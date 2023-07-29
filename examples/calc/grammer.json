@@ -1,0 +1,157 @@
+{
+  "package": "calc",
+  "rules": [
+    {
+      "name": "expr",
+      "expression": {
+        "nonTerminalSymbol": {
+          "name": "additive"
+        }
+      }
+    },
+    {
+      "name": "additive",
+      "expression": {
+        "sequence": {
+          "a": {
+            "nonTerminalSymbol": {
+              "name": "multiplicative"
+            }
+          },
+          "b": {
+            "zeroOrMore": {
+              "sequence": {
+                "a": {
+                  "nonTerminalSymbol": {
+                    "name": "binary_op1"
+                  }
+                },
+                "b": {
+                  "nonTerminalSymbol": {
+                    "name": "multiplicative"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "multiplicative",
+      "expression": {
+        "sequence": {
+          "a": {
+            "nonTerminalSymbol": {
+              "name": "value"
+            }
+          },
+          "b": {
+            "zeroOrMore": {
+              "sequence": {
+                "a": {
+                  "nonTerminalSymbol": {
+                    "name": "binary_op2"
+                  }
+                },
+                "b": {
+                  "nonTerminalSymbol": {
+                    "name": "value"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "binary_op1",
+      "expression": {
+        "choice": {
+          "a": {
+            "terminalSymbol": {
+              "text": "+"
+            }
+          },
+          "b": {
+            "terminalSymbol": {
+              "text": "-"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "binary_op2",
+      "expression": {
+        "choice": {
+          "a": {
+            "terminalSymbol": {
+              "text": "*"
+            }
+          },
+          "b": {
+            "terminalSymbol": {
+              "text": "/"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "value",
+      "expression": {
+        "choice": {
+          "a": {
+            "nonTerminalSymbol": {
+              "name": "number"
+            }
+          },
+          "b": {
+            "nonTerminalSymbol": {
+              "name": "group"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "group",
+      "expression": {
+        "sequence": {
+          "a": {
+            "terminalSymbol": {
+              "text": "("
+            }
+          },
+          "b": {
+            "sequence": {
+              "a": {
+                "nonTerminalSymbol": {
+                  "name": "additive"
+                }
+              },
+              "b": {
+                "terminalSymbol": {
+                  "text": ")"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "number",
+      "expression": {
+        "oneOrMore": {
+          "terminalSymbolRange": {
+            "start": "0",
+            "end": "9"
+          }
+        }
+      }
+    }
+  ]
+}
