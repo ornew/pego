@@ -11,10 +11,10 @@ import (
 
 /*
 expr <- term
-term <- factor (binary_op1 factor)*
-factor <- value (binary_op2 value)*
-binary_op1 <- "+" / "-"
-binary_op2 <- "*" / "/"
+term <- factor (term_binary_op factor)*
+factor <- value (factor_binary_op value)*
+term_binary_op <- "+" / "-"
+factor_binary_op <- "*" / "/"
 value <- number / group
 group <- "(" term ")"
 number <- [0-9]+
@@ -24,8 +24,8 @@ var CodeNames = map[uint32]string{
 	1: "expr",
 	2: "term",
 	3: "factor",
-	4: "binary_op1",
-	5: "binary_op2",
+	4: "term_binary_op",
+	5: "factor_binary_op",
 	6: "value",
 	7: "group",
 	8: "number",
@@ -51,16 +51,16 @@ func Parse(p *parser.Parser) (node *cst.Node, err error) {
 			// expr <- term
 			p.Alias(9)
 		case 2:
-			// term <- factor (binary_op1 factor)*
+			// term <- factor (term_binary_op factor)*
 			p.Alias(10)
 		case 3:
-			// factor <- value (binary_op2 value)*
+			// factor <- value (factor_binary_op value)*
 			p.Alias(16)
 		case 4:
-			// binary_op1 <- "+" / "-"
+			// term_binary_op <- "+" / "-"
 			p.Alias(22)
 		case 5:
-			// binary_op2 <- "*" / "/"
+			// factor_binary_op <- "*" / "/"
 			p.Alias(25)
 		case 6:
 			// value <- number / group
@@ -75,40 +75,40 @@ func Parse(p *parser.Parser) (node *cst.Node, err error) {
 			// term (from term)
 			p.Alias(2)
 		case 10:
-			// factor (binary_op1 factor)*
+			// factor (term_binary_op factor)*
 			p.Sequence(11, 12)
 		case 11:
-			// factor (from factor (binary_op1 factor)*)
+			// factor (from factor (term_binary_op factor)*)
 			p.Alias(3)
 		case 12:
-			// (binary_op1 factor)*
+			// (term_binary_op factor)*
 			p.ZeroOrMore(13)
 		case 13:
-			// binary_op1 factor
+			// term_binary_op factor
 			p.Sequence(14, 15)
 		case 14:
-			// binary_op1 (from binary_op1 factor)
+			// term_binary_op (from term_binary_op factor)
 			p.Alias(4)
 		case 15:
-			// factor (from binary_op1 factor)
+			// factor (from term_binary_op factor)
 			p.Alias(3)
 		case 16:
-			// value (binary_op2 value)*
+			// value (factor_binary_op value)*
 			p.Sequence(17, 18)
 		case 17:
-			// value (from value (binary_op2 value)*)
+			// value (from value (factor_binary_op value)*)
 			p.Alias(6)
 		case 18:
-			// (binary_op2 value)*
+			// (factor_binary_op value)*
 			p.ZeroOrMore(19)
 		case 19:
-			// binary_op2 value
+			// factor_binary_op value
 			p.Sequence(20, 21)
 		case 20:
-			// binary_op2 (from binary_op2 value)
+			// factor_binary_op (from factor_binary_op value)
 			p.Alias(5)
 		case 21:
-			// value (from binary_op2 value)
+			// value (from factor_binary_op value)
 			p.Alias(6)
 		case 22:
 			// "+" / "-"
