@@ -3,6 +3,7 @@ package generator
 import (
 	"fmt"
 	"io"
+	"os"
 	"text/template"
 
 	"github.com/ornew/pego/pkg/grammer"
@@ -179,6 +180,10 @@ func Generate(w io.Writer, g *grammer.Grammer) error {
 			c.Expr = append(c.Expr,
 				fmt.Sprintf(`// %s`, e.Group.String()),
 				fmt.Sprintf(`p.Group(%d)`, a),
+			)
+		case e.AnyChar != nil:
+			c.Expr = append(c.Expr,
+				fmt.Sprintf(`p.AnyChar()`),
 			)
 		}
 		return c.ID

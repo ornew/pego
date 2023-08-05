@@ -11,7 +11,7 @@ func (s *NonTerminal) String() string {
 }
 
 type Terminal struct {
-	Text string `json:"text"`
+	Text string `json:"text,omitempty"`
 }
 
 func (s *Terminal) String() string {

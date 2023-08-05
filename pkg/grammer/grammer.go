@@ -18,9 +18,13 @@ type Expression struct {
 	AndPredicate        *AndPredicateOp       `json:"andPredicate,omitempty"`
 	NotPredicate        *NotPredicateOp       `json:"notPredicate,omitempty"`
 	Group               *GroupOp              `json:"group,omitempty"`
+	AnyChar             *AnyCharOp            `json:"anyChar,omitempty"`
 }
 
 func (e *Expression) String() string {
+	if e == nil {
+		return "<nil>"
+	}
 	switch {
 	case e.TerminalSymbol != nil:
 		return e.TerminalSymbol.String()
@@ -44,6 +48,8 @@ func (e *Expression) String() string {
 		return e.NotPredicate.String()
 	case e.Group != nil:
 		return e.Group.String()
+	case e.AnyChar != nil:
+		return e.AnyChar.String()
 	default:
 		return "<invalid>"
 	}
@@ -122,6 +128,12 @@ type GroupOp struct {
 
 func (o *GroupOp) String() string {
 	return "(" + o.Expression.String() + ")"
+}
+
+type AnyCharOp struct{}
+
+func (o *AnyCharOp) String() string {
+	return "."
 }
 
 type Rule struct {

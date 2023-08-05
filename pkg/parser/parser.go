@@ -312,6 +312,15 @@ func (p *Parser) NotPredicate(a uint32) {
 	}
 }
 
+func (p *Parser) AnyChar() {
+	if p.GetCurrentChar() == 0 {
+		p.Reject()
+		return
+	}
+	p.Consume(1)
+	p.Accept()
+}
+
 func (p *Parser) Top() *StackData {
 	return p.stack.Top
 }
