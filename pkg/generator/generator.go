@@ -98,6 +98,10 @@ func Generate(w io.Writer, g *grammer.Grammer) error {
 	last = uint32(len(codenames)) + 1
 	var add func(parent, e *grammer.Expression) uint32
 	add = func(parent, e *grammer.Expression) uint32 {
+		if e == nil {
+			fmt.Printf("nil found: %v\n", parent)
+			os.Exit(1)
+		}
 		id, ok := index[e]
 		if ok {
 			return id
@@ -111,9 +115,9 @@ func Generate(w io.Writer, g *grammer.Grammer) error {
 		switch {
 		case e.TerminalSymbol != nil:
 			if len(e.TerminalSymbol.Text) == 1 {
-				c.Expr = append(c.Expr, fmt.Sprintf(`p.TerminalChar('%s')`, e.TerminalSymbol.Text))
+				c.Expr = append(c.Expr, fmt.Sprintf(`p.TerminalChar(%q)`, rune(e.TerminalSymbol.Text[0])))
 			} else {
-				c.Expr = append(c.Expr, fmt.Sprintf(`p.Terminal("%s")`, e.TerminalSymbol.Text))
+				c.Expr = append(c.Expr, fmt.Sprintf(`p.Terminal([]byte(%q))`, e.TerminalSymbol.Text))
 			}
 		case e.TerminalSymbolRange != nil:
 			c.Expr = append(c.Expr, fmt.Sprintf(`p.TerminalRange('%s', '%s')`, e.TerminalSymbolRange.Start, e.TerminalSymbolRange.End))
