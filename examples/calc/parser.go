@@ -10,20 +10,20 @@ import (
 )
 
 /*
-expr <- additive
-additive <- multiplicative (binary_op1 multiplicative)*
-multiplicative <- value (binary_op2 value)*
+expr <- term
+term <- factor (binary_op1 factor)*
+factor <- value (binary_op2 value)*
 binary_op1 <- "+" / "-"
 binary_op2 <- "*" / "/"
 value <- number / group
-group <- "(" additive ")"
+group <- "(" term ")"
 number <- [0-9]+
 */
 
 var CodeNames = map[uint32]string{
 	1: "expr",
-	2: "additive",
-	3: "multiplicative",
+	2: "term",
+	3: "factor",
 	4: "binary_op1",
 	5: "binary_op2",
 	6: "value",
@@ -48,13 +48,13 @@ func Parse(p *parser.Parser) (node *cst.Node, err error) {
 		}
 		switch top.Code {
 		case 1:
-			// expr <- additive
+			// expr <- term
 			p.Alias(9)
 		case 2:
-			// additive <- multiplicative (binary_op1 multiplicative)*
+			// term <- factor (binary_op1 factor)*
 			p.Alias(10)
 		case 3:
-			// multiplicative <- value (binary_op2 value)*
+			// factor <- value (binary_op2 value)*
 			p.Alias(16)
 		case 4:
 			// binary_op1 <- "+" / "-"
@@ -66,31 +66,31 @@ func Parse(p *parser.Parser) (node *cst.Node, err error) {
 			// value <- number / group
 			p.Alias(28)
 		case 7:
-			// group <- "(" additive ")"
+			// group <- "(" term ")"
 			p.Alias(31)
 		case 8:
 			// number <- [0-9]+
 			p.Alias(36)
 		case 9:
-			// additive (from additive)
+			// term (from term)
 			p.Alias(2)
 		case 10:
-			// multiplicative (binary_op1 multiplicative)*
+			// factor (binary_op1 factor)*
 			p.Sequence(11, 12)
 		case 11:
-			// multiplicative (from multiplicative (binary_op1 multiplicative)*)
+			// factor (from factor (binary_op1 factor)*)
 			p.Alias(3)
 		case 12:
-			// (binary_op1 multiplicative)*
+			// (binary_op1 factor)*
 			p.ZeroOrMore(13)
 		case 13:
-			// binary_op1 multiplicative
+			// binary_op1 factor
 			p.Sequence(14, 15)
 		case 14:
-			// binary_op1 (from binary_op1 multiplicative)
+			// binary_op1 (from binary_op1 factor)
 			p.Alias(4)
 		case 15:
-			// multiplicative (from binary_op1 multiplicative)
+			// factor (from binary_op1 factor)
 			p.Alias(3)
 		case 16:
 			// value (binary_op2 value)*
@@ -134,15 +134,15 @@ func Parse(p *parser.Parser) (node *cst.Node, err error) {
 			// group (from number / group)
 			p.Alias(7)
 		case 31:
-			// "(" additive ")"
+			// "(" term ")"
 			p.Sequence(32, 33)
 		case 32:
 			p.TerminalChar('(')
 		case 33:
-			// additive ")"
+			// term ")"
 			p.Sequence(34, 35)
 		case 34:
-			// additive (from additive ")")
+			// term (from term ")")
 			p.Alias(2)
 		case 35:
 			p.TerminalChar(')')

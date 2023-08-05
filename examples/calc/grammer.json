@@ -5,17 +5,17 @@
       "name": "expr",
       "expression": {
         "nonTerminalSymbol": {
-          "name": "additive"
+          "name": "term"
         }
       }
     },
     {
-      "name": "additive",
+      "name": "term",
       "expression": {
         "sequence": {
           "a": {
             "nonTerminalSymbol": {
-              "name": "multiplicative"
+              "name": "factor"
             }
           },
           "b": {
@@ -28,7 +28,7 @@
                 },
                 "b": {
                   "nonTerminalSymbol": {
-                    "name": "multiplicative"
+                    "name": "factor"
                   }
                 }
               }
@@ -38,7 +38,7 @@
       }
     },
     {
-      "name": "multiplicative",
+      "name": "factor",
       "expression": {
         "sequence": {
           "a": {
@@ -129,7 +129,7 @@
             "sequence": {
               "a": {
                 "nonTerminalSymbol": {
-                  "name": "additive"
+                  "name": "term"
                 }
               },
               "b": {
