@@ -14,7 +14,6 @@ type Parser struct {
 	src          []byte
 	stage        Commit
 	srcEnd       uint32
-	repeat       uint32
 	ruleCodeSize uint32
 }
 
@@ -50,7 +49,7 @@ func (p *Parser) Consume(n uint32) error {
 }
 
 func (p *Parser) GetCurrentChar() byte {
-	if p.stack.Top.Range.End.Offset == p.srcEnd {
+	if p.stack.Top.Range.End.Offset >= p.srcEnd {
 		return 0
 	}
 	return p.src[p.stack.Top.Range.End.Offset]
@@ -64,7 +63,7 @@ func (p *Parser) GetCurrentText() []byte {
 }
 
 func (p *Parser) Reject() {
-	// fmt.Printf("==== REJECT: %3d: %16v: %q\n", p.stack.Top.Code, p.stack.Top.Range, p.GetCurrentText())
+	// fmt.Printf("==== REJECT: %5d: %16v: %q\n", p.stack.Top.Code, p.stack.Top.Range, p.GetCurrentText())
 	p.stack.Top.Range.End = p.stack.Top.Range.Start
 	p.stage = Commit{
 		Range: p.stack.Top.Range,
@@ -90,7 +89,7 @@ func Squash(n *cst.Node, max uint32) *cst.Node {
 }
 
 func (p *Parser) Accept() {
-	// fmt.Printf("==== ACCEPT: %3d: %16v: %q\n", p.stack.Top.Code, p.stack.Top.Range, p.GetCurrentText())
+	// fmt.Printf("==== ACCEPT: %5d: %16v: %q\n", p.stack.Top.Code, p.stack.Top.Range, p.GetCurrentText())
 	p.stage = Commit{
 		Range:    p.stack.Top.Range,
 		Code:     p.stack.Top.Code,
@@ -229,13 +228,14 @@ func (p *Parser) ZeroOrMore(a uint32) {
 	switch {
 	case p.stack.Top.A.Code == a:
 		if p.stack.Top.A.Accepted {
-			p.repeat++
+			p.stack.Top.Repeat++
 			p.stack.Branch(p.stack.Top, a)
 		} else {
+			// fmt.Printf("==== REPEAT: %5d: %d\n", a, p.stack.Top.Repeat)
 			p.Accept()
 		}
 	case p.stack.Top.A.Code != a:
-		p.repeat = 0
+		p.stack.Top.Repeat = 0
 		p.stack.Branch(p.stack.Top, a)
 	}
 }
@@ -248,18 +248,19 @@ func (p *Parser) OneOrMore(a uint32) {
 	switch {
 	case p.stack.Top.A.Code == a:
 		if p.stack.Top.A.Accepted {
-			p.repeat++
+			p.stack.Top.Repeat++
 			p.stack.Branch(p.stack.Top, a)
 		} else {
-			if p.repeat > 0 {
+			// fmt.Printf("==== REPEAT: %5d: %d\n", a, p.stack.Top.Repeat)
+			if p.stack.Top.Repeat > 0 {
 				p.Accept()
-				p.repeat = 0
+				p.stack.Top.Repeat = 0
 			} else {
 				p.Reject()
 			}
 		}
 	case p.stack.Top.A.Code != a:
-		p.repeat = 0
+		p.stack.Top.Repeat = 0
 		p.stack.Branch(p.stack.Top, a)
 	}
 }

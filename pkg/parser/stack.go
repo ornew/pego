@@ -7,10 +7,12 @@ import (
 
 type StackData struct {
 	Node  *cst.Node
-	Code  uint32
-	A     Commit
-	B     Commit
 	Range token.Range
+	Code  uint32
+
+	A      Commit
+	B      Commit
+	Repeat uint32
 }
 
 type Stack struct {
