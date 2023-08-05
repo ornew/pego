@@ -107,6 +107,19 @@ func (p *Parser) Accept() {
 	}
 }
 
+func (p *Parser) AcceptDiscard() {
+	// fmt.Printf("==== ACCEPT DISCARD: %3d: %16v: %q\n", p.stack.Top.Code, p.stack.Top.Range, p.GetCurrentText())
+	p.stage = Commit{
+		Range:    p.stack.Top.Range,
+		Code:     p.stack.Top.Code,
+		Accepted: true,
+	}
+	_ = p.stack.Pop(1)
+	if p.stack.Top != nil {
+		p.head = p.stack.Top.Node
+	}
+}
+
 func (p *Parser) Head() *cst.Node {
 	return p.head
 }
@@ -259,6 +272,40 @@ func (p *Parser) Optional(a uint32) {
 	switch {
 	case p.stack.Top.A.Code == a:
 		p.Accept()
+	case p.stack.Top.A.Code != a:
+		p.stack.Branch(p.stack.Top, a)
+	}
+}
+
+func (p *Parser) AndPredicate(a uint32) {
+	switch p.stage.Code {
+	case a:
+		p.CommitA()
+	}
+	switch {
+	case p.stack.Top.A.Code == a:
+		if p.stack.Top.A.Accepted {
+			p.AcceptDiscard()
+		} else {
+			p.Reject()
+		}
+	case p.stack.Top.A.Code != a:
+		p.stack.Branch(p.stack.Top, a)
+	}
+}
+
+func (p *Parser) NotPredicate(a uint32) {
+	switch p.stage.Code {
+	case a:
+		p.CommitA()
+	}
+	switch {
+	case p.stack.Top.A.Code == a:
+		if !p.stack.Top.A.Accepted {
+			p.AcceptDiscard()
+		} else {
+			p.Reject()
+		}
 	case p.stack.Top.A.Code != a:
 		p.stack.Branch(p.stack.Top, a)
 	}
