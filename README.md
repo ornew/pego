@@ -5,13 +5,13 @@
 Generate parser from [grammer.json](./examples/calc/grammer.json):
 
 ```bash
-go run ./examples/calc/cmd/gen
+go run ./cmd/pego ./examples/calc/grammer.json
 ```
 
-Parse by generated [parser.go](./examples/calc/parser.go):
+Testing parse by generated [parser_gen.go](./examples/calc/parser_gen.go):
 
 ```bash
-go run ./examples/calc/cmd/parse
+go test ./examples/calc/
 ```
 
 Given:
