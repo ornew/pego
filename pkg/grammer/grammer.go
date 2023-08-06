@@ -111,7 +111,7 @@ type AndPredicateOp struct {
 }
 
 func (o *AndPredicateOp) String() string {
-	return "&(" + o.Expression.String() + ")"
+	return "&" + o.Expression.String()
 }
 
 type NotPredicateOp struct {
@@ -119,7 +119,7 @@ type NotPredicateOp struct {
 }
 
 func (o *NotPredicateOp) String() string {
-	return "!(" + o.Expression.String() + ")"
+	return "!" + o.Expression.String()
 }
 
 type GroupOp struct {

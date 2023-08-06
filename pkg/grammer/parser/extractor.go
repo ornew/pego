@@ -67,7 +67,11 @@ func (e *Extractor) getConstant(n *cst.Node) *grammer.Expression {
 }
 
 func (e *Extractor) getGroup(n *cst.Node) *grammer.Expression {
-	return e.getExpression(n.Children[0])
+	return &grammer.Expression{
+		Group: &grammer.GroupOp{
+			Expression: e.getExpression(n.Children[0]),
+		},
+	}
 }
 
 func (e *Extractor) getPrimary(n *cst.Node) *grammer.Expression {
