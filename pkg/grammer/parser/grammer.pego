@@ -1,0 +1,23 @@
+package parser
+
+file <- _spaceline? package_statement (_spaceline / rule_statement)+
+package_statement <- "package" _space ident
+rule_statement <- ident _space "<-" _space expr
+expr <- term (_space term_binary_op _space term)*
+term_binary_op <- "/"
+term <- factor (factor_binary_op factor)*
+factor_binary_op <- " "+
+factor <- primary_prefix_unary_op? primary primary_postfix_unary_op?
+primary_prefix_unary_op <- "&" / "!"
+primary_postfix_unary_op <- "*" / "+" / "?"
+primary <- any_char_op / group / constant
+group <- "(" expr ")"
+constant <- terminal_symbol_range / terminal_symbol / ident
+terminal_symbol <- "\"" string "\""
+terminal_symbol_range <- "[" charactor "-" charactor "]"
+ident <- ("_" / [a-z])+
+string <- ("\\" . / !("\"" / "\n") charactor)+
+any_char_op <- "."
+charactor <- .
+_spaceline <- "\n"+
+_space <- " "*

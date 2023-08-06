@@ -1,0 +1,527 @@
+{
+  "package": "parser",
+  "rules": [
+    {
+      "name": "file",
+      "expression": {
+        "sequence": {
+          "a": {
+            "optional": {
+              "nonTerminalSymbol": {
+                "name": "_spaceline"
+              }
+            }
+          },
+          "b": {
+            "sequence": {
+              "a": {
+                "nonTerminalSymbol": {
+                  "name": "package_statement"
+                }
+              },
+              "b": {
+                "oneOrMore": {
+                  "choice": {
+                    "a": {
+                      "nonTerminalSymbol": {
+                        "name": "_spaceline"
+                      }
+                    },
+                    "b": {
+                      "nonTerminalSymbol": {
+                        "name": "rule_statement"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "package_statement",
+      "expression": {
+        "sequence": {
+          "a": {
+            "terminalSymbol": {
+              "text": "package"
+            }
+          },
+          "b": {
+            "sequence": {
+              "a": {
+                "nonTerminalSymbol": {
+                  "name": "_space"
+                }
+              },
+              "b": {
+                "nonTerminalSymbol": {
+                  "name": "ident"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "rule_statement",
+      "expression": {
+        "sequence": {
+          "a": {
+            "nonTerminalSymbol": {
+              "name": "ident"
+            }
+          },
+          "b": {
+            "sequence": {
+              "a": {
+                "nonTerminalSymbol": {
+                  "name": "_space"
+                }
+              },
+              "b": {
+                "sequence": {
+                  "a": {
+                    "terminalSymbol": {
+                      "text": "<-"
+                    }
+                  },
+                  "b": {
+                    "sequence": {
+                      "a":{
+                        "nonTerminalSymbol": {
+                          "name": "_space"
+                        }
+                      },
+                      "b": {
+                        "nonTerminalSymbol": {
+                          "name": "expr"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "expr",
+      "expression": {
+        "sequence": {
+          "a": {
+            "nonTerminalSymbol": {
+              "name": "term"
+            }
+          },
+          "b": {
+            "zeroOrMore": {
+              "sequence": {
+                "a": {
+                  "nonTerminalSymbol": {
+                    "name": "_space"
+                  }
+                },
+                "b": {
+                  "sequence": {
+                    "a": {
+                      "nonTerminalSymbol": {
+                        "name": "term_binary_op"
+                      }
+                    },
+                    "b": {
+                      "sequence": {
+                        "a": {
+                          "nonTerminalSymbol": {
+                            "name": "_space"
+                          }
+                        },
+                        "b": {
+                          "nonTerminalSymbol": {
+                            "name": "term"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "term_binary_op",
+      "expression": {
+        "terminalSymbol": {
+          "text": "/"
+        }
+      }
+    },
+    {
+      "name": "term",
+      "expression": {
+        "sequence": {
+          "a": {
+            "nonTerminalSymbol": {
+              "name": "factor"
+            }
+          },
+          "b": {
+            "zeroOrMore": {
+              "sequence": {
+                "a": {
+                  "nonTerminalSymbol": {
+                    "name": "factor_binary_op"
+                  }
+                },
+                "b": {
+                  "nonTerminalSymbol": {
+                    "name": "factor"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "factor_binary_op",
+      "expression": {
+        "oneOrMore": {
+          "terminalSymbol": {
+            "text": " "
+          }
+        }
+      }
+    },
+    {
+      "name": "factor",
+      "expression": {
+        "sequence": {
+          "a": {
+            "optional": {
+              "nonTerminalSymbol": {
+              "name": "primary_prefix_unary_op"
+              }
+            }
+          },
+          "b": {
+            "sequence": {
+              "a": {
+                "nonTerminalSymbol": {
+                  "name": "primary"
+                }
+              },
+              "b": {
+                "optional": {
+                  "nonTerminalSymbol": {
+                    "name": "primary_postfix_unary_op"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "primary_prefix_unary_op",
+      "expression": {
+        "choice": {
+          "a": {
+            "terminalSymbol": {
+              "text": "&"
+            }
+          },
+          "b": {
+            "terminalSymbol": {
+              "text": "!"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "primary_postfix_unary_op",
+      "expression": {
+        "choice": {
+          "a": {
+            "terminalSymbol": {
+              "text": "*"
+            }
+          },
+          "b": {
+            "choice": {
+              "a": {
+                "terminalSymbol": {
+                  "text": "+"
+                }
+              },
+              "b": {
+                "terminalSymbol": {
+                  "text": "?"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "primary",
+      "expression": {
+        "choice": {
+          "a": {
+            "nonTerminalSymbol": {
+              "name": "any_char_op"
+            }
+          },
+          "b": {
+            "choice": {
+              "a": {
+                "nonTerminalSymbol": {
+                  "name": "group"
+                }
+              },
+              "b": {
+                "nonTerminalSymbol": {
+                  "name": "constant"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "group",
+      "expression": {
+        "sequence": {
+          "a": {
+            "terminalSymbol": {
+              "text": "("
+            }
+          },
+          "b": {
+            "sequence": {
+              "a": {
+                "nonTerminalSymbol": {
+                  "name": "expr"
+                }
+              },
+              "b": {
+                "terminalSymbol": {
+                  "text": ")"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "constant",
+      "expression": {
+        "choice": {
+          "a": {
+            "nonTerminalSymbol": {
+              "name": "terminal_symbol_range"
+            }
+          },
+          "b": {
+            "choice": {
+              "a": {
+                "nonTerminalSymbol": {
+                  "name": "terminal_symbol"
+                }
+              },
+              "b": {
+                "nonTerminalSymbol": {
+                  "name": "ident"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "terminal_symbol",
+      "expression": {
+        "sequence": {
+          "a": {
+            "terminalSymbol": {
+              "text": "\""
+            }
+          },
+          "b": {
+            "sequence": {
+              "a": {
+                "nonTerminalSymbol": {
+                  "name": "string"
+                }
+              },
+              "b": {
+                "terminalSymbol": {
+                  "text": "\""
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "terminal_symbol_range",
+      "expression": {
+        "sequence": {
+          "a": {
+            "terminalSymbol": {
+              "text": "["
+            }
+          },
+          "b": {
+            "sequence": {
+              "a": {
+                "nonTerminalSymbol": {
+                  "name": "charactor"
+                }
+              },
+              "b": {
+                "sequence": {
+                  "a": {
+                    "terminalSymbol": {
+                      "text": "-"
+                    }
+                  },
+                  "b": {
+                    "sequence": {
+                      "a": {
+                        "nonTerminalSymbol": {
+                          "name": "charactor"
+                        }
+                      },
+                      "b": {
+                        "terminalSymbol": {
+                          "text": "]"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ident",
+      "expression": {
+        "oneOrMore": {
+          "choice": {
+            "a": {
+              "terminalSymbol": {
+                "text": "_"
+              }
+            },
+            "b": {
+              "terminalSymbolRange": {
+                "start": "a",
+                "end": "z"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "string",
+      "expression": {
+        "oneOrMore": {
+          "choice": {
+            "a": {
+              "sequence": {
+                "a": {
+                  "terminalSymbol": {
+                    "text": "\\"
+                  }
+                },
+                "b": {
+                  "anyChar": {}
+                }
+              }
+            },
+            "b": {
+              "sequence": {
+                "a": {
+                  "notPredicate": {
+                    "choice": {
+                      "a": {
+                        "terminalSymbol": {
+                          "text": "\""
+                        }
+                      },
+                      "b": {
+                        "terminalSymbol": {
+                          "text": "\n"
+                        }
+                      }
+                    }
+                  }
+                },
+                "b": {
+                  "nonTerminalSymbol": {
+                    "name": "charactor"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "any_char_op",
+      "expression": {
+        "terminalSymbol": {
+          "text": "."
+        }
+      }
+    },
+    {
+      "name": "charactor",
+      "expression": {
+        "anyChar": {}
+      }
+    },
+    {
+      "name": "_spaceline",
+      "expression": {
+        "oneOrMore": {
+          "terminalSymbol": {
+            "text": "\n"
+          }
+        }
+      }
+    },
+    {
+      "name": "_space",
+      "expression": {
+        "zeroOrMore": {
+          "terminalSymbol": {
+            "text": " "
+          }
+        }
+      }
+    }
+  ]
+}

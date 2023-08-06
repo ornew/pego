@@ -10,25 +10,39 @@ import (
 )
 
 /*
-expr <- term
-term <- factor (term_binary_op factor)*
-factor <- value (factor_binary_op value)*
+package calc
+
+expr <- term (term_binary_op term)*
+term <- factor (factor_binary_op factor)*
 term_binary_op <- "+" / "-"
 factor_binary_op <- "*" / "/"
-value <- number / group
-group <- "(" term ")"
+factor <- group / number
+group <- "(" expr ")"
 number <- [0-9]+
 */
 
+const (
+	Code__unknown         uint32 = 0
+	Code__root            uint32 = 1
+	Code_expr             uint32 = 2
+	Code_term             uint32 = 3
+	Code_term_binary_op   uint32 = 4
+	Code_factor_binary_op uint32 = 5
+	Code_factor           uint32 = 6
+	Code_group            uint32 = 7
+	Code_number           uint32 = 8
+)
+
 var CodeNames = map[uint32]string{
-	1: "expr",
-	2: "term",
-	3: "factor",
-	4: "term_binary_op",
-	5: "factor_binary_op",
-	6: "value",
-	7: "group",
-	8: "number",
+	Code__unknown:         "<unknown>",
+	Code__root:            "<root>",
+	Code_expr:             "expr",
+	Code_term:             "term",
+	Code_term_binary_op:   "term_binary_op",
+	Code_factor_binary_op: "factor_binary_op",
+	Code_factor:           "factor",
+	Code_group:            "group",
+	Code_number:           "number",
 }
 
 func Demangle(code uint32) (string, bool) {
@@ -48,108 +62,83 @@ func Parse(p *parser.Parser) (node *cst.Node, err error) {
 		}
 		switch top.Code {
 		case 1:
-			// expr <- term
-			p.Alias(9)
+			p.Alias(2)
 		case 2:
-			// term <- factor (term_binary_op factor)*
-			p.Alias(10)
+			// term (term_binary_op term)*
+			p.Sequence(9, 10)
 		case 3:
-			// factor <- value (factor_binary_op value)*
-			p.Alias(16)
+			// factor (factor_binary_op factor)*
+			p.Sequence(14, 15)
 		case 4:
-			// term_binary_op <- "+" / "-"
-			p.Alias(22)
+			// "+" / "-"
+			p.Choice(19, 20)
 		case 5:
-			// factor_binary_op <- "*" / "/"
-			p.Alias(25)
+			// "*" / "/"
+			p.Choice(21, 22)
 		case 6:
-			// value <- number / group
-			p.Alias(28)
+			// group / number
+			p.Choice(23, 24)
 		case 7:
-			// group <- "(" term ")"
-			p.Alias(31)
+			// "(" expr ")"
+			p.Sequence(25, 26)
 		case 8:
-			// number <- [0-9]+
-			p.Alias(36)
+			// [0-9]+
+			p.OneOrMore(29)
 		case 9:
 			// term (from term)
-			p.Alias(2)
+			p.Alias(3)
 		case 10:
-			// factor (term_binary_op factor)*
-			p.Sequence(11, 12)
+			// (term_binary_op term)*
+			p.ZeroOrMore(11)
 		case 11:
-			// factor (from factor (term_binary_op factor)*)
-			p.Alias(3)
+			// term_binary_op term
+			p.Sequence(12, 13)
 		case 12:
-			// (term_binary_op factor)*
-			p.ZeroOrMore(13)
-		case 13:
-			// term_binary_op factor
-			p.Sequence(14, 15)
-		case 14:
-			// term_binary_op (from term_binary_op factor)
+			// term_binary_op (from term_binary_op)
 			p.Alias(4)
-		case 15:
-			// factor (from term_binary_op factor)
+		case 13:
+			// term (from term)
 			p.Alias(3)
+		case 14:
+			// factor (from factor)
+			p.Alias(6)
+		case 15:
+			// (factor_binary_op factor)*
+			p.ZeroOrMore(16)
 		case 16:
-			// value (factor_binary_op value)*
+			// factor_binary_op factor
 			p.Sequence(17, 18)
 		case 17:
-			// value (from value (factor_binary_op value)*)
-			p.Alias(6)
-		case 18:
-			// (factor_binary_op value)*
-			p.ZeroOrMore(19)
-		case 19:
-			// factor_binary_op value
-			p.Sequence(20, 21)
-		case 20:
-			// factor_binary_op (from factor_binary_op value)
+			// factor_binary_op (from factor_binary_op)
 			p.Alias(5)
-		case 21:
-			// value (from factor_binary_op value)
+		case 18:
+			// factor (from factor)
 			p.Alias(6)
-		case 22:
-			// "+" / "-"
-			p.Choice(23, 24)
-		case 23:
+		case 19:
 			p.TerminalChar('+')
-		case 24:
+		case 20:
 			p.TerminalChar('-')
-		case 25:
-			// "*" / "/"
-			p.Choice(26, 27)
-		case 26:
+		case 21:
 			p.TerminalChar('*')
-		case 27:
+		case 22:
 			p.TerminalChar('/')
-		case 28:
-			// number / group
-			p.Choice(29, 30)
-		case 29:
-			// number (from number / group)
-			p.Alias(8)
-		case 30:
-			// group (from number / group)
+		case 23:
+			// group (from group)
 			p.Alias(7)
-		case 31:
-			// "(" term ")"
-			p.Sequence(32, 33)
-		case 32:
+		case 24:
+			// number (from number)
+			p.Alias(8)
+		case 25:
 			p.TerminalChar('(')
-		case 33:
-			// term ")"
-			p.Sequence(34, 35)
-		case 34:
-			// term (from term ")")
+		case 26:
+			// expr ")"
+			p.Sequence(27, 28)
+		case 27:
+			// expr (from expr)
 			p.Alias(2)
-		case 35:
+		case 28:
 			p.TerminalChar(')')
-		case 36:
-			// [0-9]+
-			p.OneOrMore(37)
-		case 37:
+		case 29:
 			p.TerminalRange('0', '9')
 		default:
 			return nil, fmt.Errorf("unknown code: %d", top.Code)

@@ -111,7 +111,7 @@ type AndPredicateOp struct {
 }
 
 func (o *AndPredicateOp) String() string {
-	return "&" + o.Expression.String()
+	return "&(" + o.Expression.String() + ")"
 }
 
 type NotPredicateOp struct {
@@ -119,7 +119,7 @@ type NotPredicateOp struct {
 }
 
 func (o *NotPredicateOp) String() string {
-	return "!" + o.Expression.String()
+	return "!(" + o.Expression.String() + ")"
 }
 
 type GroupOp struct {
@@ -146,12 +146,14 @@ func (o *Rule) String() string {
 }
 
 type Grammer struct {
-	Package string `json:"package"`
-	Rules   []Rule `json:"rules"`
+	Package string  `json:"package"`
+	Rules   []*Rule `json:"rules"`
 }
 
 func (o *Grammer) String() string {
 	var b strings.Builder
+	b.WriteString("package " + o.Package + "\n")
+	b.WriteByte('\n')
 	for i, r := range o.Rules {
 		if i > 0 {
 			b.WriteByte('\n')

@@ -1,0 +1,9 @@
+package calc
+
+expr <- term (term_binary_op term)*
+term <- factor (factor_binary_op factor)*
+term_binary_op <- "+" / "-"
+factor_binary_op <- "*" / "/"
+factor <- group / number
+group <- "(" expr ")"
+number <- [0-9]+
