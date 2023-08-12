@@ -29,7 +29,8 @@ import (
 
 const (
 	Code__unknown uint32 = 0
-	Code__root uint32 = 1
+	Code__invalid uint32 = 1
+	Code__root uint32 = 2
 	{{- range .Named }}
 	Code_{{ .Name }} uint32 = {{ .Code }}
 	{{- end }}
@@ -37,6 +38,7 @@ const (
 
 var CodeNames = map[uint32]string{
 	Code__unknown: "<unknown>",
+	Code__invalid: "<invalid>",
 	Code__root: "<root>",
 	{{- range .Named }}
 	Code_{{ .Name }}: "{{ .Name }}",
@@ -52,6 +54,7 @@ func Demangle(code uint32) (string, bool) {
 }
 
 func Parse(p *parser.Parser) (node *cst.Node, err error) {
+	p.InitializeStack(Code__root)
 	p.SetRuleCodeSize({{ .NamedSize }})
 	for {
 		top := p.Top()
@@ -59,8 +62,8 @@ func Parse(p *parser.Parser) (node *cst.Node, err error) {
 			return p.Head(), nil
 		}
 		switch top.Code {
-		case 1:
-			p.Alias(2)
+		case Code__root:
+			p.Alias(Code__root+1)
 		{{- range .Named }}
 		case {{ .Code }}:
 			{{ .Text }}
@@ -112,7 +115,7 @@ func NewGenerator() *Generator {
 		Hidden:    []*Code{},
 		Unnamed:   []*Code{},
 		NamedSize: 0,
-		last:      2,
+		last:      3,
 		index:     map[string]*Code{},
 	}
 }
@@ -233,7 +236,7 @@ func (g *Generator) register(c *Code) {
 		a := g.addSubRule(c, 0, e.Group.Expression)
 		c.Render = func() string {
 			return fmt.Sprintf(`// %s`, e.Group.String()) + "\n" +
-				fmt.Sprintf(`p.Group(%d)`, a.Code)
+				fmt.Sprintf(`p.Alias(%d)`, a.Code)
 		}
 	case e.AnyChar != nil:
 		c.Render = func() string {
