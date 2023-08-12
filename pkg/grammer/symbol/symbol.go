@@ -1,6 +1,9 @@
 package symbol
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 type NonTerminal struct {
 	Name string `json:"name"`
@@ -15,7 +18,8 @@ type Terminal struct {
 }
 
 func (s *Terminal) String() string {
-	return fmt.Sprintf("%q", s.Text)
+	b, _ := json.Marshal(s.Text)
+	return string(b)
 }
 
 type TerminalRange struct {
