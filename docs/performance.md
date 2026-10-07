@@ -560,6 +560,14 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 - Effect (min of 10–12 interleaved runs, Apple M3 Max, Recovery workload): full parses 15–32% faster (closure 19.2 →
   14.6 ms, generated 16.9 → 11.5 ms), recognition 17–30% faster (closure 15.5 → 10.9 ms).
 
+### 40. One pass to prepare code-point input in generated parsers
+
+- Generated parsers prepared code-point input in three passes, as the engine did before change 30: converting to code
+  points, checking UTF-8 validity, and building the offset table for token text. Full parses always need the table,
+  so it is still built eagerly, but now in the same pass as the conversion and the check.
+- Effect (min of 16 interleaved runs, Apple M3 Max, generated parsers): JSON 10.1 → 9.6 ms, CSV 4.6 → 4.2 ms, XML 10.1 →
+  9.7 ms.
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -599,7 +607,7 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–39 are done. Next candidates, in order:
+Changes 13–40 are done. Next candidates, in order:
 
 1. Inlining small rules at compile time; the iterative VM's frame dispatch (an interface call per step).
 2. Document reparses: shifting reused subtrees still copies them (positions are absolute in nodes).

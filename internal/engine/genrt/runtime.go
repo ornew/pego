@@ -274,8 +274,6 @@ func parse(r *rule, input string, units []Unit) (n *Node, err error) {
 	if len(units) > 0 && units[0] == Bytes {
 		p.unit, p.bs, p.n = Bytes, input, len(input)
 	} else {
-		p.in = []rune(input)
-		p.n = len(p.in)
 		p.setSource(input)
 	}
 	defer func() {
@@ -625,17 +623,28 @@ func (p *parser) setCapture(slot int, v *Node) {
 	p.frame.vals[slot] = v
 }
 
-// setSource records the input string for zero-copy token text in CodePoints mode.
+// setSource decodes the input s into code points and, if s is valid UTF-8, records the offset
+// table for token text, all in one pass (a U+FFFD that decodes from three bytes is valid).
 func (p *parser) setSource(s string) {
-	if !utf8.ValidString(s) || len(s) > 1<<31-1 {
-		return
+	n := utf8.RuneCountInString(s)
+	p.in, p.n = make([]rune, n), n
+	offs := make([]int32, n+1)
+	valid := len(s) <= 1<<31-1
+	i := 0
+	for off, r := range s {
+		if r == utf8.RuneError && valid {
+			if _, size := utf8.DecodeRuneInString(s[off:]); size == 1 {
+				valid = false
+			}
+		}
+		p.in[i] = r
+		offs[i] = int32(off)
+		i++
 	}
-	p.src = s
-	p.offs = make([]int32, 0, len(p.in)+1)
-	for i := range s {
-		p.offs = append(p.offs, int32(i))
+	offs[n] = int32(len(s))
+	if valid {
+		p.src, p.offs = s, offs
 	}
-	p.offs = append(p.offs, int32(len(s)))
 }
 
 // peek returns the character at the current position and its size in units.
