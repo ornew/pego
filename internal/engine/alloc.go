@@ -9,10 +9,25 @@ const (
 	ptrChunk  = 1024
 )
 
+// splitChunks starts new chunks for the elements of a stream that follow, at an element boundary.
+// A chunk stays alive while anything in it is referenced, and keeps alive what its objects point
+// to; chunks shared by consecutive elements would therefore chain every element emitted so far to
+// the live parser state. Splitting keeps each chain within a group of elements, so memory stays
+// bounded. The unused rest of the chunks is lost at each split, so the split waits until the node
+// chunk is nearly used up, or until the elements since the last split filled more than one chunk
+// (large elements, after which the loss is small in comparison).
+func (p *parser) splitChunks() {
+	if len(p.nodeSlab) < nodeChunk/8 || p.nodeChunks >= 2 {
+		p.nodeSlab, p.ptrSlab, p.frameSlab, p.fieldSlab, p.funcSlab = nil, nil, nil, nil, nil
+		p.nodeChunks = 0
+	}
+}
+
 // newNode allocates a copy of v from a chunk and returns it.
 func (p *parser) newNode(v Node) *Node {
 	if len(p.nodeSlab) == 0 {
 		p.nodeSlab = make([]Node, nodeChunk)
+		p.nodeChunks++
 	}
 	n := &p.nodeSlab[0]
 	p.nodeSlab = p.nodeSlab[1:]

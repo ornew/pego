@@ -348,6 +348,24 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   | Arith_LeftRec | 18.2 ms | 18.8 ms (unchanged bytes) |
   | Minilang | 13.2 ms, 18.6 MB | 12.8 ms, 17.2 MB |
 
+### 22. Bounded memory and less copying in stream parsing
+
+- **Retention.** A stream parse is meant to hold only its working set, but the reachable heap grew with the number of
+  elements on several grammars (found while writing the streaming guide): about 78 MB per 100,000 records for a grammar
+  with a header and captured fields, on every backend. Nodes, child lists, frames and field lists come from chunks
+  (change 6), a chunk stays alive while anything in it is referenced, and it keeps alive what its objects point to.
+  Consecutive elements shared chunks, so the chunk being filled reached the previous element's chunks, and so on back
+  to the first element. At an element boundary, once the node chunk is nearly used up or the elements since the last
+  split filled more than one chunk, the parser now starts new chunks of every kind (`splitChunks`), so chains stay
+  within a group of elements. `TestParseStreamMemoryIsBounded` checks the reachable heap on every backend; it fails
+  without the split.
+- **Copying.** `discard` copied the whole read-ahead buffer into a new slice at every committed element. It now
+  compacts in place, and only once at least half of the buffer can go.
+- Effect (min of 6 interleaved runs, Apple M3 Max): streaming 50,000 CSV records 168.9 → 117.7 ms (closure), 180.6 →
+  129.9 ms (bytecode), 215.3 → 160.8 ms (iterative), and 686 → 351 MB allocated per parse. The reachable heap no longer
+  grows: 233 MB → 0.5 MB after 300,000 records of the grammar above. A 27 MiB, 1,000,000-record CSV file now streams with
+  a peak resident size of about 61 MB (0.8 GB before; a whole-input `Parse` takes 2.2 GB).
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -386,7 +404,7 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–21 are done. Next candidates, in order:
+Changes 13–22 are done. Next candidates, in order:
 
 1. Rule-call overhead in the iterative VM (its call frames), and inlining small rules at compile time.
 2. Document edits: shifting reused subtrees (`shiftNode`) and copying the input on every edit.

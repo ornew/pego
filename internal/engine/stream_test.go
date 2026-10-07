@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -128,6 +129,51 @@ func TestParseStreamDiscardsInput(t *testing.T) {
 	}
 	if n := p.memo.len(); n > 5000 {
 		t.Errorf("memo has %d entries", n)
+	}
+}
+
+// TestParseStreamMemoryIsBounded checks that the memory reachable during a stream parse does not
+// grow with the number of elements emitted, for elements with captures, with actions, and with
+// plain CST values, on every backend.
+func TestParseStreamMemoryIsBounded(t *testing.T) {
+	grammars := map[string]string{
+		"records": records,
+		"action": `
+type Pair struct { Key Match, Value Match }
+def main = item* #stream $$
+def item: Pair = k:@(?a-z)+ "=" v:@(?0-9)+ "\n" -> new Pair{Key: $k, Value: $v}`,
+		"lines": `
+def main = line* #stream $$
+def line = @(?a-z0-9=)+ "\n"`,
+	}
+	for name, src := range grammars {
+		prog := compile(t, src)
+		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+			header := ""
+			if name == "records" {
+				header = "#records\n"
+			}
+			const n = 60000
+			var at [2]uint64
+			count := 0
+			err := prog.ParseStreamWith("main", &lineReader{header: header, line: "key=42\n", n: n}, func(*Node) error {
+				count++
+				if count == n/3 || count == n {
+					var ms runtime.MemStats
+					runtime.GC()
+					runtime.ReadMemStats(&ms)
+					at[count/n] = ms.HeapAlloc
+				}
+				return nil
+			}, ParseOptions{Backend: b})
+			if err != nil {
+				t.Fatal(err)
+			}
+			// Retaining the elements would take tens of megabytes here.
+			if grown := int64(at[1]) - int64(at[0]); grown > 4<<20 {
+				t.Errorf("%s, %v: reachable memory grew by %d KiB over %d elements", name, b, grown>>10, n-n/3)
+			}
+		}
 	}
 }
 

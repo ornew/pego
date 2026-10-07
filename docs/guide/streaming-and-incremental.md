@@ -365,7 +365,8 @@ before `SyntaxError.Pos` that was delivered is final.
 
 What a stream parse releases as it goes:
 
-- the **input** before the element just delivered (except one character), by compacting the read buffer;
+- the **input** before the element just delivered (except one character), by compacting the read buffer once at least
+  half of it has been consumed;
 - the **memo table** entries before that position, in blocks of about 1,024 positions;
 - the **element itself**, as soon as your callback returns, provided you do not keep it.
 
@@ -374,19 +375,15 @@ set, and one huge element, such as a whole document wrapped in a single rule, de
 the last few elements, your callback's own state, and the list of recovered errors.
 
 The effect on a real input, a 27 MiB CSV file with 1,000,000 records (Apple silicon, Go 1.27.1; the program is in the
-[recipe](#recipe-summing-a-csv-column)): `ParseStream` finished in about 2.6 to 3.1 seconds with a peak resident size of
-about 0.8 GB, and `Parse` finished in 1.5 seconds with about 3.0 GB. Streaming is not faster: it trades time for memory,
-and the memory is bounded by the working set rather than by the size of the input.
+[recipe](#recipe-summing-a-csv-column)): `ParseStream` finished in about 1.4 to 1.8 seconds with a peak resident size of
+about 61 MB, and `Parse` finished in about 1.2 seconds with about 2.2 GB. Streaming is not faster: it trades a little
+time for memory, and the memory is bounded by the working set rather than by the size of the input.
 
-**Known limitation of the current implementation.** The nodes handed to you are allocated from chunks shared with the
-parser's scratch state, and in some grammars stale references in that state keep earlier chunks, and with them
-earlier elements you have already dropped, reachable (in one case that was traced, entries left behind in the list
-that undoes capture writes on backtracking). The live heap then grows with the number of elements instead of
-staying flat. In the CSV run above the live heap (measured after a forced GC) was between about 150 and 400 MiB for
-1,000,000 records rather than a few MiB. The program below parses the same input with two grammars: one whose elements
-are CST nodes with captures, where the live heap grows by about 10 MiB per 100,000 records (a grammar with a `header`
-rule before the repetition grew faster, by about 75 MiB per 100,000), and one whose element rule has an action, where
-it stays flat:
+The nodes handed to you are allocated in chunks, and a chunk stays reachable while anything in it is. The parser starts
+new chunks at element boundaries from time to time, so the elements you drop do not stay reachable through chunks shared
+with later ones. To check the working set of your own grammar, count what is still reachable after a forced garbage
+collection. This program does that for two grammars over the same input: one whose elements are CST nodes with
+captures, and one whose element rule has an action:
 
 ```go
 package main
@@ -458,10 +455,10 @@ func main() {
 
 ```
 $ go run ./mem cst
-cst:  100000 records,   76 MiB live
-cst:  200000 records,   85 MiB live
-cst:  300000 records,   95 MiB live
-cst:  400000 records,  104 MiB live
+cst:  100000 records,    0 MiB live
+cst:  200000 records,    0 MiB live
+cst:  300000 records,    0 MiB live
+cst:  400000 records,    0 MiB live
 $ go run ./mem action
 action:  100000 records,    0 MiB live
 action:  200000 records,    0 MiB live
@@ -469,9 +466,9 @@ action:  300000 records,    0 MiB live
 action:  400000 records,    0 MiB live
 ```
 
-Streaming still gets rid of the input and the tree, which dominate for most inputs. If you stream gigabytes, measure
-your own grammar with a helper like the one above, and prefer elements built by an action. This section describes the
-behaviour of the current implementation, not a guarantee.
+Both stay flat: what is reachable is the parser's working set, not the elements already delivered. If you stream
+gigabytes, measuring your own grammar with a helper like the one above is still worthwhile; what it should show is a
+number that does not grow with the input.
 
 ### Recipe: summing a CSV column
 

@@ -73,12 +73,14 @@ type parser struct {
 	frameSlab []frame
 	fieldSlab []NodeField
 	posSlab   []int
-	funcSlab  []vmFunc
-	ectx      evalCtx      // area for useCtx
-	item      [1]*Node     // the element list of an action whose body is not a sequence (one)
-	oplocals  [3]local     // $lhs, $rhs and $op of a Pratt operator action
-	saved     []*Node      // captures saved across a reset in longest
-	attempt   prattAttempt // result of the longestFrame that just finished (iterative VM)
+	// nodeChunks counts the node chunks allocated since the last splitChunks.
+	nodeChunks int
+	funcSlab   []vmFunc
+	ectx       evalCtx      // area for useCtx
+	item       [1]*Node     // the element list of an action whose body is not a sequence (one)
+	oplocals   [3]local     // $lhs, $rhs and $op of a Pratt operator action
+	saved      []*Node      // captures saved across a reset in longest
+	attempt    prattAttempt // result of the longestFrame that just finished (iterative VM)
 }
 
 // expID is an expectation (an index into descs). If msgBit is set, it is an #error message.

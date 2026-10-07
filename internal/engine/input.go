@@ -248,16 +248,19 @@ func (in *input) lineCol(pos int) (int, int) {
 	return line, col
 }
 
-// discard discards the input before position keep.
+// discard discards the input before position keep. The buffer holds read-ahead input, so it is
+// compacted in place only once at least half of it can go: copying the rest on every call would
+// cost the size of the buffer per element of a stream.
 func (in *input) discard(keep int) {
-	if keep <= in.base {
+	n := keep - in.base
+	if n <= 0 || 2*n < len(in.in)+len(in.bs) {
 		return
 	}
 	in.baseLine, in.baseCol = in.lineCol(keep)
 	if in.unit == Bytes {
-		in.bs = append([]byte(nil), in.bs[keep-in.base:]...)
+		in.bs = in.bs[:copy(in.bs, in.bs[n:])]
 	} else {
-		in.in = append([]rune(nil), in.in[keep-in.base:]...)
+		in.in = in.in[:copy(in.in, in.in[n:])]
 	}
 	in.base = keep
 }
@@ -268,6 +271,7 @@ func (in *input) discard(keep int) {
 func (p *parser) commit(pos int) {
 	p.discard(pos - 1)
 	p.trail = p.trail[:0]
+	p.splitChunks()
 	if pos-p.pruned >= 1024 {
 		p.memo.prune(pos)
 		p.pruned = pos
