@@ -62,26 +62,14 @@ func (d *Document) Edit(start, end int, text string) error {
 	if start < 0 || end < start || end > n {
 		return fmt.Errorf("invalid range [%d,%d) for text of length %d", start, end, n)
 	}
-	var delta int
 	if d.in.unit == Bytes {
-		cur := string(d.in.bs)
 		for _, pos := range []int{start, end} {
-			if err := validBoundary(cur, Bytes, pos); err != nil {
+			if err := validBoundary(d.in.src, Bytes, pos); err != nil {
 				return err
 			}
 		}
-		d.in.bs = append(append(append([]byte{}, d.in.bs[:start]...), text...), d.in.bs[end:]...)
-		delta = len(text) - (end - start)
-	} else {
-		ins := []rune(text)
-		d.in.in = append(append(append([]rune{}, d.in.in[:start]...), ins...), d.in.in[end:]...)
-		delta = len(ins) - (end - start)
 	}
-	if d.in.unit == Bytes {
-		d.in.setSource(string(d.in.bs))
-	} else {
-		d.in.setSource(string(d.in.in))
-	}
+	delta := d.in.replace(start, end, text)
 	d.memo.splice(start, end, delta, func(e *memoEntry) int {
 		switch {
 		case e.growing:

@@ -3,6 +3,7 @@ package engine
 import (
 	"encoding/json"
 	"math/rand"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -194,6 +195,63 @@ func TestDocumentEditKeepsMemo(t *testing.T) {
 				}
 			}
 			doc.Parse()
+		}
+	}
+}
+
+// TestDocumentEditText checks that after random edits, including multi-byte characters and
+// invalid UTF-8, the Document's text and its offset tables are those of the edited text read from
+// scratch, in both position units.
+func TestDocumentEditText(t *testing.T) {
+	prog := compile(t, `def main = .*`)
+	pieces := []string{"a", "é", "日本", "\n", "\xff", "z\xe3\x81", ""}
+	for _, unit := range []Unit{CodePoints, Bytes} {
+		doc, err := prog.NewDocumentWith("main", "héllo, 世界\n", ParseOptions{Unit: unit})
+		if err != nil {
+			t.Fatal(err)
+		}
+		ref := []rune("héllo, 世界\n") // the expected text, in code points
+		refBytes := []byte("héllo, 世界\n")
+		rng := rand.New(rand.NewSource(3))
+		for i := 0; i < 3000; i++ {
+			piece := pieces[rng.Intn(len(pieces))]
+			var start, end int
+			if unit == Bytes {
+				// Edit at character boundaries of the current bytes.
+				var bounds []int
+				for k := 0; k <= len(refBytes); k++ {
+					if validBoundary(string(refBytes), Bytes, k) == nil {
+						bounds = append(bounds, k)
+					}
+				}
+				start = bounds[rng.Intn(len(bounds))]
+				end = start
+				for _, b := range bounds {
+					if b >= start && b <= start+4 && rng.Intn(2) == 0 {
+						end = b
+					}
+				}
+				refBytes = append(append(append([]byte{}, refBytes[:start]...), piece...), refBytes[end:]...)
+			} else {
+				start = rng.Intn(len(ref) + 1)
+				end = start + rng.Intn(min(3, len(ref)-start)+1)
+				ref = append(append(append([]rune{}, ref[:start]...), []rune(piece)...), ref[end:]...)
+			}
+			if err := doc.Edit(start, end, piece); err != nil {
+				t.Fatal(err)
+			}
+			want := newInput(string(refBytes), Bytes)
+			if unit == CodePoints {
+				want = newInput(string(ref), CodePoints)
+			}
+			got := doc.in
+			if string(got.in) != string(want.in) || string(got.bs) != string(want.bs) || got.src != want.src ||
+				got.srcOK != want.srcOK || !slices.Equal(got.offs, want.offs) {
+				t.Fatalf("%v, edit %d: [%d,%d) -> %q: text or offsets differ from a fresh read", unit, i, start, end, piece)
+			}
+			if _, err := doc.Parse(); err != nil {
+				t.Fatal(err)
+			}
 		}
 	}
 }

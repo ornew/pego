@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"slices"
 	"unicode/utf8"
 )
 
@@ -95,6 +96,41 @@ func (in *input) setSource(s string) {
 	}
 	in.offs = append(in.offs, int32(len(s)))
 	in.srcOK = true
+}
+
+// replace replaces the positions [start, end) of a fully loaded input with text and returns the
+// change in length. The source string and its offset table are spliced rather than rebuilt; the
+// text is updated in place, since only the parser reads it (nodes refer to the source string, which
+// is never modified).
+func (in *input) replace(start, end int, text string) (delta int) {
+	if in.unit == Bytes {
+		in.bs = slices.Replace(in.bs, start, end, []byte(text)...)
+		in.src = in.src[:start] + text + in.src[end:]
+		return len(text) - (end - start)
+	}
+	ins := []rune(text)
+	in.in = slices.Replace(in.in, start, end, ins...)
+	delta = len(ins) - (end - start)
+	enc := text
+	if !utf8.ValidString(text) {
+		enc = string(ins) // invalid bytes read as U+FFFD
+	}
+	if !in.srcOK || len(in.src)+len(enc) > 1<<31-1 {
+		in.setSource(string(in.in))
+		return delta
+	}
+	from, to := in.offs[start], in.offs[end]
+	in.src = in.src[:from] + enc + in.src[to:]
+	added := make([]int32, 0, len(ins))
+	for i := range enc {
+		added = append(added, from+int32(i))
+	}
+	in.offs = slices.Replace(in.offs, start, end, added...)
+	shift := int32(len(enc)) - (to - from)
+	for i := start + len(ins); i < len(in.offs); i++ {
+		in.offs[i] += shift
+	}
+	return delta
 }
 
 func newInput(s string, unit Unit) input {

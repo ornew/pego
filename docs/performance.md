@@ -366,6 +366,18 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   grows: 233 MB → 0.5 MB after 300,000 records of the grammar above. A 27 MiB, 1,000,000-record CSV file now streams with
   a peak resident size of about 61 MB (0.8 GB before; a whole-input `Parse` takes 2.2 GB).
 
+### 23. Splicing the text of a Document in place
+
+- After change 20, most of an edit's cost was the text: `Edit` copied the code points into a new slice, converted them
+  back to a string, and rebuilt the code-point-to-byte offset table by decoding the whole string. It now replaces the
+  edited range in the code points (or bytes) in place, builds the new string by concatenating substrings of the old
+  one, and splices the offset table, adding the byte difference to the entries after the edit
+  (`input.replace`). Nodes keep referring to the old string, which does not change. `TestDocumentEditText` checks
+  after random edits with multi-byte characters and invalid UTF-8, in both units, that the text and offsets equal
+  those of the edited text read from scratch.
+- Effect (the program in the streaming guide, 100,000 lines, Apple M3 Max): `Edit` 12.3 → 2.7 ms (one rule per line),
+  16.5 → 3.4 ms (Pratt lines), 9.2 → 0.3 ms (no memo entries); JSON document of 283 KB 6.6 → 2.7 ms per edit.
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -404,10 +416,10 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–22 are done. Next candidates, in order:
+Changes 13–23 are done. Next candidates, in order:
 
 1. Rule-call overhead in the iterative VM (its call frames), and inlining small rules at compile time.
-2. Document edits: shifting reused subtrees (`shiftNode`) and copying the input on every edit.
+2. Document reparses: shifting reused subtrees (`shiftNode`, a map and a copy per reused result).
 3. Bytes allocated per parse (about 100 bytes per input byte on JSON after change 18; nodes dominate). Freeing and
    re-acquiring this memory (`runtime.madvise`, GC) is a large share of profiles on macOS.
 
