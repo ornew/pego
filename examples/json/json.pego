@@ -15,12 +15,12 @@ def main: Value = ws v:value ws $$ -> $v
 def value: Value = object / array / string / number / bool / null
 
 def object: Object = "{" ws ms:members? ws "}" -> new Object{Members: concat($ms)}
-def members = first:member rest:(-ws "," -ws m:member)*
+def members = first:member rest:(-ws -"," -ws m:member)*
     -> concat(list($first), map($rest, (r) => $r.m))
 def member: Member = k:string ws ":" ws v:value -> new Member{Key: $k, Value: $v}
 
 def array: Array = "[" ws es:elements? ws "]" -> new Array{Elements: concat($es)}
-def elements = first:value rest:(-ws "," -ws v:value)*
+def elements = first:value rest:(-ws -"," -ws v:value)*
     -> concat(list($first), map($rest, (r) => $r.v))
 
 def string = "\"" s:chars "\"" -> $s

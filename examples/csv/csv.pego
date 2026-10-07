@@ -7,7 +7,7 @@ type Field terminal  // the raw field; quoted fields keep their quotes and doubl
 
 def main = record* #stream $$
 
-def record: Record = !$$ first:field rest:("," f:field)* eol
+def record: Record = !$$ first:field rest:(-"," f:field)* eol
     -> new Record{Fields: concat(list($first), map($rest, (r) => $r.f))}
 
 def field: Field = quoted / plain

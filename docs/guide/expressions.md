@@ -873,7 +873,7 @@ def operation: Expr = pratt {
         postfix "." ws n:name -> new Member{X: $lhs, Name: $n}
     }
 }
-def args = first:expr rest:(-ws "," x:expr)* -> concat(list($first), map($rest, (r) => $r.x))
+def args = first:expr rest:(-ws -"," x:expr)* -> concat(list($first), map($rest, (r) => $r.x))
 ```
 
 (The grammar is abridged here; the types and the lexical rules are in the file.)

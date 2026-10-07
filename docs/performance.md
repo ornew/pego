@@ -26,6 +26,9 @@ Notes:
   or more.
 - Results must not change: every optimization is covered by the equivalence tests (`go test ./...`), which compare
   all backends, both position units, memoization on and off, and recognition against full parses.
+- The engine benchmarks read the grammars from `examples/` when they run, so when comparing a change to a grammar, run
+  the benchmark binary while the old grammar is checked out (for example between `git stash` and `git stash pop`), not
+  just a binary built from the old code. Generated parsers embed their grammar.
 - The numbers below are for the closure backend with code-point positions unless stated otherwise. The workloads are
   the ones in `bench/` (JSON 262 KB, minilang 89 KB, CSV 211 KB).
 
@@ -391,10 +394,23 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   Arith_Pratt 24.1 → 21.7 ms, Arith_LeftRec 44.7 → 39.8 ms, minilang 30.7 → 28.2 ms; recognition JSON 28.5 → 20.3 ms,
   XML 29.7 → 23.2 ms. Other backends unchanged.
 
+### 25. Discarding separators in the example grammars
+
+- Counting the nodes allocated against those in the final tree showed that about half of the JSON parser's nodes were
+  thrown away. Among them, every element after the first in `rest:(-ws "," -ws m:member)*` kept the `","` as a `Match`
+  child of the iteration's `Seq` (a captured repetition keeps its whole CST, see the guideline below): 15,550 nodes per
+  parse in JSON and 25,005 in CSV. The JSON, CSV and minilang examples now discard the separator (`-","`); the ASTs
+  are unchanged.
+- The rest of the discarded nodes are the iteration `Seq` nodes themselves and intermediate lists built by `list`,
+  `map` and `concat` in actions.
+- Effect (min of 6 runs alternating the old and new grammars, Apple M3 Max, code points): bytes per parse JSON 25.8 →
+  23.6 MB, CSV 22.5 → 19.0 MB, minilang 18.9 → 18.6 MB (closure); CSV 3.5% faster on the closure and bytecode backends,
+  JSON and minilang unchanged within noise. Generated parsers: JSON 11.2 → 10.9 ms, CSV 5.5 → 5.2 ms.
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
-  punctuation): `rest:(-ws "," -ws v:value)*`. The engine cannot drop them automatically, because a captured value
+  punctuation): `rest:(-ws -"," -ws v:value)*`. The engine cannot drop them automatically, because a captured value
   exposes its full CST.
 - Prefer terminal types (`type Name terminal`) or `@(...)` for tokens: their bodies are matched without building
   values.
@@ -429,7 +445,7 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–24 are done. Next candidates, in order:
+Changes 13–25 are done. Next candidates, in order:
 
 1. Inlining small rules at compile time; the iterative VM's frame dispatch (an interface call per step).
 2. Document reparses: shifting reused subtrees (`shiftNode`, a map and a copy per reused result).

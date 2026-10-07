@@ -45,7 +45,7 @@ def while: While = kw_while c:expr ws body:block -> new While{Cond: $c, Body: $b
 def return: Return = kw_return v:expr? ws ";" -> new Return{Value: $v}
 def func: Func = kw_fn ws n:name ws "(" ps:params? ws ")" ws body:block
     -> new Func{Name: $n, Params: concat($ps), Body: $body}
-def params = first:name rest:(-ws "," -ws p:name)* -> concat(list($first), map($rest, (r) => $r.p))
+def params = first:name rest:(-ws -"," -ws p:name)* -> concat(list($first), map($rest, (r) => $r.p))
 def exprStmt: ExprStmt = x:expr ws ";" -> new ExprStmt{X: $x}
 
 // --- Expressions (Pratt) ---
@@ -73,7 +73,7 @@ def operation: Expr = pratt {
         postfix "." ws n:name -> new Member{X: $lhs, Name: $n}
     }
 }
-def args = first:expr rest:(-ws "," x:expr)* -> concat(list($first), map($rest, (r) => $r.x))
+def args = first:expr rest:(-ws -"," x:expr)* -> concat(list($first), map($rest, (r) => $r.x))
 
 // --- Lexical structure ---
 def ident: Ident = !keyword (?a-zA-Z_) idchar*

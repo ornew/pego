@@ -234,7 +234,7 @@ Two details matter in practice:
   optional (`*T`).
 - A captured value keeps its **whole subtree**. If you capture a repetition such as `rest:(ws "," ws x:ident)*`, every
   whitespace node inside it stays in the tree, because you may inspect it with `.children` or `text` later. Discard the
-  parts you do not need *inside* the capture: `rest:(-ws "," -ws x:ident)*`.
+  parts you do not need *inside* the capture, punctuation included: `rest:(-ws -"," -ws x:ident)*`.
 
 ### 3.3 Unwrapping the root
 
@@ -913,7 +913,7 @@ PEGO builds values only where something can observe them. The guidelines of
 [performance.md](../performance.md#grammar-authoring-guidelines-for-performance) boil down to helping the engine know
 what is unobserved:
 
-1. **Discard trivia inside captured expressions** with `-x`: `rest:(-ws "," -ws v:value)*`. The engine cannot drop it
+1. **Discard trivia inside captured expressions** with `-x`: `rest:(-ws -"," -ws v:value)*`. The engine cannot drop it
    automatically, because a captured value exposes its full CST.
 2. **Use terminal types or `@(...)` for tokens.** Their bodies are matched without building values: an identifier is
    one node instead of one node per character.
