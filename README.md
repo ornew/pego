@@ -19,6 +19,9 @@ fmt.Println(node) // (Pair Key="abc" Value="12")
 > **Status:** PEGO is under active development. The language and the Go API may still change.
 > See [docs/development.md](docs/development.md) for the implementation status and roadmap.
 
+New to PEGO? The [getting-started tutorial](docs/tutorial/getting-started.md) builds a configuration language and a
+calculator step by step, and the [guides](docs/guide/README.md) cover each feature in depth.
+
 ## Features
 
 **Grammar language**
