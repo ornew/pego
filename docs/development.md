@@ -66,7 +66,7 @@ Left recursion is handled as in CPython's pegen (see the [reference note](ref-cp
 
 Backtracking returns to a recorded point: the position, the variable environment (a persistent list) and the history of capture writes.
 
-Nodes, child lists and capture frames are allocated from per-parse slabs (`alloc.go`), and the memo table is a per-position list of entries (`memo.go`).
+Nodes, child lists, field lists and capture frames are allocated from per-parse slabs (`alloc.go`), and the memo table is a per-position list of entries (`memo.go`). Scratch state of action and predicate evaluation lives in buffers owned by the parser and reused: an operand stack (`estack`, shared by the VMs' expression code and the closure backend's built-in calls), arenas for lambda calls, and the stack that gathers list elements (`kidStack`). A call of a rule that is not memoized and has no captures takes a shorter path (`invokePlain`) than a full invocation. See [performance.md](performance.md) for the measurements behind these choices.
 
 Two parse options affect the runtime as a whole:
 
@@ -83,11 +83,11 @@ The input (`input.go`) is held in the chosen position unit (code points or UTF-8
 
 ### Streaming
 
-For stream parsing, input is read from a `bufio.Reader` only as far as needed (`fill` in `input.go`). Each time an element of a `#stream` repetition is emitted, the input before it (except the preceding character) and the memo entries are discarded (`commit` in `input.go`). Positions remain absolute offsets from the start of the input; line and column numbers are computed by counting the lines in the discarded part.
+For stream parsing, input is read from a `bufio.Reader` only as far as needed (`fill` in `input.go`). Each time an element of a `#stream` repetition is emitted, the input before it (except the preceding character) and the memo entries can be discarded (`commit` in `input.go`): the read buffer is compacted once half of it is consumed, and the memo is pruned in blocks. At element boundaries the parser also starts new allocation chunks from time to time (`splitChunks`), so that chunks shared with earlier elements do not keep them reachable. Positions remain absolute offsets from the start of the input; line and column numbers are computed by counting the lines in the discarded part. (For whole input, errors look their line up in a table of line starts.)
 
 ### Incremental parsing
 
-Each memo entry records the range of input it examined (`document.go`). After an edit, entries that lie entirely before the edit are reused as they are, and entries that lie entirely after it are reused with shifted positions ([design](design/007-streaming-and-incremental-parsing.md)).
+Each memo entry records the range of input it examined (`document.go`). After an edit, entries that lie entirely before the edit are reused as they are, and entries that lie entirely after it are reused with shifted positions ([design](design/007-streaming-and-incremental-parsing.md)). An edit splices the text, its offset table and the memo table in place (`input.replace`, `memoTable.splice`); a shifted entry's node tree is copied with its positions moved when the entry is first reused (`shiftNode`).
 
 ### Code generation
 
