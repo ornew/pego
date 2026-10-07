@@ -213,6 +213,11 @@ func TestGenerateErrors(t *testing.T) {
 	if _, err := Generate(g, GenOptions{Start: "main"}); err == nil {
 		t.Error("expected an error for a missing package name")
 	}
+	for _, pkg := range []string{"foo-bar", "type", "1p"} {
+		if _, err := Generate(g, GenOptions{Package: pkg, Start: "main"}); err == nil || err.Error() != fmt.Sprintf("invalid package name %q", pkg) {
+			t.Errorf("package %q: got %v", pkg, err)
+		}
+	}
 	bad, _ := syntax.Parse(`def main = x`)
 	if _, err := Generate(bad, GenOptions{Package: "p", Start: "main"}); err == nil || !strings.Contains(err.Error(), "undefined rule x") {
 		t.Errorf("got %v", err)

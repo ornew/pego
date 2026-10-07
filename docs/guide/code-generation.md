@@ -184,7 +184,7 @@ Details:
   $ pego gen -g pairs.pego -pkg pairs -s nope -o /dev/null
   pego: pairs.pego: start rule nope is not defined
   $ pego gen -g pairs.pego -pkg foo-bar -o /dev/null
-  pego: pairs.pego:generated code does not compile: 4:12: expected ';', found '-'
+  pego: pairs.pego: invalid package name "foo-bar"
   ```
 
 - A `.pegoc` saved with `-no-ast` cannot be used, because code generation needs the grammar:
