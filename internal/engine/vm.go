@@ -39,6 +39,7 @@ type vmProgram struct {
 	m      *Module
 	rules  []*rule
 	byName map[string]*rule
+	nseen  int        // number of rules with rule.seen set
 	runes  [][]rune   // code points of each string in the string table
 	bytes  [][]byte   // UTF-8 of each string in the string table
 	scopes [][]string // names in the scope table
@@ -80,6 +81,7 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 			vm.byName[r.name] = r
 		}
 	}
+	vm.nseen = numberSeen(vm.rules)
 	for i := range m.Rules {
 		ri, r := &m.Rules[i], vm.rules[i]
 		if ri.Pratt >= 0 {

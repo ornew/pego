@@ -17,6 +17,7 @@ type Program struct {
 	rules     []*rule
 	descTable []string // expectation table (starting with fixedDescs)
 	twins     []*rule  // value-free twins (rule.twin); ids start at len(rules)
+	nseen     int      // number of rules with rule.seen set
 	byName    map[string]*rule
 	types     map[string]grammar.TypeSpec
 
@@ -79,6 +80,9 @@ type rule struct {
 	// transient reports that the rule is not memoized in ordinary parses (it is memoized only by
 	// the incremental Document) (transientRules).
 	transient bool
+	// seen is the rule's index among the rules whose memoization is deferred to the second call at a
+	// position (parser.firstCall), or -1.
+	seen int
 	// novalue reports that this is a value-free twin (its value is always nil).
 	novalue bool
 	// predCaps holds, for value-free rules in a program that builds no tree, the names of the
@@ -278,6 +282,7 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 	if len(c.errs) > 0 {
 		return nil, c.errs
 	}
+	prog.nseen = numberSeen(prog.rules, prog.twins)
 	if !opts.NoTypeCheck && flags == nil {
 		checkTypes(prog, &c.errs)
 		if len(c.errs) > 0 {

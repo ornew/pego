@@ -54,6 +54,9 @@ type parser struct {
 	created []*Node
 	// memoAll requests memoizing transient rules (rule.transient) too (used by Document).
 	memoAll bool
+	// deferMemo defers memoizing a rule at a position to its second call there (firstCall). It is
+	// set for whole-input parses; Document and streams memoize on the first call.
+	deferMemo bool
 
 	// Bytecode VM state
 	vals []any     // value stack
@@ -273,7 +276,7 @@ func (p *parser) mergeExpected(far int, ids []expID) {
 // The work is split into callBegin, growBegin/growStep/growEnd, invoke, and callEnd, and the
 // iterative-model VM (ivm.go) calls the same functions from its own stack.
 func (p *parser) call(r *rule, min int) (*Node, bool) {
-	if !p.memoizes(r) {
+	if !p.memoizes(r) || p.firstCall(r) {
 		// A call without memoization. The examined range (hw, lw) only grows, so it need not be saved
 		// and restored, and expectations need not be recorded separately.
 		start, rec := p.pos, len(p.recovered)
@@ -317,6 +320,35 @@ func (p *parser) memoizes(r *rule) bool {
 	return r.leader || r.memo && (!r.transient || p.memoAll)
 }
 
+// firstCall reports whether this is the first call of the memoized rule r at the current
+// position, in which case the call is not memoized, and records the call. A result is reused only
+// when the rule is called again at the same position, which in practice is rare: memoizing every
+// first call cost a memo entry per call for nothing. Deferring memoization to the second call
+// evaluates a rule at most twice per position, so parse time stays linear.
+// Left-recursion leaders are always memoized (the memo drives the growing of the seed).
+func (p *parser) firstCall(r *rule) bool {
+	if !p.deferMemo || r.seen < 0 {
+		return false
+	}
+	return p.memo.firstCall(p.pos, r.seen)
+}
+
+// numberSeen numbers the rules whose memoization firstCall may defer (rule.seen) and returns
+// their count.
+func numberSeen(lists ...[]*rule) int {
+	n := 0
+	for _, rules := range lists {
+		for _, r := range rules {
+			r.seen = -1
+			if r.memo && !r.transient && !r.leader {
+				r.seen = n
+				n++
+			}
+		}
+	}
+	return n
+}
+
 // callState is the state saved across a rule call.
 type callState struct {
 	key              memoKey
@@ -331,10 +363,11 @@ type callState struct {
 // Otherwise it prepares for the call.
 func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit bool) {
 	key := memoKey{rule: r.id, pos: p.pos, min: min}
-	if len(r.vars) > 0 && p.memoizes(r) {
+	memoize := p.memoizes(r) && !p.firstCall(r)
+	if len(r.vars) > 0 && memoize {
 		key.env = p.envValues(r.vars)
 	}
-	if p.memoizes(r) {
+	if memoize {
 		if e, found := p.memo.get(key); found && (!e.silent || p.silent > 0 || e.growing) {
 			p.touch(e.examined)
 			p.lw = min2(p.lw, e.from)
@@ -355,7 +388,7 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit boo
 		}
 	}
 	st = callState{key: key, start: p.pos, savedHW: p.hw, savedLW: p.lw, rec: len(p.recovered),
-		memoize: p.memoizes(r)}
+		memoize: memoize}
 	p.hw, p.lw = st.start, st.start
 	// A result stored in the memo also includes the expectations recorded in this call.
 	if st.memoize {

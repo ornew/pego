@@ -10,6 +10,56 @@ type memoTable struct {
 	base  int
 	slots []*memoEntry // list of entries at position base+i
 	slab  []memoEntry  // area for allocating entries in bulk
+	// seen is a bit set of the (position, rule) pairs called once (parser.firstCall), with stride
+	// bits per position. It is used only by whole-input parses, so base is 0.
+	seen   []uint64
+	stride int
+	// calls counts, per rule number, the calls and the repeated calls at a position; once repeats
+	// are frequent, the rule is memoized on the first call (eager).
+	calls []seenCalls
+}
+
+type seenCalls struct {
+	calls, repeats int32
+	eager          bool
+}
+
+// firstCall records a call of rule number r (rule.seen) at position pos and reports whether its
+// memoization is deferred: it is the first call there, and repeated calls of the rule have been
+// rare so far.
+func (t *memoTable) firstCall(pos, r int) bool {
+	if t.calls == nil {
+		t.calls = make([]seenCalls, t.stride)
+	}
+	c := &t.calls[r]
+	if c.eager {
+		return false
+	}
+	c.calls++
+	if t.markSeen(pos, r) {
+		return true
+	}
+	// Deferring costs an extra evaluation for each position where the rule is called again, and
+	// saves a memo entry for each position where it is not. Evaluations cost several entries.
+	c.repeats++
+	if c.repeats*8 > c.calls {
+		c.eager = true
+	}
+	return false
+}
+
+// markSeen records a call of rule number r at position pos and reports whether it is the first.
+func (t *memoTable) markSeen(pos, r int) bool {
+	i := pos*t.stride + r
+	w, b := i>>6, uint64(1)<<(i&63)
+	if w >= len(t.seen) {
+		t.seen = append(t.seen, make([]uint64, max(w+1-len(t.seen), len(t.seen), 64))...)
+	}
+	if t.seen[w]&b != 0 {
+		return false
+	}
+	t.seen[w] |= b
+	return true
 }
 
 func newMemoTable() *memoTable { return &memoTable{} }

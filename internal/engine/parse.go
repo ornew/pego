@@ -23,11 +23,13 @@ func (prog *Program) ParseWith(start, input string, o ParseOptions) (*Node, erro
 		}
 		p := newParser(rp, input, o.Unit)
 		p.maxDepth = o.maxDepth(o.Backend)
+		p.deferMemo = true
 		_, err = rp.run(p, o.Backend, start)
 		return nil, err
 	}
 	p := newParser(prog, input, o.Unit)
 	p.maxDepth = o.maxDepth(o.Backend)
+	p.deferMemo = true
 	return prog.run(p, o.Backend, start)
 }
 
@@ -84,6 +86,14 @@ func (prog *Program) rule(b Backend, name string) (*rule, error) {
 	return r, nil
 }
 
+// vmFor returns the prepared VM program of backend b (Bytecode or BytecodeIterative).
+func (prog *Program) vmFor(b Backend) *vmProgram {
+	if b == BytecodeIterative {
+		return prog.ivm
+	}
+	return prog.vm
+}
+
 // descs returns the expectation table of backend b (call it after rule has prepared it).
 func (prog *Program) descs(b Backend) []string {
 	switch prog.backend(b) {
@@ -128,6 +138,10 @@ func (prog *Program) run(p *parser, b Backend, start string) (n *Node, err error
 		return nil, err
 	}
 	p.descs = prog.descs(b)
+	p.memo.stride = prog.nseen
+	if be := prog.backend(b); be == Bytecode || be == BytecodeIterative {
+		p.memo.stride = prog.vmFor(be).nseen
+	}
 	defer func() {
 		if x := recover(); x != nil {
 			n = nil
