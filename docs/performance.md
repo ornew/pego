@@ -430,6 +430,16 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   within noise. All backends now allocate fewer than 1.5k objects per parse on JSON, CSV, Pratt and minilang; XML's
   remaining 19k are `text(...)` results (a string stored in an interface needs a heap header).
 
+### 28. Field lists and list built-ins without allocation in the generated parsers
+
+- The generated runtime still allocated a field list per struct node and per node with captures, and a slice per
+  `list`, `map` and `concat` call (changes 15 and 27 in the engine). Field lists now come from chunks
+  (`parser.fields`), and the list built-ins gather their elements on `kidStack` and hand the copied-out slice to
+  the list node. A predicate that fails with an evaluation error pops what a failed built-in gathered.
+- Effect (min of 8 interleaved runs, Apple M3 Max, generated parsers, code points): JSON 10.8 → 10.3 ms, 53.9k → 1.3k
+  allocations; CSV 5.2 → 4.9 ms, 45.6k → 0.8k; XML 10.5 → 10.0 ms, 31.5k → 19.1k; Arith_Pratt 7.5 → 7.2 ms, 22.8k →
+  0.6k; minilang 12.2 → 11.9 ms, 19.3k → 1.1k. Bytes change by −1% to +3% (partly used chunks).
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -468,7 +478,7 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–27 are done. Next candidates, in order:
+Changes 13–28 are done. Next candidates, in order:
 
 1. Inlining small rules at compile time; the iterative VM's frame dispatch (an interface call per step).
 2. Document reparses: shifting reused subtrees (`shiftNode`, a map and a copy per reused result).

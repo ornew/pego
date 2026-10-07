@@ -355,6 +355,7 @@ type parser struct {
 	ptrSlab   []*Node
 	kidStack  []*Node
 	frameSlab []frame
+	fieldSlab []NodeField
 	ac        actx
 	saved     []*Node // captures saved across a reset in longest
 }
@@ -542,6 +543,20 @@ func (p *parser) nodes(n int) []*Node {
 	s := p.ptrSlab[:n:n]
 	p.ptrSlab = p.ptrSlab[n:]
 	return s
+}
+
+// fields returns an empty field list with capacity n from a chunk. Appending beyond n
+// reallocates, so neighbouring lists in the chunk are never overwritten.
+func (p *parser) fields(n int) Fields {
+	if n > nodeChunk/4 {
+		return make(Fields, 0, n)
+	}
+	if len(p.fieldSlab) < n {
+		p.fieldSlab = make([]NodeField, nodeChunk)
+	}
+	fs := p.fieldSlab[:0:n]
+	p.fieldSlab = p.fieldSlab[n:]
+	return fs
 }
 
 // kids returns p.kidStack[base:] as a child list and pops it.
@@ -936,7 +951,7 @@ func (p *parser) attachCaptures(v *Node, names []string, f *frame, start, end in
 		v = p.newNode(Node{Type: "Seq", Start: start, End: end, Children: append(p.nodes(1)[:0], v), fresh: true})
 	}
 	if v.Fields == nil {
-		v.Fields = make(Fields, 0, len(names))
+		v.Fields = p.fields(len(names))
 	}
 	for i, name := range names {
 		if f.vals[i] != nil {
@@ -1128,13 +1143,14 @@ func (c *actx) result(action func(*actx) any, where string) (n *Node) {
 }
 
 func (p *parser) predicate(t func(*actx) any) (ok bool) {
-	base := len(p.created)
+	base, kids := len(p.created), len(p.kidStack)
 	defer func() {
 		p.created = p.created[:base] // drop nodes created by the predicate
 		if x := recover(); x != nil {
 			if _, isEval := x.(evalError); !isEval {
 				panic(x)
 			}
+			p.dropKids(kids) // elements gathered by a list built-in that failed
 			ok = false
 		}
 	}()
@@ -1147,13 +1163,14 @@ func (p *parser) predicate(t func(*actx) any) (ok bool) {
 }
 
 func (p *parser) assign(name string, t func(*actx) any) (ok bool) {
-	base := len(p.created)
+	base, kids := len(p.created), len(p.kidStack)
 	defer func() {
 		p.created = p.created[:base] // drop nodes created by the predicate
 		if x := recover(); x != nil {
 			if _, isEval := x.(evalError); !isEval {
 				panic(x)
 			}
+			p.dropKids(kids) // elements gathered by a list built-in that failed
 			ok = false
 		}
 	}()
@@ -1208,7 +1225,7 @@ func typeName(v any) string {
 }
 
 func (c *actx) newStruct(typ string, kv ...any) any {
-	n := c.p.newNode(Node{Type: typ, Fields: make(Fields, 0, len(kv)/2)})
+	n := c.p.newNode(Node{Type: typ, Fields: c.p.fields(len(kv) / 2)})
 	first := true
 	for i := 0; i < len(kv); i += 2 {
 		v := kv[i+1]
@@ -1231,9 +1248,14 @@ func (c *actx) newStruct(typ string, kv ...any) any {
 }
 
 func (c *actx) newList(items []*Node) *Node {
-	n := c.p.newNode(Node{Type: "List", Children: append(c.p.nodes(len(items))[:0], items...), Start: c.start, End: c.start})
+	return c.listNode(append(c.p.nodes(len(items))[:0], items...))
+}
+
+// listNode returns a List node with the child list kids (which it takes over).
+func (c *actx) listNode(kids []*Node) *Node {
+	n := c.p.newNode(Node{Type: "List", Children: kids, Start: c.start, End: c.start})
 	first := true
-	for _, it := range items {
+	for _, it := range kids {
 		if it == nil {
 			continue
 		}
@@ -1452,29 +1474,34 @@ func rtFold(fn string, right bool, acc, list any, f func(acc, item any) any) any
 	return acc
 }
 
+// The list built-ins gather the elements on kidStack (lambdas that build lists push above them)
+// and hand the copied-out slice to the list node. If one fails, the error unwinds to the action
+// (which fails the parse) or the predicate (which pops what was gathered).
+
 func (c *actx) mapList(list any, f func(item any) any) any {
 	items := listItems("map", list)
-	out := make([]*Node, len(items))
-	for i, it := range items {
-		out[i] = asNode("map", f(nodeOrNil(it)))
+	base := len(c.p.kidStack)
+	for _, it := range items {
+		n := asNode("map", f(nodeOrNil(it)))
+		c.p.kidStack = append(c.p.kidStack, n)
 	}
-	return c.newList(out)
+	return c.listNode(c.p.kids(base))
 }
 
 func (c *actx) list(args ...any) any {
-	out := make([]*Node, len(args))
-	for i, a := range args {
-		out[i] = asNode("list", a)
+	base := len(c.p.kidStack)
+	for _, a := range args {
+		c.p.kidStack = append(c.p.kidStack, asNode("list", a))
 	}
-	return c.newList(out)
+	return c.listNode(c.p.kids(base))
 }
 
 func (c *actx) concat(args ...any) any {
-	var out []*Node
+	base := len(c.p.kidStack)
 	for _, a := range args {
-		out = append(out, listItems("concat", a)...)
+		c.p.kidStack = append(c.p.kidStack, listItems("concat", a)...)
 	}
-	return c.newList(out)
+	return c.listNode(c.p.kids(base))
 }
 
 // --- Pratt expressions ---
