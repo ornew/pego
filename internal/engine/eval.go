@@ -147,27 +147,42 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 		return c.member(x, t.Name)
 
 	case *grammar.New:
-		names := make([]string, len(t.Fields))
-		vals := make([]any, len(t.Fields))
-		for i, fi := range t.Fields {
+		// The values are kept on the expression stack (evaluations nested in them push above), and
+		// the names in a buffer filled once no evaluation is pending; newStruct retains neither.
+		p := c.p
+		base := len(p.estack)
+		for _, fi := range t.Fields {
 			v, err := c.eval(fi.Value)
 			if err != nil {
+				p.estack = p.estack[:base]
 				return nil, err
 			}
-			names[i], vals[i] = fi.Name, v
+			p.estack = append(p.estack, v)
 		}
-		return c.newStruct(t.Type, names, vals)
+		p.names = p.names[:0]
+		for _, fi := range t.Fields {
+			p.names = append(p.names, fi.Name)
+		}
+		n, err := c.newStruct(t.Type, p.names, p.estack[base:])
+		p.estack = p.estack[:base]
+		return n, err
 
 	case *grammar.Call:
-		args := make([]any, len(t.Args))
-		for i, a := range t.Args {
+		// The arguments are kept on the expression stack, as in vmProgram.eval: lambdas called by the
+		// built-in push above them, and built-ins do not retain args.
+		p := c.p
+		base := len(p.estack)
+		for _, a := range t.Args {
 			v, err := c.eval(a)
 			if err != nil {
+				p.estack = p.estack[:base]
 				return nil, err
 			}
-			args[i] = v
+			p.estack = append(p.estack, v)
 		}
-		return c.builtin(t.Func, args)
+		v, err := c.builtin(t.Func, p.estack[base:])
+		p.estack = p.estack[:base]
+		return v, err
 
 	case *grammar.Lambda:
 		f := c.p.closures.alloc()

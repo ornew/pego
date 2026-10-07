@@ -62,8 +62,10 @@ type parser struct {
 	vals []any     // value stack
 	ents []vmEntry // entry stack
 	reps []repState
-	// estack is the operand stack of expression code (vmProgram.eval).
+	// estack is the operand stack of expression code (vmProgram.eval), also used for the
+	// arguments of built-ins and struct fields by the closure backend's evaluator.
 	estack []any
+	names  []string  // field names for newStruct in the closure backend's evaluator
 	pool   framePool // frames of the iterative-model VM
 
 	// Chunks of nodes and child slices (alloc.go), and the stack that collects repetition children

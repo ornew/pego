@@ -420,6 +420,16 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   allocations, 23.6 → 21.4 MB; CSV 8.0 → 7.3 ms, 56k → 0.8k allocations, 19.0 → 15.6 MB; minilang 21k → 8k
   allocations. XML and Arith_Pratt use no lambdas and are unchanged.
 
+### 27. Struct and call operands on the expression stack in the closure backend
+
+- The closure backend's evaluator built two slices for every `new T{...}` (field names and values) and one for every
+  built-in call (arguments). Values and arguments now go on the parser's expression stack (`parser.estack`, as in
+  the VMs since change 14) and field names into a reused buffer; `newStruct` and the built-ins retain neither.
+- Effect (min of 8 interleaved runs, Apple M3 Max, closure backend): Arith_Pratt 11.1 → 10.6 ms, 40.6k → 0.6k
+  allocations, 14.2 → 12.2 MB; XML 38.9k → 19.1k allocations; minilang 8.3k → 1.1k allocations; times otherwise
+  within noise. All backends now allocate fewer than 1.5k objects per parse on JSON, CSV, Pratt and minilang; XML's
+  remaining 19k are `text(...)` results (a string stored in an interface needs a heap header).
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -458,7 +468,7 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–26 are done. Next candidates, in order:
+Changes 13–27 are done. Next candidates, in order:
 
 1. Inlining small rules at compile time; the iterative VM's frame dispatch (an interface call per step).
 2. Document reparses: shifting reused subtrees (`shiftNode`, a map and a copy per reused result).
