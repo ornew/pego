@@ -763,16 +763,38 @@ func charClassString(e *grammar.CharClass) string {
 }
 
 // classAccept returns the membership test function of a character class.
+// classAccept returns the membership test of a character class. Classes of one or two ranges,
+// which are most of them, compare against constants; others test ASCII characters with a bitmap.
 func classAccept(e *grammar.CharClass) func(rune) bool {
-	return func(r rune) bool {
-		in := false
-		for _, rg := range e.Ranges {
+	neg := e.Negated
+	switch len(e.Ranges) {
+	case 1:
+		lo, hi := e.Ranges[0].Lo, e.Ranges[0].Hi
+		return func(r rune) bool { return (lo <= r && r <= hi) != neg }
+	case 2:
+		lo1, hi1, lo2, hi2 := e.Ranges[0].Lo, e.Ranges[0].Hi, e.Ranges[1].Lo, e.Ranges[1].Hi
+		return func(r rune) bool { return (lo1 <= r && r <= hi1 || lo2 <= r && r <= hi2) != neg }
+	}
+	ranges := append([]grammar.CharRange(nil), e.Ranges...)
+	slow := func(r rune) bool {
+		for _, rg := range ranges {
 			if rg.Lo <= r && r <= rg.Hi {
-				in = true
-				break
+				return !neg
 			}
 		}
-		return in != e.Negated
+		return neg
+	}
+	var ascii [2]uint64
+	for r := rune(0); r < 128; r++ {
+		if slow(r) {
+			ascii[r>>6] |= 1 << (r & 63)
+		}
+	}
+	return func(r rune) bool {
+		if uint32(r) < 128 {
+			return ascii[r>>6]&(1<<(r&63)) != 0
+		}
+		return slow(r)
 	}
 }
 

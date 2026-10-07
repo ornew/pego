@@ -462,6 +462,16 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   (bytecode), CSV 4.2 → 3.8 ms (closure), 5.2 → 4.8 ms (bytecode), with 1 MB less allocated per parse; full parses and
   XML recognition (whose predicates read token text) unchanged within noise.
 
+### 31. Specialized character-class tests in the closure backend
+
+- The closure backend tested a character against a class by looping over the class's ranges in the grammar AST.
+  Classes with one or two ranges (most of them) now compare against constants captured by the test function; larger
+  classes test ASCII characters with a bitmap and others against a copy of the ranges.
+- An ASCII bitmap alone had measured no gain (see the experiments table); removing the loop and the AST access for the
+  common small classes is what pays.
+- Effect (min of 10 interleaved runs, Apple M3 Max, closure backend): full parses 1.2–4.9% faster (CSV 7.1 → 6.8 ms,
+  XML 15.1 → 14.7 ms), recognition 1.6–9.4% faster (CSV 3.7 → 3.3 ms, XML 12.7 → 12.1 ms).
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -478,7 +488,7 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 |:--|:--|:--|
 | Go arenas (`GOEXPERIMENT=arenas`) for per-parse scratch memory (memo entries, memo slots, expectation chunks), freed at the end of `Parse` | No measurable change in time or allocation: memo entries were already slab-allocated, and the tree must stay on the heap because it is returned | Not adopted. Requires an experimental build flag for no gain |
 | Option to skip recording expected sets (report only the failure position) | After change 4: about −10% time on minilang, no change on JSON and CSV | Not adopted. Not worth an API knob; the full information is cheap enough |
-| ASCII bitmap for character classes in the closure engine (instead of scanning the ranges) | No measurable change when measured against the unmodified code in alternating runs (JSON, CSV); classes in practice have one to three ranges, which scan as fast as a bitmap lookup | Not adopted |
+| ASCII bitmap for character classes in the closure engine (instead of scanning the ranges) | No measurable change when measured against the unmodified code in alternating runs (JSON, CSV); classes in practice have one to three ranges, which scan as fast as a bitmap lookup | Not adopted then; change 31 specializes small classes instead, which does pay |
 | Freeing capture frames when their rule invocation returns (LIFO arenas for frames and their slots, marked in `invokeBegin` and freed in `invokeEnd`) | −16 to −23% bytes per parse, but 1–6% slower on every workload and backend (recognition included), even with a fast path that skips freeing when nothing was allocated: the per-call bookkeeping and the clearing of freed slots cost more than the garbage collector saved | Not adopted |
 | Memoizing every rule (classic packrat) | 2–3× slower than the transient policy on all workloads; memo entries were never reused for leaf and single-reference rules | Replaced by the transient policy (change 1) |
 
@@ -501,7 +511,7 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–30 are done. Next candidates, in order:
+Changes 13–31 are done. Next candidates, in order:
 
 1. Inlining small rules at compile time; the iterative VM's frame dispatch (an interface call per step).
 2. Document reparses: shifting reused subtrees still copies them (positions are absolute in nodes).
