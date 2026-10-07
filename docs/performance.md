@@ -440,6 +440,17 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   allocations; CSV 5.2 → 4.9 ms, 45.6k → 0.8k; XML 10.5 → 10.0 ms, 31.5k → 19.1k; Arith_Pratt 7.5 → 7.2 ms, 22.8k →
   0.6k; minilang 12.2 → 11.9 ms, 19.3k → 1.1k. Bytes change by −1% to +3% (partly used chunks).
 
+### 29. Shifting reused subtrees into the parser's chunks
+
+- After an edit, a memo result after the edit is reused with its positions shifted: `shiftNode` copies its node tree.
+  Every copied node, child list and field list was a separate heap allocation, and every copy made a new map of the
+  nodes already copied (to keep shared subtrees shared). In the incremental benchmark this was 89% of the bytes
+  allocated per edit and reparse.
+- Copies now come from the parser's chunks (`newNode`, `nodes`, `fields`), and the map is kept by the parser and
+  cleared between copies (and dropped when it grew past 1,024 entries, so clearing stays cheap).
+- Effect (min of 8 interleaved runs, Apple M3 Max, one-character edit to minilang plus reparse): 1.72 → 1.20 ms
+  (closure), 1.76 → 1.20 ms (bytecode), 1.77 → 1.25 ms (iterative); 20k → 0.15k allocations, 3.0 → 2.4 MB.
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -479,10 +490,10 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–28 are done. Next candidates, in order:
+Changes 13–29 are done. Next candidates, in order:
 
 1. Inlining small rules at compile time; the iterative VM's frame dispatch (an interface call per step).
-2. Document reparses: shifting reused subtrees (`shiftNode`, a map and a copy per reused result).
+2. Document reparses: shifting reused subtrees still copies them (positions are absolute in nodes).
 3. Bytes allocated per parse (about 100 bytes per input byte on JSON after change 18; nodes dominate). Freeing and
    re-acquiring this memory (`runtime.madvise`, GC) is a large share of profiles on macOS.
 

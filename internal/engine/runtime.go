@@ -75,6 +75,7 @@ type parser struct {
 	frameSlab []frame
 	fieldSlab []NodeField
 	posSlab   []int
+	shifted   map[*Node]*Node // copies made by shiftNode
 	// nodeChunks counts the node chunks allocated since the last splitChunks.
 	nodeChunks int
 	funcSlab   []vmFunc
@@ -386,7 +387,7 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit boo
 			p.mergeExpected(e.far, e.expected)
 		}
 		if e.shift != 0 {
-			e.node = shiftNode(e.node, e.shift, map[*Node]*Node{})
+			e.node = p.shiftNode(e.node, e.shift)
 			e.shift = 0
 		}
 		if !e.ok {
@@ -678,33 +679,47 @@ func (p *parser) makeError(pos int, expected []expID) *SyntaxError {
 	return e
 }
 
-// shiftNode returns a copy of the node tree with positions shifted by delta. Shared subtrees
-// remain shared in the copy.
-func shiftNode(n *Node, delta int, seen map[*Node]*Node) *Node {
+// shiftNode returns a copy of the node tree n with positions shifted by delta. Shared subtrees
+// remain shared in the copy. The copies come from the parser's chunks, and the table of copied
+// nodes is reused between calls (it is dropped when it grew large, so clearing it stays cheap).
+func (p *parser) shiftNode(n *Node, delta int) *Node {
+	if p.shifted == nil {
+		p.shifted = map[*Node]*Node{}
+	}
+	c := p.shiftTree(n, delta)
+	if len(p.shifted) > 1024 {
+		p.shifted = nil
+	} else {
+		clear(p.shifted)
+	}
+	return c
+}
+
+func (p *parser) shiftTree(n *Node, delta int) *Node {
 	if n == nil {
 		return nil
 	}
-	if c, ok := seen[n]; ok {
+	if c, ok := p.shifted[n]; ok {
 		return c
 	}
-	c := *n
+	c := p.newNode(*n)
 	c.Start += delta
 	c.End += delta
-	seen[n] = &c
+	p.shifted[n] = c
 	if n.Children != nil {
-		c.Children = make([]*Node, len(n.Children))
+		c.Children = p.nodes(len(n.Children))
 		for i, ch := range n.Children {
-			c.Children[i] = shiftNode(ch, delta, seen)
+			c.Children[i] = p.shiftTree(ch, delta)
 		}
 	}
 	if n.Fields != nil {
-		c.Fields = make(Fields, len(n.Fields))
+		c.Fields = p.fields(len(n.Fields))[:len(n.Fields)]
 		for i, f := range n.Fields {
 			if vn, ok := f.Value.(*Node); ok {
-				f.Value = shiftNode(vn, delta, seen)
+				f.Value = p.shiftTree(vn, delta)
 			}
 			c.Fields[i] = f
 		}
 	}
-	return &c
+	return c
 }
