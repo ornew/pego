@@ -562,12 +562,15 @@ pego: pairs-noast.pegoc: the compiled grammar omits the AST
 
 ## Memoization
 
-PEGO parses with **packrat memoization**: the result of a rule at an input position is remembered, so the rule is never
-evaluated twice at that position, however much backtracking the grammar does. This is what keeps parsing time roughly
-linear in the input. It is on by default, **automatic, and has no public switch**. The engine decides per rule:
+PEGO parses with **packrat memoization**: the result of a rule at an input position is remembered, so the rule is
+evaluated at most twice at that position, however much backtracking the grammar does. This is what keeps parsing time
+roughly linear in the input. It is on by default, **automatic, and has no public switch**. The engine decides per rule:
 
 - Rules that call no other rule, and rules referenced only once in the grammar, are not memoized in a normal parse,
   because their entries could never be reused.
+- Other rules are memoized at a position from their second call there: most rules are called only once per position,
+  and an entry that is never reused only costs memory. A rule whose calls do repeat is memoized from the first call
+  for the rest of the parse.
 - Rules in a left-recursive cycle are not memoized one by one; only the cycle's leader, the rule that grows the seed, is.
 - Rules that read [variables](../../spec/predicates.md#interaction-with-memoization) are memoized per combination of
   those variables' values, so memoization never changes the result; it only changes the cost.
