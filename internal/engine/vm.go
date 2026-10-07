@@ -644,11 +644,14 @@ type vmFunc struct {
 
 func (f *vmFunc) arity() int { return f.n }
 
-func (f *vmFunc) apply(args ...any) (any, error) {
+func (f *vmFunc) apply(x, y any) (any, error) {
 	// The locals are placed on the expression stack below the operands of the body.
 	p := f.ctx.p
 	base := len(p.estack)
-	p.estack = append(append(p.estack, f.locals...), args...)
+	p.estack = append(append(p.estack, f.locals...), x)
+	if f.n == 2 {
+		p.estack = append(p.estack, y)
+	}
 	v, err := f.vm.eval(f.ctx, f.entry, p.estack[base:len(p.estack):len(p.estack)])
 	p.estack = p.estack[:base]
 	return v, err

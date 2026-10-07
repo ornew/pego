@@ -288,7 +288,7 @@ func (p *parser) lineResult(r *rule, l *prattLine, f *frame, v *Node, start int,
 		return nil
 	}
 	if l.act != nil {
-		items := []*Node{v}
+		items := p.one(v)
 		if l.isSeq && v != nil {
 			items = v.Children
 		}
@@ -322,12 +322,17 @@ func (p *parser) prattBuild(r *rule, a *prattAttempt, lhs, rhs *Node) *Node {
 	l := a.op.line
 	if l.act != nil {
 		op := p.newNode(Node{Type: TypeMatch, Start: a.start, End: a.end, Text: p.text(a.start, a.end), terminal: true})
-		locals := &local{name: "op", val: op}
+		// The locals live in the parser, like the evaluation context (see useCtx).
+		ls := &p.oplocals
+		ls[0] = local{name: "op", val: op}
+		locals := &ls[0]
 		if a.op.kind != grammar.Prefix {
-			locals = &local{name: "lhs", val: nodeOrNil(lhs), next: locals}
+			ls[1] = local{name: "lhs", val: nodeOrNil(lhs), next: locals}
+			locals = &ls[1]
 		}
 		if a.op.kind != grammar.Postfix {
-			locals = &local{name: "rhs", val: nodeOrNil(rhs), next: locals}
+			ls[2] = local{name: "rhs", val: nodeOrNil(rhs), next: locals}
+			locals = &ls[2]
 		}
 		ctx := p.useCtx(evalCtx{p: p, scope: l.scope, frame: a.frame, start: start, end: end, locals: locals, cbase: len(p.created)})
 		return p.actionResult(ctx, l.act, r.name)

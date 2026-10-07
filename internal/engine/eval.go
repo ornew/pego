@@ -14,7 +14,9 @@ import (
 // AST, *vmFunc in bytecode.
 type function interface {
 	arity() int
-	apply(args ...any) (any, error)
+	// apply calls the function with the arguments x and y; y is ignored by a function of one
+	// parameter. (Arguments are not passed as a slice, which would escape through the interface.)
+	apply(x, y any) (any, error)
 }
 
 // evaluator evaluates an action expression (it differs per backend).
@@ -216,7 +218,7 @@ func (c *evalCtx) member(x any, name string) (any, error) {
 // newStruct creates a struct node. Its range covers the ranges of the fields whose values are
 // nodes, or is the rule's range if there are none.
 func (c *evalCtx) newStruct(typ string, names []string, vals []any) (*Node, error) {
-	n := c.p.newNode(Node{Type: typ, Fields: make(Fields, 0, len(names))})
+	n := c.p.newNode(Node{Type: typ, Fields: c.p.fields(len(names))})
 	first := true
 	for i, name := range names {
 		v := vals[i]
@@ -256,9 +258,14 @@ func unaryOp(op string, x any) (any, error) {
 }
 
 func (c *evalCtx) newList(items []*Node) *Node {
-	n := c.p.newNode(Node{Type: TypeList, Children: append(c.p.nodes(len(items))[:0], items...), Start: c.start, End: c.start})
+	return c.listNode(append(c.p.nodes(len(items))[:0], items...))
+}
+
+// listNode returns a List node with the child slice kids (which it takes over).
+func (c *evalCtx) listNode(kids []*Node) *Node {
+	n := c.p.newNode(Node{Type: TypeList, Children: kids, Start: c.start, End: c.start})
 	first := true
-	for _, it := range items {
+	for _, it := range kids {
 		if it == nil {
 			continue
 		}
@@ -443,37 +450,44 @@ func (c *evalCtx) builtin(fn string, args []any) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		out := make([]*Node, len(items))
-		for i, it := range items {
-			v, err := f.apply(nodeOrNil(it))
+		// The elements are gathered on kidStack; lambdas that build lists push above them.
+		base := len(c.p.kidStack)
+		for _, it := range items {
+			v, err := f.apply(nodeOrNil(it), nil)
 			if err != nil {
+				c.p.dropKids(base)
 				return nil, err
 			}
-			if out[i], err = asNode("map", v); err != nil {
+			n, err := asNode("map", v)
+			if err != nil {
+				c.p.dropKids(base)
 				return nil, err
 			}
+			c.p.kidStack = append(c.p.kidStack, n)
 		}
-		return c.newList(out), nil
+		return c.listNode(c.p.kids(base)), nil
 	case "list":
-		out := make([]*Node, len(args))
-		for i, a := range args {
+		base := len(c.p.kidStack)
+		for _, a := range args {
 			n, err := asNode("list", a)
 			if err != nil {
+				c.p.dropKids(base)
 				return nil, err
 			}
-			out[i] = n
+			c.p.kidStack = append(c.p.kidStack, n)
 		}
-		return c.newList(out), nil
+		return c.listNode(c.p.kids(base)), nil
 	case "concat":
-		var out []*Node
+		base := len(c.p.kidStack)
 		for _, a := range args {
 			items, err := listItems("concat", a)
 			if err != nil {
+				c.p.dropKids(base)
 				return nil, err
 			}
-			out = append(out, items...)
+			c.p.kidStack = append(c.p.kidStack, items...)
 		}
-		return c.newList(out), nil
+		return c.listNode(c.p.kids(base)), nil
 	default:
 		return nil, fmt.Errorf("unknown function %s", fn)
 	}
@@ -503,8 +517,9 @@ func asNode(fn string, v any) (*Node, error) {
 	return nil, fmt.Errorf("%s: list elements must be nodes, got %s", fn, typeName(v))
 }
 
-func (f *closure) apply(args ...any) (any, error) {
+func (f *closure) apply(x, y any) (any, error) {
 	ctx := f.ctx
+	args := [2]any{x, y}
 	for i, name := range f.params {
 		ctx = ctx.with(name, args[i])
 	}

@@ -45,6 +45,34 @@ func (p *parser) kids(base int) []*Node {
 	return ks
 }
 
+// dropKids discards p.kidStack[base:].
+func (p *parser) dropKids(base int) {
+	clear(p.kidStack[base:])
+	p.kidStack = p.kidStack[:base]
+}
+
+// fields allocates an empty field list with capacity n from a chunk and returns it. Appending
+// beyond n reallocates, so neighbouring lists in the chunk are never overwritten.
+func (p *parser) fields(n int) Fields {
+	if n > nodeChunk/4 {
+		return make(Fields, 0, n)
+	}
+	if len(p.fieldSlab) < n {
+		p.fieldSlab = make([]NodeField, nodeChunk)
+	}
+	fs := p.fieldSlab[:0:n]
+	p.fieldSlab = p.fieldSlab[n:]
+	return fs
+}
+
+// one returns a slice holding only v, for the element list of an action. It is owned by the
+// parser and valid until the next call: the list is read only while the action is evaluated
+// (evaluations never nest), and $0 copies it.
+func (p *parser) one(v *Node) []*Node {
+	p.item[0] = v
+	return p.item[:]
+}
+
 // newFrame allocates a capture frame with n slots from a chunk and returns it.
 func (p *parser) newFrame(n int) *frame {
 	if n == 0 {

@@ -68,7 +68,10 @@ type parser struct {
 	ptrSlab   []*Node
 	kidStack  []*Node
 	frameSlab []frame
+	fieldSlab []NodeField
 	ectx      evalCtx      // area for useCtx
+	item      [1]*Node     // the element list of an action whose body is not a sequence (one)
+	oplocals  [3]local     // $lhs, $rhs and $op of a Pratt operator action
 	saved     []*Node      // captures saved across a reset in longest
 	attempt   prattAttempt // result of the longestFrame that just finished (iterative VM)
 }
@@ -484,7 +487,7 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 		if r.bodyIsSeq && v != nil {
 			items = v.Children
 		} else {
-			items = []*Node{v}
+			items = p.one(v)
 		}
 		return p.runAction(r, f, items, start, p.pos)
 	}
@@ -527,7 +530,7 @@ func (p *parser) attachCaptures(v *Node, s *scope, f *frame, start, end int) *No
 		v = p.newNode(Node{Type: TypeSeq, Start: start, End: end, Children: append(p.nodes(1)[:0], v), fresh: true})
 	}
 	if v.Fields == nil {
-		v.Fields = make(Fields, 0, len(s.names))
+		v.Fields = p.fields(len(s.names))
 	}
 	for i, name := range s.names {
 		if f.vals[i] != nil {
