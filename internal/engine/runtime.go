@@ -279,6 +279,9 @@ func (p *parser) call(r *rule, min int) (*Node, bool) {
 	if !p.memoizes(r) || p.firstCall(r) {
 		// A call without memoization. The examined range (hw, lw) only grows, so it need not be saved
 		// and restored, and expectations need not be recorded separately.
+		if len(r.scope.names) == 0 {
+			return p.invokePlain(r, min)
+		}
 		start, rec := p.pos, len(p.recovered)
 		v, ok := p.invoke(r, min)
 		if !ok {
@@ -478,6 +481,32 @@ func (p *parser) invoke(r *rule, min int) (*Node, bool) {
 	st := p.invokeBegin(r)
 	v, ok := r.body(p, min)
 	return p.invokeEnd(r, &st, v, ok)
+}
+
+// invokePlain is an unmemoized call of a rule without captures: invoke with the steps of
+// invokeBegin and invokeEnd inlined, minus the capture frame (the body never writes one, so the
+// caller's stays current), and with the failure handling of call.
+func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > p.maxDepth {
+		p.fail("nesting too deep: more than %d rule calls", p.maxDepth)
+	}
+	p.stats.Evaluated++
+	v, ok := r.body(p, min)
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:min2(trail, len(p.trail))]
+	if ok {
+		v = p.finish(r, emptyFrame, v, start)
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
 }
 
 // invokeState is the state saved during a body evaluation.

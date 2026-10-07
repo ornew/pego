@@ -304,6 +304,19 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   (closure), CSV 6.8 → 4.8 ms and 10.6 → 1.6 MB. (CSV and Arith_Pratt were measured before the per-rule switch was
   added; with no repeated calls the switch never fires on them.)
 
+### 19. A plain call path for unmemoized rules without captures
+
+- A rule call went through `call` → `invoke` → `invokeBegin` / body / `invokeEnd`: a capture frame was allocated or
+  shared and switched to, an `invokeState` was built and copied, and the failure handling of `call` came on top. In
+  profiles of recognition this chain was about a fifth of the time.
+- An unmemoized call (transient rules, and first calls since change 18) of a rule whose scope has no captures now goes
+  through `invokePlain`, which does the same steps inline and leaves the caller's frame current (a body without
+  captures never writes one). Depth limit, cut, environment, trail, recovered errors and `finish` behave as before.
+  The closure backend and the recursive VM use it; the iterative VM has its own call frames.
+- Effect (min of 6 interleaved runs, Apple M3 Max): full parses 2.5–9.5% faster (JSON closure 17.7 → 16.5 ms, bytecode
+  21.8 → 19.8 ms; XML closure 17.8 → 16.2 ms), recognition 5.5–15.6% faster (JSON closure 11.8 → 10.0 ms, bytecode
+  16.4 → 13.8 ms).
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -342,9 +355,9 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–18 are done. Next candidates, in order:
+Changes 13–19 are done. Next candidates, in order:
 
-1. Rule-call overhead and inlining of small rules (item 1 above).
+1. Rule-call overhead in the iterative VM (its call frames), and inlining small rules at compile time.
 2. Document edit memo rebuild (item 5 above).
 3. Bytes allocated per parse (about 100 bytes per input byte on JSON after change 18; nodes dominate). Freeing and
    re-acquiring this memory (`runtime.madvise`, GC) is a large share of profiles on macOS.
