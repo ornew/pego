@@ -283,8 +283,8 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   call, and the rule is memoized when it is called there again. A rule is therefore evaluated at most twice per
   position and parse time stays linear.
 - Deferring costs an extra evaluation where a rule is called again. Per rule and per parse, the calls and repeated
-  calls are counted, and once more than one call in eight is a repeat, the rule is memoized from the first call
-  for the rest of the parse. Without this, the left-recursive calculator was 20–33% slower; with it, it is within
+  calls are counted, and once more than one call in sixteen is a repeat, the rule is memoized from the first call
+  for the rest of the parse (the threshold was one in eight with repeats counted twice until change 24). Without this, the left-recursive calculator was 20–33% slower; with it, it is within
   0–5%. Thresholds of 8 and 32 measured the same.
 - Left-recursion leaders are always memoized (the memo drives seed growing). `Document` (which needs every entry for
   reuse after edits) and streams keep memoizing on the first call.
@@ -378,6 +378,19 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 - Effect (the program in the streaming guide, 100,000 lines, Apple M3 Max): `Edit` 12.3 → 2.7 ms (one rule per line),
   16.5 → 3.4 ms (Pratt lines), 9.2 → 0.3 ms (no memo entries); JSON document of 283 KB 6.6 → 2.7 ms per edit.
 
+### 24. The plain call path in the iterative VM
+
+- The iterative VM sent every rule call, memoized or not, through `callBegin` and `callEnd` (examined-range
+  bookkeeping, state copies) and through the full `invokeBegin` / `invokeEnd`. Its call frame now takes the same paths
+  as `parser.call`: unmemoized calls of rules without captures run the steps of `invokePlain`, other unmemoized calls
+  skip the memo bookkeeping, and only memoized calls use `callBegin` and `callEnd`.
+- `callBegin` used to decide again whether to memoize, so the recursive backends called `firstCall` twice for each
+  memoized call and counted every repeat twice (change 18). The caller now decides once. The threshold for eager
+  memoization went from 8 to 16 so that rules switch as before (minilang allocates the same as before).
+- Effect (min of 6 interleaved runs, Apple M3 Max), iterative VM: full parses JSON 33.2 → 26.0 ms, XML 31.6 → 25.5 ms,
+  Arith_Pratt 24.1 → 21.7 ms, Arith_LeftRec 44.7 → 39.8 ms, minilang 30.7 → 28.2 ms; recognition JSON 28.5 → 20.3 ms,
+  XML 29.7 → 23.2 ms. Other backends unchanged.
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -416,9 +429,9 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–23 are done. Next candidates, in order:
+Changes 13–24 are done. Next candidates, in order:
 
-1. Rule-call overhead in the iterative VM (its call frames), and inlining small rules at compile time.
+1. Inlining small rules at compile time; the iterative VM's frame dispatch (an interface call per step).
 2. Document reparses: shifting reused subtrees (`shiftNode`, a map and a copy per reused result).
 3. Bytes allocated per parse (about 100 bytes per input byte on JSON after change 18; nodes dominate). Freeing and
    re-acquiring this memory (`runtime.madvise`, GC) is a large share of profiles on macOS.

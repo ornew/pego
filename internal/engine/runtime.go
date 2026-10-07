@@ -354,51 +354,45 @@ func numberSeen(lists ...[]*rule) int {
 	return n
 }
 
-// callState is the state saved across a rule call.
+// callState is the state saved across a memoized rule call.
 type callState struct {
 	key              memoKey
 	start            int
 	savedHW, savedLW int
 	rec              int
-	memoize          bool
 	exp              expMark
 }
 
-// callBegin looks up the memo; if a usable result exists, it sets hit and returns that result.
-// Otherwise it prepares for the call.
+// callBegin starts a memoized call (the caller has decided to memoize it: memoizes and not
+// firstCall). It looks up the memo; if a usable result exists, it sets hit and returns that
+// result. Otherwise it prepares for the call.
 func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit bool) {
 	key := memoKey{rule: r.id, pos: p.pos, min: min}
-	memoize := p.memoizes(r) && !p.firstCall(r)
-	if len(r.vars) > 0 && memoize {
+	if len(r.vars) > 0 {
 		key.env = p.envValues(r.vars)
 	}
-	if memoize {
-		if e, found := p.memo.get(key); found && (!e.silent || p.silent > 0 || e.growing) {
-			p.touch(e.examined)
-			p.lw = min2(p.lw, e.from)
-			p.stats.Reused++
-			if !e.growing {
-				p.mergeExpected(e.far, e.expected)
-			}
-			if e.shift != 0 {
-				e.node = shiftNode(e.node, e.shift, map[*Node]*Node{})
-				e.shift = 0
-			}
-			if !e.ok {
-				return st, nil, false, true
-			}
-			p.pos = e.end
-			p.recovered = append(p.recovered, e.errs...)
-			return st, e.node, true, true
+	if e, found := p.memo.get(key); found && (!e.silent || p.silent > 0 || e.growing) {
+		p.touch(e.examined)
+		p.lw = min2(p.lw, e.from)
+		p.stats.Reused++
+		if !e.growing {
+			p.mergeExpected(e.far, e.expected)
 		}
+		if e.shift != 0 {
+			e.node = shiftNode(e.node, e.shift, map[*Node]*Node{})
+			e.shift = 0
+		}
+		if !e.ok {
+			return st, nil, false, true
+		}
+		p.pos = e.end
+		p.recovered = append(p.recovered, e.errs...)
+		return st, e.node, true, true
 	}
-	st = callState{key: key, start: p.pos, savedHW: p.hw, savedLW: p.lw, rec: len(p.recovered),
-		memoize: memoize}
+	st = callState{key: key, start: p.pos, savedHW: p.hw, savedLW: p.lw, rec: len(p.recovered)}
 	p.hw, p.lw = st.start, st.start
 	// A result stored in the memo also includes the expectations recorded in this call.
-	if st.memoize {
-		st.exp = p.isolate(st.start)
-	}
+	st.exp = p.isolate(st.start)
 	return st, nil, false, false
 }
 
@@ -412,20 +406,16 @@ func (p *parser) callEnd(r *rule, st *callState, v *Node, ok bool) (*Node, bool)
 		if !ok {
 			p.recovered = p.recovered[:st.rec]
 		}
-		if st.memoize {
-			e = p.memo.alloc()
-			*e = memoEntry{node: v, ok: ok, end: p.pos, examined: p.hw, from: p.lw, silent: p.silent > 0,
-				positional: r.positional, errs: append([]*SyntaxError(nil), p.recovered[st.rec:]...)}
-			p.memo.put(st.key, e)
-		}
+		e = p.memo.alloc()
+		*e = memoEntry{node: v, ok: ok, end: p.pos, examined: p.hw, from: p.lw, silent: p.silent > 0,
+			positional: r.positional, errs: append([]*SyntaxError(nil), p.recovered[st.rec:]...)}
+		p.memo.put(st.key, e)
 	}
-	if st.memoize {
-		far, inner := p.unisolate(st.exp)
-		if e != nil {
-			e.far, e.expected = far, p.keep(inner)
-		}
-		p.mergeExpected(far, inner)
+	far, inner := p.unisolate(st.exp)
+	if e != nil {
+		e.far, e.expected = far, p.keep(inner)
 	}
+	p.mergeExpected(far, inner)
 	p.hw = max(st.savedHW, p.hw)
 	p.lw = min2(st.savedLW, p.lw)
 	if !ok {

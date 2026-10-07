@@ -168,9 +168,13 @@ type callFrame struct {
 	r     *rule
 	min   int
 	state int
-	st    callState
-	g     *growState
-	inv   invokeState
+	// memoized is set for a memoized call (callBegin and callEnd), plain for an unmemoized call of a
+	// rule without captures (the steps of invokePlain); otherwise the call is unmemoized.
+	memoized, plain bool
+	st              callState
+	g               *growState
+	inv             invokeState
+	start, rec      int // unmemoized calls: state to restore on failure
 }
 
 const (
@@ -182,6 +186,23 @@ func (f *callFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult
 	r := f.r
 	switch f.state {
 	case cBegin:
+		if !p.memoizes(r) || p.firstCall(r) {
+			f.start, f.rec = p.pos, len(p.recovered)
+			if len(r.scope.names) == 0 {
+				f.plain = true
+				f.inv = invokeState{prevEnv: p.env, prevCut: p.cut, trail: len(p.trail), start: p.pos}
+				p.cut = false
+				p.depth++
+				if p.depth > p.maxDepth {
+					p.fail("nesting too deep: more than %d rule calls", p.maxDepth)
+				}
+				p.stats.Evaluated++
+				f.state = cInvoked
+				return p.bodyFrame(r.entry, r, f.min, false), iresult{}, false
+			}
+			return f.invoke(p), iresult{}, false
+		}
+		f.memoized = true
 		st, v, ok, hit := p.callBegin(r, f.min)
 		if hit {
 			return nil, iresult{v: v, ok: ok}, true
@@ -192,7 +213,28 @@ func (f *callFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult
 		}
 		return f.invoke(p), iresult{}, false
 	default: // cInvoked
+		if f.plain { // the end of invokePlain
+			v, ok := res.v, res.ok
+			p.depth--
+			p.cut = f.inv.prevCut
+			p.trail = p.trail[:min2(f.inv.trail, len(p.trail))]
+			if ok {
+				v = p.finish(r, emptyFrame, v, f.start)
+			} else {
+				p.pos = f.start
+				p.recovered = p.recovered[:f.rec]
+			}
+			p.env = f.inv.prevEnv
+			return nil, iresult{v: v, ok: ok}, true
+		}
 		v, ok := p.invokeEnd(r, &f.inv, res.v, res.ok)
+		if !f.memoized {
+			if !ok {
+				p.pos = f.start
+				p.recovered = p.recovered[:f.rec]
+			}
+			return nil, iresult{v: v, ok: ok}, true
+		}
 		if r.leader {
 			if p.growStep(f.g, v, ok) {
 				return f.invoke(p), iresult{}, false

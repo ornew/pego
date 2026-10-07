@@ -408,7 +408,7 @@ func (p *parser) firstCall(r *rule) bool {
 	// Deferring costs an extra evaluation for each position where the rule is called again, and
 	// saves a memo entry for each position where it is not.
 	c.repeats++
-	if c.repeats*8 > c.calls {
+	if c.repeats*16 > c.calls {
 		c.eager = true
 	}
 	return false
