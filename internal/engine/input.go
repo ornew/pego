@@ -340,6 +340,32 @@ func (p *parser) peek() (rune, int, bool) {
 
 // matchLiteral advances past the string lit if it matches at the current position.
 func (p *parser) matchLiteral(rs []rune, bs []byte) bool {
+	if p.eof && p.pos >= p.base {
+		// The whole input is loaded: compare in one go. As below, a mismatch leaves pos after the
+		// matching prefix and the examined range includes the first character that differs.
+		var k, n int
+		if p.unit == Bytes {
+			in := p.bs[p.pos-p.base:]
+			n = len(bs)
+			for k < n && k < len(in) && in[k] == bs[k] {
+				k++
+			}
+		} else {
+			in := p.in[p.pos-p.base:]
+			n = len(rs)
+			for k < n && k < len(in) && in[k] == rs[k] {
+				k++
+			}
+		}
+		if k == n {
+			p.touch(p.pos + n)
+			p.pos += n
+			return true
+		}
+		p.touch(p.pos + k + 1)
+		p.pos += k
+		return false
+	}
 	if p.unit == Bytes {
 		for _, b := range bs {
 			p.touch(p.pos + 1)

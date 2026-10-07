@@ -472,6 +472,17 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 - Effect (min of 10 interleaved runs, Apple M3 Max, closure backend): full parses 1.2–4.9% faster (CSV 7.1 → 6.8 ms,
   XML 15.1 → 14.7 ms), recognition 1.6–9.4% faster (CSV 3.7 → 3.3 ms, XML 12.7 → 12.1 ms).
 
+### 32. Matching literals against loaded input in one loop
+
+- `matchLiteral` checked one character at a time, each time recording the examined range, checking that the input was
+  loaded far enough (stream input is read lazily) and indexing relative to the discarded prefix. When the whole input
+  is loaded (every parse except streams), it now compares the literal in one loop and updates the position and the
+  examined range once, with the same results (a mismatch still leaves the position after the matched prefix and
+  examines the first differing character).
+- Effect (min of 8 interleaved runs, Apple M3 Max): closure and recursive bytecode backends 1.5–7% faster (minilang
+  closure 16.2 → 15.3 ms, Arith_Pratt closure 10.4 → 9.8 ms, recognition of Arith_Pratt 7.5 → 7.0 ms), except CSV on
+  bytecode (unchanged within noise).
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -511,7 +522,7 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–31 are done. Next candidates, in order:
+Changes 13–32 are done. Next candidates, in order:
 
 1. Inlining small rules at compile time; the iterative VM's frame dispatch (an interface call per step).
 2. Document reparses: shifting reused subtrees still copies them (positions are absolute in nodes).
