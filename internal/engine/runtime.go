@@ -309,11 +309,11 @@ func (p *parser) call(r *rule, min int) (*Node, bool) {
 		g := p.growBegin(st.key)
 		for {
 			v, ok = p.invoke(r, min)
-			if !p.growStep(g, v, ok) {
+			if !p.growStep(&g, v, ok) {
 				break
 			}
 		}
-		v, ok = p.growEnd(r, g)
+		v, ok = p.growEnd(r, &g)
 	} else {
 		v, ok = p.invoke(r, min)
 	}
@@ -444,9 +444,10 @@ type growState struct {
 // growBegin places a failure in the memo as the growing result and prepares the first body
 // evaluation. After seeding the memo with a failure, the body is evaluated repeatedly, and the
 // result at the point where the match stops growing is adopted.
-func (p *parser) growBegin(key memoKey) *growState {
-	g := &growState{key: key, start: p.pos, rec: len(p.recovered)}
-	g.best = &memoEntry{ok: false, end: g.start, examined: g.start, from: g.start, growing: true}
+func (p *parser) growBegin(key memoKey) growState {
+	g := growState{key: key, start: p.pos, rec: len(p.recovered)}
+	g.best = p.memo.alloc()
+	*g.best = memoEntry{ok: false, end: g.start, examined: g.start, from: g.start, growing: true}
 	p.memo.put(key, g.best)
 	return g
 }
@@ -457,7 +458,8 @@ func (p *parser) growStep(g *growState, v *Node, ok bool) bool {
 	if !ok || (g.best.ok && p.pos <= g.best.end) {
 		return false
 	}
-	g.best = &memoEntry{node: v, ok: true, end: p.pos, from: g.start, growing: true, errs: append([]*SyntaxError(nil), p.recovered[g.rec:]...)}
+	g.best = p.memo.alloc()
+	*g.best = memoEntry{node: v, ok: true, end: p.pos, from: g.start, growing: true, errs: append([]*SyntaxError(nil), p.recovered[g.rec:]...)}
 	p.memo.put(g.key, g.best)
 	p.pos = g.start
 	p.recovered = p.recovered[:g.rec]

@@ -193,7 +193,7 @@ func (p *parser) release(f iframe) {
 	case *bodyFrame:
 		p.pool.bodies = append(p.pool.bodies, f)
 	case *callFrame:
-		f.g = nil
+		f.g = growState{}
 		p.pool.calls = append(p.pool.calls, f)
 	case *skipFrame:
 		p.pool.skips = append(p.pool.skips, f)
@@ -215,7 +215,7 @@ type callFrame struct {
 	// memoized (unmemoized calls of rules without captures use plainCallFrame instead).
 	memoized   bool
 	st         callState
-	g          *growState
+	g          growState
 	inv        invokeState
 	start, rec int // unmemoized calls: state to restore on failure
 }
@@ -252,10 +252,10 @@ func (f *callFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult
 			return nil, iresult{v: v, ok: ok}, true
 		}
 		if r.leader {
-			if p.growStep(f.g, v, ok) {
+			if p.growStep(&f.g, v, ok) {
 				return f.invoke(p), iresult{}, false
 			}
-			v, ok = p.growEnd(r, f.g)
+			v, ok = p.growEnd(r, &f.g)
 		}
 		v, ok = p.callEnd(r, &f.st, v, ok)
 		return nil, iresult{v: v, ok: ok}, true

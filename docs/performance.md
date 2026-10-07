@@ -502,6 +502,16 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   XML 24.1 → 21.9 ms, Arith_Pratt 20.3 → 19.6 ms; recognition JSON 18.4 → 14.5 ms, CSV 6.1 → 5.3 ms, XML 21.2 →
   18.9 ms; minilang unchanged within noise.
 
+### 35. Left-recursion growth without allocation
+
+- Growing the seed of a left-recursive rule allocated a `growState` per call of the leader and a memo entry on the
+  heap for the seed and for every longer result, instead of taking entries from the memo table's chunks: 84k of the
+  86k allocations per parse of the left-recursive calculator.
+- The grow state is now a value (in the caller's frame, or in the iterative VM's call frame) and the entries come from
+  the memo table's chunks.
+- Effect (min of 10 interleaved runs, Apple M3 Max, Arith_LeftRec): full parses 6–9% faster (closure 28.9 → 26.6 ms),
+  recognition 6–10% faster (closure 21.8 → 19.8 ms); 86k → 2.2k allocations.
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -541,7 +551,7 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–34 are done. Next candidates, in order:
+Changes 13–35 are done. Next candidates, in order:
 
 1. Inlining small rules at compile time; the iterative VM's frame dispatch (an interface call per step).
 2. Document reparses: shifting reused subtrees still copies them (positions are absolute in nodes).
