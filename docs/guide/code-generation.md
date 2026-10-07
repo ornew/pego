@@ -20,7 +20,7 @@ This guide shows how to generate a parser, how to call it, what it supports comp
 
 | | Engine (`pego.CompileSource`) | Generated parser |
 |:--|:--|:--|
-| Speed | Closure backend by default | The fastest backend: 24–45% faster than the closure backend, with a fraction of its allocations ([benchmarks](../benchmarks.md#analysis)) |
+| Speed | Closure backend by default | The fastest backend: 13–33% faster than the closure backend ([benchmarks](../benchmarks.md#analysis)) |
 | Dependencies | `github.com/ornew/pego` | Standard library only |
 | Grammar at run time | Loaded and compiled (or loaded from `.pegoc`) | Gone: it is compiled into Go code |
 | Grammar changes | Edit the grammar, restart | Regenerate and rebuild |
@@ -406,11 +406,11 @@ and inputs that exercise each feature of your grammar.
 
 ## Trade-offs
 
-- **Speed.** The benchmarks in [benchmarks.md](../benchmarks.md) measure the generated parsers 24–45% faster than the
-  closure backend on every workload (for example JSON 42.9 ms against 62.9 ms for the closure backend and 8.1 ms for
-  `encoding/json`, on a 262 KB input), with a fraction of the allocations (54 k against 153 k for JSON). The standard
-  library is still faster where it applies, because it builds no positioned typed tree. The numbers are from a shared
-  machine and one commit; run `go test ./bench -bench . -benchmem` for yours.
+- **Speed.** The benchmarks in [benchmarks.md](../benchmarks.md) measure the generated parsers 13–33% faster than the
+  closure backend on every workload (for example JSON 9.9 ms against 14.3 ms for the closure backend and 3.5 ms for
+  `encoding/json`, on a 262 KB input). The standard library is still faster where it applies, because it builds no
+  positioned typed tree. The numbers are from one machine and one commit; run `go test ./bench -bench . -benchmem` for
+  yours.
 - **Binary and repository size.** Each generated parser adds tens of kilobytes of source (see the sizes above) that
   you commit and that compiles into your binary. It does not pull in PEGO's compiler, analyzer or VMs; the imports are
   `bytes`, `encoding/json`, `fmt`, `sort`, `strconv`, `strings` and `unicode/utf8`.

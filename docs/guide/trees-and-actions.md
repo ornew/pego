@@ -925,10 +925,11 @@ allocated, measured around a single `Parse` call with `runtime.MemStats`:
 
 | Grammar | Allocated per parse |
 |:--|--:|
-| Whitespace kept in the captured repetition (`rest:(ws "," ws x:ident)*`), `ident` a terminal type | 30.5 MB |
-| Whitespace discarded (`rest:(-ws "," -ws x:ident)*`) | 16.7 MB |
-| Same, but `ident` without a type: `def ident = (?a-z)+` (a list of `Match` nodes) | 25.0 MB |
-| Same, with `def ident = @(?a-z)+` | 16.8 MB |
+| Whitespace kept in the captured repetition (`rest:(ws "," ws x:ident)*`), `ident` a terminal type | 27.8 MB |
+| Whitespace discarded (`rest:(-ws "," -ws x:ident)*`) | 14.0 MB |
+| Whitespace and the separator discarded (`rest:(-ws -"," -ws x:ident)*`) | 11.3 MB |
+| Whitespace discarded, but `ident` without a type: `def ident = (?a-z)+` (a list of `Match` nodes) | 22.3 MB |
+| Same, with `def ident = @(?a-z)+` | 14.0 MB |
 
 The shipped example grammars follow the same rules. Discarding their trivia was part of a change that took the JSON
 example from 50.5 MB to 42.8 MB per parse and minilang from 32.8 MB to 23.0 MB, with identical ASTs (change 9 in the
