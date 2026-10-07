@@ -82,6 +82,9 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 		}
 	}
 	vm.nseen = numberSeen(vm.rules)
+	for _, r := range vm.rules {
+		r.plain = !r.leader && (!r.memo || r.transient) && len(r.scope.names) == 0
+	}
 	for i := range m.Rules {
 		ri, r := &m.Rules[i], vm.rules[i]
 		if ri.Pratt >= 0 {
@@ -284,7 +287,11 @@ func (p *parser) exec(vm *vmProgram, ip int, r *rule, min int) (result *Node, ok
 		switch ev {
 		case evCall:
 			in := &vm.m.Code[b.ip]
-			v, ok = p.call(vm.rules[in.A], int(in.B))
+			if r := vm.rules[in.A]; r.plain && !p.memoAll {
+				v, ok = p.invokePlain(r, int(in.B)) // what call does for such a rule
+			} else {
+				v, ok = p.call(r, int(in.B))
+			}
 		case evPratt:
 			v, ok = p.prattParse(b.r, b.min)
 		default:

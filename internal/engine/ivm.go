@@ -68,6 +68,9 @@ func (f *bodyFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult
 	case evCall:
 		in := &vm.m.Code[f.b.ip]
 		r, min := vm.rules[in.A], int(in.B)
+		if r.plain && !p.memoAll {
+			return p.plainCallFrame(r, min), iresult{}, false
+		}
 		if !p.memoizes(r) || p.firstCall(r) {
 			if len(r.scope.names) == 0 {
 				return p.plainCallFrame(r, min), iresult{}, false

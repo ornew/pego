@@ -587,6 +587,14 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 - Effect (min of 12 interleaved runs, Apple M3 Max, generated parsers): JSON 9.7 → 9.3 ms, XML 9.7 → 9.1 ms, others
   0–2% faster.
 
+### 43. Direct calls of plain rules in the VMs
+
+- As in the closure backend (change 38) and generated parsers (change 42), the recursive VM calls rules that are
+  never memoized in an ordinary parse and have no captures through `invokePlain` directly, and the iterative VM
+  starts them with `plainCallFrame` without asking whether to memoize.
+- Effect (min of 10 interleaved runs, Apple M3 Max): both VMs 0.5–2.5% faster on full parses and 1.4–4.6% on
+  recognition (JSON bytecode 12.2 → 11.7 ms).
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
