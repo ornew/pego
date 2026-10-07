@@ -375,8 +375,8 @@ set, and one huge element, such as a whole document wrapped in a single rule, de
 the last few elements, your callback's own state, and the list of recovered errors.
 
 The effect on a real input, a 27 MiB CSV file with 1,000,000 records (Apple silicon, Go 1.27.1; the program is in the
-[recipe](#recipe-summing-a-csv-column)): `ParseStream` finished in about 1.4 to 1.8 seconds with a peak resident size of
-about 61 MB, and `Parse` finished in about 1.2 seconds with about 2.2 GB. Streaming is not faster: it trades a little
+[recipe](#recipe-summing-a-csv-column)): `ParseStream` finished in about 1.2 to 2.0 seconds with a peak resident size of
+about 58 MB, and `Parse` finished in about 1.0 second with about 1.9 GB. Streaming is not faster: it trades a little
 time for memory, and the memory is bounded by the working set rather than by the size of the input.
 
 The nodes handed to you are allocated in chunks, and a chunk stays reachable while anything in it is. The parser starts
@@ -1183,18 +1183,18 @@ func main() {
 
 ```
 settings, one rule per line
-    1000 lines: Parse 320µs    NewDocument+Parse 550µs    Edit 20µs     reparse 40µs     (evaluated 3, reused 1002) equal=true
-   10000 lines: Parse 2.83ms   NewDocument+Parse 4.79ms   Edit 210µs    reparse 290µs    (evaluated 3, reused 10002) equal=true
-  100000 lines: Parse 28.64ms  NewDocument+Parse 42.69ms  Edit 2.7ms    reparse 9.61ms   (evaluated 3, reused 100002) equal=true
+    1000 lines: Parse 280µs    NewDocument+Parse 520µs    Edit 20µs     reparse 30µs     (evaluated 3, reused 1002) equal=true
+   10000 lines: Parse 2.53ms   NewDocument+Parse 4.56ms   Edit 200µs    reparse 310µs    (evaluated 3, reused 10002) equal=true
+  100000 lines: Parse 27.62ms  NewDocument+Parse 42.48ms  Edit 2.59ms   reparse 7.52ms   (evaluated 3, reused 100002) equal=true
   memory at 100000 lines (1.9 MiB of text): tree from Parse 27 MiB, Document with its tree 143 MiB
 calc (Pratt expressions)
-    1000 lines: Parse 1.72ms   NewDocument+Parse 2.07ms   Edit 30µs     reparse 40µs     (evaluated 3, reused 1003) equal=true
-   10000 lines: Parse 15.57ms  NewDocument+Parse 18ms     Edit 270µs    reparse 350µs    (evaluated 3, reused 10003) equal=true
-  100000 lines: Parse 162.53ms NewDocument+Parse 174.87ms Edit 3.41ms   reparse 9.7ms    (evaluated 3, reused 100003) equal=true
+    1000 lines: Parse 1.64ms   NewDocument+Parse 1.98ms   Edit 30µs     reparse 40µs     (evaluated 3, reused 1003) equal=true
+   10000 lines: Parse 14.52ms  NewDocument+Parse 16.97ms  Edit 270µs    reparse 410µs    (evaluated 3, reused 10003) equal=true
+  100000 lines: Parse 153.05ms NewDocument+Parse 171.56ms Edit 3.65ms   reparse 8.94ms   (evaluated 3, reused 100003) equal=true
 settings, everything in one rule
-    1000 lines: Parse 210µs    NewDocument+Parse 210µs    Edit 0s       reparse 190µs    (evaluated 1, reused 0) equal=true
-   10000 lines: Parse 2.4ms    NewDocument+Parse 2.33ms   Edit 30µs     reparse 1.74ms   (evaluated 1, reused 0) equal=true
-  100000 lines: Parse 21.37ms  NewDocument+Parse 21.31ms  Edit 320µs    reparse 19.66ms  (evaluated 1, reused 0) equal=true
+    1000 lines: Parse 200µs    NewDocument+Parse 200µs    Edit 0s       reparse 160µs    (evaluated 1, reused 0) equal=true
+   10000 lines: Parse 2.16ms   NewDocument+Parse 2.19ms   Edit 40µs     reparse 1.7ms    (evaluated 1, reused 0) equal=true
+  100000 lines: Parse 20.58ms  NewDocument+Parse 20.27ms  Edit 320µs    reparse 17.92ms  (evaluated 1, reused 0) equal=true
 ```
 
 Reading the table:
@@ -1203,13 +1203,13 @@ Reading the table:
   in place, but it still visits every memo entry (about 300,000 at 100,000 lines) and moves everything after the edit,
   and the reparse makes one memo lookup per line and copies the reused results after the edit with their positions
   shifted. Both are linear in the size of the document, with small constants: at 100,000 lines an edit costs about
-  3 ms and the reparse about 10 ms.
+  3 ms and the reparse about 8 ms.
 - **The gain depends on how much a reused unit costs.** With the Pratt-expression lines, `Edit` and the reparse together
-  take about 13 ms against 163 ms for a fresh parse at 100,000 lines. With the cheap `key = value` lines, about 12 ms
-  against 29 ms. With everything in one rule there is no gain (about 20 ms against 21 ms): the one rule is evaluated
+  take about 13 ms against 153 ms for a fresh parse at 100,000 lines. With the cheap `key = value` lines, about 10 ms
+  against 28 ms. With everything in one rule there is no gain (about 18 ms against 21 ms): the one rule is evaluated
   again from scratch.
 - **The first parse is slower than `Parse`** (up to about 1.5 times with cheap rules, close to equal otherwise), because
-  every rule call is memoized.
+  every rule call is memoized (an ordinary parse memoizes only calls that repeat).
 - **Memory is a multiple of the tree.** The line starting "memory" shows the live heap for the first grammar at 100,000
   lines: the tree from `Parse` alone against a `Document` that also holds the memo table (an entry per rule call), the
   text as code points (four bytes each) and an offset table next to the string.
@@ -1297,10 +1297,10 @@ func main() {
 ```
 $ go run ./jsondoc examples/json/json.pego
 282783 bytes
-Parse:                37ms
-first Document.Parse: 46ms {448897 10001}
-Edit:                 2.65ms
-reparse:              1.61ms {11 15020}
+Parse:                31ms
+first Document.Parse: 54ms {448897 10001}
+Edit:                 2.85ms
+reparse:              1.44ms {11 15020}
 ```
 
 The full parse evaluates 448,897 rule bodies; after the edit 11 run and 15,020 results are reused.
