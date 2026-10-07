@@ -42,7 +42,7 @@ grammar.Grammar ──Compile──▶ engine.Program ─┬─ backend: closure
 
 - `engine.Compile` performs syntax, type and static analysis as it does now, and then builds an executable form for each backend.
 - The unit of bytecode is called a **module**. A module is a collection of instruction sequences and tables, and it is the only thing the runtime reads.
-- In the public API, the backend and execution model are chosen with an option (for example `pego.Compile(g, start, pego.WithBackend(pego.BytecodeIterative))`). Based on the performance comparison ([decision 4](#4-default-backend)), the default is the closure backend when the AST is available and bytecode otherwise.
+- In the public API, the backend and execution model are chosen with an option (for example `p.Parse(input, pego.WithBackend(pego.BytecodeIterative))`). Based on the performance comparison ([decision 4](#4-default-backend)), the default is the closure backend when the AST is available and bytecode otherwise.
 
 ## Execution models
 

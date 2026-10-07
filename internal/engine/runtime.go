@@ -623,7 +623,7 @@ func (p *parser) fail(format string, args ...any) {
 
 // SyntaxError reports that the input did not match the grammar.
 type SyntaxError struct {
-	Pos      int      // position in characters
+	Pos      int      // position, in the parse's position unit
 	Line     int      // 1-based line
 	Col      int      // 1-based column (in characters)
 	Expected []string // what was expected at that position

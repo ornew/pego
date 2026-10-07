@@ -39,7 +39,7 @@ As in Dubroy and Warth's "Incremental Packrat Parsing", each memo entry records 
 - Nodes in shifted entries are copied with shifted positions when they are used, which avoids copying entries that are never used.
 - Entries of rules whose results may contain position values (`startPos`, `endPos`) are not shifted; this covers rules whose actions or predicates refer to them and the rules that call those rules. Positions stored as integers cannot be shifted the way node positions can.
 - Entries that contain recovered errors are not shifted either, because error messages include positions.
-- Rules that refer to variables are never memoized in the first place.
+- Rules that refer to variables are memoized per combination of the values of those variables at the call (see [performance.md](../performance.md#12-memoizing-rules-that-read-variables)), so an entry is reused only in the same environment.
 - So that expectations for syntax errors can be recorded again when a memo entry is used, each entry also stores the farthest failure position and the expectations recorded during the call. A parse that reuses entries therefore reports the same syntax errors as a fresh parse.
 
 ### Verification

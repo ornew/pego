@@ -16,7 +16,11 @@ def deeper_indent = s:spaces [len($s) > indent] [indent = len($s)]
 ```
 
 The expression has the same syntax as an [action](actions.md#operators). It can
-refer to variables and to the captures `$label` made earlier in the same rule.
+refer to variables and to the captures `$label` made earlier in the same
+[scope](parser-expressions.md#capture): inside the element of a repetition,
+only the captures of that iteration are visible, not those of the enclosing rule
+body. To compare with a value from outside the repetition, define a variable
+from it first.
 Positional references `$n` and `$0` MUST NOT be used in predicates.
 
 ## Variables

@@ -36,6 +36,19 @@ Captures are visible only within the rule that makes them; an action cannot
 refer to the captures of the rules that called it. A capture that did not match
 is `nil`.
 
+## Variable references
+
+An action can read [variables](predicates.md#variables) by name, like a
+predicate. It sees the definitions in effect when the rule body has matched:
+those made by the rule itself and by the rules that called it, but not those of
+the rules it called, which ended with their invocations. Reading a variable that
+is not defined is a runtime error of the action.
+
+```pego
+type Item struct { Depth int, Name Match }
+def item: Item = [depth = 1] n:name -> new Item{Depth: depth, Name: $n}
+```
+
 ## Values
 
 Action expressions operate on the following values.

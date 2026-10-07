@@ -105,7 +105,9 @@ func RecognizeOnly() ParseOption {
 
 // WithMaxDepth limits the nesting of rule calls to n; deeper nesting makes the parse fail with an error.
 // The default is 100,000 (10,000,000 for BytecodeIterative). The limit keeps runaway recursion from
-// exhausting the stack or memory.
+// exhausting the stack or memory. The Closure and Bytecode backends nest rule calls on the goroutine
+// stack, so raising the limit far above the default can exceed Go's maximum stack size, which aborts
+// the program; use BytecodeIterative for deeper nesting.
 func WithMaxDepth(n int) ParseOption {
 	return func(o *engine.ParseOptions) { o.MaxDepth = n }
 }
@@ -128,7 +130,8 @@ func (p *Parser) Parse(input string, opts ...ParseOption) (*Node, error) {
 // ParseStream parses input read from r and passes each element of the #stream repetition at the top level
 // of the start rule to emit as soon as it matches. Emitted elements and the input before them are not
 // retained, so the input never has to fit in memory. If emit returns an error, parsing stops and
-// ParseStream returns that error.
+// ParseStream returns that error. An element without a value (for example, one that is discarded with -)
+// is passed as nil. As in any repetition, an element that matches without consuming input ends it.
 func (p *Parser) ParseStream(r io.Reader, emit func(*Node) error, opts ...ParseOption) error {
 	return p.prog.ParseStreamWith(p.start, r, emit, parseOptions(opts))
 }

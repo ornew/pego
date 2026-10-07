@@ -17,12 +17,13 @@
 // Left, Op, Right) instead of Python's flat lists, so `a < b < c` is
 // Compare(Compare(a, <, b), <, c).
 //
-// Because the variables make the parse context dependent, no rule is memoized. The grammar
-// therefore avoids re-parsing a prefix in ordered choices: a construct whose kind depends
-// on what follows its first element (tuple or parenthesized expression, slice or index,
-// dict or set, statement kinds after an expression) parses the element once and then
-// optional tails captured with `{0,1}`, and folds over those lists to choose the node to
-// build (folding over an empty list returns the initial value).
+// The grammar was written when rules that read variables were not memoized (they now are,
+// per combination of the variables' values), so it avoids re-parsing a prefix in ordered
+// choices, which still pays off: a construct whose kind depends on what follows its first
+// element (tuple or parenthesized expression, slice or index, dict or set, statement kinds
+// after an expression) parses the element once and then optional tails captured with
+// `{0,1}`, and folds over those lists to choose the node to build (folding over an empty
+// list returns the initial value).
 //
 // Not supported: match statements, type parameters and `type` aliases (PEP 695), `except*`,
 // and the inside of f-string replacement fields (an f-string is one terminal). Some rules
