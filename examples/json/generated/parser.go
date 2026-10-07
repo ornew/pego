@@ -219,7 +219,10 @@ type rule struct {
 	// could never be reused.
 	memo bool
 	// leader is the leader of a left-recursive cycle; its results are always memoized.
-	leader  bool
+	leader bool
+	// seen is the rule's index among the memoized rules whose memoization is deferred to the
+	// second call at a position (firstCall), or -1.
+	seen    int
 	pratt   *pratt
 	novalue bool // value-free twin, called where the value is discarded
 	// vars are the variables the rule or its callees read, sorted. Memo entries are keyed by their
@@ -229,6 +232,9 @@ type rule struct {
 
 // rules is the rule table set up by the generated code.
 var rules []*rule
+
+// nseen is the number of rules with rule.seen set.
+var nseen int
 
 // descs maps expectation IDs to their descriptions. It starts with the fixed expectations
 // below; the generated code sets the whole table.
@@ -262,6 +268,7 @@ const maxDepth = 100_000
 // parse parses the whole input with rule r.
 func parse(r *rule, input string, units []Unit) (n *Node, err error) {
 	p := &parser{}
+	p.memo.stride = nseen
 	if len(units) > 0 && units[0] == Bytes {
 		p.unit, p.bs, p.n = Bytes, input, len(input)
 	} else {
@@ -355,6 +362,54 @@ type parser struct {
 type memoTable struct {
 	slots []*memoEntry
 	slab  []memoEntry
+	// seen is a bit set of the (position, rule) pairs called once (firstCall), with stride bits per
+	// position.
+	seen   []uint64
+	stride int
+	// calls counts, per rule number, the calls and the repeated calls at a position; once repeats
+	// are frequent, the rule is memoized on the first call (eager).
+	calls []seenCalls
+}
+
+type seenCalls struct {
+	calls, repeats int32
+	eager          bool
+}
+
+// firstCall records a call of rule r at the current position and reports whether its
+// memoization is deferred: it is the first call there, and repeated calls of the rule have been
+// rare so far. Results are reused only when a rule is called again at a position, which is rare,
+// so memoizing every first call cost an entry each for nothing; deferring memoization to the
+// second call evaluates a rule at most twice per position, which keeps parse time linear.
+func (p *parser) firstCall(r *rule) bool {
+	if r.seen < 0 {
+		return false
+	}
+	t := &p.memo
+	if t.calls == nil {
+		t.calls = make([]seenCalls, t.stride)
+	}
+	c := &t.calls[r.seen]
+	if c.eager {
+		return false
+	}
+	c.calls++
+	i := p.pos*t.stride + r.seen
+	w, b := i>>6, uint64(1)<<(i&63)
+	if w >= len(t.seen) {
+		t.seen = append(t.seen, make([]uint64, max(w+1-len(t.seen), len(t.seen), 64))...)
+	}
+	if t.seen[w]&b == 0 {
+		t.seen[w] |= b
+		return true
+	}
+	// Deferring costs an extra evaluation for each position where the rule is called again, and
+	// saves a memo entry for each position where it is not.
+	c.repeats++
+	if c.repeats*8 > c.calls {
+		c.eager = true
+	}
+	return false
 }
 
 type memoEntry struct {
@@ -701,8 +756,11 @@ func (p *parser) makeError(pos int, expected []expID) *SyntaxError {
 // call calls rule r at level min.
 func (p *parser) call(r *rule, min int) (*Node, bool) {
 	start := p.pos
-	if !r.memo && !r.leader {
+	if !r.memo && !r.leader || p.firstCall(r) {
 		// Unmemoized call: no memo bookkeeping, and expectations need no isolation.
+		if len(r.scope) == 0 {
+			return p.invokePlain(r, min)
+		}
 		rec := len(p.recovered)
 		v, ok := p.invoke(r, min)
 		if !ok {
@@ -793,6 +851,31 @@ func (p *parser) invoke(r *rule, min int) (*Node, bool) {
 	p.trail = p.trail[:trail]
 	if ok {
 		v = p.finish(r, f, v, start)
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// invokePlain is an unmemoized call of a rule without captures: invoke without the capture
+// frame (the body never writes one, so the caller's stays current), with the failure handling of
+// call.
+func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		panic(fatal{fmt.Errorf("nesting too deep: more than %d rule calls", maxDepth)})
+	}
+	v, ok := r.body(p, min)
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = p.finish(r, emptyFrame, v, start)
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
 	}
 	p.env = prevEnv
 	return v, ok
@@ -1662,33 +1745,34 @@ var lit154 = []rune(".")
 
 func init() {
 	rules = []*rule{
-		{id: 0, name: "main", scope: []string{"v"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, novalue: false, vars: []string{}},
-		{id: 1, name: "value", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, novalue: false, vars: []string{}},
-		{id: 2, name: "object", scope: []string{"ms"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, novalue: false, vars: []string{}},
-		{id: 3, name: "members", scope: []string{"first", "rest"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, novalue: false, vars: []string{}},
-		{id: 4, name: "member", scope: []string{"k", "v"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, novalue: false, vars: []string{}},
-		{id: 5, name: "array", scope: []string{"es"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, novalue: false, vars: []string{}},
-		{id: 6, name: "elements", scope: []string{"first", "rest"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, novalue: false, vars: []string{}},
-		{id: 7, name: "string", scope: []string{"s"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, novalue: false, vars: []string{}},
-		{id: 8, name: "chars", scope: []string{}, bodyIsSeq: false, terminalType: "String", memo: false, leader: false, novalue: false, vars: []string{}},
-		{id: 9, name: "unescaped", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, novalue: false, vars: []string{}},
-		{id: 10, name: "escape", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, novalue: false, vars: []string{}},
-		{id: 11, name: "hex", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, novalue: false, vars: []string{}},
-		{id: 12, name: "number", scope: []string{}, bodyIsSeq: true, terminalType: "Number", memo: false, leader: false, novalue: false, vars: []string{}},
-		{id: 13, name: "int", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, novalue: false, vars: []string{}},
-		{id: 14, name: "frac", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, novalue: false, vars: []string{}},
-		{id: 15, name: "exp", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, novalue: false, vars: []string{}},
-		{id: 16, name: "bool", scope: []string{}, bodyIsSeq: false, terminalType: "Bool", memo: false, leader: false, novalue: false, vars: []string{}},
-		{id: 17, name: "null", scope: []string{}, bodyIsSeq: false, terminalType: "Null", memo: false, leader: false, novalue: false, vars: []string{}},
-		{id: 18, name: "ws", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, novalue: false, vars: []string{}},
-		{id: 19, name: "ws", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, novalue: true, vars: []string{}},
-		{id: 20, name: "unescaped", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, novalue: true, vars: []string{}},
-		{id: 21, name: "escape", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, novalue: true, vars: []string{}},
-		{id: 22, name: "int", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, novalue: true, vars: []string{}},
-		{id: 23, name: "frac", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, novalue: true, vars: []string{}},
-		{id: 24, name: "exp", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, novalue: true, vars: []string{}},
-		{id: 25, name: "hex", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, novalue: true, vars: []string{}},
+		{id: 0, name: "main", scope: []string{"v"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 1, name: "value", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, seen: 0, novalue: false, vars: []string{}},
+		{id: 2, name: "object", scope: []string{"ms"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 3, name: "members", scope: []string{"first", "rest"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 4, name: "member", scope: []string{"k", "v"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 1, novalue: false, vars: []string{}},
+		{id: 5, name: "array", scope: []string{"es"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 6, name: "elements", scope: []string{"first", "rest"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 7, name: "string", scope: []string{"s"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 2, novalue: false, vars: []string{}},
+		{id: 8, name: "chars", scope: []string{}, bodyIsSeq: false, terminalType: "String", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 9, name: "unescaped", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 10, name: "escape", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 11, name: "hex", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 12, name: "number", scope: []string{}, bodyIsSeq: true, terminalType: "Number", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 13, name: "int", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 14, name: "frac", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 15, name: "exp", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 16, name: "bool", scope: []string{}, bodyIsSeq: false, terminalType: "Bool", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 17, name: "null", scope: []string{}, bodyIsSeq: false, terminalType: "Null", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 18, name: "ws", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 19, name: "ws", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 20, name: "unescaped", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 21, name: "escape", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 22, name: "int", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 23, name: "frac", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 24, name: "exp", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 25, name: "hex", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 	}
+	nseen = 3
 	rules[0].body = func(p *parser, _ int) (*Node, bool) { return p.e6() }
 	rules[0].action = func(c *actx) any { return c.cap(0) }
 	rules[1].body = func(p *parser, _ int) (*Node, bool) { return p.e13() }

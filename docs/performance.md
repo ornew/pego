@@ -331,6 +331,23 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 - What remains is mostly shifting reused subtrees (`shiftNode` copies a reused node tree with its positions moved)
   and copying the input.
 
+### 21. Changes 18 and 19 in the generated parsers
+
+- The generated runtime (`internal/engine/genrt`) now defers memoization to the second call at a position with the
+  same per-rule switch to eager memoization (the generator emits each rule's `seen` number and their count), and calls
+  unmemoized rules without captures through `invokePlain`. The generated files in `bench/gen` and
+  `examples/json/generated` were regenerated.
+- Effect (min of 8 interleaved runs, Apple M3 Max, code points; time and bytes per parse):
+
+  | Workload | Before | After |
+  |:--|--:|--:|
+  | JSON | 14.8 ms, 37.0 MB | 11.2 ms, 23.8 MB |
+  | CSV | 7.2 ms, 27.4 MB | 5.7 ms, 19.4 MB |
+  | XML | 11.8 ms, 29.4 MB | 10.7 ms, 25.3 MB |
+  | Arith_Pratt | 8.9 ms, 16.9 MB | 7.6 ms, 11.9 MB |
+  | Arith_LeftRec | 18.2 ms | 18.8 ms (unchanged bytes) |
+  | Minilang | 13.2 ms, 18.6 MB | 12.8 ms, 17.2 MB |
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -369,13 +386,12 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–20 are done. Next candidates, in order:
+Changes 13–21 are done. Next candidates, in order:
 
 1. Rule-call overhead in the iterative VM (its call frames), and inlining small rules at compile time.
 2. Document edits: shifting reused subtrees (`shiftNode`) and copying the input on every edit.
 3. Bytes allocated per parse (about 100 bytes per input byte on JSON after change 18; nodes dominate). Freeing and
    re-acquiring this memory (`runtime.madvise`, GC) is a large share of profiles on macOS.
-4. Port change 18 (deferred memoization) to the generated parsers' runtime (`internal/engine/genrt`).
 
 Timing is noisy on shared machines: compare B/op and allocs/op, or take the minimum of several interleaved runs
 (before/after alternated with `git stash`).

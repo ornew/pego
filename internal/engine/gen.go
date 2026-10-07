@@ -132,10 +132,11 @@ func (g *generator) rules() {
 	}
 	init.WriteString("\trules = []*rule{\n")
 	for _, r := range all {
-		fmt.Fprintf(init, "\t\t{id: %d, name: %q, scope: %s, bodyIsSeq: %v, terminalType: %q, memo: %v, leader: %v, novalue: %v, vars: %s},\n",
-			r.id, r.name, goStrings(scopes[r].names), r.bodyIsSeq, r.terminalType, r.memo && !r.transient, r.leader, r.novalue, goStrings(r.vars))
+		fmt.Fprintf(init, "\t\t{id: %d, name: %q, scope: %s, bodyIsSeq: %v, terminalType: %q, memo: %v, leader: %v, seen: %d, novalue: %v, vars: %s},\n",
+			r.id, r.name, goStrings(scopes[r].names), r.bodyIsSeq, r.terminalType, r.memo && !r.transient, r.leader, r.seen, r.novalue, goStrings(r.vars))
 	}
 	init.WriteString("\t}\n")
+	fmt.Fprintf(init, "\tnseen = %d\n", g.prog.nseen)
 	for _, r := range all {
 		if pr, ok := r.def.Expr.(*grammar.Pratt); ok {
 			g.pratt(r, pr)
