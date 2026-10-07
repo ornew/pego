@@ -83,6 +83,9 @@ type rule struct {
 	// seen is the rule's index among the rules whose memoization is deferred to the second call at a
 	// position (parser.firstCall), or -1.
 	seen int
+	// plain reports that the rule is never memoized except by Document and has no captures, so
+	// call runs it with invokePlain (the closure backend calls invokePlain directly).
+	plain bool
 	// novalue reports that this is a value-free twin (its value is always nil).
 	novalue bool
 	// predCaps holds, for value-free rules in a program that builds no tree, the names of the
@@ -283,6 +286,11 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 		return nil, c.errs
 	}
 	prog.nseen = numberSeen(prog.rules, prog.twins)
+	for _, rs := range [][]*rule{prog.rules, prog.twins} {
+		for _, r := range rs {
+			r.plain = !r.leader && (!r.memo || r.transient) && len(r.scope.names) == 0
+		}
+	}
 	if !opts.NoTypeCheck && flags == nil {
 		checkTypes(prog, &c.errs)
 		if len(c.errs) > 0 {
@@ -516,7 +524,12 @@ func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
 		if !build && r.twinOK {
 			r = c.twinOf(r)
 		}
-		return func(p *parser) (*Node, bool) { return p.call(r, min) }
+		return func(p *parser) (*Node, bool) {
+			if r.plain && !p.memoAll {
+				return p.invokePlain(r, min) // what call does for such a rule, without its checks
+			}
+			return p.call(r, min)
+		}
 
 	case *grammar.Seq:
 		ms := make([]matcher, len(e.Items))

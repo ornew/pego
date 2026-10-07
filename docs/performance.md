@@ -534,6 +534,15 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   20.0 MB per parse; CSV 6.6 → 6.2 ms (closure), 4.8 → 4.5 ms (generated), 15.6 → 14.0 MB; minilang unchanged within
   noise.
 
+### 38. Calling plain rules directly from closure call sites
+
+- Rules that are never memoized in an ordinary parse and have no captures always end up in `invokePlain` (change 19),
+  but every call went through `call`'s checks first. Such rules are now marked when the program is built
+  (`rule.plain`), and the closure backend's call sites call `invokePlain` directly unless a `Document` parses (which
+  memoizes them).
+- Effect (min of 12 interleaved runs, Apple M3 Max, closure backend): full parses 0–3% faster, recognition 2–4% (JSON
+  8.4 → 8.1 ms).
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -573,7 +582,7 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–37 are done. Next candidates, in order:
+Changes 13–38 are done. Next candidates, in order:
 
 1. Inlining small rules at compile time; the iterative VM's frame dispatch (an interface call per step).
 2. Document reparses: shifting reused subtrees still copies them (positions are absolute in nodes).
