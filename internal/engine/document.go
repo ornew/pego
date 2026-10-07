@@ -82,23 +82,20 @@ func (d *Document) Edit(start, end int, text string) error {
 	} else {
 		d.in.setSource(string(d.in.in))
 	}
-	memo := newMemoTable()
-	d.memo.each(func(e *memoEntry) {
-		k := memoKey{rule: int(e.rule), pos: e.pos, min: int(e.min), env: e.env}
+	d.memo.splice(start, end, delta, func(e *memoEntry) int {
 		switch {
 		case e.growing:
 		case e.examined <= start:
-			memo.put(k, e)
+			return keepEntry
 		case e.from >= end && !e.positional && len(e.errs) == 0:
-			k.pos += delta
 			e.end += delta
 			e.from += delta
 			e.examined += delta
 			e.far += delta
 			e.shift += delta
-			memo.put(k, e)
+			return shiftEntry
 		}
+		return dropEntry
 	})
-	d.memo = memo
 	return nil
 }

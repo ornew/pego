@@ -137,3 +137,63 @@ func TestDocumentEditErrors(t *testing.T) {
 		t.Error("expected an error for an undefined rule")
 	}
 }
+
+// TestDocumentEditKeepsMemo checks that an edit keeps exactly the memo entries the rules in
+// Document's comment allow, at their new positions. The second grammar has a memoized rule that
+// examines no input, whose entries at the edit position stay in place.
+func TestDocumentEditKeepsMemo(t *testing.T) {
+	cases := []struct{ grammar, text string }{
+		{incrementalGrammar, "x = 1+2\nab,cd\n@pos\n\ny = (3)*-4\n"},
+		{"def main = (sep word sep)* $$\ndef sep = none none\ndef none = \"\"\ndef word = @(?a-z)+ \" \"?", "ab cd ef gh "},
+	}
+	pieces := []string{"a", "b", "x = ", "1", "+", "(", ")", ",", "\n", "@", " ", "zz "}
+	for _, c := range cases {
+		doc, err := compile(t, c.grammar).NewDocument("main", c.text)
+		if err != nil {
+			t.Fatal(err)
+		}
+		doc.Parse()
+		rng := rand.New(rand.NewSource(7))
+		for i := 0; i < 2000; i++ {
+			cur := []rune(doc.Text())
+			start := rng.Intn(len(cur) + 1)
+			end := start + rng.Intn(min(4, len(cur)-start)+1)
+			ins := ""
+			for k := rng.Intn(3); k > 0; k-- {
+				ins += pieces[rng.Intn(len(pieces))]
+			}
+			delta := len([]rune(ins)) - (end - start)
+			want := map[*memoEntry]int{}
+			doc.memo.each(func(e *memoEntry) {
+				switch {
+				case e.growing:
+				case e.examined <= start:
+					want[e] = e.pos
+				case e.from >= end && !e.positional && len(e.errs) == 0:
+					want[e] = e.pos + delta
+				}
+			})
+			if err := doc.Edit(start, end, ins); err != nil {
+				t.Fatal(err)
+			}
+			got := map[*memoEntry]int{}
+			for at, head := range doc.memo.slots {
+				for e := head; e != nil; e = e.next {
+					if e.pos != at {
+						t.Fatalf("edit %d: entry for position %d is listed at %d", i, e.pos, at)
+					}
+					got[e] = at
+				}
+			}
+			if len(got) != len(want) {
+				t.Fatalf("edit %d: [%d,%d) -> %q: %d entries, want %d", i, start, end, ins, len(got), len(want))
+			}
+			for e, at := range want {
+				if p, ok := got[e]; !ok || p != at {
+					t.Fatalf("edit %d: [%d,%d) -> %q: entry at %d (kept %v), want %d", i, start, end, ins, p, ok, at)
+				}
+			}
+			doc.Parse()
+		}
+	}
+}

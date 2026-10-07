@@ -140,6 +140,72 @@ func (t *memoTable) prune(pos int) {
 	t.base = pos
 }
 
+// Decisions of a splice callback
+const (
+	dropEntry  = iota
+	keepEntry  // keep at its position
+	shiftEntry // move by the splice's delta
+)
+
+// splice adjusts the table to an edit that replaced the positions [start, end) with delta more
+// positions (a Document edit). keep decides each entry's fate; an entry it shifts must lie at or
+// after end. The chains are updated in place instead of being rebuilt. Only tables without
+// pruning (base 0) are spliced.
+func (t *memoTable) splice(start, end, delta int, keep func(e *memoEntry) int) {
+	for i := range t.slots {
+		link := &t.slots[i]
+		for e := *link; e != nil; e = e.next {
+			switch keep(e) {
+			case keepEntry:
+			case shiftEntry:
+				e.pos += delta
+			default:
+				*link = e.next
+				continue
+			}
+			link = &e.next
+		}
+	}
+	if delta == 0 || len(t.slots) <= start {
+		return
+	}
+	if len(t.slots) <= end {
+		t.slots = append(t.slots, make([]*memoEntry, end+1-len(t.slots))...)
+	}
+	// Detach the entries that stay in place within [start, end] (at end, only an insertion keeps
+	// any), move the chains from end on by delta, and put the detached entries back.
+	var stay *memoEntry
+	for i := start; i <= end; i++ {
+		link := &t.slots[i]
+		for e := *link; e != nil; {
+			next := e.next
+			if e.pos == i {
+				*link = next
+				e.next, stay = stay, e
+			} else {
+				link = &e.next
+			}
+			e = next
+		}
+	}
+	n := len(t.slots)
+	if delta > 0 {
+		t.slots = slices.Grow(t.slots, delta)[:n+delta]
+		copy(t.slots[end+delta:], t.slots[end:n])
+		clear(t.slots[end : end+delta])
+	} else {
+		copy(t.slots[end+delta:], t.slots[end:n])
+		clear(t.slots[n+delta:])
+		t.slots = t.slots[:n+delta]
+	}
+	for e := stay; e != nil; {
+		next := e.next
+		e.next = t.slots[e.pos]
+		t.slots[e.pos] = e
+		e = next
+	}
+}
+
 // each passes every entry to f in position order.
 func (t *memoTable) each(f func(e *memoEntry)) {
 	for _, head := range t.slots {
