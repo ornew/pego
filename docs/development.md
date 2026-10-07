@@ -15,6 +15,8 @@ This document describes the repository layout, the architecture of the implement
 | `examples/` | Example grammars, with golden tests |
 | `bench/` | Benchmarks comparing the backends with each other and with standard-library parsers (`gen/` holds generated parsers). Results are in [benchmarks.md](benchmarks.md). |
 | `spec/` | Language specification |
+| `docs/tutorial/` | Tutorials (getting started) |
+| `docs/guide/` | Task-oriented guides to each feature ([index](guide/README.md)) |
 | `docs/design/` | Design records |
 
 ## Architecture
@@ -172,7 +174,7 @@ The `check` helper also verifies that the result is the same with memoization di
 - [x] **Predicates:** implement variables to support context-sensitive grammars.
 - [ ] **Self-hosting:** write the parser for `.pego` files in PEGO itself (it is currently a hand-written Go parser).
 - [x] **Error recovery:** treat local errors as error nodes and continue parsing the rest of the input.
-- [ ] **Documentation:** provide detailed documentation and tutorials for each feature.
+- [x] **Documentation:** provide detailed documentation and tutorials for each feature ([tutorial](tutorial/getting-started.md), [guides](guide/README.md)).
 - [x] **Go code generator:** generate Go parser code that can be compiled and run directly.
 - [x] **Bytecode VM:** a language-independent bytecode and VMs for two execution models, recursive and iterative ([design](design/010-bytecode-vm.md)).
 - [ ] **Code generators for other languages:** generate parsers in Python and other languages.

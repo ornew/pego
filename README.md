@@ -116,6 +116,8 @@ programming language, and practical grammars for Go and Python 3 that are tested
 
 | Document | Contents |
 |:--|:--|
+| [Getting started](docs/tutorial/getting-started.md) | A step-by-step tutorial, from a first grammar to typed trees and operator precedence |
+| [Guides](docs/guide/README.md) | Trees and actions, expressions, errors and recovery, context-sensitive parsing, running parsers, code generation, streaming and incremental parsing |
 | [Language specification](spec/README.md) | The PEGO grammar language |
 | [Development guide](docs/development.md) | Architecture, repository layout, implementation status, roadmap |
 | [Bytecode specification](docs/bytecode.md) | Instruction set and VM semantics, for porting the runtime |
@@ -130,4 +132,4 @@ follow the [commit message guidelines](docs/commit-messages.md).
 
 ## License
 
-PEGO is licensed under the [Apache License 2.0](LICENSE).
+PEGO is licensed under the [Apache License 2.0](LICENCE).
