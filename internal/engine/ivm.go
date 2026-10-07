@@ -42,11 +42,16 @@ func (p *parser) iterate(vm *vmProgram, root iframe) iresult {
 	}
 }
 
-// bodyFrame runs code (a rule body or a Pratt section).
+// bodyFrame runs code (a rule body or a Pratt section). For an unmemoized call of a rule without
+// captures, the body frame also does the steps of the call (invokePlain), so that such calls,
+// the most common, push one frame instead of two.
 type bodyFrame struct {
 	b       vmBody
 	block   bool // Pratt section (reports a cut to the caller through p.cut)
 	started bool
+	call    bool        // a plain call of b.r: run the end of invokePlain when the body finishes
+	inv     invokeState // call: the state saved by the call
+	rec     int         // call: recovered errors before the call
 }
 
 func (f *bodyFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult, bool) {
@@ -62,14 +67,50 @@ func (f *bodyFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult
 	switch ev {
 	case evCall:
 		in := &vm.m.Code[f.b.ip]
-		return p.callFrame(vm.rules[in.A], int(in.B)), iresult{}, false
+		r, min := vm.rules[in.A], int(in.B)
+		if !p.memoizes(r) || p.firstCall(r) {
+			if len(r.scope.names) == 0 {
+				return p.plainCallFrame(r, min), iresult{}, false
+			}
+			return p.callFrame(r, min, false), iresult{}, false
+		}
+		return p.callFrame(r, min, true), iresult{}, false
 	case evPratt:
 		return p.prattFrame(f.b.r, f.b.min), iresult{}, false
 	}
 	if f.block && f.b.cut {
 		p.cut = true
 	}
+	if f.call { // the end of invokePlain
+		r := f.b.r
+		p.depth--
+		p.cut = f.inv.prevCut
+		p.trail = p.trail[:min2(f.inv.trail, len(p.trail))]
+		if ok {
+			v = p.finish(r, emptyFrame, v, f.inv.start)
+		} else {
+			p.pos = f.inv.start
+			p.recovered = p.recovered[:f.rec]
+		}
+		p.env = f.inv.prevEnv
+	}
 	return nil, iresult{v: v, ok: ok}, true
+}
+
+// plainCallFrame starts an unmemoized call of a rule without captures (the start of invokePlain)
+// and returns the frame that runs its body.
+func (p *parser) plainCallFrame(r *rule, min int) *bodyFrame {
+	f := p.bodyFrame(r.entry, r, min, false)
+	f.call = true
+	f.inv = invokeState{prevEnv: p.env, prevCut: p.cut, trail: len(p.trail), start: p.pos}
+	f.rec = len(p.recovered)
+	p.cut = false
+	p.depth++
+	if p.depth > p.maxDepth {
+		p.fail("nesting too deep: more than %d rule calls", p.maxDepth)
+	}
+	p.stats.Evaluated++
+	return f
 }
 
 func blockFrame(p *parser, entry int) *bodyFrame {
@@ -132,7 +173,9 @@ func (p *parser) bodyFrame(entry int, r *rule, min int, block bool) *bodyFrame {
 	return f
 }
 
-func (p *parser) callFrame(r *rule, min int) *callFrame {
+// callFrame returns the frame of a call of r, memoized or not (the caller has decided, calling
+// firstCall once).
+func (p *parser) callFrame(r *rule, min int, memoized bool) *callFrame {
 	var f *callFrame
 	if n := len(p.pool.calls); n > 0 {
 		f = p.pool.calls[n-1]
@@ -140,7 +183,7 @@ func (p *parser) callFrame(r *rule, min int) *callFrame {
 	} else {
 		f = &callFrame{}
 	}
-	*f = callFrame{r: r, min: min}
+	*f = callFrame{r: r, min: min, memoized: memoized}
 	return f
 }
 
@@ -168,13 +211,13 @@ type callFrame struct {
 	r     *rule
 	min   int
 	state int
-	// memoized is set for a memoized call (callBegin and callEnd), plain for an unmemoized call of a
-	// rule without captures (the steps of invokePlain); otherwise the call is unmemoized.
-	memoized, plain bool
-	st              callState
-	g               *growState
-	inv             invokeState
-	start, rec      int // unmemoized calls: state to restore on failure
+	// memoized is set for a memoized call (callBegin and callEnd); otherwise the call is not
+	// memoized (unmemoized calls of rules without captures use plainCallFrame instead).
+	memoized   bool
+	st         callState
+	g          *growState
+	inv        invokeState
+	start, rec int // unmemoized calls: state to restore on failure
 }
 
 const (
@@ -186,23 +229,10 @@ func (f *callFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult
 	r := f.r
 	switch f.state {
 	case cBegin:
-		if !p.memoizes(r) || p.firstCall(r) {
+		if !f.memoized {
 			f.start, f.rec = p.pos, len(p.recovered)
-			if len(r.scope.names) == 0 {
-				f.plain = true
-				f.inv = invokeState{prevEnv: p.env, prevCut: p.cut, trail: len(p.trail), start: p.pos}
-				p.cut = false
-				p.depth++
-				if p.depth > p.maxDepth {
-					p.fail("nesting too deep: more than %d rule calls", p.maxDepth)
-				}
-				p.stats.Evaluated++
-				f.state = cInvoked
-				return p.bodyFrame(r.entry, r, f.min, false), iresult{}, false
-			}
 			return f.invoke(p), iresult{}, false
 		}
-		f.memoized = true
 		st, v, ok, hit := p.callBegin(r, f.min)
 		if hit {
 			return nil, iresult{v: v, ok: ok}, true
@@ -213,20 +243,6 @@ func (f *callFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult
 		}
 		return f.invoke(p), iresult{}, false
 	default: // cInvoked
-		if f.plain { // the end of invokePlain
-			v, ok := res.v, res.ok
-			p.depth--
-			p.cut = f.inv.prevCut
-			p.trail = p.trail[:min2(f.inv.trail, len(p.trail))]
-			if ok {
-				v = p.finish(r, emptyFrame, v, f.start)
-			} else {
-				p.pos = f.start
-				p.recovered = p.recovered[:f.rec]
-			}
-			p.env = f.inv.prevEnv
-			return nil, iresult{v: v, ok: ok}, true
-		}
 		v, ok := p.invokeEnd(r, &f.inv, res.v, res.ok)
 		if !f.memoized {
 			if !ok {

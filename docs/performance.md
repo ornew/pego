@@ -492,6 +492,16 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 - Effect (min of 6 interleaved runs, Apple M3 Max): both VMs 1–5% faster on full parses (JSON bytecode 18.8 →
   18.0 ms, XML 19.0 → 18.2 ms) and 2–6% on recognition, including the error-recovery workload.
 
+### 34. One frame per plain call in the iterative VM
+
+- A rule call in the iterative VM pushed a call frame, which pushed a body frame: two frame pushes, pops and dynamic
+  dispatches per call. The most common call, an unmemoized call of a rule without captures (change 24), is now run
+  by the body frame alone (`plainCallFrame`), which does the call's first steps when it is pushed and the last ones
+  when the body finishes. The caller decides once whether to memoize and passes the decision to the call frame.
+- Effect (min of 8 interleaved runs, Apple M3 Max, iterative VM): full parses JSON 24.3 → 22.0 ms, CSV 9.9 → 9.2 ms,
+  XML 24.1 → 21.9 ms, Arith_Pratt 20.3 → 19.6 ms; recognition JSON 18.4 → 14.5 ms, CSV 6.1 → 5.3 ms, XML 21.2 →
+  18.9 ms; minilang unchanged within noise.
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -531,7 +541,7 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–33 are done. Next candidates, in order:
+Changes 13–34 are done. Next candidates, in order:
 
 1. Inlining small rules at compile time; the iterative VM's frame dispatch (an interface call per step).
 2. Document reparses: shifting reused subtrees still copies them (positions are absolute in nodes).
