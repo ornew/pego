@@ -168,6 +168,16 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 		return n, err
 
 	case *grammar.Call:
+		if t.Func == "concat" {
+			base := len(c.p.kidStack)
+			for _, a := range t.Args {
+				if err := c.pushConcatArg(a); err != nil {
+					c.p.dropKids(base)
+					return nil, err
+				}
+			}
+			return c.listNode(c.p.kids(base)), nil
+		}
 		// The arguments are kept on the expression stack, as in vmProgram.eval: lambdas called by the
 		// built-in push above them, and built-ins do not retain args.
 		p := c.p
@@ -469,51 +479,12 @@ func (c *evalCtx) builtin(fn string, args []any) (any, error) {
 			}
 		}
 		return acc, nil
-	case "map":
-		f, ok := args[1].(function)
-		if !ok || f.arity() != 1 {
-			return nil, errors.New("map: second argument must be a function of one parameter")
-		}
-		items, err := listItems("map", args[0])
-		if err != nil {
-			return nil, err
-		}
+	case "map", "list", "concat":
 		// The elements are gathered on kidStack; lambdas that build lists push above them.
 		base := len(c.p.kidStack)
-		for _, it := range items {
-			v, err := f.apply(nodeOrNil(it), nil)
-			if err != nil {
-				c.p.dropKids(base)
-				return nil, err
-			}
-			n, err := asNode("map", v)
-			if err != nil {
-				c.p.dropKids(base)
-				return nil, err
-			}
-			c.p.kidStack = append(c.p.kidStack, n)
-		}
-		return c.listNode(c.p.kids(base)), nil
-	case "list":
-		base := len(c.p.kidStack)
-		for _, a := range args {
-			n, err := asNode("list", a)
-			if err != nil {
-				c.p.dropKids(base)
-				return nil, err
-			}
-			c.p.kidStack = append(c.p.kidStack, n)
-		}
-		return c.listNode(c.p.kids(base)), nil
-	case "concat":
-		base := len(c.p.kidStack)
-		for _, a := range args {
-			items, err := listItems("concat", a)
-			if err != nil {
-				c.p.dropKids(base)
-				return nil, err
-			}
-			c.p.kidStack = append(c.p.kidStack, items...)
+		if err := c.pushElems(fn, args); err != nil {
+			c.p.dropKids(base)
+			return nil, err
 		}
 		return c.listNode(c.p.kids(base)), nil
 	default:
@@ -549,6 +520,84 @@ func (c *evalCtx) textOf(x grammar.Term) (string, error) {
 		return c.p.text(v.Start, v.End), nil
 	}
 	return "", fmt.Errorf("text: invalid argument %s", typeName(v))
+}
+
+// pushElems pushes onto kidStack the elements of the list that the list built-in fn (map, list
+// or concat) makes from args.
+func (c *evalCtx) pushElems(fn string, args []any) error {
+	switch fn {
+	case "map":
+		f, ok := args[1].(function)
+		if !ok || f.arity() != 1 {
+			return errors.New("map: second argument must be a function of one parameter")
+		}
+		items, err := listItems("map", args[0])
+		if err != nil {
+			return err
+		}
+		for _, it := range items {
+			v, err := f.apply(nodeOrNil(it), nil)
+			if err != nil {
+				return err
+			}
+			n, err := asNode("map", v)
+			if err != nil {
+				return err
+			}
+			c.p.kidStack = append(c.p.kidStack, n)
+		}
+	case "list":
+		for _, a := range args {
+			n, err := asNode("list", a)
+			if err != nil {
+				return err
+			}
+			c.p.kidStack = append(c.p.kidStack, n)
+		}
+	case "concat":
+		for _, a := range args {
+			items, err := listItems("concat", a)
+			if err != nil {
+				return err
+			}
+			c.p.kidStack = append(c.p.kidStack, items...)
+		}
+	}
+	return nil
+}
+
+// pushConcatArg pushes onto kidStack the elements of t, an argument of concat. If t is itself a
+// call of a list built-in, its elements are pushed directly, without building the intermediate
+// list (concat(list($first), map($rest, ...)) is the common way to build a list).
+func (c *evalCtx) pushConcatArg(t grammar.Term) error {
+	if call, ok := t.(*grammar.Call); ok && (call.Func == "list" || call.Func == "map" && len(call.Args) == 2) {
+		p := c.p
+		base := len(p.estack)
+		for _, a := range call.Args {
+			v, err := c.eval(a)
+			if err != nil {
+				p.estack = p.estack[:base]
+				return err
+			}
+			p.estack = append(p.estack, v)
+		}
+		err := c.pushElems(call.Func, p.estack[base:])
+		p.estack = p.estack[:base]
+		return err
+	}
+	if call, ok := t.(*grammar.Call); ok && call.Func == "concat" {
+		for _, a := range call.Args {
+			if err := c.pushConcatArg(a); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	v, err := c.eval(t)
+	if err != nil {
+		return err
+	}
+	return c.pushElems("concat", []any{v})
 }
 
 func listItems(fn string, v any) ([]*Node, error) {

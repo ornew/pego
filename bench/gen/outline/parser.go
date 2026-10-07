@@ -1481,28 +1481,39 @@ func rtFold(fn string, right bool, acc, list any, f func(acc, item any) any) any
 // (which fails the parse) or the predicate (which pops what was gathered).
 
 func (c *actx) mapList(list any, f func(item any) any) any {
-	items := listItems("map", list)
 	base := len(c.p.kidStack)
-	for _, it := range items {
-		n := asNode("map", f(nodeOrNil(it)))
-		c.p.kidStack = append(c.p.kidStack, n)
-	}
-	return c.listNode(c.p.kids(base))
+	c.pushMap(list, f)
+	return c.endList(base)
 }
 
 func (c *actx) list(args ...any) any {
 	base := len(c.p.kidStack)
+	c.pushList(args...)
+	return c.endList(base)
+}
+
+// pushMap, pushList and pushItems push the elements that map, list and concat make from their
+// arguments. A concat call is generated as pushes for its arguments followed by endList, so
+// that list and map arguments build no intermediate list.
+
+func (c *actx) pushMap(list any, f func(item any) any) {
+	for _, it := range listItems("map", list) {
+		c.p.kidStack = append(c.p.kidStack, asNode("map", f(nodeOrNil(it))))
+	}
+}
+
+func (c *actx) pushList(args ...any) {
 	for _, a := range args {
 		c.p.kidStack = append(c.p.kidStack, asNode("list", a))
 	}
-	return c.listNode(c.p.kids(base))
 }
 
-func (c *actx) concat(args ...any) any {
-	base := len(c.p.kidStack)
-	for _, a := range args {
-		c.p.kidStack = append(c.p.kidStack, listItems("concat", a)...)
-	}
+func (c *actx) pushItems(v any) {
+	c.p.kidStack = append(c.p.kidStack, listItems("concat", v)...)
+}
+
+// endList returns a list of the elements pushed since base.
+func (c *actx) endList(base int) any {
 	return c.listNode(c.p.kids(base))
 }
 
@@ -1776,7 +1787,9 @@ func init() {
 	rules[1].body = func(p *parser, _ int) (*Node, bool) { return p.e14() }
 	rules[1].action = func(c *actx) any { return c.mapList(c.item(1), func(l_59 any) any { return c.member(l_59, "i") }) }
 	rules[2].body = func(p *parser, _ int) (*Node, bool) { return p.e24() }
-	rules[2].action = func(c *actx) any { return c.newStruct("Item", "Text", c.cap(1), "Children", c.concat(c.cap(2))) }
+	rules[2].action = func(c *actx) any {
+		return c.newStruct("Item", "Text", c.cap(1), "Children", func() any { b := len(c.p.kidStack); c.pushItems(c.cap(2)); return c.endList(b) }())
+	}
 	rules[3].body = func(p *parser, _ int) (*Node, bool) { return p.e35() }
 	rules[3].action = func(c *actx) any { return c.cap(1) }
 	rules[4].body = func(p *parser, _ int) (*Node, bool) { return p.e39() }

@@ -517,6 +517,15 @@ func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) str
 		}
 		return "c.newStruct(" + strings.Join(args, ", ") + ")"
 	case *grammar.Call:
+		if t.Func == "concat" {
+			// Push the elements of list, map and concat arguments directly (see
+			// evalCtx.pushConcatArg).
+			var b strings.Builder
+			b.WriteString("func() any { b := len(c.p.kidStack); ")
+			g.concatParts(&b, t, s, locals)
+			b.WriteString("return c.endList(b) }()")
+			return b.String()
+		}
 		args := make([]string, len(t.Args))
 		for i, a := range t.Args {
 			if _, ok := a.(*grammar.Lambda); !ok {
@@ -556,6 +565,27 @@ func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) str
 		return fmt.Sprintf("rtUnary(%q, %s)", t.Op, g.term(t.X, s, locals))
 	}
 	panic(fmt.Sprintf("unsupported term %T", t))
+}
+
+// concatParts writes the statements that push the elements of the arguments of the concat call t.
+func (g *generator) concatParts(b *strings.Builder, t *grammar.Call, s *scope, locals map[string]string) {
+	for _, a := range t.Args {
+		call, ok := a.(*grammar.Call)
+		switch {
+		case ok && call.Func == "list":
+			args := make([]string, len(call.Args))
+			for i, x := range call.Args {
+				args[i] = g.term(x, s, locals)
+			}
+			b.WriteString("c.pushList(" + strings.Join(args, ", ") + "); ")
+		case ok && call.Func == "map" && len(call.Args) == 2:
+			fmt.Fprintf(b, "c.pushMap(%s, %s); ", g.term(call.Args[0], s, locals), g.lambda(call.Args[1], s, locals))
+		case ok && call.Func == "concat":
+			g.concatParts(b, call, s, locals)
+		default:
+			b.WriteString("c.pushItems(" + g.term(a, s, locals) + "); ")
+		}
+	}
 }
 
 func (g *generator) lambda(t grammar.Term, s *scope, locals map[string]string) string {

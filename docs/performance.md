@@ -522,6 +522,17 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 - Effect (min of 12 interleaved runs, Apple M3 Max, XML): closure 14.1 → 13.8 ms, generated 9.9 → 9.6 ms, recognition
   11.7 → 11.4 ms; 19k → 1.1k allocations.
 
+### 37. No intermediate lists in `concat`
+
+- `concat(list($first), map($rest, (r) => $r.x))`, the usual way to build a list from a first element and the rest,
+  built two lists only for `concat` to copy their elements: about 19k list nodes per JSON parse. When an argument of
+  `concat` is itself a call of `list`, `map` or `concat`, the closure backend now pushes that call's elements
+  directly onto the stack `concat` collects on, and the code generator emits the same pushes. The VMs still build the
+  intermediate lists (fusing them there would take new instructions).
+- Effect (min of 12 interleaved runs, Apple M3 Max): JSON 14.4 → 14.1 ms (closure), 10.0 → 9.8 ms (generated), 21.4 →
+  20.0 MB per parse; CSV 6.6 → 6.2 ms (closure), 4.8 → 4.5 ms (generated), 15.6 → 14.0 MB; minilang unchanged within
+  noise.
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -561,7 +572,7 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–36 are done. Next candidates, in order:
+Changes 13–37 are done. Next candidates, in order:
 
 1. Inlining small rules at compile time; the iterative VM's frame dispatch (an interface call per step).
 2. Document reparses: shifting reused subtrees still copies them (positions are absolute in nodes).
