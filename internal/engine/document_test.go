@@ -245,6 +245,11 @@ func TestDocumentEditText(t *testing.T) {
 				want = newInput(string(ref), CodePoints)
 			}
 			got := doc.in
+			for _, in := range []*input{&got, &want} { // the offset table is built on demand
+				if in.srcOK && in.unit == CodePoints && in.offs == nil {
+					in.buildOffs()
+				}
+			}
 			if string(got.in) != string(want.in) || string(got.bs) != string(want.bs) || got.src != want.src ||
 				got.srcOK != want.srcOK || !slices.Equal(got.offs, want.offs) {
 				t.Fatalf("%v, edit %d: [%d,%d) -> %q: text or offsets differ from a fresh read", unit, i, start, end, piece)

@@ -451,6 +451,17 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 - Effect (min of 8 interleaved runs, Apple M3 Max, one-character edit to minilang plus reparse): 1.72 → 1.20 ms
   (closure), 1.76 → 1.20 ms (bytecode), 1.77 → 1.25 ms (iterative); 20k → 0.15k allocations, 3.0 → 2.4 MB.
 
+### 30. Building the code-point offset table on demand
+
+- In code-point mode, preparing the input made three passes over it: converting it to code points, checking that it
+  is valid UTF-8, and building the code-point-to-byte offset table that token text uses (change 10). In profiles of
+  recognition this was about 4.5% of the time, though recognition rarely needs token text.
+- The input is now decoded and checked in one pass, and the offset table is built the first time `text` needs it
+  (and before a `Document` edit splices it).
+- Effect (min of 6 interleaved runs, Apple M3 Max): recognition JSON 9.6 → 9.1 ms (closure), 13.6 → 12.9 ms
+  (bytecode), CSV 4.2 → 3.8 ms (closure), 5.2 → 4.8 ms (bytecode), with 1 MB less allocated per parse; full parses and
+  XML recognition (whose predicates read token text) unchanged within noise.
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -490,7 +501,7 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–29 are done. Next candidates, in order:
+Changes 13–30 are done. Next candidates, in order:
 
 1. Inlining small rules at compile time; the iterative VM's frame dispatch (an interface call per step).
 2. Document reparses: shifting reused subtrees still copies them (positions are absolute in nodes).

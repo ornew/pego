@@ -73,8 +73,9 @@ type input struct {
 	eof      bool
 	// src is the whole input as a string (unused for streams). If srcOK, text returns substrings
 	// of src without building new strings. In code points, offs[i] is the byte offset of position i
-	// (its length is the number of characters + 1). For input containing invalid UTF-8, text in code
-	// points returns strings with U+FFFD substituted, so src is not used.
+	// (its length is the number of characters + 1); it is built when text first needs it, which a
+	// recognition often never does. For input containing invalid UTF-8, text in code points returns
+	// strings with U+FFFD substituted, so src is not used.
 	src   string
 	srcOK bool
 	offs  []int32
@@ -82,20 +83,17 @@ type input struct {
 
 // setSource records the whole input string s for use by text.
 func (in *input) setSource(s string) {
-	in.src, in.srcOK, in.offs = s, false, nil
-	if in.unit == Bytes {
-		in.srcOK = true
-		return
-	}
-	if !utf8.ValidString(s) || len(s) > 1<<31-1 {
-		return
-	}
+	in.src, in.offs = s, nil
+	in.srcOK = in.unit == Bytes || utf8.ValidString(s) && len(s) <= 1<<31-1
+}
+
+// buildOffs builds the offset table of src (code points).
+func (in *input) buildOffs() {
 	in.offs = make([]int32, 0, len(in.in)+1)
-	for i := range s {
+	for i := range in.src {
 		in.offs = append(in.offs, int32(i))
 	}
-	in.offs = append(in.offs, int32(len(s)))
-	in.srcOK = true
+	in.offs = append(in.offs, int32(len(in.src)))
 }
 
 // replace replaces the positions [start, end) of a fully loaded input with text and returns the
@@ -119,6 +117,9 @@ func (in *input) replace(start, end int, text string) (delta int) {
 		in.setSource(string(in.in))
 		return delta
 	}
+	if in.offs == nil {
+		in.buildOffs()
+	}
 	from, to := in.offs[start], in.offs[end]
 	in.src = in.src[:from] + enc + in.src[to:]
 	added := make([]int32, 0, len(ins))
@@ -137,10 +138,23 @@ func newInput(s string, unit Unit) input {
 	in := input{unit: unit, eof: true, baseLine: 1, baseCol: 1}
 	if unit == Bytes {
 		in.bs = []byte(s)
-	} else {
-		in.in = []rune(s)
+		in.setSource(s)
+		return in
 	}
-	in.setSource(s)
+	// Decode and check validity in one pass (a U+FFFD that decodes from three bytes is valid).
+	in.in = make([]rune, utf8.RuneCountInString(s))
+	valid := true
+	i := 0
+	for off, r := range s {
+		if r == utf8.RuneError && valid {
+			if _, size := utf8.DecodeRuneInString(s[off:]); size == 1 {
+				valid = false
+			}
+		}
+		in.in[i] = r
+		i++
+	}
+	in.src, in.srcOK = s, valid && len(s) <= 1<<31-1
 	return in
 }
 
@@ -243,6 +257,9 @@ func (in *input) text(start, end int) string {
 	if in.srcOK {
 		if in.unit == Bytes {
 			return in.src[start:end]
+		}
+		if in.offs == nil {
+			in.buildOffs()
 		}
 		return in.src[in.offs[start]:in.offs[end]]
 	}
