@@ -11,6 +11,7 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -150,7 +151,7 @@ func formatSource(name string, src []byte, write, list bool, stdout io.Writer) e
 	}
 	g, err := pego.ParseGrammar(string(src))
 	if err != nil {
-		return fmt.Errorf("%s:%w", name, err)
+		return fileError(name, err)
 	}
 	out := grammar.Format(g)
 	changed := out != string(src)
@@ -206,7 +207,7 @@ func convertCmd(args []string, stdout io.Writer) error {
 	if target != "pego" && target != "json" {
 		return fmt.Errorf("convert: unknown format %q (want pego or json)", target)
 	}
-	g, err := loadGrammar(path)
+	g, _, err := loadGrammar(path)
 	if err != nil {
 		return err
 	}
@@ -223,37 +224,62 @@ func convertCmd(args []string, stdout io.Writer) error {
 	return os.WriteFile(*output, out, 0o644)
 }
 
-func loadGrammar(path string) (*grammar.Grammar, error) {
+// fileError prefixes each line of err (one per error when there are several) with the name of
+// the file it is about. Lines with a position ("line:col: ...") are joined to the name with a
+// colon alone, like compiler messages.
+func fileError(name string, err error) error {
+	lines := strings.Split(err.Error(), "\n")
+	for i, l := range lines {
+		if l != "" && l[0] >= '0' && l[0] <= '9' {
+			lines[i] = name + ":" + l
+		} else {
+			lines[i] = name + ": " + l
+		}
+	}
+	return &wrappedError{msg: strings.Join(lines, "\n"), err: err}
+}
+
+// wrappedError is an error with a rewritten message that still unwraps to the original.
+type wrappedError struct {
+	msg string
+	err error
+}
+
+func (e *wrappedError) Error() string { return e.msg }
+func (e *wrappedError) Unwrap() error { return e.err }
+
+// loadGrammar reads the grammar file at path. For a compiled grammar, it also returns the start
+// rule saved in it.
+func loadGrammar(path string) (g *grammar.Grammar, saved string, err error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if pego.IsCompiled(data) {
 		p, err := pego.LoadParser(data)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %w", path, err)
+			return nil, "", fmt.Errorf("%s: %w", path, err)
 		}
 		if p.Grammar() == nil {
-			return nil, fmt.Errorf("%s: the compiled grammar omits the AST", path)
+			return nil, "", fmt.Errorf("%s: the compiled grammar omits the AST", path)
 		}
-		return p.Grammar(), nil
+		return p.Grammar(), p.Start(), nil
 	}
-	var g *grammar.Grammar
 	if strings.HasSuffix(path, ".json") {
 		g, err = grammar.UnmarshalJSON(data)
 	} else {
 		g, err = pego.ParseGrammar(string(data))
 	}
 	if err != nil {
-		return nil, fmt.Errorf("%s:%w", path, err)
+		return nil, "", fileError(path, err)
 	}
-	return g, nil
+	return g, "", nil
 }
 
 func parse(args []string, stdin io.Reader, stdout io.Writer) error {
 	fs := flag.NewFlagSet("parse", flag.ContinueOnError)
 	grammarPath := fs.String("g", "", "grammar file (.pego, .json, or .pegoc)")
-	start := fs.String("s", "main", "start rule name")
+	start := fs.String("s", "", "start rule name (default: the one saved in a .pegoc, otherwise main)")
 	input := fs.String("i", "", "input string (default: standard input)")
 	format := fs.String("f", "json", "output format: json or sexpr")
 	stream := fs.Bool("stream", false, "print each #stream element of the start rule on its own line as soon as it matches")
@@ -355,7 +381,7 @@ func gen(args []string, stdout io.Writer) error {
 	fs := flag.NewFlagSet("gen", flag.ContinueOnError)
 	grammarPath := fs.String("g", "", "grammar file (.pego, .json, or .pegoc)")
 	pkg := fs.String("pkg", "", "package name of the generated code")
-	start := fs.String("s", "main", "start rule of the generated Parse function")
+	start := fs.String("s", "", "start rule of the generated Parse function (default: the one saved in a .pegoc, otherwise main)")
 	output := fs.String("o", "", "output file (default: standard output)")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -363,13 +389,16 @@ func gen(args []string, stdout io.Writer) error {
 	if *grammarPath == "" || *pkg == "" {
 		return fmt.Errorf("-g and -pkg are required")
 	}
-	g, err := loadGrammar(*grammarPath)
+	g, saved, err := loadGrammar(*grammarPath)
 	if err != nil {
 		return err
 	}
+	if *start == "" {
+		*start = cmp.Or(saved, "main")
+	}
 	code, err := pego.GenerateGo(g, *pkg, *start)
 	if err != nil {
-		return fmt.Errorf("%s:%w", *grammarPath, err)
+		return fileError(*grammarPath, err)
 	}
 	if *output == "" {
 		_, err = stdout.Write(code)
@@ -380,7 +409,8 @@ func gen(args []string, stdout io.Writer) error {
 
 // loadParser creates a parser from the grammar file at path, starting at
 // the rule start. A compiled grammar is loaded as is, without being
-// compiled again.
+// compiled again; if start is empty, it keeps the start rule saved in it,
+// and other grammars start at main.
 func loadParser(path, start string) (*pego.Parser, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -391,15 +421,18 @@ func loadParser(path, start string) (*pego.Parser, error) {
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", path, err)
 		}
+		if start == "" {
+			return p, nil
+		}
 		return p.WithStart(start)
 	}
-	g, err := loadGrammar(path)
+	g, _, err := loadGrammar(path)
 	if err != nil {
 		return nil, err
 	}
-	p, err := pego.Compile(g, start)
+	p, err := pego.Compile(g, cmp.Or(start, "main"))
 	if err != nil {
-		return nil, fmt.Errorf("%s:%w", path, err)
+		return nil, fileError(path, err)
 	}
 	return p, nil
 }
@@ -407,7 +440,7 @@ func loadParser(path, start string) (*pego.Parser, error) {
 func compileCmd(args []string) error {
 	fs := flag.NewFlagSet("compile", flag.ContinueOnError)
 	grammarPath := fs.String("g", "", "grammar file (.pego, .json, or .pegoc)")
-	start := fs.String("s", "main", "default start rule name")
+	start := fs.String("s", "", "start rule saved as the default (default: the one saved in a .pegoc, otherwise main)")
 	output := fs.String("o", "", "output file (.pegoc)")
 	noAST := fs.Bool("no-ast", false, "omit the grammar AST (the result runs only on the bytecode backends)")
 	if err := fs.Parse(args); err != nil {

@@ -166,7 +166,7 @@ pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>]
 |:--|:--|:--|
 | `-g` | (required) | The grammar: `.pego`, `.json`, or a `.pegoc` that contains the AST |
 | `-pkg` | (required) | The package name of the generated code. It must be a valid Go identifier. |
-| `-s` | `main` | The start rule of the generated `Parse` function |
+| `-s` | saved in a `.pegoc`, otherwise `main` | The start rule of the generated `Parse` function |
 | `-o` | standard output | The output file |
 
 Details:
@@ -182,15 +182,14 @@ Details:
   $ pego gen -g typeerr.pego -pkg pairs -o /dev/null
   pego: typeerr.pego:2:34: undefined capture $y
   $ pego gen -g pairs.pego -pkg pairs -s nope -o /dev/null
-  pego: pairs.pego:start rule nope is not defined
+  pego: pairs.pego: start rule nope is not defined
   $ pego gen -g pairs.pego -pkg foo-bar -o /dev/null
   pego: pairs.pego:generated code does not compile: 4:12: expected ';', found '-'
   ```
 
 - A `.pegoc` saved with `-no-ast` cannot be used, because code generation needs the grammar:
   `pego: pairs-noast.pegoc: the compiled grammar omits the AST`.
-- As with the other commands, `-s` is always passed on (default `main`); it does not read the default start rule saved
-  in a `.pegoc`.
+- As with the other commands, without `-s` the start rule saved in a `.pegoc` is used (`main` for other grammars).
 
 ### From Go
 

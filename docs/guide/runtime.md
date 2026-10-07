@@ -213,7 +213,8 @@ _, err = keyParser.Parse("abc=1")
 fmt.Println(err) // 1:4: syntax error: expected (?a-zあ-ん), end of input
 ```
 
-On the command line, `-s` selects the start rule (default `main`) for `parse`, `compile` and `gen`.
+On the command line, `-s` selects the start rule for `parse`, `compile` and `gen` (default: the one saved in a
+`.pegoc`, otherwise `main`).
 
 ## Parsing, errors and concurrency
 
@@ -556,9 +557,8 @@ $ pego convert -to pego pairs-noast.pegoc
 pego: pairs-noast.pegoc: the compiled grammar omits the AST
 ```
 
-> **Caveat.** `pego parse` and `pego gen` always pass their `-s` flag (default `main`) as the start rule, so the default
-> start rule saved by `pego compile -s` is not used by the command line; pass `-s pair` again when you parse
-> `pair.pegoc`. `LoadParser` in Go does use the saved start rule.
+Without `-s`, `pego parse`, `pego gen` and `pego compile` use the start rule saved in a `.pegoc` (here `pair`), just as
+`LoadParser` does in Go; `-s` overrides it. For `.pego` and `.json` grammars the default is `main`.
 
 ## Memoization
 
@@ -606,7 +606,7 @@ pego parse -g <grammar> [-s <rule>] [-i <input>] [-f json|sexpr] [-stream] [-che
 | Flag | Default | Meaning |
 |:--|:--|:--|
 | `-g` | (required) | The grammar |
-| `-s` | `main` | Start rule |
+| `-s` | saved in a `.pegoc`, otherwise `main` | Start rule |
 | `-i` | standard input | The input text. Without `-i`, input is read from standard input. |
 | `-f` | `json` | Output format: `json` (indented, like `encoding/json`'s `MarshalIndent`) or `sexpr` (`Node.String()`) |
 | `-check` | off | Recognition only: print `ok`, or the syntax error |

@@ -173,7 +173,7 @@ func TestErrors(t *testing.T) {
 		t.Errorf("got %v", err)
 	}
 	g := writeFile(t, "kv.pego", kv)
-	if _, err := runCLI(t, "", "parse", "-g", g, "-s", "nope"); err == nil || !strings.Contains(err.Error(), "start rule nope is not defined") {
+	if _, err := runCLI(t, "", "parse", "-g", g, "-s", "nope"); err == nil || !strings.HasSuffix(err.Error(), ".pego: start rule nope is not defined") {
 		t.Errorf("got %v", err)
 	}
 	if _, err := runCLI(t, ""); err == nil || !strings.Contains(err.Error(), "usage") {
@@ -264,6 +264,28 @@ func TestCompile(t *testing.T) {
 	}
 	if _, err := runCLI(t, "", "convert", "-to", "pego", bare); err == nil || !strings.Contains(err.Error(), "omits the AST") {
 		t.Errorf("got %v", err)
+	}
+	// Without -s, the start rule saved by compile -s is used.
+	other := filepath.Join(t.TempDir(), "other.pegoc")
+	if _, err := runCLI(t, "", "compile", "-g", g, "-s", "other", "-o", other); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := runCLI(t, "", "parse", "-g", other, "-i", "x", "-f", "sexpr"); err != nil || got != `"x"@other`+"\n" {
+		t.Errorf("got %q, %v", got, err)
+	}
+	if got, err := runCLI(t, "", "parse", "-g", other, "-s", "main", "-i", "a=1", "-f", "sexpr"); err != nil || got != `(Seq "a" "=" "1" k="a" v="1")@main`+"\n" {
+		t.Errorf("got %q, %v", got, err)
+	}
+	fromOther, err := runCLI(t, "", "gen", "-g", other, "-pkg", "p")
+	if err != nil {
+		t.Fatal(err)
+	}
+	withOther, err := runCLI(t, "", "gen", "-g", g, "-pkg", "p", "-s", "other")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fromOther != withOther {
+		t.Error("gen from a .pegoc does not use its saved start rule")
 	}
 	broken := writeFile(t, "broken.pegoc", "PEGOC\x00\x01garbage")
 	if _, err := runCLI(t, "", "parse", "-g", broken, "-i", "a=1"); err == nil || !strings.Contains(err.Error(), "broken.pegoc") {

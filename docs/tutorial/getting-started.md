@@ -447,7 +447,7 @@ pego parse -g bad-type.pego -f sexpr -i 'a=1'   # ... new Entry{Key: $v, Value: 
 
 ```text
 pego: bad-type.pego:20:64: cannot use Number | String | Bool as Key in field Key of Entry
-20:73: cannot use Key as Number | String | Bool in field Value of Entry
+bad-type.pego:20:73: cannot use Key as Number | String | Bool in field Value of Entry
 ```
 
 and misspelling a field name:
@@ -726,7 +726,7 @@ pego: bad.pego:1:12: undefined rule item
 Asking for a start rule that does not exist with `pego parse -g config.pego -s nosuch -i a` fails the same way:
 
 ```text
-pego: config.pego:start rule nosuch is not defined
+pego: config.pego: start rule nosuch is not defined
 ```
 
 ## 8. Next steps
