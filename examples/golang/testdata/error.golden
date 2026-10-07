@@ -1,0 +1,6 @@
+(File Decls=[(GenDecl Specs=[(ImportSpec Name=nil Path=StringLit"\"fmt\""@stringLit)] Tok="import"@kw_import) (FuncDecl Body=(BlockStmt List=[(ReturnStmt Results=[IntLit"1"@intLit])]) Name=Ident"ok"@ident Recv=[] Type=(FuncType Params=[] Results=[(Field Type=Ident"int"@ident)] TypeParams=[])) (FuncDecl Body=(BlockStmt List=[Error"x := 1 2"{message=`10:9: expected ';' or newline`} Error"fmt.Println(x +)"{message=`11:17: expected expression`} Error"if y := "{message=`12:10: expected expression`} Error"y {\n\t\treturn\n\t}"{message=`13:3: expected expression`} (AssignStmt Lhs=[Ident"z"@ident] Rhs=[(CompositeLit Elts=[IntLit"1"@intLit IntLit"2"@intLit] Type=Ident"T"@ident)] Tok=":="@assignOp)]) Name=Ident"bad"@ident Recv=[] Type=(FuncType Params=[] Results=[] TypeParams=[])) Error"var v ="{message=`19:1: expected expression`}] Name=Ident"broken"@ident)
+error: 10:9: expected ';' or newline
+11:17: expected expression
+12:10: expected expression
+13:3: expected expression
+19:1: expected expression

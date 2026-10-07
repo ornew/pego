@@ -1,0 +1,4 @@
+(Program Body=[(Let Name=Ident"a"@ident Value=Number"1"@number) Error"let = 2;"{message=`2:5: expected a name`} Error"print(a +);"{message=`3:10: syntax error: expected "!", "(", "-", "[", "\"", "false", "true", (?0-9), (?a-zA-Z_)`} (If Cond=Ident"a"@ident Else=(Block Body=[(Assign Target=Ident"b"@ident Value=Number"3"@number)]) Then=(Block Body=[Error"let b = ;"{message=`4:16: expected an expression`}])) (Let Name=Ident"c"@ident Value=(Binary Left=Ident"a"@ident Op="*" Right=Number"2"@number))])
+error: 2:5: expected a name
+3:10: syntax error: expected "!", "(", "-", "[", "\"", "false", "true", (?0-9), (?a-zA-Z_)
+4:16: expected an expression

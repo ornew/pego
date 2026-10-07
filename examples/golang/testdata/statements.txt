@@ -1,0 +1,59 @@
+package main
+
+func main() {
+	x, y := 1, 2
+	x++
+	y--
+	x += y *
+		2
+	ch := make(chan int, 1)
+	ch <- x; <-ch
+	var done <-chan struct{}
+	if v := f(); v > 0 {
+		return
+	} else if v < 0 {
+		panic("negative")
+	} else {
+	}
+	// Composite literals in headers must be parenthesized when the type is a name.
+	if p == (Point{1, 2}) {
+	}
+	for i := 0; i < 10; i++ {
+		continue
+	}
+	for _, v := range []int{1, 2} {
+		_ = v
+	}
+	for range 3 {
+	}
+	for x < y {
+	}
+outer:
+	for {
+		select {
+		case v, ok := <-ch:
+			_, _ = v, ok
+			break outer
+		case ch <- 1:
+		case <-done:
+			goto end
+		default:
+		}
+	}
+	switch s := g(); s {
+	case 1, 2:
+		fallthrough
+	default:
+	}
+	switch t := v.(type) {
+	case nil, *int, []string, map[string]any, func() error:
+	case interface{ M() }:
+		_ = t
+	}
+	go func() {}()
+	defer println(x /* inline */, y)
+	m := map[string][]int{"a": {1}, "b": nil}
+	s := m["a"][1:]
+	z := -x * ^y &^ *p / <-ch
+end:
+}

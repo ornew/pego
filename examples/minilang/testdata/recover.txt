@@ -1,0 +1,5 @@
+let a = 1;
+let = 2;
+print(a +);
+if a { let b = ; } else { b = 3; }
+let c = a * 2;

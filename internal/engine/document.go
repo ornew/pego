@@ -1,0 +1,104 @@
+package engine
+
+import "fmt"
+
+// Document parses a text that is edited repeatedly. It reuses the memo of the previous parse for
+// the parts the edits do not affect.
+//
+// Each memo result records the input range [from, examined) it examined. For an edit
+// [start, end):
+//   - Results with examined <= start are reused as is (they examined only input before the edit).
+//   - Results with from >= end are reused with their positions shifted by the edit's length
+//     difference (they examined only input after the edit). However, results of rules whose
+//     result depends on position values, and results containing recovered errors, cannot be
+//     shifted.
+//   - All other results are discarded.
+type Document struct {
+	prog  *Program
+	start string
+	back  Backend
+	depth int   // limit on call nesting depth
+	in    input // current text (fully loaded)
+	memo  *memoTable
+	stats Stats
+}
+
+// NewDocument creates a Document that parses text with the rule start. Positions are in code
+// points.
+func (prog *Program) NewDocument(start, text string) (*Document, error) {
+	return prog.NewDocumentWith(start, text, ParseOptions{})
+}
+
+// NewDocumentWith creates a Document with options such as the position unit. Positions passed
+// to Edit use the same unit.
+func (prog *Program) NewDocumentWith(start, text string, o ParseOptions) (*Document, error) {
+	if o.Recognize {
+		return nil, fmt.Errorf("recognition is not supported for documents")
+	}
+	if _, err := prog.rule(o.Backend, start); err != nil {
+		return nil, err
+	}
+	return &Document{prog: prog, start: start, back: o.Backend, depth: o.maxDepth(o.Backend), in: newInput(text, o.Unit), memo: newMemoTable()}, nil
+}
+
+// Text returns the current text.
+func (d *Document) Text() string { return d.in.text(0, d.in.loaded()) }
+
+// Stats returns the evaluation and memo usage counts of the last Parse.
+func (d *Document) Stats() Stats { return d.stats }
+
+// Parse parses the current text.
+func (d *Document) Parse() (*Node, error) {
+	p := &parser{prog: d.prog, input: d.in, memo: d.memo, memoAll: true, maxDepth: d.depth}
+	n, err := d.prog.run(p, d.back, d.start)
+	d.stats = p.stats
+	return n, err
+}
+
+// Edit replaces [start, end) of the text (in the Document's position unit) with text.
+// With byte positions, start and end must lie on character boundaries.
+func (d *Document) Edit(start, end int, text string) error {
+	n := d.in.loaded()
+	if start < 0 || end < start || end > n {
+		return fmt.Errorf("invalid range [%d,%d) for text of length %d", start, end, n)
+	}
+	var delta int
+	if d.in.unit == Bytes {
+		cur := string(d.in.bs)
+		for _, pos := range []int{start, end} {
+			if err := validBoundary(cur, Bytes, pos); err != nil {
+				return err
+			}
+		}
+		d.in.bs = append(append(append([]byte{}, d.in.bs[:start]...), text...), d.in.bs[end:]...)
+		delta = len(text) - (end - start)
+	} else {
+		ins := []rune(text)
+		d.in.in = append(append(append([]rune{}, d.in.in[:start]...), ins...), d.in.in[end:]...)
+		delta = len(ins) - (end - start)
+	}
+	if d.in.unit == Bytes {
+		d.in.setSource(string(d.in.bs))
+	} else {
+		d.in.setSource(string(d.in.in))
+	}
+	memo := newMemoTable()
+	d.memo.each(func(e *memoEntry) {
+		k := memoKey{rule: int(e.rule), pos: e.pos, min: int(e.min), env: e.env}
+		switch {
+		case e.growing:
+		case e.examined <= start:
+			memo.put(k, e)
+		case e.from >= end && !e.positional && len(e.errs) == 0:
+			k.pos += delta
+			e.end += delta
+			e.from += delta
+			e.examined += delta
+			e.far += delta
+			e.shift += delta
+			memo.put(k, e)
+		}
+	})
+	d.memo = memo
+	return nil
+}

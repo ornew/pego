@@ -1,0 +1,2 @@
+(Program Body=[Error"let x = 1 == 2 == 3;"{message=`1:16: syntax error: expected "%", "&&", "(", "*", "+", "-", ".", "/", "//", ";", "?", "[", "||", (? \t\r\n)`}])
+error: 1:16: syntax error: expected "%", "&&", "(", "*", "+", "-", ".", "/", "//", ";", "?", "[", "||", (? \t\r\n)

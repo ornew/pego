@@ -1,0 +1,40 @@
+// JSON (RFC 8259), parsed into a typed AST.
+package json
+
+type Object struct { Members []Member }
+type Member struct { Key String, Value Value }
+type Array struct { Elements []Value }
+type String terminal  // the raw string without quotes, escapes included
+type Number terminal
+type Bool terminal
+type Null terminal
+type Value = Object | Array | String | Number | Bool | Null
+
+def main: Value = ws v:value ws $$ -> $v
+
+def value: Value = object / array / string / number / bool / null
+
+def object: Object = "{" ws ms:members? ws "}" -> new Object{Members: concat($ms)}
+def members = first:member rest:(-ws "," -ws m:member)*
+    -> concat(list($first), map($rest, (r) => $r.m))
+def member: Member = k:string ws ":" ws v:value -> new Member{Key: $k, Value: $v}
+
+def array: Array = "[" ws es:elements? ws "]" -> new Array{Elements: concat($es)}
+def elements = first:value rest:(-ws "," -ws v:value)*
+    -> concat(list($first), map($rest, (r) => $r.v))
+
+def string = "\"" s:chars "\"" -> $s
+def chars: String = (unescaped / escape)*
+def unescaped = (?^"\\\u{0}-\u{1f})
+def escape = "\\" ((?"\\/bfnrt) / "u" hex hex hex hex)
+def hex = (?0-9a-fA-F)
+
+def number: Number = "-"? int frac? exp?
+def int = "0" / (?1-9) (?0-9)*
+def frac = "." (?0-9)+
+def exp = (?eE) (?+\-)? (?0-9)+
+
+def bool: Bool = "true" / "false"
+def null: Null = "null"
+
+def ws = (? \t\r\n)*

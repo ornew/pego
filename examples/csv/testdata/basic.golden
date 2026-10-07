@@ -1,0 +1,1 @@
+(Seq [(Record Fields=[Field"name"@field Field"age"@field Field"note"@field]) (Record Fields=[Field"alice"@field Field"30"@field Field"\"likes \"\"quotes\"\"\""@field]) (Record Fields=[Field"bob"@field Field""@field Field"\"multi\nline\""@field]) (Record Fields=[Field"\"\""@field Field"x"@field Field""@field])])@main

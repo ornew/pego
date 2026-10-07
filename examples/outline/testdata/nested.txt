@@ -1,0 +1,8 @@
+fruits
+  apple
+  citrus
+    lemon
+    lime
+
+vegetables
+  carrot

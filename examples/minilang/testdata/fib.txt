@@ -1,0 +1,16 @@
+// Fibonacci numbers
+fn fib(n) {
+    if n < 2 {
+        return n;
+    } else {
+        return fib(n - 1) + fib(n - 2);
+    }
+}
+
+let xs = [fib(10), -fib(3) * 2];
+let i = 0;
+while i < len(xs) && !done {
+    print(xs[i], i == 0 ? "first" : "rest");
+    i = i + 1;
+}
+obj.field.call("a\"b")[0];

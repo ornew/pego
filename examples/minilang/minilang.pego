@@ -1,0 +1,97 @@
+// A small programming language. Statements are PEG rules and expressions a Pratt expression, nested in each other.
+package mini
+
+type Program struct { Body []Stmt }
+
+// --- Statements ---
+type Let struct { Name Ident, Value Expr }
+type Assign struct { Target Expr, Value Expr }
+type If struct { Cond Expr, Then Block, Else *(If | Block) }
+type While struct { Cond Expr, Body Block }
+type Return struct { Value *Expr }
+type Func struct { Name Ident, Params []Ident, Body Block }
+type ExprStmt struct { X Expr }
+type Block struct { Body []Stmt }
+type Stmt = Let | Assign | If | While | Return | Func | ExprStmt | Block
+
+// --- Expressions ---
+type Ident terminal
+type Number terminal
+type String terminal
+type Bool terminal
+type Binary struct { Left Expr, Op Match, Right Expr }
+type Unary struct { Op Match, X Expr }
+type Call struct { Fn Expr, Args []Expr }
+type Index struct { X Expr, Index Expr }
+type Member struct { X Expr, Name Ident }
+type Cond struct { Cond Expr, Then Expr, Else Expr }
+type ArrayLit struct { Elems []Expr }
+type Expr = Ident | Number | String | Bool | Binary | Unary | Call | Index | Member | Cond | ArrayLit
+
+def main: Program = body:stmts ws $$ -> new Program{Body: $body}
+
+def stmts = ss:(-ws s:stmt)* -> map($ss, (x) => $x.s)
+def block: Block = "{" body:stmts ws "}" -> new Block{Body: $body}
+
+// If a statement fails to parse, skip to the next ";" (or up to the next "{" or "}"), record the error and continue.
+def stmt: Stmt = s:(let / func / if / while / return / block / assign / exprStmt)
+    #recover(skip=(?^;{}\n)+ ";"?) -> $s
+
+def let: Let = kw_let ws n:name ws "=" v:expr ws ";" -> new Let{Name: $n, Value: $v}
+def assign: Assign = t:expr ws "=" !"=" v:expr ws ";" -> new Assign{Target: $t, Value: $v}
+def if: If = kw_if c:expr ws then:block e:else? -> new If{Cond: $c, Then: $then, Else: $e}
+def else = ws kw_else ws x:(if / block) -> $x
+def while: While = kw_while c:expr ws body:block -> new While{Cond: $c, Body: $body}
+def return: Return = kw_return v:expr? ws ";" -> new Return{Value: $v}
+def func: Func = kw_fn ws n:name ws "(" ps:params? ws ")" ws body:block
+    -> new Func{Name: $n, Params: concat($ps), Body: $body}
+def params = first:name rest:(-ws "," -ws p:name)* -> concat(list($first), map($rest, (r) => $r.p))
+def exprStmt: ExprStmt = x:expr ws ";" -> new ExprStmt{X: $x}
+
+// --- Expressions (Pratt) ---
+// When no expression is found, report a message instead of the list of expected alternatives.
+def expr: Expr = e:operation #error(message="expected an expression") -> $e
+
+def operation: Expr = pratt {
+    skip ws
+    operand number
+    operand string
+    operand bool
+    operand ident
+    operand "(" e:operation ws ")" -> $e
+    operand "[" xs:args? ws "]" -> new ArrayLit{Elems: concat($xs)}
+    level { infix right "?" t:operation ws ":" -> new Cond{Cond: $lhs, Then: $t, Else: $rhs} }
+    level { infix left "||" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix left "&&" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix none "==" / "!=" / "<=" / ">=" / "<" / ">" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix left "+" / "-" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix left "*" / "/" / "%" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { prefix "-" / "!" -> new Unary{Op: $op, X: $rhs} }
+    level {
+        postfix "(" xs:args? ws ")" -> new Call{Fn: $lhs, Args: concat($xs)}
+        postfix "[" i:operation ws "]" -> new Index{X: $lhs, Index: $i}
+        postfix "." ws n:name -> new Member{X: $lhs, Name: $n}
+    }
+}
+def args = first:expr rest:(-ws "," x:expr)* -> concat(list($first), map($rest, (r) => $r.x))
+
+// --- Lexical structure ---
+def ident: Ident = !keyword (?a-zA-Z_) idchar*
+// A name in a declaration, parameter list or member access.
+def name: Ident = i:ident #error(message="expected a name") -> $i
+def keyword = ("let" / "fn" / "if" / "else" / "while" / "return" / "true" / "false") !idchar
+def idchar = (?a-zA-Z0-9_)
+def number: Number = (?0-9)+ ("." (?0-9)+)?
+def string = "\"" s:strchars "\"" -> $s
+def strchars: String = ((?^"\\\n) / "\\" .)*
+def bool: Bool = ("true" / "false") !idchar
+
+def kw_let = "let" !idchar
+def kw_fn = "fn" !idchar
+def kw_if = "if" !idchar
+def kw_else = "else" !idchar
+def kw_while = "while" !idchar
+def kw_return = "return" !idchar
+
+// Whitespace and comments.
+def ws = ((? \t\r\n) / "//" (?^\n)*)*

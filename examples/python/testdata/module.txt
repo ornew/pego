@@ -1,0 +1,30 @@
+"""Inventory of items, grouped by category."""
+from collections import defaultdict
+import json as _json
+
+
+@dataclass(frozen=True)
+class Item(Base, metaclass=Meta):
+    name: str
+    price: float = 0.0
+
+    def total(self, count=1, *, tax=0.1) -> float:
+        return self.price * count * (1 + tax)
+
+
+def group(items, key=lambda i: i.name[0]):
+    groups = defaultdict(list)
+    for item in items:
+        if item.price <= 0 or not item.name:
+            continue
+        groups[key(item)].append(item)
+    return {k: sorted(v) for k, v in groups.items() if len(v) > 1}
+
+
+async def load(path, *paths, **options):
+    async with open(path) as f:
+        data = _json.loads(await f.read())
+    cheap = [x for x in data if x["price"] < 10]
+    while (n := len(cheap)) > 100:
+        cheap = cheap[:n // 2]
+    return cheap, -2 ** -1

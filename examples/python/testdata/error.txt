@@ -1,0 +1,9 @@
+x = 1
+y = (2 +
+def f(a, b:
+    return a
+z = f(a=1, b)
+for i in range(3):
+    print(i i)
+    total += i
+w = 3

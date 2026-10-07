@@ -1,0 +1,1 @@
+(Binary Left=(Unary Op="-" X=(Binary Left=(Binary Left=(Binary Left=Number"1"@number Op="-" Right=Number"2"@number) Op="-" Right=Number"3"@number) Op="^" Right=(Binary Left=Number"2"@number Op="^" Right=Number"0.5"@number))) Op="%" Right=Number"7"@number)

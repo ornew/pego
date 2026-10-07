@@ -1,0 +1,18 @@
+package broken
+
+import "fmt"
+
+func ok() int {
+	return 1
+}
+
+func bad() {
+	x := 1 2
+	fmt.Println(x +)
+	if y := ; y {
+		return
+	}
+	z := T{1, 2}
+}
+
+var v =

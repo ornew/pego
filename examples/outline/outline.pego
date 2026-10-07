@@ -1,0 +1,31 @@
+// An outline whose hierarchy is given by indentation. Predicates and a variable track the current indentation.
+//
+//   fruits
+//     apple
+//     citrus
+//       lemon
+//   vegetables
+package outline
+
+type Item struct {
+    Text     Match
+    Children []Item
+}
+
+def main = [indent = 0] items:block blank* $$ -> $items
+
+// Items at the current indentation.
+def block = (blank* i:item)+ -> map($1, (x) => $x.i)
+
+// A line indented exactly at the current depth, followed by its children.
+def item: Item = s:spaces [len($s) == indent] text:line eol cs:children?
+    -> new Item{Text: $text, Children: concat($cs)}
+
+// If the next line is indented deeper, read the children with that depth as the new indentation.
+// A variable definition is visible only inside this rule, so returning restores the parent's indentation.
+def children = &(blank* s:spaces) [len($s) > indent] [indent = len($s)] b:block -> $b
+
+def spaces = @" "*
+def line = @(?^\n)+
+def eol = "\n" / $$
+def blank = (? \t)* "\n"

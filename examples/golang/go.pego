@@ -1,0 +1,498 @@
+// Go source files (The Go Programming Language Specification, including generics).
+// The AST is roughly modeled on the go/ast package.
+//
+// Whitespace and automatic semicolon insertion:
+//   - Rules do not skip whitespace around themselves; the caller decides what may be skipped.
+//   - sp skips horizontal whitespace and comments without newlines. It is used after tokens
+//     that end a statement at a newline in Go (identifiers, literals, ")", "]", "}", "++", ...).
+//   - ws also skips newlines. It is used after tokens that never end a statement
+//     (binary operators, ",", "(", "[", "{", ...).
+//   - eos is a statement terminator: ";", a newline, a comment containing a newline,
+//     or a following ")" or "}" (where Go allows omitting the semicolon).
+//
+// Composite literals in statement headers: a composite literal whose type is a bare type name
+// (T{...}, pkg.T{...}, T[int]{...}) is not allowed between "if", "for" or "switch" and the
+// opening brace of the block unless it is parenthesized. Headers therefore use hexpr, a copy of
+// expr without the postfix "{...}"; only literals of type literals ([]T{...}, map[K]V{...})
+// are operands there. Brackets inside a header switch back to expr.
+// (A variable would express this too, but rules that read variables are not memoized.)
+//
+// Error recovery: a declaration or statement that fails, or is not followed by a terminator,
+// becomes an Error node covering the rest of the line (and any braced block on it).
+//
+// Known deviations from the Go specification: the grammar accepts some programs that Go
+// rejects (for example, a newline before a closing ")" without a trailing comma, a missing
+// ";" between case clauses, or "{...}" after any operand), and non-ASCII characters are all
+// treated as letters in identifiers.
+package golang
+
+// --- Files and declarations ---
+type File struct { Name Ident, Decls []Decl }
+type GenDecl struct { Tok Match, Specs []Spec }
+type FuncDecl struct { Recv []Field, Name Ident, Type FuncType, Body *BlockStmt }
+type ImportSpec struct { Name *Ident, Path StringLit }  // Name is a package name, "_" or "."
+type ValueSpec struct { Names []Ident, Type *Expr, Values []Expr }
+type TypeSpec struct { Name Ident, TypeParams []Field, Assign *Match, Type Expr }
+type Decl = GenDecl | FuncDecl
+type Spec = ImportSpec | ValueSpec | TypeSpec
+
+// A parameter, result, type parameter, struct field or interface element.
+type Field struct { Names []Ident, Type Expr, Tag *StringLit }
+
+// --- Types (types are expressions, as in go/ast) ---
+type ArrayType struct { Len *Expr, Elt Expr }  // Len is nil for slices and Ellipsis for [...]T
+type StructType struct { Fields []Field }
+type FuncType struct { TypeParams []Field, Params []Field, Results []Field }
+type InterfaceType struct { Methods []Field }
+type MapType struct { Key Expr, Value Expr }
+type ChanType struct { Dir string, Value Expr }  // Dir is "both", "send" or "recv"
+type Ellipsis struct { Elt *Expr }
+
+// --- Expressions ---
+type Ident terminal
+type IntLit terminal
+type FloatLit terminal
+type ImagLit terminal
+type CharLit terminal
+type StringLit terminal  // including the quotes
+type CompositeLit struct { Type *Expr, Elts []Expr }  // Type is nil for elided types
+type KeyValueExpr struct { Key Expr, Value Expr }
+type FuncLit struct { Type FuncType, Body BlockStmt }
+type ParenExpr struct { X Expr }
+type SelectorExpr struct { X Expr, Sel Ident }
+type IndexExpr struct { X Expr, Index Expr }
+type IndexListExpr struct { X Expr, Indices []Expr }
+type SliceExpr struct { X Expr, Low *Expr, High *Expr, Max *Expr }
+type TypeAssertExpr struct { X Expr, Type *Expr }  // Type is nil for x.(type)
+type CallExpr struct { Fun Expr, Args []Expr, Ellipsis *Match }
+type StarExpr struct { X Expr }
+type UnaryExpr struct { Op Match, X Expr }
+type BinaryExpr struct { X Expr, Op Match, Y Expr }
+type Expr = Ident | IntLit | FloatLit | ImagLit | CharLit | StringLit | CompositeLit | KeyValueExpr
+    | FuncLit | ParenExpr | SelectorExpr | IndexExpr | IndexListExpr | SliceExpr | TypeAssertExpr
+    | CallExpr | StarExpr | UnaryExpr | BinaryExpr | Ellipsis
+    | ArrayType | StructType | FuncType | InterfaceType | MapType | ChanType
+
+// --- Statements ---
+type DeclStmt struct { Decl GenDecl }
+type LabeledStmt struct { Label Ident, Stmt Stmt }
+type EmptyStmt struct {}  // only as the statement of a label followed by "}" or ";"
+type ExprStmt struct { X Expr }
+type SendStmt struct { Chan Expr, Value Expr }
+type IncDecStmt struct { X Expr, Tok Match }
+type AssignStmt struct { Lhs []Expr, Tok Match, Rhs []Expr }
+type GoStmt struct { Call Expr }
+type DeferStmt struct { Call Expr }
+type ReturnStmt struct { Results []Expr }
+type BranchStmt struct { Tok Match, Label *Ident }
+type BlockStmt struct { List []Stmt }
+type IfStmt struct { Init *Stmt, Cond Expr, Body BlockStmt, Else *(IfStmt | BlockStmt) }
+type CaseClause struct { List []Expr, Body []Stmt }  // List is absent for default
+type SwitchStmt struct { Init *Stmt, Tag *Expr, Body BlockStmt }  // the body lists CaseClauses
+type TypeSwitchStmt struct { Init *Stmt, Assign Stmt, Body BlockStmt }
+type CommClause struct { Comm *Stmt, Body []Stmt }  // Comm is nil for default
+type SelectStmt struct { Body BlockStmt }  // the body lists CommClauses
+type ForStmt struct { Init *Stmt, Cond *Expr, Post *Stmt, Body BlockStmt }
+type RangeStmt struct { Key *Expr, Value *Expr, Tok *Match, X Expr, Body BlockStmt }
+type Stmt = DeclStmt | LabeledStmt | ExprStmt | SendStmt | IncDecStmt | AssignStmt | GoStmt
+    | EmptyStmt | DeferStmt | ReturnStmt | BranchStmt | BlockStmt | IfStmt | SwitchStmt | TypeSwitchStmt
+    | SelectStmt | ForStmt | RangeStmt | CaseClause | CommClause
+
+// ===================================================================
+// Source file
+// ===================================================================
+
+def main: File = -ws p:packageClause -sp -eos ds:(-wsemi d:topDecl -sp -eos)* -wsemi $$
+    -> new File{Name: $p, Decls: map($ds, (x) => $x.d)}
+
+def packageClause = kw_package #error(message="expected 'package' clause") -sp n:name -> $n
+
+// On a syntax error, skip the rest of the line (and any braced block on it) and continue.
+// The terminator is checked inside, so that "var v = 1 2" is an error rather than "var v = 1".
+def topDecl: Decl = d:topDeclT #recover(skip=skipLine) -> $d
+def topDeclT: Decl = d:(funcDecl / genDecl) eosAhead -> $d
+def skipLine = (braced / (?^\n;{}))+
+def braced = "{" (braced / (?^{}))* "}"
+
+// ===================================================================
+// Declarations
+// ===================================================================
+
+def genDecl: GenDecl = importDecl / constDecl / varDecl / typeDecl
+
+def importDecl: GenDecl = t:kw_import -sp ss:(importGroup / importOne)
+    -> new GenDecl{Tok: $t, Specs: $ss}
+def importOne = s:importSpec -> list($s)
+def importGroup = "(" ss:(-wsemi s:importSpec -sp -eos)* -wsemi ")" -> map($ss, (x) => $x.s)
+def importSpec: ImportSpec = n:importName? p:stringLit #error(message="expected import path")
+    -> new ImportSpec{Name: $n, Path: $p}
+def importName = n:(ident / dotName) -sp -> $n
+def dotName: Ident = "."
+
+def constDecl: GenDecl = t:kw_const -sp ss:(valueGroup / valueOne) -> new GenDecl{Tok: $t, Specs: $ss}
+def varDecl: GenDecl = t:kw_var -sp ss:(valueGroup / valueOne) -> new GenDecl{Tok: $t, Specs: $ss}
+def valueOne = s:valueSpec -> list($s)
+def valueGroup = "(" ss:(-wsemi s:valueSpec -sp -eos)* -wsemi ")" -> map($ss, (x) => $x.s)
+// Constant specs may omit the type and values (implicit repetition with iota).
+def valueSpec: ValueSpec = ns:identList t:specType? vs:specValues?
+    -> new ValueSpec{Names: $ns, Type: $t, Values: concat($vs)}
+def specType = -sp t:goType -> $t
+def specValues = -sp "=" -ws vs:exprList -> $vs
+
+def typeDecl: GenDecl = t:kw_type -sp ss:(typeGroup / typeOne) -> new GenDecl{Tok: $t, Specs: $ss}
+def typeOne = s:typeSpec -> list($s)
+def typeGroup = "(" ss:(-wsemi s:typeSpec -sp -eos)* -wsemi ")" -> map($ss, (x) => $x.s)
+// "type A[N]int" is tried as type parameters first, then as an array type (as in go/parser).
+def typeSpec: TypeSpec = n:name tp:typeParamsSp? a:aliasEq? -sp t:goType
+    -> new TypeSpec{Name: $n, TypeParams: concat($tp), Assign: $a, Type: $t}
+def aliasEq = -sp e:"=" -ws -> $e
+
+def funcDecl: FuncDecl = kw_func -sp r:receiver? n:name tp:typeParamsSp? -sp ps:parameters
+    rs:resultSp? b:bodySp?
+    -> new FuncDecl{Recv: concat($r), Name: $n,
+        Type: new FuncType{TypeParams: concat($tp), Params: $ps, Results: concat($rs)}, Body: $b}
+def receiver = ps:parameters -sp -> $ps
+def bodySp = -sp b:block -> $b
+
+// Type parameters: [K comparable, V any], [S ~[]E, E any], [T ~int | ~string]
+def typeParamsSp = -sp tp:typeParams -> $tp
+def typeParams = "[" -ws first:typeParam rest:(-ws "," -ws p:typeParam)* -ws ","? -ws "]"
+    -> concat(list($first), map($rest, (r) => $r.p))
+def typeParam: Field = ns:identList -sp c:constraint -> new Field{Names: $ns, Type: $c}
+def constraint: Expr = first:constraintTerm rest:(-ws o:"|" -ws t:constraintTerm)*
+    -> foldl($first, $rest, (acc, r) => new BinaryExpr{X: $acc, Op: $r.o, Y: $r.t})
+def constraintTerm: Expr = tildeTerm / goType
+def tildeTerm: UnaryExpr = o:"~" -ws t:goType -> new UnaryExpr{Op: $o, X: $t}
+
+def identList = first:ident rest:(-sp "," -ws i:ident)* -> concat(list($first), map($rest, (r) => $r.i))
+
+// ===================================================================
+// Types
+// ===================================================================
+
+def goType: Expr = t:typeP #error(message="expected type") -> $t
+def typeP: Expr = typeName / typeLit / parenType
+def parenType: ParenExpr = "(" -ws t:goType -ws ")" -> new ParenExpr{X: $t}
+
+// T, pkg.T, T[A], pkg.T[A, B]
+def typeName: Expr = genericType / genericTypeList / qualifiedIdent
+def genericType: IndexExpr = x:qualifiedIdent -sp "[" -ws i:goType -ws ","? -ws "]"
+    -> new IndexExpr{X: $x, Index: $i}
+def genericTypeList: IndexListExpr =
+    x:qualifiedIdent -sp "[" -ws first:goType rest:(-ws "," -ws t:goType)+ -ws ","? -ws "]"
+    -> new IndexListExpr{X: $x, Indices: concat(list($first), map($rest, (r) => $r.t))}
+def qualifiedIdent: Expr = selectorIdent / ident
+def selectorIdent: SelectorExpr = x:ident -sp "." -ws s:ident -> new SelectorExpr{X: $x, Sel: $s}
+
+def typeLit: Expr = pointerType / funcType / sliceType / arrayType / mapType / chanType
+    / structType / interfaceType
+def pointerType: StarExpr = "*" -ws t:goType -> new StarExpr{X: $t}
+def sliceType: ArrayType = "[" -ws "]" -sp t:goType -> new ArrayType{Elt: $t}
+def arrayType: ArrayType = "[" -ws n:expr -ws "]" -sp t:goType -> new ArrayType{Len: $n, Elt: $t}
+def ellipsisArrayType: ArrayType = "[" -ws n:ellipsisLen -ws "]" -sp t:goType
+    -> new ArrayType{Len: $n, Elt: $t}
+def ellipsisLen: Ellipsis = "..." -> new Ellipsis{}
+def mapType: MapType = kw_map -ws "[" -ws k:goType -ws "]" -sp v:goType -> new MapType{Key: $k, Value: $v}
+
+// "<-" associates with the leftmost "chan": chan<- chan int is chan<- (chan int).
+def chanType: ChanType = sendChanType / recvChanType / bidiChanType
+def sendChanType: ChanType = kw_chan -ws "<-" -ws t:goType -> new ChanType{Dir: "send", Value: $t}
+def recvChanType: ChanType = "<-" -ws kw_chan -ws t:goType -> new ChanType{Dir: "recv", Value: $t}
+def bidiChanType: ChanType = kw_chan -ws t:goType -> new ChanType{Dir: "both", Value: $t}
+
+def funcType: FuncType = kw_func -sp ps:parameters rs:resultSp?
+    -> new FuncType{Params: $ps, Results: concat($rs)}
+def resultSp = -sp r:result -> $r
+def result = parameters / resultType
+def resultType = t:goType -> list(new Field{Type: $t})
+
+// Parameters are either all named ("a, b int, c ...string") or all unnamed ("int, ...string").
+def parameters = "(" -ws ps:(namedParams / unnamedParams)? -ws ","? -ws ")" -> concat($ps)
+def namedParams = first:namedParam rest:(-ws "," -ws p:namedParam)*
+    -> concat(list($first), map($rest, (r) => $r.p))
+def namedParam: Field = ns:identList -sp t:paramType -> new Field{Names: $ns, Type: $t}
+def unnamedParams = first:unnamedParam rest:(-ws "," -ws p:unnamedParam)*
+    -> concat(list($first), map($rest, (r) => $r.p))
+def unnamedParam: Field = t:paramType -> new Field{Type: $t}
+def paramType: Expr = variadic / goType
+def variadic: Ellipsis = "..." -ws t:goType -> new Ellipsis{Elt: $t}
+
+def structType: StructType = kw_struct -sp "{" fs:(-wsemi f:fieldDecl -sp -eos)* -wsemi "}"
+    -> new StructType{Fields: map($fs, (x) => $x.f)}
+// "a, b T" is tried before an embedded field "T" or "pkg.T" (followed by a newline or a tag).
+def fieldDecl: Field = namedField / embeddedField
+def namedField: Field = ns:identList -sp t:goType g:tagSp? -> new Field{Names: $ns, Type: $t, Tag: $g}
+def embeddedField: Field = t:goType g:tagSp? -> new Field{Type: $t, Tag: $g}
+def tagSp = -sp t:stringLit -> $t
+
+def interfaceType: InterfaceType = kw_interface -sp "{" es:(-wsemi e:interfaceElem -sp -eos)* -wsemi "}"
+    -> new InterfaceType{Methods: map($es, (x) => $x.e)}
+def interfaceElem: Field = methodElem / embeddedElem
+def methodElem: Field = n:ident -sp t:methodType -> new Field{Names: list($n), Type: $t}
+def methodType: FuncType = ps:parameters rs:resultSp? -> new FuncType{Params: $ps, Results: concat($rs)}
+// Embedded interfaces and type sets: io.Reader, ~int | ~string, comparable
+def embeddedElem: Field = c:constraint -> new Field{Type: $c}
+
+// ===================================================================
+// Statements
+// ===================================================================
+
+def block: BlockStmt = "{" ss:stmtList -wsemi "}" #error(message="expected statement or '}'")
+    -> new BlockStmt{List: $ss}
+
+// Statements separated by terminators. Extra semicolons are empty statements.
+// The list does not read the terminator after the last statement, so that a case clause ends
+// with its last statement; the caller skips it.
+def stmtList = ss:stmtSeq? -> concat($ss)
+def stmtSeq = -wsemi !clauseKw first:stmtR rest:(-sp -eos -wsemi !clauseKw s:stmtR)*
+    -> concat(list($first), map($rest, (r) => $r.s))
+// On a syntax error, skip the rest of the line (and any braced block on it) and continue.
+def stmtR: Stmt = s:stmtT #recover(skip=skipLine) -> $s
+def stmtT: Stmt = s:stmt eosAhead -> $s
+def clauseKw = kw_case / kw_default
+
+def stmt: Stmt = declStmt / goStmt / deferStmt / returnStmt / branchStmt / block / ifStmt
+    / switchStmt / selectStmt / forStmt / labeledStmt / simpleStmt
+
+def declStmt: DeclStmt = d:(constDecl / varDecl / typeDecl) -> new DeclStmt{Decl: $d}
+// A label may be followed by a newline. Before "}" or an explicit ";" the labeled statement is empty.
+def labeledStmt: LabeledStmt = l:ident -sp ":" !"=" -ws s:(labeledEnd / stmt) -> new LabeledStmt{Label: $l, Stmt: $s}
+def labeledEnd: EmptyStmt = &(?;}) -> new EmptyStmt{}
+def goStmt: GoStmt = kw_go -sp x:expr -> new GoStmt{Call: $x}
+def deferStmt: DeferStmt = kw_defer -sp x:expr -> new DeferStmt{Call: $x}
+// "return" followed by a newline has no results.
+def returnStmt: ReturnStmt = kw_return xs:returnValues? -> new ReturnStmt{Results: concat($xs)}
+def returnValues = -sp xs:exprList -> $xs
+def branchStmt: BranchStmt = t:(kw_break / kw_continue / kw_goto / kw_fallthrough) l:labelSp?
+    -> new BranchStmt{Tok: $t, Label: $l}
+def labelSp = -sp l:ident -> $l
+
+// Simple statements. The alternatives re-read the same expressions, which are memoized.
+def simpleStmt: Stmt = assignStmt / sendStmt / incDecStmt / exprStmt
+def assignStmt: AssignStmt = l:exprList -sp t:assignOp -ws r:exprList
+    -> new AssignStmt{Lhs: $l, Tok: $t, Rhs: $r}
+def sendStmt: SendStmt = c:expr -sp "<-" -ws v:expr -> new SendStmt{Chan: $c, Value: $v}
+def incDecStmt: IncDecStmt = x:expr -sp t:incDecOp -> new IncDecStmt{X: $x, Tok: $t}
+def exprStmt: ExprStmt = x:expr -> new ExprStmt{X: $x}
+
+// The same simple statements in statement headers (see hexpr).
+def hsimpleStmt: Stmt = hassignStmt / hsendStmt / hincDecStmt / hexprStmt
+def hassignStmt: AssignStmt = l:hexprList -sp t:assignOp -ws r:hexprList
+    -> new AssignStmt{Lhs: $l, Tok: $t, Rhs: $r}
+def hsendStmt: SendStmt = c:hexpr -sp "<-" -ws v:hexpr -> new SendStmt{Chan: $c, Value: $v}
+def hincDecStmt: IncDecStmt = x:hexpr -sp t:incDecOp -> new IncDecStmt{X: $x, Tok: $t}
+def hexprStmt: ExprStmt = x:hexpr -> new ExprStmt{X: $x}
+
+def ifStmt: IfStmt = kw_if -sp i:headerInit? c:hexpr -sp b:block e:elseClause?
+    -> new IfStmt{Init: $i, Cond: $c, Body: $b, Else: $e}
+def headerInit: Stmt = s:hsimpleStmt -sp ";" -ws -> $s
+def elseClause = -sp kw_else -sp x:(ifStmt / block) -> $x
+
+def switchStmt: Stmt = typeSwitchStmt / exprSwitchStmt
+def exprSwitchStmt: SwitchStmt = kw_switch -sp i:headerInit? t:hexpr? -sp cs:caseBody
+    -> new SwitchStmt{Init: $i, Tag: $t, Body: $cs}
+def typeSwitchStmt: TypeSwitchStmt = kw_switch -sp i:headerInit? g:typeSwitchGuard -sp cs:caseBody
+    -> new TypeSwitchStmt{Init: $i, Assign: $g, Body: $cs}
+def typeSwitchGuard: Stmt = typeSwitchAssign / typeSwitchExpr
+def typeSwitchAssign: AssignStmt = n:ident -sp t:":=" -ws x:typeSwitchX
+    -> new AssignStmt{Lhs: list($n), Tok: $t, Rhs: list($x)}
+def typeSwitchExpr: ExprStmt = x:typeSwitchX -> new ExprStmt{X: $x}
+def typeSwitchX: TypeAssertExpr = x:hexpr -sp "." -ws "(" -ws kw_type -ws ")" -> new TypeAssertExpr{X: $x}
+def caseBody: BlockStmt = "{" cs:(-wsemi c:caseClause)* -wsemi "}" #error(message="expected 'case', 'default' or '}'")
+    -> new BlockStmt{List: map($cs, (x) => $x.c)}
+def caseClause: CaseClause = exprCase / defaultCase
+def exprCase: CaseClause = kw_case -ws xs:exprList -ws ":" b:stmtList -> new CaseClause{List: $xs, Body: $b}
+def defaultCase: CaseClause = kw_default -ws ":" b:stmtList -> new CaseClause{Body: $b}
+
+def selectStmt: SelectStmt = kw_select -sp b:selectBody -> new SelectStmt{Body: $b}
+def selectBody: BlockStmt = "{" cs:(-wsemi c:commClause)* -wsemi "}"
+    #error(message="expected 'case', 'default' or '}'")
+    -> new BlockStmt{List: map($cs, (x) => $x.c)}
+def commClause: CommClause = commCase / commDefault
+def commCase: CommClause = kw_case -ws s:simpleStmt -ws ":" b:stmtList -> new CommClause{Comm: $s, Body: $b}
+def commDefault: CommClause = kw_default -ws ":" b:stmtList -> new CommClause{Body: $b}
+
+def forStmt: Stmt = rangeStmt / bareRangeStmt / forClauseStmt / forCondStmt
+def rangeStmt: RangeStmt = kw_for -sp k:hexpr v:rangeValue? -sp t:rangeTok -ws kw_range -ws x:hexpr -sp b:block
+    -> new RangeStmt{Key: $k, Value: $v, Tok: $t, X: $x, Body: $b}
+def rangeValue = -sp "," -ws x:hexpr -> $x
+def rangeTok = @(":=" / "=" !"=")
+def bareRangeStmt: RangeStmt = kw_for -sp kw_range -ws x:hexpr -sp b:block -> new RangeStmt{X: $x, Body: $b}
+def forClauseStmt: ForStmt =
+    kw_for -sp i:hsimpleStmt? -sp ";" -ws c:hexpr? -sp ";" -ws p:hsimpleStmt? -sp b:block
+    -> new ForStmt{Init: $i, Cond: $c, Post: $p, Body: $b}
+def forCondStmt: ForStmt = kw_for -sp c:hexpr? -sp b:block -> new ForStmt{Cond: $c, Body: $b}
+
+// ===================================================================
+// Expressions
+// ===================================================================
+
+def expr: Expr = e:exprP #error(message="expected expression") -> $e
+def exprList = first:expr rest:(-sp "," -ws x:expr)* -> concat(list($first), map($rest, (r) => $r.x))
+
+// Operators consume the whitespace (including newlines) after them; skip only reads
+// horizontal whitespace, so a newline after an operand ends the expression.
+// A composite literal is a postfix "{...}" on its type: T{}, pkg.T{}, T[int]{}, []T{}.
+// (It is not checked that the operand is a type; go/parser does not check that either.)
+def exprP: Expr = pratt {
+    skip sp
+    operand primaryOperand
+    level { infix left o:orOp -ws -> new BinaryExpr{X: $lhs, Op: $o, Y: $rhs} }
+    level { infix left o:andOp -ws -> new BinaryExpr{X: $lhs, Op: $o, Y: $rhs} }
+    level { infix left o:relOp -ws -> new BinaryExpr{X: $lhs, Op: $o, Y: $rhs} }
+    level { infix left o:addOp -ws -> new BinaryExpr{X: $lhs, Op: $o, Y: $rhs} }
+    level { infix left o:mulOp -ws -> new BinaryExpr{X: $lhs, Op: $o, Y: $rhs} }
+    level {
+        prefix "*" -ws -> new StarExpr{X: $rhs}
+        prefix o:unaryOp -ws -> new UnaryExpr{Op: $o, X: $rhs}
+    }
+    level {
+        postfix "." -ws s:ident -> new SelectorExpr{X: $lhs, Sel: $s}
+        postfix "." -ws "(" -ws t:goType -ws ")" -> new TypeAssertExpr{X: $lhs, Type: $t}
+        postfix "[" -ws i:expr -ws ","? -ws "]" -> new IndexExpr{X: $lhs, Index: $i}
+        postfix "[" -ws is:indexList -ws ","? -ws "]" -> new IndexListExpr{X: $lhs, Indices: $is}
+        postfix "[" -ws lo:expr? -ws ":" -ws hi:expr? m:sliceMax? -ws "]"
+            -> new SliceExpr{X: $lhs, Low: $lo, High: $hi, Max: $m}
+        postfix "(" -ws as:callArgs? -ws d:"..."? -ws ","? -ws ")"
+            -> new CallExpr{Fun: $lhs, Args: concat($as), Ellipsis: $d}
+        postfix v:literalValue -> new CompositeLit{Type: $lhs, Elts: $v}
+    }
+}
+
+// Expressions in "if", "for" and "switch" headers: the same as exprP, except that composite
+// literals are operands whose type is a type literal ([]T{}, map[K]V{}, struct{}{}), so
+// that "if x == y {" does not read the block as a composite literal.
+def hexpr: Expr = e:hexprP #error(message="expected expression") -> $e
+def hexprList = first:hexpr rest:(-sp "," -ws x:hexpr)* -> concat(list($first), map($rest, (r) => $r.x))
+def hexprP: Expr = pratt {
+    skip sp
+    operand hcompositeLit
+    operand primaryOperand
+    level { infix left o:orOp -ws -> new BinaryExpr{X: $lhs, Op: $o, Y: $rhs} }
+    level { infix left o:andOp -ws -> new BinaryExpr{X: $lhs, Op: $o, Y: $rhs} }
+    level { infix left o:relOp -ws -> new BinaryExpr{X: $lhs, Op: $o, Y: $rhs} }
+    level { infix left o:addOp -ws -> new BinaryExpr{X: $lhs, Op: $o, Y: $rhs} }
+    level { infix left o:mulOp -ws -> new BinaryExpr{X: $lhs, Op: $o, Y: $rhs} }
+    level {
+        prefix "*" -ws -> new StarExpr{X: $rhs}
+        prefix o:unaryOp -ws -> new UnaryExpr{Op: $o, X: $rhs}
+    }
+    level {
+        postfix "." -ws s:ident -> new SelectorExpr{X: $lhs, Sel: $s}
+        postfix "." -ws "(" -ws t:goType -ws ")" -> new TypeAssertExpr{X: $lhs, Type: $t}
+        postfix "[" -ws i:expr -ws ","? -ws "]" -> new IndexExpr{X: $lhs, Index: $i}
+        postfix "[" -ws is:indexList -ws ","? -ws "]" -> new IndexListExpr{X: $lhs, Indices: $is}
+        postfix "[" -ws lo:expr? -ws ":" -ws hi:expr? m:sliceMax? -ws "]"
+            -> new SliceExpr{X: $lhs, Low: $lo, High: $hi, Max: $m}
+        postfix "(" -ws as:callArgs? -ws d:"..."? -ws ","? -ws ")"
+            -> new CallExpr{Fun: $lhs, Args: concat($as), Ellipsis: $d}
+    }
+}
+
+def indexList = first:expr rest:(-ws "," -ws x:expr)+ -> concat(list($first), map($rest, (r) => $r.x))
+def sliceMax = -ws ":" -ws x:expr -> $x
+def callArgs = first:expr rest:(-ws "," -ws x:expr)* -> concat(list($first), map($rest, (r) => $r.x))
+
+// Types are operands too: []byte(s), map[string]int{}, make(chan int), new(struct{}).
+// Pointer types are the prefix "*".
+def primaryOperand: Expr = (basicLit / funcLit / ident / parenExpr / funcType / sliceType / arrayType
+    / ellipsisArrayType / mapType / chanType / structType / interfaceType)
+    #error(message="expected expression")
+def parenExpr: ParenExpr = "(" -ws x:expr -ws ")" -> new ParenExpr{X: $x}
+def funcLit: FuncLit = t:funcType -sp b:block -> new FuncLit{Type: $t, Body: $b}
+
+def hcompositeLit: CompositeLit = t:hliteralType -sp v:literalValue -> new CompositeLit{Type: $t, Elts: $v}
+def hliteralType: Expr = structType / ellipsisArrayType / sliceType / arrayType / mapType
+def literalValue = "{" -ws es:elements? -ws ","? -ws "}" -> concat($es)
+def elements = first:element rest:(-ws "," -ws e:element)* -> concat(list($first), map($rest, (r) => $r.e))
+def element: Expr = keyedElement / elementValue
+def keyedElement: KeyValueExpr = k:elementValue -ws ":" -ws v:elementValue -> new KeyValueExpr{Key: $k, Value: $v}
+def elementValue: Expr = elidedLit / expr
+def elidedLit: CompositeLit = v:literalValue -> new CompositeLit{Elts: $v}
+
+// Operators. Each one must not be the prefix of a longer token (maximal munch).
+def orOp = @"||"
+def andOp = @"&&"
+def relOp = @("==" / "!=" / "<=" / ">=" / "<" !(?<\-) / ">" !">")
+def addOp = @("+" !(?+=) / "-" !(?\-=) / "|" !(?|=) / "^" !"=")
+def mulOp = @("*" !"=" / "/" !(?/*=) / "%" !"=" / "<<" !"=" / ">>" !"=" / "&^" !"=" / "&" !(?&=^))
+// "<-chan T" is a channel type, not a receive.
+def unaryOp = @("+" / "-" / "!" / "^" / "&" / "<-" !(ws kw_chan))
+def assignOp = @("=" !"=" / ":=" / "+=" / "-=" / "*=" / "/=" / "%=" / "&=" / "|=" / "^=" / "<<=" / ">>=" / "&^=")
+def incDecOp = @("++" / "--")
+
+// ===================================================================
+// Lexical elements
+// ===================================================================
+
+// Identifiers. Non-ASCII characters are treated as letters (a superset of Unicode letters).
+def ident: Ident = !keyword letter idchar*
+def name: Ident = i:ident #error(message="expected identifier") -> $i
+def letter = (?a-zA-Z_\u{80}-\u{10FFFF})
+def idchar = (?a-zA-Z0-9_\u{80}-\u{10FFFF})
+def keyword = ("break" / "case" / "chan" / "const" / "continue" / "default" / "defer" / "else"
+    / "fallthrough" / "for" / "func" / "goto" / "go" / "if" / "import" / "interface" / "map"
+    / "package" / "range" / "return" / "select" / "struct" / "switch" / "type" / "var") !idchar
+
+def kw_break = @("break" !idchar)
+def kw_case = @("case" !idchar)
+def kw_chan = @("chan" !idchar)
+def kw_const = @("const" !idchar)
+def kw_continue = @("continue" !idchar)
+def kw_default = @("default" !idchar)
+def kw_defer = @("defer" !idchar)
+def kw_else = @("else" !idchar)
+def kw_fallthrough = @("fallthrough" !idchar)
+def kw_for = @("for" !idchar)
+def kw_func = @("func" !idchar)
+def kw_go = @("go" !idchar)
+def kw_goto = @("goto" !idchar)
+def kw_if = @("if" !idchar)
+def kw_import = @("import" !idchar)
+def kw_interface = @("interface" !idchar)
+def kw_map = @("map" !idchar)
+def kw_package = @("package" !idchar)
+def kw_range = @("range" !idchar)
+def kw_return = @("return" !idchar)
+def kw_select = @("select" !idchar)
+def kw_struct = @("struct" !idchar)
+def kw_switch = @("switch" !idchar)
+def kw_type = @("type" !idchar)
+def kw_var = @("var" !idchar)
+
+// Literals
+def basicLit: Expr = imagLit / floatLit / intLit / charLit / stringLit
+def imagLit: ImagLit = (floatBody / decimalDigits / intBody) "i"
+def floatLit: FloatLit = floatBody
+def intLit: IntLit = intBody
+def intBody = "0" (?xX) "_"? hexDigits / "0" (?bB) "_"? binDigits / "0" (?oO) "_"? octDigits
+    / "0" ("_"? (?0-7))+ / (?1-9) ("_"? (?0-9))* / "0"
+def floatBody = hexFloat / decimalFloat
+def decimalFloat = decimalDigits "." decimalDigits? decimalExp? / decimalDigits decimalExp
+    / "." decimalDigits decimalExp?
+def decimalExp = (?eE) (?+\-)? decimalDigits
+def hexFloat = "0" (?xX) hexMantissa (?pP) (?+\-)? decimalDigits
+def hexMantissa = "_"? hexDigits ("." hexDigits?)? / "." hexDigits
+def decimalDigits = (?0-9) ("_"? (?0-9))*
+def hexDigits = hexDigit ("_"? hexDigit)*
+def binDigits = (?01) ("_"? (?01))*
+def octDigits = (?0-7) ("_"? (?0-7))*
+def hexDigit = (?0-9a-fA-F)
+
+def charLit: CharLit = "'" (escape / (?^'\\\n)) "'"
+def stringLit: StringLit = "`" (?^`)* "`" / "\"" (escape / (?^"\\\n))* "\""
+def escape = "\\" ((?abfnrtv\\'") / (?0-7){3} / "x" hexDigit{2} / "u" hexDigit{4} / "U" hexDigit{8})
+
+// Whitespace and comments
+// sp: horizontal whitespace and comments without newlines
+def sp = ((? \t\r) / "//" (?^\n)* / "/*" (!"*/" (?^\n))* "*/")*
+// ws: any whitespace and comments
+def ws = ((? \t\r\n) / "//" (?^\n)* / "/*" (!"*/" .)* "*/")*
+// wsemi: whitespace, comments and empty statements
+def wsemi = ((? \t\r\n;) / "//" (?^\n)* / "/*" (!"*/" .)* "*/")*
+// eos: an explicit or automatically inserted semicolon. It follows sp, so a remaining
+// block comment contains a newline.
+def eos = (";" / "\n" / "/*" (!"*/" .)* "*/" / &(?\)}) / $$) #error(message="expected ';' or newline")
+// eosAhead checks for a terminator without reading it (nor the comments before it, which
+// would otherwise extend the range of the statement).
+def eosAhead = &(sp eos) / -sp _|_ #error(message="expected ';' or newline")

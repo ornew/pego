@@ -1,0 +1,32 @@
+// An arithmetic calculator with exponentiation, written with a Pratt expression.
+package calc
+
+type Number terminal
+
+type Binary struct {
+    Left  Expr
+    Op    Match
+    Right Expr
+}
+
+type Unary struct {
+    Op Match
+    X  Expr
+}
+
+type Expr = Number | Binary | Unary
+
+def main: Expr = e:expr ws $$ -> $e
+
+def expr: Expr = pratt {
+    skip    ws
+    operand number
+    operand "(" e:expr ws ")" -> $e
+    level { infix left  "+" / "-"       -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix left  "*" / "/" / "%" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { prefix      "-" / "+"       -> new Unary{Op: $op, X: $rhs} }
+    level { infix right "^"             -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+}
+
+def number: Number = (?0-9)+ ("." (?0-9)+)?
+def ws = (? \t\r\n)*

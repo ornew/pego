@@ -1,0 +1,199 @@
+package engine
+
+import (
+	"strings"
+	"testing"
+)
+
+func TestCaptures(t *testing.T) {
+	t.Run("rule level", func(t *testing.T) {
+		check(t, `def main = first:word " " last:word
+def word = @(?a-z)+`,
+			ok("ab cd", `(Seq "ab"@word " " "cd"@word first="ab"@word last="cd"@word)@main`),
+		)
+	})
+	t.Run("in choice and optional", func(t *testing.T) {
+		check(t, `def main = (a:"a" / b:"b") c:"c"?`,
+			ok("a", `(Seq "a" nil a="a")@main`),
+			ok("bc", `(Seq "b" "c" b="b" c="c")@main`),
+		)
+	})
+	t.Run("repetition scope", func(t *testing.T) {
+		check(t, `def main = items:(k:@(?a-z)+ "=" v:@(?0-9)+ ";")*`,
+			// A capture of the whole body is wrapped in a Seq and made a field.
+			ok("a=1;b=2;", `(Seq [(Seq "a" "=" "1" ";" k="a" v="1") (Seq "b" "=" "2" ";" k="b" v="2")] items=[(Seq "a" "=" "1" ";" k="a" v="1") (Seq "b" "=" "2" ";" k="b" v="2")])@main`),
+		)
+	})
+	t.Run("backtracking resets captures", func(t *testing.T) {
+		check(t, `def main = x:"a" "b" / "a" "c" -> new R{X: $x}
+type R struct { X *Match }`,
+			ok("ac", `(R X=nil)`),
+		)
+	})
+}
+
+func TestActions(t *testing.T) {
+	check(t, `
+type KV struct { Key Match, Op Match, Value Match }
+def main = k:@(?a-z)+ op:"=" v:@(?0-9)+ -> new KV{Key: $1, Op: $op, Value: $3}`,
+		ok("abc=12", `(KV Key="abc" Op="=" Value="12")`),
+	)
+	check(t, `def main = "(" e:inner ")" -> $e
+def inner = @(?a-z)+`,
+		ok("(ab)", `"ab"@inner`),
+	)
+	check(t, `
+type Pair struct { All node, N int, S string, B bool }
+def main = "a" "b" -> new Pair{All: $0, N: 1 + 2 * 3, S: "x" + text($2), B: !false && 1 < 2}`,
+		ok("ab", "(Pair All=[\"a\" \"b\"] B=true N=7 S=`xb`)"),
+	)
+}
+
+func TestFold(t *testing.T) {
+	src := `
+type Op struct { Left Node, Op Match, Right Node }
+type Node = Op | Match
+def main: Node =
+    l:num rest:(op:@("+" / "-") r:num)*
+    -> foldl($l, $rest, (acc, i) => new Op{Left: $acc, Op: $i.op, Right: $i.r})
+def right: Node =
+    l:num rest:(op:"^" r:num)*
+    -> foldr($l, $rest, (acc, i) => new Op{Left: $i.r, Op: $i.op, Right: $acc})
+def num = @(?0-9)+`
+	check(t, src,
+		ok("1", `"1"@num`),
+		ok("1+2-3", `(Op Left=(Op Left="1"@num Op="+" Right="2"@num) Op="-" Right="3"@num)`),
+	)
+}
+
+func TestListBuiltins(t *testing.T) {
+	check(t, `
+type Args struct { Items []Match, N int }
+def main = first:item rest:(-"," x:item)*
+    -> new Args{Items: concat(list($first), map($rest, (r) => $r.x)), N: len($rest) + 1}
+def item = @(?a-z)+`,
+		ok("a,bc,d", `(Args Items=["a"@item "bc"@item "d"@item] N=3)`),
+	)
+}
+
+func TestMemberAccess(t *testing.T) {
+	check(t, `
+type Span struct { Start int, End int, Kids int }
+def main = "  " w:word -> new Span{Start: $w.startPos, End: $w.endPos, Kids: len($w.children)}
+def word = (?a-z) (?a-z)`,
+		ok("  ab", `(Span End=4 Kids=2 Start=2)`),
+	)
+}
+
+func TestNodePositions(t *testing.T) {
+	prog := compile(t, `
+type Op struct { Left Node, Right Node }
+type Node = Op | Match
+def main: Node = l:num rest:(-" "* -"+" r:num)* -> foldl($l, $rest, (acc, i) => new Op{Left: $acc, Right: $i.r})
+def num = -" "* n:@(?0-9)+ -> $n`)
+	n, err := prog.Parse("main", " 1 + 22+3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The final result has the range of the whole rule; intermediate nodes have the ranges of their
+	// fields.
+	if n.Start != 0 || n.End != 9 {
+		t.Errorf("root [%d,%d)", n.Start, n.End)
+	}
+	left := n.Field("Left").(*Node)
+	if left.Start != 1 || left.End != 7 {
+		t.Errorf("left [%d,%d)", left.Start, left.End)
+	}
+	if r := left.Field("Right").(*Node); r.Start != 5 || r.End != 7 || r.Text != "22" {
+		t.Errorf("22 at [%d,%d) %q", r.Start, r.End, r.Text)
+	}
+}
+
+func TestPredicates(t *testing.T) {
+	t.Run("comparison", func(t *testing.T) {
+		check(t, `def main = d:@(?0-9)+ [len($d) <= 3] "!"`,
+			ok("123!", `(Seq "123" "!" d="123")@main`),
+			fails("1234!", `1:5: syntax error: expected (?0-9)`),
+		)
+	})
+	t.Run("variables are scoped to rules", func(t *testing.T) {
+		check(t, `
+def main = [x = 1] a [x == 1]
+def a = [x == 1] [x = 2] [x == 2] "a"`,
+			ok("a", `(Seq (Seq "a")@a)@main`),
+		)
+	})
+	t.Run("undefined variable fails", func(t *testing.T) {
+		check(t, `def main = [y > 0] "a" / "b"`,
+			ok("b", `"b"@main`),
+			fails("a", `expected "b"`),
+		)
+	})
+	t.Run("backtracking rolls back definitions", func(t *testing.T) {
+		check(t, `def main = ([x = 1] "a" "b" / "a") [x == 1] "c"`,
+			fails("ac", `1:2: syntax error: expected "b"`),
+			ok("abc", `(Seq (Seq "a" "b") "c")@main`),
+		)
+	})
+	t.Run("indentation", func(t *testing.T) {
+		src := `
+def main = [indent = 0] block $$
+def block = item+
+def item = s:spaces [len($s) == indent] name:@(?a-z)+ "\n" children?
+def children = &(s:spaces) [len($s) > indent] [indent = len($s)] block
+def spaces = @" "*`
+		check(t, src,
+			ok(lines("a", "  b", "  c", "    d", "e", ""),
+				`(Seq [(Seq ""@spaces "a" "\n" (Seq [(Seq "  "@spaces "b" "\n" nil name="b" s="  "@spaces)@item (Seq "  "@spaces "c" "\n" (Seq [(Seq "    "@spaces "d" "\n" nil name="d" s="    "@spaces)@item]@block s="    "@spaces)@children name="c" s="  "@spaces)@item]@block s="  "@spaces)@children name="a" s=""@spaces)@item (Seq ""@spaces "e" "\n" nil name="e" s=""@spaces)@item]@block)@main`),
+			// The indentation of " c" matches no indentation level.
+			fails(lines("a", "   b", " c", ""), `3:2: syntax error: expected " "`),
+		)
+	})
+}
+
+func TestCompileErrors(t *testing.T) {
+	for _, tc := range []struct{ src, want string }{
+		{`def main = x`, `1:12: undefined rule x`},
+		{`def main = "a"
+def main = "b"`, `2:1: rule main is already defined`},
+		{`type Match terminal`, `type Match is reserved`},
+		{`type foo terminal
+def main = "a"`, `type foo must start with an uppercase letter`},
+		{`type Foo struct { bar Match }
+def main = "a"`, `field bar of Foo must start with an uppercase letter`},
+		{`type A terminal
+type A terminal`, `type A is already defined`},
+		{`def main = "a" -> $x`, `1:19: undefined capture $x`},
+		{`def main = "a" -> new Nope{}`, `Nope is not a struct type`},
+		{`type A struct { X Match }
+def main = "a" -> new A{Y: $1}`, `A has no field Y`},
+		{`type A struct { X Match }
+def main = "a" -> new A{X: $1, X: $1}`, `duplicate field X`},
+		{`def main = "a" -> nope(1)`, `unknown function nope`},
+		{`def main = "a" -> len(1, 2)`, `len takes 1 arguments, got 2`},
+		{`def main = @(x:"a")`, `capture x inside @, -, or ! has no effect`},
+		{`def main = x:-"a"`, `capture x of an expression without a value`},
+		{`def main = "a" #nope`, `unknown attribute #nope`},
+		{`def main = x(lvl)
+def x = "a"`, `rule x has no pratt levels`},
+	} {
+		t.Run(tc.want, func(t *testing.T) {
+			if got := compileError(t, tc.src); !strings.Contains(got, tc.want) {
+				t.Errorf("got %s\nwant %s", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestRuntimeErrors(t *testing.T) {
+	prog := compile(t, `
+type A struct { N int }
+def main = "a" -> new A{N: 1 / (len($1) - 1)}`)
+	_, err := prog.Parse("main", "a")
+	if err == nil || !strings.Contains(err.Error(), "action in main: division by zero") {
+		t.Errorf("got %v", err)
+	}
+	if _, err := prog.Parse("nope", "a"); err == nil || err.Error() != "rule nope is not defined" {
+		t.Errorf("got %v", err)
+	}
+}

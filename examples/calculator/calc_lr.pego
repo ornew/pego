@@ -1,0 +1,39 @@
+// The same language as calc.pego, written with left-recursive rules, one per precedence level.
+// Compared with a Pratt expression, every precedence level needs its own rule.
+package calc
+
+type Number terminal
+
+type Binary struct {
+    Left  Expr
+    Op    Match
+    Right Expr
+}
+
+type Unary struct {
+    Op Match
+    X  Expr
+}
+
+type Expr = Number | Binary | Unary
+
+def main: Expr = e:expr ws $$ -> $e
+
+def expr: Expr = add / term
+def add: Expr = l:expr ws op:@("+" / "-") r:term -> new Binary{Left: $l, Op: $op, Right: $r}
+
+def term: Expr = mul / unary
+def mul: Expr = l:term ws op:@("*" / "/" / "%") r:unary -> new Binary{Left: $l, Op: $op, Right: $r}
+
+def unary: Expr = neg / power
+def neg: Expr = ws op:@("-" / "+") x:unary -> new Unary{Op: $op, X: $x}
+
+// Exponentiation is right-associative, and its right operand may carry a unary operator (2^-1).
+def power: Expr = pow / primary
+def pow: Expr = l:primary ws op:"^" r:unary -> new Binary{Left: $l, Op: $op, Right: $r}
+
+def primary: Expr = ws p:(number / group) -> $p
+def group: Expr = "(" e:expr ws ")" -> $e
+
+def number: Number = (?0-9)+ ("." (?0-9)+)?
+def ws = (? \t\r\n)*
