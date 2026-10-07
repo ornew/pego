@@ -356,6 +356,7 @@ type parser struct {
 	kidStack  []*Node
 	frameSlab []frame
 	fieldSlab []NodeField
+	lines     []int // positions where lines start (makeError)
 	ac        actx
 	saved     []*Node // captures saved across a reset in longest
 }
@@ -756,15 +757,19 @@ func (p *parser) makeError(pos int, expected []expID) *SyntaxError {
 		}
 	}
 	sort.Strings(e.Expected)
-	e.Line, e.Col = 1, 1
-	for i := 0; i < pos && i < p.n; i++ {
-		if p.unit == Bytes && p.bs[i] == '\n' || p.unit == CodePoints && p.in[i] == '\n' {
-			e.Line++
-			e.Col = 1
-		} else {
-			e.Col++
+	// Look the line up in a table of line starts, built on the first error, instead of scanning
+	// from the start of the input for each error.
+	if p.lines == nil {
+		p.lines = append(p.lines, 0)
+		for i := 0; i < p.n; i++ {
+			if p.unit == Bytes && p.bs[i] == '\n' || p.unit == CodePoints && p.in[i] == '\n' {
+				p.lines = append(p.lines, i+1)
+			}
 		}
 	}
+	pos = min(pos, p.n)
+	i := sort.SearchInts(p.lines, pos+1)
+	e.Line, e.Col = i, pos-p.lines[i-1]+1
 	return e
 }
 

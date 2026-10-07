@@ -79,6 +79,9 @@ type input struct {
 	src   string
 	srcOK bool
 	offs  []int32
+	// lines holds the positions where lines start, for lineCol on fully loaded input (built on
+	// first use; nil until then).
+	lines []int
 }
 
 // setSource records the whole input string s for use by text.
@@ -101,6 +104,7 @@ func (in *input) buildOffs() {
 // text is updated in place, since only the parser reads it (nodes refer to the source string, which
 // is never modified).
 func (in *input) replace(start, end int, text string) (delta int) {
+	in.lines = nil
 	if in.unit == Bytes {
 		in.bs = slices.Replace(in.bs, start, end, []byte(text)...)
 		in.src = in.src[:start] + text + in.src[end:]
@@ -283,8 +287,19 @@ func (in *input) isNewline(i int) bool {
 
 // lineCol returns the line and column (in Unit) of position pos.
 func (in *input) lineCol(pos int) (int, int) {
+	if in.eof && in.base == 0 {
+		// The whole input is loaded: look the line up in a table of line starts, built on first
+		// use, instead of scanning from the start for each error.
+		if in.lines == nil {
+			in.buildLines()
+		}
+		pos = min(pos, in.loaded())
+		i, _ := slices.BinarySearch(in.lines, pos+1)
+		return i, pos - in.lines[i-1] + 1
+	}
 	line, col := in.baseLine, in.baseCol
-	for i := in.base; i < pos && i < in.loaded(); i++ {
+	n := in.loaded()
+	for i := in.base; i < pos && i < n; i++ {
 		var nl bool
 		if in.unit == Bytes {
 			nl = in.bs[i-in.base] == '\n'
@@ -299,6 +314,24 @@ func (in *input) lineCol(pos int) (int, int) {
 		}
 	}
 	return line, col
+}
+
+// buildLines builds the table of the positions where lines start.
+func (in *input) buildLines() {
+	in.lines = append(in.lines[:0], 0)
+	if in.unit == Bytes {
+		for i, b := range in.bs {
+			if b == '\n' {
+				in.lines = append(in.lines, i+1)
+			}
+		}
+		return
+	}
+	for i, r := range in.in {
+		if r == '\n' {
+			in.lines = append(in.lines, i+1)
+		}
+	}
 }
 
 // discard discards the input before position keep. The buffer holds read-ahead input, so it is
