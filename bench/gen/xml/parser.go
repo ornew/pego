@@ -1864,7 +1864,7 @@ func init() {
 
 // decl
 func (p *parser) e1() (*Node, bool) {
-	return p.call(rules[15], 0)
+	return p.invokePlain(rules[15], 0)
 }
 
 // decl?
@@ -2137,7 +2137,7 @@ func (p *parser) e23() (*Node, bool) {
 
 // comment
 func (p *parser) e24() (*Node, bool) {
-	return p.call(rules[11], 0)
+	return p.invokePlain(rules[11], 0)
 }
 
 // (? \t\r\n)+ / comment
@@ -2225,7 +2225,7 @@ func (p *parser) e30() (*Node, bool) {
 
 // name
 func (p *parser) e31() (*Node, bool) {
-	return p.call(rules[13], 0)
+	return p.invokePlain(rules[13], 0)
 }
 
 // n:name
@@ -2286,7 +2286,7 @@ func (p *parser) e35() (*Node, bool) {
 
 // ws
 func (p *parser) e36() (*Node, bool) {
-	return p.call(rules[17], 0)
+	return p.invokePlain(rules[17], 0)
 }
 
 // "/>"
@@ -2321,7 +2321,7 @@ func (p *parser) e41() (*Node, bool) {
 
 // name
 func (p *parser) e42() (*Node, bool) {
-	return p.call(rules[13], 0)
+	return p.invokePlain(rules[13], 0)
 }
 
 // n:name
@@ -2382,7 +2382,7 @@ func (p *parser) e46() (*Node, bool) {
 
 // ws
 func (p *parser) e47() (*Node, bool) {
-	return p.call(rules[17], 0)
+	return p.invokePlain(rules[17], 0)
 }
 
 // ">"
@@ -2392,7 +2392,7 @@ func (p *parser) e49() (*Node, bool) {
 
 // content
 func (p *parser) e50() (*Node, bool) {
-	return p.call(rules[8], 0)
+	return p.invokePlain(rules[8], 0)
 }
 
 // content*
@@ -2444,7 +2444,7 @@ func (p *parser) e54() (*Node, bool) {
 
 // name
 func (p *parser) e55() (*Node, bool) {
-	return p.call(rules[13], 0)
+	return p.invokePlain(rules[13], 0)
 }
 
 // e:name
@@ -2468,7 +2468,7 @@ func (p *parser) e58() (*Node, bool) {
 
 // ws
 func (p *parser) e59() (*Node, bool) {
-	return p.call(rules[17], 0)
+	return p.invokePlain(rules[17], 0)
 }
 
 // ">"
@@ -2530,7 +2530,7 @@ func (p *parser) e63() (*Node, bool) {
 
 // name
 func (p *parser) e64() (*Node, bool) {
-	return p.call(rules[13], 0)
+	return p.invokePlain(rules[13], 0)
 }
 
 // n:name
@@ -2544,7 +2544,7 @@ func (p *parser) e65() (*Node, bool) {
 
 // ws
 func (p *parser) e66() (*Node, bool) {
-	return p.call(rules[17], 0)
+	return p.invokePlain(rules[17], 0)
 }
 
 // "="
@@ -2554,12 +2554,12 @@ func (p *parser) e68() (*Node, bool) {
 
 // ws
 func (p *parser) e69() (*Node, bool) {
-	return p.call(rules[17], 0)
+	return p.invokePlain(rules[17], 0)
 }
 
 // value
 func (p *parser) e70() (*Node, bool) {
-	return p.call(rules[7], 0)
+	return p.invokePlain(rules[7], 0)
 }
 
 // v:value
@@ -2611,7 +2611,7 @@ func (p *parser) e75() (*Node, bool) {
 
 // ref
 func (p *parser) e76() (*Node, bool) {
-	return p.call(rules[18], 0)
+	return p.invokePlain(rules[18], 0)
 }
 
 // (?^"<&) / ref
@@ -2712,7 +2712,7 @@ func (p *parser) e84() (*Node, bool) {
 
 // ref
 func (p *parser) e85() (*Node, bool) {
-	return p.call(rules[18], 0)
+	return p.invokePlain(rules[18], 0)
 }
 
 // (?^'<&) / ref
@@ -2837,17 +2837,17 @@ func (p *parser) e92() (*Node, bool) {
 
 // cdata
 func (p *parser) e93() (*Node, bool) {
-	return p.call(rules[12], 0)
+	return p.invokePlain(rules[12], 0)
 }
 
 // comment
 func (p *parser) e94() (*Node, bool) {
-	return p.call(rules[11], 0)
+	return p.invokePlain(rules[11], 0)
 }
 
 // chardata
 func (p *parser) e95() (*Node, bool) {
-	return p.call(rules[9], 0)
+	return p.invokePlain(rules[9], 0)
 }
 
 // element / cdata / comment / chardata
@@ -2924,7 +2924,7 @@ func (p *parser) e97() (*Node, bool) {
 
 // ref
 func (p *parser) e98() (*Node, bool) {
-	return p.call(rules[18], 0)
+	return p.invokePlain(rules[18], 0)
 }
 
 // (?^<&) / ref
@@ -3593,7 +3593,7 @@ func (p *parser) e157() (*Node, bool) {
 
 // comment
 func (p *parser) e158() (*Node, bool) {
-	return p.call(rules[11], 0)
+	return p.invokePlain(rules[11], 0)
 }
 
 // (? \t\r\n)+ / comment

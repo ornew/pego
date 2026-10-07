@@ -579,6 +579,14 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 - Effect (min of 10 interleaved runs, Apple M3 Max, code points): full parses 1–5% faster on the closure and bytecode
   backends (XML closure 15.3 → 14.5 ms, JSON closure 15.4 → 14.7 ms); recognition and incremental parsing unchanged.
 
+### 42. Generated calls of plain rules
+
+- Generated parsers called every rule through `call`, which checks whether the rule is memoized before reaching
+  `invokePlain` for rules that never are (change 21). The generator knows which rules those are (`rule.plain`,
+  change 38; generated parsers have no `Document`), so their call sites now call `invokePlain` directly.
+- Effect (min of 12 interleaved runs, Apple M3 Max, generated parsers): JSON 9.7 → 9.3 ms, XML 9.7 → 9.1 ms, others
+  0–2% faster.
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and

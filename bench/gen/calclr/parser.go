@@ -1847,7 +1847,7 @@ func (p *parser) e2() (*Node, bool) {
 
 // ws
 func (p *parser) e3() (*Node, bool) {
-	return p.call(rules[13], 0)
+	return p.invokePlain(rules[13], 0)
 }
 
 // $$
@@ -1929,7 +1929,7 @@ func (p *parser) e10() (*Node, bool) {
 
 // ws
 func (p *parser) e11() (*Node, bool) {
-	return p.call(rules[13], 0)
+	return p.invokePlain(rules[13], 0)
 }
 
 // "+"
@@ -2085,7 +2085,7 @@ func (p *parser) e26() (*Node, bool) {
 
 // ws
 func (p *parser) e27() (*Node, bool) {
-	return p.call(rules[13], 0)
+	return p.invokePlain(rules[13], 0)
 }
 
 // "*"
@@ -2207,7 +2207,7 @@ func (p *parser) e40() (*Node, bool) {
 
 // power
 func (p *parser) e41() (*Node, bool) {
-	return p.call(rules[7], 0)
+	return p.invokePlain(rules[7], 0)
 }
 
 // neg / power
@@ -2246,7 +2246,7 @@ func (p *parser) e42() (*Node, bool) {
 
 // ws
 func (p *parser) e43() (*Node, bool) {
-	return p.call(rules[13], 0)
+	return p.invokePlain(rules[13], 0)
 }
 
 // "-"
@@ -2399,7 +2399,7 @@ func (p *parser) e58() (*Node, bool) {
 
 // ws
 func (p *parser) e59() (*Node, bool) {
-	return p.call(rules[13], 0)
+	return p.invokePlain(rules[13], 0)
 }
 
 // "^"
@@ -2449,12 +2449,12 @@ func (p *parser) e65() (*Node, bool) {
 
 // ws
 func (p *parser) e66() (*Node, bool) {
-	return p.call(rules[13], 0)
+	return p.invokePlain(rules[13], 0)
 }
 
 // number
 func (p *parser) e67() (*Node, bool) {
-	return p.call(rules[11], 0)
+	return p.invokePlain(rules[11], 0)
 }
 
 // group
@@ -2537,7 +2537,7 @@ func (p *parser) e75() (*Node, bool) {
 
 // ws
 func (p *parser) e76() (*Node, bool) {
-	return p.call(rules[13], 0)
+	return p.invokePlain(rules[13], 0)
 }
 
 // ")"

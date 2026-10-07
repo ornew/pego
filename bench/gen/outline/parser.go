@@ -1837,7 +1837,7 @@ func (p *parser) e3() (*Node, bool) {
 
 // blank
 func (p *parser) e4() (*Node, bool) {
-	return p.call(rules[8], 0)
+	return p.invokePlain(rules[8], 0)
 }
 
 // blank*
@@ -1892,7 +1892,7 @@ func (p *parser) e7() (*Node, bool) {
 
 // blank
 func (p *parser) e8() (*Node, bool) {
-	return p.call(rules[7], 0)
+	return p.invokePlain(rules[7], 0)
 }
 
 // blank*
@@ -1997,7 +1997,7 @@ func (p *parser) e14() (*Node, bool) {
 
 // spaces
 func (p *parser) e15() (*Node, bool) {
-	return p.call(rules[4], 0)
+	return p.invokePlain(rules[4], 0)
 }
 
 // s:spaces
@@ -2016,7 +2016,7 @@ func (p *parser) e17() (*Node, bool) {
 
 // line
 func (p *parser) e18() (*Node, bool) {
-	return p.call(rules[5], 0)
+	return p.invokePlain(rules[5], 0)
 }
 
 // text:line
@@ -2030,7 +2030,7 @@ func (p *parser) e19() (*Node, bool) {
 
 // eol
 func (p *parser) e20() (*Node, bool) {
-	return p.call(rules[9], 0)
+	return p.invokePlain(rules[9], 0)
 }
 
 // children
@@ -2087,7 +2087,7 @@ func (p *parser) e24() (*Node, bool) {
 
 // blank
 func (p *parser) e25() (*Node, bool) {
-	return p.call(rules[8], 0)
+	return p.invokePlain(rules[8], 0)
 }
 
 // blank*
@@ -2120,7 +2120,7 @@ func (p *parser) e26() (*Node, bool) {
 
 // spaces
 func (p *parser) e27() (*Node, bool) {
-	return p.call(rules[4], 0)
+	return p.invokePlain(rules[4], 0)
 }
 
 // s:spaces

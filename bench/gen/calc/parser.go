@@ -1834,7 +1834,7 @@ func (p *parser) e2() (*Node, bool) {
 
 // ws
 func (p *parser) e3() (*Node, bool) {
-	return p.call(rules[4], 0)
+	return p.invokePlain(rules[4], 0)
 }
 
 // $$
@@ -1991,12 +1991,12 @@ func (p *parser) e15() (*Node, bool) {
 
 // ws
 func (p *parser) e16() (*Node, bool) {
-	return p.call(rules[4], 0)
+	return p.invokePlain(rules[4], 0)
 }
 
 // number
 func (p *parser) e17() (*Node, bool) {
-	return p.call(rules[2], 0)
+	return p.invokePlain(rules[2], 0)
 }
 
 // "("
@@ -2020,7 +2020,7 @@ func (p *parser) e21() (*Node, bool) {
 
 // ws
 func (p *parser) e22() (*Node, bool) {
-	return p.call(rules[4], 0)
+	return p.invokePlain(rules[4], 0)
 }
 
 // ")"

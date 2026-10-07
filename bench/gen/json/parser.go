@@ -1888,7 +1888,7 @@ func init() {
 
 // ws
 func (p *parser) e1() (*Node, bool) {
-	return p.call(rules[19], 0)
+	return p.invokePlain(rules[19], 0)
 }
 
 // value
@@ -1907,7 +1907,7 @@ func (p *parser) e3() (*Node, bool) {
 
 // ws
 func (p *parser) e4() (*Node, bool) {
-	return p.call(rules[19], 0)
+	return p.invokePlain(rules[19], 0)
 }
 
 // $$
@@ -1949,17 +1949,17 @@ func (p *parser) e9() (*Node, bool) {
 
 // number
 func (p *parser) e10() (*Node, bool) {
-	return p.call(rules[12], 0)
+	return p.invokePlain(rules[12], 0)
 }
 
 // bool
 func (p *parser) e11() (*Node, bool) {
-	return p.call(rules[16], 0)
+	return p.invokePlain(rules[16], 0)
 }
 
 // null
 func (p *parser) e12() (*Node, bool) {
-	return p.call(rules[17], 0)
+	return p.invokePlain(rules[17], 0)
 }
 
 // object / array / string / number / bool / null
@@ -2059,7 +2059,7 @@ func (p *parser) e15() (*Node, bool) {
 
 // ws
 func (p *parser) e16() (*Node, bool) {
-	return p.call(rules[19], 0)
+	return p.invokePlain(rules[19], 0)
 }
 
 // members
@@ -2096,7 +2096,7 @@ func (p *parser) e19() (*Node, bool) {
 
 // ws
 func (p *parser) e20() (*Node, bool) {
-	return p.call(rules[19], 0)
+	return p.invokePlain(rules[19], 0)
 }
 
 // "}"
@@ -2140,7 +2140,7 @@ func (p *parser) e25() (*Node, bool) {
 
 // ws
 func (p *parser) e26() (*Node, bool) {
-	return p.call(rules[19], 0)
+	return p.invokePlain(rules[19], 0)
 }
 
 // -ws
@@ -2162,7 +2162,7 @@ func (p *parser) e30() (*Node, bool) {
 
 // ws
 func (p *parser) e31() (*Node, bool) {
-	return p.call(rules[19], 0)
+	return p.invokePlain(rules[19], 0)
 }
 
 // -ws
@@ -2278,7 +2278,7 @@ func (p *parser) e41() (*Node, bool) {
 
 // ws
 func (p *parser) e42() (*Node, bool) {
-	return p.call(rules[19], 0)
+	return p.invokePlain(rules[19], 0)
 }
 
 // ":"
@@ -2288,7 +2288,7 @@ func (p *parser) e44() (*Node, bool) {
 
 // ws
 func (p *parser) e45() (*Node, bool) {
-	return p.call(rules[19], 0)
+	return p.invokePlain(rules[19], 0)
 }
 
 // value
@@ -2332,7 +2332,7 @@ func (p *parser) e50() (*Node, bool) {
 
 // ws
 func (p *parser) e51() (*Node, bool) {
-	return p.call(rules[19], 0)
+	return p.invokePlain(rules[19], 0)
 }
 
 // elements
@@ -2369,7 +2369,7 @@ func (p *parser) e54() (*Node, bool) {
 
 // ws
 func (p *parser) e55() (*Node, bool) {
-	return p.call(rules[19], 0)
+	return p.invokePlain(rules[19], 0)
 }
 
 // "]"
@@ -2413,7 +2413,7 @@ func (p *parser) e60() (*Node, bool) {
 
 // ws
 func (p *parser) e61() (*Node, bool) {
-	return p.call(rules[19], 0)
+	return p.invokePlain(rules[19], 0)
 }
 
 // -ws
@@ -2435,7 +2435,7 @@ func (p *parser) e65() (*Node, bool) {
 
 // ws
 func (p *parser) e66() (*Node, bool) {
-	return p.call(rules[19], 0)
+	return p.invokePlain(rules[19], 0)
 }
 
 // -ws
@@ -2542,7 +2542,7 @@ func (p *parser) e76() (*Node, bool) {
 
 // chars
 func (p *parser) e77() (*Node, bool) {
-	return p.call(rules[8], 0)
+	return p.invokePlain(rules[8], 0)
 }
 
 // s:chars
@@ -2575,12 +2575,12 @@ func (p *parser) e81() (*Node, bool) {
 
 // unescaped
 func (p *parser) e82() (*Node, bool) {
-	return p.call(rules[20], 0)
+	return p.invokePlain(rules[20], 0)
 }
 
 // escape
 func (p *parser) e83() (*Node, bool) {
-	return p.call(rules[21], 0)
+	return p.invokePlain(rules[21], 0)
 }
 
 // unescaped / escape
@@ -2677,22 +2677,22 @@ func (p *parser) e91() (*Node, bool) {
 
 // hex
 func (p *parser) e92() (*Node, bool) {
-	return p.call(rules[11], 0)
+	return p.invokePlain(rules[11], 0)
 }
 
 // hex
 func (p *parser) e93() (*Node, bool) {
-	return p.call(rules[11], 0)
+	return p.invokePlain(rules[11], 0)
 }
 
 // hex
 func (p *parser) e94() (*Node, bool) {
-	return p.call(rules[11], 0)
+	return p.invokePlain(rules[11], 0)
 }
 
 // hex
 func (p *parser) e95() (*Node, bool) {
-	return p.call(rules[11], 0)
+	return p.invokePlain(rules[11], 0)
 }
 
 // "u" hex hex hex hex
@@ -2813,12 +2813,12 @@ func (p *parser) e102() (*Node, bool) {
 
 // int
 func (p *parser) e103() (*Node, bool) {
-	return p.call(rules[22], 0)
+	return p.invokePlain(rules[22], 0)
 }
 
 // frac
 func (p *parser) e104() (*Node, bool) {
-	return p.call(rules[23], 0)
+	return p.invokePlain(rules[23], 0)
 }
 
 // frac?
@@ -2841,7 +2841,7 @@ func (p *parser) e105() (*Node, bool) {
 
 // exp
 func (p *parser) e106() (*Node, bool) {
-	return p.call(rules[24], 0)
+	return p.invokePlain(rules[24], 0)
 }
 
 // exp?
@@ -3295,22 +3295,22 @@ func (p *parser) e142() (*Node, bool) {
 
 // hex
 func (p *parser) e143() (*Node, bool) {
-	return p.call(rules[25], 0)
+	return p.invokePlain(rules[25], 0)
 }
 
 // hex
 func (p *parser) e144() (*Node, bool) {
-	return p.call(rules[25], 0)
+	return p.invokePlain(rules[25], 0)
 }
 
 // hex
 func (p *parser) e145() (*Node, bool) {
-	return p.call(rules[25], 0)
+	return p.invokePlain(rules[25], 0)
 }
 
 // hex
 func (p *parser) e146() (*Node, bool) {
-	return p.call(rules[25], 0)
+	return p.invokePlain(rules[25], 0)
 }
 
 // "u" hex hex hex hex

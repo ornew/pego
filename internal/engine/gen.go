@@ -212,7 +212,12 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 		if !build && r.twin != nil {
 			r = r.twin
 		}
-		fmt.Fprintf(&b, "\treturn p.call(rules[%d], %d)\n", r.id, min)
+		if r.plain {
+			// Never memoized and without captures: call does nothing but invokePlain.
+			fmt.Fprintf(&b, "\treturn p.invokePlain(rules[%d], %d)\n", r.id, min)
+		} else {
+			fmt.Fprintf(&b, "\treturn p.call(rules[%d], %d)\n", r.id, min)
+		}
 	case *grammar.Seq:
 		var items []string
 		for _, it := range e.Items {

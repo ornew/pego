@@ -1998,7 +1998,7 @@ func (p *parser) e17() (*Node, bool) {
 
 // eol
 func (p *parser) e18() (*Node, bool) {
-	return p.call(rules[6], 0)
+	return p.invokePlain(rules[6], 0)
 }
 
 // !$$ first:field rest:(-"," f:field)* eol
@@ -2020,12 +2020,12 @@ func (p *parser) e19() (*Node, bool) {
 
 // quoted
 func (p *parser) e20() (*Node, bool) {
-	return p.call(rules[7], 0)
+	return p.invokePlain(rules[7], 0)
 }
 
 // plain
 func (p *parser) e21() (*Node, bool) {
-	return p.call(rules[8], 0)
+	return p.invokePlain(rules[8], 0)
 }
 
 // quoted / plain
