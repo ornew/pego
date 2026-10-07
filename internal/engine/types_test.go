@@ -65,6 +65,13 @@ def main = e:expr -> $e`,
 def main = x:"a"? y:item* z:pair -> new P{X: $x, Y: $y, Z: $z}
 def item = @(?a-z)
 def pair = "(" ")"`,
+		// Optional values as results of rules, actions and map functions
+		`def main = x:"a"? -> $x`,
+		`def main: *Match = "a"?`,
+		`type C struct { X Match, Next *C }
+def main: *C = xs:"a"* -> foldr(nil, $xs, (acc, x) => new C{X: $x, Next: $acc})`,
+		`def main = xs:p* -> map($xs, (p) => $p.x)
+def p = x:@"a"? ";"`,
 		// Inference for recursive rules
 		`def list = "a" list / _
 def main = l:list -> $l`,

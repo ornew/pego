@@ -49,6 +49,20 @@ def main = "a" "b" -> new Pair{All: $0, N: 1 + 2 * 3, S: "x" + text($2), B: !fal
 	)
 }
 
+// TestOptionalResults checks rules and actions whose result is an optional value (*T).
+func TestOptionalResults(t *testing.T) {
+	check(t, `def main = x:"a"? -> $x`,
+		ok("a", `"a"`),
+		ok("", `nil`),
+	)
+	check(t, `
+type C struct { X Match, Next *C }
+def main: *C = xs:"a"* -> foldr(nil, $xs, (acc, x) => new C{X: $x, Next: $acc})`,
+		ok("", `nil`),
+		ok("aa", `(C Next=(C Next=nil X="a") X="a")`),
+	)
+}
+
 func TestFold(t *testing.T) {
 	src := `
 type Op struct { Left Node, Op Match, Right Node }

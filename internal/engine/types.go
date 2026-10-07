@@ -170,6 +170,15 @@ func isNode(t ty) bool {
 	return false
 }
 
+// isNodeOrNil reports whether every value of type t is a node or nil: the values a rule or an
+// action may produce.
+func isNodeOrNil(t ty) bool {
+	if o, ok := t.(optTy); ok {
+		return isNode(o.elem)
+	}
+	return t == tyNil || isNode(t)
+}
+
 // assignable reports whether a value of type s can be placed where type d is expected.
 func assignable(s, d ty) bool {
 	if s == tyAny || d == tyAny || s == tyNever {

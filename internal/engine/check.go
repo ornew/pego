@@ -61,7 +61,7 @@ func checkTypes(prog *Program, errs *ErrorList) {
 	for _, rd := range rules {
 		if rd.Type != nil {
 			t := k.resolve(rd.Type)
-			if !isNode(t) && t != tyNil {
+			if !isNodeOrNil(t) {
 				k.errorf(rd.Pos, "rule %s must produce a node, but its type is %s", rd.Name, t)
 				t = tyAny
 			}
@@ -325,7 +325,7 @@ func (k *checker) ruleType(rd *grammar.RuleDef) ty {
 	var t ty
 	if rd.Action != nil {
 		t = k.term(rd.Action, &termEnv{caps: sc.caps, items: items, allowIndex: true})
-		if !isNode(t) && !assignable(t, tyNil) {
+		if !isNodeOrNil(t) {
 			k.errorf(termPos(rd.Action, rd.Pos), "action of %s must produce a node, got %s", rd.Name, t)
 			t = tyAny
 		}
@@ -422,7 +422,7 @@ func (k *checker) lineType(e grammar.Expr, action grammar.Term, locals map[strin
 		}
 	}
 	at := k.term(action, env)
-	if !isNode(at) && !assignable(at, tyNil) {
+	if !isNodeOrNil(at) {
 		k.errorf(termPos(action, pos), "action must produce a node, got %s", at)
 		return tyAny
 	}
@@ -737,7 +737,7 @@ func (k *checker) call(t *grammar.Call, env *termEnv) ty {
 			return tyAny
 		}
 		body := k.term(l.Body, env.with(l.Params, []ty{elem}))
-		if !isNode(body) && !assignable(body, tyNil) {
+		if !isNodeOrNil(body) {
 			k.errorf(t.Pos, "map: the function must produce a node, got %s", body)
 		}
 		return listTy{body}
