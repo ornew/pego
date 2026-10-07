@@ -47,12 +47,6 @@ type evalCtx struct {
 	cbase      int     // start, in p.created, of the nodes created by this evaluation
 }
 
-func (c *evalCtx) with(name string, v any) *evalCtx {
-	n := *c
-	n.locals = &local{name: name, val: v, next: c.locals}
-	return &n
-}
-
 // runAction evaluates the rule's action.
 func (p *parser) runAction(r *rule, f *frame, items []*Node, start, end int) *Node {
 	ctx := p.useCtx(evalCtx{p: p, scope: r.scope, frame: f, items: items, start: start, end: end, cbase: len(p.created)})
@@ -176,7 +170,9 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 		return c.builtin(t.Func, args)
 
 	case *grammar.Lambda:
-		return &closure{params: t.Params, body: t.Body, ctx: c}, nil
+		f := c.p.closures.alloc()
+		*f = closure{params: t.Params, body: t.Body, ctx: c.keep()}
+		return f, nil
 
 	case *grammar.Unary:
 		x, err := c.eval(t.X)
@@ -518,12 +514,39 @@ func asNode(fn string, v any) (*Node, error) {
 }
 
 func (f *closure) apply(x, y any) (any, error) {
-	ctx := f.ctx
+	// The context and the parameters are freed when the call returns; a lambda created by the body
+	// keeps a copy of them (keep).
+	p := f.ctx.p
+	mc, ml := p.lctxs.n, p.locals.n
+	ctx := p.lctxs.alloc()
+	*ctx = *f.ctx
 	args := [2]any{x, y}
 	for i, name := range f.params {
-		ctx = ctx.with(name, args[i])
+		l := p.locals.alloc()
+		*l = local{name: name, val: args[i], next: ctx.locals}
+		ctx.locals = l
 	}
-	return ctx.eval(f.body)
+	v, err := ctx.eval(f.body)
+	p.lctxs.reset(mc)
+	p.locals.reset(ml)
+	return v, err
+}
+
+// keep returns c, or a copy of c on the heap if it belongs to a lambda call (closure.apply),
+// whose context and parameters are freed when the call returns while a lambda created in it can
+// be returned from it.
+func (c *evalCtx) keep() *evalCtx {
+	if c == &c.p.ectx {
+		return c
+	}
+	k := *c
+	var head *local
+	for l, link := c.locals, &head; l != nil; l = l.next {
+		*link = &local{name: l.name, val: l.val}
+		link = &(*link).next
+	}
+	k.locals = head
+	return &k
 }
 
 // predicate compiles a predicate [...].

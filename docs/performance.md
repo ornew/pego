@@ -407,6 +407,19 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   23.6 MB, CSV 22.5 → 19.0 MB, minilang 18.9 → 18.6 MB (closure); CSV 3.5% faster on the closure and bytecode backends,
   JSON and minilang unchanged within noise. Generated parsers: JSON 11.2 → 10.9 ms, CSV 5.5 → 5.2 ms.
 
+### 26. Lambda calls without allocation in the closure backend
+
+- Each lambda call (`closure.apply`) copied the evaluation context and allocated a `local` for each parameter, and
+  each lambda expression allocated a `closure`. On JSON this was 36k of the closure backend's 37k allocations per
+  parse.
+- Contexts and parameters of a call now come from LIFO arenas in the parser (`arena[T]`), freed when the call
+  returns; closures come from an arena freed at the next evaluation (`useCtx`), since a lambda cannot outlive the
+  action or predicate that created it (lambdas are only arguments of `map`, `foldl` and `foldr`, and functions
+  cannot be stored). A lambda created inside another lambda's call keeps a heap copy of that call's context (`keep`).
+- Effect (min of 8 interleaved runs, Apple M3 Max, closure backend, code points): JSON 15.9 → 15.3 ms, 37k → 1.3k
+  allocations, 23.6 → 21.4 MB; CSV 8.0 → 7.3 ms, 56k → 0.8k allocations, 19.0 → 15.6 MB; minilang 21k → 8k
+  allocations. XML and Arith_Pratt use no lambdas and are unchanged.
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -445,7 +458,7 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–25 are done. Next candidates, in order:
+Changes 13–26 are done. Next candidates, in order:
 
 1. Inlining small rules at compile time; the iterative VM's frame dispatch (an interface call per step).
 2. Document reparses: shifting reused subtrees (`shiftNode`, a map and a copy per reused result).

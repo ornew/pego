@@ -129,8 +129,36 @@ func (p *parser) newFrame(n int) *frame {
 // useCtx places the evaluation context for actions and predicates in a single area owned by
 // the parser and returns it. Evaluations never nest, and no reference to the context survives
 // an evaluation (function values cannot be stored in struct fields or variables), so the area
-// can be reused.
+// can be reused, and so can the lambdas of the previous evaluation.
 func (p *parser) useCtx(c evalCtx) *evalCtx {
 	p.ectx = c
+	p.closures.reset(0)
 	return &p.ectx
+}
+
+// arena allocates values of type T in chunks and frees them in LIFO order (reset). Pointers to
+// allocated values stay valid until they are freed, since chunks never move.
+type arena[T any] struct {
+	chunks []*[64]T
+	n      int
+}
+
+func (a *arena[T]) alloc() *T {
+	c := a.n / 64
+	if c == len(a.chunks) {
+		a.chunks = append(a.chunks, new([64]T))
+	}
+	v := &a.chunks[c][a.n%64]
+	a.n++
+	return v
+}
+
+// reset frees the values allocated after the first n, clearing them so that they keep nothing
+// reachable.
+func (a *arena[T]) reset(n int) {
+	for i := n; i < a.n; i++ {
+		var zero T
+		a.chunks[i/64][i%64] = zero
+	}
+	a.n = n
 }
