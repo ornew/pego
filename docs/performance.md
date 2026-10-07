@@ -26,6 +26,9 @@ Notes:
   or more.
 - Results must not change: every optimization is covered by the equivalence tests (`go test ./...`), which compare
   all backends, both position units, memoization on and off, and recognition against full parses.
+- A change to shared runtime code (input, memo table, calls) should be measured on the incremental and stream
+  benchmarks too (`BenchmarkIncremental`, `BenchmarkStream`), not only on batch parsing: they reach code paths the
+  batch benchmarks do not (see the pitfall in change 30).
 - The engine benchmarks read the grammars from `examples/` when they run, so when comparing a change to a grammar, run
   the benchmark binary while the old grammar is checked out (for example between `git stash` and `git stash pop`), not
   just a binary built from the old code. Generated parsers embed their grammar.
@@ -462,6 +465,10 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 - Effect (min of 6 interleaved runs, Apple M3 Max): recognition JSON 9.6 → 9.1 ms (closure), 13.6 → 12.9 ms
   (bytecode), CSV 4.2 → 3.8 ms (closure), 5.2 → 4.8 ms (bytecode), with 1 MB less allocated per parse; full parses and
   XML recognition (whose predicates read token text) unchanged within noise.
+- Pitfall: `Document.Parse` gives the parser a copy of the input, so the table built during a parse was lost and every
+  edit and every reparse of a `Document` rebuilt it from the whole text (an edit to a 100,000-line document went from
+  0.3 to 2.2 ms). The incremental benchmarks were not in the measurements of this change. The `Document` now keeps
+  the tables a parse builds (`TestDocumentKeepsInputTables`).
 
 ### 31. Specialized character-class tests in the closure backend
 

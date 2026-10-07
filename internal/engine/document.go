@@ -52,6 +52,8 @@ func (d *Document) Parse() (*Node, error) {
 	p := &parser{prog: d.prog, input: d.in, memo: d.memo, memoAll: true, maxDepth: d.depth}
 	n, err := d.prog.run(p, d.back, d.start)
 	d.stats = p.stats
+	// Keep the tables the parse built on demand, so that later parses and edits reuse them.
+	d.in.offs, d.in.lines = p.offs, p.lines
 	return n, err
 }
 

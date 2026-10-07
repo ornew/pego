@@ -260,3 +260,28 @@ func TestDocumentEditText(t *testing.T) {
 		}
 	}
 }
+
+// TestDocumentKeepsInputTables checks that the tables a parse builds on demand (the code-point
+// offsets of token text, the line starts of error positions) stay with the Document, so that
+// edits and later parses update them instead of rebuilding them from the whole text.
+func TestDocumentKeepsInputTables(t *testing.T) {
+	doc, err := compile(t, `def main = (@(?a-z)+ "\n")* $$`).NewDocument("main", "ab\ncd\n!")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := doc.Parse(); err == nil {
+		t.Fatal("expected a syntax error")
+	}
+	if doc.in.offs == nil || doc.in.lines == nil {
+		t.Fatalf("tables not kept: offsets %v, lines %v", doc.in.offs != nil, doc.in.lines != nil)
+	}
+	if err := doc.Edit(6, 7, "ef\n"); err != nil {
+		t.Fatal(err)
+	}
+	if doc.in.offs == nil {
+		t.Fatal("the offsets were dropped by an edit")
+	}
+	if n, err := doc.Parse(); err != nil || n.String() != `(Seq [(Seq "ab" "\n") (Seq "cd" "\n") (Seq "ef" "\n")])@main` {
+		t.Fatalf("got %v, %v", n, err)
+	}
+}
