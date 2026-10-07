@@ -249,6 +249,19 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 
   Bytes per parse drop by 2–13% (XML +0.3%: partly used field chunks).
 
+### 16. Start positions and lambdas from chunks in the VMs
+
+- `PUSHPOS` pushed the start position of a sequence, repetition or atomic expression onto the value stack (`[]any`),
+  and converting an `int` to an interface allocates for values above 255. It now pushes a `*int` taken from a chunk
+  (`parser.newPos`); the consumers (`SEQ`, `ATOMIC`, `ENDREPEAT`) dereference it.
+- `EFUNC` allocated each `vmFunc`; lambdas never outlive the evaluation, and they now come from a chunk too
+  (`parser.newFunc`).
+- Effect (min of 6 interleaved runs, codepoints, Apple M3 Max): allocations per parse JSON 32k → 1.9k, CSV 41k → 1.2k,
+  XML 47k → 19k, minilang 14k → 1.4k, for both VMs. Bytes and time are unchanged (within noise); the gain is fewer
+  objects for the GC.
+- The remaining XML allocations are `text(...)` results: a string converted to an interface needs a header on the
+  heap.
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -287,7 +300,7 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–15 are done. Next candidates, in order:
+Changes 13–16 are done. Next candidates, in order:
 
 1. Inline class comparisons in the VM (`Class.has`) for small ASCII classes.
 2. Rule-call overhead and inlining of small rules (item 1 above).

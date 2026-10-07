@@ -400,7 +400,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 				b.cut = true
 			}
 		case OpPushPos:
-			p.push(p.pos)
+			p.push(p.newPos(p.pos))
 		case OpPushNil:
 			p.push(nil)
 		case OpSeq:
@@ -410,11 +410,11 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			for k := 0; k < n; k++ {
 				kids[k] = asNodeValue(p.vals[top-n+k])
 			}
-			start := p.vals[top-n-1].(int)
+			start := *p.vals[top-n-1].(*int)
 			p.vals = p.vals[:top-n-1]
 			p.push(p.newNode(Node{Type: TypeSeq, Start: start, End: p.pos, Children: kids, fresh: true}))
 		case OpAtomic:
-			start := p.pop().(int)
+			start := *p.pop().(*int)
 			if in.A == 1 {
 				p.push(p.newNode(Node{Type: TypeMatch, Start: start, End: p.pos, Text: p.text(start, p.pos), terminal: true, fresh: true}))
 			}
@@ -476,7 +476,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 				for k := range kids {
 					kids[k] = asNodeValue(p.vals[rep.base+k])
 				}
-				start := p.vals[rep.base-1].(int)
+				start := *p.vals[rep.base-1].(*int)
 				p.vals = p.vals[:rep.base-1]
 				p.push(p.newNode(Node{Type: TypeList, Start: start, End: p.pos, Children: kids, fresh: true}))
 			}
@@ -809,7 +809,7 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 				// created it (when the lambda returns it).
 				locals = append([]any(nil), locals...)
 			}
-			stack = append(stack, &vmFunc{vm: vm, entry: int(in.A), n: int(in.B), locals: locals, ctx: ctx})
+			stack = append(stack, p.newFunc(vmFunc{vm: vm, entry: int(in.A), n: int(in.B), locals: locals, ctx: ctx}))
 		case ECall:
 			// The arguments stay on the stack during the call: lambdas called by the built-in push
 			// above them, and built-ins do not retain args.

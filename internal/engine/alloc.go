@@ -45,6 +45,30 @@ func (p *parser) kids(base int) []*Node {
 	return ks
 }
 
+// newPos allocates a copy of the position pos from a chunk and returns it. Start positions are
+// pushed onto the VM value stack as *int: converting an int to an interface would allocate each
+// time.
+func (p *parser) newPos(pos int) *int {
+	if len(p.posSlab) == 0 {
+		p.posSlab = make([]int, ptrChunk)
+	}
+	n := &p.posSlab[0]
+	p.posSlab = p.posSlab[1:]
+	*n = pos
+	return n
+}
+
+// newFunc allocates a copy of the lambda f from a chunk and returns it.
+func (p *parser) newFunc(f vmFunc) *vmFunc {
+	if len(p.funcSlab) == 0 {
+		p.funcSlab = make([]vmFunc, nodeChunk/4)
+	}
+	n := &p.funcSlab[0]
+	p.funcSlab = p.funcSlab[1:]
+	*n = f
+	return n
+}
+
 // dropKids discards p.kidStack[base:].
 func (p *parser) dropKids(base int) {
 	clear(p.kidStack[base:])

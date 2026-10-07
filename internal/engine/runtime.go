@@ -69,6 +69,8 @@ type parser struct {
 	kidStack  []*Node
 	frameSlab []frame
 	fieldSlab []NodeField
+	posSlab   []int
+	funcSlab  []vmFunc
 	ectx      evalCtx      // area for useCtx
 	item      [1]*Node     // the element list of an action whose body is not a sequence (one)
 	oplocals  [3]local     // $lhs, $rhs and $op of a Pratt operator action
