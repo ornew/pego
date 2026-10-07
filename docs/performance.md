@@ -263,7 +263,7 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   XML 47k → 19k, minilang 14k → 1.4k, for both VMs. Bytes and time are unchanged (within noise); the gain is fewer
   objects for the GC.
 - The remaining XML allocations are `text(...)` results: a string converted to an interface needs a header on the
-  heap.
+  heap (comparisons of two texts avoid it since change 36).
 
 ### 17. ASCII bitmaps for character classes in the VMs
 
@@ -512,6 +512,16 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 - Effect (min of 10 interleaved runs, Apple M3 Max, Arith_LeftRec): full parses 6–9% faster (closure 28.9 → 26.6 ms),
   recognition 6–10% faster (closure 21.8 → 19.8 ms); 86k → 2.2k allocations.
 
+### 36. Comparing texts without boxing them
+
+- `text(...)` returns a string as an interface value, which allocates for the string header. The XML example compares
+  the name of every end tag with its start tag (`[text($e) == text($n)]`), which was 18k of its 19k allocations per
+  parse. A comparison `text(a) == text(b)` (or `!=`) is now evaluated as a string comparison by the closure backend
+  and emitted as one by the code generator. The VMs still box the strings (avoiding it there would take a new
+  instruction).
+- Effect (min of 12 interleaved runs, Apple M3 Max, XML): closure 14.1 → 13.8 ms, generated 9.9 → 9.6 ms, recognition
+  11.7 → 11.4 ms; 19k → 1.1k allocations.
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -551,7 +561,7 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–35 are done. Next candidates, in order:
+Changes 13–36 are done. Next candidates, in order:
 
 1. Inlining small rules at compile time; the iterative VM's frame dispatch (an interface call per step).
 2. Document reparses: shifting reused subtrees still copies them (positions are absolute in nodes).

@@ -292,6 +292,23 @@ func (c *evalCtx) listNode(kids []*Node) *Node {
 }
 
 func (c *evalCtx) binary(t *grammar.Binary) (any, error) {
+	if t.Op == "==" || t.Op == "!=" {
+		// Comparing two texts (such as an end tag with its start tag) compares the strings
+		// directly: storing a string in an interface would allocate.
+		if lx, ok := textArg(t.L); ok {
+			if rx, ok := textArg(t.R); ok {
+				ls, err := c.textOf(lx)
+				if err != nil {
+					return nil, err
+				}
+				rs, err := c.textOf(rx)
+				if err != nil {
+					return nil, err
+				}
+				return (ls == rs) == (t.Op == "=="), nil
+			}
+		}
+	}
 	l, err := c.eval(t.L)
 	if err != nil {
 		return nil, err
@@ -503,6 +520,35 @@ func (c *evalCtx) builtin(fn string, args []any) (any, error) {
 		return nil, fmt.Errorf("unknown function %s", fn)
 	}
 	return nil, fmt.Errorf("%s: invalid argument %s", fn, typeName(args[0]))
+}
+
+// textArg returns the argument of t if t is a call text(x).
+func textArg(t grammar.Term) (grammar.Term, bool) {
+	if call, ok := t.(*grammar.Call); ok && call.Func == "text" && len(call.Args) == 1 {
+		return call.Args[0], true
+	}
+	return nil, false
+}
+
+// textOf evaluates x and returns text(x) as a string.
+func (c *evalCtx) textOf(x grammar.Term) (string, error) {
+	v, err := c.eval(x)
+	if err != nil {
+		return "", err
+	}
+	switch v := v.(type) {
+	case string:
+		return v, nil
+	case *Node:
+		if v == nil {
+			return "", nil
+		}
+		if v.terminal {
+			return v.Text, nil
+		}
+		return c.p.text(v.Start, v.End), nil
+	}
+	return "", fmt.Errorf("text: invalid argument %s", typeName(v))
 }
 
 func listItems(fn string, v any) ([]*Node, error) {

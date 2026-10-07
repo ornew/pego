@@ -538,6 +538,12 @@ func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) str
 			return "c.concat(" + strings.Join(args, ", ") + ")"
 		}
 	case *grammar.Binary:
+		if lx, ok := textArg(t.L); ok && (t.Op == "==" || t.Op == "!=") {
+			if rx, ok := textArg(t.R); ok {
+				// Compare the strings directly (see evalCtx.binary).
+				return fmt.Sprintf("any(c.textStr(%s) %s c.textStr(%s))", g.term(lx, s, locals), t.Op, g.term(rx, s, locals))
+			}
+		}
 		l, r := g.term(t.L, s, locals), g.term(t.R, s, locals)
 		switch t.Op {
 		case "&&":

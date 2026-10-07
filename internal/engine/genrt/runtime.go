@@ -1420,7 +1420,11 @@ func (c *actx) length(x any) any {
 	return nil
 }
 
-func (c *actx) text(x any) any {
+func (c *actx) text(x any) any { return c.textStr(x) }
+
+// textStr returns text(x) as a string. Comparisons of two texts use it directly, since storing a
+// string in an interface allocates.
+func (c *actx) textStr(x any) string {
 	switch x := x.(type) {
 	case string:
 		return x
@@ -1434,7 +1438,7 @@ func (c *actx) text(x any) any {
 		return c.p.text(x.Start, x.End)
 	}
 	evalErrorf("text: invalid argument %s", typeName(x))
-	return nil
+	return ""
 }
 
 func listItems(fn string, v any) []*Node {
