@@ -59,8 +59,9 @@ type parser struct {
 	deferMemo bool
 
 	// Bytecode VM state
-	vals []any     // value stack
-	ents []vmEntry // entry stack
+	vals []any      // value stack
+	ents []vmEntry  // entry stack
+	labs []labState // state of the label, recovery and skip entries on ents
 	reps []repState
 	// estack is the operand stack of expression code (vmProgram.eval), also used for the
 	// arguments of built-ins and struct fields by the closure backend's evaluator.

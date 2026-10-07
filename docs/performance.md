@@ -483,6 +483,15 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   closure 16.2 → 15.3 ms, Arith_Pratt closure 10.4 → 9.8 ms, recognition of Arith_Pratt 7.5 → 7.0 ms), except CSV on
   bytecode (unchanged within noise).
 
+### 33. Smaller VM entries
+
+- Every choice and every repetition iteration pushes an entry onto the VM's entry stack. Entries were 112 bytes,
+  mostly fields that only `#error` labels, `#recover` and skip entries use; in profiles, pushing them was the most
+  expensive line of the VM loop. Those fields moved to a separate stack (`parser.labs`, indexed from the entry), and
+  the stack heights in the saved state are `int32`: an entry is now 56 bytes.
+- Effect (min of 6 interleaved runs, Apple M3 Max): both VMs 1–5% faster on full parses (JSON bytecode 18.8 →
+  18.0 ms, XML 19.0 → 18.2 ms) and 2–6% on recognition, including the error-recovery workload.
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -522,7 +531,7 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–32 are done. Next candidates, in order:
+Changes 13–33 are done. Next candidates, in order:
 
 1. Inlining small rules at compile time; the iterative VM's frame dispatch (an interface call per step).
 2. Document reparses: shifting reused subtrees still copies them (positions are absolute in nodes).

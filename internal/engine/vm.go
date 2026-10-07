@@ -192,23 +192,44 @@ const (
 	eSkip
 )
 
-// vmEntry is an element of the entry stack (see the Failure section of docs/bytecode.md).
+// vmEntry is an element of the entry stack (see the Failure section of docs/bytecode.md). It is
+// kept small, since a choice or an iteration pushes one: the state of the rarer label, recovery
+// and skip entries is on a separate stack (parser.labs).
 type vmEntry struct {
 	kind uint8
 	cut  bool
 	ip   int32
-	msg  int32 // message of eLabel
+	lab  int32 // eLabel, eRecover, eSkip: index of the entry's state in parser.labs
 	save vmSave
+}
+
+// labState is the state of a label, recovery or skip entry.
+type labState struct {
+	msg  int32   // eLabel: message
 	far  int     // eLabel, eRecover: saved farthest failure. eSkip: recovered failure
 	base int     // eLabel, eRecover: saved start of the expectation record (expMark)
 	exp  []expID // eSkip: expectations of the recovered failure
 }
 
-// vmSave is a saved state.
+// pushLab pushes an entry of kind with the state l.
+func (p *parser) pushLab(kind uint8, ip int32, save vmSave, l labState) {
+	p.labs = append(p.labs, l)
+	p.ents = append(p.ents, vmEntry{kind: kind, ip: ip, lab: int32(len(p.labs) - 1), save: save})
+}
+
+// popLab pops the state of the entry e, which has just been popped.
+func (p *parser) popLab(e *vmEntry) labState {
+	l := p.labs[e.lab]
+	p.labs = p.labs[:e.lab]
+	return l
+}
+
+// vmSave is a saved state. Stack heights are int32 to keep entries small.
 type vmSave struct {
-	pos, vals, reps, trail, recovered int
-	env                               *env
-	frame                             *frame
+	pos                          int
+	vals, reps, trail, recovered int32
+	env                          *env
+	frame                        *frame
 }
 
 type repState struct {
@@ -218,19 +239,19 @@ type repState struct {
 }
 
 func (p *parser) save() vmSave {
-	return vmSave{pos: p.pos, vals: len(p.vals), reps: len(p.reps), trail: len(p.trail),
-		recovered: len(p.recovered), env: p.env, frame: p.frame}
+	return vmSave{pos: p.pos, vals: int32(len(p.vals)), reps: int32(len(p.reps)), trail: int32(len(p.trail)),
+		recovered: int32(len(p.recovered)), env: p.env, frame: p.frame}
 }
 
 func (p *parser) restore(s *vmSave) {
 	p.pos = s.pos
 	p.vals = p.vals[:s.vals]
 	p.reps = p.reps[:s.reps]
-	for i := len(p.trail) - 1; i >= s.trail; i-- {
+	for i := len(p.trail) - 1; i >= int(s.trail); i-- {
 		u := p.trail[i]
 		u.f.vals[u.slot] = u.old
 	}
-	p.trail = p.trail[:min2(s.trail, len(p.trail))]
+	p.trail = p.trail[:min2(int(s.trail), len(p.trail))]
 	p.recovered = p.recovered[:s.recovered]
 	p.env = s.env
 	p.frame = s.frame
@@ -502,7 +523,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 				goto fail
 			}
 			p.pos = e.save.pos
-			p.vals = p.vals[:e.save.vals]
+			p.vals = p.vals[:int(e.save.vals)]
 		case OpCall:
 			b.ip = ip
 			return evCall, nil, false
@@ -519,31 +540,34 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			}
 		case OpLabel:
 			mk := p.isolate(p.pos)
-			p.ents = append(p.ents, vmEntry{kind: eLabel, msg: in.A, far: mk.far, base: mk.base})
+			p.pushLab(eLabel, 0, vmSave{}, labState{msg: in.A, far: mk.far, base: mk.base})
 		case OpEndLabel:
 			e := p.ents[len(p.ents)-1]
 			p.ents = p.ents[:len(p.ents)-1]
-			far, inner := p.unisolate(expMark{e.far, e.base})
+			l := p.popLab(&e)
+			far, inner := p.unisolate(expMark{l.far, l.base})
 			p.mergeExpected(far, inner)
 		case OpRecover:
 			mk := p.isolate(p.pos)
-			p.ents = append(p.ents, vmEntry{kind: eRecover, ip: in.A, save: p.save(), far: mk.far, base: mk.base})
+			p.pushLab(eRecover, in.A, p.save(), labState{far: mk.far, base: mk.base})
 		case OpEndRecover:
 			e := p.ents[len(p.ents)-1]
 			p.ents = p.ents[:len(p.ents)-1]
-			far, inner := p.unisolate(expMark{e.far, e.base})
+			l := p.popLab(&e)
+			far, inner := p.unisolate(expMark{l.far, l.base})
 			p.mergeExpected(far, inner)
 			ip = int(in.A)
 			continue
 		case OpEndSkip:
 			e := p.ents[len(p.ents)-1]
 			p.ents = p.ents[:len(p.ents)-1]
+			l := p.popLab(&e)
 			if p.pos == e.save.pos {
 				p.restore(&e.save)
-				p.mergeExpected(e.far, e.exp)
+				p.mergeExpected(l.far, l.exp)
 				goto fail
 			}
-			se := p.makeError(e.far, e.exp)
+			se := p.makeError(l.far, l.exp)
 			p.recovered = append(p.recovered, se)
 			if in.A == 1 {
 				p.push(p.newNode(Node{Type: TypeError, Start: e.save.pos, End: p.pos, Text: p.text(e.save.pos, p.pos),
@@ -597,18 +621,21 @@ func (p *parser) unwind(m *Module, ebase int) (ip int, ok bool) {
 			p.restore(&e.save)
 			return int(e.ip), true
 		case eLabel:
-			far, _ := p.unisolate(expMark{e.far, e.base})
-			p.expect(far, msgBit|(numFixedDescs+expID(e.msg)))
+			l := p.popLab(&e)
+			far, _ := p.unisolate(expMark{l.far, l.base})
+			p.expect(far, msgBit|(numFixedDescs+expID(l.msg)))
 			continue
 		case eRecover:
-			far, inner := p.unisolate(expMark{e.far, e.base})
+			l := p.popLab(&e)
+			far, inner := p.unisolate(expMark{l.far, l.base})
 			exp := p.keep(inner) // keep them while skip runs
 			p.restore(&e.save)
-			p.ents = append(p.ents, vmEntry{kind: eSkip, save: e.save, far: far, exp: exp})
+			p.pushLab(eSkip, 0, e.save, labState{far: far, exp: exp})
 			return int(e.ip), true
 		case eSkip:
+			l := p.popLab(&e)
 			p.restore(&e.save)
-			p.mergeExpected(e.far, e.exp)
+			p.mergeExpected(l.far, l.exp)
 		}
 	}
 }
