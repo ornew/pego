@@ -601,29 +601,22 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 
 ## Remaining hotspots and next candidates
 
-From profiles after change 8 (JSON and minilang, full parse):
+From profiles after change 41 (JSON, XML, minilang, error recovery; full parse and recognition):
 
-1. **Rule-call overhead** (`call` → `invoke` → body closure): frame setup, environment and cut save/restore, depth and
-   statistics counters. Candidate: inline calls to small, non-memoized, capture-free rules at compile time.
-2. **Per-character closure dispatch** for literals and classes inside sequences and choices. Candidates: merge
-   adjacent literals; precompute first-character sets for choices to skip alternatives that cannot match.
-3. **AST construction** (`newStruct`, `Fields`, action evaluation contexts). Each action allocates an `evalCtx`; lambdas
-   allocate a `local` per argument. Candidates: pool `evalCtx`; compile actions to Go closures over slot indices.
-4. **Generated Go parsers** now have the engine's runtime (change 11). What remains is mostly shared with the engine:
-   rule-call overhead, `Fields` slices for struct nodes, and error-recording (`expect`) on every failed literal.
-   Generator-specific candidates: inline literals and calls to small rules into the calling method.
-5. **Document edits** rebuilt the whole memo table on every edit (`Document.Edit`); since change 20 the table is
-   spliced in place. Shifting reused subtrees past an edit (`shiftNode`) remains.
-
-### Work in progress (handoff)
-
-The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–41 are done. Next candidates, in order:
-
-1. Inlining small rules at compile time; the iterative VM's frame dispatch (an interface call per step).
-2. Document reparses: shifting reused subtrees still copies them (positions are absolute in nodes).
-3. Bytes allocated per parse (about 100 bytes per input byte on JSON after change 18; nodes dominate). Freeing and
-   re-acquiring this memory (`runtime.madvise`, GC) is a large share of profiles on macOS.
+1. **Garbage collection and memory acquisition.** With the default `GOGC`, the runtime's own work (marking, and
+   `madvise` when spans are reused) is a large share of benchmark profiles. Allocations per parse are down to about a
+   thousand objects, so what remains is bytes: nodes (120 bytes each, a public struct) dominate. Freeing scratch
+   memory early did not pay (see the experiments table).
+2. **Expectation recording** (`expect`): 5–8% in most profiles, mostly the duplicate check against the expectations
+   already recorded at the farthest position. An index of the last append per expectation does not help, because it
+   goes stale whenever the farthest position advances, which is the common case.
+3. **The VMs** do not have changes 36 and 37 (text comparisons and `concat` fusion): both need new expression
+   instructions, which means extending the instruction set and deciding how its version is checked
+   (`isaVersion` must currently match exactly). The iterative VM also dispatches every step through an interface.
+4. **Document reparses** copy every reused result after an edit with shifted positions (`shiftNode`), because node
+   positions are absolute; avoiding that would need relative positions in nodes (an API change).
+5. **Rule calls** still go through a function per call; inlining small rules into their callers at compile time
+   (closure backend) or in generated code remains a candidate.
 
 Timing is noisy on shared machines: compare B/op and allocs/op, or take the minimum of several interleaved runs
 (before/after alternated with `git stash`).
