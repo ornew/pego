@@ -42,6 +42,7 @@ type vmProgram struct {
 	runes  [][]rune   // code points of each string in the string table
 	bytes  [][]byte   // UTF-8 of each string in the string table
 	scopes [][]string // names in the scope table
+	fields [][]string // names in the field lists
 	descs  []string   // expectation table: fixedDescs followed by the string table (string i has index numFixedDescs+i)
 }
 
@@ -54,6 +55,9 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 	}
 	for _, sc := range m.Scopes {
 		vm.scopes = append(vm.scopes, vm.names(sc))
+	}
+	for _, fl := range m.FieldLists {
+		vm.fields = append(vm.fields, vm.names(fl))
 	}
 	for i := range m.Rules {
 		ri := &m.Rules[i]
@@ -641,29 +645,39 @@ type vmFunc struct {
 func (f *vmFunc) arity() int { return f.n }
 
 func (f *vmFunc) apply(args ...any) (any, error) {
-	locals := append(append(make([]any, 0, len(f.locals)+len(args)), f.locals...), args...)
-	return f.vm.eval(f.ctx, f.entry, locals)
+	// The locals are placed on the expression stack below the operands of the body.
+	p := f.ctx.p
+	base := len(p.estack)
+	p.estack = append(append(p.estack, f.locals...), args...)
+	v, err := f.vm.eval(f.ctx, f.entry, p.estack[base:len(p.estack):len(p.estack)])
+	p.estack = p.estack[:base]
+	return v, err
 }
 
 // evaluator returns an evaluator for an action in expression code. If operator is set, $lhs,
 // $rhs, and $op are locals.
 func (vm *vmProgram) evaluator(entry int, operator bool) evaluator {
+	if !operator {
+		return func(ctx *evalCtx) (any, error) { return vm.eval(ctx, entry, nil) }
+	}
 	return func(ctx *evalCtx) (any, error) {
-		var locals []any
-		if operator {
-			locals = make([]any, 3)
-			for l := ctx.locals; l != nil; l = l.next {
-				switch l.name {
-				case "lhs":
-					locals[0] = l.val
-				case "rhs":
-					locals[1] = l.val
-				case "op":
-					locals[2] = l.val
-				}
+		p := ctx.p
+		base := len(p.estack)
+		p.estack = append(p.estack, nil, nil, nil)
+		locals := p.estack[base : base+3 : base+3]
+		for l := ctx.locals; l != nil; l = l.next {
+			switch l.name {
+			case "lhs":
+				locals[0] = l.val
+			case "rhs":
+				locals[1] = l.val
+			case "op":
+				locals[2] = l.val
 			}
 		}
-		return vm.eval(ctx, entry, locals)
+		v, err := vm.eval(ctx, entry, locals)
+		p.estack = p.estack[:base]
+		return v, err
 	}
 }
 
@@ -694,15 +708,20 @@ func (vm *vmProgram) assign(p *parser, name string, entry int) bool {
 	return true
 }
 
-// eval evaluates expression code from ip until ERET.
-func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (any, error) {
+// eval evaluates expression code from ip until ERET. The operands are kept on the parser's
+// expression stack (p.estack) above its current top, so evaluations nested through lambdas
+// (vmFunc.apply) share one area; the stack is back at its original height when eval returns.
+func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error) {
 	m := vm.m
-	var stack []any
+	p := ctx.p
+	stack := p.estack
+	base := len(stack)
 	pop := func() any {
 		v := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
 		return v
 	}
+	defer func() { p.estack = stack[:base] }()
 	for {
 		in := &m.Exprs[ip]
 		switch in.Op {
@@ -740,15 +759,13 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (any, error) {
 			}
 			stack = append(stack, v)
 		case ENew:
-			ids := m.FieldLists[in.B]
-			names := vm.names(ids)
-			vals := append([]any(nil), stack[len(stack)-len(ids):]...)
-			stack = stack[:len(stack)-len(ids)]
-			v, err := ctx.newStruct(m.Strings[in.A], names, vals)
+			names := vm.fields[in.B]
+			top := len(stack) - len(names)
+			v, err := ctx.newStruct(m.Strings[in.A], names, stack[top:]) // newStruct does not retain vals
 			if err != nil {
 				return nil, err
 			}
-			stack = append(stack, v)
+			stack = append(stack[:top], v)
 		case EBin:
 			r := pop()
 			l := pop()
@@ -784,16 +801,23 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (any, error) {
 				return nil, fmt.Errorf("invalid operand %s for %s", typeName(top), m.Strings[in.A])
 			}
 		case EFunc:
+			if len(locals) > 0 {
+				// The locals may be on the expression stack, and a function can outlive the lambda that
+				// created it (when the lambda returns it).
+				locals = append([]any(nil), locals...)
+			}
 			stack = append(stack, &vmFunc{vm: vm, entry: int(in.A), n: int(in.B), locals: locals, ctx: ctx})
 		case ECall:
-			n := int(in.B)
-			args := append([]any(nil), stack[len(stack)-n:]...)
-			stack = stack[:len(stack)-n]
-			v, err := ctx.builtin(builtinNames[in.A], args)
+			// The arguments stay on the stack during the call: lambdas called by the built-in push
+			// above them, and built-ins do not retain args.
+			top := len(stack) - int(in.B)
+			p.estack = stack
+			v, err := ctx.builtin(builtinNames[in.A], stack[top:])
+			stack = p.estack
 			if err != nil {
 				return nil, err
 			}
-			stack = append(stack, v)
+			stack = append(stack[:top], v)
 		case ERet:
 			return stack[len(stack)-1], nil
 		default:

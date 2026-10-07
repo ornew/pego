@@ -59,7 +59,9 @@ type parser struct {
 	vals []any     // value stack
 	ents []vmEntry // entry stack
 	reps []repState
-	pool framePool // frames of the iterative-model VM
+	// estack is the operand stack of expression code (vmProgram.eval).
+	estack []any
+	pool   framePool // frames of the iterative-model VM
 
 	// Chunks of nodes and child slices (alloc.go), and the stack that collects repetition children
 	nodeSlab  []Node

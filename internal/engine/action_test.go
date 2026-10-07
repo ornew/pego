@@ -74,6 +74,13 @@ def main = first:item rest:(-"," x:item)*
 def item = @(?a-z)+`,
 		ok("a,bc,d", `(Args Items=["a"@item "bc"@item "d"@item] N=3)`),
 	)
+	// An inner lambda reads a parameter of the enclosing lambda.
+	check(t, `
+type Pair struct { G Match, X Match }
+def main = gs:group* -> map($gs, (g) => map($g.xs, (x) => new Pair{G: $g.k, X: $x.v}))
+def group = k:@(?a-z) "=" xs:(v:@(?0-9))* ";"`,
+		ok("a=12;b=3;", `[[(Pair G="a" X="1") (Pair G="a" X="2")] [(Pair G="b" X="3")]]`),
+	)
 }
 
 func TestMemberAccess(t *testing.T) {
