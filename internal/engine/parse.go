@@ -21,13 +21,13 @@ func (prog *Program) ParseWith(start, input string, o ParseOptions) (*Node, erro
 		if err != nil {
 			return nil, err
 		}
-		p := newParser(rp, input, o.Unit)
+		p := newParser(rp, input, o.Unit, false) // recognition rarely needs token text
 		p.maxDepth = o.maxDepth(o.Backend)
 		p.deferMemo = true
 		_, err = rp.run(p, o.Backend, start)
 		return nil, err
 	}
-	p := newParser(prog, input, o.Unit)
+	p := newParser(prog, input, o.Unit, true)
 	p.maxDepth = o.maxDepth(o.Backend)
 	p.deferMemo = true
 	return prog.run(p, o.Backend, start)

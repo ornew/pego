@@ -29,6 +29,8 @@ Notes:
 - A change to shared runtime code (input, memo table, calls) should be measured on the incremental and stream
   benchmarks too (`BenchmarkIncremental`, `BenchmarkStream`), not only on batch parsing: they reach code paths the
   batch benchmarks do not (see the pitfall in change 30).
+- `go test -bench` splits the pattern at `/` and matches each part against one level of the benchmark name, so an
+  alternation that spans levels (`(Parse/JSON|Recognize/CSV)`) matches nothing; run such sets separately.
 - The engine benchmarks read the grammars from `examples/` when they run, so when comparing a change to a grammar, run
   the benchmark binary while the old grammar is checked out (for example between `git stash` and `git stash pop`), not
   just a binary built from the old code. Generated parsers embed their grammar.
@@ -568,6 +570,15 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 - Effect (min of 16 interleaved runs, Apple M3 Max, generated parsers): JSON 10.1 → 9.6 ms, CSV 4.6 → 4.2 ms, XML 10.1 →
   9.7 ms.
 
+### 41. Building the offset table while decoding, for full parses
+
+- Since change 30 the code-point offset table is built on demand, which spares recognition a pass but costs full parses
+  (which nearly always need token text) a separate pass at their first token. Full parses and `Document` now build it
+  in the decoding pass (`newTextInput` with offsets), as generated parsers do (change 40); recognition keeps building
+  it on demand.
+- Effect (min of 10 interleaved runs, Apple M3 Max, code points): full parses 1–5% faster on the closure and bytecode
+  backends (XML closure 15.3 → 14.5 ms, JSON closure 15.4 → 14.7 ms); recognition and incremental parsing unchanged.
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -607,7 +618,7 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–40 are done. Next candidates, in order:
+Changes 13–41 are done. Next candidates, in order:
 
 1. Inlining small rules at compile time; the iterative VM's frame dispatch (an interface call per step).
 2. Document reparses: shifting reused subtrees still copies them (positions are absolute in nodes).

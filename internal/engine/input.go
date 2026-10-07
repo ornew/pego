@@ -138,7 +138,11 @@ func (in *input) replace(start, end int, text string) (delta int) {
 	return delta
 }
 
-func newInput(s string, unit Unit) input {
+func newInput(s string, unit Unit) input { return newTextInput(s, unit, false) }
+
+// newTextInput returns the input s. If offsets is set (the parse will need token text), the
+// offset table is built in the same pass as the decoding; otherwise it is built on demand.
+func newTextInput(s string, unit Unit, offsets bool) input {
 	in := input{unit: unit, eof: true, baseLine: 1, baseCol: 1}
 	if unit == Bytes {
 		in.bs = []byte(s)
@@ -146,7 +150,13 @@ func newInput(s string, unit Unit) input {
 		return in
 	}
 	// Decode and check validity in one pass (a U+FFFD that decodes from three bytes is valid).
-	in.in = make([]rune, utf8.RuneCountInString(s))
+	n := utf8.RuneCountInString(s)
+	in.in = make([]rune, n)
+	var offs []int32
+	if offsets {
+		offs = make([]int32, n+1)
+		offs[n] = int32(len(s))
+	}
 	valid := true
 	i := 0
 	for off, r := range s {
@@ -156,14 +166,21 @@ func newInput(s string, unit Unit) input {
 			}
 		}
 		in.in[i] = r
+		if offsets {
+			offs[i] = int32(off)
+		}
 		i++
 	}
 	in.src, in.srcOK = s, valid && len(s) <= 1<<31-1
+	if in.srcOK {
+		in.offs = offs
+	}
 	return in
 }
 
-func newParser(prog *Program, s string, unit Unit) *parser {
-	return &parser{prog: prog, input: newInput(s, unit), memo: newMemoTable(), maxDepth: DefaultMaxDepth}
+// newParser returns a parser of the input s; offsets is as for newTextInput.
+func newParser(prog *Program, s string, unit Unit, offsets bool) *parser {
+	return &parser{prog: prog, input: newTextInput(s, unit, offsets), memo: newMemoTable(), maxDepth: DefaultMaxDepth}
 }
 
 func newStreamParser(prog *Program, r io.Reader, unit Unit) *parser {

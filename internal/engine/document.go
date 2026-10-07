@@ -38,7 +38,7 @@ func (prog *Program) NewDocumentWith(start, text string, o ParseOptions) (*Docum
 	if _, err := prog.rule(o.Backend, start); err != nil {
 		return nil, err
 	}
-	return &Document{prog: prog, start: start, back: o.Backend, depth: o.maxDepth(o.Backend), in: newInput(text, o.Unit), memo: newMemoTable()}, nil
+	return &Document{prog: prog, start: start, back: o.Backend, depth: o.maxDepth(o.Backend), in: newTextInput(text, o.Unit, true), memo: newMemoTable()}, nil
 }
 
 // Text returns the current text.
