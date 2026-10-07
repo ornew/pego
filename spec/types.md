@@ -72,8 +72,10 @@ normalized: nested unions are flattened and duplicate members are removed (so
 ### Terminal types
 
 `type T terminal` defines a terminal type: a node type for terminals, which have
-no internal structure. A rule declared with a terminal type produces, whatever
-its body, a terminal of that type holding the matched text.
+no internal structure. A rule declared with a terminal type and without an
+action produces, whatever its body, a terminal of that type holding the matched
+text. If the rule has an action, the action's value is the rule's value, and it
+must be assignable to the terminal type like any other declared type.
 
 ```pego
 type Identifier terminal
@@ -143,7 +145,8 @@ The type checker reports the following errors:
 - a field that the struct type does not declare, in `new` or in a field access,
   and a field value that is not assignable to the type of the field;
 - a rule whose value is not assignable to its declared type (except that a rule
-  declared with a terminal type always produces a terminal of that type);
+  declared with a terminal type and without an action always produces a
+  terminal of that type);
 - a rule or an action whose value is not a node;
 - `$n` out of range, and a field access on a value that may be `nil`;
 - an operand of an operator or an argument of a built-in function with an
