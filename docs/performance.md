@@ -262,6 +262,16 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 - The remaining XML allocations are `text(...)` results: a string converted to an interface needs a header on the
   heap.
 
+### 17. ASCII bitmaps for character classes in the VMs
+
+- `CLASS` and `SCAN` tested a character against a class by looping over its ranges (`Class.has`). The VM now
+  precomputes, per class, a 128-bit bitmap of the characters below 128 (negation included) when the program is
+  loaded, and tests ASCII characters with one bit lookup; other characters still use the ranges.
+- The same idea in the closure engine measured no gain (see the experiments table); in the VMs, where the class is
+  reached through the module's class table, it is a small but consistent gain.
+- Effect (min of 8 interleaved runs, Apple M3 Max): recognition 1.3–4.6% faster on JSON, CSV, XML and minilang for both
+  VMs (e.g. CSV bytecode 8.81 → 8.40 ms, XML 22.3 → 21.4 ms); full parses −1 to −4% (within noise on some).
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -300,11 +310,12 @@ From profiles after change 8 (JSON and minilang, full parse):
 ### Work in progress (handoff)
 
 The current task is porting the generated parsers' techniques to the VMs and continuing general optimization.
-Changes 13–16 are done. Next candidates, in order:
+Changes 13–17 are done. Next candidates, in order:
 
-1. Inline class comparisons in the VM (`Class.has`) for small ASCII classes.
-2. Rule-call overhead and inlining of small rules (item 1 above).
-3. Document edit memo rebuild (item 5 above).
+1. Rule-call overhead and inlining of small rules (item 1 above).
+2. Document edit memo rebuild (item 5 above).
+3. Bytes allocated per parse (about 150 bytes per input byte on JSON; nodes and memo entries dominate). Freeing and
+   re-acquiring this memory (`runtime.madvise`, GC) is a large share of profiles on macOS.
 
 Timing is noisy on shared machines: compare B/op and allocs/op, or take the minimum of several interleaved runs
 (before/after alternated with `git stash`).

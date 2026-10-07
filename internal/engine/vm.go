@@ -43,6 +43,7 @@ type vmProgram struct {
 	bytes  [][]byte   // UTF-8 of each string in the string table
 	scopes [][]string // names in the scope table
 	fields [][]string // names in the field lists
+	ascii  []asciiSet // the ASCII part of each class, as a bitmap
 	descs  []string   // expectation table: fixedDescs followed by the string table (string i has index numFixedDescs+i)
 }
 
@@ -55,6 +56,9 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 	}
 	for _, sc := range m.Scopes {
 		vm.scopes = append(vm.scopes, vm.names(sc))
+	}
+	for i := range m.Classes {
+		vm.ascii = append(vm.ascii, newASCIISet(&m.Classes[i]))
 	}
 	for _, fl := range m.FieldLists {
 		vm.fields = append(vm.fields, vm.names(fl))
@@ -319,7 +323,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			}
 		case OpClass:
 			ch, size, ok := p.peek()
-			if !ok || !m.Classes[in.A].has(ch) {
+			if !ok || !vm.has(in.A, ch) {
 				p.expect(p.pos, numFixedDescs+expID(in.B))
 				goto fail
 			}
@@ -328,7 +332,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			count, max := 0, int(in.C)
 			for max < 0 || count < max {
 				ch, size, ok := p.peek()
-				if !ok || in.A >= 0 && !m.Classes[in.A].has(ch) {
+				if !ok || in.A >= 0 && !vm.has(in.A, ch) {
 					if in.A >= 0 {
 						p.expect(p.pos, numFixedDescs+expID(m.Classes[in.A].Desc))
 					} else {
@@ -605,6 +609,27 @@ func (p *parser) unwind(m *Module, ebase int) (ip int, ok bool) {
 			p.mergeExpected(e.far, e.exp)
 		}
 	}
+}
+
+// asciiSet is the membership of the characters below 128 in a class.
+type asciiSet [2]uint64
+
+func newASCIISet(cl *Class) asciiSet {
+	var s asciiSet
+	for ch := rune(0); ch < 128; ch++ {
+		if cl.has(ch) {
+			s[ch>>6] |= 1 << (ch & 63)
+		}
+	}
+	return s
+}
+
+// has reports whether the character ch is in class a.
+func (vm *vmProgram) has(a int32, ch rune) bool {
+	if uint32(ch) < 128 {
+		return vm.ascii[a][ch>>6]&(1<<(ch&63)) != 0
+	}
+	return vm.m.Classes[a].has(ch)
 }
 
 // has reports whether the character ch is in the class.
