@@ -151,6 +151,7 @@ v, err := json.Decode(`{"name": "pego", "tags": ["peg", "pratt"]}`)
 |:--|:--|:--|
 | CSV | [`github.com/ornew/pego/parsers/csv`](parsers/csv/) | RFC 4180 |
 | JSON | [`github.com/ornew/pego/parsers/json`](parsers/json/) | RFC 8259 |
+| Python | [`github.com/ornew/pego/parsers/python`](parsers/python/) | Python 3.14 |
 | XML | [`github.com/ornew/pego/parsers/xml`](parsers/xml/) | XML 1.0 (Fifth Edition), non-validating |
 | YAML | [`github.com/ornew/pego/parsers/yaml`](parsers/yaml/) | YAML 1.2.2 |
 
