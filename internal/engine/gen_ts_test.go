@@ -514,3 +514,36 @@ console.log(JSON.stringify(parse("abcd").node));
 		t.Errorf("got  %s\nwant %s", out, want)
 	}
 }
+
+// TestGeneratedTSStackOverflowErrors checks that parse returns the stack overflows of JavaScript
+// engines as errors (V8 and JavaScriptCore throw a RangeError, SpiderMonkey an InternalError "too
+// much recursion"), and throws other exceptions. It simulates them with an input whose bytes throw.
+func TestGeneratedTSStackOverflowErrors(t *testing.T) {
+	out := runTSScript(t, `def main = .*`, `import { parse } from "./parser.ts";
+const internal = new Error("too much recursion");
+internal.name = "InternalError";
+for (const e of [internal, new RangeError("Maximum call stack size exceeded"), new TypeError("bad"), new RangeError("Invalid array length")]) {
+  const input = new Proxy(new Uint8Array(4), {
+    get(target, key) {
+      if (key === "2") {
+        throw e;
+      }
+      return Reflect.get(target, key);
+    },
+  });
+  try {
+    const r = parse(input);
+    console.log(r.error === null ? "ok" : r.error.message);
+  } catch (x) {
+    console.log("threw " + x.name + ": " + x.message);
+  }
+}
+`)
+	want := "nesting too deep: the JavaScript stack overflowed at 0 rule calls\n" +
+		"nesting too deep: the JavaScript stack overflowed at 0 rule calls\n" +
+		"threw TypeError: bad\n" +
+		"threw RangeError: Invalid array length\n"
+	if out != want {
+		t.Errorf("got\n%s\nwant\n%s", out, want)
+	}
+}

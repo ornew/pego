@@ -70,7 +70,8 @@ The runtime hides each difference, so that results are the engine's, not merely 
   `Node | null` on success and `undefined` on failure, instead of `(value, ok)` pairs.
 - **The stack is small.** Rule calls recurse, as in Go, but Node.js's default stack holds only some hundreds to a few
   thousand nested rule calls. The generated code calls literals and rules inline to save frames, the runtime turns a
-  stack overflow into an error (`nesting too deep: the JavaScript stack overflowed at N rule calls`), and the guide
+  stack overflow (a `RangeError` in V8 and JavaScriptCore, an `InternalError` "too much recursion" in SpiderMonkey)
+  into an error (`nesting too deep: the JavaScript stack overflowed at N rule calls`), and the guide
   shows how to run the parser with a larger stack. This is the one documented way in which a generated TypeScript parser
   can reject input that the engine accepts.
 

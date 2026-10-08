@@ -571,7 +571,7 @@ function run(r: Rule, seen: number, input: string | Uint8Array, unit: Unit | und
     if (x instanceof Fatal) {
       return { node: null, error: x.err };
     }
-    if (x instanceof RangeError && /stack/i.test(x.message)) {
+    if (isStackOverflow(x)) {
       // The JavaScript stack is smaller than the nesting limit allows.
       return {
         node: null,
@@ -580,6 +580,15 @@ function run(r: Rule, seen: number, input: string | Uint8Array, unit: Unit | und
     }
     throw x;
   }
+}
+
+// isStackOverflow reports whether x is what a JavaScript engine throws when the stack is exhausted:
+// a RangeError "Maximum call stack size exceeded" in V8 and JavaScriptCore, an InternalError "too much
+// recursion" in SpiderMonkey.
+function isStackOverflow(x: unknown): boolean {
+  return (
+    x instanceof Error && (x instanceof RangeError || x.name === "InternalError") && /stack|recursion/i.test(x.message)
+  );
 }
 
 // result returns the result of a parse whose call of the start rule returned v.
