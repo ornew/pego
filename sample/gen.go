@@ -83,7 +83,7 @@ type gen struct {
 	tent    bitset // targets exercised by the current attempt
 	tried   []int  // targets the current attempt tried while they were not exercised yet
 	triedB  bitset
-	trail   []int  // targets in tent, in the order they were added
+	trail   []int // targets in tent, in the order they were added
 
 	m         matcher
 	matchWork int // steps of the matcher in the current attempt

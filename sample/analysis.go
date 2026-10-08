@@ -62,8 +62,8 @@ type info struct {
 	// reachable[i] is true if the rule with index i can be called from the start rule in a context
 	// that can match; called[i] if it is called at all (outside negative lookaheads and #recover).
 	reachable, called []bool
-	reachMemo map[grammar.Expr]bitset
-	captures  map[grammar.Expr]bool // memo of hasCaptures
+	reachMemo         map[grammar.Expr]bitset
+	captures          map[grammar.Expr]bool // memo of hasCaptures
 	// compared holds the captures of rule calls that a predicate in the same rule reads.
 	compared map[*grammar.Capture]bool
 	// alphabet holds the literal strings and sample characters of the grammar, for mutations.
