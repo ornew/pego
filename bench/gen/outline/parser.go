@@ -896,7 +896,7 @@ func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
 	p.cut = false
 	p.depth++
 	if p.depth > maxDepth {
-		panic(fatal{fmt.Errorf("nesting too deep: more than %d rule calls", maxDepth)})
+		p.tooDeep()
 	}
 	v, ok := r.body(p, min)
 	p.depth--
@@ -910,6 +910,11 @@ func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
 	}
 	p.env = prevEnv
 	return v, ok
+}
+
+// tooDeep fails the parse for exceeding the nesting limit.
+func (p *parser) tooDeep() {
+	panic(fatal{fmt.Errorf("nesting too deep: more than %d rule calls", maxDepth)})
 }
 
 // finish makes the rule's value from the value of its body.
@@ -1850,7 +1855,7 @@ func (p *parser) e3() (*Node, bool) {
 
 // blank
 func (p *parser) e4() (*Node, bool) {
-	return p.invokePlain(rules[8], 0)
+	return p.r8()
 }
 
 // blank*
@@ -1905,7 +1910,7 @@ func (p *parser) e7() (*Node, bool) {
 
 // blank
 func (p *parser) e8() (*Node, bool) {
-	return p.invokePlain(rules[7], 0)
+	return p.r7()
 }
 
 // blank*
@@ -2010,7 +2015,7 @@ func (p *parser) e14() (*Node, bool) {
 
 // spaces
 func (p *parser) e15() (*Node, bool) {
-	return p.invokePlain(rules[4], 0)
+	return p.r4()
 }
 
 // s:spaces
@@ -2029,7 +2034,7 @@ func (p *parser) e17() (*Node, bool) {
 
 // line
 func (p *parser) e18() (*Node, bool) {
-	return p.invokePlain(rules[5], 0)
+	return p.r5()
 }
 
 // text:line
@@ -2043,7 +2048,7 @@ func (p *parser) e19() (*Node, bool) {
 
 // eol
 func (p *parser) e20() (*Node, bool) {
-	return p.invokePlain(rules[9], 0)
+	return p.r9()
 }
 
 // children
@@ -2100,7 +2105,7 @@ func (p *parser) e24() (*Node, bool) {
 
 // blank
 func (p *parser) e25() (*Node, bool) {
-	return p.invokePlain(rules[8], 0)
+	return p.r8()
 }
 
 // blank*
@@ -2133,7 +2138,7 @@ func (p *parser) e26() (*Node, bool) {
 
 // spaces
 func (p *parser) e27() (*Node, bool) {
-	return p.invokePlain(rules[4], 0)
+	return p.r4()
 }
 
 // s:spaces
@@ -2456,4 +2461,142 @@ func (p *parser) e58() (*Node, bool) {
 		}
 	}
 	return nil, false
+}
+
+// spaces, called as by invokePlain
+func (p *parser) r4() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e39()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = p.finish(rules[4], emptyFrame, v, start)
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// line, called as by invokePlain
+func (p *parser) r5() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e41()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = p.finish(rules[5], emptyFrame, v, start)
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// eol, called as by invokePlain
+func (p *parser) r6() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e45()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = p.finish(rules[6], emptyFrame, v, start)
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// blank, called as by invokePlain
+func (p *parser) r7() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e50()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = p.finish(rules[7], emptyFrame, v, start)
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// blank, called as by invokePlain
+func (p *parser) r8() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e54()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// eol, called as by invokePlain
+func (p *parser) r9() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e58()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
 }

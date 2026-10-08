@@ -161,6 +161,9 @@ func (g *generator) rules() {
 		if r.action != nil {
 			fmt.Fprintf(init, "\trules[%d].action = func(c *actx) any { return %s }\n", r.id, g.term(r.action, scopes[r], nil))
 		}
+		if r.plain {
+			g.plainCall(r, bodies[r])
+		}
 	}
 	// Struct fields, used to detect references to undeclared fields at run time.
 	var names []string
@@ -197,6 +200,40 @@ func describe(e grammar.Expr) string {
 	return s
 }
 
+// plainCall writes the method r<id>, which does what invokePlain does for the rule r (a rule never
+// memoized and without captures) with a direct call of its body.
+func (g *generator) plainCall(r *rule, body string) {
+	fmt.Fprintf(&g.methods, "// %s, called as by invokePlain\nfunc (p *parser) r%d() (*Node, bool) {\n", r.name, r.id)
+	g.methods.WriteString(`	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+`)
+	fmt.Fprintf(&g.methods, "\tv, ok := p.%s()\n", body)
+	g.methods.WriteString(`	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+`)
+	if r.novalue {
+		g.methods.WriteString("\t\tv = nil\n")
+	} else {
+		fmt.Fprintf(&g.methods, "\t\tv = p.finish(rules[%d], emptyFrame, v, start)\n", r.id)
+	}
+	g.methods.WriteString(`	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+`)
+}
+
 func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 	var b strings.Builder
 	switch e := e.(type) {
@@ -223,8 +260,11 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 		if !build && r.twin != nil {
 			r = r.twin
 		}
-		if r.plain {
-			// Never memoized and without captures: call does nothing but invokePlain.
+		if _, pratt := r.def.Expr.(*grammar.Pratt); r.plain && !pratt {
+			// Never memoized and without captures: call does nothing but invokePlain, which a
+			// method of its own does with a direct call of the body (see plainCalls).
+			fmt.Fprintf(&b, "\treturn p.r%d()\n", r.id)
+		} else if r.plain {
 			fmt.Fprintf(&b, "\treturn p.invokePlain(rules[%d], %d)\n", r.id, min)
 		} else {
 			fmt.Fprintf(&b, "\treturn p.call(rules[%d], %d)\n", r.id, min)

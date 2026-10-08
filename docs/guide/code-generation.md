@@ -292,14 +292,14 @@ Compared with the engine's API:
 
 | Part | Contents |
 |:--|:--|
-| Runtime | The parser state, memoization, left recursion, Pratt loop, attribute handling and the built-in functions of actions. About 1,600 lines, **the same in every generated file**, embedded from `internal/engine/genrt/runtime.go`. |
+| Runtime | The parser state, memoization, left recursion, Pratt loop, attribute handling and the built-in functions of actions. About 1,800 lines, **the same in every generated file**, embedded from `internal/engine/genrt/runtime.go`. |
 | Rule table | For each rule, the results of the engine's static analysis (memoized? left-recursion leader? capture names?). |
-| Parser expressions | One method per expression, with literals, character classes and rule indices embedded as constants. |
+| Parser expressions | One method per expression, with literals, character classes and rule indices embedded as constants, and one per rule that is never memoized and has no captures, which calls the rule's body directly. |
 | Actions and predicates | Go expressions; lambdas become Go function literals. |
 
 That is why even a tiny grammar produces a file of a few dozen kilobytes. Measured sizes: `pairs.pego` (7 lines)
-generates 46,099 bytes; the JSON grammar ([examples/json](../../examples/json/json.pego), 1,355 bytes of source) generates
-73,352 bytes; the minilang grammar (4,414 bytes) generates 109,471 bytes. The growth is in the per-grammar part.
+generates 51,194 bytes; the JSON grammar ([examples/json](../../examples/json/json.pego), 1,357 bytes of source) generates
+87,055 bytes; the minilang grammar (4,416 bytes) generates 124,318 bytes. The growth is in the per-grammar part.
 
 ## Typed values (`-types`)
 

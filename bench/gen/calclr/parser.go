@@ -896,7 +896,7 @@ func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
 	p.cut = false
 	p.depth++
 	if p.depth > maxDepth {
-		panic(fatal{fmt.Errorf("nesting too deep: more than %d rule calls", maxDepth)})
+		p.tooDeep()
 	}
 	v, ok := r.body(p, min)
 	p.depth--
@@ -910,6 +910,11 @@ func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
 	}
 	p.env = prevEnv
 	return v, ok
+}
+
+// tooDeep fails the parse for exceeding the nesting limit.
+func (p *parser) tooDeep() {
+	panic(fatal{fmt.Errorf("nesting too deep: more than %d rule calls", maxDepth)})
 }
 
 // finish makes the rule's value from the value of its body.
@@ -1862,7 +1867,7 @@ func (p *parser) e2() (*Node, bool) {
 
 // ws
 func (p *parser) e3() (*Node, bool) {
-	return p.invokePlain(rules[13], 0)
+	return p.r13()
 }
 
 // $$
@@ -1944,7 +1949,7 @@ func (p *parser) e10() (*Node, bool) {
 
 // ws
 func (p *parser) e11() (*Node, bool) {
-	return p.invokePlain(rules[13], 0)
+	return p.r13()
 }
 
 // "+"
@@ -2100,7 +2105,7 @@ func (p *parser) e26() (*Node, bool) {
 
 // ws
 func (p *parser) e27() (*Node, bool) {
-	return p.invokePlain(rules[13], 0)
+	return p.r13()
 }
 
 // "*"
@@ -2222,7 +2227,7 @@ func (p *parser) e40() (*Node, bool) {
 
 // power
 func (p *parser) e41() (*Node, bool) {
-	return p.invokePlain(rules[7], 0)
+	return p.r7()
 }
 
 // neg / power
@@ -2261,7 +2266,7 @@ func (p *parser) e42() (*Node, bool) {
 
 // ws
 func (p *parser) e43() (*Node, bool) {
-	return p.invokePlain(rules[13], 0)
+	return p.r13()
 }
 
 // "-"
@@ -2414,7 +2419,7 @@ func (p *parser) e58() (*Node, bool) {
 
 // ws
 func (p *parser) e59() (*Node, bool) {
-	return p.invokePlain(rules[13], 0)
+	return p.r13()
 }
 
 // "^"
@@ -2464,12 +2469,12 @@ func (p *parser) e65() (*Node, bool) {
 
 // ws
 func (p *parser) e66() (*Node, bool) {
-	return p.invokePlain(rules[13], 0)
+	return p.r13()
 }
 
 // number
 func (p *parser) e67() (*Node, bool) {
-	return p.invokePlain(rules[11], 0)
+	return p.r11()
 }
 
 // group
@@ -2552,7 +2557,7 @@ func (p *parser) e75() (*Node, bool) {
 
 // ws
 func (p *parser) e76() (*Node, bool) {
-	return p.invokePlain(rules[13], 0)
+	return p.r13()
 }
 
 // ")"
@@ -2708,4 +2713,96 @@ func (p *parser) e89() (*Node, bool) {
 		count++
 	}
 	return nil, count >= 0
+}
+
+// power, called as by invokePlain
+func (p *parser) r7() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e56()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = p.finish(rules[7], emptyFrame, v, start)
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// number, called as by invokePlain
+func (p *parser) r11() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e86()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = p.finish(rules[11], emptyFrame, v, start)
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// ws, called as by invokePlain
+func (p *parser) r12() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e88()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = p.finish(rules[12], emptyFrame, v, start)
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// ws, called as by invokePlain
+func (p *parser) r13() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e89()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
 }

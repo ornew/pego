@@ -896,7 +896,7 @@ func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
 	p.cut = false
 	p.depth++
 	if p.depth > maxDepth {
-		panic(fatal{fmt.Errorf("nesting too deep: more than %d rule calls", maxDepth)})
+		p.tooDeep()
 	}
 	v, ok := r.body(p, min)
 	p.depth--
@@ -910,6 +910,11 @@ func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
 	}
 	p.env = prevEnv
 	return v, ok
+}
+
+// tooDeep fails the parse for exceeding the nesting limit.
+func (p *parser) tooDeep() {
+	panic(fatal{fmt.Errorf("nesting too deep: more than %d rule calls", maxDepth)})
 }
 
 // finish makes the rule's value from the value of its body.
@@ -2043,7 +2048,7 @@ func (p *parser) e2() (*Node, bool) {
 
 // ws
 func (p *parser) e3() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // $$
@@ -2067,7 +2072,7 @@ func (p *parser) e5() (*Node, bool) {
 
 // ws
 func (p *parser) e6() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // -ws
@@ -2171,7 +2176,7 @@ func (p *parser) e17() (*Node, bool) {
 
 // ws
 func (p *parser) e18() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // "}"
@@ -2419,12 +2424,12 @@ func (p *parser) e37() (*Node, bool) {
 
 // kw_let
 func (p *parser) e38() (*Node, bool) {
-	return p.invokePlain(rules[32], 0)
+	return p.r32()
 }
 
 // ws
 func (p *parser) e39() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // name
@@ -2443,7 +2448,7 @@ func (p *parser) e41() (*Node, bool) {
 
 // ws
 func (p *parser) e42() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // "="
@@ -2467,7 +2472,7 @@ func (p *parser) e46() (*Node, bool) {
 
 // ws
 func (p *parser) e47() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // ";"
@@ -2520,7 +2525,7 @@ func (p *parser) e52() (*Node, bool) {
 
 // ws
 func (p *parser) e53() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // "="
@@ -2561,7 +2566,7 @@ func (p *parser) e60() (*Node, bool) {
 
 // ws
 func (p *parser) e61() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // ";"
@@ -2597,7 +2602,7 @@ func (p *parser) e64() (*Node, bool) {
 
 // kw_if
 func (p *parser) e65() (*Node, bool) {
-	return p.invokePlain(rules[33], 0)
+	return p.r33()
 }
 
 // expr
@@ -2616,7 +2621,7 @@ func (p *parser) e67() (*Node, bool) {
 
 // ws
 func (p *parser) e68() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // block
@@ -2687,17 +2692,17 @@ func (p *parser) e74() (*Node, bool) {
 
 // ws
 func (p *parser) e75() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // kw_else
 func (p *parser) e76() (*Node, bool) {
-	return p.invokePlain(rules[34], 0)
+	return p.r34()
 }
 
 // ws
 func (p *parser) e77() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // if
@@ -2772,7 +2777,7 @@ func (p *parser) e82() (*Node, bool) {
 
 // kw_while
 func (p *parser) e83() (*Node, bool) {
-	return p.invokePlain(rules[35], 0)
+	return p.r35()
 }
 
 // expr
@@ -2791,7 +2796,7 @@ func (p *parser) e85() (*Node, bool) {
 
 // ws
 func (p *parser) e86() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // block
@@ -2827,7 +2832,7 @@ func (p *parser) e89() (*Node, bool) {
 
 // kw_return
 func (p *parser) e90() (*Node, bool) {
-	return p.invokePlain(rules[36], 0)
+	return p.r36()
 }
 
 // expr
@@ -2864,7 +2869,7 @@ func (p *parser) e93() (*Node, bool) {
 
 // ws
 func (p *parser) e94() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // ";"
@@ -2891,12 +2896,12 @@ func (p *parser) e97() (*Node, bool) {
 
 // kw_fn
 func (p *parser) e98() (*Node, bool) {
-	return p.invokePlain(rules[37], 0)
+	return p.r37()
 }
 
 // ws
 func (p *parser) e99() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // name
@@ -2915,7 +2920,7 @@ func (p *parser) e101() (*Node, bool) {
 
 // ws
 func (p *parser) e102() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // "("
@@ -2957,7 +2962,7 @@ func (p *parser) e107() (*Node, bool) {
 
 // ws
 func (p *parser) e108() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // ")"
@@ -2967,7 +2972,7 @@ func (p *parser) e110() (*Node, bool) {
 
 // ws
 func (p *parser) e111() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // block
@@ -3035,7 +3040,7 @@ func (p *parser) e116() (*Node, bool) {
 
 // ws
 func (p *parser) e117() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // -ws
@@ -3057,7 +3062,7 @@ func (p *parser) e121() (*Node, bool) {
 
 // ws
 func (p *parser) e122() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // -ws
@@ -3173,7 +3178,7 @@ func (p *parser) e132() (*Node, bool) {
 
 // ws
 func (p *parser) e133() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // ";"
@@ -3230,7 +3235,7 @@ func (p *parser) e141() (*Node, bool) {
 
 // ws
 func (p *parser) e142() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // -ws
@@ -3340,7 +3345,7 @@ func (p *parser) e153() (*Node, bool) {
 
 // keyword
 func (p *parser) e154() (*Node, bool) {
-	return p.invokePlain(rules[38], 0)
+	return p.r38()
 }
 
 // !keyword
@@ -3367,7 +3372,7 @@ func (p *parser) e156() (*Node, bool) {
 
 // idchar
 func (p *parser) e157() (*Node, bool) {
-	return p.invokePlain(rules[39], 0)
+	return p.r39()
 }
 
 // idchar*
@@ -3591,7 +3596,7 @@ func (p *parser) e179() (*Node, bool) {
 
 // idchar
 func (p *parser) e180() (*Node, bool) {
-	return p.invokePlain(rules[39], 0)
+	return p.r39()
 }
 
 // !idchar
@@ -3713,7 +3718,7 @@ func (p *parser) e192() (*Node, bool) {
 
 // strchars
 func (p *parser) e193() (*Node, bool) {
-	return p.invokePlain(rules[22], 0)
+	return p.r22()
 }
 
 // s:strchars
@@ -3883,7 +3888,7 @@ func (p *parser) e209() (*Node, bool) {
 
 // idchar
 func (p *parser) e210() (*Node, bool) {
-	return p.invokePlain(rules[39], 0)
+	return p.r39()
 }
 
 // !idchar
@@ -3916,7 +3921,7 @@ func (p *parser) e214() (*Node, bool) {
 
 // idchar
 func (p *parser) e215() (*Node, bool) {
-	return p.invokePlain(rules[39], 0)
+	return p.r39()
 }
 
 // !idchar
@@ -3953,7 +3958,7 @@ func (p *parser) e219() (*Node, bool) {
 
 // idchar
 func (p *parser) e220() (*Node, bool) {
-	return p.invokePlain(rules[39], 0)
+	return p.r39()
 }
 
 // !idchar
@@ -3990,7 +3995,7 @@ func (p *parser) e224() (*Node, bool) {
 
 // idchar
 func (p *parser) e225() (*Node, bool) {
-	return p.invokePlain(rules[39], 0)
+	return p.r39()
 }
 
 // !idchar
@@ -4027,7 +4032,7 @@ func (p *parser) e229() (*Node, bool) {
 
 // idchar
 func (p *parser) e230() (*Node, bool) {
-	return p.invokePlain(rules[39], 0)
+	return p.r39()
 }
 
 // !idchar
@@ -4064,7 +4069,7 @@ func (p *parser) e234() (*Node, bool) {
 
 // idchar
 func (p *parser) e235() (*Node, bool) {
-	return p.invokePlain(rules[39], 0)
+	return p.r39()
 }
 
 // !idchar
@@ -4101,7 +4106,7 @@ func (p *parser) e239() (*Node, bool) {
 
 // idchar
 func (p *parser) e240() (*Node, bool) {
-	return p.invokePlain(rules[39], 0)
+	return p.r39()
 }
 
 // !idchar
@@ -4383,7 +4388,7 @@ func (p *parser) e259() (*Node, bool) {
 
 // idchar
 func (p *parser) e260() (*Node, bool) {
-	return p.invokePlain(rules[39], 0)
+	return p.r39()
 }
 
 // !idchar
@@ -4416,7 +4421,7 @@ func (p *parser) e264() (*Node, bool) {
 
 // idchar
 func (p *parser) e265() (*Node, bool) {
-	return p.invokePlain(rules[39], 0)
+	return p.r39()
 }
 
 // !idchar
@@ -4449,7 +4454,7 @@ func (p *parser) e269() (*Node, bool) {
 
 // idchar
 func (p *parser) e270() (*Node, bool) {
-	return p.invokePlain(rules[39], 0)
+	return p.r39()
 }
 
 // !idchar
@@ -4482,7 +4487,7 @@ func (p *parser) e274() (*Node, bool) {
 
 // idchar
 func (p *parser) e275() (*Node, bool) {
-	return p.invokePlain(rules[39], 0)
+	return p.r39()
 }
 
 // !idchar
@@ -4515,7 +4520,7 @@ func (p *parser) e279() (*Node, bool) {
 
 // idchar
 func (p *parser) e280() (*Node, bool) {
-	return p.invokePlain(rules[39], 0)
+	return p.r39()
 }
 
 // !idchar
@@ -4548,7 +4553,7 @@ func (p *parser) e284() (*Node, bool) {
 
 // idchar
 func (p *parser) e285() (*Node, bool) {
-	return p.invokePlain(rules[39], 0)
+	return p.r39()
 }
 
 // !idchar
@@ -4734,7 +4739,7 @@ func (p *parser) e304() (*Node, bool) {
 
 // idchar
 func (p *parser) e305() (*Node, bool) {
-	return p.invokePlain(rules[39], 0)
+	return p.r39()
 }
 
 // !idchar
@@ -4772,12 +4777,12 @@ func (p *parser) e308() (*Node, bool) {
 
 // ws
 func (p *parser) e311() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // number
 func (p *parser) e312() (*Node, bool) {
-	return p.invokePlain(rules[20], 0)
+	return p.r20()
 }
 
 // string
@@ -4787,7 +4792,7 @@ func (p *parser) e313() (*Node, bool) {
 
 // bool
 func (p *parser) e314() (*Node, bool) {
-	return p.invokePlain(rules[23], 0)
+	return p.r23()
 }
 
 // ident
@@ -4816,7 +4821,7 @@ func (p *parser) e319() (*Node, bool) {
 
 // ws
 func (p *parser) e320() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // ")"
@@ -4880,7 +4885,7 @@ func (p *parser) e328() (*Node, bool) {
 
 // ws
 func (p *parser) e329() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // "]"
@@ -4926,7 +4931,7 @@ func (p *parser) e336() (*Node, bool) {
 
 // ws
 func (p *parser) e337() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // ":"
@@ -5271,7 +5276,7 @@ func (p *parser) e379() (*Node, bool) {
 
 // ws
 func (p *parser) e380() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // ")"
@@ -5317,7 +5322,7 @@ func (p *parser) e387() (*Node, bool) {
 
 // ws
 func (p *parser) e388() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // "]"
@@ -5349,7 +5354,7 @@ func (p *parser) e393() (*Node, bool) {
 
 // ws
 func (p *parser) e394() (*Node, bool) {
-	return p.invokePlain(rules[31], 0)
+	return p.r31()
 }
 
 // name
@@ -5378,4 +5383,487 @@ func (p *parser) e397() (*Node, bool) {
 		return nil, false
 	}
 	return nil, true
+}
+
+// keyword, called as by invokePlain
+func (p *parser) r18() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e182()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = p.finish(rules[18], emptyFrame, v, start)
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// idchar, called as by invokePlain
+func (p *parser) r19() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e183()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = p.finish(rules[19], emptyFrame, v, start)
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// number, called as by invokePlain
+func (p *parser) r20() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e190()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = p.finish(rules[20], emptyFrame, v, start)
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// strchars, called as by invokePlain
+func (p *parser) r22() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e204()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = p.finish(rules[22], emptyFrame, v, start)
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// bool, called as by invokePlain
+func (p *parser) r23() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e212()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = p.finish(rules[23], emptyFrame, v, start)
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// kw_let, called as by invokePlain
+func (p *parser) r24() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e217()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = p.finish(rules[24], emptyFrame, v, start)
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// kw_fn, called as by invokePlain
+func (p *parser) r25() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e222()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = p.finish(rules[25], emptyFrame, v, start)
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// kw_if, called as by invokePlain
+func (p *parser) r26() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e227()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = p.finish(rules[26], emptyFrame, v, start)
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// kw_else, called as by invokePlain
+func (p *parser) r27() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e232()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = p.finish(rules[27], emptyFrame, v, start)
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// kw_while, called as by invokePlain
+func (p *parser) r28() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e237()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = p.finish(rules[28], emptyFrame, v, start)
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// kw_return, called as by invokePlain
+func (p *parser) r29() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e242()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = p.finish(rules[29], emptyFrame, v, start)
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// ws, called as by invokePlain
+func (p *parser) r30() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e250()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = p.finish(rules[30], emptyFrame, v, start)
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// ws, called as by invokePlain
+func (p *parser) r31() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e257()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// kw_let, called as by invokePlain
+func (p *parser) r32() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e262()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// kw_if, called as by invokePlain
+func (p *parser) r33() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e267()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// kw_else, called as by invokePlain
+func (p *parser) r34() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e272()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// kw_while, called as by invokePlain
+func (p *parser) r35() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e277()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// kw_return, called as by invokePlain
+func (p *parser) r36() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e282()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// kw_fn, called as by invokePlain
+func (p *parser) r37() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e287()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// keyword, called as by invokePlain
+func (p *parser) r38() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e307()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// idchar, called as by invokePlain
+func (p *parser) r39() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e308()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
 }
