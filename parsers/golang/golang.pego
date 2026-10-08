@@ -365,9 +365,8 @@ def plainStmt: Stmt = (&keyword s:(declStmt / goStmt / deferStmt / returnStmt / 
 
 def declStmt: DeclStmt = d:(constDecl / varDecl / typeDecl) -> new DeclStmt{Decl: $d}
 
-// An expression statement is tried first, since most statements are calls; it must end the statement.
-def simpleStmt: Stmt = exprStmtEnd / assignStmt / incDecStmt / sendStmt
-def exprStmtEnd: ExprStmt = x:expr &(-sp stmtTerm) -> new ExprStmt{X: $x}
+// (Trying the expression statement first, since most statements are calls, was not faster.)
+def simpleStmt: Stmt = assignStmt / sendStmt / incDecStmt / exprStmt
 def assignStmt: AssignStmt = l:exprList -sp t:assignOp -ws r:exprList -> new AssignStmt{Lhs: $l, Tok: text($t), Rhs: $r}
 def sendStmt: SendStmt = c:expr -sp "<-" -ws v:expr -> new SendStmt{Chan: $c, Value: $v}
 def incDecStmt: IncDecStmt = x:expr -sp t:incDecOp -> new IncDecStmt{X: $x, Tok: text($t)}
@@ -448,7 +447,7 @@ def rangeValue: Expr = -sp "," -ws v:hexpr -> $v
 // ===================================================================
 
 // Most expressions have no binary operator: a unary expression that no operator follows is the
-// expression, without the five rules of the precedence levels.
+// expression, without the five rules of the precedence levels (about 15% of the time of a parse).
 def expr: Expr = (x:unaryExpr !(-sp binaryOp) / x:orExpr) -> $x
 def exprList = first:expr rest:(-sp "," -ws x:expr)* -> concat(list($first), map($rest, (r) => $r.x))
 
@@ -480,17 +479,17 @@ def prattExpr: Expr = pratt {
     skip sp
     operand primaryOperand
     level {
-        postfix &"." "." !".." -ws s:ident -> new SelectorExpr{X: $lhs, Sel: $s}
-        postfix &"." "." !".." -ws "(" -ws kw_type -ws ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs}
-        postfix &"." "." !".." -ws "(" -ws t:typ -sp ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs, Type: $t}
-        postfix &"[" "[" -ws i:expr -sp ("," -ws)? "]" -> new IndexExpr{X: $lhs, Index: $i}
-        postfix &"[" "[" -ws i:indexList "]" -> new IndexListExpr{X: $lhs, Indices: $i}
-        postfix &"[" "[" -ws l:exprSp? ":" !"=" -ws h:exprSp? "]" !(-sp "{") -> new SliceExpr{X: $lhs, Low: $l, High: $h}
-        postfix &"[" "[" -ws l:exprSp? ":" !"=" -ws h:exprSp ":" !"=" -ws m:exprSp "]" !(-sp "{")
+        postfix dot -ws s:ident -> new SelectorExpr{X: $lhs, Sel: $s}
+        postfix dot -ws "(" -ws kw_type -ws ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs}
+        postfix dot -ws "(" -ws t:typ -sp ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs, Type: $t}
+        postfix "[" -ws i:expr -sp ("," -ws)? "]" -> new IndexExpr{X: $lhs, Index: $i}
+        postfix "[" -ws i:indexList "]" -> new IndexListExpr{X: $lhs, Indices: $i}
+        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp? "]" !(-sp "{") -> new SliceExpr{X: $lhs, Low: $l, High: $h}
+        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp ":" !"=" -ws m:exprSp "]" !(-sp "{")
             -> new SliceExpr{X: $lhs, Low: $l, High: $h, Max: $m}
-        postfix &"(" "(" -ws ")" !(-sp "{") -> new CallExpr{Fun: $lhs}
-        postfix &"(" "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")" !(-sp "{") -> new CallExpr{Fun: $lhs, Args: $as, Ellipsis: $e}
-        postfix &"{" v:litValue !(-sp "{") -> new CompositeLit{Type: $lhs, Elts: $v}
+        postfix "(" -ws ")" !(-sp "{") -> new CallExpr{Fun: $lhs}
+        postfix "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")" !(-sp "{") -> new CallExpr{Fun: $lhs, Args: $as, Ellipsis: $e}
+        postfix v:litValue !(-sp "{") -> new CompositeLit{Type: $lhs, Elts: $v}
     }
 }
 // A name, an array, struct or map type may be followed by a composite literal value.
@@ -518,18 +517,18 @@ def goPrimary: Expr = pratt {
     skip sp
     operand primaryOperand
     level {
-        postfix &"." "." !".." -ws s:ident -> new SelectorExpr{X: $lhs, Sel: $s}
-        postfix &"." "." !".." -ws "(" -ws kw_type -ws ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs}
-        postfix &"." "." !".." -ws "(" -ws t:typ -sp ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs, Type: $t}
-        postfix &"[" "[" -ws i:expr -sp ("," -ws)? "]" -> new IndexExpr{X: $lhs, Index: $i}
-        postfix &"[" "[" -ws i:indexList "]" -> new IndexListExpr{X: $lhs, Indices: $i}
-        postfix &"[" "[" -ws l:exprSp? ":" !"=" -ws h:exprSp? "]" !(-sp "{") -> new SliceExpr{X: $lhs, Low: $l, High: $h}
-        postfix &"[" "[" -ws l:exprSp? ":" !"=" -ws h:exprSp ":" !"=" -ws m:exprSp "]" !(-sp "{")
+        postfix dot -ws s:ident -> new SelectorExpr{X: $lhs, Sel: $s}
+        postfix dot -ws "(" -ws kw_type -ws ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs}
+        postfix dot -ws "(" -ws t:typ -sp ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs, Type: $t}
+        postfix "[" -ws i:expr -sp ("," -ws)? "]" -> new IndexExpr{X: $lhs, Index: $i}
+        postfix "[" -ws i:indexList "]" -> new IndexListExpr{X: $lhs, Indices: $i}
+        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp? "]" !(-sp "{") -> new SliceExpr{X: $lhs, Low: $l, High: $h}
+        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp ":" !"=" -ws m:exprSp "]" !(-sp "{")
             -> new SliceExpr{X: $lhs, Low: $l, High: $h, Max: $m}
-        postfix &"(" "(" -ws ")" !(-sp ("{" / goEnd)) -> new CallExpr{Fun: $lhs}
-        postfix &"(" "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")" !(-sp ("{" / goEnd))
+        postfix "(" -ws ")" !(-sp ("{" / goEnd)) -> new CallExpr{Fun: $lhs}
+        postfix "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")" !(-sp ("{" / goEnd))
             -> new CallExpr{Fun: $lhs, Args: $as, Ellipsis: $e}
-        postfix &"{" v:litValue !(-sp "{") -> new CompositeLit{Type: $lhs, Elts: $v}
+        postfix v:litValue !(-sp "{") -> new CompositeLit{Type: $lhs, Elts: $v}
     }
 }
 def goEnd = semi / "}" / ")"
@@ -564,16 +563,16 @@ def hprattExpr: Expr = pratt {
     skip sp
     operand hoperand
     level {
-        postfix &"." "." !".." -ws s:ident -> new SelectorExpr{X: $lhs, Sel: $s}
-        postfix &"." "." !".." -ws "(" -ws kw_type -ws ")" -> new TypeAssertExpr{X: $lhs}
-        postfix &"." "." !".." -ws "(" -ws t:typ -sp ")" -> new TypeAssertExpr{X: $lhs, Type: $t}
-        postfix &"[" "[" -ws i:expr -sp ("," -ws)? "]" -> new IndexExpr{X: $lhs, Index: $i}
-        postfix &"[" "[" -ws i:indexList "]" -> new IndexListExpr{X: $lhs, Indices: $i}
-        postfix &"[" "[" -ws l:exprSp? ":" !"=" -ws h:exprSp? "]" -> new SliceExpr{X: $lhs, Low: $l, High: $h}
-        postfix &"[" "[" -ws l:exprSp? ":" !"=" -ws h:exprSp ":" !"=" -ws m:exprSp "]"
+        postfix dot -ws s:ident -> new SelectorExpr{X: $lhs, Sel: $s}
+        postfix dot -ws "(" -ws kw_type -ws ")" -> new TypeAssertExpr{X: $lhs}
+        postfix dot -ws "(" -ws t:typ -sp ")" -> new TypeAssertExpr{X: $lhs, Type: $t}
+        postfix "[" -ws i:expr -sp ("," -ws)? "]" -> new IndexExpr{X: $lhs, Index: $i}
+        postfix "[" -ws i:indexList "]" -> new IndexListExpr{X: $lhs, Indices: $i}
+        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp? "]" -> new SliceExpr{X: $lhs, Low: $l, High: $h}
+        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp ":" !"=" -ws m:exprSp "]"
             -> new SliceExpr{X: $lhs, Low: $l, High: $h, Max: $m}
-        postfix &"(" "(" -ws ")" -> new CallExpr{Fun: $lhs}
-        postfix &"(" "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")" -> new CallExpr{Fun: $lhs, Args: $as, Ellipsis: $e}
+        postfix "(" -ws ")" -> new CallExpr{Fun: $lhs}
+        postfix "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")" -> new CallExpr{Fun: $lhs, Args: $as, Ellipsis: $e}
     }
 }
 def hoperand: Expr = operandGuard (o:ident / o:basicLit / !(parenCompositeType -sp "{") o:parenExpr / o:funcLit / o:funcType
@@ -587,16 +586,16 @@ def guardPrimary: Expr = pratt {
     skip sp
     operand hoperand
     level {
-        postfix &"." "." !".." -ws s:ident -> new SelectorExpr{X: $lhs, Sel: $s}
-        postfix &"." "." !".." -ws "(" -ws kw_type -ws ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs}
-        postfix &"." "." !".." -ws "(" -ws t:typ -sp ")" -> new TypeAssertExpr{X: $lhs, Type: $t}
-        postfix &"[" "[" -ws i:expr -sp ("," -ws)? "]" -> new IndexExpr{X: $lhs, Index: $i}
-        postfix &"[" "[" -ws i:indexList "]" -> new IndexListExpr{X: $lhs, Indices: $i}
-        postfix &"[" "[" -ws l:exprSp? ":" !"=" -ws h:exprSp? "]" -> new SliceExpr{X: $lhs, Low: $l, High: $h}
-        postfix &"[" "[" -ws l:exprSp? ":" !"=" -ws h:exprSp ":" !"=" -ws m:exprSp "]"
+        postfix dot -ws s:ident -> new SelectorExpr{X: $lhs, Sel: $s}
+        postfix dot -ws "(" -ws kw_type -ws ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs}
+        postfix dot -ws "(" -ws t:typ -sp ")" -> new TypeAssertExpr{X: $lhs, Type: $t}
+        postfix "[" -ws i:expr -sp ("," -ws)? "]" -> new IndexExpr{X: $lhs, Index: $i}
+        postfix "[" -ws i:indexList "]" -> new IndexListExpr{X: $lhs, Indices: $i}
+        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp? "]" -> new SliceExpr{X: $lhs, Low: $l, High: $h}
+        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp ":" !"=" -ws m:exprSp "]"
             -> new SliceExpr{X: $lhs, Low: $l, High: $h, Max: $m}
-        postfix &"(" "(" -ws ")" -> new CallExpr{Fun: $lhs}
-        postfix &"(" "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")" -> new CallExpr{Fun: $lhs, Args: $as, Ellipsis: $e}
+        postfix "(" -ws ")" -> new CallExpr{Fun: $lhs}
+        postfix "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")" -> new CallExpr{Fun: $lhs, Args: $as, Ellipsis: $e}
     }
 }
 
