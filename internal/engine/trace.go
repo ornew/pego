@@ -25,8 +25,9 @@ func (k TraceKind) String() string {
 
 // TraceEvent describes the start or the end of a rule call. Events nest: every TraceEnter is
 // followed, after the events of the calls the rule makes, by its TraceExit, unless the parse is
-// aborted (by a runtime error in an action, an error returned by a stream's emit function, or the
-// nesting limit).
+// aborted: by a runtime error in an action, an error returned by a stream's emit function or
+// reader, the nesting limit, or a panic in the trace function, which propagates out of the parse
+// unchanged.
 //
 // The methods LineCol, Text and Failure read the parser's state: call them only from the trace
 // function, while it handles the event.
@@ -120,6 +121,21 @@ type tracer struct {
 	stack  []tracedCallState
 }
 
+// emit passes ev to the trace function. A panic there is carried through recoverParse as a
+// tracePanic, so that it is not taken for a fault of the parse (a runtime error on a bytecode
+// backend is reported as invalid bytecode), and is raised again unchanged.
+func (t *tracer) emit(ev TraceEvent) {
+	defer func() {
+		if x := recover(); x != nil {
+			panic(tracePanic{x})
+		}
+	}()
+	t.fn(ev)
+}
+
+// tracePanic is a panic of the trace function, with the value it panicked with.
+type tracePanic struct{ value any }
+
 // tracedCallState is the state of a traced call in progress.
 type tracedCallState struct {
 	r     *rule
@@ -161,7 +177,7 @@ func (p *parser) traceEnter(r *rule, min int) {
 	t.stack = append(t.stack, tracedCallState{r: r, min: min, start: p.pos, evals: p.stats.Evaluated, hw: p.hw, rec: len(p.recovered)})
 	p.hw = p.pos
 	t.stack[len(t.stack)-1].exp = p.isolate(p.pos)
-	t.fn(TraceEvent{Kind: TraceEnter, Rule: r.name, Level: min, Depth: len(t.stack), Pos: p.pos, Lookahead: p.silent > 0, p: p})
+	t.emit(TraceEvent{Kind: TraceEnter, Rule: r.name, Level: min, Depth: len(t.stack), Pos: p.pos, Lookahead: p.silent > 0, p: p})
 }
 
 // traceExit reports the end of the innermost call in progress, whose result is ok.
@@ -179,7 +195,7 @@ func (p *parser) traceExit(ok bool) {
 			ev.rec = p.recovered[c.rec:len(p.recovered):len(p.recovered)]
 		}
 	}
-	t.fn(ev)
+	t.emit(ev)
 	p.mergeExpected(far, inner)
 	p.hw = max(c.hw, p.hw)
 	t.stack = t.stack[:len(t.stack)-1]

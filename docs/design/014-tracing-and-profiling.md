@@ -192,7 +192,10 @@ one that gave a `Document` parse a fresh memo fails the document comparison 573 
   each other.
 - The steps of a Pratt expression (operands, operators, the binding-power loop) are part of its rule's body; only calls
   of rules from them are reported.
-- An aborted parse ends the trace without the exit events of the calls in progress.
+- An aborted parse (a runtime error in an action, an error from a stream's emit function or reader, the nesting limit,
+  a panic in the trace function) ends the trace without the exit events of the calls in progress. A panic in the trace
+  function is carried through the parse's recovery as an internal value and raised again unchanged, so that a runtime
+  error there is not reported as invalid bytecode on the bytecode backends.
 - A `Profile` must not be shared by concurrent parses.
 - In a stream parse, `LineCol` knows the lines of the input still held only; for other positions it gives 0, 0 (and a
   profile `Location` prints as `position N`). Keeping the line starts of discarded input would make a stream's memory

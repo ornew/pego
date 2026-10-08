@@ -425,6 +425,27 @@ def line = @(?a-z)* "\n"`)
 	}
 }
 
+// TestTracePanic checks that a panic in the trace function propagates out of the parse with its
+// own value on every backend, rather than being reported as a fault of the parse (a runtime error
+// on the bytecode backends would be "invalid bytecode").
+func TestTracePanic(t *testing.T) {
+	prog := compile(t, `def main = @(?a-z)+ $$`)
+	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		var got any
+		var err error
+		func() {
+			defer func() { got = recover() }()
+			var m map[string]int
+			_, err = prog.ParseWith("main", "abc", ParseOptions{Backend: b, Trace: func(TraceEvent) {
+				m["x"]++ // a runtime error
+			}})
+		}()
+		if re, ok := got.(interface{ RuntimeError() }); !ok || err != nil {
+			t.Errorf("%v: recovered %#v (%v), error %v", b, got, re, err)
+		}
+	}
+}
+
 // TestTraceRecovered checks that exit events give the errors recovered during the call, which
 // are not part of Failure.
 func TestTraceRecovered(t *testing.T) {

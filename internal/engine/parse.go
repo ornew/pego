@@ -129,6 +129,9 @@ func recoverParse(x any, b Backend, err *error) {
 		*err = f.err
 		return
 	}
+	if tp, ok := x.(tracePanic); ok {
+		panic(tp.value) // a panic of the trace function, not of the parse
+	}
 	if re, ok := x.(runtime.Error); ok && (b == Bytecode || b == BytecodeIterative) {
 		*err = fmt.Errorf("invalid bytecode: %v", re)
 		return

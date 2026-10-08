@@ -410,7 +410,8 @@ concurrent parses. Generated Go parsers (`pego gen`) have no tracing.
   backend, and so are the number of evaluations and memo reuses, the memo entries and the memoization decisions; the
   test suite checks this on all its grammars, and for `Document` checks the results and `Document.Stats` across
   edits on the backend corpus.
-- **Aborted parses** (a runtime error in an action, an error from a stream's `emit`, the nesting limit) end the trace
+- **Aborted parses** (a runtime error in an action, an error from a stream's `emit` or reader, the nesting limit, a
+  panic in the trace function, which propagates out of the parse) end the trace
   without the exit events of the calls in progress.
 - **Streams forget lines.** A stream parse discards the input it has consumed, and with it the line structure:
   `LineCol` gives 0, 0 for a position that is no longer (or not yet) held, and a profile location that could not be
