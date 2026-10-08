@@ -1815,6 +1815,9 @@ class Parser {
       if (a.op.kind === "postfix") {
         lhs = this.prattBuild(r, a, lhs, null);
         lastNone = -1;
+        if (this.pos === m0pos) {
+          break;
+        }
         continue;
       }
       let rmin = a.op.level;
@@ -1833,6 +1836,12 @@ class Parser {
       lastNone = -1;
       if (a.op.assoc === "none") {
         lastNone = a.op.level;
+      }
+      // An application that consumed no input ends the loop, as an empty iteration ends a
+      // repetition: otherwise an operator that can match empty after an operand that can loops
+      // forever.
+      if (this.pos === m0pos) {
+        break;
       }
     }
     return lhs;

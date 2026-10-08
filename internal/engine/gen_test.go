@@ -72,6 +72,14 @@ def e = pratt {
     level { prefix "-"? }
     level { postfix "!"? }
 }`, []string{"x", "-x!", "--x", ""}},
+		// An empty operand and an empty infix operator: an application that consumes nothing ends
+		// the expression.
+		{"empty operand and infix", `
+def main = e $$
+def e = pratt {
+    operand "a"?
+    level { infix left _ }
+}`, []string{"a", "", "aa"}},
 		{"anchors and classes", `
 def main = (^ @(?a-z)+ $ "\n"?)* $$ (?^\n)? _`, []string{"ab\ncd\n", "ab\n1", "日本", "é\n\xff"}},
 		{"scans", `
