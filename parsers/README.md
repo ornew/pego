@@ -8,6 +8,7 @@ that depends only on the standard library: import it and parse, with nothing to 
 | CSV | [`github.com/ornew/pego/parsers/csv`](csv/) | [RFC 4180](https://www.rfc-editor.org/rfc/rfc4180), with the leniencies of `encoding/csv` | 73 edge cases, `encoding/csv` (differential and fuzz tests) |
 | JSON | [`github.com/ornew/pego/parsers/json`](json/) | [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259) | [JSONTestSuite](https://github.com/nst/JSONTestSuite) (every `y_` and `n_` case), `encoding/json` (differential and fuzz tests) |
 | XML | [`github.com/ornew/pego/parsers/xml`](xml/) | [XML 1.0 (Fifth Edition)](https://www.w3.org/TR/xml/), non-validating, with [Namespaces in XML 1.0](https://www.w3.org/TR/xml-names/) | [W3C XML Conformance Test Suite](https://www.w3.org/XML/Test/) (no failure among the XML 1.0 tests that need no external entity), `encoding/xml` (differential and fuzz tests) |
+| YAML | [`github.com/ornew/pego/parsers/yaml`](yaml/) | [YAML 1.2.2](https://yaml.org/spec/1.2.2/), with the core schema for Go values | [yaml-test-suite](https://github.com/yaml/yaml-test-suite) (all 402 tests: events and JSON values) |
 
 ```bash
 go get github.com/ornew/pego/parsers/json
