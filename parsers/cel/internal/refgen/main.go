@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -26,6 +27,7 @@ func main() {
 	out := flag.String("out", "../../testdata/ref", "output directory")
 	nrandom := flag.Int("n", 12000, "number of random expressions")
 	nlit := flag.Int("literals", 4000, "number of random literals")
+	nmacros := flag.Int("macros", 6000, "number of random macro calls")
 	ndeep := flag.Int("deep", 2000, "number of deeply nested expressions")
 	seed := flag.Uint64("seed", 1, "seed of the random generator")
 	flag.Parse()
@@ -83,7 +85,12 @@ func main() {
 	write("random.tsv", generate(*seed, *nrandom))
 	write("literals.tsv", generateLiterals(*seed, *nlit))
 	write("deep.tsv", generateDeep(*seed, *ndeep), true)
+	// The verdicts of the parser with the standard macros, for what the other files hold and for macro calls.
+	pm := newMacroParser()
+	macroInputs := slices.Concat(conf, celgo, edgeCases, generateMacros(*seed, *nmacros), generate(*seed+1, 3000))
 	writeLimits(p, filepath.Join(*out, "limits.tsv"))
+	p = pm
+	write("macros.tsv", macroInputs, true)
 }
 
 func fatal(err error) {

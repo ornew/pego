@@ -59,8 +59,8 @@ func readRef(t testing.TB, name string) []refCase {
 
 // result parses src as ParseExpr does and returns the canonical form of the expression, or ERR@line:column of
 // the error (the columns of cel-go count from 1 as well).
-func result(src string) string {
-	e, err := cel.ParseExpr(src)
+func result(src string, opts ...cel.Option) string {
+	e, err := cel.ParseExpr(src, opts...)
 	if err != nil {
 		var se *cel.SyntaxError
 		var ce *cel.CheckError
@@ -86,9 +86,13 @@ func TestDifferential(t *testing.T) {
 			continue
 		}
 		t.Run(strings.TrimSuffix(name, ".tsv"), func(t *testing.T) {
+			var opts []cel.Option
+			if name == "macros.tsv" { // cel-go with the standard macros
+				opts = append(opts, cel.WithMacros())
+			}
 			bad, rejected, samePos := 0, 0, 0
 			for _, c := range readRef(t, name) {
-				got := result(c.src)
+				got := result(c.src, opts...)
 				gotErr, wantErr := strings.HasPrefix(got, "ERR"), strings.HasPrefix(c.want, "ERR")
 				if c.want == "OK" && !gotErr { // a file of verdicts: the tree is not compared
 					got = "OK"

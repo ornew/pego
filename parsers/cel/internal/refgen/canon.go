@@ -41,6 +41,20 @@ func newParser() *parser.Parser {
 	return p
 }
 
+// newMacroParser returns the parser of newParser with the standard macros, as cel.NewEnv has it.
+func newMacroParser() *parser.Parser {
+	p, err := parser.NewParser(
+		parser.EnableOptionalSyntax(true),
+		parser.EnableIdentEscapeSyntax(true),
+		parser.EnableVariadicOperatorASTs(true),
+		parser.Macros(parser.AllMacros...),
+	)
+	if err != nil {
+		panic(err)
+	}
+	return p
+}
+
 // reference parses src with cel-go and returns its canonical form, or ERR:column of its first error.
 func reference(p *parser.Parser, src string) (out string, ok bool) {
 	defer func() {
@@ -152,6 +166,8 @@ func (c *canon) expr(e ast.Expr) {
 			c.b.WriteByte(')')
 		}
 		c.b.WriteByte(')')
+	case ast.ComprehensionKind: // a macro that was expanded
+		c.w("(comprehension@%d)", off)
 	default:
 		c.w("ERR(kind %d)", e.Kind())
 	}

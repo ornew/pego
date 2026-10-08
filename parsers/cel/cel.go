@@ -3,7 +3,6 @@ package cel
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -326,82 +325,4 @@ func Inspect(e Expr, f func(Expr) bool) {
 		return
 	}
 	Children(e, func(c Expr) { Inspect(c, f) })
-}
-
-// CheckError reports what the grammar cannot: a literal out of range, or an expression over a limit.
-type CheckError struct {
-	Span          // the expression or literal
-	Line, Col int // 1-based position of the start, in code points; 0 unless ParseExpr set them
-	Message   string
-}
-
-func (e *CheckError) Error() string {
-	if e.Line > 0 {
-		return fmt.Sprintf("%d:%d: %s", e.Line, e.Col, e.Message)
-	}
-	return fmt.Sprintf("offset %d: %s", e.Start, e.Message)
-}
-
-// Check reports what the grammar does not: a literal out of range (an int or uint outside the range of int64 or
-// uint64, a double outside the range of float64), and an expression over the DefaultLimits for its depth (CheckLimits).
-func Check(e Expr) error {
-	var err error
-	Inspect(e, func(e Expr) bool {
-		if err != nil {
-			return false
-		}
-		var verr error
-		switch e := e.(type) {
-		case *IntLit:
-			_, verr = e.Value()
-		case *UintLit:
-			_, verr = e.Value()
-		case *DoubleLit:
-			_, verr = e.Value()
-		default:
-			return true
-		}
-		if verr != nil {
-			err = &CheckError{Span: SpanOf(e), Message: verr.Error()}
-		}
-		return true
-	})
-	if err != nil {
-		return err
-	}
-	return CheckLimits(e, DefaultLimits)
-}
-
-// ParseExpr parses and checks an expression: ParseAST followed by Check, which also checks the size of the input
-// against DefaultLimits.
-func ParseExpr(input string) (Expr, error) {
-	if err := checkSize(input, DefaultLimits); err != nil {
-		return nil, err
-	}
-	e, err := ParseAST(input)
-	if err != nil {
-		return nil, err
-	}
-	if err := Check(e); err != nil {
-		ce := err.(*CheckError)
-		ce.Line, ce.Col = lineCol(input, ce.Start)
-		return nil, ce
-	}
-	return e, nil
-}
-
-// lineCol returns the 1-based line and column of the code point at pos in input.
-func lineCol(input string, pos int) (line, col int) {
-	line, col = 1, 1
-	for i, r := range []rune(input) {
-		if i >= pos {
-			break
-		}
-		if r == '\n' {
-			line, col = line+1, 1
-		} else {
-			col++
-		}
-	}
-	return line, col
 }

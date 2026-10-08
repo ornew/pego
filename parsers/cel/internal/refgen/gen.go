@@ -525,4 +525,47 @@ func generateDeep(seed uint64, n int) []string {
 	return out
 }
 
+// generateMacros returns n expressions with calls that look like the standard macros, with arguments that the macros
+// take and arguments that they do not.
+func generateMacros(seed uint64, n int) []string {
+	g := &gen{r: rand.New(rand.NewPCG(seed, seed^0x1234abcd))}
+	names := []string{"has", "all", "exists", "exists_one", "existsOne", "map", "filter", "exist", "optMap", "optFlatMap", "cel.bind", "size"}
+	args := []string{"x", "y", ".x", "__result__", "@result", "(x)", "((x))", "1", "'s'", "x.y", "x.?y", "x[0]", "x[?0]", "a.b.c", "(a.b)", "x == 1", "x.f()", "f(x)",
+		"[x]", "{x: 1}", "x ? y : z", "-x", "true", "null", "x.y.z == 1", "in", "if", "has(x.y)", "x.all(y, y)", "`x`", "x.`y`", "_", "a", "all", "map"}
+	recvs := []string{"a", "a.b", "[1, 2]", "{'k': 1}", "x.y()", "(a)", "a[0]", "f(a)", "a.?b", "'s'", ".a", "1", "null"}
+	pick := func(xs []string) string { return xs[g.n(len(xs))] }
+	seen := map[string]bool{}
+	var out []string
+	for len(out) < n {
+		var calls []string
+		for range 1 + g.n(2) {
+			name := pick(names)
+			var as []string
+			for range g.n(5) {
+				as = append(as, pick(args))
+			}
+			c := name + "(" + strings.Join(as, ", ") + ")"
+			if g.p(0.8) {
+				c = pick(recvs) + "." + c
+			} else if g.p(0.2) {
+				c = "." + c
+			}
+			if g.p(0.2) {
+				c = pick(args) + " && " + c
+			}
+			calls = append(calls, c)
+		}
+		s := strings.Join(calls, " || ")
+		if g.p(0.15) {
+			s = "!(" + s + ")"
+		}
+		if seen[s] {
+			continue
+		}
+		seen[s] = true
+		out = append(out, s)
+	}
+	return out
+}
+
 var _ = strconv.Itoa

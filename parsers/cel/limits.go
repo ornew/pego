@@ -6,7 +6,7 @@ import (
 )
 
 // Limits are limits on an expression, which a CEL implementation is free to choose (the specification only requires
-// that a few levels of nesting and 32 repetitions work).
+// that a few levels of nesting and 32 repetitions work). A limit of zero or less is not checked.
 type Limits struct {
 	// MaxDepth is the depth of recursion that the parser of cel-go allows; see CheckLimits for how it is measured.
 	MaxDepth int
@@ -26,6 +26,9 @@ var DefaultLimits = Limits{MaxDepth: 250, MaxSize: 100_000}
 // indexes count against the first; a chain of selections or operators, which ANTLR builds without recursion,
 // against the second; and a run of ! or - against neither. CheckLimits computes both from the AST.
 func CheckLimits(e Expr, l Limits) error {
+	if l.MaxDepth <= 0 {
+		return nil
+	}
 	d := &depth{max: l.MaxDepth}
 	d.ex(e)
 	if d.failed {
@@ -318,6 +321,9 @@ func visitDepth(e Expr) int {
 
 // checkSize reports whether the input is within the size limit.
 func checkSize(input string, l Limits) error {
+	if l.MaxSize <= 0 {
+		return nil
+	}
 	if n := utf8.RuneCountInString(input); n > l.MaxSize {
 		return &CheckError{Line: 1, Col: 1, Message: fmt.Sprintf("expression code point size exceeds limit: size: %d, limit %d", n, l.MaxSize)}
 	}
