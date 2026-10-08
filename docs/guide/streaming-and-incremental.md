@@ -227,7 +227,9 @@ column 5 counted in bytes.
 
 The parser does not keep text for you. Terminal nodes (`Match`, terminal types, `@(...)`) carry their text in `Node.Text`;
 structural nodes (`Seq`, `List`) do not, and by the time your callback runs the input of an element is already being
-discarded. If you need the raw text of an element, capture it as a terminal in the grammar.
+discarded. If you need the raw text of an element, capture it as a terminal in the grammar. For the same reason,
+`text(...)` in an action of the start rule, which runs after the elements have gone, returns only the part of the
+node's input that is still held (possibly `""`).
 
 ### Errors
 

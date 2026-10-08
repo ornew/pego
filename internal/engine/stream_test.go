@@ -177,6 +177,22 @@ def line = @(?a-z0-9=)+ "\n"`,
 	}
 }
 
+// TestParseStreamTextOfDiscardedInput checks that text(...) of a node whose input has been
+// discarded by the stream returns what is still held instead of failing.
+func TestParseStreamTextOfDiscardedInput(t *testing.T) {
+	prog := compile(t, `
+type T struct { H string, N int }
+def main = h:("a" "b") rs:r* #stream "!" -> new T{H: text($h), N: len($rs)}
+def r = "x" "y"`)
+	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		input := "ab" + strings.Repeat("xy", 5000) + "!"
+		err := prog.ParseStreamWith("main", strings.NewReader(input), func(*Node) error { return nil }, ParseOptions{Backend: b})
+		if err != nil {
+			t.Errorf("%v: %v", b, err)
+		}
+	}
+}
+
 type lineReader struct {
 	header, line string
 	n            int

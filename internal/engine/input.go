@@ -272,9 +272,9 @@ func (in *input) byteAt(i int) (byte, bool) {
 }
 
 func (in *input) text(start, end int) string {
-	if start < in.base {
-		start = in.base // the part discarded by the stream cannot be returned
-	}
+	// The part discarded by a stream cannot be returned: the text is cut to what is still held
+	// (possibly nothing).
+	start, end = max(start, in.base), max(end, in.base)
 	if in.srcOK {
 		if in.unit == Bytes {
 			return in.src[start:end]
