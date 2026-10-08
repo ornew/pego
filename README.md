@@ -152,6 +152,7 @@ v, err := json.Decode(`{"name": "pego", "tags": ["peg", "pratt"]}`)
 | CEL | [`github.com/ornew/pego/parsers/cel`](parsers/cel/) | The CEL language definition |
 | CSV | [`github.com/ornew/pego/parsers/csv`](parsers/csv/) | RFC 4180 |
 | CUE | [`github.com/ornew/pego/parsers/cue`](parsers/cue/) | The CUE language specification |
+| DuckDB SQL | [`github.com/ornew/pego/parsers/duckdb`](parsers/duckdb/) | DuckDB 1.5.6's SQL dialect |
 | Go | [`github.com/ornew/pego/parsers/golang`](parsers/golang/) | The Go specification (go1.27), as `go/parser` parses it |
 | JSON | [`github.com/ornew/pego/parsers/json`](parsers/json/) | RFC 8259 |
 | Python | [`github.com/ornew/pego/parsers/python`](parsers/python/) | Python 3.14 |

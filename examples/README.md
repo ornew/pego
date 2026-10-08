@@ -1,7 +1,7 @@
 # Examples
 
 Small grammars that show PEGO's features, with golden tests. Complete parsers for real languages, ready to import
-(CEL, CSV, CUE, Go, JSON, Python, TypeScript, XML and YAML), are in [parsers/](../parsers/); they are the larger examples.
+(CEL, CSV, CUE, DuckDB SQL, Go, JSON, Python, TypeScript, XML and YAML), are in [parsers/](../parsers/); they are the larger examples.
 
 | Directory | Contents | Features shown |
 |:--|:--|:--|
