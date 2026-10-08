@@ -1,0 +1,220 @@
+# Texts on which an earlier version of the parser and DuckDB's parser disagreed, found by running 1.4 million
+# mutations of the tests (with other seeds than the corpus) and by trying the constructs around them. One text per
+# line; internal/refgen/corpus.py found makes the corpus "found" of them. A line that begins with # is a comment.
+#
+# relation_expr (a table with * or ONLY): ALTER TABLE, DELETE, UPDATE, TRUNCATE and the tables of FROM
+ALTER TABLE t * ADD COLUMN c INT
+ALTER TABLE t * DROP COLUMN c
+ALTER TABLE t * RENAME TO u
+ALTER TABLE t * RENAME COLUMN a TO b
+ALTER TABLE t * RENAME CONSTRAINT a TO b
+ALTER TABLE t * SET SCHEMA s
+ALTER TABLE ONLY t ADD COLUMN c INT
+ALTER TABLE ONLY (t) ADD COLUMN c INT
+ALTER TABLE ONLY (t) RENAME TO u
+ALTER TABLE ONLY (t) RENAME COLUMN a TO b
+ALTER TABLE ONLY (t) RENAME CONSTRAINT a TO b
+ALTER TABLE ONLY (t) SET SCHEMA s
+ALTER TABLE ONLY t * ADD COLUMN c INT
+ALTER TABLE ONLY t * RENAME TO u
+ALTER TABLE IF EXISTS t * ADD COLUMN c INT
+ALTER VIEW ONLY v RENAME TO u
+ALTER VIEW v * RENAME TO u
+ALTER VIEW ONLY v SET SCHEMA s
+ALTER VIEW ONLY v ADD COLUMN c INT
+ALTER INDEX ONLY i RENAME TO u
+ALTER INDEX i * RENAME TO u
+ALTER SEQUENCE ONLY s RENAME TO u
+ALTER SEQUENCE ONLY s SET SCHEMA x
+SELECT * FROM ONLY t
+SELECT * FROM ONLY (t)
+SELECT * FROM ONLY t *
+SELECT * FROM t * x
+SELECT * FROM t *
+DELETE FROM t * WHERE a
+DELETE FROM ONLY (t) x
+DELETE FROM ONLY t *
+UPDATE t * x SET a = 1
+UPDATE ONLY (t) AS x SET a = 1
+TRUNCATE t *
+TRUNCATE ONLY t
+TRUNCATE ONLY (t)
+TRUNCATE ONLY t *
+TRUNCATE a, b
+INSERT INTO ONLY t VALUES (1)
+INSERT INTO t * VALUES (1)
+CREATE INDEX i ON ONLY t (a)
+CREATE INDEX i ON t * (a)
+# statements as the body of a CTE, of PREPARE and of EXPLAIN
+PREPARE p AS truncate t
+EXPLAIN truncate t
+WITH c AS (insert into t values (1) returning *) SELECT 1
+WITH c AS (truncate t) SELECT 1
+WITH c AS (copy t to 'f') SELECT 1
+WITH c AS (describe t) SELECT 1
+WITH c AS (merge into t using u on true when matched then delete) SELECT 1
+WITH c AS (explain select 1) SELECT 1
+WITH c AS (analyze x) SELECT 1
+WITH c AS (vacuum) SELECT 1
+WITH c AS (call f()) SELECT 1
+WITH c AS (create table t(a int)) SELECT 1
+WITH c AS (pragma x) SELECT 1
+WITH c AS (set a = 1) SELECT 1
+WITH c AS (checkpoint) SELECT 1
+WITH c AS (begin) SELECT 1
+CREATE INDEX IF NOT EXISTS ON tbl(i)
+CREATE INDEX ON tbl(i)
+CREATE UNIQUE INDEX IF NOT EXISTS ON tbl(i)
+CREATE INDEX IF NOT EXISTS i ON tbl(i)
+# PIVOT and UNPIVOT
+PIVOT t
+PIVOT t ON y
+PIVOT t USING sum(x)
+PIVOT t GROUP BY y
+PIVOT (SELECT 1)
+PIVOT_WIDER t
+PIVOT_WIDER t ON y
+UNPIVOT t
+UNPIVOT t ON a
+# types
+SELECT 1::FLOAT(18,1)
+SELECT 1::FLOAT(18)
+SELECT 1::FLOAT()
+SELECT 1::FLOAT
+SELECT 1::FLOAT(18)[]
+SELECT FLOAT(3) '1'
+SELECT FLOAT(3,1) '1'
+SELECT 1::DOUBLE(3)
+SELECT 1::DECIMAL(18,1,2)
+SELECT 1::NUMERIC()
+# intervals
+SELECT INTERVAL '1' year to month
+SELECT INTERVAL '1' years to months
+SELECT INTERVAL '1' day to hour
+SELECT INTERVAL '1' day to second
+SELECT INTERVAL '1' hour to minute
+SELECT INTERVAL '1' hour to second
+SELECT INTERVAL '1' minute to second
+SELECT INTERVAL '1' second to minute
+SELECT INTERVAL '1' month to year
+SELECT INTERVAL '1' year to day
+SELECT INTERVAL '1' week to day
+SELECT INTERVAL '1' millisecond to second
+SELECT x::INTERVAL DAY TO SECOND
+SELECT x::INTERVAL SECOND TO DAY
+SELECT x::INTERVAL SECONDS TO MINUTES
+SELECT x::INTERVAL days TO hours
+SELECT x::INTERVAL week TO day
+# table aliases and functions in FROM
+SELECT * FROM x: t
+SELECT * FROM x: t y
+SELECT * FROM x: t AS y
+SELECT * FROM x: (SELECT 1) y
+SELECT * FROM x: f(1) y
+SELECT * FROM "b" : a a
+FROM range(8) export_state (s)
+SELECT * FROM f(1) FILTER (WHERE x)
+FROM row_number() over (), i
+SELECT * FROM generate_series(1, 3) g(i)
+COPY t TO 'f' (E'a')
+COPY t TO 'f' (a 'b')
+COPY t TO 'f' (a E'b')
+# operators: a generic operator followed by a token that cannot begin its right operand, and two in a row
+SELECT 1 || |
+SELECT 1 | | 2
+SELECT 1 || | 2
+SELECT 1 || NOT 1
+SELECT 1 == NOT 1
+SELECT 1 = NOT 1
+SELECT 1 + NOT 1
+SELECT 1 ~~ NOT 1
+SELECT 1 || ESCAPE
+SELECT 1 || BETWEEN
+SELECT 1 || ISNULL
+SELECT 1 | LIKE 'b'
+SELECT a | LIKE 'b' ESCAPE 'c'
+SELECT a | NOT LIKE 'b'
+SELECT a | IN (1)
+SELECT a | IS NULL
+SELECT 1 == AND 2
+SELECT 1 || AND 2
+SELECT 1 == |
+SELECT 1 || ~ AND 2
+SELECT 1 + |
+SELECT x || |, 2
+SELECT (1 ||)
+SELECT (1 || |)
+SELECT 1 = ESCAPE
+SELECT 1 = BETWEEN
+# LIMIT with a percent sign
+SELECT 1 LIMIT 10%
+SELECT 1 LIMIT -1%
+SELECT 1 LIMIT 2*3%
+SELECT 1 LIMIT 5 % 5 %
+SELECT 1 LIMIT 5%+5
+SELECT 1 LIMIT 1+2%
+SELECT 1 LIMIT 5 + 5%
+SELECT 1 LIMIT NOT 1%
+SELECT 1 LIMIT | 50%
+SELECT 1 LIMIT 1 || 2%
+SELECT 1 LIMIT (NOT 1)%
+# NULLS FIRST and NULLS LAST are tokens of their own; E, B, X and N before a quote start a string
+SELECT * FROM integers ORDER BY i | NULLS LAST LIMIT 2
+SELECT nulls FROM t
+SELECT 1 nulls
+SELECT nulls first FROM t
+SELECT nulls, first FROM t
+SELECT 1 FROM t ORDER BY nulls nulls first
+SELECT e'a'
+SELECT e 'a'
+SELECT b'01', x'FF', n'x'
+SELECT x''
+SELECT 1 e'a'
+# SUBSTRING and TRIM
+SELECT substring(a for 2 from 1)
+SELECT substring(a from 1 for 2)
+SELECT trim(both 'x' from a, b)
+SELECT trim(a from b)
+SELECT trim(from a)
+SELECT trim(leading a, b)
+SELECT x[1].f(2)
+SELECT x[1:2].f(2)
+SELECT (x)[1].f(2)
+SELECT x.y[1].z
+# a keyword in an unusual case where a name is not allowed to be a keyword: the parser reads only three spellings
+SELECT 1 text
+SELECT 1 TEXT
+SELECT 1 Text
+SELECT x::tExT
+SELECT 1 tExT
+# DuckDB replaces the Unicode spaces of the text before it parses it, with a pass of its own that does not close a
+# dollar-quoted string followed by a letter: where it sees a string, the parser reads names (known deviations)
+select $a$b$a$x　x
+select $ü$b$ü$x　x
+select $$b$$x　x
+select $ü$x insensitive  = $ü$x　x$ü$;
+select $ü$b$ü$ x　x
+select 'b'x　x
+# differences that are not understood: DuckDB accepts after BETWEEN of a frame the words IN and AND, and after GROUPS
+# BETWEEN a dot, as the first bound before PRECEDING, rejects NOT at the start of the first frame bound after BETWEEN,
+# rejects SETOF with a qualified type, and accepts a percent sign after a postfix operator (known deviations)
+SELECT sum(c) OVER (ORDER BY a GROUPS BETWEEN . PRECEDING AND 1 PRECEDING)
+SELECT sum(b) OVER (ORDER BY a ROWS BETWEEN NOT 1 PRECEDING AND 1 FOLLOWING)
+SELECT cast (null as SETOF main.u )
+SELECT * FROM generate_series(0,10,1) LIMIT -1| %
+SELECT sum(v) OVER (ORDER BY i RANGE BETWEEN IN PRECEDING AND -1 PRECEDING)
+SELECT sum(v) OVER (ORDER BY i RANGE BETWEEN AND PRECEDING AND 1 PRECEDING)
+select $ü$x ; = $ü$x　x$ü$x$ü$
+CALL check_peg_parser(TEST_PEG_PARSER$ $TEST_PEG_PARSER$);
+select $a$x
+select $a$x$
+select $ü$x
+select $a1$x
+select $_$
+select $a$$
+select $a$b$a$
+select $_$x$_$
+select $name
+select $ name
+select $"a"
+select $1

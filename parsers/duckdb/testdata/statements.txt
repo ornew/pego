@@ -1,0 +1,5 @@
+CREATE TABLE t (id INTEGER PRIMARY KEY, name VARCHAR NOT NULL, tags VARCHAR[]);
+INSERT INTO t VALUES (1, 'a', ['x', 'y']), (2, 'b', []);
+UPDATE t SET name = upper(name) WHERE id = 1;
+DELETE FROM t WHERE id = 2;
+COPY t TO 'out.parquet' (FORMAT parquet);

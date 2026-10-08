@@ -1,0 +1,13 @@
+{"sql": "select $a$b$a$x　x", "why": "DuckDB replaces the Unicode white space of a text before parsing it, with a pass of its own that does not close a dollar-quoted string when a letter follows the closing tag; it sees a string up to the end, leaves the space alone and the scanner reads x　x as one name. The parser reads the string as the scanner does and the space as white space."}
+{"sql": "select $ü$b$ü$x　x", "why": "the same: the pass that replaces Unicode white space does not close the dollar-quoted string, because a letter follows its closing tag"}
+{"sql": "select $$b$$x　x", "why": "the same, with an empty tag"}
+{"sql": "select $ü$x insensitive  = $ü$x　x$ü$;", "why": "the same: for the pass, the string goes on to the last $ü$, and the space inside the name x　x$ü$ is not replaced"}
+{"sql": "SELECT 1 tExT", "why": "an unreserved keyword cannot be an alias without AS, in any case of its letters; the parser knows it in lower case, upper case and capitalized (see the README)"}
+{"sql": "SELECT sum(c) OVER (ORDER BY a GROUPS BETWEEN . PRECEDING AND 1 PRECEDING)", "why": "DuckDB accepts a lone dot as the first bound of GROUPS BETWEEN (not of ROWS or RANGE BETWEEN, nor as the second bound); the parser rejects it"}
+{"sql": "SELECT sum(b) OVER (ORDER BY a ROWS BETWEEN NOT 1 PRECEDING AND 1 FOLLOWING)", "why": "DuckDB rejects NOT at the start of the first bound after BETWEEN (not after ROWS, nor as the second bound); the parser accepts it"}
+{"sql": "SELECT cast (null as SETOF main.u )", "why": "DuckDB rejects SETOF before a qualified type name; the parser accepts it"}
+{"sql": "SELECT * FROM generate_series(0,10,1) LIMIT -1| %", "why": "DuckDB accepts the percent sign after a postfix operator (-1| %); the parser rejects it, as it does after + and the other operators that bind more loosely than %"}
+{"sql": "SELECT sum(v) OVER (ORDER BY i RANGE BETWEEN IN PRECEDING AND -1 PRECEDING)", "why": "DuckDB accepts the word IN as the first bound of a frame before PRECEDING (and AND, and a dot after GROUPS BETWEEN); it is not understood why, and the parser rejects it"}
+{"sql": "SELECT sum(v) OVER (ORDER BY i RANGE BETWEEN AND PRECEDING AND 1 PRECEDING)", "why": "the same, with AND"}
+{"sql": "select $ü$x ; = $ü$x　x$ü$x$ü$", "why": "the pass that replaces Unicode white space (see above) makes DuckDB see an unterminated dollar-quoted string where the scanner finds the end of one"}
+{"sql": "CALL check_peg_parser(TEST_PEG_PARSER$ $TEST_PEG_PARSER$);", "why": "the same pass that replaces Unicode white space: it takes the dollar after the name for the start of a dollar-quoted string, leaves the space (U+2002) alone, and the scanner then reads it as part of an identifier"}

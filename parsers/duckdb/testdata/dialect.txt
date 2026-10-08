@@ -1,0 +1,1 @@
+FROM read_csv('data.csv') SELECT a, b[1:2], {'k': a // 2}, [x * 2 FOR x IN l IF x > 0], list_transform(l, y -> y + 1)

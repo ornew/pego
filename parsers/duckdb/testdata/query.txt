@@ -1,0 +1,11 @@
+WITH recent AS (
+  SELECT o.id, o.total, c.name
+  FROM orders AS o JOIN customers c ON c.id = o.customer_id
+  WHERE o.placed_at >= DATE '2024-01-01' AND o.status IN ('paid', 'shipped')
+)
+SELECT name, sum(total) AS revenue, rank() OVER (ORDER BY sum(total) DESC) AS r
+FROM recent
+GROUP BY name
+HAVING count(*) > 1
+ORDER BY revenue DESC NULLS LAST
+LIMIT 10;
