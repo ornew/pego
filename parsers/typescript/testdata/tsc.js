@@ -2,7 +2,8 @@
 //
 // Usage: node tsc.js <path to the typescript package>
 //
-// Reads one JSON request per line on standard input, {"text": source, "tsx": bool}, and writes one JSON
+// Reads one JSON request per line on standard input, {"name": file name, "text": source, "tsx": bool}, and
+// writes one JSON
 // response per line: {"diags": [{"pos": utf16 offset, "code": n, "msg": text}], "nodes": [...]}, where the
 // diagnostics are the source file's parseDiagnostics and the nodes are the source file and its descendants
 // in preorder (the children in forEachChild order), each as [kind, start, end, number of children], with
@@ -35,7 +36,7 @@ function nodes(sf) {
     let start = n.getStart(sf);
     let end = n.end;
     if (n.kind === ts.SyntaxKind.SourceFile || n.kind === ts.SyntaxKind.JsxText) start = n.pos;
-    if (n.pos === n.end) end = start;
+    if (n.pos === n.end) start = end = ts.skipTrivia(sf.text, n.pos); // getStart is pos for a node of width 0
     const cs = children(n);
     out.push([kindNames[n.kind], start, end, cs.length]);
     for (let i = cs.length - 1; i >= 0; i--) stack.push(cs[i]);
@@ -46,7 +47,7 @@ function nodes(sf) {
 const rl = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
 rl.on("line", (line) => {
   const req = JSON.parse(line);
-  const sf = ts.createSourceFile(req.tsx ? "test.tsx" : "test.ts", req.text, ts.ScriptTarget.Latest, true,
+  const sf = ts.createSourceFile(req.name, req.text, ts.ScriptTarget.Latest, true,
     req.tsx ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
   const diags = sf.parseDiagnostics.map((d) => ({
     pos: d.start, code: d.code, msg: ts.flattenDiagnosticMessageText(d.messageText, "\n"),

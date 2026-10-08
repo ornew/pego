@@ -10,26 +10,35 @@ import (
 // ParseTSX parses a .tsx file: TypeScript with JSX, where <T>x is not a type assertion. Like ParseAST, it
 // returns the source file as typed values with positions in the unit (code points by default).
 func ParseTSX(input string, unit ...Unit) (*SourceFile, error) {
-	f, err := ParseAST(tsxMarker+input, unit...)
-	if f != nil {
-		shiftSpans(f)
-	}
-	return f, shiftError(err)
+	return parseWith(tsxMarker, input, unit)
 }
 
 // RecognizeTSX checks that input is a valid .tsx file without building anything, and returns the syntax
 // errors ParseTSX would return.
 func RecognizeTSX(input string, unit ...Unit) error {
-	return shiftError(Recognize(tsxMarker+input, unit...))
+	return shiftError(Recognize(tsxMarker+input, unit...), len(tsxMarker))
 }
 
-// ParseFile parses the source of the file name as a .tsx file if the name ends in .tsx (or .jsx) and as a .ts
-// file otherwise (.ts, .mts, .cts and .d.ts files).
+// ParseFile parses the source of the file name as the TypeScript compiler does (ts.createSourceFile): as a
+// .tsx file if the name ends in .tsx (or .jsx) and as a .ts file otherwise (.ts, .mts, .cts, .d.ts). In a
+// module, a file with import or export declarations or import.meta, the top level is parsed in the await
+// context (await (x) is an await expression, not a call), as the compiler reparses it; not in a declaration
+// file (.d.ts).
 func ParseFile(name, input string, unit ...Unit) (*SourceFile, error) {
+	marker := ""
 	if IsTSX(name) {
-		return ParseTSX(input, unit...)
+		marker = tsxMarker
 	}
-	return ParseAST(input, unit...)
+	f, err := parseWith(marker, input, unit)
+	if !strings.Contains(input, "await") || isDeclarationFile(name) || f != nil && !IsExternalModule(f) {
+		return f, err
+	}
+	// The top level may hold await expressions: parse it as a module would be.
+	mf, merr := parseWith(marker+awaitMarker, input, unit)
+	if f == nil && (mf == nil || !IsExternalModule(mf)) {
+		return f, err // not a module either way: the error of the script
+	}
+	return mf, merr
 }
 
 // IsTSX reports whether the file name is that of a file with JSX (.tsx or .jsx).
@@ -38,29 +47,112 @@ func IsTSX(name string) bool {
 	return ext == ".tsx" || ext == ".jsx"
 }
 
-// tsxMarker selects the TSX start of the grammar's main rule. No TypeScript source can start with NUL, so
-// the marker never changes the meaning of a .ts file; ParseTSX moves the positions back past it.
-const tsxMarker = "\x00"
+// isDeclarationFile reports whether the file name is that of a declaration file (isDeclarationFileName):
+// .d.ts, .d.mts, .d.cts, or a .ts file with .d. in its name (such as a.d.json.ts).
+func isDeclarationFile(name string) bool {
+	base := path.Base(name)
+	for _, ext := range []string{".d.ts", ".d.mts", ".d.cts"} {
+		if strings.HasSuffix(base, ext) {
+			return true
+		}
+	}
+	return strings.HasSuffix(base, ".ts") && strings.Contains(base, ".d.")
+}
+
+// IsExternalModule reports whether f is a module, as the TypeScript compiler decides
+// (isFileProbablyExternalModule): it has an import or export declaration, an export modifier, an
+// import x = require(...), or uses import.meta.
+func IsExternalModule(f *SourceFile) bool {
+	for _, s := range f.Statements {
+		switch s := s.(type) {
+		case *ImportDeclaration, *ExportAssignment, *ExportDeclaration:
+			return true
+		case *ImportEqualsDeclaration:
+			if _, ok := s.ModuleReference.(*ExternalModuleReference); ok {
+				return true
+			}
+		}
+		if hasExportModifier(s) {
+			return true
+		}
+	}
+	found := false
+	Inspect(f, func(n ASTNode) bool {
+		if m, ok := n.(*MetaProperty); ok && m.KeywordToken == "import" && m.Name.Text == "meta" {
+			found = true
+		}
+		return !found
+	})
+	return found
+}
+
+func hasExportModifier(s Statement) bool {
+	var mods []ModifierLike
+	switch s := s.(type) {
+	case *VariableStatement:
+		mods = s.Modifiers
+	case *FunctionDeclaration:
+		mods = s.Modifiers
+	case *ClassDeclaration:
+		mods = s.Modifiers
+	case *InterfaceDeclaration:
+		mods = s.Modifiers
+	case *TypeAliasDeclaration:
+		mods = s.Modifiers
+	case *EnumDeclaration:
+		mods = s.Modifiers
+	case *ModuleDeclaration:
+		mods = s.Modifiers
+	case *ImportEqualsDeclaration:
+		mods = s.Modifiers
+	}
+	for _, m := range mods {
+		if m, ok := m.(*Modifier); ok && m.Text == "export" {
+			return true
+		}
+	}
+	return false
+}
+
+// The grammar's main rule reads markers before the source: tsxMarker selects TSX, and awaitMarker parses the
+// top level in the await context. No TypeScript source can start with them (they are not whitespace or the
+// start of a token), so they never change the meaning of a source; the positions are moved back past them.
+const (
+	tsxMarker   = "\x00"
+	awaitMarker = "\x01"
+)
+
+// parseWith parses the input after the markers, and moves the positions back past them.
+func parseWith(markers, input string, unit []Unit) (*SourceFile, error) {
+	if markers == "" {
+		return ParseAST(input, unit...)
+	}
+	f, err := ParseAST(markers+input, unit...)
+	if f != nil {
+		shiftSpans(f, len(markers))
+	}
+	return f, shiftError(err, len(markers))
+}
 
 type spanSetter interface{ tsetSpan(start, end int) }
 
-// shiftSpans moves the range of every node of f one position back, past the TSX marker.
-func shiftSpans(f *SourceFile) {
+// shiftSpans moves the range of every node of f d positions back.
+func shiftSpans(f *SourceFile, d int) {
 	Inspect(f, func(n ASTNode) bool {
 		if n != nil {
 			s, e := n.Range()
-			n.(spanSetter).tsetSpan(max(s-1, 0), max(e-1, 0))
+			n.(spanSetter).tsetSpan(max(s-d, 0), max(e-d, 0))
 		}
 		return true
 	})
 }
 
-// shiftError moves the positions of syntax errors one position back, past the TSX marker.
-func shiftError(err error) error {
+// shiftError moves the positions of syntax errors d positions back.
+func shiftError(err error, d int) error {
 	shift := func(e *SyntaxError) {
-		e.Pos = max(e.Pos-1, 0)
+		e.Pos = max(e.Pos-d, 0)
 		if e.Line == 1 {
-			e.Col = max(e.Col-1, 1)
+			e.Col = max(e.Col-d, 1)
 		}
 	}
 	var se *SyntaxError

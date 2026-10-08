@@ -106,11 +106,12 @@ func startTSC(t testing.TB) *tscProcess {
 	return p
 }
 
-func (p *tscProcess) parse(text string, tsx bool) (*tscResult, error) {
+func (p *tscProcess) parse(name, text string) (*tscResult, error) {
 	req, err := json.Marshal(struct {
+		Name string `json:"name"`
 		Text string `json:"text"`
 		TSX  bool   `json:"tsx"`
-	}{text, tsx})
+	}{name, text, typescript.IsTSX(name)})
 	if err != nil {
 		return nil, err
 	}
@@ -123,14 +124,6 @@ func (p *tscProcess) parse(text string, tsx bool) (*tscResult, error) {
 	}
 	var r tscResult
 	return &r, json.Unmarshal(line, &r)
-}
-
-// parseOurs parses a source as a .ts or .tsx file with positions in bytes.
-func parseOurs(text string, tsx bool) (*typescript.SourceFile, error) {
-	if tsx {
-		return typescript.ParseTSX(text, typescript.Bytes)
-	}
-	return typescript.ParseAST(text, typescript.Bytes)
 }
 
 // flatten lists the tree of n in preorder, as testdata/tsc.js does, with UTF-16 offsets.
@@ -218,27 +211,38 @@ func toInt(v any) int {
 	return -1
 }
 
-// compareWithTSC parses text with the compiler and with this package, and returns a description of the
-// first difference: in acceptance (the compiler reports parse diagnostics) or in the tree.
-func compareWithTSC(p *tscProcess, text string, tsx bool) (string, error) {
-	want, err := p.parse(text, tsx)
+// compareWithTSC parses the source of the file name with the compiler and with ParseFile, and returns a
+// description of the first difference: in acceptance (the compiler reports parse diagnostics) or in the tree.
+// rejected reports that the compiler reports parse diagnostics.
+func compareWithTSC(p *tscProcess, name, text string) (diff string, rejected bool, err error) {
+	want, err := p.parse(name, text)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
-	f, perr := parseOurs(text, tsx)
+	rejected = len(want.Diags) > 0
+	f, perr := typescript.ParseFile(name, text, typescript.Bytes)
 	switch {
 	case len(want.Diags) > 0 && perr == nil:
 		d := want.Diags[0]
-		return fmt.Sprintf("accepted, but tsc reports at %d: %s (TS%d)", d.Pos, d.Msg, d.Code), nil
+		return fmt.Sprintf("accepted, but tsc reports at %d: %s (TS%d)", d.Pos, d.Msg, d.Code), rejected, nil
 	case len(want.Diags) == 0 && perr != nil:
-		return fmt.Sprintf("rejected: %v", perr), nil
+		var se *typescript.SyntaxError
+		if errors.As(perr, &se) {
+			lines := strings.Split(text, "\n")
+			if se.Line-1 < len(lines) {
+				line := lines[se.Line-1]
+				col := min(max(se.Col-1, 0), len(line))
+				return fmt.Sprintf("rejected at %d:%d: %q ⟨here⟩ %q", se.Line, se.Col, line[:col], line[col:]), rejected, nil
+			}
+		}
+		return fmt.Sprintf("rejected: %v", perr), rejected, nil
 	case perr != nil:
-		return "", nil // both reject
+		return "", rejected, nil // both reject
 	}
 	if d := diffTrees(want.Nodes, flatten(f, utf16Offsets(text))); d != "" {
-		return "tree: " + d, nil
+		return "tree: " + d, rejected, nil
 	}
-	return "", nil
+	return "", rejected, nil
 }
 
 // TestTSCSnippets compares small sources with the compiler: the parser must accept and reject what the
@@ -246,8 +250,11 @@ func compareWithTSC(p *tscProcess, text string, tsx bool) (string, error) {
 func TestTSCSnippets(t *testing.T) {
 	p := startTSC(t)
 	for _, src := range tscSnippets {
-		tsx := strings.HasPrefix(src, "//tsx\n")
-		d, err := compareWithTSC(p, src, tsx)
+		name := "test.ts"
+		if strings.HasPrefix(src, "//tsx\n") {
+			name = "test.tsx"
+		}
+		d, _, err := compareWithTSC(p, name, src)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -342,16 +349,13 @@ func decodeTestFile(data []byte) string {
 	return string(data)
 }
 
-// isTypeScriptFile reports whether the unit is a TypeScript file (.ts, .tsx, .mts, .cts, .d.ts, ...),
-// and whether it is a .tsx file.
-func isTypeScriptFile(name string) (ok, tsx bool) {
+// isTypeScriptFile reports whether the unit is a TypeScript file (.ts, .tsx, .mts, .cts, .d.ts, ...).
+func isTypeScriptFile(name string) bool {
 	switch strings.ToLower(filepath.Ext(name)) {
-	case ".ts", ".mts", ".cts":
-		return true, false
-	case ".tsx":
-		return true, true
+	case ".ts", ".mts", ".cts", ".tsx":
+		return true
 	}
-	return false, false
+	return false
 }
 
 // TestTypeScriptSuite compares the parser with the compiler on the test cases of the TypeScript repository
@@ -372,7 +376,7 @@ func TestTypeScriptSuite(t *testing.T) {
 	for _, dir := range []string{"conformance", "compiler"} {
 		filepath.WalkDir(filepath.Join(cases, dir), func(path string, d os.DirEntry, err error) error {
 			if err == nil && !d.IsDir() {
-				if ok, _ := isTypeScriptFile(path); ok {
+				if isTypeScriptFile(path) {
 					files = append(files, path)
 				}
 			}
@@ -384,7 +388,9 @@ func TestTypeScriptSuite(t *testing.T) {
 		t.Fatalf("no test cases in %s", cases)
 	}
 
-	type stats struct{ files, pass, fail, skip int }
+	// pass counts the files where the parser agrees with the compiler: both accept with the same tree, or both
+	// reject (rejected: the compiler reports parse diagnostics).
+	type stats struct{ files, pass, rejected, fail, skip int }
 	byDir := map[string]*stats{}
 	var failures []string
 	start := time.Now()
@@ -410,18 +416,20 @@ func TestTypeScriptSuite(t *testing.T) {
 			t.Fatal(err)
 		}
 		for _, u := range splitTestCase(path, decodeTestFile(data)) {
-			ok, tsx := isTypeScriptFile(u.name)
-			if !ok {
+			if !isTypeScriptFile(u.name) {
 				st.skip++
 				continue
 			}
 			st.files++
-			d, err := compareWithTSC(p, u.content, tsx)
+			d, rejected, err := compareWithTSC(p, u.name, u.content)
 			if err != nil {
 				t.Fatalf("%s (%s): %v", rel, u.name, err)
 			}
 			if d == "" {
 				st.pass++
+				if rejected {
+					st.rejected++
+				}
 				continue
 			}
 			st.fail++
@@ -439,6 +447,7 @@ func TestTypeScriptSuite(t *testing.T) {
 		dirs = append(dirs, d)
 		total.files += st.files
 		total.pass += st.pass
+		total.rejected += st.rejected
 		total.fail += st.fail
 		total.skip += st.skip
 	}
@@ -448,8 +457,8 @@ func TestTypeScriptSuite(t *testing.T) {
 		if st.files > 0 {
 			pct = 100 * float64(st.pass) / float64(st.files)
 		}
-		t.Logf("%-40s %6d files %6d pass %5d fail %5d skipped (not .ts/.tsx) %6.2f%%", name, st.files, st.pass, st.fail,
-			st.skip, pct)
+		t.Logf("%-40s %6d files %6d pass (%5d rejected by both) %4d fail %5d skipped (not .ts/.tsx) %6.2f%%", name,
+			st.files, st.pass, st.rejected, st.fail, st.skip, pct)
 	}
 	for _, d := range dirs {
 		report(d, byDir[d])

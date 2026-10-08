@@ -2,7 +2,9 @@
 // parsed into a typed AST modeled on the compiler's: each type is named after the SyntaxKind of its node.
 // The start rule main parses a .ts file, or a .tsx file (JSX instead of <T>x type assertions) when the input
 // starts with the character NUL (U+0000), which no TypeScript file can start with: the Go package prepends it
-// for ParseTSX and moves the positions back, so that one generated parser serves both.
+// for ParseTSX and moves the positions back, so that one generated parser serves both. After it, U+0001 parses
+// the top level in the await context, as the compiler reparses the statements of a module that contain await
+// (ParseFile does it for modules).
 //
 // The grammar follows the compiler's parser (src/compiler/parser.ts) function by function, so that it
 // accepts what the parser accepts without a syntactic diagnostic: it is as lenient as the parser is (most
@@ -67,7 +69,7 @@ type ComputedPropertyName struct { Expression Expression }
 // --- Signature elements ---
 type TypeParameter struct { Modifiers []ModifierLike, Name Identifier, Constraint *TypeNode, Default *TypeNode }
 type Parameter struct {
-    Modifiers []ModifierLike, DotDotDotToken *Token, Name BindingName, QuestionToken *Token
+    Modifiers []ModifierLike, DotDotDotToken *Token, Name *BindingName, QuestionToken *Token  // Name is nil only in JSDoc function types
     Type *TypeNode, Initializer *Expression
 }
 type Decorator struct { Expression Expression }
@@ -356,12 +358,21 @@ type JsxTagNameStart = Identifier | ThisExpression
 // Source files
 // ===================================================================
 
-def main: SourceFile = ("\u{0}" [ctx = 64] / [ctx = 0]) f:sourceFile -> $f
+def main: SourceFile = ("\u{0}" [ctx = 64] / [ctx = 0]) ("\u{1}" [ctx = ctx + 2])? f:sourceFile -> $f
 
-def sourceFile: SourceFile = hashbang? -ws ss:(s:statement -ws)* e:endOfFile
+def sourceFile: SourceFile = hashbang? -ws ss:(s:topLevelStatement -ws)* e:endOfFile
     -> new SourceFile{Statements: map($ss, (x) => $x.s), EndOfFileToken: $e}
+// When the top level is in the await context (a module, see main), the compiler reparses only the statements
+// that may contain await: not import and export declarations, enums and namespaces, which keep the script's
+// context (their await is an identifier).
+def topLevelStatement: Statement = awaitFreeTopLevelStatement / statement
+def awaitFreeTopLevelStatement: Statement = [ctx / 2 % 2 == 1] &topLevelAwaitFreeStart [ctx = ctx - 2] s:statement
+    -> $s
+def topLevelAwaitFreeStart = "import" !idPart !(-ws (?(.))
+    / "export" !idPart -ws (("type" !idPart -ws)? (?=*{) / ("default" / "as") !idPart)
+    / (("declare" / "export" / "const") !idPart -ws)* ("enum" / "namespace" / "module" / "global") !idPart
 def endOfFile: EndOfFileToken = $$
-def hashbang = "#!" (?^\n\r  )*
+def hashbang = "#!" (?^\n\r\u{2028}\u{2029})*
 
 // ===================================================================
 // Statements (parseStatement)
@@ -369,10 +380,12 @@ def hashbang = "#!" (?^\n\r  )*
 
 // The keyword decides; the contextual keywords of declarations (type, namespace, declare, ...) start a
 // declaration only when isStartOfDeclaration says so, and an expression statement otherwise.
-def statement: Statement = block / emptyStatement / variableStatement / functionDeclaration / classDeclaration
-    / ifStatement / doStatement / whileStatement / forStatement / continueStatement / breakStatement
+def statement: Statement = block / emptyStatement / variableStatement / plainFunctionDeclaration
+    / plainClassDeclaration / ifStatement / doStatement / whileStatement / forStatement / continueStatement / breakStatement
     / returnStatement / withStatement / switchStatement / throwStatement / tryStatement / debuggerStatement
     / decoratedDeclaration / contextualDeclaration / expressionOrLabeledStatement
+def plainFunctionDeclaration: FunctionDeclaration = &("function" !idPart) d:functionDeclaration -> $d
+def plainClassDeclaration: ClassDeclaration = &("class" !idPart) d:classDeclaration -> $d
 def decoratedDeclaration: Statement = &"@" d:declaration -> $d
 def contextualDeclaration: Statement = &(declarationKeyword !idPart) &declarationStart d:declaration -> $d
 def declarationKeyword = "async" / "interface" / "type" / "module" / "namespace" / "declare" / "const" / "enum"
@@ -383,9 +396,10 @@ def block: Block = "{" -ws ss:(s:statement -ws)* "}" -> new Block{Statements: ma
 def emptyStatement: EmptyStatement = ";"
 
 // var, let x, using x and await using x without modifiers (isLetDeclaration, isUsingDeclaration, ...)
-def variableStatement: VariableStatement = &("var" !idPart / "let" !idPart letFollows / "using" !idPart usingFollows
-        / "await" !idPart -ws "using" !idPart usingFollows)
-    l:variableDeclarationList eos -> new VariableStatement{DeclarationList: $l}
+def variableStatement: VariableStatement = &variableStatementStart l:variableDeclarationList eos
+    -> new VariableStatement{DeclarationList: $l}
+def variableStatementStart = "var" !idPart / "let" !idPart letFollows / "using" !idPart usingFollows
+    / "await" !idPart -ws "using" !idPart usingFollows
 // let declares before an identifier or a pattern, on any line
 def letFollows = -ws (bindingIdentifier / (?[{))
 // using declares before an identifier or {, on the same line
@@ -396,7 +410,7 @@ def ifStatement: IfStatement = "if" !idPart -ws "(" -ws e:expressionAllowIn -ws 
     -> new IfStatement{Expression: $e, ThenStatement: $t, ElseStatement: $s}
 // The ";" after do-while is optional, without automatic semicolon insertion.
 def doStatement: DoStatement = "do" !idPart -ws s:statement -ws "while" !idPart -ws "(" -ws e:expressionAllowIn
-    -ws ")" (-sp ";")? -> new DoStatement{Statement: $s, Expression: $e}
+    -ws ")" (-ws ";")? -> new DoStatement{Statement: $s, Expression: $e}
 def whileStatement: WhileStatement = "while" !idPart -ws "(" -ws e:expressionAllowIn -ws ")" -ws s:statement
     -> new WhileStatement{Expression: $e, Statement: $s}
 def withStatement: WithStatement = "with" !idPart -ws "(" -ws e:expressionAllowIn -ws ")" -ws s:statement
@@ -417,7 +431,7 @@ def awaitToken: Token = "await" !idPart
 // The initializer is parsed with `in` disallowed, so that for (x in y) is a for-in statement.
 def forInitializer: ForInitializer = [ctx = ctx - ctx / 4 % 2 * 4 + 4] i:(forDeclarationList / expression) -> $i
 def forDeclarationList: VariableDeclarationList = &(("var" / "let" / "const") !idPart
-        / "using" !idPart forUsingFollows / "await" !idPart -ws "using" !idPart forUsingFollows)
+        / "using" !idPart forUsingFollows / "await" !idPart -ws "using" !idPart usingFollows)
     l:variableDeclarationList -> $l
 // using of is a declaration before =, ; or : (disallowOf)
 def forUsingFollows = -ws "of" !idPart -ws (?=;:) / sp !("of" !idPart) (bindingIdentifier / "{")
@@ -428,8 +442,9 @@ def breakStatement: BreakStatement = "break" !idPart l:(!canParseSemicolon -ws n
     -> new BreakStatement{Label: $n}
 def returnStatement: ReturnStatement = "return" !idPart r:(!canParseSemicolon -ws e:expressionAllowIn)? eos
     -> new ReturnStatement{Expression: $e}
-def throwStatement: ThrowStatement = "throw" !idPart !nlAhead -ws e:expressionAllowIn eos
-    -> new ThrowStatement{Expression: $e}
+def throwStatement: ThrowStatement = "throw" !idPart (!nlAhead -ws e:expressionAllowIn / &nlAhead &(-ws e:missingIdentifier))
+    eos -> new ThrowStatement{Expression: $e}
+def missingIdentifier: Identifier = _
 def debuggerStatement: DebuggerStatement = "debugger" !idPart eos
 
 def switchStatement: SwitchStatement = "switch" !idPart -ws "(" -ws e:expressionAllowIn -ws ")" -ws b:caseBlock
@@ -452,16 +467,16 @@ def catchClause: CatchClause = "catch" !idPart v:(-ws "(" -ws d:variableDeclarat
 // An expression statement, or a labeled statement if the expression is an identifier followed by ":"
 // (parseExpressionOrLabeledStatement).
 def expressionOrLabeledStatement: Statement = !(&(declarationKeyword !idPart) declarationStart)
-    s:(labeledStatement / expressionStatement) -> $s
+    !variableStatementStart s:(labeledStatement / expressionStatement) -> $s
 def labeledStatement: LabeledStatement = l:identifier -ws ":" -ws s:statement
     -> new LabeledStatement{Label: $l, Statement: $s}
 def expressionStatement: ExpressionStatement = e:expressionAllowIn eos -> new ExpressionStatement{Expression: $e}
 
 // A statement terminator (parseSemicolon): ";", or nothing before a line break, "}" or the end of input.
-def eos = -sp ";" / &canParseSemicolon
-def canParseSemicolon = sp ((?;}\n\r  ) / "/*" / $$)
+def eos = -ws ";" / &canParseSemicolon
+def canParseSemicolon = sp ((?;}\n\r\u{2028}\u{2029}) / "/*" / $$)
 // A line break before the next token: sp stops at a line terminator, or at a /* */ comment containing one.
-def nlAhead = sp ((?\n\r  ) / "/*")
+def nlAhead = sp ((?\n\r\u{2028}\u{2029}) / "/*")
 
 // ===================================================================
 // Declarations (isStartOfDeclaration, parseDeclaration)
@@ -566,8 +581,17 @@ def className: Identifier = !("implements" !idPart -ws idStart) i:bindingIdentif
 
 def heritageClauses = first:heritageClause rest:(-ws h:heritageClause)*
     -> concat(list($first), map($rest, (r) => $r.h))
-def heritageClause: HeritageClause = t:@(("extends" / "implements") !idPart) ts:(-ws l:heritageTypes)?
+def heritageClause: HeritageClause = t:@(("extends" / "implements") !idPart)
+    ts:(-ws l:heritageTypes / !(-ws heritageElementStart))
     -> new HeritageClause{Token: text($t), Types: concat($l)}
+// isListElement for HeritageClauseElement
+def heritageElementStart = "{" -ws !("}" !(-ws ((?,{) / ("extends" / "implements") !idPart)))
+    / !"{" !(("extends" / "implements") !idPart -ws expressionStart) leftHandSideExpressionStart
+// isStartOfLeftHandSideExpression
+def leftHandSideExpressionStart = (?0-9"'`([{/) / "." (?0-9)
+    / ("this" / "super" / "null" / "true" / "false" / "function" / "class" / "new") !idPart
+    / "import" !idPart -ws (?(<.)
+    / !reservedWord idStart
 def heritageTypes = first:expressionWithTypeArguments rest:(-ws "," -ws e:expressionWithTypeArguments)* (-ws ",")?
     -> concat(list($first), map($rest, (r) => $r.e))
 // An element is a left-hand side expression and its type arguments; {} is an element only before
@@ -652,8 +676,8 @@ def importEqualsDeclaration: ImportEqualsDeclaration = m:modifiers "import" !idP
 def moduleReference: ModuleReference = externalModuleReference / entityName
 def externalModuleReference: ExternalModuleReference = "require" !idPart -ws "(" -ws e:moduleSpecifier -ws ")"
     -> new ExternalModuleReference{Expression: $e}
-def importDeclaration: ImportDeclaration = m:modifiers "import" !idPart -ws c:(ic:importClause -ws "from" !idPart -ws)?
-    s:moduleSpecifier a:(-sp at:importAttributes)? eos
+def importDeclaration: ImportDeclaration = m:modifiers "import" !idPart -ws
+    c:(ic:importClause -ws "from" !idPart -ws / !identifier) s:moduleSpecifier a:(-sp at:importAttributes)? eos
     -> new ImportDeclaration{Modifiers: $m, ImportClause: $ic, ModuleSpecifier: $s, Attributes: $at}
 // The phase modifier: import type ... and import defer ... (parseImportDeclarationOrImportEqualsDeclaration)
 def importClause: ImportClause = p:(pk:importPhase -ws)? (n:identifier (-ws "," -ws b:namedImportBindings)?
@@ -750,7 +774,7 @@ def modifier: Modifier = "export" !idPart &(-ws exportModifierFollows)
 def staticModifier: Modifier = "static" !idPart &(-ws canFollowModifier)
 def exportModifierFollows = "default" !idPart -ws defaultModifierFollows
     / "type" !idPart -ws canFollowExportModifier
-    / canFollowExportModifier
+    / !(("default" / "type") !idPart) canFollowExportModifier
 def canFollowExportModifier = "@" / !((?*{) / "as" !idPart) canFollowModifier
 def defaultModifierFollows = ("class" / "function" / "interface") !idPart / "@"
     / "abstract" !idPart sp "class" !idPart / "async" !idPart sp "function" !idPart
@@ -767,7 +791,7 @@ def classModifier: Modifier = "const" !idPart &(sp canFollowModifier) / modifier
 def classStaticModifier: Modifier = "static" !idPart !(-ws "{") &(-ws canFollowModifier)
 
 // Type members take no decorators; type parameters take const, in and out.
-def typeMemberModifiers = ms:(m:modifier -ws)* -> map($ms, (x) => $x.m)
+def typeMemberModifiers = ms:modifierList? -> concat($ms)
 def typeParameterModifiers = ms:(m:classModifier -ws)* -> map($ms, (x) => $x.m)
 
 // A decorator is a left-hand side expression in the decorator context, where "[" is not an element access.
@@ -799,7 +823,7 @@ def yieldExpression: YieldExpression = "yield" !idPart ([ctx % 2 == 1] / &(sp id
     r:(-sp !nlStart a:(at:asteriskToken -ws)? e:assignmentExpression)?
     -> new YieldExpression{AsteriskToken: $at, Expression: $e}
 def identifierOrKeywordOrLiteralStart = idStart / "#" / (?0-9"') / "." (?0-9)
-def nlStart = (?\n\r  ) / "/*"
+def nlStart = (?\n\r\u{2028}\u{2029}) / "/*"
 
 def assignment: BinaryExpression = l:leftHandSideExpression -ws o:assignmentOperator -ws r:assignmentExpressionInner
     -> new BinaryExpression{Left: $l, OperatorToken: $o, Right: $r}
@@ -809,15 +833,16 @@ def assignmentOperator: Token = ">>>=" / "**=" / "<<=" / ">>=" / "&&=" / "||=" /
 // The true branch allows `in` and arrow functions without a return type (allowReturnTypeInArrowFunction
 // = false), and is outside the decorator context.
 def conditionalExpression: ConditionalExpression = c:binaryExpression -ws q:conditionalQuestionToken -ws
-    [ctx = ctx - ctx / 4 % 8 * 4 + 16] t:assignmentExpressionInner -ws k:colonToken -ws f:conditionalWhenFalse
+    t:conditionalWhenTrue -ws k:colonToken -ws f:conditionalWhenFalse
     -> new ConditionalExpression{Condition: $c, QuestionToken: $q, WhenTrue: $t, ColonToken: $k, WhenFalse: $f}
+def conditionalWhenTrue: Expression = [ctx = ctx - ctx / 4 % 8 * 4 + 16] e:assignmentExpressionInner -> $e
 def conditionalWhenFalse: Expression = e:assignmentExpressionInner -> $e
 def conditionalQuestionToken: Token = "?" !"?" !("." !(?0-9))
 
 // --- Arrow functions (tryParseParenthesizedArrowFunctionExpression, isParenthesizedArrowFunctionExpression) ---
 // In a .tsx file, <T> starts JSX; a generic arrow function needs <T,>, <T = ...> or <T extends ...>.
-def arrowFunction: ArrowFunction = ml:arrowAsyncModifier? [ctx = ctx - ctx % 4 + len($ml) * 2]
-    tp:(t:arrowTypeParameters -ws)? &"(" !arrowParenthesisIsNotParameterList ps:parameterList rt:returnType? -ws
+def arrowFunction: ArrowFunction = ml:arrowAsyncModifier? !arrowParenthesisIsNotParameterList
+    [ctx = ctx - ctx % 4 + len($ml) * 2] tp:(t:arrowTypeParameters -ws)? &"(" ps:parameterList rt:returnType? -ws
     a:equalsGreaterThanToken -ws b:arrowBody ([ctx / 16 % 2 == 0] / [$rt == nil] / &(-ws ":"))
     -> new ArrowFunction{Modifiers: concat($ml), TypeParameters: concat($t), Parameters: $ps, Type: $rt,
         EqualsGreaterThanToken: $a, Body: $b}
@@ -834,7 +859,7 @@ def simpleArrowFunction: ArrowFunction = p:simpleArrowParameter -ws a:equalsGrea
     b:arrowBody -> new ArrowFunction{Parameters: list($p), EqualsGreaterThanToken: $a, Body: $b}
 def simpleArrowParameter: Parameter = n:identifier -> new Parameter{Name: $n}
 // async x => ..., all on one line
-def asyncSimpleArrowFunction: ArrowFunction = m:asyncKeywordModifier -sp !(?\n\r  ) p:simpleArrowParameter -sp
+def asyncSimpleArrowFunction: ArrowFunction = m:asyncKeywordModifier -sp !(?\n\r\u{2028}\u{2029}) p:simpleArrowParameter -sp
     a:equalsGreaterThanToken -ws [ctx = ctx - ctx % 4 + 2] b:arrowBody
     -> new ArrowFunction{Modifiers: list($m), Parameters: list($p), EqualsGreaterThanToken: $a, Body: $b}
 def arrowBody: ConciseBody = block / assignmentExpressionInner
@@ -897,7 +922,7 @@ def voidExpression: VoidExpression = "void" !idPart -ws e:simpleUnaryExpression 
 def awaitExpression: AwaitExpression = "await" !idPart ([ctx / 2 % 2 == 1] / &(sp identifierOrKeywordOrLiteralStart))
     -ws e:simpleUnaryExpression -> new AwaitExpression{Expression: $e}
 // <T>x, only in a .ts file
-def typeAssertion: TypeAssertionExpression = [ctx < 64] "<" -ws t:typeNode -ws ">" -ws e:simpleUnaryExpression
+def typeAssertion: TypeAssertionExpression = [ctx < 64] "<" !(?<=) -ws t:typeNode -ws ">" -ws e:simpleUnaryExpression
     -> new TypeAssertionExpression{Type: $t, Expression: $e}
 def jsxUnaryExpression: Expression = [ctx >= 64] &"<" e:jsxElementOrFragment -> $e
 
@@ -972,6 +997,7 @@ def heritageExpression: Expression = pratt {
 // calls or optional chains (parseMemberExpressionRest with allowOptionalChain = false).
 def newTarget: Expression = pratt {
     skip sp
+    operand superKeyword
     operand primaryExpression
     level {
         postfix -ws "." !(?0-9) -ws n:memberName -> new PropertyAccessExpression{Expression: $lhs, Name: $n}
@@ -1010,6 +1036,7 @@ def spreadElement: SpreadElement = "..." -ws e:assignmentExpression -> new Sprea
 
 // super must be followed by "(", "." or "["
 def superExpression: SuperExpression = "super" !idPart &(-ws (?(.[))
+def superKeyword: SuperExpression = "super" !idPart
 def importCallee: ImportExpression = "import" !idPart &(-ws (?(<))
 def importMetaProperty: MetaProperty = "import" !idPart -ws "." -ws n:identifierName
     -> new MetaProperty{KeywordToken: "import", Name: $n}
@@ -1237,7 +1264,7 @@ def importType: ImportType = o:("typeof" !idPart -ws)? "import" !idPart -ws "(" 
     q:(-ws "." -ws qn:entityNameAllowReserved)? ta:(-sp t:typeArguments)?
     -> new ImportType{Argument: $a, Attributes: $i, Qualifier: $qn, TypeArguments: concat($t), IsTypeOf: $o != nil}
 def importTypeAttributes: ImportAttributes = a:importAttributesBraces -> new ImportAttributes{Elements: $a, Token: "with"}
-def typeReference: TypeReference = n:entityNameAllowReserved ta:(-sp t:typeArguments)?
+def typeReference: TypeReference = n:entityNameAllowReserved (-ws "." &(-sp "<"))? ta:(-sp t:typeArguments)?
     -> new TypeReference{TypeName: $n, TypeArguments: concat($t)}
 def parenthesizedType: ParenthesizedType = "(" -ws t:typeNode -ws ")" -> new ParenthesizedType{Type: $t}
 def templateLiteralType: TemplateLiteralType = h:templateHead ss:templateTypeSpans
@@ -1256,7 +1283,8 @@ def jsdocNullableType: JSDocNullableType = "?" -ws t:typeNode -> new JSDocNullab
 def jsdocNonNullableType: JSDocNonNullableType = "!" -ws t:nonArrayType -> new JSDocNonNullableType{Type: $t}
 def jsdocFunctionType: JSDocFunctionType = "function" !idPart -ws "(" -ws ps:jsdocParameterList?
     -ws ")" rt:returnType? -> new JSDocFunctionType{Parameters: concat($ps), Type: $rt}
-def jsdocParameter: Parameter = n:(("this" / "new") !idPart -ws ":" -ws)? t:typeNode -> new Parameter{Type: $t}
+def jsdocParameter: Parameter = n:(i:jsdocParameterName -ws ":" -ws)? t:typeNode -> new Parameter{Name: $i, Type: $t}
+def jsdocParameterName: Identifier = ("this" / "new") !idPart
 
 def entityName: EntityName = first:identifier rest:(-ws "." -ws n:identifierName)*
     -> foldl($first, $rest, (acc, r) => new QualifiedName{Left: $acc, Right: $r.n})
@@ -1294,9 +1322,9 @@ def mappedType: MappedType = "{" -ws r:(rt:mappedReadonlyToken -ws)? "[" -ws p:m
         Members: map($ms, (x) => $x.m)}
 def mappedTypeParameter: TypeParameter = n:identifierName -ws "in" !idPart -ws c:typeNode
     -> new TypeParameter{Name: $n, Constraint: $c}
-def mappedReadonlyToken: Token = mappedPlusMinusReadonly / readonlyToken
+def mappedReadonlyToken: Token = t:(mappedPlusMinusReadonly / readonlyToken) -> $t
 def mappedPlusMinusReadonly: Token = t:plusMinusToken -ws "readonly" !idPart -> $t
-def mappedQuestionToken: Token = mappedPlusMinusQuestion / questionToken
+def mappedQuestionToken: Token = t:(mappedPlusMinusQuestion / questionToken) -> $t
 def mappedPlusMinusQuestion: Token = t:plusMinusToken -ws "?" -> $t
 def plusMinusToken: Token = (?+\-)
 def readonlyToken: Token = "readonly" !idPart
@@ -1371,8 +1399,19 @@ def reservedWord = ("break" / "case" / "catch" / "class" / "const" / "continue" 
     / "do" / "else" / "enum" / "export" / "extends" / "false" / "finally" / "for" / "function" / "if" / "import"
     / "instanceof" / "in" / "new" / "null" / "return" / "super" / "switch" / "this" / "throw" / "true" / "try"
     / "typeof" / "var" / "void" / "while" / "with") !idPart
-def idStart = (?a-zA-Z$_) / "\\u" unicodeEscape / uniIdStart
-def idPart = (?a-zA-Z0-9$_) / "\\u" unicodeEscape / uniIdPart
+def idStart = (?a-zA-Z$_) / "\\u" identifierStartEscape / uniIdStart
+def idPart = (?a-zA-Z0-9$_) / "\\u" identifierPartEscape / uniIdPart
+// An escape in an identifier stands for an identifier character: exactly for ASCII values; any value from
+// U+0080 is accepted (the Unicode tables are not applied to escapes).
+def identifierStartEscape = "00" asciiIdentifierStartHex / !"00" !surrogate hex hex hex hex / "00" (?89a-fA-F) hex
+    / "{" "0"* (asciiIdentifierStartHex "}" / nonASCIIBraced)
+def identifierPartEscape = "00" (asciiIdentifierStartHex / "3" (?0-9)) / !"00" !surrogate hex hex hex hex / "00" (?89a-fA-F) hex
+    / "{" "0"* (asciiIdentifierStartHex "}" / "3" (?0-9) "}" / nonASCIIBraced)
+def surrogate = (?dD) (?89a-fA-F)
+// $, A-Z, _, a-z
+def asciiIdentifierStartHex = "24" / "4" (?1-9a-fA-F) / "5" (?0-9aA) / "5" (?fF) / "6" (?1-9a-fA-F) / "7" (?0-9aA)
+// 80 to 10FFFF, after leading zeros
+def nonASCIIBraced = (?89a-fA-F) hex "}" / (?1-9a-fA-F) hex hex hex? hex? "}" / "10" hex hex hex hex "}"
 def unicodeEscape = hex hex hex hex / unicodeBraced
 // \u{...} with a value up to 10FFFF
 def unicodeBraced = "{" ("0"* (?1-9a-fA-F) hex? hex? hex? hex? "}" / "0"* "10" hex hex hex hex "}" / "0"+ "}")
@@ -1394,8 +1433,8 @@ def octalLiteral = "0" (?oO) (?0-7) ("_"? (?0-7))*
 // --- Strings (scanString, scanEscapeSequence) ---
 // Octal escapes, \8 and \9 are errors; \0 is allowed when no digit follows.
 def stringLiteral: StringLiteral = "\"" ((?^"\\\n\r)+ / escapeSequence)* "\"" / "'" ((?^'\\\n\r)+ / escapeSequence)* "'"
-def escapeSequence = "\\" ((?^0-9xu\n\r  ) / "0" !(?0-9) / "x" hex hex / "u" unicodeEscape / "\r\n"
-    / (?\n\r  ))
+def escapeSequence = "\\" ((?^0-9xu\n\r\u{2028}\u{2029}) / "0" !(?0-9) / "x" hex hex / "u" unicodeEscape / "\r\n"
+    / (?\n\r\u{2028}\u{2029}))
 
 // --- Templates (scanTemplateAndSetTokenValue) ---
 def noSubstitutionTemplateLiteral: NoSubstitutionTemplateLiteral = "`" templateCharacters "`"
@@ -1412,15 +1451,15 @@ def rawTemplateCharacters = ((?^`\\$)+ / "$" !"{" / "\\" .)*
 // --- Regular expressions (reScanSlashToken) ---
 // The body up to an unescaped "/" outside a class, on one line, and any identifier characters as flags;
 // the parser does not check the pattern or the flags.
-def regularExpressionLiteral: RegularExpressionLiteral = "/" !(?*/) ((?^/\\[\n\r  )+
-    / "\\" (?^\n\r  ) / "[" ((?^\]\\\n\r  )+ / "\\" (?^\n\r  ))* "]")+ "/" idPart*
+def regularExpressionLiteral: RegularExpressionLiteral = "/" !(?*/) ((?^/\\[\n\r\u{2028}\u{2029})+
+    / "\\" (?^\n\r\u{2028}\u{2029}) / "[" ((?^\]\\\n\r\u{2028}\u{2029})+ / "\\" (?^\n\r\u{2028}\u{2029}))* "]")+ "/" idPart*
 
 // --- Whitespace and comments ---
 // The whitespace characters of isWhiteSpaceSingleLine, and the line terminators of isLineBreak.
-def ws = ((? \t\n\r\v\f \u0085  -​    　﻿)+
-    / "//" (?^\n\r  )* / "/*" (!"*/" .)* "*/")*
-def sp = ((? \t\v\f \u0085  -​  　﻿)+
-    / "//" (?^\n\r  )* / "/*" (!"*/" (?^\n\r  ))* "*/")*
+def ws = ((? \t\n\r\v\f\u{A0}\u0085\u{1680}\u{2000}-\u{200B}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}\u{FEFF})+
+    / "//" (?^\n\r\u{2028}\u{2029})* / "/*" (!"*/" .)* "*/")*
+def sp = ((? \t\v\f\u{A0}\u0085\u{1680}\u{2000}-\u{200B}\u{202F}\u{205F}\u{3000}\u{FEFF})+
+    / "//" (?^\n\r\u{2028}\u{2029})* / "/*" (!"*/" (?^\n\r\u{2028}\u{2029}))* "*/")*
 
 // Comma-separated lists, with an optional trailing comma
 def arrayBindingElementList = f:arrayBindingElement r:(-ws "," -ws e:arrayBindingElement)* (-ws ",")? -> concat(list($f), map($r, (x) => $x.e))
