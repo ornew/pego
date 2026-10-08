@@ -1,0 +1,4 @@
+- [a, 'b', "c", {d: e}, f: g, ? h]
+- {&k key: !!int 1, [x]: y, : empty}
+- !local
+  &anchor [*anchor]

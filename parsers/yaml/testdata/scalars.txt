@@ -1,0 +1,12 @@
+plain: multi
+  line
+single: 'it''s'
+double: "tab\there \
+  continued"
+literal: |+2
+    kept
+
+folded: >-
+  folded
+  text
+# a trailing comment

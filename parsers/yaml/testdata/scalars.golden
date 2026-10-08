@@ -1,0 +1,9 @@
+(Stream Documents=[(Document Directives=[] End=nil Root=(Mapping Pairs=[(Pair Key=(Scalar Props=nil Text=`plain`) Value=(Scalar Props=nil Text=`multi
+  line`)) (Pair Key=(Scalar Props=nil Text=`single`) Value=(Scalar Props=nil Style=1 Text=`'it''s'`)) (Pair Key=(Scalar Props=nil Text=`double`) Value=(Scalar Props=nil Style=2 Text=`"tab\there \
+  continued"`)) (Pair Key=(Scalar Props=nil Text=`literal`) Value=(Scalar Indent=2 Props=nil Style=3 Text=`|+2
+    kept
+
+`)) (Pair Key=(Scalar Props=nil Text=`folded`) Value=(Scalar Indent=2 Props=nil Style=4 Text=`>-
+  folded
+  text
+`))] Props=nil))])
