@@ -41,7 +41,7 @@ func newParser() *parser.Parser {
 	return p
 }
 
-// reference parses src with cel-go and returns its canonical form, or "ERR" if cel-go reports an error.
+// reference parses src with cel-go and returns its canonical form, or ERR:column of its first error.
 func reference(p *parser.Parser, src string) (out string, ok bool) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -50,7 +50,8 @@ func reference(p *parser.Parser, src string) (out string, ok bool) {
 	}()
 	a, errs := p.Parse(common.NewTextSource(src))
 	if len(errs.GetErrors()) > 0 {
-		return "ERR", true
+		l := errs.GetErrors()[0].Location
+		return fmt.Sprintf("ERR@%d:%d", l.Line(), l.Column()+1), true
 	}
 	c := &canon{info: a.SourceInfo()}
 	c.expr(a.Expr())

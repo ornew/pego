@@ -51,7 +51,7 @@ func main() {
 			if !good {
 				continue // cel-go panicked: not a result
 			}
-			if res == "ERR" {
+			if strings.HasPrefix(res, "ERR") {
 				bad++
 			} else {
 				ok++

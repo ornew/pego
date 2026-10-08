@@ -200,7 +200,7 @@ func TestGolden(t *testing.T) {
 
 // refSources returns the expressions of every file of testdata/ref except limits.tsv.
 func refSources(t testing.TB) []string {
-	files, _ := filepath.Glob(filepath.Join("testdata", "ref", "*.tsv"))
+	files, _ := filepath.Glob(filepath.Join(refDir(), "*.tsv"))
 	var out []string
 	for _, f := range files {
 		if name := filepath.Base(f); name != "limits.tsv" {

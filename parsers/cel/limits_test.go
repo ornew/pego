@@ -49,7 +49,7 @@ var shapes = map[string]func(n int) string{
 // TestLimits checks, for each shape of expression, the sizes at which cel-go's parser starts to reject it (its limit
 // of 250 on the depth of recursion and of 100,000 code points on the size) against ParseExpr.
 func TestLimits(t *testing.T) {
-	data, err := os.ReadFile(filepath.Join("testdata", "ref", "limits.tsv"))
+	data, err := os.ReadFile(filepath.Join(refDir(), "limits.tsv"))
 	if err != nil {
 		t.Fatal(err)
 	}

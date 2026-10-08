@@ -71,7 +71,7 @@ func writeLimits(p *parser.Parser, path string) {
 	for _, s := range shapes {
 		accepted := func(n int) bool {
 			res, ok := reference(p, s.f(n))
-			return ok && res != "ERR"
+			return ok && !strings.HasPrefix(res, "ERR")
 		}
 		sizes := map[int]bool{}
 		for _, n := range []int{3, 4, 5, 10, 12, 24, 32, 64, 100, 128, 200, 1000} {
