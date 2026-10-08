@@ -410,6 +410,9 @@ concurrent parses. Generated Go parsers (`pego gen`) have no tracing.
   backend, and so are the number of evaluations and memo reuses, the memo entries and the memoization decisions; the
   test suite checks this on all its grammars, and for `Document` checks the results and `Document.Stats` across
   edits on the backend corpus.
+- **A `Document` reparse skips calls.** It reuses the unchanged elements of long repetitions without calling their
+  rules (see [streaming and incremental parsing](streaming-and-incremental.md#what-is-reused-and-why)), so those
+  calls appear in neither the trace nor the profile; memo hits do appear.
 - **Aborted parses** (a runtime error in an action, an error from a stream's `emit` or reader, the nesting limit, a
   panic in the trace function, which propagates out of the parse) end the trace
   without the exit events of the calls in progress.
