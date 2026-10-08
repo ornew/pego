@@ -97,7 +97,7 @@ for data, src in inputs:
     r = {}
     try:
         tree = ast.parse(data)
-        d = ast.dump(tree)
+        d = ast.dump(tree, include_attributes="-a" in sys.argv)
         r["ok"] = True
         if full:
             r["dump"] = d
@@ -302,6 +302,51 @@ func reportDiff(t *testing.T, py, path string) {
 	}
 	got := python.Dump(m)
 	t.Errorf("%s: ast.dump differs:\n%s", path, firstDiff(got, r.Dump))
+}
+
+// TestCPythonPositions compares the positions of the nodes (ast.dump with include_attributes=True)
+// with CPython's, on the files of the corpus and on the snippets of Lib/test.
+func TestCPythonPositions(t *testing.T) {
+	py := findPython(t)
+	files := corpus(t, py)
+	results := runCPython(t, py, files, "-a")
+	if src := os.Getenv("PEGO_CPYTHON_SRC"); src != "" {
+		results = append(results, runCPython(t, py, nil, "-a", "-x", filepath.Join(src, "Lib", "test"))...)
+	}
+	var same, diff int
+	var bad []string
+	for i, r := range results {
+		if !r.OK {
+			continue
+		}
+		m, err := python.ParseModule(r.Source)
+		if err != nil {
+			continue // reported by the other tests
+		}
+		if sha(python.DumpWithPositions(m, r.Source)) == r.Hash {
+			same++
+			continue
+		}
+		diff++
+		name := fmt.Sprintf("snippet %.60q", r.Source)
+		if i < len(files) {
+			name = files[i]
+		}
+		if len(bad) < 20 {
+			var rr cpythonResult
+			if i < len(files) {
+				rr = runCPython(t, py, []string{files[i]}, "-a", "-d")[0]
+			} else {
+				js, _ := json.Marshal(r.Source)
+				rr = runCPython(t, py, []string{string(js)}, "-a", "-d", "-s")[0]
+			}
+			bad = append(bad, name+":\n"+firstDiff(python.DumpWithPositions(m, r.Source), rr.Dump))
+		}
+	}
+	for _, b := range bad {
+		t.Error(b)
+	}
+	t.Logf("%d sources accepted by both: %d with the same positions, %d different", same+diff, same, diff)
 }
 
 func firstDiff(got, want string) string {
