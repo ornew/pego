@@ -1,0 +1,3 @@
+module github.com/ornew/pego/parsers/typescript
+
+go 1.27.1

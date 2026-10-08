@@ -1,0 +1,10 @@
+interface Point<T = number> {
+  x: T;
+  readonly y?: T;
+}
+
+export function len(p: Point): number {
+  return Math.sqrt(p.x ** 2 + p.y! ** 2)
+}
+
+const f = async <T,>(xs: T[]) => xs.map((x) => x as unknown as string);

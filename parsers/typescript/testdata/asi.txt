@@ -1,0 +1,8 @@
+let a = b
+(c)
+let d = e
+++f
+return
+x;
+let g = h < i > (j);
+let k = /=+/g.test(l) / m;

@@ -14,5 +14,6 @@ package parsers
 //go:generate go run ../cmd/pego gen -g golang/golang.pego -pkg golang -types -recognize -nodoc -o golang/parser.go
 //go:generate go run ../cmd/pego gen -g json/json.pego -pkg json -types -recognize -nodoc -o json/parser.go
 //go:generate go run ../cmd/pego gen -g python/python.pego -pkg python -types -recognize -nodoc -o python/parser.go
+//go:generate go run ../cmd/pego gen -g typescript/typescript.pego -pkg typescript -types -recognize -nodoc -o typescript/parser.go
 //go:generate go run ../cmd/pego gen -g xml/xml.pego -pkg xml -types -recognize -nodoc -o xml/parser.go
 //go:generate go run ../cmd/pego gen -g yaml/yaml.pego -pkg yaml -types -recognize -nodoc -o yaml/parser.go

@@ -1,0 +1,1442 @@
+// TypeScript 5.9 (and the ECMAScript 2025 it includes) as the TypeScript 5.9 compiler's parser accepts it,
+// parsed into a typed AST modeled on the compiler's: each type is named after the SyntaxKind of its node.
+// The start rule main parses a .ts file, or a .tsx file (JSX instead of <T>x type assertions) when the input
+// starts with the character NUL (U+0000), which no TypeScript file can start with: the Go package prepends it
+// for ParseTSX and moves the positions back, so that one generated parser serves both.
+//
+// The grammar follows the compiler's parser (src/compiler/parser.ts) function by function, so that it
+// accepts what the parser accepts without a syntactic diagnostic: it is as lenient as the parser is (most
+// "grammar errors" are reported by the checker and are not syntax errors here), and it decides the
+// ambiguities the way the parser does (arrow functions, type arguments in expressions, <T>x and JSX,
+// contextual keywords, automatic semicolon insertion).
+//
+// Whitespace. Rules do not skip whitespace around themselves, so that every node spans exactly its tokens;
+// the caller skips what may come before. ws skips any whitespace and comments; sp skips them without
+// crossing a line terminator (a /* */ comment containing one counts as a line terminator). Where the
+// compiler checks scanner.hasPrecedingLineBreak() (ASI, restricted productions, contextual keywords), the
+// grammar uses sp, or nl to test for a line break before the next token.
+//
+// Context. The parser's context flags are kept in one int variable, ctx, as a set of bits:
+//     1 yield context, 2 await context, 4 disallow `in`, 8 decorator context,
+//     16 no return type on arrow functions (allowReturnTypeInArrowFunction = false),
+//     32 disallow conditional types, 64 JSX (a .tsx file).
+// One variable rather than seven: rules that read variables are memoized per value, and each read and
+// definition walks the variable environment, so a single variable keeps both cheap.
+// Tests are written [ctx / 4 % 2 == 1] (bit 4 set); a bit b is cleared with ctx - ctx / b % 2 * b.
+package typescript
+
+// ===================================================================
+// Types
+// ===================================================================
+
+// --- Terminals ---
+type Identifier terminal
+type PrivateIdentifier terminal
+type Token terminal                          // a punctuation or keyword token (QuestionToken, PlusToken, ...)
+type Modifier terminal                       // a modifier keyword (ExportKeyword, ...)
+type KeywordTypeNode terminal                // any, number, void, ... (AnyKeyword, NumberKeyword, ...)
+type ThisTypeNode terminal                   // this as a type (ThisType)
+type NumericLiteral terminal
+type BigIntLiteral terminal
+type StringLiteral terminal                  // with its quotes
+type RegularExpressionLiteral terminal
+type NoSubstitutionTemplateLiteral terminal  // with its backquotes
+type TemplateHead terminal                   // from ` to ${
+type TemplateMiddle terminal                 // from } to ${
+type TemplateTail terminal                   // from } to `
+type ThisExpression terminal                 // ThisKeyword
+type SuperExpression terminal                // SuperKeyword
+type NullLiteral terminal                    // NullKeyword
+type BooleanLiteral terminal                 // TrueKeyword or FalseKeyword
+type ImportExpression terminal               // ImportKeyword, the callee of import(...)
+type OmittedExpression terminal              // an empty slot of an array literal or pattern
+type JsxText terminal
+type JsxOpeningFragment terminal
+type JsxClosingFragment terminal
+type EmptyStatement terminal
+type DebuggerStatement terminal
+type SemicolonClassElement terminal
+type EndOfFileToken terminal
+type JSDocAllType terminal
+type JSDocUnknownType terminal
+
+// --- Names ---
+type QualifiedName struct { Left EntityName, Right Identifier }
+type ComputedPropertyName struct { Expression Expression }
+
+// --- Signature elements ---
+type TypeParameter struct { Modifiers []ModifierLike, Name Identifier, Constraint *TypeNode, Default *TypeNode }
+type Parameter struct {
+    Modifiers []ModifierLike, DotDotDotToken *Token, Name BindingName, QuestionToken *Token
+    Type *TypeNode, Initializer *Expression
+}
+type Decorator struct { Expression Expression }
+
+// --- Type members ---
+type PropertySignature struct {
+    Modifiers []ModifierLike, Name PropertyName, QuestionToken *Token, Type *TypeNode, Initializer *Expression
+}
+type MethodSignature struct {
+    Modifiers []ModifierLike, Name PropertyName, QuestionToken *Token, TypeParameters []TypeParameter
+    Parameters []Parameter, Type *TypeNode
+}
+type CallSignature struct { TypeParameters []TypeParameter, Parameters []Parameter, Type *TypeNode }
+type ConstructSignature struct { TypeParameters []TypeParameter, Parameters []Parameter, Type *TypeNode }
+type IndexSignature struct { Modifiers []ModifierLike, Parameters []Parameter, Type *TypeNode }
+
+// --- Class members ---
+type PropertyDeclaration struct {
+    Modifiers []ModifierLike, Name PropertyName, QuestionToken *Token, ExclamationToken *Token
+    Type *TypeNode, Initializer *Expression
+}
+type MethodDeclaration struct {
+    Modifiers []ModifierLike, AsteriskToken *Token, Name PropertyName, QuestionToken *Token
+    ExclamationToken *Token, TypeParameters []TypeParameter, Parameters []Parameter, Type *TypeNode, Body *Block
+}
+type ClassStaticBlockDeclaration struct { Modifiers []ModifierLike, Body Block }
+type Constructor struct {
+    Modifiers []ModifierLike, TypeParameters []TypeParameter, Parameters []Parameter, Type *TypeNode, Body *Block
+}
+type GetAccessor struct {
+    Modifiers []ModifierLike, Name PropertyName, TypeParameters []TypeParameter, Parameters []Parameter
+    Type *TypeNode, Body *Block
+}
+type SetAccessor struct {
+    Modifiers []ModifierLike, Name PropertyName, TypeParameters []TypeParameter, Parameters []Parameter
+    Type *TypeNode, Body *Block
+}
+
+// --- Types ---
+type TypePredicate struct { AssertsModifier *Token, ParameterName TypePredicateParameterName, Type *TypeNode }
+type TypeReference struct { TypeName EntityName, TypeArguments []TypeNode }
+type FunctionType struct { TypeParameters []TypeParameter, Parameters []Parameter, Type TypeNode }
+type ConstructorType struct {
+    Modifiers []ModifierLike, TypeParameters []TypeParameter, Parameters []Parameter, Type TypeNode
+}
+type TypeQuery struct { ExprName EntityName, TypeArguments []TypeNode }
+type TypeLiteral struct { Members []TypeElement }
+type ArrayType struct { ElementType TypeNode }
+type TupleType struct { Elements []TypeNode }
+type OptionalType struct { Type TypeNode }
+type RestType struct { Type TypeNode }
+type UnionType struct { Types []TypeNode }
+type IntersectionType struct { Types []TypeNode }
+type ConditionalType struct { CheckType TypeNode, ExtendsType TypeNode, TrueType TypeNode, FalseType TypeNode }
+type InferType struct { TypeParameter TypeParameter }
+type ParenthesizedType struct { Type TypeNode }
+type TypeOperator struct { Operator string, Type TypeNode }  // Operator is keyof, unique or readonly
+type IndexedAccessType struct { ObjectType TypeNode, IndexType TypeNode }
+type MappedType struct {
+    ReadonlyToken *Token, TypeParameter TypeParameter, NameType *TypeNode, QuestionToken *Token
+    Type *TypeNode, Members []TypeElement
+}
+type LiteralType struct { Literal LiteralTypeLiteral }
+type NamedTupleMember struct { DotDotDotToken *Token, Name Identifier, QuestionToken *Token, Type TypeNode }
+type TemplateLiteralType struct { Head TemplateHead, TemplateSpans []TemplateLiteralTypeSpan }
+type TemplateLiteralTypeSpan struct { Type TypeNode, Literal TemplateMiddleOrTail }
+type ImportType struct {
+    Argument TypeNode, Attributes *ImportAttributes, Qualifier *EntityName, TypeArguments []TypeNode
+    IsTypeOf bool
+}
+type JSDocNullableType struct { Type TypeNode, Postfix bool }
+type JSDocNonNullableType struct { Type TypeNode, Postfix bool }
+type JSDocFunctionType struct { Parameters []Parameter, Type *TypeNode }
+
+// --- Binding patterns ---
+type ObjectBindingPattern struct { Elements []BindingElement }
+type ArrayBindingPattern struct { Elements []ArrayBindingElement }
+type BindingElement struct {
+    DotDotDotToken *Token, PropertyName *PropertyName, Name BindingName, Initializer *Expression
+}
+
+// --- Expressions ---
+type ArrayLiteralExpression struct { Elements []Expression }
+type ObjectLiteralExpression struct { Properties []ObjectLiteralElement }
+type PropertyAssignment struct {
+    Modifiers []ModifierLike, Name PropertyName, QuestionToken *Token, ExclamationToken *Token
+    Initializer Expression
+}
+type ShorthandPropertyAssignment struct {
+    Modifiers []ModifierLike, Name Identifier, QuestionToken *Token, ExclamationToken *Token
+    EqualsToken *Token, ObjectAssignmentInitializer *Expression
+}
+type SpreadAssignment struct { Expression Expression }
+type PropertyAccessExpression struct { Expression Expression, QuestionDotToken *Token, Name MemberName }
+type ElementAccessExpression struct { Expression Expression, QuestionDotToken *Token, ArgumentExpression Expression }
+type CallExpression struct {
+    Expression Expression, QuestionDotToken *Token, TypeArguments []TypeNode, Arguments []Expression
+}
+type NewExpression struct { Expression Expression, TypeArguments []TypeNode, Arguments *[]Expression }  // Arguments is nil without parentheses
+type TaggedTemplateExpression struct {
+    Tag Expression, QuestionDotToken *Token, TypeArguments []TypeNode, Template TemplateLiteral
+}
+type TypeAssertionExpression struct { Type TypeNode, Expression Expression }
+type ParenthesizedExpression struct { Expression Expression }
+type FunctionExpression struct {
+    Modifiers []ModifierLike, AsteriskToken *Token, Name *Identifier, TypeParameters []TypeParameter
+    Parameters []Parameter, Type *TypeNode, Body Block
+}
+type ArrowFunction struct {
+    Modifiers []ModifierLike, TypeParameters []TypeParameter, Parameters []Parameter, Type *TypeNode
+    EqualsGreaterThanToken Token, Body ConciseBody
+}
+type DeleteExpression struct { Expression Expression }
+type TypeOfExpression struct { Expression Expression }
+type VoidExpression struct { Expression Expression }
+type AwaitExpression struct { Expression Expression }
+type PrefixUnaryExpression struct { Operator string, Operand Expression }
+type PostfixUnaryExpression struct { Operand Expression, Operator string }
+type BinaryExpression struct { Left Expression, OperatorToken Token, Right Expression }
+type ConditionalExpression struct {
+    Condition Expression, QuestionToken Token, WhenTrue Expression, ColonToken Token, WhenFalse Expression
+}
+type TemplateExpression struct { Head TemplateHead, TemplateSpans []TemplateSpan }
+type TemplateSpan struct { Expression Expression, Literal TemplateMiddleOrTail }
+type YieldExpression struct { AsteriskToken *Token, Expression *Expression }
+type SpreadElement struct { Expression Expression }
+type ClassExpression struct {
+    Modifiers []ModifierLike, Name *Identifier, TypeParameters []TypeParameter
+    HeritageClauses []HeritageClause, Members []ClassElement
+}
+type ExpressionWithTypeArguments struct { Expression Expression, TypeArguments []TypeNode }
+type AsExpression struct { Expression Expression, Type TypeNode }
+type SatisfiesExpression struct { Expression Expression, Type TypeNode }
+type NonNullExpression struct { Expression Expression }
+type MetaProperty struct { KeywordToken string, Name Identifier }  // KeywordToken is new or import
+
+// --- JSX ---
+type JsxElement struct { OpeningElement JsxOpeningElement, Children []JsxChild, ClosingElement JsxClosingElement }
+type JsxSelfClosingElement struct { TagName JsxTagName, TypeArguments []TypeNode, Attributes JsxAttributes }
+type JsxOpeningElement struct { TagName JsxTagName, TypeArguments []TypeNode, Attributes JsxAttributes }
+type JsxClosingElement struct { TagName JsxTagName }
+type JsxFragment struct {
+    OpeningFragment JsxOpeningFragment, Children []JsxChild, ClosingFragment JsxClosingFragment
+}
+type JsxAttributes struct { Properties []JsxAttributeLike }
+type JsxAttribute struct { Name JsxAttributeName, Initializer *JsxAttributeValue }
+type JsxSpreadAttribute struct { Expression Expression }
+type JsxExpression struct { DotDotDotToken *Token, Expression *Expression }
+type JsxNamespacedName struct { Namespace Identifier, Name Identifier }
+
+// --- Statements ---
+type SourceFile struct { Statements []Statement, EndOfFileToken EndOfFileToken }
+type Block struct { Statements []Statement }
+type VariableStatement struct { Modifiers []ModifierLike, DeclarationList VariableDeclarationList }
+type VariableDeclarationList struct { Keyword string, Declarations []VariableDeclaration }  // var, let, const, using or await using
+type VariableDeclaration struct {
+    Name BindingName, ExclamationToken *Token, Type *TypeNode, Initializer *Expression
+}
+type ExpressionStatement struct { Expression Expression }
+type IfStatement struct { Expression Expression, ThenStatement Statement, ElseStatement *Statement }
+type DoStatement struct { Statement Statement, Expression Expression }
+type WhileStatement struct { Expression Expression, Statement Statement }
+type ForStatement struct {
+    Initializer *ForInitializer, Condition *Expression, Incrementor *Expression, Statement Statement
+}
+type ForInStatement struct { Initializer ForInitializer, Expression Expression, Statement Statement }
+type ForOfStatement struct {
+    AwaitModifier *Token, Initializer ForInitializer, Expression Expression, Statement Statement
+}
+type ContinueStatement struct { Label *Identifier }
+type BreakStatement struct { Label *Identifier }
+type ReturnStatement struct { Expression *Expression }
+type WithStatement struct { Expression Expression, Statement Statement }
+type SwitchStatement struct { Expression Expression, CaseBlock CaseBlock }
+type CaseBlock struct { Clauses []CaseOrDefaultClause }
+type CaseClause struct { Expression Expression, Statements []Statement }
+type DefaultClause struct { Statements []Statement }
+type LabeledStatement struct { Label Identifier, Statement Statement }
+type ThrowStatement struct { Expression Expression }
+type TryStatement struct { TryBlock Block, CatchClause *CatchClause, FinallyBlock *Block }
+type CatchClause struct { VariableDeclaration *VariableDeclaration, Block Block }
+
+// --- Declarations ---
+type FunctionDeclaration struct {
+    Modifiers []ModifierLike, AsteriskToken *Token, Name *Identifier, TypeParameters []TypeParameter
+    Parameters []Parameter, Type *TypeNode, Body *Block
+}
+type ClassDeclaration struct {
+    Modifiers []ModifierLike, Name *Identifier, TypeParameters []TypeParameter
+    HeritageClauses []HeritageClause, Members []ClassElement
+}
+type HeritageClause struct { Token string, Types []ExpressionWithTypeArguments }  // Token is extends or implements
+type InterfaceDeclaration struct {
+    Modifiers []ModifierLike, Name Identifier, TypeParameters []TypeParameter
+    HeritageClauses []HeritageClause, Members []TypeElement
+}
+type TypeAliasDeclaration struct {
+    Modifiers []ModifierLike, Name Identifier, TypeParameters []TypeParameter, Type TypeNode
+}
+type EnumDeclaration struct { Modifiers []ModifierLike, Name Identifier, Members []EnumMember }
+type EnumMember struct { Name PropertyName, Initializer *Expression }
+type ModuleDeclaration struct { Modifiers []ModifierLike, Name ModuleName, Body *ModuleBody }
+type ModuleBlock struct { Statements []Statement }
+type NamespaceExportDeclaration struct { Modifiers []ModifierLike, Name Identifier }
+type ImportEqualsDeclaration struct {
+    Modifiers []ModifierLike, Name Identifier, ModuleReference ModuleReference, IsTypeOnly bool
+}
+type ExternalModuleReference struct { Expression Expression }
+type ImportDeclaration struct {
+    Modifiers []ModifierLike, ImportClause *ImportClause, ModuleSpecifier Expression
+    Attributes *ImportAttributes
+}
+type ImportClause struct { Name *Identifier, NamedBindings *NamedImportBindings, PhaseModifier string }  // PhaseModifier is type, defer or empty
+type NamespaceImport struct { Name Identifier }
+type NamedImports struct { Elements []ImportSpecifier }
+type ImportSpecifier struct { PropertyName *ModuleExportName, Name Identifier, IsTypeOnly bool }
+type ImportAttributes struct { Elements []ImportAttribute, Token string }  // Token is with or assert
+type ImportAttribute struct { Name ImportAttributeName, Value Expression }
+type ExportAssignment struct { Modifiers []ModifierLike, Expression Expression, IsExportEquals bool }
+type ExportDeclaration struct {
+    Modifiers []ModifierLike, ExportClause *NamedExportBindings, ModuleSpecifier *Expression
+    Attributes *ImportAttributes, IsTypeOnly bool
+}
+type NamedExports struct { Elements []ExportSpecifier }
+type NamespaceExport struct { Name ModuleExportName }
+type ExportSpecifier struct { PropertyName *ModuleExportName, Name ModuleExportName, IsTypeOnly bool }
+
+// --- Unions ---
+type EntityName = Identifier | QualifiedName
+type PropertyName = Identifier | StringLiteral | NumericLiteral | BigIntLiteral | ComputedPropertyName
+    | PrivateIdentifier | NoSubstitutionTemplateLiteral
+type MemberName = Identifier | PrivateIdentifier
+type BindingName = Identifier | ObjectBindingPattern | ArrayBindingPattern
+type ArrayBindingElement = BindingElement | OmittedExpression
+type ModifierLike = Modifier | Decorator
+type TypePredicateParameterName = Identifier | ThisTypeNode
+type LiteralTypeLiteral = StringLiteral | NumericLiteral | BigIntLiteral | BooleanLiteral | NullLiteral
+    | PrefixUnaryExpression | NoSubstitutionTemplateLiteral
+type TemplateMiddleOrTail = TemplateMiddle | TemplateTail
+type TemplateLiteral = NoSubstitutionTemplateLiteral | TemplateExpression
+type TypeNode = KeywordTypeNode | ThisTypeNode | TypePredicate | TypeReference | FunctionType | ConstructorType
+    | TypeQuery | TypeLiteral | ArrayType | TupleType | OptionalType | RestType | UnionType | IntersectionType
+    | ConditionalType | InferType | ParenthesizedType | TypeOperator | IndexedAccessType | MappedType
+    | LiteralType | NamedTupleMember | TemplateLiteralType | ImportType | JSDocAllType | JSDocUnknownType
+    | JSDocNullableType | JSDocNonNullableType | JSDocFunctionType
+type TypeElement = CallSignature | ConstructSignature | PropertySignature | MethodSignature | IndexSignature
+    | GetAccessor | SetAccessor
+type ClassElement = PropertyDeclaration | MethodDeclaration | Constructor | SemicolonClassElement | GetAccessor
+    | SetAccessor | IndexSignature | ClassStaticBlockDeclaration
+type ObjectLiteralElement = PropertyAssignment | ShorthandPropertyAssignment | SpreadAssignment
+    | MethodDeclaration | GetAccessor | SetAccessor
+type Expression = Identifier | PrivateIdentifier | NumericLiteral | BigIntLiteral | StringLiteral
+    | RegularExpressionLiteral | NoSubstitutionTemplateLiteral | TemplateExpression | ThisExpression
+    | SuperExpression | NullLiteral | BooleanLiteral | ImportExpression | OmittedExpression
+    | ArrayLiteralExpression | ObjectLiteralExpression | PropertyAccessExpression | ElementAccessExpression
+    | CallExpression | NewExpression | TaggedTemplateExpression | TypeAssertionExpression
+    | ParenthesizedExpression | FunctionExpression | ArrowFunction | DeleteExpression | TypeOfExpression
+    | VoidExpression | AwaitExpression | PrefixUnaryExpression | PostfixUnaryExpression | BinaryExpression
+    | ConditionalExpression | YieldExpression | SpreadElement | ClassExpression | ExpressionWithTypeArguments
+    | AsExpression | SatisfiesExpression | NonNullExpression | MetaProperty | JsxElement
+    | JsxSelfClosingElement | JsxFragment
+type ConciseBody = Block | Expression
+type Statement = Block | EmptyStatement | VariableStatement | ExpressionStatement | IfStatement | DoStatement
+    | WhileStatement | ForStatement | ForInStatement | ForOfStatement | ContinueStatement | BreakStatement
+    | ReturnStatement | WithStatement | SwitchStatement | LabeledStatement | ThrowStatement | TryStatement
+    | DebuggerStatement | FunctionDeclaration | ClassDeclaration | InterfaceDeclaration
+    | TypeAliasDeclaration | EnumDeclaration | ModuleDeclaration | ImportEqualsDeclaration
+    | ImportDeclaration | ExportAssignment | ExportDeclaration | NamespaceExportDeclaration
+type ForInitializer = VariableDeclarationList | Expression
+type CaseOrDefaultClause = CaseClause | DefaultClause
+type ModuleName = Identifier | StringLiteral
+type ModuleBody = ModuleBlock | ModuleDeclaration
+type ModuleReference = Identifier | QualifiedName | ExternalModuleReference
+type NamedImportBindings = NamespaceImport | NamedImports
+type NamedExportBindings = NamedExports | NamespaceExport
+type ModuleExportName = Identifier | StringLiteral
+type ImportAttributeName = Identifier | StringLiteral
+type JsxChild = JsxText | JsxExpression | JsxElement | JsxSelfClosingElement | JsxFragment
+type JsxAttributeLike = JsxAttribute | JsxSpreadAttribute
+type JsxAttributeName = Identifier | JsxNamespacedName
+type JsxAttributeValue = StringLiteral | JsxExpression | JsxElement | JsxSelfClosingElement | JsxFragment
+type JsxTagName = Identifier | ThisExpression | JsxNamespacedName | PropertyAccessExpression
+type JsxTagNameStart = Identifier | ThisExpression
+
+// ===================================================================
+// Source files
+// ===================================================================
+
+def main: SourceFile = ("\u{0}" [ctx = 64] / [ctx = 0]) f:sourceFile -> $f
+
+def sourceFile: SourceFile = hashbang? -ws ss:(s:statement -ws)* e:endOfFile
+    -> new SourceFile{Statements: map($ss, (x) => $x.s), EndOfFileToken: $e}
+def endOfFile: EndOfFileToken = $$
+def hashbang = "#!" (?^\n\r  )*
+
+// ===================================================================
+// Statements (parseStatement)
+// ===================================================================
+
+// The keyword decides; the contextual keywords of declarations (type, namespace, declare, ...) start a
+// declaration only when isStartOfDeclaration says so, and an expression statement otherwise.
+def statement: Statement = block / emptyStatement / variableStatement / functionDeclaration / classDeclaration
+    / ifStatement / doStatement / whileStatement / forStatement / continueStatement / breakStatement
+    / returnStatement / withStatement / switchStatement / throwStatement / tryStatement / debuggerStatement
+    / decoratedDeclaration / contextualDeclaration / expressionOrLabeledStatement
+def decoratedDeclaration: Statement = &"@" d:declaration -> $d
+def contextualDeclaration: Statement = &(declarationKeyword !idPart) &declarationStart d:declaration -> $d
+def declarationKeyword = "async" / "interface" / "type" / "module" / "namespace" / "declare" / "const" / "enum"
+    / "export" / "import" / "private" / "protected" / "public" / "abstract" / "accessor" / "static" / "readonly"
+    / "global"
+
+def block: Block = "{" -ws ss:(s:statement -ws)* "}" -> new Block{Statements: map($ss, (x) => $x.s)}
+def emptyStatement: EmptyStatement = ";"
+
+// var, let x, using x and await using x without modifiers (isLetDeclaration, isUsingDeclaration, ...)
+def variableStatement: VariableStatement = &("var" !idPart / "let" !idPart letFollows / "using" !idPart usingFollows
+        / "await" !idPart -ws "using" !idPart usingFollows)
+    l:variableDeclarationList eos -> new VariableStatement{DeclarationList: $l}
+// let declares before an identifier or a pattern, on any line
+def letFollows = -ws (bindingIdentifier / (?[{))
+// using declares before an identifier or {, on the same line
+def usingFollows = sp (bindingIdentifier / "{")
+
+def ifStatement: IfStatement = "if" !idPart -ws "(" -ws e:expressionAllowIn -ws ")" -ws t:statement
+    f:(-ws "else" !idPart -ws s:statement)?
+    -> new IfStatement{Expression: $e, ThenStatement: $t, ElseStatement: $s}
+// The ";" after do-while is optional, without automatic semicolon insertion.
+def doStatement: DoStatement = "do" !idPart -ws s:statement -ws "while" !idPart -ws "(" -ws e:expressionAllowIn
+    -ws ")" (-sp ";")? -> new DoStatement{Statement: $s, Expression: $e}
+def whileStatement: WhileStatement = "while" !idPart -ws "(" -ws e:expressionAllowIn -ws ")" -ws s:statement
+    -> new WhileStatement{Expression: $e, Statement: $s}
+def withStatement: WithStatement = "with" !idPart -ws "(" -ws e:expressionAllowIn -ws ")" -ws s:statement
+    -> new WithStatement{Expression: $e, Statement: $s}
+
+// for, for-in, for-of and for await (parseForOrForInOrForOfStatement)
+def forStatement: Statement = forOfStatement / forInStatement / forClassicStatement
+def forOfStatement: ForOfStatement = "for" !idPart a:(-ws t:awaitToken)? -ws "(" -ws i:forInitializer -ws
+    "of" !idPart -ws e:assignmentExpressionAllowIn -ws ")" -ws s:statement
+    -> new ForOfStatement{AwaitModifier: $t, Initializer: $i, Expression: $e, Statement: $s}
+def forInStatement: ForInStatement = "for" !idPart -ws "(" -ws i:forInitializer -ws "in" !idPart -ws
+    e:expressionAllowIn -ws ")" -ws s:statement
+    -> new ForInStatement{Initializer: $i, Expression: $e, Statement: $s}
+def forClassicStatement: ForStatement = "for" !idPart -ws "(" -ws i:forInitializer? -ws ";" -ws
+    c:expressionAllowIn? -ws ";" -ws n:expressionAllowIn? -ws ")" -ws s:statement
+    -> new ForStatement{Initializer: $i, Condition: $c, Incrementor: $n, Statement: $s}
+def awaitToken: Token = "await" !idPart
+// The initializer is parsed with `in` disallowed, so that for (x in y) is a for-in statement.
+def forInitializer: ForInitializer = [ctx = ctx - ctx / 4 % 2 * 4 + 4] i:(forDeclarationList / expression) -> $i
+def forDeclarationList: VariableDeclarationList = &(("var" / "let" / "const") !idPart
+        / "using" !idPart forUsingFollows / "await" !idPart -ws "using" !idPart forUsingFollows)
+    l:variableDeclarationList -> $l
+// using of is a declaration before =, ; or : (disallowOf)
+def forUsingFollows = -ws "of" !idPart -ws (?=;:) / sp !("of" !idPart) (bindingIdentifier / "{")
+
+def continueStatement: ContinueStatement = "continue" !idPart l:(!canParseSemicolon -ws n:identifier)? eos
+    -> new ContinueStatement{Label: $n}
+def breakStatement: BreakStatement = "break" !idPart l:(!canParseSemicolon -ws n:identifier)? eos
+    -> new BreakStatement{Label: $n}
+def returnStatement: ReturnStatement = "return" !idPart r:(!canParseSemicolon -ws e:expressionAllowIn)? eos
+    -> new ReturnStatement{Expression: $e}
+def throwStatement: ThrowStatement = "throw" !idPart !nlAhead -ws e:expressionAllowIn eos
+    -> new ThrowStatement{Expression: $e}
+def debuggerStatement: DebuggerStatement = "debugger" !idPart eos
+
+def switchStatement: SwitchStatement = "switch" !idPart -ws "(" -ws e:expressionAllowIn -ws ")" -ws b:caseBlock
+    -> new SwitchStatement{Expression: $e, CaseBlock: $b}
+def caseBlock: CaseBlock = "{" -ws cs:(c:caseOrDefaultClause -ws)* "}"
+    -> new CaseBlock{Clauses: map($cs, (x) => $x.c)}
+def caseOrDefaultClause: CaseOrDefaultClause = caseClause / defaultClause
+def caseClause: CaseClause = "case" !idPart -ws e:expressionAllowIn -ws ":" ss:(-ws s:clauseStatement)*
+    -> new CaseClause{Expression: $e, Statements: map($ss, (x) => $x.s)}
+def defaultClause: DefaultClause = "default" !idPart -ws ":" ss:(-ws s:clauseStatement)*
+    -> new DefaultClause{Statements: map($ss, (x) => $x.s)}
+def clauseStatement: Statement = !(("case" / "default") !idPart) s:statement -> $s
+
+def tryStatement: TryStatement = "try" !idPart -ws b:block c:(-ws cc:catchClause)?
+    f:(-ws "finally" !idPart -ws fb:block)? [$cc != nil || $fb != nil]
+    -> new TryStatement{TryBlock: $b, CatchClause: $cc, FinallyBlock: $fb}
+def catchClause: CatchClause = "catch" !idPart v:(-ws "(" -ws d:variableDeclaration -ws ")")? -ws b:block
+    -> new CatchClause{VariableDeclaration: $d, Block: $b}
+
+// An expression statement, or a labeled statement if the expression is an identifier followed by ":"
+// (parseExpressionOrLabeledStatement).
+def expressionOrLabeledStatement: Statement = !(&(declarationKeyword !idPart) declarationStart)
+    s:(labeledStatement / expressionStatement) -> $s
+def labeledStatement: LabeledStatement = l:identifier -ws ":" -ws s:statement
+    -> new LabeledStatement{Label: $l, Statement: $s}
+def expressionStatement: ExpressionStatement = e:expressionAllowIn eos -> new ExpressionStatement{Expression: $e}
+
+// A statement terminator (parseSemicolon): ";", or nothing before a line break, "}" or the end of input.
+def eos = -sp ";" / &canParseSemicolon
+def canParseSemicolon = sp ((?;}\n\r  ) / "/*" / $$)
+// A line break before the next token: sp stops at a line terminator, or at a /* */ comment containing one.
+def nlAhead = sp ((?\n\r  ) / "/*")
+
+// ===================================================================
+// Declarations (isStartOfDeclaration, parseDeclaration)
+// ===================================================================
+
+// isDeclaration: modifiers on the same line followed by a declaration keyword.
+def declarationStart = ("var" / "let" / "const" / "function" / "class" / "enum") !idPart
+    / "using" !idPart usingFollows
+    / "await" !idPart -ws "using" !idPart usingFollows
+    / ("interface" / "type" / "defer") !idPart sp identifier
+    / ("module" / "namespace") !idPart sp (identifier / (?"'))
+    / "declare" !idPart sp "type" !idPart
+    / ("abstract" / "accessor" / "async" / "declare" / "private" / "protected" / "public" / "readonly") !idPart
+        !nlAhead -ws declarationStart
+    / "global" !idPart -ws ("{" / identifier / "export" !idPart)
+    / "import" !idPart -ws ("defer" !idPart / (?"'*{) / idStart)
+    / "export" !idPart -ws ("type" !idPart -ws)? ((?=*{@) / ("default" / "as") !idPart)
+    / "export" !idPart -ws declarationStart
+    / "static" !idPart -ws declarationStart
+
+def declaration: Statement = variableStatementWithModifiers / functionDeclaration / classDeclaration
+    / interfaceDeclaration / typeAliasDeclaration / enumDeclaration / moduleDeclaration
+    / importEqualsDeclaration / importDeclaration / exportAssignment / namespaceExportDeclaration
+    / exportDeclaration
+
+def variableStatementWithModifiers: VariableStatement = m:modifiers
+    &(("var" / "let" / "const" / "using") !idPart / "await" !idPart -ws "using" !idPart)
+    l:variableDeclarationList eos -> new VariableStatement{Modifiers: $m, DeclarationList: $l}
+
+// --- Variables ---
+// for (let of x) declares nothing (canFollowContextualOfKeyword).
+def variableDeclarationList: VariableDeclarationList = k:declarationListKeyword
+    ds:(!(-ws "of" !idPart -ws identifier -ws ")") -ws d:variableDeclarations)?
+    -> new VariableDeclarationList{Keyword: text($k), Declarations: concat($d)}
+def declarationListKeyword = @(("var" / "let" / "const" / "using") !idPart / "await" -ws "using" !idPart)
+def variableDeclarations = first:variableDeclaration rest:(-ws "," -ws d:variableDeclaration)* (-ws ",")?
+    -> concat(list($first), map($rest, (r) => $r.d))
+// The definite assignment x! is not parsed in a for initializer (where `in` is disallowed).
+def variableDeclaration: VariableDeclaration =
+    (n:bindingIdentifier ([ctx / 4 % 2 == 0] -sp x:exclamationToken)? / n:bindingPattern) ty:typeAnnotation?
+    i:(!(-ws ("in" / "of") !idPart) v:initializer)?
+    -> new VariableDeclaration{Name: $n, ExclamationToken: $x, Type: $ty, Initializer: $v}
+def initializer = -ws "=" !(?=>) -ws e:assignmentExpression -> $e
+def typeAnnotation = -ws ":" -ws t:typeNode -> $t
+
+// --- Binding patterns ---
+def bindingName: BindingName = bindingIdentifier / bindingPattern
+def bindingPattern: BindingName = objectBindingPattern / arrayBindingPattern
+def objectBindingPattern: ObjectBindingPattern = "{" -ws [ctx = ctx - ctx / 4 % 2 * 4]
+    es:bindingElementList? -ws "}"
+    -> new ObjectBindingPattern{Elements: concat($es)}
+def bindingElement: BindingElement = bindingElementWithPropertyName / bindingElementShorthand
+def bindingElementWithPropertyName: BindingElement = d:(t:dotDotDotToken -ws)? p:propertyName -ws ":" -ws
+    n:bindingName i:initializer?
+    -> new BindingElement{DotDotDotToken: $t, PropertyName: $p, Name: $n, Initializer: $i}
+def bindingElementShorthand: BindingElement = d:(t:dotDotDotToken -ws)? n:bindingName i:initializer?
+    -> new BindingElement{DotDotDotToken: $t, Name: $n, Initializer: $i}
+def arrayBindingPattern: ArrayBindingPattern = "[" -ws [ctx = ctx - ctx / 4 % 2 * 4]
+    es:arrayBindingElementList? -ws "]"
+    -> new ArrayBindingPattern{Elements: concat($es)}
+def arrayBindingElement: ArrayBindingElement = omittedExpression / bindingElementShorthand
+def omittedExpression: OmittedExpression = &","
+
+// --- Functions ---
+// The name may be left out only with the default modifier (export default function () {}). The
+// parameters and the body are parsed in the yield context of a generator and the await context of an
+// async function.
+def functionDeclaration: FunctionDeclaration = (&(dm:defaultModifierScan))? (&(am:asyncModifierScan))?
+    m:modifiers "function" !idPart a:(-ws s:asteriskToken)? n:(-ws i:bindingIdentifier)? [$i != nil || $dm != nil]
+    [ctx = ctx - ctx % 32 + len($s) + len($am) / 5 * 2]
+    tp:(-ws t:typeParameters)? -ws ps:parameterList rt:returnType? b:(-ws fb:block / eos)
+    -> new FunctionDeclaration{Modifiers: $m, AsteriskToken: $s, Name: $i, TypeParameters: concat($t),
+        Parameters: $ps, Type: $rt, Body: $fb}
+def defaultModifierScan = (!("default" !idPart) (decorator / modifier / staticModifier) -ws)* d:@("default" !idPart)
+    -> $d
+def asyncModifierScan = (!("async" !idPart) (decorator / modifier / staticModifier) -ws)* a:@("async" !idPart)
+    -> $a
+
+def parameterList = "(" -ws ps:parameters? -ws ")" -> concat($ps)
+def parameters = first:parameter rest:(-ws "," -ws p:parameter)* (-ws ",")?
+    -> concat(list($first), map($rest, (r) => $r.p))
+def parameter: Parameter = thisParameter / regularParameter
+def thisParameter: Parameter = n:thisIdentifier t:typeAnnotation? -> new Parameter{Name: $n, Type: $t}
+def thisIdentifier: Identifier = "this" !idPart
+def regularParameter: Parameter = m:modifiers d:(dt:dotDotDotToken -ws)? n:bindingName q:(-ws qt:questionToken)?
+    t:typeAnnotation? i:initializer?
+    -> new Parameter{Modifiers: $m, DotDotDotToken: $dt, Name: $n, QuestionToken: $qt, Type: $t, Initializer: $i}
+// A return type allows conditional types again (allowConditionalTypesAnd).
+def returnType = -ws ":" -ws [ctx = ctx - ctx / 32 % 2 * 32] t:typeOrTypePredicate -> $t
+
+// --- Classes ---
+def classDeclaration: ClassDeclaration = m:modifiers "class" !idPart n:(-ws i:className)?
+    tp:(-ws t:typeParameters)? h:(-ws hc:heritageClauses)? -ws "{" -ws ms:classMembers "}"
+    -> new ClassDeclaration{Modifiers: $m, Name: $i, TypeParameters: concat($t), HeritageClauses: concat($hc),
+        Members: $ms}
+def classExpression: ClassExpression = m:modifiers "class" !idPart n:(-ws i:className)?
+    tp:(-ws t:typeParameters)? h:(-ws hc:heritageClauses)? -ws "{" -ws ms:classMembers "}"
+    -> new ClassExpression{Modifiers: $m, Name: $i, TypeParameters: concat($t), HeritageClauses: concat($hc),
+        Members: $ms}
+// class implements X {} has no name (isImplementsClause)
+def className: Identifier = !("implements" !idPart -ws idStart) i:bindingIdentifier -> $i
+
+def heritageClauses = first:heritageClause rest:(-ws h:heritageClause)*
+    -> concat(list($first), map($rest, (r) => $r.h))
+def heritageClause: HeritageClause = t:@(("extends" / "implements") !idPart) ts:(-ws l:heritageTypes)?
+    -> new HeritageClause{Token: text($t), Types: concat($l)}
+def heritageTypes = first:expressionWithTypeArguments rest:(-ws "," -ws e:expressionWithTypeArguments)* (-ws ",")?
+    -> concat(list($first), map($rest, (r) => $r.e))
+// An element is a left-hand side expression and its type arguments; {} is an element only before
+// ",", "{", extends or implements (isValidHeritageClauseObjectLiteral).
+def expressionWithTypeArguments: ExpressionWithTypeArguments =
+    !(("extends" / "implements") !idPart -ws expressionStart)
+    !("{" -ws "}" !(-ws ((?,{) / ("extends" / "implements") !idPart)))
+    e:heritageExpression ta:(-ws t:typeArguments)?
+    -> new ExpressionWithTypeArguments{Expression: $e, TypeArguments: concat($t)}
+
+def classMembers = ms:(m:classElement -ws)* -> map($ms, (x) => $x.m)
+def classElement: ClassElement = semicolonClassElement / classStaticBlock / getAccessor / setAccessor
+    / constructorDeclaration / classIndexSignature / methodDeclaration / propertyDeclaration
+def semicolonClassElement: SemicolonClassElement = ";"
+def classStaticBlock: ClassStaticBlockDeclaration = m:classModifiers "static" !idPart -ws &"{"
+    [ctx = ctx - ctx % 32 + 2] b:block -> new ClassStaticBlockDeclaration{Modifiers: $m, Body: $b}
+def getAccessor: GetAccessor = m:classModifiers "get" !idPart &(-ws canFollowGetOrSet) -ws n:propertyName
+    [ctx = ctx - ctx % 32] tp:(-ws t:typeParameters)? -ws ps:parameterList rt:returnType? b:(-ws fb:block / eos)
+    -> new GetAccessor{Modifiers: $m, Name: $n, TypeParameters: concat($t), Parameters: $ps, Type: $rt, Body: $fb}
+def setAccessor: SetAccessor = m:classModifiers "set" !idPart &(-ws canFollowGetOrSet) -ws n:propertyName
+    [ctx = ctx - ctx % 32] tp:(-ws t:typeParameters)? -ws ps:parameterList rt:returnType? b:(-ws fb:block / eos)
+    -> new SetAccessor{Modifiers: $m, Name: $n, TypeParameters: concat($t), Parameters: $ps, Type: $rt, Body: $fb}
+def canFollowGetOrSet = "[" / literalPropertyNameStart
+// A constructor is named constructor, or "constructor" before "(" (parseConstructorName).
+def constructorDeclaration: Constructor = m:classModifiers constructorName [ctx = ctx - ctx % 32]
+    tp:(-ws t:typeParameters)? -ws ps:parameterList rt:returnType? b:(-ws fb:block / eos)
+    -> new Constructor{Modifiers: $m, TypeParameters: concat($t), Parameters: $ps, Type: $rt, Body: $fb}
+def constructorName = "constructor" !idPart / ("\"constructor\"" / "'constructor'") &(-ws "(")
+def classIndexSignature: IndexSignature = m:classModifiers &indexSignatureStart "[" -ws ps:parameters? -ws "]"
+    t:typeAnnotation? typeMemberSemicolon
+    -> new IndexSignature{Modifiers: $m, Parameters: concat($ps), Type: $t}
+// A method has "*", or "(" or "<" after its name; anything else named is a property
+// (parsePropertyOrMethodDeclaration).
+def methodDeclaration: MethodDeclaration = (&(am:asyncModifierScan))? m:classModifiers !constructorName
+    a:(s:asteriskToken -ws)? n:propertyName q:(-ws qt:questionToken)? ([$s != nil] / &(-ws (?(<)))
+    [ctx = ctx - ctx % 32 + len($s) + len($am) / 5 * 2]
+    tp:(-ws t:typeParameters)? -ws ps:parameterList rt:returnType? b:(-ws fb:block / eos)
+    -> new MethodDeclaration{Modifiers: $m, AsteriskToken: $s, Name: $n, QuestionToken: $qt,
+        TypeParameters: concat($t), Parameters: $ps, Type: $rt, Body: $fb}
+// The initializer is parsed outside the yield and await contexts, with `in` allowed; "@" or "(" on the
+// same line after the property is an error (parseSemicolonAfterPropertyName).
+def propertyDeclaration: PropertyDeclaration = m:classModifiers !constructorName n:propertyName
+    q:(-ws qt:questionToken / -sp x:exclamationToken)? t:typeAnnotation?
+    i:(-ws "=" !(?=>) -ws [ctx = ctx - ctx % 8] v:assignmentExpression)? !(-sp (?@()) eos
+    -> new PropertyDeclaration{Modifiers: $m, Name: $n, QuestionToken: $qt, ExclamationToken: $x, Type: $t,
+        Initializer: $v}
+
+// --- Interfaces, type aliases, enums ---
+def interfaceDeclaration: InterfaceDeclaration = m:modifiers "interface" !idPart -ws n:identifier
+    tp:(-ws t:typeParameters)? h:(-ws hc:heritageClauses)? -ws ms:objectTypeMembers
+    -> new InterfaceDeclaration{Modifiers: $m, Name: $n, TypeParameters: concat($t), HeritageClauses: concat($hc),
+        Members: $ms}
+// type T = intrinsic declares an intrinsic type (tryParse(parseKeywordAndNoDot)).
+def typeAliasDeclaration: TypeAliasDeclaration = m:modifiers "type" !idPart !nlAhead -ws n:identifier
+    tp:(-ws t:typeParameters)? -ws "=" -ws ty:(intrinsicKeyword / typeNode) eos
+    -> new TypeAliasDeclaration{Modifiers: $m, Name: $n, TypeParameters: concat($t), Type: $ty}
+def intrinsicKeyword: KeywordTypeNode = "intrinsic" !idPart !(-ws ".")
+def enumDeclaration: EnumDeclaration = m:modifiers "enum" !idPart -ws n:identifier -ws "{" -ws
+    [ctx = ctx - ctx % 4] ms:enumMemberList? -ws "}"
+    -> new EnumDeclaration{Modifiers: $m, Name: $n, Members: concat($ms)}
+def enumMember: EnumMember = n:propertyName i:(-ws "=" !(?=>) -ws v:assignmentExpressionAllowIn)?
+    -> new EnumMember{Name: $n, Initializer: $v}
+
+// --- Modules ---
+def moduleDeclaration: ModuleDeclaration = namespaceDeclaration / externalModuleDeclaration / globalDeclaration
+def namespaceDeclaration: ModuleDeclaration = m:modifiers ("namespace" / "module") !idPart -ws n:identifier
+    b:namespaceBody -> new ModuleDeclaration{Modifiers: $m, Name: $n, Body: $b}
+def namespaceBody: ModuleBody = (-ws "." -ws d:nestedNamespace / -ws d:moduleBlock) -> $d
+def nestedNamespace: ModuleDeclaration = n:identifierName b:namespaceBody -> new ModuleDeclaration{Name: $n, Body: $b}
+def externalModuleDeclaration: ModuleDeclaration = m:modifiers "module" !idPart -ws n:stringLiteral
+    b:(-ws mb:moduleBlock / eos) -> new ModuleDeclaration{Modifiers: $m, Name: $n, Body: $mb}
+def globalDeclaration: ModuleDeclaration = m:modifiers n:globalIdentifier b:(-ws mb:moduleBlock / eos)
+    -> new ModuleDeclaration{Modifiers: $m, Name: $n, Body: $mb}
+def globalIdentifier: Identifier = "global" !idPart
+def moduleBlock: ModuleBlock = "{" -ws ss:(s:statement -ws)* "}" -> new ModuleBlock{Statements: map($ss, (x) => $x.s)}
+
+// --- Imports ---
+// import x = require("m"), import type x = N.M
+def importEqualsDeclaration: ImportEqualsDeclaration = m:modifiers "import" !idPart -ws
+    t:(tt:"type" !idPart -ws &identifier)? n:identifier -ws "=" !(?=>) -ws r:moduleReference eos
+    -> new ImportEqualsDeclaration{Modifiers: $m, Name: $n, ModuleReference: $r, IsTypeOnly: $tt != nil}
+def moduleReference: ModuleReference = externalModuleReference / entityName
+def externalModuleReference: ExternalModuleReference = "require" !idPart -ws "(" -ws e:moduleSpecifier -ws ")"
+    -> new ExternalModuleReference{Expression: $e}
+def importDeclaration: ImportDeclaration = m:modifiers "import" !idPart -ws c:(ic:importClause -ws "from" !idPart -ws)?
+    s:moduleSpecifier a:(-sp at:importAttributes)? eos
+    -> new ImportDeclaration{Modifiers: $m, ImportClause: $ic, ModuleSpecifier: $s, Attributes: $at}
+// The phase modifier: import type ... and import defer ... (parseImportDeclarationOrImportEqualsDeclaration)
+def importClause: ImportClause = p:(pk:importPhase -ws)? (n:identifier (-ws "," -ws b:namedImportBindings)?
+        / b:namedImportBindings)
+    -> new ImportClause{Name: $n, NamedBindings: $b, PhaseModifier: text($pk)}
+def importPhase = @("type" !idPart &(-ws ("from" !idPart -ws ("from" !idPart / "=" !"=")
+        / !("from" !idPart) (identifier / (?*{))))
+    / "defer" !idPart &(-ws ("from" !idPart !(-ws (?"')) / !("from" !idPart) !(?,=))))
+def namedImportBindings: NamedImportBindings = namespaceImport / namedImports
+def namespaceImport: NamespaceImport = "*" -ws "as" !idPart -ws n:identifier -> new NamespaceImport{Name: $n}
+def namedImports: NamedImports = "{" -ws es:importSpecifierList? -ws "}"
+    -> new NamedImports{Elements: concat($es)}
+// The type modifier and as (parseImportOrExportSpecifier): type as as x, type as x, type as, type x as y, x as y
+def importSpecifier: ImportSpecifier = importSpecifierTypeAsAs / importSpecifierTypeAsName / importSpecifierTypeAs
+    / importSpecifierType / importSpecifierPlain
+def importSpecifierTypeAsAs: ImportSpecifier = "type" !idPart -ws p:asIdentifier -ws "as" !idPart -ws n:identifier
+    -> new ImportSpecifier{PropertyName: $p, Name: $n, IsTypeOnly: true}
+def importSpecifierTypeAsName: ImportSpecifier = p:typeIdentifier -ws "as" !idPart -ws n:identifier
+    -> new ImportSpecifier{PropertyName: $p, Name: $n}
+def importSpecifierTypeAs: ImportSpecifier = "type" !idPart -ws n:asIdentifier !(-ws moduleExportNameStart)
+    -> new ImportSpecifier{Name: $n, IsTypeOnly: true}
+def importSpecifierType: ImportSpecifier = "type" !idPart -ws &moduleExportNameStart
+    r:(p:moduleExportName -ws "as" !idPart -ws n:identifier / n:identifier)
+    -> new ImportSpecifier{PropertyName: $p, Name: $n, IsTypeOnly: true}
+def importSpecifierPlain: ImportSpecifier = r:(p:moduleExportName -ws "as" !idPart -ws n:identifier / n:identifier)
+    -> new ImportSpecifier{PropertyName: $p, Name: $n}
+def typeIdentifier: Identifier = "type" !idPart
+def asIdentifier: Identifier = "as" !idPart
+def moduleExportName: ModuleExportName = stringLiteral / identifierName
+def moduleExportNameStart = idStart / "#" / (?"')
+def moduleSpecifier: Expression = stringLiteral / expression
+// with { ... } or assert { ... } on the same line as the module specifier
+def importAttributes: ImportAttributes = t:@(("with" / "assert") !idPart) -ws a:importAttributesBraces
+    -> new ImportAttributes{Elements: $a, Token: text($t)}
+def importAttributesBraces = "{" -ws es:importAttributeList? -ws "}"
+    -> concat($es)
+def importAttribute: ImportAttribute = n:(stringLiteral / identifierName) -ws ":" -ws v:assignmentExpression
+    -> new ImportAttribute{Name: $n, Value: $v}
+
+// --- Exports ---
+// export = x and export default x, in the await context
+def exportAssignment: ExportAssignment = m:modifiers "export" !idPart -ws k:("=" !(?=>) / "default" !idPart) -ws
+    [ctx = ctx - ctx / 2 % 2 * 2 + 2] e:assignmentExpression eos
+    -> new ExportAssignment{Modifiers: $m, Expression: $e, IsExportEquals: text($k) == "="}
+def namespaceExportDeclaration: NamespaceExportDeclaration = m:modifiers "export" !idPart -ws "as" !idPart -ws
+    "namespace" !idPart -ws n:identifier eos -> new NamespaceExportDeclaration{Modifiers: $m, Name: $n}
+def exportDeclaration: ExportDeclaration = exportStarDeclaration / exportNamedDeclaration
+def exportStarDeclaration: ExportDeclaration = m:modifiers "export" !idPart -ws t:(tt:"type" !idPart -ws)?
+    (c:namespaceExport / "*") -ws "from" !idPart -ws [ctx = ctx - ctx / 2 % 2 * 2 + 2] s:moduleSpecifier
+    a:(-sp at:importAttributes)? eos
+    -> new ExportDeclaration{Modifiers: $m, ExportClause: $c, ModuleSpecifier: $s, Attributes: $at,
+        IsTypeOnly: $tt != nil}
+def exportNamedDeclaration: ExportDeclaration = m:modifiers "export" !idPart -ws t:(tt:"type" !idPart -ws)?
+    c:namedExports f:(-ws "from" !idPart -ws [ctx = ctx - ctx / 2 % 2 * 2 + 2] s:moduleSpecifier
+    a:(-sp at:importAttributes)?)? eos
+    -> new ExportDeclaration{Modifiers: $m, ExportClause: $c, ModuleSpecifier: $s, Attributes: $at,
+        IsTypeOnly: $tt != nil}
+def namespaceExport: NamespaceExport = "*" -ws "as" !idPart -ws n:moduleExportName -> new NamespaceExport{Name: $n}
+def namedExports: NamedExports = "{" -ws es:exportSpecifierList? -ws "}"
+    -> new NamedExports{Elements: concat($es)}
+def exportSpecifier: ExportSpecifier = exportSpecifierTypeAsAs / exportSpecifierTypeAsName / exportSpecifierTypeAs
+    / exportSpecifierType / exportSpecifierPlain
+def exportSpecifierTypeAsAs: ExportSpecifier = "type" !idPart -ws p:asIdentifier -ws "as" !idPart -ws
+    n:moduleExportName -> new ExportSpecifier{PropertyName: $p, Name: $n, IsTypeOnly: true}
+def exportSpecifierTypeAsName: ExportSpecifier = p:typeIdentifier -ws "as" !idPart -ws n:moduleExportName
+    -> new ExportSpecifier{PropertyName: $p, Name: $n}
+def exportSpecifierTypeAs: ExportSpecifier = "type" !idPart -ws n:asIdentifier !(-ws moduleExportNameStart)
+    -> new ExportSpecifier{Name: $n, IsTypeOnly: true}
+def exportSpecifierType: ExportSpecifier = "type" !idPart -ws &moduleExportNameStart
+    r:(p:moduleExportName -ws "as" !idPart -ws n:moduleExportName / n:moduleExportName)
+    -> new ExportSpecifier{PropertyName: $p, Name: $n, IsTypeOnly: true}
+def exportSpecifierPlain: ExportSpecifier =
+    r:(p:moduleExportName -ws "as" !idPart -ws n:moduleExportName / n:moduleExportName)
+    -> new ExportSpecifier{PropertyName: $p, Name: $n}
+
+// ===================================================================
+// Modifiers and decorators (parseModifiers)
+// ===================================================================
+
+// Decorators, modifiers, and after modifiers more decorators and modifiers. Each modifier keyword is a
+// modifier only before what can follow a modifier (nextTokenCanFollowModifier), so that public or
+// declare stay names elsewhere; static is a modifier once.
+def modifiers = d1:decoratorList? m1:modifierList? ([len($m1) > 0] d2:decoratorList m2:modifierList?)?
+    -> concat($d1, $m1, $d2, $m2)
+def decoratorList = ds:(d:decorator -ws)+ -> map($ds, (x) => $x.d)
+def modifierList = b:(m:modifier -ws)* s:staticModifierList? a:(m:modifier -ws)* [len($b) > 0 || len($s) > 0]
+    -> concat(map($b, (x) => $x.m), $s, map($a, (x) => $x.m))
+def staticModifierList = m:staticModifier -ws -> list($m)
+def modifier: Modifier = "export" !idPart &(-ws exportModifierFollows)
+    / "default" !idPart &(-ws defaultModifierFollows)
+    / "const" !idPart &(-ws "enum" !idPart)
+    / ("abstract" / "accessor" / "async" / "declare" / "in" / "out" / "override" / "private" / "protected"
+        / "public" / "readonly") !idPart &(sp canFollowModifier)
+def staticModifier: Modifier = "static" !idPart &(-ws canFollowModifier)
+def exportModifierFollows = "default" !idPart -ws defaultModifierFollows
+    / "type" !idPart -ws canFollowExportModifier
+    / canFollowExportModifier
+def canFollowExportModifier = "@" / !((?*{) / "as" !idPart) canFollowModifier
+def defaultModifierFollows = ("class" / "function" / "interface") !idPart / "@"
+    / "abstract" !idPart sp "class" !idPart / "async" !idPart sp "function" !idPart
+def canFollowModifier = (?[{*) / "..." / literalPropertyNameStart
+def literalPropertyNameStart = idStart / "#" / (?"'0-9) / "." (?0-9)
+
+// Class members also take const as a modifier, and static before "{" starts a static block.
+def classModifiers = d1:decoratorList? m1:classModifierList? ([len($m1) > 0] d2:decoratorList m2:classModifierList?)?
+    -> concat($d1, $m1, $d2, $m2)
+def classModifierList = b:(m:classModifier -ws)* s:classStaticModifierList? a:(m:classModifier -ws)*
+    [len($b) > 0 || len($s) > 0] -> concat(map($b, (x) => $x.m), $s, map($a, (x) => $x.m))
+def classStaticModifierList = m:classStaticModifier -ws -> list($m)
+def classModifier: Modifier = "const" !idPart &(sp canFollowModifier) / modifier
+def classStaticModifier: Modifier = "static" !idPart !(-ws "{") &(-ws canFollowModifier)
+
+// Type members take no decorators; type parameters take const, in and out.
+def typeMemberModifiers = ms:(m:modifier -ws)* -> map($ms, (x) => $x.m)
+def typeParameterModifiers = ms:(m:classModifier -ws)* -> map($ms, (x) => $x.m)
+
+// A decorator is a left-hand side expression in the decorator context, where "[" is not an element access.
+def decorator: Decorator = "@" -ws [ctx = ctx - ctx / 8 % 2 * 8 + 8] e:leftHandSideExpression
+    -> new Decorator{Expression: $e}
+
+// ===================================================================
+// Expressions
+// ===================================================================
+
+// parseExpression: a comma expression, outside the decorator context
+def expression: Expression = [ctx = ctx - ctx / 8 % 4 * 8] e:commaExpression -> $e
+// allowInAnd(parseExpression)
+def expressionAllowIn: Expression = [ctx = ctx - ctx / 4 % 8 * 4] e:commaExpression -> $e
+def commaExpression: Expression = first:assignmentExpressionInner rest:(-ws o:commaToken -ws e:assignmentExpressionInner)*
+    -> foldl($first, $rest, (acc, r) => new BinaryExpression{Left: $acc, OperatorToken: $r.o, Right: $r.e})
+// parseAssignmentExpressionOrHigher(allowReturnTypeInArrowFunction = true)
+def assignmentExpression: Expression = [ctx = ctx - ctx / 8 % 4 * 8] e:assignmentExpressionInner -> $e
+def assignmentExpressionAllowIn: Expression = [ctx = ctx - ctx / 4 % 8 * 4] e:assignmentExpressionInner -> $e
+
+// parseAssignmentExpressionOrHigher: a yield expression, an arrow function, an assignment to a left-hand
+// side expression, or a conditional expression.
+def assignmentExpressionInner: Expression = yieldExpression / arrowFunction / asyncSimpleArrowFunction
+    / simpleArrowFunction / assignment / conditionalExpression / binaryExpression
+
+// yield is an expression in the yield context, or before an identifier, keyword or literal on the
+// same line; its operand must be on the same line.
+def yieldExpression: YieldExpression = "yield" !idPart ([ctx % 2 == 1] / &(sp identifierOrKeywordOrLiteralStart))
+    r:(-sp !nlStart a:(at:asteriskToken -ws)? e:assignmentExpression)?
+    -> new YieldExpression{AsteriskToken: $at, Expression: $e}
+def identifierOrKeywordOrLiteralStart = idStart / "#" / (?0-9"') / "." (?0-9)
+def nlStart = (?\n\r  ) / "/*"
+
+def assignment: BinaryExpression = l:leftHandSideExpression -ws o:assignmentOperator -ws r:assignmentExpressionInner
+    -> new BinaryExpression{Left: $l, OperatorToken: $o, Right: $r}
+def assignmentOperator: Token = ">>>=" / "**=" / "<<=" / ">>=" / "&&=" / "||=" / "??=" / "+=" / "-=" / "*=" / "/="
+    / "%=" / "&=" / "|=" / "^=" / "=" !(?=>)
+
+// The true branch allows `in` and arrow functions without a return type (allowReturnTypeInArrowFunction
+// = false), and is outside the decorator context.
+def conditionalExpression: ConditionalExpression = c:binaryExpression -ws q:conditionalQuestionToken -ws
+    [ctx = ctx - ctx / 4 % 8 * 4 + 16] t:assignmentExpressionInner -ws k:colonToken -ws f:conditionalWhenFalse
+    -> new ConditionalExpression{Condition: $c, QuestionToken: $q, WhenTrue: $t, ColonToken: $k, WhenFalse: $f}
+def conditionalWhenFalse: Expression = e:assignmentExpressionInner -> $e
+def conditionalQuestionToken: Token = "?" !"?" !("." !(?0-9))
+
+// --- Arrow functions (tryParseParenthesizedArrowFunctionExpression, isParenthesizedArrowFunctionExpression) ---
+// In a .tsx file, <T> starts JSX; a generic arrow function needs <T,>, <T = ...> or <T extends ...>.
+def arrowFunction: ArrowFunction = ml:arrowAsyncModifier? [ctx = ctx - ctx % 4 + len($ml) * 2]
+    tp:(t:arrowTypeParameters -ws)? &"(" !arrowParenthesisIsNotParameterList ps:parameterList rt:returnType? -ws
+    a:equalsGreaterThanToken -ws b:arrowBody ([ctx / 16 % 2 == 0] / [$rt == nil] / &(-ws ":"))
+    -> new ArrowFunction{Modifiers: concat($ml), TypeParameters: concat($t), Parameters: $ps, Type: $rt,
+        EqualsGreaterThanToken: $a, Body: $b}
+def arrowAsyncModifier = m:asyncKeywordModifier -sp &(?(<) -> list($m)
+def asyncKeywordModifier: Modifier = "async" !idPart
+def arrowTypeParameters = &("<" -ws ("const" !idPart / identifier)) ([ctx < 64] / &tsxArrowTypeParametersStart)
+    tp:typeParameters -> $tp
+def tsxArrowTypeParametersStart = "<" -ws ("const" !idPart -ws)? identifier -ws
+    ("extends" !idPart -ws !(?=>/) / (?,=))
+// (yield) and (await) are not parameter lists where yield and await are not identifiers.
+def arrowParenthesisIsNotParameterList = "(" -ws ("yield" !idPart [ctx % 2 == 1] / "await" !idPart [ctx / 2 % 2 == 1])
+// x => ..., with the parameter an identifier in the current context
+def simpleArrowFunction: ArrowFunction = p:simpleArrowParameter -ws a:equalsGreaterThanToken -ws [ctx = ctx - ctx % 4]
+    b:arrowBody -> new ArrowFunction{Parameters: list($p), EqualsGreaterThanToken: $a, Body: $b}
+def simpleArrowParameter: Parameter = n:identifier -> new Parameter{Name: $n}
+// async x => ..., all on one line
+def asyncSimpleArrowFunction: ArrowFunction = m:asyncKeywordModifier -sp !(?\n\r  ) p:simpleArrowParameter -sp
+    a:equalsGreaterThanToken -ws [ctx = ctx - ctx % 4 + 2] b:arrowBody
+    -> new ArrowFunction{Modifiers: list($m), Parameters: list($p), EqualsGreaterThanToken: $a, Body: $b}
+def arrowBody: ConciseBody = block / assignmentExpressionInner
+
+// --- Binary expressions (parseBinaryExpressionRest) ---
+// The levels are those of getBinaryOperatorPrecedence; as and satisfies take a type on the same line.
+// skip is sp and each operator skips the whitespace before it, so that `as` can require no line break.
+def binaryExpression: Expression = pratt {
+    skip sp
+    operand unaryExpression
+    level { infix left -ws o:coalesceOrToken -ws -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs} }
+    level { infix left -ws o:ampersandAmpersandToken -ws -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs} }
+    level { infix left -ws o:barToken -ws -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs} }
+    level { infix left -ws o:caretToken -ws -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs} }
+    level { infix left -ws o:ampersandToken -ws -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs} }
+    level { infix left -ws o:equalityToken -ws -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs} }
+    level {
+        infix left -ws o:relationalToken -ws -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+        postfix "as" !idPart -ws t:typeNode -> new AsExpression{Expression: $lhs, Type: $t}
+        postfix "satisfies" !idPart -ws t:typeNode -> new SatisfiesExpression{Expression: $lhs, Type: $t}
+    }
+    level { infix left -ws o:shiftToken -ws -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs} }
+    level { infix left -ws o:additiveToken -ws -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs} }
+    level { infix left -ws o:multiplicativeToken -ws -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs} }
+    level { infix right -ws o:asteriskAsteriskToken -ws -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs} }
+}
+// Operator tokens, each not the start of a longer token (maximal munch).
+def coalesceOrToken: Token = "??" !"=" / "||" !"="
+def ampersandAmpersandToken: Token = "&&" !"="
+def barToken: Token = "|" !(?|=)
+def caretToken: Token = "^" !"="
+def ampersandToken: Token = "&" !(?&=)
+def equalityToken: Token = "===" / "!==" / "==" / "!="
+// In a .tsx file, </ is the start of a closing tag.
+def relationalToken: Token = "<=" / ">=" / "<" !(?<=) !([ctx >= 64] "/" !"*") / ">" !(?>=)
+    / "instanceof" !idPart / [ctx / 4 % 2 == 0] "in" !idPart
+def shiftToken: Token = ">>>" !"=" / ">>" !(?>=) / "<<" !"="
+def additiveToken: Token = "+" !(?+=) / "-" !(?\-=)
+def multiplicativeToken: Token = "*" !(?*=) / "/" !"=" / "%" !"="
+def asteriskAsteriskToken: Token = "**" !"="
+// isBinaryOperator
+def binaryOperatorStart = coalesceOrToken / ampersandAmpersandToken / barToken / caretToken / ampersandToken
+    / equalityToken / relationalToken / shiftToken / additiveToken / multiplicativeToken / asteriskAsteriskToken
+    / ("as" / "satisfies") !idPart
+
+// --- Unary expressions (parseUnaryExpressionOrHigher) ---
+// A unary operator other than ++ and -- may not be the left operand of **.
+def unaryExpression: Expression = (&unaryOperatorStart u:simpleUnaryExpression !(-ws "**" !"=")
+    / !unaryOperatorStart u:updateExpression) -> $u
+def unaryOperatorStart = "+" !"+" / "-" !"-" / (?~!) / ("delete" / "typeof" / "void" / "await") !idPart
+    / [ctx < 64] "<"
+def simpleUnaryExpression: Expression = prefixUnaryExpression / deleteExpression / typeOfExpression / voidExpression
+    / typeAssertion / jsxUnaryExpression / awaitExpression / updateExpression
+def prefixUnaryExpression: PrefixUnaryExpression = o:@("+" !"+" / "-" !"-" / "~" / "!") -ws e:simpleUnaryExpression
+    -> new PrefixUnaryExpression{Operator: text($o), Operand: $e}
+def deleteExpression: DeleteExpression = "delete" !idPart -ws e:simpleUnaryExpression -> new DeleteExpression{Expression: $e}
+def typeOfExpression: TypeOfExpression = "typeof" !idPart -ws e:simpleUnaryExpression -> new TypeOfExpression{Expression: $e}
+def voidExpression: VoidExpression = "void" !idPart -ws e:simpleUnaryExpression -> new VoidExpression{Expression: $e}
+// await is an expression in the await context, or before an identifier, keyword or literal on the same line.
+def awaitExpression: AwaitExpression = "await" !idPart ([ctx / 2 % 2 == 1] / &(sp identifierOrKeywordOrLiteralStart))
+    -ws e:simpleUnaryExpression -> new AwaitExpression{Expression: $e}
+// <T>x, only in a .ts file
+def typeAssertion: TypeAssertionExpression = [ctx < 64] "<" -ws t:typeNode -ws ">" -ws e:simpleUnaryExpression
+    -> new TypeAssertionExpression{Type: $t, Expression: $e}
+def jsxUnaryExpression: Expression = [ctx >= 64] &"<" e:jsxElementOrFragment -> $e
+
+// parseUpdateExpression
+def updateExpression: Expression = prefixUpdateExpression / jsxPrimaryExpression / postfixUpdateExpression
+    / leftHandSideExpression
+def prefixUpdateExpression: PrefixUnaryExpression = o:@("++" / "--") -ws e:leftHandSideExpression
+    -> new PrefixUnaryExpression{Operator: text($o), Operand: $e}
+def postfixUpdateExpression: PostfixUnaryExpression = e:leftHandSideExpression -sp o:@("++" / "--")
+    -> new PostfixUnaryExpression{Operand: $e, Operator: text($o)}
+// JSX in an expression, which may not be followed by "<" ("JSX expressions must have one parent element").
+def jsxPrimaryExpression: Expression = [ctx >= 64] &("<" -ws (idStart / ">")) e:jsxElementOrFragment
+    !(-ws "<" !(?<=)) -> $e
+
+// --- Left-hand side expressions (parseLeftHandSideExpressionOrHigher, parseMemberExpressionRest,
+// parseCallExpressionRest) ---
+// Type arguments in an expression are taken only before what can follow them
+// (canFollowTypeArgumentsInExpression); otherwise < is a comparison.
+def leftHandSideExpression: Expression = pratt {
+    skip sp
+    operand superExpression
+    operand importCallee
+    operand importMetaProperty
+    operand primaryExpression
+    level {
+        postfix -ws "." !(?0-9) -ws n:memberName -> new PropertyAccessExpression{Expression: $lhs, Name: $n}
+        postfix -ws q:questionDotToken -ws n:identifierName
+            -> new PropertyAccessExpression{Expression: $lhs, QuestionDotToken: $q, Name: $n}
+        postfix -ws [ctx / 8 % 2 == 0] "[" -ws e:expressionAllowIn -ws "]"
+            -> new ElementAccessExpression{Expression: $lhs, ArgumentExpression: $e}
+        postfix -ws q:questionDotToken -ws "[" -ws e:expressionAllowIn -ws "]"
+            -> new ElementAccessExpression{Expression: $lhs, QuestionDotToken: $q, ArgumentExpression: $e}
+        postfix -ws ta:(t:typeArgumentsInExpression -ws)? l:taggedTemplate
+            -> new TaggedTemplateExpression{Tag: $lhs, TypeArguments: concat($t), Template: $l}
+        postfix -ws q:questionDotToken -ws ta:(t:typeArgumentsInExpression -ws)? l:taggedTemplate
+            -> new TaggedTemplateExpression{Tag: $lhs, QuestionDotToken: $q, TypeArguments: concat($t), Template: $l}
+        postfix "!" !"=" -> new NonNullExpression{Expression: $lhs}
+        postfix -ws t:typeArgumentsInExpression -> new ExpressionWithTypeArguments{Expression: $lhs, TypeArguments: $t}
+        postfix -ws ta:(t:typeArgumentsInExpression -ws)? a:arguments
+            -> new CallExpression{Expression: $lhs, TypeArguments: concat($t), Arguments: $a}
+        postfix -ws q:questionDotToken -ws ta:(t:typeArgumentsInExpression -ws)? a:arguments
+            -> new CallExpression{Expression: $lhs, QuestionDotToken: $q, TypeArguments: concat($t), Arguments: $a}
+    }
+}
+// The same without instantiation expressions, for heritage clauses, which take type arguments of their own.
+def heritageExpression: Expression = pratt {
+    skip sp
+    operand superExpression
+    operand importCallee
+    operand importMetaProperty
+    operand primaryExpression
+    level {
+        postfix -ws "." !(?0-9) -ws n:memberName -> new PropertyAccessExpression{Expression: $lhs, Name: $n}
+        postfix -ws q:questionDotToken -ws n:identifierName
+            -> new PropertyAccessExpression{Expression: $lhs, QuestionDotToken: $q, Name: $n}
+        postfix -ws [ctx / 8 % 2 == 0] "[" -ws e:expressionAllowIn -ws "]"
+            -> new ElementAccessExpression{Expression: $lhs, ArgumentExpression: $e}
+        postfix -ws q:questionDotToken -ws "[" -ws e:expressionAllowIn -ws "]"
+            -> new ElementAccessExpression{Expression: $lhs, QuestionDotToken: $q, ArgumentExpression: $e}
+        postfix -ws ta:(t:typeArgumentsInExpression -ws)? l:taggedTemplate
+            -> new TaggedTemplateExpression{Tag: $lhs, TypeArguments: concat($t), Template: $l}
+        postfix -ws q:questionDotToken -ws ta:(t:typeArgumentsInExpression -ws)? l:taggedTemplate
+            -> new TaggedTemplateExpression{Tag: $lhs, QuestionDotToken: $q, TypeArguments: concat($t), Template: $l}
+        postfix "!" !"=" -> new NonNullExpression{Expression: $lhs}
+        postfix -ws ta:(t:typeArgumentsInExpression -ws)? a:arguments
+            -> new CallExpression{Expression: $lhs, TypeArguments: concat($t), Arguments: $a}
+        postfix -ws q:questionDotToken -ws ta:(t:typeArgumentsInExpression -ws)? a:arguments
+            -> new CallExpression{Expression: $lhs, QuestionDotToken: $q, TypeArguments: concat($t), Arguments: $a}
+    }
+}
+// The target of new: member accesses, element accesses, tagged templates and non-null assertions, without
+// calls or optional chains (parseMemberExpressionRest with allowOptionalChain = false).
+def newTarget: Expression = pratt {
+    skip sp
+    operand primaryExpression
+    level {
+        postfix -ws "." !(?0-9) -ws n:memberName -> new PropertyAccessExpression{Expression: $lhs, Name: $n}
+        postfix -ws [ctx / 8 % 2 == 0] "[" -ws e:expressionAllowIn -ws "]"
+            -> new ElementAccessExpression{Expression: $lhs, ArgumentExpression: $e}
+        postfix -ws ta:(t:typeArgumentsInExpression -ws)? l:taggedTemplate
+            -> new TaggedTemplateExpression{Tag: $lhs, TypeArguments: concat($t), Template: $l}
+        postfix "!" !"=" -> new NonNullExpression{Expression: $lhs}
+    }
+}
+def memberName: MemberName = privateIdentifier / identifierName
+def questionDotToken: Token = "?." !(?0-9)
+
+// parseTypeArgumentsInExpression: "<" types ">" not followed by ">" or "=", then what can follow type
+// arguments: "(" or a template; else not "<", ">", "+" or "-", and a line break, a binary operator or
+// something that cannot start an expression. An instantiation expression may not be followed by a
+// property access, so "." and "?." before a name are excluded too.
+def typeArgumentsInExpression = "<" -ws [ctx = ctx - ctx % 4] ts:typeList? -ws ">" !(?>=) &typeArgumentsCanFollow
+    -> concat($ts)
+def typeArgumentsCanFollow = -ws (?(`)
+    / !(-ws ((?<>+\-) / "." !(?0-9) / "?." !(?0-9) -ws idStart))
+        (nlAhead / -ws binaryOperatorStart / !(-ws expressionStart))
+// isStartOfExpression
+def expressionStart = (?0-9"'`([{/~!<#@+\-) / "." (?0-9)
+    / ("this" / "super" / "null" / "true" / "false" / "function" / "class" / "new" / "delete" / "typeof" / "void")
+        !idPart
+    / "import" !idPart -ws (?(<.)
+    / !reservedWord idStart
+    / binaryOperatorStart
+
+def arguments = "(" -ws [ctx = ctx - ctx / 4 % 8 * 4] as:argumentList? -ws ")" -> concat($as)
+def argumentList = first:argument rest:(-ws "," -ws a:argument)* (-ws ",")?
+    -> concat(list($first), map($rest, (r) => $r.a))
+def argument: Expression = spreadElement / assignmentExpressionInner
+def spreadElement: SpreadElement = "..." -ws e:assignmentExpression -> new SpreadElement{Expression: $e}
+
+// super must be followed by "(", "." or "["
+def superExpression: SuperExpression = "super" !idPart &(-ws (?(.[))
+def importCallee: ImportExpression = "import" !idPart &(-ws (?(<))
+def importMetaProperty: MetaProperty = "import" !idPart -ws "." -ws n:identifierName
+    -> new MetaProperty{KeywordToken: "import", Name: $n}
+
+// --- Primary expressions (parsePrimaryExpression) ---
+def primaryExpression: Expression = numericLiteral / bigIntLiteral / stringLiteral / noSubstitutionTemplateLiteral
+    / templateExpression / thisKeyword / nullKeyword / booleanKeyword / parenthesizedExpression
+    / arrayLiteralExpression / objectLiteralExpression / functionExpression / classExpressionPrimary
+    / newExpression / regularExpressionLiteral / privateIdentifier / identifier
+def thisKeyword: ThisExpression = "this" !idPart
+def nullKeyword: NullLiteral = "null" !idPart
+def booleanKeyword: BooleanLiteral = ("true" / "false") !idPart
+def parenthesizedExpression: ParenthesizedExpression = "(" -ws e:expressionAllowIn -ws ")"
+    -> new ParenthesizedExpression{Expression: $e}
+// An element is a spread, an expression or an omitted expression (a hole).
+def arrayLiteralExpression: ArrayLiteralExpression = "[" -ws [ctx = ctx - ctx / 8 % 4 * 8]
+    es:arrayElementList? -ws "]"
+    -> new ArrayLiteralExpression{Elements: concat($es)}
+def arrayElement: Expression = spreadElement / assignmentExpressionInner / omittedExpression
+def objectLiteralExpression: ObjectLiteralExpression = "{" -ws
+    ps:objectLiteralElementList? -ws "}"
+    -> new ObjectLiteralExpression{Properties: concat($ps)}
+// parseObjectLiteralElement
+def objectLiteralElement: ObjectLiteralElement = spreadAssignment / objectGetAccessor / objectSetAccessor
+    / objectMethod / shorthandPropertyAssignment / propertyAssignment
+def spreadAssignment: SpreadAssignment = "..." -ws e:assignmentExpression -> new SpreadAssignment{Expression: $e}
+def objectGetAccessor: GetAccessor = m:modifiers "get" !idPart &(-ws canFollowGetOrSet) -ws n:propertyName
+    [ctx = ctx - ctx % 32] tp:(-ws t:typeParameters)? -ws ps:parameterList rt:returnType? b:(-ws fb:block / eos)
+    -> new GetAccessor{Modifiers: $m, Name: $n, TypeParameters: concat($t), Parameters: $ps, Type: $rt, Body: $fb}
+def objectSetAccessor: SetAccessor = m:modifiers "set" !idPart &(-ws canFollowGetOrSet) -ws n:propertyName
+    [ctx = ctx - ctx % 32] tp:(-ws t:typeParameters)? -ws ps:parameterList rt:returnType? b:(-ws fb:block / eos)
+    -> new SetAccessor{Modifiers: $m, Name: $n, TypeParameters: concat($t), Parameters: $ps, Type: $rt, Body: $fb}
+def objectMethod: MethodDeclaration = (&(am:asyncModifierScan))? m:modifiers a:(s:asteriskToken -ws)? n:propertyName
+    q:(-ws qt:questionToken)? x:(-ws xt:exclamationToken)? ([$s != nil] / &(-ws (?(<)))
+    [ctx = ctx - ctx % 32 + len($s) + len($am) / 5 * 2]
+    tp:(-ws t:typeParameters)? -ws ps:parameterList rt:returnType? b:(-ws fb:block / eos)
+    -> new MethodDeclaration{Modifiers: $m, AsteriskToken: $s, Name: $n, QuestionToken: $qt, ExclamationToken: $xt,
+        TypeParameters: concat($t), Parameters: $ps, Type: $rt, Body: $fb}
+// An identifier not followed by ":" is a shorthand property, with an optional = initializer.
+def shorthandPropertyAssignment: ShorthandPropertyAssignment = m:modifiers n:identifier q:(-ws qt:questionToken)?
+    x:(-ws xt:exclamationToken)? !(-ws ":") i:(-ws eq:equalsToken -ws [ctx = ctx - ctx / 4 % 2 * 4] v:assignmentExpression)?
+    -> new ShorthandPropertyAssignment{Modifiers: $m, Name: $n, QuestionToken: $qt, ExclamationToken: $xt,
+        EqualsToken: $eq, ObjectAssignmentInitializer: $v}
+def propertyAssignment: PropertyAssignment = m:modifiers n:propertyName q:(-ws qt:questionToken)?
+    x:(-ws xt:exclamationToken)? -ws ":" -ws [ctx = ctx - ctx / 4 % 2 * 4] v:assignmentExpression
+    -> new PropertyAssignment{Modifiers: $m, Name: $n, QuestionToken: $qt, ExclamationToken: $xt, Initializer: $v}
+
+def functionExpression: FunctionExpression = ml:asyncFunctionModifier? "function" !idPart a:(-ws s:asteriskToken)?
+    [ctx = ctx - ctx % 32 + len($s) + len($ml) * 2] n:(-ws i:bindingIdentifier)? tp:(-ws t:typeParameters)? -ws
+    ps:parameterList rt:returnType? -ws b:block
+    -> new FunctionExpression{Modifiers: concat($ml), AsteriskToken: $s, Name: $i, TypeParameters: concat($t),
+        Parameters: $ps, Type: $rt, Body: $b}
+def asyncFunctionModifier = m:asyncKeywordModifier -sp &("function" !idPart) -> list($m)
+// class ... or decorators and class (parseDecoratedExpression)
+def classExpressionPrimary: ClassExpression = &("class" !idPart / "@") c:classExpression -> $c
+
+// new.target, or new and a member expression with optional type arguments and arguments
+// (parseNewExpressionOrNewDotTarget); new x?.y is an error.
+def newExpression: Expression = newTargetMetaProperty / newExpressionWithTarget
+def newTargetMetaProperty: MetaProperty = "new" !idPart -ws "." -ws n:identifierName
+    -> new MetaProperty{KeywordToken: "new", Name: $n}
+def newExpressionWithTarget: NewExpression = "new" !idPart -ws e:newTarget ta:(-ws t:typeArgumentsInExpression)?
+    !(-ws "?." !(?0-9)) a:(-ws as:arguments)?
+    -> new NewExpression{Expression: $e, TypeArguments: concat($t), Arguments: $as}
+
+// --- Templates ---
+// An untagged template must have valid escape sequences; a tagged one may have any.
+def templateExpression: TemplateExpression = h:templateHead ss:templateSpans
+    -> new TemplateExpression{Head: $h, TemplateSpans: $ss}
+def templateSpans = ms:(-ws m:templateSpanMiddle)* -ws t:templateSpanTail -> concat(map($ms, (x) => $x.m), list($t))
+def templateSpanMiddle: TemplateSpan = e:expressionAllowIn -ws l:templateMiddle -> new TemplateSpan{Expression: $e, Literal: $l}
+def templateSpanTail: TemplateSpan = e:expressionAllowIn -ws l:templateTail -> new TemplateSpan{Expression: $e, Literal: $l}
+def taggedTemplate: TemplateLiteral = rawNoSubstitutionTemplateLiteral / rawTemplateExpression
+def rawTemplateExpression: TemplateExpression = h:rawTemplateHead ss:rawTemplateSpans
+    -> new TemplateExpression{Head: $h, TemplateSpans: $ss}
+def rawTemplateSpans = ms:(-ws m:rawTemplateSpanMiddle)* -ws t:rawTemplateSpanTail -> concat(map($ms, (x) => $x.m), list($t))
+def rawTemplateSpanMiddle: TemplateSpan = e:expressionAllowIn -ws l:rawTemplateMiddle
+    -> new TemplateSpan{Expression: $e, Literal: $l}
+def rawTemplateSpanTail: TemplateSpan = e:expressionAllowIn -ws l:rawTemplateTail
+    -> new TemplateSpan{Expression: $e, Literal: $l}
+
+// ===================================================================
+// JSX (parseJsxElementOrSelfClosingElementOrFragment)
+// ===================================================================
+
+def jsxElementOrFragment: Expression = jsxSelfClosingElement / jsxElement / jsxFragment
+def jsxSelfClosingElement: JsxSelfClosingElement = "<" -ws n:jsxElementName ta:(-ws t:typeArguments)? -ws
+    a:jsxAttributes -ws "/" -ws ">"
+    -> new JsxSelfClosingElement{TagName: $n, TypeArguments: concat($t), Attributes: $a}
+// The closing tag must name the opening tag.
+def jsxElement: JsxElement = &("<" -ws on:jsxElementName) o:jsxOpeningElement cs:jsxChild*
+    &("</" -ws cn:jsxElementName) c:jsxClosingElement [text($on) == text($cn)]
+    -> new JsxElement{OpeningElement: $o, Children: $cs, ClosingElement: $c}
+def jsxOpeningElement: JsxOpeningElement = "<" -ws n:jsxElementName ta:(-ws t:typeArguments)? -ws a:jsxAttributes
+    -ws ">" -> new JsxOpeningElement{TagName: $n, TypeArguments: concat($t), Attributes: $a}
+def jsxClosingElement: JsxClosingElement = "</" -ws n:jsxElementName -ws ">" -> new JsxClosingElement{TagName: $n}
+def jsxFragment: JsxFragment = o:jsxOpeningFragment cs:jsxChild* c:jsxClosingFragment
+    -> new JsxFragment{OpeningFragment: $o, Children: $cs, ClosingFragment: $c}
+def jsxOpeningFragment: JsxOpeningFragment = "<" -ws ">"
+def jsxClosingFragment: JsxClosingFragment = "</" -ws ">"
+
+// A tag name: an identifier with dashes, a namespaced name, this, or a member access.
+def jsxElementName: JsxTagName = jsxNamespacedName / jsxMemberName
+def jsxMemberName: JsxTagName = first:jsxTagNameStart rest:(-ws "." -ws n:identifierName)*
+    -> foldl($first, $rest, (acc, r) => new PropertyAccessExpression{Expression: $acc, Name: $r.n})
+def jsxTagNameStart: JsxTagNameStart = jsxThis / jsxIdentifier
+def jsxThis: ThisExpression = "this" !(idPart / "-")
+def jsxIdentifier: Identifier = idStart (idPart / "-")*
+def jsxNamespacedName: JsxNamespacedName = s:jsxIdentifier -ws ":" -ws n:jsxIdentifier
+    -> new JsxNamespacedName{Namespace: $s, Name: $n}
+
+def jsxAttributes: JsxAttributes = ps:jsxAttributeLikeList?
+    -> new JsxAttributes{Properties: concat($ps)}
+def jsxAttributeLike: JsxAttributeLike = jsxSpreadAttribute / jsxAttribute
+def jsxAttribute: JsxAttribute = n:jsxAttributeName v:(-ws "=" -ws i:jsxAttributeValue)?
+    -> new JsxAttribute{Name: $n, Initializer: $i}
+def jsxAttributeName: JsxAttributeName = jsxNamespacedName / jsxIdentifier
+def jsxAttributeValue: JsxAttributeValue = jsxAttributeString / jsxAttributeExpression / jsxElementOrFragmentValue
+def jsxElementOrFragmentValue: JsxAttributeValue = jsxSelfClosingElement / jsxElement / jsxFragment
+def jsxAttributeString: StringLiteral = "\"" (?^")* "\"" / "'" (?^')* "'"
+def jsxAttributeExpression: JsxExpression = "{" -ws e:expression? -ws "}" -> new JsxExpression{Expression: $e}
+def jsxSpreadAttribute: JsxSpreadAttribute = "{" -ws "..." -ws e:expression -ws "}"
+    -> new JsxSpreadAttribute{Expression: $e}
+
+// Children: text (where ">" and "}" are errors), {expressions} and elements.
+def jsxChild: JsxChild = jsxText / jsxChildExpression / jsxChildElement
+def jsxText: JsxText = (?^{}<>)+
+def jsxChildExpression: JsxExpression = "{" -ws d:(dt:dotDotDotToken -ws)? e:expression? -ws "}"
+    -> new JsxExpression{DotDotDotToken: $dt, Expression: $e}
+def jsxChildElement: JsxChild = !"</" e:(jsxSelfClosingElement / jsxElement / jsxFragment) -> $e
+
+// ===================================================================
+// Types (parseType)
+// ===================================================================
+
+// Types are parsed outside the yield and await contexts.
+def typeNode: TypeNode = [ctx = ctx - ctx % 4] t:typeInner -> $t
+def typeInner: TypeNode = functionType / constructorType / conditionalType / unionOrHigher
+// The extends type of a conditional type and the constraint of infer disallow conditional types.
+def typeNoConditional: TypeNode = [ctx = ctx - ctx / 32 % 2 * 32 + 32] t:typeInner -> $t
+def typeAllowConditional: TypeNode = [ctx = ctx - ctx / 32 % 2 * 32] t:typeInner -> $t
+def conditionalType: ConditionalType = [ctx / 32 % 2 == 0] c:unionOrHigher -sp "extends" !idPart -ws
+    e:typeNoConditional -ws "?" -ws t:typeAllowConditional -ws ":" -ws f:typeAllowConditional
+    -> new ConditionalType{CheckType: $c, ExtendsType: $e, TrueType: $t, FalseType: $f}
+def typeOrTypePredicate: TypeNode = typePredicate / typeNode
+def typePredicate: TypePredicate = n:identifier -sp "is" !idPart -ws t:typeNode
+    -> new TypePredicate{ParameterName: $n, Type: $t}
+
+def functionType: FunctionType = tp:(t:typeParameters -ws)? ps:parameterList -ws "=>" -ws r:returnTypeOfType
+    -> new FunctionType{TypeParameters: concat($t), Parameters: $ps, Type: $r}
+def constructorType: ConstructorType = m:(am:abstractModifier -ws)? "new" !idPart -ws tp:(t:typeParameters -ws)?
+    ps:parameterList -ws "=>" -ws r:returnTypeOfType
+    -> new ConstructorType{Modifiers: concat($am), TypeParameters: concat($t), Parameters: $ps, Type: $r}
+def abstractModifier = m:abstractKeywordModifier -> list($m)
+def abstractKeywordModifier: Modifier = "abstract" !idPart
+def returnTypeOfType: TypeNode = [ctx = ctx - ctx / 32 % 2 * 32] t:typeOrTypePredicate -> $t
+
+// A leading | or & makes a union or intersection of one type.
+def unionOrHigher: TypeNode = unionType / intersectionOrHigher
+def unionType: UnionType = l:barToken? -ws f:intersectionOrHigher r:(-ws barToken -ws t:intersectionOrHigher)*
+    [$l != nil || len($r) > 0] -> new UnionType{Types: concat(list($f), map($r, (x) => $x.t))}
+def intersectionOrHigher: TypeNode = intersectionType / typeOperatorOrHigher
+def intersectionType: IntersectionType = l:ampersandToken? -ws f:typeOperatorOrHigher
+    r:(-ws ampersandToken -ws t:typeOperatorOrHigher)* [$l != nil || len($r) > 0]
+    -> new IntersectionType{Types: concat(list($f), map($r, (x) => $x.t))}
+
+def typeOperatorOrHigher: TypeNode = typeOperator / inferType / postfixTypeAllowConditional
+def postfixTypeAllowConditional: TypeNode = !(("keyof" / "unique" / "readonly" / "infer") !idPart)
+    [ctx = ctx - ctx / 32 % 2 * 32] t:postfixType -> $t
+def typeOperator: TypeOperator = o:@(("keyof" / "unique" / "readonly") !idPart) -ws t:typeOperatorOrHigher
+    -> new TypeOperator{Operator: text($o), Type: $t}
+def inferType: InferType = "infer" !idPart -ws p:inferTypeParameter -> new InferType{TypeParameter: $p}
+// infer T extends C: the constraint is kept unless a conditional type may follow and "?" does.
+def inferTypeParameter: TypeParameter = n:identifier
+    c:(-ws "extends" !idPart -ws ct:typeNoConditional ([ctx / 32 % 2 == 1] / !(-ws "?")))?
+    -> new TypeParameter{Name: $n, Constraint: $ct}
+
+// Array types, indexed access types and the JSDoc postfixes ! and ?, on the same line.
+def postfixType: TypeNode = pratt {
+    skip sp
+    operand nonArrayType
+    level {
+        postfix "[" -ws "]" -> new ArrayType{ElementType: $lhs}
+        postfix "[" -ws i:typeNode -ws "]" -> new IndexedAccessType{ObjectType: $lhs, IndexType: $i}
+        postfix "!" !"=" -> new JSDocNonNullableType{Type: $lhs, Postfix: true}
+        postfix "?" !"?" !("." !(?0-9)) !(-ws typeStart) -> new JSDocNullableType{Type: $lhs, Postfix: true}
+    }
+}
+// The same without the postfix ?, for the optional elements of tuples.
+def postfixTypeNoQuestion: TypeNode = pratt {
+    skip sp
+    operand nonArrayType
+    level {
+        postfix "[" -ws "]" -> new ArrayType{ElementType: $lhs}
+        postfix "[" -ws i:typeNode -ws "]" -> new IndexedAccessType{ObjectType: $lhs, IndexType: $i}
+        postfix "!" !"=" -> new JSDocNonNullableType{Type: $lhs, Postfix: true}
+    }
+}
+
+// parseNonArrayType
+def nonArrayType: TypeNode = keywordType / literalType / thisTypePredicate / thisType / importType / typeQuery
+    / mappedType / typeLiteral / tupleType / parenthesizedType / assertsTypePredicate / templateLiteralType
+    / jsdocAllType / jsdocUnknownType / jsdocNullableType / jsdocFunctionType / jsdocNonNullableType / typeReference
+// A keyword type, unless followed by "." (then it is a type reference)
+def keywordType: KeywordTypeNode = ("any" / "unknown" / "string" / "number" / "bigint" / "symbol" / "boolean"
+    / "undefined" / "never" / "object") !idPart !(-ws ".")
+    / "void" !idPart
+def literalType: LiteralType = l:(stringLiteral / numericLiteral / bigIntLiteral / booleanKeyword / nullKeyword
+    / noSubstitutionTemplateLiteral / negativeLiteral) -> new LiteralType{Literal: $l}
+def negativeLiteral: PrefixUnaryExpression = "-" -ws l:(numericLiteral / bigIntLiteral)
+    -> new PrefixUnaryExpression{Operator: "-", Operand: $l}
+def thisType: ThisTypeNode = "this" !idPart
+def thisTypePredicate: TypePredicate = n:thisType -sp "is" !idPart -ws t:typeNode
+    -> new TypePredicate{ParameterName: $n, Type: $t}
+// asserts x, asserts x is T, asserts this
+def assertsTypePredicate: TypePredicate = a:assertsToken &(sp identifierOrKeywordStart) -sp
+    n:(thisType / identifier) t:(-ws "is" !idPart -ws ty:typeNode)?
+    -> new TypePredicate{AssertsModifier: $a, ParameterName: $n, Type: $ty}
+def assertsToken: Token = "asserts" !idPart
+def identifierOrKeywordStart = idStart / "#"
+def typeQuery: TypeQuery = "typeof" !idPart -ws n:entityNameAllowReserved ta:(-sp t:typeArguments)?
+    -> new TypeQuery{ExprName: $n, TypeArguments: concat($t)}
+def importType: ImportType = o:("typeof" !idPart -ws)? "import" !idPart -ws "(" -ws a:typeNode
+    at:(-ws "," -ws "{" -ws ("with" / "assert") !idPart -ws ":" -ws i:importTypeAttributes (-ws ",")? -ws "}")? -ws ")"
+    q:(-ws "." -ws qn:entityNameAllowReserved)? ta:(-sp t:typeArguments)?
+    -> new ImportType{Argument: $a, Attributes: $i, Qualifier: $qn, TypeArguments: concat($t), IsTypeOf: $o != nil}
+def importTypeAttributes: ImportAttributes = a:importAttributesBraces -> new ImportAttributes{Elements: $a, Token: "with"}
+def typeReference: TypeReference = n:entityNameAllowReserved ta:(-sp t:typeArguments)?
+    -> new TypeReference{TypeName: $n, TypeArguments: concat($t)}
+def parenthesizedType: ParenthesizedType = "(" -ws t:typeNode -ws ")" -> new ParenthesizedType{Type: $t}
+def templateLiteralType: TemplateLiteralType = h:templateHead ss:templateTypeSpans
+    -> new TemplateLiteralType{Head: $h, TemplateSpans: $ss}
+def templateTypeSpans = ms:(-ws m:templateTypeSpanMiddle)* -ws t:templateTypeSpanTail
+    -> concat(map($ms, (x) => $x.m), list($t))
+def templateTypeSpanMiddle: TemplateLiteralTypeSpan = t:typeNode -ws l:templateMiddle
+    -> new TemplateLiteralTypeSpan{Type: $t, Literal: $l}
+def templateTypeSpanTail: TemplateLiteralTypeSpan = t:typeNode -ws l:templateTail
+    -> new TemplateLiteralTypeSpan{Type: $t, Literal: $l}
+
+// JSDoc types, which the parser accepts in .ts files (the checker reports them)
+def jsdocAllType: JSDocAllType = "*"
+def jsdocUnknownType: JSDocUnknownType = "?" &(-ws (?,}\)>=|))
+def jsdocNullableType: JSDocNullableType = "?" -ws t:typeNode -> new JSDocNullableType{Type: $t}
+def jsdocNonNullableType: JSDocNonNullableType = "!" -ws t:nonArrayType -> new JSDocNonNullableType{Type: $t}
+def jsdocFunctionType: JSDocFunctionType = "function" !idPart -ws "(" -ws ps:jsdocParameterList?
+    -ws ")" rt:returnType? -> new JSDocFunctionType{Parameters: concat($ps), Type: $rt}
+def jsdocParameter: Parameter = n:(("this" / "new") !idPart -ws ":" -ws)? t:typeNode -> new Parameter{Type: $t}
+
+def entityName: EntityName = first:identifier rest:(-ws "." -ws n:identifierName)*
+    -> foldl($first, $rest, (acc, r) => new QualifiedName{Left: $acc, Right: $r.n})
+def entityNameAllowReserved: EntityName = first:identifierName rest:(-ws "." -ws n:identifierName)*
+    -> foldl($first, $rest, (acc, r) => new QualifiedName{Left: $acc, Right: $r.n})
+
+def typeArguments = "<" -ws ts:typeList? -ws ">" -> concat($ts)
+def typeList = first:typeNode rest:(-ws "," -ws t:typeNode)* (-ws ",")? -> concat(list($first), map($rest, (r) => $r.t))
+def typeParameters = "<" -ws ps:typeParameterList? -ws ">"
+    -> concat($ps)
+def typeParameter: TypeParameter = m:typeParameterModifiers n:identifier c:(-ws "extends" !idPart -ws ct:typeNode)?
+    d:(-ws "=" !(?=>) -ws dt:typeNode)?
+    -> new TypeParameter{Modifiers: $m, Name: $n, Constraint: $ct, Default: $dt}
+
+// --- Tuples ---
+def tupleType: TupleType = "[" -ws es:tupleElementList? -ws "]"
+    -> new TupleType{Elements: concat($es)}
+def tupleElement: TypeNode = namedTupleMember / tupleElementType
+def namedTupleMember: NamedTupleMember = d:(dt:dotDotDotToken -ws)? n:identifierName q:(-ws qt:questionToken)? -ws ":"
+    -ws t:tupleElementType -> new NamedTupleMember{DotDotDotToken: $dt, Name: $n, QuestionToken: $qt, Type: $t}
+// T? before "," or "]" is an optional element (the parser turns a postfix JSDocNullableType into it).
+def tupleElementType: TypeNode = restType / optionalType / typeNode
+def restType: RestType = "..." -ws t:typeNode -> new RestType{Type: $t}
+def optionalType: OptionalType = t:postfixTypeNoQuestion -sp "?" &(-ws (?,\])) -> new OptionalType{Type: $t}
+
+// --- Object types ---
+def typeLiteral: TypeLiteral = !mappedTypeStart m:objectTypeMembers -> new TypeLiteral{Members: $m}
+def objectTypeMembers = "{" -ws ms:(m:typeMember -ws)* "}" -> map($ms, (x) => $x.m)
+// isStartOfMappedType
+def mappedTypeStart = "{" -ws ((?+\-) -ws "readonly" !idPart / ("readonly" !idPart -ws)? "[" -ws identifier -ws "in" !idPart)
+def mappedType: MappedType = "{" -ws r:(rt:mappedReadonlyToken -ws)? "[" -ws p:mappedTypeParameter
+    n:(-ws "as" !idPart -ws nt:typeNode)? -ws "]" q:(-ws qt:mappedQuestionToken)? t:typeAnnotation? eos -ws
+    ms:(m:typeMember -ws)* "}"
+    -> new MappedType{ReadonlyToken: $rt, TypeParameter: $p, NameType: $nt, QuestionToken: $qt, Type: $t,
+        Members: map($ms, (x) => $x.m)}
+def mappedTypeParameter: TypeParameter = n:identifierName -ws "in" !idPart -ws c:typeNode
+    -> new TypeParameter{Name: $n, Constraint: $c}
+def mappedReadonlyToken: Token = mappedPlusMinusReadonly / readonlyToken
+def mappedPlusMinusReadonly: Token = t:plusMinusToken -ws "readonly" !idPart -> $t
+def mappedQuestionToken: Token = mappedPlusMinusQuestion / questionToken
+def mappedPlusMinusQuestion: Token = t:plusMinusToken -ws "?" -> $t
+def plusMinusToken: Token = (?+\-)
+def readonlyToken: Token = "readonly" !idPart
+
+// parseTypeMember
+def typeMember: TypeElement = callSignature / constructSignature / typeGetAccessor / typeSetAccessor
+    / typeIndexSignature / methodSignature / propertySignature
+def callSignature: CallSignature = tp:(t:typeParameters -ws)? ps:parameterList rt:returnType? typeMemberSemicolon
+    -> new CallSignature{TypeParameters: concat($t), Parameters: $ps, Type: $rt}
+def constructSignature: ConstructSignature = "new" !idPart -ws &(?(<) tp:(t:typeParameters -ws)? ps:parameterList
+    rt:returnType? typeMemberSemicolon -> new ConstructSignature{TypeParameters: concat($t), Parameters: $ps, Type: $rt}
+def typeGetAccessor: GetAccessor = m:typeMemberModifiers "get" !idPart &(-ws canFollowGetOrSet) -ws n:propertyName
+    tp:(-ws t:typeParameters)? -ws ps:parameterList rt:returnType? b:(-ws fb:block / typeMemberSemicolon)
+    -> new GetAccessor{Modifiers: $m, Name: $n, TypeParameters: concat($t), Parameters: $ps, Type: $rt, Body: $fb}
+def typeSetAccessor: SetAccessor = m:typeMemberModifiers "set" !idPart &(-ws canFollowGetOrSet) -ws n:propertyName
+    tp:(-ws t:typeParameters)? -ws ps:parameterList rt:returnType? b:(-ws fb:block / typeMemberSemicolon)
+    -> new SetAccessor{Modifiers: $m, Name: $n, TypeParameters: concat($t), Parameters: $ps, Type: $rt, Body: $fb}
+def typeIndexSignature: IndexSignature = m:typeMemberModifiers &indexSignatureStart "[" -ws ps:parameters? -ws "]"
+    t:typeAnnotation? typeMemberSemicolon -> new IndexSignature{Modifiers: $m, Parameters: concat($ps), Type: $t}
+// isUnambiguouslyIndexSignature
+def indexSignatureStart = "[" -ws ("..." / "]" / modifierKeyword -ws identifier
+    / identifier -ws ((?:,) / "?" -ws (?:,\])))
+def modifierKeyword = ("abstract" / "accessor" / "async" / "const" / "declare" / "default" / "export" / "in" / "out"
+    / "override" / "private" / "protected" / "public" / "readonly" / "static") !idPart
+def methodSignature: MethodSignature = m:typeMemberModifiers n:propertyName q:(-ws qt:questionToken)? -ws &(?(<)
+    tp:(t:typeParameters -ws)? ps:parameterList rt:returnType? typeMemberSemicolon
+    -> new MethodSignature{Modifiers: $m, Name: $n, QuestionToken: $qt, TypeParameters: concat($t), Parameters: $ps,
+        Type: $rt}
+def propertySignature: PropertySignature = m:typeMemberModifiers n:propertyName q:(-ws qt:questionToken)?
+    t:typeAnnotation? i:initializer? typeMemberSemicolon
+    -> new PropertySignature{Modifiers: $m, Name: $n, QuestionToken: $qt, Type: $t, Initializer: $i}
+// "," or a statement terminator (parseTypeMemberSemicolon)
+def typeMemberSemicolon = -ws "," / eos
+
+// isStartOfType (used where "?" might be a postfix type operator)
+def typeStart = ("any" / "unknown" / "string" / "number" / "bigint" / "boolean" / "readonly" / "symbol" / "unique"
+        / "void" / "undefined" / "null" / "this" / "typeof" / "never" / "true" / "false" / "object" / "new"
+        / "infer" / "import" / "asserts" / "function") !idPart
+    / (?{[<|&"'0-9*?!`) / "..." / "." (?0-9)
+    / "-" -ws ((?0-9) / "." (?0-9))
+    / "(" -ws ((?\)[{@.#) / modifierKeyword / typeStart / bindingIdentifier)
+    / !reservedWord idStart
+
+// ===================================================================
+// Names and literals
+// ===================================================================
+
+def propertyName: PropertyName = stringLiteral / numericLiteral / bigIntLiteral / computedPropertyName
+    / privateIdentifier / identifierName
+def computedPropertyName: ComputedPropertyName = "[" -ws e:expressionAllowIn -ws "]"
+    -> new ComputedPropertyName{Expression: $e}
+
+// --- Tokens ---
+def questionToken: Token = "?"
+def exclamationToken: Token = "!" !"="
+def asteriskToken: Token = "*"
+def dotDotDotToken: Token = "..."
+def equalsGreaterThanToken: Token = "=>"
+def colonToken: Token = ":"
+def equalsToken: Token = "=" !(?=>)
+def commaToken: Token = ","
+
+// --- Identifiers ---
+// An identifier is not a reserved word, nor yield in the yield context or await in the await context
+// (isIdentifier). A binding identifier may be yield or await (isBindingIdentifier).
+def identifier: Identifier = !reservedWord !("yield" !idPart [ctx % 2 == 1]) !("await" !idPart [ctx / 2 % 2 == 1])
+    i:identifierName -> $i
+def bindingIdentifier: Identifier = !reservedWord i:identifierName -> $i
+def identifierName: Identifier = idStart idPart*
+def privateIdentifier: PrivateIdentifier = "#" idStart idPart*
+def reservedWord = ("break" / "case" / "catch" / "class" / "const" / "continue" / "debugger" / "default" / "delete"
+    / "do" / "else" / "enum" / "export" / "extends" / "false" / "finally" / "for" / "function" / "if" / "import"
+    / "instanceof" / "in" / "new" / "null" / "return" / "super" / "switch" / "this" / "throw" / "true" / "try"
+    / "typeof" / "var" / "void" / "while" / "with") !idPart
+def idStart = (?a-zA-Z$_) / "\\u" unicodeEscape / uniIdStart
+def idPart = (?a-zA-Z0-9$_) / "\\u" unicodeEscape / uniIdPart
+def unicodeEscape = hex hex hex hex / unicodeBraced
+// \u{...} with a value up to 10FFFF
+def unicodeBraced = "{" ("0"* (?1-9a-fA-F) hex? hex? hex? hex? "}" / "0"* "10" hex hex hex hex "}" / "0"+ "}")
+def hex = (?0-9a-fA-F)
+
+// --- Numbers (scanNumber) ---
+// A literal may not be followed by an identifier; 0 may not be followed by a digit (no legacy octal
+// literals, no decimals with leading zeros).
+def numericLiteral: NumericLiteral = (hexLiteral / binaryLiteral / octalLiteral / decimalLiteral) !idStart
+def bigIntLiteral: BigIntLiteral = (hexLiteral / binaryLiteral / octalLiteral / decimalInteger) "n" !idStart
+def decimalLiteral = decimalInteger ("." decimalDigits?)? exponentPart? / "." decimalDigits exponentPart?
+def decimalInteger = "0" !(?0-9_) / (?1-9) ("_"? (?0-9))*
+def decimalDigits = (?0-9) ("_"? (?0-9))*
+def exponentPart = (?eE) (?+\-)? decimalDigits
+def hexLiteral = "0" (?xX) hex ("_"? hex)*
+def binaryLiteral = "0" (?bB) (?01) ("_"? (?01))*
+def octalLiteral = "0" (?oO) (?0-7) ("_"? (?0-7))*
+
+// --- Strings (scanString, scanEscapeSequence) ---
+// Octal escapes, \8 and \9 are errors; \0 is allowed when no digit follows.
+def stringLiteral: StringLiteral = "\"" ((?^"\\\n\r)+ / escapeSequence)* "\"" / "'" ((?^'\\\n\r)+ / escapeSequence)* "'"
+def escapeSequence = "\\" ((?^0-9xu\n\r  ) / "0" !(?0-9) / "x" hex hex / "u" unicodeEscape / "\r\n"
+    / (?\n\r  ))
+
+// --- Templates (scanTemplateAndSetTokenValue) ---
+def noSubstitutionTemplateLiteral: NoSubstitutionTemplateLiteral = "`" templateCharacters "`"
+def templateHead: TemplateHead = "`" templateCharacters "${"
+def templateMiddle: TemplateMiddle = "}" templateCharacters "${"
+def templateTail: TemplateTail = "}" templateCharacters "`"
+def templateCharacters = ((?^`\\$)+ / "$" !"{" / escapeSequence)*
+def rawNoSubstitutionTemplateLiteral: NoSubstitutionTemplateLiteral = "`" rawTemplateCharacters "`"
+def rawTemplateHead: TemplateHead = "`" rawTemplateCharacters "${"
+def rawTemplateMiddle: TemplateMiddle = "}" rawTemplateCharacters "${"
+def rawTemplateTail: TemplateTail = "}" rawTemplateCharacters "`"
+def rawTemplateCharacters = ((?^`\\$)+ / "$" !"{" / "\\" .)*
+
+// --- Regular expressions (reScanSlashToken) ---
+// The body up to an unescaped "/" outside a class, on one line, and any identifier characters as flags;
+// the parser does not check the pattern or the flags.
+def regularExpressionLiteral: RegularExpressionLiteral = "/" !(?*/) ((?^/\\[\n\r  )+
+    / "\\" (?^\n\r  ) / "[" ((?^\]\\\n\r  )+ / "\\" (?^\n\r  ))* "]")+ "/" idPart*
+
+// --- Whitespace and comments ---
+// The whitespace characters of isWhiteSpaceSingleLine, and the line terminators of isLineBreak.
+def ws = ((? \t\n\r\v\f \u0085  -​    　﻿)+
+    / "//" (?^\n\r  )* / "/*" (!"*/" .)* "*/")*
+def sp = ((? \t\v\f \u0085  -​  　﻿)+
+    / "//" (?^\n\r  )* / "/*" (!"*/" (?^\n\r  ))* "*/")*
+
+// Comma-separated lists, with an optional trailing comma
+def arrayBindingElementList = f:arrayBindingElement r:(-ws "," -ws e:arrayBindingElement)* (-ws ",")? -> concat(list($f), map($r, (x) => $x.e))
+def arrayElementList = f:arrayElement r:(-ws "," -ws e:arrayElement)* (-ws ",")? -> concat(list($f), map($r, (x) => $x.e))
+def bindingElementList = f:bindingElement r:(-ws "," -ws e:bindingElement)* (-ws ",")? -> concat(list($f), map($r, (x) => $x.e))
+def enumMemberList = f:enumMember r:(-ws "," -ws e:enumMember)* (-ws ",")? -> concat(list($f), map($r, (x) => $x.e))
+def exportSpecifierList = f:exportSpecifier r:(-ws "," -ws e:exportSpecifier)* (-ws ",")? -> concat(list($f), map($r, (x) => $x.e))
+def importAttributeList = f:importAttribute r:(-ws "," -ws e:importAttribute)* (-ws ",")? -> concat(list($f), map($r, (x) => $x.e))
+def importSpecifierList = f:importSpecifier r:(-ws "," -ws e:importSpecifier)* (-ws ",")? -> concat(list($f), map($r, (x) => $x.e))
+def jsdocParameterList = f:jsdocParameter r:(-ws "," -ws p:jsdocParameter)* -> concat(list($f), map($r, (x) => $x.p))
+def jsxAttributeLikeList = f:jsxAttributeLike r:(-ws a:jsxAttributeLike)* -> concat(list($f), map($r, (x) => $x.a))
+def objectLiteralElementList = f:objectLiteralElement r:(-ws "," -ws e:objectLiteralElement)* (-ws ",")? -> concat(list($f), map($r, (x) => $x.e))
+def tupleElementList = f:tupleElement r:(-ws "," -ws e:tupleElement)* (-ws ",")? -> concat(list($f), map($r, (x) => $x.e))
+def typeParameterList = f:typeParameter r:(-ws "," -ws p:typeParameter)* (-ws ",")? -> concat(list($f), map($r, (x) => $x.p))
+
+// Unicode ID_Start and ID_Continue beyond ASCII, as TypeScript's tables have them (unicodeESNextIdentifierStart
+// and unicodeESNextIdentifierPart); the first class rejects ASCII quickly.
+def uniIdStart = &(?\u{80}-\u{10FFFF}) (?\u{AA}\u{B5}\u{BA}\u{C0}-\u{D6}\u{D8}-\u{F6}\u{F8}-\u{2C1}\u{2C6}-\u{2D1}\u{2E0}-\u{2E4}\u{2EC}\u{2EE}\u{370}-\u{374}\u{376}-\u{377}\u{37A}-\u{37D}\u{37F}\u{386}\u{388}-\u{38A}\u{38C}\u{38E}-\u{3A1}\u{3A3}-\u{3F5}\u{3F7}-\u{481}\u{48A}-\u{52F}\u{531}-\u{556}\u{559}\u{560}-\u{588}\u{5D0}-\u{5EA}\u{5EF}-\u{5F2}\u{620}-\u{64A}\u{66E}-\u{66F}\u{671}-\u{6D3}\u{6D5}\u{6E5}-\u{6E6}\u{6EE}-\u{6EF}\u{6FA}-\u{6FC}\u{6FF}\u{710}\u{712}-\u{72F}\u{74D}-\u{7A5}\u{7B1}\u{7CA}-\u{7EA}\u{7F4}-\u{7F5}\u{7FA}\u{800}-\u{815}\u{81A}\u{824}\u{828}\u{840}-\u{858}\u{860}-\u{86A}\u{870}-\u{887}\u{889}-\u{88E}\u{8A0}-\u{8C9}\u{904}-\u{939}\u{93D}\u{950}\u{958}-\u{961}\u{971}-\u{980}\u{985}-\u{98C}\u{98F}-\u{990}\u{993}-\u{9A8}\u{9AA}-\u{9B0}\u{9B2}\u{9B6}-\u{9B9}\u{9BD}\u{9CE}\u{9DC}-\u{9DD}\u{9DF}-\u{9E1}\u{9F0}-\u{9F1}\u{9FC}\u{A05}-\u{A0A}\u{A0F}-\u{A10}\u{A13}-\u{A28}\u{A2A}-\u{A30}\u{A32}-\u{A33}\u{A35}-\u{A36}\u{A38}-\u{A39}\u{A59}-\u{A5C}\u{A5E}\u{A72}-\u{A74}\u{A85}-\u{A8D}\u{A8F}-\u{A91}\u{A93}-\u{AA8}\u{AAA}-\u{AB0}\u{AB2}-\u{AB3}\u{AB5}-\u{AB9}\u{ABD}\u{AD0}\u{AE0}-\u{AE1}\u{AF9}\u{B05}-\u{B0C}\u{B0F}-\u{B10}\u{B13}-\u{B28}\u{B2A}-\u{B30}\u{B32}-\u{B33}\u{B35}-\u{B39}\u{B3D}\u{B5C}-\u{B5D}\u{B5F}-\u{B61}\u{B71}\u{B83}\u{B85}-\u{B8A}\u{B8E}-\u{B90}\u{B92}-\u{B95}\u{B99}-\u{B9A}\u{B9C}\u{B9E}-\u{B9F}\u{BA3}-\u{BA4}\u{BA8}-\u{BAA}\u{BAE}-\u{BB9}\u{BD0}\u{C05}-\u{C0C}\u{C0E}-\u{C10}\u{C12}-\u{C28}\u{C2A}-\u{C39}\u{C3D}\u{C58}-\u{C5A}\u{C5D}\u{C60}-\u{C61}\u{C80}\u{C85}-\u{C8C}\u{C8E}-\u{C90}\u{C92}-\u{CA8}\u{CAA}-\u{CB3}\u{CB5}-\u{CB9}\u{CBD}\u{CDD}-\u{CDE}\u{CE0}-\u{CE1}\u{CF1}-\u{CF2}\u{D04}-\u{D0C}\u{D0E}-\u{D10}\u{D12}-\u{D3A}\u{D3D}\u{D4E}\u{D54}-\u{D56}\u{D5F}-\u{D61}\u{D7A}-\u{D7F}\u{D85}-\u{D96}\u{D9A}-\u{DB1}\u{DB3}-\u{DBB}\u{DBD}\u{DC0}-\u{DC6}\u{E01}-\u{E30}\u{E32}-\u{E33}\u{E40}-\u{E46}\u{E81}-\u{E82}\u{E84}\u{E86}-\u{E8A}\u{E8C}-\u{EA3}\u{EA5}\u{EA7}-\u{EB0}\u{EB2}-\u{EB3}\u{EBD}\u{EC0}-\u{EC4}\u{EC6}\u{EDC}-\u{EDF}\u{F00}\u{F40}-\u{F47}\u{F49}-\u{F6C}\u{F88}-\u{F8C}\u{1000}-\u{102A}\u{103F}\u{1050}-\u{1055}\u{105A}-\u{105D}\u{1061}\u{1065}-\u{1066}\u{106E}-\u{1070}\u{1075}-\u{1081}\u{108E}\u{10A0}-\u{10C5}\u{10C7}\u{10CD}\u{10D0}-\u{10FA}\u{10FC}-\u{1248}\u{124A}-\u{124D}\u{1250}-\u{1256}\u{1258}\u{125A}-\u{125D}\u{1260}-\u{1288}\u{128A}-\u{128D}\u{1290}-\u{12B0}\u{12B2}-\u{12B5}\u{12B8}-\u{12BE}\u{12C0}\u{12C2}-\u{12C5}\u{12C8}-\u{12D6}\u{12D8}-\u{1310}\u{1312}-\u{1315}\u{1318}-\u{135A}\u{1380}-\u{138F}\u{13A0}-\u{13F5}\u{13F8}-\u{13FD}\u{1401}-\u{166C}\u{166F}-\u{167F}\u{1681}-\u{169A}\u{16A0}-\u{16EA}\u{16EE}-\u{16F8}\u{1700}-\u{1711}\u{171F}-\u{1731}\u{1740}-\u{1751}\u{1760}-\u{176C}\u{176E}-\u{1770}\u{1780}-\u{17B3}\u{17D7}\u{17DC}\u{1820}-\u{1878}\u{1880}-\u{18A8}\u{18AA}\u{18B0}-\u{18F5}\u{1900}-\u{191E}\u{1950}-\u{196D}\u{1970}-\u{1974}\u{1980}-\u{19AB}\u{19B0}-\u{19C9}\u{1A00}-\u{1A16}\u{1A20}-\u{1A54}\u{1AA7}\u{1B05}-\u{1B33}\u{1B45}-\u{1B4C}\u{1B83}-\u{1BA0}\u{1BAE}-\u{1BAF}\u{1BBA}-\u{1BE5}\u{1C00}-\u{1C23}\u{1C4D}-\u{1C4F}\u{1C5A}-\u{1C7D}\u{1C80}-\u{1C88}\u{1C90}-\u{1CBA}\u{1CBD}-\u{1CBF}\u{1CE9}-\u{1CEC}\u{1CEE}-\u{1CF3}\u{1CF5}-\u{1CF6}\u{1CFA}\u{1D00}-\u{1DBF}\u{1E00}-\u{1F15}\u{1F18}-\u{1F1D}\u{1F20}-\u{1F45}\u{1F48}-\u{1F4D}\u{1F50}-\u{1F57}\u{1F59}\u{1F5B}\u{1F5D}\u{1F5F}-\u{1F7D}\u{1F80}-\u{1FB4}\u{1FB6}-\u{1FBC}\u{1FBE}\u{1FC2}-\u{1FC4}\u{1FC6}-\u{1FCC}\u{1FD0}-\u{1FD3}\u{1FD6}-\u{1FDB}\u{1FE0}-\u{1FEC}\u{1FF2}-\u{1FF4}\u{1FF6}-\u{1FFC}\u{2071}\u{207F}\u{2090}-\u{209C}\u{2102}\u{2107}\u{210A}-\u{2113}\u{2115}\u{2118}-\u{211D}\u{2124}\u{2126}\u{2128}\u{212A}-\u{2139}\u{213C}-\u{213F}\u{2145}-\u{2149}\u{214E}\u{2160}-\u{2188}\u{2C00}-\u{2CE4}\u{2CEB}-\u{2CEE}\u{2CF2}-\u{2CF3}\u{2D00}-\u{2D25}\u{2D27}\u{2D2D}\u{2D30}-\u{2D67}\u{2D6F}\u{2D80}-\u{2D96}\u{2DA0}-\u{2DA6}\u{2DA8}-\u{2DAE}\u{2DB0}-\u{2DB6}\u{2DB8}-\u{2DBE}\u{2DC0}-\u{2DC6}\u{2DC8}-\u{2DCE}\u{2DD0}-\u{2DD6}\u{2DD8}-\u{2DDE}\u{3005}-\u{3007}\u{3021}-\u{3029}\u{3031}-\u{3035}\u{3038}-\u{303C}\u{3041}-\u{3096}\u{309B}-\u{309F}\u{30A1}-\u{30FA}\u{30FC}-\u{30FF}\u{3105}-\u{312F}\u{3131}-\u{318E}\u{31A0}-\u{31BF}\u{31F0}-\u{31FF}\u{3400}-\u{4DBF}\u{4E00}-\u{A48C}\u{A4D0}-\u{A4FD}\u{A500}-\u{A60C}\u{A610}-\u{A61F}\u{A62A}-\u{A62B}\u{A640}-\u{A66E}\u{A67F}-\u{A69D}\u{A6A0}-\u{A6EF}\u{A717}-\u{A71F}\u{A722}-\u{A788}\u{A78B}-\u{A7CA}\u{A7D0}-\u{A7D1}\u{A7D3}\u{A7D5}-\u{A7D9}\u{A7F2}-\u{A801}\u{A803}-\u{A805}\u{A807}-\u{A80A}\u{A80C}-\u{A822}\u{A840}-\u{A873}\u{A882}-\u{A8B3}\u{A8F2}-\u{A8F7}\u{A8FB}\u{A8FD}-\u{A8FE}\u{A90A}-\u{A925}\u{A930}-\u{A946}\u{A960}-\u{A97C}\u{A984}-\u{A9B2}\u{A9CF}\u{A9E0}-\u{A9E4}\u{A9E6}-\u{A9EF}\u{A9FA}-\u{A9FE}\u{AA00}-\u{AA28}\u{AA40}-\u{AA42}\u{AA44}-\u{AA4B}\u{AA60}-\u{AA76}\u{AA7A}\u{AA7E}-\u{AAAF}\u{AAB1}\u{AAB5}-\u{AAB6}\u{AAB9}-\u{AABD}\u{AAC0}\u{AAC2}\u{AADB}-\u{AADD}\u{AAE0}-\u{AAEA}\u{AAF2}-\u{AAF4}\u{AB01}-\u{AB06}\u{AB09}-\u{AB0E}\u{AB11}-\u{AB16}\u{AB20}-\u{AB26}\u{AB28}-\u{AB2E}\u{AB30}-\u{AB5A}\u{AB5C}-\u{AB69}\u{AB70}-\u{ABE2}\u{AC00}-\u{D7A3}\u{D7B0}-\u{D7C6}\u{D7CB}-\u{D7FB}\u{F900}-\u{FA6D}\u{FA70}-\u{FAD9}\u{FB00}-\u{FB06}\u{FB13}-\u{FB17}\u{FB1D}\u{FB1F}-\u{FB28}\u{FB2A}-\u{FB36}\u{FB38}-\u{FB3C}\u{FB3E}\u{FB40}-\u{FB41}\u{FB43}-\u{FB44}\u{FB46}-\u{FBB1}\u{FBD3}-\u{FD3D}\u{FD50}-\u{FD8F}\u{FD92}-\u{FDC7}\u{FDF0}-\u{FDFB}\u{FE70}-\u{FE74}\u{FE76}-\u{FEFC}\u{FF21}-\u{FF3A}\u{FF41}-\u{FF5A}\u{FF66}-\u{FFBE}\u{FFC2}-\u{FFC7}\u{FFCA}-\u{FFCF}\u{FFD2}-\u{FFD7}\u{FFDA}-\u{FFDC}\u{10000}-\u{1000B}\u{1000D}-\u{10026}\u{10028}-\u{1003A}\u{1003C}-\u{1003D}\u{1003F}-\u{1004D}\u{10050}-\u{1005D}\u{10080}-\u{100FA}\u{10140}-\u{10174}\u{10280}-\u{1029C}\u{102A0}-\u{102D0}\u{10300}-\u{1031F}\u{1032D}-\u{1034A}\u{10350}-\u{10375}\u{10380}-\u{1039D}\u{103A0}-\u{103C3}\u{103C8}-\u{103CF}\u{103D1}-\u{103D5}\u{10400}-\u{1049D}\u{104B0}-\u{104D3}\u{104D8}-\u{104FB}\u{10500}-\u{10527}\u{10530}-\u{10563}\u{10570}-\u{1057A}\u{1057C}-\u{1058A}\u{1058C}-\u{10592}\u{10594}-\u{10595}\u{10597}-\u{105A1}\u{105A3}-\u{105B1}\u{105B3}-\u{105B9}\u{105BB}-\u{105BC}\u{10600}-\u{10736}\u{10740}-\u{10755}\u{10760}-\u{10767}\u{10780}-\u{10785}\u{10787}-\u{107B0}\u{107B2}-\u{107BA}\u{10800}-\u{10805}\u{10808}\u{1080A}-\u{10835}\u{10837}-\u{10838}\u{1083C}\u{1083F}-\u{10855}\u{10860}-\u{10876}\u{10880}-\u{1089E}\u{108E0}-\u{108F2}\u{108F4}-\u{108F5}\u{10900}-\u{10915}\u{10920}-\u{10939}\u{10980}-\u{109B7}\u{109BE}-\u{109BF}\u{10A00}\u{10A10}-\u{10A13}\u{10A15}-\u{10A17}\u{10A19}-\u{10A35}\u{10A60}-\u{10A7C}\u{10A80}-\u{10A9C}\u{10AC0}-\u{10AC7}\u{10AC9}-\u{10AE4}\u{10B00}-\u{10B35}\u{10B40}-\u{10B55}\u{10B60}-\u{10B72}\u{10B80}-\u{10B91}\u{10C00}-\u{10C48}\u{10C80}-\u{10CB2}\u{10CC0}-\u{10CF2}\u{10D00}-\u{10D23}\u{10E80}-\u{10EA9}\u{10EB0}-\u{10EB1}\u{10F00}-\u{10F1C}\u{10F27}\u{10F30}-\u{10F45}\u{10F70}-\u{10F81}\u{10FB0}-\u{10FC4}\u{10FE0}-\u{10FF6}\u{11003}-\u{11037}\u{11071}-\u{11072}\u{11075}\u{11083}-\u{110AF}\u{110D0}-\u{110E8}\u{11103}-\u{11126}\u{11144}\u{11147}\u{11150}-\u{11172}\u{11176}\u{11183}-\u{111B2}\u{111C1}-\u{111C4}\u{111DA}\u{111DC}\u{11200}-\u{11211}\u{11213}-\u{1122B}\u{1123F}-\u{11240}\u{11280}-\u{11286}\u{11288}\u{1128A}-\u{1128D}\u{1128F}-\u{1129D}\u{1129F}-\u{112A8}\u{112B0}-\u{112DE}\u{11305}-\u{1130C}\u{1130F}-\u{11310}\u{11313}-\u{11328}\u{1132A}-\u{11330}\u{11332}-\u{11333}\u{11335}-\u{11339}\u{1133D}\u{11350}\u{1135D}-\u{11361}\u{11400}-\u{11434}\u{11447}-\u{1144A}\u{1145F}-\u{11461}\u{11480}-\u{114AF}\u{114C4}-\u{114C5}\u{114C7}\u{11580}-\u{115AE}\u{115D8}-\u{115DB}\u{11600}-\u{1162F}\u{11644}\u{11680}-\u{116AA}\u{116B8}\u{11700}-\u{1171A}\u{11740}-\u{11746}\u{11800}-\u{1182B}\u{118A0}-\u{118DF}\u{118FF}-\u{11906}\u{11909}\u{1190C}-\u{11913}\u{11915}-\u{11916}\u{11918}-\u{1192F}\u{1193F}\u{11941}\u{119A0}-\u{119A7}\u{119AA}-\u{119D0}\u{119E1}\u{119E3}\u{11A00}\u{11A0B}-\u{11A32}\u{11A3A}\u{11A50}\u{11A5C}-\u{11A89}\u{11A9D}\u{11AB0}-\u{11AF8}\u{11C00}-\u{11C08}\u{11C0A}-\u{11C2E}\u{11C40}\u{11C72}-\u{11C8F}\u{11D00}-\u{11D06}\u{11D08}-\u{11D09}\u{11D0B}-\u{11D30}\u{11D46}\u{11D60}-\u{11D65}\u{11D67}-\u{11D68}\u{11D6A}-\u{11D89}\u{11D98}\u{11EE0}-\u{11EF2}\u{11F02}\u{11F04}-\u{11F10}\u{11F12}-\u{11F33}\u{11FB0}\u{12000}-\u{12399}\u{12400}-\u{1246E}\u{12480}-\u{12543}\u{12F90}-\u{12FF0}\u{13000}-\u{1342F}\u{13441}-\u{13446}\u{14400}-\u{14646}\u{16800}-\u{16A38}\u{16A40}-\u{16A5E}\u{16A70}-\u{16ABE}\u{16AD0}-\u{16AED}\u{16B00}-\u{16B2F}\u{16B40}-\u{16B43}\u{16B63}-\u{16B77}\u{16B7D}-\u{16B8F}\u{16E40}-\u{16E7F}\u{16F00}-\u{16F4A}\u{16F50}\u{16F93}-\u{16F9F}\u{16FE0}-\u{16FE1}\u{16FE3}\u{17000}-\u{187F7}\u{18800}-\u{18CD5}\u{18D00}-\u{18D08}\u{1AFF0}-\u{1AFF3}\u{1AFF5}-\u{1AFFB}\u{1AFFD}-\u{1AFFE}\u{1B000}-\u{1B122}\u{1B132}\u{1B150}-\u{1B152}\u{1B155}\u{1B164}-\u{1B167}\u{1B170}-\u{1B2FB}\u{1BC00}-\u{1BC6A}\u{1BC70}-\u{1BC7C}\u{1BC80}-\u{1BC88}\u{1BC90}-\u{1BC99}\u{1D400}-\u{1D454}\u{1D456}-\u{1D49C}\u{1D49E}-\u{1D49F}\u{1D4A2}\u{1D4A5}-\u{1D4A6}\u{1D4A9}-\u{1D4AC}\u{1D4AE}-\u{1D4B9}\u{1D4BB}\u{1D4BD}-\u{1D4C3}\u{1D4C5}-\u{1D505}\u{1D507}-\u{1D50A}\u{1D50D}-\u{1D514}\u{1D516}-\u{1D51C}\u{1D51E}-\u{1D539}\u{1D53B}-\u{1D53E}\u{1D540}-\u{1D544}\u{1D546}\u{1D54A}-\u{1D550}\u{1D552}-\u{1D6A5}\u{1D6A8}-\u{1D6C0}\u{1D6C2}-\u{1D6DA}\u{1D6DC}-\u{1D6FA}\u{1D6FC}-\u{1D714}\u{1D716}-\u{1D734}\u{1D736}-\u{1D74E}\u{1D750}-\u{1D76E}\u{1D770}-\u{1D788}\u{1D78A}-\u{1D7A8}\u{1D7AA}-\u{1D7C2}\u{1D7C4}-\u{1D7CB}\u{1DF00}-\u{1DF1E}\u{1DF25}-\u{1DF2A}\u{1E030}-\u{1E06D}\u{1E100}-\u{1E12C}\u{1E137}-\u{1E13D}\u{1E14E}\u{1E290}-\u{1E2AD}\u{1E2C0}-\u{1E2EB}\u{1E4D0}-\u{1E4EB}\u{1E7E0}-\u{1E7E6}\u{1E7E8}-\u{1E7EB}\u{1E7ED}-\u{1E7EE}\u{1E7F0}-\u{1E7FE}\u{1E800}-\u{1E8C4}\u{1E900}-\u{1E943}\u{1E94B}\u{1EE00}-\u{1EE03}\u{1EE05}-\u{1EE1F}\u{1EE21}-\u{1EE22}\u{1EE24}\u{1EE27}\u{1EE29}-\u{1EE32}\u{1EE34}-\u{1EE37}\u{1EE39}\u{1EE3B}\u{1EE42}\u{1EE47}\u{1EE49}\u{1EE4B}\u{1EE4D}-\u{1EE4F}\u{1EE51}-\u{1EE52}\u{1EE54}\u{1EE57}\u{1EE59}\u{1EE5B}\u{1EE5D}\u{1EE5F}\u{1EE61}-\u{1EE62}\u{1EE64}\u{1EE67}-\u{1EE6A}\u{1EE6C}-\u{1EE72}\u{1EE74}-\u{1EE77}\u{1EE79}-\u{1EE7C}\u{1EE7E}\u{1EE80}-\u{1EE89}\u{1EE8B}-\u{1EE9B}\u{1EEA1}-\u{1EEA3}\u{1EEA5}-\u{1EEA9}\u{1EEAB}-\u{1EEBB}\u{20000}-\u{2A6DF}\u{2A700}-\u{2B739}\u{2B740}-\u{2B81D}\u{2B820}-\u{2CEA1}\u{2CEB0}-\u{2EBE0}\u{2EBF0}-\u{2EE5D}\u{2F800}-\u{2FA1D}\u{30000}-\u{3134A}\u{31350}-\u{323AF})
+def uniIdPart = &(?\u{80}-\u{10FFFF}) (?\u{AA}\u{B5}\u{B7}\u{BA}\u{C0}-\u{D6}\u{D8}-\u{F6}\u{F8}-\u{2C1}\u{2C6}-\u{2D1}\u{2E0}-\u{2E4}\u{2EC}\u{2EE}\u{300}-\u{374}\u{376}-\u{377}\u{37A}-\u{37D}\u{37F}\u{386}-\u{38A}\u{38C}\u{38E}-\u{3A1}\u{3A3}-\u{3F5}\u{3F7}-\u{481}\u{483}-\u{487}\u{48A}-\u{52F}\u{531}-\u{556}\u{559}\u{560}-\u{588}\u{591}-\u{5BD}\u{5BF}\u{5C1}-\u{5C2}\u{5C4}-\u{5C5}\u{5C7}\u{5D0}-\u{5EA}\u{5EF}-\u{5F2}\u{610}-\u{61A}\u{620}-\u{669}\u{66E}-\u{6D3}\u{6D5}-\u{6DC}\u{6DF}-\u{6E8}\u{6EA}-\u{6FC}\u{6FF}\u{710}-\u{74A}\u{74D}-\u{7B1}\u{7C0}-\u{7F5}\u{7FA}\u{7FD}\u{800}-\u{82D}\u{840}-\u{85B}\u{860}-\u{86A}\u{870}-\u{887}\u{889}-\u{88E}\u{898}-\u{8E1}\u{8E3}-\u{963}\u{966}-\u{96F}\u{971}-\u{983}\u{985}-\u{98C}\u{98F}-\u{990}\u{993}-\u{9A8}\u{9AA}-\u{9B0}\u{9B2}\u{9B6}-\u{9B9}\u{9BC}-\u{9C4}\u{9C7}-\u{9C8}\u{9CB}-\u{9CE}\u{9D7}\u{9DC}-\u{9DD}\u{9DF}-\u{9E3}\u{9E6}-\u{9F1}\u{9FC}\u{9FE}\u{A01}-\u{A03}\u{A05}-\u{A0A}\u{A0F}-\u{A10}\u{A13}-\u{A28}\u{A2A}-\u{A30}\u{A32}-\u{A33}\u{A35}-\u{A36}\u{A38}-\u{A39}\u{A3C}\u{A3E}-\u{A42}\u{A47}-\u{A48}\u{A4B}-\u{A4D}\u{A51}\u{A59}-\u{A5C}\u{A5E}\u{A66}-\u{A75}\u{A81}-\u{A83}\u{A85}-\u{A8D}\u{A8F}-\u{A91}\u{A93}-\u{AA8}\u{AAA}-\u{AB0}\u{AB2}-\u{AB3}\u{AB5}-\u{AB9}\u{ABC}-\u{AC5}\u{AC7}-\u{AC9}\u{ACB}-\u{ACD}\u{AD0}\u{AE0}-\u{AE3}\u{AE6}-\u{AEF}\u{AF9}-\u{AFF}\u{B01}-\u{B03}\u{B05}-\u{B0C}\u{B0F}-\u{B10}\u{B13}-\u{B28}\u{B2A}-\u{B30}\u{B32}-\u{B33}\u{B35}-\u{B39}\u{B3C}-\u{B44}\u{B47}-\u{B48}\u{B4B}-\u{B4D}\u{B55}-\u{B57}\u{B5C}-\u{B5D}\u{B5F}-\u{B63}\u{B66}-\u{B6F}\u{B71}\u{B82}-\u{B83}\u{B85}-\u{B8A}\u{B8E}-\u{B90}\u{B92}-\u{B95}\u{B99}-\u{B9A}\u{B9C}\u{B9E}-\u{B9F}\u{BA3}-\u{BA4}\u{BA8}-\u{BAA}\u{BAE}-\u{BB9}\u{BBE}-\u{BC2}\u{BC6}-\u{BC8}\u{BCA}-\u{BCD}\u{BD0}\u{BD7}\u{BE6}-\u{BEF}\u{C00}-\u{C0C}\u{C0E}-\u{C10}\u{C12}-\u{C28}\u{C2A}-\u{C39}\u{C3C}-\u{C44}\u{C46}-\u{C48}\u{C4A}-\u{C4D}\u{C55}-\u{C56}\u{C58}-\u{C5A}\u{C5D}\u{C60}-\u{C63}\u{C66}-\u{C6F}\u{C80}-\u{C83}\u{C85}-\u{C8C}\u{C8E}-\u{C90}\u{C92}-\u{CA8}\u{CAA}-\u{CB3}\u{CB5}-\u{CB9}\u{CBC}-\u{CC4}\u{CC6}-\u{CC8}\u{CCA}-\u{CCD}\u{CD5}-\u{CD6}\u{CDD}-\u{CDE}\u{CE0}-\u{CE3}\u{CE6}-\u{CEF}\u{CF1}-\u{CF3}\u{D00}-\u{D0C}\u{D0E}-\u{D10}\u{D12}-\u{D44}\u{D46}-\u{D48}\u{D4A}-\u{D4E}\u{D54}-\u{D57}\u{D5F}-\u{D63}\u{D66}-\u{D6F}\u{D7A}-\u{D7F}\u{D81}-\u{D83}\u{D85}-\u{D96}\u{D9A}-\u{DB1}\u{DB3}-\u{DBB}\u{DBD}\u{DC0}-\u{DC6}\u{DCA}\u{DCF}-\u{DD4}\u{DD6}\u{DD8}-\u{DDF}\u{DE6}-\u{DEF}\u{DF2}-\u{DF3}\u{E01}-\u{E3A}\u{E40}-\u{E4E}\u{E50}-\u{E59}\u{E81}-\u{E82}\u{E84}\u{E86}-\u{E8A}\u{E8C}-\u{EA3}\u{EA5}\u{EA7}-\u{EBD}\u{EC0}-\u{EC4}\u{EC6}\u{EC8}-\u{ECE}\u{ED0}-\u{ED9}\u{EDC}-\u{EDF}\u{F00}\u{F18}-\u{F19}\u{F20}-\u{F29}\u{F35}\u{F37}\u{F39}\u{F3E}-\u{F47}\u{F49}-\u{F6C}\u{F71}-\u{F84}\u{F86}-\u{F97}\u{F99}-\u{FBC}\u{FC6}\u{1000}-\u{1049}\u{1050}-\u{109D}\u{10A0}-\u{10C5}\u{10C7}\u{10CD}\u{10D0}-\u{10FA}\u{10FC}-\u{1248}\u{124A}-\u{124D}\u{1250}-\u{1256}\u{1258}\u{125A}-\u{125D}\u{1260}-\u{1288}\u{128A}-\u{128D}\u{1290}-\u{12B0}\u{12B2}-\u{12B5}\u{12B8}-\u{12BE}\u{12C0}\u{12C2}-\u{12C5}\u{12C8}-\u{12D6}\u{12D8}-\u{1310}\u{1312}-\u{1315}\u{1318}-\u{135A}\u{135D}-\u{135F}\u{1369}-\u{1371}\u{1380}-\u{138F}\u{13A0}-\u{13F5}\u{13F8}-\u{13FD}\u{1401}-\u{166C}\u{166F}-\u{167F}\u{1681}-\u{169A}\u{16A0}-\u{16EA}\u{16EE}-\u{16F8}\u{1700}-\u{1715}\u{171F}-\u{1734}\u{1740}-\u{1753}\u{1760}-\u{176C}\u{176E}-\u{1770}\u{1772}-\u{1773}\u{1780}-\u{17D3}\u{17D7}\u{17DC}-\u{17DD}\u{17E0}-\u{17E9}\u{180B}-\u{180D}\u{180F}-\u{1819}\u{1820}-\u{1878}\u{1880}-\u{18AA}\u{18B0}-\u{18F5}\u{1900}-\u{191E}\u{1920}-\u{192B}\u{1930}-\u{193B}\u{1946}-\u{196D}\u{1970}-\u{1974}\u{1980}-\u{19AB}\u{19B0}-\u{19C9}\u{19D0}-\u{19DA}\u{1A00}-\u{1A1B}\u{1A20}-\u{1A5E}\u{1A60}-\u{1A7C}\u{1A7F}-\u{1A89}\u{1A90}-\u{1A99}\u{1AA7}\u{1AB0}-\u{1ABD}\u{1ABF}-\u{1ACE}\u{1B00}-\u{1B4C}\u{1B50}-\u{1B59}\u{1B6B}-\u{1B73}\u{1B80}-\u{1BF3}\u{1C00}-\u{1C37}\u{1C40}-\u{1C49}\u{1C4D}-\u{1C7D}\u{1C80}-\u{1C88}\u{1C90}-\u{1CBA}\u{1CBD}-\u{1CBF}\u{1CD0}-\u{1CD2}\u{1CD4}-\u{1CFA}\u{1D00}-\u{1F15}\u{1F18}-\u{1F1D}\u{1F20}-\u{1F45}\u{1F48}-\u{1F4D}\u{1F50}-\u{1F57}\u{1F59}\u{1F5B}\u{1F5D}\u{1F5F}-\u{1F7D}\u{1F80}-\u{1FB4}\u{1FB6}-\u{1FBC}\u{1FBE}\u{1FC2}-\u{1FC4}\u{1FC6}-\u{1FCC}\u{1FD0}-\u{1FD3}\u{1FD6}-\u{1FDB}\u{1FE0}-\u{1FEC}\u{1FF2}-\u{1FF4}\u{1FF6}-\u{1FFC}\u{200C}-\u{200D}\u{203F}-\u{2040}\u{2054}\u{2071}\u{207F}\u{2090}-\u{209C}\u{20D0}-\u{20DC}\u{20E1}\u{20E5}-\u{20F0}\u{2102}\u{2107}\u{210A}-\u{2113}\u{2115}\u{2118}-\u{211D}\u{2124}\u{2126}\u{2128}\u{212A}-\u{2139}\u{213C}-\u{213F}\u{2145}-\u{2149}\u{214E}\u{2160}-\u{2188}\u{2C00}-\u{2CE4}\u{2CEB}-\u{2CF3}\u{2D00}-\u{2D25}\u{2D27}\u{2D2D}\u{2D30}-\u{2D67}\u{2D6F}\u{2D7F}-\u{2D96}\u{2DA0}-\u{2DA6}\u{2DA8}-\u{2DAE}\u{2DB0}-\u{2DB6}\u{2DB8}-\u{2DBE}\u{2DC0}-\u{2DC6}\u{2DC8}-\u{2DCE}\u{2DD0}-\u{2DD6}\u{2DD8}-\u{2DDE}\u{2DE0}-\u{2DFF}\u{3005}-\u{3007}\u{3021}-\u{302F}\u{3031}-\u{3035}\u{3038}-\u{303C}\u{3041}-\u{3096}\u{3099}-\u{309F}\u{30A1}-\u{30FF}\u{3105}-\u{312F}\u{3131}-\u{318E}\u{31A0}-\u{31BF}\u{31F0}-\u{31FF}\u{3400}-\u{4DBF}\u{4E00}-\u{A48C}\u{A4D0}-\u{A4FD}\u{A500}-\u{A60C}\u{A610}-\u{A62B}\u{A640}-\u{A66F}\u{A674}-\u{A67D}\u{A67F}-\u{A6F1}\u{A717}-\u{A71F}\u{A722}-\u{A788}\u{A78B}-\u{A7CA}\u{A7D0}-\u{A7D1}\u{A7D3}\u{A7D5}-\u{A7D9}\u{A7F2}-\u{A827}\u{A82C}\u{A840}-\u{A873}\u{A880}-\u{A8C5}\u{A8D0}-\u{A8D9}\u{A8E0}-\u{A8F7}\u{A8FB}\u{A8FD}-\u{A92D}\u{A930}-\u{A953}\u{A960}-\u{A97C}\u{A980}-\u{A9C0}\u{A9CF}-\u{A9D9}\u{A9E0}-\u{A9FE}\u{AA00}-\u{AA36}\u{AA40}-\u{AA4D}\u{AA50}-\u{AA59}\u{AA60}-\u{AA76}\u{AA7A}-\u{AAC2}\u{AADB}-\u{AADD}\u{AAE0}-\u{AAEF}\u{AAF2}-\u{AAF6}\u{AB01}-\u{AB06}\u{AB09}-\u{AB0E}\u{AB11}-\u{AB16}\u{AB20}-\u{AB26}\u{AB28}-\u{AB2E}\u{AB30}-\u{AB5A}\u{AB5C}-\u{AB69}\u{AB70}-\u{ABEA}\u{ABEC}-\u{ABED}\u{ABF0}-\u{ABF9}\u{AC00}-\u{D7A3}\u{D7B0}-\u{D7C6}\u{D7CB}-\u{D7FB}\u{F900}-\u{FA6D}\u{FA70}-\u{FAD9}\u{FB00}-\u{FB06}\u{FB13}-\u{FB17}\u{FB1D}-\u{FB28}\u{FB2A}-\u{FB36}\u{FB38}-\u{FB3C}\u{FB3E}\u{FB40}-\u{FB41}\u{FB43}-\u{FB44}\u{FB46}-\u{FBB1}\u{FBD3}-\u{FD3D}\u{FD50}-\u{FD8F}\u{FD92}-\u{FDC7}\u{FDF0}-\u{FDFB}\u{FE00}-\u{FE0F}\u{FE20}-\u{FE2F}\u{FE33}-\u{FE34}\u{FE4D}-\u{FE4F}\u{FE70}-\u{FE74}\u{FE76}-\u{FEFC}\u{FF10}-\u{FF19}\u{FF21}-\u{FF3A}\u{FF3F}\u{FF41}-\u{FF5A}\u{FF65}-\u{FFBE}\u{FFC2}-\u{FFC7}\u{FFCA}-\u{FFCF}\u{FFD2}-\u{FFD7}\u{FFDA}-\u{FFDC}\u{10000}-\u{1000B}\u{1000D}-\u{10026}\u{10028}-\u{1003A}\u{1003C}-\u{1003D}\u{1003F}-\u{1004D}\u{10050}-\u{1005D}\u{10080}-\u{100FA}\u{10140}-\u{10174}\u{101FD}\u{10280}-\u{1029C}\u{102A0}-\u{102D0}\u{102E0}\u{10300}-\u{1031F}\u{1032D}-\u{1034A}\u{10350}-\u{1037A}\u{10380}-\u{1039D}\u{103A0}-\u{103C3}\u{103C8}-\u{103CF}\u{103D1}-\u{103D5}\u{10400}-\u{1049D}\u{104A0}-\u{104A9}\u{104B0}-\u{104D3}\u{104D8}-\u{104FB}\u{10500}-\u{10527}\u{10530}-\u{10563}\u{10570}-\u{1057A}\u{1057C}-\u{1058A}\u{1058C}-\u{10592}\u{10594}-\u{10595}\u{10597}-\u{105A1}\u{105A3}-\u{105B1}\u{105B3}-\u{105B9}\u{105BB}-\u{105BC}\u{10600}-\u{10736}\u{10740}-\u{10755}\u{10760}-\u{10767}\u{10780}-\u{10785}\u{10787}-\u{107B0}\u{107B2}-\u{107BA}\u{10800}-\u{10805}\u{10808}\u{1080A}-\u{10835}\u{10837}-\u{10838}\u{1083C}\u{1083F}-\u{10855}\u{10860}-\u{10876}\u{10880}-\u{1089E}\u{108E0}-\u{108F2}\u{108F4}-\u{108F5}\u{10900}-\u{10915}\u{10920}-\u{10939}\u{10980}-\u{109B7}\u{109BE}-\u{109BF}\u{10A00}-\u{10A03}\u{10A05}-\u{10A06}\u{10A0C}-\u{10A13}\u{10A15}-\u{10A17}\u{10A19}-\u{10A35}\u{10A38}-\u{10A3A}\u{10A3F}\u{10A60}-\u{10A7C}\u{10A80}-\u{10A9C}\u{10AC0}-\u{10AC7}\u{10AC9}-\u{10AE6}\u{10B00}-\u{10B35}\u{10B40}-\u{10B55}\u{10B60}-\u{10B72}\u{10B80}-\u{10B91}\u{10C00}-\u{10C48}\u{10C80}-\u{10CB2}\u{10CC0}-\u{10CF2}\u{10D00}-\u{10D27}\u{10D30}-\u{10D39}\u{10E80}-\u{10EA9}\u{10EAB}-\u{10EAC}\u{10EB0}-\u{10EB1}\u{10EFD}-\u{10F1C}\u{10F27}\u{10F30}-\u{10F50}\u{10F70}-\u{10F85}\u{10FB0}-\u{10FC4}\u{10FE0}-\u{10FF6}\u{11000}-\u{11046}\u{11066}-\u{11075}\u{1107F}-\u{110BA}\u{110C2}\u{110D0}-\u{110E8}\u{110F0}-\u{110F9}\u{11100}-\u{11134}\u{11136}-\u{1113F}\u{11144}-\u{11147}\u{11150}-\u{11173}\u{11176}\u{11180}-\u{111C4}\u{111C9}-\u{111CC}\u{111CE}-\u{111DA}\u{111DC}\u{11200}-\u{11211}\u{11213}-\u{11237}\u{1123E}-\u{11241}\u{11280}-\u{11286}\u{11288}\u{1128A}-\u{1128D}\u{1128F}-\u{1129D}\u{1129F}-\u{112A8}\u{112B0}-\u{112EA}\u{112F0}-\u{112F9}\u{11300}-\u{11303}\u{11305}-\u{1130C}\u{1130F}-\u{11310}\u{11313}-\u{11328}\u{1132A}-\u{11330}\u{11332}-\u{11333}\u{11335}-\u{11339}\u{1133B}-\u{11344}\u{11347}-\u{11348}\u{1134B}-\u{1134D}\u{11350}\u{11357}\u{1135D}-\u{11363}\u{11366}-\u{1136C}\u{11370}-\u{11374}\u{11400}-\u{1144A}\u{11450}-\u{11459}\u{1145E}-\u{11461}\u{11480}-\u{114C5}\u{114C7}\u{114D0}-\u{114D9}\u{11580}-\u{115B5}\u{115B8}-\u{115C0}\u{115D8}-\u{115DD}\u{11600}-\u{11640}\u{11644}\u{11650}-\u{11659}\u{11680}-\u{116B8}\u{116C0}-\u{116C9}\u{11700}-\u{1171A}\u{1171D}-\u{1172B}\u{11730}-\u{11739}\u{11740}-\u{11746}\u{11800}-\u{1183A}\u{118A0}-\u{118E9}\u{118FF}-\u{11906}\u{11909}\u{1190C}-\u{11913}\u{11915}-\u{11916}\u{11918}-\u{11935}\u{11937}-\u{11938}\u{1193B}-\u{11943}\u{11950}-\u{11959}\u{119A0}-\u{119A7}\u{119AA}-\u{119D7}\u{119DA}-\u{119E1}\u{119E3}-\u{119E4}\u{11A00}-\u{11A3E}\u{11A47}\u{11A50}-\u{11A99}\u{11A9D}\u{11AB0}-\u{11AF8}\u{11C00}-\u{11C08}\u{11C0A}-\u{11C36}\u{11C38}-\u{11C40}\u{11C50}-\u{11C59}\u{11C72}-\u{11C8F}\u{11C92}-\u{11CA7}\u{11CA9}-\u{11CB6}\u{11D00}-\u{11D06}\u{11D08}-\u{11D09}\u{11D0B}-\u{11D36}\u{11D3A}\u{11D3C}-\u{11D3D}\u{11D3F}-\u{11D47}\u{11D50}-\u{11D59}\u{11D60}-\u{11D65}\u{11D67}-\u{11D68}\u{11D6A}-\u{11D8E}\u{11D90}-\u{11D91}\u{11D93}-\u{11D98}\u{11DA0}-\u{11DA9}\u{11EE0}-\u{11EF6}\u{11F00}-\u{11F10}\u{11F12}-\u{11F3A}\u{11F3E}-\u{11F42}\u{11F50}-\u{11F59}\u{11FB0}\u{12000}-\u{12399}\u{12400}-\u{1246E}\u{12480}-\u{12543}\u{12F90}-\u{12FF0}\u{13000}-\u{1342F}\u{13440}-\u{13455}\u{14400}-\u{14646}\u{16800}-\u{16A38}\u{16A40}-\u{16A5E}\u{16A60}-\u{16A69}\u{16A70}-\u{16ABE}\u{16AC0}-\u{16AC9}\u{16AD0}-\u{16AED}\u{16AF0}-\u{16AF4}\u{16B00}-\u{16B36}\u{16B40}-\u{16B43}\u{16B50}-\u{16B59}\u{16B63}-\u{16B77}\u{16B7D}-\u{16B8F}\u{16E40}-\u{16E7F}\u{16F00}-\u{16F4A}\u{16F4F}-\u{16F87}\u{16F8F}-\u{16F9F}\u{16FE0}-\u{16FE1}\u{16FE3}-\u{16FE4}\u{16FF0}-\u{16FF1}\u{17000}-\u{187F7}\u{18800}-\u{18CD5}\u{18D00}-\u{18D08}\u{1AFF0}-\u{1AFF3}\u{1AFF5}-\u{1AFFB}\u{1AFFD}-\u{1AFFE}\u{1B000}-\u{1B122}\u{1B132}\u{1B150}-\u{1B152}\u{1B155}\u{1B164}-\u{1B167}\u{1B170}-\u{1B2FB}\u{1BC00}-\u{1BC6A}\u{1BC70}-\u{1BC7C}\u{1BC80}-\u{1BC88}\u{1BC90}-\u{1BC99}\u{1BC9D}-\u{1BC9E}\u{1CF00}-\u{1CF2D}\u{1CF30}-\u{1CF46}\u{1D165}-\u{1D169}\u{1D16D}-\u{1D172}\u{1D17B}-\u{1D182}\u{1D185}-\u{1D18B}\u{1D1AA}-\u{1D1AD}\u{1D242}-\u{1D244}\u{1D400}-\u{1D454}\u{1D456}-\u{1D49C}\u{1D49E}-\u{1D49F}\u{1D4A2}\u{1D4A5}-\u{1D4A6}\u{1D4A9}-\u{1D4AC}\u{1D4AE}-\u{1D4B9}\u{1D4BB}\u{1D4BD}-\u{1D4C3}\u{1D4C5}-\u{1D505}\u{1D507}-\u{1D50A}\u{1D50D}-\u{1D514}\u{1D516}-\u{1D51C}\u{1D51E}-\u{1D539}\u{1D53B}-\u{1D53E}\u{1D540}-\u{1D544}\u{1D546}\u{1D54A}-\u{1D550}\u{1D552}-\u{1D6A5}\u{1D6A8}-\u{1D6C0}\u{1D6C2}-\u{1D6DA}\u{1D6DC}-\u{1D6FA}\u{1D6FC}-\u{1D714}\u{1D716}-\u{1D734}\u{1D736}-\u{1D74E}\u{1D750}-\u{1D76E}\u{1D770}-\u{1D788}\u{1D78A}-\u{1D7A8}\u{1D7AA}-\u{1D7C2}\u{1D7C4}-\u{1D7CB}\u{1D7CE}-\u{1D7FF}\u{1DA00}-\u{1DA36}\u{1DA3B}-\u{1DA6C}\u{1DA75}\u{1DA84}\u{1DA9B}-\u{1DA9F}\u{1DAA1}-\u{1DAAF}\u{1DF00}-\u{1DF1E}\u{1DF25}-\u{1DF2A}\u{1E000}-\u{1E006}\u{1E008}-\u{1E018}\u{1E01B}-\u{1E021}\u{1E023}-\u{1E024}\u{1E026}-\u{1E02A}\u{1E030}-\u{1E06D}\u{1E08F}\u{1E100}-\u{1E12C}\u{1E130}-\u{1E13D}\u{1E140}-\u{1E149}\u{1E14E}\u{1E290}-\u{1E2AE}\u{1E2C0}-\u{1E2F9}\u{1E4D0}-\u{1E4F9}\u{1E7E0}-\u{1E7E6}\u{1E7E8}-\u{1E7EB}\u{1E7ED}-\u{1E7EE}\u{1E7F0}-\u{1E7FE}\u{1E800}-\u{1E8C4}\u{1E8D0}-\u{1E8D6}\u{1E900}-\u{1E94B}\u{1E950}-\u{1E959}\u{1EE00}-\u{1EE03}\u{1EE05}-\u{1EE1F}\u{1EE21}-\u{1EE22}\u{1EE24}\u{1EE27}\u{1EE29}-\u{1EE32}\u{1EE34}-\u{1EE37}\u{1EE39}\u{1EE3B}\u{1EE42}\u{1EE47}\u{1EE49}\u{1EE4B}\u{1EE4D}-\u{1EE4F}\u{1EE51}-\u{1EE52}\u{1EE54}\u{1EE57}\u{1EE59}\u{1EE5B}\u{1EE5D}\u{1EE5F}\u{1EE61}-\u{1EE62}\u{1EE64}\u{1EE67}-\u{1EE6A}\u{1EE6C}-\u{1EE72}\u{1EE74}-\u{1EE77}\u{1EE79}-\u{1EE7C}\u{1EE7E}\u{1EE80}-\u{1EE89}\u{1EE8B}-\u{1EE9B}\u{1EEA1}-\u{1EEA3}\u{1EEA5}-\u{1EEA9}\u{1EEAB}-\u{1EEBB}\u{1FBF0}-\u{1FBF9}\u{20000}-\u{2A6DF}\u{2A700}-\u{2B739}\u{2B740}-\u{2B81D}\u{2B820}-\u{2CEA1}\u{2CEB0}-\u{2EBE0}\u{2EBF0}-\u{2EE5D}\u{2F800}-\u{2FA1D}\u{30000}-\u{3134A}\u{31350}-\u{323AF}\u{E0100}-\u{E01EF})
