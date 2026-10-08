@@ -113,6 +113,42 @@ func WithMaxDepth(n int) ParseOption {
 	return func(o *engine.ParseOptions) { o.MaxDepth = n }
 }
 
+// TraceEvent describes the start (TraceEnter) or the end (TraceExit) of a rule call. See WithTrace.
+type TraceEvent = engine.TraceEvent
+
+// TraceKind tells whether a TraceEvent starts or ends a rule call.
+type TraceKind = engine.TraceKind
+
+const (
+	// TraceEnter is reported when a rule is called, before the memo is consulted.
+	TraceEnter = engine.TraceEnter
+	// TraceExit is reported when a rule call returns.
+	TraceExit = engine.TraceExit
+)
+
+// WithTrace calls f at the start and at the end of every rule call of the parse, in order, so that the
+// events nest like the calls (the depth of an event is in TraceEvent.Depth). It reports the calls the
+// backend makes: a call skipped because the next character cannot start the rule (first-character
+// dispatch) is not reported, and the backends do not skip the same calls. Tracing does not change the
+// result, but it makes the parse several times slower. The event's methods (LineCol, Text, Failure) read
+// the parser's state, so call them from f; its fields can be kept. With several WithTrace options, each
+// function is called in order.
+//
+// Tracing works with every backend, with Parse, RecognizeOnly, ParseStream and Document (whose
+// option applies to every Document.Parse), but not with generated Go parsers.
+func WithTrace(f func(TraceEvent)) ParseOption {
+	return func(o *engine.ParseOptions) {
+		if prev := o.Trace; prev != nil {
+			o.Trace = func(e TraceEvent) {
+				prev(e)
+				f(e)
+			}
+			return
+		}
+		o.Trace = f
+	}
+}
+
 func parseOptions(opts []ParseOption) engine.ParseOptions {
 	var o engine.ParseOptions
 	for _, opt := range opts {

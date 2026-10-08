@@ -544,7 +544,7 @@ func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
 			r = c.twinOf(r)
 		}
 		return func(p *parser) (*Node, bool) {
-			if r.plain && !p.memoAll {
+			if r.plain && !p.noPlain {
 				return p.invokePlain(r, min) // what call does for such a rule, without its checks
 			}
 			return p.call(r, min)

@@ -20,7 +20,8 @@ type Document struct {
 	prog  *Program
 	start string
 	back  Backend
-	depth int   // limit on call nesting depth
+	depth int // limit on call nesting depth
+	trace func(TraceEvent)
 	in    input // current text (fully loaded)
 	memo  *memoTable
 	stats Stats
@@ -50,7 +51,7 @@ func (prog *Program) NewDocumentWith(start, text string, o ParseOptions) (*Docum
 	if _, err := prog.rule(o.Backend, start); err != nil {
 		return nil, err
 	}
-	return &Document{prog: prog, start: start, back: o.Backend, depth: o.maxDepth(o.Backend), in: newTextInput(text, o.Unit, true), memo: newMemoTable()}, nil
+	return &Document{prog: prog, start: start, back: o.Backend, depth: o.maxDepth(o.Backend), trace: o.Trace, in: newTextInput(text, o.Unit, true), memo: newMemoTable()}, nil
 }
 
 // Text returns the current text.
@@ -61,8 +62,9 @@ func (d *Document) Stats() Stats { return d.stats }
 
 // Parse parses the current text.
 func (d *Document) Parse() (*Node, error) {
-	p := &parser{prog: d.prog, input: d.in, memo: d.memo, memoAll: true, maxDepth: d.depth, gen: uint32(len(d.edits)), edits: d.edits,
+	p := &parser{prog: d.prog, input: d.in, memo: d.memo, memoAll: true, noPlain: true, maxDepth: d.depth, gen: uint32(len(d.edits)), edits: d.edits,
 		runs: map[runKey]*runRecord{}, lastRuns: d.runs, kidStack: d.kids}
+	p.setTrace(d.trace)
 	n, err := d.prog.run(p, d.back, d.start)
 	d.stats = p.stats
 	d.runs, d.resumed = p.runs, p.resumed

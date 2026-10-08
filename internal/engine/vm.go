@@ -287,7 +287,7 @@ func (p *parser) exec(vm *vmProgram, ip int, r *rule, min int) (result *Node, ok
 		switch ev {
 		case evCall:
 			in := &vm.m.Code[b.ip]
-			if r := vm.rules[in.A]; r.plain && !p.memoAll {
+			if r := vm.rules[in.A]; r.plain && !p.noPlain {
 				v, ok = p.invokePlain(r, int(in.B)) // what call does for such a rule
 			} else {
 				v, ok = p.call(r, int(in.B))

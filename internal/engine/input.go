@@ -40,6 +40,9 @@ type ParseOptions struct {
 	// means the default (DefaultMaxDepthIterative for the iterative model, DefaultMaxDepth
 	// otherwise).
 	MaxDepth int
+	// Trace, if not nil, receives an event at the start and at the end of every rule call (see
+	// TraceEvent). Tracing does not change the result of the parse.
+	Trace func(TraceEvent)
 }
 
 // Default limits on call nesting depth. Backends that run recursively use the host stack, so

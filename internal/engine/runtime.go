@@ -54,6 +54,12 @@ type parser struct {
 	created []*Node
 	// memoAll requests memoizing transient rules (rule.transient) too (used by Document).
 	memoAll bool
+	// noPlain keeps call sites from calling invokePlain directly for plain rules (rule.plain), so
+	// that every rule call goes through call. It is set when memoAll is (plain rules are then
+	// memoized) and when tracing (call reports the calls).
+	noPlain bool
+	// tr is the tracing state, or nil when the parse is not traced.
+	tr *tracer
 	// deferMemo defers memoizing a rule at a position to its second call there (firstCall). It is
 	// set for whole-input parses; Document and streams memoize on the first call.
 	deferMemo bool
@@ -307,6 +313,13 @@ func (p *parser) mergeExpected(far int, ids []expID) {
 // The work is split into callBegin, growBegin/growStep/growEnd, invoke, and callEnd, and the
 // iterative-model VM (ivm.go) calls the same functions from its own stack.
 func (p *parser) call(r *rule, min int) (*Node, bool) {
+	if p.tr != nil {
+		// A traced parse: report the call (tracedCall calls back here with direct set).
+		if !p.tr.direct {
+			return p.tracedCall(r, min)
+		}
+		p.tr.direct = false
+	}
 	if !p.memoizes(r) || p.firstCall(r) {
 		// A call without memoization. The examined range (hw, lw) only grows, so it need not be saved
 		// and restored, and expectations need not be recorded separately.

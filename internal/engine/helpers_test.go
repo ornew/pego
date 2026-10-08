@@ -60,7 +60,8 @@ type parseCase struct {
 }
 
 // check checks pairs of inputs and expected results against the grammar src. It also checks
-// that the results are the same with and without memoization.
+// that the results are the same with and without memoization, on every backend, and with and
+// without tracing.
 func check(t *testing.T, src string, cases ...parseCase) {
 	t.Helper()
 	prog := compile(t, src)
@@ -78,6 +79,8 @@ func check(t *testing.T, src string, cases ...parseCase) {
 		checkUnits(t, prog, "main", c.input, Closure)
 		checkUnits(t, prog, "main", c.input, Bytecode)
 		checkUnits(t, prog, "main", c.input, BytecodeIterative)
+		checkTrace(t, prog, "main", c.input, ParseOptions{})
+		checkTrace(t, noMemo, "main", c.input, ParseOptions{})
 	}
 }
 

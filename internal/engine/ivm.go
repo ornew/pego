@@ -68,9 +68,13 @@ func (f *bodyFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult
 	case evCall:
 		in := &vm.m.Code[f.b.ip]
 		r, min := vm.rules[in.A], int(in.B)
-		if r.plain && !p.memoAll {
+		if r.plain && !p.noPlain {
 			return p.plainCallFrame(r, min), iresult{}, false
 		}
+		if p.tr != nil {
+			return &traceFrame{r: r, min: min}, iresult{}, false
+		}
+		// What callChild does, written out on this hot path
 		if !p.memoizes(r) || p.firstCall(r) {
 			if len(r.scope.names) == 0 {
 				return p.plainCallFrame(r, min), iresult{}, false
@@ -98,6 +102,17 @@ func (f *bodyFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult
 		p.env = f.inv.prevEnv
 	}
 	return nil, iresult{v: v, ok: ok}, true
+}
+
+// callChild returns the frame that runs a call of r (the same steps as call).
+func (p *parser) callChild(r *rule, min int) iframe {
+	if !p.memoizes(r) || p.firstCall(r) {
+		if len(r.scope.names) == 0 {
+			return p.plainCallFrame(r, min)
+		}
+		return p.callFrame(r, min, false)
+	}
+	return p.callFrame(r, min, true)
 }
 
 // plainCallFrame starts an unmemoized call of a rule without captures (the start of invokePlain)

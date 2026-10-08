@@ -24,12 +24,14 @@ func (prog *Program) ParseWith(start, input string, o ParseOptions) (*Node, erro
 		p := newParser(rp, input, o.Unit, false) // recognition rarely needs token text
 		p.maxDepth = o.maxDepth(o.Backend)
 		p.deferMemo = true
+		p.setTrace(o.Trace)
 		_, err = rp.run(p, o.Backend, start)
 		return nil, err
 	}
 	p := newParser(prog, input, o.Unit, true)
 	p.maxDepth = o.maxDepth(o.Backend)
 	p.deferMemo = true
+	p.setTrace(o.Trace)
 	return prog.run(p, o.Backend, start)
 }
 
@@ -207,6 +209,7 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node)
 	p.maxDepth = o.maxDepth(o.Backend)
 	p.emit = emit
 	p.descs = prog.descs(o.Backend)
+	p.setTrace(o.Trace)
 	defer func() {
 		recoverParse(recover(), prog.backend(o.Backend), &err)
 	}()
