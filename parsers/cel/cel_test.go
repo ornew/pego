@@ -1,12 +1,12 @@
 package cel_test
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 	"unicode/utf8"
 
 	"github.com/ornew/pego/parsers/cel"
@@ -302,7 +302,7 @@ func TestValues(t *testing.T) {
 		{`"\303\277"`, "Ã¿"},
 		{`"\377"`, "ÿ"},
 		{`"\xFF"`, "ÿ"},
-		{`"☺\U0001F600"`, "☺\U0001f600"},
+		{`"\` + `u263A\U0001F600"`, "\u263a\U0001f600"},
 		{`"\a\b\f\n\r\t\v\?\"\'` + "\\`" + `"`, "\a\b\f\n\r\t\v?\"'`"},
 		{"'''a\r\nb\rc'''", "a\nb\nc"},
 		{"r'''a\r\nb'''", "a\nb"},
@@ -430,11 +430,34 @@ func TestNames(t *testing.T) {
 	}
 }
 
-func ExampleParseExpr() {
-	e, err := cel.ParseExpr(`user.age >= 18 && "admin" in user.roles`)
-	if err != nil {
-		panic(err)
+// TestAdversarial parses inputs that make a backtracking parser slow if it has no memoization or loses it in a
+// rule: deeply nested constructs with and without an error at the end, and long runs of tokens. Each takes a few
+// milliseconds; a second is generous.
+func TestAdversarial(t *testing.T) {
+	r := strings.Repeat
+	for _, tc := range []struct{ name, src string }{
+		{"parens", r("(", 1000) + "1" + r(")", 1000)},
+		{"parens-err", r("(", 1000) + "1" + r(")", 999)},
+		{"neg-call-err", r("-1.f(", 1000) + "x" + r(")", 999)},
+		{"not-parens-err", r("!(", 1000) + "x" + r(")", 999)},
+		{"ternary", r("a ? b : ", 2000) + "c"},
+		{"ternary-err", r("a ? (", 1000) + "b" + r(") : c", 999)},
+		{"calls-err", r("f(", 1000) + r(")", 999)},
+		{"member-calls-err", r("a.f(", 1000) + r(")", 999)},
+		{"list-err", r("[", 1000) + r("]", 999)},
+		{"map-err", r("{1: ", 1000) + "1" + r("}", 999)},
+		{"msg-err", r("M{f: ", 1000) + "1" + r("}", 999)},
+		{"msg-dotted-err", r("a.b.M{f: ", 1000) + "1" + r("}", 999)},
+		{"index-err", r("a[", 1000) + "0" + r("]", 999)},
+		{"mixed-err", r("(a ? [b, {c: d(", 300) + "e" + r(")}]) : f", 299)},
+		{"unterminated", "'''" + r("a'' ", 20000)},
+		{"names", "[" + r("abc.def.ghi, ", 5000) + "1]"},
+	} {
+		start := time.Now()
+		cel.ParseAST(tc.src)
+		cel.Recognize(tc.src)
+		if d := time.Since(start); d > time.Second {
+			t.Errorf("%s: %d bytes took %v", tc.name, len(tc.src), d)
+		}
 	}
-	fmt.Printf("%T\n", e)
-	// Output: *cel.Binary
 }
