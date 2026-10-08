@@ -711,6 +711,19 @@ pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>]
 Generates a standalone Go parser; see [code-generation.md](code-generation.md). `-g` and `-pkg` are required, and
 without `-o` the code goes to standard output.
 
+### `explain`, `trace` and `profile`
+
+```bash
+pego explain -g <grammar> [-s <rule>] [-i <input>] [-n <calls>]
+pego trace -g <grammar> [-s <rule>] [-i <input>] [-max-depth <n>] [-rule <name>] [-failures] [-f text|json]
+pego profile -g <grammar> [-s <rule>] [-i <input>] [-sort <column>] [-n <rows>] [-f text|json]
+```
+
+Debugging tools; all three also take `-unit` and `-backend`, and read the input from standard input without `-i`.
+`explain` shows which rule calls recorded what a syntax error says was expected, `trace` prints every rule call of a
+parse as an indented tree, and `profile` prints the cost of each rule with hints. In Go, the same information comes
+from `pego.WithTrace` and `pego.WithProfile`. See [debugging.md](debugging.md).
+
 ## Choosing: a cheat sheet
 
 | Situation | Use |
@@ -725,3 +738,4 @@ without `-o` the code goes to standard output.
 | Positions that index a Go string | `WithUnit(pego.Bytes)` |
 | Several entry points for one grammar | `Parser.WithStart` |
 | Many goroutines | Share one `*pego.Parser` |
+| Finding why an input fails or a parse is slow | `pego explain`, `pego trace`, `pego profile` (see [debugging.md](debugging.md)) |
