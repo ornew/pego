@@ -95,6 +95,7 @@ automatically in the others. This table records, for every change in the log bel
 | 52, 53 | Projected repetitions (`map($rest, (r) => $r.f)`) | ✓ | ✓ | ✓ | ✓ | ✓ | VMs: `NEXT` mode 3 (instruction set 3) |
 | 49–51 | First-character dispatch in choices | ✓ | ✓ | ✓ | ✓ | ✓ | VMs: `GUARD` (instruction set 3) |
 | 54 | `Document`: resuming long repetitions | ✓ | ✗ | ✗ | – | – | the VMs look up each element in the memo; generated parsers have no `Document` |
+| 55 | Tracing hook (cost only) | ✓ | ✓ | ✓ | – | – | generated parsers have no tracing |
 
 Not applied, and why:
 
@@ -800,6 +801,16 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   element of a long repetition (Document heap at 100,000 lines 143 → 151 MiB).
 - What remains of an edit at 100,000 lines is `Edit` itself (the memo splice visits every entry, about 30% of the
   insert/delete benchmark), moving the nodes after an edit that changed the length, and the new list of children.
+
+### 55. Tracing hook on the call path
+
+- Tracing (design 014) adds one `p.tr != nil` test at the entry of `parser.call` and one on the iterative VM's
+  non-plain call path. The plain call sites test `p.noPlain` instead of `p.memoAll` (same cost); `noPlain` is set by
+  `Document` and by tracing, so a traced parse sends every call through `call`. Nothing else on the untraced path
+  changes, and generated parsers are untouched.
+- Effect (min of 12 interleaved runs, Apple M3 Max): JSON and Minilang, closure and recursive VM, −1.3% to +0.3%
+  (noise); a first 8-run pass showed up to +6% that did not reproduce. Incremental and stream benchmarks within ±4%
+  in both directions.
 
 ## Grammar authoring guidelines for performance
 

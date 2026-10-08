@@ -40,6 +40,7 @@ This document describes the repository layout, the architecture of the implement
 | Actions | `eval.go` | Evaluation of action and predicate expressions |
 | Pratt expressions | `pratt.go` | The Pratt loop and longest-match operator selection |
 | Incremental parsing | `document.go`, `resume.go` | Reuse of memo entries across edits; resuming long repetitions |
+| Tracing and profiling | `trace.go`, `profile.go` | Rule call events for `WithTrace`, the per-rule profile and its hints |
 | Bytecode | `bytecode.go`, `bcompile.go`, `disasm.go`, `vm.go`, `ivm.go` | Bytecode module, compiler, disassembler, recursive and iterative VMs |
 | Compiled grammars | `compiled.go`, `modulefile.go` | The `.pegoc` file format |
 | Code generation | `gen.go`, `genrt/` | Generation of standalone Go parsers |
@@ -68,10 +69,11 @@ Backtracking returns to a recorded point: the position, the variable environment
 
 Nodes, child lists, field lists and capture frames are allocated from per-parse slabs (`alloc.go`), and the memo table is a per-position list of entries (`memo.go`). Scratch state of action and predicate evaluation lives in buffers owned by the parser and reused: an operand stack (`estack`, shared by the VMs' expression code and the closure backend's built-in calls), arenas for lambda calls, and the stack that gathers list elements (`kidStack`). A call of a rule that is not memoized and has no captures takes a shorter path (`invokePlain`) than a full invocation. See [performance.md](performance.md) for the measurements behind these choices.
 
-Two parse options affect the runtime as a whole:
+Three parse options affect the runtime as a whole:
 
 - **Recognition only** (`pego.RecognizeOnly`): the parser builds no tree and only checks whether the input matches, returning the same syntax errors as a full parse. Actions are not evaluated. It is not available for stream parsing or `Document`.
 - **Nesting limit** (`pego.WithMaxDepth`): rule calls may nest at most 100,000 deep by default (10,000,000 for the iterative VM); deeper nesting is reported as an error.
+- **Tracing** (`pego.WithTrace`, `pego.WithProfile`): every rule call is reported to a function at its start and end. Calls are observed in `parser.call` (and the iterative VM's `traceFrame`); a traced parse sends plain calls through `call` too (`parser.noPlain`). An untraced parse pays one nil check per call through `call`. Calls that a `Document` skips by resuming a repetition are not reported. See [design 014](design/014-tracing-and-profiling.md).
 
 ### Attributes
 
@@ -125,7 +127,7 @@ go test ./...
 ```
 
 Engine tests write grammars in PEGO source and compare results using the S-expression form of nodes (`Node.String`).
-The `check` helper also verifies that the result is the same with memoization disabled, with every backend (closure, recursive bytecode, iterative bytecode), with both position units, and in recognition-only mode.
+The `check` helper also verifies that the result is the same with memoization disabled, with every backend (closure, recursive bytecode, iterative bytecode), with both position units, in recognition-only mode, and with tracing on.
 
 ## Language feature status
 
@@ -167,6 +169,7 @@ The `check` helper also verifies that the result is the same with memoization di
 | Done | | Code generation (Go, `pego gen`) |
 | Done | | Typed values in generated parsers (`pego gen -types`) |
 | Done | | Saving and loading compiled grammars (`.pegoc`) |
+| Done | | Tracing, profiling and error explanation (`WithTrace`, `WithProfile`, `pego trace/profile/explain`) |
 
 ## Roadmap
 

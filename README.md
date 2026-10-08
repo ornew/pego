@@ -74,6 +74,8 @@ tree, err := p.Parse("1 + 2 * 3 ^ 2") // a *pego.Node, or a *pego.SyntaxError wi
   indirect, just works.
 - **Errors that point the way.** Failures report the farthest position and what was expected there. `#error`
   rewrites the message; `#recover` skips the broken part and keeps going.
+- **See what your grammar does.** `pego trace` shows every rule call with positions, results and memo hits,
+  `pego explain` which calls make up a syntax error, and `pego profile` where the time and the backtracking go.
 - **Context when you need it.** Predicates and scoped variables handle indentation, matching tags and other things
   plain PEG cannot.
 
@@ -113,6 +115,9 @@ data, _ := p.MarshalBinary() // save; pego.LoadParser(data) skips parsing and ch
 ```bash
 pego parse -g grammar.pego -i 'abc=12'           # parse and print the tree (JSON, or -f sexpr)
 pego parse -g grammar.pego -check < input.txt    # validate only
+pego explain -g grammar.pego < input.txt         # which rule calls make up a syntax error
+pego trace -g grammar.pego -i 'abc=12'           # every rule call as an indented tree (-f json for tools)
+pego profile -g grammar.pego < input.txt         # cost per rule, with hints on wasted work
 pego fmt -w grammar.pego                         # format in place, comments kept
 pego compile -g grammar.pego -o grammar.pegoc    # precompile
 pego gen -g grammar.pego -pkg calc -o parser.go  # generate a standalone Go parser
@@ -134,7 +139,7 @@ with CPython's `ast` module.
 | | |
 |:--|:--|
 | [Getting started](docs/tutorial/getting-started.md) | From a first grammar to typed trees and operator precedence, step by step |
-| [Guides](docs/guide/README.md) | Trees and actions, expressions, errors and recovery, context-sensitive parsing, running parsers, code generation, streaming and incremental parsing |
+| [Guides](docs/guide/README.md) | Trees and actions, expressions, errors and recovery, context-sensitive parsing, running parsers, code generation, streaming and incremental parsing, debugging and profiling |
 | [Language specification](spec/README.md) | The PEGO grammar language |
 | [Development guide](docs/development.md) | Architecture, repository layout, implementation status, roadmap |
 | [Bytecode specification](docs/bytecode.md) | Instruction set and VM semantics, for porting the runtime |
