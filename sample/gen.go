@@ -251,6 +251,11 @@ func (g *gen) evalCheck(c *check, final bool) (violated, keep bool) {
 // addCheck adds a check at the current position. It returns false if the check already fails. The
 // caller restores g.pending.
 func (g *gen) addCheck(e grammar.Expr, neg, progress bool) bool {
+	if neg && !progress && g.in.alwaysMatches(e) {
+		// It matches whatever follows: the matcher would only find out once the text after it is
+		// written.
+		return false
+	}
 	c := &check{pos: len(g.out), e: e, neg: neg, progress: progress}
 	violated, keep := g.evalCheck(c, false)
 	if violated {

@@ -42,6 +42,8 @@ type ruleInfo struct {
 	calls    []string
 	// possibleCalls are the calls in contexts that can match.
 	possibleCalls []string
+	// always caches alwaysMatches for the body: 0 not computed yet, 1 being computed, 2 yes, 3 no.
+	always int
 	// stops caches, per minimum level, the expression that must not match where a chain of
 	// operators of the Pratt expression ends (see gen.prattStopCheck).
 	stops map[int]grammar.Expr
@@ -250,6 +252,74 @@ func (in *info) localTargets(e grammar.Expr, s bitset) {
 			}
 		}
 	})
+}
+
+// alwaysMatches reports whether e matches at any position of any input, if only the empty string: an
+// optional expression, a repetition with minimum 0, and sequences and choices of such. Cuts (which can
+// make an optional expression fail), lookaheads and predicates make it false.
+func (in *info) alwaysMatches(e grammar.Expr) bool {
+	switch e := e.(type) {
+	case *grammar.Top:
+		return true
+	case *grammar.Literal:
+		return e.Value == ""
+	case *grammar.Optional:
+		return !in.hasCut(e.Expr)
+	case *grammar.Repeat:
+		return e.Min == 0 && !in.hasCut(e.Expr) || e.Min > 0 && in.alwaysMatches(e.Expr)
+	case *grammar.Seq:
+		for _, it := range e.Items {
+			if !in.alwaysMatches(it) {
+				return false
+			}
+		}
+		return true
+	case *grammar.Choice:
+		for _, a := range e.Alts {
+			if in.alwaysMatches(a) {
+				return !in.hasCut(e)
+			}
+		}
+		return false
+	case *grammar.Atomic:
+		return in.alwaysMatches(e.Expr)
+	case *grammar.Discard:
+		return in.alwaysMatches(e.Expr)
+	case *grammar.Capture:
+		return in.alwaysMatches(e.Expr)
+	case *grammar.Attributed:
+		return in.alwaysMatches(e.Expr)
+	case *grammar.Ref:
+		ri := in.rules[e.Name]
+		if ri == nil || ri.pratt != nil {
+			return false
+		}
+		switch ri.always {
+		case 0:
+			ri.always = 1 // a recursive call does not count
+			v := in.alwaysMatches(ri.def.Expr)
+			ri.always = 3
+			if v {
+				ri.always = 2
+			}
+			return v
+		case 2:
+			return true
+		}
+	}
+	return false
+}
+
+// hasCut reports whether e contains a cut, not counting called rules (a cut does not reach beyond its
+// rule).
+func (in *info) hasCut(e grammar.Expr) bool {
+	cut := false
+	walk(e, func(x grammar.Expr) {
+		if _, ok := x.(*grammar.Cut); ok {
+			cut = true
+		}
+	})
+	return cut
 }
 
 // hasCaptures reports whether e contains a capture, not counting called rules.

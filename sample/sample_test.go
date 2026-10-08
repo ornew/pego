@@ -250,6 +250,12 @@ def e = pratt {
 }`, nil},
 		{"unknown left side of ||, undefined variable on the right", `def main = e:num [text($e) != "" || z == 1]
 def num = d:(?0-9) -> $d`, nil},
+		{"an earlier alternative that always matches", `def main = x x x x x x x x x x x x x x x x x x x x "z" $$
+def x = "a"? / "b"?`, func(t *testing.T, in string) {
+			if strings.Contains(in, "b") {
+				t.Errorf("got %q", in)
+			}
+		}},
 		{"empty iterations below the minimum", `def main = (_){3} "q"`, nil},
 		// A repetition element sees only its own captures: outer ones are read through a variable.
 		{"repetition elements read enclosing captures through variables", `def main = n:"a" [k = len($n)] ([k == 1] "x")* "y"`, nil},

@@ -99,7 +99,10 @@ The generator prunes candidates that the parser would read differently from how 
   matched, failed, and *more* (the answer depends on text not generated yet). It answers *unknown* for predicates, Pratt
   expressions, left recursion (a rule called again at the same position), cuts, `#recover` and work over a bound; such
   a check is dropped and the parser decides. The matcher's answers are heuristics: a wrong answer costs a retry, never
-  a wrong result.
+  a wrong result. An expression that matches anywhere, if only the empty string (`"a"?`, `x*`, sequences and choices of
+  such, without cuts), violates a check that it must not match at once: the matcher would answer *more* until the text
+  after it exists, and in `x = "a"? / "b"?` the second alternative, which the parser never reaches, would be chosen
+  and undone again and again (twenty such `x` in a row found no input).
 - **Positive lookahead.** `&e` generates a text for `e`, then removes it and forces the input that follows to start
   with it. Captures and variables made in `e` stay in effect, as in the parser, so `&(s:spaces) [len($s) > indent]`
   works as in [examples/outline](../../examples/outline/outline.pego).
