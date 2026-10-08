@@ -21,18 +21,21 @@ func (prog *Program) ParseWith(start, input string, o ParseOptions) (*Node, erro
 		if err != nil {
 			return nil, err
 		}
-		p := newParser(rp, input, o.Unit, false) // recognition rarely needs token text
+		p := newPooledParser(rp, input, o.Unit, false) // recognition rarely needs token text
 		p.maxDepth = o.maxDepth(o.Backend)
 		p.deferMemo = true
 		p.setTrace(o.Trace)
 		_, err = rp.run(p, o.Backend, start)
+		p.releaseScratch()
 		return nil, err
 	}
-	p := newParser(prog, input, o.Unit, true)
+	p := newPooledParser(prog, input, o.Unit, true)
 	p.maxDepth = o.maxDepth(o.Backend)
 	p.deferMemo = true
 	p.setTrace(o.Trace)
-	return prog.run(p, o.Backend, start)
+	n, err := prog.run(p, o.Backend, start)
+	p.releaseScratch()
+	return n, err
 }
 
 // recognizer returns a program that only checks whether the input conforms to the grammar,

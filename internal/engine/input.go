@@ -146,18 +146,36 @@ func newInput(s string, unit Unit) input { return newTextInput(s, unit, false) }
 // newTextInput returns the input s. If offsets is set (the parse will need token text), the
 // offset table is built in the same pass as the decoding; otherwise it is built on demand.
 func newTextInput(s string, unit Unit, offsets bool) input {
+	return newTextInputIn(s, unit, offsets, nil)
+}
+
+// newTextInputIn is newTextInput with the buffers of sc, if not nil.
+func newTextInputIn(s string, unit Unit, offsets bool, sc *scratch) input {
 	in := input{unit: unit, eof: true, baseLine: 1, baseCol: 1}
 	if unit == Bytes {
-		in.bs = []byte(s)
+		if sc != nil {
+			in.bs = append(sc.bytes[:0], s...)
+		} else {
+			in.bs = []byte(s)
+		}
 		in.setSource(s)
 		return in
 	}
 	// Decode and check validity in one pass (a U+FFFD that decodes from three bytes is valid).
 	n := utf8.RuneCountInString(s)
-	in.in = make([]rune, n)
 	var offs []int32
+	if sc != nil {
+		in.in = grow(sc.runes, n)
+		if offsets {
+			offs = grow(sc.offs, n+1)
+		}
+	} else {
+		in.in = make([]rune, n)
+		if offsets {
+			offs = make([]int32, n+1)
+		}
+	}
 	if offsets {
-		offs = make([]int32, n+1)
 		offs[n] = int32(len(s))
 	}
 	valid := true
@@ -184,6 +202,69 @@ func newTextInput(s string, unit Unit, offsets bool) input {
 // newParser returns a parser of the input s; offsets is as for newTextInput.
 func newParser(prog *Program, s string, unit Unit, offsets bool) *parser {
 	return &parser{prog: prog, input: newTextInput(s, unit, offsets), memo: newMemoTable(), maxDepth: DefaultMaxDepth}
+}
+
+// scratch holds the buffers of a whole-input parse that nothing refers to once it returns: the
+// decoded input, its offset table, the memo table and the stack of repetition values. Node text
+// slices the input string itself, and errors are built before the parse returns.
+type scratch struct {
+	runes []rune
+	offs  []int32
+	bytes []byte
+	memo  memoTable
+	kids  []*Node
+}
+
+// maxScratch is the size, in elements, beyond which a buffer is not kept for later parses.
+const maxScratch = 1 << 22
+
+// newPooledParser is newParser with buffers left by earlier parses of prog. The caller passes the
+// parser to releaseScratch when the parse has returned.
+func newPooledParser(prog *Program, s string, unit Unit, offsets bool) *parser {
+	sc, _ := prog.scratch.Get().(*scratch)
+	if sc == nil {
+		sc = &scratch{}
+	}
+	p := &parser{prog: prog, input: newTextInputIn(s, unit, offsets, sc), memo: &sc.memo, maxDepth: DefaultMaxDepth, kidStack: sc.kids[:0]}
+	p.scratch = sc
+	return p
+}
+
+// releaseScratch returns the buffers of a parser made by newPooledParser for later parses.
+func (p *parser) releaseScratch() {
+	sc := p.scratch
+	if sc == nil {
+		return
+	}
+	p.scratch = nil
+	if cap(p.in) > cap(sc.runes) && cap(p.in) <= maxScratch {
+		sc.runes = p.in[:0]
+	}
+	if p.offs != nil && cap(p.offs) > cap(sc.offs) && cap(p.offs) <= maxScratch {
+		sc.offs = p.offs[:0]
+	}
+	if cap(p.bs) > cap(sc.bytes) && cap(p.bs) <= maxScratch {
+		sc.bytes = p.bs[:0]
+	}
+	if cap(p.kidStack) <= maxScratch {
+		clear(p.kidStack[:cap(p.kidStack)])
+		sc.kids = p.kidStack[:0]
+	} else {
+		sc.kids = nil
+	}
+	if !sc.memo.reset() {
+		sc.memo = memoTable{}
+	}
+	p.prog.scratch.Put(sc)
+}
+
+// grow returns a slice of n elements, reusing buf if it is large enough. The elements are not
+// cleared.
+func grow[T any](buf []T, n int) []T {
+	if cap(buf) >= n {
+		return buf[:n]
+	}
+	return make([]T, n)
 }
 
 func newStreamParser(prog *Program, r io.Reader, unit Unit) *parser {

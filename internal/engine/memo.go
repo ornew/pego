@@ -10,6 +10,9 @@ type memoTable struct {
 	base  int
 	slots []*memoEntry // list of entries at position base+i (base+i-gapLen from the gap on)
 	slab  []memoEntry  // area for allocating entries in bulk
+	// chunks are the areas slab came from, kept by reset for later parses; used counts those in use.
+	chunks [][]memoEntry
+	used   int
 	// Document edits splice positions in and out at the gap, slots[gap:gap+gapLen] (in Document
 	// tables, where base is 0): moving it costs only the distance to the next edit.
 	gap, gapLen int
@@ -125,11 +128,32 @@ func (t *memoTable) len() int {
 // alloc returns a new entry.
 func (t *memoTable) alloc() *memoEntry {
 	if len(t.slab) == 0 {
-		t.slab = make([]memoEntry, 256)
+		if t.used < len(t.chunks) {
+			t.slab = t.chunks[t.used]
+		} else {
+			t.slab = make([]memoEntry, 256)
+			t.chunks = append(t.chunks, t.slab)
+		}
+		t.used++
 	}
 	e := &t.slab[0]
 	t.slab = t.slab[1:]
 	return e
+}
+
+// reset empties the table for another parse, keeping its memory, and reports whether that was
+// worth keeping (it is not when it is very large).
+func (t *memoTable) reset() bool {
+	if cap(t.slots) > maxScratch || len(t.chunks)*256 > maxScratch || len(t.seen) > maxScratch {
+		return false
+	}
+	clear(t.slots)
+	for _, c := range t.chunks[:t.used] {
+		clear(c)
+	}
+	clear(t.seen)
+	*t = memoTable{slots: t.slots[:0], chunks: t.chunks, seen: t.seen[:0]}
+	return true
 }
 
 // prune discards the entries at positions before pos.

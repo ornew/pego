@@ -96,12 +96,14 @@ automatically in the others. This table records, for every change in the log bel
 | 49–51 | First-character dispatch in choices | ✓ | ✓ | ✓ | ✓ | ✓ | VMs: `GUARD` (instruction set 3) |
 | 54 | `Document`: resuming long repetitions | ✓ | ✗ | ✗ | – | – | the VMs look up each element in the memo; generated parsers have no `Document` |
 | 55 | Tracing hook (cost only) | ✓ | ✓ | ✓ | – | – | generated parsers have no tracing |
+| 57 | Scratch memory pooled across whole-input parses (input, offsets, memo, value stack) | ✓ | ✓ | ✓ | ✗ | ✓ | typed: since 48; generated `Parse` allocates afresh |
 
 Not applied, and why:
 
-- **Reusing frames when their rule returns, pooling scratch memory across parses (48):** in the Node runtimes,
-  capture frames share their chunks with the child lists of the result, so they cannot be freed or pooled without
-  separating them; freeing frames in the engine was measured slower (see the experiments table).
+- **Reusing frames when their rule returns (48):** in the Node runtimes, capture frames share their chunks with the
+  child lists of the result, so they cannot be freed or pooled without separating them; freeing frames in the engine
+  was measured slower (see the experiments table). The engine pools the scratch memory that results do not share
+  (57); generated `Parse` does not yet.
 - **Per-rule call methods for generated `Parse`** (the typed runtime's `typedCall`) measured within noise (48).
 - Experiments that did not pay off in some backends are in the experiments table at the end.
 
@@ -826,6 +828,18 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   100,000-line insert/delete 4.9 → 2.7 ms; `Edit` alone at 100,000 lines 3 ms → 0.33 ms (most of what remains copies
   the text), and 2.4 ms → 70 µs on the guide's 283 KB JSON. Allocation per reparse unchanged in steady state (the
   first edit widens the slot array once); batch parses and streams within noise.
+
+### 57. Pooling the scratch memory of whole-input parses
+
+- Each `Parse` allocated the decoded input and its offset table, the memo table (slots, entry chunks, the bit set of
+  first calls) and the stack that collects repetition values, and dropped them when it returned: nothing in a result
+  refers to them (node text slices the input string, errors are built before returning). A `Program` now keeps them
+  in a `sync.Pool` (`newPooledParser`, `releaseScratch`): the memo's slots and entry chunks are cleared and reused,
+  and buffers over 4M elements are not kept. Recognition uses its program's pool. `Document` and streams keep their
+  own memory as before.
+- Effect (min of 6 interleaved runs, Apple M3 Max, code points): full parses −1% to −8% (Minilang −8%/−7%/−6% on the
+  three backends, XML −6%/−5%/−4%, JSON −2%/−1%/−1%), allocation −14% to −38% (Minilang 15.3 → 9.5 MB); recognition
+  −5% to −11% (Arith_LeftRec −11%, 24.7 → 3.4 MB).
 
 ## Grammar authoring guidelines for performance
 

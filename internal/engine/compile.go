@@ -35,6 +35,8 @@ type Program struct {
 	ivmOnce    sync.Once
 	ivm        *vmProgram
 	pkg        string // package name when loaded from a file without the AST
+	// scratch holds the buffers of finished parses for later ones (*scratch).
+	scratch sync.Pool
 }
 
 // Options configures compilation.

@@ -71,7 +71,7 @@ Left recursion is handled as in CPython's pegen (see the [reference note](ref-cp
 
 Backtracking returns to a recorded point: the position, the variable environment (a persistent list) and the history of capture writes.
 
-Nodes, child lists, field lists and capture frames are allocated from per-parse slabs (`alloc.go`), and the memo table is a per-position list of entries (`memo.go`). Scratch state of action and predicate evaluation lives in buffers owned by the parser and reused: an operand stack (`estack`, shared by the VMs' expression code and the closure backend's built-in calls), arenas for lambda calls, and the stack that gathers list elements (`kidStack`). A call of a rule that is not memoized and has no captures takes a shorter path (`invokePlain`) than a full invocation. See [performance.md](performance.md) for the measurements behind these choices.
+Nodes, child lists, field lists and capture frames are allocated from per-parse slabs (`alloc.go`), and the memo table is a per-position list of entries (`memo.go`). Scratch state of action and predicate evaluation lives in buffers owned by the parser and reused: an operand stack (`estack`, shared by the VMs' expression code and the closure backend's built-in calls), arenas for lambda calls, and the stack that gathers list elements (`kidStack`). A whole-input parse takes its decoded input, offset table, memo table and `kidStack` from a pool kept by the `Program` and returns them when it is done (`newPooledParser`). A call of a rule that is not memoized and has no captures takes a shorter path (`invokePlain`) than a full invocation. See [performance.md](performance.md) for the measurements behind these choices.
 
 Three parse options affect the runtime as a whole:
 
