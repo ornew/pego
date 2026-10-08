@@ -56,7 +56,10 @@ The runtime hides each difference, so that results are the engine's, not merely 
   integers by `Math.trunc` is exact; `-0` is turned into `0`.
 - **JSON.** `JSON.stringify` cannot match `encoding/json` (which escapes `<`, `>`, `&`, U+2028 and U+2029 and writes
   big ints exactly), so `marshal` writes the engine's bytes; `Node.toJSON` gives the same structure for
-  `JSON.stringify`.
+  `JSON.stringify`. `marshal` and `toString` keep the values left to write on a stack of their own: left recursion,
+  left-associative Pratt operators and `foldl` build trees as deep as the input is long without nesting calls, and
+  writing them recursively overflowed the stack on trees the parse had built fine. `JSON.stringify` still recurses
+  (the guide says so).
 - **No `panic`.** Fatal errors and evaluation errors are thrown as plain objects (`Fatal`, `EvalError`, not `Error`
   subclasses, so throwing them captures no stack trace), and caught where `genrt` recovers. Results are
   `Node | null` on success and `undefined` on failure, instead of `(value, ok)` pairs.

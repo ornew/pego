@@ -104,9 +104,7 @@ export class Node {
 
   /** Formats the node as an S-expression-like string, as the engine's Node.String does. */
   toString(): string {
-    const b: string[] = [];
-    writeValue(b, this);
-    return b.join("");
+    return print(this, writeValue);
   }
 
   /**
@@ -157,52 +155,78 @@ function setField(n: Node, name: string, v: Value): void {
 
 /**
  * Encodes a node (or null) as JSON exactly as Go's encoding/json encodes the engine's Node: the same
- * keys in the same order, field names sorted, and the same escapes (including <, > and &).
+ * keys in the same order, field names sorted, and the same escapes (including <, > and &). Unlike
+ * encoding/json, which fails beyond 10,000 levels, it encodes trees of any depth.
  */
 export function marshal(n: Node | null): string {
+  return print(n, marshalValue);
+}
+
+// Pending is a value that a printer has yet to write.
+class Pending {
+  v: Value;
+  constructor(v: Value) {
+    this.v = v;
+  }
+}
+
+// print writes v with write, which writes a value as text and Pending values (its parts, such as
+// the children of a node), and writes those in turn. It keeps the values to write on a stack of
+// its own, so that it can write trees of any depth: parses build trees deeper than the JavaScript
+// stack allows recursion (left recursion, foldl and Pratt operators nest without nesting calls).
+function print(v: Value, write: (v: Value, out: (string | Pending)[]) => void): string {
   const b: string[] = [];
-  marshalValue(b, n);
+  const stack: (string | Pending)[] = [new Pending(v)];
+  const parts: (string | Pending)[] = [];
+  while (stack.length > 0) {
+    const x = stack.pop()!;
+    if (typeof x === "string") {
+      b.push(x);
+      continue;
+    }
+    parts.length = 0;
+    write(x.v, parts);
+    for (let i = parts.length - 1; i >= 0; i--) {
+      stack.push(parts[i]!);
+    }
+  }
   return b.join("");
 }
 
-function marshalValue(b: string[], v: Value): void {
+function marshalValue(v: Value, out: (string | Pending)[]): void {
   if (v === null) {
-    b.push("null");
+    out.push("null");
   } else if (v instanceof Node) {
-    b.push('{"type":', quoteJSON(v.type));
+    out.push('{"type":' + quoteJSON(v.type));
     if (v.rule !== "") {
-      b.push(',"rule":', quoteJSON(v.rule));
+      out.push(',"rule":' + quoteJSON(v.rule));
     }
-    b.push(',"start":', String(v.start), ',"end":', String(v.end));
+    out.push(',"start":' + v.start + ',"end":' + v.end);
     if (v.text !== "") {
-      b.push(',"text":', quoteJSON(v.text));
+      out.push(',"text":' + quoteJSON(v.text));
     }
     if (v.children.length > 0) {
-      b.push(',"children":[');
+      out.push(',"children":[');
       v.children.forEach((c, i) => {
         if (i > 0) {
-          b.push(",");
+          out.push(",");
         }
-        marshalValue(b, c);
+        out.push(new Pending(c));
       });
-      b.push("]");
+      out.push("]");
     }
     if (v.fields.length > 0) {
-      b.push(',"fields":{');
+      out.push(',"fields":{');
       sortedFields(v.fields).forEach((f, i) => {
-        if (i > 0) {
-          b.push(",");
-        }
-        b.push(quoteJSON(f.name), ":");
-        marshalValue(b, f.value);
+        out.push((i > 0 ? "," : "") + quoteJSON(f.name) + ":", new Pending(f.value));
       });
-      b.push("}");
+      out.push("}");
     }
-    b.push("}");
+    out.push("}");
   } else if (typeof v === "string") {
-    b.push(quoteJSON(v));
+    out.push(quoteJSON(v));
   } else {
-    b.push(String(v));
+    out.push(String(v));
   }
 }
 
@@ -262,61 +286,57 @@ function quoteJSON(s: string): string {
   return out + s.slice(from) + '"';
 }
 
-function writeValue(b: string[], v: Value): void {
+// writeValue writes v as the engine's Node.String does (see print).
+function writeValue(v: Value, out: (string | Pending)[]): void {
   if (v === null) {
-    b.push("nil");
+    out.push("nil");
   } else if (v instanceof Node) {
-    writeNode(b, v);
+    writeNode(v, out);
   } else if (typeof v === "string") {
-    b.push("`" + v + "`");
+    out.push("`" + v + "`");
   } else {
-    b.push(String(v));
+    out.push(String(v));
   }
 }
 
-function writeNode(b: string[], n: Node): void {
+function writeNode(n: Node, out: (string | Pending)[]): void {
   if (n.type === "List") {
-    b.push("[");
+    out.push("[");
     n.children.forEach((c, i) => {
       if (i > 0) {
-        b.push(" ");
+        out.push(" ");
       }
-      writeValue(b, c);
+      out.push(new Pending(c));
     });
-    writeFields(b, n, n.children.length > 0);
-    b.push("]");
+    writeFields(n, n.children.length > 0, out);
+    out.push("]");
   } else if (n.terminal) {
     if (n.type !== "Match") {
-      b.push(n.type);
+      out.push(n.type);
     }
-    b.push(quoteGo(n.text));
+    out.push(quoteGo(n.text));
     if (n.fields.length > 0) {
-      b.push("{");
-      writeFields(b, n, false);
-      b.push("}");
+      out.push("{");
+      writeFields(n, false, out);
+      out.push("}");
     }
   } else {
-    b.push("(" + n.type);
+    out.push("(" + n.type);
     for (const c of n.children) {
-      b.push(" ");
-      writeValue(b, c);
+      out.push(" ", new Pending(c));
     }
-    writeFields(b, n, true);
-    b.push(")");
+    writeFields(n, true, out);
+    out.push(")");
   }
   if (n.rule !== "") {
-    b.push("@" + n.rule);
+    out.push("@" + n.rule);
   }
 }
 
-function writeFields(b: string[], n: Node, sep: boolean): void {
+function writeFields(n: Node, sep: boolean, out: (string | Pending)[]): void {
   for (const f of sortedFields(n.fields)) {
-    if (sep) {
-      b.push(" ");
-    }
+    out.push((sep ? " " : "") + f.name + "=", new Pending(f.value));
     sep = true;
-    b.push(f.name + "=");
-    writeValue(b, f.value);
   }
 }
 

@@ -180,6 +180,10 @@ Compared with the Go API:
 - **JSON.** `JSON.stringify(node)` gives the engine's JSON structure (the same keys in the same order, fields sorted),
   with JavaScript's escaping. `marshal(node)` gives exactly the bytes Go's `json.Marshal` gives, including its escapes
   of `<`, `>` and `&`, which is what the tests compare.
+- **Deep trees.** Left recursion, left-associative Pratt operators and `foldl` build trees as deep as the input is
+  long, without deep calls. `marshal` and `toString` write trees of any depth (`encoding/json` gives up beyond 10,000
+  levels; `marshal` does not). `JSON.stringify` recurses and throws a `RangeError` on Node.js's default stack beyond
+  a few thousand levels (between 3,000 and 5,000 for `def e = e "+" n / n`): use `marshal` for such trees.
 - **One module per grammar.** Every generated module exports the same names, so import two parsers under namespaces:
   `import * as pairs from "./pairs.ts"`.
 - A parser keeps no state between calls; it is safe to call from several workers.

@@ -442,3 +442,28 @@ for (const s of ["\uDC00".repeat(7000), "x\uDC00".repeat(15000), "\uD800", "aðŸ˜
 		t.Errorf("got\n%s\nwant\n%s", clip(out, diffAt(out, want)), clip(want, diffAt(out, want)))
 	}
 }
+
+// TestGeneratedTSDeepTrees checks that the printers handle trees nested more deeply than the
+// JavaScript stack allows recursion: left recursion builds such trees without nesting calls.
+func TestGeneratedTSDeepTrees(t *testing.T) {
+	src := `
+def main = e $$
+def e = e "+" n / n
+def n = @(?0-9)+`
+	input := strings.Repeat("1+", 19999) + "1"
+	out := runTSScript(t, src, `import { parse, marshal } from "./parser.ts";
+const r = parse("`+input+`");
+console.log(r.error === null ? "ok" : r.error.message);
+console.log(String(r.node));
+console.log(marshal(r.node));
+`)
+	n, err := compile(t, src).Parse("main", input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "ok\n" + n.String() + "\n" + strings.TrimSuffix(strings.TrimPrefix(deepResultJSON(t, n, nil), `{"node":`), "}") + "\n"
+	if out != want {
+		at := diffAt(out, want)
+		t.Errorf("got\n%s\nwant\n%s", clip(out, at), clip(want, at))
+	}
+}
