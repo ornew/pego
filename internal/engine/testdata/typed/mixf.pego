@@ -1,0 +1,14 @@
+type Name terminal
+type Item struct { N Name, Kids []Item, Tag *Match, Cnt int, Txt string, Ok bool }
+type Pair struct { L Item, R Item }
+type Top = Item | Pair
+type Doc struct { Tops []Top, Names []Name, Errs []*Error, Depth int }
+def main: Doc = [d = 0] ts:(t:top ";"?)* ns:(-"#" n:name)* $$ -> new Doc{Tops: map($ts, (x) => $x.t), Names: map($ns, (y) => $y.n), Errs: list(), Depth: len($ts)}
+def top: Top = pair / item
+def pair: Pair = l:item "=" -- r:item -> new Pair{L: $l, R: $r}
+def item: Item = item1 / item2 / bad
+def item1: Item = &(n:name) nm:name tg:"!"? ks:("(" k:item ")")* [len($nm) < 4] -> new Item{N: $nm, Kids: map($ks, (z) => $z.k), Tag: $tg, Cnt: len($ks), Txt: text($nm) + "/" + text($0), Ok: $tg == nil}
+def item2: Item = "<" xs:(x:item)+ ">" -> new Item{Kids: map($xs, (e) => $e.x), Txt: "grp"}
+def bad: Item = digits #recover(skip=(?0-9)* (?a-z))
+def name: Name = (?a-c)+
+def digits: Item = d:@(?0-9)+ -> new Item{Txt: text($d), Cnt: len($d)}

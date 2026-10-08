@@ -91,13 +91,14 @@ automatically in the others. This table records, for every change in the log bel
 | 38, 42, 43, 46 | Direct calls of plain rules | ✓ | ✓ | ✓ | ✓ | ✓ | generated: a method per rule (46); typed: a method per rule for every rule (48) |
 | 39 | Line table for error positions | ✓ | ✓ | ✓ | ✓ | ✓ | streams still scan from the committed position |
 | 40, 41 | Offset table built while decoding | ✓ | ✓ | ✓ | ✓ | ✓ | engine: full parses only; recognition builds it on demand (30) |
-| 48 | Struct constructors per type, projected repetitions, frames reused, scratch pooled across parses | ✗ | ✗ | ✗ | ✗ | ✓ | possible elsewhere in part (see below) |
+| 48 | Struct constructors per type, frames reused, scratch pooled across parses | ✗ | ✗ | ✗ | ✗ | ✓ | see below |
+| 52 | Projected repetitions (`map($rest, (r) => $r.f)`) | ✗ | ✗ | ✗ | ✓ | ✓ | a candidate for the engine and the VMs |
 | 49–51 | First-character dispatch in choices | ✓ | ✓ | ✓ | ✓ | ✓ | VMs: `GUARD` (instruction set 3) |
 
 Not applied, and why:
 
-- **Projected repetitions (48)** apply to any backend in principle (the captured list is only visible to the action),
-  but have been done only in the typed runtime. A candidate for the others.
+- **Projected repetitions (52)** apply to any backend in principle (the captured list is only visible to the action),
+  but are done only by the code generator so far.
 - **Reusing frames when their rule returns, pooling scratch memory across parses (48):** in the Node runtimes,
   capture frames share their chunks with the child lists of the result, so they cannot be freed or pooled without
   separating them; freeing frames in the engine was measured slower (see the experiments table).
@@ -757,6 +758,16 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   guards).
 - Effect (min of 10 interleaved runs, Apple M3 Max): JSON 18.5 → 16.1 ms (recursive VM, −13%) and 22.4 → 19.0 ms
   (iterative VM, −15%); Minilang −8% on both; Arith_Pratt −4% and −7%; XML −1% and −7%.
+
+### 52. Projected repetitions in generated `Parse`
+
+- The projection of change 48 (a repetition captured only to be mapped to one field of its elements gathers that
+  field directly) now applies to the generated parsers' Node runtime too. A review of the typed runtime found the
+  conditions incomplete, and they are now: the action reads the capture only as `map($x, (e) => $e.f)` and uses no
+  `$n` (which can reach the same list), the names involved are captured once in the rule, and `f` is captured in
+  every element with a value that is never nil (otherwise an element without a record makes `$e.f` an error).
+- Effect (min of 8 interleaved runs, Apple M3 Max, generated `Parse`): CSV 3.9 → 2.7 ms (−30%, 14.0 → 8.7 MB), JSON
+  7.8 → 7.0 ms (−10%, 18.4 → 15.1 MB), Minilang −4%; grammars without such repetitions unchanged.
 
 ## Grammar authoring guidelines for performance
 

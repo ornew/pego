@@ -61,7 +61,7 @@ func ParseAST(input string, unit ...Unit) (%s, error) {
 	return tparse(trules[%d], input, unit, a, func(v any) %s { return %s })
 }
 `, doc, t.goType(st), start.id, t.goType(st), result)
-		return b.String(), t.names["Span"], nil
+		return b.String(), t.span, nil
 	}
 	result := t.conv(st, "n") // before the converters are written: it may need a list converter
 	newConv := ""
@@ -74,15 +74,17 @@ func ParseAST(input string, unit ...Unit) (%s, error) {
 %s	return %s, err
 }
 `, doc, t.goType(st), newConv, result)
-	return b.String(), t.names["Span"], nil
+	return b.String(), t.span, nil
 }
 
 type typedGen struct {
 	g    *generator
 	info *typeInfo
-	// names maps grammar type names (and Span) to Go type names; unions maps the written form of
-	// a union type to the Go name of the alias that declares it.
+	// names maps grammar type names to Go type names, and span is the Go name of the helper type
+	// Span; unions maps the written form of a union type to the Go name of the alias that declares
+	// it.
 	names  map[string]string
+	span   string
 	unions map[string]string
 	// lists maps the Go type of a list to the name of its converter (from nodes); tlists, to the
 	// name of its converter from values of the typed runtime.
@@ -148,7 +150,7 @@ func (t *typedGen) name() {
 	for used[span] {
 		span += "_"
 	}
-	t.names["Span"] = span
+	t.span = span // a field of its own: a grammar type may be named Span
 }
 
 // nodeUnion reports whether every member of the union is a node type (so it can be an interface).
@@ -264,7 +266,7 @@ func (t *typedGen) conv(x ty, v string) string {
 
 // decls writes the type declarations.
 func (t *typedGen) decls(b *strings.Builder) {
-	span := t.names["Span"]
+	span := t.span
 	b.WriteString("// --- Typed values (pego gen -types; Span, Match and Error are in the typed runtime above) ---\n\n")
 	for _, name := range t.terms {
 		fmt.Fprintf(b, "// %s is the terminal type %s.\n", t.names[name], name)
@@ -321,7 +323,7 @@ func (t *typedGen) decls(b *strings.Builder) {
 // converters writes the converter type and its methods. The converter allocates typed values of
 // each type, and the elements of lists, in chunks, as the parser does nodes.
 func (t *typedGen) converters(b *strings.Builder) {
-	span := t.names["Span"]
+	span := t.span
 	b.WriteString(astHelpers)
 	fmt.Fprintf(b, `func (a *astConv) toMatch(n *Node) *Match {
 	if n == nil || n.Type != "Match" {
@@ -405,7 +407,7 @@ func (a *astConv) toError(n *Node) *Error {
 // result type and the field types of every struct type have Go types of their own (no CST
 // node types, node, terminal or any).
 func (t *typedGen) runtimeOK(st ty) bool {
-	if !t.representable(st) {
+	if !t.representable(st) || t.readsFields() {
 		return false
 	}
 	for _, name := range t.structs {
@@ -416,6 +418,58 @@ func (t *typedGen) runtimeOK(st ty) bool {
 		}
 	}
 	return true
+}
+
+// readsFields reports whether an action or predicate may read a field of a struct: a member
+// access whose name is a field of some struct type. A typed value keeps its fields converted to
+// their Go types (a list as a slice, an Error where a struct is expected as nil, an omitted int as
+// 0), so reading them back would not give what the node's fields hold.
+func (t *typedGen) readsFields() bool {
+	fields := map[string]bool{}
+	for _, name := range t.structs {
+		for _, f := range t.info.fields[name] {
+			fields[f.name] = true
+		}
+	}
+	found := false
+	term := func(x grammar.Term) {
+		walkTerm(x, func(y grammar.Term) {
+			if m, ok := y.(*grammar.Member); ok && fields[m.Name] {
+				found = true
+			}
+		})
+	}
+	var expr func(e grammar.Expr)
+	expr = func(e grammar.Expr) {
+		walkExpr(e, func(x grammar.Expr) {
+			switch x := x.(type) {
+			case *grammar.Predicate:
+				term(x.Term)
+			case *grammar.Pratt:
+				for _, o := range x.Operands {
+					expr(o.Expr)
+					if o.Action != nil {
+						term(o.Action)
+					}
+				}
+				for _, l := range x.Levels {
+					for _, op := range l.Operators {
+						expr(op.Expr)
+						if op.Action != nil {
+							term(op.Action)
+						}
+					}
+				}
+			}
+		})
+	}
+	for _, r := range t.g.prog.rules {
+		expr(r.def.Expr)
+		if r.def.Action != nil {
+			term(r.def.Action)
+		}
+	}
+	return found
 }
 
 func (t *typedGen) representable(x ty) bool {
@@ -503,9 +557,15 @@ func (t *typedGen) dconv(x ty, v, a string) string {
 			return "astBool(" + v + ")"
 		}
 	case namedTy:
+		switch x {
+		case tyMatch:
+			return "tpubMatch(" + v + ")"
+		case tyError:
+			return "tpubError(" + v + ")"
+		}
 		return "tAs[" + t.goType(x) + "](" + v + ")"
 	case unionTy:
-		return "tAs[" + t.goType(x) + "](" + v + ")"
+		return "tAs[" + t.goType(x) + "](tpub(" + v + "))"
 	case optTy:
 		if b, ok := x.elem.(basicTy); ok && (b == tyInt || b == tyString || b == tyBool) {
 			return "astPtr" + strings.ToUpper(string(b)[:1]) + string(b)[1:] + "(" + v + ")"
@@ -527,7 +587,7 @@ func (t *typedGen) dconv(x ty, v, a string) string {
 // typedRuntime writes the constructors of the struct and terminal types and the list converters
 // of the typed runtime, and the chunks they allocate from.
 func (t *typedGen) typedRuntime(b *strings.Builder) {
-	span := t.names["Span"]
+	span := t.span
 	b.WriteString(astHelpers)
 	var reg strings.Builder
 	for _, r := range append(append([]*rule(nil), t.g.prog.rules...), t.g.prog.twins...) {
@@ -560,7 +620,7 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 	for i := 0; i < len(t.tlistOrder); i++ {
 		l := t.tlistOrder[i]
 		elem := t.goType(l.elem)
-		fmt.Fprintf(&convs, "func %s(a *tslabs, v any) []%s {\n\tn, _ := v.(*tnode)\n\tif n == nil {\n\t\treturn nil\n\t}\n\tout := astSlice(&a.%sChunk, len(n.kids))\n\tfor i, c := range n.kids {\n\t\tout[i] = %s\n\t}\n\treturn out\n}\n\n", l.name, elem, l.name, t.dconv(l.elem, "c", "a"))
+		fmt.Fprintf(&convs, "func %s(a *tslabs, v any) []%s {\n\tif v == nil {\n\t\treturn nil\n\t}\n\tn, _ := v.(*tnode)\n\tif n == nil {\n\t\treturn []%[2]s{} // another node (an Error), as conversion makes an empty list of it\n\t}\n\tout := astSlice(&a.%sChunk, len(n.kids))\n\tfor i, c := range n.kids {\n\t\tout[i] = %s\n\t}\n\treturn out\n}\n\n", l.name, elem, l.name, t.dconv(l.elem, "c", "a"))
 	}
 	b.WriteString("// tinit sets up the typed rules (called at the end of init, after the rule tables).\nfunc tinit() {\n" + reg.String() + "}\n\n")
 	b.WriteString(cons.String())

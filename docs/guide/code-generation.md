@@ -393,7 +393,8 @@ Details:
   in the list as `*Error`; where a struct or terminal type is expected it becomes `nil` (it is among the returned
   `SyntaxErrors` anyway).
 - **Speed.** When every value `ParseAST` can return has a Go type of its own (no `Seq`, `List`, `Operator`, records,
-  `node`, `terminal` or `any`, also in struct fields), the generated parser builds the values directly, without the
+  `node`, `terminal` or `any`, also in struct fields) and no action reads a field of a struct value, the generated
+  parser builds the values directly, without the
   nodes `Parse` makes: on the benchmarks `ParseAST` is then about 20% faster than `Parse` and allocates a tenth of the
   memory (JSON 9.9 → 7.7 ms and 20 MB → 2.4 MB on a 262 KB input; XML, the left-recursive calculator and the outline
   grammar alike). Otherwise `ParseAST` runs `Parse` and converts the tree, about 6% slower than `Parse`. The

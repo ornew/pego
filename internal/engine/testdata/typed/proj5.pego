@@ -1,0 +1,4 @@
+type B struct { N int }
+type Out struct { A []Match }
+def main: Out = -bad? xs:(n:@"x" bad)* -> new Out{A: map($xs, (e) => $e.n)}
+def bad: B = "!" -> new B{N: nope}

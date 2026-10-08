@@ -1849,8 +1849,7 @@ func (s *Span) tsetSpan(start, end int) { s.Start, s.End = start, end }
 // Match is a terminal made by a literal, a character class, ., @a or _.
 type Match struct {
 	Span
-	Text  string
-	fresh bool
+	Text string
 }
 
 // Error is input skipped by error recovery (#recover).
@@ -1858,11 +1857,48 @@ type Error struct {
 	Span
 	Text    string
 	Message string
-	fresh   bool
 }
 
-// tval is a node value of the typed runtime: a value of a struct or terminal type, *Match,
-// *Error or *tnode.
+// tmatch and terror are a Match and an Error while the typed runtime handles them: whether the
+// value is fresh (see Node.fresh) is part of the state of the parse, not of the result. The
+// result holds pointers to the embedded Match and Error (tpub).
+type tmatch struct {
+	Match
+	fresh bool
+}
+
+type terror struct {
+	Error
+	fresh bool
+}
+
+// tpub returns the public form of a value: *Match and *Error for tmatch and terror.
+func tpub(v any) any {
+	switch x := v.(type) {
+	case *tmatch:
+		return &x.Match
+	case *terror:
+		return &x.Error
+	}
+	return v
+}
+
+func tpubMatch(v any) *Match {
+	if x, ok := v.(*tmatch); ok {
+		return &x.Match
+	}
+	return nil
+}
+
+func tpubError(v any) *Error {
+	if x, ok := v.(*terror); ok {
+		return &x.Error
+	}
+	return nil
+}
+
+// tval is a node value of the typed runtime: a value of a struct or terminal type, *tmatch,
+// *terror or *tnode.
 type tval interface {
 	tspan() (int, int)
 	tsetSpan(start, end int)
@@ -1875,20 +1911,20 @@ type tval interface {
 	tsetFresh(bool)
 }
 
-func (m *Match) tname() string             { return "Match" }
-func (m *Match) ttext() (string, bool)     { return m.Text, true }
-func (m *Match) tkids() []any              { return nil }
-func (m *Match) tfield(string) (any, bool) { return nil, true }
-func (m *Match) tstruct() bool             { return false }
-func (m *Match) tfresh() bool              { return m.fresh }
-func (m *Match) tsetFresh(f bool)          { m.fresh = f }
-func (e *Error) tname() string             { return "Error" }
-func (e *Error) ttext() (string, bool)     { return e.Text, true }
-func (e *Error) tkids() []any              { return nil }
-func (e *Error) tstruct() bool             { return false }
-func (e *Error) tfresh() bool              { return e.fresh }
-func (e *Error) tsetFresh(f bool)          { e.fresh = f }
-func (e *Error) tfield(name string) (any, bool) {
+func (m *tmatch) tname() string             { return "Match" }
+func (m *tmatch) ttext() (string, bool)     { return m.Text, true }
+func (m *tmatch) tkids() []any              { return nil }
+func (m *tmatch) tfield(string) (any, bool) { return nil, true }
+func (m *tmatch) tstruct() bool             { return false }
+func (m *tmatch) tfresh() bool              { return m.fresh }
+func (m *tmatch) tsetFresh(f bool)          { m.fresh = f }
+func (e *terror) tname() string             { return "Error" }
+func (e *terror) ttext() (string, bool)     { return e.Text, true }
+func (e *terror) tkids() []any              { return nil }
+func (e *terror) tstruct() bool             { return false }
+func (e *terror) tfresh() bool              { return e.fresh }
+func (e *terror) tsetFresh(f bool)          { e.fresh = f }
+func (e *terror) tfield(name string) (any, bool) {
 	if name == "message" {
 		return e.Message, true
 	}
@@ -2124,7 +2160,7 @@ type tparser struct {
 	kidStack []any
 	ac       tctx
 	saved    []any
-	matches  []Match // returned in values, so not kept for the next parse
+	matches  []tmatch // returned in values, so not kept for the next parse
 	// Scratch memory, kept for the next parse (recycle).
 	nodes     tarena[tnode]
 	vals      tarena[any]
@@ -2185,13 +2221,13 @@ func (p *tparser) newNode(typ string, start, end int, kids []any) *tnode {
 	return n
 }
 
-func (p *tparser) newMatch(start, end int, text string, fresh bool) *Match {
+func (p *tparser) newMatch(start, end int, text string, fresh bool) *tmatch {
 	if len(p.matches) == 0 {
-		p.matches = make([]Match, nodeChunk)
+		p.matches = make([]tmatch, nodeChunk)
 	}
 	m := &p.matches[0]
 	p.matches = p.matches[1:]
-	*m = Match{Span{start, end}, text, fresh}
+	*m = tmatch{Match{Span{start, end}, text}, fresh}
 	return m
 }
 
@@ -2590,7 +2626,7 @@ func (p *tparser) recoverAttr(m, skip tmatcher, build bool) (any, bool) {
 	if !build {
 		return nil, true
 	}
-	return &Error{Span: Span{m0.pos, p.pos}, Text: p.text(m0.pos, p.pos), Message: e.Error(), fresh: true}, true
+	return &terror{Error{Span: Span{m0.pos, p.pos}, Text: p.text(m0.pos, p.pos), Message: e.Error()}, true}, true
 }
 
 // --- Actions and predicates ---
@@ -3381,9 +3417,9 @@ func tinit() {
 func tmk_Binary(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tBinary)
-	v.Left = tAs[Expr](f0)
-	v.Op = tAs[*Match](f1)
-	v.Right = tAs[Expr](f2)
+	v.Left = tAs[Expr](tpub(f0))
+	v.Op = tpubMatch(f1)
+	v.Right = tAs[Expr](tpub(f2))
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -3399,8 +3435,8 @@ func tmk_Binary(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 func tmk_Unary(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tUnary)
-	v.Op = tAs[*Match](f0)
-	v.X = tAs[Expr](f1)
+	v.Op = tpubMatch(f0)
+	v.X = tAs[Expr](tpub(f1))
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -3424,7 +3460,7 @@ type tslabs struct {
 // It builds the values directly, without the nodes Parse returns.
 func ParseAST(input string, unit ...Unit) (Expr, error) {
 	a := &tslabs{}
-	return tparse(trules[0], input, unit, a, func(v any) Expr { return tAs[Expr](v) })
+	return tparse(trules[0], input, unit, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
 }
 
 var lit7 = []rune(".")
@@ -3454,12 +3490,12 @@ var lit102 = []rune("(")
 var lit107 = []rune(")")
 var lit110 = []rune("+")
 var lit112 = []rune("-")
-var lit115 = []rune("*")
-var lit117 = []rune("/")
-var lit119 = []rune("%")
-var lit122 = []rune("-")
-var lit124 = []rune("+")
-var lit127 = []rune("^")
+var lit118 = []rune("*")
+var lit120 = []rune("/")
+var lit122 = []rune("%")
+var lit128 = []rune("-")
+var lit130 = []rune("+")
+var lit135 = []rune("^")
 
 func init() {
 	rules = []*rule{
@@ -3528,10 +3564,33 @@ func init() {
 			&tprattLine{scope: []string{}, m: (*tparser).e101, action: nil, isSeq: false},
 			&tprattLine{scope: []string{"e"}, m: (*tparser).e109, action: func(c *tctx) any { return c.cap(0) }, isSeq: true},
 		},
-		prefix: []*tprattOp{{id: 2, kind: "prefix", assoc: "", level: 3, line: &tprattLine{scope: []string{}, m: (*tparser).e126, action: func(c *tctx) any { return tmk_Unary(c, true, c.op, c.rhs) }, isSeq: false}}},
-		led: []*tprattOp{{id: 0, kind: "infix", assoc: "left", level: 1, line: &tprattLine{scope: []string{}, m: (*tparser).e114, action: func(c *tctx) any { return tmk_Binary(c, true, c.lhs, c.op, c.rhs) }, isSeq: false}},
-			{id: 1, kind: "infix", assoc: "left", level: 2, line: &tprattLine{scope: []string{}, m: (*tparser).e121, action: func(c *tctx) any { return tmk_Binary(c, true, c.lhs, c.op, c.rhs) }, isSeq: false}},
-			{id: 3, kind: "infix", assoc: "right", level: 4, line: &tprattLine{scope: []string{}, m: (*tparser).e128, action: func(c *tctx) any { return tmk_Binary(c, true, c.lhs, c.op, c.rhs) }, isSeq: false}}},
+		prefix: []*tprattOp{{id: 2, kind: "prefix", assoc: "", level: 3, line: &tprattLine{scope: []string{}, m: (*tparser).e132, action: func(c *tctx) any {
+			return func() any { f_133 := c.op; f_134 := c.rhs; return tmk_Unary(c, true, f_133, f_134) }()
+		}, isSeq: false}}},
+		led: []*tprattOp{{id: 0, kind: "infix", assoc: "left", level: 1, line: &tprattLine{scope: []string{}, m: (*tparser).e114, action: func(c *tctx) any {
+			return func() any {
+				f_115 := c.lhs
+				f_116 := c.op
+				f_117 := c.rhs
+				return tmk_Binary(c, true, f_115, f_116, f_117)
+			}()
+		}, isSeq: false}},
+			{id: 1, kind: "infix", assoc: "left", level: 2, line: &tprattLine{scope: []string{}, m: (*tparser).e124, action: func(c *tctx) any {
+				return func() any {
+					f_125 := c.lhs
+					f_126 := c.op
+					f_127 := c.rhs
+					return tmk_Binary(c, true, f_125, f_126, f_127)
+				}()
+			}, isSeq: false}},
+			{id: 3, kind: "infix", assoc: "right", level: 4, line: &tprattLine{scope: []string{}, m: (*tparser).e136, action: func(c *tctx) any {
+				return func() any {
+					f_137 := c.lhs
+					f_138 := c.op
+					f_139 := c.rhs
+					return tmk_Binary(c, true, f_137, f_138, f_139)
+				}()
+			}, isSeq: false}}},
 	}
 	trules[1].body = func(p *tparser, min int) (any, bool) { return p.prattParse(trules[1], min) }
 	trules[2].body = func(p *tparser, _ int) (any, bool) { return p.e96() }
@@ -4731,22 +4790,22 @@ func (p *tparser) e114() (any, bool) {
 }
 
 // "*"
-func (p *tparser) e116() (any, bool) {
-	return p.matchLiteral(lit115, "*", 12, false)
+func (p *tparser) e119() (any, bool) {
+	return p.matchLiteral(lit118, "*", 12, false)
 }
 
 // "/"
-func (p *tparser) e118() (any, bool) {
-	return p.matchLiteral(lit117, "/", 13, false)
+func (p *tparser) e121() (any, bool) {
+	return p.matchLiteral(lit120, "/", 13, false)
 }
 
 // "%"
-func (p *tparser) e120() (any, bool) {
-	return p.matchLiteral(lit119, "%", 14, false)
+func (p *tparser) e123() (any, bool) {
+	return p.matchLiteral(lit122, "%", 14, false)
 }
 
 // "*" / "/" / "%"
-func (p *tparser) e121() (any, bool) {
+func (p *tparser) e124() (any, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
 	if !(more && (ch == 42)) && p.depth+0 <= maxDepth {
@@ -4754,7 +4813,7 @@ func (p *tparser) e121() (any, bool) {
 	} else {
 		prevCut := p.cut
 		p.cut = false
-		v, ok := p.e116()
+		v, ok := p.e119()
 		cut := p.cut
 		p.cut = prevCut
 		if ok {
@@ -4770,7 +4829,7 @@ func (p *tparser) e121() (any, bool) {
 	} else {
 		prevCut := p.cut
 		p.cut = false
-		v, ok := p.e118()
+		v, ok := p.e121()
 		cut := p.cut
 		p.cut = prevCut
 		if ok {
@@ -4786,7 +4845,7 @@ func (p *tparser) e121() (any, bool) {
 	} else {
 		prevCut := p.cut
 		p.cut = false
-		v, ok := p.e120()
+		v, ok := p.e123()
 		cut := p.cut
 		p.cut = prevCut
 		if ok {
@@ -4801,17 +4860,17 @@ func (p *tparser) e121() (any, bool) {
 }
 
 // "-"
-func (p *tparser) e123() (any, bool) {
-	return p.matchLiteral(lit122, "-", 11, false)
+func (p *tparser) e129() (any, bool) {
+	return p.matchLiteral(lit128, "-", 11, false)
 }
 
 // "+"
-func (p *tparser) e125() (any, bool) {
-	return p.matchLiteral(lit124, "+", 10, false)
+func (p *tparser) e131() (any, bool) {
+	return p.matchLiteral(lit130, "+", 10, false)
 }
 
 // "-" / "+"
-func (p *tparser) e126() (any, bool) {
+func (p *tparser) e132() (any, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
 	if !(more && (ch == 45)) && p.depth+0 <= maxDepth {
@@ -4819,7 +4878,7 @@ func (p *tparser) e126() (any, bool) {
 	} else {
 		prevCut := p.cut
 		p.cut = false
-		v, ok := p.e123()
+		v, ok := p.e129()
 		cut := p.cut
 		p.cut = prevCut
 		if ok {
@@ -4835,7 +4894,7 @@ func (p *tparser) e126() (any, bool) {
 	} else {
 		prevCut := p.cut
 		p.cut = false
-		v, ok := p.e125()
+		v, ok := p.e131()
 		cut := p.cut
 		p.cut = prevCut
 		if ok {
@@ -4850,8 +4909,8 @@ func (p *tparser) e126() (any, bool) {
 }
 
 // "^"
-func (p *tparser) e128() (any, bool) {
-	return p.matchLiteral(lit127, "^", 15, false)
+func (p *tparser) e136() (any, bool) {
+	return p.matchLiteral(lit135, "^", 15, false)
 }
 
 // number, called as by invokePlain

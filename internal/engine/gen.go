@@ -415,12 +415,13 @@ func (g *generator) plainCall(r *rule, body string) {
 }
 
 // projections returns the captures of repetitions that the rule r's action reads only as
-// map($x, (e) => $e.f), mapped to the field f, when generating the typed runtime. Such a
+// map($x, (e) => $e.f), mapped to the field f. Such a
 // repetition gathers the values of f directly (projectRepeat), instead of a record per element
 // that the action takes apart again. The capture f must be an item of the element's sequence (so
 // it is always recorded), and no predicate may read $x.
 func (g *generator) projections(r *rule) map[string]string {
-	if g.table != "trules" || r.action == nil {
+	// $n would see the repetition's value too (it is an element of the body).
+	if g.table == "recRules" || r.action == nil || usesItems(r.action) {
 		return nil
 	}
 	cands := map[string]*grammar.Repeat{}
@@ -456,6 +457,19 @@ func (g *generator) projections(r *rule) map[string]string {
 	walk(r.def.Expr)
 	if len(cands) == 0 {
 		return nil
+	}
+	// A name captured more than once (in another repetition's elements, say) is not projected:
+	// $x and the element field refer to captures by name.
+	count := map[string]int{}
+	walkExpr(r.def.Expr, func(x grammar.Expr) {
+		if c, ok := x.(*grammar.Capture); ok {
+			count[c.Name]++
+		}
+	})
+	for name := range cands {
+		if count[name] > 1 {
+			delete(cands, name)
+		}
 	}
 	// Predicates must not read the captures.
 	walkExpr(r.def.Expr, func(x grammar.Expr) {
@@ -521,7 +535,7 @@ func (g *generator) projections(r *rule) map[string]string {
 	proj := map[string]string{}
 	for name, rp := range cands {
 		f := fields[name]
-		if f == "" || bad[name] || !directCapture(rp.Expr, f) {
+		if f == "" || bad[name] || count[f] > 1 || !g.directCapture(rp.Expr, f) {
 			continue
 		}
 		proj[name] = f
@@ -546,18 +560,52 @@ func projField(t grammar.Term) (string, bool) {
 	return m.Name, true
 }
 
-// directCapture reports whether e captures name unconditionally: e is the capture, or a sequence
-// with the capture among its items.
-func directCapture(e grammar.Expr, name string) bool {
-	if c, ok := e.(*grammar.Capture); ok {
-		return c.Name == name
-	}
-	if seq, ok := e.(*grammar.Seq); ok {
-		for _, it := range seq.Items {
-			if c, ok := it.(*grammar.Capture); ok && c.Name == name {
-				return true
+// directCapture reports whether e captures name unconditionally (e is the capture, or a sequence
+// with the capture among its items) with a value that is never nil. Then the element's record
+// always has the field, and projecting gives what map would. (When an element records no value,
+// its record is not built, and reading the field of the element fails instead.)
+func (g *generator) directCapture(e grammar.Expr, name string) bool {
+	var c *grammar.Capture
+	switch e := e.(type) {
+	case *grammar.Capture:
+		c = e
+	case *grammar.Seq:
+		for _, it := range e.Items {
+			if x, ok := it.(*grammar.Capture); ok && x.Name == name {
+				c = x
 			}
 		}
+	}
+	return c != nil && c.Name == name && g.nonNil(c.Expr)
+}
+
+// nonNil reports whether the value of e (built as a capture builds it) is never nil.
+func (g *generator) nonNil(e grammar.Expr) bool {
+	switch e := e.(type) {
+	case *grammar.Literal, *grammar.CharClass, *grammar.Any, *grammar.Atomic, *grammar.Top, *grammar.Seq, *grammar.Repeat:
+		return true
+	case *grammar.Capture:
+		return g.nonNil(e.Expr)
+	case *grammar.Choice:
+		for _, a := range e.Alts {
+			if !g.nonNil(a) {
+				return false
+			}
+		}
+		return true
+	case *grammar.Attributed:
+		return g.nonNil(e.Expr) // #recover makes an Error node
+	case *grammar.Ref:
+		if g.prog.typed == nil {
+			return false
+		}
+		switch t := g.prog.typed.rules[e.Name].(type) {
+		case nil, optTy:
+			return false
+		case basicTy:
+			return t != tyNil && t != tyAny && t != tyNever
+		}
+		return true
 	}
 	return false
 }
@@ -599,7 +647,8 @@ func (g *generator) projectRepeat(b *strings.Builder, e *grammar.Repeat, field s
 	fmt.Fprintf(b, "\t\tcount++\n\t\tp.kidStack = append(p.kidStack, f.vals[%d])\n", slot)
 	fmt.Fprintf(b, "\t\tif p.pos == m0.pos && count >= %d {\n\t\t\tbreak\n\t\t}\n\t}\n", e.Min)
 	fmt.Fprintf(b, "\tif count < %d {\n\t\tp.dropKids(base)\n\t\treturn nil, false\n\t}\n", e.Min)
-	b.WriteString("\treturn p.newNode(\"List\", start, p.pos, p.kids(base)), true\n")
+	b.WriteString(g.pick("\treturn p.newNode(Node{Type: \"List\", Start: start, End: p.pos, Children: p.kids(base), fresh: true}), true\n",
+		"\treturn p.newNode(\"List\", start, p.pos, p.kids(base)), true\n"))
 }
 
 func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
@@ -1020,18 +1069,27 @@ func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) str
 		if g.table == "trules" {
 			// The typed runtime calls the constructor of the type (tmk_T, see typedRuntime) with
 			// the fields in declaration order.
+			// The fields are evaluated in the order written (an error in one must win over the
+			// next), then passed in declaration order.
 			spec := g.prog.types[t.Type].(*grammar.StructSpec)
+			var b strings.Builder
+			b.WriteString("func() any { ")
+			vars := map[string]string{}
+			for _, given := range t.Fields {
+				v := g.name("f_")
+				vars[given.Name] = v
+				fmt.Fprintf(&b, "%s := %s; ", v, g.term(given.Value, s, locals))
+			}
 			args := []string{"c", strconv.FormatBool(grammar.Term(t) == g.final)}
 			for _, f := range spec.Fields {
-				arg := "nil"
-				for _, given := range t.Fields {
-					if given.Name == f.Name {
-						arg = g.term(given.Value, s, locals)
-					}
+				if v, ok := vars[f.Name]; ok {
+					args = append(args, v)
+				} else {
+					args = append(args, "nil")
 				}
-				args = append(args, arg)
 			}
-			return "tmk_" + t.Type + "(" + strings.Join(args, ", ") + ")"
+			b.WriteString("return tmk_" + t.Type + "(" + strings.Join(args, ", ") + ") }()")
+			return b.String()
 		}
 		args := []string{strconv.Quote(t.Type)}
 		for _, f := range t.Fields {
@@ -1063,7 +1121,7 @@ func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) str
 			return fmt.Sprintf("%sFold(%q, %v, %s, %s, %s)", g.rt(), t.Func, t.Func == "foldr", args[0], args[1], g.lambda(t.Args[2], s, locals))
 		case "map":
 			if x, ok := g.projected(t, locals); ok {
-				return "c.newList(tlistItems(\"map\", " + g.term(x, s, locals) + "))"
+				return "c.newList(" + g.pick("listItems", "tlistItems") + "(\"map\", " + g.term(x, s, locals) + "))"
 			}
 			return fmt.Sprintf("c.mapList(%s, %s)", args[0], g.lambda(t.Args[1], s, locals))
 		case "list":

@@ -1849,8 +1849,7 @@ func (s *Span) tsetSpan(start, end int) { s.Start, s.End = start, end }
 // Match is a terminal made by a literal, a character class, ., @a or _.
 type Match struct {
 	Span
-	Text  string
-	fresh bool
+	Text string
 }
 
 // Error is input skipped by error recovery (#recover).
@@ -1858,11 +1857,48 @@ type Error struct {
 	Span
 	Text    string
 	Message string
-	fresh   bool
 }
 
-// tval is a node value of the typed runtime: a value of a struct or terminal type, *Match,
-// *Error or *tnode.
+// tmatch and terror are a Match and an Error while the typed runtime handles them: whether the
+// value is fresh (see Node.fresh) is part of the state of the parse, not of the result. The
+// result holds pointers to the embedded Match and Error (tpub).
+type tmatch struct {
+	Match
+	fresh bool
+}
+
+type terror struct {
+	Error
+	fresh bool
+}
+
+// tpub returns the public form of a value: *Match and *Error for tmatch and terror.
+func tpub(v any) any {
+	switch x := v.(type) {
+	case *tmatch:
+		return &x.Match
+	case *terror:
+		return &x.Error
+	}
+	return v
+}
+
+func tpubMatch(v any) *Match {
+	if x, ok := v.(*tmatch); ok {
+		return &x.Match
+	}
+	return nil
+}
+
+func tpubError(v any) *Error {
+	if x, ok := v.(*terror); ok {
+		return &x.Error
+	}
+	return nil
+}
+
+// tval is a node value of the typed runtime: a value of a struct or terminal type, *tmatch,
+// *terror or *tnode.
 type tval interface {
 	tspan() (int, int)
 	tsetSpan(start, end int)
@@ -1875,20 +1911,20 @@ type tval interface {
 	tsetFresh(bool)
 }
 
-func (m *Match) tname() string             { return "Match" }
-func (m *Match) ttext() (string, bool)     { return m.Text, true }
-func (m *Match) tkids() []any              { return nil }
-func (m *Match) tfield(string) (any, bool) { return nil, true }
-func (m *Match) tstruct() bool             { return false }
-func (m *Match) tfresh() bool              { return m.fresh }
-func (m *Match) tsetFresh(f bool)          { m.fresh = f }
-func (e *Error) tname() string             { return "Error" }
-func (e *Error) ttext() (string, bool)     { return e.Text, true }
-func (e *Error) tkids() []any              { return nil }
-func (e *Error) tstruct() bool             { return false }
-func (e *Error) tfresh() bool              { return e.fresh }
-func (e *Error) tsetFresh(f bool)          { e.fresh = f }
-func (e *Error) tfield(name string) (any, bool) {
+func (m *tmatch) tname() string             { return "Match" }
+func (m *tmatch) ttext() (string, bool)     { return m.Text, true }
+func (m *tmatch) tkids() []any              { return nil }
+func (m *tmatch) tfield(string) (any, bool) { return nil, true }
+func (m *tmatch) tstruct() bool             { return false }
+func (m *tmatch) tfresh() bool              { return m.fresh }
+func (m *tmatch) tsetFresh(f bool)          { m.fresh = f }
+func (e *terror) tname() string             { return "Error" }
+func (e *terror) ttext() (string, bool)     { return e.Text, true }
+func (e *terror) tkids() []any              { return nil }
+func (e *terror) tstruct() bool             { return false }
+func (e *terror) tfresh() bool              { return e.fresh }
+func (e *terror) tsetFresh(f bool)          { e.fresh = f }
+func (e *terror) tfield(name string) (any, bool) {
 	if name == "message" {
 		return e.Message, true
 	}
@@ -2124,7 +2160,7 @@ type tparser struct {
 	kidStack []any
 	ac       tctx
 	saved    []any
-	matches  []Match // returned in values, so not kept for the next parse
+	matches  []tmatch // returned in values, so not kept for the next parse
 	// Scratch memory, kept for the next parse (recycle).
 	nodes     tarena[tnode]
 	vals      tarena[any]
@@ -2185,13 +2221,13 @@ func (p *tparser) newNode(typ string, start, end int, kids []any) *tnode {
 	return n
 }
 
-func (p *tparser) newMatch(start, end int, text string, fresh bool) *Match {
+func (p *tparser) newMatch(start, end int, text string, fresh bool) *tmatch {
 	if len(p.matches) == 0 {
-		p.matches = make([]Match, nodeChunk)
+		p.matches = make([]tmatch, nodeChunk)
 	}
 	m := &p.matches[0]
 	p.matches = p.matches[1:]
-	*m = Match{Span{start, end}, text, fresh}
+	*m = tmatch{Match{Span{start, end}, text}, fresh}
 	return m
 }
 
@@ -2590,7 +2626,7 @@ func (p *tparser) recoverAttr(m, skip tmatcher, build bool) (any, bool) {
 	if !build {
 		return nil, true
 	}
-	return &Error{Span: Span{m0.pos, p.pos}, Text: p.text(m0.pos, p.pos), Message: e.Error(), fresh: true}, true
+	return &terror{Error{Span: Span{m0.pos, p.pos}, Text: p.text(m0.pos, p.pos), Message: e.Error()}, true}, true
 }
 
 // --- Actions and predicates ---
@@ -3381,9 +3417,9 @@ func tinit() {
 func tmk_Binary(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tBinary)
-	v.Left = tAs[Expr](f0)
-	v.Op = tAs[*Match](f1)
-	v.Right = tAs[Expr](f2)
+	v.Left = tAs[Expr](tpub(f0))
+	v.Op = tpubMatch(f1)
+	v.Right = tAs[Expr](tpub(f2))
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -3399,8 +3435,8 @@ func tmk_Binary(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 func tmk_Unary(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tUnary)
-	v.Op = tAs[*Match](f0)
-	v.X = tAs[Expr](f1)
+	v.Op = tpubMatch(f0)
+	v.X = tAs[Expr](tpub(f1))
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -3424,7 +3460,7 @@ type tslabs struct {
 // It builds the values directly, without the nodes Parse returns.
 func ParseAST(input string, unit ...Unit) (Expr, error) {
 	a := &tslabs{}
-	return tparse(trules[0], input, unit, a, func(v any) Expr { return tAs[Expr](v) })
+	return tparse(trules[0], input, unit, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
 }
 
 var lit12 = []rune("+")
@@ -6396,7 +6432,14 @@ func (p *tparser) i0() (any, bool) {
 }
 
 // The action of add.
-func ta2(c *tctx) any { return tmk_Binary(c, true, c.cap(0), c.cap(1), c.cap(2)) }
+func ta2(c *tctx) any {
+	return func() any {
+		f_252 := c.cap(0)
+		f_253 := c.cap(1)
+		f_254 := c.cap(2)
+		return tmk_Binary(c, true, f_252, f_253, f_254)
+	}()
+}
 
 // add, called as by call
 func (p *tparser) u2() (any, bool) {
@@ -6434,7 +6477,14 @@ func (p *tparser) i2() (any, bool) {
 }
 
 // The action of mul.
-func ta4(c *tctx) any { return tmk_Binary(c, true, c.cap(0), c.cap(1), c.cap(2)) }
+func ta4(c *tctx) any {
+	return func() any {
+		f_255 := c.cap(0)
+		f_256 := c.cap(1)
+		f_257 := c.cap(2)
+		return tmk_Binary(c, true, f_255, f_256, f_257)
+	}()
+}
 
 // mul, called as by call
 func (p *tparser) u4() (any, bool) {
@@ -6530,7 +6580,9 @@ func (p *tparser) i5() (any, bool) {
 }
 
 // The action of neg.
-func ta6(c *tctx) any { return tmk_Unary(c, true, c.cap(0), c.cap(1)) }
+func ta6(c *tctx) any {
+	return func() any { f_258 := c.cap(0); f_259 := c.cap(1); return tmk_Unary(c, true, f_258, f_259) }()
+}
 
 // neg, called as by call
 func (p *tparser) u6() (any, bool) {
@@ -6593,7 +6645,14 @@ func (p *tparser) s7() (any, bool) {
 }
 
 // The action of pow.
-func ta8(c *tctx) any { return tmk_Binary(c, true, c.cap(0), c.cap(1), c.cap(2)) }
+func ta8(c *tctx) any {
+	return func() any {
+		f_260 := c.cap(0)
+		f_261 := c.cap(1)
+		f_262 := c.cap(2)
+		return tmk_Binary(c, true, f_260, f_261, f_262)
+	}()
+}
 
 // pow, called as by call
 func (p *tparser) u8() (any, bool) {

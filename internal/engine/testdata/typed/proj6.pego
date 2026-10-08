@@ -1,0 +1,2 @@
+type Out struct { A []Match, B []Match }
+def main: Out = ys:(xs:@"y" ";")* "|" xs:(n:@"x")* -> new Out{A: map($xs, (e) => $e.n), B: map($ys, (y) => $y.xs)}

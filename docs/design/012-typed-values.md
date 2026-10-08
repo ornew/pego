@@ -40,7 +40,9 @@ list. Where a struct or terminal type is expected, an `Error` node becomes `nil`
 ### The typed runtime
 
 When every value `ParseAST` can return has a Go type of its own (`runtimeOK`: no `Seq`, `List`, `Operator`, record,
-`node`, `terminal` or `any` in the result type or in any struct field), the generated parser builds the values
+`node`, `terminal` or `any` in the result type or in any struct field) and no action or predicate reads a field of a
+struct (a typed value keeps its fields converted, so reading one back would differ from the node's field: a list
+would be a new list, an omitted `int` 0 rather than nil, an `Error` nil), the generated parser builds the values
 directly. `genrt/typed.go` is a second runtime that mirrors `genrt/runtime.go` step by step, with values of type
 `any` instead of `*Node`: a value is a pointer to a struct or terminal type, `*Match`, `*Error`, an int, string or
 bool, nil, or a `*tnode` for the CST values that actions consume (Seq, List and Operator nodes, which never reach the
@@ -48,20 +50,24 @@ result). `tparser` embeds the parser and redefines only the methods that handle 
 errors and memoization decisions are literally shared. The generator writes the rules a second time for it
 (`trules`), with the expression code of the Node runtime and these differences:
 
-- **Constructors.** `new T{...}` calls a generated `tmk_T` with the fields in declaration order, which converts each
-  value to the field's Go type; a constructor that makes an action's result takes the rule's range directly.
+- **Constructors.** `new T{...}` evaluates the fields in the order written and calls a generated `tmk_T` with them in
+  declaration order, which converts each value to the field's Go type; a constructor that makes an action's result
+  takes the rule's range directly. `Match` and `Error` values carry their freshness in internal wrappers (`tmatch`,
+  `terror`), so the public types have no unexported fields.
 - **Rule calls.** Each rule gets methods of its own for call, invoke and finish, which call the body and the action
   directly and finish the value as the rule's kind requires.
 - **Projections.** A repetition captured only to be taken apart by `map($rest, (r) => $r.f)` (the usual
-  `first:x rest:(-"," r:x)*` list) gathers the values of `f` directly instead of a record per element.
+  `first:x rest:(-"," r:x)*` list) gathers the values of `f` directly instead of a record per element (the
+  conditions are in performance.md, change 52; generated `Parse` does the same).
 - **Scratch memory.** CST nodes, value lists, capture frames (freed when their rule returns), memo entries and the
   decoded input are pooled with the parser across parses, since the result never refers to them; a parse allocates
   little more than the values it returns.
 
 The parity test generates every corpus grammar twice, with the typed runtime and with conversion (below), and checks
-that `ParseAST` returns the same values and errors, also when parsing concurrently. Eight of the 25 grammars use the
-typed runtime, including JSON, XML, both calculators (Pratt and left recursion) and the indentation outline
-(predicates and variables).
+that `ParseAST` returns the same values and errors, also when parsing concurrently. The corpus includes the cases two
+reviews found where the first version differed (`internal/engine/testdata/typed`): field reads in actions, the order
+in which fields are evaluated, projections of names captured twice, of lists that `$n` also reaches and of nil
+values, and an `Error` where a list is expected.
 
 ### Conversion after the parse
 

@@ -52,6 +52,10 @@ def main = e:expr ";" a:args -> new Args{Items: concat($a.Items, $a.Items), N: l
 def expr: Node = l:num rest:(op:@("+" / "-") r:num)* -> foldl($l, $rest, (acc, i) => new Op{Left: $acc, Op: $i.op, Right: $i.r})
 def args: Args = first:num rest:(-"," x:num)* -> new Args{Items: concat(list($first), map($rest, (r) => $r.x)), N: len($rest)}
 def num = @(?0-9)+`, []string{"1+2-3;4,5,6", "1;2", "1-;2"}},
+		{"projected and indexed repetition", `
+type L struct { Items []Match, Rest node, N int }
+def main = first:x rest:(-"," r:x)* -> new L{Items: concat(list($first), map($rest, (e) => $e.r)), Rest: $2, N: len($rest)}
+def x = @(?a-z)+`, []string{"a,b,c", "a", "a,"}},
 		{"runtime error", `
 type A struct { N int }
 def main = x:@"a"* -> new A{N: 10 / len($x)}`, []string{"aa", ""}},
@@ -72,6 +76,24 @@ def e = pratt {
 def main = (^ @(?a-z)+ $ "\n"?)* $$ (?^\n)? _`, []string{"ab\ncd\n", "ab\n1", "日本", "é\n\xff"}},
 		{"scans", `
 def main = a:(?a-z)* -(?0-9){2,3} -.{1,2} -(?^,)+ "," rest:@.*`, []string{"ab12xy,z", "123,", "1", "abc12éq,é"}},
+	}
+	// Grammars of typed values with their inputs, from reviews of the typed runtime: each was a
+	// case where it differed from converting the result of Parse.
+	typed, _ := filepath.Glob("testdata/typed/*.pego")
+	for _, gp := range typed {
+		src, err := os.ReadFile(gp)
+		if err != nil {
+			t.Fatal(err)
+		}
+		data, err := os.ReadFile(strings.TrimSuffix(gp, ".pego") + ".json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		c := genCase{name: gp, src: string(src)}
+		if err := json.Unmarshal(data, &c.inputs); err != nil {
+			t.Fatalf("%s: %v", gp, err)
+		}
+		cases = append(cases, c)
 	}
 	// Grammars and inputs from examples/.
 	grammars, _ := filepath.Glob("../../examples/*/*.pego")

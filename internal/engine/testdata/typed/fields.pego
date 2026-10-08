@@ -1,0 +1,9 @@
+type Item struct { Name Match }
+type Box struct { Items []Item, N int, S string, B bool, F Item }
+type Out struct { Box Box, Start int, End int, Text string, Same bool, NNil bool, SNil bool, BNil bool, FNil bool, FText string }
+def main: Out = b:box -> new Out{Box: $b, Start: $b.Items.startPos, End: $b.Items.endPos, Text: text($b.Items), Same: $b.Items == $b.Items, NNil: $b.N == nil, SNil: $b.S == nil, BNil: $b.B == nil, FNil: $b.F == nil, FText: text($b.F)}
+def box: Box = "(" xs:item* ")" f:fitem -> new Box{Items: $xs, F: $f}
+def item: Item = " "* i:item2 -> $i
+def item2: Item = n:@"x" -> new Item{Name: $n}
+def fitem: Item = yitem #recover(skip=(?a-z)+)
+def yitem: Item = n:@"y" -> new Item{Name: $n}
