@@ -290,7 +290,7 @@ func (c *bcompiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) {
 	}
 	elemScope := s
 	sc := int32(-1)
-	if hasCaptures(e.Expr) {
+	if elementScoped(e.Expr) {
 		elemScope = newScope()
 		c.m.Scopes = append(c.m.Scopes, nil)
 		sc = int32(len(c.m.Scopes) - 1)

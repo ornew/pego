@@ -493,6 +493,14 @@ func visible(e grammar.Expr) bool {
 }
 
 // hasCaptures reports whether the expression contains captures (excluding nested repetitions).
+// elementScoped reports whether the repetition element e gets a capture scope of its own per
+// iteration: when it contains captures (hasCaptures), or its predicates read captures, which can
+// then only be its own (made inside &) or, an error, those of the enclosing scope. Every backend
+// and generator must decide the same way, since the scope decides where captures are written.
+func elementScoped(e grammar.Expr) bool {
+	return hasCaptures(e) || predicatesReadCaptures(e)
+}
+
 // predicatesReadCaptures reports whether a predicate in e refers to a capture.
 func predicatesReadCaptures(e grammar.Expr) bool {
 	found := false
@@ -1000,11 +1008,8 @@ func (c *compiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) match
 			return m
 		}
 	}
-	// An element containing captures gets its own scope per iteration. So does one whose predicates
-	// refer to captures, which can only be those of the enclosing scope: they are not visible there,
-	// and resolving the names in an empty scope reports it.
 	elemScope := s
-	if hasCaptures(e.Expr) || predicatesReadCaptures(e.Expr) {
+	if elementScoped(e.Expr) {
 		elemScope = newScope()
 		elemScope.outer = s
 	}

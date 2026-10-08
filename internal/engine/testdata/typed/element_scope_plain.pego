@@ -1,0 +1,5 @@
+// A plain rule (no captures of its own) whose repetition element captures inside & for a predicate:
+// the generated parsers dereferenced the caller's (absent) frame.
+type R struct { S string }
+def main: R = -r1 a:"a" -> new R{S: text($a)}
+def r1 = (&(x:. [len($x) > 0]))*

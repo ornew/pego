@@ -203,7 +203,7 @@ func capSets(e grammar.Expr, f func(string)) {
 			capSets(alt, f)
 		}
 	case *grammar.Repeat:
-		if !hasCaptures(e.Expr) {
+		if !elementScoped(e.Expr) {
 			capSets(e.Expr, f)
 		}
 	case *grammar.Optional:
@@ -595,8 +595,8 @@ func (d *dgen) repeat(e *grammar.Repeat, s *dscope, build bool, fail string) str
 			return v
 		}
 	}
-	// An element with captures has its own scope per iteration.
-	own := hasCaptures(e.Expr)
+	// An element with captures has its own scope per iteration (elementScoped).
+	own := elementScoped(e.Expr)
 	es := s
 	if own {
 		es = newDscope()

@@ -1,0 +1,4 @@
+// The capture of one iteration does not survive into the next: each iteration of an element whose
+// predicate reads a capture has a fresh scope.
+type R struct { S string }
+def main: R = x:((&(y:"a"))? [len($y) == 1] .)* "b" -> new R{S: text($x)}

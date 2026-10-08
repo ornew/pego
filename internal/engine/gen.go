@@ -647,9 +647,9 @@ func (g *generator) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, buil
 	if !build && g.scanRepeat(b, e) {
 		return
 	}
-	// An element with captures has its own scope per iteration.
+	// An element with captures has its own scope per iteration (elementScoped).
 	elemScope := s
-	if hasCaptures(e.Expr) {
+	if elementScoped(e.Expr) {
 		elemScope = newScope()
 	}
 	m := g.expr(e.Expr, elemScope, build)

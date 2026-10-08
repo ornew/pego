@@ -56,7 +56,7 @@ type runElem struct {
 // captures are written to the enclosing scope (those inside &, when the element has no captures of
 // its own) cannot be: reusing it would not write them.
 func (c *compiler) resumable(e grammar.Expr) bool {
-	ok := hasCaptures(e) || !anyCapture(e)
+	ok := elementScoped(e) || !anyCapture(e)
 	walkExpr(e, func(x grammar.Expr) {
 		switch x := x.(type) {
 		case *grammar.Predicate:
