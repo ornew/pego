@@ -61,6 +61,7 @@ const (
 type depth struct {
 	max    int
 	open   [nRules]int
+	stack  []Expr
 	failed bool
 }
 
@@ -73,15 +74,25 @@ func (d *depth) enter(r int) {
 
 func (d *depth) leave(r int) { d.open[r]-- }
 
-// chain returns the operands of a left-nested chain of operators of one precedence level, which the operator test
-// recognizes, and the operators; a single operand if x is not such a Binary.
-func chain(x Expr, isOp func(string) bool) []Expr {
-	b, ok := x.(*Binary)
-	if !ok || !isOp(b.Op.Text) {
-		return []Expr{x}
-	}
-	return append(chain(b.Left, isOp), b.Right)
+// terms returns the operands of a left-nested chain of operators of one precedence level, which the operator test
+// recognizes: a single operand if x is not such a Binary. They are on a stack of the depth, which the caller
+// pops with release when it is done with them.
+func (d *depth) terms(x Expr, isOp func(string) bool) []Expr {
+	base := len(d.stack)
+	d.collect(x, isOp)
+	return d.stack[base:len(d.stack):len(d.stack)]
 }
+
+func (d *depth) collect(x Expr, isOp func(string) bool) {
+	if b, ok := x.(*Binary); ok && isOp(b.Op.Text) {
+		d.collect(b.Left, isOp)
+		d.stack = append(d.stack, b.Right)
+		return
+	}
+	d.stack = append(d.stack, x)
+}
+
+func (d *depth) release(ts []Expr) { d.stack = d.stack[:len(d.stack)-len(ts)] }
 
 func isOr(op string) bool  { return op == "||" }
 func isAnd(op string) bool { return op == "&&" }
@@ -114,18 +125,22 @@ func (d *depth) ex(x Expr) {
 // or is conditionalOr: conditionalAnd ('||' conditionalAnd)*
 func (d *depth) or(x Expr) {
 	d.enter(rOr)
-	for _, t := range chain(x, isOr) {
+	ts := d.terms(x, isOr)
+	for _, t := range ts {
 		d.and(t)
 	}
+	d.release(ts)
 	d.leave(rOr)
 }
 
 // and is conditionalAnd: relation ('&&' relation)*
 func (d *depth) and(x Expr) {
 	d.enter(rAnd)
-	for _, t := range chain(x, isAnd) {
+	ts := d.terms(x, isAnd)
+	for _, t := range ts {
 		d.rel(t)
 	}
+	d.release(ts)
 	d.leave(rAnd)
 }
 
@@ -133,7 +148,8 @@ func (d *depth) and(x Expr) {
 // first operand is a calc, and so is each of the others, in a relation of its own.
 func (d *depth) rel(x Expr) {
 	d.enter(rRel)
-	for i, t := range chain(x, isRel) {
+	ts := d.terms(x, isRel)
+	for i, t := range ts {
 		if i == 0 {
 			d.calc(t)
 			continue
@@ -142,6 +158,7 @@ func (d *depth) rel(x Expr) {
 		d.calc(t)
 		d.leave(rRel)
 	}
+	d.release(ts)
 	d.leave(rRel)
 }
 
@@ -149,7 +166,8 @@ func (d *depth) rel(x Expr) {
 // operand of + and - is calc[2] (which takes * on its own) and that of * is calc[3] (a unary).
 func (d *depth) calc(x Expr) {
 	d.enter(rCalc)
-	for i, t := range chain(x, isAdd) {
+	ts := d.terms(x, isAdd)
+	for i, t := range ts {
 		if i == 0 {
 			d.mul(t)
 			continue
@@ -158,11 +176,13 @@ func (d *depth) calc(x Expr) {
 		d.mul(t)
 		d.leave(rCalc)
 	}
+	d.release(ts)
 	d.leave(rCalc)
 }
 
 func (d *depth) mul(x Expr) {
-	for i, t := range chain(x, isMul) {
+	ts := d.terms(x, isMul)
+	for i, t := range ts {
 		if i == 0 {
 			d.unary(t)
 			continue
@@ -171,6 +191,7 @@ func (d *depth) mul(x Expr) {
 		d.unary(t)
 		d.leave(rCalc)
 	}
+	d.release(ts)
 }
 
 // unary is the rule unary: member | '!'+ member | '-'+ member

@@ -1,4 +1,15 @@
-// CEL, the Common Expression Language, parsed into a typed AST.
+// CEL, the Common Expression Language (https://github.com/google/cel-spec/blob/master/doc/langdef.md), parsed into a
+// typed AST.
+//
+// The rules follow the grammar of the specification, and where it is silent the ANTLR grammar of cel-go, which
+// decides what is a valid expression in practice (the tests compare the AST of 20,000 expressions with cel-go's, and
+// the rejected ones). Tokens are separated by whitespace and comments (ws); no rule consumes whitespace after its
+// last token, so that the span of each value ends where its text ends.
+//
+// Some rules differ from the productions for speed, each with a comment on why. In all they made parsing of typical
+// expressions about a quarter faster in Recognize and a seventh faster in ParseAST (with small slabs, see the README)
+// than the grammar written as it stands in the specification, with a Pratt expression for the operators and an
+// alternative for each kind of literal at an operand.
 package cel
 
 type Ident terminal
@@ -30,40 +41,73 @@ type Expr = Ident | IntLit | UintLit | DoubleLit | StringLit | BytesLit | BoolLi
 
 def main: Expr = ws e:expr ws $$ -> $e
 
-def expr: Expr = pratt {
-    skip ws
-    operand unary
-    level { infix right "?" ws then:expr(or) ws ":" -> new Conditional{Cond: $lhs, Then: $then, Else: $rhs} }
-    level or { infix left "||" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
-    level { infix left "&&" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
-    level { infix left "<=" / "<" / ">=" / ">" / "==" / "!=" / "in" !ident_char -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
-    level { infix left "+" / "-" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
-    level { infix left "*" / "/" / "%" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
-}
+// ---- Operators ----
 
+// Expr = ConditionalOr ["?" ConditionalOr ":" Expr], and a level for each of the other precedences. Each is a rule of
+// its own, a list of operands folded to the left, instead of a Pratt expression: the Pratt loop tries every operator
+// at the end of every operand, which made Recognize 30% slower on typical expressions, and left recursion was slower
+// still (see the README).
+def expr: Expr = c:or_level rest:(-ws "?" -ws t:or_level -ws ":" -ws e:expr){0,1}
+    -> foldl($c, $rest, (a, i) => new Conditional{Cond: $a, Then: $i.t, Else: $i.e})
+def or_level: Expr = first:and_level rest:(-ws op:"||" -ws r:and_level)*
+    -> foldl($first, $rest, (a, i) => new Binary{Left: $a, Op: $i.op, Right: $i.r})
+def and_level: Expr = first:rel_level rest:(-ws op:"&&" -ws r:rel_level)*
+    -> foldl($first, $rest, (a, i) => new Binary{Left: $a, Op: $i.op, Right: $i.r})
+def rel_level: Expr = first:add_level rest:(-ws op:relop -ws r:add_level)*
+    -> foldl($first, $rest, (a, i) => new Binary{Left: $a, Op: $i.op, Right: $i.r})
+def add_level: Expr = first:mul_level rest:(-ws op:(?+\-) -ws r:mul_level)*
+    -> foldl($first, $rest, (a, i) => new Binary{Left: $a, Op: $i.op, Right: $i.r})
+def mul_level: Expr = first:unary rest:(-ws op:(?*/%) -ws r:unary)*
+    -> foldl($first, $rest, (a, i) => new Binary{Left: $a, Op: $i.op, Right: $i.r})
+// in is a keyword, not a prefix of a name: "1in x" is "1 in x", "inx" is a name.
+def relop: Match = @("<=" / "<" / ">=" / ">" / "==" / "!=" / "in" !(?A-Za-z0-9_))
+
+// Unary = Member | "!" {"!"} Member | "-" {"-"} Member. A run of operators is one rule, nested from the first to
+// the last, as ANTLR reads (ops+='!')+ member: that is why "--9223372036854775808" is an error (the literal is
+// 9223372036854775808 after two negations), where a literal with a sign, "-9223372036854775808", is not (see
+// primary), and why "-1.f()" is a call on the literal -1.
 def unary: Expr = member / not_unary / neg_unary
 def not_unary: Expr = ops:(o:"!" -ws)+ m:member -> foldr($m, $ops, (acc, i) => new Unary{Op: $i.o, X: $acc})
 def neg_unary: Expr = ops:(o:"-" -ws)+ m:member -> foldr($m, $ops, (acc, i) => new Unary{Op: $i.o, X: $acc})
 
+// Member = Primary | Member "." SELECTOR ["(" [ExprList] ")"] | Member "[" Expr "]", with the optional forms ".?" and
+// "[?". A call is longer than the selection of its name, so it wins where both match. Left recursion and a loop with
+// a rule for each kind of suffix were both slower (a Pratt loop takes about a seventh of the time of parsing a
+// typical expression). The three lines have no alternative each for the optional form: the question mark is a
+// capture, and Optional is true if it matched.
 def member: Expr = pratt {
     skip ws
     operand primary
     level {
-        postfix "." ws "?" ws f:name -> new Select{X: $lhs, Field: $f, Optional: true}
-        postfix "." ws f:name -> new Select{X: $lhs, Field: $f, Optional: false}
+        postfix "." ws q:"?"? ws f:name -> new Select{X: $lhs, Field: $f, Optional: len($q) > 0}
         postfix "." ws f:name_plain ws "(" ws as:args? ws ")" -> new Call{Target: $lhs, Func: $f, Args: concat($as)}
-        postfix "[" ws "?" ws i:expr ws "]" -> new Index{X: $lhs, Index: $i, Optional: true}
-        postfix "[" ws i:expr ws "]" -> new Index{X: $lhs, Index: $i, Optional: false}
+        postfix "[" ws q:"?"? ws i:expr ws "]" -> new Index{X: $lhs, Index: $i, Optional: len($q) > 0}
     }
 }
 
-def primary: Expr = literal / message / call / ident / paren / list / map
+// ---- Primary expressions ----
+
+// Primary = ["."] IDENT ["(" [ExprList] ")"] | "(" Expr ")" | "[" ... "]" | "{" ... "}" | ["."] SELECTOR {"." SELECTOR}
+// "{" ... "}" | LITERAL. The alternatives are chosen by the first character, with lookaheads (which record no
+// expectation in error messages, and cost one test): a name, for example, has to fail ten literals, a message and a
+// call before it is an identifier otherwise. This was the largest single change, 17% of the time of Recognize.
+def primary: Expr =
+    ( &(?A-Za-z_) v:(word_lit / message / ident_only / call)
+    / &(?0-9) v:(int_plain / double / uint / int)
+    / &(?"') v:string
+    / &"." v:(double / message / call / ident)
+    / &"-" v:(double / int)
+    / v:(paren / list / map) ) -> $v
+// A word that is a literal: true, false, null, a raw string r"..." or a bytes literal b"...".
+def word_lit: Expr = ( &(?tf) v:bool / &"n" v:null / &(?rR) v:string / &(?bB) v:bytes ) -> $v
 
 def paren: Paren = "(" ws e:expr ws ")" -> new Paren{X: $e}
 
+// An identifier that is not called, then a call: the choice of what follows a name is made after reading it once.
+def ident_only: Ident = i:ident !(ws "(") -> $i
 def ident: Ident = ("." ws)? name_global
 def call: Call = f:ident ws "(" ws as:args? ws ")" -> new Call{Target: nil, Func: $f, Args: concat($as)}
-def args = first:expr rest:(-ws -"," x:expr)* -> concat(list($first), map($rest, (r) => $r.x))
+def args = first:expr rest:(-ws -"," -ws x:expr)* -> concat(list($first), map($rest, (r) => $r.x))
 
 def list: ListLit = "[" ws es:elems? ws ","? ws "]" -> new ListLit{Elems: concat($es)}
 def elems = first:elem rest:(-ws -"," -ws x:elem)* -> concat(list($first), map($rest, (r) => $r.x))
@@ -76,7 +120,11 @@ def entry: Entry = opt_entry / plain_entry
 def opt_entry: Entry = "?" ws k:expr ws ":" ws v:expr -> new Entry{Key: $k, Value: $v, Optional: true}
 def plain_entry: Entry = k:expr ws ":" ws v:expr -> new Entry{Key: $k, Value: $v, Optional: false}
 
-def message: MessageLit = t:type_name ws "{" ws fs:fields? ws ","? ws "}" -> new MessageLit{Type: $t, Fields: concat($fs)}
+// A message is a possibly dotted name followed by "{". Its parts may be reserved words (a name that is not a
+// keyword), unlike a variable or a function. Most operands that start with a name are not a message, so the
+// lookahead reads the name by character classes, without the check for keywords, before the rule does.
+def message: MessageLit = &(("." ws)? (?A-Za-z_) (?A-Za-z0-9_)* (ws "." ws (?A-Za-z_) (?A-Za-z0-9_)*)* ws "{")
+    t:type_name ws "{" ws fs:fields? ws ","? ws "}" -> new MessageLit{Type: $t, Fields: concat($fs)}
 def type_name: Ident = ("." ws)? name_plain (ws "." ws name_plain)*
 def fields = first:field rest:(-ws -"," -ws x:field)* -> concat(list($first), map($rest, (r) => $r.x))
 def field: Field = opt_field / plain_field
@@ -84,31 +132,35 @@ def opt_field: Field = "?" ws n:name ws ":" ws v:expr -> new Field{Name: $n, Val
 def plain_field: Field = n:name ws ":" ws v:expr -> new Field{Name: $n, Value: $v, Optional: false}
 
 // ---- Literals ----
+//
+// A literal is what the lexer of cel-go reads as one token, longest first: a float is tried before an unsigned and
+// a signed integer. The sign of a number is part of the literal (and may be followed by whitespace and comments);
+// a sign before an unsigned integer is a negation.
 
-def literal: Expr = bool / null / double / uint / int / string / bytes
+def bool: BoolLit = ("true" / "false") !(?A-Za-z0-9_)
+def null: NullLit = "null" !(?A-Za-z0-9_)
 
-def bool: BoolLit = ("true" / "false") !ident_char
-def null: NullLit = "null" !ident_char
-
+// Most integers are decimal, and not followed by anything that could continue a number.
+def int_plain: IntLit = (?0-9)+ !(?0-9a-zA-Z_.)
 def sign = "-" ws
 def double: DoubleLit = sign? ((?0-9)+ "." (?0-9)+ exponent? / (?0-9)+ exponent / "." (?0-9)+ exponent?)
 def exponent = (?eE) (?+\-)? (?0-9)+
 def uint: UintLit = ("0x" (?0-9a-fA-F)+ / (?0-9)+) (?uU)
 def int: IntLit = sign? ("0x" (?0-9a-fA-F)+ / (?0-9)+) !(?uU)
 
-def string: StringLit = (?rR) raw_body / str_body
-def bytes: BytesLit = (?bB) ((?rR) raw_body / bytes_body)
+// Strings: single or triple quotes, raw or with escape sequences, and a b prefix for bytes. A triple-quoted string
+// ends at the first closing triple quote. Escapes are checked here as cel-go's unescape does, which rejects them
+// after the lexer has read them: a surrogate in \u and \U, a code point over 10FFFF, and \u and \U in bytes.
+def string: StringLit = (?rR) &(?"') raw_body / str_body
+def bytes: BytesLit = (?bB) ((?rR) &(?"') raw_body / bytes_body)
 
 def raw_body = "\"\"\"" (!"\"\"\"" .)* "\"\"\"" / "'''" (!"'''" .)* "'''" / "\"" (?^"\n\r)* "\"" / "'" (?^'\n\r)* "'"
 
-def str_body = "\"\"\"" (str_esc / (?^"\\)+ / "\"" !"\"\"")* "\"\"\""
-             / "'''" (str_esc / (?^'\\)+ / "'" !"''")* "'''"
-             / "\"" (str_esc / (?^"\\\n\r)+)* "\""
-             / "'" (str_esc / (?^'\\\n\r)+)* "'"
-def bytes_body = "\"\"\"" (bytes_esc / (?^"\\)+ / "\"" !"\"\"")* "\"\"\""
-               / "'''" (bytes_esc / (?^'\\)+ / "'" !"''")* "'''"
-               / "\"" (bytes_esc / (?^"\\\n\r)+)* "\""
-               / "'" (bytes_esc / (?^'\\\n\r)+)* "'"
+// The quote is read once, then whether it opens three.
+def str_body = "\"" ("\"\"" (str_esc / (?^"\\)+ / "\"" !"\"\"")* "\"\"\"" / (str_esc / (?^"\\\n\r)+)* "\"")
+             / "'" ("''" (str_esc / (?^'\\)+ / "'" !"''")* "'''" / (str_esc / (?^'\\\n\r)+)* "'")
+def bytes_body = "\"" ("\"\"" (bytes_esc / (?^"\\)+ / "\"" !"\"\"")* "\"\"\"" / (bytes_esc / (?^"\\\n\r)+)* "\"")
+               / "'" ("''" (bytes_esc / (?^'\\)+ / "'" !"''")* "'''" / (bytes_esc / (?^'\\\n\r)+)* "'")
 
 def bytes_esc = "\\" ((?abfnrtv"'\\?`) / (?0-3) (?0-7) (?0-7) / (?xX) hex hex)
 def str_esc = bytes_esc
@@ -117,12 +169,19 @@ def str_esc = bytes_esc
 def hex = (?0-9a-fA-F)
 
 // ---- Names ----
+//
+// Characters are tested by classes written out, since a rule for each of them costs a call: this made Recognize 7%
+// faster.
 
-def ident_char = (?A-Za-z0-9_)
-def name_plain: Ident =!(("true" / "false" / "null" / "in") !ident_char) (?A-Za-z_) ident_char*
+// A name that is not one of the keywords true, false, null and in: a selector, a field, a method and a part of a message.
+def name_plain: Ident = !(("true" / "false" / "null" / "in") !(?A-Za-z0-9_)) (?A-Za-z_) (?A-Za-z0-9_)*
+// A variable or a function must not be a reserved word either.
 def name_global = !(("true" / "false" / "null" / "in" / "as" / "break" / "const" / "continue" / "else" / "for" / "function" / "if"
-                    / "import" / "let" / "loop" / "package" / "namespace" / "return" / "var" / "void" / "while") !ident_char)
-                  (?A-Za-z_) ident_char*
+                    / "import" / "let" / "loop" / "package" / "namespace" / "return" / "var" / "void" / "while") !(?A-Za-z0-9_))
+                  (?A-Za-z_) (?A-Za-z0-9_)*
+// A field may be escaped with backquotes.
 def name: Name = name_plain / "`" (?A-Za-z0-9_.\-/ )+ "`"
 
+// Whitespace and comments. It calls no other rule: a rule that does is memoized, and the lookup costs more than
+// reading the few characters again.
 def ws = (? \t\r\n\u{c})* ("//" (?^\n)* (? \t\r\n\u{c})*)*

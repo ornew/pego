@@ -1,1 +1,1 @@
-(ListLit Elems=[IntLit"1"@int UintLit"2u"@uint IntLit"0x1F"@int IntLit"-3"@int DoubleLit"1.5e3"@double StringLit"\"s\\n\""@string StringLit"r\"\\d+\""@string BytesLit"b\"\\xff\""@bytes StringLit"\"\"\"a\nb\"\"\""@string BoolLit"true"@bool NullLit"null"@null])
+(ListLit Elems=[IntLit"1"@int_plain UintLit"2u"@uint IntLit"0x1F"@int IntLit"-3"@int DoubleLit"1.5e3"@double StringLit"\"s\\n\""@string StringLit"r\"\\d+\""@string BytesLit"b\"\\xff\""@bytes StringLit"\"\"\"a\nb\"\"\""@string BoolLit"true"@bool NullLit"null"@null])

@@ -1,0 +1,57 @@
+// Typical CEL expressions (access policies, admission control, validation, routing), for the benchmarks.
+// An expression is the lines up to a line of three dashes; a block of comments only is not one.
+---
+request.auth.claims.email_verified && request.auth.claims.email.endsWith("@example.com")
+---
+resource.name.startsWith("projects/_/buckets/public-") || "admin" in request.auth.claims.groups
+---
+request.time < timestamp("2026-01-01T00:00:00Z") && request.time > timestamp("2025-01-01T00:00:00Z")
+---
+object.spec.replicas <= 5 && object.metadata.labels.exists(k, k == "app") && object.spec.template.spec.containers.all(c, c.image.startsWith("registry.example.com/"))
+---
+object.spec.containers.all(c, has(c.securityContext) && has(c.securityContext.runAsNonRoot) && c.securityContext.runAsNonRoot == true)
+---
+has(object.metadata.annotations) && "owner" in object.metadata.annotations && object.metadata.annotations["owner"] != ""
+---
+object.spec.template.spec.volumes.all(v, !has(v.hostPath)) ? "ok" : "hostPath volumes are not allowed"
+---
+size(object.spec.containers) > 0 && object.spec.containers.map(c, c.resources.limits.cpu).all(l, l != null)
+---
+request.method in ["GET", "HEAD", "OPTIONS"] || (request.method == "POST" && request.path.matches("^/api/v[0-9]+/items$"))
+---
+user.age >= 18 && user.age < 65 && user.country in ["US", "CA", "GB"] && !user.banned
+---
+account.balance - transaction.amount >= 0.0 && transaction.amount <= account.dailyLimit - account.spentToday
+---
+items.filter(i, i.price > 10.0).map(i, i.price * double(i.quantity)).exists(t, t > 1000.0)
+---
+[1, 2, 3, 4, 5].filter(x, x % 2 == 0).map(x, x * x).exists_one(x, x > 10)
+---
+{"a": 1, "b": 2, "c": 3}.exists(k, k == "b") && size({"x": [1, 2], "y": []}) == 2
+---
+type(x) == int ? x + 1 : (type(x) == string ? x + "1" : null)
+---
+duration(request.headers["x-timeout"]) <= duration("30s") && int(request.headers["content-length"]) < 1048576
+---
+resource.labels.env == "prod" && !(principal.groups.exists(g, g == "contractors")) && principal.attributes.clearance >= 3
+---
+google.rpc.context.AttributeContext.Request{method: "GET", path: "/", headers: {"host": "example.com"}}.method == "GET"
+---
+has(self.spec.rules) && self.spec.rules.all(r, has(r.host) && r.host.matches("^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"))
+---
+self.minReplicas <= self.maxReplicas && self.maxReplicas <= 100 && self.targetCPUUtilizationPercentage in [50, 60, 70, 80]
+---
+!has(oldSelf.immutableField) || self.immutableField == oldSelf.immutableField
+---
+r"^\d{3}-\d{2}-\d{4}$" != "" && b"abc" == bytes("abc") && 'single' + "double" + """triple
+quoted""" == ''
+---
+a.b.c.d.e.f(g.h.i(j[0][1][2]), k ? l : m, n || o && p || q, -r, !s, 0x1F, 1e3, 12u, .5)
+---
+(x > 0 ? (y > 0 ? "++" : "+-") : (y > 0 ? "-+" : "--")) + (z.?w.orValue("none")) + [?opt.a, ?opt.b].size().string()
+---
+msg.header.timestamp.getFullYear() >= 2024 && msg.header.timestamp.getDayOfWeek() in [1, 2, 3, 4, 5] && msg.body.size() < 1024 * 1024
+---
+cel.bind(limit, request.quota.limit, request.usage.current + request.usage.pending <= limit * 0.9)
+---
+inputs.exists(i, i.name == "token" && i.value.matches("^[A-Za-z0-9_-]{20,}$")) && outputs.all(o, o.status in ["ok", "skipped"])
