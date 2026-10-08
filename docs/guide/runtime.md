@@ -705,11 +705,13 @@ the file, and `-no-ast` omits the AST. Both `-g` and `-o` are required.
 ### `gen`
 
 ```bash
-pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>]
+pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-recognize]
+pego gen -lang ts -g <grammar> [-s <rule>] [-o <file>] [-recognize]
 ```
 
-Generates a standalone Go parser; see [code-generation.md](code-generation.md). `-g` and `-pkg` are required, and
-without `-o` the code goes to standard output.
+Generates a standalone Go parser (see [code-generation.md](code-generation.md)) or, with `-lang ts`, a TypeScript
+module (see [typescript.md](typescript.md)). `-g` is required, and `-pkg` for Go; without `-o` the code goes to
+standard output.
 
 ### `explain`, `trace` and `profile`
 
@@ -723,6 +725,15 @@ Debugging tools; all three also take `-unit` and `-backend`, and read the input 
 `explain` shows which rule calls recorded what a syntax error says was expected, `trace` prints every rule call of a
 parse as an indented tree, and `profile` prints the cost of each rule with hints. In Go, the same information comes
 from `pego.WithTrace` and `pego.WithProfile`. See [debugging.md](debugging.md).
+
+### `sample`
+
+```bash
+pego sample -g <grammar> [-s <rule>] [-n 10] [-seed <n>] [-max-depth <d>] [-max-repeat <r>] [-max-len <bytes>] [-coverage] [-invalid] [-f lines|json]
+```
+
+Prints distinct inputs that the grammar accepts, one Go-quoted string per line or as a JSON document; `-invalid`
+prints near-miss inputs that it rejects instead. See [sampling-and-fuzzing.md](sampling-and-fuzzing.md).
 
 ## Choosing: a cheat sheet
 

@@ -125,6 +125,7 @@ pego gen -g grammar.pego -pkg calc -o parser.go  # generate a standalone Go pars
 pego gen -g grammar.pego -pkg calc -types        # ... with Go types for the grammar's types
 pego gen -g grammar.pego -pkg calc -recognize    # ... with Recognize, which validates without a tree
 pego gen -lang ts -g grammar.pego -o parser.ts     # generate a standalone TypeScript module
+pego sample -g grammar.pego -n 20 -coverage      # generate inputs the grammar accepts (tests, fuzz seeds)
 ```
 
 Run `pego` without arguments for every command and flag.
@@ -141,7 +142,7 @@ with CPython's `ast` module.
 | | |
 |:--|:--|
 | [Getting started](docs/tutorial/getting-started.md) | From a first grammar to typed trees and operator precedence, step by step |
-| [Guides](docs/guide/README.md) | Trees and actions, expressions, errors and recovery, context-sensitive parsing, running parsers, code generation (Go and TypeScript), streaming and incremental parsing, debugging and profiling |
+| [Guides](docs/guide/README.md) | Trees and actions, expressions, errors and recovery, context-sensitive parsing, running parsers, code generation (Go and TypeScript), streaming and incremental parsing, debugging and profiling, sampling inputs and fuzzing |
 | [Web site and playground](docs/guide/playground.md) | Try grammars in the browser; build and preview the site locally |
 | [Language specification](spec/README.md) | The PEGO grammar language |
 | [Development guide](docs/development.md) | Architecture, repository layout, implementation status, roadmap |
