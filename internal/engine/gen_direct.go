@@ -292,13 +292,39 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		lit := g.name("lit")
 		fmt.Fprintf(&g.vars, "var %s = []rune(%q)\n", lit, e.Value)
 		desc := g.desc(strconv.Quote(e.Value))
+		var start string
+		if build {
+			start = d.decl("x", "int")
+			d.line("%s = p.pos", start)
+		}
+		ok := d.ok()
+		match := fmt.Sprintf("_, %s = p.parser.matchLiteral(%s, %q, %d, false); !%s", ok, lit, e.Value, desc, ok)
+		if rs := []rune(e.Value); len(rs) > 0 && len(rs) <= maxInlineLiteral {
+			// The code points compared in place (see peek); matchLiteral records the expectation
+			// when they differ, and does the work in Bytes.
+			cond := fmt.Sprintf("p.pos+%d <= len(p.in)", len(rs))
+			if len(rs) == 1 {
+				cond = "p.pos < len(p.in)"
+			}
+			for i, r := range rs {
+				if i == 0 {
+					cond += fmt.Sprintf(" && p.in[p.pos] == %d", r)
+				} else {
+					cond += fmt.Sprintf(" && p.in[p.pos+%d] == %d", i, r)
+				}
+			}
+			if !d.dead {
+				d.used[fail] = true
+			}
+			d.line("if %s {\n%s\n} else if %s {\ngoto %s\n}", cond, advance(len(rs)), match, fail)
+		} else {
+			d.failIf(match, fail)
+		}
 		if !build {
-			ok := d.ok()
-			d.failIf(fmt.Sprintf("_, %s = p.parser.matchLiteral(%s, %q, %d, false); !%s", ok, lit, e.Value, desc, ok), fail)
 			return "nil"
 		}
-		v, ok := d.decl("v", "any"), d.ok()
-		d.failIf(fmt.Sprintf("%s, %s = p.matchLiteral(%s, %q, %d, true); !%s", v, ok, lit, e.Value, desc, ok), fail)
+		v := d.decl("v", "any")
+		d.line("%s = p.newMatch(%s, p.pos, %q, true)", v, d.rd(start), e.Value)
 		return v
 	case *grammar.CharClass:
 		ch, size, ok := d.rd(d.shared("ch", "rune")), d.rd(d.shared("size", "int")), d.ok()
@@ -472,6 +498,17 @@ func indexOf(xs []string, x string) (int, bool) {
 	}
 	return 0, false
 }
+
+// advance returns the statement that moves the position n units forward.
+func advance(n int) string {
+	if n == 1 {
+		return "p.pos++"
+	}
+	return fmt.Sprintf("p.pos += %d", n)
+}
+
+// maxInlineLiteral is the longest literal (in code points) compared in place.
+const maxInlineLiteral = 4
 
 // peek returns the statement that assigns what p.peek returns to ch, size and ok, with the
 // common case written out: the compiler does not inline peek. In Bytes, p.in is empty.

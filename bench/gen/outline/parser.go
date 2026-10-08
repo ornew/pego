@@ -5384,7 +5384,9 @@ func (p *tparser) s4() (any, bool) {
 	x2 = 0
 	for {
 		x3, x4 = p.pos, len(p.recovered)
-		if _, ok = p.parser.matchLiteral(lit108, " ", 5, false); !ok {
+		if p.pos < len(p.in) && p.in[p.pos] == 32 {
+			p.pos++
+		} else if _, ok = p.parser.matchLiteral(lit108, " ", 5, false); !ok {
 			goto L5
 		}
 		x2++
@@ -5467,8 +5469,9 @@ func (p *tparser) s6() (any, bool) {
 		v3    any
 		x5    rune
 		x6    bool
-		v9    any
+		x9    int
 		ok    bool
+		v10   any
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
@@ -5485,10 +5488,14 @@ func (p *tparser) s6() (any, bool) {
 		p.expect(p.pos, 7)
 		goto L7
 	}
-	if v9, ok = p.matchLiteral(lit109, "\n", 7, true); !ok {
+	x9 = p.pos
+	if p.pos < len(p.in) && p.in[p.pos] == 10 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit109, "\n", 7, false); !ok {
 		goto L8
 	}
-	v3 = v9
+	v10 = p.newMatch(x9, p.pos, "\n", true)
+	v3 = v10
 	goto L4
 L8:
 	p.pos = x1
@@ -5496,11 +5503,11 @@ L8:
 L7:
 	if !p.atEnd() {
 		p.expect(p.pos, idEndInput)
-		goto L10
+		goto L11
 	}
 	v3 = nil
 	goto L4
-L10:
+L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 	goto fail
@@ -5537,8 +5544,9 @@ func (p *tparser) s7() (any, bool) {
 		x9    int
 		v10   any
 		v11   any
-		v12   any
+		x12   int
 		v13   any
+		v14   any
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
@@ -5576,12 +5584,16 @@ func (p *tparser) s7() (any, bool) {
 	}
 	v11 = p.newNode("List", x3, p.pos, p.kids(x4))
 	x2 = append(x2, v11)
-	if v12, ok = p.matchLiteral(lit110, "\n", 7, true); !ok {
+	x12 = p.pos
+	if p.pos < len(p.in) && p.in[p.pos] == 10 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit110, "\n", 7, false); !ok {
 		goto fail
 	}
-	x2 = append(x2, v12)
-	v13 = p.newNode("Seq", x1, p.pos, x2)
-	v = v13
+	v13 = p.newMatch(x12, p.pos, "\n", true)
+	x2 = append(x2, v13)
+	v14 = p.newNode("Seq", x1, p.pos, x2)
+	v = v14
 	if n := asTval(v); n != nil {
 		n.tsetFresh(false)
 	}
@@ -5621,7 +5633,9 @@ func (p *tparser) s8() (any, bool) {
 		}
 		p.pos += size
 	}
-	if _, ok = p.parser.matchLiteral(lit111, "\n", 7, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 10 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit111, "\n", 7, false); !ok {
 		goto fail
 	}
 	v = nil
@@ -5661,7 +5675,9 @@ func (p *tparser) s9() (any, bool) {
 		p.expect(p.pos, 7)
 		goto L6
 	}
-	if _, ok = p.parser.matchLiteral(lit112, "\n", 7, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 10 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit112, "\n", 7, false); !ok {
 		goto L7
 	}
 	goto L3

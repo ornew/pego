@@ -4869,7 +4869,9 @@ func (p *tparser) s2() (any, bool) {
 		goto fail
 	}
 	x2, x3 = p.pos, len(p.recovered)
-	if _, ok = p.parser.matchLiteral(lit85, ".", 6, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 46 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit85, ".", 6, false); !ok {
 		goto L4
 	}
 	x6 = 0

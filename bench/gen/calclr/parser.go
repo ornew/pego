@@ -5772,7 +5772,9 @@ func (p *tparser) i2() (any, bool) {
 		p.expect(p.pos, 5)
 		goto L10
 	}
-	if _, ok = p.parser.matchLiteral(lit166, "+", 5, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 43 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit166, "+", 5, false); !ok {
 		goto L11
 	}
 	goto L7
@@ -5784,7 +5786,9 @@ L10:
 		p.expect(p.pos, 6)
 		goto L12
 	}
-	if _, ok = p.parser.matchLiteral(lit167, "-", 6, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 45 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit167, "-", 6, false); !ok {
 		goto L13
 	}
 	goto L7
@@ -5863,7 +5867,9 @@ func (p *tparser) i4() (any, bool) {
 		p.expect(p.pos, 7)
 		goto L10
 	}
-	if _, ok = p.parser.matchLiteral(lit174, "*", 7, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 42 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit174, "*", 7, false); !ok {
 		goto L11
 	}
 	goto L7
@@ -5875,7 +5881,9 @@ L10:
 		p.expect(p.pos, 8)
 		goto L12
 	}
-	if _, ok = p.parser.matchLiteral(lit175, "/", 8, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 47 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit175, "/", 8, false); !ok {
 		goto L13
 	}
 	goto L7
@@ -5887,7 +5895,9 @@ L12:
 		p.expect(p.pos, 9)
 		goto L14
 	}
-	if _, ok = p.parser.matchLiteral(lit176, "%", 9, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 37 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit176, "%", 9, false); !ok {
 		goto L15
 	}
 	goto L7
@@ -6063,7 +6073,9 @@ func (p *tparser) i6() (any, bool) {
 		p.expect(p.pos, 6)
 		goto L8
 	}
-	if _, ok = p.parser.matchLiteral(lit180, "-", 6, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 45 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit180, "-", 6, false); !ok {
 		goto L9
 	}
 	goto L5
@@ -6075,7 +6087,9 @@ L8:
 		p.expect(p.pos, 5)
 		goto L10
 	}
-	if _, ok = p.parser.matchLiteral(lit181, "+", 5, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 43 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit181, "+", 5, false); !ok {
 		goto L11
 	}
 	goto L5
@@ -6172,9 +6186,10 @@ func (p *tparser) i8() (any, bool) {
 		ok    bool
 		v2    any
 		k3    any
-		v4    any
-		k5    any
-		v6    any
+		x4    int
+		v5    any
+		k6    any
+		v7    any
 	)
 	start = p.pos
 	p.depth++
@@ -6188,17 +6203,21 @@ func (p *tparser) i8() (any, bool) {
 	if _, ok = p.s13(); !ok {
 		goto fail
 	}
-	if v4, ok = p.matchLiteral(lit184, "^", 10, true); !ok {
+	x4 = p.pos
+	if p.pos < len(p.in) && p.in[p.pos] == 94 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit184, "^", 10, false); !ok {
 		goto fail
 	}
-	k3 = v4
-	if v6, ok = p.u5(); !ok {
+	v5 = p.newMatch(x4, p.pos, "^", true)
+	k3 = v5
+	if v7, ok = p.u5(); !ok {
 		goto fail
 	}
-	k5 = v6
+	k6 = v7
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 	p.where = "pow"
-	v = func() any { f_185 := k1; f_186 := k3; f_187 := k5; return tmk_Binary(c, true, f_185, f_186, f_187) }()
+	v = func() any { f_185 := k1; f_186 := k3; f_187 := k6; return tmk_Binary(c, true, f_185, f_186, f_187) }()
 	p.depth--
 	return v, true
 fail:
@@ -6311,7 +6330,9 @@ func (p *tparser) i10() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	if _, ok = p.parser.matchLiteral(lit188, "(", 11, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 40 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit188, "(", 11, false); !ok {
 		goto fail
 	}
 	if v2, ok = p.call(trules[1], 0); !ok {
@@ -6321,7 +6342,9 @@ func (p *tparser) i10() (any, bool) {
 	if _, ok = p.s13(); !ok {
 		goto fail
 	}
-	if _, ok = p.parser.matchLiteral(lit189, ")", 12, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 41 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit189, ")", 12, false); !ok {
 		goto fail
 	}
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
@@ -6372,7 +6395,9 @@ func (p *tparser) s11() (any, bool) {
 		goto fail
 	}
 	x2, x3 = p.pos, len(p.recovered)
-	if _, ok = p.parser.matchLiteral(lit190, ".", 14, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 46 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit190, ".", 14, false); !ok {
 		goto L4
 	}
 	x6 = 0

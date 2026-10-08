@@ -7912,24 +7912,26 @@ func (p *tparser) s1() (any, bool) {
 		rec   int
 		x1    int
 		x2    []any
-		v3    any
+		x3    int
 		ok    bool
-		x4    int
+		v4    any
 		x5    int
 		x6    int
 		x7    int
 		x8    int
-		x10   int
-		x11   []any
-		x12   int
+		x9    int
+		x11   int
+		x12   []any
 		x13   int
+		x14   int
 		size  int
-		x15   int
-		v16   any
+		x16   int
 		v17   any
 		v18   any
 		v19   any
-		v20   any
+		x20   int
+		v21   any
+		v22   any
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
@@ -7938,29 +7940,33 @@ func (p *tparser) s1() (any, bool) {
 	}
 	x1 = p.pos
 	x2 = p.newVals(3)[:0]
-	if v3, ok = p.matchLiteral(lit309, "<?xml", 5, true); !ok {
+	x3 = p.pos
+	if _, ok = p.parser.matchLiteral(lit309, "<?xml", 5, false); !ok {
 		goto fail
 	}
-	x2 = append(x2, v3)
-	x4, x5 = p.pos, len(p.kidStack)
-	x6 = 0
+	v4 = p.newMatch(x3, p.pos, "<?xml", true)
+	x2 = append(x2, v4)
+	x5, x6 = p.pos, len(p.kidStack)
+	x7 = 0
 	for {
-		x7, x8 = p.pos, len(p.recovered)
-		x10 = p.pos
-		x11 = p.newVals(1)[:0]
-		x12, x13 = p.pos, len(p.recovered)
+		x8, x9 = p.pos, len(p.recovered)
+		x11 = p.pos
+		x12 = p.newVals(1)[:0]
+		x13, x14 = p.pos, len(p.recovered)
 		p.silent++
-		if _, ok = p.parser.matchLiteral(lit310, "?>", 6, false); !ok {
-			goto L14
+		if p.pos+2 <= len(p.in) && p.in[p.pos] == 63 && p.in[p.pos+1] == 62 {
+			p.pos += 2
+		} else if _, ok = p.parser.matchLiteral(lit310, "?>", 6, false); !ok {
+			goto L15
 		}
 		p.silent--
-		p.pos = x12
-		p.recovered = p.recovered[:x13]
-		goto L9
-	L14:
+		p.pos = x13
+		p.recovered = p.recovered[:x14]
+		goto L10
+	L15:
 		p.silent--
-		p.pos = x12
-		p.recovered = p.recovered[:x13]
+		p.pos = x13
+		p.recovered = p.recovered[:x14]
 		if p.pos < len(p.in) {
 			_, size, ok = p.in[p.pos], 1, true
 		} else {
@@ -7968,32 +7974,36 @@ func (p *tparser) s1() (any, bool) {
 		}
 		if !ok {
 			p.expect(p.pos, idAny)
-			goto L9
+			goto L10
 		}
-		x15 = p.pos
+		x16 = p.pos
 		p.pos += size
-		v16 = p.newMatch(x15, p.pos, p.text(x15, p.pos), true)
-		x11 = append(x11, v16)
-		v17 = p.newNode("Seq", x10, p.pos, x11)
-		x6++
-		p.kidStack = append(p.kidStack, v17)
-		if p.pos == x7 && x6 >= 0 {
+		v17 = p.newMatch(x16, p.pos, p.text(x16, p.pos), true)
+		x12 = append(x12, v17)
+		v18 = p.newNode("Seq", x11, p.pos, x12)
+		x7++
+		p.kidStack = append(p.kidStack, v18)
+		if p.pos == x8 && x7 >= 0 {
 			break
 		}
 		continue
-	L9:
-		p.pos = x7
-		p.recovered = p.recovered[:x8]
+	L10:
+		p.pos = x8
+		p.recovered = p.recovered[:x9]
 		break
 	}
-	v18 = p.newNode("List", x4, p.pos, p.kids(x5))
-	x2 = append(x2, v18)
-	if v19, ok = p.matchLiteral(lit311, "?>", 6, true); !ok {
+	v19 = p.newNode("List", x5, p.pos, p.kids(x6))
+	x2 = append(x2, v19)
+	x20 = p.pos
+	if p.pos+2 <= len(p.in) && p.in[p.pos] == 63 && p.in[p.pos+1] == 62 {
+		p.pos += 2
+	} else if _, ok = p.parser.matchLiteral(lit311, "?>", 6, false); !ok {
 		goto fail
 	}
-	x2 = append(x2, v19)
-	v20 = p.newNode("Seq", x1, p.pos, x2)
-	v = v20
+	v21 = p.newMatch(x20, p.pos, "?>", true)
+	x2 = append(x2, v21)
+	v22 = p.newNode("Seq", x1, p.pos, x2)
+	v = v22
 	if n := asTval(v); n != nil {
 		n.tsetFresh(false)
 	}
@@ -8380,7 +8390,9 @@ func (p *tparser) i4() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	if _, ok = p.parser.matchLiteral(lit312, "<", 9, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 60 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit312, "<", 9, false); !ok {
 		goto fail
 	}
 	if v2, ok = p.s13(); !ok {
@@ -8410,7 +8422,9 @@ func (p *tparser) i4() (any, bool) {
 	if _, ok = p.s17(); !ok {
 		goto fail
 	}
-	if _, ok = p.parser.matchLiteral(lit313, "/>", 10, false); !ok {
+	if p.pos+2 <= len(p.in) && p.in[p.pos] == 47 && p.in[p.pos+1] == 62 {
+		p.pos += 2
+	} else if _, ok = p.parser.matchLiteral(lit313, "/>", 10, false); !ok {
 		goto fail
 	}
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
@@ -8475,7 +8489,9 @@ func (p *tparser) i5() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	if _, ok = p.parser.matchLiteral(lit317, "<", 9, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 60 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit317, "<", 9, false); !ok {
 		goto fail
 	}
 	if v2, ok = p.s13(); !ok {
@@ -8505,7 +8521,9 @@ func (p *tparser) i5() (any, bool) {
 	if _, ok = p.s17(); !ok {
 		goto fail
 	}
-	if _, ok = p.parser.matchLiteral(lit318, ">", 11, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 62 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit318, ">", 11, false); !ok {
 		goto fail
 	}
 	x13, x14 = p.pos, len(p.kidStack)
@@ -8528,7 +8546,9 @@ func (p *tparser) i5() (any, bool) {
 	}
 	v20 = p.newNode("List", x13, p.pos, p.kids(x14))
 	k12 = v20
-	if _, ok = p.parser.matchLiteral(lit319, "</", 12, false); !ok {
+	if p.pos+2 <= len(p.in) && p.in[p.pos] == 60 && p.in[p.pos+1] == 47 {
+		p.pos += 2
+	} else if _, ok = p.parser.matchLiteral(lit319, "</", 12, false); !ok {
 		goto fail
 	}
 	if v22, ok = p.s13(); !ok {
@@ -8550,7 +8570,9 @@ L27:
 	if _, ok = p.s17(); !ok {
 		goto fail
 	}
-	if _, ok = p.parser.matchLiteral(lit320, ">", 11, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 62 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit320, ">", 11, false); !ok {
 		goto fail
 	}
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
@@ -8621,7 +8643,9 @@ func (p *tparser) i6() (any, bool) {
 	if _, ok = p.s17(); !ok {
 		goto fail
 	}
-	if _, ok = p.parser.matchLiteral(lit324, "=", 14, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 61 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit324, "=", 14, false); !ok {
 		goto fail
 	}
 	if _, ok = p.s17(); !ok {
@@ -8684,7 +8708,9 @@ func (p *tparser) s7() (any, bool) {
 		p.expect(p.pos, 15)
 		goto L6
 	}
-	if _, ok = p.parser.matchLiteral(lit327, "\"", 15, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 34 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit327, "\"", 15, false); !ok {
 		goto L7
 	}
 	x8 = 0
@@ -8739,7 +8765,9 @@ func (p *tparser) s7() (any, bool) {
 		p.recovered = p.recovered[:x10]
 		break
 	}
-	if _, ok = p.parser.matchLiteral(lit328, "\"", 15, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 34 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit328, "\"", 15, false); !ok {
 		goto L7
 	}
 	goto L3
@@ -8751,7 +8779,9 @@ L6:
 		p.expect(p.pos, 18)
 		goto L21
 	}
-	if _, ok = p.parser.matchLiteral(lit329, "'", 18, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 39 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit329, "'", 18, false); !ok {
 		goto L22
 	}
 	x23 = 0
@@ -8806,7 +8836,9 @@ L6:
 		p.recovered = p.recovered[:x25]
 		break
 	}
-	if _, ok = p.parser.matchLiteral(lit330, "'", 18, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 39 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit330, "'", 18, false); !ok {
 		goto L22
 	}
 	goto L3
@@ -9006,49 +9038,53 @@ func (p *tparser) s10() (any, bool) {
 		rec   int
 		x1    int
 		x2    []any
-		v3    any
+		x3    int
 		ok    bool
-		x4    int
+		v4    any
 		x5    int
-		v6    any
-		x9    int
+		x6    int
+		v7    any
 		x10   int
 		x11   int
 		x12   int
 		x13   int
+		x14   int
 		ch    rune
 		size  int
-		x15   int
-		v16   any
+		x16   int
 		v17   any
-		x18   rune
-		x19   bool
-		x22   int
-		x23   []any
-		v24   any
+		v18   any
+		x19   rune
+		x20   bool
+		x23   int
+		x24   []any
 		x25   int
-		x26   int
+		v26   any
 		x27   int
 		x28   int
 		x29   int
+		x30   int
 		x31   int
-		v32   any
-		v33   any
+		x33   int
 		v34   any
-		x37   int
-		x38   []any
-		v39   any
-		x40   int
+		v35   any
+		v36   any
+		x39   int
+		x40   []any
 		x41   int
-		x42   int
+		v42   any
 		x43   int
 		x44   int
+		x45   int
 		x46   int
-		v47   any
-		v48   any
-		v49   any
+		x47   int
+		x49   int
 		v50   any
 		v51   any
+		v52   any
+		x53   int
+		v54   any
+		v55   any
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
@@ -9057,15 +9093,19 @@ func (p *tparser) s10() (any, bool) {
 	}
 	x1 = p.pos
 	x2 = p.newVals(3)[:0]
-	if v3, ok = p.matchLiteral(lit331, "&", 17, true); !ok {
+	x3 = p.pos
+	if p.pos < len(p.in) && p.in[p.pos] == 38 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit331, "&", 17, false); !ok {
 		goto fail
 	}
-	x2 = append(x2, v3)
-	x4, x5 = p.pos, len(p.recovered)
-	x9, x10 = p.pos, len(p.kidStack)
-	x11 = 0
+	v4 = p.newMatch(x3, p.pos, "&", true)
+	x2 = append(x2, v4)
+	x5, x6 = p.pos, len(p.recovered)
+	x10, x11 = p.pos, len(p.kidStack)
+	x12 = 0
 	for {
-		x12, x13 = p.pos, len(p.recovered)
+		x13, x14 = p.pos, len(p.recovered)
 		if p.pos < len(p.in) {
 			ch, size, ok = p.in[p.pos], 1, true
 		} else {
@@ -9073,51 +9113,55 @@ func (p *tparser) s10() (any, bool) {
 		}
 		if !ok || !(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90) {
 			p.expect(p.pos, 22)
-			goto L14
+			goto L15
 		}
-		x15 = p.pos
+		x16 = p.pos
 		p.pos += size
-		v16 = p.newMatch(x15, p.pos, p.text(x15, p.pos), true)
-		x11++
-		p.kidStack = append(p.kidStack, v16)
-		if p.pos == x12 && x11 >= 1 {
+		v17 = p.newMatch(x16, p.pos, p.text(x16, p.pos), true)
+		x12++
+		p.kidStack = append(p.kidStack, v17)
+		if p.pos == x13 && x12 >= 1 {
 			break
 		}
 		continue
-	L14:
-		p.pos = x12
-		p.recovered = p.recovered[:x13]
+	L15:
+		p.pos = x13
+		p.recovered = p.recovered[:x14]
 		break
 	}
-	if x11 < 1 {
-		p.dropKids(x10)
-		goto L8
+	if x12 < 1 {
+		p.dropKids(x11)
+		goto L9
 	}
-	v17 = p.newNode("List", x9, p.pos, p.kids(x10))
-	v6 = v17
-	goto L7
-L8:
-	p.pos = x4
-	p.recovered = p.recovered[:x5]
+	v18 = p.newNode("List", x10, p.pos, p.kids(x11))
+	v7 = v18
+	goto L8
+L9:
+	p.pos = x5
+	p.recovered = p.recovered[:x6]
 	if p.pos < len(p.in) {
-		x18, _, x19 = p.in[p.pos], 1, true
+		x19, _, x20 = p.in[p.pos], 1, true
 	} else {
-		x18, _, x19 = p.peek()
+		x19, _, x20 = p.peek()
 	}
-	if !(x19 && (x18 == 35)) && p.depth+0 <= maxDepth {
+	if !(x20 && (x19 == 35)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 23)
-		goto L20
-	}
-	x22 = p.pos
-	x23 = p.newVals(2)[:0]
-	if v24, ok = p.matchLiteral(lit332, "#x", 23, true); !ok {
 		goto L21
 	}
-	x23 = append(x23, v24)
-	x25, x26 = p.pos, len(p.kidStack)
-	x27 = 0
+	x23 = p.pos
+	x24 = p.newVals(2)[:0]
+	x25 = p.pos
+	if p.pos+2 <= len(p.in) && p.in[p.pos] == 35 && p.in[p.pos+1] == 120 {
+		p.pos += 2
+	} else if _, ok = p.parser.matchLiteral(lit332, "#x", 23, false); !ok {
+		goto L22
+	}
+	v26 = p.newMatch(x25, p.pos, "#x", true)
+	x24 = append(x24, v26)
+	x27, x28 = p.pos, len(p.kidStack)
+	x29 = 0
 	for {
-		x28, x29 = p.pos, len(p.recovered)
+		x30, x31 = p.pos, len(p.recovered)
 		if p.pos < len(p.in) {
 			ch, size, ok = p.in[p.pos], 1, true
 		} else {
@@ -9125,49 +9169,53 @@ L8:
 		}
 		if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
 			p.expect(p.pos, 24)
-			goto L30
+			goto L32
 		}
-		x31 = p.pos
+		x33 = p.pos
 		p.pos += size
-		v32 = p.newMatch(x31, p.pos, p.text(x31, p.pos), true)
-		x27++
-		p.kidStack = append(p.kidStack, v32)
-		if p.pos == x28 && x27 >= 1 {
+		v34 = p.newMatch(x33, p.pos, p.text(x33, p.pos), true)
+		x29++
+		p.kidStack = append(p.kidStack, v34)
+		if p.pos == x30 && x29 >= 1 {
 			break
 		}
 		continue
-	L30:
-		p.pos = x28
-		p.recovered = p.recovered[:x29]
+	L32:
+		p.pos = x30
+		p.recovered = p.recovered[:x31]
 		break
 	}
-	if x27 < 1 {
-		p.dropKids(x26)
-		goto L21
+	if x29 < 1 {
+		p.dropKids(x28)
+		goto L22
 	}
-	v33 = p.newNode("List", x25, p.pos, p.kids(x26))
-	x23 = append(x23, v33)
-	v34 = p.newNode("Seq", x22, p.pos, x23)
-	v6 = v34
-	goto L7
+	v35 = p.newNode("List", x27, p.pos, p.kids(x28))
+	x24 = append(x24, v35)
+	v36 = p.newNode("Seq", x23, p.pos, x24)
+	v7 = v36
+	goto L8
+L22:
+	p.pos = x5
+	p.recovered = p.recovered[:x6]
 L21:
-	p.pos = x4
-	p.recovered = p.recovered[:x5]
-L20:
-	if !(x19 && (x18 == 35)) && p.depth+0 <= maxDepth {
+	if !(x20 && (x19 == 35)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 25)
-		goto L35
+		goto L37
 	}
-	x37 = p.pos
-	x38 = p.newVals(2)[:0]
-	if v39, ok = p.matchLiteral(lit333, "#", 25, true); !ok {
-		goto L36
+	x39 = p.pos
+	x40 = p.newVals(2)[:0]
+	x41 = p.pos
+	if p.pos < len(p.in) && p.in[p.pos] == 35 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit333, "#", 25, false); !ok {
+		goto L38
 	}
-	x38 = append(x38, v39)
-	x40, x41 = p.pos, len(p.kidStack)
-	x42 = 0
+	v42 = p.newMatch(x41, p.pos, "#", true)
+	x40 = append(x40, v42)
+	x43, x44 = p.pos, len(p.kidStack)
+	x45 = 0
 	for {
-		x43, x44 = p.pos, len(p.recovered)
+		x46, x47 = p.pos, len(p.recovered)
 		if p.pos < len(p.in) {
 			ch, size, ok = p.in[p.pos], 1, true
 		} else {
@@ -9175,44 +9223,48 @@ L20:
 		}
 		if !ok || !(ch >= 48 && ch <= 57) {
 			p.expect(p.pos, 26)
-			goto L45
+			goto L48
 		}
-		x46 = p.pos
+		x49 = p.pos
 		p.pos += size
-		v47 = p.newMatch(x46, p.pos, p.text(x46, p.pos), true)
-		x42++
-		p.kidStack = append(p.kidStack, v47)
-		if p.pos == x43 && x42 >= 1 {
+		v50 = p.newMatch(x49, p.pos, p.text(x49, p.pos), true)
+		x45++
+		p.kidStack = append(p.kidStack, v50)
+		if p.pos == x46 && x45 >= 1 {
 			break
 		}
 		continue
-	L45:
-		p.pos = x43
-		p.recovered = p.recovered[:x44]
+	L48:
+		p.pos = x46
+		p.recovered = p.recovered[:x47]
 		break
 	}
-	if x42 < 1 {
-		p.dropKids(x41)
-		goto L36
+	if x45 < 1 {
+		p.dropKids(x44)
+		goto L38
 	}
-	v48 = p.newNode("List", x40, p.pos, p.kids(x41))
-	x38 = append(x38, v48)
-	v49 = p.newNode("Seq", x37, p.pos, x38)
-	v6 = v49
-	goto L7
-L36:
-	p.pos = x4
-	p.recovered = p.recovered[:x5]
-L35:
+	v51 = p.newNode("List", x43, p.pos, p.kids(x44))
+	x40 = append(x40, v51)
+	v52 = p.newNode("Seq", x39, p.pos, x40)
+	v7 = v52
+	goto L8
+L38:
+	p.pos = x5
+	p.recovered = p.recovered[:x6]
+L37:
 	goto fail
-L7:
-	x2 = append(x2, v6)
-	if v50, ok = p.matchLiteral(lit334, ";", 27, true); !ok {
+L8:
+	x2 = append(x2, v7)
+	x53 = p.pos
+	if p.pos < len(p.in) && p.in[p.pos] == 59 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit334, ";", 27, false); !ok {
 		goto fail
 	}
-	x2 = append(x2, v50)
-	v51 = p.newNode("Seq", x1, p.pos, x2)
-	v = v51
+	v54 = p.newMatch(x53, p.pos, ";", true)
+	x2 = append(x2, v54)
+	v55 = p.newNode("Seq", x1, p.pos, x2)
+	v = v55
 	if n := asTval(v); n != nil {
 		n.tsetFresh(false)
 	}
@@ -9244,7 +9296,9 @@ func (p *tparser) s11() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	if _, ok = p.parser.matchLiteral(lit335, "<!--", 8, false); !ok {
+	if p.pos+4 <= len(p.in) && p.in[p.pos] == 60 && p.in[p.pos+1] == 33 && p.in[p.pos+2] == 45 && p.in[p.pos+3] == 45 {
+		p.pos += 4
+	} else if _, ok = p.parser.matchLiteral(lit335, "<!--", 8, false); !ok {
 		goto fail
 	}
 	x1 = 0
@@ -9252,7 +9306,9 @@ func (p *tparser) s11() (any, bool) {
 		x2, x3 = p.pos, len(p.recovered)
 		x5, x6 = p.pos, len(p.recovered)
 		p.silent++
-		if _, ok = p.parser.matchLiteral(lit336, "--", 28, false); !ok {
+		if p.pos+2 <= len(p.in) && p.in[p.pos] == 45 && p.in[p.pos+1] == 45 {
+			p.pos += 2
+		} else if _, ok = p.parser.matchLiteral(lit336, "--", 28, false); !ok {
 			goto L7
 		}
 		p.silent--
@@ -9283,7 +9339,9 @@ func (p *tparser) s11() (any, bool) {
 		p.recovered = p.recovered[:x3]
 		break
 	}
-	if _, ok = p.parser.matchLiteral(lit337, "-->", 29, false); !ok {
+	if p.pos+3 <= len(p.in) && p.in[p.pos] == 45 && p.in[p.pos+1] == 45 && p.in[p.pos+2] == 62 {
+		p.pos += 3
+	} else if _, ok = p.parser.matchLiteral(lit337, "-->", 29, false); !ok {
 		goto fail
 	}
 	v = trules[11].term(p, start, p.pos, p.text(start, p.pos))
@@ -9323,7 +9381,9 @@ func (p *tparser) s12() (any, bool) {
 		x2, x3 = p.pos, len(p.recovered)
 		x5, x6 = p.pos, len(p.recovered)
 		p.silent++
-		if _, ok = p.parser.matchLiteral(lit339, "]]>", 30, false); !ok {
+		if p.pos+3 <= len(p.in) && p.in[p.pos] == 93 && p.in[p.pos+1] == 93 && p.in[p.pos+2] == 62 {
+			p.pos += 3
+		} else if _, ok = p.parser.matchLiteral(lit339, "]]>", 30, false); !ok {
 			goto L7
 		}
 		p.silent--
@@ -9354,7 +9414,9 @@ func (p *tparser) s12() (any, bool) {
 		p.recovered = p.recovered[:x3]
 		break
 	}
-	if _, ok = p.parser.matchLiteral(lit340, "]]>", 30, false); !ok {
+	if p.pos+3 <= len(p.in) && p.in[p.pos] == 93 && p.in[p.pos+1] == 93 && p.in[p.pos+2] == 62 {
+		p.pos += 3
+	} else if _, ok = p.parser.matchLiteral(lit340, "]]>", 30, false); !ok {
 		goto fail
 	}
 	v = trules[12].term(p, start, p.pos, p.text(start, p.pos))
@@ -9497,7 +9559,9 @@ func (p *tparser) s15() (any, bool) {
 		x2, x3 = p.pos, len(p.recovered)
 		x5, x6 = p.pos, len(p.recovered)
 		p.silent++
-		if _, ok = p.parser.matchLiteral(lit342, "?>", 6, false); !ok {
+		if p.pos+2 <= len(p.in) && p.in[p.pos] == 63 && p.in[p.pos+1] == 62 {
+			p.pos += 2
+		} else if _, ok = p.parser.matchLiteral(lit342, "?>", 6, false); !ok {
 			goto L7
 		}
 		p.silent--
@@ -9528,7 +9592,9 @@ func (p *tparser) s15() (any, bool) {
 		p.recovered = p.recovered[:x3]
 		break
 	}
-	if _, ok = p.parser.matchLiteral(lit343, "?>", 6, false); !ok {
+	if p.pos+2 <= len(p.in) && p.in[p.pos] == 63 && p.in[p.pos+1] == 62 {
+		p.pos += 2
+	} else if _, ok = p.parser.matchLiteral(lit343, "?>", 6, false); !ok {
 		goto fail
 	}
 	v = nil
@@ -9737,7 +9803,9 @@ func (p *tparser) s18() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	if _, ok = p.parser.matchLiteral(lit344, "&", 17, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 38 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit344, "&", 17, false); !ok {
 		goto fail
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -9771,7 +9839,9 @@ L4:
 		p.expect(p.pos, 23)
 		goto L8
 	}
-	if _, ok = p.parser.matchLiteral(lit345, "#x", 23, false); !ok {
+	if p.pos+2 <= len(p.in) && p.in[p.pos] == 35 && p.in[p.pos+1] == 120 {
+		p.pos += 2
+	} else if _, ok = p.parser.matchLiteral(lit345, "#x", 23, false); !ok {
 		goto L9
 	}
 	x10 = 0
@@ -9800,7 +9870,9 @@ L8:
 		p.expect(p.pos, 25)
 		goto L11
 	}
-	if _, ok = p.parser.matchLiteral(lit346, "#", 25, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 35 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit346, "#", 25, false); !ok {
 		goto L12
 	}
 	x13 = 0
@@ -9827,7 +9899,9 @@ L12:
 L11:
 	goto fail
 L3:
-	if _, ok = p.parser.matchLiteral(lit347, ";", 27, false); !ok {
+	if p.pos < len(p.in) && p.in[p.pos] == 59 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit347, ";", 27, false); !ok {
 		goto fail
 	}
 	v = nil
