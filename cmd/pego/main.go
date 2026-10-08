@@ -6,6 +6,7 @@
 //	pego fmt [-w] [-l] [grammar.pego ...]
 //	pego convert [-to pego|json] [-o output] grammar.pego|grammar.json|grammar.pegoc
 //	pego gen -g grammar.pego -pkg name [-s main] [-o parser.go] [-types] [-recognize]
+//	pego gen -lang ts -g grammar.pego [-s main] [-o parser.ts] [-recognize]
 //	pego compile -g grammar.pego [-s main] [-no-ast] -o grammar.pegoc
 //	pego trace -g grammar.pego [-s main] [-i input] [-max-depth n] [-rule name] [-failures] [-f text|json]
 //	pego profile -g grammar.pego [-s main] [-i input] [-sort column] [-n rows] [-f text|json]
@@ -47,11 +48,13 @@ Commands:
       other format of the input and is required for compiled grammars.
 
   gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-recognize]
-      Generate a Go parser from a grammar. Without -o, the code is written
-      to standard output. With -types, Go types for the grammar's types and
-      ParseAST, which returns the result as values of those types, are
-      generated too; with -recognize, Recognize, which checks input without
-      building a tree.
+  gen -lang ts -g <grammar> [-s <rule>] [-o <file>] [-recognize]
+      Generate a Go parser (or, with -lang ts, a TypeScript module) from a
+      grammar. Without -o, the code is written to standard output. With
+      -types, Go types for the grammar's types and ParseAST, which returns
+      the result as values of those types, are generated too (Go only);
+      with -recognize, Recognize (recognize in TypeScript), which checks
+      input without building a tree.
 
   compile -g <grammar> [-s <rule>] [-no-ast] -o <file.pegoc>
       Compile a grammar and save it. The result can be used as <grammar>
@@ -407,16 +410,29 @@ func isFlagSet(fs *flag.FlagSet, name string) bool {
 func gen(args []string, stdout io.Writer) error {
 	fs := flag.NewFlagSet("gen", flag.ContinueOnError)
 	grammarPath := fs.String("g", "", "grammar file (.pego, .json, or .pegoc)")
-	pkg := fs.String("pkg", "", "package name of the generated code")
+	lang := fs.String("lang", "go", "language of the generated code: go or ts (TypeScript)")
+	pkg := fs.String("pkg", "", "package name of the generated code (Go)")
 	start := fs.String("s", "", "start rule of the generated Parse function (default: the one saved in a .pegoc, otherwise main)")
 	output := fs.String("o", "", "output file (default: standard output)")
-	types := fs.Bool("types", false, "also generate Go types for the grammar's types and ParseAST")
+	types := fs.Bool("types", false, "also generate Go types for the grammar's types and ParseAST (Go)")
 	recognize := fs.Bool("recognize", false, "also generate Recognize, which checks input without building a tree")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	if *grammarPath == "" || *pkg == "" {
-		return fmt.Errorf("-g and -pkg are required")
+	switch *lang {
+	case "go":
+		if *grammarPath == "" || *pkg == "" {
+			return fmt.Errorf("-g and -pkg are required")
+		}
+	case "ts":
+		if *grammarPath == "" {
+			return fmt.Errorf("-g is required")
+		}
+		if *pkg != "" || *types {
+			return fmt.Errorf("-pkg and -types are not supported with -lang ts")
+		}
+	default:
+		return fmt.Errorf("unknown language %q (want go or ts)", *lang)
 	}
 	g, saved, err := loadGrammar(*grammarPath)
 	if err != nil {
@@ -432,7 +448,12 @@ func gen(args []string, stdout io.Writer) error {
 	if *recognize {
 		opts = append(opts, pego.WithRecognize())
 	}
-	code, err := pego.GenerateGo(g, *pkg, *start, opts...)
+	var code []byte
+	if *lang == "ts" {
+		code, err = pego.GenerateTypeScript(g, *start, opts...)
+	} else {
+		code, err = pego.GenerateGo(g, *pkg, *start, opts...)
+	}
 	if err != nil {
 		return fileError(*grammarPath, err)
 	}

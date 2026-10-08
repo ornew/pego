@@ -6,6 +6,8 @@ does not load or compile the grammar at run time.
 
 This guide shows how to generate a parser, how to call it, what it supports compared with the engine (the
 `pego.Parser` of the [runtime guide](runtime.md)), how to keep it up to date, and when it is the right choice.
+`pego gen -lang ts` generates a TypeScript module with the same behavior instead; it has a guide of its own,
+[TypeScript parsers](typescript.md).
 
 - [Why generate](#why-generate)
 - [Quick start](#quick-start)
@@ -165,8 +167,9 @@ pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-recogniz
 
 | Flag | Default | Meaning |
 |:--|:--|:--|
+| `-lang` | `go` | The language: `go`, or `ts` for TypeScript (see [TypeScript parsers](typescript.md)) |
 | `-g` | (required) | The grammar: `.pego`, `.json`, or a `.pegoc` that contains the AST |
-| `-pkg` | (required) | The package name of the generated code. It must be a valid Go identifier. |
+| `-pkg` | (required for Go) | The package name of the generated code. It must be a valid Go identifier. |
 | `-s` | saved in a `.pegoc`, otherwise `main` | The start rule of the generated `Parse` function |
 | `-o` | standard output | The output file |
 | `-types` | off | Also generate Go types for the grammar's types and `ParseAST` (see [typed values](#typed-values--types)) |
@@ -213,7 +216,7 @@ err = os.WriteFile("pairsparser/parser.go", code, 0o644)
 Options follow the start rule: `pego.GenerateGo(g, "pairsparser", "main", pego.WithTypes())` is `pego gen -types`, and
 `pego.WithRecognize()` is `-recognize`.
 
-`pego gen` is a thin wrapper around `pego.GenerateGo`. Because a grammar built with the `grammar` package (see the
+`pego gen` is a thin wrapper around `pego.GenerateGo` (and `pego.GenerateTypeScript` with `-lang ts`). Because a grammar built with the `grammar` package (see the
 [runtime guide](runtime.md#from-go-values-programmatic-grammars)) is just an AST, it can be generated from, too.
 
 ## The generated API

@@ -255,6 +255,18 @@ func GenerateGo(g *grammar.Grammar, pkg, start string, opts ...GenOption) ([]byt
 	return engine.Generate(g, o)
 }
 
+// GenerateTypeScript generates the source code of a standalone TypeScript parser for g: a single ES
+// module without dependencies, whose parse(input) parses from the rule start and returns the same
+// trees and errors as the engine. WithRecognize also generates recognize; WithTypes is not
+// supported. Like GenerateGo, it does not support stream or incremental parsing.
+func GenerateTypeScript(g *grammar.Grammar, start string, opts ...GenOption) ([]byte, error) {
+	o := engine.GenOptions{Start: start}
+	for _, opt := range opts {
+		opt(&o)
+	}
+	return engine.GenerateTS(g, o)
+}
+
 // MarshalBinary encodes the parser (bytecode, grammar AST and start rule) in the .pegoc format.
 // LoadParser restores it without parsing, analyzing, type checking or compiling the grammar again.
 func (p *Parser) MarshalBinary() ([]byte, error) {
