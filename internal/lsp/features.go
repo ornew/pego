@@ -414,7 +414,7 @@ func (a *analysis) checkNewName(kind symKind, old, name string) *rpcError {
 		if a.rules[name] != nil {
 			return fail("rule %s is already defined", name)
 		}
-		return nil
+		return a.checkUnused(kind, name)
 	}
 	if r, _ := utf8.DecodeRuneInString(name); !unicode.IsUpper(r) {
 		return fail("type %s must start with an uppercase letter", name)
@@ -424,6 +424,17 @@ func (a *analysis) checkNewName(kind symKind, old, name string) *rpcError {
 	}
 	if a.types[name] != nil {
 		return fail("type %s is already defined", name)
+	}
+	return a.checkUnused(kind, name)
+}
+
+// checkUnused checks that name is not used in the namespace kind: renaming to the name of an
+// undefined rule or type would make its references refer to the renamed definition.
+func (a *analysis) checkUnused(kind symKind, name string) *rpcError {
+	for _, o := range a.occs {
+		if o.kind == kind && o.name == name {
+			return &rpcError{Code: codeRequestFailed, Message: fmt.Sprintf("%s %s is used (but not defined) in the file", kind, name)}
+		}
 	}
 	return nil
 }

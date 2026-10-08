@@ -82,6 +82,32 @@ func TestCompletionAfterTriggerCharacters(t *testing.T) {
 	c.exit()
 }
 
+// TestRenameToUndefinedName checks that a rule or type cannot be renamed to a name that is used
+// but not defined: the references to that name would silently start to refer to it.
+func TestRenameToUndefinedName(t *testing.T) {
+	c := newInitialized(t)
+	uri := "file:///undefined.pego"
+	c.open(uri, "def a = b c\ndef b = \"x\"\ntype T struct { F U }\ndef d: T = \"d\"")
+	for _, tc := range []struct {
+		line, char int
+		name, want string
+	}{
+		{1, 4, "c", "rule c is used (but not defined) in the file"},
+		{2, 5, "U", "type U is used (but not defined) in the file"},
+	} {
+		p := at(uri, tc.line, tc.char)
+		p["newName"] = tc.name
+		if e := c.requestError("textDocument/rename", p); e.Message != tc.want {
+			t.Errorf("rename to %s: %q, want %q", tc.name, e.Message, tc.want)
+		}
+	}
+	// A name used only in the other namespace is free.
+	p := at(uri, 1, 4)
+	p["newName"] = "U"
+	c.request("textDocument/rename", p)
+	c.exit()
+}
+
 // TestFailedAnalysis checks that a panic while analyzing a document is published as a diagnostic
 // and that the last good analysis keeps serving requests.
 func TestFailedAnalysis(t *testing.T) {
