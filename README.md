@@ -150,6 +150,7 @@ v, err := json.Decode(`{"name": "pego", "tags": ["peg", "pratt"]}`)
 | Language | Module | Specification |
 |:--|:--|:--|
 | CSV | [`github.com/ornew/pego/parsers/csv`](parsers/csv/) | RFC 4180 |
+| Go | [`github.com/ornew/pego/parsers/golang`](parsers/golang/) | The Go specification (go1.27), as `go/parser` parses it |
 | JSON | [`github.com/ornew/pego/parsers/json`](parsers/json/) | RFC 8259 |
 | Python | [`github.com/ornew/pego/parsers/python`](parsers/python/) | Python 3.14 |
 | XML | [`github.com/ornew/pego/parsers/xml`](parsers/xml/) | XML 1.0 (Fifth Edition), non-validating |
