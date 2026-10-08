@@ -97,6 +97,10 @@ func WithCoverage() Option { return func(c *config) { c.coverage = true } }
 // ErrNoInput is returned when the generator finds no input within its attempts.
 var ErrNoInput = errors.New("sample: no input found that the parser accepts")
 
+// ErrNoInvalid is returned when the generator finds valid inputs but no mutation of them that the
+// parser rejects.
+var ErrNoInvalid = errors.New("sample: no mutation found that the parser rejects")
+
 // Generator generates inputs for a parser. It is not safe for concurrent use.
 type Generator struct {
 	p     *pego.Parser

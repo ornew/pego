@@ -14,8 +14,9 @@ type Invalid struct {
 	Err      error  // the error the parser returned for Input
 }
 
-// Invalid returns a near-miss invalid input. It returns ErrNoInput if it finds none within the
-// attempts.
+// Invalid returns a near-miss invalid input. It returns ErrNoInput if it finds no valid input to mutate,
+// and ErrNoInvalid if no mutation of the valid inputs it found is rejected (a grammar such as .* accepts
+// every input).
 func (g *Generator) Invalid() (Invalid, error) {
 	for range g.cfg.attempts {
 		base, err := g.Next()
@@ -32,17 +33,18 @@ func (g *Generator) Invalid() (Invalid, error) {
 			}
 		}
 	}
-	return Invalid{}, ErrNoInput
+	return Invalid{}, ErrNoInvalid
 }
 
 // GenerateInvalid returns up to n near-miss invalid inputs with distinct Input. It returns fewer if it
-// cannot find more, and ErrNoInput if it finds none.
+// cannot find more, and the error of Invalid (ErrNoInput or ErrNoInvalid) if it finds none.
 func (g *Generator) GenerateInvalid(n int) ([]Invalid, error) {
 	var out []Invalid
 	seen := map[string]bool{}
+	var err error
 	for dups := 0; len(out) < n && dups < g.cfg.attempts; {
-		inv, err := g.Invalid()
-		if err != nil {
+		var inv Invalid
+		if inv, err = g.Invalid(); err != nil {
 			break
 		}
 		if seen[inv.Input] {
@@ -54,7 +56,7 @@ func (g *Generator) GenerateInvalid(n int) ([]Invalid, error) {
 		out = append(out, inv)
 	}
 	if len(out) == 0 && n > 0 {
-		return nil, ErrNoInput
+		return nil, err
 	}
 	return out, nil
 }

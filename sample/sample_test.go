@@ -199,6 +199,25 @@ func TestInvalid(t *testing.T) {
 	}
 }
 
+func TestNoInvalid(t *testing.T) {
+	// Every input is valid: no mutation is rejected, and the error says so.
+	g, err := sample.New(compile(t, `def main = .*`), sample.WithAttempts(5))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := g.GenerateInvalid(3); !errors.Is(err, sample.ErrNoInvalid) {
+		t.Errorf("got %v", err)
+	}
+	// No valid input to mutate.
+	g, err = sample.New(compile(t, `def main = "a"* "a"`), sample.WithAttempts(5))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := g.Invalid(); !errors.Is(err, sample.ErrNoInput) {
+		t.Errorf("got %v", err)
+	}
+}
+
 // TestPEGSemantics checks grammars where a naive walk of the grammar produces inputs that the parser
 // rejects or reads differently.
 func TestPEGSemantics(t *testing.T) {

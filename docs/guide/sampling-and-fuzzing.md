@@ -204,7 +204,9 @@ $ pego sample -g examples/json/json.pego -n 3 -invalid -f json
 ```
 
 Use them to check error messages and positions, and recovery with `#recover`: a recovered error counts as rejected, so
-the inputs of a grammar with `#recover` include ones that produce both a tree and errors.
+the inputs of a grammar with `#recover` include ones that produce both a tree and errors. A grammar that accepts every
+input, such as `def main = .*`, has no near misses: `pego sample -invalid` then fails with "no mutation found that the
+parser rejects" (`sample.ErrNoInvalid` in Go), not with the error for grammars that accept nothing.
 
 ## From Go
 
