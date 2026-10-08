@@ -94,16 +94,16 @@ form.
 
 ### Cost
 
-On the benchmarks (Apple M3 Max, min of 6 runs), the typed runtime makes `ParseAST` 30–46% faster than `Parse` with
-a fifth to a third of the memory: JSON (262 KB) 7.2 → 3.9 ms and 12.6 → 2.9 MB, XML 7.8 → 4.3 ms, the left-recursive
-calculator 15.5 → 10.3 ms, the outline 4.3 → 2.5 ms; the Pratt calculator, whose Pratt loop is the general one, 6.8 →
-6.0 ms. JSON `ParseAST` takes the time of `Recognize`, which builds nothing. Conversion costs about 6% more than
-`Parse`.
+On the benchmarks (Apple M3 Max, min of 6–8 runs), the typed runtime makes `ParseAST` 35–55% faster than `Parse`
+with a fifth to a third of the memory: JSON (262 KB) 7.2 → 3.3 ms and 12.8 → 2.9 MB, XML 7.5 → 4.0 ms, the
+left-recursive calculator 15.1 → 9.8 ms, the outline 4.0 → 2.1 ms; the Pratt calculator, whose Pratt loop is the
+general one, 6.4 → 5.8 ms. JSON `ParseAST` is faster than `Recognize` (3.8 ms), which builds nothing but runs the
+general code. Conversion costs about 6% more than `Parse`.
 
-Direct rules made most of that difference: before them, with every rule run by the general machinery of rule calls
-(capture frames and their trail, the evaluation context of actions), `ParseAST` was about 10% faster than `Parse`
-(JSON 6.4 ms). A hand-written prototype for JSON that kept captures in Go variables and built lists directly took
-4.5 ms on the same machine.
+Direct rules made most of that difference (performance.md, changes 59–61): before them, with every rule run by the
+general machinery of rule calls (capture frames and their trail, the evaluation context of actions), `ParseAST` was
+about 15% faster than `Parse` (JSON 6.2 ms). A hand-written prototype for JSON that kept captures in Go variables and
+built lists directly had taken 4.5 ms.
 
 ## Alternatives considered
 

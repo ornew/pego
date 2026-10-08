@@ -399,8 +399,8 @@ Details:
   `node`, `terminal` or `any`, also in struct fields) and no action reads a field of a struct value, the generated
   parser builds the values directly, without the
   nodes `Parse` makes: on the benchmarks `ParseAST` then takes a half to two thirds of the time of `Parse` and a fifth
-  to a third of the memory (JSON 7.2 → 3.9 ms and 12.6 → 2.9 MB on a 262 KB input, about the time of `Recognize`; XML,
-  the left-recursive calculator and the outline grammar alike; the Pratt calculator about 10% faster). Otherwise
+  to a third of the memory (JSON 7.2 → 3.3 ms and 12.8 → 2.9 MB on a 262 KB input, less than `Recognize`; XML, the
+  left-recursive calculator and the outline grammar alike; the Pratt calculator about 10% faster). Otherwise
   `ParseAST` runs `Parse` and converts the tree, about 6% slower than `Parse`. The
   [design record](../design/012-typed-values.md) explains both. The typed runtime adds about as much code to the
   generated file as the parser itself.
