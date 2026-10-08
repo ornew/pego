@@ -43,8 +43,9 @@ type ruleInfo struct {
 	length   int            // minimal length in bytes of a match
 	reach    bitset         // targets that generating the rule can exercise, its own included
 	calls    []string
-	// possibleCalls are the calls in contexts that can match.
+	// possibleCalls are the calls in contexts that can match, and possibleRefs the calls themselves.
 	possibleCalls []string
+	possibleRefs  []*grammar.Ref
 	// always caches alwaysMatches for the body: 0 not computed yet, 1 being computed, 2 yes, 3 no.
 	always int
 	// stops caches, per minimum level, the expression that must not match where a chain of
@@ -187,6 +188,7 @@ func analyze(g *grammar.Grammar, start string) *info {
 			switch e := e.(type) {
 			case *grammar.Ref:
 				ri.possibleCalls = append(ri.possibleCalls, e.Name)
+				ri.possibleRefs = append(ri.possibleRefs, e)
 			case *grammar.Choice:
 				for j, a := range e.Alts {
 					in.targets[in.altBase[e]+j].possible = in.height(a) < inf
@@ -222,6 +224,7 @@ func analyze(g *grammar.Grammar, start string) *info {
 	}
 	in.reachable = in.closure(func(ri *ruleInfo) []string { return ri.possibleCalls })
 	in.called = in.closure(func(ri *ruleInfo) []string { return ri.calls })
+	in.restrictLevels()
 	return in
 }
 
@@ -506,6 +509,37 @@ func (in *info) length(e grammar.Expr) int {
 		return l
 	}
 	return 0
+}
+
+// restrictLevels leaves out of the coverage the operators of Pratt levels that no call reaches: when a
+// Pratt rule is only called with a level (e(mul)), the operators of looser levels are never generated.
+func (in *info) restrictLevels() {
+	lowest := map[*ruleInfo]int{}
+	if in.start != nil && in.start.pratt != nil {
+		lowest[in.start] = 0
+	}
+	for _, ri := range in.order {
+		if !in.reachable[ri.index] {
+			continue
+		}
+		for _, r := range ri.possibleRefs {
+			callee := in.rules[r.Name]
+			if callee == nil || callee.pratt == nil {
+				continue
+			}
+			l := callee.levels[r.Level] // 0 without a level
+			if old, ok := lowest[callee]; !ok || l < old {
+				lowest[callee] = l
+			}
+		}
+	}
+	for ri, l := range lowest {
+		for i := 0; i < l; i++ {
+			for _, op := range ri.pratt.Levels[i].Operators {
+				in.targets[in.ops[op]].possible = false
+			}
+		}
+	}
 }
 
 // closure returns, for each rule, whether the start rule reaches it through the calls that calls

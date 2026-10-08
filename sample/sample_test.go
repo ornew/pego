@@ -578,6 +578,20 @@ def r = "x" / "y"`)
 		t.Errorf("got %+v", c)
 	}
 
+	// Operators of Pratt levels that only level-restricted calls skip are not counted.
+	p = compile(t, `def main = e(mul) $$
+def e = pratt { operand "a" level { infix left "+" } level mul { infix left "*" } }`)
+	g, err = sample.New(p, sample.WithSeed(1), sample.WithCoverage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := g.Generate(5); err != nil {
+		t.Fatal(err)
+	}
+	if c = g.Coverage(); c.Alternatives != 2 || c.AlternativesCovered != 2 {
+		t.Errorf("got %+v", c)
+	}
+
 	// A rule that is called but can never match is reported as such, not as unreachable.
 	p = compile(t, `def main = "a" / err
 def err = "b" _|_`)

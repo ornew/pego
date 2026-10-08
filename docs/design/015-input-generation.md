@@ -156,7 +156,8 @@ Rules that the start rule reaches only inside negative lookaheads (`!keyword`) o
 as unreachable, and rules that are called but can never match (bodies that end in `_|_` to report an error) as
 impossible; neither counts in the totals. Alternatives that can never match, and everything inside an expression that
 can never match (`"(" ("a" / "b") _|_`), are not counted either; a rule that can match but is called only there is
-unreachable. Each rule has a reach set (the targets that generating it can exercise), computed as a fixed point over
+unreachable. Nor are the operators of Pratt levels that every call skips: if `e` is only called as `e(mul)`, the
+operators of the levels looser than `mul` are never generated. Each rule has a reach set (the targets that generating it can exercise), computed as a fixed point over
 the call graph; reach sets of subexpressions are computed on demand.
 
 Coverage is recorded on the derivation the generator followed for each accepted input. The parser takes the same way
