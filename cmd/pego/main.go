@@ -7,6 +7,9 @@
 //	pego convert [-to pego|json] [-o output] grammar.pego|grammar.json|grammar.pegoc
 //	pego gen -g grammar.pego -pkg name [-s main] [-o parser.go] [-types] [-recognize]
 //	pego compile -g grammar.pego [-s main] [-no-ast] -o grammar.pegoc
+//	pego trace -g grammar.pego [-s main] [-i input] [-max-depth n] [-rule name] [-failures] [-f text|json]
+//	pego profile -g grammar.pego [-s main] [-i input] [-sort column] [-n rows] [-f text|json]
+//	pego explain -g grammar.pego [-s main] [-i input] [-n stacks]
 package main
 
 import (
@@ -56,6 +59,20 @@ Commands:
       result then runs only on the bytecode backends and cannot be
       converted back to a grammar.
 
+  trace -g <grammar> [-s <rule>] [-i <input>] [-max-depth <n>] [-rule <name>]
+        [-failures] [-f text|json] [-unit u] [-backend b]
+      Parse the input and print every rule call as an indented call tree
+      with positions, results and memo hits (-f json: one event per line).
+
+  profile -g <grammar> [-s <rule>] [-i <input>] [-sort <column>] [-n <rows>]
+        [-f text|json] [-unit u] [-backend b]
+      Parse the input and print the cost of each rule, with hints on where
+      the grammar does more work than it needs to.
+
+  explain -g <grammar> [-s <rule>] [-i <input>] [-n <stacks>] [-unit u] [-backend b]
+      Parse the input and, for a syntax error, print the rule calls that
+      failed at its position, each with the calls it was nested in.
+
 A <grammar> is PEGO source (.pego), a grammar in JSON (.json), or a
 grammar compiled with pego compile (.pegoc).
 
@@ -83,6 +100,12 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 		return fmtCmd(args[1:], stdin, stdout)
 	case "convert":
 		return convertCmd(args[1:], stdout)
+	case "trace":
+		return traceCmd(args[1:], stdin, stdout)
+	case "profile":
+		return profileCmd(args[1:], stdin, stdout)
+	case "explain":
+		return explainCmd(args[1:], stdin, stdout)
 	}
 	return fmt.Errorf("%s", usage)
 }
