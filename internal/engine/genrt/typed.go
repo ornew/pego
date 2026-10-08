@@ -269,7 +269,11 @@ func (p *tparser) recycle() {
 	seen, calls := q.memo.seen, q.memo.calls
 	clear(seen)
 	clear(calls)
-	*q = parser{in: q.in[:0], offs: q.offs[:0], exp: q.exp[:0], arena: q.arena[:0]}
+	in, offs := q.in[:0], q.offs[:0]
+	if cap(in) > 1<<20 { // do not keep the buffers of a large input for every later parse
+		in, offs = nil, nil
+	}
+	*q = parser{in: in, offs: offs, exp: q.exp[:0], arena: q.arena[:0]}
 	q.memo.seen, q.memo.calls = seen, calls
 	p.nodes.reset()
 	p.vals.reset()
