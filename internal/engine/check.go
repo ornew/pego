@@ -6,6 +6,10 @@ import (
 	"github.com/ornew/pego/grammar"
 )
 
+// maxInferredType is the length of the written form of an inferred rule type beyond which the
+// rule's type is taken to be any.
+const maxInferredType = 2048
+
 // checker infers and checks the types of a grammar.
 //
 // The types of rules without a declared type are found by repeating inference until no rule's
@@ -81,7 +85,13 @@ func checkTypes(prog *Program, errs *ErrorList) {
 				continue
 			}
 			t := k.ruleType(rd)
-			if t.String() != k.ruleTypes[rd.Name].String() {
+			ts := t.String()
+			if len(ts) > maxInferredType {
+				// A type that keeps growing (such as lists of lists of the rule's own values) can
+				// double in size at every round, which would take exponential time; give up on it.
+				t, ts = tyAny, tyAny.String()
+			}
+			if ts != k.ruleTypes[rd.Name].String() {
 				k.ruleTypes[rd.Name] = t
 				changed = true
 			}

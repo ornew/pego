@@ -3,6 +3,9 @@ package engine
 import (
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestTypeErrors(t *testing.T) {
@@ -90,5 +93,33 @@ def main = w:word -> new P{S: $w.startPos + $w.endPos, K: $w.children}
 def word = k:"a" v:"b"`,
 	} {
 		compile(t, src)
+	}
+}
+
+// TestInferenceOfGrowingTypes checks that inferring a rule type that grows at every round (lists
+// of lists of the rule's own values) finishes quickly instead of taking exponential time.
+func TestInferenceOfGrowingTypes(t *testing.T) {
+	src := `
+def main = (r0 / r1) r2?
+def r0 = ";"
+def r1 = "a"
+def r2 = (r3 "é" / "a")
+def r3 = (((c1:(r3) [v = len($c1)]) c2:(r1) (";") #recover(skip=(?^;)* ";"))) #error(message="m1") -> map(concat(list($c1), $c1.children), (i) => concat(list($i), map($c1.children, (j) => list($i, $j))))`
+	g, err := syntax.Parse(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan error, 1)
+	go func() {
+		_, err := Compile(g, Options{})
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("type inference did not finish within 10 seconds")
 	}
 }
