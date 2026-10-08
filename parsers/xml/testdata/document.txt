@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- catalog -->
+<catalog lang='en'>
+  <book id="b1">
+    <title>Go &amp; PEG&#x21;</title>
+    <note><![CDATA[<raw> text]]></note>
+    <?render inline?>
+    <empty/>
+  </book>
+</catalog>

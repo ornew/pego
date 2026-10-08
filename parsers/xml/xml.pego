@@ -1,0 +1,234 @@
+// XML 1.0 (Fifth Edition), https://www.w3.org/TR/xml/, parsed into a typed AST.
+//
+// The grammar follows the productions of the specification (their numbers are given in brackets) for a
+// document entity with an internal DTD subset, the part of XML that a non-validating processor reads
+// without fetching external entities. It checks the syntax, the Char production everywhere, and the
+// element type match. The other well-formedness constraints need the declarations of the DTD (entities
+// declared, no recursion, no "<" in attribute values, ...) or a set of names (unique attributes); xml.go
+// checks them after the parse.
+//
+// Character classes spell out Char ([2]) minus the characters a production excludes, so that no rule
+// accepts a code point outside Char. Text (character data, attribute values, comments, ...) is kept as
+// it is in the input; the helpers of xml.go normalize line ends and expand references.
+package xml
+
+// [1] document ::= prolog element Misc*
+// [22] prolog ::= XMLDecl? Misc* (doctypedecl Misc*)?
+type Document struct {
+    Decl    *XMLDecl
+    Prolog  []Misc // comments and processing instructions before the root element, around the doctype
+    Doctype *Doctype
+    Root    Element
+    Epilog  []Misc // comments and processing instructions after the root element
+}
+
+type XMLDecl struct { Version Version, Encoding *EncName, Standalone *YesNo }
+type Version terminal
+type EncName terminal
+type YesNo terminal
+type Misc = Comment | PI
+
+type Doctype struct { Name Name, ExternalID *ExternalID, Subset []Decl }
+type ExternalID struct { Public *PubidLiteral, System *SystemLiteral }
+type PubidLiteral terminal  // between the quotes
+type SystemLiteral terminal // between the quotes
+type Decl = ElementDecl | AttlistDecl | EntityDecl | NotationDecl | PI | Comment | PERef
+type PERef terminal         // "%name;"
+
+type ElementDecl struct { Name Name, Content ContentSpec }
+type ContentSpec = Keyword | Mixed | Choice | Sequence
+type Keyword terminal       // EMPTY, ANY, CDATA, ID, ..., #REQUIRED, #IMPLIED, #FIXED
+type Mixed struct { Names []Name }
+type Choice struct { Items []Particle, Occur *Occurrence }
+type Sequence struct { Items []Particle, Occur *Occurrence }
+type NameParticle struct { Name Name, Occur *Occurrence }
+type Particle = NameParticle | Choice | Sequence
+type Occurrence terminal    // ?, * or +
+
+type AttlistDecl struct { Name Name, Defs []AttDef }
+type AttDef struct { Name Name, Type AttType, Default *Keyword, Value *AttValue }
+type AttType = Keyword | Enumeration | NotationType
+type Enumeration struct { Values []Nmtoken }
+type NotationType struct { Names []Name }
+type Nmtoken terminal
+
+type EntityDecl struct { Parameter bool, Name Name, Value *EntityValue, ExternalID *ExternalID, NData *Name }
+type EntityValue terminal   // between the quotes
+type NotationDecl struct { Name Name, ExternalID ExternalID }
+
+type Element struct { Name Name, Attrs []Attribute, Content []Content }
+type Attribute struct { Name Name, Value AttValue }
+type AttValue terminal      // between the quotes
+type Content = Element | CharData | EntityRef | CharRef | CDSect | PI | Comment
+type CharData terminal
+type EntityRef terminal     // "&name;"
+type CharRef terminal       // "&#...;"
+type CDSect terminal        // between "<![CDATA[" and "]]>"
+type PI struct { Target Name, Data *PIData }
+type PIData terminal
+type Comment terminal       // between "<!--" and "-->"
+type Name terminal
+
+// A byte order mark (U+FEFF) may precede the document (Appendix F).
+def main: Document = "\u{FEFF}"? d:xml_decl? p1:misc_list dt:doctype? p2:misc_list r:element e:misc_list $$
+    -> new Document{Decl: $d, Prolog: concat($p1, $p2), Doctype: $dt, Root: $r, Epilog: $e}
+
+// [27] Misc ::= Comment | PI | S
+def misc_list = ms:(-ws m:misc)* -ws -> map($ms, (x) => $x.m)
+def misc: Misc = comment / pi
+
+// [23] XMLDecl ::= '<?xml' VersionInfo EncodingDecl? SDDecl? S? '?>'
+def xml_decl: XMLDecl = "<?xml" v:version_info e:encoding_decl? sd:sd_decl? ws "?>"
+    -> new XMLDecl{Version: $v, Encoding: $e, Standalone: $sd}
+// [24] VersionInfo, [26] VersionNum ::= '1.' [0-9]+
+def version_info = s "version" eq ("\"" v:version_num "\"" / "'" v:version_num "'") -> $v
+def version_num: Version = "1." (?0-9)+
+// [80] EncodingDecl, [81] EncName ::= [A-Za-z] ([A-Za-z0-9._] | '-')*
+def encoding_decl = s "encoding" eq ("\"" e:enc_name "\"" / "'" e:enc_name "'") -> $e
+def enc_name: EncName = (?A-Za-z) (?A-Za-z0-9._\-)*
+// [32] SDDecl
+def sd_decl = s "standalone" eq ("\"" v:yes_no "\"" / "'" v:yes_no "'") -> $v
+def yes_no: YesNo = "yes" / "no"
+// [25] Eq ::= S? '=' S?
+def eq = ws "=" ws
+
+// [15] Comment ::= '<!--' ((Char - '-') | ('-' (Char - '-')))* '-->'
+def comment = "<!--" c:comment_text "-->" -> $c
+def comment_text: Comment = ((?\u{2E}-\u{D7FF}\u{20}-\u{2C}\n\t\r\u{E000}-\u{FFFD}\u{10000}-\u{10FFFF})+ / "-" (?\u{2E}-\u{D7FF}\u{20}-\u{2C}\n\t\r\u{E000}-\u{FFFD}\u{10000}-\u{10FFFF}))*
+
+// [16] PI ::= '<?' PITarget (S (Char* - (Char* '?>' Char*)))? '?>'
+// [17] PITarget ::= Name - (('X' | 'x') ('M' | 'm') ('L' | 'l'))
+// The predicate fails at the end of a reserved target, so that its message is the error reported for a
+// misplaced XML declaration (a lookahead before the name would record no position).
+def pi: PI = "<?" t:name [text($t) != "xml" && text($t) != "xmL" && text($t) != "xMl" && text($t) != "xML"
+        && text($t) != "Xml" && text($t) != "XmL" && text($t) != "XMl" && text($t) != "XML"]
+        #error(message="the processing instruction target xml is reserved (an XML declaration must come first)")
+    (s d:pi_data)? "?>"
+    -> new PI{Target: $t, Data: $d}
+def pi_data: PIData = ((?\u{40}-\u{D7FF}\u{20}-\u{3E}\n\t\r\u{E000}-\u{FFFD}\u{10000}-\u{10FFFF})+ / "?" !">")*
+
+// [28] doctypedecl ::= '<!DOCTYPE' S Name (S ExternalID)? S? ('[' intSubset ']' S?)? '>'
+def doctype: Doctype = "<!DOCTYPE" s n:name (s x:external_id)? ws ("[" ds:int_subset "]" ws)? ">"
+    -> new Doctype{Name: $n, ExternalID: $x, Subset: concat($ds)}
+// [28b] intSubset ::= (markupdecl | DeclSep)*, [28a] DeclSep ::= PEReference | S,
+// [29] markupdecl ::= elementdecl | AttlistDecl | EntityDecl | NotationDecl | PI | Comment.
+// In the internal subset, parameter-entity references occur only between declarations (WFC: PEs in
+// Internal Subset), so none of the declarations below accepts one.
+def int_subset = ds:(-ws d:decl)* -ws -> map($ds, (x) => $x.d)
+def decl: Decl = element_decl / attlist_decl / entity_decl / notation_decl / pi / comment / pe_ref
+// [69] PEReference ::= '%' Name ';'
+def pe_ref: PERef = "%" name ";"
+
+// [75] ExternalID ::= 'SYSTEM' S SystemLiteral | 'PUBLIC' S PubidLiteral S SystemLiteral
+def external_id: ExternalID = system_id / public_id
+def system_id: ExternalID = "SYSTEM" s l:system_literal -> new ExternalID{System: $l}
+def public_id: ExternalID = "PUBLIC" s p:pubid_literal s l:system_literal -> new ExternalID{Public: $p, System: $l}
+// [11] SystemLiteral ::= ('"' [^"]* '"') | ("'" [^']* "'")
+def system_literal = "\"" l:system_dq "\"" / "'" l:system_sq "'" -> $l
+def system_dq: SystemLiteral = (?\u{23}-\u{D7FF}\u{20}-\u{21}\n\t\r\u{E000}-\u{FFFD}\u{10000}-\u{10FFFF})*
+def system_sq: SystemLiteral = (?\u{28}-\u{D7FF}\u{20}-\u{26}\n\t\r\u{E000}-\u{FFFD}\u{10000}-\u{10FFFF})*
+// [12] PubidLiteral, [13] PubidChar ::= #x20 | #xD | #xA | [a-zA-Z0-9] | [-'()+,./:=?;!*#@$_%]
+def pubid_literal = "\"" l:pubid_dq "\"" / "'" l:pubid_sq "'" -> $l
+def pubid_dq: PubidLiteral = (?a-zA-Z0-9 \r\n\-'(\)+,./:=?;!*#@$_%)*
+def pubid_sq: PubidLiteral = (?a-zA-Z0-9 \r\n\-(\)+,./:=?;!*#@$_%)*
+
+// [45] elementdecl ::= '<!ELEMENT' S Name S contentspec S? '>'
+// [46] contentspec ::= 'EMPTY' | 'ANY' | Mixed | children
+def element_decl: ElementDecl = "<!ELEMENT" s n:name s c:content_spec ws ">" -> new ElementDecl{Name: $n, Content: $c}
+def content_spec: ContentSpec = kw_empty / kw_any / mixed / choice / sequence
+def kw_empty: Keyword = "EMPTY"
+def kw_any: Keyword = "ANY"
+// [51] Mixed ::= '(' S? '#PCDATA' (S? '|' S? Name)* S? ')*' | '(' S? '#PCDATA' S? ')'
+def mixed: Mixed = "(" ws "#PCDATA" ns:(-ws -"|" -ws n:name)* ws (")*" / ")" [len($ns) == 0])
+    -> new Mixed{Names: map($ns, (x) => $x.n)}
+// [47] children ::= (choice | seq) ('?' | '*' | '+')?, [48] cp ::= (Name | choice | seq) ('?' | '*' | '+')?
+// [49] choice ::= '(' S? cp ( S? '|' S? cp )+ S? ')', [50] seq ::= '(' S? cp ( S? ',' S? cp )* S? ')'
+def choice: Choice = "(" ws f:cp rs:(-ws -"|" -ws c:cp)+ ws ")" o:occurrence?
+    -> new Choice{Items: concat(list($f), map($rs, (x) => $x.c)), Occur: $o}
+def sequence: Sequence = "(" ws f:cp rs:(-ws -"," -ws c:cp)* ws ")" o:occurrence?
+    -> new Sequence{Items: concat(list($f), map($rs, (x) => $x.c)), Occur: $o}
+def cp: Particle = name_particle / choice / sequence
+def name_particle: NameParticle = n:name o:occurrence? -> new NameParticle{Name: $n, Occur: $o}
+def occurrence: Occurrence = (?*+?)
+
+// [52] AttlistDecl ::= '<!ATTLIST' S Name AttDef* S? '>'
+// [53] AttDef ::= S Name S AttType S DefaultDecl
+// [60] DefaultDecl ::= '#REQUIRED' | '#IMPLIED' | (('#FIXED' S)? AttValue)
+def attlist_decl: AttlistDecl = "<!ATTLIST" s n:name ds:(-s d:att_def)* ws ">"
+    -> new AttlistDecl{Name: $n, Defs: map($ds, (x) => $x.d)}
+def att_def: AttDef = n:name s t:att_type s (k:kw_required / (k:kw_fixed s)? v:att_value)
+    -> new AttDef{Name: $n, Type: $t, Default: $k, Value: $v}
+def kw_required: Keyword = "#REQUIRED" / "#IMPLIED"
+def kw_fixed: Keyword = "#FIXED"
+// [54] AttType ::= StringType | TokenizedType | EnumeratedType
+def att_type: AttType = kw_type / notation_type / enumeration
+def kw_type: Keyword = "CDATA" / "IDREFS" / "IDREF" / "ID" / "ENTITY" / "ENTITIES" / "NMTOKENS" / "NMTOKEN"
+// [58] NotationType ::= 'NOTATION' S '(' S? Name (S? '|' S? Name)* S? ')'
+def notation_type: NotationType = "NOTATION" s "(" ws f:name rs:(-ws -"|" -ws n:name)* ws ")"
+    -> new NotationType{Names: concat(list($f), map($rs, (x) => $x.n))}
+// [59] Enumeration ::= '(' S? Nmtoken (S? '|' S? Nmtoken)* S? ')'
+def enumeration: Enumeration = "(" ws f:nmtoken rs:(-ws -"|" -ws n:nmtoken)* ws ")"
+    -> new Enumeration{Values: concat(list($f), map($rs, (x) => $x.n))}
+
+// [70] EntityDecl ::= GEDecl | PEDecl
+// [71] GEDecl ::= '<!ENTITY' S Name S EntityDef S? '>', [73] EntityDef ::= EntityValue | (ExternalID NDataDecl?)
+// [72] PEDecl ::= '<!ENTITY' S '%' S Name S PEDef S? '>', [74] PEDef ::= EntityValue | ExternalID
+def entity_decl: EntityDecl = ge_decl / pe_decl
+def ge_decl: EntityDecl = "<!ENTITY" s n:name s (v:entity_value / x:external_id (s "NDATA" s nd:name)?) ws ">"
+    -> new EntityDecl{Parameter: false, Name: $n, Value: $v, ExternalID: $x, NData: $nd}
+def pe_decl: EntityDecl = "<!ENTITY" s "%" s n:name s (v:entity_value / x:external_id) ws ">"
+    -> new EntityDecl{Parameter: true, Name: $n, Value: $v, ExternalID: $x}
+// [9] EntityValue ::= '"' ([^%&"] | PEReference | Reference)* '"' | "'" ([^%&'] | PEReference | Reference)* "'"
+// without PEReference, which the internal subset does not allow inside a declaration.
+def entity_value = "\"" v:entity_dq "\"" / "'" v:entity_sq "'" -> $v
+def entity_dq: EntityValue = ((?\u{27}-\u{D7FF}\u{20}-\u{21}\u{23}-\u{24}\n\t\r\u{E000}-\u{FFFD}\u{10000}-\u{10FFFF})+ / reference)*
+def entity_sq: EntityValue = ((?\u{28}-\u{D7FF}\u{20}-\u{24}\n\t\r\u{E000}-\u{FFFD}\u{10000}-\u{10FFFF})+ / reference)*
+
+// [82] NotationDecl ::= '<!NOTATION' S Name S (ExternalID | PublicID) S? '>', [83] PublicID ::= 'PUBLIC' S PubidLiteral
+def notation_decl: NotationDecl = "<!NOTATION" s n:name s x:notation_id ws ">" -> new NotationDecl{Name: $n, ExternalID: $x}
+def notation_id: ExternalID = system_id / public_notation
+def public_notation: ExternalID = "PUBLIC" s p:pubid_literal (s l:system_literal)? -> new ExternalID{Public: $p, System: $l}
+
+// [39] element ::= EmptyElemTag | STag content ETag
+// [40] STag ::= '<' Name (S Attribute)* S? '>', [44] EmptyElemTag ::= '<' Name (S Attribute)* S? '/>'
+// [42] ETag ::= '</' Name S? '>' (WFC: Element Type Match)
+// One rule for both forms, so that the start tag is not parsed twice.
+def element: Element = "<" n:name as:(-s a:attribute)* ws ("/>" / ">" cs:content
+        "</" e:name [text($e) == text($n)] #error(message="mismatched end tag") ws ">")
+    -> new Element{Name: $n, Attrs: map($as, (x) => $x.a), Content: concat($cs)}
+// [41] Attribute ::= Name Eq AttValue
+def attribute: Attribute = n:name eq v:att_value -> new Attribute{Name: $n, Value: $v}
+// [10] AttValue ::= '"' ([^<&"] | Reference)* '"' | "'" ([^<&'] | Reference)* "'"
+def att_value = "\"" v:att_dq "\"" / "'" v:att_sq "'" -> $v
+def att_dq: AttValue = ((?\u{3D}-\u{D7FF}\u{27}-\u{3B}\u{20}-\u{21}\u{23}-\u{25}\n\t\r\u{E000}-\u{FFFD}\u{10000}-\u{10FFFF})+ / reference)*
+def att_sq: AttValue = ((?\u{3D}-\u{D7FF}\u{28}-\u{3B}\u{20}-\u{25}\n\t\r\u{E000}-\u{FFFD}\u{10000}-\u{10FFFF})+ / reference)*
+
+// [43] content ::= CharData? ((element | Reference | CDSect | PI | Comment) CharData?)*
+def content = content_item*
+def content_item: Content = char_data / element / reference / comment / cdsect / pi
+// [14] CharData ::= [^<&]* - ([^<&]* ']]>' [^<&]*)
+def char_data: CharData = ((?\u{5E}-\u{D7FF}\u{3D}-\u{5C}\u{27}-\u{3B}\u{20}-\u{25}\n\t\r\u{E000}-\u{FFFD}\u{10000}-\u{10FFFF})+ / "]" !"]>")+
+// [18] CDSect ::= CDStart CData CDEnd, [20] CData ::= (Char* - (Char* ']]>' Char*))
+def cdsect = "<![CDATA[" c:cdata "]]>" -> $c
+def cdata: CDSect = ((?\u{5E}-\u{D7FF}\u{20}-\u{5C}\n\t\r\u{E000}-\u{FFFD}\u{10000}-\u{10FFFF})+ / "]" !"]>")*
+
+// [67] Reference ::= EntityRef | CharRef, [68] EntityRef ::= '&' Name ';'
+// [66] CharRef ::= '&#' [0-9]+ ';' | '&#x' [0-9a-fA-F]+ ';'
+def reference = char_ref / entity_ref
+def char_ref: CharRef = "&#x" (?0-9a-fA-F)+ ";" / "&#" (?0-9)+ ";"
+def entity_ref: EntityRef = "&" name ";"
+
+// [5] Name ::= NameStartChar (NameChar)*
+// [4] NameStartChar ::= ":" | [A-Z] | "_" | [a-z] | [#xC0-#xD6] | [#xD8-#xF6] | [#xF8-#x2FF] | [#x370-#x37D]
+//     | [#x37F-#x1FFF] | [#x200C-#x200D] | [#x2070-#x218F] | [#x2C00-#x2FEF] | [#x3001-#xD7FF] | [#xF900-#xFDCF]
+//     | [#xFDF0-#xFFFD] | [#x10000-#xEFFFF]
+// [4a] NameChar ::= NameStartChar | "-" | "." | [0-9] | #xB7 | [#x0300-#x036F] | [#x203F-#x2040]
+def name: Name = (?a-zA-Z_:\u{C0}-\u{D6}\u{D8}-\u{F6}\u{F8}-\u{2FF}\u{370}-\u{37D}\u{37F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF})
+    name_char*
+def name_char = (?a-zA-Z0-9_:.\-\u{B7}\u{C0}-\u{D6}\u{D8}-\u{F6}\u{F8}-\u{37D}\u{37F}-\u{1FFF}\u{200C}-\u{200D}\u{203F}-\u{2040}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF})
+// [7] Nmtoken ::= (NameChar)+
+def nmtoken: Nmtoken = name_char+
+
+// [3] S ::= (#x20 | #x9 | #xD | #xA)+
+def s = (? \t\r\n)+
+def ws = (? \t\r\n)*

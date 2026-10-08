@@ -1,0 +1,11 @@
+<!DOCTYPE doc SYSTEM "doc.dtd" [
+  <!ELEMENT doc (head, (p | list)*)+>
+  <!ELEMENT p (#PCDATA | em)*>
+  <!ATTLIST p id ID #IMPLIED align (left|right) "left" kind NOTATION (gif) #FIXED "gif">
+  <!ENTITY version "1.0">
+  <!ENTITY % common SYSTEM "common.ent">
+  %common;
+  <!ENTITY logo SYSTEM "logo.gif" NDATA gif>
+  <!NOTATION gif PUBLIC '-//W3C//NOTATION GIF//EN'>
+]>
+<doc>&version;</doc>
