@@ -119,7 +119,7 @@ func main() {
 	fmt.Println(node)
 	for _, pair := range node.Children {
 		key := pair.Field("Key").(*pairsparser.Node)
-		fmt.Printf("%s %q at %d-%d\n", pair.Type, key.Text, key.Start, key.End)
+		fmt.Printf("%s %q at %d-%d\n", pair.Type(), key.Text, key.Start, key.End)
 	}
 
 	// Positions in UTF-8 bytes.
@@ -236,7 +236,7 @@ const (
 	Bytes
 )
 
-type Node struct { Type, Rule string; Start, End int; Text string; Children []*Node; Fields Fields }
+type Node struct { Start, End int32; Text string; Children []*Node; Fields Fields } // and Type() and Rule()
 func (n *Node) Field(name string) any
 func (n *Node) IsTerminal() bool
 func (n *Node) String() string

@@ -326,36 +326,36 @@ func (t *typedGen) converters(b *strings.Builder) {
 	span := t.span
 	b.WriteString(astHelpers)
 	fmt.Fprintf(b, `func (a *astConv) toMatch(n *Node) *Match {
-	if n == nil || n.Type != "Match" {
+	if n == nil || n.Type() != "Match" {
 		return nil
 	}
 	v := astNew(&a.match)
-	*v = Match{%[1]s: %[1]s{n.Start, n.End}, Text: n.Text}
+	*v = Match{%[1]s: %[1]s{int(n.Start), int(n.End)}, Text: n.Text}
 	return v
 }
 
 func (a *astConv) toError(n *Node) *Error {
-	if n == nil || n.Type != "Error" {
+	if n == nil || n.Type() != "Error" {
 		return nil
 	}
 	msg, _ := n.Field("message").(string)
 	v := astNew(&a.error)
-	*v = Error{%[1]s: %[1]s{n.Start, n.End}, Text: n.Text, Message: msg}
+	*v = Error{%[1]s: %[1]s{int(n.Start), int(n.End)}, Text: n.Text, Message: msg}
 	return v
 }
 
 `, span)
-	b.WriteString("// anyValue converts a value of a statically unknown type into the typed value of its type (CST\n// nodes stay *Node).\nfunc (a *astConv) anyValue(v any) any {\n\tn, ok := v.(*Node)\n\tif !ok || n == nil {\n\t\treturn v\n\t}\n\tswitch n.Type {\n")
+	b.WriteString("// anyValue converts a value of a statically unknown type into the typed value of its type (CST\n// nodes stay *Node).\nfunc (a *astConv) anyValue(v any) any {\n\tn, ok := v.(*Node)\n\tif !ok || n == nil {\n\t\treturn v\n\t}\n\tswitch n.Type() {\n")
 	b.WriteString("\tcase \"Match\":\n\t\treturn a.toMatch(n)\n\tcase \"Error\":\n\t\treturn a.toError(n)\n")
 	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
 		fmt.Fprintf(b, "\tcase %q:\n\t\treturn a.to%s(n)\n", name, t.names[name])
 	}
 	b.WriteString("\t}\n\treturn n\n}\n\n")
 	for _, name := range t.terms {
-		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\tif n == nil || n.Type != %[2]q {\n\t\treturn nil\n\t}\n\tv := astNew(&a.t%[1]s)\n\t*v = %[1]s{%[3]s: %[3]s{n.Start, n.End}, Text: n.Text}\n\treturn v\n}\n\n", t.names[name], name, span)
+		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tv := astNew(&a.t%[1]s)\n\t*v = %[1]s{%[3]s: %[3]s{int(n.Start), int(n.End)}, Text: n.Text}\n\treturn v\n}\n\n", t.names[name], name, span)
 	}
 	for _, name := range t.structs {
-		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\tif n == nil || n.Type != %[2]q {\n\t\treturn nil\n\t}\n\tv := astNew(&a.t%[1]s)\n\tv.%[3]s = %[3]s{n.Start, n.End}\n", t.names[name], name, span)
+		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tv := astNew(&a.t%[1]s)\n\tv.%[3]s = %[3]s{int(n.Start), int(n.End)}\n", t.names[name], name, span)
 		if len(t.info.fields[name]) > 0 {
 			// Fields are set in the order the action set them; look each one up.
 			for _, f := range t.info.fields[name] {
@@ -367,7 +367,7 @@ func (a *astConv) toError(n *Node) *Error {
 	for _, name := range t.aliases {
 		u := t.info.aliases[name].(unionTy)
 		goName := t.names[name]
-		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) %[1]s {\n\tif n == nil {\n\t\treturn nil\n\t}\n\tswitch n.Type {\n\tcase \"Error\":\n\t\treturn a.toError(n)\n", goName)
+		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) %[1]s {\n\tif n == nil {\n\t\treturn nil\n\t}\n\tswitch n.Type() {\n\tcase \"Error\":\n\t\treturn a.toError(n)\n", goName)
 		for _, m := range u.alts {
 			if m, ok := m.(namedTy); ok {
 				switch {

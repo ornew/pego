@@ -216,6 +216,7 @@ func (g *generator) rules() {
 				r.id, r.name, goStrings(scopes[r].names), r.bodyIsSeq, r.terminalType, r.memo && !r.transient, r.leader, r.seen, r.novalue, goStrings(r.vars))
 		}
 		init.WriteString("\t}\n")
+		fmt.Fprintf(init, "\tfor _, r := range %s {\n\t\tr.kinds = newRuleKinds(r.name, r.terminalType)\n\t}\n", g.table)
 		fmt.Fprintf(init, "\t%s = %d\n", g.seenVar(), g.prog.nseen)
 	}
 	for _, r := range all {
@@ -263,6 +264,7 @@ func (g *generator) rules() {
 			fields = append(fields, fmt.Sprintf("%q: true", f.Name))
 		}
 		fmt.Fprintf(init, "\tstructFields[%q] = map[string]bool{%s}\n", name, strings.Join(fields, ", "))
+		fmt.Fprintf(init, "\ttypeKinds[%q] = kindOf(%q, \"\")\n", name, name)
 	}
 }
 
@@ -469,7 +471,7 @@ func (g *generator) projectRepeat(b *strings.Builder, e *grammar.Repeat, field s
 	fmt.Fprintf(b, "\t\tcount++\n\t\tp.kidStack = append(p.kidStack, f.vals[%d])\n", slot)
 	fmt.Fprintf(b, "\t\tif p.pos == m0.pos && count >= %d {\n\t\t\tbreak\n\t\t}\n\t}\n", e.Min)
 	fmt.Fprintf(b, "\tif count < %d {\n\t\tp.dropKids(base)\n\t\treturn nil, false\n\t}\n", e.Min)
-	b.WriteString(g.pick("\treturn p.newNode(Node{Type: \"List\", Start: start, End: p.pos, Children: p.kids(base), fresh: true}), true\n",
+	b.WriteString(g.pick("\treturn p.newNode(Node{kind: kindList, Start: int32(start), End: int32(p.pos), Children: p.kids(base), fresh: true}), true\n",
 		"\treturn p.newNode(\"List\", start, p.pos, p.kids(base)), true\n"))
 }
 
@@ -510,7 +512,7 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 			}
 		}
 		if build {
-			b.WriteString(g.pick("\treturn p.newNode(Node{Type: \"Seq\", Start: start, End: p.pos, Children: kids, fresh: true}), true\n",
+			b.WriteString(g.pick("\treturn p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true\n",
 				"\treturn p.newNode(\"Seq\", start, p.pos, kids), true\n"))
 		} else {
 			b.WriteString("\treturn nil, true\n")
@@ -549,7 +551,7 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 		m := g.expr(e.Expr, s, false)
 		fmt.Fprintf(&b, "\tstart := p.pos\n\tif _, ok := p.%s(); !ok {\n\t\treturn nil, false\n\t}\n", m)
 		if build {
-			b.WriteString(g.pick("\treturn p.newNode(Node{Type: \"Match\", Start: start, End: p.pos, Text: p.text(start, p.pos), terminal: true, fresh: true}), true\n",
+			b.WriteString(g.pick("\treturn p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true, fresh: true}), true\n",
 				"\treturn p.newMatch(start, p.pos, p.text(start, p.pos), true), true\n"))
 		} else {
 			b.WriteString("\t_ = start\n\treturn nil, true\n")
@@ -582,7 +584,7 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 		b.WriteString("\tp.cut = true\n\treturn nil, true\n")
 	case *grammar.Top:
 		if build {
-			b.WriteString(g.pick("\treturn p.newNode(Node{Type: \"Match\", Start: p.pos, End: p.pos, terminal: true, fresh: true}), true\n",
+			b.WriteString(g.pick("\treturn p.newNode(Node{kind: kindMatch, Start: int32(p.pos), End: int32(p.pos), terminal: true, fresh: true}), true\n",
 				"\treturn p.newMatch(p.pos, p.pos, \"\", true), true\n"))
 		} else {
 			b.WriteString("\treturn nil, true\n")
@@ -701,7 +703,7 @@ func (g *generator) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, buil
 		b.WriteString("\treturn nil, true\n")
 		return
 	}
-	b.WriteString(g.pick("\treturn p.newNode(Node{Type: \"List\", Start: start, End: p.pos, Children: p.kids(base), fresh: true}), true\n",
+	b.WriteString(g.pick("\treturn p.newNode(Node{kind: kindList, Start: int32(start), End: int32(p.pos), Children: p.kids(base), fresh: true}), true\n",
 		"\treturn p.newNode(\"List\", start, p.pos, p.kids(base)), true\n"))
 }
 

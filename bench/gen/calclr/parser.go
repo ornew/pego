@@ -15,17 +15,118 @@ import (
 )
 
 // Node is a value of a parse result.
+// In JSON it is an object with the members type, rule (if any), start, end, text (if any), children
+// (if any) and fields (if any).
 type Node struct {
-	Type     string  `json:"type"`
-	Rule     string  `json:"rule,omitempty"`
-	Start    int     `json:"start"`
-	End      int     `json:"end"`
-	Text     string  `json:"text,omitempty"`
-	Children []*Node `json:"children,omitempty"`
-	Fields   Fields  `json:"fields,omitempty"`
+	kind     *nodeKind // the type and rule names (Type, Rule)
+	Start    int32     // the range in the input, in the parse's position unit (End is exclusive)
+	End      int32
+	Text     string  // the text of a terminal
+	Children []*Node // the children of Seq, List and Operator nodes
+	Fields   Fields  // struct fields and captures
 
 	fresh    bool
 	terminal bool
+}
+
+// Type returns the node's type name: Match, Seq, List, Operator or Error for CST nodes, or the name
+// of a type of the grammar.
+func (n *Node) Type() string { return n.kind.typeName() }
+
+// Rule returns the name of the rule that produced the node, if it was produced by a rule without an
+// action, or "".
+func (n *Node) Rule() string { return n.kind.ruleName() }
+
+type nodeJSON struct {
+	Type     string  `json:"type"`
+	Rule     string  `json:"rule,omitempty"`
+	Start    int32   `json:"start"`
+	End      int32   `json:"end"`
+	Text     string  `json:"text,omitempty"`
+	Children []*Node `json:"children,omitempty"`
+	Fields   Fields  `json:"fields,omitempty"`
+}
+
+// MarshalJSON encodes the node as an object (see Node).
+func (n *Node) MarshalJSON() ([]byte, error) {
+	return json.Marshal(nodeJSON{n.Type(), n.Rule(), n.Start, n.End, n.Text, n.Children, n.Fields})
+}
+
+// nodeKind is a pair of type and rule names, interned (kindOf) so that a node holds one pointer
+// for both.
+type nodeKind struct {
+	typ, rule string
+	reserved  int // the index of a reserved type in reservedTypes with no rule, or -1
+}
+
+func (k *nodeKind) typeName() string {
+	if k == nil {
+		return ""
+	}
+	return k.typ
+}
+
+func (k *nodeKind) ruleName() string {
+	if k == nil {
+		return ""
+	}
+	return k.rule
+}
+
+var reservedTypes = [...]string{"Match", "Seq", "List", "Operator", "Error"}
+
+var (
+	kindMatch    = kindOf("Match", "")
+	kindSeq      = kindOf("Seq", "")
+	kindList     = kindOf("List", "")
+	kindOperator = kindOf("Operator", "")
+	kindError    = kindOf("Error", "")
+)
+
+var kinds sync.Map // [2]string → *nodeKind
+
+// kindOf returns the interned kind of the type and rule names (rules and actions prepare theirs).
+func kindOf(typ, rule string) *nodeKind {
+	key := [2]string{typ, rule}
+	if k, ok := kinds.Load(key); ok {
+		return k.(*nodeKind)
+	}
+	k := &nodeKind{typ: typ, rule: rule, reserved: -1}
+	if rule == "" {
+		for i, t := range reservedTypes {
+			if t == typ {
+				k.reserved = i
+			}
+		}
+	}
+	actual, _ := kinds.LoadOrStore(key, k)
+	return actual.(*nodeKind)
+}
+
+// ruleKinds are the kinds of a rule's nodes: the reserved types with the rule's name, and its
+// terminal type.
+type ruleKinds struct {
+	reserved [len(reservedTypes)]*nodeKind
+	term     *nodeKind
+}
+
+func newRuleKinds(rule, terminalType string) ruleKinds {
+	var rk ruleKinds
+	for i, t := range reservedTypes {
+		rk.reserved[i] = kindOf(t, rule)
+	}
+	if terminalType != "" {
+		rk.term = kindOf(terminalType, rule)
+	}
+	return rk
+}
+
+// named returns the kind k with the rule's name.
+func (rk *ruleKinds) named(k *nodeKind, rule string) *nodeKind {
+	if k.reserved >= 0 {
+		return rk.reserved[k.reserved]
+	}
+	return kindOf(k.typ, rule)
 }
 
 // NodeField is a field of a node.
@@ -126,7 +227,7 @@ func writeValue(b *strings.Builder, v any) {
 
 func writeNode(b *strings.Builder, n *Node) {
 	switch {
-	case n.Type == "List":
+	case n.Type() == "List":
 		b.WriteString("[")
 		for i, c := range n.Children {
 			if i > 0 {
@@ -137,8 +238,8 @@ func writeNode(b *strings.Builder, n *Node) {
 		writeFields(b, n, len(n.Children) > 0)
 		b.WriteString("]")
 	case n.terminal:
-		if n.Type != "Match" {
-			b.WriteString(n.Type)
+		if n.Type() != "Match" {
+			b.WriteString(n.Type())
 		}
 		b.WriteString(strconv.Quote(n.Text))
 		if len(n.Fields) > 0 {
@@ -147,7 +248,7 @@ func writeNode(b *strings.Builder, n *Node) {
 			b.WriteString("}")
 		}
 	default:
-		b.WriteString("(" + n.Type)
+		b.WriteString("(" + n.Type())
 		for _, c := range n.Children {
 			b.WriteString(" ")
 			writeValue(b, c)
@@ -155,8 +256,8 @@ func writeNode(b *strings.Builder, n *Node) {
 		writeFields(b, n, true)
 		b.WriteString(")")
 	}
-	if n.Rule != "" {
-		b.WriteString("@" + n.Rule)
+	if n.Rule() != "" {
+		b.WriteString("@" + n.Rule())
 	}
 }
 
@@ -209,6 +310,7 @@ func (l SyntaxErrors) Error() string {
 // --- Rules ---
 
 type rule struct {
+	kinds        ruleKinds // the node kinds the rule makes (set by setKinds)
 	id           int
 	name         string
 	scope        []string // capture names of the rule body, in slot order
@@ -243,6 +345,9 @@ var descs []string
 
 // structFields holds the field names of each struct type.
 var structFields = map[string]map[string]bool{}
+
+// typeKinds holds the node kinds of the struct types.
+var typeKinds = map[string]*nodeKind{}
 
 func ruleByName(name string) *rule {
 	for _, r := range rules {
@@ -995,7 +1100,7 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 		return c.result(r.action, r.name)
 	}
 	if r.terminalType != "" {
-		return p.newNode(Node{Type: r.terminalType, Rule: r.name, Start: start, End: p.pos, Text: p.text(start, p.pos), terminal: true})
+		return p.newNode(Node{kind: r.kinds.term, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true})
 	}
 	if len(r.scope) > 0 {
 		v = p.attachCaptures(v, r.scope, f, start, p.pos)
@@ -1004,8 +1109,8 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 		return nil
 	}
 	if v.fresh {
-		if v.Rule == "" {
-			v.Rule = r.name
+		if v.kind.rule == "" {
+			v.kind = r.kinds.named(v.kind, r.name)
 		}
 		v.fresh = false
 	}
@@ -1029,7 +1134,7 @@ func (p *parser) attachCaptures(v *Node, names []string, f *frame, start, end in
 		return v
 	}
 	if wrap {
-		v = p.newNode(Node{Type: "Seq", Start: start, End: end, Children: append(p.nodes(1)[:0], v), fresh: true})
+		v = p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(end), Children: append(p.nodes(1)[:0], v), fresh: true})
 	}
 	if v.Fields == nil {
 		v.Fields = p.fields(len(names))
@@ -1071,7 +1176,7 @@ func (p *parser) matchLiteral(rs []rune, text string, desc expID, build bool) (*
 	if !build {
 		return nil, true
 	}
-	return p.newNode(Node{Type: "Match", Start: start, End: p.pos, Text: text, terminal: true, fresh: true}), true
+	return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: text, terminal: true, fresh: true}), true
 }
 
 func (p *parser) matchAny(build bool) (*Node, bool) {
@@ -1090,7 +1195,7 @@ func (p *parser) single(size int, build bool) (*Node, bool) {
 	if !build {
 		return nil, true
 	}
-	return p.newNode(Node{Type: "Match", Start: start, End: p.pos, Text: p.text(start, p.pos), terminal: true, fresh: true}), true
+	return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true, fresh: true}), true
 }
 
 func (p *parser) anchor(ok bool, desc expID) (*Node, bool) {
@@ -1164,8 +1269,7 @@ func (p *parser) recoverAttr(m, skip matcher, build bool) (*Node, bool) {
 	if !build {
 		return nil, true
 	}
-	return p.newNode(Node{Type: "Error", Start: m0.pos, End: p.pos, Text: p.text(m0.pos, p.pos),
-		Fields: Fields{{"message", e.Error()}}, fresh: true, terminal: true}), true
+	return p.newNode(Node{kind: kindError, Start: int32(m0.pos), End: int32(p.pos), Text: p.text(m0.pos, p.pos), Fields: Fields{{"message", e.Error()}}, fresh: true, terminal: true}), true
 }
 
 // --- Actions and predicates ---
@@ -1215,7 +1319,7 @@ func (c *actx) result(action func(*actx) any, where string) (n *Node) {
 	}
 	for _, x := range c.p.created[c.cbase:] {
 		if x == n {
-			n.Start, n.End = c.start, c.end
+			n.Start, n.End = int32(c.start), int32(c.end)
 			break
 		}
 	}
@@ -1297,7 +1401,7 @@ func typeName(v any) string {
 		if v == nil {
 			return "nil"
 		}
-		return v.Type
+		return v.Type()
 	case int:
 		return "int"
 	case string:
@@ -1309,7 +1413,11 @@ func typeName(v any) string {
 }
 
 func (c *actx) newStruct(typ string, kv ...any) any {
-	n := c.p.newNode(Node{Type: typ, Fields: c.p.fields(len(kv) / 2)})
+	k := typeKinds[typ]
+	if k == nil {
+		k = kindOf(typ, "")
+	}
+	n := c.p.newNode(Node{kind: k, Fields: c.p.fields(len(kv) / 2)})
 	first := true
 	for i := 0; i < len(kv); i += 2 {
 		v := kv[i+1]
@@ -1325,7 +1433,7 @@ func (c *actx) newStruct(typ string, kv ...any) any {
 		}
 	}
 	if first {
-		n.Start, n.End = c.start, c.end
+		n.Start, n.End = int32(c.start), int32(c.end)
 	}
 	c.p.created = append(c.p.created, n)
 	return n
@@ -1337,7 +1445,7 @@ func (c *actx) newList(items []*Node) *Node {
 
 // listNode returns a List node with the child list kids (which it takes over).
 func (c *actx) listNode(kids []*Node) *Node {
-	n := c.p.newNode(Node{Type: "List", Children: kids, Start: c.start, End: c.start})
+	n := c.p.newNode(Node{kind: kindList, Children: kids, Start: int32(c.start), End: int32(c.start)})
 	first := true
 	for _, it := range kids {
 		if it == nil {
@@ -1361,14 +1469,14 @@ func (c *actx) member(x any, name string) any {
 	}
 	switch name {
 	case "startPos":
-		return n.Start
+		return int(n.Start)
 	case "endPos":
-		return n.End
+		return int(n.End)
 	case "children":
 		return c.newList(n.Children)
 	}
-	if fields, ok := structFields[n.Type]; ok && !fields[name] {
-		evalErrorf("%s has no field %s", n.Type, name)
+	if fields, ok := structFields[n.Type()]; ok && !fields[name] {
+		evalErrorf("%s has no field %s", n.Type(), name)
 	}
 	v, _ := n.Fields.Get(name)
 	return v
@@ -1521,7 +1629,7 @@ func (c *actx) textStr(x any) string {
 		if x.terminal {
 			return x.Text
 		}
-		return c.p.text(x.Start, x.End)
+		return c.p.text(int(x.Start), int(x.End))
 	}
 	evalErrorf("text: invalid argument %s", typeName(x))
 	return ""
@@ -1808,8 +1916,8 @@ func (p *parser) lineResult(r *rule, l *prattLine, f *frame, v *Node, start int)
 		v = p.attachCaptures(v, l.scope, f, start, p.pos)
 	}
 	if v != nil && v.fresh {
-		if v.Rule == "" {
-			v.Rule = r.name
+		if v.kind.rule == "" {
+			v.kind = r.kinds.named(v.kind, r.name)
 		}
 		v.fresh = false
 	}
@@ -1822,14 +1930,14 @@ func (p *parser) prattBuild(r *rule, a *prattAttempt, lhs, rhs *Node) *Node {
 	}
 	start, end := a.start, p.pos
 	if lhs != nil {
-		start = lhs.Start
+		start = int(lhs.Start)
 	}
 	if a.op.kind == "postfix" {
 		end = a.end
 	}
 	l := a.op.line
 	if l.action != nil {
-		op := p.newNode(Node{Type: "Match", Start: a.start, End: a.end, Text: p.text(a.start, a.end), terminal: true})
+		op := p.newNode(Node{kind: kindMatch, Start: int32(a.start), End: int32(a.end), Text: p.text(a.start, a.end), terminal: true})
 		c := p.useCtx(actx{p: p, f: a.frame, start: start, end: end, cbase: len(p.created),
 			op: op, lhs: nodeOrNil(lhs), rhs: nodeOrNil(rhs)})
 		return c.result(l.action, r.name)
@@ -1853,7 +1961,7 @@ func (p *parser) prattBuild(r *rule, a *prattAttempt, lhs, rhs *Node) *Node {
 		kids = p.nodes(3)
 		kids[0], kids[1], kids[2] = lhs, opv, rhs
 	}
-	return p.newNode(Node{Type: "Operator", Rule: r.name, Start: start, End: end, Children: kids, Fields: Fields{{"operator", a.op.id}}})
+	return p.newNode(Node{kind: r.kinds.reserved[kindOperator.reserved], Start: int32(start), End: int32(end), Children: kids, Fields: Fields{{"operator", a.op.id}}})
 }
 
 // --- Generated code ---
@@ -3595,6 +3703,9 @@ func init() {
 		{id: 12, name: "ws", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 13, name: "ws", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 	}
+	for _, r := range rules {
+		r.kinds = newRuleKinds(r.name, r.terminalType)
+	}
 	nseen = 2
 	rules[0].body = func(p *parser, _ int) (*Node, bool) { return p.e5() }
 	rules[0].action = func(c *actx) any { return c.cap(0) }
@@ -3618,7 +3729,9 @@ func init() {
 	rules[12].body = func(p *parser, _ int) (*Node, bool) { return p.e88() }
 	rules[13].body = func(p *parser, _ int) (*Node, bool) { return p.e89() }
 	structFields["Binary"] = map[string]bool{"Left": true, "Op": true, "Right": true}
+	typeKinds["Binary"] = kindOf("Binary", "")
 	structFields["Unary"] = map[string]bool{"Op": true, "X": true}
+	typeKinds["Unary"] = kindOf("Unary", "")
 	recRules = []*rule{
 		{id: 0, name: "main", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 1, name: "expr", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: true, seen: -1, novalue: true, vars: []string{}},
@@ -3633,6 +3746,9 @@ func init() {
 		{id: 10, name: "group", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 11, name: "number", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 12, name: "ws", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+	}
+	for _, r := range recRules {
+		r.kinds = newRuleKinds(r.name, r.terminalType)
 	}
 	recNseen = 2
 	recRules[0].body = func(p *parser, _ int) (*Node, bool) { return p.e93() }
@@ -3838,7 +3954,7 @@ func (p *parser) e17() (*Node, bool) {
 	if _, ok := p.e16(); !ok {
 		return nil, false
 	}
-	return p.newNode(Node{Type: "Match", Start: start, End: p.pos, Text: p.text(start, p.pos), terminal: true, fresh: true}), true
+	return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true, fresh: true}), true
 }
 
 // op:@("+" / "-")
@@ -4020,7 +4136,7 @@ func (p *parser) e35() (*Node, bool) {
 	if _, ok := p.e34(); !ok {
 		return nil, false
 	}
-	return p.newNode(Node{Type: "Match", Start: start, End: p.pos, Text: p.text(start, p.pos), terminal: true, fresh: true}), true
+	return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true, fresh: true}), true
 }
 
 // op:@("*" / "/" / "%")
@@ -4167,7 +4283,7 @@ func (p *parser) e49() (*Node, bool) {
 	if _, ok := p.e48(); !ok {
 		return nil, false
 	}
-	return p.newNode(Node{Type: "Match", Start: start, End: p.pos, Text: p.text(start, p.pos), terminal: true, fresh: true}), true
+	return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true, fresh: true}), true
 }
 
 // op:@("-" / "+")
@@ -4548,7 +4664,7 @@ func (p *parser) e88() (*Node, bool) {
 		p.dropKids(base)
 		return nil, false
 	}
-	return p.newNode(Node{Type: "List", Start: start, End: p.pos, Children: p.kids(base), fresh: true}), true
+	return p.newNode(Node{kind: kindList, Start: int32(start), End: int32(p.pos), Children: p.kids(base), fresh: true}), true
 }
 
 // (? \t\r\n)*

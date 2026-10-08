@@ -97,7 +97,7 @@ automatically in the others. This table records, for every change in the log bel
 | 54, 59 | `Document`: resuming long repetitions | ✓ | ✓ | ✓ | – | – | VMs since 59 (sites found in the bytecode); generated parsers have no `Document` |
 | 55 | Tracing hook (cost only) | ✓ | ✓ | ✓ | – | – | generated parsers have no tracing |
 | 57, 58 | Scratch memory pooled across whole-input parses (input, offsets, memo, value stack) | ✓ | ✓ | ✓ | ✓ | ✓ | typed: since 48; generated `Parse` and `Recognize`: 58 |
-| 63 | Smaller `Node` (88 bytes: `int32` positions, interned type and rule names) | ✓ | ✓ | ✓ | ✗ | – | generated `Parse`: 64; the typed runtime builds no nodes |
+| 63, 64 | Smaller `Node` (88 bytes: `int32` positions, interned type and rule names) | ✓ | ✓ | ✓ | ✓ | – | generated `Parse` since 64; the typed runtime builds no nodes |
 | 60 | Direct rules: a rule's body inlined into its call method, captures in Go variables, the action in place | – | – | – | ✗ | ✓ | typed: not for rules with a cut or `#recover`, Pratt rules and left-recursion leaders; not tried for generated `Parse` |
 | 61 | Character tests read code points without calling `peek` | – | – | – | ✗ | ✓ | typed: direct rules only; generated `Parse` still calls `peek` |
 | 62 | Short literals compared in place | – | – | – | ✗ | ✓ | typed: direct rules, up to 4 code points, code points only (the other backends match literals with their own loop, 32) |
@@ -924,6 +924,17 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   the same allocation size class as one of 120 bytes.
 - Effect (min of 6 interleaved runs, Apple M3 Max): allocation per parse −11% to −20% (JSON 13.0 → 10.8 MB, XML 16.4 →
   13.5 MB, CSV 7.1 → 5.7 MB, streams 168 → 152 MB); time within ±3% on every workload and backend.
+
+### 64. A smaller `Node` in generated parsers
+
+- Change 63 in the generated Node runtime, whose `Node` is a type of the generated package: the kinds of a rule's nodes
+  are set up in `init` with the rule table, those of struct types with `structFields`, and the emitted code makes CST
+  nodes with the shared kinds of the reserved types. The typed converters read `Type()` and convert positions to the
+  `int` spans of the typed values.
+- Effect (min of 6 interleaved runs, Apple M3 Max): `Parse` JSON −2%/−3% (code points/bytes), CSV −8%/−12%, XML
+  −7%/−5%, Arith_Pratt −3%/−4%, Arith_LeftRec −2%/−4%, Minilang within noise, Outline and Recovery +1% to +5%
+  (noise-level); allocation −10% to −21% (JSON 12.8 → 10.7 MB, Outline 12.8 → 10.2 MB); `ParseAST` and `Recognize`
+  unchanged within noise.
 
 ## Grammar authoring guidelines for performance
 
