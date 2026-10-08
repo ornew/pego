@@ -1726,6 +1726,9 @@ func (p *parser) prattParse(r *rule, min int) (*Node, bool) {
 		if a.op.kind == "postfix" {
 			lhs = p.prattBuild(r, &a, lhs, nil)
 			lastNone = -1
+			if p.pos == m0.pos {
+				break
+			}
 			continue
 		}
 		rmin := a.op.level
@@ -1744,6 +1747,11 @@ func (p *parser) prattParse(r *rule, min int) (*Node, bool) {
 		lastNone = -1
 		if a.op.assoc == "none" {
 			lastNone = a.op.level
+		}
+		// An application that consumed no input ends the loop, as an empty iteration ends a repetition:
+		// otherwise an operator that can match empty after an operand that can loops forever.
+		if p.pos == m0.pos {
+			break
 		}
 	}
 	return lhs, true
