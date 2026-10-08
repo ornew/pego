@@ -124,7 +124,8 @@ export class Node {
       o.children = this.children;
     }
     if (this.fields.length > 0) {
-      const fs: { [name: string]: unknown } = {};
+      // Without a prototype, a field named __proto__ is a field like the others.
+      const fs: { [name: string]: unknown } = Object.create(null);
       for (const f of sortedFields(this.fields)) {
         fs[f.name] = typeof f.value === "bigint" ? Number(f.value) : f.value;
       }

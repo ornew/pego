@@ -497,3 +497,20 @@ process.stdout.write(r.error === null ? String(r.node) : r.error.message);
 		t.Errorf("got\n%s\nwant\n%s", clip(out, at), clip(want, at))
 	}
 }
+
+// TestGeneratedTSFieldNames checks that JSON.stringify writes fields whose names are special in
+// JavaScript objects.
+func TestGeneratedTSFieldNames(t *testing.T) {
+	src := `def main = __proto__:"a" constructor:"b" toString:"c" hasOwnProperty:"d"`
+	out := runTSScript(t, src, `import { parse } from "./parser.ts";
+console.log(JSON.stringify(parse("abcd").node));
+`)
+	n, err := compile(t, src).Parse("main", "abcd")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, _ := json.Marshal(n)
+	if out != string(want)+"\n" {
+		t.Errorf("got  %s\nwant %s", out, want)
+	}
+}
