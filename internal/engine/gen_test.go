@@ -3,6 +3,7 @@ package engine
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand/v2"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -263,6 +264,46 @@ func TestGenerateErrors(t *testing.T) {
 	}
 }
 
+// mutants returns n random edits of each input (a character inserted, deleted or replaced, or two
+// characters swapped, up to three times), with characters from the inputs, reproducibly for a seed.
+func mutants(inputs []string, n int, seed uint64) []string {
+	rng := rand.New(rand.NewPCG(seed, 1))
+	var pool []rune
+	for _, in := range inputs {
+		pool = append(pool, []rune(in)...)
+	}
+	if len(pool) == 0 {
+		return nil
+	}
+	var out []string
+	for _, in := range inputs {
+		for range n {
+			rs := []rune(in)
+			for range 1 + rng.IntN(3) {
+				i := rng.IntN(len(rs) + 1)
+				switch c := pool[rng.IntN(len(pool))]; rng.IntN(4) {
+				case 0:
+					rs = append(rs[:i], append([]rune{c}, rs[i:]...)...)
+				case 1:
+					if i < len(rs) {
+						rs = append(rs[:i], rs[i+1:]...)
+					}
+				case 2:
+					if i < len(rs) {
+						rs[i] = c
+					}
+				default:
+					if i+1 < len(rs) {
+						rs[i], rs[i+1] = rs[i+1], rs[i]
+					}
+				}
+			}
+			out = append(out, string(rs))
+		}
+	}
+	return out
+}
+
 // typedGrammar exercises typed values: unions with CST members, lists of lists, optional
 // matches (s always matches, maybe empty; o may be nil), int and bool fields, a user type named like a runtime type (Node) and Error nodes
 // left by #recover.
@@ -298,6 +339,13 @@ def main: R = t:@n -> new R{T: $t}
 def n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x" + strings.Repeat(")", DefaultMaxDepth-2),
 		strings.Repeat("(", DefaultMaxDepth-1) + "x" + strings.Repeat(")", DefaultMaxDepth-1)}})
 	cases = append(cases, genCase{"typed", typedGrammar, []string{"f(1,x)!?;[3];zz", "f(1,(;g();", "f(a);"}})
+	// The grammars written for direct rules also get mutated inputs, which reach other partial
+	// matches and failures than the written ones.
+	for i := range cases {
+		if strings.Contains(cases[i].name, "typed/direct_") {
+			cases[i].inputs = append(cases[i].inputs, mutants(cases[i].inputs, 8, uint64(i))...)
+		}
+	}
 	dir := t.TempDir()
 	write := func(name, content string) {
 		path := filepath.Join(dir, name)
