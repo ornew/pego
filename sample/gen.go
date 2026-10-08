@@ -468,7 +468,8 @@ func (g *gen) genRepeat(e *grammar.Repeat, k cont) bool {
 		}
 	}
 	// As in the engine, an element gets its own capture scope per iteration only if it contains
-	// captures; otherwise predicates in it see the enclosing scope.
+	// captures: one without captures cannot read any (the compiler rejects predicates that read the
+	// enclosing rule's captures), so it needs none.
 	scoped := g.in.hasCaptures(e.Expr)
 	limit := e.Min + 4*g.cfg.maxRepeat + 16
 	if e.Max >= 0 {

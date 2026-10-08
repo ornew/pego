@@ -250,7 +250,8 @@ def e = pratt {
 		{"unknown left side of ||, undefined variable on the right", `def main = e:num [text($e) != "" || z == 1]
 def num = d:(?0-9) -> $d`, nil},
 		{"empty iterations below the minimum", `def main = (_){3} "q"`, nil},
-		{"capture-free repetition elements see the enclosing captures", `def main = n:"a" ([$n != nil] "x")* "y"`, nil},
+		// A repetition element sees only its own captures: outer ones are read through a variable.
+		{"repetition elements read enclosing captures through variables", `def main = n:"a" [k = len($n)] ([k == 1] "x")* "y"`, nil},
 		{"top, cut, attributes", `def main = (stmt -- ";")* _ $$
 def stmt = (@"x" / "y" "z") #error(message="expected a statement") #recover(skip=(?^;)+)`, nil},
 	}
@@ -275,7 +276,7 @@ def stmt = (@"x" / "y" "z") #error(message="expected a statement") #recover(skip
 func TestReviewRegressions(t *testing.T) {
 	for _, c := range []struct{ src, want string }{
 		{`def main = ("a"?){2} "b"`, "b"},
-		{`def main = n:"a" ([$n != nil] "x")* "y"`, "axy"},
+		{`def main = n:"a" [k = len($n)] ([k == 1] "x")* "y"`, "axy"},
 	} {
 		inputs, err := sample.Generate(compile(t, c.src), 20, sample.WithSeed(1))
 		if err != nil {

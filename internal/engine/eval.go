@@ -743,6 +743,12 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 			return
 		}
 		if _, ok := s.slots[t.Name]; !ok {
+			for o := s.outer; o != nil; o = o.outer {
+				if _, ok := o.slots[t.Name]; ok {
+					c.errorf(t.Pos, "capture $%s is not visible in a repetition element, which sees only its own captures; define a variable from it before the repetition", t.Name)
+					return
+				}
+			}
 			c.errorf(t.Pos, "undefined capture $%s", t.Name)
 		}
 	case *grammar.IndexRef:

@@ -225,7 +225,4 @@ few milliseconds for the others.
 - Predicates are evaluated with code point positions, and inputs are verified with the default options of `Parse`;
   a grammar whose result depends on the position unit, or a `#stream` grammar used with `ParseStream`, is verified
   only for `Parse`.
-- Where the engine and the specification differ, the generator follows the engine, which verifies every input: a
-  repetition element without captures shares the enclosing capture scope (spec/predicates.md says every iteration is a
-  scope), so a predicate in it can read the rule's captures.
 - A `Generator` is not safe for concurrent use.

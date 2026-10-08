@@ -228,6 +228,9 @@ def main = "a" -> new A{X: $1, X: $1}`, `duplicate field X`},
 		{`def main = @(x:"a")`, `capture x inside @, -, or ! has no effect`},
 		{`def main = x:-"a"`, `capture x of an expression without a value`},
 		{`def main = "a" #nope`, `unknown attribute #nope`},
+		// A repetition element sees only its own captures, whether it has any or not.
+		{`def main = n:"a" ([$n != nil] "x")* "y"`, `1:20: capture $n is not visible in a repetition element`},
+		{`def main = n:"a" (m:"x" [$n != nil])* "y"`, `1:26: capture $n is not visible in a repetition element`},
 		{`def main = x(lvl)
 def x = "a"`, `rule x has no pratt levels`},
 	} {

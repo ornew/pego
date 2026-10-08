@@ -111,6 +111,9 @@ type rule struct {
 type scope struct {
 	names []string
 	slots map[string]int
+	// outer is the scope of the rule body that contains a repetition element's scope, for error
+	// messages: its captures are not visible in the element.
+	outer *scope
 }
 
 func newScope() *scope { return &scope{slots: map[string]int{}} }
@@ -481,6 +484,21 @@ func visible(e grammar.Expr) bool {
 }
 
 // hasCaptures reports whether the expression contains captures (excluding nested repetitions).
+// predicatesReadCaptures reports whether a predicate in e refers to a capture.
+func predicatesReadCaptures(e grammar.Expr) bool {
+	found := false
+	walkExpr(e, func(x grammar.Expr) {
+		if p, ok := x.(*grammar.Predicate); ok {
+			walkTerm(p.Term, func(t grammar.Term) {
+				if _, ok := t.(*grammar.CaptureRef); ok {
+					found = true
+				}
+			})
+		}
+	})
+	return found
+}
+
 func hasCaptures(e grammar.Expr) bool {
 	switch e := e.(type) {
 	case *grammar.Capture:
@@ -973,10 +991,13 @@ func (c *compiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) match
 			return m
 		}
 	}
-	// An element containing captures gets its own scope per iteration.
+	// An element containing captures gets its own scope per iteration. So does one whose predicates
+	// refer to captures, which can only be those of the enclosing scope: they are not visible there,
+	// and resolving the names in an empty scope reports it.
 	elemScope := s
-	if hasCaptures(e.Expr) {
+	if hasCaptures(e.Expr) || predicatesReadCaptures(e.Expr) {
 		elemScope = newScope()
+		elemScope.outer = s
 	}
 	m := c.expr(e.Expr, elemScope, build)
 	ownScope := elemScope != s
