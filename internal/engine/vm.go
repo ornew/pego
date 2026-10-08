@@ -75,6 +75,10 @@ func (vm *vmProgram) runSite(ip int) *vmRunSite {
 		switch in.Op {
 		case OpPred, OpAssign:
 			return nil
+		case OpCapture:
+			if code[ip].C < 0 { // the element writes captures to the enclosing scope (in &)
+				return nil
+			}
 		case OpCall:
 			if in.A < 0 || int(in.A) >= len(vm.rules) {
 				return nil

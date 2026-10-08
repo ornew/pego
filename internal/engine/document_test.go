@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 // incrementalGrammar is a grammar with left recursion, a Pratt expression, line starts (which
@@ -753,6 +754,110 @@ def line = x:@(?a-z)+ "\n"`)
 		fn, ferr := prog.Parse("main", doc.Text())
 		if got, want := dump(t, n, err), dump(t, fn, ferr); got != want {
 			t.Fatalf("round %d: text %q\n got  %s\n want %s", i, doc.Text(), got, want)
+		}
+	}
+}
+
+// TestDocumentEditRegressions checks cases where resumed repetitions and lazily advanced memo
+// entries went wrong, on every backend.
+func TestDocumentEditRegressions(t *testing.T) {
+	type step struct {
+		start, end int
+		text       string
+		err        string // part of the error the parse after it must return, if it may differ from a fresh one
+		noParse    bool   // no parse after this edit: the next edit follows it at once
+	}
+	cases := []struct {
+		name, grammar, text string
+		minRecorded         int
+		o                   ParseOptions
+		steps               []step
+	}{
+		// A run that starts inside inserted text, or after it: pasting a copy of a line (this hung).
+		{"paste", `
+def main = line* $$
+def line = as "\n"
+def as = a*
+def a = "a"`, strings.Repeat("a", 20) + "\n", 0, ParseOptions{}, []step{{21, 21, "\n" + strings.Repeat("a", 20) + "\n", "", false}}},
+		// A run moved by an insertion, whose first element is empty and looked only behind: it must
+		// not be reused as an element before the edit.
+		{"run after insertion", `
+def main = ("xc" / r0 / .)* $$
+def r0 = (r1){0,2} "ab"
+def r1 = (^ "a")*`, "xxab", 1, ParseOptions{}, []step{{2, 2, "cd", "", false}}},
+		// A capture in a lookahead in an element without captures of its own goes to the rule's
+		// scope; such an element is not resumed.
+		{"capture in lookahead", `def main = (&(c:"a") . / .)* $$`, strings.Repeat("a", 20), 0, ParseOptions{}, []step{{0, 1, "b", "", false}}},
+		// Deleting up to the end of what the memo holds, with an entry kept at the start (Edit
+		// panicked).
+		{"delete tail", `
+def main = item* rest $$
+def item = e "a"
+def e = ""
+def rest = (?xy)*`, "axy", 0, ParseOptions{}, []step{{1, 2, "", "", false}}},
+		{"delete error", `
+def main = item* $$
+def item = b:bol / mid
+def bol = ^ @(?a-z)
+def mid = @(?a-z) / "\n"`, "ab!cd", 0, ParseOptions{}, []step{{1, 3, "", "", false}}},
+		// An entry found invalid by an edit, then an aborted parse: the next lookup must not apply
+		// the edits again.
+		{"aborted parse", `
+def main = (item / .)* $$
+def item = "(" item* ")" / "x"`, "xxxx(x)", 0, ParseOptions{MaxDepth: 30},
+			[]step{{0, 0, "zz", "", true}, {7, 8, strings.Repeat("(", 50), "nesting too deep", false}, {7, 57, "x", "", false}}},
+	}
+	for _, c := range cases {
+		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+			t.Run(c.name+"/"+b.String(), func(t *testing.T) {
+				if c.minRecorded > 0 {
+					defer func(n int) { minRecorded = n }(minRecorded)
+					minRecorded = c.minRecorded
+				}
+				prog := compile(t, c.grammar)
+				o := c.o
+				o.Backend = b
+				doc, err := prog.NewDocumentWith("main", c.text, o)
+				if err != nil {
+					t.Fatal(err)
+				}
+				doc.Parse()
+				for i, s := range c.steps {
+					if err := doc.Edit(s.start, s.end, s.text); err != nil {
+						t.Fatal(err)
+					}
+					if s.noParse {
+						continue
+					}
+					done := make(chan string, 1)
+					go func() {
+						n, err := doc.Parse()
+						if s.err != "" {
+							if err == nil || !strings.Contains(err.Error(), s.err) {
+								done <- fmt.Sprintf("error %v, want %q", err, s.err)
+								return
+							}
+							done <- ""
+							return
+						}
+						got := dump(t, n, err)
+						fn, ferr := prog.ParseWith("main", doc.Text(), o)
+						if want := dump(t, fn, ferr); got != want {
+							done <- fmt.Sprintf("got  %.300s\nwant %.300s", got, want)
+							return
+						}
+						done <- ""
+					}()
+					select {
+					case msg := <-done:
+						if msg != "" {
+							t.Fatalf("step %d, text %q:\n%s", i, doc.Text(), msg)
+						}
+					case <-time.After(5 * time.Second):
+						t.Fatalf("step %d: Parse does not return on %q", i, doc.Text())
+					}
+				}
+			})
 		}
 	}
 }

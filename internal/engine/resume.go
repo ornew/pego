@@ -52,9 +52,11 @@ type runElem struct {
 	v              *Node
 }
 
-// resumable reports whether a repetition with the element e can be resumed.
+// resumable reports whether a repetition with the element e can be resumed. An element whose
+// captures are written to the enclosing scope (those inside &, when the element has no captures of
+// its own) cannot be: reusing it would not write them.
 func (c *compiler) resumable(e grammar.Expr) bool {
-	ok := true
+	ok := hasCaptures(e) || !anyCapture(e)
 	walkExpr(e, func(x grammar.Expr) {
 		switch x := x.(type) {
 		case *grammar.Predicate:
@@ -66,6 +68,17 @@ func (c *compiler) resumable(e grammar.Expr) bool {
 		}
 	})
 	return ok
+}
+
+// anyCapture reports whether e contains a capture anywhere, lookaheads included.
+func anyCapture(e grammar.Expr) bool {
+	found := false
+	walkExpr(e, func(x grammar.Expr) {
+		if _, ok := x.(*grammar.Capture); ok {
+			found = true
+		}
+	})
+	return found
 }
 
 // positional reports whether the value of e may contain position values.
@@ -95,6 +108,7 @@ type runState struct {
 	edit        docEdit   // the edit since (none if old is from this parse)
 	count       int
 	done        bool // the old run ended where it stopped
+	moved       bool // old is the run that the edit moved here: none of it lies before the edit
 	rec0, prov0 int
 	// The run is old[:k], then the new elements mid, then old[j:j+t] (the elements after the edit,
 	// moved), then the new elements post.
@@ -118,8 +132,13 @@ func (p *parser) startRun(r *runState, id, min, max int, shiftable bool) {
 	} else if p.lastRuns != nil && p.gen > 0 {
 		r.edit = p.edits[p.gen-1]
 		at := r.key
-		if start > r.edit.start {
+		switch {
+		case start <= r.edit.start:
+		case start >= r.edit.end+r.edit.delta: // after the inserted text: where the edit moved it
 			at.start -= r.edit.delta
+			r.moved = true
+		default:
+			return // inside the inserted text: no run was there
 		}
 		if rec := p.lastRuns[at]; rec != nil && rec.gen+1 == p.gen {
 			r.old = rec.elems
@@ -134,7 +153,7 @@ func (r *runState) more() bool { return !r.done && (r.max < 0 || r.count < r.max
 // nextPrefix reuses the next old element if it examined only input before the edit, and returns
 // it (its value is for the caller to push), or nil.
 func (p *parser) nextPrefix(r *runState) *runElem {
-	if r.k >= len(r.old) || r.old[r.k].examined > r.edit.start || r.done {
+	if r.moved || r.k >= len(r.old) || r.old[r.k].examined > r.edit.start || r.done {
 		return nil
 	}
 	el := &r.old[r.k]

@@ -199,8 +199,8 @@ func (t *memoTable) splice(start, end, delta int, advance func(e *memoEntry) boo
 		t.slots[i] = nil
 	}
 	// Move the gap to start, take [start, end) into it, and give the new positions from it.
-	if end+t.gapLen > len(t.slots) {
-		t.slots = append(t.slots, make([]*memoEntry, end+t.gapLen-len(t.slots))...)
+	if end+t.gapLen >= len(t.slots) { // room for position end, where an entry kept at start may go
+		t.slots = append(t.slots, make([]*memoEntry, end+t.gapLen+1-len(t.slots))...)
 	}
 	switch {
 	case t.gap > start:

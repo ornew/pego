@@ -107,24 +107,31 @@ func (d *Document) Edit(start, end int, text string) error {
 // order, an entry that examined only input before it is kept as is, one that examined only input
 // after it is shifted (unless its result depends on positions or contains recovered errors, whose
 // messages contain positions), and any other is invalid.
+// The entry is changed only if it is still valid: one that is not may be looked up again (when a
+// parse is aborted before the entry is replaced).
 func advanceEntry(e *memoEntry, edits []docEdit) bool {
+	if e.growing {
+		return false
+	}
+	from, examined, shift, shifted := e.from, e.examined, 0, e.shifted
 	for _, ed := range edits[e.vgen:] {
 		switch {
-		case e.growing:
-			return false
-		case e.examined <= ed.start:
-		case e.from >= ed.end && !e.positional && len(e.errs) == 0:
-			e.pos += ed.delta
-			e.end += ed.delta
-			e.from += ed.delta
-			e.examined += ed.delta
-			e.far += ed.delta
-			e.shift += int32(ed.delta)
-			e.shifted = e.shifted || ed.delta != 0 // an edit that keeps the length moves nothing
+		case examined <= ed.start:
+		case from >= ed.end && !e.positional && len(e.errs) == 0:
+			from += ed.delta
+			examined += ed.delta
+			shift += ed.delta
+			shifted = shifted || ed.delta != 0 // an edit that keeps the length moves nothing
 		default:
 			return false
 		}
 	}
+	e.pos += shift
+	e.end += shift
+	e.from, e.examined = from, examined
+	e.far += shift
+	e.shift += int32(shift)
+	e.shifted = shifted
 	e.vgen = uint32(len(edits))
 	return true
 }
