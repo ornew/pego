@@ -97,7 +97,10 @@ def primary: Expr =
     / &(?"') v:string
     / &"." v:(double / message / call / ident)
     / &"-" v:(double / int)
-    / v:(paren / list / map) ) -> $v
+    / v:(paren / list / map / expected_start) ) -> $v
+// It never matches: it only makes the error message of an operand list the characters that an operand starts with,
+// which the lookaheads of the alternatives above do not record (lookaheads leave out of the message what they test).
+def expected_start: IntLit = !(?A-Za-z_) (?A-Za-z_) / !(?0-9) (?0-9) / !(?"') (?"') / !"." "." / !"-" "-"
 // A word that is a literal: true, false, null, a raw string r"..." or a bytes literal b"...".
 def word_lit: Expr = ( &(?tf) v:bool / &"n" v:null / &(?rR) v:string / &(?bB) v:bytes ) -> $v
 

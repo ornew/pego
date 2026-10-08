@@ -51,9 +51,18 @@ func checkMacros(e Expr) error {
 		}
 		arg := unparen(c.Args[0])
 		if c.Target == nil { // has
-			if s, ok := arg.(*Select); !ok || s.Optional {
-				err = &CheckError{Span: SpanOf(arg), Message: "invalid argument to has() macro"}
+			// A selection of a field; or a has() itself, which expands to the selection that tests the field.
+			switch a := arg.(type) {
+			case *Select:
+				if !a.Optional {
+					return true
+				}
+			case *Call:
+				if a.Target == nil && IsMacroCall(a) {
+					return true
+				}
 			}
+			err = &CheckError{Span: SpanOf(arg), Message: "invalid argument to has() macro"}
 			return true
 		}
 		id, ok := arg.(*Ident)

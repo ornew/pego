@@ -1,0 +1,1 @@
+items.exists(i, i.price > 10) && has(user.age) && items.map(i, i.ok, i.name).size() > 0

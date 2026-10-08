@@ -1,0 +1,2 @@
+[r"raw\n", B'\xff\303', """multi
+line""", "q\"uote\u00e9", .5, 0x1Fu, 1e-3]

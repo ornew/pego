@@ -1,0 +1,1 @@
+(Binary Left=(Binary Left=(Binary Left=(Binary Left=(Unary Op="!" X=(Unary Op="!" X=Ident"a"@ident)) Op="||" Right=(Unary Op="-" X=(Unary Op="-" X=(Unary Op="-" X=(Select Field=Name"c"@name Optional=false X=Ident"b"@ident))))) Op="||" Right=(Call Args=[] Func=Ident"f"@name_plain Target=IntLit"-1"@int)) Op="||" Right=IntLit"- 2"@int) Op="||" Right=(Unary Op="-" X=Ident"x"@ident))

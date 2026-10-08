@@ -1,0 +1,1 @@
+(Binary Left=Ident"a"@ident Op="&&" Right=(Call Args=[] Func=Ident"c"@name_plain Target=Ident"b"@ident))
