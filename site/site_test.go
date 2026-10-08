@@ -84,7 +84,7 @@ func TestBuild(t *testing.T) {
 			`id="CompileSource"`, `id="Parser.Parse"`, "type Node struct", `id="Node.Clone"`, "pkg.go.dev",
 		},
 		"reference/grammar/index.html": {`id="Format"`, `id="Grammar.Rules"`, "type RuleDef struct"},
-		"reference/cli/index.html":     {`id="cmd-parse"`, "<code>-g string</code>", "-backend string", "Commands:"},
+		"reference/cli/index.html":     {`id="cmd-parse"`, "<code>-g string</code>", "-backend string", `id="commands"`},
 		"docs/design/index.html":       {"012. Typed Values in Generated Parsers", "Implemented"},
 		"playground/index.html":        {`id="pg-grammar"`, `src="../playground/app.js"`, `href="../playground/playground.css"`},
 		"docs/guide/runtime/index.html": {
@@ -99,6 +99,38 @@ func TestBuild(t *testing.T) {
 		for _, w := range wants {
 			if !strings.Contains(string(data), w) {
 				t.Errorf("%s does not contain %q", page, w)
+			}
+		}
+	}
+
+	// The reference of the pego command has a section for every command, with every flag.
+	cli, err := os.ReadFile(filepath.Join(out, "reference", "cli", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sections := regexp.MustCompile(`id="cmd-([^"]+)"`).FindAllStringSubmatch(string(cli), -1)
+	var names []string
+	for _, m := range sections {
+		names = append(names, m[1])
+	}
+	if got, want := strings.Join(names, " "), "parse fmt convert gen compile trace profile explain"; got != want {
+		t.Errorf("command sections = %s, want %s", got, want)
+	}
+	for cmd, flags := range map[string][]string{
+		"parse":   {"-g string", "-check", "-stream", "-f string"},
+		"fmt":     {"-w", "-l"},
+		"trace":   {"-g string", "-f string", "-max-depth int", "-rule value", "-failures", "-unit string", "-backend string"},
+		"profile": {"-sort string", "-n int", "-f string"},
+		"explain": {"-n int", "-s string"},
+	} {
+		i := strings.Index(string(cli), `id="cmd-`+cmd+`"`)
+		section := string(cli)[i:]
+		if j := strings.Index(section[1:], `id="cmd-`); j >= 0 {
+			section = section[:j+1]
+		}
+		for _, f := range flags {
+			if !strings.Contains(section, "<code>"+f+"</code>") {
+				t.Errorf("pego %s: no flag %s", cmd, f)
 			}
 		}
 	}
@@ -165,6 +197,57 @@ func TestJavaScript(t *testing.T) {
 	out, err := exec.Command(node, append([]string{"--test"}, tests...)...).CombinedOutput()
 	if err != nil {
 		t.Fatalf("%v\n%s", err, out)
+	}
+}
+
+func TestParseUsage(t *testing.T) {
+	u, err := parseUsage(`usage: pego <command> [flags]
+
+Commands:
+
+  parse -g <grammar> [-s <rule>]
+        [-unit u]
+      Parse the input. Without -i,
+      it reads standard input.
+
+  fmt [-w]
+      Format files.
+
+A <grammar> is PEGO source
+or JSON.
+
+Run "pego <command> -h".
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if u.synopsis != "pego <command> [flags]" || len(u.commands) != 2 || len(u.notes) != 2 {
+		t.Fatalf("%+v", u)
+	}
+	p := u.commands[0]
+	if p.name != "parse" || p.synopsis != "pego parse -g <grammar> [-s <rule>]\n     [-unit u]" || p.description != "Parse the input. Without -i, it reads standard input." {
+		t.Errorf("parse: %+v", p)
+	}
+	if u.commands[1].name != "fmt" || u.notes[0] != "A <grammar> is PEGO source or JSON." {
+		t.Errorf("%+v", u)
+	}
+
+	flags := parseFlagDefaults("Usage of trace:\n  -f string\n    \toutput format (default \"text\")\n  -n int\n    \trows (0 shows all) (default 30)\n" +
+		"  -rule value\n    \tonly this rule\n  -w\twrite the result\n  -s string\n    \tstart rule (default: main)\npego: flag: help requested\n")
+	want := []cliFlag{
+		{"f", "string", `"text"`, "output format"},
+		{"n", "int", "30", "rows (0 shows all)"},
+		{"rule", "value", "", "only this rule"},
+		{"w", "", "", "write the result"},
+		{"s", "string", "", "start rule (default: main)"},
+	}
+	if len(flags) != len(want) {
+		t.Fatalf("flags = %+v", flags)
+	}
+	for i := range want {
+		if flags[i] != want[i] {
+			t.Errorf("flag %d = %+v, want %+v", i, flags[i], want[i])
+		}
 	}
 }
 

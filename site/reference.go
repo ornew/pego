@@ -12,7 +12,6 @@ import (
 	"go/token"
 	"html/template"
 	"path/filepath"
-	"strconv"
 	"strings"
 )
 
@@ -336,112 +335,6 @@ func (r *refRenderer) render(rp refPackage) string {
 		}
 	}
 	return r.b.String()
-}
-
-// cliFlag is a flag of a subcommand of the pego command, found in its source.
-type cliFlag struct {
-	name, kind, def, usage string
-}
-
-// renderCLI documents the pego command from its source: the package comment, the usage message and
-// the flags each subcommand defines with flag.NewFlagSet.
-func (s *Site) renderCLI(p *Page) (string, []Heading, error) {
-	fset, files, pkg, err := loadPackage(s.cfg.Repo, "cmd/pego", modulePath+"/cmd/pego")
-	if err != nil {
-		return "", nil, err
-	}
-	p.Description = "Parse, format, convert, compile and generate parsers from the command line."
-	var usage string
-	type command struct {
-		name  string
-		flags []cliFlag
-	}
-	var commands []command
-	// Parse the source again: the files that go/doc has seen lack unexported declarations and bodies.
-	sfset, sfiles, err := parseDir(s.cfg.Repo, "cmd/pego")
-	if err != nil {
-		return "", nil, err
-	}
-	for _, f := range sfiles {
-		ast.Inspect(f, func(n ast.Node) bool {
-			if vs, ok := n.(*ast.ValueSpec); ok {
-				for i, name := range vs.Names {
-					if name.Name == "usage" && i < len(vs.Values) {
-						if lit, ok := vs.Values[i].(*ast.BasicLit); ok && lit.Kind == token.STRING {
-							usage, _ = strconv.Unquote(lit.Value)
-						}
-					}
-				}
-			}
-			fd, ok := n.(*ast.FuncDecl)
-			if !ok || fd.Body == nil {
-				return true
-			}
-			var cmd command
-			ast.Inspect(fd.Body, func(n ast.Node) bool {
-				call, ok := n.(*ast.CallExpr)
-				if !ok {
-					return true
-				}
-				sel, ok := call.Fun.(*ast.SelectorExpr)
-				if !ok {
-					return true
-				}
-				args := make([]string, len(call.Args))
-				for i, a := range call.Args {
-					var b bytes.Buffer
-					_ = printer.Fprint(&b, sfset, a)
-					args[i] = b.String()
-					if lit, ok := a.(*ast.BasicLit); ok && lit.Kind == token.STRING {
-						args[i], _ = strconv.Unquote(lit.Value)
-					}
-				}
-				switch {
-				case sel.Sel.Name == "NewFlagSet" && len(args) > 0:
-					cmd.name = args[0]
-				case (sel.Sel.Name == "String" || sel.Sel.Name == "Bool" || sel.Sel.Name == "Int") && len(args) == 3:
-					if x, ok := sel.X.(*ast.Ident); ok && x.Name == "fs" {
-						cmd.flags = append(cmd.flags, cliFlag{name: args[0], kind: strings.ToLower(sel.Sel.Name), def: args[1], usage: args[2]})
-					}
-				}
-				return true
-			})
-			if cmd.name != "" {
-				commands = append(commands, cmd)
-			}
-			return false
-		})
-	}
-	if usage == "" || len(commands) == 0 {
-		return "", nil, fmt.Errorf("found no usage message or flag sets in cmd/pego")
-	}
-	r := &refRenderer{s: s, page: p, fset: fset, files: files, pkg: pkg, dir: "cmd/pego"}
-	r.b.WriteString("<h1 id=\"top\">The pego Command</h1>\n")
-	r.b.WriteString(`<pre><code class="language-bash">go install github.com/ornew/pego/cmd/pego@latest</code></pre>` + "\n")
-	r.heading(2, "overview", "Overview")
-	r.b.WriteString(r.docHTML(pkg.Doc))
-	r.heading(2, "usage", "Usage")
-	r.b.WriteString("<pre><code class=\"language-text\">" + template.HTMLEscapeString(usage) + "</code></pre>\n")
-	r.heading(2, "flags", "Flags")
-	for _, c := range commands {
-		r.heading(3, "cmd-"+c.name, "pego "+c.name)
-		r.b.WriteString("<table><thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead><tbody>\n")
-		for _, f := range c.flags {
-			def := f.def
-			if f.kind == "string" {
-				def = strconv.Quote(def)
-			}
-			if f.kind == "bool" {
-				fmt.Fprintf(&r.b, "<tr><td><code>-%s</code></td><td><code>%s</code></td><td>%s</td></tr>\n",
-					f.name, template.HTMLEscapeString(def), template.HTMLEscapeString(f.usage))
-			} else {
-				fmt.Fprintf(&r.b, "<tr><td><code>-%s %s</code></td><td><code>%s</code></td><td>%s</td></tr>\n",
-					f.name, f.kind, template.HTMLEscapeString(def), template.HTMLEscapeString(f.usage))
-			}
-		}
-		r.b.WriteString("</tbody></table>\n")
-	}
-	return r.b.String(), r.toc, nil
 }
 
 // aliasTarget returns the name of the type of the internal engine package that t is an alias of, if

@@ -116,6 +116,7 @@ renderer [goldmark](https://github.com/yuin/goldmark).
 | A separate module | The library module must stay free of dependencies. `site/go.mod` holds goldmark; the root module is unaffected, and `go test ./...` at the root does not see the site |
 | goldmark | The Markdown is GitHub-flavored (tables, alerts, raw `<details>`), and goldmark implements CommonMark and GFM with an AST that can be transformed. Writing a Markdown renderer would be more code than the rest of the generator |
 | `go/doc` for the reference | The reference matches the code it is built with, works offline and before a version is tagged, and is searchable with the rest of the site. pkg.go.dev remains the reference for released versions and is linked from every reference page. `go/doc` also lets the reference show what pkg.go.dev cannot: `Node`, `SyntaxError` and other public types are aliases of types in an internal package, so the reference renders the definition and methods of the internal type under the alias |
+| The `pego` command's own help for its reference | The site builds the command and documents what `pego` and `pego <command> -h` print: every command of the usage message, with the flags its flag set defines. An earlier version read the flag definitions from the source, which missed flag sets made by a helper and flags defined with `flag.Var`, and invented a command from a variable name; the help is what users see, however the code is organized |
 
 The generator:
 
