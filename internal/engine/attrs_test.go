@@ -71,6 +71,18 @@ def item = (@"a" ";") #recover(skip=(?^;)+ ";")`
 	}
 }
 
+// TestRecoverInLookahead checks that a result with errors recovered outside a lookahead is not
+// reused inside one, or the other way round: errors recovered inside a lookahead carry no
+// expectations, so the reused errors would differ from a parse without memoization.
+func TestRecoverInLookahead(t *testing.T) {
+	check(t, `
+def main = r1 "ab" / r1 _
+def r1 = &p0 p0
+def p0 = pratt { operand "a"  operand "(" p0 ")"  level { postfix "!" ";" #recover(skip=(?^;)* ";") } }`,
+		ok("a!a;", "error: 1:3: syntax error\n1:3: syntax error: expected \";\""),
+	)
+}
+
 func TestRecoverTyping(t *testing.T) {
 	// The value of a recovered expression may be an Error, but an Error can be placed where any
 	// node type is expected.

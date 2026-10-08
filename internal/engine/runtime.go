@@ -380,7 +380,10 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit boo
 	if len(r.vars) > 0 {
 		key.env = p.envValues(r.vars)
 	}
-	if e, found := p.memo.get(key); found && (!e.silent || p.silent > 0 || e.growing) {
+	// A result computed inside a lookahead recorded no expectations, so it is not reused outside
+	// one; and errors recovered inside a lookahead carry no expectations either, so a result with
+	// recovered errors is reused only in the same kind of context it was computed in.
+	if e, found := p.memo.get(key); found && (e.growing || (!e.silent || p.silent > 0) && (len(e.errs) == 0 || e.silent == (p.silent > 0))) {
 		p.touch(e.examined)
 		p.lw = min2(p.lw, e.from)
 		p.stats.Reused++

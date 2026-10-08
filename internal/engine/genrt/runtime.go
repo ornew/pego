@@ -801,7 +801,9 @@ func (p *parser) call(r *rule, min int) (*Node, bool) {
 		return v, ok
 	}
 	env := p.envValues(r.vars)
-	if e := p.memo.get(r.id, start, min, env); e != nil && (!e.silent || p.silent > 0 || e.growing) {
+	// See the engine's callBegin: entries with recovered errors are reused only in the same kind of
+	// context (inside or outside a lookahead) they were computed in.
+	if e := p.memo.get(r.id, start, min, env); e != nil && (e.growing || (!e.silent || p.silent > 0) && (len(e.errs) == 0 || e.silent == (p.silent > 0))) {
 		if !e.growing {
 			p.mergeExpected(e.far, e.expected)
 		}
