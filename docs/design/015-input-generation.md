@@ -90,10 +90,12 @@ Repetitions aim for their minimum plus a geometric number of iterations (each fu
 most `WithMaxRepeat`, default 3). Recursion is bounded by `WithMaxDepth` (default 5), which counts calls of rules that
 are already active, so a JSON value nested in arrays counts one per array, not the chain of rules between them. Once
 the depth or the length of the text (`WithMaxLen`, default 512 bytes) is reached, the generator takes the shortest way
-to finish: alternatives in order of their minimal derivation height (computed by a fixed point over the rules),
-optional expressions skipped, repetitions at their minimum. Both bounds are soft: the search goes deeper or longer
-when the input requires it (`[d >= 12]` after twelve nested parentheses), up to the hard limits on nesting and
-iterations described above.
+to finish: alternatives in order of their minimal text length once the text is long enough, or of their minimal
+derivation height (the fewest nested rule calls) once the recursion is deep enough, each computed by a fixed point over
+the rules; optional expressions skipped; repetitions at their minimum. (Ordering by height alone, a long literal beat a
+short alternative that needs one more rule call.) Both bounds are soft: the search goes deeper or longer when the input
+requires it (`[d >= 12]` after twelve nested parentheses), up to the hard limits on nesting and iterations described
+above.
 
 The hard bounds therefore are the budget (`WithBudget`, exposed because an input of 25,000 repeated literals needs more
 than the default), the nesting limit (`WithMaxDepth + 8`) and the iteration limit (`8 × WithMaxRepeat + 4`); each can be

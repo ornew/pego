@@ -470,6 +470,18 @@ def e = [d >= 15] "x" / "(" [d = d + 1] e ")"`)
 	}
 }
 
+// TestShortestWay checks that past the length limit the generator prefers the shortest text, not the
+// fewest rule calls.
+func TestShortestWay(t *testing.T) {
+	p := compile(t, `def main = "(" e ")" $$
+def e = "`+strings.Repeat("x", 96)+`" / y
+def y = "y"`)
+	inputs, err := sample.Generate(p, 3, sample.WithMaxLen(0), sample.WithMaxDepth(0))
+	if err != nil || !slices.Equal(inputs, []string{"(y)"}) {
+		t.Errorf("got %q, %v", inputs, err)
+	}
+}
+
 func TestCoverageReport(t *testing.T) {
 	p := compile(t, `def main = a / b / "c" _|_
 def a = "a" !kw

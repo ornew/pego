@@ -1,6 +1,7 @@
 package sample
 
 import (
+	"cmp"
 	"math/rand/v2"
 	"slices"
 	"unicode/utf8"
@@ -432,12 +433,14 @@ func (g *gen) genSeq(items []grammar.Expr, start int, k cont) bool {
 // option describes one way to continue at a decision.
 type option struct {
 	height int    // minimal height; inf if the option can never succeed
+	length int    // minimal length of its text in bytes
 	own    int    // the option's own target, or -1
 	reach  bitset // targets the option can exercise, or nil
 }
 
 // order returns the order in which to try the options. Options that can never succeed are left out.
-// When the generator must finish quickly, the options with the smallest height come first; in coverage
+// When the generator must finish quickly, the options with the shortest text (once the text is long
+// enough) or the fewest nested rule calls (once the recursion is deep enough) come first; in coverage
 // mode, options whose own target, and then options that reach a target, not exercised yet come first.
 // Ties are broken at random.
 func (g *gen) order(opts []option) []int {
@@ -449,8 +452,16 @@ func (g *gen) order(opts []option) []int {
 	}
 	g.rng.Shuffle(len(idx), func(i, j int) { idx[i], idx[j] = idx[j], idx[i] })
 	switch {
+	case len(g.out) >= g.cfg.maxLen:
+		// The text is long enough: the shortest text first, then the fewest rule calls.
+		slices.SortStableFunc(idx, func(a, b int) int {
+			return cmp.Or(cmp.Compare(opts[a].length, opts[b].length), cmp.Compare(opts[a].height, opts[b].height))
+		})
 	case g.minimal():
-		slices.SortStableFunc(idx, func(a, b int) int { return opts[a].height - opts[b].height })
+		// Deep enough: the fewest nested rule calls first, then the shortest text.
+		slices.SortStableFunc(idx, func(a, b int) int {
+			return cmp.Or(cmp.Compare(opts[a].height, opts[b].height), cmp.Compare(opts[a].length, opts[b].length))
+		})
 	case g.cfg.coverage:
 		rank := func(o option) int {
 			switch {
@@ -470,7 +481,7 @@ func (g *gen) genChoice(e *grammar.Choice, k cont) bool {
 	base := g.in.altBase[e]
 	opts := make([]option, len(e.Alts))
 	for i, a := range e.Alts {
-		opts[i] = option{height: g.in.height(a), own: base + i, reach: g.in.reach(a)}
+		opts[i] = option{height: g.in.height(a), length: g.in.length(a), own: base + i, reach: g.in.reach(a)}
 	}
 	pending := g.pending
 	s0 := g.steps

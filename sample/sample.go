@@ -75,7 +75,7 @@ func WithMaxDepth(d int) Option { return func(c *config) { c.maxDepth = max(d, 0
 func WithMaxRepeat(n int) Option { return func(c *config) { c.maxRepeat = max(n, 0) } }
 
 // WithMaxLen sets a soft limit on the length of an input in bytes (default DefaultMaxLen): once the input
-// is that long, the generator takes the shortest way to finish it.
+// is that long, the generator prefers the alternatives with the shortest text to finish it.
 func WithMaxLen(n int) Option { return func(c *config) { c.maxLen = max(n, 0) } }
 
 // WithBudget sets the number of steps one attempt may take before it gives up (default DefaultBudget).

@@ -80,7 +80,7 @@ func (g *gen) prattPart(op *grammar.PrattOperator, k thunk) bool {
 func (g *gen) opOptions(ops []prattOp) []int {
 	opts := make([]option, len(ops))
 	for i, o := range ops {
-		opts[i] = option{height: g.in.height(o.op.Expr), own: g.in.ops[o.op], reach: g.in.reach(o.op.Expr)}
+		opts[i] = option{height: g.in.height(o.op.Expr), length: g.in.length(o.op.Expr), own: g.in.ops[o.op], reach: g.in.reach(o.op.Expr)}
 	}
 	return g.order(opts)
 }
@@ -127,7 +127,7 @@ func (g *gen) prattPrimary(ri *ruleInfo, minLevel, prefixes int, k thunk) bool {
 func (g *gen) prattOperand(pr *grammar.Pratt, k thunk) bool {
 	opts := make([]option, len(pr.Operands))
 	for i, o := range pr.Operands {
-		opts[i] = option{height: g.in.height(o.Expr), own: g.in.operands[o], reach: g.in.reach(o.Expr)}
+		opts[i] = option{height: g.in.height(o.Expr), length: g.in.length(o.Expr), own: g.in.operands[o], reach: g.in.reach(o.Expr)}
 	}
 	pending := g.pending
 	s0 := g.steps
