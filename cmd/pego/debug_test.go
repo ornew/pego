@@ -281,7 +281,8 @@ def main = stmt* $$
 def stmt = (word ";") #recover(skip=(?^;)+ ";")
 def word = @(?a-z)+`)
 	out, err := runCLI(t, "", "explain", "-g", r, "-i", "ab1;cd;", "-backend", "bytecode")
-	want := `1:3: syntax error: expected ";", (?a-z)
+	// A single recovered error is marked too.
+	want := `1:3: syntax error: expected ";", (?a-z) (recovered)
 
 Calls that recorded what was expected at 1:3 (innermost first):
 

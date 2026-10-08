@@ -25,6 +25,7 @@ func explainCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 	var errs []*pego.SyntaxError
 	var se *pego.SyntaxError
 	var list pego.SyntaxErrors
+	recovered := false // the parse recovered from every error (Parse returned SyntaxErrors)
 	switch {
 	case perr == nil:
 		fmt.Fprintln(stdout, "ok: the input matches")
@@ -32,7 +33,7 @@ func explainCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 	case errors.As(perr, &se):
 		errs = []*pego.SyntaxError{se}
 	case errors.As(perr, &list):
-		errs = list
+		errs, recovered = list, true
 	default:
 		return perr
 	}
@@ -55,7 +56,7 @@ func explainCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 		if i > 0 {
 			fmt.Fprintln(stdout)
 		}
-		if len(errs) > 1 {
+		if recovered {
 			fmt.Fprintf(stdout, "%s (recovered)\n", e)
 		} else {
 			fmt.Fprintln(stdout, e)
