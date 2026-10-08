@@ -1,0 +1,467 @@
+package sample
+
+import (
+	"sort"
+
+	"github.com/ornew/pego/grammar"
+)
+
+// inf is the height or length of an expression that can never match.
+const inf = 1 << 30
+
+// Kinds of coverage targets.
+const (
+	targetRule = iota
+	targetAlt
+	targetOperand
+	targetOperator
+)
+
+// target is something the generator tries to exercise: a rule, an alternative of an ordered choice, or
+// an operand or operator of a Pratt expression.
+type target struct {
+	kind  int
+	rule  string
+	index int // alternative, operand or operator index
+	expr  grammar.Expr
+	// possible is false for targets that can never match (their height is inf).
+	possible bool
+}
+
+// ruleInfo is what the generator knows about a rule.
+type ruleInfo struct {
+	def      *grammar.RuleDef
+	index    int
+	pratt    *grammar.Pratt
+	levels   map[string]int // level name -> index in pratt.Levels
+	terminal bool           // the rule is declared with a terminal type
+	height   int            // minimal derivation height: nested rule calls needed to match it
+	length   int            // minimal length in bytes of a match
+	reach    bitset         // targets that generating the rule can exercise, its own included
+	calls    []string
+	// stops caches, per minimum level, the expression that must not match where a chain of
+	// operators of the Pratt expression ends (see gen.prattStopCheck).
+	stops map[int]grammar.Expr
+}
+
+// info is the analysis of a grammar shared by the generator and the matcher.
+type info struct {
+	rules   map[string]*ruleInfo
+	order   []*ruleInfo
+	start   *ruleInfo
+	targets []target
+	// Target ids of the first alternative of each choice, of each Pratt operand and operator.
+	altBase  map[*grammar.Choice]int
+	operands map[*grammar.PrattOperand]int
+	ops      map[*grammar.PrattOperator]int
+	// reachable[i] is true if the rule with index i can be called from the start rule.
+	reachable []bool
+	reachMemo map[grammar.Expr]bitset
+	// compared holds the captures of rule calls that a predicate in the same rule reads.
+	compared map[*grammar.Capture]bool
+	// alphabet holds the literal strings and sample characters of the grammar, for mutations.
+	alphabet []string
+}
+
+func analyze(g *grammar.Grammar, start string) *info {
+	in := &info{
+		rules:     map[string]*ruleInfo{},
+		altBase:   map[*grammar.Choice]int{},
+		operands:  map[*grammar.PrattOperand]int{},
+		ops:       map[*grammar.PrattOperator]int{},
+		reachMemo: map[grammar.Expr]bitset{},
+		compared:  map[*grammar.Capture]bool{},
+	}
+	terminals := map[string]bool{}
+	for _, t := range g.Types() {
+		if _, ok := t.Spec.(*grammar.TerminalSpec); ok {
+			terminals[t.Name] = true
+		}
+	}
+	for i, r := range g.Rules() {
+		ri := &ruleInfo{def: r, index: i, height: inf, length: inf, stops: map[int]grammar.Expr{}}
+		if pr, ok := r.Expr.(*grammar.Pratt); ok {
+			ri.pratt = pr
+			ri.levels = map[string]int{}
+			for j, l := range pr.Levels {
+				if l.Name != "" {
+					ri.levels[l.Name] = j
+				}
+			}
+		}
+		if t, ok := r.Type.(*grammar.TypeRef); ok && terminals[t.Name] {
+			ri.terminal = true
+		}
+		in.rules[r.Name] = ri
+		in.order = append(in.order, ri)
+		in.targets = append(in.targets, target{kind: targetRule, rule: r.Name})
+	}
+	in.start = in.rules[start]
+	// Targets inside rule bodies.
+	for _, ri := range in.order {
+		walk(ri.def.Expr, func(e grammar.Expr) {
+			switch e := e.(type) {
+			case *grammar.Ref:
+				ri.calls = append(ri.calls, e.Name)
+			case *grammar.Choice:
+				in.altBase[e] = len(in.targets)
+				for j, a := range e.Alts {
+					in.targets = append(in.targets, target{kind: targetAlt, rule: ri.def.Name, index: j, expr: a})
+				}
+			case *grammar.Pratt:
+				for j, o := range e.Operands {
+					in.operands[o] = len(in.targets)
+					in.targets = append(in.targets, target{kind: targetOperand, rule: ri.def.Name, index: j, expr: o.Expr})
+				}
+				j := 0
+				for _, l := range e.Levels {
+					for _, op := range l.Operators {
+						in.ops[op] = len(in.targets)
+						in.targets = append(in.targets, target{kind: targetOperator, rule: ri.def.Name, index: j, expr: op.Expr})
+						j++
+					}
+				}
+			case *grammar.Literal:
+				if e.Value != "" {
+					in.alphabet = append(in.alphabet, e.Value)
+				}
+			case *grammar.CharClass:
+				if !e.Negated {
+					for _, r := range e.Ranges {
+						in.alphabet = append(in.alphabet, string(r.Lo), string(r.Hi))
+					}
+				}
+			}
+		})
+	}
+	in.alphabet = dedupe(in.alphabet)
+	for _, ri := range in.order {
+		read := map[string]bool{}
+		walk(ri.def.Expr, func(e grammar.Expr) {
+			if p, ok := e.(*grammar.Predicate); ok {
+				walkTerm(p.Term, func(t grammar.Term) {
+					if c, ok := t.(*grammar.CaptureRef); ok {
+						read[c.Name] = true
+					}
+				})
+			}
+		})
+		walk(ri.def.Expr, func(e grammar.Expr) {
+			if c, ok := e.(*grammar.Capture); ok && read[c.Name] {
+				in.compared[c] = true
+			}
+		})
+	}
+
+	// Minimal heights and lengths, by iteration to a fixed point.
+	for changed := true; changed; {
+		changed = false
+		for _, ri := range in.order {
+			h, l := in.height(ri.def.Expr), in.length(ri.def.Expr)
+			if h < ri.height || l < ri.length {
+				ri.height, ri.length = min(h, ri.height), min(l, ri.length)
+				changed = true
+			}
+		}
+	}
+	for i := range in.targets {
+		t := &in.targets[i]
+		if t.kind == targetRule {
+			t.possible = in.rules[t.rule].height < inf
+		} else {
+			t.possible = in.height(t.expr) < inf
+		}
+	}
+
+	// Reach sets of rules: their own targets and those of the rules they call, transitively.
+	for _, ri := range in.order {
+		ri.reach = newBitset(len(in.targets))
+		ri.reach.set(ri.index) // the target of a rule is its index
+		in.localTargets(ri.def.Expr, ri.reach)
+	}
+	for changed := true; changed; {
+		changed = false
+		for _, ri := range in.order {
+			for _, c := range ri.calls {
+				if callee := in.rules[c]; callee != nil && ri.reach.union(callee.reach) {
+					changed = true
+				}
+			}
+		}
+	}
+	in.reachable = make([]bool, len(in.order))
+	if in.start != nil {
+		var visit func(ri *ruleInfo)
+		visit = func(ri *ruleInfo) {
+			if in.reachable[ri.index] {
+				return
+			}
+			in.reachable[ri.index] = true
+			for _, c := range ri.calls {
+				if callee := in.rules[c]; callee != nil {
+					visit(callee)
+				}
+			}
+		}
+		visit(in.start)
+	}
+	return in
+}
+
+// localTargets adds the targets inside e, not counting the rules it calls, to s.
+func (in *info) localTargets(e grammar.Expr, s bitset) {
+	walk(e, func(x grammar.Expr) {
+		switch x := x.(type) {
+		case *grammar.Choice:
+			for j := range x.Alts {
+				s.set(in.altBase[x] + j)
+			}
+		case *grammar.Pratt:
+			for _, o := range x.Operands {
+				s.set(in.operands[o])
+			}
+			for _, l := range x.Levels {
+				for _, op := range l.Operators {
+					s.set(in.ops[op])
+				}
+			}
+		}
+	})
+}
+
+// reach returns the targets that generating e can exercise.
+func (in *info) reach(e grammar.Expr) bitset {
+	if s, ok := in.reachMemo[e]; ok {
+		return s
+	}
+	s := newBitset(len(in.targets))
+	in.localTargets(e, s)
+	walk(e, func(x grammar.Expr) {
+		if r, ok := x.(*grammar.Ref); ok {
+			if ri := in.rules[r.Name]; ri != nil {
+				s.union(ri.reach)
+			}
+		}
+	})
+	in.reachMemo[e] = s
+	return s
+}
+
+// height returns the minimal number of nested rule calls needed to match e, or inf if e can never
+// match, using the current estimates of the rules' heights.
+func (in *info) height(e grammar.Expr) int {
+	switch e := e.(type) {
+	case *grammar.Ref:
+		if ri := in.rules[e.Name]; ri != nil && ri.height < inf {
+			return ri.height + 1
+		}
+		return inf
+	case *grammar.Bottom:
+		return inf
+	case *grammar.Seq:
+		h := 0
+		for _, it := range e.Items {
+			h = max(h, in.height(it))
+		}
+		return h
+	case *grammar.Choice:
+		h := inf
+		for _, a := range e.Alts {
+			h = min(h, in.height(a))
+		}
+		return h
+	case *grammar.Repeat:
+		if e.Min == 0 {
+			return 0
+		}
+		return in.height(e.Expr)
+	case *grammar.Optional, *grammar.Not:
+		return 0
+	case *grammar.And:
+		return in.height(e.Expr)
+	case *grammar.Atomic:
+		return in.height(e.Expr)
+	case *grammar.Discard:
+		return in.height(e.Expr)
+	case *grammar.Capture:
+		return in.height(e.Expr)
+	case *grammar.Attributed:
+		return in.height(e.Expr)
+	case *grammar.Pratt:
+		h := inf
+		for _, o := range e.Operands {
+			h = min(h, in.height(o.Expr))
+		}
+		return h
+	}
+	return 0
+}
+
+// length returns the minimal length in bytes of a match of e, or inf if e can never match.
+func (in *info) length(e grammar.Expr) int {
+	switch e := e.(type) {
+	case *grammar.Ref:
+		if ri := in.rules[e.Name]; ri != nil {
+			return ri.length
+		}
+		return inf
+	case *grammar.Literal:
+		return len(e.Value)
+	case *grammar.CharClass, *grammar.Any:
+		return 1
+	case *grammar.Bottom:
+		return inf
+	case *grammar.Seq:
+		l := 0
+		for _, it := range e.Items {
+			l = min(inf, l+in.length(it))
+		}
+		return l
+	case *grammar.Choice:
+		l := inf
+		for _, a := range e.Alts {
+			l = min(l, in.length(a))
+		}
+		return l
+	case *grammar.Repeat:
+		if e.Min == 0 {
+			return 0
+		}
+		return min(inf, e.Min*in.length(e.Expr))
+	case *grammar.Optional, *grammar.Not, *grammar.And:
+		return 0
+	case *grammar.Atomic:
+		return in.length(e.Expr)
+	case *grammar.Discard:
+		return in.length(e.Expr)
+	case *grammar.Capture:
+		return in.length(e.Expr)
+	case *grammar.Attributed:
+		return in.length(e.Expr)
+	case *grammar.Pratt:
+		l := inf
+		for _, o := range e.Operands {
+			l = min(l, in.length(o.Expr))
+		}
+		return l
+	}
+	return 0
+}
+
+// walk calls f for e and every parsing expression inside it that generation can produce: it does not
+// enter called rules, negative lookaheads or attribute arguments (the skip of #recover).
+func walk(e grammar.Expr, f func(grammar.Expr)) {
+	if e == nil {
+		return
+	}
+	f(e)
+	switch e := e.(type) {
+	case *grammar.Seq:
+		for _, it := range e.Items {
+			walk(it, f)
+		}
+	case *grammar.Choice:
+		for _, a := range e.Alts {
+			walk(a, f)
+		}
+	case *grammar.Repeat:
+		walk(e.Expr, f)
+	case *grammar.Optional:
+		walk(e.Expr, f)
+	case *grammar.And:
+		walk(e.Expr, f)
+	case *grammar.Not:
+		// Not walked: generation never produces what a negative lookahead matches.
+	case *grammar.Atomic:
+		walk(e.Expr, f)
+	case *grammar.Discard:
+		walk(e.Expr, f)
+	case *grammar.Capture:
+		walk(e.Expr, f)
+	case *grammar.Attributed:
+		// Attribute arguments (the skip of #recover) are not walked: valid inputs never
+		// exercise them.
+		walk(e.Expr, f)
+	case *grammar.Pratt:
+		walk(e.Skip, f)
+		for _, o := range e.Operands {
+			walk(o.Expr, f)
+		}
+		for _, l := range e.Levels {
+			for _, op := range l.Operators {
+				walk(op.Expr, f)
+			}
+		}
+	}
+}
+
+func dedupe(xs []string) []string {
+	sort.Strings(xs)
+	out := xs[:0]
+	for i, x := range xs {
+		if i == 0 || x != xs[i-1] {
+			out = append(out, x)
+		}
+	}
+	return out
+}
+
+// bitset is a set of small non-negative integers.
+type bitset []uint64
+
+func newBitset(n int) bitset { return make(bitset, (n+63)/64) }
+
+func (s bitset) set(i int)      { s[i/64] |= 1 << (i % 64) }
+func (s bitset) clear(i int)    { s[i/64] &^= 1 << (i % 64) }
+func (s bitset) has(i int) bool { return s[i/64]&(1<<(i%64)) != 0 }
+
+// union adds t to s and reports whether s changed.
+func (s bitset) union(t bitset) bool {
+	changed := false
+	for i, w := range t {
+		if s[i]|w != s[i] {
+			s[i] |= w
+			changed = true
+		}
+	}
+	return changed
+}
+
+// anyNotIn reports whether s has an element that is in neither a nor b.
+func (s bitset) anyNotIn(a, b bitset) bool {
+	for i, w := range s {
+		if w&^a[i]&^b[i] != 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// walkTerm calls f for t and every term inside it.
+func walkTerm(t grammar.Term, f func(grammar.Term)) {
+	if t == nil {
+		return
+	}
+	f(t)
+	switch t := t.(type) {
+	case *grammar.Member:
+		walkTerm(t.X, f)
+	case *grammar.New:
+		for _, fi := range t.Fields {
+			walkTerm(fi.Value, f)
+		}
+	case *grammar.Call:
+		for _, a := range t.Args {
+			walkTerm(a, f)
+		}
+	case *grammar.Lambda:
+		walkTerm(t.Body, f)
+	case *grammar.Binary:
+		walkTerm(t.L, f)
+		walkTerm(t.R, f)
+	case *grammar.Unary:
+		walkTerm(t.X, f)
+	case *grammar.Assign:
+		walkTerm(t.Value, f)
+	}
+}
