@@ -13,6 +13,7 @@
 //	pego explain -g grammar.pego [-s main] [-i input] [-n calls]
 //	pego sample -g grammar.pego [-s main] [-n 10] [-seed N] [-max-depth D] [-max-repeat R] [-max-len L]
 //	            [-coverage] [-invalid] [-f lines|json]
+//	pego lsp
 package main
 
 import (
@@ -87,6 +88,11 @@ Commands:
       prefers rules and alternatives not exercised yet and reports what was
       missed; -invalid generates near-miss inputs that the grammar rejects.
 
+  lsp
+      Run a Language Server Protocol server for .pego files on standard
+      input and output, for editors: diagnostics, formatting, go to
+      definition, references, hover, rename and completion.
+
 A <grammar> is PEGO source (.pego), a grammar in JSON (.json), or a
 grammar compiled with pego compile (.pegoc).
 
@@ -122,6 +128,8 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 		return explainCmd(args[1:], stdin, stdout)
 	case "sample":
 		return sampleCmd(args[1:], stdout)
+	case "lsp":
+		return lspCmd(args[1:], stdin, stdout)
 	}
 	return fmt.Errorf("%s", usage)
 }
