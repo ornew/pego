@@ -135,6 +135,22 @@ def number = @(?0-9)+`)
 	}
 }
 
+func TestSampleCoverageWithoutInputs(t *testing.T) {
+	// No input parses: the report still shows what the search exercised, then the command fails.
+	g := writeFile(t, "never.pego", `def main = item+ "a"
+def item = "a" / "b"`)
+	stderr := captureStderr(t)
+	out, err := runCLI(t, "", "sample", "-g", g, "-n", "3", "-coverage")
+	if err == nil || out != "" || !strings.HasPrefix(stderr.String(), "rules 0/2") {
+		t.Errorf("got %q, %v, stderr %q", out, err, stderr)
+	}
+	out, err = runCLI(t, "", "sample", "-g", g, "-n", "3", "-coverage", "-f", "json")
+	var doc sampleOutput
+	if err == nil || json.Unmarshal([]byte(out), &doc) != nil || doc.Coverage == nil || doc.Coverage.Rules != 2 {
+		t.Errorf("got %q, %v", out, err)
+	}
+}
+
 func TestSampleInvalid(t *testing.T) {
 	g := writeFile(t, "kv.pego", kvList)
 	p, err := pego.CompileSource(kvList, "main")

@@ -71,22 +71,21 @@ func sampleCmd(args []string, stdout io.Writer) error {
 	}
 	out := sampleOutput{Start: p.Start(), Seed: *seed}
 	var lines []string
+	// When nothing is found, the coverage report is still printed (it shows how far generation got),
+	// and the error is returned at the end.
+	var genErr error
 	if *invalid {
-		invs, err := g.GenerateInvalid(*n)
-		if err != nil {
-			return err
-		}
+		var invs []sample.Invalid
+		invs, genErr = g.GenerateInvalid(*n)
 		for _, inv := range invs {
 			out.Invalid = append(out.Invalid, invalidOutput{inv.Input, inv.Base, inv.Mutation, inv.Err.Error()})
 			lines = append(lines, inv.Input)
 		}
 	} else {
-		if out.Inputs, err = g.Generate(*n); err != nil {
-			return err
-		}
+		out.Inputs, genErr = g.Generate(*n)
 		lines = out.Inputs
 	}
-	if len(lines) < *n {
+	if genErr == nil && len(lines) < *n {
 		fmt.Fprintf(sampleStderr, "pego sample: found only %d distinct inputs\n", len(lines))
 	}
 	var c sample.Coverage
@@ -95,9 +94,15 @@ func sampleCmd(args []string, stdout io.Writer) error {
 		out.Coverage = &c
 	}
 	if *format == "json" {
+		if genErr != nil && !*coverage {
+			return genErr
+		}
 		enc := json.NewEncoder(stdout)
 		enc.SetIndent("", "  ")
-		return enc.Encode(out)
+		if err := enc.Encode(out); err != nil {
+			return err
+		}
+		return genErr
 	}
 	for _, l := range lines {
 		if _, err := fmt.Fprintln(stdout, strconv.Quote(l)); err != nil {
@@ -107,5 +112,5 @@ func sampleCmd(args []string, stdout io.Writer) error {
 	if *coverage {
 		fmt.Fprint(sampleStderr, c.Report())
 	}
-	return nil
+	return genErr
 }
