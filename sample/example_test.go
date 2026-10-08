@@ -41,19 +41,26 @@ func ExampleGenerator_Coverage() {
 	if err != nil {
 		panic(err)
 	}
-	// One input leaves some alternatives out; with WithCoverage, Generate would prefer them.
+	// Two inputs leave some alternatives out; with WithCoverage, Generate would prefer them. (This is the
+	// code of the guide docs/guide/sampling-and-fuzzing.md, with its output.)
 	g, err := sample.New(p, sample.WithSeed(1))
 	if err != nil {
 		panic(err)
 	}
-	if _, err := g.Generate(1); err != nil {
+	in, err := g.Next()
+	if err != nil {
 		panic(err)
 	}
+	inputs, err := g.Generate(1)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%q %q\n", in, inputs)
 	fmt.Print(g.Coverage().Report())
 	// Output:
-	// rules 4/4 (100%), alternatives 1/4 (25%)
+	// "h=\"\"" ["in=true, i=true"]
+	// rules 4/4 (100%), alternatives 2/4 (50%)
 	// missed value: choice 0: @(?0-9)+
-	// missed value: choice 2: "true"
 	// missed value: choice 3: "false"
 }
 

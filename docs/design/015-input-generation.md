@@ -86,16 +86,17 @@ length of the comment would be tried first. Three rules keep doomed subtrees sma
 
 ### Bounds
 
-Repetitions aim for their minimum plus a geometric number of iterations (each further one with probability 1/2, at
-most `WithMaxRepeat`, default 3). Recursion is bounded by `WithMaxDepth` (default 5), which counts calls of rules that
-are already active, so a JSON value nested in arrays counts one per array, not the chain of rules between them. Once
-the depth or the length of the text (`WithMaxLen`, default 512 bytes) is reached, the generator takes the shortest way
-to finish: alternatives in order of their minimal text length once the text is long enough, or of their minimal
-derivation height (the fewest nested rule calls) once the recursion is deep enough, each computed by a fixed point over
-the rules; optional expressions skipped; repetitions at their minimum. (Ordering by height alone, a long literal beat a
-short alternative that needs one more rule call.) Both bounds are soft: the search goes deeper or longer when the input
-requires it (`[d >= 12]` after twelve nested parentheses), up to the hard limits on nesting and iterations described
-above.
+Repetitions aim for their minimum plus a geometric number of iterations (each further one with probability 1/2, at most
+`WithMaxRepeat`, default 3). Recursion is bounded by `WithMaxDepth` (default 5), which counts calls of rules that are
+already active, not the chain of rules between them; one level of nesting still counts once for each rule that it enters
+again (an array directly in an array of the JSON example enters `value`, `array` and `elements` again, which counts 3,
+while an object in an array counts 1). Once the depth or the length of the text (`WithMaxLen`, default 512 bytes) is
+reached, the generator takes the shortest way to finish: alternatives in order of their minimal text length once the
+text is long enough, or of their minimal derivation height (the fewest nested rule calls) once the recursion is deep
+enough, each computed by a fixed point over the rules; optional expressions skipped; repetitions at their minimum.
+(Ordering by height alone, a long literal beat a short alternative that needs one more rule call.) Both bounds are soft:
+the search goes deeper or longer when the input requires it (`[d >= 12]` after twelve nested parentheses), up to the
+hard limits on nesting and iterations described above.
 
 The hard bounds therefore are the budget (`WithBudget`, exposed because an input of 25,000 repeated literals needs more
 than the default), the nesting limit (`WithMaxDepth + 8`) and the iteration limit (`8 × WithMaxRepeat + 4`); each can be
@@ -204,12 +205,13 @@ Coverage in coverage mode, seed 1 (`pego sample -g <grammar> -n <count> -seed 1 
 | minilang/minilang.pego | 30/30 | 45/45 | 30/30 | 45/45 |
 | outline/outline.pego | 8/8 | 2/2 | 8/8 | 2/2 |
 | xml/xml.pego | 15/15 | 19/19 | 15/15 | 19/19 |
-| python/python.pego | 175/184 (95%) | 182/202 (90%) | 178/184 (97%) | 185/202 (92%) |
-| golang/go.pego | 130/204 (64%) | 130/228 (57%) | 164/204 (80%) | 162/228 (71%) |
+| python/python.pego | 175/184 (95%) | 182/202 (90%) | 176/184 (96%) | 184/202 (91%) |
+| golang/go.pego | 158/204 (77%) | 160/228 (70%) | 188/204 (92%) | 201/228 (88%) |
 
 The Python grammar misses `elif`/`else` clauses, augmented assignments and `except` handlers: each needs several
 predicates and indentation checks to hold together after a long prefix. The Go grammar's statements are reached late:
-type expressions are long, so inputs often hit the length limit before a function body.
+type expressions are long, so inputs often hit the length limit before a function body. (The numbers were measured again
+after the fixes that followed a review; before them, Go reached 64% and 80% of its rules.)
 
 What the checks and predicate evaluation buy, on 30 inputs in coverage mode (seed 1): without them (but with the
 other mechanisms), most candidates for the larger grammars are rejected by the parser.

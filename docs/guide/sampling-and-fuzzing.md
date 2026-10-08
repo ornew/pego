@@ -42,7 +42,7 @@ $ pego sample -g examples/json/json.pego -n 8
 "{} \n"
 " \n{\t\t\t}\t\r"
 "null"
-"{\n\r\"\\uEA57᧼\"\r\r:-0e1,\"\" \t\t:\tnull}"
+"{\n\r\"\\uEA57ᨊ\"\r\r:-0e1,\"\" \t\t:\tnull}"
 ```
 
 The inputs are random, not pretty: the grammar allows whitespace between tokens, so the inputs contain it, and
@@ -79,7 +79,7 @@ input, but it goes further when the input requires it (a predicate that counts t
 
 | Flag | Option | Default | Bounds |
 |:--|:--|:--|:--|
-| `-max-depth` | `WithMaxDepth` | 5 | Recursion: rule calls nested inside calls of the same rule (a JSON array in an array counts 1 per array) |
+| `-max-depth` | `WithMaxDepth` | 5 | Recursion: calls of rules that are already active (an array directly in an array of the JSON example counts 3, since `value`, `array` and `elements` are each entered again) |
 | `-max-repeat` | `WithMaxRepeat` | 3 | Iterations a repetition aims for beyond its minimum, and operators in a chain of a Pratt expression |
 | `-max-len` | `WithMaxLen` | 512 | Length of the input in bytes |
 
@@ -161,7 +161,7 @@ never match: compound_probe, no_atom, misplaced_positional
 
 What remains is hard to reach by chance: `elif` and `else` clauses need several indentation predicates to hold
 together after a whole block, and `x += 1` competes with three optional tails of `expr_stmt` that a predicate allows
-only one of. More inputs reach more (200 inputs cover 97% of the rules); the numbers for every example grammar are in
+only one of. More inputs reach more (200 inputs cover 96% of the rules); the numbers for every example grammar are in
 the design record.
 
 With `-f json`, the report is the `coverage` member of the document. Coverage is measured on the way the generator
@@ -245,15 +245,14 @@ A `Generator` keeps state across calls: the random sequence, and what the accept
 ```go
 g, err := sample.New(p, sample.WithSeed(1))  // options: WithSeed, WithMaxDepth, WithMaxRepeat, WithMaxLen,
                                               // WithBudget, WithAttempts, WithCoverage
-in, err := g.Next()                           // one input; may repeat earlier ones
-inputs, err := g.Generate(1)                  // distinct inputs
-fmt.Print(g.Coverage().Report())
+in, err := g.Next()                           // one input ("h=\"\""); may repeat earlier ones
+inputs, err := g.Generate(1)                  // distinct inputs (["in=true, i=true"])
+fmt.Print(g.Coverage().Report())              // what the two inputs exercised
 ```
 
 ```
-rules 4/4 (100%), alternatives 1/4 (25%)
+rules 4/4 (100%), alternatives 2/4 (50%)
 missed value: choice 0: @(?0-9)+
-missed value: choice 2: "true"
 missed value: choice 3: "false"
 ```
 
@@ -264,6 +263,7 @@ one per goroutine, with different seeds.
 `Invalid` and `GenerateInvalid` return near-miss invalid inputs as `sample.Invalid` values:
 
 ```go
+g, err := sample.New(p, sample.WithSeed(1))
 invalid, err := g.GenerateInvalid(3)
 for _, inv := range invalid {
 	fmt.Printf("%q (%s): %v\n", inv.Input, inv.Mutation, inv.Err)
