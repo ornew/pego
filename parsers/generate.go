@@ -10,4 +10,5 @@
 // parsers/test.sh for all of them).
 package parsers
 
+//go:generate go run ../cmd/pego gen -g csv/csv.pego -pkg csv -types -recognize -nodoc -o csv/parser.go
 //go:generate go run ../cmd/pego gen -g json/json.pego -pkg json -types -recognize -nodoc -o json/parser.go

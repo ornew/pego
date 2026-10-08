@@ -1,0 +1,26 @@
+// CSV (RFC 4180), parsed into a typed AST.
+//
+// The syntax is the RFC's, with the leniencies of encoding/csv: records end with CRLF or LF; a CR is
+// data unless it ends a line or the input; fields hold any character but the RFC's delimiters. A
+// byte order mark at the start is skipped. An empty line is a record with one empty field, as in the
+// RFC's grammar (Records in csv.go drops such records, as encoding/csv does). Records can be consumed
+// one at a time with the engine thanks to #stream (pego parse -stream); generated parsers ignore it.
+package csv
+
+type File struct { Records []Record }
+type Record struct { Fields []Field }
+type Field terminal  // the raw field: a quoted field keeps its quotes and doubled ""
+
+def main: File = -"\u{feff}"? rs:line* #stream $$ -> new File{Records: $rs}
+
+// A record and its line break. The record's span leaves the line break out.
+def line: Record = !$$ r:record eol -> $r
+
+def record: Record = first:field rest:(-"," f:field)*
+    -> new Record{Fields: concat(list($first), map($rest, (r) => $r.f))}
+
+def field: Field = quoted / plain
+def quoted = "\"" ((?^")+ / "\"\"")* "\""
+def plain = ((?^,"\r\n)+ / "\r" !"\n" !$$)*
+
+def eol = "\r\n" / "\n" / "\r"? $$
