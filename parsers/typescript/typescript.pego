@@ -527,6 +527,8 @@ def nlAhead = sp ((?\n\r\u{2028}\u{2029}) / "/*")
 // ===================================================================
 
 // isDeclaration: modifiers on the same line followed by a declaration keyword.
+// (declarationStart and typeStart recurse at the end, after a modifier or "(", so pego lint hints that a Document
+// would evaluate them again after an edit; they are lookaheads over a few tokens of a generated parser.)
 def declarationStart = ("var" / "let" / "const" / "function" / "class" / "enum") !idPart
     / "using" !idPart usingFollows
     / "await" !idPart -ws "using" !idPart usingFollows
@@ -1531,6 +1533,7 @@ def propertySignature: PropertySignature = m:typeMemberModifiers n:propertyName 
 def typeMemberSemicolon = -ws "," / eos
 
 // isStartOfType (used where "?" might be a postfix type operator)
+// (Like declarationStart, a lookahead that recurses after "(".)
 def typeStart = ("any" / "unknown" / "string" / "number" / "bigint" / "boolean" / "readonly" / "symbol" / "unique"
         / "void" / "undefined" / "null" / "this" / "typeof" / "never" / "true" / "false" / "object" / "new"
         / "infer" / "import" / "asserts" / "function") !idPart
