@@ -30,6 +30,7 @@ type token struct {
 	num  int
 	cc   *grammar.CharClass
 	pos  grammar.Pos
+	end  grammar.Pos // position just after the token
 	// spaceBefore reports whether whitespace or a comment directly
 	// precedes the token.
 	spaceBefore bool
@@ -112,6 +113,7 @@ func lex(src string, errs *errorList) []token {
 	var toks []token
 	for {
 		t := l.next()
+		t.end = l.pos()
 		toks = append(toks, t)
 		if t.kind == tEOF {
 			return toks
