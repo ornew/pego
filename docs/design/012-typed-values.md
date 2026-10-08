@@ -62,12 +62,27 @@ errors and memoization decisions are literally shared. The generator writes the 
 - **Scratch memory.** CST nodes, value lists, capture frames (freed when their rule returns), memo entries and the
   decoded input are pooled with the parser across parses, since the result never refers to them; a parse allocates
   little more than the values it returns.
+- **Direct rules** (`gen_direct.go`). Most rules are not written as a method per expression at all: the body is
+  inlined into the method that calls the rule (`s<id>`, `v<id>` or `i<id>`), each expression jumping to a label when
+  it fails, with captures in Go variables of that method instead of a frame. Where the general code resets to a
+  mark, which undoes the trail, a direct rule restores the position, the number of recovered errors, the variable
+  environment if the expression assigns variables, and the capture variables the expression may set, saved when it
+  began: the trail of a rule's own captures is only ever extended by setCapture into its frame, so this is the same
+  state. A repetition element with captures of its own clears its variables at each iteration (a new frame) and
+  attaches them as before when its value is used. The action is a Go expression over the variables, evaluated in
+  place: no frame, no function value, and for an action that makes a struct with the rule's range none of the checks
+  of `tctx.result`, which hold by construction. A direct rule leaves `p.cut`, `p.frame` and `p.trail` alone: it has
+  no cut, and the rules it calls restore all three. The general code remains for rules with a cut or `#recover`,
+  Pratt rules and the leaders of left recursion (and anything they call keeps working, since calls are the same
+  methods either way); in the benchmark grammars that is the Pratt expression of the calculator and the three
+  left-recursive rules of the other calculator.
 
 The parity test generates every corpus grammar twice, with the typed runtime and with conversion (below), and checks
 that `ParseAST` returns the same values and errors, also when parsing concurrently. The corpus includes the cases two
 reviews found where the first version differed (`internal/engine/testdata/typed`): field reads in actions, the order
 in which fields are evaluated, projections of names captured twice, of lists that `$n` also reaches and of nil
-values, and an `Error` where a list is expected.
+values, and an `Error` where a list is expected; and grammars for the code paths of direct rules (`direct_*.pego`).
+It runs in both position units.
 
 ### Conversion after the parse
 
@@ -78,20 +93,24 @@ form.
 
 ### Cost
 
-On the benchmarks (Apple M3 Max), the typed runtime makes `ParseAST` about 20% faster than `Parse` with a tenth of the
-memory: JSON (262 KB) 9.9 → 7.7 ms and 20.0 → 2.4 MB, XML 10.0 → 8.0 ms, the left-recursive calculator 18.7 → 15.0 ms,
-the outline 4.5 → 3.5 ms; the Pratt calculator is about as fast as `Parse` (its Pratt loop is the general one).
-Conversion costs about 6% more than `Parse` (JSON 9.3 → 9.9 ms, 20.0 → 22.3 MB).
+On the benchmarks (Apple M3 Max, min of 6 runs), the typed runtime makes `ParseAST` 30–46% faster than `Parse` with
+a fifth to a third of the memory: JSON (262 KB) 7.2 → 3.9 ms and 12.6 → 2.9 MB, XML 7.8 → 4.3 ms, the left-recursive
+calculator 15.5 → 10.3 ms, the outline 4.3 → 2.5 ms; the Pratt calculator, whose Pratt loop is the general one, 6.8 →
+6.0 ms. JSON `ParseAST` takes the time of `Recognize`, which builds nothing. Conversion costs about 6% more than
+`Parse`.
 
-A hand-written prototype for JSON that kept captures in Go variables and built lists directly took 4.5 ms, about the
-time of recognition alone; the rest of the gap is the general machinery of rule calls (capture frames and their
-trail, the evaluation context of actions), which the typed runtime still shares with `Parse`.
+Direct rules made most of that difference: before them, with every rule run by the general machinery of rule calls
+(capture frames and their trail, the evaluation context of actions), `ParseAST` was about 10% faster than `Parse`
+(JSON 6.4 ms). A hand-written prototype for JSON that kept captures in Go variables and built lists directly took
+4.5 ms on the same machine.
 
 ## Alternatives considered
 
-- **Statically typed code for every expression** (captures as Go variables, lists as typed slices, as in the
-  prototype). It would close most of the remaining gap, but every construct (choices, lookaheads, `#recover`, Pratt
-  lines, lambdas) would need code of its own; the typed runtime reuses the expression code instead.
+- **Statically typed code for every expression** (captures as Go variables of their Go types, lists as typed
+  slices, as in the prototype). Direct rules take the part of it that paid: captures in Go variables, the action in
+  place. Values stay `any`, so the actions, the memo and the general code share one representation, and constructs
+  that are rare in practice (cuts, `#recover`, Pratt lines, left recursion) keep the general code instead of code of
+  their own.
 - **Converting through JSON.** No generated code, but slower than the parse itself and lossy for unions (the
   member type would have to be decoded from `type`).
 - **Exposing typed values from the engine (`pego.Parser`).** Go types cannot be created at run time, so the engine

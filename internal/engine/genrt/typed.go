@@ -162,6 +162,10 @@ type trule struct {
 	pratt  *tpratt
 	// term makes the value of a rule of a terminal type.
 	term func(p *tparser, start, end int, text string) tval
+	// entry is the generated method that calls the rule as call(r, 0) does (u<id> or s<id>), for
+	// rules that have one. A direct rule (see gen_direct.go) has no body or action and is called
+	// only through it.
+	entry func(p *tparser) (any, bool)
 }
 
 // trules is the typed rule table set up by the generated code.
@@ -245,7 +249,12 @@ func (p *tparser) run(r *trule, input string, units []Unit, ext any) (v any, err
 			}
 		}
 	}()
-	v, ok := p.call(r, 0)
+	var ok bool
+	if r.entry != nil {
+		v, ok = r.entry(p)
+	} else {
+		v, ok = p.call(r, 0)
+	}
 	if ok && p.pos == p.n {
 		if len(p.recovered) > 0 {
 			return v, SyntaxErrors(append([]*SyntaxError(nil), p.recovered...))
@@ -682,7 +691,7 @@ func (p *tparser) finish(r *trule, f *tframe, v any, start int) any {
 		return r.term(p, start, p.pos, p.text(start, p.pos))
 	}
 	if len(r.scope) > 0 {
-		v = p.attachCaptures(v, r.scope, f, start, p.pos)
+		v = p.attachCaptures(v, r.scope, f.vals, start, p.pos)
 	}
 	n := asTval(v)
 	if n == nil {
@@ -692,13 +701,13 @@ func (p *tparser) finish(r *trule, f *tframe, v any, start int) any {
 	return n
 }
 
-// attachCaptures attaches the non-nil captures as fields of the value (a CST node), first
-// wrapping it in a Seq node unless it is a fresh one that is not itself captured.
-func (p *tparser) attachCaptures(v any, names []string, f *tframe, start, end int) any {
+// attachCaptures attaches the non-nil captures vals (named names) as fields of the value (a CST
+// node), first wrapping it in a Seq node unless it is a fresh one that is not itself captured.
+func (p *tparser) attachCaptures(v any, names []string, vals []any, start, end int) any {
 	n := asTval(v)
 	found := false
 	wrap := n == nil || !n.tfresh()
-	for _, c := range f.vals {
+	for _, c := range vals {
 		if c != nil {
 			found = true
 		}
@@ -719,8 +728,8 @@ func (p *tparser) attachCaptures(v any, names []string, f *tframe, start, end in
 		t.fields = p.tfields(len(names))
 	}
 	for i, name := range names {
-		if f.vals[i] != nil {
-			t.set(name, f.vals[i])
+		if vals[i] != nil {
+			t.set(name, vals[i])
 		}
 	}
 	return t
@@ -833,6 +842,12 @@ func (c *tctx) result(action func(*tctx) any, where string) (n any) {
 	c.p.where = where
 	v := action(c)
 	c.p.where = prev
+	return c.finish(v)
+}
+
+// finish checks and finishes the value v of an action (see result): a struct the action made
+// takes the rule's range, and the value is no longer fresh.
+func (c *tctx) finish(v any) any {
 	if v == nil {
 		return nil
 	}
@@ -1414,7 +1429,7 @@ func (p *tparser) lineResult(r *trule, l *tprattLine, f *tframe, v any, start in
 		return c.result(l.action, r.name)
 	}
 	if len(l.scope) > 0 {
-		v = p.attachCaptures(v, l.scope, f, start, p.pos)
+		v = p.attachCaptures(v, l.scope, f.vals, start, p.pos)
 	}
 	if n := asTval(v); n != nil {
 		n.tsetFresh(false)
@@ -1443,7 +1458,7 @@ func (p *tparser) prattBuild(r *trule, a *tprattAttempt, lhs, rhs any) any {
 	}
 	opv := a.v
 	if len(l.scope) > 0 {
-		opv = p.attachCaptures(opv, l.scope, a.frame, a.start, a.end)
+		opv = p.attachCaptures(opv, l.scope, a.frame.vals, a.start, a.end)
 	}
 	if n := asTval(opv); n != nil {
 		n.tsetFresh(false)

@@ -2042,6 +2042,10 @@ type trule struct {
 	pratt  *tpratt
 	// term makes the value of a rule of a terminal type.
 	term func(p *tparser, start, end int, text string) tval
+	// entry is the generated method that calls the rule as call(r, 0) does (u<id> or s<id>), for
+	// rules that have one. A direct rule (see gen_direct.go) has no body or action and is called
+	// only through it.
+	entry func(p *tparser) (any, bool)
 }
 
 // trules is the typed rule table set up by the generated code.
@@ -2125,7 +2129,12 @@ func (p *tparser) run(r *trule, input string, units []Unit, ext any) (v any, err
 			}
 		}
 	}()
-	v, ok := p.call(r, 0)
+	var ok bool
+	if r.entry != nil {
+		v, ok = r.entry(p)
+	} else {
+		v, ok = p.call(r, 0)
+	}
 	if ok && p.pos == p.n {
 		if len(p.recovered) > 0 {
 			return v, SyntaxErrors(append([]*SyntaxError(nil), p.recovered...))
@@ -2562,7 +2571,7 @@ func (p *tparser) finish(r *trule, f *tframe, v any, start int) any {
 		return r.term(p, start, p.pos, p.text(start, p.pos))
 	}
 	if len(r.scope) > 0 {
-		v = p.attachCaptures(v, r.scope, f, start, p.pos)
+		v = p.attachCaptures(v, r.scope, f.vals, start, p.pos)
 	}
 	n := asTval(v)
 	if n == nil {
@@ -2572,13 +2581,13 @@ func (p *tparser) finish(r *trule, f *tframe, v any, start int) any {
 	return n
 }
 
-// attachCaptures attaches the non-nil captures as fields of the value (a CST node), first
-// wrapping it in a Seq node unless it is a fresh one that is not itself captured.
-func (p *tparser) attachCaptures(v any, names []string, f *tframe, start, end int) any {
+// attachCaptures attaches the non-nil captures vals (named names) as fields of the value (a CST
+// node), first wrapping it in a Seq node unless it is a fresh one that is not itself captured.
+func (p *tparser) attachCaptures(v any, names []string, vals []any, start, end int) any {
 	n := asTval(v)
 	found := false
 	wrap := n == nil || !n.tfresh()
-	for _, c := range f.vals {
+	for _, c := range vals {
 		if c != nil {
 			found = true
 		}
@@ -2599,8 +2608,8 @@ func (p *tparser) attachCaptures(v any, names []string, f *tframe, start, end in
 		t.fields = p.tfields(len(names))
 	}
 	for i, name := range names {
-		if f.vals[i] != nil {
-			t.set(name, f.vals[i])
+		if vals[i] != nil {
+			t.set(name, vals[i])
 		}
 	}
 	return t
@@ -2713,6 +2722,12 @@ func (c *tctx) result(action func(*tctx) any, where string) (n any) {
 	c.p.where = where
 	v := action(c)
 	c.p.where = prev
+	return c.finish(v)
+}
+
+// finish checks and finishes the value v of an action (see result): a struct the action made
+// takes the rule's range, and the value is no longer fresh.
+func (c *tctx) finish(v any) any {
 	if v == nil {
 		return nil
 	}
@@ -3294,7 +3309,7 @@ func (p *tparser) lineResult(r *trule, l *tprattLine, f *tframe, v any, start in
 		return c.result(l.action, r.name)
 	}
 	if len(l.scope) > 0 {
-		v = p.attachCaptures(v, l.scope, f, start, p.pos)
+		v = p.attachCaptures(v, l.scope, f.vals, start, p.pos)
 	}
 	if n := asTval(v); n != nil {
 		n.tsetFresh(false)
@@ -3323,7 +3338,7 @@ func (p *tparser) prattBuild(r *trule, a *tprattAttempt, lhs, rhs any) any {
 	}
 	opv := a.v
 	if len(l.scope) > 0 {
-		opv = p.attachCaptures(opv, l.scope, a.frame, a.start, a.end)
+		opv = p.attachCaptures(opv, l.scope, a.frame.vals, a.start, a.end)
 	}
 	if n := asTval(opv); n != nil {
 		n.tsetFresh(false)
@@ -3490,12 +3505,12 @@ var scope70 = []string{}
 var lit90 = []rune(" ")
 var lit96 = []rune("\n")
 var lit101 = []rune("\n")
-var scope116 = []string{"i"}
-var lit139 = []rune(" ")
-var lit145 = []rune("\n")
-var lit151 = []rune("\n")
-var lit155 = []rune("\n")
-var lit158 = []rune("\n")
+var scope104 = []string{"i"}
+var lit108 = []rune(" ")
+var lit109 = []rune("\n")
+var lit110 = []rune("\n")
+var lit111 = []rune("\n")
+var lit112 = []rune("\n")
 
 func init() {
 	rules = []*rule{
@@ -3559,20 +3574,16 @@ func init() {
 		{rule: rules[9]},
 	}
 	defer tinit()
-	trules[0].body = func(p *tparser, _ int) (any, bool) { return p.e110() }
-	trules[0].action = ta0
-	trules[1].body = func(p *tparser, _ int) (any, bool) { return p.e117() }
-	trules[1].action = ta1
-	trules[2].body = func(p *tparser, _ int) (any, bool) { return p.e127() }
-	trules[2].action = ta2
-	trules[3].body = func(p *tparser, _ int) (any, bool) { return p.e138() }
-	trules[3].action = ta3
-	trules[4].body = func(p *tparser, _ int) (any, bool) { return p.e142() }
-	trules[5].body = func(p *tparser, _ int) (any, bool) { return p.e144() }
-	trules[6].body = func(p *tparser, _ int) (any, bool) { return p.e148() }
-	trules[7].body = func(p *tparser, _ int) (any, bool) { return p.e153() }
-	trules[8].body = func(p *tparser, _ int) (any, bool) { return p.e157() }
-	trules[9].body = func(p *tparser, _ int) (any, bool) { return p.e161() }
+	trules[0].entry = (*tparser).u0
+	trules[1].entry = (*tparser).u1
+	trules[2].entry = (*tparser).u2
+	trules[3].entry = (*tparser).u3
+	trules[4].entry = (*tparser).s4
+	trules[5].entry = (*tparser).s5
+	trules[6].entry = (*tparser).s6
+	trules[7].entry = (*tparser).s7
+	trules[8].entry = (*tparser).s8
+	trules[9].entry = (*tparser).s9
 }
 
 // [indent = 0]
@@ -4925,646 +4936,6 @@ func (p *parser) q7() (*Node, bool) {
 	return v, ok
 }
 
-// [indent = 0]
-func (p *tparser) e104() (any, bool) {
-	return nil, p.assign("indent", func(c *tctx) any { return any(0) })
-}
-
-// block
-func (p *tparser) e105() (any, bool) {
-	return p.u1()
-}
-
-// items:block
-func (p *tparser) e106() (any, bool) {
-	v, ok := p.e105()
-	if ok {
-		p.setCapture(0, v)
-	}
-	return nil, ok
-}
-
-// blank
-func (p *tparser) e107() (any, bool) {
-	return p.s8()
-}
-
-// blank*
-func (p *tparser) e108() (any, bool) {
-	count := 0
-	for {
-		m0 := p.mark()
-		prevCut, prevFrame := p.cut, p.frame
-		p.cut = false
-		_, ok := p.e107()
-		cut := p.cut
-		p.cut, p.frame = prevCut, prevFrame
-		if !ok {
-			p.reset(m0)
-			if cut {
-				return nil, false
-			}
-			break
-		}
-		count++
-		if p.pos == m0.pos && count >= 0 {
-			break
-		}
-	}
-	if count < 0 {
-		return nil, false
-	}
-	return nil, true
-}
-
-// $$
-func (p *tparser) e109() (any, bool) {
-	return p.anchor(p.atEnd(), idEndInput)
-}
-
-// [indent = 0] items:block blank* $$
-func (p *tparser) e110() (any, bool) {
-	if _, ok := p.e104(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e106(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e108(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e109(); !ok {
-		return nil, false
-	}
-	return nil, true
-}
-
-// blank
-func (p *tparser) e111() (any, bool) {
-	return p.s7()
-}
-
-// blank*
-func (p *tparser) e112() (any, bool) {
-	start := p.pos
-	base := len(p.kidStack)
-	count := 0
-	for {
-		m0 := p.mark()
-		prevCut, prevFrame := p.cut, p.frame
-		p.cut = false
-		v, ok := p.e111()
-		cut := p.cut
-		p.cut, p.frame = prevCut, prevFrame
-		if !ok {
-			p.reset(m0)
-			if cut {
-				p.dropKids(base)
-				return nil, false
-			}
-			break
-		}
-		count++
-		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
-			break
-		}
-	}
-	if count < 0 {
-		p.dropKids(base)
-		return nil, false
-	}
-	return p.newNode("List", start, p.pos, p.kids(base)), true
-}
-
-// item
-func (p *tparser) e113() (any, bool) {
-	return p.u2()
-}
-
-// i:item
-func (p *tparser) e114() (any, bool) {
-	v, ok := p.e113()
-	if ok {
-		p.setCapture(0, v)
-	}
-	return v, ok
-}
-
-// blank* i:item
-func (p *tparser) e115() (any, bool) {
-	start := p.pos
-	kids := p.newVals(2)[:0]
-	if v, ok := p.e112(); !ok {
-		return nil, false
-	} else {
-		kids = append(kids, v)
-	}
-	if v, ok := p.e114(); !ok {
-		return nil, false
-	} else {
-		kids = append(kids, v)
-	}
-	return p.newNode("Seq", start, p.pos, kids), true
-}
-
-// (blank* i:item)+
-func (p *tparser) e117() (any, bool) {
-	start := p.pos
-	base := len(p.kidStack)
-	count := 0
-	for {
-		m0 := p.mark()
-		prevCut, prevFrame := p.cut, p.frame
-		p.cut = false
-		f := p.newFrame(1)
-		p.frame = f
-		v, ok := p.e115()
-		cut := p.cut
-		p.cut, p.frame = prevCut, prevFrame
-		if !ok {
-			p.reset(m0)
-			if cut {
-				p.dropKids(base)
-				return nil, false
-			}
-			break
-		}
-		v = p.attachCaptures(v, scope116, f, m0.pos, p.pos)
-		p.trail = p.trail[:m0.trail]
-		p.freeFrame(f)
-		count++
-		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
-			break
-		}
-	}
-	if count < 1 {
-		p.dropKids(base)
-		return nil, false
-	}
-	return p.newNode("List", start, p.pos, p.kids(base)), true
-}
-
-// spaces
-func (p *tparser) e118() (any, bool) {
-	return p.s4()
-}
-
-// s:spaces
-func (p *tparser) e119() (any, bool) {
-	v, ok := p.e118()
-	if ok {
-		p.setCapture(0, v)
-	}
-	return nil, ok
-}
-
-// [len($s) == indent]
-func (p *tparser) e120() (any, bool) {
-	return nil, p.predicate(func(c *tctx) any { return trtBinary("==", c.length(c.cap(0)), c.lookup("indent")) })
-}
-
-// line
-func (p *tparser) e121() (any, bool) {
-	return p.s5()
-}
-
-// text:line
-func (p *tparser) e122() (any, bool) {
-	v, ok := p.e121()
-	if ok {
-		p.setCapture(1, v)
-	}
-	return nil, ok
-}
-
-// eol
-func (p *tparser) e123() (any, bool) {
-	return p.s9()
-}
-
-// children
-func (p *tparser) e124() (any, bool) {
-	return p.u3()
-}
-
-// children?
-func (p *tparser) e125() (any, bool) {
-	m0 := p.mark()
-	prevCut := p.cut
-	p.cut = false
-	v, ok := p.e124()
-	cut := p.cut
-	p.cut = prevCut
-	if ok {
-		return v, true
-	}
-	p.reset(m0)
-	if cut {
-		return nil, false
-	}
-	return nil, true
-}
-
-// cs:children?
-func (p *tparser) e126() (any, bool) {
-	v, ok := p.e125()
-	if ok {
-		p.setCapture(2, v)
-	}
-	return nil, ok
-}
-
-// s:spaces [len($s) == indent] text:line eol cs:children?
-func (p *tparser) e127() (any, bool) {
-	if _, ok := p.e119(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e120(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e122(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e123(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e126(); !ok {
-		return nil, false
-	}
-	return nil, true
-}
-
-// blank
-func (p *tparser) e128() (any, bool) {
-	return p.s8()
-}
-
-// blank*
-func (p *tparser) e129() (any, bool) {
-	count := 0
-	for {
-		m0 := p.mark()
-		prevCut, prevFrame := p.cut, p.frame
-		p.cut = false
-		_, ok := p.e128()
-		cut := p.cut
-		p.cut, p.frame = prevCut, prevFrame
-		if !ok {
-			p.reset(m0)
-			if cut {
-				return nil, false
-			}
-			break
-		}
-		count++
-		if p.pos == m0.pos && count >= 0 {
-			break
-		}
-	}
-	if count < 0 {
-		return nil, false
-	}
-	return nil, true
-}
-
-// spaces
-func (p *tparser) e130() (any, bool) {
-	return p.s4()
-}
-
-// s:spaces
-func (p *tparser) e131() (any, bool) {
-	v, ok := p.e130()
-	if ok {
-		p.setCapture(0, v)
-	}
-	return nil, ok
-}
-
-// blank* s:spaces
-func (p *tparser) e132() (any, bool) {
-	if _, ok := p.e129(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e131(); !ok {
-		return nil, false
-	}
-	return nil, true
-}
-
-// &(blank* s:spaces)
-func (p *tparser) e133() (any, bool) {
-	start, prevCut := p.pos, p.cut
-	p.silent++
-	_, ok := p.e132()
-	p.silent--
-	p.cut = prevCut
-	p.pos = start
-	return nil, ok
-}
-
-// [len($s) > indent]
-func (p *tparser) e134() (any, bool) {
-	return nil, p.predicate(func(c *tctx) any { return trtBinary(">", c.length(c.cap(0)), c.lookup("indent")) })
-}
-
-// [indent = len($s)]
-func (p *tparser) e135() (any, bool) {
-	return nil, p.assign("indent", func(c *tctx) any { return c.length(c.cap(0)) })
-}
-
-// block
-func (p *tparser) e136() (any, bool) {
-	return p.u1()
-}
-
-// b:block
-func (p *tparser) e137() (any, bool) {
-	v, ok := p.e136()
-	if ok {
-		p.setCapture(1, v)
-	}
-	return nil, ok
-}
-
-// &(blank* s:spaces) [len($s) > indent] [indent = len($s)] b:block
-func (p *tparser) e138() (any, bool) {
-	if _, ok := p.e133(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e134(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e135(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e137(); !ok {
-		return nil, false
-	}
-	return nil, true
-}
-
-// " "
-func (p *tparser) e140() (any, bool) {
-	return p.matchLiteral(lit139, " ", 5, false)
-}
-
-// " "*
-func (p *tparser) e141() (any, bool) {
-	count := 0
-	for {
-		m0 := p.mark()
-		prevCut, prevFrame := p.cut, p.frame
-		p.cut = false
-		_, ok := p.e140()
-		cut := p.cut
-		p.cut, p.frame = prevCut, prevFrame
-		if !ok {
-			p.reset(m0)
-			if cut {
-				return nil, false
-			}
-			break
-		}
-		count++
-		if p.pos == m0.pos && count >= 0 {
-			break
-		}
-	}
-	if count < 0 {
-		return nil, false
-	}
-	return nil, true
-}
-
-// @" "*
-func (p *tparser) e142() (any, bool) {
-	start := p.pos
-	if _, ok := p.e141(); !ok {
-		return nil, false
-	}
-	return p.newMatch(start, p.pos, p.text(start, p.pos), true), true
-}
-
-// (?^\n)+
-func (p *tparser) e143() (any, bool) {
-	count := 0
-	for {
-		ch, size, ok := p.peek()
-		if !ok || (ch == 10) {
-			p.expect(p.pos, 6)
-			break
-		}
-		p.pos += size
-		count++
-	}
-	return nil, count >= 1
-}
-
-// @(?^\n)+
-func (p *tparser) e144() (any, bool) {
-	start := p.pos
-	if _, ok := p.e143(); !ok {
-		return nil, false
-	}
-	return p.newMatch(start, p.pos, p.text(start, p.pos), true), true
-}
-
-// "\n"
-func (p *tparser) e146() (any, bool) {
-	return p.matchLiteral(lit145, "\n", 7, true)
-}
-
-// $$
-func (p *tparser) e147() (any, bool) {
-	return p.anchor(p.atEnd(), idEndInput)
-}
-
-// "\n" / $$
-func (p *tparser) e148() (any, bool) {
-	m0 := p.mark()
-	ch, _, more := p.peek()
-	if !(more && (ch == 10)) && p.depth+0 <= maxDepth {
-		p.expect(p.pos, 7)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e146()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
-	}
-	{
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e147()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
-	}
-	return nil, false
-}
-
-// (? \t)
-func (p *tparser) e149() (any, bool) {
-	ch, size, ok := p.peek()
-	if !ok || !(ch == 32 || ch == 9) {
-		p.expect(p.pos, 8)
-		return nil, false
-	}
-	return p.single(size, true)
-}
-
-// (? \t)*
-func (p *tparser) e150() (any, bool) {
-	start := p.pos
-	base := len(p.kidStack)
-	count := 0
-	for {
-		m0 := p.mark()
-		prevCut, prevFrame := p.cut, p.frame
-		p.cut = false
-		v, ok := p.e149()
-		cut := p.cut
-		p.cut, p.frame = prevCut, prevFrame
-		if !ok {
-			p.reset(m0)
-			if cut {
-				p.dropKids(base)
-				return nil, false
-			}
-			break
-		}
-		count++
-		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
-			break
-		}
-	}
-	if count < 0 {
-		p.dropKids(base)
-		return nil, false
-	}
-	return p.newNode("List", start, p.pos, p.kids(base)), true
-}
-
-// "\n"
-func (p *tparser) e152() (any, bool) {
-	return p.matchLiteral(lit151, "\n", 7, true)
-}
-
-// (? \t)* "\n"
-func (p *tparser) e153() (any, bool) {
-	start := p.pos
-	kids := p.newVals(2)[:0]
-	if v, ok := p.e150(); !ok {
-		return nil, false
-	} else {
-		kids = append(kids, v)
-	}
-	if v, ok := p.e152(); !ok {
-		return nil, false
-	} else {
-		kids = append(kids, v)
-	}
-	return p.newNode("Seq", start, p.pos, kids), true
-}
-
-// (? \t)*
-func (p *tparser) e154() (any, bool) {
-	count := 0
-	for {
-		ch, size, ok := p.peek()
-		if !ok || !(ch == 32 || ch == 9) {
-			p.expect(p.pos, 8)
-			break
-		}
-		p.pos += size
-		count++
-	}
-	return nil, count >= 0
-}
-
-// "\n"
-func (p *tparser) e156() (any, bool) {
-	return p.matchLiteral(lit155, "\n", 7, false)
-}
-
-// (? \t)* "\n"
-func (p *tparser) e157() (any, bool) {
-	if _, ok := p.e154(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e156(); !ok {
-		return nil, false
-	}
-	return nil, true
-}
-
-// "\n"
-func (p *tparser) e159() (any, bool) {
-	return p.matchLiteral(lit158, "\n", 7, false)
-}
-
-// $$
-func (p *tparser) e160() (any, bool) {
-	return p.anchor(p.atEnd(), idEndInput)
-}
-
-// "\n" / $$
-func (p *tparser) e161() (any, bool) {
-	m0 := p.mark()
-	ch, _, more := p.peek()
-	if !(more && (ch == 10)) && p.depth+0 <= maxDepth {
-		p.expect(p.pos, 7)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e159()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
-	}
-	{
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e160()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
-	}
-	return nil, false
-}
-
-// The action of main.
-func ta0(c *tctx) any { return c.cap(0) }
-
 // main, called as by call
 func (p *tparser) u0() (any, bool) {
 	start, rec := p.pos, len(p.recovered)
@@ -5576,33 +4947,64 @@ func (p *tparser) u0() (any, bool) {
 	return v, ok
 }
 
-// main, invoked as by invoke
+// main, invoked as by invoke (body inlined)
 func (p *tparser) i0() (any, bool) {
-	f := p.newFrame(1)
-	prevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)
-	p.frame, p.cut = f, false
+	var (
+		start   int
+		v       any
+		c       *tctx
+		prevEnv *env
+		k1      any
+		ok      bool
+		v2      any
+		x3      int
+		x4      int
+		x5      int
+	)
+	start = p.pos
+	prevEnv = p.env
 	p.depth++
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	start := p.pos
-	_ = start
-	v, ok := p.e110()
-	p.depth--
-	p.frame, p.cut = prevFrame, prevCut
-	p.trail = p.trail[:trail]
-	if ok {
-		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
-		v = c.result(ta0, "main")
+	if !p.assign("indent", func(c *tctx) any { return any(0) }) {
+		goto fail
 	}
+	if v2, ok = p.u1(); !ok {
+		goto fail
+	}
+	k1 = v2
+	x3 = 0
+	for {
+		x4, x5 = p.pos, len(p.recovered)
+		if _, ok = p.s8(); !ok {
+			goto L6
+		}
+		x3++
+		if p.pos == x4 && x3 >= 0 {
+			break
+		}
+		continue
+	L6:
+		p.pos = x4
+		p.recovered = p.recovered[:x5]
+		break
+	}
+	if !p.atEnd() {
+		p.expect(p.pos, idEndInput)
+		goto fail
+	}
+	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+	p.where = "main"
+	v = k1
+	v = c.finish(v)
+	p.depth--
 	p.env = prevEnv
-	p.freeFrame(f)
-	return v, ok
-}
-
-// The action of block.
-func ta1(c *tctx) any {
-	return c.mapList(c.item(1), func(l_162 any) any { return c.member(l_162, "i") })
+	return v, true
+fail:
+	p.depth--
+	p.env = prevEnv
+	return nil, false
 }
 
 // block, called as by call
@@ -5613,61 +5015,197 @@ func (p *tparser) u1() (any, bool) {
 	return p.v1()
 }
 
-// block, called as by invokePlain
+// block, called as by invokePlain (body inlined)
 func (p *tparser) v1() (any, bool) {
-	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
-	prevEnv, prevCut := p.env, p.cut
-	p.cut = false
+	var (
+		start int
+		v     any
+		c     *tctx
+		rec   int
+		x1    int
+		x2    int
+		x3    int
+		x4    int
+		x5    int
+		k6    any
+		x8    int
+		x9    []any
+		x10   int
+		x11   int
+		x12   int
+		x13   int
+		x14   int
+		ok    bool
+		v16   any
+		v17   any
+		v18   any
+		v19   any
+		v20   any
+		v21   any
+	)
+	start, rec = p.pos, len(p.recovered)
 	p.depth++
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e117()
-	p.depth--
-	p.cut = prevCut
-	p.trail = p.trail[:trail]
-	if ok {
-		c := p.useCtx(tctx{p: p, f: emptyTFrame, start: start, end: p.pos, cbase: len(p.created)})
-		c.one[0] = v
-		c.items = c.one[:]
-		v = c.result(ta1, "block")
-	} else {
-		p.pos = start
-		p.recovered = p.recovered[:rec]
+	x1, x2 = p.pos, len(p.kidStack)
+	x3 = 0
+	for {
+		x4, x5 = p.pos, len(p.recovered)
+		k6 = nil
+		x8 = p.pos
+		x9 = p.newVals(2)[:0]
+		x10, x11 = p.pos, len(p.kidStack)
+		x12 = 0
+		for {
+			x13, x14 = p.pos, len(p.recovered)
+			if v16, ok = p.s7(); !ok {
+				goto L15
+			}
+			x12++
+			p.kidStack = append(p.kidStack, v16)
+			if p.pos == x13 && x12 >= 0 {
+				break
+			}
+			continue
+		L15:
+			p.pos = x13
+			p.recovered = p.recovered[:x14]
+			break
+		}
+		v17 = p.newNode("List", x10, p.pos, p.kids(x11))
+		x9 = append(x9, v17)
+		if v18, ok = p.u2(); !ok {
+			goto L7
+		}
+		k6 = v18
+		x9 = append(x9, v18)
+		v19 = p.newNode("Seq", x8, p.pos, x9)
+		v20 = p.attachCaptures(v19, scope104, []any{k6}, x4, p.pos)
+		x3++
+		p.kidStack = append(p.kidStack, v20)
+		if p.pos == x4 && x3 >= 1 {
+			break
+		}
+		continue
+	L7:
+		p.pos = x4
+		p.recovered = p.recovered[:x5]
+		break
 	}
-	p.env = prevEnv
-	return v, ok
+	if x3 < 1 {
+		p.dropKids(x2)
+		goto fail
+	}
+	v21 = p.newNode("List", x1, p.pos, p.kids(x2))
+	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+	c.one[0] = v21
+	c.items = c.one[:]
+	p.where = "block"
+	v = c.mapList(c.item(1), func(l_105 any) any { return c.member(l_105, "i") })
+	v = c.finish(v)
+	p.depth--
+	return v, true
+fail:
+	p.depth--
+	p.pos = start
+	p.recovered = p.recovered[:rec]
+	return nil, false
 }
 
-// block, invoked as by invoke
+// block, invoked as by invoke (body inlined)
 func (p *tparser) i1() (any, bool) {
-	f := p.newFrame(0)
-	prevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)
-	p.frame, p.cut = f, false
+	var (
+		start int
+		v     any
+		c     *tctx
+		x1    int
+		x2    int
+		x3    int
+		x4    int
+		x5    int
+		k6    any
+		x8    int
+		x9    []any
+		x10   int
+		x11   int
+		x12   int
+		x13   int
+		x14   int
+		ok    bool
+		v16   any
+		v17   any
+		v18   any
+		v19   any
+		v20   any
+		v21   any
+	)
+	start = p.pos
 	p.depth++
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	start := p.pos
-	_ = start
-	v, ok := p.e117()
-	p.depth--
-	p.frame, p.cut = prevFrame, prevCut
-	p.trail = p.trail[:trail]
-	if ok {
-		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
-		c.one[0] = v
-		c.items = c.one[:]
-		v = c.result(ta1, "block")
+	x1, x2 = p.pos, len(p.kidStack)
+	x3 = 0
+	for {
+		x4, x5 = p.pos, len(p.recovered)
+		k6 = nil
+		x8 = p.pos
+		x9 = p.newVals(2)[:0]
+		x10, x11 = p.pos, len(p.kidStack)
+		x12 = 0
+		for {
+			x13, x14 = p.pos, len(p.recovered)
+			if v16, ok = p.s7(); !ok {
+				goto L15
+			}
+			x12++
+			p.kidStack = append(p.kidStack, v16)
+			if p.pos == x13 && x12 >= 0 {
+				break
+			}
+			continue
+		L15:
+			p.pos = x13
+			p.recovered = p.recovered[:x14]
+			break
+		}
+		v17 = p.newNode("List", x10, p.pos, p.kids(x11))
+		x9 = append(x9, v17)
+		if v18, ok = p.u2(); !ok {
+			goto L7
+		}
+		k6 = v18
+		x9 = append(x9, v18)
+		v19 = p.newNode("Seq", x8, p.pos, x9)
+		v20 = p.attachCaptures(v19, scope104, []any{k6}, x4, p.pos)
+		x3++
+		p.kidStack = append(p.kidStack, v20)
+		if p.pos == x4 && x3 >= 1 {
+			break
+		}
+		continue
+	L7:
+		p.pos = x4
+		p.recovered = p.recovered[:x5]
+		break
 	}
-	p.env = prevEnv
-	p.freeFrame(f)
-	return v, ok
-}
-
-// The action of item.
-func ta2(c *tctx) any {
-	return func() any { f_163 := c.cap(1); f_164 := c.concat(c.cap(2)); return tmk_Item(c, true, f_163, f_164) }()
+	if x3 < 1 {
+		p.dropKids(x2)
+		goto fail
+	}
+	v21 = p.newNode("List", x1, p.pos, p.kids(x2))
+	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+	c.one[0] = v21
+	c.items = c.one[:]
+	p.where = "block"
+	v = c.mapList(c.item(1), func(l_105 any) any { return c.member(l_105, "i") })
+	v = c.finish(v)
+	p.depth--
+	return v, true
+fail:
+	p.depth--
+	return nil, false
 }
 
 // item, called as by call
@@ -5681,32 +5219,63 @@ func (p *tparser) u2() (any, bool) {
 	return v, ok
 }
 
-// item, invoked as by invoke
+// item, invoked as by invoke (body inlined)
 func (p *tparser) i2() (any, bool) {
-	f := p.newFrame(3)
-	prevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)
-	p.frame, p.cut = f, false
+	var (
+		start int
+		v     any
+		c     *tctx
+		k1    any
+		ok    bool
+		v2    any
+		k3    any
+		v4    any
+		k5    any
+		x6    int
+		x7    int
+		v8    any
+		v11   any
+	)
+	start = p.pos
 	p.depth++
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	start := p.pos
-	_ = start
-	v, ok := p.e127()
-	p.depth--
-	p.frame, p.cut = prevFrame, prevCut
-	p.trail = p.trail[:trail]
-	if ok {
-		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
-		v = c.result(ta2, "item")
+	if v2, ok = p.s4(); !ok {
+		goto fail
 	}
-	p.env = prevEnv
-	p.freeFrame(f)
-	return v, ok
+	k1 = v2
+	if !p.predicate(func(c *tctx) any { return trtBinary("==", c.length(k1), c.lookup("indent")) }) {
+		goto fail
+	}
+	if v4, ok = p.s5(); !ok {
+		goto fail
+	}
+	k3 = v4
+	if _, ok = p.s9(); !ok {
+		goto fail
+	}
+	x6, x7 = p.pos, len(p.recovered)
+	if v11, ok = p.u3(); !ok {
+		goto L9
+	}
+	v8 = v11
+	goto L10
+L9:
+	p.pos = x6
+	p.recovered = p.recovered[:x7]
+	v8 = nil
+L10:
+	k5 = v8
+	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+	p.where = "item"
+	v = func() any { f_106 := k3; f_107 := c.concat(k5); return tmk_Item(c, true, f_106, f_107) }()
+	p.depth--
+	return v, true
+fail:
+	p.depth--
+	return nil, false
 }
-
-// The action of children.
-func ta3(c *tctx) any { return c.cap(1) }
 
 // children, called as by call
 func (p *tparser) u3() (any, bool) {
@@ -5719,172 +5288,379 @@ func (p *tparser) u3() (any, bool) {
 	return v, ok
 }
 
-// children, invoked as by invoke
+// children, invoked as by invoke (body inlined)
 func (p *tparser) i3() (any, bool) {
-	f := p.newFrame(2)
-	prevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)
-	p.frame, p.cut = f, false
+	var (
+		start   int
+		v       any
+		c       *tctx
+		prevEnv *env
+		x1      int
+		x4      int
+		x5      int
+		x6      int
+		ok      bool
+		k8      any
+		v9      any
+		k10     any
+		v11     any
+	)
+	start = p.pos
+	prevEnv = p.env
 	p.depth++
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	start := p.pos
-	_ = start
-	v, ok := p.e138()
-	p.depth--
-	p.frame, p.cut = prevFrame, prevCut
-	p.trail = p.trail[:trail]
-	if ok {
-		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
-		v = c.result(ta3, "children")
+	x1 = p.pos
+	p.silent++
+	x4 = 0
+	for {
+		x5, x6 = p.pos, len(p.recovered)
+		if _, ok = p.s8(); !ok {
+			goto L7
+		}
+		x4++
+		if p.pos == x5 && x4 >= 0 {
+			break
+		}
+		continue
+	L7:
+		p.pos = x5
+		p.recovered = p.recovered[:x6]
+		break
 	}
+	if v9, ok = p.s4(); !ok {
+		goto L2
+	}
+	k8 = v9
+	p.silent--
+	p.pos = x1
+	goto L3
+L2:
+	p.silent--
+	p.pos = x1
+	goto fail
+L3:
+	if !p.predicate(func(c *tctx) any { return trtBinary(">", c.length(k8), c.lookup("indent")) }) {
+		goto fail
+	}
+	if !p.assign("indent", func(c *tctx) any { return c.length(k8) }) {
+		goto fail
+	}
+	if v11, ok = p.u1(); !ok {
+		goto fail
+	}
+	k10 = v11
+	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+	p.where = "children"
+	v = k10
+	v = c.finish(v)
+	p.depth--
 	p.env = prevEnv
-	p.freeFrame(f)
-	return v, ok
+	return v, true
+fail:
+	p.depth--
+	p.env = prevEnv
+	return nil, false
 }
 
-// spaces, called as by invokePlain
+// spaces, called as by invokePlain (body inlined)
 func (p *tparser) s4() (any, bool) {
-	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
-	prevEnv, prevCut := p.env, p.cut
-	p.cut = false
+	var (
+		v  any
+		x1 int
+		x2 int
+		x3 int
+		x4 int
+		ok bool
+		v6 any
+	)
 	p.depth++
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e142()
-	p.depth--
-	p.cut = prevCut
-	p.trail = p.trail[:trail]
-	if ok {
-		if n := asTval(v); n != nil {
-			n.tsetFresh(false)
+	x1 = p.pos
+	x2 = 0
+	for {
+		x3, x4 = p.pos, len(p.recovered)
+		if _, ok = p.parser.matchLiteral(lit108, " ", 5, false); !ok {
+			goto L5
 		}
-	} else {
-		p.pos = start
-		p.recovered = p.recovered[:rec]
+		x2++
+		if p.pos == x3 && x2 >= 0 {
+			break
+		}
+		continue
+	L5:
+		p.pos = x3
+		p.recovered = p.recovered[:x4]
+		break
 	}
-	p.env = prevEnv
-	return v, ok
+	v6 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	v = v6
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	p.depth--
+	return v, true
 }
 
-// line, called as by invokePlain
+// line, called as by invokePlain (body inlined)
 func (p *tparser) s5() (any, bool) {
-	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
-	prevEnv, prevCut := p.env, p.cut
-	p.cut = false
+	var (
+		start int
+		v     any
+		rec   int
+		x1    int
+		ch    rune
+		size  int
+		ok    bool
+		x2    int
+		v3    any
+	)
+	start, rec = p.pos, len(p.recovered)
 	p.depth++
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e144()
-	p.depth--
-	p.cut = prevCut
-	p.trail = p.trail[:trail]
-	if ok {
-		if n := asTval(v); n != nil {
-			n.tsetFresh(false)
+	x1 = p.pos
+	x2 = 0
+	for {
+		if ch, size, ok = p.peek(); !ok || (ch == 10) {
+			p.expect(p.pos, 6)
+			break
 		}
-	} else {
-		p.pos = start
-		p.recovered = p.recovered[:rec]
+		p.pos += size
+		x2++
 	}
-	p.env = prevEnv
-	return v, ok
+	if x2 < 1 {
+		goto fail
+	}
+	v3 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	v = v3
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	p.depth--
+	return v, true
+fail:
+	p.depth--
+	p.pos = start
+	p.recovered = p.recovered[:rec]
+	return nil, false
 }
 
-// eol, called as by invokePlain
+// eol, called as by invokePlain (body inlined)
 func (p *tparser) s6() (any, bool) {
-	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
-	prevEnv, prevCut := p.env, p.cut
-	p.cut = false
+	var (
+		start int
+		v     any
+		rec   int
+		x1    int
+		x2    int
+		v3    any
+		x5    rune
+		x6    bool
+		v9    any
+		ok    bool
+	)
+	start, rec = p.pos, len(p.recovered)
 	p.depth++
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e148()
-	p.depth--
-	p.cut = prevCut
-	p.trail = p.trail[:trail]
-	if ok {
-		if n := asTval(v); n != nil {
-			n.tsetFresh(false)
-		}
-	} else {
-		p.pos = start
-		p.recovered = p.recovered[:rec]
+	x1, x2 = p.pos, len(p.recovered)
+	x5, _, x6 = p.peek()
+	if !(x6 && (x5 == 10)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 7)
+		goto L7
 	}
-	p.env = prevEnv
-	return v, ok
+	if v9, ok = p.matchLiteral(lit109, "\n", 7, true); !ok {
+		goto L8
+	}
+	v3 = v9
+	goto L4
+L8:
+	p.pos = x1
+	p.recovered = p.recovered[:x2]
+L7:
+	if !p.atEnd() {
+		p.expect(p.pos, idEndInput)
+		goto L10
+	}
+	v3 = nil
+	goto L4
+L10:
+	p.pos = x1
+	p.recovered = p.recovered[:x2]
+	goto fail
+L4:
+	v = v3
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	p.depth--
+	return v, true
+fail:
+	p.depth--
+	p.pos = start
+	p.recovered = p.recovered[:rec]
+	return nil, false
 }
 
-// blank, called as by invokePlain
+// blank, called as by invokePlain (body inlined)
 func (p *tparser) s7() (any, bool) {
-	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
-	prevEnv, prevCut := p.env, p.cut
-	p.cut = false
+	var (
+		start int
+		v     any
+		rec   int
+		x1    int
+		x2    []any
+		x3    int
+		x4    int
+		x5    int
+		x6    int
+		x7    int
+		ch    rune
+		size  int
+		ok    bool
+		x9    int
+		v10   any
+		v11   any
+		v12   any
+		v13   any
+	)
+	start, rec = p.pos, len(p.recovered)
 	p.depth++
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e153()
-	p.depth--
-	p.cut = prevCut
-	p.trail = p.trail[:trail]
-	if ok {
-		if n := asTval(v); n != nil {
-			n.tsetFresh(false)
+	x1 = p.pos
+	x2 = p.newVals(2)[:0]
+	x3, x4 = p.pos, len(p.kidStack)
+	x5 = 0
+	for {
+		x6, x7 = p.pos, len(p.recovered)
+		if ch, size, ok = p.peek(); !ok || !(ch == 32 || ch == 9) {
+			p.expect(p.pos, 8)
+			goto L8
 		}
-	} else {
-		p.pos = start
-		p.recovered = p.recovered[:rec]
+		x9 = p.pos
+		p.pos += size
+		v10 = p.newMatch(x9, p.pos, p.text(x9, p.pos), true)
+		x5++
+		p.kidStack = append(p.kidStack, v10)
+		if p.pos == x6 && x5 >= 0 {
+			break
+		}
+		continue
+	L8:
+		p.pos = x6
+		p.recovered = p.recovered[:x7]
+		break
 	}
-	p.env = prevEnv
-	return v, ok
+	v11 = p.newNode("List", x3, p.pos, p.kids(x4))
+	x2 = append(x2, v11)
+	if v12, ok = p.matchLiteral(lit110, "\n", 7, true); !ok {
+		goto fail
+	}
+	x2 = append(x2, v12)
+	v13 = p.newNode("Seq", x1, p.pos, x2)
+	v = v13
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+	}
+	p.depth--
+	return v, true
+fail:
+	p.depth--
+	p.pos = start
+	p.recovered = p.recovered[:rec]
+	return nil, false
 }
 
-// blank, called as by invokePlain
+// blank, called as by invokePlain (body inlined)
 func (p *tparser) s8() (any, bool) {
-	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
-	prevEnv, prevCut := p.env, p.cut
-	p.cut = false
+	var (
+		start int
+		v     any
+		rec   int
+		ch    rune
+		size  int
+		ok    bool
+	)
+	start, rec = p.pos, len(p.recovered)
 	p.depth++
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e157()
-	p.depth--
-	p.cut = prevCut
-	p.trail = p.trail[:trail]
-	if ok {
-		v = nil
-	} else {
-		p.pos = start
-		p.recovered = p.recovered[:rec]
+	for {
+		if ch, size, ok = p.peek(); !ok || !(ch == 32 || ch == 9) {
+			p.expect(p.pos, 8)
+			break
+		}
+		p.pos += size
 	}
-	p.env = prevEnv
-	return v, ok
+	if _, ok = p.parser.matchLiteral(lit111, "\n", 7, false); !ok {
+		goto fail
+	}
+	v = nil
+	p.depth--
+	return v, true
+fail:
+	p.depth--
+	p.pos = start
+	p.recovered = p.recovered[:rec]
+	return nil, false
 }
 
-// eol, called as by invokePlain
+// eol, called as by invokePlain (body inlined)
 func (p *tparser) s9() (any, bool) {
-	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
-	prevEnv, prevCut := p.env, p.cut
-	p.cut = false
+	var (
+		start int
+		v     any
+		rec   int
+		x1    int
+		x2    int
+		x4    rune
+		x5    bool
+		ok    bool
+	)
+	start, rec = p.pos, len(p.recovered)
 	p.depth++
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e161()
-	p.depth--
-	p.cut = prevCut
-	p.trail = p.trail[:trail]
-	if ok {
-		v = nil
-	} else {
-		p.pos = start
-		p.recovered = p.recovered[:rec]
+	x1, x2 = p.pos, len(p.recovered)
+	x4, _, x5 = p.peek()
+	if !(x5 && (x4 == 10)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 7)
+		goto L6
 	}
-	p.env = prevEnv
-	return v, ok
+	if _, ok = p.parser.matchLiteral(lit112, "\n", 7, false); !ok {
+		goto L7
+	}
+	goto L3
+L7:
+	p.pos = x1
+	p.recovered = p.recovered[:x2]
+L6:
+	if !p.atEnd() {
+		p.expect(p.pos, idEndInput)
+		goto L8
+	}
+	goto L3
+L8:
+	p.pos = x1
+	p.recovered = p.recovered[:x2]
+	goto fail
+L3:
+	v = nil
+	p.depth--
+	return v, true
+fail:
+	p.depth--
+	p.pos = start
+	p.recovered = p.recovered[:rec]
+	return nil, false
 }

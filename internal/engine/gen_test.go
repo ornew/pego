@@ -316,6 +316,10 @@ func TestGeneratedTypes(t *testing.T) {
 		if strings.Contains(string(code), "tparse(trules") {
 			typedRuntime++
 		}
+		// The grammars written for direct rules (gen_direct.go) must compile rules that way.
+		if strings.Contains(c.name, "typed/direct_") && !strings.Contains(string(code), "(body inlined)") {
+			t.Errorf("%s: no direct rules", c.name)
+		}
 		write(fmt.Sprintf("g%d/parser.go", i), string(code))
 		// The same with ParseAST converting the result of Parse, which the typed runtime must equal.
 		code, err = Generate(g, GenOptions{Package: fmt.Sprintf("c%d", i), Start: "main", Types: true, convertTypes: true})
@@ -324,8 +328,8 @@ func TestGeneratedTypes(t *testing.T) {
 		}
 		write(fmt.Sprintf("c%d/parser.go", i), string(code))
 		fmt.Fprintf(&imports, "\tg%d \"gentest/g%d\"\n\tc%d \"gentest/c%d\"\n", i, i, i, i)
-		fmt.Fprintf(&parsers, "\tfunc(s string) (any, error) { return g%d.ParseAST(s) },\n", i)
-		fmt.Fprintf(&converters, "\tfunc(s string) (any, error) { return c%d.ParseAST(s) },\n", i)
+		fmt.Fprintf(&parsers, "\tfunc(s string, b bool) (any, error) { u := g%d.CodePoints; if b { u = g%d.Bytes }; return g%d.ParseAST(s, u) },\n", i, i, i)
+		fmt.Fprintf(&converters, "\tfunc(s string, b bool) (any, error) { u := c%d.CodePoints; if b { u = c%d.Bytes }; return c%d.ParseAST(s, u) },\n", i, i, i)
 		inputs = append(inputs, c.inputs)
 		prog := compile(t, c.src)
 		for _, in := range c.inputs {
@@ -343,10 +347,10 @@ import (
 	"sync"
 `+imports.String()+`)
 
-var parsers = []func(string) (any, error){
+var parsers = []func(string, bool) (any, error){
 `+parsers.String()+`}
 
-var converters = []func(string) (any, error){
+var converters = []func(string, bool) (any, error){
 `+converters.String()+`}
 
 // typeName is the dynamic type of v without the package.
@@ -364,15 +368,19 @@ func main() {
 	json.Unmarshal(data, &inputs)
 	for i, in := range inputs {
 		for _, s := range in {
-			v, err := parsers[i](s)
-			b, _ := json.Marshal(map[string]any{"value": v, "type": fmt.Sprintf("%T", v), "err": fmt.Sprint(err)})
-			cv, cerr := converters[i](s)
-			typed, _ := json.Marshal(map[string]any{"value": v, "err": fmt.Sprint(err)})
-			conv, _ := json.Marshal(map[string]any{"value": cv, "err": fmt.Sprint(cerr)})
-			if string(typed) != string(conv) || typeName(v)[strings.Index(typeName(v), ".")+1:] != typeName(cv)[strings.Index(typeName(cv), ".")+1:] {
-				fmt.Fprintf(os.Stderr, "MISMATCH %d %q\n typed %s %s\n conv  %s %s\n", i, s, typeName(v), typed, typeName(cv), conv)
+			for _, bytes := range []bool{false, true} {
+				v, err := parsers[i](s, bytes)
+				cv, cerr := converters[i](s, bytes)
+				typed, _ := json.Marshal(map[string]any{"value": v, "err": fmt.Sprint(err)})
+				conv, _ := json.Marshal(map[string]any{"value": cv, "err": fmt.Sprint(cerr)})
+				if string(typed) != string(conv) || typeName(v)[strings.Index(typeName(v), ".")+1:] != typeName(cv)[strings.Index(typeName(cv), ".")+1:] {
+					fmt.Fprintf(os.Stderr, "MISMATCH %d %q (bytes: %v)\n typed %s %s\n conv  %s %s\n", i, s, bytes, typeName(v), typed, typeName(cv), conv)
+				}
+				if !bytes {
+					b, _ := json.Marshal(map[string]any{"value": v, "type": fmt.Sprintf("%T", v), "err": fmt.Sprint(err)})
+					fmt.Println(string(b))
+				}
 			}
-			fmt.Println(string(b))
 		}
 	}
 	// Parsers of the typed runtime are pooled: parsing concurrently gives the same results.
@@ -383,8 +391,8 @@ func main() {
 			defer wg.Done()
 			for i, in := range inputs {
 				for _, s := range in {
-					v, err := parsers[i](s)
-					cv, cerr := converters[i](s)
+					v, err := parsers[i](s, false)
+					cv, cerr := converters[i](s, false)
 					a, _ := json.Marshal(map[string]any{"value": v, "err": fmt.Sprint(err)})
 					b, _ := json.Marshal(map[string]any{"value": cv, "err": fmt.Sprint(cerr)})
 					if string(a) != string(b) {

@@ -135,7 +135,10 @@ type generator struct {
 	proj map[string]string
 	// final is the struct constructor that makes an action's result in the typed runtime: its
 	// range is the rule's (see tctx.result), so it computes none and is not recorded as created.
-	final   grammar.Term
+	final grammar.Term
+	// caps maps capture names to the Go variables that hold them in a direct rule of the typed
+	// runtime (see gen_direct.go), instead of frame slots.
+	caps    map[string]string
 	vars    strings.Builder
 	init    strings.Builder
 	methods strings.Builder
@@ -181,10 +184,18 @@ func (g *generator) rules() {
 	init := &g.init
 	bodies := map[*rule]string{}
 	scopes := map[*rule]*scope{}
+	directs := map[*rule]*direct{}
 	all := append(append([]*rule(nil), g.prog.rules...), g.prog.twins...)
 	for _, r := range all {
 		s := newScope()
 		scopes[r] = s
+		if g.table == "trules" {
+			// A rule compiled into the method that calls it has no body of its own.
+			if d := g.directRule(r); d != nil {
+				directs[r] = d
+				continue
+			}
+		}
 		if _, ok := r.def.Expr.(*grammar.Pratt); !ok {
 			g.cur, g.proj = r, g.projections(r)
 			bodies[r] = g.expr(r.def.Expr, s, !r.lean)
@@ -213,6 +224,10 @@ func (g *generator) rules() {
 			g.pratt(r, pr)
 			continue
 		}
+		if d := directs[r]; d != nil {
+			g.typedCall(r, "", scopes[r], d)
+			continue
+		}
 		fmt.Fprintf(init, "\t%s[%d].body = func(p *%s, _ int) (%s, bool) { return p.%s() }\n", g.table, r.id, g.recv(), g.valType(), bodies[r])
 		if r.action != nil && g.table == "trules" {
 			// A function of its own, which typedCall calls directly.
@@ -226,7 +241,7 @@ func (g *generator) rules() {
 			g.proj = nil
 		}
 		if g.table == "trules" {
-			g.typedCall(r, bodies[r], scopes[r])
+			g.typedCall(r, bodies[r], scopes[r], nil)
 		} else if r.plain {
 			g.plainCall(r, bodies[r])
 		}
@@ -256,11 +271,23 @@ func (g *generator) rules() {
 // memo kept by callMemo) and i<id> (what invoke does). Each calls the body's method and the action
 // directly and finishes the value as the rule's kind requires (what finish does), so a call goes
 // through no rule table entry or function value.
-func (g *generator) typedCall(r *rule, body string, s *scope) {
+//
+// For a direct rule (d, see gen_direct.go), the method that runs the body (s<id>, v<id> or i<id>)
+// has it inlined, with the action.
+func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 	if _, pratt := r.def.Expr.(*grammar.Pratt); pratt || r.leader {
 		return // the general call
 	}
 	m := &g.methods
+	entry := fmt.Sprintf("u%d", r.id)
+	if r.plain {
+		entry = fmt.Sprintf("s%d", r.id)
+	}
+	fmt.Fprintf(&g.init, "\ttrules[%d].entry = (*tparser).%s\n", r.id, entry)
+	ncaps := len(s.names)
+	if d != nil {
+		ncaps = len(r.scope.names)
+	}
 	finish := func(frame string) {
 		switch {
 		case r.novalue:
@@ -279,12 +306,16 @@ func (g *generator) typedCall(r *rule, body string, s *scope) {
 			fmt.Fprintf(m, "\t\tv = trules[%d].term(p, start, p.pos, p.text(start, p.pos))\n", r.id)
 		default:
 			if len(s.names) > 0 {
-				fmt.Fprintf(m, "\t\tv = p.attachCaptures(v, trules[%d].scope, %s, start, p.pos)\n", r.id, frame)
+				fmt.Fprintf(m, "\t\tv = p.attachCaptures(v, trules[%d].scope, %s.vals, start, p.pos)\n", r.id, frame)
 			}
 			m.WriteString("\t\tif n := asTval(v); n != nil {\n\t\t\tn.tsetFresh(false)\n\t\t}\n")
 		}
 	}
 	plain := func(name string) {
+		if d != nil {
+			g.directMethod(r, d, name, "called as by invokePlain", true)
+			return
+		}
 		fmt.Fprintf(m, "// %s, called as by invokePlain\nfunc (p *tparser) %s() (any, bool) {\n", r.name, name)
 		m.WriteString("\tstart, rec, trail := p.pos, len(p.recovered), len(p.trail)\n\tprevEnv, prevCut := p.env, p.cut\n\tp.cut = false\n\tp.depth++\n\tif p.depth > maxDepth {\n\t\tp.tooDeep()\n\t}\n")
 		fmt.Fprintf(m, "\tv, ok := p.%s()\n\tp.depth--\n\tp.cut = prevCut\n\tp.trail = p.trail[:trail]\n\tif ok {\n", body)
@@ -301,13 +332,17 @@ func (g *generator) typedCall(r *rule, body string, s *scope) {
 	if memo {
 		fmt.Fprintf(m, "\tif !p.firstCall(rules[%d]) {\n\t\treturn p.callMemo(trules[%d], (*tparser).i%d)\n\t}\n", r.id, r.id, r.id)
 	}
-	if len(s.names) == 0 {
+	if ncaps == 0 {
 		fmt.Fprintf(m, "\treturn p.v%d()\n}\n\n", r.id)
 		plain(fmt.Sprintf("v%d", r.id))
 	} else {
 		fmt.Fprintf(m, "\tstart, rec := p.pos, len(p.recovered)\n\tv, ok := p.i%d()\n\tif !ok {\n\t\tp.pos = start\n\t\tp.recovered = p.recovered[:rec]\n\t}\n\treturn v, ok\n}\n\n", r.id)
 	}
 	// i<id>: the invocation (also used by the memo).
+	if d != nil {
+		g.directMethod(r, d, fmt.Sprintf("i%d", r.id), "invoked as by invoke", false)
+		return
+	}
 	fmt.Fprintf(m, "// %s, invoked as by invoke\nfunc (p *tparser) i%d() (any, bool) {\n", r.name, r.id)
 	fmt.Fprintf(m, "\tf := p.newFrame(%d)\n\tprevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)\n\tp.frame, p.cut = f, false\n\tp.depth++\n\tif p.depth > maxDepth {\n\t\tp.tooDeep()\n\t}\n\tstart := p.pos\n\t_ = start\n", len(s.names))
 	fmt.Fprintf(m, "\tv, ok := p.%s()\n\tp.depth--\n\tp.frame, p.cut = prevFrame, prevCut\n\tp.trail = p.trail[:trail]\n\tif ok {\n", body)
@@ -452,31 +487,7 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 	case *grammar.Any:
 		fmt.Fprintf(&b, "\treturn p.matchAny(%v)\n", build)
 	case *grammar.Ref:
-		r := g.prog.byName[e.Name]
-		min := 0
-		if e.Level != "" {
-			for i, l := range r.def.Expr.(*grammar.Pratt).Levels {
-				if l.Name == e.Level {
-					min = i
-				}
-			}
-		}
-		if !build && r.twin != nil {
-			r = r.twin
-		}
-		_, pratt := r.def.Expr.(*grammar.Pratt)
-		if r.plain && !pratt {
-			// Never memoized and without captures: call does nothing but invokePlain, which a
-			// method of its own does with a direct call of the body (see plainCalls).
-			fmt.Fprintf(&b, "\treturn p.%s%d()\n", g.plainPrefix(), r.id)
-		} else if g.table == "trules" && !pratt && !r.leader {
-			// The typed runtime calls a method of the rule's own (typedCall).
-			fmt.Fprintf(&b, "\treturn p.u%d()\n", r.id)
-		} else if r.plain {
-			fmt.Fprintf(&b, "\treturn p.invokePlain(%s[%d], %d)\n", g.table, r.id, min)
-		} else {
-			fmt.Fprintf(&b, "\treturn p.call(%s[%d], %d)\n", g.table, r.id, min)
-		}
+		fmt.Fprintf(&b, "\treturn %s\n", g.refCall(e, build))
 	case *grammar.Seq:
 		var items []string
 		for _, it := range e.Items {
@@ -600,6 +611,36 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 	return g.method(describe(e), b.String())
 }
 
+// refCall returns the Go call of the rule the reference e calls (its value-free twin unless
+// build).
+func (g *generator) refCall(e *grammar.Ref, build bool) string {
+	r := g.prog.byName[e.Name]
+	min := 0
+	if e.Level != "" {
+		for i, l := range r.def.Expr.(*grammar.Pratt).Levels {
+			if l.Name == e.Level {
+				min = i
+			}
+		}
+	}
+	if !build && r.twin != nil {
+		r = r.twin
+	}
+	_, pratt := r.def.Expr.(*grammar.Pratt)
+	switch {
+	case r.plain && !pratt:
+		// Never memoized and without captures: call does nothing but invokePlain, which a
+		// method of its own does with a direct call of the body (see plainCalls).
+		return fmt.Sprintf("p.%s%d()", g.plainPrefix(), r.id)
+	case g.table == "trules" && !pratt && !r.leader:
+		// The typed runtime calls a method of the rule's own (typedCall).
+		return fmt.Sprintf("p.u%d()", r.id)
+	case r.plain:
+		return fmt.Sprintf("p.invokePlain(%s[%d], %d)", g.table, r.id, min)
+	}
+	return fmt.Sprintf("p.call(%s[%d], %d)", g.table, r.id, min)
+}
+
 func (g *generator) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, build bool) {
 	if !build && g.scanRepeat(b, e) {
 		return
@@ -639,7 +680,7 @@ func (g *generator) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, buil
 	}
 	b.WriteString("\t\t\t\treturn nil, false\n\t\t\t}\n\t\t\tbreak\n\t\t}\n")
 	if own && build {
-		fmt.Fprintf(b, "\t\tv = p.attachCaptures(v, %s, f, m0.pos, p.pos)\n", scopeVar)
+		fmt.Fprintf(b, "\t\tv = p.attachCaptures(v, %s, %s, m0.pos, p.pos)\n", scopeVar, g.pick("f", "f.vals"))
 	}
 	if own && g.table == "trules" {
 		// The element's frame is dead: its values are in v, and the trail entries since m0 all
@@ -844,6 +885,9 @@ func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) str
 	case *grammar.CaptureRef:
 		if l, ok := locals[t.Name]; ok {
 			return l
+		}
+		if g.caps != nil {
+			return g.caps[t.Name]
 		}
 		return fmt.Sprintf("c.cap(%d)", s.slots[t.Name])
 	case *grammar.IndexRef:

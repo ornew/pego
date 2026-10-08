@@ -97,6 +97,7 @@ automatically in the others. This table records, for every change in the log bel
 | 54, 59 | `Document`: resuming long repetitions | ✓ | ✓ | ✓ | – | – | VMs since 59 (sites found in the bytecode); generated parsers have no `Document` |
 | 55 | Tracing hook (cost only) | ✓ | ✓ | ✓ | – | – | generated parsers have no tracing |
 | 57, 58 | Scratch memory pooled across whole-input parses (input, offsets, memo, value stack) | ✓ | ✓ | ✓ | ✓ | ✓ | typed: since 48; generated `Parse` and `Recognize`: 58 |
+| 60 | Direct rules: a rule's body inlined into its call method, captures in Go variables, the action in place | – | – | – | ✗ | ✓ | typed: not for rules with a cut or `#recover`, Pratt rules and left-recursion leaders; not tried for generated `Parse` |
 
 Not applied, and why:
 
@@ -863,6 +864,28 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 - Effect (min of 6 interleaved runs, Apple M3 Max): `BenchmarkIncrementalLong` (50,000-record CSV) 12.0 → 4.1 ms on
   the recursive VM (−66%) and 12.5 → 4.1 ms on the iterative VM (−67%); `BenchmarkIncremental` (Minilang) −11% and
   −15%; batch parses and streams within noise.
+
+### 60. Direct rules in the typed runtime
+
+- The typed runtime ran every rule as the Node runtime does: a method per expression, captures in a frame with a
+  trail that marks and resets undo, and the action through `useCtx` and `tctx.result`, reading the frame. A CPU
+  profile of JSON `ParseAST` spread the time over those methods, `setCapture` and `reset`, `newFrame` and
+  `freeFrame`, and the action plumbing (about 10%). A rule without a cut or `#recover` that is neither a Pratt rule
+  nor a left-recursion leader is now compiled into the method that calls it (design 012, "Direct rules";
+  `gen_direct.go`): failures jump to labels, captures are Go variables that backtracking points save and restore,
+  and the action is a Go expression over them, without the checks of `tctx.result` when it makes a struct with the
+  rule's range. Every rule of the JSON, XML and outline grammars is direct; in the calculators, all but the Pratt
+  expression and the three left-recursive rules.
+- The parity test of `ParseAST` gained grammars for the new code paths (`testdata/typed/direct_*.pego`: captures and
+  an environment restored by choices, optionals and repetition elements, elements with captures of their own that
+  become records, `$n`, built-ins, errors in actions, recovered errors undone and replayed from the memo, `#error`,
+  anchors, bounded repetitions and alternatives that can never be tried), and now runs in both position units.
+  Leaving out any one restoration (captures, environment, recovered errors), the clearing of element captures at
+  each iteration, or sharing one character variable among choices makes it fail.
+- Effect (min of 6 interleaved runs, Apple M3 Max): `ParseAST` JSON 6.44 → 3.86 ms (−40%), XML 6.96 → 4.34 ms (−38%),
+  Arith_LeftRec 14.3 → 10.3 ms (−28%), Outline 3.32 → 2.46 ms (−26%), Arith_Pratt 6.40 → 6.03 ms (−6%); XML 4.3 →
+  3.2 MB (no frames), the others unchanged in bytes. JSON `ParseAST` now takes the time of `Recognize` (3.9 ms) and
+  about half that of `Parse` (7.2 ms). Generated `Parse` and `Recognize` are unchanged.
 
 ## Grammar authoring guidelines for performance
 
