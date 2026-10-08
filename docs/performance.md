@@ -94,7 +94,7 @@ automatically in the others. This table records, for every change in the log bel
 | 48 | Struct constructors per type, frames reused, scratch pooled across parses | ✗ | ✗ | ✗ | ✗ | ✓ | see below |
 | 52, 53 | Projected repetitions (`map($rest, (r) => $r.f)`) | ✓ | ✓ | ✓ | ✓ | ✓ | VMs: `NEXT` mode 3 (instruction set 3) |
 | 49–51 | First-character dispatch in choices | ✓ | ✓ | ✓ | ✓ | ✓ | VMs: `GUARD` (instruction set 3) |
-| 54 | `Document`: resuming long repetitions | ✓ | ✗ | ✗ | – | – | the VMs look up each element in the memo; generated parsers have no `Document` |
+| 54, 59 | `Document`: resuming long repetitions | ✓ | ✓ | ✓ | – | – | VMs since 59 (sites found in the bytecode); generated parsers have no `Document` |
 | 55 | Tracing hook (cost only) | ✓ | ✓ | ✓ | – | – | generated parsers have no tracing |
 | 57, 58 | Scratch memory pooled across whole-input parses (input, offsets, memo, value stack) | ✓ | ✓ | ✓ | ✓ | ✓ | typed: since 48; generated `Parse` and `Recognize`: 58 |
 
@@ -849,6 +849,20 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 - Effect (min of 6 interleaved runs, Apple M3 Max): `Parse` XML −9%/−12% (code points/bytes), Arith_LeftRec −12%/−15%,
   Recovery −9%/−8%, CSV −8% (code points), Minilang −6%/−5%, JSON within noise (+2%); `Recognize` XML −17%,
   Arith_LeftRec −15%, Minilang −10%, JSON −4% with one allocation per parse; `ParseAST` unchanged (it pooled already).
+
+### 59. Resuming long repetitions in the VMs
+
+- Change 54 in both bytecode VMs, which share `exec`: the VM finds the repetitions it can resume when it loads a
+  module, from the bytecode alone (a `REPEAT`, its `ITER`, the element code, `NEXT` and `ENDREPEAT`; the element must
+  contain no `PRED` or `ASSIGN` and call no rule that reads variables, and its elements are moved past a
+  length-changing edit only if it calls no positional rule), so the instruction set is unchanged. In a `Document`
+  parse, `REPEAT` takes over the old run and reuses the elements before the edit, `ITER` resynchronizes and starts an
+  element whose examined range and expectations are kept apart (a new entry kind, `eRunIter`, undoes that on
+  failure, and a cut marks it like an `ITER`), `NEXT` records the element and `ENDREPEAT` stores the run. The steps are
+  shared with the closure backend (`runState` in `resume.go`).
+- Effect (min of 6 interleaved runs, Apple M3 Max): `BenchmarkIncrementalLong` (50,000-record CSV) 12.0 → 4.1 ms on
+  the recursive VM (−66%) and 12.5 → 4.1 ms on the iterative VM (−67%); `BenchmarkIncremental` (Minilang) −11% and
+  −15%; batch parses and streams within noise.
 
 ## Grammar authoring guidelines for performance
 

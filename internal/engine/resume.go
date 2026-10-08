@@ -85,133 +85,97 @@ func (c *compiler) positional(e grammar.Expr) bool {
 // costs little to run again. It is a variable for tests.
 var minRecorded = 16
 
-// resumeRepeat runs the repetition rs (see compiler.repeat) in a Document parse, resuming its run
-// from the previous parse when it can.
-func (p *parser) resumeRepeat(rs *runSite) (*Node, bool) {
+// runState is a run of a repetition in progress in a Document parse (resumeRepeat, and the REPEAT
+// instruction of the VMs).
+type runState struct {
+	key         runKey
+	min, max    int
+	shiftable   bool
+	old         []runElem // the run of the previous parse that this one takes over, updated in place
+	edit        docEdit   // the edit since (none if old is from this parse)
+	count       int
+	done        bool // the old run ended where it stopped
+	rec0, prov0 int
+	// The run is old[:k], then the new elements mid, then old[j:j+t] (the elements after the edit,
+	// moved), then the new elements post.
+	k, j, t   int
+	mid, post []runElem
+	// The element being parsed: where it started, and the state its examined range and
+	// expectations are kept apart from (beginElem).
+	elemStart, savedHW, savedLW int
+	mk                          expMark
+}
+
+// startRun starts a run of the repetition site id with the given bounds at the current position:
+// it looks for the run to take over, the run here or the one that the edit since moved here.
+func (p *parser) startRun(r *runState, id, min, max int, shiftable bool) {
 	start := p.pos
-	key := runKey{rs.id, start}
-	// The run of the previous parse, if one edit was made since: the run here, or the one that
-	// the edit moved here. This run takes it over, and updates its elements in place.
-	var old []runElem
-	edit := docEdit{start: 1<<62 - 1, end: 1<<62 - 1} // no edit
-	if rec := p.runs[key]; rec != nil {
-		old = rec.elems // the same repetition ran here earlier in this parse
+	*r = runState{key: runKey{id, start}, min: min, max: max, shiftable: shiftable, j: -1,
+		edit: docEdit{start: 1<<62 - 1, end: 1<<62 - 1}, rec0: len(p.recovered), prov0: p.provisional,
+		mid: r.mid[:0], post: r.post[:0]}
+	if rec := p.runs[r.key]; rec != nil {
+		r.old = rec.elems // the same repetition ran here earlier in this parse
 	} else if p.lastRuns != nil && p.gen > 0 {
-		edit = p.edits[p.gen-1]
-		at := runKey{rs.id, start}
-		if start > edit.start {
-			at.start -= edit.delta
+		r.edit = p.edits[p.gen-1]
+		at := r.key
+		if start > r.edit.start {
+			at.start -= r.edit.delta
 		}
 		if rec := p.lastRuns[at]; rec != nil && rec.gen+1 == p.gen {
-			old = rec.elems
+			r.old = rec.elems
 			delete(p.lastRuns, at)
 		}
 	}
-	base := len(p.kidStack)
-	rec0, prov0 := len(p.recovered), p.provisional
-	count := 0
-	done := false // the old run ended where it stopped
-	// The run is old[:k], then the new elements mid, then old[j:j+t] (the elements after the edit,
-	// moved), then the new elements post.
-	k, j, t := 0, -1, 0
-	var mid, post []runElem
-	if rs.build {
-		p.kidStack = slices.Grow(p.kidStack, len(old))
-	}
-	for k < len(old) && old[k].examined <= edit.start && !done {
-		done = p.reuseElem(rs, &old[k], 0, 0, count)
-		k++
-		count++
-	}
-	for !done && (rs.max < 0 || count < rs.max) {
-		// Back in step with the old run after the edit: reuse the rest of it, and go on from its end
-		// as usual. An element after the edit examined only input after it, so whichever run it
-		// belongs to, parsing at its moved position gives it moved.
-		if j < 0 && old != nil && p.pos-edit.delta >= edit.end && (rs.shiftable || edit.delta == 0) {
-			at := p.pos - edit.delta
-			i := k + sort.Search(len(old)-k, func(i int) bool { return old[k+i].start >= at })
-			if i < len(old) && old[i].start == at && after(old[i:], edit.end) {
-				j = i
-				for i := j; i < len(old) && !done && (rs.max < 0 || count < rs.max); i++ {
-					done = p.reuseElem(rs, &old[i], edit.delta, p.gen-1, count)
-					count++
-					t++
-				}
-				continue
-			}
-		}
-		elemStart := p.pos
-		m0 := p.mark()
-		prevCut, prevFrame := p.cut, p.frame
-		p.cut = false
-		var f *frame
-		if rs.ownScope {
-			f = p.newFrame(len(rs.scope.names))
-			p.frame = f
-		}
-		// Record the element's examined range and expectations separately.
-		savedHW, savedLW := p.hw, p.lw
-		p.hw, p.lw = elemStart, elemStart
-		mk := p.isolate(elemStart)
-		v, ok := rs.m(p)
-		far, inner := p.unisolate(mk)
-		var exp []expID
-		if ok {
-			exp = p.keep(inner)
-		}
-		p.mergeExpected(far, inner)
-		from, examined := p.lw, p.hw
-		p.hw, p.lw = max(savedHW, p.hw), min2(savedLW, p.lw)
-		cut := p.cut
-		p.cut, p.frame = prevCut, prevFrame
-		if !ok {
-			p.reset(m0)
-			if cut {
-				p.kids(base)
-				return nil, false
-			}
-			break
-		}
-		if rs.ownScope && rs.build {
-			v = p.attachCaptures(v, rs.scope, f, m0.pos, p.pos)
-		}
-		count++
-		if rs.build {
-			p.kidStack = append(p.kidStack, v)
-		}
-		el := runElem{start: elemStart, end: p.pos, from: from, examined: examined, far: far, exp: exp, v: v}
-		if j < 0 {
-			mid = append(mid, el)
-		} else {
-			post = append(post, el)
-		}
-		if p.pos == elemStart && count >= rs.min {
-			break
-		}
-	}
-	if count < rs.min {
-		p.kids(base)
-		return nil, false
-	}
-	if count >= minRecorded && len(p.recovered) == rec0 && p.provisional == prov0 {
-		var elems []runElem
-		if j < 0 {
-			elems = append(old[:k], mid...)
-		} else {
-			elems = append(slices.Replace(old[:j+t], k, j, mid...), post...)
-		}
-		p.runs[key] = &runRecord{gen: p.gen, elems: elems}
-	}
-	if !rs.build {
-		return nil, true
-	}
-	return p.newNode(Node{Type: TypeList, Start: start, End: p.pos, Children: p.kids(base), fresh: true}), true
 }
 
-// reuseElem reuses the element el of an old run of rs, recorded in the generation gen and moved by
-// shift since, as the element number n of the run (counting from 0), and reports whether the run
-// ends after it (as it did before).
-func (p *parser) reuseElem(rs *runSite, el *runElem, shift int, gen uint32, n int) bool {
+// more reports whether the run may take another element.
+func (r *runState) more() bool { return !r.done && (r.max < 0 || r.count < r.max) }
+
+// nextPrefix reuses the next old element if it examined only input before the edit, and returns
+// it (its value is for the caller to push), or nil.
+func (p *parser) nextPrefix(r *runState) *runElem {
+	if r.k >= len(r.old) || r.old[r.k].examined > r.edit.start || r.done {
+		return nil
+	}
+	el := &r.old[r.k]
+	p.reuseElem(r, el, 0, 0)
+	r.k++
+	return el
+}
+
+// resync reports whether the run is back in step with the old run after the edit: an old element
+// after the edit starts where the next element would. If so, the rest of the old run is reused
+// (nextTail), and the run goes on from its end as usual. An element after the edit examined only
+// input after it, so whichever run it belongs to, parsing at its moved position gives it moved.
+func (p *parser) resync(r *runState) bool {
+	if r.j >= 0 || r.old == nil || p.pos-r.edit.delta < r.edit.end || !r.shiftable && r.edit.delta != 0 {
+		return false
+	}
+	at := p.pos - r.edit.delta
+	i := r.k + sort.Search(len(r.old)-r.k, func(i int) bool { return r.old[r.k+i].start >= at })
+	if i == len(r.old) || r.old[i].start != at || !after(r.old[i:], r.edit.end) {
+		return false
+	}
+	r.j = i
+	return true
+}
+
+// nextTail reuses the next old element after the edit (after resync), moved by the edit, and
+// returns it, or nil.
+func (p *parser) nextTail(r *runState) *runElem {
+	i := r.j + r.t
+	if r.j < 0 || i >= len(r.old) || !r.more() {
+		return nil
+	}
+	el := &r.old[i]
+	p.reuseElem(r, el, r.edit.delta, p.gen-1)
+	r.t++
+	return el
+}
+
+// reuseElem reuses the element el of an old run, recorded in the generation gen and moved by shift
+// since: it replays what running it did, except pushing its value.
+func (p *parser) reuseElem(r *runState, el *runElem, shift int, gen uint32) {
 	if shift != 0 {
 		el.v = p.moveValue(el.v, shift, gen)
 		el.start += shift
@@ -225,13 +189,122 @@ func (p *parser) reuseElem(rs *runSite, el *runElem, shift int, gen uint32, n in
 	if len(el.exp) > 0 && el.far >= p.farthest {
 		p.mergeExpected(el.far, el.exp)
 	}
-	if rs.build {
-		p.kidStack = append(p.kidStack, el.v)
-	}
 	p.pos = el.end
 	p.stats.Reused++
 	p.resumed++
-	return el.end == el.start && n+1 >= rs.min || rs.max >= 0 && n+1 >= rs.max
+	r.count++
+	// The old run ended after an empty element or at its maximum.
+	r.done = el.end == el.start && r.count >= r.min || r.max >= 0 && r.count >= r.max
+}
+
+// beginElem starts parsing an element: its examined range and expectations are recorded apart.
+func (p *parser) beginElem(r *runState) {
+	r.elemStart, r.savedHW, r.savedLW = p.pos, p.hw, p.lw
+	p.hw, p.lw = p.pos, p.pos
+	r.mk = p.isolate(p.pos)
+}
+
+// endElem ends parsing an element (before the state is reset if it failed), and records it if it
+// matched with the value v.
+func (p *parser) endElem(r *runState, ok bool, v *Node) {
+	far, inner := p.unisolate(r.mk)
+	var exp []expID
+	if ok {
+		exp = p.keep(inner)
+	}
+	p.mergeExpected(far, inner)
+	from, examined := p.lw, p.hw
+	p.hw, p.lw = max(r.savedHW, p.hw), min2(r.savedLW, p.lw)
+	if !ok {
+		return
+	}
+	r.count++
+	el := runElem{start: r.elemStart, end: p.pos, from: from, examined: examined, far: far, exp: exp, v: v}
+	if r.j < 0 {
+		r.mid = append(r.mid, el)
+	} else {
+		r.post = append(r.post, el)
+	}
+}
+
+// finishRun records the run of a repetition that matched, for the next parse.
+func (p *parser) finishRun(r *runState) {
+	if r.count < minRecorded || len(p.recovered) != r.rec0 || p.provisional != r.prov0 {
+		return
+	}
+	var elems []runElem
+	if r.j < 0 {
+		elems = append(r.old[:r.k], r.mid...)
+	} else {
+		elems = append(slices.Replace(r.old[:r.j+r.t], r.k, r.j, r.mid...), r.post...)
+	}
+	p.runs[r.key] = &runRecord{gen: p.gen, elems: elems}
+}
+
+// resumeRepeat runs the repetition rs (see compiler.repeat) in a Document parse, resuming its run
+// from the previous parse when it can.
+func (p *parser) resumeRepeat(rs *runSite) (*Node, bool) {
+	start := p.pos
+	var r runState
+	p.startRun(&r, rs.id, rs.min, rs.max, rs.shiftable)
+	base := len(p.kidStack)
+	if rs.build {
+		p.kidStack = slices.Grow(p.kidStack, len(r.old))
+	}
+	for el := p.nextPrefix(&r); el != nil; el = p.nextPrefix(&r) {
+		if rs.build {
+			p.kidStack = append(p.kidStack, el.v)
+		}
+	}
+	for r.more() {
+		if p.resync(&r) {
+			for el := p.nextTail(&r); el != nil; el = p.nextTail(&r) {
+				if rs.build {
+					p.kidStack = append(p.kidStack, el.v)
+				}
+			}
+			continue
+		}
+		m0 := p.mark()
+		prevCut, prevFrame := p.cut, p.frame
+		p.cut = false
+		var f *frame
+		if rs.ownScope {
+			f = p.newFrame(len(rs.scope.names))
+			p.frame = f
+		}
+		p.beginElem(&r)
+		v, ok := rs.m(p)
+		if ok && rs.ownScope && rs.build {
+			v = p.attachCaptures(v, rs.scope, f, m0.pos, p.pos)
+		}
+		p.endElem(&r, ok, v)
+		cut := p.cut
+		p.cut, p.frame = prevCut, prevFrame
+		if !ok {
+			p.reset(m0)
+			if cut {
+				p.kids(base)
+				return nil, false
+			}
+			break
+		}
+		if rs.build {
+			p.kidStack = append(p.kidStack, v)
+		}
+		if p.pos == m0.pos && r.count >= rs.min {
+			break
+		}
+	}
+	if r.count < rs.min {
+		p.kids(base)
+		return nil, false
+	}
+	p.finishRun(&r)
+	if !rs.build {
+		return nil, true
+	}
+	return p.newNode(Node{Type: TypeList, Start: start, End: p.pos, Children: p.kids(base), fresh: true}), true
 }
 
 // after reports whether every element examined only input from end on.
@@ -266,4 +339,22 @@ func (p *parser) moveValue(v *Node, shift int, base uint32) *Node {
 	}
 	clear(p.shifts)
 	return v
+}
+
+// newRunState returns a runState for a VM repetition, reusing a freed one.
+func (p *parser) newRunState() *runState {
+	if n := len(p.freeRuns); n > 0 {
+		r := p.freeRuns[n-1]
+		p.freeRuns = p.freeRuns[:n-1]
+		return r
+	}
+	return &runState{}
+}
+
+// freeRunState makes the runState of a finished repetition available to later ones.
+func (p *parser) freeRunState(r *runState) {
+	r.old = nil
+	clear(r.mid)
+	clear(r.post)
+	p.freeRuns = append(p.freeRuns, r)
 }

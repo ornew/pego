@@ -414,6 +414,12 @@ def junk = @(?^;)* ";"`, "ab;cd;", []string{"a", "b", ";", "x;", "", "1"}},
 // TestDocumentResumesRepetitions checks that a reparse resumes long repetitions around the edit
 // (resume.go), with results equal to parsing from scratch.
 func TestDocumentResumesRepetitions(t *testing.T) {
+	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		t.Run(b.String(), func(t *testing.T) { testDocumentResumesRepetitions(t, b) })
+	}
+}
+
+func testDocumentResumesRepetitions(t *testing.T, backend Backend) {
 	cases := []struct {
 		name, grammar string
 		shifts        bool // elements after an edit are reused
@@ -449,7 +455,7 @@ def val = @(?0-9)+ / "[" items:(@(?0-9)+ ",")* "]"`, false},
 			for i := 0; i < 60; i++ {
 				fmt.Fprintf(&b, "x = %d;\nyz = [1,22,3,];\n\n", i)
 			}
-			doc, err := prog.NewDocument("main", b.String())
+			doc, err := prog.NewDocumentWith("main", b.String(), ParseOptions{Backend: backend})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -507,6 +513,12 @@ def val = @(?0-9)+ / "[" items:(@(?0-9)+ ",")* "]"`, false},
 // TestDocumentResumeEdges checks what a resumed repetition takes from the elements it reuses
 // besides their values.
 func TestDocumentResumeEdges(t *testing.T) {
+	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		t.Run(b.String(), func(t *testing.T) { testDocumentResumeEdges(t, b) })
+	}
+}
+
+func testDocumentResumeEdges(t *testing.T, backend Backend) {
 	defer func(n int) { minRecorded = n }(minRecorded)
 	minRecorded = 1
 	cases := []struct {
@@ -529,6 +541,18 @@ def stmt = (@(?a-z)+ ";") #recover(skip=(?^;)+ ";")`, strings.Repeat("ab;c1;", 8
 def main = a $$
 def a = b* "y"
 def b = a "x" / "z"`, strings.Repeat("zzyx", 6) + "y", []string{"z", "y", "x", ""}},
+		// Bounds: a run that ends at its maximum, and a minimum met by reused elements alone.
+		{"bounds", `
+def main = (@(?a-z)+ ";" / @(?a-z){1,20} "." / "\n")* $$`, strings.Repeat("abcdefghijklmnopqrstuvwxy;\n", 3) + strings.Repeat("abcdefghijklmnopqrst.\n", 3) + "\n", []string{"a", ";", ".", "\n", ""}},
+		// A cut in an element: an iteration that fails after it fails the repetition.
+		{"cut", `
+def main = ("<" -- @(?a-z)+ ">")* @(?a-z<>)* $$`, strings.Repeat("<ab><cd>", 6) + "xyz", []string{"<", ">", "a", "", "<a>"}},
+		// An element that calls a rule reading a variable defined before the repetition is not
+		// resumed: the edit changes the variable, not the input the elements examined.
+		{"variables", `
+def main = h:hdr [k = len($h)] item* $$
+def hdr = @"x"*
+def item = [k == 1] @(?a-z) / @(?a-z) "!"`, "x" + strings.Repeat("a!", 20) + "a", []string{"x", "", "a!"}},
 		{"expectations", `
 def main = item* $$
 def item = @(?a-z)+ " "*`, strings.Repeat("ab cd ", 8) + "!", []string{"a", " ", "", "  "}},
@@ -536,7 +560,7 @@ def item = @(?a-z)+ " "*`, strings.Repeat("ab cd ", 8) + "!", []string{"a", " ",
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			prog := compile(t, c.grammar)
-			doc, err := prog.NewDocument("main", c.text)
+			doc, err := prog.NewDocumentWith("main", c.text, ParseOptions{Backend: backend})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -566,7 +590,7 @@ def main = run rest $$
 def run = item*
 def item = @(?a-z) &((?a-z!) (?a-z!) (?a-z!) (?a-z!))
 def rest = @(?^\n)*`)
-		doc, err := prog.NewDocument("main", "abcdefgh!!!!")
+		doc, err := prog.NewDocumentWith("main", "abcdefgh!!!!", ParseOptions{Backend: backend})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -588,7 +612,7 @@ def rest = @(?^\n)*`)
 def main = list "!" / "bb" list "?"
 def list = item*
 def item = ^ @(?ab) / @(?ab)`)
-		doc, err := prog.NewDocument("main", "aaaa?")
+		doc, err := prog.NewDocumentWith("main", "aaaa?", ParseOptions{Backend: backend})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -610,7 +634,7 @@ def run = item*
 def item = b:bol / mid
 def bol = ^ @(?a-z)
 def mid = @(?a-z) / "\n"`)
-		doc, err := prog.NewDocument("main", "x\nab\ncd\nef\n")
+		doc, err := prog.NewDocumentWith("main", "x\nab\ncd\nef\n", ParseOptions{Backend: backend})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -627,6 +651,48 @@ def mid = @(?a-z) / "\n"`)
 			}
 		}
 	})
+}
+
+// TestDocumentResumeSequences checks edit sequences that resumed repetitions must get right on
+// every backend.
+func TestDocumentResumeSequences(t *testing.T) {
+	defer func(n int) { minRecorded = n }(minRecorded)
+	minRecorded = 1
+	cases := []struct {
+		name, grammar, text string
+		edits               []docEdit // delta is ignored: the inserted text is ins
+		ins                 []string
+	}{
+		// A minimum met only by reused elements: the edit is after all of them.
+		{"minimum", `
+def main = ("a" @(?a-z))+ @(?0-9)* $$`, strings.Repeat("ab", 20) + "123", []docEdit{{41, 42, 0}, {40, 41, 0}}, []string{"9", ""}},
+		// Elements that call a rule reading a variable defined before the repetition: an edit to
+		// the header changes how they parse, though not the input they examined.
+		{"variables", `
+def main = h:hdr [k = len($h)] item* $$
+def hdr = @"x"*
+def item = [k == 1] @(?a-z!) / @(?a-z) "!"`, "x" + strings.Repeat("a!", 20), []docEdit{{0, 1, 0}, {0, 0, 0}, {0, 0, 0}}, []string{"", "x", "x"}},
+	}
+	for _, c := range cases {
+		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+			t.Run(c.name+"/"+b.String(), func(t *testing.T) {
+				prog := compile(t, c.grammar)
+				doc, err := prog.NewDocumentWith("main", c.text, ParseOptions{Backend: b})
+				if err != nil {
+					t.Fatal(err)
+				}
+				doc.Parse()
+				for i, e := range c.edits {
+					doc.Edit(e.start, e.end, c.ins[i])
+					got, err := doc.Parse()
+					fn, ferr := prog.Parse("main", doc.Text())
+					if g, w := dump(t, got, err), dump(t, fn, ferr); g != w {
+						t.Fatalf("edit %d: %q\n got  %.300s\n want %.300s", i, doc.Text(), g, w)
+					}
+				}
+			})
+		}
+	}
 }
 
 // TestDocumentEarlierTrees checks what happens to a tree returned by an earlier parse: nodes

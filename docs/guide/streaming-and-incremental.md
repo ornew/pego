@@ -908,8 +908,7 @@ the edit), the rest of the old run is taken too, its nodes moved in place. Each 
 conditions are those of memo entries, applied per element; in addition, a repetition is not resumed when an element has
 a predicate (`[...]`) or calls a rule that reads variables, when its run recovered an error or used a left recursion
 that was still growing, and its elements are not moved past an edit that changed the length when their values may
-contain positions. Only the closure backend (the default) resumes repetitions; the bytecode backends look up each
-element in the memo table.
+contain positions. Every backend resumes repetitions.
 
 ### Writing grammars that reuse well
 

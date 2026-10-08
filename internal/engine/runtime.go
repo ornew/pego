@@ -97,7 +97,8 @@ type parser struct {
 	runs, lastRuns map[runKey]*runRecord
 	// provisional counts the uses of provisional results of growing left recursions.
 	provisional int
-	resumed     int // elements reused by resumeRepeat (for tests)
+	resumed     int         // elements reused by resumeRepeat (for tests)
+	freeRuns    []*runState // runStates of finished VM repetitions (newRunState)
 	// scratch holds the pooled buffers the parser uses (newPooledParser), or nil.
 	scratch *scratch
 	// nodeChunks counts the node chunks allocated since the last splitChunks.

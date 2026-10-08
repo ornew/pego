@@ -46,6 +46,49 @@ type vmProgram struct {
 	fields [][]string // names in the field lists
 	ascii  []asciiSet // the ASCII part of each class, as a bitmap
 	descs  []string   // expectation table: fixedDescs followed by the string table (string i has index numFixedDescs+i)
+	// runSites holds, at the index of each REPEAT that a Document can resume, how to resume it.
+	runSites []*vmRunSite
+}
+
+// vmRunSite is a repetition that a Document can resume (resume.go): the REPEAT at ip, whose ITER
+// follows it, with NEXT just before the ENDREPEAT at end.
+type vmRunSite struct {
+	end       int  // the ENDREPEAT
+	keep      bool // the elements push values
+	shiftable bool // the elements' values contain no position values
+}
+
+// runSite returns how to resume the repetition whose REPEAT is at ip, or nil if it cannot be
+// resumed (as compiler.resumable): its element evaluates predicates or calls rules that read
+// variables.
+func (vm *vmProgram) runSite(ip int) *vmRunSite {
+	code := vm.m.Code
+	if ip+1 >= len(code) || code[ip+1].Op != OpIter {
+		return nil
+	}
+	end := int(code[ip+1].A)
+	if end <= ip+2 || end >= len(code) || code[end].Op != OpEndRepeat || code[end-1].Op != OpNext {
+		return nil
+	}
+	site := &vmRunSite{end: end, keep: code[end-1].B != 0, shiftable: true}
+	for _, in := range code[ip+2 : end-1] {
+		switch in.Op {
+		case OpPred, OpAssign:
+			return nil
+		case OpCall:
+			if in.A < 0 || int(in.A) >= len(vm.rules) {
+				return nil
+			}
+			r := vm.rules[in.A]
+			if len(r.vars) > 0 {
+				return nil
+			}
+			if r.positional {
+				site.shiftable = false
+			}
+		}
+	}
+	return site
 }
 
 // newVMProgram prepares a module for execution. If iterative, it runs with the iterative model.
@@ -82,6 +125,12 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 		}
 	}
 	vm.nseen = numberSeen(vm.rules)
+	vm.runSites = make([]*vmRunSite, len(m.Code))
+	for ip, in := range m.Code {
+		if in.Op == OpRepeat {
+			vm.runSites[ip] = vm.runSite(ip)
+		}
+	}
 	for _, r := range vm.rules {
 		r.plain = !r.leader && (!r.memo || r.transient) && len(r.scope.names) == 0
 	}
@@ -188,6 +237,7 @@ func (vm *vmProgram) pratt(pi *PrattInfo) *pratt {
 const (
 	eChoice = iota
 	eIter
+	eRunIter // an iteration of a repetition whose run is recorded (repState.run)
 	eLook
 	eNotLook
 	eLabel
@@ -238,7 +288,8 @@ type vmSave struct {
 type repState struct {
 	min, max, count int
 	scope           int
-	base            int // bottom of the element values
+	base            int       // bottom of the element values
+	run             *runState // the run being recorded in a Document parse, or nil
 }
 
 func (p *parser) save() vmSave {
@@ -427,7 +478,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			marked := false
 			for k := len(p.ents) - 1; k >= ebase; k-- {
 				e := &p.ents[k]
-				if e.kind == eChoice || e.kind == eIter {
+				if e.kind == eChoice || e.kind == eIter || e.kind == eRunIter {
 					e.cut = true
 					marked = true
 					break
@@ -466,8 +517,45 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			}
 		case OpRepeat:
 			p.reps = append(p.reps, repState{min: int(in.A), max: int(in.B), scope: int(in.C), base: len(p.vals)})
+			if p.runs != nil && p.silent == 0 {
+				if site := vm.runSites[ip]; site != nil {
+					// A Document parse: resume the run of the previous parse (resume.go).
+					r := p.newRunState()
+					p.startRun(r, ip, int(in.A), int(in.B), site.shiftable)
+					rep := &p.reps[len(p.reps)-1]
+					rep.run = r
+					for el := p.nextPrefix(r); el != nil; el = p.nextPrefix(r) {
+						if site.keep {
+							p.push(el.v)
+						}
+					}
+					rep.count = r.count
+					if !r.more() {
+						ip = site.end
+						continue
+					}
+				}
+			}
 		case OpIter:
-			p.ents = append(p.ents, vmEntry{kind: eIter, ip: in.A, save: p.save()})
+			kind := uint8(eIter)
+			if rep := &p.reps[len(p.reps)-1]; rep.run != nil {
+				r := rep.run
+				if p.resync(r) {
+					for el := p.nextTail(r); el != nil; el = p.nextTail(r) {
+						if m.Code[in.A-1].B != 0 { // NEXT keeps values
+							p.push(el.v)
+						}
+					}
+					rep.count = r.count
+					if !r.more() {
+						ip = int(in.A)
+						continue
+					}
+				}
+				kind = eRunIter
+				p.beginElem(r)
+			}
+			p.ents = append(p.ents, vmEntry{kind: kind, ip: in.A, save: p.save()})
 			if sc := p.reps[len(p.reps)-1].scope; sc >= 0 {
 				p.frame = p.newFrame(len(vm.scopes[sc]))
 			}
@@ -489,6 +577,13 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 				p.frame = e.save.frame
 			}
 			rep.count++
+			if rep.run != nil {
+				var v *Node
+				if in.B != 0 {
+					v = asNodeValue(p.vals[len(p.vals)-1])
+				}
+				p.endElem(rep.run, true, v)
+			}
 			if in.B == 2 && p.emit != nil && p.depth == 1 {
 				// Elements of the start rule's #stream are passed on without being retained, and committed.
 				v := asNodeValue(p.pop())
@@ -517,6 +612,10 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			p.reps = p.reps[:len(p.reps)-1]
 			if rep.count < rep.min {
 				goto fail
+			}
+			if rep.run != nil {
+				p.finishRun(rep.run)
+				p.freeRunState(rep.run)
 			}
 			if in.A == 1 {
 				kids := p.nodes(len(p.vals) - rep.base)
@@ -626,6 +725,13 @@ func (p *parser) unwind(m *Module, ebase int) (ip int, ok bool) {
 		e := p.ents[len(p.ents)-1]
 		p.ents = p.ents[:len(p.ents)-1]
 		switch e.kind {
+		case eRunIter:
+			p.endElem(p.reps[e.save.reps-1].run, false, nil)
+			p.restore(&e.save)
+			if e.cut {
+				continue
+			}
+			return int(e.ip), true
 		case eChoice, eIter:
 			p.restore(&e.save)
 			if e.cut {
