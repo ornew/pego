@@ -406,8 +406,10 @@ concurrent parses. Generated Go parsers (`pego gen`) have no tracing.
   [design 014](../design/014-tracing-and-profiling.md#cost) for the details.
 - **On, a parse is several times slower**, mostly in the trace function. Profiles therefore show relative times.
 - **The trace shows the calls the backend makes.** The backends do not skip the same calls that cannot match the next
-  character, so their traces can differ; the results, errors and memo decisions are the same with and
-  without tracing on every backend, which the test suite checks on all its grammars.
+  character, so their traces can differ. With and without tracing, the results and errors are the same on every
+  backend, and so are the number of evaluations and memo reuses, the memo entries and the memoization decisions; the
+  test suite checks this on all its grammars, and for `Document` checks the results and `Document.Stats` across
+  edits on the backend corpus.
 - **Aborted parses** (a runtime error in an action, an error from a stream's `emit`, the nesting limit) end the trace
   without the exit events of the calls in progress.
 - **Streams forget lines.** A stream parse discards the input it has consumed, and with it the line structure:

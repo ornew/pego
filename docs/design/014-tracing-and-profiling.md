@@ -150,16 +150,23 @@ positions and clock reads) dominates.
 - `check`, which nearly every engine test uses, now also parses each input with a trace on every backend, for the
   grammar and its unmemoized variant, and compares the results (trees, positions, errors) with untraced parses. It also
   checks that the events nest, that each exit matches its enter, and that `Memo` and `Evals` agree.
+  Each parse is also repeated through a copy of `ParseWith` that exposes the parser (`parseWork`), and the work it did
+  must be the same traced and untraced: `Stats` (evaluations and memo reuses), the number of memo entries, the first
+  calls recorded and the rules memoized eagerly, that is, the memoization decisions.
 - `TestTraceKeepsResults` does the same for the backend corpus (`genCorpus`: the example grammars with their test
-  inputs, the typed-runtime cases and others), in both position units and in recognition mode.
-- `TestTraceEvents` checks the exact event sequences of small grammars on every backend: memo hits, left recursion,
-  Pratt levels, lookaheads and `#recover`. Stream and `Document` parses are checked against their untraced results and
+  inputs, the typed-runtime cases and others), in both position units and in recognition mode. For each input it also
+  parses a `Document`, traced and untraced, before and after three edits, and compares the results and
   `Document.Stats`.
+- `TestTraceEvents` checks the exact event sequences of small grammars on every backend: memo hits, left recursion,
+  Pratt levels, lookaheads and `#recover`. Stream and `Document` parses are checked against their untraced results,
+  and the evaluations and memo hits the events report against `Document.Stats`.
 - Profile tests check the counts, repeats, wasted input and hints on grammars where they are known; the CLI tests check
   the commands' output.
 
 Removing the merge of a traced call's expectations into its caller (one line of `traceExit`) makes
 `TestTraceKeepsResults` fail on 516 parses, so the equivalence tests do detect a tracer that disturbs the parse.
+Likewise, a tracer that memoized every rule (setting `memoAll`) fails the comparison of the work on 1,338 parses, and
+one that gave a `Document` parse a fresh memo fails the document comparison 573 times.
 
 ## Alternatives considered
 

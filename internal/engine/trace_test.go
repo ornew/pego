@@ -2,6 +2,8 @@ package engine
 
 import (
 	"fmt"
+	"math/bits"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -51,9 +53,10 @@ func traceLines(prog *Program, start, input string, o ParseOptions) ([]string, s
 	return out, resultJSON(n, err)
 }
 
-// checkTrace checks that tracing changes no result on any backend and that the events are well
-// formed. (Backends need not report the same calls: they skip different calls by first-character
-// dispatch.)
+// checkTrace checks that tracing changes no result on any backend, nor the work of the parse
+// (evaluations, memo reuses, memo entries and memoization decisions), and that the events are
+// well formed. (Backends need not report the same calls: they skip different calls by
+// first-character dispatch.)
 func checkTrace(t *testing.T, prog *Program, start, input string, o ParseOptions) {
 	t.Helper()
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -64,8 +67,61 @@ func checkTrace(t *testing.T, prog *Program, start, input string, o ParseOptions
 		if _, got := traceLines(prog, start, input, o); got != want {
 			t.Errorf("input %q (%v, unit %v, recognize %v): tracing changes the result\n without %s\n with    %s", input, b, o.Unit, o.Recognize, want, got)
 		}
+		w1, r1 := parseWork(prog, start, input, o)
+		o.Trace = func(TraceEvent) {}
+		w2, r2 := parseWork(prog, start, input, o)
+		o.Trace = nil
+		if r1 != want || r2 != want || w1 != w2 {
+			t.Errorf("input %q (%v, unit %v, recognize %v): tracing changes the work of the parse\n without %+v %s\n with    %+v %s", input, b, o.Unit, o.Recognize, w1, r1, w2, r2)
+		}
 		checkEvents(t, prog, start, input, o)
 	}
+}
+
+// parseWorkStats is what a parse did: its counts, the memo entries it left, and the memoization
+// decisions it made (the first calls recorded, and the rules memoized eagerly).
+type parseWorkStats struct {
+	Stats
+	entries, firstCalls int
+	eager               string
+}
+
+// parseWork parses as ParseWith does and returns what the parse did, with the result (as
+// resultJSON).
+func parseWork(prog *Program, start, input string, o ParseOptions) (parseWorkStats, string) {
+	target := prog
+	if o.Recognize {
+		rp, err := prog.recognizer()
+		if err != nil {
+			return parseWorkStats{}, resultJSON(nil, err)
+		}
+		target = rp
+	}
+	p := newParser(target, input, o.Unit, !o.Recognize)
+	p.maxDepth = o.maxDepth(o.Backend)
+	p.deferMemo = true
+	p.setTrace(o.Trace)
+	n, err := target.run(p, o.Backend, start)
+	if o.Recognize {
+		n = nil
+	}
+	w := parseWorkStats{Stats: p.stats}
+	for _, e := range p.memo.slots {
+		for ; e != nil; e = e.next {
+			w.entries++
+		}
+	}
+	for _, x := range p.memo.seen {
+		w.firstCalls += bits.OnesCount64(x)
+	}
+	w.eager = fmt.Sprint(slices.Collect(func(yield func(bool) bool) {
+		for _, c := range p.memo.calls {
+			if !yield(c.eager) {
+				return
+			}
+		}
+	}))
+	return w, resultJSON(n, err)
 }
 
 // checkEvents checks that the events of a parse nest and that exits agree with their enters.
@@ -121,6 +177,40 @@ func TestTraceKeepsResults(t *testing.T) {
 			for _, u := range []Unit{CodePoints, Bytes} {
 				checkTrace(t, prog, "main", in, ParseOptions{Unit: u})
 				checkTrace(t, prog, "main", in, ParseOptions{Unit: u, Recognize: true})
+			}
+			checkTraceDocument(t, prog, in)
+		}
+	}
+}
+
+// checkTraceDocument checks that tracing a Document changes neither its results nor its counts
+// (Document.Stats), before and after edits.
+func checkTraceDocument(t *testing.T, prog *Program, input string) {
+	t.Helper()
+	runes := []rune(input)
+	mid := len(runes) / 2
+	edits := []struct {
+		start, end int
+		text       string
+	}{{mid, mid, "x"}, {mid, mid + 1, ""}, {0, min(1, len(runes)), "a"}}
+	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		plain, err1 := prog.NewDocumentWith("main", input, ParseOptions{Backend: b})
+		traced, err2 := prog.NewDocumentWith("main", input, ParseOptions{Backend: b, Trace: func(TraceEvent) {}})
+		if err1 != nil || err2 != nil {
+			t.Fatal(err1, err2)
+		}
+		for i := 0; ; i++ {
+			n1, e1 := plain.Parse()
+			n2, e2 := traced.Parse()
+			if a, c := resultJSON(n1, e1), resultJSON(n2, e2); a != c || plain.Stats() != traced.Stats() {
+				t.Errorf("input %q (%v), after %d edits: tracing changes the document\n without %+v %s\n with    %+v %s", input, b, i, plain.Stats(), a, traced.Stats(), c)
+			}
+			if i == len(edits) {
+				break
+			}
+			ed := edits[i]
+			if err1, err2 := plain.Edit(ed.start, ed.end, ed.text), traced.Edit(ed.start, ed.end, ed.text); err1 != nil || err2 != nil {
+				t.Fatal(err1, err2)
 			}
 		}
 	}
