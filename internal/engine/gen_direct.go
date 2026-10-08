@@ -110,15 +110,15 @@ func (d *dgen) rd(v ...string) string {
 	return v[0]
 }
 
-// rdIn marks the capture variables of caps that the Go expression x mentions as read, and
-// returns x.
-func (d *dgen) rdIn(x string, caps map[string]string) string {
-	for _, v := range caps {
-		if regexp.MustCompile(`\b` + v + `\b`).MatchString(x) {
-			d.reads[v] = true
+// rdTerm marks the capture variables (caps) that the term t reads as read: those generator.term
+// writes for its captures outside lambdas that bind the name. (Searching the Go text for the
+// variable's name would also find it in string literals, such as a variable or field named k1.)
+func (d *dgen) rdTerm(t grammar.Term, caps map[string]string) {
+	capRefs(t, func(name string) {
+		if v, ok := caps[name]; ok {
+			d.rd(v)
 		}
-	}
-	return x
+	})
 }
 
 func (d *dgen) label() string {
@@ -760,7 +760,8 @@ func (d *dgen) predicate(e *grammar.Predicate, s *dscope, fail string) string {
 	g := d.g
 	prev := g.caps
 	g.caps = caps
-	term := d.rdIn(g.term(t, newScope(), nil), caps)
+	term := g.term(t, newScope(), nil)
+	d.rdTerm(t, caps)
 	g.caps = prev
 	if a, ok := e.Term.(*grammar.Assign); ok {
 		d.failIf(fmt.Sprintf("!p.assign(%q, func(c *tctx) any { return %s })", a.Name, term), fail)
@@ -774,12 +775,23 @@ func (d *dgen) predicate(e *grammar.Predicate, s *dscope, fail string) string {
 // name) is in caps.
 func refsKnown(t grammar.Term, caps map[string]string) bool {
 	ok := true
+	capRefs(t, func(name string) {
+		if _, known := caps[name]; !known {
+			ok = false
+		}
+	})
+	return ok
+}
+
+// capRefs calls f with the name of each capture the term t refers to outside lambdas that bind
+// the name.
+func capRefs(t grammar.Term, f func(name string)) {
 	var walk func(t grammar.Term, shadow map[string]bool)
 	walk = func(t grammar.Term, shadow map[string]bool) {
 		switch t := t.(type) {
 		case *grammar.CaptureRef:
-			if _, known := caps[t.Name]; !known && !shadow[t.Name] {
-				ok = false
+			if !shadow[t.Name] {
+				f(t.Name)
 			}
 		case *grammar.Lambda:
 			inner := map[string]bool{}
@@ -795,7 +807,6 @@ func refsKnown(t grammar.Term, caps map[string]string) bool {
 		}
 	}
 	walk(t, map[string]bool{})
-	return ok
 }
 
 // walkChildren calls f with the direct subterms of t (those walkTerm visits next).
@@ -952,7 +963,8 @@ func (d *dgen) finish(r *rule, s *dscope, body string) (start, ctx bool) {
 		// nest, so it need not be restored).
 		d.line("p.where = %q", r.name)
 		g.caps, g.final = caps, r.action
-		action := d.rdIn(g.term(r.action, newScope(), nil), caps)
+		action := g.term(r.action, newScope(), nil)
+		d.rdTerm(r.action, caps)
 		g.caps, g.final = nil, nil
 		d.line("v = %s", action)
 		if _, isNew := r.action.(*grammar.New); isNew {
