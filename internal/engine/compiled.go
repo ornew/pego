@@ -29,7 +29,10 @@ import (
 const (
 	compiledMagic   = "PEGOC\x00"
 	compiledVersion = 2
-	isaVersion      = 1 // instruction set version
+	// isaVersion is the instruction set version written to files. Files of earlier versions load:
+	// version 2 only adds instructions (ETEXTCHK, ETEXTEQ, ELISTBEGIN, ELISTPUSH, EMAPPUSH,
+	// ELISTEND).
+	isaVersion = 2
 	maxDepth        = 10000
 )
 
@@ -568,8 +571,8 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	if v == 1 {
 		return r.loadV1(opts)
 	}
-	if isa := r.uint(); r.err == nil && isa != isaVersion {
-		return nil, "", fmt.Errorf("unsupported instruction set version %d (want %d)", isa, isaVersion)
+	if isa := r.uint(); r.err == nil && (isa < 1 || isa > isaVersion) {
+		return nil, "", fmt.Errorf("unsupported instruction set version %d (want 1 to %d)", isa, isaVersion)
 	}
 	r.strings()
 	start := r.str()

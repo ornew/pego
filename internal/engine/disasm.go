@@ -155,10 +155,15 @@ func (m *Module) operands(in Instr, str func(int) string, names func([]int) stri
 		return fmt.Sprintf("%s expr=%d", m.Strings[a], bb)
 	case OpLabel, EStr, EVar, EMember, EBin, EUnary, EBoolChk:
 		return str(a)
-	case EInt, EItem, ELocal, ECap:
+	case EInt, EItem, ELocal, ECap, EListPush:
 		return strconv.Itoa(a)
 	case EBool:
 		return strconv.FormatBool(a == 1)
+	case ETextEq:
+		if a == 1 {
+			return "!="
+		}
+		return "=="
 	case ENew:
 		return fmt.Sprintf("%s fields=%s", m.Strings[a], names(m.FieldLists[bb]))
 	case EFunc:

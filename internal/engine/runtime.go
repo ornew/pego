@@ -67,6 +67,7 @@ type parser struct {
 	// arguments of built-ins and struct fields by the closure backend's evaluator.
 	estack []any
 	names  []string  // field names for newStruct in the closure backend's evaluator
+	lists  []int     // starts on kidStack of the lists being gathered by ELISTBEGIN
 	pool   framePool // frames of the iterative-model VM
 
 	// Chunks of nodes and child slices (alloc.go), and the stack that collects repetition children

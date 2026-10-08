@@ -251,10 +251,18 @@ Actions and predicates are evaluated by stack-based expression code. An evaluati
 | 115 | `EFUNC` | A start, B parameter count | Push a function that captures the current locals. |
 | 116 | `ECALL` | A built-in, B argument count | Pop the arguments, call the built-in function, and push the result. |
 | 117 | `ERET` | | Return the top value as the value of the expression. |
+| 118 | `ETEXTCHK` | | It is an error (the same as `text`'s) if `text` of the top value is not defined. The value stays. *(Instruction set 2.)* |
+| 119 | `ETEXTEQ` | A neg | Pop two values and push whether their texts (as `text` gives them; both were checked with `ETEXTCHK`) are equal, or unequal if neg is 1. *(Instruction set 2.)* |
+| 120 | `ELISTBEGIN` | | Start gathering the elements of a list. Gatherings nest. *(Instruction set 2.)* |
+| 121 | `ELISTPUSH` | A n | Pop n values and add them, in order, to the list being gathered, with the checks of `list`. *(Instruction set 2.)* |
+| 122 | `EMAPPUSH` | | Pop a function and a list (the list below) and add the results of calling the function on each element, with the checks of `map`. *(Instruction set 2.)* |
+| 123 | `ELISTEND` | | Finish the innermost gathering and push its elements as a `List`, as `concat` builds it. *(Instruction set 2.)* |
 
 Names (`EVAR`, `EMEMBER`), operators (`EBIN`, `EUNARY`, `EBOOLCHK`, written as their source symbol such as `+` or `&&`) and type names (`ENEW`) are string-table indices.
 
 Calling a function evaluates its code from its start, with the locals captured at creation followed by the arguments as its locals.
+
+Instructions 118–123 are shortcuts with the same results as the general instructions. The reference compiler emits `ETEXTCHK` after each operand and `ETEXTEQ` for `text(a) == text(b)` and `text(a) != text(b)`, which compares the texts without making them values, and `ELISTBEGIN`, `ELISTPUSH`/`EMAPPUSH` per argument and `ELISTEND` for a `concat` call whose arguments are all `list`, `map` or such `concat` calls, which builds no intermediate list. In both cases the errors arise in the same order as with `ECALL`.
 
 Built-in function indices: 0 `len`, 1 `text`, 2 `foldl`, 3 `foldr`, 4 `map`, 5 `list`, 6 `concat`. Their semantics are defined in [spec/actions.md](../spec/actions.md) (built-in functions).
 
@@ -271,7 +279,7 @@ A module is stored in the `.pegoc` version 2 format. Integers are variable-lengt
 |:--|:--|
 | Magic | `PEGOC\x00` (6 bytes) |
 | Version | 1 byte (2) |
-| Instruction-set version | Unsigned integer (1) |
+| Instruction-set version | Unsigned integer (2). A runtime loads files of every instruction-set version up to its own: version 2 only adds instructions (118–123). |
 | String table | Count, then each string (byte length and UTF-8 bytes), all unsigned. The module's string table is a prefix of this table. |
 | Start rule | String index, unsigned (the empty string means no default start rule) |
 | Package name | String index, unsigned |

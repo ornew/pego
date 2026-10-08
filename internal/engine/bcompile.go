@@ -392,6 +392,38 @@ func (c *bcompiler) expr(t grammar.Term, s *scope, locals []string, allowIndex b
 	return start
 }
 
+// concatParts emits the code that gathers the elements of the arguments of a fusable concat call.
+func (c *bcompiler) concatParts(t *grammar.Call, s *scope, locals []string) {
+	for _, a := range t.Args {
+		call := a.(*grammar.Call)
+		switch call.Func {
+		case "list":
+			for _, x := range call.Args {
+				c.term(x, s, locals)
+			}
+			c.eemit(EListPush, int32(len(call.Args)), 0)
+		case "map":
+			c.term(call.Args[0], s, locals)
+			c.lambda(call.Args[1], s, locals)
+			c.eemit(EMapPush, 0, 0)
+		case "concat":
+			c.concatParts(call, s, locals)
+		}
+	}
+}
+
+// lambda emits a function value for the lambda t.
+func (c *bcompiler) lambda(t grammar.Term, s *scope, locals []string) {
+	l, ok := t.(*grammar.Lambda)
+	if !ok {
+		c.term(t, s, locals)
+		return
+	}
+	at := c.eemit(EFunc, 0, int32(len(l.Params)))
+	c.lambdas = append(c.lambdas, pendingLambda{at: at, body: l.Body, scope: s,
+		locals: append(append([]string(nil), locals...), l.Params...)})
+}
+
 func (c *bcompiler) term(t grammar.Term, s *scope, locals []string) {
 	switch t := t.(type) {
 	case *grammar.IntLit:
@@ -426,6 +458,13 @@ func (c *bcompiler) term(t grammar.Term, s *scope, locals []string) {
 		c.m.FieldLists = append(c.m.FieldLists, c.strs2(names))
 		c.eemit(ENew, c.str(t.Type), int32(len(c.m.FieldLists)-1))
 	case *grammar.Call:
+		if t.Func == "concat" && fusable(t) {
+			// Gather the elements of list, map and concat arguments directly (see fusable).
+			c.eemit(EListBegin, 0, 0)
+			c.concatParts(t, s, locals)
+			c.eemit(EListEnd, 0, 0)
+			return
+		}
 		fn := 0
 		for i, n := range builtinNames {
 			if n == t.Func {
@@ -455,6 +494,18 @@ func (c *bcompiler) term(t grammar.Term, s *scope, locals []string) {
 			c.eemit(EBoolChk, c.str(t.Op), 0)
 			c.m.Exprs[j].A = int32(len(c.m.Exprs))
 		default:
+			if lx, ok := textArg(t.L); ok && (t.Op == "==" || t.Op == "!=") {
+				if rx, ok := textArg(t.R); ok {
+					// Compare the texts without making strings values (see evalCtx.binary). Each
+					// argument is checked right after it is evaluated, as text(...) would be.
+					c.term(lx, s, locals)
+					c.eemit(ETextChk, 0, 0)
+					c.term(rx, s, locals)
+					c.eemit(ETextChk, 0, 0)
+					c.eemit(ETextEq, b2i(t.Op == "!="), 0)
+					return
+				}
+			}
 			c.term(t.L, s, locals)
 			c.term(t.R, s, locals)
 			c.eemit(EBin, c.str(t.Op), 0)

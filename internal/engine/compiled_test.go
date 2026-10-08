@@ -163,6 +163,37 @@ func TestCompiledErrors(t *testing.T) {
 	}
 }
 
+// TestCompiledEarlierInstructionSet checks that a file of instruction set 1 (which version 2
+// only extends) still loads and runs, and that a file of a later version does not load.
+func TestCompiledEarlierInstructionSet(t *testing.T) {
+	src := `def main = n:@(?0-9)+ -> $n`
+	data, err := compile(t, src).MarshalBinary("main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resum := func(b []byte) []byte {
+		b = append([]byte(nil), b[:len(b)-4]...)
+		return binary.LittleEndian.AppendUint32(b, crc32.ChecksumIEEE(b))
+	}
+	for _, isa := range []byte{1, isaVersion, isaVersion + 1} {
+		d := append([]byte(nil), data...)
+		d[len(compiledMagic)+1] = isa
+		prog, _, err := LoadProgram(resum(d), Options{})
+		if isa > isaVersion {
+			if err == nil || !strings.Contains(err.Error(), "unsupported instruction set version") {
+				t.Errorf("isa %d: got %v", isa, err)
+			}
+			continue
+		}
+		if err != nil {
+			t.Fatalf("isa %d: %v", isa, err)
+		}
+		if got := resultWith(prog, "12", ParseOptions{Backend: Bytecode}); got != `"12"` {
+			t.Errorf("isa %d: got %s", isa, got)
+		}
+	}
+}
+
 // TestCompiledCorruptionDoesNotPanic checks that loading corrupted data (with a valid checksum)
 // does not panic.
 func TestCompiledCorruptionDoesNotPanic(t *testing.T) {

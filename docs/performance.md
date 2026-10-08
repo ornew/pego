@@ -602,6 +602,15 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 - Effect (min of 10 interleaved runs, Apple M3 Max): both VMs 0.5–2.5% faster on full parses and 1.4–4.6% on
   recognition (JSON bytecode 12.2 → 11.7 ms).
 
+### 44. Changes 36 and 37 in the VMs (instruction set 2)
+
+- The VMs now compare `text(a) == text(b)` without boxing the strings and build no intermediate lists for a `concat`
+  of `list`, `map` and `concat` calls, through six new expression instructions (`ETEXTCHK`, `ETEXTEQ`,
+  `ELISTBEGIN`, `ELISTPUSH`, `EMAPPUSH`, `ELISTEND`; see [bytecode.md](bytecode.md)). The instruction-set version
+  of compiled files is now 2, and files of version 1 still load.
+- Effect (min of 20 interleaved runs, Apple M3 Max, recursive VM, during a busy day): XML 19.2k → 1.2k allocations,
+  JSON 22.0 → 20.5 MB and CSV 16.2 → 14.6 MB per parse; time within ±3% (CSV and XML 2% faster, JSON 3% slower).
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -633,9 +642,7 @@ From profiles after change 41 (JSON, XML, minilang, error recovery; full parse a
 2. **Expectation recording** (`expect`): 5–8% in most profiles, mostly the duplicate check against the expectations
    already recorded at the farthest position. An index of the last append per expectation does not help, because it
    goes stale whenever the farthest position advances, which is the common case.
-3. **The VMs** do not have changes 36 and 37 (text comparisons and `concat` fusion): both need new expression
-   instructions, which means extending the instruction set and deciding how its version is checked
-   (`isaVersion` must currently match exactly). The iterative VM also dispatches every step through an interface.
+3. **The iterative VM** dispatches every step through an interface (the VMs got changes 36 and 37 in change 44).
 4. **Document reparses** copy every reused result after an edit with shifted positions (`shiftNode`), because node
    positions are absolute; avoiding that would need relative positions in nodes (an API change).
 5. **Rule calls** still go through a function per call; inlining small rules into their callers at compile time

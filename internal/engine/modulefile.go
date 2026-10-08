@@ -334,7 +334,11 @@ func validateModule(m *Module) error {
 	}
 	for ip, x := range m.Exprs {
 		switch x.Op {
-		case EInt, ENil, ERet:
+		case EInt, ENil, ERet, ETextChk, EListBegin, EMapPush, EListEnd:
+		case ETextEq:
+			flag(x.A, 1)
+		case EListPush:
+			nonneg(x.A)
 		case EBool:
 			flag(x.A, 1)
 		case EStr, EVar, EMember, EBin, EUnary, EBoolChk:

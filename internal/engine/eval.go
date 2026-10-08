@@ -452,20 +452,11 @@ func (c *evalCtx) builtin(fn string, args []any) (any, error) {
 			return 0, nil
 		}
 	case "text":
-		switch x := args[0].(type) {
-		case nil:
-			return "", nil
-		case string:
-			return x, nil
-		case *Node:
-			if x == nil {
-				return "", nil
-			}
-			if x.terminal {
-				return x.Text, nil
-			}
-			return c.p.text(x.Start, x.End), nil
+		s, err := c.textString(args[0])
+		if err != nil {
+			return nil, err
 		}
+		return s, nil
 	case "foldl", "foldr":
 		f, ok := args[2].(function)
 		if !ok || f.arity() != 2 {
@@ -514,6 +505,11 @@ func (c *evalCtx) textOf(x grammar.Term) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	return c.textString(v)
+}
+
+// textString returns text(v) (the built-in) as a string.
+func (c *evalCtx) textString(v any) (string, error) {
 	switch v := v.(type) {
 	case nil:
 		return "", nil

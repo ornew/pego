@@ -225,6 +225,21 @@ const (
 	ECall
 	// ERET: return the expression's value.
 	ERet
+	// ETEXTCHK: check that text(x) of the top value x is defined (instruction set 2).
+	ETextChk
+	// ETEXTEQ neg: pop two values and push whether their texts are equal (unequal if neg)
+	// (instruction set 2).
+	ETextEq
+	// ELISTBEGIN: start gathering list elements (instruction set 2).
+	EListBegin
+	// ELISTPUSH n: pop n values and add them as elements, like list (instruction set 2).
+	EListPush
+	// EMAPPUSH: pop a list and a function and add the results of the function, like map
+	// (instruction set 2).
+	EMapPush
+	// ELISTEND: push a list of the elements gathered since the matching ELISTBEGIN
+	// (instruction set 2).
+	EListEnd
 )
 
 // Built-in function indices
@@ -251,6 +266,8 @@ var opNames = map[Op]string{
 	EInt: "EINT", EStr: "ESTR", EBool: "EBOOL", ENil: "ENIL", ECap: "ECAP", EItem: "EITEM",
 	ELocal: "ELOCAL", EVar: "EVAR", EMember: "EMEMBER", ENew: "ENEW", EBin: "EBIN", EUnary: "EUNARY",
 	EAnd: "EAND", EOr: "EOR", EBoolChk: "EBOOLCHK", EFunc: "EFUNC", ECall: "ECALL", ERet: "ERET",
+	ETextChk: "ETEXTCHK", ETextEq: "ETEXTEQ", EListBegin: "ELISTBEGIN", EListPush: "ELISTPUSH",
+	EMapPush: "EMAPPUSH", EListEnd: "ELISTEND",
 }
 
 func (o Op) String() string {

@@ -785,7 +785,14 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 		stack = stack[:len(stack)-1]
 		return v
 	}
-	defer func() { p.estack = stack[:base] }()
+	kids, lists := len(p.kidStack), len(p.lists)
+	defer func() {
+		p.estack = stack[:base]
+		if err != nil { // a failed predicate lets the parse go on: drop gathered list elements
+			p.dropKids(kids)
+			p.lists = p.lists[:lists]
+		}
+	}()
 	for {
 		in := &m.Exprs[ip]
 		switch in.Op {
@@ -882,6 +889,36 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 				return nil, err
 			}
 			stack = append(stack[:top], v)
+		case ETextChk:
+			if _, err := ctx.textString(stack[len(stack)-1]); err != nil {
+				return nil, err
+			}
+		case ETextEq:
+			// Both values were checked by ETEXTCHK.
+			ls, _ := ctx.textString(stack[len(stack)-2])
+			rs, _ := ctx.textString(stack[len(stack)-1])
+			stack = append(stack[:len(stack)-2], (ls == rs) != (in.A == 1))
+		case EListBegin:
+			p.lists = append(p.lists, len(p.kidStack))
+		case EListPush:
+			top := len(stack) - int(in.A)
+			if err := ctx.pushElems("list", stack[top:]); err != nil {
+				return nil, err
+			}
+			stack = stack[:top]
+		case EMapPush:
+			top := len(stack) - 2
+			p.estack = stack // the function's calls push above its arguments
+			err := ctx.pushElems("map", stack[top:])
+			stack = p.estack
+			if err != nil {
+				return nil, err
+			}
+			stack = stack[:top]
+		case EListEnd:
+			b := p.lists[len(p.lists)-1]
+			p.lists = p.lists[:len(p.lists)-1]
+			stack = append(stack, ctx.listNode(p.kids(b)))
 		case ERet:
 			return stack[len(stack)-1], nil
 		default:
