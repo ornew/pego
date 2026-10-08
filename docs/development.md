@@ -21,7 +21,7 @@ This document describes the repository layout, the architecture of the implement
 | `playground/` | WebAssembly API used by the web playground (package `main`; `GOOS=js GOARCH=wasm`) |
 | `site/` | Web site generator (a separate Go module): landing page, docs, reference and playground; build with `site/build.sh` |
 | `netlify.toml` | Netlify build configuration for the site |
-| `bench/` | Benchmarks comparing the backends with each other and with standard-library parsers (`gen/` holds generated parsers). Results are in [benchmarks.md](benchmarks.md). |
+| `bench/` | Benchmarks comparing the backends with each other and with standard-library parsers (`gen/` holds generated parsers). Results are in [benchmarks.md](benchmarks.md), generated with `go run ./bench/report` (`report/`) from the raw results in `results.txt`. |
 | `spec/` | Language specification |
 | `docs/tutorial/` | Tutorials (getting started) |
 | `docs/guide/` | Task-oriented guides to each feature ([index](guide/README.md)) |
