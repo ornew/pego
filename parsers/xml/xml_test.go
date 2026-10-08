@@ -27,6 +27,15 @@ func TestDecode(t *testing.T) {
 		{`<!DOCTYPE a [<!ENTITY e "x&f;y"><!ENTITY f "<b>&#38;amp;</b>">]><a>&e;</a>`, `<a>x<b>&amp;</b>y</a>`},
 		{`<!DOCTYPE a [<!ENTITY e "1 &f; 2"><!ENTITY f "&#38;#60;&#9;">]><a v="&e;"/>`, `<a v="1 &lt;  2"></a>`},
 		{`<!DOCTYPE a [<!ENTITY e "&#38;#38;"><!ENTITY f "&#38;#60;">]><a>&e;&f;</a>`, `<a>&amp;&lt;</a>`},
+		// Markup made of character references in an entity value is markup in the replacement text.
+		{`<!DOCTYPE a [<!ENTITY e "&#60;b>x&#60;/b>&#38;#60;">]><a>&e;</a>`, `<a><b>x</b>&lt;</a>`},
+		// White space characters of a replacement text become spaces in attribute values; line ends of
+		// replacement texts are not normalized.
+		{`<!DOCTYPE a [<!ENTITY e "1&#9;2&#13;&#10;3">]><a x="&e;">&e;</a>`, `<a x="1 2  3">1&#9;2&#13;&#10;3</a>`},
+		// Attribute defaults: references expanded where they are declared.
+		{`<!DOCTYPE a [<!ENTITY e "v"><!ATTLIST a x CDATA "&e;&#60;" y CDATA "&#38;e;">]><a/>`, `<a x="v&lt;" y="&amp;e;"></a>`},
+		// An undeclared entity in a default, where the DTD was not read entirely.
+		{`<!DOCTYPE a SYSTEM "a.dtd" [<!ATTLIST a x CDATA "&u;">]><a/>`, `<a x="&amp;u;"></a>`},
 		// The first declaration of an entity binds.
 		{`<!DOCTYPE a [<!ENTITY e "1"><!ENTITY e "2">]><a>&e;</a>`, `<a>1</a>`},
 		// Attribute defaults and normalization of tokenized types.

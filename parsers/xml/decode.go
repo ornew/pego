@@ -900,16 +900,23 @@ func entitySyntaxError(err error, prefix, n int, unclosed string) error {
 
 var spanType = reflect.TypeFor[Span]()
 
-// shift moves the spans of the values reachable from v by d.
-func shift(v reflect.Value, d int) {
+// shift moves the spans of the values reachable from v by d, each value once.
+func shift(v reflect.Value, d int) { shiftOnce(v, d, map[uintptr]bool{}) }
+
+func shiftOnce(v reflect.Value, d int, seen map[uintptr]bool) {
 	switch v.Kind() {
-	case reflect.Interface, reflect.Pointer:
+	case reflect.Interface:
 		if !v.IsNil() {
-			shift(v.Elem(), d)
+			shiftOnce(v.Elem(), d, seen)
+		}
+	case reflect.Pointer:
+		if !v.IsNil() && !seen[v.Pointer()] {
+			seen[v.Pointer()] = true
+			shiftOnce(v.Elem(), d, seen)
 		}
 	case reflect.Slice:
 		for i := 0; i < v.Len(); i++ {
-			shift(v.Index(i), d)
+			shiftOnce(v.Index(i), d, seen)
 		}
 	case reflect.Struct:
 		if v.Type() == spanType {
@@ -918,7 +925,7 @@ func shift(v reflect.Value, d int) {
 			return
 		}
 		for i := 0; i < v.NumField(); i++ {
-			shift(v.Field(i), d)
+			shiftOnce(v.Field(i), d, seen)
 		}
 	}
 }
