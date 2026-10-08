@@ -824,7 +824,7 @@ The [runtime guide](../guide/runtime.md) describes the backends, options and com
 | Indentation-based languages, matching tags, predicates and variables | [Context-sensitive parsing](../guide/context-sensitive.md) |
 | The precise definition of every construct | [Language specification](../../spec/README.md) |
 | Complete grammars with tests: CSV, XML, a calculator, an outline format, a small programming language, Go, Python | [examples/](../../examples/README.md) |
-| Ready-made parsers for common languages (JSON), as Go modules | [parsers/](../../parsers/README.md) |
+| Ready-made parsers for common languages (CSV, JSON), as Go modules | [parsers/](../../parsers/README.md) |
 
 A good way to continue is to extend the configuration language of section 5: add `[section]` headers, lists of values,
 and `#error` messages, then read [parsers/json](../../parsers/json/json.pego) and [examples/csv](../../examples/csv/) to see how

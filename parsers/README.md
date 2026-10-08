@@ -5,6 +5,7 @@ that depends only on the standard library: import it and parse, with nothing to 
 
 | Language | Module | Specification | Checked against |
 |:--|:--|:--|:--|
+| CSV | [`github.com/ornew/pego/parsers/csv`](csv/) | [RFC 4180](https://www.rfc-editor.org/rfc/rfc4180), with the leniencies of `encoding/csv` | 73 edge cases, `encoding/csv` (differential and fuzz tests) |
 | JSON | [`github.com/ornew/pego/parsers/json`](json/) | [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259) | [JSONTestSuite](https://github.com/nst/JSONTestSuite) (every `y_` and `n_` case), `encoding/json` (differential and fuzz tests) |
 
 ```bash
@@ -52,6 +53,9 @@ go test ./parsers -update             # rewrite the golden files from the engine
 parsers/test.sh                       # both, and the tests of every module
 cd parsers/json && go test ./...      # the tests of one module
 ```
+
+The generated `parser.go` declares unexported names of its runtime (such as `parse`, `parser` and `rule`) in the
+package, so hand-written code must avoid them.
 
 The generation commands are the `go:generate` lines of [generate.go](generate.go); the up-to-date test reads them, so a
 new parser needs only a new line there. The modules are not part of the main module's `go test ./...`: run
