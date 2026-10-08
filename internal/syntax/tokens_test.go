@@ -82,6 +82,64 @@ func TestIsIdentifier(t *testing.T) {
 	}
 }
 
+// TestLongRunsOfInvalidCharacters checks that the lexer handles a long run of characters that
+// start no token without recursing per character (which overflowed the stack), and reports the
+// run as one error.
+func TestLongRunsOfInvalidCharacters(t *testing.T) {
+	junk := strings.Repeat("`;~😀", 1<<19) // 2M characters
+	src := "def a = \"x\"\n" + junk + "\ndef b = \"y\""
+	g, errs := ParsePartial(src)
+	if len(errs) != 1 || errs[0].Pos != (grammar.Pos{Line: 2, Col: 1}) || !strings.HasPrefix(errs[0].Msg, "unexpected characters") {
+		t.Errorf("errors %v", errs[:min(len(errs), 3)])
+	}
+	if len(g.Rules()) != 2 {
+		t.Errorf("rules %v", g.Rules())
+	}
+	if toks := Tokenize(src); len(toks) != 8 {
+		t.Errorf("%d tokens", len(toks))
+	}
+}
+
+// TestErrorLimit checks that the number of errors is limited: many separate invalid characters
+// make at most maxErrors errors and a last one that says there are more.
+func TestErrorLimit(t *testing.T) {
+	_, errs := ParsePartial(strings.Repeat("` ", 10000))
+	if len(errs) != maxErrors+1 || errs[maxErrors].Msg != "too many errors" {
+		t.Errorf("%d errors, the last %v", len(errs), errs[len(errs)-1])
+	}
+}
+
+// TestDeepNesting checks that deeply nested expressions, types and values are reported as an
+// error instead of overflowing the stack.
+func TestDeepNesting(t *testing.T) {
+	const n = 1 << 14 // far beyond the limit
+	for _, src := range []string{
+		"def a = " + strings.Repeat("(\n", 1<<20), // used to overflow the stack
+		"def a = " + strings.Repeat("!", n) + "b",
+		"def a = " + strings.Repeat("x:", n) + "b",
+		"def a = b #recover(skip=" + strings.Repeat("c #recover(skip=", n),
+		"def a = b -> " + strings.Repeat("- ", n) + "1",
+		"def a = b -> " + strings.Repeat("(", n) + "1",
+		"def a = b [" + strings.Repeat("!", n) + "x]",
+		"def a = b -> foldl(" + strings.Repeat("(x) => foldl(", n),
+		"def a: " + strings.Repeat("[]", n) + "T = b",
+		"type T = " + strings.Repeat("(*", n) + "U",
+	} {
+		_, errs := ParsePartial(src + "\ndef ok = \"x\"")
+		found := false
+		for _, e := range errs {
+			found = found || e.Msg == "nesting too deep"
+		}
+		if !found {
+			t.Errorf("%.30q...: errors %v", src, errs[:min(len(errs), 3)])
+		}
+	}
+	// Deep nesting below the limit is fine.
+	if _, errs := ParsePartial("def a = " + strings.Repeat("(", 200) + "b" + strings.Repeat(")", 200)); errs != nil {
+		t.Errorf("errors %v", errs)
+	}
+}
+
 // TestIncompletePackageClause checks that a package clause without a name is reported as an
 // error, not a panic, and that the definitions after it are parsed.
 func TestIncompletePackageClause(t *testing.T) {

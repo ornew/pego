@@ -26,11 +26,25 @@ func (l ErrorList) Error() string {
 	return strings.Join(msgs, "\n")
 }
 
+// maxErrors is the number of errors reported at most; a last error says that there are more.
+const maxErrors = 100
+
+// maxNesting bounds the nesting of the parser's recursive calls (see enter), about two for each
+// level of parentheses: deeper nesting of expressions, values and types is an error, so that a
+// malformed or hostile source cannot overflow the stack.
+const maxNesting = 1000
+
 type errorList struct{ list ErrorList }
 
 func (e *errorList) add(pos grammar.Pos, msg string) {
 	// Report only the first error at a given position.
 	if n := len(e.list); n > 0 && e.list[n-1].Pos == pos {
+		return
+	}
+	if len(e.list) >= maxErrors {
+		if len(e.list) == maxErrors {
+			e.list = append(e.list, &Error{Pos: pos, Msg: "too many errors"})
+		}
 		return
 	}
 	e.list = append(e.list, &Error{Pos: pos, Msg: msg})
@@ -72,6 +86,8 @@ type parser struct {
 	// nest counts the choices being parsed with choice. Line breaks are
 	// recorded only outside them, in the top level of a rule body.
 	nest int
+	// depth counts the nested calls of the functions that call deeper (see enter).
+	depth int
 }
 
 // bail is the panic value used to abort parsing on an unrecoverable
@@ -283,7 +299,21 @@ func (p *parser) typeExpr() grammar.TypeExpr {
 	return u
 }
 
+// enter counts one more level of nesting and fails beyond maxNesting. The caller defers
+// p.leave().
+func (p *parser) enter() {
+	p.depth++
+	if p.depth > maxNesting {
+		p.errorf("nesting too deep")
+		panic(bail{})
+	}
+}
+
+func (p *parser) leave() { p.depth-- }
+
 func (p *parser) typeTerm() grammar.TypeExpr {
+	p.enter()
+	defer p.leave()
 	switch {
 	case p.accept("[]"):
 		return &grammar.ListType{Elem: p.typeTerm()}
@@ -465,6 +495,8 @@ func (p *parser) prattOperator() *grammar.PrattOperator {
 // --- Parser expressions ---
 
 func (p *parser) choice() grammar.Expr {
+	p.enter()
+	defer p.leave()
 	p.nest++
 	defer func() { p.nest-- }()
 	first := p.sequence()
@@ -512,6 +544,8 @@ func (p *parser) sequence() grammar.Expr {
 }
 
 func (p *parser) prefixed() grammar.Expr {
+	p.enter()
+	defer p.leave()
 	t := p.tok()
 	if t.kind == tIdent && p.peek(1).kind == tPunct && p.peek(1).text == ":" && !p.peek(1).spaceBefore {
 		p.next()
@@ -677,6 +711,8 @@ func (p *parser) primary() grammar.Expr {
 // --- Value expressions ---
 
 func (p *parser) term() grammar.Term {
+	p.enter()
+	defer p.leave()
 	if l := p.tryLambda(); l != nil {
 		return l
 	}
@@ -756,6 +792,8 @@ func contains(xs []string, x string) bool {
 }
 
 func (p *parser) unary() grammar.Term {
+	p.enter()
+	defer p.leave()
 	t := p.tok()
 	if p.accept("-") || p.accept("!") {
 		return &grammar.Unary{Pos: t.pos, Op: t.text, X: p.unary()}

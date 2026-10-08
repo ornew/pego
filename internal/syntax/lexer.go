@@ -125,35 +125,10 @@ func isIdentStart(r rune) bool { return r == '_' || unicode.IsLetter(r) }
 func isIdentPart(r rune) bool  { return r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r) }
 
 func (l *lexer) next() token {
-	space, newline := false, false
-	for l.i < len(l.src) {
-		r := l.src[l.i]
-		if r == '\n' {
-			newline = true
-			l.newlines++
-		}
-		if unicode.IsSpace(r) {
-			space = true
-			l.advance()
-			continue
-		}
-		if r == '/' && l.peekAt(1) == '/' {
-			space = true
-			c := &grammar.Comment{Pos: l.pos(), Blank: l.newlines >= 2}
-			start := l.i
-			for l.i < len(l.src) && l.src[l.i] != '\n' {
-				l.advance()
-			}
-			c.Text = strings.TrimRightFunc(string(l.src[start:l.i]), unicode.IsSpace)
-			if l.newlines == 0 && l.ntoks > 0 && l.lineComment == nil && len(l.comments) == 0 {
-				l.lineComment = c
-			} else {
-				l.comments = append(l.comments, c)
-			}
-			l.newlines = 0
-			continue
-		}
-		break
+	space, newline := l.skipSpace()
+	for l.i < len(l.src) && !l.startsToken() {
+		l.skipInvalid()
+		space, newline = l.skipSpace()
 	}
 	t := token{
 		pos: l.pos(), spaceBefore: space, lineBefore: newline, blankBefore: l.newlines >= 2,
@@ -210,6 +185,7 @@ func (l *lexer) next() token {
 		t.kind = tIndex
 		t.num, _ = strconv.Atoi(string(l.src[start:l.i]))
 	default:
+		// startsToken guarantees that a punctuation token starts here.
 		for _, p := range puncts {
 			if l.hasPrefix(p) {
 				for range []rune(p) {
@@ -219,11 +195,79 @@ func (l *lexer) next() token {
 				return t
 			}
 		}
-		l.errorf(t.pos, "unexpected character %q", r)
-		l.advance()
-		return l.next()
+		panic(fmt.Sprintf("syntax: no token starts with %q", r))
 	}
 	return t
+}
+
+// punctStart holds the first characters of the punctuation tokens.
+var punctStart = map[rune]bool{}
+
+func init() {
+	for _, p := range puncts {
+		r, _ := utf8.DecodeRuneInString(p)
+		punctStart[r] = true
+	}
+}
+
+// startsToken reports whether a token starts at the current character, which is not white space
+// or a comment.
+func (l *lexer) startsToken() bool {
+	r := l.src[l.i]
+	return isIdentStart(r) || unicode.IsDigit(r) || r == '"' || punctStart[r]
+}
+
+// skipInvalid skips a run of characters that start no token, up to white space or the start of a
+// token, and reports the run as one error.
+func (l *lexer) skipInvalid() {
+	pos, start := l.pos(), l.i
+	for l.i < len(l.src) && !unicode.IsSpace(l.src[l.i]) && !l.startsToken() {
+		l.advance()
+	}
+	if l.i-start == 1 {
+		l.errorf(pos, "unexpected character %q", l.src[start])
+		return
+	}
+	s := string(l.src[start:min(l.i, start+10)])
+	if l.i-start > 10 {
+		s += "..."
+	}
+	l.errorf(pos, "unexpected characters %q", s)
+}
+
+// skipSpace skips white space and comments, recording the comments. It reports whether it
+// skipped anything, and whether that included a line break.
+func (l *lexer) skipSpace() (space, newline bool) {
+	for l.i < len(l.src) {
+		r := l.src[l.i]
+		if r == '\n' {
+			newline = true
+			l.newlines++
+		}
+		if unicode.IsSpace(r) {
+			space = true
+			l.advance()
+			continue
+		}
+		if r == '/' && l.peekAt(1) == '/' {
+			space = true
+			c := &grammar.Comment{Pos: l.pos(), Blank: l.newlines >= 2}
+			start := l.i
+			for l.i < len(l.src) && l.src[l.i] != '\n' {
+				l.advance()
+			}
+			c.Text = strings.TrimRightFunc(string(l.src[start:l.i]), unicode.IsSpace)
+			if l.newlines == 0 && l.ntoks > 0 && l.lineComment == nil && len(l.comments) == 0 {
+				l.lineComment = c
+			} else {
+				l.comments = append(l.comments, c)
+			}
+			l.newlines = 0
+			continue
+		}
+		break
+	}
+	return space, newline
 }
 
 func (l *lexer) hasPrefix(s string) bool {

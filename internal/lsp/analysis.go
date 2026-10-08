@@ -147,6 +147,10 @@ func analyze(text string) *analysis {
 	return a
 }
 
+// maxCompileErrors is the number of compile errors published at most for a document; a last
+// diagnostic says how many more there are. (The parser limits the number of syntax errors.)
+const maxCompileErrors = 100
+
 func (a *analysis) diag(r Range, msg string) {
 	a.diags = append(a.diags, Diagnostic{Range: r, Severity: severityError, Source: "pego", Message: msg})
 }
@@ -163,7 +167,11 @@ func (a *analysis) compile() {
 		a.diag(a.idx.rangeOf(0, 0), err.Error())
 		return
 	}
-	for _, e := range list {
+	for i, e := range list {
+		if i == maxCompileErrors {
+			a.diag(a.errorRange(e.Pos, true), fmt.Sprintf("%d more errors", len(list)-i))
+			break
+		}
 		a.diag(a.errorRange(e.Pos, true), e.Msg)
 	}
 }

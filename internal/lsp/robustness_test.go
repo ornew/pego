@@ -27,6 +27,30 @@ func TestIncompletePackageClause(t *testing.T) {
 	c.exit()
 }
 
+// TestHostileInput checks that long runs of invalid characters and deep nesting, which used to
+// overflow the stack and kill the server, produce a few diagnostics, and that the number of
+// diagnostics is limited.
+func TestHostileInput(t *testing.T) {
+	c := newInitialized(t)
+	junk := "def a = \"x\"\n" + strings.Repeat("`;~😀", 1<<19)
+	if d := c.open("file:///junk.pego", junk); len(d) != 1 || !strings.HasPrefix(d[0].Message, "unexpected characters") {
+		t.Errorf("junk: %d diagnostics, the first %+v", len(d), d[:min(len(d), 1)])
+	}
+	if d := c.open("file:///deep.pego", "def a = "+strings.Repeat("(\n", 1<<20)); messages(d) != "nesting too deep" {
+		t.Errorf("deep nesting: %.200s", messages(d))
+	}
+	// Separate invalid characters: the parser records at most 100 errors.
+	if d := c.open("file:///many.pego", strings.Repeat("` ", 10000)); len(d) != 101 || d[100].Message != "too many errors" {
+		t.Errorf("many syntax errors: %d diagnostics", len(d))
+	}
+	// Compile errors: the server publishes at most 100.
+	refs := strings.Repeat(" x", 300)
+	if d := c.open("file:///undefined.pego", "def a ="+refs); len(d) != 101 || d[100].Message != "200 more errors" || d[100].Range != rng(0, 208, 0, 209) {
+		t.Errorf("many compile errors: %d diagnostics, the last %+v", len(d), d[len(d)-1])
+	}
+	c.exit()
+}
+
 // TestFailedAnalysis checks that a panic while analyzing a document is published as a diagnostic
 // and that the last good analysis keeps serving requests.
 func TestFailedAnalysis(t *testing.T) {

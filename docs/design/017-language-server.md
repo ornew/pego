@@ -47,6 +47,9 @@ or 1 accordingly, as the specification asks.
 A body that is not JSON gets a `ParseError` response with a null id and the server goes on; a header without
 `Content-Length` cannot be resynchronized, so the server stops with an error.
 A panic in a request handler becomes an `InternalError` response instead of ending the server.
+A stack overflow cannot be recovered from, so nothing in the analysis recurses without bound: the lexer skips invalid
+characters in a loop, and the parser reports nesting deeper than about 500 levels of parentheses as an error
+(`syntax.maxNesting`).
 A panic while analyzing a document (a bug) is published as its only diagnostic, and the analysis of the last version
 that did not fail keeps answering requests; formatting and rename, which would edit the text that analysis describes,
 are refused until the document analyzes again.
@@ -95,8 +98,13 @@ stay as they are.
 
 ### Diagnostics
 
-Syntax errors are published as they are, all of them (the parser reports one per definition at most).
-Compile and type errors are published when there is no syntax error.
+Syntax errors are published as the parser reports them: at most one parse error per definition (the parser skips to
+the next definition), plus the lexical errors, such as invalid escape sequences; a run of characters that start no
+token is one error.
+The parser records at most 100 errors and then one that says there are too many, so a file of junk does not flood the
+editor.
+Compile and type errors are published when there is no syntax error, at most 100 of them and then one that says how
+many more there are.
 An error has only a start position; its range is the token that starts there, or one character.
 The compiler reports errors about a whole definition (such as a rule defined twice) at its `def` or `type` keyword;
 those are reported at the definition's name.
