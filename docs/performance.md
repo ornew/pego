@@ -2,7 +2,8 @@
 
 This document records every performance change made to the PEGO runtime: what was changed, why, and what it bought.
 It also records experiments that did **not** pay off, so they are not repeated, and the hotspots that remain.
-Update it in the same commit as any performance-related change.
+Update it in the same commit as any performance-related change, including the table of where each optimization
+applies.
 
 For end-to-end comparisons between backends and with the Go standard library, see [benchmarks.md](benchmarks.md).
 
@@ -50,6 +51,58 @@ several times slower in absolute terms):
 | CSV | 6.4 ms | 14.0 MB | 0.7 k | 3.3 ms | 4.8 ms / 0.7 k allocations |
 
 Starting point (first benchmark run, on the virtual machine): JSON took ~510 ms and allocated 206 MB in 2.6 M allocations.
+
+## Where each optimization applies
+
+The runtimes are separate code: the closure backend (`compile.go`, `runtime.go`), the recursive and iterative bytecode
+VMs (`vm.go`, `ivm.go`), the generated parsers' runtime (`genrt/runtime.go`, behind `Parse` and `Recognize`) and the
+typed runtime of generated parsers (`genrt/typed.go`, behind `ParseAST`). An optimization made in one of them is not
+automatically in the others. This table records, for every change in the log below, where it is in effect.
+
+✓ applied · ✗ not applied (see the note) · – not applicable (the backend has no such code path or feature)
+
+| # | Optimization | Closure | VM | Iter. VM | Generated | Typed | Notes |
+|--:|:--|:-:|:-:|:-:|:-:|:-:|:--|
+| 1 | Value-free bodies, twins, transient rules | ✓ | ✓ | ✓ | ✓ | ✓ | generated since 11 |
+| 2 | Pooled frames of the iterative VM | – | – | ✓ | – | – | |
+| 3 | Node fields as a slice | ✓ | ✓ | ✓ | ✓ | – | the typed runtime builds no nodes for its results |
+| 4 | Expectations as interned IDs | ✓ | ✓ | ✓ | ✓ | ✓ | generated since 11 |
+| 5 | Memo table with per-position chains | ✓ | ✓ | ✓ | ✓ | ✓ | |
+| 6 | Slab allocation (nodes, lists, frames) | ✓ | ✓ | ✓ | ✓ | ✓ | typed: pooled arenas (48) |
+| 7 | Recognition mode | ✓ | ✓ | ✓ | ✓ | – | generated: `-recognize` (47) |
+| 8 | Unmemoized fast path, scan loops, nesting limit | ✓ | ✓ | ✓ | ✓ | ✓ | VMs: `SCAN` |
+| 9 | Value-free Pratt lines | ✓ | ✓ | ✓ | ✓ | ✓ | |
+| 10 | Zero-copy token text, reused evaluation context | ✓ | ✓ | ✓ | ✓ | ✓ | VMs: text only (their evaluator has its own stack, 14) |
+| 12 | Memoizing rules that read variables | ✓ | ✓ | ✓ | ✓ | ✓ | |
+| 13 | Pratt attempts by value | ✓ | ✓ | ✓ | ✓ | ✓ | iterative VM: pooled Pratt frames |
+| 14, 27 | Operands on one expression stack | ✓ | ✓ | ✓ | – | – | generated code evaluates actions as Go expressions |
+| 15, 28 | Allocation-free action plumbing (field chunks, list built-ins on a stack) | ✓ | ✓ | ✓ | ✓ | ✓ | |
+| 16 | Start positions and lambdas from chunks | – | ✓ | ✓ | – | – | |
+| 17, 31 | Fast character-class tests | ✓ | ✓ | ✓ | ✓ | ✓ | closure: specialized tests (31); VMs: ASCII bitmaps (17); generated: inline comparisons (11) |
+| 18 | Memoizing from the second call at a position | ✓ | ✓ | ✓ | ✓ | ✓ | not for `Document` and streams, which keep every entry; generated since 21 |
+| 19 | Plain call path (`invokePlain`) | ✓ | ✓ | ✓ | ✓ | ✓ | iterative VM since 24 (`plainCallFrame`, 34) |
+| 20, 23, 30, 45 | `Document` edits: memo and text spliced, offsets on demand, trees moved in place | ✓ | ✓ | ✓ | – | – | generated parsers have no `Document` |
+| 22 | Bounded memory in streams | ✓ | ✓ | ✓ | – | – | generated parsers have no streams |
+| 26 | Lambda calls without allocation | ✓ | ✓ | ✓ | – | – | VMs: lambdas from chunks (16); generated lambdas are Go function literals |
+| 32 | Literals compared in one loop | ✓ | ✓ | ✓ | ✓ | ✓ | generated: its own loop |
+| 33 | Smaller VM entries | – | ✓ | ✓ | – | – | |
+| 35 | Left-recursion growth without allocation | ✓ | ✓ | ✓ | ✓ | ✓ | |
+| 36, 37 | Unboxed text comparison, no intermediate lists in `concat` | ✓ | ✓ | ✓ | ✓ | ✓ | VMs since 44 (instruction set 2) |
+| 38, 42, 43, 46 | Direct calls of plain rules | ✓ | ✓ | ✓ | ✓ | ✓ | generated: a method per rule (46); typed: a method per rule for every rule (48) |
+| 39 | Line table for error positions | ✓ | ✓ | ✓ | ✓ | ✓ | streams still scan from the committed position |
+| 40, 41 | Offset table built while decoding | ✓ | ✓ | ✓ | ✓ | ✓ | engine: full parses only; recognition builds it on demand (30) |
+| 48 | Struct constructors per type, projected repetitions, frames reused, scratch pooled across parses | ✗ | ✗ | ✗ | ✗ | ✓ | possible elsewhere in part (see below) |
+| 49–51 | First-character dispatch in choices | ✓ | ✓ | ✓ | ✓ | ✓ | VMs: `GUARD` (instruction set 3) |
+
+Not applied, and why:
+
+- **Projected repetitions (48)** apply to any backend in principle (the captured list is only visible to the action),
+  but have been done only in the typed runtime. A candidate for the others.
+- **Reusing frames when their rule returns, pooling scratch memory across parses (48):** in the Node runtimes,
+  capture frames share their chunks with the child lists of the result, so they cannot be freed or pooled without
+  separating them; freeing frames in the engine was measured slower (see the experiments table).
+- **Per-rule call methods for generated `Parse`** (the typed runtime's `typedCall`) measured within noise (48).
+- Experiments that did not pay off in some backends are in the experiments table at the end.
 
 ## Change log
 
