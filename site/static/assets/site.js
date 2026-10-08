@@ -4,6 +4,7 @@
 import { escapeHTML, highlight, highlightJSON } from "./highlight.js";
 import { encodeState } from "./state.js";
 import { siteRoot } from "./pego-client.js";
+import { search, snippet } from "./search.js";
 
 const root = siteRoot();
 
@@ -115,56 +116,6 @@ async function loadIndex() {
     });
   }
   return index;
-}
-
-function search(pages, query) {
-  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
-  if (!terms.length) return [];
-  const hits = [];
-  for (const p of pages) {
-    const title = p.t.toLowerCase();
-    const text = (p.lx ??= p.x.toLowerCase());
-    let score = 0;
-    let heading = null;
-    let ok = true;
-    for (const t of terms) {
-      let s = 0;
-      if (title.includes(t)) s += title.startsWith(t) ? 30 : 20;
-      for (const h of p.h) {
-        if (h[1].toLowerCase().includes(t)) {
-          s += 8;
-          heading ??= h;
-        }
-      }
-      let count = 0;
-      for (let i = text.indexOf(t); i >= 0 && count < 10; i = text.indexOf(t, i + t.length)) count++;
-      s += count;
-      if (s === 0) {
-        ok = false;
-        break;
-      }
-      score += s;
-    }
-    if (ok) hits.push({ p, score, heading });
-  }
-  hits.sort((a, b) => b.score - a.score);
-  return hits.slice(0, 12).map((h) => ({ ...h, terms }));
-}
-
-function snippet(text, terms) {
-  const lower = text.toLowerCase();
-  let at = -1;
-  for (const t of terms) {
-    at = lower.indexOf(t);
-    if (at >= 0) break;
-  }
-  if (at < 0) return "";
-  const start = Math.max(0, at - 50);
-  let s = escapeHTML((start > 0 ? "…" : "") + text.slice(start, at + 110) + "…");
-  for (const t of terms) {
-    s = s.replace(new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), (m) => `<mark>${m}</mark>`);
-  }
-  return s;
 }
 
 function showResults(hits, query) {
