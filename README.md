@@ -2,9 +2,9 @@
 
 # PEGO
 
-**Typed Parsers for Go, from One Grammar**
+**Grammar In. Bulletproof Parser Out.**
 
-Write the grammar. Get the tree. Ship the parser.
+Blazing fast. Runs anywhere. Streams forever. Reparses in a blink.
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENCE) [![Go Reference](https://pkg.go.dev/badge/github.com/ornew/pego.svg)](https://pkg.go.dev/github.com/ornew/pego) [![Go](https://img.shields.io/badge/go-1.27+-00ADD8?logo=go&logoColor=white)](go.mod)
 
@@ -12,10 +12,11 @@ Write the grammar. Get the tree. Ship the parser.
 
 </div>
 
-PEGO extends [Parsing Expression Grammars](https://en.wikipedia.org/wiki/Parsing_expression_grammar) with types,
-operator precedence, left recursion and error recovery. One `.pego` file describes the syntax *and* the tree you
-want; PEGO runs it on an engine, a portable bytecode VM, or as generated Go with zero dependencies, and returns the
-same tree on all of them. No lexer, no codegen step to start, nothing outside the standard library.
+PEGO turns one grammar file into a production parser. The grammar language extends
+[Parsing Expression Grammars](https://en.wikipedia.org/wiki/Parsing_expression_grammar) with types, operator
+precedence, left recursion and error recovery, so a single `.pego` file defines both the syntax and the tree you get
+back. Run it on the engine, on a portable bytecode VM, or as generated code with zero dependencies — the result is
+the same everywhere.
 
 ```pego
 // calc.pego
@@ -54,19 +55,26 @@ tree, err := p.Parse("1 + 2 * 3 ^ 2") // a *pego.Node, or a *pego.SyntaxError wi
 
 ## Why PEGO
 
-- **Trees, not parse dumps.** Declare struct, union and terminal types and build them in actions. Rule types are
-  inferred and checked when the grammar compiles, not when your program crashes.
-- **Expressions without the ladder.** Precedence and associativity are `pratt` levels, not a tower of rules. Left
-  recursion works too, direct or indirect.
-- **Errors people can act on.** Failures point at the farthest position with what was expected. `#error` rewrites
-  the message; `#recover` skips a broken statement and keeps parsing.
-- **Context when you need it.** Predicates and scoped variables handle indentation-based blocks, matching tags and
-  other things plain PEG cannot.
-- **One grammar, every backend.** A closure-compiled engine, a bytecode VM (recursive, or with an explicit stack for
-  deep nesting), and standalone generated Go — all checked to return identical trees, positions and errors.
-- **Built for editors and pipelines.** Stream unbounded input element by element, reparse edited documents
-  incrementally, validate without building a tree, and load precompiled grammars (`.pegoc`) without compiling them
-  again.
+- **Edits in a blink.** `Document` reparses only what an edit touched: about 1 ms after a one-character edit to an
+  89 KB program, 15× faster than parsing it again.
+- **Infinite input, flat memory.** `ParseStream` emits each element as soon as it matches and drops the input it
+  has consumed, so memory stays constant however long the stream runs.
+- **Write once, run anywhere.** Grammars compile to a language-independent bytecode with a
+  [published specification](docs/bytecode.md). Precompiled `.pegoc` files load in tens of microseconds, and
+  `pego gen` emits a standalone parser that needs nothing but a standard library.
+- **Fast out of the box.** A 262 KB JSON document becomes a fully typed, positioned tree in under 10 ms with a
+  generated parser. Recognition mode validates without building a tree at all.
+- **Four backends, one answer.** Closure engine, recursive VM, iterative VM, generated code: the test suite checks
+  that all of them return identical trees, positions and errors.
+- **No nesting too deep.** The iterative VM runs on its own stack, up to 10 million nested rule calls.
+- **Types all the way down.** Declare struct, union and terminal types and build them in actions. Rule types are
+  inferred and checked when the grammar compiles, and `pego gen -types` emits matching Go types.
+- **Precedence without the pain.** Operators are `pratt` levels, not a ladder of rules. Left recursion, direct or
+  indirect, just works.
+- **Errors that point the way.** Failures report the farthest position and what was expected there. `#error`
+  rewrites the message; `#recover` skips the broken part and keeps going.
+- **Context when you need it.** Predicates and scoped variables handle indentation, matching tags and other things
+  plain PEG cannot.
 
 ## Install
 
