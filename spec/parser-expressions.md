@@ -31,7 +31,9 @@ The following rules determine the shape of the tree.
    - `def d = a` produces the value of rule `a` unchanged.
 2. **Rule names.** A node that a rule without an action creates **in its own
    body** is labeled with the name of that rule. Nodes received from other rules
-   keep their own label: `def d = a` produces the node of `a`, labeled `a`.
+   keep their own label: `def d = a` produces the node of `a`, labeled `a`. The
+   value of an action is final in the same way: if an action returns a node of
+   its rule's body (`-> $1`), that node is not labeled by any rule.
 3. **Expressions without a value.** The following expressions have no value and
    never appear as children of a `Seq` node:
    - anchors: `^^`, `$$`, `^`, `$`;

@@ -1151,6 +1151,9 @@ func (c *actx) result(action func(*actx) any, where string) (n *Node) {
 		}
 	}
 	c.p.created = c.p.created[:c.cbase]
+	if n != nil {
+		n.fresh = false // the value of an action is final (see the engine's actionResult)
+	}
 	return n
 }
 

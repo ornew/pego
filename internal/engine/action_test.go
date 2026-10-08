@@ -49,6 +49,27 @@ def main = "a" "b" -> new Pair{All: $0, N: 1 + 2 * 3, S: "x" + text($2), B: !fal
 	)
 }
 
+// TestActionResultsAreFinal checks that a node returned by an action from its own rule body is
+// not labeled by the rules that receive it. Such a node can be shared through the memo, so
+// labeling it would make the result depend on which call was memoized.
+func TestActionResultsAreFinal(t *testing.T) {
+	src := `
+def main = (a "x" / b "y")*
+def a = r
+def b = r
+def r = c:"q" e -> $c
+def e = _`
+	want := `[(Seq "q" "y") (Seq "q" "x") (Seq "q" "y")]@main`
+	check(t, src, ok("qyqxqy", want), ok("qy", `[(Seq "q" "y")]@main`))
+	doc, err := compile(t, src).NewDocument("main", "qyqxqy")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n, err := doc.Parse(); err != nil || n.String() != want {
+		t.Errorf("document: got %v, %v", n, err)
+	}
+}
+
 // TestOptionalResults checks rules and actions whose result is an optional value (*T).
 func TestOptionalResults(t *testing.T) {
 	check(t, `def main = x:"a"? -> $x`,

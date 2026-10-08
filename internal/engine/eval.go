@@ -77,6 +77,11 @@ func (p *parser) actionResult(ctx *evalCtx, act evaluator, where string) *Node {
 		}
 	}
 	ctx.p.created = ctx.p.created[:ctx.cbase]
+	if n != nil {
+		// The value of an action is final: a node it returns from the rule body (-> $1) is not
+		// labeled by the rules that receive it, which might share it through the memo.
+		n.fresh = false
+	}
 	return n
 }
 
