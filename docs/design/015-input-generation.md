@@ -55,7 +55,9 @@ iteration count, taking an optional expression, a character) tries its options i
 fails is undone and the next one is tried. All state (the text, captures, variables, pending checks) is either a
 persistent list or restored on return, so undoing is free. One *attempt* is a depth-first search bounded by a budget
 of steps (20,000); a generator makes up to `WithAttempts` attempts per input (100), each continuing the same random
-sequence, so the result depends only on the parser, the options and the seed.
+sequence, so the result depends only on the parser, the options and the seed, for a given version of the package and
+of Go: the random numbers come from `math/rand/v2` (PCG), whose methods' algorithms Go does not promise to keep across
+releases, and any change to the search changes the inputs too. Tests that need stable inputs should store them.
 
 The checks described below are re-evaluated each time a character is written, so the matcher that evaluates them can
 do far more work than the generation: with a pending lookahead per character over a long text, the work grows with the

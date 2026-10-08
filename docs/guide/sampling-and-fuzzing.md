@@ -14,7 +14,8 @@ reporting and recovery.
 | Seed a fuzz test | | `sample.Seed(f, p, n)` |
 
 Every input you get has been parsed with the parser and accepted without errors, also without errors recovered by
-`#recover`. The same grammar, options and seed always give the same inputs.
+`#recover`. The same grammar, options and seed give the same inputs (see [below](#on-the-command-line) for how far
+that holds).
 
 The design is in [design record 015](../design/015-input-generation.md).
 
@@ -49,8 +50,11 @@ The inputs are random, not pretty: the grammar allows whitespace between tokens,
 characters are drawn mostly from printable ASCII with some multi-byte characters mixed in, and otherwise from any code
 point the character class matches (never a surrogate). `strconv.Unquote` reads each line back.
 
-`-seed` selects the random decisions; the default is 0. The same seed gives the same inputs on every run and machine,
-so a seed is enough to reproduce a test case. `-f json` prints a JSON document instead:
+`-seed` selects the random decisions; the default is 0. With the same version of PEGO, built with the same Go release,
+the same grammar, options and seed give the same inputs on every run and machine, so a seed is enough to reproduce a
+test case. Across versions they may differ: the generator's algorithm changes as it improves, and it draws its random
+numbers with `math/rand/v2`, whose algorithms Go does not promise to keep. Keep the inputs themselves (as test files,
+or in a fuzz corpus) where they must not change. `-f json` prints a JSON document instead:
 
 ```bash
 $ pego sample -g examples/json/json.pego -n 2 -seed 5 -f json
