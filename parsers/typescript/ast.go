@@ -8,9 +8,23 @@ import (
 // ASTNode is a node of the AST: a pointer to one of the struct or terminal types of this package, each of which
 // embeds Span, its range in the input. Kind gives its SyntaxKind, and ForEachChild and Inspect visit its
 // children in the order of the TypeScript compiler's forEachChild.
+//
+// The fields of the nodes have the union types of the grammar (Statement, Expression, TypeNode, BindingName, ...),
+// which are not ASTNodes themselves, although the values in them are; AsNode converts them, and Kind,
+// ForEachChild and Inspect take them as they are.
 type ASTNode interface {
 	Range() (start, end int)
 	tspan() (int, int) // the generated method of *Span: only the types of this package are nodes
+}
+
+// AsNode returns v, a node or the value of a field of a union type such as Expression, as an ASTNode, or nil if it
+// is nil or not a node.
+func AsNode(v any) ASTNode {
+	n, _ := v.(ASTNode)
+	if n == nil || reflect.ValueOf(n).IsNil() {
+		return nil
+	}
+	return n
 }
 
 // Range returns the start and the end (exclusive) of the node in the input.
@@ -19,8 +33,9 @@ func (s Span) Range() (start, end int) { return s.Start, s.End }
 // Kind returns the name of the node's SyntaxKind in the TypeScript compiler, such as "Identifier",
 // "CallExpression", "PlusToken" or "ExportKeyword". Most types are named after their kind; the terminals that
 // stand for several kinds (Token, Modifier, KeywordTypeNode, BooleanLiteral) have the kind of their text.
-func Kind(n ASTNode) string {
-	switch n := n.(type) {
+func Kind(v any) string {
+	node := AsNode(v)
+	switch n := node.(type) {
 	case *Token:
 		return tokenKinds[n.Text]
 	case *Modifier:
@@ -42,7 +57,7 @@ func Kind(n ASTNode) string {
 	case nil:
 		return ""
 	}
-	return reflect.TypeOf(n).Elem().Name()
+	return reflect.TypeOf(node).Elem().Name()
 }
 
 // tokenKinds maps the text of a token, modifier or keyword to its SyntaxKind.
@@ -93,15 +108,12 @@ var tokenKinds = map[string]string{
 // ForEachChild calls f for each child of n, in the order of the TypeScript compiler's forEachChild, and stops
 // when f returns false. It returns false if f did. Children are the node-valued fields of n, and the elements
 // of its list fields; attributes such as the operator of a PrefixUnaryExpression are not children.
-func ForEachChild(n ASTNode, f func(ASTNode) bool) bool {
+func ForEachChild(node any, f func(ASTNode) bool) bool {
+	n := AsNode(node)
 	if n == nil {
 		return true
 	}
-	v := reflect.ValueOf(n)
-	if v.IsNil() {
-		return true
-	}
-	v = v.Elem()
+	v := reflect.ValueOf(n).Elem()
 	for _, i := range childFields(v.Type()) {
 		fv := v.Field(i)
 		switch fv.Kind() {
@@ -122,8 +134,9 @@ func ForEachChild(n ASTNode, f func(ASTNode) bool) bool {
 
 // Inspect visits n and its descendants in depth-first order, the children of a node in the order of
 // ForEachChild: it calls f(n), and if that returns true, inspects each child, then calls f(nil).
-func Inspect(n ASTNode, f func(ASTNode) bool) {
-	if n == nil || reflect.ValueOf(n).IsNil() {
+func Inspect(node any, f func(ASTNode) bool) {
+	n := AsNode(node)
+	if n == nil {
 		return
 	}
 	if !f(n) {
