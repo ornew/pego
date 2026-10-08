@@ -25,6 +25,22 @@
 // One variable rather than seven: rules that read variables are memoized per value, and each read and
 // definition walks the variable environment, so a single variable keeps both cheap.
 // Tests are written [ctx / 4 % 2 == 1] (bit 4 set); a bit b is cleared with ctx - ctx / b % 2 * b.
+//
+// Performance. The grammar follows the compiler's order of alternatives, which tries what is rare before what is
+// common, and a rule that fails at once still costs a call and records what it expected. What paid, measured
+// as rule calls (pego profile) and as time on the benchmarks of the package:
+//   - A silent lookahead of the next character in front of an alternative or an operator (&(?...)), which
+//     records no expectation: the operators of binaryExpression and the postfix operators of the
+//     left-hand side, whose Pratt loops try every operator after every operand; the ws and sp rules, which
+//     are called twice a token; unaryOperatorStart; the arrow functions and the assignment.
+//   - Dispatch by the first character: primaryExpression tries identifiers first (they are the most common
+//     and cannot be mistaken for a keyword), statement takes the statements that start with a keyword, a
+//     brace, ";" or "@" apart from expression statements, and reservedWord tests the first letter.
+//   - No rule call per character of an identifier (identifierRest).
+// Together they take the rule calls on a 300 KB piece of the TypeScript compiler's own JavaScript from 1.66 M
+// to 0.72 M and its parse time to about 60%, and a declaration file (lib.dom.d.ts) to 85%.
+// What did not pay: ws and sp matching one character at a time inside a lookahead, a single parse of the
+// left-hand side before ++ and --, and ordering the alternatives of statement by frequency.
 package typescript
 
 // ===================================================================
@@ -384,10 +400,20 @@ def hashbang = "#!" (?^\n\r\u{2028}\u{2029})*
 
 // The keyword decides; the contextual keywords of declarations (type, namespace, declare, ...) start a
 // declaration only when isStartOfDeclaration says so, and an expression statement otherwise.
-def statement: Statement = block / emptyStatement / variableStatement / plainFunctionDeclaration
+def statement: Statement = (&statementSpecialStart s:specialStatement / !statementSpecialStart s:plainStatement)
+    -> $s
+// A statement that starts with a brace, ";", "@", a keyword or a contextual keyword of declarations (which may also
+// start an expression). If none of them matches, the statement is not tried as a plain one (a block followed by
+// "=" is an error, not an expression statement).
+def specialStatement: Statement = block / emptyStatement / variableStatement / plainFunctionDeclaration
     / plainClassDeclaration / ifStatement / doStatement / whileStatement / forStatement / continueStatement / breakStatement
     / returnStatement / withStatement / switchStatement / throwStatement / tryStatement / debuggerStatement
     / decoratedDeclaration / contextualDeclaration / expressionOrLabeledStatement
+def statementSpecialStart = (?{;@) / &(?abcdefgilmnoprstuvw) (statementKeyword / declarationKeyword) !idPart
+def statementKeyword = "var" / "let" / "using" / "await" / "function" / "class" / "if" / "do" / "while" / "for"
+    / "continue" / "break" / "return" / "with" / "switch" / "throw" / "try" / "debugger"
+// Any other statement is an expression statement or a labeled statement.
+def plainStatement: Statement = s:(labeledStatement / expressionStatement) -> $s
 def plainFunctionDeclaration: FunctionDeclaration = &("function" !idPart) d:functionDeclaration -> $d
 def plainClassDeclaration: ClassDeclaration = &("class" !idPart) d:classDeclaration -> $d
 def decoratedDeclaration: Statement = &"@" d:declaration -> $d
@@ -475,7 +501,7 @@ def catchClause: CatchClause = "catch" !idPart (-ws "(" -ws d:variableDeclaratio
 def expressionOrLabeledStatement: Statement = !(&(declarationKeyword !idPart) declarationStart)
     !variableStatementStart !((?{@) / ("function" / "class") !idPart)
     s:(labeledStatement / expressionStatement / declareStatement) -> $s
-def labeledStatement: LabeledStatement = l:identifier -ws ":" -ws s:statement
+def labeledStatement: LabeledStatement = &((?a-zA-Z$_\\\u{80}-\u{10FFFF}) identifierRest -ws ":") l:identifier -ws ":" -ws s:statement
     -> new LabeledStatement{Label: $l, Statement: $s}
 def expressionStatement: ExpressionStatement = e:expressionAllowIn eos -> new ExpressionStatement{Expression: $e}
 // The identifier declare needs no terminator: the parser reports no missing ";" after it
@@ -737,7 +763,7 @@ def importSpecifierPlain: ImportSpecifier = (p:moduleExportName -ws "as" !idPart
     -> new ImportSpecifier{PropertyName: $p, Name: $n}
 def typeIdentifier: Identifier = "type" !idPart
 def importedName: Identifier = identifier / privateName
-def privateName: Identifier = "#" idStart idPart*
+def privateName: Identifier = "#" idStart identifierRest
 def asIdentifier: Identifier = "as" !idPart
 def moduleExportName: ModuleExportName = stringLiteral / identifierNameOrPrivate
 def moduleExportNameStart = idStart / "#" / (?"')
@@ -859,7 +885,7 @@ def yieldExpression: YieldExpression = "yield" !idPart ([ctx % 2 == 1] / &(sp id
 def identifierOrKeywordOrLiteralStart = idStart / "#" / (?0-9"') / "." (?0-9)
 def nlStart = (?\n\r\u{2028}\u{2029}) / "/*"
 
-def assignment: BinaryExpression = l:leftHandSideExpression -ws o:assignmentOperator -ws r:assignmentExpressionInner
+def assignment: BinaryExpression = l:leftHandSideExpression -ws &(?>*<&|?+\-/%^=) o:assignmentOperator -ws r:assignmentExpressionInner
     -> new BinaryExpression{Left: $l, OperatorToken: $o, Right: $r}
 def assignmentOperator: Token = ">>>=" / "**=" / "<<=" / ">>=" / "&&=" / "||=" / "??=" / "+=" / "-=" / "*=" / "/="
     / "%=" / "&=" / "|=" / "^=" / "=" !(?=>)
@@ -875,7 +901,8 @@ def conditionalQuestionToken: Token = "?" !"?" !("." !(?0-9))
 
 // --- Arrow functions (tryParseParenthesizedArrowFunctionExpression, isParenthesizedArrowFunctionExpression) ---
 // In a .tsx file, <T> starts JSX; a generic arrow function needs <T,>, <T = ...> or <T extends ...>.
-def arrowFunction: ArrowFunction = ml:arrowAsyncModifier? !arrowParenthesisIsNotParameterList
+def arrowFunction: ArrowFunction = &("async" !idPart / (?(<))
+    ml:arrowAsyncModifier? !arrowParenthesisIsNotParameterList
     [ctx = ctx - ctx % 4 + len($ml) * 2] (t:arrowTypeParameters -ws)? &"(" ps:parameterList rt:returnType? -ws
     a:equalsGreaterThanToken -ws b:arrowBody ([ctx / 16 % 2 == 0] / [$rt == nil] / &(-ws ":"))
     -> new ArrowFunction{Modifiers: concat($ml), TypeParameters: concat($t), Parameters: $ps, Type: $rt,
@@ -890,7 +917,8 @@ def tsxArrowTypeParametersStart = "<" -ws ("const" !idPart -ws)? identifier -ws
 def arrowParenthesisIsNotParameterList = "(" -ws ("yield" !idPart [ctx % 2 == 1] / "await" !idPart [ctx / 2 % 2 == 1]
     / !(!("async" !idPart) modifierKeyword -ws identifier) (identifier / "this" !idPart) -ws !(?:?,=\)))
 // x => ..., with the parameter an identifier in the current context
-def simpleArrowFunction: ArrowFunction = p:simpleArrowParameter -ws a:equalsGreaterThanToken -ws [ctx = ctx - ctx % 4]
+def simpleArrowFunction: ArrowFunction = &((?a-zA-Z$_\\\u{80}-\u{10FFFF}) identifierRest -ws "=>")
+    p:simpleArrowParameter -ws a:equalsGreaterThanToken -ws [ctx = ctx - ctx % 4]
     b:arrowBody -> new ArrowFunction{Parameters: list($p), EqualsGreaterThanToken: $a, Body: $b}
 def simpleArrowParameter: Parameter = n:identifier -> new Parameter{Name: $n}
 // async x => ..., all on one line
@@ -902,24 +930,58 @@ def arrowBody: ConciseBody = block / assignmentExpressionInner
 // --- Binary expressions (parseBinaryExpressionRest) ---
 // The levels are those of getBinaryOperatorPrecedence; as and satisfies take a type on the same line.
 // skip is sp and each operator skips the whitespace before it, so that `as` can require no line break.
+// Every operator is tried after every operand, so each starts with a silent test of the character where it can
+// start (&(?...): a line break or "/" for the whitespace and comments before it, or a character of the operator),
+// which fails without a rule call or an expectation.
 def binaryExpression: Expression = pratt {
     skip sp
     operand unaryExpression
-    level { infix left -ws o:coalesceOrToken -- -ws -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs} }
-    level { infix left -ws o:ampersandAmpersandToken -- -ws -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs} }
-    level { infix left -ws o:barToken -- -ws -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs} }
-    level { infix left -ws o:caretToken -- -ws -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs} }
-    level { infix left -ws o:ampersandToken -- -ws -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs} }
-    level { infix left -ws o:equalityToken -- -ws -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs} }
     level {
-        infix left -ws o:relationalToken -- -ws -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+        infix left &(?\n\r\u{2028}\u{2029}/?|) -ws o:coalesceOrToken -- -ws
+            -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+    }
+    level {
+        infix left &(?\n\r\u{2028}\u{2029}/&) -ws o:ampersandAmpersandToken -- -ws
+            -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+    }
+    level {
+        infix left &(?\n\r\u{2028}\u{2029}/|) -ws o:barToken -- -ws
+            -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+    }
+    level {
+        infix left &(?\n\r\u{2028}\u{2029}/^) -ws o:caretToken -- -ws
+            -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+    }
+    level {
+        infix left &(?\n\r\u{2028}\u{2029}/&) -ws o:ampersandToken -- -ws
+            -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+    }
+    level {
+        infix left &(?\n\r\u{2028}\u{2029}/=!) -ws o:equalityToken -- -ws
+            -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+    }
+    level {
+        infix left &(?\n\r\u{2028}\u{2029}/<>i) -ws o:relationalToken -- -ws
+            -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
         postfix "as" !idPart -- -ws t:typeNode -> new AsExpression{Expression: $lhs, Type: $t}
         postfix "satisfies" !idPart -- -ws t:typeNode -> new SatisfiesExpression{Expression: $lhs, Type: $t}
     }
-    level { infix left -ws o:shiftToken -- -ws -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs} }
-    level { infix left -ws o:additiveToken -- -ws -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs} }
-    level { infix left -ws o:multiplicativeToken -- -ws -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs} }
-    level { infix right -ws o:asteriskAsteriskToken -- -ws -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs} }
+    level {
+        infix left &(?\n\r\u{2028}\u{2029}/<>) -ws o:shiftToken -- -ws
+            -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+    }
+    level {
+        infix left &(?\n\r\u{2028}\u{2029}/+-) -ws o:additiveToken -- -ws
+            -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+    }
+    level {
+        infix left &(?\n\r\u{2028}\u{2029}/*%) -ws o:multiplicativeToken -- -ws
+            -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+    }
+    level {
+        infix right &(?\n\r\u{2028}\u{2029}/*) -ws o:asteriskAsteriskToken -- -ws
+            -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
+    }
 }
 // Operator tokens, each not the start of a longer token (maximal munch).
 def coalesceOrToken: Token = "??" !"=" / "||" !"="
@@ -944,8 +1006,8 @@ def binaryOperatorStart = coalesceOrToken / ampersandAmpersandToken / barToken /
 // A unary operator other than ++ and -- may not be the left operand of **.
 def unaryExpression: Expression = (&unaryOperatorStart u:simpleUnaryExpression !(-ws "**" !"=")
     / !unaryOperatorStart u:updateExpression) -> $u
-def unaryOperatorStart = "+" !"+" / "-" !"-" / (?~!) / ("delete" / "typeof" / "void" / "await") !idPart
-    / [ctx < 64] "<"
+def unaryOperatorStart = &(?+\-~!<dtva)
+    ("+" !"+" / "-" !"-" / (?~!) / ("delete" / "typeof" / "void" / "await") !idPart / [ctx < 64] "<")
 def simpleUnaryExpression: Expression = prefixUnaryExpression / deleteExpression / typeOfExpression / voidExpression
     / typeAssertion / jsxUnaryExpression / awaitExpression / updateExpression
 def prefixUnaryExpression: PrefixUnaryExpression = o:@("+" !"+" / "-" !"-" / "~" / "!") -ws e:simpleUnaryExpression
@@ -962,12 +1024,13 @@ def typeAssertion: TypeAssertionExpression = [ctx < 64] "<" !(?<=) -ws t:typeNod
 def jsxUnaryExpression: Expression = [ctx >= 64] &"<" e:jsxElementOrFragment -> $e
 
 // parseUpdateExpression
-def updateExpression: Expression = prefixUpdateExpression / jsxPrimaryExpression / postfixUpdateExpression
-    / leftHandSideExpression
+def updateExpression: Expression = prefixUpdateExpression / jsxPrimaryExpression / postfixOrLeftHandSideExpression
+// A left-hand side expression, parsed once, and one ++ or -- after it on the same line.
+def postfixOrLeftHandSideExpression: Expression = e:leftHandSideExpression rest:(-sp o:@("++" / "--"))*
+    [len($rest) <= 1]
+    -> foldl($e, $rest, (acc, r) => new PostfixUnaryExpression{Operand: $acc, Operator: text($r.o)})
 def prefixUpdateExpression: PrefixUnaryExpression = o:@("++" / "--") -ws e:leftHandSideExpression
     -> new PrefixUnaryExpression{Operator: text($o), Operand: $e}
-def postfixUpdateExpression: PostfixUnaryExpression = e:leftHandSideExpression -sp o:@("++" / "--")
-    -> new PostfixUnaryExpression{Operand: $e, Operator: text($o)}
 // JSX in an expression, which may not be followed by "<" ("JSX expressions must have one parent element").
 def jsxPrimaryExpression: Expression = [ctx >= 64] &("<" -ws (idStart / ">")) e:jsxElementOrFragment
     !(-ws "<" !(?<=)) -> $e
@@ -976,55 +1039,60 @@ def jsxPrimaryExpression: Expression = [ctx >= 64] &("<" -ws (idStart / ">")) e:
 // parseCallExpressionRest) ---
 // Type arguments in an expression are taken only before what can follow them
 // (canFollowTypeArgumentsInExpression); otherwise < is a comparison.
+// As in binaryExpression, each postfix operator starts with a silent test of its first character (or of a line
+// break or "/" before it), and the operand that is almost always the one, primaryExpression, comes first.
 def leftHandSideExpression: Expression = pratt {
     skip sp
+    operand primaryExpression
     operand superExpression
     operand importCallee
     operand importMetaProperty
-    operand primaryExpression
     level {
-        postfix -ws "." !(?0-9.) -- -ws n:memberName -> new PropertyAccessExpression{Expression: $lhs, Name: $n}
-        postfix -ws q:questionDotToken -- -ws n:identifierName
+        postfix &(?\n\r\u{2028}\u{2029}/.) -ws "." !(?0-9.) -- -ws n:memberName
+            -> new PropertyAccessExpression{Expression: $lhs, Name: $n}
+        postfix &(?\n\r\u{2028}\u{2029}/?) -ws q:questionDotToken -- -ws n:identifierName
             -> new PropertyAccessExpression{Expression: $lhs, QuestionDotToken: $q, Name: $n}
-        postfix -ws [ctx / 8 % 2 == 0] "[" -- -ws e:expressionAllowIn -ws "]"
+        postfix &(?\n\r\u{2028}\u{2029}/[) -ws [ctx / 8 % 2 == 0] "[" -- -ws e:expressionAllowIn -ws "]"
             -> new ElementAccessExpression{Expression: $lhs, ArgumentExpression: $e}
-        postfix -ws q:questionDotToken -- -ws "[" -ws e:expressionAllowIn -ws "]"
+        postfix &(?\n\r\u{2028}\u{2029}/?) -ws q:questionDotToken -- -ws "[" -ws e:expressionAllowIn -ws "]"
             -> new ElementAccessExpression{Expression: $lhs, QuestionDotToken: $q, ArgumentExpression: $e}
-        postfix -ws (t:typeArgumentsInExpression -ws)? &"`" -- l:taggedTemplate
+        postfix &(?\n\r\u{2028}\u{2029}/<`) -ws (t:typeArgumentsInExpression -ws)? &"`" -- l:taggedTemplate
             -> new TaggedTemplateExpression{Tag: $lhs, TypeArguments: concat($t), Template: $l}
-        postfix -ws q:questionDotToken -- -ws (t:typeArgumentsInExpression -ws)? l:taggedTemplate
+        postfix &(?\n\r\u{2028}\u{2029}/?) -ws q:questionDotToken -- -ws (t:typeArgumentsInExpression -ws)? l:taggedTemplate
             -> new TaggedTemplateExpression{Tag: $lhs, QuestionDotToken: $q, TypeArguments: concat($t), Template: $l}
         postfix "!" !"=" -> new NonNullExpression{Expression: $lhs}
-        postfix -ws t:typeArgumentsInExpression -> new ExpressionWithTypeArguments{Expression: $lhs, TypeArguments: $t}
-        postfix -ws (t:typeArgumentsInExpression -ws)? &"(" -- a:arguments
+        postfix &(?\n\r\u{2028}\u{2029}/<) -ws t:typeArgumentsInExpression
+            -> new ExpressionWithTypeArguments{Expression: $lhs, TypeArguments: $t}
+        postfix &(?\n\r\u{2028}\u{2029}/<() -ws (t:typeArgumentsInExpression -ws)? &"(" -- a:arguments
             -> new CallExpression{Expression: $lhs, TypeArguments: concat($t), Arguments: $a}
-        postfix -ws q:questionDotToken -- -ws (t:typeArgumentsInExpression -ws)? a:arguments
+        postfix &(?\n\r\u{2028}\u{2029}/?) -ws q:questionDotToken -- -ws (t:typeArgumentsInExpression -ws)? a:arguments
             -> new CallExpression{Expression: $lhs, QuestionDotToken: $q, TypeArguments: concat($t), Arguments: $a}
     }
 }
 // The same without instantiation expressions, for heritage clauses, which take type arguments of their own.
 def heritageExpression: Expression = pratt {
     skip sp
+    operand primaryExpression
     operand superExpression
     operand importCallee
     operand importMetaProperty
-    operand primaryExpression
     level {
-        postfix -ws "." !(?0-9.) -- -ws n:memberName -> new PropertyAccessExpression{Expression: $lhs, Name: $n}
-        postfix -ws q:questionDotToken -- -ws n:identifierName
+        postfix &(?\n\r\u{2028}\u{2029}/.) -ws "." !(?0-9.) -- -ws n:memberName
+            -> new PropertyAccessExpression{Expression: $lhs, Name: $n}
+        postfix &(?\n\r\u{2028}\u{2029}/?) -ws q:questionDotToken -- -ws n:identifierName
             -> new PropertyAccessExpression{Expression: $lhs, QuestionDotToken: $q, Name: $n}
-        postfix -ws [ctx / 8 % 2 == 0] "[" -- -ws e:expressionAllowIn -ws "]"
+        postfix &(?\n\r\u{2028}\u{2029}/[) -ws [ctx / 8 % 2 == 0] "[" -- -ws e:expressionAllowIn -ws "]"
             -> new ElementAccessExpression{Expression: $lhs, ArgumentExpression: $e}
-        postfix -ws q:questionDotToken -- -ws "[" -ws e:expressionAllowIn -ws "]"
+        postfix &(?\n\r\u{2028}\u{2029}/?) -ws q:questionDotToken -- -ws "[" -ws e:expressionAllowIn -ws "]"
             -> new ElementAccessExpression{Expression: $lhs, QuestionDotToken: $q, ArgumentExpression: $e}
-        postfix -ws (t:typeArgumentsInExpression -ws)? &"`" -- l:taggedTemplate
+        postfix &(?\n\r\u{2028}\u{2029}/<`) -ws (t:typeArgumentsInExpression -ws)? &"`" -- l:taggedTemplate
             -> new TaggedTemplateExpression{Tag: $lhs, TypeArguments: concat($t), Template: $l}
-        postfix -ws q:questionDotToken -- -ws (t:typeArgumentsInExpression -ws)? l:taggedTemplate
+        postfix &(?\n\r\u{2028}\u{2029}/?) -ws q:questionDotToken -- -ws (t:typeArgumentsInExpression -ws)? l:taggedTemplate
             -> new TaggedTemplateExpression{Tag: $lhs, QuestionDotToken: $q, TypeArguments: concat($t), Template: $l}
         postfix "!" !"=" -> new NonNullExpression{Expression: $lhs}
-        postfix -ws (t:typeArgumentsInExpression -ws)? &"(" -- a:arguments
+        postfix &(?\n\r\u{2028}\u{2029}/<() -ws (t:typeArgumentsInExpression -ws)? &"(" -- a:arguments
             -> new CallExpression{Expression: $lhs, TypeArguments: concat($t), Arguments: $a}
-        postfix -ws q:questionDotToken -- -ws (t:typeArgumentsInExpression -ws)? a:arguments
+        postfix &(?\n\r\u{2028}\u{2029}/?) -ws q:questionDotToken -- -ws (t:typeArgumentsInExpression -ws)? a:arguments
             -> new CallExpression{Expression: $lhs, QuestionDotToken: $q, TypeArguments: concat($t), Arguments: $a}
     }
 }
@@ -1032,13 +1100,14 @@ def heritageExpression: Expression = pratt {
 // calls or optional chains (parseMemberExpressionRest with allowOptionalChain = false).
 def newTarget: Expression = pratt {
     skip sp
-    operand superKeyword
     operand primaryExpression
+    operand superKeyword
     level {
-        postfix -ws "." !(?0-9.) -- -ws n:memberName -> new PropertyAccessExpression{Expression: $lhs, Name: $n}
-        postfix -ws [ctx / 8 % 2 == 0] "[" -- -ws e:expressionAllowIn -ws "]"
+        postfix &(?\n\r\u{2028}\u{2029}/.) -ws "." !(?0-9.) -- -ws n:memberName
+            -> new PropertyAccessExpression{Expression: $lhs, Name: $n}
+        postfix &(?\n\r\u{2028}\u{2029}/[) -ws [ctx / 8 % 2 == 0] "[" -- -ws e:expressionAllowIn -ws "]"
             -> new ElementAccessExpression{Expression: $lhs, ArgumentExpression: $e}
-        postfix -ws (t:typeArgumentsInExpression -ws)? &"`" -- l:taggedTemplate
+        postfix &(?\n\r\u{2028}\u{2029}/<`) -ws (t:typeArgumentsInExpression -ws)? &"`" -- l:taggedTemplate
             -> new TaggedTemplateExpression{Tag: $lhs, TypeArguments: concat($t), Template: $l}
         postfix "!" !"=" -> new NonNullExpression{Expression: $lhs}
     }
@@ -1077,10 +1146,16 @@ def importMetaProperty: MetaProperty = "import" !idPart -ws "." -ws n:identifier
     -> new MetaProperty{KeywordToken: "import", Name: $n}
 
 // --- Primary expressions (parsePrimaryExpression) ---
-def primaryExpression: Expression = numericLiteral / bigIntLiteral / stringLiteral / noSubstitutionTemplateLiteral
-    / templateExpression / thisKeyword / nullKeyword / booleanKeyword / parenthesizedExpression
-    / arrayLiteralExpression / objectLiteralExpression / functionExpression / classExpressionPrimary
-    / newExpression / regularExpressionLiteral / privateIdentifier / identifier
+// An identifier is the most common primary expression, and it cannot be mistaken for a keyword (async function is
+// a function expression). The first character tells words from the rest; (?a-zA-Z$_\\\u{80}-\u{10FFFF})
+// is the start of an identifier, or a character that may turn out not to be.
+def primaryExpression: Expression = (&(?a-zA-Z$_\\\u{80}-\u{10FFFF}) e:wordPrimary / e:symbolPrimary) -> $e
+def wordPrimary: Expression = (!("async" !idPart -sp "function" !idPart) e:identifier / e:thisKeyword / e:nullKeyword
+    / e:booleanKeyword / e:functionExpression / e:classExpressionPrimary / e:newExpression) -> $e
+def symbolPrimary: Expression = stringLiteral / numericOrBigIntLiteral / noSubstitutionTemplateLiteral
+    / templateExpression / parenthesizedExpression / arrayLiteralExpression / objectLiteralExpression
+    / classExpressionPrimary / regularExpressionLiteral / privateIdentifier
+def numericOrBigIntLiteral: Expression = &(?0-9.) e:(numericLiteral / bigIntLiteral) -> $e
 def thisKeyword: ThisExpression = "this" !idPart
 def nullKeyword: NullLiteral = "null" !idPart
 def booleanKeyword: BooleanLiteral = ("true" / "false") !idPart
@@ -1460,9 +1535,9 @@ def commaToken: Token = ","
 def identifier: Identifier = !reservedWord !("yield" !idPart [ctx % 2 == 1]) !("await" !idPart [ctx / 2 % 2 == 1])
     i:identifierName -> $i
 def bindingIdentifier: Identifier = !reservedWord i:identifierName -> $i
-def identifierName: Identifier = idStart idPart*
-def privateIdentifier: PrivateIdentifier = "#" idStart idPart*
-def identifierNameOrPrivate: Identifier = "#"? idStart idPart*
+def identifierName: Identifier = idStart identifierRest
+def privateIdentifier: PrivateIdentifier = "#" idStart identifierRest
+def identifierNameOrPrivate: Identifier = "#"? idStart identifierRest
 // Every keyword, reserved or contextual
 def anyKeyword = ("abstract" / "accessor" / "any" / "asserts" / "assert" / "async" / "as" / "await" / "bigint"
     / "boolean" / "break" / "case" / "catch" / "class" / "constructor" / "const" / "continue" / "debugger"
@@ -1473,10 +1548,15 @@ def anyKeyword = ("abstract" / "accessor" / "any" / "asserts" / "assert" / "asyn
     / "public" / "readonly" / "require" / "return" / "satisfies" / "set" / "static" / "string" / "super"
     / "switch" / "symbol" / "this" / "throw" / "true" / "try" / "typeof" / "type" / "undefined" / "unique"
     / "unknown" / "using" / "var" / "void" / "while" / "with" / "yield") !idPart
-def reservedWord = ("break" / "case" / "catch" / "class" / "const" / "continue" / "debugger" / "default" / "delete"
-    / "do" / "else" / "enum" / "export" / "extends" / "false" / "finally" / "for" / "function" / "if" / "import"
-    / "instanceof" / "in" / "new" / "null" / "return" / "super" / "switch" / "this" / "throw" / "true" / "try"
-    / "typeof" / "var" / "void" / "while" / "with") !idPart
+// The first letter selects the words to try.
+def reservedWord = (&"b" "break" / &"c" ("case" / "catch" / "class" / "const" / "continue")
+    / &"d" ("debugger" / "default" / "delete" / "do") / &"e" ("else" / "enum" / "export" / "extends")
+    / &"f" ("false" / "finally" / "for" / "function") / &"i" ("if" / "import" / "instanceof" / "in")
+    / &"n" ("new" / "null") / &"r" "return" / &"s" ("super" / "switch")
+    / &"t" ("this" / "throw" / "true" / "try" / "typeof") / &"v" ("var" / "void") / &"w" ("while" / "with")) !idPart
+// The rest of an identifier: runs of ASCII identifier characters, which are most of them, without a rule call
+// per character, and the escapes and non-ASCII characters between them.
+def identifierRest = (?a-zA-Z0-9$_)* (("\\u" identifierPartEscape / uniIdPart) (?a-zA-Z0-9$_)*)*
 def idStart = (?a-zA-Z$_) / "\\u" identifierStartEscape / uniIdStart
 def idPart = (?a-zA-Z0-9$_) / "\\u" identifierPartEscape / uniIdPart
 // An escape in an identifier stands for an identifier character: exactly for ASCII values; any value from
@@ -1533,11 +1613,14 @@ def regularExpressionLiteral: RegularExpressionLiteral = "/" !(?*/) ((?^/\\[\n\r
     / "\\" (?^\n\r\u{2028}\u{2029}) / "[" ((?^\]\\\n\r\u{2028}\u{2029})+ / "\\" (?^\n\r\u{2028}\u{2029}))* "]")+ "/" ((?a-zA-Z0-9$_) / uniIdPart)*
 
 // --- Whitespace and comments ---
-// The whitespace characters of isWhiteSpaceSingleLine, and the line terminators of isLineBreak.
-def ws = ((? \t\n\r\v\f\u{A0}\u0085\u{1680}\u{2000}-\u{200B}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}\u{FEFF})+
-    / "//" (?^\n\r\u{2028}\u{2029})* / "/*" (!"*/" .)* "*/")*
-def sp = ((? \t\v\f\u{A0}\u0085\u{1680}\u{2000}-\u{200B}\u{202F}\u{205F}\u{3000}\u{FEFF})+
-    / "//" (?^\n\r\u{2028}\u{2029})* / "/*" (!"*/" (?^\n\r\u{2028}\u{2029}))* "*/")*
+// The whitespace characters of isWhiteSpaceSingleLine, and the line terminators of isLineBreak. Most calls find
+// none, so a silent test of the next character comes first (it must include "/", the start of a comment).
+def ws = (&(? \t\n\r\v\f\u{A0}\u0085\u{1680}\u{2000}-\u{200B}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}\u{FEFF}/)
+    ((? \t\n\r\v\f\u{A0}\u0085\u{1680}\u{2000}-\u{200B}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}\u{FEFF})+
+    / "//" (?^\n\r\u{2028}\u{2029})* / "/*" (!"*/" .)* "*/"))*
+def sp = (&(? \t\v\f\u{A0}\u0085\u{1680}\u{2000}-\u{200B}\u{202F}\u{205F}\u{3000}\u{FEFF}/)
+    ((? \t\v\f\u{A0}\u0085\u{1680}\u{2000}-\u{200B}\u{202F}\u{205F}\u{3000}\u{FEFF})+
+    / "//" (?^\n\r\u{2028}\u{2029})* / "/*" (!"*/" (?^\n\r\u{2028}\u{2029}))* "*/"))*
 
 // Comma-separated lists, with an optional trailing comma
 def arrayBindingElementList = f:arrayBindingElement r:(-ws "," -ws e:arrayBindingElement)* (-ws ",")? -> concat(list($f), map($r, (x) => $x.e))

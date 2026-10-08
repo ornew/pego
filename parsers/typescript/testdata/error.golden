@@ -1,1 +1,1 @@
-error: 1:18: syntax error: expected "#", "'", "(", "++", "--", ".", "/", "/*", "//", "0", "[", "\"", "\\u", "`", "async", "false", "function", "import", "new", "null", "super", "this", "true", "yield", "{", (? \t\n\r\v\f\u00a0\u0085\u1680\u2000-\u200b\u2028\u2029\u202f\u205f\u3000\ufeff), (?1-9), (?a-zA-Z$_)
+error: 1:18: syntax error: expected "#", "'", "(", "++", "--", "/", "[", "\"", "`", "async", "import", "super", "yield", "{"
