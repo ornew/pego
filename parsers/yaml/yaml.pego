@@ -239,7 +239,8 @@ def s_l_block_scalar: Scalar =
         // before it may exceed; without a non-empty line, that of the longest empty line.
         / &(s_b_comment -(@" "* b_break)* s:@" "*)
           ( [len($s) > n] [n = len($s)] &(s_b_comment (e:@" "* [len($e) <= n] b_break)* @" "* !b_break)
-          / [len($s) <= n] &(s_b_comment l:block_longest?) ([len($l) > n] [n = len($l)] / [n = n + 1]) ) )
+          // n becomes the running maximum of n+1 and the lengths of the empty lines.
+          / [len($s) <= n] [n = n + 1] &(s_b_comment (!$$ e:@" "* (b_break / $$) ([len($e) > n] [n = len($e)])?)*) ) )
         c2:(?+\-)? [len($c1) + len($c2) <= 1]
         s_b_comment
         l_block_content
@@ -248,10 +249,6 @@ def s_l_block_scalar: Scalar =
     -> new Scalar{Props: $p, Style: 3 + len($f), Indent: n, Text: text($t)}
 def s_separate_n1 = [n = n + 1] s_separate_lines
 def block_scalar_properties: Properties = [n = n + 1] p:c_ns_properties s_separate_lines -> $p
-// The spaces of the longest of the empty lines that follow.
-def block_longest: Match = block_longest_more / block_longest_one
-def block_longest_more: Match = s:@" "* b_break r:block_longest [len($r) >= len($s)] -> $r
-def block_longest_one: Match = s:@" "* (b_break / $$) -> $s
 
 // [173] l-literal-content(n,t) ::= ( l-nb-literal-text(n) b-nb-literal-next(n)* b-chomped-last(t) )? l-chomped-empty(n,t)
 // [182] l-folded-content(n,t) ::= ( l-nb-diff-lines(n) b-chomped-last(t) )? l-chomped-empty(n,t)
@@ -288,8 +285,11 @@ def e_node_comments: Scalar = v:e_node s_l_comments -> $v
 
 // [137] c-flow-sequence(n,c) ::= "[" s-separate(n,c)? ns-s-flow-seq-entries(n,in-flow(c))? "]"
 // [136] in-flow(c): flow-in for flow-out and flow-in, flow-key for block-key and flow-key.
+// The context is defined only where it changes: reading a variable takes longer the more definitions
+// were made since it was defined, so that defining c at every level of nested flow collections made
+// reading n quadratic in the depth.
 def c_flow_sequence: Sequence = (&(?!&) p:properties_separate)? "[" s_separate?
-    ([c == "flow-out" || c == "flow-in"] [c = "flow-in"] / [c = "flow-key"])
+    ([c == "flow-in" || c == "flow-key"] / [c == "flow-out"] [c = "flow-in"] / [c = "flow-key"])
     es:ns_s_flow_seq_entries? "]"
     -> new Sequence{Props: $p, Flow: true, Items: concat($es)}
 // [138] ns-s-flow-seq-entries(n,c) ::= ns-flow-seq-entry(n,c) s-separate(n,c)? ( "," s-separate(n,c)? ns-s-flow-seq-entries(n,c)? )?
@@ -301,7 +301,7 @@ def ns_flow_seq_entry: Value = ns_flow_pair / ns_flow_node
 
 // [140] c-flow-mapping(n,c) ::= "{" s-separate(n,c)? ns-s-flow-map-entries(n,in-flow(c))? "}"
 def c_flow_mapping: Mapping = (&(?!&) p:properties_separate)? "{" s_separate?
-    ([c == "flow-out" || c == "flow-in"] [c = "flow-in"] / [c = "flow-key"])
+    ([c == "flow-in" || c == "flow-key"] / [c == "flow-out"] [c = "flow-in"] / [c = "flow-key"])
     es:ns_s_flow_map_entries? "}"
     -> new Mapping{Props: $p, Flow: true, Pairs: concat($es)}
 // [141] ns-s-flow-map-entries(n,c) ::= ns-flow-map-entry(n,c) s-separate(n,c)? ( "," s-separate(n,c)? ns-s-flow-map-entries(n,c)? )?
@@ -343,10 +343,10 @@ def ns_flow_pair: Mapping = e:(flow_map_explicit / ns_flow_pair_entry) -> new Ma
 def ns_flow_pair_entry: Pair = ns_flow_pair_yaml_key_entry / c_ns_flow_map_empty_key_entry / c_ns_flow_pair_json_key_entry
 // [152] ns-flow-pair-yaml-key-entry(n,c) ::= ns-s-implicit-yaml-key(flow-key) c-ns-flow-map-separate-value(n,c)
 def ns_flow_pair_yaml_key_entry: Pair = k:flow_pair_yaml_key v:c_ns_flow_map_separate_value -> new Pair{Key: $k, Value: $v}
-def flow_pair_yaml_key: Value = [c = "flow-key"] k:ns_flow_yaml_node s_separate_in_line? -> $k
+def flow_pair_yaml_key: Value = ([c == "flow-key"] / [c = "flow-key"]) k:ns_flow_yaml_node s_separate_in_line? -> $k
 // [153] c-ns-flow-pair-json-key-entry(n,c) ::= c-s-implicit-json-key(flow-key) c-ns-flow-map-adjacent-value(n,c)
 def c_ns_flow_pair_json_key_entry: Pair = k:flow_pair_json_key v:c_ns_flow_map_adjacent_value -> new Pair{Key: $k, Value: $v}
-def flow_pair_json_key: Value = &(?[{'"!&) [c = "flow-key"] k:c_flow_json_node s_separate_in_line? -> $k
+def flow_pair_json_key: Value = &(?[{'"!&) ([c == "flow-key"] / [c = "flow-key"]) k:c_flow_json_node s_separate_in_line? -> $k
 
 // ---- Plain scalars (7.3.3) ----
 
