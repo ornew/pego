@@ -149,6 +149,24 @@ func WithTrace(f func(TraceEvent)) ParseOption {
 	}
 }
 
+// Profile accumulates the cost of each rule over the parses given WithProfile: calls, body evaluations,
+// memo hits, matches and failures, the input consumed and the input examined by failed calls, repeated
+// evaluations at a position, and time. Hints summarizes where to look. A Profile is not safe for
+// concurrent use.
+type Profile = engine.Profile
+
+// RuleProfile is the cost of one rule in a Profile.
+type RuleProfile = engine.RuleProfile
+
+// Location is a position with its line and column.
+type Location = engine.Location
+
+// WithProfile adds the cost of the parse to prof. It traces the parse (see WithTrace), so the parse is
+// several times slower, and the times in prof are meaningful relative to each other only.
+func WithProfile(prof *Profile) ParseOption {
+	return WithTrace(prof.Trace)
+}
+
 func parseOptions(opts []ParseOption) engine.ParseOptions {
 	var o engine.ParseOptions
 	for _, opt := range opts {

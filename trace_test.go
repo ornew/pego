@@ -49,3 +49,34 @@ def value = @(?0-9)+`, "main")
 		t.Errorf("%d exits, want %d", exits, len(want)-1)
 	}
 }
+
+func TestWithProfile(t *testing.T) {
+	p, err := pego.CompileSource(`
+def main = item+ $$
+def item = word / num
+def word = @(?a-z)+ " "?
+def num = @(?0-9)+ " "?`, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var prof pego.Profile
+	if _, err := p.Parse("ab 12 cd", pego.WithProfile(&prof)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := p.Parse("1 x", pego.WithProfile(&prof), pego.WithBackend(pego.BytecodeIterative)); err != nil {
+		t.Fatal(err)
+	}
+	counts := map[string]string{}
+	for _, r := range prof.Rules {
+		counts[r.Rule] = fmt.Sprintf("calls=%d matched=%d failed=%d consumed=%d", r.Calls, r.Matched, r.Failed, r.Consumed)
+	}
+	want := map[string]string{
+		"main": "calls=2 matched=2 failed=0 consumed=11",
+		"item": "calls=7 matched=5 failed=2 consumed=11",
+		"word": "calls=7 matched=3 failed=4 consumed=6",
+		"num":  "calls=4 matched=2 failed=2 consumed=5",
+	}
+	if fmt.Sprint(counts) != fmt.Sprint(want) || prof.Parses != 2 || len(prof.Hints()) == 0 {
+		t.Errorf("profile %v (%d parses), want %v", counts, prof.Parses, want)
+	}
+}
