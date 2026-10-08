@@ -394,12 +394,12 @@ The measurements are in [benchmarks.md](../benchmarks.md); the figures below are
 | You want | Choose | Why |
 |:--|:--|:--|
 | The best default for a Go program that loads a grammar at start-up | Closure (the default) | It is faster than both VMs on every benchmarked workload. |
-| The fastest parsing, with a fixed grammar | [Generated Go](code-generation.md) | The benchmarks show it 13–33% faster than the closure backend. |
+| The fastest parsing, with a fixed grammar | [Generated Go](code-generation.md) | The benchmarks show it 27–43% faster than the closure backend, and its typed values (`-types`) faster still. |
 | Input that can nest very deeply (untrusted JSON-like data, generated code) | Bytecode (iterative) | Rule calls live on the VM's own stack, not the Go stack. |
 | A grammar distributed as a data file, not source | Bytecode, from a `.pegoc` | See [compiled grammars](#compiled-grammars-pegoc). |
 | Checking validity only | Any backend with [`RecognizeOnly`](#recognition-mode) | No tree is built. |
 
-The recursive bytecode VM is 1.1–1.4× slower than the closure backend in the benchmarks and the iterative VM 1.2–2.0×
+The recursive bytecode VM is 1.1–1.4× slower than the closure backend in the benchmarks and the iterative VM 1.2–1.9×
 slower; you pay that for portability (the same bytecode is specified for other runtimes in
 [bytecode.md](../bytecode.md)) and, for the iterative VM, for the independence from the Go stack. Do not pick bytecode
 inside a Go program for speed.
@@ -440,7 +440,7 @@ Generated parsers have the same default of 100,000 and no option to change it (s
 ## Recognition mode
 
 `RecognizeOnly()` checks whether the input matches without building a tree. `Parse` then returns a `nil` node and the
-same syntax errors as a full parse. It is faster and allocates less: the benchmarks measure recognition at 1.2–2.0×
+same syntax errors as a full parse. It is faster and allocates less: the benchmarks measure recognition at 1.2–1.8×
 faster than a full parse on the closure backend.
 
 ```go
@@ -470,7 +470,7 @@ A compiled grammar is a saved `*pego.Parser`: bytecode, optionally the grammar A
 file with a checksum. Loading it skips parsing, static analysis and type checking, so:
 
 - start-up is faster. The [benchmarks](../benchmarks.md#preparation-time-until-a-grammar-is-ready-to-use) measure
-  loading at roughly a half to a sixth of the time of compiling from source, and fastest for files without the AST;
+  loading at roughly a half to a quarter of the time of compiling from source, and fastest for files without the AST;
 - you can ship a grammar as data (a file or a `go:embed` byte slice) without shipping its source; and
 - the bytecode is the same portable format described in [bytecode.md](../bytecode.md).
 

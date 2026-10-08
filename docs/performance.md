@@ -40,15 +40,9 @@ Notes:
 
 ## Current state
 
-Closure backend, code points, median of 3 runs at 2e688c7 on an Apple M3 Max (full tables in
-[benchmarks.md](benchmarks.md); entries before change 13 were measured on a 4-vCPU Intel Xeon virtual machine and are
-several times slower in absolute terms):
-
-| Workload | Full parse | Allocated per parse | Allocations per parse | Recognition only | Generated Go parser |
-|:--|--:|--:|--:|--:|--:|
-| JSON | 14.3 ms | 20.0 MB | 1.2 k | 8.6 ms | 9.9 ms / 1.2 k allocations |
-| minilang | 15.6 ms | 17.1 MB | 1.1 k | 11.6 ms | 12.2 ms / 1.1 k allocations |
-| CSV | 6.4 ms | 14.0 MB | 0.7 k | 3.3 ms | 4.8 ms / 0.7 k allocations |
+The current figures for every backend and workload are in [benchmarks.md](benchmarks.md), which `go run ./bench/report`
+regenerates from a fresh run. The entries below record the effect of each change when it was made; entries before
+change 13 were measured on a 4-vCPU Intel Xeon virtual machine and are several times slower in absolute terms.
 
 Starting point (first benchmark run, on the virtual machine): JSON took ~510 ms and allocated 206 MB in 2.6 M allocations.
 
