@@ -13,8 +13,12 @@ func lspCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 	fs := flag.NewFlagSet("lsp", flag.ContinueOnError)
 	// Language clients often pass --stdio; standard input and output are the only transport.
 	fs.Bool("stdio", true, "communicate over standard input and output (the only transport)")
-	if err := fs.Parse(args); err != nil {
-		return err
+	// Clients also pass flags of their own (such as --clientProcessId=N), and the server has no
+	// options, so every argument but a request for help is ignored.
+	for _, a := range args {
+		if a == "-h" || a == "-help" || a == "--help" {
+			return fs.Parse([]string{a})
+		}
 	}
 	version := "(unknown)"
 	if info, ok := debug.ReadBuildInfo(); ok {

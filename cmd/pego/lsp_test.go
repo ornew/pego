@@ -23,7 +23,8 @@ func TestLSP(t *testing.T) {
 		`{"jsonrpc":"2.0","id":2,"method":"shutdown"}`,
 		`{"jsonrpc":"2.0","method":"exit"}`,
 	)
-	out, err := runCLI(t, in, "lsp", "--stdio")
+	// Clients pass flags of their own, such as --clientProcessId; they are ignored.
+	out, err := runCLI(t, in, "lsp", "--stdio", "--clientProcessId=123", "-v", "extra")
 	if err != nil {
 		t.Fatal(err)
 	}

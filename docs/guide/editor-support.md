@@ -24,8 +24,8 @@ pego lsp     # speaks LSP on standard input and output; editors start it for you
 `go install` puts `pego` in `$(go env GOPATH)/bin` (or `$GOBIN`). Editors start the command by name, so that
 directory must be on the `PATH` the editor sees, or the editor must be given the full path.
 
-`pego lsp` takes no options. It accepts `--stdio`, which some clients add, and ignores it: standard input and output
-are the only transport.
+`pego lsp` takes no options. It ignores the arguments that clients add, such as `--stdio` and `--clientProcessId=N`:
+standard input and output are the only transport.
 
 ## What the server does
 
