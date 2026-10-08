@@ -1,139 +1,141 @@
+<div align="center">
+
 # PEGO
 
-PEGO is a parser framework for Go. You describe a language in the PEGO grammar language — an extension of
-[Parsing Expression Grammars](https://en.wikipedia.org/wiki/Parsing_expression_grammar) — and PEGO turns it into a
-parser that builds typed syntax trees, reports precise errors, and can recover from them.
+**Typed Parsers for Go, from One Grammar**
+
+Write the grammar. Get the tree. Ship the parser.
+
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENCE) [![Go Reference](https://pkg.go.dev/badge/github.com/ornew/pego.svg)](https://pkg.go.dev/github.com/ornew/pego) [![Go](https://img.shields.io/badge/go-1.27+-00ADD8?logo=go&logoColor=white)](go.mod)
+
+[Quick start](docs/tutorial/getting-started.md) · [Guides](docs/guide/README.md) · [Specification](spec/README.md) · [Examples](examples/)
+
+</div>
+
+PEGO extends [Parsing Expression Grammars](https://en.wikipedia.org/wiki/Parsing_expression_grammar) with types,
+operator precedence, left recursion and error recovery. One `.pego` file describes the syntax *and* the tree you
+want; PEGO runs it on an engine, a portable bytecode VM, or as generated Go with zero dependencies, and returns the
+same tree on all of them. No lexer, no codegen step to start, nothing outside the standard library.
 
 ```pego
-type Pair struct { Key Match, Value Match }
+// calc.pego
+type Num terminal
+type Bin struct { Left Expr, Op Match, Right Expr }
+type Expr = Bin | Num
 
-def main = k:@(?a-z)+ "=" v:@(?0-9)+ -> new Pair{Key: $k, Value: $v}
+def main: Expr = pratt {
+    skip    " "*
+    operand num
+    operand "(" e:main ")" -> $e
+    level { infix left  "+" / "-" -> new Bin{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix left  "*" / "/" -> new Bin{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix right "^"       -> new Bin{Left: $lhs, Op: $op, Right: $rhs} }
+}
+
+def num: Num = (?0-9)+
+```
+
+```console
+$ pego parse -g calc.pego -f sexpr -i '1 + 2 * 3 ^ 2'
+(Bin Left=Num"1"@num Op="+" Right=(Bin Left=Num"2"@num Op="*" Right=(Bin Left=Num"3"@num Op="^" Right=Num"2"@num)))
+
+$ pego parse -g calc.pego -i '1 + * 2'
+pego: 1:5: syntax error: expected "(", (?0-9)
 ```
 
 ```go
-p, err := pego.CompileSource(src, "main")
-node, err := p.Parse("abc=12")
-fmt.Println(node) // (Pair Key="abc" Value="12")
+p, _ := pego.CompileSource(src, "main")
+tree, err := p.Parse("1 + 2 * 3 ^ 2") // a *pego.Node, or a *pego.SyntaxError with line, column and expectations
 ```
 
-> **Status:** PEGO is under active development. The language and the Go API may still change.
-> See [docs/development.md](docs/development.md) for the implementation status and roadmap.
+> [!NOTE]
+> PEGO is under active development; the language and the Go API may still change.
+> See the [implementation status and roadmap](docs/development.md).
 
-New to PEGO? The [getting-started tutorial](docs/tutorial/getting-started.md) builds a configuration language and a
-calculator step by step, and the [guides](docs/guide/README.md) cover each feature in depth.
+## Why PEGO
 
-## Features
+- **Trees, not parse dumps.** Declare struct, union and terminal types and build them in actions. Rule types are
+  inferred and checked when the grammar compiles, not when your program crashes.
+- **Expressions without the ladder.** Precedence and associativity are `pratt` levels, not a tower of rules. Left
+  recursion works too, direct or indirect.
+- **Errors people can act on.** Failures point at the farthest position with what was expected. `#error` rewrites
+  the message; `#recover` skips a broken statement and keeps parsing.
+- **Context when you need it.** Predicates and scoped variables handle indentation-based blocks, matching tags and
+  other things plain PEG cannot.
+- **One grammar, every backend.** A closure-compiled engine, a bytecode VM (recursive, or with an explicit stack for
+  deep nesting), and standalone generated Go — all checked to return identical trees, positions and errors.
+- **Built for editors and pipelines.** Stream unbounded input element by element, reparse edited documents
+  incrementally, validate without building a tree, and load precompiled grammars (`.pegoc`) without compiling them
+  again.
 
-**Grammar language**
-
-- **Typed trees.** Declare struct, union and terminal types and build them with actions; rule types are inferred and
-  checked at compile time.
-- **Pratt expressions.** Operator precedence and associativity are declared as levels instead of being encoded in rules.
-- **Left recursion.** Directly and indirectly left-recursive rules are supported.
-- **Context-sensitive parsing.** Predicates and scoped variables handle constructs such as indentation-based blocks or
-  matching tags.
-- **Error reporting and recovery.** Failures are reported at the farthest position with the expected alternatives;
-  `#error` replaces them with custom messages and `#recover` skips malformed input and keeps going.
-
-**Runtime**
-
-- **Several backends with identical results:** a closure-compiled engine, a portable bytecode VM (recursive, or with
-  an explicit stack for deeply nested input), and generated standalone Go parsers (`pego gen`).
-- **Streaming** parsing of unbounded input, emitting the elements of a `#stream` repetition as they complete.
-- **Incremental** reparsing of edited documents, reusing results that an edit did not affect.
-- **Recognition mode** that validates input without building a tree.
-- **Compiled grammars** (`.pegoc`) that load without recompiling; the bytecode can be saved without the grammar AST
-  for a minimal runtime footprint.
-- Positions in Unicode code points or UTF-8 bytes.
-
-## Installation
+## Install
 
 ```bash
 go get github.com/ornew/pego                        # library
 go install github.com/ornew/pego/cmd/pego@latest    # command-line tool
 ```
 
-PEGO requires Go 1.27 or later and has no dependencies outside the standard library.
+Go 1.27 or later. No dependencies outside the standard library.
 
-## Usage
+## Use it
 
-### Go API
-
-```go
-import "github.com/ornew/pego"
-
-p, err := pego.CompileSource(grammarSource, "main")
-if err != nil {
-	// grammar errors, with positions
-}
-
-node, err := p.Parse(input)    // *pego.SyntaxError if the input does not match
-data, _ := json.Marshal(node)  // nodes encode to JSON with types and positions
-
-p.Parse(input, pego.WithUnit(pego.Bytes))       // positions in UTF-8 bytes
-p.Parse(input, pego.WithBackend(pego.Bytecode)) // choose a backend
-p.Parse(input, pego.RecognizeOnly())            // validate without building a tree
-```
-
-Grammars can also be built programmatically with the `grammar` package and compiled with `pego.Compile`.
-
-Streaming and incremental parsing:
+**From Go**
 
 ```go
-err := p.ParseStream(reader, func(n *pego.Node) error { /* one element */ return nil })
+p, err := pego.CompileSource(grammarSource, "main") // grammar errors come with positions
+
+node, err := p.Parse(input)                       // positions in code points by default
+p.Parse(input, pego.WithUnit(pego.Bytes))         // ... or in UTF-8 bytes
+p.Parse(input, pego.WithBackend(pego.Bytecode))   // pick a backend
+p.Parse(input, pego.RecognizeOnly())              // validate without building a tree
+json.Marshal(node)                                // nodes encode with types and positions
+
+err = p.ParseStream(r, func(n *pego.Node) error { return nil }) // one #stream element at a time
 
 doc, _ := p.NewDocument(text)
-node, err := doc.Parse()
 doc.Edit(10, 12, "new text") // replace [10, 12)
-node, err = doc.Parse()      // reuses results outside the edit
+node, err = doc.Parse()      // reuses everything the edit did not touch
+
+data, _ := p.MarshalBinary() // save; pego.LoadParser(data) skips parsing and checking
 ```
 
-Saving and loading compiled grammars:
-
-```go
-data, _ := p.MarshalBinary()   // or p.Marshal(pego.WithoutAST())
-p2, _ := pego.LoadParser(data) // no parsing, analysis or type checking at load time
-```
-
-### Command-line tool
+**From the command line**
 
 ```bash
-pego parse -g grammar.pego -i 'abc=12'           # parse and print the tree as JSON (-f sexpr for S-expressions)
+pego parse -g grammar.pego -i 'abc=12'           # parse and print the tree (JSON, or -f sexpr)
 pego parse -g grammar.pego -check < input.txt    # validate only
-pego fmt -w grammar.pego                         # format PEGO source in place (comments are kept)
-pego convert -to json grammar.pego               # convert between .pego, JSON and .pegoc
-pego compile -g grammar.pego -o grammar.pegoc    # save a compiled grammar
+pego fmt -w grammar.pego                         # format in place, comments kept
+pego compile -g grammar.pego -o grammar.pegoc    # precompile
 pego gen -g grammar.pego -pkg calc -o parser.go  # generate a standalone Go parser
-pego gen -g grammar.pego -pkg calc -types        # ... also with Go types for the grammar types
+pego gen -g grammar.pego -pkg calc -types        # ... with Go types for the grammar's types
 ```
 
-Run `pego` without arguments for the full list of commands and flags.
+Run `pego` without arguments for every command and flag.
 
 ## Examples
 
-The [examples](examples/) directory contains complete grammars with tests, including JSON, CSV, XML, an arithmetic
-calculator (with Pratt expressions and with left recursion), an indentation-based outline format, a small
-programming language, and practical grammars for Go and Python 3 that are tested against real source files
-(the Go standard library and `go/ast`, and the Python standard library and CPython's `ast` module).
+Complete grammars with tests live in [examples/](examples/): JSON, CSV, XML, a calculator (Pratt and
+left-recursive), an indentation-based outline format and a small programming language — plus practical grammars
+for **Go** and **Python 3**, tested against the Go standard library with `go/ast` and the Python standard library
+with CPython's `ast` module.
 
 ## Documentation
 
-| Document | Contents |
+| | |
 |:--|:--|
-| [Getting started](docs/tutorial/getting-started.md) | A step-by-step tutorial, from a first grammar to typed trees and operator precedence |
+| [Getting started](docs/tutorial/getting-started.md) | From a first grammar to typed trees and operator precedence, step by step |
 | [Guides](docs/guide/README.md) | Trees and actions, expressions, errors and recovery, context-sensitive parsing, running parsers, code generation, streaming and incremental parsing |
 | [Language specification](spec/README.md) | The PEGO grammar language |
 | [Development guide](docs/development.md) | Architecture, repository layout, implementation status, roadmap |
 | [Bytecode specification](docs/bytecode.md) | Instruction set and VM semantics, for porting the runtime |
-| [Benchmarks](docs/benchmarks.md) | Backend comparison and comparison with the Go standard library |
-| [Performance tuning log](docs/performance.md) | Optimizations made, experiments, remaining hotspots |
-| [Design records](docs/design/) | Design decisions and their rationale |
+| [Benchmarks](docs/benchmarks.md) · [Performance log](docs/performance.md) | How fast, and how it got there |
+| [Design records](docs/design/) | Decisions and their rationale |
 
 ## Contributing
 
-Bug reports, feature requests and pull requests are welcome. Please run `go test ./...` before submitting changes and
-follow the [commit message guidelines](docs/commit-messages.md).
+Bug reports, ideas and pull requests are welcome. Run `go test ./...` before sending changes, and follow the
+[commit message guidelines](docs/commit-messages.md).
 
 ## License
 
-PEGO is licensed under the [Apache License 2.0](LICENCE).
+[Apache License 2.0](LICENCE)
