@@ -115,7 +115,7 @@ func TestBuild(t *testing.T) {
 	for _, m := range sections {
 		names = append(names, m[1])
 	}
-	if got, want := strings.Join(names, " "), "parse fmt convert gen compile trace profile explain"; got != want {
+	if got, want := strings.Join(names, " "), "parse fmt convert gen compile trace profile explain sample"; got != want {
 		t.Errorf("command sections = %s, want %s", got, want)
 	}
 	for cmd, flags := range map[string][]string{
@@ -245,6 +245,10 @@ Commands:
   fmt [-w]
       Format files.
 
+  gen -pkg <name>
+  gen -lang ts
+      Generate a parser.
+
 A <grammar> is PEGO source
 or JSON.
 
@@ -253,7 +257,7 @@ Run "pego <command> -h".
 	if err != nil {
 		t.Fatal(err)
 	}
-	if u.synopsis != "pego <command> [flags]" || len(u.commands) != 2 || len(u.notes) != 2 {
+	if u.synopsis != "pego <command> [flags]" || len(u.commands) != 3 || len(u.notes) != 2 {
 		t.Fatalf("%+v", u)
 	}
 	p := u.commands[0]
@@ -262,6 +266,9 @@ Run "pego <command> -h".
 	}
 	if u.commands[1].name != "fmt" || u.notes[0] != "A <grammar> is PEGO source or JSON." {
 		t.Errorf("%+v", u)
+	}
+	if g := u.commands[2]; g.name != "gen" || g.synopsis != "pego gen -pkg <name>\npego gen -lang ts" || g.description != "Generate a parser." {
+		t.Errorf("gen (two forms of one command): %+v", g)
 	}
 
 	flags := parseFlagDefaults("Usage of trace:\n  -f string\n    \toutput format (default \"text\")\n  -n int\n    \trows (0 shows all) (default 30)\n" +

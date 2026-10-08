@@ -76,7 +76,13 @@ func parseUsage(text string) (cliUsage, error) {
 			}
 			note.WriteString(strings.TrimSpace(l))
 		case commandRe.MatchString(l) && !strings.HasPrefix(l, "   "):
-			u.commands = append(u.commands, cliCommand{name: commandRe.FindStringSubmatch(l)[1], synopsis: "pego " + strings.TrimSpace(l)})
+			name := commandRe.FindStringSubmatch(l)[1]
+			if cmd != nil && cmd.name == name && cmd.description == "" {
+				// Another form of the same command (pego gen for Go and for TypeScript).
+				cmd.synopsis += "\npego " + strings.TrimSpace(l)
+				continue
+			}
+			u.commands = append(u.commands, cliCommand{name: name, synopsis: "pego " + strings.TrimSpace(l)})
 			cmd = &u.commands[len(u.commands)-1]
 		case cmd != nil && strings.HasPrefix(l, "        "):
 			cmd.synopsis += "\n     " + strings.TrimSpace(l)
