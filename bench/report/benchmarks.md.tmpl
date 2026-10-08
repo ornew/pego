@@ -1,5 +1,7 @@
 {{- $all := list "JSON" "CSV" "XML" "Arith_Pratt" "Arith_LeftRec" "Minilang" "Recovery" "Outline" -}}
-{{- $typed := list "JSON" "XML" "Arith_Pratt" "Arith_LeftRec" "Outline" -}}
+{{- /* Workloads whose ParseAST builds the values directly; the others convert the tree of Parse. */ -}}
+{{- $typedDirect := list "JSON" "XML" "Arith_Pratt" "Arith_LeftRec" "Outline" -}}
+{{- $typedConverted := list "CSV" "Minilang" "Recovery" -}}
 {{- $std := list "JSON:encoding_json" "CSV:encoding_csv" "XML:encoding_xml" "Arith_Pratt:go_parser" "Arith_LeftRec:go_parser" -}}
 {{- $backends := list "closure" "bytecode" "iterative" -}}
 # Benchmarks
@@ -43,16 +45,16 @@ Measured on {{meta "date"}} at commit {{meta "commit"}} with {{meta "go"}} on {{
 Times are per parse (median of {{runs "Parse/JSON/closure/codepoints"}} runs); factors in parentheses are relative to the closure backend.
 For the history of the optimizations behind these numbers, see [performance.md](performance.md).
 
-### Batch parsing (position unit: code points)
+### Parsing time (position unit: code points)
 
-| Workload | Closure | Bytecode (recursive) | Bytecode (iterative) | Generated Go | Standard library |
-|:--|--:|--:|--:|--:|--:|
+| Workload | Closure | Bytecode (recursive) | Bytecode (iterative) | Generated Go | Generated Go, typed (`ParseAST`) | Standard library |
+|:--|--:|--:|--:|--:|--:|--:|
 {{- range $all}}
-{{- $c := printf "Parse/%s/closure/codepoints" .}}
-| {{.}} | {{t $c}} | {{rel (printf "Parse/%s/bytecode/codepoints" .) $c}} | {{rel (printf "Parse/%s/iterative/codepoints" .) $c}} | {{rel (printf "Parse/%s/generated/codepoints" .) $c}} | {{stdCell . $std}} |
+{{- $c := printf "Parse/%s/closure/codepoints" .}}{{$a := printf "Parse/%s/generated_ast" .}}
+| {{.}} | {{t $c}} | {{rel (printf "Parse/%s/bytecode/codepoints" .) $c}} | {{rel (printf "Parse/%s/iterative/codepoints" .) $c}} | {{rel (printf "Parse/%s/generated/codepoints" .) $c}} | {{if has $a}}{{rel $a $c}}{{else}}–{{end}} | {{stdCell . $std}} |
 {{- end}}
 
-### Batch parsing (position unit: bytes)
+### Parsing time (position unit: bytes)
 
 | Workload | Closure | Bytecode (recursive) | Bytecode (iterative) | Generated Go |
 |:--|--:|--:|--:|--:|
@@ -61,57 +63,83 @@ For the history of the optimizations behind these numbers, see [performance.md](
 | {{.}} | {{t $c}} | {{rel (printf "Parse/%s/bytecode/bytes" .) $c}} | {{rel (printf "Parse/%s/iterative/bytes" .) $c}} | {{rel (printf "Parse/%s/generated/bytes" .) $c}} |
 {{- end}}
 
-### Typed values (`ParseAST` of `pego gen -types`)
+### Memory per parse (position unit: code points)
 
-`ParseAST` builds the grammar's Go types directly instead of a `Node` tree. The factor is relative to the generated parser's `Parse` (code points).
+Bytes allocated / number of allocations.
 
-| Workload | `Parse` | `ParseAST` | Allocated (`Parse` → `ParseAST`) |
-|:--|--:|--:|--:|
-{{- range $typed}}
-{{- $p := printf "Parse/%s/generated/codepoints" .}}{{$a := printf "Parse/%s/generated_ast" .}}
-| {{.}} | {{t $p}} | {{rel $a $p}} | {{bytes $p}} → {{bytes $a}} |
+| Workload | Closure | Bytecode (recursive) | Bytecode (iterative) | Generated Go | Generated Go, typed (`ParseAST`) | Standard library |
+|:--|--:|--:|--:|--:|--:|--:|
+{{- range $all}}
+{{- $a := printf "Parse/%s/generated_ast" .}}
+| {{.}} | {{mem (printf "Parse/%s/closure/codepoints" .)}} | {{mem (printf "Parse/%s/bytecode/codepoints" .)}} | {{mem (printf "Parse/%s/iterative/codepoints" .)}} | {{mem (printf "Parse/%s/generated/codepoints" .)}} | {{if has $a}}{{mem $a}}{{else}}–{{end}} | {{stdMem . $std}} |
 {{- end}}
 
-### Allocations (code points, per parse)
+### Memory per parse (position unit: bytes)
 
-| Workload | Closure | Bytecode (recursive) | Bytecode (iterative) | Generated Go | Standard library |
-|:--|--:|--:|--:|--:|--:|
+| Workload | Closure | Bytecode (recursive) | Bytecode (iterative) | Generated Go |
+|:--|--:|--:|--:|--:|
 {{- range $all}}
-| {{.}} | {{mem (printf "Parse/%s/closure/codepoints" .)}} | {{mem (printf "Parse/%s/bytecode/codepoints" .)}} | {{mem (printf "Parse/%s/iterative/codepoints" .)}} | {{mem (printf "Parse/%s/generated/codepoints" .)}} | {{stdMem . $std}} |
+| {{.}} | {{mem (printf "Parse/%s/closure/bytes" .)}} | {{mem (printf "Parse/%s/bytecode/bytes" .)}} | {{mem (printf "Parse/%s/iterative/bytes" .)}} | {{mem (printf "Parse/%s/generated/bytes" .)}} |
+{{- end}}
+
+### Typed values (`ParseAST` of `pego gen -types`)
+
+`ParseAST` builds the grammar's Go types directly when every value it can return has a Go type of its own ("direct");
+otherwise (the values include CST nodes, as in CSV and minilang) it runs `Parse` and converts the tree ("converted";
+for CSV, whose start rule's value is itself a list node, the tree is returned as it is).
+See [code generation](guide/code-generation.md#typed-values--types). The factor is relative to the generated parser's
+`Parse` (code points).
+
+| Workload | `ParseAST` | `Parse` | `ParseAST` | Memory (`Parse` → `ParseAST`) |
+|:--|:--|--:|--:|--:|
+{{- range $all}}
+{{- $p := printf "Parse/%s/generated/codepoints" .}}{{$a := printf "Parse/%s/generated_ast" .}}
+{{- if has $a}}
+| {{.}} | {{if inList . $typedDirect}}direct{{else}}converted{{end}} | {{t $p}} | {{rel $a $p}} | {{mem $p}} → {{mem $a}} |
+{{- end}}
 {{- end}}
 
 ### Recognition only (`RecognizeOnly`, no tree)
 
-| Workload | Closure | Bytecode (recursive) | Bytecode (iterative) | Generated Go | Standard library |
+| Workload | Closure | Bytecode (recursive) | Bytecode (iterative) | Generated Go (`Recognize`) | Standard library |
 |:--|--:|--:|--:|--:|--:|
 {{- range $all}}
-| {{.}} | {{t (printf "Recognize/%s/closure" .)}} | {{t (printf "Recognize/%s/bytecode" .)}} | {{t (printf "Recognize/%s/iterative" .)}} | {{t (printf "Recognize/%s/generated" .)}} | {{if eq . "JSON"}}{{t "Recognize/JSON/json_Valid"}} (`json.Valid`){{else}}–{{end}} |
+{{- $c := printf "Recognize/%s/closure" .}}
+| {{.}} | {{t $c}} | {{rel (printf "Recognize/%s/bytecode" .) $c}} | {{rel (printf "Recognize/%s/iterative" .) $c}} | {{rel (printf "Recognize/%s/generated" .) $c}} | {{if eq . "JSON"}}{{t "Recognize/JSON/json_Valid"}} (`json.Valid`){{else}}–{{end}} |
+{{- end}}
+
+Memory per recognition (bytes allocated / number of allocations):
+
+| Workload | Closure | Bytecode (recursive) | Bytecode (iterative) | Generated Go (`Recognize`) | Standard library |
+|:--|--:|--:|--:|--:|--:|
+{{- range $all}}
+| {{.}} | {{mem (printf "Recognize/%s/closure" .)}} | {{mem (printf "Recognize/%s/bytecode" .)}} | {{mem (printf "Recognize/%s/iterative" .)}} | {{mem (printf "Recognize/%s/generated" .)}} | {{if eq . "JSON"}}{{mem "Recognize/JSON/json_Valid"}}{{else}}–{{end}} |
 {{- end}}
 
 ### Incremental parsing (minilang, one-character edit followed by a parse)
 
-| Backend | `Document` | Full parse each time |
-|:--|--:|--:|
+| Backend | `Document`: time | `Document`: memory | Full parse each time: time | Full parse each time: memory |
+|:--|--:|--:|--:|--:|
 {{- range $backends}}
-| {{backendName .}} | {{t (printf "Incremental/%s/document" .)}} / {{bytes (printf "Incremental/%s/document" .)}} | {{t (printf "Incremental/%s/fresh" .)}} / {{bytes (printf "Incremental/%s/fresh" .)}} |
+| {{backendName .}} | {{t (printf "Incremental/%s/document" .)}} | {{mem (printf "Incremental/%s/document" .)}} | {{t (printf "Incremental/%s/fresh" .)}} | {{mem (printf "Incremental/%s/fresh" .)}} |
 {{- end}}
 
 ### Incremental parsing of a long document (CSV, 50,000 records, one-character edit followed by a parse)
 
-| Backend | Time | Allocated |
+| Backend | Time | Memory |
 |:--|--:|--:|
 {{- range $backends}}
-| {{backendName .}} | {{t (printf "IncrementalLong/%s" .)}} | {{bytes (printf "IncrementalLong/%s" .)}} |
+| {{backendName .}} | {{t (printf "IncrementalLong/%s" .)}} | {{mem (printf "IncrementalLong/%s" .)}} |
 {{- end}}
 
 ### Streaming (CSV, 50,000 rows, {{size "Stream/closure"}})
 
-| Backend | Time | Throughput | Allocated |
+| Backend | Time | Throughput | Memory |
 |:--|--:|--:|--:|
 {{- range $backends}}
-| {{backendName .}} | {{t (printf "Stream/%s" .)}} | {{mbs (printf "Stream/%s" .)}} | {{bytes (printf "Stream/%s" .)}} |
+| {{backendName .}} | {{t (printf "Stream/%s" .)}} | {{mbs (printf "Stream/%s" .)}} | {{mem (printf "Stream/%s" .)}} |
 {{- end}}
-| `encoding/csv` (`Read` loop) | {{t "Stream/encoding_csv"}} | {{mbs "Stream/encoding_csv"}} | {{bytes "Stream/encoding_csv"}} |
+| `encoding/csv` (`Read` loop) | {{t "Stream/encoding_csv"}} | {{mbs "Stream/encoding_csv"}} | {{mem "Stream/encoding_csv"}} |
 
 ### Preparation (time until a grammar is ready to use)
 
@@ -120,12 +148,20 @@ preparing the VM).
 
 | Grammar | Compile from source | `.pegoc` → closure | `.pegoc` → bytecode | `.pegoc` (no AST) → bytecode |
 |:--|--:|--:|--:|--:|
-| JSON ({{fileSize "examples/json/json.pego"}}) | {{t "Prepare/json/source"}} | {{t "Prepare/json/pegoc/closure"}} | {{t "Prepare/json/pegoc/bytecode"}} | {{t "Prepare/json/pegoc-noast/bytecode"}} |
-| minilang ({{fileSize "examples/minilang/minilang.pego"}}) | {{t "Prepare/minilang/source"}} | {{t "Prepare/minilang/pegoc/closure"}} | {{t "Prepare/minilang/pegoc/bytecode"}} | {{t "Prepare/minilang/pegoc-noast/bytecode"}} |
+{{- range list "json" "minilang"}}
+| {{.}} | {{t (printf "Prepare/%s/source" .)}} | {{t (printf "Prepare/%s/pegoc/closure" .)}} | {{t (printf "Prepare/%s/pegoc/bytecode" .)}} | {{t (printf "Prepare/%s/pegoc-noast/bytecode" .)}} |
+{{- end}}
+
+Memory (bytes allocated / number of allocations) and file sizes:
+
+| Grammar | Source | Compile from source | `.pegoc` (with the AST) | `.pegoc` → closure | `.pegoc` → bytecode | `.pegoc` (no AST) | `.pegoc` (no AST) → bytecode |
+|:--|--:|--:|--:|--:|--:|--:|--:|
+| json | {{fileSize "examples/json/json.pego"}} | {{mem "Prepare/json/source"}} | {{fmtBytes (metric "Prepare/json/pegoc/closure" "file-bytes")}} | {{mem "Prepare/json/pegoc/closure"}} | {{mem "Prepare/json/pegoc/bytecode"}} | {{fmtBytes (metric "Prepare/json/pegoc-noast/bytecode" "file-bytes")}} | {{mem "Prepare/json/pegoc-noast/bytecode"}} |
+| minilang | {{fileSize "examples/minilang/minilang.pego"}} | {{mem "Prepare/minilang/source"}} | {{fmtBytes (metric "Prepare/minilang/pegoc/closure" "file-bytes")}} | {{mem "Prepare/minilang/pegoc/closure"}} | {{mem "Prepare/minilang/pegoc/bytecode"}} | {{fmtBytes (metric "Prepare/minilang/pegoc-noast/bytecode" "file-bytes")}} | {{mem "Prepare/minilang/pegoc-noast/bytecode"}} |
 
 ## Analysis
 
-- **Generated Go parsers take {{ratioRange "Parse/{w}/generated/codepoints" "Parse/{w}/closure/codepoints" $all}}× the time of the closure backend**, and allocate about as much. With `-types`, `ParseAST` takes {{ratioRange "Parse/{w}/generated_ast" "Parse/{w}/generated/codepoints" $typed}}× the time of the generated `Parse` and a fraction of its memory, since it builds the grammar's Go types instead of a tree.
+- **Generated Go parsers take {{ratioRange "Parse/{w}/generated/codepoints" "Parse/{w}/closure/codepoints" $all}}× the time of the closure backend**, and allocate about as much. With `-types`, `ParseAST` takes {{ratioRange "Parse/{w}/generated_ast" "Parse/{w}/generated/codepoints" $typedDirect}}× the time of the generated `Parse` and {{bytesRange "Parse/{w}/generated_ast" "Parse/{w}/generated/codepoints" $typedDirect}} of its memory where it builds the grammar's Go types directly, and {{ratioRange "Parse/{w}/generated_ast" "Parse/{w}/generated/codepoints" $typedConverted}}× the time where it converts the tree of `Parse`.
 - **The bytecode VMs take {{ratioRange "Parse/{w}/bytecode/codepoints" "Parse/{w}/closure/codepoints" $all}}× (recursive) and {{ratioRange "Parse/{w}/iterative/codepoints" "Parse/{w}/closure/codepoints" $all}}× (iterative) the time of the closure backend.** The iterative VM pays for running rule calls and Pratt loops as state machines on its own stack.
 - **The standard library is {{speedupRange "Parse/{w}/generated/codepoints" "Parse/{w}/{s}" $std}} times as fast as generated parsers** ({{speedupRange "Parse/{w}/closure/codepoints" "Parse/{w}/{s}" $std}} times as fast as the closure backend). The comparison is not like for like: `encoding/json`, `encoding/csv` and `encoding/xml` build no positioned typed tree, and `go/parser` uses a hand-written lexer. With typed values, JSON `ParseAST` takes {{factor "Parse/JSON/generated_ast" "Parse/JSON/encoding_json"}}× the time of `encoding/json`.
 - **Recognition** is {{speedupRange "Parse/{w}/closure/codepoints" "Recognize/{w}/closure" $all}} times as fast as a full parse on the closure backend. It is still far from `json.Valid`, a hand-written state machine.
@@ -142,3 +178,13 @@ The default backend (`pego.DefaultBackend`) is the **closure backend** when the 
 - Bytecode is a portable format; there is no reason to prefer it inside Go. A file without the AST cannot be turned into closures, so bytecode is used for it.
 - The iterative VM is selected explicitly when deeply nested input must be parsed independently of the Go stack size.
 - Generated Go parsers are compiled with the rest of the program and need no backend at run time; use them when the grammar is fixed.
+
+## All results
+
+Every benchmark of the run, by its name under `bench/` (median of the runs; the throughput is in MB/s of input).
+
+| Benchmark | Time | Throughput | Memory | Allocations | Other |
+|:--|--:|--:|--:|--:|:--|
+{{- range all}}
+{{row .}}
+{{- end}}

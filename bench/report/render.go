@@ -30,6 +30,7 @@ type result struct {
 type results struct {
 	meta  map[string]string // date, commit, go, cores, load (from the header), cpu, goos, goarch (from go test)
 	bench map[string]*result
+	order []string // names in the order of the run
 }
 
 var procsSuffix = regexp.MustCompile(`-\d+$`)
@@ -109,6 +110,7 @@ func parseResults(data []byte) (*results, error) {
 		}
 		r.bench[name] = res
 	}
+	r.order = order
 	return r, nil
 }
 
@@ -245,7 +247,43 @@ func render(root string, data []byte) ([]byte, error) {
 			}
 			return b
 		},
-		"list": func(xs ...string) []string { return xs },
+		"list":   func(xs ...string) []string { return xs },
+		"inList": func(x string, xs []string) bool { return slices.Contains(xs, x) },
+		// bytesRange is the range, over the items, of the memory of a relative to b: "0.23–0.26".
+		"bytesRange": func(a, b string, items []string) string {
+			lo, hi := ratioBounds(func(a, b string) float64 {
+				ra, rb := get(a), get(b)
+				if rb.bytesPerOp == 0 {
+					return 0
+				}
+				return ra.bytesPerOp / rb.bytesPerOp
+			}, a, b, items)
+			return rangeOf(fmtFactor(lo), fmtFactor(hi))
+		},
+		// has reports whether the results include a benchmark.
+		"has": func(name string) bool { return r.bench[name] != nil },
+		// allocs is the number of allocations per operation.
+		"allocs": func(name string) string { return fmtCount(get(name).allocs) },
+		// all lists every benchmark of the run, in its order, for the table of all results.
+		"all": func() []string { return r.order },
+		// row is the row of a benchmark in the table of all results.
+		"row": func(name string) string {
+			b := get(name)
+			mbs := "–"
+			if b.mbs > 0 {
+				mbs = fmtSig(b.mbs, 3)
+			}
+			var extra []string
+			for k, v := range b.metrics {
+				extra = append(extra, fmt.Sprintf("%s %s", fmtSig(v, 3), k))
+			}
+			slices.Sort(extra)
+			other := "–"
+			if len(extra) > 0 {
+				other = strings.Join(extra, ", ")
+			}
+			return fmt.Sprintf("| `%s` | %s | %s | %s | %s | %s |", name, fmtTime(b.ns), mbs, fmtBytes(b.bytesPerOp), fmtCount(b.allocs), other)
+		},
 	}
 	tmpl, err := template.New("benchmarks.md").Funcs(funcs).Parse(docTemplate)
 	if err != nil {

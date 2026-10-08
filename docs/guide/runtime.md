@@ -359,7 +359,7 @@ Choosing:
   system that counts characters (editors and language servers often count UTF-16 units, which neither unit matches).
 - Invalid UTF-8 is read as one U+FFFD character per invalid byte, so positions stay well defined.
 
-The [benchmarks](../benchmarks.md#batch-parsing-position-unit-bytes) show almost no speed difference between the units.
+The [benchmarks](../benchmarks.md#parsing-time-position-unit-bytes) show almost no speed difference between the units.
 The CLI flag is `-unit codepoints|bytes`.
 
 ## Backends
@@ -394,12 +394,12 @@ The measurements are in [benchmarks.md](../benchmarks.md); the figures below are
 | You want | Choose | Why |
 |:--|:--|:--|
 | The best default for a Go program that loads a grammar at start-up | Closure (the default) | It is faster than both VMs on every benchmarked workload. |
-| The fastest parsing, with a fixed grammar | [Generated Go](code-generation.md) | The benchmarks show it 27–43% faster than the closure backend, and its typed values (`-types`) faster still. |
+| The fastest parsing, with a fixed grammar | [Generated Go](code-generation.md) | The benchmarks show it 28–45% faster than the closure backend, and its typed values (`-types`) faster still. |
 | Input that can nest very deeply (untrusted JSON-like data, generated code) | Bytecode (iterative) | Rule calls live on the VM's own stack, not the Go stack. |
 | A grammar distributed as a data file, not source | Bytecode, from a `.pegoc` | See [compiled grammars](#compiled-grammars-pegoc). |
 | Checking validity only | Any backend with [`RecognizeOnly`](#recognition-mode) | No tree is built. |
 
-The recursive bytecode VM is 1.1–1.4× slower than the closure backend in the benchmarks and the iterative VM 1.2–1.9×
+The recursive bytecode VM is 1.1–1.3× slower than the closure backend in the benchmarks and the iterative VM 1.3–1.9×
 slower; you pay that for portability (the same bytecode is specified for other runtimes in
 [bytecode.md](../bytecode.md)) and, for the iterative VM, for the independence from the Go stack. Do not pick bytecode
 inside a Go program for speed.
@@ -440,7 +440,7 @@ Generated parsers have the same default of 100,000 and no option to change it (s
 ## Recognition mode
 
 `RecognizeOnly()` checks whether the input matches without building a tree. `Parse` then returns a `nil` node and the
-same syntax errors as a full parse. It is faster and allocates less: the benchmarks measure recognition at 1.2–1.8×
+same syntax errors as a full parse. It is faster and allocates less: the benchmarks measure recognition at 1.2–1.6×
 faster than a full parse on the closure backend.
 
 ```go

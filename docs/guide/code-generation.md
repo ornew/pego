@@ -22,7 +22,7 @@ This guide shows how to generate a parser, how to call it, what it supports comp
 
 | | Engine (`pego.CompileSource`) | Generated parser |
 |:--|:--|:--|
-| Speed | Closure backend by default | The fastest backend: 27–43% faster than the closure backend, and typed values faster still ([benchmarks](../benchmarks.md#analysis)) |
+| Speed | Closure backend by default | The fastest backend: 28–45% faster than the closure backend, and typed values faster still ([benchmarks](../benchmarks.md#analysis)) |
 | Dependencies | `github.com/ornew/pego` | Standard library only |
 | Grammar at run time | Loaded and compiled (or loaded from `.pegoc`) | Gone: it is compiled into Go code |
 | Grammar changes | Edit the grammar, restart | Regenerate and rebuild |
@@ -399,9 +399,9 @@ Details:
   `node`, `terminal` or `any`, also in struct fields) and no action reads a field of a struct value, the generated
   parser builds the values directly, without the
   nodes `Parse` makes: on the benchmarks `ParseAST` then takes a half to two thirds of the time of `Parse` and a quarter
-  to a third of the memory (JSON 6.8 → 3.2 ms and 10.4 → 2.4 MB on a 262 KB input, less than `Recognize`; XML, the
-  left-recursive calculator and the outline grammar alike; the Pratt calculator about 9% faster). Otherwise
-  `ParseAST` runs `Parse` and converts the tree, about 6% slower than `Parse`. The
+  to a third of the memory (JSON 6.7 → 3.1 ms and 10.4 → 2.4 MB on a 262 KB input, less than `Recognize`; XML, the
+  left-recursive calculator and the outline grammar alike; the Pratt calculator about 11% faster). Otherwise
+  `ParseAST` runs `Parse` and converts the tree, about 10% slower than `Parse` (minilang). The
   [design record](../design/012-typed-values.md) explains both. The typed runtime adds about as much code to the
   generated file as the parser itself.
 - `ParseRule` still returns `*Node`; typed values exist for the start rule only.
@@ -530,9 +530,9 @@ and inputs that exercise each feature of your grammar.
 
 ## Trade-offs
 
-- **Speed.** The benchmarks in [benchmarks.md](../benchmarks.md) measure the generated parsers 27–43% faster than the
-  closure backend on every workload (for example JSON 6.8 ms against 11.8 ms for the closure backend and 3.6 ms for
-  `encoding/json`, on a 262 KB input), and `ParseAST` faster still (JSON 3.2 ms). The standard library is still faster where it applies, because it builds no
+- **Speed.** The benchmarks in [benchmarks.md](../benchmarks.md) measure the generated parsers 28–45% faster than the
+  closure backend on every workload (for example JSON 6.7 ms against 11.8 ms for the closure backend and 3.6 ms for
+  `encoding/json`, on a 262 KB input), and `ParseAST` faster still (JSON 3.1 ms). The standard library is still faster where it applies, because it builds no
   positioned typed tree. The numbers are from one machine and one commit; run `go run ./bench/report` to measure yours.
 - **Binary and repository size.** Each generated parser adds tens of kilobytes of source (see the sizes above) that
   you commit and that compiles into your binary. It does not pull in PEGO's compiler, analyzer or VMs; the imports are
