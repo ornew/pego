@@ -336,7 +336,7 @@ func TestDeepNesting(t *testing.T) {
 	for _, tc := range []struct {
 		depth int
 		ok    bool
-	}{{10000, true}, {100000, false}} {
+	}{{24000, true}, {26000, false}, {1000000, false}} {
 		src := strings.Repeat("<a>", tc.depth) + strings.Repeat("</a>", tc.depth)
 		if _, err := xml.Decode(src); (err == nil) != tc.ok {
 			t.Errorf("depth %d: Decode: %v", tc.depth, err)
