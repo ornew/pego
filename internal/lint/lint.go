@@ -43,6 +43,17 @@ func (s Severity) String() string {
 // MarshalText encodes the severity as its name.
 func (s Severity) MarshalText() ([]byte, error) { return []byte(s.String()), nil }
 
+// UnmarshalText decodes the name of a severity.
+func (s *Severity) UnmarshalText(text []byte) error {
+	for _, v := range []Severity{Hint, Warning, Error} {
+		if v.String() == string(text) {
+			*s = v
+			return nil
+		}
+	}
+	return fmt.Errorf("unknown severity %q", text)
+}
+
 // Finding is a problem found in a grammar.
 type Finding struct {
 	// Pos is where the problem is in the source. It is the zero Pos for a grammar without

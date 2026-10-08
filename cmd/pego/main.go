@@ -11,6 +11,7 @@
 //	pego trace -g grammar.pego [-s main] [-i input] [-max-depth n] [-rule name] [-failures] [-f text|json]
 //	pego profile -g grammar.pego [-s main] [-i input] [-sort column] [-n rows] [-f text|json]
 //	pego explain -g grammar.pego [-s main] [-i input] [-n calls]
+//	pego lint -g grammar.pego [-s main] [-f text|json] [-disable checks] [-strict] [-list]
 //	pego sample -g grammar.pego [-s main] [-n 10] [-seed N] [-max-depth D] [-max-repeat R] [-max-len L]
 //	            [-coverage] [-invalid] [-f lines|json]
 //	pego lsp
@@ -80,6 +81,13 @@ Commands:
       recorded what it says was expected, each with the calls it was
       nested in.
 
+  lint -g <grammar> [-s <rule>] [-f text|json] [-disable <checks>] [-strict]
+       [-list]
+      Report likely mistakes in a grammar: alternatives and expressions
+      that can never match or have no effect, unused captures and rules,
+      and shapes that slow down incremental parsing. Fails if an error is
+      found (with -strict, also a warning). -list lists the checks.
+
   sample -g <grammar> [-s <rule>] [-n <count>] [-seed <n>] [-max-depth <d>]
          [-max-repeat <r>] [-max-len <bytes>] [-coverage] [-invalid]
          [-f lines|json]
@@ -130,6 +138,8 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 		return sampleCmd(args[1:], stdout)
 	case "lsp":
 		return lspCmd(args[1:], stdin, stdout)
+	case "lint":
+		return lintCmd(args[1:], stdout)
 	}
 	return fmt.Errorf("%s", usage)
 }
