@@ -135,7 +135,11 @@ func analyze(text string) *analysis {
 	a.g, a.syntaxErrs = syntax.ParsePartial(text)
 	a.collect()
 	for _, e := range a.syntaxErrs {
-		a.diag(a.errorRange(e.Pos, false), e.Msg)
+		r := a.errorRange(e.Pos, false)
+		if e.End.IsValid() {
+			r = a.idx.rangeOf(a.idx.pegoOffset(e.Pos), a.idx.pegoOffset(e.End))
+		}
+		a.diag(r, e.Msg)
 	}
 	if len(a.syntaxErrs) == 0 {
 		a.compile()

@@ -140,6 +140,31 @@ func TestDeepNesting(t *testing.T) {
 	}
 }
 
+// TestErrorEnd checks the end of the errors whose text is known: an escape sequence (from its
+// backslash) and a run of invalid characters.
+func TestErrorEnd(t *testing.T) {
+	for _, tc := range []struct {
+		src            string
+		line, col, end int
+		msg            string
+	}{
+		{`def a = "😀\q"`, 1, 11, 13, `unknown escape sequence \q`},
+		{`def a = (?a\9)`, 1, 12, 14, `unknown escape sequence \9`},
+		{`def a = "\u{zz}"`, 1, 10, 16, `invalid unicode escape \uzz`},
+		{"def a = \"x\" `~` b", 1, 13, 16, "unexpected characters \"`~`\""},
+	} {
+		_, errs := ParsePartial(tc.src)
+		if len(errs) != 1 {
+			t.Errorf("%s: errors %v", tc.src, errs)
+			continue
+		}
+		e := errs[0]
+		if e.Msg != tc.msg || e.Pos != (grammar.Pos{Line: tc.line, Col: tc.col}) || e.End != (grammar.Pos{Line: tc.line, Col: tc.end}) {
+			t.Errorf("%s: error %q at %v-%v, want %q at %d:%d-%d", tc.src, e.Msg, e.Pos, e.End, tc.msg, tc.line, tc.col, tc.end)
+		}
+	}
+}
+
 // TestIncompletePackageClause checks that a package clause without a name is reported as an
 // error, not a panic, and that the definitions after it are parsed.
 func TestIncompletePackageClause(t *testing.T) {

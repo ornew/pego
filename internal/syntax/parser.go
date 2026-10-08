@@ -10,6 +10,9 @@ import (
 // Error is a syntax error.
 type Error struct {
 	Pos grammar.Pos
+	// End is the position just after the text the error is about, when the lexer knows it (an
+	// escape sequence, a run of invalid characters), and the zero Pos otherwise.
+	End grammar.Pos
 	Msg string
 }
 
@@ -36,7 +39,9 @@ const maxNesting = 1000
 
 type errorList struct{ list ErrorList }
 
-func (e *errorList) add(pos grammar.Pos, msg string) {
+func (e *errorList) add(pos grammar.Pos, msg string) { e.addRange(pos, grammar.Pos{}, msg) }
+
+func (e *errorList) addRange(pos, end grammar.Pos, msg string) {
 	// Report only the first error at a given position.
 	if n := len(e.list); n > 0 && e.list[n-1].Pos == pos {
 		return
@@ -47,7 +52,7 @@ func (e *errorList) add(pos grammar.Pos, msg string) {
 		}
 		return
 	}
-	e.list = append(e.list, &Error{Pos: pos, Msg: msg})
+	e.list = append(e.list, &Error{Pos: pos, End: end, Msg: msg})
 }
 
 // Parse parses the PEGO source code src.

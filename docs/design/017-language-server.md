@@ -108,7 +108,8 @@ The parser records at most 100 errors and then one that says there are too many,
 editor.
 Compile and type errors are published when there is no syntax error, at most 100 of them and then one that says how
 many more there are.
-An error has only a start position; its range is the token that starts there, or one character.
+An invalid escape sequence or a run of invalid characters is reported over its text (`syntax.Error.End`); other
+errors have only a start position, and their range is the token that starts there, or one character.
 The compiler reports errors about a whole definition (such as a rule defined twice) at its `def` or `type` keyword;
 those are reported at the definition's name.
 Diagnostics are published after `didOpen`, every `didChange` and `didSave`, with the document version, and cleared on

@@ -108,6 +108,17 @@ func TestRenameToUndefinedName(t *testing.T) {
 	c.exit()
 }
 
+// TestEscapeErrorRange checks that the diagnostic of an invalid escape sequence covers the whole
+// sequence, from its backslash.
+func TestEscapeErrorRange(t *testing.T) {
+	c := newInitialized(t)
+	d := c.open("file:///escape.pego", "def a = \"😀\\q\" ` b")
+	if len(d) != 2 || d[0].Range != rng(0, 11, 0, 13) || d[1].Range != rng(0, 15, 0, 16) {
+		t.Errorf("diagnostics %+v", d)
+	}
+	c.exit()
+}
+
 // TestFailedAnalysis checks that a panic while analyzing a document is published as a diagnostic
 // and that the last good analysis keeps serving requests.
 func TestFailedAnalysis(t *testing.T) {

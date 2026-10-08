@@ -225,14 +225,14 @@ func (l *lexer) skipInvalid() {
 		l.advance()
 	}
 	if l.i-start == 1 {
-		l.errorf(pos, "unexpected character %q", l.src[start])
+		l.errs.addRange(pos, l.pos(), fmt.Sprintf("unexpected character %q", l.src[start]))
 		return
 	}
 	s := string(l.src[start:min(l.i, start+10)])
 	if l.i-start > 10 {
 		s += "..."
 	}
-	l.errorf(pos, "unexpected characters %q", s)
+	l.errs.addRange(pos, l.pos(), fmt.Sprintf("unexpected characters %q", s))
 }
 
 // skipSpace skips white space and comments, recording the comments. It reports whether it
@@ -280,10 +280,17 @@ func (l *lexer) hasPrefix(s string) bool {
 }
 
 // escape reads the escape sequence after a backslash.
+// escapeError reports an error about the escape sequence that starts at start and ends at the
+// current position.
+func (l *lexer) escapeError(start grammar.Pos, format string, args ...any) {
+	l.errs.addRange(start, l.pos(), fmt.Sprintf(format, args...))
+}
+
 func (l *lexer) escape() rune {
-	pos := l.pos()
+	start := l.pos()
+	start.Col-- // the backslash, which is not a line break
 	if l.i >= len(l.src) {
-		l.errorf(pos, "unterminated escape")
+		l.escapeError(start, "unterminated escape")
 		return 0
 	}
 	r := l.advance()
@@ -321,14 +328,14 @@ func (l *lexer) escape() rune {
 		}
 		n, err := strconv.ParseUint(hex.String(), 16, 32)
 		if err != nil {
-			l.errorf(pos, "invalid unicode escape \\u%s", hex.String())
+			l.escapeError(start, "invalid unicode escape \\u%s", hex.String())
 		}
 		return rune(n)
 	}
 	if r < utf8.RuneSelf && (unicode.IsLetter(r) || unicode.IsDigit(r)) {
 		// Only punctuation stands for itself; an unknown letter or digit escape is almost
 		// certainly a mistake (such as \x41) and would otherwise match the wrong character.
-		l.errorf(pos, "unknown escape sequence \\%c", r)
+		l.escapeError(start, "unknown escape sequence \\%c", r)
 	}
 	return r
 }
