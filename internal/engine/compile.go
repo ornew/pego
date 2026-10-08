@@ -19,8 +19,11 @@ type Program struct {
 	twins     []*rule   // value-free twins (rule.twin); ids start at len(rules)
 	nseen     int       // number of rules with rule.seen set
 	typed     *typeInfo // types found by the type checker (nil if it did not run)
-	byName    map[string]*rule
-	types     map[string]grammar.TypeSpec
+	// projected holds the map calls of actions that read a projected repetition (project.go).
+	projected     map[*grammar.Call]bool
+	noProjections bool
+	byName        map[string]*rule
+	types         map[string]grammar.TypeSpec
 
 	moduleOnce sync.Once
 	module     *Module
@@ -43,6 +46,9 @@ type Options struct {
 	// recognize builds a program that only checks whether the input conforms to the grammar, without
 	// building a tree (Program.recognizer).
 	recognize bool
+	// noProjections compiles repetitions as written (project.go), for tests: with projections in
+	// every backend, only a program without them can check what they produce.
+	noProjections bool
 }
 
 // matcher tries to match at the current position and returns the value and whether it
@@ -158,6 +164,7 @@ var builtinTypes = map[string]bool{
 
 type compiler struct {
 	prog *Program
+	proj map[string]string // projected captures of the rule being compiled (ruleProjections)
 	an   *analysis
 	opts Options
 	errs ErrorList
@@ -211,6 +218,7 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 	prog := &Program{Grammar: g, byName: map[string]*rule{}, types: map[string]grammar.TypeSpec{},
 		descTable: append([]string(nil), fixedDescs...)}
 	c := &compiler{prog: prog, opts: opts}
+	prog.noProjections = opts.noProjections
 
 	for _, td := range g.Types() {
 		switch {
@@ -310,7 +318,15 @@ func (c *compiler) compileRule(r *rule) {
 	_, r.bodyIsSeq = r.def.Expr.(*grammar.Seq)
 	r.stream = c.checkStream(r.def.Expr)
 	r.lean = r.novalue || leanBody(r)
+	c.proj = ruleProjections(c.prog, r)
 	m := c.expr(r.def.Expr, r.scope, !r.lean)
+	if c.proj != nil {
+		if c.prog.projected == nil {
+			c.prog.projected = map[*grammar.Call]bool{}
+		}
+		markProjectedMaps(r.action, c.proj, c.prog.projected)
+	}
+	c.proj = nil
 	r.body = func(p *parser, _ int) (*Node, bool) { return m(p) }
 	if r.action != nil {
 		c.checkTerm(r.action, r.scope, nil)
@@ -706,7 +722,12 @@ func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
 			return nil
 		}
 		slot := s.slot(e.Name)
-		m := c.expr(e.Expr, s, true)
+		var m matcher
+		if field := c.proj[e.Name]; field != "" {
+			m = c.projectRepeat(e.Expr.(*grammar.Repeat), field)
+		} else {
+			m = c.expr(e.Expr, s, true)
+		}
 		return func(p *parser) (*Node, bool) {
 			v, ok := m(p)
 			if ok {
@@ -1012,6 +1033,49 @@ func (c *compiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) match
 		}
 		if !build {
 			return nil, true
+		}
+		return p.newNode(Node{Type: TypeList, Start: start, End: p.pos, Children: p.kids(base), fresh: true}), true
+	}
+}
+
+// projectRepeat compiles a repetition that gathers the values of the capture field of its elements
+// (project.go). The elements build no values of their own, and share one capture frame: nothing
+// refers to an element's frame once its value is taken.
+func (c *compiler) projectRepeat(e *grammar.Repeat, field string) matcher {
+	elemScope := newScope()
+	m := c.expr(e.Expr, elemScope, false)
+	slot, n := elemScope.slots[field], len(elemScope.names)
+	min, max := e.Min, e.Max
+	return func(p *parser) (*Node, bool) {
+		start := p.pos
+		base := len(p.kidStack)
+		f := p.newFrame(n)
+		count := 0
+		for i := 0; max < 0 || i < max; i++ {
+			clear(f.vals)
+			m0 := p.mark()
+			prevCut, prevFrame := p.cut, p.frame
+			p.cut, p.frame = false, f
+			_, ok := m(p)
+			cut := p.cut
+			p.cut, p.frame = prevCut, prevFrame
+			if !ok {
+				p.reset(m0)
+				if cut {
+					p.kids(base)
+					return nil, false
+				}
+				break
+			}
+			count++
+			p.kidStack = append(p.kidStack, f.vals[slot])
+			if p.pos == m0.pos && count >= min {
+				break
+			}
+		}
+		if count < min {
+			p.kids(base)
+			return nil, false
 		}
 		return p.newNode(Node{Type: TypeList, Start: start, End: p.pos, Children: p.kids(base), fresh: true}), true
 	}

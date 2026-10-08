@@ -136,6 +136,9 @@ func (m *Module) operands(in Instr, str func(int) string, names func([]int) stri
 		}
 		return fmt.Sprintf("min=%d max=%d scope=%s", a, bb, sc)
 	case OpNext:
+		if bb == 3 {
+			return fmt.Sprintf("-> %d mode=field slot=%d", a, c)
+		}
 		return fmt.Sprintf("-> %d mode=%s", a, []string{"drop", "keep", "stream"}[bb])
 	case OpLook:
 		if bb == 1 {

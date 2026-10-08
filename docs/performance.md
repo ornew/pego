@@ -92,13 +92,11 @@ automatically in the others. This table records, for every change in the log bel
 | 39 | Line table for error positions | ✓ | ✓ | ✓ | ✓ | ✓ | streams still scan from the committed position |
 | 40, 41 | Offset table built while decoding | ✓ | ✓ | ✓ | ✓ | ✓ | engine: full parses only; recognition builds it on demand (30) |
 | 48 | Struct constructors per type, frames reused, scratch pooled across parses | ✗ | ✗ | ✗ | ✗ | ✓ | see below |
-| 52 | Projected repetitions (`map($rest, (r) => $r.f)`) | ✗ | ✗ | ✗ | ✓ | ✓ | a candidate for the engine and the VMs |
+| 52, 53 | Projected repetitions (`map($rest, (r) => $r.f)`) | ✓ | ✓ | ✓ | ✓ | ✓ | VMs: `NEXT` mode 3 (instruction set 3) |
 | 49–51 | First-character dispatch in choices | ✓ | ✓ | ✓ | ✓ | ✓ | VMs: `GUARD` (instruction set 3) |
 
 Not applied, and why:
 
-- **Projected repetitions (52)** apply to any backend in principle (the captured list is only visible to the action),
-  but are done only by the code generator so far.
 - **Reusing frames when their rule returns, pooling scratch memory across parses (48):** in the Node runtimes,
   capture frames share their chunks with the child lists of the result, so they cannot be freed or pooled without
   separating them; freeing frames in the engine was measured slower (see the experiments table).
@@ -768,6 +766,20 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   every element with a value that is never nil (otherwise an element without a record makes `$e.f` an error).
 - Effect (min of 8 interleaved runs, Apple M3 Max, generated `Parse`): CSV 3.9 → 2.7 ms (−30%, 14.0 → 8.7 MB), JSON
   7.8 → 7.0 ms (−10%, 18.4 → 15.1 MB), Minilang −4%; grammars without such repetitions unchanged.
+
+### 53. Projected repetitions in the engine and the VMs
+
+- Change 52 in every backend. The analysis moved to `project.go` (shared by the closure backend, the bytecode
+  compiler and the code generator). It decides from the grammar alone (the engine compiles before type checking):
+  a rule's value is never nil when it has a terminal type or its action makes a struct or returns such a capture,
+  through `#error` and recursion. The closure backend records the projected `map` calls and its evaluator takes the
+  list as it is; the VMs mark the repetition with `NEXT` mode 3 (push the field's slot) and compile the `map` with
+  `(e) => $e` in place of the projection, so they need no other new instruction.
+- With projections in every backend, results produced with them could only be checked against a program without
+  them: the corpus tests now compare every backend and the generated parsers with the engine compiled with
+  `noProjections`, and fail if the conditions are loosened (a nil field, `$n`).
+- Effect (min of 10 interleaved runs, Apple M3 Max): CSV −22% (closure, 6.1 → 4.7 ms), −16% and −14% (VMs), 14.0 →
+  8.7 MB; JSON −9% (closure, 13.5 → 12.3 ms), −8% and −6% (VMs); Minilang within noise.
 
 ## Grammar authoring guidelines for performance
 

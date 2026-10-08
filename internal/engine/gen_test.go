@@ -166,7 +166,7 @@ def n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x" 
 		fmt.Fprintf(&parsers, "\tfunc(s string, b bool) (any, error) { u := g%d.CodePoints; if b { u = g%d.Bytes }; n, err := g%d.Parse(s, u); return n, err },\n", i, i, i)
 		fmt.Fprintf(&recognizers, "\tfunc(s string, b bool) error { u := g%d.CodePoints; if b { u = g%d.Bytes }; return g%d.Recognize(s, u) },\n", i, i, i)
 		inputs = append(inputs, c.inputs)
-		prog := compile(t, c.src)
+		prog := compile(t, c.src, Options{noProjections: true}) // the generated code projects (project.go)
 		for _, in := range c.inputs {
 			for _, unit := range []Unit{CodePoints, Bytes} {
 				n, err := prog.ParseWith("main", in, ParseOptions{Unit: unit})

@@ -19,7 +19,8 @@ func (prog *Program) Module() *Module {
 
 type bcompiler struct {
 	prog *Program
-	cur  *rule // rule being compiled
+	cur  *rule             // rule being compiled
+	proj map[string]string // projected captures of its body (ruleProjections)
 	m    *Module
 	strs map[string]int
 	// lambdas are the lambdas whose body compilation has been deferred.
@@ -104,7 +105,9 @@ func (c *bcompiler) compile() {
 			c.emit(OpReturn, 0, 0, 0)
 		} else {
 			ri.Entry = int(c.here())
+			c.proj = ruleProjections(c.prog, r)
 			c.value(r.def.Expr, s, !r.lean)
+			c.proj = nil
 			c.emit(OpReturn, 0, 0, 0)
 		}
 		ri.Scope = c.strs2(s.names)
@@ -243,7 +246,11 @@ func (c *bcompiler) match(e grammar.Expr, s *scope, build bool) {
 			return
 		}
 		slot := s.slot(e.Name)
-		c.match(e.Expr, s, true)
+		if field := c.proj[e.Name]; field != "" {
+			c.projectRepeat(e.Expr.(*grammar.Repeat), field)
+		} else {
+			c.match(e.Expr, s, true)
+		}
 		c.emit(OpCapture, int32(slot), b2i(!build), 0)
 	case *grammar.Cut:
 		c.emit(OpCut, 0, 0, 0)
@@ -416,6 +423,27 @@ func (c *bcompiler) expr(t grammar.Term, s *scope, locals []string, allowIndex b
 	return start
 }
 
+// projectRepeat emits a repetition that gathers the values of the capture field of its elements
+// (project.go): the elements are matched without values, and NEXT pushes the field's slot.
+func (c *bcompiler) projectRepeat(e *grammar.Repeat, field string) {
+	elemScope := newScope()
+	c.m.Scopes = append(c.m.Scopes, nil)
+	sc := int32(len(c.m.Scopes) - 1)
+	c.emit(OpPushPos, 0, 0, 0)
+	c.emit(OpRepeat, int32(e.Min), int32(e.Max), sc)
+	loop := c.here()
+	iter := c.emit(OpIter, 0, 0, 0)
+	c.match(e.Expr, elemScope, false)
+	c.emit(OpNext, loop, 3, int32(elemScope.slots[field]))
+	c.m.Code[iter].A = c.here()
+	c.emit(OpEndRepeat, 1, 0, 0)
+	c.m.Scopes[sc] = c.strs2(elemScope.names)
+}
+
+// identity is the lambda (e) => $e, which takes the place of the projection in a map call of a
+// projected repetition: the list holds the values already.
+var identity = &grammar.Lambda{Params: []string{"e"}, Body: &grammar.CaptureRef{Name: "e"}}
+
 // concatParts emits the code that gathers the elements of the arguments of a fusable concat call.
 func (c *bcompiler) concatParts(t *grammar.Call, s *scope, locals []string) {
 	for _, a := range t.Args {
@@ -428,7 +456,11 @@ func (c *bcompiler) concatParts(t *grammar.Call, s *scope, locals []string) {
 			c.eemit(EListPush, int32(len(call.Args)), 0)
 		case "map":
 			c.term(call.Args[0], s, locals)
-			c.lambda(call.Args[1], s, locals)
+			if c.prog.projected[call] {
+				c.lambda(identity, s, locals)
+			} else {
+				c.lambda(call.Args[1], s, locals)
+			}
 			c.eemit(EMapPush, 0, 0)
 		case "concat":
 			c.concatParts(call, s, locals)
@@ -497,6 +529,9 @@ func (c *bcompiler) term(t grammar.Term, s *scope, locals []string) {
 		}
 		for _, a := range t.Args {
 			if l, ok := a.(*grammar.Lambda); ok {
+				if c.prog.projected[t] {
+					l = identity
+				}
 				at := c.eemit(EFunc, 0, int32(len(l.Params)))
 				c.lambdas = append(c.lambdas, pendingLambda{at: at, body: l.Body, scope: s,
 					locals: append(append([]string(nil), locals...), l.Params...)})

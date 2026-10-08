@@ -297,7 +297,8 @@ func validateModule(m *Module) error {
 			if x.A < 0 || int(x.A) >= ip {
 				fail("invalid loop from %d to %d", ip, x.A)
 			}
-			flag(x.B, 2)
+			flag(x.B, 3)
+			nonneg(x.C)
 		case OpSeq:
 			nonneg(x.A)
 		case OpCapture:

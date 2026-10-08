@@ -144,8 +144,9 @@ const (
 	OpRepeat
 	// ITER l: push an entry for one iteration. On failure, restore the state and go to l.
 	OpIter
-	// NEXT l, f: commit one iteration and go to l if the repetition can continue. f is 1 to keep the
-	// value, 2 to pass it to the stream, 0 to discard it.
+	// NEXT l, f, s: commit one iteration and go to l if the repetition can continue. f is 1 to keep
+	// the value, 2 to pass it to the stream, 0 to discard it, and 3 to push the value of slot s of
+	// the element's frame instead (a projected repetition, whose elements have no value).
 	OpNext
 	// ENDREPEAT b: end the repetition, check the count, and push a List if b is 1.
 	OpEndRepeat

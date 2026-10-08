@@ -19,6 +19,17 @@ func TestBackendsMatchOnCorpus(t *testing.T) {
 					checkBackends(t, prog, "main", in)
 				}
 			}
+			// Projected repetitions (project.go) give what the repetitions as written give.
+			prog, plain := compile(t, c.src), compile(t, c.src, Options{noProjections: true})
+			for _, in := range c.inputs {
+				for _, u := range []Unit{CodePoints, Bytes} {
+					n1, err1 := prog.ParseWith("main", in, ParseOptions{Unit: u})
+					n2, err2 := plain.ParseWith("main", in, ParseOptions{Unit: u})
+					if a, b := resultJSON(n1, err1), resultJSON(n2, err2); a != b {
+						t.Errorf("input %q (%v): projected repetitions differ\n projected %s\n plain     %s", in, u, a, b)
+					}
+				}
+			}
 		})
 	}
 }

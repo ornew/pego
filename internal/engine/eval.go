@@ -173,6 +173,18 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 		return n, err
 
 	case *grammar.Call:
+		if c.p.prog.projected[t] {
+			// map($x, (e) => $e.f) of a projected repetition: $x holds the values already.
+			x, err := c.eval(t.Args[0])
+			if err != nil {
+				return nil, err
+			}
+			items, err := listItems("map", x)
+			if err != nil {
+				return nil, err
+			}
+			return c.newList(items), nil
+		}
 		if t.Func == "concat" && fusable(t) {
 			base := len(c.p.kidStack)
 			for _, a := range t.Args {
@@ -592,6 +604,13 @@ func fusable(t *grammar.Call) bool {
 
 // pushConcatArg pushes onto kidStack the elements of t, an argument of a fusable concat call.
 func (c *evalCtx) pushConcatArg(t grammar.Term) error {
+	if call, ok := t.(*grammar.Call); ok && c.p.prog.projected[call] {
+		v, err := c.eval(call.Args[0])
+		if err != nil {
+			return err
+		}
+		return c.pushElems("concat", []any{v})
+	}
 	if call, ok := t.(*grammar.Call); ok && (call.Func == "list" || call.Func == "map" && len(call.Args) == 2) {
 		p := c.p
 		base := len(p.estack)

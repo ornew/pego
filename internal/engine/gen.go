@@ -318,17 +318,6 @@ func (g *generator) typedCall(r *rule, body string, s *scope) {
 	m.WriteString("\t}\n\tp.env = prevEnv\n\tp.freeFrame(f)\n\treturn v, ok\n}\n\n")
 }
 
-// usesItems reports whether the action refers to the body's elements ($n).
-func usesItems(t grammar.Term) bool {
-	found := false
-	walkTerm(t, func(x grammar.Term) {
-		if _, ok := x.(*grammar.IndexRef); ok {
-			found = true
-		}
-	})
-	return found
-}
-
 // plainPrefix is the prefix of the methods written by plainCall, and seenVar the variable that
 // holds the number of rules with rule.seen set, for the rule table being generated.
 func (g *generator) plainPrefix() string {
@@ -414,219 +403,20 @@ func (g *generator) plainCall(r *rule, body string) {
 `)
 }
 
-// projections returns the captures of repetitions that the rule r's action reads only as
-// map($x, (e) => $e.f), mapped to the field f. Such a
-// repetition gathers the values of f directly (projectRepeat), instead of a record per element
-// that the action takes apart again. The capture f must be an item of the element's sequence (so
-// it is always recorded), and no predicate may read $x.
+// projections returns the projected repetition captures of the rule r (see ruleProjections), none
+// in the recognizer.
 func (g *generator) projections(r *rule) map[string]string {
-	// $n would see the repetition's value too (it is an element of the body).
-	if g.table == "recRules" || r.action == nil || usesItems(r.action) {
+	if g.table == "recRules" {
 		return nil
 	}
-	cands := map[string]*grammar.Repeat{}
-	var walk func(e grammar.Expr)
-	walk = func(e grammar.Expr) {
-		switch e := e.(type) {
-		case *grammar.Capture:
-			if rp, ok := e.Expr.(*grammar.Repeat); ok && hasCaptures(rp.Expr) {
-				cands[e.Name] = rp
-				return
-			}
-			walk(e.Expr)
-		case *grammar.Seq:
-			for _, it := range e.Items {
-				walk(it)
-			}
-		case *grammar.Choice:
-			for _, a := range e.Alts {
-				walk(a)
-			}
-		case *grammar.Optional:
-			walk(e.Expr)
-		case *grammar.Attributed:
-			walk(e.Expr)
-		case *grammar.Repeat:
-			if !hasCaptures(e.Expr) {
-				walk(e.Expr)
-			}
-		case *grammar.And:
-			walk(e.Expr)
-		}
-	}
-	walk(r.def.Expr)
-	if len(cands) == 0 {
-		return nil
-	}
-	// A name captured more than once (in another repetition's elements, say) is not projected:
-	// $x and the element field refer to captures by name.
-	count := map[string]int{}
-	walkExpr(r.def.Expr, func(x grammar.Expr) {
-		if c, ok := x.(*grammar.Capture); ok {
-			count[c.Name]++
-		}
-	})
-	for name := range cands {
-		if count[name] > 1 {
-			delete(cands, name)
-		}
-	}
-	// Predicates must not read the captures.
-	walkExpr(r.def.Expr, func(x grammar.Expr) {
-		if pr, ok := x.(*grammar.Predicate); ok {
-			walkTerm(pr.Term, func(t grammar.Term) {
-				if c, ok := t.(*grammar.CaptureRef); ok {
-					delete(cands, c.Name)
-				}
-			})
-		}
-	})
-	fields := map[string]string{}
-	bad := map[string]bool{}
-	var use func(t grammar.Term, shadow map[string]bool)
-	use = func(t grammar.Term, shadow map[string]bool) {
-		switch t := t.(type) {
-		case *grammar.CaptureRef:
-			if !shadow[t.Name] {
-				bad[t.Name] = true
-			}
-			return
-		case *grammar.Call:
-			if t.Func == "map" && len(t.Args) == 2 {
-				if x, ok := t.Args[0].(*grammar.CaptureRef); ok && !shadow[x.Name] {
-					if f, ok := projField(t.Args[1]); ok && (fields[x.Name] == "" || fields[x.Name] == f) {
-						fields[x.Name] = f
-						return
-					}
-				}
-			}
-			for _, a := range t.Args {
-				use(a, shadow)
-			}
-			return
-		case *grammar.Lambda:
-			inner := map[string]bool{}
-			for k := range shadow {
-				inner[k] = true
-			}
-			for _, p := range t.Params {
-				inner[p] = true
-			}
-			use(t.Body, inner)
-			return
-		case *grammar.Member:
-			use(t.X, shadow)
-			return
-		case *grammar.New:
-			for _, f := range t.Fields {
-				use(f.Value, shadow)
-			}
-			return
-		case *grammar.Binary:
-			use(t.L, shadow)
-			use(t.R, shadow)
-			return
-		case *grammar.Unary:
-			use(t.X, shadow)
-			return
-		}
-	}
-	use(r.action, map[string]bool{})
-	proj := map[string]string{}
-	for name, rp := range cands {
-		f := fields[name]
-		if f == "" || bad[name] || count[f] > 1 || !g.directCapture(rp.Expr, f) {
-			continue
-		}
-		proj[name] = f
-	}
-	return proj
-}
-
-// projField reports whether the lambda is (e) => $e.f and returns f.
-func projField(t grammar.Term) (string, bool) {
-	l, ok := t.(*grammar.Lambda)
-	if !ok || len(l.Params) != 1 {
-		return "", false
-	}
-	m, ok := l.Body.(*grammar.Member)
-	if !ok {
-		return "", false
-	}
-	x, ok := m.X.(*grammar.CaptureRef)
-	if !ok || x.Name != l.Params[0] || m.Name == "startPos" || m.Name == "endPos" || m.Name == "children" {
-		return "", false
-	}
-	return m.Name, true
-}
-
-// directCapture reports whether e captures name unconditionally (e is the capture, or a sequence
-// with the capture among its items) with a value that is never nil. Then the element's record
-// always has the field, and projecting gives what map would. (When an element records no value,
-// its record is not built, and reading the field of the element fails instead.)
-func (g *generator) directCapture(e grammar.Expr, name string) bool {
-	var c *grammar.Capture
-	switch e := e.(type) {
-	case *grammar.Capture:
-		c = e
-	case *grammar.Seq:
-		for _, it := range e.Items {
-			if x, ok := it.(*grammar.Capture); ok && x.Name == name {
-				c = x
-			}
-		}
-	}
-	return c != nil && c.Name == name && g.nonNil(c.Expr)
-}
-
-// nonNil reports whether the value of e (built as a capture builds it) is never nil.
-func (g *generator) nonNil(e grammar.Expr) bool {
-	switch e := e.(type) {
-	case *grammar.Literal, *grammar.CharClass, *grammar.Any, *grammar.Atomic, *grammar.Top, *grammar.Seq, *grammar.Repeat:
-		return true
-	case *grammar.Capture:
-		return g.nonNil(e.Expr)
-	case *grammar.Choice:
-		for _, a := range e.Alts {
-			if !g.nonNil(a) {
-				return false
-			}
-		}
-		return true
-	case *grammar.Attributed:
-		return g.nonNil(e.Expr) // #recover makes an Error node
-	case *grammar.Ref:
-		if g.prog.typed == nil {
-			return false
-		}
-		switch t := g.prog.typed.rules[e.Name].(type) {
-		case nil, optTy:
-			return false
-		case basicTy:
-			return t != tyNil && t != tyAny && t != tyNever
-		}
-		return true
-	}
-	return false
+	return ruleProjections(g.prog, r)
 }
 
 // projected reports whether the map call t reads a projected capture (projections), and returns
 // the capture.
 func (g *generator) projected(t *grammar.Call, locals map[string]string) (grammar.Term, bool) {
-	if g.proj == nil || len(t.Args) != 2 {
-		return nil, false
-	}
-	x, ok := t.Args[0].(*grammar.CaptureRef)
-	if !ok || g.proj[x.Name] == "" {
-		return nil, false
-	}
-	if _, local := locals[x.Name]; local {
-		return nil, false
-	}
-	if f, ok := projField(t.Args[1]); !ok || f != g.proj[x.Name] {
-		return nil, false
-	}
-	return x, true
+	x, ok := projectedMap(t, g.proj, func(name string) bool { _, local := locals[name]; return local })
+	return x, ok
 }
 
 // projectRepeat writes a repetition that gathers the values of the capture field of its elements

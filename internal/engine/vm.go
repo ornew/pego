@@ -476,7 +476,13 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			p.ents = p.ents[:len(p.ents)-1]
 			rep := &p.reps[len(p.reps)-1]
 			if rep.scope >= 0 {
-				if in.B != 0 { // in a value-free repetition, the element scope exists only for predicates
+				if in.B == 3 { // a projected repetition: the value is the field's capture
+					var v *Node
+					if int(in.C) < len(p.frame.vals) { // (a corrupted file may name another slot)
+						v = p.frame.vals[in.C]
+					}
+					p.push(v)
+				} else if in.B != 0 { // in a value-free repetition, the element scope exists only for predicates
 					top := len(p.vals) - 1
 					p.vals[top] = p.attachCapturesNames(asNodeValue(p.vals[top]), vm.scopes[rep.scope], p.frame, e.save.pos, p.pos)
 				}
