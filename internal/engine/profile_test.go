@@ -129,3 +129,28 @@ def line = @(?a-z)* "\n"`)
 		t.Errorf("unknown location prints as %q", got)
 	}
 }
+
+// TestProfileStreamMemory checks that profiling a stream keeps its memory bounded: the positions
+// evaluated are forgotten once the stream has discarded them.
+func TestProfileStreamMemory(t *testing.T) {
+	prog := compile(t, `
+def main = line* #stream $$
+def line = @(?a-z)* "\n"`)
+	const lines = 50000
+	for _, back := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		var pr Profile
+		r := strings.NewReader(strings.Repeat("abcdefgh\n", lines))
+		if err := prog.ParseStreamWith("main", r, func(*Node) error { return nil }, ParseOptions{Backend: back, Trace: pr.Trace}); err != nil {
+			t.Fatal(err)
+		}
+		var line *RuleProfile
+		for _, r := range pr.Rules {
+			if r.Rule == "line" {
+				line = r
+			}
+		}
+		if len(pr.seen) > 4*profileSeenMin || line == nil || line.Calls != lines+1 || line.Repeats != 0 {
+			t.Errorf("%v: %d positions kept, line %+v", back, len(pr.seen), line)
+		}
+	}
+}

@@ -93,7 +93,9 @@ nested calls, and per rule name (so that a value-free twin counts as its rule) i
 - **repeats**: calls that evaluated the body at a (position, binding level) where the rule had been evaluated before in
   the same parse, and the most such evaluations at one position. Since memoization is deferred to the second call at a
   position (performance.md, change 18), a memoized rule has at most one repeat per position; more points at a rule that
-  is not memoized and whose callers are retried;
+  is not memoized and whose callers are retried. The positions evaluated are kept in a map, from which those that a
+  stream parse has discarded (and so can never return to) are dropped whenever it doubles, so profiling a stream
+  keeps its memory bounded;
 - **time**: inclusive time, counted only for the outermost call of a rule in progress (so that recursion does not count
   the same time twice), and self time, the inclusive time minus that of the nested calls.
 

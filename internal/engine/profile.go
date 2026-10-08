@@ -29,7 +29,13 @@ type Profile struct {
 	stack []profileCall
 	seen  map[profileKey]int32 // evaluated calls per rule, position and level
 	open  []int32              // per rule, the calls in progress (for Time)
+	// seenMax is the size of seen at which the positions a stream has discarded are dropped
+	// from it, which keeps it bounded in a stream parse.
+	seenMax int
 }
+
+// profileSeenMin is the smallest seenMax.
+const profileSeenMin = 1024
 
 // RuleProfile is the cost of one rule. Calls of a rule's value-free twin count as calls of the rule.
 type RuleProfile struct {
@@ -103,6 +109,7 @@ func (pr *Profile) Trace(e TraceEvent) {
 			pr.stack = pr.stack[:0]
 			clear(pr.seen)
 			clear(pr.open)
+			pr.seenMax = profileSeenMin
 		}
 		i := pr.rule(e.Rule)
 		pr.open[i]++
@@ -157,6 +164,9 @@ func (pr *Profile) Trace(e TraceEvent) {
 		k := profileKey{rule: int32(c.rule), level: int32(e.Level), pos: e.Pos}
 		n := pr.seen[k] + 1
 		pr.seen[k] = n
+		if len(pr.seen) >= pr.seenMax {
+			pr.dropDiscarded(e)
+		}
 		if n > 1 {
 			r.Repeats++
 		}
@@ -165,6 +175,19 @@ func (pr *Profile) Trace(e TraceEvent) {
 			r.MaxEvalsAt = location(e, e.Pos)
 		}
 	}
+}
+
+// dropDiscarded drops from seen the positions before the input a stream parse still holds: the
+// parser cannot return to them, so no rule is evaluated there again.
+func (pr *Profile) dropDiscarded(e TraceEvent) {
+	if e.p != nil && e.p.base > 0 {
+		for k := range pr.seen {
+			if k.pos < e.p.base {
+				delete(pr.seen, k)
+			}
+		}
+	}
+	pr.seenMax = max(profileSeenMin, 2*len(pr.seen))
 }
 
 func location(e TraceEvent, pos int) Location {
