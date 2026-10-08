@@ -394,7 +394,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			var desc expID
 			switch in.A {
 			case 0:
-				ok, desc = p.pos == 0, idBeginInput
+				ok, desc = p.atInputStart(), idBeginInput
 			case 1:
 				ok, desc = p.atEOF(), idEndInput
 			case 2:

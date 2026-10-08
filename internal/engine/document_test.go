@@ -285,3 +285,25 @@ func TestDocumentKeepsInputTables(t *testing.T) {
 		t.Fatalf("got %v, %v", n, err)
 	}
 }
+
+// TestDocumentInputStartAnchors checks that results that depend on being at the start of the
+// input (^^) or of a line (^) are not reused after text is inserted before them.
+func TestDocumentInputStartAnchors(t *testing.T) {
+	for _, anchor := range []string{"^^", "^"} {
+		src := "def main = (z / a)*\ndef a = " + anchor + ` "b" / "b" "!"` + "\ndef z = \"q\""
+		prog := compile(t, src)
+		doc, err := prog.NewDocument("main", "b")
+		if err != nil {
+			t.Fatal(err)
+		}
+		doc.Parse()
+		if err := doc.Edit(0, 0, "q"); err != nil {
+			t.Fatal(err)
+		}
+		n, err := doc.Parse()
+		fn, ferr := prog.Parse("main", doc.Text())
+		if got, want := dump(t, n, err), dump(t, fn, ferr); got != want {
+			t.Errorf("%s: got %s, want %s", anchor, got, want)
+		}
+	}
+}

@@ -442,13 +442,23 @@ func (p *parser) atEOF() bool {
 	return !p.fill(p.pos + 1)
 }
 
-// atLineStart reports whether the current position is at the start of a line.
+// atLineStart reports whether the current position is at the start of a line. It examines the
+// preceding character, or the absence of one: in both cases the result depends on the input
+// before the position, so it records that (lw), which keeps a Document from shifting the result
+// past an edit before it.
 func (p *parser) atLineStart() bool {
+	p.lw = min2(p.lw, p.pos-1)
 	if p.pos == 0 {
 		return true
 	}
-	p.lw = min2(p.lw, p.pos-1)
 	return p.isNewline(p.pos - 1)
+}
+
+// atInputStart reports whether the current position is the start of the input. Like
+// atLineStart, the result depends on the input before the position.
+func (p *parser) atInputStart() bool {
+	p.lw = min2(p.lw, p.pos-1)
+	return p.pos == 0
 }
 
 // textLen returns the length of the string in Unit.

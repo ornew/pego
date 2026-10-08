@@ -699,7 +699,7 @@ func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
 		return func(p *parser) (*Node, bool) { return nil, false }
 
 	case *grammar.BeginInput:
-		return anchor(func(p *parser) bool { return p.pos == 0 }, idBeginInput)
+		return anchor(func(p *parser) bool { return p.atInputStart() }, idBeginInput)
 	case *grammar.EndInput:
 		return anchor(func(p *parser) bool { return p.atEOF() }, idEndInput)
 	case *grammar.BeginLine:

@@ -35,7 +35,7 @@ As in Dubroy and Warth's "Incremental Packrat Parsing", each memo entry records 
 | The examined range starts at or after end | Reused with positions shifted by the change in length |
 | Otherwise | Discarded |
 
-- The examined range includes lookahead and checks of the next character (such as the check that ends a `*`). A line-start check (`^`) examines the preceding character, so the examined range can begin before the start of the match.
+- The examined range includes lookahead and checks of the next character (such as the check that ends a `*`). A line-start check (`^`) examines the preceding character, so the examined range can begin before the start of the match; the same holds for `^` and `^^` at the start of the input, whose result depends on there being nothing before it.
 - Nodes in shifted entries are copied with shifted positions when they are used, which avoids copying entries that are never used.
 - Entries of rules whose results may contain position values (`startPos`, `endPos`) are not shifted; this covers rules whose actions or predicates refer to them and the rules that call those rules. Positions stored as integers cannot be shifted the way node positions can.
 - Entries that contain recovered errors are not shifted either, because error messages include positions.
