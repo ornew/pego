@@ -10,11 +10,12 @@ import (
 // Positions are converted through byte offsets in the document text. Three kinds of positions
 // meet here:
 //
-//   - LSP positions: zero-based lines separated by "\n", "\r\n" or "\r", and columns in UTF-16
-//     code units;
-//   - PEGO positions (grammar.Pos): one-based lines separated by "\n" only (the lexer reads "\r" as
-//     white space), and one-based columns in code points;
+//   - LSP positions: zero-based lines and columns in UTF-16 code units;
+//   - PEGO positions (grammar.Pos): one-based lines and columns in code points, in which the "\r"
+//     of a "\r\n" counts as a column of its line;
 //   - byte offsets into the UTF-8 text, which both are converted to and from.
+//
+// For both, a line ends at "\n", "\r\n" or a lone "\r".
 
 // textIndex converts positions in a text.
 //
@@ -25,9 +26,8 @@ import (
 // by walking from the nearest checkpoint.
 type textIndex struct {
 	text string
-	// lines are the byte offsets at which LSP lines start, and pegoLines those at which PEGO lines
-	// start.
-	lines, pegoLines []int
+	// lines are the byte offsets at which lines start.
+	lines []int
 	// checkpoints are at the first character boundaries at or after multiples of checkpointEvery.
 	checkpoints []checkpoint
 }
@@ -40,7 +40,7 @@ type checkpoint struct {
 const checkpointEvery = 64
 
 func newTextIndex(text string) *textIndex {
-	t := &textIndex{text: text, lines: []int{0}, pegoLines: []int{0}}
+	t := &textIndex{text: text, lines: []int{0}}
 	units, runes, next := 0, 0, 0
 	for i := 0; i < len(text); {
 		if i >= next {
@@ -50,7 +50,6 @@ func newTextIndex(text string) *textIndex {
 		switch text[i] {
 		case '\n':
 			t.lines = append(t.lines, i+1)
-			t.pegoLines = append(t.pegoLines, i+1)
 		case '\r':
 			if i+1 >= len(text) || text[i+1] != '\n' {
 				t.lines = append(t.lines, i+1)
@@ -173,12 +172,13 @@ func (t *textIndex) pegoOffset(p grammar.Pos) int {
 	if p.Line < 1 {
 		return 0
 	}
-	if p.Line > len(t.pegoLines) {
+	if p.Line > len(t.lines) {
 		return len(t.text)
 	}
-	start, end := t.pegoLines[p.Line-1], len(t.text)
-	if p.Line < len(t.pegoLines) {
-		end = t.pegoLines[p.Line] - 1
+	// The end of the line is its last line break character: the "\r" of a "\r\n" is a column.
+	start, end := t.lines[p.Line-1], len(t.text)
+	if p.Line < len(t.lines) {
+		end = t.lines[p.Line] - 1
 	}
 	_, runes := t.count(start)
 	return t.seek(start, end, runes+max(p.Col-1, 0), false)

@@ -119,6 +119,33 @@ func TestEscapeErrorRange(t *testing.T) {
 	c.exit()
 }
 
+// TestLoneCarriageReturns checks a document whose lines end with lone "\r" (old Mac line ends),
+// which used to read as one comment line: no definitions, no diagnostics.
+func TestLoneCarriageReturns(t *testing.T) {
+	c := newInitialized(t)
+	uri := "file:///cr.pego"
+	text := "// The rules.\rdef  a = b x // c\rdef b = \"😀\"\r"
+	d := c.open(uri, text)
+	if messages(d) != "undefined rule x" || d[0].Range != rng(1, 11, 1, 12) {
+		t.Errorf("diagnostics %+v", d)
+	}
+	var syms []DocumentSymbol
+	c.requestInto("textDocument/documentSymbol", docParams(uri), &syms)
+	if len(syms) != 2 || syms[0].SelectionRange != rng(1, 5, 1, 6) || syms[1].Range != rng(2, 0, 2, 12) {
+		t.Errorf("symbols %+v", syms)
+	}
+	if h, _ := hoverText(c, uri, 1, 5); !strings.Contains(h, "The rules.") {
+		t.Errorf("hover %q", h)
+	}
+	// Formatting keeps the line ends.
+	change(c, uri, 2, edit(1, 11, 1, 13, ""))
+	text = "// The rules.\rdef  a = b // c\rdef b = \"😀\"\r"
+	if got := formatDoc(c, uri, text); got != "// The rules.\rdef a = b // c\rdef b = \"😀\"\r" {
+		t.Errorf("formatted %q", got)
+	}
+	c.exit()
+}
+
 // TestFailedAnalysis checks that a panic while analyzing a document is published as a diagnostic
 // and that the last good analysis keeps serving requests.
 func TestFailedAnalysis(t *testing.T) {

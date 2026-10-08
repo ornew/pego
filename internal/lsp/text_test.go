@@ -61,7 +61,7 @@ func TestTextIndexPositions(t *testing.T) {
 }
 
 func TestTextIndexPegoPositions(t *testing.T) {
-	// PEGO lines end only at \n; \r is a character of the line, and columns count code points.
+	// Columns count code points, and the \r of \r\n is a column of its line.
 	text := "a😀b\r\n名\rx\nz"
 	idx := newTextIndex(text)
 	for _, tc := range []struct {
@@ -73,9 +73,10 @@ func TestTextIndexPegoPositions(t *testing.T) {
 		{grammar.Pos{Line: 1, Col: 3}, 5},
 		{grammar.Pos{Line: 1, Col: 4}, 6}, // \r
 		{grammar.Pos{Line: 2, Col: 1}, 8},
-		{grammar.Pos{Line: 2, Col: 3}, 12}, // x, after the lone \r
-		{grammar.Pos{Line: 3, Col: 1}, 14},
-		{grammar.Pos{Line: 3, Col: 2}, 15},
+		{grammar.Pos{Line: 2, Col: 2}, 11}, // the lone \r
+		{grammar.Pos{Line: 3, Col: 1}, 12}, // x, after the lone \r
+		{grammar.Pos{Line: 4, Col: 1}, 14},
+		{grammar.Pos{Line: 4, Col: 2}, 15},
 	} {
 		if got := idx.pegoOffset(tc.pos); got != tc.off {
 			t.Errorf("pegoOffset(%v) = %d, want %d", tc.pos, got, tc.off)
@@ -87,8 +88,11 @@ func TestTextIndexPegoPositions(t *testing.T) {
 	if got := idx.pegoOffset(grammar.Pos{Line: 9, Col: 1}); got != len(text) {
 		t.Errorf("past the last line: %d", got)
 	}
+	if got := idx.pegoOffset(grammar.Pos{Line: 2, Col: 9}); got != 11 {
+		t.Errorf("past the end of a line that ends with \\r: %d", got)
+	}
 	// The x after the lone \r is on LSP line 2.
-	if got := idx.position(idx.pegoOffset(grammar.Pos{Line: 2, Col: 3})); got != (Position{2, 0}) {
+	if got := idx.position(idx.pegoOffset(grammar.Pos{Line: 3, Col: 1})); got != (Position{2, 0}) {
 		t.Errorf("x at %v", got)
 	}
 }
@@ -176,11 +180,15 @@ func naivePegoOffset(t *textIndex, p grammar.Pos) int {
 	if p.Line < 1 {
 		return 0
 	}
-	if p.Line > len(t.pegoLines) {
+	if p.Line > len(t.lines) {
 		return len(t.text)
 	}
-	off := t.pegoLines[p.Line-1]
-	for col := 1; col < p.Col && off < len(t.text) && t.text[off] != '\n'; col++ {
+	off := t.lines[p.Line-1]
+	end := len(t.text)
+	if p.Line < len(t.lines) {
+		end = t.lines[p.Line] - 1
+	}
+	for col := 1; col < p.Col && off < end; col++ {
 		_, size := utf8.DecodeRuneInString(t.text[off:])
 		off += size
 	}
@@ -213,7 +221,7 @@ func TestTextIndexMatchesNaive(t *testing.T) {
 			if got, want := idx.offset(p), naiveOffset(idx, p); got != want {
 				t.Fatalf("text %q: offset(%v) = %d, want %d", text, p, got, want)
 			}
-			pp := grammar.Pos{Line: rnd.IntN(len(idx.pegoLines) + 1), Col: rnd.IntN(1000) + 1}
+			pp := grammar.Pos{Line: rnd.IntN(len(idx.lines) + 1), Col: rnd.IntN(1000) + 1}
 			if got, want := idx.pegoOffset(pp), naivePegoOffset(idx, pp); got != want {
 				t.Fatalf("text %q: pegoOffset(%v) = %d, want %d", text, pp, got, want)
 			}

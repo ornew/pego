@@ -165,6 +165,33 @@ func TestErrorEnd(t *testing.T) {
 	}
 }
 
+// TestLineEnds checks that a line ends at "\n", "\r\n" or a lone "\r": a comment ends there and
+// the next token is on the next line. Lone carriage returns used to make everything after the
+// first comment part of it.
+func TestLineEnds(t *testing.T) {
+	for _, nl := range []string{"\n", "\r\n", "\r"} {
+		src := strings.Join([]string{"// first", "def a = b // second", "", "def b = \"x\""}, nl)
+		toks := Tokenize(src)
+		var got []string
+		for _, tok := range toks {
+			got = append(got, fmt.Sprintf("%q %d:%d", tok.Text, tok.Pos.Line, tok.Pos.Col))
+		}
+		want := `"// first" 1:1 "def" 2:1 "a" 2:5 "=" 2:7 "b" 2:9 "// second" 2:11 "def" 4:1 "b" 4:5 "=" 4:7 "x" 4:9`
+		if strings.Join(got, " ") != want {
+			t.Errorf("%q: tokens %s", nl, strings.Join(got, " "))
+		}
+		g, errs := ParsePartial(src)
+		if errs != nil || len(g.Rules()) != 2 {
+			t.Errorf("%q: errors %v, rules %v", nl, errs, g.Rules())
+			continue
+		}
+		// The layout is the same: the comments are kept and the blank line too.
+		if got, want := grammar.Format(g), "// first\ndef a = b // second\n\ndef b = \"x\"\n"; got != want {
+			t.Errorf("%q: formatted %q", nl, got)
+		}
+	}
+}
+
 // TestIncompletePackageClause checks that a package clause without a name is reported as an
 // error, not a panic, and that the definitions after it are parsed.
 func TestIncompletePackageClause(t *testing.T) {

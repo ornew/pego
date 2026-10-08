@@ -27,19 +27,32 @@ func (s *Server) formatting(params json.RawMessage) (any, *rpcError) {
 
 // formatEdits returns the edits that format the document like pego fmt: none if it does not
 // parse, because the formatter would drop the definitions with errors. The document keeps its line
-// terminators: if its first line ends with "\r\n", so do the formatted lines.
+// ends: the formatted lines end like its first line ("\n", "\r\n" or "\r").
 func formatEdits(a *analysis) []TextEdit {
 	if len(a.syntaxErrs) > 0 {
 		return []TextEdit{}
 	}
 	out := grammar.Format(a.g)
-	if i := strings.IndexByte(a.text, '\n'); i > 0 && a.text[i-1] == '\r' {
-		out = strings.ReplaceAll(out, "\n", "\r\n")
+	if nl := lineEnd(a.text); nl != "\n" {
+		out = strings.ReplaceAll(out, "\n", nl)
 	}
 	if out == a.text {
 		return []TextEdit{}
 	}
 	return []TextEdit{minimalEdit(a.idx, a.text, out)}
+}
+
+// lineEnd returns the line end of the first line of text: "\n", "\r\n" or "\r" ("\n" if there is
+// only one line).
+func lineEnd(text string) string {
+	i := strings.IndexAny(text, "\r\n")
+	switch {
+	case i < 0 || text[i] == '\n':
+		return "\n"
+	case i+1 < len(text) && text[i+1] == '\n':
+		return "\r\n"
+	}
+	return "\r"
 }
 
 // minimalEdit returns a single edit that turns old (indexed by idx) into new, replacing only the

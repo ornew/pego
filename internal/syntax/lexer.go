@@ -92,10 +92,17 @@ func (l *lexer) peekAt(k int) rune {
 	return 0
 }
 
+// lineBreak reports whether the character at i ends a line: a line feed, or a carriage return
+// that no line feed follows ("\r\n" ends a line at its "\n").
+func (l *lexer) lineBreak(i int) bool {
+	r := l.src[i]
+	return r == '\n' || r == '\r' && (i+1 >= len(l.src) || l.src[i+1] != '\n')
+}
+
 func (l *lexer) advance() rune {
 	r := l.src[l.i]
 	l.i++
-	if r == '\n' {
+	if l.lineBreak(l.i - 1) {
 		l.line++
 		l.col = 1
 	} else {
@@ -240,7 +247,7 @@ func (l *lexer) skipInvalid() {
 func (l *lexer) skipSpace() (space, newline bool) {
 	for l.i < len(l.src) {
 		r := l.src[l.i]
-		if r == '\n' {
+		if l.lineBreak(l.i) {
 			newline = true
 			l.newlines++
 		}
@@ -253,7 +260,8 @@ func (l *lexer) skipSpace() (space, newline bool) {
 			space = true
 			c := &grammar.Comment{Pos: l.pos(), Blank: l.newlines >= 2}
 			start := l.i
-			for l.i < len(l.src) && l.src[l.i] != '\n' {
+			// A comment ends before the line break ("\r\n" at its "\r").
+			for l.i < len(l.src) && l.src[l.i] != '\n' && l.src[l.i] != '\r' {
 				l.advance()
 			}
 			c.Text = strings.TrimRightFunc(string(l.src[start:l.i]), unicode.IsSpace)
