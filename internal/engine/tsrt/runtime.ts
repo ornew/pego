@@ -508,10 +508,11 @@ const maxDepth = 100_000;
 
 // run parses the whole input with rule r of a rule table with seen rules that have rule.seen set.
 function run(r: Rule, seen: number, input: string | Uint8Array, unit: Unit | undefined): ParseResult {
-  const p = new Parser(input, unit === Bytes ? Bytes : CodePoints, seen);
-  let v: R;
+  let p: Parser | null = null;
   try {
-    v = p.call(r, 0);
+    // Made inside the try, so that decoding the input fails as parsing does.
+    p = new Parser(input, unit === Bytes ? Bytes : CodePoints, seen);
+    return result(p, p.call(r, 0));
   } catch (x) {
     if (x instanceof Fatal) {
       return { node: null, error: x.err };
@@ -520,11 +521,15 @@ function run(r: Rule, seen: number, input: string | Uint8Array, unit: Unit | und
       // The JavaScript stack is smaller than the nesting limit allows.
       return {
         node: null,
-        error: new Error(`nesting too deep: the JavaScript stack overflowed at ${p.depth} rule calls`),
+        error: new Error(`nesting too deep: the JavaScript stack overflowed at ${p === null ? 0 : p.depth} rule calls`),
       };
     }
     throw x;
   }
+}
+
+// result returns the result of a parse whose call of the start rule returned v.
+function result(p: Parser, v: R): ParseResult {
   if (v !== undefined && p.pos === p.n) {
     if (p.recovered.length > 0) {
       return { node: v, error: new SyntaxErrors(p.recovered) };
@@ -675,6 +680,8 @@ function runeCount(s: string): number {
 
 // wellFormed replaces the lone surrogates of s with U+FFFD.
 function wellFormed(s: string): string {
+  const parts: string[] = [];
+  let from = 0;
   for (let i = 0; i < s.length; i++) {
     const c = s.charCodeAt(i);
     if (c >= 0xd800 && c <= 0xdfff) {
@@ -682,10 +689,15 @@ function wellFormed(s: string): string {
         i++;
         continue;
       }
-      return s.slice(0, i) + replacementChar + wellFormed(s.slice(i + 1));
+      parts.push(s.slice(from, i), replacementChar);
+      from = i + 1;
     }
   }
-  return s;
+  if (from === 0) {
+    return s;
+  }
+  parts.push(s.slice(from));
+  return parts.join("");
 }
 
 // compareStrings compares strings by the byte order of their UTF-8 encodings (Go's string order),

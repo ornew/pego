@@ -386,3 +386,59 @@ func diffAt(a, b string) int {
 	}
 	return i
 }
+
+// runTSScript generates a TypeScript parser for the grammar src as parser.ts and runs script, a
+// module that imports it, with node on the main thread (with Node's default stack). It returns
+// the standard output.
+func runTSScript(t *testing.T, src, script string) string {
+	t.Helper()
+	if testing.Short() {
+		t.Skip("runs generated code")
+	}
+	node, err := exec.LookPath("node")
+	if err != nil {
+		t.Skip("node not found")
+	}
+	g, err := syntax.Parse(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	code, err := GenerateTS(g, GenOptions{Start: "main"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	for name, content := range map[string]string{"package.json": `{"type": "module"}`, "parser.ts": string(code), "main.ts": script} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cmd := exec.Command(node, "main.ts")
+	cmd.Dir = dir
+	var stderr strings.Builder
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("node: %v\n%s", err, clip(stderr.String(), 0))
+	}
+	return string(out)
+}
+
+// TestGeneratedTSLoneSurrogates checks that strings with many lone surrogates, which the parser
+// replaces with U+FFFD before parsing, parse like any other input.
+func TestGeneratedTSLoneSurrogates(t *testing.T) {
+	out := runTSScript(t, `def main = .*`, `import { parse } from "./parser.ts";
+for (const s of ["\uDC00".repeat(7000), "x\uDC00".repeat(15000), "\uD800", "a😀\uDE00"]) {
+  const r = parse(s);
+  if (r.error !== null) {
+    console.log("error: " + r.error.message);
+    continue;
+  }
+  console.log(r.node.end, r.node.children.filter((c) => c.text === "�").length, r.node.children.map((c) => c.text.length).join(""));
+}
+`)
+	want := "7000 7000 " + strings.Repeat("1", 7000) + "\n30000 15000 " + strings.Repeat("1", 30000) + "\n1 1 1\n3 1 121\n"
+	if out != want {
+		t.Errorf("got\n%s\nwant\n%s", clip(out, diffAt(out, want)), clip(want, diffAt(out, want)))
+	}
+}
