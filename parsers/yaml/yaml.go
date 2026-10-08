@@ -36,7 +36,21 @@ const (
 	Folded       = 4 // a folded block scalar (>)
 )
 
-// Tag returns the tag of the properties, or nil.
+// PropertiesOf returns the properties of a node: its tag and anchor, or nil if it has neither (an alias
+// has none).
+func PropertiesOf(v Value) *Properties {
+	switch v := v.(type) {
+	case *Mapping:
+		return v.Props
+	case *Sequence:
+		return v.Props
+	case *Scalar:
+		return v.Props
+	}
+	return nil
+}
+
+// tag returns the tag of the properties, or nil.
 func (p *Properties) tag() *Tag {
 	if p == nil {
 		return nil
@@ -79,13 +93,13 @@ func (s *Scalar) Value() string {
 func isWhite(c byte) bool { return c == ' ' || c == '\t' }
 
 // foldFlow decodes the text of a flow scalar (7.3): a line break and the white space around it fold to a
-// space, or to a line feed per empty line that follows it; quote is '\'' to decode '' in a single-quoted
-// scalar, '"' to decode the escapes of a double-quoted one.
+// space, or to a line feed per empty line that follows it. The quote is a single quote to decode the
+// doubled quotes of a single-quoted scalar, a double quote to decode the escapes of a double-quoted one,
+// or 0.
 func foldFlow(t string, quote byte) string {
 	var b strings.Builder
 	b.Grow(len(t))
-	pending := 0 // the start of white space not yet written, which a line break discards; -1 if none
-	pending = -1
+	pending := -1 // the start of white space not yet written, which a line break discards; -1 if none
 	flush := func(i int) {
 		if pending >= 0 {
 			b.WriteString(t[pending:i])
@@ -338,8 +352,20 @@ func (e *SemanticError) Error() string { return fmt.Sprintf("yaml: %d-%d: %s", e
 
 func errorAt(s Span, msg string) error { return &SemanticError{s, msg} }
 
-// resolveTag returns the full name of a tag: the prefix of its handle followed by its suffix with the %
-// escapes decoded, the URI of a verbatim tag, or "!" for the non-specific tag.
+// ResolveTag returns the full name of a tag of the document (6.8.2, 6.9.1): for a shorthand, the prefix
+// of its handle followed by its suffix with the % escapes decoded ("!!str" is "tag:yaml.org,2002:str",
+// "!local" is "!local" unless a TAG directive of the document changes the prefix of "!"); for a verbatim
+// tag, the tag between "!<" and ">"; for the non-specific tag, "!". A handle that the document does not
+// declare is an error.
+func (d *Document) ResolveTag(t *Tag) (string, error) {
+	handles, err := d.tagHandles()
+	if err != nil {
+		return "", err
+	}
+	return resolveTag(t, handles)
+}
+
+// resolveTag returns the full name of a tag (see Document.ResolveTag).
 func resolveTag(t *Tag, handles map[string]string) (string, error) {
 	s := t.Text
 	if strings.HasPrefix(s, "!<") {
