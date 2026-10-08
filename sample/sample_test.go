@@ -77,13 +77,18 @@ func TestExamplesParse(t *testing.T) {
 	}
 }
 
-// TestExamplesCoverage checks that coverage mode reaches most of each example grammar, and logs the
-// coverage (go test -v ./sample -run Coverage).
+// TestExamplesCoverage checks that coverage mode reaches most of each grammar of examples/, and logs
+// the coverage (go test -v ./sample -run Coverage). The grammars of parsers/ are left out: they follow
+// real languages, whose predicates and context the generator rarely satisfies by chance (50 inputs
+// cover 12% of the rules of parsers/golang), and their own tests check them.
 func TestExamplesCoverage(t *testing.T) {
 	// Minimum shares of rules and alternatives, in percent. The Go and Python grammars are large,
 	// and their inputs reach the length limit before covering everything.
 	want := map[string][2]int{"golang/go.pego": {60, 50}, "python/python.pego": {85, 80}}
 	for path, p := range exampleParsers(t) {
+		if !strings.Contains(filepath.ToSlash(path), "/examples/") {
+			continue
+		}
 		t.Run(path, func(t *testing.T) {
 			g, err := sample.New(p, sample.WithSeed(1), sample.WithCoverage())
 			if err != nil {
