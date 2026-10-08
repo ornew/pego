@@ -91,7 +91,7 @@ Each memo entry records the range of input it examined (`document.go`). After an
 
 ### Code generation
 
-The generator (`gen.go`, `genrt/`) emits one Go method per expression and embeds `genrt/runtime.go`, a runtime that behaves like the engine, producing a parser that depends only on the standard library. The tests build the generated parsers and check that they return the same results as the engine ([design](design/008-code-generation.md)).
+The generator (`gen.go`, `genrt/`) emits one Go method per expression and embeds `genrt/runtime.go`, a runtime that behaves like the engine, producing a parser that depends only on the standard library. The tests build the generated parsers and check that they return the same results as the engine ([design](design/008-code-generation.md)). With `GenOptions.Types` (`gen_types.go`), it also emits a Go type for each grammar type, from the types the type checker inferred (`Program.typed`), and `ParseAST`, which converts the tree into them ([design](design/012-typed-values.md)).
 
 ### Compiled grammars
 
@@ -165,6 +165,7 @@ The `check` helper also verifies that the result is the same with memoization di
 | Done | | Stream parsing (`#stream`) |
 | Done | | Incremental parsing (`Document`) |
 | Done | | Code generation (Go, `pego gen`) |
+| Done | | Typed values in generated parsers (`pego gen -types`) |
 | Done | | Saving and loading compiled grammars (`.pegoc`) |
 
 ## Roadmap

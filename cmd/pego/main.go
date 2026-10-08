@@ -5,7 +5,7 @@
 //	pego parse -g grammar.pego [-s main] [-i input] [-f json|sexpr] [-stream] [-unit u] [-backend b]
 //	pego fmt [-w] [-l] [grammar.pego ...]
 //	pego convert [-to pego|json] [-o output] grammar.pego|grammar.json|grammar.pegoc
-//	pego gen -g grammar.pego -pkg name [-s main] [-o parser.go]
+//	pego gen -g grammar.pego -pkg name [-s main] [-o parser.go] [-types]
 //	pego compile -g grammar.pego [-s main] [-no-ast] -o grammar.pegoc
 package main
 
@@ -43,9 +43,11 @@ Commands:
       Convert a grammar between PEGO source and JSON. -to defaults to the
       other format of the input and is required for compiled grammars.
 
-  gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>]
+  gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types]
       Generate a Go parser from a grammar. Without -o, the code is written
-      to standard output.
+      to standard output. With -types, Go types for the grammar's types and
+      ParseAST, which returns the result as values of those types, are
+      generated too.
 
   compile -g <grammar> [-s <rule>] [-no-ast] -o <file.pegoc>
       Compile a grammar and save it. The result can be used as <grammar>
@@ -383,6 +385,7 @@ func gen(args []string, stdout io.Writer) error {
 	pkg := fs.String("pkg", "", "package name of the generated code")
 	start := fs.String("s", "", "start rule of the generated Parse function (default: the one saved in a .pegoc, otherwise main)")
 	output := fs.String("o", "", "output file (default: standard output)")
+	types := fs.Bool("types", false, "also generate Go types for the grammar's types and ParseAST")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -396,7 +399,11 @@ func gen(args []string, stdout io.Writer) error {
 	if *start == "" {
 		*start = cmp.Or(saved, "main")
 	}
-	code, err := pego.GenerateGo(g, *pkg, *start)
+	var opts []pego.GenOption
+	if *types {
+		opts = append(opts, pego.WithTypes())
+	}
+	code, err := pego.GenerateGo(g, *pkg, *start, opts...)
 	if err != nil {
 		return fileError(*grammarPath, err)
 	}

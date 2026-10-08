@@ -223,3 +223,148 @@ func TestGenerateErrors(t *testing.T) {
 		t.Errorf("got %v", err)
 	}
 }
+
+// typedGrammar exercises typed values: unions with CST members, lists of lists, optional
+// matches (s always matches, maybe empty; o may be nil), int and bool fields, a user type named like a runtime type (Node) and Error nodes
+// left by #recover.
+const typedGrammar = `
+type Name terminal
+type Num terminal
+type Node = Call | Name | Num | Seq
+type Call struct { Fn Name, Args []Node, Span Match, N int, Opt *Match, Rows [][]Num, Ok bool }
+def main: []Node = xs:item* $$ -> concat(map($xs, (x) => $x))
+def item: Node = (call / name / num / grp) #recover(skip=(?^;)+ ";")
+def call: Call = f:name "(" a:args? ")" s:@"!"? o:"?"? ";" -> new Call{Fn: $f, Args: concat($a), Span: $s, N: len($a), Opt: $o, Rows: list(list()), Ok: true}
+def args = first:item rest:(-"," x:item)* -> concat(list($first), map($rest, (r) => $r.x))
+def grp = "[" n:num "]" ";"
+def name: Name = (?a-z)+
+def num: Num = (?0-9)+`
+
+// TestGeneratedTypes checks ParseAST of parsers generated with Types: it compiles for every
+// grammar of the corpus and returns the errors of Parse, and it converts the trees of
+// typedGrammar into the expected values.
+func TestGeneratedTypes(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds generated code")
+	}
+	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
+	if _, err := os.Stat(goBin); err != nil {
+		t.Skip("go command not found")
+	}
+	cases := append(genCorpus(t), genCase{"typed", typedGrammar, []string{"f(1,x)!?;[3];zz", "f(1,(;g();", "f(a);"}})
+	dir := t.TempDir()
+	write := func(name, content string) {
+		path := filepath.Join(dir, name)
+		os.MkdirAll(filepath.Dir(path), 0o755)
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("go.mod", "module gentest\n\ngo 1.24\n")
+	var imports, parsers strings.Builder
+	var inputs [][]string
+	var wantErr []string
+	for i, c := range cases {
+		g, err := syntax.Parse(c.src)
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		code, err := Generate(g, GenOptions{Package: fmt.Sprintf("g%d", i), Start: "main", Types: true})
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		write(fmt.Sprintf("g%d/parser.go", i), string(code))
+		fmt.Fprintf(&imports, "\tg%d \"gentest/g%d\"\n", i, i)
+		fmt.Fprintf(&parsers, "\tfunc(s string) (any, error) { return g%d.ParseAST(s) },\n", i)
+		inputs = append(inputs, c.inputs)
+		prog := compile(t, c.src)
+		for _, in := range c.inputs {
+			_, err := prog.Parse("main", in)
+			wantErr = append(wantErr, fmt.Sprint(err))
+		}
+	}
+	write("main.go", `package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+`+imports.String()+`)
+
+var parsers = []func(string) (any, error){
+`+parsers.String()+`}
+
+func main() {
+	var inputs [][]string
+	data, _ := os.ReadFile(os.Args[1])
+	json.Unmarshal(data, &inputs)
+	for i, in := range inputs {
+		for _, s := range in {
+			v, err := parsers[i](s)
+			b, _ := json.Marshal(map[string]any{"value": v, "type": fmt.Sprintf("%T", v), "err": fmt.Sprint(err)})
+			fmt.Println(string(b))
+		}
+	}
+}
+`)
+	data, _ := json.Marshal(inputs)
+	write("inputs.json", string(data))
+	cmd := exec.Command(goBin, "run", ".", "inputs.json")
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod", "GOTOOLCHAIN=local")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("go run: %v\n%s", err, out)
+	}
+	lines := strings.Split(strings.TrimSuffix(string(out), "\n"), "\n")
+	if len(lines) != len(wantErr) {
+		t.Fatalf("got %d results, want %d\n%s", len(lines), len(wantErr), out)
+	}
+	var got []struct {
+		Value json.RawMessage
+		Type  string
+		Err   string
+	}
+	for _, l := range lines {
+		var r struct {
+			Value json.RawMessage
+			Type  string
+			Err   string
+		}
+		if err := json.Unmarshal([]byte(l), &r); err != nil {
+			t.Fatalf("%v: %s", err, l)
+		}
+		got = append(got, r)
+	}
+	k := 0
+	for _, c := range cases {
+		for _, in := range c.inputs {
+			if got[k].Err != wantErr[k] {
+				t.Errorf("%s: input %q: error %s, want %s", c.name, in, got[k].Err, wantErr[k])
+			}
+			k++
+		}
+	}
+	typed := got[len(got)-3:]
+	for i, want := range []string{
+		`{"Value":[` +
+			`{"Start":0,"End":9,"Fn":{"Start":0,"End":1,"Text":"f"},"Args":[{"Start":2,"End":3,"Text":"1"},{"Start":4,"End":5,"Text":"x"}],"Span":{"Start":6,"End":7,"Text":"!"},"N":2,"Opt":{"Start":7,"End":8,"Text":"?"},"Rows":[[]],"Ok":true},` +
+			`{"type":"Seq","rule":"grp","start":9,"end":13,"children":[{"type":"Match","start":9,"end":10,"text":"["},{"type":"Num","rule":"num","start":10,"end":11,"text":"3"},{"type":"Match","start":11,"end":12,"text":"]"},{"type":"Match","start":12,"end":13,"text":";"}],"fields":{"n":{"type":"Num","rule":"num","start":10,"end":11,"text":"3"}}},` +
+			`{"Start":13,"End":15,"Text":"zz"}],"Type":"[]g37.Node_","Err":"<nil>"}`,
+		`{"Value":[` +
+			`{"Start":0,"End":1,"Text":"f"},` +
+			`{"Start":1,"End":6,"Text":"(1,(;","Message":"1:2: syntax error: expected \"[\", (?0-9), (?a-z)"},` +
+			`{"Start":6,"End":7,"Text":"g"},` +
+			`{"Start":7,"End":10,"Text":"();","Message":"1:8: syntax error: expected \"[\", (?0-9), (?a-z)"}],"Type":"[]g37.Node_","Err":"1:2: syntax error: expected \"[\", (?0-9), (?a-z)\n1:8: syntax error: expected \"[\", (?0-9), (?a-z)"}`,
+		`{"Value":[{"Start":0,"End":5,"Fn":{"Start":0,"End":1,"Text":"f"},"Args":[{"Start":2,"End":3,"Text":"a"}],"Span":{"Start":4,"End":4,"Text":""},"N":1,"Opt":null,"Rows":[[]],"Ok":true}],"Type":"[]g37.Node_","Err":"<nil>"}`,
+	} {
+		var b strings.Builder
+		enc := json.NewEncoder(&b)
+		enc.SetEscapeHTML(false)
+		enc.Encode(typed[i])
+		want = strings.ReplaceAll(want, "g37", fmt.Sprintf("g%d", len(cases)-1))
+		if got := strings.TrimSuffix(b.String(), "\n"); got != want {
+			t.Errorf("typed %q:\n got %s\nwant %s", cases[len(cases)-1].inputs[i], got, want)
+		}
+	}
+}

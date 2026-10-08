@@ -25,7 +25,7 @@ The node representation (`Node`) and the JSON format are the same as the engine'
 
 ### Alternatives considered
 
-- **Generating a typed AST (a Go struct per grammar type)**: convenient for users, but it would need a separate design for representing union types, optional types and the `Error` nodes of error recovery as Go types. This time, identical behavior was prioritized, so the generated parser returns the same `Node` as the engine.
+- **Generating a typed AST (a Go struct per grammar type)**: convenient for users, but it would need a separate design for representing union types, optional types and the `Error` nodes of error recovery as Go types. This time, identical behavior was prioritized, so the generated parser returns the same `Node` as the engine. Typed values were added later as an option on top of `Node` ([012](012-typed-values.md)).
 - **Making the engine a public package and calling it from generated code**: the generated code would be smaller, but the runtime internals would have to become public API. The ability to distribute the generated code on its own was prioritized.
 
 ### Verifying identical behavior

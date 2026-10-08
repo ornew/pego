@@ -114,6 +114,33 @@ func checkTypes(prog *Program, errs *ErrorList) {
 	for _, rd := range rules {
 		k.ruleType(rd)
 	}
+
+	// Keep the types for code generation (typedGo).
+	k.report = false
+	info := &typeInfo{rules: k.ruleTypes, fields: map[string][]typedField{}, aliases: map[string]ty{}}
+	for _, td := range prog.Grammar.Types() {
+		switch spec := td.Spec.(type) {
+		case *grammar.StructSpec:
+			for _, f := range spec.Fields {
+				info.fields[td.Name] = append(info.fields[td.Name], typedField{f.Name, k.resolve(f.Type)})
+			}
+		case *grammar.AliasSpec:
+			info.aliases[td.Name] = k.resolveNamed(td.Name, td.Pos)
+		}
+	}
+	prog.typed = info
+}
+
+// typeInfo holds the types found by the type checker, for code generation.
+type typeInfo struct {
+	rules   map[string]ty           // the type of each rule
+	fields  map[string][]typedField // the fields of each struct type, in declaration order
+	aliases map[string]ty           // the type each alias stands for
+}
+
+type typedField struct {
+	name string
+	t    ty
 }
 
 // resolve turns a type expression into a type.

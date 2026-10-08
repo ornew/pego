@@ -170,11 +170,24 @@ func (d *Document) Parse() (*Node, error) { return d.doc.Parse() }
 // Stats returns the evaluation and reuse counts of the last Parse.
 func (d *Document) Stats() ParseStats { return d.doc.Stats() }
 
+// GenOption configures code generation.
+type GenOption func(*engine.GenOptions)
+
+// WithTypes also generates a Go type for each type of the grammar and a function ParseAST, which
+// returns the result of the start rule as values of those types instead of *Node.
+func WithTypes() GenOption {
+	return func(o *engine.GenOptions) { o.Types = true }
+}
+
 // GenerateGo generates the source code of a standalone Go parser for g in package pkg. The generated code
 // depends only on the standard library; its Parse(input) parses from the rule start. It does not support
 // stream or incremental parsing.
-func GenerateGo(g *grammar.Grammar, pkg, start string) ([]byte, error) {
-	return engine.Generate(g, engine.GenOptions{Package: pkg, Start: start})
+func GenerateGo(g *grammar.Grammar, pkg, start string, opts ...GenOption) ([]byte, error) {
+	o := engine.GenOptions{Package: pkg, Start: start}
+	for _, opt := range opts {
+		opt(&o)
+	}
+	return engine.Generate(g, o)
 }
 
 // MarshalBinary encodes the parser (bytecode, grammar AST and start rule) in the .pegoc format.

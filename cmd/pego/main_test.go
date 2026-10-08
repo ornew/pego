@@ -222,6 +222,13 @@ func TestGen(t *testing.T) {
 	if _, err := runCLI(t, "", "gen", "-g", g); err == nil {
 		t.Error("expected an error without -pkg")
 	}
+	if strings.Contains(out, "func ParseAST(") {
+		t.Error("ParseAST generated without -types")
+	}
+	typed, err := runCLI(t, "", "gen", "-g", g, "-pkg", "kv", "-types")
+	if err != nil || !strings.Contains(typed, "func ParseAST(") {
+		t.Errorf("-types: no ParseAST: %v", err)
+	}
 }
 
 func TestCompile(t *testing.T) {

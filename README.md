@@ -104,6 +104,7 @@ pego fmt -w grammar.pego                         # format PEGO source in place (
 pego convert -to json grammar.pego               # convert between .pego, JSON and .pegoc
 pego compile -g grammar.pego -o grammar.pegoc    # save a compiled grammar
 pego gen -g grammar.pego -pkg calc -o parser.go  # generate a standalone Go parser
+pego gen -g grammar.pego -pkg calc -types        # ... also with Go types for the grammar types
 ```
 
 Run `pego` without arguments for the full list of commands and flags.

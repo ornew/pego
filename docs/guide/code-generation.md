@@ -159,7 +159,7 @@ parsers in [bench/gen](../../bench/gen/) are generated from the grammars in `exa
 ## The `pego gen` command
 
 ```bash
-pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>]
+pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types]
 ```
 
 | Flag | Default | Meaning |
@@ -168,6 +168,7 @@ pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>]
 | `-pkg` | (required) | The package name of the generated code. It must be a valid Go identifier. |
 | `-s` | saved in a `.pegoc`, otherwise `main` | The start rule of the generated `Parse` function |
 | `-o` | standard output | The output file |
+| `-types` | off | Also generate Go types for the grammar's types and `ParseAST` (see [typed values](#typed-values--types)) |
 
 Details:
 
@@ -206,6 +207,8 @@ if err != nil {
 }
 err = os.WriteFile("pairsparser/parser.go", code, 0o644)
 ```
+
+Options follow the start rule: `pego.GenerateGo(g, "pairsparser", "main", pego.WithTypes())` is `pego gen -types`.
 
 `pego gen` is a thin wrapper around `pego.GenerateGo`. Because a grammar built with the `grammar` package (see the
 [runtime guide](runtime.md#from-go-values-programmatic-grammars)) is just an AST, it can be generated from, too.
@@ -297,6 +300,100 @@ Compared with the engine's API:
 That is why even a tiny grammar produces a file of a few dozen kilobytes. Measured sizes: `pairs.pego` (7 lines)
 generates 46,099 bytes; the JSON grammar ([examples/json](../../examples/json/json.pego), 1,355 bytes of source) generates
 73,352 bytes; the minilang grammar (4,414 bytes) generates 109,471 bytes. The growth is in the per-grammar part.
+
+## Typed values (`-types`)
+
+With `-types` (`pego.WithTypes()`), the generated package also defines a Go type for each type of the grammar and a
+function that returns the result as values of those types:
+
+```go
+// ParseAST parses the input like Parse and returns the result as typed values.
+func ParseAST(input string, unit ...Unit) (T, error) // T: the Go type of the start rule's type
+```
+
+For the JSON grammar ([examples/json](../../examples/json/json.pego)), whose start rule has the type `Value`, the
+generated types are:
+
+```go
+type Span struct{ Start, End int }
+
+type String struct {
+	Span
+	Text string
+}
+// ... Number, Bool and Null likewise (terminal types)
+
+type Member struct {
+	Span
+	Key   *String
+	Value Value
+}
+
+type Object struct {
+	Span
+	Members []*Member
+}
+// ... Array likewise (struct types)
+
+// Value is the union type Value = Object | Array | String | Number | Bool | Null.
+type Value interface{ isValue() }
+
+func ParseAST(input string, unit ...Unit) (Value, error)
+```
+
+and a type switch replaces the field lookups and type assertions of `*Node`:
+
+```go
+v, err := jsonparser.ParseAST(`{"name": "pego", "tags": ["peg", "go"], "stars": 42}`)
+if err != nil {
+	log.Fatal(err)
+}
+for _, m := range v.(*jsonparser.Object).Members {
+	switch x := m.Value.(type) {
+	case *jsonparser.Array:
+		fmt.Println(m.Key.Text, "array of", len(x.Elements))
+	case *jsonparser.Number:
+		fmt.Println(m.Key.Text, "number", x.Text, "at", x.Start)
+	case *jsonparser.String:
+		fmt.Println(m.Key.Text, "string", x.Text)
+	}
+}
+```
+
+```
+name string pego
+tags array of 2
+stars number 42 at 49
+```
+
+How grammar types map to Go:
+
+| Grammar type | Go type |
+|:--|:--|
+| `int`, `string`, `bool` | the same |
+| struct type `T` | `*T`: the same fields, plus an embedded `Span` with the value's range |
+| terminal type `T` | `*T`: `Span` and `Text` |
+| `Match` | `*Match`: `Span` and `Text` |
+| `Error` (left by `#recover`) | `*Error`: `Span`, `Text` and `Message` |
+| union `U = A \| B` of node types | an interface `U`, implemented by `*A`, `*B` and `*Error` (and by `*Node` if a member is a CST type) |
+| `[]T` | a slice; an empty list is an empty slice, not `nil` |
+| `*T` | `*int`, `*string` or `*bool` for basic types; otherwise the Go type of `T`, `nil` when absent |
+| `Seq`, `List`, `Operator` and records | `*Node`, as from `Parse` |
+| `node`, `terminal`, `any`, unions with basic members | `any`, holding the converted value |
+
+Details:
+
+- **Names.** Go types have the names of the grammar types. A name that the generated runtime already uses (`Node`,
+  `Match`, `Error`, `Parse`, `Unit`, ...) gets a trailing underscore: a grammar type `Node` becomes `Node_`. `Span`
+  is renamed the same way if a type or field is called `Span`.
+- **Errors.** `ParseAST` returns the errors of `Parse`. After `#recover`, an `Error` in a list of a union type stays
+  in the list as `*Error`; where a struct or terminal type is expected it becomes `nil` (it is among the returned
+  `SyntaxErrors` anyway).
+- **Cost.** `ParseAST` runs `Parse` and converts the tree, so it is a little slower than `Parse`, not faster: about
+  6% on the JSON benchmark, with 11% more bytes allocated. Use it for the convenience of the API; when only speed
+  matters, `Parse` (or recognition with the engine) is the faster choice. The [design record](../design/012-typed-values.md)
+  explains why.
+- `ParseRule` still returns `*Node`; typed values exist for the start rule only.
 
 ## What is supported
 
@@ -423,9 +520,10 @@ and inputs that exercise each feature of your grammar.
 - **Review noise.** Large diffs on regeneration (particularly after upgrading PEGO) are expected. Mark the files as
   generated for your review tool: the first line, `// Code generated by pego. DO NOT EDIT.`, follows the Go
   convention that tools recognize.
-- **Typed AST.** The generated parser does not generate Go structs for your grammar types. It returns generic
-  `*Node` trees like the engine, which is what makes the two interchangeable. Write a small conversion from `*Node` to
-  your own types, as [examples/json/main.go](../../examples/json/main.go) does (`toGo`).
+- **Typed AST.** `Parse` returns generic `*Node` trees like the engine, which is what makes the two interchangeable.
+  For Go types matching the grammar's types, generate with [`-types`](#typed-values--types) and call `ParseAST`;
+  for types of your own, write a small conversion from `*Node`, as [examples/json/main.go](../../examples/json/main.go)
+  does (`toGo`).
 
 ## Recipes
 
@@ -456,7 +554,8 @@ tool.
 
 ### Wrapping the result in your own types
 
-The generated `Node` is the same loose shape for every grammar. A thin layer keeps that out of the rest of your program:
+If the grammar declares the types you want, [`-types`](#typed-values--types) generates them. Otherwise: the generated
+`Node` is the same loose shape for every grammar. A thin layer keeps that out of the rest of your program:
 
 ```go
 type Pair struct{ Key, Value string }

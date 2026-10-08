@@ -15,9 +15,10 @@ import (
 type Program struct {
 	Grammar   *grammar.Grammar
 	rules     []*rule
-	descTable []string // expectation table (starting with fixedDescs)
-	twins     []*rule  // value-free twins (rule.twin); ids start at len(rules)
-	nseen     int      // number of rules with rule.seen set
+	descTable []string  // expectation table (starting with fixedDescs)
+	twins     []*rule   // value-free twins (rule.twin); ids start at len(rules)
+	nseen     int       // number of rules with rule.seen set
+	typed     *typeInfo // types found by the type checker (nil if it did not run)
 	byName    map[string]*rule
 	types     map[string]grammar.TypeSpec
 

@@ -21,6 +21,9 @@ type GenOptions struct {
 	Package string
 	// Start is the start rule of the generated Parse function.
 	Start string
+	// Types also generates a Go type for each type of the grammar and ParseAST, which returns the
+	// result as values of those types (see gen_types.go).
+	Types bool
 }
 
 // Generate generates the source code of a Go parser for a grammar.
@@ -67,6 +70,14 @@ func ParseRule(name, input string, unit ...Unit) (*Node, error) {
 }
 
 `)
+	if opts.Types {
+		typed, err := gen.typedGo(start)
+		if err != nil {
+			return nil, err
+		}
+		out.WriteString(typed)
+		out.WriteString("\n")
+	}
 	out.WriteString(gen.vars.String())
 	out.WriteString("\nfunc init() {\n")
 	out.WriteString(gen.init.String())
