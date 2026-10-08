@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
+	"unicode"
 
 	"github.com/ornew/pego/grammar"
 )
@@ -77,12 +79,33 @@ export function parseRule(name: string, input: string | Uint8Array, unit?: Unit)
 		fmt.Fprintf(&out, "export function recognize(input: string | Uint8Array, unit?: Unit): Error | null {\n  return run(Q%d, recNseen, input, unit).error;\n}\n\n", rec.byName[start.name].id)
 	}
 	out.WriteString(gen.vars.String())
-	fmt.Fprintf(&out, "\ndescs = %s;\n\n", tsStrings(gen.descs))
+	fmt.Fprintf(&out, "\ndescs = %s;\n", tsStrings(gen.descs))
+	fmt.Fprintf(&out, "printRuns = %q;\n\n", tsPrintRuns())
 	out.WriteString(gen.init.String())
 	out.WriteString("\n")
 	out.WriteString(gen.methods.String())
 	return []byte(out.String()), nil
 }
+
+// tsPrintRuns returns the code points that strconv.IsPrint accepts, for the runtime's quoteGo: the
+// lengths of the alternating runs of code points that it rejects and accepts, from U+0000, in base
+// 36 separated by commas (about 3 KB). Writing the table of the Go that generates the parser, rather
+// than relying on the JavaScript runtime's Unicode properties, makes toString quote as the engine's
+// Node.String does even where their Unicode versions differ.
+var tsPrintRuns = sync.OnceValue(func() string {
+	var b strings.Builder
+	prev, start := false, 0
+	for r := 0; r <= unicode.MaxRune; r++ {
+		if p := strconv.IsPrint(rune(r)); p != prev {
+			if b.Len() > 0 {
+				b.WriteByte(',')
+			}
+			b.WriteString(strconv.FormatInt(int64(r-start), 36))
+			prev, start = p, r
+		}
+	}
+	return b.String()
+})
 
 // tsGen generates TypeScript. It shares the expectation table, names and analyses of generator.
 type tsGen struct {

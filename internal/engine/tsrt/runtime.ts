@@ -340,7 +340,40 @@ function writeFields(n: Node, sep: boolean, out: (string | Pending)[]): void {
   }
 }
 
-const printable = /^[\p{L}\p{M}\p{N}\p{P}\p{S}]$/u;
+// printRuns is the table of the code points that Go's strconv.IsPrint accepts, which the generated
+// code sets: the lengths of the alternating runs of code points that it rejects and accepts, from
+// U+0000, in base 36 separated by commas. It comes from the Go that generated the parser, so that
+// quoteGo does not depend on the version of Unicode of the JavaScript runtime.
+let printRuns = "";
+
+// printStarts holds the starts of the runs of printRuns, decoded on first use.
+let printStarts: number[] | null = null;
+
+// isPrint reports whether Go's strconv.IsPrint accepts r.
+function isPrint(r: number): boolean {
+  let starts = printStarts;
+  if (starts === null) {
+    starts = [];
+    let x = 0;
+    for (const d of printRuns === "" ? [] : printRuns.split(",")) {
+      x += parseInt(d, 36);
+      starts.push(x);
+    }
+    printStarts = starts;
+  }
+  // The number of runs that start at or before r, which is odd in a run of accepted code points.
+  let lo = 0;
+  let hi = starts.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (starts[mid]! <= r) {
+      lo = mid + 1;
+    } else {
+      hi = mid;
+    }
+  }
+  return lo % 2 === 1;
+}
 
 // quoteGo quotes s as Go's strconv.Quote does.
 function quoteGo(s: string): string {
@@ -349,7 +382,7 @@ function quoteGo(s: string): string {
     const r = ch.codePointAt(0) as number;
     if (r === 0x22 || r === 0x5c) {
       out += "\\" + ch;
-    } else if (r === 0x20 || (r >= 0x21 && r < 0x7f) || (r >= 0x80 && printable.test(ch))) {
+    } else if ((r >= 0x20 && r < 0x7f) || (r >= 0x80 && isPrint(r))) {
       out += ch;
     } else if (r === 0x07) {
       out += "\\a";

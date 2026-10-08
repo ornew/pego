@@ -467,3 +467,33 @@ console.log(marshal(r.node));
 		t.Errorf("got\n%s\nwant\n%s", clip(out, at), clip(want, at))
 	}
 }
+
+// TestGeneratedTSQuotesEveryCodePoint checks that toString quotes every code point as the engine's
+// Node.String does (with strconv.Quote, whose idea of printable characters follows Go's Unicode
+// version, not the JavaScript runtime's).
+func TestGeneratedTSQuotesEveryCodePoint(t *testing.T) {
+	out := runTSScript(t, `def main = .*`, `import { parse } from "./parser.ts";
+const parts = [];
+for (let r = 0; r <= 0x10ffff; r++) {
+  if (r < 0xd800 || r > 0xdfff) {
+    parts.push(String.fromCodePoint(r));
+  }
+}
+const r = parse(parts.join(""));
+process.stdout.write(r.error === null ? String(r.node) : r.error.message);
+`)
+	var b strings.Builder
+	for r := rune(0); r <= 0x10FFFF; r++ {
+		if r < 0xD800 || r > 0xDFFF {
+			b.WriteRune(r)
+		}
+	}
+	n, err := compile(t, `def main = .*`).Parse("main", b.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := n.String(); out != want {
+		at := diffAt(out, want)
+		t.Errorf("got\n%s\nwant\n%s", clip(out, at), clip(want, at))
+	}
+}

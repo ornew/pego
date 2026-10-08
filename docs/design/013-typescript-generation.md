@@ -60,6 +60,11 @@ The runtime hides each difference, so that results are the engine's, not merely 
   left-associative Pratt operators and `foldl` build trees as deep as the input is long without nesting calls, and
   writing them recursively overflowed the stack on trees the parse had built fine. `JSON.stringify` still recurses
   (the guide says so).
+- **Unicode versions differ.** `toString` quotes text as `strconv.Quote` does, which escapes the characters that
+  `strconv.IsPrint` rejects. The JavaScript runtime's Unicode properties (`\p{L}` and so on) follow its own version of
+  Unicode (Node.js 24 has Unicode 16, Go 1.27 Unicode 17: thousands of code points differ), so the generator writes
+  Go's table into the module instead: the lengths of the alternating runs of rejected and accepted code points, in
+  base 36, about 3 KB. The table is that of the Go that generates the parser.
 - **No `panic`.** Fatal errors and evaluation errors are thrown as plain objects (`Fatal`, `EvalError`, not `Error`
   subclasses, so throwing them captures no stack trace), and caught where `genrt` recovers. Results are
   `Node | null` on success and `undefined` on failure, instead of `(value, ok)` pairs.
