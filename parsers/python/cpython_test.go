@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -37,23 +38,62 @@ func findPython(t testing.TB) string {
 	return py
 }
 
-// cpythonScript reads paths (or, with -s, Python string literals) from standard input, one per
-// line, and writes a JSON object per input: whether ast.parse accepts it, the SHA-256 of
-// ast.dump of the tree (or the full dump with -d), the error, and the source text as CPython
-// decodes it (files may be in other encodings).
+// cpythonScript reads paths of files (or, with -s, JSON strings of source text) from standard
+// input, one per line, or with -x ROOT takes the snippets of Python code in the files under ROOT:
+// every string constant (they include the code that tests compile, valid or not) and every
+// doctest example. It writes a JSON object for each: whether ast.parse accepts it, the SHA-256 of
+// ast.dump of the tree (or the full dump with -d), the error, and the source text (as CPython
+// decodes it, for files, which may be in other encodings).
 const cpythonScript = `
-import ast, hashlib, json, sys, tokenize, io, warnings
+import ast, doctest, hashlib, io, json, os, sys, tokenize, warnings
 warnings.simplefilter("ignore")
 full = "-d" in sys.argv
-snippets = "-s" in sys.argv
-for line in sys.stdin:
-    line = line.rstrip("\n")
-    if snippets:
-        src = ast.literal_eval(line)
-        data = src
-    else:
-        data = open(line, "rb").read()
-        src = None
+
+def snippets(root):
+    found = set()
+    parser = doctest.DocTestParser()
+    for dp, dn, fn in os.walk(root):
+        for f in sorted(fn):
+            if not f.endswith(".py"):
+                continue
+            try:
+                tree = ast.parse(open(os.path.join(dp, f), "rb").read())
+            except Exception:
+                continue
+            for n in ast.walk(tree):
+                if not isinstance(n, ast.Constant) or not isinstance(n.value, (str, bytes)):
+                    continue
+                v = n.value
+                if isinstance(v, bytes):
+                    try:
+                        v = v.decode("utf-8")
+                    except UnicodeDecodeError:
+                        continue
+                if not 0 < len(v) <= 5000:
+                    continue
+                found.add(v)
+                if ">>>" in v:
+                    try:
+                        found.update(ex.source for ex in parser.get_examples(v))
+                    except Exception:
+                        pass
+    out = []
+    for s in sorted(found):
+        try:
+            s.encode("utf-8")
+        except UnicodeEncodeError:
+            continue
+        out.append(s)
+    return out
+
+if "-x" in sys.argv:
+    inputs = [(s, s) for s in snippets(sys.argv[sys.argv.index("-x") + 1])]
+elif "-s" in sys.argv:
+    inputs = [(json.loads(line), None) for line in sys.stdin]
+    inputs = [(s, s) for s, _ in inputs]
+else:
+    inputs = [(open(p, "rb").read(), None) for p in (line.rstrip("\n") for line in sys.stdin)]
+for data, src in inputs:
     r = {}
     try:
         tree = ast.parse(data)
@@ -66,15 +106,15 @@ for line in sys.stdin:
     except (SyntaxError, ValueError, MemoryError, RecursionError) as e:
         r["ok"] = False
         r["error"] = type(e).__name__ + ": " + str(e)
-    if not snippets:
+    if src is None:
         try:
             enc, _ = tokenize.detect_encoding(io.BytesIO(data).readline)
             src = data.decode(enc)
             if src.startswith(chr(0xfeff)):
                 src = src[1:]
-            r["source"] = src
         except Exception as e:
             r["decode_error"] = str(e)
+    r["source"] = src
     print(json.dumps(r, ensure_ascii=True))
     sys.stdout.flush()
 `
@@ -93,6 +133,9 @@ func runCPython(t testing.TB, py string, inputs []string, args ...string) []cpyt
 	t.Helper()
 	cmd := exec.Command(py, append([]string{"-I", "-c", cpythonScript}, args...)...)
 	cmd.Stdin = strings.NewReader(strings.Join(inputs, "\n") + "\n")
+	if len(inputs) == 0 {
+		cmd.Stdin = nil
+	}
 	out, err := cmd.StdoutPipe()
 	if err != nil {
 		t.Fatal(err)
@@ -114,7 +157,7 @@ func runCPython(t testing.TB, py string, inputs []string, args ...string) []cpyt
 	if err := cmd.Wait(); err != nil {
 		t.Fatal(err)
 	}
-	if len(results) != len(inputs) {
+	if len(inputs) > 0 && len(results) != len(inputs) {
 		t.Fatalf("CPython returned %d results for %d inputs", len(results), len(inputs))
 	}
 	return results
@@ -204,6 +247,49 @@ func TestCPythonCorpus(t *testing.T) {
 	if diff > 0 {
 		t.Errorf("%d files have a different ast.dump", diff)
 	}
+}
+
+// TestCPythonSnippets compares the parser with CPython on the snippets of code in the strings and
+// doctests of CPython's Lib/test (PEGO_CPYTHON_SRC): tens of thousands of programs, most of them
+// small and many of them invalid, written to test the compiler. The same snippets must be
+// accepted, with the same ast.dump.
+func TestCPythonSnippets(t *testing.T) {
+	py := findPython(t)
+	src := os.Getenv("PEGO_CPYTHON_SRC")
+	if src == "" {
+		t.Skip("set PEGO_CPYTHON_SRC to a checkout of CPython 3.14")
+	}
+	results := runCPython(t, py, nil, "-x", filepath.Join(src, "Lib", "test"))
+	var same, rejected, byCheck int
+	var bad []string
+	for _, r := range results {
+		m, err := python.ParseModule(r.Source)
+		_, aerr := python.ParseAST(r.Source)
+		if rerr := python.Recognize(r.Source); (rerr == nil) != (aerr == nil) {
+			bad = append(bad, fmt.Sprintf("%q: ParseAST: %v, Recognize: %v", r.Source, aerr, rerr))
+		}
+		if aerr == nil && err != nil {
+			byCheck++ // rejected only by Check
+		}
+		switch {
+		case r.OK && err != nil:
+			bad = append(bad, fmt.Sprintf("rejected %q: %v", r.Source, firstLine(err)))
+		case !r.OK && err == nil:
+			bad = append(bad, fmt.Sprintf("accepted %q; CPython: %s", r.Source, r.Error))
+		case !r.OK:
+			rejected++
+		case sha(python.Dump(m)) != r.Hash:
+			bad = append(bad, fmt.Sprintf("different ast.dump for %q", r.Source))
+		default:
+			same++
+		}
+	}
+	sort.Strings(bad)
+	for _, b := range bad[:min(len(bad), 40)] {
+		t.Error(b)
+	}
+	t.Logf("%d snippets: %d accepted by both with the same ast.dump, %d rejected by both (%d of them only by Check), %d differ",
+		len(results), same, rejected, byCheck, len(bad))
 }
 
 // reportDiff shows where the dump of a file differs from CPython's.

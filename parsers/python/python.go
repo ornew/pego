@@ -55,13 +55,23 @@ func Check(m *Module, src string, unit ...Unit) error {
 	if err := checkFuture(m, fail); err != nil {
 		return err
 	}
-	if !strings.Contains(src, `\N{`) && !hasLongDigits(src) {
+	ascii := isASCII(src)
+	if ascii && !strings.Contains(src, `\N{`) && !hasLongDigits(src) {
 		return nil
 	}
 	var err error
 	Inspect(m, func(n any) bool {
 		if err != nil {
 			return false
+		}
+		if !ascii {
+			for _, id := range identifiersOf(n) {
+				switch NormalizeName(id) {
+				case "None", "True", "False":
+					err = fail(nodeSpan(n).Start, "identifier field can't represent '%s' constant", NormalizeName(id))
+					return false
+				}
+			}
 		}
 		switch n := n.(type) {
 		case *Constant:
@@ -82,6 +92,66 @@ func Check(m *Module, src string, unit ...Unit) error {
 		return true
 	})
 	return err
+}
+
+func isASCII(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] >= utf8.RuneSelf {
+			return false
+		}
+	}
+	return true
+}
+
+// nodeSpan returns the span of a node of the AST.
+func nodeSpan(n any) Span {
+	if v := reflect.ValueOf(n); v.Kind() == reflect.Pointer && !v.IsNil() {
+		if f := v.Elem().FieldByName("Span"); f.IsValid() {
+			return f.Interface().(Span)
+		}
+	}
+	return Span{}
+}
+
+// identifiersOf returns the identifiers that a node holds in fields of its own.
+func identifiersOf(n any) []string {
+	switch n := n.(type) {
+	case *Name:
+		return []string{n.Id}
+	case *Attribute:
+		return []string{n.Attr}
+	case *FunctionDef:
+		return []string{n.Name}
+	case *AsyncFunctionDef:
+		return []string{n.Name}
+	case *ClassDef:
+		return []string{n.Name}
+	case *Arg:
+		return []string{n.Arg}
+	case *Keyword:
+		return []string{n.Arg}
+	case *Alias:
+		return append(strings.Split(n.Name, "."), n.AsName)
+	case *ImportFrom:
+		return strings.Split(n.Module, ".")
+	case *ExceptHandler:
+		return []string{n.Name}
+	case *MatchAs:
+		return []string{n.Name}
+	case *MatchStar:
+		return []string{n.Name}
+	case *MatchMapping:
+		return []string{n.Rest}
+	case *Identifier:
+		return []string{n.Text}
+	case *TypeVar:
+		return []string{n.Name}
+	case *ParamSpec:
+		return []string{n.Name}
+	case *TypeVarTuple:
+		return []string{n.Name}
+	}
+	return nil
 }
 
 func isDecimal(lit string) bool {

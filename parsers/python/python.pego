@@ -202,11 +202,11 @@ def first_stmts = i:indentation
     [foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail) == 0
         && foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail) == 0]
     #error(message="unexpected indent")
-    s:stmts -> $s
+    s:stmts (-ws -";")? -> $s
 
-// After the last statement: an optional ';', the end of its line, blank lines, and whitespace or a
+// After the last statement (and its ';'): the end of its line, blank lines, and whitespace or a
 // comment on a last line without a newline.
-def module_end = (ws ";")? (eol blank*)? (? \t\u{c})* comment?
+def module_end = (eol blank*)? (? \t\u{c})* comment?
 
 // The statements of a block, the first at the current position (its indentation consumed by the
 // caller). Simple statements on one line are separated by ';'; lines by stmt_sep, which requires the
@@ -804,26 +804,26 @@ def str_lit = (?uU) str_body / (?rR) raw_str_body / str_body
 def bytes_lit = ((?bB) (?rR) / (?rR) (?bB)) raw_bytes_body / (?bB) bytes_body
 def str_body = "'''" ((?^'\\\u{0})+ / !"'''" "'" / str_esc)* "'''"
     / "\"\"\"" ((?^"\\\u{0})+ / !"\"\"\"" "\"" / str_esc)* "\"\"\""
-    / "'" ((?^'\\\n\r\u{0})+ / str_esc)* "'"
-    / "\"" ((?^"\\\n\r\u{0})+ / str_esc)* "\""
+    / !"'''" "'" ((?^'\\\n\r\u{0})+ / str_esc)* "'"
+    / !"\"\"\"" "\"" ((?^"\\\n\r\u{0})+ / str_esc)* "\""
 // Escape sequences: those that CPython rejects (a \x, \u or \U escape with too few digits or out
 // of range, a malformed \N{...}) fail; an unknown escape is the backslash and the character.
 def str_esc = "\\" (newline / "x" hex hex / "u" hex hex hex hex / "U" ("0010" hex hex hex hex / "000" hex hex hex hex hex)
     / "N{" (?A-Za-z0-9 \-)+ "}" / (?^xuUN\n\r\u{0}))
 def raw_str_body = "'''" ((?^'\\\u{0})+ / !"'''" "'" / "\\" (?^\u{0}))* "'''"
     / "\"\"\"" ((?^"\\\u{0})+ / !"\"\"\"" "\"" / "\\" (?^\u{0}))* "\"\"\""
-    / "'" ((?^'\\\n\r\u{0})+ / "\\" ("\r\n" / (?^\u{0})))* "'"
-    / "\"" ((?^"\\\n\r\u{0})+ / "\\" ("\r\n" / (?^\u{0})))* "\""
+    / !"'''" "'" ((?^'\\\n\r\u{0})+ / "\\" ("\r\n" / (?^\u{0})))* "'"
+    / !"\"\"\"" "\"" ((?^"\\\n\r\u{0})+ / "\\" ("\r\n" / (?^\u{0})))* "\""
 // Bytes literals may contain only ASCII characters.
 def bytes_body = "'''" ((?^'\\\u{0}\u{80}-\u{10FFFF})+ / !"'''" "'" / bytes_esc)* "'''"
     / "\"\"\"" ((?^"\\\u{0}\u{80}-\u{10FFFF})+ / !"\"\"\"" "\"" / bytes_esc)* "\"\"\""
-    / "'" ((?^'\\\n\r\u{0}\u{80}-\u{10FFFF})+ / bytes_esc)* "'"
-    / "\"" ((?^"\\\n\r\u{0}\u{80}-\u{10FFFF})+ / bytes_esc)* "\""
+    / !"'''" "'" ((?^'\\\n\r\u{0}\u{80}-\u{10FFFF})+ / bytes_esc)* "'"
+    / !"\"\"\"" "\"" ((?^"\\\n\r\u{0}\u{80}-\u{10FFFF})+ / bytes_esc)* "\""
 def bytes_esc = "\\" (newline / "x" hex hex / (?^x\n\r\u{0}\u{80}-\u{10FFFF}))
 def raw_bytes_body = "'''" ((?^'\\\u{0}\u{80}-\u{10FFFF})+ / !"'''" "'" / "\\" (?^\u{0}\u{80}-\u{10FFFF}))* "'''"
     / "\"\"\"" ((?^"\\\u{0}\u{80}-\u{10FFFF})+ / !"\"\"\"" "\"" / "\\" (?^\u{0}\u{80}-\u{10FFFF}))* "\"\"\""
-    / "'" ((?^'\\\n\r\u{0}\u{80}-\u{10FFFF})+ / "\\" ("\r\n" / (?^\u{0}\u{80}-\u{10FFFF})))* "'"
-    / "\"" ((?^"\\\n\r\u{0}\u{80}-\u{10FFFF})+ / "\\" ("\r\n" / (?^\u{0}\u{80}-\u{10FFFF})))* "\""
+    / !"'''" "'" ((?^'\\\n\r\u{0}\u{80}-\u{10FFFF})+ / "\\" ("\r\n" / (?^\u{0}\u{80}-\u{10FFFF})))* "'"
+    / !"\"\"\"" "\"" ((?^"\\\n\r\u{0}\u{80}-\u{10FFFF})+ / "\\" ("\r\n" / (?^\u{0}\u{80}-\u{10FFFF})))* "\""
 def hex = (?0-9a-fA-F)
 
 // --- f-strings and t-strings ---
@@ -854,11 +854,11 @@ def frawesc = "\\" ("\r\n" / (?^{}\u{0}) / &(?{}))
 // inside the braces, newlines are whitespace), an optional '=', conversion and format spec.
 def ffield: FormattedValue = "{" [lv < 400] [lv = lv / 2 * 2 + 3]
     [fs / 16 <= 2] #error(message="f-string: expressions nested too deeply")
-    s:(-ws v:annotated_rhs) d:fdebug? c:fconv? (-ws f:fspec)? -ws "}"
+    s:(-ws v:annotated_rhs) d:fdebug? c:fconv? (-ws f:fspec / -ws) "}"
     -> new FormattedValue{Value: $v, Str: text($s), Debug: text($d), Conversion: text($c), FormatSpec: $f}
 def tfield: Interpolation = "{" [lv < 400] [lv = lv / 2 * 2 + 3]
     [fs / 16 <= 2] #error(message="t-string: expressions nested too deeply")
-    s:(-ws v:annotated_rhs) d:fdebug? c:fconv? (-ws f:fspec)? -ws "}"
+    s:(-ws v:annotated_rhs) d:fdebug? c:fconv? (-ws f:fspec / -ws) "}"
     -> new Interpolation{Value: $v, Str: text($s), Debug: text($d), Conversion: text($c), FormatSpec: $f}
 def fdebug = ws "=" ws
 // The conversion character must follow the '!' immediately.

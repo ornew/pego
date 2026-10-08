@@ -56,8 +56,8 @@ func (c *Constant) Value() (any, error) {
 }
 
 // StringValue returns the value of string literals as code points, which may include lone
-// surrogates (\ud800), and whether the first literal has the prefix u (Python's Constant.kind
-// "u"). It is an error for a constant that is not a string.
+// surrogates (\ud800), and whether the first literal has the prefix u in lower case (Python's
+// Constant.kind "u"). It is an error for a constant that is not a string.
 func (c *Constant) StringValue() (value []rune, u bool, err error) {
 	v, err := constValue(c.Text)
 	if err != nil {
@@ -231,8 +231,9 @@ func stringsValue(text string) (cval, error) {
 				raw = true
 			case 'b', 'B':
 				isBytes = true
-			case 'u', 'U':
-				u = true
+			case 'u':
+				u = true // CPython sets the kind for a lower-case u only
+			case 'U':
 			default:
 				return cval{}, fmt.Errorf("python: invalid string prefix in %.40q", text)
 			}
