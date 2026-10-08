@@ -139,8 +139,9 @@ grammar:
   changes.
 
 A differential test against the first version of the grammar, which followed the productions without these changes
-(`git show 4d9d1bc:parsers/yaml/yaml.pego`), found no difference on the suite and 30,000 random mutations of it
-(both accepted 14,449, with the same trees).
+(`git show 4d9d1bc:parsers/yaml/yaml.pego`), found no difference on the suite and on 150,000 random mutations of its
+inputs: both grammars accepted the same 70,639 and gave the same trees. (It ran on the engine, which this module
+cannot import, and is not part of its tests.)
 
 ## Performance
 

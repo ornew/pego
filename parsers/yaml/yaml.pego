@@ -136,9 +136,10 @@ def s_l_block_node: Value =
 
 // [197] s-l+flow-in-block(n) ::= s-separate(n+1,flow-out) ns-flow-node(n+1,flow-out) s-l-comments
 // s-separate(n+1,flow-out) is s-separate-lines(n+1), whose common case comes first here.
-// A plain scalar without properties, the common case, is read without defining c.
+// A plain scalar without properties, the common case, is read without defining c, and the common case
+// of s-l-comments, a line break before a line of content, is read without calling the rule.
 def s_l_flow_in_block: Value = [n = n + 1] ((? \t)+ !(?#\r\n) !$$ / s_separate_lines)
-    v:(plain_out_node / flow_out_node) s_l_comments -> $v
+    v:(plain_out_node / flow_out_node) ((? \t)* b_break &((? \t)* (?^#\r\n)) / s_l_comments) -> $v
 def flow_out_node: Value = [c = "flow-out"] v:ns_flow_node -> $v
 // ns-flow-node(n,flow-out) where it is a plain scalar without properties: nothing else starts with a
 // character that can start a plain scalar.
