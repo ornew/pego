@@ -31,7 +31,7 @@ import (
 var (
 	tscVerbose = flag.Bool("tsc.v", false, "log every mismatch with the TypeScript compiler")
 	tscFilter  = flag.String("tsc.run", "", "only the test cases whose path matches this regular expression")
-	tscUpdate  = flag.Bool("tsc.update", false, "rewrite testdata/tsc-known-failures.txt")
+	tscUpdate  = flag.Bool("tsc.update", false, "rewrite testdata/tsc-known-failures.list")
 )
 
 // tscResult is the compiler's result for a source.
@@ -224,7 +224,11 @@ func compareWithTSC(p *tscProcess, name, text string) (diff string, rejected boo
 	switch {
 	case len(want.Diags) > 0 && perr == nil:
 		d := want.Diags[0]
-		return fmt.Sprintf("accepted, but tsc reports at %d: %s (TS%d)", d.Pos, d.Msg, d.Code), rejected, nil
+		u16 := utf16Offsets(text)
+		at, _ := slices.BinarySearch(u16, d.Pos)
+		from, to := max(at-40, 0), min(at+40, len(text))
+		return fmt.Sprintf("accepted, but tsc reports at %d: %s (TS%d): %q ⟨here⟩ %q", d.Pos, d.Msg, d.Code,
+			text[from:at], text[at:to]), rejected, nil
 	case len(want.Diags) == 0 && perr != nil:
 		var se *typescript.SyntaxError
 		if errors.As(perr, &se) {
@@ -360,7 +364,7 @@ func isTypeScriptFile(name string) bool {
 
 // TestTypeScriptSuite compares the parser with the compiler on the test cases of the TypeScript repository
 // (tests/cases/conformance and tests/cases/compiler): acceptance, file by file, and the trees of the files
-// both accept. The known differences are listed in testdata/tsc-known-failures.txt; the test fails on any
+// both accept. The known differences are listed in testdata/tsc-known-failures.list; the test fails on any
 // other difference, and on a listed one that no longer differs (run with -tsc.update to rewrite the list).
 func TestTypeScriptSuite(t *testing.T) {
 	cases := os.Getenv("PEGO_TYPESCRIPT_TESTS")
@@ -491,7 +495,7 @@ func TestTypeScriptSuite(t *testing.T) {
 	}
 }
 
-const knownFailuresFile = "testdata/tsc-known-failures.txt"
+const knownFailuresFile = "testdata/tsc-known-failures.list"
 
 func readKnownFailures() ([]string, error) {
 	data, err := os.ReadFile(knownFailuresFile)
