@@ -42023,16 +42023,18 @@ func (p *parser) e3229() (*Node, bool) {
 	return v, ok
 }
 
-// [len($n) < 10 || len($n) == 10 && text($n) <= "1073741824"]
 func (p *parser) e3230() (*Node, bool) {
 	return nil, p.predicate(func(c *actx) any {
-		return rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
+		return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
 			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("1073741824")) })
+		}), func() any {
+			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) })
+		}), func() any {
+			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
 		})
 	})
 }
 
-// "0"* n:@((?1-9) (?0-9)*) [len($n) < 10 || len($n) == 10 && text($n) <= "1073741824"]
 func (p *parser) e3231() (*Node, bool) {
 	start := p.pos
 	kids := p.nodes(2)[:0]
@@ -57504,16 +57506,18 @@ func (p *parser) e4773() (*Node, bool) {
 	return nil, ok
 }
 
-// [len($n) < 10 || len($n) == 10 && text($n) <= "1073741824"]
 func (p *parser) e4774() (*Node, bool) {
 	return nil, p.predicate(func(c *actx) any {
-		return rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
+		return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
 			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("1073741824")) })
+		}), func() any {
+			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) })
+		}), func() any {
+			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
 		})
 	})
 }
 
-// "0"* n:@((?1-9) (?0-9)*) [len($n) < 10 || len($n) == 10 && text($n) <= "1073741824"]
 func (p *parser) e4775() (*Node, bool) {
 	if _, ok := p.e4768(); !ok {
 		return nil, false
@@ -94943,16 +94947,18 @@ func (p *parser) e8704() (*Node, bool) {
 	return v, ok
 }
 
-// [len($n) < 10 || len($n) == 10 && text($n) <= "1073741824"]
 func (p *parser) e8705() (*Node, bool) {
 	return nil, p.predicate(func(c *actx) any {
-		return rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
+		return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
 			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("1073741824")) })
+		}), func() any {
+			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) })
+		}), func() any {
+			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
 		})
 	})
 }
 
-// "0"* n:@((?1-9) (?0-9)*) [len($n) < 10 || len($n) == 10 && text($n) <= "1073741824"]
 func (p *parser) e8706() (*Node, bool) {
 	start := p.pos
 	kids := p.nodes(2)[:0]
@@ -110350,16 +110356,18 @@ func (p *parser) e10238() (*Node, bool) {
 	return nil, ok
 }
 
-// [len($n) < 10 || len($n) == 10 && text($n) <= "1073741824"]
 func (p *parser) e10239() (*Node, bool) {
 	return nil, p.predicate(func(c *actx) any {
-		return rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
+		return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
 			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("1073741824")) })
+		}), func() any {
+			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) })
+		}), func() any {
+			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
 		})
 	})
 }
 
-// "0"* n:@((?1-9) (?0-9)*) [len($n) < 10 || len($n) == 10 && text($n) <= "1073741824"]
 func (p *parser) e10240() (*Node, bool) {
 	if _, ok := p.e10233(); !ok {
 		return nil, false
@@ -150387,8 +150395,12 @@ func (p *tparser) i255() (any, bool) {
 	k12 = v14
 	x2 = append(x2, v14)
 	if !p.predicate(func(c *tctx) any {
-		return trtOr(trtBinary("<", c.length(k12), any(10)), func() any {
+		return trtOr(trtOr(trtOr(trtBinary("<", c.length(k12), any(10)), func() any {
 			return trtAnd(trtBinary("==", c.length(k12), any(10)), func() any { return trtBinary("<=", c.text(k12), any("1073741824")) })
+		}), func() any {
+			return trtAnd(trtBinary("==", c.length(k12), any(19)), func() any { return trtBinary(">=", c.text(k12), any("9223372036854775808")) })
+		}), func() any {
+			return trtAnd(trtBinary("==", c.length(k12), any(20)), func() any { return trtBinary("<=", c.text(k12), any("18446744073709551615")) })
 		})
 	}) {
 		goto fail
@@ -169359,8 +169371,12 @@ func (p *tparser) i393() (any, bool) {
 	v7 = p.newMatch(x6, p.pos, p.text(x6, p.pos), true)
 	k5 = v7
 	if !p.predicate(func(c *tctx) any {
-		return trtOr(trtBinary("<", c.length(k5), any(10)), func() any {
+		return trtOr(trtOr(trtOr(trtBinary("<", c.length(k5), any(10)), func() any {
 			return trtAnd(trtBinary("==", c.length(k5), any(10)), func() any { return trtBinary("<=", c.text(k5), any("1073741824")) })
+		}), func() any {
+			return trtAnd(trtBinary("==", c.length(k5), any(19)), func() any { return trtBinary(">=", c.text(k5), any("9223372036854775808")) })
+		}), func() any {
+			return trtAnd(trtBinary("==", c.length(k5), any(20)), func() any { return trtBinary("<=", c.text(k5), any("18446744073709551615")) })
 		})
 	}) {
 		goto fail

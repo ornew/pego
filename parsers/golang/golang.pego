@@ -645,8 +645,10 @@ def dirBlock = dirSegBlock &"*/"
 def dirCharBlock = (?^*\u{0}\u{FEFF}\u{FFFD}) / "*" !"/" / validFFFD
 def dirSegBlock = ((?^:*\u{0}\u{FEFF}\u{FFFD})+ / "*" !"/" / validFFFD)*
 def dirMidBlock = dirNum &":" / !(dirUint &":") dirSegBlock
-// A number from 1 to 2^30.
-def dirNum = "0"* n:@((?1-9) (?0-9)*) [len($n) < 10 || len($n) == 10 && text($n) <= "1073741824"]
+// A number from 1 to 2^30, or from 2^63 to 2^64-1: go/scanner converts the number to an int, and
+// those that do not fit (on 64-bit platforms) become negative and pass its check.
+def dirNum = "0"* n:@((?1-9) (?0-9)*) [len($n) < 10 || len($n) == 10 && text($n) <= "1073741824"
+    || len($n) == 19 && text($n) >= "9223372036854775808" || len($n) == 20 && text($n) <= "18446744073709551615"]
 // A number that strconv.ParseUint accepts (at most 2^64-1).
 def dirUint = &(?0-9) "0"* n:@((?1-9) (?0-9)*)? [len($n) < 20 || len($n) == 20 && text($n) <= "18446744073709551615"]
 
