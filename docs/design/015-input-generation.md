@@ -7,10 +7,11 @@
 ## Summary
 
 The package `github.com/ornew/pego/sample` generates inputs that a grammar accepts, to test code that consumes parse
-results and to seed fuzz tests. A generator walks the grammar AST
+results and to seed fuzz tests, and `pego sample` exposes it on the command line. A generator walks the grammar AST
 from the start rule of a `*pego.Parser`, makes random but reproducible decisions, and returns an input only after the
 parser has accepted it. It can bias its decisions toward rules and alternatives that no input has exercised yet and
-report what was missed, and it can produce near-miss invalid inputs by mutating valid ones.
+report what was missed, and it can produce near-miss invalid inputs by mutating valid ones. The guide
+[Sampling inputs and fuzzing](../guide/sampling-and-fuzzing.md) shows how to use it.
 
 ```go
 inputs, err := sample.Generate(p, 20, sample.WithSeed(1))          // distinct inputs that p accepts
@@ -140,9 +141,19 @@ inserting or substituting a token (a literal or character of the grammar, or a c
 swapping two runes, or truncating. It keeps the result only if the parser rejects it, and labels it with the mutation
 and the error. Single mutations of valid inputs exercise error reporting and recovery much more than random bytes do.
 
+### Command line
+
+`pego sample -g grammar [-s rule] [-n 10] [-seed N] [-max-depth D] [-max-repeat R] [-max-len L] [-coverage] [-invalid]
+[-f lines|json]` prints distinct inputs. The lines format writes each input as a Go-quoted string, because inputs
+contain line breaks and arbitrary characters; the JSON format writes one document with the start rule, the seed, the
+inputs (or the invalid inputs with their base, mutation and error) and, with `-coverage`, the coverage. In the lines
+format the coverage report goes to standard error, so that standard output stays a list of inputs. `-invalid` replaces
+the valid inputs instead of adding to them, for the same reason. The seed defaults to 0, so that runs are reproducible
+unless asked otherwise.
+
 ## Results
 
-Coverage in coverage mode, seed 1 (`Generator.Generate` with `WithSeed(1)` and `WithCoverage()`):
+Coverage in coverage mode, seed 1 (`pego sample -g <grammar> -n <count> -seed 1 -coverage`):
 
 | Grammar | Rules (50 inputs) | Alternatives (50) | Rules (200) | Alternatives (200) |
 |:--|--:|--:|--:|--:|
