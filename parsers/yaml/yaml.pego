@@ -142,13 +142,19 @@ def plain_out_node: Scalar = t:@ns_plain_multi_out -> new Scalar{Props: nil, Tex
 // The properties are optional in s-l+block-collection, but a PEG does not try again without them if
 // the comments fail after them (when the properties belong to an implicit key: "&a a: b").
 def s_l_block_collection: Value = block_sequence_node / block_mapping_node
-def block_sequence_node: Sequence = p:block_collection_start items:seq_space
+def block_sequence_node: Sequence = p:block_sequence_start items:seq_space
     -> new Sequence{Props: $p, Items: $items}
 def block_mapping_node: Mapping = p:block_collection_start pairs:l_block_mapping
     -> new Mapping{Props: $p, Pairs: $pairs}
 // The first alternative is the common case: no property on this line, nor at the start of the next line
-// with content.
+// with content. The sequence has a copy of the rule, so that each is called once at a position: a rule
+// called again at a position is memoized, which costs more here than parsing the comments again.
 def block_collection_start =
+    ( s_l_comments &((? \t)* (?^!&))
+    / p:block_collection_properties s_l_comments
+    / p:block_collection_property s_l_comments
+    / s_l_comments ) -> $p
+def block_sequence_start =
     ( s_l_comments &((? \t)* (?^!&))
     / p:block_collection_properties s_l_comments
     / p:block_collection_property s_l_comments
