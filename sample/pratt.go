@@ -263,27 +263,43 @@ func (g *gen) prattTail(ri *ruleInfo, minLevel, count int, open []bool, k thunk)
 }
 
 // prattStopCheck returns the expression that must not match where a chain ends: the parser would
-// otherwise continue the chain with a postfix or infix operator. Infix operators whose part can match
-// the empty string are left out, since whether they apply depends on the operand after them.
+// otherwise continue the chain. A postfix operator applies when its part matches; an infix operator only
+// when an operand follows it (otherwise the parser ends the expression before the operator), so the check
+// requires the operand too: a prefix operator part or an operand. Parts that match the empty string are
+// not candidates for prefix and postfix operators; for infix operators (juxtaposition) the operand
+// after them decides.
 func (g *gen) prattStopCheck(ri *ruleInfo, minLevel int) grammar.Expr {
 	if c, ok := ri.stops[minLevel]; ok {
 		return c
 	}
-	var alts []grammar.Expr
-	for _, kind := range []string{grammar.Postfix, grammar.Infix} {
-		for _, o := range prattOps(ri.pratt, minLevel, kind) {
-			if g.in.length(o.op.Expr) > 0 {
-				alts = append(alts, o.op.Expr)
-			}
+	pr := ri.pratt
+	skip := func(items ...grammar.Expr) grammar.Expr {
+		if pr.Skip != nil {
+			items = append([]grammar.Expr{&grammar.Optional{Expr: pr.Skip}}, items...)
 		}
+		return &grammar.Seq{Items: items}
+	}
+	var starts []grammar.Expr
+	for _, o := range prattOps(pr, minLevel, grammar.Prefix) {
+		if g.in.length(o.op.Expr) > 0 {
+			starts = append(starts, o.op.Expr)
+		}
+	}
+	for _, o := range pr.Operands {
+		starts = append(starts, o.Expr)
+	}
+	var alts []grammar.Expr
+	for _, o := range prattOps(pr, minLevel, grammar.Postfix) {
+		if g.in.length(o.op.Expr) > 0 {
+			alts = append(alts, o.op.Expr)
+		}
+	}
+	for _, o := range prattOps(pr, minLevel, grammar.Infix) {
+		alts = append(alts, &grammar.Seq{Items: []grammar.Expr{o.op.Expr, skip(&grammar.Choice{Alts: starts})}})
 	}
 	var c grammar.Expr
 	if len(alts) > 0 {
-		items := []grammar.Expr{&grammar.Choice{Alts: alts}}
-		if ri.pratt.Skip != nil {
-			items = []grammar.Expr{&grammar.Optional{Expr: ri.pratt.Skip}, items[0]}
-		}
-		c = &grammar.Seq{Items: items}
+		c = skip(&grammar.Choice{Alts: alts})
 	}
 	ri.stops[minLevel] = c
 	return c

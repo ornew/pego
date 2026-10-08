@@ -284,6 +284,11 @@ func TestReviewRegressions(t *testing.T) {
 	for _, c := range []struct{ src, want string }{
 		{`def main = ("a"?){2} "b"`, "b"},
 		{`def main = n:"a" [k = len($n)] ([k == 1] "x")* "y"`, "axy"},
+		// The parser ends a Pratt expression before an infix operator that no operand follows.
+		{`def main = e "+" $$
+def e = pratt { operand "a" level { infix left "+" } }`, "a+"},
+		{`def main = "[" e ","? "]" $$
+def e = pratt { operand "a" level { infix left "," } }`, "[a,]"},
 	} {
 		inputs, err := sample.Generate(compile(t, c.src), 20, sample.WithSeed(1))
 		if err != nil {

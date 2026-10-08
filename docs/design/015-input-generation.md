@@ -121,8 +121,10 @@ The generator prunes candidates that the parser would read differently from how 
   parser builds the tree from the binding levels, so any chain is accepted except where an operator part is read
   differently or an `infix none` operator would chain; the generator tracks the latter per level (an operator of a
   looser level in between allows it again). A level-restricted call (`e(add)`) uses only the operators of that level
-  and tighter ones. Where a chain ends, no further postfix or infix operator part may match after the skip. Prefix and
-  postfix parts that would match the empty string are not used, as in the parser.
+  and tighter ones. Where a chain ends, no further postfix operator part may match after the skip, and no infix
+  operator part followed by the start of an operand (the parser ends the expression before an infix operator that no
+  operand follows, so `a+` is accepted by `e "+"`). Prefix and postfix parts that would match the empty string are not
+  used, as in the parser.
 - **Left recursion** needs nothing special: the recursion is bounded like any other, and the parser grows the seed.
 
 ### Coverage
