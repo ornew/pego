@@ -297,6 +297,23 @@ func (in *info) alwaysMatches(e grammar.Expr) bool {
 	return false
 }
 
+// binds reports whether e makes captures or defines variables, not counting called rules (whose
+// captures and variables are not visible to the caller).
+func (in *info) binds(e grammar.Expr) bool {
+	b := false
+	walk(e, func(x grammar.Expr) {
+		switch x := x.(type) {
+		case *grammar.Capture:
+			b = true
+		case *grammar.Predicate:
+			if _, ok := x.Term.(*grammar.Assign); ok {
+				b = true
+			}
+		}
+	})
+	return b
+}
+
 // hasCut reports whether e contains a cut, not counting called rules (a cut does not reach beyond its
 // rule).
 func (in *info) hasCut(e grammar.Expr) bool {

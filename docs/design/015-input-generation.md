@@ -120,7 +120,11 @@ The generator prunes candidates that the parser would read differently from how 
   and undone again and again (twenty such `x` in a row found no input).
 - **Positive lookahead.** `&e` generates a text for `e`, then removes it and forces the input that follows to start
   with it. Captures and variables made in `e` stay in effect, as in the parser, so `&(s:spaces) [len($s) > indent]`
-  works as in [examples/outline](../../examples/outline/outline.pego).
+  works as in [examples/outline](../../examples/outline/outline.pego). Forcing guesses the text before the rest of the
+  input exists, so `&(. .) "ab"` almost never worked; when forcing fails and `e` makes no captures and defines no
+  variables, the generator falls back to a check that `e` match whatever the rest of the input turns out to be.
+  (Using only the check made the Python grammar's coverage slightly worse: forcing `&")"` or `&(ws ":")` guides
+  what follows.)
 - **Predicates and variables.** Predicates are evaluated on the generated text with three-valued logic: literals,
   captures (with the kind of value the parser would build: a terminal, a list with its length, `nil`, a node), variables
   (scoped per rule invocation and undone on backtracking), `len`, `text`, comparisons, arithmetic and boolean operators.

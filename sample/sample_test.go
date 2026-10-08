@@ -256,6 +256,7 @@ def x = "a"? / "b"?`, func(t *testing.T, in string) {
 				t.Errorf("got %q", in)
 			}
 		}},
+		{"a lookahead with wildcards before a literal", `def main = &(. .) "ab" $$`, nil},
 		{"empty iterations below the minimum", `def main = (_){3} "q"`, nil},
 		// A repetition element sees only its own captures: outer ones are read through a variable.
 		{"repetition elements read enclosing captures through variables", `def main = n:"a" [k = len($n)] ([k == 1] "x")* "y"`, nil},

@@ -609,11 +609,15 @@ func (g *gen) genRepeat(e *grammar.Repeat, k cont) bool {
 	return iter(0)
 }
 
-// genAnd generates a text for the lookahead &e and then requires the input to continue with it.
-// Captures and variables made in e stay in effect, as in the parser.
+// genAnd handles the lookahead &e. It first generates a text for e and requires the input to continue
+// with it; captures and variables made in e stay in effect, as in the parser. If that fails and e makes
+// no captures and defines no variables, it then only requires, with a check, that e match the text that
+// follows, so that the text generated after the lookahead decides: &(. .) "ab" cannot guess "ab" in
+// advance.
 func (g *gen) genAnd(e *grammar.And, k cont) bool {
 	pos := len(g.out)
-	return g.gen(e.Expr, func(val) bool {
+	s0 := g.steps
+	forced := g.gen(e.Expr, func(val) bool {
 		t := string(g.out[pos:])
 		f := g.forced
 		g.out = g.out[:pos]
@@ -623,6 +627,13 @@ func (g *gen) genAnd(e *grammar.And, k cont) bool {
 		g.forced = f
 		return ok
 	})
+	if forced || g.in.binds(e.Expr) || !g.retry(s0) {
+		return forced
+	}
+	pending := g.pending
+	ok := g.addCheck(e.Expr, false, false) && k(val{kind: vNone, start: pos, end: pos})
+	g.pending = pending
+	return ok
 }
 
 // Characters that generated input prefers: printable ASCII and a few multi-byte characters.
