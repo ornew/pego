@@ -120,11 +120,11 @@ func (m *matcher) match(e grammar.Expr, pos int) (status, int) {
 			if st != matched {
 				return st, p
 			}
-			if p == pos {
+			n++
+			if p == pos && n >= e.Min {
 				break
 			}
 			pos = p
-			n++
 		}
 		if n < e.Min {
 			return failed, pos

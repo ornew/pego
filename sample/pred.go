@@ -165,7 +165,12 @@ func (g *gen) binary(t *grammar.Binary) (pval, bool) {
 		}
 		r, err := g.eval(t.R)
 		if err {
-			return unknownVal, true
+			// The parser evaluates the right side only if the left side does not decide; when the
+			// left side is unknown, it may decide.
+			if l.kind == pBool {
+				return unknownVal, true
+			}
+			return unknownVal, false
 		}
 		switch {
 		case r.kind == pBool && r.b == (t.Op == "||"):

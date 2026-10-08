@@ -11,7 +11,8 @@
 //	pego trace -g grammar.pego [-s main] [-i input] [-max-depth n] [-rule name] [-failures] [-f text|json]
 //	pego profile -g grammar.pego [-s main] [-i input] [-sort column] [-n rows] [-f text|json]
 //	pego explain -g grammar.pego [-s main] [-i input] [-n calls]
-//	pego sample -g grammar.pego [-s main] [-n 10] [-seed N] [-max-depth D] [-coverage] [-invalid] [-f lines|json]
+//	pego sample -g grammar.pego [-s main] [-n 10] [-seed N] [-max-depth D] [-max-repeat R] [-max-len L]
+//	            [-coverage] [-invalid] [-f lines|json]
 package main
 
 import (
@@ -79,7 +80,8 @@ Commands:
       nested in.
 
   sample -g <grammar> [-s <rule>] [-n <count>] [-seed <n>] [-max-depth <d>]
-         [-coverage] [-invalid] [-f lines|json]
+         [-max-repeat <r>] [-max-len <bytes>] [-coverage] [-invalid]
+         [-f lines|json]
       Generate distinct inputs that the grammar accepts, for tests and fuzz
       corpora, each printed as a quoted string on its own line. -coverage
       prefers rules and alternatives not exercised yet and reports what was

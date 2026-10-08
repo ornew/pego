@@ -119,8 +119,9 @@ The generator prunes candidates that the parser would read differently from how 
 
 The targets are the rules, the alternatives of ordered choices, and the operands and operators of Pratt expressions.
 Rules that the start rule reaches only inside negative lookaheads (`!keyword`) or the skip of `#recover` are reported
-as unreachable, and rules and alternatives that can never match (bodies that end in `_|_` to report an error) as
-impossible; neither counts in the totals. Each rule has a reach set (the targets that generating it can exercise),
+as unreachable, and rules that can never match (bodies that end in `_|_` to report an error) as impossible; neither
+counts in the totals. Alternatives that can never match, and everything inside an expression that can never match
+(`"(" ("a" / "b") _|_`), are not counted either; a rule called only there is unreachable. Each rule has a reach set (the targets that generating it can exercise),
 computed as a fixed point over the call graph; reach sets of subexpressions are computed on demand.
 
 Coverage is recorded on the derivation the generator followed for each accepted input. The parser takes the same way
@@ -224,4 +225,7 @@ few milliseconds for the others.
 - Predicates are evaluated with code point positions, and inputs are verified with the default options of `Parse`;
   a grammar whose result depends on the position unit, or a `#stream` grammar used with `ParseStream`, is verified
   only for `Parse`.
+- Where the engine and the specification differ, the generator follows the engine, which verifies every input: a
+  repetition element without captures shares the enclosing capture scope (spec/predicates.md says every iteration is a
+  scope), so a predicate in it can read the rule's captures.
 - A `Generator` is not safe for concurrent use.

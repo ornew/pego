@@ -132,8 +132,9 @@ The report counts the rules that the start rule reaches, the alternatives of ord
 operators of Pratt expressions. It lists separately, and does not count:
 
 - `unreachable`: rules that generation cannot exercise, because the start rule does not call them or calls them only
-  inside a negative lookahead (`!keyword`) or the skip of `#recover`;
-- `never match`: rules that can never match, such as rules that end in `_|_` to report an error.
+  inside a negative lookahead (`!keyword`), the skip of `#recover`, or an expression that can never match;
+- `never match`: rules that can never match, such as rules that end in `_|_` to report an error. Alternatives that can
+  never match are not counted either.
 
 For the Python grammar of [examples/python](../../examples/python/python.pego), 50 inputs cover most of the grammar:
 

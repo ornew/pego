@@ -247,6 +247,10 @@ def e = pratt {
     level { prefix "-" / "!" }
     level { postfix "!" / "[" e "]" }
 }`, nil},
+		{"unknown left side of ||, undefined variable on the right", `def main = e:num [text($e) != "" || z == 1]
+def num = d:(?0-9) -> $d`, nil},
+		{"empty iterations below the minimum", `def main = (_){3} "q"`, nil},
+		{"capture-free repetition elements see the enclosing captures", `def main = n:"a" ([$n != nil] "x")* "y"`, nil},
 		{"top, cut, attributes", `def main = (stmt -- ";")* _ $$
 def stmt = (@"x" / "y" "z") #error(message="expected a statement") #recover(skip=(?^;)+)`, nil},
 	}
@@ -264,6 +268,22 @@ def stmt = (@"x" / "y" "z") #error(message="expected a statement") #recover(skip
 				}
 			}
 		})
+	}
+}
+
+// TestReviewRegressions checks inputs that the generator used to prune although the parser accepts them.
+func TestReviewRegressions(t *testing.T) {
+	for _, c := range []struct{ src, want string }{
+		{`def main = ("a"?){2} "b"`, "b"},
+		{`def main = n:"a" ([$n != nil] "x")* "y"`, "axy"},
+	} {
+		inputs, err := sample.Generate(compile(t, c.src), 20, sample.WithSeed(1))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !slices.Contains(inputs, c.want) {
+			t.Errorf("%s: %q does not include %q", c.src, inputs, c.want)
+		}
 	}
 }
 
@@ -391,6 +411,22 @@ def never = "n" _|_`)
 	}
 	if got := c.String(); got != "rules 3/3 (100%), alternatives 2/2 (100%)" {
 		t.Errorf("got %q", got)
+	}
+
+	// Targets inside expressions that can never match are not counted, and rules called only there are
+	// unreachable.
+	p = compile(t, `def main = ("(" ("a" / "b") _|_) / r _|_ / "c"
+def r = "x" / "y"`)
+	g, err = sample.New(p, sample.WithSeed(1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := g.Generate(1); err != nil {
+		t.Fatal(err)
+	}
+	c = g.Coverage()
+	if c.Rules != 1 || c.Alternatives != 1 || c.AlternativesCovered != 1 || !slices.Equal(c.Unreachable, []string{"r"}) {
+		t.Errorf("got %+v", c)
 	}
 
 	// Without generating anything, everything reachable is missed.

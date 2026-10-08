@@ -467,6 +467,9 @@ func (g *gen) genRepeat(e *grammar.Repeat, k cont) bool {
 			want = max(want, e.Min+1)
 		}
 	}
+	// As in the engine, an element gets its own capture scope per iteration only if it contains
+	// captures; otherwise predicates in it see the enclosing scope.
+	scoped := g.in.hasCaptures(e.Expr)
 	limit := e.Min + 4*g.cfg.maxRepeat + 16
 	if e.Max >= 0 {
 		want = min(want, e.Max)
@@ -484,14 +487,17 @@ func (g *gen) genRepeat(e *grammar.Repeat, k cont) bool {
 			}
 			pos := len(g.out)
 			caps := g.caps
-			g.caps = nil // each iteration is a capture scope
+			if scoped {
+				g.caps = nil // each iteration is a capture scope
+			}
 			ok := g.gen(e.Expr, func(val) bool {
 				inner := g.caps
 				g.caps = caps
 				var ok bool
-				if len(g.out) == pos {
-					// The parser ends a repetition at an iteration that consumes nothing.
-					ok = i+1 >= e.Min && k(val{kind: vList, start: start, end: pos, n: i + 1})
+				if len(g.out) == pos && i+1 >= e.Min {
+					// The parser ends a repetition at an iteration that consumes nothing, once it
+					// has the minimum.
+					ok = k(val{kind: vList, start: start, end: pos, n: i + 1})
 				} else {
 					ok = iter(i + 1)
 				}

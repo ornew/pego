@@ -24,7 +24,8 @@ type target struct {
 	rule  string
 	index int // alternative, operand or operator index
 	expr  grammar.Expr
-	// possible is false for targets that can never match (their height is inf).
+	// possible is false for targets that can never be part of a match: they can never match
+	// themselves, or only occur inside an expression that can never match ("(" ("a" / "b") _|_).
 	possible bool
 }
 
@@ -39,6 +40,8 @@ type ruleInfo struct {
 	length   int            // minimal length in bytes of a match
 	reach    bitset         // targets that generating the rule can exercise, its own included
 	calls    []string
+	// possibleCalls are the calls in contexts that can match.
+	possibleCalls []string
 	// stops caches, per minimum level, the expression that must not match where a chain of
 	// operators of the Pratt expression ends (see gen.prattStopCheck).
 	stops map[int]grammar.Expr
@@ -57,6 +60,7 @@ type info struct {
 	// reachable[i] is true if the rule with index i can be called from the start rule.
 	reachable []bool
 	reachMemo map[grammar.Expr]bitset
+	captures  map[grammar.Expr]bool // memo of hasCaptures
 	// compared holds the captures of rule calls that a predicate in the same rule reads.
 	compared map[*grammar.Capture]bool
 	// alphabet holds the literal strings and sample characters of the grammar, for mutations.
@@ -71,6 +75,7 @@ func analyze(g *grammar.Grammar, start string) *info {
 		ops:       map[*grammar.PrattOperator]int{},
 		reachMemo: map[grammar.Expr]bitset{},
 		compared:  map[*grammar.Capture]bool{},
+		captures:  map[grammar.Expr]bool{},
 	}
 	terminals := map[string]bool{}
 	for _, t := range g.Types() {
@@ -164,13 +169,31 @@ func analyze(g *grammar.Grammar, start string) *info {
 			}
 		}
 	}
-	for i := range in.targets {
-		t := &in.targets[i]
-		if t.kind == targetRule {
-			t.possible = in.rules[t.rule].height < inf
-		} else {
-			t.possible = in.height(t.expr) < inf
+	// Targets and calls in contexts that can match.
+	for _, ri := range in.order {
+		if ri.height >= inf {
+			continue
 		}
+		in.targets[ri.index].possible = true
+		in.walkPossible(ri.def.Expr, func(e grammar.Expr) {
+			switch e := e.(type) {
+			case *grammar.Ref:
+				ri.possibleCalls = append(ri.possibleCalls, e.Name)
+			case *grammar.Choice:
+				for j, a := range e.Alts {
+					in.targets[in.altBase[e]+j].possible = in.height(a) < inf
+				}
+			case *grammar.Pratt:
+				for _, o := range e.Operands {
+					in.targets[in.operands[o]].possible = in.height(o.Expr) < inf
+				}
+				for _, l := range e.Levels {
+					for _, op := range l.Operators {
+						in.targets[in.ops[op]].possible = in.height(op.Expr) < inf
+					}
+				}
+			}
+		})
 	}
 
 	// Reach sets of rules: their own targets and those of the rules they call, transitively.
@@ -197,7 +220,7 @@ func analyze(g *grammar.Grammar, start string) *info {
 				return
 			}
 			in.reachable[ri.index] = true
-			for _, c := range ri.calls {
+			for _, c := range ri.possibleCalls {
 				if callee := in.rules[c]; callee != nil {
 					visit(callee)
 				}
@@ -227,6 +250,21 @@ func (in *info) localTargets(e grammar.Expr, s bitset) {
 			}
 		}
 	})
+}
+
+// hasCaptures reports whether e contains a capture, not counting called rules.
+func (in *info) hasCaptures(e grammar.Expr) bool {
+	if v, ok := in.captures[e]; ok {
+		return v
+	}
+	v := false
+	walk(e, func(x grammar.Expr) {
+		if _, ok := x.(*grammar.Capture); ok {
+			v = true
+		}
+	})
+	in.captures[e] = v
+	return v
 }
 
 // reach returns the targets that generating e can exercise.
@@ -346,6 +384,49 @@ func (in *info) length(e grammar.Expr) int {
 		return l
 	}
 	return 0
+}
+
+// walkPossible is walk restricted to expressions that can match: it skips an expression that can never
+// match and everything inside it.
+func (in *info) walkPossible(e grammar.Expr, f func(grammar.Expr)) {
+	if e == nil || in.height(e) >= inf {
+		return
+	}
+	f(e)
+	switch e := e.(type) {
+	case *grammar.Seq:
+		for _, it := range e.Items {
+			in.walkPossible(it, f)
+		}
+	case *grammar.Choice:
+		for _, a := range e.Alts {
+			in.walkPossible(a, f)
+		}
+	case *grammar.Repeat:
+		in.walkPossible(e.Expr, f)
+	case *grammar.Optional:
+		in.walkPossible(e.Expr, f)
+	case *grammar.And:
+		in.walkPossible(e.Expr, f)
+	case *grammar.Atomic:
+		in.walkPossible(e.Expr, f)
+	case *grammar.Discard:
+		in.walkPossible(e.Expr, f)
+	case *grammar.Capture:
+		in.walkPossible(e.Expr, f)
+	case *grammar.Attributed:
+		in.walkPossible(e.Expr, f)
+	case *grammar.Pratt:
+		in.walkPossible(e.Skip, f)
+		for _, o := range e.Operands {
+			in.walkPossible(o.Expr, f)
+		}
+		for _, l := range e.Levels {
+			for _, op := range l.Operators {
+				in.walkPossible(op.Expr, f)
+			}
+		}
+	}
 }
 
 // walk calls f for e and every parsing expression inside it that generation can produce: it does not
