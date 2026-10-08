@@ -116,7 +116,7 @@ func (c *checker) fill(s *scope, decls []Decl) {
 				c.insert(s, name, v, x, nil)
 			}
 		case *LetClause:
-			if name := x.Ident.Text; ast_isValidIdent(name) {
+			if name := x.Ident.Text; isValidIdent(name) {
 				c.insert(s, name, x, x, nil)
 			}
 		case *ImportDecl:
@@ -148,7 +148,7 @@ func importIdent(spec *ImportSpec) string {
 	if i := strings.LastIndex(path, "/"); i >= 0 {
 		q = path[i+1:]
 	}
-	if !ast_isValidIdent(q) || strings.HasPrefix(q, "#") || q == "_" {
+	if !isValidIdent(q) || strings.HasPrefix(q, "#") || q == "_" {
 		return ""
 	}
 	return q
@@ -161,7 +161,7 @@ func labelName(l Label) (string, bool) {
 	}
 	switch n := l.(type) {
 	case *Ident:
-		if !ast_isValidIdent(n.Text) {
+		if !isValidIdent(n.Text) {
 			return "", false
 		}
 		return n.Text, true
@@ -173,8 +173,8 @@ func labelName(l Label) (string, bool) {
 	return "", false
 }
 
-// ast_isValidIdent reports whether str is a valid identifier (ast.IsValidIdent).
-func ast_isValidIdent(ident string) bool {
+// isValidIdent reports whether str is a valid identifier (ast.IsValidIdent).
+func isValidIdent(ident string) bool {
 	if ident == "" {
 		return false
 	}
@@ -432,6 +432,10 @@ func children(n any) []any {
 		}
 	}
 	switch x := n.(type) {
+	case *File:
+		for _, d := range x.Decls {
+			add(d)
+		}
 	case *Field:
 		add(x.Label)
 		if x.Alias != nil {

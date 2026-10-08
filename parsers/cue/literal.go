@@ -450,9 +450,9 @@ func isValidImport(lit string) bool {
 }
 
 // Value returns the integer that the literal denotes: its digits with underscores removed, in decimal,
-// hexadecimal (0x), octal (0o) or binary (0b), or with a multiplier (1K is 1,000, 1Ki is 1,024, and
-// M, G, T, P likewise): a fraction in front of a multiplier is truncated towards zero (1.5G is 1,500,000,000,
-// 1.3Ki is 1,331).
+// hexadecimal (0x), octal (0o) or binary (0b), or with a multiplier (1K is 1,000, 1Ki is 1,024, and M, G, T, P
+// likewise). A fraction in front of a multiplier is allowed where the product is an integer (1.5G is
+// 1,500,000,000); otherwise (1.3Ki is 1,331.2) the value is an error, as it is for cue/literal.
 func (n *Int) Value() (*big.Int, error) {
 	t := strings.ReplaceAll(n.Text, "_", "")
 	var base int
@@ -493,7 +493,10 @@ func (n *Int) Value() (*big.Int, error) {
 		return nil, fmt.Errorf("cue: invalid integer %s", n.Text)
 	}
 	r.Mul(r, new(big.Rat).SetInt(mult))
-	return new(big.Int).Quo(r.Num(), r.Denom()), nil // truncated towards zero
+	if !r.IsInt() {
+		return nil, fmt.Errorf("cue: number %s cannot be represented as an int", n.Text)
+	}
+	return new(big.Int).Set(r.Num()), nil
 }
 
 // Int64 returns the integer as an int64; a value out of the range of int64 is an error.

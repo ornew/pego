@@ -6,7 +6,8 @@
 //
 //	refgen -probe file...       print the tree or the first error of each file
 //	refgen -cue DIR -stats      statistics of the corpus (the sources of a checkout of cue-lang/cue)
-//	refgen -cue DIR -o OUTDIR   write OUTDIR/corpus.tar.gz, OUTDIR/mutants.txt.gz and OUTDIR/generated.txt.gz
+//	refgen -cue DIR -o OUTDIR   write OUTDIR/corpus.tar.gz, OUTDIR/mutants.txt.gz, OUTDIR/generated.txt.gz and
+//	                            OUTDIR/literals.txt.gz
 //	refgen -bench FILE          time the reference parser on a file (the default mode, without comments)
 //	refgen -cue DIR -mutants FILE -per N -seed S   write the results of more mutations
 package main
@@ -36,6 +37,7 @@ func main() {
 	mutantsOnly := flag.String("mutants", "", "write only this file of results of mutations (with -per and -seed)")
 	generated := flag.String("generated", "", "write only this file of results of generated inputs (with -count and -seed)")
 	bench := flag.String("bench", "", "time the reference parser on this file")
+	literals := flag.String("literals", "", "write only this file of decoded literals (with -cue and -seed)")
 	count := flag.Int("count", 5000, "with -o or -generated: the number of inputs of each family")
 	flag.Parse()
 	switch {
@@ -74,6 +76,14 @@ func main() {
 			fatal(err)
 		}
 		runBench(src)
+	case *literals != "":
+		srcs, err := collect(*cue)
+		if err != nil {
+			fatal(err)
+		}
+		if err := writeLiterals(*literals, srcs, *seed); err != nil {
+			fatal(err)
+		}
 	case *generated != "":
 		if err := writeGenerated(*generated, *count, *seed); err != nil {
 			fatal(err)
@@ -98,6 +108,9 @@ func main() {
 			fatal(err)
 		}
 		if err := writeGenerated(filepath.Join(*out, "generated.txt.gz"), *count, *seed); err != nil {
+			fatal(err)
+		}
+		if err := writeLiterals(filepath.Join(*out, "literals.txt.gz"), srcs, *seed); err != nil {
 			fatal(err)
 		}
 	default:
