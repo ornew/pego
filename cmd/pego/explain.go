@@ -38,7 +38,17 @@ func explainCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 	}
 	x := &explainer{at: map[int]*explained{}}
 	for _, e := range errs {
-		x.at[e.Pos] = &explained{}
+		ex := x.at[e.Pos]
+		if ex == nil {
+			ex = &explained{items: map[string]bool{}}
+			x.at[e.Pos] = ex
+		}
+		for _, s := range e.Expected {
+			ex.items[s] = true
+		}
+		for _, s := range e.Messages {
+			ex.items["#"+s] = true
+		}
 	}
 	p.Parse(src, append(opts, pego.WithTrace(x.event))...)
 	for i, e := range errs {
@@ -73,6 +83,9 @@ type explainFrame struct {
 // explained holds the calls that recorded expectations at an error position.
 type explained struct {
 	calls []explainedCall
+	// items holds what the errors at the position say was expected ("expected" or "#message"):
+	// #error replaces the expectations of its expression, which calls in it still recorded.
+	items map[string]bool
 }
 
 type explainedCall struct {
@@ -122,9 +135,10 @@ func (x *explainer) record(e pego.TraceEvent, top explainFrame, f *pego.SyntaxEr
 		}
 		parent = x.stack[n-1].nested
 	}
+	ex := x.at[f.Pos]
 	c := explainedCall{matched: e.Matched && !recovered, text: e.Text(), memo: e.Memo, recovered: recovered}
-	own := func(key, s string, dst *[]string) {
-		if !top.nested[key] {
+	own := func(key, item, s string, dst *[]string) {
+		if !top.nested[key] && ex.items[item] {
 			*dst = append(*dst, s)
 		}
 		if parent != nil {
@@ -132,10 +146,10 @@ func (x *explainer) record(e pego.TraceEvent, top explainFrame, f *pego.SyntaxEr
 		}
 	}
 	for _, s := range f.Expected {
-		own(fmt.Sprintf("%d %s", f.Pos, s), s, &c.expected)
+		own(fmt.Sprintf("%d %s", f.Pos, s), s, s, &c.expected)
 	}
 	for _, s := range f.Messages {
-		own(fmt.Sprintf("%d #%s", f.Pos, s), s, &c.messages)
+		own(fmt.Sprintf("%d #%s", f.Pos, s), "#"+s, s, &c.messages)
 	}
 	if len(c.expected) == 0 && len(c.messages) == 0 {
 		return
@@ -144,7 +158,6 @@ func (x *explainer) record(e pego.TraceEvent, top explainFrame, f *pego.SyntaxEr
 	for i := len(x.stack) - 1; i >= 0; i-- {
 		c.stack = append(c.stack, fmt.Sprintf("%s %s", x.stack[i].rule, position(e, x.stack[i].pos)))
 	}
-	ex := x.at[f.Pos]
 	if !slices.ContainsFunc(ex.calls, func(o explainedCall) bool {
 		return slices.Equal(o.stack, c.stack) && slices.Equal(o.expected, c.expected) && slices.Equal(o.messages, c.messages)
 	}) {

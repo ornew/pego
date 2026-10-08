@@ -255,6 +255,24 @@ def word = @(?a-z)+`)
 	}
 }
 
+// TestExplainErrorLabel checks that expectations that #error replaced with its message, which
+// the calls in its expression still recorded, are not listed.
+func TestExplainErrorLabel(t *testing.T) {
+	g := writeFile(t, "let.pego", `
+def main = "let" " " name #error(message="expected a name") ";"
+def name = @(?a-z)+ (?0-9)*`)
+	out, err := runCLI(t, "", "explain", "-g", g, "-i", "let 1;")
+	want := `1:5: expected a name
+
+Calls that recorded what was expected at 1:5 (innermost first):
+
+  main 1:1: expected a name
+`
+	if err != nil || out != want {
+		t.Errorf("got %v\n%s\nwant\n%s", err, out, want)
+	}
+}
+
 // TestExplainRecoveredBody checks that the expectations of the expression a #recover recovered
 // from, which the record of the enclosing call no longer holds, are attributed to that call.
 func TestExplainRecoveredBody(t *testing.T) {
