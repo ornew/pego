@@ -46,8 +46,10 @@ The lifecycle follows the specification:
 or 1 accordingly, as the specification asks.
 A body that is not JSON gets a `ParseError` response with a null id and the server goes on; a header without
 `Content-Length` cannot be resynchronized, so the server stops with an error.
-A panic in a request handler becomes an `InternalError` response instead of ending the server, and the compiler runs
-under `recover` too.
+A panic in a request handler becomes an `InternalError` response instead of ending the server.
+A panic while analyzing a document (a bug) is published as its only diagnostic, and the analysis of the last version
+that did not fail keeps answering requests; formatting and rename, which would edit the text that analysis describes,
+are refused until the document analyzes again.
 
 ### Positions
 

@@ -84,10 +84,49 @@ type analysis struct {
 	vars map[string]bool
 }
 
-func analyze(text string) *analysis {
-	a := &analysis{text: text, idx: newTextIndex(text), tokAt: map[int]int{},
+// analyzeHook, if not nil, is called at the start of every analysis. Tests use it to make an
+// analysis fail.
+var analyzeHook func(text string)
+
+// analyzeSafely analyzes text, turning a panic into an error.
+func analyzeSafely(text string) (a *analysis, err error) {
+	defer func() {
+		if x := recover(); x != nil {
+			a, err = nil, fmt.Errorf("%v", x)
+		}
+	}()
+	if analyzeHook != nil {
+		analyzeHook(text)
+	}
+	return analyze(text), nil
+}
+
+// failedAnalysis returns the analysis to use for text when analyzing it failed with err: good, the
+// analysis of an earlier version, if there is one, or an empty analysis of text. Its only
+// diagnostic reports the failure, and it counts as having a syntax error, so that formatting and
+// rename, which would edit the text it describes, refuse.
+func failedAnalysis(text string, good *analysis, err error) *analysis {
+	msg := "internal error while analyzing the document: " + err.Error()
+	var a analysis
+	if good != nil {
+		a = *good
+	} else {
+		a = *newAnalysis(text)
+		a.g = &grammar.Grammar{}
+	}
+	a.syntaxErrs = syntax.ErrorList{&syntax.Error{Msg: msg}}
+	a.diags = []Diagnostic{{Range: Range{}, Severity: severityError, Source: "pego", Message: msg}}
+	return &a
+}
+
+func newAnalysis(text string) *analysis {
+	return &analysis{text: text, idx: newTextIndex(text), tokAt: map[int]int{},
 		rules: map[string]*definition{}, types: map[string]*definition{},
 		sem: map[int]semClass{}, vars: map[string]bool{}}
+}
+
+func analyze(text string) *analysis {
+	a := newAnalysis(text)
 	for _, t := range syntax.Tokenize(text) {
 		start, end := a.idx.pegoOffset(t.Pos), a.idx.pegoOffset(t.End)
 		a.tokAt[start] = len(a.toks)

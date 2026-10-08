@@ -60,11 +60,22 @@ type document struct {
 	version int
 	text    string
 	an      *analysis // analysis of text, nil until needed
+	// good is the last analysis that did not fail.
+	good *analysis
 }
 
+// analysis returns the analysis of the document. If analyzing the text fails (a bug), it returns
+// the last good analysis with a diagnostic that reports the failure, so that the client sees that
+// something is wrong and the other features keep working on the text as it was.
 func (d *document) analysis() *analysis {
 	if d.an == nil {
-		d.an = analyze(d.text)
+		an, err := analyzeSafely(d.text)
+		if err != nil {
+			an = failedAnalysis(d.text, d.good, err)
+		} else {
+			d.good = an
+		}
+		d.an = an
 	}
 	return d.an
 }
