@@ -78,9 +78,6 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	fmt.Fprintf(&out, "// Package %s is a parser generated from a PEGO grammar.\n", opts.Package)
 	rt := runtimeSource[strings.Index(runtimeSource, "package genrt"):]
 	rt = strings.Replace(rt, "package genrt", "package "+opts.Package, 1)
-	if opts.Types {
-		rt = strings.Replace(rt, "import (\n", "import (\n\t\"sync\"\n", 1)
-	}
 	out.WriteString(rt)
 	out.WriteString("\n// --- Generated code ---\n\n")
 	fmt.Fprintf(&out, "// Parse parses the whole input with the rule %s. unit selects the position unit (CodePoints by default).\n", start.name)

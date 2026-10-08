@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"unicode/utf8"
 )
 
@@ -268,8 +269,15 @@ const maxDepth = 100_000
 // parse parses the whole input with rule r of a rule table with seen rules that have rule.seen
 // set.
 func parse(r *rule, seen int, input string, units []Unit) (n *Node, err error) {
-	p := &parser{}
+	p, _ := ppool.Get().(*parser)
+	if p == nil {
+		p = &parser{}
+	}
+	defer p.release()
 	p.memo.stride = seen
+	if len(p.memo.calls) != seen {
+		p.memo.calls = nil // kept from a parse with another rule table (Recognize)
+	}
 	if len(units) > 0 && units[0] == Bytes {
 		p.unit, p.bs, p.n = Bytes, input, len(input)
 	} else {
@@ -295,6 +303,37 @@ func parse(r *rule, seen int, input string, units []Unit) (n *Node, err error) {
 		p.expect(p.pos, idEndInput)
 	}
 	return nil, p.makeError(p.farthest, p.exp[p.expBase:])
+}
+
+// ppool keeps parsers of parse, with their scratch memory, for later parses. What a parse returns
+// never refers to that memory: nodes, child lists, fields and frames come from slabs that are not
+// kept, and node text slices the input string.
+var ppool sync.Pool
+
+// release clears the parser and returns it to ppool, keeping the decoded input, the memo table and
+// the stacks unless they are very large.
+func (p *parser) release() {
+	m := &p.memo
+	clear(m.slots)
+	for _, c := range m.chunks[:m.used] {
+		clear(c)
+	}
+	clear(m.seen)
+	clear(m.calls)
+	clear(p.kidStack[:cap(p.kidStack)])
+	clear(p.trail[:cap(p.trail)])
+	clear(p.saved[:cap(p.saved)])
+	in, offs := p.in[:0], p.offs[:0]
+	if cap(in) > 1<<20 { // do not keep the buffers of a large input for every later parse
+		in, offs = nil, nil
+	}
+	memo := memoTable{slots: m.slots[:0], chunks: m.chunks, seen: m.seen[:0], calls: m.calls}
+	if cap(m.slots) > 1<<20 || len(m.chunks) > 1<<12 || cap(m.seen) > 1<<20 {
+		memo = memoTable{}
+	}
+	*p = parser{in: in, offs: offs, exp: p.exp[:0], arena: p.arena[:0], kidStack: p.kidStack[:0],
+		trail: p.trail[:0], saved: p.saved[:0], memo: memo}
+	ppool.Put(p)
 }
 
 // --- Parser state ---
@@ -363,6 +402,9 @@ type parser struct {
 type memoTable struct {
 	slots []*memoEntry
 	slab  []memoEntry
+	// chunks are the areas slab came from, kept for later parses (release); used counts those in use.
+	chunks [][]memoEntry
+	used   int
 	// seen is a bit set of the (position, rule) pairs called once (firstCall), with stride bits per
 	// position.
 	seen   []uint64
@@ -499,7 +541,13 @@ func (p *parser) envValues(names []string) []any {
 
 func (t *memoTable) alloc() *memoEntry {
 	if len(t.slab) == 0 {
-		t.slab = make([]memoEntry, 256)
+		if t.used < len(t.chunks) {
+			t.slab = t.chunks[t.used]
+		} else {
+			t.slab = make([]memoEntry, 256)
+			t.chunks = append(t.chunks, t.slab)
+		}
+		t.used++
 	}
 	e := &t.slab[0]
 	t.slab = t.slab[1:]
