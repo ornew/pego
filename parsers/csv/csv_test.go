@@ -267,9 +267,9 @@ func TestParseAST(t *testing.T) {
 		start, end int
 		fields     []field
 	}{
-		{1, 9, []field{{"a", 1, 2, false, "a"}, {"\"b\"\"c\"", 3, 9, true, "b\"c"}}},
-		{11, 11, []field{{"", 11, 11, false, ""}}},
-		{12, 20, []field{{"x", 12, 13, false, "x"}, {"\"y\nz\"", 14, 19, true, "y\nz"}, {"", 20, 20, false, ""}}},
+		{1, 11, []field{{"a", 1, 2, false, "a"}, {"\"b\"\"c\"", 3, 9, true, "b\"c"}}},
+		{11, 12, []field{{"", 11, 11, false, ""}}},
+		{12, 21, []field{{"x", 12, 13, false, "x"}, {"\"y\nz\"", 14, 19, true, "y\nz"}, {"", 20, 20, false, ""}}},
 	}
 	if f.Start != 0 || f.End != len([]rune(in)) {
 		t.Errorf("file span %v", f.Span)
@@ -316,6 +316,8 @@ func TestSyntaxError(t *testing.T) {
 		{"a,\"b\"c", 1, 6},
 		{"a\n\"b\nc", 3, 2},
 		{"\"a\" ,b", 1, 4},
+		{"日本,語\"", 1, 5},      // code points
+		{"\xff日本,語\"", 1, 12}, // bytes, in input that is not UTF-8
 	} {
 		_, err := csv.Records(tc.in)
 		var se *csv.SyntaxError
@@ -355,6 +357,14 @@ func TestTable(t *testing.T) {
 	}
 	if err != nil && err.Error() != "csv: line 4: record has 1 fields, the header has 2" {
 		t.Errorf("message: %v", err)
+	}
+
+	// Lines after non-ASCII text and after bytes that are not UTF-8.
+	for _, in := range []string{"日本,語\n\"é\nü\",x\n\n\"z\"\n", "\xff,\xfe\n\"\xfd\n\",x\n\nz\n"} {
+		_, _, err = csv.Table(in)
+		if !errors.As(err, &fe) || *fe != (csv.FieldCountError{Line: 5, Fields: 1, Want: 2}) {
+			t.Errorf("%q: %v", in, err)
+		}
 	}
 
 	var se *csv.SyntaxError

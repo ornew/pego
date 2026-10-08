@@ -11,16 +11,18 @@ type File struct { Records []Record }
 type Record struct { Fields []Field }
 type Field terminal  // the raw field: a quoted field keeps its quotes and doubled ""
 
-def main: File = -"\u{feff}"? rs:line* #stream $$ -> new File{Records: $rs}
+def main: File = -"\u{feff}"? rs:record* #stream $$ -> new File{Records: $rs}
 
-// A record and its line break. The record's span leaves the line break out.
-def line: Record = !$$ r:record eol -> $r
-
-def record: Record = first:field rest:(-"," f:field)*
+// A record's span includes its line break (its fields end at the End of the last one): a rule that
+// leaves the line break out (`!$$ r:record eol -> $r`) makes ParseAST about 7% slower.
+def record: Record = !$$ first:field rest:(-"," f:field)* eol
     -> new Record{Fields: concat(list($first), map($rest, (r) => $r.f))}
 
-def field: Field = quoted / plain
-def quoted = "\"" ((?^")+ / "\"\"")* "\""
-def plain = ((?^,"\r\n)+ / "\r" !"\n" !$$)*
+// A quoted field, then an unquoted one: runs of ordinary characters separated by the rare ones ("" in
+// a quoted field, a CR that does not end the line in an unquoted one). Written inline rather than as
+// rules of their own, and as runs rather than a repetition of a choice ((?^")+ / "\"\""), it makes
+// ParseAST about 8% faster and Recognize about 25%.
+def field: Field = "\"" (?^")* ("\"\"" (?^")*)* "\""
+    / (?^,"\r\n)* ("\r" &(?^\n) (?^,"\r\n)*)*
 
 def eol = "\r\n" / "\n" / "\r"? $$
