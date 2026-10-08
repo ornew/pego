@@ -387,9 +387,10 @@ line, `-backend closure|bytecode|bytecode-iterative` does the same.
 
 ### Which one
 
-The measurements are in [benchmarks.md](../benchmarks.md); the figures below are summarized from its analysis
-(one machine, so treat them as orders of magnitude rather than promises). Run `go test ./bench -bench .
--benchmem` to measure your own grammar and input.
+The measurements are in [benchmarks.md](../benchmarks.md) and their analysis in
+[performance.md](../performance.md#where-pego-stands); the figures below are summarized from them (one machine, so
+treat them as orders of magnitude rather than promises). Run `go test ./bench -bench . -benchmem` to measure your own
+grammar and input.
 
 | You want | Choose | Why |
 |:--|:--|:--|

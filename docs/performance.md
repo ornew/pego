@@ -5,13 +5,79 @@ It also records experiments that did **not** pay off, so they are not repeated, 
 Update it in the same commit as any performance-related change, including the table of where each optimization
 applies.
 
-For end-to-end comparisons between backends and with the Go standard library, see [benchmarks.md](benchmarks.md).
+The measured results of every benchmark are in [benchmarks.md](benchmarks.md), which is generated from a run; this
+document describes the benchmarks, analyzes the results, and records how they came about.
+
+- [Where PEGO stands](#where-pego-stands): an analysis of the latest results
+- [How to measure](#how-to-measure): the benchmarks, their workloads and method, and tools for measuring a change
+- [Where each optimization applies](#where-each-optimization-applies), the [change log](#change-log) and the
+  [experiments that did not pay off](#experiments-that-did-not-pay-off)
+
+## Where PEGO stands
+
+An analysis of the results in [benchmarks.md](benchmarks.md) as measured on 2026-10-08 at commit b03fd59 (Apple M3
+Max, Go 1.27.1). The figures below are rounded from that run; regenerating the results does not update this analysis,
+so check the commit above against the one in [benchmarks.md](benchmarks.md) before relying on it.
+
+**Backends.** Generated Go parsers take 0.55–0.72× the time of the closure backend. The recursive bytecode VM takes
+1.07–1.33× and the iterative VM 1.28–1.94×; the iterative VM pays most on Pratt expressions (1.94×), whose loop runs
+as a state machine on its own stack. The closure backend is the default for this reason (see the
+[runtime guide](guide/runtime.md#backends)); the VMs are for grammars without their AST and, iteratively, for deep
+nesting.
+
+**Typed values.** Where `ParseAST` builds the grammar's Go types directly (JSON, XML, the calculators, outline), it
+takes 0.47–0.89× the time of the generated `Parse` and a quarter to a third of its memory (0.29–0.85 of its
+allocations; outline keeps most of them, in lists). On JSON and XML it takes 0.86× and 1.02× the time of `encoding/json` and `encoding/xml`, with about as
+many bytes and 200–300 times fewer allocations (231 against 53,340 for JSON), while also recording positions and the
+expectations for errors. Where the values include CST nodes (CSV, minilang), `ParseAST` converts the tree of `Parse`:
+the same time for CSV, whose result is the tree itself, and 1.10× the time and 1.27× the memory for minilang.
+
+**Allocations.** Every backend makes a few hundred to about two thousand allocations per parse (319 for CSV, 767 for
+JSON, 2,247 for outline), against 10,000–80,000 for the standard-library parsers: nodes, lists and fields come from
+slabs, and the memo, the input buffers and the stacks are reused across parses. The bytes are another matter: a tree
+of `Node`s takes 26–131 bytes per input byte (left recursion the most, through the intermediate results it grows), which
+is what typed values save.
+
+**Recognition.** `RecognizeOnly` takes 0.61–0.81× the time of a full parse on the closure backend and allocates almost
+nothing, except where predicates read values (XML's tag names, outline's indentation: 4.9 MB and 1.9 MB, which build
+those values) and where left recursion grows (1 MB). The generated `Recognize` takes 0.45–0.74× the time of the
+generated `Parse`, yet it is slower than the typed `ParseAST` on JSON (1.22×), XML (1.33×) and the left-recursive
+calculator (1.03×): `ParseAST` runs direct rules, one method per rule, while `Parse` and `Recognize` still run a method
+per expression. Direct rules for the Node runtime and the recognizer are the most promising optimization left (see
+[the backlog](https://github.com/ornew/pego/issues/1)).
+
+**The standard library** is 1.8–6.6 times as fast as generated `Parse` where it applies. The gap is widest where
+PEGO's work is structurally different: left recursion (6.6×, against `go/parser`'s hand-written precedence climbing)
+and CSV (3.4×, `encoding/csv` builds no tree at all). `json.Valid`, a hand-written state machine, is 12 times as fast
+as the generated `Recognize`.
+
+**Grammar style.** The same expressions take 2.6 times as long with left recursion as with a Pratt expression on the
+closure backend (2.4 generated, 1.7 typed), as you would expect from growing a seed at every level. Error recovery
+costs nothing measurable: the minilang input with one line in seven broken parses in 0.91× the time of the clean one,
+since recovered statements are skipped rather than parsed.
+
+**Position units** make no consistent difference: byte positions take 0.95–1.09× the time of code points.
+
+**Incremental parsing.** An edit and a reparse of the 300-function minilang program take 143–154 µs, 89–158 times
+less than a full parse, on every backend. On the 50,000-record CSV document they take 2.5–2.8 ms, most of it moving
+the reused records after the edit; there the VMs allocate 2.6 times as much as the closure backend (7.1 MB against
+2.7 MB).
+
+**Streaming** keeps memory bounded but runs at 0.55–0.63 of the throughput of batch parsing, and allocates 70 bytes per
+input byte and 6 allocations per record, against 26 bytes per input byte and 0.06 allocations per record for a batch
+parse: the per-element scratch is not reused across elements the way a batch parse reuses it.
+
+**Preparation.** Loading a `.pegoc` file takes 0.39–0.60× the time of compiling the grammar from source for the
+closure backend, 0.49–0.79× for bytecode, and 0.22–0.28× for a file without the AST.
 
 ## How to measure
 
+The benchmarks are in `bench/`. `go run ./bench/report` runs all of them (about eight minutes) and regenerates
+[benchmarks.md](benchmarks.md); see [the benchmark workloads](#benchmark-workloads) for what they measure.
+
 ```bash
-# Full benchmark suite (all backends, both position units, stdlib counterparts)
-go test ./bench -run '^$' -bench . -benchmem -count 3
+# Full benchmark suite (all backends, both position units, stdlib counterparts), and the results document
+go run ./bench/report
 
 # A single workload, with CPU and allocation profiles
 go test ./bench -run '^$' -bench 'BenchmarkParse/JSON/closure/codepoints' -benchtime 20x \
@@ -22,9 +88,9 @@ go tool pprof -sample_index=alloc_space -top -nodecount 30 bench.test mem.out
 
 Notes:
 
-- The reference machine is a shared 4-vCPU VM. Wall-clock numbers vary by 10–20% between runs, and more when other
-  processes are busy. Prefer `B/op` and `allocs/op`, which are deterministic, and confirm time changes with `-count 3`
-  or more.
+- Wall-clock numbers vary by a few percent between runs on an idle machine, and by 10–20% on a busy one. Prefer `B/op`
+  and `allocs/op`, which are nearly deterministic, and confirm time changes with interleaved runs of the binaries
+  before and after the change (`-count 3` or more each).
 - Results must not change: every optimization is covered by the equivalence tests (`go test ./...`), which compare
   all backends, both position units, memoization on and off, and recognition against full parses.
 - A change to shared runtime code (input, memo table, calls) should be measured on the incremental and stream
@@ -35,14 +101,43 @@ Notes:
 - The engine benchmarks read the grammars from `examples/` when they run, so when comparing a change to a grammar, run
   the benchmark binary while the old grammar is checked out (for example between `git stash` and `git stash pop`), not
   just a binary built from the old code. Generated parsers embed their grammar.
-- The numbers below are for the closure backend with code-point positions unless stated otherwise. The workloads are
-  the ones in `bench/` (JSON 262 KB, minilang 89 KB, CSV 211 KB).
+- The numbers in the change log are for the closure backend with code-point positions unless stated otherwise.
 
-## Current state
+### Benchmark workloads
 
-The current figures for every backend and workload are in [benchmarks.md](benchmarks.md), which `go run ./bench/report`
-regenerates from a fresh run. The entries below record the effect of each change when it was made; entries before
-change 13 were measured on a 4-vCPU Intel Xeon virtual machine and are several times slower in absolute terms.
+`TestWorkloads` in `bench/` checks, on reduced inputs, that every input can be parsed by every backend and that the
+PEGO backends return the same results.
+
+- Inputs are generated by `bench/inputs.go` from a fixed random seed, so they are identical across runs. They include
+  multi-byte characters such as Japanese text.
+- The grammars are taken unchanged from `examples/`: JSON, CSV, XML, the calculator in its Pratt and left-recursive
+  forms, minilang, and outline. The generated parsers in `bench/gen/` are generated from them (`go generate ./bench`).
+- Each benchmark runs three times and the median is reported.
+- Comparisons with the standard library measure different outputs. Every PEGO backend builds a tree whose nodes carry
+  positions (start and end) and rule names, and records the expectations at the farthest failure. The standard-library
+  parsers produce:
+  - `encoding/json`: decoding into `any` (no positions).
+  - `encoding/csv`: `ReadAll` (a list of field strings with quotes removed).
+  - `encoding/xml`: reading tokens with `Decoder.Token` (no tree).
+  - `go/parser.ParseExpr`: a Go expression AST (with positions).
+
+| Workload | Grammar | Input | Main focus |
+|:--|:--|:--|:--|
+| JSON | `examples/json` | Array of objects, 262 KB | Lexical repetition, AST of union types |
+| CSV | `examples/csv` | 5,000 rows (211 KB); fields with quotes, commas and newlines | Simple repetition, many terminals |
+| XML | `examples/xml` | Nesting, attributes, character references, comments, CDATA; 262 KB | Nesting, a predicate comparing start-tag and end-tag names |
+| Arith_Pratt | `examples/calculator/calc.pego` | Expression with 20,000 terms (133 KB), parentheses nested up to depth 40 | Pratt loop and longest match |
+| Arith_LeftRec | `examples/calculator/calc_lr.pego` | Same as above | Left-recursion seed growing |
+| Minilang | `examples/minilang` | 300 functions (89 KB) | PEG statements nested with Pratt expressions, keyword exclusion |
+| Recovery | `examples/minilang` | Same as above, with one line in seven broken | `#recover`, expectation recording |
+| Outline | `examples/outline` | 5,000 lines (83 KB), depth up to 10 | Predicates and variables (non-memoized rules) |
+| Incremental | `examples/minilang` | Repeated one-character insertions and deletions in 300 functions | Memo reuse with `Document` (compared with a full parse each time) |
+| Incremental, long | `examples/csv` | Repeated one-character insertions and deletions in the middle of 50,000 records | Resuming long repetitions with `Document` |
+| Stream | `examples/csv` | 50,000 rows (2.2 MB) | Reading and discarding with `ParseStream` |
+| Prepare | JSON, minilang | None | Compiling from source and loading `.pegoc` (with and without the AST) |
+
+The entries of the change log record the effect of each change when it was made; entries before change 13 were
+measured on a 4-vCPU Intel Xeon virtual machine and are several times slower in absolute terms.
 
 Starting point (first benchmark run, on the virtual machine): JSON took ~510 ms and allocated 206 MB in 2.6 M allocations.
 

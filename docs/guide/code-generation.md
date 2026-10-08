@@ -22,7 +22,7 @@ This guide shows how to generate a parser, how to call it, what it supports comp
 
 | | Engine (`pego.CompileSource`) | Generated parser |
 |:--|:--|:--|
-| Speed | Closure backend by default | The fastest backend: 28–45% faster than the closure backend, and typed values faster still ([benchmarks](../benchmarks.md#analysis)) |
+| Speed | Closure backend by default | The fastest backend: 28–45% faster than the closure backend, and typed values faster still ([benchmarks](../benchmarks.md), [analysis](../performance.md#where-pego-stands)) |
 | Dependencies | `github.com/ornew/pego` | Standard library only |
 | Grammar at run time | Loaded and compiled (or loaded from `.pegoc`) | Gone: it is compiled into Go code |
 | Grammar changes | Edit the grammar, restart | Regenerate and rebuild |

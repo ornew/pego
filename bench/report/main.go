@@ -6,8 +6,9 @@
 //
 // It saves the raw `go test` output, with the date, commit, Go version and load average of the run
 // in a header, to bench/results.txt, and renders the document from that file and the template
-// benchmarks.md.tmpl. Every figure in the document, including the ranges in its analysis, is
-// computed from the results; TestDocumentIsUpToDate checks that the document matches them.
+// benchmarks.md.tmpl. The document holds results only (their analysis is in docs/performance.md),
+// and every figure in it is computed from the results; TestDocumentIsUpToDate checks that it
+// matches them.
 package main
 
 import (

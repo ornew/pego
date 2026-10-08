@@ -161,10 +161,6 @@ func render(root string, data []byte) ([]byte, error) {
 		"rel": func(name, base string) string {
 			return fmt.Sprintf("%s (%s×)", fmtTime(get(name).ns), fmtFactor(ratio(name, base)))
 		},
-		// factor is the time of a relative to b: "1.26".
-		"factor": func(a, b string) string { return fmtFactor(ratio(a, b)) },
-		// speedup is how many times faster b is than a: "15".
-		"speedup": func(a, b string) string { return fmtSig(ratio(a, b), 2) },
 		// mem is bytes and allocations per operation: "10.6 MB / 0.8 k".
 		"mem": func(name string) string {
 			b := get(name)
@@ -194,26 +190,6 @@ func render(root string, data []byte) ([]byte, error) {
 				return ""
 			}
 			return fmtBytes(float64(st.Size()))
-		},
-		// ratioRange is the range, over the items, of the time of a relative to b, where {w} in the
-		// names stands for each item, and {s} for the part after a colon in it ("JSON:encoding_json"):
-		// "0.67–0.87".
-		"ratioRange": func(a, b string, items []string) string {
-			lo, hi := ratioBounds(ratio, a, b, items)
-			return rangeOf(fmtFactor(lo), fmtFactor(hi))
-		},
-		// speedupRange is the range of how many times faster b is than a: "3.1–8.0".
-		"speedupRange": func(a, b string, items []string) string {
-			lo, hi := ratioBounds(ratio, a, b, items)
-			return rangeOf(fmtSig(lo, 2), fmtSig(hi, 2))
-		},
-		// mbsRatio is the throughput of a relative to b, as a fraction: "0.72".
-		"mbsRatio": func(a, b string) string {
-			ra, rb := get(a), get(b)
-			if rb.mbs == 0 {
-				return "?"
-			}
-			return fmtFactor(ra.mbs / rb.mbs)
 		},
 		// runs is the number of runs of a benchmark.
 		"runs": func(name string) int { return get(name).runs },
@@ -249,17 +225,6 @@ func render(root string, data []byte) ([]byte, error) {
 		},
 		"list":   func(xs ...string) []string { return xs },
 		"inList": func(x string, xs []string) bool { return slices.Contains(xs, x) },
-		// bytesRange is the range, over the items, of the memory of a relative to b: "0.23–0.26".
-		"bytesRange": func(a, b string, items []string) string {
-			lo, hi := ratioBounds(func(a, b string) float64 {
-				ra, rb := get(a), get(b)
-				if rb.bytesPerOp == 0 {
-					return 0
-				}
-				return ra.bytesPerOp / rb.bytesPerOp
-			}, a, b, items)
-			return rangeOf(fmtFactor(lo), fmtFactor(hi))
-		},
 		// has reports whether the results include a benchmark.
 		"has": func(name string) bool { return r.bench[name] != nil },
 		// allocs is the number of allocations per operation.
@@ -298,18 +263,6 @@ func render(root string, data []byte) ([]byte, error) {
 		return nil, fmt.Errorf("the results lack %s", strings.Join(slices.Compact(missing), ", "))
 	}
 	return out.Bytes(), nil
-}
-
-// ratioBounds returns the smallest and the largest ratio of a to b over the items (see ratioRange).
-func ratioBounds(ratio func(a, b string) float64, a, b string, items []string) (lo, hi float64) {
-	lo, hi = math.Inf(1), math.Inf(-1)
-	for _, it := range items {
-		w, sub, _ := strings.Cut(it, ":")
-		r := strings.NewReplacer("{w}", w, "{s}", sub)
-		x := ratio(r.Replace(a), r.Replace(b))
-		lo, hi = min(lo, x), max(hi, x)
-	}
-	return lo, hi
 }
 
 // stdPackage names the standard-library parser of a benchmark.
