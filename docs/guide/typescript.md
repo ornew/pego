@@ -177,9 +177,11 @@ Compared with the Go API:
   Its `message` is Go's `Error()` (`"1:5: syntax error: expected (?0-9)"`), and `reason()` is Go's `Message()`.
 - **Field values** are `Node`, numbers (or bigints, see [values](#values-of-actions)), strings, booleans or `null`;
   narrow them with `instanceof Node` or `typeof`.
-- **JSON.** `JSON.stringify(node)` gives the engine's JSON structure (the same keys in the same order, fields sorted),
-  with JavaScript's escaping. `marshal(node)` gives exactly the bytes Go's `json.Marshal` gives, including its escapes
-  of `<`, `>` and `&`, which is what the tests compare.
+- **JSON.** `marshal(node)` gives exactly the bytes Go's `json.Marshal` gives, including its escapes of `<`, `>` and
+  `&`, which is what the tests compare. `JSON.stringify(node)` gives the same keys in the same order (fields sorted),
+  with JavaScript's escaping, and the same values except in two cases: ints beyond the safe integers become rounded
+  numbers, and in `Bytes` mode an invalid input byte in text is written as the surrogate that stands for it (see
+  [units](#input-positions-and-units)), such as `"a\udcff"` where `marshal` and the engine write `"a�"`.
 - **Deep trees.** Left recursion, left-associative Pratt operators and `foldl` build trees as deep as the input is
   long, without deep calls. `marshal` and `toString` write trees of any depth (`encoding/json` gives up beyond 10,000
   levels; `marshal` does not). `JSON.stringify` recurses and throws a `RangeError` on Node.js's default stack beyond
@@ -211,7 +213,7 @@ the engine's:
 - In `Bytes` mode, text keeps the bytes, as Go strings do: in node text and in `text(...)`, each invalid byte *b* is
   the lone surrogate U+DC00+*b* (U+DC80–U+DCFF, like Python's `surrogateescape`), so `len`, comparisons and
   `toString` see the bytes the engine sees. `marshal` writes such a byte as the character U+FFFD, as Go's JSON does
-  for PEGO's module (depending on the Go release and settings, Go may write the escape `�` instead, the same
+  for PEGO's module (depending on the Go release and settings, Go may write the escape `\ufffd` instead, the same
   JSON value). Valid input never contains these surrogates.
 
 Node `start` and `end` are positions in the chosen unit, **not** indexes into the JavaScript string. To slice the input,
