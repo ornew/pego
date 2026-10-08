@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
 )
@@ -669,8 +670,18 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 		}
 	case *grammar.Choice:
 		b.WriteString("\tm0 := p.mark()\n")
+		peeked := false
 		for _, alt := range e.Alts {
 			m := g.expr(alt, s, build)
+			if cond, desc, depth, ok := g.first(alt, 0, map[string]bool{}); ok {
+				// An alternative whose first terminal does not match the next character is skipped,
+				// with the expectation it would record (see first).
+				if !peeked {
+					b.WriteString("\tch, _, more := p.peek()\n")
+					peeked = true
+				}
+				fmt.Fprintf(&b, "\tif !(more && (%s)) && p.depth+%d <= maxDepth {\n\t\tp.expect(p.pos, %d)\n\t} else ", cond, depth, desc)
+			}
 			fmt.Fprintf(&b, "\t{\n\t\tprevCut := p.cut\n\t\tp.cut = false\n\t\tv, ok := p.%s()\n\t\tcut := p.cut\n\t\tp.cut = prevCut\n"+
 				"\t\tif ok {\n\t\t\treturn v, true\n\t\t}\n\t\tp.reset(m0)\n\t\tif cut {\n\t\t\treturn nil, false\n\t\t}\n\t}\n", m)
 		}
@@ -846,6 +857,47 @@ func (g *generator) scanRepeat(b *strings.Builder, e *grammar.Repeat) bool {
 	fmt.Fprintf(b, "\t\tif %s\n\t\t\tbreak\n\t\t}\n\t\tp.pos += size\n\t\tcount++\n\t}\n", cond)
 	fmt.Fprintf(b, "\treturn nil, count >= %d\n", e.Min)
 	return true
+}
+
+// first returns the condition on the next character ch under which the expression e can match,
+// when e must begin with a given terminal (a literal or a character class, possibly behind
+// sequences, captures, @, - and calls of rules that are not left-recursive or Pratt), with the
+// expectation e records when the condition does not hold and the number of rule calls on the way.
+// Then e fails at once without the terminal, recording only that expectation (a call memoizes the
+// same failure, and memoization only affects speed), so a choice can skip it; unless the calls on
+// the way would exceed the nesting limit.
+func (g *generator) first(e grammar.Expr, depth int, seen map[string]bool) (string, expID, int, bool) {
+	switch e := e.(type) {
+	case *grammar.Literal:
+		if e.Value == "" {
+			break
+		}
+		r, _ := utf8.DecodeRuneInString(e.Value)
+		return fmt.Sprintf("ch == %d", r), g.desc(strconv.Quote(e.Value)), depth, true
+	case *grammar.CharClass:
+		return "!" + classReject(e), g.desc(charClassString(e)), depth, true
+	case *grammar.Seq:
+		if len(e.Items) > 0 {
+			return g.first(e.Items[0], depth, seen)
+		}
+	case *grammar.Capture:
+		return g.first(e.Expr, depth, seen)
+	case *grammar.Atomic:
+		return g.first(e.Expr, depth, seen)
+	case *grammar.Discard:
+		return g.first(e.Expr, depth, seen)
+	case *grammar.Ref:
+		r := g.prog.byName[e.Name]
+		if r == nil || r.leader || seen[e.Name] {
+			break
+		}
+		if _, pratt := r.def.Expr.(*grammar.Pratt); pratt {
+			break
+		}
+		seen[e.Name] = true
+		return g.first(r.def.Expr, depth+1, seen)
+	}
+	return "", 0, 0, false
 }
 
 // classReject returns a Go condition on ch that is true when ch is not accepted by the class.

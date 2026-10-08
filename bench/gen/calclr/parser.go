@@ -3686,7 +3686,10 @@ func (p *parser) e15() (*Node, bool) {
 // "+" / "-"
 func (p *parser) e16() (*Node, bool) {
 	m0 := p.mark()
-	{
+	ch, _, more := p.peek()
+	if !(more && (ch == 43)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 5)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e13()
@@ -3700,7 +3703,9 @@ func (p *parser) e16() (*Node, bool) {
 			return nil, false
 		}
 	}
-	{
+	if !(more && (ch == 45)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 6)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e15()
@@ -3847,7 +3852,10 @@ func (p *parser) e33() (*Node, bool) {
 // "*" / "/" / "%"
 func (p *parser) e34() (*Node, bool) {
 	m0 := p.mark()
-	{
+	ch, _, more := p.peek()
+	if !(more && (ch == 42)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 7)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e29()
@@ -3861,7 +3869,9 @@ func (p *parser) e34() (*Node, bool) {
 			return nil, false
 		}
 	}
-	{
+	if !(more && (ch == 47)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 8)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e31()
@@ -3875,7 +3885,9 @@ func (p *parser) e34() (*Node, bool) {
 			return nil, false
 		}
 	}
-	{
+	if !(more && (ch == 37)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 9)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e33()
@@ -4003,7 +4015,10 @@ func (p *parser) e47() (*Node, bool) {
 // "-" / "+"
 func (p *parser) e48() (*Node, bool) {
 	m0 := p.mark()
-	{
+	ch, _, more := p.peek()
+	if !(more && (ch == 45)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 6)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e45()
@@ -4017,7 +4032,9 @@ func (p *parser) e48() (*Node, bool) {
 			return nil, false
 		}
 	}
-	{
+	if !(more && (ch == 43)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 5)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e47()
@@ -4220,7 +4237,10 @@ func (p *parser) e69() (*Node, bool) {
 			return nil, false
 		}
 	}
-	{
+	ch, _, more := p.peek()
+	if !(more && (ch == 40)) && p.depth+1 <= maxDepth {
+		p.expect(p.pos, 11)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e68()
@@ -4624,7 +4644,10 @@ func (p *parser) e102() (*Node, bool) {
 // "+" / "-"
 func (p *parser) e103() (*Node, bool) {
 	m0 := p.mark()
-	{
+	ch, _, more := p.peek()
+	if !(more && (ch == 43)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 5)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e100()
@@ -4638,7 +4661,9 @@ func (p *parser) e103() (*Node, bool) {
 			return nil, false
 		}
 	}
-	{
+	if !(more && (ch == 45)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 6)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e102()
@@ -4759,7 +4784,10 @@ func (p *parser) e117() (*Node, bool) {
 // "*" / "/" / "%"
 func (p *parser) e118() (*Node, bool) {
 	m0 := p.mark()
-	{
+	ch, _, more := p.peek()
+	if !(more && (ch == 42)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 7)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e113()
@@ -4773,7 +4801,9 @@ func (p *parser) e118() (*Node, bool) {
 			return nil, false
 		}
 	}
-	{
+	if !(more && (ch == 47)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 8)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e115()
@@ -4787,7 +4817,9 @@ func (p *parser) e118() (*Node, bool) {
 			return nil, false
 		}
 	}
-	{
+	if !(more && (ch == 37)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 9)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e117()
@@ -4898,7 +4930,10 @@ func (p *parser) e129() (*Node, bool) {
 // "-" / "+"
 func (p *parser) e130() (*Node, bool) {
 	m0 := p.mark()
-	{
+	ch, _, more := p.peek()
+	if !(more && (ch == 45)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 6)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e127()
@@ -4912,7 +4947,9 @@ func (p *parser) e130() (*Node, bool) {
 			return nil, false
 		}
 	}
-	{
+	if !(more && (ch == 43)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 5)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e129()
@@ -5071,7 +5108,10 @@ func (p *parser) e146() (*Node, bool) {
 			return nil, false
 		}
 	}
-	{
+	ch, _, more := p.peek()
+	if !(more && (ch == 40)) && p.depth+1 <= maxDepth {
+		p.expect(p.pos, 11)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e145()
@@ -5547,7 +5587,10 @@ func (p *tparser) e177() (any, bool) {
 // "+" / "-"
 func (p *tparser) e178() (any, bool) {
 	m0 := p.mark()
-	{
+	ch, _, more := p.peek()
+	if !(more && (ch == 43)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 5)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e175()
@@ -5561,7 +5604,9 @@ func (p *tparser) e178() (any, bool) {
 			return nil, false
 		}
 	}
-	{
+	if !(more && (ch == 45)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 6)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e177()
@@ -5708,7 +5753,10 @@ func (p *tparser) e195() (any, bool) {
 // "*" / "/" / "%"
 func (p *tparser) e196() (any, bool) {
 	m0 := p.mark()
-	{
+	ch, _, more := p.peek()
+	if !(more && (ch == 42)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 7)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e191()
@@ -5722,7 +5770,9 @@ func (p *tparser) e196() (any, bool) {
 			return nil, false
 		}
 	}
-	{
+	if !(more && (ch == 47)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 8)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e193()
@@ -5736,7 +5786,9 @@ func (p *tparser) e196() (any, bool) {
 			return nil, false
 		}
 	}
-	{
+	if !(more && (ch == 37)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 9)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e195()
@@ -5864,7 +5916,10 @@ func (p *tparser) e209() (any, bool) {
 // "-" / "+"
 func (p *tparser) e210() (any, bool) {
 	m0 := p.mark()
-	{
+	ch, _, more := p.peek()
+	if !(more && (ch == 45)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 6)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e207()
@@ -5878,7 +5933,9 @@ func (p *tparser) e210() (any, bool) {
 			return nil, false
 		}
 	}
-	{
+	if !(more && (ch == 43)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 5)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e209()
@@ -6081,7 +6138,10 @@ func (p *tparser) e231() (any, bool) {
 			return nil, false
 		}
 	}
-	{
+	ch, _, more := p.peek()
+	if !(more && (ch == 40)) && p.depth+1 <= maxDepth {
+		p.expect(p.pos, 11)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e230()

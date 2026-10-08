@@ -3929,7 +3929,10 @@ func (p *parser) e44() (*Node, bool) {
 // "\n" / $$
 func (p *parser) e45() (*Node, bool) {
 	m0 := p.mark()
-	{
+	ch, _, more := p.peek()
+	if !(more && (ch == 10)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 7)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e43()
@@ -4069,7 +4072,10 @@ func (p *parser) e57() (*Node, bool) {
 // "\n" / $$
 func (p *parser) e58() (*Node, bool) {
 	m0 := p.mark()
-	{
+	ch, _, more := p.peek()
+	if !(more && (ch == 10)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 7)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e56()
@@ -4635,7 +4641,10 @@ func (p *parser) e98() (*Node, bool) {
 // "\n" / $$
 func (p *parser) e99() (*Node, bool) {
 	m0 := p.mark()
-	{
+	ch, _, more := p.peek()
+	if !(more && (ch == 10)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 7)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e97()
@@ -5272,7 +5281,10 @@ func (p *tparser) e147() (any, bool) {
 // "\n" / $$
 func (p *tparser) e148() (any, bool) {
 	m0 := p.mark()
-	{
+	ch, _, more := p.peek()
+	if !(more && (ch == 10)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 7)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e146()
@@ -5412,7 +5424,10 @@ func (p *tparser) e160() (any, bool) {
 // "\n" / $$
 func (p *tparser) e161() (any, bool) {
 	m0 := p.mark()
-	{
+	ch, _, more := p.peek()
+	if !(more && (ch == 10)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 7)
+	} else {
 		prevCut := p.cut
 		p.cut = false
 		v, ok := p.e159()
