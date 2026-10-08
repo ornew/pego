@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"runtime/debug"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -71,5 +72,50 @@ def x = pratt {
 		if _, err := prog.ParseWith("main", in[:len(in)-1], ParseOptions{Backend: BytecodeIterative}); err == nil && in[len(in)-1] == ')' {
 			t.Errorf("input %.10q...: expected an error", in)
 		}
+	}
+}
+
+// TestConcurrentParses runs parses with every backend and in recognition mode concurrently on
+// one Program (whose backends are prepared lazily), and checks that each gets the result of a
+// parse on its own. Run with -race to check that per-parse state is not shared.
+func TestConcurrentParses(t *testing.T) {
+	prog := compile(t, `
+type Pair struct { Key Match, Value Node }
+type Op struct { L Node, R Node }
+type Node = Op | Match
+def main = ps:pair* -> concat(map($ps, (p) => $p), list())
+def pair: Pair = k:@(?a-z)+ "=" v:expr ";" [text($k) != "bad"] -> new Pair{Key: $k, Value: $v}
+def expr: Node = l:@(?0-9)+ rest:("+" r:@(?0-9)+)* -> foldl($l, $rest, (acc, x) => new Op{L: $acc, R: $x.r})`)
+	inputs := []string{"a=1;b=2+3;", "x=1+2+3;y=4;z=5;", "a=1;bad=2;", "q=12+"}
+	want := map[string]string{}
+	for _, in := range inputs {
+		want[in] = result(prog, in)
+	}
+	var wg sync.WaitGroup
+	errs := make(chan string, 100)
+	for g := 0; g < 8; g++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := 0; i < 50; i++ {
+				in := inputs[(g+i)%len(inputs)]
+				for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+					if got := resultWith(prog, in, ParseOptions{Backend: b}); got != want[in] {
+						errs <- fmt.Sprintf("%v %q: got %s, want %s", b, in, got, want[in])
+						return
+					}
+					_, err := prog.ParseWith("main", in, ParseOptions{Backend: b, Recognize: true})
+					if (err == nil) != !strings.HasPrefix(want[in], "error: ") {
+						errs <- fmt.Sprintf("%v %q: recognition gave %v", b, in, err)
+						return
+					}
+				}
+			}
+		}()
+	}
+	wg.Wait()
+	close(errs)
+	for e := range errs {
+		t.Error(e)
 	}
 }
