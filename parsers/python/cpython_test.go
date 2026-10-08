@@ -3,14 +3,18 @@ package python_test
 import (
 	"bufio"
 	"crypto/sha256"
+	_ "embed"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -38,86 +42,10 @@ func findPython(t testing.TB) string {
 	return py
 }
 
-// cpythonScript reads paths of files (or, with -s, JSON strings of source text) from standard
-// input, one per line, or with -x ROOT takes the snippets of Python code in the files under ROOT:
-// every string constant (they include the code that tests compile, valid or not) and every
-// doctest example. It writes a JSON object for each: whether ast.parse accepts it, the SHA-256 of
-// ast.dump of the tree (or the full dump with -d), the error, and the source text (as CPython
-// decodes it, for files, which may be in other encodings).
-const cpythonScript = `
-import ast, doctest, hashlib, io, json, os, sys, tokenize, warnings
-warnings.simplefilter("ignore")
-full = "-d" in sys.argv
-
-def snippets(root):
-    found = set()
-    parser = doctest.DocTestParser()
-    for dp, dn, fn in os.walk(root):
-        for f in sorted(fn):
-            if not f.endswith(".py"):
-                continue
-            try:
-                tree = ast.parse(open(os.path.join(dp, f), "rb").read())
-            except Exception:
-                continue
-            for n in ast.walk(tree):
-                if not isinstance(n, ast.Constant) or not isinstance(n.value, (str, bytes)):
-                    continue
-                v = n.value
-                if isinstance(v, bytes):
-                    try:
-                        v = v.decode("utf-8")
-                    except UnicodeDecodeError:
-                        continue
-                if not 0 < len(v) <= 5000:
-                    continue
-                found.add(v)
-                if ">>>" in v:
-                    try:
-                        found.update(ex.source for ex in parser.get_examples(v))
-                    except Exception:
-                        pass
-    out = []
-    for s in sorted(found):
-        try:
-            s.encode("utf-8")
-        except UnicodeEncodeError:
-            continue
-        out.append(s)
-    return out
-
-if "-x" in sys.argv:
-    inputs = [(s, s) for s in snippets(sys.argv[sys.argv.index("-x") + 1])]
-elif "-s" in sys.argv:
-    inputs = [(json.loads(line), None) for line in sys.stdin]
-    inputs = [(s, s) for s, _ in inputs]
-else:
-    inputs = [(open(p, "rb").read(), None) for p in (line.rstrip("\n") for line in sys.stdin)]
-for data, src in inputs:
-    r = {}
-    try:
-        tree = ast.parse(data)
-        d = ast.dump(tree, include_attributes="-a" in sys.argv)
-        r["ok"] = True
-        if full:
-            r["dump"] = d
-        else:
-            r["hash"] = hashlib.sha256(d.encode("utf-8", "surrogatepass")).hexdigest()
-    except (SyntaxError, ValueError, MemoryError, RecursionError) as e:
-        r["ok"] = False
-        r["error"] = type(e).__name__ + ": " + str(e)
-    if src is None:
-        try:
-            enc, _ = tokenize.detect_encoding(io.BytesIO(data).readline)
-            src = data.decode(enc)
-            if src.startswith(chr(0xfeff)):
-                src = src[1:]
-        except Exception as e:
-            r["decode_error"] = str(e)
-    r["source"] = src
-    print(json.dumps(r, ensure_ascii=True))
-    sys.stdout.flush()
-`
+// cpythonScript is the program that runs CPython (see its header).
+//
+//go:embed internal/refgen/refgen.py
+var cpythonScript string
 
 type cpythonResult struct {
 	OK          bool   `json:"ok"`
@@ -368,4 +296,132 @@ func firstLine(err error) string {
 		return s
 	}
 	return s
+}
+
+// TestCPythonMutations compares the parser with CPython on random mutations (deleted, inserted,
+// replaced and swapped characters and tokens) of the snippets of the vendored reference data that
+// both accept: inputs near the border of the language, where grammars differ. The same mutants
+// must be accepted, with the same ast.dump.
+func TestCPythonMutations(t *testing.T) {
+	py := findPython(t)
+	var seeds []string
+	for _, r := range readReferences(t, "testdata/cpython-snippets.jsonl.gz") {
+		if r.OK && len(r.Source) <= 400 {
+			seeds = append(seeds, r.Source)
+		}
+	}
+	n := 60000
+	if testing.Short() {
+		n = 6000
+	}
+	if v, err := strconv.Atoi(os.Getenv("PEGO_MUTANTS")); err == nil {
+		n = v
+	}
+	pieces := []string{"(", ")", "[", "]", "{", "}", ":", ":=", ",", ";", ".", "...", "=", "==", "*", "**", "->", "@", "\n", "\n    ", "\t",
+		" ", "\\\n", "#", "'", "\"", "'''", "f'", "f\"{", "}", "{", "!r", "lambda ", "async ", "await ", "yield ", "not ", "in ", "if ",
+		"else ", "for ", "def ", "class ", "match ", "case ", "type ", "except ", "*", "0x", "1_", "e5", "j", "u", "b'", "r'", "ä", "\x0c"}
+	seed, _ := strconv.Atoi(os.Getenv("PEGO_MUTANTS_SEED"))
+	rng := rand.New(rand.NewPCG(7, uint64(11+seed)))
+	mutants := make([]string, 0, n)
+	for len(mutants) < n {
+		rs := []rune(seeds[rng.IntN(len(seeds))])
+		for k := 1 + rng.IntN(2); k > 0 && len(rs) > 0; k-- {
+			i := rng.IntN(len(rs))
+			switch rng.IntN(4) {
+			case 0:
+				rs = append(rs[:i], rs[i+1:]...)
+			case 1:
+				rs = slices.Insert(rs, i, []rune(pieces[rng.IntN(len(pieces))])...)
+			case 2:
+				rs[i] = []rune(pieces[rng.IntN(len(pieces))])[0]
+			default:
+				j := rng.IntN(len(rs))
+				rs[i], rs[j] = rs[j], rs[i]
+			}
+		}
+		mutants = append(mutants, string(rs))
+	}
+	var inputs []string
+	for _, m := range mutants {
+		js, _ := json.Marshal(m)
+		inputs = append(inputs, string(js))
+	}
+	results := runCPython(t, py, inputs, "-s")
+	var same, rejected, bad int
+	for i, r := range results {
+		m, err := python.ParseModule(mutants[i])
+		var msg string
+		switch {
+		case r.OK && err != nil:
+			msg = fmt.Sprintf("rejected %q: %v", mutants[i], firstLine(err))
+		case !r.OK && err == nil:
+			msg = fmt.Sprintf("accepted %q; CPython: %s", mutants[i], r.Error)
+		case !r.OK:
+			rejected++
+		case sha(python.Dump(m)) != r.Hash:
+			msg = fmt.Sprintf("different ast.dump for %q", mutants[i])
+		default:
+			same++
+		}
+		if msg != "" {
+			if bad++; bad <= 30 {
+				t.Error(msg)
+			}
+		}
+	}
+	t.Logf("%d mutants: %d accepted by both with the same ast.dump, %d rejected by both, %d differ", len(results), same, rejected, bad)
+}
+
+// TestCPythonLines compares the parser with CPython on random sequences of the pieces that make up
+// the lines of a program: names, brackets, colons, comments, tabs, form feeds, backslash
+// continuations and line ends of every kind. They exercise the tokenizer's rules about
+// indentation, blank lines and the end of the input, which a grammar without a tokenizer
+// reproduces with rules of its own.
+func TestCPythonLines(t *testing.T) {
+	py := findPython(t)
+	pieces := []string{"a", "b = 1", "if x:", "else:", "pass", "def f():", "class C:", "(", ")", "[", "]", ":", ";", ",", "#c", "'s'", "'''", "\"\"\"",
+		"\n", "\n", "\n", "\r\n", "\r", "\\\n", "\\", " ", " ", "  ", "    ", "\t", "\x0c", "\\\r\n", "lambda", "x if y else z", "f'{", "}", "async", "match x:", "case 1:"}
+	n := 100000
+	if testing.Short() {
+		n = 10000
+	}
+	if v, err := strconv.Atoi(os.Getenv("PEGO_MUTANTS")); err == nil {
+		n = v
+	}
+	seed, _ := strconv.Atoi(os.Getenv("PEGO_MUTANTS_SEED"))
+	rng := rand.New(rand.NewPCG(13, uint64(17+seed)))
+	var progs, inputs []string
+	for len(progs) < n {
+		var b strings.Builder
+		for k := 2 + rng.IntN(9); k > 0; k-- {
+			b.WriteString(pieces[rng.IntN(len(pieces))])
+		}
+		progs = append(progs, b.String())
+		js, _ := json.Marshal(b.String())
+		inputs = append(inputs, string(js))
+	}
+	results := runCPython(t, py, inputs, "-s")
+	var same, rejected, bad int
+	for i, r := range results {
+		m, err := python.ParseModule(progs[i])
+		var msg string
+		switch {
+		case r.OK && err != nil:
+			msg = fmt.Sprintf("rejected %q: %v", progs[i], firstLine(err))
+		case !r.OK && err == nil:
+			msg = fmt.Sprintf("accepted %q; CPython: %s", progs[i], r.Error)
+		case !r.OK:
+			rejected++
+		case sha(python.Dump(m)) != r.Hash:
+			msg = fmt.Sprintf("different ast.dump for %q", progs[i])
+		default:
+			same++
+		}
+		if msg != "" {
+			if bad++; bad <= 30 {
+				t.Error(msg)
+			}
+		}
+	}
+	t.Logf("%d programs: %d accepted by both with the same ast.dump, %d rejected by both, %d differ", len(results), same, rejected, bad)
 }
