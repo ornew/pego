@@ -119,14 +119,6 @@ func recoverAttr(m, skip matcher, build bool) matcher {
 		if !build {
 			return nil, true
 		}
-		return p.newNode(Node{
-			Type:     TypeError,
-			Start:    m0.pos,
-			End:      p.pos,
-			Text:     p.text(m0.pos, p.pos),
-			Fields:   Fields{{"message", e.Error()}},
-			fresh:    true,
-			terminal: true,
-		}), true
+		return p.newNode(Node{kind: kindError, Start: int32(m0.pos), End: int32(p.pos), Text: p.text(m0.pos, p.pos), Fields: Fields{{"message", e.Error()}}, fresh: true, terminal: true}), true
 	}
 }

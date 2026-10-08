@@ -607,7 +607,7 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 		return p.runAction(r, f, items, start, p.pos)
 	}
 	if r.terminalType != "" {
-		return p.newNode(Node{Type: r.terminalType, Rule: r.name, Start: start, End: p.pos, Text: p.text(start, p.pos), terminal: true})
+		return p.newNode(Node{kind: r.kinds.term, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true})
 	}
 	if len(r.scope.names) > 0 {
 		v = p.attachCaptures(v, r.scope, f, start, p.pos)
@@ -616,8 +616,8 @@ func (p *parser) finish(r *rule, f *frame, v *Node, start int) *Node {
 		return nil
 	}
 	if v.fresh {
-		if v.Rule == "" {
-			v.Rule = r.name
+		if v.kind.rule == "" {
+			v.kind = r.kinds.named(v.kind, r.name)
 		}
 		v.fresh = false
 	}
@@ -642,7 +642,7 @@ func (p *parser) attachCaptures(v *Node, s *scope, f *frame, start, end int) *No
 		return v
 	}
 	if wrap {
-		v = p.newNode(Node{Type: TypeSeq, Start: start, End: end, Children: append(p.nodes(1)[:0], v), fresh: true})
+		v = p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(end), Children: append(p.nodes(1)[:0], v), fresh: true})
 	}
 	if v.Fields == nil {
 		v.Fields = p.fields(len(s.names))
@@ -779,7 +779,7 @@ func (p *parser) shiftOf(n *Node) int {
 	if d, ok := p.shifts[n.gen]; ok {
 		return d
 	}
-	s := n.Start
+	s := int(n.Start)
 	for _, ed := range p.edits[n.gen:p.gen] {
 		if s >= ed.end {
 			s += ed.delta
@@ -788,15 +788,15 @@ func (p *parser) shiftOf(n *Node) int {
 	if p.shifts == nil {
 		p.shifts = map[uint32]int{}
 	}
-	p.shifts[n.gen] = s - n.Start
-	return s - n.Start
+	p.shifts[n.gen] = s - int(n.Start)
+	return s - int(n.Start)
 }
 
 // moveTree moves the non-empty node n by shift (shiftOf(n)), and its descendants, in place.
 func (p *parser) moveTree(n *Node, shift int) {
 	gen := n.gen
-	n.Start += shift
-	n.End += shift
+	n.Start += int32(shift)
+	n.End += int32(shift)
 	n.gen = p.gen
 	for i, c := range n.Children {
 		if c != nil && c.gen < p.gen {
@@ -836,8 +836,8 @@ func (p *parser) moveEmpty(n *Node, shift int) *Node {
 		return c
 	}
 	c := p.newNode(*n)
-	c.Start += shift
-	c.End += shift
+	c.Start += int32(shift)
+	c.End += int32(shift)
 	p.moved[n] = c
 	if n.Children != nil {
 		c.Children = p.nodes(len(n.Children))

@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // Names of the reserved node types.
@@ -19,22 +20,19 @@ const (
 )
 
 // Node is a value produced by parsing. It is a CST node, a terminal, a list, or a struct built by
-// an action.
+// an action. In JSON it is an object with the members type, rule (if any), start, end, text (if
+// any), children (if any) and fields (if any).
 type Node struct {
-	// Type is the node's type name: a reserved type (Match, Seq, List, Operator, Error) for CST
-	// nodes, or otherwise the name of a type defined in the grammar.
-	Type string `json:"type"`
-	// Rule holds the rule name when the node was produced by a rule without an action.
-	Rule string `json:"rule,omitempty"`
-	// Start and End are the range in the input (in characters; End is exclusive).
-	Start int `json:"start"`
-	End   int `json:"end"`
+	// kind holds the type and rule names (Type, Rule). Nodes share it: names are interned.
+	kind *nodeKind
+	// Start and End are the range in the input, in the parse's position unit (End is exclusive).
+	Start, End int32
 	// Text is the text of a terminal.
-	Text string `json:"text,omitempty"`
+	Text string
 	// Children are the children of Seq, List, and Operator nodes. Omitted elements are nil.
-	Children []*Node `json:"children,omitempty"`
+	Children []*Node
 	// Fields are the struct fields and captures. Each value is a *Node, int, string, bool, or nil.
-	Fields Fields `json:"fields,omitempty"`
+	Fields Fields
 
 	// fresh reports that the node was created in the rule body currently being evaluated and has not
 	// yet been returned to any rule. That rule may freely modify a fresh node.
@@ -43,6 +41,117 @@ type Node struct {
 	terminal bool
 	// gen is the number of Document edits that the positions account for (see moveTree).
 	gen uint32
+}
+
+// Type returns the node's type name: a reserved type (Match, Seq, List, Operator, Error) for CST
+// nodes, or otherwise the name of a type defined in the grammar.
+func (n *Node) Type() string { return n.kind.typeName() }
+
+// Rule returns the name of the rule that produced the node, if it was produced by a rule without
+// an action, or "".
+func (n *Node) Rule() string { return n.kind.ruleName() }
+
+// nodeJSON is the JSON form of a Node.
+type nodeJSON struct {
+	Type     string  `json:"type"`
+	Rule     string  `json:"rule,omitempty"`
+	Start    int32   `json:"start"`
+	End      int32   `json:"end"`
+	Text     string  `json:"text,omitempty"`
+	Children []*Node `json:"children,omitempty"`
+	Fields   Fields  `json:"fields,omitempty"`
+}
+
+// MarshalJSON encodes the node as an object (see Node).
+func (n *Node) MarshalJSON() ([]byte, error) {
+	return json.Marshal(nodeJSON{n.Type(), n.Rule(), n.Start, n.End, n.Text, n.Children, n.Fields})
+}
+
+// nodeKind is the pair of type and rule names of nodes. Kinds are interned (kindOf), so that a node
+// holds one pointer for both names.
+type nodeKind struct {
+	typ, rule string
+	reserved  int // the index of a reserved type in reservedTypes with no rule, or -1
+}
+
+func (k *nodeKind) typeName() string {
+	if k == nil {
+		return ""
+	}
+	return k.typ
+}
+
+func (k *nodeKind) ruleName() string {
+	if k == nil {
+		return ""
+	}
+	return k.rule
+}
+
+var reservedTypes = [...]string{TypeMatch, TypeSeq, TypeList, TypeOperator, TypeError}
+
+// Kinds of the reserved types without a rule.
+var (
+	kindMatch    = kindOf(TypeMatch, "")
+	kindSeq      = kindOf(TypeSeq, "")
+	kindList     = kindOf(TypeList, "")
+	kindOperator = kindOf(TypeOperator, "")
+	kindError    = kindOf(TypeError, "")
+)
+
+var kinds sync.Map // [2]string → *nodeKind
+
+// kindOf returns the interned kind of the type and rule names. It is meant for compilation and
+// loading; parsing uses kinds prepared then.
+func kindOf(typ, rule string) *nodeKind {
+	key := [2]string{typ, rule}
+	if k, ok := kinds.Load(key); ok {
+		return k.(*nodeKind)
+	}
+	k := &nodeKind{typ: typ, rule: rule, reserved: -1}
+	if rule == "" {
+		for i, t := range reservedTypes {
+			if t == typ {
+				k.reserved = i
+			}
+		}
+	}
+	actual, _ := kinds.LoadOrStore(key, k)
+	return actual.(*nodeKind)
+}
+
+// typeKind returns the kind of nodes of the grammar's type typ without a rule.
+func (prog *Program) typeKind(typ string) *nodeKind {
+	if k := prog.typeKinds[typ]; k != nil {
+		return k
+	}
+	return kindOf(typ, "")
+}
+
+// ruleKinds are the kinds of a rule's nodes: those of the reserved types, which the rule gives its
+// name to (finish), and of its terminal type.
+type ruleKinds struct {
+	reserved [len(reservedTypes)]*nodeKind
+	term     *nodeKind
+}
+
+func newRuleKinds(rule, terminalType string) ruleKinds {
+	var rk ruleKinds
+	for i, t := range reservedTypes {
+		rk.reserved[i] = kindOf(t, rule)
+	}
+	if terminalType != "" {
+		rk.term = kindOf(terminalType, rule)
+	}
+	return rk
+}
+
+// named returns the kind k with the rule's name.
+func (rk *ruleKinds) named(k *nodeKind, rule string) *nodeKind {
+	if k.reserved >= 0 {
+		return rk.reserved[k.reserved]
+	}
+	return kindOf(k.typ, rule)
 }
 
 // NodeField is a field of a node (a struct field or a capture).
@@ -188,7 +297,7 @@ func writeValue(b *strings.Builder, v any) {
 
 func writeNode(b *strings.Builder, n *Node) {
 	switch {
-	case n.Type == TypeList:
+	case n.kind == kindList || n.Type() == TypeList:
 		b.WriteString("[")
 		for i, c := range n.Children {
 			if i > 0 {
@@ -199,8 +308,8 @@ func writeNode(b *strings.Builder, n *Node) {
 		writeFields(b, n, len(n.Children) > 0)
 		b.WriteString("]")
 	case n.terminal:
-		if n.Type != TypeMatch {
-			b.WriteString(n.Type)
+		if t := n.Type(); t != TypeMatch {
+			b.WriteString(t)
 		}
 		b.WriteString(strconv.Quote(n.Text))
 		if len(n.Fields) > 0 {
@@ -209,7 +318,7 @@ func writeNode(b *strings.Builder, n *Node) {
 			b.WriteString("}")
 		}
 	default:
-		b.WriteString("(" + n.Type)
+		b.WriteString("(" + n.Type())
 		for _, c := range n.Children {
 			b.WriteString(" ")
 			writeValue(b, c)
@@ -217,8 +326,8 @@ func writeNode(b *strings.Builder, n *Node) {
 		writeFields(b, n, true)
 		b.WriteString(")")
 	}
-	if n.Rule != "" {
-		b.WriteString("@" + n.Rule)
+	if r := n.Rule(); r != "" {
+		b.WriteString("@" + r)
 	}
 }
 

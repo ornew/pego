@@ -35,6 +35,8 @@ type Program struct {
 	ivmOnce    sync.Once
 	ivm        *vmProgram
 	pkg        string // package name when loaded from a file without the AST
+	// typeKinds holds the node kinds of the grammar's types (typeKind), made with the program.
+	typeKinds map[string]*nodeKind
 	// scratch holds the buffers of finished parses for later ones (*scratch).
 	scratch sync.Pool
 }
@@ -58,6 +60,8 @@ type Options struct {
 type matcher func(p *parser) (*Node, bool)
 
 type rule struct {
+	// kinds are the node kinds the rule makes (newRuleKinds).
+	kinds ruleKinds
 	id           int
 	name         string
 	def          *grammar.RuleDef
@@ -302,6 +306,10 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 		return nil, c.errs
 	}
 	prog.nseen = numberSeen(prog.rules, prog.twins)
+	prog.typeKinds = map[string]*nodeKind{}
+	for name := range prog.types {
+		prog.typeKinds[name] = kindOf(name, "")
+	}
 	for _, rs := range [][]*rule{prog.rules, prog.twins} {
 		for _, r := range rs {
 			r.plain = !r.leader && (!r.memo || r.transient) && len(r.scope.names) == 0
@@ -318,6 +326,7 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 
 func (c *compiler) compileRule(r *rule) {
 	c.rule = r
+	r.kinds = newRuleKinds(r.name, r.terminalType)
 	if p, ok := r.def.Expr.(*grammar.Pratt); ok {
 		c.compilePratt(r, p)
 		return
@@ -540,7 +549,7 @@ func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
 			if !build {
 				return nil, true
 			}
-			return p.newNode(Node{Type: TypeMatch, Start: start, End: p.pos, Text: e.Value, terminal: true, fresh: true}), true
+			return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: e.Value, terminal: true, fresh: true}), true
 		}
 
 	case *grammar.CharClass:
@@ -599,7 +608,7 @@ func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
 			if !build {
 				return nil, true
 			}
-			return p.newNode(Node{Type: TypeSeq, Start: start, End: p.pos, Children: kids, fresh: true}), true
+			return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
 		}
 
 	case *grammar.Choice:
@@ -722,7 +731,7 @@ func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
 			if !build {
 				return nil, true
 			}
-			return p.newNode(Node{Type: TypeMatch, Start: start, End: p.pos, Text: p.text(start, p.pos), terminal: true, fresh: true}), true
+			return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true, fresh: true}), true
 		}
 
 	case *grammar.Discard:
@@ -772,7 +781,7 @@ func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
 			if !build {
 				return nil, true
 			}
-			return p.newNode(Node{Type: TypeMatch, Start: p.pos, End: p.pos, terminal: true, fresh: true}), true
+			return p.newNode(Node{kind: kindMatch, Start: int32(p.pos), End: int32(p.pos), terminal: true, fresh: true}), true
 		}
 
 	case *grammar.Bottom:
@@ -885,7 +894,7 @@ func (c *compiler) single(build bool, desc expID, accept func(rune) bool) matche
 		if !build {
 			return nil, true
 		}
-		return p.newNode(Node{Type: TypeMatch, Start: start, End: p.pos, Text: p.text(start, p.pos), terminal: true, fresh: true}), true
+		return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true, fresh: true}), true
 	}
 }
 
@@ -1067,7 +1076,7 @@ func (c *compiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) match
 		if !build {
 			return nil, true
 		}
-		return p.newNode(Node{Type: TypeList, Start: start, End: p.pos, Children: p.kids(base), fresh: true}), true
+		return p.newNode(Node{kind: kindList, Start: int32(start), End: int32(p.pos), Children: p.kids(base), fresh: true}), true
 	}
 }
 
@@ -1110,7 +1119,7 @@ func (c *compiler) projectRepeat(e *grammar.Repeat, field string) matcher {
 			p.kids(base)
 			return nil, false
 		}
-		return p.newNode(Node{Type: TypeList, Start: start, End: p.pos, Children: p.kids(base), fresh: true}), true
+		return p.newNode(Node{kind: kindList, Start: int32(start), End: int32(p.pos), Children: p.kids(base), fresh: true}), true
 	}
 }
 

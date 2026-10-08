@@ -127,7 +127,7 @@ func TestDocumentPositionalActions(t *testing.T) {
 		t.Fatal(err)
 	}
 	pos := n.Children[0].Children[2].Children[0]
-	if pos.Type != "Pos" || pos.Field("At") != 3 {
+	if pos.Type() != "Pos" || pos.Field("At") != 3 {
 		t.Errorf("got %s", pos)
 	}
 }

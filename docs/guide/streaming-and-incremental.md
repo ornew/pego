@@ -628,7 +628,7 @@ func main() {
 		panic(err)
 	}
 	err = p.ParseStream(strings.NewReader("#version 2\na=1\nb=2\n"), func(n *pego.Node) error {
-		switch n.Type {
+		switch n.Type() {
 		case "Header":
 			fmt.Println("header, version", n.Field("Version").(*pego.Node).Text)
 		case "Pair":

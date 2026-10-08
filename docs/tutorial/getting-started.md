@@ -158,9 +158,9 @@ func main() {
 	}
 
 	fmt.Println(node) // the S-expression form
-	fmt.Println(node.Type, node.Rule, node.Start, node.End)
+	fmt.Println(node.Type(), node.Rule(), node.Start, node.End)
 	for _, c := range node.Children {
-		fmt.Printf("%s %q [%d,%d)\n", c.Type, c.Text, c.Start, c.End)
+		fmt.Printf("%s %q [%d,%d)\n", c.Type(), c.Text, c.Start, c.End)
 	}
 
 	data, _ := json.Marshal(node)
@@ -188,8 +188,8 @@ Match "world" [6,11)
 - `pego.CompileSource(grammarSource, startRule)` parses and type-checks the grammar and returns a `*pego.Parser`. It
   fails with an error that has the line and column in the grammar source if the grammar is wrong. Compile once and reuse
   the parser; it can be used from several goroutines.
-- `p.Parse(input)` returns a `*pego.Node`. Nodes expose `Type`, `Rule`, `Start`, `End`, `Text`, `Children` and
-  `Fields`, and encode to JSON as shown.
+- `p.Parse(input)` returns a `*pego.Node`. Nodes expose `Type()`, `Rule()`, `Start`, `End`, `Text`, `Children`
+  and `Fields`, and encode to JSON as shown.
 - When the input does not match, `Parse` returns a `*pego.SyntaxError` (see [section 7](#7-syntax-errors)).
 
 ## 3. Building blocks
@@ -507,7 +507,7 @@ func main() {
 	for _, e := range entries.Children {
 		key := e.Field("Key").(*pego.Node)
 		value := e.Field("Value").(*pego.Node)
-		fmt.Printf("%-6s %-7s %s\n", key.Text, value.Type, value.Text)
+		fmt.Printf("%-6s %-7s %s\n", key.Text, value.Type(), value.Text)
 	}
 }
 ```
@@ -523,7 +523,7 @@ debug  Bool    true
 ```
 
 `node.Field(name)` returns the value of a struct field or capture, as an `any`: a `*pego.Node` for node values, or an
-`int`, `string` or `bool`. A list is a node of type `List` whose `Children` are the elements. `value.Type` tells you
+`int`, `string` or `bool`. A list is a node of type `List` whose `Children` are the elements. `value.Type()` tells you
 which member of the `Value` union you got, so a `switch` on it is how you walk a union.
 
 ## 6. Expressions and precedence

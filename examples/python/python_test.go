@@ -217,7 +217,7 @@ func show(v any) string {
 		return "nil"
 	}
 	f := func(name string) string { return show(n.Field(name)) }
-	switch n.Type {
+	switch n.Type() {
 	case "Name", "Constant", "Identifier":
 		return n.Text
 	case "BinOp", "BoolOp", "Compare":
@@ -251,7 +251,7 @@ func show(v any) string {
 		}
 		return "[" + strings.Join(parts, " ") + "]"
 	}
-	return n.Type
+	return n.Type()
 }
 
 func TestPrecedence(t *testing.T) {
@@ -433,10 +433,10 @@ func count(n *pego.Node, counts map[string]int) {
 	if n == nil {
 		return
 	}
-	switch n.Type {
+	switch n.Type() {
 	case "List", "Seq", "Match", "Module", "Arguments", "Identifier", "DottedName", "DictItem", "DictUnpack":
 	default:
-		counts[n.Type]++
+		counts[n.Type()]++
 	}
 	for _, c := range n.Children {
 		count(c, counts)

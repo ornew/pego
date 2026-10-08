@@ -322,9 +322,9 @@ func deepResultJSON(t *testing.T, n *Node, err error) string {
 			return
 		}
 		str := func(s string) string { data, _ := json.Marshal(s); return string(data) }
-		b.WriteString(`{"type":` + str(x.Type))
-		if x.Rule != "" {
-			b.WriteString(`,"rule":` + str(x.Rule))
+		b.WriteString(`{"type":` + str(x.Type()))
+		if x.Rule() != "" {
+			b.WriteString(`,"rule":` + str(x.Rule()))
 		}
 		fmt.Fprintf(&b, `,"start":%d,"end":%d`, x.Start, x.End)
 		if x.Text != "" {

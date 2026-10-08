@@ -307,8 +307,8 @@ func (p *parser) lineResult(r *rule, l *prattLine, f *frame, v *Node, start int,
 		v = p.attachCaptures(v, l.scope, f, start, p.pos)
 	}
 	if v != nil && v.fresh {
-		if v.Rule == "" {
-			v.Rule = r.name
+		if v.kind.rule == "" {
+			v.kind = r.kinds.named(v.kind, r.name)
 		}
 		v.fresh = false
 	}
@@ -322,14 +322,14 @@ func (p *parser) prattBuild(r *rule, a *prattAttempt, lhs, rhs *Node) *Node {
 	}
 	start, end := a.start, p.pos
 	if lhs != nil {
-		start = lhs.Start
+		start = int(lhs.Start)
 	}
 	if a.op.kind == grammar.Postfix {
 		end = a.end
 	}
 	l := a.op.line
 	if l.act != nil {
-		op := p.newNode(Node{Type: TypeMatch, Start: a.start, End: a.end, Text: p.text(a.start, a.end), terminal: true})
+		op := p.newNode(Node{kind: kindMatch, Start: int32(a.start), End: int32(a.end), Text: p.text(a.start, a.end), terminal: true})
 		// The locals live in the parser, like the evaluation context (see useCtx).
 		ls := &p.oplocals
 		ls[0] = local{name: "op", val: op}
@@ -364,5 +364,5 @@ func (p *parser) prattBuild(r *rule, a *prattAttempt, lhs, rhs *Node) *Node {
 		kids = p.nodes(3)
 		kids[0], kids[1], kids[2] = lhs, opv, rhs
 	}
-	return p.newNode(Node{Type: TypeOperator, Rule: r.name, Start: start, End: end, Children: kids, Fields: Fields{{"operator", a.op.id}}})
+	return p.newNode(Node{kind: r.kinds.reserved[kindOperator.reserved], Start: int32(start), End: int32(end), Children: kids, Fields: Fields{{"operator", a.op.id}}})
 }

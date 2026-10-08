@@ -41,7 +41,7 @@ func eval(p *pego.Parser, src string) (float64, error) {
 
 // evalNode evaluates the AST (Number, Binary, Unary) built by the actions of calc.pego.
 func evalNode(n *pego.Node) (float64, error) {
-	switch n.Type {
+	switch n.Type() {
 	case "Number":
 		return strconv.ParseFloat(n.Text, 64)
 	case "Unary":
@@ -77,5 +77,5 @@ func evalNode(n *pego.Node) (float64, error) {
 			return math.Pow(l, r), nil
 		}
 	}
-	return 0, fmt.Errorf("unexpected node %s", n.Type)
+	return 0, fmt.Errorf("unexpected node %s", n.Type())
 }

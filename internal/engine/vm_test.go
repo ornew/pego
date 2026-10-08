@@ -77,7 +77,7 @@ def x = pratt {
 	defer debug.SetMaxStack(prev)
 	for _, in := range inputs {
 		n, err := prog.ParseWith("main", in, ParseOptions{Backend: BytecodeIterative})
-		if err != nil || n.End != len(in) {
+		if err != nil || int(n.End) != len(in) {
 			t.Errorf("input %.10q...: %v", in, err)
 		}
 		if _, err := prog.ParseWith("main", in[:len(in)-1], ParseOptions{Backend: BytecodeIterative}); err == nil && in[len(in)-1] == ')' {

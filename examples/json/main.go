@@ -47,7 +47,7 @@ func decode(p *pego.Parser, src string) (any, error) {
 
 // toGo converts the AST of json.pego into Go values of the same shape that encoding/json produces.
 func toGo(n *pego.Node) (any, error) {
-	switch n.Type {
+	switch n.Type() {
 	case "Object":
 		obj := map[string]any{}
 		for _, m := range n.Field("Members").(*pego.Node).Children {
@@ -89,5 +89,5 @@ func toGo(n *pego.Node) (any, error) {
 	case "Null":
 		return nil, nil
 	}
-	return nil, fmt.Errorf("unexpected node %s", n.Type)
+	return nil, fmt.Errorf("unexpected node %s", n.Type())
 }

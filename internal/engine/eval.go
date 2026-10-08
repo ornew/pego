@@ -72,7 +72,7 @@ func (p *parser) actionResult(ctx *evalCtx, act evaluator, where string) *Node {
 	}
 	for _, c := range ctx.p.created[ctx.cbase:] {
 		if c == n {
-			n.Start, n.End = ctx.start, ctx.end
+			n.Start, n.End = int32(ctx.start), int32(ctx.end)
 			break
 		}
 	}
@@ -93,7 +93,7 @@ func typeName(v any) string {
 		if v == nil {
 			return "nil"
 		}
-		return v.Type
+		return v.Type()
 	case int:
 		return "int"
 	case string:
@@ -239,14 +239,14 @@ func (c *evalCtx) member(x any, name string) (any, error) {
 	}
 	switch name {
 	case "startPos":
-		return n.Start, nil
+		return int(n.Start), nil
 	case "endPos":
-		return n.End, nil
+		return int(n.End), nil
 	case "children":
 		return c.newList(n.Children), nil
 	}
-	if st, ok := c.p.prog.types[n.Type].(*grammar.StructSpec); ok && fieldOf(st, name) == nil {
-		return nil, fmt.Errorf("%s has no field %s", n.Type, name)
+	if st, ok := c.p.prog.types[n.Type()].(*grammar.StructSpec); ok && fieldOf(st, name) == nil {
+		return nil, fmt.Errorf("%s has no field %s", n.Type(), name)
 	}
 	// Unset fields and unmatched captures are nil.
 	v, _ := n.Fields.Get(name)
@@ -256,7 +256,7 @@ func (c *evalCtx) member(x any, name string) (any, error) {
 // newStruct creates a struct node. Its range covers the ranges of the fields whose values are
 // nodes, or is the rule's range if there are none.
 func (c *evalCtx) newStruct(typ string, names []string, vals []any) (*Node, error) {
-	n := c.p.newNode(Node{Type: typ, Fields: c.p.fields(len(names))})
+	n := c.p.newNode(Node{kind: c.p.prog.typeKind(typ), Fields: c.p.fields(len(names))})
 	first := true
 	for i, name := range names {
 		v := vals[i]
@@ -275,7 +275,7 @@ func (c *evalCtx) newStruct(typ string, names []string, vals []any) (*Node, erro
 		}
 	}
 	if first {
-		n.Start, n.End = c.start, c.end
+		n.Start, n.End = int32(c.start), int32(c.end)
 	}
 	c.p.created = append(c.p.created, n)
 	return n, nil
@@ -301,7 +301,7 @@ func (c *evalCtx) newList(items []*Node) *Node {
 
 // listNode returns a List node with the child slice kids (which it takes over).
 func (c *evalCtx) listNode(kids []*Node) *Node {
-	n := c.p.newNode(Node{Type: TypeList, Children: kids, Start: c.start, End: c.start})
+	n := c.p.newNode(Node{kind: kindList, Children: kids, Start: int32(c.start), End: int32(c.start)})
 	first := true
 	for _, it := range kids {
 		if it == nil {
@@ -534,7 +534,7 @@ func (c *evalCtx) textString(v any) (string, error) {
 		if v.terminal {
 			return v.Text, nil
 		}
-		return c.p.text(v.Start, v.End), nil
+		return c.p.text(int(v.Start), int(v.End)), nil
 	}
 	return "", fmt.Errorf("text: invalid argument %s", typeName(v))
 }

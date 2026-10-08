@@ -287,7 +287,7 @@ ranging over `node.Fields` yields `NodeField{Name, Value}` in the order the fiel
 ```go
 for _, pair := range node.Children {
 	key := pair.Field("Key").(*pego.Node)
-	fmt.Printf("%s %q at %d-%d\n", pair.Type, key.Text, key.Start, key.End)
+	fmt.Printf("%s %q at %d-%d\n", pair.Type(), key.Text, key.Start, key.End)
 }
 
 first := node.Children[0]
@@ -305,7 +305,8 @@ Pair "あい" at 8-10
 Because a field is an `any`, assert its type: `.(*pego.Node)` for nodes and captures, `.(int)` for integers.
 `node.IsTerminal()` reports whether a node is a terminal (`Match` or a terminal type); for those, `Text` holds the text.
 
-**Positions.** `Start` and `End` delimit the input a node covers, as a half-open range. Note that a rule that
+**Positions.** `Start` and `End` (`int32`, which Go accepts as slice indexes; convert with `int(n.Start)` for
+arithmetic with `int`s) delimit the input a node covers, as a half-open range. Note that a rule that
 includes trailing whitespace covers it: the first `Pair` above ends at 8, after `"; "`. To get the matched text of any
 node, slice the input (with [byte positions](#position-units) this is a plain Go slice) or use `text(...)` in an action.
 

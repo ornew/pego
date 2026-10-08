@@ -662,7 +662,7 @@ func errorNodes(n *pego.Node, out *[]*pego.Node) {
 	if n == nil {
 		return
 	}
-	if n.Type == "Error" {
+	if n.Type() == "Error" {
 		*out = append(*out, n)
 		return
 	}

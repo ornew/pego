@@ -256,28 +256,28 @@ func compareAST(t *testing.T, path string, tf *token.File, want *ast.File, got *
 		if n == nil {
 			return
 		}
-		switch n.Type {
+		switch n.Type() {
 		case "Match", "Seq", "List", "File", "EmptyStmt":
 		case "FuncType":
 			if parent != "FuncDecl" {
-				add(gotKeys, n.Type, n.Start, n.End)
+				add(gotKeys, n.Type(), int(n.Start), int(n.End))
 			}
 		case "IntLit", "FloatLit", "ImagLit", "CharLit", "StringLit":
-			add(gotKeys, "BasicLit", n.Start, n.End)
+			add(gotKeys, "BasicLit", int(n.Start), int(n.End))
 		case "BinaryExpr", "UnaryExpr":
 			if op, ok := n.Field("Op").(*pego.Node); ok {
-				add(gotKeys, "op", op.Start, op.End)
+				add(gotKeys, "op", int(op.Start), int(op.End))
 			}
-			add(gotKeys, n.Type, n.Start, n.End)
+			add(gotKeys, n.Type(), int(n.Start), int(n.End))
 		default:
-			add(gotKeys, n.Type, n.Start, n.End)
+			add(gotKeys, n.Type(), int(n.Start), int(n.End))
 		}
 		for _, c := range n.Children {
-			walk(c, n.Type)
+			walk(c, n.Type())
 		}
 		for _, f := range n.Fields {
 			if c, ok := f.Value.(*pego.Node); ok {
-				walk(c, n.Type)
+				walk(c, n.Type())
 			}
 		}
 	}

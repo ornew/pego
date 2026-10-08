@@ -120,6 +120,7 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 		if ri.TerminalType >= 0 {
 			r.terminalType = m.Strings[ri.TerminalType]
 		}
+		r.kinds = newRuleKinds(r.name, r.terminalType)
 		if ri.Action >= 0 {
 			r.act = vm.evaluator(ri.Action, false)
 		}
@@ -404,7 +405,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 				goto fail
 			}
 			if in.C == 1 {
-				p.push(p.newNode(Node{Type: TypeMatch, Start: start, End: p.pos, Text: m.Strings[in.A], terminal: true, fresh: true}))
+				p.push(p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: m.Strings[in.A], terminal: true, fresh: true}))
 			}
 		case OpClass:
 			ch, size, ok := p.peek()
@@ -447,7 +448,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			p.single(size, in.A == 1)
 		case OpTop:
 			if in.A == 1 {
-				p.push(p.newNode(Node{Type: TypeMatch, Start: p.pos, End: p.pos, terminal: true, fresh: true}))
+				p.push(p.newNode(Node{kind: kindMatch, Start: int32(p.pos), End: int32(p.pos), terminal: true, fresh: true}))
 			}
 		case OpFail:
 			goto fail
@@ -508,11 +509,11 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			}
 			start := *p.vals[top-n-1].(*int)
 			p.vals = p.vals[:top-n-1]
-			p.push(p.newNode(Node{Type: TypeSeq, Start: start, End: p.pos, Children: kids, fresh: true}))
+			p.push(p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}))
 		case OpAtomic:
 			start := *p.pop().(*int)
 			if in.A == 1 {
-				p.push(p.newNode(Node{Type: TypeMatch, Start: start, End: p.pos, Text: p.text(start, p.pos), terminal: true, fresh: true}))
+				p.push(p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true, fresh: true}))
 			}
 		case OpCapture:
 			p.setCapture(int(in.A), asNodeValue(p.vals[len(p.vals)-1]))
@@ -628,7 +629,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 				}
 				start := *p.vals[rep.base-1].(*int)
 				p.vals = p.vals[:rep.base-1]
-				p.push(p.newNode(Node{Type: TypeList, Start: start, End: p.pos, Children: kids, fresh: true}))
+				p.push(p.newNode(Node{kind: kindList, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}))
 			}
 		case OpLook:
 			kind := uint8(eLook)
@@ -693,8 +694,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			se := p.makeError(l.far, l.exp)
 			p.recovered = append(p.recovered, se)
 			if in.A == 1 {
-				p.push(p.newNode(Node{Type: TypeError, Start: e.save.pos, End: p.pos, Text: p.text(e.save.pos, p.pos),
-					Fields: Fields{{"message", se.Error()}}, fresh: true, terminal: true}))
+				p.push(p.newNode(Node{kind: kindError, Start: int32(e.save.pos), End: int32(p.pos), Text: p.text(e.save.pos, p.pos), Fields: Fields{{"message", se.Error()}}, fresh: true, terminal: true}))
 			}
 		case OpReturn, OpEnd:
 			var v *Node
@@ -806,7 +806,7 @@ func (p *parser) single(size int, b bool) {
 	start := p.pos
 	p.pos += size
 	if b {
-		p.push(p.newNode(Node{Type: TypeMatch, Start: start, End: p.pos, Text: p.text(start, p.pos), terminal: true, fresh: true}))
+		p.push(p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true, fresh: true}))
 	}
 }
 

@@ -97,6 +97,7 @@ automatically in the others. This table records, for every change in the log bel
 | 54, 59 | `Document`: resuming long repetitions | ✓ | ✓ | ✓ | – | – | VMs since 59 (sites found in the bytecode); generated parsers have no `Document` |
 | 55 | Tracing hook (cost only) | ✓ | ✓ | ✓ | – | – | generated parsers have no tracing |
 | 57, 58 | Scratch memory pooled across whole-input parses (input, offsets, memo, value stack) | ✓ | ✓ | ✓ | ✓ | ✓ | typed: since 48; generated `Parse` and `Recognize`: 58 |
+| 63 | Smaller `Node` (88 bytes: `int32` positions, interned type and rule names) | ✓ | ✓ | ✓ | ✗ | – | generated `Parse`: 64; the typed runtime builds no nodes |
 | 60 | Direct rules: a rule's body inlined into its call method, captures in Go variables, the action in place | – | – | – | ✗ | ✓ | typed: not for rules with a cut or `#recover`, Pratt rules and left-recursion leaders; not tried for generated `Parse` |
 | 61 | Character tests read code points without calling `peek` | – | – | – | ✗ | ✓ | typed: direct rules only; generated `Parse` still calls `peek` |
 | 62 | Short literals compared in place | – | – | – | ✗ | ✓ | typed: direct rules, up to 4 code points, code points only (the other backends match literals with their own loop, 32) |
@@ -910,6 +911,20 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 - Effect (min of 12 interleaved runs, Apple M3 Max, `ParseAST`): JSON 3.34 → 3.16 ms (−5%), XML 3.89 → 3.80 ms
   (−2%), Outline 2.14 → 1.97 ms (−8%); the calculators within noise (min of 8 runs).
 
+### 63. A smaller `Node`
+
+- `Node` was 120 bytes: two name strings (`Type`, `Rule`), `int` positions, the text, children, fields and flags. The
+  pair of names now sits behind one pointer to an interned kind (`nodeKind`; rules precompute the kinds they give
+  their nodes, and programs those of the grammar's types, so a parse never looks one up), and `Start` and `End` are
+  `int32`: 88 bytes. This changes the API: `Type()` and `Rule()` are methods, and positions are `int32` (Go accepts
+  them as slice indexes; arithmetic with `int`s needs a conversion). JSON and `String` output are unchanged
+  (`MarshalJSON` writes the same members).
+- Measured beforehand with a synthetic tree of 400,000 nodes: building −15%, node memory −22%, walking −7%, a GC with
+  the tree live unchanged; `int32` positions alone saved nothing, since a chunk of 256 nodes of 112 bytes falls into
+  the same allocation size class as one of 120 bytes.
+- Effect (min of 6 interleaved runs, Apple M3 Max): allocation per parse −11% to −20% (JSON 13.0 → 10.8 MB, XML 16.4 →
+  13.5 MB, CSV 7.1 → 5.7 MB, streams 168 → 152 MB); time within ±3% on every workload and backend.
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -931,7 +946,7 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 | Storing all-ASCII input in code points as bytes (positions are the same in both units), with `len` of strings still counting code points | −9% bytes per parse on ASCII versions of the JSON, CSV and XML inputs (no rune array or offset table), but 0–4% slower: matching bytes checks for multi-byte characters at every step, which indexing code points does not | Not adopted |
 | Iterative VM: holding body frames by value in the VM stack (a tagged entry instead of a pooled frame behind an interface) | 5–19% slower: each entry is about 150 bytes, and copying and clearing it on every push and pop costs more than the interface call and the pool it saves | Not adopted |
 | Iterative VM: calling body frames directly (a type assertion before the interface call) and returning them to the pool without the type switch | Within ±4% (noise) | Not adopted |
-| Estimating a smaller `Node` (120 → about 88 bytes with `int32` positions and interned type and rule names) by the opposite change: 32 bytes of padding | Closure: JSON +1%, XML +4%, Arith_Pratt +1%, Minilang and the long `Document` within noise, about +12% bytes; so shrinking would gain a few percent at most | Not adopted for now: it would change the public `Node` (positions no longer `int`, names behind methods) for little gain |
+| Estimating a smaller `Node` (120 → about 88 bytes with `int32` positions and interned type and rule names) by the opposite change: 32 bytes of padding | Closure: JSON +1%, XML +4%, Arith_Pratt +1%, Minilang and the long `Document` within noise, about +12% bytes; so shrinking would gain a few percent at most | Adopted later as change 63, accepting the API change for the memory it saves |
 | Inlining small plain rules into direct typed rules (after change 62; a body without calls of up to 16 expressions, also tried transitively) | `ParseAST` JSON −1% to −7% depending on the run, the other benchmarks within ±3% | Not adopted: no consistent gain for more generated code |
 | Setting the fields of the reused action context in place in direct typed rules, instead of copying a whole `tctx` | `ParseAST` JSON −5%, Outline +5%, the others within ±2% | Not adopted (noise) |
 | Memoizing every rule (classic packrat) | 2–3× slower than the transient policy on all workloads; memo entries were never reused for leaf and single-reference rules | Replaced by the transient policy (change 1) |

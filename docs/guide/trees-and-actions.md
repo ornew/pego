@@ -615,8 +615,8 @@ pego parse -g unit.pego -s kv -i 'あい=うえお' -unit bytes | grep -A6 '"v"'
 
 ## 8. Using the tree from Go
 
-`Parser.Parse` returns a `*pego.Node`. Its exported fields mirror the JSON keys: `Type`, `Rule`, `Start`, `End`,
-`Text`, `Children` and `Fields`. `Field(name)` returns the value of a struct field or capture (a `*pego.Node`, `int`,
+`Parser.Parse` returns a `*pego.Node`. It mirrors the JSON keys: the methods `Type()` and `Rule()`, and the fields
+`Start` and `End` (`int32`), `Text`, `Children` and `Fields`. `Field(name)` returns the value of a struct field or capture (a `*pego.Node`, `int`,
 `string`, `bool` or `nil`), and `IsTerminal` tells terminals apart. The node also marshals to the JSON shown above with
 `encoding/json`.
 
@@ -669,7 +669,7 @@ func main() {
 }
 
 func dump(n *pego.Node, depth int) {
-	fmt.Printf("%s%s [%d,%d)", strings.Repeat("  ", depth), n.Type, n.Start, n.End)
+	fmt.Printf("%s%s [%d,%d)", strings.Repeat("  ", depth), n.Type(), n.Start, n.End)
 	if n.IsTerminal() {
 		fmt.Printf(" %q", n.Text)
 	}

@@ -323,7 +323,7 @@ func (p *parser) resumeRepeat(rs *runSite) (*Node, bool) {
 	if !rs.build {
 		return nil, true
 	}
-	return p.newNode(Node{Type: TypeList, Start: start, End: p.pos, Children: p.kids(base), fresh: true}), true
+	return p.newNode(Node{kind: kindList, Start: int32(start), End: int32(p.pos), Children: p.kids(base), fresh: true}), true
 }
 
 // after reports whether every element examined only input from end on.

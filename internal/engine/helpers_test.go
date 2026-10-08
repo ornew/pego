@@ -205,7 +205,7 @@ func toCodePoints(input string, n *Node, err error) (*Node, error) {
 		}
 		c := *n
 		seen[n] = &c
-		c.Start, c.End = cp[n.Start], cp[n.End]
+		c.Start, c.End = int32(cp[n.Start]), int32(cp[n.End])
 		if n.Children != nil {
 			c.Children = make([]*Node, len(n.Children))
 			for i, ch := range n.Children {
@@ -219,7 +219,7 @@ func toCodePoints(input string, n *Node, err error) (*Node, error) {
 				case *Node:
 					f.Value = conv(v)
 				case string:
-					if n.Type == TypeError && f.Name == "message" {
+					if n.Type() == TypeError && f.Name == "message" {
 						f.Value = fixMessage(v)
 					}
 				}
