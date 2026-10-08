@@ -290,7 +290,14 @@ func TestGeneratedTypes(t *testing.T) {
 	if _, err := os.Stat(goBin); err != nil {
 		t.Skip("go command not found")
 	}
-	cases := append(genCorpus(t), genCase{"typed", typedGrammar, []string{"f(1,x)!?;[3];zz", "f(1,(;g();", "f(a);"}})
+	// Exactly at and just beyond the nesting limit, through direct rules (as in
+	// TestGeneratedParsersMatchEngine).
+	cases := append(genCorpus(t), genCase{"nesting limit", `
+type R struct { T Match }
+def main: R = t:@n -> new R{T: $t}
+def n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x" + strings.Repeat(")", DefaultMaxDepth-2),
+		strings.Repeat("(", DefaultMaxDepth-1) + "x" + strings.Repeat(")", DefaultMaxDepth-1)}})
+	cases = append(cases, genCase{"typed", typedGrammar, []string{"f(1,x)!?;[3];zz", "f(1,(;g();", "f(a);"}})
 	dir := t.TempDir()
 	write := func(name, content string) {
 		path := filepath.Join(dir, name)

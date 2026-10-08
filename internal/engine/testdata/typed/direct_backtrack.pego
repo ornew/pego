@@ -1,7 +1,8 @@
 // Direct rules of the typed runtime: captures restored when a choice, an optional or a repetition
 // element fails after setting them (also captures inside & in a repetition without a scope of its
 // own), an environment restored when an alternative that assigned a variable fails, and
-// first-character tests of alternatives after one that read further characters.
+// first-character tests of alternatives after one that read further characters; a plain rule that
+// assigns a variable (bump) restores the environment when it returns.
 type Name terminal
 type A struct { X *Name, Y *Name, Z *Name, Q *Name, W *Name, P *Name, Last *Name, Mode int, Sign *Match }
 type L struct { Items []A }
@@ -9,6 +10,7 @@ def main: L = [m = 0] xs:(a:alt -";"?)* $$ -> new L{Items: map($xs, (e) => $e.a)
 def alt: A = (x:name "+" y:name "!" / x:name "+" z:name)
     ("(" q:name ")")? ("(" w:name ".")?
     ("[" (&(p:name) name ",")* last:name "]")?
-    ([m = 1] "<" / ">")? s:@("-" (?0-9) "!" / "-" (?0-9) "?" / "+")?
+    ([m = 1] "<" / ">")? bump? s:@("-" (?0-9) "!" / "-" (?0-9) "?" / "+")?
     -> new A{X: $x, Y: $y, Z: $z, Q: $q, W: $w, P: $p, Last: $last, Mode: m, Sign: $s}
 def name: Name = (?a-z)+
+def bump = [m = 7] "~"
