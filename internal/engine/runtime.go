@@ -163,6 +163,10 @@ type memoEntry struct {
 	pos       int
 	next      *memoEntry
 	rule, min int32
+	// vgen is the number of document edits that the positions (pos, end, examined, from, far) and
+	// shift account for. A Document applies an edit to most entries only when they are looked up
+	// (advanceEntry).
+	vgen uint32
 
 	ok bool
 	// silent reports that the result was evaluated inside a lookahead. No expectations were
@@ -416,7 +420,11 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit boo
 	// A result computed inside a lookahead recorded no expectations, so it is not reused outside
 	// one; and errors recovered inside a lookahead carry no expectations either, so a result with
 	// recovered errors is reused only in the same kind of context it was computed in.
-	if e, found := p.memo.get(key); found && (e.growing || (!e.silent || p.silent > 0) && (len(e.errs) == 0 || e.silent == (p.silent > 0))) {
+	e, found := p.memo.get(key)
+	if found && e.vgen != p.gen && !advanceEntry(e, p.edits[:p.gen]) {
+		found = false // an edit since invalidated it
+	}
+	if found && (e.growing || (!e.silent || p.silent > 0) && (len(e.errs) == 0 || e.silent == (p.silent > 0))) {
 		p.touch(e.examined)
 		p.lw = min2(p.lw, e.from)
 		p.stats.Reused++
@@ -453,7 +461,7 @@ func (p *parser) callEnd(r *rule, st *callState, v *Node, ok bool) (*Node, bool)
 			p.recovered = p.recovered[:st.rec]
 		}
 		e = p.memo.alloc()
-		*e = memoEntry{node: v, ok: ok, end: p.pos, examined: p.hw, from: p.lw, silent: p.silent > 0, gen: p.gen,
+		*e = memoEntry{node: v, ok: ok, end: p.pos, examined: p.hw, from: p.lw, silent: p.silent > 0, gen: p.gen, vgen: p.gen,
 			positional: r.positional, errs: append([]*SyntaxError(nil), p.recovered[st.rec:]...)}
 		p.memo.put(st.key, e)
 	}
@@ -484,7 +492,7 @@ type growState struct {
 func (p *parser) growBegin(key memoKey) growState {
 	g := growState{key: key, start: p.pos, rec: len(p.recovered)}
 	g.best = p.memo.alloc()
-	*g.best = memoEntry{ok: false, end: g.start, examined: g.start, from: g.start, growing: true, gen: p.gen}
+	*g.best = memoEntry{ok: false, end: g.start, examined: g.start, from: g.start, growing: true, gen: p.gen, vgen: p.gen}
 	p.memo.put(key, g.best)
 	return g
 }
@@ -496,7 +504,7 @@ func (p *parser) growStep(g *growState, v *Node, ok bool) bool {
 		return false
 	}
 	g.best = p.memo.alloc()
-	*g.best = memoEntry{node: v, ok: true, end: p.pos, from: g.start, growing: true, gen: p.gen, errs: append([]*SyntaxError(nil), p.recovered[g.rec:]...)}
+	*g.best = memoEntry{node: v, ok: true, end: p.pos, from: g.start, growing: true, gen: p.gen, vgen: p.gen, errs: append([]*SyntaxError(nil), p.recovered[g.rec:]...)}
 	p.memo.put(g.key, g.best)
 	p.pos = g.start
 	p.recovered = p.recovered[:g.rec]

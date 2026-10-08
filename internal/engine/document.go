@@ -14,6 +14,9 @@ import "fmt"
 //     shifted.
 //   - All other results are discarded.
 //
+// Edit applies these rules only to the results at the edited positions; any other result applies
+// the edits made since its last use when it is next looked up (advanceEntry).
+//
 // The nodes of a shifted result are moved in place when the result is reused (moveResult), so
 // trees returned by earlier parses change with them.
 type Document struct {
@@ -95,21 +98,33 @@ func (d *Document) Edit(start, end int, text string) error {
 		return nil
 	}
 	d.edits = append(d.edits, docEdit{start, end, delta})
-	d.memo.splice(start, end, delta, func(e *memoEntry) int {
+	d.memo.splice(start, end, delta, func(e *memoEntry) bool { return advanceEntry(e, d.edits) })
+	return nil
+}
+
+// advanceEntry applies to the memo entry e the edits it does not account for yet (those after the
+// first e.vgen of edits), and reports whether it is still valid. For each edit [start, end), in
+// order, an entry that examined only input before it is kept as is, one that examined only input
+// after it is shifted (unless its result depends on positions or contains recovered errors, whose
+// messages contain positions), and any other is invalid.
+func advanceEntry(e *memoEntry, edits []docEdit) bool {
+	for _, ed := range edits[e.vgen:] {
 		switch {
 		case e.growing:
-		case e.examined <= start:
-			return keepEntry
-		case e.from >= end && !e.positional && len(e.errs) == 0:
-			e.end += delta
-			e.from += delta
-			e.examined += delta
-			e.far += delta
-			e.shift += int32(delta)
-			e.shifted = e.shifted || delta != 0 // an edit that keeps the length moves nothing
-			return shiftEntry
+			return false
+		case e.examined <= ed.start:
+		case e.from >= ed.end && !e.positional && len(e.errs) == 0:
+			e.pos += ed.delta
+			e.end += ed.delta
+			e.from += ed.delta
+			e.examined += ed.delta
+			e.far += ed.delta
+			e.shift += int32(ed.delta)
+			e.shifted = e.shifted || ed.delta != 0 // an edit that keeps the length moves nothing
+		default:
+			return false
 		}
-		return dropEntry
-	})
-	return nil
+	}
+	e.vgen = uint32(len(edits))
+	return true
 }

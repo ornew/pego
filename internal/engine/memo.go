@@ -8,8 +8,11 @@ import "slices"
 // the cost of hashing entries and growing the table, and it can be pruned in position order.
 type memoTable struct {
 	base  int
-	slots []*memoEntry // list of entries at position base+i
+	slots []*memoEntry // list of entries at position base+i (base+i-gapLen from the gap on)
 	slab  []memoEntry  // area for allocating entries in bulk
+	// Document edits splice positions in and out at the gap, slots[gap:gap+gapLen] (in Document
+	// tables, where base is 0): moving it costs only the distance to the next edit.
+	gap, gapLen int
 	// seen is a bit set of the (position, rule) pairs called once (parser.firstCall), with stride
 	// bits per position. It is used only by whole-input parses, so base is 0.
 	seen   []uint64
@@ -67,6 +70,9 @@ func newMemoTable() *memoTable { return &memoTable{} }
 // get returns the entry for key k.
 func (t *memoTable) get(k memoKey) (*memoEntry, bool) {
 	i := k.pos - t.base
+	if i >= t.gap {
+		i += t.gapLen
+	}
 	if i < 0 || i >= len(t.slots) {
 		return nil, false
 	}
@@ -83,6 +89,9 @@ func (t *memoTable) put(k memoKey, e *memoEntry) {
 	i := k.pos - t.base
 	if i < 0 {
 		return // discarded position
+	}
+	if i >= t.gap {
+		i += t.gapLen
 	}
 	if i >= len(t.slots) {
 		if i < cap(t.slots) {
@@ -140,68 +149,64 @@ func (t *memoTable) prune(pos int) {
 	t.base = pos
 }
 
-// Decisions of a splice callback
-const (
-	dropEntry  = iota
-	keepEntry  // keep at its position
-	shiftEntry // move by the splice's delta
-)
-
-// splice adjusts the table to an edit that replaced the positions [start, end) with delta more
-// positions (a Document edit). keep decides each entry's fate; an entry it shifts must lie at or
-// after end. The chains are updated in place instead of being rebuilt. Only tables without
-// pruning (base 0) are spliced.
-func (t *memoTable) splice(start, end, delta int, keep func(e *memoEntry) int) {
-	for i := range t.slots {
-		link := &t.slots[i]
-		for e := *link; e != nil; e = e.next {
-			switch keep(e) {
-			case keepEntry:
-			case shiftEntry:
-				e.pos += delta
-			default:
-				*link = e.next
-				continue
-			}
-			link = &e.next
-		}
-	}
-	if delta == 0 || len(t.slots) <= start {
-		return
-	}
-	if len(t.slots) <= end {
-		t.slots = append(t.slots, make([]*memoEntry, end+1-len(t.slots))...)
-	}
-	// Detach the entries that stay in place within [start, end] (at end, only an insertion keeps
-	// any), move the chains from end on by delta, and put the detached entries back.
+// splice adjusts the table to a Document edit that replaced the positions [start, end) with
+// delta more positions. Entries elsewhere move with their positions, and advance is applied to
+// them when they are next looked up; the entries at the positions [start, end] are decided now:
+// advance reports whether each is still valid (one at start kept as it was, or one at end shifted
+// by delta). Only tables without pruning (base 0) are spliced.
+func (t *memoTable) splice(start, end, delta int, advance func(e *memoEntry) bool) {
+	// Detach the entries at [start, end] and keep the valid ones.
 	var stay *memoEntry
-	for i := start; i <= end; i++ {
-		link := &t.slots[i]
-		for e := *link; e != nil; {
+	for pos := start; pos <= end; pos++ {
+		i := pos
+		if i >= t.gap {
+			i += t.gapLen
+		}
+		if i >= len(t.slots) {
+			break
+		}
+		for e := t.slots[i]; e != nil; {
 			next := e.next
-			if e.pos == i {
-				*link = next
+			if advance(e) {
 				e.next, stay = stay, e
-			} else {
-				link = &e.next
 			}
 			e = next
 		}
+		t.slots[i] = nil
 	}
-	n := len(t.slots)
-	if delta > 0 {
-		t.slots = slices.Grow(t.slots, delta)[:n+delta]
-		copy(t.slots[end+delta:], t.slots[end:n])
-		clear(t.slots[end : end+delta])
-	} else {
-		copy(t.slots[end+delta:], t.slots[end:n])
-		clear(t.slots[n+delta:])
-		t.slots = t.slots[:n+delta]
+	// Move the gap to start, take [start, end) into it, and give the new positions from it.
+	if end+t.gapLen > len(t.slots) {
+		t.slots = append(t.slots, make([]*memoEntry, end+t.gapLen-len(t.slots))...)
 	}
+	switch {
+	case t.gap > start:
+		copy(t.slots[start+t.gapLen:t.gap+t.gapLen], t.slots[start:t.gap])
+		clear(t.slots[start:min(t.gap, start+t.gapLen)])
+	case t.gap < start:
+		copy(t.slots[t.gap:start], t.slots[t.gap+t.gapLen:start+t.gapLen])
+		clear(t.slots[max(start, t.gap+t.gapLen) : start+t.gapLen])
+	}
+	t.gap = start
+	t.gapLen += end - start
+	n := end - start + delta
+	if n > t.gapLen {
+		// Widen the gap, with room for later insertions.
+		more := n - t.gapLen + max(1024, len(t.slots)/16)
+		grown := make([]*memoEntry, len(t.slots)+more)
+		copy(grown, t.slots[:t.gap])
+		copy(grown[t.gap+t.gapLen+more:], t.slots[t.gap+t.gapLen:])
+		t.slots, t.gapLen = grown, t.gapLen+more
+	}
+	t.gap += n
+	t.gapLen -= n
 	for e := stay; e != nil; {
 		next := e.next
-		e.next = t.slots[e.pos]
-		t.slots[e.pos] = e
+		i := e.pos
+		if i >= t.gap {
+			i += t.gapLen
+		}
+		e.next = t.slots[i]
+		t.slots[i] = e
 		e = next
 	}
 }

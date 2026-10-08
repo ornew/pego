@@ -171,6 +171,9 @@ func TestDocumentEditKeepsMemo(t *testing.T) {
 			delta := len([]rune(ins)) - (end - start)
 			want := map[*memoEntry]int{}
 			doc.memo.each(func(e *memoEntry) {
+				if !advanceEntry(e, doc.edits) {
+					return // invalidated by an earlier edit, and not looked up since
+				}
 				switch {
 				case e.growing:
 				case e.examined <= start:
@@ -182,9 +185,20 @@ func TestDocumentEditKeepsMemo(t *testing.T) {
 			if err := doc.Edit(start, end, ins); err != nil {
 				t.Fatal(err)
 			}
+			// Entries are brought up to date when they are looked up: do it for every entry.
 			got := map[*memoEntry]int{}
-			for at, head := range doc.memo.slots {
+			m := doc.memo
+			for idx, head := range m.slots {
+				at := idx
+				if idx >= m.gap+m.gapLen {
+					at -= m.gapLen
+				} else if idx >= m.gap && head != nil {
+					t.Fatalf("edit %d: entry in the gap", i)
+				}
 				for e := head; e != nil; e = e.next {
+					if !advanceEntry(e, doc.edits) {
+						continue
+					}
 					if e.pos != at {
 						t.Fatalf("edit %d: entry for position %d is listed at %d", i, e.pos, at)
 					}

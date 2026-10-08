@@ -889,7 +889,8 @@ Consequences, all of which can be read off the numbers in the next section:
 - **Looking ahead widens the range.** The range includes the character after a token (the check that ended a `+` or
   `*`), the characters examined by `&e` and `!e`, and, for `^` (beginning of line), the character before the match.
   Usually that is one character and harmless. A rule that looks far ahead is invalidated by edits far away.
-- **Shifting is lazy and cheap**, but not free: every entry after the edit is visited.
+- **Shifting is lazy and cheap.** `Edit` touches only the entries at the edited positions; every other entry is
+  brought up to date (kept, shifted or dropped by the rules above, edit by edit) when it is next looked up.
 - **Positional values block shifting.** A node's `Start` and `End` can be moved, but a position stored in an `int`
   field (`startPos`, `endPos` in an action or predicate) cannot. The rules that use them, and the rules that call those
   rules, are re-evaluated whenever they lie after an edit.
@@ -1204,41 +1205,39 @@ func main() {
 
 ```
 settings, one rule per line
-    1000 lines: Parse 250µs    NewDocument+Parse 600µs    Edit 30µs     reparse 20µs     (evaluated 3, reused 1001) equal=true
-   10000 lines: Parse 2.65ms   NewDocument+Parse 5.51ms   Edit 260µs    reparse 70µs     (evaluated 3, reused 10001) equal=true
-  100000 lines: Parse 26.24ms  NewDocument+Parse 44.35ms  Edit 3.09ms   reparse 590µs    (evaluated 3, reused 100001) equal=true
+    1000 lines: Parse 230µs    NewDocument+Parse 580µs    Edit 0s       reparse 20µs     (evaluated 3, reused 1001) equal=true
+   10000 lines: Parse 2.47ms   NewDocument+Parse 5.21ms   Edit 30µs     reparse 70µs     (evaluated 3, reused 10001) equal=true
+  100000 lines: Parse 25.06ms  NewDocument+Parse 41.75ms  Edit 330µs    reparse 610µs    (evaluated 3, reused 100001) equal=true
   memory at 100000 lines (1.9 MiB of text): tree from Parse 27 MiB, Document with its tree 151 MiB
 calc (Pratt expressions)
-    1000 lines: Parse 1.86ms   NewDocument+Parse 2.35ms   Edit 30µs     reparse 30µs     (evaluated 3, reused 1002) equal=true
-   10000 lines: Parse 16.7ms   NewDocument+Parse 19.45ms  Edit 310µs    reparse 190µs    (evaluated 3, reused 10002) equal=true
-  100000 lines: Parse 151.51ms NewDocument+Parse 174.27ms Edit 4.04ms   reparse 1.77ms   (evaluated 3, reused 100002) equal=true
+    1000 lines: Parse 1.8ms    NewDocument+Parse 2.24ms   Edit 10µs     reparse 30µs     (evaluated 3, reused 1002) equal=true
+   10000 lines: Parse 15.55ms  NewDocument+Parse 18.74ms  Edit 40µs     reparse 190µs    (evaluated 3, reused 10002) equal=true
+  100000 lines: Parse 158.72ms NewDocument+Parse 169.44ms Edit 360µs    reparse 1.85ms   (evaluated 3, reused 100002) equal=true
 settings, everything in one rule
-    1000 lines: Parse 170µs    NewDocument+Parse 200µs    Edit 10µs     reparse 10µs     (evaluated 1, reused 999) equal=true
-   10000 lines: Parse 2.08ms   NewDocument+Parse 2.32ms   Edit 60µs     reparse 70µs     (evaluated 1, reused 9999) equal=true
-  100000 lines: Parse 19.18ms  NewDocument+Parse 19.31ms  Edit 620µs    reparse 580µs    (evaluated 1, reused 99999) equal=true
+    1000 lines: Parse 170µs    NewDocument+Parse 180µs    Edit 0s       reparse 10µs     (evaluated 1, reused 999) equal=true
+   10000 lines: Parse 1.74ms   NewDocument+Parse 2.51ms   Edit 40µs     reparse 100µs    (evaluated 1, reused 9999) equal=true
+  100000 lines: Parse 19.91ms  NewDocument+Parse 25.23ms  Edit 360µs    reparse 620µs    (evaluated 1, reused 99999) equal=true
 ```
 
 Reading the table:
 
-- **The reparse hardly grows with the document; `Edit` still does.** The program replaces one digit, so nothing after
-  the edit moves: the reparse takes the lines before and after the edit from the resumed `line*` and parses one line,
-  about 0.6 ms at 100,000 lines (it was 9 ms when every line was a memo lookup). An edit that changes the length also
-  moves the nodes of every reused line after it in place, which is linear in the size of the document. `Edit` splices
-  the text, its offset table and the memo table in place, but it still visits every memo entry (about 300,000 at
-  100,000 lines) and moves everything after the edit: about 3 ms at 100,000 lines.
+- **Neither step grows much with the document.** The program replaces one digit, so nothing after the edit moves:
+  the reparse takes the lines before and after the edit from the resumed `line*` and parses one line, about 0.6 ms at
+  100,000 lines. An edit that changes the length also moves the nodes of every reused line after it in place, which is
+  linear in the size of the document. `Edit` splices the text and its offset table, and in the memo table touches only
+  the entries at the edited positions (the others are brought up to date when they are next looked up): about 0.3 ms
+  at 100,000 lines, most of it copying the text.
 - **The gain depends on how much a reused unit costs.** With the Pratt-expression lines, `Edit` and the reparse together
-  take about 6 ms against 152 ms for a fresh parse at 100,000 lines. With the cheap `key = value` lines, about 4 ms
-  against 26 ms. Everything in one rule gains too (about 1.2 ms against 19 ms): its repetition resumes, and the table
-  that `Edit` walks is small, since there is only one rule call.
+  take about 2 ms against 159 ms for a fresh parse at 100,000 lines. With the cheap `key = value` lines, about 1 ms
+  against 25 ms. Everything in one rule gains as much: its repetition resumes.
 - **The first parse is slower than `Parse`** (up to about 1.5 times with cheap rules, close to equal otherwise), because
   every rule call is memoized (an ordinary parse memoizes only calls that repeat).
 - **Memory is a multiple of the tree.** The line starting "memory" shows the live heap for the first grammar at 100,000
   lines: the tree from `Parse` alone against a `Document` that also holds the memo table (an entry per rule call), the
   records of long repetitions (about 80 bytes per element), the text as code points (four bytes each) and an offset
   table next to the string.
-- **Every `Edit` walks the memo table**, so a burst of small edits still costs one walk each (about 3 ms at 100,000
-  lines in the table above). When an editor delivers a burst of changes, merging adjacent ones into a single `Edit`
-  (replace the smallest range that covers them) and calling `Parse` once is cheaper.
+- **Bursts of edits are fine.** An `Edit` costs little on its own, and entries that several edits affect are brought
+  up to date once, when they are looked up. Merging adjacent changes into one `Edit` still saves copying the text.
 
 A real grammar, [examples/json](../../examples/json/json.pego), on an array of 5,000 objects (283 KB). Run it from the
 root of the repository:
@@ -1320,10 +1319,10 @@ func main() {
 ```
 $ go run ./jsondoc examples/json/json.pego
 282783 bytes
-Parse:                18ms
-first Document.Parse: 44ms {338896 10001}
-Edit:                 2.43ms
-reparse:              1.16ms {11 15016}
+Parse:                16ms
+first Document.Parse: 42ms {338896 10001}
+Edit:                 70µs
+reparse:              1.26ms {11 15016}
 ```
 
 The full parse evaluates 338,896 rule bodies; after the edit 11 run and 15,016 results are reused.
