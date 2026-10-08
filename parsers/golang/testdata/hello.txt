@@ -1,0 +1,14 @@
+package main
+
+import "fmt"
+
+// main prints a greeting.
+func main() {
+	for i, s := range []string{"hello", "world"} {
+		if i > 0 {
+			fmt.Print(" ")
+		}
+		fmt.Print(s)
+	}
+	fmt.Println()
+}

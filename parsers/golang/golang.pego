@@ -1,0 +1,737 @@
+// Go source files (The Go Programming Language Specification), parsed as go/parser parses them:
+// the grammar accepts exactly the files go/parser accepts and builds the same tree as go/ast. Where
+// go/parser accepts more than the specification (types where expressions are expected, x.(type)
+// outside type switches, any simple statement as a for post statement, and so on), so does the
+// grammar; the type checker rejects those programs, not the parser.
+//
+// Tokens and automatic semicolons
+//
+// Rules neither start nor end with whitespace: the caller skips what may come between two tokens.
+// After a token that ends a statement at a newline (an identifier, a literal, break, continue,
+// fallthrough, return, ++, --, ")", "]" or "}"), the caller skips sp, which stops at a newline; after
+// any other token it skips ws, which does not. Where a statement may end, semi matches the semicolon
+// that follows: ";", a newline, a block comment that contains a newline, or the end of the file.
+//
+// Choices that commit
+//
+// go/parser decides by the next token and does not backtrack: once it sees "[" after a type name, it
+// parses type arguments, and a failure there is an error. The grammar mirrors each such decision
+// with a negative lookahead (`!(-sp "[")` after a type name that has no type arguments, for
+// example), so that a failed alternative never falls back to a shorter one that go/parser would not
+// have chosen.
+//
+// Composite literals and control clauses
+//
+// In the header of an if, for or switch statement, a composite literal whose type is a name
+// (T{}, p.T{}, T[int]{}) must be parenthesized, since its "{" would begin the block. The
+// expressions of headers therefore have rules of their own (hexpr and the rules it calls, prefixed
+// with h), which take a "{" as the end of the expression; brackets, parentheses and braces inside a
+// header switch back to the ordinary rules, as they do in go/parser.
+package golang
+
+// ===================================================================
+// Types
+// ===================================================================
+
+type File struct { Name Ident, Decls []Decl }
+
+// --- Declarations ---
+type GenDecl struct { Tok string, Specs []Spec }  // Tok is "import", "const", "type" or "var"
+type FuncDecl struct { Recv *FieldList, Name Ident, Type FuncType, Body *BlockStmt }
+type ImportSpec struct { Name *Ident, Path StringLit }  // Name is a package name, "_" or "."
+type ValueSpec struct { Names []Ident, Type *Expr, Values []Expr }
+type TypeSpec struct { Name Ident, TypeParams *FieldList, Assign *Match, Type Expr }  // Assign is the "=" of an alias
+type Decl = GenDecl | FuncDecl
+type Spec = ImportSpec | ValueSpec | TypeSpec
+
+// A list of parameters, results, type parameters, struct fields or interface elements. Its range
+// covers the parentheses, brackets or braces, if any.
+type FieldList struct { List []Field }
+type Field struct { Names []Ident, Type Expr, Tag *StringLit }
+
+// --- Expressions and types ---
+type Ident terminal
+type IntLit terminal
+type FloatLit terminal
+type ImagLit terminal
+type CharLit terminal
+type StringLit terminal  // including the quotes
+type Ellipsis struct { Elt *Expr }  // ...T in a parameter list, or the length of [...]T (no Elt)
+type CompositeLit struct { Type *Expr, Elts []Expr }  // Type is nil in an elided literal {...}
+type FuncLit struct { Type FuncType, Body BlockStmt }
+type ParenExpr struct { X Expr }
+type SelectorExpr struct { X Expr, Sel Ident }
+type IndexExpr struct { X Expr, Index Expr }
+type IndexListExpr struct { X Expr, Indices []Expr }
+type SliceExpr struct { X Expr, Low *Expr, High *Expr, Max *Expr }
+type TypeAssertExpr struct { X Expr, Type *Expr }  // Type is nil in x.(type)
+type CallExpr struct { Fun Expr, Args []Expr, Ellipsis *Match }  // Ellipsis is the "..." of f(s...)
+type StarExpr struct { X Expr }
+type UnaryExpr struct { Op string, X Expr }
+type BinaryExpr struct { X Expr, Op string, Y Expr }
+type KeyValueExpr struct { Key Expr, Value Expr }
+type ArrayType struct { Len *Expr, Elt Expr }  // Len is nil for a slice type and an Ellipsis for [...]T
+type StructType struct { Fields FieldList }
+type FuncType struct { TypeParams *FieldList, Params FieldList, Results *FieldList }
+type InterfaceType struct { Methods FieldList }
+type MapType struct { Key Expr, Value Expr }
+type ChanType struct { Dir int, Value Expr }  // Dir is 1 (chan<-), 2 (<-chan) or 3 (chan), as go/ast.ChanDir
+type Expr = Ident | IntLit | FloatLit | ImagLit | CharLit | StringLit | Ellipsis | CompositeLit | FuncLit
+    | ParenExpr | SelectorExpr | IndexExpr | IndexListExpr | SliceExpr | TypeAssertExpr | CallExpr
+    | StarExpr | UnaryExpr | BinaryExpr | KeyValueExpr | ArrayType | StructType | FuncType
+    | InterfaceType | MapType | ChanType
+
+// --- Statements ---
+type DeclStmt struct { Decl GenDecl }
+type EmptyStmt struct {}  // an explicit ";", or an empty statement before "}" after a label (empty range)
+type LabeledStmt struct { Label Ident, Stmt Stmt }
+type ExprStmt struct { X Expr }
+type SendStmt struct { Chan Expr, Value Expr }
+type IncDecStmt struct { X Expr, Tok string }
+type AssignStmt struct { Lhs []Expr, Tok string, Rhs []Expr }
+type GoStmt struct { Call CallExpr }
+type DeferStmt struct { Call CallExpr }
+type ReturnStmt struct { Results []Expr }
+type BranchStmt struct { Tok string, Label *Ident }
+type BlockStmt struct { List []Stmt }
+type IfStmt struct { Init *Stmt, Cond Expr, Body BlockStmt, Else *Stmt }
+type CaseClause struct { List []Expr, Body []Stmt }  // List is empty for default
+type SwitchStmt struct { Init *Stmt, Tag *Expr, Body BlockStmt }  // the body lists CaseClauses
+type TypeSwitchStmt struct { Init *Stmt, Assign Stmt, Body BlockStmt }
+type CommClause struct { Comm *Stmt, Body []Stmt }  // Comm is nil for default
+type SelectStmt struct { Body BlockStmt }  // the body lists CommClauses
+type ForStmt struct { Init *Stmt, Cond *Expr, Post *Stmt, Body BlockStmt }
+type RangeStmt struct { Key *Expr, Value *Expr, Tok string, X Expr, Body BlockStmt }  // Tok is "" in for range x
+type Stmt = DeclStmt | EmptyStmt | LabeledStmt | ExprStmt | SendStmt | IncDecStmt | AssignStmt | GoStmt
+    | DeferStmt | ReturnStmt | BranchStmt | BlockStmt | IfStmt | CaseClause | SwitchStmt | TypeSwitchStmt
+    | CommClause | SelectStmt | ForStmt | RangeStmt
+
+// ===================================================================
+// Source files
+// ===================================================================
+
+// A byte order mark is allowed only as the first character. Imports come before the other
+// declarations; each declaration ends with a semicolon.
+def main: File = -"\u{FEFF}"? -ws kw_package -ws n:ident -sp -semi -ws
+    is:(d:importDecl -sp -semi -ws)* ds:(d:topDecl -sp -semi -ws)* $$
+    -> new File{Name: $n, Decls: concat(map($is, (x) => $x.d), map($ds, (x) => $x.d))}
+
+def topDecl: Decl = funcDecl / constDecl / varDecl / typeDecl
+
+// ===================================================================
+// Declarations
+// ===================================================================
+
+def importDecl: GenDecl = kw_import -ws ss:(importGroup / importOne) -> new GenDecl{Tok: "import", Specs: $ss}
+def importOne = s:importSpec -> list($s)
+def importGroup = "(" -ws ss:(s:importSpec -sp -groupTerm -ws)* ")" -> map($ss, (x) => $x.s)
+def importSpec: ImportSpec = n:importName? p:stringLit -> new ImportSpec{Name: $n, Path: $p}
+def importName: Ident = (i:ident -sp / i:dotName -ws) -> $i
+def dotName: Ident = "." !".."
+
+def constDecl: GenDecl = kw_const -ws ss:(constGroup / constOne) -> new GenDecl{Tok: "const", Specs: $ss}
+def constOne = s:constSpec -> list($s)
+def constGroup = "(" -ws ss:(s:constSpec -sp -groupTerm -ws)* ")" -> map($ss, (x) => $x.s)
+// The type and the values of a constant are optional (go/parser leaves the checks to the type
+// checker).
+def constSpec: ValueSpec = ns:identList t:typeSp? vs:valuesSp? -> new ValueSpec{Names: $ns, Type: $t, Values: concat($vs)}
+def typeSp: Expr = -sp t:typ -> $t
+def identList = first:ident rest:(-sp "," -ws n:ident)* -> concat(list($first), map($rest, (r) => $r.n))
+def valuesSp = -sp "=" !"=" -ws vs:exprList -> $vs
+
+def varDecl: GenDecl = kw_var -ws ss:(varGroup / varOne) -> new GenDecl{Tok: "var", Specs: $ss}
+def varOne = s:varSpec -> list($s)
+def varGroup = "(" -ws ss:(s:varSpec -sp -groupTerm -ws)* ")" -> map($ss, (x) => $x.s)
+def varSpec: ValueSpec = varSpecTyped / varSpecUntyped
+def varSpecTyped: ValueSpec = ns:identList -sp t:typ vs:valuesSp? -> new ValueSpec{Names: $ns, Type: $t, Values: concat($vs)}
+def varSpecUntyped: ValueSpec = ns:identList -sp "=" !"=" -ws vs:exprList -> new ValueSpec{Names: $ns, Values: $vs}
+
+def typeDecl: GenDecl = kw_type -ws ss:(typeGroup / typeOne) -> new GenDecl{Tok: "type", Specs: $ss}
+def typeOne = s:typeSpec -> list($s)
+def typeGroup = "(" -ws ss:(s:typeSpec -sp -groupTerm -ws)* ")" -> map($ss, (x) => $x.s)
+
+// A type specification is generic or an array type when "[" follows the name. go/parser decides it
+// as follows (parseTypeSpec), and so does the grammar:
+//   - "[" P "[" ...: type parameters (genericParams with a constraint that starts with "[").
+//   - "[" P x where P x cannot continue as an expression (P any, P ~int, P, Q any): type parameters.
+//   - "[" P *E "," / "[" P(E) ","...: type parameters, and so are P *E and P(E) before "]" when E
+//     (or a term of a following "|" union) is a type literal or ~T and therefore no expression
+//     (splitDecision).
+//   - otherwise an array type whose length is the expression.
+def typeSpec: TypeSpec = typeSpecGeneric / typeSpecArray / typeSpecPlain
+def typeSpecGeneric: TypeSpec = n:ident -sp tp:genericParams -sp a:aliasEq? t:typ
+    -> new TypeSpec{Name: $n, TypeParams: $tp, Assign: $a, Type: $t}
+def typeSpecArray: TypeSpec = n:ident -sp !genericStart t:arrayType -> new TypeSpec{Name: $n, Type: $t}
+def typeSpecPlain: TypeSpec = n:ident -sp !"[" a:aliasEq? t:typ -> new TypeSpec{Name: $n, Assign: $a, Type: $t}
+def aliasEq: Match = e:@("=" !"=") -ws -> $e
+
+def genericStart = "[" -ws ident -sp "[" / generalStart / "[" -ws splitDecision
+def generalStart = "[" -ws ident -sp !("]" / binaryOp / dot / "(" / "{" / "[")
+def genericParams: FieldList = (&("[" -ws ident -sp "[") p:typeParams / &generalStart p:typeParams / p:splitParams) -> $p
+
+// The first type parameter is P *E or P(E), possibly followed by "|" terms (go/parser's extractName).
+def splitParams: FieldList = &("[" -ws splitDecision) "[" -ws p:ident -sp t:splitType
+    rest:(-sp "," -ws g:typeParam)* -sp ("," -ws)? "]"
+    -> new FieldList{List: concat(list(new Field{Names: list($p), Type: $t}), map($rest, (r) => $r.g))}
+def splitType: Expr = h:splitHead rest:(-sp "|" !(?|=) -ws t:mulExpr)*
+    -> foldl($h, $rest, (acc, i) => new BinaryExpr{X: $acc, Op: "|", Y: $i.t})
+def splitHead: Expr = splitStar / splitParen
+def splitStar: StarExpr = "*" !"=" -ws u:unaryExpr -> new StarExpr{X: $u}
+def splitParen: ParenExpr = "(" -ws a:expr -sp ("," -ws)? ")" !(-sp (dot / "[" / "(")) -> new ParenExpr{X: $a}
+
+// P *E or P(E) is a type parameter if a "," follows, or if E or a "|" term is a type element.
+def splitDecision = ident -sp splitHeadShape (-sp "|" !(?|=) -ws mulExpr)* -sp ","
+    / ident -sp splitHeadTE (-sp "|" !(?|=) -ws mulExpr)* -sp "]"
+    / ident -sp splitHeadShape (-sp "|" !(?|=) -ws !termTE mulExpr)* -sp "|" !(?|=) -ws termTE
+      (-sp "|" !(?|=) -ws mulExpr)* -sp "]"
+def splitHeadShape = "*" !"=" -ws unaryExpr / "(" -ws expr -sp ("," -ws)? ")" !(-sp (dot / "[" / "("))
+def splitHeadTE = "*" !"=" -ws &unaryTE unaryExpr
+    / "(" -ws &exprTE expr -sp ("," -ws)? ")" !(-sp (dot / "[" / "("))
+
+// Type elements (go/parser's isTypeElem): a unary expression that is a type literal, ~x or a
+// parenthesized type element, and a binary expression with such an operand.
+def unaryTE = "~" -ws unaryExpr
+    / recvChanType
+    / (arrayType / structType / funcType / mapType) !(-sp (dot / "[" / "(" / "{"))
+    / (interfaceType / chanType) !(-sp (dot / "[" / "("))
+    / "(" -ws exprTE -sp ")" !(-sp (dot / "[" / "("))
+def exprTE = (!unaryTE unaryExpr -sp binaryOp -ws)* unaryTE (-sp binaryOp -ws unaryExpr)*
+def termTE = (!unaryTE unaryExpr -sp mulOp -ws)* unaryTE (-sp mulOp -ws unaryExpr)*
+
+def funcDecl: FuncDecl = kw_func -ws r:recvSp? n:ident tp:typeParamsSp? -sp ps:params rs:resultsSp?
+    ([$rs != nil] / !(-sp typeStart)) b:bodySp?
+    -> new FuncDecl{Recv: $r, Name: $n, Type: new FuncType{TypeParams: $tp, Params: $ps, Results: $rs}, Body: $b}
+def recvSp: FieldList = r:params -sp -> $r
+def typeParamsSp: FieldList = -sp t:typeParams -> $t
+def bodySp: BlockStmt = -sp b:block -> $b
+
+// ===================================================================
+// Parameters
+// ===================================================================
+
+// A parameter list is either all named (a, b int, c ...string) or all unnamed (int, ...string),
+// as go/parser's parseParameterList decides. Only the last parameter may be variadic.
+def params: FieldList = "(" -ws l:paramList? ")" -> new FieldList{List: concat($l)}
+def paramList = namedParams / unnamedParams
+def namedParams = first:paramGroup rest:(-sp "," -ws g:paramGroup)* -sp ("," -ws)?
+    -> concat(list($first), map($rest, (r) => $r.g))
+def paramGroup: Field = (g:variadicGroup &(-sp ("," -ws)? ")") / g:namedGroup) -> $g
+def variadicGroup: Field = n:ident -sp t:variadicType -> new Field{Names: list($n), Type: $t}
+def namedGroup: Field = ns:identList -sp t:namedParamType -> new Field{Names: $ns, Type: $t}
+def namedParamType: Expr = (t:arrayFieldType / !"[" !"..." t:typ) -> $t
+def variadicType: Ellipsis = "..." -ws t:typ -> new Ellipsis{Elt: $t}
+def unnamedParams = first:unnamedParam rest:(-sp "," -ws p:unnamedParam)* -sp ("," -ws)?
+    -> concat(list($first), map($rest, (r) => $r.p))
+def unnamedParam: Field = (t:variadicType &(-sp ("," -ws)? ")") / t:unnamedType) -> new Field{Type: $t}
+// An unnamed parameter that starts with a name: a type name, or an instance whose arguments are
+// expressions (go/parser's parseArrayFieldOrTypeInstance).
+def unnamedType: Expr = (t:identIndexList / t:identIndex / t:qualifiedIdent !(-sp ("[" / dot)) / t:qualifiedInstance
+    / !ident t:typ) -> $t
+
+// Results: a parameter list without "...", or a single type.
+def resultsSp: FieldList = -sp r:results -> $r
+def results: FieldList = resultParams / resultType
+def resultType: FieldList = t:typ -> new FieldList{List: list(new Field{Type: $t})}
+def resultParams: FieldList = "(" -ws l:resultList? ")" -> new FieldList{List: concat($l)}
+def resultList = namedResults / unnamedResults
+def namedResults = first:namedGroup rest:(-sp "," -ws g:namedGroup)* -sp ("," -ws)?
+    -> concat(list($first), map($rest, (r) => $r.g))
+def unnamedResults = first:unnamedResult rest:(-sp "," -ws p:unnamedResult)* -sp ("," -ws)?
+    -> concat(list($first), map($rest, (r) => $r.p))
+def unnamedResult: Field = t:unnamedType -> new Field{Type: $t}
+
+// Type parameters: [K comparable, V any], [S ~[]E, E any], [T ~int | ~string].
+def typeParams: FieldList = "[" -ws first:typeParam rest:(-sp "," -ws g:typeParam)* -sp ("," -ws)? "]"
+    -> new FieldList{List: concat(list($first), map($rest, (r) => $r.g))}
+def typeParam: Field = ns:identList -sp c:constraint -> new Field{Names: $ns, Type: $c}
+def constraint: Expr = first:constraintFirst rest:(-sp "|" !(?|=) -ws t:embeddedTerm)*
+    -> foldl($first, $rest, (acc, i) => new BinaryExpr{X: $acc, Op: "|", Y: $i.t})
+def constraintFirst: Expr = (t:tildeTerm / t:arrayFieldType / !"[" !"..." t:typ) -> $t
+def embeddedTerm: Expr = tildeTerm / typ
+def tildeTerm: UnaryExpr = "~" -ws t:typ -> new UnaryExpr{Op: "~", X: $t}
+
+// x []E and x [N]E after a parameter or field name (parseArrayFieldOrTypeInstance): the length is an
+// expression, so [...]E is an error here.
+def arrayFieldType: ArrayType = "[" -ws n:exprSp? "]" -sp t:typ -> new ArrayType{Len: $n, Elt: $t}
+def exprSp: Expr = x:expr -sp -> $x
+
+// x[A] and x[A, B] where the arguments are expressions.
+def identIndex: IndexExpr = x:ident -sp "[" -ws i:expr -sp ("," -ws)? "]" -> new IndexExpr{X: $x, Index: $i}
+def identIndexList: IndexListExpr = x:ident -sp "[" -ws first:expr rest:(-sp "," -ws e:expr)+ -sp ("," -ws)? "]"
+    -> new IndexListExpr{X: $x, Indices: concat(list($first), map($rest, (r) => $r.e))}
+
+// ===================================================================
+// Types
+// ===================================================================
+
+def typ: Expr = typeName / arrayType / structType / pointerType / funcType / interfaceType / mapType
+    / chanType / parenType
+// The tokens with which a type can start.
+def typeStart = ident / "[" / kw_struct / "*" !"=" / kw_func / kw_interface / kw_map / kw_chan / "<-" / "("
+
+def parenType: ParenExpr = "(" -ws t:typ -sp ")" -> new ParenExpr{X: $t}
+def pointerType: StarExpr = "*" !"=" -ws t:typ -> new StarExpr{X: $t}
+
+// T, p.T, T[A], p.T[A, B]: type arguments are types here.
+def typeName: Expr = (t:qualifiedInstance / t:qualifiedIdent !(-sp "[")) -> $t
+def qualifiedInstance: Expr = typeInstanceList / typeInstance
+def typeInstance: IndexExpr = x:qualifiedIdent -sp "[" -ws t:typ -sp ("," -ws)? "]" -> new IndexExpr{X: $x, Index: $t}
+def typeInstanceList: IndexListExpr = x:qualifiedIdent -sp "[" -ws first:typ rest:(-sp "," -ws t:typ)+ -sp ("," -ws)? "]"
+    -> new IndexListExpr{X: $x, Indices: concat(list($first), map($rest, (r) => $r.t))}
+def qualifiedIdent: Expr = (t:selectorIdent / t:ident !(-sp dot)) -> $t
+def selectorIdent: SelectorExpr = x:ident -sp dot -ws s:ident -> new SelectorExpr{X: $x, Sel: $s}
+
+// [N]T, []T and [...]T. The length is any expression.
+def arrayType: ArrayType = "[" -ws n:arrayLen? "]" -sp t:typ -> new ArrayType{Len: $n, Elt: $t}
+def arrayLen: Expr = (x:ellipsisLen -ws / x:expr -sp) -> $x
+def ellipsisLen: Ellipsis = "..." -> new Ellipsis{}
+
+def mapType: MapType = kw_map -ws "[" -ws k:typ -sp "]" -sp v:typ -> new MapType{Key: $k, Value: $v}
+
+// "<-" binds to the leftmost "chan": chan<- chan int is chan<- (chan int).
+def chanType: ChanType = sendChanType / bothChanType / recvChanTypeT
+def sendChanType: ChanType = kw_chan -ws "<-" -ws t:typ -> new ChanType{Dir: 1, Value: $t}
+def bothChanType: ChanType = kw_chan -ws !"<-" t:typ -> new ChanType{Dir: 3, Value: $t}
+def recvChanTypeT: ChanType = "<-" -ws kw_chan -ws t:typ -> new ChanType{Dir: 2, Value: $t}
+
+// Type parameters are an error in a function type (go/parser accepts and complains), so there are
+// none. A type that follows the parameters on the same line must be the result.
+def funcType: FuncType = kw_func -ws ps:params rs:resultsSp? ([$rs != nil] / !(-sp typeStart))
+    -> new FuncType{Params: $ps, Results: $rs}
+
+def structType: StructType = kw_struct -ws l:fieldBlock -> new StructType{Fields: $l}
+def fieldBlock: FieldList = "{" -ws fs:(f:fieldDecl -sp -fieldTerm -ws)* "}" -> new FieldList{List: map($fs, (x) => $x.f)}
+// go/parser's parseFieldDecl: a name followed by ".", a tag or the end of the field is an embedded
+// type; one name followed by "[" begins an array type or an embedded instance.
+def fieldDecl: Field = embeddedField / starField / multiNameField / arrayNameField / oneNameField / instanceField
+def embeddedField: Field = &(ident -sp (dot / "\"" / "`" / semi / "}")) t:typeName g:tagSp? -> new Field{Type: $t, Tag: $g}
+def starField: Field = t:starEmbedded g:tagSp? -> new Field{Type: $t, Tag: $g}
+def starEmbedded: StarExpr = "*" !"=" -ws t:typeName -> new StarExpr{X: $t}
+def multiNameField: Field = first:ident rest:(-sp "," -ws n:ident)+ -sp t:typ g:tagSp?
+    -> new Field{Names: concat(list($first), map($rest, (r) => $r.n)), Type: $t, Tag: $g}
+def arrayNameField: Field = n:ident -sp t:arrayFieldType g:tagSp? -> new Field{Names: list($n), Type: $t, Tag: $g}
+def oneNameField: Field = n:ident -sp !"[" t:typ g:tagSp? -> new Field{Names: list($n), Type: $t, Tag: $g}
+def instanceField: Field = t:(identIndexList / identIndex) g:tagSp? -> new Field{Type: $t, Tag: $g}
+def tagSp: StringLit = -sp s:stringLit -> $s
+
+def interfaceType: InterfaceType = kw_interface -ws l:methodBlock -> new InterfaceType{Methods: $l}
+def methodBlock: FieldList = "{" -ws es:(e:interfaceElem -sp -fieldTerm -ws)* "}" -> new FieldList{List: map($es, (x) => $x.e)}
+def interfaceElem: Field = methodSpec / embeddedElem
+def methodSpec: Field = n:ident -sp t:signature -> new Field{Names: list($n), Type: $t}
+def signature: FuncType = ps:params rs:resultsSp? ([$rs != nil] / !(-sp typeStart)) -> new FuncType{Params: $ps, Results: $rs}
+// An embedded element: T, p.T, T[A], ~T, and unions of them. The first argument of T[...] is
+// parsed as an expression (go/parser's parseMethodSpec).
+def embeddedElem: Field = first:embeddedFirst rest:(-sp "|" !(?|=) -ws t:embeddedTerm)*
+    -> new Field{Type: foldl($first, $rest, (acc, i) => new BinaryExpr{X: $acc, Op: "|", Y: $i.t})}
+def embeddedFirst: Expr = embeddedIndexList / embeddedIndex / embeddedTerm
+def embeddedIndex: IndexExpr = x:ident -sp "[" -ws i:expr -sp ("," -ws)? "]" -> new IndexExpr{X: $x, Index: $i}
+def embeddedIndexList: IndexListExpr = x:ident -sp "[" -ws first:expr rest:(-sp "," -ws t:typ)+ -sp ("," -ws)? "]"
+    -> new IndexListExpr{X: $x, Indices: concat(list($first), map($rest, (r) => $r.t))}
+
+// ===================================================================
+// Statements
+// ===================================================================
+
+def block: BlockStmt = "{" -ws ss:(s:stmt -ws)* "}" -> new BlockStmt{List: map($ss, (x) => $x.s)}
+
+// A statement and its semicolon. A label and an empty statement need none.
+def stmt: Stmt = emptyStmt / labeledEmpty / terminatedStmt
+def terminatedStmt: Stmt = s:(labeledStmt / plainStmt) -sp -stmtTerm -> $s
+def emptyStmt: EmptyStmt = ";" -> new EmptyStmt{}
+def implicitEmpty: EmptyStmt = &"}" -> new EmptyStmt{}
+// A label followed by "}" labels an empty statement (with an empty range).
+def labeledEmpty: LabeledStmt = l:ident -sp ":" !"=" -ws s:(implicitEmpty / emptyStmt / labeledEmpty)
+    -> new LabeledStmt{Label: $l, Stmt: $s}
+def labeledStmt: LabeledStmt = l:ident -sp ":" !"=" -ws s:(labeledStmt / plainStmt) -> new LabeledStmt{Label: $l, Stmt: $s}
+
+// The statements of a case clause. The semicolon after the last one is left to the caller, so that
+// the clause ends with its last statement.
+def clauseBody = ss:(-ws s:clauseStmt)* l:lastClauseStmt? -> concat(map($ss, (x) => $x.s), $l)
+// A statement followed by another one.
+def clauseStmt: Stmt = s:(emptyStmt / labeledEmpty / clauseTerminated) &(-ws !clauseEnd) -> $s
+def clauseTerminated: Stmt = s:(labeledStmt / plainStmt) -sp -stmtTerm -> $s
+// The last statement, whose semicolon is not consumed.
+def lastClauseStmt = -ws s:(emptyStmt / labeledEmpty / lastClauseTerminated) -> list($s)
+def lastClauseTerminated: Stmt = s:(labeledStmt / plainStmt) &(-sp stmtTerm) -> $s
+def clauseEnd = kw_case / kw_default / "}"
+
+// go/parser starts a simple statement only at the tokens that start an expression, which "~" does not.
+def plainStmt: Stmt = (s:declStmt / s:goStmt / s:deferStmt / s:returnStmt / s:branchStmt / s:block / s:ifStmt
+    / s:switchStmt / s:selectStmt / s:forStmt / !"~" s:simpleStmt) -> $s
+
+def declStmt: DeclStmt = d:(constDecl / varDecl / typeDecl) -> new DeclStmt{Decl: $d}
+
+def simpleStmt: Stmt = assignStmt / sendStmt / incDecStmt / exprStmt
+def assignStmt: AssignStmt = l:exprList -sp t:assignOp -ws r:exprList -> new AssignStmt{Lhs: $l, Tok: text($t), Rhs: $r}
+def sendStmt: SendStmt = c:expr -sp "<-" -ws v:expr -> new SendStmt{Chan: $c, Value: $v}
+def incDecStmt: IncDecStmt = x:expr -sp t:@("++" / "--") -> new IncDecStmt{X: $x, Tok: text($t)}
+def exprStmt: ExprStmt = x:expr -> new ExprStmt{X: $x}
+
+// The same in the header of an if, for or switch statement.
+def hsimpleStmt: Stmt = hassignStmt / hsendStmt / hincDecStmt / hexprStmt
+def hassignStmt: AssignStmt = l:hexprList -sp t:assignOp -ws r:hexprList -> new AssignStmt{Lhs: $l, Tok: text($t), Rhs: $r}
+def hsendStmt: SendStmt = c:hexpr -sp "<-" -ws v:hexpr -> new SendStmt{Chan: $c, Value: $v}
+def hincDecStmt: IncDecStmt = x:hexpr -sp t:@("++" / "--") -> new IncDecStmt{X: $x, Tok: text($t)}
+def hexprStmt: ExprStmt = x:hexpr -> new ExprStmt{X: $x}
+
+// The expression of go and defer must be a call that is not parenthesized: the operand of the
+// last call is parsed by goPrimary, which does not apply a call that ends the statement.
+def goStmt: GoStmt = kw_go -ws c:goCall -> new GoStmt{Call: $c}
+def deferStmt: DeferStmt = kw_defer -ws c:goCall -> new DeferStmt{Call: $c}
+def goCall: CallExpr = goCallEmpty / goCallArgs
+def goCallEmpty: CallExpr = f:goPrimary -sp "(" -ws ")" -> new CallExpr{Fun: $f}
+def goCallArgs: CallExpr = f:goPrimary -sp "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")"
+    -> new CallExpr{Fun: $f, Args: $as, Ellipsis: $e}
+def dotsWs: Match = d:@"..." -ws -> $d
+
+def returnStmt: ReturnStmt = kw_return xs:returnValues? -> new ReturnStmt{Results: concat($xs)}
+def returnValues = -sp xs:exprList -> $xs
+
+def branchStmt: BranchStmt = breakStmt / continueStmt / gotoStmt / fallthroughStmt
+def breakStmt: BranchStmt = kw_break l:labelSp? -> new BranchStmt{Tok: "break", Label: $l}
+def continueStmt: BranchStmt = kw_continue l:labelSp? -> new BranchStmt{Tok: "continue", Label: $l}
+def gotoStmt: BranchStmt = kw_goto -ws l:ident -> new BranchStmt{Tok: "goto", Label: $l}
+def fallthroughStmt: BranchStmt = kw_fallthrough -> new BranchStmt{Tok: "fallthrough"}
+def labelSp: Ident = -sp l:ident -> $l
+
+// if [init;] cond {...} [else ...]. The semicolon after init may be a newline.
+def ifStmt: IfStmt = kw_if -ws (i:hsimpleSemi / -";" -ws)? c:hexpr -sp b:block e:elseSp?
+    -> new IfStmt{Init: $i, Cond: $c, Body: $b, Else: $e}
+def hsimpleSemi: Stmt = s:hsimpleStmt -sp -hsemi -ws -> $s
+def elseSp: Stmt = -sp kw_else -ws s:(ifStmt / block) -> $s
+
+def switchStmt: Stmt = typeSwitchStmt / exprSwitchStmt
+def switchInit = s:hsimpleStmt? -sp -hsemi -ws -> $s
+def exprSwitchStmt: SwitchStmt = kw_switch -ws i:switchInit? t:hexpr? -sp b:caseBlock
+    -> new SwitchStmt{Init: $i, Tag: $t, Body: $b}
+def typeSwitchStmt: TypeSwitchStmt = kw_switch -ws i:switchInit? g:typeSwitchGuard -sp b:caseBlock
+    -> new TypeSwitchStmt{Init: $i, Assign: $g, Body: $b}
+// x.(type) or v := x.(type), where x is parsed by guardPrimary, which does not apply the .(type)
+// before "{".
+def typeSwitchGuard: Stmt = guardAssign / guardExpr
+def guardAssign: AssignStmt = l:hexpr -sp ":=" -ws x:guardAssert -> new AssignStmt{Lhs: list($l), Tok: ":=", Rhs: list($x)}
+def guardExpr: ExprStmt = x:guardAssert -> new ExprStmt{X: $x}
+def guardAssert: TypeAssertExpr = x:guardPrimary -sp dot -ws "(" -ws kw_type -ws ")" -> new TypeAssertExpr{X: $x}
+def caseBlock: BlockStmt = "{" -ws cs:(c:caseClause (-sp -stmtTerm)? -ws)* "}" -> new BlockStmt{List: map($cs, (x) => $x.c)}
+def caseClause: CaseClause = caseClauseList / caseClauseDefault
+def caseClauseList: CaseClause = kw_case -ws xs:exprList -sp ":" !"=" b:clauseBody -> new CaseClause{List: $xs, Body: $b}
+def caseClauseDefault: CaseClause = kw_default -ws ":" !"=" b:clauseBody -> new CaseClause{Body: $b}
+
+def selectStmt: SelectStmt = kw_select -ws b:commBlock -> new SelectStmt{Body: $b}
+def commBlock: BlockStmt = "{" -ws cs:(c:commClause (-sp -stmtTerm)? -ws)* "}" -> new BlockStmt{List: map($cs, (x) => $x.c)}
+def commClause: CommClause = commClauseCase / commClauseDefault
+def commClauseCase: CommClause = kw_case -ws c:commStmt -sp ":" !"=" b:clauseBody -> new CommClause{Comm: $c, Body: $b}
+def commClauseDefault: CommClause = kw_default -ws ":" !"=" b:clauseBody -> new CommClause{Body: $b}
+// go/parser does not check that a communication receives or sends.
+def commStmt: Stmt = sendStmt / commRecv / exprStmt
+def commRecv: AssignStmt = first:expr rest:(-sp "," -ws x:expr){0,1} -sp t:@(":=" / "=" !"=") -ws r:expr
+    -> new AssignStmt{Lhs: concat(list($first), map($rest, (q) => $q.x)), Tok: text($t), Rhs: list($r)}
+
+def forStmt: Stmt = forInfinite / forRange / forClause / forCond
+def forInfinite: ForStmt = kw_for -ws b:block -> new ForStmt{Body: $b}
+def forCond: ForStmt = kw_for -ws c:hexpr -sp b:block -> new ForStmt{Cond: $c, Body: $b}
+// The semicolons may be newlines.
+def forClause: ForStmt = kw_for -ws i:hsimpleStmt? -sp -hsemi -ws c:hexpr? -sp -hsemi -ws p:hsimpleStmt? -sp b:block
+    -> new ForStmt{Init: $i, Cond: $c, Post: $p, Body: $b}
+def forRange: RangeStmt = kw_for -ws (k:hexpr v:rangeValue? -sp t:@(":=" / "=" !"=") -ws)? kw_range -ws x:hexpr -sp b:block
+    -> new RangeStmt{Key: $k, Value: $v, Tok: text($t), X: $x, Body: $b}
+def rangeValue: Expr = -sp "," -ws v:hexpr -> $v
+
+// ===================================================================
+// Expressions
+// ===================================================================
+
+def expr: Expr = orExpr
+def exprList = first:expr rest:(-sp "," -ws x:expr)* -> concat(list($first), map($rest, (r) => $r.x))
+
+def orExpr: Expr = l:andExpr rest:(-sp o:@"||" -ws r:andExpr)*
+    -> foldl($l, $rest, (acc, i) => new BinaryExpr{X: $acc, Op: text($i.o), Y: $i.r})
+def andExpr: Expr = l:cmpExpr rest:(-sp o:@"&&" -ws r:cmpExpr)*
+    -> foldl($l, $rest, (acc, i) => new BinaryExpr{X: $acc, Op: text($i.o), Y: $i.r})
+def cmpExpr: Expr = l:addExpr rest:(-sp o:relOp -ws r:addExpr)*
+    -> foldl($l, $rest, (acc, i) => new BinaryExpr{X: $acc, Op: text($i.o), Y: $i.r})
+def addExpr: Expr = l:mulExpr rest:(-sp o:addOp -ws r:mulExpr)*
+    -> foldl($l, $rest, (acc, i) => new BinaryExpr{X: $acc, Op: text($i.o), Y: $i.r})
+def mulExpr: Expr = l:unaryExpr rest:(-sp o:mulOp -ws r:unaryExpr)*
+    -> foldl($l, $rest, (acc, i) => new BinaryExpr{X: $acc, Op: text($i.o), Y: $i.r})
+
+// <-chan T is a channel type, not a receive; go/parser reassociates the arrow when the operand of
+// "<-" is a channel type, which yields the type <-chan T or an error.
+def unaryExpr: Expr = recvChanType / recvExpr / unaryOpExpr / starExpr / primaryExpr
+def recvChanType: ChanType = t:recvChanTypeT !(-sp (dot / "[" / "(")) -> $t
+def recvExpr: UnaryExpr = "<-" -ws !(chanType !(-sp (dot / "[" / "("))) x:unaryExpr -> new UnaryExpr{Op: "<-", X: $x}
+def unaryOpExpr: UnaryExpr = o:unaryOp -ws x:unaryExpr -> new UnaryExpr{Op: text($o), X: $x}
+def starExpr: StarExpr = "*" !"=" -ws x:unaryExpr -> new StarExpr{X: $x}
+
+// Primary expressions: an operand and selectors, indexes, slices, type assertions, calls and
+// composite literals. Outside headers, a "{" after an operand is a composite literal, which
+// go/parser allows only after a name, a selector, an index or an array, struct or map type: the
+// other operands and suffixes do not match before a "{" (any "{" after them would be an error).
+def primaryExpr: Expr = (o:primaryOperand !(-sp (dot / "[" / "(" / "{")) / o:prattExpr) -> $o
+def prattExpr: Expr = pratt {
+    skip sp
+    operand primaryOperand
+    level {
+        postfix dot -ws s:ident -> new SelectorExpr{X: $lhs, Sel: $s}
+        postfix dot -ws "(" -ws kw_type -ws ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs}
+        postfix dot -ws "(" -ws t:typ -sp ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs, Type: $t}
+        postfix "[" -ws i:expr -sp ("," -ws)? "]" -> new IndexExpr{X: $lhs, Index: $i}
+        postfix "[" -ws i:indexList "]" -> new IndexListExpr{X: $lhs, Indices: $i}
+        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp? "]" !(-sp "{") -> new SliceExpr{X: $lhs, Low: $l, High: $h}
+        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp ":" !"=" -ws m:exprSp "]" !(-sp "{")
+            -> new SliceExpr{X: $lhs, Low: $l, High: $h, Max: $m}
+        postfix "(" -ws ")" !(-sp "{") -> new CallExpr{Fun: $lhs}
+        postfix "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")" !(-sp "{") -> new CallExpr{Fun: $lhs, Args: $as, Ellipsis: $e}
+        postfix v:litValue !(-sp "{") -> new CompositeLit{Type: $lhs, Elts: $v}
+    }
+}
+// A name, an array, struct or map type may be followed by a composite literal value.
+def primaryOperand: Expr = (o:ident / o:literalOperand !(-sp "{") / o:arrayType / o:structType / o:mapType) -> $o
+def literalOperand: Expr = basicLit / parenExpr / funcLit / funcType / chanType / interfaceType
+def indexList = first:expr rest:(-sp "," -ws t:typ)+ -sp ("," -ws)? -> concat(list($first), map($rest, (r) => $r.t))
+
+def parenExpr: ParenExpr = "(" -ws x:expr -sp ")" -> new ParenExpr{X: $x}
+def funcLit: FuncLit = t:funcType -sp b:block -> new FuncLit{Type: $t, Body: $b}
+
+def litValue = "{" -ws es:elements? "}" -> concat($es)
+def elements = first:element rest:(-sp "," -ws e:element)* -sp ("," -ws)? -> concat(list($first), map($rest, (r) => $r.e))
+def element: Expr = keyValue / elementValue
+def keyValue: KeyValueExpr = k:elementValue -sp ":" !"=" -ws v:elementValue -> new KeyValueExpr{Key: $k, Value: $v}
+def elementValue: Expr = elidedLit / expr
+def elidedLit: CompositeLit = v:litValue -> new CompositeLit{Elts: $v}
+
+// go and defer: the same, except that a call followed by the end of the statement is not applied.
+def goPrimary: Expr = pratt {
+    skip sp
+    operand primaryOperand
+    level {
+        postfix dot -ws s:ident -> new SelectorExpr{X: $lhs, Sel: $s}
+        postfix dot -ws "(" -ws kw_type -ws ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs}
+        postfix dot -ws "(" -ws t:typ -sp ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs, Type: $t}
+        postfix "[" -ws i:expr -sp ("," -ws)? "]" -> new IndexExpr{X: $lhs, Index: $i}
+        postfix "[" -ws i:indexList "]" -> new IndexListExpr{X: $lhs, Indices: $i}
+        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp? "]" !(-sp "{") -> new SliceExpr{X: $lhs, Low: $l, High: $h}
+        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp ":" !"=" -ws m:exprSp "]" !(-sp "{")
+            -> new SliceExpr{X: $lhs, Low: $l, High: $h, Max: $m}
+        postfix "(" -ws ")" !(-sp ("{" / goEnd)) -> new CallExpr{Fun: $lhs}
+        postfix "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")" !(-sp ("{" / goEnd))
+            -> new CallExpr{Fun: $lhs, Args: $as, Ellipsis: $e}
+        postfix v:litValue !(-sp "{") -> new CompositeLit{Type: $lhs, Elts: $v}
+    }
+}
+def goEnd = semi / "}" / ")"
+
+// ===================================================================
+// Expressions in headers
+// ===================================================================
+
+def hexpr: Expr = horExpr
+def hexprList = first:hexpr rest:(-sp "," -ws x:hexpr)* -> concat(list($first), map($rest, (r) => $r.x))
+
+def horExpr: Expr = l:handExpr rest:(-sp o:@"||" -ws r:handExpr)*
+    -> foldl($l, $rest, (acc, i) => new BinaryExpr{X: $acc, Op: text($i.o), Y: $i.r})
+def handExpr: Expr = l:hcmpExpr rest:(-sp o:@"&&" -ws r:hcmpExpr)*
+    -> foldl($l, $rest, (acc, i) => new BinaryExpr{X: $acc, Op: text($i.o), Y: $i.r})
+def hcmpExpr: Expr = l:haddExpr rest:(-sp o:relOp -ws r:haddExpr)*
+    -> foldl($l, $rest, (acc, i) => new BinaryExpr{X: $acc, Op: text($i.o), Y: $i.r})
+def haddExpr: Expr = l:hmulExpr rest:(-sp o:addOp -ws r:hmulExpr)*
+    -> foldl($l, $rest, (acc, i) => new BinaryExpr{X: $acc, Op: text($i.o), Y: $i.r})
+def hmulExpr: Expr = l:hunaryExpr rest:(-sp o:mulOp -ws r:hunaryExpr)*
+    -> foldl($l, $rest, (acc, i) => new BinaryExpr{X: $acc, Op: text($i.o), Y: $i.r})
+
+def hunaryExpr: Expr = recvChanType / hrecvExpr / hunaryOpExpr / hstarExpr / hprimaryExpr
+def hrecvExpr: UnaryExpr = "<-" -ws !(chanType !(-sp (dot / "[" / "("))) x:hunaryExpr -> new UnaryExpr{Op: "<-", X: $x}
+def hunaryOpExpr: UnaryExpr = o:unaryOp -ws x:hunaryExpr -> new UnaryExpr{Op: text($o), X: $x}
+def hstarExpr: StarExpr = "*" !"=" -ws x:hunaryExpr -> new StarExpr{X: $x}
+
+// Only array, struct and map types take a composite literal here. A parenthesized one followed by
+// "{" is an error in go/parser, not the end of the header.
+def hprimaryExpr: Expr = (o:hoperand !(-sp (dot / "[" / "(")) / o:hprattExpr) -> $o
+def hprattExpr: Expr = pratt {
+    skip sp
+    operand hoperand
+    level {
+        postfix dot -ws s:ident -> new SelectorExpr{X: $lhs, Sel: $s}
+        postfix dot -ws "(" -ws kw_type -ws ")" -> new TypeAssertExpr{X: $lhs}
+        postfix dot -ws "(" -ws t:typ -sp ")" -> new TypeAssertExpr{X: $lhs, Type: $t}
+        postfix "[" -ws i:expr -sp ("," -ws)? "]" -> new IndexExpr{X: $lhs, Index: $i}
+        postfix "[" -ws i:indexList "]" -> new IndexListExpr{X: $lhs, Indices: $i}
+        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp? "]" -> new SliceExpr{X: $lhs, Low: $l, High: $h}
+        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp ":" !"=" -ws m:exprSp "]"
+            -> new SliceExpr{X: $lhs, Low: $l, High: $h, Max: $m}
+        postfix "(" -ws ")" -> new CallExpr{Fun: $lhs}
+        postfix "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")" -> new CallExpr{Fun: $lhs, Args: $as, Ellipsis: $e}
+    }
+}
+def hoperand: Expr = (o:ident / o:basicLit / !(parenCompositeType -sp "{") o:parenExpr / o:funcLit / o:funcType
+    / o:compositeLitH / o:arrayType !(-sp "{") / o:structType !(-sp "{") / o:mapType !(-sp "{") / o:chanType
+    / o:interfaceType) -> $o
+def compositeLitH: CompositeLit = t:(arrayType / structType / mapType) -sp v:litValue -> new CompositeLit{Type: $t, Elts: $v}
+def parenCompositeType = "(" -ws (parenCompositeType / arrayType / structType / mapType) -sp ")"
+
+// The type switch guard: the same, except that .(type) before "{" is not applied.
+def guardPrimary: Expr = pratt {
+    skip sp
+    operand hoperand
+    level {
+        postfix dot -ws s:ident -> new SelectorExpr{X: $lhs, Sel: $s}
+        postfix dot -ws "(" -ws kw_type -ws ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs}
+        postfix dot -ws "(" -ws t:typ -sp ")" -> new TypeAssertExpr{X: $lhs, Type: $t}
+        postfix "[" -ws i:expr -sp ("," -ws)? "]" -> new IndexExpr{X: $lhs, Index: $i}
+        postfix "[" -ws i:indexList "]" -> new IndexListExpr{X: $lhs, Indices: $i}
+        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp? "]" -> new SliceExpr{X: $lhs, Low: $l, High: $h}
+        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp ":" !"=" -ws m:exprSp "]"
+            -> new SliceExpr{X: $lhs, Low: $l, High: $h, Max: $m}
+        postfix "(" -ws ")" -> new CallExpr{Fun: $lhs}
+        postfix "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")" -> new CallExpr{Fun: $lhs, Args: $as, Ellipsis: $e}
+    }
+}
+
+// ===================================================================
+// Operators
+// ===================================================================
+
+// Each operator must not be the beginning of a longer token.
+def dot = "." !".."
+def binaryOp = "||" / "&&" / relOp / addOp / mulOp
+def relOp = @("==" / "!=" / "<=" / ">=" / "<" !(?<\-) / ">" !">")
+def addOp = @("+" !(?+=) / "-" !(?\-=) / "|" !(?|=) / "^" !"=")
+def mulOp = @("*" !"=" / "/" !(?/*=) / "%" !"=" / "<<" !"=" / ">>" !"=" / "&^" !"=" / "&" !(?&=^))
+def unaryOp = @("+" !(?+=) / "-" !(?\-=) / "!" !"=" / "^" !"=" / "&" !(?&=^) / "~")
+def assignOp = @("=" !"=" / ":=" / "+=" / "-=" / "*=" / "/=" / "%=" / "&=" / "|=" / "^=" / "<<=" / ">>=" / "&^=")
+
+// ===================================================================
+// Semicolons and whitespace
+// ===================================================================
+
+// A semicolon after a token that ends a statement at a newline, once sp has been skipped: ";", a
+// newline, a block comment with a newline in it, or the end of the file.
+def semi = ";" / "\n" / blockComment / $$
+// Where the semicolon may be left out: before "}" (statements, fields) and ")" (grouped specs).
+def stmtTerm = semi / &"}"
+def fieldTerm = semi / &"}"
+def groupTerm = semi / &")"
+// The semicolons of headers, which go/parser does not let the end of the file or "}" replace.
+def hsemi = ";" / "\n" / blockComment
+
+// sp: spaces and comments that do not end the line. ws: all whitespace and comments.
+def sp = ((? \t\r)+ / lineComment / !blockNL blockComment)*
+def ws = ((? \t\r\n)+ / lineComment / blockComment)*
+def blockNL = "/*" (!"*/" (?^\n))* "\n"
+
+// Comments must not contain NUL, a byte order mark or invalid UTF-8 (see validFFFD).
+def lineComment = ^ "//line " dirLine / !(^ "//line ") "//" lineText
+def lineText = ((?^\n\u{0}\u{FEFF}\u{FFFD})+ / validFFFD)*
+def blockComment = "/*" ("line " dirBlock / !"line " blockText) "*/"
+def blockText = ((?^*\u{0}\u{FEFF}\u{FFFD})+ / "*" !"/" / validFFFD)*
+// U+FFFD is valid only if it is spelled out: invalid UTF-8 is read as U+FFFD too, but its text is
+// the invalid byte (with the Bytes position unit; see the package documentation).
+def validFFFD = c:"\u{FFFD}" [text($c) == "\u{FFFD}"]
+
+// Line directives: //line at the beginning of a line and /*line anywhere. go/scanner checks the
+// numbers after the last one or two colons: the line (and the column, if both are numbers) must be
+// between 1 and 2^30. Text without a colon is no directive.
+def dirLine = dirSegLine dirEolLine
+    / (!(":" dirSegLine ":" dirSegLine dirEolLine) dirCharLine)* ":" dirMidLine ":" dirNum dirEolLine
+    / dirSegLine ":" dirNum dirEolLine
+def dirCharLine = (?^\n\u{0}\u{FEFF}\u{FFFD}) / validFFFD
+def dirSegLine = ((?^:\n\r\u{0}\u{FEFF}\u{FFFD})+ / "\r" !("\n" / $$) / validFFFD)*
+// A final carriage return (of a \r\n line end) is not part of the directive.
+def dirEolLine = "\r"? &("\n" / $$)
+def dirMidLine = dirNum &":" / !(dirUint &":") dirSegLine
+def dirBlock = dirSegBlock &"*/"
+    / (!(":" dirSegBlock ":" dirSegBlock "*/") dirCharBlock)* ":" dirMidBlock ":" dirNum &"*/"
+    / dirSegBlock ":" dirNum &"*/"
+def dirCharBlock = (?^*\u{0}\u{FEFF}\u{FFFD}) / "*" !"/" / validFFFD
+def dirSegBlock = ((?^:*\u{0}\u{FEFF}\u{FFFD})+ / "*" !"/" / validFFFD)*
+def dirMidBlock = dirNum &":" / !(dirUint &":") dirSegBlock
+// A number from 1 to 2^30.
+def dirNum = "0"* n:@((?1-9) (?0-9)*) [len($n) < 10 || len($n) == 10 && text($n) <= "1073741824"]
+// A number that strconv.ParseUint accepts (at most 2^64-1).
+def dirUint = &(?0-9) "0"* n:@((?1-9) (?0-9)*)? [len($n) < 20 || len($n) == 20 && text($n) <= "18446744073709551615"]
+
+// ===================================================================
+// Identifiers and keywords
+// ===================================================================
+
+// Letters and digits are those of Unicode (unicode.IsLetter, unicode.IsDigit), see uLetter and
+// uDigit.
+def ident: Ident = !keyword idStart idRest
+def idStart = (?a-zA-Z_) / &(?\u{80}-\u{10FFFF}) uLetter
+def idRest = ((?a-zA-Z0-9_)+ / &(?\u{80}-\u{10FFFF}) (uLetter / uDigit))*
+// A keyword must not be followed by a letter or digit. (Any other non-ASCII character is an error
+// anyway.)
+def idChar = (?a-zA-Z0-9_\u{80}-\u{10FFFF})
+def keyword = ("break" / "case" / "chan" / "const" / "continue" / "default" / "defer" / "else"
+    / "fallthrough" / "for" / "func" / "goto" / "go" / "if" / "import" / "interface" / "map"
+    / "package" / "range" / "return" / "select" / "struct" / "switch" / "type" / "var") !idChar
+
+def kw_break = "break" !idChar
+def kw_case = "case" !idChar
+def kw_chan = "chan" !idChar
+def kw_const = "const" !idChar
+def kw_continue = "continue" !idChar
+def kw_default = "default" !idChar
+def kw_defer = "defer" !idChar
+def kw_else = "else" !idChar
+def kw_fallthrough = "fallthrough" !idChar
+def kw_for = "for" !idChar
+def kw_func = "func" !idChar
+def kw_go = "go" !idChar
+def kw_goto = "goto" !idChar
+def kw_if = "if" !idChar
+def kw_import = "import" !idChar
+def kw_interface = "interface" !idChar
+def kw_map = "map" !idChar
+def kw_package = "package" !idChar
+def kw_range = "range" !idChar
+def kw_return = "return" !idChar
+def kw_select = "select" !idChar
+def kw_struct = "struct" !idChar
+def kw_switch = "switch" !idChar
+def kw_type = "type" !idChar
+def kw_var = "var" !idChar
+
+// ===================================================================
+// Literals
+// ===================================================================
+
+def basicLit: Expr = imagLit / floatLit / intLit / charLit / stringLit
+
+// Numbers: each form must not be followed by a character that go/scanner would read as part of the
+// same literal (it would report an error), nor by a letter or digit (two literals, or a literal and
+// a name, never follow each other).
+def intLit: IntLit = ("0" (?xX) "_"? hexDigits / "0" (?oO) "_"? octDigits / "0" (?bB) "_"? binDigits
+    / "0" ("_"? (?0-7))* / (?1-9) ("_"? (?0-9))*) !(?0-9a-zA-Z_.)
+def floatLit: FloatLit = (decimalFloat / hexFloat) !(?0-9a-zA-Z_)
+def imagLit: ImagLit = (decimalFloat "i" / hexFloat "i" / imagInt "i") !(?0-9a-zA-Z_)
+// The integer part of an imaginary literal may hold digits invalid for its base (as go/scanner
+// allows), and 0123i is decimal.
+def imagInt = "0" (?xX) "_"? hexDigits / "0" (?oObB) "_"? decDigits / decDigits
+def decimalFloat = decDigits "." decDigits? decimalExp? / decDigits decimalExp / "." decDigits decimalExp?
+def decimalExp = (?eE) (?+\-)? decDigits
+def hexFloat = "0" (?xX) ("_"? hexDigits ("." hexDigits?)? / "." hexDigits) (?pP) (?+\-)? decDigits
+def decDigits = (?0-9) ("_"? (?0-9))*
+def hexDigits = (?0-9a-fA-F) ("_"? (?0-9a-fA-F))*
+def octDigits = (?0-7) ("_"? (?0-7))*
+def binDigits = (?01) ("_"? (?01))*
+
+def charLit: CharLit = "'" (charEscape / !(?'\\\n) srcChar) "'"
+def stringLit: StringLit = "`" (!"`" srcChar)* "`" / "\"" ((?^"\\\n\u{0}\u{FEFF}\u{FFFD})+ / stringEscape / validFFFD)* "\""
+// A character of the source: not NUL, nor a byte order mark, nor invalid UTF-8.
+def srcChar = (?^\u{0}\u{FEFF}\u{FFFD}) / validFFFD
+def charEscape = "\\" ((?abfnrtv\\') / escapeValue)
+def stringEscape = "\\" ((?abfnrtv\\") / escapeValue)
+// Octal escapes up to \377; \u and \U escapes of code points, not surrogate halves.
+def escapeValue = (?0-3) (?0-7) (?0-7) / "x" hexDigit hexDigit / "u" !((?dD) (?89a-fA-F)) hexDigit hexDigit hexDigit hexDigit
+    / "U" "00" ("0" !("0" (?dD) (?89a-fA-F)) hexDigit hexDigit hexDigit hexDigit hexDigit / "10" hexDigit hexDigit hexDigit hexDigit)
+def hexDigit = (?0-9a-fA-F)
+
+// ===================================================================
+// Unicode letters and digits (generated by TestUnicodeTables -update from package unicode)
+// ===================================================================
+
+// BEGIN UNICODE
+def uLetter = &(?\u{AA}\u{B5}\u{BA}\u{C0}-\u{D6}\u{D8}-\u{F6}\u{F8}-\u{2C1}\u{2C6}-\u{2D1}\u{2E0}-\u{2E4}\u{2EC}\u{2EE}\u{370}-\u{374}\u{376}-\u{377}\u{37A}-\u{37D}\u{37F}\u{386}\u{388}-\u{38A}\u{38C}\u{38E}-\u{3A1}\u{3A3}-\u{3F5}\u{3F7}-\u{481}\u{48A}-\u{52F}\u{531}-\u{556}\u{559}\u{560}-\u{588}\u{5D0}-\u{5EA}\u{5EF}-\u{5F2}\u{620}-\u{64A}\u{66E}-\u{66F}\u{671}-\u{6D3}\u{6D5}\u{6E5}-\u{6E6}\u{6EE}-\u{6EF}\u{6FA}-\u{6FC}\u{6FF}\u{710}\u{712}-\u{72F}\u{74D}-\u{7A5}\u{7B1}\u{7CA}-\u{7EA}\u{7F4}-\u{7F5}\u{7FA}\u{800}-\u{815}\u{81A}\u{824}\u{828}\u{840}-\u{858}\u{860}-\u{86A}\u{870}-\u{887}\u{889}-\u{88F}\u{8A0}-\u{8C9}\u{904}-\u{939}\u{93D}\u{950}\u{958}-\u{961}\u{971}-\u{980}\u{985}-\u{98C}\u{98F}-\u{990}\u{993}-\u{9A8}\u{9AA}-\u{9B0}\u{9B2}\u{9B6}-\u{9B9}\u{9BD}\u{9CE}\u{9DC}-\u{9DD}\u{9DF}-\u{9E1}\u{9F0}-\u{9F1}\u{9FC}\u{A05}-\u{A0A}\u{A0F}-\u{A10}\u{A13}-\u{A28}\u{A2A}-\u{A30}\u{A32}-\u{A33}\u{A35}-\u{A36}\u{A38}-\u{A39}\u{A59}-\u{A5C}\u{A5E}\u{A72}-\u{A74}\u{A85}-\u{A8D}\u{A8F}-\u{A91}\u{A93}-\u{AA8}\u{AAA}-\u{AB0}\u{AB2}-\u{AB3}\u{AB5}-\u{AB9}\u{ABD}\u{AD0}\u{AE0}-\u{AE1}\u{AF9}\u{B05}-\u{B0C}\u{B0F}-\u{B10}\u{B13}-\u{B28}\u{B2A}-\u{B30}\u{B32}-\u{B33}\u{B35}-\u{B39}\u{B3D}\u{B5C}-\u{B5D}\u{B5F}-\u{B61}\u{B71}\u{B83}\u{B85}-\u{B8A}\u{B8E}-\u{B90}\u{B92}-\u{B95}\u{B99}-\u{B9A}\u{B9C}\u{B9E}-\u{B9F}\u{BA3}-\u{BA4}\u{BA8}-\u{BAA}\u{BAE}-\u{BB9}\u{BD0}\u{C05}-\u{C0C}\u{C0E}-\u{C10}\u{C12}-\u{C28}\u{C2A}-\u{C39}\u{C3D}\u{C58}-\u{C5A}\u{C5C}-\u{C5D}\u{C60}-\u{C61}\u{C80}\u{C85}-\u{C8C}\u{C8E}-\u{C90}\u{C92}-\u{CA8}\u{CAA}-\u{CB3}\u{CB5}-\u{CB9}\u{CBD}\u{CDC}-\u{CDE}\u{CE0}-\u{CE1}\u{CF1}-\u{CF2}\u{D04}-\u{D0C}\u{D0E}-\u{D10}\u{D12}-\u{D3A}\u{D3D}\u{D4E}\u{D54}-\u{D56}\u{D5F}-\u{D61}\u{D7A}-\u{D7F}\u{D85}-\u{D96}\u{D9A}-\u{DB1}\u{DB3}-\u{DBB}\u{DBD}\u{DC0}-\u{DC6}\u{E01}-\u{E30}\u{E32}-\u{E33}\u{E40}-\u{E46}\u{E81}-\u{E82}\u{E84}\u{E86}-\u{E8A}\u{E8C}-\u{EA3}\u{EA5}\u{EA7}-\u{EB0}\u{EB2}-\u{EB3}\u{EBD}\u{EC0}-\u{EC4}\u{EC6}\u{EDC}-\u{EDF}\u{F00}\u{F40}-\u{F47}\u{F49}-\u{F6C}\u{F88}-\u{F8C}\u{1000}-\u{102A}\u{103F}\u{1050}-\u{1055}\u{105A}-\u{105D}\u{1061}\u{1065}-\u{1066}\u{106E}-\u{1070}\u{1075}-\u{1081}\u{108E}\u{10A0}-\u{10C5}\u{10C7}\u{10CD}\u{10D0}-\u{10FA}\u{10FC}-\u{1248}\u{124A}-\u{124D}\u{1250}-\u{1256}\u{1258}\u{125A}-\u{125D}\u{1260}-\u{1288}\u{128A}-\u{128D}\u{1290}-\u{12B0}\u{12B2}-\u{12B5}\u{12B8}-\u{12BE}\u{12C0}\u{12C2}-\u{12C5}\u{12C8}-\u{12D6}\u{12D8}-\u{1310}\u{1312}-\u{1315}\u{1318}-\u{135A}\u{1380}-\u{138F}\u{13A0}-\u{13F5}\u{13F8}-\u{13FD}\u{1401}-\u{166C}\u{166F}-\u{167F}\u{1681}-\u{169A}\u{16A0}-\u{16EA}\u{16F1}-\u{16F8}\u{1700}-\u{1711}\u{171F}-\u{1731}\u{1740}-\u{1751}\u{1760}-\u{176C}\u{176E}-\u{1770}\u{1780}-\u{17B3}\u{17D7}\u{17DC}\u{1820}-\u{1878}\u{1880}-\u{1884}\u{1887}-\u{18A8}\u{18AA}\u{18B0}-\u{18F5}\u{1900}-\u{191E}\u{1950}-\u{196D}\u{1970}-\u{1974}\u{1980}-\u{19AB}\u{19B0}-\u{19C9}\u{1A00}-\u{1A16}\u{1A20}-\u{1A54}\u{1AA7}\u{1B05}-\u{1B33}\u{1B45}-\u{1B4C}\u{1B83}-\u{1BA0}\u{1BAE}-\u{1BAF}\u{1BBA}-\u{1BE5}\u{1C00}-\u{1C23}\u{1C4D}-\u{1C4F}\u{1C5A}-\u{1C7D}\u{1C80}-\u{1C8A}\u{1C90}-\u{1CBA}\u{1CBD}-\u{1CBF}\u{1CE9}-\u{1CEC}\u{1CEE}-\u{1CF3}\u{1CF5}-\u{1CF6}\u{1CFA}\u{1D00}-\u{1DBF}\u{1E00}-\u{1F15}\u{1F18}-\u{1F1D}\u{1F20}-\u{1F45}\u{1F48}-\u{1F4D}\u{1F50}-\u{1F57}\u{1F59}\u{1F5B}\u{1F5D}\u{1F5F}-\u{1F7D}\u{1F80}-\u{1FB4}\u{1FB6}-\u{1FBC}\u{1FBE}\u{1FC2}-\u{1FC4}\u{1FC6}-\u{1FCC}\u{1FD0}-\u{1FD3}\u{1FD6}-\u{1FDB}\u{1FE0}-\u{1FEC}\u{1FF2}-\u{1FF4}\u{1FF6}-\u{1FFC}\u{2071}\u{207F}\u{2090}-\u{209C}\u{2102}\u{2107}\u{210A}-\u{2113}\u{2115}\u{2119}-\u{211D}\u{2124}\u{2126}\u{2128}\u{212A}-\u{212D}\u{212F}-\u{2139}\u{213C}-\u{213F}\u{2145}-\u{2149}\u{214E}\u{2183}-\u{2184}\u{2C00}-\u{2CE4}\u{2CEB}-\u{2CEE}\u{2CF2}-\u{2CF3}\u{2D00}-\u{2D25}\u{2D27}\u{2D2D}\u{2D30}-\u{2D67}\u{2D6F}\u{2D80}-\u{2D96}\u{2DA0}-\u{2DA6}\u{2DA8}-\u{2DAE}\u{2DB0}-\u{2DB6}\u{2DB8}-\u{2DBE}\u{2DC0}-\u{2DC6}\u{2DC8}-\u{2DCE}\u{2DD0}-\u{2DD6}\u{2DD8}-\u{2DDE}\u{2E2F}\u{3005}-\u{3006}\u{3031}-\u{3035}\u{303B}-\u{303C}\u{3041}-\u{3096}\u{309D}-\u{309F}\u{30A1}-\u{30FA}\u{30FC}-\u{30FF}\u{3105}-\u{312F}\u{3131}-\u{318E}\u{31A0}-\u{31BF}\u{31F0}-\u{31FF}\u{3400}-\u{4DBF}\u{4E00}-\u{A48C}\u{A4D0}-\u{A4FD}\u{A500}-\u{A60C}\u{A610}-\u{A61F}\u{A62A}-\u{A62B}\u{A640}-\u{A66E}\u{A67F}-\u{A69D}\u{A6A0}-\u{A6E5}\u{A717}-\u{A71F}\u{A722}-\u{A788}\u{A78B}-\u{A7DC}\u{A7F1}-\u{A801}\u{A803}-\u{A805}\u{A807}-\u{A80A}\u{A80C}-\u{A822}\u{A840}-\u{A873}\u{A882}-\u{A8B3}\u{A8F2}-\u{A8F7}\u{A8FB}\u{A8FD}-\u{A8FE}\u{A90A}-\u{A925}\u{A930}-\u{A946}\u{A960}-\u{A97C}\u{A984}-\u{A9B2}\u{A9CF}\u{A9E0}-\u{A9E4}\u{A9E6}-\u{A9EF}\u{A9FA}-\u{A9FE}\u{AA00}-\u{AA28}\u{AA40}-\u{AA42}\u{AA44}-\u{AA4B}\u{AA60}-\u{AA76}\u{AA7A}\u{AA7E}-\u{AAAF}\u{AAB1}\u{AAB5}-\u{AAB6}\u{AAB9}-\u{AABD}\u{AAC0}\u{AAC2}\u{AADB}-\u{AADD}\u{AAE0}-\u{AAEA}\u{AAF2}-\u{AAF4}\u{AB01}-\u{AB06}\u{AB09}-\u{AB0E}\u{AB11}-\u{AB16}\u{AB20}-\u{AB26}\u{AB28}-\u{AB2E}\u{AB30}-\u{AB5A}\u{AB5C}-\u{AB69}\u{AB70}-\u{ABE2}\u{AC00}-\u{D7A3}\u{D7B0}-\u{D7C6}\u{D7CB}-\u{D7FB}\u{F900}-\u{FA6D}\u{FA70}-\u{FAD9}\u{FB00}-\u{FB06}\u{FB13}-\u{FB17}\u{FB1D}\u{FB1F}-\u{FB28}\u{FB2A}-\u{FB36}\u{FB38}-\u{FB3C}\u{FB3E}\u{FB40}-\u{FB41}\u{FB43}-\u{FB44}\u{FB46}-\u{FBB1}\u{FBD3}-\u{FD3D}\u{FD50}-\u{FD8F}\u{FD92}-\u{FDC7}\u{FDF0}-\u{FDFB}\u{FE70}-\u{FE74}\u{FE76}-\u{FEFC}\u{FF21}-\u{FF3A}\u{FF41}-\u{FF5A}\u{FF66}-\u{FFBE}\u{FFC2}-\u{FFC7}\u{FFCA}-\u{FFCF}\u{FFD2}-\u{FFD7}\u{FFDA}-\u{FFDC}\u{10000}-\u{1000B}\u{1000D}-\u{10026}\u{10028}-\u{1003A}\u{1003C}-\u{1003D}\u{1003F}-\u{1004D}\u{10050}-\u{1005D}\u{10080}-\u{100FA}\u{10280}-\u{1029C}\u{102A0}-\u{102D0}\u{10300}-\u{1031F}\u{1032D}-\u{10340}\u{10342}-\u{10349}\u{10350}-\u{10375}\u{10380}-\u{1039D}\u{103A0}-\u{103C3}\u{103C8}-\u{103CF}\u{10400}-\u{1049D}\u{104B0}-\u{104D3}\u{104D8}-\u{104FB}\u{10500}-\u{10527}\u{10530}-\u{10563}\u{10570}-\u{1057A}\u{1057C}-\u{1058A}\u{1058C}-\u{10592}\u{10594}-\u{10595}\u{10597}-\u{105A1}\u{105A3}-\u{105B1}\u{105B3}-\u{105B9}\u{105BB}-\u{105BC}\u{105C0}-\u{105F3}\u{10600}-\u{10736}\u{10740}-\u{10755}\u{10760}-\u{10767}\u{10780}-\u{10785}\u{10787}-\u{107B0}\u{107B2}-\u{107BA}\u{10800}-\u{10805}\u{10808}\u{1080A}-\u{10835}\u{10837}-\u{10838}\u{1083C}\u{1083F}-\u{10855}\u{10860}-\u{10876}\u{10880}-\u{1089E}\u{108E0}-\u{108F2}\u{108F4}-\u{108F5}\u{10900}-\u{10915}\u{10920}-\u{10939}\u{10940}-\u{10959}\u{10980}-\u{109B7}\u{109BE}-\u{109BF}\u{10A00}\u{10A10}-\u{10A13}\u{10A15}-\u{10A17}\u{10A19}-\u{10A35}\u{10A60}-\u{10A7C}\u{10A80}-\u{10A9C}\u{10AC0}-\u{10AC7}\u{10AC9}-\u{10AE4}\u{10B00}-\u{10B35}\u{10B40}-\u{10B55}\u{10B60}-\u{10B72}\u{10B80}-\u{10B91}\u{10C00}-\u{10C48}\u{10C80}-\u{10CB2}\u{10CC0}-\u{10CF2}\u{10D00}-\u{10D23}\u{10D4A}-\u{10D65}\u{10D6F}-\u{10D85}\u{10E80}-\u{10EA9}\u{10EB0}-\u{10EB1}\u{10EC2}-\u{10EC7}\u{10F00}-\u{10F1C}\u{10F27}\u{10F30}-\u{10F45}\u{10F70}-\u{10F81}\u{10FB0}-\u{10FC4}\u{10FE0}-\u{10FF6}\u{11003}-\u{11037}\u{11071}-\u{11072}\u{11075}\u{11083}-\u{110AF}\u{110D0}-\u{110E8}\u{11103}-\u{11126}\u{11144}\u{11147}\u{11150}-\u{11172}\u{11176}\u{11183}-\u{111B2}\u{111C1}-\u{111C4}\u{111DA}\u{111DC}\u{11200}-\u{11211}\u{11213}-\u{1122B}\u{1123F}-\u{11240}\u{11280}-\u{11286}\u{11288}\u{1128A}-\u{1128D}\u{1128F}-\u{1129D}\u{1129F}-\u{112A8}\u{112B0}-\u{112DE}\u{11305}-\u{1130C}\u{1130F}-\u{11310}\u{11313}-\u{11328}\u{1132A}-\u{11330}\u{11332}-\u{11333}\u{11335}-\u{11339}\u{1133D}\u{11350}\u{1135D}-\u{11361}\u{11380}-\u{11389}\u{1138B}\u{1138E}\u{11390}-\u{113B5}\u{113B7}\u{113D1}\u{113D3}\u{11400}-\u{11434}\u{11447}-\u{1144A}\u{1145F}-\u{11461}\u{11480}-\u{114AF}\u{114C4}-\u{114C5}\u{114C7}\u{11580}-\u{115AE}\u{115D8}-\u{115DB}\u{11600}-\u{1162F}\u{11644}\u{11680}-\u{116AA}\u{116B8}\u{11700}-\u{1171A}\u{11740}-\u{11746}\u{11800}-\u{1182B}\u{118A0}-\u{118DF}\u{118FF}-\u{11906}\u{11909}\u{1190C}-\u{11913}\u{11915}-\u{11916}\u{11918}-\u{1192F}\u{1193F}\u{11941}\u{119A0}-\u{119A7}\u{119AA}-\u{119D0}\u{119E1}\u{119E3}\u{11A00}\u{11A0B}-\u{11A32}\u{11A3A}\u{11A50}\u{11A5C}-\u{11A89}\u{11A9D}\u{11AB0}-\u{11AF8}\u{11BC0}-\u{11BE0}\u{11C00}-\u{11C08}\u{11C0A}-\u{11C2E}\u{11C40}\u{11C72}-\u{11C8F}\u{11D00}-\u{11D06}\u{11D08}-\u{11D09}\u{11D0B}-\u{11D30}\u{11D46}\u{11D60}-\u{11D65}\u{11D67}-\u{11D68}\u{11D6A}-\u{11D89}\u{11D98}\u{11DB0}-\u{11DDB}\u{11EE0}-\u{11EF2}\u{11F02}\u{11F04}-\u{11F10}\u{11F12}-\u{11F33}\u{11FB0}\u{12000}-\u{12399}\u{12480}-\u{12543}\u{12F90}-\u{12FF0}\u{13000}-\u{1342F}\u{13441}-\u{13446}\u{13460}-\u{143FA}\u{14400}-\u{14646}\u{16100}-\u{1611D}\u{16800}-\u{16A38}\u{16A40}-\u{16A5E}\u{16A70}-\u{16ABE}\u{16AD0}-\u{16AED}\u{16B00}-\u{16B2F}\u{16B40}-\u{16B43}\u{16B63}-\u{16B77}\u{16B7D}-\u{16B8F}\u{16D40}-\u{16D6C}\u{16E40}-\u{16E7F}\u{16EA0}-\u{16EB8}\u{16EBB}-\u{16ED3}\u{16F00}-\u{16F4A}\u{16F50}\u{16F93}-\u{16F9F}\u{16FE0}-\u{16FE1}\u{16FE3}\u{16FF2}-\u{16FF3}\u{17000}-\u{18CD5}\u{18CFF}-\u{18D1E}\u{18D80}-\u{18DF2}\u{1AFF0}-\u{1AFF3}\u{1AFF5}-\u{1AFFB}\u{1AFFD}-\u{1AFFE}\u{1B000}-\u{1B122}\u{1B132}\u{1B150}-\u{1B152}\u{1B155}\u{1B164}-\u{1B167}\u{1B170}-\u{1B2FB}\u{1BC00}-\u{1BC6A}\u{1BC70}-\u{1BC7C}\u{1BC80}-\u{1BC88}\u{1BC90}-\u{1BC99}\u{1D400}-\u{1D454}\u{1D456}-\u{1D49C}\u{1D49E}-\u{1D49F}\u{1D4A2}\u{1D4A5}-\u{1D4A6}\u{1D4A9}-\u{1D4AC}\u{1D4AE}-\u{1D4B9}\u{1D4BB}\u{1D4BD}-\u{1D4C3}\u{1D4C5}-\u{1D505}\u{1D507}-\u{1D50A}\u{1D50D}-\u{1D514}\u{1D516}-\u{1D51C}\u{1D51E}-\u{1D539}\u{1D53B}-\u{1D53E}\u{1D540}-\u{1D544}\u{1D546}\u{1D54A}-\u{1D550}\u{1D552}-\u{1D6A5}\u{1D6A8}-\u{1D6C0}\u{1D6C2}-\u{1D6DA}\u{1D6DC}-\u{1D6FA}\u{1D6FC}-\u{1D714}\u{1D716}-\u{1D734}\u{1D736}-\u{1D74E}\u{1D750}-\u{1D76E}\u{1D770}-\u{1D788}\u{1D78A}-\u{1D7A8}\u{1D7AA}-\u{1D7C2}\u{1D7C4}-\u{1D7CB}\u{1DF00}-\u{1DF1E}\u{1DF25}-\u{1DF2A}\u{1E030}-\u{1E06D}\u{1E100}-\u{1E12C}\u{1E137}-\u{1E13D}\u{1E14E}\u{1E290}-\u{1E2AD}\u{1E2C0}-\u{1E2EB}\u{1E4D0}-\u{1E4EB}\u{1E5D0}-\u{1E5ED}\u{1E5F0}\u{1E6C0}-\u{1E6DE}\u{1E6E0}-\u{1E6E2}\u{1E6E4}-\u{1E6E5}\u{1E6E7}-\u{1E6ED}\u{1E6F0}-\u{1E6F4}\u{1E6FE}-\u{1E6FF}\u{1E7E0}-\u{1E7E6}\u{1E7E8}-\u{1E7EB}\u{1E7ED}-\u{1E7EE}\u{1E7F0}-\u{1E7FE}\u{1E800}-\u{1E8C4}\u{1E900}-\u{1E943}\u{1E94B}\u{1EE00}-\u{1EE03}\u{1EE05}-\u{1EE1F}\u{1EE21}-\u{1EE22}\u{1EE24}\u{1EE27}\u{1EE29}-\u{1EE32}\u{1EE34}-\u{1EE37}\u{1EE39}\u{1EE3B}\u{1EE42}\u{1EE47}\u{1EE49}\u{1EE4B}\u{1EE4D}-\u{1EE4F}\u{1EE51}-\u{1EE52}\u{1EE54}\u{1EE57}\u{1EE59}\u{1EE5B}\u{1EE5D}\u{1EE5F}\u{1EE61}-\u{1EE62}\u{1EE64}\u{1EE67}-\u{1EE6A}\u{1EE6C}-\u{1EE72}\u{1EE74}-\u{1EE77}\u{1EE79}-\u{1EE7C}\u{1EE7E}\u{1EE80}-\u{1EE89}\u{1EE8B}-\u{1EE9B}\u{1EEA1}-\u{1EEA3}\u{1EEA5}-\u{1EEA9}\u{1EEAB}-\u{1EEBB}\u{20000}-\u{2A6DF}\u{2A700}-\u{2B81D}\u{2B820}-\u{2CEAD}\u{2CEB0}-\u{2EBE0}\u{2EBF0}-\u{2EE5D}\u{2F800}-\u{2FA1D}\u{30000}-\u{3134A}\u{31350}-\u{33479}) .
+def uDigit = &(?\u{660}-\u{669}\u{6F0}-\u{6F9}\u{7C0}-\u{7C9}\u{966}-\u{96F}\u{9E6}-\u{9EF}\u{A66}-\u{A6F}\u{AE6}-\u{AEF}\u{B66}-\u{B6F}\u{BE6}-\u{BEF}\u{C66}-\u{C6F}\u{CE6}-\u{CEF}\u{D66}-\u{D6F}\u{DE6}-\u{DEF}\u{E50}-\u{E59}\u{ED0}-\u{ED9}\u{F20}-\u{F29}\u{1040}-\u{1049}\u{1090}-\u{1099}\u{17E0}-\u{17E9}\u{1810}-\u{1819}\u{1946}-\u{194F}\u{19D0}-\u{19D9}\u{1A80}-\u{1A89}\u{1A90}-\u{1A99}\u{1B50}-\u{1B59}\u{1BB0}-\u{1BB9}\u{1C40}-\u{1C49}\u{1C50}-\u{1C59}\u{A620}-\u{A629}\u{A8D0}-\u{A8D9}\u{A900}-\u{A909}\u{A9D0}-\u{A9D9}\u{A9F0}-\u{A9F9}\u{AA50}-\u{AA59}\u{ABF0}-\u{ABF9}\u{FF10}-\u{FF19}\u{104A0}-\u{104A9}\u{10D30}-\u{10D39}\u{10D40}-\u{10D49}\u{11066}-\u{1106F}\u{110F0}-\u{110F9}\u{11136}-\u{1113F}\u{111D0}-\u{111D9}\u{112F0}-\u{112F9}\u{11450}-\u{11459}\u{114D0}-\u{114D9}\u{11650}-\u{11659}\u{116C0}-\u{116C9}\u{116D0}-\u{116E3}\u{11730}-\u{11739}\u{118E0}-\u{118E9}\u{11950}-\u{11959}\u{11BF0}-\u{11BF9}\u{11C50}-\u{11C59}\u{11D50}-\u{11D59}\u{11DA0}-\u{11DA9}\u{11DE0}-\u{11DE9}\u{11F50}-\u{11F59}\u{16130}-\u{16139}\u{16A60}-\u{16A69}\u{16AC0}-\u{16AC9}\u{16B50}-\u{16B59}\u{16D70}-\u{16D79}\u{1CCF0}-\u{1CCF9}\u{1D7CE}-\u{1D7FF}\u{1E140}-\u{1E149}\u{1E2F0}-\u{1E2F9}\u{1E4F0}-\u{1E4F9}\u{1E5F1}-\u{1E5FA}\u{1E950}-\u{1E959}\u{1FBF0}-\u{1FBF9}) .
+// END UNICODE

@@ -1,0 +1,19 @@
+package s
+
+func f(ch chan int, v any) {
+	switch x := v.(type) {
+	case int, string:
+		_ = x
+	default:
+	}
+	select {
+	case n, ok := <-ch:
+		_, _ = n, ok
+	case ch <- 1:
+	}
+	if p := (T{}); p.ok {
+		goto L
+	}
+L:
+	defer func() { recover() }()
+}

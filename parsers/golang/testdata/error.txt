@@ -1,0 +1,6 @@
+package e
+
+func f() {
+	if x := T{} {
+	}
+}

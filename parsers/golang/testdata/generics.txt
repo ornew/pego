@@ -1,0 +1,21 @@
+package g
+
+type Number interface {
+	~int | ~float64
+}
+
+type Pair[K comparable, V any] struct {
+	Key K
+	Val V `json:"val"`
+}
+
+type A[N]int // an array type, not a type parameter list
+
+func Sum[T Number](xs ...T) (s T) {
+	for _, x := range xs {
+		s += x
+	}
+	return
+}
+
+var p = Pair[string, int]{"a", 1}
