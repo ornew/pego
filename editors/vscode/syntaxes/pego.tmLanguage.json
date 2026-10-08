@@ -1,0 +1,301 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "PEGO",
+  "scopeName": "source.pego",
+  "fileTypes": ["pego"],
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#package" },
+    { "include": "#type-definition" },
+    { "include": "#rule-definition" },
+    { "include": "#body" }
+  ],
+  "repository": {
+    "comment": {
+      "match": "//.*$",
+      "name": "comment.line.double-slash.pego"
+    },
+    "package": {
+      "match": "\\b(package)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)",
+      "captures": {
+        "1": { "name": "keyword.other.package.pego" },
+        "2": { "name": "entity.name.namespace.pego" }
+      }
+    },
+    "type-definition": {
+      "patterns": [
+        {
+          "comment": "type Name struct { Field Type, ... }",
+          "begin": "\\b(type)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)\\s+(struct)\\s*(\\{)",
+          "beginCaptures": {
+            "1": { "name": "storage.type.pego" },
+            "2": { "name": "entity.name.type.pego" },
+            "3": { "name": "storage.type.struct.pego" },
+            "4": { "name": "punctuation.definition.block.begin.pego" }
+          },
+          "end": "\\}",
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.block.end.pego" }
+          },
+          "patterns": [
+            { "include": "#comment" },
+            { "include": "#field" },
+            { "include": "#type-expression" },
+            { "match": ",", "name": "punctuation.separator.comma.pego" }
+          ]
+        },
+        {
+          "comment": "type Name = Type | Type",
+          "begin": "\\b(type)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)\\s*(=)",
+          "beginCaptures": {
+            "1": { "name": "storage.type.pego" },
+            "2": { "name": "entity.name.type.pego" },
+            "3": { "name": "keyword.operator.assignment.pego" }
+          },
+          "end": "(?=//)|$",
+          "patterns": [{ "include": "#type-expression" }]
+        },
+        {
+          "comment": "type Name terminal, and a type definition being written",
+          "match": "\\b(type)(?:\\s+([\\p{L}_][\\p{L}\\p{N}_]*)(?:\\s+(terminal|struct)\\b)?)?",
+          "captures": {
+            "1": { "name": "storage.type.pego" },
+            "2": { "name": "entity.name.type.pego" },
+            "3": { "name": "storage.type.$3.pego" }
+          }
+        }
+      ]
+    },
+    "field": {
+      "comment": "The name of a struct field: the first identifier on a line, or after { or ,",
+      "match": "(?:^|(?<=[{,]))\\s*([\\p{L}_][\\p{L}\\p{N}_]*)",
+      "captures": {
+        "1": { "name": "variable.other.property.pego" }
+      }
+    },
+    "type-expression": {
+      "patterns": [
+        { "include": "#comment" },
+        {
+          "match": "\\b(int|string|bool|node|terminal|Match|Seq|List|Operator|Error)\\b",
+          "name": "support.type.builtin.pego"
+        },
+        {
+          "match": "[\\p{L}_][\\p{L}\\p{N}_]*",
+          "name": "entity.name.type.pego"
+        },
+        {
+          "match": "\\[\\]|\\*",
+          "name": "keyword.operator.type.pego"
+        },
+        {
+          "match": "\\|",
+          "name": "keyword.operator.union.pego"
+        },
+        {
+          "match": "[()]",
+          "name": "punctuation.parenthesis.pego"
+        }
+      ]
+    },
+    "rule-definition": {
+      "patterns": [
+        {
+          "comment": "def name: Type =",
+          "begin": "\\b(def)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)\\s*(:)",
+          "beginCaptures": {
+            "1": { "name": "storage.type.function.pego" },
+            "2": { "name": "entity.name.function.pego" },
+            "3": { "name": "punctuation.separator.type.pego" }
+          },
+          "end": "(=)|(?=^\\s*(?:def|type)\\b)",
+          "endCaptures": {
+            "1": { "name": "keyword.operator.assignment.pego" }
+          },
+          "patterns": [{ "include": "#type-expression" }]
+        },
+        {
+          "comment": "def name =",
+          "match": "\\b(def)(?:\\s+([\\p{L}_][\\p{L}\\p{N}_]*))?",
+          "captures": {
+            "1": { "name": "storage.type.function.pego" },
+            "2": { "name": "entity.name.function.pego" }
+          }
+        }
+      ]
+    },
+    "body": {
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#string" },
+        { "include": "#char-class" },
+        { "include": "#attribute" },
+        { "include": "#keyword" },
+        { "include": "#new" },
+        { "include": "#builtin-function" },
+        { "include": "#capture-label" },
+        { "include": "#capture-reference" },
+        { "include": "#member" },
+        { "include": "#number" },
+        { "include": "#operator" }
+      ]
+    },
+    "string": {
+      "begin": "\"",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.string.begin.pego" }
+      },
+      "end": "(\")|$",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.string.end.pego" }
+      },
+      "name": "string.quoted.double.pego",
+      "patterns": [{ "include": "#escape" }]
+    },
+    "escape": {
+      "patterns": [
+        {
+          "match": "\\\\(?:u\\{[0-9A-Fa-f]+\\}|u[0-9A-Fa-f]{4}|[ntrfvab0]|[^A-Za-z0-9])",
+          "name": "constant.character.escape.pego"
+        },
+        {
+          "match": "\\\\.",
+          "name": "invalid.illegal.escape.pego"
+        }
+      ]
+    },
+    "char-class": {
+      "comment": "(?a-z_), (?^\"\\\\)",
+      "begin": "(\\(\\?)(\\^)?",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.character-class.begin.pego" },
+        "2": { "name": "keyword.operator.negation.pego" }
+      },
+      "end": "(\\))|$",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.character-class.end.pego" }
+      },
+      "name": "string.regexp.character-class.pego",
+      "patterns": [
+        { "include": "#escape" },
+        {
+          "match": "(?<!\\(\\?|\\(\\?\\^)-(?!\\))",
+          "name": "keyword.operator.range.pego"
+        }
+      ]
+    },
+    "attribute": {
+      "patterns": [
+        {
+          "comment": "#name(arg=value, ...)",
+          "begin": "(#)([\\p{L}_][\\p{L}\\p{N}_]*)(\\()",
+          "beginCaptures": {
+            "1": { "name": "punctuation.definition.attribute.pego" },
+            "2": { "name": "entity.other.attribute-name.pego" },
+            "3": { "name": "punctuation.parenthesis.begin.pego" }
+          },
+          "end": "\\)",
+          "endCaptures": {
+            "0": { "name": "punctuation.parenthesis.end.pego" }
+          },
+          "patterns": [
+            {
+              "match": "([\\p{L}_][\\p{L}\\p{N}_]*)\\s*(=)(?!=)",
+              "captures": {
+                "1": { "name": "variable.parameter.attribute.pego" },
+                "2": { "name": "keyword.operator.assignment.pego" }
+              }
+            },
+            { "include": "#parenthesized" },
+            { "include": "#body" }
+          ]
+        },
+        {
+          "match": "(#)([\\p{L}_][\\p{L}\\p{N}_]*)",
+          "captures": {
+            "1": { "name": "punctuation.definition.attribute.pego" },
+            "2": { "name": "entity.other.attribute-name.pego" }
+          }
+        }
+      ]
+    },
+    "parenthesized": {
+      "comment": "A group inside attribute arguments, so that its ) does not end them",
+      "begin": "\\((?!\\?)",
+      "end": "\\)",
+      "patterns": [{ "include": "#parenthesized" }, { "include": "#body" }]
+    },
+    "keyword": {
+      "patterns": [
+        {
+          "match": "\\b(infix)\\s+(left|right|none)\\b",
+          "captures": {
+            "1": { "name": "keyword.control.pratt.pego" },
+            "2": { "name": "keyword.other.associativity.pego" }
+          }
+        },
+        {
+          "match": "\\b(pratt|skip|operand|level|prefix|postfix|infix)\\b",
+          "name": "keyword.control.pratt.pego"
+        },
+        {
+          "match": "\\b(true|false|nil)\\b",
+          "name": "constant.language.pego"
+        }
+      ]
+    },
+    "new": {
+      "match": "\\b(new)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)",
+      "captures": {
+        "1": { "name": "keyword.operator.new.pego" },
+        "2": { "name": "entity.name.type.pego" }
+      }
+    },
+    "builtin-function": {
+      "match": "\\b(len|text|foldl|foldr|map|list|concat)(?=\\()",
+      "name": "support.function.builtin.pego"
+    },
+    "capture-label": {
+      "comment": "label:expr (also the fields of new T{Field: value})",
+      "match": "([\\p{L}_][\\p{L}\\p{N}_]*)(:)",
+      "captures": {
+        "1": { "name": "variable.other.capture.pego" },
+        "2": { "name": "punctuation.separator.capture.pego" }
+      }
+    },
+    "capture-reference": {
+      "match": "\\$(?:[\\p{L}_][\\p{L}\\p{N}_]*|[0-9]+)",
+      "name": "variable.parameter.capture.pego"
+    },
+    "member": {
+      "match": "(\\.)([\\p{L}_][\\p{L}\\p{N}_]*)",
+      "captures": {
+        "1": { "name": "punctuation.accessor.pego" },
+        "2": { "name": "variable.other.property.pego" }
+      }
+    },
+    "number": {
+      "match": "\\b[0-9]+\\b",
+      "name": "constant.numeric.integer.pego"
+    },
+    "operator": {
+      "patterns": [
+        { "match": "->|=>", "name": "keyword.operator.arrow.pego" },
+        { "match": "_\\|_", "name": "constant.language.bottom.pego" },
+        { "match": "--", "name": "keyword.control.cut.pego" },
+        { "match": "\\^\\^|\\$\\$|\\^|\\$", "name": "keyword.operator.anchor.pego" },
+        { "match": "(?<![\\p{L}\\p{N}_])_(?![\\p{L}\\p{N}_])", "name": "constant.language.top.pego" },
+        { "match": "==|!=|<=|>=|&&|\\|\\||<|>|%", "name": "keyword.operator.pego" },
+        { "match": "\\{[0-9]*(?:,[0-9]*)?\\}", "name": "keyword.operator.quantifier.pego" },
+        { "match": "[*+?]", "name": "keyword.operator.quantifier.pego" },
+        { "match": "/", "name": "keyword.operator.choice.pego" },
+        { "match": "[&!]", "name": "keyword.operator.lookahead.pego" },
+        { "match": "@", "name": "keyword.operator.atomic.pego" },
+        { "match": "-", "name": "keyword.operator.discard.pego" },
+        { "match": "\\.", "name": "constant.language.any.pego" },
+        { "match": "=", "name": "keyword.operator.assignment.pego" },
+        { "match": "[{}()\\[\\],]", "name": "punctuation.pego" }
+      ]
+    }
+  }
+}

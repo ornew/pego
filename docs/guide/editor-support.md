@@ -74,6 +74,32 @@ hover shows the declared type, or says that the type is not known yet.
 
 The examples below start `pego lsp` for files ending in `.pego`.
 
+### Visual Studio Code
+
+The repository has an extension in [`editors/vscode`](../../editors/vscode/README.md). It adds the `pego` language
+(line comments, bracket matching and auto-closing pairs), syntax highlighting with a TextMate grammar, and starts
+`pego lsp` for `.pego` files. It is not published to the Marketplace; build and install it from a checkout with
+Node.js 20 or later:
+
+```sh
+cd editors/vscode
+npm install
+npm run package                        # builds pego-0.1.0.vsix
+code --install-extension pego-0.1.0.vsix
+```
+
+To try it without installing, open `editors/vscode` in VS Code and press F5: a window with the extension loaded opens.
+
+| Setting | Default | Meaning |
+|:--|:--|:--|
+| `pego.server.enabled` | `true` | Start the language server. Without it, only highlighting and the editing settings apply |
+| `pego.server.path` | `pego` | The `pego` command: a name looked up on the `PATH`, or an absolute path |
+| `pego.trace.server` | `off` | Log the protocol messages (`messages` or `verbose`) in the *PEGO Language Server* output channel |
+
+**PEGO: Restart Language Server** in the command palette restarts the server, for example after installing a new
+`pego`. Highlighting does not need the server, so it works even when `pego` is not installed; the extension then
+shows an error once and offers no diagnostics.
+
 ### Neovim
 
 With Neovim 0.11 or later, in `init.lua`:
@@ -144,7 +170,8 @@ everything it supports in its reply to `initialize`, and uses UTF-16 positions, 
 ## Troubleshooting
 
 - **Nothing happens.** Check that the editor finds the command: run `pego lsp` in a terminal (it waits for input;
-  press Ctrl-C), and give the editor the full path if it does not see your `PATH`.
+  press Ctrl-C), and give the editor the full path if it does not see your `PATH` (in VS Code, `pego.server.path`).
+  In VS Code, set `pego.trace.server` to `messages` and look at the *PEGO Language Server* output channel.
 - **The server exits with status 1.** It does so when the editor sends `exit` without `shutdown` first, or when the
   input ends; the editor restarts it.
 - **Formatting does nothing.** The file has a syntax error; fix the errors the editor shows first.

@@ -1,0 +1,89 @@
+{
+  "name": "pego",
+  "displayName": "PEGO",
+  "description": "PEGO grammar files: syntax highlighting, and diagnostics, formatting, navigation, hover, rename and completion from the pego language server",
+  "version": "0.1.0",
+  "publisher": "ornew",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ornew/pego",
+    "directory": "editors/vscode"
+  },
+  "engines": {
+    "vscode": "^1.91.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Formatters"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "pego",
+        "aliases": [
+          "PEGO",
+          "pego"
+        ],
+        "extensions": [
+          ".pego"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "pego",
+        "scopeName": "source.pego",
+        "path": "./syntaxes/pego.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "PEGO",
+      "properties": {
+        "pego.server.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Start the PEGO language server (pego lsp) for .pego files. Syntax highlighting works without it."
+        },
+        "pego.server.path": {
+          "type": "string",
+          "default": "pego",
+          "description": "The pego command that runs the language server: a name looked up on the PATH, or an absolute path."
+        },
+        "pego.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Log the messages between VS Code and the language server in the PEGO Language Server output channel."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "pego.restartServer",
+        "title": "Restart Language Server",
+        "category": "PEGO"
+      }
+    ]
+  },
+  "scripts": {
+    "check": "node scripts/check-grammar.js",
+    "check-server": "node scripts/check-server.js",
+    "package": "vsce package --skip-license"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^10.1.2"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^3.0.0",
+    "vscode-jsonrpc": "^9.0.3",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.3.2"
+  }
+}

@@ -11,6 +11,9 @@
 Any editor with an LSP client gets the errors of a grammar as it is typed, formatting, navigation between rules and
 types, hover with inferred rule types, rename and completion.
 
+A minimal VS Code extension (`editors/vscode/`) starts the server and adds a TextMate grammar for syntax
+highlighting, which works without the server too.
+
 The server is the package `internal/lsp`, written with the standard library only, so the root module gains no
 dependency.
 How to use it is in the [editor support guide](../guide/editor-support.md).
@@ -119,6 +122,29 @@ types after `new` and the fields after `.`; in the type of a rule or a type defi
 associativities; elsewhere in a rule body, the rules and the keywords that may come there.
 Rule and type names come from every `def name` and `type Name` in the file, including definitions that do not parse
 yet.
+
+### Editor integration
+
+The server is generic: an editor needs only to start `pego lsp` for `.pego` files.
+`editors/vscode/` adds what VS Code needs: a language definition for `.pego` files (line comments, brackets,
+auto-closing pairs, indentation after an opening bracket), a TextMate grammar (`syntaxes/pego.tmLanguage.json`), and
+a client (`extension.js`) that starts `pego lsp` with `vscode-languageclient`.
+The client is plain JavaScript, so the extension has no compile step; its settings select the command
+(`pego.server.path`), turn the server off (`pego.server.enabled`) and log the protocol (`pego.trace.server`).
+
+Highlighting comes from the TextMate grammar, so it works before the server starts, without it, and in tools that read
+TextMate grammars.
+The grammar scopes definitions, type expressions (in rule types, aliases and struct bodies, so that a rule named
+`string` is not taken for the built-in type), struct fields, capture labels and references, attributes, strings and
+character classes with their escape sequences (an unknown escape is marked invalid), and every operator.
+Rule references are left unscoped; semantic tokens from the server color them where the editor supports it.
+
+The extension's checks run with Node.js: `npm run check` compiles every regular expression of the grammar with
+Oniguruma (`vscode-oniguruma`, the engine VS Code uses), tokenizes a sample with `vscode-textmate` and checks the scope
+of each of its parts, and tokenizes the example grammars, none of which may contain an invalid token;
+`npm run check-server` talks to a running `pego lsp` with `vscode-jsonrpc`, the JSON-RPC library of the language
+client, to check that the two interoperate.
+The node modules and the packaged `.vsix` are not committed.
 
 ## Alternatives
 
