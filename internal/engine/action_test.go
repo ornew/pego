@@ -264,6 +264,19 @@ type T struct { S string }
 def main = x:"a"? "b" -> new T{S: text($x) + "!"}`, ok("b", "(T S=`!`)"))
 }
 
+// TestLargeIntegers checks that integer literals beyond 32 bits keep their value on every backend.
+func TestLargeIntegers(t *testing.T) {
+	prog := compile(t, `
+type T struct { A int, B int, C int, D int, E int }
+def main = "a" -> new T{A: 3000000000, B: 0 - 3000000000, C: 9223372036854775807, D: 0 - 9223372036854775807 - 1, E: 4294967296}`)
+	want := `(T A=3000000000 B=-3000000000 C=9223372036854775807 D=-9223372036854775808 E=4294967296)`
+	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		if n, err := prog.ParseWith("main", "a", ParseOptions{Backend: b}); err != nil || n.String() != want {
+			t.Errorf("%v: got %v, %v, want %s", b, n, err, want)
+		}
+	}
+}
+
 // TestLenOfStrings checks that len counts the characters of strings in the position unit on
 // every backend, for strings that do not come from the input too.
 func TestLenOfStrings(t *testing.T) {

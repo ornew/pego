@@ -483,7 +483,9 @@ func (c *bcompiler) lambda(t grammar.Term, s *scope, locals []string) {
 func (c *bcompiler) term(t grammar.Term, s *scope, locals []string) {
 	switch t := t.(type) {
 	case *grammar.IntLit:
-		c.eemit(EInt, int32(t.Value), 0)
+		// A holds the low 32 bits and B the rest (see EInt), so B is 0 for the values of int32.
+		lo := int32(t.Value)
+		c.eemit(EInt, lo, int32((uint64(t.Value)-uint64(int64(lo)))>>32))
 	case *grammar.StringLit:
 		c.eemit(EStr, c.str(t.Value), 0)
 	case *grammar.BoolLit:

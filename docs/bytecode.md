@@ -235,7 +235,7 @@ Actions and predicates are evaluated by stack-based expression code. An evaluati
 
 | Code | Instruction | Operands | Behavior |
 |--:|:--|:--|:--|
-| 100 | `EINT` | A value | Push an integer. |
+| 100 | `EINT` | A, B value | Push the integer A + B × 2³² (A and B signed, with 64-bit wrap-around): A holds its low 32 bits, and B is 0 for the integers of 32 bits. |
 | 101 | `ESTR` | A string | Push a string. |
 | 102 | `EBOOL` | A value | Push a boolean (0 or 1). |
 | 103 | `ENIL` | | Push nil. |

@@ -920,7 +920,7 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 		in := &m.Exprs[ip]
 		switch in.Op {
 		case EInt:
-			stack = append(stack, int(in.A))
+			stack = append(stack, int(int64(in.A)+int64(in.B)<<32))
 		case EStr:
 			stack = append(stack, m.Strings[in.A])
 		case EBool:

@@ -160,7 +160,9 @@ func (m *Module) operands(in Instr, str func(int) string, names func([]int) stri
 		return fmt.Sprintf("%s expr=%d", m.Strings[a], bb)
 	case OpLabel, EStr, EVar, EMember, EBin, EUnary, EBoolChk:
 		return str(a)
-	case EInt, EItem, ELocal, ECap, EListPush:
+	case EInt:
+		return strconv.FormatInt(int64(a)+int64(bb)<<32, 10)
+	case EItem, ELocal, ECap, EListPush:
 		return strconv.Itoa(a)
 	case EBool:
 		return strconv.FormatBool(a == 1)
