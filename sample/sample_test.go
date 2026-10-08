@@ -313,6 +313,25 @@ def x = "a" / "c"`)
 	}
 }
 
+// TestCoverageDeadAlternative checks that coverage mode stops pursuing an alternative that the parser
+// never takes when the search fails on it late, without a candidate to reject: the last alternative
+// below is dead, since the first one matches whatever it starts with.
+func TestCoverageDeadAlternative(t *testing.T) {
+	p := compile(t, `def main = s $$
+def s = "(" s ")" / "x" / "y" / "(" s ")" "!"`)
+	plain, err := sample.Generate(p, 20, sample.WithSeed(1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	covered, err := sample.Generate(p, 20, sample.WithSeed(1), sample.WithCoverage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(covered) < len(plain)-2 {
+		t.Errorf("coverage mode found %d inputs, plain mode %d", len(covered), len(plain))
+	}
+}
+
 func TestNoInput(t *testing.T) {
 	// No input parses: the repetition takes every "a", and the second "a" never matches.
 	p := compile(t, `def main = "a"* "a"`)

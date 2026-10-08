@@ -138,9 +138,16 @@ instrumenting the runtimes for coverage was not worth the cost in every backend.
 With `WithCoverage`, decisions prefer, in order, options whose own target is not exercised yet, options whose reach
 contains such a target, and the rest (at random within each group). Optional expressions and repetitions that reach an
 unexercised target are taken with probability 3/4 rather than always: when several of them together violate a predicate
-(`[len($a) + len($g) + len($n) <= 1]` in the Python grammar), always taking them all would fail every attempt. A target
-that took part in four rejected candidates is no longer preferred (the parser may never take it, because of a cut for
-example).
+(`[len($a) + len($g) + len($n) <= 1]` in the Python grammar), always taking them all would fail every attempt.
+
+A target that ten failed attempts tried while it was not exercised yet is *settled*: it is no longer preferred, and
+neither are options because they reach it. The parser may never take it, because of a cut, or because an earlier
+alternative of the choice matches whatever it matches; in `s = "(" s ")" / "x" / "y" / "(" s ")" "!"` the last
+alternative is dead, and the search finds out only after generating a whole nested `s`. Both kinds of failure count:
+candidates the parser rejects, and searches that end without a candidate. Counting only rejected candidates, coverage
+mode found 2 inputs for that grammar where plain generation found 10, because every recursive alternative kept leading
+to the dead one. The threshold is a trade-off: at four failures, targets of the Python grammar that are reachable but
+rarely found were settled too early, and coverage fell from 90% to 88% of its alternatives.
 
 ### Invalid inputs
 

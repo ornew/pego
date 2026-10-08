@@ -32,9 +32,10 @@ const quickFailure = 8
 // matchBudget is the budget of the matcher in an attempt, in multiples of the generation budget.
 const matchBudget = 1000
 
-// hopeless is the number of rejected candidates after which coverage mode stops preferring a target
-// that no accepted input has exercised: the parser may never take it (because of a cut, for example).
-const hopeless = 4
+// hopeless is the number of failed attempts after which coverage mode stops preferring a target that no
+// accepted input has exercised: the parser may never take it (because of a cut, or because an earlier
+// alternative of the choice matches whatever it matches, which may show only late in the search).
+const hopeless = 10
 
 // cont is a continuation that receives the value of the expression just generated.
 type cont func(v val) bool
@@ -62,7 +63,9 @@ type gen struct {
 	cfg     *config
 	rng     *rand.Rand
 	covered bitset // targets exercised by accepted inputs
-	// rejected counts, for each target, the candidates that exercised it and that the parser rejected.
+	settled bitset // targets that coverage mode no longer pursues: covered or hopeless
+	// rejected counts, for each target, the failed attempts that tried it while it was not exercised
+	// yet: searches that ended without a candidate, and candidates that the parser rejected.
 	rejected []int
 
 	// The state of one attempt. Every function that changes it restores it before returning, so that a
@@ -78,6 +81,8 @@ type gen struct {
 	depth   int   // calls of rules that were already active: the recursion depth
 	steps   int
 	tent    bitset // targets exercised by the current attempt
+	tried   []int  // targets the current attempt tried while they were not exercised yet
+	triedB  bitset
 	trail   []int  // targets in tent, in the order they were added
 
 	m         matcher
@@ -97,6 +102,8 @@ func newGen(in *info, cfg *config) *gen {
 		covered:  newBitset(len(in.targets)),
 		rejected: make([]int, len(in.targets)),
 		tent:     newBitset(len(in.targets)),
+		triedB:   newBitset(len(in.targets)),
+		settled:  newBitset(len(in.targets)),
 		active:   make([]int, len(in.order)),
 	}
 }
@@ -112,6 +119,10 @@ func (g *gen) attempt() (string, []int, bool) {
 		g.tent.clear(t)
 	}
 	g.trail = g.trail[:0]
+	for _, t := range g.tried {
+		g.triedB.clear(t)
+	}
+	g.tried = g.tried[:0]
 	ok := g.genRef(&grammar.Ref{Name: g.in.start.def.Name}, func(val) bool { return g.finish() }, false)
 	return g.result, g.resultTrail, ok
 }
@@ -157,13 +168,37 @@ func (g *gen) minimal() bool {
 // current attempt.
 func (g *gen) untouched(t int) bool { return !g.covered.has(t) && !g.tent.has(t) }
 
-// wanted reports whether coverage mode prefers the target: it is untouched, and candidates that
-// exercised it were not rejected too often.
-func (g *gen) wanted(t int) bool { return g.untouched(t) && g.rejected[t] < hopeless }
+// wanted reports whether coverage mode prefers the target: it is untouched, and attempts that tried it
+// did not fail too often.
+func (g *gen) wanted(t int) bool { return g.untouched(t) && !g.settled.has(t) }
+
+// accepted records the targets of an accepted input.
+func (g *gen) accepted(trail []int) {
+	for _, t := range trail {
+		g.covered.set(t)
+		g.settled.set(t)
+	}
+}
+
+// failed records a failed attempt (a search without a candidate, or a candidate the parser rejected)
+// against the targets it tried while they were not exercised yet. A target that keeps failing is
+// settled: coverage mode no longer prefers it, nor options that reach it.
+func (g *gen) failed() {
+	for _, t := range g.tried {
+		g.rejected[t]++
+		if g.rejected[t] >= hopeless {
+			g.settled.set(t)
+		}
+	}
+}
 
 // mark records that the current attempt exercises the target, and returns a mark for unmark.
 func (g *gen) mark(t int) int {
 	n := len(g.trail)
+	if g.cfg.coverage && !g.covered.has(t) && !g.triedB.has(t) {
+		g.triedB.set(t)
+		g.tried = append(g.tried, t)
+	}
 	if !g.tent.has(t) {
 		g.tent.set(t)
 		g.trail = append(g.trail, t)
@@ -405,7 +440,7 @@ func (g *gen) order(opts []option) []int {
 			switch {
 			case o.own >= 0 && g.wanted(o.own):
 				return 0
-			case o.reach != nil && o.reach.anyNotIn(g.covered, g.tent):
+			case o.reach != nil && o.reach.anyNotIn(g.settled, g.tent):
 				return 1
 			}
 			return 2
@@ -459,7 +494,7 @@ func (g *gen) genOptional(e *grammar.Optional, k cont) bool {
 	switch {
 	case g.minimal():
 		takeFirst = false
-	case g.cfg.coverage && g.in.reach(e.Expr).anyNotIn(g.covered, g.tent):
+	case g.cfg.coverage && g.in.reach(e.Expr).anyNotIn(g.settled, g.tent):
 		takeFirst = g.rng.IntN(4) != 0
 	}
 	if takeFirst {
@@ -477,7 +512,7 @@ func (g *gen) genRepeat(e *grammar.Repeat, k cont) bool {
 		for extra := 0; extra < g.cfg.maxRepeat && g.rng.IntN(2) == 0; extra++ {
 			want++
 		}
-		if g.cfg.coverage && g.rng.IntN(4) != 0 && g.in.reach(e.Expr).anyNotIn(g.covered, g.tent) {
+		if g.cfg.coverage && g.rng.IntN(4) != 0 && g.in.reach(e.Expr).anyNotIn(g.settled, g.tent) {
 			want = max(want, e.Min+1)
 		}
 	}

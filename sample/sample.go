@@ -137,19 +137,16 @@ func (g *Generator) Next() (string, error) {
 		s, trail, ok := g.g.attempt()
 		if !ok {
 			g.stats.Failed++
+			g.g.failed()
 			continue
 		}
 		g.stats.Candidates++
 		if _, err := g.p.Parse(s); err != nil {
 			g.stats.Rejected++
-			for _, t := range trail {
-				g.g.rejected[t]++
-			}
+			g.g.failed()
 			continue
 		}
-		for _, t := range trail {
-			g.g.covered.set(t)
-		}
+		g.g.accepted(trail)
 		return s, nil
 	}
 	return "", ErrNoInput
