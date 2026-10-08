@@ -8,6 +8,13 @@ export function fmtTime(micros) {
 
 const plural = (n, word) => (n === 1 ? `1 ${word}` : `${n} ${word}s`);
 
+// depthHint explains the playground's nesting limit, which is lower than the engine's because the
+// browser's stack is small (see playground/main_js.go).
+function depthHint(res, req) {
+  if (!/^nesting too deep/.test(res.error || "") || req.backend === "bytecode-iterative" || req.maxDepth) return "";
+  return " (the playground's limit, which fits the browser's stack; the bytecode-iterative backend has none)";
+}
+
 export function describeResult(res, req) {
   const errs = res.errors ?? [];
   const info = `start ${res.start || "?"} · ${fmtTime(res.micros ?? 0)}`;
@@ -15,7 +22,7 @@ export function describeResult(res, req) {
   let status;
   if (!res.matched) {
     if (errs.length) status = { kind: "error", text: `✗ Syntax error at ${errs[0].line}:${errs[0].col} · ${info}` };
-    else status = { kind: "error", text: `✗ ${res.error || "The input does not match the grammar"}` };
+    else status = { kind: "error", text: `✗ ${res.error || "The input does not match the grammar"}${depthHint(res, req)}` };
   } else if (res.error) {
     // The input matched, but the result cannot be shown (for example, a tree nested too deep).
     status = { kind: "warn", text: `⚠ Matched, but ${res.error} · ${info}` };

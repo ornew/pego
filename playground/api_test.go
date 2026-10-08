@@ -172,6 +172,52 @@ func TestBadRequests(t *testing.T) {
 	}
 }
 
+func TestDepthLimits(t *testing.T) {
+	defer func(d, td int) { maxDepth, maxTreeDepth = d, td }(maxDepth, maxTreeDepth)
+	maxDepth, maxTreeDepth = 50, 30
+	src := `def main = value $$
+def value = list / "x"
+def list = "[" value* "]"
+`
+	nested := func(n int) string { return strings.Repeat("[", n) + "x" + strings.Repeat("]", n) }
+
+	// Rule calls nest too deeply: an engine error, not a crash.
+	for _, backend := range []string{"", "closure", "bytecode"} {
+		r := call[parseResult](t, "parse", parseRequest{Grammar: src, Input: nested(40), Backend: backend})
+		if r.Matched || r.Error != "nesting too deep: more than 50 rule calls" {
+			t.Errorf("backend %q: %+v", backend, r)
+		}
+	}
+	// The iterative backend is not limited, but the tree is too deep to show.
+	r := call[parseResult](t, "parse", parseRequest{Grammar: src, Input: nested(40), Backend: "bytecode-iterative"})
+	if !r.Matched || r.JSON != "" || r.SExpr != "" || r.Depth != 82 || r.Nodes != 162 ||
+		r.Error != "the tree is nested 82 levels deep, more than the 30 levels the playground can show" {
+		t.Errorf("iterative: %+v", r)
+	}
+	// Within the limits, and with an explicit limit.
+	r = call[parseResult](t, "parse", parseRequest{Grammar: src, Input: nested(10)})
+	if !r.Matched || r.Error != "" || r.Depth != 22 || r.Nodes != 42 || r.JSON == "" {
+		t.Errorf("within the limits: %+v", r)
+	}
+	r = call[parseResult](t, "parse", parseRequest{Grammar: src, Input: nested(10), MaxDepth: 5})
+	if r.Matched || !strings.Contains(r.Error, "more than 5 rule calls") {
+		t.Errorf("explicit limit: %+v", r)
+	}
+}
+
+func TestDeepTreeNatively(t *testing.T) {
+	// encoding/json refuses trees nested more than 10,000 levels; the limit reports them first.
+	src := `def main = value $$
+def value = list / "x"
+def list = "[" value* "]"
+`
+	n := 3000
+	r := call[parseResult](t, "parse", parseRequest{Grammar: src, Input: strings.Repeat("[", n) + "x" + strings.Repeat("]", n), Backend: "bytecode-iterative"})
+	if !r.Matched || r.Depth != 2*n+2 || !strings.HasPrefix(r.Error, "the tree is nested 6002 levels deep") {
+		t.Errorf("matched %v, depth %d, error %q", r.Matched, r.Depth, r.Error)
+	}
+}
+
 func TestParseWithoutValue(t *testing.T) {
 	// A start rule that matches without producing a value still matches.
 	for _, recognize := range []bool{false, true} {

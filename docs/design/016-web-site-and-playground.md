@@ -49,6 +49,31 @@ How to use, build and deploy it is described in the [playground guide](../guide/
 - The last compiled grammar is cached by its source, so typing in the input does not compile the grammar again.
 - A panic in a request is recovered and returned as an error, so a bug does not stop the WebAssembly program.
 
+### Nesting and the browser's stack
+
+Go compiled to WebAssembly makes every Go function call a WebAssembly call, so recursion consumes the JavaScript
+engine's native stack, which is about 1 MB and cannot be raised by a page. When it runs out, the engine throws
+("Maximum call stack size exceeded", "too much recursion" in Firefox) and the Go program cannot continue. The engine's
+own limit of 100,000 nested rule calls is far beyond that, and three things recurse: the closure and bytecode backends
+(once or more per rule call), `encoding/json` and `Node.String` (once per tree level).
+
+Measured with the examples (nested JSON arrays, parenthesized calculator and minilang expressions, nested minilang
+blocks), with the limits disabled:
+
+| Where | Rule calls at overflow (closure, bytecode) | Tree depth at overflow |
+|:--|--:|--:|
+| Web Worker in desktop Chromium (October 2026) | about 1,460–1,690 | about 880–980 |
+| Node 24 | about 2,900–3,400 | about 1,900–1,970 |
+
+The playground sets `WithMaxDepth(600)` for the backends that recurse, and refuses to encode trees nested more than
+400 levels (measured without recursion, and reported with the depth). Both leave a margin of more than two over
+Chromium's worker, because a rule call takes more stack in rules with deeply nested expressions and other browsers have
+other stack sizes (Firefox and Safari were not measured). The iterative backend gets no rule limit: its rule calls do
+not recurse, and its trees are caught by the tree limit. Natively, the tree limit is 4,000, below what `encoding/json`
+accepts (10,000 levels of JSON, two per node level). As a last resort, the page restarts the worker when a call fails
+with a stack overflow and says that the parse needed more stack than the browser provides. The smoke test checks in Node
+that nesting of 400 and 5,000 levels ends with these errors and leaves the program running.
+
 ### The page
 
 The playground runs `pego.wasm` in a **Web Worker**. A long parse cannot freeze the page, and a parse that runs longer

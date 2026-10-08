@@ -121,6 +121,37 @@ for (const ex of manifest) {
   check(`${tag} gen -types`, gen.code === wantGen.out, diff(gen.code, wantGen.out));
 }
 
+// Deep nesting ends with an error instead of overflowing the JavaScript stack, which would stop the
+// program (every later call would then fail).
+{
+  const grammar = readFileSync(path.join(args.repo, "examples/json/json.pego"), "utf8");
+  for (const n of [400, 5000]) {
+    const input = "[".repeat(n) + "]".repeat(n);
+    for (const backend of ["", "closure", "bytecode"]) {
+      let res;
+      try {
+        res = call("parse", { grammar, input, backend });
+      } catch (err) {
+        res = { crash: String(err) };
+      }
+      check(`nesting ${n} ${backend || "default"}`, res.matched === false && /^nesting too deep: more than \d+ rule calls$/.test(res.error),
+        JSON.stringify(res).slice(0, 300));
+    }
+    let res;
+    try {
+      res = call("parse", { grammar, input, backend: "bytecode-iterative" });
+    } catch (err) {
+      res = { crash: String(err) };
+    }
+    check(`nesting ${n} bytecode-iterative`, res.matched === true && res.json === undefined && /^the tree is nested \d+ levels deep/.test(res.error),
+      JSON.stringify(res).slice(0, 300));
+    const rec = call("parse", { grammar, input, backend: "bytecode-iterative", recognize: true });
+    check(`nesting ${n} recognize`, rec.matched === true && !rec.error, JSON.stringify(rec).slice(0, 300));
+  }
+  const ok = call("parse", { grammar, input: "[".repeat(100) + "]".repeat(100) });
+  check("moderate nesting", ok.matched && ok.json && !ok.error, JSON.stringify(ok).slice(0, 300));
+}
+
 // Grammar errors come back as diagnostics with positions.
 const bad = call("compile", { grammar: "def main = (\n" });
 check("diagnostic position", bad.ok === false && bad.diagnostics[0]?.line === 2 && bad.diagnostics[0]?.col === 1,

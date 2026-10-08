@@ -4,6 +4,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { fatalError, friendlyError } from "../static/assets/pego-client.js";
 import { describeResult } from "../static/playground/status.js";
 
 const base = { start: "main", micros: 10 };
@@ -46,6 +47,26 @@ test("a match whose tree cannot be shown", () => {
   assert.equal(status.kind, "warn");
   assert.match(status.text, /Matched, but the tree is nested 6000 levels deep/);
   assert.match(empty, /nested 6000 levels deep/);
+});
+
+test("the nesting limit is explained", () => {
+  const res = { ...base, matched: false, error: "nesting too deep: more than 600 rule calls" };
+  assert.match(describeResult(res, {}).status.text, /600 rule calls \(the playground's limit.*bytecode-iterative/);
+  assert.doesNotMatch(describeResult(res, { backend: "bytecode-iterative" }).status.text, /playground's limit/);
+});
+
+test("stack overflows of every browser restart the parser", () => {
+  for (const m of [
+    "RangeError: Maximum call stack size exceeded", // Chromium, Node
+    "InternalError: too much recursion", // Firefox
+    "RangeError: Maximum call stack size exceeded.", // Safari
+    "Go program has already exited",
+    "RuntimeError: unreachable",
+  ]) {
+    assert.ok(fatalError(m), m);
+  }
+  assert.ok(!fatalError("start rule x is not defined"));
+  assert.match(friendlyError("InternalError: too much recursion"), /more stack than the browser provides/);
 });
 
 test("a successful parse", () => {

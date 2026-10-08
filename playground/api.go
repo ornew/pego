@@ -74,6 +74,9 @@ type parseRequest struct {
 	Unit      string `json:"unit"`      // codepoints (default) or bytes
 	Backend   string `json:"backend"`   // closure, bytecode, bytecode-iterative, or empty for the default
 	Recognize bool   `json:"recognize"` // check the input without building a tree
+	// MaxDepth limits the nesting of rule calls (pego.WithMaxDepth); 0 selects the playground's
+	// limit, maxDepth, for the backends that nest rule calls on the stack.
+	MaxDepth int `json:"maxDepth,omitempty"`
 }
 
 // syntaxError mirrors pego.SyntaxError. Pos is in the unit of the parse; Message is the description
@@ -97,6 +100,7 @@ type parseResult struct {
 	JSON  string `json:"json,omitempty"`
 	SExpr string `json:"sexpr,omitempty"`
 	Nodes int    `json:"nodes,omitempty"` // number of nodes in the tree
+	Depth int    `json:"depth,omitempty"` // how deeply the nodes are nested
 	// Errors are the syntax errors: the one that stopped the parse, or those recovered from with
 	// #recover (Recovered is then true and the tree is still returned).
 	Errors    []syntaxError `json:"errors,omitempty"`
@@ -192,6 +196,14 @@ func errorResponse(err error) []byte {
 	b, _ := json.Marshal(map[string]string{"error": err.Error()})
 	return b
 }
+
+// Limits that keep a parse and the display of its result within the stack. Natively, the defaults
+// of the engine apply, and trees are limited by encoding/json, which refuses to nest more than 10,000
+// levels (two per node level). main_js.go lowers both for WebAssembly.
+var (
+	maxDepth     = 0    // nesting of rule calls (pego.WithMaxDepth); 0 is the engine's default
+	maxTreeDepth = 4000 // nesting of nodes in a tree that is encoded and displayed
+)
 
 // compiled is the result of compiling one grammar source. The last one is kept, so that typing in the
 // input does not compile the grammar again.
@@ -335,6 +347,12 @@ func parse(req parseRequest) parseResult {
 	if req.Recognize {
 		opts = append(opts, pego.RecognizeOnly())
 	}
+	// The iterative backend keeps rule calls on its own stack, so only the others need maxDepth.
+	if d := req.MaxDepth; d > 0 {
+		opts = append(opts, pego.WithMaxDepth(d))
+	} else if maxDepth > 0 && req.Backend != "bytecode-iterative" {
+		opts = append(opts, pego.WithMaxDepth(maxDepth))
+	}
 	p := c.parser
 	if req.Start != "" && req.Start != p.Start() {
 		var err error
@@ -353,6 +371,14 @@ func parse(req parseRequest) parseResult {
 	// that produces no value (a discarded match) returns a nil node and no error.
 	res.Matched = !isFailure(err)
 	if node != nil {
+		res.Nodes, res.Depth = measureTree(node)
+	}
+	if node != nil && res.Depth > maxTreeDepth {
+		// Encoding the tree recurses once per level, and so does the page that shows it.
+		res.Error = fmt.Sprintf("the tree is nested %d levels deep, more than the %d levels the playground can show", res.Depth, maxTreeDepth)
+		node = nil
+	}
+	if node != nil {
 		// Encode exactly like pego parse: an indented json.Encoder, without the final newline.
 		var b bytes.Buffer
 		enc := json.NewEncoder(&b)
@@ -363,7 +389,6 @@ func parse(req parseRequest) parseResult {
 		}
 		res.JSON = strings.TrimSuffix(b.String(), "\n")
 		res.SExpr = node.String()
-		res.Nodes = countNodes(node)
 	}
 	if err != nil {
 		var list pego.SyntaxErrors
@@ -400,20 +425,31 @@ func convertError(e *pego.SyntaxError) syntaxError {
 	}
 }
 
-func countNodes(n *pego.Node) int {
-	if n == nil {
-		return 0
+// measureTree returns the number of nodes of the tree n and how deeply they are nested (1 for a
+// single node). It does not recurse, so that it works on trees of any depth.
+func measureTree(n *pego.Node) (count, depth int) {
+	type item struct {
+		n     *pego.Node
+		depth int
 	}
-	count := 1
-	for _, c := range n.Children {
-		count += countNodes(c)
-	}
-	for _, f := range n.Fields {
-		if c, ok := f.Value.(*pego.Node); ok {
-			count += countNodes(c)
+	stack := []item{{n, 1}}
+	for len(stack) > 0 {
+		it := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		count++
+		depth = max(depth, it.depth)
+		for _, c := range it.n.Children {
+			if c != nil {
+				stack = append(stack, item{c, it.depth + 1})
+			}
+		}
+		for _, f := range it.n.Fields {
+			if c, ok := f.Value.(*pego.Node); ok && c != nil {
+				stack = append(stack, item{c, it.depth + 1})
+			}
 		}
 	}
-	return count
+	return count, depth
 }
 
 func format(src string) formatResult {

@@ -47,6 +47,22 @@ In the editors, Tab inserts indentation; press Escape first to move the focus wi
 Parsing runs in a Web Worker, so a slow parse never freezes the page. A parse that takes more than 10 seconds is
 stopped and the worker is restarted.
 
+### Nesting limits
+
+In the browser, the Go code runs on the JavaScript engine's stack, which is far smaller than the stack of a native Go
+program. The playground therefore limits nesting more than the engine does:
+
+- With the closure and bytecode backends (and the default), rule calls may nest at most **600** deep, instead of
+  100,000 (`pego.WithMaxDepth`). Deeper input ends with the engine's error `nesting too deep: more than 600 rule calls`.
+  A JSON array nests three rule calls per level, so this allows about 200 nested arrays, where `pego parse` handles
+  thousands. The bytecode-iterative backend keeps rule calls on its own stack and has no such limit.
+- Trees nested more than **400** levels deep are not shown: the input matches, and the status says how deep the tree
+  is. Encoding a tree as JSON or an S-expression takes stack for each level.
+
+The limits leave a margin of more than two over what overflowed in measurements (see
+[design record 016](../design/016-web-site-and-playground.md#nesting-and-the-browsers-stack)). If a parse still
+overflows the stack, the worker is restarted and the status says so.
+
 ### Shared links
 
 The state of the playground is kept in the URL fragment, so reloading the page keeps your work and a link reproduces it.
@@ -119,7 +135,7 @@ page or Node:
 | Method | Request | Response |
 |:--|:--|:--|
 | `compile` | `{grammar}` | `{ok, package, rules: [{name, type, line, col}], types: [{name, kind, spec, line, col}], start, diagnostics: [{line, col, message}]}` |
-| `parse` | `{grammar, input, start, unit, backend, recognize}` | `{compile, start, matched, json, sexpr, nodes, errors: [{pos, line, col, expected, messages, message}], recovered, error, micros}` |
+| `parse` | `{grammar, input, start, unit, backend, recognize, maxDepth}` | `{compile, start, matched, json, sexpr, nodes, depth, errors: [{pos, line, col, expected, messages, message}], recovered, error, micros}` |
 | `format` | `{grammar}` | `{formatted, diagnostics}` |
 | `generate` | `{grammar, package, start, types, recognize}` | `{code, diagnostics}` |
 | `version` | | `{go, module, revision, modified}` |
@@ -127,7 +143,8 @@ page or Node:
 `matched` is true when the parse succeeded, including a start rule that matches without producing a value (then
 `json` is empty) and a parse that recovered from errors (then `recovered` is true and `errors` lists them); a syntax
 error that stops the parse, or another error such as a runtime error in an action, makes it false. `json` and `sexpr` are exactly what `pego parse` prints with `-f json` and `-f sexpr` (without the final newline), and
-`message` is the description of an error as the command prints it after `line:col:`. An empty `start` selects the default start rule (`main`, or else the first rule); a `start` that the grammar does not
+`message` is the description of an error as the command prints it after `line:col:`. `maxDepth` overrides the [nesting limit](#nesting-limits) (for any backend); `nodes` and `depth` are the number of
+nodes of the tree and how deeply they nest. An empty `start` selects the default start rule (`main`, or else the first rule); a `start` that the grammar does not
 define is reported as the error `start rule X is not defined` (in `error` for `parse`, in `diagnostics` for
 `generate`). `unit` is `codepoints` (the
 default) or `bytes`; `backend` is empty (the default), `closure`, `bytecode` or `bytecode-iterative`. Grammar diagnostics

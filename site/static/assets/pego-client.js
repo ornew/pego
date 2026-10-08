@@ -26,6 +26,21 @@ function compileModule(base) {
   return modulePromise;
 }
 
+// fatalError reports whether an error thrown by pego.wasm means that the Go program cannot continue:
+// it exited, trapped, or overflowed the JavaScript stack ("Maximum call stack size exceeded" in
+// Chromium and Safari, "too much recursion" in Firefox).
+export function fatalError(message) {
+  return /exited|unreachable|call stack|too much recursion|stack overflow/i.test(message);
+}
+
+// friendlyError explains a fatal error.
+export function friendlyError(message) {
+  if (/call stack|too much recursion|stack overflow/i.test(message)) {
+    return "the parse needed more stack than the browser provides (try the bytecode-iterative backend); the parser was restarted";
+  }
+  return `the parser stopped (${message}) and was restarted`;
+}
+
 export class PegoClient {
   constructor(base, { timeout = 10000 } = {}) {
     this.base = new URL(base, location.href).href;
@@ -78,8 +93,12 @@ export class PegoClient {
     this.pending.delete(msg.id);
     clearTimeout(p.timer);
     if (msg.error) {
-      p.reject(new Error(msg.error));
-      if (/exited|unreachable|stack/i.test(msg.error)) this.restart(msg.error);
+      if (fatalError(msg.error)) {
+        p.reject(new Error(friendlyError(msg.error)));
+        this.restart(msg.error);
+      } else {
+        p.reject(new Error(msg.error));
+      }
     } else {
       p.resolve(JSON.parse(msg.out));
     }
