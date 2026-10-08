@@ -254,3 +254,27 @@ def word = @(?a-z)+`)
 		}
 	}
 }
+
+// TestExplainRecoveredBody checks that the expectations of the expression a #recover recovered
+// from, which the record of the enclosing call no longer holds, are attributed to that call.
+func TestExplainRecoveredBody(t *testing.T) {
+	r := writeFile(t, "recover.pego", `
+def main = stmt* $$
+def stmt = (word ";") #recover(skip=(?^;)+ ";")
+def word = @(?a-z)+`)
+	out, err := runCLI(t, "", "explain", "-g", r, "-i", "ab1;cd;", "-backend", "bytecode")
+	want := `1:3: syntax error: expected ";", (?a-z)
+
+Calls that recorded what was expected at 1:3 (innermost first):
+
+  word 1:1: matched "ab", then expected (?a-z)
+    in stmt 1:1
+    in main 1:1
+
+  stmt 1:1: expected ";" (recovered by #recover)
+    in main 1:1
+`
+	if err != nil || out != want {
+		t.Errorf("got %v\n%s\nwant\n%s", err, out, want)
+	}
+}

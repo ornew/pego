@@ -58,6 +58,8 @@ func explainCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 type explainer struct {
 	stack []explainFrame
 	at    map[int]*explained // per error position
+	// placed holds the recovered errors already attributed to a call.
+	placed map[*pego.SyntaxError]bool
 }
 
 type explainFrame struct {
@@ -80,6 +82,8 @@ type explainedCall struct {
 	matched  bool
 	text     string // the input matched, if the call matched
 	memo     bool
+	// recovered reports that a #recover in the call recovered from the error.
+	recovered bool
 }
 
 func (x *explainer) event(e pego.TraceEvent) {
@@ -89,11 +93,28 @@ func (x *explainer) event(e pego.TraceEvent) {
 	}
 	top := x.stack[len(x.stack)-1]
 	x.stack = x.stack[:len(x.stack)-1]
-	f := e.Failure()
-	if f == nil || x.at[f.Pos] == nil {
+	if f := e.Failure(); f != nil {
+		x.record(e, top, f, false)
+	}
+	// A recovered error is no longer in the record of the call whose #recover recovered from it:
+	// the first call to report it (the innermost, since calls end innermost first) is that call.
+	for _, r := range e.Recovered() {
+		if !x.placed[r] {
+			if x.placed == nil {
+				x.placed = map[*pego.SyntaxError]bool{}
+			}
+			x.placed[r] = true
+			x.record(e, top, r, true)
+		}
+	}
+}
+
+// record lists, for the call top that e ends, the expectations of f (its failure or an error it
+// recovered from) that it recorded itself, and passes all of them on to its caller.
+func (x *explainer) record(e pego.TraceEvent, top explainFrame, f *pego.SyntaxError, recovered bool) {
+	if x.at[f.Pos] == nil {
 		return
 	}
-	// Keep what the call recorded itself, and pass everything it recorded on to its caller.
 	var parent map[string]bool
 	if n := len(x.stack); n > 0 {
 		if x.stack[n-1].nested == nil {
@@ -101,7 +122,7 @@ func (x *explainer) event(e pego.TraceEvent) {
 		}
 		parent = x.stack[n-1].nested
 	}
-	c := explainedCall{matched: e.Matched, text: e.Text(), memo: e.Memo}
+	c := explainedCall{matched: e.Matched && !recovered, text: e.Text(), memo: e.Memo, recovered: recovered}
 	own := func(key, s string, dst *[]string) {
 		if !top.nested[key] {
 			*dst = append(*dst, s)
@@ -153,6 +174,9 @@ func (x *explainer) print(w io.Writer, e *pego.SyntaxError, limit int) {
 		note := ""
 		if c.memo {
 			note = " [memo]"
+		}
+		if c.recovered {
+			note += " (recovered by #recover)"
 		}
 		fmt.Fprintf(w, "\n  %s: %s%s%s\n", c.stack[0], how, strings.Join(what, "; "), note)
 		for _, call := range c.stack[1:] {

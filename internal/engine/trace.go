@@ -65,6 +65,7 @@ type TraceEvent struct {
 	p   *parser
 	far int
 	exp []expID
+	rec []*SyntaxError
 }
 
 // LineCol returns the 1-based line and column of the position pos.
@@ -95,6 +96,14 @@ func (e TraceEvent) Failure() *SyntaxError {
 	return e.p.makeError(e.far, e.exp)
 }
 
+// Recovered returns, for an exit event of a call that matched, the syntax errors that #recover
+// recovered from during the call, in nested calls too, or taken from the memo with the call's
+// result. The expectations of a recovered error are not part of Failure: recovering removes them
+// from the record of the call that contains the #recover.
+func (e TraceEvent) Recovered() []*SyntaxError {
+	return e.rec
+}
+
 // tracer is the tracing state of a parse.
 type tracer struct {
 	fn func(TraceEvent)
@@ -112,9 +121,10 @@ type tracedCallState struct {
 	// evals is the number of body evaluations of the parse when the call started, and nested
 	// those made by nested calls since.
 	evals, nested int
-	// hw is the end of the examined input when the call started.
-	hw  int
-	exp expMark
+	// hw is the end of the examined input when the call started, and rec the number of
+	// recovered errors.
+	hw, rec int
+	exp     expMark
 }
 
 // setTrace makes the parse report its rule calls to fn (nothing if fn is nil).
@@ -141,7 +151,7 @@ func (p *parser) tracedCall(r *rule, min int) (*Node, bool) {
 // keep a maximum).
 func (p *parser) traceEnter(r *rule, min int) {
 	t := p.tr
-	t.stack = append(t.stack, tracedCallState{r: r, min: min, start: p.pos, evals: p.stats.Evaluated, hw: p.hw})
+	t.stack = append(t.stack, tracedCallState{r: r, min: min, start: p.pos, evals: p.stats.Evaluated, hw: p.hw, rec: len(p.recovered)})
 	p.hw = p.pos
 	t.stack[len(t.stack)-1].exp = p.isolate(p.pos)
 	t.fn(TraceEvent{Kind: TraceEnter, Rule: r.name, Level: min, Depth: len(t.stack), Pos: p.pos, Lookahead: p.silent > 0, p: p})
@@ -158,6 +168,9 @@ func (p *parser) traceExit(ok bool) {
 		Examined: p.hw, p: p, far: far, exp: inner}
 	if ok {
 		ev.End = p.pos
+		if len(p.recovered) > c.rec {
+			ev.rec = p.recovered[c.rec:len(p.recovered):len(p.recovered)]
+		}
 	}
 	t.fn(ev)
 	p.mergeExpected(far, inner)

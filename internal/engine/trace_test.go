@@ -334,3 +334,27 @@ def line = @(?a-z)* "\n"`)
 		}
 	}
 }
+
+// TestTraceRecovered checks that exit events give the errors recovered during the call, which
+// are not part of Failure.
+func TestTraceRecovered(t *testing.T) {
+	prog := compile(t, `
+def main = stmt* $$
+def stmt = (word ";") #recover(skip=(?^;)+ ";")
+def word = @(?a-z)+`)
+	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		var got []string
+		_, err := prog.ParseWith("main", "ab1;cd;", ParseOptions{Backend: b, Trace: func(e TraceEvent) {
+			if e.Kind == TraceExit && len(e.Recovered()) > 0 {
+				got = append(got, fmt.Sprintf("%s@%d %v; failure %v", e.Rule, e.Pos, e.Recovered(), e.Failure()))
+			}
+		}})
+		want := []string{
+			`stmt@0 [1:3: syntax error: expected ";", (?a-z)]; failure 1:4: syntax error: expected (?^;)`,
+			`main@0 [1:3: syntax error: expected ";", (?a-z)]; failure 1:8: syntax error: expected (?^;), (?a-z)`,
+		}
+		if strings.Join(got, "\n") != strings.Join(want, "\n") || err == nil {
+			t.Errorf("%v: %v\n%s\nwant\n%s", b, err, strings.Join(got, "\n"), strings.Join(want, "\n"))
+		}
+	}
+}

@@ -109,9 +109,14 @@ deliberately few and name what to look at.
 `explain` parses once without tracing to get the syntax errors, then parses again with a trace that watches only the
 errors' positions. When a call ends with a failure at such a position, the expectations it recorded itself are those
 of its `Failure` that no nested call recorded at that position (each call passes everything it recorded on to its
-caller). Calls with expectations of their own are listed with the stack of calls they were nested in. An expectation
-that no call recorded is the end of the input that the parser expects after the start rule returns, which the output
-states separately.
+caller). Calls with expectations of their own are listed with the stack of calls they were nested in.
+
+A `#recover` that recovers takes the expectations of the expression it recovered from out of the record of the call
+that contains it, so they are not in that call's `Failure`. The exit event gives them as `Recovered`, the errors
+recovered during the call; the first call to report an error (the innermost, as calls end innermost first) is the one
+whose body holds the `#recover`, and its own expectations are again those no nested call recorded. What remains
+unattributed is the end of the input that the parser expects after the start rule returns, which the output states
+separately.
 
 ### Command-line output
 

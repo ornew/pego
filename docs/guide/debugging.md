@@ -97,7 +97,8 @@ Some things to know:
 - Calls inside a lookahead (`&`, `!`) record no expectations, so they never appear.
 - If the start rule has no `$$`, the parser itself expects the end of the input after the start rule returns. When that
   is part of the error, the last line says so: `The start rule matched up to L:C, but the input does not end there.`
-- Errors recovered with `#recover` are explained one by one, each marked `(recovered)`.
+- Errors recovered with `#recover` are explained one by one, each marked `(recovered)`. The expectations of the
+  expression a `#recover` recovered from are listed under the call that contains it, marked `(recovered by #recover)`.
 - `-n` limits the number of entries per error (default 10).
 
 ## 3. What does the parser do?
@@ -373,8 +374,9 @@ main failed: 1:7: syntax error: expected (?0-9)
 ```
 
 A `TraceEvent` has `Kind` (`TraceEnter` or `TraceExit`), `Rule`, `Level`, `Depth`, `Pos` and `Lookahead`; exit events
-also have `Matched`, `End`, `Memo`, `Evals` and `Examined`, and the methods `Text` (the input matched) and `Failure`
-(the farthest failure recorded during the call, as a `*SyntaxError`, or nil). `LineCol` converts a position.
+also have `Matched`, `End`, `Memo`, `Evals` and `Examined`, and the methods `Text` (the input matched), `Failure`
+(the farthest failure recorded during the call, as a `*SyntaxError`, or nil) and `Recovered` (the errors `#recover`
+recovered from during the call, whose expectations `Failure` does not include). `LineCol` converts a position.
 
 `pego.WithProfile` adds a parse to a `pego.Profile`, which can collect any number of parses, for example a whole test
 corpus:
