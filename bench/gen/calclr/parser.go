@@ -1443,6 +1443,8 @@ func (c *actx) text(x any) any { return c.textStr(x) }
 // string in an interface allocates.
 func (c *actx) textStr(x any) string {
 	switch x := x.(type) {
+	case nil:
+		return ""
 	case string:
 		return x
 	case *Node:

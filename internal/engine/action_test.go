@@ -251,3 +251,12 @@ def main = "a" -> new A{N: 1 / (len($1) - 1)}`)
 		t.Errorf("got %v", err)
 	}
 }
+
+// TestTextOfNil checks that text of a capture that did not match is "" on every backend, as
+// specified.
+func TestTextOfNil(t *testing.T) {
+	check(t, `def main = x:"a"? [text($x) == ""] "b"`, ok("b", `(Seq nil "b")@main`))
+	check(t, `
+type T struct { S string }
+def main = x:"a"? "b" -> new T{S: text($x) + "!"}`, ok("b", "(T S=`!`)"))
+}

@@ -453,6 +453,8 @@ func (c *evalCtx) builtin(fn string, args []any) (any, error) {
 		}
 	case "text":
 		switch x := args[0].(type) {
+		case nil:
+			return "", nil
 		case string:
 			return x, nil
 		case *Node:
@@ -513,6 +515,8 @@ func (c *evalCtx) textOf(x grammar.Term) (string, error) {
 		return "", err
 	}
 	switch v := v.(type) {
+	case nil:
+		return "", nil
 	case string:
 		return v, nil
 	case *Node:
