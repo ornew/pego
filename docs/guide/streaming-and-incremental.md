@@ -210,7 +210,7 @@ next chunk shows it is not followed by another letter, and `ef` until the end of
 | Where `#stream` can appear | On a repetition (`*`, `+` or `{n,m}`) that is the body of a rule, an item of the body's top-level sequence, or the expression captured by such an item (`items:record* #stream`). Anywhere else (inside a choice or a group, or on something that is not a repetition) is a compile error, as is a second `#stream` in the same rule or any argument to it. |
 | Which rule streams | Only the **start rule** of the parse, at call depth 1. `ParseStream` fails with `rule main has no #stream repetition` if the start rule has none, even when a rule it calls does. Use `Parser.WithStart` to stream from another rule. In every other call of a rule that contains `#stream`, the repetition is an ordinary one. |
 | What may follow | Anything. After the repetition ends, the rest of the start rule must match as usual, normally `$$`. |
-| Elements that can match nothing | An element that matches the empty string is delivered once and then ends the repetition. Without a guard like the `!$$` in [examples/csv](../../examples/csv/csv.pego), a record rule whose fields and line end can all match nothing delivers one extra empty record at the end of input. |
+| Elements that can match nothing | An element that matches the empty string is delivered once and then ends the repetition. Without a guard like the `!$$` in [parsers/csv](../../parsers/csv/csv.pego), a record rule whose fields and line end can all match nothing delivers one extra empty record at the end of input. |
 | Options | `WithUnit` and `WithBackend` work; `WithMaxDepth` applies; `RecognizeOnly` is an error. |
 | Lookbehind | After an element, the input before it is dropped except for the one character before it, so `^` (beginning of line) still works at the start of the next element. Nothing in the language looks further back. |
 | Concurrency | A `Parser` can run many `ParseStream` calls at once. Each call has its own state. |
@@ -474,13 +474,15 @@ number that does not grow with the input.
 
 ### Recipe: summing a CSV column
 
-The CSV grammar from [examples/csv](../../examples/csv/) streams record by record. This program sums the third column
-and reports the first bad record with its offset; with `-whole` it uses `Parse` instead, to compare.
+The CSV grammar of [parsers/csv](../../parsers/csv/csv.pego) streams record by record. This program, with a copy of
+`csv.pego` next to it, sums the third column and reports the first bad record with its offset; with `-whole` it uses
+`Parse` instead, to compare.
 
 ```go
 package main
 
 import (
+	_ "embed"
 	"flag"
 	"fmt"
 	"io"
@@ -490,24 +492,8 @@ import (
 	"github.com/ornew/pego"
 )
 
-// This is examples/csv/csv.pego.
-const grammar = `
-package csv
-
-type Record struct { Fields []Field }
-type Field terminal  // the raw field; quoted fields keep their quotes and doubled ""
-
-def main = record* #stream $$
-
-def record: Record = !$$ first:field rest:(-"," f:field)* eol
-    -> new Record{Fields: concat(list($first), map($rest, (r) => $r.f))}
-
-def field: Field = quoted / plain
-def quoted = "\"" ((?^") / "\"\"")* "\""
-def plain = (?^,"\r\n)*
-
-def eol = "\r\n" / "\n" / $$
-`
+//go:embed csv.pego
+var grammar string
 
 func main() {
 	whole := flag.Bool("whole", false, "read all the input and call Parse instead of ParseStream")
@@ -545,13 +531,13 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		// main is a Seq whose first child is the List of all the records.
+		// main returns a File whose Records field holds all the records.
 		tree, err := p.Parse(string(data))
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		for _, rec := range tree.Children[0].Children {
+		for _, rec := range tree.Field("Records").(*pego.Node).Children {
 			if err := sum(rec); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)

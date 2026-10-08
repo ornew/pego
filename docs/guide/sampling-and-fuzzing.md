@@ -150,23 +150,29 @@ operators of Pratt expressions. It lists separately, and does not count:
   an error. Alternatives that can
   never match are not counted either.
 
-For the Python grammar of [examples/python](../../examples/python/python.pego), 50 inputs cover most of the grammar:
+For the XML grammar of [parsers/xml](../../parsers/xml/xml.pego), 50 inputs cover all of it:
 
 ```bash
-$ pego sample -g examples/python/python.pego -n 50 -seed 1 -coverage > /dev/null
-rules 175/184 (95%), alternatives 182/202 (90%)
-missed rule: assign_value
-missed rule: augop
-missed rule: elif_else
-...
-unreachable: skip_line, deeper_line, keyword
-never match: compound_probe, no_atom, misplaced_positional
+$ pego sample -g parsers/xml/xml.pego -n 50 -seed 1 -coverage > /dev/null
+rules 74/74 (100%), alternatives 89/89 (100%)
 ```
 
-What remains is hard to reach by chance: `elif` and `else` clauses need several indentation predicates to hold
-together after a whole block, and `x += 1` competes with three optional tails of `expr_stmt` that a predicate allows
-only one of. More inputs reach more (200 inputs cover 96% of the rules); the numbers for every example grammar are in
-the design record.
+Not every grammar is like that. The Python grammar of [parsers/python](../../parsers/python/python.pego) keeps the
+indentation of the current block packed in a variable and compares it in predicates (`stmt_sep`, `indented_block`),
+which the generator rarely satisfies by chance, so it misses the rules that need them:
+
+```bash
+$ pego sample -g parsers/python/python.pego -n 50 -seed 1 -coverage > /dev/null
+rules 93/336 (28%), alternatives 86/471 (18%)
+missed rule: stmt_sep
+missed rule: block
+missed rule: indented_block
+...
+unreachable: keyword
+```
+
+More inputs reach more (200 inputs cover 43% of the rules), but such a grammar is better tested with real inputs: the
+tests of the ready-made parsers use the specifications and the reference implementations of their languages.
 
 With `-f json`, the report is the `coverage` member of the document. Coverage is measured on the way the generator
 derived each input, which is the parser's way unless the generator could not tell (see the
@@ -400,7 +406,7 @@ parser would read differently:
 - `!e` must not match; for `&e`, a text for `e` is generated and the input must continue with it;
 - predicates are evaluated on the generated text, with captures, variables, `len`, `text`, comparisons and arithmetic,
   so indentation (as in [examples/outline](../../examples/outline/outline.pego)) and matching tags (as in
-  [examples/xml](../../examples/xml/xml.pego)) work;
+  [parsers/xml](../../parsers/xml/xml.pego)) work;
 - Pratt expressions are generated as chains of operands and operators, avoiding chains of `infix none` operators,
   and level-restricted calls use only the allowed operators.
 

@@ -273,8 +273,8 @@ Three attributes matter here:
   the error points at the wrong place or says nothing (see above). The recipes use it every time.
 - `#recover(skip=e)` restores the variables to the values they had where the expression began, so definitions made
   inside the failed expression are gone after the recovery. The `skip` expression is matched in that restored context,
-  so it can read variables: the Python example skips the rest of a broken line **and the more deeply indented lines
-  after it** by comparing indentation in `skip` ([see below](#indentation-blocks)).
+  so it can read variables: a `skip` can skip the rest of a broken line **and the more deeply indented lines
+  after it** by comparing indentation ([see the error guide](errors-and-recovery.md#skip-to-the-next-statement-or-line-and-continue)).
 - `#stream` repetitions see the variables defined before them: with `def main = [mode = 1] rs:rec* #stream $$` and
   `def rec = [mode == 1] ...`, every streamed element reads `mode`.
 
@@ -301,7 +301,7 @@ those values are equal, so memoization never changes what a parse returns, only 
 What this means when you write a grammar:
 
 - **Write it naturally.** Context-sensitive grammars used to be exponential in the worst case, because a rule that reads
-  a variable was not memoized at all (docs/performance.md, item 12, describes the Python example being written in a
+  a variable was not memoized at all (docs/performance.md, item 12, describes an early Python grammar being written in a
   parse-once-then-fold style to avoid that). Now an ordered choice that re-parses a prefix is cached like any other:
 
 ```pego
@@ -332,11 +332,11 @@ ok
 ### Matching tags
 
 The closing tag must repeat the name of the opening tag. When both are in the same rule, capture the names and compare
-the text. That is how [examples/xml](../../examples/xml/xml.pego) does it (a rule `pair`, with
+the text. That is how [parsers/xml](../../parsers/xml/xml.pego) does it (a rule `element`, with
 `"<" n:name ... "</" e:name [text($e) == text($n)] #error(message="mismatched end tag")`):
 
 ```bash
-pego parse -g examples/xml/xml.pego -f sexpr -i '<a><b>text</c></a>'
+pego parse -g parsers/xml/xml.pego -f sexpr -i '<a><b>text</c></a>'
 ```
 
 ```text
@@ -493,32 +493,34 @@ pego parse -g outline.pego -f sexpr -i $'a\n b\n  c\n d\n'
 The label does not make valid input fail: at a normal block end, `item` fails at the same predicate, but that only
 records a candidate error, which matters only if the parse as a whole fails and this is its farthest failure.
 
-**The Python example.** [examples/python](../../examples/python/python.pego) uses the same idea at scale:
+**The Python grammar.** [parsers/python](../../parsers/python/python.pego) uses the same idea at scale. It packs the
+indentation of the current block (its column, its column with tabs counted as one, which detects inconsistent use of
+tabs, and the number of enclosing blocks) into one variable, `ind`:
 
-- `indented_block` is the `children` rule: `&(blank_line* s:indentation) [len($s) > indent] [indent = len($s)] b:block`.
-  A `suite` (the part after `:` of `if`, `def`, ...) calls it, so the body of every compound statement is a nested
-  scope.
-- `statement_line` requires `[len($sp) == indent]`, and clauses that continue a compound statement (`elif`, `else`,
-  `except`) start with `same_indent`, which requires the same indentation as the header.
-- The error labels on these predicates give messages such as `expected an indented block` and `unexpected indentation`.
-- Broken lines are recovered together with their body, by a `skip` that reads `indent` (see the
-  [error guide](errors-and-recovery.md#skip-to-the-next-statement-or-line-and-continue)).
+- `indented_block` is the `children` rule: it reads the `indentation` of the next line, requires it to be deeper than
+  `ind` (with `#error(message="expected an indented block")`), defines the new `ind` and parses the `stmts` of the
+  block. A `block` (the part after the `:` of `if`, `def`, ...) calls it, or reads simple statements on the same line,
+  so the body of every compound statement is a nested scope.
+- `stmt_sep` separates the statements of a block: it reads the indentation of the next line and requires it to be
+  exactly `ind`. Clauses that continue a compound statement (`elif`, `else`, `except`) start with `clause_sep`, which
+  requires the same indentation as the header.
+- A line whose indentation matches no enclosing block is not taken by any `stmt_sep`, so the nested blocks end one
+  after the other, and `main` ends with its own message, `invalid syntax`.
 
 ```bash
-pego parse -g examples/python/python.pego -f sexpr -i $'if x:\npass\n'
+pego parse -g parsers/python/python.pego -f sexpr -i $'if x:\npass\n'
 ```
 
 ```text
-(Module Body=[Error"if x:"{message=`2:1: expected an indented block`} (Pass)])
 pego: 2:1: expected an indented block
 ```
 
 ```bash
-pego parse -g examples/python/python.pego -i $'if x:\n    a = 1\n  b = 2\n'
+pego parse -g parsers/python/python.pego -i $'if x:\n    a = 1\n  b = 2\n'
 ```
 
 ```text
-pego: 3:3: unexpected indentation
+pego: 3:3: invalid syntax
 ```
 
 ### Newlines that depend on context

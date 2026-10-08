@@ -656,8 +656,8 @@ pego parse -g calc-lr.pego -f sexpr -i '1 + 2 * 3 - 4'
 ```
 
 This produces the same trees as the Pratt version, with one rule per level instead of one line per level. Pratt
-expressions scale better as the language grows (the [Go](../../examples/golang/) and
-[Python](../../examples/python/) examples use them for their full operator tables), and they support features such as
+expressions scale better as the language grows (the [Go](../../parsers/golang/) and
+[Python](../../parsers/python/) parsers use them for their full operator tables), and they support features such as
 level-restricted calls and mixed prefix, infix and postfix operators. The guide to
 [expressions](../guide/expressions.md) compares the two approaches and covers every option;
 [examples/calculator](../../examples/calculator/) contains both versions of a complete calculator with an evaluator.
@@ -823,9 +823,9 @@ The [runtime guide](../guide/runtime.md) describes the backends, options and com
 | Error messages, `#error`, `#recover` and the Go error types | [Errors and recovery](../guide/errors-and-recovery.md) |
 | Indentation-based languages, matching tags, predicates and variables | [Context-sensitive parsing](../guide/context-sensitive.md) |
 | The precise definition of every construct | [Language specification](../../spec/README.md) |
-| Complete grammars with tests: CSV, XML, a calculator, an outline format, a small programming language, Go, Python | [examples/](../../examples/README.md) |
+| Small grammars with tests that show the features: a calculator, an outline format, a small programming language | [examples/](../../examples/README.md) |
 | Ready-made parsers for common languages (CEL, CSV, Go, JSON, Python, TypeScript, XML, YAML), as Go modules | [parsers/](../../parsers/README.md) |
 
 A good way to continue is to extend the configuration language of section 5: add `[section]` headers, lists of values,
-and `#error` messages, then read [parsers/json](../../parsers/json/json.pego) and [examples/csv](../../examples/csv/) to see how
+and `#error` messages, then read [parsers/json](../../parsers/json/json.pego) and [parsers/csv](../../parsers/csv/) to see how
 larger grammars are organized.

@@ -160,10 +160,9 @@ v, err := json.Decode(`{"name": "pego", "tags": ["peg", "pratt"]}`)
 
 ## Examples
 
-Complete grammars with tests live in [examples/](examples/): CSV, XML, a calculator (Pratt and
-left-recursive), an indentation-based outline format and a small programming language — plus practical grammars
-for **Go** and **Python 3**, tested against the Go standard library with `go/ast` and the Python standard library
-with CPython's `ast` module.
+Small grammars with tests that show the features live in [examples/](examples/): a calculator (Pratt and
+left-recursive), an indentation-based outline format and a small programming language. The complete parsers of
+[parsers/](parsers/), such as the ones for **Go** and **Python 3**, are the larger examples.
 
 ## Documentation
 

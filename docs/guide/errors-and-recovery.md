@@ -857,27 +857,65 @@ def stmt = s:(let / print / block) #recover(skip=(?^;{}\n)+ ";"?) -> $s
   deliberate, and a stray `;` is an error.
 
 For a language where an indented block follows a header line, skip the broken line **and the more deeply indented
-lines after it**; otherwise the body of a broken `if`/`def` would be parsed as statements at the wrong level.
-`examples/python` does this with a skip that reads the indentation variable (see the
-[context-sensitive guide](context-sensitive.md#indentation-blocks)):
+lines after it**; otherwise the body of a broken header would be parsed as statements at the wrong level. The `skip`
+reads the indentation variable (see the [context-sensitive guide](context-sensitive.md#indentation-blocks)). This
+grammar has assignments and `if` blocks:
 
 ```pego
-def simple_stmt: StmtNode = s:(terminated_simple_stmt / compound_probe) #recover(skip=skip_line) -> $s
+// blocks.pego
+package blocks
+
+type Name terminal
+type Num terminal
+type Assign struct { Name Name, Value Num }
+type If struct { Test Name, Body []Stmt }
+type Stmt = Assign | If
+
+def main: []Stmt = [indent = 0] ss:stmts blank* $$ -> $ss
+def stmts = (blank* s:stmt)+ -> map($1, (x) => $x.s)
+
+// The indentation is outside the recovery: a line that is not at this block's indentation ends the block.
+def stmt = indentation s:(if_stmt / assign) #recover(skip=skip_line) -> $s
+def indentation = s:spaces [len($s) == indent]
+
+def if_stmt: If = "if " t:name ":" eol b:body -> new If{Test: $t, Body: $b}
+def body = &(blank* s:spaces) [len($s) > indent] [indent = len($s)] ss:stmts -> $ss
+def assign: Assign = n:name " = " v:num eol -> new Assign{Name: $n, Value: $v}
+
+// The rest of the broken line and the lines indented deeper than the block.
 def skip_line = (?^\n)+ deeper_line*
-def deeper_line = newline blank_line* s:indentation [len($s) > indent] (?^\n)+
+def deeper_line = "\n" blank* s:spaces [len($s) > indent] (?^\n)+
+
+def spaces = @" "*
+def name: Name = @(?a-z)+
+def num: Num = @(?0-9)+
+def eol = "\n" / $$
+def blank = (? \t)* "\n"
 ```
 
 ```bash
-pego parse -g examples/python/python.pego -f sexpr -i $'def f(x):\n    y = = 1\n        z = 2\n    return y\nprint(1)\n'
+pego parse -g blocks.pego -f sexpr -i $'if x:\n    y = 1\n    z = = 2\n        w = 3\n    v = 4\nu = 5\n'
 ```
 
 ```text
-(Module Body=[(FunctionDef Args=(Arguments Args=[(Arg Annotation=nil Arg=Identifier"x"@identifier Default=nil)] KwArg=nil KwOnlyArgs=[] PosOnlyArgs=[] VarArg=nil) Body=[Error"y = = 1\n        z = 2"{message=`2:9: expected an expression`} (Return Value=Name"y"@name)] DecoratorList=[] Name=Identifier"f"@identifier Returns=nil) (Expr Value=(Call Args=[Constant"1"@number] Func=Name"print"@name Keywords=[]))])
-pego: 2:9: expected an expression
+[(If Body=[(Assign Name=Name"y"@name Value=Num"1"@num) Error"z = = 2\n        w = 3"{message=`3:9: syntax error: expected (?0-9)`} (Assign Name=Name"v"@name Value=Num"4"@num)] Test=Name"x"@name) (Assign Name=Name"u"@name Value=Num"5"@num)]
+pego: 3:9: syntax error: expected (?0-9)
 ```
 
-The broken line and its more indented continuation became one `Error` node; `return y` and `print(1)` were parsed
-normally.
+The broken line and its more indented continuation became one `Error` node; `v = 4` and `u = 5` were parsed normally,
+each in its own block. A broken header takes its body with it:
+
+```bash
+pego parse -g blocks.pego -f sexpr -i $'if x\n    y = 1\nu = 5\n'
+```
+
+```text
+[Error"if x\n    y = 1"{message=`1:5: syntax error: expected ":", (?a-z)`} (Assign Name=Name"u"@name Value=Num"5"@num)]
+pego: 1:5: syntax error: expected ":", (?a-z)
+```
+
+The indentation check is outside the `#recover`: a line that is not at the indentation of the block fails `stmt` before
+the recovery starts, which ends the block instead of being skipped.
 
 ### Recover inside a list
 

@@ -17,7 +17,7 @@ This document describes the repository layout, the architecture of the implement
 | `internal/engine/genrt/` | Runtime code embedded in generated Go parsers |
 | `internal/engine/tsrt/` | Runtime code embedded in generated TypeScript parsers |
 | `cmd/pego/` | Command-line tool |
-| `examples/` | Example grammars, with golden tests |
+| `examples/` | Small example grammars that show the features, with golden tests |
 | `parsers/` | Ready-made parsers for common languages, each a Go module of its own (`parsers/<language>/`, with the grammar, the generated parser and conformance tests); `generate.go` and `parsers_test.go` (main module) generate them and check them on every backend ([README](../parsers/README.md)) |
 | `playground/` | WebAssembly API used by the web playground (package `main`; `GOOS=js GOARCH=wasm`) |
 | `site/` | Web site generator (a separate Go module): landing page, docs, reference and playground; build with `site/build.sh` |
