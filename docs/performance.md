@@ -644,6 +644,8 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 | ASCII bitmap for character classes in the closure engine (instead of scanning the ranges) | No measurable change when measured against the unmodified code in alternating runs (JSON, CSV); classes in practice have one to three ranges, which scan as fast as a bitmap lookup | Not adopted then; change 31 specializes small classes instead, which does pay |
 | Freeing capture frames when their rule invocation returns (LIFO arenas for frames and their slots, marked in `invokeBegin` and freed in `invokeEnd`) | −16 to −23% bytes per parse, but 1–6% slower on every workload and backend (recognition included), even with a fast path that skips freeing when nothing was allocated: the per-call bookkeeping and the clearing of freed slots cost more than the garbage collector saved | Not adopted |
 | Storing all-ASCII input in code points as bytes (positions are the same in both units), with `len` of strings still counting code points | −9% bytes per parse on ASCII versions of the JSON, CSV and XML inputs (no rune array or offset table), but 0–4% slower: matching bytes checks for multi-byte characters at every step, which indexing code points does not | Not adopted |
+| Iterative VM: holding body frames by value in the VM stack (a tagged entry instead of a pooled frame behind an interface) | 5–19% slower: each entry is about 150 bytes, and copying and clearing it on every push and pop costs more than the interface call and the pool it saves | Not adopted |
+| Iterative VM: calling body frames directly (a type assertion before the interface call) and returning them to the pool without the type switch | Within ±4% (noise) | Not adopted |
 | Memoizing every rule (classic packrat) | 2–3× slower than the transient policy on all workloads; memo entries were never reused for leaf and single-reference rules | Replaced by the transient policy (change 1) |
 
 ## Remaining hotspots and next candidates
@@ -657,7 +659,9 @@ From profiles after change 41 (JSON, XML, minilang, error recovery; full parse a
 2. **Expectation recording** (`expect`): 5–8% in most profiles, mostly the duplicate check against the expectations
    already recorded at the farthest position. An index of the last append per expectation does not help, because it
    goes stale whenever the farthest position advances, which is the common case.
-3. **The iterative VM** dispatches every step through an interface (the VMs got changes 36 and 37 in change 44).
+3. **The iterative VM** dispatches every frame through an interface (the VMs got changes 36 and 37 in change 44).
+   Two ways of avoiding it did not pay (see the experiments table): the remaining cost is the work each frame does,
+   such as saving and restoring the parser state that the recursive model keeps in Go locals.
 4. **Document edits** walk every memo entry (`memoTable.splice`) to drop or shift it, and a reparse walks the reused
    trees after the edit to move them (change 45). Both are linear in the document; positions relative to a parent
    would avoid them, at the cost of an API change (`Node.Start` and `End` would no longer be absolute).
