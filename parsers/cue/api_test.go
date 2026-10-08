@@ -18,6 +18,7 @@ func TestCheck(t *testing.T) {
 		{"import \"a b\"\n", `invalid import path: "a b"`},
 		{"x: {a: 1}\n[a, b]: int\n", "square bracket must have exactly one element"},
 		{"[]: int\n", "square bracket must have exactly one element"},
+		{"x: \"\"\"\n  a\\(b)\n c\n  \"\"\"\n", "non-matching whitespace for multiline string"},
 		{"a~X: 1\n", "postfix alias syntax requires @experiment(aliasv2)"},
 	} {
 		_, aerr := ParseAST(c.in)
@@ -76,6 +77,15 @@ func TestAttributeStrings(t *testing.T) {
 		a := f.Decls[0].(*Field).Attrs
 		if len(a) != 1 || a[0].End != len([]rune(strings.TrimSuffix(in, "\n"))) {
 			t.Errorf("%q: attribute %+v", in, a)
+		}
+	}
+	// A line goes on after an interpolation that has line breaks; an empty line needs no indentation.
+	for _, in := range []string{
+		"x: \"\"\"\n  a\\(b\n )\n  c\n  \"\"\"\n",
+		"x: \"\"\"\n  a\\(b)\n\n  c\n  \"\"\"\n",
+	} {
+		if !Valid(in) {
+			t.Errorf("%q is not valid", in)
 		}
 	}
 	if Valid("x: 1 @a(#\"x\"") {

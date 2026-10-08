@@ -163,10 +163,12 @@ def bare_let: Ident = "let" !idchar !(sp ident) &(sp ("," / "\n" / "//" / $$ / "
 
 // --- Fields ---
 def field: Field = field_plain / field_alias
-def field_plain: Field = l:label_plain [!(text($l) >= "__" && text($l) < "_\u{60}")] al:postfix_alias_at?
+// An identifier that starts with "__" is not a label. The test is a lookahead, not a predicate on the label: a
+// predicate that reads a value makes the recognizer build the values of everything the label contains.
+def field_plain: Field = !"__" l:label_plain al:postfix_alias_at?
     sp (c:"?" colon_ec / c:"!" colon_ne / colon_ec0) v:field_value as:attrs
     -> new Field{Label: $l, Alias: $al, Constraint: $c, Value: $v, Attrs: $as}
-def field_alias: Field = l:alias_label [!(text($l) >= "__" && text($l) < "_\u{60}")] al:postfix_alias_at?
+def field_alias: Field = l:alias_label al:postfix_alias_at?
     sp (c:"?" colon_ec / c:"!" colon_ne / colon_ec0) v:field_value as:attrs
     -> new Field{Label: $l, Alias: $al, Constraint: $c, Value: $v, Attrs: $as}
 // A field of the chain a: b: c, which declares no more than the labels (a "__" label is only checked
@@ -414,7 +416,6 @@ def hq = [sv < 2] / [sv >= 2] "#" [sv = sv - 2] hq
 def g_escbody = [sv % 2 == 0] esc_dq / [sv % 2 == 1] esc_sq
 def gs_esc = "\\" h:@"#"* ([len($h) < sv / 2] / [len($h) == sv / 2] g_escbody)
 def g_interp_open = "\\" h:@"#"* [len($h) == sv / 2] "("
-def g_interp_skip = g_interp_open ws expr (icomma / sp) ")"
 def ml_nl = "\n" / "\r\n"
 // After the opening quotes: fewer hashes than the string has, which the scanner takes as part of the opening
 // (with as many, the string is one quote), then a line break.
@@ -441,23 +442,21 @@ def gsl_last: []Expr = e:interp_expr z:gsl_end -> list($e, $z)
 
 // On several lines.
 def ml_body = ((?^\n\\\u{0}\u{feff})+ / gs_esc)*
-def ml_body_i = ((?^\n\\\u{0}\u{feff})+ / g_interp_skip / gs_esc)*
 def ml_line = lead:@(? \t)* !ml_close_tail body:@ml_body "\n"
-def ml_line_i = lead:@(? \t)* !ml_close_tail body:@ml_body_i "\n"
 def ml_close: Match = c:@(? \t)* qc qc qc hq -> $c
 def gml_plain: String = hs:@"#"* ("\"" [sv = len($hs) * 2] / "'" [sv = len($hs) * 2 + 1]) ml_open_tail ls:ml_line* cw:ml_close
     [foldl(true, $ls, (a, l) => $a && (len($l.lead) == 0 && len($l.body) == 0
         || text($l.lead) >= text($cw) && text($l.lead) < text($cw) + "\u{10ffff}"))]
-def gml_check: Match = "#"* (?"') ml_open_tail ls:ml_line_i* cw:ml_close
-    [foldl(true, $ls, (a, l) => $a && (len($l.lead) == 0 && len($l.body) == 0
-        || text($l.lead) >= text($cw) && text($l.lead) < text($cw) + "\u{10ffff}"))] -> $cw
+// The indentation of the lines of a string with interpolations is tested by Check. A test here would read the
+// lines as values, and so make every rule that the lines call (all that read an expression) build values in the
+// recognizer.
 def ml_frag = ((?^\n\\\u{0}\u{feff})+ / gs_esc / "\n" (? \t)* !ml_close_tail)*
 def gml_open: String = "#"* (?"') ml_open_tail (? \t)* !ml_close_tail ml_frag g_interp_open
 def gml_mid: String = ")" ml_frag g_interp_open
 def gml_end: String = ")" ml_frag "\n" (? \t)* ml_close_tail
-def gml_interp: Interpolation = &(hs:@"#"* "\"") [sv = len($hs) * 2] &gml_check f:gml_open t:gml_rest
+def gml_interp: Interpolation = &(hs:@"#"* "\"") [sv = len($hs) * 2] f:gml_open t:gml_rest
     -> new Interpolation{Elts: concat(list($f), $t)}
-def gml_interp_s: Interpolation = &(hs:@"#"* "'") [sv = len($hs) * 2 + 1] &gml_check f:gml_open t:gml_rest
+def gml_interp_s: Interpolation = &(hs:@"#"* "'") [sv = len($hs) * 2 + 1] f:gml_open t:gml_rest
     -> new Interpolation{Elts: concat(list($f), $t)}
 def gml_rest: []Expr = gml_more / gml_last
 def gml_more: []Expr = e:interp_expr m:gml_mid t:gml_rest -> concat(list($e, $m), $t)

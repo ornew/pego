@@ -30,7 +30,8 @@ func (e *SemanticError) Error() string {
 // the file has not enabled with an @experiment attribute (the grammar reads the syntax of all experiments: the
 // postfix "..." of explicitopen, the postfix alias of aliasv2 and the else and otherwise clauses of try), an
 // experiment that does not exist, an alias of the old kind in a file that has enabled aliasv2, an import path that
-// is not valid (it has a character that a path cannot have, or is empty), and errors in the scopes of the file
+// is not valid (it has a character that a path cannot have, or is empty), a string with interpolations on
+// several lines whose lines are not indented as its closing quotes are, and errors in the scopes of the file
 // (astutil.Resolve): an alias or let clause declared twice in a scope, a field that has the name of
 // an alias of the same scope, a field with both a label alias and a postfix alias, an alias that is the
 // blank identifier, and a reference in a pattern constraint to a field of its struct. Of the errors, it
@@ -47,6 +48,11 @@ func (f *File) Check() error {
 			}
 		}
 	}
+	inspect(f, func(n any) {
+		if x, ok := n.(*Interpolation); ok {
+			c.multiline(x)
+		}
+	})
 	root := &scope{index: map[string]entry{}, node: f}
 	c.fill(root, f.Decls)
 	s := root
@@ -63,6 +69,48 @@ func (f *File) Check() error {
 		}
 	}
 	return first
+}
+
+// multiline checks the indentation of the lines of a string with interpolations on several lines: each line that
+// is not empty starts with the white space that precedes the closing quotes. (The grammar checks the strings
+// without interpolations; for the others, a test in the grammar would make the recognizer build values.)
+// A line goes on after an interpolation, whose text is not part of it.
+func (c *checker) multiline(x *Interpolation) {
+	first, ok := x.Elts[0].(*String)
+	if !ok {
+		return
+	}
+	t := first.Text
+	n := 0
+	for n < len(t) && t[n] == '#' {
+		n++
+	}
+	if len(t) < n+3 || t[n] != '"' && t[n] != '\'' || t[n+1] != t[n] || t[n+2] != t[n] {
+		return
+	}
+	var b strings.Builder
+	for i := 0; i < len(x.Elts); i += 2 {
+		if i > 0 {
+			b.WriteByte('x') // an interpolation
+		}
+		b.WriteString(x.Elts[i].(*String).Text)
+	}
+	text := b.String()[n+3:]
+	nl := strings.IndexByte(text, '\n')
+	if nl < 0 {
+		return
+	}
+	lines := strings.Split(text[nl+1:], "\n")
+	closing := lines[len(lines)-1]
+	cw := closing[:len(closing)-len(strings.TrimLeft(closing, " \t"))]
+	for _, line := range lines[:len(lines)-1] {
+		lead := line[:len(line)-len(strings.TrimLeft(line, " \t"))]
+		if line == "" || strings.HasPrefix(lead, cw) {
+			continue
+		}
+		c.errf(x, "invalid string: non-matching whitespace for multiline string (expected %q, got %q)", cw, lead)
+		return
+	}
 }
 
 // A scope is a block with its declared names, as in astutil.
@@ -333,9 +381,7 @@ func (c *checker) walk(s *scope, n any) {
 	case *SelectorExpr:
 		c.walk(s, x.X)
 	default:
-		for _, ch := range children(n) {
-			c.walk(s, ch)
-		}
+		eachChild(n, func(ch any) { c.walk(s, ch) })
 	}
 }
 
@@ -424,10 +470,16 @@ func (c *checker) scopeClauses(s *scope, clauses []Clause) *scope {
 // children returns the child nodes of a node, as ast.Walk visits them.
 func children(n any) []any {
 	var out []any
+	eachChild(n, func(x any) { out = append(out, x) })
+	return out
+}
+
+// eachChild calls f for each child node of a node, in source order.
+func eachChild(n any, f func(any)) {
 	add := func(xs ...any) {
 		for _, x := range xs {
 			if !isNil(x) {
-				out = append(out, x)
+				f(x)
 			}
 		}
 	}
@@ -525,7 +577,6 @@ func children(n any) []any {
 	case *FallbackClause:
 		add(x.Body)
 	}
-	return out
 }
 
 func isNil(x any) bool {
@@ -534,9 +585,7 @@ func isNil(x any) bool {
 
 // inspect calls f for every node of the tree of n, children first.
 func inspect(n any, f func(any)) {
-	for _, ch := range children(n) {
-		inspect(ch, f)
-	}
+	eachChild(n, func(ch any) { inspect(ch, f) })
 	f(n)
 }
 

@@ -9,8 +9,6 @@ func Inspect(n any, f func(node any) bool) {
 	if !f(n) {
 		return
 	}
-	for _, ch := range children(n) {
-		Inspect(ch, f)
-	}
+	eachChild(n, func(ch any) { Inspect(ch, f) })
 	f(nil)
 }
