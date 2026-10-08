@@ -132,12 +132,15 @@ const (
 // dispatch) is not reported, and the backends do not skip the same calls. Tracing does not change the
 // result, but it makes the parse several times slower. The event's methods (LineCol, Text, Failure) read
 // the parser's state, so call them from f; its fields can be kept. With several WithTrace options, each
-// function is called in order.
+// function is called in order. A nil f is ignored.
 //
 // Tracing works with every backend, with Parse, RecognizeOnly, ParseStream and Document (whose
 // option applies to every Document.Parse), but not with generated Go parsers.
 func WithTrace(f func(TraceEvent)) ParseOption {
 	return func(o *engine.ParseOptions) {
+		if f == nil {
+			return
+		}
 		if prev := o.Trace; prev != nil {
 			o.Trace = func(e TraceEvent) {
 				prev(e)
@@ -162,8 +165,12 @@ type RuleProfile = engine.RuleProfile
 type Location = engine.Location
 
 // WithProfile adds the cost of the parse to prof. It traces the parse (see WithTrace), so the parse is
-// several times slower, and the times in prof are meaningful relative to each other only.
+// several times slower, and the times in prof are meaningful relative to each other only. A nil prof is
+// ignored.
 func WithProfile(prof *Profile) ParseOption {
+	if prof == nil {
+		return WithTrace(nil)
+	}
 	return WithTrace(prof.Trace)
 }
 

@@ -80,3 +80,27 @@ def num = @(?0-9)+ " "?`, "main")
 		t.Errorf("profile %v (%d parses), want %v", counts, prof.Parses, want)
 	}
 }
+
+// TestNilTraceOptions checks that WithTrace(nil) and WithProfile(nil) are ignored, alone and
+// combined with other trace functions.
+func TestNilTraceOptions(t *testing.T) {
+	p, err := pego.CompileSource(`def main = @(?a-z)+ $$`, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	calls := 0
+	count := pego.WithTrace(func(pego.TraceEvent) { calls++ })
+	for _, opts := range [][]pego.ParseOption{
+		{pego.WithTrace(nil)},
+		{pego.WithProfile(nil)},
+		{count, pego.WithTrace(nil), pego.WithProfile(nil)},
+		{pego.WithProfile(nil), count},
+	} {
+		if n, err := p.Parse("abc", opts...); err != nil || n == nil {
+			t.Errorf("got %v, %v", n, err)
+		}
+	}
+	if calls != 4 {
+		t.Errorf("%d events, want 4", calls)
+	}
+}
