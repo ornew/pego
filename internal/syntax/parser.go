@@ -188,7 +188,14 @@ func (p *parser) file() *grammar.Grammar {
 	if p.is("package") {
 		g.PackageBreak = p.lineBreak()
 		p.next()
-		g.Package = p.ident().text
+		func() {
+			defer p.recover() // a missing name skips to the first definition
+			if p.is("def") || p.is("type") {
+				p.errorf("expected identifier, found %s", p.tok())
+				panic(bail{})
+			}
+			g.Package = p.ident().text
+		}()
 	}
 	for p.tok().kind != tEOF {
 		start := p.i

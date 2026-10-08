@@ -81,3 +81,20 @@ func TestIsIdentifier(t *testing.T) {
 		t.Error("IsKeyword")
 	}
 }
+
+// TestIncompletePackageClause checks that a package clause without a name is reported as an
+// error, not a panic, and that the definitions after it are parsed.
+func TestIncompletePackageClause(t *testing.T) {
+	for _, src := range []string{"package", "package ", "package {", "package\ndef a = \"x\"", "package 1 def a = \"x\""} {
+		g, errs := ParsePartial(src)
+		if len(errs) != 1 || !strings.HasPrefix(errs[0].Msg, "expected identifier") {
+			t.Errorf("%q: errors %v", src, errs)
+		}
+		if strings.Contains(src, "def a") && (len(g.Statements) != 1 || g.Rules()[0].Name != "a") {
+			t.Errorf("%q: statements %v", src, g.Statements)
+		}
+		if _, err := Parse(src); err == nil {
+			t.Errorf("%q: Parse accepted it", src)
+		}
+	}
+}
