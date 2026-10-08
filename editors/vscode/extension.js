@@ -30,6 +30,9 @@ async function start() {
     await c.start();
     client = c;
   } catch (err) {
+    // A client whose server did not start is not reused; dispose of what it holds (its output
+    // channel, for one).
+    c.dispose().catch(() => {});
     const message = err instanceof Error ? err.message : String(err);
     vscode.window.showErrorMessage(
       `PEGO: could not start the language server with "${command} lsp": ${message}. ` +

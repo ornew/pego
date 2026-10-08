@@ -17,6 +17,15 @@
     "Programming Languages",
     "Formatters"
   ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "In an untrusted workspace, the workspace cannot choose the command that runs the language server (pego.server.path).",
+      "restrictedConfigurations": [
+        "pego.server.path"
+      ]
+    }
+  },
   "main": "./extension.js",
   "contributes": {
     "languages": [
@@ -50,7 +59,8 @@
         "pego.server.path": {
           "type": "string",
           "default": "pego",
-          "description": "The pego command that runs the language server: a name looked up on the PATH, or an absolute path."
+          "description": "The pego command that runs the language server: a name looked up on the PATH, or an absolute path. In an untrusted workspace, the workspace's value is ignored.",
+          "scope": "machine-overridable"
         },
         "pego.trace.server": {
           "type": "string",
@@ -73,7 +83,7 @@
     ]
   },
   "scripts": {
-    "check": "node scripts/check-grammar.js",
+    "check": "node scripts/check-grammar.js && node scripts/check-extension.js",
     "check-server": "node scripts/check-server.js",
     "package": "vsce package --skip-license"
   },

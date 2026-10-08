@@ -93,7 +93,7 @@ To try it without installing, open `editors/vscode` in VS Code and press F5: a w
 | Setting | Default | Meaning |
 |:--|:--|:--|
 | `pego.server.enabled` | `true` | Start the language server. Without it, only highlighting and the editing settings apply |
-| `pego.server.path` | `pego` | The `pego` command: a name looked up on the `PATH`, or an absolute path |
+| `pego.server.path` | `pego` | The `pego` command: a name looked up on the `PATH`, or an absolute path. In an untrusted workspace (Restricted Mode), the workspace's value is ignored, so that opening a folder cannot make VS Code run a program of its choosing |
 | `pego.trace.server` | `off` | Log the protocol messages (`messages` or `verbose`) in the *PEGO Language Server* output channel |
 
 **PEGO: Restart Language Server** in the command palette restarts the server, for example after installing a new

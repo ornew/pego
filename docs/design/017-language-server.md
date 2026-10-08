@@ -155,6 +155,9 @@ auto-closing pairs, indentation after an opening bracket), a TextMate grammar (`
 a client (`extension.js`) that starts `pego lsp` with `vscode-languageclient`.
 The client is plain JavaScript, so the extension has no compile step; its settings select the command
 (`pego.server.path`), turn the server off (`pego.server.enabled`) and log the protocol (`pego.trace.server`).
+`pego.server.path` names a program to run, so the extension declares it a restricted configuration for untrusted
+workspaces: in Restricted Mode, VS Code ignores a value that a workspace sets.
+A client whose server fails to start is disposed of, and **PEGO: Restart Language Server** tries again.
 
 Highlighting comes from the TextMate grammar, so it works before the server starts, without it, and in tools that read
 TextMate grammars.
@@ -165,7 +168,8 @@ Rule references are left unscoped; semantic tokens from the server color them wh
 
 The extension's checks run with Node.js: `npm run check` compiles every regular expression of the grammar with
 Oniguruma (`vscode-oniguruma`, the engine VS Code uses), tokenizes a sample with `vscode-textmate` and checks the scope
-of each of its parts, and tokenizes the example grammars, none of which may contain an invalid token;
+of each of its parts, and tokenizes the example grammars, none of which may contain an invalid token; it also checks
+the manifest and activates the extension with stand-ins for VS Code and the language client;
 `npm run check-server` talks to a running `pego lsp` with `vscode-jsonrpc`, the JSON-RPC library of the language
 client, to check that the two interoperate.
 The node modules and the packaged `.vsix` are not committed.
