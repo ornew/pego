@@ -208,6 +208,8 @@ function marshalValue(b: string[], v: Value): void {
 
 const hex = "0123456789abcdef";
 
+const replacementChar = String.fromCharCode(0xfffd);
+
 // quoteJSON quotes s as Go's encoding/json does with HTML escaping.
 function quoteJSON(s: string): string {
   let out = '"';
@@ -244,12 +246,13 @@ function quoteJSON(s: string): string {
     } else if (c === 0x2028 || c === 0x2029) {
       esc = "\\u202" + hex[c & 15];
     } else if (c >= 0xd800 && c <= 0xdfff) {
-      // A lone surrogate is not valid UTF-8; Go replaces invalid input with U+FFFD.
+      // A lone surrogate is not valid UTF-8: an invalid byte (see decodeBytes), which Go writes as
+      // U+FFFD.
       if (c < 0xdc00 && i + 1 < s.length && (s.charCodeAt(i + 1) & 0xfc00) === 0xdc00) {
         i++;
         continue;
       }
-      esc = "�";
+      esc = replacementChar;
     } else {
       continue;
     }
@@ -344,8 +347,10 @@ function quoteGo(s: string): string {
       out += "\\v";
     } else if (r < 0x20 || r === 0x7f) {
       out += "\\x" + hex[r >> 4] + hex[r & 15];
+    } else if (r >= 0xdc80 && r <= 0xdcff) {
+      out += "\\x" + hex[(r >> 4) & 15] + hex[r & 15]; // an invalid byte (see decodeBytes)
     } else if (r >= 0xd800 && r <= 0xdfff) {
-      out += "�"; // a lone surrogate, encoded as U+FFFD
+      out += replacementChar; // other lone surrogates do not occur
     } else if (r < 0x10000) {
       out += "\\u" + r.toString(16).padStart(4, "0");
     } else {
@@ -612,7 +617,7 @@ function encodeUTF8(s: string): Uint8Array {
   return out;
 }
 
-// utf8Len returns the length of s in UTF-8 (lone surrogates count as U+FFFD).
+// utf8Len returns the length of s in UTF-8: the number of bytes utf8Bytes returns.
 function utf8Len(s: string): number {
   let n = s.length;
   for (let i = 0; i < s.length; i++) {
@@ -625,11 +630,34 @@ function utf8Len(s: string): number {
     } else if (c >= 0xd800 && c < 0xdc00 && i + 1 < s.length && (s.charCodeAt(i + 1) & 0xfc00) === 0xdc00) {
       n += 2; // a pair: 2 units, 4 bytes
       i++;
-    } else {
-      n += 2;
+    } else if (c < 0xdc80 || c > 0xdcff) {
+      n += 2; // an invalid byte (see decodeBytes) is one byte
     }
   }
   return n;
+}
+
+// utf8Bytes returns the bytes of s: its UTF-8 encoding, with the surrogates that stand for invalid
+// bytes (see decodeBytes) as those bytes.
+function utf8Bytes(s: string): number[] {
+  const out: number[] = [];
+  for (const ch of s) {
+    const c = ch.codePointAt(0)!;
+    if (c >= 0xdc80 && c <= 0xdcff) {
+      out.push(c & 0xff);
+      continue;
+    }
+    for (const x of encodeUTF8(ch)) {
+      out.push(x);
+    }
+  }
+  return out;
+}
+
+// isByte reports whether s[i] is a surrogate that stands for an invalid byte (see decodeBytes).
+function isByte(s: string, i: number): boolean {
+  const c = s.charCodeAt(i);
+  return c >= 0xdc80 && c <= 0xdcff && !(i > 0 && (s.charCodeAt(i - 1) & 0xfc00) === 0xd800);
 }
 
 // runeCount returns the number of code points in s.
@@ -654,20 +682,31 @@ function wellFormed(s: string): string {
         i++;
         continue;
       }
-      return s.slice(0, i) + "�" + wellFormed(s.slice(i + 1));
+      return s.slice(0, i) + replacementChar + wellFormed(s.slice(i + 1));
     }
   }
   return s;
 }
 
-// compareStrings compares strings by code points, which is the byte order of their UTF-8 encodings
-// (Go's string order).
+// compareStrings compares strings by the byte order of their UTF-8 encodings (Go's string order),
+// which is the order of their code points.
 function compareStrings(a: string, b: string): number {
   const n = Math.min(a.length, b.length);
   for (let i = 0; i < n; i++) {
     let x = a.charCodeAt(i);
     let y = b.charCodeAt(i);
     if (x !== y) {
+      if (isByte(a, i) || isByte(b, i)) {
+        // An invalid byte compares as a byte with the bytes of the other string.
+        const p = utf8Bytes(a.slice(i));
+        const q = utf8Bytes(b.slice(i));
+        for (let k = 0; k < p.length && k < q.length; k++) {
+          if (p[k] !== q[k]) {
+            return p[k]! < q[k]! ? -1 : 1;
+          }
+        }
+        return p.length < q.length ? -1 : p.length > q.length ? 1 : 0;
+      }
       if (x >= 0xd800 && y >= 0xd800) {
         // Surrogates (code points above U+FFFF) sort after U+E000-U+FFFF.
         x = x >= 0xe000 ? x - 0x800 : x + 0x2000;
@@ -881,6 +920,11 @@ class Parser {
 
   // decodeBytes sets offs from bs and returns the text, decoding bs as Go does. offs maps the
   // positions where a character starts (all positions a parse reaches) to offsets in the text.
+  //
+  // Text in byte mode holds bytes, as in Go, where text of invalid UTF-8 keeps the bytes: an invalid
+  // byte b is the lone surrogate U+DC00+b in the text (U+DC80-U+DCFF, as Python's surrogateescape),
+  // so that len, comparisons and toString see the bytes. JSON (marshal) writes it as U+FFFD, as Go
+  // does.
   decodeBytes(): string {
     const b = this.bs;
     const n = b.length;
@@ -896,7 +940,10 @@ class Parser {
     let j = 0;
     let o = 0;
     for (let i = 0; i < n; i += decodedSize) {
-      const c = decodeRune(b, i, n);
+      let c = decodeRune(b, i, n);
+      if (decodedSize === 1 && c === 0xfffd) {
+        c = 0xdc00 + b[i]!; // an invalid byte
+      }
       if (offs !== null) {
         offs[i] = o;
       }

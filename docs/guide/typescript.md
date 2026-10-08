@@ -204,6 +204,10 @@ the engine's:
   as `TextEncoder` does.
 - A **`Uint8Array`** is parsed as UTF-8 bytes, which is what the engine parses. An invalid sequence decodes as U+FFFD,
   one per byte, exactly as Go decodes it; in `Bytes` mode the positions count the original bytes.
+- In `Bytes` mode, text keeps the bytes, as Go strings do: in node text and in `text(...)`, each invalid byte *b* is
+  the lone surrogate U+DC00+*b* (U+DC80–U+DCFF, like Python's `surrogateescape`), so `len`, comparisons and
+  `toString` see the bytes the engine sees. `marshal` writes such a byte as U+FFFD, as Go's JSON does. Valid input
+  never contains these surrogates.
 
 Node `start` and `end` are positions in the chosen unit, **not** indexes into the JavaScript string. To slice the input,
 use `node.text` (terminals) or keep the positions in code points and convert: `Array.from(input).slice(n.start,
@@ -274,8 +278,9 @@ nested arrays (each level is several rule calls). Beyond that, the parse returns
 nesting too deep: the JavaScript stack overflowed at 2292 rule calls
 ```
 
-That is the one way a TypeScript parser can differ from the engine: input the engine accepts can exhaust a small
-stack. To accept deeper input, give the parser a bigger stack. Each nested rule call takes about 1 KB:
+That is the way in which a TypeScript parser differs from the engine in practice: input the engine accepts can exhaust
+a small stack (the [design record](../design/013-typescript-generation.md#limitations) lists the others, which only
+input that is not valid UTF-8 can show). To accept deeper input, give the parser a bigger stack. Each nested rule call takes about 1 KB:
 
 - In a **worker thread**, set the stack size. With 128 MB, the parentheses grammar reaches the limit of 100,000:
 

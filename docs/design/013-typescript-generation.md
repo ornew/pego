@@ -45,7 +45,11 @@ The runtime hides each difference, so that results are the engine's, not merely 
   a `Uint8Array` is decoded exactly as Go decodes it (`utf8.DecodeRune`: an invalid sequence is U+FFFD of one byte),
   which `TextDecoder` does not do. In actions, string comparison orders by code point (Go's byte order) and `len`
   counts code points or UTF-8 bytes. Literals carry both their code points and their bytes, computed by the generator
-  with Go's conversions.
+  with Go's conversions. In byte mode, Go's node text holds the raw bytes even when they are not valid UTF-8, so the
+  runtime keeps each invalid byte *b* in text as the lone surrogate U+DC00+*b* (as Python's `surrogateescape`
+  does): text stays injective, `len` counts such a surrogate as one byte, comparisons order it as that byte, the
+  S-expression form writes it as `\xNN` (as `strconv.Quote` does), and `marshal` writes it as U+FFFD (as
+  `encoding/json` does).
 - **Ints are 64-bit and wrap around in Go.** An int is a `number` while it is a safe integer and a `bigint` beyond
   (normalized after each operation), so ordinary arithmetic stays on numbers, equal ints are always `===` (memo keys
   compare variable values with `===`), and overflow, `MinInt64 / -1` and the like give Go's results. Division of safe
@@ -86,8 +90,12 @@ as a string, in a worker with a 1 GB stack. For each it compares with the engine
 Go test does):
 
 1. the result as JSON, byte for byte (the node from `marshal`, and the error message);
-2. the S-expression form (`toString` against `Node.String`), except for invalid UTF-8 in byte mode (see below);
+2. the S-expression form, byte for byte (`toString` against `Node.String`);
 3. the error of `recognize` against the engine's recognition.
+
+Besides the inputs of the corpus, it parses every prefix of each short input and the input without each of its bytes
+(variants that fail in many places, some of them not valid UTF-8). With variants of inputs up to 2,000 bytes instead
+of 40, the test compares 40,128 results; that run is too slow to keep, but it passes.
 
 It also type-checks all generated modules with `tsc --strict` plus `--noUnusedLocals`, `--noUnusedParameters`,
 `--noUncheckedIndexedAccess`, `--exactOptionalPropertyTypes`, `--erasableSyntaxOnly` and others, at `--target es2020`.
@@ -108,6 +116,6 @@ The test is skipped without `node`, and the type check without `tsc`.
 
 - Typed values (`-types`) are not generated for TypeScript, nor stream or incremental parsing.
 - Deep nesting is limited by the JavaScript stack (see above) as well as by the limit of 100,000 nested rule calls.
-- In byte mode, on input that is not valid UTF-8, node text holds U+FFFD for each invalid byte (as its JSON does in
-  Go, where the node holds the raw bytes). Positions and JSON are the engine's, but `len` and comparisons of such text
-  in actions, and `toString`, which Go writes with `\x` escapes, can differ.
+- In byte mode, Go concatenates bytes: `text($a) + text($b)` of two halves of a character is that character, while
+  the runtime's two surrogates stay two surrogates. Only input that is not valid UTF-8 can tell.
+- `JSON.stringify` writes ints beyond the safe integers inexactly; `marshal` does not.

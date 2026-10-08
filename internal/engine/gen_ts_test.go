@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"bufio"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -19,7 +20,7 @@ import (
 // UTF-8) to out.jsonl. It parses in a worker thread with a large stack, so that nesting reaches the
 // limit of 100,000 rule calls (Node's default stack holds far fewer).
 const tsHarness = `import { Worker, isMainThread, workerData } from "node:worker_threads";
-import { readFileSync, writeFileSync } from "node:fs";
+import { closeSync, openSync, readFileSync, writeSync } from "node:fs";
 
 if (isMainThread) {
   const w = new Worker(new URL(import.meta.url), {
@@ -32,8 +33,22 @@ if (isMainThread) {
   });
   w.on("exit", (code) => process.exit(code));
 } else {
+  // The bytes of a string in base64, with the surrogates that stand for invalid bytes (in text
+  // of byte mode) as those bytes, so that strings with them can be compared with Go's.
+  const bytesOf = (s) => {
+    const out = [];
+    for (const ch of s) {
+      const c = ch.codePointAt(0);
+      if (c >= 0xdc80 && c <= 0xdcff) {
+        out.push(c & 0xff);
+      } else {
+        out.push(...Buffer.from(ch, "utf8"));
+      }
+    }
+    return Buffer.from(out).toString("base64");
+  };
   const inputs = JSON.parse(readFileSync(workerData.inputs, "utf8"));
-  const lines = [];
+  const out = openSync(workerData.out, "w");
   for (let i = 0; i < inputs.length; i++) {
     const m = await import("./g" + i + ".ts");
     for (const input of inputs[i]) {
@@ -46,19 +61,23 @@ if (isMainThread) {
         for (const x of forms) {
           const r = m.parse(x, unit);
           const rec = m.recognize(x, unit);
-          lines.push(JSON.stringify({
+          writeSync(out, JSON.stringify({
             node: m.marshal(r.node),
             err: r.error === null ? null : r.error.message,
-            str: r.node === null ? "" : r.node.toString(),
+            str: r.node === null ? "" : bytesOf(r.node.toString()),
             rec: rec === null ? "<nil>" : rec.message,
-          }));
+          }) + "\n");
         }
       }
     }
   }
-  writeFileSync(workerData.out, lines.join("\n") + "\n");
+  closeSync(out);
 }
 `
+
+// tsVariantLen is the length up to which TestGeneratedTSParsersMatchEngine also parses variants of
+// an input.
+var tsVariantLen = 40
 
 // TestGeneratedTSParsersMatchEngine checks that generated TypeScript parsers return the same results
 // as the engine, as TestGeneratedParsersMatchEngine does for Go: the same trees as JSON (byte for
@@ -102,6 +121,27 @@ def main = x:@(?a-z)* ","? y:@(?^!)* [big = 9007199254740992 + len($x)] z:big? -
     M: len($z),
 }
 def big = [big > 9007199254740992] @"!"+`, []string{"", "a", "ab,c😀", ",！", "z,日本", "abc,😀x", "a,!!"}})
+	// Variants of the short inputs: every prefix, and the input without each byte. They fail in many
+	// places (expectations, recovery, cuts, memoized failures), and some are not valid UTF-8.
+	for i := range cases {
+		seen := map[string]bool{}
+		for _, s := range cases[i].inputs {
+			seen[s] = true
+		}
+		for _, s := range cases[i].inputs {
+			if len(s) > tsVariantLen {
+				continue
+			}
+			for k := 0; k < len(s); k++ {
+				for _, v := range []string{s[:k], s[:k] + s[k+1:]} {
+					if !seen[v] {
+						seen[v] = true
+						cases[i].inputs = append(cases[i].inputs, v)
+					}
+				}
+			}
+		}
+	}
 	dir := t.TempDir()
 	write := func(name, content string) {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
@@ -171,11 +211,12 @@ def big = [big > 9007199254740992] @"!"+`, []string{"", "a", "ab,c😀", ",！",
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("node: %v\n%s", err, out)
 	}
-	out, err := os.ReadFile(filepath.Join(dir, "out.jsonl"))
+	f, err := os.Open(filepath.Join(dir, "out.jsonl"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	lines := strings.Split(strings.TrimSuffix(string(out), "\n"), "\n")
+	defer f.Close()
+	results := bufio.NewReader(f)
 	k, w := 0, 0
 	for _, c := range cases {
 		for _, s := range c.inputs {
@@ -185,8 +226,9 @@ def big = [big > 9007199254740992] @"!"+`, []string{"", "a", "ab,c😀", ",！",
 					forms = append(forms, "string")
 				}
 				for _, form := range forms {
-					if k >= len(lines) {
-						t.Fatalf("got %d results, want more", len(lines))
+					line, err := results.ReadString('\n')
+					if err != nil {
+						t.Fatalf("got %d results, want more: %v", k, err)
 					}
 					var got struct {
 						Node string
@@ -194,8 +236,8 @@ def big = [big > 9007199254740992] @"!"+`, []string{"", "a", "ab,c😀", ",！",
 						Str  string
 						Rec  string
 					}
-					if err := json.Unmarshal([]byte(lines[k]), &got); err != nil {
-						t.Fatalf("%v: %s", err, lines[k])
+					if err := json.Unmarshal([]byte(line), &got); err != nil {
+						t.Fatalf("%v: %s", err, line)
 					}
 					k++
 					// The result as resultJSON encodes it, with the node as marshal encoded it.
@@ -212,11 +254,13 @@ def big = [big > 9007199254740992] @"!"+`, []string{"", "a", "ab,c😀", ",！",
 						at := diffAt(res, wants[w].out)
 						t.Errorf("%s (%v, %s): input %q\n generated %s\n engine    %s", c.name, unit, form, in, clip(res, at), clip(wants[w].out, at))
 					}
-					// Text of invalid UTF-8 is U+FFFD in TypeScript strings, where the engine's node
-					// has the bytes (which its String quotes as \x escapes and JSON as U+FFFD).
-					if got.Str != wants[w].str && (unit == CodePoints || utf8.ValidString(s)) {
-						at := diffAt(got.Str, wants[w].str)
-						t.Errorf("%s (%v, %s): input %q: String\n generated %s\n engine    %s", c.name, unit, form, in, clip(got.Str, at), clip(wants[w].str, at))
+					str, err := base64.StdEncoding.DecodeString(got.Str)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if string(str) != wants[w].str {
+						at := diffAt(string(str), wants[w].str)
+						t.Errorf("%s (%v, %s): input %q: String\n generated %s\n engine    %s", c.name, unit, form, in, clip(string(str), at), clip(wants[w].str, at))
 					}
 					if got.Rec != wants[w].rec {
 						t.Errorf("%s (%v, %s): input %q: recognize\n generated %s\n engine    %s", c.name, unit, form, in, got.Rec, wants[w].rec)
@@ -226,8 +270,9 @@ def big = [big > 9007199254740992] @"!"+`, []string{"", "a", "ab,c😀", ",！",
 			}
 		}
 	}
-	if k != len(lines) {
-		t.Errorf("got %d results, want %d", len(lines), k)
+	t.Logf("compared %d results of %d grammars", k, len(cases))
+	if rest, _ := results.ReadString('\n'); rest != "" {
+		t.Errorf("got more than %d results", k)
 	}
 }
 
