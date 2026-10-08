@@ -1,0 +1,854 @@
+" "	ERR
+"! !a"	a@3
+"!!!a"	(call@0 !_ a@3)
+"!!"	ERR
+"!!a"	a@2
+"!"	ERR
+"!("	ERR
+"!(-1)"	(call@0 !_ i:-1@2)
+"!-"	ERR
+"!--1"	ERR
+"!-1"	(call@0 !_ i:-1@1)
+"!-a"	ERR
+"!="	ERR
+"!a b"	ERR
+"!a"	(call@0 !_ a@1)
+""	ERR
+"# c\n1"	ERR
+"#"	ERR
+"$"	ERR
+"% a"	ERR
+"%"	ERR
+"&"	ERR
+"&&"	ERR
+"'"	ERR
+"''"	s:""@0
+"'''"	ERR
+"''''''"	s:""@0
+"'''''''"	ERR
+"'''\\''''"	s:"'"@0
+"'''\\u00e9'''"	s:"é"@0
+"'''a'''"	s:"a"@0
+"'''a''''"	ERR
+"'''a'''.size()"	(mcall@12 size s:"a"@0)
+"'''a\nb'''"	s:"a\nb"@0
+"'''a\r\nb'''"	s:"a\nb"@0
+"'''x''x'''"	s:"x''x"@0
+"'\"'"	s:"\""@0
+"'\"\"'"	s:"\"\""@0
+"'\\'"	ERR
+"'\\''"	s:"'"@0
+"'\\a\\b\\f\\n\\r\\t\\v\\\\\\?\\\"\\'\\`'"	s:"\a\b\f\n\r\t\v\\?\"'`"@0
+"'a' 'b'"	ERR
+"'a' + 'b'"	(call@4 _+_ s:"a"@0 s:"b"@6)
+"'a'"	s:"a"@0
+"'a''b'"	ERR
+"'a'.size()"	(mcall@8 size s:"a"@0)
+"'a'[0]"	(call@3 _[_] s:"a"@0 i:0@4)
+"'a'in x"	(call@3 @in s:"a"@0 x@6)
+"'a'in['a']"	(call@3 @in s:"a"@0 (list@5 s:"a"@6))
+"'a\nb'"	ERR
+"'b'a"	ERR
+"'ÿ'"	s:"ÿ"@0
+"("	ERR
+"((((a"	ERR
+"((a)"	ERR
+"((a))"	a@2
+"()"	ERR
+"(.)"	ERR
+"(a && b) && c"	(call@9 _&&_ (call@3 _&&_ a@1 b@6) c@12)
+"(a ? b : c) ? d : e"	(call@12 _?_:_ (call@3 _?_:_ a@1 b@5 c@9) d@14 e@18)
+"(a || b) || c"	(call@9 _||_ (call@3 _||_ a@1 b@6) c@12)
+"(a"	ERR
+"(a)(b)"	ERR
+"(a))"	ERR
+"(a).b"	(sel@3 a@1 b)
+"(a)[0]"	(call@3 _[_] a@1 i:0@4)
+"(a){}"	ERR
+"(a.)"	ERR
+")"	ERR
+"))))"	ERR
+"* a"	ERR
+"*"	ERR
+"+ a"	ERR
+"+"	ERR
+"+a"	ERR
+","	ERR
+"- - 1"	i:1@4
+"- -a"	a@3
+"- .5"	d:-0.5@0
+"- 1"	i:-1@0
+"- 1.b"	(sel@3 i:-1@0 b)
+"- 1u"	(call@0 -_ u:1@2)
+"- a"	(call@0 -_ a@2)
+"-!!a"	ERR
+"-!"	ERR
+"-!1"	ERR
+"-!a"	ERR
+"-"	ERR
+"-("	ERR
+"-(-1)"	(call@0 -_ i:-1@2)
+"-(-a)"	(call@0 -_ (call@2 -_ a@3))
+"-(1)"	(call@0 -_ i:1@2)
+"--"	ERR
+"---1"	(call@0 -_ i:1@3)
+"---a"	(call@0 -_ a@3)
+"--1"	i:1@2
+"--9223372036854775808"	ERR
+"--a"	a@2
+"-.5"	d:-0.5@0
+"-0x1"	i:-1@0
+"-0x8000000000000000"	i:-9223372036854775808@0
+"-0x8000000000000001"	ERR
+"-1 .b"	(sel@3 i:-1@0 b)
+"-1"	i:-1@0
+"-1.5"	d:-1.5@0
+"-1.b"	(sel@2 i:-1@0 b)
+"-1.b()"	(mcall@4 b i:-1@0)
+"-1[0]"	(call@2 _[_] i:-1@0 i:0@3)
+"-1e3"	d:-1000@0
+"-1e309"	ERR
+"-1u"	(call@0 -_ u:1@1)
+"-9223372036854775808"	i:-9223372036854775808@0
+"-9223372036854775809"	ERR
+"-a b"	ERR
+"-a"	(call@0 -_ a@1)
+"-a.b"	(call@0 -_ (sel@2 a@1 b))
+". M{}"	(msg@3 .M)
+". a . b"	(sel@4 .a@2 b)
+". a"	.a@2
+"."	ERR
+".."	ERR
+"..f(a)"	ERR
+".1"	d:0.1@0
+".5"	d:0.5@0
+".5.5"	ERR
+".?a"	ERR
+".M{}"	(msg@2 .M)
+".a"	.a@1
+".a."	ERR
+".a.M{}"	(msg@4 .a.M)
+".a.b"	(sel@2 .a@1 b)
+".as"	ERR
+".e5"	.e5@1
+".f(a)"	(call@2 .f a@3)
+".if"	ERR
+".if(a)"	ERR
+"/ / c\n1"	ERR
+"/ a"	ERR
+"/"	ERR
+"/* c */ 1"	ERR
+"// c"	ERR
+"// c\n"	ERR
+"// c\n1"	i:1@5
+"//\n1"	i:1@3
+"0"	i:0@0
+"0.0"	d:0@0
+"00"	i:0@0
+"00.0"	d:0@0
+"007"	i:7@0
+"01"	i:1@0
+"0X1"	ERR
+"0e0"	d:0@0
+"0x"	ERR
+"0x1g"	ERR
+"0xFU"	u:15@0
+"0xFu"	u:15@0
+"0xg"	ERR
+"1 # c"	ERR
+"1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10"	(call@34 _+_ (call@30 _+_ (call@26 _+_ (call@22 _+_ (call@18 _+_ (call@14 _+_ (call@10 _+_ (call@6 _+_ (call@2 _+_ i:1@0 i:2@4) i:3@8) i:4@12) i:5@16) i:6@20) i:7@24) i:8@28) i:9@32) i:10@36)
+"1 - -1"	(call@2 _-_ i:1@0 i:-1@4)
+"1 - 1"	(call@2 _-_ i:1@0 i:1@4)
+"1 --1"	(call@2 _-_ i:1@0 i:-1@3)
+"1 -1"	(call@2 _-_ i:1@0 i:1@3)
+"1 / / 2"	ERR
+"1 /* c */"	ERR
+"1 // c"	i:1@0
+"1 // c\n"	i:1@0
+"1 //2"	i:1@0
+"1 /2"	(call@2 _/_ i:1@0 i:2@3)
+"1 2"	ERR
+"1 === 2"	ERR
+"1 \v 2"	ERR
+"1 a"	ERR
+"1 in x"	(call@2 @in i:1@0 x@5)
+"1+-1"	(call@1 _+_ i:1@0 i:-1@2)
+"1- 1"	(call@1 _-_ i:1@0 i:1@3)
+"1-+1"	ERR
+"1---1"	(call@1 _-_ i:1@0 i:1@4)
+"1--1"	(call@1 _-_ i:1@0 i:-1@2)
+"1-1"	(call@1 _-_ i:1@0 i:1@2)
+"1."	ERR
+"1..5"	ERR
+"1.5.5"	ERR
+"1.5in x"	(call@3 @in d:1.5@0 x@6)
+"1.e3"	(sel@1 i:1@0 e3)
+"1//"	i:1@0
+"1//c"	i:1@0
+"1E+5"	d:100000@0
+"1U"	u:1@0
+"1\f+\f2"	(call@2 _+_ i:1@0 i:2@4)
+"1\r+\r2"	(call@2 _+_ i:1@0 i:2@4)
+"1\r\n+\r\n2"	(call@3 _+_ i:1@0 i:2@6)
+"1\u0085+2"	ERR
+"1\u00a0+2"	ERR
+"1\u2028+2"	ERR
+"1\ufeff"	ERR
+"1\x00"	ERR
+"1_0"	ERR
+"1a"	ERR
+"1e"	ERR
+"1e+"	ERR
+"1e-309"	d:1e-309@0
+"1e-400"	d:0@0
+"1e-5"	d:1e-05@0
+"1e308"	d:1e+308@0
+"1e309"	ERR
+"1e5"	d:100000@0
+"1e5u"	ERR
+"1in x"	(call@1 @in i:1@0 x@4)
+"1in[1]"	(call@1 @in i:1@0 (list@3 i:1@4))
+"1u in x"	(call@3 @in u:1@0 x@6)
+"1u"	u:1@0
+"1u1"	ERR
+"1uu"	ERR
+"2.5e-324"	d:5e-324@0
+"4.9e-324"	d:5e-324@0
+"5.5e"	ERR
+"5e-325"	d:0@0
+"9223372036854775808"	ERR
+":"	ERR
+";"	ERR
+"<"	ERR
+"="	ERR
+"=="	ERR
+">"	ERR
+"? b : c"	ERR
+"?"	ERR
+"?a"	ERR
+"@"	ERR
+"@index0"	ERR
+"B\"a\""	b:"a"@0
+"Br\"a\""	b:"a"@0
+"M {a: 1}"	(msg@2 M (field@4 a i:1@6))
+"M//c\n{a: 1}"	(msg@5 M (field@7 a i:1@9))
+"M\n{a: 1}"	(msg@2 M (field@4 a i:1@6))
+"M\t{a: 1}"	(msg@2 M (field@4 a i:1@6))
+"M{ }"	(msg@1 M)
+"M{"	ERR
+"M{,a: b}"	ERR
+"M{,}"	(msg@1 M)
+"M{:b}"	ERR
+"M{? a: b}"	(msg@1 M (?field@5 a b@7))
+"M{?a: b}"	(msg@1 M (?field@4 a b@6))
+"M{?}"	ERR
+"M{``: 1}"	ERR
+"M{`a b`: 1}"	(msg@1 M (field@7 a b i:1@9))
+"M{`a`: 1, `b-c`: 2}"	(msg@1 M (field@5 a i:1@7) (field@15 b-c i:2@17))
+"M{a : 1 , b : 2 }"	(msg@1 M (field@4 a i:1@6) (field@12 b i:2@14))
+"M{a"	ERR
+"M{a.b: c}"	ERR
+"M{a//c\n: 1}"	(msg@1 M (field@7 a i:1@9))
+"M{a: 1}{b: 2}"	ERR
+"M{a: ?b}"	ERR
+"M{a: M{b: M{c: 1}}}"	(msg@1 M (field@3 a (msg@6 M (field@8 b (msg@11 M (field@13 c i:1@15))))))
+"M{a: [M{}], b: {1: M{}}}"	(msg@1 M (field@3 a (list@5 (msg@7 M))) (field@13 b (map@15 (entry@17 i:1@16 (msg@20 M)))))
+"M{a: b"	ERR
+"M{a: b, c: d}"	(msg@1 M (field@3 a b@5) (field@9 c d@11))
+"M{a: b,"	ERR
+"M{a: b,,}"	ERR
+"M{a: b,}"	(msg@1 M (field@3 a b@5))
+"M{a: b: c}"	ERR
+"M{a: b}"	(msg@1 M (field@3 a b@5))
+"M{a:"	ERR
+"M{a:}"	ERR
+"M{as: 1, var: 2}"	(msg@1 M (field@4 as i:1@6) (field@12 var i:2@14))
+"M{a}"	ERR
+"M{if: if}"	ERR
+"M{}"	(msg@1 M)
+"M{}.a.b{}"	ERR
+"M{}{}"	ERR
+"NULL"	NULL@0
+"R\"a\""	s:"a"@0
+"True"	True@0
+"[ ]"	(list@0)
+"["	ERR
+"[,]"	(list@0)
+"[,a]"	ERR
+"[0].a"	(sel@3 (list@0 i:0@1) a)
+"[0][0]"	(call@3 _[_] (list@0 i:0@1) i:0@4)
+"[1, 2, 3][0]"	(call@9 _[_] (list@0 i:1@1 i:2@4 i:3@7) i:0@10)
+"[1,//c\n2]"	(list@0 i:1@1 i:2@7)
+"[? a]"	(list@0 ?a@3)
+"[??a]"	ERR
+"[?]"	ERR
+"[?a, ?b]"	(list@0 ?a@2 ?b@6)
+"[?a,]"	(list@0 ?a@2)
+"[?a]"	(list@0 ?a@2)
+"[[[["	ERR
+"[[]"	ERR
+"[[],[]]"	(list@0 (list@1) (list@4))
+"[[]]"	(list@0 (list@1))
+"[] []"	ERR
+"[]"	(list@0)
+"[]]"	ERR
+"[]in x"	(call@2 @in (list@0) x@5)
+"[]{}"	ERR
+"[a b]"	ERR
+"[a"	ERR
+"[a, ?b]"	(list@0 a@1 ?b@5)
+"[a, b,]"	(list@0 a@1 b@4)
+"[a, b]"	(list@0 a@1 b@4)
+"[a,"	ERR
+"[a,,]"	ERR
+"[a,]"	(list@0 a@1)
+"[a.]"	ERR
+"[a:b]"	ERR
+"[a;b]"	ERR
+"[a]"	(list@0 a@1)
+"[if]"	ERR
+"\""	ERR
+"\"''\""	s:"''"@0
+"\"'\""	s:"'"@0
+"\"\""	s:""@0
+"\"\"\""	ERR
+"\"\"\"\""	ERR
+"\"\"\"\"\""	ERR
+"\"\"\"\"\"\""	s:""@0
+"\"\"\"\"\"\"\""	ERR
+"\"\"\"\"a\"\"\""	s:"\"a"@0
+"\"\"\"\\\"\"\""	ERR
+"\"\"\"\\\"\"\"\""	s:"\""@0
+"\"\"\"\\\"\"\"\"\""	ERR
+"\"\"\"\\\n\"\"\""	ERR
+"\"\"\"\\s\"\"\""	ERR
+"\"\"\"a"	ERR
+"\"\"\"a\"\""	ERR
+"\"\"\"a\"\"\""	s:"a"@0
+"\"\"\"a\"\"\"\""	ERR
+"\"\"\"a\"\"\"\"\""	ERR
+"\"\"\"a\nb\"\"\""	s:"a\nb"@0
+"\"\"\"a\r\nb\"\"\""	s:"a\nb"@0
+"\"\"\"a\rb\"\"\""	s:"a\nb"@0
+"\"\"\"x\"\"x\"\"\""	s:"x\"\"x"@0
+"\"\\ \""	ERR
+"\"\\"	ERR
+"\"\\/\""	ERR
+"\"\\0000\""	s:"\x000"@0
+"\"\\000\""	s:"\x00"@0
+"\"\\00\""	ERR
+"\"\\0\""	ERR
+"\"\\101\""	s:"A"@0
+"\"\\18\""	ERR
+"\"\\1\""	ERR
+"\"\\377\""	s:"ÿ"@0
+"\"\\400\""	ERR
+"\"\\U00000000\""	s:"\x00"@0
+"\"\\U0000000g\""	ERR
+"\"\\U00000041\""	s:"A"@0
+"\"\\U000000\""	ERR
+"\"\\U0000D800\""	ERR
+"\"\\U0000dfff\""	ERR
+"\"\\U0001F600\""	s:"😀"@0
+"\"\\U0010FFFF\""	s:"\U0010ffff"@0
+"\"\\U00110000\""	ERR
+"\"\\U1F600\""	ERR
+"\"\\UD83DDE03\""	ERR
+"\"\\Uffffffff\""	ERR
+"\"\\X41\""	s:"A"@0
+"\"\\\""	ERR
+"\"\\\"\""	s:"\""@0
+"\"\\\\\""	s:"\\"@0
+"\"\\\\\\\""	ERR
+"\"\\\n\""	ERR
+"\"\\\r\""	ERR
+"\"\\a\\b\\f\\n\\r\\t\\v\\\\\\?\\\"\\'\\`\""	s:"\a\b\f\n\r\t\v\\?\"'`"@0
+"\"\\e\""	ERR
+"\"\\s\""	ERR
+"\"\\u0041\""	s:"A"@0
+"\"\\u004\""	ERR
+"\"\\u00e9\""	s:"é"@0
+"\"\\u00g1\""	ERR
+"\"\\u263A\""	s:"☺"@0
+"\"\\uFFFE\""	s:"\ufffe"@0
+"\"\\uFFFF\""	s:"\uffff"@0
+"\"\\ud7ff\""	s:"\ud7ff"@0
+"\"\\ud800\""	ERR
+"\"\\ud83d\\ude03\""	ERR
+"\"\\udbff\""	ERR
+"\"\\udc00\""	ERR
+"\"\\udfff\""	ERR
+"\"\\ue000\""	s:"\ue000"@0
+"\"\\x41\""	s:"A"@0
+"\"\\x4\""	ERR
+"\"\\xFF\""	s:"ÿ"@0
+"\"\\x\""	ERR
+"\"\\xg0\""	ERR
+"\"\\z\""	ERR
+"\"\u2028\""	s:"\u2028"@0
+"\"\ufeff\""	s:"\ufeff"@0
+"\"\x00\""	s:"\x00"@0
+"\"\xc3(\""	s:"�("@0
+"\"\xff\""	s:"�"@0
+"\"a\" \"b\""	ERR
+"\"a\""	s:"a"@0
+"\"a\".size()"	(mcall@8 size s:"a"@0)
+"\"a\"\"b\""	ERR
+"\"a\"in x"	(call@3 @in s:"a"@0 x@6)
+"\"a\nb\""	ERR
+"\"a\rb\""	ERR
+"\"é\""	s:"é"@0
+"\"日本\""	s:"日本"@0
+"\"😀\""	s:"😀"@0
+"\\"	ERR
+"\f"	ERR
+"\n"	ERR
+"\r"	ERR
+"\t"	ERR
+"\u00a0"	ERR
+"\u2003"	ERR
+"\ufeff1"	ERR
+"\x001"	ERR
+"]"	ERR
+"]]]]"	ERR
+"^"	ERR
+"_"	_@0
+"_1"	_1@0
+"__"	__@0
+"_true"	_true@0
+"`"	ERR
+"`M`{a: 1}"	ERR
+"``"	ERR
+"`a"	ERR
+"`a`"	ERR
+"`a`.b"	ERR
+"a ! = b"	ERR
+"a != b"	(call@2 _!=_ a@0 b@5)
+"a !== b"	ERR
+"a !b"	ERR
+"a % b % c"	(call@6 _%_ (call@2 _%_ a@0 b@4) c@8)
+"a %"	ERR
+"a & & b"	ERR
+"a & b"	ERR
+"a && b && c && d && e"	(call@2 _&&_ a@0 b@5 c@10 d@15 e@20)
+"a && b && c"	(call@2 _&&_ a@0 b@5 c@10)
+"a && b < c"	(call@2 _&&_ a@0 (call@7 _<_ b@5 c@9))
+"a && b || c"	(call@7 _||_ (call@2 _&&_ a@0 b@5) c@10)
+"a && b"	(call@2 _&&_ a@0 b@5)
+"a * * b"	ERR
+"a * b + c"	(call@6 _+_ (call@2 _*_ a@0 b@4) c@8)
+"a * b / c % d"	(call@10 _%_ (call@6 _/_ (call@2 _*_ a@0 b@4) c@8) d@12)
+"a *"	ERR
+"a ** b"	ERR
+"a + + b"	ERR
+"a + - b"	(call@2 _+_ a@0 (call@4 -_ b@6))
+"a + b * c"	(call@2 _+_ a@0 (call@6 _*_ b@4 c@8))
+"a + b - c + d"	(call@10 _+_ (call@6 _-_ (call@2 _+_ a@0 b@4) c@8) d@12)
+"a + b < c"	(call@6 _<_ (call@2 _+_ a@0 b@4) c@8)
+"a + b ? c : d"	(call@6 _?_:_ (call@2 _+_ a@0 b@4) c@8 d@12)
+"a +"	ERR
+"a +//c\nb"	(call@2 _+_ a@0 b@7)
+"a - + b"	ERR
+"a - - b"	(call@2 _-_ a@0 (call@4 -_ b@6))
+"a - -1"	(call@2 _-_ a@0 i:-1@4)
+"a - b - c"	(call@6 _-_ (call@2 _-_ a@0 b@4) c@8)
+"a -1"	(call@2 _-_ a@0 i:1@3)
+"a . b . M { a : 1 }"	(msg@10 a.b.M (field@14 a i:1@16))
+"a . b"	(sel@2 a@0 b)
+"a . f ( b )"	(mcall@6 f a@0 b@8)
+"a .b"	(sel@2 a@0 b)
+"a / b / c"	(call@6 _/_ (call@2 _/_ a@0 b@4) c@8)
+"a /"	ERR
+"a /* b */ + c"	ERR
+"a // b"	a@0
+"a //c\n + b"	(call@7 _+_ a@0 b@9)
+"a 1"	ERR
+"a : b"	ERR
+"a < = b"	ERR
+"a < b && c > d"	(call@6 _&&_ (call@2 _<_ a@0 b@4) (call@11 _>_ c@9 d@13))
+"a < b + c"	(call@2 _<_ a@0 (call@6 _+_ b@4 c@8))
+"a < b < c"	(call@6 _<_ (call@2 _<_ a@0 b@4) c@8)
+"a < b == c"	(call@6 _==_ (call@2 _<_ a@0 b@4) c@9)
+"a << b"	ERR
+"a <= b"	(call@2 _<=_ a@0 b@5)
+"a <> b"	ERR
+"a = b"	ERR
+"a =< b"	ERR
+"a == b == c"	(call@7 _==_ (call@2 _==_ a@0 b@5) c@10)
+"a == b in c"	(call@7 @in (call@2 _==_ a@0 b@5) c@10)
+"a == b"	(call@2 _==_ a@0 b@5)
+"a === b"	ERR
+"a => b"	ERR
+"a >= b"	(call@2 _>=_ a@0 b@5)
+"a >> b"	ERR
+"a ? (b ? c : d) : e"	(call@2 _?_:_ a@0 (call@7 _?_:_ b@5 c@9 d@13) e@18)
+"a ? .b : c"	(call@2 _?_:_ a@0 .b@5 c@9)
+"a ? : c"	ERR
+"a ? b + c : d + e"	(call@2 _?_:_ a@0 (call@6 _+_ b@4 c@8) (call@14 _+_ d@12 e@16))
+"a ? b : (c ? d : e)"	(call@2 _?_:_ a@0 b@4 (call@11 _?_:_ c@9 d@13 e@17))
+"a ? b : c : d"	ERR
+"a ? b : c ? d : e"	(call@2 _?_:_ a@0 b@4 (call@10 _?_:_ c@8 d@12 e@16))
+"a ? b : c ? d :"	ERR
+"a ? b : c ? d"	ERR
+"a ? b : c || d"	(call@2 _?_:_ a@0 b@4 (call@10 _||_ c@8 d@13))
+"a ? b : c"	(call@2 _?_:_ a@0 b@4 c@8)
+"a ? b :"	ERR
+"a ? b ; c"	ERR
+"a ? b ? c : d : e"	ERR
+"a ? b ? c : d"	ERR
+"a ? b || c : d"	(call@2 _?_:_ a@0 (call@6 _||_ b@4 c@9) d@13)
+"a ? b"	ERR
+"a ?"	ERR
+"a ?.5 : c"	(call@2 _?_:_ a@0 d:0.5@3 c@8)
+"a ?.5 :c"	(call@2 _?_:_ a@0 d:0.5@3 c@7)
+"a ?.b : c"	(call@2 _?_:_ a@0 .b@4 c@8)
+"a ?: b"	ERR
+"a ?? b"	ERR
+"a ?b:c"	(call@2 _?_:_ a@0 b@3 c@5)
+"a [0]"	(call@2 _[_] a@0 i:0@3)
+"a ^ b"	ERR
+"a b c"	ERR
+"a b"	ERR
+"a in b == c"	(call@7 _==_ (call@2 @in a@0 b@5) c@10)
+"a in b"	(call@2 @in a@0 b@5)
+"a in"	ERR
+"a in(b)"	(call@2 @in a@0 b@5)
+"a inb"	ERR
+"a | b"	ERR
+"a | | b"	ERR
+"a || (b || c) || d"	(call@2 _||_ a@0 (call@8 _||_ b@6 c@11) d@17)
+"a || (b || c)"	(call@2 _||_ a@0 (call@8 _||_ b@6 c@11))
+"a || b && c || d && e"	(call@2 _||_ a@0 (call@7 _&&_ b@5 c@10) (call@17 _&&_ d@15 e@20))
+"a || b && c"	(call@2 _||_ a@0 (call@7 _&&_ b@5 c@10))
+"a || b == c"	(call@2 _||_ a@0 (call@7 _==_ b@5 c@10))
+"a || b ? c : d"	(call@7 _?_:_ (call@2 _||_ a@0 b@5) c@9 d@13)
+"a || b || (c || d)"	(call@2 _||_ a@0 b@5 (call@13 _||_ c@11 d@16))
+"a || b || c || d || e"	(call@2 _||_ a@0 b@5 c@10 d@15 e@20)
+"a || b || c"	(call@2 _||_ a@0 b@5 c@10)
+"a || b"	(call@2 _||_ a@0 b@5)
+"a"	a@0
+"a#"	ERR
+"a$"	ERR
+"a'b'"	ERR
+"a((("	ERR
+"a().b{}"	ERR
+"a(as)"	ERR
+"a)"	ERR
+"a+-a"	(call@1 _+_ a@0 (call@2 -_ a@3))
+"a, b"	ERR
+"a,"	ERR
+"a---a"	(call@1 _-_ a@0 a@4)
+"a--a"	(call@1 _-_ a@0 (call@2 -_ a@3))
+"a-1"	(call@1 _-_ a@0 i:1@2)
+"a. ?b"	(call@1 _?._ a@0 s:"b"@4)
+"a. b"	(sel@1 a@0 b)
+"a."	ERR
+"a.("	ERR
+"a.(b)"	ERR
+"a.(b){}"	ERR
+"a..b"	ERR
+"a.1"	ERR
+"a.1b"	ERR
+"a.? b"	(call@1 _?._ a@0 s:"b"@4)
+"a.?"	ERR
+"a.?1"	ERR
+"a.??b"	ERR
+"a.?\nb"	(call@1 _?._ a@0 s:"b"@4)
+"a.?`b c`"	(call@1 _?._ a@0 s:"b c"@3)
+"a.?b"	(call@1 _?._ a@0 s:"b"@3)
+"a.?b()"	ERR
+"a.?b.c"	(sel@4 (call@1 _?._ a@0 s:"b"@3) c)
+"a.?b[0]"	(call@4 _[_] (call@1 _?._ a@0 s:"b"@3) i:0@5)
+"a.M{}"	(msg@3 a.M)
+"a.["	ERR
+"a._"	(sel@1 a@0 _)
+"a.` b `"	(sel@1 a@0  b )
+"a.``"	ERR
+"a.`a`.`b`"	(sel@5 (sel@1 a@0 a) b)
+"a.`b c`"	(sel@1 a@0 b c)
+"a.`b c`()"	ERR
+"a.`b'c`"	ERR
+"a.`b-c`"	(sel@1 a@0 b-c)
+"a.`b.c`"	(sel@1 a@0 b.c)
+"a.`b/c`"	(sel@1 a@0 b/c)
+"a.`b:c`"	ERR
+"a.`b\"c`"	ERR
+"a.`b\nc`"	ERR
+"a.`b`"	(sel@1 a@0 b)
+"a.`b`.c"	(sel@5 (sel@1 a@0 b) c)
+"a.`b`[0]"	(call@5 _[_] (sel@1 a@0 b) i:0@6)
+"a.`é`"	ERR
+"a.as"	(sel@1 a@0 as)
+"a.b + c.d"	(call@4 _+_ (sel@1 a@0 b) (sel@7 c@6 d))
+"a.b in c"	(call@4 @in (sel@1 a@0 b) c@7)
+"a.b(c).d(e)"	(mcall@8 d (mcall@3 b a@0 c@4) e@9)
+"a.b."	ERR
+"a.b.M{a: 1}"	(msg@5 a.b.M (field@7 a i:1@9))
+"a.b.c"	(sel@3 (sel@1 a@0 b) c)
+"a.b.c."	ERR
+"a.b.c.d.e.f("	ERR
+"a.b.c.d.e.f.g.h.i.j.k.l"	(sel@21 (sel@19 (sel@17 (sel@15 (sel@13 (sel@11 (sel@9 (sel@7 (sel@5 (sel@3 (sel@1 a@0 b) c) d) e) f) g) h) i) j) k) l)
+"a.b.c{}"	(msg@5 a.b.c)
+"a.b.exists(c, c)"	(mcall@10 exists (sel@1 a@0 b) c@11 c@14)
+"a.b.if{}"	(msg@6 a.b.if)
+"a.b1"	(sel@1 a@0 b1)
+"a.b{c: d}.e"	(sel@9 (msg@3 a.b (field@5 c d@7)) e)
+"a.b{c: d}.f()"	(mcall@11 f (msg@3 a.b (field@5 c d@7)))
+"a.b{c: d}[0]"	(call@9 _[_] (msg@3 a.b (field@5 c d@7)) i:0@10)
+"a.b{}"	(msg@3 a.b)
+"a.f("	ERR
+"a.f()"	(mcall@3 f a@0)
+"a.f()()"	ERR
+"a.f(?b)"	ERR
+"a.f(b"	ERR
+"a.f(b)"	(mcall@3 f a@0 b@4)
+"a.f(b,"	ERR
+"a.f(b,)"	ERR
+"a.false"	ERR
+"a.if"	(sel@1 a@0 if)
+"a.if()"	(mcall@4 if a@0)
+"a.if{}"	(msg@4 a.if)
+"a.in"	ERR
+"a.in()"	ERR
+"a.in{}"	ERR
+"a.null"	ERR
+"a.package()"	(mcall@9 package a@0)
+"a.true"	ERR
+"a.true()"	ERR
+"a.true{}"	ERR
+"a.var.let"	(sel@5 (sel@1 a@0 var) let)
+"a.{"	ERR
+"a.é"	ERR
+"a: b}"	ERR
+"a:b"	ERR
+"a;"	ERR
+"a? b :c"	(call@1 _?_:_ a@0 b@3 c@6)
+"a?!b:c"	(call@1 _?_:_ a@0 (call@2 !_ b@3) c@5)
+"a?'b':c"	(call@1 _?_:_ a@0 s:"b"@2 c@6)
+"a?(b):c"	(call@1 _?_:_ a@0 b@3 c@6)
+"a?-1:c"	(call@1 _?_:_ a@0 i:-1@2 c@5)
+"a?.5:c"	(call@1 _?_:_ a@0 d:0.5@2 c@5)
+"a?.b"	ERR
+"a?.b.c:d"	(call@1 _?_:_ a@0 (sel@4 .b@3 c) d@7)
+"a?M{}:c"	(call@1 _?_:_ a@0 (msg@3 M) c@6)
+"a?[0]"	ERR
+"a?[b]:c"	(call@1 _?_:_ a@0 (list@2 b@3) c@6)
+"a?b.c:d"	(call@1 _?_:_ a@0 (sel@3 b@2 c) d@6)
+"a?b:c"	(call@1 _?_:_ a@0 b@2 c@4)
+"a?{b:c}:c"	(call@1 _?_:_ a@0 (map@2 (entry@4 b@3 c@5)) c@8)
+"a@"	ERR
+"a[ 0 ]"	(call@1 _[_] a@0 i:0@3)
+"a[ ?0]"	(call@1 _[?_] a@0 i:0@4)
+"a[0,1]"	ERR
+"a[0] + b[1]"	(call@5 _+_ (call@1 _[_] a@0 i:0@2) (call@8 _[_] b@7 i:1@9))
+"a[0]"	(call@1 _[_] a@0 i:0@2)
+"a[0].exists(c, c)"	(mcall@11 exists (call@1 _[_] a@0 i:0@2) c@12 c@15)
+"a[0][1]"	(call@4 _[_] (call@1 _[_] a@0 i:0@2) i:1@5)
+"a[0][1][2][3][4][5][6][7][8][9][10][11]"	(call@35 _[_] (call@31 _[_] (call@28 _[_] (call@25 _[_] (call@22 _[_] (call@19 _[_] (call@16 _[_] (call@13 _[_] (call@10 _[_] (call@7 _[_] (call@4 _[_] (call@1 _[_] a@0 i:0@2) i:1@5) i:2@8) i:3@11) i:4@14) i:5@17) i:6@20) i:7@23) i:8@26) i:9@29) i:10@32) i:11@36)
+"a[0]{}"	ERR
+"a[? 0]"	(call@1 _[?_] a@0 i:0@4)
+"a[?0]"	(call@1 _[?_] a@0 i:0@3)
+"a[??0]"	ERR
+"a[?]"	ERR
+"a[[[["	ERR
+"a[]"	ERR
+"a\"b\""	ERR
+"a]"	ERR
+"a`"	ERR
+"ain b"	ERR
+"all(x, y)"	(call@3 all x@4 y@7)
+"as"	ERR
+"as()"	ERR
+"as.a"	ERR
+"as{}"	(msg@2 as)
+"a{in: 1}"	ERR
+"a{null: 1}"	ERR
+"a{true: 1}"	ERR
+"aé"	ERR
+"b \"a\""	ERR
+"b r\"a\""	ERR
+"b''"	b:""@0
+"b'''\\xff'''"	b:"\xff"@0
+"b'a'"	b:"a"@0
+"b'a'.size()"	(mcall@9 size b:"a"@0)
+"bR'a\\n'"	b:"a\\n"@0
+"b\"\""	b:""@0
+"b\"\"\"a\"\"\""	b:"a"@0
+"b\"\\377\""	b:"\xff"@0
+"b\"\\400\""	ERR
+"b\"\\U000000ff\""	ERR
+"b\"\\u00ff\""	ERR
+"b\"\\x4\""	ERR
+"b\"\\xff\""	b:"\xff"@0
+"b\"\xc3(\""	b:"�("@0
+"b\"\xff\""	b:"�"@0
+"b\"é\""	b:"é"@0
+"b\"ÿ\""	b:"ÿ"@0
+"bb\"a\""	ERR
+"br \"a\""	ERR
+"br\"\\u00ff\""	b:"\\u00ff"@0
+"br\"a\\n\""	b:"a\\n"@0
+"break"	ERR
+"cel.bind(x, 1, x)"	(mcall@8 bind cel@0 x@9 i:1@12 x@15)
+"cel.block([1], @index0)"	ERR
+"const"	ERR
+"continue"	ERR
+"e5"	e5@0
+"else"	ERR
+"exists(x, y)"	(call@6 exists x@7 y@10)
+"f (a)"	(call@2 f a@3)
+"f( a , b )"	(call@1 f a@3 b@7)
+"f("	ERR
+"f()"	(call@1 f)
+"f()()"	ERR
+"f().g"	(sel@3 (call@1 f) g)
+"f().g()"	(mcall@5 g (call@1 f))
+"f()[0]"	(call@3 _[_] (call@1 f) i:0@4)
+"f(){}"	ERR
+"f(,)"	ERR
+"f(,a)"	ERR
+"f(//c\na)"	(call@1 f a@6)
+"f(?a)"	ERR
+"f(a"	ERR
+"f(a) + g(b)"	(call@5 _+_ (call@1 f a@2) (call@8 g b@9))
+"f(a)"	(call@1 f a@2)
+"f(a, b)"	(call@1 f a@2 b@5)
+"f(a,"	ERR
+"f(a,)"	ERR
+"f(a.)"	ERR
+"f(f(f(f(f(f(f(f(f(f(f(f(1))))))))))))"	(call@1 f (call@3 f (call@5 f (call@7 f (call@9 f (call@11 f (call@13 f (call@15 f (call@17 f (call@19 f (call@21 f (call@23 f i:1@24))))))))))))
+"f(if)"	ERR
+"f//c\n(a)"	(call@5 f a@6)
+"f\n(a)"	(call@2 f a@3)
+"false"	false@0
+"falsey"	falsey@0
+"filter(x, y)"	(call@6 filter x@7 y@10)
+"for"	ERR
+"function"	ERR
+"has()"	(call@3 has)
+"has(1)"	(call@3 has i:1@4)
+"has(x)"	(call@3 has x@4)
+"has(x, y)"	(call@3 has x@4 y@7)
+"has(x.y)"	(call@3 has (sel@5 x@4 y))
+"has(x.y.z)"	(call@3 has (sel@7 (sel@5 x@4 y) z))
+"has(x[0])"	(call@3 has (call@5 _[_] x@4 i:0@6))
+"if ? a : b"	ERR
+"if"	ERR
+"if(a)"	ERR
+"if.a"	ERR
+"if.x{}"	(msg@4 if.x)
+"if{if: 1}"	(msg@2 if (field@5 if i:1@7))
+"if{}"	(msg@2 if)
+"import"	ERR
+"in"	ERR
+"in(a)"	ERR
+"in{}"	ERR
+"let"	ERR
+"loop"	ERR
+"map(x, y)"	(call@3 map x@4 y@7)
+"math.greatest(1, 2)"	(mcall@13 greatest math@0 i:1@14 i:2@17)
+"namespace"	ERR
+"nul"	nul@0
+"null"	null@0
+"null.a"	(sel@4 null@0 a)
+"null{}"	ERR
+"optMap(x, y, z)"	(call@6 optMap x@7 y@10 z@13)
+"package"	ERR
+"r \"a\""	ERR
+"r''"	s:""@0
+"r'''a\nb'''"	s:"a\nb"@0
+"r'''x'''y'''"	ERR
+"r'\\'"	s:"\\"@0
+"r'\\''"	ERR
+"r'a'.size()"	(mcall@9 size s:"a"@0)
+"r'a\\b'"	s:"a\\b"@0
+"r\"\""	s:""@0
+"r\"\"\"\"\"\""	s:""@0
+"r\"\"\"\\\"\"\""	s:"\\"@0
+"r\"\"\"a\\\"\"\""	s:"a\\"@0
+"r\"\"\"x\"\"\"y\"\"\""	ERR
+"r\"\\\""	s:"\\"@0
+"r\"\\\\\""	s:"\\\\"@0
+"r\"a\\\""	s:"a\\"@0
+"r\"a\\\"b\""	ERR
+"r\"a\nb\""	ERR
+"ra\"b\""	ERR
+"rb\"a\""	ERR
+"return"	ERR
+"rr\"a\""	ERR
+"true in x"	(call@5 @in true@0 x@8)
+"true"	true@0
+"true()"	ERR
+"true.a"	(sel@4 true@0 a)
+"true1"	true1@0
+"true_"	true_@0
+"truein x"	ERR
+"trueiny"	trueiny@0
+"truex"	truex@0
+"true{}"	ERR
+"var"	ERR
+"void"	ERR
+"while"	ERR
+"x in true"	(call@2 @in x@0 true@5)
+"x in y in z"	(call@7 @in (call@2 @in x@0 y@5) z@10)
+"x.@index0"	ERR
+"x.all()"	(mcall@5 all x@0)
+"x.all(1, y)"	(mcall@5 all x@0 i:1@6 y@9)
+"x.all(y)"	(mcall@5 all x@0 y@6)
+"x.all(y, y)"	(mcall@5 all x@0 y@6 y@9)
+"x.all(y, z, w)"	(mcall@5 all x@0 y@6 z@9 w@12)
+"x.cel.b"	(sel@5 (sel@1 x@0 cel) b)
+"x.exists(y, y > 0)"	(mcall@8 exists x@0 y@9 (call@14 _>_ y@12 i:0@16))
+"x.exists_one(y, y)"	(mcall@12 exists_one x@0 y@13 y@16)
+"x.filter(1, y)"	(mcall@8 filter x@0 i:1@9 y@12)
+"x.filter(y, y)"	(mcall@8 filter x@0 y@9 y@12)
+"x.has(y)"	(mcall@5 has x@0 y@6)
+"x.map(1, y)"	(mcall@5 map x@0 i:1@6 y@9)
+"x.map(y, y + 1)"	(mcall@5 map x@0 y@6 (call@11 _+_ y@9 i:1@13))
+"x.map(y, z, w)"	(mcall@5 map x@0 y@6 z@9 w@12)
+"x.optFlatMap(y, y)"	(mcall@12 optFlatMap x@0 y@13 y@16)
+"x.optMap(y, y)"	(mcall@8 optMap x@0 y@9 y@12)
+"{ }"	(map@0)
+"{"	ERR
+"{,a: b}"	ERR
+"{,}"	(map@0)
+"{1: 2, 3: 4}"	(map@0 (entry@2 i:1@1 i:2@4) (entry@8 i:3@7 i:4@10))
+"{1: if}"	ERR
+"{:b}"	ERR
+"{? a : b}"	(map@0 (?entry@5 a@3 b@7))
+"{?a: ?b}"	ERR
+"{?a: b}"	(map@0 (?entry@3 a@2 b@5))
+"{?}"	ERR
+"{[]: []}"	(map@0 (entry@3 (list@1) (list@5)))
+"{a ? b : c : d}"	(map@0 (entry@11 (call@3 _?_:_ a@1 b@5 c@9) d@13))
+"{a b: c}"	ERR
+"{a.: b}"	ERR
+"{a.b: c.d}"	(map@0 (entry@4 (sel@2 a@1 b) (sel@7 c@6 d)))
+"{a: ?b}"	ERR
+"{a: b ? c : d}"	(map@0 (entry@2 a@1 (call@6 _?_:_ b@4 c@8 d@12)))
+"{a: b c}"	ERR
+"{a: b"	ERR
+"{a: b, c: d}"	(map@0 (entry@2 a@1 b@4) (entry@8 c@7 d@10))
+"{a: b,"	ERR
+"{a: b,,}"	ERR
+"{a: b,}"	(map@0 (entry@2 a@1 b@4))
+"{a: b: c}"	ERR
+"{a: b}"	(map@0 (entry@2 a@1 b@4))
+"{a:"	ERR
+"{a://c\nb}"	(map@0 (entry@2 a@1 b@7))
+"{a:}"	ERR
+"{a}"	ERR
+"{if: 1}"	ERR
+"{{{{"	ERR
+"{{}: {}}"	(map@0 (entry@3 (map@1) (map@5)))
+"{} {}"	ERR
+"{}"	(map@0)
+"{}.a"	(sel@2 (map@0) a)
+"{}[0]"	(call@2 _[_] (map@0) i:0@3)
+"{}}"	ERR
+"|"	ERR
+"||"	ERR
+"}"	ERR
+"}}}}"	ERR
+"~"	ERR
+"é"	ERR
