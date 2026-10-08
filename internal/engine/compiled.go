@@ -31,8 +31,8 @@ const (
 	compiledVersion = 2
 	// isaVersion is the instruction set version written to files. Files of earlier versions load:
 	// version 2 only adds instructions (ETEXTCHK, ETEXTEQ, ELISTBEGIN, ELISTPUSH, EMAPPUSH,
-	// ELISTEND).
-	isaVersion = 2
+	// ELISTEND), and version 3 GUARD.
+	isaVersion = 3
 	maxDepth   = 10000
 )
 

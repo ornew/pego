@@ -128,6 +128,7 @@ When an instruction fails, the VM pops entries from the entry stack of the curre
 | 2 | `CLASS` | A class, B expectation, C b | If the current character is in the class (not in it, for a negated class), advance one character and, if b, push a `Match`. Otherwise record B at the current position and fail. |
 | 3 | `ANY` | A b | If there is a character, advance one character (and, if b, push a `Match`). Otherwise record `any character` and fail. |
 | 33 | `SCAN` | A class, B min, C max | A value-free repetition of one character. Advance over characters that are in class A (any character if A is -1) until a character does not match or C characters have been read (no limit if C is -1). If it stopped at a non-matching character (or at the end of input), record the class's expectation (`any character` if A is -1) at that position. Fail if fewer than B characters were read. |
+| 34 | `GUARD` | A class, B depth, C target | First-character dispatch, emitted before the `CHOICE` of an alternative that must begin with a given terminal. If the next character is not in class A (or there is none) and the current call depth plus B does not exceed the nesting limit, record the class's expectation at the current position and go to C (the next alternative); otherwise continue. For a literal, A is a class of its first character whose expectation is the literal's. The alternative would have failed there recording just that expectation, so skipping it changes nothing but speed. |
 | 4 | `TOP` | A b | If b, push an empty `Match`. |
 | 5 | `FAIL` | | Fail. |
 | 6 | `ASSERT` | A kind | 0: the position is 0. 1: at the end of input. 2: the position is 0 or the preceding character is `\n`. 3: at the end of input, or the current character is `\n` or `\r`. If the condition does not hold, record `beginning of input`, `end of input`, `beginning of line` or `end of line` respectively, and fail. |
@@ -279,7 +280,7 @@ A module is stored in the `.pegoc` version 2 format. Integers are variable-lengt
 |:--|:--|
 | Magic | `PEGOC\x00` (6 bytes) |
 | Version | 1 byte (2) |
-| Instruction-set version | Unsigned integer (2). A runtime loads files of every instruction-set version up to its own: version 2 only adds instructions (118–123). |
+| Instruction-set version | Unsigned integer (3). A runtime loads files of every instruction-set version up to its own: version 2 only adds instructions (118–123), and version 3 `GUARD` (34). |
 | String table | Count, then each string (byte length and UTF-8 bytes), all unsigned. The module's string table is a prefix of this table. |
 | Start rule | String index, unsigned (the empty string means no default start rule) |
 | Package name | String index, unsigned |

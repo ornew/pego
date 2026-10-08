@@ -13,7 +13,7 @@ def key = @(?a-z)+ #error(message="expected a key")`)
 	got := prog.Module().Disassemble()
 	want := `rules:
   0 main entry=0 scope=[k v] action=0 memo,seq,transient
-  1 key entry=12 scope=[] memo,transient
+  1 key entry=13 scope=[] memo,transient
 code:
 main:
      0  CALL       key min=0 keep=1
@@ -23,18 +23,19 @@ main:
      4  SCAN       "(?0-9)" min=1 max=-1
      5  ATOMIC     build=1
      6  CAPTURE    slot=1 pop
-     7  CHOICE     -> 10
-     8  STR        ";" build=0
-     9  COMMIT     -> 11
-    10  TOP        build=0
-    11  RETURN     
+     7  GUARD      ";" depth=0 -> 11
+     8  CHOICE     -> 11
+     9  STR        ";" build=0
+    10  COMMIT     -> 12
+    11  TOP        build=0
+    12  RETURN     
 key:
-    12  PUSHPOS    
-    13  LABEL      "expected a key"
-    14  SCAN       "(?a-z)" min=1 max=-1
-    15  ENDLABEL   
-    16  ATOMIC     build=1
-    17  RETURN     
+    13  PUSHPOS    
+    14  LABEL      "expected a key"
+    15  SCAN       "(?a-z)" min=1 max=-1
+    16  ENDLABEL   
+    17  ATOMIC     build=1
+    18  RETURN     
 exprs:
 main.action:
      0  ECAP       0
@@ -60,6 +61,10 @@ func TestModuleCompilesCorpus(t *testing.T) {
 			case OpJump, OpChoice, OpCommit, OpIter, OpNext, OpLook, OpRecover, OpEndRecover:
 				if in.A < 0 || int(in.A) > len(m.Code) {
 					t.Errorf("%s: code %d: jump to %d", c.name, i, in.A)
+				}
+			case OpGuard:
+				if in.C <= int32(i) || int(in.C) > len(m.Code) {
+					t.Errorf("%s: code %d: guard jumps to %d", c.name, i, in.C)
 				}
 			}
 		}

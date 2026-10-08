@@ -358,6 +358,13 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 				goto fail
 			}
 			p.single(size, in.C == 1)
+		case OpGuard:
+			ch, _, ok := p.peek()
+			if !(ok && vm.has(in.A, ch)) && p.depth+int(in.B) <= p.maxDepth {
+				p.expect(p.pos, numFixedDescs+expID(m.Classes[in.A].Desc))
+				ip = int(in.C)
+				continue
+			}
 		case OpScan:
 			count, max := 0, int(in.C)
 			for max < 0 || count < max {

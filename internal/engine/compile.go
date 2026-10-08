@@ -570,7 +570,7 @@ func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
 		guarded := false
 		for i, alt := range e.Alts {
 			ms[i] = c.expr(alt, s, build)
-			guards[i] = c.first(alt, 0, map[string]bool{})
+			guards[i] = c.first(alt)
 			guarded = guarded || guards[i].accept != nil
 		}
 		if guarded {
@@ -772,42 +772,34 @@ func anchor(cond func(p *parser) bool, desc expID) matcher {
 }
 
 // single compiles an expression that matches one character.
-// firstGuard tells when an alternative of a choice can be skipped (see first).
-type firstGuard struct {
-	accept func(rune) bool // nil if it cannot be
-	desc   expID
-	depth  int
-}
-
-// first returns, when the expression e must begin with a given terminal (a literal or a
-// character class, possibly behind sequences, captures, @, - and calls of rules that are neither
-// left-recursive nor Pratt), the characters that can start it, the expectation e records when the
-// next character is not one of them, and the number of rule calls on the way. Then e fails at once,
-// recording only that expectation (having examined only that character, which the choice's peek
-// also records; a call memoizes the same failure, and memoization only affects speed), so a choice
-// can skip it, unless the calls on the way would exceed the nesting limit.
-func (c *compiler) first(e grammar.Expr, depth int, seen map[string]bool) firstGuard {
+// firstTerminal returns the terminal (a *grammar.Literal or *grammar.CharClass) that the expression
+// e must begin with, if any, and the number of rule calls on the way: e is the terminal, possibly
+// behind sequences, captures, @, - and calls of rules that are neither left-recursive nor Pratt.
+// When the next character cannot start the terminal, e fails at once, recording only the
+// terminal's expectation and examining only that character (a call memoizes the same failure, and
+// memoization only affects speed), so a choice can skip e: first-character dispatch, done by the
+// closure backend, the VMs (GUARD) and generated parsers, unless the calls on the way would exceed
+// the nesting limit.
+func firstTerminal(prog *Program, e grammar.Expr, depth int, seen map[string]bool) (grammar.Expr, int) {
 	switch e := e.(type) {
 	case *grammar.Literal:
-		if e.Value == "" {
-			break
+		if e.Value != "" {
+			return e, depth
 		}
-		r0, _ := utf8.DecodeRuneInString(e.Value)
-		return firstGuard{func(r rune) bool { return r == r0 }, c.desc(quote(e.Value)), depth}
 	case *grammar.CharClass:
-		return firstGuard{classAccept(e), c.desc(charClassString(e)), depth}
+		return e, depth
 	case *grammar.Seq:
 		if len(e.Items) > 0 {
-			return c.first(e.Items[0], depth, seen)
+			return firstTerminal(prog, e.Items[0], depth, seen)
 		}
 	case *grammar.Capture:
-		return c.first(e.Expr, depth, seen)
+		return firstTerminal(prog, e.Expr, depth, seen)
 	case *grammar.Atomic:
-		return c.first(e.Expr, depth, seen)
+		return firstTerminal(prog, e.Expr, depth, seen)
 	case *grammar.Discard:
-		return c.first(e.Expr, depth, seen)
+		return firstTerminal(prog, e.Expr, depth, seen)
 	case *grammar.Ref:
-		r := c.prog.byName[e.Name]
+		r := prog.byName[e.Name]
 		if r == nil || r.leader || seen[e.Name] || r.def == nil {
 			break
 		}
@@ -815,7 +807,25 @@ func (c *compiler) first(e grammar.Expr, depth int, seen map[string]bool) firstG
 			break
 		}
 		seen[e.Name] = true
-		return c.first(r.def.Expr, depth+1, seen)
+		return firstTerminal(prog, r.def.Expr, depth+1, seen)
+	}
+	return nil, 0
+}
+
+// firstGuard tells when an alternative of a choice can be skipped (see firstTerminal).
+type firstGuard struct {
+	accept func(rune) bool // nil if it cannot be
+	desc   expID
+	depth  int
+}
+
+func (c *compiler) first(e grammar.Expr) firstGuard {
+	switch t, depth := firstTerminal(c.prog, e, 0, map[string]bool{}); t := t.(type) {
+	case *grammar.Literal:
+		r0, _ := utf8.DecodeRuneInString(t.Value)
+		return firstGuard{func(r rune) bool { return r == r0 }, c.desc(quote(t.Value)), depth}
+	case *grammar.CharClass:
+		return firstGuard{classAccept(t), c.desc(charClassString(t)), depth}
 	}
 	return firstGuard{}
 }

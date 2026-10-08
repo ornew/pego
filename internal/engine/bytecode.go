@@ -184,6 +184,11 @@ const (
 	// is a fast form of a value-free single-character repetition that records the expectation once,
 	// at the position that did not match.
 	OpScan
+	// GUARD c, d, l: first-character dispatch. If the next character is not in character class c
+	// (or there is none), and d more rule calls would not exceed the nesting limit, record the
+	// class's expectation and go to l (the next alternative of a choice, which this alternative
+	// could not match). Otherwise continue.
+	OpGuard
 )
 
 // Expression instructions
@@ -262,7 +267,7 @@ var opNames = map[Op]string{
 	OpIter: "ITER", OpNext: "NEXT", OpEndRepeat: "ENDREPEAT", OpLook: "LOOK", OpEndLook: "ENDLOOK",
 	OpCall: "CALL", OpPratt: "PRATT", OpPred: "PRED", OpAssign: "ASSIGN", OpLabel: "LABEL",
 	OpEndLabel: "ENDLABEL", OpRecover: "RECOVER", OpEndRecover: "ENDRECOVER", OpEndSkip: "ENDSKIP",
-	OpReturn: "RETURN", OpEnd: "END", OpScan: "SCAN",
+	OpReturn: "RETURN", OpEnd: "END", OpScan: "SCAN", OpGuard: "GUARD",
 	EInt: "EINT", EStr: "ESTR", EBool: "EBOOL", ENil: "ENIL", ECap: "ECAP", EItem: "EITEM",
 	ELocal: "ELOCAL", EVar: "EVAR", EMember: "EMEMBER", ENew: "ENEW", EBin: "EBIN", EUnary: "EUNARY",
 	EAnd: "EAND", EOr: "EOR", EBoolChk: "EBOOLCHK", EFunc: "EFUNC", ECall: "ECALL", ERet: "ERET",

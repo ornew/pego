@@ -121,6 +121,8 @@ func (m *Module) operands(in Instr, str func(int) string, names func([]int) stri
 			return fmt.Sprintf("slot=%d pop", a)
 		}
 		return fmt.Sprintf("slot=%d", a)
+	case OpGuard:
+		return fmt.Sprintf("%s depth=%d -> %d", m.Strings[m.Classes[a].Desc], bb, c) // the expectation as written
 	case OpScan:
 		cl := "any"
 		if a >= 0 {

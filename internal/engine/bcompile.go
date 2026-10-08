@@ -1,6 +1,8 @@
 package engine
 
 import (
+	"unicode/utf8"
+
 	"github.com/ornew/pego/grammar"
 )
 
@@ -121,6 +123,24 @@ func (c *bcompiler) value(e grammar.Expr, s *scope, build bool) {
 }
 
 // class adds the character class to the character class table and returns its index.
+// guard emits a GUARD for an alternative of a choice that must begin with a given terminal
+// (firstTerminal) and returns its index, or -1. Its jump target is set by the caller.
+func (c *bcompiler) guard(alt grammar.Expr) int {
+	t, depth := firstTerminal(c.prog, alt, 0, map[string]bool{})
+	var cl int32
+	switch t := t.(type) {
+	case *grammar.CharClass:
+		cl = c.class(t)
+	case *grammar.Literal:
+		r, _ := utf8.DecodeRuneInString(t.Value)
+		c.m.Classes = append(c.m.Classes, Class{Ranges: []rune{r, r}, Desc: int(c.str(quote(t.Value)))})
+		cl = int32(len(c.m.Classes) - 1)
+	default:
+		return -1
+	}
+	return c.emit(OpGuard, cl, int32(depth), 0)
+}
+
 func (c *bcompiler) class(e *grammar.CharClass) int32 {
 	cl := Class{Negated: e.Negated, Desc: int(c.str(charClassString(e)))}
 	for _, r := range e.Ranges {
@@ -175,10 +195,14 @@ func (c *bcompiler) match(e grammar.Expr, s *scope, build bool) {
 				c.value(alt, s, build)
 				break
 			}
+			guard := c.guard(alt)
 			ch := c.emit(OpChoice, 0, 0, 0)
 			c.value(alt, s, build)
 			ends = append(ends, c.emit(OpCommit, 0, 0, 0))
 			c.m.Code[ch].A = c.here()
+			if guard >= 0 {
+				c.m.Code[guard].C = c.here()
+			}
 		}
 		for _, j := range ends {
 			c.m.Code[j].A = c.here()

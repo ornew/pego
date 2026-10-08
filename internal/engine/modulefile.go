@@ -322,6 +322,10 @@ func validateModule(m *Module) error {
 			in("expression", int(x.B), len(m.Exprs))
 		case OpLabel:
 			str(int(x.A))
+		case OpGuard:
+			in("class", int(x.A), len(m.Classes))
+			nonneg(x.B)
+			forward(ip, x.C, n)
 		case OpScan:
 			opt("class", int(x.A), len(m.Classes))
 			nonneg(x.B)
