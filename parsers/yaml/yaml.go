@@ -386,66 +386,118 @@ func unescapeURI(s string) (string, error) {
 	return b.String(), nil
 }
 
-// Check reports the errors of the stream that are not syntax errors and that Events, Load and LoadAll
-// report too: a tag shorthand with a handle the document does not declare, more than one YAML directive
-// in a document or more than one TAG directive for a handle, and a YAML version other than 1.x.
+// Check reports the errors of the stream that are not syntax errors, which Valid, Events, Load and
+// LoadAll report too: a tag shorthand with a handle the document does not declare, more than one YAML
+// directive in a document or more than one TAG directive for a handle, a YAML version other than 1.x,
+// and an alias of an anchor that no node before it in the document has.
 func (s *Stream) Check() error {
 	for _, d := range s.Documents {
 		handles, err := d.tagHandles()
 		if err != nil {
 			return err
 		}
-		if err := checkTags(d.Root, handles); err != nil {
+		c := checker{handles: handles, anchors: map[string]bool{}}
+		if err := c.node(d.Root); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func checkTags(v Value, handles map[string]string) error {
+type checker struct {
+	handles map[string]string
+	anchors map[string]bool
+}
+
+// node checks a node and its descendants in the order of the document.
+func (c *checker) node(v Value) error {
 	var p *Properties
 	switch v := v.(type) {
 	case *Mapping:
-		for _, pr := range v.Pairs {
-			if err := checkTags(pr.Key, handles); err != nil {
-				return err
-			}
-			if err := checkTags(pr.Value, handles); err != nil {
-				return err
-			}
-		}
 		p = v.Props
 	case *Sequence:
-		for _, it := range v.Items {
-			if err := checkTags(it, handles); err != nil {
-				return err
-			}
-		}
 		p = v.Props
 	case *Scalar:
 		p = v.Props
+	case *Alias:
+		if !c.anchors[v.Name()] {
+			return errorAt(v.Span, "undefined alias "+v.Text)
+		}
+	}
+	if a := p.anchor(); a != nil {
+		c.anchors[a.Name()] = true
 	}
 	if t := p.tag(); t != nil {
-		if _, err := resolveTag(t, handles); err != nil {
+		if _, err := resolveTag(t, c.handles); err != nil {
 			return err
 		}
 	}
+	switch v := v.(type) {
+	case *Mapping:
+		for _, pr := range v.Pairs {
+			if err := c.node(pr.Key); err != nil {
+				return err
+			}
+			if err := c.node(pr.Value); err != nil {
+				return err
+			}
+		}
+	case *Sequence:
+		for _, it := range v.Items {
+			if err := c.node(it); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
+}
+
+// parseChecked parses input and checks the stream (Check), which must be UTF-8.
+func parseChecked(input string) (*Stream, error) {
+	if !utf8.ValidString(input) {
+		i := 0
+		for i < len(input) {
+			r, n := utf8.DecodeRuneInString(input[i:])
+			if r == utf8.RuneError && n == 1 {
+				break
+			}
+			i += n
+		}
+		return nil, fmt.Errorf("yaml: invalid UTF-8 at byte %d", i)
+	}
+	s, err := ParseAST(input)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.Check(); err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+// Valid reports whether input is a valid YAML stream: well-formed UTF-8 that ParseAST accepts and Check
+// finds no error in.
+func Valid(input string) bool {
+	_, err := parseChecked(input)
+	return err == nil
 }
 
 // Events parses input and returns its event stream in the format of the yaml-test-suite (test.event):
 // one event per line (+STR, +DOC, +MAP, +SEQ, =VAL, =ALI, -SEQ, -MAP, -DOC, -STR), with the anchors, the
 // resolved tags, the style of each scalar and its value with \\, \0, \b, \t, \n and \r escaped.
 func Events(input string) (string, error) {
-	s, err := ParseAST(input)
+	s, err := parseChecked(input)
 	if err != nil {
 		return "", err
 	}
 	return s.Events()
 }
 
-// Events returns the event stream of a parsed stream (see the function Events).
+// Events returns the event stream of a parsed stream (see the function Events), or the error of Check.
 func (s *Stream) Events() (string, error) {
+	if err := s.Check(); err != nil {
+		return "", err
+	}
 	var b strings.Builder
 	b.WriteString("+STR\n")
 	for _, d := range s.Documents {
@@ -573,8 +625,8 @@ func Load(input string) (any, error) {
 	return nil, fmt.Errorf("yaml: %d documents, expected one", len(vs))
 }
 
-// LoadAll parses input and returns the value of each document, composed with the YAML 1.2 core schema
-// (10.3):
+// LoadAll parses input, checks it as Valid does, and returns the value of each document, composed with
+// the YAML 1.2 core schema (10.3):
 //
 //   - a mapping is a map[string]any if all of its keys are strings, and a map[any]any otherwise; a key
 //     that is a mapping or a sequence is an error, and so is a key that occurs twice;
@@ -583,12 +635,13 @@ func Load(input string) (any, error) {
 //     false, False, FALSE), an int64 (decimal, 0o octal or 0x hexadecimal), a float64 (with .inf,
 //     -.inf and .nan in the three cases) or a string; an integer outside the range of int64 is an error;
 //   - a quoted or block scalar, and any scalar with the tag ! or !!str, is a string;
-//   - the tags !!null, !!bool, !!int and !!float require a plain value of their type, and !!map and !!seq
-//     a mapping and a sequence; other tags do not change the value;
+//   - the tags !!null, !!bool, !!int and !!float require a value that resolves to their type (or an int
+//     for !!float), whatever its style, and !!map and !!seq a mapping and a sequence; other tags do not
+//     change the value;
 //   - an alias is the value of the node with the anchor, the same map or slice for a collection; an
 //     alias of an undefined anchor, or of a node that contains the alias, is an error.
 func LoadAll(input string) ([]any, error) {
-	s, err := ParseAST(input)
+	s, err := parseChecked(input)
 	if err != nil {
 		return nil, err
 	}
@@ -601,7 +654,8 @@ func LoadAll(input string) ([]any, error) {
 	return vs, nil
 }
 
-// Load returns the value of the document (see LoadAll).
+// Load returns the value of the document (see LoadAll). It does not run Check, but reports the same
+// errors in the document.
 func (d *Document) Load() (any, error) {
 	handles, err := d.tagHandles()
 	if err != nil {
