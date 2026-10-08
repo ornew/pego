@@ -1,0 +1,25 @@
+# Netlify configuration for the PEGO web site: the landing page, the documentation rendered from
+# the repository's Markdown, the API reference and the playground. The build needs only Go; see
+# docs/guide/playground.md and docs/design/016-web-site-and-playground.md.
+
+[build]
+  command = "sh site/build.sh"
+  publish = "site/dist"
+
+[build.environment]
+  # The go directive of go.mod and site/go.mod.
+  GO_VERSION = "1.27.1"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # 'wasm-unsafe-eval' lets the playground compile pego.wasm; nothing else is loaded from
+    # elsewhere or run inline.
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/playground/pego.wasm"
+  [headers.values]
+    Content-Type = "application/wasm"

@@ -1,0 +1,52 @@
+<section class="hero">
+  <div class="hero-text">
+    <h1 class="tagline">{{.Tagline}}</h1>
+    <p class="subtitle">{{.Subtitle}}</p>
+    {{range .Intro}}<div class="intro">{{.}}</div>{{end}}
+    <p class="cta">
+      <a class="button primary" href="docs/tutorial/getting-started/">Get started</a>
+      <a class="button" href="{{.Playground}}">Open the playground</a>
+    </p>
+  </div>
+  <div class="live" id="live" data-grammar="{{.Example}}" data-input="{{.ExampleIn}}">
+    <div class="live-head">
+      <span class="live-title">Try it: <code>calc.pego</code></span>
+      <a class="live-open" id="live-open" href="{{.Playground}}">Edit in the playground →</a>
+    </div>
+    <pre class="live-grammar"><code class="language-pego">{{.Example}}</code></pre>
+    <label class="live-input-label" for="live-input">Input</label>
+    <input id="live-input" class="live-input" value="{{.ExampleIn}}" spellcheck="false" autocomplete="off">
+    <div class="live-output-label">Tree <span id="live-status" class="live-status">loading the parser…</span></div>
+    <pre class="live-output" id="live-output" aria-live="polite"></pre>
+  </div>
+</section>
+
+<section class="snippets">
+{{.Snippets}}
+</section>
+
+<section class="features" id="why-pego" aria-labelledby="why-pego-title">
+  <h2 id="why-pego-title">Why PEGO</h2>
+  <div class="feature-grid">
+    {{range .Features}}<div class="feature">
+      <h3>{{.Title}}</h3>
+      <p>{{.Body}}</p>
+    </div>
+    {{end}}
+  </div>
+</section>
+
+<section class="readme prose">
+{{.Sections}}
+</section>
+
+<section class="doc-cards" aria-labelledby="docs-title">
+  <h2 id="docs-title">Documentation</h2>
+  <div class="card-grid">
+    {{range .Docs}}<a class="card" href="{{.URL}}">
+      <h3>{{.Title}}</h3>
+      <p>{{.Text}}</p>
+    </a>
+    {{end}}
+  </div>
+</section>

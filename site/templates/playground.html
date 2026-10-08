@@ -1,0 +1,89 @@
+<div class="pg" id="pg">
+  <div class="pg-toolbar" role="toolbar" aria-label="Playground">
+    <label class="field">
+      <span>Example</span>
+      <select id="pg-example" aria-label="Load an example">
+        <option value="">Choose…</option>
+      </select>
+    </label>
+    <label class="field">
+      <span>Start</span>
+      <select id="pg-start" aria-label="Start rule"></select>
+    </label>
+    <details class="pg-options">
+      <summary>Options</summary>
+      <div class="pg-options-body">
+        <label class="field"><span>Positions</span>
+          <select id="pg-unit"><option value="codepoints">code points</option><option value="bytes">bytes</option></select>
+        </label>
+        <label class="field"><span>Backend</span>
+          <select id="pg-backend">
+            <option value="">default</option>
+            <option value="closure">closure</option>
+            <option value="bytecode">bytecode</option>
+            <option value="bytecode-iterative">bytecode-iterative</option>
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" id="pg-recognize"> Recognize only</label>
+      </div>
+    </details>
+    <span class="spacer"></span>
+    <button type="button" class="button small" id="pg-format" title="Format the grammar (pego fmt)">Format</button>
+    <button type="button" class="button small" id="pg-share" title="Copy a link to this grammar and input">Share</button>
+  </div>
+
+  <div class="pg-editors">
+    <section class="pane" aria-labelledby="pg-grammar-label">
+      <header class="pane-head"><h2 id="pg-grammar-label">Grammar</h2><span class="pane-info" id="pg-grammar-info"></span></header>
+      <div class="editor" id="pg-grammar-editor" data-language="pego">
+        <div class="gutter" aria-hidden="true"></div>
+        <div class="editor-body">
+          <pre class="backdrop" aria-hidden="true"></pre>
+          <textarea id="pg-grammar" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" aria-labelledby="pg-grammar-label"></textarea>
+        </div>
+      </div>
+    </section>
+    <section class="pane" aria-labelledby="pg-input-label">
+      <header class="pane-head"><h2 id="pg-input-label">Input</h2><span class="pane-info" id="pg-input-info"></span></header>
+      <div class="editor" id="pg-input-editor">
+        <div class="gutter" aria-hidden="true"></div>
+        <div class="editor-body">
+          <pre class="backdrop" aria-hidden="true"></pre>
+          <textarea id="pg-input" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" aria-labelledby="pg-input-label"></textarea>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="pg-status" id="pg-status" role="status" aria-live="polite">Loading the parser…</div>
+  <div class="pg-errors" id="pg-errors" hidden></div>
+
+  <section class="pg-output" id="pg-output-root" aria-label="Result">
+    <div class="tabs" role="tablist">
+      <button role="tab" type="button" id="tab-tree" aria-controls="panel-tree" aria-selected="true">Tree</button>
+      <button role="tab" type="button" id="tab-json" aria-controls="panel-json" aria-selected="false">JSON</button>
+      <button role="tab" type="button" id="tab-sexpr" aria-controls="panel-sexpr" aria-selected="false">S-expression</button>
+      <button role="tab" type="button" id="tab-grammar" aria-controls="panel-grammar" aria-selected="false">Rules &amp; types</button>
+      <button role="tab" type="button" id="tab-go" aria-controls="panel-go" aria-selected="false">Generated Go</button>
+      <span class="spacer"></span>
+      <button type="button" class="button small" id="pg-copy" title="Copy the content of this tab">Copy</button>
+    </div>
+    <div class="panel" role="tabpanel" id="panel-tree" aria-labelledby="tab-tree">
+      <div class="tree-tools"><button type="button" class="link-button" id="tree-expand">Expand all</button> <button type="button" class="link-button" id="tree-collapse">Collapse all</button></div>
+      <div class="tree" id="pg-tree"></div>
+    </div>
+    <div class="panel" role="tabpanel" id="panel-json" aria-labelledby="tab-json" hidden><pre class="code" id="pg-json"></pre></div>
+    <div class="panel" role="tabpanel" id="panel-sexpr" aria-labelledby="tab-sexpr" hidden><pre class="code wrap" id="pg-sexpr"></pre></div>
+    <div class="panel" role="tabpanel" id="panel-grammar" aria-labelledby="tab-grammar" hidden><div id="pg-outline"></div></div>
+    <div class="panel" role="tabpanel" id="panel-go" aria-labelledby="tab-go" hidden>
+      <div class="gen-options">
+        <label class="field"><span>Package</span><input id="gen-package" value="parser" size="10" spellcheck="false"></label>
+        <label class="check"><input type="checkbox" id="gen-types" checked> <code>-types</code></label>
+        <label class="check"><input type="checkbox" id="gen-recognize"> <code>-recognize</code></label>
+        <span class="gen-cmd" id="gen-cmd"></span>
+      </div>
+      <pre class="code" id="pg-go"><code class="language-go"></code></pre>
+    </div>
+  </section>
+  <p class="pg-footer" id="pg-version"></p>
+</div>

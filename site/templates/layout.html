@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en" data-root="{{.Root}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{if eq .Page.Kind "landing"}}{{.Page.Title}}{{else}}{{.Page.Title}} · PEGO{{end}}</title>
+{{with .Page.Description}}<meta name="description" content="{{.}}">{{end}}
+<meta name="color-scheme" content="light dark">
+<script src="{{.URL "assets/theme.js"}}"></script>
+<link rel="icon" href="{{.URL "assets/favicon.svg"}}" type="image/svg+xml">
+<link rel="stylesheet" href="{{.URL "assets/site.css"}}">
+{{range .Page.Styles}}<link rel="stylesheet" href="{{$.URL .}}">
+{{end}}</head>
+<body class="kind-{{.Page.Kind}}">
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <button class="icon-button menu-toggle" type="button" aria-label="Show navigation" aria-expanded="false" aria-controls="{{if eq .Page.Kind "doc"}}sidebar{{else}}mobile-menu{{end}}">
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="{{.URL ""}}"><img src="{{.URL "assets/favicon.svg"}}" alt="" width="22" height="22">PEGO</a>
+  <nav class="topnav" aria-label="Main">
+    <a href="{{.URL "docs/tutorial/getting-started/"}}"{{if eq .Page.Section "Tutorial"}} aria-current="true"{{end}}>Learn</a>
+    <a href="{{.URL "docs/guide/"}}"{{if eq .Page.Section "Guides"}} aria-current="true"{{end}}>Guides</a>
+    <a href="{{.URL "spec/"}}"{{if eq .Page.Section "Specification"}} aria-current="true"{{end}}>Spec</a>
+    <a href="{{.URL "reference/"}}"{{if eq .Page.Section "Reference"}} aria-current="true"{{end}}>Reference</a>
+    <a href="{{.URL "playground/"}}"{{if eq .Page.Kind "playground"}} aria-current="page"{{end}}>Playground</a>
+  </nav>
+  <div class="search" role="search">
+    <input id="search-input" type="search" placeholder="Search docs" aria-label="Search the documentation" autocomplete="off" spellcheck="false">
+    <kbd class="search-key" aria-hidden="true">/</kbd>
+    <div id="search-results" class="search-results" hidden></div>
+  </div>
+  <button class="icon-button theme-toggle" type="button" aria-label="Toggle the color theme" title="Theme">
+    <svg class="sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1.5v2.5M12 20v2.5M1.5 12H4M20 12h2.5M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/></g></svg>
+    <svg class="moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z" fill="currentColor"/></svg>
+  </button>
+  <a class="icon-button" href="{{.GitHub}}" aria-label="PEGO on GitHub" title="GitHub">
+    <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+  </a>
+</header>
+{{define "mobilelinks"}}<ul>
+      <li><a href="{{.URL ""}}">Home</a></li>
+      <li><a href="{{.URL "docs/tutorial/getting-started/"}}">Learn</a></li>
+      <li><a href="{{.URL "docs/guide/"}}">Guides</a></li>
+      <li><a href="{{.URL "spec/"}}">Specification</a></li>
+      <li><a href="{{.URL "reference/"}}">Reference</a></li>
+      <li><a href="{{.URL "playground/"}}">Playground</a></li>
+    </ul>{{end}}
+{{if eq .Page.Kind "doc"}}
+<div class="doc-layout">
+  <nav id="sidebar" class="sidebar" aria-label="Documentation">
+    <div class="nav-section mobile-links"><h2>Site</h2>{{template "mobilelinks" .}}</div>
+    {{range .Sections}}<div class="nav-section">
+      <h2>{{.Name}}</h2>
+      <ul>{{range .Pages}}
+        <li><a href="{{$.URL .URL}}"{{if eq .URL $.Page.URL}} aria-current="page"{{end}}>{{.Nav}}</a></li>{{end}}
+      </ul>
+    </div>
+    {{end}}
+  </nav>
+  <main id="main" class="doc-main">
+    <article class="prose">
+{{.Page.Body}}
+    </article>
+    <footer class="doc-footer">
+      {{with .Page.SourceURL}}<p class="source-link"><a href="{{.}}">View the source of this page on GitHub</a></p>{{end}}
+      <nav class="pager" aria-label="Pages">
+        {{with .Prev}}<a class="prev" href="{{$.URL .URL}}"><span>Previous</span>{{.Nav}}</a>{{end}}
+        {{with .Next}}<a class="next" href="{{$.URL .URL}}"><span>Next</span>{{.Nav}}</a>{{end}}
+      </nav>
+    </footer>
+  </main>
+  {{if .Page.TOC}}<nav class="toc" aria-label="On this page">
+    <h2>On this page</h2>
+    <ul>{{range .Page.TOC}}
+      <li class="toc-{{.Level}}"><a href="#{{.ID}}">{{.Text}}</a></li>{{end}}
+    </ul>
+  </nav>{{end}}
+</div>
+{{else}}
+<nav id="mobile-menu" class="mobile-menu nav-section" aria-label="Site">{{template "mobilelinks" .}}</nav>
+<main id="main" class="{{.Page.Kind}}-main">
+{{.Page.Body}}
+</main>
+{{end}}
+{{if ne .Page.Kind "playground"}}<footer class="site-footer">
+  <p>PEGO is open source under the Apache License 2.0. <a href="{{.GitHub}}">GitHub</a> · <a href="https://pkg.go.dev/github.com/ornew/pego">pkg.go.dev</a> · <a href="{{.URL "playground/"}}">Playground</a></p>
+</footer>{{end}}
+<script type="module" src="{{.URL "assets/site.js"}}"></script>
+{{range .Page.Scripts}}<script type="module" src="{{$.URL .}}"></script>
+{{end}}</body>
+</html>
