@@ -651,7 +651,7 @@ type commentGrouper struct {
 }
 
 type lineComment struct {
-	c               *ast.Comment
+	c             *ast.Comment
 	line, endLine int
 }
 
