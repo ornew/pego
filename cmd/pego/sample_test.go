@@ -97,6 +97,7 @@ func TestSampleOptions(t *testing.T) {
 	for _, args := range [][]string{
 		{"sample"},
 		{"sample", "-g", g, "-f", "xml"},
+		{"sample", "-g", g, "-n", "-3"},
 		{"sample", "-g", g, "-s", "nope"},
 		{"sample", "-g", writeFile(t, "never.pego", `def main = "a"* "a"`), "-n", "1"},
 	} {

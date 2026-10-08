@@ -50,6 +50,9 @@ func sampleCmd(args []string, stdout io.Writer) error {
 	if *grammarPath == "" {
 		return fmt.Errorf("-g is required")
 	}
+	if *n < 0 {
+		return fmt.Errorf("-n must not be negative")
+	}
 	if *format != "lines" && *format != "json" {
 		return fmt.Errorf("unknown format %q", *format)
 	}
