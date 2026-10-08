@@ -224,3 +224,18 @@ def e = pratt {
 		fails("", "expected"),
 	)
 }
+
+// TestPrattEmptyApplication checks that an operator application that consumes no input ends the
+// loop, as an empty iteration ends a repetition: with an operand and an operator that can both
+// match empty, the loop would never end.
+func TestPrattEmptyApplication(t *testing.T) {
+	check(t, `
+def main = e $$
+def e = pratt { operand "a"? level { infix left _ } }`,
+		ok("a", `(Seq (Operator "a"@e "" nil operator=0)@e)@main`),
+		ok("", `(Seq (Operator nil "" nil operator=0)@e)@main`))
+	check(t, `
+def main = e $$
+def e = pratt { operand "a"? level { postfix "!"? } }`,
+		ok("a!!", `(Seq (Operator (Operator "a"@e "!" operator=0)@e "!" operator=0)@e)@main`))
+}

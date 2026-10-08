@@ -501,6 +501,9 @@ func (f *prattFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresul
 			if a.op.kind == grammar.Postfix {
 				f.lhs = p.prattBuild(f.r, a, f.lhs, nil)
 				f.lastNone = -1
+				if p.pos == f.m0.pos { // as in parser.prattParse
+					return nil, iresult{v: f.lhs, ok: true}, true
+				}
 				f.state = pLoop
 				continue
 			}
@@ -523,6 +526,9 @@ func (f *prattFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresul
 			f.lastNone = -1
 			if a.op.assoc == grammar.AssocNone {
 				f.lastNone = a.op.level
+			}
+			if p.pos == f.m0.pos { // as in parser.prattParse
+				return nil, iresult{v: f.lhs, ok: true}, true
 			}
 			f.state = pLoop
 		}

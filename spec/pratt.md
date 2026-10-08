@@ -150,7 +150,10 @@ infix left _                            // application    f x (empty operator pa
   shorter candidate. A prefix or postfix operator part that matches the empty
   string is not a candidate (it could otherwise be applied indefinitely);
   infix operator parts may match the empty string, which is how juxtaposition
-  is written.
+  is written. An infix operator that is applied without consuming any input
+  (an empty operator part and an empty right operand, with no `skip` text)
+  ends the expression after it is applied, as an iteration that consumes no
+  input ends a repetition; otherwise it would be applied indefinitely.
 - **Backtracking.** If an operator part matches but its right operand cannot be
   parsed, the operator is not applied and the expression ends before the
   operator. For a prefix operator, the parser then tries the `operand` items at

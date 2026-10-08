@@ -1336,6 +1336,9 @@ func (p *tparser) prattParse(r *trule, min int) (any, bool) {
 		if a.op.kind == "postfix" {
 			lhs = p.prattBuild(r, &a, lhs, nil)
 			lastNone = -1
+			if p.pos == m0.pos {
+				break
+			}
 			continue
 		}
 		rmin := a.op.level
@@ -1354,6 +1357,9 @@ func (p *tparser) prattParse(r *trule, min int) (any, bool) {
 		lastNone = -1
 		if a.op.assoc == "none" {
 			lastNone = a.op.level
+		}
+		if p.pos == m0.pos { // as in runtime.go
+			break
 		}
 	}
 	return lhs, true
