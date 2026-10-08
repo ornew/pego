@@ -55,12 +55,13 @@ func profileCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 		rules = rules[:*rows]
 	}
 	if *format == "json" {
+		// The profile with the rules shown, in their order, and the hints
 		out := struct {
-			Result string              `json:"result"`
-			Total  *pego.Profile       `json:"total"`
-			Rules  []*pego.RuleProfile `json:"rules"`
-			Hints  []string            `json:"hints"`
-		}{"ok", &prof, rules, prof.Hints()}
+			Result string `json:"result"`
+			pego.Profile
+			Hints []string `json:"hints"`
+		}{"ok", prof, prof.Hints()}
+		out.Rules = rules
 		if perr != nil {
 			out.Result = perr.Error()
 		}

@@ -12,15 +12,17 @@ import (
 // function, Profile.Trace). It is not safe for concurrent use.
 type Profile struct {
 	// Parses is the number of parses profiled.
-	Parses int
+	Parses int `json:"parses"`
 	// Calls, Evals and MemoHits total the rules' counts.
-	Calls, Evals, MemoHits int
+	Calls    int `json:"calls"`
+	Evals    int `json:"evals"`
+	MemoHits int `json:"memoHits"`
 	// Examined totals, over the parses, the end of the input the start rule examined.
-	Examined int
-	// Time totals the time of the parses' start rule calls.
-	Time time.Duration
+	Examined int `json:"examined"`
+	// Time totals the time of the parses' start rule calls (in nanoseconds in JSON).
+	Time time.Duration `json:"time"`
 	// Rules holds the rules called, in the order of their first call.
-	Rules []*RuleProfile
+	Rules []*RuleProfile `json:"rules"`
 
 	index map[string]int
 	// State of the parse in progress
@@ -31,38 +33,45 @@ type Profile struct {
 
 // RuleProfile is the cost of one rule. Calls of a rule's value-free twin count as calls of the rule.
 type RuleProfile struct {
-	Rule string
+	Rule string `json:"rule"`
 	// Calls is the number of calls. Each call either evaluated the rule body or took the result from
 	// the memo (MemoHits); it matched (Matched) or failed (Failed).
-	Calls, MemoHits, Matched, Failed int
+	Calls    int `json:"calls"`
+	MemoHits int `json:"memoHits"`
+	Matched  int `json:"matched"`
+	Failed   int `json:"failed"`
 	// Evals is the number of body evaluations: one per call not answered by the memo, and one more
 	// for each step a left-recursive match grows.
-	Evals int
+	Evals int `json:"evals"`
 	// Consumed totals the input matched by the calls that matched.
-	Consumed int
+	Consumed int `json:"consumed"`
 	// Wasted totals the input examined by the calls that evaluated the body and failed: the work
 	// that led to nothing. It is inclusive: a failed call counts what the calls it made examined.
 	// LongestFail is the most input a single failed call examined, at LongestFailAt.
-	Wasted        int
-	LongestFail   int
-	LongestFailAt Location
+	Wasted        int      `json:"wasted"`
+	LongestFail   int      `json:"longestFail"`
+	LongestFailAt Location `json:"longestFailAt"`
 	// Repeats is the number of calls that evaluated the body at a position (and binding level)
 	// where an earlier call of the same parse had evaluated it already. MaxEvals is the most
 	// evaluating calls at one position, at MaxEvalsAt. A memoized rule is evaluated at most twice
 	// at a position (the memo keeps a result from the second call on); a rule that is not
 	// memoized is evaluated each time its callers are.
-	Repeats    int
-	MaxEvals   int
-	MaxEvalsAt Location
+	Repeats    int      `json:"repeats"`
+	MaxEvals   int      `json:"maxEvals"`
+	MaxEvalsAt Location `json:"maxEvalsAt"`
 	// Time is the time spent in the calls, nested calls included. A call within a call of the
 	// same rule counts once. SelfTime excludes the time of nested calls. Both include the
-	// overhead of measuring them, so they are meaningful relative to each other.
-	Time, SelfTime time.Duration
+	// overhead of measuring them, so they are meaningful relative to each other. JSON gives them in
+	// nanoseconds.
+	Time     time.Duration `json:"time"`
+	SelfTime time.Duration `json:"selfTime"`
 }
 
 // Location is a position with its line and column.
 type Location struct {
-	Pos, Line, Col int
+	Pos  int `json:"pos"`
+	Line int `json:"line"`
+	Col  int `json:"col"`
 }
 
 func (l Location) String() string { return fmt.Sprintf("%d:%d", l.Line, l.Col) }

@@ -166,9 +166,9 @@ func TestProfileCmd(t *testing.T) {
 		t.Fatal(err)
 	}
 	var res struct {
-		Result string
-		Total  struct{ Parses, Calls int }
-		Rules  []struct {
+		Result        string
+		Parses, Calls int
+		Rules         []struct {
 			Rule  string
 			Calls int
 		}
@@ -177,7 +177,7 @@ func TestProfileCmd(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &res); err != nil {
 		t.Fatal(err)
 	}
-	if res.Result != "1:7: syntax error: expected (?0-9)" || res.Total.Parses != 1 || len(res.Rules) != 2 || res.Rules[0].Calls < res.Rules[1].Calls || len(res.Hints) == 0 {
+	if res.Result != "1:7: syntax error: expected (?0-9)" || res.Parses != 1 || len(res.Rules) != 2 || res.Rules[0].Calls < res.Rules[1].Calls || len(res.Hints) == 0 {
 		t.Errorf("got %+v", res)
 	}
 	if _, err := runCLI(t, "", "profile", "-g", g, "-sort", "size"); err == nil {
