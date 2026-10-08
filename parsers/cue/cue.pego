@@ -410,8 +410,7 @@ def gstring: StrLit = gtriple / gml_plain / gml_interp / gml_interp_s / gsl_plai
 def qc = [sv % 2 == 0] "\"" / [sv % 2 == 1] "'"
 // The hashes that close a string are exactly as many as the ones that opened it; the scanner leaves the others to
 // the next token, which matters where a string is skipped as part of an attribute.
-def hq = [k = sv / 2] hq_rec
-def hq_rec = [k == 0] / [k > 0] "#" [k = k - 1] hq_rec
+def hq = [sv < 2] / [sv >= 2] "#" [sv = sv - 2] hq
 def g_escbody = [sv % 2 == 0] esc_dq / [sv % 2 == 1] esc_sq
 def gs_esc = "\\" h:@"#"* ([len($h) < sv / 2] / [len($h) == sv / 2] g_escbody)
 def g_interp_open = "\\" h:@"#"* [len($h) == sv / 2] "("
