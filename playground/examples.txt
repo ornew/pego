@@ -5,9 +5,9 @@
 calculator          examples/calculator/calc.pego        examples/calculator/testdata/mixed.txt     Pratt expressions and a typed AST
 calculator-lr       examples/calculator/calc_lr.pego     examples/calculator/testdata/mixed.txt     The same calculator with left recursion
 json                parsers/json/json.pego               parsers/json/testdata/object.txt           Union and terminal types, separated lists
-csv                 examples/csv/csv.pego                examples/csv/testdata/basic.txt            Quoted fields and #stream
-xml                 examples/xml/xml.pego                examples/xml/testdata/doc.txt              Matching tag names with a predicate
-xml-error           examples/xml/xml.pego                examples/xml/testdata/mismatch.txt         A custom message with #error
+csv                 parsers/csv/csv.pego                 parsers/csv/testdata/basic.txt             Quoted fields and #stream
+xml                 parsers/xml/xml.pego                 parsers/xml/testdata/document.txt          Matching tag names with a predicate
+xml-error           parsers/xml/xml.pego                 parsers/xml/testdata/mismatch.txt          A custom message with #error
 outline             examples/outline/outline.pego        examples/outline/testdata/nested.txt       Indentation with predicates and variables
 minilang            examples/minilang/minilang.pego      examples/minilang/testdata/fib.txt         A small programming language
 minilang-recover    examples/minilang/minilang.pego      examples/minilang/testdata/recover.txt     Error recovery with #recover

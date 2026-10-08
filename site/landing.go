@@ -101,7 +101,7 @@ func (s *Site) renderLanding() error {
 		{"docs/guide/", "Task-oriented guides to trees, expressions, errors, context, runtimes and code generation."},
 		{"spec/", "The normative definition of the PEGO grammar language."},
 		{"reference/", "The Go API and the command-line tool, generated from the source."},
-		{"examples/", "Complete grammars, from JSON and CSV to Go and Python."},
+		{"examples/", "Small grammars that show the features: a calculator, an outline and a small language."},
 		{"docs/design/", "The decisions behind PEGO and their rationale."},
 	} {
 		q := s.page(c.url)

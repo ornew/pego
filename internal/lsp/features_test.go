@@ -575,7 +575,9 @@ func TestSemanticTokens(t *testing.T) {
 // resolves to a definition, and that the formatting edits give what pego fmt prints.
 func TestExampleGrammars(t *testing.T) {
 	paths, err := filepath.Glob("../../examples/*/*.pego")
-	if err != nil || len(paths) == 0 {
+	more, err2 := filepath.Glob("../../parsers/*/*.pego")
+	paths = append(paths, more...)
+	if err != nil || err2 != nil || len(paths) == 0 {
 		t.Fatalf("no example grammars: %v", err)
 	}
 	for _, path := range paths {
@@ -608,8 +610,8 @@ func TestExampleGrammars(t *testing.T) {
 // BenchmarkAnalyze measures the analysis that runs after every change, on the largest example
 // grammars.
 func BenchmarkAnalyze(b *testing.B) {
-	for _, name := range []string{"golang/go.pego", "python/python.pego"} {
-		data, err := os.ReadFile("../../examples/" + name)
+	for _, name := range []string{"golang/golang.pego", "python/python.pego"} {
+		data, err := os.ReadFile("../../parsers/" + name)
 		if err != nil {
 			b.Fatal(err)
 		}

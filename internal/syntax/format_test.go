@@ -294,14 +294,16 @@ def e = pratt { // e
 // Formatting every example grammar keeps its grammar and comments.
 func TestFormatExamples(t *testing.T) {
 	var paths []string
-	err := filepath.WalkDir("../../examples", func(path string, d fs.DirEntry, err error) error {
-		if err == nil && !d.IsDir() && strings.HasSuffix(path, ".pego") {
-			paths = append(paths, path)
+	for _, root := range []string{"../../examples", "../../parsers"} {
+		err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+			if err == nil && !d.IsDir() && strings.HasSuffix(path, ".pego") {
+				paths = append(paths, path)
+			}
+			return err
+		})
+		if err != nil {
+			t.Fatal(err)
 		}
-		return err
-	})
-	if err != nil {
-		t.Fatal(err)
 	}
 	if len(paths) == 0 {
 		t.Fatal("no example grammars")

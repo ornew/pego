@@ -296,19 +296,9 @@ func TestDirectives(t *testing.T) {
 	}
 }
 
-// TestExamples lints the example grammars. Every finding listed here has been checked by hand;
-// anything else is a false positive (or a new mistake in an example).
+// TestExamples lints the example grammars. They have no findings: any finding is a false positive
+// (or a new mistake in an example).
 func TestExamples(t *testing.T) {
-	want := map[string][]string{
-		// Captures of optional groups whose own captures are what the actions read.
-		"python/python.pego": {
-			"197:32 warning unused-capture", "198:29 warning unused-capture", "198:48 warning unused-capture",
-			"205:48 warning unused-capture", "209:41 warning unused-capture", "220:40 warning unused-capture",
-			"265:55 warning unused-capture", "265:72 warning unused-capture", "275:40 warning unused-capture",
-			"306:5 warning unused-capture", "306:9 warning unused-capture", "307:5 warning unused-capture",
-			"311:45 warning unused-capture", "346:29 warning unused-capture",
-		},
-	}
 	files, err := filepath.Glob("../../examples/*/*.pego")
 	if err != nil || len(files) == 0 {
 		t.Fatalf("no example grammars: %v", err)
@@ -321,11 +311,11 @@ func TestExamples(t *testing.T) {
 				t.Fatal(err)
 			}
 			got, fs := lintSource(t, string(src), Options{})
-			if !slices.Equal(got, want[filepath.ToSlash(name)]) {
+			if len(got) != 0 {
 				for _, f := range fs {
 					t.Log(f)
 				}
-				t.Errorf("got  %q\nwant %q", got, want[filepath.ToSlash(name)])
+				t.Errorf("got  %q\nwant none", got)
 			}
 		})
 	}

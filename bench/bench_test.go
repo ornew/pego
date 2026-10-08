@@ -58,7 +58,7 @@ var workloads = []workload{
 		},
 	},
 	{
-		name: "CSV", grammar: "../examples/csv/csv.pego", input: func(k int) string { return CSVInput(5000 / k) },
+		name: "CSV", grammar: "../parsers/csv/csv.pego", input: func(k int) string { return CSVInput(5000 / k) },
 		gen: func(s string, b bool) error {
 			if b {
 				return genErr(gcsv.Parse(s, gcsv.Bytes))
@@ -75,7 +75,7 @@ var workloads = []workload{
 		},
 	},
 	{
-		name: "XML", grammar: "../examples/xml/xml.pego", input: func(k int) string { return XMLInput(256 << 10 / k) },
+		name: "XML", grammar: "../parsers/xml/xml.pego", input: func(k int) string { return XMLInput(256 << 10 / k) },
 		gen: func(s string, b bool) error {
 			if b {
 				return genErr(gxml.Parse(s, gxml.Bytes))
@@ -398,7 +398,7 @@ func BenchmarkIncremental(b *testing.B) {
 // BenchmarkIncrementalLong repeats a one-character edit in the middle of a long CSV file (50000
 // records) followed by a parse with a Document.
 func BenchmarkIncrementalLong(b *testing.B) {
-	p := load(b, "../examples/csv/csv.pego")
+	p := load(b, "../parsers/csv/csv.pego")
 	input := CSVInput(50000)
 	at := utf8.RuneCountInString(input[:strings.Index(input, "\n25000,")+len("\n25000,")])
 	for _, be := range backends {
@@ -429,7 +429,7 @@ func BenchmarkIncrementalLong(b *testing.B) {
 
 // BenchmarkStream parses CSV as a stream, receiving one record at a time.
 func BenchmarkStream(b *testing.B) {
-	p := load(b, "../examples/csv/csv.pego")
+	p := load(b, "../parsers/csv/csv.pego")
 	input := CSVInput(50000)
 	for _, be := range backends {
 		b.Run(be.name, func(b *testing.B) {

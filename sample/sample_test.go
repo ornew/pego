@@ -82,9 +82,6 @@ func TestExamplesParse(t *testing.T) {
 // real languages, whose predicates and context the generator rarely satisfies by chance (50 inputs
 // cover 12% of the rules of parsers/golang), and their own tests check them.
 func TestExamplesCoverage(t *testing.T) {
-	// Minimum shares of rules and alternatives, in percent. The Go and Python grammars are large,
-	// and their inputs reach the length limit before covering everything.
-	want := map[string][2]int{"golang/go.pego": {60, 50}, "python/python.pego": {85, 80}}
 	for path, p := range exampleParsers(t) {
 		if !strings.Contains(filepath.ToSlash(path), "/examples/") {
 			continue
@@ -101,14 +98,8 @@ func TestExamplesCoverage(t *testing.T) {
 			checkParse(t, p, inputs)
 			c := g.Coverage()
 			t.Logf("%d inputs: %s", len(inputs), c)
-			min := [2]int{100, 100}
-			for suffix, m := range want {
-				if strings.HasSuffix(filepath.ToSlash(path), suffix) {
-					min = m
-				}
-			}
-			if c.RulesCovered*100 < min[0]*c.Rules || c.AlternativesCovered*100 < min[1]*c.Alternatives {
-				t.Errorf("coverage %s is below %d%% of rules and %d%% of alternatives\n%s", c, min[0], min[1], c.Report())
+			if c.RulesCovered < c.Rules || c.AlternativesCovered < c.Alternatives {
+				t.Errorf("coverage %s is below 100%% of rules and alternatives\n%s", c, c.Report())
 			}
 		})
 	}

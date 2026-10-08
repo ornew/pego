@@ -1,5 +1,0 @@
-name,age,note
-alice,30,"likes ""quotes"""
-bob,,"multi
-line"
-"",x,

@@ -1,5 +1,0 @@
-(Module Body=[(Assign Targets=[Name"x"@name] Value=Constant"1"@number) Error"y = (2 +"{message=`3:1: expected an expression`} Error"def f(a, b:\n    return a"{message=`4:5: expected an expression`} Error"z = f(a=1, b)"{message=`5:13: positional argument follows keyword argument`} (For Body=[Error"print(i i)"{message=`7:13: expected ',' or ')'`} (AugAssign Op="+="@augop Target=Name"total"@name Value=Name"i"@name)] Iter=(Call Args=[Constant"3"@number] Func=Name"range"@name Keywords=[]) OrElse=[] Target=Name"i"@name) (Assign Targets=[Name"w"@name] Value=Constant"3"@number)])
-error: 3:1: expected an expression
-4:5: expected an expression
-5:13: positional argument follows keyword argument
-7:13: expected ',' or ')'

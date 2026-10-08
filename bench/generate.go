@@ -9,8 +9,8 @@
 package bench
 
 //go:generate go run ../cmd/pego gen -g ../parsers/json/json.pego -pkg json -recognize -types -o gen/json/parser.go
-//go:generate go run ../cmd/pego gen -g ../examples/csv/csv.pego -pkg csv -recognize -types -o gen/csv/parser.go
-//go:generate go run ../cmd/pego gen -g ../examples/xml/xml.pego -pkg xml -recognize -types -o gen/xml/parser.go
+//go:generate go run ../cmd/pego gen -g ../parsers/csv/csv.pego -pkg csv -recognize -types -o gen/csv/parser.go
+//go:generate go run ../cmd/pego gen -g ../parsers/xml/xml.pego -pkg xml -recognize -types -o gen/xml/parser.go
 //go:generate go run ../cmd/pego gen -g ../examples/calculator/calc.pego -pkg calc -recognize -types -o gen/calc/parser.go
 //go:generate go run ../cmd/pego gen -g ../examples/calculator/calc_lr.pego -pkg calclr -recognize -types -o gen/calclr/parser.go
 //go:generate go run ../cmd/pego gen -g ../examples/minilang/minilang.pego -pkg minilang -recognize -types -o gen/minilang/parser.go
