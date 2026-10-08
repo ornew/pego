@@ -1,0 +1,128 @@
+// CEL, the Common Expression Language, parsed into a typed AST.
+package cel
+
+type Ident terminal
+type Name terminal
+type IntLit terminal
+type UintLit terminal
+type DoubleLit terminal
+type StringLit terminal
+type BytesLit terminal
+type BoolLit terminal
+type NullLit terminal
+
+type Paren struct { X Expr }
+type Select struct { X Expr, Field Name, Optional bool }
+type Index struct { X Expr, Index Expr, Optional bool }
+type Call struct { Target *Expr, Func Ident, Args []Expr }
+type Unary struct { Op Match, X Expr }
+type Binary struct { Left Expr, Op Match, Right Expr }
+type Conditional struct { Cond Expr, Then Expr, Else Expr }
+type ListLit struct { Elems []Expr }
+type MapLit struct { Entries []Entry }
+type Entry struct { Key Expr, Value Expr, Optional bool }
+type MessageLit struct { Type Ident, Fields []Field }
+type Field struct { Name Name, Value Expr, Optional bool }
+type Optional struct { X Expr }
+
+type Expr = Ident | IntLit | UintLit | DoubleLit | StringLit | BytesLit | BoolLit | NullLit | Paren | Select | Index | Call
+          | Unary | Binary | Conditional | ListLit | MapLit | MessageLit | Optional
+
+def main: Expr = ws e:expr ws $$ -> $e
+
+def expr: Expr = pratt {
+    skip ws
+    operand unary
+    level { infix right "?" ws then:expr(or) ws ":" -> new Conditional{Cond: $lhs, Then: $then, Else: $rhs} }
+    level or { infix left "||" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix left "&&" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix left "<=" / "<" / ">=" / ">" / "==" / "!=" / "in" !ident_char -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix left "+" / "-" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix left "*" / "/" / "%" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+}
+
+def unary: Expr = member / not_unary / neg_unary
+def not_unary: Expr = ops:(o:"!" -ws)+ m:member -> foldr($m, $ops, (acc, i) => new Unary{Op: $i.o, X: $acc})
+def neg_unary: Expr = ops:(o:"-" -ws)+ m:member -> foldr($m, $ops, (acc, i) => new Unary{Op: $i.o, X: $acc})
+
+def member: Expr = pratt {
+    skip ws
+    operand primary
+    level {
+        postfix "." ws "?" ws f:name -> new Select{X: $lhs, Field: $f, Optional: true}
+        postfix "." ws f:name -> new Select{X: $lhs, Field: $f, Optional: false}
+        postfix "." ws f:name_plain ws "(" ws as:args? ws ")" -> new Call{Target: $lhs, Func: $f, Args: concat($as)}
+        postfix "[" ws "?" ws i:expr ws "]" -> new Index{X: $lhs, Index: $i, Optional: true}
+        postfix "[" ws i:expr ws "]" -> new Index{X: $lhs, Index: $i, Optional: false}
+    }
+}
+
+def primary: Expr = literal / message / call / ident / paren / list / map
+
+def paren: Paren = "(" ws e:expr ws ")" -> new Paren{X: $e}
+
+def ident: Ident = ("." ws)? name_global
+def call: Call = f:ident ws "(" ws as:args? ws ")" -> new Call{Target: nil, Func: $f, Args: concat($as)}
+def args = first:expr rest:(-ws -"," x:expr)* -> concat(list($first), map($rest, (r) => $r.x))
+
+def list: ListLit = "[" ws es:elems? ws ","? ws "]" -> new ListLit{Elems: concat($es)}
+def elems = first:elem rest:(-ws -"," -ws x:elem)* -> concat(list($first), map($rest, (r) => $r.x))
+def elem: Expr = optional / expr
+def optional: Optional = "?" ws x:expr -> new Optional{X: $x}
+
+def map: MapLit = "{" ws es:entries? ws ","? ws "}" -> new MapLit{Entries: concat($es)}
+def entries = first:entry rest:(-ws -"," -ws x:entry)* -> concat(list($first), map($rest, (r) => $r.x))
+def entry: Entry = opt_entry / plain_entry
+def opt_entry: Entry = "?" ws k:expr ws ":" ws v:expr -> new Entry{Key: $k, Value: $v, Optional: true}
+def plain_entry: Entry = k:expr ws ":" ws v:expr -> new Entry{Key: $k, Value: $v, Optional: false}
+
+def message: MessageLit = t:type_name ws "{" ws fs:fields? ws ","? ws "}" -> new MessageLit{Type: $t, Fields: concat($fs)}
+def type_name: Ident = ("." ws)? name_plain (ws "." ws name_plain)*
+def fields = first:field rest:(-ws -"," -ws x:field)* -> concat(list($first), map($rest, (r) => $r.x))
+def field: Field = opt_field / plain_field
+def opt_field: Field = "?" ws n:name ws ":" ws v:expr -> new Field{Name: $n, Value: $v, Optional: true}
+def plain_field: Field = n:name ws ":" ws v:expr -> new Field{Name: $n, Value: $v, Optional: false}
+
+// ---- Literals ----
+
+def literal: Expr = bool / null / double / uint / int / string / bytes
+
+def bool: BoolLit = ("true" / "false") !ident_char
+def null: NullLit = "null" !ident_char
+
+def sign = "-" ws
+def double: DoubleLit = sign? ((?0-9)+ "." (?0-9)+ exponent? / (?0-9)+ exponent / "." (?0-9)+ exponent?)
+def exponent = (?eE) (?+\-)? (?0-9)+
+def uint: UintLit = ("0x" (?0-9a-fA-F)+ / (?0-9)+) (?uU)
+def int: IntLit = sign? ("0x" (?0-9a-fA-F)+ / (?0-9)+) !(?uU)
+
+def string: StringLit = (?rR) raw_body / str_body
+def bytes: BytesLit = (?bB) ((?rR) raw_body / bytes_body)
+
+def raw_body = "\"\"\"" (!"\"\"\"" .)* "\"\"\"" / "'''" (!"'''" .)* "'''" / "\"" (?^"\n\r)* "\"" / "'" (?^'\n\r)* "'"
+
+def str_body = "\"\"\"" (str_esc / (?^"\\)+ / "\"" !"\"\"")* "\"\"\""
+             / "'''" (str_esc / (?^'\\)+ / "'" !"''")* "'''"
+             / "\"" (str_esc / (?^"\\\n\r)+)* "\""
+             / "'" (str_esc / (?^'\\\n\r)+)* "'"
+def bytes_body = "\"\"\"" (bytes_esc / (?^"\\)+ / "\"" !"\"\"")* "\"\"\""
+               / "'''" (bytes_esc / (?^'\\)+ / "'" !"''")* "'''"
+               / "\"" (bytes_esc / (?^"\\\n\r)+)* "\""
+               / "'" (bytes_esc / (?^'\\\n\r)+)* "'"
+
+def bytes_esc = "\\" ((?abfnrtv"'\\?`) / (?0-3) (?0-7) (?0-7) / (?xX) hex hex)
+def str_esc = bytes_esc
+            / "\\u" !((?dD) (?89a-fA-F)) hex hex hex hex
+            / "\\U" !("0000" (?dD) (?89a-fA-F)) "00" ("0" hex{5} / "10" hex{4})
+def hex = (?0-9a-fA-F)
+
+// ---- Names ----
+
+def ident_char = (?A-Za-z0-9_)
+def name_plain: Ident =!(("true" / "false" / "null" / "in") !ident_char) (?A-Za-z_) ident_char*
+def name_global = !(("true" / "false" / "null" / "in" / "as" / "break" / "const" / "continue" / "else" / "for" / "function" / "if"
+                    / "import" / "let" / "loop" / "package" / "namespace" / "return" / "var" / "void" / "while") !ident_char)
+                  (?A-Za-z_) ident_char*
+def name: Name = name_plain / "`" (?A-Za-z0-9_.\-/ )+ "`"
+
+def ws = (? \t\r\n\u{c})* ("//" (?^\n)* (? \t\r\n\u{c})*)*

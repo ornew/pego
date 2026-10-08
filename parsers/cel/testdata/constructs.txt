@@ -1,0 +1,1 @@
+pkg.Msg{name: "n", ?opt: x, items: [1, ?y], attrs: {"k": 1, ?"j": 2}}.name.?first[?0]

@@ -1,0 +1,1 @@
+request.auth.claims.groups.exists(g, g in ["admin", "ops"]) && !(resource.name == "x") ? "yes" : "no" // policy
