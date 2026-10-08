@@ -566,8 +566,44 @@ func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
 
 	case *grammar.Choice:
 		ms := make([]matcher, len(e.Alts))
+		guards := make([]firstGuard, len(e.Alts))
+		guarded := false
 		for i, alt := range e.Alts {
 			ms[i] = c.expr(alt, s, build)
+			guards[i] = c.first(alt, 0, map[string]bool{})
+			guarded = guarded || guards[i].accept != nil
+		}
+		if guarded {
+			return func(p *parser) (*Node, bool) {
+				m0 := p.mark()
+				var ch rune
+				more, peeked := false, false
+				for i, m := range ms {
+					if g := &guards[i]; g.accept != nil {
+						if !peeked {
+							ch, _, more = p.peek()
+							peeked = true
+						}
+						if !(more && g.accept(ch)) && p.depth+g.depth <= p.maxDepth {
+							p.expect(p.pos, g.desc) // what the alternative would record
+							continue
+						}
+					}
+					prevCut := p.cut
+					p.cut = false
+					v, ok := m(p)
+					cut := p.cut
+					p.cut = prevCut
+					if ok {
+						return v, true
+					}
+					p.reset(m0)
+					if cut {
+						return nil, false
+					}
+				}
+				return nil, false
+			}
 		}
 		return func(p *parser) (*Node, bool) {
 			m0 := p.mark()
@@ -736,6 +772,54 @@ func anchor(cond func(p *parser) bool, desc expID) matcher {
 }
 
 // single compiles an expression that matches one character.
+// firstGuard tells when an alternative of a choice can be skipped (see first).
+type firstGuard struct {
+	accept func(rune) bool // nil if it cannot be
+	desc   expID
+	depth  int
+}
+
+// first returns, when the expression e must begin with a given terminal (a literal or a
+// character class, possibly behind sequences, captures, @, - and calls of rules that are neither
+// left-recursive nor Pratt), the characters that can start it, the expectation e records when the
+// next character is not one of them, and the number of rule calls on the way. Then e fails at once,
+// recording only that expectation (having examined only that character, which the choice's peek
+// also records; a call memoizes the same failure, and memoization only affects speed), so a choice
+// can skip it, unless the calls on the way would exceed the nesting limit.
+func (c *compiler) first(e grammar.Expr, depth int, seen map[string]bool) firstGuard {
+	switch e := e.(type) {
+	case *grammar.Literal:
+		if e.Value == "" {
+			break
+		}
+		r0, _ := utf8.DecodeRuneInString(e.Value)
+		return firstGuard{func(r rune) bool { return r == r0 }, c.desc(quote(e.Value)), depth}
+	case *grammar.CharClass:
+		return firstGuard{classAccept(e), c.desc(charClassString(e)), depth}
+	case *grammar.Seq:
+		if len(e.Items) > 0 {
+			return c.first(e.Items[0], depth, seen)
+		}
+	case *grammar.Capture:
+		return c.first(e.Expr, depth, seen)
+	case *grammar.Atomic:
+		return c.first(e.Expr, depth, seen)
+	case *grammar.Discard:
+		return c.first(e.Expr, depth, seen)
+	case *grammar.Ref:
+		r := c.prog.byName[e.Name]
+		if r == nil || r.leader || seen[e.Name] || r.def == nil {
+			break
+		}
+		if _, pratt := r.def.Expr.(*grammar.Pratt); pratt {
+			break
+		}
+		seen[e.Name] = true
+		return c.first(r.def.Expr, depth+1, seen)
+	}
+	return firstGuard{}
+}
+
 func (c *compiler) single(build bool, desc expID, accept func(rune) bool) matcher {
 	return func(p *parser) (*Node, bool) {
 		ch, size, ok := p.peek()

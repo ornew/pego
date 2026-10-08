@@ -1020,13 +1020,13 @@ func main() {
 
 ```
 grammar                      first parse          after editing line 500
-one rule per line            evaluated 3004     evaluated 3     reused 1002
-line start anchor ^          evaluated 3004     evaluated 3     reused 1002
-variable read in each line   evaluated 3004     evaluated 3     reused 1002
-startPos in an action        evaluated 3004     evaluated 1004  reused 1002
+one rule per line            evaluated 3003     evaluated 3     reused 1001
+line start anchor ^          evaluated 3003     evaluated 3     reused 1001
+variable read in each line   evaluated 3003     evaluated 3     reused 1001
+startPos in an action        evaluated 3003     evaluated 1004  reused 1001
 right-recursive list         evaluated 4004     evaluated 503   reused 501
-lookahead to the end of text evaluated 3004     evaluated 502   reused 1501
-#recover, bad line 900       evaluated 3003     evaluated 4     reused 1002
+lookahead to the end of text evaluated 3003     evaluated 502   reused 1500
+#recover, bad line 900       evaluated 3002     evaluated 4     reused 1001
 everything in one rule       evaluated 1        evaluated 1     reused 0
 ```
 
@@ -1189,18 +1189,18 @@ func main() {
 
 ```
 settings, one rule per line
-    1000 lines: Parse 280µs    NewDocument+Parse 520µs    Edit 20µs     reparse 30µs     (evaluated 3, reused 1002) equal=true
-   10000 lines: Parse 2.53ms   NewDocument+Parse 4.56ms   Edit 200µs    reparse 310µs    (evaluated 3, reused 10002) equal=true
-  100000 lines: Parse 27.62ms  NewDocument+Parse 42.48ms  Edit 2.59ms   reparse 7.52ms   (evaluated 3, reused 100002) equal=true
+    1000 lines: Parse 230µs    NewDocument+Parse 490µs    Edit 20µs     reparse 40µs     (evaluated 3, reused 1001) equal=true
+   10000 lines: Parse 2.31ms   NewDocument+Parse 4.31ms   Edit 220µs    reparse 320µs    (evaluated 3, reused 10001) equal=true
+  100000 lines: Parse 25.44ms  NewDocument+Parse 40.07ms  Edit 2.78ms   reparse 9.18ms   (evaluated 3, reused 100001) equal=true
   memory at 100000 lines (1.9 MiB of text): tree from Parse 27 MiB, Document with its tree 143 MiB
 calc (Pratt expressions)
-    1000 lines: Parse 1.64ms   NewDocument+Parse 1.98ms   Edit 30µs     reparse 40µs     (evaluated 3, reused 1003) equal=true
-   10000 lines: Parse 14.52ms  NewDocument+Parse 16.97ms  Edit 270µs    reparse 410µs    (evaluated 3, reused 10003) equal=true
-  100000 lines: Parse 153.05ms NewDocument+Parse 171.56ms Edit 3.65ms   reparse 8.94ms   (evaluated 3, reused 100003) equal=true
+    1000 lines: Parse 1.87ms   NewDocument+Parse 2.29ms   Edit 30µs     reparse 50µs     (evaluated 3, reused 1002) equal=true
+   10000 lines: Parse 16.78ms  NewDocument+Parse 19.05ms  Edit 280µs    reparse 420µs    (evaluated 3, reused 10002) equal=true
+  100000 lines: Parse 150.92ms NewDocument+Parse 172.84ms Edit 3.64ms   reparse 10.73ms  (evaluated 3, reused 100002) equal=true
 settings, everything in one rule
-    1000 lines: Parse 200µs    NewDocument+Parse 200µs    Edit 0s       reparse 160µs    (evaluated 1, reused 0) equal=true
-   10000 lines: Parse 2.16ms   NewDocument+Parse 2.19ms   Edit 40µs     reparse 1.7ms    (evaluated 1, reused 0) equal=true
-  100000 lines: Parse 20.58ms  NewDocument+Parse 20.27ms  Edit 320µs    reparse 17.92ms  (evaluated 1, reused 0) equal=true
+    1000 lines: Parse 170µs    NewDocument+Parse 170µs    Edit 0s       reparse 160µs    (evaluated 1, reused 0) equal=true
+   10000 lines: Parse 2.08ms   NewDocument+Parse 1.98ms   Edit 30µs     reparse 1.65ms   (evaluated 1, reused 0) equal=true
+  100000 lines: Parse 18.13ms  NewDocument+Parse 17.76ms  Edit 330µs    reparse 18.99ms  (evaluated 1, reused 0) equal=true
 ```
 
 Reading the table:
@@ -1208,11 +1208,11 @@ Reading the table:
 - **The cost still grows with the document, but slowly.** `Edit` splices the text, its offset table and the memo table
   in place, but it still visits every memo entry (about 300,000 at 100,000 lines) and moves everything after the edit,
   and the reparse makes one memo lookup per line and, when the edit changed the length of the text, moves the nodes
-  of the reused results after the edit in place. Both are linear in the size of the document, with small constants: at 100,000 lines an edit costs about
-  3 ms and the reparse about 8 ms.
+  of the reused results after the edit in place. Both are linear in the size of the document, with small constants:
+  at 100,000 lines an edit costs about 3 ms and the reparse about 9 ms.
 - **The gain depends on how much a reused unit costs.** With the Pratt-expression lines, `Edit` and the reparse together
-  take about 13 ms against 153 ms for a fresh parse at 100,000 lines. With the cheap `key = value` lines, about 10 ms
-  against 28 ms. With everything in one rule there is no gain (about 18 ms against 21 ms): the one rule is evaluated
+  take about 14 ms against 151 ms for a fresh parse at 100,000 lines. With the cheap `key = value` lines, about 12 ms
+  against 25 ms. With everything in one rule there is no gain (about 19 ms against 18 ms): the one rule is evaluated
   again from scratch.
 - **The first parse is slower than `Parse`** (up to about 1.5 times with cheap rules, close to equal otherwise), because
   every rule call is memoized (an ordinary parse memoizes only calls that repeat).
@@ -1303,13 +1303,13 @@ func main() {
 ```
 $ go run ./jsondoc examples/json/json.pego
 282783 bytes
-Parse:                31ms
-first Document.Parse: 54ms {448897 10001}
-Edit:                 2.85ms
-reparse:              1.44ms {11 15020}
+Parse:                19ms
+first Document.Parse: 37ms {338896 10001}
+Edit:                 2.2ms
+reparse:              1.44ms {11 15016}
 ```
 
-The full parse evaluates 448,897 rule bodies; after the edit 11 run and 15,020 results are reused.
+The full parse evaluates 338,896 rule bodies; after the edit 11 run and 15,016 results are reused.
 
 Limits to keep in mind:
 
@@ -1456,21 +1456,21 @@ func main() {
 ```
 
 ```
-(first parse)      evaluated 3004 reused    0  ok, 1000 entries
-"\n"               evaluated    4 reused 1002  ok, 1001 entries
-"t"                evaluated    4 reused  499  error at 500:2, keeping the last good tree
-"i"                evaluated    3 reused  500  error at 500:3, keeping the last good tree
-"m"                evaluated    3 reused  500  error at 500:4, keeping the last good tree
-"e"                evaluated    3 reused  500  error at 500:5, keeping the last good tree
-"o"                evaluated    3 reused  500  error at 500:6, keeping the last good tree
-"u"                evaluated    3 reused  500  error at 500:7, keeping the last good tree
-"t"                evaluated    3 reused  500  error at 500:8, keeping the last good tree
-" "                evaluated    3 reused  500  error at 500:8, keeping the last good tree
-"="                evaluated    2 reused  501  error at 500:8, keeping the last good tree
-" "                evaluated    3 reused  501  error at 500:11, keeping the last good tree
-"3"                evaluated    3 reused 1003  ok, 1001 entries
-"0"                evaluated    3 reused 1003  ok, 1001 entries
-"45"               evaluated    3 reused 1003  ok, 1001 entries
+(first parse)      evaluated 3003 reused    0  ok, 1000 entries
+"\n"               evaluated    4 reused 1001  ok, 1001 entries
+"t"                evaluated    3 reused  499  error at 500:2, keeping the last good tree
+"i"                evaluated    3 reused  499  error at 500:3, keeping the last good tree
+"m"                evaluated    3 reused  499  error at 500:4, keeping the last good tree
+"e"                evaluated    3 reused  499  error at 500:5, keeping the last good tree
+"o"                evaluated    3 reused  499  error at 500:6, keeping the last good tree
+"u"                evaluated    3 reused  499  error at 500:7, keeping the last good tree
+"t"                evaluated    3 reused  499  error at 500:8, keeping the last good tree
+" "                evaluated    3 reused  499  error at 500:8, keeping the last good tree
+"="                evaluated    2 reused  500  error at 500:8, keeping the last good tree
+" "                evaluated    3 reused  500  error at 500:11, keeping the last good tree
+"3"                evaluated    3 reused 1002  ok, 1001 entries
+"0"                evaluated    3 reused 1002  ok, 1001 entries
+"45"               evaluated    3 reused 1002  ok, 1001 entries
 same as a fresh parse: true
 ```
 
@@ -1478,8 +1478,8 @@ What to see in the output:
 
 - Every keystroke is one `Edit` and one `Parse`. While the line is incomplete, `Parse` returns a `*SyntaxError` and no
   tree, so the editor keeps the last good tree. The first 499 settings are still reused (the parser stops at the first
-  error and does not touch the rest); the cost is the same 3 or 4 evaluations.
-- When the line becomes valid (after `3`), everything after it is reused again: 1,003 reuses, 3 evaluations.
+  error and does not touch the rest); the cost is the same 3 evaluations.
+- When the line becomes valid (after `3`), everything after it is reused again: 1,002 reuses, 3 evaluations.
 - The last line of the output checks the contract: the incremental tree equals a fresh parse of the same text (the
   comparison here is by JSON, which includes positions).
 
