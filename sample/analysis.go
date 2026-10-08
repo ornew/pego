@@ -59,8 +59,9 @@ type info struct {
 	altBase  map[*grammar.Choice]int
 	operands map[*grammar.PrattOperand]int
 	ops      map[*grammar.PrattOperator]int
-	// reachable[i] is true if the rule with index i can be called from the start rule.
-	reachable []bool
+	// reachable[i] is true if the rule with index i can be called from the start rule in a context
+	// that can match; called[i] if it is called at all (outside negative lookaheads and #recover).
+	reachable, called []bool
 	reachMemo map[grammar.Expr]bitset
 	captures  map[grammar.Expr]bool // memo of hasCaptures
 	// compared holds the captures of rule calls that a predicate in the same rule reads.
@@ -214,22 +215,8 @@ func analyze(g *grammar.Grammar, start string) *info {
 			}
 		}
 	}
-	in.reachable = make([]bool, len(in.order))
-	if in.start != nil {
-		var visit func(ri *ruleInfo)
-		visit = func(ri *ruleInfo) {
-			if in.reachable[ri.index] {
-				return
-			}
-			in.reachable[ri.index] = true
-			for _, c := range ri.possibleCalls {
-				if callee := in.rules[c]; callee != nil {
-					visit(callee)
-				}
-			}
-		}
-		visit(in.start)
-	}
+	in.reachable = in.closure(func(ri *ruleInfo) []string { return ri.possibleCalls })
+	in.called = in.closure(func(ri *ruleInfo) []string { return ri.calls })
 	return in
 }
 
@@ -454,6 +441,28 @@ func (in *info) length(e grammar.Expr) int {
 		return l
 	}
 	return 0
+}
+
+// closure returns, for each rule, whether the start rule reaches it through the calls that calls
+// returns.
+func (in *info) closure(calls func(*ruleInfo) []string) []bool {
+	seen := make([]bool, len(in.order))
+	var visit func(ri *ruleInfo)
+	visit = func(ri *ruleInfo) {
+		if seen[ri.index] {
+			return
+		}
+		seen[ri.index] = true
+		for _, c := range calls(ri) {
+			if callee := in.rules[c]; callee != nil {
+				visit(callee)
+			}
+		}
+	}
+	if in.start != nil {
+		visit(in.start)
+	}
+	return seen
 }
 
 // walkPossible is walk restricted to expressions that can match: it skips an expression that can never

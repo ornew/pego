@@ -210,9 +210,9 @@ type Coverage struct {
 	MissedAlternatives []Alternative `json:"missedAlternatives,omitempty"`
 	// Unreachable lists the rules that generation cannot exercise from the start rule: rules that are
 	// not called, or called only inside negative lookaheads (!keyword), the skip of #recover, or
-	// expressions that can never match.
-	// Impossible lists the rules that can never match (such as bodies that end in _|_ to report an
-	// error). Neither is counted in Rules.
+	// expressions that can never match. Impossible lists the rules that the start rule calls (outside
+	// negative lookaheads and #recover) but that can never match, such as rules that end in _|_ to
+	// report an error. Neither is counted in Rules.
 	Unreachable []string `json:"unreachable,omitempty"`
 	Impossible  []string `json:"impossible,omitempty"`
 }
@@ -240,10 +240,10 @@ func (g *Generator) Coverage() Coverage {
 	var c Coverage
 	for _, ri := range in.order {
 		switch {
+		case ri.height >= inf && in.called[ri.index]:
+			c.Impossible = append(c.Impossible, ri.def.Name)
 		case !in.reachable[ri.index]:
 			c.Unreachable = append(c.Unreachable, ri.def.Name)
-		case ri.height >= inf:
-			c.Impossible = append(c.Impossible, ri.def.Name)
 		}
 	}
 	kinds := map[int]string{targetAlt: "choice", targetOperand: "operand", targetOperator: "operator"}

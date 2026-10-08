@@ -480,6 +480,18 @@ def r = "x" / "y"`)
 		t.Errorf("got %+v", c)
 	}
 
+	// A rule that is called but can never match is reported as such, not as unreachable.
+	p = compile(t, `def main = "a" / err
+def err = "b" _|_`)
+	g, err = sample.New(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c = g.Coverage()
+	if !slices.Equal(c.Impossible, []string{"err"}) || len(c.Unreachable) != 0 || !strings.Contains(c.Report(), "never match: err") {
+		t.Errorf("got %+v", c)
+	}
+
 	// Without generating anything, everything reachable is missed.
 	p = compile(t, `def main = x / y
 def x = "x" z?
