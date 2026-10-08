@@ -154,7 +154,7 @@ Memory (bytes allocated / number of allocations) and file sizes:
 
 | Grammar | Source | Compile from source | `.pegoc` (with the AST) | `.pegoc` → closure | `.pegoc` → bytecode | `.pegoc` (no AST) | `.pegoc` (no AST) → bytecode |
 |:--|--:|--:|--:|--:|--:|--:|--:|
-| json | 1.36 KB | 288 KB / 2.7 k | 2.88 KB | 110 KB / 1.3 k | 146 KB / 1.6 k | 2.22 KB | 80.7 KB / 538 |
+| json | 1.51 KB | 288 KB / 2.7 k | 2.88 KB | 110 KB / 1.3 k | 146 KB / 1.6 k | 2.22 KB | 80.7 KB / 538 |
 | minilang | 4.42 KB | 927 KB / 7.7 k | 6.75 KB | 317 KB / 2.9 k | 392 KB / 3.6 k | 4.90 KB | 233 KB / 1.2 k |
 
 ## All results

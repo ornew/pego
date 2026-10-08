@@ -18,6 +18,7 @@ This document describes the repository layout, the architecture of the implement
 | `internal/engine/tsrt/` | Runtime code embedded in generated TypeScript parsers |
 | `cmd/pego/` | Command-line tool |
 | `examples/` | Example grammars, with golden tests |
+| `parsers/` | Ready-made parsers for common languages, each a Go module of its own (`parsers/<language>/`, with the grammar, the generated parser and conformance tests); `generate.go` and `parsers_test.go` (main module) generate them and check them on every backend ([README](../parsers/README.md)) |
 | `playground/` | WebAssembly API used by the web playground (package `main`; `GOOS=js GOARCH=wasm`) |
 | `site/` | Web site generator (a separate Go module): landing page, docs, reference and playground; build with `site/build.sh` |
 | `netlify.toml` | Netlify build configuration for the site |

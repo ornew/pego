@@ -43,7 +43,7 @@ func genErr[N any](_ N, err error) error { return err }
 
 var workloads = []workload{
 	{
-		name: "JSON", grammar: "../examples/json/json.pego", input: func(k int) string { return JSONInput(256 << 10 / k) },
+		name: "JSON", grammar: "../parsers/json/json.pego", input: func(k int) string { return JSONInput(256 << 10 / k) },
 		gen: func(s string, b bool) error {
 			if b {
 				return genErr(gjson.Parse(s, gjson.Bytes))
@@ -468,7 +468,7 @@ func BenchmarkStream(b *testing.B) {
 // BenchmarkPrepare compares compiling a grammar from source with loading a saved grammar (with and without
 // the AST), including backend setup on the first parse after loading.
 func BenchmarkPrepare(b *testing.B) {
-	for _, path := range []string{"../examples/json/json.pego", "../examples/minilang/minilang.pego"} {
+	for _, path := range []string{"../parsers/json/json.pego", "../examples/minilang/minilang.pego"} {
 		name := strings.TrimSuffix(path[strings.LastIndex(path, "/")+1:], ".pego")
 		src, err := os.ReadFile(path)
 		if err != nil {

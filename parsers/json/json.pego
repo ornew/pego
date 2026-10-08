@@ -24,8 +24,9 @@ def elements = first:value rest:(-ws -"," -ws v:value)*
     -> concat(list($first), map($rest, (r) => $r.v))
 
 def string = "\"" s:chars "\"" -> $s
-def chars: String = (unescaped / escape)*
-def unescaped = (?^"\\\u{0}-\u{1f})
+// Runs of unescaped characters are matched by an inline class: calling a rule for each character
+// makes the generated Recognize about a quarter slower and ParseAST about a tenth.
+def chars: String = ((?^"\\\u{0}-\u{1f})+ / escape)*
 def escape = "\\" ((?"\\/bfnrt) / "u" hex hex hex hex)
 def hex = (?0-9a-fA-F)
 

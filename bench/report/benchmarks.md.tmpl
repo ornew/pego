@@ -132,7 +132,7 @@ Memory (bytes allocated / number of allocations) and file sizes:
 
 | Grammar | Source | Compile from source | `.pegoc` (with the AST) | `.pegoc` → closure | `.pegoc` → bytecode | `.pegoc` (no AST) | `.pegoc` (no AST) → bytecode |
 |:--|--:|--:|--:|--:|--:|--:|--:|
-| json | {{fileSize "examples/json/json.pego"}} | {{mem "Prepare/json/source"}} | {{fmtBytes (metric "Prepare/json/pegoc/closure" "file-bytes")}} | {{mem "Prepare/json/pegoc/closure"}} | {{mem "Prepare/json/pegoc/bytecode"}} | {{fmtBytes (metric "Prepare/json/pegoc-noast/bytecode" "file-bytes")}} | {{mem "Prepare/json/pegoc-noast/bytecode"}} |
+| json | {{fileSize "parsers/json/json.pego"}} | {{mem "Prepare/json/source"}} | {{fmtBytes (metric "Prepare/json/pegoc/closure" "file-bytes")}} | {{mem "Prepare/json/pegoc/closure"}} | {{mem "Prepare/json/pegoc/bytecode"}} | {{fmtBytes (metric "Prepare/json/pegoc-noast/bytecode" "file-bytes")}} | {{mem "Prepare/json/pegoc-noast/bytecode"}} |
 | minilang | {{fileSize "examples/minilang/minilang.pego"}} | {{mem "Prepare/minilang/source"}} | {{fmtBytes (metric "Prepare/minilang/pegoc/closure" "file-bytes")}} | {{mem "Prepare/minilang/pegoc/closure"}} | {{mem "Prepare/minilang/pegoc/bytecode"}} | {{fmtBytes (metric "Prepare/minilang/pegoc-noast/bytecode" "file-bytes")}} | {{mem "Prepare/minilang/pegoc-noast/bytecode"}} |
 
 ## All results

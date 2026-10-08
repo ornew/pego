@@ -372,8 +372,8 @@ inputs as strings and as bytes ([design record 013](../design/013-typescript-gen
 ## Trade-offs
 
 - **Size.** The runtime is about 2,400 lines in every file, with a 3 KB table of printable characters; the rest
-  grows with the grammar. `pairs.pego` generates 79,670 bytes, the JSON grammar ([examples/json](../../examples/json/json.pego)) 114,343 bytes and the minilang
-  grammar 152,417 bytes. Minified and compressed by a bundler, it is a fraction of that.
+  grows with the grammar. `pairs.pego` generates 80,480 bytes, the JSON grammar ([parsers/json](../../parsers/json/json.pego)) 114,192 bytes and the minilang
+  grammar 153,227 bytes. Minified and compressed by a bundler, it is a fraction of that.
 - **Speed.** On Node.js 24 (Apple M-series), the JSON grammar parses a 260 KB document in about 18 ms in code points
   and 25 ms in bytes, once the code is warm. That is fine for editors and tools, but no match for `JSON.parse`: use a
   generated parser for formats that have no native parser.

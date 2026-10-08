@@ -1238,7 +1238,7 @@ Reading the table:
 - **Bursts of edits are fine.** An `Edit` costs little on its own, and entries that several edits affect are brought
   up to date once, when they are looked up. Merging adjacent changes into one `Edit` still saves copying the text.
 
-A real grammar, [examples/json](../../examples/json/json.pego), on an array of 5,000 objects (283 KB). Run it from the
+A real grammar, [parsers/json](../../parsers/json/json.pego), on an array of 5,000 objects (283 KB). Run it from the
 root of the repository:
 
 <details>
@@ -1257,7 +1257,7 @@ import (
 	"github.com/ornew/pego"
 )
 
-// Run it from the root of the repository: go run ./jsondoc examples/json/json.pego
+// Run it from the root of the repository: go run ./jsondoc parsers/json/json.pego
 func main() {
 	src, err := os.ReadFile(os.Args[1])
 	if err != nil {
@@ -1316,15 +1316,15 @@ func main() {
 </details>
 
 ```
-$ go run ./jsondoc examples/json/json.pego
+$ go run ./jsondoc parsers/json/json.pego
 282783 bytes
 Parse:                16ms
-first Document.Parse: 42ms {338896 10001}
-Edit:                 70µs
-reparse:              1.26ms {11 15016}
+first Document.Parse: 31ms {235006 10001}
+Edit:                 60µs
+reparse:              1.2ms {11 15016}
 ```
 
-The full parse evaluates 338,896 rule bodies; after the edit 11 run and 15,016 results are reused.
+The full parse evaluates 235,006 rule bodies; after the edit 11 run and 15,016 results are reused.
 
 Limits to keep in mind:
 

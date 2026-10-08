@@ -32,10 +32,10 @@ The design is in [design record 015](../design/015-input-generation.md).
 
 `pego sample` prints distinct inputs that the grammar accepts, ten by default (`-n`), each as a Go-quoted string on its
 own line, so that inputs containing line breaks stay on one line. With the JSON grammar of
-[examples/json](../../examples/json/json.pego):
+[parsers/json](../../parsers/json/json.pego):
 
 ```bash
-$ pego sample -g examples/json/json.pego -n 8
+$ pego sample -g parsers/json/json.pego -n 8
 " [  \n]"
 "\tfalse"
 "\"\\r\"\t "
@@ -43,7 +43,7 @@ $ pego sample -g examples/json/json.pego -n 8
 "{} \n"
 " \n{\t\t\t}\t\r"
 "null"
-"{\n\r\"\\uEA57ᨊ\"\r\r:-0e1,\"\" \t\t:\tnull}"
+"{\n\r\"\\uEA57^1\"\t\t:1E+71,\"\"\n:null\n \r,\t\"*ଦ\":\t\t\t{\"\"\t:\n\n\nnull\t,\"\\r\":null,\"an<5\": true,\"\":\rnull}\t\t\t,\"ጴ,G\":\t\n true}"
 ```
 
 The inputs are random, not pretty: the grammar allows whitespace between tokens, so the inputs contain it, and
@@ -57,7 +57,7 @@ numbers with `math/rand/v2`, whose algorithms Go does not promise to keep. Keep 
 or in a fuzz corpus) where they must not change. `-f json` prints a JSON document instead:
 
 ```bash
-$ pego sample -g examples/json/json.pego -n 2 -seed 5 -f json
+$ pego sample -g parsers/json/json.pego -n 2 -seed 5 -f json
 {
   "start": "main",
   "seed": 5,
@@ -180,7 +180,7 @@ format, each comes with the input it was made from, the mutation (positions are 
 error:
 
 ```bash
-$ pego sample -g examples/json/json.pego -n 3 -invalid -f json
+$ pego sample -g parsers/json/json.pego -n 3 -invalid -f json
 {
   "start": "main",
   "seed": 0,
@@ -192,16 +192,16 @@ $ pego sample -g examples/json/json.pego -n 3 -invalid -f json
       "error": "2:1: syntax error: expected \"\\\"\", \"}\", (? \\t\\r\\n)"
     },
     {
-      "input": "\n\"'\\r\\u5\\r\\u58CD\"",
-      "base": "\n\"'\\r\\u58CD\"",
-      "mutation": "duplicate \"\\\\r\\\\u5\" at 3",
-      "error": "2:8: syntax error: expected (?0-9a-fA-F)"
+      "input": "t\"✵5\\u58CD⭧g\"",
+      "base": "\n\"✵5\\u58CD⭧g\"",
+      "mutation": "replace \"\\n\" at 0 with \"t\"",
+      "error": "1:1: syntax error: expected \"-\", \"0\", \"[\", \"\\\"\", \"false\", \"null\", \"true\", \"{\", (? \\t\\r\\n), (?1-9)"
     },
     {
-      "input": "{\"\\n#x\":\t\"\",\t\t\"\":\"\\\"",
-      "base": "{\"\\n#x\":\t\"\",\t\t\"\":\"\\\"\"}",
-      "mutation": "delete \"\\\"}\" at 20",
-      "error": "1:21: syntax error: expected \"\\\"\", \"\\\\\", (?^\"\\\\\\x00-\\x1f)"
+      "input": "\r\n {} r\n",
+      "base": "\r\n {} \n",
+      "mutation": "insert \"r\" at 6",
+      "error": "2:5: syntax error: expected (? \\t\\r\\n), end of input"
     }
   ]
 }
@@ -289,12 +289,12 @@ forget, and a seed reproduces any failure. Two kinds of checks work without know
   well-formed error; pretty-printing and parsing again gives the same tree; a converter's output is valid in the target
   format.
 - **Differential tests** against another implementation of the same language. This test (from
-  [sample/sample_test.go](../../sample/sample_test.go)) checks that the JSON grammar of the examples and Go's
+  [sample/sample_test.go](../../sample/sample_test.go)) checks that the JSON grammar of [parsers/json](../../parsers/json/) and Go's
   `encoding/json` agree, on 200 generated documents and on 200 near-miss invalid ones:
 
 ```go
 func TestJSONAgreesWithEncodingJSON(t *testing.T) {
-	p := ... // the parser of examples/json/json.pego
+	p := ... // the parser of parsers/json/json.pego
 	g, err := sample.New(p, sample.WithSeed(1), sample.WithCoverage())
 	if err != nil {
 		t.Fatal(err)

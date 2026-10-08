@@ -19,7 +19,9 @@ import (
 func exampleParsers(t *testing.T) map[string]*pego.Parser {
 	t.Helper()
 	paths, err := filepath.Glob("../examples/*/*.pego")
-	if err != nil || len(paths) == 0 {
+	more, err2 := filepath.Glob("../parsers/*/*.pego")
+	paths = append(paths, more...)
+	if err != nil || err2 != nil || len(paths) == 0 {
 		t.Fatalf("no example grammars: %v", err)
 	}
 	ps := map[string]*pego.Parser{}
@@ -107,10 +109,10 @@ func TestExamplesCoverage(t *testing.T) {
 	}
 }
 
-// TestJSONAgreesWithEncodingJSON is a differential test: the JSON grammar of examples/json and
+// TestJSONAgreesWithEncodingJSON is a differential test: the JSON grammar of parsers/json and
 // encoding/json must accept the same inputs.
 func TestJSONAgreesWithEncodingJSON(t *testing.T) {
-	p := exampleParsers(t)[filepath.Join("..", "examples", "json", "json.pego")]
+	p := exampleParsers(t)[filepath.Join("..", "parsers", "json", "json.pego")]
 	g, err := sample.New(p, sample.WithSeed(1), sample.WithCoverage())
 	if err != nil {
 		t.Fatal(err)
@@ -137,7 +139,7 @@ func TestJSONAgreesWithEncodingJSON(t *testing.T) {
 
 func TestDeterminism(t *testing.T) {
 	ps := exampleParsers(t)
-	p := ps[filepath.Join("..", "examples", "json", "json.pego")]
+	p := ps[filepath.Join("..", "parsers", "json", "json.pego")]
 	gen := func(seed uint64) ([]string, []sample.Invalid) {
 		g, err := sample.New(p, sample.WithSeed(seed), sample.WithCoverage())
 		if err != nil {

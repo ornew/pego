@@ -96,7 +96,7 @@ func TestRepository(t *testing.T) {
 				return filepath.SkipDir
 			}
 			slash := filepath.ToSlash(path)
-			if testing.Short() && (strings.HasSuffix(slash, "bench/gen") || strings.HasSuffix(slash, "examples/json/generated")) {
+			if testing.Short() && (strings.HasSuffix(slash, "bench/gen") || strings.HasPrefix(slash, "../../parsers/")) {
 				return filepath.SkipDir
 			}
 			return nil

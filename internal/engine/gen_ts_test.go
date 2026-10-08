@@ -289,7 +289,7 @@ func TestGenerateTSErrors(t *testing.T) {
 		t.Errorf("got %v", err)
 	}
 	// Generating is deterministic.
-	src, _ := os.ReadFile("../../examples/json/json.pego")
+	src, _ := os.ReadFile("../../parsers/json/json.pego")
 	jg, err := syntax.Parse(string(src))
 	if err != nil {
 		t.Fatal(err)

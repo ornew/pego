@@ -135,9 +135,25 @@ pego sample -g grammar.pego -n 20 -coverage      # generate inputs the grammar a
 
 Run `pego` without arguments for every command and flag.
 
+## Ready-made parsers
+
+[parsers/](parsers/) has parsers for common languages, written in PEGO, generated into Go and tested against the
+languages' conformance suites and reference implementations. Each is a module of its own that depends only on the
+standard library:
+
+```go
+import "github.com/ornew/pego/parsers/json"
+
+v, err := json.Decode(`{"name": "pego", "tags": ["peg", "pratt"]}`)
+```
+
+| Language | Module | Specification |
+|:--|:--|:--|
+| JSON | [`github.com/ornew/pego/parsers/json`](parsers/json/) | RFC 8259 |
+
 ## Examples
 
-Complete grammars with tests live in [examples/](examples/): JSON, CSV, XML, a calculator (Pratt and
+Complete grammars with tests live in [examples/](examples/): CSV, XML, a calculator (Pratt and
 left-recursive), an indentation-based outline format and a small programming language — plus practical grammars
 for **Go** and **Python 3**, tested against the Go standard library with `go/ast` and the Python standard library
 with CPython's `ast` module.
