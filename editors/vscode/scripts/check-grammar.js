@@ -68,6 +68,11 @@ const sample = [
   '}',
   'def main = ^^ expr? $$ [n = len($1) > 0 && true] -- _ _|_ . x{2,3} !y &z -w',
   'def string = "s" string',
+  'def a = default_value typed_x',
+  'def typed = typed new T{}',
+  'type U = A',
+  '    | B // the other',
+  'def x² = y',
 ].join('\n');
 
 const expectations = [
@@ -129,6 +134,19 @@ const expectations = [
   ['-', 'keyword.operator.discard.pego', '-w'],
   ['string', 'entity.name.function.pego', 'def string'],
   ['string', '!support.type.builtin.pego', '"s" string'],
+  // Keywords at the start of identifiers are not keywords.
+  ['default_value', '!storage.type.function.pego'],
+  ['typed_x', '!storage.type.pego'],
+  ['typed', 'entity.name.function.pego', 'def typed'],
+  ['typed', '!storage.type.pego', '= typed'],
+  // The braces of new T{} are not a repetition.
+  ['{}', '!keyword.operator.quantifier.pego'],
+  // A union continued on the next line.
+  ['|', 'keyword.operator.union.pego', '    | B'],
+  ['B', 'entity.name.type.pego', '| B'],
+  ['// the other', 'comment.line.double-slash.pego'],
+  // Identifiers continue with decimal digits only, like the lexer's.
+  ['²', '!entity.name.function.pego', 'def x²'],
 ];
 
 async function main() {
