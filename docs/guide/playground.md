@@ -1,7 +1,8 @@
 # The Web Site and the Playground
 
-PEGO has a static web site: a landing page, this documentation, an API reference and a **playground** where you write a
-grammar, type an input and see the tree as you type. Everything in the playground runs in your browser: the PEGO library
+PEGO has a static web site at **[pego.ornew.net](https://pego.ornew.net/)**: a landing page, this documentation, an API
+reference and a **[playground](https://pego.ornew.net/playground/)** where you write a grammar, type an input and see the
+tree as you type. Everything in the playground runs in your browser: the PEGO library
 is compiled to WebAssembly, so nothing is sent to a server.
 
 This guide explains what the playground shows, how to build and preview the whole site locally, how it is deployed, and
@@ -121,7 +122,7 @@ until the switch in the header is used), and work on phone screens.
 [`netlify.toml`](../../netlify.toml) at the root of the repository configures Netlify: the build command is
 `sh site/build.sh`, the publish directory is `site/dist`, and `GO_VERSION` selects the Go version of `go.mod`. Connecting
 the repository to a Netlify site is enough to deploy it; each build runs the link check, so a broken link fails the
-deploy instead of publishing it.
+deploy instead of publishing it. The official site, [pego.ornew.net](https://pego.ornew.net/), is deployed this way.
 
 The configuration also sets a strict `Content-Security-Policy`: the pages load scripts, styles and data only from the
 site itself, and need no inline scripts or styles; `'wasm-unsafe-eval'` allows compiling `pego.wasm`. The

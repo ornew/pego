@@ -6,9 +6,9 @@
 
 Blazing fast. Runs anywhere. Streams forever. Reparses in a blink.
 
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENCE) [![Go Reference](https://pkg.go.dev/badge/github.com/ornew/pego.svg)](https://pkg.go.dev/github.com/ornew/pego) [![Go](https://img.shields.io/badge/go-1.27+-00ADD8?logo=go&logoColor=white)](go.mod)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENCE) [![Go Reference](https://pkg.go.dev/badge/github.com/ornew/pego.svg)](https://pkg.go.dev/github.com/ornew/pego) [![Go](https://img.shields.io/badge/go-1.27+-00ADD8?logo=go&logoColor=white)](go.mod) [![Netlify Status](https://api.netlify.com/api/v1/badges/29040d97-0646-4829-8871-188310aec03a/deploy-status)](https://app.netlify.com/projects/pego-go/deploys)
 
-[Quick start](docs/tutorial/getting-started.md) · [Playground](docs/guide/playground.md) · [Guides](docs/guide/README.md) · [Specification](spec/README.md) · [Examples](examples/)
+[Website](https://pego.ornew.net/) · [Playground](https://pego.ornew.net/playground/) · [Quick start](docs/tutorial/getting-started.md) · [Guides](docs/guide/README.md) · [Specification](spec/README.md) · [Examples](examples/)
 
 </div>
 
@@ -143,7 +143,7 @@ with CPython's `ast` module.
 |:--|:--|
 | [Getting started](docs/tutorial/getting-started.md) | From a first grammar to typed trees and operator precedence, step by step |
 | [Guides](docs/guide/README.md) | Trees and actions, expressions, errors and recovery, context-sensitive parsing, running parsers, code generation (Go and TypeScript), streaming and incremental parsing, debugging and profiling, sampling inputs and fuzzing |
-| [Web site and playground](docs/guide/playground.md) | Try grammars in the browser; build and preview the site locally |
+| [Web site and playground](docs/guide/playground.md) | Try grammars in the browser at [pego.ornew.net/playground](https://pego.ornew.net/playground/); build and preview the site locally |
 | [Language specification](spec/README.md) | The PEGO grammar language |
 | [Development guide](docs/development.md) | Architecture, repository layout, implementation status, roadmap |
 | [Bytecode specification](docs/bytecode.md) | Instruction set and VM semantics, for porting the runtime |

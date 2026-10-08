@@ -4,7 +4,8 @@ This tutorial takes you from an empty directory to a parser that reads a small c
 that respects operator precedence. Every grammar, command and Go program below is complete and was run to produce the
 output shown, so you can type along.
 
-You will need Go 1.27 or later. No other dependencies are required.
+You will need Go 1.27 or later. No other dependencies are required. To try a grammar before installing anything, use
+the [playground](https://pego.ornew.net/playground/), which runs PEGO in your browser.
 
 Contents:
 
