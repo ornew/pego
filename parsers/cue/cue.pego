@@ -14,9 +14,10 @@
 // A parenthesized expression, an index and an argument list therefore end on the line of their last token
 // (before the closing bracket), as in the reference parser.
 //
-// Experiments. The attributes @experiment(...) before the package clause change the syntax: the variables
-// ex_try, ex_alias and ex_open say which of try (the else and otherwise clauses), aliasv2 (the postfix
-// alias, and no prefix aliases) and explicitopen (the postfix "...") are enabled.
+// Experiments. The attributes @experiment(...) before the package clause change the syntax that is allowed
+// (try: else and otherwise clauses; aliasv2: postfix aliases, and no prefix aliases; explicitopen: the postfix "...").
+// The grammar reads all of it, and Check tests which of it the file may use: a variable of the grammar that the
+// rules read would make every rule a function of it (see the README).
 package cue
 
 // --- Declarations ---
@@ -26,7 +27,7 @@ type ImportDecl struct { Lparen *Match, Specs []ImportSpec }
 type ImportSpec struct { Name *Ident, Path String }
 type Field struct { Label Label, Alias *PostfixAlias, Constraint *Match, Value Expr, Attrs []Attribute }
 type PostfixAlias struct { Label *Ident, Field Ident }
-type EmbedDecl struct { Expr Expr }
+type EmbedDecl struct { Expr Expr, Alias *PostfixAlias }  // Alias is read and dropped by cue/parser
 type LetClause struct { Ident Ident, Expr Expr }
 type Ellipsis struct { Type *Expr }
 type Comprehension struct { Clauses []Clause, Value StructLit, Fallback *FallbackClause }
@@ -72,23 +73,10 @@ type Expr = Ident | Int | Float | String | Bool | Null | Bottom | Interpolation 
 // ===================================================================
 
 def main: File = "\u{feff}"? ws
-    &(ns:exp_names) [ex_try = foldl(false, $ns, (a, n) => $a || text($n) == "try")]
-    [ex_alias = foldl(false, $ns, (a, n) => $a || text($n) == "aliasv2")]
-    [ex_open = foldl(false, $ns, (a, n) => $a || text($n) == "explicitopen")]
     as1:(a:attribute_d sep)* pkg:(p:package_clause sep){0,1} ([len($pkg) > 0] / !("package" !idchar)) as2:(a:attribute_d sep)*
     is:(i:import_decl sep)* !("import" !idchar) ds:decls $$
     -> new File{Decls: concat(map($as1, (x) => $x.a), map($pkg, (x) => $x.p), map($as2, (x) => $x.a),
         map($is, (x) => $x.i), $ds)}
-
-// The experiments of the file: the names in the @experiment attributes before the package clause. An
-// unknown name, or a list that does not consist of names, is an error.
-def exp_names: []Match = xs:(a:exp_item sep)* !"@" -> foldl(list(), $xs, (acc, i) => concat($acc, $i.a))
-def exp_item: []Match = exp_attr / plain_attr
-def plain_attr: []Match = !"@experiment(" attribute_d -> list()
-def exp_attr: []Match = "@experiment(" l:exp_list? ")" -> concat($l)
-def exp_list: []Match = nlws first:exp_name rest:(nlws "," nlws m:exp_name)* nlws
-    -> concat(list($first), map($rest, (r) => $r.m))
-def exp_name = @(("testing" / "accepted_" / "structcmp" / "explicitopen" / "aliasv2" / "try" / "shortcircuit") !idchar)
 
 def package_clause: Package = "package" !idchar sp n:ident
     [!(text($n) >= "#" && text($n) < "$") && !(text($n) >= "_#" && text($n) < "_$")]
@@ -122,7 +110,8 @@ def icomma = sp ("\n" / &"//" / $$) ws
 // The end of a declaration: a comma, or the closing brace of the struct.
 def sep = comma / sp &"}"
 // ":" after a token that ends a line (a line break before it inserts no comma) and after "!" (which does not).
-def colon_ec = sp ("\n" nlws)? ":" ws
+def colon_ec = sp colon_ec0
+def colon_ec0 = ("\n" nlws)? ":" ws
 def colon_ne = ws ":" ws
 def colon_ahead = sp ("\n" nlws)? ":"
 
@@ -136,19 +125,24 @@ def item_normal: Decl = d:decl sep -> $d
 // A label followed by a postfix alias or a "?" or "!" (not a field, since no ":" follows) and then a comma,
 // a closing brace or the end of the input is an embedding of the label, which the reference parser accepts
 // (it drops the rest).
-def item_tail: Decl = e:embed_tail -postfix_alias_at? -tail_mark? sep -> $e
-def embed_tail: EmbedDecl = !("func" !idchar) l:label_emb
-    &(postfix_alias_at (sp "?" after_ec / sp "!" after_ne / after_ec) / sp "?" after_ec / sp "!" after_ne)
-    -> new EmbedDecl{Expr: $l}
+def item_tail: Decl = e:embed_tail -tail_mark? sep -> $e
+def embed_tail: EmbedDecl = !("func" !idchar) l:label_plain (a:postfix_alias_at &(tail_end) / &(tail_mark_end))
+    -> new EmbedDecl{Expr: $l, Alias: $a}
+def tail_end = sp "?" after_ec / sp "!" after_ne / after_ec
+def tail_mark_end = sp "?" after_ec / sp "!" after_ne
 def after_ec = sp ("," / "}" / "\n" / "//" / $$)
 def after_ne = ws ("," / "}" / $$)
 def tail_mark = sp "?" / sp "!" ws
 
-def decl: Decl = ellipsis_decl / attribute_d / let_decl / comprehension / field / embed_decl
+// Most rules begin with a lookahead on the first character, which costs no expectation when it fails: a rule that
+// is tried at every declaration and rarely matches would otherwise add what it expects to the set that the farthest
+// failure collects (which costs a search of the set for each item), and the set is what the error message lists.
+def decl: Decl = ellipsis_decl / attribute_d / let_decl / comp_decl / field / embed_decl
+def comp_decl: Comprehension = &(?fit) c:comprehension -> $c
 
-def ellipsis_decl: Ellipsis = "..." -> new Ellipsis{}
+def ellipsis_decl: Ellipsis = &"." "..." -> new Ellipsis{}
 
-def let_decl: LetClause = "let" !idchar sp i:ident [!(text($i) >= "__" && text($i) < "_\u{60}")] sp bind ws e:expr
+def let_decl: LetClause = &"l" "let" !idchar sp i:ident [!(text($i) >= "__" && text($i) < "_\u{60}")] sp bind ws e:expr
     -> new LetClause{Ident: $i, Expr: $e}
 
 def embed_decl: EmbedDecl = embed_plain / embed_bare
@@ -162,57 +156,62 @@ def bare_if: Ident = "if" !idchar &(sp ("," / "\n" / "//" / $$))
 def bare_let: Ident = "let" !idchar !(sp ident) &(sp ("," / "\n" / "//" / $$ / "}"))
 
 // --- Fields ---
-def field: Field = l:label [!(text($l) >= "__" && text($l) < "_\u{60}")] al:postfix_alias_at?
-    ( sp c:"?" colon_ec / sp c:"!" colon_ne / colon_ec ) v:field_value as:attrs
+def field: Field = field_plain / field_alias
+def field_plain: Field = l:label_plain [!(text($l) >= "__" && text($l) < "_\u{60}")] al:postfix_alias_at?
+    sp (c:"?" colon_ec / c:"!" colon_ne / colon_ec0) v:field_value as:attrs
+    -> new Field{Label: $l, Alias: $al, Constraint: $c, Value: $v, Attrs: $as}
+def field_alias: Field = l:alias_label [!(text($l) >= "__" && text($l) < "_\u{60}")] al:postfix_alias_at?
+    sp (c:"?" colon_ec / c:"!" colon_ne / colon_ec0) v:field_value as:attrs
     -> new Field{Label: $l, Alias: $al, Constraint: $c, Value: $v, Attrs: $as}
 // A field of the chain a: b: c, which declares no more than the labels (a "__" label is only checked
 // at the start of the chain).
-def nfield: Field = l:nlabel al:postfix_alias_at?
-    ( sp c:"?" colon_ec / sp c:"!" colon_ne / colon_ec ) v:field_value as:attrs
+def nfield: Field = nfield_plain / nfield_alias
+def nfield_plain: Field = l:nlabel_plain al:postfix_alias_at?
+    sp (c:"?" colon_ec / c:"!" colon_ne / colon_ec0) v:field_value as:attrs
     -> new Field{Label: $l, Alias: $al, Constraint: $c, Value: $v, Attrs: $as}
-def field_value: Expr = nested / alias_value / let_skip / let_value / expr_nolet
+def nfield_alias: Field = l:alias_nlabel al:postfix_alias_at?
+    sp (c:"?" colon_ec / c:"!" colon_ne / colon_ec0) v:field_value as:attrs
+    -> new Field{Label: $l, Alias: $al, Constraint: $c, Value: $v, Attrs: $as}
+def field_value: Expr = fv_label / expr
+// A value that starts like a label may be a field of a chain, an alias or a let clause, and is an expression otherwise.
+def fv_label: Expr = &(?a-zA-Z_$#"'(\[\u{80}-\u{10ffff}) v:fv_choice -> $v
+def fv_choice: Expr = nested / alias_value / let_skip / let_value / expr_nolet
 // A let clause where a value is expected is read and dropped, and the value is what follows it (the reference
 // parser reads the clause as the start of a declaration, and then the value).
-def let_skip: Expr = -let_decl -sep e:expr -> $e
+def let_skip: Expr = &"l" -let_decl -sep e:expr -> $e
 // let at the start of a value is an identifier of its own: no operator follows it.
-def let_value: Ident = "let" !idchar !(sp ident)
+def let_value: Ident = &"l" "let" !idchar !(sp ident)
 def expr_nolet: Expr = !("let" !idchar) e:expr -> $e
 def nested: StructLit = f:nfield -> new StructLit{Elts: list($f)}
-def alias_value: Alias = [!ex_alias] i:ident_any sp bind ws e:expr
+def alias_value: Alias = i:ident_any sp bind ws e:expr
     [!(text($i) >= "__" && text($i) < "_\u{60}")] -> new Alias{Ident: $i, Expr: $e}
 def attrs: []Attribute = as:(sp a:attribute)* -> map($as, (x) => $x.a)
 
-def postfix_alias_at: PostfixAlias = sp p:postfix_alias -> $p
+def postfix_alias_at: PostfixAlias = &(sp "~") sp p:postfix_alias -> $p
 def postfix_alias: PostfixAlias = alias_dual / alias_paren / alias_simple
-def alias_dual: PostfixAlias = [ex_alias] "~" ws "(" ws k:ident comma v:ident sp ")" -> new PostfixAlias{Label: $k, Field: $v}
-def alias_paren: PostfixAlias = [ex_alias] "~" ws "(" ws f:ident sp ")" -> new PostfixAlias{Field: $f}
-def alias_simple: PostfixAlias = [ex_alias] "~" ws f:ident -> new PostfixAlias{Field: $f}
+def alias_dual: PostfixAlias = "~" ws "(" ws k:ident comma v:ident sp ")" -> new PostfixAlias{Label: $k, Field: $v}
+def alias_paren: PostfixAlias = "~" ws "(" ws f:ident sp ")" -> new PostfixAlias{Field: $f}
+def alias_simple: PostfixAlias = "~" ws f:ident -> new PostfixAlias{Field: $f}
 
 // --- Labels ---
-def label: Label = alias_label / label_plain
-def label_plain: Label = ident_label / strlit / bool_lit / null_lit / paren_expr / pattern_list
-def label_emb: Label = ident_label / strlit / bool_lit / null_lit / paren_expr / list_lit
+// A label in brackets (a pattern constraint) is read as a list: Check tests that it has exactly one element. The list
+// is the same as the one read as a value, so the memo of the rule saves reading it twice.
+def label_plain: Label = ident_label / strlit / bool_lit / null_lit / paren_expr / list_lit
 def ident_label: Ident = ident / kw_label
 def kw_label: Ident = ("in" / "else" / "fallback" / "otherwise" / "func") !idchar / for_label / if_label / let_label
 def for_label: Ident = "for" !idchar &(sp (":" / "=" !(?=~) / "?" / "!" !(?=~) / "," / "\n" / "//" / $$))
 def if_label: Ident = "if" !idchar &(sp (":" / "=" !(?=~) / "?" / "," / "\n" / "//" / $$ / "!" ws ":"))
 def let_label: Ident = "let" !idchar !(sp ident)
-def alias_label: Alias = [!ex_alias] i:ident_label sp bind ws r:alias_rhs
+def alias_label: Alias = i:ident_label sp bind ws r:alias_rhs
     [!(text($i) >= "__" && text($i) < "_\u{60}")] -> new Alias{Ident: $i, Expr: $r}
 // A label after the first of a chain a: b: c: for, if and try are identifiers there.
-def nlabel: Label = alias_nlabel / nlabel_plain
-def nlabel_plain: Label = nident_label / strlit / bool_lit / null_lit / paren_expr / pattern_list
+def nlabel_plain: Label = nident_label / strlit / bool_lit / null_lit / paren_expr / list_lit
 def nident_label: Ident = ident / nkw_label
 def nkw_label: Ident = ("in" / "else" / "fallback" / "otherwise" / "func" / "for" / "if" / "try") !idchar / let_label
-def alias_nlabel: Alias = [!ex_alias] i:nident_label sp bind ws r:alias_rhs
+def alias_nlabel: Alias = i:nident_label sp bind ws r:alias_rhs
     [!(text($i) >= "__" && text($i) < "_\u{60}")] -> new Alias{Ident: $i, Expr: $r}
 def alias_rhs: Expr = ident_any / strlit / number / bool_lit / null_lit / paren_expr / list_lit
 def ident_any: Ident = ident / kwident
-// A pattern constraint: a list of exactly one element.
-def pattern_list: ListLit = pattern_list_e / pattern_list_d
-def pattern_list_e: ListLit = "[" ws e:list_elem (comma / sp) "]" -> new ListLit{Elts: list($e)}
-def pattern_list_d: ListLit = "[" ws d:list_dots (comma / sp) "]" -> new ListLit{Elts: list($d)}
-
 // --- Comprehensions ---
 // A comprehension with a single if or try clause takes else; one with other clauses takes otherwise.
 def comprehension: Comprehension = comp_single / comp_multi
@@ -222,8 +221,8 @@ def comp_multi: Comprehension = first:start_clause rest:(clause_gap c:clause)* c
     -> new Comprehension{Clauses: concat(list($first), map($rest, (x) => $x.c)), Value: $v, Fallback: $f}
 def fb_else: FallbackClause = sp f:else_clause -> $f
 def fb_other: FallbackClause = sp f:otherwise_clause -> $f
-def else_clause: FallbackClause = [ex_try] "else" !idchar sp b:struct_lit -> new FallbackClause{Body: $b}
-def otherwise_clause: FallbackClause = [ex_try] ("otherwise" / "fallback") !idchar sp b:struct_lit
+def else_clause: FallbackClause = "else" !idchar sp b:struct_lit -> new FallbackClause{Body: $b}
+def otherwise_clause: FallbackClause = ("otherwise" / "fallback") !idchar sp b:struct_lit
     -> new FallbackClause{Body: $b}
 def clause_gap = comma / sp
 // for and if start a comprehension unless the next token makes them identifiers.
@@ -251,31 +250,31 @@ def struct_lit: StructLit = "{" ws ds:decls "}" -> new StructLit{Elts: $ds}
 def list_lit: ListLit = "[" ws es:(e:list_elem esep)* d:(x:list_dots esep){0,1} "]"
     -> new ListLit{Elts: concat(map($es, (x) => $x.e), map($d, (x) => $x.x))}
 def esep = comma / sp &"]"
-def list_elem: Expr = comprehension / alias_elem / elem_expr / bare_for_if
+def list_elem: Expr = comp_decl / alias_elem / elem_expr / bare_for_if
 def elem_expr: Expr = !gate_kw3 e:expr -> $e
 def gate_kw3 = ("for" / "if" / "try") !idchar
 def bare_for_if: Ident = "for" !idchar &(sp (":" / "=" !(?=~) / "?" / "!" !(?=~) / "," / "\n" / "//" / $$))
     / "if" !idchar &(sp (":" / "=" !(?=~) / "?" / "," / "\n" / "//" / $$ / "!" ws ":"))
-def alias_elem: Alias = [!ex_alias] i:(ident / kwident / bare_for_if) sp bind ws e:expr
+def alias_elem: Alias = i:(ident / kwident / bare_for_if) sp bind ws e:expr
     [!(text($i) >= "__" && text($i) < "_\u{60}")] -> new Alias{Ident: $i, Expr: $e}
 def list_dots: Ellipsis = "..." t:dots_type? -> new Ellipsis{Type: $t}
 def dots_type: Expr = sp x:expr -> $x
 
 def paren_expr: ParenExpr = "(" ws e:expr sp ")" -> new ParenExpr{X: $e}
 
-def expr: Expr = pratt {
+// An expression that is a single operand, which most are, is read without the operator loop: unless an operator
+// or a postfix operator may follow, the operand is the expression.
+def expr: Expr = atom_expr / full_expr
+def atom_expr: Expr = a:operand_any !(sp (?.\[(|&=!<>+\-*/)) -> $a
+def operand_any: Expr = operand_word / operand_digit / operand_other
+def operand_word: Expr = &(?a-zA-Z_$#\u{80}-\u{10ffff}) o:word_any -> $o
+def word_any: Expr = bottom / ident_q / ident / bool_lit / null_lit / kwident / strlit
+def operand_digit: Expr = &(?0-9.) n:number -> $n
+def operand_other: Expr = struct_lit / list_lit / strlit / paren_expr
+def ident_q: Expr = i:ident sp q:"?" !colon_ahead -> new PostfixExpr{X: $i, Op: $q}
+def full_expr: Expr = pratt {
     skip sp
-    operand bottom
-    operand i:ident sp q:"?" !colon_ahead -> new PostfixExpr{X: $i, Op: $q}
-    operand ident
-    operand number
-    operand struct_lit
-    operand list_lit
-    operand strlit
-    operand paren_expr
-    operand bool_lit
-    operand null_lit
-    operand kwident
+    operand operand_any
 
     level { infix left o:"|" ws -> new BinaryExpr{X: $lhs, Op: $o, Y: $rhs} }
     level { infix left o:"&" ws -> new BinaryExpr{X: $lhs, Op: $o, Y: $rhs} }
@@ -294,7 +293,7 @@ def expr: Expr = pratt {
         postfix "[" ws i:expr (comma / sp) r:"]" -> new IndexExpr{X: $lhs, Index: $i, Rbrack: $r}
         postfix "[" ws lo:expr? colon_ec hi:expr? sp "]" -> new SliceExpr{X: $lhs, Low: $lo, High: $hi}
         postfix "(" ws as:(a:expr asep)* ")" -> new CallExpr{Fun: $lhs, Args: map($as, (x) => $x.a)}
-        postfix [ex_open] o:"..." -> new PostfixExpr{X: $lhs, Op: $o}
+        postfix o:"..." -> new PostfixExpr{X: $lhs, Op: $o}
     }
 }
 def asep = comma / sp &")"
@@ -310,8 +309,8 @@ def interp_expr: Expr = ws e:expr (icomma / sp) &")" -> $e
 
 // An attribute may have a line break before its parenthesis where no comma would be inserted (it starts a
 // declaration); after a field it may not.
-def attribute: Attribute = "@" idchars sp "(" attr_body ")"
-def attribute_d: Attribute = "@" idchars ws "(" attr_body ")"
+def attribute: Attribute = &"@" "@" idchars sp "(" attr_body ")"
+def attribute_d: Attribute = &"@" "@" idchars ws "(" attr_body ")"
 def attr_body = ((? \t\r\n)+ / comment / attr_group / attr_tok)*
 def attr_group = "(" attr_body ")" / "[" attr_body "]" / "{" attr_body "}"
 def attr_tok = attr_str / attr_num / "_|_" / ident_text / attribute / "..." / "." !"." / (?:;?~+\-*/<>=!&|,) / "#"+ !(?"')
@@ -337,19 +336,20 @@ def digit_any = (?0-9) / !(?\u{0}-\u{7f}) udigit
 // before it; "#" followed by a digit is an identifier of its own.
 def ident_text = "#" hashrest / "_" !"|_" ("#" hashrest / !"_#" idchars) / idstart idchars
 def hashrest = &digit_any / idchar+ / !(?"'#)
-def ident: Ident = !kw ident_text
+def ident: Ident = !(&(?iefltno) kw) ident_text
 def kw = ("if" / "else" / "for" / "in" / "let" / "try" / "fallback" / "otherwise" / "func" / "true" / "false" / "null") !idchar
 // The keywords that are not values, used as identifiers.
 def kwident: Ident = ("if" / "else" / "for" / "in" / "let" / "try" / "fallback" / "otherwise" / "func") !idchar
 def bool_lit: Bool = ("true" / "false") !idchar
 def null_lit: Null = "null" !idchar
-def bottom: Bottom = "_|_"
+def bottom: Bottom = &"_" "_|_"
 
 // ===================================================================
 // Numbers
 // ===================================================================
 
-def number: Number = based / float_lit / int_lit
+def number: Number = &(?0-9.) n:number_any -> $n
+def number_any: Number = based / float_lit / int_lit
 def hexd = (?0-9a-fA-F)
 def based: Int = "0" ((?xX) "_"? hexd ("_"? hexd)* / "b" "_"? (?01) ("_"? (?01))* / "o" "_"? (?0-7) ("_"? (?0-7))*)
 def d10 = (?0-9) ("_"? (?0-9))*
@@ -393,36 +393,39 @@ def sq_rest: []Expr = sq_more / sq_last
 def sq_more: []Expr = e:interp_expr m:sq_mid t:sq_rest -> concat(list($e, $m), $t)
 def sq_last: []Expr = e:interp_expr z:sq_end -> list($e, $z)
 
-// The other strings: those with hashes, and the multi-line ones. They read the variables nh, the number of
-// hashes, and qs, the quote character (" or '), which the rule of the string defines; k counts hashes down.
-// A closing quote is followed by the hashes; an escape is a backslash followed by as many hashes (fewer
-// and the backslash is an ordinary character), and a multi-line string closes at a quote of its own on a
-// line of its own, whose indentation must be a prefix of the indentation of every other line that is not empty.
-def gstring: StrLit = gtriple / gml_plain / gml_interp / gsl_plain / gsl_interp
-def qc = c:@(?"') [text($c) == qs]
-def hx = [k > 0] "#" [k = k - 1] hx / [k == 0]
-def hashes = [k = nh] hx
-def g_escbody = [qs == "\""] esc_dq / [qs == "'"] esc_sq
-def gs_esc = "\\" h:@"#"* ([len($h) < nh] / [len($h) == nh] g_escbody)
-def g_interp_open = "\\" h:@"#"* [len($h) == nh] "("
+// The other strings: those with hashes, and the multi-line ones. They read the variable sv, which the rule of the
+// string defines: twice the number of hashes, plus 1 for a string in single quotes (one variable is cheaper than
+// two: every rule that reads one, directly or through the rules it calls, which here is every rule, builds the
+// values of the variables it reads to find its result in the memo table). A closing quote is followed by the
+// hashes; an escape is a backslash followed by as many hashes (fewer and the backslash is an ordinary
+// character), and a multi-line string closes at a quote of its own on a line of its own, whose indentation must
+// be a prefix of the indentation of every other line that is not empty.
+def gstring: StrLit = gtriple / gml_plain / gml_interp / gml_interp_s / gsl_plain / gsl_interp / gsl_interp_s
+def qc = [sv % 2 == 0] "\"" / [sv % 2 == 1] "'"
+def hq = h:@"#"* [len($h) == sv / 2]
+def g_escbody = [sv % 2 == 0] esc_dq / [sv % 2 == 1] esc_sq
+def gs_esc = "\\" h:@"#"* ([len($h) < sv / 2] / [len($h) == sv / 2] g_escbody)
+def g_interp_open = "\\" h:@"#"* [len($h) == sv / 2] "("
 def g_interp_skip = g_interp_open ws expr (icomma / sp) ")"
 def ml_nl = "\n" / "\r\n"
 // After the opening quotes: fewer hashes than the string has, which the scanner takes as part of the opening
 // (with as many, the string is one quote), then a line break.
-def ml_open_tail = qc qc xh:@"#"* [len($xh) == 0 || len($xh) < nh] ml_nl
-def ml_close_tail = qc qc qc hashes
+def ml_open_tail = qc qc xh:@"#"* [len($xh) == 0 || len($xh) < sv / 2] ml_nl
+def ml_close_tail = qc qc qc hq
 
 // #"""#: a single quote between triple quotes and hashes.
-def gtriple: String = hs:@"#"+ [nh = len($hs)] qo:@(?"') [qs = text($qo)] qc qc hashes
+def gtriple: String = hs:@"#"+ ("\"" [sv = len($hs) * 2] / "'" [sv = len($hs) * 2 + 1]) qc qc hq
 
 // On a single line.
 def gs_body = ((?^\n\\\u{0}\u{feff}"')+ / gs_quote / gs_esc)*
-def gs_quote = c:@(?"') ([text($c) != qs] / [text($c) == qs] &(h:@"#"* [len($h) < nh]))
-def gsl_plain: String = hs:@"#"* [nh = len($hs)] qo:@(?"') [qs = text($qo)] !(qc qc) gs_body qc hashes
+def gs_quote = [sv % 2 == 0] ("\"" &(h:@"#"* [len($h) < sv / 2]) / "'") / [sv % 2 == 1] ("'" &(h:@"#"* [len($h) < sv / 2]) / "\"")
+def gsl_plain: String = hs:@"#"* ("\"" [sv = len($hs) * 2] / "'" [sv = len($hs) * 2 + 1]) !(qc qc) gs_body qc hq
 def gsl_open: String = "#"* (?"') !(qc qc) gs_body g_interp_open
 def gsl_mid: String = ")" gs_body g_interp_open
-def gsl_end: String = ")" gs_body qc hashes
-def gsl_interp: Interpolation = &(hs:@"#"* qo:@(?"')) [nh = len($hs)] [qs = text($qo)] f:gsl_open t:gsl_rest
+def gsl_end: String = ")" gs_body qc hq
+def gsl_interp: Interpolation = &(hs:@"#"* "\"") [sv = len($hs) * 2] f:gsl_open t:gsl_rest
+    -> new Interpolation{Elts: concat(list($f), $t)}
+def gsl_interp_s: Interpolation = &(hs:@"#"* "'") [sv = len($hs) * 2 + 1] f:gsl_open t:gsl_rest
     -> new Interpolation{Elts: concat(list($f), $t)}
 def gsl_rest: []Expr = gsl_more / gsl_last
 def gsl_more: []Expr = e:interp_expr m:gsl_mid t:gsl_rest -> concat(list($e, $m), $t)
@@ -433,8 +436,8 @@ def ml_body = ((?^\n\\\u{0}\u{feff})+ / gs_esc)*
 def ml_body_i = ((?^\n\\\u{0}\u{feff})+ / g_interp_skip / gs_esc)*
 def ml_line = lead:@(? \t)* !ml_close_tail body:@ml_body "\n"
 def ml_line_i = lead:@(? \t)* !ml_close_tail body:@ml_body_i "\n"
-def ml_close: Match = c:@(? \t)* qc qc qc hashes -> $c
-def gml_plain: String = hs:@"#"* [nh = len($hs)] qo:@(?"') [qs = text($qo)] ml_open_tail ls:ml_line* cw:ml_close
+def ml_close: Match = c:@(? \t)* qc qc qc hq -> $c
+def gml_plain: String = hs:@"#"* ("\"" [sv = len($hs) * 2] / "'" [sv = len($hs) * 2 + 1]) ml_open_tail ls:ml_line* cw:ml_close
     [foldl(true, $ls, (a, l) => $a && (len($l.lead) == 0 && len($l.body) == 0
         || text($l.lead) >= text($cw) && text($l.lead) < text($cw) + "\u{10ffff}"))]
 def gml_check: Match = "#"* (?"') ml_open_tail ls:ml_line_i* cw:ml_close
@@ -444,7 +447,9 @@ def ml_frag = ((?^\n\\\u{0}\u{feff})+ / gs_esc / "\n" (? \t)* !ml_close_tail)*
 def gml_open: String = "#"* (?"') ml_open_tail (? \t)* !ml_close_tail ml_frag g_interp_open
 def gml_mid: String = ")" ml_frag g_interp_open
 def gml_end: String = ")" ml_frag "\n" (? \t)* ml_close_tail
-def gml_interp: Interpolation = &(hs:@"#"* qo:@(?"')) [nh = len($hs)] [qs = text($qo)] &gml_check f:gml_open t:gml_rest
+def gml_interp: Interpolation = &(hs:@"#"* "\"") [sv = len($hs) * 2] &gml_check f:gml_open t:gml_rest
+    -> new Interpolation{Elts: concat(list($f), $t)}
+def gml_interp_s: Interpolation = &(hs:@"#"* "'") [sv = len($hs) * 2 + 1] &gml_check f:gml_open t:gml_rest
     -> new Interpolation{Elts: concat(list($f), $t)}
 def gml_rest: []Expr = gml_more / gml_last
 def gml_more: []Expr = e:interp_expr m:gml_mid t:gml_rest -> concat(list($e, $m), $t)

@@ -25,7 +25,11 @@ func (e *SemanticError) Error() string {
 	return fmt.Sprintf("cue: at %d: %s", e.Start, e.Msg)
 }
 
-// Check reports the errors that cuelang.org/go/cue/parser finds besides those of the syntax: an import path that
+// Check reports the errors that cuelang.org/go/cue/parser finds besides those of the syntax: a label in square
+// brackets (a pattern constraint) that does not have exactly one element, a syntax that
+// the file has not enabled with an @experiment attribute (the grammar reads the syntax of all experiments: the
+// postfix "..." of explicitopen, the postfix alias of aliasv2 and the else and otherwise clauses of try), an
+// experiment that does not exist, an alias of the old kind in a file that has enabled aliasv2, an import path that
 // is not valid (it has a character that a path cannot have, or is empty), and errors in the scopes of the file
 // (astutil.Resolve): an alias or let clause declared twice in a scope, a field that has the name of
 // an alias of the same scope, a field with both a label alias and a postfix alias, an alias that is the
@@ -33,6 +37,7 @@ func (e *SemanticError) Error() string {
 // returns the first in the order of the source, a *SemanticError.
 func (f *File) Check() error {
 	c := &checker{}
+	c.experiments(f)
 	for _, d := range f.Decls {
 		if x, ok := d.(*ImportDecl); ok {
 			for _, spec := range x.Specs {
@@ -480,6 +485,9 @@ func children(n any) []any {
 		}
 	case *EmbedDecl:
 		add(x.Expr)
+		if x.Alias != nil {
+			add(x.Alias)
+		}
 	case *LetClause:
 		add(x.Ident, x.Expr)
 	case *TryClause:
@@ -604,3 +612,60 @@ func SpanOf(x any) Span {
 	panic(fmt.Sprintf("cue: SpanOf %T", x))
 }
 
+
+// experiments checks the @experiment attributes at the start of the file, and the use of the syntax that they enable.
+func (c *checker) experiments(f *File) {
+	var try, aliasV2, explicitOpen bool
+	for _, d := range f.Decls {
+		a, ok := d.(*Attribute)
+		if !ok {
+			break
+		}
+		name, body := a.Split()
+		if name != "experiment" || body == "" {
+			continue
+		}
+		for _, elem := range strings.Split(body, ",") {
+			switch strings.TrimSpace(elem) {
+			case "testing", "accepted_", "structcmp", "shortcircuit":
+			case "try":
+				try = true
+			case "aliasv2":
+				aliasV2 = true
+			case "explicitopen":
+				explicitOpen = true
+			default:
+				c.errf(a, "unknown experiment %q", strings.TrimSpace(elem))
+			}
+		}
+	}
+	for _, d := range f.Decls {
+		inspect(d, func(n any) {
+			switch x := n.(type) {
+			case *PostfixExpr:
+				if x.Op.Text == "..." && !explicitOpen {
+					c.errf(x, "postfix ... operator requires @experiment(explicitopen)")
+				}
+			case *Field:
+				if l, ok := x.Label.(*ListLit); ok && len(l.Elts) != 1 {
+					c.errf(l, "square bracket must have exactly one element")
+				}
+				if x.Alias != nil && !aliasV2 {
+					c.errf(x.Alias, "postfix alias syntax requires @experiment(aliasv2)")
+				}
+			case *EmbedDecl:
+				if x.Alias != nil && !aliasV2 {
+					c.errf(x.Alias, "postfix alias syntax requires @experiment(aliasv2)")
+				}
+			case *Alias:
+				if aliasV2 {
+					c.errf(x, "old-style alias syntax (=) is not allowed with @experiment(aliasv2); use postfix syntax (~X or ~(K,V))")
+				}
+			case *FallbackClause:
+				if !try {
+					c.errf(x, "else requires @experiment(try)")
+				}
+			}
+		})
+	}
+}
