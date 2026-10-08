@@ -128,7 +128,7 @@ The generator:
 - **Builds the landing page from `README.md`**: the tagline, the introduction, the first `pego` code block (as a live
   example), the list under "Why PEGO" (as feature cards) and the following sections. If the README stops having that
   shape, the build fails instead of producing an empty page.
-- **Writes a search index** (the text of every page and its headings, about 0.6 MB, loaded on first use of the search
+- **Writes a search index** (the text of every page and its headings, about 0.7 MB, loaded on first use of the search
   box). A search service or a prebuilt index library would add a dependency or a third party for a site of this size.
 - **Checks every internal link and anchor** of the output, and fails the build if one is broken; it also fails if a
   Markdown file under `docs/` or `spec/` belongs to no section of the navigation.
@@ -143,14 +143,23 @@ All URLs in the pages are relative, so the output works at any path and from any
 this): the theme is applied by a small blocking script file, and Markdown tables use `align` attributes instead of
 `style`.
 
+The WebAssembly binary is the one large file of the site, and it changes only when the library or the Go version
+does. The build names it after a hash of its content (`playground/wasm/pego-<hash>.wasm`) and records the name in
+every page (`<html data-wasm>`), so `netlify.toml` can let browsers cache it for a year without revalidating
+(`Cache-Control: immutable`). The pages, scripts and `wasm_exec.js` keep Netlify's default, which revalidates on each
+visit, so a deploy is seen at once; `wasm_exec.js` must match the Go version that built the binary, and both change
+in the same deploy. A page loaded before a deploy may ask for a binary the new deploy no longer has; reloading it
+fixes that.
+
 ## Sizes
 
 | | Bytes |
 |:--|--:|
-| `pego.wasm` (`-ldflags=-s -w -trimpath`) | 8.2 MB |
+| `pego.wasm` (`-ldflags=-s -w -trimpath`) | 8.3 MB |
 | … compressed with gzip / Brotli | 2.2 MB / 1.6 MB |
 | `pego.wasm` without `-s -w` | 8.4 MB |
-| The whole published directory | 10.3 MB |
+| The search index | 0.7 MB |
+| The whole published directory (47 pages, 65 files) | 10.6 MB |
 
 Stripping symbols saves little for WebAssembly (about 140 KB). Most of the binary is the Go runtime, `reflect` and
 `encoding/json`, and the Go printer and parser packages that `GenerateGo` uses to format generated code. TinyGo might

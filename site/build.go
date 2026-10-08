@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"embed"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -74,6 +76,7 @@ type Site struct {
 	byDir    map[string]*Page // by the repository directory the page is the index of
 	sections []*Section
 	problems []string
+	wasm     string // site path of the playground's WebAssembly binary
 }
 
 //go:embed templates
@@ -118,13 +121,17 @@ func Build(cfg Config) (Stats, error) {
 	if err := s.renderAll(); err != nil {
 		return Stats{}, err
 	}
-	if err := s.writeAll(); err != nil {
-		return Stats{}, err
-	}
+	// Build the WebAssembly binary first: the pages refer to it by its content-hashed name.
+	s.wasm = "playground/pego.wasm" // missing without -wasm
 	if cfg.Wasm {
-		if err := buildWasm(cfg.Repo, filepath.Join(cfg.Out, "playground")); err != nil {
+		name, err := buildWasm(cfg.Repo, filepath.Join(cfg.Out, "playground"))
+		if err != nil {
 			return Stats{}, err
 		}
+		s.wasm = "playground/" + name
+	}
+	if err := s.writeAll(); err != nil {
+		return Stats{}, err
 	}
 	if cfg.Check {
 		s.problems = append(s.problems, checkLinks(cfg.Out)...)
@@ -462,6 +469,7 @@ type layoutData struct {
 	Sections   []*Section
 	Prev, Next *Page
 	GitHub     string
+	Wasm       string // relative URL of the playground's WebAssembly binary
 }
 
 // URL returns the relative URL of a site path from the page.
@@ -477,7 +485,7 @@ func (s *Site) writeAll() error {
 		flat = append(flat, sec.Pages...)
 	}
 	for _, p := range s.pages {
-		d := layoutData{Site: s, Page: p, Root: relURL(p.URL, ""), Sections: s.sections, GitHub: s.cfg.GitHub}
+		d := layoutData{Site: s, Page: p, Root: relURL(p.URL, ""), Sections: s.sections, GitHub: s.cfg.GitHub, Wasm: relURL(p.URL, s.wasm)}
 		if i := slices.Index(flat, p); i >= 0 {
 			if i > 0 {
 				d.Prev = flat[i-1]
@@ -598,32 +606,46 @@ func (s *Site) writeExamples() error {
 	return writeFile(filepath.Join(s.cfg.Out, "playground", "examples.json"), b)
 }
 
-// buildWasm builds the playground's WebAssembly binary into dir and copies the Go runtime support
-// (wasm_exec.js) next to it.
-func buildWasm(repo, dir string) error {
+// buildWasm builds the playground's WebAssembly binary into dir/wasm, named after a hash of its
+// content so that it can be cached forever (see netlify.toml), and copies the Go runtime support
+// (wasm_exec.js) into dir. It returns the path of the binary relative to dir.
+func buildWasm(repo, dir string) (string, error) {
 	goTool, err := exec.LookPath("go")
 	if err != nil {
-		return fmt.Errorf("building the playground needs the go command: %w", err)
+		return "", fmt.Errorf("building the playground needs the go command: %w", err)
 	}
 	abs, err := filepath.Abs(dir)
 	if err != nil {
-		return err
+		return "", err
 	}
-	cmd := exec.Command(goTool, "build", "-trimpath", "-ldflags=-s -w", "-o", filepath.Join(abs, "pego.wasm"), "./playground")
+	tmp := filepath.Join(abs, "pego.wasm.tmp")
+	cmd := exec.Command(goTool, "build", "-trimpath", "-ldflags=-s -w", "-o", tmp, "./playground")
 	cmd.Dir = repo
 	cmd.Env = append(os.Environ(), "GOOS=js", "GOARCH=wasm")
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("building pego.wasm: %v\n%s", err, out)
+		return "", fmt.Errorf("building pego.wasm: %v\n%s", err, out)
+	}
+	data, err := os.ReadFile(tmp)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(data)
+	name := "wasm/pego-" + hex.EncodeToString(sum[:])[:16] + ".wasm"
+	if err := writeFile(filepath.Join(abs, filepath.FromSlash(name)), data); err != nil {
+		return "", err
+	}
+	if err := os.Remove(tmp); err != nil {
+		return "", err
 	}
 	out, err := exec.Command(goTool, "env", "GOROOT").Output()
 	if err != nil {
-		return fmt.Errorf("go env GOROOT: %w", err)
+		return "", fmt.Errorf("go env GOROOT: %w", err)
 	}
 	support, err := os.ReadFile(filepath.Join(strings.TrimSpace(string(out)), "lib", "wasm", "wasm_exec.js"))
 	if err != nil {
-		return err
+		return "", err
 	}
-	return writeFile(filepath.Join(abs, "wasm_exec.js"), support)
+	return name, writeFile(filepath.Join(abs, "wasm_exec.js"), support)
 }
 
 func stats(out string, pages int) (Stats, error) {

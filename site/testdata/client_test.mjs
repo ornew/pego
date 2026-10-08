@@ -94,6 +94,16 @@ test("a worker that fails to start is started again by the next call", async () 
   assert.deepEqual(await c.call("echo", { n: 1 }), { n: 1 });
 });
 
+test("the client loads the binary the page names", async () => {
+  const { FakeWorker, workers } = fakeWorkers();
+  let compiled = null;
+  const c = client({ Worker: FakeWorker, wasm: "wasm/pego-0123456789abcdef.wasm", compile: async (url) => ((compiled = url), {}) });
+  await c.call("echo", {});
+  assert.equal(compiled, "https://example.test/playground/wasm/pego-0123456789abcdef.wasm");
+  assert.equal(workers[0].received[0].wasm, compiled);
+  assert.equal(new PegoClient("https://example.test/playground/", { wasm: null }).wasm, "https://example.test/playground/pego.wasm");
+});
+
 test("a stack overflow restarts the worker", async () => {
   const { FakeWorker, workers } = fakeWorkers();
   const c = client({ Worker: FakeWorker });

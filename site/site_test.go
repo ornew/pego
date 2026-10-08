@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"io/fs"
 	"os"
@@ -171,11 +173,41 @@ func TestBuild(t *testing.T) {
 	}
 	files := []string{"worker.js", "app.js", "../assets/pego-client.js", "../assets/state.js", "../assets/highlight.js"}
 	if cfg.Wasm {
-		files = append(files, "pego.wasm", "wasm_exec.js")
+		files = append(files, "wasm_exec.js")
 	}
 	for _, f := range files {
 		if _, err := os.Stat(filepath.Join(out, "playground", filepath.FromSlash(f))); err != nil {
 			t.Error(err)
+		}
+	}
+
+	// Every page names the WebAssembly binary by a name that changes with its content, so that it can
+	// be cached forever.
+	if cfg.Wasm {
+		wasmRe := regexp.MustCompile(`<html [^>]*data-wasm="([^"]+)"`)
+		for _, page := range []string{"index.html", "playground/index.html", "docs/guide/runtime/index.html"} {
+			data, err := os.ReadFile(filepath.Join(out, filepath.FromSlash(page)))
+			if err != nil {
+				t.Fatal(err)
+			}
+			m := wasmRe.FindSubmatch(data)
+			if m == nil {
+				t.Errorf("%s names no WebAssembly binary", page)
+				continue
+			}
+			ref := filepath.Join(out, filepath.FromSlash(filepath.Dir(page)), filepath.FromSlash(string(m[1])))
+			if !regexp.MustCompile(`/playground/wasm/pego-[0-9a-f]{16}\.wasm$`).MatchString(filepath.ToSlash(ref)) {
+				t.Errorf("%s: %s is not content-hashed", page, m[1])
+			}
+			wasm, err := os.ReadFile(ref)
+			if err != nil {
+				t.Error(err)
+				continue
+			}
+			sum := sha256.Sum256(wasm)
+			if !strings.Contains(string(m[1]), hex.EncodeToString(sum[:])[:16]) {
+				t.Errorf("%s: the name %s does not match the content", page, m[1])
+			}
 		}
 	}
 }

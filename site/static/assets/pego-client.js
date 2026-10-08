@@ -11,9 +11,8 @@
 
 let modulePromise = null;
 
-function compileModule(base) {
+function compileModule(url) {
   modulePromise ??= (async () => {
-    const url = base + "pego.wasm";
     try {
       return await WebAssembly.compileStreaming(fetch(url));
     } catch {
@@ -53,8 +52,11 @@ function superseded() {
 export class PegoClient {
   // options.Worker and options.compile replace the Worker constructor and the compilation of
   // pego.wasm (for tests).
-  constructor(base, { timeout = 10000, Worker: WorkerClass = globalThis.Worker, compile = compileModule } = {}) {
+  // base is the URL of the playground directory (worker.js, wasm_exec.js); wasm is the URL of
+  // pego.wasm, by default the one the page names in <html data-wasm>.
+  constructor(base, { timeout = 10000, wasm = defaultWasm(), Worker: WorkerClass = globalThis.Worker, compile = compileModule } = {}) {
     this.base = new URL(base, globalThis.location?.href).href;
+    this.wasm = new URL(wasm || "pego.wasm", this.base).href;
     this.timeout = timeout;
     this.WorkerClass = WorkerClass;
     this.compile = compile;
@@ -81,7 +83,7 @@ export class PegoClient {
   }
 
   async spawn() {
-    const module = await this.compile(this.base);
+    const module = await this.compile(this.wasm);
     const worker = new this.WorkerClass(this.base + "worker.js");
     this.worker = worker;
     const ready = new Promise((resolve, reject) => {
@@ -89,9 +91,9 @@ export class PegoClient {
       worker.onerror = (e) => reject(new Error(e.message || "the parser worker failed to start"));
     });
     try {
-      worker.postMessage({ type: "init", base: this.base, module });
+      worker.postMessage({ type: "init", base: this.base, wasm: this.wasm, module });
     } catch {
-      worker.postMessage({ type: "init", base: this.base }); // the module cannot be sent: compile in the worker
+      worker.postMessage({ type: "init", base: this.base, wasm: this.wasm }); // the module cannot be sent: compile in the worker
     }
     try {
       this.version = await ready;
@@ -190,6 +192,12 @@ export class PegoClient {
     this.onrestart?.(reason);
     if (this.queue.length) this.pump();
   }
+}
+
+// defaultWasm returns the URL of pego.wasm that the page names in <html data-wasm>, if any.
+function defaultWasm() {
+  const w = globalThis.document?.documentElement?.dataset?.wasm;
+  return w ? new URL(w, globalThis.location?.href).href : null;
 }
 
 // siteRoot returns the URL of the site root, which every page records in <html data-root>.

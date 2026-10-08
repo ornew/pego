@@ -108,7 +108,7 @@ The build output (`site/dist`) is not committed.
 | `/` | The landing page, assembled from [`README.md`](../../README.md): the tagline and introduction, a live example with the README's grammar, the feature list under "Why PEGO" as cards, and the following sections |
 | `/docs/tutorial/`, `/docs/guide/`, `/spec/`, `/docs/design/`, `/docs/…`, `/examples/` | The Markdown files of the repository, rendered at build time. Links between Markdown files (relative, relative to the repository root like `/spec/types.md`, or percent-encoded) become links between pages; links to other files of the repository go to GitHub. The design records get a generated index |
 | `/reference/` | The API reference of packages `pego` and `grammar`, generated from the Go source with `go/doc`, and the reference of the `pego` command, generated from what the command prints: its usage message and `pego <command> -h` for every command it lists. Types that are aliases of internal types (such as `Node`) show the definition and methods of the internal type |
-| `/playground/` | The playground: `app.js`, `worker.js`, `pego.wasm` built from [`playground/`](../../playground/), and `wasm_exec.js` from the Go distribution |
+| `/playground/` | The playground: `app.js`, `worker.js`, `wasm/pego-<hash>.wasm` built from [`playground/`](../../playground/) (named after a hash of its content, which every page records in `<html data-wasm>`), and `wasm_exec.js` from the Go distribution |
 | `/search-index.json` | The text of every page, for the search box in the header (press `/`) |
 
 Nothing is copied by hand, so the site cannot drift from the repository: rebuilding it picks up every change.
@@ -124,7 +124,9 @@ the repository to a Netlify site is enough to deploy it; each build runs the lin
 deploy instead of publishing it.
 
 The configuration also sets a strict `Content-Security-Policy`: the pages load scripts, styles and data only from the
-site itself, and need no inline scripts or styles; `'wasm-unsafe-eval'` allows compiling `pego.wasm`.
+site itself, and need no inline scripts or styles; `'wasm-unsafe-eval'` allows compiling `pego.wasm`. The
+WebAssembly binary, whose name changes with its content, is cached for a year (`immutable`); the other files are
+revalidated on each visit, Netlify's default.
 
 ## The WebAssembly API
 
@@ -160,7 +162,7 @@ go.run(instance);
 const res = JSON.parse(pego.parse(JSON.stringify({ grammar: 'def main = "a"+', input: "aaa" })));
 ```
 
-The binary is about 8.2 MB, 2.2 MB compressed with gzip and 1.6 MB with Brotli (static hosts such as Netlify compress
+The binary is about 8.3 MB, 2.2 MB compressed with gzip and 1.6 MB with Brotli (static hosts such as Netlify compress
 it). The landing page loads it only when its live example scrolls into view.
 
 ## Tests

@@ -1,5 +1,5 @@
 // Web Worker that runs pego.wasm, so that a long parse never freezes the page. The page sends
-// {type: "init", module?, base} once, then {id, method, req}; each call is answered with
+// {type: "init", base, wasm, module?} once, then {id, method, req}; each call is answered with
 // {id, out} (the JSON response) or {id, error}.
 
 let ready = null;
@@ -11,7 +11,7 @@ async function init(msg) {
   if (msg.module) {
     instance = await WebAssembly.instantiate(msg.module, go.importObject);
   } else {
-    const resp = await fetch(msg.base + "pego.wasm");
+    const resp = await fetch(msg.wasm);
     instance = (await WebAssembly.instantiate(await resp.arrayBuffer(), go.importObject)).instance;
   }
   go.run(instance).then(() => {
