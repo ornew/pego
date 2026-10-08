@@ -134,6 +134,10 @@ The following fields are available on every node:
 | unary `-` | integers |
 
 Integer division truncates toward zero; `%` takes the sign of the dividend.
+
+Comparing nodes by identity tells whether two values are the same node, such as a capture and an element of a
+list. Whether two separate calls of a rule at the same position return the same node is not specified: it
+depends on memoization. To compare what two nodes matched, compare `text(...)` or their fields.
 Strings are compared lexicographically.
 
 Operators bind in the following order, from loosest to tightest:
