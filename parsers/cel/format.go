@@ -2,10 +2,10 @@ package cel
 
 import "strings"
 
-// Format returns the expression as source text on one line: the literals as they were written, the operators with a
-// space around them, and no comments. It puts parentheses where the precedence of a node needs them, so it is also fit
-// for a tree that was built without Paren nodes. Parsing the result gives the same expression, apart from the
-// parentheses that it adds or drops and the positions.
+// Format returns the expression as source text: the literals as they were written (a triple-quoted string keeps its
+// line breaks), the operators with a space around them, and no comments. It puts parentheses where the precedence of
+// a node needs them, so it is also fit for a tree that was built without Paren nodes. Parsing the result gives the
+// same expression, apart from the parentheses that it adds and the positions.
 func Format(e Expr) string {
 	var b strings.Builder
 	f := &formatter{&b}

@@ -54,7 +54,7 @@ ok := cel.Valid(`1 +`) // false
 | `CheckLimits(e, Limits) error`, `DefaultLimits` | The depth of recursion and the size that cel-go allows (250 and 100,000 code points) |
 | `CheckMacros(e) error`, `IsMacroCall(*Call) bool` | The calls of the standard macros that cel-go rejects, and the calls that are macros |
 | `WithLimits(Limits)`, `WithMacros()` | Options of `ParseExpr`, `Valid` and `Check` |
-| `Format(e) string` | The expression as source on one line, with the parentheses its precedence needs |
+| `Format(e) string` | The expression as source, with the parentheses its precedence needs |
 | `Inspect(e, f)`, `Children(e, f)`, `SpanOf(e)` | Walk the tree; the range of any node |
 | `Constant(e) (any, bool)` | The Go value of a literal, or a list or map of literals |
 | `(*IntLit).Value()`, `(*UintLit).Value()`, `(*DoubleLit).Value()`, `(*StringLit).Value()`, `(*BytesLit).Value()`, `(*BoolLit).Value()` | The values of the literals, decoded as cel-go does (`Text` is the source) |

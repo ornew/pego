@@ -59,8 +59,7 @@ func Constant(e Expr) (any, bool) {
 	return nil, false
 }
 
-// hashable reports whether v can be the key of a map: CEL keys are ints, uints, bools and strings; a double or
-// a list is not comparable here, and bytes are not hashable.
+// hashable reports whether v can be the key of a map: the keys of a CEL map are bools, ints, uints and strings.
 func hashable(v any) bool {
 	switch v.(type) {
 	case int64, uint64, bool, string:
