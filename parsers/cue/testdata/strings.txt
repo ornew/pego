@@ -1,0 +1,11 @@
+s1: "plain é \"quoted\""
+s2: 'bytes \xff'
+s3: #"raw \#(x) "quotes""#
+s4: """
+    multi
+      line \(x)
+    """
+n1: 1_000
+n2: 0xFF
+n3: 1.5Ki
+n4: .5e-3

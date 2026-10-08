@@ -1,0 +1,8 @@
+a: 1 | *2 | 3
+b: (x & y) || !z
+c: [1, 2, ...int]
+d: strings.ToUpper("x")[0:1]
+e: foo.bar?.baz["k"]
+f: -1 + 2*3 - 4/5
+g: <10 & >=1
+h: "a\(1 + 2)b"

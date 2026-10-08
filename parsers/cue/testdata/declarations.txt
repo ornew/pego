@@ -1,0 +1,15 @@
+// A package with an import, definitions, optional and required fields.
+package p
+
+import "strings"
+
+#Person: {
+	name!:  string
+	age?:   int & >=0
+	email:  =~"^[a-z]+@[a-z]+$" @go(Email)
+	...
+}
+alice: #Person & {name: "alice", age: 30}
+a: b: c: 1
+let x = 1 + 2
+y: [for i in [1, 2, 3] if i > 1 {i * x}]

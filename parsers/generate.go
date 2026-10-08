@@ -12,6 +12,7 @@ package parsers
 
 //go:generate go run ../cmd/pego gen -g cel/cel.pego -pkg cel -types -recognize -nodoc -o cel/parser.go
 //go:generate go run ../cmd/pego gen -g csv/csv.pego -pkg csv -types -recognize -nodoc -o csv/parser.go
+//go:generate go run ../cmd/pego gen -g cue/cue.pego -pkg cue -types -recognize -nodoc -o cue/parser.go
 //go:generate go run ../cmd/pego gen -g golang/golang.pego -pkg golang -types -recognize -nodoc -o golang/parser.go
 //go:generate go run ../cmd/pego gen -g json/json.pego -pkg json -types -recognize -nodoc -o json/parser.go
 //go:generate go run ../cmd/pego gen -g python/python.pego -pkg python -types -recognize -nodoc -o python/parser.go
