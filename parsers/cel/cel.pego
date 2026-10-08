@@ -2,14 +2,16 @@
 // typed AST.
 //
 // The rules follow the grammar of the specification, and where it is silent the ANTLR grammar of cel-go, which
-// decides what is a valid expression in practice (the tests compare the AST of 20,000 expressions with cel-go's, and
-// the rejected ones). Tokens are separated by whitespace and comments (ws); no rule consumes whitespace after its
-// last token, so that the span of each value ends where its text ends.
+// decides in practice what is an expression: the tests compare the AST of every expression of a large corpus with
+// cel-go's, and check that the ones cel-go rejects are rejected (see the README). Tokens are separated by whitespace
+// and comments (ws). No rule consumes whitespace after its last token, so that the span of each value ends where its
+// text does.
 //
-// Some rules differ from the productions for speed, each with a comment on why. In all they made parsing of typical
-// expressions about a quarter faster in Recognize and a seventh faster in ParseAST (with small slabs, see the README)
-// than the grammar written as it stands in the specification, with a Pratt expression for the operators and an
-// alternative for each kind of literal at an operand.
+// Some rules differ from the productions of the specification for speed, each with a comment on why and on what
+// it measurably changed. The first version of this grammar, which wrote the productions as they stand (an
+// alternative for each kind of literal at an operand, a message tried before a call before an identifier, a rule for
+// each character class), took 39% more time to recognize and 16% more to build the AST of typical expressions, and
+// 38% and 24% more on a long one (the benchmarks of testdata/bench; see the README for the method).
 package cel
 
 type Ident terminal
@@ -43,24 +45,19 @@ def main: Expr = ws e:expr ws $$ -> $e
 
 // ---- Operators ----
 
-// Expr = ConditionalOr ["?" ConditionalOr ":" Expr], and a level for each of the other precedences. Each is a rule of
-// its own, a list of operands folded to the left, instead of a Pratt expression: the Pratt loop tries every operator
-// at the end of every operand, which made Recognize 30% slower on typical expressions, and left recursion was slower
-// still (see the README).
-def expr: Expr = c:or_level rest:(-ws "?" -ws t:or_level -ws ":" -ws e:expr){0,1}
-    -> foldl($c, $rest, (a, i) => new Conditional{Cond: $a, Then: $i.t, Else: $i.e})
-def or_level: Expr = first:and_level rest:(-ws op:"||" -ws r:and_level)*
-    -> foldl($first, $rest, (a, i) => new Binary{Left: $a, Op: $i.op, Right: $i.r})
-def and_level: Expr = first:rel_level rest:(-ws op:"&&" -ws r:rel_level)*
-    -> foldl($first, $rest, (a, i) => new Binary{Left: $a, Op: $i.op, Right: $i.r})
-def rel_level: Expr = first:add_level rest:(-ws op:relop -ws r:add_level)*
-    -> foldl($first, $rest, (a, i) => new Binary{Left: $a, Op: $i.op, Right: $i.r})
-def add_level: Expr = first:mul_level rest:(-ws op:(?+\-) -ws r:mul_level)*
-    -> foldl($first, $rest, (a, i) => new Binary{Left: $a, Op: $i.op, Right: $i.r})
-def mul_level: Expr = first:unary rest:(-ws op:(?*/%) -ws r:unary)*
-    -> foldl($first, $rest, (a, i) => new Binary{Left: $a, Op: $i.op, Right: $i.r})
-// in is a keyword, not a prefix of a name: "1in x" is "1 in x", "inx" is a name.
-def relop: Match = @("<=" / "<" / ">=" / ">" / "==" / "!=" / "in" !(?A-Za-z0-9_))
+// Expr = ConditionalOr ["?" ConditionalOr ":" Expr] and a level for each of the other precedences, all left
+// associative. The then branch is parsed at the level of ||, as the production says. A rule for each level, with
+// the operands folded to the left, took as long as a Pratt expression.
+def expr: Expr = pratt {
+    skip ws
+    operand unary
+    level { infix right "?" ws then:expr(or) ws ":" -> new Conditional{Cond: $lhs, Then: $then, Else: $rhs} }
+    level or { infix left "||" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix left "&&" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix left "<=" / "<" / ">=" / ">" / "==" / "!=" / "in" !(?A-Za-z0-9_) -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix left "+" / "-" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix left "*" / "/" / "%" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+}
 
 // Unary = Member | "!" {"!"} Member | "-" {"-"} Member. A run of operators is one rule, nested from the first to
 // the last, as ANTLR reads (ops+='!')+ member: that is why "--9223372036854775808" is an error (the literal is
@@ -71,10 +68,10 @@ def not_unary: Expr = ops:(o:"!" -ws)+ m:member -> foldr($m, $ops, (acc, i) => n
 def neg_unary: Expr = ops:(o:"-" -ws)+ m:member -> foldr($m, $ops, (acc, i) => new Unary{Op: $i.o, X: $acc})
 
 // Member = Primary | Member "." SELECTOR ["(" [ExprList] ")"] | Member "[" Expr "]", with the optional forms ".?" and
-// "[?". A call is longer than the selection of its name, so it wins where both match. Left recursion and a loop with
-// a rule for each kind of suffix were both slower (a Pratt loop takes about a seventh of the time of parsing a
-// typical expression). The three lines have no alternative each for the optional form: the question mark is a
-// capture, and Optional is true if it matched.
+// "[?". A call is longer than the selection of its name, so it wins where both match. The optional marker is a
+// capture, and Optional says whether it matched, so that three lines do the work of five: the Pratt loop tries every
+// line at the end of every operand, and five took 13% more time to build the AST of a long expression. A left
+// recursive rule for each suffix took 51% more time to recognize typical expressions and 70% more a long one.
 def member: Expr = pratt {
     skip ws
     operand primary
@@ -88,9 +85,9 @@ def member: Expr = pratt {
 // ---- Primary expressions ----
 
 // Primary = ["."] IDENT ["(" [ExprList] ")"] | "(" Expr ")" | "[" ... "]" | "{" ... "}" | ["."] SELECTOR {"." SELECTOR}
-// "{" ... "}" | LITERAL. The alternatives are chosen by the first character, with lookaheads (which record no
-// expectation in error messages, and cost one test): a name, for example, has to fail ten literals, a message and a
-// call before it is an identifier otherwise. This was the largest single change, 17% of the time of Recognize.
+// "{" ... "}" | LITERAL. The alternative is chosen by the first character, with lookaheads, which cost one test and
+// record nothing in the message of a syntax error (expected_start makes up for it): a name, for example, has to fail
+// ten literals before it is read as an identifier otherwise. Without them, Recognize took 26% more time.
 def primary: Expr =
     ( &(?A-Za-z_) v:(word_lit / message / ident_only / call)
     / &(?0-9) v:(int_plain / double / uint / int)
@@ -106,7 +103,7 @@ def word_lit: Expr = ( &(?tf) v:bool / &"n" v:null / &(?rR) v:string / &(?bB) v:
 
 def paren: Paren = "(" ws e:expr ws ")" -> new Paren{X: $e}
 
-// An identifier that is not called, then a call: the choice of what follows a name is made after reading it once.
+// An identifier that is not called, then a call: a call first took 4% more time.
 def ident_only: Ident = i:ident !(ws "(") -> $i
 def ident: Ident = ("." ws)? name_global
 def call: Call = f:ident ws "(" ws as:args? ws ")" -> new Call{Target: nil, Func: $f, Args: concat($as)}
@@ -124,8 +121,8 @@ def opt_entry: Entry = "?" ws k:expr ws ":" ws v:expr -> new Entry{Key: $k, Valu
 def plain_entry: Entry = k:expr ws ":" ws v:expr -> new Entry{Key: $k, Value: $v, Optional: false}
 
 // A message is a possibly dotted name followed by "{". Its parts may be reserved words (a name that is not a
-// keyword), unlike a variable or a function. Most operands that start with a name are not a message, so the
-// lookahead reads the name by character classes, without the check for keywords, before the rule does.
+// keyword), unlike a variable or a function. Most operands that start with a name are not a message, so a lookahead
+// reads the name by character classes before the rule reads it as names, which saves 3% of the time.
 def message: MessageLit = &(("." ws)? (?A-Za-z_) (?A-Za-z0-9_)* (ws "." ws (?A-Za-z_) (?A-Za-z0-9_)*)* ws "{")
     t:type_name ws "{" ws fs:fields? ws ","? ws "}" -> new MessageLit{Type: $t, Fields: concat($fs)}
 def type_name: Ident = ("." ws)? name_plain (ws "." ws name_plain)*
@@ -173,8 +170,8 @@ def hex = (?0-9a-fA-F)
 
 // ---- Names ----
 //
-// Characters are tested by classes written out, since a rule for each of them costs a call: this made Recognize 7%
-// faster.
+// Characters are tested by classes written out, since a rule for each of them costs a call: a rule for the
+// characters of a name took 10% more time to recognize typical expressions.
 
 // A name that is not one of the keywords true, false, null and in: a selector, a field, a method and a part of a message.
 def name_plain: Ident = !(("true" / "false" / "null" / "in") !(?A-Za-z0-9_)) (?A-Za-z_) (?A-Za-z0-9_)*
@@ -185,6 +182,6 @@ def name_global = !(("true" / "false" / "null" / "in" / "as" / "break" / "const"
 // A field may be escaped with backquotes.
 def name: Name = name_plain / "`" (?A-Za-z0-9_.\-/ )+ "`"
 
-// Whitespace and comments. It calls no other rule: a rule that does is memoized, and the lookup costs more than
-// reading the few characters again.
+// Whitespace and comments. It calls no other rule: a rule that does is memoized, and a ws that called another rule
+// for its body took 14% more time to recognize typical expressions.
 def ws = (? \t\r\n\u{c})* ("//" (?^\n)* (? \t\r\n\u{c})*)*
