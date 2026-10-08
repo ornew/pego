@@ -182,7 +182,9 @@ type CharClass struct {
 }
 
 // Any matches any single character (.).
-type Any struct{}
+type Any struct {
+	Pos Pos `json:"-"`
+}
 
 // Seq is a sequence a b.
 type Seq struct {
@@ -204,35 +206,44 @@ type Choice struct {
 
 // Repeat is a repetition a{Min,Max}. A negative Max means no upper
 // bound. a* is {0,} and a+ is {1,}.
+//
+// Pos is the position where the repeated expression begins (its opening
+// parenthesis, if it is parenthesized).
 type Repeat struct {
+	Pos  Pos  `json:"-"`
 	Expr Expr `json:"expr"`
 	Min  int  `json:"min"`
 	Max  int  `json:"max"`
 }
 
 // Optional is an optional expression a?. Its value is the value of a, or
-// nil.
+// nil. Pos is the position where a begins, as in Repeat.
 type Optional struct {
+	Pos  Pos  `json:"-"`
 	Expr Expr `json:"expr"`
 }
 
 // And is a positive lookahead &a.
 type And struct {
+	Pos  Pos  `json:"-"`
 	Expr Expr `json:"expr"`
 }
 
 // Not is a negative lookahead !a.
 type Not struct {
+	Pos  Pos  `json:"-"`
 	Expr Expr `json:"expr"`
 }
 
 // Atomic is an atomic expression @a.
 type Atomic struct {
+	Pos  Pos  `json:"-"`
 	Expr Expr `json:"expr"`
 }
 
 // Discard is a discarded expression -a.
 type Discard struct {
+	Pos  Pos  `json:"-"`
 	Expr Expr `json:"expr"`
 }
 
@@ -244,25 +255,39 @@ type Capture struct {
 }
 
 // Cut is a cut --.
-type Cut struct{}
+type Cut struct {
+	Pos Pos `json:"-"`
+}
 
 // Top is the top expression _.
-type Top struct{}
+type Top struct {
+	Pos Pos `json:"-"`
+}
 
 // Bottom is the bottom expression _|_.
-type Bottom struct{}
+type Bottom struct {
+	Pos Pos `json:"-"`
+}
 
 // BeginInput matches the beginning of the input (^^).
-type BeginInput struct{}
+type BeginInput struct {
+	Pos Pos `json:"-"`
+}
 
 // EndInput matches the end of the input ($$).
-type EndInput struct{}
+type EndInput struct {
+	Pos Pos `json:"-"`
+}
 
 // BeginLine matches the beginning of a line (^).
-type BeginLine struct{}
+type BeginLine struct {
+	Pos Pos `json:"-"`
+}
 
 // EndLine matches the end of a line ($).
-type EndLine struct{}
+type EndLine struct {
+	Pos Pos `json:"-"`
+}
 
 // Predicate is a predicate [Term].
 type Predicate struct {

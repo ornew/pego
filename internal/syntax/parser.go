@@ -513,32 +513,33 @@ func (p *parser) prefixed() grammar.Expr {
 	}
 	switch {
 	case p.accept("&"):
-		return &grammar.And{Expr: p.prefixed()}
+		return &grammar.And{Pos: t.pos, Expr: p.prefixed()}
 	case p.accept("!"):
-		return &grammar.Not{Expr: p.prefixed()}
+		return &grammar.Not{Pos: t.pos, Expr: p.prefixed()}
 	case p.accept("@"):
-		return &grammar.Atomic{Expr: p.prefixed()}
+		return &grammar.Atomic{Pos: t.pos, Expr: p.prefixed()}
 	case p.is("-"):
 		p.next()
-		return &grammar.Discard{Expr: p.prefixed()}
+		return &grammar.Discard{Pos: t.pos, Expr: p.prefixed()}
 	}
 	return p.suffixed()
 }
 
 func (p *parser) suffixed() grammar.Expr {
+	start := p.tok().pos
 	e := p.primary()
 	for {
 		t := p.tok()
 		switch {
 		case p.accept("*"):
-			e = &grammar.Repeat{Expr: e, Min: 0, Max: -1}
+			e = &grammar.Repeat{Pos: start, Expr: e, Min: 0, Max: -1}
 		case p.accept("+"):
-			e = &grammar.Repeat{Expr: e, Min: 1, Max: -1}
+			e = &grammar.Repeat{Pos: start, Expr: e, Min: 1, Max: -1}
 		case p.accept("?"):
-			e = &grammar.Optional{Expr: e}
+			e = &grammar.Optional{Pos: start, Expr: e}
 		case p.is("{") && !t.spaceBefore:
 			p.next()
-			r := &grammar.Repeat{Expr: e}
+			r := &grammar.Repeat{Pos: start, Expr: e}
 			if p.tok().kind == tInt {
 				r.Min = p.next().num
 			}
@@ -611,7 +612,7 @@ func (p *parser) primary() grammar.Expr {
 		}
 		p.next()
 		if t.text == "_" {
-			return &grammar.Top{}
+			return &grammar.Top{Pos: t.pos}
 		}
 		ref := &grammar.Ref{Pos: t.pos, Name: t.text}
 		if p.is("(") && !p.tok().spaceBefore {
@@ -641,25 +642,25 @@ func (p *parser) primary() grammar.Expr {
 			return pred
 		case "--":
 			p.next()
-			return &grammar.Cut{}
+			return &grammar.Cut{Pos: t.pos}
 		case "^^":
 			p.next()
-			return &grammar.BeginInput{}
+			return &grammar.BeginInput{Pos: t.pos}
 		case "^":
 			p.next()
-			return &grammar.BeginLine{}
+			return &grammar.BeginLine{Pos: t.pos}
 		case "$$":
 			p.next()
-			return &grammar.EndInput{}
+			return &grammar.EndInput{Pos: t.pos}
 		case "$":
 			p.next()
-			return &grammar.EndLine{}
+			return &grammar.EndLine{Pos: t.pos}
 		case "_|_":
 			p.next()
-			return &grammar.Bottom{}
+			return &grammar.Bottom{Pos: t.pos}
 		case ".":
 			p.next()
-			return &grammar.Any{}
+			return &grammar.Any{Pos: t.pos}
 		}
 	}
 	p.errorf("expected an expression, found %s", t)

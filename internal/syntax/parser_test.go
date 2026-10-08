@@ -1,6 +1,7 @@
 package syntax
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -199,5 +200,55 @@ func TestEscapes(t *testing.T) {
 		if _, err := Parse(src); err == nil || !strings.Contains(err.Error(), "unknown escape sequence") {
 			t.Errorf("%s: got %v", src, err)
 		}
+	}
+}
+
+func TestExprPositions(t *testing.T) {
+	// Each prefix operator and atom records its own position; a postfix operator records where
+	// its operand begins (the parenthesis of a group).
+	e, err := ParseExpr("&a !b @c -d _ _|_ -- ^^ ^ $ $$ . (x y)* z+ (w)? v{2}")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, it := range e.(*grammar.Seq).Items {
+		var pos grammar.Pos
+		switch it := it.(type) {
+		case *grammar.And:
+			pos = it.Pos
+		case *grammar.Not:
+			pos = it.Pos
+		case *grammar.Atomic:
+			pos = it.Pos
+		case *grammar.Discard:
+			pos = it.Pos
+		case *grammar.Top:
+			pos = it.Pos
+		case *grammar.Bottom:
+			pos = it.Pos
+		case *grammar.Cut:
+			pos = it.Pos
+		case *grammar.BeginInput:
+			pos = it.Pos
+		case *grammar.BeginLine:
+			pos = it.Pos
+		case *grammar.EndLine:
+			pos = it.Pos
+		case *grammar.EndInput:
+			pos = it.Pos
+		case *grammar.Any:
+			pos = it.Pos
+		case *grammar.Repeat:
+			pos = it.Pos
+		case *grammar.Optional:
+			pos = it.Pos
+		default:
+			t.Fatalf("unexpected %T", it)
+		}
+		got = append(got, fmt.Sprintf("%s@%d", grammar.FormatExpr(it), pos.Col))
+	}
+	want := "&a@1 !b@4 @c@7 -d@10 _@13 _|_@15 --@19 ^^@22 ^@25 $@27 $$@29 .@32 (x y)*@34 z+@41 w?@44 v{2}@49"
+	if s := strings.Join(got, " "); s != want {
+		t.Errorf("got  %s\nwant %s", s, want)
 	}
 }
