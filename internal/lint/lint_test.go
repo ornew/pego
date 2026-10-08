@@ -139,6 +139,11 @@ func TestNeverMatches(t *testing.T) {
 		{name: "mutual recursion", src: "def main = \"(\" b \")\"\ndef b = \"[\" main \"]\"",
 			want: []string{"1:1 error never-matches", "2:1 error never-matches"}},
 		{name: "only the cycle is reported", src: "def main = x\ndef x = \"(\" x \")\"", want: []string{"2:1 error never-matches"}},
+		{name: "mutual recursion message", src: "def main = \"(\" b \")\"\ndef b = \"[\" main \"]\"",
+			want: []string{"1:1 error never-matches", "2:1 error never-matches"}, msg: "a match of one of main, b,"},
+		// args calls itself, but only in an optional tail: it fails because expr does.
+		{name: "recursion that is not the cause", src: "def main = args\ndef args = expr (\",\" args)?\ndef expr = expr \"+\" \"t\"",
+			want: []string{"2:22 hint right-recursion", "3:1 error never-matches"}},
 		{name: "explicit failure", src: "def main = x / \"y\"\ndef x = \"a\" _|_"},
 		{name: "explicit failure in a recursion", src: `def main = "(" main ")" / _|_ #error(message="m")`},
 	})

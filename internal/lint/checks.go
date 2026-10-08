@@ -239,35 +239,114 @@ func (l *linter) neverMatches() {
 		})
 	})
 
-	// Recursion without a base case: report the rules that are on a cycle of such rules. The rules
-	// that only call them are left alone (they are fixed with them).
+	// Recursion without a base case. The rules that cannot match even if _|_ and ! of an
+	// expression that always succeeds are taken to match fail because of recursion. Group them by
+	// mutual recursion, and report a group only if it still cannot match when every rule outside
+	// it is assumed to: otherwise the cause is a rule it calls, which is reported in its own group.
+	var stuck []string
 	edges := map[string][]string{}
 	for _, r := range a.order {
 		if a.baseCase[r.Name] {
 			continue
 		}
+		stuck = append(stuck, r.Name)
 		for _, c := range calls(r.Expr) {
 			if a.rules[c] != nil && !a.baseCase[c] && !slices.Contains(edges[r.Name], c) {
 				edges[r.Name] = append(edges[r.Name], c)
 			}
 		}
 	}
+	report := map[string][]string{} // rule -> its group
+	for _, group := range sccs(stuck, edges) {
+		if len(group) == 1 && !slices.Contains(edges[group[0]], group[0]) {
+			continue // not recursive
+		}
+		assumed := map[string]bool{}
+		for _, n := range stuck {
+			if !slices.Contains(group, n) {
+				assumed[n] = true
+			}
+		}
+		for n := range a.baseCase {
+			assumed[n] = true
+		}
+		for changed := true; changed; {
+			changed = false
+			for _, n := range group {
+				if !assumed[n] && a.mayMatchIn(a.rules[n].Expr, assumed, true) {
+					assumed[n], changed = true, true
+				}
+			}
+		}
+		for _, n := range group {
+			if !assumed[n] {
+				report[n] = group
+			}
+		}
+	}
 	l.eachRule(func(r *grammar.RuleDef) {
-		if a.baseCase[r.Name] {
+		group, ok := report[r.Name]
+		if !ok {
 			return
 		}
-		cycle := findCycle(r.Name, edges)
-		if cycle == nil {
-			return
+		what := r.Name
+		if len(group) > 1 {
+			what = "one of " + strings.Join(group, ", ")
 		}
-		via := ""
-		if len(cycle) > 1 {
-			via = " (through " + strings.Join(cycle[1:], ", ") + ")"
-		}
-		l.report(CheckNeverMatches, Error, r.Pos, "add an alternative that does not call "+r.Name+" (a base case)",
-			"rule %s can never match: every match of it needs a match of %s itself first%s, so the recursion has no base case",
-			r.Name, r.Name, via)
+		l.report(CheckNeverMatches, Error, r.Pos, "add an alternative that does not recurse (a base case)",
+			"rule %s can never match: every match of it would contain a match of %s, so the recursion has no base case",
+			r.Name, what)
 	})
+}
+
+// sccs returns the strongly connected components of the graph, each in the order of nodes, and
+// the components in the order of their first nodes.
+func sccs(nodes []string, edges map[string][]string) [][]string {
+	index, low := map[string]int{}, map[string]int{}
+	onStack := map[string]bool{}
+	var stack []string
+	var out [][]string
+	var visit func(v string)
+	visit = func(v string) {
+		index[v], low[v] = len(index), len(index)
+		stack = append(stack, v)
+		onStack[v] = true
+		for _, w := range edges[v] {
+			if _, seen := index[w]; !seen {
+				visit(w)
+				low[v] = min(low[v], low[w])
+			} else if onStack[w] {
+				low[v] = min(low[v], index[w])
+			}
+		}
+		if low[v] == index[v] {
+			var c []string
+			for {
+				w := stack[len(stack)-1]
+				stack = stack[:len(stack)-1]
+				onStack[w] = false
+				c = append(c, w)
+				if w == v {
+					break
+				}
+			}
+			out = append(out, c)
+		}
+	}
+	for _, n := range nodes {
+		if _, seen := index[n]; !seen {
+			visit(n)
+		}
+	}
+	pos := map[string]int{}
+	for i, n := range nodes {
+		pos[n] = i
+	}
+	for _, c := range out {
+		slices.SortFunc(c, func(x, y string) int { return pos[x] - pos[y] })
+	}
+	slices.SortFunc(out, func(x, y []string) int { return pos[x[0]] - pos[y[0]] })
+	return out
 }
 
 func firstChar(s string) string {
