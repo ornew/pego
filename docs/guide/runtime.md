@@ -730,7 +730,7 @@ from `pego.WithTrace` and `pego.WithProfile`. See [debugging.md](debugging.md).
 ### `sample`
 
 ```bash
-pego sample -g <grammar> [-s <rule>] [-n 10] [-seed <n>] [-max-depth <d>] [-max-repeat <r>] [-max-len <bytes>] [-coverage] [-invalid] [-f lines|json]
+pego sample -g <grammar> [-s <rule>] [-n 10] [-seed <n>] [-max-depth <d>] [-max-repeat <r>] [-max-len <bytes>] [-budget <steps>] [-coverage] [-invalid] [-f lines|json]
 ```
 
 Prints distinct inputs that the grammar accepts, one Go-quoted string per line or as a JSON document; `-invalid`

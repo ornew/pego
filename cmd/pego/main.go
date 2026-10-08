@@ -12,7 +12,7 @@
 //	pego profile -g grammar.pego [-s main] [-i input] [-sort column] [-n rows] [-f text|json]
 //	pego explain -g grammar.pego [-s main] [-i input] [-n calls]
 //	pego lint -g grammar.pego [-s main] [-f text|json] [-disable checks] [-strict] [-list]
-//	pego sample -g grammar.pego [-s main] [-n 10] [-seed N] [-max-depth D] [-max-repeat R] [-max-len L]
+//	pego sample -g grammar.pego [-s main] [-n 10] [-seed N] [-max-depth D] [-max-repeat R] [-max-len L] [-budget B]
 //	            [-coverage] [-invalid] [-f lines|json]
 //	pego lsp
 package main
@@ -89,7 +89,7 @@ Commands:
       found (with -strict, also a warning). -list lists the checks.
 
   sample -g <grammar> [-s <rule>] [-n <count>] [-seed <n>] [-max-depth <d>]
-         [-max-repeat <r>] [-max-len <bytes>] [-coverage] [-invalid]
+         [-max-repeat <r>] [-max-len <bytes>] [-budget <steps>] [-coverage] [-invalid]
          [-f lines|json]
       Generate distinct inputs that the grammar accepts, for tests and fuzz
       corpora, each printed as a quoted string on its own line. -coverage
