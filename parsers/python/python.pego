@@ -1,0 +1,944 @@
+// Python 3.14 as CPython 3.14.0 parses it (Grammar/python.gram and the tokenizer), parsed into a
+// typed AST modeled on Python's ast module.
+//
+// The grammar works on characters: there is no separate tokenizer. What CPython's tokenizer does is
+// done here as follows.
+//
+//   - Whitespace. `ws` skips spaces, tabs, form feeds and backslash continuations between tokens, and
+//     inside brackets also newlines and comments. Rules never consume whitespace at their start or
+//     end, so the span of every node is exactly its text.
+//   - Brackets. The variable `lv` is twice the bracket depth, plus one at the top level of an f-string
+//     or t-string replacement field (where a lambda would end at the ':' of the format spec, and
+//     CPython rejects it). Every rule that opens a bracket defines `lv` anew, so the depth is restored
+//     when it returns; CPython allows 200 levels.
+//   - Indentation. The variable `ind` packs the indentation of the current block: its column (tabs to
+//     the next multiple of 8, a form feed resets it), its column with tabs counted as one (CPython's
+//     "altcol", which detects inconsistent use of tabs: TabError), and the number of enclosing blocks
+//     (at most 99): ind = col + 2^22 * altcol + 2^44 * depth. A statement must start at exactly the
+//     block's indentation; a block opens a deeper one by defining `ind` in its own rule, so returning
+//     restores the enclosing one (INDENT and DEDENT without tokens). A line that matches no enclosing
+//     indentation is an error, as in CPython.
+//   - Line ends. A statement does not consume the end of its line: the separator before the next
+//     statement does, so compound statements end with their last statement.
+//   - Tokens. Operators are matched with the longest-match rule of the tokenizer written out as
+//     lookaheads (`"<" !(?<=>)`), keywords and names with `!idcont` after them, and numbers with the
+//     tokenizer's check of what may follow them.
+//   - f-strings and t-strings (PEP 701, 750). The variable `fs` holds the kind of quote (1 ', 2 ", 3
+//     ''', 4 """), plus 8 for a raw string, plus 16 for each enclosing format spec (fields may be
+//     nested in format specs twice). Replacement fields contain any expression, including strings
+//     with the same quotes.
+//
+// Other variables: `lam` is true while parsing the parameters of a lambda (no annotations, ':' ends
+// them), and `barry` is true after `from __future__ import barry_as_FLUFL` (then '<>' is the
+// inequality operator and '!=' is an error).
+//
+// The AST follows Python's ast module, with these differences: identifiers are strings, and an absent
+// one (Python's None) is ""; ctx is the string "Load", "Store" or "Del"; operators are the source
+// tokens (`Op`); booleans replace the ints of AnnAssign.simple and comprehension.is_async; constants,
+// and the literal parts of f-strings and t-strings, are their source text (see python.go for their
+// values); FormattedValue and Interpolation keep the source text of their expression (Str) and of
+// their `=` (Debug) and their conversion character as a string. Python's List and Match are ListExpr
+// and MatchStmt (List and Match are reserved in PEGO), and its Expr statement is ExprStmt.
+package python
+
+type Module struct { Body []Stmt }
+
+// --- Statements ---
+type FunctionDef struct {
+    Name          string
+    Args          Arguments
+    Body          []Stmt
+    DecoratorList []Expr
+    Returns       *Expr
+    TypeParams    []TypeParam
+}
+type AsyncFunctionDef struct {
+    Name          string
+    Args          Arguments
+    Body          []Stmt
+    DecoratorList []Expr
+    Returns       *Expr
+    TypeParams    []TypeParam
+}
+type ClassDef struct {
+    Name          string
+    Bases         []Expr
+    Keywords      []Keyword
+    Body          []Stmt
+    DecoratorList []Expr
+    TypeParams    []TypeParam
+}
+type Return struct { Value *Expr }
+type Delete struct { Targets []Expr }
+type Assign struct { Targets []Expr, Value Expr }
+type TypeAlias struct { Name Name, TypeParams []TypeParam, Value Expr }
+type AugAssign struct { Target Expr, Op Op, Value Expr }
+type AnnAssign struct { Target Expr, Annotation Expr, Value *Expr, Simple bool }
+type For struct { Target Expr, Iter Expr, Body []Stmt, OrElse []Stmt }
+type AsyncFor struct { Target Expr, Iter Expr, Body []Stmt, OrElse []Stmt }
+type While struct { Test Expr, Body []Stmt, OrElse []Stmt }
+type If struct { Test Expr, Body []Stmt, OrElse []Stmt }
+type With struct { Items []WithItem, Body []Stmt }
+type AsyncWith struct { Items []WithItem, Body []Stmt }
+type MatchStmt struct { Subject Expr, Cases []MatchCase }
+type Raise struct { Exc *Expr, Cause *Expr }
+type Try struct { Body []Stmt, Handlers []ExceptHandler, OrElse []Stmt, FinalBody []Stmt }
+type TryStar struct { Body []Stmt, Handlers []ExceptHandler, OrElse []Stmt, FinalBody []Stmt }
+type Assert struct { Test Expr, Msg *Expr }
+type Import struct { Names []Alias }
+type ImportFrom struct { Module string, Names []Alias, Level int }
+type Global struct { Names []Identifier }
+type Nonlocal struct { Names []Identifier }
+type ExprStmt struct { Value Expr }
+type Pass struct {}
+type Break struct {}
+type Continue struct {}
+type Stmt = FunctionDef | AsyncFunctionDef | ClassDef | Return | Delete | Assign | TypeAlias
+    | AugAssign | AnnAssign | For | AsyncFor | While | If | With | AsyncWith | MatchStmt | Raise
+    | Try | TryStar | Assert | Import | ImportFrom | Global | Nonlocal | ExprStmt | Pass | Break
+    | Continue
+
+// --- Expressions ---
+type BoolOp struct { Op Op, Values []Expr }
+type NamedExpr struct { Target Name, Value Expr }
+type BinOp struct { Left Expr, Op Op, Right Expr }
+type UnaryOp struct { Op Op, Operand Expr }
+type Lambda struct { Args Arguments, Body Expr }
+type IfExp struct { Test Expr, Body Expr, OrElse Expr }
+// Keys has a nil key for each `**` item.
+type Dict struct { Keys []*Expr, Values []Expr }
+type Set struct { Elts []Expr }
+type ListComp struct { Elt Expr, Generators []Comprehension }
+type SetComp struct { Elt Expr, Generators []Comprehension }
+type DictComp struct { Key Expr, Value Expr, Generators []Comprehension }
+type GeneratorExp struct { Elt Expr, Generators []Comprehension }
+type Await struct { Value Expr }
+type Yield struct { Value *Expr }
+type YieldFrom struct { Value Expr }
+type Compare struct { Left Expr, Ops []Op, Comparators []Expr }
+type Call struct { Func Expr, Args []Expr, Keywords []Keyword }
+// A replacement field of an f-string, or of a format spec. Str is the source of the expression
+// (from after the '{'), Debug the '=' with the whitespace around it ("" without), Conversion the
+// conversion character ("" without).
+type FormattedValue struct { Value Expr, Str string, Debug string, Conversion string, FormatSpec *JoinedStr }
+// A replacement field of a t-string, like FormattedValue.
+type Interpolation struct { Value Expr, Str string, Debug string, Conversion string, FormatSpec *JoinedStr }
+// Adjacent f-strings and string literals, or a format spec. The values are the parts in source
+// order: whole string literals (Constant), the literal text of f-strings (FStringMiddle, or
+// FStringRawMiddle in raw f-strings) and replacement fields.
+type JoinedStr struct { Values []StrPart }
+// Adjacent t-strings: their literal text and Interpolations.
+type TemplateStr struct { Values []StrPart }
+// A number, True, False, None, `...`, or adjacent string or bytes literals: the source text.
+type Constant terminal
+type Attribute struct { Value Expr, Attr string, Ctx string }
+type Subscript struct { Value Expr, Slice Expr, Ctx string }
+type Starred struct { Value Expr, Ctx string }
+type Name struct { Id string, Ctx string }
+type ListExpr struct { Elts []Expr, Ctx string }
+type Tuple struct { Elts []Expr, Ctx string }
+type Slice struct { Lower *Expr, Upper *Expr, Step *Expr }
+type Expr = BoolOp | NamedExpr | BinOp | UnaryOp | Lambda | IfExp | Dict | Set | ListComp | SetComp
+    | DictComp | GeneratorExp | Await | Yield | YieldFrom | Compare | Call | FormattedValue
+    | Interpolation | JoinedStr | TemplateStr | Constant | Attribute | Subscript | Starred | Name
+    | ListExpr | Tuple | Slice
+
+// The literal text of an f-string or t-string between replacement fields, with its escape
+// sequences and doubled braces as written.
+type FStringMiddle terminal
+// The same in a raw f-string or t-string.
+type FStringRawMiddle terminal
+type StrPart = Constant | FStringMiddle | FStringRawMiddle | FormattedValue | Interpolation
+
+// --- Patterns ---
+type MatchCase struct { Pattern Pattern, Guard *Expr, Body []Stmt }
+type MatchValue struct { Value Expr }
+type MatchSingleton struct { Value Constant }
+type MatchSequence struct { Patterns []Pattern }
+type MatchMapping struct { Keys []Expr, Patterns []Pattern, Rest string }
+type MatchClass struct { Cls Expr, Patterns []Pattern, KwdAttrs []Identifier, KwdPatterns []Pattern }
+type MatchStar struct { Name string }
+type MatchAs struct { Pattern *Pattern, Name string }
+type MatchOr struct { Patterns []Pattern }
+type Pattern = MatchValue | MatchSingleton | MatchSequence | MatchMapping | MatchClass | MatchStar
+    | MatchAs | MatchOr
+
+// --- Other nodes ---
+// The parameters of a function or lambda. Defaults are those of the last positional parameters;
+// KwDefaults has one entry per keyword-only parameter, nil where it has no default.
+type Arguments struct {
+    PosOnlyArgs []Arg
+    Args        []Arg
+    VarArg      *Arg
+    KwOnlyArgs  []Arg
+    KwDefaults  []*Expr
+    KwArg       *Arg
+    Defaults    []Expr
+}
+type Arg struct { Arg string, Annotation *Expr }
+// Arg is "" for `**value`.
+type Keyword struct { Arg string, Value Expr }
+type Alias struct { Name string, AsName string }
+type WithItem struct { ContextExpr Expr, OptionalVars *Expr }
+type Comprehension struct { Target Expr, Iter Expr, Ifs []Expr, IsAsync bool }
+type ExceptHandler struct { Type *Expr, Name string, Body []Stmt }
+type TypeVar struct { Name string, Bound *Expr, DefaultValue *Expr }
+type ParamSpec struct { Name string, DefaultValue *Expr }
+type TypeVarTuple struct { Name string, DefaultValue *Expr }
+type TypeParam = TypeVar | ParamSpec | TypeVarTuple
+// A name in a list of names (Global, Nonlocal, MatchClass.KwdAttrs).
+type Identifier terminal
+// An operator as written: "+", "not in", "+=", "and", ...
+type Op terminal
+
+// ============================================================================
+// Module, blocks and lines
+// ============================================================================
+
+def main: Module = [ind = 0] [lv = 0] [fs = 0] [lam = false] [barry = false]
+    -blank* b:first_stmts? -module_end $$ #error(message="invalid syntax") -> new Module{Body: concat($b)}
+// The first statement must not be indented.
+def first_stmts = i:indentation
+    [foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail) == 0
+        && foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail) == 0]
+    #error(message="unexpected indent")
+    s:stmts -> $s
+
+// After the last statement: an optional ';', the end of its line, blank lines, and whitespace or a
+// comment on a last line without a newline.
+def module_end = (ws ";")? (eol blank*)? (? \t\u{c})* comment?
+
+// The statements of a block, the first at the current position (its indentation consumed by the
+// caller). Simple statements on one line are separated by ';'; lines by stmt_sep, which requires the
+// block's indentation. `from __future__ import barry_as_FLUFL` turns on `barry` for the statements
+// that follow it in the block (in CPython, for the rest of the file).
+def stmts = (&barry_import [barry = true])? f:stmt
+    r:(-ws -";" -ws (&barry_import [barry = true])? s:simple_stmt
+        / -stmt_sep (&barry_import [barry = true])? s:stmt)*
+    -> concat(list($f), map($r, (x) => $x.s))
+def stmt_sep = (ws ";")? eol blank* i:indentation
+    [foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail)
+        + 4194304 * (foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail)) == ind % (4194304 * 4194304)]
+
+// The body of a compound statement, after its ':': simple statements on the same line, or an
+// indented block on the following lines.
+def block = -ws b:(indented_block / simple_stmts) -> $b
+def indented_block = -eol -blank* i:indentation
+    [foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail) > ind % 4194304
+        && foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail) > ind / 4194304 % 4194304]
+        #error(message="expected an indented block")
+    [ind / (4194304 * 4194304) < 99] #error(message="too many levels of indentation")
+    [ind = foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail)
+        + 4194304 * (foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail))
+        + (ind / (4194304 * 4194304) + 1) * (4194304 * 4194304)]
+    s:stmts -> $s
+def simple_stmts = f:simple_stmt r:(-ws -";" -ws s:simple_stmt)* -> concat(list($f), map($r, (x) => $x.s))
+
+// The line end, blank lines and indentation before a clause that continues a compound statement
+// (elif, else, except, finally, case) or before the next decorator: the indentation of the block.
+def clause_sep = (ws ";")? eol blank* i:indentation
+    [foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail)
+        + 4194304 * (foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail)) == ind % (4194304 * 4194304)]
+
+// The indentation of a line: segments of spaces ended by a tab, then spaces. Only what follows the
+// last form feed counts. A backslash continuation at the start of the line is skipped (CPython then
+// counts the whitespace after it); continuations after some whitespace end the indentation (CPython
+// keeps the column of the first one).
+def indentation = -((? \t)* "\u{c}")* -("\\" newline !$$ ((? \t)* "\u{c}")*)*
+    segs:(sp:@" "* "\t")* tail:@" "* -("\\" newline !$$ (? \t\u{c})*)*
+
+def blank = (? \t\u{c})* ("\\" newline !$$ (? \t\u{c})*)* comment? newline
+def eol = ws comment? (newline / $$)
+def newline = "\r\n" / (?\n\r)
+def comment = "#" (?^\n\r\u{0})*
+
+// Whitespace between tokens: spaces, tabs, form feeds and backslash continuations, and inside
+// brackets newlines and comments. A continuation must not end the input.
+def ws = ((? \t\u{c})+ / "\\" ("\r\n" / (?\n\r)) !$$ / &(?#\n\r) [lv >= 2] ("#" (?^\n\r\u{0})* / "\r\n" / (?\n\r)))*
+
+// ============================================================================
+// Statements
+// ============================================================================
+
+def stmt: Stmt = compound_stmt / simple_stmt
+
+def simple_stmt: Stmt = pass_stmt / break_stmt / continue_stmt / return_stmt / raise_stmt
+    / global_stmt / nonlocal_stmt / del_stmt / assert_stmt / import_stmt / from_stmt / yield_stmt
+    / type_alias / expr_stmt / assignment
+
+// An expression statement is parsed first, since most statements are: the expression is parsed
+// once. Only if it is followed by '=', an augmented assignment operator or ':' is the statement an
+// assignment, parsed again from its start (as CPython's assignment rule, which it tries first).
+def expr_stmt: ExprStmt = e:star_expressions !(ws ("=" !"=" / ":" !"=" / augassign_op)) -> new ExprStmt{Value: $e}
+
+def assignment: Stmt = ann_simple / ann_complex / assign_one / assign_chain / aug_assign
+def ann_simple: AnnAssign = t:store_name -ws ":" !"=" -ws a:expression (-ws "=" !"=" -ws x:annotated_rhs)?
+    -> new AnnAssign{Target: $t, Annotation: $a, Value: $x, Simple: true}
+def ann_complex: AnnAssign = t:(paren_single_target / single_subscript_attribute_target) -ws ":" !"=" -ws a:expression
+    (-ws "=" !"=" -ws x:annotated_rhs)?
+    -> new AnnAssign{Target: $t, Annotation: $a, Value: $x, Simple: false}
+// `x = value` is parsed with one target first, so that the value is not first tried as a target.
+def assign_one: Assign = t:star_targets -ws "=" !"=" -ws v:annotated_rhs !(ws "=" !"=")
+    -> new Assign{Targets: list($t), Value: $v}
+def assign_chain: Assign = ts:(t:star_targets -ws "=" !"=" -ws)+ v:annotated_rhs !(ws "=" !"=")
+    -> new Assign{Targets: map($ts, (x) => $x.t), Value: $v}
+def aug_assign: AugAssign = t:single_target -ws o:augassign_op -ws v:annotated_rhs
+    -> new AugAssign{Target: $t, Op: $o, Value: $v}
+def augassign_op: Op = "+=" / "-=" / "*=" / "@=" / "/=" / "%=" / "&=" / "|=" / "^=" / "<<=" / ">>=" / "**=" / "//="
+def annotated_rhs: Expr = yield_expr / star_expressions
+
+def pass_stmt: Pass = kw_pass -> new Pass{}
+def break_stmt: Break = kw_break -> new Break{}
+def continue_stmt: Continue = kw_continue -> new Continue{}
+def return_stmt: Return = kw_return (-ws e:star_expressions)? -> new Return{Value: $e}
+def raise_stmt: Raise = kw_raise (-ws e:expression (-ws kw_from -ws c:expression)?)? -> new Raise{Exc: $e, Cause: $c}
+def global_stmt: Global = kw_global -ws f:identifier r:(-ws -"," -ws n:identifier)*
+    -> new Global{Names: concat(list($f), map($r, (x) => $x.n))}
+def nonlocal_stmt: Nonlocal = kw_nonlocal -ws f:identifier r:(-ws -"," -ws n:identifier)*
+    -> new Nonlocal{Names: concat(list($f), map($r, (x) => $x.n))}
+def del_stmt: Delete = kw_del -ws f:del_target r:(-ws -"," -ws t:del_target)* (-ws -",")? &(ws (";" / "#" / newline / $$))
+    -> new Delete{Targets: concat(list($f), map($r, (x) => $x.t))}
+def assert_stmt: Assert = kw_assert -ws t:expression (-ws "," -ws m:expression)? -> new Assert{Test: $t, Msg: $m}
+def yield_stmt: ExprStmt = y:yield_expr -> new ExprStmt{Value: $y}
+def type_alias: TypeAlias = kw_type -ws n:store_name (-ws p:type_params)? -ws "=" !"=" -ws v:expression
+    -> new TypeAlias{Name: $n, TypeParams: concat($p), Value: $v}
+
+def import_stmt: Import = kw_import -ws f:dotted_as_name r:(-ws -"," -ws a:dotted_as_name)*
+    -> new Import{Names: concat(list($f), map($r, (x) => $x.a))}
+def dotted_as_name: Alias = d:dotted_name (-ws kw_as -ws a:ident)?
+    -> new Alias{Name: foldl(text($d.f), $d.r, (acc, x) => $acc + "." + text($x.n)), AsName: text($a)}
+def dotted_name = f:ident r:(-ws -"." -ws n:ident)*
+// `from` dots and an optional module (at least one of them), `import` and the names.
+def from_stmt: ImportFrom = kw_from ds:(-ws d:("..." / "."))* m:from_module [len($ds) > 0 || $m.f != nil]
+    -ws kw_import -ws ns:import_from_targets
+    -> new ImportFrom{Module: foldl(text($m.f), $m.r, (acc, x) => $acc + "." + text($x.n)), Names: $ns,
+        Level: foldl(0, $ds, (acc, x) => $acc + len($x.d))}
+// Always a record (the empty match `_` makes it one), with the fields f and r when there is a module.
+def from_module = _ (-ws f:ident r:(-ws -"." -ws n:ident)*)?
+def import_from_targets = paren_import_names / plain_import_names / star_import
+def paren_import_names = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws f:import_from_as_name
+    r:(-ws -"," -ws a:import_from_as_name)* (-ws -",")? -ws ")"
+    -> concat(list($f), map($r, (x) => $x.a))
+def plain_import_names = f:import_from_as_name r:(-ws -"," -ws a:import_from_as_name)* !(ws ",")
+    -> concat(list($f), map($r, (x) => $x.a))
+def star_import = a:star_alias -> list($a)
+def star_alias: Alias = "*" -> new Alias{Name: "*"}
+def import_from_as_name: Alias = n:ident (-ws kw_as -ws a:ident)? -> new Alias{Name: text($n), AsName: text($a)}
+
+// `from __future__ import ... barry_as_FLUFL ...`
+def barry_import = kw_from -ws "__future__" !idcont -ws kw_import -ws
+    ("(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws barry_names / barry_names)
+def barry_names = (!("barry_as_FLUFL" !idcont) ident -ws (kw_as -ws ident -ws)? "," -ws)* "barry_as_FLUFL" !idcont
+
+// ============================================================================
+// Compound statements
+// ============================================================================
+
+def compound_stmt: Stmt = if_stmt / while_stmt / for_stmt / try_stmt / with_stmt / funcdef / classdef
+    / async_funcdef / async_for / async_with / match_stmt
+
+def if_stmt: If = kw_if -ws t:named_expression -ws ":" b:block o:(elif_part / else_part)?
+    -> new If{Test: $t, Body: $b, OrElse: concat($o)}
+def elif_part = -clause_sep e:elif_stmt -> list($e)
+def elif_stmt: If = kw_elif -ws t:named_expression -ws ":" b:block o:(elif_part / else_part)?
+    -> new If{Test: $t, Body: $b, OrElse: concat($o)}
+def else_part = -clause_sep kw_else -ws ":" b:block -> $b
+
+def while_stmt: While = kw_while -ws t:named_expression -ws ":" b:block o:else_part?
+    -> new While{Test: $t, Body: $b, OrElse: concat($o)}
+
+def for_stmt: For = kw_for -ws t:star_targets -ws kw_in -ws i:star_expressions -ws ":" b:block o:else_part?
+    -> new For{Target: $t, Iter: $i, Body: $b, OrElse: concat($o)}
+def async_for: AsyncFor = kw_async -ws kw_for -ws t:star_targets -ws kw_in -ws i:star_expressions -ws ":" b:block
+    o:else_part? -> new AsyncFor{Target: $t, Iter: $i, Body: $b, OrElse: concat($o)}
+
+def with_stmt: With = kw_with -ws is:with_items -ws ":" b:block -> new With{Items: $is, Body: $b}
+def async_with: AsyncWith = kw_async -ws kw_with -ws is:with_items -ws ":" b:block -> new AsyncWith{Items: $is, Body: $b}
+// `with (a as b, c):` is tried before taking the parenthesis as part of an expression.
+def with_items = paren_with_items / plain_with_items
+def paren_with_items = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws f:with_item r:(-ws -"," -ws w:with_item)*
+    (-ws -",")? -ws ")" &(ws ":") -> concat(list($f), map($r, (x) => $x.w))
+def plain_with_items = f:with_item r:(-ws -"," -ws w:with_item)* -> concat(list($f), map($r, (x) => $x.w))
+def with_item: WithItem = with_item_as / with_item_plain
+def with_item_as: WithItem = e:expression -ws kw_as -ws t:star_target &(ws (?,\):))
+    -> new WithItem{ContextExpr: $e, OptionalVars: $t}
+def with_item_plain: WithItem = e:expression -> new WithItem{ContextExpr: $e}
+
+// The handlers are either all `except` or all `except*`; with `except*` the statement is a TryStar
+// (made once for each handler: the last is the result).
+def try_stmt: Stmt = kw_try -ws ":" b:block hs:(-clause_sep h:except_handler)* xs:(-clause_sep h:except_star_handler)*
+    e:else_part? f:finally_part?
+    [len($hs) == 0 || len($xs) == 0] [len($hs) + len($xs) > 0 || $f != nil && $e == nil]
+    #error(message="expected 'except' or 'finally' block")
+    -> foldl(new Try{Body: $b, Handlers: map($hs, (x) => $x.h), OrElse: concat($e), FinalBody: concat($f)}, $xs,
+        (acc, y) => new TryStar{Body: $b, Handlers: map($xs, (x) => $x.h), OrElse: concat($e), FinalBody: concat($f)})
+def finally_part = -clause_sep kw_finally -ws ":" b:block -> $b
+def except_handler: ExceptHandler = except_as / except_plain / except_bare
+def except_as: ExceptHandler = kw_except -ws t:expression -ws kw_as -ws n:ident -ws ":" b:block
+    -> new ExceptHandler{Type: $t, Name: text($n), Body: $b}
+// Several types without parentheses (PEP 758) make a tuple.
+def except_plain: ExceptHandler = kw_except -ws t:expressions -ws ":" b:block -> new ExceptHandler{Type: $t, Body: $b}
+def except_bare: ExceptHandler = kw_except -ws ":" b:block -> new ExceptHandler{Body: $b}
+def except_star_handler: ExceptHandler = except_star_as / except_star_plain
+def except_star_as: ExceptHandler = kw_except -ws "*" -ws t:expression -ws kw_as -ws n:ident -ws ":" b:block
+    -> new ExceptHandler{Type: $t, Name: text($n), Body: $b}
+def except_star_plain: ExceptHandler = kw_except -ws "*" -ws t:expressions -ws ":" b:block
+    -> new ExceptHandler{Type: $t, Body: $b}
+
+// Decorators are lines of their own, at the indentation of the definition. The span of a decorated
+// definition starts at its first decorator.
+def decorators = ds:("@" -ws e:named_expression -dec_sep)* -> map($ds, (x) => $x.e)
+def dec_sep = eol blank* i:indentation
+    [foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail)
+        + 4194304 * (foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail)) == ind % (4194304 * 4194304)]
+
+def funcdef: FunctionDef = ds:decorators kw_def -ws n:ident (-ws p:type_params)? -ws a:def_params
+    (-ws "->" -ws r:expression)? -ws ":" b:block
+    -> new FunctionDef{Name: text($n), Args: $a, Body: $b, DecoratorList: $ds, Returns: $r, TypeParams: concat($p)}
+def async_funcdef: AsyncFunctionDef = ds:decorators kw_async -ws kw_def -ws n:ident (-ws p:type_params)? -ws a:def_params
+    (-ws "->" -ws r:expression)? -ws ":" b:block
+    -> new AsyncFunctionDef{Name: text($n), Args: $a, Body: $b, DecoratorList: $ds, Returns: $r, TypeParams: concat($p)}
+def def_params: Arguments = "(" [lv < 400] [lv = lv / 2 * 2 + 2] [lam = false] -ws a:params -ws ")" -> $a
+
+def classdef: Stmt = classdef_args / classdef_plain
+def classdef_args: ClassDef = ds:decorators kw_class -ws n:ident (-ws p:type_params)? -ws c:call_args -ws ":" b:block
+    -> new ClassDef{Name: text($n), Bases: concat(map($c.pos, (x) => $x.a), foldl(list(), $c.kw1, (acc, x) => concat($acc, $x.ss))),
+        Keywords: concat(foldl(list(), $c.kw1, (acc, x) => concat($acc, $x.ks)), map($c.kw2, (x) => $x.k)),
+        Body: $b, DecoratorList: $ds, TypeParams: concat($p)}
+def classdef_plain: ClassDef = ds:decorators kw_class -ws n:ident (-ws p:type_params)? -ws ":" b:block
+    -> new ClassDef{Name: text($n), Body: $b, DecoratorList: $ds, TypeParams: concat($p)}
+
+// The cases are lines of their own in a deeper block.
+def match_stmt: MatchStmt = kw_match -ws s:subject_expr -ws ":" cs:case_blocks -> new MatchStmt{Subject: $s, Cases: $cs}
+def subject_expr: Expr = subject_tuple / named_expression
+def subject_tuple: Tuple = f:star_named_expression -ws "," r:(-ws x:star_named_expression -ws -",")*
+    l:(-ws y:star_named_expression){0,1}
+    -> new Tuple{Elts: concat(list($f), map($r, (z) => $z.x), map($l, (z) => $z.y)), Ctx: "Load"}
+def case_blocks = -ws -eol -blank* i:indentation
+    [foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail) > ind % 4194304
+        && foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail) > ind / 4194304 % 4194304]
+        #error(message="expected an indented block")
+    [ind / (4194304 * 4194304) < 99] #error(message="too many levels of indentation")
+    [ind = foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail)
+        + 4194304 * (foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail))
+        + (ind / (4194304 * 4194304) + 1) * (4194304 * 4194304)]
+    f:case_block r:(-clause_sep c:case_block)* -> concat(list($f), map($r, (x) => $x.c))
+def case_block: MatchCase = kw_case -ws p:patterns (-ws kw_if -ws g:named_expression)? -ws ":" b:block
+    -> new MatchCase{Pattern: $p, Guard: $g, Body: $b}
+
+// ============================================================================
+// Patterns
+// ============================================================================
+
+def patterns: Pattern = open_sequence_pattern / pattern
+def open_sequence_pattern: MatchSequence = s:open_seq_items
+    -> new MatchSequence{Patterns: concat(list($s.f), map($s.r, (x) => $x.p), map($s.l, (x) => $x.q))}
+// A sequence pattern without brackets: at least one comma.
+def open_seq_items = f:maybe_star_pattern -ws "," r:(-ws p:maybe_star_pattern -ws -",")* l:(-ws q:maybe_star_pattern){0,1}
+def pattern: Pattern = as_pattern / or_pattern
+def as_pattern: MatchAs = p:or_pattern -ws kw_as -ws n:capture_name -> new MatchAs{Pattern: $p, Name: text($n)}
+def or_pattern: Pattern = f:closed_pattern t:(rs:(-ws -"|" !"=" -ws p:closed_pattern)+){0,1}
+    -> foldl($f, $t, (acc, x) => new MatchOr{Patterns: concat(list($f), map($x.rs, (y) => $y.p))})
+def closed_pattern: Pattern = literal_pattern / capture_pattern / wildcard_pattern / value_pattern
+    / group_pattern / sequence_pattern / mapping_pattern / class_pattern
+
+def literal_pattern: Pattern = signed_number_pattern / complex_pattern / string_pattern / singleton_pattern
+def signed_number_pattern: MatchValue = v:signed_number !(ws (?+\-)) -> new MatchValue{Value: $v}
+def complex_pattern: MatchValue = v:complex_number -> new MatchValue{Value: $v}
+def string_pattern: MatchValue = v:strings -> new MatchValue{Value: $v}
+def singleton_pattern: MatchSingleton = v:singleton -> new MatchSingleton{Value: $v}
+def singleton: Constant = ("None" / "True" / "False") !idcont
+// The keys of mapping patterns.
+def literal_expr: Expr = signed_number_lit / complex_number / strings / singleton
+def signed_number_lit: Expr = v:signed_number !(ws (?+\-)) -> $v
+def signed_number: Expr = number / neg_number
+def neg_number: UnaryOp = o:minus_op -ws n:number -> new UnaryOp{Op: $o, Operand: $n}
+// The real part must be a real number and the imaginary part an imaginary one.
+def complex_number: BinOp = r:signed_real_number -ws o:plus_minus_op -ws i:imag_number -> new BinOp{Left: $r, Op: $o, Right: $i}
+def signed_real_number: Expr = real_number / neg_real_number
+def neg_real_number: UnaryOp = o:minus_op -ws n:real_number -> new UnaryOp{Op: $o, Operand: $n}
+def minus_op: Op = "-" !(?=>)
+def plus_minus_op: Op = "+" !"=" / "-" !(?=>)
+
+def capture_pattern: MatchAs = n:capture_name -> new MatchAs{Name: text($n)}
+def capture_name = !("_" !idcont) n:ident !(ws ("." !".." / "(" / "=" !"=")) -> $n
+def wildcard_pattern: MatchAs = "_" !idcont -> new MatchAs{}
+def value_pattern: MatchValue = a:attr !(ws ("." !".." / "(" / "=" !"=")) -> new MatchValue{Value: $a}
+// A dotted name of at least two names. (The spans of the inner attributes cover only their value.)
+def attr: Expr = f:name r:(-ws -"." !".." -ws n:ident)+
+    -> foldl($f, $r, (acc, x) => new Attribute{Value: $acc, Attr: text($x.n), Ctx: "Load"})
+def name_or_attr: Expr = attr / name
+def group_pattern: Pattern = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws p:pattern -ws ")" -> $p
+def sequence_pattern: MatchSequence = list_pattern / empty_tuple_pattern / tuple_pattern
+def empty_tuple_pattern: MatchSequence = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws ")" -> new MatchSequence{}
+def list_pattern: MatchSequence = "[" [lv < 400] [lv = lv / 2 * 2 + 2] -ws ps:star_patterns? -ws "]"
+    -> new MatchSequence{Patterns: concat($ps)}
+def star_patterns = f:maybe_star_pattern r:(-ws -"," -ws p:maybe_star_pattern)* (-ws -",")?
+    -> concat(list($f), map($r, (x) => $x.p))
+def tuple_pattern: MatchSequence = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws s:open_seq_items -ws ")"
+    -> new MatchSequence{Patterns: concat(list($s.f), map($s.r, (x) => $x.p), map($s.l, (x) => $x.q))}
+def maybe_star_pattern: Pattern = star_pattern / pattern
+def star_pattern: MatchStar = "*" -ws (n:capture_name / "_" !idcont) -> new MatchStar{Name: text($n)}
+
+def mapping_pattern: MatchMapping = "{" [lv < 400] [lv = lv / 2 * 2 + 2] -ws
+    (ks:kv_patterns (-ws -"," -ws "**" -ws r:capture_name)? / "**" -ws r:capture_name)?
+    (-ws -",")? -ws "}"
+    -> new MatchMapping{Keys: map($ks, (x) => $x.k), Patterns: map($ks, (x) => $x.v), Rest: text($r)}
+def kv_patterns = f:key_value_pattern r:(-ws -"," -ws p:key_value_pattern)* -> concat(list($f), map($r, (x) => $x.p))
+def key_value_pattern = k:(literal_expr / attr) -ws ":" -ws v:pattern
+
+def class_pattern: MatchClass = c:name_or_attr -ws "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws
+    (ps:positional_patterns (-ws -"," -ws ks:keyword_patterns)? / ks:keyword_patterns)?
+    (-ws -",")? -ws ")"
+    -> new MatchClass{Cls: $c, Patterns: concat($ps), KwdAttrs: map($ks, (x) => $x.n), KwdPatterns: map($ks, (x) => $x.v)}
+def positional_patterns = f:pattern r:(-ws -"," -ws p:pattern)* -> concat(list($f), map($r, (x) => $x.p))
+def keyword_patterns = f:keyword_pattern r:(-ws -"," -ws p:keyword_pattern)* -> concat(list($f), map($r, (x) => $x.p))
+def keyword_pattern = n:identifier -ws "=" !"=" -ws v:pattern
+
+// ============================================================================
+// Type parameters
+// ============================================================================
+
+def type_params = "[" [lv < 400] [lv = lv / 2 * 2 + 2] -ws f:type_param r:(-ws -"," -ws p:type_param)* (-ws -",")? -ws "]"
+    -> concat(list($f), map($r, (x) => $x.p))
+def type_param: TypeParam = type_var / type_var_tuple / param_spec
+def type_var: TypeVar = n:ident (-ws ":" -ws b:expression)? (-ws "=" !"=" -ws d:expression)?
+    -> new TypeVar{Name: text($n), Bound: $b, DefaultValue: $d}
+def type_var_tuple: TypeVarTuple = "*" !"*" -ws n:ident (-ws "=" !"=" -ws d:star_expression)?
+    -> new TypeVarTuple{Name: text($n), DefaultValue: $d}
+def param_spec: ParamSpec = "**" -ws n:ident (-ws "=" !"=" -ws d:expression)?
+    -> new ParamSpec{Name: text($n), DefaultValue: $d}
+
+// ============================================================================
+// Parameters
+// ============================================================================
+
+// The parameters of a def (lam false) or a lambda (lam true: no annotations, and ':' ends them):
+// positional ones, optionally '/' after which the ones before it are positional-only and more
+// positional ones may follow, then '*' with the keyword-only ones, and '**'. A positional parameter
+// without a default may not follow one with a default. (`$sl` has one element if there is a '/'.)
+def params: Arguments = g1nd:param_nd* g1wd:param_wd* sl:slash{0,1} g2nd:param_nd* g2wd:param_wd* st:star_etc
+    [len($sl) == 0 || len($g1nd) + len($g1wd) > 0] #error(message="at least one argument must precede /")
+    [len($sl) > 0 || len($g2nd) + len($g2wd) == 0] [len($g1wd) == 0 || len($g2nd) == 0]
+    #error(message="parameter without a default follows parameter with a default")
+    -> new Arguments{
+        PosOnlyArgs: foldl(list(), $sl, (acc, x) => concat($g1nd, map($g1wd, (y) => $y.p))),
+        Args: concat(foldl(concat($g1nd, map($g1wd, (y) => $y.p)), $sl, (acc, x) => list()), $g2nd, map($g2wd, (y) => $y.p)),
+        VarArg: $st.va,
+        KwOnlyArgs: map($st.ko, (x) => $x.p),
+        KwDefaults: map($st.ko, (x) => $x.d),
+        KwArg: $st.kw,
+        Defaults: concat(map($g1wd, (y) => $y.d), map($g2wd, (y) => $y.d))}
+def param_nd: Arg = p:param -pend -> $p
+def param_wd = p:param -ws "=" !"=" -ws d:expression -pend
+def slash = s:"/" -pend
+// After '*': a parameter (the var-positional one) or a comma and at least one keyword-only
+// parameter. The rule always matches, so that its record always exists.
+def star_etc = _ ("*" !(?*=) -ws (va:vararg_param -pend / "," -ws) ko:(p:param (-ws "=" !"=" -ws d:expression)? -pend)*
+        [$va != nil || len($ko) > 0] #error(message="named arguments must follow bare *"))?
+    (kw:kwds)?
+def kwds: Arg = "**" -ws p:param -pend -> $p
+def param: Arg = n:ident (-ws [!lam] ":" !"=" -ws a:expression)? -> new Arg{Arg: text($n), Annotation: $a}
+// The annotation of *args may be starred (*args: *Ts).
+def vararg_param: Arg = n:ident (-ws [!lam] ":" !"=" -ws a:star_expression)? -> new Arg{Arg: text($n), Annotation: $a}
+// A parameter is followed by a comma, or ends the list.
+def pend = -ws ("," -ws / &([lam] ":" !"=" / [!lam] ")"))
+
+// ============================================================================
+// Expressions
+// ============================================================================
+
+// Comma-separated expressions make a Tuple; one expression without a comma is returned as is.
+def expressions: Expr = f:expression t:(rs:(-ws -"," -ws x:expression)+ (-ws -",")? / -ws c:","){0,1}
+    -> foldl($f, $t, (acc, y) => new Tuple{Elts: concat(list($f), map($y.rs, (z) => $z.x)), Ctx: "Load"})
+def star_expressions: Expr = f:star_expression t:(rs:(-ws -"," -ws x:star_expression)+ (-ws -",")? / -ws c:","){0,1}
+    -> foldl($f, $t, (acc, y) => new Tuple{Elts: concat(list($f), map($y.rs, (z) => $z.x)), Ctx: "Load"})
+def star_expression: Expr = starred_bitor / expression
+def star_named_expression: Expr = starred_bitor / named_expression
+def starred_bitor: Starred = "*" !(?*=) -ws v:bitwise_or -> new Starred{Value: $v, Ctx: "Load"}
+def starred_expression: Starred = "*" !(?*=) -ws v:expression -> new Starred{Value: $v, Ctx: "Load"}
+def named_expression: Expr = walrus / plain_named_expression
+def plain_named_expression: Expr = e:expression !(ws ":=") -> $e
+def walrus: NamedExpr = n:store_name -ws ":=" -ws v:expression -> new NamedExpr{Target: $n, Value: $v}
+def expression: Expr = conditional / lambdef
+def conditional: Expr = d:disjunction t:(-ws kw_if -ws c:disjunction -ws kw_else -ws o:expression){0,1}
+    -> foldl($d, $t, (acc, x) => new IfExp{Test: $x.c, Body: $d, OrElse: $x.o})
+// A lambda may not be at the top level of a replacement field, where its ':' starts the format spec.
+def lambdef: Lambda = kw_lambda [lv % 2 == 0] #error(message="f-string: lambda expressions are not allowed without parentheses")
+    -ws a:lambda_params -ws ":" !"=" -ws b:expression -> new Lambda{Args: $a, Body: $b}
+def lambda_params: Arguments = [lam = true] a:params -> $a
+
+def yield_expr: Expr = yield_from / yield_plain
+def yield_from: YieldFrom = kw_yield -ws kw_from -ws v:expression -> new YieldFrom{Value: $v}
+def yield_plain: Yield = kw_yield (-ws v:star_expressions)? -> new Yield{Value: $v}
+
+// Boolean operations are flat (BoolOp with all the operands), as in Python; Op is the first
+// operator.
+def disjunction: Expr = f:conjunction t:(-ws o:or_op -ws c:conjunction rs:(-ws -or_op -ws x:conjunction)*){0,1}
+    -> foldl($f, $t, (acc, y) => new BoolOp{Op: $y.o, Values: concat(list($f), list($y.c), map($y.rs, (z) => $z.x))})
+def conjunction: Expr = f:inversion t:(-ws o:and_op -ws c:inversion rs:(-ws -and_op -ws x:inversion)*){0,1}
+    -> foldl($f, $t, (acc, y) => new BoolOp{Op: $y.o, Values: concat(list($f), list($y.c), map($y.rs, (z) => $z.x))})
+def or_op: Op = "or" !idcont
+def and_op: Op = "and" !idcont
+def inversion: Expr = not_expr / comparison
+def not_expr: UnaryOp = o:not_op -ws v:inversion -> new UnaryOp{Op: $o, Operand: $v}
+def not_op: Op = "not" !idcont
+
+// Chained comparisons are one Compare, as in Python.
+def comparison: Expr = f:bitwise_or t:(rs:(-ws o:comp_op -ws x:bitwise_or)+){0,1}
+    -> foldl($f, $t, (acc, y) => new Compare{Left: $f, Ops: map($y.rs, (z) => $z.o), Comparators: map($y.rs, (z) => $z.x)})
+def comp_op: Op = "==" / "!=" [!barry] / "<>" [barry] / "<=" / ">=" / "<" !(?<=>) / ">" !(?>=)
+    / "not" !idcont ws "in" !idcont / "in" !idcont / "is" !idcont ws "not" !idcont / "is" !idcont
+
+def bitwise_or: Expr = f:bitwise_xor r:(-ws o:bor_op -ws x:bitwise_xor)*
+    -> foldl($f, $r, (acc, y) => new BinOp{Left: $acc, Op: $y.o, Right: $y.x})
+def bor_op: Op = "|" !"="
+def bitwise_xor: Expr = f:bitwise_and r:(-ws o:bxor_op -ws x:bitwise_and)*
+    -> foldl($f, $r, (acc, y) => new BinOp{Left: $acc, Op: $y.o, Right: $y.x})
+def bxor_op: Op = "^" !"="
+def bitwise_and: Expr = f:shift_expr r:(-ws o:band_op -ws x:shift_expr)*
+    -> foldl($f, $r, (acc, y) => new BinOp{Left: $acc, Op: $y.o, Right: $y.x})
+def band_op: Op = "&" !"="
+def shift_expr: Expr = f:sum r:(-ws o:shift_op -ws x:sum)*
+    -> foldl($f, $r, (acc, y) => new BinOp{Left: $acc, Op: $y.o, Right: $y.x})
+def shift_op: Op = "<<" !"=" / ">>" !"="
+def sum: Expr = f:term r:(-ws o:sum_op -ws x:term)*
+    -> foldl($f, $r, (acc, y) => new BinOp{Left: $acc, Op: $y.o, Right: $y.x})
+def sum_op: Op = "+" !"=" / "-" !(?=>)
+def term: Expr = f:factor r:(-ws o:term_op -ws x:factor)*
+    -> foldl($f, $r, (acc, y) => new BinOp{Left: $acc, Op: $y.o, Right: $y.x})
+def term_op: Op = "*" !(?*=) / "//" !"=" / "/" !(?/=) / "%" !"=" / "@" !"="
+def factor: Expr = unary / power
+def unary: UnaryOp = o:unary_op -ws v:factor -> new UnaryOp{Op: $o, Operand: $v}
+def unary_op: Op = "+" !"=" / "-" !(?=>) / "~"
+def power: Expr = a:await_primary t:(-ws o:pow_op -ws f:factor){0,1}
+    -> foldl($a, $t, (acc, x) => new BinOp{Left: $a, Op: $x.o, Right: $x.f})
+def pow_op: Op = "**" !"="
+def await_primary: Expr = await_expr / primary
+def await_expr: Await = kw_await -ws v:primary -> new Await{Value: $v}
+
+// An atom followed by attributes, calls and subscripts. Most atoms are followed by none, and are
+// returned without running the Pratt expression.
+def primary: Expr = atom_only / primary_chain
+def atom_only: Expr = a:atom !(ws ((?([) / "." !"..")) -> $a
+def primary_chain: Expr = pratt {
+    skip ws
+    operand atom
+    level {
+        postfix "." !".." -ws n:ident -> new Attribute{Value: $lhs, Attr: text($n), Ctx: "Load"}
+        postfix g:genexp -> new Call{Func: $lhs, Args: list($g)}
+        postfix c:call_args -> new Call{Func: $lhs,
+            Args: concat(map($c.pos, (x) => $x.a), foldl(list(), $c.kw1, (acc, x) => concat($acc, $x.ss))),
+            Keywords: concat(foldl(list(), $c.kw1, (acc, x) => concat($acc, $x.ks)), map($c.kw2, (x) => $x.k))}
+        postfix s:subscript -> new Subscript{Value: $lhs, Slice: $s, Ctx: "Load"}
+    }
+}
+
+// Call arguments: positional ones (and *x), then keyword arguments and *x, then keyword
+// arguments and **x. Starred arguments among the keyword arguments are positional arguments of
+// the Call, after the others.
+def call_args = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws
+    pos:(a:pos_arg -arg_sep)*
+    kw1:((ks:kwarg_list / ss:starred_list) -arg_sep)*
+    kw2:(k:(kwarg / dstar_arg) -arg_sep)*
+    ")"
+def arg_sep = -ws ("," -ws / &")")
+def pos_arg: Expr = starred_expression / positional_named
+def positional_named: Expr = e:named_expression !(ws "=" !"=") -> $e
+def kwarg_list = k:kwarg -> list($k)
+def starred_list = s:starred_expression -> list($s)
+def kwarg: Keyword = n:ident -ws "=" !"=" -ws v:expression -> new Keyword{Arg: text($n), Value: $v}
+def dstar_arg: Keyword = "**" -ws v:expression -> new Keyword{Value: $v}
+// A generator expression as the only argument needs no parentheses of its own: f(x for x in y).
+def genexp: GeneratorExp = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws e:named_expression -ws g:for_if_clauses -ws ")"
+    -> new GeneratorExp{Elt: $e, Generators: $g}
+
+def subscript = "[" [lv < 400] [lv = lv / 2 * 2 + 2] -ws s:slices -ws "]" -> $s
+// Several items, or a starred one, make a Tuple.
+def slices: Expr = star_first_slices / plain_slices
+def star_first_slices: Tuple = f:starred_expression rs:(-ws -"," -ws x:slice_or_star)* (-ws -",")?
+    -> new Tuple{Elts: concat(list($f), map($rs, (y) => $y.x)), Ctx: "Load"}
+def plain_slices: Expr = f:slice t:(rs:(-ws -"," -ws x:slice_or_star)+ (-ws -",")? / -ws c:","){0,1}
+    -> foldl($f, $t, (acc, y) => new Tuple{Elts: concat(list($f), map($y.rs, (z) => $z.x)), Ctx: "Load"})
+def slice_or_star: Expr = slice / starred_expression
+def slice: Expr = slice_colon / named_expression
+def slice_colon: Slice = (l:expression -ws)? ":" !"=" (-ws u:expression)? (-ws ":" !"=" (-ws s:expression)?)?
+    -> new Slice{Lower: $l, Upper: $u, Step: $s}
+
+// --- Comprehensions ---
+def for_if_clauses = f:for_if_clause r:(-ws c:for_if_clause)* -> concat(list($f), map($r, (x) => $x.c))
+def for_if_clause: Comprehension = a:(kw_async -ws)? kw_for -ws t:star_targets -ws kw_in -ws i:disjunction
+    ifs:(-ws kw_if -ws c:disjunction)*
+    -> new Comprehension{Target: $t, Iter: $i, Ifs: map($ifs, (x) => $x.c), IsAsync: $a != nil}
+
+// --- Atoms ---
+def atom: Expr = strings / name / number / constant_kw / paren / list_display / braces / ellipsis
+def name: Name = n:ident -> new Name{Id: text($n), Ctx: "Load"}
+def constant_kw: Constant = ("True" / "False" / "None") !idcont
+def ellipsis: Constant = "..."
+
+// (), (x), (x,), (x, y), (*x, y), (x for x in y), (yield x)
+def paren: Expr = empty_tuple / yield_group / star_first_tuple / paren_named
+def empty_tuple: Tuple = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws ")" -> new Tuple{Ctx: "Load"}
+def yield_group: Expr = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws y:yield_expr -ws ")" -> $y
+def star_first_tuple: Tuple = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws f:starred_bitor
+    rs:(-ws -"," -ws x:star_named_expression)* c:(-ws ",")? -ws ")" [len($rs) > 0 || $c != nil]
+    -> new Tuple{Elts: concat(list($f), map($rs, (y) => $y.x)), Ctx: "Load"}
+// The first element is parsed once; what follows it decides the node.
+def paren_named: Expr = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws e:named_expression
+    t:(rs:(-ws -"," -ws x:star_named_expression)+ (-ws -",")? / -ws c:","){0,1}
+    g:(-ws cs:for_if_clauses){0,1}
+    -ws ")" [len($t) + len($g) <= 1]
+    -> foldl(foldl($e, $t, (acc, y) => new Tuple{Elts: concat(list($e), map($y.rs, (z) => $z.x)), Ctx: "Load"}),
+        $g, (acc, y) => new GeneratorExp{Elt: $e, Generators: $y.cs})
+
+// [], [x, *y], [x for x in y]
+def list_display: Expr = empty_list / list_items
+def empty_list: ListExpr = "[" [lv < 400] [lv = lv / 2 * 2 + 2] -ws "]" -> new ListExpr{Ctx: "Load"}
+def list_items: Expr = "[" [lv < 400] [lv = lv / 2 * 2 + 2] -ws f:(s:starred_bitor / named_expression)
+    rs:(-ws -"," -ws x:star_named_expression)* c:(-ws ",")?
+    g:(-ws cs:for_if_clauses){0,1}
+    -ws "]" [len($g) == 0 || $s == nil && len($rs) == 0 && $c == nil]
+    -> foldl(new ListExpr{Elts: concat(list($f), map($rs, (y) => $y.x)), Ctx: "Load"},
+        $g, (acc, y) => new ListComp{Elt: $f, Generators: $y.cs})
+
+// {}, {k: v, **d}, {k: v for ...}, {x, *y}, {x for ...}
+def braces: Expr = empty_dict / dict_unpack_first / set_star_first / brace_items
+def empty_dict: Dict = "{" [lv < 400] [lv = lv / 2 * 2 + 2] -ws "}" -> new Dict{}
+def dict_unpack_first: Dict = "{" [lv < 400] [lv = lv / 2 * 2 + 2] -ws "**" -ws f:bitwise_or
+    rs:(-ws -"," -ws (-"**" -ws v:bitwise_or / k:expression -ws -":" !"=" -ws v:expression))* (-ws -",")? -ws "}"
+    -> new Dict{Keys: concat(list(nil), map($rs, (y) => $y.k)), Values: concat(list($f), map($rs, (y) => $y.v))}
+def set_star_first: Set = "{" [lv < 400] [lv = lv / 2 * 2 + 2] -ws f:starred_bitor
+    rs:(-ws -"," -ws x:star_named_expression)* (-ws -",")? -ws "}"
+    -> new Set{Elts: concat(list($f), map($rs, (y) => $y.x))}
+// The first element is parsed once. A ':' after it makes the display a dict (whose key may not be
+// an assignment expression), and comprehension clauses after it (and its value) a comprehension.
+def brace_items: Expr = "{" [lv < 400] [lv = lv / 2 * 2 + 2] -ws f:(w:walrus / expression)
+    kv:(-ws ":" !"=" -ws v:expression){0,1}
+    [isdict = len($kv) > 0] [$w == nil || !isdict]
+    g:(-ws cs:for_if_clauses){0,1}
+    dr:([isdict] -ws -"," -ws (-"**" -ws v:bitwise_or / k:expression -ws -":" !"=" -ws v:expression))*
+    sr:([!isdict] -ws -"," -ws x:star_named_expression)*
+    c:(-ws ",")?
+    -ws "}" [len($g) == 0 || len($dr) + len($sr) == 0 && $c == nil]
+    -> foldl(
+        foldl(new Set{Elts: concat(list($f), map($sr, (y) => $y.x))},
+            $kv, (acc, x) => new Dict{Keys: concat(list($f), map($dr, (y) => $y.k)), Values: concat(list($x.v), map($dr, (y) => $y.v))}),
+        $g, (acc, y) => foldl(new SetComp{Elt: $f, Generators: $y.cs},
+            $kv, (acc2, x) => new DictComp{Key: $f, Value: $x.v, Generators: $y.cs}))
+
+// ============================================================================
+// Assignment targets
+// ============================================================================
+
+def star_targets: Expr = f:star_target t:(rs:(-ws -"," -ws x:star_target)+ (-ws -",")? / -ws c:","){0,1}
+    -> foldl($f, $t, (acc, y) => new Tuple{Elts: concat(list($f), map($y.rs, (z) => $z.x)), Ctx: "Store"})
+def star_target: Expr = starred_target / target_with_star_atom
+def starred_target: Starred = "*" !(?*=) -ws !"*" t:star_target -> new Starred{Value: $t, Ctx: "Store"}
+def target_with_star_atom: Expr = attr_target / subscript_target / star_atom
+def attr_target: Attribute = t:t_primary -ws "." !".." -ws n:ident !(ws t_lookahead)
+    -> new Attribute{Value: $t, Attr: text($n), Ctx: "Store"}
+def subscript_target: Subscript = t:t_primary -ws s:subscript !(ws t_lookahead)
+    -> new Subscript{Value: $t, Slice: $s, Ctx: "Store"}
+def star_atom: Expr = store_name / paren_target / empty_tuple_target / star_tuple_target / empty_list_target / star_list_target
+def paren_target: Expr = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws t:target_with_star_atom -ws ")" -> $t
+def empty_tuple_target: Tuple = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws ")" -> new Tuple{Ctx: "Store"}
+def star_tuple_target: Tuple = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws f:star_target
+    rs:(-ws -"," -ws x:star_target)* c:(-ws ",")? -ws ")" [len($rs) > 0 || $c != nil]
+    -> new Tuple{Elts: concat(list($f), map($rs, (y) => $y.x)), Ctx: "Store"}
+def empty_list_target: ListExpr = "[" [lv < 400] [lv = lv / 2 * 2 + 2] -ws "]" -> new ListExpr{Ctx: "Store"}
+def star_list_target: ListExpr = "[" [lv < 400] [lv = lv / 2 * 2 + 2] -ws f:star_target
+    rs:(-ws -"," -ws x:star_target)* (-ws -",")? -ws "]"
+    -> new ListExpr{Elts: concat(list($f), map($rs, (y) => $y.x)), Ctx: "Store"}
+def single_target: Expr = single_subscript_attribute_target / store_name / paren_single_target
+def single_subscript_attribute_target: Expr = attr_target / subscript_target
+def paren_single_target: Expr = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws t:single_target -ws ")" -> $t
+def store_name: Name = n:ident -> new Name{Id: text($n), Ctx: "Store"}
+
+// The value of an attribute or subscript target: a primary followed by another trailer.
+def t_primary: Expr = pratt {
+    skip ws
+    operand a:atom &(ws t_lookahead) -> $a
+    level {
+        postfix "." !".." -ws n:ident &(ws t_lookahead) -> new Attribute{Value: $lhs, Attr: text($n), Ctx: "Load"}
+        postfix g:genexp &(ws t_lookahead) -> new Call{Func: $lhs, Args: list($g)}
+        postfix c:call_args &(ws t_lookahead) -> new Call{Func: $lhs,
+            Args: concat(map($c.pos, (x) => $x.a), foldl(list(), $c.kw1, (acc, x) => concat($acc, $x.ss))),
+            Keywords: concat(foldl(list(), $c.kw1, (acc, x) => concat($acc, $x.ks)), map($c.kw2, (x) => $x.k))}
+        postfix s:subscript &(ws t_lookahead) -> new Subscript{Value: $lhs, Slice: $s, Ctx: "Load"}
+    }
+}
+def t_lookahead = (?([) / "." !".."
+
+def del_target: Expr = del_attr / del_subscript / del_name / paren_del_target / del_tuple / del_list
+def del_attr: Attribute = t:t_primary -ws "." !".." -ws n:ident !(ws t_lookahead)
+    -> new Attribute{Value: $t, Attr: text($n), Ctx: "Del"}
+def del_subscript: Subscript = t:t_primary -ws s:subscript !(ws t_lookahead)
+    -> new Subscript{Value: $t, Slice: $s, Ctx: "Del"}
+def del_name: Name = n:ident -> new Name{Id: text($n), Ctx: "Del"}
+def paren_del_target: Expr = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws t:del_target -ws ")" -> $t
+def del_tuple: Tuple = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws ts:del_targets? -ws ")" -> new Tuple{Elts: concat($ts), Ctx: "Del"}
+def del_list: ListExpr = "[" [lv < 400] [lv = lv / 2 * 2 + 2] -ws ts:del_targets? -ws "]" -> new ListExpr{Elts: concat($ts), Ctx: "Del"}
+def del_targets = f:del_target r:(-ws -"," -ws t:del_target)* (-ws -",")? -> concat(list($f), map($r, (x) => $x.t))
+
+// ============================================================================
+// Strings
+// ============================================================================
+
+// Adjacent literals form one node: a Constant for string or bytes literals (bytes and others may
+// not be mixed), a JoinedStr if one of them is an f-string, a TemplateStr for t-strings (which
+// may not be mixed with others).
+def strings: Expr = &string_start s:(tstrings / plain_strings / bytes_strings / fjoined) -> $s
+def string_start = (?rRbBuUfFtT){0,2} (?'")
+def plain_strings: Constant = str_lit (ws str_lit)* !(ws string_start)
+def bytes_strings: Constant = bytes_lit (ws bytes_lit)* !(ws string_start)
+def fjoined: JoinedStr = f:fjoin_item r:(-ws p:fjoin_item)* !(ws string_start)
+    -> new JoinedStr{Values: foldl($f, $r, (acc, x) => concat($acc, $x.p))}
+def fjoin_item = fstring / str_part
+def str_part = c:str_constant -> list($c)
+def str_constant: Constant = str_lit
+def tstrings: TemplateStr = f:tstring r:(-ws p:tstring)* !(ws string_start)
+    -> new TemplateStr{Values: foldl($f, $r, (acc, x) => concat($acc, $x.p))}
+
+def str_lit = (?uU) str_body / (?rR) raw_str_body / str_body
+def bytes_lit = ((?bB) (?rR) / (?rR) (?bB)) raw_bytes_body / (?bB) bytes_body
+def str_body = "'''" ((?^'\\\u{0})+ / !"'''" "'" / str_esc)* "'''"
+    / "\"\"\"" ((?^"\\\u{0})+ / !"\"\"\"" "\"" / str_esc)* "\"\"\""
+    / "'" ((?^'\\\n\r\u{0})+ / str_esc)* "'"
+    / "\"" ((?^"\\\n\r\u{0})+ / str_esc)* "\""
+// Escape sequences: those that CPython rejects (a \x, \u or \U escape with too few digits or out
+// of range, a malformed \N{...}) fail; an unknown escape is the backslash and the character.
+def str_esc = "\\" (newline / "x" hex hex / "u" hex hex hex hex / "U" ("0010" hex hex hex hex / "000" hex hex hex hex hex)
+    / "N{" (?A-Za-z0-9 \-)+ "}" / (?^xuUN\n\r\u{0}))
+def raw_str_body = "'''" ((?^'\\\u{0})+ / !"'''" "'" / "\\" (?^\u{0}))* "'''"
+    / "\"\"\"" ((?^"\\\u{0})+ / !"\"\"\"" "\"" / "\\" (?^\u{0}))* "\"\"\""
+    / "'" ((?^'\\\n\r\u{0})+ / "\\" ("\r\n" / (?^\u{0})))* "'"
+    / "\"" ((?^"\\\n\r\u{0})+ / "\\" ("\r\n" / (?^\u{0})))* "\""
+// Bytes literals may contain only ASCII characters.
+def bytes_body = "'''" ((?^'\\\u{0}\u{80}-\u{10FFFF})+ / !"'''" "'" / bytes_esc)* "'''"
+    / "\"\"\"" ((?^"\\\u{0}\u{80}-\u{10FFFF})+ / !"\"\"\"" "\"" / bytes_esc)* "\"\"\""
+    / "'" ((?^'\\\n\r\u{0}\u{80}-\u{10FFFF})+ / bytes_esc)* "'"
+    / "\"" ((?^"\\\n\r\u{0}\u{80}-\u{10FFFF})+ / bytes_esc)* "\""
+def bytes_esc = "\\" (newline / "x" hex hex / (?^x\n\r\u{0}\u{80}-\u{10FFFF}))
+def raw_bytes_body = "'''" ((?^'\\\u{0}\u{80}-\u{10FFFF})+ / !"'''" "'" / "\\" (?^\u{0}\u{80}-\u{10FFFF}))* "'''"
+    / "\"\"\"" ((?^"\\\u{0}\u{80}-\u{10FFFF})+ / !"\"\"\"" "\"" / "\\" (?^\u{0}\u{80}-\u{10FFFF}))* "\"\"\""
+    / "'" ((?^'\\\n\r\u{0}\u{80}-\u{10FFFF})+ / "\\" ("\r\n" / (?^\u{0}\u{80}-\u{10FFFF})))* "'"
+    / "\"" ((?^"\\\n\r\u{0}\u{80}-\u{10FFFF})+ / "\\" ("\r\n" / (?^\u{0}\u{80}-\u{10FFFF})))* "\""
+def hex = (?0-9a-fA-F)
+
+// --- f-strings and t-strings ---
+// The prefix and the opening quote define fs (see the top of the file); the parts are the literal
+// text between replacement fields and the fields.
+def fstring = ((?rR) (?fF) [fs = 8] / (?fF) (?rR) [fs = 8] / (?fF) [fs = 0])
+    ("'''" [fs = fs + 3] / "\"\"\"" [fs = fs + 4] / "'" [fs = fs + 1] / "\"" [fs = fs + 2])
+    ps:fpart* fclose #error(message="unterminated f-string literal") -> $ps
+def tstring = ((?rR) (?tT) [fs = 8] / (?tT) (?rR) [fs = 8] / (?tT) [fs = 0])
+    ("'''" [fs = fs + 3] / "\"\"\"" [fs = fs + 4] / "'" [fs = fs + 1] / "\"" [fs = fs + 2])
+    ps:tpart* fclose #error(message="unterminated t-string literal") -> $ps
+def fclose = [fs % 8 == 1] "'" / [fs % 8 == 2] "\"" / [fs % 8 == 3] "'''" / [fs % 8 == 4] "\"\"\""
+def fpart: StrPart = fraw_text / ftext / ffield
+def tpart: StrPart = fraw_text / ftext / tfield
+// Literal text: doubled braces stand for braces; a single '}' is an error.
+def ftext: FStringMiddle = [fs / 8 % 2 == 0] ((?^'"\\{}\n\r\u{0})+ / fquote / "{{" / "}}" / fesc)+
+def fraw_text: FStringRawMiddle = [fs / 8 % 2 == 1] ((?^'"\\{}\n\r\u{0})+ / fquote / "{{" / "}}" / frawesc)+
+// The quotes and newlines that do not end the string.
+def fquote = [fs % 8 == 1] "\"" / [fs % 8 == 2] "'"
+    / [fs % 8 == 3] (!"'''" "'" / "\"" / newline) / [fs % 8 == 4] (!"\"\"\"" "\"" / "'" / newline)
+// As in string literals, except that a backslash before a brace is a character of its own and the
+// brace is not escaped.
+def fesc = "\\" (newline / "x" hex hex / "u" hex hex hex hex / "U" ("0010" hex hex hex hex / "000" hex hex hex hex hex)
+    / "N{" (?A-Za-z0-9 \-)+ "}" / (?^xuUN{}\n\r\u{0}) / &(?{}))
+def frawesc = "\\" ("\r\n" / (?^{}\u{0}) / &(?{}))
+
+// A replacement field: the expression (any expression, including strings with the same quotes;
+// inside the braces, newlines are whitespace), an optional '=', conversion and format spec.
+def ffield: FormattedValue = "{" [lv < 400] [lv = lv / 2 * 2 + 3]
+    [fs / 16 <= 2] #error(message="f-string: expressions nested too deeply")
+    s:(-ws v:annotated_rhs) d:fdebug? c:fconv? (-ws f:fspec)? -ws "}"
+    -> new FormattedValue{Value: $v, Str: text($s), Debug: text($d), Conversion: text($c), FormatSpec: $f}
+def tfield: Interpolation = "{" [lv < 400] [lv = lv / 2 * 2 + 3]
+    [fs / 16 <= 2] #error(message="t-string: expressions nested too deeply")
+    s:(-ws v:annotated_rhs) d:fdebug? c:fconv? (-ws f:fspec)? -ws "}"
+    -> new Interpolation{Value: $v, Str: text($s), Debug: text($d), Conversion: text($c), FormatSpec: $f}
+def fdebug = ws "=" ws
+// The conversion character must follow the '!' immediately.
+def fconv = -ws "!" c:@(?sra) !idcont -> $c
+// A format spec: literal text (no doubled braces) and replacement fields.
+def fspec: JoinedStr = ":" [fs = fs + 16] ps:fspec_part* -> new JoinedStr{Values: $ps}
+def fspec_part: StrPart = fspec_raw_text / fspec_text / ffield
+def fspec_text: FStringMiddle = [fs / 8 % 2 == 0] ((?^'"\\{}\n\r\u{0})+ / fquote / fesc)+
+def fspec_raw_text: FStringRawMiddle = [fs / 8 % 2 == 1] ((?^'"\\{}\n\r\u{0})+ / fquote / frawesc)+
+
+// ============================================================================
+// Numbers
+// ============================================================================
+
+// A number may be followed by an identifier character only if a keyword that can follow a number
+// starts there (CPython's verify_end_of_number): `1if x else 2`, `0x1for x in y`.
+def number: Constant = (hex_lit / oct_lit / bin_lit / dec_number) num_end
+def real_number: Constant = (hex_lit / oct_lit / bin_lit / dec_real) !(?jJ) num_end
+def imag_number: Constant = (pointfloat exponent? / digitpart exponent?) (?jJ) num_end
+def hex_lit = "0" (?xX) ("_"? (?0-9a-fA-F))+
+def oct_lit = "0" (?oO) ("_"? (?0-7))+
+def bin_lit = "0" (?bB) ("_"? (?01))+
+def dec_number = pointfloat exponent? (?jJ)? / digitpart exponent (?jJ)? / digitpart (?jJ) / nonzero_int / zero_int
+def dec_real = pointfloat exponent? / digitpart exponent / nonzero_int / zero_int
+def pointfloat = digitpart "." digitpart? / "." digitpart
+def exponent = (?eE) (?+\-)? digitpart
+def digitpart = (?0-9) ("_"? (?0-9))*
+def nonzero_int = (?1-9) ("_"? (?0-9))*
+// Decimal integers other than zero may not start with 0.
+def zero_int = "0" ("_"? "0")* !(?xXoObB)
+def num_end = &("and" / "else" / "for" / "i" (?fns) / "or" / "not") / !(?a-zA-Z0-9_)
+
+// ============================================================================
+// Names and keywords
+// ============================================================================
+
+// A name: a letter or '_' then letters, digits and '_' (Unicode XID_Start and XID_Continue), that is
+// not a keyword. The soft keywords (match, case, type, _) are names.
+def ident = @(!keyword idstart idcont*)
+def identifier: Identifier = ident
+def idstart = (?a-zA-Z_) / &(?\u{80}-\u{10FFFF}) idstart_other #error(message="invalid character")
+def idcont = (?a-zA-Z0-9_) / &(?\u{80}-\u{10FFFF}) idcont_other #error(message="invalid character")
+def keyword = ("False" / "None" / "True" / "and" / "assert" / "async" / "as" / "await" / "break" / "class"
+    / "continue" / "def" / "del" / "elif" / "else" / "except" / "finally" / "for" / "from" / "global" / "if"
+    / "import" / "in" / "is" / "lambda" / "nonlocal" / "not" / "or" / "pass" / "raise" / "return" / "try"
+    / "while" / "with" / "yield") !idcont
+
+def kw_as = "as" !idcont
+def kw_assert = "assert" !idcont
+def kw_async = "async" !idcont
+def kw_await = "await" !idcont
+def kw_break = "break" !idcont
+def kw_case = "case" !idcont
+def kw_class = "class" !idcont
+def kw_continue = "continue" !idcont
+def kw_def = "def" !idcont
+def kw_del = "del" !idcont
+def kw_elif = "elif" !idcont
+def kw_else = "else" !idcont
+def kw_except = "except" !idcont
+def kw_finally = "finally" !idcont
+def kw_for = "for" !idcont
+def kw_from = "from" !idcont
+def kw_global = "global" !idcont
+def kw_if = "if" !idcont
+def kw_import = "import" !idcont
+def kw_in = "in" !idcont
+def kw_lambda = "lambda" !idcont
+def kw_match = "match" !idcont
+def kw_nonlocal = "nonlocal" !idcont
+def kw_pass = "pass" !idcont
+def kw_raise = "raise" !idcont
+def kw_return = "return" !idcont
+def kw_try = "try" !idcont
+def kw_type = "type" !idcont
+def kw_while = "while" !idcont
+def kw_with = "with" !idcont
+def kw_yield = "yield" !idcont
+
+// The characters of Unicode 16.0 (as in CPython 3.14) other than ASCII that may start and continue
+// an identifier, generated with str.isidentifier.
+def idstart_other = (?\u{AA}\u{B5}\u{BA}\u{C0}-\u{D6}\u{D8}-\u{F6}\u{F8}-\u{2C1}\u{2C6}-\u{2D1}\u{2E0}-\u{2E4}\u{2EC}\u{2EE}\u{370}-\u{374}\u{376}-\u{377}\u{37B}-\u{37D}\u{37F}\u{386}\u{388}-\u{38A}\u{38C}\u{38E}-\u{3A1}\u{3A3}-\u{3F5}\u{3F7}-\u{481}\u{48A}-\u{52F}\u{531}-\u{556}\u{559}\u{560}-\u{588}\u{5D0}-\u{5EA}\u{5EF}-\u{5F2}\u{620}-\u{64A}\u{66E}-\u{66F}\u{671}-\u{6D3}\u{6D5}\u{6E5}-\u{6E6}\u{6EE}-\u{6EF}\u{6FA}-\u{6FC}\u{6FF}\u{710}\u{712}-\u{72F}\u{74D}-\u{7A5}\u{7B1}\u{7CA}-\u{7EA}\u{7F4}-\u{7F5}\u{7FA}\u{800}-\u{815}\u{81A}\u{824}\u{828}\u{840}-\u{858}\u{860}-\u{86A}\u{870}-\u{887}\u{889}-\u{88E}\u{8A0}-\u{8C9}\u{904}-\u{939}\u{93D}\u{950}\u{958}-\u{961}\u{971}-\u{980}\u{985}-\u{98C}\u{98F}-\u{990}\u{993}-\u{9A8}\u{9AA}-\u{9B0}\u{9B2}\u{9B6}-\u{9B9}\u{9BD}\u{9CE}\u{9DC}-\u{9DD}\u{9DF}-\u{9E1}\u{9F0}-\u{9F1}\u{9FC}\u{A05}-\u{A0A}\u{A0F}-\u{A10}\u{A13}-\u{A28}\u{A2A}-\u{A30}\u{A32}-\u{A33}\u{A35}-\u{A36}\u{A38}-\u{A39}\u{A59}-\u{A5C}\u{A5E}\u{A72}-\u{A74}\u{A85}-\u{A8D}\u{A8F}-\u{A91}\u{A93}-\u{AA8}\u{AAA}-\u{AB0}\u{AB2}-\u{AB3}\u{AB5}-\u{AB9}\u{ABD}\u{AD0}\u{AE0}-\u{AE1}\u{AF9}\u{B05}-\u{B0C}\u{B0F}-\u{B10}\u{B13}-\u{B28}\u{B2A}-\u{B30}\u{B32}-\u{B33}\u{B35}-\u{B39}\u{B3D}\u{B5C}-\u{B5D}\u{B5F}-\u{B61}\u{B71}\u{B83}\u{B85}-\u{B8A}\u{B8E}-\u{B90}\u{B92}-\u{B95}\u{B99}-\u{B9A}\u{B9C}\u{B9E}-\u{B9F}\u{BA3}-\u{BA4}\u{BA8}-\u{BAA}\u{BAE}-\u{BB9}\u{BD0}\u{C05}-\u{C0C}\u{C0E}-\u{C10}\u{C12}-\u{C28}\u{C2A}-\u{C39}\u{C3D}\u{C58}-\u{C5A}\u{C5D}\u{C60}-\u{C61}\u{C80}\u{C85}-\u{C8C}\u{C8E}-\u{C90}\u{C92}-\u{CA8}\u{CAA}-\u{CB3}\u{CB5}-\u{CB9}\u{CBD}\u{CDD}-\u{CDE}\u{CE0}-\u{CE1}\u{CF1}-\u{CF2}\u{D04}-\u{D0C}\u{D0E}-\u{D10}\u{D12}-\u{D3A}\u{D3D}\u{D4E}\u{D54}-\u{D56}\u{D5F}-\u{D61}\u{D7A}-\u{D7F}\u{D85}-\u{D96}\u{D9A}-\u{DB1}\u{DB3}-\u{DBB}\u{DBD}\u{DC0}-\u{DC6}\u{E01}-\u{E30}\u{E32}\u{E40}-\u{E46}\u{E81}-\u{E82}\u{E84}\u{E86}-\u{E8A}\u{E8C}-\u{EA3}\u{EA5}\u{EA7}-\u{EB0}\u{EB2}\u{EBD}\u{EC0}-\u{EC4}\u{EC6}\u{EDC}-\u{EDF}\u{F00}\u{F40}-\u{F47}\u{F49}-\u{F6C}\u{F88}-\u{F8C}\u{1000}-\u{102A}\u{103F}\u{1050}-\u{1055}\u{105A}-\u{105D}\u{1061}\u{1065}-\u{1066}\u{106E}-\u{1070}\u{1075}-\u{1081}\u{108E}\u{10A0}-\u{10C5}\u{10C7}\u{10CD}\u{10D0}-\u{10FA}\u{10FC}-\u{1248}\u{124A}-\u{124D}\u{1250}-\u{1256}\u{1258}\u{125A}-\u{125D}\u{1260}-\u{1288}\u{128A}-\u{128D}\u{1290}-\u{12B0}\u{12B2}-\u{12B5}\u{12B8}-\u{12BE}\u{12C0}\u{12C2}-\u{12C5}\u{12C8}-\u{12D6}\u{12D8}-\u{1310}\u{1312}-\u{1315}\u{1318}-\u{135A}\u{1380}-\u{138F}\u{13A0}-\u{13F5}\u{13F8}-\u{13FD}\u{1401}-\u{166C}\u{166F}-\u{167F}\u{1681}-\u{169A}\u{16A0}-\u{16EA}\u{16EE}-\u{16F8}\u{1700}-\u{1711}\u{171F}-\u{1731}\u{1740}-\u{1751}\u{1760}-\u{176C}\u{176E}-\u{1770}\u{1780}-\u{17B3}\u{17D7}\u{17DC}\u{1820}-\u{1878}\u{1880}-\u{18A8}\u{18AA}\u{18B0}-\u{18F5}\u{1900}-\u{191E}\u{1950}-\u{196D}\u{1970}-\u{1974}\u{1980}-\u{19AB}\u{19B0}-\u{19C9}\u{1A00}-\u{1A16}\u{1A20}-\u{1A54}\u{1AA7}\u{1B05}-\u{1B33}\u{1B45}-\u{1B4C}\u{1B83}-\u{1BA0}\u{1BAE}-\u{1BAF}\u{1BBA}-\u{1BE5}\u{1C00}-\u{1C23}\u{1C4D}-\u{1C4F}\u{1C5A}-\u{1C7D}\u{1C80}-\u{1C8A}\u{1C90}-\u{1CBA}\u{1CBD}-\u{1CBF}\u{1CE9}-\u{1CEC}\u{1CEE}-\u{1CF3}\u{1CF5}-\u{1CF6}\u{1CFA}\u{1D00}-\u{1DBF}\u{1E00}-\u{1F15}\u{1F18}-\u{1F1D}\u{1F20}-\u{1F45}\u{1F48}-\u{1F4D}\u{1F50}-\u{1F57}\u{1F59}\u{1F5B}\u{1F5D}\u{1F5F}-\u{1F7D}\u{1F80}-\u{1FB4}\u{1FB6}-\u{1FBC}\u{1FBE}\u{1FC2}-\u{1FC4}\u{1FC6}-\u{1FCC}\u{1FD0}-\u{1FD3}\u{1FD6}-\u{1FDB}\u{1FE0}-\u{1FEC}\u{1FF2}-\u{1FF4}\u{1FF6}-\u{1FFC}\u{2071}\u{207F}\u{2090}-\u{209C}\u{2102}\u{2107}\u{210A}-\u{2113}\u{2115}\u{2118}-\u{211D}\u{2124}\u{2126}\u{2128}\u{212A}-\u{2139}\u{213C}-\u{213F}\u{2145}-\u{2149}\u{214E}\u{2160}-\u{2188}\u{2C00}-\u{2CE4}\u{2CEB}-\u{2CEE}\u{2CF2}-\u{2CF3}\u{2D00}-\u{2D25}\u{2D27}\u{2D2D}\u{2D30}-\u{2D67}\u{2D6F}\u{2D80}-\u{2D96}\u{2DA0}-\u{2DA6}\u{2DA8}-\u{2DAE}\u{2DB0}-\u{2DB6}\u{2DB8}-\u{2DBE}\u{2DC0}-\u{2DC6}\u{2DC8}-\u{2DCE}\u{2DD0}-\u{2DD6}\u{2DD8}-\u{2DDE}\u{3005}-\u{3007}\u{3021}-\u{3029}\u{3031}-\u{3035}\u{3038}-\u{303C}\u{3041}-\u{3096}\u{309D}-\u{309F}\u{30A1}-\u{30FA}\u{30FC}-\u{30FF}\u{3105}-\u{312F}\u{3131}-\u{318E}\u{31A0}-\u{31BF}\u{31F0}-\u{31FF}\u{3400}-\u{4DBF}\u{4E00}-\u{A48C}\u{A4D0}-\u{A4FD}\u{A500}-\u{A60C}\u{A610}-\u{A61F}\u{A62A}-\u{A62B}\u{A640}-\u{A66E}\u{A67F}-\u{A69D}\u{A6A0}-\u{A6EF}\u{A717}-\u{A71F}\u{A722}-\u{A788}\u{A78B}-\u{A7CD}\u{A7D0}-\u{A7D1}\u{A7D3}\u{A7D5}-\u{A7DC}\u{A7F2}-\u{A801}\u{A803}-\u{A805}\u{A807}-\u{A80A}\u{A80C}-\u{A822}\u{A840}-\u{A873}\u{A882}-\u{A8B3}\u{A8F2}-\u{A8F7}\u{A8FB}\u{A8FD}-\u{A8FE}\u{A90A}-\u{A925}\u{A930}-\u{A946}\u{A960}-\u{A97C}\u{A984}-\u{A9B2}\u{A9CF}\u{A9E0}-\u{A9E4}\u{A9E6}-\u{A9EF}\u{A9FA}-\u{A9FE}\u{AA00}-\u{AA28}\u{AA40}-\u{AA42}\u{AA44}-\u{AA4B}\u{AA60}-\u{AA76}\u{AA7A}\u{AA7E}-\u{AAAF}\u{AAB1}\u{AAB5}-\u{AAB6}\u{AAB9}-\u{AABD}\u{AAC0}\u{AAC2}\u{AADB}-\u{AADD}\u{AAE0}-\u{AAEA}\u{AAF2}-\u{AAF4}\u{AB01}-\u{AB06}\u{AB09}-\u{AB0E}\u{AB11}-\u{AB16}\u{AB20}-\u{AB26}\u{AB28}-\u{AB2E}\u{AB30}-\u{AB5A}\u{AB5C}-\u{AB69}\u{AB70}-\u{ABE2}\u{AC00}-\u{D7A3}\u{D7B0}-\u{D7C6}\u{D7CB}-\u{D7FB}\u{F900}-\u{FA6D}\u{FA70}-\u{FAD9}\u{FB00}-\u{FB06}\u{FB13}-\u{FB17}\u{FB1D}\u{FB1F}-\u{FB28}\u{FB2A}-\u{FB36}\u{FB38}-\u{FB3C}\u{FB3E}\u{FB40}-\u{FB41}\u{FB43}-\u{FB44}\u{FB46}-\u{FBB1}\u{FBD3}-\u{FC5D}\u{FC64}-\u{FD3D}\u{FD50}-\u{FD8F}\u{FD92}-\u{FDC7}\u{FDF0}-\u{FDF9}\u{FE71}\u{FE73}\u{FE77}\u{FE79}\u{FE7B}\u{FE7D}\u{FE7F}-\u{FEFC}\u{FF21}-\u{FF3A}\u{FF41}-\u{FF5A}\u{FF66}-\u{FF9D}\u{FFA0}-\u{FFBE}\u{FFC2}-\u{FFC7}\u{FFCA}-\u{FFCF}\u{FFD2}-\u{FFD7}\u{FFDA}-\u{FFDC}\u{10000}-\u{1000B}\u{1000D}-\u{10026}\u{10028}-\u{1003A}\u{1003C}-\u{1003D}\u{1003F}-\u{1004D}\u{10050}-\u{1005D}\u{10080}-\u{100FA}\u{10140}-\u{10174}\u{10280}-\u{1029C}\u{102A0}-\u{102D0}\u{10300}-\u{1031F}\u{1032D}-\u{1034A}\u{10350}-\u{10375}\u{10380}-\u{1039D}\u{103A0}-\u{103C3}\u{103C8}-\u{103CF}\u{103D1}-\u{103D5}\u{10400}-\u{1049D}\u{104B0}-\u{104D3}\u{104D8}-\u{104FB}\u{10500}-\u{10527}\u{10530}-\u{10563}\u{10570}-\u{1057A}\u{1057C}-\u{1058A}\u{1058C}-\u{10592}\u{10594}-\u{10595}\u{10597}-\u{105A1}\u{105A3}-\u{105B1}\u{105B3}-\u{105B9}\u{105BB}-\u{105BC}\u{105C0}-\u{105F3}\u{10600}-\u{10736}\u{10740}-\u{10755}\u{10760}-\u{10767}\u{10780}-\u{10785}\u{10787}-\u{107B0}\u{107B2}-\u{107BA}\u{10800}-\u{10805}\u{10808}\u{1080A}-\u{10835}\u{10837}-\u{10838}\u{1083C}\u{1083F}-\u{10855}\u{10860}-\u{10876}\u{10880}-\u{1089E}\u{108E0}-\u{108F2}\u{108F4}-\u{108F5}\u{10900}-\u{10915}\u{10920}-\u{10939}\u{10980}-\u{109B7}\u{109BE}-\u{109BF}\u{10A00}\u{10A10}-\u{10A13}\u{10A15}-\u{10A17}\u{10A19}-\u{10A35}\u{10A60}-\u{10A7C}\u{10A80}-\u{10A9C}\u{10AC0}-\u{10AC7}\u{10AC9}-\u{10AE4}\u{10B00}-\u{10B35}\u{10B40}-\u{10B55}\u{10B60}-\u{10B72}\u{10B80}-\u{10B91}\u{10C00}-\u{10C48}\u{10C80}-\u{10CB2}\u{10CC0}-\u{10CF2}\u{10D00}-\u{10D23}\u{10D4A}-\u{10D65}\u{10D6F}-\u{10D85}\u{10E80}-\u{10EA9}\u{10EB0}-\u{10EB1}\u{10EC2}-\u{10EC4}\u{10F00}-\u{10F1C}\u{10F27}\u{10F30}-\u{10F45}\u{10F70}-\u{10F81}\u{10FB0}-\u{10FC4}\u{10FE0}-\u{10FF6}\u{11003}-\u{11037}\u{11071}-\u{11072}\u{11075}\u{11083}-\u{110AF}\u{110D0}-\u{110E8}\u{11103}-\u{11126}\u{11144}\u{11147}\u{11150}-\u{11172}\u{11176}\u{11183}-\u{111B2}\u{111C1}-\u{111C4}\u{111DA}\u{111DC}\u{11200}-\u{11211}\u{11213}-\u{1122B}\u{1123F}-\u{11240}\u{11280}-\u{11286}\u{11288}\u{1128A}-\u{1128D}\u{1128F}-\u{1129D}\u{1129F}-\u{112A8}\u{112B0}-\u{112DE}\u{11305}-\u{1130C}\u{1130F}-\u{11310}\u{11313}-\u{11328}\u{1132A}-\u{11330}\u{11332}-\u{11333}\u{11335}-\u{11339}\u{1133D}\u{11350}\u{1135D}-\u{11361}\u{11380}-\u{11389}\u{1138B}\u{1138E}\u{11390}-\u{113B5}\u{113B7}\u{113D1}\u{113D3}\u{11400}-\u{11434}\u{11447}-\u{1144A}\u{1145F}-\u{11461}\u{11480}-\u{114AF}\u{114C4}-\u{114C5}\u{114C7}\u{11580}-\u{115AE}\u{115D8}-\u{115DB}\u{11600}-\u{1162F}\u{11644}\u{11680}-\u{116AA}\u{116B8}\u{11700}-\u{1171A}\u{11740}-\u{11746}\u{11800}-\u{1182B}\u{118A0}-\u{118DF}\u{118FF}-\u{11906}\u{11909}\u{1190C}-\u{11913}\u{11915}-\u{11916}\u{11918}-\u{1192F}\u{1193F}\u{11941}\u{119A0}-\u{119A7}\u{119AA}-\u{119D0}\u{119E1}\u{119E3}\u{11A00}\u{11A0B}-\u{11A32}\u{11A3A}\u{11A50}\u{11A5C}-\u{11A89}\u{11A9D}\u{11AB0}-\u{11AF8}\u{11BC0}-\u{11BE0}\u{11C00}-\u{11C08}\u{11C0A}-\u{11C2E}\u{11C40}\u{11C72}-\u{11C8F}\u{11D00}-\u{11D06}\u{11D08}-\u{11D09}\u{11D0B}-\u{11D30}\u{11D46}\u{11D60}-\u{11D65}\u{11D67}-\u{11D68}\u{11D6A}-\u{11D89}\u{11D98}\u{11EE0}-\u{11EF2}\u{11F02}\u{11F04}-\u{11F10}\u{11F12}-\u{11F33}\u{11FB0}\u{12000}-\u{12399}\u{12400}-\u{1246E}\u{12480}-\u{12543}\u{12F90}-\u{12FF0}\u{13000}-\u{1342F}\u{13441}-\u{13446}\u{13460}-\u{143FA}\u{14400}-\u{14646}\u{16100}-\u{1611D}\u{16800}-\u{16A38}\u{16A40}-\u{16A5E}\u{16A70}-\u{16ABE}\u{16AD0}-\u{16AED}\u{16B00}-\u{16B2F}\u{16B40}-\u{16B43}\u{16B63}-\u{16B77}\u{16B7D}-\u{16B8F}\u{16D40}-\u{16D6C}\u{16E40}-\u{16E7F}\u{16F00}-\u{16F4A}\u{16F50}\u{16F93}-\u{16F9F}\u{16FE0}-\u{16FE1}\u{16FE3}\u{17000}-\u{187F7}\u{18800}-\u{18CD5}\u{18CFF}-\u{18D08}\u{1AFF0}-\u{1AFF3}\u{1AFF5}-\u{1AFFB}\u{1AFFD}-\u{1AFFE}\u{1B000}-\u{1B122}\u{1B132}\u{1B150}-\u{1B152}\u{1B155}\u{1B164}-\u{1B167}\u{1B170}-\u{1B2FB}\u{1BC00}-\u{1BC6A}\u{1BC70}-\u{1BC7C}\u{1BC80}-\u{1BC88}\u{1BC90}-\u{1BC99}\u{1D400}-\u{1D454}\u{1D456}-\u{1D49C}\u{1D49E}-\u{1D49F}\u{1D4A2}\u{1D4A5}-\u{1D4A6}\u{1D4A9}-\u{1D4AC}\u{1D4AE}-\u{1D4B9}\u{1D4BB}\u{1D4BD}-\u{1D4C3}\u{1D4C5}-\u{1D505}\u{1D507}-\u{1D50A}\u{1D50D}-\u{1D514}\u{1D516}-\u{1D51C}\u{1D51E}-\u{1D539}\u{1D53B}-\u{1D53E}\u{1D540}-\u{1D544}\u{1D546}\u{1D54A}-\u{1D550}\u{1D552}-\u{1D6A5}\u{1D6A8}-\u{1D6C0}\u{1D6C2}-\u{1D6DA}\u{1D6DC}-\u{1D6FA}\u{1D6FC}-\u{1D714}\u{1D716}-\u{1D734}\u{1D736}-\u{1D74E}\u{1D750}-\u{1D76E}\u{1D770}-\u{1D788}\u{1D78A}-\u{1D7A8}\u{1D7AA}-\u{1D7C2}\u{1D7C4}-\u{1D7CB}\u{1DF00}-\u{1DF1E}\u{1DF25}-\u{1DF2A}\u{1E030}-\u{1E06D}\u{1E100}-\u{1E12C}\u{1E137}-\u{1E13D}\u{1E14E}\u{1E290}-\u{1E2AD}\u{1E2C0}-\u{1E2EB}\u{1E4D0}-\u{1E4EB}\u{1E5D0}-\u{1E5ED}\u{1E5F0}\u{1E7E0}-\u{1E7E6}\u{1E7E8}-\u{1E7EB}\u{1E7ED}-\u{1E7EE}\u{1E7F0}-\u{1E7FE}\u{1E800}-\u{1E8C4}\u{1E900}-\u{1E943}\u{1E94B}\u{1EE00}-\u{1EE03}\u{1EE05}-\u{1EE1F}\u{1EE21}-\u{1EE22}\u{1EE24}\u{1EE27}\u{1EE29}-\u{1EE32}\u{1EE34}-\u{1EE37}\u{1EE39}\u{1EE3B}\u{1EE42}\u{1EE47}\u{1EE49}\u{1EE4B}\u{1EE4D}-\u{1EE4F}\u{1EE51}-\u{1EE52}\u{1EE54}\u{1EE57}\u{1EE59}\u{1EE5B}\u{1EE5D}\u{1EE5F}\u{1EE61}-\u{1EE62}\u{1EE64}\u{1EE67}-\u{1EE6A}\u{1EE6C}-\u{1EE72}\u{1EE74}-\u{1EE77}\u{1EE79}-\u{1EE7C}\u{1EE7E}\u{1EE80}-\u{1EE89}\u{1EE8B}-\u{1EE9B}\u{1EEA1}-\u{1EEA3}\u{1EEA5}-\u{1EEA9}\u{1EEAB}-\u{1EEBB}\u{20000}-\u{2A6DF}\u{2A700}-\u{2B739}\u{2B740}-\u{2B81D}\u{2B820}-\u{2CEA1}\u{2CEB0}-\u{2EBE0}\u{2EBF0}-\u{2EE5D}\u{2F800}-\u{2FA1D}\u{30000}-\u{3134A}\u{31350}-\u{323AF})
+def idcont_other = (?\u{AA}\u{B5}\u{B7}\u{BA}\u{C0}-\u{D6}\u{D8}-\u{F6}\u{F8}-\u{2C1}\u{2C6}-\u{2D1}\u{2E0}-\u{2E4}\u{2EC}\u{2EE}\u{300}-\u{374}\u{376}-\u{377}\u{37B}-\u{37D}\u{37F}\u{386}-\u{38A}\u{38C}\u{38E}-\u{3A1}\u{3A3}-\u{3F5}\u{3F7}-\u{481}\u{483}-\u{487}\u{48A}-\u{52F}\u{531}-\u{556}\u{559}\u{560}-\u{588}\u{591}-\u{5BD}\u{5BF}\u{5C1}-\u{5C2}\u{5C4}-\u{5C5}\u{5C7}\u{5D0}-\u{5EA}\u{5EF}-\u{5F2}\u{610}-\u{61A}\u{620}-\u{669}\u{66E}-\u{6D3}\u{6D5}-\u{6DC}\u{6DF}-\u{6E8}\u{6EA}-\u{6FC}\u{6FF}\u{710}-\u{74A}\u{74D}-\u{7B1}\u{7C0}-\u{7F5}\u{7FA}\u{7FD}\u{800}-\u{82D}\u{840}-\u{85B}\u{860}-\u{86A}\u{870}-\u{887}\u{889}-\u{88E}\u{897}-\u{8E1}\u{8E3}-\u{963}\u{966}-\u{96F}\u{971}-\u{983}\u{985}-\u{98C}\u{98F}-\u{990}\u{993}-\u{9A8}\u{9AA}-\u{9B0}\u{9B2}\u{9B6}-\u{9B9}\u{9BC}-\u{9C4}\u{9C7}-\u{9C8}\u{9CB}-\u{9CE}\u{9D7}\u{9DC}-\u{9DD}\u{9DF}-\u{9E3}\u{9E6}-\u{9F1}\u{9FC}\u{9FE}\u{A01}-\u{A03}\u{A05}-\u{A0A}\u{A0F}-\u{A10}\u{A13}-\u{A28}\u{A2A}-\u{A30}\u{A32}-\u{A33}\u{A35}-\u{A36}\u{A38}-\u{A39}\u{A3C}\u{A3E}-\u{A42}\u{A47}-\u{A48}\u{A4B}-\u{A4D}\u{A51}\u{A59}-\u{A5C}\u{A5E}\u{A66}-\u{A75}\u{A81}-\u{A83}\u{A85}-\u{A8D}\u{A8F}-\u{A91}\u{A93}-\u{AA8}\u{AAA}-\u{AB0}\u{AB2}-\u{AB3}\u{AB5}-\u{AB9}\u{ABC}-\u{AC5}\u{AC7}-\u{AC9}\u{ACB}-\u{ACD}\u{AD0}\u{AE0}-\u{AE3}\u{AE6}-\u{AEF}\u{AF9}-\u{AFF}\u{B01}-\u{B03}\u{B05}-\u{B0C}\u{B0F}-\u{B10}\u{B13}-\u{B28}\u{B2A}-\u{B30}\u{B32}-\u{B33}\u{B35}-\u{B39}\u{B3C}-\u{B44}\u{B47}-\u{B48}\u{B4B}-\u{B4D}\u{B55}-\u{B57}\u{B5C}-\u{B5D}\u{B5F}-\u{B63}\u{B66}-\u{B6F}\u{B71}\u{B82}-\u{B83}\u{B85}-\u{B8A}\u{B8E}-\u{B90}\u{B92}-\u{B95}\u{B99}-\u{B9A}\u{B9C}\u{B9E}-\u{B9F}\u{BA3}-\u{BA4}\u{BA8}-\u{BAA}\u{BAE}-\u{BB9}\u{BBE}-\u{BC2}\u{BC6}-\u{BC8}\u{BCA}-\u{BCD}\u{BD0}\u{BD7}\u{BE6}-\u{BEF}\u{C00}-\u{C0C}\u{C0E}-\u{C10}\u{C12}-\u{C28}\u{C2A}-\u{C39}\u{C3C}-\u{C44}\u{C46}-\u{C48}\u{C4A}-\u{C4D}\u{C55}-\u{C56}\u{C58}-\u{C5A}\u{C5D}\u{C60}-\u{C63}\u{C66}-\u{C6F}\u{C80}-\u{C83}\u{C85}-\u{C8C}\u{C8E}-\u{C90}\u{C92}-\u{CA8}\u{CAA}-\u{CB3}\u{CB5}-\u{CB9}\u{CBC}-\u{CC4}\u{CC6}-\u{CC8}\u{CCA}-\u{CCD}\u{CD5}-\u{CD6}\u{CDD}-\u{CDE}\u{CE0}-\u{CE3}\u{CE6}-\u{CEF}\u{CF1}-\u{CF3}\u{D00}-\u{D0C}\u{D0E}-\u{D10}\u{D12}-\u{D44}\u{D46}-\u{D48}\u{D4A}-\u{D4E}\u{D54}-\u{D57}\u{D5F}-\u{D63}\u{D66}-\u{D6F}\u{D7A}-\u{D7F}\u{D81}-\u{D83}\u{D85}-\u{D96}\u{D9A}-\u{DB1}\u{DB3}-\u{DBB}\u{DBD}\u{DC0}-\u{DC6}\u{DCA}\u{DCF}-\u{DD4}\u{DD6}\u{DD8}-\u{DDF}\u{DE6}-\u{DEF}\u{DF2}-\u{DF3}\u{E01}-\u{E3A}\u{E40}-\u{E4E}\u{E50}-\u{E59}\u{E81}-\u{E82}\u{E84}\u{E86}-\u{E8A}\u{E8C}-\u{EA3}\u{EA5}\u{EA7}-\u{EBD}\u{EC0}-\u{EC4}\u{EC6}\u{EC8}-\u{ECE}\u{ED0}-\u{ED9}\u{EDC}-\u{EDF}\u{F00}\u{F18}-\u{F19}\u{F20}-\u{F29}\u{F35}\u{F37}\u{F39}\u{F3E}-\u{F47}\u{F49}-\u{F6C}\u{F71}-\u{F84}\u{F86}-\u{F97}\u{F99}-\u{FBC}\u{FC6}\u{1000}-\u{1049}\u{1050}-\u{109D}\u{10A0}-\u{10C5}\u{10C7}\u{10CD}\u{10D0}-\u{10FA}\u{10FC}-\u{1248}\u{124A}-\u{124D}\u{1250}-\u{1256}\u{1258}\u{125A}-\u{125D}\u{1260}-\u{1288}\u{128A}-\u{128D}\u{1290}-\u{12B0}\u{12B2}-\u{12B5}\u{12B8}-\u{12BE}\u{12C0}\u{12C2}-\u{12C5}\u{12C8}-\u{12D6}\u{12D8}-\u{1310}\u{1312}-\u{1315}\u{1318}-\u{135A}\u{135D}-\u{135F}\u{1369}-\u{1371}\u{1380}-\u{138F}\u{13A0}-\u{13F5}\u{13F8}-\u{13FD}\u{1401}-\u{166C}\u{166F}-\u{167F}\u{1681}-\u{169A}\u{16A0}-\u{16EA}\u{16EE}-\u{16F8}\u{1700}-\u{1715}\u{171F}-\u{1734}\u{1740}-\u{1753}\u{1760}-\u{176C}\u{176E}-\u{1770}\u{1772}-\u{1773}\u{1780}-\u{17D3}\u{17D7}\u{17DC}-\u{17DD}\u{17E0}-\u{17E9}\u{180B}-\u{180D}\u{180F}-\u{1819}\u{1820}-\u{1878}\u{1880}-\u{18AA}\u{18B0}-\u{18F5}\u{1900}-\u{191E}\u{1920}-\u{192B}\u{1930}-\u{193B}\u{1946}-\u{196D}\u{1970}-\u{1974}\u{1980}-\u{19AB}\u{19B0}-\u{19C9}\u{19D0}-\u{19DA}\u{1A00}-\u{1A1B}\u{1A20}-\u{1A5E}\u{1A60}-\u{1A7C}\u{1A7F}-\u{1A89}\u{1A90}-\u{1A99}\u{1AA7}\u{1AB0}-\u{1ABD}\u{1ABF}-\u{1ACE}\u{1B00}-\u{1B4C}\u{1B50}-\u{1B59}\u{1B6B}-\u{1B73}\u{1B80}-\u{1BF3}\u{1C00}-\u{1C37}\u{1C40}-\u{1C49}\u{1C4D}-\u{1C7D}\u{1C80}-\u{1C8A}\u{1C90}-\u{1CBA}\u{1CBD}-\u{1CBF}\u{1CD0}-\u{1CD2}\u{1CD4}-\u{1CFA}\u{1D00}-\u{1F15}\u{1F18}-\u{1F1D}\u{1F20}-\u{1F45}\u{1F48}-\u{1F4D}\u{1F50}-\u{1F57}\u{1F59}\u{1F5B}\u{1F5D}\u{1F5F}-\u{1F7D}\u{1F80}-\u{1FB4}\u{1FB6}-\u{1FBC}\u{1FBE}\u{1FC2}-\u{1FC4}\u{1FC6}-\u{1FCC}\u{1FD0}-\u{1FD3}\u{1FD6}-\u{1FDB}\u{1FE0}-\u{1FEC}\u{1FF2}-\u{1FF4}\u{1FF6}-\u{1FFC}\u{200C}-\u{200D}\u{203F}-\u{2040}\u{2054}\u{2071}\u{207F}\u{2090}-\u{209C}\u{20D0}-\u{20DC}\u{20E1}\u{20E5}-\u{20F0}\u{2102}\u{2107}\u{210A}-\u{2113}\u{2115}\u{2118}-\u{211D}\u{2124}\u{2126}\u{2128}\u{212A}-\u{2139}\u{213C}-\u{213F}\u{2145}-\u{2149}\u{214E}\u{2160}-\u{2188}\u{2C00}-\u{2CE4}\u{2CEB}-\u{2CF3}\u{2D00}-\u{2D25}\u{2D27}\u{2D2D}\u{2D30}-\u{2D67}\u{2D6F}\u{2D7F}-\u{2D96}\u{2DA0}-\u{2DA6}\u{2DA8}-\u{2DAE}\u{2DB0}-\u{2DB6}\u{2DB8}-\u{2DBE}\u{2DC0}-\u{2DC6}\u{2DC8}-\u{2DCE}\u{2DD0}-\u{2DD6}\u{2DD8}-\u{2DDE}\u{2DE0}-\u{2DFF}\u{3005}-\u{3007}\u{3021}-\u{302F}\u{3031}-\u{3035}\u{3038}-\u{303C}\u{3041}-\u{3096}\u{3099}-\u{309A}\u{309D}-\u{309F}\u{30A1}-\u{30FF}\u{3105}-\u{312F}\u{3131}-\u{318E}\u{31A0}-\u{31BF}\u{31F0}-\u{31FF}\u{3400}-\u{4DBF}\u{4E00}-\u{A48C}\u{A4D0}-\u{A4FD}\u{A500}-\u{A60C}\u{A610}-\u{A62B}\u{A640}-\u{A66F}\u{A674}-\u{A67D}\u{A67F}-\u{A6F1}\u{A717}-\u{A71F}\u{A722}-\u{A788}\u{A78B}-\u{A7CD}\u{A7D0}-\u{A7D1}\u{A7D3}\u{A7D5}-\u{A7DC}\u{A7F2}-\u{A827}\u{A82C}\u{A840}-\u{A873}\u{A880}-\u{A8C5}\u{A8D0}-\u{A8D9}\u{A8E0}-\u{A8F7}\u{A8FB}\u{A8FD}-\u{A92D}\u{A930}-\u{A953}\u{A960}-\u{A97C}\u{A980}-\u{A9C0}\u{A9CF}-\u{A9D9}\u{A9E0}-\u{A9FE}\u{AA00}-\u{AA36}\u{AA40}-\u{AA4D}\u{AA50}-\u{AA59}\u{AA60}-\u{AA76}\u{AA7A}-\u{AAC2}\u{AADB}-\u{AADD}\u{AAE0}-\u{AAEF}\u{AAF2}-\u{AAF6}\u{AB01}-\u{AB06}\u{AB09}-\u{AB0E}\u{AB11}-\u{AB16}\u{AB20}-\u{AB26}\u{AB28}-\u{AB2E}\u{AB30}-\u{AB5A}\u{AB5C}-\u{AB69}\u{AB70}-\u{ABEA}\u{ABEC}-\u{ABED}\u{ABF0}-\u{ABF9}\u{AC00}-\u{D7A3}\u{D7B0}-\u{D7C6}\u{D7CB}-\u{D7FB}\u{F900}-\u{FA6D}\u{FA70}-\u{FAD9}\u{FB00}-\u{FB06}\u{FB13}-\u{FB17}\u{FB1D}-\u{FB28}\u{FB2A}-\u{FB36}\u{FB38}-\u{FB3C}\u{FB3E}\u{FB40}-\u{FB41}\u{FB43}-\u{FB44}\u{FB46}-\u{FBB1}\u{FBD3}-\u{FC5D}\u{FC64}-\u{FD3D}\u{FD50}-\u{FD8F}\u{FD92}-\u{FDC7}\u{FDF0}-\u{FDF9}\u{FE00}-\u{FE0F}\u{FE20}-\u{FE2F}\u{FE33}-\u{FE34}\u{FE4D}-\u{FE4F}\u{FE71}\u{FE73}\u{FE77}\u{FE79}\u{FE7B}\u{FE7D}\u{FE7F}-\u{FEFC}\u{FF10}-\u{FF19}\u{FF21}-\u{FF3A}\u{FF3F}\u{FF41}-\u{FF5A}\u{FF65}-\u{FFBE}\u{FFC2}-\u{FFC7}\u{FFCA}-\u{FFCF}\u{FFD2}-\u{FFD7}\u{FFDA}-\u{FFDC}\u{10000}-\u{1000B}\u{1000D}-\u{10026}\u{10028}-\u{1003A}\u{1003C}-\u{1003D}\u{1003F}-\u{1004D}\u{10050}-\u{1005D}\u{10080}-\u{100FA}\u{10140}-\u{10174}\u{101FD}\u{10280}-\u{1029C}\u{102A0}-\u{102D0}\u{102E0}\u{10300}-\u{1031F}\u{1032D}-\u{1034A}\u{10350}-\u{1037A}\u{10380}-\u{1039D}\u{103A0}-\u{103C3}\u{103C8}-\u{103CF}\u{103D1}-\u{103D5}\u{10400}-\u{1049D}\u{104A0}-\u{104A9}\u{104B0}-\u{104D3}\u{104D8}-\u{104FB}\u{10500}-\u{10527}\u{10530}-\u{10563}\u{10570}-\u{1057A}\u{1057C}-\u{1058A}\u{1058C}-\u{10592}\u{10594}-\u{10595}\u{10597}-\u{105A1}\u{105A3}-\u{105B1}\u{105B3}-\u{105B9}\u{105BB}-\u{105BC}\u{105C0}-\u{105F3}\u{10600}-\u{10736}\u{10740}-\u{10755}\u{10760}-\u{10767}\u{10780}-\u{10785}\u{10787}-\u{107B0}\u{107B2}-\u{107BA}\u{10800}-\u{10805}\u{10808}\u{1080A}-\u{10835}\u{10837}-\u{10838}\u{1083C}\u{1083F}-\u{10855}\u{10860}-\u{10876}\u{10880}-\u{1089E}\u{108E0}-\u{108F2}\u{108F4}-\u{108F5}\u{10900}-\u{10915}\u{10920}-\u{10939}\u{10980}-\u{109B7}\u{109BE}-\u{109BF}\u{10A00}-\u{10A03}\u{10A05}-\u{10A06}\u{10A0C}-\u{10A13}\u{10A15}-\u{10A17}\u{10A19}-\u{10A35}\u{10A38}-\u{10A3A}\u{10A3F}\u{10A60}-\u{10A7C}\u{10A80}-\u{10A9C}\u{10AC0}-\u{10AC7}\u{10AC9}-\u{10AE6}\u{10B00}-\u{10B35}\u{10B40}-\u{10B55}\u{10B60}-\u{10B72}\u{10B80}-\u{10B91}\u{10C00}-\u{10C48}\u{10C80}-\u{10CB2}\u{10CC0}-\u{10CF2}\u{10D00}-\u{10D27}\u{10D30}-\u{10D39}\u{10D40}-\u{10D65}\u{10D69}-\u{10D6D}\u{10D6F}-\u{10D85}\u{10E80}-\u{10EA9}\u{10EAB}-\u{10EAC}\u{10EB0}-\u{10EB1}\u{10EC2}-\u{10EC4}\u{10EFC}-\u{10F1C}\u{10F27}\u{10F30}-\u{10F50}\u{10F70}-\u{10F85}\u{10FB0}-\u{10FC4}\u{10FE0}-\u{10FF6}\u{11000}-\u{11046}\u{11066}-\u{11075}\u{1107F}-\u{110BA}\u{110C2}\u{110D0}-\u{110E8}\u{110F0}-\u{110F9}\u{11100}-\u{11134}\u{11136}-\u{1113F}\u{11144}-\u{11147}\u{11150}-\u{11173}\u{11176}\u{11180}-\u{111C4}\u{111C9}-\u{111CC}\u{111CE}-\u{111DA}\u{111DC}\u{11200}-\u{11211}\u{11213}-\u{11237}\u{1123E}-\u{11241}\u{11280}-\u{11286}\u{11288}\u{1128A}-\u{1128D}\u{1128F}-\u{1129D}\u{1129F}-\u{112A8}\u{112B0}-\u{112EA}\u{112F0}-\u{112F9}\u{11300}-\u{11303}\u{11305}-\u{1130C}\u{1130F}-\u{11310}\u{11313}-\u{11328}\u{1132A}-\u{11330}\u{11332}-\u{11333}\u{11335}-\u{11339}\u{1133B}-\u{11344}\u{11347}-\u{11348}\u{1134B}-\u{1134D}\u{11350}\u{11357}\u{1135D}-\u{11363}\u{11366}-\u{1136C}\u{11370}-\u{11374}\u{11380}-\u{11389}\u{1138B}\u{1138E}\u{11390}-\u{113B5}\u{113B7}-\u{113C0}\u{113C2}\u{113C5}\u{113C7}-\u{113CA}\u{113CC}-\u{113D3}\u{113E1}-\u{113E2}\u{11400}-\u{1144A}\u{11450}-\u{11459}\u{1145E}-\u{11461}\u{11480}-\u{114C5}\u{114C7}\u{114D0}-\u{114D9}\u{11580}-\u{115B5}\u{115B8}-\u{115C0}\u{115D8}-\u{115DD}\u{11600}-\u{11640}\u{11644}\u{11650}-\u{11659}\u{11680}-\u{116B8}\u{116C0}-\u{116C9}\u{116D0}-\u{116E3}\u{11700}-\u{1171A}\u{1171D}-\u{1172B}\u{11730}-\u{11739}\u{11740}-\u{11746}\u{11800}-\u{1183A}\u{118A0}-\u{118E9}\u{118FF}-\u{11906}\u{11909}\u{1190C}-\u{11913}\u{11915}-\u{11916}\u{11918}-\u{11935}\u{11937}-\u{11938}\u{1193B}-\u{11943}\u{11950}-\u{11959}\u{119A0}-\u{119A7}\u{119AA}-\u{119D7}\u{119DA}-\u{119E1}\u{119E3}-\u{119E4}\u{11A00}-\u{11A3E}\u{11A47}\u{11A50}-\u{11A99}\u{11A9D}\u{11AB0}-\u{11AF8}\u{11BC0}-\u{11BE0}\u{11BF0}-\u{11BF9}\u{11C00}-\u{11C08}\u{11C0A}-\u{11C36}\u{11C38}-\u{11C40}\u{11C50}-\u{11C59}\u{11C72}-\u{11C8F}\u{11C92}-\u{11CA7}\u{11CA9}-\u{11CB6}\u{11D00}-\u{11D06}\u{11D08}-\u{11D09}\u{11D0B}-\u{11D36}\u{11D3A}\u{11D3C}-\u{11D3D}\u{11D3F}-\u{11D47}\u{11D50}-\u{11D59}\u{11D60}-\u{11D65}\u{11D67}-\u{11D68}\u{11D6A}-\u{11D8E}\u{11D90}-\u{11D91}\u{11D93}-\u{11D98}\u{11DA0}-\u{11DA9}\u{11EE0}-\u{11EF6}\u{11F00}-\u{11F10}\u{11F12}-\u{11F3A}\u{11F3E}-\u{11F42}\u{11F50}-\u{11F5A}\u{11FB0}\u{12000}-\u{12399}\u{12400}-\u{1246E}\u{12480}-\u{12543}\u{12F90}-\u{12FF0}\u{13000}-\u{1342F}\u{13440}-\u{13455}\u{13460}-\u{143FA}\u{14400}-\u{14646}\u{16100}-\u{16139}\u{16800}-\u{16A38}\u{16A40}-\u{16A5E}\u{16A60}-\u{16A69}\u{16A70}-\u{16ABE}\u{16AC0}-\u{16AC9}\u{16AD0}-\u{16AED}\u{16AF0}-\u{16AF4}\u{16B00}-\u{16B36}\u{16B40}-\u{16B43}\u{16B50}-\u{16B59}\u{16B63}-\u{16B77}\u{16B7D}-\u{16B8F}\u{16D40}-\u{16D6C}\u{16D70}-\u{16D79}\u{16E40}-\u{16E7F}\u{16F00}-\u{16F4A}\u{16F4F}-\u{16F87}\u{16F8F}-\u{16F9F}\u{16FE0}-\u{16FE1}\u{16FE3}-\u{16FE4}\u{16FF0}-\u{16FF1}\u{17000}-\u{187F7}\u{18800}-\u{18CD5}\u{18CFF}-\u{18D08}\u{1AFF0}-\u{1AFF3}\u{1AFF5}-\u{1AFFB}\u{1AFFD}-\u{1AFFE}\u{1B000}-\u{1B122}\u{1B132}\u{1B150}-\u{1B152}\u{1B155}\u{1B164}-\u{1B167}\u{1B170}-\u{1B2FB}\u{1BC00}-\u{1BC6A}\u{1BC70}-\u{1BC7C}\u{1BC80}-\u{1BC88}\u{1BC90}-\u{1BC99}\u{1BC9D}-\u{1BC9E}\u{1CCF0}-\u{1CCF9}\u{1CF00}-\u{1CF2D}\u{1CF30}-\u{1CF46}\u{1D165}-\u{1D169}\u{1D16D}-\u{1D172}\u{1D17B}-\u{1D182}\u{1D185}-\u{1D18B}\u{1D1AA}-\u{1D1AD}\u{1D242}-\u{1D244}\u{1D400}-\u{1D454}\u{1D456}-\u{1D49C}\u{1D49E}-\u{1D49F}\u{1D4A2}\u{1D4A5}-\u{1D4A6}\u{1D4A9}-\u{1D4AC}\u{1D4AE}-\u{1D4B9}\u{1D4BB}\u{1D4BD}-\u{1D4C3}\u{1D4C5}-\u{1D505}\u{1D507}-\u{1D50A}\u{1D50D}-\u{1D514}\u{1D516}-\u{1D51C}\u{1D51E}-\u{1D539}\u{1D53B}-\u{1D53E}\u{1D540}-\u{1D544}\u{1D546}\u{1D54A}-\u{1D550}\u{1D552}-\u{1D6A5}\u{1D6A8}-\u{1D6C0}\u{1D6C2}-\u{1D6DA}\u{1D6DC}-\u{1D6FA}\u{1D6FC}-\u{1D714}\u{1D716}-\u{1D734}\u{1D736}-\u{1D74E}\u{1D750}-\u{1D76E}\u{1D770}-\u{1D788}\u{1D78A}-\u{1D7A8}\u{1D7AA}-\u{1D7C2}\u{1D7C4}-\u{1D7CB}\u{1D7CE}-\u{1D7FF}\u{1DA00}-\u{1DA36}\u{1DA3B}-\u{1DA6C}\u{1DA75}\u{1DA84}\u{1DA9B}-\u{1DA9F}\u{1DAA1}-\u{1DAAF}\u{1DF00}-\u{1DF1E}\u{1DF25}-\u{1DF2A}\u{1E000}-\u{1E006}\u{1E008}-\u{1E018}\u{1E01B}-\u{1E021}\u{1E023}-\u{1E024}\u{1E026}-\u{1E02A}\u{1E030}-\u{1E06D}\u{1E08F}\u{1E100}-\u{1E12C}\u{1E130}-\u{1E13D}\u{1E140}-\u{1E149}\u{1E14E}\u{1E290}-\u{1E2AE}\u{1E2C0}-\u{1E2F9}\u{1E4D0}-\u{1E4F9}\u{1E5D0}-\u{1E5FA}\u{1E7E0}-\u{1E7E6}\u{1E7E8}-\u{1E7EB}\u{1E7ED}-\u{1E7EE}\u{1E7F0}-\u{1E7FE}\u{1E800}-\u{1E8C4}\u{1E8D0}-\u{1E8D6}\u{1E900}-\u{1E94B}\u{1E950}-\u{1E959}\u{1EE00}-\u{1EE03}\u{1EE05}-\u{1EE1F}\u{1EE21}-\u{1EE22}\u{1EE24}\u{1EE27}\u{1EE29}-\u{1EE32}\u{1EE34}-\u{1EE37}\u{1EE39}\u{1EE3B}\u{1EE42}\u{1EE47}\u{1EE49}\u{1EE4B}\u{1EE4D}-\u{1EE4F}\u{1EE51}-\u{1EE52}\u{1EE54}\u{1EE57}\u{1EE59}\u{1EE5B}\u{1EE5D}\u{1EE5F}\u{1EE61}-\u{1EE62}\u{1EE64}\u{1EE67}-\u{1EE6A}\u{1EE6C}-\u{1EE72}\u{1EE74}-\u{1EE77}\u{1EE79}-\u{1EE7C}\u{1EE7E}\u{1EE80}-\u{1EE89}\u{1EE8B}-\u{1EE9B}\u{1EEA1}-\u{1EEA3}\u{1EEA5}-\u{1EEA9}\u{1EEAB}-\u{1EEBB}\u{1FBF0}-\u{1FBF9}\u{20000}-\u{2A6DF}\u{2A700}-\u{2B739}\u{2B740}-\u{2B81D}\u{2B820}-\u{2CEA1}\u{2CEB0}-\u{2EBE0}\u{2EBF0}-\u{2EE5D}\u{2F800}-\u{2FA1D}\u{30000}-\u{3134A}\u{31350}-\u{323AF}\u{E0100}-\u{E01EF})

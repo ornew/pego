@@ -1,0 +1,23 @@
+"""A module."""
+from __future__ import annotations
+import os.path as p, sys
+
+@dataclass(frozen=True)
+class Point[T: (int, float) = int](Base, metaclass=Meta):
+    x: T = 0
+
+    async def scale(self, k: T, /, *args, factor=2, **kw) -> Point[T]:
+        while (n := len(args)) > 1 and not k:
+            k -= n; continue
+        return Point(self.x * k ** -1, *args)
+
+for i, (a, *b) in enumerate(data[1:, ::2]):
+    try:
+        del a.b[i], c
+    except* (ValueError, TypeError) as e:
+        raise RuntimeError from e
+    else:
+        pass
+
+type Pair[*Ts] = tuple[*Ts]
+lambda x=1, *, y: x if y else -x

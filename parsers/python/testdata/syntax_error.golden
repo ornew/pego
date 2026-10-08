@@ -1,0 +1,1 @@
+error: 1:13: syntax error: expected "*", "**", ",", ":", "=", "\\", (? \t\f), (?a-zA-Z0-9_), (?a-zA-Z_)

@@ -1,0 +1,9 @@
+match command.split():
+    case [action, *rest] if action:
+        pass
+    case {"x": 1 | -2.5 | 3+4j, **others}:
+        pass
+    case Point(x=0, y=_) | None as p:
+        pass
+    case _:
+        pass

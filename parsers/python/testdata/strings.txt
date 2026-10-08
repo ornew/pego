@@ -1,0 +1,5 @@
+s = 'a' "b" r'\d' u'''multi
+line''' + b'\x00' rb"\n"
+f = f"{x!r:>{width}} {y=} {{literal}}" rf'{z}\n' f'{f"{1}"}'
+t = t'{name!s:^10}'
+n = 0x_ff + 0o17 + 0b1 + 1_000 + 1.5e-3 + .5j + 1if x else 2
