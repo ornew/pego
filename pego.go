@@ -251,6 +251,12 @@ func WithRecognize() GenOption {
 	return func(o *engine.GenOptions) { o.Recognize = true }
 }
 
+// WithoutPackageDoc leaves the package comment out of a generated Go parser, for a package that has
+// its own documentation in another file.
+func WithoutPackageDoc() GenOption {
+	return func(o *engine.GenOptions) { o.OmitPackageDoc = true }
+}
+
 // GenerateGo generates the source code of a standalone Go parser for g in package pkg. The generated code
 // depends only on the standard library; its Parse(input) parses from the rule start. It does not support
 // stream or incremental parsing.

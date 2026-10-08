@@ -236,6 +236,13 @@ func TestGen(t *testing.T) {
 	if err != nil || !strings.Contains(rec, "func Recognize(") {
 		t.Errorf("-recognize: no Recognize: %v", err)
 	}
+	if !strings.Contains(out, "// Package kv is a parser generated from a PEGO grammar.") {
+		t.Error("no package comment")
+	}
+	nodoc, err := runCLI(t, "", "gen", "-g", g, "-pkg", "kv", "-nodoc")
+	if err != nil || strings.Contains(nodoc, "// Package kv") || !strings.Contains(nodoc, "package kv") {
+		t.Errorf("-nodoc: package comment still there: %v", err)
+	}
 }
 
 func TestGenTypeScript(t *testing.T) {
@@ -263,6 +270,7 @@ func TestGenTypeScript(t *testing.T) {
 		{"gen", "-lang", "ts"},
 		{"gen", "-lang", "ts", "-g", g, "-pkg", "kv"},
 		{"gen", "-lang", "ts", "-g", g, "-types"},
+		{"gen", "-lang", "ts", "-g", g, "-nodoc"},
 		{"gen", "-lang", "rust", "-g", g, "-pkg", "kv"},
 	} {
 		if _, err := runCLI(t, "", args...); err == nil {

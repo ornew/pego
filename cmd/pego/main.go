@@ -5,7 +5,7 @@
 //	pego parse -g grammar.pego [-s main] [-i input] [-f json|sexpr] [-stream] [-unit u] [-backend b]
 //	pego fmt [-w] [-l] [grammar.pego ...]
 //	pego convert [-to pego|json] [-o output] grammar.pego|grammar.json|grammar.pegoc
-//	pego gen -g grammar.pego -pkg name [-s main] [-o parser.go] [-types] [-recognize]
+//	pego gen -g grammar.pego -pkg name [-s main] [-o parser.go] [-types] [-recognize] [-nodoc]
 //	pego gen -lang ts -g grammar.pego [-s main] [-o parser.ts] [-recognize]
 //	pego compile -g grammar.pego [-s main] [-no-ast] -o grammar.pegoc
 //	pego trace -g grammar.pego [-s main] [-i input] [-max-depth n] [-rule name] [-failures] [-f text|json]
@@ -52,13 +52,15 @@ Commands:
       other format of the input and is required for compiled grammars.
 
   gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-recognize]
+        [-nodoc]
   gen -lang ts -g <grammar> [-s <rule>] [-o <file>] [-recognize]
       Generate a Go parser (or, with -lang ts, a TypeScript module) from a
       grammar. Without -o, the code is written to standard output. With
       -types, Go types for the grammar's types and ParseAST, which returns
       the result as values of those types, are generated too (Go only);
       with -recognize, Recognize (recognize in TypeScript), which checks
-      input without building a tree.
+      input without building a tree. -nodoc leaves out the package comment
+      of the Go code, for a package documented in another file.
 
   compile -g <grammar> [-s <rule>] [-no-ast] -o <file.pegoc>
       Compile a grammar and save it. The result can be used as <grammar>
@@ -446,6 +448,7 @@ func gen(args []string, stdout io.Writer) error {
 	output := fs.String("o", "", "output file (default: standard output)")
 	types := fs.Bool("types", false, "also generate Go types for the grammar's types and ParseAST (Go)")
 	recognize := fs.Bool("recognize", false, "also generate Recognize, which checks input without building a tree")
+	nodoc := fs.Bool("nodoc", false, "leave out the package comment (Go)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -458,8 +461,8 @@ func gen(args []string, stdout io.Writer) error {
 		if *grammarPath == "" {
 			return fmt.Errorf("-g is required")
 		}
-		if *pkg != "" || *types {
-			return fmt.Errorf("-pkg and -types are not supported with -lang ts")
+		if *pkg != "" || *types || *nodoc {
+			return fmt.Errorf("-pkg, -types and -nodoc are not supported with -lang ts")
 		}
 	default:
 		return fmt.Errorf("unknown language %q (want go or ts)", *lang)
@@ -477,6 +480,9 @@ func gen(args []string, stdout io.Writer) error {
 	}
 	if *recognize {
 		opts = append(opts, pego.WithRecognize())
+	}
+	if *nodoc {
+		opts = append(opts, pego.WithoutPackageDoc())
 	}
 	var code []byte
 	if *lang == "ts" {

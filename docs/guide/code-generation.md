@@ -162,7 +162,7 @@ parsers in [bench/gen](../../bench/gen/) are generated from the grammars in `exa
 ## The `pego gen` command
 
 ```bash
-pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-recognize]
+pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-recognize] [-nodoc]
 ```
 
 | Flag | Default | Meaning |
@@ -174,6 +174,7 @@ pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-recogniz
 | `-o` | standard output | The output file |
 | `-types` | off | Also generate Go types for the grammar's types and `ParseAST` (see [typed values](#typed-values--types)) |
 | `-recognize` | off | Also generate `Recognize`, which checks input without building a tree (see [recognition](#recognition--recognize)) |
+| `-nodoc` | off | Leave out the package comment (`// Package p is a parser generated from a PEGO grammar.`), for a package that has its own documentation in another file |
 
 Details:
 
@@ -214,7 +215,7 @@ err = os.WriteFile("pairsparser/parser.go", code, 0o644)
 ```
 
 Options follow the start rule: `pego.GenerateGo(g, "pairsparser", "main", pego.WithTypes())` is `pego gen -types`, and
-`pego.WithRecognize()` is `-recognize`.
+`pego.WithRecognize()` is `-recognize`, and `pego.WithoutPackageDoc()` is `-nodoc`.
 
 `pego gen` is a thin wrapper around `pego.GenerateGo` (and `pego.GenerateTypeScript` with `-lang ts`). Because a grammar built with the `grammar` package (see the
 [runtime guide](runtime.md#from-go-values-programmatic-grammars)) is just an AST, it can be generated from, too.
