@@ -129,7 +129,13 @@ def s_l_block_node: Value =
 
 // [197] s-l+flow-in-block(n) ::= s-separate(n+1,flow-out) ns-flow-node(n+1,flow-out) s-l-comments
 // s-separate(n+1,flow-out) is s-separate-lines(n+1), whose common case comes first here.
-def s_l_flow_in_block: Value = [n = n + 1] [c = "flow-out"] ((? \t)+ !(?#\r\n) !$$ / s_separate_lines) v:ns_flow_node s_l_comments -> $v
+// A plain scalar without properties, the common case, is read without defining c.
+def s_l_flow_in_block: Value = [n = n + 1] ((? \t)+ !(?#\r\n) !$$ / s_separate_lines)
+    v:(plain_out_node / flow_out_node) s_l_comments -> $v
+def flow_out_node: Value = [c = "flow-out"] v:ns_flow_node -> $v
+// ns-flow-node(n,flow-out) where it is a plain scalar without properties: nothing else starts with a
+// character that can start a plain scalar.
+def plain_out_node: Scalar = t:@ns_plain_multi_out -> new Scalar{Props: nil, Text: text($t)}
 
 // [200] s-l+block-collection(n,c) ::= ( s-separate(n+1,c) c-ns-properties(n+1,c) )? s-l-comments
 //   ( seq-space(n,c) | l+block-mapping(n) )
@@ -147,13 +153,15 @@ def block_collection_start =
     / p:block_collection_properties s_l_comments
     / p:block_collection_property s_l_comments
     / s_l_comments ) -> $p
-def block_collection_properties: Properties = [n = n + 1] s_separate p:c_ns_properties -> $p
+// s-separate(n+1,c) is s-separate-lines(n+1) for c = block-out and block-in, the contexts of block nodes.
+def block_collection_properties: Properties = [n = n + 1] s_separate_lines p:c_ns_properties -> $p
 // One property, when the next line starts with a property that belongs to an implicit key:
 // "!!map\n&a8 !!str key8: value7".
-def block_collection_property: Properties = [n = n + 1] s_separate (t:c_ns_tag_property / a:c_ns_anchor_property)
+def block_collection_property: Properties = [n = n + 1] s_separate_lines (t:c_ns_tag_property / a:c_ns_anchor_property)
     -> new Properties{Tag: $t, Anchor: $a}
 // [201] seq-space(n,block-out) ::= l+block-sequence(n-1), seq-space(n,block-in) ::= l+block-sequence(n)
-def seq_space = ([c == "block-out"] [n = n - 1] / [c == "block-in"]) s:l_block_sequence -> $s
+// The lookahead skips the rule where no entry starts.
+def seq_space = &(@" "* "-" !ns_char) ([c == "block-out"] [n = n - 1] / [c == "block-in"]) s:l_block_sequence -> $s
 
 // [183] l+block-sequence(n) ::= ( s-indent(n+m) c-l-block-seq-entry(n+m) )+ for some m > 0
 // The lookahead reads the indentation n+m of the first entry.
@@ -192,9 +200,18 @@ def ns_l_block_map_implicit_entry: Pair = k:(ns_s_block_map_implicit_key / e_nod
 // [193] ns-s-block-map-implicit-key ::= c-s-implicit-json-key(block-key) | ns-s-implicit-yaml-key(block-key)
 // [154] ns-s-implicit-yaml-key(c) ::= ns-flow-yaml-node(0,c) s-separate-in-line?
 // [155] c-s-implicit-json-key(c) ::= c-flow-json-node(0,c) s-separate-in-line?
-def ns_s_block_map_implicit_key: Value = [c = "block-key"] (&(?[{'"!&) k:c_flow_json_node / k:ns_flow_yaml_node) s_separate_in_line? -> $k
+// A plain key without properties, the common case, is read without defining c.
+def ns_s_block_map_implicit_key: Value =
+    ( k:plain_key_node / [c = "block-key"] (&(?[{'"!&) k:c_flow_json_node / k:ns_flow_yaml_node) )
+    s_separate_in_line? -> $k
+def plain_key_node: Scalar = t:@ns_plain_one_out -> new Scalar{Props: nil, Text: text($t)}
 // [194] c-l-block-map-implicit-value(n) ::= ":" ( s-l+block-node(n,block-out) | ( e-node s-l-comments ) )
-def c_l_block_map_implicit_value: Value = ":" [c = "block-out"] v:(s_l_block_node / e_node_comments) -> $v
+def c_l_block_map_implicit_value: Value = ":" v:(block_out_node / e_node_comments) -> $v
+// s-l+block-node(n,block-out), whose flow node, the common case, is read without defining c, which it
+// does not read (see s_l_block_node).
+def block_out_node: Value =
+    ( &((? \t)+ (?^|>!&#\r\n)) v:s_l_flow_in_block
+    / [c = "block-out"] v:s_l_block_node ) -> $v
 
 // ---- Block scalars (8.1) ----
 
@@ -229,8 +246,8 @@ def s_l_block_scalar: Scalar =
     )
     l_trail_comments?
     -> new Scalar{Props: $p, Style: 3 + len($f), Indent: n, Text: text($t)}
-def s_separate_n1 = [n = n + 1] s_separate
-def block_scalar_properties: Properties = [n = n + 1] p:c_ns_properties s_separate -> $p
+def s_separate_n1 = [n = n + 1] s_separate_lines
+def block_scalar_properties: Properties = [n = n + 1] p:c_ns_properties s_separate_lines -> $p
 // The spaces of the longest of the empty lines that follow.
 def block_longest: Match = block_longest_more / block_longest_one
 def block_longest_more: Match = s:@" "* b_break r:block_longest [len($r) >= len($s)] -> $r
