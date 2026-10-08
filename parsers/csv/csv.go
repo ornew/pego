@@ -3,7 +3,8 @@
 // Records returns the records of a file as strings, with the quotes of quoted fields removed and their
 // doubled quotes decoded, as encoding/csv's ReadAll does; Table reads a file with a header record.
 // ParseAST returns the file as typed values with their positions in the input (a File of Records of
-// Fields), Parse returns it as a tree of Nodes, and Recognize and Valid only check it.
+// Fields, each with its Span), Parse returns it as a tree of Nodes, and Recognize and Valid only check
+// it.
 //
 // # Syntax
 //
@@ -16,23 +17,40 @@
 //     ends the last record as encoding/csv does.
 //   - A field may contain any character except, unquoted, the comma, the double quote and the line
 //     break (the RFC's TEXTDATA allows only printable ASCII). Bytes that are not UTF-8 are data too.
-//   - The line break after the last record is optional, and an empty input has no records.
+//   - The line break after the last record is optional, and an empty input has no records (the RFC's
+//     grammar would read it as one record of one empty field).
+//   - A comma at the end of a record is followed by an empty field, as the RFC's grammar has it.
 //   - A double quote in an unquoted field, a quoted field followed by anything but a comma or a line
 //     break, spaces around a quoted field (` "a"` or `"a" `) and an unterminated quoted field are
 //     syntax errors, as in the RFC and in encoding/csv.
 //   - A byte order mark (U+FEFF) at the start of the input is skipped. encoding/csv keeps it in the
-//     first field.
+//     first field (and so rejects a quoted first field after it).
+//
+// The delimiter is always the comma, and there are no comment lines.
 //
 // # Values
 //
 // ParseAST represents the input as the RFC's grammar does: an empty line is a record with one empty
-// field (Record.Blank), and records may have different numbers of fields. Records and Table drop
-// blank records, as encoding/csv skips empty lines. Records does not require every record to have the
-// same number of fields (the RFC says only that they should; encoding/csv requires it unless
+// field (Record.Blank), and records may have different numbers of fields. A record's span includes
+// its line break. Records and Table drop blank records, as encoding/csv skips empty lines (so a file of
+// one column loses its empty values, which ParseAST keeps). Records does not require every record to
+// have the same number of fields (the RFC says only that they should; encoding/csv requires it unless
 // FieldsPerRecord is -1); Table requires every record to have as many fields as the header.
 //
 // The value of a quoted field is the text between its quotes with each "" replaced by ". A CRLF inside
 // a quoted field is kept as it is; encoding/csv turns it into LF.
+//
+// With code point positions (the default), the Text of a field holds U+FFFD for each byte that is not
+// part of valid UTF-8; with Bytes it holds the bytes. Records and Table keep them.
+//
+// # Conformance
+//
+// There is no official test suite for CSV. The tests check 73 cases (the examples of RFC 4180, the
+// cases of csv-spectrum and the points above, 13 of them rejected) against expected records and
+// against encoding/csv, which gives the same result on all but the 7 that differ in the two ways
+// above (a byte order mark, CRLF in quoted fields); and they compare Records with encoding/csv on
+// 2,000 random files and in FuzzRecords, where both accept the same inputs and return the same records
+// once those two differences are accounted for.
 package csv
 
 import (
