@@ -9,8 +9,9 @@ This document describes the repository layout, the architecture of the implement
 | `pego.go` | Public API of package `pego` (`ParseGrammar`, `Compile`, `CompileSource`, `Parser.Parse`, and others) |
 | `grammar/` | Grammar AST, JSON conversion (`MarshalJSON`, `UnmarshalJSON`) and formatting as PEGO source (`Format`, which preserves comments). Public package. |
 | `internal/syntax/` | Lexer and parser for PEGO source code (source → `grammar.Grammar`) |
-| `internal/engine/` | Compiler, static analysis, parser runtime, action evaluation, bytecode VMs and Go code generation |
-| `internal/engine/genrt/` | Runtime code embedded in generated parsers |
+| `internal/engine/` | Compiler, static analysis, parser runtime, action evaluation, bytecode VMs and Go and TypeScript code generation |
+| `internal/engine/genrt/` | Runtime code embedded in generated Go parsers |
+| `internal/engine/tsrt/` | Runtime code embedded in generated TypeScript parsers |
 | `cmd/pego/` | Command-line tool |
 | `examples/` | Example grammars, with golden tests |
 | `playground/` | WebAssembly API used by the web playground (package `main`; `GOOS=js GOARCH=wasm`) |
@@ -46,7 +47,7 @@ This document describes the repository layout, the architecture of the implement
 | Tracing and profiling | `trace.go`, `profile.go` | Rule call events for `WithTrace`, the per-rule profile and its hints |
 | Bytecode | `bytecode.go`, `bcompile.go`, `disasm.go`, `vm.go`, `ivm.go` | Bytecode module, compiler, disassembler, recursive and iterative VMs |
 | Compiled grammars | `compiled.go`, `modulefile.go` | The `.pegoc` file format |
-| Code generation | `gen.go`, `genrt/` | Generation of standalone Go parsers |
+| Code generation | `gen.go`, `genrt/`, `gen_ts.go`, `tsrt/` | Generation of standalone Go and TypeScript parsers |
 
 Files without a directory are in `internal/engine/`. The sections below describe each component.
 
@@ -98,6 +99,8 @@ Each memo entry records the range of input it examined (`document.go`). After an
 
 The generator (`gen.go`, `genrt/`) emits one Go method per expression and embeds `genrt/runtime.go`, a runtime that behaves like the engine, producing a parser that depends only on the standard library. The tests build the generated parsers and check that they return the same results as the engine ([design](design/008-code-generation.md)). With `GenOptions.Recognize`, it also generates the recognizer (`Program.recognizer`) into a second rule table, behind `Recognize`. With `GenOptions.Types` (`gen_types.go`), it also emits a Go type for each grammar type, from the types the type checker inferred (`Program.typed`), and `ParseAST`, which builds them with a second, typed runtime (`genrt/typed.go`, with the rules generated again for it) or, for grammars whose results include CST values, converts the tree of `Parse` ([design](design/012-typed-values.md)).
 
+The TypeScript generator (`gen_ts.go`) walks the same analysis results and emits one function per expression into a module that embeds `tsrt/runtime.ts`, a port of `genrt/runtime.go` that hides JavaScript's differences (UTF-16 strings, 53-bit numbers, JSON escaping). `TestGeneratedTSParsersMatchEngine` runs the generated modules with Node.js on the corpus of the Go generator's test, plus prefixes and byte deletions of short inputs. It compares the JSON, `Node.String` and recognition with the engine, and type-checks the modules with `tsc` ([design](design/013-typescript-generation.md)).
+
 ### Compiled grammars
 
 A compiled grammar file (`compiled.go`, `modulefile.go`) stores the bytecode module and, optionally, the AST and the static-analysis results (version 2; the format is defined in [bytecode.md](bytecode.md#file-format)). Loading skips parsing, static analysis, type checking and compilation to bytecode. A file without the AST can be executed only by the bytecode backends. Version 1 files (AST only) can still be loaded ([design](design/009-compiled-grammar-format.md)).
@@ -131,6 +134,8 @@ go test ./...
 
 Engine tests write grammars in PEGO source and compare results using the S-expression form of nodes (`Node.String`).
 The `check` helper also verifies that the result is the same with memoization disabled, with every backend (closure, recursive bytecode, iterative bytecode), with both position units, in recognition-only mode, and with tracing on.
+
+The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for its type check, `tsc`; it is skipped when they are missing.
 
 `cd site && go test ./...` builds the site and checks its pages and links; `go test ./playground` runs the WebAssembly smoke test when Node is installed.
 
@@ -174,6 +179,7 @@ The `check` helper also verifies that the result is the same with memoization di
 | Done | | Code generation (Go, `pego gen`) |
 | Done | | Typed values in generated parsers (`pego gen -types`) |
 | Done | | Saving and loading compiled grammars (`.pegoc`) |
+| Done | | Code generation (TypeScript, `pego gen -lang ts`) |
 | Done | | Tracing, profiling and error explanation (`WithTrace`, `WithProfile`, `pego trace/profile/explain`) |
 
 ## Roadmap
@@ -186,6 +192,7 @@ The `check` helper also verifies that the result is the same with memoization di
 - [x] **Documentation:** provide detailed documentation and tutorials for each feature ([tutorial](tutorial/getting-started.md), [guides](guide/README.md)).
 - [x] **Go code generator:** generate Go parser code that can be compiled and run directly.
 - [x] **Bytecode VM:** a language-independent bytecode and VMs for two execution models, recursive and iterative ([design](design/010-bytecode-vm.md)).
+- [x] **TypeScript code generator:** standalone TypeScript parsers that return the engine's results ([design](design/013-typescript-generation.md)).
 - [ ] **Code generators for other languages:** generate parsers in Python and other languages.
 - [x] **Streaming:** consume input as a stream and emit nodes as a stream.
 - [x] **Incremental parsing:** update a parse efficiently after an edit.

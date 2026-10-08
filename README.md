@@ -61,11 +61,12 @@ tree, err := p.Parse("1 + 2 * 3 ^ 2") // a *pego.Node, or a *pego.SyntaxError wi
   has consumed, so memory stays constant however long the stream runs.
 - **Write once, run anywhere.** Grammars compile to a language-independent bytecode with a
   [published specification](docs/bytecode.md). Precompiled `.pegoc` files load in tens of microseconds, and
-  `pego gen` emits a standalone parser that needs nothing but a standard library.
+  `pego gen` emits a standalone parser: Go that needs nothing but the standard library, or a TypeScript module with
+  no dependencies for Node.js, Deno, Bun and browsers.
 - **Fast out of the box.** A 262 KB JSON document becomes a fully typed, positioned tree in under 10 ms with a
   generated parser. Recognition mode validates without building a tree at all.
-- **Four backends, one answer.** Closure engine, recursive VM, iterative VM, generated code: the test suite checks
-  that all of them return identical trees, positions and errors.
+- **Every backend, one answer.** Closure engine, recursive VM, iterative VM, generated Go and TypeScript: the test
+  suite checks that all of them return identical trees, positions and errors.
 - **No nesting too deep.** The iterative VM runs on its own stack, up to 10 million nested rule calls.
 - **Types all the way down.** Declare struct, union and terminal types and build them in actions. Rule types are
   inferred and checked when the grammar compiles, and `pego gen -types` emits matching Go types that the parser
@@ -123,6 +124,7 @@ pego compile -g grammar.pego -o grammar.pegoc    # precompile
 pego gen -g grammar.pego -pkg calc -o parser.go  # generate a standalone Go parser
 pego gen -g grammar.pego -pkg calc -types        # ... with Go types for the grammar's types
 pego gen -g grammar.pego -pkg calc -recognize    # ... with Recognize, which validates without a tree
+pego gen -lang ts -g grammar.pego -o parser.ts     # generate a standalone TypeScript module
 ```
 
 Run `pego` without arguments for every command and flag.
@@ -139,7 +141,7 @@ with CPython's `ast` module.
 | | |
 |:--|:--|
 | [Getting started](docs/tutorial/getting-started.md) | From a first grammar to typed trees and operator precedence, step by step |
-| [Guides](docs/guide/README.md) | Trees and actions, expressions, errors and recovery, context-sensitive parsing, running parsers, code generation, streaming and incremental parsing, debugging and profiling |
+| [Guides](docs/guide/README.md) | Trees and actions, expressions, errors and recovery, context-sensitive parsing, running parsers, code generation (Go and TypeScript), streaming and incremental parsing, debugging and profiling |
 | [Web site and playground](docs/guide/playground.md) | Try grammars in the browser; build and preview the site locally |
 | [Language specification](spec/README.md) | The PEGO grammar language |
 | [Development guide](docs/development.md) | Architecture, repository layout, implementation status, roadmap |
