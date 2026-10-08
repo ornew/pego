@@ -4,6 +4,7 @@
 import { PegoClient, siteRoot } from "../assets/pego-client.js";
 import { escapeHTML, highlight, highlightJSON, tokenize } from "../assets/highlight.js";
 import { decodeState, encodeState } from "../assets/state.js";
+import { describeResult } from "./status.js";
 
 const $ = (id) => document.getElementById(id);
 const client = new PegoClient(siteRoot() + "playground/");
@@ -473,9 +474,6 @@ function showErrors(items) {
   }
 }
 
-function fmtTime(micros) {
-  return micros < 1000 ? `${micros} µs` : `${(micros / 1000).toFixed(micros < 10000 ? 2 : 1)} ms`;
-}
 
 // ---------------------------------------------------------------- Parsing
 
@@ -556,31 +554,13 @@ function apply(res, req) {
   hoverNode = null;
 
   const tree0 = res.json ? JSON.parse(res.json) : null;
-  let empty = "";
-  if (!tree0) {
-    if (req.recognize && res.matched) empty = "Recognition mode builds no tree. The input matches.";
-    else if (res.matched) empty = "The start rule produced no value.";
-    else empty = "No tree: the input does not match the grammar.";
-  }
+  const { status, empty } = describeResult(res, req);
   tree.set(tree0, empty);
   $("pg-json").innerHTML = res.json ? (res.json.length < 300000 ? highlightJSON(res.json) : escapeHTML(res.json)) : "";
   $("pg-sexpr").textContent = res.sexpr || "";
   updateInputMarks();
-
-  const info = `start <code>${escapeHTML(res.start)}</code> · ${fmtTime(res.micros)}`;
+  setStatus(status.kind, escapeHTML(status.text));
   const errs = res.errors ?? [];
-  if (res.error) {
-    setStatus("error", `✗ ${escapeHTML(res.error)}`);
-  } else if (!res.matched) {
-    const e = errs[0];
-    setStatus("error", `✗ Syntax error at ${e.line}:${e.col} · ${info}`);
-  } else if (errs.length) {
-    setStatus("warn", `⚠ Recovered from ${errs.length === 1 ? "1 error" : errs.length + " errors"} · ${res.nodes} nodes · ${info}`);
-  } else if (req.recognize) {
-    setStatus("ok", `✓ The input matches · ${info}`);
-  } else {
-    setStatus("ok", `✓ Matched · ${res.nodes} nodes · ${info}`);
-  }
   showErrors([
     ...(res.error ? [{ where: "parse", message: res.error }] : []),
     ...errs.map((e) => ({

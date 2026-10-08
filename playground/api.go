@@ -349,7 +349,9 @@ func parse(req parseRequest) parseResult {
 	node, err := p.Parse(req.Input, opts...)
 	res.Micros = time.Since(t0).Microseconds()
 
-	res.Matched = node != nil || (req.Recognize && !isFailure(err))
+	// The input matched if the parse succeeded, possibly after recovering from errors. A start rule
+	// that produces no value (a discarded match) returns a nil node and no error.
+	res.Matched = !isFailure(err)
 	if node != nil {
 		// Encode exactly like pego parse: an indented json.Encoder, without the final newline.
 		var b bytes.Buffer

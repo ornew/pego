@@ -162,3 +162,26 @@ func TestBadRequests(t *testing.T) {
 		t.Errorf("version = %+v", v)
 	}
 }
+
+func TestParseWithoutValue(t *testing.T) {
+	// A start rule that matches without producing a value still matches.
+	for _, recognize := range []bool{false, true} {
+		r := call[parseResult](t, "parse", parseRequest{Grammar: `def main = -"a"`, Input: "a", Recognize: recognize})
+		if !r.Matched || len(r.Errors) != 0 || r.Error != "" || r.JSON != "" {
+			t.Errorf("recognize=%v: %+v", recognize, r)
+		}
+	}
+	// So does a recognition that recovered from errors, which reports them.
+	src := `def main = stmt* $$
+def stmt = s:((?a-z)+ ";") #recover(skip=(?^;)+ ";") -> $s
+`
+	r := call[parseResult](t, "parse", parseRequest{Grammar: src, Input: "ab;1;", Recognize: true})
+	if !r.Matched || !r.Recovered || len(r.Errors) != 1 || r.JSON != "" {
+		t.Errorf("recognize with recovery: %+v", r)
+	}
+	// A runtime error is not a match.
+	r = call[parseResult](t, "parse", parseRequest{Grammar: "type T struct { D int }\ndef main: T = \"a\" -> new T{D: depth}", Input: "a"})
+	if r.Matched || r.Error == "" {
+		t.Errorf("runtime error: %+v", r)
+	}
+}

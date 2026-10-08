@@ -25,10 +25,10 @@ a result panel. Every edit re-parses after a short pause; the grammar is compile
 |:--|:--|
 | **Example** | Loads one of the grammars of [`examples/`](../../examples/README.md) with a sample input: the calculator (Pratt and left-recursive), JSON, CSV, XML (and an XML error), the indentation outline, and minilang (and a minilang input that `#recover` recovers from) |
 | **Start** | The start rule. The default is `main`, or the first rule if there is no `main`, as with `pego parse -s` |
-| **Options** | The position unit (code points or bytes, `-unit`), the backend (`-backend`) and recognition mode (`-check`) |
+| **Options** | The position unit (code points or bytes, `-unit`), the backend (`-backend`) and recognition mode (`pego.RecognizeOnly`, which builds no tree). Like `pego parse -check`, recognition reports the same syntax errors as a full parse; where the command prints `ok` only for an input without errors, the playground also shows an input that `#recover` recovered from as a match, with its errors |
 | **Format** | Formats the grammar like `pego fmt`, keeping comments. The change can be undone |
 | **Share** | Copies a link that holds the grammar, the input and the options (see [shared links](#shared-links)) |
-| Status line | Whether the input matched, the number of nodes, the start rule and the parse time |
+| Status line | Whether the input matched (with or without a value, or after recovering from errors), the number of nodes, the start rule and the parse time |
 | Errors | Grammar errors with their positions, the syntax error that stopped the parse, or the errors `#recover` recovered from. Click one to jump to it. The editors also mark the position and the line number |
 
 The result panel has five tabs:
@@ -124,7 +124,9 @@ page or Node:
 | `generate` | `{grammar, package, start, types, recognize}` | `{code, diagnostics}` |
 | `version` | | `{go, module, revision, modified}` |
 
-`json` and `sexpr` are exactly what `pego parse` prints with `-f json` and `-f sexpr` (without the final newline), and
+`matched` is true when the parse succeeded, including a start rule that matches without producing a value (then
+`json` is empty) and a parse that recovered from errors (then `recovered` is true and `errors` lists them); a syntax
+error that stops the parse, or another error such as a runtime error in an action, makes it false. `json` and `sexpr` are exactly what `pego parse` prints with `-f json` and `-f sexpr` (without the final newline), and
 `message` is the description of an error as the command prints it after `line:col:`. `unit` is `codepoints` (the
 default) or `bytes`; `backend` is empty (the default), `closure`, `bytecode` or `bytecode-iterative`. Grammar diagnostics
 count columns in code points. A request that cannot be decoded, or an internal error, returns `{error}`.
@@ -147,7 +149,7 @@ it). The landing page loads it only when its live example scrolls into view.
 | Test | What it checks |
 |:--|:--|
 | `go test ./playground` | The API natively (it has no build tags), and `TestWasmSmoke`: it builds `pego.wasm` and the `pego` command, and runs [`playground/testdata/smoke.mjs`](../../playground/testdata/smoke.mjs) in Node, which compares every example of [`playground/examples.txt`](../../playground/examples.txt) with the command: JSON, S-expression, errors, `-check`, every backend, byte positions, `pego fmt` and `pego gen -types`. It is skipped when `node` is not installed and in `-short` mode |
-| `cd site && go test ./...` | Builds the whole site and checks that every Markdown file of `docs/` and `spec/` became a page, that the generated pages and the search index are complete, that no page needs inline scripts or styles, and that every internal link and anchor resolves |
+| `cd site && go test ./...` | Builds the whole site and checks that every Markdown file of `docs/` and `spec/` became a page, that the generated pages and the search index are complete, that no page needs inline scripts or styles, and that every internal link and anchor resolves. `TestJavaScript` runs the tests of the page scripts in `site/testdata/*_test.mjs` with `node --test` (skipped without Node) |
 
 The site is a separate Go module, so `go test ./...` at the root does not run its tests.
 

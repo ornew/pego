@@ -151,6 +151,23 @@ func TestBuild(t *testing.T) {
 // inlineRe matches style attributes, style elements, inline scripts and event handler attributes.
 var inlineRe = regexp.MustCompile(`\sstyle="|<style[\s>]|<script>|<script [^>]*>[^<]|\son[a-z]+="`)
 
+// TestJavaScript runs the tests of the site's JavaScript modules in testdata/*_test.mjs with Node. It
+// is skipped when node is not installed.
+func TestJavaScript(t *testing.T) {
+	node, err := exec.LookPath("node")
+	if err != nil {
+		t.Skip("node is not installed")
+	}
+	tests, err := filepath.Glob(filepath.Join("testdata", "*_test.mjs"))
+	if err != nil || len(tests) == 0 {
+		t.Fatalf("no JavaScript tests: %v", err)
+	}
+	out, err := exec.Command(node, append([]string{"--test"}, tests...)...).CombinedOutput()
+	if err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+}
+
 func TestCheckLinks(t *testing.T) {
 	out := t.TempDir()
 	write := func(name, content string) {
