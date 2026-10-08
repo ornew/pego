@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/ornew/pego"
 	"github.com/ornew/pego/sample"
@@ -285,6 +286,30 @@ func TestReviewRegressions(t *testing.T) {
 		if !slices.Contains(inputs, c.want) {
 			t.Errorf("%s: %q does not include %q", c.src, inputs, c.want)
 		}
+	}
+}
+
+// TestBudgetBoundsTime checks that an attempt stays within its budget when checks, not generation
+// steps, do the work: every character written re-evaluates the pending checks.
+func TestBudgetBoundsTime(t *testing.T) {
+	// Many pending checks over a growing text (one attempt took 16 s when only generation steps
+	// counted).
+	p := compile(t, `def main = ("c" r ";")* ";"
+def r = "a" (";" r / ";" "b")*`)
+	g, err := sample.New(p, sample.WithSeed(2), sample.WithAttempts(1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	start := time.Now()
+	g.Next()
+	if d := time.Since(start); d > 3*time.Second {
+		t.Errorf("one attempt took %v", d)
+	}
+	// A lookahead per character over the whole text: cubic work in the length.
+	p = compile(t, `def main = (!(x* "b") "a"){200} "c" $$
+def x = "a" / "c"`)
+	if _, err := sample.Generate(p, 1); err != nil {
+		t.Error(err)
 	}
 }
 

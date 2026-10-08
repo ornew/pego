@@ -1,6 +1,7 @@
 package sample
 
 import (
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -36,7 +37,7 @@ type matcher struct {
 	text   []byte
 	final  bool // text is the whole input
 	steps  int
-	active map[activeCall]bool
+	active []activeCall // rule calls in progress, to detect left recursion
 }
 
 type activeCall struct {
@@ -44,8 +45,9 @@ type activeCall struct {
 	pos  int
 }
 
-func (in *info) match(e grammar.Expr, text []byte, pos int, final bool) (status, int) {
-	m := &matcher{in: in, text: text, final: final}
+// run matches e at pos in text. m.steps is then the work it took.
+func (m *matcher) run(e grammar.Expr, text []byte, pos int, final bool) (status, int) {
+	m.text, m.final, m.steps, m.active = text, final, 0, m.active[:0]
 	return m.match(e, pos)
 }
 
@@ -167,15 +169,12 @@ func (m *matcher) match(e grammar.Expr, pos int) (status, int) {
 			return unknown, pos
 		}
 		key := activeCall{ri, pos}
-		if m.active[key] {
+		if slices.Contains(m.active, key) {
 			return unknown, pos // left recursion
 		}
-		if m.active == nil {
-			m.active = map[activeCall]bool{}
-		}
-		m.active[key] = true
+		m.active = append(m.active, key)
 		st, p := m.match(ri.def.Expr, pos)
-		delete(m.active, key)
+		m.active = m.active[:len(m.active)-1]
 		return st, p
 	case *grammar.Top:
 		return matched, pos

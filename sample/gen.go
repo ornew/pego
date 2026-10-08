@@ -29,6 +29,9 @@ import (
 // quickFailure is the number of steps within which an option is considered to have failed right away.
 const quickFailure = 8
 
+// matchBudget is the budget of the matcher in an attempt, in multiples of the generation budget.
+const matchBudget = 1000
+
 // hopeless is the number of rejected candidates after which coverage mode stops preferring a target
 // that no accepted input has exercised: the parser may never take it (because of a cut, for example).
 const hopeless = 4
@@ -77,6 +80,9 @@ type gen struct {
 	tent    bitset // targets exercised by the current attempt
 	trail   []int  // targets in tent, in the order they were added
 
+	m         matcher
+	matchWork int // steps of the matcher in the current attempt
+
 	scratch     []byte
 	result      string
 	resultTrail []int
@@ -86,6 +92,7 @@ func newGen(in *info, cfg *config) *gen {
 	return &gen{
 		in:       in,
 		cfg:      cfg,
+		m:        matcher{in: in},
 		rng:      rand.New(rand.NewPCG(cfg.seed, 0x9e3779b97f4a7c15)),
 		covered:  newBitset(len(in.targets)),
 		rejected: make([]int, len(in.targets)),
@@ -100,7 +107,7 @@ func (g *gen) attempt() (string, []int, bool) {
 	g.out, g.forced, g.endAt, g.pending = g.out[:0], "", -1, nil
 	g.caps, g.vars, g.sib = nil, nil, nil
 	clear(g.active)
-	g.depth, g.steps = 0, 0
+	g.depth, g.steps, g.matchWork = 0, 0, 0
 	for _, t := range g.trail {
 		g.tent.clear(t)
 	}
@@ -124,7 +131,13 @@ func (g *gen) finish() bool {
 	return true
 }
 
-func (g *gen) exhausted() bool { return g.steps > g.cfg.budget }
+// exhausted reports whether the attempt has used up its budget: generation steps, and the steps of the
+// matcher that evaluates checks. Every character written re-evaluates the pending checks, so the
+// matcher can do far more work than the generation itself (with many pending lookaheads over a long
+// text); it gets a budget of its own, matchBudget times the generation budget.
+func (g *gen) exhausted() bool {
+	return g.steps > g.cfg.budget || g.matchWork > matchBudget*g.cfg.budget
+}
 
 // retry reports whether a decision that started at step s0 may try another option. A decision gives
 // up once its failed options have taken more than the retry limit: when a doomed decision was made
@@ -187,7 +200,8 @@ func (g *gen) text() []byte {
 func (g *gen) evalCheck(c *check, final bool) (violated, keep bool) {
 	// The input is complete at the end, or where $$ requires it to end.
 	final = g.forced == "" && (final || g.endAt == len(g.out))
-	st, end := g.in.match(c.e, g.text(), c.pos, final)
+	st, end := g.m.run(c.e, g.text(), c.pos, final)
+	g.matchWork += g.m.steps
 	switch st {
 	case matched:
 		return c.neg && (!c.progress || end > c.pos), false
@@ -220,7 +234,7 @@ func (g *gen) recheck() bool {
 	changed := false
 	for c := g.pending; c != nil; c = c.next {
 		violated, keep := g.evalCheck(c, false)
-		if violated {
+		if violated || g.exhausted() {
 			return false
 		}
 		if keep {
@@ -252,7 +266,7 @@ func (g *gen) emit(s string, k func(start int) bool) bool {
 	pending := g.pending
 	g.out = append(g.out, s...)
 	g.forced = f[n:]
-	ok := g.recheck() && k(start)
+	ok := g.recheck() && !g.exhausted() && k(start)
 	g.out = g.out[:start]
 	g.forced = f
 	g.pending = pending

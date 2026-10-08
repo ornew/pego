@@ -57,6 +57,13 @@ persistent list or restored on return, so undoing is free. One *attempt* is a de
 of steps (20,000); a generator makes up to `WithAttempts` attempts per input (100), each continuing the same random
 sequence, so the result depends only on the parser, the options and the seed.
 
+The checks described below are re-evaluated each time a character is written, so the matcher that evaluates them can
+do far more work than the generation: with a pending lookahead per character over a long text, the work grows with the
+cube of the length, and one attempt once took 16 seconds while counting only 20,000 generation steps. The matcher's
+steps therefore have a budget of their own, 1,000 times the generation budget (a matcher step is a few nanoseconds),
+which bounds an attempt to a fraction of a second. A grammar that needs more, such as a negative lookahead over the
+whole input before each of 800 characters, finds no input instead of taking seconds per attempt.
+
 Depth-first search alone is exponential when a doomed decision is followed by many equivalent ones: a line comment
 `"//" (?^\n)*` before a token on the same line is detected only when the token is written, and every character and
 length of the comment would be tried first. Three rules keep doomed subtrees small:
