@@ -233,7 +233,8 @@ func (p *tparser) run(r *trule, input string, units []Unit, ext any) (v any, err
 	p.ext = ext
 	p.memo.stride = nseen
 	if len(units) > 0 && units[0] == Bytes {
-		p.unit, p.bs, p.n = Bytes, input, len(input)
+		// p.in stays empty: direct rules read code points from it while p.pos < len(p.in).
+		p.unit, p.bs, p.n, p.in = Bytes, input, len(input), p.in[:0]
 	} else {
 		p.setSource(input)
 	}

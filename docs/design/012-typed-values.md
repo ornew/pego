@@ -71,7 +71,8 @@ errors and memoization decisions are literally shared. The generator writes the 
   state. A repetition element with captures of its own clears its variables at each iteration (a new frame) and
   attaches them as before when its value is used. The action is a Go expression over the variables, evaluated in
   place: no frame, no function value, and for an action that makes a struct with the rule's range none of the checks
-  of `tctx.result`, which hold by construction. A direct rule leaves `p.cut`, `p.frame` and `p.trail` alone: it has
+  of `tctx.result`, which hold by construction. Character tests read code points from the decoded input without
+  calling `peek`, which the compiler does not inline. A direct rule leaves `p.cut`, `p.frame` and `p.trail` alone: it has
   no cut, and the rules it calls restore all three. The general code remains for rules with a cut or `#recover`,
   Pratt rules and the leaders of left recursion (and anything they call keeps working, since calls are the same
   methods either way); in the benchmark grammars that is the Pratt expression of the calculator and the three

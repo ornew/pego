@@ -2113,7 +2113,8 @@ func (p *tparser) run(r *trule, input string, units []Unit, ext any) (v any, err
 	p.ext = ext
 	p.memo.stride = nseen
 	if len(units) > 0 && units[0] == Bytes {
-		p.unit, p.bs, p.n = Bytes, input, len(input)
+		// p.in stays empty: direct rules read code points from it while p.pos < len(p.in).
+		p.unit, p.bs, p.n, p.in = Bytes, input, len(input), p.in[:0]
 	} else {
 		p.setSource(input)
 	}
@@ -5426,7 +5427,12 @@ func (p *tparser) s5() (any, bool) {
 	x1 = p.pos
 	x2 = 0
 	for {
-		if ch, size, ok = p.peek(); !ok || (ch == 10) {
+		if p.pos < len(p.in) {
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || (ch == 10) {
 			p.expect(p.pos, 6)
 			break
 		}
@@ -5470,7 +5476,11 @@ func (p *tparser) s6() (any, bool) {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
-	x5, _, x6 = p.peek()
+	if p.pos < len(p.in) {
+		x5, _, x6 = p.in[p.pos], 1, true
+	} else {
+		x5, _, x6 = p.peek()
+	}
 	if !(x6 && (x5 == 10)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 7)
 		goto L7
@@ -5541,7 +5551,12 @@ func (p *tparser) s7() (any, bool) {
 	x5 = 0
 	for {
 		x6, x7 = p.pos, len(p.recovered)
-		if ch, size, ok = p.peek(); !ok || !(ch == 32 || ch == 9) {
+		if p.pos < len(p.in) {
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || !(ch == 32 || ch == 9) {
 			p.expect(p.pos, 8)
 			goto L8
 		}
@@ -5595,7 +5610,12 @@ func (p *tparser) s8() (any, bool) {
 		p.tooDeep()
 	}
 	for {
-		if ch, size, ok = p.peek(); !ok || !(ch == 32 || ch == 9) {
+		if p.pos < len(p.in) {
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || !(ch == 32 || ch == 9) {
 			p.expect(p.pos, 8)
 			break
 		}
@@ -5632,7 +5652,11 @@ func (p *tparser) s9() (any, bool) {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
-	x4, _, x5 = p.peek()
+	if p.pos < len(p.in) {
+		x4, _, x5 = p.in[p.pos], 1, true
+	} else {
+		x4, _, x5 = p.peek()
+	}
 	if !(x5 && (x4 == 10)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 7)
 		goto L6

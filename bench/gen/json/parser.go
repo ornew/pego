@@ -2113,7 +2113,8 @@ func (p *tparser) run(r *trule, input string, units []Unit, ext any) (v any, err
 	p.ext = ext
 	p.memo.stride = nseen
 	if len(units) > 0 && units[0] == Bytes {
-		p.unit, p.bs, p.n = Bytes, input, len(input)
+		// p.in stays empty: direct rules read code points from it while p.pos < len(p.in).
+		p.unit, p.bs, p.n, p.in = Bytes, input, len(input), p.in[:0]
 	} else {
 		p.setSource(input)
 	}
@@ -7597,7 +7598,11 @@ func (p *tparser) v1() (any, bool) {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
-	x5, _, x6 = p.peek()
+	if p.pos < len(p.in) {
+		x5, _, x6 = p.in[p.pos], 1, true
+	} else {
+		x5, _, x6 = p.peek()
+	}
 	if !(x6 && (x5 == 123)) && p.depth+1 <= maxDepth {
 		p.expect(p.pos, 5)
 		goto L7
@@ -7703,7 +7708,11 @@ func (p *tparser) i1() (any, bool) {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
-	x5, _, x6 = p.peek()
+	if p.pos < len(p.in) {
+		x5, _, x6 = p.in[p.pos], 1, true
+	} else {
+		x5, _, x6 = p.peek()
+	}
 	if !(x6 && (x5 == 123)) && p.depth+1 <= maxDepth {
 		p.expect(p.pos, 5)
 		goto L7
@@ -8202,7 +8211,11 @@ func (p *tparser) s8() (any, bool) {
 	for {
 		x2, x3 = p.pos, len(p.recovered)
 		x5, x6 = p.pos, len(p.recovered)
-		x8, _, x9 = p.peek()
+		if p.pos < len(p.in) {
+			x8, _, x9 = p.in[p.pos], 1, true
+		} else {
+			x8, _, x9 = p.peek()
+		}
 		if !(x9 && (!(x8 == 34 || x8 == 92 || x8 >= 0 && x8 <= 31))) && p.depth+1 <= maxDepth {
 			p.expect(p.pos, 13)
 			goto L10
@@ -8261,7 +8274,12 @@ func (p *tparser) s9() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	if ch, size, ok = p.peek(); !ok || (ch == 34 || ch == 92 || ch >= 0 && ch <= 31) {
+	if p.pos < len(p.in) {
+		ch, size, ok = p.in[p.pos], 1, true
+	} else {
+		ch, size, ok = p.peek()
+	}
+	if !ok || (ch == 34 || ch == 92 || ch >= 0 && ch <= 31) {
 		p.expect(p.pos, 13)
 		goto fail
 	}
@@ -8322,12 +8340,21 @@ func (p *tparser) s10() (any, bool) {
 	}
 	x2 = append(x2, v3)
 	x4, x5 = p.pos, len(p.recovered)
-	x8, _, x9 = p.peek()
+	if p.pos < len(p.in) {
+		x8, _, x9 = p.in[p.pos], 1, true
+	} else {
+		x8, _, x9 = p.peek()
+	}
 	if !(x9 && (!!(x8 == 34 || x8 == 92 || x8 == 47 || x8 == 98 || x8 == 102 || x8 == 110 || x8 == 114 || x8 == 116))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 15)
 		goto L10
 	}
-	if ch, size, ok = p.peek(); !ok || !(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116) {
+	if p.pos < len(p.in) {
+		ch, size, ok = p.in[p.pos], 1, true
+	} else {
+		ch, size, ok = p.peek()
+	}
+	if !ok || !(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116) {
 		p.expect(p.pos, 15)
 		goto L11
 	}
@@ -8407,7 +8434,12 @@ func (p *tparser) s11() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	if ch, size, ok = p.peek(); !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
+	if p.pos < len(p.in) {
+		ch, size, ok = p.in[p.pos], 1, true
+	} else {
+		ch, size, ok = p.peek()
+	}
+	if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
 		p.expect(p.pos, 17)
 		goto fail
 	}
@@ -8521,7 +8553,11 @@ func (p *tparser) s13() (any, bool) {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
-	x5, _, x6 = p.peek()
+	if p.pos < len(p.in) {
+		x5, _, x6 = p.in[p.pos], 1, true
+	} else {
+		x5, _, x6 = p.peek()
+	}
 	if !(x6 && (x5 == 48)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 19)
 		goto L7
@@ -8541,7 +8577,12 @@ L7:
 	}
 	x12 = p.pos
 	x13 = p.newVals(2)[:0]
-	if ch, size, ok = p.peek(); !ok || !(ch >= 49 && ch <= 57) {
+	if p.pos < len(p.in) {
+		ch, size, ok = p.in[p.pos], 1, true
+	} else {
+		ch, size, ok = p.peek()
+	}
+	if !ok || !(ch >= 49 && ch <= 57) {
 		p.expect(p.pos, 20)
 		goto L11
 	}
@@ -8553,7 +8594,12 @@ L7:
 	x18 = 0
 	for {
 		x19, x20 = p.pos, len(p.recovered)
-		if ch, size, ok = p.peek(); !ok || !(ch >= 48 && ch <= 57) {
+		if p.pos < len(p.in) {
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || !(ch >= 48 && ch <= 57) {
 			p.expect(p.pos, 21)
 			goto L21
 		}
@@ -8632,7 +8678,12 @@ func (p *tparser) s14() (any, bool) {
 	x6 = 0
 	for {
 		x7, x8 = p.pos, len(p.recovered)
-		if ch, size, ok = p.peek(); !ok || !(ch >= 48 && ch <= 57) {
+		if p.pos < len(p.in) {
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || !(ch >= 48 && ch <= 57) {
 			p.expect(p.pos, 21)
 			goto L9
 		}
@@ -8705,7 +8756,12 @@ func (p *tparser) s15() (any, bool) {
 	}
 	x1 = p.pos
 	x2 = p.newVals(3)[:0]
-	if ch, size, ok = p.peek(); !ok || !(ch == 101 || ch == 69) {
+	if p.pos < len(p.in) {
+		ch, size, ok = p.in[p.pos], 1, true
+	} else {
+		ch, size, ok = p.peek()
+	}
+	if !ok || !(ch == 101 || ch == 69) {
 		p.expect(p.pos, 23)
 		goto fail
 	}
@@ -8714,7 +8770,12 @@ func (p *tparser) s15() (any, bool) {
 	v4 = p.newMatch(x3, p.pos, p.text(x3, p.pos), true)
 	x2 = append(x2, v4)
 	x5, x6 = p.pos, len(p.recovered)
-	if ch, size, ok = p.peek(); !ok || !(ch == 43 || ch == 45) {
+	if p.pos < len(p.in) {
+		ch, size, ok = p.in[p.pos], 1, true
+	} else {
+		ch, size, ok = p.peek()
+	}
+	if !ok || !(ch == 43 || ch == 45) {
 		p.expect(p.pos, 24)
 		goto L8
 	}
@@ -8733,7 +8794,12 @@ L9:
 	x14 = 0
 	for {
 		x15, x16 = p.pos, len(p.recovered)
-		if ch, size, ok = p.peek(); !ok || !(ch >= 48 && ch <= 57) {
+		if p.pos < len(p.in) {
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || !(ch >= 48 && ch <= 57) {
 			p.expect(p.pos, 21)
 			goto L17
 		}
@@ -8789,7 +8855,11 @@ func (p *tparser) s16() (any, bool) {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
-	x4, _, x5 = p.peek()
+	if p.pos < len(p.in) {
+		x4, _, x5 = p.in[p.pos], 1, true
+	} else {
+		x4, _, x5 = p.peek()
+	}
 	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 25)
 		goto L6
@@ -8876,7 +8946,12 @@ func (p *tparser) s18() (any, bool) {
 	x3 = 0
 	for {
 		x4, x5 = p.pos, len(p.recovered)
-		if ch, size, ok = p.peek(); !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
+		if p.pos < len(p.in) {
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
 			p.expect(p.pos, 27)
 			goto L6
 		}
@@ -8916,7 +8991,12 @@ func (p *tparser) s19() (any, bool) {
 		p.tooDeep()
 	}
 	for {
-		if ch, size, ok = p.peek(); !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
+		if p.pos < len(p.in) {
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
 			p.expect(p.pos, 27)
 			break
 		}
@@ -8942,7 +9022,12 @@ func (p *tparser) s20() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	if ch, size, ok = p.peek(); !ok || (ch == 34 || ch == 92 || ch >= 0 && ch <= 31) {
+	if p.pos < len(p.in) {
+		ch, size, ok = p.in[p.pos], 1, true
+	} else {
+		ch, size, ok = p.peek()
+	}
+	if !ok || (ch == 34 || ch == 92 || ch >= 0 && ch <= 31) {
 		p.expect(p.pos, 13)
 		goto fail
 	}
@@ -8980,12 +9065,21 @@ func (p *tparser) s21() (any, bool) {
 		goto fail
 	}
 	x1, x2 = p.pos, len(p.recovered)
-	x4, _, x5 = p.peek()
+	if p.pos < len(p.in) {
+		x4, _, x5 = p.in[p.pos], 1, true
+	} else {
+		x4, _, x5 = p.peek()
+	}
 	if !(x5 && (!!(x4 == 34 || x4 == 92 || x4 == 47 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 15)
 		goto L6
 	}
-	if ch, size, ok = p.peek(); !ok || !(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116) {
+	if p.pos < len(p.in) {
+		ch, size, ok = p.in[p.pos], 1, true
+	} else {
+		ch, size, ok = p.peek()
+	}
+	if !ok || !(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116) {
 		p.expect(p.pos, 15)
 		goto L7
 	}
@@ -9051,7 +9145,11 @@ func (p *tparser) s22() (any, bool) {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
-	x4, _, x5 = p.peek()
+	if p.pos < len(p.in) {
+		x4, _, x5 = p.in[p.pos], 1, true
+	} else {
+		x4, _, x5 = p.peek()
+	}
 	if !(x5 && (x4 == 48)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 19)
 		goto L6
@@ -9068,13 +9166,23 @@ L6:
 		p.expect(p.pos, 20)
 		goto L8
 	}
-	if ch, size, ok = p.peek(); !ok || !(ch >= 49 && ch <= 57) {
+	if p.pos < len(p.in) {
+		ch, size, ok = p.in[p.pos], 1, true
+	} else {
+		ch, size, ok = p.peek()
+	}
+	if !ok || !(ch >= 49 && ch <= 57) {
 		p.expect(p.pos, 20)
 		goto L9
 	}
 	p.pos += size
 	for {
-		if ch, size, ok = p.peek(); !ok || !(ch >= 48 && ch <= 57) {
+		if p.pos < len(p.in) {
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || !(ch >= 48 && ch <= 57) {
 			p.expect(p.pos, 21)
 			break
 		}
@@ -9118,7 +9226,12 @@ func (p *tparser) s23() (any, bool) {
 	}
 	x1 = 0
 	for {
-		if ch, size, ok = p.peek(); !ok || !(ch >= 48 && ch <= 57) {
+		if p.pos < len(p.in) {
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || !(ch >= 48 && ch <= 57) {
 			p.expect(p.pos, 21)
 			break
 		}
@@ -9156,13 +9269,23 @@ func (p *tparser) s24() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	if ch, size, ok = p.peek(); !ok || !(ch == 101 || ch == 69) {
+	if p.pos < len(p.in) {
+		ch, size, ok = p.in[p.pos], 1, true
+	} else {
+		ch, size, ok = p.peek()
+	}
+	if !ok || !(ch == 101 || ch == 69) {
 		p.expect(p.pos, 23)
 		goto fail
 	}
 	p.pos += size
 	x1, x2 = p.pos, len(p.recovered)
-	if ch, size, ok = p.peek(); !ok || !(ch == 43 || ch == 45) {
+	if p.pos < len(p.in) {
+		ch, size, ok = p.in[p.pos], 1, true
+	} else {
+		ch, size, ok = p.peek()
+	}
+	if !ok || !(ch == 43 || ch == 45) {
 		p.expect(p.pos, 24)
 		goto L3
 	}
@@ -9174,7 +9297,12 @@ L3:
 L4:
 	x5 = 0
 	for {
-		if ch, size, ok = p.peek(); !ok || !(ch >= 48 && ch <= 57) {
+		if p.pos < len(p.in) {
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || !(ch >= 48 && ch <= 57) {
 			p.expect(p.pos, 21)
 			break
 		}
@@ -9209,7 +9337,12 @@ func (p *tparser) s25() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	if ch, size, ok = p.peek(); !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
+	if p.pos < len(p.in) {
+		ch, size, ok = p.in[p.pos], 1, true
+	} else {
+		ch, size, ok = p.peek()
+	}
+	if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
 		p.expect(p.pos, 17)
 		goto fail
 	}

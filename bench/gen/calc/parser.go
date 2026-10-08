@@ -2113,7 +2113,8 @@ func (p *tparser) run(r *trule, input string, units []Unit, ext any) (v any, err
 	p.ext = ext
 	p.memo.stride = nseen
 	if len(units) > 0 && units[0] == Bytes {
-		p.unit, p.bs, p.n = Bytes, input, len(input)
+		// p.in stays empty: direct rules read code points from it while p.pos < len(p.in).
+		p.unit, p.bs, p.n, p.in = Bytes, input, len(input), p.in[:0]
 	} else {
 		p.setSource(input)
 	}
@@ -4852,7 +4853,12 @@ func (p *tparser) s2() (any, bool) {
 	}
 	x1 = 0
 	for {
-		if ch, size, ok = p.peek(); !ok || !(ch >= 48 && ch <= 57) {
+		if p.pos < len(p.in) {
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || !(ch >= 48 && ch <= 57) {
 			p.expect(p.pos, 5)
 			break
 		}
@@ -4868,7 +4874,12 @@ func (p *tparser) s2() (any, bool) {
 	}
 	x6 = 0
 	for {
-		if ch, size, ok = p.peek(); !ok || !(ch >= 48 && ch <= 57) {
+		if p.pos < len(p.in) {
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || !(ch >= 48 && ch <= 57) {
 			p.expect(p.pos, 5)
 			break
 		}
@@ -4917,7 +4928,12 @@ func (p *tparser) s3() (any, bool) {
 	x3 = 0
 	for {
 		x4, x5 = p.pos, len(p.recovered)
-		if ch, size, ok = p.peek(); !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
+		if p.pos < len(p.in) {
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
 			p.expect(p.pos, 7)
 			goto L6
 		}
@@ -4957,7 +4973,12 @@ func (p *tparser) s4() (any, bool) {
 		p.tooDeep()
 	}
 	for {
-		if ch, size, ok = p.peek(); !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
+		if p.pos < len(p.in) {
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
 			p.expect(p.pos, 7)
 			break
 		}

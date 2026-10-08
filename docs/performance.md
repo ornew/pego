@@ -98,6 +98,7 @@ automatically in the others. This table records, for every change in the log bel
 | 55 | Tracing hook (cost only) | ✓ | ✓ | ✓ | – | – | generated parsers have no tracing |
 | 57, 58 | Scratch memory pooled across whole-input parses (input, offsets, memo, value stack) | ✓ | ✓ | ✓ | ✓ | ✓ | typed: since 48; generated `Parse` and `Recognize`: 58 |
 | 60 | Direct rules: a rule's body inlined into its call method, captures in Go variables, the action in place | – | – | – | ✗ | ✓ | typed: not for rules with a cut or `#recover`, Pratt rules and left-recursion leaders; not tried for generated `Parse` |
+| 61 | Character tests read code points without calling `peek` | – | – | – | ✗ | ✓ | typed: direct rules only; generated `Parse` still calls `peek` |
 
 Not applied, and why:
 
@@ -886,6 +887,17 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   Arith_LeftRec 14.3 → 10.3 ms (−28%), Outline 3.32 → 2.46 ms (−26%), Arith_Pratt 6.40 → 6.03 ms (−6%); XML 4.3 →
   3.2 MB (no frames), the others unchanged in bytes. JSON `ParseAST` now takes the time of `Recognize` (3.9 ms) and
   about half that of `Parse` (7.2 ms). Generated `Parse` and `Recognize` are unchanged.
+
+### 61. Reading code points directly in direct rules
+
+- After change 59, `peek` (the character at the position, in either position unit) was 9% of a JSON `ParseAST`
+  profile. The compiler does not inline it: its cost is 110 against a budget of 80, mostly for decoding a multi-byte
+  character in `Bytes`, and still 88 with that moved into a function of its own, because the call alone costs 57.
+  Direct rules now read the character from `p.in[p.pos]` while `p.pos < len(p.in)`, and call `peek` otherwise, in
+  character classes, `.`, scan loops and the first-character tests of choices. `p.in` is empty in `Bytes`, which
+  `run` now ensures rather than relying on how a pooled parser was cleared.
+- Effect (min of 8 interleaved runs, Apple M3 Max, `ParseAST`): JSON 3.75 → 3.30 ms (−12%), XML 4.41 → 3.99 ms
+  (−10%), Outline −6%, Arith_LeftRec −3%, Arith_Pratt −2% (its Pratt loop is the general code).
 
 ## Grammar authoring guidelines for performance
 
