@@ -177,24 +177,24 @@ def splitType: Expr = h:splitHead rest:(-sp "|" !(?|=) -ws t:mulExpr)*
     -> foldl($h, $rest, (acc, i) => new BinaryExpr{X: $acc, Op: "|", Y: $i.t})
 def splitHead: Expr = splitStar / splitParen
 def splitStar: StarExpr = "*" !"=" -ws u:unaryExpr -> new StarExpr{X: $u}
-def splitParen: ParenExpr = "(" -ws a:expr -sp ("," -ws)? ")" !(-sp (dot / "[" / "(")) -> new ParenExpr{X: $a}
+def splitParen: ParenExpr = "(" -ws a:expr -sp ("," -ws)? ")" !(-sp (?.[()) -> new ParenExpr{X: $a}
 
 // P *E or P(E) is a type parameter if a "," follows, or if E or a "|" term is a type element.
 def splitDecision = ident -sp splitHeadShape (-sp "|" !(?|=) -ws mulExpr)* -sp ","
     / ident -sp splitHeadTE (-sp "|" !(?|=) -ws mulExpr)* -sp "]"
     / ident -sp splitHeadShape (-sp "|" !(?|=) -ws !termTE mulExpr)* -sp "|" !(?|=) -ws termTE
       (-sp "|" !(?|=) -ws mulExpr)* -sp "]"
-def splitHeadShape = "*" !"=" -ws unaryExpr / "(" -ws expr -sp ("," -ws)? ")" !(-sp (dot / "[" / "("))
+def splitHeadShape = "*" !"=" -ws unaryExpr / "(" -ws expr -sp ("," -ws)? ")" !(-sp (?.[())
 def splitHeadTE = "*" !"=" -ws &unaryTE unaryExpr
-    / "(" -ws &exprTE expr -sp ("," -ws)? ")" !(-sp (dot / "[" / "("))
+    / "(" -ws &exprTE expr -sp ("," -ws)? ")" !(-sp (?.[())
 
 // Type elements (go/parser's isTypeElem): a unary expression that is a type literal, ~x or a
 // parenthesized type element, and a binary expression with such an operand.
 def unaryTE = "~" -ws unaryExpr
     / recvChanType
-    / (arrayType / structType / funcType / mapType) !(-sp (dot / "[" / "(" / "{"))
-    / (interfaceType / chanType) !(-sp (dot / "[" / "("))
-    / "(" -ws exprTE -sp ")" !(-sp (dot / "[" / "("))
+    / (arrayType / structType / funcType / mapType) !(-sp (?.[({))
+    / (interfaceType / chanType) !(-sp (?.[())
+    / "(" -ws exprTE -sp ")" !(-sp (?.[())
 def exprTE = (!unaryTE unaryExpr -sp binaryOp -ws)* unaryTE (-sp binaryOp -ws unaryExpr)*
 def termTE = (!unaryTE unaryExpr -sp mulOp -ws)* unaryTE (-sp mulOp -ws unaryExpr)*
 
@@ -264,8 +264,10 @@ def identIndexList: IndexListExpr = x:ident -sp "[" -ws first:expr rest:(-sp ","
 // Types
 // ===================================================================
 
-def typ: Expr = typeName / arrayType / structType / pointerType / funcType / interfaceType / mapType
-    / chanType / parenType
+def typ: Expr = typeGuard (t:typeName / t:arrayType / t:structType / t:pointerType / t:funcType / t:interfaceType
+    / t:mapType / t:chanType / t:parenType) -> $t
+// As operandGuard, for types.
+def typeGuard = &(?a-zA-Z_[*<(\u{80}-\u{10FFFF}) / _|_ #error(message="expected type")
 // The tokens with which a type can start.
 def typeStart = ident / "[" / kw_struct / "*" !"=" / kw_func / kw_interface / kw_map / kw_chan / "<-" / "("
 
@@ -278,8 +280,8 @@ def qualifiedInstance: Expr = typeInstanceList / typeInstance
 def typeInstance: IndexExpr = x:qualifiedIdent -sp "[" -ws t:typ -sp ("," -ws)? "]" -> new IndexExpr{X: $x, Index: $t}
 def typeInstanceList: IndexListExpr = x:qualifiedIdent -sp "[" -ws first:typ rest:(-sp "," -ws t:typ)+ -sp ("," -ws)? "]"
     -> new IndexListExpr{X: $x, Indices: concat(list($first), map($rest, (r) => $r.t))}
-def qualifiedIdent: Expr = (t:selectorIdent / t:ident !(-sp dot)) -> $t
-def selectorIdent: SelectorExpr = x:ident -sp dot -ws s:ident -> new SelectorExpr{X: $x, Sel: $s}
+def qualifiedIdent: Expr = (t:selectorIdent / t:ident !(-sp "." !"..")) -> $t
+def selectorIdent: SelectorExpr = x:ident -sp "." !".." -ws s:ident -> new SelectorExpr{X: $x, Sel: $s}
 
 // [N]T, []T and [...]T. The length is any expression.
 def arrayType: ArrayType = "[" -ws n:arrayLen? "]" -sp t:typ -> new ArrayType{Len: $n, Elt: $t}
@@ -356,22 +358,26 @@ def lastClauseTerminated: Stmt = s:(labeledStmt / plainStmt) &(-sp stmtTerm) -> 
 def clauseEnd = kw_case / kw_default / "}"
 
 // go/parser starts a simple statement only at the tokens that start an expression, which "~" does not.
-def plainStmt: Stmt = (s:declStmt / s:goStmt / s:deferStmt / s:returnStmt / s:branchStmt / s:block / s:ifStmt
-    / s:switchStmt / s:selectStmt / s:forStmt / !"~" s:simpleStmt) -> $s
+// (The lookahead for a keyword spares the other statements the expectations of the keywords, which
+// cost more than the lookahead.)
+def plainStmt: Stmt = (&keyword s:(declStmt / goStmt / deferStmt / returnStmt / branchStmt / ifStmt / switchStmt
+    / selectStmt / forStmt) / s:block / !"~" s:simpleStmt) -> $s
 
 def declStmt: DeclStmt = d:(constDecl / varDecl / typeDecl) -> new DeclStmt{Decl: $d}
 
-def simpleStmt: Stmt = assignStmt / sendStmt / incDecStmt / exprStmt
+// An expression statement is tried first, since most statements are calls; it must end the statement.
+def simpleStmt: Stmt = exprStmtEnd / assignStmt / incDecStmt / sendStmt
+def exprStmtEnd: ExprStmt = x:expr &(-sp stmtTerm) -> new ExprStmt{X: $x}
 def assignStmt: AssignStmt = l:exprList -sp t:assignOp -ws r:exprList -> new AssignStmt{Lhs: $l, Tok: text($t), Rhs: $r}
 def sendStmt: SendStmt = c:expr -sp "<-" -ws v:expr -> new SendStmt{Chan: $c, Value: $v}
-def incDecStmt: IncDecStmt = x:expr -sp t:@("++" / "--") -> new IncDecStmt{X: $x, Tok: text($t)}
+def incDecStmt: IncDecStmt = x:expr -sp t:incDecOp -> new IncDecStmt{X: $x, Tok: text($t)}
 def exprStmt: ExprStmt = x:expr -> new ExprStmt{X: $x}
 
 // The same in the header of an if, for or switch statement.
 def hsimpleStmt: Stmt = hassignStmt / hsendStmt / hincDecStmt / hexprStmt
 def hassignStmt: AssignStmt = l:hexprList -sp t:assignOp -ws r:hexprList -> new AssignStmt{Lhs: $l, Tok: text($t), Rhs: $r}
 def hsendStmt: SendStmt = c:hexpr -sp "<-" -ws v:hexpr -> new SendStmt{Chan: $c, Value: $v}
-def hincDecStmt: IncDecStmt = x:hexpr -sp t:@("++" / "--") -> new IncDecStmt{X: $x, Tok: text($t)}
+def hincDecStmt: IncDecStmt = x:hexpr -sp t:incDecOp -> new IncDecStmt{X: $x, Tok: text($t)}
 def hexprStmt: ExprStmt = x:hexpr -> new ExprStmt{X: $x}
 
 // The expression of go and defer must be a call that is not parenthesized: the operand of the
@@ -441,12 +447,14 @@ def rangeValue: Expr = -sp "," -ws v:hexpr -> $v
 // Expressions
 // ===================================================================
 
-def expr: Expr = orExpr
+// Most expressions have no binary operator: a unary expression that no operator follows is the
+// expression, without the five rules of the precedence levels.
+def expr: Expr = (x:unaryExpr !(-sp binaryOp) / x:orExpr) -> $x
 def exprList = first:expr rest:(-sp "," -ws x:expr)* -> concat(list($first), map($rest, (r) => $r.x))
 
-def orExpr: Expr = l:andExpr rest:(-sp o:@"||" -ws r:andExpr)*
+def orExpr: Expr = l:andExpr rest:(-sp o:orOp -ws r:andExpr)*
     -> foldl($l, $rest, (acc, i) => new BinaryExpr{X: $acc, Op: text($i.o), Y: $i.r})
-def andExpr: Expr = l:cmpExpr rest:(-sp o:@"&&" -ws r:cmpExpr)*
+def andExpr: Expr = l:cmpExpr rest:(-sp o:andOp -ws r:cmpExpr)*
     -> foldl($l, $rest, (acc, i) => new BinaryExpr{X: $acc, Op: text($i.o), Y: $i.r})
 def cmpExpr: Expr = l:addExpr rest:(-sp o:relOp -ws r:addExpr)*
     -> foldl($l, $rest, (acc, i) => new BinaryExpr{X: $acc, Op: text($i.o), Y: $i.r})
@@ -457,9 +465,9 @@ def mulExpr: Expr = l:unaryExpr rest:(-sp o:mulOp -ws r:unaryExpr)*
 
 // <-chan T is a channel type, not a receive; go/parser reassociates the arrow when the operand of
 // "<-" is a channel type, which yields the type <-chan T or an error.
-def unaryExpr: Expr = recvChanType / recvExpr / unaryOpExpr / starExpr / primaryExpr
-def recvChanType: ChanType = t:recvChanTypeT !(-sp (dot / "[" / "(")) -> $t
-def recvExpr: UnaryExpr = "<-" -ws !(chanType !(-sp (dot / "[" / "("))) x:unaryExpr -> new UnaryExpr{Op: "<-", X: $x}
+def unaryExpr: Expr = (&(?<+\-!^&~*) u:(recvChanType / recvExpr / unaryOpExpr / starExpr) / u:primaryExpr) -> $u
+def recvChanType: ChanType = t:recvChanTypeT !(-sp (?.[()) -> $t
+def recvExpr: UnaryExpr = "<-" -ws !(chanType !(-sp (?.[())) x:unaryExpr -> new UnaryExpr{Op: "<-", X: $x}
 def unaryOpExpr: UnaryExpr = o:unaryOp -ws x:unaryExpr -> new UnaryExpr{Op: text($o), X: $x}
 def starExpr: StarExpr = "*" !"=" -ws x:unaryExpr -> new StarExpr{X: $x}
 
@@ -467,26 +475,31 @@ def starExpr: StarExpr = "*" !"=" -ws x:unaryExpr -> new StarExpr{X: $x}
 // composite literals. Outside headers, a "{" after an operand is a composite literal, which
 // go/parser allows only after a name, a selector, an index or an array, struct or map type: the
 // other operands and suffixes do not match before a "{" (any "{" after them would be an error).
-def primaryExpr: Expr = (o:primaryOperand !(-sp (dot / "[" / "(" / "{")) / o:prattExpr) -> $o
+def primaryExpr: Expr = (o:primaryOperand !(-sp (?.[({)) / o:prattExpr) -> $o
 def prattExpr: Expr = pratt {
     skip sp
     operand primaryOperand
     level {
-        postfix dot -ws s:ident -> new SelectorExpr{X: $lhs, Sel: $s}
-        postfix dot -ws "(" -ws kw_type -ws ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs}
-        postfix dot -ws "(" -ws t:typ -sp ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs, Type: $t}
-        postfix "[" -ws i:expr -sp ("," -ws)? "]" -> new IndexExpr{X: $lhs, Index: $i}
-        postfix "[" -ws i:indexList "]" -> new IndexListExpr{X: $lhs, Indices: $i}
-        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp? "]" !(-sp "{") -> new SliceExpr{X: $lhs, Low: $l, High: $h}
-        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp ":" !"=" -ws m:exprSp "]" !(-sp "{")
+        postfix &"." "." !".." -ws s:ident -> new SelectorExpr{X: $lhs, Sel: $s}
+        postfix &"." "." !".." -ws "(" -ws kw_type -ws ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs}
+        postfix &"." "." !".." -ws "(" -ws t:typ -sp ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs, Type: $t}
+        postfix &"[" "[" -ws i:expr -sp ("," -ws)? "]" -> new IndexExpr{X: $lhs, Index: $i}
+        postfix &"[" "[" -ws i:indexList "]" -> new IndexListExpr{X: $lhs, Indices: $i}
+        postfix &"[" "[" -ws l:exprSp? ":" !"=" -ws h:exprSp? "]" !(-sp "{") -> new SliceExpr{X: $lhs, Low: $l, High: $h}
+        postfix &"[" "[" -ws l:exprSp? ":" !"=" -ws h:exprSp ":" !"=" -ws m:exprSp "]" !(-sp "{")
             -> new SliceExpr{X: $lhs, Low: $l, High: $h, Max: $m}
-        postfix "(" -ws ")" !(-sp "{") -> new CallExpr{Fun: $lhs}
-        postfix "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")" !(-sp "{") -> new CallExpr{Fun: $lhs, Args: $as, Ellipsis: $e}
-        postfix v:litValue !(-sp "{") -> new CompositeLit{Type: $lhs, Elts: $v}
+        postfix &"(" "(" -ws ")" !(-sp "{") -> new CallExpr{Fun: $lhs}
+        postfix &"(" "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")" !(-sp "{") -> new CallExpr{Fun: $lhs, Args: $as, Ellipsis: $e}
+        postfix &"{" v:litValue !(-sp "{") -> new CompositeLit{Type: $lhs, Elts: $v}
     }
 }
 // A name, an array, struct or map type may be followed by a composite literal value.
-def primaryOperand: Expr = (o:ident / o:literalOperand !(-sp "{") / o:arrayType / o:structType / o:mapType) -> $o
+def primaryOperand: Expr = operandGuard (o:ident / o:literalOperand !(-sp "{") / o:arrayType / o:structType / o:mapType) -> $o
+// An expression is often tried where none is (an optional one, or a list that ends): where no
+// operand can start, the guard records one message instead of the sixteen tokens that can begin
+// an operand, which every expression memoized there would merge again (about a fifth of the
+// time of a parse).
+def operandGuard = &(?a-zA-Z_0-9.'"`([<\u{80}-\u{10FFFF}) / _|_ #error(message="expected operand")
 def literalOperand: Expr = basicLit / parenExpr / funcLit / funcType / chanType / interfaceType
 def indexList = first:expr rest:(-sp "," -ws t:typ)+ -sp ("," -ws)? -> concat(list($first), map($rest, (r) => $r.t))
 
@@ -505,18 +518,18 @@ def goPrimary: Expr = pratt {
     skip sp
     operand primaryOperand
     level {
-        postfix dot -ws s:ident -> new SelectorExpr{X: $lhs, Sel: $s}
-        postfix dot -ws "(" -ws kw_type -ws ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs}
-        postfix dot -ws "(" -ws t:typ -sp ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs, Type: $t}
-        postfix "[" -ws i:expr -sp ("," -ws)? "]" -> new IndexExpr{X: $lhs, Index: $i}
-        postfix "[" -ws i:indexList "]" -> new IndexListExpr{X: $lhs, Indices: $i}
-        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp? "]" !(-sp "{") -> new SliceExpr{X: $lhs, Low: $l, High: $h}
-        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp ":" !"=" -ws m:exprSp "]" !(-sp "{")
+        postfix &"." "." !".." -ws s:ident -> new SelectorExpr{X: $lhs, Sel: $s}
+        postfix &"." "." !".." -ws "(" -ws kw_type -ws ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs}
+        postfix &"." "." !".." -ws "(" -ws t:typ -sp ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs, Type: $t}
+        postfix &"[" "[" -ws i:expr -sp ("," -ws)? "]" -> new IndexExpr{X: $lhs, Index: $i}
+        postfix &"[" "[" -ws i:indexList "]" -> new IndexListExpr{X: $lhs, Indices: $i}
+        postfix &"[" "[" -ws l:exprSp? ":" !"=" -ws h:exprSp? "]" !(-sp "{") -> new SliceExpr{X: $lhs, Low: $l, High: $h}
+        postfix &"[" "[" -ws l:exprSp? ":" !"=" -ws h:exprSp ":" !"=" -ws m:exprSp "]" !(-sp "{")
             -> new SliceExpr{X: $lhs, Low: $l, High: $h, Max: $m}
-        postfix "(" -ws ")" !(-sp ("{" / goEnd)) -> new CallExpr{Fun: $lhs}
-        postfix "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")" !(-sp ("{" / goEnd))
+        postfix &"(" "(" -ws ")" !(-sp ("{" / goEnd)) -> new CallExpr{Fun: $lhs}
+        postfix &"(" "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")" !(-sp ("{" / goEnd))
             -> new CallExpr{Fun: $lhs, Args: $as, Ellipsis: $e}
-        postfix v:litValue !(-sp "{") -> new CompositeLit{Type: $lhs, Elts: $v}
+        postfix &"{" v:litValue !(-sp "{") -> new CompositeLit{Type: $lhs, Elts: $v}
     }
 }
 def goEnd = semi / "}" / ")"
@@ -525,12 +538,12 @@ def goEnd = semi / "}" / ")"
 // Expressions in headers
 // ===================================================================
 
-def hexpr: Expr = horExpr
+def hexpr: Expr = (x:hunaryExpr !(-sp binaryOp) / x:horExpr) -> $x
 def hexprList = first:hexpr rest:(-sp "," -ws x:hexpr)* -> concat(list($first), map($rest, (r) => $r.x))
 
-def horExpr: Expr = l:handExpr rest:(-sp o:@"||" -ws r:handExpr)*
+def horExpr: Expr = l:handExpr rest:(-sp o:orOp -ws r:handExpr)*
     -> foldl($l, $rest, (acc, i) => new BinaryExpr{X: $acc, Op: text($i.o), Y: $i.r})
-def handExpr: Expr = l:hcmpExpr rest:(-sp o:@"&&" -ws r:hcmpExpr)*
+def handExpr: Expr = l:hcmpExpr rest:(-sp o:andOp -ws r:hcmpExpr)*
     -> foldl($l, $rest, (acc, i) => new BinaryExpr{X: $acc, Op: text($i.o), Y: $i.r})
 def hcmpExpr: Expr = l:haddExpr rest:(-sp o:relOp -ws r:haddExpr)*
     -> foldl($l, $rest, (acc, i) => new BinaryExpr{X: $acc, Op: text($i.o), Y: $i.r})
@@ -539,31 +552,31 @@ def haddExpr: Expr = l:hmulExpr rest:(-sp o:addOp -ws r:hmulExpr)*
 def hmulExpr: Expr = l:hunaryExpr rest:(-sp o:mulOp -ws r:hunaryExpr)*
     -> foldl($l, $rest, (acc, i) => new BinaryExpr{X: $acc, Op: text($i.o), Y: $i.r})
 
-def hunaryExpr: Expr = recvChanType / hrecvExpr / hunaryOpExpr / hstarExpr / hprimaryExpr
-def hrecvExpr: UnaryExpr = "<-" -ws !(chanType !(-sp (dot / "[" / "("))) x:hunaryExpr -> new UnaryExpr{Op: "<-", X: $x}
+def hunaryExpr: Expr = (&(?<+\-!^&~*) u:(recvChanType / hrecvExpr / hunaryOpExpr / hstarExpr) / u:hprimaryExpr) -> $u
+def hrecvExpr: UnaryExpr = "<-" -ws !(chanType !(-sp (?.[())) x:hunaryExpr -> new UnaryExpr{Op: "<-", X: $x}
 def hunaryOpExpr: UnaryExpr = o:unaryOp -ws x:hunaryExpr -> new UnaryExpr{Op: text($o), X: $x}
 def hstarExpr: StarExpr = "*" !"=" -ws x:hunaryExpr -> new StarExpr{X: $x}
 
 // Only array, struct and map types take a composite literal here. A parenthesized one followed by
 // "{" is an error in go/parser, not the end of the header.
-def hprimaryExpr: Expr = (o:hoperand !(-sp (dot / "[" / "(")) / o:hprattExpr) -> $o
+def hprimaryExpr: Expr = (o:hoperand !(-sp (?.[()) / o:hprattExpr) -> $o
 def hprattExpr: Expr = pratt {
     skip sp
     operand hoperand
     level {
-        postfix dot -ws s:ident -> new SelectorExpr{X: $lhs, Sel: $s}
-        postfix dot -ws "(" -ws kw_type -ws ")" -> new TypeAssertExpr{X: $lhs}
-        postfix dot -ws "(" -ws t:typ -sp ")" -> new TypeAssertExpr{X: $lhs, Type: $t}
-        postfix "[" -ws i:expr -sp ("," -ws)? "]" -> new IndexExpr{X: $lhs, Index: $i}
-        postfix "[" -ws i:indexList "]" -> new IndexListExpr{X: $lhs, Indices: $i}
-        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp? "]" -> new SliceExpr{X: $lhs, Low: $l, High: $h}
-        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp ":" !"=" -ws m:exprSp "]"
+        postfix &"." "." !".." -ws s:ident -> new SelectorExpr{X: $lhs, Sel: $s}
+        postfix &"." "." !".." -ws "(" -ws kw_type -ws ")" -> new TypeAssertExpr{X: $lhs}
+        postfix &"." "." !".." -ws "(" -ws t:typ -sp ")" -> new TypeAssertExpr{X: $lhs, Type: $t}
+        postfix &"[" "[" -ws i:expr -sp ("," -ws)? "]" -> new IndexExpr{X: $lhs, Index: $i}
+        postfix &"[" "[" -ws i:indexList "]" -> new IndexListExpr{X: $lhs, Indices: $i}
+        postfix &"[" "[" -ws l:exprSp? ":" !"=" -ws h:exprSp? "]" -> new SliceExpr{X: $lhs, Low: $l, High: $h}
+        postfix &"[" "[" -ws l:exprSp? ":" !"=" -ws h:exprSp ":" !"=" -ws m:exprSp "]"
             -> new SliceExpr{X: $lhs, Low: $l, High: $h, Max: $m}
-        postfix "(" -ws ")" -> new CallExpr{Fun: $lhs}
-        postfix "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")" -> new CallExpr{Fun: $lhs, Args: $as, Ellipsis: $e}
+        postfix &"(" "(" -ws ")" -> new CallExpr{Fun: $lhs}
+        postfix &"(" "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")" -> new CallExpr{Fun: $lhs, Args: $as, Ellipsis: $e}
     }
 }
-def hoperand: Expr = (o:ident / o:basicLit / !(parenCompositeType -sp "{") o:parenExpr / o:funcLit / o:funcType
+def hoperand: Expr = operandGuard (o:ident / o:basicLit / !(parenCompositeType -sp "{") o:parenExpr / o:funcLit / o:funcType
     / o:compositeLitH / o:arrayType !(-sp "{") / o:structType !(-sp "{") / o:mapType !(-sp "{") / o:chanType
     / o:interfaceType) -> $o
 def compositeLitH: CompositeLit = t:(arrayType / structType / mapType) -sp v:litValue -> new CompositeLit{Type: $t, Elts: $v}
@@ -574,16 +587,16 @@ def guardPrimary: Expr = pratt {
     skip sp
     operand hoperand
     level {
-        postfix dot -ws s:ident -> new SelectorExpr{X: $lhs, Sel: $s}
-        postfix dot -ws "(" -ws kw_type -ws ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs}
-        postfix dot -ws "(" -ws t:typ -sp ")" -> new TypeAssertExpr{X: $lhs, Type: $t}
-        postfix "[" -ws i:expr -sp ("," -ws)? "]" -> new IndexExpr{X: $lhs, Index: $i}
-        postfix "[" -ws i:indexList "]" -> new IndexListExpr{X: $lhs, Indices: $i}
-        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp? "]" -> new SliceExpr{X: $lhs, Low: $l, High: $h}
-        postfix "[" -ws l:exprSp? ":" !"=" -ws h:exprSp ":" !"=" -ws m:exprSp "]"
+        postfix &"." "." !".." -ws s:ident -> new SelectorExpr{X: $lhs, Sel: $s}
+        postfix &"." "." !".." -ws "(" -ws kw_type -ws ")" !(-sp "{") -> new TypeAssertExpr{X: $lhs}
+        postfix &"." "." !".." -ws "(" -ws t:typ -sp ")" -> new TypeAssertExpr{X: $lhs, Type: $t}
+        postfix &"[" "[" -ws i:expr -sp ("," -ws)? "]" -> new IndexExpr{X: $lhs, Index: $i}
+        postfix &"[" "[" -ws i:indexList "]" -> new IndexListExpr{X: $lhs, Indices: $i}
+        postfix &"[" "[" -ws l:exprSp? ":" !"=" -ws h:exprSp? "]" -> new SliceExpr{X: $lhs, Low: $l, High: $h}
+        postfix &"[" "[" -ws l:exprSp? ":" !"=" -ws h:exprSp ":" !"=" -ws m:exprSp "]"
             -> new SliceExpr{X: $lhs, Low: $l, High: $h, Max: $m}
-        postfix "(" -ws ")" -> new CallExpr{Fun: $lhs}
-        postfix "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")" -> new CallExpr{Fun: $lhs, Args: $as, Ellipsis: $e}
+        postfix &"(" "(" -ws ")" -> new CallExpr{Fun: $lhs}
+        postfix &"(" "(" -ws as:exprList -sp e:dotsWs? ("," -ws)? ")" -> new CallExpr{Fun: $lhs, Args: $as, Ellipsis: $e}
     }
 }
 
@@ -593,12 +606,18 @@ def guardPrimary: Expr = pratt {
 
 // Each operator must not be the beginning of a longer token.
 def dot = "." !".."
-def binaryOp = "||" / "&&" / relOp / addOp / mulOp
-def relOp = @("==" / "!=" / "<=" / ">=" / "<" !(?<\-) / ">" !">")
-def addOp = @("+" !(?+=) / "-" !(?\-=) / "|" !(?|=) / "^" !"=")
-def mulOp = @("*" !"=" / "/" !(?/*=) / "%" !"=" / "<<" !"=" / ">>" !"=" / "&^" !"=" / "&" !(?&=^))
-def unaryOp = @("+" !(?+=) / "-" !(?\-=) / "!" !"=" / "^" !"=" / "&" !(?&=^) / "~")
-def assignOp = @("=" !"=" / ":=" / "+=" / "-=" / "*=" / "/=" / "%=" / "&=" / "|=" / "^=" / "<<=" / ">>=" / "&^=")
+// An operator is tried after every operand, mostly where none follows: the lookahead for its first
+// character keeps those failures out of the expectations of syntax errors, which go/parser does not
+// report either, and recording them was about a third of the time of a parse.
+def binaryOp = &(?|&=!<>+\-^*/%) (orOp / andOp / relOp / addOp / mulOp)
+def orOp = &"|" @"||"
+def andOp = &"&" @"&&"
+def relOp = &(?=!<>) @("==" / "!=" / "<=" / ">=" / "<" !(?<\-) / ">" !">")
+def addOp = &(?+\-|^) @("+" !(?+=) / "-" !(?\-=) / "|" !(?|=) / "^" !"=")
+def mulOp = &(?*/%<>&) @("*" !"=" / "/" !(?/*=) / "%" !"=" / "<<" !"=" / ">>" !"=" / "&^" !"=" / "&" !(?&=^))
+def unaryOp = &(?+\-!^&~) @("+" !(?+=) / "-" !(?\-=) / "!" !"=" / "^" !"=" / "&" !(?&=^) / "~")
+def assignOp = &(?=:+\-*/%&|^<>) @("=" !"=" / ":=" / "+=" / "-=" / "*=" / "/=" / "%=" / "&=" / "|=" / "^=" / "<<=" / ">>=" / "&^=")
+def incDecOp = &(?+\-) @("++" / "--")
 
 // ===================================================================
 // Semicolons and whitespace
@@ -615,13 +634,62 @@ def groupTerm = semi / &")"
 def hsemi = ";" / "\n" / blockComment
 
 // sp: spaces and comments that do not end the line. ws: all whitespace and comments.
-def sp = ((? \t\r)+ / lineComment / !blockNL blockComment)*
-def ws = ((? \t\r\n)+ / lineComment / blockComment)*
-def blockNL = "/*" (!"*/" (?^\n))* "\n"
+//
+// They are called at almost every position, often several times: they call no other rule, so that
+// the parser does not memoize them (which took a tenth of the time of a parse), and they spell out
+// the comments by hand: blockComment below is what the block comments in them match, with the line
+// directives of dirBlock expanded in place. For a //line comment the same checks apply to the end
+// of the line instead of "*/", where a final "\r" of a "\r\n" line end is not part of the directive
+// (the tests compare every case with go/scanner). A //line directive must start a line, which a
+// comment that sp reads never does (sp follows a token on the same line). The lookaheads keep the
+// expectations of whitespace, which is optional everywhere, out of syntax errors.
+def sp = (&(? \t\r/) ((? \t\r) (&(? \t\r) (? \t\r))*
+    / "//" ((?^\n\u{0}\u{FEFF}\u{FFFD})+ / c1:"\u{FFFD}" [text($c1) == "\u{FFFD}"])*
+    / !("/*" (!"*/" (?^\n))* "\n") "/*" ("line " (
+        ((?^:*\u{0}\u{FEFF}\u{FFFD})+ / "*" !"/" / c2:"\u{FFFD}" [text($c2) == "\u{FFFD}"])* &"*/"
+      / (!(":" ((?^:*)+ / "*" !"/")* ":" ((?^:*)+ / "*" !"/")* "*/") ((?^*\u{0}\u{FEFF}\u{FFFD}) / "*" !"/"
+          / c3:"\u{FFFD}" [text($c3) == "\u{FFFD}"]))*
+        ":" ("0"* n1:@((?1-9) (?0-9)*) &":" [len($n1) < 10 || len($n1) == 10 && text($n1) <= "1073741824"
+              || len($n1) == 19 && text($n1) >= "9223372036854775808" || len($n1) == 20 && text($n1) <= "18446744073709551615"]
+            / "0"* n2:@((?1-9) (?0-9)*) &":" [len($n2) > 20 || len($n2) == 20 && text($n2) > "18446744073709551615"]
+            / !((?0-9)+ ":") ((?^:*\u{0}\u{FEFF}\u{FFFD})+ / "*" !"/" / c4:"\u{FFFD}" [text($c4) == "\u{FFFD}"])*)
+        ":" "0"* n3:@((?1-9) (?0-9)*) &"*/" [len($n3) < 10 || len($n3) == 10 && text($n3) <= "1073741824"
+            || len($n3) == 19 && text($n3) >= "9223372036854775808" || len($n3) == 20 && text($n3) <= "18446744073709551615"]
+      / ((?^:*\u{0}\u{FEFF}\u{FFFD})+ / "*" !"/" / c5:"\u{FFFD}" [text($c5) == "\u{FFFD}"])* ":"
+        "0"* n4:@((?1-9) (?0-9)*) &"*/" [len($n4) < 10 || len($n4) == 10 && text($n4) <= "1073741824"
+            || len($n4) == 19 && text($n4) >= "9223372036854775808" || len($n4) == 20 && text($n4) <= "18446744073709551615"])
+      / !"line " ((?^*\u{0}\u{FEFF}\u{FFFD})+ / "*" !"/" / c6:"\u{FFFD}" [text($c6) == "\u{FFFD}"])*) "*/"))*
+def ws = (&(? \t\r\n/) ((? \t\r\n) (&(? \t\r\n) (? \t\r\n))*
+    / ^ "//line " (
+        ((?^:\n\r\u{0}\u{FEFF}\u{FFFD})+ / "\r" !("\n" / $$) / c1:"\u{FFFD}" [text($c1) == "\u{FFFD}"])* "\r"? &("\n" / $$)
+      / (!(":" ((?^:\n\r)+ / "\r" !("\n" / $$))* ":" ((?^:\n\r)+ / "\r" !("\n" / $$))* "\r"? &("\n" / $$))
+          ((?^\n\u{0}\u{FEFF}\u{FFFD}) / c2:"\u{FFFD}" [text($c2) == "\u{FFFD}"]))*
+        ":" ("0"* n1:@((?1-9) (?0-9)*) &":" [len($n1) < 10 || len($n1) == 10 && text($n1) <= "1073741824"
+              || len($n1) == 19 && text($n1) >= "9223372036854775808" || len($n1) == 20 && text($n1) <= "18446744073709551615"]
+            / "0"* n2:@((?1-9) (?0-9)*) &":" [len($n2) > 20 || len($n2) == 20 && text($n2) > "18446744073709551615"]
+            / !((?0-9)+ ":") ((?^:\n\r\u{0}\u{FEFF}\u{FFFD})+ / "\r" !("\n" / $$) / c3:"\u{FFFD}" [text($c3) == "\u{FFFD}"])*)
+        ":" "0"* n3:@((?1-9) (?0-9)*) "\r"? &("\n" / $$) [len($n3) < 10 || len($n3) == 10 && text($n3) <= "1073741824"
+            || len($n3) == 19 && text($n3) >= "9223372036854775808" || len($n3) == 20 && text($n3) <= "18446744073709551615"]
+      / ((?^:\n\r\u{0}\u{FEFF}\u{FFFD})+ / "\r" !("\n" / $$) / c4:"\u{FFFD}" [text($c4) == "\u{FFFD}"])* ":"
+        "0"* n4:@((?1-9) (?0-9)*) "\r"? &("\n" / $$) [len($n4) < 10 || len($n4) == 10 && text($n4) <= "1073741824"
+            || len($n4) == 19 && text($n4) >= "9223372036854775808" || len($n4) == 20 && text($n4) <= "18446744073709551615"])
+    / !(^ "//line ") "//" ((?^\n\u{0}\u{FEFF}\u{FFFD})+ / c5:"\u{FFFD}" [text($c5) == "\u{FFFD}"])*
+    / "/*" ("line " (
+        ((?^:*\u{0}\u{FEFF}\u{FFFD})+ / "*" !"/" / c6:"\u{FFFD}" [text($c6) == "\u{FFFD}"])* &"*/"
+      / (!(":" ((?^:*)+ / "*" !"/")* ":" ((?^:*)+ / "*" !"/")* "*/") ((?^*\u{0}\u{FEFF}\u{FFFD}) / "*" !"/"
+          / c7:"\u{FFFD}" [text($c7) == "\u{FFFD}"]))*
+        ":" ("0"* n5:@((?1-9) (?0-9)*) &":" [len($n5) < 10 || len($n5) == 10 && text($n5) <= "1073741824"
+              || len($n5) == 19 && text($n5) >= "9223372036854775808" || len($n5) == 20 && text($n5) <= "18446744073709551615"]
+            / "0"* n6:@((?1-9) (?0-9)*) &":" [len($n6) > 20 || len($n6) == 20 && text($n6) > "18446744073709551615"]
+            / !((?0-9)+ ":") ((?^:*\u{0}\u{FEFF}\u{FFFD})+ / "*" !"/" / c8:"\u{FFFD}" [text($c8) == "\u{FFFD}"])*)
+        ":" "0"* n7:@((?1-9) (?0-9)*) &"*/" [len($n7) < 10 || len($n7) == 10 && text($n7) <= "1073741824"
+            || len($n7) == 19 && text($n7) >= "9223372036854775808" || len($n7) == 20 && text($n7) <= "18446744073709551615"]
+      / ((?^:*\u{0}\u{FEFF}\u{FFFD})+ / "*" !"/" / c9:"\u{FFFD}" [text($c9) == "\u{FFFD}"])* ":"
+        "0"* n8:@((?1-9) (?0-9)*) &"*/" [len($n8) < 10 || len($n8) == 10 && text($n8) <= "1073741824"
+            || len($n8) == 19 && text($n8) >= "9223372036854775808" || len($n8) == 20 && text($n8) <= "18446744073709551615"])
+      / !"line " ((?^*\u{0}\u{FEFF}\u{FFFD})+ / "*" !"/" / c10:"\u{FFFD}" [text($c10) == "\u{FFFD}"])*) "*/"))*
 
 // Comments must not contain NUL, a byte order mark or invalid UTF-8 (see validFFFD).
-def lineComment = ^ "//line " dirLine / !(^ "//line ") "//" lineText
-def lineText = ((?^\n\u{0}\u{FEFF}\u{FFFD})+ / validFFFD)*
 def blockComment = "/*" ("line " dirBlock / !"line " blockText) "*/"
 def blockText = ((?^*\u{0}\u{FEFF}\u{FFFD})+ / "*" !"/" / validFFFD)*
 // U+FFFD is valid only if it is spelled out: invalid UTF-8 is read as U+FFFD too, but its text is
@@ -631,14 +699,6 @@ def validFFFD = c:"\u{FFFD}" [text($c) == "\u{FFFD}"]
 // Line directives: //line at the beginning of a line and /*line anywhere. go/scanner checks the
 // numbers after the last one or two colons: the line (and the column, if both are numbers) must be
 // between 1 and 2^30. Text without a colon is no directive.
-def dirLine = dirSegLine dirEolLine
-    / (!(":" dirSegLine ":" dirSegLine dirEolLine) dirCharLine)* ":" dirMidLine ":" dirNum dirEolLine
-    / dirSegLine ":" dirNum dirEolLine
-def dirCharLine = (?^\n\u{0}\u{FEFF}\u{FFFD}) / validFFFD
-def dirSegLine = ((?^:\n\r\u{0}\u{FEFF}\u{FFFD})+ / "\r" !("\n" / $$) / validFFFD)*
-// A final carriage return (of a \r\n line end) is not part of the directive.
-def dirEolLine = "\r"? &("\n" / $$)
-def dirMidLine = dirNum &":" / !(dirUint &":") dirSegLine
 def dirBlock = dirSegBlock &"*/"
     / (!(":" dirSegBlock ":" dirSegBlock "*/") dirCharBlock)* ":" dirMidBlock ":" dirNum &"*/"
     / dirSegBlock ":" dirNum &"*/"
@@ -660,7 +720,7 @@ def dirUint = &(?0-9) "0"* n:@((?1-9) (?0-9)*)? [len($n) < 20 || len($n) == 20 &
 // uDigit.
 def ident: Ident = !keyword idStart idRest
 def idStart = (?a-zA-Z_) / &(?\u{80}-\u{10FFFF}) uLetter
-def idRest = ((?a-zA-Z0-9_)+ / &(?\u{80}-\u{10FFFF}) (uLetter / uDigit))*
+def idRest = (&(?a-zA-Z0-9_\u{80}-\u{10FFFF}) ((?a-zA-Z0-9_) (&(?a-zA-Z0-9_) (?a-zA-Z0-9_))* / uLetter / uDigit))*
 // A keyword must not be followed by a letter or digit. (Any other non-ASCII character is an error
 // anyway.)
 def idChar = (?a-zA-Z0-9_\u{80}-\u{10FFFF})
