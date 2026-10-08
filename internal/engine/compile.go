@@ -61,7 +61,7 @@ type matcher func(p *parser) (*Node, bool)
 
 type rule struct {
 	// kinds are the node kinds the rule makes (newRuleKinds).
-	kinds ruleKinds
+	kinds        ruleKinds
 	id           int
 	name         string
 	def          *grammar.RuleDef

@@ -79,7 +79,15 @@ A grammar file is a sequence of Unicode characters encoded in UTF-8.
 Whitespace (any Unicode white space character, including newlines) separates
 tokens and is otherwise insignificant, except where this specification requires
 two tokens to be adjacent (see [Adjacency](#adjacency)). A comment starts with
-`//` and extends to the end of the line. There are no block comments.
+`//` and extends to the end of the line. There are no block comments. In grammar
+source, a line ends at a line feed (U+000A), a carriage return followed by a line
+feed, or a carriage return alone; a comment ends before the line end. (Positions
+in the input being parsed count lines differently: see
+[Positions](#positions).)
+
+Implementations MAY limit the nesting depth of grammar source and the number of
+syntax errors reported for it; the reference implementation reports at most 100
+errors and rejects nesting deeper than about 500 levels of parentheses.
 
 ### Identifiers and keywords
 
