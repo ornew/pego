@@ -130,6 +130,22 @@ def line = @(?a-z)* "\n"`)
 	}
 }
 
+// TestHintsWithoutTime checks that, when no time was measured (so there is no time hint), a
+// profile with one finding does not also say that nothing stands out.
+func TestHintsWithoutTime(t *testing.T) {
+	pr := Profile{Calls: 10, Examined: 100, Rules: []*RuleProfile{
+		{Rule: "x", Calls: 10, Evals: 10, Repeats: 5, MaxEvals: 3, MaxEvalsAt: Location{0, 1, 1}},
+	}}
+	hints := pr.Hints()
+	if len(hints) != 1 || !strings.HasPrefix(hints[0], "Evaluated again") {
+		t.Errorf("hints %q", hints)
+	}
+	pr.Rules[0].MaxEvals = 2
+	if hints := pr.Hints(); len(hints) != 1 || !strings.HasPrefix(hints[0], "Nothing else stands out") {
+		t.Errorf("hints %q", hints)
+	}
+}
+
 // TestProfileStreamMemory checks that profiling a stream keeps its memory bounded: the positions
 // evaluated are forgotten once the stream has discarded them.
 func TestProfileStreamMemory(t *testing.T) {

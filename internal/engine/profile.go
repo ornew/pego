@@ -237,6 +237,7 @@ func (pr *Profile) Hints() []string {
 				})))
 		}
 	}
+	timeHints := len(hints)
 	if top := pr.top(func(r *RuleProfile) int64 {
 		if r.MaxEvals <= 2 {
 			return 0
@@ -278,7 +279,7 @@ func (pr *Profile) Hints() []string {
 				return fmt.Sprintf("%s (%d positions in %d failed calls)", r.Rule, r.Wasted, r.Failed)
 			})))
 	}
-	if len(hints) <= 1 && pr.Calls > 0 {
+	if len(hints) == timeHints && pr.Calls > 0 {
 		hints = append(hints, "Nothing else stands out: no rule is evaluated more than twice at a position, and no failed call examines much input.")
 	}
 	return hints
