@@ -207,9 +207,9 @@ def first_stmts = i:indentation
     #error(message="unexpected indent")
     s:stmts (-ws -";")? -> $s
 
-// After the last statement (and its ';'): the end of its line, blank lines, and whitespace or a
-// comment on a last line without a newline.
-def module_end = (eol blank*)? (? \t\u{c})* comment?
+// After the last statement (and its ';'): the end of its line, blank lines, and whitespace, a
+// continuation (not at the very end) or a comment on a last line without a newline.
+def module_end = (eol blank*)? (? \t\u{c})* ("\\" newline !$$ (? \t\u{c})*)* comment?
 
 // The statements of a block, the first at the current position (its indentation consumed by the
 // caller). Simple statements on one line are separated by ';'; lines by stmt_sep, which requires the

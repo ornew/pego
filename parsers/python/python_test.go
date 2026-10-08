@@ -41,3 +41,54 @@ func TestGolden(t *testing.T) {
 		}
 	}
 }
+
+// TestAcceptance checks inputs at the border of the language against what CPython 3.14.0 does (accept
+// or reject), which differential testing found: the end of the input after a line continuation.
+func TestAcceptance(t *testing.T) {
+	for src, ok := range map[string]bool{
+		"a\n\\\n ":                        true,
+		"a\n\\\n \n":                      true,
+		"a \\\n ":                         true,
+		"a\n \\\n ":                       true,
+		"a\n\\\n#c":                       true,
+		"if 1:\n  a\n\\\n ":               true,
+		"a\n\\\n\\\n ":                    true,
+		"\\\n ":                           true,
+		"a\\\n":                           false,
+		"a\n\\\n":                         false,
+		"\\\n":                            false,
+		"a = (1 \\\n ":                    false,
+		"x = 1\x00\n":                     false,
+		"\ufeffx = 1\n":                   false,
+		" x = 1\n":                        false,
+		"if 1:\n\tx = 1\n        y = 2\n": false,
+	} {
+		if _, err := python.ParseModule(src); (err == nil) != ok {
+			t.Errorf("%q: accepted %v, want %v (%v)", src, err == nil, ok, err)
+		}
+	}
+}
+
+// FuzzParse checks that the parser does not panic and that ParseAST, Recognize and Dump agree.
+func FuzzParse(f *testing.F) {
+	inputs, _ := filepath.Glob("testdata/*.txt")
+	for _, in := range inputs {
+		data, _ := os.ReadFile(in)
+		f.Add(string(data))
+	}
+	f.Add("a\n\\\n ")
+	f.Add("if x:\n\tpass\n  else: 1\n")
+	f.Add("f'{x!r:>{w}}' t'{y=}'")
+	f.Fuzz(func(t *testing.T, src string) {
+		m, err := python.ParseAST(src)
+		if rerr := python.Recognize(src); (rerr == nil) != (err == nil) {
+			t.Fatalf("ParseAST: %v, Recognize: %v", err, rerr)
+		}
+		if err != nil {
+			return
+		}
+		python.Check(m, src)
+		python.Dump(m)
+		python.DumpWithPositions(m, src)
+	})
+}
