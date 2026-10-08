@@ -27,7 +27,10 @@ func (r result) dump() string {
 }
 
 // run parses src with the reference parser (default configuration: latest language version, no
-// experiments except those the file enables itself) and describes the result.
+// experiments except those the file enables itself) and describes the result. Acceptance and the tree are
+// those of the default mode; the comments come from a second parse that keeps them, which rejects a few inputs
+// the first accepts (a comment between the name of an attribute and its parenthesis): the comments of such a
+// source are not known.
 func run(name string, src []byte) (r result) {
 	r.Name = name
 	defer func() {
@@ -36,7 +39,7 @@ func run(name string, src []byte) (r result) {
 			r.Err = fmt.Sprintf("panic: %v", e)
 		}
 	}()
-	f, err := parser.ParseFile(name, src, parser.ParseComments)
+	f, err := parser.ParseFile(name, src)
 	if err != nil || f == nil {
 		r.Err = "unknown error"
 		if err != nil {
@@ -48,9 +51,10 @@ func run(name string, src []byte) (r result) {
 		return r
 	}
 	r.Accepted = true
+	fc, cerr := parser.ParseFile(name, src, parser.ParseComments)
 	var b strings.Builder
 	d := &dumper{b: &b}
-	d.file(f)
+	d.file(f, fc, cerr)
 	r.Tree = b.String()
 	return r
 }
@@ -74,17 +78,21 @@ func (d *dumper) open(kind string, n ast.Node) {
 	d.w("(%s %d %d", kind, off(n.Pos()), off(n.End()))
 }
 
-func (d *dumper) file(f *ast.File) {
+func (d *dumper) file(f, fc *ast.File, cerr error) {
 	d.w("(file")
 	for _, x := range f.Decls {
 		d.w(" ")
 		d.decl(x)
 	}
 	d.w(")\n")
+	if cerr != nil || fc == nil {
+		d.w("(comments ?)\n")
+		return
+	}
 	// Comments, in source order.
 	var cs []*ast.Comment
 	seen := map[*ast.Comment]bool{}
-	ast.Walk(f, func(n ast.Node) bool {
+	ast.Walk(fc, func(n ast.Node) bool {
 		for _, g := range ast.Comments(n) {
 			for _, c := range g.List {
 				if !seen[c] {

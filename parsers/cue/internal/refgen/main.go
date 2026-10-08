@@ -6,7 +6,8 @@
 //
 //	refgen -probe file...       print the tree or the first error of each file
 //	refgen -cue DIR -stats      statistics of the corpus (the sources of a checkout of cue-lang/cue)
-//	refgen -cue DIR -o OUTDIR   write OUTDIR/corpus.tar.gz and OUTDIR/mutants.txt.gz
+//	refgen -cue DIR -o OUTDIR   write OUTDIR/corpus.tar.gz, OUTDIR/mutants.txt.gz and OUTDIR/generated.txt.gz
+//	refgen -cue DIR -mutants FILE -per N -seed S   write the results of more mutations
 package main
 
 import (
@@ -20,10 +21,8 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 )
-
-// mutantsPerSource is the number of mutated inputs made from each source of the corpus.
-const mutantsPerSource = 8
 
 func main() {
 	probe := flag.Bool("probe", false, "print the tree and the error of each file argument")
@@ -31,6 +30,11 @@ func main() {
 	stats := flag.Bool("stats", false, "print statistics of the corpus")
 	listRejected := flag.Bool("rejected", false, "with -stats: list the rejected sources")
 	out := flag.String("o", "", "directory to write the vendored results to")
+	per := flag.Int("per", 8, "with -o: the number of mutated inputs made from each source")
+	seed := flag.Uint64("seed", 0, "with -o: the first seed of the mutations")
+	mutantsOnly := flag.String("mutants", "", "write only this file of results of mutations (with -per and -seed)")
+	generated := flag.String("generated", "", "write only this file of results of generated inputs (with -count and -seed)")
+	count := flag.Int("count", 5000, "with -o or -generated: the number of inputs of each family")
 	flag.Parse()
 	switch {
 	case *probe:
@@ -62,6 +66,18 @@ func main() {
 			}
 		}
 		fmt.Printf("sources %d (%d bytes), accepted %d (%d bytes, trees %d bytes)\n", len(srcs), total, acc, accBytes, treeBytes)
+	case *generated != "":
+		if err := writeGenerated(*generated, *count, *seed); err != nil {
+			fatal(err)
+		}
+	case *mutantsOnly != "":
+		srcs, err := collect(*cue)
+		if err != nil {
+			fatal(err)
+		}
+		if err := writeMutants(*mutantsOnly, srcs, *per, *seed); err != nil {
+			fatal(err)
+		}
 	case *out != "":
 		srcs, err := collect(*cue)
 		if err != nil {
@@ -70,7 +86,10 @@ func main() {
 		if err := writeCorpus(filepath.Join(*out, "corpus.tar.gz"), srcs); err != nil {
 			fatal(err)
 		}
-		if err := writeMutants(filepath.Join(*out, "mutants.txt.gz"), srcs); err != nil {
+		if err := writeMutants(filepath.Join(*out, "mutants.txt.gz"), srcs, *per, *seed); err != nil {
+			fatal(err)
+		}
+		if err := writeGenerated(filepath.Join(*out, "generated.txt.gz"), *count, *seed); err != nil {
 			fatal(err)
 		}
 	default:
@@ -115,25 +134,57 @@ func writeCorpus(path string, srcs []source) error {
 	return os.WriteFile(path, buf.Bytes(), 0o644)
 }
 
-// writeMutants writes, compressed, a line for each mutated input: the name of its source, its number,
-// the FNV-1a hash of the input, 1 or 0 for accepted or rejected, and for an accepted input the
-// beginning of the SHA-256 hash of its canonical tree.
-func writeMutants(path string, srcs []source) error {
+// writeMutants writes, compressed, a header line "# per=N seed=S" and a line for each mutated input: the name
+// of its source, its number, the FNV-1a hash of the input, 1 or 0 for accepted or rejected, and for an accepted
+// input the beginning of the SHA-256 hash of the first line of its canonical tree (the comments are not compared). The sources are sorted by name, and the
+// mutant m of the source i is the mutation with the seed S + i*N + m.
+func writeMutants(path string, srcs []source, per int, seed uint64) error {
 	var buf bytes.Buffer
 	gz, _ := gzip.NewWriterLevel(&buf, gzip.BestCompression)
+	fmt.Fprintf(gz, "# per=%d seed=%d\n", per, seed)
 	sorted := append([]source(nil), srcs...)
 	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Name < sorted[j].Name })
 	for i, s := range sorted {
-		for m := range mutantsPerSource {
-			in := mutate(s.Data, uint64(i*mutantsPerSource+m))
+		for m := range per {
+			in := mutate(s.Data, seed+uint64(i*per+m))
 			h := fnv.New64a()
 			h.Write(in)
 			r := run(s.Name, in)
 			if r.Accepted {
-				sum := sha256.Sum256([]byte(r.Tree))
+				tree, _, _ := strings.Cut(r.Tree, "\n")
+				sum := sha256.Sum256([]byte(tree))
 				fmt.Fprintf(gz, "%s\t%d\t%016x\t1\t%x\n", s.Name, m, h.Sum64(), sum[:8])
 			} else {
 				fmt.Fprintf(gz, "%s\t%d\t%016x\t0\n", s.Name, m, h.Sum64())
+			}
+		}
+	}
+	if err := gz.Close(); err != nil {
+		return err
+	}
+	return os.WriteFile(path, buf.Bytes(), 0o644)
+}
+
+// writeGenerated writes, compressed, a header line "# count=N seed=S" and a line for each generated input:
+// its family, its number, the FNV-1a hash of the input, 1 or 0 for accepted or rejected, and for an accepted
+// input the beginning of the SHA-256 hash of the first line of its canonical tree. The input i of a family is
+// generate(family, S+i).
+func writeGenerated(path string, count int, seed uint64) error {
+	var buf bytes.Buffer
+	gz, _ := gzip.NewWriterLevel(&buf, gzip.BestCompression)
+	fmt.Fprintf(gz, "# count=%d seed=%d\n", count, seed)
+	for _, fam := range families {
+		for i := range count {
+			in := generate(fam, seed+uint64(i))
+			h := fnv.New64a()
+			h.Write([]byte(in))
+			r := run(fam, []byte(in))
+			if r.Accepted {
+				tree, _, _ := strings.Cut(r.Tree, "\n")
+				sum := sha256.Sum256([]byte(tree))
+				fmt.Fprintf(gz, "%s\t%d\t%016x\t1\t%x\n", fam, i, h.Sum64(), sum[:8])
+			} else {
+				fmt.Fprintf(gz, "%s\t%d\t%016x\t0\n", fam, i, h.Sum64())
 			}
 		}
 	}
