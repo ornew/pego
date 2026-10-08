@@ -338,6 +338,31 @@ func TestNonASCIIAnchors(t *testing.T) {
 	}
 }
 
+// TestHeadingText checks that heading anchors and the table of contents use the text of a heading as
+// displayed, after entities and escapes, as GitHub does.
+func TestHeadingText(t *testing.T) {
+	s := &Site{cfg: Config{Repo: "..", GitHub: "https://github.com/ornew/pego", Ref: "main"}, bySrc: map[string]*Page{}, byDir: map[string]*Page{}}
+	p := &Page{Src: "docs/x.md", URL: "docs/x/"}
+	s.add(p)
+	m := s.parseMarkdown(p, []byte("# Title\n\n## A &amp; B\n\n## Escaped \\*star\\*\n\n## The `#recover` attribute & <b>more</b>\n\nSoft\nbreak\n----\n\n## Compiled grammars (`.pegoc`)\n"))
+	want := []Heading{
+		{1, "title", "Title"},
+		{2, "a--b", "A & B"},
+		{2, "escaped-star", "Escaped *star*"},
+		{2, "the-recover-attribute--more", "The #recover attribute & more"},
+		{2, "soft-break", "Soft break"},
+		{2, "compiled-grammars-pegoc", "Compiled grammars (.pegoc)"},
+	}
+	if len(m.headings) != len(want) {
+		t.Fatalf("headings = %+v", m.headings)
+	}
+	for i, h := range want {
+		if m.headings[i] != h {
+			t.Errorf("heading %d = %+v, want %+v", i, m.headings[i], h)
+		}
+	}
+}
+
 func TestSlug(t *testing.T) {
 	for in, want := range map[string]string{
 		"Compiled grammars (.pegoc)":         "compiled-grammars-pegoc",

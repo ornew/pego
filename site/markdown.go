@@ -85,8 +85,7 @@ type transformer struct {
 	m *markdown
 }
 
-func (t transformer) Transform(doc *ast.Document, reader text.Reader, _ parser.Context) {
-	src := reader.Source()
+func (t transformer) Transform(doc *ast.Document, _ text.Reader, _ parser.Context) {
 	ids := map[string]int{}
 	_ = ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
@@ -94,7 +93,7 @@ func (t transformer) Transform(doc *ast.Document, reader text.Reader, _ parser.C
 		}
 		switch n := n.(type) {
 		case *ast.Heading:
-			txt := nodeText(n, src)
+			txt := t.m.text(n)
 			id := slug(txt)
 			if k := ids[id]; k > 0 {
 				ids[id]++
@@ -113,25 +112,19 @@ func (t transformer) Transform(doc *ast.Document, reader text.Reader, _ parser.C
 	})
 }
 
-// nodeText returns the plain text of an inline tree, as it is displayed.
-func nodeText(n ast.Node, src []byte) string {
-	var b strings.Builder
-	_ = ast.Walk(n, func(c ast.Node, entering bool) (ast.WalkStatus, error) {
-		if !entering {
-			return ast.WalkContinue, nil
+// text returns the text of the node as it is displayed: rendered, so that entities, escapes and
+// code spans read as they do on the page, without tags, and with white space collapsed.
+func (m *markdown) text(n ast.Node) string {
+	var b bytes.Buffer
+	r := m.md.Renderer()
+	for c := n.FirstChild(); c != nil; c = c.NextSibling() {
+		if err := r.Render(&b, m.src, c); err != nil {
+			panic(err) // rendering to a bytes.Buffer does not fail
 		}
-		switch c := c.(type) {
-		case *ast.Text:
-			b.Write(c.Segment.Value(src))
-			if c.SoftLineBreak() || c.HardLineBreak() {
-				b.WriteByte(' ')
-			}
-		case *ast.String:
-			b.Write(c.Value)
-		}
-		return ast.WalkContinue, nil
-	})
-	return b.String()
+	}
+	// Inline tags join text without spaces ("(<code>.pegoc</code>)" reads "(.pegoc)").
+	h := tagRe.ReplaceAllString(anchorRe.ReplaceAllString(b.String(), ""), "")
+	return strings.TrimSpace(spaceRe.ReplaceAllString(html.UnescapeString(h), " "))
 }
 
 // slug returns the anchor GitHub generates for a heading: lower case, without punctuation, and with

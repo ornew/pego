@@ -63,7 +63,7 @@ func (s *Site) renderLanding() error {
 	section := ""
 	for n := m.doc.FirstChild(); n != nil; n = n.NextSibling() {
 		if h, ok := n.(*ast.Heading); ok && h.Level == 2 {
-			section = nodeText(h, src)
+			section = m.text(h)
 		}
 		switch {
 		case section == "":
@@ -135,11 +135,11 @@ func (s *Site) landingIntro(d *landingData, m *markdown, n ast.Node, snippets *s
 		html := m.render(n)
 		switch {
 		case n.ChildCount() == 1 && n.FirstChild().Kind() == ast.KindEmphasis && d.Tagline == "":
-			d.Tagline = nodeText(n, src)
+			d.Tagline = m.text(n)
 		case strings.Contains(html, "<img"), strings.Contains(html, " · "):
 			// Badges and quick links: the site has its own navigation.
 		case d.Subtitle == "":
-			d.Subtitle = nodeText(n, src)
+			d.Subtitle = m.text(n)
 		default:
 			d.Intro = append(d.Intro, template.HTML(html))
 		}
