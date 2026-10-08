@@ -5,6 +5,7 @@ that depends only on the standard library: import it and parse, with nothing to 
 
 | Language | Module | Specification | Checked against |
 |:--|:--|:--|:--|
+| CEL | [`github.com/ornew/pego/parsers/cel`](cel/) | The [CEL language definition](https://github.com/google/cel-spec/blob/master/doc/langdef.md), as cel-go parses it | All 2,527 conformance tests of cel-spec; cel-go v0.32.0 (trees, offsets and literal values on 32,794 vendored expressions; fuzz tests) |
 | CSV | [`github.com/ornew/pego/parsers/csv`](csv/) | [RFC 4180](https://www.rfc-editor.org/rfc/rfc4180), with the leniencies of `encoding/csv` | 73 edge cases, `encoding/csv` (differential and fuzz tests) |
 | Go | [`github.com/ornew/pego/parsers/golang`](golang/) | [The Go Programming Language Specification](https://go.dev/ref/spec) (go1.27), as `go/parser` parses it; `ParseFile` returns `go/ast` | `go/parser`: every file of GOROOT/src (whole trees, positions included), the programs embedded in its tests, mutations and fuzz tests (no difference) |
 | JSON | [`github.com/ornew/pego/parsers/json`](json/) | [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259) | [JSONTestSuite](https://github.com/nst/JSONTestSuite) (every `y_` and `n_` case), `encoding/json` (differential and fuzz tests) |
