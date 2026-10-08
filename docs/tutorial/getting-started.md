@@ -748,8 +748,7 @@ pego fmt -l messy.pego     # prints the file name if its formatting differs
 pego fmt messy.pego        # prints the formatted source
 ```
 
-```text
-messy.pego
+```pego
 type Pair struct { Key Match, Value Match }
 // a key=value pair
 def main = k:@(?a-z)+ "=" v:@(?0-9)+ -> new Pair{Key: $k, Value: $v}
