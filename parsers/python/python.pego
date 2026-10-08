@@ -7,10 +7,10 @@
 //   - Whitespace. `ws` skips spaces, tabs, form feeds and backslash continuations between tokens, and
 //     inside brackets also newlines and comments. Rules never consume whitespace at their start or
 //     end, so the span of every node is exactly its text.
-//   - Brackets. The variable `lv` is twice the bracket depth, plus one at the top level of an f-string
-//     or t-string replacement field (where a lambda would end at the ':' of the format spec, and
-//     CPython rejects it). Every rule that opens a bracket defines `lv` anew, so the depth is restored
-//     when it returns; CPython allows 200 levels.
+//   - Brackets. The low part of the variable `lv` (lv % 512) is twice the bracket depth, plus one at the
+//     top level of an f-string or t-string replacement field (where a lambda would end at the ':' of
+//     the format spec, and CPython rejects it). Every rule that opens a bracket defines `lv` anew, so
+//     the depth is restored when it returns; CPython allows 200 levels.
 //   - Indentation. The variable `ind` packs the indentation of the current block: its column (tabs to
 //     the next multiple of 8, a form feed resets it), its column with tabs counted as one (CPython's
 //     "altcol", which detects inconsistent use of tabs: TabError), and the number of enclosing blocks
@@ -23,14 +23,17 @@
 //   - Tokens. Operators are matched with the longest-match rule of the tokenizer written out as
 //     lookaheads (`"<" !(?<=>)`), keywords and names with `!idcont` after them, and numbers with the
 //     tokenizer's check of what may follow them.
-//   - f-strings and t-strings (PEP 701, 750). The variable `fs` holds the kind of quote (1 ', 2 ", 3
-//     ''', 4 """), plus 8 for a raw string, plus 16 for each enclosing format spec (fields may be
-//     nested in format specs twice). Replacement fields contain any expression, including strings
-//     with the same quotes.
+//   - f-strings and t-strings (PEP 701, 750). The rest of `lv` (lv / 512) holds the kind of the
+//     innermost string's quote (1 ', 2 ", 3 ''', 4 """; lv / 512 % 8), whether it is raw (lv / 4096 % 2),
+//     and the number of enclosing format specs (lv / 8192; fields may be nested in format specs
+//     twice). Replacement fields contain any expression, including strings with the same quotes.
 //
-// Other variables: `lam` is true while parsing the parameters of a lambda (no annotations, ':' ends
-// them), and `barry` is true after `from __future__ import barry_as_FLUFL` (then '<>' is the
-// inequality operator and '!=' is an error).
+// All the state but the indentation is packed in `lv` because a rule is memoized once for every value
+// of the variables it reads: with the separate variables the grammar once had (the quote kind, whether
+// the parameters of a lambda are being parsed, whether `barry_as_FLUFL` was imported), the parser was
+// 10% slower and allocated 25% more on the standard library's largest modules. `from __future__
+// import barry_as_FLUFL` (which makes '<>' the inequality operator and '!=' an error) is checked
+// after the parse, in Check; the grammar accepts both operators.
 //
 // The AST follows Python's ast module, with these differences: identifiers are strings, and an absent
 // one (Python's None) is ""; ctx is the string "Load", "Store" or "Del"; operators are the source
@@ -195,7 +198,7 @@ type Op terminal
 // Module, blocks and lines
 // ============================================================================
 
-def main: Module = [ind = 0] [lv = 0] [fs = 0] [lam = false] [barry = false]
+def main: Module = [ind = 0] [lv = 0]
     -blank* b:first_stmts? -module_end $$ #error(message="invalid syntax") -> new Module{Body: concat($b)}
 // The first statement must not be indented.
 def first_stmts = i:indentation
@@ -210,11 +213,8 @@ def module_end = (eol blank*)? (? \t\u{c})* comment?
 
 // The statements of a block, the first at the current position (its indentation consumed by the
 // caller). Simple statements on one line are separated by ';'; lines by stmt_sep, which requires the
-// block's indentation. `from __future__ import barry_as_FLUFL` turns on `barry` for the statements
-// that follow it in the block (in CPython, for the rest of the file).
-def stmts = (&barry_import [barry = true])? f:stmt
-    r:(-ws -";" -ws (&barry_import [barry = true])? s:simple_stmt
-        / -stmt_sep (&barry_import [barry = true])? s:stmt)*
+// block's indentation.
+def stmts = f:stmt r:(-ws -";" -ws s:simple_stmt / -stmt_sep s:stmt)*
     -> concat(list($f), map($r, (x) => $x.s))
 def stmt_sep = (ws ";")? eol blank* i:indentation
     [foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail)
@@ -254,7 +254,7 @@ def comment = "#" (?^\n\r\u{0})*
 
 // Whitespace between tokens: spaces, tabs, form feeds and backslash continuations, and inside
 // brackets newlines and comments. A continuation must not end the input.
-def ws = ((? \t\u{c})+ / "\\" ("\r\n" / (?\n\r)) !$$ / &(?#\n\r) [lv >= 2] ("#" (?^\n\r\u{0})* / "\r\n" / (?\n\r)))*
+def ws = ((? \t\u{c})+ / "\\" ("\r\n" / (?\n\r)) !$$ / &(?#\n\r) [lv % 512 >= 2] ("#" (?^\n\r\u{0})* / "\r\n" / (?\n\r)))*
 
 // ============================================================================
 // Statements
@@ -316,7 +316,7 @@ def from_stmt: ImportFrom = kw_from ds:(-ws d:("..." / "."))* m:from_module [len
 // Always a record (the empty match `_` makes it one), with the fields f and r when there is a module.
 def from_module = _ (-ws f:ident r:(-ws -"." -ws n:ident)*)?
 def import_from_targets = paren_import_names / plain_import_names / star_import
-def paren_import_names = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws f:import_from_as_name
+def paren_import_names = "(" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws f:import_from_as_name
     r:(-ws -"," -ws a:import_from_as_name)* (-ws -",")? -ws ")"
     -> concat(list($f), map($r, (x) => $x.a))
 def plain_import_names = f:import_from_as_name r:(-ws -"," -ws a:import_from_as_name)* !(ws ",")
@@ -325,10 +325,6 @@ def star_import = a:star_alias -> list($a)
 def star_alias: Alias = "*" -> new Alias{Name: "*"}
 def import_from_as_name: Alias = n:ident (-ws kw_as -ws a:ident)? -> new Alias{Name: text($n), AsName: text($a)}
 
-// `from __future__ import ... barry_as_FLUFL ...`
-def barry_import = kw_from -ws "__future__" !idcont -ws kw_import -ws
-    ("(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws barry_names / barry_names)
-def barry_names = (!("barry_as_FLUFL" !idcont) ident -ws (kw_as -ws ident -ws)? "," -ws)* "barry_as_FLUFL" !idcont
 
 // ============================================================================
 // Compound statements
@@ -356,7 +352,7 @@ def with_stmt: With = kw_with -ws is:with_items -ws ":" b:block -> new With{Item
 def async_with: AsyncWith = kw_async -ws kw_with -ws is:with_items -ws ":" b:block -> new AsyncWith{Items: $is, Body: $b}
 // `with (a as b, c):` is tried before taking the parenthesis as part of an expression.
 def with_items = paren_with_items / plain_with_items
-def paren_with_items = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws f:with_item r:(-ws -"," -ws w:with_item)*
+def paren_with_items = "(" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws f:with_item r:(-ws -"," -ws w:with_item)*
     (-ws -",")? -ws ")" &(ws ":") -> concat(list($f), map($r, (x) => $x.w))
 def plain_with_items = f:with_item r:(-ws -"," -ws w:with_item)* -> concat(list($f), map($r, (x) => $x.w))
 def with_item: WithItem = with_item_as / with_item_plain
@@ -398,7 +394,7 @@ def funcdef: FunctionDef = ds:decorators kw_def -ws n:ident (-ws p:type_params)?
 def async_funcdef: AsyncFunctionDef = ds:decorators kw_async -ws kw_def -ws n:ident (-ws p:type_params)? -ws a:def_params
     (-ws "->" -ws r:expression)? -ws ":" b:block
     -> new AsyncFunctionDef{Name: text($n), Args: $a, Body: $b, DecoratorList: $ds, Returns: $r, TypeParams: concat($p)}
-def def_params: Arguments = "(" [lv < 400] [lv = lv / 2 * 2 + 2] [lam = false] -ws a:params -ws ")" -> $a
+def def_params: Arguments = "(" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws a:params -ws ")" -> $a
 
 def classdef: Stmt = classdef_args / classdef_plain
 def classdef_args: ClassDef = ds:decorators kw_class -ws n:ident (-ws p:type_params)? -ws c:call_args -ws ":" b:block
@@ -468,26 +464,26 @@ def value_pattern: MatchValue = a:attr !(ws ("." !".." / "(" / "=" !"=")) -> new
 def attr: Expr = f:name r:(-ws -"." !".." -ws n:ident)+
     -> foldl($f, $r, (acc, x) => new Attribute{Value: $acc, Attr: text($x.n), Ctx: "Load"})
 def name_or_attr: Expr = attr / name
-def group_pattern: Pattern = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws p:pattern -ws ")" -> $p
+def group_pattern: Pattern = "(" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws p:pattern -ws ")" -> $p
 def sequence_pattern: MatchSequence = list_pattern / empty_tuple_pattern / tuple_pattern
-def empty_tuple_pattern: MatchSequence = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws ")" -> new MatchSequence{}
-def list_pattern: MatchSequence = "[" [lv < 400] [lv = lv / 2 * 2 + 2] -ws ps:star_patterns? -ws "]"
+def empty_tuple_pattern: MatchSequence = "(" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws ")" -> new MatchSequence{}
+def list_pattern: MatchSequence = "[" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws ps:star_patterns? -ws "]"
     -> new MatchSequence{Patterns: concat($ps)}
 def star_patterns = f:maybe_star_pattern r:(-ws -"," -ws p:maybe_star_pattern)* (-ws -",")?
     -> concat(list($f), map($r, (x) => $x.p))
-def tuple_pattern: MatchSequence = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws s:open_seq_items -ws ")"
+def tuple_pattern: MatchSequence = "(" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws s:open_seq_items -ws ")"
     -> new MatchSequence{Patterns: concat(list($s.f), map($s.r, (x) => $x.p), map($s.l, (x) => $x.q))}
 def maybe_star_pattern: Pattern = star_pattern / pattern
 def star_pattern: MatchStar = "*" -ws (n:capture_name / "_" !idcont) -> new MatchStar{Name: text($n)}
 
-def mapping_pattern: MatchMapping = "{" [lv < 400] [lv = lv / 2 * 2 + 2] -ws
+def mapping_pattern: MatchMapping = "{" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws
     (ks:kv_patterns (-ws -"," -ws "**" -ws r:capture_name)? / "**" -ws r:capture_name)?
     (-ws -",")? -ws "}"
     -> new MatchMapping{Keys: map($ks, (x) => $x.k), Patterns: map($ks, (x) => $x.v), Rest: text($r)}
 def kv_patterns = f:key_value_pattern r:(-ws -"," -ws p:key_value_pattern)* -> concat(list($f), map($r, (x) => $x.p))
 def key_value_pattern = k:(literal_expr / attr) -ws ":" -ws v:pattern
 
-def class_pattern: MatchClass = c:name_or_attr -ws "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws
+def class_pattern: MatchClass = c:name_or_attr -ws "(" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws
     (ps:positional_patterns (-ws -"," -ws ks:keyword_patterns)? / ks:keyword_patterns)?
     (-ws -",")? -ws ")"
     -> new MatchClass{Cls: $c, Patterns: concat($ps), KwdAttrs: map($ks, (x) => $x.n), KwdPatterns: map($ks, (x) => $x.v)}
@@ -499,7 +495,7 @@ def keyword_pattern = n:identifier -ws "=" !"=" -ws v:pattern
 // Type parameters
 // ============================================================================
 
-def type_params = "[" [lv < 400] [lv = lv / 2 * 2 + 2] -ws f:type_param r:(-ws -"," -ws p:type_param)* (-ws -",")? -ws "]"
+def type_params = "[" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws f:type_param r:(-ws -"," -ws p:type_param)* (-ws -",")? -ws "]"
     -> concat(list($f), map($r, (x) => $x.p))
 def type_param: TypeParam = type_var / type_var_tuple / param_spec
 def type_var: TypeVar = n:ident (-ws ":" -ws b:expression)? (-ws "=" !"=" -ws d:expression)?
@@ -513,7 +509,7 @@ def param_spec: ParamSpec = "**" -ws n:ident (-ws "=" !"=" -ws d:expression)?
 // Parameters
 // ============================================================================
 
-// The parameters of a def (lam false) or a lambda (lam true: no annotations, and ':' ends them):
+// The parameters of a def (the lambda's, without annotations and ended by ':', are lambda_params):
 // positional ones, optionally '/' after which the ones before it are positional-only and more
 // positional ones may follow, then '*' with the keyword-only ones, and '**'. A positional parameter
 // without a default may not follow one with a default. (`$sl` has one element if there is a '/'.)
@@ -538,11 +534,11 @@ def star_etc = _ ("*" !(?*=) -ws (va:vararg_param -pend / "," -ws) ko:(p:param (
         [$va != nil || len($ko) > 0] #error(message="named arguments must follow bare *"))?
     (kw:kwds)?
 def kwds: Arg = "**" -ws p:param -pend -> $p
-def param: Arg = n:ident (-ws [!lam] ":" !"=" -ws a:expression)? -> new Arg{Arg: text($n), Annotation: $a}
+def param: Arg = n:ident (-ws ":" !"=" -ws a:expression)? -> new Arg{Arg: text($n), Annotation: $a}
 // The annotation of *args may be starred (*args: *Ts).
-def vararg_param: Arg = n:ident (-ws [!lam] ":" !"=" -ws a:star_expression)? -> new Arg{Arg: text($n), Annotation: $a}
+def vararg_param: Arg = n:ident (-ws ":" !"=" -ws a:star_expression)? -> new Arg{Arg: text($n), Annotation: $a}
 // A parameter is followed by a comma, or ends the list.
-def pend = -ws ("," -ws / &([lam] ":" !"=" / [!lam] ")"))
+def pend = -ws ("," -ws / &")")
 
 // ============================================================================
 // Expressions
@@ -566,7 +562,28 @@ def conditional: Expr = d:disjunction t:(-ws kw_if -ws c:disjunction -ws kw_else
 // A lambda may not be at the top level of a replacement field, where its ':' starts the format spec.
 def lambdef: Lambda = kw_lambda [lv % 2 == 0] #error(message="f-string: lambda expressions are not allowed without parentheses")
     -ws a:lambda_params -ws ":" !"=" -ws b:expression -> new Lambda{Args: $a, Body: $b}
-def lambda_params: Arguments = [lam = true] a:params -> $a
+// The parameters of a lambda: as those of a def, without annotations, and ended by ':'.
+def lambda_params: Arguments = g1nd:lparam_nd* g1wd:lparam_wd* sl:lslash{0,1} g2nd:lparam_nd* g2wd:lparam_wd* st:lstar_etc
+    [len($sl) == 0 || len($g1nd) + len($g1wd) > 0] #error(message="at least one argument must precede /")
+    [len($sl) > 0 || len($g2nd) + len($g2wd) == 0] [len($g1wd) == 0 || len($g2nd) == 0]
+    #error(message="parameter without a default follows parameter with a default")
+    -> new Arguments{
+        PosOnlyArgs: foldl(list(), $sl, (acc, x) => concat($g1nd, map($g1wd, (y) => $y.p))),
+        Args: concat(foldl(concat($g1nd, map($g1wd, (y) => $y.p)), $sl, (acc, x) => list()), $g2nd, map($g2wd, (y) => $y.p)),
+        VarArg: $st.va,
+        KwOnlyArgs: map($st.ko, (x) => $x.p),
+        KwDefaults: map($st.ko, (x) => $x.d),
+        KwArg: $st.kw,
+        Defaults: concat(map($g1wd, (y) => $y.d), map($g2wd, (y) => $y.d))}
+def lparam_nd: Arg = p:lparam -lpend -> $p
+def lparam_wd = p:lparam -ws "=" !"=" -ws d:expression -lpend
+def lslash = s:"/" -lpend
+def lstar_etc = _ ("*" !(?*=) -ws (va:lparam -lpend / "," -ws) ko:(p:lparam (-ws "=" !"=" -ws d:expression)? -lpend)*
+        [$va != nil || len($ko) > 0] #error(message="named arguments must follow bare *"))?
+    (kw:lkwds)?
+def lkwds: Arg = "**" -ws p:lparam -lpend -> $p
+def lparam: Arg = n:ident -> new Arg{Arg: text($n)}
+def lpend = -ws ("," -ws / &(":" !"="))
 
 def yield_expr: Expr = yield_from / yield_plain
 def yield_from: YieldFrom = kw_yield -ws kw_from -ws v:expression -> new YieldFrom{Value: $v}
@@ -587,7 +604,7 @@ def not_op: Op = "not" !idcont
 // Chained comparisons are one Compare, as in Python.
 def comparison: Expr = f:bitwise_or t:(rs:(-ws o:comp_op -ws x:bitwise_or)+){0,1}
     -> foldl($f, $t, (acc, y) => new Compare{Left: $f, Ops: map($y.rs, (z) => $z.o), Comparators: map($y.rs, (z) => $z.x)})
-def comp_op: Op = "==" / "!=" [!barry] / "<>" [barry] / "<=" / ">=" / "<" !(?<=>) / ">" !(?>=)
+def comp_op: Op = "==" / "!=" / "<>" / "<=" / ">=" / "<" !(?<=>) / ">" !(?>=)
     / "not" !idcont ws "in" !idcont / "in" !idcont / "is" !idcont ws "not" !idcont / "is" !idcont
 
 def bitwise_or: Expr = f:bitwise_xor r:(-ws o:bor_op -ws x:bitwise_xor)*
@@ -637,7 +654,7 @@ def primary_chain: Expr = pratt {
 // Call arguments: positional ones (and *x), then keyword arguments and *x, then keyword
 // arguments and **x. Starred arguments among the keyword arguments are positional arguments of
 // the Call, after the others.
-def call_args = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws
+def call_args = "(" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws
     pos:(a:pos_arg -arg_sep)*
     kw1:((ks:kwarg_list / ss:starred_list) -arg_sep)*
     kw2:(k:(kwarg / dstar_arg) -arg_sep)*
@@ -650,10 +667,10 @@ def starred_list = s:starred_expression -> list($s)
 def kwarg: Keyword = n:ident -ws "=" !"=" -ws v:expression -> new Keyword{Arg: text($n), Value: $v}
 def dstar_arg: Keyword = "**" -ws v:expression -> new Keyword{Value: $v}
 // A generator expression as the only argument needs no parentheses of its own: f(x for x in y).
-def genexp: GeneratorExp = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws e:named_expression -ws g:for_if_clauses -ws ")"
+def genexp: GeneratorExp = "(" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws e:named_expression -ws g:for_if_clauses -ws ")"
     -> new GeneratorExp{Elt: $e, Generators: $g}
 
-def subscript = "[" [lv < 400] [lv = lv / 2 * 2 + 2] -ws s:slices -ws "]" -> $s
+def subscript = "[" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws s:slices -ws "]" -> $s
 // Several items, or a starred one, make a Tuple.
 def slices: Expr = star_first_slices / plain_slices
 def star_first_slices: Tuple = f:starred_expression rs:(-ws -"," -ws x:slice_or_star)* (-ws -",")?
@@ -679,13 +696,13 @@ def ellipsis: Constant = "..."
 
 // (), (x), (x,), (x, y), (*x, y), (x for x in y), (yield x)
 def paren: Expr = empty_tuple / yield_group / star_first_tuple / paren_named
-def empty_tuple: Tuple = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws ")" -> new Tuple{Ctx: "Load"}
-def yield_group: Expr = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws y:yield_expr -ws ")" -> $y
-def star_first_tuple: Tuple = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws f:starred_bitor
+def empty_tuple: Tuple = "(" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws ")" -> new Tuple{Ctx: "Load"}
+def yield_group: Expr = "(" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws y:yield_expr -ws ")" -> $y
+def star_first_tuple: Tuple = "(" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws f:starred_bitor
     rs:(-ws -"," -ws x:star_named_expression)* c:(-ws ",")? -ws ")" [len($rs) > 0 || $c != nil]
     -> new Tuple{Elts: concat(list($f), map($rs, (y) => $y.x)), Ctx: "Load"}
 // The first element is parsed once; what follows it decides the node.
-def paren_named: Expr = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws e:named_expression
+def paren_named: Expr = "(" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws e:named_expression
     t:(rs:(-ws -"," -ws x:star_named_expression)+ (-ws -",")? / -ws c:","){0,1}
     g:(-ws cs:for_if_clauses){0,1}
     -ws ")" [len($t) + len($g) <= 1]
@@ -694,8 +711,8 @@ def paren_named: Expr = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws e:named_express
 
 // [], [x, *y], [x for x in y]
 def list_display: Expr = empty_list / list_items
-def empty_list: ListExpr = "[" [lv < 400] [lv = lv / 2 * 2 + 2] -ws "]" -> new ListExpr{Ctx: "Load"}
-def list_items: Expr = "[" [lv < 400] [lv = lv / 2 * 2 + 2] -ws f:(s:starred_bitor / named_expression)
+def empty_list: ListExpr = "[" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws "]" -> new ListExpr{Ctx: "Load"}
+def list_items: Expr = "[" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws f:(s:starred_bitor / named_expression)
     rs:(-ws -"," -ws x:star_named_expression)* c:(-ws ",")?
     g:(-ws cs:for_if_clauses){0,1}
     -ws "]" [len($g) == 0 || $s == nil && len($rs) == 0 && $c == nil]
@@ -704,16 +721,16 @@ def list_items: Expr = "[" [lv < 400] [lv = lv / 2 * 2 + 2] -ws f:(s:starred_bit
 
 // {}, {k: v, **d}, {k: v for ...}, {x, *y}, {x for ...}
 def braces: Expr = empty_dict / dict_unpack_first / set_star_first / brace_items
-def empty_dict: Dict = "{" [lv < 400] [lv = lv / 2 * 2 + 2] -ws "}" -> new Dict{}
-def dict_unpack_first: Dict = "{" [lv < 400] [lv = lv / 2 * 2 + 2] -ws "**" -ws f:bitwise_or
+def empty_dict: Dict = "{" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws "}" -> new Dict{}
+def dict_unpack_first: Dict = "{" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws "**" -ws f:bitwise_or
     rs:(-ws -"," -ws (-"**" -ws v:bitwise_or / k:expression -ws -":" !"=" -ws v:expression))* (-ws -",")? -ws "}"
     -> new Dict{Keys: concat(list(nil), map($rs, (y) => $y.k)), Values: concat(list($f), map($rs, (y) => $y.v))}
-def set_star_first: Set = "{" [lv < 400] [lv = lv / 2 * 2 + 2] -ws f:starred_bitor
+def set_star_first: Set = "{" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws f:starred_bitor
     rs:(-ws -"," -ws x:star_named_expression)* (-ws -",")? -ws "}"
     -> new Set{Elts: concat(list($f), map($rs, (y) => $y.x))}
 // The first element is parsed once. A ':' after it makes the display a dict (whose key may not be
 // an assignment expression), and comprehension clauses after it (and its value) a comprehension.
-def brace_items: Expr = "{" [lv < 400] [lv = lv / 2 * 2 + 2] -ws f:(w:walrus / expression)
+def brace_items: Expr = "{" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws f:(w:walrus / expression)
     kv:(-ws ":" !"=" -ws v:expression){0,1}
     [isdict = len($kv) > 0] [$w == nil || !isdict]
     g:(-ws cs:for_if_clauses){0,1}
@@ -741,18 +758,18 @@ def attr_target: Attribute = t:t_primary -ws "." !".." -ws n:ident !(ws t_lookah
 def subscript_target: Subscript = t:t_primary -ws s:subscript !(ws t_lookahead)
     -> new Subscript{Value: $t, Slice: $s, Ctx: "Store"}
 def star_atom: Expr = store_name / paren_target / empty_tuple_target / star_tuple_target / empty_list_target / star_list_target
-def paren_target: Expr = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws t:target_with_star_atom -ws ")" -> $t
-def empty_tuple_target: Tuple = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws ")" -> new Tuple{Ctx: "Store"}
-def star_tuple_target: Tuple = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws f:star_target
+def paren_target: Expr = "(" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws t:target_with_star_atom -ws ")" -> $t
+def empty_tuple_target: Tuple = "(" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws ")" -> new Tuple{Ctx: "Store"}
+def star_tuple_target: Tuple = "(" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws f:star_target
     rs:(-ws -"," -ws x:star_target)* c:(-ws ",")? -ws ")" [len($rs) > 0 || $c != nil]
     -> new Tuple{Elts: concat(list($f), map($rs, (y) => $y.x)), Ctx: "Store"}
-def empty_list_target: ListExpr = "[" [lv < 400] [lv = lv / 2 * 2 + 2] -ws "]" -> new ListExpr{Ctx: "Store"}
-def star_list_target: ListExpr = "[" [lv < 400] [lv = lv / 2 * 2 + 2] -ws f:star_target
+def empty_list_target: ListExpr = "[" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws "]" -> new ListExpr{Ctx: "Store"}
+def star_list_target: ListExpr = "[" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws f:star_target
     rs:(-ws -"," -ws x:star_target)* (-ws -",")? -ws "]"
     -> new ListExpr{Elts: concat(list($f), map($rs, (y) => $y.x)), Ctx: "Store"}
 def single_target: Expr = single_subscript_attribute_target / store_name / paren_single_target
 def single_subscript_attribute_target: Expr = attr_target / subscript_target
-def paren_single_target: Expr = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws t:single_target -ws ")" -> $t
+def paren_single_target: Expr = "(" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws t:single_target -ws ")" -> $t
 def store_name: Name = n:ident -> new Name{Id: text($n), Ctx: "Store"}
 
 // The value of an attribute or subscript target: a primary followed by another trailer.
@@ -776,9 +793,9 @@ def del_attr: Attribute = t:t_primary -ws "." !".." -ws n:ident !(ws t_lookahead
 def del_subscript: Subscript = t:t_primary -ws s:subscript !(ws t_lookahead)
     -> new Subscript{Value: $t, Slice: $s, Ctx: "Del"}
 def del_name: Name = n:ident -> new Name{Id: text($n), Ctx: "Del"}
-def paren_del_target: Expr = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws t:del_target -ws ")" -> $t
-def del_tuple: Tuple = "(" [lv < 400] [lv = lv / 2 * 2 + 2] -ws ts:del_targets? -ws ")" -> new Tuple{Elts: concat($ts), Ctx: "Del"}
-def del_list: ListExpr = "[" [lv < 400] [lv = lv / 2 * 2 + 2] -ws ts:del_targets? -ws "]" -> new ListExpr{Elts: concat($ts), Ctx: "Del"}
+def paren_del_target: Expr = "(" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws t:del_target -ws ")" -> $t
+def del_tuple: Tuple = "(" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws ts:del_targets? -ws ")" -> new Tuple{Elts: concat($ts), Ctx: "Del"}
+def del_list: ListExpr = "[" [lv % 512 < 400] [lv = lv / 2 * 2 + 2] -ws ts:del_targets? -ws "]" -> new ListExpr{Elts: concat($ts), Ctx: "Del"}
 def del_targets = f:del_target r:(-ws -"," -ws t:del_target)* (-ws -",")? -> concat(list($f), map($r, (x) => $x.t))
 
 // ============================================================================
@@ -827,23 +844,23 @@ def raw_bytes_body = "'''" ((?^'\\\u{0}\u{80}-\u{10FFFF})+ / !"'''" "'" / "\\" (
 def hex = (?0-9a-fA-F)
 
 // --- f-strings and t-strings ---
-// The prefix and the opening quote define fs (see the top of the file); the parts are the literal
+// The prefix and the opening quote define the quote and the rawness in lv (see the top of the file); the parts are the literal
 // text between replacement fields and the fields.
-def fstring = ((?rR) (?fF) [fs = 8] / (?fF) (?rR) [fs = 8] / (?fF) [fs = 0])
-    ("'''" [fs = fs + 3] / "\"\"\"" [fs = fs + 4] / "'" [fs = fs + 1] / "\"" [fs = fs + 2])
+def fstring = ((?rR) (?fF) [lv = lv % 512 + 4096] / (?fF) (?rR) [lv = lv % 512 + 4096] / (?fF) [lv = lv % 512])
+    ("'''" [lv = lv + 3 * 512] / "\"\"\"" [lv = lv + 4 * 512] / "'" [lv = lv + 512] / "\"" [lv = lv + 2 * 512])
     ps:fpart* fclose #error(message="unterminated f-string literal") -> $ps
-def tstring = ((?rR) (?tT) [fs = 8] / (?tT) (?rR) [fs = 8] / (?tT) [fs = 0])
-    ("'''" [fs = fs + 3] / "\"\"\"" [fs = fs + 4] / "'" [fs = fs + 1] / "\"" [fs = fs + 2])
+def tstring = ((?rR) (?tT) [lv = lv % 512 + 4096] / (?tT) (?rR) [lv = lv % 512 + 4096] / (?tT) [lv = lv % 512])
+    ("'''" [lv = lv + 3 * 512] / "\"\"\"" [lv = lv + 4 * 512] / "'" [lv = lv + 512] / "\"" [lv = lv + 2 * 512])
     ps:tpart* fclose #error(message="unterminated t-string literal") -> $ps
-def fclose = [fs % 8 == 1] "'" / [fs % 8 == 2] "\"" / [fs % 8 == 3] "'''" / [fs % 8 == 4] "\"\"\""
+def fclose = [lv / 512 % 8 == 1] "'" / [lv / 512 % 8 == 2] "\"" / [lv / 512 % 8 == 3] "'''" / [lv / 512 % 8 == 4] "\"\"\""
 def fpart: StrPart = fraw_text / ftext / ffield
 def tpart: StrPart = fraw_text / ftext / tfield
 // Literal text: doubled braces stand for braces; a single '}' is an error.
-def ftext: FStringMiddle = [fs / 8 % 2 == 0] ((?^'"\\{}\n\r\u{0})+ / fquote / "{{" / "}}" / fesc)+
-def fraw_text: FStringRawMiddle = [fs / 8 % 2 == 1] ((?^'"\\{}\n\r\u{0})+ / fquote / "{{" / "}}" / frawesc)+
+def ftext: FStringMiddle = [lv / 4096 % 2 == 0] ((?^'"\\{}\n\r\u{0})+ / fquote / "{{" / "}}" / fesc)+
+def fraw_text: FStringRawMiddle = [lv / 4096 % 2 == 1] ((?^'"\\{}\n\r\u{0})+ / fquote / "{{" / "}}" / frawesc)+
 // The quotes and newlines that do not end the string.
-def fquote = [fs % 8 == 1] "\"" / [fs % 8 == 2] "'"
-    / [fs % 8 == 3] (!"'''" "'" / "\"" / newline) / [fs % 8 == 4] (!"\"\"\"" "\"" / "'" / newline)
+def fquote = [lv / 512 % 8 == 1] "\"" / [lv / 512 % 8 == 2] "'"
+    / [lv / 512 % 8 == 3] (!"'''" "'" / "\"" / newline) / [lv / 512 % 8 == 4] (!"\"\"\"" "\"" / "'" / newline)
 // As in string literals, except that a backslash before a brace is a character of its own and the
 // brace is not escaped.
 def fesc = "\\" (newline / "x" hex hex / "u" hex hex hex hex / "U" ("0010" hex hex hex hex / "000" hex hex hex hex hex)
@@ -852,22 +869,22 @@ def frawesc = "\\" ("\r\n" / (?^{}\u{0}) / &(?{}))
 
 // A replacement field: the expression (any expression, including strings with the same quotes;
 // inside the braces, newlines are whitespace), an optional '=', conversion and format spec.
-def ffield: FormattedValue = "{" [lv < 400] [lv = lv / 2 * 2 + 3]
-    [fs / 16 <= 2] #error(message="f-string: expressions nested too deeply")
+def ffield: FormattedValue = "{" [lv % 512 < 400] [lv = lv / 2 * 2 + 3]
+    [lv / 8192 <= 2] #error(message="f-string: expressions nested too deeply")
     s:(-ws v:annotated_rhs) d:fdebug? c:fconv? (-ws f:fspec / -ws) "}"
     -> new FormattedValue{Value: $v, Str: text($s), Debug: text($d), Conversion: text($c), FormatSpec: $f}
-def tfield: Interpolation = "{" [lv < 400] [lv = lv / 2 * 2 + 3]
-    [fs / 16 <= 2] #error(message="t-string: expressions nested too deeply")
+def tfield: Interpolation = "{" [lv % 512 < 400] [lv = lv / 2 * 2 + 3]
+    [lv / 8192 <= 2] #error(message="t-string: expressions nested too deeply")
     s:(-ws v:annotated_rhs) d:fdebug? c:fconv? (-ws f:fspec / -ws) "}"
     -> new Interpolation{Value: $v, Str: text($s), Debug: text($d), Conversion: text($c), FormatSpec: $f}
 def fdebug = ws "=" ws
 // The conversion character must follow the '!' immediately.
 def fconv = -ws "!" c:@(?sra) !idcont -> $c
 // A format spec: literal text (no doubled braces) and replacement fields.
-def fspec: JoinedStr = ":" [fs = fs + 16] ps:fspec_part* -> new JoinedStr{Values: $ps}
+def fspec: JoinedStr = ":" [lv = lv + 8192] ps:fspec_part* -> new JoinedStr{Values: $ps}
 def fspec_part: StrPart = fspec_raw_text / fspec_text / ffield
-def fspec_text: FStringMiddle = [fs / 8 % 2 == 0] ((?^'"\\{}\n\r\u{0})+ / fquote / fesc)+
-def fspec_raw_text: FStringRawMiddle = [fs / 8 % 2 == 1] ((?^'"\\{}\n\r\u{0})+ / fquote / frawesc)+
+def fspec_text: FStringMiddle = [lv / 4096 % 2 == 0] ((?^'"\\{}\n\r\u{0})+ / fquote / fesc)+
+def fspec_raw_text: FStringRawMiddle = [lv / 4096 % 2 == 1] ((?^'"\\{}\n\r\u{0})+ / fquote / frawesc)+
 
 // ============================================================================
 // Numbers

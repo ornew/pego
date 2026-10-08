@@ -28,7 +28,9 @@ func ParseModule(src string, unit ...Unit) (*Module, error) {
 //   - a decimal integer literal may have at most 4300 digits (CPython's default limit of
 //     sys.set_int_max_str_digits);
 //   - the `from __future__ import` statements at the start of the module (after the docstring)
-//     must name features that exist ("braces" is "not a chance").
+//     must name features that exist ("braces" is "not a chance");
+//   - the inequality operator is '!=', or '<>' after `from __future__ import barry_as_FLUFL` (the
+//     grammar accepts both).
 func Check(m *Module, src string, unit ...Unit) error {
 	pos := func(off int) *SyntaxError {
 		line, col := 1, 1
@@ -54,6 +56,11 @@ func Check(m *Module, src string, unit ...Unit) error {
 	}
 	if err := checkFuture(m, fail); err != nil {
 		return err
+	}
+	if strings.Contains(src, "<>") || strings.Contains(src, "barry_as_FLUFL") {
+		if err := checkBarry(m, fail); err != nil {
+			return err
+		}
 	}
 	ascii := isASCII(src)
 	if ascii && !strings.Contains(src, `\N{`) && !hasLongDigits(src) {
@@ -203,6 +210,42 @@ func checkFuture(m *Module, fail func(int, string, ...any) error) error {
 			case !futureFeatures[a.Name]:
 				return fail(a.Start, "future feature %s is not defined", a.Name)
 			}
+		}
+	}
+	return nil
+}
+
+// checkBarry checks the inequality operators: '<>' is an error, unless it comes after `from
+// __future__ import barry_as_FLUFL`, and then '!=' is the error.
+func checkBarry(m *Module, fail func(int, string, ...any) error) error {
+	barry := -1 // the end of the first import of barry_as_FLUFL
+	var ops []*Op
+	Inspect(m, func(n any) bool {
+		switch n := n.(type) {
+		case *ImportFrom:
+			if n.Level == 0 && n.Module == "__future__" {
+				for _, a := range n.Names {
+					if a.Name == "barry_as_FLUFL" && (barry < 0 || n.End < barry) {
+						barry = n.End
+					}
+				}
+			}
+		case *Compare:
+			for _, o := range n.Ops {
+				if o.Text == "<>" || o.Text == "!=" {
+					ops = append(ops, o)
+				}
+			}
+		}
+		return true
+	})
+	for _, o := range ops {
+		after := barry >= 0 && o.Start >= barry
+		switch {
+		case o.Text == "<>" && !after:
+			return fail(o.Start, "invalid syntax")
+		case o.Text == "!=" && after:
+			return fail(o.Start, "with Barry as BDFL, use '<>' instead of '!='")
 		}
 	}
 	return nil
