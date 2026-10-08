@@ -142,8 +142,9 @@ func (p *Parser) ParseStream(r io.Reader, emit func(*Node) error, opts ...ParseO
 // for concurrent use.
 //
 // Reused results are shared with the trees returned by earlier parses, and the nodes after an edit are
-// moved to their new positions in place: an earlier tree changes when Parse runs again. Use Node.Clone
-// to keep a tree as it was.
+// moved to their new positions in place: an earlier tree changes when Parse runs again, and is then a
+// mix of nodes at new positions (those reused) and at old ones. Parse writes it, so it must not be read
+// concurrently with Parse. Use Node.Clone to keep a tree as it was.
 type Document struct {
 	doc *engine.Document
 }

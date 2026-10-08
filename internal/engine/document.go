@@ -27,8 +27,9 @@ type Document struct {
 	edits []docEdit // all edits so far; nodes record how many their positions account for
 }
 
-// maxEdits bounds the edit log: when it is full, the memo is dropped and the log restarts.
-const maxEdits = 1 << 16
+// maxEdits bounds the edit log: when it is full, the memo is dropped and the log restarts. It is a
+// variable for tests.
+var maxEdits = 1 << 16
 
 // NewDocument creates a Document that parses text with the rule start. Positions are in code
 // points.
@@ -94,7 +95,7 @@ func (d *Document) Edit(start, end int, text string) error {
 			e.from += delta
 			e.examined += delta
 			e.far += delta
-			e.shift += delta
+			e.shift += int32(delta)
 			e.shifted = e.shifted || delta != 0 // an edit that keeps the length moves nothing
 			return shiftEntry
 		}

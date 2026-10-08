@@ -79,9 +79,13 @@ type parser struct {
 	posSlab   []int
 	// Document edits: gen is the number of edits made before this parse, and edits records them
 	// (see moveResult). moved holds the copies made by moveEmpty.
-	gen   uint32
-	edits []docEdit
-	moved map[*Node]*Node
+	gen    uint32
+	edits  []docEdit
+	moved  map[*Node]*Node
+	shifts map[uint32]int // shiftOf of each generation in the current moveResult
+	// moveBase and baseShift are the generation and the shift of the memo entry being moved.
+	moveBase  uint32
+	baseShift int
 	// nodeChunks counts the node chunks allocated since the last splitChunks.
 	nodeChunks int
 	funcSlab   []vmFunc
@@ -128,11 +132,12 @@ type memoEntry struct {
 	// from is the start of the examined input (detecting a line start may examine the preceding
 	// character).
 	from int
-	// shift is the amount of position shift from edits since the node was last brought up to
-	// date through this entry; shifted reports that some edit shifted the entry since then (the
-	// shifts may cancel out, and the node may have been moved through another result that shares
-	// it, so shift alone does not tell whether the node needs moving).
-	shift int
+	// gen is the number of document edits when the node was stored or last brought up to date
+	// through this entry, and shift is how far edits have shifted the entry since; shifted reports
+	// that some edit shifted it (the shifts may cancel out, and nodes may have been moved through
+	// another result that shares them, so shift alone does not tell whether to move the node).
+	gen   uint32
+	shift int32
 	// errs holds the syntax errors recovered in this call. They are recorded again when the memo
 	// entry is used.
 	errs []*SyntaxError
@@ -400,8 +405,7 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit boo
 			p.mergeExpected(e.far, e.expected)
 		}
 		if e.shifted {
-			e.node = p.moveResult(e.node, e.shift)
-			e.shift, e.shifted = 0, false
+			p.moveResult(e)
 		}
 		if !e.ok {
 			return st, nil, false, true
@@ -428,7 +432,7 @@ func (p *parser) callEnd(r *rule, st *callState, v *Node, ok bool) (*Node, bool)
 			p.recovered = p.recovered[:st.rec]
 		}
 		e = p.memo.alloc()
-		*e = memoEntry{node: v, ok: ok, end: p.pos, examined: p.hw, from: p.lw, silent: p.silent > 0,
+		*e = memoEntry{node: v, ok: ok, end: p.pos, examined: p.hw, from: p.lw, silent: p.silent > 0, gen: p.gen,
 			positional: r.positional, errs: append([]*SyntaxError(nil), p.recovered[st.rec:]...)}
 		p.memo.put(st.key, e)
 	}
@@ -459,7 +463,7 @@ type growState struct {
 func (p *parser) growBegin(key memoKey) growState {
 	g := growState{key: key, start: p.pos, rec: len(p.recovered)}
 	g.best = p.memo.alloc()
-	*g.best = memoEntry{ok: false, end: g.start, examined: g.start, from: g.start, growing: true}
+	*g.best = memoEntry{ok: false, end: g.start, examined: g.start, from: g.start, growing: true, gen: p.gen}
 	p.memo.put(key, g.best)
 	return g
 }
@@ -471,7 +475,7 @@ func (p *parser) growStep(g *growState, v *Node, ok bool) bool {
 		return false
 	}
 	g.best = p.memo.alloc()
-	*g.best = memoEntry{node: v, ok: true, end: p.pos, from: g.start, growing: true, errs: append([]*SyntaxError(nil), p.recovered[g.rec:]...)}
+	*g.best = memoEntry{node: v, ok: true, end: p.pos, from: g.start, growing: true, gen: p.gen, errs: append([]*SyntaxError(nil), p.recovered[g.rec:]...)}
 	p.memo.put(g.key, g.best)
 	p.pos = g.start
 	p.recovered = p.recovered[:g.rec]
@@ -698,66 +702,90 @@ func (p *parser) makeError(pos int, expected []expID) *SyntaxError {
 // positions.
 type docEdit struct{ start, end, delta int }
 
-// moveResult brings the positions of the result n of a memo entry that edits have shifted (by
-// shift in total) up to date, and returns it.
+// moveResult brings the positions of the result of the memo entry e, which edits have shifted, up
+// to date.
 //
 // Nodes are moved in place rather than copied, so that reusing a result after an edit costs no
-// allocation: a node's positions are valid after its first gen edits, and moveTree replays the
-// later ones. An edit never falls inside a reused node, so for a non-empty node each edit either
-// lies before it (the node moves by the edit's delta) or not (it stays), and the node's
-// positions tell which, wherever the node is shared. An empty node at the point of an insertion
-// is ambiguous: it may belong to a result before the insertion and to one after it at the same
-// time. Such nodes are never modified; they are copied, moving with the node that contains them
-// (the whole tree of a reused result moves together).
-func (p *parser) moveResult(n *Node, shift int) *Node {
+// allocation: a node's positions are valid after its first gen edits, and the later ones are
+// replayed. No edit falls inside the input a reused result examined, so all the nodes of its tree
+// move together, and for a non-empty node each edit either lies before it (the node moves by the
+// edit's delta) or not (it stays), which its positions tell wherever the node is shared. An empty
+// node at the point of an insertion is ambiguous: it may belong to a result before the insertion
+// and to one after it at the same time. Empty nodes are therefore never modified; they are
+// copied, moving with the node that contains them (or, at the root, with the memo entry).
+func (p *parser) moveResult(e *memoEntry) {
+	n := e.node
+	p.moveBase, p.baseShift = e.gen, int(e.shift)
+	e.gen, e.shift, e.shifted = p.gen, 0, false
 	if n == nil {
-		return nil
+		return
 	}
 	if p.moved == nil {
 		p.moved = map[*Node]*Node{}
 	}
 	if n.Start == n.End {
-		// An empty result moves with its memo entry; its tree is empty too, and never modified.
-		n = p.moveEmpty(n, n.Start+shift)
+		e.node = p.moveEmpty(n, p.baseShift)
 	} else if n.gen < p.gen {
-		p.moveTree(n)
+		p.moveTree(n, p.shiftOf(n))
 	}
 	if len(p.moved) > 1024 {
 		p.moved = nil
 	} else {
 		clear(p.moved)
 	}
-	return n
+	clear(p.shifts)
 }
 
-// moveTree moves the non-empty node n and its descendants in place (see moveResult).
-func (p *parser) moveTree(n *Node) {
+// shiftOf returns how far the non-empty node n of the result being moved moves with the edits
+// since n.gen. The nodes of a result move together. Those that were current when the entry's
+// result was last current (gen at most moveBase) move by the entry's shift; others were moved through
+// another result since, and the edits after that are replayed once per generation (shifts).
+func (p *parser) shiftOf(n *Node) int {
+	if n.gen <= p.moveBase {
+		return p.baseShift
+	}
+	if d, ok := p.shifts[n.gen]; ok {
+		return d
+	}
 	s := n.Start
 	for _, ed := range p.edits[n.gen:p.gen] {
 		if s >= ed.end {
 			s += ed.delta
 		}
 	}
-	shift := s - n.Start
-	n.Start = s
+	if p.shifts == nil {
+		p.shifts = map[uint32]int{}
+	}
+	p.shifts[n.gen] = s - n.Start
+	return s - n.Start
+}
+
+// moveTree moves the non-empty node n by shift (shiftOf(n)), and its descendants, in place.
+func (p *parser) moveTree(n *Node, shift int) {
+	gen := n.gen
+	n.Start += shift
 	n.End += shift
 	n.gen = p.gen
 	for i, c := range n.Children {
 		if c != nil && c.gen < p.gen {
-			n.Children[i] = p.moveChild(c, shift)
+			n.Children[i] = p.moveChild(c, gen, shift)
 		}
 	}
 	for i := range n.Fields {
 		if c, ok := n.Fields[i].Value.(*Node); ok && c != nil && c.gen < p.gen {
-			n.Fields[i].Value = p.moveChild(c, shift)
+			n.Fields[i].Value = p.moveChild(c, gen, shift)
 		}
 	}
 }
 
-// moveChild moves the descendant c of a node that moved by shift, and returns it or its copy.
-func (p *parser) moveChild(c *Node, shift int) *Node {
+// moveChild moves the descendant c of a node of generation gen that moved by shift, and returns
+// it or its copy.
+func (p *parser) moveChild(c *Node, gen uint32, shift int) *Node {
 	if c.Start != c.End {
-		p.moveTree(c)
+		if c.gen != gen {
+			shift = p.shiftOf(c)
+		}
+		p.moveTree(c, shift)
 		return c
 	}
 	// An empty node is not modified after it is made, so its positions are valid where its
@@ -765,35 +793,47 @@ func (p *parser) moveChild(c *Node, shift int) *Node {
 	if shift == 0 {
 		return c
 	}
-	return p.moveEmpty(c, c.Start+shift)
+	return p.moveEmpty(c, shift)
 }
 
-// moveEmpty returns a copy of the empty node n, and of its descendants (all empty at the same
-// point), at the position pos. Copies made in the same moveResult are shared.
-func (p *parser) moveEmpty(n *Node, pos int) *Node {
-	if n == nil {
-		return nil
-	}
+// moveEmpty returns a copy of the empty node n moved by shift. Its descendants move with it: empty
+// ones are copied the same way, and non-empty ones (captured in a lookahead) are moved in place.
+// Copies made in the same moveResult are shared.
+func (p *parser) moveEmpty(n *Node, shift int) *Node {
 	if c, ok := p.moved[n]; ok {
 		return c
 	}
 	c := p.newNode(*n)
-	c.Start, c.End = pos, pos
+	c.Start += shift
+	c.End += shift
 	p.moved[n] = c
 	if n.Children != nil {
 		c.Children = p.nodes(len(n.Children))
 		for i, ch := range n.Children {
-			c.Children[i] = p.moveEmpty(ch, pos)
+			c.Children[i] = p.moveDescendant(ch, n.gen, shift)
 		}
 	}
 	if n.Fields != nil {
 		c.Fields = p.fields(len(n.Fields))[:len(n.Fields)]
 		for i, f := range n.Fields {
 			if vn, ok := f.Value.(*Node); ok {
-				f.Value = p.moveEmpty(vn, pos)
+				f.Value = p.moveDescendant(vn, n.gen, shift)
 			}
 			c.Fields[i] = f
 		}
+	}
+	return c
+}
+
+// moveDescendant moves the descendant c of an empty node of generation gen that moved by shift.
+func (p *parser) moveDescendant(c *Node, gen uint32, shift int) *Node {
+	switch {
+	case c == nil:
+		return nil
+	case c.Start == c.End:
+		return p.moveEmpty(c, shift)
+	case c.gen < p.gen:
+		return p.moveChild(c, gen, shift)
 	}
 	return c
 }

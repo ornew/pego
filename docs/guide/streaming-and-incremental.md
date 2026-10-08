@@ -862,8 +862,11 @@ snapshot unchanged: true
 ```
 
 Pointer comparison tells which nodes the new tree reused from the old one (`l1[50] == l2[51]`); compare `Start`, `End`
-and content to see what else is the same. `Clone` copies the whole tree (keeping subtrees shared within it shared), so
-it costs about as much memory as the tree. Do not read an earlier tree while `Parse` runs.
+and content to see what else is the same. After the next `Parse`, an earlier tree is a mix: the nodes the new tree
+reused are at their new positions, the others at their old ones, so a child can even lie outside its parent's range.
+Use it only for such comparisons, or keep a `Clone`, which copies the whole tree (keeping subtrees shared within it
+shared) and costs about as much memory as the tree. `Parse` writes the nodes it moves, so do not read an earlier
+tree while `Parse` runs.
 
 ### What is reused, and why
 

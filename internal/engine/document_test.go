@@ -333,6 +333,16 @@ def junk = @(?^;)* ";"
 def item = k:key ":" v:val? ";" kids:(-"," c:@(?0-9)*)*
 def key = @(?a-z)* -> $0
 def val = e:@(?0-9)* -> $e`, "a:1;,2,b:;:3;,;", []string{"a", "b", ":", ";", "1", ",", "x:2;", ",3", ":;", ""}},
+		// Empty results with captures made in a lookahead: non-empty nodes, and empty nodes at
+		// other positions, inside empty ones.
+		{`
+type S struct { K Match }
+def main = (item / junk)* $$
+def item = p:peek q:peek2 r:peek3 w:@(?a-z)+ ";"
+def peek = &(k:@(?a-z)+)
+def peek2 = &(k:@(?a-z)+) -> new S{K: $k}
+def peek3 = &(@(?a-z)* m:@"")
+def junk = @(?^;)* ";"`, "ab;cd;", []string{"a", "b", ";", "x;", "", "1"}},
 	}
 	// Edits leave the last character alone: each text ends with a terminator that lets it parse.
 	for ci, c := range cases {
@@ -345,9 +355,13 @@ def val = e:@(?0-9)* -> $e`, "a:1;,2,b:;:3;,;", []string{"a", "b", ":", ";", "1"
 			doc.Parse()
 			rng := rand.New(rand.NewSource(int64(11 + ci)))
 			parsed := 0
-			for i := 0; i < 600; i++ {
+			for i := 0; i < 400; i++ {
 				var log []string
-				for k := 1 + rng.Intn(3); k > 0; k-- {
+				edits := 1 + rng.Intn(3)
+				if rng.Intn(20) == 0 {
+					edits = 30 // many edits between parses
+				}
+				for k := edits; k > 0; k-- {
 					n := len([]rune(doc.Text())) - 1
 					start := rng.Intn(n + 1)
 					end := start
@@ -370,8 +384,8 @@ def val = e:@(?0-9)* -> $e`, "a:1;,2,b:;:3;,;", []string{"a", "b", ":", ";", "1"
 					t.Fatalf("grammar %d, %v, round %d: %v\ntext %q\n got  %s\n want %s", ci, b, i, log, doc.Text(), got, want)
 				}
 			}
-			if parsed < 400 {
-				t.Errorf("grammar %d, %v: only %d of 600 rounds parsed", ci, b, parsed)
+			if parsed < 260 {
+				t.Errorf("grammar %d, %v: only %d of 400 rounds parsed", ci, b, parsed)
 			}
 		}
 	}
@@ -405,5 +419,36 @@ def line = x:@(?a-z)+ "\n"`)
 	}
 	if dump(t, snap, nil) != before {
 		t.Error("the clone changed")
+	}
+}
+
+// TestDocumentEditLogLimit checks parses across resets of a full edit log.
+func TestDocumentEditLogLimit(t *testing.T) {
+	defer func(n int) { maxEdits = n }(maxEdits)
+	maxEdits = 5
+	prog := compile(t, `
+def main = line* $$
+def line = x:@(?a-z)+ "\n"`)
+	doc, err := prog.NewDocument("main", "ab\ncd\nef\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc.Parse()
+	rng := rand.New(rand.NewSource(5))
+	for i := 0; i < 300; i++ {
+		for k := rng.Intn(4); k >= 0; k-- {
+			n := len([]rune(doc.Text()))
+			at := rng.Intn(n)
+			if rng.Intn(2) == 0 {
+				doc.Edit(at, at, []string{"q", "zz\n"}[rng.Intn(2)])
+			} else if t := doc.Text(); t[at] != '\n' && at > 0 && t[at-1] != '\n' {
+				doc.Edit(at, at+1, "")
+			}
+		}
+		n, err := doc.Parse()
+		fn, ferr := prog.Parse("main", doc.Text())
+		if got, want := dump(t, n, err), dump(t, fn, ferr); got != want {
+			t.Fatalf("round %d: text %q\n got  %s\n want %s", i, doc.Text(), got, want)
+		}
 	}
 }
