@@ -6,8 +6,11 @@ This document describes the repository layout, the architecture of the implement
 
 | Path | Contents |
 |:--|:--|
-| `pego.go` | Public API of package `pego` (`ParseGrammar`, `Compile`, `CompileSource`, `Parser.Parse`, and others) |
+| `pego.go`, `lint.go` | Public API of package `pego` (`ParseGrammar`, `Compile`, `CompileSource`, `Parser.Parse`, `Lint`, and others) |
 | `grammar/` | Grammar AST, JSON conversion (`MarshalJSON`, `UnmarshalJSON`) and formatting as PEGO source (`Format`, which preserves comments). Public package. |
+| `internal/lint/` | Grammar linter behind `pego.Lint` and `pego lint`: shared static analysis (`analysis.go`) and checks (`checks.go`) |
+| `internal/lsp/` | Language Server Protocol server for `.pego` files (`pego lsp`): JSON-RPC over standard input and output, document sync, diagnostics, formatting, navigation, hover, rename, completion, semantic tokens |
+| `editors/vscode/` | VS Code extension (Node.js, not part of the Go module): language configuration, TextMate grammar (`syntaxes/pego.tmLanguage.json`) and a client that starts `pego lsp` |
 | `sample/` | Generation of inputs that a grammar accepts, coverage reports, near-miss invalid inputs and a fuzzing helper (`Generate`, `New`, `Seed`). Public package. |
 | `internal/syntax/` | Lexer and parser for PEGO source code (source → `grammar.Grammar`) |
 | `internal/engine/` | Compiler, static analysis, parser runtime, action evaluation, bytecode VMs and Go and TypeScript code generation |
@@ -46,6 +49,7 @@ This document describes the repository layout, the architecture of the implement
 | Pratt expressions | `pratt.go` | The Pratt loop and longest-match operator selection |
 | Incremental parsing | `document.go`, `resume.go` | Reuse of memo entries across edits; resuming long repetitions |
 | Tracing and profiling | `trace.go`, `profile.go` | Rule call events for `WithTrace`, the per-rule profile and its hints |
+| Language server | `internal/lsp/` | Analyzes open `.pego` documents (tokens, partial parse, compile, rule types) and answers LSP requests |
 | Bytecode | `bytecode.go`, `bcompile.go`, `disasm.go`, `vm.go`, `ivm.go` | Bytecode module, compiler, disassembler, recursive and iterative VMs |
 | Compiled grammars | `compiled.go`, `modulefile.go` | The `.pegoc` file format |
 | Code generation | `gen.go`, `genrt/`, `gen_ts.go`, `tsrt/` | Generation of standalone Go and TypeScript parsers |
@@ -102,6 +106,14 @@ The generator (`gen.go`, `genrt/`) emits one Go method per expression and embeds
 
 The TypeScript generator (`gen_ts.go`) walks the same analysis results and emits one function per expression into a module that embeds `tsrt/runtime.ts`, a port of `genrt/runtime.go` that hides JavaScript's differences (UTF-16 strings, 53-bit numbers, JSON escaping). `TestGeneratedTSParsersMatchEngine` runs the generated modules with Node.js on the corpus of the Go generator's test, plus prefixes and byte deletions of short inputs. It compares the JSON, `Node.String` and recognition with the engine, and type-checks the modules with `tsc` ([design](design/013-typescript-generation.md)).
 
+### Linting
+
+Package `internal/lint` analyzes the AST of a grammar that compiles (`pego.Lint` compiles it first). `analysis.go` computes nullability (separately at the end of the input and elsewhere), whether expressions can match at all (least fixed points), whether an expression certainly succeeds on every input that begins with a given string (`matchPrefix`), a prefix every match begins with, and structural equality. Calls of left-recursive rules are never taken as certain. `checks.go` builds the checks on these so that errors and warnings are proven; hints are heuristics. `lint:ignore` comments are read from `Grammar.AllComments` ([design](design/018-grammar-linting.md)).
+
+### Language server
+
+`internal/lsp` implements LSP 3.17 over standard input and output with the standard library. Each version of an open document is analyzed once: `syntax.Tokenize` gives every token with its span, `syntax.ParsePartial` the definitions that parse even when others have errors, and, when there is no syntax error, `engine.Compile` the compile and type errors and `Program.RuleType` the declared or inferred rule types. Positions are converted through byte offsets between LSP's UTF-16 columns and line ends and PEGO's code-point columns. Completion works on tokens, since the definition being written rarely parses ([design](design/017-language-server.md)).
+
 ### Input generation
 
 Package `sample` walks the grammar AST of a `Parser` with a bounded, seeded depth-first search in continuation-passing style (`gen.go`, `pratt.go`), prunes candidates that the parser would read differently with checks evaluated by a partial matcher (`match.go`) and with predicates evaluated on the generated text (`pred.go`), and returns only inputs that `Parse` accepts. It measures coverage of rules, alternatives and Pratt operands and operators (`analysis.go`) and mutates valid inputs into near-miss invalid ones (`mutate.go`) ([design](design/015-input-generation.md)).
@@ -141,6 +153,10 @@ Engine tests write grammars in PEGO source and compare results using the S-expre
 The `check` helper also verifies that the result is the same with memoization disabled, with every backend (closure, recursive bytecode, iterative bytecode), with both position units, in recognition-only mode, and with tracing on.
 
 The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for its type check, `tsc`; it is skipped when they are missing.
+
+`internal/lint` tests every check with positive and negative cases, lints every example grammar against a hand-checked list of findings, and `TestSoundness` checks the certain findings against the engine on random grammars, exhaustively over short inputs (`-soundness=N` for a longer run).
+
+`internal/lsp` tests talk to the server in process over pipes (lifecycle, malformed messages, incremental edits with non-ASCII and astral characters and `\r\n`, every request) and analyze every example grammar. In `editors/vscode`, `npm install && npm run check` compiles the TextMate grammar's regular expressions with Oniguruma and checks the scopes of a sample and the example grammars; `npm run check-server -- <path to pego>` talks to the server with the VS Code client's JSON-RPC library.
 
 `sample` tests generate inputs for every example grammar and every grammar of the engine's test corpus (`internal/engine/sample_test.go`, through `export_test.go`) and parse them on every backend.
 
@@ -188,6 +204,8 @@ The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for i
 | Done | | Saving and loading compiled grammars (`.pegoc`) |
 | Done | | Code generation (TypeScript, `pego gen -lang ts`) |
 | Done | | Input generation and fuzzing (`pego sample`, package `sample`) |
+| Done | | Grammar linting (`pego lint`, `pego.Lint`) |
+| Done | | Editor support (`pego lsp`, VS Code extension with a TextMate grammar) |
 | Done | | Tracing, profiling and error explanation (`WithTrace`, `WithProfile`, `pego trace/profile/explain`) |
 
 ## Roadmap
@@ -200,6 +218,7 @@ The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for i
 - [x] **Documentation:** provide detailed documentation and tutorials for each feature ([tutorial](tutorial/getting-started.md), [guides](guide/README.md)).
 - [x] **Go code generator:** generate Go parser code that can be compiled and run directly.
 - [x] **Bytecode VM:** a language-independent bytecode and VMs for two execution models, recursive and iterative ([design](design/010-bytecode-vm.md)).
+- [x] **Editor support:** a language server (`pego lsp`) and a VS Code extension ([design](design/017-language-server.md)).
 - [x] **TypeScript code generator:** standalone TypeScript parsers that return the engine's results ([design](design/013-typescript-generation.md)).
 - [ ] **Code generators for other languages:** generate parsers in Python and other languages.
 - [x] **Streaming:** consume input as a stream and emit nodes as a stream.

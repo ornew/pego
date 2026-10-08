@@ -77,6 +77,9 @@ tree, err := p.Parse("1 + 2 * 3 ^ 2") // a *pego.Node, or a *pego.SyntaxError wi
   rewrites the message; `#recover` skips the broken part and keeps going.
 - **See what your grammar does.** `pego trace` shows every rule call with positions, results and memo hits,
   `pego explain` which calls make up a syntax error, and `pego profile` where the time and the backtracking go.
+  `pego lint` points out alternatives that can never match and other likely mistakes before any input does.
+- **At home in your editor.** `pego lsp` gives any LSP editor errors as you type, formatting, go to definition,
+  hover with inferred rule types, rename and completion; a VS Code extension is included.
 - **Context when you need it.** Predicates and scoped variables handle indentation, matching tags and other things
   plain PEG cannot.
 
@@ -119,6 +122,8 @@ pego parse -g grammar.pego -check < input.txt    # validate only
 pego explain -g grammar.pego < input.txt         # which rule calls make up a syntax error
 pego trace -g grammar.pego -i 'abc=12'           # every rule call as an indented tree (-f json for tools)
 pego profile -g grammar.pego < input.txt         # cost per rule, with hints on wasted work
+pego lint -g grammar.pego                        # likely mistakes: dead alternatives, unused captures, ...
+pego lsp                                         # language server for editors (errors, formatting, rename, ...)
 pego fmt -w grammar.pego                         # format in place, comments kept
 pego compile -g grammar.pego -o grammar.pegoc    # precompile
 pego gen -g grammar.pego -pkg calc -o parser.go  # generate a standalone Go parser
@@ -142,7 +147,8 @@ with CPython's `ast` module.
 | | |
 |:--|:--|
 | [Getting started](docs/tutorial/getting-started.md) | From a first grammar to typed trees and operator precedence, step by step |
-| [Guides](docs/guide/README.md) | Trees and actions, expressions, errors and recovery, context-sensitive parsing, running parsers, code generation (Go and TypeScript), streaming and incremental parsing, debugging and profiling, sampling inputs and fuzzing |
+| [Guides](docs/guide/README.md) | Trees and actions, expressions, errors and recovery, context-sensitive parsing, running parsers, code generation (Go and TypeScript), streaming and incremental parsing, debugging and profiling, linting grammars, sampling inputs and fuzzing, editor support |
+| [Editor support](docs/guide/editor-support.md) | `pego lsp` and the VS Code extension: errors as you type, formatting, navigation, hover with inferred types, rename, completion |
 | [Web site and playground](docs/guide/playground.md) | Try grammars in the browser at [pego.ornew.net/playground](https://pego.ornew.net/playground/); build and preview the site locally |
 | [Language specification](spec/README.md) | The PEGO grammar language |
 | [Development guide](docs/development.md) | Architecture, repository layout, implementation status, roadmap |
