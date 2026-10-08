@@ -435,7 +435,7 @@ func (g *generator) attributed(e *grammar.Attributed, s *scope, build bool) stri
 		case "recover":
 			skipExpr, _ := a.Arg("skip")
 			skip := g.expr(skipExpr, s, false)
-			m = g.method("#recover", fmt.Sprintf("\treturn p.recoverAttr((*parser).%s, (*parser).%s, %v)\n", m, skip, build))
+			m = g.method("#recover", fmt.Sprintf("\treturn p.recoverAttr((*parser).%s, (*parser).%s, %v)\n", m, skip, build && visible(e.Expr)))
 		}
 	}
 	return m

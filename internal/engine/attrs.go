@@ -34,7 +34,9 @@ func (c *compiler) attributed(e *grammar.Attributed, s *scope, build bool) match
 				continue
 			}
 			c.noCaptures(skipExpr)
-			m = recoverAttr(m, c.expr(skipExpr, s, false), build)
+			// An expression without a value (a lookahead, a predicate, ...) has none after a
+			// recovery either, so that the shape of the enclosing value does not depend on it.
+			m = recoverAttr(m, c.expr(skipExpr, s, false), build && visible(e.Expr))
 		default:
 			c.errorf(a.Pos, "unknown attribute #%s", a.Name)
 		}

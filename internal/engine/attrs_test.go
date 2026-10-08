@@ -83,6 +83,30 @@ def p0 = pratt { operand "a"  operand "(" p0 ")"  level { postfix "!" ";" #recov
 	)
 }
 
+// TestRecoverWithoutValue checks that #recover on an expression without a value (here a
+// lookahead) gives no value after a recovery, on every backend, inside a sequence and as a
+// rule body.
+func TestRecoverWithoutValue(t *testing.T) {
+	for _, src := range []string{
+		"def main = r0 \"b\"\ndef r0 = c0:(_) (&\"a\") #recover(skip=(?^;)* \";\")",
+		"def main = r0 \"b\"\ndef r0 = (&\"a\") #recover(skip=(?^;)* \";\")",
+	} {
+		prog := compile(t, src)
+		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+			n, err := prog.ParseWith("main", "x;b", ParseOptions{Backend: b})
+			var errs SyntaxErrors
+			if n == nil || !errors.As(err, &errs) || len(errs) != 1 {
+				t.Errorf("%v: got %v, %v\n%s", b, n, err, src)
+				continue
+			}
+			if s := n.String(); strings.Contains(s, "Error") {
+				t.Errorf("%v: the recovery made a value: %s", b, s)
+			}
+		}
+		checkBackends(t, prog, "main", "x;b")
+	}
+}
+
 func TestRecoverTyping(t *testing.T) {
 	// The value of a recovered expression may be an Error, but an Error can be placed where any
 	// node type is expected.

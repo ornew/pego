@@ -312,7 +312,7 @@ func (c *bcompiler) attributed(e *grammar.Attributed, i int, s *scope, build boo
 		end := c.emit(OpEndRecover, 0, 0, 0)
 		c.m.Code[rec].A = c.here()
 		c.match(skip, s, false)
-		c.emit(OpEndSkip, b2i(build), 0, 0)
+		c.emit(OpEndSkip, b2i(build && visible(e.Expr)), 0, 0) // as in compiler.attributed
 		c.m.Code[end].A = c.here()
 	default: // #stream is handled by the repetition
 		c.attributed(e, i-1, s, build)

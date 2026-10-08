@@ -87,6 +87,8 @@ def stmt = s:(let / assign / call) #recover(skip=(?^;)+ ";") -> $s
   returned.
 - An error recovered inside a match that was later undone by backtracking is
   not reported.
+- An expression that has no value (a lookahead or a predicate, for example) has
+  none after a recovery either; the error is still recorded.
 - The type of an expression with `#recover` is the union of its original type
   and `Error`. `Error` is assignable to every node type (see
   [Assignability](types.md#assignability)).
