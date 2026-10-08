@@ -72,7 +72,13 @@ type Expr = Ident | Int | Float | String | Bool | Null | Bottom | Interpolation 
 // Source file
 // ===================================================================
 
-def main: File = "\u{feff}"? ws
+// A file is first read inside a lookahead, where a failed alternative is not recorded: the parse of a file that is
+// valid does not search the set of the items that the farthest failure expects, which it needs only for the error of
+// a file that is not. The values built in a lookahead stay, and the rest of the input is skipped. If the file is not
+// valid, it is read again outside, which gives the error.
+def main: File = main_fast / file
+def main_fast: File = &(f:file) .* -> $f
+def file: File = "\u{feff}"? ws
     as1:(a:attribute_d sep)* pkg:(p:package_clause sep){0,1} ([len($pkg) > 0] / !("package" !idchar)) as2:(a:attribute_d sep)*
     is:(i:import_decl sep)* !("import" !idchar) ds:decls $$
     -> new File{Decls: concat(map($as1, (x) => $x.a), map($pkg, (x) => $x.p), map($as2, (x) => $x.a),
@@ -402,7 +408,10 @@ def sq_last: []Expr = e:interp_expr z:sq_end -> list($e, $z)
 // be a prefix of the indentation of every other line that is not empty.
 def gstring: StrLit = gtriple / gml_plain / gml_interp / gml_interp_s / gsl_plain / gsl_interp / gsl_interp_s
 def qc = [sv % 2 == 0] "\"" / [sv % 2 == 1] "'"
-def hq = h:@"#"* [len($h) == sv / 2]
+// The hashes that close a string are exactly as many as the ones that opened it; the scanner leaves the others to
+// the next token, which matters where a string is skipped as part of an attribute.
+def hq = [k = sv / 2] hq_rec
+def hq_rec = [k == 0] / [k > 0] "#" [k = k - 1] hq_rec
 def g_escbody = [sv % 2 == 0] esc_dq / [sv % 2 == 1] esc_sq
 def gs_esc = "\\" h:@"#"* ([len($h) < sv / 2] / [len($h) == sv / 2] g_escbody)
 def g_interp_open = "\\" h:@"#"* [len($h) == sv / 2] "("

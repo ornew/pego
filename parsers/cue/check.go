@@ -612,7 +612,6 @@ func SpanOf(x any) Span {
 	panic(fmt.Sprintf("cue: SpanOf %T", x))
 }
 
-
 // experiments checks the @experiment attributes at the start of the file, and the use of the syntax that they enable.
 func (c *checker) experiments(f *File) {
 	var try, aliasV2, explicitOpen bool
