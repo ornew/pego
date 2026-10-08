@@ -40,7 +40,7 @@ A `.pego` file is a whole grammar, so the server analyzes each open file on its 
 | Document symbols | The outline of the file: rules with their types, types, and the fields of struct types |
 | Hover | For a rule, `def name: Type` with its declared or inferred type, and its documentation comment. For a type, its definition. For built-in types, functions (`len`, `foldl`, ...), node fields (`startPos`, ...) and attributes (`#error`, ...), a description |
 | Rename | Renames a rule or type everywhere in the file. A new name that is invalid, a keyword or already taken is refused |
-| Completion | Rule names in rule bodies, types where a type is expected, attributes after `#`, captures after `$`, built-in functions and `new` in actions and predicates, struct types after `new`, fields after `.`, and keywords |
+| Completion | Rule names in rule bodies, types where a type is expected, attributes after `#`; in actions and predicates, captures after `$`, built-in functions, `new`, struct types after `new` and fields after `.`; and keywords |
 | Semantic highlighting | Rule names, type names, captures, fields and built-in names in their own colors, if the editor supports semantic tokens |
 
 ### Documentation comments

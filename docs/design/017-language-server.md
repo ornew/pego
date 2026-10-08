@@ -134,10 +134,13 @@ struct.
 
 Completion cannot rely on the grammar, because the definition being typed rarely parses.
 It looks at the tokens before the cursor instead: inside a comment, string or character class it offers nothing;
-after `#`, the attributes; after `$`, the capture labels and lambda parameters of the definition; after `->` or inside
-`[...]` (a value expression), the built-in functions, `new`, `true`, `false`, `nil` and predicate variables, the struct
-types after `new` and the fields after `.`; in the type of a rule or a type definition, the types; after `infix`, the
-associativities; elsewhere in a rule body, the rules and the keywords that may come there.
+after `#`, the attributes; after `->` or inside `[...]` (a value expression), the built-in functions, `new`, `true`,
+`false`, `nil` and predicate variables, the capture labels and lambda parameters of the definition after `$`, the
+struct types after `new` and the fields after `.`; in the type of a rule or a type definition, the types; after
+`infix`, the associativities; elsewhere in a rule body, the rules and the keywords that may come there.
+`$` and `.` are trigger characters, so the client asks for completions as soon as they are typed; in a parsing
+expression they are the end-of-line anchor and any character, and the server offers nothing directly after them, so
+that pressing Enter does not turn `$` into a capture reference or `.` into `.rule`.
 Rule and type names come from every `def name` and `type Name` in the file, including definitions that do not parse
 yet.
 

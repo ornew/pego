@@ -83,25 +83,37 @@ func (a *analysis) complete(off int) []CompletionItem {
 	if i >= 0 && a.inside(a.toks[i], off) {
 		return items
 	}
-	// prev is the token before the word being typed, if any.
-	prev := i
+	// prev is the token before the word being typed, if any. capture reports that the word is a
+	// capture reference ($name), or that "$" is directly before the cursor or the word.
+	prev, capture := i, false
 	if i >= 0 && off <= a.toks[i].end {
 		switch a.toks[i].Kind {
 		case syntax.TokenCapture:
-			return a.captureItems(i)
+			prev, capture = i-1, true
 		case syntax.TokenIdent:
 			prev = i - 1
 		}
 	}
-	// A "#" or "$" directly before the word (or the cursor).
-	adjacent := prev >= 0 && (prev == i && a.toks[prev].end == off || prev == i-1 && a.toks[prev].end == a.toks[i].start)
-	if adjacent && a.toks[prev].Kind == syntax.TokenPunct {
-		switch a.toks[prev].Text {
-		case "#":
-			return attributeItems()
-		case "$":
-			return a.captureItems(prev)
-		}
+	// The punctuation directly before the word (or the cursor).
+	adjacent := ""
+	if prev >= 0 && a.toks[prev].Kind == syntax.TokenPunct &&
+		(prev == i && a.toks[prev].end == off || prev == i-1 && a.toks[prev].end == a.toks[i].start) {
+		adjacent = a.toks[prev].Text
+	}
+	switch adjacent {
+	case "#":
+		return attributeItems()
+	case "$":
+		capture = true
+	}
+	// "$" and "." are trigger characters. In a value expression they start a capture reference
+	// and a field access; elsewhere they are the end-of-line anchor and any character, after which
+	// a completion accepted with Enter would only break the expression.
+	if (capture || adjacent == ".") && !a.inValue(prev) {
+		return items
+	}
+	if capture {
+		return a.captureItems(prev)
 	}
 	// st is the keyword of the definition the cursor is in.
 	st := prev
@@ -125,13 +137,7 @@ func (a *analysis) complete(off int) []CompletionItem {
 		return append(a.typeItems(false), keywordItems(statementKeywords)...)
 	}
 	// A rule definition: its type comes before "=".
-	eq := -1
-	for j := st + 1; j <= prev; j++ {
-		if a.isPunct(j, "=") {
-			eq = j
-			break
-		}
-	}
+	eq := a.ruleEquals(st, prev)
 	if eq < 0 {
 		switch pt.Text {
 		case ":", "|", "[]", "*", "(":
@@ -139,24 +145,8 @@ func (a *analysis) complete(off int) []CompletionItem {
 		}
 		return items
 	}
-	// In the body, an action (after ->) or a predicate (in [...]) is a value expression.
-	term, pratt, depth := false, a.isIdent(eq+1, "pratt"), 0
-	for j := eq + 1; j <= prev; j++ {
-		switch t := a.toks[j]; {
-		case a.isPunct(j, "->"):
-			term = true
-		case a.isPunct(j, "["):
-			depth++
-		case a.isPunct(j, "]"):
-			depth = max(0, depth-1)
-		case pratt && t.Kind == syntax.TokenIdent:
-			switch t.Text {
-			case "skip", "operand", "level", "prefix", "postfix", "infix":
-				term = false // the next line of the pratt expression
-			}
-		}
-	}
-	if term || depth > 0 {
+	value, pratt := a.scanBody(eq, prev)
+	if value {
 		switch pt.Text {
 		case "new":
 			return a.typeItems(true)
@@ -181,6 +171,58 @@ func (a *analysis) complete(off int) []CompletionItem {
 		items = append(items, keywordItems(prattKeywords)...)
 	}
 	return append(items, keywordItems(statementKeywords)...)
+}
+
+// ruleEquals returns the index of the "=" of the rule definition whose def is token st, if it
+// comes before token prev, or -1.
+func (a *analysis) ruleEquals(st, prev int) int {
+	for j := st + 1; j <= prev; j++ {
+		if a.isPunct(j, "=") {
+			return j
+		}
+	}
+	return -1
+}
+
+// scanBody scans the tokens of a rule body from its "=" (token eq) to token prev, and reports
+// whether the cursor after prev is in a value expression (an action after "->", or a predicate
+// in [...]) and whether the body is a pratt expression.
+func (a *analysis) scanBody(eq, prev int) (value, pratt bool) {
+	term, depth := false, 0
+	pratt = a.isIdent(eq+1, "pratt")
+	for j := eq + 1; j <= prev; j++ {
+		switch t := a.toks[j]; {
+		case a.isPunct(j, "->"):
+			term = true
+		case a.isPunct(j, "["):
+			depth++
+		case a.isPunct(j, "]"):
+			depth = max(0, depth-1)
+		case pratt && t.Kind == syntax.TokenIdent:
+			switch t.Text {
+			case "skip", "operand", "level", "prefix", "postfix", "infix":
+				term = false // the next line of the pratt expression
+			}
+		}
+	}
+	return term || depth > 0, pratt
+}
+
+// inValue reports whether the cursor after token prev is in a value expression of a rule body.
+func (a *analysis) inValue(prev int) bool {
+	st := prev
+	for st >= 0 && !a.isDefKeyword(st) {
+		st--
+	}
+	if st < 0 || !a.isIdent(st, "def") {
+		return false
+	}
+	eq := a.ruleEquals(st, prev)
+	if eq < 0 {
+		return false
+	}
+	value, _ := a.scanBody(eq, prev)
+	return value
 }
 
 // captureItems returns the capture labels and lambda parameters of the definition that token i

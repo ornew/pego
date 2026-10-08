@@ -51,6 +51,37 @@ func TestHostileInput(t *testing.T) {
 	c.exit()
 }
 
+// TestCompletionAfterTriggerCharacters checks that "$" and "." offer completions only in value
+// expressions. In a parsing expression they are the end-of-line anchor and any character, and
+// accepting a capture or a rule there (Enter after typing them) broke the expression.
+func TestCompletionAfterTriggerCharacters(t *testing.T) {
+	c := newInitialized(t)
+	uri := "file:///trigger.pego"
+	lines := []string{
+		`def a = x:"a" $`,
+		`def b = x:"a" $x`,
+		`def c = "x" .`,
+		`def d = "x" .b`,
+		`def e = "x" . `,
+		`def f = x:"a" -> $`,
+		`def g = x:"a" -> $x.`,
+		`def h = x:"a" [$`,
+		`def i = x:"a" [len($x) > 0] $`,
+	}
+	c.open(uri, strings.Join(lines, "\n"))
+	rules := []string{"a", "b", "c", "d", "def", "e", "f", "g", "h", "i", "type"}
+	for i, want := range [][]string{
+		nil, nil, nil, nil, rules,
+		{"x"}, {"children", "endPos", "startPos"}, {"x"}, nil,
+	} {
+		got := completionLabels(c, uri, i, len(lines[i]))
+		if strings.Join(got, " ") != strings.Join(want, " ") {
+			t.Errorf("%q: got %q, want %q", lines[i], got, want)
+		}
+	}
+	c.exit()
+}
+
 // TestFailedAnalysis checks that a panic while analyzing a document is published as a diagnostic
 // and that the last good analysis keeps serving requests.
 func TestFailedAnalysis(t *testing.T) {
