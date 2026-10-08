@@ -41,6 +41,8 @@ type Node struct {
 	fresh bool
 	// terminal reports that the node is a terminal.
 	terminal bool
+	// gen is the number of Document edits that the positions account for (see moveTree).
+	gen uint32
 }
 
 // NodeField is a field of a node (a struct field or a capture).
@@ -100,6 +102,41 @@ func (fs Fields) MarshalJSON() ([]byte, error) {
 	}
 	b.WriteByte('}')
 	return b.Bytes(), nil
+}
+
+// Clone returns a deep copy of the tree n. Subtrees shared within the tree stay shared in the
+// copy. A Document moves the nodes it reuses after an edit, which changes trees returned by its
+// earlier parses; a clone keeps a tree as it was.
+func (n *Node) Clone() *Node {
+	return cloneNode(n, map[*Node]*Node{})
+}
+
+func cloneNode(n *Node, seen map[*Node]*Node) *Node {
+	if n == nil {
+		return nil
+	}
+	if c, ok := seen[n]; ok {
+		return c
+	}
+	c := new(Node)
+	*c = *n
+	seen[n] = c
+	if n.Children != nil {
+		c.Children = make([]*Node, len(n.Children))
+		for i, ch := range n.Children {
+			c.Children[i] = cloneNode(ch, seen)
+		}
+	}
+	if n.Fields != nil {
+		c.Fields = make(Fields, len(n.Fields))
+		for i, f := range n.Fields {
+			if vn, ok := f.Value.(*Node); ok {
+				f.Value = cloneNode(vn, seen)
+			}
+			c.Fields[i] = f
+		}
+	}
+	return c
 }
 
 // IsTerminal reports whether the node is a terminal (Match or a terminal type).

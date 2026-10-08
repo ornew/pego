@@ -611,6 +611,20 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 - Effect (min of 20 interleaved runs, Apple M3 Max, recursive VM, during a busy day): XML 19.2k → 1.2k allocations,
   JSON 22.0 → 20.5 MB and CSV 16.2 → 14.6 MB per parse; time within ±3% (CSV and XML 2% faster, JSON 3% slower).
 
+### 45. Moving reused trees in place after document edits
+
+- A `Document` reparse copied the node tree of every reused result after an edit with shifted positions
+  (`shiftNode`), so it allocated in proportion to everything after the edit. Nodes are now moved in place
+  (`moveResult`): each node records how many document edits its positions account for (`Node.gen`, in padding, so
+  `Node` stays 120 bytes), and the document keeps its edits. A non-empty node moves by the edits that lie before it,
+  which its positions tell; empty nodes at an insertion point are ambiguous and are copied instead. Edits that keep
+  the length no longer mark entries as shifted.
+- Trees returned by earlier parses now change when the document is parsed again; `Node.Clone` keeps a copy.
+- Effect (min of 12 interleaved runs, Apple M3 Max, minilang, one-character edit and reparse): 1.34 → 0.90 ms on the
+  closure backend, 1.30 → 0.92 ms (recursive VM), 1.24 → 0.94 ms (iterative VM); 2.4 MB → 0.34 MB and 151 → 49
+  allocations per edit. Most of what remains is the `madvise` calls of the Go runtime reusing scavenged memory, which
+  is specific to macOS, and `memoTable.splice` walking every memo entry.
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -644,8 +658,9 @@ From profiles after change 41 (JSON, XML, minilang, error recovery; full parse a
    already recorded at the farthest position. An index of the last append per expectation does not help, because it
    goes stale whenever the farthest position advances, which is the common case.
 3. **The iterative VM** dispatches every step through an interface (the VMs got changes 36 and 37 in change 44).
-4. **Document reparses** copy every reused result after an edit with shifted positions (`shiftNode`), because node
-   positions are absolute; avoiding that would need relative positions in nodes (an API change).
+4. **Document edits** walk every memo entry (`memoTable.splice`) to drop or shift it, and a reparse walks the reused
+   trees after the edit to move them (change 45). Both are linear in the document; positions relative to a parent
+   would avoid them, at the cost of an API change (`Node.Start` and `End` would no longer be absolute).
 5. **Rule calls** still go through a function per call; inlining small rules into their callers at compile time
    (closure backend) or in generated code remains a candidate.
 

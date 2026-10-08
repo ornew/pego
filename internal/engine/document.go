@@ -13,6 +13,9 @@ import "fmt"
 //     result depends on position values, and results containing recovered errors, cannot be
 //     shifted.
 //   - All other results are discarded.
+//
+// The nodes of a shifted result are moved in place when the result is reused (moveResult), so
+// trees returned by earlier parses change with them.
 type Document struct {
 	prog  *Program
 	start string
@@ -21,7 +24,11 @@ type Document struct {
 	in    input // current text (fully loaded)
 	memo  *memoTable
 	stats Stats
+	edits []docEdit // all edits so far; nodes record how many their positions account for
 }
+
+// maxEdits bounds the edit log: when it is full, the memo is dropped and the log restarts.
+const maxEdits = 1 << 16
 
 // NewDocument creates a Document that parses text with the rule start. Positions are in code
 // points.
@@ -49,7 +56,7 @@ func (d *Document) Stats() Stats { return d.stats }
 
 // Parse parses the current text.
 func (d *Document) Parse() (*Node, error) {
-	p := &parser{prog: d.prog, input: d.in, memo: d.memo, memoAll: true, maxDepth: d.depth}
+	p := &parser{prog: d.prog, input: d.in, memo: d.memo, memoAll: true, maxDepth: d.depth, gen: uint32(len(d.edits)), edits: d.edits}
 	n, err := d.prog.run(p, d.back, d.start)
 	d.stats = p.stats
 	// Keep the tables the parse built on demand, so that later parses and edits reuse them.
@@ -72,6 +79,11 @@ func (d *Document) Edit(start, end int, text string) error {
 		}
 	}
 	delta := d.in.replace(start, end, text)
+	if len(d.edits) == maxEdits {
+		d.memo, d.edits = newMemoTable(), nil
+		return nil
+	}
+	d.edits = append(d.edits, docEdit{start, end, delta})
 	d.memo.splice(start, end, delta, func(e *memoEntry) int {
 		switch {
 		case e.growing:
@@ -83,6 +95,7 @@ func (d *Document) Edit(start, end int, text string) error {
 			e.examined += delta
 			e.far += delta
 			e.shift += delta
+			e.shifted = e.shifted || delta != 0 // an edit that keeps the length moves nothing
 			return shiftEntry
 		}
 		return dropEntry

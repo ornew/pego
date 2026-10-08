@@ -2,6 +2,7 @@ package engine
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/rand"
 	"slices"
 	"strings"
@@ -305,5 +306,104 @@ func TestDocumentInputStartAnchors(t *testing.T) {
 		if got, want := dump(t, n, err), dump(t, fn, ferr); got != want {
 			t.Errorf("%s: got %s, want %s", anchor, got, want)
 		}
+	}
+}
+
+// TestDocumentMovesReusedTrees checks reused results after random batches of edits (several
+// edits between parses) on grammars with empty nodes, which can lie at an insertion point on
+// either side of it, and nodes reachable twice (as a child and a field).
+func TestDocumentMovesReusedTrees(t *testing.T) {
+	cases := []struct {
+		grammar, text string
+		pieces        []string
+	}{
+		{strings.Replace(incrementalGrammar, "(line / blank)*", "(line / blank / junk)*", 1) + "\ndef junk = @(?^\\n)* \"\\n\"",
+			"x = 1+2\nab,cd\n@pos\n\ny = (3)*-4\n",
+			[]string{"a", "b", "x = ", "1", "+", "2*3", "(", ")", "-", ",", "\n", "@", "q", " ", ""}},
+		{`
+type W struct { Pre Match, Word Match, Post Match, Gap Match }
+def main = (sep w:word sep)* $$
+def sep = none none
+def none = @""
+def word: W = p:none x:@(?a-z)+ q:none g:gap -> new W{Pre: $p, Word: $x, Post: $q, Gap: $g}
+def gap = @" "*`, "ab cd  e ", []string{"a", "b", " ", "ab ", "", "zz"}},
+		{`
+def main = items:(item / junk)* tail:@""  $$
+def junk = @(?^;)* ";"
+def item = k:key ":" v:val? ";" kids:(-"," c:@(?0-9)*)*
+def key = @(?a-z)* -> $0
+def val = e:@(?0-9)* -> $e`, "a:1;,2,b:;:3;,;", []string{"a", "b", ":", ";", "1", ",", "x:2;", ",3", ":;", ""}},
+	}
+	// Edits leave the last character alone: each text ends with a terminator that lets it parse.
+	for ci, c := range cases {
+		prog := compile(t, c.grammar)
+		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+			doc, err := prog.NewDocumentWith("main", c.text, ParseOptions{Backend: b})
+			if err != nil {
+				t.Fatal(err)
+			}
+			doc.Parse()
+			rng := rand.New(rand.NewSource(int64(11 + ci)))
+			parsed := 0
+			for i := 0; i < 600; i++ {
+				var log []string
+				for k := 1 + rng.Intn(3); k > 0; k-- {
+					n := len([]rune(doc.Text())) - 1
+					start := rng.Intn(n + 1)
+					end := start
+					if rng.Intn(2) == 0 {
+						end += rng.Intn(min(3, n-start) + 1)
+					}
+					ins := c.pieces[rng.Intn(len(c.pieces))]
+					if err := doc.Edit(start, end, ins); err != nil {
+						t.Fatal(err)
+					}
+					log = append(log, fmt.Sprintf("[%d,%d)->%q", start, end, ins))
+				}
+				n, err := doc.Parse()
+				if err == nil {
+					parsed++
+				}
+				got := dump(t, n, err)
+				fn, ferr := prog.Parse("main", doc.Text())
+				if want := dump(t, fn, ferr); got != want {
+					t.Fatalf("grammar %d, %v, round %d: %v\ntext %q\n got  %s\n want %s", ci, b, i, log, doc.Text(), got, want)
+				}
+			}
+			if parsed < 400 {
+				t.Errorf("grammar %d, %v: only %d of 600 rounds parsed", ci, b, parsed)
+			}
+		}
+	}
+}
+
+// TestDocumentEarlierTrees checks what happens to a tree returned by an earlier parse: nodes
+// reused after an edit are moved in place (so the earlier tree shares them), and a clone keeps
+// the tree as it was, sharing included.
+func TestDocumentEarlierTrees(t *testing.T) {
+	prog := compile(t, `
+def main = line* $$
+def line = x:@(?a-z)+ "\n"`)
+	doc, err := prog.NewDocument("main", strings.Repeat("ab\n", 10))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t1, _ := doc.Parse()
+	snap := t1.Clone()
+	before := dump(t, t1, nil)
+	if dump(t, snap, nil) != before {
+		t.Fatal("clone differs")
+	}
+	if l := snap.Children[0].Children[3]; l.Field("x") != l.Children[0] {
+		t.Error("clone does not share the captured child")
+	}
+	doc.Edit(0, 0, "zz\n")
+	t2, _ := doc.Parse()
+	old, cur := t1.Children[0].Children[3], t2.Children[0].Children[4]
+	if old != cur || cur.Start != 12 || cur.Field("x").(*Node).Start != 12 {
+		t.Errorf("line 3 of the earlier tree: shared %v, at %d", old == cur, cur.Start)
+	}
+	if dump(t, snap, nil) != before {
+		t.Error("the clone changed")
 	}
 }

@@ -140,6 +140,10 @@ func (p *Parser) ParseStream(r io.Reader, emit func(*Node) error, opts ...ParseO
 // Document is a text that is edited repeatedly. Parsing after an edit reuses the results of the previous
 // parse that the edit did not affect (incremental parsing), as needed by editors. A Document is not safe
 // for concurrent use.
+//
+// Reused results are shared with the trees returned by earlier parses, and the nodes after an edit are
+// moved to their new positions in place: an earlier tree changes when Parse runs again. Use Node.Clone
+// to keep a tree as it was.
 type Document struct {
 	doc *engine.Document
 }

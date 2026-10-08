@@ -32,6 +32,7 @@ func (p *parser) newNode(v Node) *Node {
 	n := &p.nodeSlab[0]
 	p.nodeSlab = p.nodeSlab[1:]
 	*n = v
+	n.gen = p.gen
 	return n
 }
 

@@ -817,8 +817,10 @@ break line 1                 {Evaluated:2 Reused:0}  error: 1:2: syntax error: e
 - **Breaking line 1:** the result is the syntax error, as from a fresh parse. Nothing after the error is examined, so the
   rest of the memo table is simply left for later.
 
-A tree from an earlier `Parse` is never modified. Unchanged subtrees before an edit are shared with the new tree (the
-very same `*Node`), and entries after the edit are copied with shifted positions:
+Reused results are not copied. Unchanged subtrees before an edit are shared with the new tree as they are, and
+subtrees after it are shared too, **moved in place** to their new positions. A tree returned by an earlier `Parse`
+therefore changes: the nodes the new parse reused carry their new positions. To keep a tree as it was (for example,
+to keep showing the last good state), take a `Clone` before the next `Parse`:
 
 ```go
 package main
@@ -842,27 +844,26 @@ def main = line* $$
 def line = (?a-z)+ "\n"`, "main")
 	d, _ := p.NewDocument(strings.Repeat("ab\n", 100))
 	t1, _ := d.Parse()
+	snapshot := t1.Clone()
 	before := js(t1)
 	d.Edit(0, 0, "zzzz\n")
 	t2, _ := d.Parse()
-	fmt.Println("old tree unchanged after a shifting edit:", js(t1) == before)
 	l1, l2 := t1.Children[0].Children, t2.Children[0].Children
-	fmt.Println("line 50 starts at", l1[50].Start, "then", l2[51].Start, "shared:", l1[50] == l2[51])
-	d.Edit(len([]rune(d.Text())), len([]rune(d.Text())), "q\n")
-	t3, _ := d.Parse()
-	l3 := t3.Children[0].Children
-	fmt.Println("edit at the end: line 50 shared with previous:", l2[51] == l3[51])
+	fmt.Println("line 50 shared:", l1[50] == l2[51], "now starts at", l2[51].Start)
+	fmt.Println("earlier tree unchanged:", js(t1) == before)
+	fmt.Println("snapshot unchanged:", js(snapshot) == before)
 }
 ```
 
 ```
-old tree unchanged after a shifting edit: true
-line 50 starts at 150 then 155 shared: false
-edit at the end: line 50 shared with previous: true
+line 50 shared: true now starts at 155
+earlier tree unchanged: false
+snapshot unchanged: true
 ```
 
-So you can keep the previous tree (for example, to keep showing the last good state), and you can find which top-level
-nodes before the edit are unchanged by comparing pointers; after the edit, compare `Start`, `End` and content.
+Pointer comparison tells which nodes the new tree reused from the old one (`l1[50] == l2[51]`); compare `Start`, `End`
+and content to see what else is the same. `Clone` copies the whole tree (keeping subtrees shared within it shared), so
+it costs about as much memory as the tree. Do not read an earlier tree while `Parse` runs.
 
 ### What is reused, and why
 
@@ -871,7 +872,7 @@ For an edit of `[start, end)`, and a memo entry that examined `[from, examined)`
 | Entry | After the edit |
 |:--|:--|
 | `examined <= start` (all of it lies before the edit) | Kept as is |
-| `from >= end` (all of it lies after the edit) | Kept, with positions moved by the change in length |
+| `from >= end` (all of it lies after the edit) | Kept, with positions moved by the change in length (when it is reused, its nodes are moved in place) |
 | anything else (it overlaps the edit) | Dropped |
 
 Consequences, all of which can be read off the numbers in the next section:
@@ -1203,8 +1204,8 @@ Reading the table:
 
 - **The cost still grows with the document, but slowly.** `Edit` splices the text, its offset table and the memo table
   in place, but it still visits every memo entry (about 300,000 at 100,000 lines) and moves everything after the edit,
-  and the reparse makes one memo lookup per line and copies the reused results after the edit with their positions
-  shifted. Both are linear in the size of the document, with small constants: at 100,000 lines an edit costs about
+  and the reparse makes one memo lookup per line and, when the edit changed the length of the text, moves the nodes
+  of the reused results after the edit in place. Both are linear in the size of the document, with small constants: at 100,000 lines an edit costs about
   3 ms and the reparse about 8 ms.
 - **The gain depends on how much a reused unit costs.** With the Pratt-expression lines, `Edit` and the reparse together
   take about 13 ms against 153 ms for a fresh parse at 100,000 lines. With the cheap `key = value` lines, about 10 ms
@@ -1487,6 +1488,9 @@ Adapting it to a real editor:
 - If the grammar uses `#recover`, `Parse` returns a tree and a `pego.SyntaxErrors` together: keep the tree, show the
   errors.
 - Debounce: reparse after the user pauses, not after every key, and merge the edits that arrived meanwhile.
+- The kept tree shares its nodes with the document, and later parses move the nodes they reuse to their new
+  positions. If the editor needs the last good tree exactly as it was (for example, to map positions in the text it
+  was parsed from), keep `node.Clone()` instead.
 - If something looks wrong, compare with `Parser.Parse` on `doc.Text()`. The two must agree.
 
 ## See also
