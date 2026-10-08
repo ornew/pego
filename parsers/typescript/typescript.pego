@@ -941,9 +941,11 @@ def arrowBody: ConciseBody = block / assignmentExpressionInner
 // skip is sp and each operator skips the whitespace before it, so that `as` can require no line break.
 // Every operator is tried after every operand, so each starts with a silent test of the character where it can
 // start (&(?...): a line break or "/" for the whitespace and comments before it, or a character of the operator),
-// which fails without a rule call or an expectation.
+// which fails without a rule call or an expectation. For the same reason skip, which the Pratt loop runs before
+// each operator and operand, is sp behind a silent test of whether it has anything to skip (here and in the other
+// Pratt expressions).
 def binaryExpression: Expression = pratt {
-    skip sp
+    skip (&(? \t\v\f\u{A0}\u0085\u{1680}\u{2000}-\u{200B}\u{202F}\u{205F}\u{3000}\u{FEFF}/) sp)
     operand unaryExpression
     level {
         infix left &(?\n\r\u{2028}\u{2029}/?|) -ws o:coalesceOrToken -- -ws
@@ -972,8 +974,8 @@ def binaryExpression: Expression = pratt {
     level {
         infix left &(?\n\r\u{2028}\u{2029}/<>i) -ws o:relationalToken -- -ws
             -> new BinaryExpression{Left: $lhs, OperatorToken: $o, Right: $rhs}
-        postfix "as" !idPart -- -ws t:typeNode -> new AsExpression{Expression: $lhs, Type: $t}
-        postfix "satisfies" !idPart -- -ws t:typeNode -> new SatisfiesExpression{Expression: $lhs, Type: $t}
+        postfix &(?a) "as" !idPart -- -ws t:typeNode -> new AsExpression{Expression: $lhs, Type: $t}
+        postfix &(?s) "satisfies" !idPart -- -ws t:typeNode -> new SatisfiesExpression{Expression: $lhs, Type: $t}
     }
     level {
         infix left &(?\n\r\u{2028}\u{2029}/<>) -ws o:shiftToken -- -ws
@@ -1052,7 +1054,7 @@ def jsxPrimaryExpression: Expression = [ctx >= 64] &("<" -ws (idStart / ">")) e:
 // As in binaryExpression, each postfix operator starts with a silent test of its first character (or of a line
 // break or "/" before it), and the operand that is almost always the one, primaryExpression, comes first.
 def leftHandSideExpression: Expression = pratt {
-    skip sp
+    skip (&(? \t\v\f\u{A0}\u0085\u{1680}\u{2000}-\u{200B}\u{202F}\u{205F}\u{3000}\u{FEFF}/) sp)
     operand primaryExpression
     operand superExpression
     operand importCallee
@@ -1070,7 +1072,7 @@ def leftHandSideExpression: Expression = pratt {
             -> new TaggedTemplateExpression{Tag: $lhs, TypeArguments: concat($t), Template: $l}
         postfix &(?\n\r\u{2028}\u{2029}/?) -ws q:questionDotToken -- -ws (t:typeArgumentsInExpression -ws)? l:taggedTemplate
             -> new TaggedTemplateExpression{Tag: $lhs, QuestionDotToken: $q, TypeArguments: concat($t), Template: $l}
-        postfix "!" !"=" -> new NonNullExpression{Expression: $lhs}
+        postfix &(?!) "!" !"=" -> new NonNullExpression{Expression: $lhs}
         postfix &(?\n\r\u{2028}\u{2029}/<) -ws t:typeArgumentsInExpression
             -> new ExpressionWithTypeArguments{Expression: $lhs, TypeArguments: $t}
         postfix &(?\n\r\u{2028}\u{2029}/<() -ws (t:typeArgumentsInExpression -ws)? &"(" -- a:arguments
@@ -1081,7 +1083,7 @@ def leftHandSideExpression: Expression = pratt {
 }
 // The same without instantiation expressions, for heritage clauses, which take type arguments of their own.
 def heritageExpression: Expression = pratt {
-    skip sp
+    skip (&(? \t\v\f\u{A0}\u0085\u{1680}\u{2000}-\u{200B}\u{202F}\u{205F}\u{3000}\u{FEFF}/) sp)
     operand primaryExpression
     operand superExpression
     operand importCallee
@@ -1099,7 +1101,7 @@ def heritageExpression: Expression = pratt {
             -> new TaggedTemplateExpression{Tag: $lhs, TypeArguments: concat($t), Template: $l}
         postfix &(?\n\r\u{2028}\u{2029}/?) -ws q:questionDotToken -- -ws (t:typeArgumentsInExpression -ws)? l:taggedTemplate
             -> new TaggedTemplateExpression{Tag: $lhs, QuestionDotToken: $q, TypeArguments: concat($t), Template: $l}
-        postfix "!" !"=" -> new NonNullExpression{Expression: $lhs}
+        postfix &(?!) "!" !"=" -> new NonNullExpression{Expression: $lhs}
         postfix &(?\n\r\u{2028}\u{2029}/<() -ws (t:typeArgumentsInExpression -ws)? &"(" -- a:arguments
             -> new CallExpression{Expression: $lhs, TypeArguments: concat($t), Arguments: $a}
         postfix &(?\n\r\u{2028}\u{2029}/?) -ws q:questionDotToken -- -ws (t:typeArgumentsInExpression -ws)? a:arguments
@@ -1109,7 +1111,7 @@ def heritageExpression: Expression = pratt {
 // The target of new: member accesses, element accesses, tagged templates and non-null assertions, without
 // calls or optional chains (parseMemberExpressionRest with allowOptionalChain = false).
 def newTarget: Expression = pratt {
-    skip sp
+    skip (&(? \t\v\f\u{A0}\u0085\u{1680}\u{2000}-\u{200B}\u{202F}\u{205F}\u{3000}\u{FEFF}/) sp)
     operand primaryExpression
     operand superKeyword
     level {
@@ -1119,7 +1121,7 @@ def newTarget: Expression = pratt {
             -> new ElementAccessExpression{Expression: $lhs, ArgumentExpression: $e}
         postfix &(?\n\r\u{2028}\u{2029}/<`) -ws (t:typeArgumentsInExpression -ws)? &"`" -- l:taggedTemplate
             -> new TaggedTemplateExpression{Tag: $lhs, TypeArguments: concat($t), Template: $l}
-        postfix "!" !"=" -> new NonNullExpression{Expression: $lhs}
+        postfix &(?!) "!" !"=" -> new NonNullExpression{Expression: $lhs}
     }
 }
 def memberName: MemberName = privateIdentifier / identifierName
@@ -1352,7 +1354,7 @@ def inferTypeParameter: TypeParameter = n:identifier
 
 // Array types, indexed access types and the JSDoc postfixes ! and ?, on the same line.
 def postfixType: TypeNode = pratt {
-    skip sp
+    skip (&(? \t\v\f\u{A0}\u0085\u{1680}\u{2000}-\u{200B}\u{202F}\u{205F}\u{3000}\u{FEFF}/) sp)
     operand nonArrayType
     level {
         postfix "[" -ws "]" -> new ArrayType{ElementType: $lhs}
@@ -1363,7 +1365,7 @@ def postfixType: TypeNode = pratt {
 }
 // The same without the postfix ?, for the optional elements of tuples.
 def postfixTypeNoQuestion: TypeNode = pratt {
-    skip sp
+    skip (&(? \t\v\f\u{A0}\u0085\u{1680}\u{2000}-\u{200B}\u{202F}\u{205F}\u{3000}\u{FEFF}/) sp)
     operand nonArrayType
     level {
         postfix "[" -ws "]" -> new ArrayType{ElementType: $lhs}
