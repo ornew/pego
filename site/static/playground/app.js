@@ -582,8 +582,11 @@ function apply(res, req) {
 
 let rulesKey = "";
 function updateRules(c) {
-  const key = c.rules.map((r) => r.name).join(" ") + "|" + c.start;
-  if (key !== rulesKey && c.rules.length) {
+  // A requested start rule that the grammar does not define (after an edit, or from a link) stays
+  // selected, marked, and the parse reports it, rather than silently parsing from another rule.
+  const missing = requestedStart && !c.rules.some((r) => r.name === requestedStart) ? requestedStart : "";
+  const key = c.rules.map((r) => r.name).join(" ") + "|" + c.start + "|" + missing;
+  if (key !== rulesKey && (c.rules.length || missing)) {
     rulesKey = key;
     startSelect.textContent = "";
     for (const r of c.rules) {
@@ -592,8 +595,14 @@ function updateRules(c) {
       o.textContent = r.name === c.start ? `${r.name} (default)` : r.name;
       startSelect.append(o);
     }
+    if (missing) {
+      const o = document.createElement("option");
+      o.value = missing;
+      o.textContent = `${missing} (not defined)`;
+      startSelect.append(o);
+    }
   }
-  if (c.rules.length) startSelect.value = c.rules.some((r) => r.name === requestedStart) ? requestedStart : c.start;
+  if (c.rules.length || missing) startSelect.value = requestedStart || c.start;
 
   // Rules and types tab.
   const out = $("pg-outline");

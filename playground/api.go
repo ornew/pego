@@ -70,7 +70,7 @@ type grammarRequest struct {
 type parseRequest struct {
 	Grammar   string `json:"grammar"`
 	Input     string `json:"input"`
-	Start     string `json:"start"`     // start rule; empty or unknown selects the default
+	Start     string `json:"start"`     // start rule; empty selects the default (main, or else the first rule)
 	Unit      string `json:"unit"`      // codepoints (default) or bytes
 	Backend   string `json:"backend"`   // closure, bytecode, bytecode-iterative, or empty for the default
 	Recognize bool   `json:"recognize"` // check the input without building a tree
@@ -89,7 +89,7 @@ type syntaxError struct {
 
 type parseResult struct {
 	Compile compileResult `json:"compile"`
-	Start   string        `json:"start,omitempty"` // the start rule used
+	Start   string        `json:"start,omitempty"` // the start rule used; empty if the requested one is not defined
 	// Matched reports that the input matched, possibly after recovering from errors.
 	Matched bool `json:"matched"`
 	// JSON is the tree exactly as pego parse prints it, and SExpr as pego parse -f sexpr prints it
@@ -336,10 +336,10 @@ func parse(req parseRequest) parseResult {
 		opts = append(opts, pego.RecognizeOnly())
 	}
 	p := c.parser
-	if req.Start != "" && req.Start != p.Start() && slices.ContainsFunc(c.info.Rules, func(r ruleInfo) bool { return r.Name == req.Start }) {
+	if req.Start != "" && req.Start != p.Start() {
 		var err error
 		if p, err = p.WithStart(req.Start); err != nil {
-			res.Error = err.Error()
+			res.Error = err.Error() // start rule X is not defined
 			return res
 		}
 	}
@@ -439,8 +439,11 @@ func generate(req generateRequest) generateResult {
 		pkg = "parser"
 	}
 	start := req.Start
-	if !slices.ContainsFunc(c.info.Rules, func(r ruleInfo) bool { return r.Name == start }) {
+	if start == "" {
 		start = c.info.Start
+	} else if !slices.ContainsFunc(c.info.Rules, func(r ruleInfo) bool { return r.Name == start }) {
+		res.Diagnostics = []diagnostic{{Message: fmt.Sprintf("start rule %s is not defined", start)}}
+		return res
 	}
 	var opts []pego.GenOption
 	if req.Types {

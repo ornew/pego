@@ -108,10 +108,19 @@ func TestParse(t *testing.T) {
 	if len(r.Errors) != 1 || r.Errors[0].Pos != 8 || r.Errors[0].Line != 2 || r.Errors[0].Col != 4 {
 		t.Errorf("bytes: %+v", r)
 	}
-	// An unknown start rule falls back to the default.
+	// An unknown start rule is an error, not a silent fallback to the default.
 	r = call[parseResult](t, "parse", parseRequest{Grammar: pairs, Input: "a=1", Start: "nope"})
-	if r.Start != "main" || !r.Matched {
-		t.Errorf("fallback start: %+v", r)
+	if r.Start != "" || r.Matched || r.Error != "start rule nope is not defined" || !r.Compile.OK {
+		t.Errorf("unknown start: %+v", r)
+	}
+	g := call[generateResult](t, "generate", generateRequest{Grammar: pairs, Start: "nope"})
+	if g.Code != "" || len(g.Diagnostics) != 1 || g.Diagnostics[0].Message != "start rule nope is not defined" {
+		t.Errorf("generate with an unknown start: %+v", g)
+	}
+	// An empty start rule selects the default: main, or else the first rule.
+	r = call[parseResult](t, "parse", parseRequest{Grammar: "def a = \"x\"\ndef b = \"y\"", Input: "x"})
+	if r.Start != "a" || !r.Matched {
+		t.Errorf("default start: %+v", r)
 	}
 	r = call[parseResult](t, "parse", parseRequest{Grammar: pairs, Input: "a=1", Backend: "nope"})
 	if !strings.Contains(r.Error, "unknown backend") {
