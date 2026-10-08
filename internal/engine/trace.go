@@ -68,9 +68,16 @@ type TraceEvent struct {
 	rec []*SyntaxError
 }
 
-// LineCol returns the 1-based line and column of the position pos.
+// LineCol returns the 1-based line and column of the position pos. In a stream parse, it returns
+// 0, 0 for a position (other than 0) in input that has been discarded or not read yet: keeping
+// the line starts of discarded input would make the memory of a stream grow with its length.
 func (e TraceEvent) LineCol(pos int) (line, col int) {
-	if e.p == nil {
+	switch {
+	case e.p == nil:
+		return 0, 0
+	case pos == 0:
+		return 1, 1
+	case pos < e.p.base || pos > e.p.loaded():
 		return 0, 0
 	}
 	return e.p.lineCol(pos)

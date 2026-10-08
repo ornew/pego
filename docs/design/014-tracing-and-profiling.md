@@ -185,3 +185,6 @@ Removing the merge of a traced call's expectations into its caller (one line of 
   of rules from them are reported.
 - An aborted parse ends the trace without the exit events of the calls in progress.
 - A `Profile` must not be shared by concurrent parses.
+- In a stream parse, `LineCol` knows the lines of the input still held only; for other positions it gives 0, 0 (and a
+  profile `Location` prints as `position N`). Keeping the line starts of discarded input would make a stream's memory
+  grow with its length.

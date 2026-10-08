@@ -74,7 +74,14 @@ type Location struct {
 	Col  int `json:"col"`
 }
 
-func (l Location) String() string { return fmt.Sprintf("%d:%d", l.Line, l.Col) }
+// String returns line:col, or "position N" when the line is unknown (Line is 0: the position
+// was in input that a stream parse had discarded; see TraceEvent.LineCol).
+func (l Location) String() string {
+	if l.Line == 0 {
+		return fmt.Sprintf("position %d", l.Pos)
+	}
+	return fmt.Sprintf("%d:%d", l.Line, l.Col)
+}
 
 type profileCall struct {
 	rule  int

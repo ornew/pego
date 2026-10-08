@@ -80,3 +80,52 @@ def a = a "x" / "y"`)
 		t.Errorf("hints %q", pr.Hints())
 	}
 }
+
+// TestStreamLocations checks that, in a stream parse, events never give a wrong line and column
+// for a position whose input has been discarded (they give 0, 0), and that the profile's
+// locations are right or unknown.
+func TestStreamLocations(t *testing.T) {
+	prog := compile(t, `
+def main = line* #stream $$
+def line = @(?a-z)* "\n"`)
+	var b strings.Builder
+	for range 3000 {
+		b.WriteString("abcdefgh\n")
+	}
+	input := b.String()
+	want := func(pos int) (int, int) { return pos/9 + 1, pos%9 + 1 }
+	for _, back := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		var pr Profile
+		bad, unknown := 0, 0
+		trace := func(e TraceEvent) {
+			pr.Trace(e)
+			// Only the start of the start rule's call precedes discarded input: check one more
+			// position, at the start of line 2, which is not read yet at first and then discarded.
+			for _, pos := range []int{e.Pos, e.End, 9} {
+				line, col := e.LineCol(pos)
+				if line == 0 && col == 0 {
+					unknown++
+				} else if l, c := want(pos); line != l || col != c {
+					bad++
+				}
+			}
+		}
+		err := prog.ParseStreamWith("main", strings.NewReader(input), func(*Node) error { return nil }, ParseOptions{Backend: back, Trace: trace})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if bad > 0 || unknown == 0 {
+			t.Errorf("%v: %d wrong locations, %d unknown", back, bad, unknown)
+		}
+		for _, r := range pr.Rules {
+			for _, l := range []Location{r.MaxEvalsAt, r.LongestFailAt} {
+				if wl, wc := want(l.Pos); l.Line != 0 && (l.Line != wl || l.Col != wc) {
+					t.Errorf("%v: %s: location %+v", back, r.Rule, l)
+				}
+			}
+		}
+	}
+	if got := (Location{Pos: 12}).String(); got != "position 12" {
+		t.Errorf("unknown location prints as %q", got)
+	}
+}

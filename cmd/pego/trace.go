@@ -126,7 +126,7 @@ func callName(e pego.TraceEvent) string {
 
 func position(e pego.TraceEvent, pos int) string {
 	line, col := e.LineCol(pos)
-	return fmt.Sprintf("%d:%d", line, col)
+	return pego.Location{Pos: pos, Line: line, Col: col}.String()
 }
 
 // result describes the outcome of the call that e ends.
