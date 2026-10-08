@@ -46,6 +46,10 @@ func TestDocumentMatchesFreshParse(t *testing.T) {
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		t.Run(b.String(), func(t *testing.T) { testDocumentMatchesFreshParse(t, b) })
 	}
+	// Record every repetition's run, so that the short repetitions of the test resume too.
+	defer func(n int) { minRecorded = n }(minRecorded)
+	minRecorded = 1
+	t.Run("resume", func(t *testing.T) { testDocumentMatchesFreshParse(t, Closure) })
 }
 
 func testDocumentMatchesFreshParse(t *testing.T, b Backend) {
@@ -344,6 +348,8 @@ def peek2 = &(k:@(?a-z)+) -> new S{K: $k}
 def peek3 = &(@(?a-z)* m:@"")
 def junk = @(?^;)* ";"`, "ab;cd;", []string{"a", "b", ";", "x;", "", "1"}},
 	}
+	defer func(n int) { minRecorded = n }(minRecorded)
+	minRecorded = 1 // resume short repetitions too
 	// Edits leave the last character alone: each text ends with a terminator that lets it parse.
 	for ci, c := range cases {
 		prog := compile(t, c.grammar)
@@ -389,6 +395,224 @@ def junk = @(?^;)* ";"`, "ab;cd;", []string{"a", "b", ";", "x;", "", "1"}},
 			}
 		}
 	}
+}
+
+// TestDocumentResumesRepetitions checks that a reparse resumes long repetitions around the edit
+// (resume.go), with results equal to parsing from scratch.
+func TestDocumentResumesRepetitions(t *testing.T) {
+	cases := []struct {
+		name, grammar string
+		shifts        bool // elements after an edit are reused
+	}{
+		{"captures", `
+def main = stmt* $$
+def stmt = k:key " = " v:val ";\n" / "{\n" body:stmt* "}\n" / "\n"
+def key = @(?a-z)+
+def val = @(?0-9)+ / "[" items:(@(?0-9)+ ",")* "]"`, true},
+		// #stream has no effect on a Document.
+		{"stream", `
+def main = stmt* #stream $$
+def stmt = k:key " = " v:val ";\n" / "{\n" body:stmt* "}\n" / "\n"
+def key = @(?a-z)+
+def val = @(?0-9)+ / "[" items:(@(?0-9)+ ",")* "]"`, true},
+		{"inline", `
+def main = (@(?a-z)+ " = " (@(?0-9)+ / "[" (@(?0-9)+ ",")* "]") ";\n" / "\n")* $$`, true},
+		// Positions in the values of the elements: they are not moved past an edit.
+		{"positional", `
+type P struct { At int }
+def main = stmt* $$
+def stmt = assign / "\n"
+def assign = k:key " = " v:val ";\n" -> new P{At: $k.startPos}
+def key = @(?a-z)+
+def val = @(?0-9)+ / "[" items:(@(?0-9)+ ",")* "]"`, false},
+	}
+	// Mostly edits that keep the text valid.
+	pieces := []string{"a", "b", "1", "22", "q = 5;\n", "\n", "\n\n", "{\nk = 1;\n}\n", "[", "2,", "]", " = ", ""}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			prog := compile(t, c.grammar)
+			var b strings.Builder
+			for i := 0; i < 60; i++ {
+				fmt.Fprintf(&b, "x = %d;\nyz = [1,22,3,];\n\n", i)
+			}
+			doc, err := prog.NewDocument("main", b.String())
+			if err != nil {
+				t.Fatal(err)
+			}
+			doc.Parse()
+			rng := rand.New(rand.NewSource(3))
+			check := func(round int, what string) (int, error) {
+				got, err := doc.Parse()
+				fn, ferr := prog.Parse("main", doc.Text())
+				if g, w := dump(t, got, err), dump(t, fn, ferr); g != w {
+					t.Fatalf("round %d, %s\ntext %q\n got  %s\n want %s", round, what, doc.Text(), g, w)
+				}
+				return doc.resumed, err
+			}
+			tails, valid := 0, 0
+			for i := 0; i < 600; i++ {
+				cur := []rune(doc.Text())
+				start := rng.Intn(len(cur))
+				for rng.Intn(2) == 0 && start > 0 && cur[start-1] != '\n' {
+					start-- // often at a line start
+				}
+				end := start
+				if rng.Intn(3) == 0 {
+					end += rng.Intn(min(2, len(cur)-start) + 1)
+				}
+				ins := pieces[rng.Intn(len(pieces))]
+				if c.name == "inline" && strings.ContainsAny(ins, "{}") {
+					ins = ""
+				}
+				if err := doc.Edit(start, end, ins); err != nil {
+					t.Fatal(err)
+				}
+				_, err := check(i, fmt.Sprintf("[%d,%d) -> %q", start, end, ins))
+				// Undo the edit: the elements after it move back.
+				if err := doc.Edit(start, start+len([]rune(ins)), string(cur[start:end])); err != nil {
+					t.Fatal(err)
+				}
+				resumed, _ := check(i, "undo")
+				if err != nil || len([]rune(ins)) == end-start {
+					continue
+				}
+				// The edited text parsed and the edit moved the text after it: the elements after the
+				// edit are reused on the undo, unless their values contain positions.
+				valid++
+				if before := strings.Count(string(cur[:start]), "\n"); resumed > before+10 {
+					tails++
+				}
+			}
+			if c.shifts && tails < valid*3/4 || !c.shifts && tails > 0 || valid < 50 {
+				t.Errorf("elements after the edit reused in %d of %d rounds", tails, valid)
+			}
+		})
+	}
+}
+
+// TestDocumentResumeEdges checks what a resumed repetition takes from the elements it reuses
+// besides their values.
+func TestDocumentResumeEdges(t *testing.T) {
+	defer func(n int) { minRecorded = n }(minRecorded)
+	minRecorded = 1
+	cases := []struct {
+		name, grammar, text string
+		pieces              []string
+	}{
+		// An element after the edit that examined input before it (^) is not reused.
+		{"lookbehind", `
+def main = item* $$
+def item = b:bol / mid
+def bol = ^ @(?a-z)
+def mid = @(?a-z) / "\n"`, strings.Repeat("ab\ncd\n", 8), []string{"\n", "x", ""}},
+		// The expectations of reused elements: the error at the end includes the " " that the last
+		// element expected there.
+		// Runs with recovered errors or provisional results of a left recursion are not recorded.
+		{"recovered", `
+def main = stmt* $$
+def stmt = (@(?a-z)+ ";") #recover(skip=(?^;)+ ";")`, strings.Repeat("ab;c1;", 8) + ";", []string{"a", "1", ";", ""}},
+		{"left recursion", `
+def main = a $$
+def a = b* "y"
+def b = a "x" / "z"`, strings.Repeat("zzyx", 6) + "y", []string{"z", "y", "x", ""}},
+		{"expectations", `
+def main = item* $$
+def item = @(?a-z)+ " "*`, strings.Repeat("ab cd ", 8) + "!", []string{"a", " ", "", "  "}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			prog := compile(t, c.grammar)
+			doc, err := prog.NewDocument("main", c.text)
+			if err != nil {
+				t.Fatal(err)
+			}
+			doc.Parse()
+			rng := rand.New(rand.NewSource(7))
+			for i := 0; i < 400; i++ {
+				n := len([]rune(doc.Text())) - 1 // leave the last character
+				start := rng.Intn(n + 1)
+				end := start + rng.Intn(min(2, n-start)+1)
+				ins := c.pieces[rng.Intn(len(c.pieces))]
+				if err := doc.Edit(start, end, ins); err != nil {
+					t.Fatal(err)
+				}
+				got, err := doc.Parse()
+				fn, ferr := prog.Parse("main", doc.Text())
+				if g, w := dump(t, got, err), dump(t, fn, ferr); g != w {
+					t.Fatalf("round %d: [%d,%d) -> %q\ntext %q\n got  %s\n want %s", i, start, end, ins, doc.Text(), g, w)
+				}
+			}
+		})
+	}
+	// The input range reused elements examined: the last element looks four characters ahead,
+	// past where the repetition ends, so the run's result depends on the "!!!!".
+	t.Run("examined", func(t *testing.T) {
+		prog := compile(t, `
+def main = run rest $$
+def run = item*
+def item = @(?a-z) &((?a-z!) (?a-z!) (?a-z!) (?a-z!))
+def rest = @(?^\n)*`)
+		doc, err := prog.NewDocument("main", "abcdefgh!!!!")
+		if err != nil {
+			t.Fatal(err)
+		}
+		doc.Parse()
+		for _, e := range []docEdit{{0, 1, 0}, {11, 12, 0}} {
+			doc.Edit(e.start, e.end, "z?"[e.start/11:e.start/11+1])
+			got, err := doc.Parse()
+			fn, ferr := prog.Parse("main", doc.Text())
+			if g, w := dump(t, got, err), dump(t, fn, ferr); g != w {
+				t.Fatalf("%q\n got  %s\n want %s", doc.Text(), g, w)
+			}
+		}
+	})
+	// Two runs of a parse that both map to the same old run: an insertion at its start puts one run
+	// at the old position and the other where the edit moved it (the elements look behind, so the
+	// old result of list is not moved there). Only one of them takes the old run over.
+	t.Run("two runs", func(t *testing.T) {
+		prog := compile(t, `
+def main = list "!" / "bb" list "?"
+def list = item*
+def item = ^ @(?ab) / @(?ab)`)
+		doc, err := prog.NewDocument("main", "aaaa?")
+		if err != nil {
+			t.Fatal(err)
+		}
+		doc.Parse()
+		doc.Edit(0, 0, "bb")
+		got, err := doc.Parse()
+		fn, ferr := prog.Parse("main", doc.Text())
+		if g, w := dump(t, got, err), dump(t, fn, ferr); g != w {
+			t.Fatalf("%q\n got  %s\n want %s", doc.Text(), g, w)
+		}
+	})
+	// The same before the repetition: the first element looks at the character before it, so the
+	// run's result depends on the "\n".
+	t.Run("examined before", func(t *testing.T) {
+		prog := compile(t, `
+def main = pre run $$
+def pre = @(?xy\n)*
+def run = item*
+def item = b:bol / mid
+def bol = ^ @(?a-z)
+def mid = @(?a-z) / "\n"`)
+		doc, err := prog.NewDocument("main", "x\nab\ncd\nef\n")
+		if err != nil {
+			t.Fatal(err)
+		}
+		doc.Parse()
+		for _, e := range []struct {
+			start, end int
+			text       string
+		}{{6, 7, "z"}, {1, 2, "y"}} {
+			doc.Edit(e.start, e.end, e.text)
+			got, err := doc.Parse()
+			fn, ferr := prog.Parse("main", doc.Text())
+			if g, w := dump(t, got, err), dump(t, fn, ferr); g != w {
+				t.Fatalf("%q\n got  %s\n want %s", doc.Text(), g, w)
+			}
+		}
+	})
 }
 
 // TestDocumentEarlierTrees checks what happens to a tree returned by an earlier parse: nodes

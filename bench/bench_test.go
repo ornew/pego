@@ -387,6 +387,38 @@ func BenchmarkIncremental(b *testing.B) {
 	}
 }
 
+// BenchmarkIncrementalLong repeats a one-character edit in the middle of a long CSV file (50000
+// records) followed by a parse with a Document.
+func BenchmarkIncrementalLong(b *testing.B) {
+	p := load(b, "../examples/csv/csv.pego")
+	input := CSVInput(50000)
+	at := utf8.RuneCountInString(input[:strings.Index(input, "\n25000,")+len("\n25000,")])
+	for _, be := range backends {
+		b.Run(be.name, func(b *testing.B) {
+			doc, err := p.NewDocument(input, pego.WithBackend(be.b))
+			if err != nil {
+				b.Fatal(err)
+			}
+			if _, err := doc.Parse(); err != nil {
+				b.Fatal(err)
+			}
+			b.ReportAllocs()
+			i := 0
+			for b.Loop() {
+				if i%2 == 0 {
+					doc.Edit(at, at, "z")
+				} else {
+					doc.Edit(at, at+1, "")
+				}
+				i++
+				if _, err := doc.Parse(); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
+
 // BenchmarkStream parses CSV as a stream, receiving one record at a time.
 func BenchmarkStream(b *testing.B) {
 	p := load(b, "../examples/csv/csv.pego")

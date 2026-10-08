@@ -726,7 +726,8 @@ the position, and the result, together with **the range of input the call looked
 character that was examined to decide, such as the character after a `+` that ended it, and lookahead). When the text is
 edited, an entry stays valid if the edit lies outside the range it examined, and is dropped otherwise. The next `Parse`
 runs the grammar from the start rule as usual, but each rule call that finds a valid entry returns its result without
-running. The result is always the same as parsing the new text from scratch (a randomized test in
+running. A long repetition is not even run element by element: it **resumes** its run from the last parse (see
+[What is reused, and why](#what-is-reused-and-why)). The result is always the same as parsing the new text from scratch (a randomized test in
 `internal/engine/document_test.go` checks the node tree, the positions and the syntax errors against a fresh parse after
 each of 2,000 random edits, on every backend).
 
@@ -737,7 +738,7 @@ each of 2,000 random edits, on every backend).
 | `p.NewDocument(text, opts...)` | A document holding `text`. Options: `WithUnit` (also the unit of `Edit`) and `WithBackend`. Fails for `RecognizeOnly`, for an unavailable backend (`Closure` on a parser saved without its AST), and for an unknown start rule. Nothing is parsed yet. |
 | `doc.Edit(start, end, text)` | Replace `[start, end)` with `text`, in the document's unit. `start == end` inserts, an empty `text` deletes. An error if the range is outside the text, and with `Bytes`, if `start` or `end` is inside a character. Does not parse. |
 | `doc.Parse()` | Parse the current text. Results and errors are those of `Parser.Parse`, including `SyntaxErrors` returned with a tree for recovered errors. |
-| `doc.Stats()` | `ParseStats{Evaluated, Reused}` of the last `Parse`: rule bodies run, and memo results used. |
+| `doc.Stats()` | `ParseStats{Evaluated, Reused}` of the last `Parse`: rule bodies run, and results used again (memo results and the elements of resumed repetitions). |
 | `doc.Text()` | The current text. |
 
 A `Document` is not safe for concurrent use; a `Parser` is, so use one `Document` per goroutine and share the `Parser`.
@@ -897,10 +898,22 @@ Consequences, all of which can be read off the numbers in the next section:
 - **Variables are fine.** Rules that read [variables](../../spec/predicates.md#interaction-with-memoization) are memoized
   per combination of variable values and reused like any other (see the table below).
 
+**Long repetitions resume.** The rule that contains the edit runs again, and with it any repetition in it, such as the
+`line*` of a whole file. Run element by element, that would be a memo lookup per line, so a `Document` also records the
+run of every repetition of 16 elements or more: where each element started and ended, the range it examined, its value
+and its expectations. When the repetition runs again after one edit, the elements before the edit are taken as they
+are, the parse continues from there, and as soon as an element ends where an old element after the edit began (moved by
+the edit), the rest of the old run is taken too, its nodes moved in place. Each reused element counts in `Reused`. The
+conditions are those of memo entries, applied per element; in addition, a repetition is not resumed when an element has
+a predicate (`[...]`) or calls a rule that reads variables, when its run recovered an error or used a left recursion
+that was still growing, and its elements are not moved past an edit that changed the length when their values may
+contain positions. Only the closure backend (the default) resumes repetitions; the bytecode backends look up each
+element in the memo table.
+
 ### Writing grammars that reuse well
 
 The table shows what one edit costs after a first parse, for eight grammars of a 1,000-line `item_a = 0` file. The
-program changes one digit on line 500 and prints `Stats`:
+program inserts a digit on line 500 and prints `Stats`:
 
 <details>
 <summary>The program</summary>
@@ -1000,13 +1013,13 @@ func main() {
 		doc.Parse() // a recovered error is returned together with the tree; ignore it here
 		first := doc.Stats()
 
-		// Replace the first digit of the number on line 500.
+		// Insert a digit before the number on line 500.
 		start := strings.Index(v.text, "item_")
 		for i := 1; i < 500; i++ {
 			start += strings.IndexByte(v.text[start:], '\n') + 1
 		}
 		pos := start + len("item_a = ") // the text is ASCII, so bytes are code points
-		if err := doc.Edit(pos, pos+1, "9"); err != nil {
+		if err := doc.Edit(pos, pos, "9"); err != nil {
 			log.Fatal(err)
 		}
 		doc.Parse()
@@ -1027,7 +1040,7 @@ startPos in an action        evaluated 3003     evaluated 1004  reused 1001
 right-recursive list         evaluated 4004     evaluated 503   reused 501
 lookahead to the end of text evaluated 3003     evaluated 502   reused 1500
 #recover, bad line 900       evaluated 3002     evaluated 4     reused 1001
-everything in one rule       evaluated 1        evaluated 1     reused 0
+everything in one rule       evaluated 1        evaluated 1     reused 999
 ```
 
 - Give every unit you want to reuse its own rule: a line, a statement, a declaration, a list item. Three evaluations
@@ -1042,8 +1055,10 @@ everything in one rule       evaluated 1        evaluated 1     reused 0
   for you) when you walk the tree.
 - **Avoid lookahead that can reach the end of the text.** Here every line examines up to the end of the document, so
   every line before the edit is dropped (502 evaluations, half the document).
-- Everything in one rule (the last row) has "1 evaluation" and nothing reused. The count is of rule bodies, not of work:
-  that one body scans the whole document. Judge a grammar by time as well as by `Stats`.
+- Everything in one rule (the last row) has "1 evaluation", and its repetition resumes: 999 of the 1,000 lines are
+  reused, and only the edited one is parsed again. That works because the repetition is flat; anything nested inside
+  a line (a rule-less expression, a list) is parsed again with its line. Rules remain the unit of reuse everywhere else,
+  and `Stats` counts rule bodies, not work: judge a grammar by time as well.
 
 ### Performance and limits
 
@@ -1189,36 +1204,38 @@ func main() {
 
 ```
 settings, one rule per line
-    1000 lines: Parse 230µs    NewDocument+Parse 490µs    Edit 20µs     reparse 40µs     (evaluated 3, reused 1001) equal=true
-   10000 lines: Parse 2.31ms   NewDocument+Parse 4.31ms   Edit 220µs    reparse 320µs    (evaluated 3, reused 10001) equal=true
-  100000 lines: Parse 25.44ms  NewDocument+Parse 40.07ms  Edit 2.78ms   reparse 9.18ms   (evaluated 3, reused 100001) equal=true
-  memory at 100000 lines (1.9 MiB of text): tree from Parse 27 MiB, Document with its tree 143 MiB
+    1000 lines: Parse 250µs    NewDocument+Parse 600µs    Edit 30µs     reparse 20µs     (evaluated 3, reused 1001) equal=true
+   10000 lines: Parse 2.65ms   NewDocument+Parse 5.51ms   Edit 260µs    reparse 70µs     (evaluated 3, reused 10001) equal=true
+  100000 lines: Parse 26.24ms  NewDocument+Parse 44.35ms  Edit 3.09ms   reparse 590µs    (evaluated 3, reused 100001) equal=true
+  memory at 100000 lines (1.9 MiB of text): tree from Parse 27 MiB, Document with its tree 151 MiB
 calc (Pratt expressions)
-    1000 lines: Parse 1.87ms   NewDocument+Parse 2.29ms   Edit 30µs     reparse 50µs     (evaluated 3, reused 1002) equal=true
-   10000 lines: Parse 16.78ms  NewDocument+Parse 19.05ms  Edit 280µs    reparse 420µs    (evaluated 3, reused 10002) equal=true
-  100000 lines: Parse 150.92ms NewDocument+Parse 172.84ms Edit 3.64ms   reparse 10.73ms  (evaluated 3, reused 100002) equal=true
+    1000 lines: Parse 1.86ms   NewDocument+Parse 2.35ms   Edit 30µs     reparse 30µs     (evaluated 3, reused 1002) equal=true
+   10000 lines: Parse 16.7ms   NewDocument+Parse 19.45ms  Edit 310µs    reparse 190µs    (evaluated 3, reused 10002) equal=true
+  100000 lines: Parse 151.51ms NewDocument+Parse 174.27ms Edit 4.04ms   reparse 1.77ms   (evaluated 3, reused 100002) equal=true
 settings, everything in one rule
-    1000 lines: Parse 170µs    NewDocument+Parse 170µs    Edit 0s       reparse 160µs    (evaluated 1, reused 0) equal=true
-   10000 lines: Parse 2.08ms   NewDocument+Parse 1.98ms   Edit 30µs     reparse 1.65ms   (evaluated 1, reused 0) equal=true
-  100000 lines: Parse 18.13ms  NewDocument+Parse 17.76ms  Edit 330µs    reparse 18.99ms  (evaluated 1, reused 0) equal=true
+    1000 lines: Parse 170µs    NewDocument+Parse 200µs    Edit 10µs     reparse 10µs     (evaluated 1, reused 999) equal=true
+   10000 lines: Parse 2.08ms   NewDocument+Parse 2.32ms   Edit 60µs     reparse 70µs     (evaluated 1, reused 9999) equal=true
+  100000 lines: Parse 19.18ms  NewDocument+Parse 19.31ms  Edit 620µs    reparse 580µs    (evaluated 1, reused 99999) equal=true
 ```
 
 Reading the table:
 
-- **The cost still grows with the document, but slowly.** `Edit` splices the text, its offset table and the memo table
-  in place, but it still visits every memo entry (about 300,000 at 100,000 lines) and moves everything after the edit,
-  and the reparse makes one memo lookup per line and, when the edit changed the length of the text, moves the nodes
-  of the reused results after the edit in place. Both are linear in the size of the document, with small constants:
-  at 100,000 lines an edit costs about 3 ms and the reparse about 9 ms.
+- **The reparse hardly grows with the document; `Edit` still does.** The program replaces one digit, so nothing after
+  the edit moves: the reparse takes the lines before and after the edit from the resumed `line*` and parses one line,
+  about 0.6 ms at 100,000 lines (it was 9 ms when every line was a memo lookup). An edit that changes the length also
+  moves the nodes of every reused line after it in place, which is linear in the size of the document. `Edit` splices
+  the text, its offset table and the memo table in place, but it still visits every memo entry (about 300,000 at
+  100,000 lines) and moves everything after the edit: about 3 ms at 100,000 lines.
 - **The gain depends on how much a reused unit costs.** With the Pratt-expression lines, `Edit` and the reparse together
-  take about 14 ms against 151 ms for a fresh parse at 100,000 lines. With the cheap `key = value` lines, about 12 ms
-  against 25 ms. With everything in one rule there is no gain (about 19 ms against 18 ms): the one rule is evaluated
-  again from scratch.
+  take about 6 ms against 152 ms for a fresh parse at 100,000 lines. With the cheap `key = value` lines, about 4 ms
+  against 26 ms. Everything in one rule gains too (about 1.2 ms against 19 ms): its repetition resumes, and the table
+  that `Edit` walks is small, since there is only one rule call.
 - **The first parse is slower than `Parse`** (up to about 1.5 times with cheap rules, close to equal otherwise), because
   every rule call is memoized (an ordinary parse memoizes only calls that repeat).
 - **Memory is a multiple of the tree.** The line starting "memory" shows the live heap for the first grammar at 100,000
   lines: the tree from `Parse` alone against a `Document` that also holds the memo table (an entry per rule call), the
-  text as code points (four bytes each) and an offset table next to the string.
+  records of long repetitions (about 80 bytes per element), the text as code points (four bytes each) and an offset
+  table next to the string.
 - **Every `Edit` walks the memo table**, so a burst of small edits still costs one walk each (about 3 ms at 100,000
   lines in the table above). When an editor delivers a burst of changes, merging adjacent ones into a single `Edit`
   (replace the smallest range that covers them) and calling `Parse` once is cheaper.
@@ -1303,10 +1320,10 @@ func main() {
 ```
 $ go run ./jsondoc examples/json/json.pego
 282783 bytes
-Parse:                19ms
-first Document.Parse: 37ms {338896 10001}
-Edit:                 2.2ms
-reparse:              1.44ms {11 15016}
+Parse:                18ms
+first Document.Parse: 44ms {338896 10001}
+Edit:                 2.43ms
+reparse:              1.16ms {11 15016}
 ```
 
 The full parse evaluates 338,896 rule bodies; after the edit 11 run and 15,016 results are reused.

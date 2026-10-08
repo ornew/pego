@@ -173,6 +173,8 @@ type compiler struct {
 	// is being checked.
 	noIndex string
 	descIDs map[string]expID
+	// runSites numbers the repetitions that a Document can resume (resume.go).
+	runSites int
 }
 
 // desc returns the index of an expectation string (adding it to Program.descs).
@@ -977,7 +979,15 @@ func (c *compiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) match
 	m := c.expr(e.Expr, elemScope, build)
 	ownScope := elemScope != s
 	min, max := e.Min, e.Max
+	var rs *runSite
+	if c.resumable(e.Expr) { // a Document parse is not a stream: #stream has no effect there
+		c.runSites++
+		rs = &runSite{id: c.runSites, m: m, scope: elemScope, ownScope: ownScope, build: build, min: min, max: max, shiftable: !c.positional(e.Expr)}
+	}
 	return func(p *parser) (*Node, bool) {
+		if rs != nil && p.runs != nil && p.silent == 0 {
+			return p.resumeRepeat(rs)
+		}
 		start := p.pos
 		base := len(p.kidStack) // collect the element values
 		count := 0

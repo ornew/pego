@@ -25,6 +25,10 @@ type Document struct {
 	memo  *memoTable
 	stats Stats
 	edits []docEdit // all edits so far; nodes record how many their positions account for
+	runs  map[runKey]*runRecord
+	kids  []*Node // the parser's stack of repetition values, kept for the next parse
+	// resumed is the number of repetition elements the last Parse resumed (for tests).
+	resumed int
 }
 
 // maxEdits bounds the edit log: when it is full, the memo is dropped and the log restarts. It is a
@@ -57,9 +61,13 @@ func (d *Document) Stats() Stats { return d.stats }
 
 // Parse parses the current text.
 func (d *Document) Parse() (*Node, error) {
-	p := &parser{prog: d.prog, input: d.in, memo: d.memo, memoAll: true, maxDepth: d.depth, gen: uint32(len(d.edits)), edits: d.edits}
+	p := &parser{prog: d.prog, input: d.in, memo: d.memo, memoAll: true, maxDepth: d.depth, gen: uint32(len(d.edits)), edits: d.edits,
+		runs: map[runKey]*runRecord{}, lastRuns: d.runs, kidStack: d.kids}
 	n, err := d.prog.run(p, d.back, d.start)
 	d.stats = p.stats
+	d.runs, d.resumed = p.runs, p.resumed
+	d.kids = p.kidStack[:0]
+	clear(d.kids[:cap(d.kids)]) // let go of the nodes
 	// Keep the tables the parse built on demand, so that later parses and edits reuse them.
 	d.in.offs, d.in.lines = p.offs, p.lines
 	return n, err
@@ -81,7 +89,7 @@ func (d *Document) Edit(start, end int, text string) error {
 	}
 	delta := d.in.replace(start, end, text)
 	if len(d.edits) == maxEdits {
-		d.memo, d.edits = newMemoTable(), nil
+		d.memo, d.edits, d.runs = newMemoTable(), nil, nil
 		return nil
 	}
 	d.edits = append(d.edits, docEdit{start, end, delta})

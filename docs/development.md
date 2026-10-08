@@ -39,7 +39,7 @@ This document describes the repository layout, the architecture of the implement
 | Input | `input.go` | Position units, incremental reading and discarding of stream input |
 | Actions | `eval.go` | Evaluation of action and predicate expressions |
 | Pratt expressions | `pratt.go` | The Pratt loop and longest-match operator selection |
-| Incremental parsing | `document.go` | Reuse of memo entries across edits |
+| Incremental parsing | `document.go`, `resume.go` | Reuse of memo entries across edits; resuming long repetitions |
 | Bytecode | `bytecode.go`, `bcompile.go`, `disasm.go`, `vm.go`, `ivm.go` | Bytecode module, compiler, disassembler, recursive and iterative VMs |
 | Compiled grammars | `compiled.go`, `modulefile.go` | The `.pegoc` file format |
 | Code generation | `gen.go`, `genrt/` | Generation of standalone Go parsers |
@@ -87,7 +87,7 @@ For stream parsing, input is read from a `bufio.Reader` only as far as needed (`
 
 ### Incremental parsing
 
-Each memo entry records the range of input it examined (`document.go`). After an edit, entries that lie entirely before the edit are reused as they are, and entries that lie entirely after it are reused with shifted positions ([design](design/007-streaming-and-incremental-parsing.md)). Repetitions that an action only takes apart with `map($x, (e) => $e.f)` are compiled to gather the field directly in every backend (`project.go`). An edit splices the text, its offset table and the memo table in place (`input.replace`, `memoTable.splice`) and is recorded in the document's edit log. A shifted entry's nodes are moved in place when the entry is first reused (`moveResult`): each node records how many edits its positions account for (`Node.gen`), and an edit never falls inside a reused node, so a non-empty node's positions tell which later edits move it. Empty nodes at an insertion point are ambiguous (they can belong to results on both sides) and are copied instead.
+Each memo entry records the range of input it examined (`document.go`). After an edit, entries that lie entirely before the edit are reused as they are, and entries that lie entirely after it are reused with shifted positions ([design](design/007-streaming-and-incremental-parsing.md)). Repetitions that an action only takes apart with `map($x, (e) => $e.f)` are compiled to gather the field directly in every backend (`project.go`). An edit splices the text, its offset table and the memo table in place (`input.replace`, `memoTable.splice`) and is recorded in the document's edit log. A shifted entry's nodes are moved in place when the entry is first reused (`moveResult`): each node records how many edits its positions account for (`Node.gen`), and an edit never falls inside a reused node, so a non-empty node's positions tell which later edits move it. Empty nodes at an insertion point are ambiguous (they can belong to results on both sides) and are copied instead. In the closure backend, a repetition of 16 elements or more records its run, and after an edit it reuses the elements before the edit and, once its elements line up with the old ones again, the rest of the old run (`resumeRepeat`), so that a reparse need not look up every line of a file in the memo table.
 
 ### Code generation
 

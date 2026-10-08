@@ -86,6 +86,12 @@ type parser struct {
 	// moveBase and baseShift are the generation and the shift of the memo entry being moved.
 	moveBase  uint32
 	baseShift int
+	// runs and lastRuns are the repetition runs recorded in this Document parse and the previous
+	// one (resume.go). runs is nil outside Document parses.
+	runs, lastRuns map[runKey]*runRecord
+	// provisional counts the uses of provisional results of growing left recursions.
+	provisional int
+	resumed     int // elements reused by resumeRepeat (for tests)
 	// nodeChunks counts the node chunks allocated since the last splitChunks.
 	nodeChunks int
 	funcSlab   []vmFunc
@@ -403,6 +409,8 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit boo
 		p.stats.Reused++
 		if !e.growing {
 			p.mergeExpected(e.far, e.expected)
+		} else {
+			p.provisional++
 		}
 		if e.shifted {
 			p.moveResult(e)

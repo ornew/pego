@@ -42,6 +42,16 @@ As in Dubroy and Warth's "Incremental Packrat Parsing", each memo entry records 
 - Rules that refer to variables are memoized per combination of the values of those variables at the call (see [performance.md](../performance.md#12-memoizing-rules-that-read-variables)), so an entry is reused only in the same environment.
 - So that expectations for syntax errors can be recorded again when a memo entry is used, each entry also stores the farthest failure position and the expectations recorded during the call. A parse that reuses entries therefore reports the same syntax errors as a fresh parse.
 
+### Resuming repetitions
+
+The rule that contains an edit runs again, and with it any repetition in its body, element by element: for the `line*` of a file, a memo lookup per line, which is work in proportion to the document (performance.md change 54). A repetition run in a `Document` parse therefore records its run when it has 16 elements or more (`resume.go`): per element, its start and end, the range it examined, its farthest-failure expectations, and its value. When the repetition runs again after exactly one edit, at the same position or the one the edit moved it to, it takes over the old run:
+
+- The elements that examined only input before the edit are reused as they are, in order, as memo entries before the edit would be.
+- From the first element that examined the edit, elements are parsed again. Before each one, if the current position, mapped back across the edit, is where an old element began, and that element and every one after it examined only input after the edit, the rest of the old run is reused, its nodes moved in place by the edit's delta as for a shifted memo entry (`moveValue`). The parse then continues from the end of the old run as usual, so the attempt that ended the repetition is made again.
+- Reusing an element replays what running it would have done to the enclosing call: it extends the examined range (both ends), records its expectations, and pushes its value.
+
+An element is a function of the input it examined only under the conditions that memo entries rely on, and a few more, since an element is an expression rather than a rule call: no predicate in the element (it may read variables from the enclosing rule) and no call of a rule that reads variables; no recovered error and no provisional result of a growing left recursion in the run (the run is then not recorded); and no position values in the elements' values when the edit changes the length. Captures need nothing special: an element with captures gets its own frame, and one without them cannot write to the enclosing frame. The old run is updated in place (it is taken out of the previous parse's records, so no other run of the same parse can see it half-updated), and the records of a parse replace those of the previous one, so stale records do not accumulate. Only the closure backend resumes repetitions.
+
 ### Verification
 
 A test applies random edits repeatedly and checks that the result of incremental parsing (the node tree, including positions, and the syntax errors) equals the result of parsing the edited text from scratch (`internal/engine/document_test.go`).
