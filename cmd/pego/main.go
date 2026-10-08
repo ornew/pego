@@ -9,7 +9,7 @@
 //	pego compile -g grammar.pego [-s main] [-no-ast] -o grammar.pegoc
 //	pego trace -g grammar.pego [-s main] [-i input] [-max-depth n] [-rule name] [-failures] [-f text|json]
 //	pego profile -g grammar.pego [-s main] [-i input] [-sort column] [-n rows] [-f text|json]
-//	pego explain -g grammar.pego [-s main] [-i input] [-n stacks]
+//	pego explain -g grammar.pego [-s main] [-i input] [-n calls]
 package main
 
 import (
@@ -69,9 +69,10 @@ Commands:
       Parse the input and print the cost of each rule, with hints on where
       the grammar does more work than it needs to.
 
-  explain -g <grammar> [-s <rule>] [-i <input>] [-n <stacks>] [-unit u] [-backend b]
+  explain -g <grammar> [-s <rule>] [-i <input>] [-n <calls>] [-unit u] [-backend b]
       Parse the input and, for a syntax error, print the rule calls that
-      failed at its position, each with the calls it was nested in.
+      recorded what it says was expected, each with the calls it was
+      nested in.
 
 A <grammar> is PEGO source (.pego), a grammar in JSON (.json), or a
 grammar compiled with pego compile (.pegoc).
