@@ -13,6 +13,9 @@ This document describes the repository layout, the architecture of the implement
 | `internal/engine/genrt/` | Runtime code embedded in generated parsers |
 | `cmd/pego/` | Command-line tool |
 | `examples/` | Example grammars, with golden tests |
+| `playground/` | WebAssembly API used by the web playground (package `main`; `GOOS=js GOARCH=wasm`) |
+| `site/` | Web site generator (a separate Go module): landing page, docs, reference and playground; build with `site/build.sh` |
+| `netlify.toml` | Netlify build configuration for the site |
 | `bench/` | Benchmarks comparing the backends with each other and with standard-library parsers (`gen/` holds generated parsers). Results are in [benchmarks.md](benchmarks.md). |
 | `spec/` | Language specification |
 | `docs/tutorial/` | Tutorials (getting started) |
@@ -128,6 +131,8 @@ go test ./...
 
 Engine tests write grammars in PEGO source and compare results using the S-expression form of nodes (`Node.String`).
 The `check` helper also verifies that the result is the same with memoization disabled, with every backend (closure, recursive bytecode, iterative bytecode), with both position units, in recognition-only mode, and with tracing on.
+
+`cd site && go test ./...` builds the site and checks its pages and links; `go test ./playground` runs the WebAssembly smoke test when Node is installed.
 
 ## Language feature status
 

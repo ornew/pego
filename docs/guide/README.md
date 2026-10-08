@@ -14,3 +14,4 @@ The normative definition of the language is the [specification](../../spec/READM
 | [Code generation](code-generation.md) | Standalone Go parsers with `pego gen`: the generated API, typed values (`-types`), what is supported, keeping generated code up to date, trade-offs |
 | [Streaming and incremental parsing](streaming-and-incremental.md) | `#stream` and `ParseStream` for unbounded input; `Document` for reparsing after edits; what is reused and how to write grammars that reuse well |
 | [Debugging and profiling](debugging.md) | Why an input fails (`pego explain`), what the parser does (`pego trace`), why a parse is slow (`pego profile`) and how to read the profile, `WithTrace` and `WithProfile` in Go, costs and limits |
+| [The web site and the playground](playground.md) | Using the playground (tree view, errors, shared links, generated Go), building and previewing the site, deploying on Netlify, the WebAssembly API |
