@@ -1808,7 +1808,20 @@ func (p *parser) apply(a *prattAttempt) {
 	p.recovered = append(p.recovered, a.errs...)
 }
 
+// prattParse parses an expression with operators that bind tighter than min. Each level of its
+// recursion (the operand of a prefix operator, the right operand of an infix operator) counts
+// against the nesting limit, like a rule call.
 func (p *parser) prattParse(r *rule, min int) (*Node, bool) {
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.prattExpr(r, min)
+	p.depth--
+	return v, ok
+}
+
+func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 	pr := r.pratt
 	lhs, ok := p.prattNud(r)
 	if !ok {
@@ -3314,7 +3327,18 @@ func (p *tparser) apply(a *tprattAttempt) {
 	p.recovered = append(p.recovered, a.errs...)
 }
 
+// prattParse is parser.prattParse for typed values.
 func (p *tparser) prattParse(r *trule, min int) (any, bool) {
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.prattExpr(r, min)
+	p.depth--
+	return v, ok
+}
+
+func (p *tparser) prattExpr(r *trule, min int) (any, bool) {
 	pr := r.pratt
 	lhs, ok := p.prattNud(r)
 	if !ok {

@@ -196,8 +196,21 @@ func (p *parser) apply(a *prattAttempt) {
 }
 
 // prattParse parses an expression, absorbing only operators that bind tighter than binding level
-// min.
+// min. The operand of a prefix operator and the right operand of an infix operator are parsed by
+// recursion, so each level counts as a rule call against the nesting limit: a chain of prefix or
+// right-associative operators would otherwise nest without bound on the goroutine stack.
 func (p *parser) prattParse(r *rule, min int) (*Node, bool) {
+	p.depth++
+	if p.depth > p.maxDepth {
+		p.fail("nesting too deep: more than %d rule calls", p.maxDepth)
+	}
+	v, ok := p.prattExpr(r, min)
+	p.depth--
+	return v, ok
+}
+
+// prattExpr is the body of prattParse.
+func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 	pr := r.pratt
 	lhs, ok := p.prattNud(r)
 	if !ok {

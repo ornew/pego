@@ -1785,7 +1785,19 @@ class Parser {
     }
   }
 
+  // prattParse parses an expression with operators that bind tighter than min. Each level of its
+  // recursion (the operand of a prefix operator, the right operand of an infix operator) counts
+  // against the nesting limit, like a rule call.
   prattParse(r: Rule, min: number): R {
+    if (++this.depth > maxDepth) {
+      this.tooDeep();
+    }
+    const v = this.prattExpr(r, min);
+    this.depth--;
+    return v;
+  }
+
+  prattExpr(r: Rule, min: number): R {
     const pr = r.pratt as Pratt;
     let lhs = this.prattNud(r);
     if (lhs === undefined) {

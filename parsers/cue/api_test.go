@@ -385,10 +385,13 @@ func TestDepth(t *testing.T) {
 			t.Errorf("%s: only %d levels are valid", c.name, lo)
 		}
 	}
-	// A chain of prefix operators is read in a loop of the engine's Pratt parser, which does not count it against
-	// the limit: a million of them overflows the stack (see the README).
-	if !Valid("x: " + strings.Repeat("-", 100000) + "1\n") {
-		t.Errorf("100,000 prefix operators are not valid")
+	// Each prefix operator of a chain counts against the limit (the Pratt parser reads its operand by
+	// recursion): about 100,000 are valid, and a million are an error, not a stack overflow.
+	if !Valid("x: " + strings.Repeat("-", 90000) + "1\n") {
+		t.Errorf("90,000 prefix operators are not valid")
+	}
+	if Valid("x: " + strings.Repeat("-", 1000000) + "1\n") {
+		t.Errorf("1,000,000 prefix operators are valid")
 	}
 }
 

@@ -86,6 +86,34 @@ def x = pratt {
 	}
 }
 
+// TestPrattNestingLimit checks that chains of prefix and right-associative operators, which a
+// Pratt expression parses by recursion, count against the nesting limit on the recursive
+// backends: they fail with an error instead of overflowing the goroutine stack.
+func TestPrattNestingLimit(t *testing.T) {
+	prog := compile(t, `
+def main = x $$
+def x = pratt {
+    operand "x"
+    level { infix right "^" }
+    level { prefix "-" }
+}`)
+	const depth = 3 * DefaultMaxDepth
+	for _, in := range []string{strings.Repeat("-", depth) + "x", strings.Repeat("x^", depth) + "x"} {
+		for _, b := range []Backend{Closure, Bytecode} {
+			if _, err := prog.ParseWith("main", in, ParseOptions{Backend: b}); err == nil || !strings.Contains(err.Error(), "nesting too deep") {
+				t.Errorf("%v, input %.10q...: got %v, want a nesting error", b, in, err)
+			}
+		}
+		// Within the limit, the recursive backends parse such chains.
+		short := in[len(in)-2*(DefaultMaxDepth/4)-1:]
+		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+			if n, err := prog.ParseWith("main", short, ParseOptions{Backend: b}); err != nil || int(n.End) != len(short) {
+				t.Errorf("%v, input %.10q...: %v", b, short, err)
+			}
+		}
+	}
+}
+
 // TestConcurrentParses runs parses with every backend and in recognition mode concurrently on
 // one Program (whose backends are prepared lazily), and checks that each gets the result of a
 // parse on its own. Run with -race to check that per-parse state is not shared.

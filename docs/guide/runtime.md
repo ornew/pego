@@ -425,6 +425,10 @@ n, err := p.Parse(input, pego.WithBackend(pego.BytecodeIterative), pego.WithMaxD
 // nesting too deep: more than 100 rule calls
 ```
 
+A Pratt expression reads the operand of a prefix operator and the right operand of an infix operator by recursion,
+so each operator of a chain of prefix or right-associative operators (`---x`, `a ^ b ^ c ^ ...`) counts as one more
+nested call; chains of left-associative operators are read in a loop and do not nest.
+
 Two things to know:
 
 - Lowering the limit is safe on every backend, and is a good idea for untrusted input: it bounds the work and the memory

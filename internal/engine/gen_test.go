@@ -149,6 +149,15 @@ func TestGeneratedParsersMatchEngine(t *testing.T) {
 def main = n
 def n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x" + strings.Repeat(")", DefaultMaxDepth-2),
 		strings.Repeat("(", DefaultMaxDepth-1) + "x" + strings.Repeat(")", DefaultMaxDepth-1)}})
+	// Chains of prefix and right-associative operators count against the limit too (a Pratt
+	// expression parses them by recursion).
+	cases = append(cases, genCase{"pratt nesting limit", `
+def main = x
+def x = pratt {
+    operand "x"
+    level { infix right "^" }
+    level { prefix "-" }
+}`, []string{strings.Repeat("-", 3*DefaultMaxDepth) + "x", strings.Repeat("x^", 3*DefaultMaxDepth) + "x", strings.Repeat("-", DefaultMaxDepth/4) + "x"}})
 	dir := t.TempDir()
 	write := func(name, content string) {
 		path := filepath.Join(dir, name)

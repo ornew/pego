@@ -104,6 +104,8 @@ func RecognizeOnly() ParseOption {
 }
 
 // WithMaxDepth limits the nesting of rule calls to n; deeper nesting makes the parse fail with an error.
+// The operand of a prefix operator and the right operand of an infix operator of a Pratt expression
+// nest like rule calls.
 // The default is 100,000 (10,000,000 for BytecodeIterative). The limit keeps runaway recursion from
 // exhausting the stack or memory. The Closure and Bytecode backends nest rule calls on the goroutine
 // stack, so raising the limit far above the default can exceed Go's maximum stack size, which aborts

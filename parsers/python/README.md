@@ -115,8 +115,9 @@ The others run CPython 3.14 and are skipped without it.
   also rejects very deep expressions: `MemoryError: Parser stack overflowed` for 3,000 nested `lambda:` or 3,000
   `**` (`a**b**...`) and 10,000 `not` (but not for 3,000 `not`), `RecursionError` in the compiler for a chain of
   20,000 `+` or attributes. This parser accepts all of them: its limit is the generated parser's 100,000 rule calls
-  (between 40,000 and 50,000 levels of `not`, `lambda:` or conditionals; chains of operators and prefix operators
-  are not nested), beyond which it fails with an error instead of exhausting the stack.
+  (between 40,000 and 50,000 levels of `not`, `lambda:` or conditionals, and 99,978 unary operators `-`, `+`, `~` or
+  `**` in a chain; chains of binary operators other than `**` are not nested), beyond which it fails with an error
+  instead of exhausting the stack.
 - **`Span`s are not CPython's positions** in a few places: the span of a binary operation, attribute, subscript or
   call does not include the parentheses of an operand at its edge, the span of a decorated definition starts at the
   first decorator, and that of a compound statement stops before a `;` that ends its last line. `DumpWithPositions`

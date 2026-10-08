@@ -1326,7 +1326,18 @@ func (p *tparser) apply(a *tprattAttempt) {
 	p.recovered = append(p.recovered, a.errs...)
 }
 
+// prattParse is parser.prattParse for typed values.
 func (p *tparser) prattParse(r *trule, min int) (any, bool) {
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.prattExpr(r, min)
+	p.depth--
+	return v, ok
+}
+
+func (p *tparser) prattExpr(r *trule, min int) (any, bool) {
 	pr := r.pratt
 	lhs, ok := p.prattNud(r)
 	if !ok {

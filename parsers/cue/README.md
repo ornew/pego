@@ -135,10 +135,8 @@ function of it.
 - **Nesting.** `cue/parser` rejects expressions nested 10,000 levels deep ("expression exceeds maximum nesting
   depth"); this parser stops at the generated parser's limit of 100,000 rule calls and reports an error, at a depth that
   depends on the construct (`TestDepth` measures it: 8,331 levels of structs, 14,282 of lists, 19,995 of
-  parentheses, about 50,000 of calls). Input nested between the two limits is accepted by one and rejected by the other.
-- **A chain of prefix operators** (`---...1`) is not counted against the limit (the engine's Pratt parser recurses
-  without counting it): a million operators (1 MB) overflow the goroutine stack with a fatal error, which `recover`
-  cannot catch; 700,000 are fine. Limit the size of untrusted input.
+  parentheses, about 50,000 of calls, 99,981 prefix operators in a chain). Input nested between the two limits is
+  accepted by one and rejected by the other.
 - **Language versions.** Only the latest syntax is read: there is no `@lang` version selection of older releases.
 - **Invalid UTF-8.** `ParseFile` rejects it as `cue/parser` does; `ParseAST` reads it inside strings and comments as
   U+FFFD, and rejects it elsewhere.
