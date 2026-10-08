@@ -7,6 +7,7 @@
 //	refgen -probe file...       print the tree or the first error of each file
 //	refgen -cue DIR -stats      statistics of the corpus (the sources of a checkout of cue-lang/cue)
 //	refgen -cue DIR -o OUTDIR   write OUTDIR/corpus.tar.gz, OUTDIR/mutants.txt.gz and OUTDIR/generated.txt.gz
+//	refgen -bench FILE          time the reference parser on a file (the default mode, without comments)
 //	refgen -cue DIR -mutants FILE -per N -seed S   write the results of more mutations
 package main
 
@@ -34,6 +35,7 @@ func main() {
 	seed := flag.Uint64("seed", 0, "with -o: the first seed of the mutations")
 	mutantsOnly := flag.String("mutants", "", "write only this file of results of mutations (with -per and -seed)")
 	generated := flag.String("generated", "", "write only this file of results of generated inputs (with -count and -seed)")
+	bench := flag.String("bench", "", "time the reference parser on this file")
 	count := flag.Int("count", 5000, "with -o or -generated: the number of inputs of each family")
 	flag.Parse()
 	switch {
@@ -66,6 +68,12 @@ func main() {
 			}
 		}
 		fmt.Printf("sources %d (%d bytes), accepted %d (%d bytes, trees %d bytes)\n", len(srcs), total, acc, accBytes, treeBytes)
+	case *bench != "":
+		src, err := os.ReadFile(*bench)
+		if err != nil {
+			fatal(err)
+		}
+		runBench(src)
 	case *generated != "":
 		if err := writeGenerated(*generated, *count, *seed); err != nil {
 			fatal(err)
