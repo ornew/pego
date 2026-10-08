@@ -106,7 +106,7 @@ The build output (`site/dist`) is not committed.
 | URL | Source |
 |:--|:--|
 | `/` | The landing page, assembled from [`README.md`](../../README.md): the tagline and introduction, a live example with the README's grammar, the feature list under "Why PEGO" as cards, and the following sections |
-| `/docs/tutorial/`, `/docs/guide/`, `/spec/`, `/docs/design/`, `/docs/…`, `/examples/` | The Markdown files of the repository, rendered at build time. Links between Markdown files become links between pages; links to other files of the repository go to GitHub. The design records get a generated index |
+| `/docs/tutorial/`, `/docs/guide/`, `/spec/`, `/docs/design/`, `/docs/…`, `/examples/` | The Markdown files of the repository, rendered at build time. Links between Markdown files (relative, relative to the repository root like `/spec/types.md`, or percent-encoded) become links between pages; links to other files of the repository go to GitHub. The design records get a generated index |
 | `/reference/` | The API reference of packages `pego` and `grammar`, generated from the Go source with `go/doc`, and the reference of the `pego` command, generated from what the command prints: its usage message and `pego <command> -h` for every command it lists. Types that are aliases of internal types (such as `Node`) show the definition and methods of the internal type |
 | `/playground/` | The playground: `app.js`, `worker.js`, `pego.wasm` built from [`playground/`](../../playground/), and `wasm_exec.js` from the Go distribution |
 | `/search-index.json` | The text of every page, for the search box in the header (press `/`) |

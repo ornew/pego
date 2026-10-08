@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html"
 	"io/fs"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -52,6 +53,14 @@ func checkLinks(out string) []string {
 				continue
 			}
 			target, frag, _ := strings.Cut(ref, "#")
+			// Fragments and paths are compared decoded: goldmark percent-encodes non-ASCII characters
+			// in link destinations, while ids are written as they are.
+			if f, err := url.PathUnescape(frag); err == nil {
+				frag = f
+			}
+			if t, err := url.PathUnescape(target); err == nil {
+				target = t
+			}
 			var tp string
 			if target == "" {
 				tp = file

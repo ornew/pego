@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"html/template"
 	"io/fs"
+	"net/url"
 	"os"
 	"os/exec"
 	"path"
@@ -304,7 +305,16 @@ func (s *Site) resolveLink(p *Page, dest string) string {
 	if hasFrag {
 		frag = "#" + frag
 	}
-	rp := path.Clean(path.Join(dirOf(p.Src), target))
+	// Paths may be percent-encoded ("my%20file.md"), and a path starting with "/" is relative to the
+	// root of the repository, as on GitHub.
+	if t, err := url.PathUnescape(target); err == nil {
+		target = t
+	}
+	base := dirOf(p.Src)
+	if strings.HasPrefix(target, "/") {
+		base, target = "", "."+target
+	}
+	rp := path.Clean(path.Join(base, target))
 	if rp == ".." || strings.HasPrefix(rp, "../") {
 		s.problems = append(s.problems, fmt.Sprintf("%s: link %s leaves the repository", p.Src, dest))
 		return dest
@@ -327,7 +337,7 @@ func (s *Site) resolveLink(p *Page, dest string) string {
 	if fi.IsDir() {
 		kind = "tree"
 	}
-	return s.cfg.GitHub + "/" + kind + "/" + s.cfg.Ref + "/" + rp + frag
+	return s.cfg.GitHub + "/" + kind + "/" + s.cfg.Ref + "/" + (&url.URL{Path: rp}).EscapedPath() + frag
 }
 
 // relURL returns the relative URL from the page at from to the page at to (both site paths of

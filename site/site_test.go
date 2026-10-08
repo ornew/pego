@@ -262,10 +262,11 @@ func TestCheckLinks(t *testing.T) {
 <a href="missing/">missing page</a> <a href="a/#nope">missing anchor</a> <a href="#gone">missing local anchor</a>
 <a href="https://example.com/x">external</a> <link href="style.css" rel="stylesheet"> <script src="gone.js"></script>
 <a href="../outside/">outside</a> <a href="a/?q=1&amp;r=2">query</a>`)
-	write("a/index.html", `<p id="x">x</p>`)
+	write("a/index.html", `<p id="x">x</p> <h2 id="unicode-あい">u</h2> <a href="#unicode-%E3%81%82%E3%81%84">ok</a>
+<a href="../a/#unicode-あい">ok</a> <a href="#unicode-%E3%81%82">missing</a>`)
 	write("style.css", ``)
 	problems := checkLinks(out)
-	want := []string{"missing/", "a/#nope", "#gone", "gone.js", "../outside/", "a/?q=1&r=2"}
+	want := []string{"missing/", "a/#nope", "#gone", "gone.js", "../outside/", "a/?q=1&r=2", "#unicode-%E3%81%82"}
 	if len(problems) != len(want) {
 		t.Fatalf("got %d problems, want %d:\n%s", len(problems), len(want), strings.Join(problems, "\n"))
 	}
@@ -296,6 +297,12 @@ func TestResolveLink(t *testing.T) {
 		{"../../README.md", "../../../"},
 		{"../../examples/json/json.pego", "https://github.com/ornew/pego/blob/main/examples/json/json.pego"},
 		{"../../examples/json/", "https://github.com/ornew/pego/tree/main/examples/json"},
+		// Links relative to the repository root and percent-encoded paths work on GitHub too.
+		{"/spec/pratt.md#levels", "../../../spec/pratt/#levels"},
+		{"/examples/json/json.pego", "https://github.com/ornew/pego/blob/main/examples/json/json.pego"},
+		{"/", "../../../"},
+		{"%2E%2E/%2E%2E/spec/pratt.md", "../../../spec/pratt/"},
+		{"../../spec/pratt.md#caf%C3%A9", "../../../spec/pratt/#caf%C3%A9"},
 	} {
 		if got := s.resolveLink(from, tc.dest); got != tc.want {
 			t.Errorf("resolveLink(%q) = %q, want %q", tc.dest, got, tc.want)
@@ -306,8 +313,28 @@ func TestResolveLink(t *testing.T) {
 	}
 	s.resolveLink(from, "missing.md")
 	s.resolveLink(from, "../../../outside.md")
-	if len(s.problems) != 2 {
-		t.Errorf("problems = %v, want two", s.problems)
+	s.resolveLink(from, "/../outside.md")
+	if len(s.problems) != 3 {
+		t.Errorf("problems = %v, want three", s.problems)
+	}
+}
+
+// TestNonASCIIAnchors renders headings and links with non-ASCII text, which goldmark percent-encodes
+// in link destinations, and checks that the links resolve.
+func TestNonASCIIAnchors(t *testing.T) {
+	s := &Site{cfg: Config{Repo: "..", GitHub: "https://github.com/ornew/pego", Ref: "main"}, bySrc: map[string]*Page{}, byDir: map[string]*Page{}}
+	p := &Page{Src: "docs/x.md", URL: "docs/x/"}
+	s.add(p)
+	m := s.parseMarkdown(p, []byte("# Title\n\n## Café au lait\n\n## 日本語の見出し\n\n[a](#café-au-lait) [b](#日本語の見出し) [c](#caf%C3%A9-au-lait)\n"))
+	out := t.TempDir()
+	if err := writeFile(filepath.Join(out, "docs", "x", "index.html"), []byte(m.render(nil))); err != nil {
+		t.Fatal(err)
+	}
+	if problems := checkLinks(out); len(problems) != 0 {
+		t.Errorf("problems: %v", problems)
+	}
+	if len(s.problems) != 0 {
+		t.Errorf("site problems: %v", s.problems)
 	}
 }
 
