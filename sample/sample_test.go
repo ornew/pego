@@ -439,6 +439,37 @@ def n = "(" n ")" / "[" n* "]" / "x"`)
 	}
 }
 
+// TestHardLimits checks the hard limits (nesting, iterations, budget) and that their options raise them.
+func TestHardLimits(t *testing.T) {
+	// Deeper nesting than WithMaxDepth when a predicate requires it, up to WithMaxDepth + 8.
+	p := compile(t, `def main = [d = 0] e $$
+def e = [d >= 12] "x" / "(" [d = d + 1] e ")"`)
+	if inputs, err := sample.Generate(p, 1); err != nil || len(inputs[0]) != 25 {
+		t.Errorf("depth 12: got %q, %v", inputs, err)
+	}
+	p = compile(t, `def main = [d = 0] e $$
+def e = [d >= 15] "x" / "(" [d = d + 1] e ")"`)
+	if _, err := sample.Generate(p, 1); !errors.Is(err, sample.ErrNoInput) {
+		t.Errorf("depth 15, default: got %v", err)
+	}
+	if inputs, err := sample.Generate(p, 1, sample.WithMaxDepth(7)); err != nil || len(inputs[0]) != 31 {
+		t.Errorf("depth 15, max depth 7: got %q, %v", inputs, err)
+	}
+	// More iterations than the default limit (28) with a larger WithMaxRepeat.
+	p = compile(t, `def main = x:"a"* [len($x) == 29] $$`)
+	if inputs, err := sample.Generate(p, 1, sample.WithMaxRepeat(4)); err != nil || len(inputs[0]) != 29 {
+		t.Errorf("29 iterations: got %q, %v", inputs, err)
+	}
+	// More steps than the default budget with WithBudget.
+	p = compile(t, `def main = "a"{25000} $$`)
+	if _, err := sample.Generate(p, 1, sample.WithAttempts(1)); !errors.Is(err, sample.ErrNoInput) {
+		t.Errorf("default budget: got %v", err)
+	}
+	if inputs, err := sample.Generate(p, 1, sample.WithAttempts(1), sample.WithBudget(100000)); err != nil || len(inputs[0]) != 25000 {
+		t.Errorf("larger budget: got %d inputs, %v", len(inputs), err)
+	}
+}
+
 func TestCoverageReport(t *testing.T) {
 	p := compile(t, `def main = a / b / "c" _|_
 def a = "a" !kw

@@ -37,6 +37,17 @@ const matchBudget = 1000
 // alternative of the choice matches whatever it matches, which may show only late in the search).
 const hopeless = 10
 
+// maxIterations returns how many iterations beyond its minimum a repetition may take at most, a hard
+// limit (see WithMaxRepeat). Without it, a repetition whose stop keeps failing (an
+// indentation that a predicate rejects, at every width) would iterate until the budget runs out.
+func maxIterations(maxRepeat int) int { return 8*maxRepeat + 4 }
+
+// maxNesting returns how many recursive rule calls may nest at most, a hard limit (see WithMaxDepth).
+// Past maxDepth the generator prefers the shortest way out, but backtracking can still try deeper and
+// deeper calls; without the limit, a dead alternative that fails only after a nested call (as in
+// s = "(" s ")" / "x" / "(" s ")" "!") makes attempts several times slower.
+func maxNesting(maxDepth int) int { return maxDepth + 8 }
+
 // cont is a continuation that receives the value of the expression just generated.
 type cont func(v val) bool
 
@@ -525,7 +536,7 @@ func (g *gen) genRepeat(e *grammar.Repeat, k cont) bool {
 	// captures: one without captures cannot read any (the compiler rejects predicates that read the
 	// enclosing rule's captures), so it needs none.
 	scoped := g.in.hasCaptures(e.Expr)
-	limit := e.Min + 4*g.cfg.maxRepeat + 16
+	limit := e.Min + maxIterations(g.cfg.maxRepeat)
 	if e.Max >= 0 {
 		want = min(want, e.Max)
 		limit = min(limit, e.Max)
@@ -754,7 +765,7 @@ func (g *gen) genRef(e *grammar.Ref, k cont, compared bool) bool {
 func (g *gen) callRule(ri *ruleInfo, level, key string, k cont) bool {
 	recursive := g.active[ri.index] > 0
 	if recursive {
-		if g.depth > g.cfg.maxDepth+8 {
+		if g.depth >= maxNesting(g.cfg.maxDepth) {
 			return false
 		}
 		g.depth++

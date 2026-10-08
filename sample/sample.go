@@ -38,7 +38,7 @@ const (
 	DefaultMaxRepeat = 3
 	DefaultMaxLen    = 512
 	DefaultAttempts  = 100
-	defaultBudget    = 20000
+	DefaultBudget    = 20000
 	defaultRetry     = 4096
 )
 
@@ -60,18 +60,31 @@ type Option func(*config)
 // the same inputs.
 func WithSeed(seed uint64) Option { return func(c *config) { c.seed = seed } }
 
-// WithMaxDepth bounds recursion: once rule calls are nested d deep inside calls of the same rules (a JSON
-// array in an array in an array, ...), the generator takes the shortest way to finish (default
-// DefaultMaxDepth). Calls of rules that are not already active do not count.
+// WithMaxDepth bounds recursion: once rule calls are nested d deep inside calls of the same rules, the
+// generator prefers the shortest way to finish (default DefaultMaxDepth). Calls of rules that are not
+// already active do not count. The bound is soft: when the input requires deeper nesting (a predicate
+// that counts it, for example), the search goes deeper, but never beyond d + 8: raise d for inputs that
+// must nest deeper.
 func WithMaxDepth(d int) Option { return func(c *config) { c.maxDepth = max(d, 0) } }
 
 // WithMaxRepeat sets how many iterations an unbounded repetition aims for beyond its minimum, at most
-// (default DefaultMaxRepeat). It also bounds the operators of a Pratt expression chain.
+// (default DefaultMaxRepeat). It also bounds the operators of a Pratt expression chain. The search may
+// take more iterations when the input requires them (a predicate after the repetition wants a longer
+// match), but never more than 8 × n + 4 beyond the minimum (28 by default): raise n for inputs with
+// longer repetitions.
 func WithMaxRepeat(n int) Option { return func(c *config) { c.maxRepeat = max(n, 0) } }
 
 // WithMaxLen sets a soft limit on the length of an input in bytes (default DefaultMaxLen): once the input
 // is that long, the generator takes the shortest way to finish it.
 func WithMaxLen(n int) Option { return func(c *config) { c.maxLen = max(n, 0) } }
+
+// WithBudget sets the number of steps one attempt may take before it gives up (default DefaultBudget).
+// A step is a parsing expression generated; checks have a budget of their own in proportion. Past
+// WithMaxDepth and WithMaxLen, the generator only prefers the shortest way to finish, so the budget and
+// the limits on nesting and iterations (see WithMaxDepth and WithMaxRepeat) are what bound an attempt. Inputs that need many steps (an
+// expression repeated 25,000 times) need a larger budget; the budget also bounds the stack the search
+// uses, which grows with the steps of an attempt.
+func WithBudget(steps int) Option { return func(c *config) { c.budget = max(steps, 1) } }
 
 // WithAttempts sets how many candidates the generator tries for one input before giving up (default
 // DefaultAttempts).
@@ -112,7 +125,7 @@ func New(p *pego.Parser, opts ...Option) (*Generator, error) {
 		maxRepeat: DefaultMaxRepeat,
 		maxLen:    DefaultMaxLen,
 		attempts:  DefaultAttempts,
-		budget:    defaultBudget,
+		budget:    DefaultBudget,
 		retry:     defaultRetry,
 	}
 	for _, o := range opts {

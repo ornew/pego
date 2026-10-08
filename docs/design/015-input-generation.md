@@ -75,6 +75,14 @@ length of the comment would be tried first. Three rules keep doomed subtrees sma
 - A repetition goes beyond the number of iterations it aimed for only when stopping failed right away (within 8
   steps, as when a predicate after it wants a longer match) or within two extra iterations (two tokens that ran together
   need the whitespace between them).
+- A repetition takes at most `8 × WithMaxRepeat + 4` iterations beyond its minimum (28 by default), and recursive rule
+  calls nest at most `WithMaxDepth + 8` deep (13 by default). Both are hard limits on the search, not only on the
+  inputs: a repetition whose stop keeps failing right away (a line comment whose next character fails the check, or an
+  indentation that a predicate rejects at every width) would otherwise iterate until the budget runs out, and
+  backtracking would try deeper and deeper calls before a dead alternative. Without the iteration limit, generating 50
+  inputs for the Python grammar took 7.7 seconds instead of 0.15; without the nesting limit, coverage mode on
+  `s = "(" s ")" / "x" / "y" / "(" s ")" "!"` took 25 seconds or more instead of one. A grammar whose inputs need longer
+  repetitions or deeper nesting raises `WithMaxRepeat` or `WithMaxDepth`.
 
 ### Bounds
 
@@ -83,8 +91,13 @@ most `WithMaxRepeat`, default 3). Recursion is bounded by `WithMaxDepth` (defaul
 are already active, so a JSON value nested in arrays counts one per array, not the chain of rules between them. Once
 the depth or the length of the text (`WithMaxLen`, default 512 bytes) is reached, the generator takes the shortest way
 to finish: alternatives in order of their minimal derivation height (computed by a fixed point over the rules),
-optional expressions skipped, repetitions at their minimum. Both bounds are soft, since the search may still need a
-longer way out.
+optional expressions skipped, repetitions at their minimum. Both bounds are soft: the search goes deeper or longer
+when the input requires it (`[d >= 12]` after twelve nested parentheses), up to the hard limits on nesting and
+iterations described above.
+
+The hard bounds therefore are the budget (`WithBudget`, exposed because an input of 25,000 repeated literals needs more
+than the default), the nesting limit (`WithMaxDepth + 8`) and the iteration limit (`8 × WithMaxRepeat + 4`); each can be
+raised through its option, and each is documented with it.
 
 ### Steering by PEG semantics
 

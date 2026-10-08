@@ -74,8 +74,8 @@ an action at run time.
 
 ## Controlling size and shape
 
-Three options bound the inputs. All three are soft: past a bound, the generator takes the shortest way to finish the
-input, which may still add a little.
+Three options shape the inputs. They are soft: past a bound, the generator prefers the shortest way to finish the
+input, but it goes further when the input requires it (a predicate that counts the nesting, or a longer match).
 
 | Flag | Option | Default | Bounds |
 |:--|:--|:--|:--|
@@ -98,6 +98,15 @@ $ pego sample -g examples/calculator/calc.pego -n 5 -seed 7 -max-len 30 -max-rep
 Smaller bounds give smaller, more numerous distinct inputs; larger ones exercise deep nesting and long lists. Very
 large lengths make each attempt slower and can lower coverage on large grammars: the generator works within a budget of
 steps per attempt, and the defaults are a good compromise for the grammars in [examples](../../examples/).
+
+Three limits are hard, and each has a knob:
+
+- An attempt gives up after a budget of steps (`-budget`, `WithBudget`, default 20,000; a step is roughly one
+  expression generated). An input that needs more, such as `"a"{25000}`, is found only with a larger budget.
+- A repetition never takes more than `8 × max-repeat + 4` iterations beyond its minimum (28 by default), even when a
+  predicate wants more: `x:"a"* [len($x) == 29]` needs `-max-repeat 4`.
+- Recursive rule calls never nest more than `max-depth + 8` deep (13 by default): an input that must nest 15 levels
+  deep needs `-max-depth 7`.
 
 ## Coverage
 
@@ -233,7 +242,7 @@ A `Generator` keeps state across calls: the random sequence, and what the accept
 
 ```go
 g, err := sample.New(p, sample.WithSeed(1))  // options: WithSeed, WithMaxDepth, WithMaxRepeat, WithMaxLen,
-                                              // WithAttempts, WithCoverage
+                                              // WithBudget, WithAttempts, WithCoverage
 in, err := g.Next()                           // one input; may repeat earlier ones
 inputs, err := g.Generate(1)                  // distinct inputs
 fmt.Print(g.Coverage().Report())
@@ -395,7 +404,8 @@ and checking, which costs attempts; a grammar where most choices depend on them 
 lower coverage. In practice:
 
 - **No input found** (`sample.ErrNoInput`, or `pego sample` fails): check that some input parses at all. The grammar
-  may accept nothing, or every input may fail an action at run time. Otherwise raise `WithAttempts`.
+  may accept nothing, or every input may fail an action at run time. If the inputs it needs are long, raise the
+  budget (`WithBudget`) or, for long repetitions, `WithMaxRepeat`; if they are merely rare, raise `WithAttempts`.
 - **Few distinct inputs**: the language may be small (`"a" / "b"` has two inputs). `Generate` stops after
   `WithAttempts` (100) inputs in a row that it already returned.
 - **Missed alternatives** that should be reachable: an earlier alternative of the choice may match their text (as with

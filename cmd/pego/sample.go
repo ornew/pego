@@ -40,6 +40,7 @@ func sampleCmd(args []string, stdout io.Writer) error {
 	maxDepth := fs.Int("max-depth", sample.DefaultMaxDepth, "recursion depth beyond which the generator finishes the input the shortest way")
 	maxRepeat := fs.Int("max-repeat", sample.DefaultMaxRepeat, "iterations beyond the minimum that a repetition aims for, at most")
 	maxLen := fs.Int("max-len", sample.DefaultMaxLen, "soft limit on the length of an input in bytes")
+	budget := fs.Int("budget", sample.DefaultBudget, "steps one attempt may take before it gives up")
 	coverage := fs.Bool("coverage", false, "prefer rules and alternatives not exercised yet, and report the coverage")
 	invalid := fs.Bool("invalid", false, "generate near-miss inputs that the grammar rejects instead")
 	format := fs.String("f", "lines", "output format: lines (one quoted input per line) or json")
@@ -61,6 +62,7 @@ func sampleCmd(args []string, stdout io.Writer) error {
 		sample.WithMaxDepth(*maxDepth),
 		sample.WithMaxRepeat(*maxRepeat),
 		sample.WithMaxLen(*maxLen),
+		sample.WithBudget(*budget),
 	}
 	if *coverage {
 		opts = append(opts, sample.WithCoverage())
