@@ -1511,9 +1511,17 @@ func (c *actx) list(args ...any) any {
 	return c.endList(base)
 }
 
+func (c *actx) concat(args ...any) any {
+	base := len(c.p.kidStack)
+	for _, a := range args {
+		c.pushItems(a)
+	}
+	return c.endList(base)
+}
+
 // pushMap, pushList and pushItems push the elements that map, list and concat make from their
-// arguments. A concat call is generated as pushes for its arguments followed by endList, so
-// that list and map arguments build no intermediate list.
+// arguments. A concat call whose arguments are all list, map or such concat calls is generated
+// as pushes for its arguments followed by endList, so that they build no intermediate list.
 
 func (c *actx) pushMap(list any, f func(item any) any) {
 	for _, it := range listItems("map", list) {
@@ -1838,9 +1846,7 @@ func init() {
 	rules[0].action = func(c *actx) any { return c.cap(0) }
 	rules[1].body = func(p *parser, _ int) (*Node, bool) { return p.e13() }
 	rules[2].body = func(p *parser, _ int) (*Node, bool) { return p.e23() }
-	rules[2].action = func(c *actx) any {
-		return c.newStruct("Object", "Members", func() any { b := len(c.p.kidStack); c.pushItems(c.cap(0)); return c.endList(b) }())
-	}
+	rules[2].action = func(c *actx) any { return c.newStruct("Object", "Members", c.concat(c.cap(0))) }
 	rules[3].body = func(p *parser, _ int) (*Node, bool) { return p.e39() }
 	rules[3].action = func(c *actx) any {
 		return func() any {
@@ -1853,9 +1859,7 @@ func init() {
 	rules[4].body = func(p *parser, _ int) (*Node, bool) { return p.e48() }
 	rules[4].action = func(c *actx) any { return c.newStruct("Member", "Key", c.cap(0), "Value", c.cap(1)) }
 	rules[5].body = func(p *parser, _ int) (*Node, bool) { return p.e58() }
-	rules[5].action = func(c *actx) any {
-		return c.newStruct("Array", "Elements", func() any { b := len(c.p.kidStack); c.pushItems(c.cap(0)); return c.endList(b) }())
-	}
+	rules[5].action = func(c *actx) any { return c.newStruct("Array", "Elements", c.concat(c.cap(0))) }
 	rules[6].body = func(p *parser, _ int) (*Node, bool) { return p.e74() }
 	rules[6].action = func(c *actx) any {
 		return func() any {

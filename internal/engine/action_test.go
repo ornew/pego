@@ -70,6 +70,18 @@ def e = _`
 	}
 }
 
+// TestConcatErrorOrder checks that concat reports the same error on every backend when an
+// argument that is not a list call fails late: the arguments are evaluated before concat
+// checks them.
+func TestConcatErrorOrder(t *testing.T) {
+	check(t, `def main = [v = 1] x:"a" -> concat(v, u)`,
+		ok("a", "error: action in main: variable u is not defined"))
+	check(t, `
+type A struct { N int }
+def main = [v = 1] x:"a" -> concat(v, list(new A{N: 1 / 0}))`,
+		ok("a", "error: action in main: division by zero"))
+}
+
 // TestOptionalResults checks rules and actions whose result is an optional value (*T).
 func TestOptionalResults(t *testing.T) {
 	check(t, `def main = x:"a"? -> $x`,

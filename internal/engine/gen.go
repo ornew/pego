@@ -522,8 +522,8 @@ func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) str
 		}
 		return "c.newStruct(" + strings.Join(args, ", ") + ")"
 	case *grammar.Call:
-		if t.Func == "concat" {
-			// Push the elements of list, map and concat arguments directly (see
+		if t.Func == "concat" && fusable(t) {
+			// Push the elements of list, map and concat arguments directly (see fusable and
 			// evalCtx.pushConcatArg).
 			var b strings.Builder
 			b.WriteString("func() any { b := len(c.p.kidStack); ")

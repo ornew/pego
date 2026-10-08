@@ -1511,9 +1511,17 @@ func (c *actx) list(args ...any) any {
 	return c.endList(base)
 }
 
+func (c *actx) concat(args ...any) any {
+	base := len(c.p.kidStack)
+	for _, a := range args {
+		c.pushItems(a)
+	}
+	return c.endList(base)
+}
+
 // pushMap, pushList and pushItems push the elements that map, list and concat make from their
-// arguments. A concat call is generated as pushes for its arguments followed by endList, so
-// that list and map arguments build no intermediate list.
+// arguments. A concat call whose arguments are all list, map or such concat calls is generated
+// as pushes for its arguments followed by endList, so that they build no intermediate list.
 
 func (c *actx) pushMap(list any, f func(item any) any) {
 	for _, it := range listItems("map", list) {

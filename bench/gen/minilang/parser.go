@@ -1511,9 +1511,17 @@ func (c *actx) list(args ...any) any {
 	return c.endList(base)
 }
 
+func (c *actx) concat(args ...any) any {
+	base := len(c.p.kidStack)
+	for _, a := range args {
+		c.pushItems(a)
+	}
+	return c.endList(base)
+}
+
 // pushMap, pushList and pushItems push the elements that map, list and concat make from their
-// arguments. A concat call is generated as pushes for its arguments followed by endList, so
-// that list and map arguments build no intermediate list.
+// arguments. A concat call whose arguments are all list, map or such concat calls is generated
+// as pushes for its arguments followed by endList, so that they build no intermediate list.
 
 func (c *actx) pushMap(list any, f func(item any) any) {
 	for _, it := range listItems("map", list) {
@@ -1926,7 +1934,7 @@ func init() {
 	rules[9].action = func(c *actx) any { return c.newStruct("Return", "Value", c.cap(0)) }
 	rules[10].body = func(p *parser, _ int) (*Node, bool) { return p.e114() }
 	rules[10].action = func(c *actx) any {
-		return c.newStruct("Func", "Name", c.cap(0), "Params", func() any { b := len(c.p.kidStack); c.pushItems(c.cap(1)); return c.endList(b) }(), "Body", c.cap(2))
+		return c.newStruct("Func", "Name", c.cap(0), "Params", c.concat(c.cap(1)), "Body", c.cap(2))
 	}
 	rules[11].body = func(p *parser, _ int) (*Node, bool) { return p.e130() }
 	rules[11].action = func(c *actx) any {
@@ -1949,9 +1957,7 @@ func init() {
 			&prattLine{scope: []string{}, m: (*parser).e314, action: nil, isSeq: false},
 			&prattLine{scope: []string{}, m: (*parser).e315, action: nil, isSeq: false},
 			&prattLine{scope: []string{"e"}, m: (*parser).e323, action: func(c *actx) any { return c.cap(0) }, isSeq: true},
-			&prattLine{scope: []string{"xs"}, m: (*parser).e332, action: func(c *actx) any {
-				return c.newStruct("ArrayLit", "Elems", func() any { b := len(c.p.kidStack); c.pushItems(c.cap(0)); return c.endList(b) }())
-			}, isSeq: true},
+			&prattLine{scope: []string{"xs"}, m: (*parser).e332, action: func(c *actx) any { return c.newStruct("ArrayLit", "Elems", c.concat(c.cap(0))) }, isSeq: true},
 		},
 		prefix: []*prattOp{{id: 6, kind: "prefix", assoc: "", level: 7, line: &prattLine{scope: []string{}, m: (*parser).e374, action: func(c *actx) any { return c.newStruct("Unary", "Op", c.op, "X", c.rhs) }, isSeq: false}}},
 		led: []*prattOp{{id: 0, kind: "infix", assoc: "right", level: 1, line: &prattLine{scope: []string{"t"}, m: (*parser).e340, action: func(c *actx) any { return c.newStruct("Cond", "Cond", c.lhs, "Then", c.cap(0), "Else", c.rhs) }, isSeq: true}},
@@ -1960,9 +1966,7 @@ func init() {
 			{id: 3, kind: "infix", assoc: "none", level: 4, line: &prattLine{scope: []string{}, m: (*parser).e357, action: func(c *actx) any { return c.newStruct("Binary", "Left", c.lhs, "Op", c.op, "Right", c.rhs) }, isSeq: false}},
 			{id: 4, kind: "infix", assoc: "left", level: 5, line: &prattLine{scope: []string{}, m: (*parser).e362, action: func(c *actx) any { return c.newStruct("Binary", "Left", c.lhs, "Op", c.op, "Right", c.rhs) }, isSeq: false}},
 			{id: 5, kind: "infix", assoc: "left", level: 6, line: &prattLine{scope: []string{}, m: (*parser).e369, action: func(c *actx) any { return c.newStruct("Binary", "Left", c.lhs, "Op", c.op, "Right", c.rhs) }, isSeq: false}},
-			{id: 7, kind: "postfix", assoc: "", level: 8, line: &prattLine{scope: []string{"xs"}, m: (*parser).e383, action: func(c *actx) any {
-				return c.newStruct("Call", "Fn", c.lhs, "Args", func() any { b := len(c.p.kidStack); c.pushItems(c.cap(0)); return c.endList(b) }())
-			}, isSeq: true}},
+			{id: 7, kind: "postfix", assoc: "", level: 8, line: &prattLine{scope: []string{"xs"}, m: (*parser).e383, action: func(c *actx) any { return c.newStruct("Call", "Fn", c.lhs, "Args", c.concat(c.cap(0))) }, isSeq: true}},
 			{id: 8, kind: "postfix", assoc: "", level: 8, line: &prattLine{scope: []string{"i"}, m: (*parser).e391, action: func(c *actx) any { return c.newStruct("Index", "X", c.lhs, "Index", c.cap(0)) }, isSeq: true}},
 			{id: 9, kind: "postfix", assoc: "", level: 8, line: &prattLine{scope: []string{"n"}, m: (*parser).e397, action: func(c *actx) any { return c.newStruct("Member", "X", c.lhs, "Name", c.cap(0)) }, isSeq: true}}},
 	}
