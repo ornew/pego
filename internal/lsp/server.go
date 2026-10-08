@@ -25,6 +25,25 @@ type Server struct {
 	state state
 	// version is reported to the client as the server's version.
 	version string
+	// client holds what the client supports, from its initialize request.
+	client clientCapabilities
+}
+
+// clientCapabilities are the capabilities of the client that change the server's responses.
+type clientCapabilities struct {
+	TextDocument struct {
+		Completion struct {
+			CompletionItem struct {
+				// SnippetSupport allows completion items with placeholders.
+				SnippetSupport bool `json:"snippetSupport"`
+			} `json:"completionItem"`
+		} `json:"completion"`
+		DocumentSymbol struct {
+			// HierarchicalDocumentSymbolSupport allows DocumentSymbol results (otherwise the
+			// result is a flat list of SymbolInformation).
+			HierarchicalDocumentSymbolSupport bool `json:"hierarchicalDocumentSymbolSupport"`
+		} `json:"documentSymbol"`
+	} `json:"textDocument"`
 }
 
 type state int
@@ -213,6 +232,13 @@ func init() {
 }
 
 func (s *Server) initialize(params json.RawMessage) (any, *rpcError) {
+	var p struct {
+		Capabilities clientCapabilities `json:"capabilities"`
+	}
+	if err := decode(params, &p); err != nil {
+		return nil, err
+	}
+	s.client = p.Capabilities
 	s.state = stateInitialized
 	return map[string]any{
 		"capabilities": map[string]any{

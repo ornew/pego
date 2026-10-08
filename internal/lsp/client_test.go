@@ -60,9 +60,17 @@ func newServer(t *testing.T) *testClient {
 func newInitialized(t *testing.T) *testClient {
 	t.Helper()
 	c := newServer(t)
-	c.request("initialize", map[string]any{"capabilities": map[string]any{}})
+	c.request("initialize", map[string]any{"capabilities": fullCapabilities})
 	c.notify("initialized", map[string]any{})
 	return c
+}
+
+// fullCapabilities are the client capabilities that change the server's responses, all set.
+var fullCapabilities = map[string]any{
+	"textDocument": map[string]any{
+		"completion":     map[string]any{"completionItem": map[string]any{"snippetSupport": true}},
+		"documentSymbol": map[string]any{"hierarchicalDocumentSymbolSupport": true},
+	},
 }
 
 // sendRaw sends body as a message.

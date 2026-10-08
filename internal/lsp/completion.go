@@ -18,7 +18,16 @@ func (s *Server) completion(params json.RawMessage) (any, *rpcError) {
 	if err != nil {
 		return nil, err
 	}
-	return completionList{Items: d.analysis().complete(off)}, nil
+	items := d.analysis().complete(off)
+	if !s.client.TextDocument.Completion.CompletionItem.SnippetSupport {
+		// Without snippets, insert the label.
+		for i := range items {
+			if items[i].InsertTextFormat == insertSnippet {
+				items[i].InsertText, items[i].InsertTextFormat = "", 0
+			}
+		}
+	}
+	return completionList{Items: items}, nil
 }
 
 func (a *analysis) isPunct(i int, text string) bool {

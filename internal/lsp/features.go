@@ -158,7 +158,22 @@ func (s *Server) documentSymbol(params json.RawMessage) (any, *rpcError) {
 	if err != nil {
 		return nil, err
 	}
-	return d.analysis().symbols(), nil
+	syms := d.analysis().symbols()
+	if s.client.TextDocument.DocumentSymbol.HierarchicalDocumentSymbolSupport {
+		return syms, nil
+	}
+	// A flat list for clients without hierarchical symbols, with the fields after their struct.
+	flat := []symbolInformation{}
+	var add func(syms []DocumentSymbol, container string)
+	add = func(syms []DocumentSymbol, container string) {
+		for _, sym := range syms {
+			flat = append(flat, symbolInformation{Name: sym.Name, Kind: sym.Kind,
+				Location: Location{URI: d.uri, Range: sym.Range}, ContainerName: container})
+			add(sym.Children, sym.Name)
+		}
+	}
+	add(syms, "")
+	return flat, nil
 }
 
 func (a *analysis) symbols() []DocumentSymbol {

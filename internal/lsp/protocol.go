@@ -127,6 +127,14 @@ const (
 	symbolKindStruct    = 23
 )
 
+// symbolInformation is a symbol of a document outline for clients without hierarchical symbols.
+type symbolInformation struct {
+	Name          string   `json:"name"`
+	Kind          int      `json:"kind"`
+	Location      Location `json:"location"`
+	ContainerName string   `json:"containerName,omitempty"`
+}
+
 // DocumentSymbol is a symbol of a document outline.
 type DocumentSymbol struct {
 	Name           string           `json:"name"`

@@ -2,6 +2,7 @@ package lsp
 
 import (
 	"encoding/json"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -160,4 +161,56 @@ func TestInputEndsBeforeExit(t *testing.T) {
 	case <-timeoutC():
 		t.Fatal("the server did not stop")
 	}
+}
+
+func TestClientCapabilities(t *testing.T) {
+	src := "type P struct { A Match }\ndef a = x:\"a\" -> len($x)"
+	completion := func(c *testClient) CompletionItem {
+		t.Helper()
+		var list completionList
+		c.requestInto("textDocument/completion", at("file:///caps.pego", 1, 19), &list)
+		for _, it := range list.Items {
+			if it.Label == "len" {
+				return it
+			}
+		}
+		t.Fatalf("no len in %+v", list)
+		return CompletionItem{}
+	}
+
+	// A client with snippets and hierarchical symbols.
+	c := newInitialized(t)
+	c.open("file:///caps.pego", src)
+	if it := completion(c); it.InsertText != "len($1)" || it.InsertTextFormat != insertSnippet {
+		t.Errorf("with snippets: %+v", it)
+	}
+	var syms []DocumentSymbol
+	c.requestInto("textDocument/documentSymbol", docParams("file:///caps.pego"), &syms)
+	if len(syms) != 2 || len(syms[0].Children) != 1 {
+		t.Errorf("hierarchical symbols %+v", syms)
+	}
+	c.exit()
+
+	// A client without them.
+	c = newServer(t)
+	if e := c.requestError("initialize", map[string]any{"capabilities": "none"}); e.Code != codeInvalidParams {
+		t.Errorf("initialize with invalid params: %+v", e)
+	}
+	c.request("initialize", map[string]any{"capabilities": map[string]any{}})
+	c.open("file:///caps.pego", src)
+	if it := completion(c); it.InsertText != "" || it.InsertTextFormat != 0 {
+		t.Errorf("without snippets: %+v", it)
+	}
+	var flat []symbolInformation
+	c.requestInto("textDocument/documentSymbol", docParams("file:///caps.pego"), &flat)
+	uri := "file:///caps.pego"
+	want := []symbolInformation{
+		{Name: "P", Kind: symbolKindStruct, Location: Location{URI: uri, Range: rng(0, 0, 0, 25)}},
+		{Name: "A", Kind: symbolKindField, Location: Location{URI: uri, Range: rng(0, 16, 0, 23)}, ContainerName: "P"},
+		{Name: "a", Kind: symbolKindFunction, Location: Location{URI: uri, Range: rng(1, 0, 1, 24)}},
+	}
+	if !reflect.DeepEqual(flat, want) {
+		t.Errorf("flat symbols\ngot  %+v\nwant %+v", flat, want)
+	}
+	c.exit()
 }
