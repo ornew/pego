@@ -123,3 +123,26 @@ def r3 = (((c1:(r3) [v = len($c1)]) c2:(r1) (";") #recover(skip=(?^;)* ";"))) #e
 		t.Fatal("type inference did not finish within 10 seconds")
 	}
 }
+
+func TestRuleType(t *testing.T) {
+	prog := compile(t, `type N terminal
+type P struct { X N }
+def n: N = @"1"
+def p = x:n -> new P{X: $x}
+def ps = p*
+def opt = "a"?
+def main = ps $$`)
+	for name, want := range map[string]string{
+		"n": "N", "p": "P", "ps": "[]P", "opt": "*Match", "main": "Seq",
+	} {
+		if got, ok := prog.RuleType(name); !ok || got != want {
+			t.Errorf("RuleType(%s) = %q, %v; want %q", name, got, ok, want)
+		}
+	}
+	if _, ok := prog.RuleType("nope"); ok {
+		t.Error("RuleType reported an undefined rule")
+	}
+	if _, ok := compile(t, `def main = "a"`, Options{NoTypeCheck: true}).RuleType("main"); ok {
+		t.Error("RuleType reported a type without type checking")
+	}
+}

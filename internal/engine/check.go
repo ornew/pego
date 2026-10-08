@@ -138,6 +138,20 @@ type typeInfo struct {
 	aliases map[string]ty           // the type each alias stands for
 }
 
+// RuleType returns the type of the rule name, declared or inferred, as written in a grammar (for
+// example "[]Expr | *Match"). It reports false if the program has no such rule or its types were
+// not checked (Options.NoTypeCheck, or a program loaded from a compiled grammar).
+func (p *Program) RuleType(name string) (string, bool) {
+	if p.typed == nil {
+		return "", false
+	}
+	t, ok := p.typed.rules[name]
+	if !ok {
+		return "", false
+	}
+	return t.String(), true
+}
+
 type typedField struct {
 	name string
 	t    ty
