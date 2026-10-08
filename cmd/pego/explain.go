@@ -10,18 +10,17 @@ import (
 	"github.com/ornew/pego"
 )
 
-// explainCmd parses the input and, for each syntax error, prints the rule calls that failed at the
-// error's position: the innermost calls whose failures make up the error, with the calls they
-// were nested in.
+// explainCmd parses the input and, for each syntax error, prints the rule calls that recorded
+// what the error says was expected, each with the calls it was nested in.
 func explainCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 	f := newDebugFlags("explain")
-	limit := f.fs.Int("n", 10, "most call stacks to show per error (0 shows all)")
+	limit := f.fs.Int("n", 10, "most calls to show per error (0 shows all)")
 	p, src, opts, err := f.load(args, stdin)
 	if err != nil {
 		return err
 	}
 	// Parse once to find the errors, then again with a trace that keeps only the calls that
-	// failed at their positions.
+	// recorded expectations at their positions.
 	_, perr := p.Parse(src, opts...)
 	var errs []*pego.SyntaxError
 	var se *pego.SyntaxError
@@ -39,7 +38,7 @@ func explainCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 	}
 	x := &explainer{at: map[int]*explained{}}
 	for _, e := range errs {
-		x.at[e.Pos] = &explained{covered: map[int]bool{}}
+		x.at[e.Pos] = &explained{}
 	}
 	p.Parse(src, append(opts, pego.WithTrace(x.event))...)
 	for i, e := range errs {
@@ -58,90 +57,112 @@ func explainCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 
 type explainer struct {
 	stack []explainFrame
-	seq   int
 	at    map[int]*explained // per error position
 }
 
 type explainFrame struct {
-	id   int
 	rule string
 	pos  int
+	// nested holds the expectations that calls nested in this one recorded ("pos expected" or
+	// "pos #message"): the call's own record includes them.
+	nested map[string]bool
 }
 
-// explained holds the failed calls found at an error position.
+// explained holds the calls that recorded expectations at an error position.
 type explained struct {
-	stacks []failedCall
-	// covered holds the ids of the calls on the stacks found: a call that fails at the position
-	// after a call nested in it did is not innermost.
-	covered map[int]bool
+	calls []explainedCall
 }
 
-type failedCall struct {
-	calls  []string // innermost first: "rule line:col"
-	what   string
-	memo   bool
-	failed bool
+type explainedCall struct {
+	stack    []string // innermost first: "rule line:col"
+	expected []string // recorded by the call itself, not by the calls nested in it
+	messages []string
+	matched  bool
+	text     string // the input matched, if the call matched
+	memo     bool
 }
 
 func (x *explainer) event(e pego.TraceEvent) {
 	if e.Kind == pego.TraceEnter {
-		x.seq++
-		x.stack = append(x.stack, explainFrame{id: x.seq, rule: e.Rule, pos: e.Pos})
+		x.stack = append(x.stack, explainFrame{rule: e.Rule, pos: e.Pos})
 		return
 	}
 	top := x.stack[len(x.stack)-1]
-	defer func() { x.stack = x.stack[:len(x.stack)-1] }()
+	x.stack = x.stack[:len(x.stack)-1]
 	f := e.Failure()
-	if f == nil {
+	if f == nil || x.at[f.Pos] == nil {
 		return
+	}
+	// Keep what the call recorded itself, and pass everything it recorded on to its caller.
+	var parent map[string]bool
+	if n := len(x.stack); n > 0 {
+		if x.stack[n-1].nested == nil {
+			x.stack[n-1].nested = map[string]bool{}
+		}
+		parent = x.stack[n-1].nested
+	}
+	c := explainedCall{matched: e.Matched, text: e.Text(), memo: e.Memo}
+	own := func(key, s string, dst *[]string) {
+		if !top.nested[key] {
+			*dst = append(*dst, s)
+		}
+		if parent != nil {
+			parent[key] = true
+		}
+	}
+	for _, s := range f.Expected {
+		own(fmt.Sprintf("%d %s", f.Pos, s), s, &c.expected)
+	}
+	for _, s := range f.Messages {
+		own(fmt.Sprintf("%d #%s", f.Pos, s), s, &c.messages)
+	}
+	if len(c.expected) == 0 && len(c.messages) == 0 {
+		return
+	}
+	c.stack = append(c.stack, fmt.Sprintf("%s %s", top.rule, position(e, top.pos)))
+	for i := len(x.stack) - 1; i >= 0; i-- {
+		c.stack = append(c.stack, fmt.Sprintf("%s %s", x.stack[i].rule, position(e, x.stack[i].pos)))
 	}
 	ex := x.at[f.Pos]
-	if ex == nil || ex.covered[top.id] {
-		return
-	}
-	c := failedCall{what: strings.TrimPrefix(f.Message(), "syntax error: "), memo: e.Memo, failed: !e.Matched}
-	for i := len(x.stack) - 1; i >= 0; i-- {
-		fr := x.stack[i]
-		ex.covered[fr.id] = true
-		c.calls = append(c.calls, fmt.Sprintf("%s %s", fr.rule, position(e, fr.pos)))
-	}
-	if !slices.ContainsFunc(ex.stacks, func(o failedCall) bool {
-		return o.what == c.what && slices.Equal(o.calls, c.calls)
+	if !slices.ContainsFunc(ex.calls, func(o explainedCall) bool {
+		return slices.Equal(o.stack, c.stack) && slices.Equal(o.expected, c.expected) && slices.Equal(o.messages, c.messages)
 	}) {
-		ex.stacks = append(ex.stacks, c)
+		ex.calls = append(ex.calls, c)
 	}
 }
 
 func (x *explainer) print(w io.Writer, e *pego.SyntaxError, limit int) {
 	ex := x.at[e.Pos]
-	if len(ex.stacks) == 0 {
-		fmt.Fprintf(w, "\nNo rule call failed at %d:%d: the start rule matched up to there, and the input does not end.\n", e.Line, e.Col)
-		return
+	if len(ex.calls) > 0 {
+		fmt.Fprintf(w, "\nCalls that recorded what was expected at %d:%d (innermost first):\n", e.Line, e.Col)
 	}
-	fmt.Fprintf(w, "\nCalls that failed at %d:%d (innermost first):\n", e.Line, e.Col)
-	for i, c := range ex.stacks {
+	for i, c := range ex.calls {
 		if limit > 0 && i == limit {
-			fmt.Fprintf(w, "\n(%d more; -n 0 shows all)\n", len(ex.stacks)-limit)
+			fmt.Fprintf(w, "\n(%d more; -n 0 shows all)\n", len(ex.calls)-limit)
 			break
 		}
-		how := "expected"
-		if !c.failed {
-			how = "matched, but at the error position expected"
+		var what []string
+		if len(c.expected) > 0 {
+			what = append(what, "expected "+strings.Join(c.expected, ", "))
+		}
+		what = append(what, c.messages...)
+		how := ""
+		if c.matched {
+			how = "matched " + snippet(c.text, 30) + ", then "
 		}
 		note := ""
 		if c.memo {
 			note = " [memo]"
 		}
-		fmt.Fprintf(w, "\n  %s: %s %s%s\n", c.calls[0], how, strings.TrimPrefix(c.what, "expected "), note)
-		for _, call := range c.calls[1:] {
+		fmt.Fprintf(w, "\n  %s: %s%s%s\n", c.stack[0], how, strings.Join(what, "; "), note)
+		for _, call := range c.stack[1:] {
 			fmt.Fprintf(w, "    in %s\n", call)
 		}
 	}
-	// Expectations recorded outside every rule call: the start rule matched up to the error
-	// position and the input continues there.
-	for _, s := range e.Expected {
-		if s == "end of input" && !slices.ContainsFunc(ex.stacks, func(c failedCall) bool { return strings.Contains(c.what, "end of input") }) {
-			fmt.Fprintf(w, "\n  The start rule matched up to %d:%d, where the input does not end.\n", e.Line, e.Col)
-		}
+	// The end of the input is expected after the start rule returns, outside every call.
+	if slices.Contains(e.Expected, "end of input") && !slices.ContainsFunc(ex.calls, func(c explainedCall) bool {
+		return slices.Contains(c.expected, "end of input")
+	}) {
+		fmt.Fprintf(w, "\n  The start rule matched up to %d:%d, but the input does not end there.\n", e.Line, e.Col)
 	}
 }

@@ -190,7 +190,7 @@ func TestExplain(t *testing.T) {
 	out, err := runCLI(t, "", "explain", "-g", g, "-i", "a=1;\nb=x")
 	want := `2:3: syntax error: expected (?0-9)
 
-Calls that failed at 2:3 (innermost first):
+Calls that recorded what was expected at 2:3 (innermost first):
 
   value 2:3: expected (?0-9)
     in pair 2:1
@@ -199,12 +199,14 @@ Calls that failed at 2:3 (innermost first):
 	if err != nil || out != want {
 		t.Errorf("got %v\n%s\nwant\n%s", err, out, want)
 	}
+	// Calls that matched can record expectations after their match; each call shows only the
+	// expectations it recorded itself. The start rule's $$ expects the end of input.
 	out, err = runCLI(t, "", "explain", "-g", g, "-i", "a=1 !", "-backend", "bytecode-iterative")
 	want = `1:5: syntax error: expected (? \n), (?a-z), end of input
 
-Calls that failed at 1:5 (innermost first):
+Calls that recorded what was expected at 1:5 (innermost first):
 
-  ws 1:4: matched, but at the error position expected (? \n)
+  ws 1:4: matched " ", then expected (? \n)
     in pair 1:1
     in main 1:1
 
@@ -212,7 +214,23 @@ Calls that failed at 1:5 (innermost first):
     in pair 1:5
     in main 1:1
 
-  The start rule matched up to 1:5, where the input does not end.
+  main 1:1: expected end of input
+`
+	if err != nil || out != want {
+		t.Errorf("got %v\n%s\nwant\n%s", err, out, want)
+	}
+	// Without $$, the parser expects the end of input after the start rule returns.
+	unanchored := writeFile(t, "unanchored.pego", `def main = pair+
+def pair = @(?a-z) "=" @(?0-9)`)
+	out, err = runCLI(t, "", "explain", "-g", unanchored, "-i", "a=1!")
+	want = `1:4: syntax error: expected (?a-z), end of input
+
+Calls that recorded what was expected at 1:4 (innermost first):
+
+  pair 1:4: expected (?a-z)
+    in main 1:1
+
+  The start rule matched up to 1:4, but the input does not end there.
 `
 	if err != nil || out != want {
 		t.Errorf("got %v\n%s\nwant\n%s", err, out, want)
