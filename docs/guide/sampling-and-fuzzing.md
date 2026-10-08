@@ -46,8 +46,8 @@ $ pego sample -g examples/json/json.pego -n 8
 ```
 
 The inputs are random, not pretty: the grammar allows whitespace between tokens, so the inputs contain it, and
-characters are drawn from printable ASCII with some multi-byte characters mixed in. `strconv.Unquote` reads each line
-back.
+characters are drawn mostly from printable ASCII with some multi-byte characters mixed in, and otherwise from any code
+point the character class matches (never a surrogate). `strconv.Unquote` reads each line back.
 
 `-seed` selects the random decisions; the default is 0. The same seed gives the same inputs on every run and machine,
 so a seed is enough to reproduce a test case. `-f json` prints a JSON document instead:

@@ -645,7 +645,10 @@ var niceRunes = func() []rune {
 	return append(rs, []rune("éßΩж日本語😀")...)
 }()
 
-// classRune returns a random code point that the class matches, preferring nice runes.
+// classRune returns a random code point that the class matches, preferring nice runes, then, for a
+// negated class, code points below U+3000. Otherwise it picks a range of the code points that the class
+// actually matches (see classRanges) and a code point in it, so that classes with few or unusual code
+// points (the complement of almost everything, ranges that span the surrogates) are generated too.
 func (g *gen) classRune(c *grammar.CharClass) (rune, bool) {
 	if g.rng.IntN(4) != 0 {
 		for range 8 {
@@ -656,34 +659,34 @@ func (g *gen) classRune(c *grammar.CharClass) (rune, bool) {
 	}
 	if c.Negated {
 		for range 16 {
-			r := rune(g.rng.IntN(0x3000))
-			if r >= 0x20 && inClass(c, r) {
+			if r := rune(0x20 + g.rng.IntN(0x3000-0x20)); inClass(c, r) {
 				return r, true
 			}
 		}
-		for _, r := range niceRunes {
-			if inClass(c, r) {
-				return r, true
-			}
-		}
-		for r := rune(0); r < 0x20; r++ {
-			if inClass(c, r) {
-				return r, true
-			}
-		}
-		return 0, false
 	}
-	if len(c.Ranges) == 0 {
-		return 0, false
-	}
-	rg := c.Ranges[g.rng.IntN(len(c.Ranges))]
-	for range 8 {
-		r := rg.Lo + rune(g.rng.Int64N(int64(rg.Hi-rg.Lo)+1))
-		if utf8.ValidRune(r) {
+	if !c.Negated && len(c.Ranges) > 0 {
+		// One of the class's own ranges, then a code point in it that is not a surrogate.
+		rg := c.Ranges[g.rng.IntN(len(c.Ranges))]
+		size := int64(rg.Hi-rg.Lo) + 1
+		if lo, hi := max(rg.Lo, 0xD800), min(rg.Hi, 0xDFFF); lo <= hi {
+			size -= int64(hi-lo) + 1
+		}
+		if size > 0 {
+			r := rg.Lo + rune(g.rng.Int64N(size))
+			if r >= 0xD800 && rg.Lo < 0xD800 {
+				r += 0x800 // skip the surrogates
+			} else if rg.Lo >= 0xD800 && rg.Lo <= 0xDFFF {
+				r += 0xE000 - rg.Lo
+			}
 			return r, true
 		}
 	}
-	return rg.Lo, utf8.ValidRune(rg.Lo)
+	rs := g.in.classRanges(c)
+	if len(rs) == 0 {
+		return 0, false
+	}
+	rg := rs[g.rng.IntN(len(rs))]
+	return rg.Lo + rune(g.rng.Int64N(int64(rg.Hi-rg.Lo)+1)), true
 }
 
 func (g *gen) genClass(c *grammar.CharClass, k cont) bool {

@@ -1,7 +1,10 @@
 package sample
 
 import (
+	"cmp"
+	"slices"
 	"sort"
+	"unicode"
 
 	"github.com/ornew/pego/grammar"
 )
@@ -63,7 +66,8 @@ type info struct {
 	// that can match; called[i] if it is called at all (outside negative lookaheads and #recover).
 	reachable, called []bool
 	reachMemo         map[grammar.Expr]bitset
-	captures          map[grammar.Expr]bool // memo of hasCaptures
+	captures          map[grammar.Expr]bool                      // memo of hasCaptures
+	classes           map[*grammar.CharClass][]grammar.CharRange // memo of classRanges
 	// compared holds the captures of rule calls that a predicate in the same rule reads.
 	compared map[*grammar.Capture]bool
 	// alphabet holds the literal strings and sample characters of the grammar, for mutations.
@@ -79,6 +83,7 @@ func analyze(g *grammar.Grammar, start string) *info {
 		reachMemo: map[grammar.Expr]bitset{},
 		compared:  map[*grammar.Capture]bool{},
 		captures:  map[grammar.Expr]bool{},
+		classes:   map[*grammar.CharClass][]grammar.CharRange{},
 	}
 	terminals := map[string]bool{}
 	for _, t := range g.Types() {
@@ -312,6 +317,49 @@ func (in *info) binds(e grammar.Expr) bool {
 		}
 	})
 	return b
+}
+
+// classRanges returns the code points that the class matches as sorted, disjoint ranges of valid code
+// points: the complement for a negated class, and without the surrogates, which no input can contain.
+func (in *info) classRanges(c *grammar.CharClass) []grammar.CharRange {
+	if rs, ok := in.classes[c]; ok {
+		return rs
+	}
+	rs := append([]grammar.CharRange(nil), c.Ranges...)
+	slices.SortFunc(rs, func(a, b grammar.CharRange) int { return cmp.Compare(a.Lo, b.Lo) })
+	var merged []grammar.CharRange
+	for _, r := range rs {
+		if n := len(merged); n > 0 && r.Lo <= merged[n-1].Hi+1 {
+			merged[n-1].Hi = max(merged[n-1].Hi, r.Hi)
+		} else {
+			merged = append(merged, r)
+		}
+	}
+	if c.Negated {
+		var comp []grammar.CharRange
+		next := rune(0)
+		for _, r := range merged {
+			if r.Lo > next {
+				comp = append(comp, grammar.CharRange{Lo: next, Hi: r.Lo - 1})
+			}
+			next = max(next, r.Hi+1)
+		}
+		if next <= unicode.MaxRune {
+			comp = append(comp, grammar.CharRange{Lo: next, Hi: unicode.MaxRune})
+		}
+		merged = comp
+	}
+	var valid []grammar.CharRange
+	for _, r := range merged {
+		r.Hi = min(r.Hi, unicode.MaxRune)
+		for _, part := range []grammar.CharRange{{Lo: r.Lo, Hi: min(r.Hi, 0xD7FF)}, {Lo: max(r.Lo, 0xE000), Hi: r.Hi}} {
+			if part.Lo <= part.Hi {
+				valid = append(valid, part)
+			}
+		}
+	}
+	in.classes[c] = valid
+	return valid
 }
 
 // hasCut reports whether e contains a cut, not counting called rules (a cut does not reach beyond its

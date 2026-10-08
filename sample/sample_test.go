@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -196,6 +197,35 @@ func TestInvalid(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestRareClasses checks classes whose code points are few, far from ASCII, or around the surrogates.
+func TestRareClasses(t *testing.T) {
+	for _, c := range []struct {
+		class string
+		want  []string
+	}{
+		{`(?^\u{0}-\u{10fffe})`, []string{"\U0010FFFF"}},
+		{`(?^\u{0}-\u{2fff}\u{3001}-\u{10ffff})`, []string{"\u3000"}},
+		{`(?\u{d7ff}-\u{e000})`, []string{"\uD7FF", "\uE000"}},
+		{`(?^\u{20}-\u{10ffff}\u{0}-\u{1d})`, []string{"\x1e", "\x1f"}},
+	} {
+		p := compile(t, "def main = "+c.class+" $$")
+		inputs, err := sample.Generate(p, 5, sample.WithSeed(1))
+		if err != nil {
+			t.Errorf("%s: %v", c.class, err)
+			continue
+		}
+		var want []string
+		for _, w := range c.want {
+			s, _ := strconv.Unquote(`"` + w + `"`)
+			want = append(want, s)
+		}
+		slices.Sort(inputs)
+		if !slices.Equal(inputs, want) {
+			t.Errorf("%s: got %q, want %q", c.class, inputs, want)
+		}
 	}
 }
 
