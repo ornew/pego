@@ -260,3 +260,24 @@ func TestTextOfNil(t *testing.T) {
 type T struct { S string }
 def main = x:"a"? "b" -> new T{S: text($x) + "!"}`, ok("b", "(T S=`!`)"))
 }
+
+// TestLenOfStrings checks that len counts the characters of strings in the position unit on
+// every backend, for strings that do not come from the input too.
+func TestLenOfStrings(t *testing.T) {
+	prog := compile(t, `
+type T struct { N int, M int }
+def main = x:"a" -> new T{N: len("日本"), M: len(text($x) + "é")}`)
+	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		for _, tc := range []struct {
+			o    ParseOptions
+			want string
+		}{
+			{ParseOptions{Backend: b}, `(T M=2 N=2)`},
+			{ParseOptions{Backend: b, Unit: Bytes}, `(T M=3 N=6)`},
+		} {
+			if n, err := prog.ParseWith("main", "a", tc.o); err != nil || n.String() != tc.want {
+				t.Errorf("%v %v: got %v, %v, want %s", b, tc.o.Unit, n, err, tc.want)
+			}
+		}
+	}
+}
