@@ -127,10 +127,11 @@ Diagnostics are published after `didOpen`, every `didChange` and `didSave`, with
 | `completion` | See below |
 | `semanticTokens/full` | Tells rule names, type names (built-in ones as `defaultLibrary`), capture labels, predicate variables, fields, built-in functions, attributes, keywords, strings, numbers, character classes and comments apart. Punctuation is left to the TextMate grammar |
 
-Two capabilities of the client change the responses: without `completionItem.snippetSupport`, completion items
-insert their label instead of a snippet with placeholders (such as `foldl(${1:init}, ...)`), and without
+Three capabilities of the client change the responses: without `completionItem.snippetSupport`, completion items
+insert their label instead of a snippet with placeholders (such as `foldl(${1:init}, ...)`); without
 `hierarchicalDocumentSymbolSupport`, the outline is a flat list of `SymbolInformation`, with each field after its
-struct.
+struct; and without `rename.prepareSupport`, the server announces rename without `prepareProvider`, as LSP
+requires.
 
 Completion cannot rely on the grammar, because the definition being typed rarely parses.
 It looks at the tokens before the cursor instead: inside a comment, string or character class it offers nothing;

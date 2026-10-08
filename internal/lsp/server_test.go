@@ -27,7 +27,7 @@ func TestLifecycle(t *testing.T) {
 			Name string `json:"name"`
 		} `json:"serverInfo"`
 	}
-	c.requestInto("initialize", map[string]any{"processId": nil, "capabilities": map[string]any{}}, &init)
+	c.requestInto("initialize", map[string]any{"processId": nil, "capabilities": fullCapabilities}, &init)
 	caps := init.Capabilities
 	if caps.PositionEncoding != "utf-16" || !caps.TextDocumentSync.OpenClose || caps.TextDocumentSync.Change != 2 ||
 		!caps.DocumentFormattingProvider || !caps.DefinitionProvider || !caps.RenameProvider.PrepareProvider ||
@@ -196,7 +196,16 @@ func TestClientCapabilities(t *testing.T) {
 	if e := c.requestError("initialize", map[string]any{"capabilities": "none"}); e.Code != codeInvalidParams {
 		t.Errorf("initialize with invalid params: %+v", e)
 	}
-	c.request("initialize", map[string]any{"capabilities": map[string]any{}})
+	var init struct {
+		Capabilities struct {
+			RenameProvider json.RawMessage `json:"renameProvider"`
+		} `json:"capabilities"`
+	}
+	c.requestInto("initialize", map[string]any{"capabilities": map[string]any{}}, &init)
+	// Without rename.prepareSupport, the server must not announce prepareProvider.
+	if r := string(init.Capabilities.RenameProvider); r != "true" {
+		t.Errorf("renameProvider %s", r)
+	}
 	c.open("file:///caps.pego", src)
 	if it := completion(c); it.InsertText != "" || it.InsertTextFormat != 0 {
 		t.Errorf("without snippets: %+v", it)

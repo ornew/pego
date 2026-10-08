@@ -38,6 +38,10 @@ type clientCapabilities struct {
 				SnippetSupport bool `json:"snippetSupport"`
 			} `json:"completionItem"`
 		} `json:"completion"`
+		Rename struct {
+			// PrepareSupport allows the server to announce prepareRename.
+			PrepareSupport bool `json:"prepareSupport"`
+		} `json:"rename"`
 		DocumentSymbol struct {
 			// HierarchicalDocumentSymbolSupport allows DocumentSymbol results (otherwise the
 			// result is a flat list of SymbolInformation).
@@ -251,6 +255,11 @@ func (s *Server) initialize(params json.RawMessage) (any, *rpcError) {
 	}
 	s.client = p.Capabilities
 	s.state = stateInitialized
+	// LSP allows announcing prepareRename only to clients that support it.
+	var rename any = true
+	if s.client.TextDocument.Rename.PrepareSupport {
+		rename = map[string]any{"prepareProvider": true}
+	}
 	return map[string]any{
 		"capabilities": map[string]any{
 			"positionEncoding": "utf-16",
@@ -265,7 +274,7 @@ func (s *Server) initialize(params json.RawMessage) (any, *rpcError) {
 			"documentHighlightProvider":  true,
 			"documentSymbolProvider":     true,
 			"hoverProvider":              true,
-			"renameProvider":             map[string]any{"prepareProvider": true},
+			"renameProvider":             rename,
 			"completionProvider":         map[string]any{"triggerCharacters": []string{"#", "$", "."}},
 			"semanticTokensProvider": map[string]any{
 				"legend": map[string]any{"tokenTypes": semanticTokenTypes, "tokenModifiers": semanticTokenModifiers},

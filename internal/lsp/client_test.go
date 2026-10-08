@@ -70,6 +70,7 @@ var fullCapabilities = map[string]any{
 	"textDocument": map[string]any{
 		"completion":     map[string]any{"completionItem": map[string]any{"snippetSupport": true}},
 		"documentSymbol": map[string]any{"hierarchicalDocumentSymbolSupport": true},
+		"rename":         map[string]any{"prepareSupport": true},
 	},
 }
 
