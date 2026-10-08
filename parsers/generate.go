@@ -13,3 +13,4 @@ package parsers
 //go:generate go run ../cmd/pego gen -g csv/csv.pego -pkg csv -types -recognize -nodoc -o csv/parser.go
 //go:generate go run ../cmd/pego gen -g json/json.pego -pkg json -types -recognize -nodoc -o json/parser.go
 //go:generate go run ../cmd/pego gen -g xml/xml.pego -pkg xml -types -recognize -nodoc -o xml/parser.go
+//go:generate go run ../cmd/pego gen -g yaml/yaml.pego -pkg yaml -types -recognize -nodoc -o yaml/parser.go

@@ -1,0 +1,14 @@
+%YAML 1.2
+--- !!map
+name: &n pego  # a comment
+tags: [peg, "pratt"]
+same: *n
+spec: {version: 1.2.2}
+items:
+- 'single'
+- ? key
+  : value
+text: |-
+  literal
+  block
+...
