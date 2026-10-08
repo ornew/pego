@@ -66,6 +66,9 @@ Three kinds of positions meet in the server:
 
 Every conversion goes through byte offsets (`internal/lsp/text.go`): a `textIndex` holds the offsets at which LSP
 lines and PEGO lines start and converts each kind of position to and from an offset.
+Columns come from checkpoints: every 64 bytes, the index records how many UTF-16 code units and code points precede
+that offset, so converting a position walks at most 64 bytes, however long its line (walking from the start of the
+line made a file with a long line take seconds to analyze).
 Going through offsets keeps the two notions of a line apart, so a file with `\r\n` or even lone `\r` line ends gets
 correct ranges.
 A position inside a surrogate pair is taken to be the start of the character, and a position past the end of a line

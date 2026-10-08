@@ -1,7 +1,12 @@
 package lsp
 
 import (
+	"math/rand/v2"
+	"sort"
+	"strings"
 	"testing"
+	"time"
+	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
 )
@@ -127,4 +132,114 @@ func TestMinimalEdit(t *testing.T) {
 			t.Errorf("%q -> %q: edit %+v gives %q", tc.old, tc.new, e, got)
 		}
 	}
+}
+
+// The straightforward conversions, which walk each line from its start, are the reference for the
+// indexed ones.
+
+func naiveOffset(t *textIndex, p Position) int {
+	if p.Line < 0 {
+		return 0
+	}
+	if p.Line >= len(t.lines) {
+		return len(t.text)
+	}
+	off, end := t.lines[p.Line], t.lineEnd(p.Line)
+	for n := 0; off < end; {
+		r, size := utf8.DecodeRuneInString(t.text[off:end])
+		if n+utf16Len(r) > p.Character {
+			break
+		}
+		n += utf16Len(r)
+		off += size
+	}
+	return off
+}
+
+func naivePosition(t *textIndex, off int) Position {
+	off = max(0, min(off, len(t.text)))
+	line := sort.Search(len(t.lines), func(i int) bool { return t.lines[i] > off }) - 1
+	off = min(off, t.lineEnd(line))
+	col := 0
+	for i := t.lines[line]; i < off; {
+		r, size := utf8.DecodeRuneInString(t.text[i:])
+		if i+size > off {
+			break
+		}
+		col += utf16Len(r)
+		i += size
+	}
+	return Position{Line: line, Character: col}
+}
+
+func naivePegoOffset(t *textIndex, p grammar.Pos) int {
+	if p.Line < 1 {
+		return 0
+	}
+	if p.Line > len(t.pegoLines) {
+		return len(t.text)
+	}
+	off := t.pegoLines[p.Line-1]
+	for col := 1; col < p.Col && off < len(t.text) && t.text[off] != '\n'; col++ {
+		_, size := utf8.DecodeRuneInString(t.text[off:])
+		off += size
+	}
+	return off
+}
+
+// TestTextIndexMatchesNaive compares the conversions with the reference ones on random texts with
+// long lines, every kind of line end and characters of every UTF-8 and UTF-16 width.
+func TestTextIndexMatchesNaive(t *testing.T) {
+	rnd := rand.New(rand.NewPCG(1, 2))
+	pieces := []string{"a", "é", "名", "😀", "\n", "\r\n", "\r", " ", "\xff"}
+	for iter := 0; iter < 200; iter++ {
+		var b strings.Builder
+		n := rnd.IntN(3000)
+		for b.Len() < n {
+			// Long runs of one piece make lines longer than the index's checkpoint spacing.
+			p := pieces[rnd.IntN(len(pieces))]
+			for k := rnd.IntN(200); k >= 0; k-- {
+				b.WriteString(p)
+			}
+		}
+		text := b.String()
+		idx := newTextIndex(text)
+		for k := 0; k < 300; k++ {
+			off := rnd.IntN(len(text) + 2)
+			if got, want := idx.position(off), naivePosition(idx, off); got != want {
+				t.Fatalf("text %q: position(%d) = %v, want %v", text, off, got, want)
+			}
+			p := Position{Line: rnd.IntN(len(idx.lines)+1) - rnd.IntN(2), Character: rnd.IntN(1000)}
+			if got, want := idx.offset(p), naiveOffset(idx, p); got != want {
+				t.Fatalf("text %q: offset(%v) = %d, want %d", text, p, got, want)
+			}
+			pp := grammar.Pos{Line: rnd.IntN(len(idx.pegoLines) + 1), Col: rnd.IntN(1000) + 1}
+			if got, want := idx.pegoOffset(pp), naivePegoOffset(idx, pp); got != want {
+				t.Fatalf("text %q: pegoOffset(%v) = %d, want %d", text, pp, got, want)
+			}
+		}
+	}
+}
+
+// TestLongLine checks that a document with a long line is analyzed in about linear time. The
+// conversions used to walk the line from its start for every token, so a line of 64 KB took
+// seconds and one of 1 MB did not open.
+func TestLongLine(t *testing.T) {
+	c := newInitialized(t)
+	uri := "file:///long.pego"
+	const n = 1 << 17
+	text := "def a = " + strings.Repeat(`"😀" b `, n) + "\ndef b = \"x\"" // 1 MB, 260,000 tokens
+	start := time.Now()
+	c.open(uri, text) // waits up to 10 seconds
+	var res struct {
+		Data []int `json:"data"`
+	}
+	c.requestInto("textDocument/semanticTokens/full", docParams(uri), &res)
+	if len(res.Data) != 5*(2+2*n+3) {
+		t.Errorf("%d semantic token integers", len(res.Data))
+	}
+	if d := time.Since(start); d > 5*time.Second {
+		t.Errorf("took %v", d)
+	}
+	c.exit()
 }
