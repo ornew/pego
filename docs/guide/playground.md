@@ -45,7 +45,7 @@ In the editors, Tab inserts indentation; press Escape first to move the focus wi
 200,000 characters are shown without highlighting to keep typing responsive.
 
 Parsing runs in a Web Worker, so a slow parse never freezes the page. A parse that takes more than 10 seconds is
-stopped and the worker is restarted.
+stopped and the worker is restarted; edits made in the meantime are parsed on the new worker.
 
 ### Nesting limits
 

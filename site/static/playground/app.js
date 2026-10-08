@@ -500,7 +500,7 @@ async function parse() {
   const slow = setTimeout(() => n === seq && setStatus("busy", "Parsing…"), 300);
   let res;
   try {
-    res = await client.call("parse", req);
+    res = await client.call("parse", req, { key: "parse" });
   } catch (err) {
     clearTimeout(slow);
     if (n !== seq) return;
@@ -666,7 +666,7 @@ async function generate() {
   $("gen-cmd").innerHTML = `<code>pego gen -g grammar.pego ${escapeHTML(flags.join(" "))}</code>`;
   const code = $("pg-go").firstElementChild;
   try {
-    const res = await client.call("generate", req);
+    const res = await client.call("generate", req, { key: "generate" });
     if (n !== genSeq) return;
     if (res.diagnostics?.length) {
       code.textContent = res.diagnostics.map((d) => (d.line ? `${d.line}:${d.col}: ` : "") + d.message).join("\n");

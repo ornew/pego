@@ -23,7 +23,7 @@ if (live && input && output) {
   const run = async () => {
     const n = ++seq;
     try {
-      const res = await client.call("parse", { grammar, input: input.value });
+      const res = await client.call("parse", { grammar, input: input.value }, { key: "parse" });
       if (n !== seq) return;
       if (res.errors?.length) {
         const e = res.errors[0];

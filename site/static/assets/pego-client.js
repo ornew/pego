@@ -1,10 +1,13 @@
 // Client of the playground's Web Worker (playground/worker.js), which runs pego.wasm.
 //
 //   const pego = new PegoClient(playgroundURL);
-//   const res = await pego.call("parse", {grammar, input});
+//   const res = await pego.call("parse", {grammar, input}, {key: "parse"});
 //
-// A call that takes longer than the timeout terminates the worker, which is restarted for the next
-// call, so that a runaway parse cannot hang the page.
+// Calls are queued here and sent to the worker one at a time, so that the timeout of a call counts
+// only the time the worker spends on it. A call with a key replaces a queued call with the same key
+// that has not started (which rejects with an error whose name is "SupersededError"), so that typing
+// quickly does not queue a parse per keystroke. A call that takes longer than the timeout terminates
+// the worker; the calls queued behind it then run on a new worker.
 
 let modulePromise = null;
 
@@ -41,26 +44,45 @@ export function friendlyError(message) {
   return `the parser stopped (${message}) and was restarted`;
 }
 
+function superseded() {
+  const err = new Error("superseded by a newer call");
+  err.name = "SupersededError";
+  return err;
+}
+
 export class PegoClient {
-  constructor(base, { timeout = 10000 } = {}) {
-    this.base = new URL(base, location.href).href;
+  // options.Worker and options.compile replace the Worker constructor and the compilation of
+  // pego.wasm (for tests).
+  constructor(base, { timeout = 10000, Worker: WorkerClass = globalThis.Worker, compile = compileModule } = {}) {
+    this.base = new URL(base, globalThis.location?.href).href;
     this.timeout = timeout;
-    this.pending = new Map();
+    this.WorkerClass = WorkerClass;
+    this.compile = compile;
+    this.queue = []; // calls not yet sent: {method, req, key, resolve, reject}
+    this.active = null; // the call the worker is running: {..., id, timer}
     this.seq = 0;
     this.worker = null;
-    this.version = null;
     this.readyPromise = null;
+    this.version = null;
     this.onrestart = null;
   }
 
+  // start starts a worker if there is none, and returns the version of pego.wasm once it runs. If
+  // starting fails, the next call tries again.
   start() {
-    this.readyPromise ??= this.spawn();
+    if (!this.readyPromise) {
+      const p = this.spawn();
+      this.readyPromise = p;
+      p.catch(() => {
+        if (this.readyPromise === p) this.readyPromise = null;
+      });
+    }
     return this.readyPromise;
   }
 
   async spawn() {
-    const module = await compileModule(this.base);
-    const worker = new Worker(this.base + "worker.js");
+    const module = await this.compile(this.base);
+    const worker = new this.WorkerClass(this.base + "worker.js");
     this.worker = worker;
     const ready = new Promise((resolve, reject) => {
       worker.onmessage = (e) => this.onMessage(worker, e.data, resolve, reject);
@@ -71,8 +93,61 @@ export class PegoClient {
     } catch {
       worker.postMessage({ type: "init", base: this.base }); // the module cannot be sent: compile in the worker
     }
-    this.version = await ready;
+    try {
+      this.version = await ready;
+    } catch (err) {
+      if (this.worker === worker) {
+        worker.terminate();
+        this.worker = null;
+      }
+      throw err;
+    }
     return this.version;
+  }
+
+  call(method, req, { key = null } = {}) {
+    return new Promise((resolve, reject) => {
+      if (key !== null) {
+        this.queue = this.queue.filter((c) => {
+          if (c.key !== key) return true;
+          c.reject(superseded());
+          return false;
+        });
+      }
+      this.queue.push({ method, req, key, resolve, reject });
+      this.pump();
+    });
+  }
+
+  // pump sends the next queued call when the worker is idle, starting a worker if needed.
+  async pump() {
+    if (this.active || this.pumping || !this.queue.length) return;
+    this.pumping = true;
+    try {
+      await this.start();
+    } catch (err) {
+      // The worker could not start: fail the calls waiting for it; a later call tries again.
+      for (const c of this.queue.splice(0)) c.reject(err);
+      return;
+    } finally {
+      this.pumping = false;
+    }
+    if (this.active || !this.queue.length || !this.worker) {
+      if (!this.worker && this.queue.length) this.pump();
+      return;
+    }
+    const c = this.queue.shift();
+    c.id = ++this.seq;
+    c.timer = setTimeout(() => this.onTimeout(c), this.timeout);
+    this.active = c;
+    this.worker.postMessage({ id: c.id, method: c.method, req: c.req });
+  }
+
+  onTimeout(c) {
+    if (this.active !== c) return;
+    this.active = null;
+    c.reject(new Error(`stopped after ${this.timeout / 1000} seconds; the parser was restarted`));
+    this.restart("timeout");
   }
 
   onMessage(worker, msg, resolve, reject) {
@@ -88,46 +163,32 @@ export class PegoClient {
         this.restart("the parser stopped unexpectedly");
         return;
     }
-    const p = this.pending.get(msg.id);
-    if (!p) return;
-    this.pending.delete(msg.id);
-    clearTimeout(p.timer);
-    if (msg.error) {
-      if (fatalError(msg.error)) {
-        p.reject(new Error(friendlyError(msg.error)));
-        this.restart(msg.error);
-      } else {
-        p.reject(new Error(msg.error));
-      }
-    } else {
-      p.resolve(JSON.parse(msg.out));
+    const c = this.active;
+    if (!c || c.id !== msg.id) return;
+    this.active = null;
+    clearTimeout(c.timer);
+    if (msg.error && fatalError(msg.error)) {
+      c.reject(new Error(friendlyError(msg.error)));
+      this.restart(msg.error);
+      return;
     }
+    if (msg.error) c.reject(new Error(msg.error));
+    else c.resolve(JSON.parse(msg.out));
+    this.pump();
   }
 
-  async call(method, req) {
-    await this.start();
-    const id = ++this.seq;
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        this.pending.delete(id);
-        reject(new Error(`stopped after ${this.timeout / 1000} seconds; the parser was restarted`));
-        this.restart("timeout");
-      }, this.timeout);
-      this.pending.set(id, { resolve, reject, timer });
-      this.worker.postMessage({ id, method, req });
-    });
-  }
-
+  // restart replaces the worker. The call it was running fails; the queued calls run on the new one.
   restart(reason) {
     this.worker?.terminate();
     this.worker = null;
-    for (const [, p] of this.pending) {
-      clearTimeout(p.timer);
-      p.reject(new Error(reason));
+    this.readyPromise = null;
+    if (this.active) {
+      clearTimeout(this.active.timer);
+      this.active.reject(new Error(friendlyError(reason)));
+      this.active = null;
     }
-    this.pending.clear();
-    this.readyPromise = this.spawn();
     this.onrestart?.(reason);
+    if (this.queue.length) this.pump();
   }
 }
 

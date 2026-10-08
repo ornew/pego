@@ -77,9 +77,16 @@ that nesting of 400 and 5,000 levels ends with these errors and leaves the progr
 ### The page
 
 The playground runs `pego.wasm` in a **Web Worker**. A long parse cannot freeze the page, and a parse that runs longer
-than 10 seconds is stopped by terminating the worker; the next request starts a new one. The page compiles the module
-once (`WebAssembly.compileStreaming`) and sends the compiled module to each worker, so a restart takes milliseconds.
-Requests are debounced and numbered, and stale responses are dropped.
+than 10 seconds is stopped by terminating the worker. The page compiles the module once
+(`WebAssembly.compileStreaming`) and sends the compiled module to each worker, so a restart takes milliseconds.
+
+The client (`pego-client.js`) queues requests and sends them to the worker one at a time, which is how the worker would
+run them anyway. This makes the timeout count only the time the worker spends on a request, not the time it waited
+behind another, and lets a restart lose nothing but the request that timed out: the requests queued behind it, such as
+the parse of the input the user corrected meanwhile, run on the new worker. A request with a key (`parse`, `generate`)
+replaces a queued request with the same key that has not started, so typing quickly does not queue a parse per
+keystroke. If a worker cannot start (for example, `pego.wasm` cannot be downloaded), the queued requests fail and the
+next request tries again. Requests are also debounced and numbered, and the page drops stale responses.
 
 The editors are textareas with a highlighted copy of the text behind them (the textarea's own text is transparent and
 its caret visible). This gives syntax highlighting for grammars, marks for errors and for the node under the pointer,
