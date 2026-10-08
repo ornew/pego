@@ -100,7 +100,7 @@ left-recursive calculator 15.1 → 9.8 ms, the outline 4.0 → 2.1 ms; the Pratt
 general one, 6.4 → 5.8 ms. JSON `ParseAST` is faster than `Recognize` (3.8 ms), which builds nothing but runs the
 general code. Conversion costs about 6% more than `Parse`.
 
-Direct rules made most of that difference (performance.md, changes 59–61): before them, with every rule run by the
+Direct rules made most of that difference (performance.md, changes 60–62): before them, with every rule run by the
 general machinery of rule calls (capture frames and their trail, the evaluation context of actions), `ParseAST` was
 about 15% faster than `Parse` (JSON 6.2 ms). A hand-written prototype for JSON that kept captures in Go variables and
 built lists directly had taken 4.5 ms.

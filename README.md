@@ -63,14 +63,14 @@ tree, err := p.Parse("1 + 2 * 3 ^ 2") // a *pego.Node, or a *pego.SyntaxError wi
   [published specification](docs/bytecode.md). Precompiled `.pegoc` files load in tens of microseconds, and
   `pego gen` emits a standalone parser: Go that needs nothing but the standard library, or a TypeScript module with
   no dependencies for Node.js, Deno, Bun and browsers.
-- **Fast out of the box.** A 262 KB JSON document becomes a fully typed, positioned tree in under 10 ms with a
-  generated parser. Recognition mode validates without building a tree at all.
+- **Fast out of the box.** A 262 KB JSON document becomes a fully typed, positioned tree in about 3 ms with a
+  generated parser — less time than merely validating it. Recognition mode validates without building a tree at all.
 - **Every backend, one answer.** Closure engine, recursive VM, iterative VM, generated Go and TypeScript: the test
   suite checks that all of them return identical trees, positions and errors.
 - **No nesting too deep.** The iterative VM runs on its own stack, up to 10 million nested rule calls.
 - **Types all the way down.** Declare struct, union and terminal types and build them in actions. Rule types are
   inferred and checked when the grammar compiles, and `pego gen -types` emits matching Go types that the parser
-  builds directly — faster than its own tree, in a tenth of the memory.
+  builds directly — twice as fast as its own tree, in a fifth of the memory.
 - **Precedence without the pain.** Operators are `pratt` levels, not a ladder of rules. Left recursion, direct or
   indirect, just works.
 - **Errors that point the way.** Failures report the farthest position and what was expected there. `#error`

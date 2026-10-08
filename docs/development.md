@@ -52,7 +52,7 @@ This document describes the repository layout, the architecture of the implement
 | Language server | `internal/lsp/` | Analyzes open `.pego` documents (tokens, partial parse, compile, rule types) and answers LSP requests |
 | Bytecode | `bytecode.go`, `bcompile.go`, `disasm.go`, `vm.go`, `ivm.go` | Bytecode module, compiler, disassembler, recursive and iterative VMs |
 | Compiled grammars | `compiled.go`, `modulefile.go` | The `.pegoc` file format |
-| Code generation | `gen.go`, `genrt/`, `gen_ts.go`, `tsrt/` | Generation of standalone Go and TypeScript parsers |
+| Code generation | `gen.go`, `gen_direct.go`, `genrt/`, `gen_ts.go`, `tsrt/` | Generation of standalone Go and TypeScript parsers |
 
 Files without a directory are in `internal/engine/`. The sections below describe each component.
 
@@ -102,7 +102,7 @@ Each memo entry records the range of input it examined (`document.go`). After an
 
 ### Code generation
 
-The generator (`gen.go`, `genrt/`) emits one Go method per expression and embeds `genrt/runtime.go`, a runtime that behaves like the engine, producing a parser that depends only on the standard library. The tests build the generated parsers and check that they return the same results as the engine ([design](design/008-code-generation.md)). With `GenOptions.Recognize`, it also generates the recognizer (`Program.recognizer`) into a second rule table, behind `Recognize`. With `GenOptions.Types` (`gen_types.go`), it also emits a Go type for each grammar type, from the types the type checker inferred (`Program.typed`), and `ParseAST`, which builds them with a second, typed runtime (`genrt/typed.go`, with the rules generated again for it) or, for grammars whose results include CST values, converts the tree of `Parse` ([design](design/012-typed-values.md)).
+The generator (`gen.go`, `genrt/`) emits one Go method per expression and embeds `genrt/runtime.go`, a runtime that behaves like the engine, producing a parser that depends only on the standard library. The tests build the generated parsers and check that they return the same results as the engine ([design](design/008-code-generation.md)). With `GenOptions.Recognize`, it also generates the recognizer (`Program.recognizer`) into a second rule table, behind `Recognize`. With `GenOptions.Types` (`gen_types.go`), it also emits a Go type for each grammar type, from the types the type checker inferred (`Program.typed`), and `ParseAST`, which builds them with a second, typed runtime (`genrt/typed.go`, with the rules generated again for it, most of which `gen_direct.go` compiles into a single method each: the body inlined, captures in Go variables, the action in place; rules with cuts, `#recover`, Pratt expressions and left-recursion leaders keep a method per expression) or, for grammars whose results include CST values, converts the tree of `Parse` ([design](design/012-typed-values.md)).
 
 The TypeScript generator (`gen_ts.go`) walks the same analysis results and emits one function per expression into a module that embeds `tsrt/runtime.ts`, a port of `genrt/runtime.go` that hides JavaScript's differences (UTF-16 strings, 53-bit numbers, JSON escaping). `TestGeneratedTSParsersMatchEngine` runs the generated modules with Node.js on the corpus of the Go generator's test, plus prefixes and byte deletions of short inputs. It compares the JSON, `Node.String` and recognition with the engine, and type-checks the modules with `tsc` ([design](design/013-typescript-generation.md)).
 

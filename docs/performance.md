@@ -891,7 +891,7 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 
 ### 61. Reading code points directly in direct rules
 
-- After change 59, `peek` (the character at the position, in either position unit) was 9% of a JSON `ParseAST`
+- After change 60, `peek` (the character at the position, in either position unit) was 9% of a JSON `ParseAST`
   profile. The compiler does not inline it: its cost is 110 against a budget of 80, mostly for decoding a multi-byte
   character in `Bytes`, and still 88 with that moved into a function of its own, because the call alone costs 57.
   Direct rules now read the character from `p.in[p.pos]` while `p.pos < len(p.in)`, and call `peek` otherwise, in
@@ -932,7 +932,7 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 | Iterative VM: holding body frames by value in the VM stack (a tagged entry instead of a pooled frame behind an interface) | 5–19% slower: each entry is about 150 bytes, and copying and clearing it on every push and pop costs more than the interface call and the pool it saves | Not adopted |
 | Iterative VM: calling body frames directly (a type assertion before the interface call) and returning them to the pool without the type switch | Within ±4% (noise) | Not adopted |
 | Estimating a smaller `Node` (120 → about 88 bytes with `int32` positions and interned type and rule names) by the opposite change: 32 bytes of padding | Closure: JSON +1%, XML +4%, Arith_Pratt +1%, Minilang and the long `Document` within noise, about +12% bytes; so shrinking would gain a few percent at most | Not adopted for now: it would change the public `Node` (positions no longer `int`, names behind methods) for little gain |
-| Inlining small plain rules into direct typed rules (after change 61; a body without calls of up to 16 expressions, also tried transitively) | `ParseAST` JSON −1% to −7% depending on the run, the other benchmarks within ±3% | Not adopted: no consistent gain for more generated code |
+| Inlining small plain rules into direct typed rules (after change 62; a body without calls of up to 16 expressions, also tried transitively) | `ParseAST` JSON −1% to −7% depending on the run, the other benchmarks within ±3% | Not adopted: no consistent gain for more generated code |
 | Setting the fields of the reused action context in place in direct typed rules, instead of copying a whole `tctx` | `ParseAST` JSON −5%, Outline +5%, the others within ±2% | Not adopted (noise) |
 | Memoizing every rule (classic packrat) | 2–3× slower than the transient policy on all workloads; memo entries were never reused for leaf and single-reference rules | Replaced by the transient policy (change 1) |
 
