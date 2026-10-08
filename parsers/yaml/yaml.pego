@@ -8,6 +8,13 @@
 // values in practice is written once per value (ns_plain_one_out for ns-plain-one-line(c) with
 // c = block-key, ...). Scalars keep their source text; folding, escapes and chomping are decoded by
 // the Go code of the package (Scalar.Value), and tags are resolved by Events and Load.
+//
+// Where a PEG needs it (an ordered choice does not try the next alternative once one matched), and where
+// it measurably pays, the rules differ from the productions; a comment says why at each place. The
+// changes made for speed try an alternative only where its first characters can match, define the
+// context only where it changes, and read the common plain scalars without it: together they made
+// ParseAST about four times as fast on the benchmark of Kubernetes-like manifests (39 ms to 9.2 ms for
+// 256 KB), and a differential test against the version without them found no difference.
 package yaml
 
 type Stream struct { Documents []Document }

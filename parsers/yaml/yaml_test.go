@@ -307,6 +307,19 @@ func TestCheck(t *testing.T) {
 	}
 }
 
+func TestSemanticErrorPosition(t *testing.T) {
+	for _, tc := range []struct{ src, want string }{
+		{"a: 1\nb: *x\n", "yaml: 2:4: undefined alias *x"},
+		{"é: 1\né: 2\n", `yaml: 2:1: duplicate key "é"`},
+		{"- !e!x a\n", "yaml: 1:3: undeclared tag handle !e!"},
+	} {
+		_, err := yaml.LoadAll(tc.src)
+		if err == nil || err.Error() != tc.want {
+			t.Errorf("%q: %v, want %s", tc.src, err, tc.want)
+		}
+	}
+}
+
 func TestEvents(t *testing.T) {
 	got, err := yaml.Events("%TAG !e! tag:e.com,2000:\n--- !e!m\n- &a 'x'\n- *a\n- {k: v}\n- |\n  w\n...\n")
 	if err != nil {
