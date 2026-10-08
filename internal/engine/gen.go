@@ -24,6 +24,9 @@ type GenOptions struct {
 	// Types also generates a Go type for each type of the grammar and ParseAST, which returns the
 	// result as values of those types (see gen_types.go).
 	Types bool
+	// Recognize also generates Recognize, which checks the input without building a tree (as the
+	// engine's ParseOptions.Recognize does).
+	Recognize bool
 }
 
 // Generate generates the source code of a Go parser for a grammar.
@@ -46,9 +49,20 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if !token.IsIdentifier(opts.Package) || opts.Package == "_" {
 		return nil, fmt.Errorf("invalid package name %q", opts.Package)
 	}
-	gen := &generator{prog: prog}
+	gen := &generator{prog: prog, table: "rules"}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
+	var rec *Program
+	if opts.Recognize {
+		// The recognizer: the program in which no rule builds a value (Program.recognizer), in a
+		// rule table of its own.
+		if rec, err = prog.recognizer(); err != nil {
+			return nil, err
+		}
+		gen.prog, gen.table = rec, "recRules"
+		gen.rules()
+		gen.prog, gen.table = prog, "rules"
+	}
 	fmt.Fprintf(&gen.init, "\tdescs = %s\n", goStrings(gen.descs))
 
 	var out strings.Builder
@@ -59,14 +73,20 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	out.WriteString("\n// --- Generated code ---\n\n")
 	fmt.Fprintf(&out, "// Parse parses the whole input with the rule %s. unit selects the position unit (CodePoints by default).\n", start.name)
 	out.WriteString("// If the parse recovered from errors with #recover, it returns the node together with SyntaxErrors.\n")
-	fmt.Fprintf(&out, "func Parse(input string, unit ...Unit) (*Node, error) { return parse(rules[%d], input, unit) }\n\n", start.id)
+	fmt.Fprintf(&out, "func Parse(input string, unit ...Unit) (*Node, error) { return parse(rules[%d], nseen, input, unit) }\n\n", start.id)
+	if rec != nil {
+		fmt.Fprintf(&out, "// Recognize checks that the whole input matches the rule %s without building a tree, and returns the\n", start.name)
+		out.WriteString("// syntax errors Parse would return (SyntaxErrors for errors recovered with #recover). Actions are not\n// evaluated, so it does not report runtime errors in actions.\n")
+		fmt.Fprintf(&out, "func Recognize(input string, unit ...Unit) error {\n\t_, err := parse(recRules[%d], recNseen, input, unit)\n\treturn err\n}\n\n", rec.byName[start.name].id)
+		out.WriteString("// recRules is the rule table of Recognize, and recNseen its number of rules with rule.seen set.\nvar recRules []*rule\nvar recNseen int\n\n")
+	}
 	out.WriteString(`// ParseRule parses the whole input with the rule name.
 func ParseRule(name, input string, unit ...Unit) (*Node, error) {
 	r := ruleByName(name)
 	if r == nil {
 		return nil, fmt.Errorf("rule %s is not defined", name)
 	}
-	return parse(r, input, unit)
+	return parse(r, nseen, input, unit)
 }
 
 `)
@@ -92,6 +112,8 @@ func ParseRule(name, input string, unit ...Unit) (*Node, error) {
 
 type generator struct {
 	prog    *Program
+	table   string // the rule table being generated: rules, or recRules for Recognize
+	cur     *rule  // the rule being generated
 	vars    strings.Builder
 	init    strings.Builder
 	methods strings.Builder
@@ -142,28 +164,33 @@ func (g *generator) rules() {
 		s := newScope()
 		scopes[r] = s
 		if _, ok := r.def.Expr.(*grammar.Pratt); !ok {
+			g.cur = r
 			bodies[r] = g.expr(r.def.Expr, s, !r.lean)
 		}
 	}
-	init.WriteString("\trules = []*rule{\n")
+	fmt.Fprintf(init, "\t%s = []*rule{\n", g.table)
 	for _, r := range all {
 		fmt.Fprintf(init, "\t\t{id: %d, name: %q, scope: %s, bodyIsSeq: %v, terminalType: %q, memo: %v, leader: %v, seen: %d, novalue: %v, vars: %s},\n",
 			r.id, r.name, goStrings(scopes[r].names), r.bodyIsSeq, r.terminalType, r.memo && !r.transient, r.leader, r.seen, r.novalue, goStrings(r.vars))
 	}
 	init.WriteString("\t}\n")
-	fmt.Fprintf(init, "\tnseen = %d\n", g.prog.nseen)
+	fmt.Fprintf(init, "\t%s = %d\n", g.seenVar(), g.prog.nseen)
 	for _, r := range all {
 		if pr, ok := r.def.Expr.(*grammar.Pratt); ok {
+			g.cur = r
 			g.pratt(r, pr)
 			continue
 		}
-		fmt.Fprintf(init, "\trules[%d].body = func(p *parser, _ int) (*Node, bool) { return p.%s() }\n", r.id, bodies[r])
+		fmt.Fprintf(init, "\t%s[%d].body = func(p *parser, _ int) (*Node, bool) { return p.%s() }\n", g.table, r.id, bodies[r])
 		if r.action != nil {
-			fmt.Fprintf(init, "\trules[%d].action = func(c *actx) any { return %s }\n", r.id, g.term(r.action, scopes[r], nil))
+			fmt.Fprintf(init, "\t%s[%d].action = func(c *actx) any { return %s }\n", g.table, r.id, g.term(r.action, scopes[r], nil))
 		}
 		if r.plain {
 			g.plainCall(r, bodies[r])
 		}
+	}
+	if g.table != "rules" {
+		return // the recognizer shares the struct fields
 	}
 	// Struct fields, used to detect references to undeclared fields at run time.
 	var names []string
@@ -180,6 +207,22 @@ func (g *generator) rules() {
 		}
 		fmt.Fprintf(init, "\tstructFields[%q] = map[string]bool{%s}\n", name, strings.Join(fields, ", "))
 	}
+}
+
+// plainPrefix is the prefix of the methods written by plainCall, and seenVar the variable that
+// holds the number of rules with rule.seen set, for the rule table being generated.
+func (g *generator) plainPrefix() string {
+	if g.table == "rules" {
+		return "r"
+	}
+	return "q"
+}
+
+func (g *generator) seenVar() string {
+	if g.table == "rules" {
+		return "nseen"
+	}
+	return "recNseen"
 }
 
 // method emits a method with the given body and returns its name.
@@ -203,7 +246,7 @@ func describe(e grammar.Expr) string {
 // plainCall writes the method r<id>, which does what invokePlain does for the rule r (a rule never
 // memoized and without captures) with a direct call of its body.
 func (g *generator) plainCall(r *rule, body string) {
-	fmt.Fprintf(&g.methods, "// %s, called as by invokePlain\nfunc (p *parser) r%d() (*Node, bool) {\n", r.name, r.id)
+	fmt.Fprintf(&g.methods, "// %s, called as by invokePlain\nfunc (p *parser) %s%d() (*Node, bool) {\n", r.name, g.plainPrefix(), r.id)
 	g.methods.WriteString(`	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
@@ -221,7 +264,7 @@ func (g *generator) plainCall(r *rule, body string) {
 	if r.novalue {
 		g.methods.WriteString("\t\tv = nil\n")
 	} else {
-		fmt.Fprintf(&g.methods, "\t\tv = p.finish(rules[%d], emptyFrame, v, start)\n", r.id)
+		fmt.Fprintf(&g.methods, "\t\tv = p.finish(%s[%d], emptyFrame, v, start)\n", g.table, r.id)
 	}
 	g.methods.WriteString(`	} else {
 		p.pos = start
@@ -263,11 +306,11 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 		if _, pratt := r.def.Expr.(*grammar.Pratt); r.plain && !pratt {
 			// Never memoized and without captures: call does nothing but invokePlain, which a
 			// method of its own does with a direct call of the body (see plainCalls).
-			fmt.Fprintf(&b, "\treturn p.r%d()\n", r.id)
+			fmt.Fprintf(&b, "\treturn p.%s%d()\n", g.plainPrefix(), r.id)
 		} else if r.plain {
-			fmt.Fprintf(&b, "\treturn p.invokePlain(rules[%d], %d)\n", r.id, min)
+			fmt.Fprintf(&b, "\treturn p.invokePlain(%s[%d], %d)\n", g.table, r.id, min)
 		} else {
-			fmt.Fprintf(&b, "\treturn p.call(rules[%d], %d)\n", r.id, min)
+			fmt.Fprintf(&b, "\treturn p.call(%s[%d], %d)\n", g.table, r.id, min)
 		}
 	case *grammar.Seq:
 		var items []string
@@ -327,6 +370,11 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 		m := g.expr(e.Expr, s, false)
 		fmt.Fprintf(&b, "\t_, ok := p.%s()\n\treturn nil, ok\n", m)
 	case *grammar.Capture:
+		if !build && g.cur != nil && g.cur.predCaps != nil && !g.cur.predCaps[e.Name] {
+			// In the recognizer, captures not referenced by predicates are not recorded (as in
+			// the engine).
+			return g.expr(e.Expr, s, false)
+		}
 		slot := s.slot(e.Name)
 		m := g.expr(e.Expr, s, true)
 		fmt.Fprintf(&b, "\tv, ok := p.%s()\n\tif ok {\n\t\tp.setCapture(%d, v)\n\t}\n", m, slot)
@@ -494,7 +542,7 @@ func (g *generator) attributed(e *grammar.Attributed, s *scope, build bool) stri
 
 func (g *generator) pratt(r *rule, e *grammar.Pratt) {
 	var b strings.Builder
-	fmt.Fprintf(&b, "\trules[%d].pratt = &pratt{\n", r.id)
+	fmt.Fprintf(&b, "\t%s[%d].pratt = &pratt{\n", g.table, r.id)
 	if e.Skip != nil {
 		fmt.Fprintf(&b, "\t\tskip: (*parser).%s,\n", g.expr(e.Skip, newScope(), false))
 	}
@@ -519,7 +567,7 @@ func (g *generator) pratt(r *rule, e *grammar.Pratt) {
 	fmt.Fprintf(&b, "\t\tprefix: []*prattOp{%s},\n", strings.Join(prefix, ",\n"))
 	fmt.Fprintf(&b, "\t\tled: []*prattOp{%s},\n", strings.Join(led, ",\n"))
 	b.WriteString("\t}\n")
-	fmt.Fprintf(&b, "\trules[%d].body = func(p *parser, min int) (*Node, bool) { return p.prattParse(rules[%d], min) }\n", r.id, r.id)
+	fmt.Fprintf(&b, "\t%s[%d].body = func(p *parser, min int) (*Node, bool) { return p.prattParse(%s[%d], min) }\n", g.table, r.id, g.table, r.id)
 	g.init.WriteString(b.String())
 }
 
@@ -529,11 +577,12 @@ func (g *generator) prattLine(e grammar.Expr, action grammar.Term, operator bool
 	if operator {
 		locals = []string{"lhs", "rhs", "op"}
 	}
-	// Lines whose value is unused are matched without values, as in the engine.
-	m := g.expr(e, s, !leanLine(action, locals))
+	// Lines whose value is unused are matched without values, as in the engine; so are all lines
+	// of a rule without a value (in the recognizer).
+	m := g.expr(e, s, !g.cur.novalue && !leanLine(action, locals))
 	_, isSeq := e.(*grammar.Seq)
 	act := "nil"
-	if action != nil {
+	if action != nil && !g.cur.novalue {
 		var locals map[string]string
 		if operator {
 			locals = map[string]string{"lhs": "c.lhs", "rhs": "c.rhs", "op": "c.op"}

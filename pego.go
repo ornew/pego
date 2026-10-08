@@ -184,6 +184,12 @@ func WithTypes() GenOption {
 	return func(o *engine.GenOptions) { o.Types = true }
 }
 
+// WithRecognize also generates a function Recognize, which checks the input against the start rule
+// without building a tree, like Parse with RecognizeOnly.
+func WithRecognize() GenOption {
+	return func(o *engine.GenOptions) { o.Recognize = true }
+}
+
 // GenerateGo generates the source code of a standalone Go parser for g in package pkg. The generated code
 // depends only on the standard library; its Parse(input) parses from the rule start. It does not support
 // stream or incremental parsing.

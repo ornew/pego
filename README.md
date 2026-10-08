@@ -116,6 +116,7 @@ pego fmt -w grammar.pego                         # format in place, comments kep
 pego compile -g grammar.pego -o grammar.pegoc    # precompile
 pego gen -g grammar.pego -pkg calc -o parser.go  # generate a standalone Go parser
 pego gen -g grammar.pego -pkg calc -types        # ... with Go types for the grammar's types
+pego gen -g grammar.pego -pkg calc -recognize    # ... with Recognize, which validates without a tree
 ```
 
 Run `pego` without arguments for every command and flag.

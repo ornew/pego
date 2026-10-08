@@ -265,10 +265,11 @@ const (
 // maxDepth is the maximum nesting of rule calls, the same default as the engine.
 const maxDepth = 100_000
 
-// parse parses the whole input with rule r.
-func parse(r *rule, input string, units []Unit) (n *Node, err error) {
+// parse parses the whole input with rule r of a rule table with seen rules that have rule.seen
+// set.
+func parse(r *rule, seen int, input string, units []Unit) (n *Node, err error) {
 	p := &parser{}
-	p.memo.stride = nseen
+	p.memo.stride = seen
 	if len(units) > 0 && units[0] == Bytes {
 		p.unit, p.bs, p.n = Bytes, input, len(input)
 	} else {
@@ -1721,6 +1722,9 @@ func (p *parser) prattNud(r *rule) (*Node, bool) {
 }
 
 func (p *parser) lineResult(r *rule, l *prattLine, f *frame, v *Node, start int) *Node {
+	if r.novalue {
+		return nil
+	}
 	if l.action != nil {
 		c := p.useCtx(actx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
 		if l.isSeq && v != nil {
@@ -1744,6 +1748,9 @@ func (p *parser) lineResult(r *rule, l *prattLine, f *frame, v *Node, start int)
 }
 
 func (p *parser) prattBuild(r *rule, a *prattAttempt, lhs, rhs *Node) *Node {
+	if r.novalue {
+		return nil
+	}
 	start, end := a.start, p.pos
 	if lhs != nil {
 		start = lhs.Start
@@ -1784,7 +1791,19 @@ func (p *parser) prattBuild(r *rule, a *prattAttempt, lhs, rhs *Node) *Node {
 
 // Parse parses the whole input with the rule main. unit selects the position unit (CodePoints by default).
 // If the parse recovered from errors with #recover, it returns the node together with SyntaxErrors.
-func Parse(input string, unit ...Unit) (*Node, error) { return parse(rules[0], input, unit) }
+func Parse(input string, unit ...Unit) (*Node, error) { return parse(rules[0], nseen, input, unit) }
+
+// Recognize checks that the whole input matches the rule main without building a tree, and returns the
+// syntax errors Parse would return (SyntaxErrors for errors recovered with #recover). Actions are not
+// evaluated, so it does not report runtime errors in actions.
+func Recognize(input string, unit ...Unit) error {
+	_, err := parse(recRules[0], recNseen, input, unit)
+	return err
+}
+
+// recRules is the rule table of Recognize, and recNseen its number of rules with rule.seen set.
+var recRules []*rule
+var recNseen int
 
 // ParseRule parses the whole input with the rule name.
 func ParseRule(name, input string, unit ...Unit) (*Node, error) {
@@ -1792,7 +1811,7 @@ func ParseRule(name, input string, unit ...Unit) (*Node, error) {
 	if r == nil {
 		return nil, fmt.Errorf("rule %s is not defined", name)
 	}
-	return parse(r, input, unit)
+	return parse(r, nseen, input, unit)
 }
 
 var scope11 = []string{"s"}
@@ -1874,6 +1893,70 @@ var lit381 = []rune(")")
 var lit384 = []rune("[")
 var lit389 = []rune("]")
 var lit392 = []rune(".")
+var scope407 = []string{}
+var lit409 = []rune("{")
+var lit413 = []rune("}")
+var lit426 = []rune(";")
+var lit435 = []rune("=")
+var lit439 = []rune(";")
+var lit444 = []rune("=")
+var lit446 = []rune("=")
+var lit451 = []rune(";")
+var lit477 = []rune(";")
+var lit484 = []rune("(")
+var lit489 = []rune(")")
+var lit497 = []rune(",")
+var scope504 = []string{}
+var lit509 = []rune(";")
+var lit517 = []rune(",")
+var scope522 = []string{}
+var lit533 = []rune("let")
+var lit535 = []rune("fn")
+var lit537 = []rune("if")
+var lit539 = []rune("else")
+var lit541 = []rune("while")
+var lit543 = []rune("return")
+var lit545 = []rune("true")
+var lit547 = []rune("false")
+var lit555 = []rune(".")
+var lit561 = []rune("\"")
+var lit564 = []rune("\"")
+var lit568 = []rune("\\")
+var lit574 = []rune("true")
+var lit576 = []rune("false")
+var lit582 = []rune("let")
+var lit587 = []rune("fn")
+var lit592 = []rune("if")
+var lit597 = []rune("else")
+var lit602 = []rune("while")
+var lit607 = []rune("return")
+var lit613 = []rune("//")
+var lit624 = []rune("(")
+var lit628 = []rune(")")
+var lit631 = []rune("[")
+var lit636 = []rune("]")
+var lit639 = []rune("?")
+var lit643 = []rune(":")
+var lit646 = []rune("||")
+var lit648 = []rune("&&")
+var lit650 = []rune("==")
+var lit652 = []rune("!=")
+var lit654 = []rune("<=")
+var lit656 = []rune(">=")
+var lit658 = []rune("<")
+var lit660 = []rune(">")
+var lit663 = []rune("+")
+var lit665 = []rune("-")
+var lit668 = []rune("*")
+var lit670 = []rune("/")
+var lit672 = []rune("%")
+var lit675 = []rune("-")
+var lit677 = []rune("!")
+var lit680 = []rune("(")
+var lit685 = []rune(")")
+var lit688 = []rune("[")
+var lit692 = []rune("]")
+var lit695 = []rune(".")
 
 func init() {
 	rules = []*rule{
@@ -2029,6 +2112,92 @@ func init() {
 	structFields["Return"] = map[string]bool{"Value": true}
 	structFields["Unary"] = map[string]bool{"Op": true, "X": true}
 	structFields["While"] = map[string]bool{"Cond": true, "Body": true}
+	recRules = []*rule{
+		{id: 0, name: "main", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 1, name: "stmts", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, seen: 0, novalue: true, vars: []string{}},
+		{id: 2, name: "block", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 1, novalue: true, vars: []string{}},
+		{id: 3, name: "stmt", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 4, name: "let", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 5, name: "assign", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 6, name: "if", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 2, novalue: true, vars: []string{}},
+		{id: 7, name: "else", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 8, name: "while", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 9, name: "return", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 10, name: "func", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 11, name: "params", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 12, name: "exprStmt", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 13, name: "expr", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, seen: 3, novalue: true, vars: []string{}},
+		{id: 14, name: "operation", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, seen: 4, novalue: true, vars: []string{}},
+		{id: 15, name: "args", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 5, novalue: true, vars: []string{}},
+		{id: 16, name: "ident", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 6, novalue: true, vars: []string{}},
+		{id: 17, name: "name", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, seen: 7, novalue: true, vars: []string{}},
+		{id: 18, name: "keyword", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 19, name: "idchar", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 20, name: "number", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 21, name: "string", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 22, name: "strchars", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 23, name: "bool", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 24, name: "kw_let", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 25, name: "kw_fn", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 26, name: "kw_if", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 27, name: "kw_else", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 28, name: "kw_while", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 29, name: "kw_return", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 30, name: "ws", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+	}
+	recNseen = 8
+	recRules[0].body = func(p *parser, _ int) (*Node, bool) { return p.e402() }
+	recRules[1].body = func(p *parser, _ int) (*Node, bool) { return p.e408() }
+	recRules[2].body = func(p *parser, _ int) (*Node, bool) { return p.e415() }
+	recRules[3].body = func(p *parser, _ int) (*Node, bool) { return p.e430() }
+	recRules[4].body = func(p *parser, _ int) (*Node, bool) { return p.e441() }
+	recRules[5].body = func(p *parser, _ int) (*Node, bool) { return p.e453() }
+	recRules[6].body = func(p *parser, _ int) (*Node, bool) { return p.e460() }
+	recRules[7].body = func(p *parser, _ int) (*Node, bool) { return p.e467() }
+	recRules[8].body = func(p *parser, _ int) (*Node, bool) { return p.e472() }
+	recRules[9].body = func(p *parser, _ int) (*Node, bool) { return p.e479() }
+	recRules[10].body = func(p *parser, _ int) (*Node, bool) { return p.e493() }
+	recRules[11].body = func(p *parser, _ int) (*Node, bool) { return p.e506() }
+	recRules[12].body = func(p *parser, _ int) (*Node, bool) { return p.e511() }
+	recRules[13].body = func(p *parser, _ int) (*Node, bool) { return p.e513() }
+	recRules[14].pratt = &pratt{
+		skip: (*parser).e619,
+		operands: []*prattLine{
+			&prattLine{scope: []string{}, m: (*parser).e620, action: nil, isSeq: false},
+			&prattLine{scope: []string{}, m: (*parser).e621, action: nil, isSeq: false},
+			&prattLine{scope: []string{}, m: (*parser).e622, action: nil, isSeq: false},
+			&prattLine{scope: []string{}, m: (*parser).e623, action: nil, isSeq: false},
+			&prattLine{scope: []string{}, m: (*parser).e630, action: nil, isSeq: true},
+			&prattLine{scope: []string{}, m: (*parser).e638, action: nil, isSeq: true},
+		},
+		prefix: []*prattOp{{id: 6, kind: "prefix", assoc: "", level: 7, line: &prattLine{scope: []string{}, m: (*parser).e679, action: nil, isSeq: false}}},
+		led: []*prattOp{{id: 0, kind: "infix", assoc: "right", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e645, action: nil, isSeq: true}},
+			{id: 1, kind: "infix", assoc: "left", level: 2, line: &prattLine{scope: []string{}, m: (*parser).e647, action: nil, isSeq: false}},
+			{id: 2, kind: "infix", assoc: "left", level: 3, line: &prattLine{scope: []string{}, m: (*parser).e649, action: nil, isSeq: false}},
+			{id: 3, kind: "infix", assoc: "none", level: 4, line: &prattLine{scope: []string{}, m: (*parser).e662, action: nil, isSeq: false}},
+			{id: 4, kind: "infix", assoc: "left", level: 5, line: &prattLine{scope: []string{}, m: (*parser).e667, action: nil, isSeq: false}},
+			{id: 5, kind: "infix", assoc: "left", level: 6, line: &prattLine{scope: []string{}, m: (*parser).e674, action: nil, isSeq: false}},
+			{id: 7, kind: "postfix", assoc: "", level: 8, line: &prattLine{scope: []string{}, m: (*parser).e687, action: nil, isSeq: true}},
+			{id: 8, kind: "postfix", assoc: "", level: 8, line: &prattLine{scope: []string{}, m: (*parser).e694, action: nil, isSeq: true}},
+			{id: 9, kind: "postfix", assoc: "", level: 8, line: &prattLine{scope: []string{}, m: (*parser).e699, action: nil, isSeq: true}}},
+	}
+	recRules[14].body = func(p *parser, min int) (*Node, bool) { return p.prattParse(recRules[14], min) }
+	recRules[15].body = func(p *parser, _ int) (*Node, bool) { return p.e524() }
+	recRules[16].body = func(p *parser, _ int) (*Node, bool) { return p.e530() }
+	recRules[17].body = func(p *parser, _ int) (*Node, bool) { return p.e532() }
+	recRules[18].body = func(p *parser, _ int) (*Node, bool) { return p.e552() }
+	recRules[19].body = func(p *parser, _ int) (*Node, bool) { return p.e553() }
+	recRules[20].body = func(p *parser, _ int) (*Node, bool) { return p.e560() }
+	recRules[21].body = func(p *parser, _ int) (*Node, bool) { return p.e566() }
+	recRules[22].body = func(p *parser, _ int) (*Node, bool) { return p.e573() }
+	recRules[23].body = func(p *parser, _ int) (*Node, bool) { return p.e581() }
+	recRules[24].body = func(p *parser, _ int) (*Node, bool) { return p.e586() }
+	recRules[25].body = func(p *parser, _ int) (*Node, bool) { return p.e591() }
+	recRules[26].body = func(p *parser, _ int) (*Node, bool) { return p.e596() }
+	recRules[27].body = func(p *parser, _ int) (*Node, bool) { return p.e601() }
+	recRules[28].body = func(p *parser, _ int) (*Node, bool) { return p.e606() }
+	recRules[29].body = func(p *parser, _ int) (*Node, bool) { return p.e611() }
+	recRules[30].body = func(p *parser, _ int) (*Node, bool) { return p.e618() }
 	descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"{\"", "\"}\"", "(?^;{}\\n)", "\";\"", "\"=\"", "\"(\"", "\")\"", "\",\"", "expected an expression", "(?a-zA-Z_)", "expected a name", "\"let\"", "\"fn\"", "\"if\"", "\"else\"", "\"while\"", "\"return\"", "\"true\"", "\"false\"", "(?a-zA-Z0-9_)", "(?0-9)", "\".\"", "\"\\\"\"", "(?^\"\\\\\\n)", "\"\\\\\"", "(? \\t\\r\\n)", "\"//\"", "(?^\\n)", "\"[\"", "\"]\"", "\"?\"", "\":\"", "\"||\"", "\"&&\"", "\"==\"", "\"!=\"", "\"<=\"", "\">=\"", "\"<\"", "\">\"", "\"+\"", "\"-\"", "\"*\"", "\"/\"", "\"%\"", "\"!\""}
 }
 
@@ -5855,6 +6024,2979 @@ func (p *parser) r39() (*Node, bool) {
 		p.tooDeep()
 	}
 	v, ok := p.e308()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// stmts
+func (p *parser) e399() (*Node, bool) {
+	return p.call(recRules[1], 0)
+}
+
+// ws
+func (p *parser) e400() (*Node, bool) {
+	return p.q30()
+}
+
+// $$
+func (p *parser) e401() (*Node, bool) {
+	return p.anchor(p.atEnd(), idEndInput)
+}
+
+// body:stmts ws $$
+func (p *parser) e402() (*Node, bool) {
+	if _, ok := p.e399(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e400(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e401(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// ws
+func (p *parser) e403() (*Node, bool) {
+	return p.q30()
+}
+
+// -ws
+func (p *parser) e404() (*Node, bool) {
+	_, ok := p.e403()
+	return nil, ok
+}
+
+// stmt
+func (p *parser) e405() (*Node, bool) {
+	return p.q3()
+}
+
+// -ws s:stmt
+func (p *parser) e406() (*Node, bool) {
+	if _, ok := p.e404(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e405(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// (-ws s:stmt)*
+func (p *parser) e408() (*Node, bool) {
+	count := 0
+	for {
+		m0 := p.mark()
+		prevCut, prevFrame := p.cut, p.frame
+		p.cut = false
+		f := p.newFrame(0)
+		p.frame = f
+		_, ok := p.e406()
+		cut := p.cut
+		p.cut, p.frame = prevCut, prevFrame
+		if !ok {
+			p.reset(m0)
+			if cut {
+				return nil, false
+			}
+			break
+		}
+		count++
+		if p.pos == m0.pos && count >= 0 {
+			break
+		}
+	}
+	if count < 0 {
+		return nil, false
+	}
+	return nil, true
+}
+
+// "{"
+func (p *parser) e410() (*Node, bool) {
+	return p.matchLiteral(lit409, "{", 5, false)
+}
+
+// stmts
+func (p *parser) e411() (*Node, bool) {
+	return p.call(recRules[1], 0)
+}
+
+// ws
+func (p *parser) e412() (*Node, bool) {
+	return p.q30()
+}
+
+// "}"
+func (p *parser) e414() (*Node, bool) {
+	return p.matchLiteral(lit413, "}", 6, false)
+}
+
+// "{" body:stmts ws "}"
+func (p *parser) e415() (*Node, bool) {
+	if _, ok := p.e410(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e411(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e412(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e414(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// let
+func (p *parser) e416() (*Node, bool) {
+	return p.q4()
+}
+
+// func
+func (p *parser) e417() (*Node, bool) {
+	return p.q10()
+}
+
+// if
+func (p *parser) e418() (*Node, bool) {
+	return p.call(recRules[6], 0)
+}
+
+// while
+func (p *parser) e419() (*Node, bool) {
+	return p.q8()
+}
+
+// return
+func (p *parser) e420() (*Node, bool) {
+	return p.q9()
+}
+
+// block
+func (p *parser) e421() (*Node, bool) {
+	return p.call(recRules[2], 0)
+}
+
+// assign
+func (p *parser) e422() (*Node, bool) {
+	return p.q5()
+}
+
+// exprStmt
+func (p *parser) e423() (*Node, bool) {
+	return p.q12()
+}
+
+// let / func / if / while / return / block / assign / exprStmt
+func (p *parser) e424() (*Node, bool) {
+	m0 := p.mark()
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e416()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e417()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e418()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e419()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e420()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e421()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e422()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e423()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+// (?^;{}\n)+
+func (p *parser) e425() (*Node, bool) {
+	count := 0
+	for {
+		ch, size, ok := p.peek()
+		if !ok || (ch == 59 || ch == 123 || ch == 125 || ch == 10) {
+			p.expect(p.pos, 7)
+			break
+		}
+		p.pos += size
+		count++
+	}
+	return nil, count >= 1
+}
+
+// ";"
+func (p *parser) e427() (*Node, bool) {
+	return p.matchLiteral(lit426, ";", 8, false)
+}
+
+// ";"?
+func (p *parser) e428() (*Node, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.cut = false
+	v, ok := p.e427()
+	cut := p.cut
+	p.cut = prevCut
+	if ok {
+		return v, true
+	}
+	p.reset(m0)
+	if cut {
+		return nil, false
+	}
+	return nil, true
+}
+
+// (?^;{}\n)+ ";"?
+func (p *parser) e429() (*Node, bool) {
+	if _, ok := p.e425(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e428(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// #recover
+func (p *parser) e430() (*Node, bool) {
+	return p.recoverAttr((*parser).e424, (*parser).e429, false)
+}
+
+// kw_let
+func (p *parser) e431() (*Node, bool) {
+	return p.q24()
+}
+
+// ws
+func (p *parser) e432() (*Node, bool) {
+	return p.q30()
+}
+
+// name
+func (p *parser) e433() (*Node, bool) {
+	return p.call(recRules[17], 0)
+}
+
+// ws
+func (p *parser) e434() (*Node, bool) {
+	return p.q30()
+}
+
+// "="
+func (p *parser) e436() (*Node, bool) {
+	return p.matchLiteral(lit435, "=", 9, false)
+}
+
+// expr
+func (p *parser) e437() (*Node, bool) {
+	return p.call(recRules[13], 0)
+}
+
+// ws
+func (p *parser) e438() (*Node, bool) {
+	return p.q30()
+}
+
+// ";"
+func (p *parser) e440() (*Node, bool) {
+	return p.matchLiteral(lit439, ";", 8, false)
+}
+
+// kw_let ws n:name ws "=" v:expr ws ";"
+func (p *parser) e441() (*Node, bool) {
+	if _, ok := p.e431(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e432(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e433(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e434(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e436(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e437(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e438(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e440(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// expr
+func (p *parser) e442() (*Node, bool) {
+	return p.call(recRules[13], 0)
+}
+
+// ws
+func (p *parser) e443() (*Node, bool) {
+	return p.q30()
+}
+
+// "="
+func (p *parser) e445() (*Node, bool) {
+	return p.matchLiteral(lit444, "=", 9, false)
+}
+
+// "="
+func (p *parser) e447() (*Node, bool) {
+	return p.matchLiteral(lit446, "=", 9, false)
+}
+
+// !"="
+func (p *parser) e448() (*Node, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.silent++
+	_, ok := p.e447()
+	p.silent--
+	p.cut = prevCut
+	p.reset(m0)
+	return nil, !ok
+}
+
+// expr
+func (p *parser) e449() (*Node, bool) {
+	return p.call(recRules[13], 0)
+}
+
+// ws
+func (p *parser) e450() (*Node, bool) {
+	return p.q30()
+}
+
+// ";"
+func (p *parser) e452() (*Node, bool) {
+	return p.matchLiteral(lit451, ";", 8, false)
+}
+
+// t:expr ws "=" !"=" v:expr ws ";"
+func (p *parser) e453() (*Node, bool) {
+	if _, ok := p.e442(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e443(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e445(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e448(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e449(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e450(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e452(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// kw_if
+func (p *parser) e454() (*Node, bool) {
+	return p.q26()
+}
+
+// expr
+func (p *parser) e455() (*Node, bool) {
+	return p.call(recRules[13], 0)
+}
+
+// ws
+func (p *parser) e456() (*Node, bool) {
+	return p.q30()
+}
+
+// block
+func (p *parser) e457() (*Node, bool) {
+	return p.call(recRules[2], 0)
+}
+
+// else
+func (p *parser) e458() (*Node, bool) {
+	return p.q7()
+}
+
+// else?
+func (p *parser) e459() (*Node, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.cut = false
+	v, ok := p.e458()
+	cut := p.cut
+	p.cut = prevCut
+	if ok {
+		return v, true
+	}
+	p.reset(m0)
+	if cut {
+		return nil, false
+	}
+	return nil, true
+}
+
+// kw_if c:expr ws then:block e:else?
+func (p *parser) e460() (*Node, bool) {
+	if _, ok := p.e454(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e455(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e456(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e457(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e459(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// ws
+func (p *parser) e461() (*Node, bool) {
+	return p.q30()
+}
+
+// kw_else
+func (p *parser) e462() (*Node, bool) {
+	return p.q27()
+}
+
+// ws
+func (p *parser) e463() (*Node, bool) {
+	return p.q30()
+}
+
+// if
+func (p *parser) e464() (*Node, bool) {
+	return p.call(recRules[6], 0)
+}
+
+// block
+func (p *parser) e465() (*Node, bool) {
+	return p.call(recRules[2], 0)
+}
+
+// if / block
+func (p *parser) e466() (*Node, bool) {
+	m0 := p.mark()
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e464()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e465()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+// ws kw_else ws x:(if / block)
+func (p *parser) e467() (*Node, bool) {
+	if _, ok := p.e461(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e462(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e463(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e466(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// kw_while
+func (p *parser) e468() (*Node, bool) {
+	return p.q28()
+}
+
+// expr
+func (p *parser) e469() (*Node, bool) {
+	return p.call(recRules[13], 0)
+}
+
+// ws
+func (p *parser) e470() (*Node, bool) {
+	return p.q30()
+}
+
+// block
+func (p *parser) e471() (*Node, bool) {
+	return p.call(recRules[2], 0)
+}
+
+// kw_while c:expr ws body:block
+func (p *parser) e472() (*Node, bool) {
+	if _, ok := p.e468(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e469(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e470(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e471(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// kw_return
+func (p *parser) e473() (*Node, bool) {
+	return p.q29()
+}
+
+// expr
+func (p *parser) e474() (*Node, bool) {
+	return p.call(recRules[13], 0)
+}
+
+// expr?
+func (p *parser) e475() (*Node, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.cut = false
+	v, ok := p.e474()
+	cut := p.cut
+	p.cut = prevCut
+	if ok {
+		return v, true
+	}
+	p.reset(m0)
+	if cut {
+		return nil, false
+	}
+	return nil, true
+}
+
+// ws
+func (p *parser) e476() (*Node, bool) {
+	return p.q30()
+}
+
+// ";"
+func (p *parser) e478() (*Node, bool) {
+	return p.matchLiteral(lit477, ";", 8, false)
+}
+
+// kw_return v:expr? ws ";"
+func (p *parser) e479() (*Node, bool) {
+	if _, ok := p.e473(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e475(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e476(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e478(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// kw_fn
+func (p *parser) e480() (*Node, bool) {
+	return p.q25()
+}
+
+// ws
+func (p *parser) e481() (*Node, bool) {
+	return p.q30()
+}
+
+// name
+func (p *parser) e482() (*Node, bool) {
+	return p.call(recRules[17], 0)
+}
+
+// ws
+func (p *parser) e483() (*Node, bool) {
+	return p.q30()
+}
+
+// "("
+func (p *parser) e485() (*Node, bool) {
+	return p.matchLiteral(lit484, "(", 10, false)
+}
+
+// params
+func (p *parser) e486() (*Node, bool) {
+	return p.q11()
+}
+
+// params?
+func (p *parser) e487() (*Node, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.cut = false
+	v, ok := p.e486()
+	cut := p.cut
+	p.cut = prevCut
+	if ok {
+		return v, true
+	}
+	p.reset(m0)
+	if cut {
+		return nil, false
+	}
+	return nil, true
+}
+
+// ws
+func (p *parser) e488() (*Node, bool) {
+	return p.q30()
+}
+
+// ")"
+func (p *parser) e490() (*Node, bool) {
+	return p.matchLiteral(lit489, ")", 11, false)
+}
+
+// ws
+func (p *parser) e491() (*Node, bool) {
+	return p.q30()
+}
+
+// block
+func (p *parser) e492() (*Node, bool) {
+	return p.call(recRules[2], 0)
+}
+
+// kw_fn ws n:name ws "(" ps:params? ws ")" ws body:block
+func (p *parser) e493() (*Node, bool) {
+	if _, ok := p.e480(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e481(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e482(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e483(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e485(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e487(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e488(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e490(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e491(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e492(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// name
+func (p *parser) e494() (*Node, bool) {
+	return p.call(recRules[17], 0)
+}
+
+// ws
+func (p *parser) e495() (*Node, bool) {
+	return p.q30()
+}
+
+// -ws
+func (p *parser) e496() (*Node, bool) {
+	_, ok := p.e495()
+	return nil, ok
+}
+
+// ","
+func (p *parser) e498() (*Node, bool) {
+	return p.matchLiteral(lit497, ",", 12, false)
+}
+
+// -","
+func (p *parser) e499() (*Node, bool) {
+	_, ok := p.e498()
+	return nil, ok
+}
+
+// ws
+func (p *parser) e500() (*Node, bool) {
+	return p.q30()
+}
+
+// -ws
+func (p *parser) e501() (*Node, bool) {
+	_, ok := p.e500()
+	return nil, ok
+}
+
+// name
+func (p *parser) e502() (*Node, bool) {
+	return p.call(recRules[17], 0)
+}
+
+// -ws -"," -ws p:name
+func (p *parser) e503() (*Node, bool) {
+	if _, ok := p.e496(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e499(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e501(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e502(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// (-ws -"," -ws p:name)*
+func (p *parser) e505() (*Node, bool) {
+	count := 0
+	for {
+		m0 := p.mark()
+		prevCut, prevFrame := p.cut, p.frame
+		p.cut = false
+		f := p.newFrame(0)
+		p.frame = f
+		_, ok := p.e503()
+		cut := p.cut
+		p.cut, p.frame = prevCut, prevFrame
+		if !ok {
+			p.reset(m0)
+			if cut {
+				return nil, false
+			}
+			break
+		}
+		count++
+		if p.pos == m0.pos && count >= 0 {
+			break
+		}
+	}
+	if count < 0 {
+		return nil, false
+	}
+	return nil, true
+}
+
+// first:name rest:(-ws -"," -ws p:name)*
+func (p *parser) e506() (*Node, bool) {
+	if _, ok := p.e494(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e505(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// expr
+func (p *parser) e507() (*Node, bool) {
+	return p.call(recRules[13], 0)
+}
+
+// ws
+func (p *parser) e508() (*Node, bool) {
+	return p.q30()
+}
+
+// ";"
+func (p *parser) e510() (*Node, bool) {
+	return p.matchLiteral(lit509, ";", 8, false)
+}
+
+// x:expr ws ";"
+func (p *parser) e511() (*Node, bool) {
+	if _, ok := p.e507(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e508(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e510(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// operation
+func (p *parser) e512() (*Node, bool) {
+	return p.call(recRules[14], 0)
+}
+
+// #error
+func (p *parser) e513() (*Node, bool) {
+	return p.errorAttr((*parser).e512, msgBit|13)
+}
+
+// expr
+func (p *parser) e514() (*Node, bool) {
+	return p.call(recRules[13], 0)
+}
+
+// ws
+func (p *parser) e515() (*Node, bool) {
+	return p.q30()
+}
+
+// -ws
+func (p *parser) e516() (*Node, bool) {
+	_, ok := p.e515()
+	return nil, ok
+}
+
+// ","
+func (p *parser) e518() (*Node, bool) {
+	return p.matchLiteral(lit517, ",", 12, false)
+}
+
+// -","
+func (p *parser) e519() (*Node, bool) {
+	_, ok := p.e518()
+	return nil, ok
+}
+
+// expr
+func (p *parser) e520() (*Node, bool) {
+	return p.call(recRules[13], 0)
+}
+
+// -ws -"," x:expr
+func (p *parser) e521() (*Node, bool) {
+	if _, ok := p.e516(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e519(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e520(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// (-ws -"," x:expr)*
+func (p *parser) e523() (*Node, bool) {
+	count := 0
+	for {
+		m0 := p.mark()
+		prevCut, prevFrame := p.cut, p.frame
+		p.cut = false
+		f := p.newFrame(0)
+		p.frame = f
+		_, ok := p.e521()
+		cut := p.cut
+		p.cut, p.frame = prevCut, prevFrame
+		if !ok {
+			p.reset(m0)
+			if cut {
+				return nil, false
+			}
+			break
+		}
+		count++
+		if p.pos == m0.pos && count >= 0 {
+			break
+		}
+	}
+	if count < 0 {
+		return nil, false
+	}
+	return nil, true
+}
+
+// first:expr rest:(-ws -"," x:expr)*
+func (p *parser) e524() (*Node, bool) {
+	if _, ok := p.e514(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e523(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// keyword
+func (p *parser) e525() (*Node, bool) {
+	return p.q18()
+}
+
+// !keyword
+func (p *parser) e526() (*Node, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.silent++
+	_, ok := p.e525()
+	p.silent--
+	p.cut = prevCut
+	p.reset(m0)
+	return nil, !ok
+}
+
+// (?a-zA-Z_)
+func (p *parser) e527() (*Node, bool) {
+	ch, size, ok := p.peek()
+	if !ok || !(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch == 95) {
+		p.expect(p.pos, 14)
+		return nil, false
+	}
+	return p.single(size, false)
+}
+
+// idchar
+func (p *parser) e528() (*Node, bool) {
+	return p.q19()
+}
+
+// idchar*
+func (p *parser) e529() (*Node, bool) {
+	count := 0
+	for {
+		m0 := p.mark()
+		prevCut, prevFrame := p.cut, p.frame
+		p.cut = false
+		_, ok := p.e528()
+		cut := p.cut
+		p.cut, p.frame = prevCut, prevFrame
+		if !ok {
+			p.reset(m0)
+			if cut {
+				return nil, false
+			}
+			break
+		}
+		count++
+		if p.pos == m0.pos && count >= 0 {
+			break
+		}
+	}
+	if count < 0 {
+		return nil, false
+	}
+	return nil, true
+}
+
+// !keyword (?a-zA-Z_) idchar*
+func (p *parser) e530() (*Node, bool) {
+	if _, ok := p.e526(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e527(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e529(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// ident
+func (p *parser) e531() (*Node, bool) {
+	return p.call(recRules[16], 0)
+}
+
+// #error
+func (p *parser) e532() (*Node, bool) {
+	return p.errorAttr((*parser).e531, msgBit|15)
+}
+
+// "let"
+func (p *parser) e534() (*Node, bool) {
+	return p.matchLiteral(lit533, "let", 16, false)
+}
+
+// "fn"
+func (p *parser) e536() (*Node, bool) {
+	return p.matchLiteral(lit535, "fn", 17, false)
+}
+
+// "if"
+func (p *parser) e538() (*Node, bool) {
+	return p.matchLiteral(lit537, "if", 18, false)
+}
+
+// "else"
+func (p *parser) e540() (*Node, bool) {
+	return p.matchLiteral(lit539, "else", 19, false)
+}
+
+// "while"
+func (p *parser) e542() (*Node, bool) {
+	return p.matchLiteral(lit541, "while", 20, false)
+}
+
+// "return"
+func (p *parser) e544() (*Node, bool) {
+	return p.matchLiteral(lit543, "return", 21, false)
+}
+
+// "true"
+func (p *parser) e546() (*Node, bool) {
+	return p.matchLiteral(lit545, "true", 22, false)
+}
+
+// "false"
+func (p *parser) e548() (*Node, bool) {
+	return p.matchLiteral(lit547, "false", 23, false)
+}
+
+// "let" / "fn" / "if" / "else" / "while" / "return" / "true" / "false"
+func (p *parser) e549() (*Node, bool) {
+	m0 := p.mark()
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e534()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e536()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e538()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e540()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e542()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e544()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e546()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e548()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+// idchar
+func (p *parser) e550() (*Node, bool) {
+	return p.q19()
+}
+
+// !idchar
+func (p *parser) e551() (*Node, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.silent++
+	_, ok := p.e550()
+	p.silent--
+	p.cut = prevCut
+	p.reset(m0)
+	return nil, !ok
+}
+
+// ("let" / "fn" / "if" / "else" / "while" / "return" / "true" / "false") !idchar
+func (p *parser) e552() (*Node, bool) {
+	if _, ok := p.e549(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e551(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// (?a-zA-Z0-9_)
+func (p *parser) e553() (*Node, bool) {
+	ch, size, ok := p.peek()
+	if !ok || !(ch >= 97 && ch <= 122 || ch >= 65 && ch <= 90 || ch >= 48 && ch <= 57 || ch == 95) {
+		p.expect(p.pos, 24)
+		return nil, false
+	}
+	return p.single(size, false)
+}
+
+// (?0-9)+
+func (p *parser) e554() (*Node, bool) {
+	count := 0
+	for {
+		ch, size, ok := p.peek()
+		if !ok || !(ch >= 48 && ch <= 57) {
+			p.expect(p.pos, 25)
+			break
+		}
+		p.pos += size
+		count++
+	}
+	return nil, count >= 1
+}
+
+// "."
+func (p *parser) e556() (*Node, bool) {
+	return p.matchLiteral(lit555, ".", 26, false)
+}
+
+// (?0-9)+
+func (p *parser) e557() (*Node, bool) {
+	count := 0
+	for {
+		ch, size, ok := p.peek()
+		if !ok || !(ch >= 48 && ch <= 57) {
+			p.expect(p.pos, 25)
+			break
+		}
+		p.pos += size
+		count++
+	}
+	return nil, count >= 1
+}
+
+// "." (?0-9)+
+func (p *parser) e558() (*Node, bool) {
+	if _, ok := p.e556(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e557(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// ("." (?0-9)+)?
+func (p *parser) e559() (*Node, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.cut = false
+	v, ok := p.e558()
+	cut := p.cut
+	p.cut = prevCut
+	if ok {
+		return v, true
+	}
+	p.reset(m0)
+	if cut {
+		return nil, false
+	}
+	return nil, true
+}
+
+// (?0-9)+ ("." (?0-9)+)?
+func (p *parser) e560() (*Node, bool) {
+	if _, ok := p.e554(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e559(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// "\""
+func (p *parser) e562() (*Node, bool) {
+	return p.matchLiteral(lit561, "\"", 27, false)
+}
+
+// strchars
+func (p *parser) e563() (*Node, bool) {
+	return p.q22()
+}
+
+// "\""
+func (p *parser) e565() (*Node, bool) {
+	return p.matchLiteral(lit564, "\"", 27, false)
+}
+
+// "\"" s:strchars "\""
+func (p *parser) e566() (*Node, bool) {
+	if _, ok := p.e562(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e563(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e565(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// (?^"\\\n)
+func (p *parser) e567() (*Node, bool) {
+	ch, size, ok := p.peek()
+	if !ok || (ch == 34 || ch == 92 || ch == 10) {
+		p.expect(p.pos, 28)
+		return nil, false
+	}
+	return p.single(size, false)
+}
+
+// "\\"
+func (p *parser) e569() (*Node, bool) {
+	return p.matchLiteral(lit568, "\\", 29, false)
+}
+
+// .
+func (p *parser) e570() (*Node, bool) {
+	return p.matchAny(false)
+}
+
+// "\\" .
+func (p *parser) e571() (*Node, bool) {
+	if _, ok := p.e569(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e570(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// (?^"\\\n) / "\\" .
+func (p *parser) e572() (*Node, bool) {
+	m0 := p.mark()
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e567()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e571()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+// ((?^"\\\n) / "\\" .)*
+func (p *parser) e573() (*Node, bool) {
+	count := 0
+	for {
+		m0 := p.mark()
+		prevCut, prevFrame := p.cut, p.frame
+		p.cut = false
+		_, ok := p.e572()
+		cut := p.cut
+		p.cut, p.frame = prevCut, prevFrame
+		if !ok {
+			p.reset(m0)
+			if cut {
+				return nil, false
+			}
+			break
+		}
+		count++
+		if p.pos == m0.pos && count >= 0 {
+			break
+		}
+	}
+	if count < 0 {
+		return nil, false
+	}
+	return nil, true
+}
+
+// "true"
+func (p *parser) e575() (*Node, bool) {
+	return p.matchLiteral(lit574, "true", 22, false)
+}
+
+// "false"
+func (p *parser) e577() (*Node, bool) {
+	return p.matchLiteral(lit576, "false", 23, false)
+}
+
+// "true" / "false"
+func (p *parser) e578() (*Node, bool) {
+	m0 := p.mark()
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e575()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e577()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+// idchar
+func (p *parser) e579() (*Node, bool) {
+	return p.q19()
+}
+
+// !idchar
+func (p *parser) e580() (*Node, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.silent++
+	_, ok := p.e579()
+	p.silent--
+	p.cut = prevCut
+	p.reset(m0)
+	return nil, !ok
+}
+
+// ("true" / "false") !idchar
+func (p *parser) e581() (*Node, bool) {
+	if _, ok := p.e578(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e580(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// "let"
+func (p *parser) e583() (*Node, bool) {
+	return p.matchLiteral(lit582, "let", 16, false)
+}
+
+// idchar
+func (p *parser) e584() (*Node, bool) {
+	return p.q19()
+}
+
+// !idchar
+func (p *parser) e585() (*Node, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.silent++
+	_, ok := p.e584()
+	p.silent--
+	p.cut = prevCut
+	p.reset(m0)
+	return nil, !ok
+}
+
+// "let" !idchar
+func (p *parser) e586() (*Node, bool) {
+	if _, ok := p.e583(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e585(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// "fn"
+func (p *parser) e588() (*Node, bool) {
+	return p.matchLiteral(lit587, "fn", 17, false)
+}
+
+// idchar
+func (p *parser) e589() (*Node, bool) {
+	return p.q19()
+}
+
+// !idchar
+func (p *parser) e590() (*Node, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.silent++
+	_, ok := p.e589()
+	p.silent--
+	p.cut = prevCut
+	p.reset(m0)
+	return nil, !ok
+}
+
+// "fn" !idchar
+func (p *parser) e591() (*Node, bool) {
+	if _, ok := p.e588(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e590(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// "if"
+func (p *parser) e593() (*Node, bool) {
+	return p.matchLiteral(lit592, "if", 18, false)
+}
+
+// idchar
+func (p *parser) e594() (*Node, bool) {
+	return p.q19()
+}
+
+// !idchar
+func (p *parser) e595() (*Node, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.silent++
+	_, ok := p.e594()
+	p.silent--
+	p.cut = prevCut
+	p.reset(m0)
+	return nil, !ok
+}
+
+// "if" !idchar
+func (p *parser) e596() (*Node, bool) {
+	if _, ok := p.e593(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e595(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// "else"
+func (p *parser) e598() (*Node, bool) {
+	return p.matchLiteral(lit597, "else", 19, false)
+}
+
+// idchar
+func (p *parser) e599() (*Node, bool) {
+	return p.q19()
+}
+
+// !idchar
+func (p *parser) e600() (*Node, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.silent++
+	_, ok := p.e599()
+	p.silent--
+	p.cut = prevCut
+	p.reset(m0)
+	return nil, !ok
+}
+
+// "else" !idchar
+func (p *parser) e601() (*Node, bool) {
+	if _, ok := p.e598(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e600(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// "while"
+func (p *parser) e603() (*Node, bool) {
+	return p.matchLiteral(lit602, "while", 20, false)
+}
+
+// idchar
+func (p *parser) e604() (*Node, bool) {
+	return p.q19()
+}
+
+// !idchar
+func (p *parser) e605() (*Node, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.silent++
+	_, ok := p.e604()
+	p.silent--
+	p.cut = prevCut
+	p.reset(m0)
+	return nil, !ok
+}
+
+// "while" !idchar
+func (p *parser) e606() (*Node, bool) {
+	if _, ok := p.e603(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e605(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// "return"
+func (p *parser) e608() (*Node, bool) {
+	return p.matchLiteral(lit607, "return", 21, false)
+}
+
+// idchar
+func (p *parser) e609() (*Node, bool) {
+	return p.q19()
+}
+
+// !idchar
+func (p *parser) e610() (*Node, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.silent++
+	_, ok := p.e609()
+	p.silent--
+	p.cut = prevCut
+	p.reset(m0)
+	return nil, !ok
+}
+
+// "return" !idchar
+func (p *parser) e611() (*Node, bool) {
+	if _, ok := p.e608(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e610(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// (? \t\r\n)
+func (p *parser) e612() (*Node, bool) {
+	ch, size, ok := p.peek()
+	if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
+		p.expect(p.pos, 30)
+		return nil, false
+	}
+	return p.single(size, false)
+}
+
+// "//"
+func (p *parser) e614() (*Node, bool) {
+	return p.matchLiteral(lit613, "//", 31, false)
+}
+
+// (?^\n)*
+func (p *parser) e615() (*Node, bool) {
+	count := 0
+	for {
+		ch, size, ok := p.peek()
+		if !ok || (ch == 10) {
+			p.expect(p.pos, 32)
+			break
+		}
+		p.pos += size
+		count++
+	}
+	return nil, count >= 0
+}
+
+// "//" (?^\n)*
+func (p *parser) e616() (*Node, bool) {
+	if _, ok := p.e614(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e615(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// (? \t\r\n) / "//" (?^\n)*
+func (p *parser) e617() (*Node, bool) {
+	m0 := p.mark()
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e612()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e616()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+// ((? \t\r\n) / "//" (?^\n)*)*
+func (p *parser) e618() (*Node, bool) {
+	count := 0
+	for {
+		m0 := p.mark()
+		prevCut, prevFrame := p.cut, p.frame
+		p.cut = false
+		_, ok := p.e617()
+		cut := p.cut
+		p.cut, p.frame = prevCut, prevFrame
+		if !ok {
+			p.reset(m0)
+			if cut {
+				return nil, false
+			}
+			break
+		}
+		count++
+		if p.pos == m0.pos && count >= 0 {
+			break
+		}
+	}
+	if count < 0 {
+		return nil, false
+	}
+	return nil, true
+}
+
+// main, called as by invokePlain
+func (p *parser) q0() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e402()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// stmt, called as by invokePlain
+func (p *parser) q3() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e430()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// let, called as by invokePlain
+func (p *parser) q4() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e441()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// assign, called as by invokePlain
+func (p *parser) q5() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e453()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// else, called as by invokePlain
+func (p *parser) q7() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e467()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// while, called as by invokePlain
+func (p *parser) q8() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e472()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// return, called as by invokePlain
+func (p *parser) q9() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e479()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// func, called as by invokePlain
+func (p *parser) q10() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e493()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// params, called as by invokePlain
+func (p *parser) q11() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e506()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// exprStmt, called as by invokePlain
+func (p *parser) q12() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e511()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// ws
+func (p *parser) e619() (*Node, bool) {
+	return p.q30()
+}
+
+// number
+func (p *parser) e620() (*Node, bool) {
+	return p.q20()
+}
+
+// string
+func (p *parser) e621() (*Node, bool) {
+	return p.q21()
+}
+
+// bool
+func (p *parser) e622() (*Node, bool) {
+	return p.q23()
+}
+
+// ident
+func (p *parser) e623() (*Node, bool) {
+	return p.call(recRules[16], 0)
+}
+
+// "("
+func (p *parser) e625() (*Node, bool) {
+	return p.matchLiteral(lit624, "(", 10, false)
+}
+
+// operation
+func (p *parser) e626() (*Node, bool) {
+	return p.call(recRules[14], 0)
+}
+
+// ws
+func (p *parser) e627() (*Node, bool) {
+	return p.q30()
+}
+
+// ")"
+func (p *parser) e629() (*Node, bool) {
+	return p.matchLiteral(lit628, ")", 11, false)
+}
+
+// "(" e:operation ws ")"
+func (p *parser) e630() (*Node, bool) {
+	if _, ok := p.e625(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e626(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e627(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e629(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// "["
+func (p *parser) e632() (*Node, bool) {
+	return p.matchLiteral(lit631, "[", 33, false)
+}
+
+// args
+func (p *parser) e633() (*Node, bool) {
+	return p.call(recRules[15], 0)
+}
+
+// args?
+func (p *parser) e634() (*Node, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.cut = false
+	v, ok := p.e633()
+	cut := p.cut
+	p.cut = prevCut
+	if ok {
+		return v, true
+	}
+	p.reset(m0)
+	if cut {
+		return nil, false
+	}
+	return nil, true
+}
+
+// ws
+func (p *parser) e635() (*Node, bool) {
+	return p.q30()
+}
+
+// "]"
+func (p *parser) e637() (*Node, bool) {
+	return p.matchLiteral(lit636, "]", 34, false)
+}
+
+// "[" xs:args? ws "]"
+func (p *parser) e638() (*Node, bool) {
+	if _, ok := p.e632(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e634(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e635(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e637(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// "?"
+func (p *parser) e640() (*Node, bool) {
+	return p.matchLiteral(lit639, "?", 35, false)
+}
+
+// operation
+func (p *parser) e641() (*Node, bool) {
+	return p.call(recRules[14], 0)
+}
+
+// ws
+func (p *parser) e642() (*Node, bool) {
+	return p.q30()
+}
+
+// ":"
+func (p *parser) e644() (*Node, bool) {
+	return p.matchLiteral(lit643, ":", 36, false)
+}
+
+// "?" t:operation ws ":"
+func (p *parser) e645() (*Node, bool) {
+	if _, ok := p.e640(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e641(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e642(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e644(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// "||"
+func (p *parser) e647() (*Node, bool) {
+	return p.matchLiteral(lit646, "||", 37, false)
+}
+
+// "&&"
+func (p *parser) e649() (*Node, bool) {
+	return p.matchLiteral(lit648, "&&", 38, false)
+}
+
+// "=="
+func (p *parser) e651() (*Node, bool) {
+	return p.matchLiteral(lit650, "==", 39, false)
+}
+
+// "!="
+func (p *parser) e653() (*Node, bool) {
+	return p.matchLiteral(lit652, "!=", 40, false)
+}
+
+// "<="
+func (p *parser) e655() (*Node, bool) {
+	return p.matchLiteral(lit654, "<=", 41, false)
+}
+
+// ">="
+func (p *parser) e657() (*Node, bool) {
+	return p.matchLiteral(lit656, ">=", 42, false)
+}
+
+// "<"
+func (p *parser) e659() (*Node, bool) {
+	return p.matchLiteral(lit658, "<", 43, false)
+}
+
+// ">"
+func (p *parser) e661() (*Node, bool) {
+	return p.matchLiteral(lit660, ">", 44, false)
+}
+
+// "==" / "!=" / "<=" / ">=" / "<" / ">"
+func (p *parser) e662() (*Node, bool) {
+	m0 := p.mark()
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e651()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e653()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e655()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e657()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e659()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e661()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+// "+"
+func (p *parser) e664() (*Node, bool) {
+	return p.matchLiteral(lit663, "+", 45, false)
+}
+
+// "-"
+func (p *parser) e666() (*Node, bool) {
+	return p.matchLiteral(lit665, "-", 46, false)
+}
+
+// "+" / "-"
+func (p *parser) e667() (*Node, bool) {
+	m0 := p.mark()
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e664()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e666()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+// "*"
+func (p *parser) e669() (*Node, bool) {
+	return p.matchLiteral(lit668, "*", 47, false)
+}
+
+// "/"
+func (p *parser) e671() (*Node, bool) {
+	return p.matchLiteral(lit670, "/", 48, false)
+}
+
+// "%"
+func (p *parser) e673() (*Node, bool) {
+	return p.matchLiteral(lit672, "%", 49, false)
+}
+
+// "*" / "/" / "%"
+func (p *parser) e674() (*Node, bool) {
+	m0 := p.mark()
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e669()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e671()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e673()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+// "-"
+func (p *parser) e676() (*Node, bool) {
+	return p.matchLiteral(lit675, "-", 46, false)
+}
+
+// "!"
+func (p *parser) e678() (*Node, bool) {
+	return p.matchLiteral(lit677, "!", 50, false)
+}
+
+// "-" / "!"
+func (p *parser) e679() (*Node, bool) {
+	m0 := p.mark()
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e676()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e678()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+// "("
+func (p *parser) e681() (*Node, bool) {
+	return p.matchLiteral(lit680, "(", 10, false)
+}
+
+// args
+func (p *parser) e682() (*Node, bool) {
+	return p.call(recRules[15], 0)
+}
+
+// args?
+func (p *parser) e683() (*Node, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.cut = false
+	v, ok := p.e682()
+	cut := p.cut
+	p.cut = prevCut
+	if ok {
+		return v, true
+	}
+	p.reset(m0)
+	if cut {
+		return nil, false
+	}
+	return nil, true
+}
+
+// ws
+func (p *parser) e684() (*Node, bool) {
+	return p.q30()
+}
+
+// ")"
+func (p *parser) e686() (*Node, bool) {
+	return p.matchLiteral(lit685, ")", 11, false)
+}
+
+// "(" xs:args? ws ")"
+func (p *parser) e687() (*Node, bool) {
+	if _, ok := p.e681(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e683(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e684(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e686(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// "["
+func (p *parser) e689() (*Node, bool) {
+	return p.matchLiteral(lit688, "[", 33, false)
+}
+
+// operation
+func (p *parser) e690() (*Node, bool) {
+	return p.call(recRules[14], 0)
+}
+
+// ws
+func (p *parser) e691() (*Node, bool) {
+	return p.q30()
+}
+
+// "]"
+func (p *parser) e693() (*Node, bool) {
+	return p.matchLiteral(lit692, "]", 34, false)
+}
+
+// "[" i:operation ws "]"
+func (p *parser) e694() (*Node, bool) {
+	if _, ok := p.e689(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e690(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e691(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e693(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// "."
+func (p *parser) e696() (*Node, bool) {
+	return p.matchLiteral(lit695, ".", 26, false)
+}
+
+// ws
+func (p *parser) e697() (*Node, bool) {
+	return p.q30()
+}
+
+// name
+func (p *parser) e698() (*Node, bool) {
+	return p.call(recRules[17], 0)
+}
+
+// "." ws n:name
+func (p *parser) e699() (*Node, bool) {
+	if _, ok := p.e696(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e697(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e698(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// keyword, called as by invokePlain
+func (p *parser) q18() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e552()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// idchar, called as by invokePlain
+func (p *parser) q19() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e553()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// number, called as by invokePlain
+func (p *parser) q20() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e560()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// string, called as by invokePlain
+func (p *parser) q21() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e566()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// strchars, called as by invokePlain
+func (p *parser) q22() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e573()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// bool, called as by invokePlain
+func (p *parser) q23() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e581()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// kw_let, called as by invokePlain
+func (p *parser) q24() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e586()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// kw_fn, called as by invokePlain
+func (p *parser) q25() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e591()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// kw_if, called as by invokePlain
+func (p *parser) q26() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e596()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// kw_else, called as by invokePlain
+func (p *parser) q27() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e601()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// kw_while, called as by invokePlain
+func (p *parser) q28() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e606()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// kw_return, called as by invokePlain
+func (p *parser) q29() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e611()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// ws, called as by invokePlain
+func (p *parser) q30() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e618()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]

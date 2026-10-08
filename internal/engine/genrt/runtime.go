@@ -267,10 +267,11 @@ const (
 // maxDepth is the maximum nesting of rule calls, the same default as the engine.
 const maxDepth = 100_000
 
-// parse parses the whole input with rule r.
-func parse(r *rule, input string, units []Unit) (n *Node, err error) {
+// parse parses the whole input with rule r of a rule table with seen rules that have rule.seen
+// set.
+func parse(r *rule, seen int, input string, units []Unit) (n *Node, err error) {
 	p := &parser{}
-	p.memo.stride = nseen
+	p.memo.stride = seen
 	if len(units) > 0 && units[0] == Bytes {
 		p.unit, p.bs, p.n = Bytes, input, len(input)
 	} else {
@@ -1723,6 +1724,9 @@ func (p *parser) prattNud(r *rule) (*Node, bool) {
 }
 
 func (p *parser) lineResult(r *rule, l *prattLine, f *frame, v *Node, start int) *Node {
+	if r.novalue {
+		return nil
+	}
 	if l.action != nil {
 		c := p.useCtx(actx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
 		if l.isSeq && v != nil {
@@ -1746,6 +1750,9 @@ func (p *parser) lineResult(r *rule, l *prattLine, f *frame, v *Node, start int)
 }
 
 func (p *parser) prattBuild(r *rule, a *prattAttempt, lhs, rhs *Node) *Node {
+	if r.novalue {
+		return nil
+	}
 	start, end := a.start, p.pos
 	if lhs != nil {
 		start = lhs.Start

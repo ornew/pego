@@ -229,6 +229,13 @@ func TestGen(t *testing.T) {
 	if err != nil || !strings.Contains(typed, "func ParseAST(") {
 		t.Errorf("-types: no ParseAST: %v", err)
 	}
+	if strings.Contains(out, "func Recognize(") {
+		t.Error("Recognize generated without -recognize")
+	}
+	rec, err := runCLI(t, "", "gen", "-g", g, "-pkg", "kv", "-recognize")
+	if err != nil || !strings.Contains(rec, "func Recognize(") {
+		t.Errorf("-recognize: no Recognize: %v", err)
+	}
 }
 
 func TestCompile(t *testing.T) {

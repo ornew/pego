@@ -265,10 +265,11 @@ const (
 // maxDepth is the maximum nesting of rule calls, the same default as the engine.
 const maxDepth = 100_000
 
-// parse parses the whole input with rule r.
-func parse(r *rule, input string, units []Unit) (n *Node, err error) {
+// parse parses the whole input with rule r of a rule table with seen rules that have rule.seen
+// set.
+func parse(r *rule, seen int, input string, units []Unit) (n *Node, err error) {
 	p := &parser{}
-	p.memo.stride = nseen
+	p.memo.stride = seen
 	if len(units) > 0 && units[0] == Bytes {
 		p.unit, p.bs, p.n = Bytes, input, len(input)
 	} else {
@@ -1721,6 +1722,9 @@ func (p *parser) prattNud(r *rule) (*Node, bool) {
 }
 
 func (p *parser) lineResult(r *rule, l *prattLine, f *frame, v *Node, start int) *Node {
+	if r.novalue {
+		return nil
+	}
 	if l.action != nil {
 		c := p.useCtx(actx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
 		if l.isSeq && v != nil {
@@ -1744,6 +1748,9 @@ func (p *parser) lineResult(r *rule, l *prattLine, f *frame, v *Node, start int)
 }
 
 func (p *parser) prattBuild(r *rule, a *prattAttempt, lhs, rhs *Node) *Node {
+	if r.novalue {
+		return nil
+	}
 	start, end := a.start, p.pos
 	if lhs != nil {
 		start = lhs.Start
@@ -1784,7 +1791,19 @@ func (p *parser) prattBuild(r *rule, a *prattAttempt, lhs, rhs *Node) *Node {
 
 // Parse parses the whole input with the rule main. unit selects the position unit (CodePoints by default).
 // If the parse recovered from errors with #recover, it returns the node together with SyntaxErrors.
-func Parse(input string, unit ...Unit) (*Node, error) { return parse(rules[0], input, unit) }
+func Parse(input string, unit ...Unit) (*Node, error) { return parse(rules[0], nseen, input, unit) }
+
+// Recognize checks that the whole input matches the rule main without building a tree, and returns the
+// syntax errors Parse would return (SyntaxErrors for errors recovered with #recover). Actions are not
+// evaluated, so it does not report runtime errors in actions.
+func Recognize(input string, unit ...Unit) error {
+	_, err := parse(recRules[0], recNseen, input, unit)
+	return err
+}
+
+// recRules is the rule table of Recognize, and recNseen its number of rules with rule.seen set.
+var recRules []*rule
+var recNseen int
 
 // ParseRule parses the whole input with the rule name.
 func ParseRule(name, input string, unit ...Unit) (*Node, error) {
@@ -1792,7 +1811,7 @@ func ParseRule(name, input string, unit ...Unit) (*Node, error) {
 	if r == nil {
 		return nil, fmt.Errorf("rule %s is not defined", name)
 	}
-	return parse(r, input, unit)
+	return parse(r, nseen, input, unit)
 }
 
 var lit7 = []rune(".")
@@ -1806,6 +1825,17 @@ var lit35 = []rune("%")
 var lit38 = []rune("-")
 var lit40 = []rune("+")
 var lit43 = []rune("^")
+var lit50 = []rune(".")
+var lit59 = []rune("(")
+var lit63 = []rune(")")
+var lit66 = []rune("+")
+var lit68 = []rune("-")
+var lit71 = []rune("*")
+var lit73 = []rune("/")
+var lit75 = []rune("%")
+var lit78 = []rune("-")
+var lit80 = []rune("+")
+var lit83 = []rune("^")
 
 func init() {
 	rules = []*rule{
@@ -1835,6 +1865,28 @@ func init() {
 	rules[4].body = func(p *parser, _ int) (*Node, bool) { return p.e15() }
 	structFields["Binary"] = map[string]bool{"Left": true, "Op": true, "Right": true}
 	structFields["Unary"] = map[string]bool{"Op": true, "X": true}
+	recRules = []*rule{
+		{id: 0, name: "main", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 1, name: "expr", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, seen: 0, novalue: true, vars: []string{}},
+		{id: 2, name: "number", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+		{id: 3, name: "ws", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
+	}
+	recNseen = 1
+	recRules[0].body = func(p *parser, _ int) (*Node, bool) { return p.e48() }
+	recRules[1].pratt = &pratt{
+		skip: (*parser).e57,
+		operands: []*prattLine{
+			&prattLine{scope: []string{}, m: (*parser).e58, action: nil, isSeq: false},
+			&prattLine{scope: []string{}, m: (*parser).e65, action: nil, isSeq: true},
+		},
+		prefix: []*prattOp{{id: 2, kind: "prefix", assoc: "", level: 3, line: &prattLine{scope: []string{}, m: (*parser).e82, action: nil, isSeq: false}}},
+		led: []*prattOp{{id: 0, kind: "infix", assoc: "left", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e70, action: nil, isSeq: false}},
+			{id: 1, kind: "infix", assoc: "left", level: 2, line: &prattLine{scope: []string{}, m: (*parser).e77, action: nil, isSeq: false}},
+			{id: 3, kind: "infix", assoc: "right", level: 4, line: &prattLine{scope: []string{}, m: (*parser).e84, action: nil, isSeq: false}}},
+	}
+	recRules[1].body = func(p *parser, min int) (*Node, bool) { return p.prattParse(recRules[1], min) }
+	recRules[2].body = func(p *parser, _ int) (*Node, bool) { return p.e55() }
+	recRules[3].body = func(p *parser, _ int) (*Node, bool) { return p.e56() }
 	descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "(?0-9)", "\".\"", "(? \\t\\r\\n)", "\"(\"", "\")\"", "\"+\"", "\"-\"", "\"*\"", "\"/\"", "\"%\"", "\"^\""}
 }
 
@@ -2277,6 +2329,397 @@ func (p *parser) r4() (*Node, bool) {
 		p.tooDeep()
 	}
 	v, ok := p.e15()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// expr
+func (p *parser) e45() (*Node, bool) {
+	return p.call(recRules[1], 0)
+}
+
+// ws
+func (p *parser) e46() (*Node, bool) {
+	return p.q3()
+}
+
+// $$
+func (p *parser) e47() (*Node, bool) {
+	return p.anchor(p.atEnd(), idEndInput)
+}
+
+// e:expr ws $$
+func (p *parser) e48() (*Node, bool) {
+	if _, ok := p.e45(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e46(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e47(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// (?0-9)+
+func (p *parser) e49() (*Node, bool) {
+	count := 0
+	for {
+		ch, size, ok := p.peek()
+		if !ok || !(ch >= 48 && ch <= 57) {
+			p.expect(p.pos, 5)
+			break
+		}
+		p.pos += size
+		count++
+	}
+	return nil, count >= 1
+}
+
+// "."
+func (p *parser) e51() (*Node, bool) {
+	return p.matchLiteral(lit50, ".", 6, false)
+}
+
+// (?0-9)+
+func (p *parser) e52() (*Node, bool) {
+	count := 0
+	for {
+		ch, size, ok := p.peek()
+		if !ok || !(ch >= 48 && ch <= 57) {
+			p.expect(p.pos, 5)
+			break
+		}
+		p.pos += size
+		count++
+	}
+	return nil, count >= 1
+}
+
+// "." (?0-9)+
+func (p *parser) e53() (*Node, bool) {
+	if _, ok := p.e51(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e52(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// ("." (?0-9)+)?
+func (p *parser) e54() (*Node, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.cut = false
+	v, ok := p.e53()
+	cut := p.cut
+	p.cut = prevCut
+	if ok {
+		return v, true
+	}
+	p.reset(m0)
+	if cut {
+		return nil, false
+	}
+	return nil, true
+}
+
+// (?0-9)+ ("." (?0-9)+)?
+func (p *parser) e55() (*Node, bool) {
+	if _, ok := p.e49(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e54(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// (? \t\r\n)*
+func (p *parser) e56() (*Node, bool) {
+	count := 0
+	for {
+		ch, size, ok := p.peek()
+		if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
+			p.expect(p.pos, 7)
+			break
+		}
+		p.pos += size
+		count++
+	}
+	return nil, count >= 0
+}
+
+// main, called as by invokePlain
+func (p *parser) q0() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e48()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// ws
+func (p *parser) e57() (*Node, bool) {
+	return p.q3()
+}
+
+// number
+func (p *parser) e58() (*Node, bool) {
+	return p.q2()
+}
+
+// "("
+func (p *parser) e60() (*Node, bool) {
+	return p.matchLiteral(lit59, "(", 8, false)
+}
+
+// expr
+func (p *parser) e61() (*Node, bool) {
+	return p.call(recRules[1], 0)
+}
+
+// ws
+func (p *parser) e62() (*Node, bool) {
+	return p.q3()
+}
+
+// ")"
+func (p *parser) e64() (*Node, bool) {
+	return p.matchLiteral(lit63, ")", 9, false)
+}
+
+// "(" e:expr ws ")"
+func (p *parser) e65() (*Node, bool) {
+	if _, ok := p.e60(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e61(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e62(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e64(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// "+"
+func (p *parser) e67() (*Node, bool) {
+	return p.matchLiteral(lit66, "+", 10, false)
+}
+
+// "-"
+func (p *parser) e69() (*Node, bool) {
+	return p.matchLiteral(lit68, "-", 11, false)
+}
+
+// "+" / "-"
+func (p *parser) e70() (*Node, bool) {
+	m0 := p.mark()
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e67()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e69()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+// "*"
+func (p *parser) e72() (*Node, bool) {
+	return p.matchLiteral(lit71, "*", 12, false)
+}
+
+// "/"
+func (p *parser) e74() (*Node, bool) {
+	return p.matchLiteral(lit73, "/", 13, false)
+}
+
+// "%"
+func (p *parser) e76() (*Node, bool) {
+	return p.matchLiteral(lit75, "%", 14, false)
+}
+
+// "*" / "/" / "%"
+func (p *parser) e77() (*Node, bool) {
+	m0 := p.mark()
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e72()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e74()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e76()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+// "-"
+func (p *parser) e79() (*Node, bool) {
+	return p.matchLiteral(lit78, "-", 11, false)
+}
+
+// "+"
+func (p *parser) e81() (*Node, bool) {
+	return p.matchLiteral(lit80, "+", 10, false)
+}
+
+// "-" / "+"
+func (p *parser) e82() (*Node, bool) {
+	m0 := p.mark()
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e79()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e81()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+// "^"
+func (p *parser) e84() (*Node, bool) {
+	return p.matchLiteral(lit83, "^", 15, false)
+}
+
+// number, called as by invokePlain
+func (p *parser) q2() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e55()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// ws, called as by invokePlain
+func (p *parser) q3() (*Node, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e56()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]

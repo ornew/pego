@@ -26,8 +26,10 @@ type workload struct {
 	name    string
 	grammar string                 // path of a grammar in examples/
 	input   func(scale int) string // input of 1/scale of the full size (benchmarks use 1)
-	// gen parses with the generated parser (in byte positions if bytes is set).
+	// gen parses with the generated parser (in byte positions if bytes is set), and rec recognizes
+	// with it.
 	gen func(input string, bytes bool) error
+	rec func(input string) error
 	// std is the standard library parser to compare with (nil if there is none).
 	std     func(input string) error
 	stdName string
@@ -46,6 +48,7 @@ var workloads = []workload{
 			}
 			return genErr(gjson.Parse(s))
 		},
+		rec:     func(s string) error { return gjson.Recognize(s) },
 		stdName: "encoding_json", std: func(s string) error {
 			var v any
 			return json.Unmarshal([]byte(s), &v)
@@ -59,6 +62,7 @@ var workloads = []workload{
 			}
 			return genErr(gcsv.Parse(s))
 		},
+		rec:     func(s string) error { return gcsv.Recognize(s) },
 		stdName: "encoding_csv", std: func(s string) error {
 			r := csv.NewReader(strings.NewReader(s))
 			r.FieldsPerRecord = -1
@@ -74,6 +78,7 @@ var workloads = []workload{
 			}
 			return genErr(gxml.Parse(s))
 		},
+		rec:     func(s string) error { return gxml.Recognize(s) },
 		stdName: "encoding_xml", std: func(s string) error {
 			d := xml.NewDecoder(strings.NewReader(s))
 			for {
@@ -93,6 +98,7 @@ var workloads = []workload{
 			}
 			return genErr(gcalc.Parse(s))
 		},
+		rec:     func(s string) error { return gcalc.Recognize(s) },
 		stdName: "go_parser", std: func(s string) error { return genErr(parser.ParseExpr(s)) },
 	},
 	{
@@ -103,6 +109,7 @@ var workloads = []workload{
 			}
 			return genErr(gcalclr.Parse(s))
 		},
+		rec:     func(s string) error { return gcalclr.Recognize(s) },
 		stdName: "go_parser", std: func(s string) error { return genErr(parser.ParseExpr(s)) },
 	},
 	{
@@ -113,6 +120,7 @@ var workloads = []workload{
 			}
 			return genErr(gminilang.Parse(s))
 		},
+		rec: func(s string) error { return gminilang.Recognize(s) },
 	},
 	{
 		name: "Recovery", grammar: "../examples/minilang/minilang.pego", input: func(k int) string { return MinilangInput(300/k, 7) },
@@ -127,6 +135,7 @@ var workloads = []workload{
 			}
 			return nil
 		},
+		rec: func(s string) error { return gminilang.Recognize(s) },
 	},
 	{
 		name: "Outline", grammar: "../examples/outline/outline.pego", input: func(k int) string { return OutlineInput(5000 / k) },
@@ -136,6 +145,7 @@ var workloads = []workload{
 			}
 			return genErr(goutline.Parse(s))
 		},
+		rec: func(s string) error { return goutline.Recognize(s) },
 	},
 }
 
@@ -287,6 +297,15 @@ func BenchmarkRecognize(b *testing.B) {
 					}
 				})
 			}
+			b.Run("generated", func(b *testing.B) {
+				b.SetBytes(int64(len(input)))
+				b.ReportAllocs()
+				for b.Loop() {
+					if err := w.rec(input); err != nil && !w.partial {
+						b.Fatal(err)
+					}
+				}
+			})
 			if w.name == "JSON" {
 				b.Run("json_Valid", func(b *testing.B) {
 					b.SetBytes(int64(len(input)))

@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -100,7 +101,8 @@ func resultJSON(n *Node, err error) string {
 }
 
 // TestGeneratedParsersMatchEngine checks that generated parsers return the same results as the engine:
-// the same trees, positions included, and the same errors.
+// the same trees, positions included, and the same errors, and that Recognize returns the errors of
+// the engine's recognition.
 func TestGeneratedParsersMatchEngine(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
@@ -125,7 +127,7 @@ def n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x" 
 		}
 	}
 	write("go.mod", "module gentest\n\ngo 1.24\n")
-	var imports, parsers strings.Builder
+	var imports, parsers, recognizers strings.Builder
 	var inputs [][]string
 	var want []string
 	for i, c := range cases {
@@ -133,19 +135,22 @@ def n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x" 
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := Generate(g, GenOptions{Package: fmt.Sprintf("g%d", i), Start: "main"})
+		code, err := Generate(g, GenOptions{Package: fmt.Sprintf("g%d", i), Start: "main", Recognize: true})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
 		write(fmt.Sprintf("g%d/parser.go", i), string(code))
 		fmt.Fprintf(&imports, "\tg%d \"gentest/g%d\"\n", i, i)
 		fmt.Fprintf(&parsers, "\tfunc(s string, b bool) (any, error) { u := g%d.CodePoints; if b { u = g%d.Bytes }; n, err := g%d.Parse(s, u); return n, err },\n", i, i, i)
+		fmt.Fprintf(&recognizers, "\tfunc(s string, b bool) error { u := g%d.CodePoints; if b { u = g%d.Bytes }; return g%d.Recognize(s, u) },\n", i, i, i)
 		inputs = append(inputs, c.inputs)
 		prog := compile(t, c.src)
 		for _, in := range c.inputs {
 			for _, unit := range []Unit{CodePoints, Bytes} {
 				n, err := prog.ParseWith("main", in, ParseOptions{Unit: unit})
-				want = append(want, resultJSON(n, err))
+				out := resultJSON(n, err)
+				_, err = prog.ParseWith("main", in, ParseOptions{Unit: unit, Recognize: true})
+				want = append(want, out+" recognize: "+strconv.Quote(fmt.Sprint(err)))
 			}
 		}
 	}
@@ -155,10 +160,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 `+imports.String()+`)
 
 var parsers = []func(string, bool) (any, error){
 `+parsers.String()+`}
+
+var recognizers = []func(string, bool) error{
+`+recognizers.String()+`}
 
 func main() {
 	var inputs [][]string
@@ -173,7 +182,7 @@ func main() {
 					out["err"] = err.Error()
 				}
 				b, _ := json.Marshal(out)
-				fmt.Println(string(b))
+				fmt.Println(string(b) + " recognize: " + strconv.Quote(fmt.Sprint(recognizers[i](s, bytes))))
 			}
 		}
 	}

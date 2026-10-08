@@ -5,7 +5,7 @@
 //	pego parse -g grammar.pego [-s main] [-i input] [-f json|sexpr] [-stream] [-unit u] [-backend b]
 //	pego fmt [-w] [-l] [grammar.pego ...]
 //	pego convert [-to pego|json] [-o output] grammar.pego|grammar.json|grammar.pegoc
-//	pego gen -g grammar.pego -pkg name [-s main] [-o parser.go] [-types]
+//	pego gen -g grammar.pego -pkg name [-s main] [-o parser.go] [-types] [-recognize]
 //	pego compile -g grammar.pego [-s main] [-no-ast] -o grammar.pegoc
 package main
 
@@ -43,11 +43,12 @@ Commands:
       Convert a grammar between PEGO source and JSON. -to defaults to the
       other format of the input and is required for compiled grammars.
 
-  gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types]
+  gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-recognize]
       Generate a Go parser from a grammar. Without -o, the code is written
       to standard output. With -types, Go types for the grammar's types and
       ParseAST, which returns the result as values of those types, are
-      generated too.
+      generated too; with -recognize, Recognize, which checks input without
+      building a tree.
 
   compile -g <grammar> [-s <rule>] [-no-ast] -o <file.pegoc>
       Compile a grammar and save it. The result can be used as <grammar>
@@ -386,6 +387,7 @@ func gen(args []string, stdout io.Writer) error {
 	start := fs.String("s", "", "start rule of the generated Parse function (default: the one saved in a .pegoc, otherwise main)")
 	output := fs.String("o", "", "output file (default: standard output)")
 	types := fs.Bool("types", false, "also generate Go types for the grammar's types and ParseAST")
+	recognize := fs.Bool("recognize", false, "also generate Recognize, which checks input without building a tree")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -402,6 +404,9 @@ func gen(args []string, stdout io.Writer) error {
 	var opts []pego.GenOption
 	if *types {
 		opts = append(opts, pego.WithTypes())
+	}
+	if *recognize {
+		opts = append(opts, pego.WithRecognize())
 	}
 	code, err := pego.GenerateGo(g, *pkg, *start, opts...)
 	if err != nil {

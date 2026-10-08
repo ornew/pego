@@ -80,7 +80,7 @@ type listConv struct {
 // runtimeNames are the exported names of the generated runtime, which typed values must avoid.
 var runtimeNames = map[string]bool{
 	"Node": true, "NodeField": true, "Fields": true, "SyntaxError": true, "SyntaxErrors": true, "Unit": true,
-	"CodePoints": true, "Bytes": true, "Parse": true, "ParseRule": true, "ParseAST": true, "Match": true, "Error": true,
+	"CodePoints": true, "Bytes": true, "Parse": true, "ParseRule": true, "ParseAST": true, "Recognize": true, "Match": true, "Error": true,
 }
 
 // name assigns Go names: grammar type names stay unless they clash with the runtime (then "_" is
