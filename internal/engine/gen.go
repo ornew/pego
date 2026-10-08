@@ -40,7 +40,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if opts.Package == "" {
 		return nil, fmt.Errorf("package name is required")
 	}
-	if !token.IsIdentifier(opts.Package) {
+	if !token.IsIdentifier(opts.Package) || opts.Package == "_" {
 		return nil, fmt.Errorf("invalid package name %q", opts.Package)
 	}
 	gen := &generator{prog: prog}

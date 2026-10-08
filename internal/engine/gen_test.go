@@ -213,7 +213,7 @@ func TestGenerateErrors(t *testing.T) {
 	if _, err := Generate(g, GenOptions{Start: "main"}); err == nil {
 		t.Error("expected an error for a missing package name")
 	}
-	for _, pkg := range []string{"foo-bar", "type", "1p"} {
+	for _, pkg := range []string{"foo-bar", "type", "1p", "_"} {
 		if _, err := Generate(g, GenOptions{Package: pkg, Start: "main"}); err == nil || err.Error() != fmt.Sprintf("invalid package name %q", pkg) {
 			t.Errorf("package %q: got %v", pkg, err)
 		}
