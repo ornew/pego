@@ -76,7 +76,7 @@ func treeOf(result string) (string, bool) {
 // comments must be the same.
 func TestCorpus(t *testing.T) {
 	corpus := loadCorpus(t)
-	var accepted, rejected, treeDiff, accDiff int
+	var accepted, rejected, checkOnly, treeDiff, accDiff int
 	var reports, treeReports []string
 	for _, c := range corpus {
 		ref, refOK := treeOf(c.result)
@@ -90,6 +90,9 @@ func TestCorpus(t *testing.T) {
 		}
 		if err != nil {
 			rejected++
+			if _, aerr := ParseAST(c.src, Bytes); aerr == nil {
+				checkOnly++ // the syntax is valid; Check rejects it
+			}
 			continue
 		}
 		accepted++
@@ -106,8 +109,8 @@ func TestCorpus(t *testing.T) {
 			}
 		}
 	}
-	t.Logf("%d sources: %d accepted, %d rejected, %d differ in acceptance, %d in the tree",
-		len(corpus), accepted, rejected, accDiff, treeDiff)
+	t.Logf("%d sources: %d accepted, %d rejected (%d of them by Check, which ParseAST does not do), %d differ in acceptance, %d in the tree",
+		len(corpus), accepted, rejected, checkOnly, accDiff, treeDiff)
 	for _, r := range append(reports, treeReports...) {
 		t.Error(r)
 	}

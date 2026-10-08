@@ -353,19 +353,42 @@ func TestSyntaxErrors(t *testing.T) {
 	}
 }
 
+// TestDepth: the parser does not fail on deeply nested input (the nesting limit of the generated parser is 100,000
+// rule calls) and reports the depth where it stops. cue/parser stops at 10,000 levels of expressions.
 func TestDepth(t *testing.T) {
-	for _, c := range []struct{ open, mid, close string }{
-		{"[", "1", "]"},
-		{"{a: ", "1", "}"},
-		{"(", "1", ")"},
-		{"-", "1", ""},
-		{"a & (", "b", ")"},
+	for _, c := range []struct{ name, open, mid, close string }{
+		{"list", "[", "1", "]"},
+		{"struct", "{a: ", "1", "}"},
+		{"paren", "(", "1", ")"},
+		{"call", "f(", "1", ")"},
+		{"index", "a[", "1", "]"},
+		{"binary in parens", "(1 + ", "1", ")"},
 	} {
-		n := 2000
-		in := "x: " + strings.Repeat(c.open, n) + c.mid + strings.Repeat(c.close, n) + "\n"
-		if !Valid(in) {
-			t.Errorf("%q nested %d deep is not valid", c.open, n)
+		valid := func(n int) bool {
+			return Recognize("x: "+strings.Repeat(c.open, n)+c.mid+strings.Repeat(c.close, n)+"\n") == nil
 		}
+		if !valid(2000) {
+			t.Errorf("%s: 2,000 levels are not valid", c.name)
+			continue
+		}
+		lo, hi := 2000, 100000
+		for lo < hi {
+			n := (lo + hi + 1) / 2
+			if valid(n) {
+				lo = n
+			} else {
+				hi = n - 1
+			}
+		}
+		t.Logf("%s: valid up to %d levels", c.name, lo)
+		if lo < 5000 {
+			t.Errorf("%s: only %d levels are valid", c.name, lo)
+		}
+	}
+	// A chain of prefix operators is read in a loop of the engine's Pratt parser, which does not count it against
+	// the limit: a million of them overflows the stack (see the README).
+	if !Valid("x: " + strings.Repeat("-", 100000) + "1\n") {
+		t.Errorf("100,000 prefix operators are not valid")
 	}
 }
 
