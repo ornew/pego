@@ -68,7 +68,8 @@ tree, err := p.Parse("1 + 2 * 3 ^ 2") // a *pego.Node, or a *pego.SyntaxError wi
   that all of them return identical trees, positions and errors.
 - **No nesting too deep.** The iterative VM runs on its own stack, up to 10 million nested rule calls.
 - **Types all the way down.** Declare struct, union and terminal types and build them in actions. Rule types are
-  inferred and checked when the grammar compiles, and `pego gen -types` emits matching Go types.
+  inferred and checked when the grammar compiles, and `pego gen -types` emits matching Go types that the parser
+  builds directly — faster than its own tree, in a tenth of the memory.
 - **Precedence without the pain.** Operators are `pratt` levels, not a ladder of rules. Left recursion, direct or
   indirect, just works.
 - **Errors that point the way.** Failures report the farthest position and what was expected there. `#error`

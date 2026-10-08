@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"unicode/utf8"
 )
 
@@ -626,8 +627,19 @@ func (p *parser) setCapture(slot int, v *Node) {
 // table for token text, all in one pass (a U+FFFD that decodes from three bytes is valid).
 func (p *parser) setSource(s string) {
 	n := utf8.RuneCountInString(s)
-	p.in, p.n = make([]rune, n), n
-	offs := make([]int32, n+1)
+	// The buffers of a parser used before are reused (the typed runtime keeps parsers).
+	if cap(p.in) >= n {
+		p.in = p.in[:n]
+	} else {
+		p.in = make([]rune, n)
+	}
+	p.n = n
+	offs := p.offs[:0]
+	if cap(offs) >= n+1 {
+		offs = offs[:n+1]
+	} else {
+		offs = make([]int32, n+1)
+	}
 	valid := len(s) <= 1<<31-1
 	i := 0
 	for off, r := range s {
@@ -643,6 +655,8 @@ func (p *parser) setSource(s string) {
 	offs[n] = int32(len(s))
 	if valid {
 		p.src, p.offs = s, offs
+	} else {
+		p.offs = nil
 	}
 }
 
@@ -1814,6 +1828,1737 @@ func ParseRule(name, input string, unit ...Unit) (*Node, error) {
 	return parse(r, nseen, input, unit)
 }
 
+// --- Typed runtime ---
+
+// The typed runtime, appended to generated parsers made with pego gen -types. It parses like the
+// runtime in runtime.go, but builds the values of the grammar's types directly, as Go values,
+// instead of Node trees: the value of an expression is an any holding a pointer to a struct or
+// terminal type, *Match, *Error, an int, string or bool, nil, or a *tnode for the CST values that
+// actions consume (Seq, List and Operator nodes). Every step mirrors runtime.go, so the result is
+// that of converting the Node tree that Parse returns.
+//
+// tparser embeds the parser and redefines the methods that handle values; the generated
+// methods of the typed rules (trules) run on it.
+
+// Span is the range of input a typed value covers, in the parse's position unit (End is exclusive).
+type Span struct{ Start, End int }
+
+func (s *Span) tspan() (int, int)       { return s.Start, s.End }
+func (s *Span) tsetSpan(start, end int) { s.Start, s.End = start, end }
+
+// Match is a terminal made by a literal, a character class, ., @a or _.
+type Match struct {
+	Span
+	Text  string
+	fresh bool
+}
+
+// Error is input skipped by error recovery (#recover).
+type Error struct {
+	Span
+	Text    string
+	Message string
+	fresh   bool
+}
+
+// tval is a node value of the typed runtime: a value of a struct or terminal type, *Match,
+// *Error or *tnode.
+type tval interface {
+	tspan() (int, int)
+	tsetSpan(start, end int)
+	tname() string                  // type name
+	ttext() (string, bool)          // text of a terminal
+	tkids() []any                   // children of a CST node
+	tfield(name string) (any, bool) // field value, and whether the type has the field (structs)
+	tstruct() bool                  // a struct type
+	tfresh() bool
+	tsetFresh(bool)
+}
+
+func (m *Match) tname() string             { return "Match" }
+func (m *Match) ttext() (string, bool)     { return m.Text, true }
+func (m *Match) tkids() []any              { return nil }
+func (m *Match) tfield(string) (any, bool) { return nil, true }
+func (m *Match) tstruct() bool             { return false }
+func (m *Match) tfresh() bool              { return m.fresh }
+func (m *Match) tsetFresh(f bool)          { m.fresh = f }
+func (e *Error) tname() string             { return "Error" }
+func (e *Error) ttext() (string, bool)     { return e.Text, true }
+func (e *Error) tkids() []any              { return nil }
+func (e *Error) tstruct() bool             { return false }
+func (e *Error) tfresh() bool              { return e.fresh }
+func (e *Error) tsetFresh(f bool)          { e.fresh = f }
+func (e *Error) tfield(name string) (any, bool) {
+	if name == "message" {
+		return e.Message, true
+	}
+	return nil, true
+}
+
+// tnode is a Seq, List or Operator node of the typed runtime.
+type tnode struct {
+	Span
+	typ    string
+	kids   []any
+	fields []tfield
+	fresh  bool
+}
+
+type tfield struct {
+	name string
+	val  any
+}
+
+func (n *tnode) tname() string         { return n.typ }
+func (n *tnode) ttext() (string, bool) { return "", false }
+func (n *tnode) tkids() []any          { return n.kids }
+func (n *tnode) tstruct() bool         { return false }
+func (n *tnode) tfresh() bool          { return n.fresh }
+func (n *tnode) tsetFresh(f bool)      { n.fresh = f }
+func (n *tnode) tfield(name string) (any, bool) {
+	for _, f := range n.fields {
+		if f.name == name {
+			return f.val, true
+		}
+	}
+	return nil, true
+}
+
+func (n *tnode) set(name string, v any) {
+	for i := range n.fields {
+		if n.fields[i].name == name {
+			n.fields[i].val = v
+			return
+		}
+	}
+	n.fields = append(n.fields, tfield{name, v})
+}
+
+// asTval returns v as a node value, or nil. Values never hold nil pointers: nil is always the
+// untyped nil.
+func asTval(v any) tval {
+	n, _ := v.(tval)
+	return n
+}
+
+// --- Rules ---
+
+// trule is a rule of the typed runtime: the rule's analysis results and its typed body.
+type trule struct {
+	*rule
+	body   func(p *tparser, min int) (any, bool)
+	action func(c *tctx) any
+	pratt  *tpratt
+	// term makes the value of a rule of a terminal type.
+	term func(p *tparser, start, end int, text string) tval
+}
+
+// trules is the typed rule table set up by the generated code.
+var trules []*trule
+
+// tAs returns v as a T, or the zero T (nil) if it is not one.
+func tAs[T any](v any) T {
+	t, _ := v.(T)
+	return t
+}
+
+// tptr and tderef return the value of a field of a pointer type as a value of the typed runtime.
+func tptr[T any](p *T) any {
+	if p == nil {
+		return nil
+	}
+	return p
+}
+
+func tderef[T any](p *T) any {
+	if p == nil {
+		return nil
+	}
+	return *p
+}
+
+// tlistOf returns a List node of kids, for reading a list field of a struct in an action.
+func tlistOf(kids []any) any {
+	n := &tnode{typ: "List", kids: kids}
+	first := true
+	for _, it := range kids {
+		t := asTval(it)
+		if t == nil {
+			continue
+		}
+		s, e := t.tspan()
+		if first || s < n.Start {
+			n.Start = s
+		}
+		if first || e > n.End {
+			n.End = e
+		}
+		first = false
+	}
+	return n
+}
+
+// tparse parses the whole input with the typed rule r, and returns the result converted by conv
+// (before the parser's scratch memory, which the result may be in, is cleared). ext holds the
+// generated code's chunks.
+func tparse[T any](r *trule, input string, units []Unit, ext any, conv func(any) T) (T, error) {
+	p, _ := tpool.Get().(*tparser)
+	if p == nil {
+		p = &tparser{parser: &parser{}}
+	}
+	v, err := p.run(r, input, units, ext)
+	res := conv(v)
+	p.recycle()
+	tpool.Put(p)
+	return res, err
+}
+
+// run parses the whole input with the typed rule r.
+func (p *tparser) run(r *trule, input string, units []Unit, ext any) (v any, err error) {
+	p.ext = ext
+	p.memo.stride = nseen
+	if len(units) > 0 && units[0] == Bytes {
+		p.unit, p.bs, p.n = Bytes, input, len(input)
+	} else {
+		p.setSource(input)
+	}
+	defer func() {
+		if x := recover(); x != nil {
+			switch x := x.(type) {
+			case fatal:
+				v, err = nil, x.err
+			case evalError: // in an action (predicates recover their own)
+				v, err = nil, fmt.Errorf("action in %s: %s", p.where, x.msg)
+			default:
+				panic(x)
+			}
+		}
+	}()
+	v, ok := p.call(r, 0)
+	if ok && p.pos == p.n {
+		if len(p.recovered) > 0 {
+			return v, SyntaxErrors(append([]*SyntaxError(nil), p.recovered...))
+		}
+		return v, nil
+	}
+	if ok {
+		p.expect(p.pos, idEndInput)
+	}
+	return nil, p.makeError(p.farthest, p.exp[p.expBase:])
+}
+
+// tpool keeps parsers of the typed runtime, with their scratch memory, for later parses. What a
+// parse returns never refers to that memory: CST nodes, value lists, frames and memo entries are
+// consumed by the parse itself (typed values come from the generated code's chunks, ext).
+var tpool sync.Pool
+
+// recycle clears the parser for the next parse, keeping its scratch memory.
+func (p *tparser) recycle() {
+	q := p.parser
+	seen, calls := q.memo.seen, q.memo.calls
+	clear(seen)
+	clear(calls)
+	*q = parser{in: q.in[:0], offs: q.offs[:0], exp: q.exp[:0], arena: q.arena[:0]}
+	q.memo.seen, q.memo.calls = seen, calls
+	p.nodes.reset()
+	p.vals.reset()
+	p.frames.reset()
+	p.fields.reset()
+	p.memoSlab.reset()
+	clear(p.trail)
+	clear(p.kidStack)
+	clear(p.saved)
+	clear(p.memoSlots)
+	free := p.free
+	for i := range free {
+		free[i] = free[i][:0]
+	}
+	*p = tparser{parser: q, trail: p.trail[:0], kidStack: p.kidStack[:0], saved: p.saved[:0], memoSlots: p.memoSlots[:0],
+		nodes: p.nodes, vals: p.vals, frames: p.frames, fields: p.fields, memoSlab: p.memoSlab, free: free}
+}
+
+// tarena allocates values of type T in chunks that are kept from one parse to the next (tpool):
+// reset clears what was used and starts again at the first chunk.
+type tarena[T any] struct {
+	chunks [][]T
+	ci     int // the chunk in use
+	off    int // the next free element in it
+}
+
+const tchunk = 512
+
+// slice returns n zero elements (capacity n).
+func (a *tarena[T]) slice(n int) []T {
+	if n > tchunk/4 {
+		return make([]T, n)
+	}
+	if a.ci < len(a.chunks) && a.off+n > len(a.chunks[a.ci]) {
+		a.ci++
+		a.off = 0
+	}
+	if a.ci == len(a.chunks) {
+		a.chunks = append(a.chunks, make([]T, tchunk))
+	}
+	s := a.chunks[a.ci][a.off : a.off+n : a.off+n]
+	a.off += n
+	return s
+}
+
+func (a *tarena[T]) one() *T { return &a.slice(1)[0] }
+
+func (a *tarena[T]) reset() {
+	for i := 0; i <= a.ci && i < len(a.chunks); i++ {
+		clear(a.chunks[i])
+	}
+	a.ci, a.off = 0, 0
+}
+
+// tparser is the parser state of the typed runtime.
+type tparser struct {
+	*parser
+	ext      any    // the generated code's allocation chunks
+	where    string // the rule whose action is being evaluated
+	frame    *tframe
+	trail    []tundo
+	created  []tval // struct values made by the action being evaluated
+	kidStack []any
+	ac       tctx
+	saved    []any
+	matches  []Match // returned in values, so not kept for the next parse
+	// Scratch memory, kept for the next parse (recycle).
+	nodes     tarena[tnode]
+	vals      tarena[any]
+	frames    tarena[tframe]
+	fields    tarena[tfield]
+	memoSlab  tarena[tmemoEntry]
+	memoSlots []*tmemoEntry // memo entries by position (chains)
+	free      [8][]*tframe  // frames freed by freeFrame, by size
+}
+
+type tframe struct{ vals []any }
+
+// freeFrame makes the frame f, which nothing refers to any more, available to newFrame. A rule's
+// frame is dead when the rule returns: the values have been copied into its result, and the
+// trail entries that refer to it are gone.
+func (p *tparser) freeFrame(f *tframe) {
+	n := len(f.vals)
+	if n == 0 || n >= len(p.free) {
+		return
+	}
+	clear(f.vals)
+	p.free[n] = append(p.free[n], f)
+}
+
+var emptyTFrame = &tframe{}
+
+type tundo struct {
+	f    *tframe
+	slot int
+	old  any
+}
+
+func (p *tparser) mark() mark {
+	return mark{pos: p.pos, env: p.env, trail: len(p.trail), recovered: len(p.recovered)}
+}
+
+func (p *tparser) reset(m mark) {
+	p.pos = m.pos
+	p.env = m.env
+	p.recovered = p.recovered[:m.recovered]
+	for i := len(p.trail) - 1; i >= m.trail; i-- {
+		u := p.trail[i]
+		u.f.vals[u.slot] = u.old
+	}
+	p.trail = p.trail[:m.trail]
+}
+
+func (p *tparser) setCapture(slot int, v any) {
+	p.trail = append(p.trail, tundo{f: p.frame, slot: slot, old: p.frame.vals[slot]})
+	p.frame.vals[slot] = v
+}
+
+// --- Allocation ---
+
+func (p *tparser) newNode(typ string, start, end int, kids []any) *tnode {
+	n := p.nodes.one()
+	*n = tnode{Span: Span{start, end}, typ: typ, kids: kids, fresh: true}
+	return n
+}
+
+func (p *tparser) newMatch(start, end int, text string, fresh bool) *Match {
+	if len(p.matches) == 0 {
+		p.matches = make([]Match, nodeChunk)
+	}
+	m := &p.matches[0]
+	p.matches = p.matches[1:]
+	*m = Match{Span{start, end}, text, fresh}
+	return m
+}
+
+// newVals returns a value list of length and capacity n.
+func (p *tparser) newVals(n int) []any {
+	if n == 0 {
+		return []any{}
+	}
+	return p.vals.slice(n)
+}
+
+func (p *tparser) tfields(n int) []tfield {
+	return p.fields.slice(n)[:0]
+}
+
+// kids returns p.kidStack[base:] as a value list and pops it.
+func (p *tparser) kids(base int) []any {
+	ks := p.newVals(len(p.kidStack) - base)
+	copy(ks, p.kidStack[base:])
+	p.dropKids(base)
+	return ks
+}
+
+func (p *tparser) dropKids(base int) {
+	clear(p.kidStack[base:])
+	p.kidStack = p.kidStack[:base]
+}
+
+func (p *tparser) newFrame(n int) *tframe {
+	if n == 0 {
+		return emptyTFrame
+	}
+	if n < len(p.free) {
+		if fs := p.free[n]; len(fs) > 0 {
+			f := fs[len(fs)-1]
+			p.free[n] = fs[:len(fs)-1]
+			return f
+		}
+	}
+	f := p.frames.one()
+	f.vals = p.newVals(n)
+	return f
+}
+
+// --- Memo ---
+
+// The memo of typed results (tparser.memoSlots, chains of entries by position) is keyed like
+// memoTable, whose firstCall bookkeeping the typed runtime shares.
+type tmemoEntry struct {
+	val      any
+	errs     []*SyntaxError
+	expected []expID
+	next     *tmemoEntry
+	env      []any
+	end      int
+	far      int
+	rule     int32
+	min      int32
+	ok       bool
+	silent   bool
+	growing  bool
+}
+
+func (p *tparser) memoGet(rule, pos, min int, env []any) *tmemoEntry {
+	if pos >= len(p.memoSlots) {
+		return nil
+	}
+	for e := p.memoSlots[pos]; e != nil; e = e.next {
+		if e.rule == int32(rule) && e.min == int32(min) && sameValues(e.env, env) {
+			return e
+		}
+	}
+	return nil
+}
+
+func (p *tparser) memoPut(rule, pos, min int, env []any, e *tmemoEntry) {
+	if pos >= len(p.memoSlots) {
+		if pos < cap(p.memoSlots) {
+			p.memoSlots = p.memoSlots[:pos+1]
+		} else {
+			grown := make([]*tmemoEntry, pos+1, max(2*cap(p.memoSlots), pos+1, 64))
+			copy(grown, p.memoSlots)
+			p.memoSlots = grown
+		}
+	}
+	e.rule, e.min, e.env = int32(rule), int32(min), env
+	link := &p.memoSlots[pos]
+	for x := *link; x != nil; link, x = &x.next, x.next {
+		if x.rule == e.rule && x.min == e.min && sameValues(x.env, env) {
+			e.next = x.next
+			*link = e
+			return
+		}
+	}
+	e.next = p.memoSlots[pos]
+	p.memoSlots[pos] = e
+}
+
+// --- Rule calls ---
+
+func (p *tparser) call(r *trule, min int) (any, bool) {
+	start := p.pos
+	if !r.memo && !r.leader || p.firstCall(r.rule) {
+		if len(r.scope) == 0 {
+			return p.invokePlain(r, min)
+		}
+		rec := len(p.recovered)
+		v, ok := p.invoke(r, min)
+		if !ok {
+			p.pos = start
+			p.recovered = p.recovered[:rec]
+		}
+		return v, ok
+	}
+	env := p.envValues(r.vars)
+	if e := p.memoGet(r.id, start, min, env); e != nil && (e.growing || (!e.silent || p.silent > 0) && (len(e.errs) == 0 || e.silent == (p.silent > 0))) {
+		if !e.growing {
+			p.mergeExpected(e.far, e.expected)
+		}
+		if !e.ok {
+			return nil, false
+		}
+		p.pos = e.end
+		p.recovered = append(p.recovered, e.errs...)
+		return e.val, true
+	}
+	rec := len(p.recovered)
+	m := p.isolate(start)
+	var v any
+	var ok bool
+	var e *tmemoEntry
+	if r.leader {
+		v, ok = p.grow(r, min, env)
+		e = p.memoGet(r.id, start, min, env)
+	} else {
+		v, ok = p.invoke(r, min)
+		if !ok {
+			p.recovered = p.recovered[:rec]
+		}
+		e = p.memoSlab.one()
+		*e = tmemoEntry{val: v, ok: ok, end: p.pos, silent: p.silent > 0,
+			errs: append([]*SyntaxError(nil), p.recovered[rec:]...)}
+		p.memoPut(r.id, start, min, env, e)
+	}
+	far, inner := p.unisolate(m)
+	e.far, e.expected = far, p.keep(inner)
+	p.mergeExpected(far, inner)
+	if !ok {
+		p.pos = start
+	}
+	return v, ok
+}
+
+// callMemo is the memoized part of call, for the rule r invoked by inv (the generated i<id>):
+// the rule is called at the position again, or its memoization is no longer deferred.
+func (p *tparser) callMemo(r *trule, inv func(*tparser) (any, bool)) (any, bool) {
+	start := p.pos
+	env := p.envValues(r.vars)
+	if e := p.memoGet(r.id, start, 0, env); e != nil && (e.growing || (!e.silent || p.silent > 0) && (len(e.errs) == 0 || e.silent == (p.silent > 0))) {
+		if !e.growing {
+			p.mergeExpected(e.far, e.expected)
+		}
+		if !e.ok {
+			return nil, false
+		}
+		p.pos = e.end
+		p.recovered = append(p.recovered, e.errs...)
+		return e.val, true
+	}
+	rec := len(p.recovered)
+	m := p.isolate(start)
+	v, ok := inv(p)
+	if !ok {
+		p.recovered = p.recovered[:rec]
+	}
+	e := p.memoSlab.one()
+	*e = tmemoEntry{val: v, ok: ok, end: p.pos, silent: p.silent > 0,
+		errs: append([]*SyntaxError(nil), p.recovered[rec:]...)}
+	p.memoPut(r.id, start, 0, env, e)
+	far, inner := p.unisolate(m)
+	e.far, e.expected = far, p.keep(inner)
+	p.mergeExpected(far, inner)
+	if !ok {
+		p.pos = start
+	}
+	return v, ok
+}
+
+func (p *tparser) grow(r *trule, min int, env []any) (any, bool) {
+	start := p.pos
+	rec := len(p.recovered)
+	best := p.memoSlab.one()
+	*best = tmemoEntry{end: start, growing: true}
+	p.memoPut(r.id, start, min, env, best)
+	for {
+		v, ok := p.invoke(r, min)
+		if !ok || (best.ok && p.pos <= best.end) {
+			break
+		}
+		best = p.memoSlab.one()
+		*best = tmemoEntry{val: v, ok: true, end: p.pos, growing: true, errs: append([]*SyntaxError(nil), p.recovered[rec:]...)}
+		p.memoPut(r.id, start, min, env, best)
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	best.growing = false
+	best.silent = p.silent > 0
+	p.pos = best.end
+	p.recovered = append(p.recovered[:rec], best.errs...)
+	return best.val, best.ok
+}
+
+func (p *tparser) invoke(r *trule, min int) (any, bool) {
+	f := p.newFrame(len(r.scope))
+	prevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)
+	p.frame, p.cut = f, false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	start := p.pos
+	v, ok := r.body(p, min)
+	p.depth--
+	p.frame, p.cut = prevFrame, prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = p.finish(r, f, v, start)
+	}
+	p.env = prevEnv
+	p.freeFrame(f)
+	return v, ok
+}
+
+func (p *tparser) invokePlain(r *trule, min int) (any, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := r.body(p, min)
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = p.finish(r, emptyTFrame, v, start)
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// finish makes the rule's value from the value of its body.
+func (p *tparser) finish(r *trule, f *tframe, v any, start int) any {
+	if r.novalue {
+		return nil
+	}
+	if r.action != nil {
+		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
+		n := asTval(v)
+		if r.bodyIsSeq && n != nil {
+			c.items = n.tkids()
+		} else {
+			c.one[0] = n
+			c.items = c.one[:]
+		}
+		return c.result(r.action, r.name)
+	}
+	if r.terminalType != "" {
+		return r.term(p, start, p.pos, p.text(start, p.pos))
+	}
+	if len(r.scope) > 0 {
+		v = p.attachCaptures(v, r.scope, f, start, p.pos)
+	}
+	n := asTval(v)
+	if n == nil {
+		return nil
+	}
+	n.tsetFresh(false)
+	return n
+}
+
+// attachCaptures attaches the non-nil captures as fields of the value (a CST node), first
+// wrapping it in a Seq node unless it is a fresh one that is not itself captured.
+func (p *tparser) attachCaptures(v any, names []string, f *tframe, start, end int) any {
+	n := asTval(v)
+	found := false
+	wrap := n == nil || !n.tfresh()
+	for _, c := range f.vals {
+		if c != nil {
+			found = true
+		}
+		if c != nil && n != nil && c == any(n) {
+			wrap = true
+		}
+	}
+	if !found {
+		return v
+	}
+	t, isNode := n.(*tnode)
+	if wrap || !isNode {
+		kids := p.newVals(1)
+		kids[0] = v
+		t = p.newNode("Seq", start, end, kids)
+	}
+	if t.fields == nil {
+		t.fields = p.tfields(len(names))
+	}
+	for i, name := range names {
+		if f.vals[i] != nil {
+			t.set(name, f.vals[i])
+		}
+	}
+	return t
+}
+
+// --- Terminals ---
+
+func (p *tparser) matchLiteral(rs []rune, text string, desc expID, build bool) (any, bool) {
+	start := p.pos
+	if _, ok := p.parser.matchLiteral(rs, text, desc, false); !ok {
+		return nil, false
+	}
+	if !build {
+		return nil, true
+	}
+	return p.newMatch(start, p.pos, text, true), true
+}
+
+func (p *tparser) matchAny(build bool) (any, bool) {
+	_, size, ok := p.peek()
+	if !ok {
+		p.expect(p.pos, idAny)
+		return nil, false
+	}
+	return p.single(size, build)
+}
+
+func (p *tparser) single(size int, build bool) (any, bool) {
+	start := p.pos
+	p.pos += size
+	if !build {
+		return nil, true
+	}
+	return p.newMatch(start, p.pos, p.text(start, p.pos), true), true
+}
+
+func (p *tparser) anchor(ok bool, desc expID) (any, bool) {
+	if ok {
+		return nil, true
+	}
+	p.expect(p.pos, desc)
+	return nil, false
+}
+
+// --- Attributes ---
+
+type tmatcher = func(p *tparser) (any, bool)
+
+func (p *tparser) tracked(m tmatcher) (v any, ok bool, far int, expected []expID) {
+	mark := p.isolate(p.pos)
+	v, ok = m(p)
+	far, expected = p.unisolate(mark)
+	return v, ok, far, expected
+}
+
+func (p *tparser) errorAttr(m tmatcher, msg expID) (any, bool) {
+	v, ok, far, expected := p.tracked(m)
+	if ok {
+		p.mergeExpected(far, expected)
+		return v, true
+	}
+	p.expect(far, msg)
+	return nil, false
+}
+
+func (p *tparser) recoverAttr(m, skip tmatcher, build bool) (any, bool) {
+	m0 := p.mark()
+	v, ok, far, expected := p.tracked(m)
+	if ok {
+		p.mergeExpected(far, expected)
+		return v, true
+	}
+	expected = p.keep(expected)
+	p.reset(m0)
+	if _, ok := skip(p); !ok || p.pos == m0.pos {
+		p.reset(m0)
+		p.mergeExpected(far, expected)
+		return nil, false
+	}
+	e := p.makeError(far, expected)
+	p.recovered = append(p.recovered, e)
+	if !build {
+		return nil, true
+	}
+	return &Error{Span: Span{m0.pos, p.pos}, Text: p.text(m0.pos, p.pos), Message: e.Error(), fresh: true}, true
+}
+
+// --- Actions and predicates ---
+
+// tctx is the context of evaluating an action or a predicate (actx in the typed runtime).
+type tctx struct {
+	p            *tparser
+	f            *tframe
+	items        []any
+	start, end   int
+	cbase        int
+	lhs, rhs, op any
+	one          [1]any
+}
+
+func (p *tparser) useCtx(c tctx) *tctx {
+	p.ac = c
+	return &p.ac
+}
+
+// result evaluates an action. Its errors fail the parse: tparse reports them with the rule
+// name, which result records in p.where instead of deferring a recovery for each action.
+func (c *tctx) result(action func(*tctx) any, where string) (n any) {
+	prev := c.p.where
+	c.p.where = where
+	v := action(c)
+	c.p.where = prev
+	if v == nil {
+		return nil
+	}
+	t := asTval(v)
+	if t == nil {
+		evalErrorf("result must be a node, got %s", ttypeName(v))
+	}
+	for _, x := range c.p.created[c.cbase:] {
+		if x == t {
+			t.tsetSpan(c.start, c.end)
+			break
+		}
+	}
+	c.p.created = c.p.created[:c.cbase]
+	t.tsetFresh(false)
+	return t
+}
+
+func (p *tparser) predicate(t func(*tctx) any) (ok bool) {
+	base, kids := len(p.created), len(p.kidStack)
+	defer func() {
+		p.created = p.created[:base]
+		if x := recover(); x != nil {
+			if _, isEval := x.(evalError); !isEval {
+				panic(x)
+			}
+			p.dropKids(kids)
+			ok = false
+		}
+	}()
+	c := p.useCtx(tctx{p: p, f: p.frame, start: p.pos, end: p.pos, cbase: len(p.created)})
+	v := t(c)
+	if b, isBool := v.(bool); isBool && !b {
+		return false
+	}
+	return true
+}
+
+func (p *tparser) assign(name string, t func(*tctx) any) (ok bool) {
+	base, kids := len(p.created), len(p.kidStack)
+	defer func() {
+		p.created = p.created[:base]
+		if x := recover(); x != nil {
+			if _, isEval := x.(evalError); !isEval {
+				panic(x)
+			}
+			p.dropKids(kids)
+			ok = false
+		}
+	}()
+	c := p.useCtx(tctx{p: p, f: p.frame, start: p.pos, end: p.pos, cbase: len(p.created)})
+	v := t(c)
+	if _, isFn := v.(func(...any) any); isFn {
+		return false
+	}
+	p.env = &env{name: name, val: v, next: p.env}
+	return true
+}
+
+// tvalOrNil is the typed runtime's nodeOrNil: values are already any, with the untyped nil.
+func tvalOrNil(v any) any { return v }
+
+func (c *tctx) cap(slot int) any { return tvalOrNil(c.f.vals[slot]) }
+
+func (c *tctx) item(n int) any {
+	if n == 0 {
+		return c.newList(c.items)
+	}
+	if n > len(c.items) {
+		evalErrorf("$%d is out of range (%d elements)", n, len(c.items))
+	}
+	return tvalOrNil(c.items[n-1])
+}
+
+func (c *tctx) lookup(name string) any {
+	for e := c.p.env; e != nil; e = e.next {
+		if e.name == name {
+			return e.val
+		}
+	}
+	evalErrorf("variable %s is not defined", name)
+	return nil
+}
+
+// ttypeName is typeName for values of the typed runtime.
+func ttypeName(v any) string {
+	switch v.(type) {
+	case nil:
+		return "nil"
+	case int:
+		return "int"
+	case string:
+		return "string"
+	case bool:
+		return "bool"
+	}
+	if t, ok := v.(tval); ok {
+		return t.tname()
+	}
+	return fmt.Sprintf("%T", v)
+}
+
+// spanOf widens the range [*start, *end) to cover the field value v if it is a node (first is
+// set until a node has been seen), as newStruct does.
+func spanOf(v any, first *bool, start, end *int) {
+	child := asTval(v)
+	if child == nil {
+		return
+	}
+	s, e := child.tspan()
+	if *first || s < *start {
+		*start = s
+	}
+	if *first || e > *end {
+		*end = e
+	}
+	*first = false
+}
+
+// made finishes a struct value n made by an action with the given range (see newStruct).
+func (c *tctx) made(n tval, first bool, start, end int) any {
+	if first {
+		start, end = c.start, c.end
+	}
+	n.tsetSpan(start, end)
+	c.p.created = append(c.p.created, n)
+	return n
+}
+
+func (c *tctx) newList(items []any) any {
+	return c.listNode(append(c.p.newVals(len(items))[:0], items...))
+}
+
+// listNode returns a List node with the child list kids (which it takes over).
+func (c *tctx) listNode(kids []any) *tnode {
+	n := c.p.newNode("List", c.start, c.start, kids)
+	n.fresh = false
+	first := true
+	for _, it := range kids {
+		t := asTval(it)
+		if t == nil {
+			continue
+		}
+		s, e := t.tspan()
+		if first || s < n.Start {
+			n.Start = s
+		}
+		if first || e > n.End {
+			n.End = e
+		}
+		first = false
+	}
+	return n
+}
+
+func (c *tctx) member(x any, name string) any {
+	n := asTval(x)
+	if n == nil {
+		evalErrorf("cannot access .%s of %s", name, ttypeName(x))
+	}
+	switch name {
+	case "startPos":
+		s, _ := n.tspan()
+		return s
+	case "endPos":
+		_, e := n.tspan()
+		return e
+	case "children":
+		return c.newList(n.tkids())
+	}
+	v, ok := n.tfield(name)
+	if !ok {
+		evalErrorf("%s has no field %s", n.tname(), name)
+	}
+	return tvalOrNil(v)
+}
+
+func trtUnary(op string, x any) any {
+	switch op {
+	case "-":
+		if i, ok := x.(int); ok {
+			return -i
+		}
+	case "!":
+		if b, ok := x.(bool); ok {
+			return !b
+		}
+	}
+	evalErrorf("invalid operand %s for unary %s", ttypeName(x), op)
+	return nil
+}
+
+func trtBool(op string, v any) bool {
+	b, ok := v.(bool)
+	if !ok {
+		evalErrorf("invalid operand %s for %s", ttypeName(v), op)
+	}
+	return b
+}
+
+func trtAnd(l any, r func() any) any {
+	if !trtBool("&&", l) {
+		return false
+	}
+	return trtBool("&&", r())
+}
+
+func trtOr(l any, r func() any) any {
+	if trtBool("||", l) {
+		return true
+	}
+	return trtBool("||", r())
+}
+
+func trtEqual(a, b any) bool {
+	switch a.(type) {
+	case int, string, bool:
+		return a == b
+	case nil:
+		return b == nil
+	}
+	an, ok := a.(tval)
+	if !ok {
+		return false
+	}
+	bn, ok := b.(tval)
+	return ok && an == bn
+}
+
+func trtBinary(op string, l, r any) any {
+	switch op {
+	case "==":
+		return trtEqual(l, r)
+	case "!=":
+		return !trtEqual(l, r)
+	}
+	switch l := l.(type) {
+	case int:
+		if r, ok := r.(int); ok {
+			switch op {
+			case "+":
+				return l + r
+			case "-":
+				return l - r
+			case "*":
+				return l * r
+			case "/", "%":
+				if r == 0 {
+					evalErrorf("division by zero")
+				}
+				if op == "/" {
+					return l / r
+				}
+				return l % r
+			case "<":
+				return l < r
+			case "<=":
+				return l <= r
+			case ">":
+				return l > r
+			case ">=":
+				return l >= r
+			}
+		}
+	case string:
+		if r, ok := r.(string); ok {
+			switch op {
+			case "+":
+				return l + r
+			case "<":
+				return l < r
+			case "<=":
+				return l <= r
+			case ">":
+				return l > r
+			case ">=":
+				return l >= r
+			}
+		}
+	}
+	evalErrorf("invalid operands %s and %s for %s", ttypeName(l), ttypeName(r), op)
+	return nil
+}
+
+func (c *tctx) length(x any) any {
+	switch x := x.(type) {
+	case string:
+		return c.p.unitLen(x)
+	case nil:
+		return 0
+	}
+	if n, ok := x.(tval); ok {
+		if text, ok := n.ttext(); ok {
+			return c.p.unitLen(text)
+		}
+		return len(n.tkids())
+	}
+	evalErrorf("len: invalid argument %s", ttypeName(x))
+	return nil
+}
+
+func (c *tctx) text(x any) any { return c.textStr(x) }
+
+func (c *tctx) textStr(x any) string {
+	switch x := x.(type) {
+	case nil:
+		return ""
+	case string:
+		return x
+	}
+	if n, ok := x.(tval); ok {
+		if text, ok := n.ttext(); ok {
+			return text
+		}
+		s, e := n.tspan()
+		return c.p.text(s, e)
+	}
+	evalErrorf("text: invalid argument %s", ttypeName(x))
+	return ""
+}
+
+func tlistItems(fn string, v any) []any {
+	if v == nil {
+		return nil
+	}
+	if n, ok := v.(tval); ok {
+		return n.tkids()
+	}
+	evalErrorf("%s: expected a list, got %s", fn, ttypeName(v))
+	return nil
+}
+
+func tasNode(fn string, v any) any {
+	if v == nil {
+		return nil
+	}
+	if _, ok := v.(tval); ok {
+		return v
+	}
+	evalErrorf("%s: list elements must be nodes, got %s", fn, ttypeName(v))
+	return nil
+}
+
+func trtFold(fn string, right bool, acc, list any, f func(acc, item any) any) any {
+	items := tlistItems(fn, list)
+	for i := range items {
+		it := items[i]
+		if right {
+			it = items[len(items)-1-i]
+		}
+		acc = f(acc, tvalOrNil(it))
+	}
+	return acc
+}
+
+func (c *tctx) mapList(list any, f func(item any) any) any {
+	base := len(c.p.kidStack)
+	c.pushMap(list, f)
+	return c.endList(base)
+}
+
+func (c *tctx) list(args ...any) any {
+	base := len(c.p.kidStack)
+	c.pushList(args...)
+	return c.endList(base)
+}
+
+func (c *tctx) concat(args ...any) any {
+	base := len(c.p.kidStack)
+	for _, a := range args {
+		c.pushItems(a)
+	}
+	return c.endList(base)
+}
+
+func (c *tctx) pushMap(list any, f func(item any) any) {
+	for _, it := range tlistItems("map", list) {
+		c.p.kidStack = append(c.p.kidStack, tasNode("map", f(tvalOrNil(it))))
+	}
+}
+
+func (c *tctx) pushList(args ...any) {
+	for _, a := range args {
+		c.p.kidStack = append(c.p.kidStack, tasNode("list", a))
+	}
+}
+
+func (c *tctx) pushItems(v any) {
+	c.p.kidStack = append(c.p.kidStack, tlistItems("concat", v)...)
+}
+
+func (c *tctx) endList(base int) any {
+	return c.listNode(c.p.kids(base))
+}
+
+// --- Pratt expressions ---
+
+type tpratt struct {
+	skip     tmatcher
+	operands []*tprattLine
+	prefix   []*tprattOp
+	led      []*tprattOp
+}
+
+type tprattLine struct {
+	scope  []string
+	m      tmatcher
+	action func(*tctx) any
+	isSeq  bool
+}
+
+type tprattOp struct {
+	id    int
+	kind  string
+	assoc string
+	level int
+	line  *tprattLine
+}
+
+type tprattAttempt struct {
+	op         *tprattOp
+	frame      *tframe
+	v          any
+	start, end int
+	env        *env
+	cut        bool
+	errs       []*SyntaxError
+}
+
+func (p *tparser) skipTrivia(pr *tpratt) {
+	if pr.skip == nil {
+		return
+	}
+	m := p.mark()
+	p.silent++
+	_, ok := pr.skip(p)
+	p.silent--
+	if !ok {
+		p.reset(m)
+	}
+}
+
+func (p *tparser) longest(ops []*tprattOp) (best tprattAttempt, cutFailed bool) {
+	m0 := p.mark()
+	for _, op := range ops {
+		prevFrame, prevCut := p.frame, p.cut
+		f := p.newFrame(len(op.line.scope))
+		p.frame, p.cut = f, false
+		v, ok := op.line.m(p)
+		cut := p.cut
+		p.frame, p.cut = prevFrame, prevCut
+		if ok && p.pos == m0.pos && op.kind != "infix" {
+			ok = false
+		}
+		if ok && (best.op == nil || p.pos > best.end) {
+			best = tprattAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
+				errs: append([]*SyntaxError(nil), p.recovered[m0.recovered:]...)}
+		}
+		if !ok && cut {
+			cutFailed = true
+		}
+		if len(f.vals) == 0 {
+			p.reset(m0)
+			continue
+		}
+		p.saved = append(p.saved[:0], f.vals...)
+		p.reset(m0)
+		copy(f.vals, p.saved)
+	}
+	return best, cutFailed
+}
+
+func (p *tparser) apply(a *tprattAttempt) {
+	p.pos, p.env = a.end, a.env
+	p.recovered = append(p.recovered, a.errs...)
+}
+
+func (p *tparser) prattParse(r *trule, min int) (any, bool) {
+	pr := r.pratt
+	lhs, ok := p.prattNud(r)
+	if !ok {
+		return nil, false
+	}
+	lastNone := -1
+	for {
+		m0 := p.mark()
+		p.skipTrivia(pr)
+		a, cutFailed := p.longest(pr.led)
+		if a.op == nil {
+			p.reset(m0)
+			if cutFailed {
+				return nil, false
+			}
+			break
+		}
+		if a.op.level <= min || a.op.assoc == "none" && a.op.level == lastNone {
+			p.reset(m0)
+			break
+		}
+		p.apply(&a)
+		if a.op.kind == "postfix" {
+			lhs = p.prattBuild(r, &a, lhs, nil)
+			lastNone = -1
+			continue
+		}
+		rmin := a.op.level
+		if a.op.assoc == "right" {
+			rmin--
+		}
+		rhs, ok := p.prattParse(r, rmin)
+		if !ok {
+			if a.cut {
+				return nil, false
+			}
+			p.reset(m0)
+			break
+		}
+		lhs = p.prattBuild(r, &a, lhs, rhs)
+		lastNone = -1
+		if a.op.assoc == "none" {
+			lastNone = a.op.level
+		}
+	}
+	return lhs, true
+}
+
+func (p *tparser) prattNud(r *trule) (any, bool) {
+	pr := r.pratt
+	p.skipTrivia(pr)
+	m0 := p.mark()
+	if a, _ := p.longest(pr.prefix); a.op != nil {
+		p.apply(&a)
+		rhs, ok := p.prattParse(r, a.op.level)
+		if ok {
+			return p.prattBuild(r, &a, nil, rhs), true
+		}
+		if a.cut {
+			return nil, false
+		}
+		p.reset(m0)
+	}
+	for _, o := range pr.operands {
+		prevFrame, prevCut := p.frame, p.cut
+		f := p.newFrame(len(o.scope))
+		p.frame, p.cut = f, false
+		v, ok := o.m(p)
+		cut := p.cut
+		p.frame, p.cut = prevFrame, prevCut
+		if ok {
+			return p.lineResult(r, o, f, v, m0.pos), true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+func (p *tparser) lineResult(r *trule, l *tprattLine, f *tframe, v any, start int) any {
+	if r.novalue {
+		return nil
+	}
+	if l.action != nil {
+		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
+		n := asTval(v)
+		if l.isSeq && n != nil {
+			c.items = n.tkids()
+		} else {
+			c.one[0] = n
+			c.items = c.one[:]
+		}
+		return c.result(l.action, r.name)
+	}
+	if len(l.scope) > 0 {
+		v = p.attachCaptures(v, l.scope, f, start, p.pos)
+	}
+	if n := asTval(v); n != nil {
+		n.tsetFresh(false)
+		return n
+	}
+	return nil
+}
+
+func (p *tparser) prattBuild(r *trule, a *tprattAttempt, lhs, rhs any) any {
+	if r.novalue {
+		return nil
+	}
+	start, end := a.start, p.pos
+	if l := asTval(lhs); l != nil {
+		start, _ = l.tspan()
+	}
+	if a.op.kind == "postfix" {
+		end = a.end
+	}
+	l := a.op.line
+	if l.action != nil {
+		op := p.newMatch(a.start, a.end, p.text(a.start, a.end), false)
+		c := p.useCtx(tctx{p: p, f: a.frame, start: start, end: end, cbase: len(p.created),
+			op: op, lhs: tvalOrNil(lhs), rhs: tvalOrNil(rhs)})
+		return c.result(l.action, r.name)
+	}
+	opv := a.v
+	if len(l.scope) > 0 {
+		opv = p.attachCaptures(opv, l.scope, a.frame, a.start, a.end)
+	}
+	if n := asTval(opv); n != nil {
+		n.tsetFresh(false)
+	}
+	var kids []any
+	switch a.op.kind {
+	case "prefix":
+		kids = p.newVals(2)
+		kids[0], kids[1] = tvalOrNil(opv), tvalOrNil(rhs)
+	case "postfix":
+		kids = p.newVals(2)
+		kids[0], kids[1] = tvalOrNil(lhs), tvalOrNil(opv)
+	default:
+		kids = p.newVals(3)
+		kids[0], kids[1], kids[2] = tvalOrNil(lhs), tvalOrNil(opv), tvalOrNil(rhs)
+	}
+	n := p.newNode("Operator", start, end, kids)
+	n.fresh = false
+	n.fields = []tfield{{"operator", a.op.id}}
+	return n
+}
+
+// --- Typed values (pego gen -types; Span, Match and Error are in the typed runtime above) ---
+
+// Bool is the terminal type Bool.
+type Bool struct {
+	Span
+	Text string
+}
+
+// Null is the terminal type Null.
+type Null struct {
+	Span
+	Text string
+}
+
+// Number is the terminal type Number.
+type Number struct {
+	Span
+	Text string
+}
+
+// String is the terminal type String.
+type String struct {
+	Span
+	Text string
+}
+
+// Array is the struct type Array.
+type Array struct {
+	Span
+	Elements []Value
+}
+
+// Member is the struct type Member.
+type Member struct {
+	Span
+	Key   *String
+	Value Value
+}
+
+// Object is the struct type Object.
+type Object struct {
+	Span
+	Members []*Member
+}
+
+// Value is the union type Value = Object | Array | String | Number | Bool | Null. Error (left by #recover) also implements it.
+type Value interface{ isValue() }
+
+func (*Array) isValue()  {}
+func (*Bool) isValue()   {}
+func (*Error) isValue()  {}
+func (*Null) isValue()   {}
+func (*Number) isValue() {}
+func (*Object) isValue() {}
+func (*String) isValue() {}
+
+func (v *Bool) tname() string             { return "Bool" }
+func (v *Bool) ttext() (string, bool)     { return v.Text, true }
+func (v *Bool) tkids() []any              { return nil }
+func (v *Bool) tfield(string) (any, bool) { return nil, true }
+func (v *Bool) tstruct() bool             { return false }
+func (v *Bool) tfresh() bool              { return false }
+func (v *Bool) tsetFresh(bool)            {}
+
+func (v *Null) tname() string             { return "Null" }
+func (v *Null) ttext() (string, bool)     { return v.Text, true }
+func (v *Null) tkids() []any              { return nil }
+func (v *Null) tfield(string) (any, bool) { return nil, true }
+func (v *Null) tstruct() bool             { return false }
+func (v *Null) tfresh() bool              { return false }
+func (v *Null) tsetFresh(bool)            {}
+
+func (v *Number) tname() string             { return "Number" }
+func (v *Number) ttext() (string, bool)     { return v.Text, true }
+func (v *Number) tkids() []any              { return nil }
+func (v *Number) tfield(string) (any, bool) { return nil, true }
+func (v *Number) tstruct() bool             { return false }
+func (v *Number) tfresh() bool              { return false }
+func (v *Number) tsetFresh(bool)            {}
+
+func (v *String) tname() string             { return "String" }
+func (v *String) ttext() (string, bool)     { return v.Text, true }
+func (v *String) tkids() []any              { return nil }
+func (v *String) tfield(string) (any, bool) { return nil, true }
+func (v *String) tstruct() bool             { return false }
+func (v *String) tfresh() bool              { return false }
+func (v *String) tsetFresh(bool)            {}
+
+func (v *Array) tname() string         { return "Array" }
+func (v *Array) ttext() (string, bool) { return "", false }
+func (v *Array) tkids() []any          { return nil }
+func (v *Array) tstruct() bool         { return true }
+func (v *Array) tfresh() bool          { return false }
+func (v *Array) tsetFresh(bool)        {}
+func (v *Array) tfield(name string) (any, bool) {
+	switch name {
+	case "Elements":
+		return func() any {
+			if v.Elements == nil {
+				return nil
+			}
+			kids := make([]any, len(v.Elements))
+			for i, x := range v.Elements {
+				kids[i] = any(x)
+			}
+			return tlistOf(kids)
+		}(), true
+	}
+	return nil, false
+}
+
+func (v *Member) tname() string         { return "Member" }
+func (v *Member) ttext() (string, bool) { return "", false }
+func (v *Member) tkids() []any          { return nil }
+func (v *Member) tstruct() bool         { return true }
+func (v *Member) tfresh() bool          { return false }
+func (v *Member) tsetFresh(bool)        {}
+func (v *Member) tfield(name string) (any, bool) {
+	switch name {
+	case "Key":
+		return tptr(v.Key), true
+	case "Value":
+		return any(v.Value), true
+	}
+	return nil, false
+}
+
+func (v *Object) tname() string         { return "Object" }
+func (v *Object) ttext() (string, bool) { return "", false }
+func (v *Object) tkids() []any          { return nil }
+func (v *Object) tstruct() bool         { return true }
+func (v *Object) tfresh() bool          { return false }
+func (v *Object) tsetFresh(bool)        {}
+func (v *Object) tfield(name string) (any, bool) {
+	switch name {
+	case "Members":
+		return func() any {
+			if v.Members == nil {
+				return nil
+			}
+			kids := make([]any, len(v.Members))
+			for i, x := range v.Members {
+				kids[i] = tptr(x)
+			}
+			return tlistOf(kids)
+		}(), true
+	}
+	return nil, false
+}
+
+func astNode(v any) *Node    { n, _ := v.(*Node); return n }
+func astInt(v any) int       { i, _ := v.(int); return i }
+func astString(v any) string { s, _ := v.(string); return s }
+func astBool(v any) bool     { x, _ := v.(bool); return x }
+func astPtrInt(v any) *int {
+	if i, ok := v.(int); ok {
+		return &i
+	}
+	return nil
+}
+func astPtrString(v any) *string {
+	if s, ok := v.(string); ok {
+		return &s
+	}
+	return nil
+}
+func astPtrBool(v any) *bool {
+	if x, ok := v.(bool); ok {
+		return &x
+	}
+	return nil
+}
+
+// astNew returns a new zero value from the chunk *s.
+func astNew[T any](s *[]T) *T {
+	if len(*s) == 0 {
+		*s = make([]T, 256)
+	}
+	v := &(*s)[0]
+	*s = (*s)[1:]
+	return v
+}
+
+// astSlice returns a slice of n zero values from the chunk *s. Its capacity is n, so appending
+// to it does not overwrite other slices.
+func astSlice[T any](s *[]T, n int) []T {
+	if n == 0 {
+		return []T{} // an empty list, not nil
+	}
+	if n > 256 {
+		return make([]T, n)
+	}
+	if len(*s) < n {
+		*s = make([]T, 1024)
+	}
+	v := (*s)[:n:n]
+	*s = (*s)[n:]
+	return v
+}
+
+// tinit sets up the typed rules (called at the end of init, after the rule tables).
+func tinit() {
+	trules[8].term = func(p *tparser, start, end int, text string) tval {
+		v := astNew(&p.ext.(*tslabs).tString)
+		*v = String{Span: Span{start, end}, Text: text}
+		return v
+	}
+	trules[12].term = func(p *tparser, start, end int, text string) tval {
+		v := astNew(&p.ext.(*tslabs).tNumber)
+		*v = Number{Span: Span{start, end}, Text: text}
+		return v
+	}
+	trules[16].term = func(p *tparser, start, end int, text string) tval {
+		v := astNew(&p.ext.(*tslabs).tBool)
+		*v = Bool{Span: Span{start, end}, Text: text}
+		return v
+	}
+	trules[17].term = func(p *tparser, start, end int, text string) tval {
+		v := astNew(&p.ext.(*tslabs).tNull)
+		*v = Null{Span: Span{start, end}, Text: text}
+		return v
+	}
+}
+
+// tmk_Array makes a Array in an action (newStruct in the typed runtime).
+func tmk_Array(c *tctx, final bool, f0 any) any {
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tArray)
+	v.Elements = tl0(a, f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_Member makes a Member in an action (newStruct in the typed runtime).
+func tmk_Member(c *tctx, final bool, f0 any, f1 any) any {
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tMember)
+	v.Key = tAs[*String](f0)
+	v.Value = tAs[Value](f1)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	spanOf(f0, &first, &start, &end)
+	spanOf(f1, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+// tmk_Object makes a Object in an action (newStruct in the typed runtime).
+func tmk_Object(c *tctx, final bool, f0 any) any {
+	a := c.p.ext.(*tslabs)
+	v := astNew(&a.tObject)
+	v.Members = tl1(a, f0)
+	if final {
+		v.Span = Span{c.start, c.end}
+		return v
+	}
+	first, start, end := true, 0, 0
+	spanOf(f0, &first, &start, &end)
+	return c.made(v, first, start, end)
+}
+
+func tl0(a *tslabs, v any) []Value {
+	n, _ := v.(*tnode)
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.tl0Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[Value](c)
+	}
+	return out
+}
+
+func tl1(a *tslabs, v any) []*Member {
+	n, _ := v.(*tnode)
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.tl1Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*Member](c)
+	}
+	return out
+}
+
+// tslabs holds the chunks the typed values of a parse are allocated from.
+type tslabs struct {
+	tBool    []Bool
+	tNull    []Null
+	tNumber  []Number
+	tString  []String
+	tArray   []Array
+	tMember  []Member
+	tObject  []Object
+	tl0Chunk []Value
+	tl1Chunk []*Member
+}
+
+// ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
+// from errors, the result is returned together with SyntaxErrors; an Error node where a struct or
+// terminal type is expected becomes nil.
+// It builds the values directly, without the nodes Parse returns.
+func ParseAST(input string, unit ...Unit) (Value, error) {
+	a := &tslabs{}
+	return tparse(trules[0], input, unit, a, func(v any) Value { return tAs[Value](v) })
+}
+
 var lit14 = []rune("{")
 var lit21 = []rune("}")
 var lit28 = []rune(",")
@@ -1856,6 +3601,27 @@ var lit270 = []rune(".")
 var lit279 = []rune("true")
 var lit281 = []rune("false")
 var lit284 = []rune("null")
+var lit300 = []rune("{")
+var lit307 = []rune("}")
+var lit314 = []rune(",")
+var lit328 = []rune(":")
+var lit334 = []rune("[")
+var lit341 = []rune("]")
+var lit348 = []rune(",")
+var lit359 = []rune("\"")
+var lit363 = []rune("\"")
+var lit371 = []rune("\\")
+var lit374 = []rune("u")
+var lit384 = []rune("-")
+var lit393 = []rune("0")
+var lit400 = []rune(".")
+var lit411 = []rune("true")
+var lit413 = []rune("false")
+var lit416 = []rune("null")
+var lit422 = []rune("\\")
+var lit425 = []rune("u")
+var lit434 = []rune("0")
+var lit440 = []rune(".")
 
 func init() {
 	rules = []*rule{
@@ -1979,6 +3745,68 @@ func init() {
 	recRules[17].body = func(p *parser, _ int) (*Node, bool) { return p.e285() }
 	recRules[18].body = func(p *parser, _ int) (*Node, bool) { return p.e286() }
 	descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"{\"", "\"}\"", "\",\"", "\":\"", "\"[\"", "\"]\"", "\"\\\"\"", "(?^\"\\\\\\x00-\\x1f)", "\"\\\\\"", "(?\"\\\\/bfnrt)", "\"u\"", "(?0-9a-fA-F)", "\"-\"", "\"0\"", "(?1-9)", "(?0-9)", "\".\"", "(?eE)", "(?+\\-)", "\"true\"", "\"false\"", "\"null\"", "(? \\t\\r\\n)"}
+	trules = []*trule{
+		{rule: rules[0]},
+		{rule: rules[1]},
+		{rule: rules[2]},
+		{rule: rules[3]},
+		{rule: rules[4]},
+		{rule: rules[5]},
+		{rule: rules[6]},
+		{rule: rules[7]},
+		{rule: rules[8]},
+		{rule: rules[9]},
+		{rule: rules[10]},
+		{rule: rules[11]},
+		{rule: rules[12]},
+		{rule: rules[13]},
+		{rule: rules[14]},
+		{rule: rules[15]},
+		{rule: rules[16]},
+		{rule: rules[17]},
+		{rule: rules[18]},
+		{rule: rules[19]},
+		{rule: rules[20]},
+		{rule: rules[21]},
+		{rule: rules[22]},
+		{rule: rules[23]},
+		{rule: rules[24]},
+		{rule: rules[25]},
+	}
+	defer tinit()
+	trules[0].body = func(p *tparser, _ int) (any, bool) { return p.e292() }
+	trules[0].action = ta0
+	trules[1].body = func(p *tparser, _ int) (any, bool) { return p.e299() }
+	trules[2].body = func(p *tparser, _ int) (any, bool) { return p.e309() }
+	trules[2].action = ta2
+	trules[3].body = func(p *tparser, _ int) (any, bool) { return p.e324() }
+	trules[3].action = ta3
+	trules[4].body = func(p *tparser, _ int) (any, bool) { return p.e333() }
+	trules[4].action = ta4
+	trules[5].body = func(p *tparser, _ int) (any, bool) { return p.e343() }
+	trules[5].action = ta5
+	trules[6].body = func(p *tparser, _ int) (any, bool) { return p.e358() }
+	trules[6].action = ta6
+	trules[7].body = func(p *tparser, _ int) (any, bool) { return p.e365() }
+	trules[7].action = ta7
+	trules[8].body = func(p *tparser, _ int) (any, bool) { return p.e369() }
+	trules[9].body = func(p *tparser, _ int) (any, bool) { return p.e370() }
+	trules[10].body = func(p *tparser, _ int) (any, bool) { return p.e382() }
+	trules[11].body = func(p *tparser, _ int) (any, bool) { return p.e383() }
+	trules[12].body = func(p *tparser, _ int) (any, bool) { return p.e392() }
+	trules[13].body = func(p *tparser, _ int) (any, bool) { return p.e399() }
+	trules[14].body = func(p *tparser, _ int) (any, bool) { return p.e404() }
+	trules[15].body = func(p *tparser, _ int) (any, bool) { return p.e410() }
+	trules[16].body = func(p *tparser, _ int) (any, bool) { return p.e415() }
+	trules[17].body = func(p *tparser, _ int) (any, bool) { return p.e417() }
+	trules[18].body = func(p *tparser, _ int) (any, bool) { return p.e419() }
+	trules[19].body = func(p *tparser, _ int) (any, bool) { return p.e420() }
+	trules[20].body = func(p *tparser, _ int) (any, bool) { return p.e421() }
+	trules[21].body = func(p *tparser, _ int) (any, bool) { return p.e433() }
+	trules[22].body = func(p *tparser, _ int) (any, bool) { return p.e439() }
+	trules[23].body = func(p *tparser, _ int) (any, bool) { return p.e443() }
+	trules[24].body = func(p *tparser, _ int) (any, bool) { return p.e448() }
+	trules[25].body = func(p *tparser, _ int) (any, bool) { return p.e449() }
 }
 
 // ws
@@ -5509,6 +7337,2435 @@ func (p *parser) q18() (*Node, bool) {
 		p.tooDeep()
 	}
 	v, ok := p.e286()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// ws
+func (p *tparser) e287() (any, bool) {
+	return p.s19()
+}
+
+// value
+func (p *tparser) e288() (any, bool) {
+	return p.u1()
+}
+
+// v:value
+func (p *tparser) e289() (any, bool) {
+	v, ok := p.e288()
+	if ok {
+		p.setCapture(0, v)
+	}
+	return nil, ok
+}
+
+// ws
+func (p *tparser) e290() (any, bool) {
+	return p.s19()
+}
+
+// $$
+func (p *tparser) e291() (any, bool) {
+	return p.anchor(p.atEnd(), idEndInput)
+}
+
+// ws v:value ws $$
+func (p *tparser) e292() (any, bool) {
+	if _, ok := p.e287(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e289(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e290(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e291(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// object
+func (p *tparser) e293() (any, bool) {
+	return p.u2()
+}
+
+// array
+func (p *tparser) e294() (any, bool) {
+	return p.u5()
+}
+
+// string
+func (p *tparser) e295() (any, bool) {
+	return p.u7()
+}
+
+// number
+func (p *tparser) e296() (any, bool) {
+	return p.s12()
+}
+
+// bool
+func (p *tparser) e297() (any, bool) {
+	return p.s16()
+}
+
+// null
+func (p *tparser) e298() (any, bool) {
+	return p.s17()
+}
+
+// object / array / string / number / bool / null
+func (p *tparser) e299() (any, bool) {
+	m0 := p.mark()
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e293()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e294()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e295()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e296()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e297()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e298()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+// "{"
+func (p *tparser) e301() (any, bool) {
+	return p.matchLiteral(lit300, "{", 5, false)
+}
+
+// ws
+func (p *tparser) e302() (any, bool) {
+	return p.s19()
+}
+
+// members
+func (p *tparser) e303() (any, bool) {
+	return p.u3()
+}
+
+// members?
+func (p *tparser) e304() (any, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.cut = false
+	v, ok := p.e303()
+	cut := p.cut
+	p.cut = prevCut
+	if ok {
+		return v, true
+	}
+	p.reset(m0)
+	if cut {
+		return nil, false
+	}
+	return nil, true
+}
+
+// ms:members?
+func (p *tparser) e305() (any, bool) {
+	v, ok := p.e304()
+	if ok {
+		p.setCapture(0, v)
+	}
+	return nil, ok
+}
+
+// ws
+func (p *tparser) e306() (any, bool) {
+	return p.s19()
+}
+
+// "}"
+func (p *tparser) e308() (any, bool) {
+	return p.matchLiteral(lit307, "}", 6, false)
+}
+
+// "{" ws ms:members? ws "}"
+func (p *tparser) e309() (any, bool) {
+	if _, ok := p.e301(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e302(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e305(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e306(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e308(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// member
+func (p *tparser) e310() (any, bool) {
+	return p.u4()
+}
+
+// first:member
+func (p *tparser) e311() (any, bool) {
+	v, ok := p.e310()
+	if ok {
+		p.setCapture(0, v)
+	}
+	return nil, ok
+}
+
+// ws
+func (p *tparser) e312() (any, bool) {
+	return p.s19()
+}
+
+// -ws
+func (p *tparser) e313() (any, bool) {
+	_, ok := p.e312()
+	return nil, ok
+}
+
+// ","
+func (p *tparser) e315() (any, bool) {
+	return p.matchLiteral(lit314, ",", 7, false)
+}
+
+// -","
+func (p *tparser) e316() (any, bool) {
+	_, ok := p.e315()
+	return nil, ok
+}
+
+// ws
+func (p *tparser) e317() (any, bool) {
+	return p.s19()
+}
+
+// -ws
+func (p *tparser) e318() (any, bool) {
+	_, ok := p.e317()
+	return nil, ok
+}
+
+// member
+func (p *tparser) e319() (any, bool) {
+	return p.u4()
+}
+
+// m:member
+func (p *tparser) e320() (any, bool) {
+	v, ok := p.e319()
+	if ok {
+		p.setCapture(0, v)
+	}
+	return nil, ok
+}
+
+// -ws -"," -ws m:member
+func (p *tparser) e321() (any, bool) {
+	if _, ok := p.e313(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e316(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e318(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e320(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// (-ws -"," -ws m:member)* (projected to m)
+func (p *tparser) e322() (any, bool) {
+	start := p.pos
+	base := len(p.kidStack)
+	f := p.newFrame(1)
+	count := 0
+	for {
+		clear(f.vals)
+		m0 := p.mark()
+		prevCut, prevFrame := p.cut, p.frame
+		p.cut = false
+		p.frame = f
+		_, ok := p.e321()
+		cut := p.cut
+		p.cut, p.frame = prevCut, prevFrame
+		if !ok {
+			p.reset(m0)
+			if cut {
+				p.dropKids(base)
+				return nil, false
+			}
+			break
+		}
+		count++
+		p.kidStack = append(p.kidStack, f.vals[0])
+		if p.pos == m0.pos && count >= 0 {
+			break
+		}
+	}
+	if count < 0 {
+		p.dropKids(base)
+		return nil, false
+	}
+	return p.newNode("List", start, p.pos, p.kids(base)), true
+}
+
+// rest:(-ws -"," -ws m:member)*
+func (p *tparser) e323() (any, bool) {
+	v, ok := p.e322()
+	if ok {
+		p.setCapture(1, v)
+	}
+	return nil, ok
+}
+
+// first:member rest:(-ws -"," -ws m:member)*
+func (p *tparser) e324() (any, bool) {
+	if _, ok := p.e311(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e323(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// string
+func (p *tparser) e325() (any, bool) {
+	return p.u7()
+}
+
+// k:string
+func (p *tparser) e326() (any, bool) {
+	v, ok := p.e325()
+	if ok {
+		p.setCapture(0, v)
+	}
+	return nil, ok
+}
+
+// ws
+func (p *tparser) e327() (any, bool) {
+	return p.s19()
+}
+
+// ":"
+func (p *tparser) e329() (any, bool) {
+	return p.matchLiteral(lit328, ":", 8, false)
+}
+
+// ws
+func (p *tparser) e330() (any, bool) {
+	return p.s19()
+}
+
+// value
+func (p *tparser) e331() (any, bool) {
+	return p.u1()
+}
+
+// v:value
+func (p *tparser) e332() (any, bool) {
+	v, ok := p.e331()
+	if ok {
+		p.setCapture(1, v)
+	}
+	return nil, ok
+}
+
+// k:string ws ":" ws v:value
+func (p *tparser) e333() (any, bool) {
+	if _, ok := p.e326(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e327(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e329(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e330(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e332(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// "["
+func (p *tparser) e335() (any, bool) {
+	return p.matchLiteral(lit334, "[", 9, false)
+}
+
+// ws
+func (p *tparser) e336() (any, bool) {
+	return p.s19()
+}
+
+// elements
+func (p *tparser) e337() (any, bool) {
+	return p.u6()
+}
+
+// elements?
+func (p *tparser) e338() (any, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.cut = false
+	v, ok := p.e337()
+	cut := p.cut
+	p.cut = prevCut
+	if ok {
+		return v, true
+	}
+	p.reset(m0)
+	if cut {
+		return nil, false
+	}
+	return nil, true
+}
+
+// es:elements?
+func (p *tparser) e339() (any, bool) {
+	v, ok := p.e338()
+	if ok {
+		p.setCapture(0, v)
+	}
+	return nil, ok
+}
+
+// ws
+func (p *tparser) e340() (any, bool) {
+	return p.s19()
+}
+
+// "]"
+func (p *tparser) e342() (any, bool) {
+	return p.matchLiteral(lit341, "]", 10, false)
+}
+
+// "[" ws es:elements? ws "]"
+func (p *tparser) e343() (any, bool) {
+	if _, ok := p.e335(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e336(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e339(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e340(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e342(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// value
+func (p *tparser) e344() (any, bool) {
+	return p.u1()
+}
+
+// first:value
+func (p *tparser) e345() (any, bool) {
+	v, ok := p.e344()
+	if ok {
+		p.setCapture(0, v)
+	}
+	return nil, ok
+}
+
+// ws
+func (p *tparser) e346() (any, bool) {
+	return p.s19()
+}
+
+// -ws
+func (p *tparser) e347() (any, bool) {
+	_, ok := p.e346()
+	return nil, ok
+}
+
+// ","
+func (p *tparser) e349() (any, bool) {
+	return p.matchLiteral(lit348, ",", 7, false)
+}
+
+// -","
+func (p *tparser) e350() (any, bool) {
+	_, ok := p.e349()
+	return nil, ok
+}
+
+// ws
+func (p *tparser) e351() (any, bool) {
+	return p.s19()
+}
+
+// -ws
+func (p *tparser) e352() (any, bool) {
+	_, ok := p.e351()
+	return nil, ok
+}
+
+// value
+func (p *tparser) e353() (any, bool) {
+	return p.u1()
+}
+
+// v:value
+func (p *tparser) e354() (any, bool) {
+	v, ok := p.e353()
+	if ok {
+		p.setCapture(0, v)
+	}
+	return nil, ok
+}
+
+// -ws -"," -ws v:value
+func (p *tparser) e355() (any, bool) {
+	if _, ok := p.e347(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e350(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e352(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e354(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// (-ws -"," -ws v:value)* (projected to v)
+func (p *tparser) e356() (any, bool) {
+	start := p.pos
+	base := len(p.kidStack)
+	f := p.newFrame(1)
+	count := 0
+	for {
+		clear(f.vals)
+		m0 := p.mark()
+		prevCut, prevFrame := p.cut, p.frame
+		p.cut = false
+		p.frame = f
+		_, ok := p.e355()
+		cut := p.cut
+		p.cut, p.frame = prevCut, prevFrame
+		if !ok {
+			p.reset(m0)
+			if cut {
+				p.dropKids(base)
+				return nil, false
+			}
+			break
+		}
+		count++
+		p.kidStack = append(p.kidStack, f.vals[0])
+		if p.pos == m0.pos && count >= 0 {
+			break
+		}
+	}
+	if count < 0 {
+		p.dropKids(base)
+		return nil, false
+	}
+	return p.newNode("List", start, p.pos, p.kids(base)), true
+}
+
+// rest:(-ws -"," -ws v:value)*
+func (p *tparser) e357() (any, bool) {
+	v, ok := p.e356()
+	if ok {
+		p.setCapture(1, v)
+	}
+	return nil, ok
+}
+
+// first:value rest:(-ws -"," -ws v:value)*
+func (p *tparser) e358() (any, bool) {
+	if _, ok := p.e345(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e357(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// "\""
+func (p *tparser) e360() (any, bool) {
+	return p.matchLiteral(lit359, "\"", 11, false)
+}
+
+// chars
+func (p *tparser) e361() (any, bool) {
+	return p.s8()
+}
+
+// s:chars
+func (p *tparser) e362() (any, bool) {
+	v, ok := p.e361()
+	if ok {
+		p.setCapture(0, v)
+	}
+	return nil, ok
+}
+
+// "\""
+func (p *tparser) e364() (any, bool) {
+	return p.matchLiteral(lit363, "\"", 11, false)
+}
+
+// "\"" s:chars "\""
+func (p *tparser) e365() (any, bool) {
+	if _, ok := p.e360(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e362(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e364(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// unescaped
+func (p *tparser) e366() (any, bool) {
+	return p.s20()
+}
+
+// escape
+func (p *tparser) e367() (any, bool) {
+	return p.s21()
+}
+
+// unescaped / escape
+func (p *tparser) e368() (any, bool) {
+	m0 := p.mark()
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e366()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e367()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+// (unescaped / escape)*
+func (p *tparser) e369() (any, bool) {
+	count := 0
+	for {
+		m0 := p.mark()
+		prevCut, prevFrame := p.cut, p.frame
+		p.cut = false
+		_, ok := p.e368()
+		cut := p.cut
+		p.cut, p.frame = prevCut, prevFrame
+		if !ok {
+			p.reset(m0)
+			if cut {
+				return nil, false
+			}
+			break
+		}
+		count++
+		if p.pos == m0.pos && count >= 0 {
+			break
+		}
+	}
+	if count < 0 {
+		return nil, false
+	}
+	return nil, true
+}
+
+// (?^"\\\u{0}-\u{1f})
+func (p *tparser) e370() (any, bool) {
+	ch, size, ok := p.peek()
+	if !ok || (ch == 34 || ch == 92 || ch >= 0 && ch <= 31) {
+		p.expect(p.pos, 12)
+		return nil, false
+	}
+	return p.single(size, true)
+}
+
+// "\\"
+func (p *tparser) e372() (any, bool) {
+	return p.matchLiteral(lit371, "\\", 13, true)
+}
+
+// (?"\\/bfnrt)
+func (p *tparser) e373() (any, bool) {
+	ch, size, ok := p.peek()
+	if !ok || !(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116) {
+		p.expect(p.pos, 14)
+		return nil, false
+	}
+	return p.single(size, true)
+}
+
+// "u"
+func (p *tparser) e375() (any, bool) {
+	return p.matchLiteral(lit374, "u", 15, true)
+}
+
+// hex
+func (p *tparser) e376() (any, bool) {
+	return p.s11()
+}
+
+// hex
+func (p *tparser) e377() (any, bool) {
+	return p.s11()
+}
+
+// hex
+func (p *tparser) e378() (any, bool) {
+	return p.s11()
+}
+
+// hex
+func (p *tparser) e379() (any, bool) {
+	return p.s11()
+}
+
+// "u" hex hex hex hex
+func (p *tparser) e380() (any, bool) {
+	start := p.pos
+	kids := p.newVals(5)[:0]
+	if v, ok := p.e375(); !ok {
+		return nil, false
+	} else {
+		kids = append(kids, v)
+	}
+	if v, ok := p.e376(); !ok {
+		return nil, false
+	} else {
+		kids = append(kids, v)
+	}
+	if v, ok := p.e377(); !ok {
+		return nil, false
+	} else {
+		kids = append(kids, v)
+	}
+	if v, ok := p.e378(); !ok {
+		return nil, false
+	} else {
+		kids = append(kids, v)
+	}
+	if v, ok := p.e379(); !ok {
+		return nil, false
+	} else {
+		kids = append(kids, v)
+	}
+	return p.newNode("Seq", start, p.pos, kids), true
+}
+
+// (?"\\/bfnrt) / "u" hex hex hex hex
+func (p *tparser) e381() (any, bool) {
+	m0 := p.mark()
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e373()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e380()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+// "\\" ((?"\\/bfnrt) / "u" hex hex hex hex)
+func (p *tparser) e382() (any, bool) {
+	start := p.pos
+	kids := p.newVals(2)[:0]
+	if v, ok := p.e372(); !ok {
+		return nil, false
+	} else {
+		kids = append(kids, v)
+	}
+	if v, ok := p.e381(); !ok {
+		return nil, false
+	} else {
+		kids = append(kids, v)
+	}
+	return p.newNode("Seq", start, p.pos, kids), true
+}
+
+// (?0-9a-fA-F)
+func (p *tparser) e383() (any, bool) {
+	ch, size, ok := p.peek()
+	if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
+		p.expect(p.pos, 16)
+		return nil, false
+	}
+	return p.single(size, true)
+}
+
+// "-"
+func (p *tparser) e385() (any, bool) {
+	return p.matchLiteral(lit384, "-", 17, false)
+}
+
+// "-"?
+func (p *tparser) e386() (any, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.cut = false
+	v, ok := p.e385()
+	cut := p.cut
+	p.cut = prevCut
+	if ok {
+		return v, true
+	}
+	p.reset(m0)
+	if cut {
+		return nil, false
+	}
+	return nil, true
+}
+
+// int
+func (p *tparser) e387() (any, bool) {
+	return p.s22()
+}
+
+// frac
+func (p *tparser) e388() (any, bool) {
+	return p.s23()
+}
+
+// frac?
+func (p *tparser) e389() (any, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.cut = false
+	v, ok := p.e388()
+	cut := p.cut
+	p.cut = prevCut
+	if ok {
+		return v, true
+	}
+	p.reset(m0)
+	if cut {
+		return nil, false
+	}
+	return nil, true
+}
+
+// exp
+func (p *tparser) e390() (any, bool) {
+	return p.s24()
+}
+
+// exp?
+func (p *tparser) e391() (any, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.cut = false
+	v, ok := p.e390()
+	cut := p.cut
+	p.cut = prevCut
+	if ok {
+		return v, true
+	}
+	p.reset(m0)
+	if cut {
+		return nil, false
+	}
+	return nil, true
+}
+
+// "-"? int frac? exp?
+func (p *tparser) e392() (any, bool) {
+	if _, ok := p.e386(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e387(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e389(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e391(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// "0"
+func (p *tparser) e394() (any, bool) {
+	return p.matchLiteral(lit393, "0", 18, true)
+}
+
+// (?1-9)
+func (p *tparser) e395() (any, bool) {
+	ch, size, ok := p.peek()
+	if !ok || !(ch >= 49 && ch <= 57) {
+		p.expect(p.pos, 19)
+		return nil, false
+	}
+	return p.single(size, true)
+}
+
+// (?0-9)
+func (p *tparser) e396() (any, bool) {
+	ch, size, ok := p.peek()
+	if !ok || !(ch >= 48 && ch <= 57) {
+		p.expect(p.pos, 20)
+		return nil, false
+	}
+	return p.single(size, true)
+}
+
+// (?0-9)*
+func (p *tparser) e397() (any, bool) {
+	start := p.pos
+	base := len(p.kidStack)
+	count := 0
+	for {
+		m0 := p.mark()
+		prevCut, prevFrame := p.cut, p.frame
+		p.cut = false
+		v, ok := p.e396()
+		cut := p.cut
+		p.cut, p.frame = prevCut, prevFrame
+		if !ok {
+			p.reset(m0)
+			if cut {
+				p.dropKids(base)
+				return nil, false
+			}
+			break
+		}
+		count++
+		p.kidStack = append(p.kidStack, v)
+		if p.pos == m0.pos && count >= 0 {
+			break
+		}
+	}
+	if count < 0 {
+		p.dropKids(base)
+		return nil, false
+	}
+	return p.newNode("List", start, p.pos, p.kids(base)), true
+}
+
+// (?1-9) (?0-9)*
+func (p *tparser) e398() (any, bool) {
+	start := p.pos
+	kids := p.newVals(2)[:0]
+	if v, ok := p.e395(); !ok {
+		return nil, false
+	} else {
+		kids = append(kids, v)
+	}
+	if v, ok := p.e397(); !ok {
+		return nil, false
+	} else {
+		kids = append(kids, v)
+	}
+	return p.newNode("Seq", start, p.pos, kids), true
+}
+
+// "0" / (?1-9) (?0-9)*
+func (p *tparser) e399() (any, bool) {
+	m0 := p.mark()
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e394()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e398()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+// "."
+func (p *tparser) e401() (any, bool) {
+	return p.matchLiteral(lit400, ".", 21, true)
+}
+
+// (?0-9)
+func (p *tparser) e402() (any, bool) {
+	ch, size, ok := p.peek()
+	if !ok || !(ch >= 48 && ch <= 57) {
+		p.expect(p.pos, 20)
+		return nil, false
+	}
+	return p.single(size, true)
+}
+
+// (?0-9)+
+func (p *tparser) e403() (any, bool) {
+	start := p.pos
+	base := len(p.kidStack)
+	count := 0
+	for {
+		m0 := p.mark()
+		prevCut, prevFrame := p.cut, p.frame
+		p.cut = false
+		v, ok := p.e402()
+		cut := p.cut
+		p.cut, p.frame = prevCut, prevFrame
+		if !ok {
+			p.reset(m0)
+			if cut {
+				p.dropKids(base)
+				return nil, false
+			}
+			break
+		}
+		count++
+		p.kidStack = append(p.kidStack, v)
+		if p.pos == m0.pos && count >= 1 {
+			break
+		}
+	}
+	if count < 1 {
+		p.dropKids(base)
+		return nil, false
+	}
+	return p.newNode("List", start, p.pos, p.kids(base)), true
+}
+
+// "." (?0-9)+
+func (p *tparser) e404() (any, bool) {
+	start := p.pos
+	kids := p.newVals(2)[:0]
+	if v, ok := p.e401(); !ok {
+		return nil, false
+	} else {
+		kids = append(kids, v)
+	}
+	if v, ok := p.e403(); !ok {
+		return nil, false
+	} else {
+		kids = append(kids, v)
+	}
+	return p.newNode("Seq", start, p.pos, kids), true
+}
+
+// (?eE)
+func (p *tparser) e405() (any, bool) {
+	ch, size, ok := p.peek()
+	if !ok || !(ch == 101 || ch == 69) {
+		p.expect(p.pos, 22)
+		return nil, false
+	}
+	return p.single(size, true)
+}
+
+// (?+\-)
+func (p *tparser) e406() (any, bool) {
+	ch, size, ok := p.peek()
+	if !ok || !(ch == 43 || ch == 45) {
+		p.expect(p.pos, 23)
+		return nil, false
+	}
+	return p.single(size, true)
+}
+
+// (?+\-)?
+func (p *tparser) e407() (any, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.cut = false
+	v, ok := p.e406()
+	cut := p.cut
+	p.cut = prevCut
+	if ok {
+		return v, true
+	}
+	p.reset(m0)
+	if cut {
+		return nil, false
+	}
+	return nil, true
+}
+
+// (?0-9)
+func (p *tparser) e408() (any, bool) {
+	ch, size, ok := p.peek()
+	if !ok || !(ch >= 48 && ch <= 57) {
+		p.expect(p.pos, 20)
+		return nil, false
+	}
+	return p.single(size, true)
+}
+
+// (?0-9)+
+func (p *tparser) e409() (any, bool) {
+	start := p.pos
+	base := len(p.kidStack)
+	count := 0
+	for {
+		m0 := p.mark()
+		prevCut, prevFrame := p.cut, p.frame
+		p.cut = false
+		v, ok := p.e408()
+		cut := p.cut
+		p.cut, p.frame = prevCut, prevFrame
+		if !ok {
+			p.reset(m0)
+			if cut {
+				p.dropKids(base)
+				return nil, false
+			}
+			break
+		}
+		count++
+		p.kidStack = append(p.kidStack, v)
+		if p.pos == m0.pos && count >= 1 {
+			break
+		}
+	}
+	if count < 1 {
+		p.dropKids(base)
+		return nil, false
+	}
+	return p.newNode("List", start, p.pos, p.kids(base)), true
+}
+
+// (?eE) (?+\-)? (?0-9)+
+func (p *tparser) e410() (any, bool) {
+	start := p.pos
+	kids := p.newVals(3)[:0]
+	if v, ok := p.e405(); !ok {
+		return nil, false
+	} else {
+		kids = append(kids, v)
+	}
+	if v, ok := p.e407(); !ok {
+		return nil, false
+	} else {
+		kids = append(kids, v)
+	}
+	if v, ok := p.e409(); !ok {
+		return nil, false
+	} else {
+		kids = append(kids, v)
+	}
+	return p.newNode("Seq", start, p.pos, kids), true
+}
+
+// "true"
+func (p *tparser) e412() (any, bool) {
+	return p.matchLiteral(lit411, "true", 24, false)
+}
+
+// "false"
+func (p *tparser) e414() (any, bool) {
+	return p.matchLiteral(lit413, "false", 25, false)
+}
+
+// "true" / "false"
+func (p *tparser) e415() (any, bool) {
+	m0 := p.mark()
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e412()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e414()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+// "null"
+func (p *tparser) e417() (any, bool) {
+	return p.matchLiteral(lit416, "null", 26, false)
+}
+
+// (? \t\r\n)
+func (p *tparser) e418() (any, bool) {
+	ch, size, ok := p.peek()
+	if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
+		p.expect(p.pos, 27)
+		return nil, false
+	}
+	return p.single(size, true)
+}
+
+// (? \t\r\n)*
+func (p *tparser) e419() (any, bool) {
+	start := p.pos
+	base := len(p.kidStack)
+	count := 0
+	for {
+		m0 := p.mark()
+		prevCut, prevFrame := p.cut, p.frame
+		p.cut = false
+		v, ok := p.e418()
+		cut := p.cut
+		p.cut, p.frame = prevCut, prevFrame
+		if !ok {
+			p.reset(m0)
+			if cut {
+				p.dropKids(base)
+				return nil, false
+			}
+			break
+		}
+		count++
+		p.kidStack = append(p.kidStack, v)
+		if p.pos == m0.pos && count >= 0 {
+			break
+		}
+	}
+	if count < 0 {
+		p.dropKids(base)
+		return nil, false
+	}
+	return p.newNode("List", start, p.pos, p.kids(base)), true
+}
+
+// (? \t\r\n)*
+func (p *tparser) e420() (any, bool) {
+	count := 0
+	for {
+		ch, size, ok := p.peek()
+		if !ok || !(ch == 32 || ch == 9 || ch == 13 || ch == 10) {
+			p.expect(p.pos, 27)
+			break
+		}
+		p.pos += size
+		count++
+	}
+	return nil, count >= 0
+}
+
+// (?^"\\\u{0}-\u{1f})
+func (p *tparser) e421() (any, bool) {
+	ch, size, ok := p.peek()
+	if !ok || (ch == 34 || ch == 92 || ch >= 0 && ch <= 31) {
+		p.expect(p.pos, 12)
+		return nil, false
+	}
+	return p.single(size, false)
+}
+
+// "\\"
+func (p *tparser) e423() (any, bool) {
+	return p.matchLiteral(lit422, "\\", 13, false)
+}
+
+// (?"\\/bfnrt)
+func (p *tparser) e424() (any, bool) {
+	ch, size, ok := p.peek()
+	if !ok || !(ch == 34 || ch == 92 || ch == 47 || ch == 98 || ch == 102 || ch == 110 || ch == 114 || ch == 116) {
+		p.expect(p.pos, 14)
+		return nil, false
+	}
+	return p.single(size, false)
+}
+
+// "u"
+func (p *tparser) e426() (any, bool) {
+	return p.matchLiteral(lit425, "u", 15, false)
+}
+
+// hex
+func (p *tparser) e427() (any, bool) {
+	return p.s25()
+}
+
+// hex
+func (p *tparser) e428() (any, bool) {
+	return p.s25()
+}
+
+// hex
+func (p *tparser) e429() (any, bool) {
+	return p.s25()
+}
+
+// hex
+func (p *tparser) e430() (any, bool) {
+	return p.s25()
+}
+
+// "u" hex hex hex hex
+func (p *tparser) e431() (any, bool) {
+	if _, ok := p.e426(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e427(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e428(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e429(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e430(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// (?"\\/bfnrt) / "u" hex hex hex hex
+func (p *tparser) e432() (any, bool) {
+	m0 := p.mark()
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e424()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e431()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+// "\\" ((?"\\/bfnrt) / "u" hex hex hex hex)
+func (p *tparser) e433() (any, bool) {
+	if _, ok := p.e423(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e432(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// "0"
+func (p *tparser) e435() (any, bool) {
+	return p.matchLiteral(lit434, "0", 18, false)
+}
+
+// (?1-9)
+func (p *tparser) e436() (any, bool) {
+	ch, size, ok := p.peek()
+	if !ok || !(ch >= 49 && ch <= 57) {
+		p.expect(p.pos, 19)
+		return nil, false
+	}
+	return p.single(size, false)
+}
+
+// (?0-9)*
+func (p *tparser) e437() (any, bool) {
+	count := 0
+	for {
+		ch, size, ok := p.peek()
+		if !ok || !(ch >= 48 && ch <= 57) {
+			p.expect(p.pos, 20)
+			break
+		}
+		p.pos += size
+		count++
+	}
+	return nil, count >= 0
+}
+
+// (?1-9) (?0-9)*
+func (p *tparser) e438() (any, bool) {
+	if _, ok := p.e436(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e437(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// "0" / (?1-9) (?0-9)*
+func (p *tparser) e439() (any, bool) {
+	m0 := p.mark()
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e435()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	{
+		prevCut := p.cut
+		p.cut = false
+		v, ok := p.e438()
+		cut := p.cut
+		p.cut = prevCut
+		if ok {
+			return v, true
+		}
+		p.reset(m0)
+		if cut {
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+// "."
+func (p *tparser) e441() (any, bool) {
+	return p.matchLiteral(lit440, ".", 21, false)
+}
+
+// (?0-9)+
+func (p *tparser) e442() (any, bool) {
+	count := 0
+	for {
+		ch, size, ok := p.peek()
+		if !ok || !(ch >= 48 && ch <= 57) {
+			p.expect(p.pos, 20)
+			break
+		}
+		p.pos += size
+		count++
+	}
+	return nil, count >= 1
+}
+
+// "." (?0-9)+
+func (p *tparser) e443() (any, bool) {
+	if _, ok := p.e441(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e442(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// (?eE)
+func (p *tparser) e444() (any, bool) {
+	ch, size, ok := p.peek()
+	if !ok || !(ch == 101 || ch == 69) {
+		p.expect(p.pos, 22)
+		return nil, false
+	}
+	return p.single(size, false)
+}
+
+// (?+\-)
+func (p *tparser) e445() (any, bool) {
+	ch, size, ok := p.peek()
+	if !ok || !(ch == 43 || ch == 45) {
+		p.expect(p.pos, 23)
+		return nil, false
+	}
+	return p.single(size, false)
+}
+
+// (?+\-)?
+func (p *tparser) e446() (any, bool) {
+	m0 := p.mark()
+	prevCut := p.cut
+	p.cut = false
+	v, ok := p.e445()
+	cut := p.cut
+	p.cut = prevCut
+	if ok {
+		return v, true
+	}
+	p.reset(m0)
+	if cut {
+		return nil, false
+	}
+	return nil, true
+}
+
+// (?0-9)+
+func (p *tparser) e447() (any, bool) {
+	count := 0
+	for {
+		ch, size, ok := p.peek()
+		if !ok || !(ch >= 48 && ch <= 57) {
+			p.expect(p.pos, 20)
+			break
+		}
+		p.pos += size
+		count++
+	}
+	return nil, count >= 1
+}
+
+// (?eE) (?+\-)? (?0-9)+
+func (p *tparser) e448() (any, bool) {
+	if _, ok := p.e444(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e446(); !ok {
+		return nil, false
+	}
+	if _, ok := p.e447(); !ok {
+		return nil, false
+	}
+	return nil, true
+}
+
+// (?0-9a-fA-F)
+func (p *tparser) e449() (any, bool) {
+	ch, size, ok := p.peek()
+	if !ok || !(ch >= 48 && ch <= 57 || ch >= 97 && ch <= 102 || ch >= 65 && ch <= 70) {
+		p.expect(p.pos, 16)
+		return nil, false
+	}
+	return p.single(size, false)
+}
+
+// The action of main.
+func ta0(c *tctx) any { return c.cap(0) }
+
+// main, called as by call
+func (p *tparser) u0() (any, bool) {
+	start, rec := p.pos, len(p.recovered)
+	v, ok := p.i0()
+	if !ok {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	return v, ok
+}
+
+// main, invoked as by invoke
+func (p *tparser) i0() (any, bool) {
+	f := p.newFrame(1)
+	prevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)
+	p.frame, p.cut = f, false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	start := p.pos
+	_ = start
+	v, ok := p.e292()
+	p.depth--
+	p.frame, p.cut = prevFrame, prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
+		v = c.result(ta0, "main")
+	}
+	p.env = prevEnv
+	p.freeFrame(f)
+	return v, ok
+}
+
+// value, called as by call
+func (p *tparser) u1() (any, bool) {
+	if !p.firstCall(rules[1]) {
+		return p.callMemo(trules[1], (*tparser).i1)
+	}
+	return p.v1()
+}
+
+// value, called as by invokePlain
+func (p *tparser) v1() (any, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e299()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// value, invoked as by invoke
+func (p *tparser) i1() (any, bool) {
+	f := p.newFrame(0)
+	prevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)
+	p.frame, p.cut = f, false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	start := p.pos
+	_ = start
+	v, ok := p.e299()
+	p.depth--
+	p.frame, p.cut = prevFrame, prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+	}
+	p.env = prevEnv
+	p.freeFrame(f)
+	return v, ok
+}
+
+// The action of object.
+func ta2(c *tctx) any { return tmk_Object(c, true, c.concat(c.cap(0))) }
+
+// object, called as by call
+func (p *tparser) u2() (any, bool) {
+	start, rec := p.pos, len(p.recovered)
+	v, ok := p.i2()
+	if !ok {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	return v, ok
+}
+
+// object, invoked as by invoke
+func (p *tparser) i2() (any, bool) {
+	f := p.newFrame(1)
+	prevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)
+	p.frame, p.cut = f, false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	start := p.pos
+	_ = start
+	v, ok := p.e309()
+	p.depth--
+	p.frame, p.cut = prevFrame, prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
+		v = c.result(ta2, "object")
+	}
+	p.env = prevEnv
+	p.freeFrame(f)
+	return v, ok
+}
+
+// The action of members.
+func ta3(c *tctx) any {
+	return func() any { b := len(c.p.kidStack); c.pushList(c.cap(0)); c.pushItems(c.cap(1)); return c.endList(b) }()
+}
+
+// members, called as by call
+func (p *tparser) u3() (any, bool) {
+	start, rec := p.pos, len(p.recovered)
+	v, ok := p.i3()
+	if !ok {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	return v, ok
+}
+
+// members, invoked as by invoke
+func (p *tparser) i3() (any, bool) {
+	f := p.newFrame(2)
+	prevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)
+	p.frame, p.cut = f, false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	start := p.pos
+	_ = start
+	v, ok := p.e324()
+	p.depth--
+	p.frame, p.cut = prevFrame, prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
+		v = c.result(ta3, "members")
+	}
+	p.env = prevEnv
+	p.freeFrame(f)
+	return v, ok
+}
+
+// The action of member.
+func ta4(c *tctx) any { return tmk_Member(c, true, c.cap(0), c.cap(1)) }
+
+// member, called as by call
+func (p *tparser) u4() (any, bool) {
+	if !p.firstCall(rules[4]) {
+		return p.callMemo(trules[4], (*tparser).i4)
+	}
+	start, rec := p.pos, len(p.recovered)
+	v, ok := p.i4()
+	if !ok {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	return v, ok
+}
+
+// member, invoked as by invoke
+func (p *tparser) i4() (any, bool) {
+	f := p.newFrame(2)
+	prevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)
+	p.frame, p.cut = f, false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	start := p.pos
+	_ = start
+	v, ok := p.e333()
+	p.depth--
+	p.frame, p.cut = prevFrame, prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
+		v = c.result(ta4, "member")
+	}
+	p.env = prevEnv
+	p.freeFrame(f)
+	return v, ok
+}
+
+// The action of array.
+func ta5(c *tctx) any { return tmk_Array(c, true, c.concat(c.cap(0))) }
+
+// array, called as by call
+func (p *tparser) u5() (any, bool) {
+	start, rec := p.pos, len(p.recovered)
+	v, ok := p.i5()
+	if !ok {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	return v, ok
+}
+
+// array, invoked as by invoke
+func (p *tparser) i5() (any, bool) {
+	f := p.newFrame(1)
+	prevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)
+	p.frame, p.cut = f, false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	start := p.pos
+	_ = start
+	v, ok := p.e343()
+	p.depth--
+	p.frame, p.cut = prevFrame, prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
+		v = c.result(ta5, "array")
+	}
+	p.env = prevEnv
+	p.freeFrame(f)
+	return v, ok
+}
+
+// The action of elements.
+func ta6(c *tctx) any {
+	return func() any { b := len(c.p.kidStack); c.pushList(c.cap(0)); c.pushItems(c.cap(1)); return c.endList(b) }()
+}
+
+// elements, called as by call
+func (p *tparser) u6() (any, bool) {
+	start, rec := p.pos, len(p.recovered)
+	v, ok := p.i6()
+	if !ok {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	return v, ok
+}
+
+// elements, invoked as by invoke
+func (p *tparser) i6() (any, bool) {
+	f := p.newFrame(2)
+	prevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)
+	p.frame, p.cut = f, false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	start := p.pos
+	_ = start
+	v, ok := p.e358()
+	p.depth--
+	p.frame, p.cut = prevFrame, prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
+		v = c.result(ta6, "elements")
+	}
+	p.env = prevEnv
+	p.freeFrame(f)
+	return v, ok
+}
+
+// The action of string.
+func ta7(c *tctx) any { return c.cap(0) }
+
+// string, called as by call
+func (p *tparser) u7() (any, bool) {
+	if !p.firstCall(rules[7]) {
+		return p.callMemo(trules[7], (*tparser).i7)
+	}
+	start, rec := p.pos, len(p.recovered)
+	v, ok := p.i7()
+	if !ok {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	return v, ok
+}
+
+// string, invoked as by invoke
+func (p *tparser) i7() (any, bool) {
+	f := p.newFrame(1)
+	prevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)
+	p.frame, p.cut = f, false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	start := p.pos
+	_ = start
+	v, ok := p.e365()
+	p.depth--
+	p.frame, p.cut = prevFrame, prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		c := p.useCtx(tctx{p: p, f: f, start: start, end: p.pos, cbase: len(p.created)})
+		v = c.result(ta7, "string")
+	}
+	p.env = prevEnv
+	p.freeFrame(f)
+	return v, ok
+}
+
+// chars, called as by invokePlain
+func (p *tparser) s8() (any, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e369()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = trules[8].term(p, start, p.pos, p.text(start, p.pos))
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// unescaped, called as by invokePlain
+func (p *tparser) s9() (any, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e370()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// escape, called as by invokePlain
+func (p *tparser) s10() (any, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e382()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// hex, called as by invokePlain
+func (p *tparser) s11() (any, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e383()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// number, called as by invokePlain
+func (p *tparser) s12() (any, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e392()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = trules[12].term(p, start, p.pos, p.text(start, p.pos))
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// int, called as by invokePlain
+func (p *tparser) s13() (any, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e399()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// frac, called as by invokePlain
+func (p *tparser) s14() (any, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e404()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// exp, called as by invokePlain
+func (p *tparser) s15() (any, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e410()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// bool, called as by invokePlain
+func (p *tparser) s16() (any, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e415()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = trules[16].term(p, start, p.pos, p.text(start, p.pos))
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// null, called as by invokePlain
+func (p *tparser) s17() (any, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e417()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = trules[17].term(p, start, p.pos, p.text(start, p.pos))
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// ws, called as by invokePlain
+func (p *tparser) s18() (any, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e419()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		if n := asTval(v); n != nil {
+			n.tsetFresh(false)
+		}
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// ws, called as by invokePlain
+func (p *tparser) s19() (any, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e420()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// unescaped, called as by invokePlain
+func (p *tparser) s20() (any, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e421()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// escape, called as by invokePlain
+func (p *tparser) s21() (any, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e433()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// int, called as by invokePlain
+func (p *tparser) s22() (any, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e439()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// frac, called as by invokePlain
+func (p *tparser) s23() (any, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e443()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// exp, called as by invokePlain
+func (p *tparser) s24() (any, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e448()
+	p.depth--
+	p.cut = prevCut
+	p.trail = p.trail[:trail]
+	if ok {
+		v = nil
+	} else {
+		p.pos = start
+		p.recovered = p.recovered[:rec]
+	}
+	p.env = prevEnv
+	return v, ok
+}
+
+// hex, called as by invokePlain
+func (p *tparser) s25() (any, bool) {
+	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
+	prevEnv, prevCut := p.env, p.cut
+	p.cut = false
+	p.depth++
+	if p.depth > maxDepth {
+		p.tooDeep()
+	}
+	v, ok := p.e449()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]

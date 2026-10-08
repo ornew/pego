@@ -37,30 +37,55 @@ Names that clash with the runtime's exported names (`Node`, `Match`, `Error`, `P
 list. Where a struct or terminal type is expected, an `Error` node becomes `nil`; it is reported in the
 `SyntaxErrors` that `ParseAST` returns anyway.
 
+### The typed runtime
+
+When every value `ParseAST` can return has a Go type of its own (`runtimeOK`: no `Seq`, `List`, `Operator`, record,
+`node`, `terminal` or `any` in the result type or in any struct field), the generated parser builds the values
+directly. `genrt/typed.go` is a second runtime that mirrors `genrt/runtime.go` step by step, with values of type
+`any` instead of `*Node`: a value is a pointer to a struct or terminal type, `*Match`, `*Error`, an int, string or
+bool, nil, or a `*tnode` for the CST values that actions consume (Seq, List and Operator nodes, which never reach the
+result). `tparser` embeds the parser and redefines only the methods that handle values, so matching, expectations,
+errors and memoization decisions are literally shared. The generator writes the rules a second time for it
+(`trules`), with the expression code of the Node runtime and these differences:
+
+- **Constructors.** `new T{...}` calls a generated `tmk_T` with the fields in declaration order, which converts each
+  value to the field's Go type; a constructor that makes an action's result takes the rule's range directly.
+- **Rule calls.** Each rule gets methods of its own for call, invoke and finish, which call the body and the action
+  directly and finish the value as the rule's kind requires.
+- **Projections.** A repetition captured only to be taken apart by `map($rest, (r) => $r.f)` (the usual
+  `first:x rest:(-"," r:x)*` list) gathers the values of `f` directly instead of a record per element.
+- **Scratch memory.** CST nodes, value lists, capture frames (freed when their rule returns), memo entries and the
+  decoded input are pooled with the parser across parses, since the result never refers to them; a parse allocates
+  little more than the values it returns.
+
+The parity test generates every corpus grammar twice, with the typed runtime and with conversion (below), and checks
+that `ParseAST` returns the same values and errors, also when parsing concurrently. Eight of the 25 grammars use the
+typed runtime, including JSON, XML, both calculators (Pratt and left recursion) and the indentation outline
+(predicates and variables).
+
 ### Conversion after the parse
 
-`ParseAST` calls `Parse` and converts the tree. The converter (`astConv`) has one method per type and per list
-type, looks fields up by name, and allocates the values of each type, and the elements of lists, in chunks, as the
-runtime does nodes.
-
-The parse itself is unchanged, so the typed result is exactly the engine's tree in another form, and the parity
-tests of generated parsers ([008](008-code-generation.md)) keep covering it. The tests also generate every grammar
-of the corpus with types, check that `ParseAST` returns the errors of `Parse`, and compare the values of a grammar
-that exercises unions with CST members, lists of lists, optional values and recovered errors.
+Otherwise `ParseAST` calls `Parse` and converts the tree. The converter (`astConv`) has one method per type and per
+list type, looks fields up by name, and allocates the values of each type, and the elements of lists, in chunks, as
+the runtime does nodes. The parse itself is unchanged, so the typed result is exactly the engine's tree in another
+form.
 
 ### Cost
 
-On the 262 KB JSON benchmark input (Apple M3 Max), `ParseAST` takes about 6% longer than `Parse` (9.3 → 9.9 ms) and
-allocates 11% more bytes (20.0 → 22.3 MB) and 1,441 instead of 1,215 objects. Allocating list elements in chunks
-took the object count down from 6,307.
+On the benchmarks (Apple M3 Max), the typed runtime makes `ParseAST` about 20% faster than `Parse` with a tenth of the
+memory: JSON (262 KB) 9.9 → 7.7 ms and 20.0 → 2.4 MB, XML 10.0 → 8.0 ms, the left-recursive calculator 18.7 → 15.0 ms,
+the outline 4.5 → 3.5 ms; the Pratt calculator is about as fast as `Parse` (its Pratt loop is the general one).
+Conversion costs about 6% more than `Parse` (JSON 9.3 → 9.9 ms, 20.0 → 22.3 MB).
+
+A hand-written prototype for JSON that kept captures in Go variables and built lists directly took 4.5 ms, about the
+time of recognition alone; the rest of the gap is the general machinery of rule calls (capture frames and their
+trail, the evaluation context of actions), which the typed runtime still shares with `Parse`.
 
 ## Alternatives considered
 
-- **A typed runtime that builds the typed values directly, without `Node`.** This is the only way typed values
-  could make parsing *faster*: no nodes, no field lists, no conversion. But every part of the runtime that handles
-  values (memoization, left recursion, captures, actions, `#recover`, the built-in functions) works on `Node` and
-  `any` and is shared with the engine's semantics; a second, typed version of it would double what the parity tests
-  must keep equal. Not done for now; converting after the parse gives the API at a small, predictable cost.
+- **Statically typed code for every expression** (captures as Go variables, lists as typed slices, as in the
+  prototype). It would close most of the remaining gap, but every construct (choices, lookaheads, `#recover`, Pratt
+  lines, lambdas) would need code of its own; the typed runtime reuses the expression code instead.
 - **Converting through JSON.** No generated code, but slower than the parse itself and lossy for unions (the
   member type would have to be decoded from `type`).
 - **Exposing typed values from the engine (`pego.Parser`).** Go types cannot be created at run time, so the engine
@@ -68,6 +93,6 @@ took the object count down from 6,307.
 
 ## Limitations
 
-- Typed values are a view of the tree after the parse: they cost a little more than `Parse`, not less.
+- Grammars whose results include CST values convert the tree after the parse, at a small extra cost.
 - `ParseAST` is generated for the start rule only (`ParseRule` returns `*Node`).
 - Values whose type is not known statically (`node`, `any`, unions with basic members) are `any`.

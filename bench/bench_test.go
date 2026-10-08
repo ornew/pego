@@ -30,6 +30,8 @@ type workload struct {
 	// with it.
 	gen func(input string, bytes bool) error
 	rec func(input string) error
+	// ast parses into typed values with the generated parser's ParseAST (nil if not generated).
+	ast func(input string) error
 	// std is the standard library parser to compare with (nil if there is none).
 	std     func(input string) error
 	stdName string
@@ -49,6 +51,7 @@ var workloads = []workload{
 			return genErr(gjson.Parse(s))
 		},
 		rec:     func(s string) error { return gjson.Recognize(s) },
+		ast:     func(s string) error { return genErr(gjson.ParseAST(s)) },
 		stdName: "encoding_json", std: func(s string) error {
 			var v any
 			return json.Unmarshal([]byte(s), &v)
@@ -79,6 +82,7 @@ var workloads = []workload{
 			return genErr(gxml.Parse(s))
 		},
 		rec:     func(s string) error { return gxml.Recognize(s) },
+		ast:     func(s string) error { return genErr(gxml.ParseAST(s)) },
 		stdName: "encoding_xml", std: func(s string) error {
 			d := xml.NewDecoder(strings.NewReader(s))
 			for {
@@ -99,6 +103,7 @@ var workloads = []workload{
 			return genErr(gcalc.Parse(s))
 		},
 		rec:     func(s string) error { return gcalc.Recognize(s) },
+		ast:     func(s string) error { return genErr(gcalc.ParseAST(s)) },
 		stdName: "go_parser", std: func(s string) error { return genErr(parser.ParseExpr(s)) },
 	},
 	{
@@ -110,6 +115,7 @@ var workloads = []workload{
 			return genErr(gcalclr.Parse(s))
 		},
 		rec:     func(s string) error { return gcalclr.Recognize(s) },
+		ast:     func(s string) error { return genErr(gcalclr.ParseAST(s)) },
 		stdName: "go_parser", std: func(s string) error { return genErr(parser.ParseExpr(s)) },
 	},
 	{
@@ -146,6 +152,7 @@ var workloads = []workload{
 			return genErr(goutline.Parse(s))
 		},
 		rec: func(s string) error { return goutline.Recognize(s) },
+		ast: func(s string) error { return genErr(goutline.ParseAST(s)) },
 	},
 }
 
@@ -217,6 +224,11 @@ func TestWorkloads(t *testing.T) {
 					t.Errorf("generated (bytes %v): %v", b, err)
 				}
 			}
+			if w.ast != nil {
+				if err := w.ast(input); err != nil {
+					t.Errorf("generated ParseAST: %v", err)
+				}
+			}
 			if w.std != nil {
 				if err := w.std(input); err != nil {
 					t.Errorf("%s: %v", w.stdName, err)
@@ -258,6 +270,17 @@ func BenchmarkParse(b *testing.B) {
 					b.ReportAllocs()
 					for b.Loop() {
 						if err := w.gen(input, u.u == pego.Bytes); err != nil {
+							b.Fatal(err)
+						}
+					}
+				})
+			}
+			if w.ast != nil {
+				b.Run("generated_ast", func(b *testing.B) {
+					b.SetBytes(int64(len(input)))
+					b.ReportAllocs()
+					for b.Loop() {
+						if err := w.ast(input); err != nil {
 							b.Fatal(err)
 						}
 					}

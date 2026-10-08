@@ -628,8 +628,19 @@ func (p *parser) setCapture(slot int, v *Node) {
 // table for token text, all in one pass (a U+FFFD that decodes from three bytes is valid).
 func (p *parser) setSource(s string) {
 	n := utf8.RuneCountInString(s)
-	p.in, p.n = make([]rune, n), n
-	offs := make([]int32, n+1)
+	// The buffers of a parser used before are reused (the typed runtime keeps parsers).
+	if cap(p.in) >= n {
+		p.in = p.in[:n]
+	} else {
+		p.in = make([]rune, n)
+	}
+	p.n = n
+	offs := p.offs[:0]
+	if cap(offs) >= n+1 {
+		offs = offs[:n+1]
+	} else {
+		offs = make([]int32, n+1)
+	}
 	valid := len(s) <= 1<<31-1
 	i := 0
 	for off, r := range s {
@@ -645,6 +656,8 @@ func (p *parser) setSource(s string) {
 	offs[n] = int32(len(s))
 	if valid {
 		p.src, p.offs = s, offs
+	} else {
+		p.offs = nil
 	}
 }
 

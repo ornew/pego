@@ -26,35 +26,55 @@ import (
 // An Error node (left by #recover) where a struct or terminal type is expected becomes nil; it is
 // reported among the SyntaxErrors anyway.
 
-// typedGo returns the Go source of the typed values for a parser starting at rule start.
-func (g *generator) typedGo(start *rule) (string, error) {
+// typedGo returns the Go source of the typed values for a parser starting at rule start, and
+// the name of the helper type Span. Unless conv is set, ParseAST runs the typed runtime
+// (genrt/typed.go) when every value it can produce has a Go type of its own; otherwise it converts
+// the result of Parse.
+func (g *generator) typedGo(start *rule, conv bool) (string, string, error) {
 	info := g.prog.typed
 	if info == nil {
-		return "", fmt.Errorf("typed values need the grammar's types (type checking did not run)")
+		return "", "", fmt.Errorf("typed values need the grammar's types (type checking did not run)")
 	}
-	t := &typedGen{g: g, info: info, names: map[string]string{}, unions: map[string]string{}, lists: map[string]string{}}
+	t := &typedGen{g: g, info: info, names: map[string]string{}, unions: map[string]string{}, lists: map[string]string{}, tlists: map[string]string{}}
 	t.name()
 	st := info.rules[start.name]
 	if st == nil {
 		st = tyAny
+	}
+	var b strings.Builder
+	t.decls(&b)
+	t.valueMethods(&b)
+	doc := `// ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
+// from errors, the result is returned together with SyntaxErrors; an Error node where a struct or
+// terminal type is expected becomes nil.
+`
+	if !conv && t.runtimeOK(st) {
+		// The typed rules: the rules generated once more for the typed runtime.
+		g.table = "trules"
+		g.rules()
+		g.table = "rules"
+		result := t.dconv(st, "v", "a") // before the converters are written
+		t.typedRuntime(&b)
+		fmt.Fprintf(&b, `%s// It builds the values directly, without the nodes Parse returns.
+func ParseAST(input string, unit ...Unit) (%s, error) {
+	a := &tslabs{}
+	return tparse(trules[%d], input, unit, a, func(v any) %s { return %s })
+}
+`, doc, t.goType(st), start.id, t.goType(st), result)
+		return b.String(), t.names["Span"], nil
 	}
 	result := t.conv(st, "n") // before the converters are written: it may need a list converter
 	newConv := ""
 	if strings.Contains(result, "a.") {
 		newConv = "\ta := &astConv{}\n"
 	}
-	var b strings.Builder
-	t.decls(&b)
 	t.converters(&b)
-	fmt.Fprintf(&b, `// ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
-// from errors, the result is returned together with SyntaxErrors; an Error node where a struct or
-// terminal type is expected becomes nil.
-func ParseAST(input string, unit ...Unit) (%s, error) {
+	fmt.Fprintf(&b, `%sfunc ParseAST(input string, unit ...Unit) (%s, error) {
 	n, err := Parse(input, unit...)
 %s	return %s, err
 }
-`, t.goType(st), newConv, result)
-	return b.String(), nil
+`, doc, t.goType(st), newConv, result)
+	return b.String(), t.names["Span"], nil
 }
 
 type typedGen struct {
@@ -64,12 +84,15 @@ type typedGen struct {
 	// a union type to the Go name of the alias that declares it.
 	names  map[string]string
 	unions map[string]string
-	// lists maps the Go type of a list to the name of its converter.
-	lists     map[string]string
-	listOrder []listConv
-	structs   []string // struct type names, sorted
-	terms     []string // terminal type names, sorted
-	aliases   []string // union alias names, sorted
+	// lists maps the Go type of a list to the name of its converter (from nodes); tlists, to the
+	// name of its converter from values of the typed runtime.
+	lists      map[string]string
+	listOrder  []listConv
+	tlists     map[string]string
+	tlistOrder []listConv
+	structs    []string // struct type names, sorted
+	terms      []string // terminal type names, sorted
+	aliases    []string // union alias names, sorted
 }
 
 type listConv struct {
@@ -242,13 +265,7 @@ func (t *typedGen) conv(x ty, v string) string {
 // decls writes the type declarations.
 func (t *typedGen) decls(b *strings.Builder) {
 	span := t.names["Span"]
-	b.WriteString("// --- Typed values (pego gen -types) ---\n\n")
-	fmt.Fprintf(b, "// %s is the range of input a typed value covers, in the parse's position unit (End is exclusive).\n", span)
-	fmt.Fprintf(b, "type %s struct{ Start, End int }\n\n", span)
-	b.WriteString("// Match is a terminal made by a literal, a character class, ., @a or _.\n")
-	fmt.Fprintf(b, "type Match struct {\n\t%s\n\tText string\n}\n\n", span)
-	b.WriteString("// Error is input skipped by error recovery (#recover).\n")
-	fmt.Fprintf(b, "type Error struct {\n\t%s\n\tText    string\n\tMessage string\n}\n\n", span)
+	b.WriteString("// --- Typed values (pego gen -types; Span, Match and Error are in the typed runtime above) ---\n\n")
 	for _, name := range t.terms {
 		fmt.Fprintf(b, "// %s is the terminal type %s.\n", t.names[name], name)
 		fmt.Fprintf(b, "type %s struct {\n\t%s\n\tText string\n}\n\n", t.names[name], span)
@@ -305,57 +322,7 @@ func (t *typedGen) decls(b *strings.Builder) {
 // each type, and the elements of lists, in chunks, as the parser does nodes.
 func (t *typedGen) converters(b *strings.Builder) {
 	span := t.names["Span"]
-	b.WriteString(`func astNode(v any) *Node { n, _ := v.(*Node); return n }
-func astInt(v any) int       { i, _ := v.(int); return i }
-func astString(v any) string { s, _ := v.(string); return s }
-func astBool(v any) bool     { x, _ := v.(bool); return x }
-func astPtrInt(v any) *int {
-	if i, ok := v.(int); ok {
-		return &i
-	}
-	return nil
-}
-func astPtrString(v any) *string {
-	if s, ok := v.(string); ok {
-		return &s
-	}
-	return nil
-}
-func astPtrBool(v any) *bool {
-	if x, ok := v.(bool); ok {
-		return &x
-	}
-	return nil
-}
-
-// astNew returns a new zero value from the chunk *s.
-func astNew[T any](s *[]T) *T {
-	if len(*s) == 0 {
-		*s = make([]T, 256)
-	}
-	v := &(*s)[0]
-	*s = (*s)[1:]
-	return v
-}
-
-// astSlice returns a slice of n zero values from the chunk *s. Its capacity is n, so appending
-// to it does not overwrite other slices.
-func astSlice[T any](s *[]T, n int) []T {
-	if n == 0 {
-		return []T{} // an empty list, not nil
-	}
-	if n > 256 {
-		return make([]T, n)
-	}
-	if len(*s) < n {
-		*s = make([]T, 1024)
-	}
-	v := (*s)[:n:n]
-	*s = (*s)[n:]
-	return v
-}
-
-`)
+	b.WriteString(astHelpers)
 	fmt.Fprintf(b, `func (a *astConv) toMatch(n *Node) *Match {
 	if n == nil || n.Type != "Match" {
 		return nil
@@ -433,3 +400,230 @@ func (a *astConv) toError(n *Node) *Error {
 	}
 	b.WriteString("}\n\n")
 }
+
+// runtimeOK reports whether the typed runtime can build every value ParseAST may return: the
+// result type and the field types of every struct type have Go types of their own (no CST
+// node types, node, terminal or any).
+func (t *typedGen) runtimeOK(st ty) bool {
+	if !t.representable(st) {
+		return false
+	}
+	for _, name := range t.structs {
+		for _, f := range t.info.fields[name] {
+			if !t.representable(f.t) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func (t *typedGen) representable(x ty) bool {
+	switch x := x.(type) {
+	case basicTy:
+		return x == tyInt || x == tyString || x == tyBool
+	case namedTy:
+		return x == tyMatch || x == tyError || x.kind == 's' || x.kind == 't'
+	case listTy:
+		return t.representable(x.elem)
+	case optTy:
+		return t.representable(x.elem)
+	case unionTy:
+		if _, ok := t.unions[x.String()]; !ok || cstUnion(x) {
+			return false
+		}
+		for _, a := range x.alts {
+			if !t.representable(a) {
+				return false
+			}
+		}
+		return true
+	}
+	return false
+}
+
+// valueMethods writes the methods that make the struct and terminal types values of the typed
+// runtime (tval).
+func (t *typedGen) valueMethods(b *strings.Builder) {
+	for _, name := range t.terms {
+		g := t.names[name]
+		fmt.Fprintf(b, "func (v *%[1]s) tname() string { return %[2]q }\nfunc (v *%[1]s) ttext() (string, bool) { return v.Text, true }\n", g, name)
+		fmt.Fprintf(b, "func (v *%[1]s) tkids() []any { return nil }\nfunc (v *%[1]s) tfield(string) (any, bool) { return nil, true }\n", g)
+		fmt.Fprintf(b, "func (v *%[1]s) tstruct() bool { return false }\nfunc (v *%[1]s) tfresh() bool { return false }\nfunc (v *%[1]s) tsetFresh(bool) {}\n\n", g)
+	}
+	for _, name := range t.structs {
+		g := t.names[name]
+		fmt.Fprintf(b, "func (v *%[1]s) tname() string { return %[2]q }\nfunc (v *%[1]s) ttext() (string, bool) { return \"\", false }\n", g, name)
+		fmt.Fprintf(b, "func (v *%[1]s) tkids() []any { return nil }\nfunc (v *%[1]s) tstruct() bool { return true }\n", g)
+		fmt.Fprintf(b, "func (v *%[1]s) tfresh() bool { return false }\nfunc (v *%[1]s) tsetFresh(bool) {}\n", g)
+		fmt.Fprintf(b, "func (v *%s) tfield(name string) (any, bool) {\n\tswitch name {\n", g)
+		for _, f := range t.info.fields[name] {
+			if t.representable(f.t) {
+				fmt.Fprintf(b, "\tcase %q:\n\t\treturn %s, true\n", f.name, t.back(f.t, "v."+f.name))
+			} else {
+				fmt.Fprintf(b, "\tcase %q:\n\t\treturn nil, true\n", f.name)
+			}
+		}
+		b.WriteString("\t}\n\treturn nil, false\n}\n\n")
+	}
+}
+
+// back returns a Go expression converting x, an expression of the Go type of type ty, into a
+// value of the typed runtime.
+func (t *typedGen) back(x ty, v string) string {
+	switch x := x.(type) {
+	case basicTy:
+		return "any(" + v + ")"
+	case namedTy:
+		return "tptr(" + v + ")"
+	case unionTy:
+		return "any(" + v + ")"
+	case optTy:
+		if b, ok := x.elem.(basicTy); ok && (b == tyInt || b == tyString || b == tyBool) {
+			return "tderef(" + v + ")"
+		}
+		return t.back(x.elem, v)
+	case listTy:
+		return fmt.Sprintf("func() any { if %[1]s == nil { return nil }; kids := make([]any, len(%[1]s)); for i, x := range %[1]s { kids[i] = %[2]s }; return tlistOf(kids) }()", v, t.back(x.elem, "x"))
+	}
+	return "nil"
+}
+
+// dconv returns a Go expression of type goType(x) converting v, a value of the typed runtime,
+// with the chunks a (a *tslabs).
+func (t *typedGen) dconv(x ty, v, a string) string {
+	switch x := x.(type) {
+	case basicTy:
+		switch x {
+		case tyInt:
+			return "astInt(" + v + ")"
+		case tyString:
+			return "astString(" + v + ")"
+		case tyBool:
+			return "astBool(" + v + ")"
+		}
+	case namedTy:
+		return "tAs[" + t.goType(x) + "](" + v + ")"
+	case unionTy:
+		return "tAs[" + t.goType(x) + "](" + v + ")"
+	case optTy:
+		if b, ok := x.elem.(basicTy); ok && (b == tyInt || b == tyString || b == tyBool) {
+			return "astPtr" + strings.ToUpper(string(b)[:1]) + string(b)[1:] + "(" + v + ")"
+		}
+		return t.dconv(x.elem, v, a)
+	case listTy:
+		goType := t.goType(x)
+		name, ok := t.tlists[goType]
+		if !ok {
+			name = fmt.Sprintf("tl%d", len(t.tlists))
+			t.tlists[goType] = name
+			t.tlistOrder = append(t.tlistOrder, listConv{name, x.elem})
+		}
+		return name + "(" + a + ", " + v + ")"
+	}
+	return "nil"
+}
+
+// typedRuntime writes the constructors of the struct and terminal types and the list converters
+// of the typed runtime, and the chunks they allocate from.
+func (t *typedGen) typedRuntime(b *strings.Builder) {
+	span := t.names["Span"]
+	b.WriteString(astHelpers)
+	var reg strings.Builder
+	for _, r := range append(append([]*rule(nil), t.g.prog.rules...), t.g.prog.twins...) {
+		if r.terminalType == "" {
+			continue
+		}
+		g := t.names[r.terminalType]
+		fmt.Fprintf(&reg, "\ttrules[%d].term = func(p *tparser, start, end int, text string) tval {\n\t\tv := astNew(&p.ext.(*tslabs).t%s)\n\t\t*v = %s{%s: %s{start, end}, Text: text}\n\t\treturn v\n\t}\n", r.id, g, g, span, span)
+	}
+	var cons strings.Builder
+	for _, name := range t.structs {
+		g := t.names[name]
+		fields := t.info.fields[name]
+		params := []string{"c *tctx", "final bool"}
+		for i := range fields {
+			params = append(params, fmt.Sprintf("f%d any", i))
+		}
+		fmt.Fprintf(&cons, "// tmk_%s makes a %s in an action (newStruct in the typed runtime).\nfunc tmk_%s(%s) any {\n\ta := c.p.ext.(*tslabs)\n\tv := astNew(&a.t%s)\n", name, name, name, strings.Join(params, ", "), g)
+		for i, f := range fields {
+			fmt.Fprintf(&cons, "\tv.%s = %s\n", f.name, t.dconv(f.t, fmt.Sprintf("f%d", i), "a"))
+		}
+		fmt.Fprintf(&cons, "\tif final {\n\t\tv.%[1]s = %[1]s{c.start, c.end}\n\t\treturn v\n\t}\n\tfirst, start, end := true, 0, 0\n", span)
+		for i := range fields {
+			fmt.Fprintf(&cons, "\tspanOf(f%d, &first, &start, &end)\n", i)
+		}
+		cons.WriteString("\treturn c.made(v, first, start, end)\n}\n\n")
+	}
+	// List converters (more may be added while writing them, for lists of lists).
+	var convs strings.Builder
+	for i := 0; i < len(t.tlistOrder); i++ {
+		l := t.tlistOrder[i]
+		elem := t.goType(l.elem)
+		fmt.Fprintf(&convs, "func %s(a *tslabs, v any) []%s {\n\tn, _ := v.(*tnode)\n\tif n == nil {\n\t\treturn nil\n\t}\n\tout := astSlice(&a.%sChunk, len(n.kids))\n\tfor i, c := range n.kids {\n\t\tout[i] = %s\n\t}\n\treturn out\n}\n\n", l.name, elem, l.name, t.dconv(l.elem, "c", "a"))
+	}
+	b.WriteString("// tinit sets up the typed rules (called at the end of init, after the rule tables).\nfunc tinit() {\n" + reg.String() + "}\n\n")
+	b.WriteString(cons.String())
+	b.WriteString(convs.String())
+	b.WriteString("// tslabs holds the chunks the typed values of a parse are allocated from.\ntype tslabs struct {\n")
+	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
+		fmt.Fprintf(b, "\tt%s []%s\n", t.names[name], t.names[name])
+	}
+	for _, l := range t.tlistOrder {
+		fmt.Fprintf(b, "\t%sChunk []%s\n", l.name, t.goType(l.elem))
+	}
+	b.WriteString("}\n\n")
+}
+
+// astHelpers are the conversion helpers of typed values.
+const astHelpers = `func astNode(v any) *Node { n, _ := v.(*Node); return n }
+func astInt(v any) int       { i, _ := v.(int); return i }
+func astString(v any) string { s, _ := v.(string); return s }
+func astBool(v any) bool     { x, _ := v.(bool); return x }
+func astPtrInt(v any) *int {
+	if i, ok := v.(int); ok {
+		return &i
+	}
+	return nil
+}
+func astPtrString(v any) *string {
+	if s, ok := v.(string); ok {
+		return &s
+	}
+	return nil
+}
+func astPtrBool(v any) *bool {
+	if x, ok := v.(bool); ok {
+		return &x
+	}
+	return nil
+}
+
+// astNew returns a new zero value from the chunk *s.
+func astNew[T any](s *[]T) *T {
+	if len(*s) == 0 {
+		*s = make([]T, 256)
+	}
+	v := &(*s)[0]
+	*s = (*s)[1:]
+	return v
+}
+
+// astSlice returns a slice of n zero values from the chunk *s. Its capacity is n, so appending
+// to it does not overwrite other slices.
+func astSlice[T any](s *[]T, n int) []T {
+	if n == 0 {
+		return []T{} // an empty list, not nil
+	}
+	if n > 256 {
+		return make([]T, n)
+	}
+	if len(*s) < n {
+		*s = make([]T, 1024)
+	}
+	v := (*s)[:n:n]
+	*s = (*s)[n:]
+	return v
+}
+
+`

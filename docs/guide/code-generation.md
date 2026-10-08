@@ -392,10 +392,13 @@ Details:
 - **Errors.** `ParseAST` returns the errors of `Parse`. After `#recover`, an `Error` in a list of a union type stays
   in the list as `*Error`; where a struct or terminal type is expected it becomes `nil` (it is among the returned
   `SyntaxErrors` anyway).
-- **Cost.** `ParseAST` runs `Parse` and converts the tree, so it is a little slower than `Parse`, not faster: about
-  6% on the JSON benchmark, with 11% more bytes allocated. Use it for the convenience of the API; when only speed
-  matters, `Parse` (or recognition with the engine) is the faster choice. The [design record](../design/012-typed-values.md)
-  explains why.
+- **Speed.** When every value `ParseAST` can return has a Go type of its own (no `Seq`, `List`, `Operator`, records,
+  `node`, `terminal` or `any`, also in struct fields), the generated parser builds the values directly, without the
+  nodes `Parse` makes: on the benchmarks `ParseAST` is then about 20% faster than `Parse` and allocates a tenth of the
+  memory (JSON 9.9 → 7.7 ms and 20 MB → 2.4 MB on a 262 KB input; XML, the left-recursive calculator and the outline
+  grammar alike). Otherwise `ParseAST` runs `Parse` and converts the tree, about 6% slower than `Parse`. The
+  [design record](../design/012-typed-values.md) explains both. The typed runtime adds about as much code to the
+  generated file as the parser itself.
 - `ParseRule` still returns `*Node`; typed values exist for the start rule only.
 
 ## Recognition (`-recognize`)

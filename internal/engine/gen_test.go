@@ -270,9 +270,10 @@ func TestGeneratedTypes(t *testing.T) {
 		}
 	}
 	write("go.mod", "module gentest\n\ngo 1.24\n")
-	var imports, parsers strings.Builder
+	var imports, parsers, converters strings.Builder
 	var inputs [][]string
 	var wantErr []string
+	typedRuntime := 0
 	for i, c := range cases {
 		g, err := syntax.Parse(c.src)
 		if err != nil {
@@ -282,9 +283,19 @@ func TestGeneratedTypes(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
+		if strings.Contains(string(code), "tparse(trules") {
+			typedRuntime++
+		}
 		write(fmt.Sprintf("g%d/parser.go", i), string(code))
-		fmt.Fprintf(&imports, "\tg%d \"gentest/g%d\"\n", i, i)
+		// The same with ParseAST converting the result of Parse, which the typed runtime must equal.
+		code, err = Generate(g, GenOptions{Package: fmt.Sprintf("c%d", i), Start: "main", Types: true, convertTypes: true})
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		write(fmt.Sprintf("c%d/parser.go", i), string(code))
+		fmt.Fprintf(&imports, "\tg%d \"gentest/g%d\"\n\tc%d \"gentest/c%d\"\n", i, i, i, i)
 		fmt.Fprintf(&parsers, "\tfunc(s string) (any, error) { return g%d.ParseAST(s) },\n", i)
+		fmt.Fprintf(&converters, "\tfunc(s string) (any, error) { return c%d.ParseAST(s) },\n", i)
 		inputs = append(inputs, c.inputs)
 		prog := compile(t, c.src)
 		for _, in := range c.inputs {
@@ -298,10 +309,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
+	"sync"
 `+imports.String()+`)
 
 var parsers = []func(string) (any, error){
 `+parsers.String()+`}
+
+var converters = []func(string) (any, error){
+`+converters.String()+`}
+
+// typeName is the dynamic type of v without the package.
+func typeName(v any) string {
+	s := fmt.Sprintf("%T", v)
+	if i := strings.LastIndex(s, "."); i >= 0 {
+		return strings.TrimLeft(s[:i], "[]*") + s[i:]
+	}
+	return s
+}
 
 func main() {
 	var inputs [][]string
@@ -311,9 +336,35 @@ func main() {
 		for _, s := range in {
 			v, err := parsers[i](s)
 			b, _ := json.Marshal(map[string]any{"value": v, "type": fmt.Sprintf("%T", v), "err": fmt.Sprint(err)})
+			cv, cerr := converters[i](s)
+			typed, _ := json.Marshal(map[string]any{"value": v, "err": fmt.Sprint(err)})
+			conv, _ := json.Marshal(map[string]any{"value": cv, "err": fmt.Sprint(cerr)})
+			if string(typed) != string(conv) || typeName(v)[strings.Index(typeName(v), ".")+1:] != typeName(cv)[strings.Index(typeName(cv), ".")+1:] {
+				fmt.Fprintf(os.Stderr, "MISMATCH %d %q\n typed %s %s\n conv  %s %s\n", i, s, typeName(v), typed, typeName(cv), conv)
+			}
 			fmt.Println(string(b))
 		}
 	}
+	// Parsers of the typed runtime are pooled: parsing concurrently gives the same results.
+	var wg sync.WaitGroup
+	for g := 0; g < 8; g++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i, in := range inputs {
+				for _, s := range in {
+					v, err := parsers[i](s)
+					cv, cerr := converters[i](s)
+					a, _ := json.Marshal(map[string]any{"value": v, "err": fmt.Sprint(err)})
+					b, _ := json.Marshal(map[string]any{"value": cv, "err": fmt.Sprint(cerr)})
+					if string(a) != string(b) {
+						fmt.Fprintf(os.Stderr, "CONCURRENT MISMATCH %d %q\n", i, s)
+					}
+				}
+			}
+		}()
+	}
+	wg.Wait()
 }
 `)
 	data, _ := json.Marshal(inputs)
@@ -321,10 +372,19 @@ func main() {
 	cmd := exec.Command(goBin, "run", ".", "inputs.json")
 	cmd.Dir = dir
 	cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod", "GOTOOLCHAIN=local")
-	out, err := cmd.CombinedOutput()
+	var stderr strings.Builder
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
 	if err != nil {
-		t.Fatalf("go run: %v\n%s", err, out)
+		t.Fatalf("go run: %v\n%s", err, stderr.String())
 	}
+	if stderr.Len() > 0 {
+		t.Errorf("the typed runtime differs from converting the result of Parse:\n%s", stderr.String())
+	}
+	if typedRuntime < 5 {
+		t.Errorf("only %d of %d grammars use the typed runtime", typedRuntime, len(cases))
+	}
+	t.Logf("%d of %d grammars use the typed runtime", typedRuntime, len(cases))
 	lines := strings.Split(strings.TrimSuffix(string(out), "\n"), "\n")
 	if len(lines) != len(wantErr) {
 		t.Fatalf("got %d results, want %d\n%s", len(lines), len(wantErr), out)

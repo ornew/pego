@@ -91,7 +91,7 @@ Each memo entry records the range of input it examined (`document.go`). After an
 
 ### Code generation
 
-The generator (`gen.go`, `genrt/`) emits one Go method per expression and embeds `genrt/runtime.go`, a runtime that behaves like the engine, producing a parser that depends only on the standard library. The tests build the generated parsers and check that they return the same results as the engine ([design](design/008-code-generation.md)). With `GenOptions.Recognize`, it also generates the recognizer (`Program.recognizer`) into a second rule table, behind `Recognize`. With `GenOptions.Types` (`gen_types.go`), it also emits a Go type for each grammar type, from the types the type checker inferred (`Program.typed`), and `ParseAST`, which converts the tree into them ([design](design/012-typed-values.md)).
+The generator (`gen.go`, `genrt/`) emits one Go method per expression and embeds `genrt/runtime.go`, a runtime that behaves like the engine, producing a parser that depends only on the standard library. The tests build the generated parsers and check that they return the same results as the engine ([design](design/008-code-generation.md)). With `GenOptions.Recognize`, it also generates the recognizer (`Program.recognizer`) into a second rule table, behind `Recognize`. With `GenOptions.Types` (`gen_types.go`), it also emits a Go type for each grammar type, from the types the type checker inferred (`Program.typed`), and `ParseAST`, which builds them with a second, typed runtime (`genrt/typed.go`, with the rules generated again for it) or, for grammars whose results include CST values, converts the tree of `Parse` ([design](design/012-typed-values.md)).
 
 ### Compiled grammars
 
