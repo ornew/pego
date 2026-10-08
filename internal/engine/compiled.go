@@ -33,7 +33,7 @@ const (
 	// version 2 only adds instructions (ETEXTCHK, ETEXTEQ, ELISTBEGIN, ELISTPUSH, EMAPPUSH,
 	// ELISTEND).
 	isaVersion = 2
-	maxDepth        = 10000
+	maxDepth   = 10000
 )
 
 // ErrNotCompiled reports that the data is not a compiled grammar.
