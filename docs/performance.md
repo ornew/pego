@@ -193,6 +193,7 @@ automatically in the others. This table records, for every change in the log bel
 | 63, 64 | Smaller `Node` (88 bytes: `int32` positions, interned type and rule names) | ✓ | ✓ | ✓ | ✓ | – | generated `Parse` since 64; the typed runtime builds no nodes |
 | 60 | Direct rules: a rule's body inlined into its call method, captures in Go variables, the action in place | – | – | – | ✗ | ✓ | typed: not for rules with a cut or `#recover`, Pratt rules and left-recursion leaders; not tried for generated `Parse` |
 | 61 | Character tests read code points without calling `peek` | – | – | – | ✗ | ✓ | typed: direct rules only; generated `Parse` still calls `peek` |
+| 66 | No memo key allocated for variables where none is defined | ✓ | ✓ | ✓ | ✓ | ✓ | |
 | 62 | Short literals compared in place | – | – | – | ✗ | ✓ | typed: direct rules, up to 4 code points, code points only (the other backends match literals with their own loop, 32) |
 
 Not applied, and why:
@@ -1038,11 +1039,24 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 - Effect: a 1 MB single-line grammar (260,000 tokens) is analyzed and tokenized in 0.35 s instead of over 10 s;
   `BenchmarkAnalyze` (go.pego and python.pego) unchanged at about 11 ms.
 
+### 66. No memo key allocated for variables where none is defined
+
+- The memo key of a call of a rule that reads variables holds their current values, and `envValues` allocated a
+  slice for it on every memoized call. The set of variables a rule reads is transitive, so one variable used deep in
+  a grammar (`parsers/cue` tracks the hashes of a raw string in `sv`) puts it on most rules, while in most calls no
+  variable is defined at all. Where none is, the key is now a shared slice of nils (memo entries only compare keys).
+- Effect (`parsers/cue` `ParseAST`, mean of 6 runs, Apple M3 Max): config 25.2 → 23.4 ms (−7%), 128,458 → 3,006
+  allocations, 8.9 → 6.8 MB; corpus 18.3 → 17.2 ms (−6%), 99,588 → 2,045 allocations. The engine's outline workload
+  is unchanged within noise (its rules that read variables run where one is defined).
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
   punctuation): `rest:(-ws -"," -ws v:value)*`. The engine cannot drop them automatically, because a captured value
   exposes its full CST.
+- A predicate that reads a capture makes the capture's rules build values even in recognition mode, and with them
+  every rule they call: in `parsers/cue`, one predicate reading a capture that contained an expression made nearly
+  the whole grammar build values in `Recognize`. Keep captures that predicates read small (a name, a token).
 - Prefer terminal types (`type Name terminal`) or `@(...)` for tokens: their bodies are matched without building
   values.
 - Write actions that use captures rather than `$n` where possible; a body whose action does not use `$n` is matched

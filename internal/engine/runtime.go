@@ -360,8 +360,16 @@ func (p *parser) call(r *rule, min int) (*Node, bool) {
 	return p.callEnd(r, &st, v, ok)
 }
 
+// noVals are the values of variables where no variable is defined (all nil): the memo key of
+// most calls of a rule that reads variables, shared instead of allocated for each call. Memo
+// entries only compare their keys, so nothing writes to it.
+var noVals [16]any
+
 // envValues returns the current values of the variables names (nil for an undefined variable).
 func (p *parser) envValues(names []string) []any {
+	if p.env == nil && len(names) <= len(noVals) {
+		return noVals[:len(names):len(names)]
+	}
 	vals := make([]any, len(names))
 	for i, name := range names {
 		vals[i], _ = p.env.lookup(name)
