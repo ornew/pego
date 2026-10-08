@@ -3528,10 +3528,10 @@ func init() {
 			&tprattLine{scope: []string{}, m: (*tparser).e101, action: nil, isSeq: false},
 			&tprattLine{scope: []string{"e"}, m: (*tparser).e109, action: func(c *tctx) any { return c.cap(0) }, isSeq: true},
 		},
-		prefix: []*tprattOp{{id: 2, kind: "prefix", assoc: "", level: 3, line: &tprattLine{scope: []string{}, m: (*tparser).e126, action: func(c *tctx) any { return tmk_Unary(c, false, c.op, c.rhs) }, isSeq: false}}},
-		led: []*tprattOp{{id: 0, kind: "infix", assoc: "left", level: 1, line: &tprattLine{scope: []string{}, m: (*tparser).e114, action: func(c *tctx) any { return tmk_Binary(c, false, c.lhs, c.op, c.rhs) }, isSeq: false}},
-			{id: 1, kind: "infix", assoc: "left", level: 2, line: &tprattLine{scope: []string{}, m: (*tparser).e121, action: func(c *tctx) any { return tmk_Binary(c, false, c.lhs, c.op, c.rhs) }, isSeq: false}},
-			{id: 3, kind: "infix", assoc: "right", level: 4, line: &tprattLine{scope: []string{}, m: (*tparser).e128, action: func(c *tctx) any { return tmk_Binary(c, false, c.lhs, c.op, c.rhs) }, isSeq: false}}},
+		prefix: []*tprattOp{{id: 2, kind: "prefix", assoc: "", level: 3, line: &tprattLine{scope: []string{}, m: (*tparser).e126, action: func(c *tctx) any { return tmk_Unary(c, true, c.op, c.rhs) }, isSeq: false}}},
+		led: []*tprattOp{{id: 0, kind: "infix", assoc: "left", level: 1, line: &tprattLine{scope: []string{}, m: (*tparser).e114, action: func(c *tctx) any { return tmk_Binary(c, true, c.lhs, c.op, c.rhs) }, isSeq: false}},
+			{id: 1, kind: "infix", assoc: "left", level: 2, line: &tprattLine{scope: []string{}, m: (*tparser).e121, action: func(c *tctx) any { return tmk_Binary(c, true, c.lhs, c.op, c.rhs) }, isSeq: false}},
+			{id: 3, kind: "infix", assoc: "right", level: 4, line: &tprattLine{scope: []string{}, m: (*tparser).e128, action: func(c *tctx) any { return tmk_Binary(c, true, c.lhs, c.op, c.rhs) }, isSeq: false}}},
 	}
 	trules[1].body = func(p *tparser, min int) (any, bool) { return p.prattParse(trules[1], min) }
 	trules[2].body = func(p *tparser, _ int) (any, bool) { return p.e96() }

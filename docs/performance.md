@@ -666,6 +666,9 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
 - Effect (min of 4 runs, Apple M3 Max), `ParseAST` against `Parse` of the same generated parser: JSON 9.9 → 7.7 ms
   (20.0 → 2.4 MB), XML 10.0 → 8.0 ms (25.2 → 3.2 MB), Arith_LeftRec 18.7 → 15.0 ms (39.4 → 4.1 MB), Outline 4.5 →
   3.5 ms (13.5 → 2.6 MB), Arith_Pratt 7.8 → 8.0 ms (12.2 → 3.1 MB).
+- Later, struct constructors that make the result of a Pratt line's action also take the rule's range directly:
+  Arith_Pratt 7.7 → 7.2 ms (min of 12 interleaved runs), now faster than `Parse` (7.8 ms). The same per-rule call
+  methods for the Node runtime's `Parse` measured within ±4% (noise) and were not adopted.
 - On macOS most of the time a large allocation costs is the `madvise` calls of the Go runtime; profiles there
   attribute it to the code that touches new memory, and GOGC=off makes it worse (every span is new).
 

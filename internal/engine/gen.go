@@ -932,7 +932,11 @@ func (g *generator) prattLine(e grammar.Expr, action grammar.Term, operator bool
 		if operator {
 			locals = map[string]string{"lhs": "c.lhs", "rhs": "c.rhs", "op": "c.op"}
 		}
+		if g.table == "trules" {
+			g.final = action // re-ranged by tctx.result, as an action's result
+		}
 		act = fmt.Sprintf("func(c *%s) any { return %s }", g.ctxType(), g.term(action, s, locals))
+		g.final = nil
 	}
 	return fmt.Sprintf("&%s{scope: %s, m: (*%s).%s, action: %s, isSeq: %v}", g.pick("prattLine", "tprattLine"), goStrings(s.names), g.recv(), m, act, isSeq)
 }
