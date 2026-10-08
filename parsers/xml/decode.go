@@ -176,6 +176,13 @@ type processor struct {
 	budget int
 	ref    int    // the position of the outermost entity reference being expanded, or -1
 	in     string // the innermost entity being expanded, for messages
+
+	stack []Item // the items of the elements being decoded (see builder)
+	buf   []byte // the text being merged (see builder)
+	elems []Elem // chunks to allocate from
+	texts []Text
+	attrs []Attr
+	items []Item
 }
 
 func process(doc *Document, input string) (*Tree, error) {
@@ -427,13 +434,14 @@ func (p *processor) peRef(r *PERef) error {
 // element decodes an element; doc reports whether it is in the document entity (whose line ends are
 // normalized), ent names the entity otherwise.
 func (p *processor) element(x *Element, doc bool, ent string) (*Elem, error) {
-	el := &Elem{Name: x.Name.Text, Src: x, Entity: ent, ref: p.ref}
+	el := p.newElem()
+	*el = Elem{Name: x.Name.Text, Src: x, Entity: ent, ref: p.ref}
 	var decls []*AttributeDecl
 	if p.dtd != nil {
 		decls = p.dtd.Attributes[el.Name]
 	}
 	if n := len(x.Attrs) + len(decls); n > 0 {
-		el.Attrs = make([]Attr, 0, n)
+		el.Attrs = p.newAttrs(n)
 	}
 	for i, a := range x.Attrs {
 		name := a.Name.Text
@@ -484,7 +492,7 @@ func (p *processor) element(x *Element, doc bool, ent string) (*Elem, error) {
 		}
 	}
 	if len(x.Content) > 0 {
-		var b builder
+		b := p.builder()
 		if err := p.content(&b, x.Content, doc, ent); err != nil {
 			return nil, err
 		}
@@ -493,55 +501,106 @@ func (p *processor) element(x *Element, doc bool, ent string) (*Elem, error) {
 	return el, nil
 }
 
-// builder collects the decoded content of an element, merging adjacent text.
+// builder collects the decoded content of an element, merging adjacent text. The items are collected
+// on the processor's stack and the text in its buffer, both shared by all builders: an element flushes
+// its pending text before it decodes a child element.
 type builder struct {
-	items []Item
+	p     *processor
+	base  int    // the start of the items in p.stack
 	text  string // the pending text if it is one piece
-	sb    strings.Builder
-	multi bool // the pending text is in sb
+	start int    // the start of the pending text in p.buf if multi
+	multi bool   // the pending text is in p.buf
 }
+
+func (p *processor) builder() builder { return builder{p: p, base: len(p.stack)} }
 
 func (b *builder) addText(s string) {
 	switch {
 	case s == "":
 	case b.multi:
-		b.sb.WriteString(s)
+		b.p.buf = append(b.p.buf, s...)
 	case b.text == "":
 		b.text = s
 	default:
-		b.sb.WriteString(b.text)
-		b.sb.WriteString(s)
+		b.start = len(b.p.buf)
+		b.p.buf = append(append(b.p.buf, b.text...), s...)
 		b.multi = true
 	}
 }
 
 func (b *builder) addRune(r rune) {
 	if !b.multi {
-		b.sb.WriteString(b.text)
+		b.start = len(b.p.buf)
+		b.p.buf = append(b.p.buf, b.text...)
 		b.multi = true
 	}
-	b.sb.WriteRune(r)
+	b.p.buf = utf8.AppendRune(b.p.buf, r)
 }
 
 func (b *builder) flush() {
+	p := b.p
 	if b.multi {
-		b.items = append(b.items, &Text{Data: b.sb.String()})
-		b.sb.Reset()
+		p.stack = append(p.stack, p.newText(string(p.buf[b.start:])))
+		p.buf = p.buf[:b.start]
 		b.multi = false
 	} else if b.text != "" {
-		b.items = append(b.items, &Text{Data: b.text})
+		p.stack = append(p.stack, p.newText(b.text))
 	}
 	b.text = ""
 }
 
 func (b *builder) add(it Item) {
 	b.flush()
-	b.items = append(b.items, it)
+	b.p.stack = append(b.p.stack, it)
 }
 
+// done returns the items, in a slice of their own.
 func (b *builder) done() []Item {
 	b.flush()
-	return b.items
+	p := b.p
+	n := len(p.stack) - b.base
+	if n == 0 {
+		return nil
+	}
+	if len(p.items) < n {
+		p.items = make([]Item, max(n, 1024))
+	}
+	items := p.items[:n:n]
+	p.items = p.items[n:]
+	copy(items, p.stack[b.base:])
+	clear(p.stack[b.base:])
+	p.stack = p.stack[:b.base]
+	return items
+}
+
+// Elements, texts and attributes are allocated in chunks.
+
+func (p *processor) newElem() *Elem {
+	if len(p.elems) == 0 {
+		p.elems = make([]Elem, 256)
+	}
+	e := &p.elems[0]
+	p.elems = p.elems[1:]
+	return e
+}
+
+func (p *processor) newText(s string) *Text {
+	if len(p.texts) == 0 {
+		p.texts = make([]Text, 256)
+	}
+	t := &p.texts[0]
+	p.texts = p.texts[1:]
+	t.Data = s
+	return t
+}
+
+func (p *processor) newAttrs(n int) []Attr {
+	if len(p.attrs) < n {
+		p.attrs = make([]Attr, max(n, 256))
+	}
+	a := p.attrs[:0:n]
+	p.attrs = p.attrs[n:]
+	return a
 }
 
 func (p *processor) content(b *builder, items []Content, doc bool, ent string) error {
@@ -570,6 +629,7 @@ func (p *processor) content(b *builder, items []Content, doc bool, ent string) e
 				return err
 			}
 		case *Element:
+			b.flush() // before the element's content uses p.buf and p.stack
 			el, err := p.element(x, doc, ent)
 			if err != nil {
 				return err

@@ -205,7 +205,10 @@ def att_sq: AttValue = ((?\u{3D}-\u{D7FF}\u{28}-\u{3B}\u{20}-\u{25}\n\t\r\u{E000
 
 // [43] content ::= CharData? ((element | Reference | CDSect | PI | Comment) CharData?)*
 def content = content_item*
-def content_item: Content = char_data / element / reference / comment / cdsect / pi
+def content_item: Content = char_data / markup
+// Content ends at an end tag: the lookahead saves trying (and memoizing) every alternative there, which
+// makes ParseAST about 10% faster and Recognize about 30%.
+def markup: Content = !"</" c:(element / reference / comment / cdsect / pi) -> $c
 // [14] CharData ::= [^<&]* - ([^<&]* ']]>' [^<&]*)
 def char_data: CharData = ((?\u{5E}-\u{D7FF}\u{3D}-\u{5C}\u{27}-\u{3B}\u{20}-\u{25}\n\t\r\u{E000}-\u{FFFD}\u{10000}-\u{10FFFF})+ / "]" !"]>")+
 // [18] CDSect ::= CDStart CData CDEnd, [20] CData ::= (Char* - (Char* ']]>' Char*))
@@ -223,8 +226,10 @@ def entity_ref: EntityRef = "&" name ";"
 //     | [#x37F-#x1FFF] | [#x200C-#x200D] | [#x2070-#x218F] | [#x2C00-#x2FEF] | [#x3001-#xD7FF] | [#xF900-#xFDCF]
 //     | [#xFDF0-#xFFFD] | [#x10000-#xEFFFF]
 // [4a] NameChar ::= NameStartChar | "-" | "." | [0-9] | #xB7 | [#x0300-#x036F] | [#x203F-#x2040]
+// The name characters are an inline class rather than a call of name_char, which makes ParseAST about
+// 7% faster.
 def name: Name = (?a-zA-Z_:\u{C0}-\u{D6}\u{D8}-\u{F6}\u{F8}-\u{2FF}\u{370}-\u{37D}\u{37F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF})
-    name_char*
+    (?a-zA-Z0-9_:.\-\u{B7}\u{C0}-\u{D6}\u{D8}-\u{F6}\u{F8}-\u{37D}\u{37F}-\u{1FFF}\u{200C}-\u{200D}\u{203F}-\u{2040}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF})*
 def name_char = (?a-zA-Z0-9_:.\-\u{B7}\u{C0}-\u{D6}\u{D8}-\u{F6}\u{F8}-\u{37D}\u{37F}-\u{1FFF}\u{200C}-\u{200D}\u{203F}-\u{2040}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF})
 // [7] Nmtoken ::= (NameChar)+
 def nmtoken: Nmtoken = name_char+
