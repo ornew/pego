@@ -66,6 +66,7 @@ var workloads = []workload{
 			return genErr(gcsv.Parse(s))
 		},
 		rec:     func(s string) error { return gcsv.Recognize(s) },
+		ast:     func(s string) error { return genErr(gcsv.ParseAST(s)) },
 		stdName: "encoding_csv", std: func(s string) error {
 			r := csv.NewReader(strings.NewReader(s))
 			r.FieldsPerRecord = -1
@@ -127,6 +128,7 @@ var workloads = []workload{
 			return genErr(gminilang.Parse(s))
 		},
 		rec: func(s string) error { return gminilang.Recognize(s) },
+		ast: func(s string) error { return genErr(gminilang.ParseAST(s)) },
 	},
 	{
 		name: "Recovery", grammar: "../examples/minilang/minilang.pego", input: func(k int) string { return MinilangInput(300/k, 7) },
@@ -142,6 +144,12 @@ var workloads = []workload{
 			return nil
 		},
 		rec: func(s string) error { return gminilang.Recognize(s) },
+		ast: func(s string) error {
+			if v, _ := gminilang.ParseAST(s); v == nil {
+				return io.ErrUnexpectedEOF
+			}
+			return nil
+		},
 	},
 	{
 		name: "Outline", grammar: "../examples/outline/outline.pego", input: func(k int) string { return OutlineInput(5000 / k) },
@@ -483,7 +491,6 @@ func BenchmarkPrepare(b *testing.B) {
 			b    pego.Backend
 		}{{"pegoc/closure", full, pego.Closure}, {"pegoc/bytecode", full, pego.Bytecode}, {"pegoc-noast/bytecode", bare, pego.Bytecode}} {
 			b.Run(name+"/"+c.name, func(b *testing.B) {
-				b.ReportMetric(float64(len(c.data)), "file-bytes")
 				b.ReportAllocs()
 				for b.Loop() {
 					lp, err := pego.LoadParser(c.data)
@@ -492,6 +499,7 @@ func BenchmarkPrepare(b *testing.B) {
 					}
 					lp.Parse("", pego.WithBackend(c.b)) // set up the backend (the parse may fail)
 				}
+				b.ReportMetric(float64(len(c.data)), "file-bytes") // after the loop, which resets metrics
 			})
 		}
 	}
