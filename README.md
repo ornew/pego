@@ -153,6 +153,7 @@ v, err := json.Decode(`{"name": "pego", "tags": ["peg", "pratt"]}`)
 | Go | [`github.com/ornew/pego/parsers/golang`](parsers/golang/) | The Go specification (go1.27), as `go/parser` parses it |
 | JSON | [`github.com/ornew/pego/parsers/json`](parsers/json/) | RFC 8259 |
 | Python | [`github.com/ornew/pego/parsers/python`](parsers/python/) | Python 3.14 |
+| TypeScript | [`github.com/ornew/pego/parsers/typescript`](parsers/typescript/) | TypeScript 5.9 and TSX |
 | XML | [`github.com/ornew/pego/parsers/xml`](parsers/xml/) | XML 1.0 (Fifth Edition), non-validating |
 | YAML | [`github.com/ornew/pego/parsers/yaml`](parsers/yaml/) | YAML 1.2.2 |
 
