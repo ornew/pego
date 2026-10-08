@@ -1,1 +1,1 @@
-error: 1:18: syntax error: expected "#", "'", "(", "++", "--", "/", "[", "\"", "`", "async", "import", "super", "yield", "{"
+error: 1:18: expected an expression

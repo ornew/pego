@@ -28,19 +28,25 @@
 //
 // Performance. The grammar follows the compiler's order of alternatives, which tries what is rare before what is
 // common, and a rule that fails at once still costs a call and records what it expected. What paid, measured
-// as rule calls (pego profile) and as time on the benchmarks of the package:
+// as rule calls (pego profile) and as time on the benchmarks of the package (see the README):
 //   - A silent lookahead of the next character in front of an alternative or an operator (&(?...)), which
 //     records no expectation: the operators of binaryExpression and the postfix operators of the
 //     left-hand side, whose Pratt loops try every operator after every operand; the ws and sp rules, which
-//     are called twice a token; unaryOperatorStart; the arrow functions and the assignment.
-//   - Dispatch by the first character: primaryExpression tries identifiers first (they are the most common
-//     and cannot be mistaken for a keyword), statement takes the statements that start with a keyword, a
-//     brace, ";" or "@" apart from expression statements, and reservedWord tests the first letter.
+//     are called twice a token; the modifiers, the unary operators and the update expressions.
+//   - Dispatch by the first character or word: primaryExpression and nonArrayType try identifiers and type
+//     references first (they are the most common, and cannot be mistaken for a keyword); the statements that
+//     start with a keyword, a brace, ";" or "@" are apart from expression statements; assignmentExpressionInner
+//     tests for each of its alternatives; reservedWord tests the first letter.
+//   - One parse where the compiler's order parsed twice and relied on the memo: a union, an intersection or a
+//     conditional type, and a conditional expression, are a fold over the optional tail of their first operand
+//     (the same for ++ and --) instead of an alternative that parses the operand, fails and parses it again.
 //   - No rule call per character of an identifier (identifierRest).
-// Together they take the rule calls on a 300 KB piece of the TypeScript compiler's own JavaScript from 1.66 M
-// to 0.72 M and its parse time to about 60%, and a declaration file (lib.dom.d.ts) to 85%.
-// What did not pay: ws and sp matching one character at a time inside a lookahead, a single parse of the
-// left-hand side before ++ and --, and ordering the alternatives of statement by frequency.
+// Together they take the rule calls on 300 KB of the TypeScript compiler's own JavaScript from 1.66 M to 0.59 M,
+// and the parse time of lib.dom.d.ts and of the compiler to about half.
+// What did not pay: ws and sp matching one character at a time inside a lookahead, and ordering the alternatives
+// of statement by frequency.
+// The #error labels of primaryExpression and nonArrayType replace the long lists of tokens the silent tests no
+// longer record by "expected an expression" and "expected a type"; they cost nothing measurable.
 package typescript
 
 // ===================================================================
@@ -763,7 +769,7 @@ def importSpecifierPlain: ImportSpecifier = (p:moduleExportName -ws "as" !idPart
     -> new ImportSpecifier{PropertyName: $p, Name: $n}
 def typeIdentifier: Identifier = "type" !idPart
 def importedName: Identifier = identifier / privateName
-def privateName: Identifier = "#" idStart identifierRest
+def privateName: Identifier = "#" ((?a-zA-Z$_) / idStartOther) identifierRest
 def asIdentifier: Identifier = "as" !idPart
 def moduleExportName: ModuleExportName = stringLiteral / identifierNameOrPrivate
 def moduleExportNameStart = idStart / "#" / (?"')
@@ -819,12 +825,13 @@ def exportSpecifierPlain: ExportSpecifier =
 // Decorators, modifiers, and after modifiers more decorators and modifiers. Each modifier keyword is a
 // modifier only before what can follow a modifier (nextTokenCanFollowModifier), so that public or
 // declare stay names elsewhere; static is a modifier once.
-def modifiers = d1:decoratorList? m1:modifierList? ([len($m1) > 0] d2:decoratorList m2:modifierList?)?
+def modifiers = (&"@" d1:decoratorList)? m1:modifierList? ([len($m1) > 0] d2:decoratorList m2:modifierList?)?
     -> concat($d1, $m1, $d2, $m2)
 def decoratorList = ds:(d:decorator -ws)+ -> map($ds, (x) => $x.d)
-def modifierList = b:(m:modifier -ws)* s:staticModifierList? a:(m:modifier -ws)* [len($b) > 0 || len($s) > 0]
+def modifierList = b:(&(?acdeiopr) m:modifier -ws)* s:staticModifierList? a:(&(?acdeiopr) m:modifier -ws)*
+    [len($b) > 0 || len($s) > 0]
     -> concat(map($b, (x) => $x.m), $s, map($a, (x) => $x.m))
-def staticModifierList = m:staticModifier -ws -> list($m)
+def staticModifierList = &"s" m:staticModifier -ws -> list($m)
 def modifier: Modifier = "export" !idPart &(-ws exportModifierFollows)
     / "default" !idPart &(-ws defaultModifierFollows)
     / "const" !idPart &(-ws "enum" !idPart)
@@ -841,17 +848,18 @@ def canFollowModifier = (?[{*) / "..." / literalPropertyNameStart
 def literalPropertyNameStart = idStart / "#" / (?"'0-9) / "." (?0-9)
 
 // Class members also take const as a modifier, and static before "{" starts a static block.
-def classModifiers = d1:decoratorList? m1:classModifierList? ([len($m1) > 0] d2:decoratorList m2:classModifierList?)?
+def classModifiers = (&"@" d1:decoratorList)? m1:classModifierList? ([len($m1) > 0] d2:decoratorList m2:classModifierList?)?
     -> concat($d1, $m1, $d2, $m2)
-def classModifierList = b:(m:classModifier -ws)* s:classStaticModifierList? a:(m:classModifier -ws)*
-    [len($b) > 0 || len($s) > 0] -> concat(map($b, (x) => $x.m), $s, map($a, (x) => $x.m))
-def classStaticModifierList = m:classStaticModifier -ws -> list($m)
+def classModifierList = b:(&(?acdeiopr) m:classModifier -ws)* s:classStaticModifierList?
+    a:(&(?acdeiopr) m:classModifier -ws)* [len($b) > 0 || len($s) > 0] -> concat(map($b, (x) => $x.m), $s, map($a, (x) => $x.m))
+def classStaticModifierList = &"s" m:classStaticModifier -ws -> list($m)
 def classModifier: Modifier = "const" !idPart &(sp canFollowModifier) / modifier
 def classStaticModifier: Modifier = "static" !idPart !(-ws "{") &(-ws canFollowModifier)
 
 // Type members take no decorators; type parameters take const, in and out.
 def typeMemberModifiers = ms:modifierList? -> concat($ms)
-def typeParameterModifiers = b:(m:classModifier -ws)* s:staticModifierList? a:(m:classModifier -ws)*
+def typeParameterModifiers = b:(&(?acdeiopr) m:classModifier -ws)* s:staticModifierList?
+    a:(&(?acdeiopr) m:classModifier -ws)*
     -> concat(map($b, (x) => $x.m), $s, map($a, (x) => $x.m))
 
 // A decorator is a left-hand side expression in the decorator context, where "[" is not an element access.
@@ -874,8 +882,9 @@ def assignmentExpressionAllowIn: Expression = [ctx = ctx - ctx / 4 % 8 * 4] e:as
 
 // parseAssignmentExpressionOrHigher: a yield expression, an arrow function, an assignment to a left-hand
 // side expression, or a conditional expression.
-def assignmentExpressionInner: Expression = yieldExpression / arrowFunction / asyncSimpleArrowFunction
-    / simpleArrowFunction / assignment / conditionalExpression / binaryExpression
+def assignmentExpressionInner: Expression = (&"yield" e:yieldExpression / &("async" !idPart / (?(<)) e:arrowFunction
+    / &"async" e:asyncSimpleArrowFunction / &((?a-zA-Z$_\\\u{80}-\u{10FFFF}) identifierRest -ws "=>") e:simpleArrowFunction / e:assignment
+    / e:conditionalOrBinaryExpression) -> $e
 
 // yield is an expression in the yield context, or before an identifier, keyword or literal on the
 // same line; its operand must be on the same line.
@@ -892,17 +901,18 @@ def assignmentOperator: Token = ">>>=" / "**=" / "<<=" / ">>=" / "&&=" / "||=" /
 
 // The true branch allows `in` and arrow functions without a return type (allowReturnTypeInArrowFunction
 // = false), and is outside the decorator context.
-def conditionalExpression: ConditionalExpression = c:binaryExpression -ws q:conditionalQuestionToken -ws
-    t:conditionalWhenTrue -ws k:colonToken -ws f:conditionalWhenFalse
-    -> new ConditionalExpression{Condition: $c, QuestionToken: $q, WhenTrue: $t, ColonToken: $k, WhenFalse: $f}
+def conditionalOrBinaryExpression: Expression = c:binaryExpression
+    rest:(-ws q:conditionalQuestionToken -ws t:conditionalWhenTrue -ws k:colonToken -ws
+        f:conditionalWhenFalse)*
+    -> foldl($c, $rest, (acc, r) => new ConditionalExpression{Condition: $acc, QuestionToken: $r.q, WhenTrue: $r.t,
+        ColonToken: $r.k, WhenFalse: $r.f})
 def conditionalWhenTrue: Expression = [ctx = ctx - ctx / 4 % 8 * 4 + 16] e:assignmentExpressionInner -> $e
 def conditionalWhenFalse: Expression = e:assignmentExpressionInner -> $e
 def conditionalQuestionToken: Token = "?" !"?" !("." !(?0-9))
 
 // --- Arrow functions (tryParseParenthesizedArrowFunctionExpression, isParenthesizedArrowFunctionExpression) ---
 // In a .tsx file, <T> starts JSX; a generic arrow function needs <T,>, <T = ...> or <T extends ...>.
-def arrowFunction: ArrowFunction = &("async" !idPart / (?(<))
-    ml:arrowAsyncModifier? !arrowParenthesisIsNotParameterList
+def arrowFunction: ArrowFunction = ml:arrowAsyncModifier? !arrowParenthesisIsNotParameterList
     [ctx = ctx - ctx % 4 + len($ml) * 2] (t:arrowTypeParameters -ws)? &"(" ps:parameterList rt:returnType? -ws
     a:equalsGreaterThanToken -ws b:arrowBody ([ctx / 16 % 2 == 0] / [$rt == nil] / &(-ws ":"))
     -> new ArrowFunction{Modifiers: concat($ml), TypeParameters: concat($t), Parameters: $ps, Type: $rt,
@@ -917,8 +927,7 @@ def tsxArrowTypeParametersStart = "<" -ws ("const" !idPart -ws)? identifier -ws
 def arrowParenthesisIsNotParameterList = "(" -ws ("yield" !idPart [ctx % 2 == 1] / "await" !idPart [ctx / 2 % 2 == 1]
     / !(!("async" !idPart) modifierKeyword -ws identifier) (identifier / "this" !idPart) -ws !(?:?,=\)))
 // x => ..., with the parameter an identifier in the current context
-def simpleArrowFunction: ArrowFunction = &((?a-zA-Z$_\\\u{80}-\u{10FFFF}) identifierRest -ws "=>")
-    p:simpleArrowParameter -ws a:equalsGreaterThanToken -ws [ctx = ctx - ctx % 4]
+def simpleArrowFunction: ArrowFunction = p:simpleArrowParameter -ws a:equalsGreaterThanToken -ws [ctx = ctx - ctx % 4]
     b:arrowBody -> new ArrowFunction{Parameters: list($p), EqualsGreaterThanToken: $a, Body: $b}
 def simpleArrowParameter: Parameter = n:identifier -> new Parameter{Name: $n}
 // async x => ..., all on one line
@@ -1004,8 +1013,8 @@ def binaryOperatorStart = coalesceOrToken / ampersandAmpersandToken / barToken /
 
 // --- Unary expressions (parseUnaryExpressionOrHigher) ---
 // A unary operator other than ++ and -- may not be the left operand of **.
-def unaryExpression: Expression = (&unaryOperatorStart u:simpleUnaryExpression !(-ws "**" !"=")
-    / !unaryOperatorStart u:updateExpression) -> $u
+def unaryExpression: Expression = (&(?+\-~!<dtva) &unaryOperatorStart u:simpleUnaryExpression !(-ws "**" !"=")
+    / !(&(?+\-~!<dtva) unaryOperatorStart) u:updateExpression) -> $u
 def unaryOperatorStart = &(?+\-~!<dtva)
     ("+" !"+" / "-" !"-" / (?~!) / ("delete" / "typeof" / "void" / "await") !idPart / [ctx < 64] "<")
 def simpleUnaryExpression: Expression = prefixUnaryExpression / deleteExpression / typeOfExpression / voidExpression
@@ -1024,7 +1033,8 @@ def typeAssertion: TypeAssertionExpression = [ctx < 64] "<" !(?<=) -ws t:typeNod
 def jsxUnaryExpression: Expression = [ctx >= 64] &"<" e:jsxElementOrFragment -> $e
 
 // parseUpdateExpression
-def updateExpression: Expression = prefixUpdateExpression / jsxPrimaryExpression / postfixOrLeftHandSideExpression
+def updateExpression: Expression = (&(?+\-) e:prefixUpdateExpression / [ctx >= 64] &"<" e:jsxPrimaryExpression
+    / e:postfixOrLeftHandSideExpression) -> $e
 // A left-hand side expression, parsed once, and one ++ or -- after it on the same line.
 def postfixOrLeftHandSideExpression: Expression = e:leftHandSideExpression rest:(-sp o:@("++" / "--"))*
     [len($rest) <= 1]
@@ -1149,7 +1159,8 @@ def importMetaProperty: MetaProperty = "import" !idPart -ws "." -ws n:identifier
 // An identifier is the most common primary expression, and it cannot be mistaken for a keyword (async function is
 // a function expression). The first character tells words from the rest; (?a-zA-Z$_\\\u{80}-\u{10FFFF})
 // is the start of an identifier, or a character that may turn out not to be.
-def primaryExpression: Expression = (&(?a-zA-Z$_\\\u{80}-\u{10FFFF}) e:wordPrimary / e:symbolPrimary) -> $e
+def primaryExpression: Expression = (&(?a-zA-Z$_\\\u{80}-\u{10FFFF}) e:wordPrimary / e:symbolPrimary)
+    #error(message="expected an expression") -> $e
 def wordPrimary: Expression = (!("async" !idPart -sp "function" !idPart) e:identifier / e:thisKeyword / e:nullKeyword
     / e:booleanKeyword / e:functionExpression / e:classExpressionPrimary / e:newExpression) -> $e
 def symbolPrimary: Expression = stringLiteral / numericOrBigIntLiteral / noSubstitutionTemplateLiteral
@@ -1287,21 +1298,24 @@ def jsxChildElement: JsxChild = !"</" e:(jsxSelfClosingElement / jsxElement / js
 
 // Types are parsed outside the yield and await contexts.
 def typeNode: TypeNode = [ctx = ctx - ctx % 4] t:typeInner -> $t
-def typeInner: TypeNode = functionType / constructorType / conditionalType / unionOrHigher
+def typeInner: TypeNode = functionType / constructorType / conditionalOrHigher
 // The extends type of a conditional type and the constraint of infer disallow conditional types.
 def typeNoConditional: TypeNode = [ctx = ctx - ctx / 32 % 2 * 32 + 32] t:typeInner -> $t
 def typeAllowConditional: TypeNode = [ctx = ctx - ctx / 32 % 2 * 32] t:typeInner -> $t
-def conditionalType: ConditionalType = [ctx / 32 % 2 == 0] c:unionOrHigher -sp "extends" !idPart -ws
-    e:typeNoConditional -ws "?" -ws t:typeAllowConditional -ws ":" -ws f:typeAllowConditional
-    -> new ConditionalType{CheckType: $c, ExtendsType: $e, TrueType: $t, FalseType: $f}
+// A union or intersection type, parsed once, and the conditional type it may check (extends ... ? ... : ...).
+def conditionalOrHigher: TypeNode = c:unionOrHigher
+    rest:([ctx / 32 % 2 == 0] -sp "extends" !idPart -ws e:typeNoConditional -ws "?" -ws t:typeAllowConditional -ws ":"
+        -ws f:typeAllowConditional)*
+    -> foldl($c, $rest, (acc, r) => new ConditionalType{CheckType: $acc, ExtendsType: $r.e, TrueType: $r.t,
+        FalseType: $r.f})
 def typeOrTypePredicate: TypeNode = typePredicate / typeNode
 def typePredicate: TypePredicate = n:identifier -sp "is" !idPart -ws t:typeNode
     -> new TypePredicate{ParameterName: $n, Type: $t}
 
-def functionType: FunctionType = (&"<" / &unambiguousFunctionTypeStart) (t:typeParameters -ws)? ps:parameterList
+def functionType: FunctionType = &(?(<) (&"<" / &unambiguousFunctionTypeStart) (t:typeParameters -ws)? ps:parameterList
     -ws "=>" -ws r:returnTypeOfType
     -> new FunctionType{TypeParameters: concat($t), Parameters: $ps, Type: $r}
-def constructorType: ConstructorType = (am:abstractModifier -ws)? "new" !idPart -ws (t:typeParameters -ws)?
+def constructorType: ConstructorType = &(("abstract" / "new") !idPart) (am:abstractModifier -ws)? "new" !idPart -ws (t:typeParameters -ws)?
     ps:parameterList -ws "=>" -ws r:returnTypeOfType
     -> new ConstructorType{Modifiers: concat($am), TypeParameters: concat($t), Parameters: $ps, Type: $r}
 def abstractModifier = m:abstractKeywordModifier -> list($m)
@@ -1310,19 +1324,24 @@ def returnTypeOfType: TypeNode = [ctx = ctx - ctx / 32 % 2 * 32] t:typeOrTypePre
 
 // A leading | or & makes a union or intersection of one type.
 // A | or & after a type is always followed by a type: a failed one is an error, not the end of the type.
-def unionOrHigher: TypeNode = unionType / singleUnionConstituent
-def singleUnionConstituent: TypeNode = t:intersectionOrHigher !(-ws barToken) -> $t
-def unionType: UnionType = l:barToken? -ws f:intersectionOrHigher r:(-ws barToken -ws t:intersectionOrHigher)*
-    !(-ws barToken) [$l != nil || len($r) > 0] -> new UnionType{Types: concat(list($f), map($r, (x) => $x.t))}
-def intersectionOrHigher: TypeNode = intersectionType / singleIntersectionConstituent
-def singleIntersectionConstituent: TypeNode = t:typeOperatorOrHigher !(-ws ampersandToken) -> $t
-def intersectionType: IntersectionType = l:ampersandToken? -ws f:typeOperatorOrHigher
-    r:(-ws ampersandToken -ws t:typeOperatorOrHigher)* !(-ws ampersandToken) [$l != nil || len($r) > 0]
+def unionOrHigher: TypeNode = (u:leadingUnionType / u:plainOrUnionType) -> $u
+def leadingUnionType: UnionType = barToken -ws f:intersectionOrHigher r:(-ws barToken -ws t:intersectionOrHigher)*
+    !(-ws barToken) -> new UnionType{Types: concat(list($f), map($r, (x) => $x.t))}
+def plainOrUnionType: TypeNode = f:intersectionOrHigher
+    more:(ts:(-ws barToken -ws t:intersectionOrHigher)+)* !(-ws barToken)
+    -> foldl($f, $more, (acc, m) => new UnionType{Types: concat(list($acc), map($m.ts, (x) => $x.t))})
+def intersectionOrHigher: TypeNode = (u:leadingIntersectionType / u:plainOrIntersectionType) -> $u
+def leadingIntersectionType: IntersectionType = ampersandToken -ws f:typeOperatorOrHigher
+    r:(-ws ampersandToken -ws t:typeOperatorOrHigher)* !(-ws ampersandToken)
     -> new IntersectionType{Types: concat(list($f), map($r, (x) => $x.t))}
+def plainOrIntersectionType: TypeNode = f:typeOperatorOrHigher
+    more:(ts:(-ws ampersandToken -ws t:typeOperatorOrHigher)+)* !(-ws ampersandToken)
+    -> foldl($f, $more, (acc, m) => new IntersectionType{Types: concat(list($acc), map($m.ts, (x) => $x.t))})
 
-def typeOperatorOrHigher: TypeNode = typeOperator / inferType / postfixTypeAllowConditional
-def postfixTypeAllowConditional: TypeNode = !(("keyof" / "unique" / "readonly" / "infer") !idPart)
-    [ctx = ctx - ctx / 32 % 2 * 32] t:postfixType -> $t
+def typeOperatorOrHigher: TypeNode = (&(("keyof" / "unique" / "readonly" / "infer") !idPart)
+    t:(typeOperator / inferType) / !(("keyof" / "unique" / "readonly" / "infer") !idPart) t:postfixTypeAllowConditional)
+    -> $t
+def postfixTypeAllowConditional: TypeNode = [ctx = ctx - ctx / 32 % 2 * 32] t:postfixType -> $t
 def typeOperator: TypeOperator = o:@(("keyof" / "unique" / "readonly") !idPart) -ws t:typeOperatorOrHigher
     -> new TypeOperator{Operator: text($o), Type: $t}
 def inferType: InferType = "infer" !idPart -ws p:inferTypeParameter -> new InferType{TypeParameter: $p}
@@ -1354,10 +1373,18 @@ def postfixTypeNoQuestion: TypeNode = pratt {
 }
 
 // parseNonArrayType
-def nonArrayType: TypeNode = keywordType / literalType / thisTypePredicate / thisType / importType / typeQuery
-    / mappedType / typeLiteral / tupleType / parenthesizedType / assertsTypePredicate / templateLiteralType
-    / jsdocAllType / jsdocUnknownType / jsdocNullableType / jsdocFunctionType / functionTypeReference
-    / jsdocNonNullableType / typeReference
+// The first character tells words, whose alternatives are tried in the compiler's order, from the rest.
+def nonArrayType: TypeNode = (&(?a-zA-Z$_\\\u{80}-\u{10FFFF}) t:wordType / t:symbolType)
+    #error(message="expected a type") -> $t
+// A word that is not one of those of the other types (keywords, literals, this, typeof, import, asserts, function)
+// is a type reference.
+def wordType: TypeNode = (&(("any" / "unknown" / "string" / "number" / "bigint" / "symbol" / "boolean" / "undefined"
+        / "never" / "object" / "void" / "true" / "false" / "null" / "this" / "typeof" / "import" / "asserts" / "function")
+        !idPart) t:specialWordType / t:typeReference) -> $t
+def specialWordType: TypeNode = keywordType / literalType / thisTypePredicate / thisType / importType / typeQuery
+    / assertsTypePredicate / jsdocFunctionType / functionTypeReference / typeReference
+def symbolType: TypeNode = literalType / mappedType / typeLiteral / tupleType / parenthesizedType
+    / templateLiteralType / jsdocAllType / jsdocUnknownType / jsdocNullableType / jsdocNonNullableType / typeReference
 // A keyword type, unless followed by "." (then it is a type reference)
 def keywordType: KeywordTypeNode = ("any" / "unknown" / "string" / "number" / "bigint" / "symbol" / "boolean"
     / "undefined" / "never" / "object") !idPart !(-ws ".")
@@ -1532,12 +1559,12 @@ def commaToken: Token = ","
 // --- Identifiers ---
 // An identifier is not a reserved word, nor yield in the yield context or await in the await context
 // (isIdentifier). A binding identifier may be yield or await (isBindingIdentifier).
-def identifier: Identifier = !reservedWord !("yield" !idPart [ctx % 2 == 1]) !("await" !idPart [ctx / 2 % 2 == 1])
+def identifier: Identifier = !(&(?bcdefinrstvw) reservedWord) !("yield" !idPart [ctx % 2 == 1]) !("await" !idPart [ctx / 2 % 2 == 1])
     i:identifierName -> $i
-def bindingIdentifier: Identifier = !reservedWord i:identifierName -> $i
-def identifierName: Identifier = idStart identifierRest
-def privateIdentifier: PrivateIdentifier = "#" idStart identifierRest
-def identifierNameOrPrivate: Identifier = "#"? idStart identifierRest
+def bindingIdentifier: Identifier = !(&(?bcdefinrstvw) reservedWord) i:identifierName -> $i
+def identifierName: Identifier = ((?a-zA-Z$_) / idStartOther) identifierRest
+def privateIdentifier: PrivateIdentifier = "#" ((?a-zA-Z$_) / idStartOther) identifierRest
+def identifierNameOrPrivate: Identifier = "#"? ((?a-zA-Z$_) / idStartOther) identifierRest
 // Every keyword, reserved or contextual
 def anyKeyword = ("abstract" / "accessor" / "any" / "asserts" / "assert" / "async" / "as" / "await" / "bigint"
     / "boolean" / "break" / "case" / "catch" / "class" / "constructor" / "const" / "continue" / "debugger"
@@ -1556,8 +1583,9 @@ def reservedWord = (&"b" "break" / &"c" ("case" / "catch" / "class" / "const" / 
     / &"t" ("this" / "throw" / "true" / "try" / "typeof") / &"v" ("var" / "void") / &"w" ("while" / "with")) !idPart
 // The rest of an identifier: runs of ASCII identifier characters, which are most of them, without a rule call
 // per character, and the escapes and non-ASCII characters between them.
-def identifierRest = (?a-zA-Z0-9$_)* (("\\u" identifierPartEscape / uniIdPart) (?a-zA-Z0-9$_)*)*
-def idStart = (?a-zA-Z$_) / "\\u" identifierStartEscape / uniIdStart
+def identifierRest = (?a-zA-Z0-9$_)* (&(?\\\u{80}-\u{10FFFF}) ("\\u" identifierPartEscape / uniIdPart) (?a-zA-Z0-9$_)*)*
+def idStart = (?a-zA-Z$_) / idStartOther
+def idStartOther = "\\u" identifierStartEscape / uniIdStart
 def idPart = (?a-zA-Z0-9$_) / "\\u" identifierPartEscape / uniIdPart
 // An escape in an identifier stands for an identifier character: exactly for ASCII values; any value from
 // U+0080 is accepted (the Unicode tables are not applied to escapes).
