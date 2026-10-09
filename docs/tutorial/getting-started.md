@@ -830,6 +830,7 @@ The [runtime guide](../guide/runtime.md) describes the backends and options in d
 | The precise definition of every construct | [Language specification](../../spec/README.md) |
 | Small grammars with tests that show the features: a calculator, an outline format, a small programming language | [examples/](../../examples/README.md) |
 | Ready-made parsers for common languages (CEL, CSV, CUE, DuckDB SQL, Go, JSON, Python, TypeScript, XML, YAML), as Go modules | [parsers/](../../parsers/README.md) |
+| Using a ready-made parser in a program: entry points, trees, positions, errors | [Using the ready-made parsers](../guide/ready-made-parsers.md) |
 
 A good way to continue is to extend the configuration language of section 5: add `[section]` headers, lists of values,
 and `#error` messages, then read [parsers/json](../../parsers/json/json.pego) and [parsers/csv](../../parsers/csv/) to see how
