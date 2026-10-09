@@ -8,6 +8,7 @@ This document describes the repository layout, the architecture of the implement
 |:--|:--|
 | `pego.go`, `lint.go` | Public API of package `pego` (`ParseGrammar`, `Compile`, `CompileSource`, `Parser.Parse`, `Lint`, and others) |
 | `grammar/` | Grammar AST, JSON conversion (`MarshalJSON`, `UnmarshalJSON`) and formatting as PEGO source (`Format`, which preserves comments). Public package. |
+| `internal/grammaranalysis/` | Conservative success and cut proofs shared by the compiler and linter |
 | `internal/lint/` | Grammar linter behind `pego.Lint` and `pego lint`: shared static analysis (`analysis.go`) and checks (`checks.go`) |
 | `internal/lsp/` | Language Server Protocol server for `.pego` files (`pego lsp`): JSON-RPC over standard input and output, document sync, diagnostics, formatting, navigation, hover, rename, completion, semantic tokens |
 | `editors/vscode/` | VS Code extension (Node.js, not part of the Go module): language configuration, TextMate grammar (`syntaxes/pego.tmLanguage.json`) and a client that starts `pego lsp` |
@@ -69,6 +70,13 @@ The compiler (`compile.go`) turns each parser expression into a function (a clos
 ### Static analysis
 
 The analysis (`analysis.go`) computes nullability, the strongly connected components of the left-call graph, and the variables each rule reads (directly or through its callees), and from these decides for each rule whether it is memoized and whether it is a left-recursion leader. Rules that read variables are memoized per combination of those variables' values at the call.
+
+The left-call graph excludes zero-count repetition bodies and ordered-choice suffixes only when an earlier
+alternative is proven to succeed on every input. `internal/grammaranalysis` supplies this conservative proof,
+including cut scopes and recovery skips. Recovery skip calls start at the base expression's original position and
+participate unless the base is proven successful. Graph refinement repeats to a fixed point: removing an unreachable
+cycle can make another rule's success provable. Cyclic calls can read a failing seed and cannot prove success.
+Unknown predicates, Pratt and level-restricted calls remain conservative; the runtime grammar is not rewritten.
 
 ### Runtime
 
@@ -231,9 +239,9 @@ engines, saved grammars and generated parsers (C10). Full-width repetition bound
 implementation-int range through compact wide instructions ([design](design/020-wide-repetition-bounds.md)).
 Hidden/indirect left-recursion reuse (C20) tracks completed calls that depend on unfinished seeds and invalidates
 them after edits; finalized heads without outer-seed or completed intermediate dependencies retain range-based reuse.
-Follow with dead-alternative
-semantics (C21), then typing/validation
-and input/stream equivalence fixes. Earlier backlog items now share current category IDs and priorities;
+Left-recursion reachability (C21/C26) excludes proven-unreachable choice suffixes and zero-count repetition bodies,
+includes possible recovery skip calls, and refines the graph to stability. The linter also accounts for recovery skip
+cuts (C25). Follow with typing/validation and input/stream equivalence fixes. Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused
 optimization measurements, and correctness-only performance impacts are recorded in commit messages. The full suite

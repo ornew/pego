@@ -193,8 +193,10 @@ Two things to know when you remove or move a dead alternative:
 - It no longer adds what it expected to syntax errors (`expected "=", "=="` becomes `expected "="`), which is usually
   better.
 - In a left-recursive rule, the engine decides how to grow the recursion from the rules that each rule can call first,
-  counting calls in alternatives that are never tried. If the dead alternative calls a left-recursive rule before
-  consuming input, removing it can change the parse; the fix says so, and the result is worth comparing.
+  excluding zero-count repetition bodies and choice suffixes whose earlier alternative is proven to succeed on every
+  input. Possible recovery skip calls also participate. The compiler does not prove every input-dependent dead branch;
+  removing or moving such a branch can still change the parse if it calls a left-recursive rule before consuming input.
+  The fix cautions about these calls; compare the results.
 
 ### `never-matches`
 

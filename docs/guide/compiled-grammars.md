@@ -383,6 +383,11 @@ The consequences:
   was made from for the release that wrote it; files from other releases are loaded on the strength of the version
   numbers alone.
 
+Saved files retain the left-recursion classification chosen by the compiler that wrote them, including files with
+the AST. To adopt corrected classification of unreachable alternatives or recovery skip calls, recompile the source
+with the current compiler and regenerate standalone parsers. Loading an older file does not rerun this analysis;
+the file format and bytecode versions are unchanged by these classification fixes.
+
 The format is specified in [bytecode.md](../../spec/bytecode.md#file-format) and its design in
 [design record 009](../design/009-compiled-grammar-format.md).
 

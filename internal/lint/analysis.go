@@ -1,10 +1,12 @@
 package lint
 
 import (
+	"slices"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/grammaranalysis"
 )
 
 // analysis holds what the checks need to know about a grammar. Every property is either an
@@ -38,7 +40,8 @@ type analysis struct {
 	leftRecursive map[string]bool
 	// engineNullable is nullability as the engine computes it to find left recursion (cruder
 	// than nullable: every lookahead counts as nullable).
-	engineNullable map[string]bool
+	engineNullable   map[string]bool
+	engineSucceeding map[string]bool
 
 	// Memos of the analyses that follow rule calls, and the rules being followed (a call of a
 	// rule that is being followed is not followed again: the result is "not certain").
@@ -73,10 +76,26 @@ func newAnalysis(g *grammar.Grammar) *analysis {
 	for _, r := range a.order {
 		left[r.Name] = a.leftCalls(r.Expr, nil)
 	}
-	for _, r := range a.order {
-		if findCycle(r.Name, left) != nil {
-			a.leftRecursive[r.Name] = true
+	// Match the compiler's graph/proof fixed point: breaking one cycle can
+	// prove a rule successful and expose more unreachable call edges.
+	for {
+		clear(a.leftRecursive)
+		for _, r := range a.order {
+			if findCycle(r.Name, left) != nil {
+				a.leftRecursive[r.Name] = true
+			}
 		}
+		a.engineSucceeding = grammaranalysis.SucceedingRules(a.order, a.leftRecursive)
+		next := map[string][]string{}
+		changed := false
+		for _, r := range a.order {
+			next[r.Name] = a.leftCalls(r.Expr, nil)
+			changed = changed || !slices.Equal(left[r.Name], next[r.Name])
+		}
+		if !changed {
+			break
+		}
+		left = next
 	}
 	for _, end := range []bool{false, true} {
 		set := a.nullable[b2i(end)]
@@ -165,9 +184,14 @@ func (a *analysis) leftCalls(e grammar.Expr, acc []string) []string {
 	case *grammar.Choice:
 		for _, alt := range e.Alts {
 			acc = a.leftCalls(alt, acc)
+			if grammaranalysis.AlwaysSucceeds(alt, a.engineSucceeding) {
+				break
+			}
 		}
 	case *grammar.Repeat:
-		acc = a.leftCalls(e.Expr, acc)
+		if e.Max != 0 {
+			acc = a.leftCalls(e.Expr, acc)
+		}
 	case *grammar.Optional:
 		acc = a.leftCalls(e.Expr, acc)
 	case *grammar.And:
@@ -182,12 +206,24 @@ func (a *analysis) leftCalls(e grammar.Expr, acc []string) []string {
 		acc = a.leftCalls(e.Expr, acc)
 	case *grammar.Attributed:
 		acc = a.leftCalls(e.Expr, acc)
+		if !grammaranalysis.AlwaysSucceeds(e.Expr, a.engineSucceeding) {
+			for _, at := range e.Attrs {
+				if at.Name == "recover" {
+					if skip, ok := at.Arg("skip"); ok {
+						acc = a.leftCalls(skip, acc)
+					}
+				}
+			}
+		}
 	case *grammar.Pratt:
 		if e.Skip != nil {
 			acc = a.leftCalls(e.Skip, acc)
 		}
 		for _, o := range e.Operands {
 			acc = a.leftCalls(o.Expr, acc)
+			if grammaranalysis.AlwaysSucceeds(o.Expr, a.engineSucceeding) {
+				break
+			}
 		}
 		for _, l := range e.Levels {
 			for _, op := range l.Operators {
@@ -583,25 +619,7 @@ func (a *analysis) fails(e grammar.Expr, t string) bool {
 // expression around e: one that is not inside a choice, repetition, optional expression or
 // lookahead of its own (which stop it), or in another rule (cuts do not cross rules).
 func hasLooseCut(e grammar.Expr) bool {
-	switch e := e.(type) {
-	case *grammar.Cut:
-		return true
-	case *grammar.Seq:
-		for _, it := range e.Items {
-			if hasLooseCut(it) {
-				return true
-			}
-		}
-	case *grammar.Capture:
-		return hasLooseCut(e.Expr)
-	case *grammar.Atomic:
-		return hasLooseCut(e.Expr)
-	case *grammar.Discard:
-		return hasLooseCut(e.Expr)
-	case *grammar.Attributed:
-		return hasLooseCut(e.Expr)
-	}
-	return false
+	return grammaranalysis.HasLooseCut(e)
 }
 
 // prefixResult is the result of prefix.

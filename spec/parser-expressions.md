@@ -409,6 +409,16 @@ recursion is entered, decided by static analysis) is grown in this way, and the
 others are evaluated again in each iteration. A rule that is not left-recursive
 is evaluated once.
 
+Static analysis considers calls that may run before consuming input, including
+calls in `#recover(skip=...)`: recovery returns to the base expression's starting
+position before trying the skip. It excludes zero-count repetition bodies and
+ordered-choice suffixes when an earlier alternative is proven to succeed on every
+input. Success proofs respect cut scopes; calls inside a left-recursion cycle
+can read a failing seed and do not prove success. Removing unreachable calls and
+refining the proofs continues until the call graph stabilizes. Unknown paths
+remain in the graph, so removing an alternative whose unreachability is not
+proven by this analysis can still change how an indirect cycle is entered.
+
 Because growing tries the alternatives in order, **the recursive alternative
 MUST come before the base case**: if the base case comes first, it matches again
 with the same length, nothing grows, and the input after it is left over.

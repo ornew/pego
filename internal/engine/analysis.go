@@ -1,14 +1,17 @@
 package engine
 
 import (
+	"slices"
 	"sort"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/grammaranalysis"
 )
 
 // analysis is the result of static analysis across rules.
 type analysis struct {
-	nullable map[string]bool
+	nullable   map[string]bool
+	succeeding map[string]bool
 	// leaders are the rules that break left-recursion cycles. These rules are evaluated with
 	// grow-the-seed.
 	leaders map[string]bool
@@ -66,7 +69,37 @@ func analyze(rules []*grammar.RuleDef) *analysis {
 			}
 		}
 	}
-	for _, scc := range tarjan(rules, left) {
+	// Removing unreachable calls can break a cycle and make another rule's
+	// success provable. Repeat until the graph stabilizes; each pass only
+	// removes edges, so there are finitely many refinements.
+	var components [][]string
+	for {
+		components = tarjan(rules, left)
+		clear(a.cyclic)
+		for _, scc := range components {
+			if len(scc) > 1 || contains(left[scc[0]], scc[0]) {
+				for _, n := range scc {
+					a.cyclic[n] = true
+				}
+			}
+		}
+		a.succeeding = grammaranalysis.SucceedingRules(rules, a.cyclic)
+		next := map[string][]string{}
+		changed := false
+		for _, r := range rules {
+			for _, n := range a.leftCalls(r.Expr, nil) {
+				if byName[n] != nil {
+					next[r.Name] = append(next[r.Name], n)
+				}
+			}
+			changed = changed || !slices.Equal(left[r.Name], next[r.Name])
+		}
+		if !changed {
+			break
+		}
+		left = next
+	}
+	for _, scc := range components {
 		if len(scc) == 1 && !contains(left[scc[0]], scc[0]) {
 			continue
 		}
@@ -162,9 +195,14 @@ func (a *analysis) leftCalls(e grammar.Expr, acc []string) []string {
 	case *grammar.Choice:
 		for _, alt := range e.Alts {
 			acc = a.leftCalls(alt, acc)
+			if grammaranalysis.AlwaysSucceeds(alt, a.succeeding) {
+				break
+			}
 		}
 	case *grammar.Repeat:
-		acc = a.leftCalls(e.Expr, acc)
+		if e.Max != 0 {
+			acc = a.leftCalls(e.Expr, acc)
+		}
 	case *grammar.Optional:
 		acc = a.leftCalls(e.Expr, acc)
 	case *grammar.And:
@@ -179,12 +217,24 @@ func (a *analysis) leftCalls(e grammar.Expr, acc []string) []string {
 		acc = a.leftCalls(e.Expr, acc)
 	case *grammar.Attributed:
 		acc = a.leftCalls(e.Expr, acc)
+		if !grammaranalysis.AlwaysSucceeds(e.Expr, a.succeeding) {
+			for _, at := range e.Attrs {
+				if at.Name == "recover" {
+					if skip, ok := at.Arg("skip"); ok {
+						acc = a.leftCalls(skip, acc)
+					}
+				}
+			}
+		}
 	case *grammar.Pratt:
 		if e.Skip != nil {
 			acc = a.leftCalls(e.Skip, acc)
 		}
 		for _, o := range e.Operands {
 			acc = a.leftCalls(o.Expr, acc)
+			if grammaranalysis.AlwaysSucceeds(o.Expr, a.succeeding) {
+				break
+			}
 		}
 		for _, l := range e.Levels {
 			for _, op := range l.Operators {

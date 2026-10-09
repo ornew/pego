@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/grammaranalysis"
 )
 
 func at(p grammar.Pos) string {
@@ -99,7 +100,7 @@ func (l *linter) shadowedAlts(alts []grammar.Expr, kind string) {
 			}
 			l.report(CheckShadowedAlt, Error, posOf(alts[i+1]),
 				fmt.Sprintf("remove what follows %s %d, or make it fail where it matches nothing", kind, i+1)+
-					a.leftRecursionCaveat(alts[i+1:]...),
+					a.shadowedSuffixCaveat(alt, alts[i+1:]...),
 				"%s never tried: %s %d (%s%s) always succeeds", plural(later), kind, i+1, show(alt), at(posOf(alt)))
 			alts = alts[:i+1]
 			break
@@ -123,10 +124,20 @@ func (l *linter) shadowedAlts(alts []grammar.Expr, kind string) {
 	}
 }
 
+// The compiler's universal-success proof excludes this exact suffix from its
+// left-call graph. Stronger, input-dependent lint proofs may still change the
+// conservative graph when their suggested fix is applied.
+func (a *analysis) shadowedSuffixCaveat(prior grammar.Expr, later ...grammar.Expr) string {
+	if grammaranalysis.AlwaysSucceeds(prior, a.engineSucceeding) {
+		return ""
+	}
+	return a.leftRecursionCaveat(later...)
+}
+
 // leftRecursionCaveat returns a caution to add to a fix that removes or moves the expressions es,
 // if they call a left-recursive rule before consuming input: the engine decides how to grow left
-// recursion from the calls that rules can make first, counting those in alternatives that are
-// never tried, so the change can change the result.
+// recursion from a conservative graph. Calls whose infeasibility is not established
+// by the compiler still participate, so removing them can change the result.
 func (a *analysis) leftRecursionCaveat(es ...grammar.Expr) string {
 	for _, e := range es {
 		for _, c := range a.leftCalls(e, nil) {
