@@ -3,7 +3,8 @@
 This chapter defines how the text of a grammar file is divided into tokens:
 characters, line terminators, white space, comments, identifiers, keywords,
 literals, escape sequences and punctuation. The structure of the file built from
-the tokens is the subject of [Grammar Files](grammar-files.md).
+the tokens is the subject of [Grammar Files](grammar-files.md), and the whole
+syntax is summarized in [Syntax Summary](syntax.md).
 
 ## Source text
 

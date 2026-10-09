@@ -27,9 +27,10 @@ fails:
 | What may be handed over early | `#stream` repetitions | [Attributes](attributes.md#stream) |
 
 A grammar file is written in the language that [Lexical Structure](lexical.md)
-and [Grammar Files](grammar-files.md) define. The portable
-[bytecode](bytecode.md) that a grammar compiles to, and the virtual machine that
-runs it, are specified for those who port the runtime.
+and [Grammar Files](grammar-files.md) define; [Syntax Summary](syntax.md)
+collects its grammar in one place and the [Glossary](glossary.md) defines the
+terms. The portable [bytecode](bytecode.md) that a grammar compiles to, and the
+virtual machine that runs it, are specified for those who port the runtime.
 
 ## Example: a calculator
 

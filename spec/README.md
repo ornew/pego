@@ -35,6 +35,8 @@ The chapters are in reading order: each builds on the ones before it.
 | 9 | [Type Checking](type-checking.md) | The type of each expression, type inference and the errors that the checker reports |
 | 10 | [Attributes](attributes.md) | `#error`, `#recover` and `#stream` |
 | 11 | [Parsing](parsing.md) | A parse as a whole: the start rule, input and positions, results and nodes, syntax errors, memoization, limits and modes |
+| 12 | [Syntax Summary](syntax.md) | The syntax of grammar files as a PEGO grammar that is tested against the reference parser |
+| 13 | [Glossary](glossary.md) | The terms of this specification, with the place where each is defined |
 
 The portable bytecode that a grammar compiles to and the virtual machine that
 runs it are specified separately, for those who port the runtime:

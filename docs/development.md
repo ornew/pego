@@ -162,6 +162,8 @@ The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for i
 
 `sample` tests generate inputs for every example grammar and every grammar of the engine's test corpus (`internal/engine/sample_test.go`, through `export_test.go`) and parse them on every backend.
 
+`spec/syntax_test.go` runs the grammar of the [syntax summary](../spec/syntax.md) on every `.pego` file and every `pego` code block of the repository and requires it to agree with the parser of `internal/syntax`.
+
 `cd site && go test ./...` builds the site and checks its pages and links; `go test ./playground` runs the WebAssembly smoke test when Node is installed.
 
 ## Language feature status

@@ -90,7 +90,7 @@ line and column of the construct it concerns in the grammar source (see
 
 | Class | Examples | Defined in |
 |:--|:--|:--|
-| Lexical and syntax errors | An unterminated string, an unknown escape, a character that starts no token, a missing `)`, a definition that is neither `def` nor `type`, a repetition whose maximum is less than its minimum | [Lexical Structure](lexical.md) and the constructs below |
+| Lexical and syntax errors | An unterminated string, an unknown escape, a character that starts no token, a missing `)`, a definition that is neither `def` nor `type`, a repetition whose maximum is less than its minimum | [Lexical Structure](lexical.md), [Syntax Summary](syntax.md) |
 | Definition and reference errors | A name that is defined twice, a reserved or lowercase type name, an undefined rule, a call with a level that does not exist, a capture of an expression without a value, an unknown attribute, a `#stream` that is not at the top level of a rule body | The chapter of the construct |
 | Type errors | A field that the struct does not declare, a value that is not assignable to the declared type, `$n` out of range | [Type Checking](type-checking.md#checked-errors) |
 
