@@ -35,7 +35,7 @@ def repeated: A = (x:"b"){2} --`)
 		t.Fatal(err)
 	}
 	for name, contents := range map[string][]byte{
-		"parser.go": code, "pool_test.go": []byte(typedPoolFixture), "go.mod": []byte("module poolfixture\n\ngo 1.27\n"),
+		"parser.go": code, "pool_test.go": []byte(typedPoolFixture), "go.mod": []byte("module poolfixture\n\ngo 1.27.1\n"),
 	} {
 		if err := os.WriteFile(filepath.Join(dir, name), contents, 0o644); err != nil {
 			t.Fatal(err)

@@ -288,6 +288,10 @@ captured repetition boundaries (G01), and clear full trail/saved-capture storage
 and returned values are preserved. `TestGeneratedTypedPoolRetention` checks both units after a 2 MiB overwritten
 capture, failed reuse, nested rollback and repeat captures. `PEGO_TYPED_POOL_DIR` preserves its generated fixture;
 `BenchmarkTypedCapturePool` and the verbose `TestTypedPoolHeap` measure throughput and explicitly retained scratch.
+The preserved pool fixture requires the repository's Go 1.27.1 baseline. Check each benchmark binary's
+`go version -m` metadata when recording the actual toolchain: the original dedicated capture/heap measurements
+at `0038cee` used Go 1.27.0, while its representative generated AST benchmarks used Go 1.27.1. Each comparison
+used the same toolchain on both sides; this corrects the broader version statement in that commit message.
 Returned typed values can independently retain discarded siblings in their allocation chunks; P28 tracks this
 optimization candidate separately, with result ownership and allocation/throughput measurement gates.
 Typed Go generation exports every declared alias (G02), including chained/list/scalar/optional/CST aliases and
