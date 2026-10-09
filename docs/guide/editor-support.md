@@ -43,6 +43,9 @@ A `.pego` file is a whole grammar, so the server analyzes each open file on its 
 | Completion | Rule names in rule bodies, types where a type is expected, attributes after `#`; in actions and predicates, captures after `$`, built-in functions, `new`, struct types after `new` and fields after `.`; and keywords |
 | Semantic highlighting | Rule names, type names, captures, fields and built-in names in their own colors, if the editor supports semantic tokens |
 
+White space and `//` comments may separate `def`, `type` or `new` from the following name. Symbols,
+navigation, references and rename still identify the name itself; rename leaves the comment text intact.
+
 ### Documentation comments
 
 The comment lines directly above a definition are its documentation, shown on hover and in completion. A

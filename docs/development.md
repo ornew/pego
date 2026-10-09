@@ -127,6 +127,10 @@ Package `internal/lint` analyzes the AST of a grammar that compiles (`pego.Lint`
 ### Language server
 
 `internal/lsp` implements LSP 3.17 over standard input and output with the standard library. Each version of an open document is analyzed once: `syntax.Tokenize` gives every token with its span, `syntax.ParsePartial` the definitions that parse even when others have errors, and, when there is no syntax error, `engine.Compile` the compile and type errors and `Program.RuleType` the declared or inferred rule types. Positions are converted through byte offsets between LSP's UTF-16 columns and line ends and PEGO's code-point columns. Completion works on tokens, since the definition being written rarely parses ([design](design/017-language-server.md)).
+Definition and constructor name mapping skips intervening comment tokens while preserving original name spans
+and documentation comments. Framed-protocol tests cover symbols, hover, definitions, references and complete
+rename edits across repeated comments and LF/CRLF/CR line endings, including incomplete input (E01).
+Comment-separated attribute and Pratt associativity semantic highlighting remains tracked separately (E07).
 
 ### Input generation
 

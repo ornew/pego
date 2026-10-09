@@ -220,6 +220,15 @@ func (a *analysis) tokenIndex(pos grammar.Pos) (int, bool) {
 	return i, ok
 }
 
+// significantToken skips comments from i, returning len(toks) at end of input.
+// Other tokens, including punctuation, retain their place in the syntax.
+func (a *analysis) significantToken(i int) int {
+	for i < len(a.toks) && a.toks[i].Kind == syntax.TokenComment {
+		i++
+	}
+	return i
+}
+
 // collect records the definitions and the occurrences of names in the grammar.
 func (a *analysis) collect() {
 	for _, s := range a.g.Statements {
@@ -279,14 +288,18 @@ func (a *analysis) markToken(i int, typ semTokenType, mods int) {
 // define records the definition whose keyword is at pos.
 func (a *analysis) define(kind symKind, name string, pos grammar.Pos) *definition {
 	i, ok := a.tokenIndex(pos)
-	if !ok || i+1 >= len(a.toks) || a.toks[i+1].Kind != syntax.TokenIdent || a.toks[i+1].Text != name {
+	if !ok {
 		return nil
 	}
-	kw, n := a.toks[i], a.toks[i+1]
+	next := a.significantToken(i + 1)
+	if next >= len(a.toks) || a.toks[next].Kind != syntax.TokenIdent || a.toks[next].Text != name {
+		return nil
+	}
+	kw, n := a.toks[i], a.toks[next]
 	d := &definition{kind: kind, name: name, kwStart: kw.start, nameStart: n.start, nameEnd: n.end, start: kw.start}
 	// The definition ends with the last token before the next definition.
-	last := i + 1
-	for j := i + 2; j < len(a.toks); j++ {
+	last := next
+	for j := next + 1; j < len(a.toks); j++ {
 		t := a.toks[j]
 		if t.Kind == syntax.TokenIdent && (t.Text == "def" || t.Text == "type") {
 			break
@@ -437,7 +450,7 @@ func (a *analysis) walkTerm(t grammar.Term) {
 	case *grammar.New:
 		// The type name follows the keyword new.
 		if i, ok := a.tokenIndex(t.Pos); ok {
-			a.refToken(kindType, t.Type, i+1)
+			a.refToken(kindType, t.Type, a.significantToken(i+1))
 		}
 		for _, f := range t.Fields {
 			a.mark(f.Pos, semProperty, 0)
