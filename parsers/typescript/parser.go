@@ -4804,6 +4804,12 @@ type YieldExpression struct {
 	Expression    Expression
 }
 
+// ModuleExportName is the alias type ModuleExportName = Identifier | StringLiteral.
+type ModuleExportName = ImportAttributeName
+
+// ModuleName is the alias type ModuleName = Identifier | StringLiteral.
+type ModuleName = ImportAttributeName
+
 // ArrayBindingElement is the union type ArrayBindingElement = BindingElement | OmittedExpression. Error (left by #recover) also implements it.
 type ArrayBindingElement interface{ isArrayBindingElement() }
 

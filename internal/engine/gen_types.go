@@ -88,13 +88,14 @@ type typedGen struct {
 	unions map[string]string
 	// lists maps the Go type of a list to the name of its converter (from nodes); tlists, to the
 	// name of its converter from values of the typed runtime.
-	lists      map[string]string
-	listOrder  []listConv
-	tlists     map[string]string
-	tlistOrder []listConv
-	structs    []string // struct type names, sorted
-	terms      []string // terminal type names, sorted
-	aliases    []string // union alias names, sorted
+	lists       map[string]string
+	listOrder   []listConv
+	tlists      map[string]string
+	tlistOrder  []listConv
+	structs     []string // struct type names, sorted
+	terms       []string // terminal type names, sorted
+	aliases     []string // canonical node union names, sorted
+	typeAliases []string // other declared aliases, sorted
 }
 
 type listConv struct {
@@ -142,8 +143,10 @@ func (t *typedGen) name() {
 				if _, dup := t.unions[u.String()]; !dup {
 					t.unions[u.String()] = t.names[name]
 					t.aliases = append(t.aliases, name)
+					continue
 				}
 			}
+			t.typeAliases = append(t.typeAliases, name)
 		}
 	}
 	span := "Span"
@@ -279,6 +282,10 @@ func (t *typedGen) decls(b *strings.Builder) {
 			fmt.Fprintf(b, "\t%s %s\n", f.name, t.goType(f.t))
 		}
 		b.WriteString("}\n\n")
+	}
+	for _, name := range t.typeAliases {
+		fmt.Fprintf(b, "// %s is the alias type %s = %s.\n", t.names[name], name, t.info.aliases[name])
+		fmt.Fprintf(b, "type %s = %s\n\n", t.names[name], t.goType(t.info.aliases[name]))
 	}
 	// Unions: an interface with a marker method that each member (and Error) implements.
 	impl := map[string][]string{} // Go type (without *) -> markers

@@ -389,12 +389,17 @@ How grammar types map to Go:
 | `*T` | `*int`, `*string` or `*bool` for basic types; otherwise the Go type of `T`, `nil` when absent |
 | `Seq`, `List`, `Operator` and records | `*Node`, as from `Parse` |
 | `node`, `terminal`, `any`, unions with basic members | `any`, holding the converted value |
+| alias `Alias = T` | a Go alias to the value type of `T`; for example, `Alias = Word` becomes `type Alias = *Word` |
 
 Details:
 
 - **Names.** Go types have the names of the grammar types. A name that the generated runtime already uses (`Node`,
   `Match`, `Error`, `Parse`, `Unit`, ...) gets a trailing underscore: a grammar type `Node` becomes `Node_`. `Span`
   is renamed the same way if a type or field is called `Span`.
+- **Aliases.** Every declared alias is exported, including chained, scalar, optional, list and CST aliases. Node
+  unions with the same normalized representation share one generated interface; additional names are Go aliases
+  to it. Aliases preserve assignment compatibility and add no new runtime value kind. Regenerate existing parsers
+  to receive previously omitted alias names.
 - **Errors.** `ParseAST` returns the errors of `Parse`. After `#recover`, an `Error` in a list of a union type stays
   in the list as `*Error`; where a struct or terminal type is expected it becomes `nil` (it is among the returned
   `SyntaxErrors` anyway).

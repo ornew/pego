@@ -290,6 +290,9 @@ capture, failed reuse, nested rollback and repeat captures. `PEGO_TYPED_POOL_DIR
 `BenchmarkTypedCapturePool` and the verbose `TestTypedPoolHeap` measure throughput and explicitly retained scratch.
 Returned typed values can independently retain discarded siblings in their allocation chunks; P28 tracks this
 optimization candidate separately, with result ownership and allocation/throughput measurement gates.
+Typed Go generation exports every declared alias (G02), including chained/list/scalar/optional/CST aliases and
+additional names for the same normalized node union. Canonical runtime types remain unchanged; external-consumer
+compilation tests cover both direct typed construction and conversion, assignment compatibility and name collisions.
 Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused

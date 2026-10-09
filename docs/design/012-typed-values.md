@@ -33,6 +33,13 @@ fields of each struct type and the resolved alias types), and the generator maps
 Names that clash with the runtime's exported names (`Node`, `Match`, `Error`, `Parse`, ...) get a trailing `_`
 (a grammar type `Node` becomes `Node_`), and the helper `Span` takes a name no type or field uses.
 
+Every declared alias is exported as a Go alias to its resolved value representation: `type Alias = Word` in the
+grammar becomes `type Alias = *Word` in Go, and a list alias becomes an alias to the corresponding slice. Chained,
+scalar, optional and CST aliases follow the same mapping. Node unions with the same normalized representation
+share one canonical interface and marker-method set; the other declared names alias that interface. This preserves
+assignment compatibility without duplicating runtime kinds, converters or marker methods. Name collision handling
+applies to alias names as well as struct and terminal declarations.
+
 `Error` implements every union so that a `#recover` inside a list of a union type (`[]Stmt`) keeps the error in the
 list. Where a struct or terminal type is expected, an `Error` node becomes `nil`; it is reported in the
 `SyntaxErrors` that `ParseAST` returns anyway.

@@ -245,6 +245,7 @@ type GenOption func(*engine.GenOptions)
 
 // WithTypes also generates a Go type for each type of the grammar and a function ParseAST, which
 // returns the result of the start rule as values of those types instead of *Node.
+// Declared aliases name the target's Go value type; names colliding with the runtime gain underscores.
 func WithTypes() GenOption {
 	return func(o *engine.GenOptions) { o.Types = true }
 }
