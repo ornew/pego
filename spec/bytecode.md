@@ -59,6 +59,11 @@ expression code. These constants preserve the full implementation-int range;
 they are read directly, without evaluating an action. Ordinary instructions
 retain their compact representation.
 
+The public grammar AST treats every negative repetition maximum as unbounded.
+Compilation canonicalizes it to -1 before narrowing operands or creating wide
+bound constants. The AST's original field is preserved; serialized bytecode
+uses the existing -1 sentinel for both `REPEAT` and `SCAN` variants.
+
 ### Rule table
 
 | Item | Description |

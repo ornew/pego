@@ -70,6 +70,11 @@ func (c *bcompiler) integer(value int) int32 {
 }
 
 func (c *bcompiler) repetition(op Op, min, max int, other int32) {
+	// Public ASTs allow any negative maximum. Canonicalize before narrowing
+	// so large negative values cannot wrap into finite bytecode bounds.
+	if max < 0 {
+		max = -1
+	}
 	if int64(min) <= 1<<31-1 && int64(max) <= 1<<31-1 {
 		if op == OpScan {
 			c.emit(op, other, int32(min), int32(max))

@@ -113,5 +113,6 @@ The validator reports one structural defect per call. It does not validate
 Unicode class scalars/range semantics or offer semantic validation without
 compilation. Formatting layout and resource budgets remain separate concerns.
 A strict JSON intake API, including unknown fields and duplicate-key policy,
-requires its own design. Existing serialization limitations for hand-built
-negative maxima other than -1 remain separate from structural validation.
+requires its own design. Bytecode compilation canonicalizes negative unbounded
+maxima to -1 while preserving the caller and saved AST's original field; see
+[wide repetition bounds](020-wide-repetition-bounds.md).

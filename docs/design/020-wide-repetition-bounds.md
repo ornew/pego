@@ -43,6 +43,12 @@ iterative VMs share the implementation. Projected repetitions also use wide
 bounds. Closure and generated Go retain their existing implementation-int
 loops; generated TypeScript is checked on the same boundary grammars.
 
+Hand-built ASTs may use any negative maximum for an unbounded repetition.
+Bytecode lowering canonicalizes all such values to -1 before choosing compact
+or wide operands. This prevents large negative values from narrowing into
+finite maxima and retains the existing module-validation contract. The caller's
+AST is not mutated; an AST-bearing file preserves its original maximum.
+
 Loading verifies that both references point to `EINT`, that each value fits
 the runtime's implementation `int`, and that the minimum and maximum form a
 valid range. A 32-bit runtime rejects a wider compiled bound rather than
@@ -55,6 +61,11 @@ The `.pegoc` format remains version 2. Instruction set 4 adds `REPEATW` and
 continue to declare instruction set 3, preserving compatibility with earlier
 runtimes. Earlier instruction sets still load. A file falsely declaring an
 older instruction set while using wide bounds is rejected.
+
+Previously emitted files with noncanonical negative bytecode maxima may fail
+validation or have already lost their unbounded meaning during narrowing.
+Recompile the original AST to obtain canonical bounds; loading does not infer
+or repair values from an already narrowed instruction.
 
 Files compiled before this correction must be rebuilt if they contain large
 bounds. Their stored matching code already lost the original values; a load
@@ -84,6 +95,13 @@ and TypeScript. Streams and edited Documents exercise the wide repetition
 state and its resumption metadata. Loader tests reject missing or noninteger
 bound constants, negative minima, invalid maxima, reversed bounds and false
 instruction-set declarations. Disassembly displays complete bound values.
+
+The public-AST regressions additionally cover -2, the minimum signed 32-bit
+value, -2³² and the native minimum integer as unbounded maxima, including SCAN,
+projection, a wide minimum, full/bare saved modules and unchanged AST fields.
+Streams and edited Documents are compared by tree and position, with actual
+repetition resumption checked; generated Go, typed Go and TypeScript retain
+the same negative-bound semantics.
 
 ## Performance and limitations
 

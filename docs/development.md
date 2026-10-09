@@ -248,7 +248,10 @@ includes possible recovery skip calls, and refines the graph to stability. The l
 cuts (C25). Dependency-ordered inference (C11) preserves long finite chains and unrelated rule types while bounding evolving
 recursive types. JSON/public AST validation (C12) rejects malformed children, pointer cycles, negative indexes,
 invalid repetition bounds and trailing JSON. Its public structural API is implemented ([design](design/021-grammar-ast-validation.md));
-opt-in strict JSON intake remains proposed (F02). Follow with input/stream equivalence fixes. Earlier backlog items now share current category IDs and priorities;
+opt-in strict JSON intake remains proposed (F02).
+Bytecode lowering also canonicalizes every negative public-AST repetition maximum to -1 (C27), preserving
+unbounded semantics in ordinary/wide REPEAT and SCAN instructions and saved modules without mutating the AST.
+Follow with input/stream equivalence fixes. Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused
 optimization measurements, and correctness-only performance impacts are recorded in commit messages. The full suite

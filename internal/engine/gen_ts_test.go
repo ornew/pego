@@ -12,6 +12,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
+	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -392,16 +393,21 @@ func diffAt(a, b string) int {
 // the standard output.
 func runTSScript(t *testing.T, src, script string) string {
 	t.Helper()
+	g, err := syntax.Parse(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return runTSGrammarScript(t, g, script)
+}
+
+func runTSGrammarScript(t *testing.T, g *grammar.Grammar, script string) string {
+	t.Helper()
 	if testing.Short() {
 		t.Skip("runs generated code")
 	}
 	node, err := exec.LookPath("node")
 	if err != nil {
 		t.Skip("node not found")
-	}
-	g, err := syntax.Parse(src)
-	if err != nil {
-		t.Fatal(err)
 	}
 	code, err := GenerateTS(g, GenOptions{Start: "main"})
 	if err != nil {

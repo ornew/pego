@@ -33,6 +33,12 @@ maximum must be at least the minimum. Any negative maximum means unbounded,
 as documented by `grammar.Repeat`. Shared subtrees, empty collections and
 genuinely nil optional children remain allowed.
 
+Both VMs and generated parsers honor negative unbounded maxima. Saving a
+compiled grammar preserves the original maximum in its AST and uses the
+standard unbounded representation in its bytecode. Recompile older artifacts
+created from noncanonical negative maxima to replace incorrectly narrowed
+or rejected bytecode.
+
 This is structural validation. It does not resolve names, check action types,
 validate attributes or enforce Pratt semantics; compile the grammar for those
 checks. It also does not validate source comments/layout or impose resource
