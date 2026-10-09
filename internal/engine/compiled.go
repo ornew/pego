@@ -29,10 +29,10 @@ import (
 const (
 	compiledMagic   = "PEGOC\x00"
 	compiledVersion = 2
-	// isaVersion is the instruction set version written to files. Files of earlier versions load:
+	// isaVersion is the latest supported instruction set. Files of earlier versions load:
 	// version 2 only adds instructions (ETEXTCHK, ETEXTEQ, ELISTBEGIN, ELISTPUSH, EMAPPUSH,
-	// ELISTEND), and version 3 GUARD and NEXT with f 3.
-	isaVersion = 3
+	// ELISTEND), version 3 GUARD and NEXT with f 3, and version 4 wide repetition bounds.
+	isaVersion = 4
 	maxDepth   = 10000
 )
 
@@ -168,7 +168,7 @@ func (prog *Program) MarshalBinaryWith(start string, o MarshalOptions) ([]byte, 
 	var out bytes.Buffer
 	out.WriteString(compiledMagic)
 	out.WriteByte(compiledVersion)
-	out.Write(binary.AppendUvarint(nil, isaVersion))
+	out.Write(binary.AppendUvarint(nil, uint64(m.instructionSetVersion())))
 	w.finish(&out)
 	return out.Bytes(), nil
 }
@@ -571,7 +571,8 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	if v == 1 {
 		return r.loadV1(opts)
 	}
-	if isa := r.uint(); r.err == nil && (isa < 1 || isa > isaVersion) {
+	isa := r.uint()
+	if r.err == nil && (isa < 1 || isa > isaVersion) {
 		return nil, "", fmt.Errorf("unsupported instruction set version %d (want 1 to %d)", isa, isaVersion)
 	}
 	r.strings()
@@ -597,6 +598,9 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	}
 	if err := validateModule(m); err != nil {
 		return nil, "", fmt.Errorf("invalid compiled grammar: %w", err)
+	}
+	if isa < 4 && m.instructionSetVersion() == 4 {
+		return nil, "", errors.New("invalid compiled grammar: wide repetition bounds require instruction set version 4")
 	}
 	if prog == nil {
 		prog = moduleProgram(m)

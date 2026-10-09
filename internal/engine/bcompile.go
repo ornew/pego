@@ -63,6 +63,29 @@ func (c *bcompiler) eemit(op Op, a, b int32) int {
 	return len(c.m.Exprs) - 1
 }
 
+// integer stores a full implementation-int value using the EINT representation.
+func (c *bcompiler) integer(value int) int32 {
+	lo := int32(value)
+	return int32(c.eemit(EInt, lo, int32((uint64(value)-uint64(int64(lo)))>>32)))
+}
+
+func (c *bcompiler) repetition(op Op, min, max int, other int32) {
+	if int64(min) <= 1<<31-1 && int64(max) <= 1<<31-1 {
+		if op == OpScan {
+			c.emit(op, other, int32(min), int32(max))
+		} else {
+			c.emit(op, int32(min), int32(max), other)
+		}
+		return
+	}
+	lo, hi := c.integer(min), c.integer(max)
+	if op == OpScan {
+		c.emit(OpScanWide, other, lo, hi)
+	} else {
+		c.emit(OpRepeatWide, lo, hi, other)
+	}
+}
+
 func b2i(b bool) int32 {
 	if b {
 		return 1
@@ -281,10 +304,10 @@ func (c *bcompiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) {
 	if !build && !stream { // value-free repetition of a single character (same as compiler.scanRepeat)
 		switch x := e.Expr.(type) {
 		case *grammar.CharClass:
-			c.emit(OpScan, c.class(x), int32(e.Min), int32(e.Max))
+			c.repetition(OpScan, e.Min, e.Max, c.class(x))
 			return
 		case *grammar.Any:
-			c.emit(OpScan, -1, int32(e.Min), int32(e.Max))
+			c.repetition(OpScan, e.Min, e.Max, -1)
 			return
 		}
 	}
@@ -298,7 +321,7 @@ func (c *bcompiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) {
 	if build {
 		c.emit(OpPushPos, 0, 0, 0)
 	}
-	c.emit(OpRepeat, int32(e.Min), int32(e.Max), sc)
+	c.repetition(OpRepeat, e.Min, e.Max, sc)
 	loop := c.here()
 	iter := c.emit(OpIter, 0, 0, 0)
 	if build {
@@ -430,7 +453,7 @@ func (c *bcompiler) projectRepeat(e *grammar.Repeat, field string) {
 	c.m.Scopes = append(c.m.Scopes, nil)
 	sc := int32(len(c.m.Scopes) - 1)
 	c.emit(OpPushPos, 0, 0, 0)
-	c.emit(OpRepeat, int32(e.Min), int32(e.Max), sc)
+	c.repetition(OpRepeat, e.Min, e.Max, sc)
 	loop := c.here()
 	iter := c.emit(OpIter, 0, 0, 0)
 	c.match(e.Expr, elemScope, false)

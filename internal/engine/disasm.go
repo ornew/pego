@@ -123,13 +123,19 @@ func (m *Module) operands(in Instr, str func(int) string, names func([]int) stri
 		return fmt.Sprintf("slot=%d", a)
 	case OpGuard:
 		return fmt.Sprintf("%s depth=%d -> %d", m.Strings[m.Classes[a].Desc], bb, c) // the expectation as written
-	case OpScan:
+	case OpScan, OpScanWide:
+		if in.Op == OpScanWide {
+			bb, c = int(m.Exprs[bb].integer()), int(m.Exprs[c].integer())
+		}
 		cl := "any"
 		if a >= 0 {
 			cl = str(m.Classes[a].Desc)
 		}
 		return fmt.Sprintf("%s min=%d max=%d", cl, bb, c)
-	case OpRepeat:
+	case OpRepeat, OpRepeatWide:
+		if in.Op == OpRepeatWide {
+			a, bb = int(m.Exprs[a].integer()), int(m.Exprs[bb].integer())
+		}
 		sc := "-"
 		if c >= 0 {
 			sc = names(m.Scopes[c])

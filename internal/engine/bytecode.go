@@ -16,6 +16,16 @@ type Module struct {
 	Exprs      []Instr // expression code (actions and predicates)
 }
 
+// instructionSetVersion keeps ordinary modules readable by instruction-set-3 runtimes.
+func (m *Module) instructionSetVersion() int {
+	for _, in := range m.Code {
+		if in.Op == OpRepeatWide || in.Op == OpScanWide {
+			return 4
+		}
+	}
+	return 3
+}
+
 // Class is a character class. Ranges is a list of lower and upper bound pairs.
 type Class struct {
 	Ranges  []rune
@@ -97,6 +107,11 @@ const (
 type Instr struct {
 	Op      Op
 	A, B, C int32
+}
+
+// integer decodes the signed integer held by an EINT instruction.
+func (in Instr) integer() int64 {
+	return int64(in.A) + int64(in.B)<<32
 }
 
 // Op is an opcode.
@@ -191,6 +206,10 @@ const (
 	// class's expectation and go to l (the next alternative of a choice, which this alternative
 	// could not match). Otherwise continue.
 	OpGuard
+	// REPEATW min, max, sc: REPEAT with bounds stored in EINT instructions of Exprs.
+	OpRepeatWide
+	// SCANW c, min, max: SCAN with bounds stored in EINT instructions of Exprs.
+	OpScanWide
 )
 
 // Expression instructions
@@ -270,6 +289,7 @@ var opNames = map[Op]string{
 	OpCall: "CALL", OpPratt: "PRATT", OpPred: "PRED", OpAssign: "ASSIGN", OpLabel: "LABEL",
 	OpEndLabel: "ENDLABEL", OpRecover: "RECOVER", OpEndRecover: "ENDRECOVER", OpEndSkip: "ENDSKIP",
 	OpReturn: "RETURN", OpEnd: "END", OpScan: "SCAN", OpGuard: "GUARD",
+	OpRepeatWide: "REPEATW", OpScanWide: "SCANW",
 	EInt: "EINT", EStr: "ESTR", EBool: "EBOOL", ENil: "ENIL", ECap: "ECAP", EItem: "EITEM",
 	ELocal: "ELOCAL", EVar: "EVAR", EMember: "EMEMBER", ENew: "ENEW", EBin: "EBIN", EUnary: "EUNARY",
 	EAnd: "EAND", EOr: "EOR", EBoolChk: "EBOOLCHK", EFunc: "EFUNC", ECall: "ECALL", ERet: "ERET",

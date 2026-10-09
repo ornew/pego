@@ -53,6 +53,12 @@ A module consists of the following tables and code sequences.
 
 An instruction consists of an opcode and up to three integer operands, `A`, `B` and `C`. A jump target is the index of an instruction in the same code sequence.
 
+Operands are signed 32-bit integers. Repetition bounds that exceed this range
+use `REPEATW` or `SCANW`, whose bound operands index `EINT` constants in the
+expression code. These constants preserve the full implementation-int range;
+they are read directly, without evaluating an action. Ordinary instructions
+retain their compact representation.
+
 ### Rule table
 
 | Item | Description |
@@ -142,6 +148,8 @@ When an instruction fails, the VM pops entries from the entry stack of the curre
 | 14 | `ATOMIC` | A b | Pop a position and, if b, push a `Match` of the text from that position to the current position. |
 | 15 | `CAPTURE` | A slot, B pop | Write the top value into slot A of the current frame and record the write in the capture trail. If B is 1, also pop the value (a capture in a value-free context). |
 | 16 | `REPEAT` | A min, B max, C scope | Push a repetition state (count 0, value-stack base at the current height). B = -1 means no maximum. C is a scope-table index, or -1 if elements have no scope. When the repetition builds a value, a `PUSHPOS` immediately before it pushes the start position. |
+| 35 | `REPEATW` | A min constant, B max constant, C scope | Like `REPEAT`, with the bounds read from the `EINT` instructions at expression-code indices A and B. The scope, iteration, streaming and resumption semantics are unchanged. Requires instruction set 4. |
+| 36 | `SCANW` | A class, B min constant, C max constant | Like `SCAN`, with the bounds read from the `EINT` instructions at expression-code indices B and C. Requires instruction set 4. |
 | 17 | `ITER` | A exit | If the repetition has a finite maximum and its count has reached it, jump to A without executing the element. Otherwise save the state and push an iteration entry whose target is A (the exit of the loop). If the repetition has a scope, switch to a new frame. |
 | 18 | `NEXT` | A loop, B mode, C slot | One iteration succeeded. Remove the iteration entry and restore the frame. If the repetition has a scope and the mode is 1 or 2, attach the captures to the element value (with mode 0 the scope exists only for predicates inside the element). Increment the count. Mode 0 keeps no value (a value-free repetition), 1 keeps the value, 2 passes the value to the stream consumer, and 3 (instruction set 3) pushes the value of slot C of the element's frame as the element value: a projected repetition, whose elements are matched without values (`map($x, (e) => $e.f)` reads only that field; see `internal/engine/project.go`). Then, if the iteration consumed no input and the count is at least the minimum, or the count has reached the maximum, jump to the exit recorded by `ITER`; otherwise jump to A. |
 | 19 | `ENDREPEAT` | A b | Pop the repetition state. Fail if the count is below the minimum. If b, pop the values above the value-stack base and the start position below them, and push a `List` (fresh). |
@@ -280,7 +288,7 @@ A module is stored in the `.pegoc` version 2 format. Integers are variable-lengt
 |:--|:--|
 | Magic | `PEGOC\x00` (6 bytes) |
 | Version | 1 byte (2) |
-| Instruction-set version | Unsigned integer (3). A runtime loads files of every instruction-set version up to its own: version 2 only adds instructions (118–123), and version 3 `GUARD` (34) and `NEXT` mode 3. |
+| Instruction-set version | Unsigned integer (3 for ordinary modules, 4 when wide bounds are used). A runtime loads files of every instruction-set version up to its own: version 2 adds instructions 118–123, version 3 `GUARD` (34) and `NEXT` mode 3, and version 4 `REPEATW` (35) and `SCANW` (36). |
 | String table | Count, then each string (byte length and UTF-8 bytes), all unsigned. The module's string table is a prefix of this table. |
 | Start rule | String index, unsigned (the empty string means no default start rule) |
 | Package name | String index, unsigned |
@@ -305,6 +313,7 @@ On load, a runtime checks the following and rejects the file if any check fails:
 - The checksum, the version and the instruction-set version are valid, and no data remains after the end.
 - Every reference in the tables and instructions (strings, character classes, scopes, field lists, rules, Pratt tables, expression code, built-in functions) is in range.
 - Every opcode is known, and every flag operand is within its range.
+- Wide bounds reference `EINT` constants, fit the runtime's implementation `int`, and satisfy minimum ≥ 0 and maximum = -1 or maximum ≥ minimum. Wide instructions require instruction-set version 4.
 - Every jump target is forward. Only `NEXT` jumps backward. The target of `EFUNC` is also forward.
 
 A runtime does not verify that instruction sequences use the value stack and the entry stack correctly. Runtime errors caused by invalid code are reported as parse errors, but termination is not guaranteed, so load files only from trusted sources.

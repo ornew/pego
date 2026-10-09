@@ -219,15 +219,19 @@ The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for i
 ## Roadmap
 
 The [living backlog](https://github.com/ornew/pego/issues/1) is the source of individual defects, priorities and
-landing commits. The 2026-10-09 audit found correctness/resource gaps despite the implemented feature coverage above.
+landing commits. Its body lists open work and links to dedicated priority, progress and category completion
+comments. Completed items move to their category comment with the landing commit. The 2026-10-09 audit found
+correctness/resource gaps despite the implemented feature coverage above.
 Action-variable memo keys (C01), interrupted Document cache cleanup (C05), engine memo retirement (C02/P01) and
 nil-action construction tracking cleanup (C03, including generated runtimes) and bounded persistent variable
 bindings (C04/P02, including generated runtimes), safe YAML directive validation (M01) and iterative Pratt depth
 accounting (C06), finite stream/zero repetition bounds (C07) and adjacent-minus formatting integrity (C09) are
 implemented, along with staged in-place formatting writes (T01) and canonical terminal/struct aliases across
-engines, saved grammars and generated parsers (C10). Follow with wider repetition bounds (C08), preserving the
-current grammar specification, then typing/validation and
-incremental-equivalence fixes. Full benchmark
+engines, saved grammars and generated parsers (C10). Full-width repetition bounds (C08) preserve the grammar's
+implementation-int range through compact wide instructions ([design](design/020-wide-repetition-bounds.md)).
+Follow with hidden/indirect left-recursion reuse and dead-alternative semantics (C20/C21), then typing/validation
+and input/stream equivalence fixes. Earlier backlog items now share current category IDs and priorities;
+their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused
 optimization measurements, and correctness-only performance impacts are recorded in commit messages. The full suite
 includes batch, recognition, incremental, stream and preparation workloads.

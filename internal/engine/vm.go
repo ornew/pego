@@ -132,7 +132,7 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 	vm.nseen = numberSeen(vm.rules)
 	vm.runSites = make([]*vmRunSite, len(m.Code))
 	for ip, in := range m.Code {
-		if in.Op == OpRepeat {
+		if in.Op == OpRepeat || in.Op == OpRepeatWide {
 			vm.runSites[ip] = vm.runSite(ip)
 		}
 	}
@@ -421,8 +421,12 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 				ip = int(in.C)
 				continue
 			}
-		case OpScan:
-			count, max := 0, int(in.C)
+		case OpScan, OpScanWide:
+			min, max := int(in.B), int(in.C)
+			if in.Op == OpScanWide {
+				min, max = int(m.Exprs[in.B].integer()), int(m.Exprs[in.C].integer())
+			}
+			count := 0
 			for max < 0 || count < max {
 				ch, size, ok := p.peek()
 				if !ok || in.A >= 0 && !vm.has(in.A, ch) {
@@ -436,7 +440,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 				p.pos += size
 				count++
 			}
-			if count < int(in.B) {
+			if count < min {
 				goto fail
 			}
 		case OpAny:
@@ -520,13 +524,17 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			if in.B == 1 {
 				p.vals = p.vals[:len(p.vals)-1]
 			}
-		case OpRepeat:
-			p.reps = append(p.reps, repState{min: int(in.A), max: int(in.B), scope: int(in.C), base: len(p.vals)})
+		case OpRepeat, OpRepeatWide:
+			min, max := int(in.A), int(in.B)
+			if in.Op == OpRepeatWide {
+				min, max = int(m.Exprs[in.A].integer()), int(m.Exprs[in.B].integer())
+			}
+			p.reps = append(p.reps, repState{min: min, max: max, scope: int(in.C), base: len(p.vals)})
 			if p.runs != nil && p.silent == 0 {
 				if site := vm.runSites[ip]; site != nil {
 					// A Document parse: resume the run of the previous parse (resume.go).
 					r := p.newRunState()
-					p.startRun(r, ip, int(in.A), int(in.B), site.shiftable)
+					p.startRun(r, ip, min, max, site.shiftable)
 					rep := &p.reps[len(p.reps)-1]
 					rep.run = r
 					for el := p.nextPrefix(r); el != nil; el = p.nextPrefix(r) {

@@ -364,14 +364,18 @@ A file carries two version numbers after its magic number:
 | Number | Now | Meaning |
 |:--|--:|:--|
 | Format version | 2 | The layout of the file. A runtime loads files of version 1 and 2 and refuses any other. |
-| Instruction-set version | 3 | The instructions the bytecode may use. A runtime loads files of every instruction-set version up to its own: new versions only add instructions, so older files keep working (they just lack the newer, faster instructions). |
+| Instruction-set version | 3 or 4 | The instructions the bytecode may use. Version 4 adds full-width repetition bounds; modules without them still use version 3. A runtime loads files of every instruction-set version up to its own. |
 
 The consequences:
 
 - **A newer PEGO loads the files of an older one.** It does not make them faster than they were: a file built by an old
   release has the bytecode that release produced.
-- **An older PEGO does not load the files of a newer one.** It reports `unsupported instruction set version` or
-  `unsupported compiled grammar version`.
+- **An older PEGO refuses files requiring a newer format or instruction set.**
+  It reports `unsupported instruction set version` or `unsupported compiled grammar version`.
+  A grammar with bounds above 2³¹−1 requires instruction set 4; ordinary modules
+  retain version 3. A runtime with a narrower implementation `int` rejects
+  bounds outside its range. Recompile older files containing large bounds:
+  their already-truncated bytecode cannot recover the original values.
 - **The same grammar can produce different bytes in a new release**, when the compiler improves. Rebuild the file when
   you upgrade PEGO, as you would regenerate [generated code](code-generation.md#keeping-generated-code-up-to-date).
   The up-to-date test above fails after such an upgrade until you do.
@@ -430,7 +434,7 @@ in a profile, and to generated code when parsing speed does.
 |:--|:--|
 | `not a compiled PEGO grammar` | The data does not start with the magic number: it is a source file, JSON, or something else. |
 | `unsupported compiled grammar version N (want 2)` | The file was written by a different format version. Rebuild it with your release. |
-| `unsupported instruction set version N (want 1 to 3)` | The file was written by a newer release. Upgrade PEGO or rebuild the file. |
+| `unsupported instruction set version N (want 1 to 4)` | The file requires a newer instruction set. Upgrade PEGO or rebuild the file. |
 | `invalid compiled grammar: checksum mismatch` | The file is truncated or changed (a bad download, an editor that converted line endings, a merge). |
 | `invalid compiled grammar: ...` (other) | The structure is wrong, though the checksum matches. Rebuild the file. |
 | `the closure backend needs the grammar, which the compiled grammar omits` | You asked a file without the AST for `Closure`. Use a bytecode backend, or the full file. |

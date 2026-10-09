@@ -270,6 +270,31 @@ func validateModule(m *Module) error {
 			fail("invalid flag %d", b)
 		}
 	}
+	bound := func(index int32) int64 {
+		in("bound expression", int(index), len(m.Exprs))
+		if index < 0 || int(index) >= len(m.Exprs) {
+			return 0
+		}
+		x := m.Exprs[index]
+		if x.Op != EInt {
+			fail("bound expression %d is not EINT", index)
+			return 0
+		}
+		n := x.integer()
+		if int64(int(n)) != n {
+			fail("repetition bound %d exceeds the implementation int range", n)
+		}
+		return n
+	}
+	wideBounds := func(minIndex, maxIndex int32) {
+		min, max := bound(minIndex), bound(maxIndex)
+		if min < 0 {
+			fail("invalid minimum %d", min)
+		}
+		if max < -1 || max >= 0 && max < min {
+			fail("invalid maximum %d for minimum %d", max, min)
+		}
+	}
 	for ip, x := range m.Code {
 		n := len(m.Code)
 		switch x.Op {
@@ -310,6 +335,9 @@ func validateModule(m *Module) error {
 				fail("invalid maximum %d", x.B)
 			}
 			opt("scope", int(x.C), len(m.Scopes))
+		case OpRepeatWide:
+			wideBounds(x.A, x.B)
+			opt("scope", int(x.C), len(m.Scopes))
 		case OpCall:
 			in("rule", int(x.A), len(m.Rules))
 			nonneg(x.B)
@@ -333,6 +361,9 @@ func validateModule(m *Module) error {
 			if x.C < -1 {
 				fail("invalid maximum %d", x.C)
 			}
+		case OpScanWide:
+			opt("class", int(x.A), len(m.Classes))
+			wideBounds(x.B, x.C)
 		default:
 			fail("invalid instruction %d at %d", x.Op, ip)
 		}
