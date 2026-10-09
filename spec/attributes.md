@@ -18,31 +18,9 @@ and unknown arguments are errors.
 
 | Attribute | Description |
 |:--|:--|
-| `#error(message="...")` | Replaces the expected items of a syntax error inside the expression with a message |
+| `#error(message="...")` | Replaces the expected items of a [syntax error](parsing.md#syntax-errors) inside the expression with a message |
 | `#recover(skip=e)` | When the expression fails, skips input matching `e` and continues parsing |
 | `#stream` | In a stream parse, hands each element of a repetition to the caller as soon as it matches |
-
-## Syntax errors
-
-When the input does not match the grammar, the parser reports the **farthest
-position** that parsing reached, together with the items that were expected at
-that position: literals, character classes, `any character` (for `.`) and
-anchors.
-
-```
-1:5: syntax error: expected "(", "-", (?0-9)
-```
-
-- The position is given as a 1-based line and column. The column is counted in
-  the [position unit](overview.md#positions) (code points by default).
-- The expected items are listed in sorted order, without duplicates.
-- Failures inside [lookahead](parser-expressions.md#lookahead) and inside the
-  [`skip` of a Pratt expression](pratt.md#skip) are not included. Predicates
-  and bottom (`_|_`) contribute no expected items.
-- If the start rule matches but input remains, `end of input` is expected at the
-  first unconsumed position.
-- If nothing was expected at the farthest position, the message is just
-  `syntax error`.
 
 ## `#error`
 

@@ -3,7 +3,7 @@
 This guide explains how PEGO reports syntax errors, how to make the messages useful, and how to keep parsing after an
 error so that one run reports every problem in a file. It is a companion to the normative text in
 [spec/attributes.md](../../spec/attributes.md) (`#error`, `#recover` and
-[syntax errors](../../spec/attributes.md#syntax-errors)); the reasoning behind the design is recorded in
+[syntax errors](../../spec/parsing.md#syntax-errors)); the reasoning behind the design is recorded in
 [docs/design/006](../design/006-error-reporting-and-recovery.md).
 
 Contents:
@@ -97,7 +97,7 @@ pego: 1:1: syntax error: expected "(", (?0-9)
 
 Lines and columns are 1-based. A tab counts as one column, and only a line feed starts a new line (in CRLF text, the
 carriage return is the last column of its line). Columns are counted in the
-[position unit](../../spec/overview.md#positions): code points by default, bytes with `-unit bytes`
+[position unit](../../spec/parsing.md#positions): code points by default, bytes with `-unit bytes`
 (`pego.WithUnit(pego.Bytes)` in Go). The two differ only after non-ASCII text:
 
 ```pego

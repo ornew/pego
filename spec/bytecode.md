@@ -1,7 +1,7 @@
 # PEGO Bytecode Specification
 
 This document specifies the bytecode (the *module*) that a PEGO grammar compiles to, and the behavior of the virtual machine (VM) that executes it.
-A runtime for another language must implement this document. For the design background, see [design record 010](../docs/design/010-bytecode-vm.md).
+A runtime for another language must implement this document. The meaning of the language that the bytecode implements is defined by the other chapters of the [specification](README.md); for the results a parse must produce, see [Parsing](parsing.md). For the design background, see [design record 010](../docs/design/010-bytecode-vm.md).
 
 The reference implementation is the Go package `internal/engine` (`bytecode.go`, `bcompile.go` and the VMs in `vm.go` and `ivm.go`). A bytecode VM must produce the same results as the closure backend.
 
@@ -269,7 +269,7 @@ Built-in function indices: 0 `len`, 1 `text`, 2 `foldl`, 3 `foldr`, 4 `map`, 5 `
 
 ## Error messages
 
-A syntax error is formatted as `line:column: syntax error: expected A, B` (expectations sorted lexicographically). If `#error` messages apply, it is formatted as `line:column: message` (multiple messages joined with `; `).
+A syntax error (see [Syntax errors](parsing.md#syntax-errors)) is formatted as `line:column: syntax error: expected A, B` (expectations sorted lexicographically). If `#error` messages apply, it is formatted as `line:column: message` (multiple messages joined with `; `).
 Expectation strings are those the compiler placed in the string table: literals in quotes, character classes in `(?...)` form, `any character`, and so on.
 
 ## File format

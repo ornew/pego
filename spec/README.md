@@ -8,7 +8,9 @@ reports and recovers from syntax errors.
 
 This document is the reference for the grammar language. It describes the
 syntax and meaning of `.pego` grammar files and the results of parsing input
-with them.
+with them. For how to use the language, see the
+[guides](../docs/guide/README.md); for a first tour, see the
+[tutorial](../docs/tutorial/getting-started.md).
 
 > Every feature described in this specification is implemented. The
 > implementation status is tracked in
@@ -18,15 +20,28 @@ with them.
 
 ## Contents
 
-1. [Overview and Grammar Files](overview.md)
-2. [Type System](types.md)
-3. [Parsing Expressions](parser-expressions.md)
-4. [Pratt Expressions](pratt.md)
-5. [Predicates and Variables](predicates.md)
-6. [Actions](actions.md)
-7. [Type Checking](type-checking.md)
-8. [Attributes](attributes.md)
-9. [PEGO Bytecode Specification](bytecode.md)
+The chapters are in reading order: each builds on the ones before it.
+
+| | Chapter | Defines |
+|--:|:--|:--|
+| 1 | [Overview](overview.md) | The main ideas of the language and a complete example grammar |
+| 2 | [Lexical Structure](lexical.md) | Characters, white space, comments, identifiers, keywords, literals, escape sequences, punctuation and adjacency |
+| 3 | [Grammar Files](grammar-files.md) | The package clause, type and rule definitions, names and their scope, errors in a grammar, grammar representations |
+| 4 | [Type System](types.md) | Built-in and reserved types, struct, union and terminal types, names of types, assignability |
+| 5 | [Parsing Expressions](parser-expressions.md) | The expressions that match input, the concrete syntax tree they build, captures, cut, rule calls and left recursion |
+| 6 | [Pratt Expressions](pratt.md) | Operator expressions declared by precedence and associativity |
+| 7 | [Predicates and Variables](predicates.md) | Predicates, variables and their scope, and context-sensitive parsing |
+| 8 | [Actions](actions.md) | Building the value of a rule: captures, `new`, operators and built-in functions |
+| 9 | [Type Checking](type-checking.md) | The type of each expression, type inference and the errors that the checker reports |
+| 10 | [Attributes](attributes.md) | `#error`, `#recover` and `#stream` |
+| 11 | [Parsing](parsing.md) | A parse as a whole: the start rule, input and positions, results and nodes, syntax errors, memoization, limits and modes |
+
+The portable bytecode that a grammar compiles to and the virtual machine that
+runs it are specified separately, for those who port the runtime:
+
+| Document | Defines |
+|:--|:--|
+| [PEGO Bytecode Specification](bytecode.md) | The module (tables and instructions), the VM state, the instruction set, rule calls, left recursion, Pratt expressions, expression code and the `.pegoc` file format |
 
 ## Conventions
 
@@ -35,7 +50,8 @@ as described in [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119). They are
 used only where a requirement is normative; most of this specification states
 the behavior of the language in plain declarative sentences.
 
-Grammar examples are written in ` ```pego ` code blocks. Syntax summaries use
+Grammar examples are written in ` ```pego ` code blocks. Output of the `pego`
+command that an example shows is the output of running that command. Syntax summaries use
 angle brackets for placeholders (`<name>`), square brackets for optional parts
 (`[: <type>]`) and `|` for alternatives.
 

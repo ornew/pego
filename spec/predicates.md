@@ -64,7 +64,7 @@ Predicates use the same operators and built-in functions as
 
 | Function | Description |
 |:--|:--|
-| `len(x)` | The number of elements of a list, or the length of a string or a terminal in the [position unit](overview.md#positions) |
+| `len(x)` | The number of elements of a list, or the length of a string or a terminal in the [position unit](parsing.md#positions) |
 | `text(x)` | The input text that the node `x` covers |
 
 Nodes that a predicate creates (for example with `new`) are discarded after the

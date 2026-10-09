@@ -63,7 +63,7 @@ Action expressions operate on the following values.
 | Function | `(acc, i) => ...` (only as an argument of `foldl`, `foldr` and `map`) |
 
 String literals in actions use the same escape sequences as string literals in
-parsing expressions (see [Literals](overview.md#literals)). Integer literals are
+parsing expressions (see [Escape sequences](lexical.md#escape-sequences)). Integer literals are
 decimal; a negative number is written with the unary `-` operator.
 
 A list is a `List` node. Lists are produced by repetitions and by the built-in
@@ -118,7 +118,7 @@ The following fields are available on every node:
 
 | Field | Type | Value |
 |:--|:--|:--|
-| `startPos` | `int` | The start position of the node in the [position unit](overview.md#positions) |
+| `startPos` | `int` | The start position of the node in the [position unit](parsing.md#positions) |
 | `endPos` | `int` | The end position of the node (exclusive) |
 | `children` | `[]*node` | The children of a `Seq`, `List` or `Operator` node; empty for other nodes |
 
@@ -158,7 +158,7 @@ Parentheses group subexpressions.
 
 | Function | Description |
 |:--|:--|
-| `len(x)` | The length of a string or a terminal in the [position unit](overview.md#positions); for any other node, the number of children; `0` for `nil` |
+| `len(x)` | The length of a string or a terminal in the [position unit](parsing.md#positions); for any other node, the number of children; `0` for `nil` |
 | `text(x)` | The input text that the node `x` covers (for a terminal, its text); `""` for `nil` |
 | `foldl(init, list, (acc, item) => ...)` | Folds `list` from the left |
 | `foldr(init, list, (acc, item) => ...)` | Folds `list` from the right |

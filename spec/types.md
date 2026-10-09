@@ -12,8 +12,8 @@ offending construct.
 
 | Type | Description |
 |:--|:--|
-| `int` | An integer. Positions in the input are also `int` values (see [Positions](overview.md#positions)). |
-| `string` | A string. `len` measures its length in the [position unit](overview.md#positions). |
+| `int` | An integer. Positions in the input are also `int` values (see [Positions](parsing.md#positions)). |
+| `string` | A string. `len` measures its length in the [position unit](parsing.md#positions). |
 | `bool` | A boolean. |
 | `node` | Any node. |
 | `terminal` | Any terminal: a `Match` node or a node of a terminal type. |
@@ -58,7 +58,7 @@ Identifiers that begin with a lowercase letter are reserved for the built-in
 types (`int`, `string`, `bool`, `node`, `terminal`). The names of the reserved
 node types (`Match`, `Seq`, `List`, `Operator`, `Error`) MUST NOT be defined.
 Each type name MUST be defined at most once, and types and rules have separate
-namespaces.
+namespaces (see [Names](grammar-files.md#names)).
 
 ## Type definitions
 

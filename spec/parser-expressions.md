@@ -44,8 +44,8 @@ The following rules determine the shape of the tree.
    which appears as a child.
 4. **Suppressed construction.** Atomic (`@a`) and discard (`-a`) do not build
    the values of their operands, which saves work and keeps the tree small.
-5. **Whole input.** The [start rule](overview.md#start-rule) MUST match the
-   entire input; remaining input is a syntax error.
+5. **Whole input.** A parse succeeds only if the [start rule](parsing.md#start-rule)
+   matches the entire input; see [Parsing](parsing.md#whole-input).
 
 The reasons for making choices transparent are recorded in
 [docs/design/002](../docs/design/002-transparent-choice.md).
@@ -131,7 +131,7 @@ Inside a character class:
   `(` and `?`, need no escape.
 - `^` immediately after `(?` negates the class; elsewhere it is literal.
 - Whitespace is literal: `(? \t)` matches a space or a tab.
-- The escape sequences of [string literals](overview.md#literals) are
+- The escape sequences of [string literals](lexical.md#escape-sequences) are
   available.
 - A class MUST contain at least one item and MUST NOT span lines.
 
@@ -254,7 +254,7 @@ def ident = !"if" (?a-z)+
 Captures and variable definitions made inside a positive lookahead remain in
 effect after it; only the input position is restored. A negative lookahead MUST
 NOT contain captures. Failures inside a lookahead are not included in the
-expected items of a [syntax error](attributes.md#syntax-errors).
+expected items of a [syntax error](parsing.md#syntax-errors).
 
 ## Controlling construction
 
