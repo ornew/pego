@@ -73,6 +73,10 @@ the server. `#example=<name>` opens an example by name, for example `playground/
 Following another shared link in the same page restores every option, including the start rule and result tab,
 even when grammar and input are unchanged. Changes to parsing options trigger a new parse; tab-only navigation
 preserves the editors and shows the existing result without reparsing (the Go tab generates code).
+If editing, sharing or navigation overlaps compression or link loading, the most recent action wins. Older work
+cannot replace its state or URL. Share copies its own completed link; a request superseded by a later action does
+not copy. The landing page's live-example link likewise follows the newest input. If encoding or decoding fails,
+the existing state/link is retained and the browser console reports the failure.
 
 Code blocks of grammars in this documentation have a **Playground** button that opens them in the playground.
 
@@ -179,7 +183,9 @@ it). The landing page loads it only when its live example scrolls into view.
 The site is a separate Go module, so `go test ./...` at the root does not run its tests.
 The playground state tests execute the actual application with a controlled DOM, client and timers. They check
 incoming option-only links, omitted/invalid option defaults, parse requests, tabs, editor scroll and named examples;
-they do not replace checks in a browser with the real WebAssembly worker.
+deferred encoding/decoding tests also cover reverse completion, Share, navigation before event delivery, autosave
+during link loading, local edits during initial example fetching, and failures in both playground and landing scripts.
+They do not replace checks in a browser with the real WebAssembly worker.
 `node site/testdata/bench_playground_state.mjs [app.js]` measures unchanged-link dispatch in that harness, with
 10,000 warmups and 100,000 measured events. The optional application path compares another revision. Immediate
 decoding excludes compression/encoding, browser DOM, worker and WebAssembly costs.

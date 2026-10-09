@@ -14,6 +14,7 @@ if (live && input && output) {
   const client = new PegoClient(siteRoot() + "playground/");
   let timer = 0;
   let seq = 0;
+  let linkVersion = 0;
 
   const setStatus = (text, cls) => {
     status.textContent = text;
@@ -47,7 +48,14 @@ if (live && input && output) {
   };
 
   const updateLink = async () => {
-    open.href = siteRoot() + "playground/#" + (await encodeState({ g: grammar, i: input.value }));
+    const version = ++linkVersion;
+    const text = input.value;
+    try {
+      const hash = await encodeState({ g: grammar, i: text });
+      if (version === linkVersion && input.value === text) open.href = siteRoot() + "playground/#" + hash;
+    } catch (err) {
+      if (version === linkVersion) console.warn("pego: cannot update the playground link:", err);
+    }
   };
 
   input.addEventListener("input", () => {

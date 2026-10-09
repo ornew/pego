@@ -109,6 +109,15 @@ Grammar, input, start rule, position unit, backend and recognition changes trigg
 unchanged editors and reuse the result, with code generation on the Go tab. Controlled application-wiring tests
 exercise the hashchange handler and distinguish parse requests from presentation-only navigation.
 
+Asynchronous URL work belongs to the most recent user action. Editing, changing options or tabs, choosing an example,
+sharing, and following a link invalidate older encodes and decodes immediately, before debounce timers or compression
+finish. An incoming link blocks autosaves from older parse completions until it is applied or superseded by a local
+action. Initial decoding and example fetching follow the same rule, so they cannot replace later edits or navigation.
+Writes check both the action revision and the adopted fragment: navigation changes the fragment before delivering
+`hashchange`, and an old timer must not publish during that interval. Share copies only its own successfully published
+link; a superseded request does not copy. The landing page's live-example link also keeps only the newest input's
+encoding. Encoding and decoding failures leave the existing state/link intact and report a console warning.
+
 ### The site generator (`site/`)
 
 The generator is a Go program in its own module, `github.com/ornew/pego/site`, with one dependency: the Markdown
@@ -179,6 +188,10 @@ example is about to become visible.
   byte positions, `fmt` and `gen -types` with the command. It is skipped without Node and in `-short` mode.
 - `site/site_test.go` builds the whole site and checks that every document became a page, that the landing page,
   the reference and the search index are complete, that no page needs inline code, and that no link is broken.
+- `site/testdata/state_ordering_test.mjs` executes the actual playground and landing scripts with deferred encoding,
+  decoding and example fetching. It controls completion order across edits, options, tabs, examples, Share, startup
+  and navigation, including fragment changes before event delivery and error paths. Real browser checks complement
+  these controlled DOM/client/timer tests with the WebAssembly worker.
 
 ## Alternatives considered
 

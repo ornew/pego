@@ -635,8 +635,10 @@ $("pg-outline").addEventListener("click", (e) => {
   if (!b) return;
   if (b.dataset.line) grammarEditor.focusAt(lineColOffset(grammarEditor.value, +b.dataset.line, +b.dataset.col));
   if (b.dataset.start) {
+    changeState();
     requestedStart = b.dataset.start;
     scheduleParse(0);
+    saveState();
   }
 });
 
@@ -684,7 +686,8 @@ for (const id of ["gen-package", "gen-types", "gen-recognize"]) $(id).addEventLi
 
 let activeTab = "tree";
 const tabs = ["tree", "json", "sexpr", "grammar", "go"];
-function selectTab(name) {
+function selectTab(name, persist = true) {
+  if (persist) changeState();
   activeTab = name;
   for (const t of tabs) {
     $("tab-" + t).setAttribute("aria-selected", String(t === name));
@@ -692,7 +695,7 @@ function selectTab(name) {
     $("panel-" + t).hidden = t !== name;
   }
   if (name === "go") generate();
-  saveState();
+  if (persist) saveState();
 }
 for (const t of tabs) $("tab-" + t).addEventListener("click", () => selectTab(t));
 document.querySelector(".tabs").addEventListener("keydown", (e) => {
@@ -731,20 +734,69 @@ async function copyText(text, button) {
 // ---------------------------------------------------------------- State in the URL
 
 let saveTimer = 0;
+let stateVersion = 0;
+let loadingVersion = null;
+// Only navigation whose event has been handled may replace the current UI.
+let stateHash = location.hash;
+let examplesReady;
+
+// Invalidate old work at the user's intent, before the next debounce/encode.
+function changeState() {
+  clearTimeout(saveTimer);
+  loadingVersion = null;
+  return ++stateVersion;
+}
+
 function saveState() {
+  // An older parse finishing during navigation must not save the old UI.
+  if (loadingVersion !== null) return;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(writeHash, 400);
 }
 
 async function writeHash() {
+  const version = stateVersion;
+  const previousHash = stateHash;
+  if (location.hash !== previousHash) return null;
   const s = { g: grammarEditor.value, i: inputEditor.value };
   if (requestedStart) s.s = requestedStart;
   if (unitSelect.value !== "codepoints") s.u = unitSelect.value;
   if (backendSelect.value) s.b = backendSelect.value;
   if (recognizeBox.checked) s.r = 1;
   if (activeTab !== "tree") s.t = activeTab;
-  const hash = "#" + (await encodeState(s));
+  let hash;
+  try {
+    hash = "#" + (await encodeState(s));
+  } catch (err) {
+    if (version === stateVersion) console.warn("pego: cannot save the state in the URL:", err);
+    return null;
+  }
+  if (version !== stateVersion || loadingVersion !== null) return null;
+  // Navigation changes the fragment before its hashchange event is delivered.
+  // Another writer for this same state may already have installed this hash.
+  if (location.hash !== previousHash && location.hash !== hash) return null;
   if (location.hash !== hash) history.replaceState(null, "", hash);
+  stateHash = hash;
+  return location.href;
+}
+
+async function loadHash(hash, version, initial = false) {
+  let s;
+  try {
+    s = await decodeState(hash);
+  } catch (err) {
+    if (version === stateVersion) console.warn("pego: cannot read the state in the URL:", err);
+  }
+  if (initial || s?.example) await examplesReady;
+  if (version !== stateVersion || location.hash !== hash) return;
+  loadingVersion = null;
+  if (s?.example) {
+    if (!loadExample(s.example) && initial && examples.length) loadExample(examples[0].name);
+  } else if (s) {
+    if (applyState(s) && !initial) scheduleParse(0);
+  } else if (initial && examples.length) {
+    loadExample(examples[0].name);
+  }
 }
 
 function applyState(s) {
@@ -766,7 +818,7 @@ function applyState(s) {
   recognizeBox.checked = recognize;
   if (s.u || s.b || s.r) document.querySelector(".pg-options").open = true;
   const tab = tabs.includes(s.t) ? s.t : "tree";
-  if (tab !== activeTab) selectTab(tab);
+  if (tab !== activeTab) selectTab(tab, false);
   return changed;
 }
 
@@ -782,22 +834,34 @@ function loadExample(name) {
 // ---------------------------------------------------------------- Wiring
 
 grammarEditor.ta.addEventListener("input", () => {
+  changeState();
   exampleSelect.value = "";
   scheduleParse();
   saveState();
 });
 inputEditor.ta.addEventListener("input", () => {
+  changeState();
   updateInputMarks(); // drops marks that no longer match the text
   scheduleParse();
   saveState();
 });
-for (const el of [unitSelect, backendSelect, recognizeBox]) el.addEventListener("change", () => scheduleParse(0));
+for (const el of [unitSelect, backendSelect, recognizeBox]) el.addEventListener("change", () => {
+  changeState();
+  scheduleParse(0);
+  saveState();
+});
 startSelect.addEventListener("change", () => {
+  changeState();
   requestedStart = startSelect.value;
   scheduleParse(0);
+  saveState();
 });
 exampleSelect.addEventListener("change", () => {
-  if (exampleSelect.value) loadExample(exampleSelect.value);
+  if (exampleSelect.value) {
+    changeState();
+    loadExample(exampleSelect.value);
+    saveState();
+  }
 });
 
 // Moving the caret in the input shows the node under it.
@@ -825,16 +889,17 @@ $("pg-format").addEventListener("click", async () => {
 });
 
 $("pg-share").addEventListener("click", async () => {
-  clearTimeout(saveTimer);
-  await writeHash();
-  await copyText(location.href, $("pg-share"));
+  changeState();
+  const href = await writeHash();
+  if (href) await copyText(href, $("pg-share"));
 });
 
-window.addEventListener("hashchange", async () => {
-  const s = await decodeState(location.hash);
-  if (!s) return;
-  if (s.example) loadExample(s.example);
-  else if (applyState(s)) scheduleParse(0);
+window.addEventListener("hashchange", () => {
+  const hash = location.hash;
+  const version = changeState();
+  stateHash = hash;
+  loadingVersion = version;
+  return loadHash(hash, version);
 });
 
 client.onrestart = (reason) => {
@@ -842,25 +907,23 @@ client.onrestart = (reason) => {
 };
 
 async function init() {
-  try {
-    examples = await (await fetch("examples.json")).json();
-  } catch {
-    examples = [];
-  }
-  for (const ex of examples) {
-    const o = document.createElement("option");
-    o.value = ex.name;
-    o.textContent = `${ex.name} — ${ex.description}`;
-    exampleSelect.append(o);
-  }
-  const s = await decodeState(location.hash);
-  if (s?.example && loadExample(s.example)) {
-    // loaded
-  } else if (s && !s.example) {
-    applyState(s);
-  } else if (examples.length) {
-    loadExample(examples[0].name);
-  }
+  const hash = location.hash;
+  const version = changeState();
+  loadingVersion = version;
+  examplesReady = (async () => {
+    try {
+      examples = await (await fetch("examples.json")).json();
+    } catch {
+      examples = [];
+    }
+    for (const ex of examples) {
+      const o = document.createElement("option");
+      o.value = ex.name;
+      o.textContent = `${ex.name} — ${ex.description}`;
+      exampleSelect.append(o);
+    }
+  })();
+  await loadHash(hash, version, true);
   grammarEditor.render();
   inputEditor.render();
   try {
@@ -871,7 +934,7 @@ async function init() {
     setStatus("error", `✗ The parser could not be loaded: ${escapeHTML(err.message || String(err))}`);
     return;
   }
-  scheduleParse(0);
+  if (loadingVersion === null) scheduleParse(0);
 }
 
 init();

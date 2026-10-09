@@ -6,7 +6,7 @@ import * as highlighting from "../static/assets/highlight.js";
 import { decodeState, encodeState } from "../static/assets/state.js";
 import { describeResult } from "../static/playground/status.js";
 
-class Element {
+export class Element {
   value = "";
   checked = false;
   textContent = "";
@@ -26,7 +26,8 @@ class Element {
   querySelectorAll() { return []; }
 }
 
-export async function playground({ state, app, decode = decodeState, encode = encodeState } = {}) {
+export async function playground({ state, app, decode = decodeState, encode = encodeState,
+  waitForInit = true, fetchExamples } = {}) {
   const elements = new Map();
   const el = (id) => {
     if (!elements.has(id)) elements.set(id, new Element());
@@ -43,9 +44,11 @@ export async function playground({ state, app, decode = decodeState, encode = en
     getElementById: el, querySelector: el, createElement: () => new Element(),
     addEventListener() {},
   };
-  const listeners = {}, timers = new Map(), calls = [], writes = [];
+  const listeners = {}, timers = new Map(), calls = [], writes = [], copies = [], warnings = [];
   let timerID = 0;
   const location = { hash: state ? "#" + await encodeState(state) : "" };
+  Object.defineProperty(location, "href", { get: () => "https://example.test/playground/" + location.hash });
+  el("pg-share").textContent = "Share";
   class PegoClient {
     async start() { return { module: "controlled", go: "controlled" }; }
     async call(method, req) {
@@ -59,10 +62,12 @@ export async function playground({ state, app, decode = decodeState, encode = en
   }
   const context = vm.createContext({
     ...highlighting, decodeState: decode, encodeState: encode, describeResult,
-    PegoClient, siteRoot: () => "/", document, location, console,
+    PegoClient, siteRoot: () => "/", document, location,
+    console: { ...console, warn: (...args) => warnings.push(args) },
+    navigator: { clipboard: { writeText: async (text) => copies.push(text) } },
     window: { addEventListener: (name, fn) => { listeners[name] = fn; } },
     history: { replaceState: (_, __, hash) => { location.hash = hash; writes.push(hash); } },
-    fetch: async () => ({ json: async () => [{ name: "sample", grammar: 'def main = "a"', input: "a" }] }),
+    fetch: fetchExamples || (async () => ({ json: async () => [{ name: "sample", grammar: 'def main = "a"', input: "a" }] })),
     setTimeout: (fn, delay) => { timers.set(++timerID, { fn, delay }); return timerID; },
     clearTimeout: (id) => timers.delete(id),
   });
@@ -70,13 +75,16 @@ export async function playground({ state, app, decode = decodeState, encode = en
   // Bind the four imported dependencies above; execute all remaining source,
   // including init and the real hashchange listener, without copying functions.
   const script = new vm.Script(source.replace(/^import .*;\n/gm, ""), { filename: "playground/app.js" });
-  await script.runInContext(context);
+  const initialization = script.runInContext(context);
   const flush = async (delay) => {
     for (const [id, timer] of [...timers]) if (timer.delay === delay && timers.delete(id)) await timer.fn();
   };
-  await flush(0);
-  return {
-    el, calls, writes, timers, location, flush, context,
+  const ready = initialization.then(() => flush(0));
+  const h = {
+    el, calls, writes, copies, warnings, timers, location, flush, context, ready,
+    async event(id, name, event = {}) {
+      for (const fn of el(id).listeners[name] || []) await fn(event);
+    },
     async hash(state) {
       location.hash = "#" + await encodeState(state);
       await listeners.hashchange();
@@ -84,4 +92,6 @@ export async function playground({ state, app, decode = decodeState, encode = en
     },
     dispatchHash: () => listeners.hashchange(),
   };
+  if (waitForInit) await ready;
+  return h;
 }
