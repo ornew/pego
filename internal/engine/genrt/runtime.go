@@ -1311,6 +1311,7 @@ func (p *parser) useCtx(c actx) *actx {
 
 func (c *actx) result(action func(*actx) any, where string) (n *Node) {
 	defer func() {
+		c.p.dropCreated(c.cbase)
 		if x := recover(); x != nil {
 			e, ok := x.(evalError)
 			if !ok {
@@ -1333,17 +1334,22 @@ func (c *actx) result(action func(*actx) any, where string) (n *Node) {
 			break
 		}
 	}
-	c.p.created = c.p.created[:c.cbase]
 	if n != nil {
 		n.fresh = false // the value of an action is final (see the engine's actionResult)
 	}
 	return n
 }
 
+// dropCreated releases tracking references without changing the created values.
+func (p *parser) dropCreated(base int) {
+	clear(p.created[base:])
+	p.created = p.created[:base]
+}
+
 func (p *parser) predicate(t func(*actx) any) (ok bool) {
 	base, kids := len(p.created), len(p.kidStack)
 	defer func() {
-		p.created = p.created[:base] // drop nodes created by the predicate
+		p.dropCreated(base)
 		if x := recover(); x != nil {
 			if _, isEval := x.(evalError); !isEval {
 				panic(x)
@@ -1363,7 +1369,7 @@ func (p *parser) predicate(t func(*actx) any) (ok bool) {
 func (p *parser) assign(name string, t func(*actx) any) (ok bool) {
 	base, kids := len(p.created), len(p.kidStack)
 	defer func() {
-		p.created = p.created[:base] // drop nodes created by the predicate
+		p.dropCreated(base)
 		if x := recover(); x != nil {
 			if _, isEval := x.(evalError); !isEval {
 				panic(x)

@@ -871,7 +871,7 @@ func (vm *vmProgram) evaluator(entry int, operator bool) evaluator {
 func (vm *vmProgram) predicate(p *parser, entry int) bool {
 	ctx := p.useCtx(evalCtx{p: p, frame: p.frame, start: p.pos, end: p.pos, cbase: len(p.created)})
 	v, err := vm.eval(ctx, entry, nil)
-	p.created = p.created[:ctx.cbase] // discard nodes created by the predicate
+	p.dropCreated(ctx.cbase)
 	if err != nil {
 		return false
 	}
@@ -884,7 +884,7 @@ func (vm *vmProgram) predicate(p *parser, entry int) bool {
 func (vm *vmProgram) assign(p *parser, name string, entry int) bool {
 	ctx := p.useCtx(evalCtx{p: p, frame: p.frame, start: p.pos, end: p.pos, cbase: len(p.created)})
 	v, err := vm.eval(ctx, entry, nil)
-	p.created = p.created[:ctx.cbase] // discard nodes created by the predicate
+	p.dropCreated(ctx.cbase)
 	if err != nil {
 		return false
 	}

@@ -1308,6 +1308,7 @@ func (p *parser) useCtx(c actx) *actx {
 
 func (c *actx) result(action func(*actx) any, where string) (n *Node) {
 	defer func() {
+		c.p.dropCreated(c.cbase)
 		if x := recover(); x != nil {
 			e, ok := x.(evalError)
 			if !ok {
@@ -1330,17 +1331,22 @@ func (c *actx) result(action func(*actx) any, where string) (n *Node) {
 			break
 		}
 	}
-	c.p.created = c.p.created[:c.cbase]
 	if n != nil {
 		n.fresh = false // the value of an action is final (see the engine's actionResult)
 	}
 	return n
 }
 
+// dropCreated releases tracking references without changing the created values.
+func (p *parser) dropCreated(base int) {
+	clear(p.created[base:])
+	p.created = p.created[:base]
+}
+
 func (p *parser) predicate(t func(*actx) any) (ok bool) {
 	base, kids := len(p.created), len(p.kidStack)
 	defer func() {
-		p.created = p.created[:base] // drop nodes created by the predicate
+		p.dropCreated(base)
 		if x := recover(); x != nil {
 			if _, isEval := x.(evalError); !isEval {
 				panic(x)
@@ -1360,7 +1366,7 @@ func (p *parser) predicate(t func(*actx) any) (ok bool) {
 func (p *parser) assign(name string, t func(*actx) any) (ok bool) {
 	base, kids := len(p.created), len(p.kidStack)
 	defer func() {
-		p.created = p.created[:base] // drop nodes created by the predicate
+		p.dropCreated(base)
 		if x := recover(); x != nil {
 			if _, isEval := x.(evalError); !isEval {
 				panic(x)
@@ -2857,28 +2863,35 @@ func (c *tctx) result(action func(*tctx) any, where string) (n any) {
 // finish checks and finishes the value v of an action (see result): a struct the action made
 // takes the rule's range, and the value is no longer fresh.
 func (c *tctx) finish(v any) any {
+	t := asTval(v)
+	if t != nil {
+		for _, x := range c.p.created[c.cbase:] {
+			if x == t {
+				t.tsetSpan(c.start, c.end)
+				break
+			}
+		}
+	}
+	c.p.dropCreated(c.cbase)
 	if v == nil {
 		return nil
 	}
-	t := asTval(v)
 	if t == nil {
 		evalErrorf("result must be a node, got %s", ttypeName(v))
 	}
-	for _, x := range c.p.created[c.cbase:] {
-		if x == t {
-			t.tsetSpan(c.start, c.end)
-			break
-		}
-	}
-	c.p.created = c.p.created[:c.cbase]
 	t.tsetFresh(false)
 	return t
+}
+
+func (p *tparser) dropCreated(base int) {
+	clear(p.created[base:])
+	p.created = p.created[:base]
 }
 
 func (p *tparser) predicate(t func(*tctx) any) (ok bool) {
 	base, kids := len(p.created), len(p.kidStack)
 	defer func() {
-		p.created = p.created[:base]
+		p.dropCreated(base)
 		if x := recover(); x != nil {
 			if _, isEval := x.(evalError); !isEval {
 				panic(x)
@@ -2898,7 +2911,7 @@ func (p *tparser) predicate(t func(*tctx) any) (ok bool) {
 func (p *tparser) assign(name string, t func(*tctx) any) (ok bool) {
 	base, kids := len(p.created), len(p.kidStack)
 	defer func() {
-		p.created = p.created[:base]
+		p.dropCreated(base)
 		if x := recover(); x != nil {
 			if _, isEval := x.(evalError); !isEval {
 				panic(x)
@@ -145269,7 +145282,7 @@ L21:
 		}()
 		return tmk_FieldList(c, true, f_13156)
 	}()
-	p.created = p.created[:c.cbase]
+	p.dropCreated(c.cbase)
 	p.depth--
 	return v, true
 fail:
@@ -148655,7 +148668,7 @@ L39:
 		f_13200 := k34
 		return tmk_FuncDecl(c, true, f_13194, f_13195, f_13196, f_13200)
 	}()
-	p.created = p.created[:c.cbase]
+	p.dropCreated(c.cbase)
 	p.depth--
 	return v, true
 fail:
@@ -149917,7 +149930,7 @@ func (p *tparser) i60() (any, bool) {
 		f_13224 := c.list(func() any { f_13225 := k1; return tmk_Field(c, false, nil, f_13225, nil) }())
 		return tmk_FieldList(c, true, f_13224)
 	}()
-	p.created = p.created[:c.cbase]
+	p.dropCreated(c.cbase)
 	p.depth--
 	return v, true
 fail:
@@ -154706,7 +154719,7 @@ func (p *tparser) i112() (any, bool) {
 		})
 		return tmk_Field(c, true, nil, f_13358, nil)
 	}()
-	p.created = p.created[:c.cbase]
+	p.dropCreated(c.cbase)
 	p.depth--
 	return v, true
 fail:

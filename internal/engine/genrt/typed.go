@@ -849,28 +849,35 @@ func (c *tctx) result(action func(*tctx) any, where string) (n any) {
 // finish checks and finishes the value v of an action (see result): a struct the action made
 // takes the rule's range, and the value is no longer fresh.
 func (c *tctx) finish(v any) any {
+	t := asTval(v)
+	if t != nil {
+		for _, x := range c.p.created[c.cbase:] {
+			if x == t {
+				t.tsetSpan(c.start, c.end)
+				break
+			}
+		}
+	}
+	c.p.dropCreated(c.cbase)
 	if v == nil {
 		return nil
 	}
-	t := asTval(v)
 	if t == nil {
 		evalErrorf("result must be a node, got %s", ttypeName(v))
 	}
-	for _, x := range c.p.created[c.cbase:] {
-		if x == t {
-			t.tsetSpan(c.start, c.end)
-			break
-		}
-	}
-	c.p.created = c.p.created[:c.cbase]
 	t.tsetFresh(false)
 	return t
+}
+
+func (p *tparser) dropCreated(base int) {
+	clear(p.created[base:])
+	p.created = p.created[:base]
 }
 
 func (p *tparser) predicate(t func(*tctx) any) (ok bool) {
 	base, kids := len(p.created), len(p.kidStack)
 	defer func() {
-		p.created = p.created[:base]
+		p.dropCreated(base)
 		if x := recover(); x != nil {
 			if _, isEval := x.(evalError); !isEval {
 				panic(x)
@@ -890,7 +897,7 @@ func (p *tparser) predicate(t func(*tctx) any) (ok bool) {
 func (p *tparser) assign(name string, t func(*tctx) any) (ok bool) {
 	base, kids := len(p.created), len(p.kidStack)
 	defer func() {
-		p.created = p.created[:base]
+		p.dropCreated(base)
 		if x := recover(); x != nil {
 			if _, isEval := x.(evalError); !isEval {
 				panic(x)

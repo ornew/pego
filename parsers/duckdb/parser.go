@@ -1308,6 +1308,7 @@ func (p *parser) useCtx(c actx) *actx {
 
 func (c *actx) result(action func(*actx) any, where string) (n *Node) {
 	defer func() {
+		c.p.dropCreated(c.cbase)
 		if x := recover(); x != nil {
 			e, ok := x.(evalError)
 			if !ok {
@@ -1330,17 +1331,22 @@ func (c *actx) result(action func(*actx) any, where string) (n *Node) {
 			break
 		}
 	}
-	c.p.created = c.p.created[:c.cbase]
 	if n != nil {
 		n.fresh = false // the value of an action is final (see the engine's actionResult)
 	}
 	return n
 }
 
+// dropCreated releases tracking references without changing the created values.
+func (p *parser) dropCreated(base int) {
+	clear(p.created[base:])
+	p.created = p.created[:base]
+}
+
 func (p *parser) predicate(t func(*actx) any) (ok bool) {
 	base, kids := len(p.created), len(p.kidStack)
 	defer func() {
-		p.created = p.created[:base] // drop nodes created by the predicate
+		p.dropCreated(base)
 		if x := recover(); x != nil {
 			if _, isEval := x.(evalError); !isEval {
 				panic(x)
@@ -1360,7 +1366,7 @@ func (p *parser) predicate(t func(*actx) any) (ok bool) {
 func (p *parser) assign(name string, t func(*actx) any) (ok bool) {
 	base, kids := len(p.created), len(p.kidStack)
 	defer func() {
-		p.created = p.created[:base] // drop nodes created by the predicate
+		p.dropCreated(base)
 		if x := recover(); x != nil {
 			if _, isEval := x.(evalError); !isEval {
 				panic(x)
@@ -2857,28 +2863,35 @@ func (c *tctx) result(action func(*tctx) any, where string) (n any) {
 // finish checks and finishes the value v of an action (see result): a struct the action made
 // takes the rule's range, and the value is no longer fresh.
 func (c *tctx) finish(v any) any {
+	t := asTval(v)
+	if t != nil {
+		for _, x := range c.p.created[c.cbase:] {
+			if x == t {
+				t.tsetSpan(c.start, c.end)
+				break
+			}
+		}
+	}
+	c.p.dropCreated(c.cbase)
 	if v == nil {
 		return nil
 	}
-	t := asTval(v)
 	if t == nil {
 		evalErrorf("result must be a node, got %s", ttypeName(v))
 	}
-	for _, x := range c.p.created[c.cbase:] {
-		if x == t {
-			t.tsetSpan(c.start, c.end)
-			break
-		}
-	}
-	c.p.created = c.p.created[:c.cbase]
 	t.tsetFresh(false)
 	return t
+}
+
+func (p *tparser) dropCreated(base int) {
+	clear(p.created[base:])
+	p.created = p.created[:base]
 }
 
 func (p *tparser) predicate(t func(*tctx) any) (ok bool) {
 	base, kids := len(p.created), len(p.kidStack)
 	defer func() {
-		p.created = p.created[:base]
+		p.dropCreated(base)
 		if x := recover(); x != nil {
 			if _, isEval := x.(evalError); !isEval {
 				panic(x)
@@ -2898,7 +2911,7 @@ func (p *tparser) predicate(t func(*tctx) any) (ok bool) {
 func (p *tparser) assign(name string, t func(*tctx) any) (ok bool) {
 	base, kids := len(p.created), len(p.kidStack)
 	defer func() {
-		p.created = p.created[:base]
+		p.dropCreated(base)
 		if x := recover(); x != nil {
 			if _, isEval := x.(evalError); !isEval {
 				panic(x)
@@ -460933,7 +460946,7 @@ func (p *tparser) i183() (any, bool) {
 		f_33163 := k5
 		return tmk_TypedLit(c, true, f_33160, f_33163)
 	}()
-	p.created = p.created[:c.cbase]
+	p.dropCreated(c.cbase)
 	p.depth--
 	return v, true
 fail:
@@ -465856,7 +465869,7 @@ L6:
 		f_33257 := k7
 		return tmk_TypedLit(c, true, f_33255, f_33257)
 	}()
-	p.created = p.created[:c.cbase]
+	p.dropCreated(c.cbase)
 	p.depth--
 	return v, true
 fail:
@@ -465988,7 +466001,7 @@ L3:
 		f_33263 := k6
 		return tmk_TypedLit(c, true, f_33261, f_33263)
 	}()
-	p.created = p.created[:c.cbase]
+	p.dropCreated(c.cbase)
 	p.depth--
 	return v, true
 fail:
@@ -483198,7 +483211,7 @@ L29:
 		f_33583 := c.text(k26)
 		return tmk_IndexElem(c, true, f_33578, f_33580, f_33581, f_33582, f_33583)
 	}()
-	p.created = p.created[:c.cbase]
+	p.dropCreated(c.cbase)
 	p.depth--
 	return v, true
 fail:
@@ -488289,7 +488302,7 @@ L10:
 		f_33687 := k7
 		return tmk_Reloption(c, true, f_33685, nil, f_33687)
 	}()
-	p.created = p.created[:c.cbase]
+	p.dropCreated(c.cbase)
 	p.depth--
 	return v, true
 fail:
@@ -503214,7 +503227,7 @@ func (p *tparser) i548() (any, bool) {
 		f_34026 := k6
 		return tmk_RenameStmt(c, true, f_34023, nil, f_34024, nil, nil, f_34026)
 	}()
-	p.created = p.created[:c.cbase]
+	p.dropCreated(c.cbase)
 	p.depth--
 	return v, true
 fail:
@@ -504586,7 +504599,7 @@ L31:
 		f_34064 := c.text(k28)
 		return tmk_DropStmt(c, true, f_34059, f_34060, f_34061, f_34063, f_34064)
 	}()
-	p.created = p.created[:c.cbase]
+	p.dropCreated(c.cbase)
 	p.depth--
 	return v, true
 fail:

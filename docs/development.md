@@ -216,8 +216,9 @@ The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for i
 
 The [living backlog](https://github.com/ornew/pego/issues/1) is the source of individual defects, priorities and
 landing commits. The 2026-10-09 audit found correctness/resource gaps despite the implemented feature coverage above.
-Action-variable memo keys (C01), interrupted Document cache cleanup (C05) and engine memo retirement (C02/P01) have
-landed; nil-action retention (C03) and shadowed stream environments (C04) are next. Follow with the YAML panic,
+Action-variable memo keys (C01), interrupted Document cache cleanup (C05), engine memo retirement (C02/P01) and
+nil-action construction tracking cleanup (C03, including generated runtimes) are implemented. Shadowed stream
+environments (C04) are next. Follow with the YAML panic,
 depth/backend limits, formatting integrity, typing/validation and incremental-equivalence fixes. Full benchmark
 results will be refreshed at the streaming-memory checkpoint; tuning entries carry focused measurements per change.
 

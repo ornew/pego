@@ -60,29 +60,37 @@ func termEvaluator(t grammar.Term) evaluator {
 
 func (p *parser) actionResult(ctx *evalCtx, act evaluator, where string) *Node {
 	v, err := act(ctx)
+	n, ok := v.(*Node)
+	if err == nil && n != nil {
+		for _, c := range p.created[ctx.cbase:] {
+			if c == n {
+				n.Start, n.End = int32(ctx.start), int32(ctx.end)
+				break
+			}
+		}
+	}
+	p.dropCreated(ctx.cbase)
 	if err != nil {
 		p.fail("action in %s: %v", where, err)
 	}
 	if v == nil {
 		return nil
 	}
-	n, ok := v.(*Node)
 	if !ok {
 		p.fail("action in %s: result must be a node, got %s", where, typeName(v))
 	}
-	for _, c := range ctx.p.created[ctx.cbase:] {
-		if c == n {
-			n.Start, n.End = int32(ctx.start), int32(ctx.end)
-			break
-		}
-	}
-	ctx.p.created = ctx.p.created[:ctx.cbase]
 	if n != nil {
 		// The value of an action is final: a node it returns from the rule body (-> $1) is not
 		// labeled by the rules that receive it, which might share it through the memo.
 		n.fresh = false
 	}
 	return n
+}
+
+// dropCreated releases tracking references without changing the created values.
+func (p *parser) dropCreated(base int) {
+	clear(p.created[base:])
+	p.created = p.created[:base]
 }
 
 func typeName(v any) string {
@@ -709,7 +717,7 @@ func (c *compiler) predicate(e *grammar.Predicate, s *scope) matcher {
 		return func(p *parser) (*Node, bool) {
 			ctx := p.useCtx(evalCtx{p: p, scope: s, frame: p.frame, start: p.pos, end: p.pos, cbase: len(p.created)})
 			v, err := ctx.eval(a.Value)
-			p.created = p.created[:ctx.cbase] // discard nodes created by the predicate
+			p.dropCreated(ctx.cbase)
 			if err != nil {
 				return nil, false
 			}
@@ -724,7 +732,7 @@ func (c *compiler) predicate(e *grammar.Predicate, s *scope) matcher {
 	return func(p *parser) (*Node, bool) {
 		ctx := p.useCtx(evalCtx{p: p, scope: s, frame: p.frame, start: p.pos, end: p.pos, cbase: len(p.created)})
 		v, err := ctx.eval(e.Term)
-		p.created = p.created[:ctx.cbase] // discard nodes created by the predicate
+		p.dropCreated(ctx.cbase)
 		if err != nil {
 			return nil, false
 		}

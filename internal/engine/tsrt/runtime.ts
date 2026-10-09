@@ -2014,7 +2014,6 @@ class Actx {
   }
 
   result(action: Action, where: string): Node | null {
-    let n: Node;
     try {
       const v = action(this);
       if (v === null) {
@@ -2023,24 +2022,25 @@ class Actx {
       if (!(v instanceof Node)) {
         return evalError(`result must be a node, got ${typeName(v)}`);
       }
-      n = v;
+      const n = v;
+      const created = this.p.created;
+      for (let i = this.cbase; i < created.length; i++) {
+        if (created[i] === n) {
+          n.start = this.start;
+          n.end = this.end;
+          break;
+        }
+      }
+      n.fresh = false; // the value of an action is final (see the engine's actionResult)
+      return n;
     } catch (x) {
       if (x instanceof EvalError) {
         throw new Fatal(new Error(`action in ${where}: ${x.msg}`));
       }
       throw x;
+    } finally {
+      this.p.created.length = this.cbase;
     }
-    const created = this.p.created;
-    for (let i = this.cbase; i < created.length; i++) {
-      if (created[i] === n) {
-        n.start = this.start;
-        n.end = this.end;
-        break;
-      }
-    }
-    created.length = this.cbase;
-    n.fresh = false; // the value of an action is final (see the engine's actionResult)
-    return n;
   }
 
   cap(slot: number): Value {

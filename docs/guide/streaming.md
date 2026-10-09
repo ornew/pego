@@ -374,6 +374,11 @@ before `SyntaxError.Pos` that was delivered is final.
 
 ## Memory
 
+An action may construct temporary nodes and return `nil`. The callback receives
+that nil value, and the action's construction tracker releases its references
+before delivery. Clearing that tracker preserves any nodes the action returns
+or stores in an environment; it does not change their fields or positions.
+
 What a stream parse releases as it goes:
 
 - the **input** before the element just delivered (except one character), by compacting the read buffer once at least

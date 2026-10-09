@@ -977,7 +977,7 @@ func (d *dgen) finish(r *rule, s *dscope, body string) (start, ctx bool) {
 				}
 			})
 			if nested > 1 {
-				d.line("p.created = p.created[:c.cbase]")
+				d.line("p.dropCreated(c.cbase)")
 			}
 		} else {
 			d.line("v = c.finish(v)")
