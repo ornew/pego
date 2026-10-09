@@ -426,14 +426,16 @@ n, err := p.Parse(input, pego.WithBackend(pego.BytecodeIterative), pego.WithMaxD
 // nesting too deep: more than 100 rule calls
 ```
 
-A Pratt expression reads the operand of a prefix operator and the right operand of an infix operator by recursion,
-so each operator of a chain of prefix or right-associative operators (`---x`, `a ^ b ^ c ^ ...`) counts as one more
-nested call; chains of left-associative operators are read in a loop and do not nest.
+A Pratt expression adds one active call level, and reading a prefix operand or an infix right operand adds another
+Pratt level. These levels count on every backend, including the iterative VM's heap frames. Each operator of a
+prefix or right-associative chain (`---x`, `a ^ b ^ c ^ ...`) adds a nested level; left-associative chains return
+from each right operand before reading the next operator. Completed frames and ordinary failed branches release
+depth; exceeding the limit aborts the parse and discards its execution state.
 
 Two things to know:
 
-- Lowering the limit is safe on every backend, and is a good idea for untrusted input: it bounds the work and the memory
-  a hostile input can cause. A nesting error is an ordinary `error`, so treat it like any parse failure.
+- Lowering the limit is safe on every backend and bounds active nested calls and Pratt frames. Input length and
+  total parsing work require separate limits. A nesting error is an ordinary `error`, so treat it like any parse failure.
 - **Raising the limit on the closure and recursive bytecode backends is limited by the Go stack.** Go's goroutine
   stack is capped at 1 GB by default; running past it is not a recoverable error but a fatal `stack overflow` that
   kills the process. In a trial with the grammar above, the closure backend parsed 300,000 levels with

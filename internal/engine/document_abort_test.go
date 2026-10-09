@@ -19,6 +19,8 @@ def x: N = t:@(x "a" / "a") -> new N{X:1/(2-len($t))}`, "aa", "aaa", "division b
 def main = x $$
 def x = x "a" / nested
 def nested = "(" nested ")" / "a"`, "((a))", "a", "nesting too deep", 3},
+		{"Pratt depth", `def main=e $$
+def e = pratt { operand "x" level { prefix "-" } }`, "---x", "x", "nesting too deep", 4},
 	} {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []Unit{CodePoints, Bytes} {

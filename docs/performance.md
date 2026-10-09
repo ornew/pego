@@ -207,6 +207,7 @@ automatically in the others. This table records, for every change in the log bel
 | 68 | Release action/predicate construction tracking, including nil results | ✓ | ✓ | ✓ | ✓ | ✓ | direct typed nested constructors included; TS also truncates on nil/errors; no generated streaming API |
 | 69 | One current variable binding per name, persistent replacement and equal-value reuse | ✓ | ✓ | ✓ | ✓ | ✓ | TS also uses unique bindings; lookup scales with names, not assignment history; changed non-head values copy a prefix |
 | 70 | Reject malformed known YAML directives and validate directive AST parameters | ✓ | ✓ | ✓ | ✓ | ✓ | YAML grammar guard applies on every backend; semantic checks are in the standalone Go YAML API; TS not measured |
+| 71 | Count active iterative Pratt frames against the nesting limit | – | – | ✓ | – | – | recursive/generated runtimes already count Pratt nesting; completed iterative frames release depth |
 | 62 | Short literals compared in place | – | – | – | ✗ | ✓ | typed: direct rules, up to 4 code points, code points only (the other backends match literals with their own loop, 32) |
 
 Not applied, and why:
@@ -1199,6 +1200,29 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   `go test -run '^$' -bench '^(BenchmarkDirectives|BenchmarkParseAST|BenchmarkRecognize|BenchmarkLoadAll|BenchmarkEvents)$' -benchtime=200ms -benchmem`.
   Regression tests cover every engine/unit, generated API entry point, directive AST
   methods and replayable malformed fuzz seeds.
+
+### 71. Iterative Pratt nesting limits
+
+- The iterative VM now counts every active Pratt expression frame against
+  `WithMaxDepth`, including prefix and infix right operands. Previously only
+  surrounding rule calls counted, so long operator chains bypassed the limit.
+  Frame construction checks depth, and the shared completion path decrements it
+  on successful and ordinary failed attempts. A nesting overflow aborts the parse;
+  Document retries discard interrupted caches as they do for other runtime errors.
+- Six interleaved pairs against b5cc8bc (runtime unchanged from f8d6c2a), Go 1.27.1,
+  Apple M3 Max, `-benchtime=200ms`, measure iterative `Arith_Pratt` and `Minilang`
+  parsing in both units and recognition. Median time changes range from −1.4% to
+  +1.3%; no material speed change is measured. Recognition keeps exactly the same
+  B/op and allocation counts. Parsing B/op changes range from −0.82% to +0.38%,
+  with allocation-count differences up to 17 per operation in these short samples;
+  first-call runtime preparation is included and amortized over few parses.
+  The fix changes no allocation path or frame layout and is retained for correct limits.
+- Reproduce with
+  `go test ./bench -run '^$' -bench '^Benchmark(Parse|Recognize)$/^(Arith_Pratt|Minilang)$/^iterative$' -benchtime=200ms -benchmem`.
+  The baseline binary restores `internal/engine/ivm.go` from b5cc8bc with a Go overlay.
+  Boundary tests cover all engines/units, memo on/off, recognition, prefix/right/left
+  association, postfix loops, backtracking, stream partial emissions and Document retry/edit.
+  Raw output remains local, as for other focused measurements.
 
 ## Grammar authoring guidelines for performance
 

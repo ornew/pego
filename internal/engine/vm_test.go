@@ -87,8 +87,8 @@ def x = pratt {
 }
 
 // TestPrattNestingLimit checks that chains of prefix and right-associative operators, which a
-// Pratt expression parses by recursion, count against the nesting limit on the recursive
-// backends: they fail with an error instead of overflowing the goroutine stack.
+// Pratt expression parses by recursion, count against an explicit nesting limit on every
+// backend: they fail with an error instead of consuming unbounded stack or frame storage.
 func TestPrattNestingLimit(t *testing.T) {
 	prog := compile(t, `
 def main = x $$
@@ -99,8 +99,8 @@ def x = pratt {
 }`)
 	const depth = 3 * DefaultMaxDepth
 	for _, in := range []string{strings.Repeat("-", depth) + "x", strings.Repeat("x^", depth) + "x"} {
-		for _, b := range []Backend{Closure, Bytecode} {
-			if _, err := prog.ParseWith("main", in, ParseOptions{Backend: b}); err == nil || !strings.Contains(err.Error(), "nesting too deep") {
+		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
+			if _, err := prog.ParseWith("main", in, ParseOptions{Backend: b, MaxDepth: DefaultMaxDepth}); err == nil || !strings.Contains(err.Error(), "nesting too deep") {
 				t.Errorf("%v, input %.10q...: got %v, want a nesting error", b, in, err)
 			}
 		}
@@ -109,6 +109,79 @@ def x = pratt {
 		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			if n, err := prog.ParseWith("main", short, ParseOptions{Backend: b}); err != nil || int(n.End) != len(short) {
 				t.Errorf("%v, input %.10q...: %v", b, short, err)
+			}
+		}
+	}
+}
+
+func TestPrattDepthBoundaries(t *testing.T) {
+	const src = `
+def main = (e ";" / "-;" / "x^;")* $$
+def e = pratt {
+    operand "x"
+    level { infix right "^" }
+    level { infix left "+" }
+    level { prefix "-" }
+    level { postfix "!" }
+}`
+	for _, disableMemo := range []bool{false, true} {
+		prog := compile(t, src, Options{DisableMemo: disableMemo})
+		for _, tc := range []struct {
+			input string
+			depth int
+			ok    bool
+		}{
+			{"x;", 2, false}, {"x;", 3, true},
+			{"-x;", 3, false}, {"-x;", 4, true}, {"--x;", 4, false}, {"--x;", 5, true},
+			{"x^x;", 3, false}, {"x^x;", 4, true}, {"x^x^x;", 4, false}, {"x^x^x;", 5, true},
+			{strings.Repeat("x+", 128) + "x;", 4, true},
+			{"x" + strings.Repeat("!", 128) + ";", 3, true},
+			{strings.Repeat("-x;", 128), 4, true},      // completed frames must release depth
+			{strings.Repeat("-;x^;-x;", 128), 4, true}, // failed child frames must also release depth
+		} {
+			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+				for _, unit := range []Unit{CodePoints, Bytes} {
+					for _, recognize := range []bool{false, true} {
+						opts := ParseOptions{Backend: backend, Unit: unit, MaxDepth: tc.depth, Recognize: recognize}
+						n, err := prog.ParseWith("main", tc.input, opts)
+						if (err == nil) != tc.ok {
+							t.Errorf("memo disabled %v, %s/%s, recognize %v depth %d input %.20q: %v, %v", disableMemo, backend, unit, recognize, tc.depth, tc.input, n, err)
+						}
+						if !tc.ok && (err == nil || !strings.Contains(err.Error(), fmt.Sprintf("nesting too deep: more than %d rule calls", tc.depth))) {
+							t.Errorf("%s depth %d input %.20q: want depth error, got %v", backend, tc.depth, tc.input, err)
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func TestPrattStreamDepthLimit(t *testing.T) {
+	prog := compile(t, `def main=(e ";")* #stream $$
+def e=pratt { operand "x" level { infix right "^" } level { prefix "-" } }`)
+	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		for _, unit := range []Unit{CodePoints, Bytes} {
+			for _, tc := range []struct {
+				input string
+				count int
+				ok    bool
+			}{
+				{strings.Repeat("-x;", 128), 128, true},
+				{"x;-x;--x;", 2, false},
+				{"x;x^x;x^x^x;", 2, false},
+			} {
+				count := 0
+				err := prog.ParseStreamWith("main", strings.NewReader(tc.input), func(*Node) error {
+					count++
+					return nil
+				}, ParseOptions{Backend: backend, Unit: unit, MaxDepth: 4})
+				if count != tc.count || (err == nil) != tc.ok {
+					t.Errorf("%s/%s input %.20q: emitted %d, err %v; want %d, success %v", backend, unit, tc.input, count, err, tc.count, tc.ok)
+				}
+				if !tc.ok && (err == nil || !strings.Contains(err.Error(), "nesting too deep")) {
+					t.Errorf("%s/%s input %.20q: want depth error, got %v", backend, unit, tc.input, err)
+				}
 			}
 		}
 	}

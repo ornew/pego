@@ -174,6 +174,10 @@ func (p *parser) nudFrame(r *rule) *nudFrame {
 }
 
 func (p *parser) prattFrame(r *rule, min int) *prattFrame {
+	p.depth++
+	if p.depth > p.maxDepth {
+		p.fail("nesting too deep: more than %d rule calls", p.maxDepth)
+	}
 	f := reuse(&p.pool.pratts)
 	*f = prattFrame{r: r, min: min}
 	return f
@@ -220,6 +224,7 @@ func (p *parser) release(f iframe) {
 	case *nudFrame:
 		p.pool.nuds = append(p.pool.nuds, f)
 	case *prattFrame:
+		p.depth--
 		p.pool.pratts = append(p.pool.pratts, f)
 	}
 }
