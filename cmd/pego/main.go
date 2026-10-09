@@ -226,17 +226,58 @@ func formatSource(name string, src []byte, write, list bool, stdout io.Writer) e
 		if !changed {
 			return nil
 		}
-		info, err := os.Stat(name)
-		if err != nil {
-			return err
-		}
-		return os.WriteFile(name, []byte(out), info.Mode().Perm())
+		return writeFormattedFile(name, []byte(out))
 	}
 	if list {
 		return nil
 	}
 	_, err = io.WriteString(stdout, out)
 	return err
+}
+
+// writeFormattedFile stages a complete replacement beside the symlink-resolved
+// target. Failed staging leaves the source intact; replacing a hard-linked name
+// leaves the other links pointing to the previous content.
+func writeFormattedFile(name string, data []byte) error {
+	path, err := filepath.EvalSymlinks(name)
+	if err != nil {
+		return err
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("%s: cannot replace a non-regular file", name)
+	}
+	// Preserve the permission check that an in-place write performs, even
+	// when the containing directory would allow replacing a read-only file.
+	target, err := os.OpenFile(path, os.O_WRONLY, 0)
+	if err != nil {
+		return err
+	}
+	if err := target.Close(); err != nil {
+		return err
+	}
+	f, err := os.CreateTemp(filepath.Dir(path), ".pego-fmt-*")
+	if err != nil {
+		return err
+	}
+	temp := f.Name()
+	defer func() {
+		f.Close()
+		os.Remove(temp)
+	}()
+	if _, err := f.Write(data); err != nil {
+		return err
+	}
+	if err := f.Chmod(info.Mode().Perm()); err != nil {
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	return os.Rename(temp, path)
 }
 
 func convertCmd(args []string, stdout io.Writer) error {

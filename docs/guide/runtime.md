@@ -601,6 +601,11 @@ Formats PEGO source and **keeps comments**. Without `-w` it prints the result; `
 Adjacent minus operators stay separated: `- -"a"` remains two discards, and `- -1` remains two unary negations.
 The whitespace prevents either expression from becoming the distinct `--` cut token.
 
+With `-w`, a changed regular file is written completely to a temporary file in the target directory before replacement.
+Permission bits are preserved, read-only files are rejected, and the directory must allow creating and replacing files.
+Symlinks keep pointing to the same path and that target is replaced; formatting one hard-linked name leaves the other
+names with their original content. Files whose formatting is unchanged are left in place.
+
 ```bash
 $ cat messy.pego
 // A messy grammar.
