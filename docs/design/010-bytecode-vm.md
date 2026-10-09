@@ -4,7 +4,7 @@
 - **Author**: @ornew
 - **Date**: 2026-10-07
 
-> **Note**: The normative definition of the instruction set and the file format is [bytecode.md](../bytecode.md). The instruction names and operands sketched in this record are the original plan and differ in detail from the final instruction set.
+> **Note**: The normative definition of the instruction set and the file format is [bytecode.md](../../spec/bytecode.md). The instruction names and operands sketched in this record are the original plan and differ in detail from the final instruction set.
 
 ## Summary
 

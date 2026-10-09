@@ -4,7 +4,7 @@
 - **Author**: @ornew
 - **Date**: 2026-10-07
 
-> **Note (2026-10)**: Version 2 of the format, introduced by [010](010-bytecode-vm.md), stores the bytecode module and makes the AST optional. Version 1, described below, can still be loaded. The current format is defined in [bytecode.md](../bytecode.md#file-format).
+> **Note (2026-10)**: Version 2 of the format, introduced by [010](010-bytecode-vm.md), stores the bytecode module and makes the AST optional. Version 1, described below, can still be loaded. The current format is defined in [bytecode.md](../../spec/bytecode.md#file-format).
 
 ## Summary
 

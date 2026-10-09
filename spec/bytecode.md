@@ -1,7 +1,7 @@
 # PEGO Bytecode Specification
 
 This document specifies the bytecode (the *module*) that a PEGO grammar compiles to, and the behavior of the virtual machine (VM) that executes it.
-A runtime for another language must implement this document. For the design background, see [design record 010](design/010-bytecode-vm.md).
+A runtime for another language must implement this document. For the design background, see [design record 010](../docs/design/010-bytecode-vm.md).
 
 The reference implementation is the Go package `internal/engine` (`bytecode.go`, `bcompile.go` and the VMs in `vm.go` and `ivm.go`). A bytecode VM must produce the same results as the closure backend.
 
@@ -159,7 +159,7 @@ When an instruction fails, the VM pops entries from the entry stack of the curre
 | 31 | `RETURN` | | The rule body succeeded. |
 | 32 | `END` | | A Pratt part succeeded. |
 
-**Streaming.** `NEXT` with mode 2 is emitted only for the repetition marked `#stream` in the start rule. When the VM is parsing a stream and this repetition runs in the start rule's body (call depth 1), the element value is not kept: it is passed to the consumer (no longer fresh), the input up to the current position is committed (earlier input and memo entries are discarded; see [design record 007](design/007-streaming-and-incremental-parsing.md)), and the loop exits if the iteration consumed no input and otherwise jumps to A. In any other parse, mode 2 behaves like mode 1.
+**Streaming.** `NEXT` with mode 2 is emitted only for the repetition marked `#stream` in the start rule. When the VM is parsing a stream and this repetition runs in the start rule's body (call depth 1), the element value is not kept: it is passed to the consumer (no longer fresh), the input up to the current position is committed (earlier input and memo entries are discarded; see [design record 007](../docs/design/007-streaming-and-incremental-parsing.md)), and the loop exits if the iteration consumed no input and otherwise jumps to A. In any other parse, mode 2 behaves like mode 1.
 
 ### Recovery
 
@@ -210,7 +210,7 @@ The value of the rule is built from the body value v and the start position:
 
 ## Pratt expressions
 
-The algorithm is the same as `prattParse` in the closure backend; see the parsing rules in [spec/pratt.md](../spec/pratt.md). Each part's code runs with its own entry-stack base and frame.
+The algorithm is the same as `prattParse` in the closure backend; see the parsing rules in [Pratt Expressions](pratt.md#parsing-rules). Each part's code runs with its own entry-stack base and frame.
 
 - **Skip:** increment `silent`, run the skip code, and on failure reset the position.
 - **Longest match:** for each candidate operator, save the state, run the line's code in a new frame, and on success record the end position, the value, the frame, the environment, whether a cut was passed, and the recovered errors; then restore the state (writing the recorded captures back into the frame). A prefix or postfix candidate that succeeds without consuming input is treated as not matching. Select the candidate that advanced farthest; on a tie, select the one declared first. Also record whether some candidate failed after passing a cut.
@@ -265,7 +265,7 @@ Calling a function evaluates its code from its start, with the locals captured a
 
 Instructions 118–123 are shortcuts with the same results as the general instructions. The reference compiler emits `ETEXTCHK` after each operand and `ETEXTEQ` for `text(a) == text(b)` and `text(a) != text(b)`, which compares the texts without making them values, and `ELISTBEGIN`, `ELISTPUSH`/`EMAPPUSH` per argument and `ELISTEND` for a `concat` call whose arguments are all `list`, `map` or such `concat` calls, which builds no intermediate list. In both cases the errors arise in the same order as with `ECALL`.
 
-Built-in function indices: 0 `len`, 1 `text`, 2 `foldl`, 3 `foldr`, 4 `map`, 5 `list`, 6 `concat`. Their semantics are defined in [spec/actions.md](../spec/actions.md) (built-in functions).
+Built-in function indices: 0 `len`, 1 `text`, 2 `foldl`, 3 `foldr`, 4 `map`, 5 `list`, 6 `concat`. Their semantics are defined in [Actions](actions.md#built-in-functions).
 
 ## Error messages
 

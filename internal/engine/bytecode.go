@@ -3,7 +3,7 @@ package engine
 import "fmt"
 
 // Module is a grammar compiled to bytecode. It is the only thing the VM runs.
-// The instruction set and its semantics are specified in docs/bytecode.md.
+// The instruction set and its semantics are specified in spec/bytecode.md.
 type Module struct {
 	Strings    []string   // string table
 	Classes    []Class    // character class table

@@ -250,7 +250,7 @@ const (
 	eSkip
 )
 
-// vmEntry is an element of the entry stack (see the Failure section of docs/bytecode.md). It is
+// vmEntry is an element of the entry stack (see the Failure section of spec/bytecode.md). It is
 // kept small, since a choice or an iteration pushes one: the state of the rarer label, recovery
 // and skip entries is on a separate stack (parser.labs).
 type vmEntry struct {

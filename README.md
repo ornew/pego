@@ -60,7 +60,7 @@ tree, err := p.Parse("1 + 2 * 3 ^ 2") // a *pego.Node, or a *pego.SyntaxError wi
 - **Infinite input, flat memory.** `ParseStream` emits each element as soon as it matches and drops the input it
   has consumed, so memory stays constant however long the stream runs.
 - **Write once, run anywhere.** Grammars compile to a language-independent bytecode with a
-  [published specification](docs/bytecode.md). Precompiled `.pegoc` files load in tens of microseconds, and
+  [published specification](spec/bytecode.md). Precompiled `.pegoc` files load in tens of microseconds, and
   `pego gen` emits a standalone parser: Go that needs nothing but the standard library, or a TypeScript module with
   no dependencies for Node.js, Deno, Bun and browsers.
 - **Fast out of the box.** A 262 KB JSON document becomes a fully typed, positioned tree in about 3 ms with a
@@ -177,7 +177,7 @@ left-recursive), an indentation-based outline format and a small programming lan
 | [Web site and playground](docs/guide/playground.md) | Try grammars in the browser at [pego.ornew.net/playground](https://pego.ornew.net/playground/); build and preview the site locally |
 | [Language specification](spec/README.md) | The PEGO grammar language |
 | [Development guide](docs/development.md) | Architecture, repository layout, implementation status, roadmap |
-| [Bytecode specification](docs/bytecode.md) | Instruction set and VM semantics, for porting the runtime |
+| [Bytecode specification](spec/bytecode.md) | Instruction set and VM semantics, for porting the runtime |
 | [Benchmarks](docs/benchmarks.md) · [Performance log](docs/performance.md) | How fast, and how it got there |
 | [Design records](docs/design/) | Decisions and their rationale |
 

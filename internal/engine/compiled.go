@@ -11,7 +11,7 @@ import (
 )
 
 // The compiled grammar format (.pegoc), specified in the File format section of
-// docs/bytecode.md.
+// spec/bytecode.md.
 //
 //	magic    "PEGOC\x00"
 //	version  1 byte (compiledVersion)

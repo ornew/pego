@@ -115,7 +115,7 @@ var docSections = []docSection{
 	{name: "Parsers", globs: []string{"parsers/README.md", "parsers/*/README.md"}, index: "parsers/README.md"},
 	{name: "Design records", globs: []string{"docs/design/*.md"}, collapsible: true},
 	{name: "Project", globs: []string{"examples/README.md", "docs/*.md"}, first: []string{
-		"examples/README.md", "docs/development.md", "docs/bytecode.md", "docs/benchmarks.md", "docs/performance.md",
+		"examples/README.md", "docs/development.md", "docs/benchmarks.md", "docs/performance.md",
 	}},
 }
 

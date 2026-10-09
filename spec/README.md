@@ -25,6 +25,7 @@ with them.
 5. [Predicates and Variables](predicates.md)
 6. [Actions](actions.md)
 7. [Attributes](attributes.md)
+8. [PEGO Bytecode Specification](bytecode.md)
 
 ## Conventions
 

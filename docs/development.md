@@ -23,7 +23,7 @@ This document describes the repository layout, the architecture of the implement
 | `site/` | Web site generator (a separate Go module): landing page, docs, reference and playground; build with `site/build.sh` |
 | `netlify.toml` | Netlify build configuration for the site |
 | `bench/` | Benchmarks comparing the backends with each other and with standard-library parsers (`gen/` holds generated parsers). Results are in [benchmarks.md](benchmarks.md), generated with `go run ./bench/report` (`report/`) from the raw results in `results.txt`. |
-| `spec/` | Language specification |
+| `spec/` | Language specification, including the bytecode and VM specification ([bytecode.md](../spec/bytecode.md)) |
 | `docs/tutorial/` | Tutorials (getting started) |
 | `docs/guide/` | Task-oriented guides to each feature ([index](guide/README.md)) |
 | `docs/cookbook/` | Recipes: complete, runnable solutions to concrete tasks ([index](cookbook/README.md)) |
@@ -122,11 +122,11 @@ Package `sample` walks the grammar AST of a `Parser` with a bounded, seeded dept
 
 ### Compiled grammars
 
-A compiled grammar file (`compiled.go`, `modulefile.go`) stores the bytecode module and, optionally, the AST and the static-analysis results (version 2; the format is defined in [bytecode.md](bytecode.md#file-format)). Loading skips parsing, static analysis, type checking and compilation to bytecode. A file without the AST can be executed only by the bytecode backends. Version 1 files (AST only) can still be loaded ([design](design/009-compiled-grammar-format.md)).
+A compiled grammar file (`compiled.go`, `modulefile.go`) stores the bytecode module and, optionally, the AST and the static-analysis results (version 2; the format is defined in [bytecode.md](../spec/bytecode.md#file-format)). Loading skips parsing, static analysis, type checking and compilation to bytecode. A file without the AST can be executed only by the bytecode backends. Version 1 files (AST only) can still be loaded ([design](design/009-compiled-grammar-format.md)).
 
 ### Bytecode
 
-The bytecode compiler (`bytecode.go`, `bcompile.go`, `disasm.go`) compiles a program into a language-independent module of tables and instruction sequences. The instruction set is defined in [bytecode.md](bytecode.md).
+The bytecode compiler (`bytecode.go`, `bcompile.go`, `disasm.go`) compiles a program into a language-independent module of tables and instruction sequences. The instruction set is defined in [bytecode.md](../spec/bytecode.md).
 
 - The **recursive VM** (`vm.go`) uses the runtime shared with the closure backend (`runtime.go`, `pratt.go`) for rule calls, memoization, left recursion and Pratt operator selection, and executes rule bodies, actions and predicates as bytecode.
 - The **iterative VM** (`ivm.go`) calls the same runtime functions from a state machine kept on its own stack instead of the host call stack.
