@@ -191,6 +191,10 @@ The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for i
 `spec/syntax_test.go` runs the grammar of the [syntax summary](../spec/syntax.md) on every `.pego` file and every `pego` code block of the repository and requires it to agree with the parser of `internal/syntax`.
 
 `cd site && go test ./...` builds the site and checks its pages and links; `go test ./playground` runs the WebAssembly smoke test when Node is installed.
+Playground shared-link navigation applies every normalized option and tab even when grammar/input are unchanged
+(W01); only parse-affecting changes schedule parsing, preserving editor scroll on tab-only navigation. Actual-app
+controlled DOM/client/timer tests cover each field, default restoration, missing start rules and named examples.
+Asynchronous hash-write/load ordering is still tracked separately (W02).
 
 ## Language feature status
 

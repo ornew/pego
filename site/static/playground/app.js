@@ -748,14 +748,26 @@ async function writeHash() {
 }
 
 function applyState(s) {
-  grammarEditor.value = s.g ?? "";
-  inputEditor.value = s.i ?? "";
-  requestedStart = s.s ?? "";
-  unitSelect.value = s.u === "bytes" ? "bytes" : "codepoints";
-  backendSelect.value = ["closure", "bytecode", "bytecode-iterative"].includes(s.b) ? s.b : "";
-  recognizeBox.checked = !!s.r;
+  const grammar = s.g ?? "";
+  const input = s.i ?? "";
+  const start = s.s ?? "";
+  const unit = s.u === "bytes" ? "bytes" : "codepoints";
+  const backend = ["closure", "bytecode", "bytecode-iterative"].includes(s.b) ? s.b : "";
+  const recognize = !!s.r;
+  const changed = grammar !== grammarEditor.value || input !== inputEditor.value ||
+    start !== requestedStart || unit !== unitSelect.value ||
+    backend !== backendSelect.value || recognize !== recognizeBox.checked;
+  // Presentation-only navigation must preserve the editors' selection/scroll.
+  if (grammar !== grammarEditor.value) grammarEditor.value = grammar;
+  if (input !== inputEditor.value) inputEditor.value = input;
+  requestedStart = start;
+  unitSelect.value = unit;
+  backendSelect.value = backend;
+  recognizeBox.checked = recognize;
   if (s.u || s.b || s.r) document.querySelector(".pg-options").open = true;
-  selectTab(tabs.includes(s.t) ? s.t : "tree");
+  const tab = tabs.includes(s.t) ? s.t : "tree";
+  if (tab !== activeTab) selectTab(tab);
+  return changed;
 }
 
 function loadExample(name) {
@@ -822,10 +834,7 @@ window.addEventListener("hashchange", async () => {
   const s = await decodeState(location.hash);
   if (!s) return;
   if (s.example) loadExample(s.example);
-  else if (s.g !== grammarEditor.value || s.i !== inputEditor.value) {
-    applyState(s);
-    scheduleParse(0);
-  }
+  else if (applyState(s)) scheduleParse(0);
 });
 
 client.onrestart = (reason) => {

@@ -104,6 +104,10 @@ The tree view renders children only when a node is expanded, so large trees stay
 with `CompressionStream("deflate-raw")` and encoded as base64url (`#z=`), or as plain JSON where compression is not
 available (`#j=`). Compression matters because a grammar of a few kilobytes would otherwise make a link of several;
 the fragment is never sent to the server. No storage or account is needed to share.
+Incoming links normalize and apply all state fields, including links that change only parsing options or the tab.
+Grammar, input, start rule, position unit, backend and recognition changes trigger parsing. Tab-only changes preserve
+unchanged editors and reuse the result, with code generation on the Go tab. Controlled application-wiring tests
+exercise the hashchange handler and distinguish parse requests from presentation-only navigation.
 
 ### The site generator (`site/`)
 

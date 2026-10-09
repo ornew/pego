@@ -70,6 +70,9 @@ The state of the playground is kept in the URL fragment, so reloading the page k
 The fragment is `#z=` followed by the state as JSON, compressed with deflate (`CompressionStream`) and encoded as
 base64url; browsers without `CompressionStream` write `#j=` with the JSON uncompressed. The fragment is never sent to
 the server. `#example=<name>` opens an example by name, for example `playground/#example=minilang-recover`.
+Following another shared link in the same page restores every option, including the start rule and result tab,
+even when grammar and input are unchanged. Changes to parsing options trigger a new parse; tab-only navigation
+preserves the editors and shows the existing result without reparsing (the Go tab generates code).
 
 Code blocks of grammars in this documentation have a **Playground** button that opens them in the playground.
 
@@ -174,6 +177,12 @@ it). The landing page loads it only when its live example scrolls into view.
 | `cd site && go test ./...` | Builds the whole site and checks that every Markdown file of `docs/` and `spec/` became a page, that the generated pages and the search index are complete, that no page needs inline scripts or styles, and that every internal link and anchor resolves. `TestJavaScript` runs the tests of the page scripts in `site/testdata/*_test.mjs` with `node --test` (skipped without Node) |
 
 The site is a separate Go module, so `go test ./...` at the root does not run its tests.
+The playground state tests execute the actual application with a controlled DOM, client and timers. They check
+incoming option-only links, omitted/invalid option defaults, parse requests, tabs, editor scroll and named examples;
+they do not replace checks in a browser with the real WebAssembly worker.
+`node site/testdata/bench_playground_state.mjs [app.js]` measures unchanged-link dispatch in that harness, with
+10,000 warmups and 100,000 measured events. The optional application path compares another revision. Immediate
+decoding excludes compression/encoding, browser DOM, worker and WebAssembly costs.
 
 ## Changing the site
 
