@@ -68,14 +68,22 @@ func (d *Document) Parse() (*Node, error) {
 	p := &parser{prog: d.prog, input: d.in, memo: d.memo, memoAll: true, noPlain: true, maxDepth: d.depth, gen: uint32(len(d.edits)), edits: d.edits,
 		runs: map[runKey]*runRecord{}, lastRuns: d.runs, kidStack: d.kids}
 	p.setTrace(d.trace)
-	n, err := d.prog.run(p, d.back, d.start)
-	d.stats = p.stats
-	d.runs, d.resumed = p.runs, p.resumed
-	d.kids = p.kidStack[:0]
-	clear(d.kids[:cap(d.kids)]) // let go of the nodes
-	// Keep the tables the parse built on demand, so that later parses and edits reuse them.
-	d.in.offs, d.in.lines = p.offs, p.lines
-	return n, err
+	defer func() {
+		d.stats = p.stats
+		d.kids = p.kidStack[:0]
+		clear(d.kids[:cap(d.kids)]) // let go of the nodes, even on a trace panic
+		// Keep the tables the parse built on demand, so later parses and edits reuse them.
+		d.in.offs, d.in.lines = p.offs, p.lines
+		if p.aborted {
+			// Completed calls may depend on provisional LR seeds too, so
+			// removing only entries marked growing is insufficient.
+			d.memo = newMemoTable()
+			d.runs, d.kids, d.resumed = nil, nil, 0
+		} else {
+			d.runs, d.resumed = p.runs, p.resumed
+		}
+	}()
+	return d.prog.run(p, d.back, d.start)
 }
 
 // Edit replaces [start, end) of the text (in the Document's position unit) with text.

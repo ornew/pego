@@ -54,6 +54,13 @@ each of 2,000 random edits, on every backend).
 A `Document` is not safe for concurrent use; a `Parser` is, so use one `Document` per goroutine and share the `Parser`.
 Several `Edit` calls can precede one `Parse`.
 
+An action error, a nesting-limit error, or a panic in a trace callback interrupts
+the parse. A `Document` discards its memo and repetition caches after such an
+interruption, because partial results can depend on unfinished left-recursion
+seeds. The text and options stay available for retry or editing; trace panics
+still propagate to the caller. Ordinary syntax errors and recovered errors are
+completed parse outcomes and keep their reusable caches.
+
 ## A walkthrough with `Stats`
 
 ```go

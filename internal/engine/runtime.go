@@ -18,6 +18,9 @@ type parser struct {
 	lw int
 	// stats counts evaluations and memo uses.
 	stats Stats
+	// aborted reports an interrupted execution, whose partial caches cannot be
+	// reused by a Document. Normal syntax errors are completed executions.
+	aborted bool
 
 	env   *env   // predicate variables
 	frame *frame // current capture frame

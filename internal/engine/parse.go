@@ -141,6 +141,7 @@ func recoverParse(x any, b Backend, err *error) {
 
 // run parses the whole input of p with the start rule start.
 func (prog *Program) run(p *parser, b Backend, start string) (n *Node, err error) {
+	p.aborted = false
 	r, err := prog.rule(b, start)
 	if err != nil {
 		return nil, err
@@ -152,6 +153,7 @@ func (prog *Program) run(p *parser, b Backend, start string) (n *Node, err error
 	}
 	defer func() {
 		if x := recover(); x != nil {
+			p.aborted = true
 			n = nil
 			recoverParse(x, prog.backend(b), &err)
 		}
