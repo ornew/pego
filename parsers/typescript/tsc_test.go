@@ -36,7 +36,9 @@ var (
 
 // tscResult is the compiler's result for a source.
 type tscResult struct {
-	Diags []struct {
+	Version string   `json:"version"`
+	Values  []string `json:"values"`
+	Diags   []struct {
 		Pos  int    `json:"pos"`
 		Code int    `json:"code"`
 		Msg  string `json:"msg"`
@@ -106,12 +108,13 @@ func startTSC(t testing.TB) *tscProcess {
 	return p
 }
 
-func (p *tscProcess) parse(name, text string) (*tscResult, error) {
+func (p *tscProcess) parse(name, text string, values ...bool) (*tscResult, error) {
 	req, err := json.Marshal(struct {
-		Name string `json:"name"`
-		Text string `json:"text"`
-		TSX  bool   `json:"tsx"`
-	}{name, text, typescript.IsTSX(name)})
+		Name   string `json:"name"`
+		Text   string `json:"text"`
+		TSX    bool   `json:"tsx"`
+		Values bool   `json:"values,omitempty"`
+	}{name, text, typescript.IsTSX(name), len(values) > 0 && values[0]})
 	if err != nil {
 		return nil, err
 	}

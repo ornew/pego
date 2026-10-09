@@ -52,5 +52,17 @@ rl.on("line", (line) => {
   const diags = sf.parseDiagnostics.map((d) => ({
     pos: d.start, code: d.code, msg: ts.flattenDiagnosticMessageText(d.messageText, "\n"),
   }));
-  process.stdout.write(JSON.stringify({ diags, nodes: nodes(sf) }) + "\n");
+  const result = { diags, nodes: nodes(sf) };
+  // Cooked-value requests are opt-in; the large tree corpus keeps its protocol.
+  if (req.values) {
+    result.version = ts.version;
+    result.values = sf.statements.map((s) => {
+      if (!ts.isExpressionStatement(s) ||
+          !(ts.isStringLiteral(s.expression) || ts.isNoSubstitutionTemplateLiteral(s.expression))) {
+        throw new Error("a cooked-value request must contain only string or template literal statements");
+      }
+      return s.expression.text;
+    });
+  }
+  process.stdout.write(JSON.stringify(result) + "\n");
 });

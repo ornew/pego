@@ -313,6 +313,9 @@ Scheme-less TAG prefixes remain syntactically valid, but a use must expand to a 
 preserves verbatim text and decoded shorthand values; malformed public Tag objects report errors instead of panics.
 Measured repeated tag-resolution work is tracked separately for bounded per-operation reuse (P29), with equivalent
 tagged loading/events, tag-free controls, mutation/error-position correctness and allocation/retention gates.
+TypeScript cooked literal helpers normalize actual template CR/CRLF to LF and preserve escaped surrogate pairs
+across zero-width LF/CR/CRLF/LS/PS continuations (M05). Parsed values in both units and an opt-in exact 5.9.3
+cooked-value oracle cover true intervening characters and unpaired surrogates; grammar/generated output is unchanged.
 Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused

@@ -8,8 +8,9 @@ import (
 )
 
 // Value returns the string the literal stands for: the text between the quotes with its escapes decoded (\n, \xHH,
-// \uHHHH, \u{H...}, line continuations and the escapes of any other character). An escape of an unpaired surrogate
-// gives U+FFFD, as Go strings cannot hold one.
+// \uHHHH, \u{H...}, line continuations and the escapes of any other character). Line continuations contribute
+// no value and do not break a surrogate pair. An escape of an unpaired surrogate gives U+FFFD, as Go strings
+// cannot hold one.
 func (s *StringLiteral) Value() string {
 	if len(s.Text) < 2 {
 		return ""
@@ -18,11 +19,13 @@ func (s *StringLiteral) Value() string {
 }
 
 // Value returns the text of the template without its backquotes, with its escapes decoded (the cooked value).
+// Actual CR and CRLF line endings become LF before escape decoding; an escaped \r remains CR.
 func (t *NoSubstitutionTemplateLiteral) Value() string {
 	if len(t.Text) < 2 {
 		return ""
 	}
-	return decodeEscapes(strings.ReplaceAll(t.Text[1:len(t.Text)-1], "\r\n", "\n"))
+	body := strings.ReplaceAll(t.Text[1:len(t.Text)-1], "\r\n", "\n")
+	return decodeEscapes(strings.ReplaceAll(body, "\r", "\n"))
 }
 
 // decodeEscapes decodes the escape sequences of a string or template literal body.
@@ -68,14 +71,12 @@ func decodeEscapes(s string) string {
 			r = '\v'
 		case '0':
 			r = 0
-		case '\n', ' ', ' ': // line continuation
-			flush()
+		case '\n', '\u2028', '\u2029': // zero-width line continuation
 			continue
 		case '\r':
 			if i < len(s) && s[i] == '\n' {
 				i++
 			}
-			flush()
 			continue
 		case 'x':
 			v, n := hexValue(s[i:], 2)

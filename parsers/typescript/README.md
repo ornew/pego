@@ -53,7 +53,7 @@ err = typescript.Recognize("interface A { x: number }") // nil
 | `ForEachChild(node, f)`, `Inspect(node, f)` | The children of a node in the order of `ts.forEachChild`, and the depth-first walk (`f(nil)` after the children) |
 | `AsNode(v) ASTNode` | A value of a union field (`Expression`, `Statement`, `TypeNode`, `BindingName`, ...) as a node, with `Range()` |
 | `IsExternalModule(f)`, `IsTSX(name)` | As `ts.isExternalModule`'s probable-module test and the compiler's choice of JSX by file name |
-| `(*StringLiteral).Value()`, `(*NoSubstitutionTemplateLiteral).Value()` | The string with its escapes decoded (an unpaired surrogate gives U+FFFD) |
+| `(*StringLiteral).Value()`, `(*NoSubstitutionTemplateLiteral).Value()` | The string with its escapes decoded; template CR/CRLF line endings become LF (an unpaired surrogate gives U+FFFD) |
 | `(*NumericLiteral).Value()`, `(*BigIntLiteral).Value()` | The number as a `float64` (`+Inf` if too large) and the integer as a `*big.Int`, with `0x`, `0b`, `0o` and `_` |
 | `(*Identifier).Value()`, `(*PrivateIdentifier).Value()` | The name with its unicode escapes decoded |
 | `*SyntaxError`, `SyntaxErrors` | `Line`, `Col`, `Pos` and the expected tokens (or `Message()`) of the first syntax error, after which parsing stops |
@@ -171,6 +171,11 @@ the engine by `go test ./parsers`), `TestValid` and `TestInvalid` (sources the p
 (`go test -fuzz FuzzParse`: `ParseAST` and `Recognize` agree on any input, and the ranges of a parsed file are
 valid; 2.8 million executions in 60 seconds without a failure).
 
+Cooked literal values discard line continuations, including LF, CR, CRLF, U+2028 and U+2029. These zero-width
+continuations do not separate escaped high and low surrogates; real characters and value-producing escapes do.
+Templates normalize actual CR and CRLF to LF before decoding escapes, so an explicit `\r` still yields CR.
+Unpaired UTF-16 surrogates use U+FFFD in the returned Go strings.
+
 ### Running the differential tests
 
 They are skipped unless two environment variables are set:
@@ -184,7 +189,7 @@ git clone --depth 1 --branch v5.9.3 https://github.com/microsoft/TypeScript /tmp
 cd parsers/typescript
 export PEGO_TYPESCRIPT=/tmp/ts/node_modules/typescript
 export PEGO_TYPESCRIPT_TESTS=/tmp/TypeScript/tests/cases
-go test -run 'TestTypeScriptSuite|TestTypeScriptLib|TestTSCMutations|TestTSCSnippets' -v .   # the table above is its output
+go test -run 'TestTypeScriptSuite|TestTypeScriptLib|TestTSCMutations|TestTSCSnippets|TestTSCCookedLiteralValues' -v .
 go test -run TestTypeScriptSuite -tsc.v .                      # every difference, with the text around it
 go test -run TestTypeScriptSuite -tsc.run 'classes/.*' .       # only the test cases whose path matches
 go test -run TestTSCMutations -tsc.mutations 30000 -tsc.seed 2 .
@@ -192,7 +197,9 @@ go test -run TestTypeScriptSuite -tsc.update .                 # rewrite testdat
 ```
 
 [testdata/tsc.js](testdata/tsc.js) is the node program the tests talk to: it parses a source and writes the compiler's
-parse diagnostics and its tree.
+parse diagnostics and its tree. `TestTSCCookedLiteralValues` needs only `PEGO_TYPESCRIPT` and Node; it checks
+literal values against exactly TypeScript 5.9.3, including actual line endings and surrogate pairs across
+continuations. Cooked-value requests are opt-in, so the syntax/range corpus keeps its existing protocol.
 
 ## Grammar
 
