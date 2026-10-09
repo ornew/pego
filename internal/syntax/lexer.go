@@ -161,16 +161,8 @@ func (l *lexer) next() token {
 		}
 		t.kind, t.text = tIdent, string(l.src[start:l.i])
 	case unicode.IsDigit(r):
-		start := l.i
-		for l.i < len(l.src) && unicode.IsDigit(l.src[l.i]) {
-			l.advance()
-		}
-		t.kind, t.text = tInt, string(l.src[start:l.i])
-		n, err := strconv.Atoi(t.text)
-		if err != nil {
-			l.errorf(t.pos, "invalid number %s", t.text)
-		}
-		t.num = n
+		t.kind = tInt
+		t.text, t.num = l.decimal(t.pos, "number", "")
 	case r == '"':
 		t.kind, t.text = tString, l.string()
 	case r == '(' && l.peekAt(1) == '?':
@@ -185,12 +177,8 @@ func (l *lexer) next() token {
 		t.kind, t.text = tCapture, string(l.src[start:l.i])
 	case r == '$' && unicode.IsDigit(l.peekAt(1)):
 		l.advance()
-		start := l.i
-		for l.i < len(l.src) && unicode.IsDigit(l.src[l.i]) {
-			l.advance()
-		}
 		t.kind = tIndex
-		t.num, _ = strconv.Atoi(string(l.src[start:l.i]))
+		t.text, t.num = l.decimal(t.pos, "positional reference", "$")
 	default:
 		// startsToken guarantees that a punctuation token starts here.
 		for _, p := range puncts {
@@ -205,6 +193,24 @@ func (l *lexer) next() token {
 		panic(fmt.Sprintf("syntax: no token starts with %q", r))
 	}
 	return t
+}
+
+// decimal consumes a whole digit run so unsupported Unicode digits cannot be
+// mistaken for a valid ASCII prefix. Atoi accepts ASCII decimal digits only
+// and checks the implementation's int range. Invalid values are placeholders
+// in a partial AST, always accompanied by a diagnostic.
+func (l *lexer) decimal(pos grammar.Pos, kind, prefix string) (string, int) {
+	start := l.i
+	for l.i < len(l.src) && unicode.IsDigit(l.src[l.i]) {
+		l.advance()
+	}
+	text := string(l.src[start:l.i])
+	n, err := strconv.Atoi(text)
+	if err != nil {
+		l.errs.addRange(pos, l.pos(), fmt.Sprintf("invalid %s %s%s", kind, prefix, text))
+		return text, 0
+	}
+	return text, n
 }
 
 // punctStart holds the first characters of the punctuation tokens.

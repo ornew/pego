@@ -1,7 +1,6 @@
 package syntax
 
 import (
-	"strconv"
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
@@ -29,7 +28,8 @@ const (
 type Token struct {
 	Kind TokenKind
 	// Text is the name of an identifier or a capture reference, the punctuation, the digits of an
-	// integer or an index reference, the decoded value of a string, or the text of a comment
+	// integer or an index reference (preserving spelling even when invalid), the
+	// decoded value of a string, or the text of a comment
 	// (including "//", without trailing white space). It is empty for a character class.
 	Text string
 	// Pos is the position of the first character of the token, and End the position just after
@@ -68,7 +68,7 @@ func Tokenize(src string) []Token {
 		case tCapture:
 			tok.Kind = TokenCapture
 		case tIndex:
-			tok.Kind, tok.Text = TokenIndex, strconv.Itoa(t.num)
+			tok.Kind = TokenIndex
 		case tPunct:
 			tok.Kind = TokenPunct
 		}

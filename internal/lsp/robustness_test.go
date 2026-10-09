@@ -3,6 +3,7 @@ package lsp
 import (
 	"strings"
 	"testing"
+	"unicode/utf16"
 )
 
 // Regression tests for input that broke the server.
@@ -117,6 +118,20 @@ func TestEscapeErrorRange(t *testing.T) {
 		t.Errorf("diagnostics %+v", d)
 	}
 	c.exit()
+}
+
+func TestDecimalReferenceErrorRange(t *testing.T) {
+	const prefix = `def main="😀" -> `
+	for _, digits := range []string{"١", "𝟙", "1١", "18446744073709551616"} {
+		c := newInitialized(t)
+		end := len(utf16.Encode([]rune(prefix + "$" + digits)))
+		start := len(utf16.Encode([]rune(prefix)))
+		d := c.open("file:///decimal.pego", prefix+"$"+digits+"\ndef after=\"ok\"")
+		if len(d) != 1 || !strings.Contains(d[0].Message, "invalid positional reference") || d[0].Range != rng(0, start, 0, end) {
+			t.Errorf("%q: diagnostics %+v", digits, d)
+		}
+		c.exit()
+	}
 }
 
 // TestLoneCarriageReturns checks a document whose lines end with lone "\r" (old Mac line ends),

@@ -119,10 +119,10 @@ sequence `(?` always starts a character class.
 
 ### Integer literals
 
-An integer literal is a sequence of decimal digits. It is used as a repetition
-count in `a{n,m}` and in actions and predicates. A number that does not fit in
-an `int` of the implementation is an error. A negative number in an action is
-written with the unary `-` operator.
+An integer literal is a sequence of ASCII decimal digits (`0`–`9`). It is used
+as a repetition count in `a{n,m}` and in actions and predicates. A number that
+does not fit in an `int` of the implementation is an error. A negative number
+in an action is written with the unary `-` operator.
 
 ```pego
 "a"{2,3}   [len($s) > 4]
@@ -130,11 +130,18 @@ written with the unary `-` operator.
 
 ### Capture references
 
-`$` immediately followed by an identifier (`$label`) or by decimal digits (`$1`)
-is a capture reference, used in [actions](actions.md#capture-references) and
-[predicates](predicates.md#predicates). `$` followed by anything else is the
+`$` immediately followed by an identifier (`$label`) or by ASCII decimal
+digits (`$1`) is a capture reference, used in
+[actions](actions.md#capture-references) and [predicates](predicates.md#predicates).
+`$` followed by anything else is the
 [end-of-line anchor](parser-expressions.md#anchors), and `$$` is the end-of-input
 anchor.
+
+A positional index uses the same decimal-digit and implementation-`int` range
+as an integer literal. Leading zeros are allowed; `$0` selects all values, as
+defined in [capture references](actions.md#capture-references). Non-ASCII
+decimal digits and overflowing numbers are errors, including after `$`;
+they are not interpreted as a different index or as a line anchor.
 
 ### Punctuation
 

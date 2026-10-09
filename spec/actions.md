@@ -31,6 +31,9 @@ def key_value = k:(?a-z)+ op:"=" v:(?0-9)+
 [Values and the concrete syntax tree](parser-expressions.md#values-and-the-concrete-syntax-tree)).
 If the rule body is not a sequence, `$1` is the value of the body. It is an
 error if `n` exceeds the number of elements with a value.
+The index uses ASCII decimal digits and must fit the implementation's `int`;
+leading zeros do not change its value. Invalid digits or overflow are syntax
+errors (see [capture references](lexical.md#capture-references)).
 
 Captures are visible only within the rule that makes them; an action cannot
 refer to the captures of the rules that called it. A capture that did not match

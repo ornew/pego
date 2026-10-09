@@ -263,6 +263,10 @@ bounds; valid endpoints may span the surrogate interval. YAML's redundant surrog
 `BenchmarkCharacterRangeValidation` measures AST validation/compilation after source parsing, while
 `BenchmarkUnicodeEscapeSyntax` measures source intake. YAML's `BenchmarkUnicodeClasses` uses 500 sequence entries
 with ASCII/Unicode mapping values to measure generated Parse, ParseAST and Recognize in both position units.
+Integer and positional-reference source tokens share ASCII decimal digits and implementation-int bounds
+(C17); overflow or unsupported digits produce ranged diagnostics. Editor tokens retain original digits,
+including invalid indices and leading zeros; Unicode identifiers and `$0` semantics remain supported.
+`BenchmarkDecimalSource` compares valid plain, integer-heavy and positional-reference-heavy source intake.
 Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused
