@@ -224,7 +224,8 @@ Action-variable memo keys (C01), interrupted Document cache cleanup (C05), engin
 nil-action construction tracking cleanup (C03, including generated runtimes) and bounded persistent variable
 bindings (C04/P02, including generated runtimes) and safe YAML directive validation (M01) are implemented. Follow with
 depth/backend limits, formatting integrity, typing/validation and incremental-equivalence fixes. Full benchmark
-results will be refreshed at the streaming-memory checkpoint; tuning entries carry focused measurements per change.
+results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused
+measurements per change. The full suite includes batch, recognition, incremental, stream and preparation workloads.
 
 The [incremental document and tree tooling proposal](design/019-incremental-document-and-tree-tooling.md) examines
 input updates, saved trees and downstream editor work. These stages are proposed, not implemented APIs or measured speedups. Preserve current PEG and mutable
