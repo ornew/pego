@@ -57,8 +57,20 @@ A function (`(acc, item) => ...`) can appear only as an argument of `foldl`,
 ## Type inference
 
 The type of a rule without a declared type is inferred from its body, or from
-its action if it has one. For recursive rules, inference is repeated until the
-types of all rules no longer change.
+its action if it has one. Dependencies are inferred before their callers, so
+finite acyclic chains do not depend on definition order or an iteration cap.
+Recursive dependency groups are iterated until their types no longer change;
+union-member ordering does not count as a type change. Pratt operator actions
+also depend on their rule's type through the `lhs` and `rhs` values.
+
+The implementation bounds changing recursive types conservatively. After an
+initial inferred result, further growth beyond 2,048 bytes in the written type
+or 50 increases in structural nesting depth widens that rule to `any` for the
+rest of inference. Repeating non-stable type states widen only the rules that
+vary in the cycle. Stable peers, acyclic rules and stable oversized recursive
+types retain their types. These are resource limits, not proofs of infinite
+growth: a finite recursive type can also reach them. Declare recursive result
+types when precise checking is required.
 
 ```pego
 def num = @(?0-9)+         // Match

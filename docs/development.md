@@ -43,7 +43,7 @@ This document describes the repository layout, the architecture of the implement
 |:--|:--|:--|
 | Syntax | `internal/syntax/` | Parses PEGO source into an AST with source positions |
 | Static analysis | `analysis.go` | Nullability, left-recursion leaders, memoization, variable and position dependencies |
-| Type checking | `check.go`, `types.go` | Type inference for undeclared rule types; checking of actions, predicates and struct fields |
+| Type checking | `check.go`, `type_inference.go`, `types.go` | Type inference for undeclared rule types; checking of actions, predicates and struct fields |
 | Closure compiler | `compile.go` | Compiles parser expressions into Go closures |
 | Runtime | `runtime.go`, `memo.go`, `alloc.go`, `parse.go` | Rule calls, memoization, left recursion, backtracking, node allocation, parse entry points |
 | Attributes | `attrs.go` | `#error` and `#recover` |
@@ -147,7 +147,11 @@ The backend is selected with `ParseOptions.Backend` (`pego.WithBackend` in the p
 
 ### Type checking
 
-The type checker (`check.go`, `types.go`) infers the types of rules without a declared type by fixed-point iteration, and then checks the types of actions, predicates and struct fields.
+The type checker (`check.go`, `type_inference.go`, `types.go`) processes inferred-rule dependency components in
+callee-first order, then checks actions, predicates and struct fields. Acyclic rules are inferred once; recursive
+components iterate using canonical type keys that ignore union-member order. Pratt operator actions introduce
+implicit self-dependencies. Per-rule recursive growth budgets and repeating-state detection permanently widen only
+affected rules to `any`, retaining stable peers and unrelated finite types ([specification](../spec/type-checking.md#type-inference)).
 
 ### Actions
 
@@ -241,7 +245,8 @@ Hidden/indirect left-recursion reuse (C20) tracks completed calls that depend on
 them after edits; finalized heads without outer-seed or completed intermediate dependencies retain range-based reuse.
 Left-recursion reachability (C21/C26) excludes proven-unreachable choice suffixes and zero-count repetition bodies,
 includes possible recovery skip calls, and refines the graph to stability. The linter also accounts for recovery skip
-cuts (C25). Follow with typing/validation and input/stream equivalence fixes. Earlier backlog items now share current category IDs and priorities;
+cuts (C25). Dependency-ordered inference (C11) preserves long finite chains and unrelated rule types while bounding evolving
+recursive types. Follow with JSON/public AST validation (C12) and input/stream equivalence fixes. Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused
 optimization measurements, and correctness-only performance impacts are recorded in commit messages. The full suite
