@@ -508,11 +508,11 @@ func TestNavigation(t *testing.T) {
 			}
 		}
 	}
-	if got, want := strings.Join(names, ", "), "Tutorial, Guides, Specification, Reference, Parsers, Design records, Project"; got != want {
+	if got, want := strings.Join(names, ", "), "Tutorial, Guides, Cookbook, Specification, Reference, Parsers, Design records, Project"; got != want {
 		t.Errorf("sections = %s, want %s", got, want)
 	}
-	if want := map[string]bool{"docs/guide/": true, "spec/": true, "parsers/": true}; !maps.Equal(intro, want) {
-		t.Errorf("pages titled Introduction = %v, want the indexes of Guides, Specification and Parsers", intro)
+	if want := map[string]bool{"docs/guide/": true, "docs/cookbook/": true, "spec/": true, "parsers/": true}; !maps.Equal(intro, want) {
+		t.Errorf("pages titled Introduction = %v, want the indexes of Guides, Cookbook, Specification and Parsers", intro)
 	}
 	for _, sec := range secs {
 		if sec.Name != "Parsers" {

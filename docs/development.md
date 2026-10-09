@@ -26,6 +26,7 @@ This document describes the repository layout, the architecture of the implement
 | `spec/` | Language specification |
 | `docs/tutorial/` | Tutorials (getting started) |
 | `docs/guide/` | Task-oriented guides to each feature ([index](guide/README.md)) |
+| `docs/cookbook/` | Recipes: complete, runnable solutions to concrete tasks ([index](cookbook/README.md)) |
 | `docs/design/` | Design records |
 
 ## Architecture
