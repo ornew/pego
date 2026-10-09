@@ -49,7 +49,7 @@ def <rule name>[: <type>] = <parsing expression> [-> <action>]
   [Type System](types.md).
 - A **rule definition** (`def`) defines a rule.
   - `: <type>` declares the type of the value the rule produces. If it is
-    omitted, the type is inferred (see [Type inference](types.md#type-inference)).
+    omitted, the type is inferred (see [Type inference](type-checking.md#type-inference)).
   - The right-hand side of `=` is a [parsing expression](parser-expressions.md)
     or a [Pratt expression](pratt.md).
   - The optional `-> <action>` is an [action](actions.md) that builds the value
