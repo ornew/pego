@@ -68,7 +68,16 @@ func (p *printer) write(s string) {
 	if p.cur == nil {
 		p.newLine("")
 	}
-	p.cur.text += s
+	p.cur.text = joinMinusTokens(p.cur.text, s)
+}
+
+// joinMinusTokens keeps adjacent minus operators from becoming the cut
+// token "--". It is also used when a complete expression is formatted.
+func joinMinusTokens(left, right string) string {
+	if strings.HasSuffix(left, "-") && strings.HasPrefix(right, "-") {
+		return left + " " + right
+	}
+	return left + right
 }
 
 // flush writes the trailing comments of the current line.
@@ -492,7 +501,7 @@ func formatExpr(e Expr, outer int) string {
 	case *Atomic:
 		return paren("@"+formatExpr(e.Expr, precPrefix), precPrefix, outer)
 	case *Discard:
-		return paren("-"+formatExpr(e.Expr, precPrefix), precPrefix, outer)
+		return paren(joinMinusTokens("-", formatExpr(e.Expr, precPrefix)), precPrefix, outer)
 	case *Repeat:
 		s := formatExpr(e.Expr, precSuffix)
 		switch {
@@ -684,7 +693,7 @@ func formatTerm(t Term, outer int) string {
 		}
 		return s
 	case *Unary:
-		return t.Op + formatTerm(t.X, 6)
+		return joinMinusTokens(t.Op, formatTerm(t.X, 6))
 	case *Assign:
 		return t.Name + " = " + FormatTerm(t.Value)
 	}

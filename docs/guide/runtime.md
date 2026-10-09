@@ -598,6 +598,8 @@ pego fmt [-w] [-l] [<file.pego> ...]
 Formats PEGO source and **keeps comments**. Without `-w` it prints the result; `-w` rewrites the files in place;
 `-l` lists the files whose formatting differs (use it as a CI check). Without file arguments it formats standard input
 (`-w` is then an error). It accepts only `.pego` files; for JSON and compiled grammars it points you to `convert`.
+Adjacent minus operators stay separated: `- -"a"` remains two discards, and `- -1` remains two unary negations.
+The whitespace prevents either expression from becoming the distinct `--` cut token.
 
 ```bash
 $ cat messy.pego

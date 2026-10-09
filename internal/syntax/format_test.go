@@ -85,6 +85,43 @@ func mustJSON(t *testing.T, g *grammar.Grammar) string {
 	return string(data)
 }
 
+func TestFormatMinusBoundaries(t *testing.T) {
+	for _, src := range []string{
+		`def main=- -"a"`,
+		`def main=- - -"a"`,
+		`def main=(- -"a" / "b") $$`,
+		`def main=(- -- "a" "b" / "a" "c") $$`,
+		`def main=xs:(x:- -"a")* $$`,
+		`def main="a" [(- -1) == 1]`,
+		"type P struct { N int }\ndef main:P=\"a\" -> new P{N:- -1}",
+		"type P struct { N int }\ndef main:P=\"a\" -> new P{N:- - -1}",
+	} {
+		t.Run(src, func(t *testing.T) { checkFormat(t, src) })
+	}
+}
+
+var formattedGrammarSink string
+
+func BenchmarkFormatGrammar(b *testing.B) {
+	for _, name := range []string{"../../examples/minilang/minilang.pego", "../../parsers/yaml/yaml.pego"} {
+		b.Run(filepath.Base(name), func(b *testing.B) {
+			data, err := os.ReadFile(name)
+			if err != nil {
+				b.Fatal(err)
+			}
+			g, err := Parse(string(data))
+			if err != nil {
+				b.Fatal(err)
+			}
+			b.SetBytes(int64(len(data)))
+			b.ReportAllocs()
+			for b.Loop() {
+				formattedGrammarSink = grammar.Format(g)
+			}
+		})
+	}
+}
+
 func TestFormatSource(t *testing.T) {
 	for _, tc := range []struct{ name, in, want string }{
 		{

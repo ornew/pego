@@ -223,9 +223,9 @@ landing commits. The 2026-10-09 audit found correctness/resource gaps despite th
 Action-variable memo keys (C01), interrupted Document cache cleanup (C05), engine memo retirement (C02/P01) and
 nil-action construction tracking cleanup (C03, including generated runtimes) and bounded persistent variable
 bindings (C04/P02, including generated runtimes), safe YAML directive validation (M01) and iterative Pratt depth
-accounting (C06) and finite stream/zero repetition bounds (C07) are implemented. Follow with wider repetition-bound
-validation (C08), formatting integrity, typing/validation
-and incremental-equivalence fixes. Full benchmark
+accounting (C06), finite stream/zero repetition bounds (C07) and adjacent-minus formatting integrity (C09) are
+implemented. Follow with wider repetition bounds (C08), safe in-place formatting (T01), typing/validation and
+incremental-equivalence fixes. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused
 optimization measurements, and correctness-only performance impacts are recorded in commit messages. The full suite
 includes batch, recognition, incremental, stream and preparation workloads.
