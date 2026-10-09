@@ -72,7 +72,8 @@ predicate is evaluated.
 
 ## Interaction with memoization
 
-The result of a rule that reads variables, directly or through the rules it
+The result of a rule that reads variables in predicates or actions (including
+Pratt operand and operator actions), directly or through the rules it
 calls, depends on the values of those variables when the rule is called
 (definitions made inside the rule are undone when it returns). Such a rule is
 memoized per combination of those values: a memoized result is reused only when

@@ -86,6 +86,7 @@ def main = (^ @(?a-z)+ $ "\n"?)* $$ (?^\n)? _`, []string{"ab\ncd\n", "ab\n1", "�
 		{"scans", `
 def main = a:(?a-z)* -(?0-9){2,3} -.{1,2} -(?^,)+ "," rest:@.*`, []string{"ab12xy,z", "123,", "1", "abc12éq,é"}},
 	}
+	cases = append(cases, actionVariableCases...)
 	// Grammars of typed values with their inputs, from reviews of the typed runtime: each was a
 	// case where it differed from converting the result of Parse.
 	typed, _ := filepath.Glob("testdata/typed/*.pego")

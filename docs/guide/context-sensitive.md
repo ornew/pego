@@ -293,7 +293,7 @@ Three attributes matter here:
 A packrat parser caches the result of a rule at each input position, so that backtracking does not repeat work. A rule
 that reads variables does not depend on the position alone: the same rule at the same position can succeed with one
 `indent` and fail with another. PEGO therefore keys the cache by the position **and the values of the variables the rule
-can read**, directly or through the rules it calls (see the
+can read** in predicates and actions, including Pratt actions, directly or through the rules it calls (see the
 [spec](../../spec/predicates.md#interaction-with-memoization) and [item 12 of
 docs/performance.md](../performance.md#12-memoizing-rules-that-read-variables)). A cached result is reused only when
 those values are equal, so memoization never changes what a parse returns, only what it costs.

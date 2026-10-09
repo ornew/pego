@@ -207,8 +207,9 @@ func allCalls(e grammar.Expr, acc []string) []string {
 	return acc
 }
 
-// ruleVariables returns, for each rule, the sorted names of the variables read by predicates in the
-// rule or in the rules it calls, directly or indirectly. A rule's result depends on the environment
+// ruleVariables returns, for each rule, the sorted names of the variables read by
+// predicates and actions in the rule or in the rules it calls, directly or
+// indirectly. A rule's result depends on the environment
 // only through the values of these variables at the call: definitions made inside a rule are
 // undone when it returns.
 func ruleVariables(rules []*grammar.RuleDef) map[string][]string {
@@ -216,13 +217,9 @@ func ruleVariables(rules []*grammar.RuleDef) map[string][]string {
 	calls := map[string][]string{}
 	for _, r := range rules {
 		set := map[string]bool{}
-		walkExpr(r.Expr, func(x grammar.Expr) {
-			if p, ok := x.(*grammar.Predicate); ok {
-				walkTerm(p.Term, func(t grammar.Term) {
-					if v, ok := t.(*grammar.VarRef); ok {
-						set[v.Name] = true
-					}
-				})
+		walkRuleTerms(r, func(t grammar.Term) {
+			if v, ok := t.(*grammar.VarRef); ok {
+				set[v.Name] = true
 			}
 		})
 		direct[r.Name] = set
@@ -446,39 +443,35 @@ func propagate(rules []*grammar.RuleDef, calls map[string][]string, set map[stri
 	}
 }
 
-// ruleUsesPositions reports whether the rule's actions or predicates refer to startPos or
-// endPos.
-func ruleUsesPositions(r *grammar.RuleDef) bool {
-	var terms []grammar.Term
-	if r.Action != nil {
-		terms = append(terms, r.Action)
-	}
+// walkRuleTerms visits every term in a rule's predicates and actions, including
+// Pratt operand and operator actions.
+func walkRuleTerms(r *grammar.RuleDef, f func(grammar.Term)) {
+	walkTerm(r.Action, f)
 	walkExpr(r.Expr, func(e grammar.Expr) {
 		switch e := e.(type) {
 		case *grammar.Predicate:
-			terms = append(terms, e.Term)
+			walkTerm(e.Term, f)
 		case *grammar.Pratt:
 			for _, o := range e.Operands {
-				if o.Action != nil {
-					terms = append(terms, o.Action)
-				}
+				walkTerm(o.Action, f)
 			}
 			for _, l := range e.Levels {
 				for _, op := range l.Operators {
-					if op.Action != nil {
-						terms = append(terms, op.Action)
-					}
+					walkTerm(op.Action, f)
 				}
 			}
 		}
 	})
+}
+
+// ruleUsesPositions reports whether the rule's actions or predicates refer to startPos or
+// endPos.
+func ruleUsesPositions(r *grammar.RuleDef) bool {
 	found := false
-	for _, t := range terms {
-		walkTerm(t, func(x grammar.Term) {
-			if m, ok := x.(*grammar.Member); ok && (m.Name == "startPos" || m.Name == "endPos") {
-				found = true
-			}
-		})
-	}
+	walkRuleTerms(r, func(x grammar.Term) {
+		if m, ok := x.(*grammar.Member); ok && (m.Name == "startPos" || m.Name == "endPos") {
+			found = true
+		}
+	})
 	return found
 }
