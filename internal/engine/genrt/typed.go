@@ -290,9 +290,9 @@ func (p *tparser) recycle() {
 	p.frames.reset()
 	p.fields.reset()
 	p.memoSlab.reset()
-	clear(p.trail)
+	clear(p.trail[:cap(p.trail)])
 	clear(p.kidStack)
-	clear(p.saved)
+	clear(p.saved[:cap(p.saved)])
 	clear(p.memoSlots)
 	free := p.free
 	for i := range free {
@@ -394,7 +394,14 @@ func (p *tparser) reset(m mark) {
 		u := p.trail[i]
 		u.f.vals[u.slot] = u.old
 	}
-	p.trail = p.trail[:m.trail]
+	p.dropTrail(m.trail)
+}
+
+// dropTrail discards undo history whose effects are already restored or whose
+// frame is returning. Clear its references before truncating the backing slice.
+func (p *tparser) dropTrail(base int) {
+	clear(p.trail[base:])
+	p.trail = p.trail[:base]
 }
 
 func (p *tparser) setCapture(slot int, v any) {
@@ -641,7 +648,7 @@ func (p *tparser) invoke(r *trule, min int) (any, bool) {
 	v, ok := r.body(p, min)
 	p.depth--
 	p.frame, p.cut = prevFrame, prevCut
-	p.trail = p.trail[:trail]
+	p.dropTrail(trail)
 	if ok {
 		v = p.finish(r, f, v, start)
 	}
@@ -661,7 +668,7 @@ func (p *tparser) invokePlain(r *trule, min int) (any, bool) {
 	v, ok := r.body(p, min)
 	p.depth--
 	p.cut = prevCut
-	p.trail = p.trail[:trail]
+	p.dropTrail(trail)
 	if ok {
 		v = p.finish(r, emptyTFrame, v, start)
 	} else {

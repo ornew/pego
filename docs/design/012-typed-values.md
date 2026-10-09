@@ -62,6 +62,10 @@ errors and memoization decisions are literally shared. The generator writes the 
 - **Scratch memory.** CST nodes, value lists, capture frames (freed when their rule returns), memo entries and the
   decoded input are pooled with the parser across parses, since the result never refers to them; a parse allocates
   little more than the values it returns.
+  Discarded undo-trail entries are cleared after rollback, rule return and captured repetition elements, including
+  generated call methods. Live caller undo entries remain available. Recycling clears the full trail and Pratt
+  saved-capture backing slices, since their lengths may have shrunk after retaining overwritten values. This releases
+  discarded captures from pooled scratch while preserving returned terminals/structs; it does not rely on a later pool GC.
 - **Direct rules** (`gen_direct.go`). Most rules are not written as a method per expression at all: the body is
   inlined into the method that calls the rule (`s<id>`, `v<id>` or `i<id>`), each expression jumping to a label when
   it fails, with captures in Go variables of that method instead of a frame. Where the general code resets to a

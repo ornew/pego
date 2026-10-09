@@ -325,7 +325,7 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 		}
 		fmt.Fprintf(m, "// %s, called as by invokePlain\nfunc (p *tparser) %s() (any, bool) {\n", r.name, name)
 		m.WriteString("\tstart, rec, trail := p.pos, len(p.recovered), len(p.trail)\n\tprevEnv, prevCut := p.env, p.cut\n\tp.cut = false\n\tp.depth++\n\tif p.depth > maxDepth {\n\t\tp.tooDeep()\n\t}\n")
-		fmt.Fprintf(m, "\tv, ok := p.%s()\n\tp.depth--\n\tp.cut = prevCut\n\tp.trail = p.trail[:trail]\n\tif ok {\n", body)
+		fmt.Fprintf(m, "\tv, ok := p.%s()\n\tp.depth--\n\tp.cut = prevCut\n\tp.dropTrail(trail)\n\tif ok {\n", body)
 		finish("emptyTFrame")
 		m.WriteString("\t} else {\n\t\tp.pos = start\n\t\tp.recovered = p.recovered[:rec]\n\t}\n\tp.env = prevEnv\n\treturn v, ok\n}\n\n")
 	}
@@ -352,7 +352,7 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 	}
 	fmt.Fprintf(m, "// %s, invoked as by invoke\nfunc (p *tparser) i%d() (any, bool) {\n", r.name, r.id)
 	fmt.Fprintf(m, "\tf := p.newFrame(%d)\n\tprevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)\n\tp.frame, p.cut = f, false\n\tp.depth++\n\tif p.depth > maxDepth {\n\t\tp.tooDeep()\n\t}\n\tstart := p.pos\n\t_ = start\n", len(s.names))
-	fmt.Fprintf(m, "\tv, ok := p.%s()\n\tp.depth--\n\tp.frame, p.cut = prevFrame, prevCut\n\tp.trail = p.trail[:trail]\n\tif ok {\n", body)
+	fmt.Fprintf(m, "\tv, ok := p.%s()\n\tp.depth--\n\tp.frame, p.cut = prevFrame, prevCut\n\tp.dropTrail(trail)\n\tif ok {\n", body)
 	finish("f")
 	m.WriteString("\t}\n\tp.env = prevEnv\n\tp.freeFrame(f)\n\treturn v, ok\n}\n\n")
 }
@@ -421,11 +421,7 @@ func (g *generator) plainCall(r *rule, body string) {
 	}
 `)
 	fmt.Fprintf(&g.methods, "\tv, ok := p.%s()\n", body)
-	g.methods.WriteString(`	p.depth--
-	p.cut = prevCut
-	p.trail = p.trail[:trail]
-	if ok {
-`)
+	g.methods.WriteString("\tp.depth--\n\tp.cut = prevCut\n" + g.pick("\tp.trail = p.trail[:trail]\n", "\tp.dropTrail(trail)\n") + "\tif ok {\n")
 	if r.novalue {
 		g.methods.WriteString("\t\tv = nil\n")
 	} else {
@@ -692,7 +688,7 @@ func (g *generator) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, buil
 	if own && g.table == "trules" {
 		// The element's frame is dead: its values are in v, and the trail entries since m0 all
 		// refer to it (or to frames of its own elements), so they can go too.
-		b.WriteString("\t\tp.trail = p.trail[:m0.trail]\n\t\tp.freeFrame(f)\n")
+		b.WriteString("\t\tp.dropTrail(m0.trail)\n\t\tp.freeFrame(f)\n")
 	}
 	b.WriteString("\t\tcount++\n")
 	if build {

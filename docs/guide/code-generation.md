@@ -407,6 +407,10 @@ Details:
   `ParseAST` runs `Parse` and converts the tree, about 10% slower than `Parse` (minilang). The
   [design record](../design/012-typed-values.md) explains both. The typed runtime adds about as much code to the
   generated file as the parser itself.
+- **Scratch reuse.** The typed runtime clears discarded undo entries after rollback, rule return and captured
+  repetition elements. Parser recycling also clears saved-capture backing slices, so overwritten values do not remain
+  reachable through pooled scratch after a later failed parse. Returned values remain valid. Regenerate existing typed
+  parsers to receive this cleanup; output strings may still retain their own backing storage.
 - `ParseRule` still returns `*Node`; typed values exist for the start rule only.
 
 ## Recognition (`-recognize`)

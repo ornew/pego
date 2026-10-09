@@ -283,6 +283,13 @@ Recovery cannot wrap a streaming repetition (C19); source/public AST validation 
 and saved bytecode validates recovery boundaries before allowing a stream-mode `NEXT`, including AST-omitted files.
 Element-local recovery remains supported. `BenchmarkStreamRecoveryPreparation` measures compilation and bare-module
 loading with one or 100 recovery rules; existing stream workloads cover unchanged runtime paths.
+Typed generated Go parsers release discarded capture undo entries at rollback, generated/runtime call return and
+captured repetition boundaries (G01), and clear full trail/saved-capture storage when recycled. Parent undo records
+and returned values are preserved. `TestGeneratedTypedPoolRetention` checks both units after a 2 MiB overwritten
+capture, failed reuse, nested rollback and repeat captures. `PEGO_TYPED_POOL_DIR` preserves its generated fixture;
+`BenchmarkTypedCapturePool` and the verbose `TestTypedPoolHeap` measure throughput and explicitly retained scratch.
+Returned typed values can independently retain discarded siblings in their allocation chunks; P28 tracks this
+optimization candidate separately, with result ownership and allocation/throughput measurement gates.
 Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused
