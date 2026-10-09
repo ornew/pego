@@ -5,8 +5,8 @@ and how to choose between the ways of executing it (closure, bytecode, iterative
 covers saving grammars as `.pegoc` files and the `pego` command-line tool.
 
 It assumes you can already write a grammar. If not, start with the [language specification](../../spec/README.md).
-Related guides: [generating a standalone Go parser](code-generation.md), and streaming and incremental parsing in
-[streaming-and-incremental.md](streaming-and-incremental.md).
+Related guides: [generating a standalone Go parser](code-generation.md),
+[streaming input](streaming.md) and [reparsing edited text](incremental.md).
 
 - [The pipeline](#the-pipeline)
 - [Compiling a grammar](#compiling-a-grammar)
@@ -585,7 +585,7 @@ What this means for you:
 
 - **Memory grows with input size.** The memo table, like the tree, is proportional to the input. For very large or
   unbounded input use a `#stream` repetition and `ParseStream`, which discards memo entries and input already
-  handed to you (see [streaming-and-incremental.md](streaming-and-incremental.md)).
+  handed to you (see [streaming.md](streaming.md)).
 - **Incremental parsing reuses the memo.** `Document` keeps it between edits, and memoizes the rules that a normal parse
   skips, so that more of a previous parse can be reused.
 - **Generated parsers memoize in the same way.** Memoization decisions are made by the same analysis and are saved in
@@ -618,7 +618,7 @@ pego parse -g <grammar> [-s <rule>] [-i <input>] [-f json|sexpr] [-stream] [-che
 | `-check` | off | Recognition only: print `ok`, or the syntax error |
 | `-unit` | `codepoints` | Position unit |
 | `-backend` | chosen for the grammar | `closure`, `bytecode` or `bytecode-iterative` |
-| `-stream` | off | Print each `#stream` element as soon as it matches, one per line (see [streaming-and-incremental.md](streaming-and-incremental.md)) |
+| `-stream` | off | Print each `#stream` element as soon as it matches, one per line (see [streaming.md](streaming.md)) |
 
 ```bash
 $ pego parse -g pairs.pego -f sexpr -i 'abc=12; あい=3'

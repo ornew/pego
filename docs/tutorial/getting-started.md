@@ -817,7 +817,8 @@ The [runtime guide](../guide/runtime.md) describes the backends, options and com
 | To learn about | Read |
 |:--|:--|
 | Choosing a backend, runtime options, compiled grammars, code generation | [Runtime guide](../guide/runtime.md) |
-| Parsing unbounded input as a stream, and reparsing edited documents | [Streaming and incremental parsing](../guide/streaming-and-incremental.md) |
+| Parsing unbounded input as a stream | [Streaming](../guide/streaming.md) |
+| Reparsing an edited document | [Incremental parsing](../guide/incremental.md) |
 | Shaping trees, struct and union types, `foldl`, `map`, `concat` and the other action functions | [Trees and actions](../guide/trees-and-actions.md) |
 | Operator tables, precedence, associativity, level-restricted calls, left recursion | [Expressions](../guide/expressions.md) |
 | Error messages, `#error`, `#recover` and the Go error types | [Errors and recovery](../guide/errors-and-recovery.md) |

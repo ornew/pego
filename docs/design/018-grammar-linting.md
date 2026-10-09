@@ -191,7 +191,7 @@ called by unreachable rules are reported too, with a message that says so.
 ### Performance hints
 
 They complement `pego profile`, which needs an input, with what the grammar's shape implies for `Document` reuse (see
-[Writing grammars that reuse well](../guide/streaming-and-incremental.md#writing-grammars-that-reuse-well)):
+[Writing grammars that reuse well](../guide/incremental.md#writing-grammars-that-reuse-well)):
 
 - `right-recursion`: a rule that continues a list by calling itself at its end, after a call of another rule
   (`lines = line lines?`, `items = item ("," items)?`). Each call spans the rest of the list. Prefix operators

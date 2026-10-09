@@ -131,7 +131,7 @@ A grammar decoded from JSON or loaded from a compiled grammar has no source posi
 |:--|:--|
 | `error` | Certain: part of the grammar can never take effect. An alternative that can never match, an expression that can never match. |
 | `warning` | Certain about the fact, though the grammar may still do what was meant: a capture that is never read, a repetition whose element can match nothing, a rule that is never used. |
-| `hint` | A suggestion about performance, mostly for [incremental parsing](streaming-and-incremental.md#writing-grammars-that-reuse-well). The grammar is correct as written. |
+| `hint` | A suggestion about performance, mostly for [incremental parsing](incremental.md#writing-grammars-that-reuse-well). The grammar is correct as written. |
 
 Errors and warnings are proven from the grammar: when the linter cannot be sure, it says nothing. That means it misses
 some mistakes (see [What the linter does not find](#what-the-linter-does-not-find)), but what it reports is worth
@@ -300,7 +300,7 @@ def args = expr ("," args)?
 
 Each call spans the rest of the list, so a list of n items nests n calls deep, and after an edit a `Document`
 evaluates again every call that begins before the edit (503 of 1,000 lines in the measurement in
-[Writing grammars that reuse well](streaming-and-incremental.md#writing-grammars-that-reuse-well)). Write the list as a
+[Writing grammars that reuse well](incremental.md#writing-grammars-that-reuse-well)). Write the list as a
 repetition: `line*`, `expr ("," expr)*`. A prefix operator (`"-" unary`) is not reported, but a right-associative
 binary operator written this way is; a hint, not a mistake.
 
