@@ -810,13 +810,15 @@ n, err := p.Parse("abc=12", pego.WithBackend(pego.Bytecode)) // also pego.WithUn
 `pego compile -g config.pego -o config.pegoc` saves a compiled grammar that every command accepts in place of the
 `.pego` file (`pego parse -g config.pegoc ...`), and `pego.LoadParser` loads it without recompiling.
 `pego convert -to json config.pego` converts a grammar to JSON, which is handy for tools that generate grammars.
-The [runtime guide](../guide/runtime.md) describes the backends, options and compiled grammars in detail.
+The [runtime guide](../guide/runtime.md) describes the backends and options in detail, and the
+[compiled grammars guide](../guide/compiled-grammars.md) the `.pegoc` format.
 
 ### Where to go from here
 
 | To learn about | Read |
 |:--|:--|
-| Choosing a backend, runtime options, compiled grammars, code generation | [Runtime guide](../guide/runtime.md) |
+| Choosing a backend, runtime options, code generation | [Runtime guide](../guide/runtime.md) |
+| Saving a grammar to a file and loading it without recompiling | [Compiled grammars](../guide/compiled-grammars.md) |
 | Parsing unbounded input as a stream | [Streaming](../guide/streaming.md) |
 | Reparsing an edited document | [Incremental parsing](../guide/incremental.md) |
 | Shaping trees, struct and union types, `foldl`, `map`, `concat` and the other action functions | [Trees and actions](../guide/trees-and-actions.md) |

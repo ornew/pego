@@ -541,7 +541,7 @@ and inputs that exercise each feature of your grammar.
   you commit and that compiles into your binary. It does not pull in PEGO's compiler, analyzer or VMs; the imports are
   `bytes`, `encoding/json`, `fmt`, `sort`, `strconv`, `strings` and `unicode/utf8`.
 - **Start-up.** There is none: no grammar to parse or compile. If start-up time is the only concern and a source file
-  is acceptable, loading a [`.pegoc`](runtime.md#compiled-grammars-pegoc) is the cheaper alternative.
+  is acceptable, loading a [`.pegoc`](compiled-grammars.md) is the cheaper alternative.
 - **Flexibility.** The grammar is frozen into the binary. Changing it means regenerating, rebuilding and redeploying;
   if users supply grammars at run time, use the engine.
 - **Features.** No streaming, incremental parsing, depth option or backend choice (see
