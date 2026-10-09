@@ -891,7 +891,7 @@ func (vm *vmProgram) assign(p *parser, name string, entry int) bool {
 	if _, isFn := v.(function); isFn {
 		return false
 	}
-	p.env = &env{name: name, val: v, next: p.env}
+	p.bind(name, v)
 	return true
 }
 

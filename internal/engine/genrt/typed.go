@@ -911,7 +911,7 @@ func (p *tparser) assign(name string, t func(*tctx) any) (ok bool) {
 	if _, isFn := v.(func(...any) any); isFn {
 		return false
 	}
-	p.env = &env{name: name, val: v, next: p.env}
+	p.bind(name, v)
 	return true
 }
 

@@ -376,8 +376,15 @@ before `SyntaxError.Pos` that was delivered is final.
 
 An action may construct temporary nodes and return `nil`. The callback receives
 that nil value, and the action's construction tracker releases its references
-before delivery. Clearing that tracker preserves any nodes the action returns
-or stores in an environment; it does not change their fields or positions.
+before delivery. Clearing that tracker preserves nodes the action returns;
+it does not change their fields or positions. Variables hold scalar values.
+
+Repeated variable assignments keep one current binding per name. Environments
+saved for backtracking or a caller remain immutable, but the current environment
+does not retain all previous assignments from consumed records. Lookup cost
+depends on distinct variable names. Large variable values, active rollback
+points and memo keys can still keep their own data alive; see
+[performance log entry 69](../performance.md#69-bound-persistent-variable-binding-histories).
 
 What a stream parse releases as it goes:
 

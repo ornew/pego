@@ -77,6 +77,10 @@ The runtime (`runtime.go`) memoizes rule calls keyed by (rule, position, level),
 Left recursion is handled as in CPython's pegen (see the [reference note](ref-cpython-pegen-packrat-parsing.md)): only the leader rule, which breaks the cycle, is evaluated by growing the seed, and the other rules in the cycle are not memoized.
 
 Backtracking returns to a recorded point: the position, the variable environment (a persistent list) and the history of capture writes.
+The current environment holds at most one binding per variable name. Replacing a value copies only the preceding
+bindings, so saved environments remain immutable; assigning an equal value reuses the existing environment.
+Lookups depend on distinct names rather than assignment history. A parse-wide name hint avoids scanning for first
+assignments and records names from the first assignment, including abandoned branches.
 
 Nodes, child lists, field lists and capture frames are allocated from per-parse slabs (`alloc.go`), and the memo table is a per-position list of entries (`memo.go`). Scratch state of action and predicate evaluation lives in buffers owned by the parser and reused: an operand stack (`estack`, shared by the VMs' expression code and the closure backend's built-in calls), arenas for lambda calls, and the stack that gathers list elements (`kidStack`). A whole-input parse takes its decoded input, offset table, memo table and `kidStack` from a pool kept by the `Program` and returns them when it is done (`newPooledParser`). A call of a rule that is not memoized and has no captures takes a shorter path (`invokePlain`) than a full invocation. See [performance.md](performance.md) for the measurements behind these choices.
 
@@ -217,8 +221,8 @@ The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for i
 The [living backlog](https://github.com/ornew/pego/issues/1) is the source of individual defects, priorities and
 landing commits. The 2026-10-09 audit found correctness/resource gaps despite the implemented feature coverage above.
 Action-variable memo keys (C01), interrupted Document cache cleanup (C05), engine memo retirement (C02/P01) and
-nil-action construction tracking cleanup (C03, including generated runtimes) are implemented. Shadowed stream
-environments (C04) are next. Follow with the YAML panic,
+nil-action construction tracking cleanup (C03, including generated runtimes) and bounded persistent variable
+bindings (C04/P02, including generated runtimes) are implemented. Follow with the YAML panic,
 depth/backend limits, formatting integrity, typing/validation and incremental-equivalence fixes. Full benchmark
 results will be refreshed at the streaming-memory checkpoint; tuning entries carry focused measurements per change.
 

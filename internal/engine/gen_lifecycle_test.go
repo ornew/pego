@@ -128,3 +128,111 @@ for (const unit of [CodePoints, Bytes]) {
 		t.Fatalf("generated TS tracking: %v\n%s", err, out)
 	}
 }
+
+// Inspect the live environment before returning from a generated rule: rule
+// return restores the caller's environment and would conceal retained history.
+func TestGeneratedEnvironmentBindings(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds generated code")
+	}
+	g, err := syntax.Parse(assignedStream)
+	if err != nil {
+		t.Fatal(err)
+	}
+	code, err := Generate(g, GenOptions{Package: "main", Start: "main"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	main := `package main
+import "strings"
+func main() {
+ for _, unit := range []Unit{CodePoints, Bytes} {
+  input := strings.Repeat("a", 10000)
+  p := &parser{}
+  if unit == Bytes { p.unit, p.bs, p.n = Bytes, input, len(input) } else { p.setSource(input) }
+  p.memo.stride = nseen
+  p.frame = p.newFrame(len(rules[0].scope))
+  if _, ok := rules[0].body(p, 0); !ok || p.pos != p.n { panic("parse failed") }
+  names := make(map[string]bool)
+  for e := p.env; e != nil; e = e.next {
+   if names[e.name] { panic("retained shadowed binding") }
+   names[e.name] = true
+  }
+  if len(names) != 3 { panic("lost binding") }
+ }
+}`
+	for name, contents := range map[string][]byte{"parser.go": code, "main.go": []byte(main), "go.mod": []byte("module lifecycle\n\ngo 1.27\n")} {
+		if err := os.WriteFile(filepath.Join(dir, name), contents, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cmd := exec.Command("go", "run", ".")
+	cmd.Dir = dir
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("generated binding state: %v\n%s", err, out)
+	}
+}
+
+func TestGeneratedTSEnvironmentBindings(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs generated code")
+	}
+	node, err := exec.LookPath("node")
+	if err != nil {
+		t.Skip("node not found")
+	}
+	g, err := syntax.Parse(assignedStream)
+	if err != nil {
+		t.Fatal(err)
+	}
+	code, err := GenerateTS(g, GenOptions{Start: "main"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	code = append(code, []byte(`
+for (const unit of [CodePoints, Bytes]) {
+ const p = new Parser("a".repeat(10000), unit, nseen);
+ if (rules[0]!.body(p,0) === undefined || p.pos !== p.n) throw new Error("parse failed");
+ const names = new Set<string>();
+ for (let e = p.env; e !== null; e = e.next) {
+  if (names.has(e.name)) throw new Error("retained shadowed binding");
+  names.add(e.name);
+ }
+ if (names.size !== 3) throw new Error("lost binding");
+ p.env = null;
+ p.bind("z", 1);
+ const saved = p.env as Env | null;
+ p.bind("z", 1);
+ if (p.env !== saved) throw new Error("equal assignment replaced state");
+ p.bind("w", true);
+ p.env = saved;
+ p.bind("w", false);
+ p.bind("z", 2);
+ if (saved!.val !== 1) throw new Error("saved environment mutated");
+ const q = new Parser("", unit, nseen);
+ q.bind("x",1);
+ const first = q.env as Env | null;
+ q.env = null;
+ q.bind("y",2);
+ q.bind("z",3);
+ q.env = first;
+ q.bind("w",4);
+ q.bind("x",5);
+ let count = 0;
+ for (let e = q.env; e !== null; e = e.next) count++;
+ if (count !== 2 || first!.val !== 1) throw new Error("early snapshot restore");
+}
+`)...)
+	dir := t.TempDir()
+	for name, contents := range map[string][]byte{"parser.ts": code, "package.json": []byte(`{"type":"module"}`)} {
+		if err := os.WriteFile(filepath.Join(dir, name), contents, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cmd := exec.Command(node, "parser.ts")
+	cmd.Dir = dir
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("generated TS binding state: %v\n%s", err, out)
+	}
+}

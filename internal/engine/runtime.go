@@ -22,10 +22,11 @@ type parser struct {
 	// reused by a Document. Normal syntax errors are completed executions.
 	aborted bool
 
-	env   *env   // predicate variables
-	frame *frame // current capture frame
-	trail []undo // capture writes to undo on backtracking
-	cut   bool   // whether a cut has been passed in the current alternative
+	env   *env            // predicate variables
+	bound map[string]bool // names assigned anywhere in this parse (a lookup hint)
+	frame *frame          // current capture frame
+	trail []undo          // capture writes to undo on backtracking
+	cut   bool            // whether a cut has been passed in the current alternative
 	memo  *memoTable
 
 	// While silent is positive (inside a lookahead), expectations are not recorded.
@@ -203,8 +204,8 @@ type undo struct {
 	old  *Node
 }
 
-// env is a persistent list of predicate variables. A definition is represented by prepending a
-// new element; older environments are never modified.
+// env is a persistent list with one current binding per predicate variable.
+// Older environments saved for rollback are never modified.
 type env struct {
 	name string
 	val  any
@@ -218,6 +219,54 @@ func (e *env) lookup(name string) (any, bool) {
 		}
 	}
 	return nil, false
+}
+
+// bind keeps one current binding per name. Replacing a non-head binding copies
+// only the prefix before it, so environments saved for rollback stay immutable.
+// bound is monotonic: a name never assigned before cannot occur in the current
+// environment. A name assigned only on an abandoned branch may be absent now;
+// that false positive only causes a search, not a different binding.
+func (p *parser) bind(name string, val any) {
+	e := p.env
+	if p.bound == nil {
+		p.bound = make(map[string]bool)
+	}
+	if e == nil {
+		p.bound[name] = true
+		p.env = &env{name: name, val: val}
+		return
+	}
+	if e.name == name {
+		if e.val != val {
+			p.env = &env{name: name, val: val, next: e.next}
+		}
+		return
+	}
+	if !p.bound[name] {
+		p.bound[name] = true
+		p.env = &env{name: name, val: val, next: e}
+		return
+	}
+	old := e
+	for old != nil && old.name != name {
+		old = old.next
+	}
+	if old == nil {
+		p.env = &env{name: name, val: val, next: e}
+		return
+	}
+	// Variables are checked scalar values; an equal assignment has no effect.
+	if old.val == val {
+		return
+	}
+	head := &env{name: name, val: val}
+	tail := head
+	for cur := e; cur != old; cur = cur.next {
+		tail.next = &env{name: cur.name, val: cur.val}
+		tail = tail.next
+	}
+	tail.next = old.next
+	p.env = head
 }
 
 // mark is the state restored on backtracking.

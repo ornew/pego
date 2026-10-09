@@ -327,6 +327,12 @@ ok
   call its own entry, so a rule that reads it is never reused. If a value is needed only to build the tree, capture it
   and use an action instead of a variable.
 
+Each current environment stores one value per distinct variable name. Repeated assignments do not lengthen lookup
+paths; backtracking and rule returns still restore the earlier values. Assigning the same scalar value reuses the
+environment. Changing a value behind other names copies that prefix to preserve saved environments, so frequent
+changes to many distinct names can allocate more than a grammar with one variable. See
+[performance log entry 69](../performance.md#69-bound-persistent-variable-binding-histories) for measurements.
+
 ## 3. Recipes
 
 ### Matching tags

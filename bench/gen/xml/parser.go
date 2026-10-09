@@ -472,6 +472,7 @@ type parser struct {
 	depth   int     // nesting of rule calls
 	created []*Node // struct nodes made by the action being evaluated (from actx.cbase)
 	env     *env
+	bound   map[string]bool // names assigned anywhere in this parse (a lookup hint)
 	frame   *frame
 	trail   []undo
 	cut     bool
@@ -756,6 +757,52 @@ type env struct {
 	name string
 	val  any
 	next *env
+}
+
+// bind replaces a binding by copying its prefix, preserving saved environments.
+// bound tracks names ever assigned, so first assignments need no linear search.
+// Names from abandoned branches may be absent now; that only causes a search.
+func (p *parser) bind(name string, val any) {
+	e := p.env
+	if p.bound == nil {
+		p.bound = make(map[string]bool)
+	}
+	if e == nil {
+		p.bound[name] = true
+		p.env = &env{name: name, val: val}
+		return
+	}
+	if e.name == name {
+		if e.val != val {
+			p.env = &env{name: name, val: val, next: e.next}
+		}
+		return
+	}
+	if !p.bound[name] {
+		p.bound[name] = true
+		p.env = &env{name: name, val: val, next: e}
+		return
+	}
+	old := e
+	for old != nil && old.name != name {
+		old = old.next
+	}
+	if old == nil {
+		p.env = &env{name: name, val: val, next: e}
+		return
+	}
+	// Variables are checked scalar values; an equal assignment has no effect.
+	if old.val == val {
+		return
+	}
+	head := &env{name: name, val: val}
+	tail := head
+	for cur := e; cur != old; cur = cur.next {
+		tail.next = &env{name: cur.name, val: cur.val}
+		tail = tail.next
+	}
+	tail.next = old.next
+	p.env = head
 }
 
 type mark struct {
@@ -1381,7 +1428,7 @@ func (p *parser) assign(name string, t func(*actx) any) (ok bool) {
 	if _, isFn := v.(func(...any) any); isFn {
 		return false
 	}
-	p.env = &env{name: name, val: v, next: p.env}
+	p.bind(name, v)
 	return true
 }
 
@@ -2926,7 +2973,7 @@ func (p *tparser) assign(name string, t func(*tctx) any) (ok bool) {
 	if _, isFn := v.(func(...any) any); isFn {
 		return false
 	}
-	p.env = &env{name: name, val: v, next: p.env}
+	p.bind(name, v)
 	return true
 }
 

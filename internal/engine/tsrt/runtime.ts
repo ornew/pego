@@ -874,6 +874,7 @@ class Parser {
   depth = 0; // nesting of rule calls
   created: Node[] = []; // struct nodes made by the action being evaluated (from Actx.cbase)
   env: Env | null = null;
+  bound: Set<string> | null = null; // names assigned anywhere in this parse (a lookup hint)
   frame: Frame = emptyFrame;
   trail: { f: Frame; slot: number; old: Node | null }[] = [];
   cut = false;
@@ -1686,7 +1687,7 @@ class Parser {
       if (typeof v === "function") {
         return false;
       }
-      this.env = { name, val: v, next: this.env };
+      this.bind(name, v);
       return true;
     } catch (x) {
       if (!(x instanceof EvalError)) {
@@ -1697,6 +1698,42 @@ class Parser {
     } finally {
       this.created.length = base; // drop nodes created by the predicate
     }
+  }
+
+  // Preserve environments saved for rollback; first assignments skip searching.
+  bind(name: string, val: Value): void {
+    const e = this.env;
+    if (this.bound === null) this.bound = new Set();
+    if (e === null) {
+      this.env = { name, val, next: null };
+      this.bound.add(name);
+      return;
+    }
+    if (e.name === name) {
+      if (e.val !== val) this.env = { name, val, next: e.next };
+      return;
+    }
+    if (!this.bound.has(name)) {
+      this.bound.add(name);
+      this.env = { name, val, next: e };
+      return;
+    }
+    let old: Env | null = e;
+    while (old !== null && old.name !== name) old = old.next;
+    if (old === null) {
+      this.env = { name, val, next: e };
+      return;
+    }
+    // Variables are checked scalar values; an equal assignment has no effect.
+    if (old.val === val) return;
+    const head: Env = { name, val, next: null };
+    let tail = head;
+    for (let cur: Env | null = e; cur !== old; cur = cur!.next) {
+      tail.next = { name: cur!.name, val: cur!.val, next: null };
+      tail = tail.next;
+    }
+    tail.next = old.next;
+    this.env = head;
   }
 
   // --- Pratt expressions ---

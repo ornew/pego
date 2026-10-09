@@ -724,7 +724,7 @@ func (c *compiler) predicate(e *grammar.Predicate, s *scope) matcher {
 			if _, isFn := v.(*closure); isFn {
 				return nil, false
 			}
-			p.env = &env{name: a.Name, val: v, next: p.env}
+			p.bind(a.Name, v)
 			return nil, true
 		}
 	}
