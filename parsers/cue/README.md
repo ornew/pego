@@ -67,7 +67,9 @@ var ce *cue.SemanticError // found after the syntax: Msg, Line, Col, Span
 | `*SyntaxError`, `*SemanticError` | Errors with positions |
 
 Positions are in code points by default (`Span` is `Start`, `End`, with `End` exclusive); `cue.ParseFile(src, cue.Bytes)`
-counts bytes, as the reference parser does.
+counts bytes, as the reference parser does. Invalid UTF-8 errors point at the first offending byte, converted
+to the selected span unit, with an empty span. `SemanticError.Line` and `Col` are 1-based codepoint locations
+in both units, including these encoding errors; a valid U+FFFD is not an encoding error.
 
 The types follow `cuelang.org/go/cue/ast`: `ast.BasicLit` is split by kind into `Int`, `Float` and `String` (with `Bool`,
 `Null` and `Bottom` as in `ast`); the package clause, the imports and the file attributes are in `File.Decls`; the

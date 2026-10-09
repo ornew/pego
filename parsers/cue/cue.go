@@ -45,16 +45,19 @@ import (
 // any: ParseAST, then Check, and an error for input that is not UTF-8 (which the parser reads as U+FFFD).
 func ParseFile(input string, unit ...Unit) (*File, error) {
 	if !utf8.ValidString(input) {
-		i := 0
+		pos := 0
 		for j, r := range input {
 			if r == utf8.RuneError {
 				if _, w := utf8.DecodeRuneInString(input[j:]); w == 1 {
+					if len(unit) > 0 && unit[0] == Bytes {
+						pos = j
+					}
 					break
 				}
 			}
-			i = j
+			pos++
 		}
-		return nil, locate(input, &SemanticError{Span: Span{Start: i + 1, End: i + 1}, Msg: "illegal UTF-8 encoding"}, unit)
+		return nil, locate(input, &SemanticError{Span: Span{Start: pos, End: pos}, Msg: "illegal UTF-8 encoding"}, unit)
 	}
 	f, err := ParseAST(input, unit...)
 	if err != nil {
