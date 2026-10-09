@@ -9,7 +9,8 @@
 `grammar.Validate(g)` reports a structural defect as a
 `*grammar.ValidationError` with an AST path and nearest known source position.
 JSON loading and the compiler share this check. Malformed required children,
-negative positional references and reversed repetition bounds return errors
+negative positional references, reversed repetition bounds and invalid
+character-range endpoints return errors
 before analysis can dereference them.
 
 ## Motivation
@@ -51,6 +52,14 @@ new supported node type. A positional reference must be nonnegative. A
 repetition's minimum must be nonnegative and its maximum must be negative
 (unbounded) or at least the minimum.
 
+Character-range endpoints must be Unicode scalar values (0 through 0x10FFFF,
+excluding 0xD800–0xDFFF), with the lower endpoint no greater than the upper.
+Scalar endpoints may span the surrogate interval. Empty AST classes,
+overlapping ranges and negation retain their existing meanings. Source
+Unicode escapes obey the same scalar-value bound, checked by the lexer.
+Previously accepted surrogate exclusions are unreachable after UTF-8 decoding;
+remove them and recompile AST-bearing saved grammars that contain them.
+
 Name resolution, type checking, attributes and Pratt semantics remain compiler
 checks. Source layout is excluded. Successful structural validation is not a
 guarantee that a grammar compiles, formats to valid source or fits a resource
@@ -91,6 +100,10 @@ change or change to generated runtime behavior.
 - **Make JSON strict by default.** Rejecting unknown fields or duplicate keys
   changes compatibility. An optional strict decoder needs a separate policy
   and remains unimplemented.
+- **Clamp invalid character ranges or replace invalid escapes silently.**
+  This changes the requested grammar into a different one. Reject invalid
+  scalar endpoints and reversed bounds with diagnostics instead; validation
+  preserves the caller's AST.
 
 ## Testing
 
@@ -101,6 +114,11 @@ fallback, 50,000 nested nodes, integer overflow and trailing JSON. External
 embedded node values and pointers must return unsupported-node errors.
 Compiler tests cover skipped type checks, saved-AST reconstruction and Go,
 typed Go and TypeScript generator entry points.
+Unicode regressions cover negative, surrogate, above-maximum and reversed
+endpoints, exact range paths/positions, source escapes, noncharacters and
+scalar-ended ranges spanning the surrogate interval. Compiled-file intake
+rejects malformed AST ranges; the generated/saved corpus covers scalar
+boundaries and negated ranges in both position units where supported.
 
 Existing parser, generated-code and saved-grammar suites check valid inputs.
 Preparation measurements compare source compilation and saved grammar loading;
@@ -109,9 +127,10 @@ commit, without an optimization-log entry.
 
 ## Limitations and open questions
 
-The validator reports one structural defect per call. It does not validate
-Unicode class scalars/range semantics or offer semantic validation without
-compilation. Formatting layout and resource budgets remain separate concerns.
+The validator reports one structural defect per call. It checks character
+range scalar endpoints and ordering, but does not offer semantic validation
+without compilation. Formatting layout and resource budgets remain separate
+concerns.
 A strict JSON intake API, including unknown fields and duplicate-key policy,
 requires its own design. Bytecode compilation canonicalizes negative unbounded
 maxima to -1 while preserving the caller and saved AST's original field; see

@@ -5451,7 +5451,7 @@ func init() {
 	recRules[137].body = func(p *parser, _ int) (*Node, bool) { return p.e2915() }
 	recRules[138].body = func(p *parser, _ int) (*Node, bool) { return p.e2916() }
 	recRules[139].body = func(p *parser, _ int) (*Node, bool) { return p.e2917() }
-	descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"...\"", "\"\\ufeff\"", "\"---\"", "(?\\r\\n \\t)", "\"%\"", "\"YAML\"", "\"TAG\"", "(?0-9)", "\".\"", "\"!\"", "\"#\"", "\"&\"", "\"!<\"", "\">\"", "(?0-9a-zA-Z\\-)", "\"!!\"", "\"*\"", "(?^\\x00- \\x7f-\\u0084\\u0086-\\u009f�-�\\ufeff\\ufffe\\uffff,[]{})", "(?0-9a-zA-Z\\-#;/\\?:@&=+$,_.!~*\\'\\(\\)[])", "(?0-9a-zA-Z\\-#;/\\?:@&=+$_.~*\\'\\(\\))", "(?0-9a-fA-F)", "(? \\t)", "(?|>!&)", "(?#\\r\\n)", "(?^#\\r\\n)", "(?^!&)", "\" \"", "\"-\"", "\"?\"", "\":\"", "(?[{\\'\"!&)", "(?^|>!&#\\r\\n)", "\"|\"", "(?+\\-)", "\"1\"", "\"2\"", "\"3\"", "\"4\"", "\"5\"", "\"6\"", "\"7\"", "\"8\"", "\"9\"", "(?!&)", "\"[\"", "\"]\"", "\",\"", "\"{\"", "\"}\"", "(?^\\x00- \\x7f-\\u0084\\u0086-\\u009f�-�\\ufeff\\ufffe\\uffff\\-\\?:,[]{}#&*!|>\\'\"%@`)", "(?\\-\\?:)", "(?^\\x00- \\x7f-\\u0084\\u0086-\\u009f�-�\\ufeff\\ufffe\\uffff:)", "(?^\\x00- \\x7f-\\u0084\\u0086-\\u009f�-�\\ufeff\\ufffe\\uffff:#)", "(?^\\x00- \\x7f-\\u0084\\u0086-\\u009f�-�\\ufeff\\ufffe\\uffff:,[]{})", "(?^\\x00- \\x7f-\\u0084\\u0086-\\u009f�-�\\ufeff\\ufffe\\uffff:#,[]{})", "\"\\\"\"", "(?^\\x00-\\b\\n-\\x1f\"\\\\)", "\"\\\\\"", "(?0abt\\tnvfre \"/\\\\N_LP)", "\"x\"", "\"u\"", "\"U\"", "(?^\\x00- \"\\\\)", "\"'\"", "(?^\\x00-\\b\\n-\\x1f\\')", "\"''\"", "(?^\\x00- \\')", "(?^\\x00-\\b\\n-\\x1f\\x7f-\\u0084\\u0086-\\u009f�-�\\ufeff\\ufffe\\uffff)", "\"\\r\\n\"", "\"\\r\"", "\"\\n\"", "(?^\\x00- \\x7f-\\u0084\\u0086-\\u009f�-�\\ufeff\\ufffe\\uffff)"}
+	descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"...\"", "\"\\ufeff\"", "\"---\"", "(?\\r\\n \\t)", "\"%\"", "\"YAML\"", "\"TAG\"", "(?0-9)", "\".\"", "\"!\"", "\"#\"", "\"&\"", "\"!<\"", "\">\"", "(?0-9a-zA-Z\\-)", "\"!!\"", "\"*\"", "(?^\\x00- \\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff,[]{})", "(?0-9a-zA-Z\\-#;/\\?:@&=+$,_.!~*\\'\\(\\)[])", "(?0-9a-zA-Z\\-#;/\\?:@&=+$_.~*\\'\\(\\))", "(?0-9a-fA-F)", "(? \\t)", "(?|>!&)", "(?#\\r\\n)", "(?^#\\r\\n)", "(?^!&)", "\" \"", "\"-\"", "\"?\"", "\":\"", "(?[{\\'\"!&)", "(?^|>!&#\\r\\n)", "\"|\"", "(?+\\-)", "\"1\"", "\"2\"", "\"3\"", "\"4\"", "\"5\"", "\"6\"", "\"7\"", "\"8\"", "\"9\"", "(?!&)", "\"[\"", "\"]\"", "\",\"", "\"{\"", "\"}\"", "(?^\\x00- \\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff\\-\\?:,[]{}#&*!|>\\'\"%@`)", "(?\\-\\?:)", "(?^\\x00- \\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff:)", "(?^\\x00- \\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff:#)", "(?^\\x00- \\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff:,[]{})", "(?^\\x00- \\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff:#,[]{})", "\"\\\"\"", "(?^\\x00-\\b\\n-\\x1f\"\\\\)", "\"\\\\\"", "(?0abt\\tnvfre \"/\\\\N_LP)", "\"x\"", "\"u\"", "\"U\"", "(?^\\x00- \"\\\\)", "\"'\"", "(?^\\x00-\\b\\n-\\x1f\\')", "\"''\"", "(?^\\x00- \\')", "(?^\\x00-\\b\\n-\\x1f\\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff)", "\"\\r\\n\"", "\"\\r\"", "\"\\n\"", "(?^\\x00- \\x7f-\\u0084\\u0086-\\u009f\\ufeff\\ufffe\\uffff)"}
 	trules = []*trule{
 		{rule: rules[0]},
 		{rule: rules[1]},
@@ -8359,10 +8359,10 @@ func (p *parser) e227() (*Node, bool) {
 	return nil, true
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff},[]{})
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff},[]{})
 func (p *parser) e228() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 		p.expect(p.pos, 22)
 		return nil, false
 	}
@@ -16745,10 +16745,10 @@ func (p *parser) e986() (*Node, bool) {
 	return nil, false
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff},[]{})
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff},[]{})
 func (p *parser) e987() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 		p.expect(p.pos, 22)
 		return nil, false
 	}
@@ -16772,10 +16772,10 @@ func (p *parser) e989() (*Node, bool) {
 	return nil, !ok
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}\-\?:,[]{}#&*!|>'"%@`)
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}\-\?:,[]{}#&*!|>'"%@`)
 func (p *parser) e990() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
 		p.expect(p.pos, 54)
 		return nil, false
 	}
@@ -16826,7 +16826,7 @@ func (p *parser) e994() (*Node, bool) {
 func (p *parser) e995() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96))) && p.depth+0 <= maxDepth {
+	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 54)
 	} else {
 		prevCut := p.cut
@@ -16885,17 +16885,17 @@ func (p *parser) e997() (*Node, bool) {
 	return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:)
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:)
 func (p *parser) e998() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58) {
 		p.expect(p.pos, 56)
 		return nil, false
 	}
 	return p.single(size, true)
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:)+
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:)+
 func (p *parser) e999() (*Node, bool) {
 	start := p.pos
 	base := len(p.kidStack)
@@ -17007,10 +17007,10 @@ func (p *parser) e1006() (*Node, bool) {
 	return p.newNode(Node{kind: kindList, Start: int32(start), End: int32(p.pos), Children: p.kids(base), fresh: true}), true
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:#)
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#)
 func (p *parser) e1007() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
 		p.expect(p.pos, 57)
 		return nil, false
 	}
@@ -17053,11 +17053,11 @@ func (p *parser) e1012() (*Node, bool) {
 	return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:#) / ":" &ns_char
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#) / ":" &ns_char
 func (p *parser) e1013() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35))) && p.depth+0 <= maxDepth {
+	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 57)
 	} else {
 		prevCut := p.cut
@@ -17092,6 +17092,7 @@ func (p *parser) e1013() (*Node, bool) {
 	return nil, false
 }
 
+// (? \t)+ ((?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#) / ":" &ns_char)
 func (p *parser) e1014() (*Node, bool) {
 	start := p.pos
 	kids := p.nodes(2)[:0]
@@ -17217,10 +17218,10 @@ func (p *parser) e1020() (*Node, bool) {
 	return nil, !ok
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:#)
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#)
 func (p *parser) e1021() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
 		p.expect(p.pos, 57)
 		return nil, false
 	}
@@ -17263,11 +17264,11 @@ func (p *parser) e1026() (*Node, bool) {
 	return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:#) / ":" &ns_char
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#) / ":" &ns_char
 func (p *parser) e1027() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35))) && p.depth+0 <= maxDepth {
+	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 57)
 	} else {
 		prevCut := p.cut
@@ -17396,10 +17397,10 @@ func (p *parser) e1033() (*Node, bool) {
 	return nil, !ok
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}\-\?:,[]{}#&*!|>'"%@`)
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}\-\?:,[]{}#&*!|>'"%@`)
 func (p *parser) e1034() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
 		p.expect(p.pos, 54)
 		return nil, false
 	}
@@ -17450,7 +17451,7 @@ func (p *parser) e1038() (*Node, bool) {
 func (p *parser) e1039() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96))) && p.depth+0 <= maxDepth {
+	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 54)
 	} else {
 		prevCut := p.cut
@@ -17509,17 +17510,17 @@ func (p *parser) e1041() (*Node, bool) {
 	return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:,[]{})
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:,[]{})
 func (p *parser) e1042() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 		p.expect(p.pos, 58)
 		return nil, false
 	}
 	return p.single(size, true)
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:,[]{})+
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:,[]{})+
 func (p *parser) e1043() (*Node, bool) {
 	start := p.pos
 	base := len(p.kidStack)
@@ -17631,10 +17632,10 @@ func (p *parser) e1050() (*Node, bool) {
 	return p.newNode(Node{kind: kindList, Start: int32(start), End: int32(p.pos), Children: p.kids(base), fresh: true}), true
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:#,[]{})
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#,[]{})
 func (p *parser) e1051() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 		p.expect(p.pos, 59)
 		return nil, false
 	}
@@ -17677,10 +17678,11 @@ func (p *parser) e1056() (*Node, bool) {
 	return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
 }
 
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#,[]{}) / ":" &ns_plain_safe_in
 func (p *parser) e1057() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125))) && p.depth+0 <= maxDepth {
+	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 59)
 	} else {
 		prevCut := p.cut
@@ -17840,10 +17842,10 @@ func (p *parser) e1064() (*Node, bool) {
 	return nil, !ok
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:#,[]{})
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#,[]{})
 func (p *parser) e1065() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 		p.expect(p.pos, 59)
 		return nil, false
 	}
@@ -17886,10 +17888,11 @@ func (p *parser) e1070() (*Node, bool) {
 	return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
 }
 
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#,[]{}) / ":" &ns_plain_safe_in
 func (p *parser) e1071() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125))) && p.depth+0 <= maxDepth {
+	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 59)
 	} else {
 		prevCut := p.cut
@@ -21260,17 +21263,17 @@ func (p *parser) e1304() (*Node, bool) {
 	return p.matchLiteral(lit1303, "#", 15, true)
 }
 
-// (?^\u{0}-\u{8}\n-\u{1f}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff})
+// (?^\u{0}-\u{8}\n-\u{1f}\u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff})
 func (p *parser) e1305() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 8 || ch >= 10 && ch <= 31 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535) {
+	if !ok || (ch >= 0 && ch <= 8 || ch >= 10 && ch <= 31 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535) {
 		p.expect(p.pos, 72)
 		return nil, false
 	}
 	return p.single(size, true)
 }
 
-// (?^\u{0}-\u{8}\n-\u{1f}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff})*
+// (?^\u{0}-\u{8}\n-\u{1f}\u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff})*
 func (p *parser) e1306() (*Node, bool) {
 	start := p.pos
 	base := len(p.kidStack)
@@ -21303,7 +21306,7 @@ func (p *parser) e1306() (*Node, bool) {
 	return p.newNode(Node{kind: kindList, Start: int32(start), End: int32(p.pos), Children: p.kids(base), fresh: true}), true
 }
 
-// "#" (?^\u{0}-\u{8}\n-\u{1f}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff})*
+// "#" (?^\u{0}-\u{8}\n-\u{1f}\u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff})*
 func (p *parser) e1307() (*Node, bool) {
 	start := p.pos
 	kids := p.nodes(2)[:0]
@@ -21550,20 +21553,20 @@ func (p *parser) e1329() (*Node, bool) {
 	return nil, false
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff})
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff})
 func (p *parser) e1330() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535) {
 		p.expect(p.pos, 76)
 		return nil, false
 	}
 	return p.single(size, true)
 }
 
-// (?^\u{0}-\u{8}\n-\u{1f}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff})
+// (?^\u{0}-\u{8}\n-\u{1f}\u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff})
 func (p *parser) e1331() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 8 || ch >= 10 && ch <= 31 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535) {
+	if !ok || (ch >= 0 && ch <= 8 || ch >= 10 && ch <= 31 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535) {
 		p.expect(p.pos, 72)
 		return nil, false
 	}
@@ -22227,10 +22230,10 @@ func (p *parser) e1384() (*Node, bool) {
 	return nil, false
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff})
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff})
 func (p *parser) e1385() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535) {
 		p.expect(p.pos, 76)
 		return nil, false
 	}
@@ -22316,10 +22319,10 @@ func (p *parser) e1392() (*Node, bool) {
 	return nil, false
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff},[]{})
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff},[]{})
 func (p *parser) e1393() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 		p.expect(p.pos, 22)
 		return nil, false
 	}
@@ -22565,10 +22568,10 @@ func (p *parser) e1415() (*Node, bool) {
 	return nil, !ok
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:#)
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#)
 func (p *parser) e1416() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
 		p.expect(p.pos, 57)
 		return nil, false
 	}
@@ -22607,11 +22610,11 @@ func (p *parser) e1421() (*Node, bool) {
 	return nil, true
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:#) / ":" &ns_char
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#) / ":" &ns_char
 func (p *parser) e1422() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35))) && p.depth+0 <= maxDepth {
+	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 57)
 	} else {
 		prevCut := p.cut
@@ -22788,10 +22791,10 @@ func (p *parser) e1435() (*Node, bool) {
 	return nil, !ok
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}\-\?:,[]{}#&*!|>'"%@`)
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}\-\?:,[]{}#&*!|>'"%@`)
 func (p *parser) e1436() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
 		p.expect(p.pos, 54)
 		return nil, false
 	}
@@ -22838,7 +22841,7 @@ func (p *parser) e1440() (*Node, bool) {
 func (p *parser) e1441() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96))) && p.depth+0 <= maxDepth {
+	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 54)
 	} else {
 		prevCut := p.cut
@@ -23449,10 +23452,10 @@ func (p *parser) e1494() (*Node, bool) {
 	return nil, false
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff},[]{})
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff},[]{})
 func (p *parser) e1495() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 		p.expect(p.pos, 22)
 		return nil, false
 	}
@@ -24008,12 +24011,12 @@ func (p *parser) e1548() (*Node, bool) {
 	return nil, true
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:)+
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:)+
 func (p *parser) e1549() (*Node, bool) {
 	count := 0
 	for {
 		ch, size, ok := p.peek()
-		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58) {
+		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58) {
 			p.expect(p.pos, 56)
 			break
 		}
@@ -24070,10 +24073,10 @@ func (p *parser) e1555() (*Node, bool) {
 	return nil, count >= 1
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:#)
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#)
 func (p *parser) e1556() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
 		p.expect(p.pos, 57)
 		return nil, false
 	}
@@ -24112,11 +24115,11 @@ func (p *parser) e1561() (*Node, bool) {
 	return nil, true
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:#) / ":" &ns_char
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#) / ":" &ns_char
 func (p *parser) e1562() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35))) && p.depth+0 <= maxDepth {
+	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 57)
 	} else {
 		prevCut := p.cut
@@ -24151,6 +24154,7 @@ func (p *parser) e1562() (*Node, bool) {
 	return nil, false
 }
 
+// (? \t)+ ((?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#) / ":" &ns_char)
 func (p *parser) e1563() (*Node, bool) {
 	if _, ok := p.e1555(); !ok {
 		return nil, false
@@ -24243,12 +24247,12 @@ func (p *parser) e1567() (*Node, bool) {
 	return p.matchLiteral(lit1566, "#", 15, false)
 }
 
-// (?^\u{0}-\u{8}\n-\u{1f}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff})*
+// (?^\u{0}-\u{8}\n-\u{1f}\u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff})*
 func (p *parser) e1568() (*Node, bool) {
 	count := 0
 	for {
 		ch, size, ok := p.peek()
-		if !ok || (ch >= 0 && ch <= 8 || ch >= 10 && ch <= 31 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535) {
+		if !ok || (ch >= 0 && ch <= 8 || ch >= 10 && ch <= 31 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535) {
 			p.expect(p.pos, 72)
 			break
 		}
@@ -24258,7 +24262,7 @@ func (p *parser) e1568() (*Node, bool) {
 	return nil, count >= 0
 }
 
-// "#" (?^\u{0}-\u{8}\n-\u{1f}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff})*
+// "#" (?^\u{0}-\u{8}\n-\u{1f}\u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff})*
 func (p *parser) e1569() (*Node, bool) {
 	if _, ok := p.e1567(); !ok {
 		return nil, false
@@ -24385,10 +24389,10 @@ func (p *parser) e1581() (*Node, bool) {
 	return nil, !ok
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:#,[]{})
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#,[]{})
 func (p *parser) e1582() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 		p.expect(p.pos, 59)
 		return nil, false
 	}
@@ -24427,10 +24431,11 @@ func (p *parser) e1587() (*Node, bool) {
 	return nil, true
 }
 
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#,[]{}) / ":" &ns_plain_safe_in
 func (p *parser) e1588() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125))) && p.depth+0 <= maxDepth {
+	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 59)
 	} else {
 		prevCut := p.cut
@@ -24540,10 +24545,10 @@ func (p *parser) e1594() (*Node, bool) {
 	return nil, !ok
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}\-\?:,[]{}#&*!|>'"%@`)
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}\-\?:,[]{}#&*!|>'"%@`)
 func (p *parser) e1595() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
 		p.expect(p.pos, 54)
 		return nil, false
 	}
@@ -24590,7 +24595,7 @@ func (p *parser) e1599() (*Node, bool) {
 func (p *parser) e1600() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96))) && p.depth+0 <= maxDepth {
+	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 54)
 	} else {
 		prevCut := p.cut
@@ -25533,12 +25538,12 @@ func (p *parser) e1673() (*Node, bool) {
 	return nil, true
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:,[]{})+
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:,[]{})+
 func (p *parser) e1674() (*Node, bool) {
 	count := 0
 	for {
 		ch, size, ok := p.peek()
-		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 			p.expect(p.pos, 58)
 			break
 		}
@@ -25595,10 +25600,10 @@ func (p *parser) e1680() (*Node, bool) {
 	return nil, count >= 1
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:#,[]{})
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#,[]{})
 func (p *parser) e1681() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 		p.expect(p.pos, 59)
 		return nil, false
 	}
@@ -25637,10 +25642,11 @@ func (p *parser) e1686() (*Node, bool) {
 	return nil, true
 }
 
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#,[]{}) / ":" &ns_plain_safe_in
 func (p *parser) e1687() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125))) && p.depth+0 <= maxDepth {
+	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 59)
 	} else {
 		prevCut := p.cut
@@ -29733,10 +29739,10 @@ func (p *parser) e1920() (*Node, bool) {
 	return nil, true
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff},[]{})
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff},[]{})
 func (p *parser) e1921() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 		p.expect(p.pos, 22)
 		return nil, false
 	}
@@ -37118,10 +37124,10 @@ func (p *parser) e2596() (*Node, bool) {
 	return nil, false
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff},[]{})
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff},[]{})
 func (p *parser) e2597() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 		p.expect(p.pos, 22)
 		return nil, false
 	}
@@ -37145,10 +37151,10 @@ func (p *parser) e2599() (*Node, bool) {
 	return nil, !ok
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}\-\?:,[]{}#&*!|>'"%@`)
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}\-\?:,[]{}#&*!|>'"%@`)
 func (p *parser) e2600() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
 		p.expect(p.pos, 54)
 		return nil, false
 	}
@@ -37195,7 +37201,7 @@ func (p *parser) e2604() (*Node, bool) {
 func (p *parser) e2605() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96))) && p.depth+0 <= maxDepth {
+	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 54)
 	} else {
 		prevCut := p.cut
@@ -37248,12 +37254,12 @@ func (p *parser) e2607() (*Node, bool) {
 	return nil, true
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:)+
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:)+
 func (p *parser) e2608() (*Node, bool) {
 	count := 0
 	for {
 		ch, size, ok := p.peek()
-		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58) {
+		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58) {
 			p.expect(p.pos, 56)
 			break
 		}
@@ -37310,10 +37316,10 @@ func (p *parser) e2614() (*Node, bool) {
 	return nil, count >= 1
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:#)
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#)
 func (p *parser) e2615() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
 		p.expect(p.pos, 57)
 		return nil, false
 	}
@@ -37352,11 +37358,11 @@ func (p *parser) e2620() (*Node, bool) {
 	return nil, true
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:#) / ":" &ns_char
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#) / ":" &ns_char
 func (p *parser) e2621() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35))) && p.depth+0 <= maxDepth {
+	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 57)
 	} else {
 		prevCut := p.cut
@@ -37391,6 +37397,7 @@ func (p *parser) e2621() (*Node, bool) {
 	return nil, false
 }
 
+// (? \t)+ ((?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#) / ":" &ns_char)
 func (p *parser) e2622() (*Node, bool) {
 	if _, ok := p.e2614(); !ok {
 		return nil, false
@@ -37505,10 +37512,10 @@ func (p *parser) e2628() (*Node, bool) {
 	return nil, !ok
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:#)
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#)
 func (p *parser) e2629() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
 		p.expect(p.pos, 57)
 		return nil, false
 	}
@@ -37547,11 +37554,11 @@ func (p *parser) e2634() (*Node, bool) {
 	return nil, true
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:#) / ":" &ns_char
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#) / ":" &ns_char
 func (p *parser) e2635() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35))) && p.depth+0 <= maxDepth {
+	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 57)
 	} else {
 		prevCut := p.cut
@@ -37661,10 +37668,10 @@ func (p *parser) e2641() (*Node, bool) {
 	return nil, !ok
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}\-\?:,[]{}#&*!|>'"%@`)
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}\-\?:,[]{}#&*!|>'"%@`)
 func (p *parser) e2642() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
 		p.expect(p.pos, 54)
 		return nil, false
 	}
@@ -37711,7 +37718,7 @@ func (p *parser) e2646() (*Node, bool) {
 func (p *parser) e2647() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96))) && p.depth+0 <= maxDepth {
+	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 54)
 	} else {
 		prevCut := p.cut
@@ -37764,12 +37771,12 @@ func (p *parser) e2649() (*Node, bool) {
 	return nil, true
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:,[]{})+
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:,[]{})+
 func (p *parser) e2650() (*Node, bool) {
 	count := 0
 	for {
 		ch, size, ok := p.peek()
-		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 			p.expect(p.pos, 58)
 			break
 		}
@@ -37826,10 +37833,10 @@ func (p *parser) e2656() (*Node, bool) {
 	return nil, count >= 1
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:#,[]{})
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#,[]{})
 func (p *parser) e2657() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 		p.expect(p.pos, 59)
 		return nil, false
 	}
@@ -37868,10 +37875,11 @@ func (p *parser) e2662() (*Node, bool) {
 	return nil, true
 }
 
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#,[]{}) / ":" &ns_plain_safe_in
 func (p *parser) e2663() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125))) && p.depth+0 <= maxDepth {
+	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 59)
 	} else {
 		prevCut := p.cut
@@ -38020,10 +38028,10 @@ func (p *parser) e2670() (*Node, bool) {
 	return nil, !ok
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:#,[]{})
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#,[]{})
 func (p *parser) e2671() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 		p.expect(p.pos, 59)
 		return nil, false
 	}
@@ -38062,10 +38070,11 @@ func (p *parser) e2676() (*Node, bool) {
 	return nil, true
 }
 
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#,[]{}) / ":" &ns_plain_safe_in
 func (p *parser) e2677() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125))) && p.depth+0 <= maxDepth {
+	if !(more && (!(ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 59)
 	} else {
 		prevCut := p.cut
@@ -40709,12 +40718,12 @@ func (p *parser) e2891() (*Node, bool) {
 	return p.matchLiteral(lit2890, "#", 15, false)
 }
 
-// (?^\u{0}-\u{8}\n-\u{1f}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff})*
+// (?^\u{0}-\u{8}\n-\u{1f}\u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff})*
 func (p *parser) e2892() (*Node, bool) {
 	count := 0
 	for {
 		ch, size, ok := p.peek()
-		if !ok || (ch >= 0 && ch <= 8 || ch >= 10 && ch <= 31 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535) {
+		if !ok || (ch >= 0 && ch <= 8 || ch >= 10 && ch <= 31 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535) {
 			p.expect(p.pos, 72)
 			break
 		}
@@ -40724,7 +40733,7 @@ func (p *parser) e2892() (*Node, bool) {
 	return nil, count >= 0
 }
 
-// "#" (?^\u{0}-\u{8}\n-\u{1f}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff})*
+// "#" (?^\u{0}-\u{8}\n-\u{1f}\u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff})*
 func (p *parser) e2893() (*Node, bool) {
 	if _, ok := p.e2891(); !ok {
 		return nil, false
@@ -40961,20 +40970,20 @@ func (p *parser) e2915() (*Node, bool) {
 	return nil, false
 }
 
-// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff})
+// (?^\u{0}- \u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff})
 func (p *parser) e2916() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535) {
 		p.expect(p.pos, 76)
 		return nil, false
 	}
 	return p.single(size, false)
 }
 
-// (?^\u{0}-\u{8}\n-\u{1f}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff})
+// (?^\u{0}-\u{8}\n-\u{1f}\u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff})
 func (p *parser) e2917() (*Node, bool) {
 	ch, size, ok := p.peek()
-	if !ok || (ch >= 0 && ch <= 8 || ch >= 10 && ch <= 31 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535) {
+	if !ok || (ch >= 0 && ch <= 8 || ch >= 10 && ch <= 31 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535) {
 		p.expect(p.pos, 72)
 		return nil, false
 	}
@@ -45742,7 +45751,7 @@ func (p *tparser) s30() (any, bool) {
 	} else {
 		ch, size, ok = p.peek()
 	}
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 		p.expect(p.pos, 22)
 		goto fail
 	}
@@ -53330,7 +53339,7 @@ func (p *tparser) s104() (any, bool) {
 	} else {
 		ch, size, ok = p.peek()
 	}
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 		p.expect(p.pos, 22)
 		goto fail
 	}
@@ -53413,7 +53422,7 @@ L5:
 	} else {
 		x10, _, x11 = p.peek()
 	}
-	if !(x11 && (!(x10 >= 0 && x10 <= 32 || x10 >= 127 && x10 <= 132 || x10 >= 134 && x10 <= 159 || x10 >= 55296 && x10 <= 57343 || x10 == 65279 || x10 == 65534 || x10 == 65535 || x10 == 45 || x10 == 63 || x10 == 58 || x10 == 44 || x10 == 91 || x10 == 93 || x10 == 123 || x10 == 125 || x10 == 35 || x10 == 38 || x10 == 42 || x10 == 33 || x10 == 124 || x10 == 62 || x10 == 39 || x10 == 34 || x10 == 37 || x10 == 64 || x10 == 96))) && p.depth+0 <= maxDepth {
+	if !(x11 && (!(x10 >= 0 && x10 <= 32 || x10 >= 127 && x10 <= 132 || x10 >= 134 && x10 <= 159 || x10 == 65279 || x10 == 65534 || x10 == 65535 || x10 == 45 || x10 == 63 || x10 == 58 || x10 == 44 || x10 == 91 || x10 == 93 || x10 == 123 || x10 == 125 || x10 == 35 || x10 == 38 || x10 == 42 || x10 == 33 || x10 == 124 || x10 == 62 || x10 == 39 || x10 == 34 || x10 == 37 || x10 == 64 || x10 == 96))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 54)
 		goto L12
 	}
@@ -53422,7 +53431,7 @@ L5:
 	} else {
 		ch, size, ok = p.peek()
 	}
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
 		p.expect(p.pos, 54)
 		goto L13
 	}
@@ -53547,7 +53556,7 @@ L5:
 	} else {
 		x10, _, x11 = p.peek()
 	}
-	if !(x11 && (!(x10 >= 0 && x10 <= 32 || x10 >= 127 && x10 <= 132 || x10 >= 134 && x10 <= 159 || x10 >= 55296 && x10 <= 57343 || x10 == 65279 || x10 == 65534 || x10 == 65535 || x10 == 45 || x10 == 63 || x10 == 58 || x10 == 44 || x10 == 91 || x10 == 93 || x10 == 123 || x10 == 125 || x10 == 35 || x10 == 38 || x10 == 42 || x10 == 33 || x10 == 124 || x10 == 62 || x10 == 39 || x10 == 34 || x10 == 37 || x10 == 64 || x10 == 96))) && p.depth+0 <= maxDepth {
+	if !(x11 && (!(x10 >= 0 && x10 <= 32 || x10 >= 127 && x10 <= 132 || x10 >= 134 && x10 <= 159 || x10 == 65279 || x10 == 65534 || x10 == 65535 || x10 == 45 || x10 == 63 || x10 == 58 || x10 == 44 || x10 == 91 || x10 == 93 || x10 == 123 || x10 == 125 || x10 == 35 || x10 == 38 || x10 == 42 || x10 == 33 || x10 == 124 || x10 == 62 || x10 == 39 || x10 == 34 || x10 == 37 || x10 == 64 || x10 == 96))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 54)
 		goto L12
 	}
@@ -53556,7 +53565,7 @@ L5:
 	} else {
 		ch, size, ok = p.peek()
 	}
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
 		p.expect(p.pos, 54)
 		goto L13
 	}
@@ -53710,7 +53719,7 @@ func (p *tparser) v106() (any, bool) {
 			} else {
 				ch, size, ok = p.peek()
 			}
-			if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58) {
+			if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58) {
 				p.expect(p.pos, 56)
 				goto L17
 			}
@@ -53818,7 +53827,7 @@ func (p *tparser) v106() (any, bool) {
 		} else {
 			x49, _, x50 = p.peek()
 		}
-		if !(x50 && (!(x49 >= 0 && x49 <= 32 || x49 >= 127 && x49 <= 132 || x49 >= 134 && x49 <= 159 || x49 >= 55296 && x49 <= 57343 || x49 == 65279 || x49 == 65534 || x49 == 65535 || x49 == 58 || x49 == 35))) && p.depth+0 <= maxDepth {
+		if !(x50 && (!(x49 >= 0 && x49 <= 32 || x49 >= 127 && x49 <= 132 || x49 >= 134 && x49 <= 159 || x49 == 65279 || x49 == 65534 || x49 == 65535 || x49 == 58 || x49 == 35))) && p.depth+0 <= maxDepth {
 			p.expect(p.pos, 57)
 			goto L51
 		}
@@ -53827,7 +53836,7 @@ func (p *tparser) v106() (any, bool) {
 		} else {
 			ch, size, ok = p.peek()
 		}
-		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
+		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
 			p.expect(p.pos, 57)
 			goto L52
 		}
@@ -53980,7 +53989,7 @@ func (p *tparser) i106() (any, bool) {
 			} else {
 				ch, size, ok = p.peek()
 			}
-			if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58) {
+			if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58) {
 				p.expect(p.pos, 56)
 				goto L17
 			}
@@ -54088,7 +54097,7 @@ func (p *tparser) i106() (any, bool) {
 		} else {
 			x49, _, x50 = p.peek()
 		}
-		if !(x50 && (!(x49 >= 0 && x49 <= 32 || x49 >= 127 && x49 <= 132 || x49 >= 134 && x49 <= 159 || x49 >= 55296 && x49 <= 57343 || x49 == 65279 || x49 == 65534 || x49 == 65535 || x49 == 58 || x49 == 35))) && p.depth+0 <= maxDepth {
+		if !(x50 && (!(x49 >= 0 && x49 <= 32 || x49 >= 127 && x49 <= 132 || x49 >= 134 && x49 <= 159 || x49 == 65279 || x49 == 65534 || x49 == 65535 || x49 == 58 || x49 == 35))) && p.depth+0 <= maxDepth {
 			p.expect(p.pos, 57)
 			goto L51
 		}
@@ -54097,7 +54106,7 @@ func (p *tparser) i106() (any, bool) {
 		} else {
 			ch, size, ok = p.peek()
 		}
-		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
+		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
 			p.expect(p.pos, 57)
 			goto L52
 		}
@@ -54263,7 +54272,7 @@ func (p *tparser) v107() (any, bool) {
 		} else {
 			x20, _, x21 = p.peek()
 		}
-		if !(x21 && (!(x20 >= 0 && x20 <= 32 || x20 >= 127 && x20 <= 132 || x20 >= 134 && x20 <= 159 || x20 >= 55296 && x20 <= 57343 || x20 == 65279 || x20 == 65534 || x20 == 65535 || x20 == 58 || x20 == 35))) && p.depth+0 <= maxDepth {
+		if !(x21 && (!(x20 >= 0 && x20 <= 32 || x20 >= 127 && x20 <= 132 || x20 >= 134 && x20 <= 159 || x20 == 65279 || x20 == 65534 || x20 == 65535 || x20 == 58 || x20 == 35))) && p.depth+0 <= maxDepth {
 			p.expect(p.pos, 57)
 			goto L22
 		}
@@ -54272,7 +54281,7 @@ func (p *tparser) v107() (any, bool) {
 		} else {
 			ch, size, ok = p.peek()
 		}
-		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
+		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
 			p.expect(p.pos, 57)
 			goto L23
 		}
@@ -54431,7 +54440,7 @@ func (p *tparser) i107() (any, bool) {
 		} else {
 			x20, _, x21 = p.peek()
 		}
-		if !(x21 && (!(x20 >= 0 && x20 <= 32 || x20 >= 127 && x20 <= 132 || x20 >= 134 && x20 <= 159 || x20 >= 55296 && x20 <= 57343 || x20 == 65279 || x20 == 65534 || x20 == 65535 || x20 == 58 || x20 == 35))) && p.depth+0 <= maxDepth {
+		if !(x21 && (!(x20 >= 0 && x20 <= 32 || x20 >= 127 && x20 <= 132 || x20 >= 134 && x20 <= 159 || x20 == 65279 || x20 == 65534 || x20 == 65535 || x20 == 58 || x20 == 35))) && p.depth+0 <= maxDepth {
 			p.expect(p.pos, 57)
 			goto L22
 		}
@@ -54440,7 +54449,7 @@ func (p *tparser) i107() (any, bool) {
 		} else {
 			ch, size, ok = p.peek()
 		}
-		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
+		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
 			p.expect(p.pos, 57)
 			goto L23
 		}
@@ -54583,7 +54592,7 @@ L5:
 	} else {
 		x10, _, x11 = p.peek()
 	}
-	if !(x11 && (!(x10 >= 0 && x10 <= 32 || x10 >= 127 && x10 <= 132 || x10 >= 134 && x10 <= 159 || x10 >= 55296 && x10 <= 57343 || x10 == 65279 || x10 == 65534 || x10 == 65535 || x10 == 45 || x10 == 63 || x10 == 58 || x10 == 44 || x10 == 91 || x10 == 93 || x10 == 123 || x10 == 125 || x10 == 35 || x10 == 38 || x10 == 42 || x10 == 33 || x10 == 124 || x10 == 62 || x10 == 39 || x10 == 34 || x10 == 37 || x10 == 64 || x10 == 96))) && p.depth+0 <= maxDepth {
+	if !(x11 && (!(x10 >= 0 && x10 <= 32 || x10 >= 127 && x10 <= 132 || x10 >= 134 && x10 <= 159 || x10 == 65279 || x10 == 65534 || x10 == 65535 || x10 == 45 || x10 == 63 || x10 == 58 || x10 == 44 || x10 == 91 || x10 == 93 || x10 == 123 || x10 == 125 || x10 == 35 || x10 == 38 || x10 == 42 || x10 == 33 || x10 == 124 || x10 == 62 || x10 == 39 || x10 == 34 || x10 == 37 || x10 == 64 || x10 == 96))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 54)
 		goto L12
 	}
@@ -54592,7 +54601,7 @@ L5:
 	} else {
 		ch, size, ok = p.peek()
 	}
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
 		p.expect(p.pos, 54)
 		goto L13
 	}
@@ -54717,7 +54726,7 @@ L5:
 	} else {
 		x10, _, x11 = p.peek()
 	}
-	if !(x11 && (!(x10 >= 0 && x10 <= 32 || x10 >= 127 && x10 <= 132 || x10 >= 134 && x10 <= 159 || x10 >= 55296 && x10 <= 57343 || x10 == 65279 || x10 == 65534 || x10 == 65535 || x10 == 45 || x10 == 63 || x10 == 58 || x10 == 44 || x10 == 91 || x10 == 93 || x10 == 123 || x10 == 125 || x10 == 35 || x10 == 38 || x10 == 42 || x10 == 33 || x10 == 124 || x10 == 62 || x10 == 39 || x10 == 34 || x10 == 37 || x10 == 64 || x10 == 96))) && p.depth+0 <= maxDepth {
+	if !(x11 && (!(x10 >= 0 && x10 <= 32 || x10 >= 127 && x10 <= 132 || x10 >= 134 && x10 <= 159 || x10 == 65279 || x10 == 65534 || x10 == 65535 || x10 == 45 || x10 == 63 || x10 == 58 || x10 == 44 || x10 == 91 || x10 == 93 || x10 == 123 || x10 == 125 || x10 == 35 || x10 == 38 || x10 == 42 || x10 == 33 || x10 == 124 || x10 == 62 || x10 == 39 || x10 == 34 || x10 == 37 || x10 == 64 || x10 == 96))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 54)
 		goto L12
 	}
@@ -54726,7 +54735,7 @@ L5:
 	} else {
 		ch, size, ok = p.peek()
 	}
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
 		p.expect(p.pos, 54)
 		goto L13
 	}
@@ -54880,7 +54889,7 @@ func (p *tparser) v109() (any, bool) {
 			} else {
 				ch, size, ok = p.peek()
 			}
-			if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+			if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 				p.expect(p.pos, 58)
 				goto L17
 			}
@@ -54988,7 +54997,7 @@ func (p *tparser) v109() (any, bool) {
 		} else {
 			x49, _, x50 = p.peek()
 		}
-		if !(x50 && (!(x49 >= 0 && x49 <= 32 || x49 >= 127 && x49 <= 132 || x49 >= 134 && x49 <= 159 || x49 >= 55296 && x49 <= 57343 || x49 == 65279 || x49 == 65534 || x49 == 65535 || x49 == 58 || x49 == 35 || x49 == 44 || x49 == 91 || x49 == 93 || x49 == 123 || x49 == 125))) && p.depth+0 <= maxDepth {
+		if !(x50 && (!(x49 >= 0 && x49 <= 32 || x49 >= 127 && x49 <= 132 || x49 >= 134 && x49 <= 159 || x49 == 65279 || x49 == 65534 || x49 == 65535 || x49 == 58 || x49 == 35 || x49 == 44 || x49 == 91 || x49 == 93 || x49 == 123 || x49 == 125))) && p.depth+0 <= maxDepth {
 			p.expect(p.pos, 59)
 			goto L51
 		}
@@ -54997,7 +55006,7 @@ func (p *tparser) v109() (any, bool) {
 		} else {
 			ch, size, ok = p.peek()
 		}
-		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 			p.expect(p.pos, 59)
 			goto L52
 		}
@@ -55150,7 +55159,7 @@ func (p *tparser) i109() (any, bool) {
 			} else {
 				ch, size, ok = p.peek()
 			}
-			if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+			if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 				p.expect(p.pos, 58)
 				goto L17
 			}
@@ -55258,7 +55267,7 @@ func (p *tparser) i109() (any, bool) {
 		} else {
 			x49, _, x50 = p.peek()
 		}
-		if !(x50 && (!(x49 >= 0 && x49 <= 32 || x49 >= 127 && x49 <= 132 || x49 >= 134 && x49 <= 159 || x49 >= 55296 && x49 <= 57343 || x49 == 65279 || x49 == 65534 || x49 == 65535 || x49 == 58 || x49 == 35 || x49 == 44 || x49 == 91 || x49 == 93 || x49 == 123 || x49 == 125))) && p.depth+0 <= maxDepth {
+		if !(x50 && (!(x49 >= 0 && x49 <= 32 || x49 >= 127 && x49 <= 132 || x49 >= 134 && x49 <= 159 || x49 == 65279 || x49 == 65534 || x49 == 65535 || x49 == 58 || x49 == 35 || x49 == 44 || x49 == 91 || x49 == 93 || x49 == 123 || x49 == 125))) && p.depth+0 <= maxDepth {
 			p.expect(p.pos, 59)
 			goto L51
 		}
@@ -55267,7 +55276,7 @@ func (p *tparser) i109() (any, bool) {
 		} else {
 			ch, size, ok = p.peek()
 		}
-		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 			p.expect(p.pos, 59)
 			goto L52
 		}
@@ -55425,7 +55434,7 @@ func (p *tparser) s110() (any, bool) {
 		} else {
 			x20, _, x21 = p.peek()
 		}
-		if !(x21 && (!(x20 >= 0 && x20 <= 32 || x20 >= 127 && x20 <= 132 || x20 >= 134 && x20 <= 159 || x20 >= 55296 && x20 <= 57343 || x20 == 65279 || x20 == 65534 || x20 == 65535 || x20 == 58 || x20 == 35 || x20 == 44 || x20 == 91 || x20 == 93 || x20 == 123 || x20 == 125))) && p.depth+0 <= maxDepth {
+		if !(x21 && (!(x20 >= 0 && x20 <= 32 || x20 >= 127 && x20 <= 132 || x20 >= 134 && x20 <= 159 || x20 == 65279 || x20 == 65534 || x20 == 65535 || x20 == 58 || x20 == 35 || x20 == 44 || x20 == 91 || x20 == 93 || x20 == 123 || x20 == 125))) && p.depth+0 <= maxDepth {
 			p.expect(p.pos, 59)
 			goto L22
 		}
@@ -55434,7 +55443,7 @@ func (p *tparser) s110() (any, bool) {
 		} else {
 			ch, size, ok = p.peek()
 		}
-		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 			p.expect(p.pos, 59)
 			goto L23
 		}
@@ -59864,7 +59873,7 @@ func (p *tparser) s134() (any, bool) {
 		} else {
 			ch, size, ok = p.peek()
 		}
-		if !ok || (ch >= 0 && ch <= 8 || ch >= 10 && ch <= 31 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535) {
+		if !ok || (ch >= 0 && ch <= 8 || ch >= 10 && ch <= 31 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535) {
 			p.expect(p.pos, 72)
 			goto L10
 		}
@@ -60192,7 +60201,7 @@ func (p *tparser) s138() (any, bool) {
 	} else {
 		ch, size, ok = p.peek()
 	}
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535) {
 		p.expect(p.pos, 76)
 		goto fail
 	}
@@ -60234,7 +60243,7 @@ func (p *tparser) s139() (any, bool) {
 	} else {
 		ch, size, ok = p.peek()
 	}
-	if !ok || (ch >= 0 && ch <= 8 || ch >= 10 && ch <= 31 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535) {
+	if !ok || (ch >= 0 && ch <= 8 || ch >= 10 && ch <= 31 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535) {
 		p.expect(p.pos, 72)
 		goto fail
 	}
@@ -61251,7 +61260,7 @@ func (p *tparser) s147() (any, bool) {
 	} else {
 		ch, size, ok = p.peek()
 	}
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535) {
 		p.expect(p.pos, 76)
 		goto fail
 	}
@@ -61393,7 +61402,7 @@ func (p *tparser) s149() (any, bool) {
 	} else {
 		ch, size, ok = p.peek()
 	}
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 		p.expect(p.pos, 22)
 		goto fail
 	}
@@ -61763,7 +61772,7 @@ func (p *tparser) v152() (any, bool) {
 		} else {
 			x11, _, x12 = p.peek()
 		}
-		if !(x12 && (!(x11 >= 0 && x11 <= 32 || x11 >= 127 && x11 <= 132 || x11 >= 134 && x11 <= 159 || x11 >= 55296 && x11 <= 57343 || x11 == 65279 || x11 == 65534 || x11 == 65535 || x11 == 58 || x11 == 35))) && p.depth+0 <= maxDepth {
+		if !(x12 && (!(x11 >= 0 && x11 <= 32 || x11 >= 127 && x11 <= 132 || x11 >= 134 && x11 <= 159 || x11 == 65279 || x11 == 65534 || x11 == 65535 || x11 == 58 || x11 == 35))) && p.depth+0 <= maxDepth {
 			p.expect(p.pos, 57)
 			goto L13
 		}
@@ -61772,7 +61781,7 @@ func (p *tparser) v152() (any, bool) {
 		} else {
 			ch, size, ok = p.peek()
 		}
-		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
+		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
 			p.expect(p.pos, 57)
 			goto L14
 		}
@@ -61884,7 +61893,7 @@ func (p *tparser) i152() (any, bool) {
 		} else {
 			x11, _, x12 = p.peek()
 		}
-		if !(x12 && (!(x11 >= 0 && x11 <= 32 || x11 >= 127 && x11 <= 132 || x11 >= 134 && x11 <= 159 || x11 >= 55296 && x11 <= 57343 || x11 == 65279 || x11 == 65534 || x11 == 65535 || x11 == 58 || x11 == 35))) && p.depth+0 <= maxDepth {
+		if !(x12 && (!(x11 >= 0 && x11 <= 32 || x11 >= 127 && x11 <= 132 || x11 >= 134 && x11 <= 159 || x11 == 65279 || x11 == 65534 || x11 == 65535 || x11 == 58 || x11 == 35))) && p.depth+0 <= maxDepth {
 			p.expect(p.pos, 57)
 			goto L13
 		}
@@ -61893,7 +61902,7 @@ func (p *tparser) i152() (any, bool) {
 		} else {
 			ch, size, ok = p.peek()
 		}
-		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
+		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
 			p.expect(p.pos, 57)
 			goto L14
 		}
@@ -62061,7 +62070,7 @@ L3:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (!(x7 >= 0 && x7 <= 32 || x7 >= 127 && x7 <= 132 || x7 >= 134 && x7 <= 159 || x7 >= 55296 && x7 <= 57343 || x7 == 65279 || x7 == 65534 || x7 == 65535 || x7 == 45 || x7 == 63 || x7 == 58 || x7 == 44 || x7 == 91 || x7 == 93 || x7 == 123 || x7 == 125 || x7 == 35 || x7 == 38 || x7 == 42 || x7 == 33 || x7 == 124 || x7 == 62 || x7 == 39 || x7 == 34 || x7 == 37 || x7 == 64 || x7 == 96))) && p.depth+0 <= maxDepth {
+	if !(x8 && (!(x7 >= 0 && x7 <= 32 || x7 >= 127 && x7 <= 132 || x7 >= 134 && x7 <= 159 || x7 == 65279 || x7 == 65534 || x7 == 65535 || x7 == 45 || x7 == 63 || x7 == 58 || x7 == 44 || x7 == 91 || x7 == 93 || x7 == 123 || x7 == 125 || x7 == 35 || x7 == 38 || x7 == 42 || x7 == 33 || x7 == 124 || x7 == 62 || x7 == 39 || x7 == 34 || x7 == 37 || x7 == 64 || x7 == 96))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 54)
 		goto L9
 	}
@@ -62070,7 +62079,7 @@ L3:
 	} else {
 		ch, size, ok = p.peek()
 	}
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
 		p.expect(p.pos, 54)
 		goto L10
 	}
@@ -62165,7 +62174,7 @@ L3:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (!(x7 >= 0 && x7 <= 32 || x7 >= 127 && x7 <= 132 || x7 >= 134 && x7 <= 159 || x7 >= 55296 && x7 <= 57343 || x7 == 65279 || x7 == 65534 || x7 == 65535 || x7 == 45 || x7 == 63 || x7 == 58 || x7 == 44 || x7 == 91 || x7 == 93 || x7 == 123 || x7 == 125 || x7 == 35 || x7 == 38 || x7 == 42 || x7 == 33 || x7 == 124 || x7 == 62 || x7 == 39 || x7 == 34 || x7 == 37 || x7 == 64 || x7 == 96))) && p.depth+0 <= maxDepth {
+	if !(x8 && (!(x7 >= 0 && x7 <= 32 || x7 >= 127 && x7 <= 132 || x7 >= 134 && x7 <= 159 || x7 == 65279 || x7 == 65534 || x7 == 65535 || x7 == 45 || x7 == 63 || x7 == 58 || x7 == 44 || x7 == 91 || x7 == 93 || x7 == 123 || x7 == 125 || x7 == 35 || x7 == 38 || x7 == 42 || x7 == 33 || x7 == 124 || x7 == 62 || x7 == 39 || x7 == 34 || x7 == 37 || x7 == 64 || x7 == 96))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 54)
 		goto L9
 	}
@@ -62174,7 +62183,7 @@ L3:
 	} else {
 		ch, size, ok = p.peek()
 	}
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
 		p.expect(p.pos, 54)
 		goto L10
 	}
@@ -62693,7 +62702,7 @@ func (p *tparser) s161() (any, bool) {
 	} else {
 		ch, size, ok = p.peek()
 	}
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 		p.expect(p.pos, 22)
 		goto fail
 	}
@@ -63437,7 +63446,7 @@ func (p *tparser) v170() (any, bool) {
 			} else {
 				ch, size, ok = p.peek()
 			}
-			if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58) {
+			if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58) {
 				p.expect(p.pos, 56)
 				break
 			}
@@ -63506,7 +63515,7 @@ func (p *tparser) v170() (any, bool) {
 		} else {
 			x22, _, x23 = p.peek()
 		}
-		if !(x23 && (!(x22 >= 0 && x22 <= 32 || x22 >= 127 && x22 <= 132 || x22 >= 134 && x22 <= 159 || x22 >= 55296 && x22 <= 57343 || x22 == 65279 || x22 == 65534 || x22 == 65535 || x22 == 58 || x22 == 35))) && p.depth+0 <= maxDepth {
+		if !(x23 && (!(x22 >= 0 && x22 <= 32 || x22 >= 127 && x22 <= 132 || x22 >= 134 && x22 <= 159 || x22 == 65279 || x22 == 65534 || x22 == 65535 || x22 == 58 || x22 == 35))) && p.depth+0 <= maxDepth {
 			p.expect(p.pos, 57)
 			goto L24
 		}
@@ -63515,7 +63524,7 @@ func (p *tparser) v170() (any, bool) {
 		} else {
 			ch, size, ok = p.peek()
 		}
-		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
+		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
 			p.expect(p.pos, 57)
 			goto L25
 		}
@@ -63613,7 +63622,7 @@ func (p *tparser) i170() (any, bool) {
 			} else {
 				ch, size, ok = p.peek()
 			}
-			if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58) {
+			if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58) {
 				p.expect(p.pos, 56)
 				break
 			}
@@ -63682,7 +63691,7 @@ func (p *tparser) i170() (any, bool) {
 		} else {
 			x22, _, x23 = p.peek()
 		}
-		if !(x23 && (!(x22 >= 0 && x22 <= 32 || x22 >= 127 && x22 <= 132 || x22 >= 134 && x22 <= 159 || x22 >= 55296 && x22 <= 57343 || x22 == 65279 || x22 == 65534 || x22 == 65535 || x22 == 58 || x22 == 35))) && p.depth+0 <= maxDepth {
+		if !(x23 && (!(x22 >= 0 && x22 <= 32 || x22 >= 127 && x22 <= 132 || x22 >= 134 && x22 <= 159 || x22 == 65279 || x22 == 65534 || x22 == 65535 || x22 == 58 || x22 == 35))) && p.depth+0 <= maxDepth {
 			p.expect(p.pos, 57)
 			goto L24
 		}
@@ -63691,7 +63700,7 @@ func (p *tparser) i170() (any, bool) {
 		} else {
 			ch, size, ok = p.peek()
 		}
-		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
+		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35) {
 			p.expect(p.pos, 57)
 			goto L25
 		}
@@ -63777,7 +63786,7 @@ func (p *tparser) s171() (any, bool) {
 		} else {
 			ch, size, ok = p.peek()
 		}
-		if !ok || (ch >= 0 && ch <= 8 || ch >= 10 && ch <= 31 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535) {
+		if !ok || (ch >= 0 && ch <= 8 || ch >= 10 && ch <= 31 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535) {
 			p.expect(p.pos, 72)
 			break
 		}
@@ -63931,7 +63940,7 @@ func (p *tparser) s173() (any, bool) {
 		} else {
 			x11, _, x12 = p.peek()
 		}
-		if !(x12 && (!(x11 >= 0 && x11 <= 32 || x11 >= 127 && x11 <= 132 || x11 >= 134 && x11 <= 159 || x11 >= 55296 && x11 <= 57343 || x11 == 65279 || x11 == 65534 || x11 == 65535 || x11 == 58 || x11 == 35 || x11 == 44 || x11 == 91 || x11 == 93 || x11 == 123 || x11 == 125))) && p.depth+0 <= maxDepth {
+		if !(x12 && (!(x11 >= 0 && x11 <= 32 || x11 >= 127 && x11 <= 132 || x11 >= 134 && x11 <= 159 || x11 == 65279 || x11 == 65534 || x11 == 65535 || x11 == 58 || x11 == 35 || x11 == 44 || x11 == 91 || x11 == 93 || x11 == 123 || x11 == 125))) && p.depth+0 <= maxDepth {
 			p.expect(p.pos, 59)
 			goto L13
 		}
@@ -63940,7 +63949,7 @@ func (p *tparser) s173() (any, bool) {
 		} else {
 			ch, size, ok = p.peek()
 		}
-		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 			p.expect(p.pos, 59)
 			goto L14
 		}
@@ -64051,7 +64060,7 @@ L3:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (!(x7 >= 0 && x7 <= 32 || x7 >= 127 && x7 <= 132 || x7 >= 134 && x7 <= 159 || x7 >= 55296 && x7 <= 57343 || x7 == 65279 || x7 == 65534 || x7 == 65535 || x7 == 45 || x7 == 63 || x7 == 58 || x7 == 44 || x7 == 91 || x7 == 93 || x7 == 123 || x7 == 125 || x7 == 35 || x7 == 38 || x7 == 42 || x7 == 33 || x7 == 124 || x7 == 62 || x7 == 39 || x7 == 34 || x7 == 37 || x7 == 64 || x7 == 96))) && p.depth+0 <= maxDepth {
+	if !(x8 && (!(x7 >= 0 && x7 <= 32 || x7 >= 127 && x7 <= 132 || x7 >= 134 && x7 <= 159 || x7 == 65279 || x7 == 65534 || x7 == 65535 || x7 == 45 || x7 == 63 || x7 == 58 || x7 == 44 || x7 == 91 || x7 == 93 || x7 == 123 || x7 == 125 || x7 == 35 || x7 == 38 || x7 == 42 || x7 == 33 || x7 == 124 || x7 == 62 || x7 == 39 || x7 == 34 || x7 == 37 || x7 == 64 || x7 == 96))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 54)
 		goto L9
 	}
@@ -64060,7 +64069,7 @@ L3:
 	} else {
 		ch, size, ok = p.peek()
 	}
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
 		p.expect(p.pos, 54)
 		goto L10
 	}
@@ -64155,7 +64164,7 @@ L3:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (!(x7 >= 0 && x7 <= 32 || x7 >= 127 && x7 <= 132 || x7 >= 134 && x7 <= 159 || x7 >= 55296 && x7 <= 57343 || x7 == 65279 || x7 == 65534 || x7 == 65535 || x7 == 45 || x7 == 63 || x7 == 58 || x7 == 44 || x7 == 91 || x7 == 93 || x7 == 123 || x7 == 125 || x7 == 35 || x7 == 38 || x7 == 42 || x7 == 33 || x7 == 124 || x7 == 62 || x7 == 39 || x7 == 34 || x7 == 37 || x7 == 64 || x7 == 96))) && p.depth+0 <= maxDepth {
+	if !(x8 && (!(x7 >= 0 && x7 <= 32 || x7 >= 127 && x7 <= 132 || x7 >= 134 && x7 <= 159 || x7 == 65279 || x7 == 65534 || x7 == 65535 || x7 == 45 || x7 == 63 || x7 == 58 || x7 == 44 || x7 == 91 || x7 == 93 || x7 == 123 || x7 == 125 || x7 == 35 || x7 == 38 || x7 == 42 || x7 == 33 || x7 == 124 || x7 == 62 || x7 == 39 || x7 == 34 || x7 == 37 || x7 == 64 || x7 == 96))) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 54)
 		goto L9
 	}
@@ -64164,7 +64173,7 @@ L3:
 	} else {
 		ch, size, ok = p.peek()
 	}
-	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
+	if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 45 || ch == 63 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125 || ch == 35 || ch == 38 || ch == 42 || ch == 33 || ch == 124 || ch == 62 || ch == 39 || ch == 34 || ch == 37 || ch == 64 || ch == 96) {
 		p.expect(p.pos, 54)
 		goto L10
 	}
@@ -65085,7 +65094,7 @@ func (p *tparser) v181() (any, bool) {
 			} else {
 				ch, size, ok = p.peek()
 			}
-			if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+			if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 				p.expect(p.pos, 58)
 				break
 			}
@@ -65154,7 +65163,7 @@ func (p *tparser) v181() (any, bool) {
 		} else {
 			x22, _, x23 = p.peek()
 		}
-		if !(x23 && (!(x22 >= 0 && x22 <= 32 || x22 >= 127 && x22 <= 132 || x22 >= 134 && x22 <= 159 || x22 >= 55296 && x22 <= 57343 || x22 == 65279 || x22 == 65534 || x22 == 65535 || x22 == 58 || x22 == 35 || x22 == 44 || x22 == 91 || x22 == 93 || x22 == 123 || x22 == 125))) && p.depth+0 <= maxDepth {
+		if !(x23 && (!(x22 >= 0 && x22 <= 32 || x22 >= 127 && x22 <= 132 || x22 >= 134 && x22 <= 159 || x22 == 65279 || x22 == 65534 || x22 == 65535 || x22 == 58 || x22 == 35 || x22 == 44 || x22 == 91 || x22 == 93 || x22 == 123 || x22 == 125))) && p.depth+0 <= maxDepth {
 			p.expect(p.pos, 59)
 			goto L24
 		}
@@ -65163,7 +65172,7 @@ func (p *tparser) v181() (any, bool) {
 		} else {
 			ch, size, ok = p.peek()
 		}
-		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 			p.expect(p.pos, 59)
 			goto L25
 		}
@@ -65261,7 +65270,7 @@ func (p *tparser) i181() (any, bool) {
 			} else {
 				ch, size, ok = p.peek()
 			}
-			if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+			if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 				p.expect(p.pos, 58)
 				break
 			}
@@ -65330,7 +65339,7 @@ func (p *tparser) i181() (any, bool) {
 		} else {
 			x22, _, x23 = p.peek()
 		}
-		if !(x23 && (!(x22 >= 0 && x22 <= 32 || x22 >= 127 && x22 <= 132 || x22 >= 134 && x22 <= 159 || x22 >= 55296 && x22 <= 57343 || x22 == 65279 || x22 == 65534 || x22 == 65535 || x22 == 58 || x22 == 35 || x22 == 44 || x22 == 91 || x22 == 93 || x22 == 123 || x22 == 125))) && p.depth+0 <= maxDepth {
+		if !(x23 && (!(x22 >= 0 && x22 <= 32 || x22 >= 127 && x22 <= 132 || x22 >= 134 && x22 <= 159 || x22 == 65279 || x22 == 65534 || x22 == 65535 || x22 == 58 || x22 == 35 || x22 == 44 || x22 == 91 || x22 == 93 || x22 == 123 || x22 == 125))) && p.depth+0 <= maxDepth {
 			p.expect(p.pos, 59)
 			goto L24
 		}
@@ -65339,7 +65348,7 @@ func (p *tparser) i181() (any, bool) {
 		} else {
 			ch, size, ok = p.peek()
 		}
-		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch >= 55296 && ch <= 57343 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
+		if !ok || (ch >= 0 && ch <= 32 || ch >= 127 && ch <= 132 || ch >= 134 && ch <= 159 || ch == 65279 || ch == 65534 || ch == 65535 || ch == 58 || ch == 35 || ch == 44 || ch == 91 || ch == 93 || ch == 123 || ch == 125) {
 			p.expect(p.pos, 59)
 			goto L25
 		}

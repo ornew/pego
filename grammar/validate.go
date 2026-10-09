@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 // ValidationError describes a structural defect in a grammar AST. Path uses
@@ -32,9 +33,9 @@ type validationFrame struct {
 }
 
 // Validate checks required children, nonnegative positional references,
-// repetition bounds and pointer cycles without mutating g. It returns the
-// first *ValidationError in deterministic depth-first order, checking a node's
-// bounds before its children, or nil.
+// repetition and character-range bounds, and pointer cycles without mutating g.
+// It returns the first *ValidationError in deterministic depth-first order,
+// checking a node's bounds before its children, or nil.
 //
 // Optional children may be nil, but an interface containing a nil pointer is
 // invalid. Shared subtrees are allowed. Empty collections and any negative
@@ -104,9 +105,23 @@ func Validate(g *Grammar) error {
 		// Leaf nodes need no cycle tracking. Non-leaf nodes stay active until
 		// their exit frame, distinguishing a pointer cycle from a shared child.
 		switch n := f.node.(type) {
-		case *TypeRef, *TerminalSpec, *Ref, *Literal, *CharClass, *Any,
+		case *TypeRef, *TerminalSpec, *Ref, *Literal, *Any,
 			*Cut, *Top, *Bottom, *BeginInput, *EndInput, *BeginLine, *EndLine,
 			*IntLit, *StringLit, *BoolLit, *NilLit, *CaptureRef, *VarRef:
+			path = path[:len(path)-1]
+			continue
+		case *CharClass:
+			for i, r := range n.Ranges {
+				if !utf8.ValidRune(r.Lo) {
+					return fail("ranges["+strconv.Itoa(i)+"].lo", "character range lower bound must be a Unicode scalar value")
+				}
+				if !utf8.ValidRune(r.Hi) {
+					return fail("ranges["+strconv.Itoa(i)+"].hi", "character range upper bound must be a Unicode scalar value")
+				}
+				if r.Hi < r.Lo {
+					return fail("ranges["+strconv.Itoa(i)+"].hi", "character range upper bound is less than lower bound")
+				}
+			}
 			path = path[:len(path)-1]
 			continue
 		case *IndexRef:

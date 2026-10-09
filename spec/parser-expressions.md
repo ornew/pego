@@ -147,7 +147,8 @@ def string = "\"" @(?^"\\)* "\""  // characters other than " and \
 Inside a character class:
 
 - `a-z` denotes the inclusive range from `a` to `z`. The upper bound MUST NOT
-  be less than the lower bound.
+  be less than the lower bound. Both endpoints MUST be Unicode scalar values;
+  a range may span the surrogate interval when its endpoints are scalar values.
 - A `-` that is not between two characters (the first item, or the last item
   before `)`) is a literal `-`. Elsewhere, write `\-`.
 - `)` MUST be escaped as `\)`, and `\` as `\\`. Other characters, such as

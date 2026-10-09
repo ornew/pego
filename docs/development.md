@@ -258,6 +258,11 @@ input text; byte-mode text predicates can still distinguish invalid bytes from e
 raw-invalid-byte AST literal normalization/validation. Byte Document edits follow decoded UTF-8 boundaries,
 accepting separate invalid bytes, and invalidate EOF-truncated decoding when appended bytes complete a character
 (C15); deterministic malformed-input edits agree with fresh parses across backends and units.
+Unicode escapes and public AST/JSON character-range endpoints must be scalar values (C16), with ordered range
+bounds; valid endpoints may span the surrogate interval. YAML's redundant surrogate exclusions are removed.
+`BenchmarkCharacterRangeValidation` measures AST validation/compilation after source parsing, while
+`BenchmarkUnicodeEscapeSyntax` measures source intake. YAML's `BenchmarkUnicodeClasses` uses 500 sequence entries
+with ASCII/Unicode mapping values to measure generated Parse, ParseAST and Recognize in both position units.
 Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused

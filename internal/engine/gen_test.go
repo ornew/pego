@@ -24,6 +24,10 @@ type genCase struct {
 // genCorpus returns the grammars and inputs used to compare backends and generated parsers with the engine.
 func genCorpus(t *testing.T) []genCase {
 	cases := []genCase{
+		{"unicode scalar boundaries", `
+type N struct { T Match }
+def main = t:@("f" (?\u0000-\u{10FFFF}) / "e" (?\uD7FF-\uE000) / "n" (?^\uD7FF-\uE000) / "l" ("\u{10FFFF}" / "\uFFFD" / "\uFFFF")) $$ -> new N{T: $t}`,
+			[]string{"f\x00", "fa", "f\ud7ff", "f\ue000", "f\ufffd", "f\uffff", "f\U0010ffff", "e\ud7ff", "e\ue000", "e\ue001", "na", "n\ue000", "l\U0010ffff", "l\ufffd", "l\uffff", "la", "f", "f😀x"}},
 		{"long inferred chain", inferredChain(64, false, ""), []string{"a", "", "aa", "b"}},
 		{"arith", arith, []string{"1+2*3", "-2^2", "3!!", "(1+2)*3", "1==2==3", "1+", ""}},
 		{"ast", ast, []string{"a ? b : c ? d : e", "f(a = 1, b), c", "-a(1)[2]", "a->b-c", "f()", "f(,)"}},

@@ -176,7 +176,12 @@ String literals and character classes accept the following escape sequences.
 | `\uhhhh` | the code point with the four-digit hexadecimal value `hhhh` |
 | `\c` | for any other character `c` that is not an ASCII letter or digit, the character itself (for example `\\`, `\"`, `\-`, `\)`). Any other escape of an ASCII letter or digit is an error. |
 
-A hexadecimal escape that is not valid is an error.
+A hexadecimal escape MUST denote a Unicode scalar value: U+0000 through
+U+10FFFF, excluding the surrogate interval U+D800 through U+DFFF. Invalid
+hexadecimal text, surrogate values and values above U+10FFFF are errors.
+Adjacent surrogate escapes do not form a supplementary character; write its
+scalar value, such as `\u{1F600}`. Noncharacters such as U+FFFF are valid
+scalar values.
 
 ## Adjacency
 

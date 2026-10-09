@@ -335,8 +335,9 @@ func (l *lexer) escape() rune {
 			}
 		}
 		n, err := strconv.ParseUint(hex.String(), 16, 32)
-		if err != nil {
+		if err != nil || !utf8.ValidRune(rune(n)) {
 			l.escapeError(start, "invalid unicode escape \\u%s", hex.String())
+			return utf8.RuneError
 		}
 		return rune(n)
 	}
@@ -373,7 +374,7 @@ func (l *lexer) charClass() *grammar.CharClass {
 	start := l.pos()
 	l.advance() // (
 	l.advance() // ?
-	cc := &grammar.CharClass{}
+	cc := &grammar.CharClass{Pos: start}
 	if l.peekAt(0) == '^' {
 		l.advance()
 		cc.Negated = true

@@ -116,7 +116,7 @@ def c_ns_anchor_property: Anchor = "&" ns_anchor_char+
 // [104] c-ns-alias-node ::= "*" ns-anchor-name
 def c_ns_alias_node: Alias = "*" ns_anchor_char+
 // [102] ns-anchor-char ::= ns-char - c-flow-indicator
-def ns_anchor_char = (?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff},[]{})
+def ns_anchor_char = (?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff},[]{})
 // [39] ns-uri-char, [40] ns-tag-char ::= ns-uri-char - c-tag - c-flow-indicator
 def ns_uri_char = "%" ns_hex_digit ns_hex_digit / (?0-9a-zA-Z\-#;/?:@&=+$,_.!~*'(\)[])
 def ns_tag_char = "%" ns_hex_digit ns_hex_digit / (?0-9a-zA-Z\-#;/?:@&=+$_.~*'(\))
@@ -374,7 +374,7 @@ def ns_plain =
   / [c == "flow-key"] ns_plain_one_in
 // [128] ns-plain-safe(c): ns-char outside flow collections, ns-char - c-flow-indicator inside them.
 def ns_plain_safe = [c == "flow-out" || c == "block-key"] ns_char / [c == "flow-in" || c == "flow-key"] ns_plain_safe_in
-def ns_plain_safe_in = (?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff},[]{})
+def ns_plain_safe_in = (?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff},[]{})
 
 // [133] ns-plain-one-line(c) ::= ns-plain-first(c) nb-ns-plain-in-line(c), outside flow collections.
 // [126] ns-plain-first(c) ::= ( ns-char - c-indicator ) | ( ( "?" | ":" | "-" ) <followed by an ns-plain-safe(c)> )
@@ -383,30 +383,30 @@ def ns_plain_safe_in = (?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff
 // A "#" is a plain character only right after another one, so the in-line part reads runs of
 // characters that may include "#", and after white space a character that is not "#".
 def ns_plain_one_out = !c_forbidden
-    ( (?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}\-?:,[]{}#&*!|>'"%@`) / (?\-?:) &ns_char )
+    ( (?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}\-?:,[]{}#&*!|>'"%@`) / (?\-?:) &ns_char )
     nb_ns_plain_in_line_out
 def nb_ns_plain_in_line_out =
-    ( (?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:)+
+    ( (?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:)+
     / ":" &ns_char
-    / (? \t)+ ((?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:#) / ":" &ns_char) )*
+    / (? \t)+ ((?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#) / ":" &ns_char) )*
 // [135] ns-plain-multi-line(n,c) ::= ns-plain-one-line(c) s-ns-plain-next-line(n,c)*
 // [134] s-ns-plain-next-line(n,c) ::= s-flow-folded(n) ns-plain-char(c) nb-ns-plain-in-line(c)
 def ns_plain_multi_out = ns_plain_one_out
     ( s_flow_folded !c_forbidden
-      ((?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:#) / ":" &ns_char)
+      ((?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#) / ":" &ns_char)
       nb_ns_plain_in_line_out )*
 
 // The same inside flow collections, where the flow indicators end a plain scalar.
 def ns_plain_one_in = !c_forbidden
-    ( (?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}\-?:,[]{}#&*!|>'"%@`) / (?\-?:) &ns_plain_safe_in )
+    ( (?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}\-?:,[]{}#&*!|>'"%@`) / (?\-?:) &ns_plain_safe_in )
     nb_ns_plain_in_line_in
 def nb_ns_plain_in_line_in =
-    ( (?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:,[]{})+
+    ( (?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:,[]{})+
     / ":" &ns_plain_safe_in
-    / (? \t)+ ((?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:#,[]{}) / ":" &ns_plain_safe_in) )*
+    / (? \t)+ ((?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#,[]{}) / ":" &ns_plain_safe_in) )*
 def ns_plain_multi_in = ns_plain_one_in
     ( s_flow_folded !c_forbidden
-      ((?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff}:#,[]{}) / ":" &ns_plain_safe_in)
+      ((?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff}:#,[]{}) / ":" &ns_plain_safe_in)
       nb_ns_plain_in_line_in )*
 
 // ---- Quoted scalars (7.3.1, 7.3.2) ----
@@ -485,7 +485,7 @@ def s_b_comment = (s_separate_in_line c_nb_comment_text?)? b_comment
 // the input, which would end the repetitions of l-comment without consuming anything.
 def l_comment = !$$ s_separate_in_line c_nb_comment_text? b_comment
 // [75] c-nb-comment-text ::= "#" nb-char*
-def c_nb_comment_text = "#" (?^\u{0}-\u{8}\u{a}-\u{1f}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff})*
+def c_nb_comment_text = "#" (?^\u{0}-\u{8}\u{a}-\u{1f}\u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff})*
 // [76] b-comment ::= b-non-content | <end-of-input>
 def b_comment = "\r\n" / "\r" / "\n" / $$
 
@@ -494,9 +494,11 @@ def b_comment = "\r\n" / "\r" / "\n" / $$
 def s_indent = s:@" "* [len($s) == n]
 
 // ---- Characters (chapter 5) ----
+// UTF-8 decoding yields only Unicode scalar values, so character classes need
+// no explicit surrogate exclusions.
 
 // [28] b-break ::= ( b-carriage-return b-line-feed ) | b-carriage-return | b-line-feed
 def b_break = "\r\n" / "\r" / "\n"
 // [34] ns-char ::= nb-char - s-white, where [27] nb-char ::= c-printable - b-char - c-byte-order-mark
-def ns_char = (?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff})
-def nb_char = (?^\u{0}-\u{8}\u{a}-\u{1f}\u{7f}-\u{84}\u{86}-\u{9f}\u{d800}-\u{dfff}\u{feff}\u{fffe}\u{ffff})
+def ns_char = (?^\u{0}-\u{20}\u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff})
+def nb_char = (?^\u{0}-\u{8}\u{a}-\u{1f}\u{7f}-\u{84}\u{86}-\u{9f}\u{feff}\u{fffe}\u{ffff})

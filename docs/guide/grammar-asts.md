@@ -28,10 +28,18 @@ serialize positions. `Msg` describes the problem.
 Validation rejects a nil grammar, missing required children, nil entries in
 node collections, interfaces holding typed nil pointers, unsupported embedded
 node types, pointer cycles, negative positional references and malformed
-repetition bounds. A repetition's minimum must be nonnegative; a finite
+repetition and character-range bounds. A repetition's minimum must be nonnegative; a finite
 maximum must be at least the minimum. Any negative maximum means unbounded,
 as documented by `grammar.Repeat`. Shared subtrees, empty collections and
 genuinely nil optional children remain allowed.
+
+A character range's `Lo` and `Hi` must be Unicode scalar values (0 through
+0x10FFFF except 0xD800–0xDFFF), with `Lo <= Hi`. A valid range can span the
+surrogate interval; overlapping ranges and empty AST classes retain their
+existing meanings. Invalid endpoints are reported at paths such as
+`$.statements[0].expr.ranges[0].lo`. This also applies to JSON intake,
+compilation and generation. Remove unreachable surrogate exclusions from
+older grammars and recompile AST-bearing saved parsers that contain them.
 
 Both VMs and generated parsers honor negative unbounded maxima. Saving a
 compiled grammar preserves the original maximum in its AST and uses the

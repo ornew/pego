@@ -169,6 +169,7 @@ type Literal struct {
 }
 
 // CharRange is a character range [Lo, Hi].
+// Both endpoints must be Unicode scalar values and Lo must not exceed Hi.
 type CharRange struct {
 	Lo rune `json:"lo"`
 	Hi rune `json:"hi"`
