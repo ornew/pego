@@ -138,6 +138,9 @@ by then: line and column numbers, like node positions, refer to the whole input.
 Input is read only as far as it is needed. Elements that end in a fixed literal are delivered the moment their last
 character arrives; an element that ends in a repetition (`+`, `*`, `?`) needs to see one more character first, because
 that is how the parser knows the repetition has ended. This matters when input trickles in, as over a network.
+This delivery behavior is the same in both position units: decoding an ASCII character or a complete UTF-8
+sequence does not wait for unrelated future bytes. An incomplete UTF-8 prefix waits for the remaining bytes or
+the reader's actual EOF; a non-EOF reader error terminates the parse (see [Errors](#errors)).
 This program feeds a pipe in chunks 200 ms apart and shows when each element is delivered:
 
 ```go

@@ -330,13 +330,18 @@ func (in *input) decode(i int) (r rune, size, examined int, ok bool) {
 		}
 		return in.in[i-in.base], 1, i + 1, true
 	}
-	in.fill(i + utf8.UTFMax)
-	b := in.bs[min(i-in.base, len(in.bs)):]
-	if len(b) == 0 {
+	if !in.fill(i + 1) {
 		return 0, 0, i + 1, false
 	}
+	b := in.bs[i-in.base:]
 	if b[0] < utf8.RuneSelf {
 		return rune(b[0]), 1, i + 1, true
+	}
+	// A complete rune (including an invalid prefix) needs no future bytes.
+	// Wait only while the available UTF-8 prefix is genuinely incomplete.
+	for !in.eof && !utf8.FullRune(b) {
+		in.fill(in.loaded() + 1)
+		b = in.bs[i-in.base:]
 	}
 	r, size = utf8.DecodeRune(b)
 	examined = i + size

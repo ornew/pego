@@ -108,7 +108,7 @@ The input (`input.go`) is held in the chosen position unit (code points or UTF-8
 
 ### Streaming
 
-For stream parsing, input is read from a `bufio.Reader` only as far as needed (`fill` in `input.go`). Each time an element of a `#stream` repetition is emitted, the input before it (except the preceding character) and the memo entries can be discarded (`commit` in `input.go`): the read buffer is compacted once half of it is consumed, and the memo is pruned in blocks. At element boundaries the parser also starts new allocation chunks from time to time (`splitChunks`), so that chunks shared with earlier elements do not keep them reachable. Positions remain absolute offsets from the start of the input; line and column numbers are computed by counting the lines in the discarded part. (For whole input, errors look their line up in a table of line starts.)
+For stream parsing, input is read from a `bufio.Reader` only as far as needed (`fill` in `input.go`). Byte-unit decoding requests one byte first and reads further only while the UTF-8 prefix is incomplete; a complete character never requires unrelated future bytes. Each time an element of a `#stream` repetition is emitted, the input before it (except the preceding character) and the memo entries can be discarded (`commit` in `input.go`): the read buffer is compacted once half of it is consumed, and the memo is pruned in blocks. At element boundaries the parser also starts new allocation chunks from time to time (`splitChunks`), so that chunks shared with earlier elements do not keep them reachable. Positions remain absolute offsets from the start of the input; line and column numbers are computed by counting the lines in the discarded part. (For whole input, errors look their line up in a table of line starts.)
 
 ### Incremental parsing
 
@@ -251,7 +251,9 @@ invalid repetition bounds and trailing JSON. Its public structural API is implem
 opt-in strict JSON intake remains proposed (F02).
 Bytecode lowering also canonicalizes every negative public-AST repetition maximum to -1 (C27), preserving
 unbounded semantics in ordinary/wide REPEAT and SCAN instructions and saved modules without mutating the AST.
-Follow with input/stream equivalence fixes. Earlier backlog items now share current category IDs and priorities;
+Byte-position streams emit complete elements without waiting for unrelated future bytes (C13), while split UTF-8
+prefixes still require continuation bytes or actual EOF. Follow with invalid-UTF-8 matching and edit equivalence fixes.
+Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused
 optimization measurements, and correctness-only performance impacts are recorded in commit messages. The full suite

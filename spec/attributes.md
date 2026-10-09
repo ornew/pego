@@ -89,6 +89,9 @@ def main = ^^ header records:record* #stream $$
 - A stream parse reads only as much input as it needs, and discards each handed
   element together with the input and memoization data before it, so the input
   need not fit in memory.
+  In either position unit, decoding a complete character does not require
+  future bytes. An incomplete UTF-8 prefix requires more bytes or actual EOF;
+  a non-EOF reader error terminates the parse.
 - Handed elements are not included in the value (`List`) of the repetition.
 - Once an element is handed over it is final: the parser never backtracks to
   a position before it. For this reason, `#stream` MUST appear only at the top
