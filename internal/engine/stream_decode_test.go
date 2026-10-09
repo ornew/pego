@@ -124,7 +124,7 @@ func TestByteDecodeIncompletePrefixAtEOF(t *testing.T) {
 				if ok || size != 0 || examined != 1 || !in.eof {
 					t.Fatalf("empty EOF: %U %d %d %v", got, size, examined, ok)
 				}
-			} else if !ok || got != utf8.RuneError || size != 1 || examined != len(s) || !in.eof {
+			} else if !ok || got != utf8.RuneError || size != 1 || examined != len(s)+1 || !in.eof {
 				t.Fatalf("incomplete EOF: %U %d %d %v eof=%v", got, size, examined, ok, in.eof)
 			}
 		})

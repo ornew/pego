@@ -59,6 +59,12 @@ reuse.
 | `doc.Stats()` | `ParseStats{Evaluated, Reused}` of the last `Parse`: rule bodies run, and results used again (memo results and the elements of resumed repetitions). |
 | `doc.Text()` | The current text. |
 
+In byte mode, only the interior of a valid UTF-8 character is excluded as an edit boundary. Each invalid byte is
+a separate replacement character, so it can be replaced or have text inserted before or after it. An edit can join
+an incomplete prefix and continuation bytes into a valid character; the next parse invalidates results that depended
+on the earlier decoding, including a prefix completed by an insertion at EOF. In code-point mode, invalid bytes
+have already been replaced with U+FFFD; editing that normalized text does not reassemble the original bytes.
+
 A `Document` is not safe for concurrent use; a `Parser` is, so use one `Document` per goroutine and share the `Parser`.
 Several `Edit` calls can precede one `Parse`.
 

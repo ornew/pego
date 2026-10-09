@@ -255,7 +255,9 @@ Byte-position streams emit complete elements without waiting for unrelated futur
 prefixes still require continuation bytes or actual EOF. Replacement-character literals match invalid UTF-8 input in
 both position units across engines and generated Go/TS (C14), preserving encoded-byte success paths and matched
 input text; byte-mode text predicates can still distinguish invalid bytes from encoded U+FFFD. Follow with
-invalid-UTF-8 edit equivalence fixes and raw-invalid-byte AST literal normalization/validation.
+raw-invalid-byte AST literal normalization/validation. Byte Document edits follow decoded UTF-8 boundaries,
+accepting separate invalid bytes, and invalidate EOF-truncated decoding when appended bytes complete a character
+(C15); deterministic malformed-input edits agree with fresh parses across backends and units.
 Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused

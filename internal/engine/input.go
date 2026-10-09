@@ -348,6 +348,11 @@ func (in *input) decode(i int) (r rune, size, examined int, ok bool) {
 	if r == utf8.RuneError && size == 1 {
 		// Whether the bytes are invalid depends on the following bytes.
 		examined = i + min(utf8.UTFMax, len(b))
+		if !utf8.FullRune(b) {
+			// EOF completed the decoding decision, not the character. An
+			// insertion here may complete the prefix and change its size.
+			examined++
+		}
 	}
 	return r, size, examined, true
 }
@@ -591,7 +596,18 @@ func (u Unit) textLen(s string) int {
 // validBoundary checks, when the unit is Bytes, that the position lies on a character boundary.
 func validBoundary(text string, unit Unit, pos int) error {
 	if unit == Bytes && pos < len(text) && !utf8.RuneStart(text[pos]) {
-		return fmt.Errorf("position %d is not at a character boundary", pos)
+		// A continuation byte is interior only when a valid rune covers
+		// it. Invalid bytes are separate one-byte replacement characters.
+		// No UTF-8 character starts more than three bytes before pos.
+		for start := pos - 1; start >= max(0, pos-utf8.UTFMax+1); start-- {
+			if utf8.RuneStart(text[start]) {
+				_, size := utf8.DecodeRuneInString(text[start:])
+				if start+size > pos {
+					return fmt.Errorf("position %d is not at a character boundary", pos)
+				}
+				break
+			}
+		}
 	}
 	return nil
 }

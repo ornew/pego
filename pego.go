@@ -230,6 +230,8 @@ func (d *Document) Text() string { return d.doc.Text() }
 
 // Edit replaces the range [start, end) of the text, in the document's position unit, with text.
 // With byte positions, start and end must be on character boundaries.
+// Each invalid UTF-8 byte is a separate character; edits may join bytes into
+// a valid UTF-8 character.
 func (d *Document) Edit(start, end int, text string) error { return d.doc.Edit(start, end, text) }
 
 // Parse parses the current text. Its results and errors are those of Parser.Parse.

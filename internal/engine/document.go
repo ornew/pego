@@ -90,6 +90,7 @@ func (d *Document) Parse() (*Node, error) {
 
 // Edit replaces [start, end) of the text (in the Document's position unit) with text.
 // With byte positions, start and end must lie on character boundaries.
+// Invalid UTF-8 bytes are separate characters; an edit may complete a prefix.
 func (d *Document) Edit(start, end int, text string) error {
 	n := d.in.loaded()
 	if start < 0 || end < start || end > n {
