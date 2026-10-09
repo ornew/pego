@@ -619,7 +619,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 				ip = int(in.A)
 				continue
 			}
-			if p.pos == e.save.pos && rep.count >= rep.min || rep.max >= 0 && rep.count >= rep.max {
+			if p.pos == e.save.pos || rep.max >= 0 && rep.count >= rep.max {
 				ip = int(e.ip)
 			} else {
 				ip = int(in.A)

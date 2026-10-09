@@ -304,7 +304,8 @@ def x = "a"? / "b"?`, func(t *testing.T, in string) {
 			}
 		}},
 		{"a lookahead with wildcards before a literal", `def main = &(. .) "ab" $$`, nil},
-		{"empty iterations below the minimum", `def main = (_){3} "q"`, nil},
+		{"empty iteration meets the minimum after consumption", `def main = ("a" / _){2} "q"`, nil},
+		{"negative lookahead of an unmet empty minimum", `def main = !_{2} "b" $$`, nil},
 		// A repetition element sees only its own captures: outer ones are read through a variable.
 		{"repetition elements read enclosing captures through variables", `def main = n:"a" [k = len($n)] ([k == 1] "x")* "y"`, nil},
 		{"top, cut, attributes", `def main = (stmt -- ";")* _ $$
@@ -330,7 +331,7 @@ def stmt = (@"x" / "y" "z") #error(message="expected a statement") #recover(skip
 // TestReviewRegressions checks inputs that the generator used to prune although the parser accepts them.
 func TestReviewRegressions(t *testing.T) {
 	for _, c := range []struct{ src, want string }{
-		{`def main = ("a"?){2} "b"`, "b"},
+		{`def main = ("a"?){2} "b"`, "ab"},
 		{`def main = n:"a" [k = len($n)] ([k == 1] "x")* "y"`, "axy"},
 		// The parser ends a Pratt expression before an infix operator that no operand follows.
 		{`def main = e "+" $$
@@ -345,6 +346,34 @@ def e = pratt { operand "a" level { infix left "," } }`, "[a,]"},
 		if !slices.Contains(inputs, c.want) {
 			t.Errorf("%s: %q does not include %q", c.src, inputs, c.want)
 		}
+	}
+}
+
+func TestNullableMinimumHasNoSample(t *testing.T) {
+	p := compile(t, `def main = _{3} "q"`)
+	if _, err := sample.Generate(p, 1, sample.WithSeed(1), sample.WithAttempts(5)); !errors.Is(err, sample.ErrNoInput) {
+		t.Errorf("got %v, want ErrNoInput", err)
+	}
+}
+
+func BenchmarkSampleRepetitionControl(b *testing.B) {
+	for _, tc := range []struct{ name, source string }{
+		{"Ordinary", `def main = ("a" "b"?){2,8} $$`},
+		{"NullableMinimumOne", `def main = ("a" / _){1,8} $$`},
+	} {
+		p, err := pego.CompileSource(tc.source, "main")
+		if err != nil {
+			b.Fatal(err)
+		}
+		b.Run(tc.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				inputs, err := sample.Generate(p, 5, sample.WithSeed(1))
+				if err != nil || len(inputs) != 5 {
+					b.Fatalf("generated %d inputs: %v", len(inputs), err)
+				}
+			}
+		})
 	}
 }
 

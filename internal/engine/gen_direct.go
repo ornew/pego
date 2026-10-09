@@ -628,7 +628,7 @@ func (d *dgen) repeat(e *grammar.Repeat, s *dscope, build bool, fail string) str
 	if build {
 		d.line("p.kidStack = append(p.kidStack, %s)", d.rd(v))
 	}
-	d.line("if p.pos == %s && %s >= %d {\nbreak\n}", d.rd(m.pos), d.rd(count), e.Min)
+	d.line("if p.pos == %s {\nbreak\n}", d.rd(m.pos))
 	if d.used[f] {
 		d.exit("continue")
 		d.place(f)
@@ -730,7 +730,7 @@ func (d *dgen) projectRepeat(e *grammar.Repeat, field, fail string) string {
 	}
 	d.line("%s++", count)
 	d.line("p.kidStack = append(p.kidStack, %s)", d.rd(fv))
-	d.line("if p.pos == %s && %s >= %d {\nbreak\n}", d.rd(m.pos), d.rd(count), e.Min)
+	d.line("if p.pos == %s {\nbreak\n}", d.rd(m.pos))
 	if d.used[f] {
 		d.exit("continue")
 		d.place(f)

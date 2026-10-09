@@ -3867,7 +3867,7 @@ func (p *parser) e5() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -3926,7 +3926,7 @@ func (p *parser) e9() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -3993,7 +3993,7 @@ func (p *parser) e14() (*Node, bool) {
 		v = p.attachCaptures(v, scope13, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -4117,7 +4117,7 @@ func (p *parser) e26() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -4227,7 +4227,7 @@ func (p *parser) e38() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -4349,7 +4349,7 @@ func (p *parser) e47() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -4631,7 +4631,7 @@ func (p *parser) e63() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -4686,7 +4686,7 @@ func (p *parser) e67() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -4732,7 +4732,7 @@ func (p *parser) e71() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -4837,7 +4837,7 @@ func (p *parser) e81() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -4938,7 +4938,7 @@ func (p *parser) e92() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -5206,6 +5206,7 @@ func (p *tparser) i0() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x3
 	if !p.assign("indent", func(c *tctx) any { return any(0) }) {
 		goto fail
 	}
@@ -5220,7 +5221,7 @@ func (p *tparser) i0() (any, bool) {
 			goto L6
 		}
 		x3++
-		if p.pos == x4 && x3 >= 0 {
+		if p.pos == x4 {
 			break
 		}
 		continue
@@ -5287,6 +5288,7 @@ func (p *tparser) v1() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _ = x3, x12
 	x1, x2 = p.pos, len(p.kidStack)
 	x3 = 0
 	for {
@@ -5303,7 +5305,7 @@ func (p *tparser) v1() (any, bool) {
 			}
 			x12++
 			p.kidStack = append(p.kidStack, v16)
-			if p.pos == x13 && x12 >= 0 {
+			if p.pos == x13 {
 				break
 			}
 			continue
@@ -5323,7 +5325,7 @@ func (p *tparser) v1() (any, bool) {
 		v20 = p.attachCaptures(v19, scope104, []any{k6}, x4, p.pos)
 		x3++
 		p.kidStack = append(p.kidStack, v20)
-		if p.pos == x4 && x3 >= 1 {
+		if p.pos == x4 {
 			break
 		}
 		continue
@@ -5384,6 +5386,7 @@ func (p *tparser) i1() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _ = x3, x12
 	x1, x2 = p.pos, len(p.kidStack)
 	x3 = 0
 	for {
@@ -5400,7 +5403,7 @@ func (p *tparser) i1() (any, bool) {
 			}
 			x12++
 			p.kidStack = append(p.kidStack, v16)
-			if p.pos == x13 && x12 >= 0 {
+			if p.pos == x13 {
 				break
 			}
 			continue
@@ -5420,7 +5423,7 @@ func (p *tparser) i1() (any, bool) {
 		v20 = p.attachCaptures(v19, scope104, []any{k6}, x4, p.pos)
 		x3++
 		p.kidStack = append(p.kidStack, v20)
-		if p.pos == x4 && x3 >= 1 {
+		if p.pos == x4 {
 			break
 		}
 		continue
@@ -5550,6 +5553,7 @@ func (p *tparser) i3() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x4
 	x1 = p.pos
 	p.silent++
 	x4 = 0
@@ -5559,7 +5563,7 @@ func (p *tparser) i3() (any, bool) {
 			goto L7
 		}
 		x4++
-		if p.pos == x5 && x4 >= 0 {
+		if p.pos == x5 {
 			break
 		}
 		continue
@@ -5618,6 +5622,7 @@ func (p *tparser) s4() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x2
 	x1 = p.pos
 	x2 = 0
 	for {
@@ -5628,7 +5633,7 @@ func (p *tparser) s4() (any, bool) {
 			goto L5
 		}
 		x2++
-		if p.pos == x3 && x2 >= 0 {
+		if p.pos == x3 {
 			break
 		}
 		continue
@@ -5791,6 +5796,7 @@ func (p *tparser) s7() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x5
 	x1 = p.pos
 	x2 = p.newVals(2)[:0]
 	x3, x4 = p.pos, len(p.kidStack)
@@ -5811,7 +5817,7 @@ func (p *tparser) s7() (any, bool) {
 		v10 = p.newMatch(x9, p.pos, p.text(x9, p.pos), true)
 		x5++
 		p.kidStack = append(p.kidStack, v10)
-		if p.pos == x6 && x5 >= 0 {
+		if p.pos == x6 {
 			break
 		}
 		continue

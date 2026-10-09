@@ -123,7 +123,7 @@ func (m *matcher) match(e grammar.Expr, pos int) (status, int) {
 				return st, p
 			}
 			n++
-			if p == pos && n >= e.Min {
+			if p == pos {
 				break
 			}
 			pos = p

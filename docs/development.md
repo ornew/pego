@@ -272,6 +272,13 @@ captures read by predicates without attaching them to an absent element value. `
 in recognition; ordinary batch values and streaming callbacks are retained.
 `BenchmarkStreamCaptureRecognition` uses 1,000 Unicode elements; its optional plain-grammar baseline checks
 equivalent successful recognition when a prior `#stream` implementation cannot run the capture-bearing case.
+Repetition stops after its first successful zero-consumption iteration and then checks the minimum (C18).
+Batch, recognition, streaming, projected values, recorded resumption and generated Go/TS loops share this rule;
+an empty iteration counts once, so larger minima require earlier consuming iterations. Nullability/left-call
+analysis and linter success proofs account for the same stopping rule. `BenchmarkNullableRepetitionControl`
+measures ordinary, nullable-tail and projected parsing/recognition of 1,000 elements across all backends.
+Sample generation's repetition search, prefix matcher and always-match proofs use the same stopping rule;
+`BenchmarkSampleRepetitionControl` checks equivalent ordinary and nullable minimum-one generation workloads.
 Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused

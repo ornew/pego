@@ -474,7 +474,7 @@ func (g *generator) projectRepeat(b *strings.Builder, e *grammar.Repeat, field s
 	fmt.Fprintf(b, "\t\t_, ok := p.%s()\n", m)
 	b.WriteString("\t\tcut := p.cut\n\t\tp.cut, p.frame = prevCut, prevFrame\n\t\tif !ok {\n\t\t\tp.reset(m0)\n\t\t\tif cut {\n\t\t\t\tp.dropKids(base)\n\t\t\t\treturn nil, false\n\t\t\t}\n\t\t\tbreak\n\t\t}\n")
 	fmt.Fprintf(b, "\t\tcount++\n\t\tp.kidStack = append(p.kidStack, f.vals[%d])\n", slot)
-	fmt.Fprintf(b, "\t\tif p.pos == m0.pos && count >= %d {\n\t\t\tbreak\n\t\t}\n\t}\n", e.Min)
+	b.WriteString("\t\tif p.pos == m0.pos {\n\t\t\tbreak\n\t\t}\n\t}\n")
 	fmt.Fprintf(b, "\tif count < %d {\n\t\tp.dropKids(base)\n\t\treturn nil, false\n\t}\n", e.Min)
 	b.WriteString(g.pick("\treturn p.newNode(Node{kind: kindList, Start: int32(start), End: int32(p.pos), Children: p.kids(base), fresh: true}), true\n",
 		"\treturn p.newNode(\"List\", start, p.pos, p.kids(base)), true\n"))
@@ -698,7 +698,7 @@ func (g *generator) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, buil
 	if build {
 		b.WriteString("\t\tp.kidStack = append(p.kidStack, v)\n")
 	}
-	fmt.Fprintf(b, "\t\tif p.pos == m0.pos && count >= %d {\n\t\t\tbreak\n\t\t}\n\t}\n", e.Min)
+	b.WriteString("\t\tif p.pos == m0.pos {\n\t\t\tbreak\n\t\t}\n\t}\n")
 	fmt.Fprintf(b, "\tif count < %d {\n", e.Min)
 	if build {
 		b.WriteString("\t\tp.dropKids(base)\n")

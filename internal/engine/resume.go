@@ -213,7 +213,7 @@ func (p *parser) reuseElem(r *runState, el *runElem, shift int, gen uint32) {
 	p.resumed++
 	r.count++
 	// The old run ended after an empty element or at its maximum.
-	r.done = el.end == el.start && r.count >= r.min || r.max >= 0 && r.count >= r.max
+	r.done = el.end == el.start || r.max >= 0 && r.count >= r.max
 }
 
 // beginElem starts parsing an element: its examined range and expectations are recorded apart.
@@ -311,7 +311,7 @@ func (p *parser) resumeRepeat(rs *runSite) (*Node, bool) {
 		if rs.build {
 			p.kidStack = append(p.kidStack, v)
 		}
-		if p.pos == m0.pos && r.count >= rs.min {
+		if p.pos == m0.pos {
 			break
 		}
 	}

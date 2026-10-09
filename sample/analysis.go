@@ -261,7 +261,7 @@ func (in *info) alwaysMatches(e grammar.Expr) bool {
 	case *grammar.Optional:
 		return !in.hasCut(e.Expr)
 	case *grammar.Repeat:
-		return e.Min == 0 && !in.hasCut(e.Expr) || e.Min > 0 && in.alwaysMatches(e.Expr)
+		return e.Min == 0 && !in.hasCut(e.Expr) || e.Min == 1 && in.alwaysMatches(e.Expr)
 	case *grammar.Seq:
 		for _, it := range e.Items {
 			if !in.alwaysMatches(it) {

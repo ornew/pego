@@ -149,7 +149,7 @@ func (a *analysis) isEngineNullable(e grammar.Expr) bool {
 		}
 		return false
 	case *grammar.Repeat:
-		return e.Min == 0 || a.isEngineNullable(e.Expr)
+		return e.Min == 0 || e.Min == 1 && a.isEngineNullable(e.Expr)
 	case *grammar.Atomic:
 		return a.isEngineNullable(e.Expr)
 	case *grammar.Discard:
@@ -279,7 +279,7 @@ func (a *analysis) nullableAt(e grammar.Expr, end bool) bool {
 		}
 		return false
 	case *grammar.Repeat:
-		return e.Min == 0 || a.nullableAt(e.Expr, end)
+		return e.Min == 0 || e.Min == 1 && a.nullableAt(e.Expr, end)
 	case *grammar.And:
 		// At the end of the input, the operand can only match without consuming input.
 		return !end || a.nullableAt(e.Expr, true)
@@ -491,10 +491,22 @@ func (a *analysis) matchPrefix(e grammar.Expr, t string) matchResult {
 		}
 	case *grammar.Repeat:
 		cur := ok(t)
-		for range e.Min {
+		for i := range e.Min {
 			if cur.exact {
+				before := cur.rest
 				if cur = a.matchPrefix(e.Expr, cur.rest); !cur.ok {
 					return cur
+				}
+				if cur.exact && cur.rest == before {
+					if i+1 < e.Min {
+						return matchResult{}
+					}
+					return cur // the first empty iteration ends the repetition
+				}
+				// An inexact match may consume nothing and stop before the
+				// minimum. Do not prove another iteration from its success.
+				if !cur.exact && i+1 < e.Min {
+					return matchResult{}
 				}
 			} else if !a.succeeds(e.Expr) {
 				return matchResult{}

@@ -56,8 +56,8 @@ func AlwaysSucceeds(e grammar.Expr, sure map[string]bool) bool {
 		if e.Min == 0 {
 			return !HasLooseCut(e.Expr) || AlwaysSucceeds(e.Expr, sure)
 		}
-		// A stream ends after its first empty iteration, so an empty body
-		// cannot prove larger minima even if a whole-input parse repeats it.
+		// Repetition ends after its first empty iteration, so an always
+		// succeeding body cannot prove larger minima.
 		return e.Min == 1 && AlwaysSucceeds(e.Expr, sure)
 	case *grammar.And:
 		return AlwaysSucceeds(e.Expr, sure)

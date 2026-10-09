@@ -252,9 +252,18 @@ possible (up to the maximum) and fails only if fewer than the minimum matched.
 `m` MUST NOT be less than `n`.
 
 The value is a `List` node whose children are the values of the iterations.
-Repetition stops at the first iteration that succeeds without consuming input,
-so a repetition of an expression that can match the empty string does not loop
-forever.
+Repetition stops at the first iteration that succeeds without consuming input.
+That iteration counts and contributes its value, if any; the minimum is checked
+after stopping. It MUST NOT run additional empty iterations to meet the minimum.
+This rule applies to batch parsing, recognition, streaming, projected values,
+incremental resumption and generated parsers.
+
+For example, `_{0}` succeeds with no iterations, `_{0,1}` succeeds with one
+empty value, and `_{2}` and `_{2,}` fail on empty input after one successful
+iteration. A nullable body can still meet a larger minimum by consuming input:
+`("a" / _){2}` on `a` succeeds with one consuming iteration and one empty one.
+The stopping rule keeps empty matches from looping forever, even with a large
+minimum.
 
 ### Optional
 

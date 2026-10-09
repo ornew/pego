@@ -24,6 +24,17 @@ type genCase struct {
 // genCorpus returns the grammars and inputs used to compare backends and generated parsers with the engine.
 func genCorpus(t *testing.T) []genCase {
 	cases := []genCase{
+		{"nullable minimum repetitions", `
+def main=("z" zero / "o" one / "t" two / "u" unbounded / "a" atomic / "d" discarded / "p" projected / "f" fallback) $$
+def zero=("é" / _){0} #stream
+def one=("é" / _){0,1} #stream
+def two=("é" / _){2} #stream
+def unbounded=("é" / _){2,} #stream
+def atomic=@("é" / _){2,}
+def discarded=-("é" / _){2,}
+def projected=xs:(f:("é" / _)){2,} -> map($xs, (x) => $x.f)
+def fallback=("é" / _){3} / "é"`,
+			[]string{"z", "zé", "o", "oé", "oéé", "t", "té", "téé", "tééé", "u", "ué", "uéé", "uééé", "a", "aé", "aéé", "d", "dé", "déé", "p", "pé", "péé", "f", "fé", "féé", "fééé", ""}},
 		{"stream capture recognition", `
 type N struct { T []Match }
 def main=items:(x:@"é" [text($x)=="é"]){0,2} #stream $$ -> new N{T: map($items, (i) => $i.x)}`,

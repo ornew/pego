@@ -158,7 +158,7 @@ func (a *analysis) isNullable(e grammar.Expr) bool {
 		}
 		return false
 	case *grammar.Repeat:
-		return e.Min == 0 || a.isNullable(e.Expr)
+		return e.Min == 0 || e.Min == 1 && a.isNullable(e.Expr)
 	case *grammar.Atomic:
 		return a.isNullable(e.Expr)
 	case *grammar.Discard:

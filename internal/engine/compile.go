@@ -1078,7 +1078,7 @@ func (c *compiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) match
 			if build {
 				p.kidStack = append(p.kidStack, v)
 			}
-			if p.pos == m0.pos && count >= min {
+			if p.pos == m0.pos {
 				// Stop a repetition that consumes no input.
 				break
 			}
@@ -1125,7 +1125,7 @@ func (c *compiler) projectRepeat(e *grammar.Repeat, field string) matcher {
 			}
 			count++
 			p.kidStack = append(p.kidStack, f.vals[slot])
-			if p.pos == m0.pos && count >= min {
+			if p.pos == m0.pos {
 				break
 			}
 		}

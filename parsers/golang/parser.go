@@ -12754,7 +12754,7 @@ func (p *parser) e28() (*Node, bool) {
 		v = p.attachCaptures(v, scope27, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -12867,7 +12867,7 @@ func (p *parser) e40() (*Node, bool) {
 		v = p.attachCaptures(v, scope39, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -13225,7 +13225,7 @@ func (p *parser) e72() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, f.vals[0])
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -13671,7 +13671,7 @@ func (p *parser) e123() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, f.vals[0])
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -13938,7 +13938,7 @@ func (p *parser) e153() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, f.vals[0])
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -14252,7 +14252,7 @@ func (p *parser) e191() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, f.vals[0])
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -14726,7 +14726,7 @@ func (p *parser) e246() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, f.vals[0])
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -15951,7 +15951,7 @@ func (p *parser) e388() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, f.vals[0])
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -16194,7 +16194,7 @@ func (p *parser) e415() (*Node, bool) {
 		v = p.attachCaptures(v, scope414, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -16622,7 +16622,7 @@ func (p *parser) e467() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -16805,7 +16805,7 @@ func (p *parser) e487() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -17008,7 +17008,7 @@ func (p *parser) e509() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -17175,7 +17175,7 @@ func (p *parser) e529() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -18468,7 +18468,7 @@ func (p *parser) e654() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -18561,7 +18561,7 @@ func (p *parser) e663() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -18691,7 +18691,7 @@ func (p *parser) e674() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -18784,7 +18784,7 @@ func (p *parser) e683() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -19437,7 +19437,7 @@ func (p *parser) e754() (*Node, bool) {
 		v = p.attachCaptures(v, scope753, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -20049,7 +20049,7 @@ func (p *parser) e827() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, f.vals[0])
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -20879,7 +20879,7 @@ func (p *parser) e913() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, f.vals[0])
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -21069,7 +21069,7 @@ func (p *parser) e935() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, f.vals[0])
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -21289,7 +21289,7 @@ func (p *parser) e963() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, f.vals[0])
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -21577,7 +21577,7 @@ func (p *parser) e997() (*Node, bool) {
 		v = p.attachCaptures(v, scope996, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -22268,7 +22268,7 @@ func (p *parser) e1084() (*Node, bool) {
 		v = p.attachCaptures(v, scope1083, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -23555,7 +23555,7 @@ func (p *parser) e1219() (*Node, bool) {
 		v = p.attachCaptures(v, scope1218, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -24804,7 +24804,7 @@ func (p *parser) e1374() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, f.vals[0])
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -25398,7 +25398,7 @@ func (p *parser) e1433() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, f.vals[0])
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -25972,7 +25972,7 @@ func (p *parser) e1498() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, f.vals[0])
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -26377,7 +26377,7 @@ func (p *parser) e1540() (*Node, bool) {
 		v = p.attachCaptures(v, scope1539, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -26760,7 +26760,7 @@ func (p *parser) e1588() (*Node, bool) {
 		v = p.attachCaptures(v, scope1587, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -26954,7 +26954,7 @@ func (p *parser) e1611() (*Node, bool) {
 		v = p.attachCaptures(v, scope1610, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -27527,7 +27527,7 @@ func (p *parser) e1673() (*Node, bool) {
 		v = p.attachCaptures(v, scope1672, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -31010,7 +31010,7 @@ func (p *parser) e2047() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, f.vals[0])
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -31451,7 +31451,7 @@ func (p *parser) e2102() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, f.vals[0])
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -31883,7 +31883,7 @@ func (p *parser) e2152() (*Node, bool) {
 		v = p.attachCaptures(v, scope2151, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -33088,7 +33088,7 @@ func (p *parser) e2289() (*Node, bool) {
 		v = p.attachCaptures(v, scope2288, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -33231,7 +33231,7 @@ func (p *parser) e2304() (*Node, bool) {
 		v = p.attachCaptures(v, scope2303, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -33374,7 +33374,7 @@ func (p *parser) e2319() (*Node, bool) {
 		v = p.attachCaptures(v, scope2318, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -33517,7 +33517,7 @@ func (p *parser) e2334() (*Node, bool) {
 		v = p.attachCaptures(v, scope2333, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -33660,7 +33660,7 @@ func (p *parser) e2349() (*Node, bool) {
 		v = p.attachCaptures(v, scope2348, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -33803,7 +33803,7 @@ func (p *parser) e2364() (*Node, bool) {
 		v = p.attachCaptures(v, scope2363, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -34950,7 +34950,7 @@ func (p *parser) e2474() (*Node, bool) {
 		v = p.attachCaptures(v, scope2473, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -35335,7 +35335,7 @@ func (p *parser) e2525() (*Node, bool) {
 		v = p.attachCaptures(v, scope2524, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -35911,7 +35911,7 @@ func (p *parser) e2587() (*Node, bool) {
 		v = p.attachCaptures(v, scope2586, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -36054,7 +36054,7 @@ func (p *parser) e2602() (*Node, bool) {
 		v = p.attachCaptures(v, scope2601, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -36197,7 +36197,7 @@ func (p *parser) e2617() (*Node, bool) {
 		v = p.attachCaptures(v, scope2616, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -36340,7 +36340,7 @@ func (p *parser) e2632() (*Node, bool) {
 		v = p.attachCaptures(v, scope2631, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -36483,7 +36483,7 @@ func (p *parser) e2647() (*Node, bool) {
 		v = p.attachCaptures(v, scope2646, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -36626,7 +36626,7 @@ func (p *parser) e2662() (*Node, bool) {
 		v = p.attachCaptures(v, scope2661, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -40379,7 +40379,7 @@ func (p *parser) e3035() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -40444,7 +40444,7 @@ func (p *parser) e3040() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -40551,7 +40551,7 @@ func (p *parser) e3048() (*Node, bool) {
 		v = p.attachCaptures(v, scope3047, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -40640,7 +40640,7 @@ func (p *parser) e3057() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -40723,7 +40723,7 @@ func (p *parser) e3067() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -40883,7 +40883,7 @@ func (p *parser) e3081() (*Node, bool) {
 		v = p.attachCaptures(v, scope3080, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -41033,7 +41033,7 @@ func (p *parser) e3096() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -41151,7 +41151,7 @@ func (p *parser) e3107() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -41372,7 +41372,7 @@ func (p *parser) e3127() (*Node, bool) {
 		v = p.attachCaptures(v, scope3126, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -41415,7 +41415,7 @@ func (p *parser) e3132() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -41557,7 +41557,7 @@ func (p *parser) e3145() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -41744,7 +41744,7 @@ func (p *parser) e3162() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -41904,7 +41904,7 @@ func (p *parser) e3176() (*Node, bool) {
 		v = p.attachCaptures(v, scope3175, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -42009,7 +42009,7 @@ func (p *parser) e3183() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -42176,7 +42176,7 @@ func (p *parser) e3195() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -42336,7 +42336,7 @@ func (p *parser) e3209() (*Node, bool) {
 		v = p.attachCaptures(v, scope3208, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -42379,7 +42379,7 @@ func (p *parser) e3214() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -42616,7 +42616,7 @@ func (p *parser) e3231() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -42776,7 +42776,7 @@ func (p *parser) e3245() (*Node, bool) {
 		v = p.attachCaptures(v, scope3244, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -42957,7 +42957,7 @@ func (p *parser) e3254() (*Node, bool) {
 		v = p.attachCaptures(v, scope3253, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -43067,7 +43067,7 @@ func (p *parser) e3262() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -43137,7 +43137,7 @@ func (p *parser) e3268() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -43339,7 +43339,7 @@ func (p *parser) e3284() (*Node, bool) {
 		v = p.attachCaptures(v, scope3283, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -43601,7 +43601,7 @@ func (p *parser) e3306() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -43761,7 +43761,7 @@ func (p *parser) e3319() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -44008,7 +44008,7 @@ func (p *parser) e3339() (*Node, bool) {
 		v = p.attachCaptures(v, scope3338, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -44051,7 +44051,7 @@ func (p *parser) e3344() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -44193,7 +44193,7 @@ func (p *parser) e3357() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -44380,7 +44380,7 @@ func (p *parser) e3374() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -44582,7 +44582,7 @@ func (p *parser) e3390() (*Node, bool) {
 		v = p.attachCaptures(v, scope3389, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -44687,7 +44687,7 @@ func (p *parser) e3397() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -44924,7 +44924,7 @@ func (p *parser) e3414() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -45126,7 +45126,7 @@ func (p *parser) e3430() (*Node, bool) {
 		v = p.attachCaptures(v, scope3429, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -45169,7 +45169,7 @@ func (p *parser) e3435() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -45500,7 +45500,7 @@ func (p *parser) e3461() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -45607,7 +45607,7 @@ func (p *parser) e3469() (*Node, bool) {
 		v = p.attachCaptures(v, scope3468, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -45680,7 +45680,7 @@ func (p *parser) e3476() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -45840,7 +45840,7 @@ func (p *parser) e3490() (*Node, bool) {
 		v = p.attachCaptures(v, scope3489, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -45990,7 +45990,7 @@ func (p *parser) e3505() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -46108,7 +46108,7 @@ func (p *parser) e3516() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -46329,7 +46329,7 @@ func (p *parser) e3536() (*Node, bool) {
 		v = p.attachCaptures(v, scope3535, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -46372,7 +46372,7 @@ func (p *parser) e3541() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -46514,7 +46514,7 @@ func (p *parser) e3554() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -46701,7 +46701,7 @@ func (p *parser) e3571() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -46861,7 +46861,7 @@ func (p *parser) e3585() (*Node, bool) {
 		v = p.attachCaptures(v, scope3584, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -46966,7 +46966,7 @@ func (p *parser) e3592() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -47133,7 +47133,7 @@ func (p *parser) e3604() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -47293,7 +47293,7 @@ func (p *parser) e3618() (*Node, bool) {
 		v = p.attachCaptures(v, scope3617, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -47336,7 +47336,7 @@ func (p *parser) e3623() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -47573,7 +47573,7 @@ func (p *parser) e3640() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -47733,7 +47733,7 @@ func (p *parser) e3654() (*Node, bool) {
 		v = p.attachCaptures(v, scope3653, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -47925,7 +47925,7 @@ func (p *parser) e3663() (*Node, bool) {
 		v = p.attachCaptures(v, scope3662, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -48101,7 +48101,7 @@ func (p *parser) e3680() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -48229,7 +48229,7 @@ func (p *parser) e3689() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -48409,7 +48409,7 @@ func (p *parser) e3712() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -48733,7 +48733,7 @@ func (p *parser) e3742() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -48861,7 +48861,7 @@ func (p *parser) e3751() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -49033,7 +49033,7 @@ func (p *parser) e3768() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -49177,7 +49177,7 @@ func (p *parser) e3780() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -49519,7 +49519,7 @@ func (p *parser) e3807() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -49644,7 +49644,7 @@ func (p *parser) e3813() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -51503,7 +51503,7 @@ func (p *parser) e4031() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -51596,7 +51596,7 @@ func (p *parser) e4039() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -52801,7 +52801,7 @@ func (p *parser) e4138() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -52911,7 +52911,7 @@ func (p *parser) e4146() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -53021,7 +53021,7 @@ func (p *parser) e4154() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -53131,7 +53131,7 @@ func (p *parser) e4162() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -53319,7 +53319,7 @@ func (p *parser) e4182() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -53449,7 +53449,7 @@ func (p *parser) e4192() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -54405,7 +54405,7 @@ func (p *parser) e4276() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -54629,7 +54629,7 @@ func (p *parser) e4297() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -54884,7 +54884,7 @@ func (p *parser) e4319() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -55044,7 +55044,7 @@ func (p *parser) e4332() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -55278,7 +55278,7 @@ func (p *parser) e4352() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -55316,7 +55316,7 @@ func (p *parser) e4357() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -55447,7 +55447,7 @@ func (p *parser) e4370() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -55788,7 +55788,7 @@ func (p *parser) e4402() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -55884,7 +55884,7 @@ func (p *parser) e4409() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -56265,7 +56265,7 @@ func (p *parser) e4441() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -56303,7 +56303,7 @@ func (p *parser) e4446() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -56685,7 +56685,7 @@ func (p *parser) e4479() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -56870,7 +56870,7 @@ func (p *parser) e4499() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -57015,7 +57015,7 @@ func (p *parser) e4514() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -57133,7 +57133,7 @@ func (p *parser) e4525() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -57337,7 +57337,7 @@ func (p *parser) e4545() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -57375,7 +57375,7 @@ func (p *parser) e4550() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -57506,7 +57506,7 @@ func (p *parser) e4563() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -57805,7 +57805,7 @@ func (p *parser) e4593() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -57901,7 +57901,7 @@ func (p *parser) e4600() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -58172,7 +58172,7 @@ func (p *parser) e4625() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -58210,7 +58210,7 @@ func (p *parser) e4630() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -58549,7 +58549,7 @@ func (p *parser) e4660() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -58719,7 +58719,7 @@ func (p *parser) e4669() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -58853,7 +58853,7 @@ func (p *parser) e4682() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -58981,7 +58981,7 @@ func (p *parser) e4694() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -59063,7 +59063,7 @@ func (p *parser) e4703() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -59265,7 +59265,7 @@ func (p *parser) e4726() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -59410,7 +59410,7 @@ func (p *parser) e4741() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -59528,7 +59528,7 @@ func (p *parser) e4752() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -59732,7 +59732,7 @@ func (p *parser) e4772() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -59770,7 +59770,7 @@ func (p *parser) e4777() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -59901,7 +59901,7 @@ func (p *parser) e4790() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -60200,7 +60200,7 @@ func (p *parser) e4820() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -60296,7 +60296,7 @@ func (p *parser) e4827() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -60567,7 +60567,7 @@ func (p *parser) e4852() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -60605,7 +60605,7 @@ func (p *parser) e4857() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -60944,7 +60944,7 @@ func (p *parser) e4887() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -61103,7 +61103,7 @@ func (p *parser) e4896() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -62015,7 +62015,7 @@ func (p *parser) e4996() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -62177,7 +62177,7 @@ func (p *parser) e5016() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -62359,7 +62359,7 @@ func (p *parser) e5038() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -62515,7 +62515,7 @@ func (p *parser) e5058() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -62715,7 +62715,7 @@ func (p *parser) e5074() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -62797,7 +62797,7 @@ func (p *parser) e5083() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -63382,7 +63382,7 @@ func (p *parser) e5137() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -63464,7 +63464,7 @@ func (p *parser) e5146() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -65734,7 +65734,7 @@ func (p *parser) e5385() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -65788,7 +65788,7 @@ func (p *parser) e5390() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -66070,7 +66070,7 @@ func (p *parser) e5412() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -66180,7 +66180,7 @@ func (p *parser) e5418() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -66272,7 +66272,7 @@ func (p *parser) e5426() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -66365,7 +66365,7 @@ func (p *parser) e5434() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -66458,7 +66458,7 @@ func (p *parser) e5442() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -69080,7 +69080,7 @@ func (p *parser) e5728() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -69728,7 +69728,7 @@ func (p *parser) e5800() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -70016,7 +70016,7 @@ func (p *parser) e5829() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -70288,7 +70288,7 @@ func (p *parser) e5856() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -77688,7 +77688,7 @@ func (p *parser) e6572() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -77773,7 +77773,7 @@ func (p *parser) e6582() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -78089,7 +78089,7 @@ func (p *parser) e6611() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -78493,7 +78493,7 @@ func (p *parser) e6658() (*Node, bool) {
 		v = p.attachCaptures(v, scope6657, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -78766,7 +78766,7 @@ func (p *parser) e6689() (*Node, bool) {
 		v = p.attachCaptures(v, scope6688, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -79084,7 +79084,7 @@ func (p *parser) e6728() (*Node, bool) {
 		v = p.attachCaptures(v, scope6727, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -79562,7 +79562,7 @@ func (p *parser) e6784() (*Node, bool) {
 		v = p.attachCaptures(v, scope6783, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -80793,7 +80793,7 @@ func (p *parser) e6927() (*Node, bool) {
 		v = p.attachCaptures(v, scope6926, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -81036,7 +81036,7 @@ func (p *parser) e6954() (*Node, bool) {
 		v = p.attachCaptures(v, scope6953, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -81464,7 +81464,7 @@ func (p *parser) e7006() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -81647,7 +81647,7 @@ func (p *parser) e7026() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -81850,7 +81850,7 @@ func (p *parser) e7048() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -82017,7 +82017,7 @@ func (p *parser) e7068() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -83310,7 +83310,7 @@ func (p *parser) e7193() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -83403,7 +83403,7 @@ func (p *parser) e7202() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -83533,7 +83533,7 @@ func (p *parser) e7213() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -83626,7 +83626,7 @@ func (p *parser) e7222() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -84207,7 +84207,7 @@ func (p *parser) e7285() (*Node, bool) {
 		v = p.attachCaptures(v, scope7284, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -84825,7 +84825,7 @@ func (p *parser) e7359() (*Node, bool) {
 		v = p.attachCaptures(v, scope7358, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -85661,7 +85661,7 @@ func (p *parser) e7446() (*Node, bool) {
 		v = p.attachCaptures(v, scope7445, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -85857,7 +85857,7 @@ func (p *parser) e7469() (*Node, bool) {
 		v = p.attachCaptures(v, scope7468, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -86083,7 +86083,7 @@ func (p *parser) e7498() (*Node, bool) {
 		v = p.attachCaptures(v, scope7497, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -86371,7 +86371,7 @@ func (p *parser) e7532() (*Node, bool) {
 		v = p.attachCaptures(v, scope7531, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -87062,7 +87062,7 @@ func (p *parser) e7619() (*Node, bool) {
 		v = p.attachCaptures(v, scope7618, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -88349,7 +88349,7 @@ func (p *parser) e7754() (*Node, bool) {
 		v = p.attachCaptures(v, scope7753, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -89602,7 +89602,7 @@ func (p *parser) e7910() (*Node, bool) {
 		v = p.attachCaptures(v, scope7909, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -90202,7 +90202,7 @@ func (p *parser) e7970() (*Node, bool) {
 		v = p.attachCaptures(v, scope7969, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -90780,7 +90780,7 @@ func (p *parser) e8036() (*Node, bool) {
 		v = p.attachCaptures(v, scope8035, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -91185,7 +91185,7 @@ func (p *parser) e8078() (*Node, bool) {
 		v = p.attachCaptures(v, scope8077, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -91568,7 +91568,7 @@ func (p *parser) e8126() (*Node, bool) {
 		v = p.attachCaptures(v, scope8125, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -91762,7 +91762,7 @@ func (p *parser) e8149() (*Node, bool) {
 		v = p.attachCaptures(v, scope8148, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -92335,7 +92335,7 @@ func (p *parser) e8211() (*Node, bool) {
 		v = p.attachCaptures(v, scope8210, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -95826,7 +95826,7 @@ func (p *parser) e8586() (*Node, bool) {
 		v = p.attachCaptures(v, scope8585, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -96275,7 +96275,7 @@ func (p *parser) e8642() (*Node, bool) {
 		v = p.attachCaptures(v, scope8641, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -96707,7 +96707,7 @@ func (p *parser) e8692() (*Node, bool) {
 		v = p.attachCaptures(v, scope8691, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -97912,7 +97912,7 @@ func (p *parser) e8829() (*Node, bool) {
 		v = p.attachCaptures(v, scope8828, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -98055,7 +98055,7 @@ func (p *parser) e8844() (*Node, bool) {
 		v = p.attachCaptures(v, scope8843, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -98198,7 +98198,7 @@ func (p *parser) e8859() (*Node, bool) {
 		v = p.attachCaptures(v, scope8858, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -98341,7 +98341,7 @@ func (p *parser) e8874() (*Node, bool) {
 		v = p.attachCaptures(v, scope8873, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -98484,7 +98484,7 @@ func (p *parser) e8889() (*Node, bool) {
 		v = p.attachCaptures(v, scope8888, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -98627,7 +98627,7 @@ func (p *parser) e8904() (*Node, bool) {
 		v = p.attachCaptures(v, scope8903, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -99774,7 +99774,7 @@ func (p *parser) e9014() (*Node, bool) {
 		v = p.attachCaptures(v, scope9013, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -100159,7 +100159,7 @@ func (p *parser) e9065() (*Node, bool) {
 		v = p.attachCaptures(v, scope9064, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -100735,7 +100735,7 @@ func (p *parser) e9127() (*Node, bool) {
 		v = p.attachCaptures(v, scope9126, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -100878,7 +100878,7 @@ func (p *parser) e9142() (*Node, bool) {
 		v = p.attachCaptures(v, scope9141, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -101021,7 +101021,7 @@ func (p *parser) e9157() (*Node, bool) {
 		v = p.attachCaptures(v, scope9156, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -101164,7 +101164,7 @@ func (p *parser) e9172() (*Node, bool) {
 		v = p.attachCaptures(v, scope9171, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -101307,7 +101307,7 @@ func (p *parser) e9187() (*Node, bool) {
 		v = p.attachCaptures(v, scope9186, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -101450,7 +101450,7 @@ func (p *parser) e9202() (*Node, bool) {
 		v = p.attachCaptures(v, scope9201, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -105203,7 +105203,7 @@ func (p *parser) e9575() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -105268,7 +105268,7 @@ func (p *parser) e9580() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -105375,7 +105375,7 @@ func (p *parser) e9588() (*Node, bool) {
 		v = p.attachCaptures(v, scope9587, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -105464,7 +105464,7 @@ func (p *parser) e9597() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -105547,7 +105547,7 @@ func (p *parser) e9607() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -105707,7 +105707,7 @@ func (p *parser) e9621() (*Node, bool) {
 		v = p.attachCaptures(v, scope9620, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -105857,7 +105857,7 @@ func (p *parser) e9636() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -105975,7 +105975,7 @@ func (p *parser) e9647() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -106196,7 +106196,7 @@ func (p *parser) e9667() (*Node, bool) {
 		v = p.attachCaptures(v, scope9666, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -106239,7 +106239,7 @@ func (p *parser) e9672() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -106381,7 +106381,7 @@ func (p *parser) e9685() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -106568,7 +106568,7 @@ func (p *parser) e9702() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -106728,7 +106728,7 @@ func (p *parser) e9716() (*Node, bool) {
 		v = p.attachCaptures(v, scope9715, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -106833,7 +106833,7 @@ func (p *parser) e9723() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -107000,7 +107000,7 @@ func (p *parser) e9735() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -107160,7 +107160,7 @@ func (p *parser) e9749() (*Node, bool) {
 		v = p.attachCaptures(v, scope9748, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -107203,7 +107203,7 @@ func (p *parser) e9754() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -107440,7 +107440,7 @@ func (p *parser) e9771() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -107600,7 +107600,7 @@ func (p *parser) e9785() (*Node, bool) {
 		v = p.attachCaptures(v, scope9784, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -107781,7 +107781,7 @@ func (p *parser) e9794() (*Node, bool) {
 		v = p.attachCaptures(v, scope9793, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -107891,7 +107891,7 @@ func (p *parser) e9802() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -107961,7 +107961,7 @@ func (p *parser) e9808() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -108163,7 +108163,7 @@ func (p *parser) e9824() (*Node, bool) {
 		v = p.attachCaptures(v, scope9823, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -108425,7 +108425,7 @@ func (p *parser) e9846() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -108585,7 +108585,7 @@ func (p *parser) e9859() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -108832,7 +108832,7 @@ func (p *parser) e9879() (*Node, bool) {
 		v = p.attachCaptures(v, scope9878, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -108875,7 +108875,7 @@ func (p *parser) e9884() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -109017,7 +109017,7 @@ func (p *parser) e9897() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -109204,7 +109204,7 @@ func (p *parser) e9914() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -109406,7 +109406,7 @@ func (p *parser) e9930() (*Node, bool) {
 		v = p.attachCaptures(v, scope9929, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -109511,7 +109511,7 @@ func (p *parser) e9937() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -109748,7 +109748,7 @@ func (p *parser) e9954() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -109950,7 +109950,7 @@ func (p *parser) e9970() (*Node, bool) {
 		v = p.attachCaptures(v, scope9969, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -109993,7 +109993,7 @@ func (p *parser) e9975() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -110324,7 +110324,7 @@ func (p *parser) e10001() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -110431,7 +110431,7 @@ func (p *parser) e10009() (*Node, bool) {
 		v = p.attachCaptures(v, scope10008, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -110504,7 +110504,7 @@ func (p *parser) e10016() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -110664,7 +110664,7 @@ func (p *parser) e10030() (*Node, bool) {
 		v = p.attachCaptures(v, scope10029, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -110814,7 +110814,7 @@ func (p *parser) e10045() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -110932,7 +110932,7 @@ func (p *parser) e10056() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -111153,7 +111153,7 @@ func (p *parser) e10076() (*Node, bool) {
 		v = p.attachCaptures(v, scope10075, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -111196,7 +111196,7 @@ func (p *parser) e10081() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -111338,7 +111338,7 @@ func (p *parser) e10094() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -111525,7 +111525,7 @@ func (p *parser) e10111() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -111685,7 +111685,7 @@ func (p *parser) e10125() (*Node, bool) {
 		v = p.attachCaptures(v, scope10124, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -111790,7 +111790,7 @@ func (p *parser) e10132() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -111957,7 +111957,7 @@ func (p *parser) e10144() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -112117,7 +112117,7 @@ func (p *parser) e10158() (*Node, bool) {
 		v = p.attachCaptures(v, scope10157, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -112160,7 +112160,7 @@ func (p *parser) e10163() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -112397,7 +112397,7 @@ func (p *parser) e10180() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -112557,7 +112557,7 @@ func (p *parser) e10194() (*Node, bool) {
 		v = p.attachCaptures(v, scope10193, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -112749,7 +112749,7 @@ func (p *parser) e10203() (*Node, bool) {
 		v = p.attachCaptures(v, scope10202, f, m0.pos, p.pos)
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -112925,7 +112925,7 @@ func (p *parser) e10220() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -113053,7 +113053,7 @@ func (p *parser) e10229() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -113233,7 +113233,7 @@ func (p *parser) e10252() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -113557,7 +113557,7 @@ func (p *parser) e10282() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 1 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -113685,7 +113685,7 @@ func (p *parser) e10291() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -113857,7 +113857,7 @@ func (p *parser) e10308() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -114001,7 +114001,7 @@ func (p *parser) e10320() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -114343,7 +114343,7 @@ func (p *parser) e10347() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -114468,7 +114468,7 @@ func (p *parser) e10353() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -116319,7 +116319,7 @@ func (p *parser) e10571() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -116412,7 +116412,7 @@ func (p *parser) e10579() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -117617,7 +117617,7 @@ func (p *parser) e10678() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -117727,7 +117727,7 @@ func (p *parser) e10686() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -117837,7 +117837,7 @@ func (p *parser) e10694() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -117947,7 +117947,7 @@ func (p *parser) e10702() (*Node, bool) {
 		}
 		count++
 		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -118135,7 +118135,7 @@ func (p *parser) e10722() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -118265,7 +118265,7 @@ func (p *parser) e10732() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -119221,7 +119221,7 @@ func (p *parser) e10816() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -119445,7 +119445,7 @@ func (p *parser) e10837() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -119700,7 +119700,7 @@ func (p *parser) e10859() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -119860,7 +119860,7 @@ func (p *parser) e10872() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -120094,7 +120094,7 @@ func (p *parser) e10892() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -120132,7 +120132,7 @@ func (p *parser) e10897() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -120263,7 +120263,7 @@ func (p *parser) e10910() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -120604,7 +120604,7 @@ func (p *parser) e10942() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -120700,7 +120700,7 @@ func (p *parser) e10949() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -121081,7 +121081,7 @@ func (p *parser) e10981() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -121119,7 +121119,7 @@ func (p *parser) e10986() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -121501,7 +121501,7 @@ func (p *parser) e11019() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -121686,7 +121686,7 @@ func (p *parser) e11039() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -121831,7 +121831,7 @@ func (p *parser) e11054() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -121949,7 +121949,7 @@ func (p *parser) e11065() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -122153,7 +122153,7 @@ func (p *parser) e11085() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -122191,7 +122191,7 @@ func (p *parser) e11090() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -122322,7 +122322,7 @@ func (p *parser) e11103() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -122621,7 +122621,7 @@ func (p *parser) e11133() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -122717,7 +122717,7 @@ func (p *parser) e11140() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -122988,7 +122988,7 @@ func (p *parser) e11165() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -123026,7 +123026,7 @@ func (p *parser) e11170() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -123365,7 +123365,7 @@ func (p *parser) e11200() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -123535,7 +123535,7 @@ func (p *parser) e11209() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -123636,7 +123636,7 @@ func (p *parser) e11217() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -123764,7 +123764,7 @@ func (p *parser) e11229() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -123846,7 +123846,7 @@ func (p *parser) e11238() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -124048,7 +124048,7 @@ func (p *parser) e11261() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -124193,7 +124193,7 @@ func (p *parser) e11276() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -124311,7 +124311,7 @@ func (p *parser) e11287() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -124515,7 +124515,7 @@ func (p *parser) e11307() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -124553,7 +124553,7 @@ func (p *parser) e11312() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -124684,7 +124684,7 @@ func (p *parser) e11325() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -124983,7 +124983,7 @@ func (p *parser) e11355() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -125079,7 +125079,7 @@ func (p *parser) e11362() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -125350,7 +125350,7 @@ func (p *parser) e11387() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -125388,7 +125388,7 @@ func (p *parser) e11392() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -125727,7 +125727,7 @@ func (p *parser) e11422() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -125886,7 +125886,7 @@ func (p *parser) e11431() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -126765,7 +126765,7 @@ func (p *parser) e11526() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -126927,7 +126927,7 @@ func (p *parser) e11546() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -127109,7 +127109,7 @@ func (p *parser) e11568() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -127265,7 +127265,7 @@ func (p *parser) e11588() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -127465,7 +127465,7 @@ func (p *parser) e11604() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -127547,7 +127547,7 @@ func (p *parser) e11613() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -128132,7 +128132,7 @@ func (p *parser) e11667() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -128214,7 +128214,7 @@ func (p *parser) e11676() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -130484,7 +130484,7 @@ func (p *parser) e11915() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -130538,7 +130538,7 @@ func (p *parser) e11920() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -130820,7 +130820,7 @@ func (p *parser) e11942() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -130930,7 +130930,7 @@ func (p *parser) e11948() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -131022,7 +131022,7 @@ func (p *parser) e11956() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -131115,7 +131115,7 @@ func (p *parser) e11964() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -131208,7 +131208,7 @@ func (p *parser) e11972() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -133830,7 +133830,7 @@ func (p *parser) e12258() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -134478,7 +134478,7 @@ func (p *parser) e12330() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -134766,7 +134766,7 @@ func (p *parser) e12359() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -135038,7 +135038,7 @@ func (p *parser) e12386() (*Node, bool) {
 			break
 		}
 		count++
-		if p.pos == m0.pos && count >= 0 {
+		if p.pos == m0.pos {
 			break
 		}
 	}
@@ -142461,6 +142461,7 @@ func (p *tparser) i0() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _ = x10, x24
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) && p.in[p.pos] == 65279 {
 		p.pos++
@@ -142519,7 +142520,7 @@ L4:
 		v19 = p.attachCaptures(v18, scope13090, []any{k13}, x11, p.pos)
 		x10++
 		p.kidStack = append(p.kidStack, v19)
-		if p.pos == x11 && x10 >= 0 {
+		if p.pos == x11 {
 			break
 		}
 		continue
@@ -142555,7 +142556,7 @@ L4:
 		v33 = p.attachCaptures(v32, scope13091, []any{k27}, x25, p.pos)
 		x24++
 		p.kidStack = append(p.kidStack, v33)
-		if p.pos == x25 && x24 >= 0 {
+		if p.pos == x25 {
 			break
 		}
 		continue
@@ -142836,6 +142837,7 @@ func (p *tparser) i4() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x4
 	if p.pos < len(p.in) && p.in[p.pos] == 40 {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit13098, "(", 10, false); !ok {
@@ -142863,7 +142865,7 @@ func (p *tparser) i4() (any, bool) {
 		}
 		x4++
 		p.kidStack = append(p.kidStack, k7)
-		if p.pos == x5 && x4 >= 0 {
+		if p.pos == x5 {
 			break
 		}
 		continue
@@ -143231,6 +143233,7 @@ func (p *tparser) i10() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x4
 	if p.pos < len(p.in) && p.in[p.pos] == 40 {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit13106, "(", 10, false); !ok {
@@ -143258,7 +143261,7 @@ func (p *tparser) i10() (any, bool) {
 		}
 		x4++
 		p.kidStack = append(p.kidStack, k7)
-		if p.pos == x5 && x4 >= 0 {
+		if p.pos == x5 {
 			break
 		}
 		continue
@@ -143449,6 +143452,7 @@ func (p *tparser) i13() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.u254(); !ok {
 		goto fail
 	}
@@ -143474,7 +143478,7 @@ func (p *tparser) i13() (any, bool) {
 		k9 = v11
 		x6++
 		p.kidStack = append(p.kidStack, k9)
-		if p.pos == x7 && x6 >= 0 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -143723,6 +143727,7 @@ func (p *tparser) i17() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x4
 	if p.pos < len(p.in) && p.in[p.pos] == 40 {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit13116, "(", 10, false); !ok {
@@ -143750,7 +143755,7 @@ func (p *tparser) i17() (any, bool) {
 		}
 		x4++
 		p.kidStack = append(p.kidStack, k7)
-		if p.pos == x5 && x4 >= 0 {
+		if p.pos == x5 {
 			break
 		}
 		continue
@@ -144180,6 +144185,7 @@ func (p *tparser) i23() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x4
 	if p.pos < len(p.in) && p.in[p.pos] == 40 {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit13127, "(", 10, false); !ok {
@@ -144207,7 +144213,7 @@ func (p *tparser) i23() (any, bool) {
 		}
 		x4++
 		p.kidStack = append(p.kidStack, k7)
-		if p.pos == x5 && x4 >= 0 {
+		if p.pos == x5 {
 			break
 		}
 		continue
@@ -145255,6 +145261,7 @@ func (p *tparser) i32() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x11
 	x1 = p.pos
 	p.silent++
 	if p.pos < len(p.in) && p.in[p.pos] == 91 {
@@ -145316,7 +145323,7 @@ L3:
 		k14 = v16
 		x11++
 		p.kidStack = append(p.kidStack, k14)
-		if p.pos == x12 && x11 >= 0 {
+		if p.pos == x12 {
 			break
 		}
 		continue
@@ -145413,6 +145420,7 @@ func (p *tparser) i33() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.s34(); !ok {
 		goto fail
 	}
@@ -145467,7 +145475,7 @@ func (p *tparser) i33() (any, bool) {
 		v20 = p.attachCaptures(v19, scope13160, []any{k9}, x7, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v20)
-		if p.pos == x7 && x6 >= 0 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -145837,6 +145845,7 @@ func (p *tparser) v37() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _, _, _ = x12, x36, x60, x85
 	x1, x2 = p.pos, len(p.recovered)
 	x6 = p.pos
 	x7 = p.newVals(4)[:0]
@@ -145898,7 +145907,7 @@ func (p *tparser) v37() (any, bool) {
 		v24 = p.newNode("Seq", x16, p.pos, x17)
 		x12++
 		p.kidStack = append(p.kidStack, v24)
-		if p.pos == x13 && x12 >= 0 {
+		if p.pos == x13 {
 			break
 		}
 		continue
@@ -145986,7 +145995,7 @@ L5:
 		v48 = p.newNode("Seq", x40, p.pos, x41)
 		x36++
 		p.kidStack = append(p.kidStack, v48)
-		if p.pos == x37 && x36 >= 0 {
+		if p.pos == x37 {
 			break
 		}
 		continue
@@ -146087,7 +146096,7 @@ L29:
 		v75 = p.newNode("Seq", x64, p.pos, x65)
 		x60++
 		p.kidStack = append(p.kidStack, v75)
-		if p.pos == x61 && x60 >= 0 {
+		if p.pos == x61 {
 			break
 		}
 		continue
@@ -146183,7 +146192,7 @@ L81:
 		v97 = p.newNode("Seq", x89, p.pos, x90)
 		x85++
 		p.kidStack = append(p.kidStack, v97)
-		if p.pos == x86 && x85 >= 0 {
+		if p.pos == x86 {
 			break
 		}
 		continue
@@ -146325,6 +146334,7 @@ func (p *tparser) i37() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _, _, _ = x12, x36, x60, x85
 	x1, x2 = p.pos, len(p.recovered)
 	x6 = p.pos
 	x7 = p.newVals(4)[:0]
@@ -146386,7 +146396,7 @@ func (p *tparser) i37() (any, bool) {
 		v24 = p.newNode("Seq", x16, p.pos, x17)
 		x12++
 		p.kidStack = append(p.kidStack, v24)
-		if p.pos == x13 && x12 >= 0 {
+		if p.pos == x13 {
 			break
 		}
 		continue
@@ -146474,7 +146484,7 @@ L5:
 		v48 = p.newNode("Seq", x40, p.pos, x41)
 		x36++
 		p.kidStack = append(p.kidStack, v48)
-		if p.pos == x37 && x36 >= 0 {
+		if p.pos == x37 {
 			break
 		}
 		continue
@@ -146575,7 +146585,7 @@ L29:
 		v75 = p.newNode("Seq", x64, p.pos, x65)
 		x60++
 		p.kidStack = append(p.kidStack, v75)
-		if p.pos == x61 && x60 >= 0 {
+		if p.pos == x61 {
 			break
 		}
 		continue
@@ -146671,7 +146681,7 @@ L81:
 		v97 = p.newNode("Seq", x89, p.pos, x90)
 		x85++
 		p.kidStack = append(p.kidStack, v97)
-		if p.pos == x86 && x85 >= 0 {
+		if p.pos == x86 {
 			break
 		}
 		continue
@@ -148060,6 +148070,7 @@ func (p *tparser) v41() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _ = x5, x21
 	x1 = p.pos
 	x2 = p.newVals(3)[:0]
 	x3, x4 = p.pos, len(p.kidStack)
@@ -148098,7 +148109,7 @@ func (p *tparser) v41() (any, bool) {
 		v16 = p.newNode("Seq", x9, p.pos, x10)
 		x5++
 		p.kidStack = append(p.kidStack, v16)
-		if p.pos == x6 && x5 >= 0 {
+		if p.pos == x6 {
 			break
 		}
 		continue
@@ -148136,7 +148147,7 @@ func (p *tparser) v41() (any, bool) {
 		v29 = p.newNode("Seq", x25, p.pos, x26)
 		x21++
 		p.kidStack = append(p.kidStack, v29)
-		if p.pos == x22 && x21 >= 0 {
+		if p.pos == x22 {
 			break
 		}
 		continue
@@ -148199,6 +148210,7 @@ func (p *tparser) i41() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _ = x5, x21
 	x1 = p.pos
 	x2 = p.newVals(3)[:0]
 	x3, x4 = p.pos, len(p.kidStack)
@@ -148237,7 +148249,7 @@ func (p *tparser) i41() (any, bool) {
 		v16 = p.newNode("Seq", x9, p.pos, x10)
 		x5++
 		p.kidStack = append(p.kidStack, v16)
-		if p.pos == x6 && x5 >= 0 {
+		if p.pos == x6 {
 			break
 		}
 		continue
@@ -148275,7 +148287,7 @@ func (p *tparser) i41() (any, bool) {
 		v29 = p.newNode("Seq", x25, p.pos, x26)
 		x21++
 		p.kidStack = append(p.kidStack, v29)
-		if p.pos == x22 && x21 >= 0 {
+		if p.pos == x22 {
 			break
 		}
 		continue
@@ -148347,6 +148359,7 @@ func (p *tparser) v42() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _ = x5, x21
 	x1 = p.pos
 	x2 = p.newVals(3)[:0]
 	x3, x4 = p.pos, len(p.kidStack)
@@ -148385,7 +148398,7 @@ func (p *tparser) v42() (any, bool) {
 		v16 = p.newNode("Seq", x9, p.pos, x10)
 		x5++
 		p.kidStack = append(p.kidStack, v16)
-		if p.pos == x6 && x5 >= 0 {
+		if p.pos == x6 {
 			break
 		}
 		continue
@@ -148423,7 +148436,7 @@ func (p *tparser) v42() (any, bool) {
 		v29 = p.newNode("Seq", x25, p.pos, x26)
 		x21++
 		p.kidStack = append(p.kidStack, v29)
-		if p.pos == x22 && x21 >= 0 {
+		if p.pos == x22 {
 			break
 		}
 		continue
@@ -148486,6 +148499,7 @@ func (p *tparser) i42() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _ = x5, x21
 	x1 = p.pos
 	x2 = p.newVals(3)[:0]
 	x3, x4 = p.pos, len(p.kidStack)
@@ -148524,7 +148538,7 @@ func (p *tparser) i42() (any, bool) {
 		v16 = p.newNode("Seq", x9, p.pos, x10)
 		x5++
 		p.kidStack = append(p.kidStack, v16)
-		if p.pos == x6 && x5 >= 0 {
+		if p.pos == x6 {
 			break
 		}
 		continue
@@ -148562,7 +148576,7 @@ func (p *tparser) i42() (any, bool) {
 		v29 = p.newNode("Seq", x25, p.pos, x26)
 		x21++
 		p.kidStack = append(p.kidStack, v29)
-		if p.pos == x22 && x21 >= 0 {
+		if p.pos == x22 {
 			break
 		}
 		continue
@@ -149046,6 +149060,7 @@ func (p *tparser) i49() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.u50(); !ok {
 		goto fail
 	}
@@ -149080,7 +149095,7 @@ func (p *tparser) i49() (any, bool) {
 		v17 = p.attachCaptures(v16, scope13205, []any{k9}, x7, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v17)
-		if p.pos == x7 && x6 >= 0 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -149523,6 +149538,7 @@ func (p *tparser) i55() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.u56(); !ok {
 		goto fail
 	}
@@ -149548,7 +149564,7 @@ func (p *tparser) i55() (any, bool) {
 		k9 = v11
 		x6++
 		p.kidStack = append(p.kidStack, k9)
-		if p.pos == x7 && x6 >= 0 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -150167,6 +150183,7 @@ func (p *tparser) i63() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.u52(); !ok {
 		goto fail
 	}
@@ -150192,7 +150209,7 @@ func (p *tparser) i63() (any, bool) {
 		k9 = v11
 		x6++
 		p.kidStack = append(p.kidStack, k9)
-		if p.pos == x7 && x6 >= 0 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -150268,6 +150285,7 @@ func (p *tparser) i64() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.u65(); !ok {
 		goto fail
 	}
@@ -150293,7 +150311,7 @@ func (p *tparser) i64() (any, bool) {
 		k9 = v11
 		x6++
 		p.kidStack = append(p.kidStack, k9)
-		if p.pos == x7 && x6 >= 0 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -150415,6 +150433,7 @@ func (p *tparser) i66() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if p.pos < len(p.in) && p.in[p.pos] == 91 {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit13234, "[", 16, false); !ok {
@@ -150448,7 +150467,7 @@ func (p *tparser) i66() (any, bool) {
 		k9 = v11
 		x6++
 		p.kidStack = append(p.kidStack, k9)
-		if p.pos == x7 && x6 >= 0 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -150591,6 +150610,7 @@ func (p *tparser) i68() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.u69(); !ok {
 		goto fail
 	}
@@ -150645,7 +150665,7 @@ func (p *tparser) i68() (any, bool) {
 		v20 = p.attachCaptures(v19, scope13242, []any{k9}, x7, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v20)
-		if p.pos == x7 && x6 >= 0 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -151231,6 +151251,7 @@ func (p *tparser) i75() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x8
 	if v2, ok = p.u254(); !ok {
 		goto fail
 	}
@@ -151280,7 +151301,7 @@ func (p *tparser) i75() (any, bool) {
 		v19 = p.attachCaptures(v18, scope13264, []any{k11}, x9, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
-		if p.pos == x9 && x8 >= 1 {
+		if p.pos == x9 {
 			break
 		}
 		continue
@@ -152465,6 +152486,7 @@ func (p *tparser) i84() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x8
 	if v2, ok = p.u85(); !ok {
 		goto fail
 	}
@@ -152514,7 +152536,7 @@ func (p *tparser) i84() (any, bool) {
 		v19 = p.attachCaptures(v18, scope13289, []any{k11}, x9, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
-		if p.pos == x9 && x8 >= 1 {
+		if p.pos == x9 {
 			break
 		}
 		continue
@@ -153530,6 +153552,7 @@ func (p *tparser) i97() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x4
 	if p.pos < len(p.in) && p.in[p.pos] == 123 {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit13322, "{", 18, false); !ok {
@@ -153557,7 +153580,7 @@ func (p *tparser) i97() (any, bool) {
 		}
 		x4++
 		p.kidStack = append(p.kidStack, k7)
-		if p.pos == x5 && x4 >= 0 {
+		if p.pos == x5 {
 			break
 		}
 		continue
@@ -153992,6 +154015,7 @@ func (p *tparser) i102() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.u254(); !ok {
 		goto fail
 	}
@@ -154017,7 +154041,7 @@ func (p *tparser) i102() (any, bool) {
 		k9 = v11
 		x6++
 		p.kidStack = append(p.kidStack, k9)
-		if p.pos == x7 && x6 >= 1 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -154431,6 +154455,7 @@ func (p *tparser) i108() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x4
 	if p.pos < len(p.in) && p.in[p.pos] == 123 {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit13349, "{", 18, false); !ok {
@@ -154458,7 +154483,7 @@ func (p *tparser) i108() (any, bool) {
 		}
 		x4++
 		p.kidStack = append(p.kidStack, k7)
-		if p.pos == x5 && x4 >= 0 {
+		if p.pos == x5 {
 			break
 		}
 		continue
@@ -154719,6 +154744,7 @@ func (p *tparser) i112() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.s113(); !ok {
 		goto fail
 	}
@@ -154773,7 +154799,7 @@ func (p *tparser) i112() (any, bool) {
 		v20 = p.attachCaptures(v19, scope13357, []any{k9}, x7, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v20)
-		if p.pos == x7 && x6 >= 0 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -154990,6 +155016,7 @@ func (p *tparser) i115() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x8
 	if v2, ok = p.u254(); !ok {
 		goto fail
 	}
@@ -155039,7 +155066,7 @@ func (p *tparser) i115() (any, bool) {
 		v19 = p.attachCaptures(v18, scope13371, []any{k11}, x9, p.pos)
 		x8++
 		p.kidStack = append(p.kidStack, v19)
-		if p.pos == x9 && x8 >= 1 {
+		if p.pos == x9 {
 			break
 		}
 		continue
@@ -155135,6 +155162,7 @@ func (p *tparser) i116() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x4
 	if p.pos < len(p.in) && p.in[p.pos] == 123 {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit13377, "{", 18, false); !ok {
@@ -155162,7 +155190,7 @@ func (p *tparser) i116() (any, bool) {
 		v13 = p.attachCaptures(v12, scope13378, []any{k7}, x5, p.pos)
 		x4++
 		p.kidStack = append(p.kidStack, v13)
-		if p.pos == x5 && x4 >= 0 {
+		if p.pos == x5 {
 			break
 		}
 		continue
@@ -155662,6 +155690,7 @@ func (p *tparser) i123() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x4
 	x2, x3 = p.pos, len(p.kidStack)
 	x4 = 0
 	for {
@@ -155681,7 +155710,7 @@ func (p *tparser) i123() (any, bool) {
 		v13 = p.attachCaptures(v12, scope13392, []any{k7}, x5, p.pos)
 		x4++
 		p.kidStack = append(p.kidStack, v13)
-		if p.pos == x5 && x4 >= 0 {
+		if p.pos == x5 {
 			break
 		}
 		continue
@@ -158757,6 +158786,7 @@ func (p *tparser) i166() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x4
 	if p.pos < len(p.in) && p.in[p.pos] == 123 {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit13454, "{", 18, false); !ok {
@@ -158790,7 +158820,7 @@ func (p *tparser) i166() (any, bool) {
 		}
 		x4++
 		p.kidStack = append(p.kidStack, k7)
-		if p.pos == x5 && x4 >= 0 {
+		if p.pos == x5 {
 			break
 		}
 		continue
@@ -159109,6 +159139,7 @@ func (p *tparser) i171() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x4
 	if p.pos < len(p.in) && p.in[p.pos] == 123 {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit13465, "{", 18, false); !ok {
@@ -159142,7 +159173,7 @@ func (p *tparser) i171() (any, bool) {
 		}
 		x4++
 		p.kidStack = append(p.kidStack, k7)
-		if p.pos == x5 && x4 >= 0 {
+		if p.pos == x5 {
 			break
 		}
 		continue
@@ -159492,6 +159523,7 @@ func (p *tparser) i176() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.u183(); !ok {
 		goto fail
 	}
@@ -159526,7 +159558,7 @@ func (p *tparser) i176() (any, bool) {
 		v18 = p.attachCaptures(v17, scope13476, []any{k10}, x8, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v18)
-		if p.pos == x8 && x6 >= 0 {
+		if p.pos == x8 {
 			break
 		}
 		continue
@@ -160298,6 +160330,7 @@ func (p *tparser) i184() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.u183(); !ok {
 		goto fail
 	}
@@ -160332,7 +160365,7 @@ func (p *tparser) i184() (any, bool) {
 		v17 = p.attachCaptures(v16, scope13501, []any{k9}, x7, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v17)
-		if p.pos == x7 && x6 >= 0 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -160400,6 +160433,7 @@ func (p *tparser) i185() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.u186(); !ok {
 		goto fail
 	}
@@ -160432,7 +160466,7 @@ func (p *tparser) i185() (any, bool) {
 		v17 = p.attachCaptures(v16, scope13503, []any{k9, k10}, x7, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v17)
-		if p.pos == x7 && x6 >= 0 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -160505,6 +160539,7 @@ func (p *tparser) i186() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.u187(); !ok {
 		goto fail
 	}
@@ -160537,7 +160572,7 @@ func (p *tparser) i186() (any, bool) {
 		v17 = p.attachCaptures(v16, scope13509, []any{k9, k10}, x7, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v17)
-		if p.pos == x7 && x6 >= 0 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -160610,6 +160645,7 @@ func (p *tparser) i187() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.u188(); !ok {
 		goto fail
 	}
@@ -160642,7 +160678,7 @@ func (p *tparser) i187() (any, bool) {
 		v17 = p.attachCaptures(v16, scope13515, []any{k9, k10}, x7, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v17)
-		if p.pos == x7 && x6 >= 0 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -160715,6 +160751,7 @@ func (p *tparser) i188() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.u189(); !ok {
 		goto fail
 	}
@@ -160747,7 +160784,7 @@ func (p *tparser) i188() (any, bool) {
 		v17 = p.attachCaptures(v16, scope13521, []any{k9, k10}, x7, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v17)
-		if p.pos == x7 && x6 >= 0 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -160820,6 +160857,7 @@ func (p *tparser) i189() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.u190(); !ok {
 		goto fail
 	}
@@ -160852,7 +160890,7 @@ func (p *tparser) i189() (any, bool) {
 		v17 = p.attachCaptures(v16, scope13527, []any{k9, k10}, x7, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v17)
-		if p.pos == x7 && x6 >= 0 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -162990,6 +163028,7 @@ func (p *tparser) i200() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.u183(); !ok {
 		goto fail
 	}
@@ -163024,7 +163063,7 @@ func (p *tparser) i200() (any, bool) {
 		v17 = p.attachCaptures(v16, scope13543, []any{k9}, x7, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v17)
-		if p.pos == x7 && x6 >= 1 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -163294,6 +163333,7 @@ func (p *tparser) i204() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.u205(); !ok {
 		goto fail
 	}
@@ -163328,7 +163368,7 @@ func (p *tparser) i204() (any, bool) {
 		v17 = p.attachCaptures(v16, scope13554, []any{k9}, x7, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v17)
-		if p.pos == x7 && x6 >= 0 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -165325,6 +165365,7 @@ func (p *tparser) i212() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.u211(); !ok {
 		goto fail
 	}
@@ -165359,7 +165400,7 @@ func (p *tparser) i212() (any, bool) {
 		v17 = p.attachCaptures(v16, scope13565, []any{k9}, x7, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v17)
-		if p.pos == x7 && x6 >= 0 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -165427,6 +165468,7 @@ func (p *tparser) i213() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.u214(); !ok {
 		goto fail
 	}
@@ -165459,7 +165501,7 @@ func (p *tparser) i213() (any, bool) {
 		v17 = p.attachCaptures(v16, scope13567, []any{k9, k10}, x7, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v17)
-		if p.pos == x7 && x6 >= 0 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -165532,6 +165574,7 @@ func (p *tparser) i214() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.u215(); !ok {
 		goto fail
 	}
@@ -165564,7 +165607,7 @@ func (p *tparser) i214() (any, bool) {
 		v17 = p.attachCaptures(v16, scope13573, []any{k9, k10}, x7, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v17)
-		if p.pos == x7 && x6 >= 0 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -165637,6 +165680,7 @@ func (p *tparser) i215() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.u216(); !ok {
 		goto fail
 	}
@@ -165669,7 +165713,7 @@ func (p *tparser) i215() (any, bool) {
 		v17 = p.attachCaptures(v16, scope13579, []any{k9, k10}, x7, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v17)
-		if p.pos == x7 && x6 >= 0 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -165742,6 +165786,7 @@ func (p *tparser) i216() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.u217(); !ok {
 		goto fail
 	}
@@ -165774,7 +165819,7 @@ func (p *tparser) i216() (any, bool) {
 		v17 = p.attachCaptures(v16, scope13585, []any{k9, k10}, x7, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v17)
-		if p.pos == x7 && x6 >= 0 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -165847,6 +165892,7 @@ func (p *tparser) i217() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x6
 	if v2, ok = p.u218(); !ok {
 		goto fail
 	}
@@ -165879,7 +165925,7 @@ func (p *tparser) i217() (any, bool) {
 		v17 = p.attachCaptures(v16, scope13591, []any{k9, k10}, x7, p.pos)
 		x6++
 		p.kidStack = append(p.kidStack, v17)
-		if p.pos == x7 && x6 >= 0 {
+		if p.pos == x7 {
 			break
 		}
 		continue
@@ -171727,6 +171773,7 @@ func (p *tparser) s243() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ = x3, x34, x56, x69, x94, x132, x145, x182, x192, x208, x268, x286, x308, x321, x354, x372, x385, x417, x439, x452
 	x1, x2 = p.pos, len(p.kidStack)
 	x3 = 0
 	for {
@@ -171828,7 +171875,7 @@ func (p *tparser) s243() (any, bool) {
 			v45 = p.newNode("Seq", x38, p.pos, x39)
 			x34++
 			p.kidStack = append(p.kidStack, v45)
-			if p.pos == x35 && x34 >= 0 {
+			if p.pos == x35 {
 				break
 			}
 			continue
@@ -171889,7 +171936,7 @@ func (p *tparser) s243() (any, bool) {
 				v74 = p.newMatch(x73, p.pos, p.text(x73, p.pos), true)
 				x69++
 				p.kidStack = append(p.kidStack, v74)
-				if p.pos == x70 && x69 >= 1 {
+				if p.pos == x70 {
 					break
 				}
 				continue
@@ -171945,7 +171992,7 @@ func (p *tparser) s243() (any, bool) {
 			v85 = p.attachCaptures(v64, scope13676, []any{k59}, x57, p.pos)
 			x56++
 			p.kidStack = append(p.kidStack, v85)
-			if p.pos == x57 && x56 >= 0 {
+			if p.pos == x57 {
 				break
 			}
 			continue
@@ -172005,7 +172052,7 @@ func (p *tparser) s243() (any, bool) {
 			}
 			p.pos += size
 			x94++
-			if p.pos == x95 && x94 >= 0 {
+			if p.pos == x95 {
 				break
 			}
 			continue
@@ -172089,7 +172136,7 @@ func (p *tparser) s243() (any, bool) {
 				v150 = p.newMatch(x149, p.pos, p.text(x149, p.pos), true)
 				x145++
 				p.kidStack = append(p.kidStack, v150)
-				if p.pos == x146 && x145 >= 1 {
+				if p.pos == x146 {
 					break
 				}
 				continue
@@ -172182,7 +172229,7 @@ func (p *tparser) s243() (any, bool) {
 			v171 = p.attachCaptures(v140, scope13685, []any{k135}, x133, p.pos)
 			x132++
 			p.kidStack = append(p.kidStack, v171)
-			if p.pos == x133 && x132 >= 0 {
+			if p.pos == x133 {
 				break
 			}
 			continue
@@ -172296,7 +172343,7 @@ func (p *tparser) s243() (any, bool) {
 				goto L195
 			L198:
 				x192++
-				if p.pos == x193 && x192 >= 0 {
+				if p.pos == x193 {
 					break
 				}
 				continue
@@ -172372,7 +172419,7 @@ func (p *tparser) s243() (any, bool) {
 				goto L211
 			L214:
 				x208++
-				if p.pos == x209 && x208 >= 0 {
+				if p.pos == x209 {
 					break
 				}
 				continue
@@ -172494,7 +172541,7 @@ func (p *tparser) s243() (any, bool) {
 			v253 = p.attachCaptures(v252, scope13697, []any{k185}, x183, p.pos)
 			x182++
 			p.kidStack = append(p.kidStack, v253)
-			if p.pos == x183 && x182 >= 0 {
+			if p.pos == x183 {
 				break
 			}
 			continue
@@ -172531,7 +172578,7 @@ func (p *tparser) s243() (any, bool) {
 			v273 = p.newMatch(x272, p.pos, "0", true)
 			x268++
 			p.kidStack = append(p.kidStack, v273)
-			if p.pos == x269 && x268 >= 0 {
+			if p.pos == x269 {
 				break
 			}
 			continue
@@ -172617,7 +172664,7 @@ func (p *tparser) s243() (any, bool) {
 			v291 = p.newMatch(x290, p.pos, "0", true)
 			x286++
 			p.kidStack = append(p.kidStack, v291)
-			if p.pos == x287 && x286 >= 0 {
+			if p.pos == x287 {
 				break
 			}
 			continue
@@ -172743,7 +172790,7 @@ func (p *tparser) s243() (any, bool) {
 				v326 = p.newMatch(x325, p.pos, p.text(x325, p.pos), true)
 				x321++
 				p.kidStack = append(p.kidStack, v326)
-				if p.pos == x322 && x321 >= 1 {
+				if p.pos == x322 {
 					break
 				}
 				continue
@@ -172836,7 +172883,7 @@ func (p *tparser) s243() (any, bool) {
 			v347 = p.attachCaptures(v316, scope13707, []any{k311}, x309, p.pos)
 			x308++
 			p.kidStack = append(p.kidStack, v347)
-			if p.pos == x309 && x308 >= 0 {
+			if p.pos == x309 {
 				break
 			}
 			continue
@@ -172879,7 +172926,7 @@ func (p *tparser) s243() (any, bool) {
 			v359 = p.newMatch(x358, p.pos, "0", true)
 			x354++
 			p.kidStack = append(p.kidStack, v359)
-			if p.pos == x355 && x354 >= 0 {
+			if p.pos == x355 {
 				break
 			}
 			continue
@@ -172979,7 +173026,7 @@ func (p *tparser) s243() (any, bool) {
 				v390 = p.newMatch(x389, p.pos, p.text(x389, p.pos), true)
 				x385++
 				p.kidStack = append(p.kidStack, v390)
-				if p.pos == x386 && x385 >= 1 {
+				if p.pos == x386 {
 					break
 				}
 				continue
@@ -173072,7 +173119,7 @@ func (p *tparser) s243() (any, bool) {
 			v411 = p.attachCaptures(v380, scope13714, []any{k375}, x373, p.pos)
 			x372++
 			p.kidStack = append(p.kidStack, v411)
-			if p.pos == x373 && x372 >= 0 {
+			if p.pos == x373 {
 				break
 			}
 			continue
@@ -173104,7 +173151,7 @@ func (p *tparser) s243() (any, bool) {
 			v422 = p.newMatch(x421, p.pos, "0", true)
 			x417++
 			p.kidStack = append(p.kidStack, v422)
-			if p.pos == x418 && x417 >= 0 {
+			if p.pos == x418 {
 				break
 			}
 			continue
@@ -173231,7 +173278,7 @@ func (p *tparser) s243() (any, bool) {
 				v457 = p.newMatch(x456, p.pos, p.text(x456, p.pos), true)
 				x452++
 				p.kidStack = append(p.kidStack, v457)
-				if p.pos == x453 && x452 >= 1 {
+				if p.pos == x453 {
 					break
 				}
 				continue
@@ -173324,7 +173371,7 @@ func (p *tparser) s243() (any, bool) {
 			v478 = p.attachCaptures(v447, scope13722, []any{k442}, x440, p.pos)
 			x439++
 			p.kidStack = append(p.kidStack, v478)
-			if p.pos == x440 && x439 >= 0 {
+			if p.pos == x440 {
 				break
 			}
 			continue
@@ -173373,7 +173420,7 @@ func (p *tparser) s243() (any, bool) {
 		v485 = p.attachCaptures(v484, scope13724, []any{k6, k7, k8, k9}, x4, p.pos)
 		x3++
 		p.kidStack = append(p.kidStack, v485)
-		if p.pos == x4 && x3 >= 0 {
+		if p.pos == x4 {
 			break
 		}
 		continue
@@ -174076,6 +174123,7 @@ func (p *tparser) s244() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ = x3, x42, x74, x87, x147, x157, x181, x254, x272, x294, x307, x348, x381, x394, x434, x473, x486, x540, x553, x590, x600, x616, x676, x694, x716, x729, x762, x780, x793, x825, x847, x860
 	x1, x2 = p.pos, len(p.kidStack)
 	x3 = 0
 	for {
@@ -174185,7 +174233,7 @@ func (p *tparser) s244() (any, bool) {
 			v53 = p.newNode("Seq", x46, p.pos, x47)
 			x42++
 			p.kidStack = append(p.kidStack, v53)
-			if p.pos == x43 && x42 >= 0 {
+			if p.pos == x43 {
 				break
 			}
 			continue
@@ -174255,7 +174303,7 @@ func (p *tparser) s244() (any, bool) {
 				v92 = p.newMatch(x91, p.pos, p.text(x91, p.pos), true)
 				x87++
 				p.kidStack = append(p.kidStack, v92)
-				if p.pos == x88 && x87 >= 1 {
+				if p.pos == x88 {
 					break
 				}
 				continue
@@ -174373,7 +174421,7 @@ func (p *tparser) s244() (any, bool) {
 			v121 = p.attachCaptures(v82, scope13729, []any{k77}, x75, p.pos)
 			x74++
 			p.kidStack = append(p.kidStack, v121)
-			if p.pos == x75 && x74 >= 0 {
+			if p.pos == x75 {
 				break
 			}
 			continue
@@ -174553,7 +174601,7 @@ func (p *tparser) s244() (any, bool) {
 				goto L160
 			L163:
 				x157++
-				if p.pos == x158 && x157 >= 0 {
+				if p.pos == x158 {
 					break
 				}
 				continue
@@ -174654,7 +174702,7 @@ func (p *tparser) s244() (any, bool) {
 				goto L184
 			L187:
 				x181++
-				if p.pos == x182 && x181 >= 0 {
+				if p.pos == x182 {
 					break
 				}
 				continue
@@ -174785,7 +174833,7 @@ func (p *tparser) s244() (any, bool) {
 			v239 = p.attachCaptures(v238, scope13741, []any{k150}, x148, p.pos)
 			x147++
 			p.kidStack = append(p.kidStack, v239)
-			if p.pos == x148 && x147 >= 0 {
+			if p.pos == x148 {
 				break
 			}
 			continue
@@ -174822,7 +174870,7 @@ func (p *tparser) s244() (any, bool) {
 			v259 = p.newMatch(x258, p.pos, "0", true)
 			x254++
 			p.kidStack = append(p.kidStack, v259)
-			if p.pos == x255 && x254 >= 0 {
+			if p.pos == x255 {
 				break
 			}
 			continue
@@ -174908,7 +174956,7 @@ func (p *tparser) s244() (any, bool) {
 			v277 = p.newMatch(x276, p.pos, "0", true)
 			x272++
 			p.kidStack = append(p.kidStack, v277)
-			if p.pos == x273 && x272 >= 0 {
+			if p.pos == x273 {
 				break
 			}
 			continue
@@ -175034,7 +175082,7 @@ func (p *tparser) s244() (any, bool) {
 				v312 = p.newMatch(x311, p.pos, p.text(x311, p.pos), true)
 				x307++
 				p.kidStack = append(p.kidStack, v312)
-				if p.pos == x308 && x307 >= 1 {
+				if p.pos == x308 {
 					break
 				}
 				continue
@@ -175152,7 +175200,7 @@ func (p *tparser) s244() (any, bool) {
 			v341 = p.attachCaptures(v302, scope13751, []any{k297}, x295, p.pos)
 			x294++
 			p.kidStack = append(p.kidStack, v341)
-			if p.pos == x295 && x294 >= 0 {
+			if p.pos == x295 {
 				break
 			}
 			continue
@@ -175195,7 +175243,7 @@ func (p *tparser) s244() (any, bool) {
 			v353 = p.newMatch(x352, p.pos, "0", true)
 			x348++
 			p.kidStack = append(p.kidStack, v353)
-			if p.pos == x349 && x348 >= 0 {
+			if p.pos == x349 {
 				break
 			}
 			continue
@@ -175336,7 +175384,7 @@ func (p *tparser) s244() (any, bool) {
 				v399 = p.newMatch(x398, p.pos, p.text(x398, p.pos), true)
 				x394++
 				p.kidStack = append(p.kidStack, v399)
-				if p.pos == x395 && x394 >= 1 {
+				if p.pos == x395 {
 					break
 				}
 				continue
@@ -175454,7 +175502,7 @@ func (p *tparser) s244() (any, bool) {
 			v428 = p.attachCaptures(v389, scope13759, []any{k384}, x382, p.pos)
 			x381++
 			p.kidStack = append(p.kidStack, v428)
-			if p.pos == x382 && x381 >= 0 {
+			if p.pos == x382 {
 				break
 			}
 			continue
@@ -175486,7 +175534,7 @@ func (p *tparser) s244() (any, bool) {
 			v439 = p.newMatch(x438, p.pos, "0", true)
 			x434++
 			p.kidStack = append(p.kidStack, v439)
-			if p.pos == x435 && x434 >= 0 {
+			if p.pos == x435 {
 				break
 			}
 			continue
@@ -175669,7 +175717,7 @@ func (p *tparser) s244() (any, bool) {
 				v491 = p.newMatch(x490, p.pos, p.text(x490, p.pos), true)
 				x486++
 				p.kidStack = append(p.kidStack, v491)
-				if p.pos == x487 && x486 >= 1 {
+				if p.pos == x487 {
 					break
 				}
 				continue
@@ -175725,7 +175773,7 @@ func (p *tparser) s244() (any, bool) {
 			v502 = p.attachCaptures(v481, scope13767, []any{k476}, x474, p.pos)
 			x473++
 			p.kidStack = append(p.kidStack, v502)
-			if p.pos == x474 && x473 >= 0 {
+			if p.pos == x474 {
 				break
 			}
 			continue
@@ -175818,7 +175866,7 @@ func (p *tparser) s244() (any, bool) {
 				v558 = p.newMatch(x557, p.pos, p.text(x557, p.pos), true)
 				x553++
 				p.kidStack = append(p.kidStack, v558)
-				if p.pos == x554 && x553 >= 1 {
+				if p.pos == x554 {
 					break
 				}
 				continue
@@ -175911,7 +175959,7 @@ func (p *tparser) s244() (any, bool) {
 			v579 = p.attachCaptures(v548, scope13773, []any{k543}, x541, p.pos)
 			x540++
 			p.kidStack = append(p.kidStack, v579)
-			if p.pos == x541 && x540 >= 0 {
+			if p.pos == x541 {
 				break
 			}
 			continue
@@ -176025,7 +176073,7 @@ func (p *tparser) s244() (any, bool) {
 				goto L603
 			L606:
 				x600++
-				if p.pos == x601 && x600 >= 0 {
+				if p.pos == x601 {
 					break
 				}
 				continue
@@ -176101,7 +176149,7 @@ func (p *tparser) s244() (any, bool) {
 				goto L619
 			L622:
 				x616++
-				if p.pos == x617 && x616 >= 0 {
+				if p.pos == x617 {
 					break
 				}
 				continue
@@ -176223,7 +176271,7 @@ func (p *tparser) s244() (any, bool) {
 			v661 = p.attachCaptures(v660, scope13785, []any{k593}, x591, p.pos)
 			x590++
 			p.kidStack = append(p.kidStack, v661)
-			if p.pos == x591 && x590 >= 0 {
+			if p.pos == x591 {
 				break
 			}
 			continue
@@ -176260,7 +176308,7 @@ func (p *tparser) s244() (any, bool) {
 			v681 = p.newMatch(x680, p.pos, "0", true)
 			x676++
 			p.kidStack = append(p.kidStack, v681)
-			if p.pos == x677 && x676 >= 0 {
+			if p.pos == x677 {
 				break
 			}
 			continue
@@ -176346,7 +176394,7 @@ func (p *tparser) s244() (any, bool) {
 			v699 = p.newMatch(x698, p.pos, "0", true)
 			x694++
 			p.kidStack = append(p.kidStack, v699)
-			if p.pos == x695 && x694 >= 0 {
+			if p.pos == x695 {
 				break
 			}
 			continue
@@ -176472,7 +176520,7 @@ func (p *tparser) s244() (any, bool) {
 				v734 = p.newMatch(x733, p.pos, p.text(x733, p.pos), true)
 				x729++
 				p.kidStack = append(p.kidStack, v734)
-				if p.pos == x730 && x729 >= 1 {
+				if p.pos == x730 {
 					break
 				}
 				continue
@@ -176565,7 +176613,7 @@ func (p *tparser) s244() (any, bool) {
 			v755 = p.attachCaptures(v724, scope13795, []any{k719}, x717, p.pos)
 			x716++
 			p.kidStack = append(p.kidStack, v755)
-			if p.pos == x717 && x716 >= 0 {
+			if p.pos == x717 {
 				break
 			}
 			continue
@@ -176608,7 +176656,7 @@ func (p *tparser) s244() (any, bool) {
 			v767 = p.newMatch(x766, p.pos, "0", true)
 			x762++
 			p.kidStack = append(p.kidStack, v767)
-			if p.pos == x763 && x762 >= 0 {
+			if p.pos == x763 {
 				break
 			}
 			continue
@@ -176708,7 +176756,7 @@ func (p *tparser) s244() (any, bool) {
 				v798 = p.newMatch(x797, p.pos, p.text(x797, p.pos), true)
 				x793++
 				p.kidStack = append(p.kidStack, v798)
-				if p.pos == x794 && x793 >= 1 {
+				if p.pos == x794 {
 					break
 				}
 				continue
@@ -176801,7 +176849,7 @@ func (p *tparser) s244() (any, bool) {
 			v819 = p.attachCaptures(v788, scope13802, []any{k783}, x781, p.pos)
 			x780++
 			p.kidStack = append(p.kidStack, v819)
-			if p.pos == x781 && x780 >= 0 {
+			if p.pos == x781 {
 				break
 			}
 			continue
@@ -176833,7 +176881,7 @@ func (p *tparser) s244() (any, bool) {
 			v830 = p.newMatch(x829, p.pos, "0", true)
 			x825++
 			p.kidStack = append(p.kidStack, v830)
-			if p.pos == x826 && x825 >= 0 {
+			if p.pos == x826 {
 				break
 			}
 			continue
@@ -176960,7 +177008,7 @@ func (p *tparser) s244() (any, bool) {
 				v865 = p.newMatch(x864, p.pos, p.text(x864, p.pos), true)
 				x860++
 				p.kidStack = append(p.kidStack, v865)
-				if p.pos == x861 && x860 >= 1 {
+				if p.pos == x861 {
 					break
 				}
 				continue
@@ -177053,7 +177101,7 @@ func (p *tparser) s244() (any, bool) {
 			v886 = p.attachCaptures(v855, scope13810, []any{k850}, x848, p.pos)
 			x847++
 			p.kidStack = append(p.kidStack, v886)
-			if p.pos == x848 && x847 >= 0 {
+			if p.pos == x848 {
 				break
 			}
 			continue
@@ -177107,7 +177155,7 @@ func (p *tparser) s244() (any, bool) {
 		v893 = p.attachCaptures(v892, scope13812, []any{k6, k7, k8, k9, k10, k11, k12, k13}, x4, p.pos)
 		x3++
 		p.kidStack = append(p.kidStack, v893)
-		if p.pos == x4 && x3 >= 0 {
+		if p.pos == x4 {
 			break
 		}
 		continue
@@ -177419,6 +177467,7 @@ func (p *tparser) s246() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _ = x3, x14
 	x1, x2 = p.pos, len(p.kidStack)
 	x3 = 0
 	for {
@@ -177442,7 +177491,7 @@ func (p *tparser) s246() (any, bool) {
 			v19 = p.newMatch(x18, p.pos, p.text(x18, p.pos), true)
 			x14++
 			p.kidStack = append(p.kidStack, v19)
-			if p.pos == x15 && x14 >= 1 {
+			if p.pos == x15 {
 				break
 			}
 			continue
@@ -177519,7 +177568,7 @@ func (p *tparser) s246() (any, bool) {
 	L10:
 		x3++
 		p.kidStack = append(p.kidStack, v9)
-		if p.pos == x4 && x3 >= 0 {
+		if p.pos == x4 {
 			break
 		}
 		continue
@@ -177643,6 +177692,7 @@ func (p *tparser) s248() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x18
 	x1, x2 = p.pos, len(p.recovered)
 	x6 = p.pos
 	x7 = p.newVals(1)[:0]
@@ -177717,7 +177767,7 @@ L5:
 		v28 = p.newNode("Seq", x22, p.pos, x23)
 		x18++
 		p.kidStack = append(p.kidStack, v28)
-		if p.pos == x19 && x18 >= 0 {
+		if p.pos == x19 {
 			break
 		}
 		continue
@@ -177996,6 +178046,7 @@ func (p *tparser) v250() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _ = x3, x14
 	x1, x2 = p.pos, len(p.kidStack)
 	x3 = 0
 	for {
@@ -178019,7 +178070,7 @@ func (p *tparser) v250() (any, bool) {
 			v19 = p.newMatch(x18, p.pos, p.text(x18, p.pos), true)
 			x14++
 			p.kidStack = append(p.kidStack, v19)
-			if p.pos == x15 && x14 >= 1 {
+			if p.pos == x15 {
 				break
 			}
 			continue
@@ -178096,7 +178147,7 @@ func (p *tparser) v250() (any, bool) {
 	L10:
 		x3++
 		p.kidStack = append(p.kidStack, v9)
-		if p.pos == x4 && x3 >= 0 {
+		if p.pos == x4 {
 			break
 		}
 		continue
@@ -178153,6 +178204,7 @@ func (p *tparser) i250() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _ = x3, x14
 	x1, x2 = p.pos, len(p.kidStack)
 	x3 = 0
 	for {
@@ -178176,7 +178228,7 @@ func (p *tparser) i250() (any, bool) {
 			v19 = p.newMatch(x18, p.pos, p.text(x18, p.pos), true)
 			x14++
 			p.kidStack = append(p.kidStack, v19)
-			if p.pos == x15 && x14 >= 1 {
+			if p.pos == x15 {
 				break
 			}
 			continue
@@ -178253,7 +178305,7 @@ func (p *tparser) i250() (any, bool) {
 	L10:
 		x3++
 		p.kidStack = append(p.kidStack, v9)
-		if p.pos == x4 && x3 >= 0 {
+		if p.pos == x4 {
 			break
 		}
 		continue
@@ -178421,6 +178473,7 @@ func (p *tparser) i252() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x5
 	x1 = p.pos
 	x2 = p.newVals(2)[:0]
 	x3, x4 = p.pos, len(p.kidStack)
@@ -178436,7 +178489,7 @@ func (p *tparser) i252() (any, bool) {
 		v10 = p.newMatch(x9, p.pos, "0", true)
 		x5++
 		p.kidStack = append(p.kidStack, v10)
-		if p.pos == x6 && x5 >= 0 {
+		if p.pos == x6 {
 			break
 		}
 		continue
@@ -178538,6 +178591,7 @@ func (p *tparser) i253() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x8
 	x1 = p.pos
 	x2 = p.newVals(2)[:0]
 	x3 = p.pos
@@ -178573,7 +178627,7 @@ L5:
 		v13 = p.newMatch(x12, p.pos, "0", true)
 		x8++
 		p.kidStack = append(p.kidStack, v13)
-		if p.pos == x9 && x8 >= 0 {
+		if p.pos == x9 {
 			break
 		}
 		continue
@@ -178876,6 +178930,7 @@ func (p *tparser) s256() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _ = x3, x26
 	x1, x2 = p.pos, len(p.kidStack)
 	x3 = 0
 	for {
@@ -178969,7 +179024,7 @@ func (p *tparser) s256() (any, bool) {
 			v37 = p.newNode("Seq", x30, p.pos, x31)
 			x26++
 			p.kidStack = append(p.kidStack, v37)
-			if p.pos == x27 && x26 >= 0 {
+			if p.pos == x27 {
 				break
 			}
 			continue
@@ -179009,7 +179064,7 @@ func (p *tparser) s256() (any, bool) {
 		v44 = p.newNode("Seq", x7, p.pos, x8)
 		x3++
 		p.kidStack = append(p.kidStack, v44)
-		if p.pos == x4 && x3 >= 0 {
+		if p.pos == x4 {
 			break
 		}
 		continue
@@ -182295,6 +182350,7 @@ func (p *tparser) s285() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _ = x26, x36
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		x4, _, x5 = p.in[p.pos], 1, true
@@ -182449,7 +182505,7 @@ L18:
 		}
 		p.pos += size
 		x26++
-		if p.pos == x27 && x26 >= 0 {
+		if p.pos == x27 {
 			break
 		}
 		continue
@@ -182502,7 +182558,7 @@ L24:
 		}
 		p.pos += size
 		x36++
-		if p.pos == x37 && x36 >= 0 {
+		if p.pos == x37 {
 			break
 		}
 		continue
@@ -183932,6 +183988,7 @@ func (p *tparser) s292() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x7
 	x1 = p.pos
 	x2 = p.newVals(2)[:0]
 	if p.pos < len(p.in) {
@@ -183985,7 +184042,7 @@ func (p *tparser) s292() (any, bool) {
 		v22 = p.newNode("Seq", x11, p.pos, x12)
 		x7++
 		p.kidStack = append(p.kidStack, v22)
-		if p.pos == x8 && x7 >= 0 {
+		if p.pos == x8 {
 			break
 		}
 		continue
@@ -184046,6 +184103,7 @@ func (p *tparser) s293() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x7
 	x1 = p.pos
 	x2 = p.newVals(2)[:0]
 	if p.pos < len(p.in) {
@@ -184099,7 +184157,7 @@ func (p *tparser) s293() (any, bool) {
 		v22 = p.newNode("Seq", x11, p.pos, x12)
 		x7++
 		p.kidStack = append(p.kidStack, v22)
-		if p.pos == x8 && x7 >= 0 {
+		if p.pos == x8 {
 			break
 		}
 		continue
@@ -184160,6 +184218,7 @@ func (p *tparser) s294() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x7
 	x1 = p.pos
 	x2 = p.newVals(2)[:0]
 	if p.pos < len(p.in) {
@@ -184213,7 +184272,7 @@ func (p *tparser) s294() (any, bool) {
 		v22 = p.newNode("Seq", x11, p.pos, x12)
 		x7++
 		p.kidStack = append(p.kidStack, v22)
-		if p.pos == x8 && x7 >= 0 {
+		if p.pos == x8 {
 			break
 		}
 		continue
@@ -184274,6 +184333,7 @@ func (p *tparser) s295() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x7
 	x1 = p.pos
 	x2 = p.newVals(2)[:0]
 	if p.pos < len(p.in) {
@@ -184327,7 +184387,7 @@ func (p *tparser) s295() (any, bool) {
 		v22 = p.newNode("Seq", x11, p.pos, x12)
 		x7++
 		p.kidStack = append(p.kidStack, v22)
-		if p.pos == x8 && x7 >= 0 {
+		if p.pos == x8 {
 			break
 		}
 		continue
@@ -184480,6 +184540,7 @@ func (p *tparser) v297() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _ = x8, x17
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		x4, _, x5 = p.in[p.pos], 1, true
@@ -184517,7 +184578,7 @@ func (p *tparser) v297() (any, bool) {
 			goto L11
 		}
 		x8++
-		if p.pos == x9 && x8 >= 0 {
+		if p.pos == x9 {
 			break
 		}
 		continue
@@ -184602,7 +184663,7 @@ L6:
 		goto L20
 	L23:
 		x17++
-		if p.pos == x18 && x17 >= 0 {
+		if p.pos == x18 {
 			break
 		}
 		continue
@@ -184664,6 +184725,7 @@ func (p *tparser) i297() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _ = x8, x17
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
 		x4, _, x5 = p.in[p.pos], 1, true
@@ -184701,7 +184763,7 @@ func (p *tparser) i297() (any, bool) {
 			goto L11
 		}
 		x8++
-		if p.pos == x9 && x8 >= 0 {
+		if p.pos == x9 {
 			break
 		}
 		continue
@@ -184786,7 +184848,7 @@ L6:
 		goto L20
 	L23:
 		x17++
-		if p.pos == x18 && x17 >= 0 {
+		if p.pos == x18 {
 			break
 		}
 		continue
@@ -186494,6 +186556,7 @@ func (p *tparser) s305() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ = x1, x31, x47, x93, x101, x125, x182, x192, x206, x236, x258, x288, x313, x351, x377, x385, x401, x440, x450, x464, x486, x496, x518, x531
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -186587,7 +186650,7 @@ func (p *tparser) s305() (any, bool) {
 			}
 			p.pos += size
 			x31++
-			if p.pos == x32 && x31 >= 0 {
+			if p.pos == x32 {
 				break
 			}
 			continue
@@ -186733,7 +186796,7 @@ func (p *tparser) s305() (any, bool) {
 			goto L51
 		L55:
 			x47++
-			if p.pos == x48 && x47 >= 0 {
+			if p.pos == x48 {
 				break
 			}
 			continue
@@ -186899,7 +186962,7 @@ func (p *tparser) s305() (any, bool) {
 				goto L104
 			L107:
 				x101++
-				if p.pos == x102 && x101 >= 0 {
+				if p.pos == x102 {
 					break
 				}
 				continue
@@ -187000,7 +187063,7 @@ func (p *tparser) s305() (any, bool) {
 				goto L128
 			L131:
 				x125++
-				if p.pos == x126 && x125 >= 0 {
+				if p.pos == x126 {
 					break
 				}
 				continue
@@ -187119,7 +187182,7 @@ func (p *tparser) s305() (any, bool) {
 			goto L97
 		L167:
 			x93++
-			if p.pos == x94 && x93 >= 0 {
+			if p.pos == x94 {
 				break
 			}
 			continue
@@ -187145,7 +187208,7 @@ func (p *tparser) s305() (any, bool) {
 				goto L185
 			}
 			x182++
-			if p.pos == x183 && x182 >= 0 {
+			if p.pos == x183 {
 				break
 			}
 			continue
@@ -187220,7 +187283,7 @@ func (p *tparser) s305() (any, bool) {
 				goto L195
 			}
 			x192++
-			if p.pos == x193 && x192 >= 0 {
+			if p.pos == x193 {
 				break
 			}
 			continue
@@ -187426,7 +187489,7 @@ func (p *tparser) s305() (any, bool) {
 			goto L210
 		L214:
 			x206++
-			if p.pos == x207 && x206 >= 0 {
+			if p.pos == x207 {
 				break
 			}
 			continue
@@ -187457,7 +187520,7 @@ func (p *tparser) s305() (any, bool) {
 				goto L239
 			}
 			x236++
-			if p.pos == x237 && x236 >= 0 {
+			if p.pos == x237 {
 				break
 			}
 			continue
@@ -187673,7 +187736,7 @@ func (p *tparser) s305() (any, bool) {
 			goto L262
 		L266:
 			x258++
-			if p.pos == x259 && x258 >= 0 {
+			if p.pos == x259 {
 				break
 			}
 			continue
@@ -187696,7 +187759,7 @@ func (p *tparser) s305() (any, bool) {
 				goto L291
 			}
 			x288++
-			if p.pos == x289 && x288 >= 0 {
+			if p.pos == x289 {
 				break
 			}
 			continue
@@ -187893,7 +187956,7 @@ func (p *tparser) s305() (any, bool) {
 			goto L317
 		L321:
 			x313++
-			if p.pos == x314 && x313 >= 0 {
+			if p.pos == x314 {
 				break
 			}
 			continue
@@ -188032,7 +188095,7 @@ func (p *tparser) s305() (any, bool) {
 			goto L355
 		L359:
 			x351++
-			if p.pos == x352 && x351 >= 0 {
+			if p.pos == x352 {
 				break
 			}
 			continue
@@ -188137,7 +188200,7 @@ func (p *tparser) s305() (any, bool) {
 				goto L388
 			L391:
 				x385++
-				if p.pos == x386 && x385 >= 0 {
+				if p.pos == x386 {
 					break
 				}
 				continue
@@ -188213,7 +188276,7 @@ func (p *tparser) s305() (any, bool) {
 				goto L404
 			L407:
 				x401++
-				if p.pos == x402 && x401 >= 0 {
+				if p.pos == x402 {
 					break
 				}
 				continue
@@ -188316,7 +188379,7 @@ func (p *tparser) s305() (any, bool) {
 			goto L381
 		L420:
 			x377++
-			if p.pos == x378 && x377 >= 0 {
+			if p.pos == x378 {
 				break
 			}
 			continue
@@ -188342,7 +188405,7 @@ func (p *tparser) s305() (any, bool) {
 				goto L443
 			}
 			x440++
-			if p.pos == x441 && x440 >= 0 {
+			if p.pos == x441 {
 				break
 			}
 			continue
@@ -188417,7 +188480,7 @@ func (p *tparser) s305() (any, bool) {
 				goto L453
 			}
 			x450++
-			if p.pos == x451 && x450 >= 0 {
+			if p.pos == x451 {
 				break
 			}
 			continue
@@ -188598,7 +188661,7 @@ func (p *tparser) s305() (any, bool) {
 			goto L468
 		L472:
 			x464++
-			if p.pos == x465 && x464 >= 0 {
+			if p.pos == x465 {
 				break
 			}
 			continue
@@ -188629,7 +188692,7 @@ func (p *tparser) s305() (any, bool) {
 				goto L489
 			}
 			x486++
-			if p.pos == x487 && x486 >= 0 {
+			if p.pos == x487 {
 				break
 			}
 			continue
@@ -188784,7 +188847,7 @@ func (p *tparser) s305() (any, bool) {
 			goto L500
 		L504:
 			x496++
-			if p.pos == x497 && x496 >= 0 {
+			if p.pos == x497 {
 				break
 			}
 			continue
@@ -188807,7 +188870,7 @@ func (p *tparser) s305() (any, bool) {
 				goto L521
 			}
 			x518++
-			if p.pos == x519 && x518 >= 0 {
+			if p.pos == x519 {
 				break
 			}
 			continue
@@ -188986,7 +189049,7 @@ func (p *tparser) s305() (any, bool) {
 			goto L535
 		L539:
 			x531++
-			if p.pos == x532 && x531 >= 0 {
+			if p.pos == x532 {
 				break
 			}
 			continue
@@ -189026,7 +189089,7 @@ func (p *tparser) s305() (any, bool) {
 		goto L12
 	L26:
 		x1++
-		if p.pos == x2 && x1 >= 0 {
+		if p.pos == x2 {
 			break
 		}
 		continue
@@ -189271,6 +189334,7 @@ func (p *tparser) s307() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _, _, _, _, _, _, _, _, _, _, _, _, _, _ = x1, x23, x32, x53, x79, x105, x113, x129, x168, x178, x192, x214, x224, x246, x259
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -189356,7 +189420,7 @@ func (p *tparser) s307() (any, bool) {
 			}
 			p.pos += size
 			x23++
-			if p.pos == x24 && x23 >= 0 {
+			if p.pos == x24 {
 				break
 			}
 			continue
@@ -189440,7 +189504,7 @@ func (p *tparser) s307() (any, bool) {
 			goto L36
 		L40:
 			x32++
-			if p.pos == x33 && x32 >= 0 {
+			if p.pos == x33 {
 				break
 			}
 			continue
@@ -189494,7 +189558,7 @@ func (p *tparser) s307() (any, bool) {
 			}
 			p.pos += size
 			x53++
-			if p.pos == x54 && x53 >= 0 {
+			if p.pos == x54 {
 				break
 			}
 			continue
@@ -189630,7 +189694,7 @@ func (p *tparser) s307() (any, bool) {
 			goto L83
 		L87:
 			x79++
-			if p.pos == x80 && x79 >= 0 {
+			if p.pos == x80 {
 				break
 			}
 			continue
@@ -189735,7 +189799,7 @@ func (p *tparser) s307() (any, bool) {
 				goto L116
 			L119:
 				x113++
-				if p.pos == x114 && x113 >= 0 {
+				if p.pos == x114 {
 					break
 				}
 				continue
@@ -189811,7 +189875,7 @@ func (p *tparser) s307() (any, bool) {
 				goto L132
 			L135:
 				x129++
-				if p.pos == x130 && x129 >= 0 {
+				if p.pos == x130 {
 					break
 				}
 				continue
@@ -189914,7 +189978,7 @@ func (p *tparser) s307() (any, bool) {
 			goto L109
 		L148:
 			x105++
-			if p.pos == x106 && x105 >= 0 {
+			if p.pos == x106 {
 				break
 			}
 			continue
@@ -189940,7 +190004,7 @@ func (p *tparser) s307() (any, bool) {
 				goto L171
 			}
 			x168++
-			if p.pos == x169 && x168 >= 0 {
+			if p.pos == x169 {
 				break
 			}
 			continue
@@ -190015,7 +190079,7 @@ func (p *tparser) s307() (any, bool) {
 				goto L181
 			}
 			x178++
-			if p.pos == x179 && x178 >= 0 {
+			if p.pos == x179 {
 				break
 			}
 			continue
@@ -190196,7 +190260,7 @@ func (p *tparser) s307() (any, bool) {
 			goto L196
 		L200:
 			x192++
-			if p.pos == x193 && x192 >= 0 {
+			if p.pos == x193 {
 				break
 			}
 			continue
@@ -190227,7 +190291,7 @@ func (p *tparser) s307() (any, bool) {
 				goto L217
 			}
 			x214++
-			if p.pos == x215 && x214 >= 0 {
+			if p.pos == x215 {
 				break
 			}
 			continue
@@ -190382,7 +190446,7 @@ func (p *tparser) s307() (any, bool) {
 			goto L228
 		L232:
 			x224++
-			if p.pos == x225 && x224 >= 0 {
+			if p.pos == x225 {
 				break
 			}
 			continue
@@ -190405,7 +190469,7 @@ func (p *tparser) s307() (any, bool) {
 				goto L249
 			}
 			x246++
-			if p.pos == x247 && x246 >= 0 {
+			if p.pos == x247 {
 				break
 			}
 			continue
@@ -190584,7 +190648,7 @@ func (p *tparser) s307() (any, bool) {
 			goto L263
 		L267:
 			x259++
-			if p.pos == x260 && x259 >= 0 {
+			if p.pos == x260 {
 				break
 			}
 			continue
@@ -190619,7 +190683,7 @@ func (p *tparser) s307() (any, bool) {
 		goto L8
 	L18:
 		x1++
-		if p.pos == x2 && x1 >= 0 {
+		if p.pos == x2 {
 			break
 		}
 		continue
@@ -191768,6 +191832,7 @@ func (p *tparser) v318() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _, _, _ = x5, x13, x21, x34
 	x1, x2 = p.pos, len(p.recovered)
 	if _, ok = p.u254(); !ok {
 		goto L4
@@ -191816,7 +191881,7 @@ func (p *tparser) v318() (any, bool) {
 			goto L8
 		}
 		x5++
-		if p.pos == x6 && x5 >= 0 {
+		if p.pos == x6 {
 			break
 		}
 		continue
@@ -191884,7 +191949,7 @@ L4:
 			goto L16
 		}
 		x13++
-		if p.pos == x14 && x13 >= 0 {
+		if p.pos == x14 {
 			break
 		}
 		continue
@@ -191965,7 +192030,7 @@ L12:
 			goto L24
 		}
 		x21++
-		if p.pos == x22 && x21 >= 0 {
+		if p.pos == x22 {
 			break
 		}
 		continue
@@ -192046,7 +192111,7 @@ L33:
 			goto L37
 		}
 		x34++
-		if p.pos == x35 && x34 >= 0 {
+		if p.pos == x35 {
 			break
 		}
 		continue
@@ -192117,6 +192182,7 @@ func (p *tparser) i318() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _, _, _ = x5, x13, x21, x34
 	x1, x2 = p.pos, len(p.recovered)
 	if _, ok = p.u254(); !ok {
 		goto L4
@@ -192165,7 +192231,7 @@ func (p *tparser) i318() (any, bool) {
 			goto L8
 		}
 		x5++
-		if p.pos == x6 && x5 >= 0 {
+		if p.pos == x6 {
 			break
 		}
 		continue
@@ -192233,7 +192299,7 @@ L4:
 			goto L16
 		}
 		x13++
-		if p.pos == x14 && x13 >= 0 {
+		if p.pos == x14 {
 			break
 		}
 		continue
@@ -192314,7 +192380,7 @@ L12:
 			goto L24
 		}
 		x21++
-		if p.pos == x22 && x21 >= 0 {
+		if p.pos == x22 {
 			break
 		}
 		continue
@@ -192395,7 +192461,7 @@ L33:
 			goto L37
 		}
 		x34++
-		if p.pos == x35 && x34 >= 0 {
+		if p.pos == x35 {
 			break
 		}
 		continue
@@ -192455,6 +192521,7 @@ func (p *tparser) v319() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _ = x1, x8
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -192484,7 +192551,7 @@ func (p *tparser) v319() (any, bool) {
 			goto L4
 		}
 		x1++
-		if p.pos == x2 && x1 >= 0 {
+		if p.pos == x2 {
 			break
 		}
 		continue
@@ -192512,7 +192579,7 @@ func (p *tparser) v319() (any, bool) {
 			goto L11
 		}
 		x8++
-		if p.pos == x9 && x8 >= 0 {
+		if p.pos == x9 {
 			break
 		}
 		continue
@@ -192549,6 +192616,7 @@ func (p *tparser) i319() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _ = x1, x8
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -192578,7 +192646,7 @@ func (p *tparser) i319() (any, bool) {
 			goto L4
 		}
 		x1++
-		if p.pos == x2 && x1 >= 0 {
+		if p.pos == x2 {
 			break
 		}
 		continue
@@ -192606,7 +192674,7 @@ func (p *tparser) i319() (any, bool) {
 			goto L11
 		}
 		x8++
-		if p.pos == x9 && x8 >= 0 {
+		if p.pos == x9 {
 			break
 		}
 		continue
@@ -193197,6 +193265,7 @@ func (p *tparser) v321() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _ = x1, x8
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -193226,7 +193295,7 @@ func (p *tparser) v321() (any, bool) {
 			goto L4
 		}
 		x1++
-		if p.pos == x2 && x1 >= 0 {
+		if p.pos == x2 {
 			break
 		}
 		continue
@@ -193254,7 +193323,7 @@ func (p *tparser) v321() (any, bool) {
 			goto L11
 		}
 		x8++
-		if p.pos == x9 && x8 >= 0 {
+		if p.pos == x9 {
 			break
 		}
 		continue
@@ -193291,6 +193360,7 @@ func (p *tparser) i321() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _ = x1, x8
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -193320,7 +193390,7 @@ func (p *tparser) i321() (any, bool) {
 			goto L4
 		}
 		x1++
-		if p.pos == x2 && x1 >= 0 {
+		if p.pos == x2 {
 			break
 		}
 		continue
@@ -193348,7 +193418,7 @@ func (p *tparser) i321() (any, bool) {
 			goto L11
 		}
 		x8++
-		if p.pos == x9 && x8 >= 0 {
+		if p.pos == x9 {
 			break
 		}
 		continue
@@ -196816,6 +196886,7 @@ func (p *tparser) v353() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x1
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -196890,7 +196961,7 @@ func (p *tparser) v353() (any, bool) {
 		goto L4
 	L7:
 		x1++
-		if p.pos == x2 && x1 >= 0 {
+		if p.pos == x2 {
 			break
 		}
 		continue
@@ -196926,6 +196997,7 @@ func (p *tparser) i353() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x1
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -197000,7 +197072,7 @@ func (p *tparser) i353() (any, bool) {
 		goto L4
 	L7:
 		x1++
-		if p.pos == x2 && x1 >= 0 {
+		if p.pos == x2 {
 			break
 		}
 		continue
@@ -197046,6 +197118,7 @@ func (p *tparser) i354() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x4
 	x1 = p.pos
 	p.silent++
 	if p.pos < len(p.in) {
@@ -197075,7 +197148,7 @@ L3:
 			goto L7
 		}
 		x4++
-		if p.pos == x5 && x4 >= 0 {
+		if p.pos == x5 {
 			break
 		}
 		continue
@@ -197238,6 +197311,7 @@ func (p *tparser) s356() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_, _ = x1, x15
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -197315,7 +197389,7 @@ func (p *tparser) s356() (any, bool) {
 			}
 			p.pos += size
 			x15++
-			if p.pos == x16 && x15 >= 0 {
+			if p.pos == x16 {
 				break
 			}
 			continue
@@ -197346,7 +197420,7 @@ func (p *tparser) s356() (any, bool) {
 		goto L4
 	L10:
 		x1++
-		if p.pos == x2 && x1 >= 0 {
+		if p.pos == x2 {
 			break
 		}
 		continue
@@ -197415,6 +197489,7 @@ func (p *tparser) s358() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x1
 	if p.pos < len(p.in) {
 		ch, size, ok = p.in[p.pos], 1, true
 	} else {
@@ -197450,7 +197525,7 @@ func (p *tparser) s358() (any, bool) {
 		}
 		p.pos += size
 		x1++
-		if p.pos == x2 && x1 >= 0 {
+		if p.pos == x2 {
 			break
 		}
 		continue
@@ -197489,6 +197564,7 @@ func (p *tparser) s359() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x1
 	if p.pos < len(p.in) {
 		ch, size, ok = p.in[p.pos], 1, true
 	} else {
@@ -197524,7 +197600,7 @@ func (p *tparser) s359() (any, bool) {
 		}
 		p.pos += size
 		x1++
-		if p.pos == x2 && x1 >= 0 {
+		if p.pos == x2 {
 			break
 		}
 		continue
@@ -197563,6 +197639,7 @@ func (p *tparser) s360() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x1
 	if p.pos < len(p.in) {
 		ch, size, ok = p.in[p.pos], 1, true
 	} else {
@@ -197598,7 +197675,7 @@ func (p *tparser) s360() (any, bool) {
 		}
 		p.pos += size
 		x1++
-		if p.pos == x2 && x1 >= 0 {
+		if p.pos == x2 {
 			break
 		}
 		continue
@@ -200102,6 +200179,7 @@ func (p *tparser) s378() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x1
 	if p.pos < len(p.in) {
 		ch, size, ok = p.in[p.pos], 1, true
 	} else {
@@ -200137,7 +200215,7 @@ func (p *tparser) s378() (any, bool) {
 		}
 		p.pos += size
 		x1++
-		if p.pos == x2 && x1 >= 0 {
+		if p.pos == x2 {
 			break
 		}
 		continue
@@ -200851,6 +200929,7 @@ func (p *tparser) s381() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x9
 	x1, x2 = p.pos, len(p.recovered)
 	if _, ok = p.u353(); !ok {
 		goto L4
@@ -200912,7 +200991,7 @@ L4:
 			goto L12
 		}
 		x9++
-		if p.pos == x10 && x9 >= 0 {
+		if p.pos == x10 {
 			break
 		}
 		continue
@@ -201020,6 +201099,7 @@ func (p *tparser) s382() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x1
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -201094,7 +201174,7 @@ func (p *tparser) s382() (any, bool) {
 		goto L4
 	L7:
 		x1++
-		if p.pos == x2 && x1 >= 0 {
+		if p.pos == x2 {
 			break
 		}
 		continue
@@ -201360,6 +201440,7 @@ func (p *tparser) i386() (any, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
+	_ = x1
 	x1 = 0
 	for {
 		x2, x3 = p.pos, len(p.recovered)
@@ -201369,7 +201450,7 @@ func (p *tparser) i386() (any, bool) {
 			goto L4
 		}
 		x1++
-		if p.pos == x2 && x1 >= 0 {
+		if p.pos == x2 {
 			break
 		}
 		continue

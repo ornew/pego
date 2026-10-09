@@ -571,10 +571,11 @@ func (g *gen) genRepeat(e *grammar.Repeat, k cont) bool {
 				inner := g.caps
 				g.caps = caps
 				var ok bool
-				if len(g.out) == pos && i+1 >= e.Min {
-					// The parser ends a repetition at an iteration that consumes nothing, once it
-					// has the minimum.
-					ok = k(val{kind: vList, start: start, end: pos, n: i + 1})
+				if len(g.out) == pos {
+					// The first empty iteration ends the repetition, even below
+					// its minimum. Retry a consuming body instead of inventing
+					// further empty iterations.
+					ok = i+1 >= e.Min && k(val{kind: vList, start: start, end: pos, n: i + 1})
 				} else {
 					ok = iter(i + 1)
 				}

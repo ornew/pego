@@ -361,7 +361,7 @@ func (g *tsGen) projectRepeat(b *strings.Builder, e *grammar.Repeat, field strin
 	fmt.Fprintf(b, "    const v = %s;\n", m)
 	b.WriteString("    const cut = p.cut;\n    p.cut = prevCut;\n    p.frame = prevFrame;\n    if (v === undefined) {\n      " + tsReset + "\n      if (cut) {\n        p.dropKids(base);\n        return undefined;\n      }\n      break;\n    }\n")
 	fmt.Fprintf(b, "    count++;\n    p.kidStack.push(f[%d]!);\n", slot)
-	fmt.Fprintf(b, "    if (p.pos === m0pos && count >= %d) {\n      break;\n    }\n  }\n", e.Min)
+	b.WriteString("    if (p.pos === m0pos) {\n      break;\n    }\n  }\n")
 	fmt.Fprintf(b, "  if (count < %d) {\n    p.dropKids(base);\n    return undefined;\n  }\n", e.Min)
 	b.WriteString("  return new Node(\"List\", \"\", start, p.pos, \"\", p.kids(base), noFields, true, false);\n")
 }
@@ -566,7 +566,7 @@ func (g *tsGen) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, build bo
 	if build {
 		b.WriteString("    p.kidStack.push(v);\n")
 	}
-	fmt.Fprintf(b, "    if (p.pos === m0pos && count >= %d) {\n      break;\n    }\n  }\n", e.Min)
+	b.WriteString("    if (p.pos === m0pos) {\n      break;\n    }\n  }\n")
 	fmt.Fprintf(b, "  if (count < %d) {\n", e.Min)
 	if build {
 		b.WriteString("    p.dropKids(base);\n")

@@ -93,6 +93,10 @@ def main = ^^ header records:record* #stream $$
   future bytes. An incomplete UTF-8 prefix requires more bytes or actual EOF;
   a non-EOF reader error terminates the parse.
 - Handed elements are not included in the value (`List`) of the repetition.
+- The first successful iteration that consumes no input is handed to the
+  caller and ends the repetition, even if its minimum has not been met. It
+  counts once; a minimum failure then returns an error without retracting it.
+  The same stopping/counting rule applies to ordinary repetition.
 - Once an element is handed over it is final: the parser never backtracks to
   a position before it. For this reason, `#stream` MUST appear only at the top
   level of a rule body: on the body itself, on an element of the body's
