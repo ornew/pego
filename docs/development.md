@@ -297,6 +297,11 @@ optimization candidate separately, with result ownership and allocation/throughp
 Typed Go generation exports every declared alias (G02), including chained/list/scalar/optional/CST aliases and
 additional names for the same normalized node union. Canonical runtime types remain unchanged; external-consumer
 compilation tests cover both direct typed construction and conversion, assignment compatibility and name collisions.
+Generated depth configuration (G04) is proposed in [design record 022](design/022-generated-parser-depth-limits.md).
+Baseline Go grammar probes accept 16,000 nested parentheses but return the 100,000-rule-call error at 17,000/30,000;
+a temporary 600,000-call overlay accepts all three in Recognize and ParseAST. The proposal preserves defaults and
+adds generation-time configuration; matching the distributed Go parser's reference nesting ceiling is a separate
+open contract choice. No configurable limit or default change is implemented yet.
 Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused
