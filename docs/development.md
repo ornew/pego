@@ -7,7 +7,7 @@ This document describes the repository layout, the architecture of the implement
 | Path | Contents |
 |:--|:--|
 | `pego.go`, `lint.go` | Public API of package `pego` (`ParseGrammar`, `Compile`, `CompileSource`, `Parser.Parse`, `Lint`, and others) |
-| `grammar/` | Grammar AST, JSON conversion (`MarshalJSON`, `UnmarshalJSON`) and formatting as PEGO source (`Format`, which preserves comments). Public package. |
+| `grammar/` | Grammar AST, structural validation (`Validate`), JSON conversion (`MarshalJSON`, `UnmarshalJSON`) and formatting as PEGO source (`Format`, which preserves comments). Public package. |
 | `internal/grammaranalysis/` | Conservative success and cut proofs shared by the compiler and linter |
 | `internal/lint/` | Grammar linter behind `pego.Lint` and `pego lint`: shared static analysis (`analysis.go`) and checks (`checks.go`) |
 | `internal/lsp/` | Language Server Protocol server for `.pego` files (`pego lsp`): JSON-RPC over standard input and output, document sync, diagnostics, formatting, navigation, hover, rename, completion, semantic tokens |
@@ -246,7 +246,9 @@ them after edits; finalized heads without outer-seed or completed intermediate d
 Left-recursion reachability (C21/C26) excludes proven-unreachable choice suffixes and zero-count repetition bodies,
 includes possible recovery skip calls, and refines the graph to stability. The linter also accounts for recovery skip
 cuts (C25). Dependency-ordered inference (C11) preserves long finite chains and unrelated rule types while bounding evolving
-recursive types. Follow with JSON/public AST validation (C12) and input/stream equivalence fixes. Earlier backlog items now share current category IDs and priorities;
+recursive types. JSON/public AST validation (C12) rejects malformed children, pointer cycles, negative indexes,
+invalid repetition bounds and trailing JSON. Its public structural API is implemented ([design](design/021-grammar-ast-validation.md));
+opt-in strict JSON intake remains proposed (F02). Follow with input/stream equivalence fixes. Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused
 optimization measurements, and correctness-only performance impacts are recorded in commit messages. The full suite

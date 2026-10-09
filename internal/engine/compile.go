@@ -226,6 +226,10 @@ type ruleFlags struct {
 // build builds a program from the grammar. If flags is not nil, it skips static analysis and
 // type checking and uses flags instead.
 func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error) {
+	if err := grammar.Validate(g); err != nil {
+		e := err.(*grammar.ValidationError)
+		return nil, ErrorList{&Error{Pos: e.Pos, Msg: e.Path + ": " + e.Msg}}
+	}
 	prog := &Program{Grammar: g, byName: map[string]*rule{}, types: map[string]grammar.TypeSpec{},
 		descTable: append([]string(nil), fixedDescs...)}
 	c := &compiler{prog: prog, opts: opts}

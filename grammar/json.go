@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"reflect"
 	"strings"
 )
@@ -55,6 +56,9 @@ func MarshalJSON(g *Grammar) ([]byte, error) {
 }
 
 // UnmarshalJSON decodes a grammar from JSON.
+// It requires one complete JSON value and checks structural validity with
+// Validate. Unknown fields and duplicate object keys retain encoding/json's
+// permissive behavior; compilation still performs semantic checks.
 func UnmarshalJSON(data []byte) (*Grammar, error) {
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.UseNumber()
@@ -62,11 +66,22 @@ func UnmarshalJSON(data []byte) (*Grammar, error) {
 	if err := dec.Decode(&raw); err != nil {
 		return nil, err
 	}
+	var extra any
+	if err := dec.Decode(&extra); err != io.EOF {
+		if err == nil {
+			return nil, fmt.Errorf("$: trailing JSON value")
+		}
+		return nil, fmt.Errorf("$: trailing JSON data: %w", err)
+	}
 	v, err := decode(raw, reflect.TypeOf((*Grammar)(nil)), "$")
 	if err != nil {
 		return nil, err
 	}
-	return v.Interface().(*Grammar), nil
+	g := v.Interface().(*Grammar)
+	if err := Validate(g); err != nil {
+		return nil, err
+	}
+	return g, nil
 }
 
 type fieldTag struct {
@@ -240,6 +255,9 @@ func decode(raw any, t reflect.Type, path string) (reflect.Value, error) {
 		i, err := n.Int64()
 		if err != nil {
 			return reflect.Value{}, fmt.Errorf("%s: %w", path, err)
+		}
+		if reflect.Zero(t).OverflowInt(i) {
+			return reflect.Value{}, fmt.Errorf("%s: integer %s is out of range for %s", path, n, t)
 		}
 		return reflect.ValueOf(i).Convert(t), nil
 	}

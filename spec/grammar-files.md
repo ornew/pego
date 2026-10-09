@@ -123,3 +123,11 @@ optionally, the tree (see [File format](bytecode.md#file-format)). All
 representations describe the same language. The `pego convert` command
 converts between them, and `pego fmt` formats `.pego` source files, keeping
 comments.
+
+JSON decoding requires one complete document and rejects trailing non-whitespace
+data. JSON and hand-built ASTs must have nonnil required children and collection
+entries, nonnegative positional references and valid repetition bounds. Pointer
+cycles and typed nil interface nodes are rejected. The public
+`grammar.Validate` function checks this structure before semantic compilation;
+see [building grammars as ASTs and JSON](../docs/guide/grammar-asts.md) for its
+diagnostics and compatibility rules. Unknown JSON fields remain ignored.

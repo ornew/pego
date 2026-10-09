@@ -94,3 +94,25 @@ func TestJSONErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestJSONTrailingData(t *testing.T) {
+	for _, suffix := range []string{"TRAILING", "{}", "null", "true"} {
+		if _, err := UnmarshalJSON([]byte(`{"statements":[]}` + suffix)); err == nil {
+			t.Errorf("accepted trailing %q", suffix)
+		}
+	}
+}
+
+func BenchmarkJSONIntake(b *testing.B) {
+	data, err := MarshalJSON(sampleGrammar())
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		if _, err := UnmarshalJSON(data); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
