@@ -346,6 +346,10 @@ cooked-value oracle cover true intervening characters and unpaired surrogates; g
 CUE ParseFile encoding errors identify the first invalid UTF-8 byte in the selected span unit (M06), including
 multibyte prefixes and later lines. Semantic-error line/column locations retain their codepoint contract in both
 units; valid replacement characters remain accepted. Grammar/generated output is unchanged.
+DuckDB keyword classification matches every ASCII case while retaining category-specific identifier permissions
+and full word boundaries (M11, keyword stage). Vendored reference tests retain twelve scanner/grammar deviations;
+transformer-only semantic checks and generated parser size remain open work. The module README describes those
+limits separately from the corrected keyword behavior.
 Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused

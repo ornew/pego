@@ -119,13 +119,13 @@ the script; for the SELECT statements of `tests` and `exprs` it also compares th
 | | tests | exprs | lexical | keywords | mutants | found |
 |:--|--:|--:|--:|--:|--:|--:|
 | Both accept | 45,537 | 6,166 | 852 | 64,053 | 3,894 | 91 |
-| Both reject (a syntax error) | 195 | 1,489 | 338 | 18,333 | 15,984 | 85 |
+| Both reject (a syntax error) | 195 | 1,489 | 338 | 18,333 | 15,984 | 86 |
 | DuckDB rejects after parsing, the parser accepts | 180 | 0 | 29 | 1,233 | 122 | 11 |
-| Known deviations ([testdata/deviations.jsonl](testdata/deviations.jsonl)) | 0 | 0 | 0 | 0 | 0 | 13 |
+| Known deviations ([testdata/deviations.jsonl](testdata/deviations.jsonl)) | 0 | 0 | 0 | 0 | 0 | 12 |
 | The parser rejects what DuckDB accepts, other | 0 | 0 | 0 | 0 | 0 | 0 |
 | The parser accepts what DuckDB rejects with a syntax error, other | 0 | 0 | 0 | 0 | 0 | 0 |
 
-**The parser and DuckDB agree on every text** where DuckDB's parser itself finds a syntax error or none, but the thirteen
+**The parser and DuckDB agree on every text** where DuckDB's parser itself finds a syntax error or none, but the twelve
 known deviations (below). The third row counts the texts that DuckDB's parser rejects in the step after the Bison
 grammar, when it transforms the syntax tree into its own: the grammar cannot know. They are 1,575 texts, of which about 1,150 name a window that does not exist, 133 are
 an empty select list in a context the grammar accepts (`cte2 AS (SELECT )`), and the others are checks such as
@@ -171,11 +171,11 @@ AST in all of the 114,000 SELECT statements that they make.
 
 ### Known deviations and limits
 
-- **Thirteen texts** ([testdata/deviations.jsonl](testdata/deviations.jsonl), each with its reason) on which the parser and DuckDB
+- **Twelve texts** ([testdata/deviations.jsonl](testdata/deviations.jsonl), each with its reason) on which the parser and DuckDB
   differ in acceptance. Six come from the pass with which DuckDB replaces Unicode white space before it parses: it does
   not close a dollar-quoted string when a letter follows the closing tag (`select $a$b$a$x<U+3000>x`), so it leaves the
-  white space inside the name that follows, where the parser reads a space. One is the spelling of an unreserved keyword
-  (below). Six are constructs that are not understood: DuckDB accepts the words `IN` and `AND` and, after `GROUPS BETWEEN`,
+  white space inside the name that follows, where the parser reads a space. Six are constructs that are not understood:
+  DuckDB accepts the words `IN` and `AND` and, after `GROUPS BETWEEN`,
   a lone dot as the first bound of a frame (before `PRECEDING`), rejects `NOT` at the start of that bound and `SETOF`
   before a qualified type, and accepts a percent sign after a postfix operator (`LIMIT -1| %`). The other differences that mutating the tests found, in 1.4 million
   texts, were fixed and are in the corpus `found`.
@@ -191,15 +191,9 @@ AST in all of the 114,000 SELECT statements that they make.
 - **Nesting** is limited by the depth limit of the generated parser, 100,000 rule calls: 16,600 levels of parentheses,
   14,200 of lists, 12,500 of `CASE`, 11,100 of derived tables, 10,000 of function calls, 7,100 of subqueries and 99,980
   prefix operators in a chain (`NOT NOT ... a`, `- - ... a`). Deeper input fails with an error.
-- **Unreserved keywords as names**: a word that is not a keyword at all is required in a few places (an alias without `AS`,
-  the dotted name of a type, the setting of `ALTER DATABASE`, ...). The 330 unreserved keywords are recognized there in
-  lower case, upper case and capitalized (`text`, `TEXT`, `Text`) and not in any other spelling: `SELECT 1 tExT` is accepted
-  as an alias, where DuckDB rejects it. The other keywords are matched in every case everywhere. Matching the 330 in
-  every case would add 140,000 lines to the parser and half as much again to its compile time.
-- **Compile time and size**: the generated `parser.go` is 13.2 MB (643,000 lines), because the generator writes about 50 lines for
-  each node of the grammar, and the grammar has some 12,000 of them. The first build takes about a minute (63 s of
-  wall-clock time and 112 s of CPU with an empty build cache, on the machine of the benchmarks); the Go build cache makes
-  the next ones free.
+- **Compile time and size**: the generated `parser.go` is 15.5 MB (779,000 lines). The generator writes separate rules for
+  tree parsing, recognition and typed AST construction, including the case-insensitive keyword tries. Its first
+  compilation is expensive; subsequent builds reuse the Go build cache. Reducing generated code size remains open work.
 - **DuckDB's extensions** (the parsers that extensions add, such as PRQL) and the settings that change how DuckDB parses
   (`SET` of an option of the parser) are not covered.
 
@@ -223,6 +217,10 @@ it measurably pays, are commented in the grammar:
 - **Where a keyword may be a name** is decided by its category (`unreserved`, `column_name`, `type_function`, `reserved`),
   with the exceptions of the grammar: `CUBE`, `ROLLUP`, `ENUM`, `BETWEEN` and `OPERATOR` that the parser shifts as keywords
   in some positions.
+- **Every keyword is matched without regard to ASCII case.** A word that is not a keyword at all is required in a few
+  places, including an alias without `AS` and the dotted name of a type: `SELECT 1 tExT` is rejected, while
+  `SELECT 1 AS tExT` and `SELECT tExT FROM tExT` remain valid. Keyword tries check the entire word, so `tExT_`, `tExTé`
+  and `tExT$` remain ordinary identifiers. Quoted names and the original spelling of identifier text are preserved.
 - **A rule has one action**: where the Bison grammar gives alternatives different actions, they are rules of their own, so
   that every node has its type. Optional parts are `*T` fields, repeated parts `[]T`.
 - **Alternatives are tried only where they can match**: an identifier that cannot begin a call, a typed literal or a
@@ -268,14 +266,19 @@ what each failed alternative expected (for the error message), another tenth in 
 allocator and the garbage collector. `Recognize` builds nothing and is not faster than `ParseAST`, whose rules the generator
 compiles into direct code (see the [code generation guide](../../docs/guide/code-generation.md#typed-values--types)). Tuning the grammar took `ParseAST` from 4.1 MB/s to
 5.6 MB/s: the operators of the expressions are tried only when the character that follows could begin them, a function call
-is not parsed twice to find that no string literal follows it, `IN`, `LIKE`, `IS` and the rest are one operator each, and a
-word is compared with the unreserved keywords that begin with its letter, not with all 330 (that alone made a `CREATE TABLE`
-with a `TEXT` column 5 times as fast). `BenchmarkStatements` gives the speed on 35 kinds of statement, from 2.5 MB/s
+is not parsed twice to find that no string literal follows it, `IN`, `LIKE`, `IS` and the rest are one operator each, and
+the benchmarked version compared a word with unreserved keywords beginning with its letter, rather than all 330
+(that alone made a `CREATE TABLE` with a `TEXT` column 5 times as fast). The current grammar uses case-insensitive
+tries for complete keyword recognition; the historical measurements above predate that correctness change.
+`BenchmarkStatements` gives the speed on 35 kinds of statement, from 2.5 MB/s
 (`SELECT [1, 2, 3], {'a': 1, 'b': 2}, x[1], x.y`) to 19 MB/s (`ATTACH 'f.db' AS db`).
 
 ## Development
 
 ```bash
+python3 parsers/duckdb/internal/refgen/keywords.py parsers/duckdb/duckdb.pego --check
+# Check generated keyword rules and keywords.go from the repository root (Python 3 and gofmt required).
+# After changing a keyword list, run the same command without --check, then regenerate parser.go below.
 go generate ./parsers                 # regenerate parser.go after changing duckdb.pego (from the repository root)
 go test ./parsers                     # parser.go up to date; golden files on every backend of the engine
 cd parsers/duckdb && go test ./...    # conformance against the vendored data, the examples, the other tests

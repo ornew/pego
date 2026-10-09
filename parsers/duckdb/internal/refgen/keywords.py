@@ -31,6 +31,7 @@ Names (ColId and friends) accept a word that is not a keyword of a category that
 """
 import os
 import re
+import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.realpath(__file__))
@@ -154,20 +155,12 @@ def main():
         ('kw_not_type_name', 'type_name_token may not be one of these', ['kw_r', 'kw_c', 'kw_cf']),
         ('kw_not_type_func', 'type_function_name may not be one of these', ['kw_r', 'kw_c']),
         ('kw_reserved', 'the reserved keywords', ['kw_r']),
-        ('kw_any', 'every keyword (an unreserved keyword only in the three spellings)', ['kw_r', 'kw_c', 'kw_cf', 'kw_ct', 'kw_t', 'kw_tf', 'kw_u']),
+        ('kw_any', 'every keyword, without regard to ASCII case', ['kw_r', 'kw_c', 'kw_cf', 'kw_ct', 'kw_t', 'kw_tf', 'kw_u']),
     ]
-    # The unreserved keywords are the most (330), and only matter where a word must not be a keyword at all (an alias
-    # without AS, a type name with dots, ...). A trie of them would make the parser a quarter larger and half as slow
-    # to compile; they are compared in the three usual spellings instead, among the words that begin with the same
-    # letter as the one that is read.
-    alts = []
-    for letter in sorted({w[0] for w in U}):
-        spellings = []
-        for w in sorted(x for x in U if x[0] == letter):
-            for x in dict.fromkeys([w, w.upper(), w.capitalize()]):
-                spellings.append('text($w) == "%s"' % x)
-        alts.append('&(?%s%s) w:word [%s]' % (letter, letter.upper(), ' || '.join(spellings)))
-    out.append('// the unreserved keywords, in lower case, upper case and capitalized\ndef kw_u =\n      ' + '\n    / '.join(alts) + '\n')
+    # An IDENT must exclude every keyword in every ASCII spelling, even when
+    # unreserved keywords remain legal in ColId and other name contexts.
+    # Share prefixes and test the complete word boundary, as for other classes.
+    out.append(trie_rule('kw_u', U, 'the unreserved keywords, without regard to ASCII case'))
     for name, doc, parts in composites:
         out.append('// %s\ndef %s = %s\n' % (doc, name, ' / '.join(parts)))
     out.append(END)
@@ -186,7 +179,8 @@ def main():
         gosrc.append('\t"%s": %s,' % (w, cat_of[w]))
     gosrc.append('}')
     gosrc.append('')
-    gonew = '\n'.join(gosrc)
+    gonew = subprocess.run(['gofmt'], input='\n'.join(gosrc), text=True,
+                           capture_output=True, check=True).stdout
     goold = open(gofile, encoding='utf-8').read() if os.path.exists(gofile) else ''
     if check:
         print('up to date' if new == src and gonew == goold else 'out of date')

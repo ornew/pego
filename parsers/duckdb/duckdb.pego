@@ -2622,34 +2622,296 @@ def kw_tf = ((?aA) ((?sS) (?oO) (?fF)
           / (?vV) (?eE) (?rR) (?bB) (?oO) (?sS) (?eE))
     !(?a-zA-Z0-9_$\u{80}-\u{9f}\u{a1}-\u{1fff}\u{200c}-\u{202e}\u{2030}-\u{205e}\u{2061}-\u{2fff}\u{3001}-\u{fefe}\u{ff00}-\u{10ffff})
 
-// the unreserved keywords, in lower case, upper case and capitalized
-def kw_u =
-      &(?aA) w:word [text($w) == "abort" || text($w) == "ABORT" || text($w) == "Abort" || text($w) == "absolute" || text($w) == "ABSOLUTE" || text($w) == "Absolute" || text($w) == "access" || text($w) == "ACCESS" || text($w) == "Access" || text($w) == "action" || text($w) == "ACTION" || text($w) == "Action" || text($w) == "add" || text($w) == "ADD" || text($w) == "Add" || text($w) == "admin" || text($w) == "ADMIN" || text($w) == "Admin" || text($w) == "after" || text($w) == "AFTER" || text($w) == "After" || text($w) == "aggregate" || text($w) == "AGGREGATE" || text($w) == "Aggregate" || text($w) == "also" || text($w) == "ALSO" || text($w) == "Also" || text($w) == "alter" || text($w) == "ALTER" || text($w) == "Alter" || text($w) == "always" || text($w) == "ALWAYS" || text($w) == "Always" || text($w) == "assertion" || text($w) == "ASSERTION" || text($w) == "Assertion" || text($w) == "assignment" || text($w) == "ASSIGNMENT" || text($w) == "Assignment" || text($w) == "attach" || text($w) == "ATTACH" || text($w) == "Attach" || text($w) == "attribute" || text($w) == "ATTRIBUTE" || text($w) == "Attribute"]
-    / &(?bB) w:word [text($w) == "backward" || text($w) == "BACKWARD" || text($w) == "Backward" || text($w) == "before" || text($w) == "BEFORE" || text($w) == "Before" || text($w) == "begin" || text($w) == "BEGIN" || text($w) == "Begin"]
-    / &(?cC) w:word [text($w) == "cache" || text($w) == "CACHE" || text($w) == "Cache" || text($w) == "call" || text($w) == "CALL" || text($w) == "Call" || text($w) == "called" || text($w) == "CALLED" || text($w) == "Called" || text($w) == "cascade" || text($w) == "CASCADE" || text($w) == "Cascade" || text($w) == "cascaded" || text($w) == "CASCADED" || text($w) == "Cascaded" || text($w) == "catalog" || text($w) == "CATALOG" || text($w) == "Catalog" || text($w) == "centuries" || text($w) == "CENTURIES" || text($w) == "Centuries" || text($w) == "century" || text($w) == "CENTURY" || text($w) == "Century" || text($w) == "chain" || text($w) == "CHAIN" || text($w) == "Chain" || text($w) == "characteristics" || text($w) == "CHARACTERISTICS" || text($w) == "Characteristics" || text($w) == "checkpoint" || text($w) == "CHECKPOINT" || text($w) == "Checkpoint" || text($w) == "class" || text($w) == "CLASS" || text($w) == "Class" || text($w) == "close" || text($w) == "CLOSE" || text($w) == "Close" || text($w) == "cluster" || text($w) == "CLUSTER" || text($w) == "Cluster" || text($w) == "comment" || text($w) == "COMMENT" || text($w) == "Comment" || text($w) == "comments" || text($w) == "COMMENTS" || text($w) == "Comments" || text($w) == "commit" || text($w) == "COMMIT" || text($w) == "Commit" || text($w) == "committed" || text($w) == "COMMITTED" || text($w) == "Committed" || text($w) == "compression" || text($w) == "COMPRESSION" || text($w) == "Compression" || text($w) == "configuration" || text($w) == "CONFIGURATION" || text($w) == "Configuration" || text($w) == "conflict" || text($w) == "CONFLICT" || text($w) == "Conflict" || text($w) == "connection" || text($w) == "CONNECTION" || text($w) == "Connection" || text($w) == "constraints" || text($w) == "CONSTRAINTS" || text($w) == "Constraints" || text($w) == "content" || text($w) == "CONTENT" || text($w) == "Content" || text($w) == "continue" || text($w) == "CONTINUE" || text($w) == "Continue" || text($w) == "conversion" || text($w) == "CONVERSION" || text($w) == "Conversion" || text($w) == "copy" || text($w) == "COPY" || text($w) == "Copy" || text($w) == "cost" || text($w) == "COST" || text($w) == "Cost" || text($w) == "csv" || text($w) == "CSV" || text($w) == "Csv" || text($w) == "cube" || text($w) == "CUBE" || text($w) == "Cube" || text($w) == "current" || text($w) == "CURRENT" || text($w) == "Current" || text($w) == "cursor" || text($w) == "CURSOR" || text($w) == "Cursor" || text($w) == "cycle" || text($w) == "CYCLE" || text($w) == "Cycle"]
-    / &(?dD) w:word [text($w) == "data" || text($w) == "DATA" || text($w) == "Data" || text($w) == "database" || text($w) == "DATABASE" || text($w) == "Database" || text($w) == "day" || text($w) == "DAY" || text($w) == "Day" || text($w) == "days" || text($w) == "DAYS" || text($w) == "Days" || text($w) == "deallocate" || text($w) == "DEALLOCATE" || text($w) == "Deallocate" || text($w) == "decade" || text($w) == "DECADE" || text($w) == "Decade" || text($w) == "decades" || text($w) == "DECADES" || text($w) == "Decades" || text($w) == "declare" || text($w) == "DECLARE" || text($w) == "Declare" || text($w) == "defaults" || text($w) == "DEFAULTS" || text($w) == "Defaults" || text($w) == "deferred" || text($w) == "DEFERRED" || text($w) == "Deferred" || text($w) == "definer" || text($w) == "DEFINER" || text($w) == "Definer" || text($w) == "delete" || text($w) == "DELETE" || text($w) == "Delete" || text($w) == "delimiter" || text($w) == "DELIMITER" || text($w) == "Delimiter" || text($w) == "delimiters" || text($w) == "DELIMITERS" || text($w) == "Delimiters" || text($w) == "depends" || text($w) == "DEPENDS" || text($w) == "Depends" || text($w) == "detach" || text($w) == "DETACH" || text($w) == "Detach" || text($w) == "dictionary" || text($w) == "DICTIONARY" || text($w) == "Dictionary" || text($w) == "disable" || text($w) == "DISABLE" || text($w) == "Disable" || text($w) == "discard" || text($w) == "DISCARD" || text($w) == "Discard" || text($w) == "document" || text($w) == "DOCUMENT" || text($w) == "Document" || text($w) == "domain" || text($w) == "DOMAIN" || text($w) == "Domain" || text($w) == "double" || text($w) == "DOUBLE" || text($w) == "Double" || text($w) == "drop" || text($w) == "DROP" || text($w) == "Drop"]
-    / &(?eE) w:word [text($w) == "each" || text($w) == "EACH" || text($w) == "Each" || text($w) == "enable" || text($w) == "ENABLE" || text($w) == "Enable" || text($w) == "encoding" || text($w) == "ENCODING" || text($w) == "Encoding" || text($w) == "encrypted" || text($w) == "ENCRYPTED" || text($w) == "Encrypted" || text($w) == "enum" || text($w) == "ENUM" || text($w) == "Enum" || text($w) == "error" || text($w) == "ERROR" || text($w) == "Error" || text($w) == "escape" || text($w) == "ESCAPE" || text($w) == "Escape" || text($w) == "event" || text($w) == "EVENT" || text($w) == "Event" || text($w) == "exclude" || text($w) == "EXCLUDE" || text($w) == "Exclude" || text($w) == "excluding" || text($w) == "EXCLUDING" || text($w) == "Excluding" || text($w) == "exclusive" || text($w) == "EXCLUSIVE" || text($w) == "Exclusive" || text($w) == "execute" || text($w) == "EXECUTE" || text($w) == "Execute" || text($w) == "explain" || text($w) == "EXPLAIN" || text($w) == "Explain" || text($w) == "export" || text($w) == "EXPORT" || text($w) == "Export" || text($w) == "export_state" || text($w) == "EXPORT_STATE" || text($w) == "Export_state" || text($w) == "extension" || text($w) == "EXTENSION" || text($w) == "Extension" || text($w) == "extensions" || text($w) == "EXTENSIONS" || text($w) == "Extensions" || text($w) == "external" || text($w) == "EXTERNAL" || text($w) == "External"]
-    / &(?fF) w:word [text($w) == "family" || text($w) == "FAMILY" || text($w) == "Family" || text($w) == "filter" || text($w) == "FILTER" || text($w) == "Filter" || text($w) == "first" || text($w) == "FIRST" || text($w) == "First" || text($w) == "following" || text($w) == "FOLLOWING" || text($w) == "Following" || text($w) == "force" || text($w) == "FORCE" || text($w) == "Force" || text($w) == "forward" || text($w) == "FORWARD" || text($w) == "Forward" || text($w) == "function" || text($w) == "FUNCTION" || text($w) == "Function" || text($w) == "functions" || text($w) == "FUNCTIONS" || text($w) == "Functions"]
-    / &(?gG) w:word [text($w) == "global" || text($w) == "GLOBAL" || text($w) == "Global" || text($w) == "grant" || text($w) == "GRANT" || text($w) == "Grant" || text($w) == "granted" || text($w) == "GRANTED" || text($w) == "Granted" || text($w) == "groups" || text($w) == "GROUPS" || text($w) == "Groups"]
-    / &(?hH) w:word [text($w) == "handler" || text($w) == "HANDLER" || text($w) == "Handler" || text($w) == "header" || text($w) == "HEADER" || text($w) == "Header" || text($w) == "hold" || text($w) == "HOLD" || text($w) == "Hold" || text($w) == "hour" || text($w) == "HOUR" || text($w) == "Hour" || text($w) == "hours" || text($w) == "HOURS" || text($w) == "Hours"]
-    / &(?iI) w:word [text($w) == "identity" || text($w) == "IDENTITY" || text($w) == "Identity" || text($w) == "if" || text($w) == "IF" || text($w) == "If" || text($w) == "ignore" || text($w) == "IGNORE" || text($w) == "Ignore" || text($w) == "immediate" || text($w) == "IMMEDIATE" || text($w) == "Immediate" || text($w) == "immutable" || text($w) == "IMMUTABLE" || text($w) == "Immutable" || text($w) == "implicit" || text($w) == "IMPLICIT" || text($w) == "Implicit" || text($w) == "import" || text($w) == "IMPORT" || text($w) == "Import" || text($w) == "include" || text($w) == "INCLUDE" || text($w) == "Include" || text($w) == "including" || text($w) == "INCLUDING" || text($w) == "Including" || text($w) == "increment" || text($w) == "INCREMENT" || text($w) == "Increment" || text($w) == "index" || text($w) == "INDEX" || text($w) == "Index" || text($w) == "indexes" || text($w) == "INDEXES" || text($w) == "Indexes" || text($w) == "inherit" || text($w) == "INHERIT" || text($w) == "Inherit" || text($w) == "inherits" || text($w) == "INHERITS" || text($w) == "Inherits" || text($w) == "inline" || text($w) == "INLINE" || text($w) == "Inline" || text($w) == "input" || text($w) == "INPUT" || text($w) == "Input" || text($w) == "insensitive" || text($w) == "INSENSITIVE" || text($w) == "Insensitive" || text($w) == "insert" || text($w) == "INSERT" || text($w) == "Insert" || text($w) == "install" || text($w) == "INSTALL" || text($w) == "Install" || text($w) == "instead" || text($w) == "INSTEAD" || text($w) == "Instead" || text($w) == "invoker" || text($w) == "INVOKER" || text($w) == "Invoker" || text($w) == "isolation" || text($w) == "ISOLATION" || text($w) == "Isolation"]
-    / &(?jJ) w:word [text($w) == "json" || text($w) == "JSON" || text($w) == "Json"]
-    / &(?kK) w:word [text($w) == "key" || text($w) == "KEY" || text($w) == "Key"]
-    / &(?lL) w:word [text($w) == "label" || text($w) == "LABEL" || text($w) == "Label" || text($w) == "language" || text($w) == "LANGUAGE" || text($w) == "Language" || text($w) == "large" || text($w) == "LARGE" || text($w) == "Large" || text($w) == "last" || text($w) == "LAST" || text($w) == "Last" || text($w) == "leakproof" || text($w) == "LEAKPROOF" || text($w) == "Leakproof" || text($w) == "level" || text($w) == "LEVEL" || text($w) == "Level" || text($w) == "listen" || text($w) == "LISTEN" || text($w) == "Listen" || text($w) == "load" || text($w) == "LOAD" || text($w) == "Load" || text($w) == "local" || text($w) == "LOCAL" || text($w) == "Local" || text($w) == "location" || text($w) == "LOCATION" || text($w) == "Location" || text($w) == "lock" || text($w) == "LOCK" || text($w) == "Lock" || text($w) == "locked" || text($w) == "LOCKED" || text($w) == "Locked" || text($w) == "logged" || text($w) == "LOGGED" || text($w) == "Logged"]
-    / &(?mM) w:word [text($w) == "macro" || text($w) == "MACRO" || text($w) == "Macro" || text($w) == "mapping" || text($w) == "MAPPING" || text($w) == "Mapping" || text($w) == "match" || text($w) == "MATCH" || text($w) == "Match" || text($w) == "matched" || text($w) == "MATCHED" || text($w) == "Matched" || text($w) == "materialized" || text($w) == "MATERIALIZED" || text($w) == "Materialized" || text($w) == "maxvalue" || text($w) == "MAXVALUE" || text($w) == "Maxvalue" || text($w) == "merge" || text($w) == "MERGE" || text($w) == "Merge" || text($w) == "method" || text($w) == "METHOD" || text($w) == "Method" || text($w) == "microsecond" || text($w) == "MICROSECOND" || text($w) == "Microsecond" || text($w) == "microseconds" || text($w) == "MICROSECONDS" || text($w) == "Microseconds" || text($w) == "millennia" || text($w) == "MILLENNIA" || text($w) == "Millennia" || text($w) == "millennium" || text($w) == "MILLENNIUM" || text($w) == "Millennium" || text($w) == "millisecond" || text($w) == "MILLISECOND" || text($w) == "Millisecond" || text($w) == "milliseconds" || text($w) == "MILLISECONDS" || text($w) == "Milliseconds" || text($w) == "minute" || text($w) == "MINUTE" || text($w) == "Minute" || text($w) == "minutes" || text($w) == "MINUTES" || text($w) == "Minutes" || text($w) == "minvalue" || text($w) == "MINVALUE" || text($w) == "Minvalue" || text($w) == "mode" || text($w) == "MODE" || text($w) == "Mode" || text($w) == "month" || text($w) == "MONTH" || text($w) == "Month" || text($w) == "months" || text($w) == "MONTHS" || text($w) == "Months" || text($w) == "move" || text($w) == "MOVE" || text($w) == "Move"]
-    / &(?nN) w:word [text($w) == "name" || text($w) == "NAME" || text($w) == "Name" || text($w) == "names" || text($w) == "NAMES" || text($w) == "Names" || text($w) == "new" || text($w) == "NEW" || text($w) == "New" || text($w) == "next" || text($w) == "NEXT" || text($w) == "Next" || text($w) == "no" || text($w) == "NO" || text($w) == "No" || text($w) == "nothing" || text($w) == "NOTHING" || text($w) == "Nothing" || text($w) == "notify" || text($w) == "NOTIFY" || text($w) == "Notify" || text($w) == "nowait" || text($w) == "NOWAIT" || text($w) == "Nowait" || text($w) == "nulls" || text($w) == "NULLS" || text($w) == "Nulls"]
-    / &(?oO) w:word [text($w) == "object" || text($w) == "OBJECT" || text($w) == "Object" || text($w) == "of" || text($w) == "OF" || text($w) == "Of" || text($w) == "off" || text($w) == "OFF" || text($w) == "Off" || text($w) == "oids" || text($w) == "OIDS" || text($w) == "Oids" || text($w) == "old" || text($w) == "OLD" || text($w) == "Old" || text($w) == "operator" || text($w) == "OPERATOR" || text($w) == "Operator" || text($w) == "option" || text($w) == "OPTION" || text($w) == "Option" || text($w) == "options" || text($w) == "OPTIONS" || text($w) == "Options" || text($w) == "ordinality" || text($w) == "ORDINALITY" || text($w) == "Ordinality" || text($w) == "others" || text($w) == "OTHERS" || text($w) == "Others" || text($w) == "over" || text($w) == "OVER" || text($w) == "Over" || text($w) == "overriding" || text($w) == "OVERRIDING" || text($w) == "Overriding" || text($w) == "owned" || text($w) == "OWNED" || text($w) == "Owned" || text($w) == "owner" || text($w) == "OWNER" || text($w) == "Owner"]
-    / &(?pP) w:word [text($w) == "parallel" || text($w) == "PARALLEL" || text($w) == "Parallel" || text($w) == "parser" || text($w) == "PARSER" || text($w) == "Parser" || text($w) == "partial" || text($w) == "PARTIAL" || text($w) == "Partial" || text($w) == "partition" || text($w) == "PARTITION" || text($w) == "Partition" || text($w) == "partitioned" || text($w) == "PARTITIONED" || text($w) == "Partitioned" || text($w) == "passing" || text($w) == "PASSING" || text($w) == "Passing" || text($w) == "password" || text($w) == "PASSWORD" || text($w) == "Password" || text($w) == "percent" || text($w) == "PERCENT" || text($w) == "Percent" || text($w) == "persistent" || text($w) == "PERSISTENT" || text($w) == "Persistent" || text($w) == "plans" || text($w) == "PLANS" || text($w) == "Plans" || text($w) == "policy" || text($w) == "POLICY" || text($w) == "Policy" || text($w) == "pragma" || text($w) == "PRAGMA" || text($w) == "Pragma" || text($w) == "preceding" || text($w) == "PRECEDING" || text($w) == "Preceding" || text($w) == "prepare" || text($w) == "PREPARE" || text($w) == "Prepare" || text($w) == "prepared" || text($w) == "PREPARED" || text($w) == "Prepared" || text($w) == "preserve" || text($w) == "PRESERVE" || text($w) == "Preserve" || text($w) == "prior" || text($w) == "PRIOR" || text($w) == "Prior" || text($w) == "privileges" || text($w) == "PRIVILEGES" || text($w) == "Privileges" || text($w) == "procedural" || text($w) == "PROCEDURAL" || text($w) == "Procedural" || text($w) == "procedure" || text($w) == "PROCEDURE" || text($w) == "Procedure" || text($w) == "program" || text($w) == "PROGRAM" || text($w) == "Program" || text($w) == "publication" || text($w) == "PUBLICATION" || text($w) == "Publication"]
-    / &(?qQ) w:word [text($w) == "quarter" || text($w) == "QUARTER" || text($w) == "Quarter" || text($w) == "quarters" || text($w) == "QUARTERS" || text($w) == "Quarters" || text($w) == "quote" || text($w) == "QUOTE" || text($w) == "Quote"]
-    / &(?rR) w:word [text($w) == "range" || text($w) == "RANGE" || text($w) == "Range" || text($w) == "read" || text($w) == "READ" || text($w) == "Read" || text($w) == "reassign" || text($w) == "REASSIGN" || text($w) == "Reassign" || text($w) == "recheck" || text($w) == "RECHECK" || text($w) == "Recheck" || text($w) == "recursive" || text($w) == "RECURSIVE" || text($w) == "Recursive" || text($w) == "ref" || text($w) == "REF" || text($w) == "Ref" || text($w) == "referencing" || text($w) == "REFERENCING" || text($w) == "Referencing" || text($w) == "refresh" || text($w) == "REFRESH" || text($w) == "Refresh" || text($w) == "reindex" || text($w) == "REINDEX" || text($w) == "Reindex" || text($w) == "relative" || text($w) == "RELATIVE" || text($w) == "Relative" || text($w) == "release" || text($w) == "RELEASE" || text($w) == "Release" || text($w) == "rename" || text($w) == "RENAME" || text($w) == "Rename" || text($w) == "repeatable" || text($w) == "REPEATABLE" || text($w) == "Repeatable" || text($w) == "replace" || text($w) == "REPLACE" || text($w) == "Replace" || text($w) == "replica" || text($w) == "REPLICA" || text($w) == "Replica" || text($w) == "reset" || text($w) == "RESET" || text($w) == "Reset" || text($w) == "respect" || text($w) == "RESPECT" || text($w) == "Respect" || text($w) == "restart" || text($w) == "RESTART" || text($w) == "Restart" || text($w) == "restrict" || text($w) == "RESTRICT" || text($w) == "Restrict" || text($w) == "returns" || text($w) == "RETURNS" || text($w) == "Returns" || text($w) == "revoke" || text($w) == "REVOKE" || text($w) == "Revoke" || text($w) == "role" || text($w) == "ROLE" || text($w) == "Role" || text($w) == "rollback" || text($w) == "ROLLBACK" || text($w) == "Rollback" || text($w) == "rollup" || text($w) == "ROLLUP" || text($w) == "Rollup" || text($w) == "rows" || text($w) == "ROWS" || text($w) == "Rows" || text($w) == "rule" || text($w) == "RULE" || text($w) == "Rule"]
-    / &(?sS) w:word [text($w) == "sample" || text($w) == "SAMPLE" || text($w) == "Sample" || text($w) == "savepoint" || text($w) == "SAVEPOINT" || text($w) == "Savepoint" || text($w) == "schema" || text($w) == "SCHEMA" || text($w) == "Schema" || text($w) == "schemas" || text($w) == "SCHEMAS" || text($w) == "Schemas" || text($w) == "scope" || text($w) == "SCOPE" || text($w) == "Scope" || text($w) == "scroll" || text($w) == "SCROLL" || text($w) == "Scroll" || text($w) == "search" || text($w) == "SEARCH" || text($w) == "Search" || text($w) == "second" || text($w) == "SECOND" || text($w) == "Second" || text($w) == "seconds" || text($w) == "SECONDS" || text($w) == "Seconds" || text($w) == "secret" || text($w) == "SECRET" || text($w) == "Secret" || text($w) == "security" || text($w) == "SECURITY" || text($w) == "Security" || text($w) == "sequence" || text($w) == "SEQUENCE" || text($w) == "Sequence" || text($w) == "sequences" || text($w) == "SEQUENCES" || text($w) == "Sequences" || text($w) == "serializable" || text($w) == "SERIALIZABLE" || text($w) == "Serializable" || text($w) == "server" || text($w) == "SERVER" || text($w) == "Server" || text($w) == "session" || text($w) == "SESSION" || text($w) == "Session" || text($w) == "set" || text($w) == "SET" || text($w) == "Set" || text($w) == "sets" || text($w) == "SETS" || text($w) == "Sets" || text($w) == "share" || text($w) == "SHARE" || text($w) == "Share" || text($w) == "simple" || text($w) == "SIMPLE" || text($w) == "Simple" || text($w) == "skip" || text($w) == "SKIP" || text($w) == "Skip" || text($w) == "snapshot" || text($w) == "SNAPSHOT" || text($w) == "Snapshot" || text($w) == "sorted" || text($w) == "SORTED" || text($w) == "Sorted" || text($w) == "source" || text($w) == "SOURCE" || text($w) == "Source" || text($w) == "sql" || text($w) == "SQL" || text($w) == "Sql" || text($w) == "stable" || text($w) == "STABLE" || text($w) == "Stable" || text($w) == "standalone" || text($w) == "STANDALONE" || text($w) == "Standalone" || text($w) == "start" || text($w) == "START" || text($w) == "Start" || text($w) == "statement" || text($w) == "STATEMENT" || text($w) == "Statement" || text($w) == "statistics" || text($w) == "STATISTICS" || text($w) == "Statistics" || text($w) == "stdin" || text($w) == "STDIN" || text($w) == "Stdin" || text($w) == "stdout" || text($w) == "STDOUT" || text($w) == "Stdout" || text($w) == "storage" || text($w) == "STORAGE" || text($w) == "Storage" || text($w) == "stored" || text($w) == "STORED" || text($w) == "Stored" || text($w) == "strict" || text($w) == "STRICT" || text($w) == "Strict" || text($w) == "strip" || text($w) == "STRIP" || text($w) == "Strip" || text($w) == "subscription" || text($w) == "SUBSCRIPTION" || text($w) == "Subscription" || text($w) == "sysid" || text($w) == "SYSID" || text($w) == "Sysid" || text($w) == "system" || text($w) == "SYSTEM" || text($w) == "System"]
-    / &(?tT) w:word [text($w) == "tables" || text($w) == "TABLES" || text($w) == "Tables" || text($w) == "tablespace" || text($w) == "TABLESPACE" || text($w) == "Tablespace" || text($w) == "target" || text($w) == "TARGET" || text($w) == "Target" || text($w) == "temp" || text($w) == "TEMP" || text($w) == "Temp" || text($w) == "template" || text($w) == "TEMPLATE" || text($w) == "Template" || text($w) == "temporary" || text($w) == "TEMPORARY" || text($w) == "Temporary" || text($w) == "text" || text($w) == "TEXT" || text($w) == "Text" || text($w) == "ties" || text($w) == "TIES" || text($w) == "Ties" || text($w) == "transaction" || text($w) == "TRANSACTION" || text($w) == "Transaction" || text($w) == "transform" || text($w) == "TRANSFORM" || text($w) == "Transform" || text($w) == "trigger" || text($w) == "TRIGGER" || text($w) == "Trigger" || text($w) == "truncate" || text($w) == "TRUNCATE" || text($w) == "Truncate" || text($w) == "trusted" || text($w) == "TRUSTED" || text($w) == "Trusted" || text($w) == "type" || text($w) == "TYPE" || text($w) == "Type" || text($w) == "types" || text($w) == "TYPES" || text($w) == "Types"]
-    / &(?uU) w:word [text($w) == "unbounded" || text($w) == "UNBOUNDED" || text($w) == "Unbounded" || text($w) == "uncommitted" || text($w) == "UNCOMMITTED" || text($w) == "Uncommitted" || text($w) == "unencrypted" || text($w) == "UNENCRYPTED" || text($w) == "Unencrypted" || text($w) == "unknown" || text($w) == "UNKNOWN" || text($w) == "Unknown" || text($w) == "unlisten" || text($w) == "UNLISTEN" || text($w) == "Unlisten" || text($w) == "unlogged" || text($w) == "UNLOGGED" || text($w) == "Unlogged" || text($w) == "until" || text($w) == "UNTIL" || text($w) == "Until" || text($w) == "update" || text($w) == "UPDATE" || text($w) == "Update" || text($w) == "use" || text($w) == "USE" || text($w) == "Use" || text($w) == "user" || text($w) == "USER" || text($w) == "User"]
-    / &(?vV) w:word [text($w) == "vacuum" || text($w) == "VACUUM" || text($w) == "Vacuum" || text($w) == "valid" || text($w) == "VALID" || text($w) == "Valid" || text($w) == "validate" || text($w) == "VALIDATE" || text($w) == "Validate" || text($w) == "validator" || text($w) == "VALIDATOR" || text($w) == "Validator" || text($w) == "value" || text($w) == "VALUE" || text($w) == "Value" || text($w) == "variable" || text($w) == "VARIABLE" || text($w) == "Variable" || text($w) == "varying" || text($w) == "VARYING" || text($w) == "Varying" || text($w) == "version" || text($w) == "VERSION" || text($w) == "Version" || text($w) == "view" || text($w) == "VIEW" || text($w) == "View" || text($w) == "views" || text($w) == "VIEWS" || text($w) == "Views" || text($w) == "virtual" || text($w) == "VIRTUAL" || text($w) == "Virtual" || text($w) == "volatile" || text($w) == "VOLATILE" || text($w) == "Volatile"]
-    / &(?wW) w:word [text($w) == "week" || text($w) == "WEEK" || text($w) == "Week" || text($w) == "weeks" || text($w) == "WEEKS" || text($w) == "Weeks" || text($w) == "whitespace" || text($w) == "WHITESPACE" || text($w) == "Whitespace" || text($w) == "within" || text($w) == "WITHIN" || text($w) == "Within" || text($w) == "without" || text($w) == "WITHOUT" || text($w) == "Without" || text($w) == "work" || text($w) == "WORK" || text($w) == "Work" || text($w) == "wrapper" || text($w) == "WRAPPER" || text($w) == "Wrapper" || text($w) == "write" || text($w) == "WRITE" || text($w) == "Write"]
-    / &(?xX) w:word [text($w) == "xml" || text($w) == "XML" || text($w) == "Xml"]
-    / &(?yY) w:word [text($w) == "year" || text($w) == "YEAR" || text($w) == "Year" || text($w) == "years" || text($w) == "YEARS" || text($w) == "Years" || text($w) == "yes" || text($w) == "YES" || text($w) == "Yes"]
-    / &(?zZ) w:word [text($w) == "zone" || text($w) == "ZONE" || text($w) == "Zone"]
+// the unreserved keywords, without regard to ASCII case
+def kw_u = ((?aA) ((?bB) ((?oO) (?rR) (?tT)
+              / (?sS) (?oO) (?lL) (?uU) (?tT) (?eE))
+            / (?cC) ((?cC) (?eE) (?sS) (?sS)
+              / (?tT) (?iI) (?oO) (?nN))
+            / (?dD) ((?dD)
+              / (?mM) (?iI) (?nN))
+            / (?fF) (?tT) (?eE) (?rR)
+            / (?gG) (?gG) (?rR) (?eE) (?gG) (?aA) (?tT) (?eE)
+            / (?lL) ((?sS) (?oO)
+              / (?tT) (?eE) (?rR)
+              / (?wW) (?aA) (?yY) (?sS))
+            / (?sS) (?sS) ((?eE) (?rR) (?tT) (?iI) (?oO) (?nN)
+              / (?iI) (?gG) (?nN) (?mM) (?eE) (?nN) (?tT))
+            / (?tT) (?tT) ((?aA) (?cC) (?hH)
+              / (?rR) (?iI) (?bB) (?uU) (?tT) (?eE)))
+          / (?bB) ((?aA) (?cC) (?kK) (?wW) (?aA) (?rR) (?dD)
+            / (?eE) ((?fF) (?oO) (?rR) (?eE)
+              / (?gG) (?iI) (?nN)))
+          / (?cC) ((?aA) ((?cC) (?hH) (?eE)
+              / (?lL) (?lL) ((?eE) (?dD))?
+              / (?sS) (?cC) (?aA) (?dD) (?eE) ((?dD))?
+              / (?tT) (?aA) (?lL) (?oO) (?gG))
+            / (?eE) (?nN) (?tT) (?uU) (?rR) ((?iI) (?eE) (?sS)
+              / (?yY))
+            / (?hH) ((?aA) ((?iI) (?nN)
+                / (?rR) (?aA) (?cC) (?tT) (?eE) (?rR) (?iI) (?sS) (?tT) (?iI) (?cC) (?sS))
+              / (?eE) (?cC) (?kK) (?pP) (?oO) (?iI) (?nN) (?tT))
+            / (?lL) ((?aA) (?sS) (?sS)
+              / (?oO) (?sS) (?eE)
+              / (?uU) (?sS) (?tT) (?eE) (?rR))
+            / (?oO) ((?mM) ((?mM) ((?eE) (?nN) (?tT) ((?sS))?
+                  / (?iI) (?tT) ((?tT) (?eE) (?dD))?)
+                / (?pP) (?rR) (?eE) (?sS) (?sS) (?iI) (?oO) (?nN))
+              / (?nN) ((?fF) ((?iI) (?gG) (?uU) (?rR) (?aA) (?tT) (?iI) (?oO) (?nN)
+                  / (?lL) (?iI) (?cC) (?tT))
+                / (?nN) (?eE) (?cC) (?tT) (?iI) (?oO) (?nN)
+                / (?sS) (?tT) (?rR) (?aA) (?iI) (?nN) (?tT) (?sS)
+                / (?tT) ((?eE) (?nN) (?tT)
+                  / (?iI) (?nN) (?uU) (?eE))
+                / (?vV) (?eE) (?rR) (?sS) (?iI) (?oO) (?nN))
+              / (?pP) (?yY)
+              / (?sS) (?tT))
+            / (?sS) (?vV)
+            / (?uU) ((?bB) (?eE)
+              / (?rR) ((?rR) (?eE) (?nN) (?tT)
+                / (?sS) (?oO) (?rR)))
+            / (?yY) (?cC) (?lL) (?eE))
+          / (?dD) ((?aA) ((?tT) (?aA) ((?bB) (?aA) (?sS) (?eE))?
+              / (?yY) ((?sS))?)
+            / (?eE) ((?aA) (?lL) (?lL) (?oO) (?cC) (?aA) (?tT) (?eE)
+              / (?cC) ((?aA) (?dD) (?eE) ((?sS))?
+                / (?lL) (?aA) (?rR) (?eE))
+              / (?fF) ((?aA) (?uU) (?lL) (?tT) (?sS)
+                / (?eE) (?rR) (?rR) (?eE) (?dD)
+                / (?iI) (?nN) (?eE) (?rR))
+              / (?lL) ((?eE) (?tT) (?eE)
+                / (?iI) (?mM) (?iI) (?tT) (?eE) (?rR) ((?sS))?)
+              / (?pP) (?eE) (?nN) (?dD) (?sS)
+              / (?tT) (?aA) (?cC) (?hH))
+            / (?iI) ((?cC) (?tT) (?iI) (?oO) (?nN) (?aA) (?rR) (?yY)
+              / (?sS) ((?aA) (?bB) (?lL) (?eE)
+                / (?cC) (?aA) (?rR) (?dD)))
+            / (?oO) ((?cC) (?uU) (?mM) (?eE) (?nN) (?tT)
+              / (?mM) (?aA) (?iI) (?nN)
+              / (?uU) (?bB) (?lL) (?eE))
+            / (?rR) (?oO) (?pP))
+          / (?eE) ((?aA) (?cC) (?hH)
+            / (?nN) ((?aA) (?bB) (?lL) (?eE)
+              / (?cC) ((?oO) (?dD) (?iI) (?nN) (?gG)
+                / (?rR) (?yY) (?pP) (?tT) (?eE) (?dD))
+              / (?uU) (?mM))
+            / (?rR) (?rR) (?oO) (?rR)
+            / (?sS) (?cC) (?aA) (?pP) (?eE)
+            / (?vV) (?eE) (?nN) (?tT)
+            / (?xX) ((?cC) (?lL) (?uU) ((?dD) ((?eE)
+                  / (?iI) (?nN) (?gG))
+                / (?sS) (?iI) (?vV) (?eE))
+              / (?eE) (?cC) (?uU) (?tT) (?eE)
+              / (?pP) ((?lL) (?aA) (?iI) (?nN)
+                / (?oO) (?rR) (?tT) ("_" (?sS) (?tT) (?aA) (?tT) (?eE))?)
+              / (?tT) (?eE) ((?nN) (?sS) (?iI) (?oO) (?nN) ((?sS))?
+                / (?rR) (?nN) (?aA) (?lL))))
+          / (?fF) ((?aA) (?mM) (?iI) (?lL) (?yY)
+            / (?iI) ((?lL) (?tT) (?eE) (?rR)
+              / (?rR) (?sS) (?tT))
+            / (?oO) ((?lL) (?lL) (?oO) (?wW) (?iI) (?nN) (?gG)
+              / (?rR) ((?cC) (?eE)
+                / (?wW) (?aA) (?rR) (?dD)))
+            / (?uU) (?nN) (?cC) (?tT) (?iI) (?oO) (?nN) ((?sS))?)
+          / (?gG) ((?lL) (?oO) (?bB) (?aA) (?lL)
+            / (?rR) ((?aA) (?nN) (?tT) ((?eE) (?dD))?
+              / (?oO) (?uU) (?pP) (?sS)))
+          / (?hH) ((?aA) (?nN) (?dD) (?lL) (?eE) (?rR)
+            / (?eE) (?aA) (?dD) (?eE) (?rR)
+            / (?oO) ((?lL) (?dD)
+              / (?uU) (?rR) ((?sS))?))
+          / (?iI) ((?dD) (?eE) (?nN) (?tT) (?iI) (?tT) (?yY)
+            / (?fF)
+            / (?gG) (?nN) (?oO) (?rR) (?eE)
+            / (?mM) ((?mM) ((?eE) (?dD) (?iI) (?aA) (?tT) (?eE)
+                / (?uU) (?tT) (?aA) (?bB) (?lL) (?eE))
+              / (?pP) ((?lL) (?iI) (?cC) (?iI) (?tT)
+                / (?oO) (?rR) (?tT)))
+            / (?nN) ((?cC) ((?lL) (?uU) (?dD) ((?eE)
+                  / (?iI) (?nN) (?gG))
+                / (?rR) (?eE) (?mM) (?eE) (?nN) (?tT))
+              / (?dD) (?eE) (?xX) ((?eE) (?sS))?
+              / (?hH) (?eE) (?rR) (?iI) (?tT) ((?sS))?
+              / (?lL) (?iI) (?nN) (?eE)
+              / (?pP) (?uU) (?tT)
+              / (?sS) ((?eE) ((?nN) (?sS) (?iI) (?tT) (?iI) (?vV) (?eE)
+                  / (?rR) (?tT))
+                / (?tT) ((?aA) (?lL) (?lL)
+                  / (?eE) (?aA) (?dD)))
+              / (?vV) (?oO) (?kK) (?eE) (?rR))
+            / (?sS) (?oO) (?lL) (?aA) (?tT) (?iI) (?oO) (?nN))
+          / (?jJ) (?sS) (?oO) (?nN)
+          / (?kK) (?eE) (?yY)
+          / (?lL) ((?aA) ((?bB) (?eE) (?lL)
+              / (?nN) (?gG) (?uU) (?aA) (?gG) (?eE)
+              / (?rR) (?gG) (?eE)
+              / (?sS) (?tT))
+            / (?eE) ((?aA) (?kK) (?pP) (?rR) (?oO) (?oO) (?fF)
+              / (?vV) (?eE) (?lL))
+            / (?iI) (?sS) (?tT) (?eE) (?nN)
+            / (?oO) ((?aA) (?dD)
+              / (?cC) ((?aA) ((?lL)
+                  / (?tT) (?iI) (?oO) (?nN))
+                / (?kK) ((?eE) (?dD))?)
+              / (?gG) (?gG) (?eE) (?dD)))
+          / (?mM) ((?aA) ((?cC) (?rR) (?oO)
+              / (?pP) (?pP) (?iI) (?nN) (?gG)
+              / (?tT) ((?cC) (?hH) ((?eE) (?dD))?
+                / (?eE) (?rR) (?iI) (?aA) (?lL) (?iI) (?zZ) (?eE) (?dD))
+              / (?xX) (?vV) (?aA) (?lL) (?uU) (?eE))
+            / (?eE) ((?rR) (?gG) (?eE)
+              / (?tT) (?hH) (?oO) (?dD))
+            / (?iI) ((?cC) (?rR) (?oO) (?sS) (?eE) (?cC) (?oO) (?nN) (?dD) ((?sS))?
+              / (?lL) (?lL) ((?eE) (?nN) (?nN) (?iI) ((?aA)
+                  / (?uU) (?mM))
+                / (?iI) (?sS) (?eE) (?cC) (?oO) (?nN) (?dD) ((?sS))?)
+              / (?nN) ((?uU) (?tT) (?eE) ((?sS))?
+                / (?vV) (?aA) (?lL) (?uU) (?eE)))
+            / (?oO) ((?dD) (?eE)
+              / (?nN) (?tT) (?hH) ((?sS))?
+              / (?vV) (?eE)))
+          / (?nN) ((?aA) (?mM) (?eE) ((?sS))?
+            / (?eE) ((?wW)
+              / (?xX) (?tT))
+            / (?oO) ((?tT) ((?hH) (?iI) (?nN) (?gG)
+                / (?iI) (?fF) (?yY))
+              / (?wW) (?aA) (?iI) (?tT))?
+            / (?uU) (?lL) (?lL) (?sS))
+          / (?oO) ((?bB) (?jJ) (?eE) (?cC) (?tT)
+            / (?fF) ((?fF))?
+            / (?iI) (?dD) (?sS)
+            / (?lL) (?dD)
+            / (?pP) ((?eE) (?rR) (?aA) (?tT) (?oO) (?rR)
+              / (?tT) (?iI) (?oO) (?nN) ((?sS))?)
+            / (?rR) (?dD) (?iI) (?nN) (?aA) (?lL) (?iI) (?tT) (?yY)
+            / (?tT) (?hH) (?eE) (?rR) (?sS)
+            / (?vV) (?eE) (?rR) ((?rR) (?iI) (?dD) (?iI) (?nN) (?gG))?
+            / (?wW) (?nN) (?eE) ((?dD)
+              / (?rR)))
+          / (?pP) ((?aA) ((?rR) ((?aA) (?lL) (?lL) (?eE) (?lL)
+                / (?sS) (?eE) (?rR)
+                / (?tT) (?iI) ((?aA) (?lL)
+                  / (?tT) (?iI) (?oO) (?nN) ((?eE) (?dD))?))
+              / (?sS) (?sS) ((?iI) (?nN) (?gG)
+                / (?wW) (?oO) (?rR) (?dD)))
+            / (?eE) (?rR) ((?cC) (?eE) (?nN) (?tT)
+              / (?sS) (?iI) (?sS) (?tT) (?eE) (?nN) (?tT))
+            / (?lL) (?aA) (?nN) (?sS)
+            / (?oO) (?lL) (?iI) (?cC) (?yY)
+            / (?rR) ((?aA) (?gG) (?mM) (?aA)
+              / (?eE) ((?cC) (?eE) (?dD) (?iI) (?nN) (?gG)
+                / (?pP) (?aA) (?rR) (?eE) ((?dD))?
+                / (?sS) (?eE) (?rR) (?vV) (?eE))
+              / (?iI) ((?oO) (?rR)
+                / (?vV) (?iI) (?lL) (?eE) (?gG) (?eE) (?sS))
+              / (?oO) ((?cC) (?eE) (?dD) (?uU) (?rR) ((?aA) (?lL)
+                  / (?eE))
+                / (?gG) (?rR) (?aA) (?mM)))
+            / (?uU) (?bB) (?lL) (?iI) (?cC) (?aA) (?tT) (?iI) (?oO) (?nN))
+          / (?qQ) (?uU) ((?aA) (?rR) (?tT) (?eE) (?rR) ((?sS))?
+            / (?oO) (?tT) (?eE))
+          / (?rR) ((?aA) (?nN) (?gG) (?eE)
+            / (?eE) ((?aA) ((?dD)
+                / (?sS) (?sS) (?iI) (?gG) (?nN))
+              / (?cC) ((?hH) (?eE) (?cC) (?kK)
+                / (?uU) (?rR) (?sS) (?iI) (?vV) (?eE))
+              / (?fF) ((?eE) (?rR) (?eE) (?nN) (?cC) (?iI) (?nN) (?gG)
+                / (?rR) (?eE) (?sS) (?hH))?
+              / (?iI) (?nN) (?dD) (?eE) (?xX)
+              / (?lL) ((?aA) (?tT) (?iI) (?vV) (?eE)
+                / (?eE) (?aA) (?sS) (?eE))
+              / (?nN) (?aA) (?mM) (?eE)
+              / (?pP) ((?eE) (?aA) (?tT) (?aA) (?bB) (?lL) (?eE)
+                / (?lL) ((?aA) (?cC) (?eE)
+                  / (?iI) (?cC) (?aA)))
+              / (?sS) ((?eE) (?tT)
+                / (?pP) (?eE) (?cC) (?tT)
+                / (?tT) ((?aA) (?rR) (?tT)
+                  / (?rR) (?iI) (?cC) (?tT)))
+              / (?tT) (?uU) (?rR) (?nN) (?sS)
+              / (?vV) (?oO) (?kK) (?eE))
+            / (?oO) ((?lL) ((?eE)
+                / (?lL) ((?bB) (?aA) (?cC) (?kK)
+                  / (?uU) (?pP)))
+              / (?wW) (?sS))
+            / (?uU) (?lL) (?eE))
+          / (?sS) ((?aA) ((?mM) (?pP) (?lL) (?eE)
+              / (?vV) (?eE) (?pP) (?oO) (?iI) (?nN) (?tT))
+            / (?cC) ((?hH) (?eE) (?mM) (?aA) ((?sS))?
+              / (?oO) (?pP) (?eE)
+              / (?rR) (?oO) (?lL) (?lL))
+            / (?eE) ((?aA) (?rR) (?cC) (?hH)
+              / (?cC) ((?oO) (?nN) (?dD) ((?sS))?
+                / (?rR) (?eE) (?tT)
+                / (?uU) (?rR) (?iI) (?tT) (?yY))
+              / (?qQ) (?uU) (?eE) (?nN) (?cC) (?eE) ((?sS))?
+              / (?rR) ((?iI) (?aA) (?lL) (?iI) (?zZ) (?aA) (?bB) (?lL) (?eE)
+                / (?vV) (?eE) (?rR))
+              / (?sS) (?sS) (?iI) (?oO) (?nN)
+              / (?tT) ((?sS))?)
+            / (?hH) (?aA) (?rR) (?eE)
+            / (?iI) (?mM) (?pP) (?lL) (?eE)
+            / (?kK) (?iI) (?pP)
+            / (?nN) (?aA) (?pP) (?sS) (?hH) (?oO) (?tT)
+            / (?oO) ((?rR) (?tT) (?eE) (?dD)
+              / (?uU) (?rR) (?cC) (?eE))
+            / (?qQ) (?lL)
+            / (?tT) ((?aA) ((?bB) (?lL) (?eE)
+                / (?nN) (?dD) (?aA) (?lL) (?oO) (?nN) (?eE)
+                / (?rR) (?tT)
+                / (?tT) ((?eE) (?mM) (?eE) (?nN) (?tT)
+                  / (?iI) (?sS) (?tT) (?iI) (?cC) (?sS)))
+              / (?dD) ((?iI) (?nN)
+                / (?oO) (?uU) (?tT))
+              / (?oO) (?rR) ((?aA) (?gG) (?eE)
+                / (?eE) (?dD))
+              / (?rR) (?iI) ((?cC) (?tT)
+                / (?pP)))
+            / (?uU) (?bB) (?sS) (?cC) (?rR) (?iI) (?pP) (?tT) (?iI) (?oO) (?nN)
+            / (?yY) (?sS) ((?iI) (?dD)
+              / (?tT) (?eE) (?mM)))
+          / (?tT) ((?aA) ((?bB) (?lL) (?eE) (?sS) ((?pP) (?aA) (?cC) (?eE))?
+              / (?rR) (?gG) (?eE) (?tT))
+            / (?eE) ((?mM) (?pP) ((?lL) (?aA) (?tT) (?eE)
+                / (?oO) (?rR) (?aA) (?rR) (?yY))?
+              / (?xX) (?tT))
+            / (?iI) (?eE) (?sS)
+            / (?rR) ((?aA) (?nN) (?sS) ((?aA) (?cC) (?tT) (?iI) (?oO) (?nN)
+                / (?fF) (?oO) (?rR) (?mM))
+              / (?iI) (?gG) (?gG) (?eE) (?rR)
+              / (?uU) ((?nN) (?cC) (?aA) (?tT) (?eE)
+                / (?sS) (?tT) (?eE) (?dD)))
+            / (?yY) (?pP) (?eE) ((?sS))?)
+          / (?uU) ((?nN) ((?bB) (?oO) (?uU) (?nN) (?dD) (?eE) (?dD)
+              / (?cC) (?oO) (?mM) (?mM) (?iI) (?tT) (?tT) (?eE) (?dD)
+              / (?eE) (?nN) (?cC) (?rR) (?yY) (?pP) (?tT) (?eE) (?dD)
+              / (?kK) (?nN) (?oO) (?wW) (?nN)
+              / (?lL) ((?iI) (?sS) (?tT) (?eE) (?nN)
+                / (?oO) (?gG) (?gG) (?eE) (?dD))
+              / (?tT) (?iI) (?lL))
+            / (?pP) (?dD) (?aA) (?tT) (?eE)
+            / (?sS) (?eE) ((?rR))?)
+          / (?vV) ((?aA) ((?cC) (?uU) (?uU) (?mM)
+              / (?lL) ((?iI) (?dD) ((?aA) (?tT) ((?eE)
+                    / (?oO) (?rR)))?
+                / (?uU) (?eE))
+              / (?rR) ((?iI) (?aA) (?bB) (?lL) (?eE)
+                / (?yY) (?iI) (?nN) (?gG)))
+            / (?eE) (?rR) (?sS) (?iI) (?oO) (?nN)
+            / (?iI) ((?eE) (?wW) ((?sS))?
+              / (?rR) (?tT) (?uU) (?aA) (?lL))
+            / (?oO) (?lL) (?aA) (?tT) (?iI) (?lL) (?eE))
+          / (?wW) ((?eE) (?eE) (?kK) ((?sS))?
+            / (?hH) (?iI) (?tT) (?eE) (?sS) (?pP) (?aA) (?cC) (?eE)
+            / (?iI) (?tT) (?hH) ((?iI) (?nN)
+              / (?oO) (?uU) (?tT))
+            / (?oO) (?rR) (?kK)
+            / (?rR) ((?aA) (?pP) (?pP) (?eE) (?rR)
+              / (?iI) (?tT) (?eE)))
+          / (?xX) (?mM) (?lL)
+          / (?yY) (?eE) ((?aA) (?rR) ((?sS))?
+            / (?sS))
+          / (?zZ) (?oO) (?nN) (?eE))
+    !(?a-zA-Z0-9_$\u{80}-\u{9f}\u{a1}-\u{1fff}\u{200c}-\u{202e}\u{2030}-\u{205e}\u{2061}-\u{2fff}\u{3001}-\u{fefe}\u{ff00}-\u{10ffff})
 
 // ColId may not be one of these keywords
 def kw_not_col_id = kw_r / kw_t / kw_tf
@@ -2666,7 +2928,7 @@ def kw_not_type_func = kw_r / kw_c
 // the reserved keywords
 def kw_reserved = kw_r
 
-// every keyword (an unreserved keyword only in the three spellings)
+// every keyword, without regard to ASCII case
 def kw_any = kw_r / kw_c / kw_cf / kw_ct / kw_t / kw_tf / kw_u
 
 // END GENERATED KEYWORDS
