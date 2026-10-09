@@ -4,7 +4,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"html"
 	"io/fs"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -429,5 +431,130 @@ func TestPrepareOutRefusesForeignDirectory(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, "precious.txt")); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// sidebarSection is a section of the navigation of a page.
+type sidebarSection struct {
+	Name        string
+	Collapsible bool // a details element, which the reader can fold
+	Open        bool
+	Links       []sidebarLink
+}
+
+// sidebarLink is a link of the navigation of a page.
+type sidebarLink struct {
+	Href    string // relative to the page
+	Title   string
+	Current bool
+}
+
+var (
+	sidebarRe        = regexp.MustCompile(`(?s)<nav id="sidebar".*?</nav>`)
+	sidebarSectionRe = regexp.MustCompile(`(?s)<(div|details) class="nav-section([^"]*)"( open)?>(.*?)</(?:div|details)>`)
+	sidebarHeadingRe = regexp.MustCompile(`<h2>([^<]*)</h2>`)
+	sidebarLinkRe    = regexp.MustCompile(`<a href="([^"]*)"( aria-current="page")?>([^<]*)</a>`)
+)
+
+// readSidebar returns the sections of the navigation of a generated page, without the list of the
+// site for mobile screens.
+func readSidebar(t *testing.T, page string) []sidebarSection {
+	t.Helper()
+	data, err := os.ReadFile(page)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nav := sidebarRe.FindString(string(data))
+	if nav == "" {
+		t.Fatalf("%s has no sidebar", page)
+	}
+	var secs []sidebarSection
+	for _, m := range sidebarSectionRe.FindAllStringSubmatch(nav, -1) {
+		if strings.Contains(m[2], "mobile-links") {
+			continue
+		}
+		h := sidebarHeadingRe.FindStringSubmatch(m[4])
+		if h == nil {
+			t.Fatalf("%s: a section has no heading", page)
+		}
+		sec := sidebarSection{Name: h[1], Collapsible: m[1] == "details", Open: m[3] != ""}
+		for _, l := range sidebarLinkRe.FindAllStringSubmatch(m[4], -1) {
+			sec.Links = append(sec.Links, sidebarLink{Href: l[1], Title: html.UnescapeString(l[3]), Current: l[2] != ""})
+		}
+		secs = append(secs, sec)
+	}
+	return secs
+}
+
+// TestNavigation checks the titles of the pages in the navigation of the documentation.
+func TestNavigation(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "dist")
+	if _, err := Build(Config{Repo: "..", Out: out, Check: true, GitHub: "https://github.com/ornew/pego", Ref: "main"}); err != nil {
+		t.Fatal(err)
+	}
+	// The links of the navigation are relative to the page; this strips the "../" that leads to the root.
+	site := func(href string) string { return strings.TrimLeft(href, "./") }
+
+	// Only the index of a section is called "Introduction"; every other page has its own title.
+	secs := readSidebar(t, filepath.Join(out, "docs", "guide", "runtime", "index.html"))
+	var names []string
+	intro := map[string]bool{}
+	for _, sec := range secs {
+		names = append(names, sec.Name)
+		for _, l := range sec.Links {
+			if l.Title == "Introduction" {
+				intro[site(l.Href)] = true
+			}
+		}
+	}
+	if got, want := strings.Join(names, ", "), "Tutorial, Guides, Specification, Reference, Parsers, Design records, Project"; got != want {
+		t.Errorf("sections = %s, want %s", got, want)
+	}
+	if want := map[string]bool{"docs/guide/": true, "spec/": true, "parsers/": true}; !maps.Equal(intro, want) {
+		t.Errorf("pages titled Introduction = %v, want the indexes of Guides, Specification and Parsers", intro)
+	}
+	for _, sec := range secs {
+		if sec.Name != "Parsers" {
+			continue
+		}
+		parsers := 0
+		for _, l := range sec.Links {
+			dir := site(l.Href)
+			if dir == "parsers/" {
+				continue
+			}
+			parsers++
+			// A parser is titled by the first heading of its page.
+			data, err := os.ReadFile(filepath.Join(out, filepath.FromSlash(dir), "index.html"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			m := regexp.MustCompile(`(?s)<h1[^>]*>(.*?)</h1>`).FindSubmatch(data)
+			if m == nil {
+				t.Fatalf("%s has no heading", dir)
+			}
+			if h := html.UnescapeString(regexp.MustCompile(`<[^>]*>`).ReplaceAllString(string(m[1]), "")); l.Title != h {
+				t.Errorf("%s is titled %q in the navigation, want %q", dir, l.Title, h)
+			}
+		}
+		if parsers < 5 {
+			t.Errorf("the Parsers section lists %d parsers", parsers)
+		}
+	}
+
+}
+
+func TestNavTitle(t *testing.T) {
+	for _, tc := range []struct {
+		p    *Page
+		want string
+	}{
+		{&Page{Src: "parsers/README.md", Title: "Ready-made parsers", Index: true}, "Introduction"},
+		{&Page{Src: "parsers/json/README.md", Title: "JSON"}, "JSON"},
+		{&Page{Src: "docs/tutorial/getting-started.md", Title: "Getting started: a tutorial"}, "Getting started"},
+	} {
+		if got := navTitle(tc.p); got != tc.want {
+			t.Errorf("navTitle(%s) = %q, want %q", tc.p.Src, got, tc.want)
+		}
 	}
 }

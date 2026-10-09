@@ -52,6 +52,7 @@ type Page struct {
 	Title       string
 	Nav         string // short title for the navigation
 	Section     string
+	Index       bool   // the index of its section, which the navigation calls "Introduction"
 	Kind        string // landing, doc or playground
 	Description string
 	Body        template.HTML
@@ -216,7 +217,7 @@ func (s *Site) collect() error {
 			if s.bySrc[f] != nil {
 				continue // listed by an earlier section
 			}
-			p := &Page{Src: f, URL: urlOf(f), Kind: "doc", Section: sec.Name,
+			p := &Page{Src: f, URL: urlOf(f), Kind: "doc", Section: sec.Name, Index: f == ds.index,
 				SourceURL: s.cfg.GitHub + "/blob/" + s.cfg.Ref + "/" + f}
 			s.add(p)
 			sec.Pages = append(sec.Pages, p)
@@ -360,9 +361,10 @@ func relURL(from, to string) string {
 
 var titleNumberRe = regexp.MustCompile(`^(\d{3})[.:]\s+`)
 
-// navTitle shortens a page title for the navigation.
+// navTitle shortens a page title for the navigation. The index of a section is called "Introduction";
+// other pages keep their own titles, even when their file is a README.md.
 func navTitle(p *Page) string {
-	if path.Base(p.Src) == "README.md" {
+	if p.Index {
 		return "Introduction"
 	}
 	t := p.Title
