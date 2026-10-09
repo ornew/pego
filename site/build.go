@@ -110,6 +110,7 @@ type docSection struct {
 var docSections = []docSection{
 	{name: "Tutorial", globs: []string{"docs/tutorial/*.md"}},
 	{name: "Guides", globs: []string{"docs/guide/*.md"}, index: "docs/guide/README.md"},
+	{name: "Cookbook", globs: []string{"docs/cookbook/*.md"}, index: "docs/cookbook/README.md"},
 	{name: "Specification", globs: []string{"spec/*.md"}, index: "spec/README.md"},
 	{name: "Parsers", globs: []string{"parsers/README.md", "parsers/*/README.md"}, index: "parsers/README.md"},
 	{name: "Design records", globs: []string{"docs/design/*.md"}, collapsible: true},
