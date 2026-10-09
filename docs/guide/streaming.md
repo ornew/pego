@@ -21,6 +21,10 @@ position units. It does not work with `RecognizeOnly` (`ParseStream` returns an 
 The design is in [design record 007](../design/007-streaming-and-incremental-parsing.md); the attribute is specified in
 [spec/attributes.md](../../spec/attributes.md#stream).
 
+Recognition treats `#stream` as an ordinary repetition and invokes no callbacks. Captures needed by element
+predicates still work, but element values are not collected or decorated with captures. This applies to both VM
+backends as well as Closure; recognition from a saved grammar requires its AST.
+
 - [A first example](#a-first-example)
 - [What is emitted, and when](#what-is-emitted-and-when)
 - [Rules and limits](#rules-and-limits)

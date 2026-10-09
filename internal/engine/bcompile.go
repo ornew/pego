@@ -335,7 +335,7 @@ func (c *bcompiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) {
 		c.match(e.Expr, elemScope, false)
 	}
 	flag := b2i(build)
-	if stream {
+	if stream && build {
 		flag = 2
 	}
 	c.emit(OpNext, loop, flag, 0)

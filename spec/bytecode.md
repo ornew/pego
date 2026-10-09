@@ -115,6 +115,11 @@ Operator kinds are encoded as 0 = prefix, 1 = postfix, 2 = infix. Associativity 
 **Save and restore.** Saving the state records `pos`, the height of the value stack, the height of the entry stack, the number of repetition states, the length of the capture trail, the environment, the number of recovered errors, and the frame. Restoring returns each of these to the recorded value.
 Unwinding the capture trail writes each recorded previous value back into its slot.
 
+Value-free recognition uses `NEXT` mode 0 even for a source repetition marked
+`#stream`. Mode 2 requires an element value on the stack; it belongs to a
+value-building stream-capable program. Element capture frames remain available
+to predicates in mode 0, but are not attached to an element value.
+
 ## Failure
 
 When an instruction fails, the VM pops entries from the entry stack of the current rule body and handles each according to its kind. If there are no entries left, the rule body fails.

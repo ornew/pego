@@ -24,6 +24,11 @@ type genCase struct {
 // genCorpus returns the grammars and inputs used to compare backends and generated parsers with the engine.
 func genCorpus(t *testing.T) []genCase {
 	cases := []genCase{
+		{"stream capture recognition", `
+type N struct { T []Match }
+def main=items:(x:@"é" [text($x)=="é"]){0,2} #stream $$ -> new N{T: map($items, (i) => $i.x)}`,
+			[]string{"", "é", "éé", "ééé", "a", "éa"}},
+		{"stream empty capture recognition", `def main=(x:_){1} #stream $$`, []string{"", "a", "é"}},
 		{"unicode scalar boundaries", `
 type N struct { T Match }
 def main = t:@("f" (?\u0000-\u{10FFFF}) / "e" (?\uD7FF-\uE000) / "n" (?^\uD7FF-\uE000) / "l" ("\u{10FFFF}" / "\uFFFD" / "\uFFFF")) $$ -> new N{T: $t}`,

@@ -267,6 +267,11 @@ Integer and positional-reference source tokens share ASCII decimal digits and im
 (C17); overflow or unsupported digits produce ranged diagnostics. Editor tokens retain original digits,
 including invalid indices and leading zeros; Unicode identifiers and `$0` semantics remain supported.
 `BenchmarkDecimalSource` compares valid plain, integer-heavy and positional-reference-heavy source intake.
+Recognition of capture-bearing `#stream` repetitions emits value-free VM iteration mode (C29), preserving
+captures read by predicates without attaching them to an absent element value. `#stream` remains inactive
+in recognition; ordinary batch values and streaming callbacks are retained.
+`BenchmarkStreamCaptureRecognition` uses 1,000 Unicode elements; its optional plain-grammar baseline checks
+equivalent successful recognition when a prior `#stream` implementation cannot run the capture-bearing case.
 Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused
