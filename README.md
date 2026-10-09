@@ -171,7 +171,7 @@ left-recursive), an indentation-based outline format and a small programming lan
 | | |
 |:--|:--|
 | [Getting started](docs/tutorial/getting-started.md) | From a first grammar to typed trees and operator precedence, step by step |
-| [Guides](docs/guide/README.md) | Trees and actions, expressions, errors and recovery, context-sensitive parsing, running parsers, compiled grammars, code generation (Go and TypeScript), streaming, incremental parsing, debugging and profiling, linting grammars, sampling inputs and fuzzing, editor support |
+| [Guides](docs/guide/README.md) | Trees and actions, expressions, errors and recovery, context-sensitive parsing, running parsers, compiled grammars, code generation (Go and TypeScript), streaming, incremental parsing, debugging and profiling, linting grammars, testing grammars, sampling inputs and fuzzing, editor support |
 | [Cookbook](docs/cookbook/README.md) | Short, complete recipes for concrete tasks: a configuration file into Go structs, a filter language, errors with a caret, several errors at once, parsing every keystroke, shipping a generated parser, testing against a grammar |
 | [Editor support](docs/guide/editor-support.md) | `pego lsp` and the VS Code extension: errors as you type, formatting, navigation, hover with inferred types, rename, completion |
 | [Web site and playground](docs/guide/playground.md) | Try grammars in the browser at [pego.ornew.net/playground](https://pego.ornew.net/playground/); build and preview the site locally |

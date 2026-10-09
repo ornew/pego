@@ -826,6 +826,7 @@ The [runtime guide](../guide/runtime.md) describes the backends and options in d
 | Error messages, `#error`, `#recover` and the Go error types | [Errors and recovery](../guide/errors-and-recovery.md) |
 | Indentation-based languages, matching tags, predicates and variables | [Context-sensitive parsing](../guide/context-sensitive.md) |
 | Solving a concrete task: reading a configuration file, evaluating formulas, reporting errors, parsing as the user types, shipping a parser | [Cookbook](../cookbook/README.md) |
+| Testing a grammar: examples, golden files, generated inputs, fuzzing | [Testing grammars](../guide/testing-grammars.md) |
 | The precise definition of every construct | [Language specification](../../spec/README.md) |
 | Small grammars with tests that show the features: a calculator, an outline format, a small programming language | [examples/](../../examples/README.md) |
 | Ready-made parsers for common languages (CEL, CSV, CUE, DuckDB SQL, Go, JSON, Python, TypeScript, XML, YAML), as Go modules | [parsers/](../../parsers/README.md) |
