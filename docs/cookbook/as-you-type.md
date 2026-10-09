@@ -159,5 +159,5 @@ The unit of reuse is the rule call, so:
   meanwhile together, with several `Edit` calls before one `Parse`.
 - **Only the errors.** A `Document` cannot be used with `RecognizeOnly`; it always builds the tree.
 
-See the guide on [incremental parsing](../guide/README.md) (in the index, under streaming and incremental parsing) for
+See the guide on [incremental parsing](../guide/incremental.md) for
 the model of reuse, the full API, and more on writing grammars that reuse well.

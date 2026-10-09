@@ -158,7 +158,7 @@ memory figures vary by a few MiB from run to run.)
 ## Variations
 
 - **Cancel on a quiet connection.** `ParseStream` blocks in `Read`. To stop it from outside, make `Read` fail (close the
-  connection or the write end of a pipe); see the streaming section of the [guides](../guide/README.md).
+  connection or the write end of a pipe); see the guide on [streaming](../guide/streaming.md).
 - **Skip bad records.** Add [`#recover`](several-errors.md) inside the record rule. The bad record becomes an `Error`
   node that your function receives, and `ParseStream` returns the recorded errors at the end.
 - **Do not hold on to nodes.** The record is reachable only through your function; if you keep it (in a slice, say),
