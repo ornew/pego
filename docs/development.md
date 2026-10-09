@@ -305,6 +305,9 @@ open contract choice. No configurable limit or default change is implemented yet
 YAML composition preserves the latest preceding anchor occurrence (M02), including nested definitions with the same
 name. Completing an outer collection cannot reclaim that name; aliases keep map/slice sharing, and pending
 self-references remain errors. Composition tests include shared manually constructed anchor objects and event order.
+XML byte decoding checks encoding declarations beyond the former 256-byte prefix (M03), bounded by the declaration
+terminator. Long declarations retain supported transcoding, unsupported-encoding rejection, ASCII validation and
+BOM/UTF-16 agreement checks; generated grammar and parser output are unchanged.
 Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused

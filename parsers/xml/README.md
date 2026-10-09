@@ -81,6 +81,8 @@ match. `Decode` checks every other well-formedness constraint that does not need
   internal parameter entity referenced between declarations matches the declarations of the internal subset (PE
   Between Declarations; it is parsed with the same grammar);
 - the input is valid UTF-8 (`DecodeBytes` and `Transcode` also check the encoding declaration against the encoding).
+  Encoding detection reads through the declaration's end, including long whitespace before `encoding`; it has no
+  fixed byte-prefix cutoff. Unsupported declarations and BOM disagreements remain errors.
 
 It processes the internal subset as XML requires: the first declaration of an entity or an attribute binds; after a
 reference to a parameter entity it does not read (an external one, or an undeclared one), it does not process entity

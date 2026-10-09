@@ -14,7 +14,7 @@ import (
 // and the encoding declaration, and supports UTF-8, UTF-16 (big and little endian, with or without a
 // byte order mark), ISO-8859-1 and US-ASCII. Other encodings are an error, as is a declaration that
 // names another encoding than the one the bytes are in. It does not check that UTF-8 is valid; Decode
-// does.
+// does. Declaration detection has no fixed byte-prefix limit.
 func Transcode(data []byte) (string, error) {
 	var (
 		big, little bool // UTF-16
@@ -120,7 +120,12 @@ func declaredEncoding(s string) string {
 	if !strings.HasPrefix(s, "<?xml") {
 		return ""
 	}
-	m := encodingDecl.FindStringSubmatch(s[:min(len(s), 256)])
+	// A declaration can contain arbitrarily long whitespace before encoding.
+	// Keep the search inside its terminator, rather than a fixed byte prefix.
+	if end := strings.Index(s, "?>"); end >= 0 {
+		s = s[:end]
+	}
+	m := encodingDecl.FindStringSubmatch(s)
 	if m == nil {
 		return ""
 	}
