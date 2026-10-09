@@ -5,6 +5,12 @@ It also records experiments that did **not** pay off, so they are not repeated, 
 Update it in the same commit as any performance-related change, including the table of where each optimization
 applies.
 
+Keep a summary with the baseline commit, candidate change, workload, environment, sample method,
+results, tradeoffs and reproduction command. Focused raw output is local working data and is not
+committed by default; source commits and benchmark code allow reruns. Keep raw output in Git only
+when it has exceptional long-term value that a summary and rerun cannot preserve. The existing
+full-suite `bench/results.txt` remains the input to the generated results document.
+
 The measured results of every benchmark are in [benchmarks.md](benchmarks.md), which is generated from a run; this
 document describes the benchmarks, analyzes the results, and records how they came about.
 
@@ -1076,9 +1082,8 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   batch workload allocates 4–5% fewer bytes for parsing and 19–21% fewer for
   recognition; time is within 4% on every backend/unit. Generated runtimes
   are unchanged. These are focused comparisons against f3a2c96 with an overlay
-  of its memo allocator, rather than a refresh of the full benchmark report.
-  [Raw focused output](../bench/measurements/memo-lifecycle-results.txt) records both versions
-  and the memory regression measurements.
+  of its memo allocator, compared with the retirement change in 9353e09;
+  this was not a refresh of the full benchmark report.
 - Reproduce the focused stream cases with
   `go test ./internal/engine -run '^$' -bench '^BenchmarkMemoLifecycle$' -benchmem`.
   Memory regressions are `TestMemoizedStreamMemoryIsBounded` and
@@ -1109,9 +1114,9 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   the cleanup for bounded retention; these figures do not claim every action
   path is faster. TS retained-state/semantic tests pass, but TS timing is not
   measured here. The full benchmark refresh follows the stream-memory work.
-- [Raw focused output](../bench/measurements/action-lifecycle-results.txt) records the
-  baseline at daa364d (code unchanged from 9353e09), overlays, six run pairs and
-  retained-state regressions. Reproduce the focused workload with
+- The baseline is daa364d (code unchanged from 9353e09), compared with the
+  action-reference cleanup in f259b37. Restore `eval.go`/`vm.go` and the
+  generated benchmark parsers for the baseline overlay. Reproduce with
   `go test ./internal/engine -run '^$' -bench '^BenchmarkNilActionStream$' -benchmem`.
   Tests cover backing-array references and prefix ownership, stream heap on
   both units/all engines, generated Go/typed direct rules and TS nil/error paths.
@@ -1157,8 +1162,12 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   0.03% in this sample.
   TS live-state and parity tests cover semantics; no TS speedup is measured.
   The full benchmark report is refreshed at the stream-memory checkpoint.
-- [Raw focused output](../bench/measurements/env-binding-results.txt) records the overlays,
-  six pairs per case, rollback workloads and heap regressions. Reproduce with
+- Six pairs compare f259b37 (runtime and generated benchmark fixtures restored
+  with a Go overlay) with the unique-binding change in ec2f903. Restore
+  `runtime.go`, `eval.go`, `vm.go` and `bench/gen/*/parser.go`; an unused
+  prepend-only `bind` helper lets new snapshot tests compile on the baseline,
+  whose assignment paths and parser layout remain unchanged. The rollback
+  workloads and heap regressions are in the benchmark/test code. Reproduce with
   `go test ./internal/engine -run '^$' -bench 'Benchmark(EnvironmentBindings|DistinctBindings)$' -benchmem`.
   Tests check saved snapshots against independent value maps, choice/rule scope,
   positive/negative lookahead, streams and actual generated Go/TS rule state.
@@ -1182,9 +1191,11 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   Bytes range from −1.1% to +0.8%, with at most two allocations of difference per parse.
   Changing grammar expression IDs can affect memo layout even without directives in input.
   The full checkpoint report measures the main runtime suite separately; it has no YAML workload.
-- [Raw paired measurements](../bench/measurements/yaml-directive-results.txt) include
-  commands, overlay provenance and all samples. Regression tests cover every engine/unit,
-  generated API entry point, directive AST methods and replayable malformed fuzz seeds.
+- The baseline is ec2f903 (`yaml.go` and generated `parser.go` restored with a Go
+  overlay), compared with the directive fix in f8d6c2a. Run from `parsers/yaml`:
+  `go test -run '^$' -bench '^(BenchmarkDirectives|BenchmarkParseAST|BenchmarkRecognize|BenchmarkLoadAll|BenchmarkEvents)$' -benchtime=200ms -benchmem`.
+  Regression tests cover every engine/unit, generated API entry point, directive AST
+  methods and replayable malformed fuzz seeds.
 
 ## Grammar authoring guidelines for performance
 
