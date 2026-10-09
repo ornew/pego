@@ -85,7 +85,9 @@ of an arbitrary AST graph.
   `!!seq` a mapping and a sequence; other tags do not change the value (there are no YAML 1.1 types such as
   `!!binary` or `!!timestamp`, nor merge keys `<<`);
 - an alias is the value of its anchor, the same map or slice for a collection; an alias inside the node it refers
-  to is an error.
+  to is an error. Duplicate anchor names resolve to the latest preceding occurrence, including nested definitions
+  ([YAML 1.2.2 section 7.1](https://yaml.org/spec/1.2.2/#71-alias-nodes)). Completing an outer collection does not
+  restore its older binding: `- &a [&a x]` followed by `- *a` loads as `[["x"], "x"]`.
 
 ## Conformance
 

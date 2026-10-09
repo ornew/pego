@@ -771,7 +771,8 @@ func Load(input string) (any, error) {
 //     for !!float), whatever its style, and !!map and !!seq a mapping and a sequence; other tags do not
 //     change the value;
 //   - an alias is the value of the node with the anchor, the same map or slice for a collection; an
-//     alias of an undefined anchor, or of a node that contains the alias, is an error.
+//     alias selects the latest preceding occurrence of that name, including nested redefinitions;
+//     an alias of an undefined anchor, or of a node that contains the alias, is an error.
 func LoadAll(input string) ([]any, error) {
 	s, err := parseChecked(input)
 	if err != nil {
@@ -800,11 +801,13 @@ func (d *Document) Load() (any, error) {
 type anchored struct {
 	v    any
 	done bool
+	id   uint64
 }
 
 type composer struct {
-	handles map[string]string
-	anchors map[string]anchored
+	handles    map[string]string
+	anchors    map[string]anchored
+	nextAnchor uint64
 }
 
 func (c *composer) value(v Value) (any, error) {
@@ -834,15 +837,20 @@ func (c *composer) value(v Value) (any, error) {
 		}
 	}
 	anchor := p.anchor()
+	var id uint64
 	if anchor != nil {
-		c.anchors[anchor.Name()] = anchored{}
+		c.nextAnchor++
+		id = c.nextAnchor
+		c.anchors[anchor.Name()] = anchored{id: id}
 	}
 	x, err := c.content(v, tag)
 	if err != nil {
 		return nil, err
 	}
-	if anchor != nil {
-		c.anchors[anchor.Name()] = anchored{x, true}
+	if anchor != nil && c.anchors[anchor.Name()].id == id {
+		// Completing an enclosing collection must not replace a newer binding
+		// encountered in its children. Identity belongs to this composition visit.
+		c.anchors[anchor.Name()] = anchored{v: x, done: true, id: id}
 	}
 	return x, nil
 }

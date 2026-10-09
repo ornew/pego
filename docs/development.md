@@ -302,6 +302,9 @@ Baseline Go grammar probes accept 16,000 nested parentheses but return the 100,0
 a temporary 600,000-call overlay accepts all three in Recognize and ParseAST. The proposal preserves defaults and
 adds generation-time configuration; matching the distributed Go parser's reference nesting ceiling is a separate
 open contract choice. No configurable limit or default change is implemented yet.
+YAML composition preserves the latest preceding anchor occurrence (M02), including nested definitions with the same
+name. Completing an outer collection cannot reclaim that name; aliases keep map/slice sharing, and pending
+self-references remain errors. Composition tests include shared manually constructed anchor objects and event order.
 Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused
