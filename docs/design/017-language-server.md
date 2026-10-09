@@ -158,6 +158,15 @@ The client is plain JavaScript, so the extension has no compile step; its settin
 `pego.server.path` names a program to run, so the extension declares it a restricted configuration for untrusted
 workspaces: in Restricted Mode, VS Code ignores a value that a workspace sets.
 A client whose server fails to start is disposed of, and **PEGO: Restart Language Server** tries again.
+Lifecycle transitions are serialized: startup, explicit restarts, server-setting changes and deactivation own at
+most one client. Cleanup must succeed before its owner is cleared and a replacement starts; failed cleanup retains
+the client for retry. Failed-start disposal is awaited. Deactivation immediately disables future starts and then
+waits for queued cleanup. Setting-change errors are reported because the host does not await event callbacks;
+explicit restart errors remain observable to its caller. Current settings are read when a queued start executes.
+The extension owns the client's log output channel and releases it after successful cleanup. A small subclass
+handles `vscode-languageclient` 10.1.2's `StartFailed` shutdown rejection through its protected shutdown and
+connection-close hooks, without private fields. It waits for an initializing client to settle and joins concurrent
+failure cleanup, preserving the default error handler for ordinary running-server crashes.
 
 Highlighting comes from the TextMate grammar, so it works before the server starts, without it, and in tools that read
 TextMate grammars.

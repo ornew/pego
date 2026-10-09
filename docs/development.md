@@ -131,6 +131,12 @@ Definition and constructor name mapping skips intervening comment tokens while p
 and documentation comments. Framed-protocol tests cover symbols, hover, definitions, references and complete
 rename edits across repeated comments and LF/CRLF/CR line endings, including incomplete input (E01).
 Comment-separated attribute and Pratt associativity semantic highlighting remains tracked separately (E07).
+The VS Code extension serializes startup/restart/configuration/shutdown transitions, retains failed cleanup
+ownership for retry, and prevents startup after deactivation (E02). Deferred stand-in checks exercise the actual
+extension module. Installed-client checks cover actual ENOENT, rejected JSON-RPC initialization and connection-close
+cleanup before disposal, including single feature/diagnostic/output cleanup and fresh attempts. A narrow subclass
+adapts the dependency's failed-start shutdown through protected hooks; the extension owns its output channel.
+These checks do not establish live VS Code UI behavior. A sequential dispatch benchmark excludes host/IPC.
 
 ### Input generation
 

@@ -83,7 +83,7 @@
     ]
   },
   "scripts": {
-    "check": "node scripts/check-grammar.js && node scripts/check-extension.js",
+    "check": "node scripts/check-grammar.js && node scripts/check-extension.js && node --unhandled-rejections=strict scripts/check-client.js",
     "check-server": "node scripts/check-server.js",
     "package": "vsce package --skip-license"
   },
