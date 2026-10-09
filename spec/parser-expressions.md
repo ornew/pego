@@ -4,6 +4,28 @@ A parsing expression is the right-hand side of a rule definition (`def`). It
 matches a prefix of the input at the current position and either succeeds,
 possibly consuming input and producing a value, or fails.
 
+## Evaluation
+
+A parsing expression is evaluated at a position of the input. If it succeeds,
+the evaluation produces an end position, which is the position where the
+next expression of a sequence continues, and a value (or no value). If it
+fails, it has no effect: the position, the captures and the
+[variables](predicates.md#variables) are as they were before it. The following
+holds for every expression:
+
+- **Determinism.** The result depends only on the grammar, the start rule, the
+  input and the position unit; there is no ambiguity.
+- **Order.** The elements of a sequence are evaluated from left to right, and
+  the alternatives of a choice from left to right.
+- **No backtracking into a success.** Once an expression has succeeded, it is
+  not evaluated again with a different result to make a later expression
+  succeed: a choice commits to the first alternative that succeeds, and a
+  repetition takes as many iterations as it can. This is the behavior of PEG,
+  as opposed to context-free grammars.
+- **Recorded failures.** A failure records what was expected at its position.
+  The farthest failure of a parse is reported as a
+  [syntax error](parsing.md#syntax-errors).
+
 ## Values and the concrete syntax tree
 
 PEGO produces a predictable and consistent concrete syntax tree (CST). When a
@@ -57,6 +79,7 @@ The reasons for making choices transparent are recorded in
 | `"..."` | literal | yes |
 | `(?...)`, `(?^...)` | character class | yes |
 | `.` | any character | yes |
+| `name`, `name(level)` | [rule call](#rule-calls) | depends on the rule |
 | `_` | top | no |
 | `_\|_` | bottom | no |
 | `^^` / `$$` | beginning / end of input | no |
@@ -343,17 +366,69 @@ The following restrictions apply:
 - The captured expression MUST have a value: `x:&a`, `x:-a` and `x:--` are
   errors.
 
+## Rule calls
+
+A rule name in a parsing expression calls the rule at the current position:
+the body of the rule is evaluated there. If the body succeeds, so does the
+call, with the end position of the body and the value of the rule (the value of
+its action, if it has one). The rule MUST be defined; see
+[Names](grammar-files.md#names).
+
+A call is evaluated in a scope of its own. The captures made in the body of the
+rule are visible only in that body and in the rule's action, and the variables
+that the rule defines end with the call; the variables of the calling rules are
+visible to the called rule (see [Variables](predicates.md#variables)). Rules
+MAY call themselves recursively.
+
+A rule defined with a [Pratt expression](pratt.md) can be called with the name
+of a binding level, `name(level)`; see
+[Level-restricted calls](pratt.md#level-restricted-calls).
+
 ## Left recursion
 
-A rule MAY be directly or indirectly left-recursive.
+A rule MAY be directly or indirectly left-recursive: it may call itself at the
+position where it started, before consuming any input.
 
 ```pego
 def expr = expr "+" term / term
 ```
 
-The algorithm is described in
-[docs/design/003](../docs/design/003-packrat-parsing.md).
+A call of a left-recursive rule `R` at a position `p` is evaluated by growing a
+seed:
 
-For expressions with operator precedence and associativity, a
-[Pratt expression](pratt.md) declares the operators directly instead of
-requiring one left-recursive rule per precedence level.
+1. While `R` is being evaluated at `p`, a call of `R` at `p` fails. The body
+   of `R` is evaluated under this condition. If it fails, the call fails.
+2. If the body succeeded, its value is the current result (the seed). The body
+   is evaluated again, with calls of `R` at `p` now succeeding with the current
+   result. If the body succeeds and ends farther than the current result,
+   the new value becomes the current result and step 2 is repeated. Otherwise
+   the current result is the value of the call.
+
+In an indirect left recursion, one rule of the cycle (the one where the
+recursion is entered, decided by static analysis) is grown in this way, and the
+others are evaluated again in each iteration. A rule that is not left-recursive
+is evaluated once.
+
+Because growing tries the alternatives in order, **the recursive alternative
+MUST come before the base case**: if the base case comes first, it matches again
+with the same length, nothing grows, and the input after it is left over.
+
+```pego
+def main = a $$
+def a = a "x" / "y"
+```
+
+For the input `yxx`, `pego parse -f sexpr` prints the left-associative tree
+
+```
+(Seq (Seq (Seq "y"@a "x")@a "x")@a)@main
+```
+
+With `def a = "y" / a "x"`, the same input fails with
+`1:2: syntax error: expected end of input`.
+
+The memoization that the algorithm needs is described in
+[docs/design/003](../docs/design/003-packrat-parsing.md). For expressions with
+operator precedence and associativity, a [Pratt expression](pratt.md) declares
+the operators directly instead of requiring one left-recursive rule per
+precedence level.

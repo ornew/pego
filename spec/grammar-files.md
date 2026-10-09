@@ -58,7 +58,7 @@ the rule matches, it produces a single value.
   rule-level action: its operands and operators have their own.
 
 A rule is used by writing its name in a parsing expression, which calls it at
-the current position (see [Parsing Expressions](parser-expressions.md)).
+the current position (see [Rule calls](parser-expressions.md#rule-calls)).
 
 ## Names
 
