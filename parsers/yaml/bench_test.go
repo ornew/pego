@@ -132,6 +132,49 @@ func BenchmarkRecognize(b *testing.B) {
 	}
 }
 
+// BenchmarkDirectives isolates known-name parsing, reserved-name fallback and semantic checks.
+func BenchmarkDirectives(b *testing.B) {
+	for _, tc := range []struct{ name, directive string }{
+		{"YAML", "%YAML 1.2"},
+		{"TAG", "%TAG !e! tag:example:"},
+		{"Reserved", "%YAMLfoo ignored"},
+	} {
+		input := strings.Repeat(tc.directive+"\n--- x\n...\n", 128)
+		b.Run(tc.name, func(b *testing.B) {
+			b.Run("ParseAST", func(b *testing.B) {
+				b.SetBytes(int64(len(input)))
+				b.ReportAllocs()
+				for b.Loop() {
+					if _, err := yaml.ParseAST(input); err != nil {
+						b.Fatal(err)
+					}
+				}
+			})
+			b.Run("Recognize", func(b *testing.B) {
+				b.SetBytes(int64(len(input)))
+				b.ReportAllocs()
+				for b.Loop() {
+					if err := yaml.Recognize(input); err != nil {
+						b.Fatal(err)
+					}
+				}
+			})
+			b.Run("Check", func(b *testing.B) {
+				s, err := yaml.ParseAST(input)
+				if err != nil {
+					b.Fatal(err)
+				}
+				b.ReportAllocs()
+				for b.Loop() {
+					if err := s.Check(); err != nil {
+						b.Fatal(err)
+					}
+				}
+			})
+		})
+	}
+}
+
 func BenchmarkParse(b *testing.B) {
 	b.SetBytes(int64(len(benchInput)))
 	b.ReportAllocs()

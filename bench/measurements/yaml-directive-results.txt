@@ -1,0 +1,247 @@
+# Focused YAML directive correctness measurements
+# date: 2026-10-09
+# baseline: ec2f903 (yaml.go and generated parser.go restored with a Go overlay)
+# candidate: M01 exact known-name guard and directive AST validation
+# go: go1.27.1 darwin/arm64
+# cpu: Apple M3 Max, 16 logical cores
+# method: six interleaved pairs, alternating which variant runs first; no concurrent tests or benchmarks
+# workload: existing 256 KiB Kubernetes-like stream; 128-document YAML/TAG/reserved directive streams
+# Check measures an already parsed AST; ParseAST and Recognize include parsing
+# same new benchmark functions compiled into both binaries; baseline tests were not executed
+# build: from parsers/yaml, go test -c -o /tmp/pego-m01-after.test .
+# baseline build: same command with -overlay /tmp/pego-m01-before-overlay.json
+# overlay restores parsers/yaml/yaml.go and parser.go from git show ec2f903:<path>
+# run: from parsers/yaml, <binary> -test.run=^$ -test.bench='^(BenchmarkDirectives|BenchmarkParseAST|BenchmarkRecognize|BenchmarkLoadAll|BenchmarkEvents)$' -test.benchtime=200ms -test.benchmem
+# Units are ns/op, B/op, allocs/op; reported comparisons use the median of six samples
+
+# Baseline samples
+# pair 1 before 2026-10-09T12:44:59.568250+00:00
+goos: darwin
+goarch: arm64
+pkg: github.com/ornew/pego/parsers/yaml
+cpu: Apple M3 Max
+BenchmarkParseAST-16      	      19	  10787739 ns/op	  24.32 MB/s	 8651713 B/op	   51819 allocs/op
+BenchmarkLoadAll-16       	      20	  11464238 ns/op	  22.88 MB/s	13752550 B/op	   88969 allocs/op
+BenchmarkEvents-16        	      18	  12452866 ns/op	  21.06 MB/s	14115776 B/op	   57515 allocs/op
+BenchmarkRecognize-16     	      18	  12815931 ns/op	  20.47 MB/s	 7047040 B/op	   32567 allocs/op
+BenchmarkDirectives/YAML/ParseAST-16         	    2144	    107584 ns/op	  23.80 MB/s	  168779 B/op	     826 allocs/op
+BenchmarkDirectives/YAML/Recognize-16        	    1756	    140146 ns/op	  18.27 MB/s	   99354 B/op	     690 allocs/op
+BenchmarkDirectives/YAML/Check-16            	   21049	     11286 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/TAG/ParseAST-16          	    1875	    129644 ns/op	  31.59 MB/s	  178369 B/op	     827 allocs/op
+BenchmarkDirectives/TAG/Recognize-16         	    1334	    174776 ns/op	  23.44 MB/s	   99485 B/op	     690 allocs/op
+BenchmarkDirectives/TAG/Check-16             	   18460	     13230 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/Reserved/ParseAST-16     	    1993	    121293 ns/op	  28.49 MB/s	  178303 B/op	     827 allocs/op
+BenchmarkDirectives/Reserved/Recognize-16    	    1470	    164782 ns/op	  20.97 MB/s	   99412 B/op	     690 allocs/op
+BenchmarkDirectives/Reserved/Check-16        	   20722	     11362 ns/op	   43008 B/op	     256 allocs/op
+PASS
+# pair 2 before 2026-10-09T12:45:09.733780+00:00
+goos: darwin
+goarch: arm64
+pkg: github.com/ornew/pego/parsers/yaml
+cpu: Apple M3 Max
+BenchmarkParseAST-16      	      22	  10078170 ns/op	  26.03 MB/s	 8471608 B/op	   51817 allocs/op
+BenchmarkLoadAll-16       	      20	  11544415 ns/op	  22.72 MB/s	13752435 B/op	   88969 allocs/op
+BenchmarkEvents-16        	      19	  12083083 ns/op	  21.71 MB/s	13895344 B/op	   57513 allocs/op
+BenchmarkRecognize-16     	      18	  12429162 ns/op	  21.10 MB/s	 7047044 B/op	   32567 allocs/op
+BenchmarkDirectives/YAML/ParseAST-16         	    2215	    106153 ns/op	  24.12 MB/s	  168772 B/op	     826 allocs/op
+BenchmarkDirectives/YAML/Recognize-16        	    1644	    142007 ns/op	  18.03 MB/s	   99362 B/op	     690 allocs/op
+BenchmarkDirectives/YAML/Check-16            	   20982	     11542 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/TAG/ParseAST-16          	    1815	    130194 ns/op	  31.46 MB/s	  178375 B/op	     827 allocs/op
+BenchmarkDirectives/TAG/Recognize-16         	    1422	    173662 ns/op	  23.59 MB/s	   99468 B/op	     690 allocs/op
+BenchmarkDirectives/TAG/Check-16             	   18207	     13085 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/Reserved/ParseAST-16     	    2026	    120598 ns/op	  28.66 MB/s	  178299 B/op	     827 allocs/op
+BenchmarkDirectives/Reserved/Recognize-16    	    1435	    166696 ns/op	  20.73 MB/s	   99415 B/op	     690 allocs/op
+BenchmarkDirectives/Reserved/Check-16        	   21037	     11465 ns/op	   43008 B/op	     256 allocs/op
+PASS
+# pair 3 before 2026-10-09T12:45:12.815471+00:00
+goos: darwin
+goarch: arm64
+pkg: github.com/ornew/pego/parsers/yaml
+cpu: Apple M3 Max
+BenchmarkParseAST-16      	      22	  10378913 ns/op	  25.27 MB/s	 8471718 B/op	   51817 allocs/op
+BenchmarkLoadAll-16       	      18	  12515201 ns/op	  20.96 MB/s	14170839 B/op	   88974 allocs/op
+BenchmarkEvents-16        	      19	  12065154 ns/op	  21.74 MB/s	13895227 B/op	   57513 allocs/op
+BenchmarkRecognize-16     	      18	  12580984 ns/op	  20.85 MB/s	 7046922 B/op	   32567 allocs/op
+BenchmarkDirectives/YAML/ParseAST-16         	    2155	    108097 ns/op	  23.68 MB/s	  168779 B/op	     826 allocs/op
+BenchmarkDirectives/YAML/Recognize-16        	    1713	    138997 ns/op	  18.42 MB/s	   99358 B/op	     690 allocs/op
+BenchmarkDirectives/YAML/Check-16            	   20775	     11630 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/TAG/ParseAST-16          	    1822	    127833 ns/op	  32.04 MB/s	  178645 B/op	     827 allocs/op
+BenchmarkDirectives/TAG/Recognize-16         	    1377	    176438 ns/op	  23.22 MB/s	   99477 B/op	     690 allocs/op
+BenchmarkDirectives/TAG/Check-16             	   18241	     13228 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/Reserved/ParseAST-16     	    1962	    121313 ns/op	  28.49 MB/s	  178506 B/op	     827 allocs/op
+BenchmarkDirectives/Reserved/Recognize-16    	    1474	    168979 ns/op	  20.45 MB/s	   99411 B/op	     690 allocs/op
+BenchmarkDirectives/Reserved/Check-16        	   19266	     12148 ns/op	   43008 B/op	     256 allocs/op
+PASS
+# pair 4 before 2026-10-09T12:45:22.079247+00:00
+goos: darwin
+goarch: arm64
+pkg: github.com/ornew/pego/parsers/yaml
+cpu: Apple M3 Max
+BenchmarkParseAST-16      	      24	   9490819 ns/op	  27.64 MB/s	 8375952 B/op	   51815 allocs/op
+BenchmarkLoadAll-16       	      19	  11972827 ns/op	  21.91 MB/s	17908681 B/op	   89011 allocs/op
+BenchmarkEvents-16        	      20	  11849900 ns/op	  22.14 MB/s	14950830 B/op	   57523 allocs/op
+BenchmarkRecognize-16     	      18	  12706021 ns/op	  20.64 MB/s	 7047044 B/op	   32567 allocs/op
+BenchmarkDirectives/YAML/ParseAST-16         	    2252	    106199 ns/op	  24.11 MB/s	  168770 B/op	     826 allocs/op
+BenchmarkDirectives/YAML/Recognize-16        	    1688	    145259 ns/op	  17.62 MB/s	   99359 B/op	     690 allocs/op
+BenchmarkDirectives/YAML/Check-16            	   21076	     11360 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/TAG/ParseAST-16          	    1818	    129945 ns/op	  31.52 MB/s	  178376 B/op	     827 allocs/op
+BenchmarkDirectives/TAG/Recognize-16         	    1366	    173816 ns/op	  23.57 MB/s	   99477 B/op	     690 allocs/op
+BenchmarkDirectives/TAG/Check-16             	   18138	     13253 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/Reserved/ParseAST-16     	    1995	    120536 ns/op	  28.67 MB/s	  178301 B/op	     827 allocs/op
+BenchmarkDirectives/Reserved/Recognize-16    	    1406	    167944 ns/op	  20.58 MB/s	   99418 B/op	     690 allocs/op
+BenchmarkDirectives/Reserved/Check-16        	   20871	     11431 ns/op	   43008 B/op	     256 allocs/op
+PASS
+# pair 5 before 2026-10-09T12:45:25.174592+00:00
+goos: darwin
+goarch: arm64
+pkg: github.com/ornew/pego/parsers/yaml
+cpu: Apple M3 Max
+BenchmarkParseAST-16      	      24	   9647783 ns/op	  27.19 MB/s	 8376167 B/op	   51815 allocs/op
+BenchmarkLoadAll-16       	      20	  11414454 ns/op	  22.98 MB/s	13752428 B/op	   88969 allocs/op
+BenchmarkEvents-16        	      16	  12558432 ns/op	  20.89 MB/s	14637434 B/op	   57520 allocs/op
+BenchmarkRecognize-16     	      15	  13605417 ns/op	  19.28 MB/s	 7239445 B/op	   32568 allocs/op
+BenchmarkDirectives/YAML/ParseAST-16         	    1947	    116292 ns/op	  22.01 MB/s	  168795 B/op	     826 allocs/op
+BenchmarkDirectives/YAML/Recognize-16        	    1611	    146417 ns/op	  17.48 MB/s	   99365 B/op	     690 allocs/op
+BenchmarkDirectives/YAML/Check-16            	   21300	     11310 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/TAG/ParseAST-16          	    1831	    130870 ns/op	  31.30 MB/s	  178373 B/op	     827 allocs/op
+BenchmarkDirectives/TAG/Recognize-16         	    1357	    177623 ns/op	  23.06 MB/s	   99480 B/op	     690 allocs/op
+BenchmarkDirectives/TAG/Check-16             	   18280	     13100 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/Reserved/ParseAST-16     	    1911	    122512 ns/op	  28.21 MB/s	  178310 B/op	     827 allocs/op
+BenchmarkDirectives/Reserved/Recognize-16    	    1464	    168114 ns/op	  20.56 MB/s	   99411 B/op	     690 allocs/op
+BenchmarkDirectives/Reserved/Check-16        	   21339	     11296 ns/op	   43008 B/op	     256 allocs/op
+PASS
+# pair 6 before 2026-10-09T12:45:34.391665+00:00
+goos: darwin
+goarch: arm64
+pkg: github.com/ornew/pego/parsers/yaml
+cpu: Apple M3 Max
+BenchmarkParseAST-16      	      21	  10671317 ns/op	  24.58 MB/s	 8526379 B/op	   51818 allocs/op
+BenchmarkLoadAll-16       	      16	  13402911 ns/op	  19.57 MB/s	14692646 B/op	   88979 allocs/op
+BenchmarkEvents-16        	      20	  12477856 ns/op	  21.02 MB/s	11190582 B/op	   57485 allocs/op
+BenchmarkRecognize-16     	      16	  14176083 ns/op	  18.50 MB/s	 7167102 B/op	   32567 allocs/op
+BenchmarkDirectives/YAML/ParseAST-16         	    1848	    127728 ns/op	  20.04 MB/s	  168803 B/op	     826 allocs/op
+BenchmarkDirectives/YAML/Recognize-16        	    1501	    162977 ns/op	  15.71 MB/s	   99374 B/op	     690 allocs/op
+BenchmarkDirectives/YAML/Check-16            	   16488	     14562 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/TAG/ParseAST-16          	    1503	    148366 ns/op	  27.61 MB/s	  178759 B/op	     827 allocs/op
+BenchmarkDirectives/TAG/Recognize-16         	    1350	    180047 ns/op	  22.75 MB/s	   99483 B/op	     690 allocs/op
+BenchmarkDirectives/TAG/Check-16             	   18175	     13242 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/Reserved/ParseAST-16     	    1897	    123790 ns/op	  27.92 MB/s	  178725 B/op	     827 allocs/op
+BenchmarkDirectives/Reserved/Recognize-16    	    1434	    167777 ns/op	  20.60 MB/s	   99417 B/op	     690 allocs/op
+BenchmarkDirectives/Reserved/Check-16        	   20890	     11604 ns/op	   43008 B/op	     256 allocs/op
+PASS
+
+# Candidate samples
+# pair 1 after 2026-10-09T12:45:03.164464+00:00
+goos: darwin
+goarch: arm64
+pkg: github.com/ornew/pego/parsers/yaml
+cpu: Apple M3 Max
+BenchmarkParseAST-16      	      19	  10596178 ns/op	  24.76 MB/s	 8651162 B/op	   51818 allocs/op
+BenchmarkLoadAll-16       	      20	  11585535 ns/op	  22.64 MB/s	15006003 B/op	   88981 allocs/op
+BenchmarkEvents-16        	      21	  11183268 ns/op	  23.46 MB/s	11130953 B/op	   57485 allocs/op
+BenchmarkRecognize-16     	      19	  12495520 ns/op	  20.99 MB/s	 6996497 B/op	   32567 allocs/op
+BenchmarkDirectives/YAML/ParseAST-16         	    2149	    107410 ns/op	  23.83 MB/s	  168775 B/op	     826 allocs/op
+BenchmarkDirectives/YAML/Recognize-16        	    1657	    141853 ns/op	  18.05 MB/s	   99362 B/op	     690 allocs/op
+BenchmarkDirectives/YAML/Check-16            	   19171	     12490 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/TAG/ParseAST-16          	    1861	    128061 ns/op	  31.98 MB/s	  178369 B/op	     827 allocs/op
+BenchmarkDirectives/TAG/Recognize-16         	    1376	    173133 ns/op	  23.66 MB/s	   99478 B/op	     690 allocs/op
+BenchmarkDirectives/TAG/Check-16             	   17790	     13642 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/Reserved/ParseAST-16     	    1872	    121805 ns/op	  28.37 MB/s	  178523 B/op	     827 allocs/op
+BenchmarkDirectives/Reserved/Recognize-16    	    1426	    167159 ns/op	  20.67 MB/s	   99416 B/op	     690 allocs/op
+BenchmarkDirectives/Reserved/Check-16        	   20588	     11549 ns/op	   43008 B/op	     256 allocs/op
+PASS
+# pair 2 after 2026-10-09T12:45:06.619636+00:00
+goos: darwin
+goarch: arm64
+pkg: github.com/ornew/pego/parsers/yaml
+cpu: Apple M3 Max
+BenchmarkParseAST-16      	      24	   9597075 ns/op	  27.33 MB/s	 8375939 B/op	   51815 allocs/op
+BenchmarkLoadAll-16       	      19	  11553761 ns/op	  22.70 MB/s	13950409 B/op	   88971 allocs/op
+BenchmarkEvents-16        	      20	  11739954 ns/op	  22.34 MB/s	14950830 B/op	   57523 allocs/op
+BenchmarkRecognize-16     	      18	  12527132 ns/op	  20.94 MB/s	 7047041 B/op	   32567 allocs/op
+BenchmarkDirectives/YAML/ParseAST-16         	    2240	    107661 ns/op	  23.78 MB/s	  168770 B/op	     826 allocs/op
+BenchmarkDirectives/YAML/Recognize-16        	    1723	    153229 ns/op	  16.71 MB/s	   99357 B/op	     690 allocs/op
+BenchmarkDirectives/YAML/Check-16            	   19165	     12434 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/TAG/ParseAST-16          	    1807	    131096 ns/op	  31.24 MB/s	  178377 B/op	     827 allocs/op
+BenchmarkDirectives/TAG/Recognize-16         	    1392	    175019 ns/op	  23.40 MB/s	   99475 B/op	     690 allocs/op
+BenchmarkDirectives/TAG/Check-16             	   17737	     13484 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/Reserved/ParseAST-16     	    1921	    120391 ns/op	  28.71 MB/s	  178310 B/op	     827 allocs/op
+BenchmarkDirectives/Reserved/Recognize-16    	    1459	    166330 ns/op	  20.78 MB/s	   99412 B/op	     690 allocs/op
+BenchmarkDirectives/Reserved/Check-16        	   21090	     11642 ns/op	   43008 B/op	     256 allocs/op
+PASS
+# pair 3 after 2026-10-09T12:45:15.896313+00:00
+goos: darwin
+goarch: arm64
+pkg: github.com/ornew/pego/parsers/yaml
+cpu: Apple M3 Max
+BenchmarkParseAST-16      	      24	   9615495 ns/op	  27.28 MB/s	 8376280 B/op	   51815 allocs/op
+BenchmarkLoadAll-16       	      22	  11298311 ns/op	  23.22 MB/s	12271536 B/op	   88954 allocs/op
+BenchmarkEvents-16        	      19	  12001724 ns/op	  21.86 MB/s	13895218 B/op	   57512 allocs/op
+BenchmarkRecognize-16     	      18	  12621773 ns/op	  20.78 MB/s	 7046915 B/op	   32567 allocs/op
+BenchmarkDirectives/YAML/ParseAST-16         	    2144	    108811 ns/op	  23.53 MB/s	  168935 B/op	     826 allocs/op
+BenchmarkDirectives/YAML/Recognize-16        	    1712	    140797 ns/op	  18.18 MB/s	   99358 B/op	     690 allocs/op
+BenchmarkDirectives/YAML/Check-16            	   19134	     12628 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/TAG/ParseAST-16          	    1776	    128421 ns/op	  31.90 MB/s	  178381 B/op	     827 allocs/op
+BenchmarkDirectives/TAG/Recognize-16         	    1364	    175336 ns/op	  23.36 MB/s	   99480 B/op	     690 allocs/op
+BenchmarkDirectives/TAG/Check-16             	   17521	     13463 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/Reserved/ParseAST-16     	    1981	    121244 ns/op	  28.50 MB/s	  178302 B/op	     827 allocs/op
+BenchmarkDirectives/Reserved/Recognize-16    	    1458	    164934 ns/op	  20.95 MB/s	   99412 B/op	     690 allocs/op
+BenchmarkDirectives/Reserved/Check-16        	   20984	     11434 ns/op	   43008 B/op	     256 allocs/op
+PASS
+# pair 4 after 2026-10-09T12:45:18.991307+00:00
+goos: darwin
+goarch: arm64
+pkg: github.com/ornew/pego/parsers/yaml
+cpu: Apple M3 Max
+BenchmarkParseAST-16      	      24	   9475007 ns/op	  27.68 MB/s	 8376047 B/op	   51815 allocs/op
+BenchmarkLoadAll-16       	      20	  11667279 ns/op	  22.48 MB/s	13752706 B/op	   88969 allocs/op
+BenchmarkEvents-16        	      19	  11798309 ns/op	  22.23 MB/s	15214655 B/op	   57526 allocs/op
+BenchmarkRecognize-16     	      18	  12526000 ns/op	  20.94 MB/s	 7047042 B/op	   32567 allocs/op
+BenchmarkDirectives/YAML/ParseAST-16         	    2186	    108521 ns/op	  23.59 MB/s	  168927 B/op	     826 allocs/op
+BenchmarkDirectives/YAML/Recognize-16        	    1728	    140979 ns/op	  18.16 MB/s	   99356 B/op	     690 allocs/op
+BenchmarkDirectives/YAML/Check-16            	   19131	     12573 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/TAG/ParseAST-16          	    1806	    131576 ns/op	  31.13 MB/s	  178378 B/op	     827 allocs/op
+BenchmarkDirectives/TAG/Recognize-16         	    1365	    175586 ns/op	  23.33 MB/s	   99480 B/op	     690 allocs/op
+BenchmarkDirectives/TAG/Check-16             	   17540	     13673 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/Reserved/ParseAST-16     	    1923	    122928 ns/op	  28.11 MB/s	  178309 B/op	     827 allocs/op
+BenchmarkDirectives/Reserved/Recognize-16    	    1448	    167712 ns/op	  20.61 MB/s	   99414 B/op	     690 allocs/op
+BenchmarkDirectives/Reserved/Check-16        	   20626	     11586 ns/op	   43008 B/op	     256 allocs/op
+PASS
+# pair 5 after 2026-10-09T12:45:28.204748+00:00
+goos: darwin
+goarch: arm64
+pkg: github.com/ornew/pego/parsers/yaml
+cpu: Apple M3 Max
+BenchmarkParseAST-16      	      24	   9752219 ns/op	  26.90 MB/s	 8375950 B/op	   51815 allocs/op
+BenchmarkLoadAll-16       	      19	  11751667 ns/op	  22.32 MB/s	13950803 B/op	   88971 allocs/op
+BenchmarkEvents-16        	      18	  11872873 ns/op	  22.09 MB/s	14115186 B/op	   57515 allocs/op
+BenchmarkRecognize-16     	      18	  12548745 ns/op	  20.90 MB/s	 7047042 B/op	   32567 allocs/op
+BenchmarkDirectives/YAML/ParseAST-16         	    2217	    106725 ns/op	  23.99 MB/s	  168771 B/op	     826 allocs/op
+BenchmarkDirectives/YAML/Recognize-16        	    1652	    143322 ns/op	  17.86 MB/s	   99363 B/op	     690 allocs/op
+BenchmarkDirectives/YAML/Check-16            	   19359	     12488 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/TAG/ParseAST-16          	    1789	    130824 ns/op	  31.31 MB/s	  178379 B/op	     827 allocs/op
+BenchmarkDirectives/TAG/Recognize-16         	    1353	    177586 ns/op	  23.06 MB/s	   99481 B/op	     690 allocs/op
+BenchmarkDirectives/TAG/Check-16             	   17348	     13781 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/Reserved/ParseAST-16     	    1926	    123919 ns/op	  27.89 MB/s	  178307 B/op	     827 allocs/op
+BenchmarkDirectives/Reserved/Recognize-16    	    1410	    170843 ns/op	  20.23 MB/s	   99420 B/op	     690 allocs/op
+BenchmarkDirectives/Reserved/Check-16        	   21033	     11376 ns/op	   43008 B/op	     256 allocs/op
+PASS
+# pair 6 after 2026-10-09T12:45:31.269544+00:00
+goos: darwin
+goarch: arm64
+pkg: github.com/ornew/pego/parsers/yaml
+cpu: Apple M3 Max
+BenchmarkParseAST-16      	      24	   9746562 ns/op	  26.91 MB/s	 8376278 B/op	   51815 allocs/op
+BenchmarkLoadAll-16       	      19	  11693689 ns/op	  22.43 MB/s	13950799 B/op	   88971 allocs/op
+BenchmarkEvents-16        	      18	  13272829 ns/op	  19.76 MB/s	14115180 B/op	   57515 allocs/op
+BenchmarkRecognize-16     	      16	  13430633 ns/op	  19.53 MB/s	 7167255 B/op	   32568 allocs/op
+BenchmarkDirectives/YAML/ParseAST-16         	    1929	    118872 ns/op	  21.54 MB/s	  168795 B/op	     826 allocs/op
+BenchmarkDirectives/YAML/Recognize-16        	    1665	    152297 ns/op	  16.81 MB/s	   99361 B/op	     690 allocs/op
+BenchmarkDirectives/YAML/Check-16            	   18873	     12725 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/TAG/ParseAST-16          	    1770	    133788 ns/op	  30.62 MB/s	  178381 B/op	     827 allocs/op
+BenchmarkDirectives/TAG/Recognize-16         	    1376	    180992 ns/op	  22.63 MB/s	   99477 B/op	     690 allocs/op
+BenchmarkDirectives/TAG/Check-16             	   17053	     14005 ns/op	   43008 B/op	     256 allocs/op
+BenchmarkDirectives/Reserved/ParseAST-16     	    1720	    147929 ns/op	  23.36 MB/s	  178333 B/op	     827 allocs/op
+BenchmarkDirectives/Reserved/Recognize-16    	    1288	    192763 ns/op	  17.93 MB/s	   99435 B/op	     690 allocs/op
+BenchmarkDirectives/Reserved/Check-16        	   16682	     14405 ns/op	   43008 B/op	     256 allocs/op
+PASS

@@ -222,7 +222,7 @@ The [living backlog](https://github.com/ornew/pego/issues/1) is the source of in
 landing commits. The 2026-10-09 audit found correctness/resource gaps despite the implemented feature coverage above.
 Action-variable memo keys (C01), interrupted Document cache cleanup (C05), engine memo retirement (C02/P01) and
 nil-action construction tracking cleanup (C03, including generated runtimes) and bounded persistent variable
-bindings (C04/P02, including generated runtimes) are implemented. Follow with the YAML panic,
+bindings (C04/P02, including generated runtimes) and safe YAML directive validation (M01) are implemented. Follow with
 depth/backend limits, formatting integrity, typing/validation and incremental-equivalence fixes. Full benchmark
 results will be refreshed at the streaming-memory checkpoint; tuning entries carry focused measurements per change.
 

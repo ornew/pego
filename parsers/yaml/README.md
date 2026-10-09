@@ -59,6 +59,17 @@ more than one `%TAG` directive for a handle, a `%YAML` version whose major versi
 that no earlier node of the document has. `Valid`, `Events`, `Load` and `LoadAll` also reject input that is not
 UTF-8, which the parser reads as U+FFFD.
 
+The known directive names `%YAML` and `%TAG` must satisfy their own syntax; missing or malformed
+parameters are syntax errors, rather than unknown directives. Longer names such as `%YAMLfoo` remain
+reserved directives. Versions contain decimal major and minor parts; leading zeros are allowed and
+the supported major version is 1. TAG handles are `!`, `!!`, or a name of ASCII letters, digits and
+hyphens enclosed in `!` characters. Relative tag prefixes are allowed by the grammar.
+
+For manually constructed ASTs, `Check`, stream `Events`, document `Load` and `ResolveTag` return a
+`SemanticError` for missing directives/names, wrong known-directive parameter counts, nil parameters,
+malformed versions/handles or empty tag prefixes. This checks directive shape; it is not validation
+of an arbitrary AST graph.
+
 ### Go values
 
 `Load` composes a document with the YAML 1.2 core schema (10.3):

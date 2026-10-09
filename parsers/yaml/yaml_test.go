@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/ornew/pego/parsers/yaml"
 )
@@ -404,8 +405,11 @@ func FuzzParse(f *testing.F) {
 	for _, s := range []string{"a: [b, {c: d}]\n", "- |\n x\n- 'y'\n", "--- !!str &a \"z\"\n...\n", "? a\n: *a\n", "a:\n\tb"} {
 		f.Add(s)
 	}
+	for _, s := range []string{"%TAG\n---\n", "%YAML\n--- x\n", "%TAG !e!\n--- x\n", "%YAML 1.foo\n--- x\n", "%TAG notahandle tag:x\n--- x\n", "%YAMLfoo\n--- x\n"} {
+		f.Add(s)
+	}
 	f.Fuzz(func(t *testing.T, src string) {
-		_, perr := yaml.ParseAST(src)
+		s, perr := yaml.ParseAST(src)
 		if rerr := yaml.Recognize(src); (perr == nil) != (rerr == nil) {
 			t.Fatalf("%q: ParseAST: %v, Recognize: %v", src, perr, rerr)
 		}
@@ -413,6 +417,12 @@ func FuzzParse(f *testing.F) {
 		if yaml.Valid(src) != (eerr == nil) {
 			t.Fatalf("%q: Valid and Events disagree: %v", src, eerr)
 		}
+		if perr == nil {
+			if err := s.Check(); (utf8.ValidString(src) && err == nil) != yaml.Valid(src) {
+				t.Fatalf("%q: Check and Valid disagree: %v", src, err)
+			}
+		}
+		yaml.Load(src)
 		yaml.LoadAll(src)
 	})
 }

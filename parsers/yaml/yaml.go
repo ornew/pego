@@ -343,17 +343,40 @@ func (d *Document) tagHandles() (map[string]string, error) {
 	declared := map[string]bool{}
 	yaml := false
 	for _, dir := range d.Directives {
+		if dir == nil {
+			return nil, errorAt(d.Span, "nil directive")
+		}
+		if dir.Name == nil {
+			return nil, errorAt(dir.Span, "directive has no name")
+		}
 		switch dir.Name.Text {
 		case "YAML":
+			if len(dir.Params) != 1 || dir.Params[0] == nil {
+				return nil, errorAt(dir.Span, "YAML directive requires one version")
+			}
+			v := dir.Params[0].Text
+			major, minor, ok := strings.Cut(v, ".")
+			if !ok || !decimalDigits(major) || !decimalDigits(minor) {
+				return nil, errorAt(dir.Span, "invalid YAML version "+v)
+			}
 			if yaml {
 				return nil, errorAt(dir.Span, "more than one YAML directive")
 			}
 			yaml = true
-			if v := dir.Params[0].Text; !strings.HasPrefix(v, "1.") {
+			if strings.TrimLeft(major, "0") != "1" {
 				return nil, errorAt(dir.Span, "unsupported YAML version "+v)
 			}
 		case "TAG":
+			if len(dir.Params) != 2 || dir.Params[0] == nil || dir.Params[1] == nil {
+				return nil, errorAt(dir.Span, "TAG directive requires a handle and prefix")
+			}
 			h := dir.Params[0].Text
+			if !validTagHandle(h) {
+				return nil, errorAt(dir.Span, "invalid TAG handle "+h)
+			}
+			if dir.Params[1].Text == "" {
+				return nil, errorAt(dir.Span, "TAG directive requires a non-empty prefix")
+			}
 			if declared[h] {
 				return nil, errorAt(dir.Span, "more than one TAG directive for the handle "+h)
 			}
@@ -362,6 +385,35 @@ func (d *Document) tagHandles() (map[string]string, error) {
 		}
 	}
 	return handles, nil
+}
+
+func decimalDigits(s string) bool {
+	if s == "" {
+		return false
+	}
+	for i := range s {
+		if s[i] < '0' || s[i] > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// validTagHandle follows the three handle forms in YAML 1.2.2 section 6.8.2.1.
+func validTagHandle(s string) bool {
+	if s == "!" || s == "!!" {
+		return true
+	}
+	if len(s) < 3 || s[0] != '!' || s[len(s)-1] != '!' {
+		return false
+	}
+	for i := 1; i < len(s)-1; i++ {
+		c := s[i]
+		if !(c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c == '-') {
+			return false
+		}
+	}
+	return true
 }
 
 // SemanticError is an error that the syntax does not show, found after parsing: an undeclared tag

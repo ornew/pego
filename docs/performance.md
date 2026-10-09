@@ -197,6 +197,7 @@ automatically in the others. This table records, for every change in the log bel
 | 67 | Retire/reuse memo entries on replacement, pruning and edit invalidation | ✓ | ✓ | ✓ | ✗ | ✗ | streams and Documents are engine-only; generated batch memo recycling has not been measured |
 | 68 | Release action/predicate construction tracking, including nil results | ✓ | ✓ | ✓ | ✓ | ✓ | direct typed nested constructors included; TS also truncates on nil/errors; no generated streaming API |
 | 69 | One current variable binding per name, persistent replacement and equal-value reuse | ✓ | ✓ | ✓ | ✓ | ✓ | TS also uses unique bindings; lookup scales with names, not assignment history; changed non-head values copy a prefix |
+| 70 | Reject malformed known YAML directives and validate directive AST parameters | ✓ | ✓ | ✓ | ✓ | ✓ | YAML grammar guard applies on every backend; semantic checks are in the standalone Go YAML API; TS not measured |
 | 62 | Short literals compared in place | – | – | – | ✗ | ✓ | typed: direct rules, up to 4 code points, code points only (the other backends match literals with their own loop, 32) |
 
 Not applied, and why:
@@ -1161,6 +1162,29 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   `go test ./internal/engine -run '^$' -bench 'Benchmark(EnvironmentBindings|DistinctBindings)$' -benchmem`.
   Tests check saved snapshots against independent value maps, choice/rule scope,
   positive/negative lookahead, streams and actual generated Go/TS rule state.
+
+### 70. YAML directive syntax and AST checks
+
+- Malformed exact `%YAML`/`%TAG` names no longer fall back to reserved directives.
+  Missing parameters previously caused panics in validation/loading; invalid versions
+  and handles could be accepted. A value-free exact-name guard preserves longer
+  reserved names. The standalone YAML API checks directive counts, nil fields,
+  decimal versions, handles and non-empty prefixes before using them. Decimal
+  major version 1 accepts leading zeros without converting unbounded digits to integers.
+- Six interleaved pairs on Go 1.27.1/Apple M3 Max isolate 128-document streams.
+  `ParseAST` and `Recognize` for YAML, TAG and reserved directives stay within 0.9%
+  in median time and keep the same allocation counts. Checking already parsed YAML
+  directives takes 11.45 → 12.53 µs (+9.4%); TAG takes 13.23 → 13.66 µs (+3.2%).
+  All three `Check` cases retain 43,008 B and 256 allocations. The extra checks are
+  accepted correctness costs, not an optimization.
+- The existing 256 KiB Kubernetes workload has sampled time changes of −5.4% to −1.1%
+  for `ParseAST`, `Recognize`, `Events` and `LoadAll`; these are not claimed speedups.
+  Bytes range from −1.1% to +0.8%, with at most two allocations of difference per parse.
+  Changing grammar expression IDs can affect memo layout even without directives in input.
+  The full checkpoint report measures the main runtime suite separately; it has no YAML workload.
+- [Raw paired measurements](../bench/measurements/yaml-directive-results.txt) include
+  commands, overlay provenance and all samples. Regression tests cover every engine/unit,
+  generated API entry point, directive AST methods and replayable malformed fuzz seeds.
 
 ## Grammar authoring guidelines for performance
 

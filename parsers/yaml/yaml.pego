@@ -93,7 +93,8 @@ def tag_handle: Word = c_tag_handle
 def ns_tag_prefix: Word = "!" ns_uri_char* / ns_tag_char ns_uri_char*
 // [83] ns-reserved-directive ::= ns-directive-name ( s-separate-in-line ns-directive-parameter )*
 // A parameter does not start with "#", which starts the comment after the directive instead.
-def ns_reserved_directive: Directive = name:ns_directive_name ps:(-s_separate_in_line !"#" p:ns_directive_parameter)*
+// Known names must satisfy their own syntax; longer unknown names remain reserved directives.
+def ns_reserved_directive: Directive = !("YAML" !ns_char / "TAG" !ns_char) name:ns_directive_name ps:(-s_separate_in_line !"#" p:ns_directive_parameter)*
     -> new Directive{Name: $name, Params: map($ps, (x) => $x.p)}
 def ns_directive_name: Word = ns_char+
 def ns_directive_parameter: Word = ns_char+
