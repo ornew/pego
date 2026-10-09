@@ -27,7 +27,7 @@ This document describes the repository layout, the architecture of the implement
 | `docs/tutorial/` | Tutorials (getting started) |
 | `docs/guide/` | Task-oriented guides to each feature ([index](guide/README.md)) |
 | `docs/cookbook/` | Recipes: complete, runnable solutions to concrete tasks ([index](cookbook/README.md)) |
-| `docs/design/` | Design records |
+| `docs/design/` | Design records; [template](design/000-template.md) for new proposals |
 
 ## Architecture
 
@@ -192,7 +192,7 @@ The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for i
 | Done | | Any character (`.`) and negated character classes (`(?^...)`) |
 | Done | | Predicates (`[...]`) |
 | Done | | Attributes (`#...`) |
-| Done | | Error recovery (`#recover`) and error messages (`#error`) |
+| Done | | Consuming skip recovery (`#recover`) and error messages (`#error`); missing-token insertion is proposed |
 | Done | Actions | Actions (`->`) |
 | Done | | Variables (`x`, `x = 1`) |
 | Done | | Capture references (`$label`, `$1`) |
@@ -202,7 +202,7 @@ The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for i
 | Done | | Parsing PEGO source (`.pego`) |
 | Done | | Pratt expressions (`pratt`) |
 | Done | | Stream parsing (`#stream`) |
-| Done | | Incremental parsing (`Document`) |
+| Done | | Mutable incremental parsing (`Document`); snapshots/change notifications are proposed |
 | Done | | Code generation (Go, `pego gen`) |
 | Done | | Typed values in generated parsers (`pego gen -types`) |
 | Done | | Saving and loading compiled grammars (`.pegoc`) |
@@ -214,11 +214,37 @@ The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for i
 
 ## Roadmap
 
+The [living backlog](https://github.com/ornew/pego/issues/1) is the source of individual defects, priorities and
+landing commits. The 2026-10-09 audit found correctness/resource gaps despite the implemented feature coverage above.
+Action-variable memo keys (C01), interrupted Document cache cleanup (C05) and engine memo retirement (C02/P01) have
+landed; nil-action retention (C03) and shadowed stream environments (C04) are next. Follow with the YAML panic,
+depth/backend limits, formatting integrity, typing/validation and incremental-equivalence fixes. Full benchmark
+results will be refreshed at the streaming-memory checkpoint; tuning entries carry focused measurements per change.
+
+The [incremental document and tree tooling proposal](design/019-incremental-document-and-tree-tooling.md) examines
+input updates, saved trees and downstream editor work. These stages are proposed, not implemented APIs or measured speedups. Preserve current PEG and mutable
+Document/Node contracts while designing additions; large changes need a dedicated design record.
+
+| Order after correctness gates | Planned capability | Backlog |
+|:--|:--|:--|
+| 1 | Cancellation and explicit work budgets | F01 |
+| 2 | Replayable edit fuzzing and grammar fixtures | F16, F06 |
+| 3 | Iterative Walker/Cursor and structured output schemas | F10, F17 |
+| 4 | Chunked Document input, measured against contiguous input | P10 |
+| 5 | Immutable/versioned snapshots and shared trees/sequences | F04 |
+| 6 | Conservative output change notifications, then structural queries/highlighting | F18, F19 |
+| 7 | Explicit missing-token recovery for editing | F20 |
+| 8 | Measured multi-character literal dispatch and compact-leaf experiments | P11, P12 |
+
+Other backlog features remain tracked; this order captures editor dependencies rather than removing them. Existing
+memo dependency tracking, lazy edit shifts and repetition resumption remain the foundation. Generated streams and
+Document, typed TypeScript, other-language generators and source maps for fragments require separate portable contracts.
+
 - [x] **AST construction:** implement every feature related to `->` actions (variable references, `fold`, `new`).
 - [x] **Detailed error reporting:** report the location (line and column) and the expected tokens when a parse fails.
 - [x] **Predicates:** implement variables to support context-sensitive grammars.
 - [ ] **Self-hosting:** write the parser for `.pego` files in PEGO itself (it is currently a hand-written Go parser).
-- [x] **Error recovery:** treat local errors as error nodes and continue parsing the rest of the input.
+- [x] **Error recovery:** consume a grammar-specified skip on failure, returning error nodes and continuing parsing.
 - [x] **Documentation:** provide detailed documentation and tutorials for each feature ([tutorial](tutorial/getting-started.md), [guides](guide/README.md)).
 - [x] **Go code generator:** generate Go parser code that can be compiled and run directly.
 - [x] **Bytecode VM:** a language-independent bytecode and VMs for two execution models, recursive and iterative ([design](design/010-bytecode-vm.md)).
@@ -226,4 +252,4 @@ The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for i
 - [x] **TypeScript code generator:** standalone TypeScript parsers that return the engine's results ([design](design/013-typescript-generation.md)).
 - [ ] **Code generators for other languages:** generate parsers in Python and other languages.
 - [x] **Streaming:** consume input as a stream and emit nodes as a stream.
-- [x] **Incremental parsing:** update a parse efficiently after an edit.
+- [x] **Incremental parsing:** reuse memoized rules and long repetition results after edits in a mutable Document.

@@ -51,7 +51,10 @@ tree, err := p.Parse("1 + 2 * 3 ^ 2") // a *pego.Node, or a *pego.SyntaxError wi
 
 > [!NOTE]
 > PEGO is under active development; the language and the Go API may still change.
-> See the [implementation status and roadmap](docs/development.md).
+> See the [implementation status and roadmap](docs/development.md) and the
+> [living backlog](https://github.com/ornew/pego/issues/1). The
+> [incremental document and tree tooling proposal](docs/design/019-incremental-document-and-tree-tooling.md)
+> describes input storage, snapshots and query capabilities, with validation gates before implementation.
 
 ## Why PEGO
 
