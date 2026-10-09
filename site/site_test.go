@@ -486,7 +486,8 @@ func readSidebar(t *testing.T, page string) []sidebarSection {
 	return secs
 }
 
-// TestNavigation checks the titles of the pages in the navigation of the documentation.
+// TestNavigation checks the navigation of the documentation: the titles of the pages of each section,
+// and the collapsible section of design records, closed unless the current page is one of its entries.
 func TestNavigation(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "dist")
 	if _, err := Build(Config{Repo: "..", Out: out, Check: true, GitHub: "https://github.com/ornew/pego", Ref: "main"}); err != nil {
@@ -542,6 +543,46 @@ func TestNavigation(t *testing.T) {
 		}
 	}
 
+	// Design records folds: closed on a page of the guides, open on a page of the section.
+	design := func(secs []sidebarSection) sidebarSection {
+		for _, sec := range secs {
+			if sec.Name == "Design records" {
+				return sec
+			}
+		}
+		t.Fatal("no Design records section")
+		return sidebarSection{}
+	}
+	for _, sec := range secs {
+		if sec.Collapsible != (sec.Name == "Design records") || sec.Open {
+			t.Errorf("section %s: collapsible=%v open=%v on a guide", sec.Name, sec.Collapsible, sec.Open)
+		}
+	}
+	if sec := design(secs); len(sec.Links) < 15 {
+		t.Errorf("Design records lists %d pages", len(sec.Links))
+	}
+	for _, tc := range []struct {
+		page, current string // current is the title of the entry of the page, if the section should be open
+	}{
+		{"docs/guide/runtime/index.html", ""},
+		{"parsers/json/index.html", ""},
+		{"docs/design/index.html", "Index"},
+		{"docs/design/012-typed-values/index.html", "012 Typed Values in Generated Parsers"},
+	} {
+		sec := design(readSidebar(t, filepath.Join(out, filepath.FromSlash(tc.page))))
+		if sec.Open != (tc.current != "") {
+			t.Errorf("%s: Design records open = %v, want %v", tc.page, sec.Open, tc.current != "")
+		}
+		current := ""
+		for _, l := range sec.Links {
+			if l.Current {
+				current = l.Title
+			}
+		}
+		if current != tc.current {
+			t.Errorf("%s: current entry of Design records = %q, want %q", tc.page, current, tc.current)
+		}
+	}
 }
 
 func TestNavTitle(t *testing.T) {

@@ -50,13 +50,19 @@
 <div class="doc-layout">
   <nav id="sidebar" class="sidebar" aria-label="Documentation">
     <div class="nav-section mobile-links"><h2>Site</h2>{{template "mobilelinks" .}}</div>
-    {{range .Sections}}<div class="nav-section">
+    {{range .Sections}}{{if .Collapsible}}<details class="nav-section nav-fold"{{if .Contains $.Page}} open{{end}}>
+      <summary><h2>{{.Name}}</h2></summary>
+      <ul>{{range .Pages}}
+        <li><a href="{{$.URL .URL}}"{{if eq .URL $.Page.URL}} aria-current="page"{{end}}>{{.Nav}}</a></li>{{end}}
+      </ul>
+    </details>
+    {{else}}<div class="nav-section">
       <h2>{{.Name}}</h2>
       <ul>{{range .Pages}}
         <li><a href="{{$.URL .URL}}"{{if eq .URL $.Page.URL}} aria-current="page"{{end}}>{{.Nav}}</a></li>{{end}}
       </ul>
     </div>
-    {{end}}
+    {{end}}{{end}}
   </nav>
   <main id="main" class="doc-main">
     <article class="prose">

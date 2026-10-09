@@ -65,9 +65,13 @@ type Page struct {
 
 // Section is a group of pages in the navigation.
 type Section struct {
-	Name  string
-	Pages []*Page
+	Name        string
+	Collapsible bool // the navigation folds the pages under the name, open only if the current page is one of them
+	Pages       []*Page
 }
+
+// Contains reports whether the section lists p.
+func (s *Section) Contains(p *Page) bool { return slices.Contains(s.Pages, p) }
 
 // Site is a site being built.
 type Site struct {
@@ -98,6 +102,9 @@ type docSection struct {
 	index string
 	// first lists files that come first, in this order.
 	first []string
+	// collapsible folds the section in the navigation under its name. It is closed unless the current
+	// page belongs to the section.
+	collapsible bool
 }
 
 var docSections = []docSection{
@@ -105,7 +112,7 @@ var docSections = []docSection{
 	{name: "Guides", globs: []string{"docs/guide/*.md"}, index: "docs/guide/README.md"},
 	{name: "Specification", globs: []string{"spec/*.md"}, index: "spec/README.md"},
 	{name: "Parsers", globs: []string{"parsers/README.md", "parsers/*/README.md"}, index: "parsers/README.md"},
-	{name: "Design records", globs: []string{"docs/design/*.md"}},
+	{name: "Design records", globs: []string{"docs/design/*.md"}, collapsible: true},
 	{name: "Project", globs: []string{"examples/README.md", "docs/*.md"}, first: []string{
 		"examples/README.md", "docs/development.md", "docs/bytecode.md", "docs/benchmarks.md", "docs/performance.md",
 	}},
@@ -206,7 +213,7 @@ func (s *Site) collect() error {
 		if err != nil {
 			return err
 		}
-		sec := &Section{Name: ds.name}
+		sec := &Section{Name: ds.name, Collapsible: ds.collapsible}
 		if ds.name == "Design records" {
 			idx := &Page{URL: "docs/design/", Kind: "doc", Title: "Design Records", Nav: "Index", Section: sec.Name}
 			s.add(idx)

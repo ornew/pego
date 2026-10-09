@@ -304,6 +304,35 @@ code, kbd, pre { font-family: var(--mono); font-size: 0.9em; }
 .nav-section a:hover { background: var(--bg-soft); color: var(--fg); text-decoration: none; }
 .nav-section a[aria-current] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 
+/* A collapsible section (details in the navigation): its heading is the summary, with a chevron that
+   turns when the section is open. The heading keeps its style and margins. */
+.nav-fold > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 18px 8px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  list-style: none;
+}
+.nav-fold > summary::-webkit-details-marker { display: none; }
+.nav-fold > summary h2 { margin: 0; }
+.nav-fold > summary::after {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin: 0 4px 0 auto;
+  border-right: 2px solid var(--fg-faint);
+  border-bottom: 2px solid var(--fg-faint);
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+}
+.nav-fold[open] > summary::after { transform: rotate(45deg); }
+.nav-fold > summary:hover h2 { color: var(--fg-soft); }
+.nav-fold > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .nav-fold > summary::after { transition: none; } }
+
 .doc-main { min-width: 0; padding: 32px 48px 64px; }
 
 .toc {
