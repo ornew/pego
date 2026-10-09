@@ -542,8 +542,13 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 				}
 			}
 		case OpIter:
+			rep := &p.reps[len(p.reps)-1]
+			if rep.max >= 0 && rep.count >= rep.max {
+				ip = int(in.A)
+				continue
+			}
 			kind := uint8(eIter)
-			if rep := &p.reps[len(p.reps)-1]; rep.run != nil {
+			if rep.run != nil {
 				r := rep.run
 				if p.resync(r) {
 					for el := p.nextTail(r); el != nil; el = p.nextTail(r) {

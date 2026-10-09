@@ -142,7 +142,8 @@ const (
 	// scope (-1 if none). When building values, the start position is pushed with PUSHPOS just
 	// before.
 	OpRepeat
-	// ITER l: push an entry for one iteration. On failure, restore the state and go to l.
+	// ITER l: go to l if the repetition has reached its finite maximum; otherwise push an entry
+	// for one iteration. On failure, restore the state and go to l.
 	OpIter
 	// NEXT l, f, s: commit one iteration and go to l if the repetition can continue. f is 1 to keep
 	// the value, 2 to pass it to the stream, 0 to discard it, and 3 to push the value of slot s of
