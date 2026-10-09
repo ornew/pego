@@ -1,0 +1,265 @@
+SlotTypeInfo: c_type str, py_type Any, adaptor Callable[[Any], Any]?
+Expr: 
+ATAlterConstraint: conname str?, alterEnforceability bool?, is_enforced bool?, alterDeferrability bool?, deferrable bool?, initdeferred bool?, alterInheritability bool?, noinherit bool?
+A_ArrayExpr: elements tuple[Any, ...]?, list_start int?, list_end int?, location int?
+ValUnion: val Node?
+A_Const: isnull bool?, val Node?
+A_Expr: kind A_Expr_Kind?, name tuple[Any, ...]?, lexpr Node?, rexpr Node?, rexpr_list_start int?, rexpr_list_end int?, location int?
+A_Indices: is_slice bool?, lidx Node?, uidx Node?
+A_Indirection: arg Node?, indirection tuple[Any, ...]?
+A_Star: 
+AccessPriv: priv_name str?, cols tuple[Any, ...]?
+Aggref: aggargtypes tuple[Any, ...]?, aggdirectargs tuple[Any, ...]?, args tuple[Any, ...]?, aggorder tuple[Any, ...]?, aggdistinct tuple[Any, ...]?, aggfilter Expr?, aggstar bool?, aggvariadic bool?, aggkind str?, agglevelsup int?, aggsplit AggSplit?, aggno int?, aggtransno int?, location int?
+Alias: aliasname str?, colnames tuple[Any, ...]?
+AlterCollationStmt: collname tuple[Any, ...]?
+AlterDatabaseRefreshCollStmt: dbname str?
+AlterDatabaseSetStmt: dbname str?, setstmt VariableSetStmt?
+AlterDatabaseStmt: dbname str?, options tuple[Any, ...]?
+AlterDefaultPrivilegesStmt: options tuple[Any, ...]?, action GrantStmt?
+AlterDomainStmt: subtype str?, typeName tuple[Any, ...]?, name str?, def_ Node?, behavior DropBehavior?, missing_ok bool?
+AlterEnumStmt: typeName tuple[Any, ...]?, oldVal str?, newVal str?, newValNeighbor str?, newValIsAfter bool?, skipIfNewValExists bool?
+AlterEventTrigStmt: trigname str?, tgenabled str?
+AlterExtensionContentsStmt: extname str?, action int?, objtype ObjectType?, object Node?
+AlterExtensionStmt: extname str?, options tuple[Any, ...]?
+AlterFdwStmt: fdwname str?, func_options tuple[Any, ...]?, options tuple[Any, ...]?
+AlterForeignServerStmt: servername str?, version str?, options tuple[Any, ...]?, has_version bool?
+AlterFunctionStmt: objtype ObjectType?, func ObjectWithArgs?, actions tuple[Any, ...]?
+AlterObjectDependsStmt: objectType ObjectType?, relation RangeVar?, object Node?, extname String?, remove bool?
+AlterObjectSchemaStmt: objectType ObjectType?, relation RangeVar?, object Node?, newschema str?, missing_ok bool?
+AlterOpFamilyStmt: opfamilyname tuple[Any, ...]?, amname str?, isDrop bool?, items tuple[Any, ...]?
+AlterOperatorStmt: opername ObjectWithArgs?, options tuple[Any, ...]?
+AlterOwnerStmt: objectType ObjectType?, relation RangeVar?, object Node?, newowner RoleSpec?
+AlterPolicyStmt: policy_name str?, table RangeVar?, roles tuple[Any, ...]?, qual Node?, with_check Node?
+AlterPublicationStmt: pubname str?, options tuple[Any, ...]?, pubobjects tuple[Any, ...]?, for_all_tables bool?, action AlterPublicationAction?
+AlterRoleSetStmt: role RoleSpec?, database str?, setstmt VariableSetStmt?
+AlterRoleStmt: role RoleSpec?, options tuple[Any, ...]?, action int?
+AlterSeqStmt: sequence RangeVar?, options tuple[Any, ...]?, for_identity bool?, missing_ok bool?
+AlterStatsStmt: defnames tuple[Any, ...]?, stxstattarget Node?, missing_ok bool?
+AlterSubscriptionStmt: kind AlterSubscriptionType?, subname str?, conninfo str?, publication tuple[Any, ...]?, options tuple[Any, ...]?, conninfo_location int?
+AlterSystemStmt: setstmt VariableSetStmt?
+AlterTSConfigurationStmt: kind AlterTSConfigType?, cfgname tuple[Any, ...]?, tokentype tuple[Any, ...]?, dicts tuple[Any, ...]?, override bool?, replace bool?, missing_ok bool?
+AlterTSDictionaryStmt: dictname tuple[Any, ...]?, options tuple[Any, ...]?
+AlterTableCmd: subtype AlterTableType?, name str?, num int?, newowner RoleSpec?, def_ Node?, behavior DropBehavior?, missing_ok bool?, recurse bool?
+AlterTableMoveAllStmt: orig_tablespacename str?, objtype ObjectType?, roles tuple[Any, ...]?, new_tablespacename str?, nowait bool?
+AlterTableSpaceOptionsStmt: tablespacename str?, options tuple[Any, ...]?, isReset bool?
+AlterTableStmt: relation RangeVar?, cmds tuple[Any, ...]?, objtype ObjectType?, missing_ok bool?
+AlterTypeStmt: typeName tuple[Any, ...]?, options tuple[Any, ...]?
+AlterUserMappingStmt: user RoleSpec?, servername str?, options tuple[Any, ...]?
+AlternativeSubPlan: subplans tuple[Any, ...]?
+ArrayCoerceExpr: arg Expr?, elemexpr Expr?, resulttypmod int?, coerceformat CoercionForm?, location int?
+ArrayExpr: elements tuple[Any, ...]?, multidims bool?, list_start int?, list_end int?, location int?
+BitString: bsval str?
+BoolExpr: boolop BoolExprType?, args tuple[Any, ...]?, location int?
+Boolean: boolval bool?
+BooleanTest: arg Expr?, booltesttype BoolTestType?, location int?
+CTECycleClause: cycle_col_list tuple[Any, ...]?, cycle_mark_column str?, cycle_mark_value Node?, cycle_mark_default Node?, cycle_path_column str?, location int?, cycle_mark_typmod int?
+CTESearchClause: search_col_list tuple[Any, ...]?, search_breadth_first bool?, search_seq_column str?, location int?
+CallContext: atomic bool?
+CallStmt: funccall FuncCall?, funcexpr FuncExpr?, outargs tuple[Any, ...]?
+CaseExpr: arg Expr?, args tuple[Any, ...]?, defresult Expr?, location int?
+CaseTestExpr: typeMod int?
+CaseWhen: expr Expr?, result Expr?, location int?
+CheckPointStmt: 
+ClosePortalStmt: portalname str?
+ClusterStmt: relation RangeVar?, indexname str?, params tuple[Any, ...]?
+CoalesceExpr: args tuple[Any, ...]?, location int?
+CoerceToDomain: arg Expr?, resulttypmod int?, coercionformat CoercionForm?, location int?
+CoerceToDomainValue: typeMod int?, location int?
+CoerceViaIO: arg Expr?, coerceformat CoercionForm?, location int?
+CollateClause: arg Node?, collname tuple[Any, ...]?, location int?
+CollateExpr: arg Expr?, location int?
+ColumnDef: colname str?, typeName TypeName?, compression str?, inhcount int?, is_local bool?, is_not_null bool?, is_from_type bool?, storage str?, storage_name str?, raw_default Node?, cooked_default Node?, identity str?, identitySequence RangeVar?, generated str?, collClause CollateClause?, constraints tuple[Any, ...]?, fdwoptions tuple[Any, ...]?, location int?
+ColumnRef: fields tuple[Any, ...]?, location int?
+CommentStmt: objtype ObjectType?, object Node?, comment str?
+CommonTableExpr: ctename str?, aliascolnames tuple[Any, ...]?, ctematerialized CTEMaterialize?, ctequery Node?, search_clause CTESearchClause?, cycle_clause CTECycleClause?, location int?, cterecursive bool?, cterefcount int?, ctecolnames tuple[Any, ...]?, ctecoltypes tuple[Any, ...]?, ctecoltypmods tuple[Any, ...]?, ctecolcollations tuple[Any, ...]?
+CompositeTypeStmt: typevar RangeVar?, coldeflist tuple[Any, ...]?
+Constraint: contype ConstrType?, conname str?, deferrable bool?, initdeferred bool?, is_enforced bool?, skip_validation bool?, initially_valid bool?, is_no_inherit bool?, raw_expr Node?, cooked_expr str?, generated_when str?, generated_kind str?, nulls_not_distinct bool?, keys tuple[Any, ...]?, without_overlaps bool?, including tuple[Any, ...]?, exclusions tuple[Any, ...]?, options tuple[Any, ...]?, indexname str?, indexspace str?, reset_default_tblspc bool?, access_method str?, where_clause Node?, pktable RangeVar?, fk_attrs tuple[Any, ...]?, pk_attrs tuple[Any, ...]?, fk_with_period bool?, pk_with_period bool?, fk_matchtype str?, fk_upd_action str?, fk_del_action str?, fk_del_set_cols tuple[Any, ...]?, old_conpfeqop tuple[Any, ...]?, location int?
+ConstraintsSetStmt: constraints tuple[Any, ...]?, deferred bool?
+ConvertRowtypeExpr: arg Expr?, convertformat CoercionForm?, location int?
+CopyStmt: relation RangeVar?, query Node?, attlist tuple[Any, ...]?, is_from bool?, is_program bool?, filename str?, options tuple[Any, ...]?, whereClause Node?
+CreateAmStmt: amname str?, handler_name tuple[Any, ...]?, amtype str?
+CreateCastStmt: sourcetype TypeName?, targettype TypeName?, func ObjectWithArgs?, context CoercionContext?, inout bool?
+CreateConversionStmt: conversion_name tuple[Any, ...]?, for_encoding_name str?, to_encoding_name str?, func_name tuple[Any, ...]?, def_ bool?
+CreateDomainStmt: domainname tuple[Any, ...]?, typeName TypeName?, collClause CollateClause?, constraints tuple[Any, ...]?
+CreateEnumStmt: typeName tuple[Any, ...]?, vals tuple[Any, ...]?
+CreateEventTrigStmt: trigname str?, eventname str?, whenclause tuple[Any, ...]?, funcname tuple[Any, ...]?
+CreateExtensionStmt: extname str?, if_not_exists bool?, options tuple[Any, ...]?
+CreateFdwStmt: fdwname str?, func_options tuple[Any, ...]?, options tuple[Any, ...]?
+CreateForeignServerStmt: servername str?, servertype str?, version str?, fdwname str?, if_not_exists bool?, options tuple[Any, ...]?
+CreateForeignTableStmt: base CreateStmt?, servername str?, options tuple[Any, ...]?
+CreateFunctionStmt: is_procedure bool?, replace bool?, funcname tuple[Any, ...]?, parameters tuple[Any, ...]?, returnType TypeName?, options tuple[Any, ...]?, sql_body Node?
+CreateOpClassItem: itemtype int?, name ObjectWithArgs?, number int?, order_family tuple[Any, ...]?, class_args tuple[Any, ...]?, storedtype TypeName?
+CreateOpClassStmt: opclassname tuple[Any, ...]?, opfamilyname tuple[Any, ...]?, amname str?, datatype TypeName?, items tuple[Any, ...]?, isDefault bool?
+CreateOpFamilyStmt: opfamilyname tuple[Any, ...]?, amname str?
+CreatePLangStmt: replace bool?, plname str?, plhandler tuple[Any, ...]?, plinline tuple[Any, ...]?, plvalidator tuple[Any, ...]?, pltrusted bool?
+CreatePolicyStmt: policy_name str?, table RangeVar?, cmd_name str?, permissive bool?, roles tuple[Any, ...]?, qual Node?, with_check Node?
+CreatePublicationStmt: pubname str?, options tuple[Any, ...]?, pubobjects tuple[Any, ...]?, for_all_tables bool?
+CreateRangeStmt: typeName tuple[Any, ...]?, params tuple[Any, ...]?
+CreateRoleStmt: stmt_type RoleStmtType?, role str?, options tuple[Any, ...]?
+CreateSchemaStmt: schemaname str?, authrole RoleSpec?, schemaElts tuple[Any, ...]?, if_not_exists bool?
+CreateSeqStmt: sequence RangeVar?, options tuple[Any, ...]?, for_identity bool?, if_not_exists bool?
+CreateStatsStmt: defnames tuple[Any, ...]?, stat_types tuple[Any, ...]?, exprs tuple[Any, ...]?, relations tuple[Any, ...]?, stxcomment str?, transformed bool?, if_not_exists bool?
+CreateStmt: relation RangeVar?, tableElts tuple[Any, ...]?, inhRelations tuple[Any, ...]?, partbound PartitionBoundSpec?, partspec PartitionSpec?, ofTypename TypeName?, constraints tuple[Any, ...]?, nnconstraints tuple[Any, ...]?, options tuple[Any, ...]?, oncommit OnCommitAction?, tablespacename str?, accessMethod str?, if_not_exists bool?
+CreateSubscriptionStmt: subname str?, conninfo str?, publication tuple[Any, ...]?, options tuple[Any, ...]?, conninfo_location int?
+CreateTableAsStmt: query Node?, into IntoClause?, objtype ObjectType?, is_select_into bool?, if_not_exists bool?
+CreateTableSpaceStmt: tablespacename str?, owner RoleSpec?, location str?, options tuple[Any, ...]?
+CreateTransformStmt: replace bool?, type_name TypeName?, lang str?, fromsql ObjectWithArgs?, tosql ObjectWithArgs?
+CreateTrigStmt: replace bool?, isconstraint bool?, trigname str?, relation RangeVar?, funcname tuple[Any, ...]?, args tuple[Any, ...]?, row bool?, timing int?, events int?, columns tuple[Any, ...]?, whenClause Node?, transitionRels tuple[Any, ...]?, deferrable bool?, initdeferred bool?, constrrel RangeVar?
+CreateUserMappingStmt: user RoleSpec?, servername str?, if_not_exists bool?, options tuple[Any, ...]?
+CreatedbStmt: dbname str?, options tuple[Any, ...]?
+CurrentOfExpr: cvarno int?, cursor_name str?, cursor_param int?
+DeallocateStmt: name str?, isall bool?, location int?
+DeclareCursorStmt: portalname str?, options int?, query Node?
+DefElem: defnamespace str?, defname str?, arg Node?, defaction DefElemAction?, location int?, arg_location int?
+DefineStmt: kind ObjectType?, oldstyle bool?, defnames tuple[Any, ...]?, args tuple[Any, ...]?, definition tuple[Any, ...]?, if_not_exists bool?, replace bool?
+DeleteStmt: relation RangeVar?, usingClause tuple[Any, ...]?, whereClause Node?, returningClause ReturningClause?, withClause WithClause?
+DiscardStmt: target DiscardMode?
+DoStmt: args tuple[Any, ...]?
+DropOwnedStmt: roles tuple[Any, ...]?, behavior DropBehavior?
+DropRoleStmt: roles tuple[Any, ...]?, missing_ok bool?
+DropStmt: objects tuple[Any, ...]?, removeType ObjectType?, behavior DropBehavior?, missing_ok bool?, concurrent bool?
+DropSubscriptionStmt: subname str?, missing_ok bool?, behavior DropBehavior?
+DropTableSpaceStmt: tablespacename str?, missing_ok bool?
+DropUserMappingStmt: user RoleSpec?, servername str?, missing_ok bool?
+DropdbStmt: dbname str?, missing_ok bool?, options tuple[Any, ...]?
+ExecuteStmt: name str?, params tuple[Any, ...]?
+ExplainStmt: query Node?, options tuple[Any, ...]?
+FetchStmt: direction FetchDirection?, howMany int?, portalname str?, ismove bool?
+FieldSelect: arg Expr?, fieldnum int?, resulttypmod int?
+FieldStore: arg Expr?, newvals tuple[Any, ...]?, fieldnums tuple[Any, ...]?
+Float: fval str?
+FromExpr: fromlist tuple[Any, ...]?, quals Node?
+FuncCall: funcname tuple[Any, ...]?, args tuple[Any, ...]?, agg_order tuple[Any, ...]?, agg_filter Node?, over WindowDef?, agg_within_group bool?, agg_star bool?, agg_distinct bool?, func_variadic bool?, funcformat CoercionForm?, location int?
+FuncExpr: funcretset bool?, funcvariadic bool?, funcformat CoercionForm?, args tuple[Any, ...]?, location int?
+FunctionParameter: name str?, argType TypeName?, mode FunctionParameterMode?, defexpr Node?, location int?
+GrantRoleStmt: granted_roles tuple[Any, ...]?, grantee_roles tuple[Any, ...]?, is_grant bool?, opt tuple[Any, ...]?, grantor RoleSpec?, behavior DropBehavior?
+GrantStmt: is_grant bool?, targtype GrantTargetType?, objtype ObjectType?, objects tuple[Any, ...]?, privileges tuple[Any, ...]?, grantees tuple[Any, ...]?, grant_option bool?, grantor RoleSpec?, behavior DropBehavior?
+GroupingFunc: args tuple[Any, ...]?, refs tuple[Any, ...]?, agglevelsup int?, location int?
+GroupingSet: kind GroupingSetKind?, content tuple[Any, ...]?, location int?
+ImportForeignSchemaStmt: server_name str?, remote_schema str?, local_schema str?, list_type ImportForeignSchemaType?, table_list tuple[Any, ...]?, options tuple[Any, ...]?
+IndexElem: name str?, expr Node?, indexcolname str?, collation tuple[Any, ...]?, opclass tuple[Any, ...]?, opclassopts tuple[Any, ...]?, ordering SortByDir?, nulls_ordering SortByNulls?
+IndexStmt: idxname str?, relation RangeVar?, accessMethod str?, tableSpace str?, indexParams tuple[Any, ...]?, indexIncludingParams tuple[Any, ...]?, options tuple[Any, ...]?, whereClause Node?, excludeOpNames tuple[Any, ...]?, idxcomment str?, oldNumber int?, oldCreateSubid int?, oldFirstRelfilelocatorSubid int?, unique bool?, nulls_not_distinct bool?, primary bool?, isconstraint bool?, iswithoutoverlaps bool?, deferrable bool?, initdeferred bool?, transformed bool?, concurrent bool?, if_not_exists bool?, reset_default_tblspc bool?
+InferClause: indexElems tuple[Any, ...]?, whereClause Node?, conname str?, location int?
+InferenceElem: expr Node?
+InlineCodeBlock: source_text str?, langIsTrusted bool?, atomic bool?
+InsertStmt: relation RangeVar?, cols tuple[Any, ...]?, selectStmt Node?, onConflictClause OnConflictClause?, returningClause ReturningClause?, withClause WithClause?, override OverridingKind?
+Integer: ival int?
+IntoClause: rel RangeVar?, colNames tuple[Any, ...]?, accessMethod str?, options tuple[Any, ...]?, onCommit OnCommitAction?, tableSpaceName str?, viewQuery Query?, skipData bool?
+JoinExpr: jointype JoinType?, isNatural bool?, larg Node?, rarg Node?, usingClause tuple[Any, ...]?, join_using_alias Alias?, quals Node?, alias Alias?, rtindex int?
+JsonAggConstructor: output JsonOutput?, agg_filter Node?, agg_order tuple[Any, ...]?, over WindowDef?, location int?
+JsonArgument: val JsonValueExpr?, name str?
+JsonArrayAgg: constructor JsonAggConstructor?, arg JsonValueExpr?, absent_on_null bool?
+JsonArrayConstructor: exprs tuple[Any, ...]?, output JsonOutput?, absent_on_null bool?, location int?
+JsonArrayQueryConstructor: query Node?, output JsonOutput?, format JsonFormat?, absent_on_null bool?, location int?
+JsonBehavior: btype JsonBehaviorType?, expr Node?, coerce bool?, location int?
+JsonConstructorExpr: type JsonConstructorType?, args tuple[Any, ...]?, func Expr?, coercion Expr?, returning JsonReturning?, absent_on_null bool?, unique bool?, location int?
+JsonExpr: op JsonExprOp?, column_name str?, formatted_expr Node?, format JsonFormat?, path_spec Node?, returning JsonReturning?, passing_names tuple[Any, ...]?, passing_values tuple[Any, ...]?, on_empty JsonBehavior?, on_error JsonBehavior?, use_io_coercion bool?, use_json_coercion bool?, wrapper JsonWrapper?, omit_quotes bool?, location int?
+JsonFormat: format_type JsonFormatType?, encoding JsonEncoding?, location int?
+JsonFuncExpr: op JsonExprOp?, column_name str?, context_item JsonValueExpr?, pathspec Node?, passing tuple[Any, ...]?, output JsonOutput?, on_empty JsonBehavior?, on_error JsonBehavior?, wrapper JsonWrapper?, quotes JsonQuotes?, location int?
+JsonIsPredicate: expr Node?, format JsonFormat?, item_type JsonValueType?, unique_keys bool?, location int?
+JsonKeyValue: key Expr?, value JsonValueExpr?
+JsonObjectAgg: constructor JsonAggConstructor?, arg JsonKeyValue?, absent_on_null bool?, unique bool?
+JsonObjectConstructor: exprs tuple[Any, ...]?, output JsonOutput?, absent_on_null bool?, unique bool?, location int?
+JsonOutput: typeName TypeName?, returning JsonReturning?
+JsonParseExpr: expr JsonValueExpr?, output JsonOutput?, unique_keys bool?, location int?
+JsonReturning: format JsonFormat?, typmod int?
+JsonScalarExpr: expr Expr?, output JsonOutput?, location int?
+JsonSerializeExpr: expr JsonValueExpr?, output JsonOutput?, location int?
+JsonTable: context_item JsonValueExpr?, pathspec JsonTablePathSpec?, passing tuple[Any, ...]?, columns tuple[Any, ...]?, on_error JsonBehavior?, alias Alias?, lateral bool?, location int?
+JsonTableColumn: coltype JsonTableColumnType?, name str?, typeName TypeName?, pathspec JsonTablePathSpec?, format JsonFormat?, wrapper JsonWrapper?, quotes JsonQuotes?, columns tuple[Any, ...]?, on_empty JsonBehavior?, on_error JsonBehavior?, location int?
+JsonTablePathSpec: string Node?, name str?, name_location int?, location int?
+JsonValueExpr: raw_expr Expr?, formatted_expr Expr?, format JsonFormat?
+ListenStmt: conditionname str?
+LoadStmt: filename str?
+LockStmt: relations tuple[Any, ...]?, mode int?, nowait bool?
+LockingClause: lockedRels tuple[Any, ...]?, strength LockClauseStrength?, waitPolicy LockWaitPolicy?
+MergeAction: matchKind MergeMatchKind?, commandType CmdType?, override OverridingKind?, qual Node?, targetList tuple[Any, ...]?, updateColnos tuple[Any, ...]?
+MergeStmt: relation RangeVar?, sourceRelation Node?, joinCondition Node?, mergeWhenClauses tuple[Any, ...]?, returningClause ReturningClause?, withClause WithClause?
+MergeSupportFunc: location int?
+MergeWhenClause: matchKind MergeMatchKind?, commandType CmdType?, override OverridingKind?, condition Node?, targetList tuple[Any, ...]?, values tuple[Any, ...]?
+MinMaxExpr: op MinMaxOp?, args tuple[Any, ...]?, location int?
+MultiAssignRef: source Node?, colno int?, ncolumns int?
+NamedArgExpr: arg Expr?, name str?, argnumber int?, location int?
+NotifyStmt: conditionname str?, payload str?, payload_location int?
+NullTest: arg Expr?, nulltesttype NullTestType?, argisrow bool?, location int?
+ObjectWithArgs: objname tuple[Any, ...]?, objargs tuple[Any, ...]?, objfuncargs tuple[Any, ...]?, args_unspecified bool?
+OnConflictClause: action OnConflictAction?, infer InferClause?, targetList tuple[Any, ...]?, whereClause Node?, location int?
+OnConflictExpr: action OnConflictAction?, arbiterElems tuple[Any, ...]?, arbiterWhere Node?, onConflictSet tuple[Any, ...]?, onConflictWhere Node?, exclRelIndex int?, exclRelTlist tuple[Any, ...]?
+OpExpr: opretset bool?, args tuple[Any, ...]?, location int?
+PLAssignStmt: name str?, indirection tuple[Any, ...]?, nnames int?, val SelectStmt?, location int?
+Param: paramkind ParamKind?, paramid int?, paramtypmod int?, location int?
+ParamRef: number int?, location int?
+PartitionBoundSpec: strategy str?, is_default bool?, modulus int?, remainder int?, listdatums tuple[Any, ...]?, lowerdatums tuple[Any, ...]?, upperdatums tuple[Any, ...]?, location int?
+PartitionCmd: name RangeVar?, bound PartitionBoundSpec?, concurrent bool?
+PartitionElem: name str?, expr Node?, collation tuple[Any, ...]?, opclass tuple[Any, ...]?, location int?
+PartitionRangeDatum: kind PartitionRangeDatumKind?, value Node?, location int?
+PartitionSpec: strategy PartitionStrategy?, partParams tuple[Any, ...]?, location int?
+PrepareStmt: name str?, argtypes tuple[Any, ...]?, query Node?
+PublicationObjSpec: pubobjtype PublicationObjSpecType?, name str?, pubtable PublicationTable?, location int?
+PublicationTable: relation RangeVar?, whereClause Node?, columns tuple[Any, ...]?
+Query: commandType CmdType?, querySource QuerySource?, canSetTag bool?, utilityStmt Node?, resultRelation int?, hasAggs bool?, hasWindowFuncs bool?, hasTargetSRFs bool?, hasSubLinks bool?, hasDistinctOn bool?, hasRecursive bool?, hasModifyingCTE bool?, hasForUpdate bool?, hasRowSecurity bool?, hasGroupRTE bool?, isReturn bool?, cteList tuple[Any, ...]?, rtable tuple[Any, ...]?, rteperminfos tuple[Any, ...]?, jointree FromExpr?, mergeActionList tuple[Any, ...]?, mergeTargetRelation int?, mergeJoinCondition Node?, targetList tuple[Any, ...]?, override OverridingKind?, onConflict OnConflictExpr?, returningOldAlias str?, returningNewAlias str?, returningList tuple[Any, ...]?, groupClause tuple[Any, ...]?, groupDistinct bool?, groupingSets tuple[Any, ...]?, havingQual Node?, windowClause tuple[Any, ...]?, distinctClause tuple[Any, ...]?, sortClause tuple[Any, ...]?, limitOffset Node?, limitCount Node?, limitOption LimitOption?, rowMarks tuple[Any, ...]?, setOperations Node?, constraintDeps tuple[Any, ...]?, withCheckOptions tuple[Any, ...]?, stmt_location int?, stmt_len int?
+RTEPermissionInfo: inh bool?, requiredPerms int?, selectedCols set[int]?, insertedCols set[int]?, updatedCols set[int]?
+RangeFunction: lateral bool?, ordinality bool?, is_rowsfrom bool?, functions tuple[Any, ...]?, alias Alias?, coldeflist tuple[Any, ...]?
+RangeSubselect: lateral bool?, subquery Node?, alias Alias?
+RangeTableFunc: lateral bool?, docexpr Node?, rowexpr Node?, namespaces tuple[Any, ...]?, columns tuple[Any, ...]?, alias Alias?, location int?
+RangeTableFuncCol: colname str?, typeName TypeName?, for_ordinality bool?, is_not_null bool?, colexpr Node?, coldefexpr Node?, location int?
+RangeTableSample: relation Node?, method tuple[Any, ...]?, args tuple[Any, ...]?, repeatable Node?, location int?
+RangeTblEntry: alias Alias?, eref Alias?, rtekind RTEKind?, inh bool?, relkind str?, rellockmode int?, perminfoindex int?, tablesample TableSampleClause?, subquery Query?, security_barrier bool?, jointype JoinType?, joinmergedcols int?, joinaliasvars tuple[Any, ...]?, joinleftcols tuple[Any, ...]?, joinrightcols tuple[Any, ...]?, join_using_alias Alias?, functions tuple[Any, ...]?, funcordinality bool?, tablefunc TableFunc?, values_lists tuple[Any, ...]?, ctename str?, ctelevelsup int?, self_reference bool?, coltypes tuple[Any, ...]?, coltypmods tuple[Any, ...]?, colcollations tuple[Any, ...]?, enrname str?, enrtuples float?, groupexprs tuple[Any, ...]?, lateral bool?, inFromCl bool?, securityQuals tuple[Any, ...]?
+RangeTblFunction: funcexpr Node?, funccolcount int?, funccolnames tuple[Any, ...]?, funccoltypes tuple[Any, ...]?, funccoltypmods tuple[Any, ...]?, funccolcollations tuple[Any, ...]?, funcparams set[int]?
+RangeTblRef: rtindex int?
+RangeVar: catalogname str?, schemaname str?, relname str?, inh bool?, relpersistence str?, alias Alias?, location int?
+RawStmt: stmt Node, stmt_location int?, stmt_len int?
+ReassignOwnedStmt: roles tuple[Any, ...]?, newrole RoleSpec?
+RefreshMatViewStmt: concurrent bool?, skipData bool?, relation RangeVar?
+ReindexStmt: kind ReindexObjectType?, relation RangeVar?, name str?, params tuple[Any, ...]?
+RelabelType: arg Expr?, resulttypmod int?, relabelformat CoercionForm?, location int?
+RenameStmt: renameType ObjectType?, relationType ObjectType?, relation RangeVar?, object Node?, subname str?, newname str?, behavior DropBehavior?, missing_ok bool?
+ReplicaIdentityStmt: identity_type str?, name str?
+ResTarget: name str?, indirection tuple[Any, ...]?, val Node?, location int?
+ReturnStmt: returnval Node?
+ReturningClause: options tuple[Any, ...]?, exprs tuple[Any, ...]?
+ReturningExpr: retlevelsup int?, retold bool?, retexpr Expr?
+ReturningOption: option ReturningOptionKind?, value str?, location int?
+RoleSpec: roletype RoleSpecType?, rolename str?, location int?
+RowCompareExpr: cmptype CompareType?, opnos tuple[Any, ...]?, opfamilies tuple[Any, ...]?, inputcollids tuple[Any, ...]?, largs tuple[Any, ...]?, rargs tuple[Any, ...]?
+RowExpr: args tuple[Any, ...]?, row_format CoercionForm?, colnames tuple[Any, ...]?, location int?
+RowMarkClause: rti int?, strength LockClauseStrength?, waitPolicy LockWaitPolicy?, pushedDown bool?
+RuleStmt: relation RangeVar?, rulename str?, whereClause Node?, event CmdType?, instead bool?, actions tuple[Any, ...]?, replace bool?
+SQLValueFunction: op SQLValueFunctionOp?, typmod int?, location int?
+ScalarArrayOpExpr: useOr bool?, args tuple[Any, ...]?, location int?
+SecLabelStmt: objtype ObjectType?, object Node?, provider str?, label str?
+SelectStmt: distinctClause tuple[Any, ...]?, intoClause IntoClause?, targetList tuple[Any, ...]?, fromClause tuple[Any, ...]?, whereClause Node?, groupClause tuple[Any, ...]?, groupDistinct bool?, havingClause Node?, windowClause tuple[Any, ...]?, valuesLists tuple[Any, ...]?, sortClause tuple[Any, ...]?, limitOffset Node?, limitCount Node?, limitOption LimitOption?, lockingClause tuple[Any, ...]?, withClause WithClause?, op SetOperation?, all bool?, larg SelectStmt?, rarg SelectStmt?
+SetOperationStmt: op SetOperation?, all bool?, larg Node?, rarg Node?, colTypes tuple[Any, ...]?, colTypmods tuple[Any, ...]?, colCollations tuple[Any, ...]?, groupClauses tuple[Any, ...]?
+SetToDefault: typeMod int?, location int?
+SortBy: node Node?, sortby_dir SortByDir?, sortby_nulls SortByNulls?, useOp tuple[Any, ...]?, location int?
+SortGroupClause: tleSortGroupRef int?, reverse_sort bool?, nulls_first bool?, hashable bool?
+StatsElem: name str?, expr Node?
+String: sval str?
+SubLink: subLinkType SubLinkType?, subLinkId int?, testexpr Node?, operName tuple[Any, ...]?, subselect Node?, location int?
+SubPlan: subLinkType SubLinkType?, testexpr Node?, paramIds tuple[Any, ...]?, plan_id int?, plan_name str?, firstColTypmod int?, useHashTable bool?, unknownEqFalse bool?, parallel_safe bool?, setParam tuple[Any, ...]?, parParam tuple[Any, ...]?, args tuple[Any, ...]?, startup_cost float?, per_call_cost float?
+SubscriptingRef: reftypmod int?, refupperindexpr tuple[Any, ...]?, reflowerindexpr tuple[Any, ...]?, refexpr Expr?, refassgnexpr Expr?
+TableFunc: functype TableFuncType?, ns_uris tuple[Any, ...]?, ns_names tuple[Any, ...]?, docexpr Node?, rowexpr Node?, colnames tuple[Any, ...]?, coltypes tuple[Any, ...]?, coltypmods tuple[Any, ...]?, colcollations tuple[Any, ...]?, colexprs tuple[Any, ...]?, coldefexprs tuple[Any, ...]?, colvalexprs tuple[Any, ...]?, passingvalexprs tuple[Any, ...]?, notnulls set[int]?, plan Node?, ordinalitycol int?, location int?
+TableLikeClause: relation RangeVar?, options int?
+TableSampleClause: args tuple[Any, ...]?, repeatable Expr?
+TargetEntry: expr Expr?, resno int?, resname str?, ressortgroupref int?, resorigcol int?, resjunk bool?
+TransactionStmt: kind TransactionStmtKind?, options tuple[Any, ...]?, savepoint_name str?, gid str?, chain bool?, location int?
+TriggerTransition: name str?, isNew bool?, isTable bool?
+TruncateStmt: relations tuple[Any, ...]?, restart_seqs bool?, behavior DropBehavior?
+TypeCast: arg Node?, typeName TypeName?, location int?
+TypeName: names tuple[Any, ...]?, setof bool?, pct_type bool?, typmods tuple[Any, ...]?, typemod int?, arrayBounds tuple[Any, ...]?, location int?
+UnlistenStmt: conditionname str?
+UpdateStmt: relation RangeVar?, targetList tuple[Any, ...]?, whereClause Node?, fromClause tuple[Any, ...]?, returningClause ReturningClause?, withClause WithClause?
+VacuumRelation: relation RangeVar?, va_cols tuple[Any, ...]?
+VacuumStmt: options tuple[Any, ...]?, rels tuple[Any, ...]?, is_vacuumcmd bool?
+Var: varno int?, varattno int?, vartypmod int?, varnullingrels set[int]?, varlevelsup int?, varreturningtype VarReturningType?, location int?
+VariableSetStmt: kind VariableSetKind?, name str?, args tuple[Any, ...]?, jumble_args bool?, is_local bool?, location int?
+VariableShowStmt: name str?
+ViewStmt: view RangeVar?, aliases tuple[Any, ...]?, query Node?, replace bool?, options tuple[Any, ...]?, withCheckOption ViewCheckOption?
+WindowClause: name str?, refname str?, partitionClause tuple[Any, ...]?, orderClause tuple[Any, ...]?, frameOptions int?, startOffset Node?, endOffset Node?, inRangeAsc bool?, inRangeNullsFirst bool?, winref int?, copiedOrder bool?
+WindowDef: name str?, refname str?, partitionClause tuple[Any, ...]?, orderClause tuple[Any, ...]?, frameOptions int?, startOffset Node?, endOffset Node?, location int?
+WindowFunc: args tuple[Any, ...]?, aggfilter Expr?, runCondition tuple[Any, ...]?, winref int?, winstar bool?, winagg bool?, location int?
+WindowFuncRunCondition: wfunc_left bool?, arg Expr?
+WithCheckOption: kind WCOKind?, relname str?, polname str?, qual Node?, cascaded bool?
+WithClause: ctes tuple[Any, ...]?, recursive bool?, location int?
+XmlExpr: op XmlExprOp?, name str?, named_args tuple[Any, ...]?, arg_names tuple[Any, ...]?, args tuple[Any, ...]?, xmloption XmlOptionType?, indent bool?, typmod int?, location int?
+XmlSerialize: xmloption XmlOptionType?, expr Node?, typeName TypeName?, indent bool?, location int?

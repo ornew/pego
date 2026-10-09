@@ -1,0 +1,12 @@
+
+// stub: replaced by the XML and JSON expressions of group D
+type ExprStubD struct { }
+type ExprD = ExprStubD
+type TableRefStubD struct { }
+type TableRefD = TableRefStubD
+// the XML and JSON functions with special syntax (func_expr_common_subexpr of gram.y)
+def xmljson_expr: ExprD = "@@never@@" -> new ExprStubD{}
+// json_aggregate_func with its FILTER and OVER clauses
+def json_agg_expr: ExprD = "@@never@@" -> new ExprStubD{}
+// xmltable and json_table with their alias, as the alternatives of table_ref
+def xmljson_table: TableRefD = "@@never@@" -> new TableRefStubD{}

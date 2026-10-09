@@ -1,0 +1,15 @@
+// ==== Stubs of the rules of other regions (deleted when the regions are merged) ====
+
+// ExecuteStmt (the owner of EXECUTE): the node, which the query of CREATE TABLE AS can be (see CTASQuery)
+type ExecuteStmt struct { Name Ident, Params []Expr }
+
+// B2: OPTIONS ( generic_option_list ), the options of a foreign data wrapper, server, table or column
+def create_generic_options: []DefElem = OPTIONS -LP first:generic_option_elem rest:(-COMMA x:generic_option_elem)* -RP
+    -> concat(list($first), map($rest, (r) => $r.x))
+def generic_option_elem: DefElem = n:ColLabel v:Sconst -> new DefElem{Defname: $n, Arg: $v, Defaction: "DEFELEM_UNSPEC"}
+def alter_generic_options: []DefElem = OPTIONS -LP first:alter_generic_option_elem rest:(-COMMA x:alter_generic_option_elem)* -RP
+    -> concat(list($first), map($rest, (r) => $r.x))
+def alter_generic_option_elem: DefElem =
+    ( SET [da = "DEFELEM_SET"] n:ColLabel v:Sconst / ADD [da = "DEFELEM_ADD"] n:ColLabel v:Sconst
+    / DROP [da = "DEFELEM_DROP"] n:ColLabel / [da = "DEFELEM_UNSPEC"] n:ColLabel v:Sconst )
+    -> new DefElem{Defname: $n, Arg: $v, Defaction: da}

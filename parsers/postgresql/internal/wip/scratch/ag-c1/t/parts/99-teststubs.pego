@@ -1,0 +1,30 @@
+// TEST ONLY: working versions of the rules that group A owns (CREATE TABLE AS, REFRESH MATERIALIZED VIEW), to
+// test the statements of group C1 that contain them (EXPLAIN CREATE TABLE AS, CREATE TABLE AS EXECUTE).
+type CreateTableAsStmt struct { Query ExecuteOrCreateTableAsQuery, Into IntoClause, Objtype string, IsSelectInto bool, IfNotExists bool }
+type ExecuteOrCreateTableAsQuery = SelectStmt | ExecuteStmt
+type RefreshMatViewStmt struct { Concurrent bool, SkipData bool, Relation RangeVar }
+type OptTempValue struct { Relpersistence string }
+type WithDataValue struct { SkipData bool }
+
+def CreateAsStmt: CreateTableAsStmt = [ine = false] CREATE p:OptTemp TABLE (IF NOT EXISTS [ine = true])? t:create_as_target AS q:SelectStmt d:opt_with_data
+    -> new CreateTableAsStmt{Query: $q, Objtype: "OBJECT_TABLE", IfNotExists: ine,
+        Into: new IntoClause{Rel: new RangeVar{Catalogname: $t.Rel.Catalogname, Schemaname: $t.Rel.Schemaname, Relname: $t.Rel.Relname,
+            Inh: $t.Rel.Inh, Relpersistence: $p.Relpersistence, Alias: $t.Rel.Alias}, ColNames: $t.ColNames, AccessMethod: $t.AccessMethod,
+            Options: $t.Options, OnCommit: $t.OnCommit, TableSpaceName: $t.TableSpaceName, SkipData: $d.SkipData}}
+def CreateMatViewStmt: CreateTableAsStmt = "@@never@@" -> new CreateTableAsStmt{}
+def RefreshMatViewStmt: RefreshMatViewStmt = REFRESH MATERIALIZED VIEW c:CONCURRENTLY? r:qualified_name d:opt_with_data
+    -> new RefreshMatViewStmt{Concurrent: len($c) > 0, SkipData: $d.SkipData, Relation: $r}
+def create_as_target: IntoClause = [oc = "ONCOMMIT_NOOP"] r:qualified_name c:opt_column_list? (USING a:name)? (WITH o:reloptions / WITHOUT OIDS)?
+    (ON COMMIT (DROP [oc = "ONCOMMIT_DROP"] / DELETE ROWS [oc = "ONCOMMIT_DELETE_ROWS"] / PRESERVE ROWS [oc = "ONCOMMIT_PRESERVE_ROWS"]))?
+    (TABLESPACE ts:name)?
+    -> new IntoClause{Rel: $r, ColNames: concat($c), AccessMethod: $a, Options: concat($o), OnCommit: oc, TableSpaceName: $ts}
+def OptTemp: OptTempValue = [rp = "p"] ((TEMPORARY / TEMP / LOCAL TEMPORARY / LOCAL TEMP / GLOBAL TEMPORARY / GLOBAL TEMP) [rp = "t"] / UNLOGGED [rp = "u"])?
+    -> new OptTempValue{Relpersistence: rp}
+def opt_with_data: WithDataValue = [sk = false] (WITH DATA / WITH NO DATA [sk = true])? -> new WithDataValue{SkipData: sk}
+
+// surrogates of the statements of other groups that contain SetResetClause and FunctionSetResetClause
+type AlterDatabaseSetStmt struct { Dbname Ident, Setstmt VariableSetStmt }
+def AlterDatabaseSetStmt: AlterDatabaseSetStmt = ALTER DATABASE n:name s:SetResetClause -> new AlterDatabaseSetStmt{Dbname: $n, Setstmt: $s}
+type AlterFunctionStmt struct { Objtype string, Func ObjectWithArgs, Actions []VariableSetStmt }
+def AlterFunctionStmt: AlterFunctionStmt = ALTER FUNCTION f:function_with_argtypes s:FunctionSetResetClause
+    -> new AlterFunctionStmt{Objtype: "OBJECT_FUNCTION", Func: $f, Actions: list($s)}

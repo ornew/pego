@@ -1,0 +1,91 @@
+// ==== CREATE FUNCTION / PROCEDURE, ALTER FUNCTION, CREATE CAST, CREATE TRANSFORM ====
+
+// FUNCTION and PROCEDURE share the rule: only a function has RETURNS (gram.y has four productions).
+// RETURNS NULL ON NULL INPUT is an option, not a return type: func_type cannot start with NULL.
+def CreateFunctionStmt: CreateFunctionStmt =
+    CREATE r:(OR REPLACE)? (FUNCTION [ip = false] / PROCEDURE [ip = true])
+    n:func_name a:func_args_with_defaults rt:func_returns o:createfunc_opt_item* b:routine_body?
+    [!ip || !$rt.Declared]
+    [!$rt.Table || foldl(true, $a, (acc, p) => $acc && ($p.Mode == "FUNC_PARAM_DEFAULT" || $p.Mode == "FUNC_PARAM_IN" || $p.Mode == "FUNC_PARAM_VARIADIC"))]
+    -> new CreateFunctionStmt{IsProcedure: ip, Replace: len($r) > 0, Funcname: $n, Parameters: concat($a, $rt.Parameters),
+        ReturnType: $rt.Type, Options: $o, SqlBody: $b}
+
+def func_args_with_defaults: []FunctionParameter = -LP l:func_arg_with_default_list? -RP -> concat($l)
+def func_arg_with_default_list: []FunctionParameter = first:func_arg_with_default rest:(-COMMA x:func_arg_with_default)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+def func_arg_with_default: FunctionParameter = a:func_arg ((DEFAULT / EQ) e:a_expr)?
+    -> new FunctionParameter{Name: $a.Name, ArgType: $a.ArgType, Mode: $a.Mode, Defexpr: $e}
+
+// RETURNS TABLE (...): the columns become parameters, the result is that column's type or record (setof)
+def func_returns: FuncReturns = returns_table_many / returns_table_one / returns_type / returns_none
+def returns_type: FuncReturns = RETURNS t:func_type -> new FuncReturns{Declared: true, Table: false, Type: $t}
+def returns_none: FuncReturns = _ -> new FuncReturns{Declared: false, Table: false}
+def returns_table_one: FuncReturns = RETURNS TABLE -LP c:table_func_column -RP
+    -> new FuncReturns{Declared: true, Table: true, Parameters: list($c),
+        Type: new TypeName{Names: $c.ArgType.Names, Setof: true, PctType: $c.ArgType.PctType, Typmods: $c.ArgType.Typmods,
+            Typemod: $c.ArgType.Typemod, ArrayBounds: $c.ArgType.ArrayBounds}}
+def returns_table_many: FuncReturns = RETURNS TABLE -LP first:table_func_column rest:(-COMMA x:table_func_column)+ -RP
+    -> new FuncReturns{Declared: true, Table: true, Parameters: concat(list($first), map($rest, (r) => $r.x)),
+        Type: new TypeName{Names: list(new String{Sval: "pg_catalog"}, new String{Sval: "record"}), Setof: true, Typemod: -1}}
+def table_func_column: FunctionParameter = n:param_name t:func_type
+    -> new FunctionParameter{Name: $n, ArgType: $t, Mode: "FUNC_PARAM_TABLE"}
+
+// The options common to CREATE FUNCTION and ALTER FUNCTION
+def common_func_opt_item: DefElemK = func_opt_flag / func_opt_vol / func_opt_cost / func_opt_support / func_opt_set / func_opt_parallel
+def func_opt_flag: DefElemK =
+    ( CALLED ON NULL INPUT [n = "strict"] [v = false]
+    / RETURNS NULL ON NULL INPUT [n = "strict"] [v = true]
+    / STRICT [n = "strict"] [v = true]
+    / EXTERNAL? SECURITY [n = "security"] (DEFINER [v = true] / INVOKER [v = false])
+    / LEAKPROOF [n = "leakproof"] [v = true]
+    / NOT LEAKPROOF [n = "leakproof"] [v = false] )
+    -> new DefElemK{Defname: n, Arg: new Boolean{Boolval: v}}
+def func_opt_vol: DefElemK = (IMMUTABLE [v = "immutable"] / STABLE [v = "stable"] / VOLATILE [v = "volatile"])
+    -> new DefElemK{Defname: "volatility", Arg: new String{Sval: v}}
+def func_opt_cost: DefElemK = (COST [n = "cost"] / ROWS [n = "rows"]) v:NumericOnly -> new DefElemK{Defname: n, Arg: $v}
+def func_opt_support: DefElemK = SUPPORT n:any_name -> new DefElemK{Defname: "support", Arg: new NodeList{Items: $n}}
+def func_opt_set: DefElemK = s:FunctionSetResetClause -> new DefElemK{Defname: "set", Arg: $s}
+def func_opt_parallel: DefElemK = PARALLEL v:ColId -> new DefElemK{Defname: "parallel", Arg: $v}
+
+def createfunc_opt_item: DefElemK = func_opt_as / func_opt_language / func_opt_transform / func_opt_window / common_func_opt_item
+def func_opt_as: DefElemK = AS a:Sconst b:func_as_second? -> new DefElemK{Defname: "as", Arg: new NodeList{Items: concat(list($a), $b)}}
+def func_as_second: []Sconst = -COMMA x:Sconst -> list($x)
+def func_opt_language: DefElemK = LANGUAGE v:NonReservedWord_or_Sconst -> new DefElemK{Defname: "language", Arg: $v}
+def func_opt_transform: DefElemK = TRANSFORM first:transform_type rest:(-COMMA x:transform_type)*
+    -> new DefElemK{Defname: "transform", Arg: new NodeList{Items: concat(list($first), map($rest, (r) => $r.x))}}
+def transform_type: TypeName = FOR TYPE t:Typename -> $t
+def func_opt_window: DefElemK = WINDOW -> new DefElemK{Defname: "window", Arg: new Boolean{Boolval: true}}
+
+// RETURN expr, or BEGIN ATOMIC statements END. The statements are those of the core (`stmt`) and RETURN; empty
+// statements are dropped. The body is a list holding the list of statements, so that an empty body can be told
+// from no body.
+def routine_body: FuncBody = ReturnStmt / begin_atomic
+def ReturnStmt: ReturnStmt = RETURN e:a_expr -> new ReturnStmt{Returnval: $e}
+def begin_atomic: NodeList = BEGIN ATOMIC -SEMI* xs:(x:routine_body_stmt -SEMI+)* END
+    -> new NodeList{Items: list(new NodeList{Items: map($xs, (r) => $r.x)})}
+def routine_body_stmt: BodyStmt = stmt / ReturnStmt
+
+def AlterFunctionStmt: AlterFunctionStmt =
+    ALTER (FUNCTION [k = "OBJECT_FUNCTION"] / PROCEDURE [k = "OBJECT_PROCEDURE"] / ROUTINE [k = "OBJECT_ROUTINE"])
+    f:function_with_argtypes a:common_func_opt_item+ RESTRICT?
+    -> new AlterFunctionStmt{Objtype: k, Func: $f, Actions: $a}
+
+// ---- CREATE CAST, CREATE TRANSFORM and their DROP statements ----
+
+def CreateCastStmt: CreateCastStmt = [c = "COERCION_EXPLICIT"] [io = false]
+    CREATE CAST -LP s:Typename AS t:Typename -RP
+    (WITH FUNCTION f:function_with_argtypes / WITHOUT FUNCTION / WITH INOUT [io = true])
+    (AS (IMPLICIT [c = "COERCION_IMPLICIT"] / ASSIGNMENT [c = "COERCION_ASSIGNMENT"]))?
+    -> new CreateCastStmt{Sourcetype: $s, Targettype: $t, Func: $f, Context: c, Inout: io}
+
+def DropCastStmt: DropStmt = DROP CAST ie:(IF EXISTS)? -LP s:Typename AS t:Typename -RP b:drop_behavior?
+    -> new DropStmt{Objects: list(new NodeList{Items: list($s, $t)}), RemoveType: "OBJECT_CAST", Behavior: $b, MissingOk: len($ie) > 0}
+
+def CreateTransformStmt: CreateTransformStmt = CREATE r:(OR REPLACE)? TRANSFORM FOR t:Typename LANGUAGE l:name
+    -LP (fr:transform_from (-COMMA to:transform_to)? / to:transform_to (-COMMA fr:transform_from)?) -RP
+    -> new CreateTransformStmt{Replace: len($r) > 0, TypeName: $t, Lang: $l, Fromsql: $fr, Tosql: $to}
+def transform_from: ObjectWithArgs = FROM SQL WITH FUNCTION f:function_with_argtypes -> $f
+def transform_to: ObjectWithArgs = TO SQL WITH FUNCTION f:function_with_argtypes -> $f
+
+def DropTransformStmt: DropStmt = DROP TRANSFORM ie:(IF EXISTS)? FOR t:Typename LANGUAGE l:name b:drop_behavior?
+    -> new DropStmt{Objects: list(new NodeList{Items: list($t, $l)}), RemoveType: "OBJECT_TRANSFORM", Behavior: $b, MissingOk: len($ie) > 0}

@@ -1,0 +1,65 @@
+// ==== Logical replication: PUBLICATION and SUBSCRIPTION ====
+
+type PublicationTable struct { Relation RangeVar, WhereClause *Expr, Columns []Ident }
+type PublicationObjSpec struct { Pubobjtype string, Name *Ident, Pubtable *PublicationTable }
+type CreatePublicationStmt struct { Pubname Ident, Options []DefElem, Pubobjects []PublicationObjSpec, ForAllTables bool }
+type AlterPublicationStmt struct {
+    Pubname Ident, Options []DefElem, Pubobjects []PublicationObjSpec, ForAllTables bool, Action string
+}
+type CreateSubscriptionStmt struct { Subname Ident, Conninfo Sconst, Publication []Ident, Options []DefElem }
+type AlterSubscriptionStmt struct {
+    Kind string, Subname Ident, Conninfo *Sconst, Publication []Ident, Options []DefElem
+}
+type DropSubscriptionStmt struct { Subname Ident, MissingOk bool, Behavior *DropBehavior }
+
+// ---- PUBLICATION ----
+
+def CreatePublicationStmt: CreatePublicationStmt = [fat = false] CREATE PUBLICATION n:name
+    (FOR (ALL TABLES [fat = true] / l:pub_obj_list))? o:opt_definition?
+    -> new CreatePublicationStmt{Pubname: $n, Options: concat($o), Pubobjects: concat($l), ForAllTables: fat}
+def AlterPublicationStmt: AlterPublicationStmt = [a = ""] ALTER PUBLICATION n:name
+    ( SET d:definition / (ADD [a = "AP_AddObjects"] / DROP [a = "AP_DropObjects"] / SET [a = "AP_SetObjects"]) l:pub_obj_list )
+    -> new AlterPublicationStmt{Pubname: $n, Options: concat($d), Pubobjects: concat($l), Action: a}
+
+// The objects of a publication: TABLE t [(columns)] [WHERE (...)], TABLES IN SCHEMA s, or CURRENT_SCHEMA. A
+// name without keyword continues the kind of the item before it (gram.y rewrites the list afterwards, in
+// preprocess_pubobj_list); the variable pk holds the kind of the previous item ("" before the first). After a
+// table, an item is a table (with columns and a filter, ONLY, * and a schema); after a schema it is a plain
+// schema name or CURRENT_SCHEMA, and a column list, a filter or a qualified name is an error there.
+def pub_obj_list: []PublicationObjSpec = [pk = ""] l:pub_obj_chain -> $l
+def pub_obj_chain: []PublicationObjSpec = o:PublicationObjSpec [pk = $o.Pubobjtype] r:pub_obj_more?
+    -> concat(list($o), $r)
+def pub_obj_more: []PublicationObjSpec = -COMMA l:pub_obj_chain -> $l
+def PublicationObjSpec: PublicationObjSpec = pub_table / pub_cur_schema / pub_schema / pub_cont_table / pub_cont_schema / pub_cont_cur_schema
+def pub_table: PublicationObjSpec = TABLE r:relation_expr c:opt_column_list? w:pub_where?
+    -> new PublicationObjSpec{Pubobjtype: "PUBLICATIONOBJ_TABLE", Pubtable: new PublicationTable{Relation: $r, Columns: concat($c), WhereClause: $w}}
+def pub_where: Expr = WHERE -LP e:a_expr -RP -> $e
+def pub_cur_schema: PublicationObjSpec = TABLES IN SCHEMA CURRENT_SCHEMA
+    -> new PublicationObjSpec{Pubobjtype: "PUBLICATIONOBJ_TABLES_IN_CUR_SCHEMA"}
+def pub_schema: PublicationObjSpec = TABLES IN SCHEMA n:ColId
+    -> new PublicationObjSpec{Pubobjtype: "PUBLICATIONOBJ_TABLES_IN_SCHEMA", Name: $n}
+def pub_cont_table: PublicationObjSpec = [pk == "PUBLICATIONOBJ_TABLE"] r:relation_expr c:opt_column_list? w:pub_where?
+    -> new PublicationObjSpec{Pubobjtype: "PUBLICATIONOBJ_TABLE", Pubtable: new PublicationTable{Relation: $r, Columns: concat($c), WhereClause: $w}}
+def pub_cont_schema: PublicationObjSpec = [pk != "" && pk != "PUBLICATIONOBJ_TABLE"] n:ColId
+    -> new PublicationObjSpec{Pubobjtype: "PUBLICATIONOBJ_TABLES_IN_SCHEMA", Name: $n}
+def pub_cont_cur_schema: PublicationObjSpec = [pk != "" && pk != "PUBLICATIONOBJ_TABLE"] CURRENT_SCHEMA
+    -> new PublicationObjSpec{Pubobjtype: "PUBLICATIONOBJ_TABLES_IN_CUR_SCHEMA"}
+
+// ---- SUBSCRIPTION ----
+
+def CreateSubscriptionStmt: CreateSubscriptionStmt = CREATE SUBSCRIPTION n:name CONNECTION c:Sconst PUBLICATION p:name_list o:opt_definition?
+    -> new CreateSubscriptionStmt{Subname: $n, Conninfo: $c, Publication: $p, Options: concat($o)}
+def AlterSubscriptionStmt: AlterSubscriptionStmt = alter_sub_enabled / alter_sub_general
+def alter_sub_general: AlterSubscriptionStmt = [k = ""] ALTER SUBSCRIPTION n:name
+    ( SET (d:definition / PUBLICATION [k = "ALTER_SUBSCRIPTION_SET_PUBLICATION"] p:name_list o:opt_definition?)
+    / CONNECTION c:Sconst [k = "ALTER_SUBSCRIPTION_CONNECTION"]
+    / REFRESH PUBLICATION [k = "ALTER_SUBSCRIPTION_REFRESH"] o:opt_definition?
+    / ADD PUBLICATION [k = "ALTER_SUBSCRIPTION_ADD_PUBLICATION"] p:name_list o:opt_definition?
+    / DROP PUBLICATION [k = "ALTER_SUBSCRIPTION_DROP_PUBLICATION"] p:name_list o:opt_definition?
+    / SKIP [k = "ALTER_SUBSCRIPTION_SKIP"] d:definition )
+    -> new AlterSubscriptionStmt{Kind: k, Subname: $n, Conninfo: $c, Publication: concat($p), Options: concat($d, $o)}
+def alter_sub_enabled: AlterSubscriptionStmt = ALTER SUBSCRIPTION n:name (ENABLE [e = true] / DISABLE [e = false])
+    -> new AlterSubscriptionStmt{Kind: "ALTER_SUBSCRIPTION_ENABLED", Subname: $n,
+        Options: list(new DefElem{Defname: new String{Sval: "enabled"}, Arg: new Boolean{Boolval: e}})}
+def DropSubscriptionStmt: DropSubscriptionStmt = DROP SUBSCRIPTION i:(IF EXISTS)? n:name b:drop_behavior?
+    -> new DropSubscriptionStmt{Subname: $n, MissingOk: len($i) > 0, Behavior: $b}

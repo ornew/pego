@@ -1,0 +1,111 @@
+// ==== Triggers, event triggers, rules and policies ====
+
+type CreateEventTrigStmt struct { Trigname Ident, Eventname Ident, Whenclause []DefElem, Funcname []Ident }
+type AlterEventTrigStmt struct { Trigname Ident, Tgenabled string }
+// A trigger's argument: a number, a string or a name; the converter turns the numbers into strings
+type TrgArgNum struct { Val Num }
+type TriggerFuncArg = TrgArgNum | Ident | Sconst
+type TriggerTransition struct { Name Ident, IsNew bool, IsTable bool }
+type CreateTrigStmt struct {
+    Replace bool, Isconstraint bool, Trigname Ident, Relation RangeVar, Funcname []Ident, Args []TriggerFuncArg, Row bool,
+    Timing int, Events int, Columns []Ident, WhenClause *Expr, TransitionRels []TriggerTransition, Deferrable bool,
+    Initdeferred bool, Constrrel *RangeVar
+}
+type RuleActionStmt = SelectStmt | InsertStmt | UpdateStmt | DeleteStmt | NotifyStmt
+type RuleStmt struct {
+    Relation RangeVar, Rulename Ident, WhereClause *Expr, Event string, Instead bool, Actions []RuleActionStmt, Replace bool
+}
+type CreatePolicyStmt struct {
+    PolicyName Ident, Table RangeVar, CmdName string, Permissive bool, Roles []RoleSpec, Qual *Expr, WithCheck *Expr
+}
+type AlterPolicyStmt struct { PolicyName Ident, Table RangeVar, Roles []RoleSpec, Qual *Expr, WithCheck *Expr }
+
+// ---- CREATE TRIGGER ----
+
+def CreateTrigStmt: CreateTrigStmt = trigger_regular / trigger_constraint
+// The timing and the events are bit masks, as in the C code: ROW 1, BEFORE 2, INSERT 4, DELETE 8, UPDATE 16,
+// TRUNCATE 32, INSTEAD 64 (AFTER is 0). Without FOR EACH, a trigger is a statement trigger.
+def trigger_regular: CreateTrigStmt = [t = 0] [row = false]
+    CREATE r:b2_or_replace? TRIGGER n:name (BEFORE [t = 2] / AFTER [t = 0] / INSTEAD OF [t = 64]) ev:trigger_events
+    ON rel:qualified_name tr:trigger_referencing? (FOR EACH? (ROW [row = true] / STATEMENT [row = false]))? w:trigger_when?
+    EXECUTE (FUNCTION / PROCEDURE) f:func_name -LP a:trigger_func_args? -RP
+    -> new CreateTrigStmt{Replace: len($r) > 0, Trigname: $n, Relation: $rel, Funcname: $f, Args: concat($a), Row: row, Timing: t,
+        Events: $ev.Events, Columns: $ev.Columns, WhenClause: $w, TransitionRels: concat($tr)}
+// CREATE CONSTRAINT TRIGGER: AFTER, FOR EACH ROW, and the attributes of a constraint (OR REPLACE is an error)
+def trigger_constraint: CreateTrigStmt =
+    CREATE CONSTRAINT TRIGGER n:name AFTER ev:trigger_events ON rel:qualified_name (FROM cr:qualified_name)? cas:trigger_cas
+    FOR EACH ROW w:trigger_when? EXECUTE (FUNCTION / PROCEDURE) f:func_name -LP a:trigger_func_args? -RP
+    -> new CreateTrigStmt{Isconstraint: true, Trigname: $n, Relation: $rel, Funcname: $f, Args: concat($a), Row: true,
+        Events: $ev.Events, Columns: $ev.Columns, WhenClause: $w, Deferrable: ($cas.Ival / 2) % 2 == 1 || ($cas.Ival / 8) % 2 == 1,
+        Initdeferred: ($cas.Ival / 8) % 2 == 1, Constrrel: $cr}
+
+// The events: INSERT, DELETE, UPDATE [OF columns] and TRUNCATE joined by OR, each at most once. Events is the
+// mask, Sum the mask with a repeated event counted twice (so a repetition is Events != Sum).
+type TrgEv struct { Events int, Sum int, Columns []Ident }
+def trigger_events: TrgEv = e:trigger_events_list [$e.Events == $e.Sum] -> $e
+def trigger_events_list: TrgEv = first:trigger_event rest:(-OR x:trigger_event)*
+    -> foldl($first, $rest, (acc, i) => new TrgEv{Events: $acc.Events + $i.x.Events * (1 - ($acc.Events / $i.x.Events) % 2), Sum: $acc.Sum + $i.x.Sum, Columns: concat($acc.Columns, $i.x.Columns)})
+def trigger_event: TrgEv = (INSERT [b = 4] / DELETE [b = 8] / UPDATE [b = 16] (OF c:column_list)? / TRUNCATE [b = 32])
+    -> new TrgEv{Events: b, Sum: b, Columns: concat($c)}
+def trigger_referencing: []TriggerTransition = REFERENCING l:trigger_transition+ -> $l
+def trigger_transition: TriggerTransition = (NEW [n = true] / OLD [n = false]) (TABLE [t = true] / ROW [t = false]) AS? r:ColId
+    -> new TriggerTransition{Name: $r, IsNew: n, IsTable: t}
+def trigger_when: Expr = WHEN -LP e:a_expr -RP -> $e
+def trigger_func_args: []TriggerFuncArg = first:trigger_func_arg rest:(-COMMA x:trigger_func_arg)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+def trigger_func_arg: TriggerFuncArg = trigger_arg_num / Sconst / ColLabel
+def trigger_arg_num: TrgArgNum = v:(Iconst / Fconst) -> new TrgArgNum{Val: $v}
+// The attributes of a constraint trigger: a mask of NOT DEFERRABLE 1, DEFERRABLE 2, INITIALLY IMMEDIATE 4 and
+// INITIALLY DEFERRED 8; contradictions are errors (NOT VALID and the others are errors for a trigger).
+def trigger_cas: Integer = c:trigger_cas_list [$c.Ival % 4 != 3 && ($c.Ival / 4) % 4 != 3 && $c.Ival % 2 + ($c.Ival / 8) % 2 != 2] -> $c
+def trigger_cas_list: Integer = l:trigger_cas_elem*
+    -> foldl(new Integer{Ival: 0}, $l, (acc, i) => new Integer{Ival: $acc.Ival + $i.Ival * (1 - ($acc.Ival / $i.Ival) % 2)})
+def trigger_cas_elem: Integer = (NOT DEFERRABLE [b = 1] / DEFERRABLE [b = 2] / INITIALLY IMMEDIATE [b = 4] / INITIALLY DEFERRED [b = 8])
+    -> new Integer{Ival: b}
+
+// ---- CREATE EVENT TRIGGER, ALTER EVENT TRIGGER ----
+
+def CreateEventTrigStmt: CreateEventTrigStmt = CREATE EVENT TRIGGER n:name ON e:ColLabel w:event_trigger_when? EXECUTE (FUNCTION / PROCEDURE)
+    f:func_name -LP -RP
+    -> new CreateEventTrigStmt{Trigname: $n, Eventname: $e, Whenclause: concat($w), Funcname: $f}
+def event_trigger_when: []DefElem = WHEN first:event_trigger_when_item rest:(-AND x:event_trigger_when_item)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+def event_trigger_when_item: DefElem = n:ColId IN -LP first:Sconst rest:(-COMMA x:Sconst)* -RP
+    -> new DefElem{Defname: $n, Arg: new NodeList{Items: concat(list($first), map($rest, (r) => $r.x))}}
+def AlterEventTrigStmt: AlterEventTrigStmt = ALTER EVENT TRIGGER n:name
+    (ENABLE (REPLICA [e = "R"] / ALWAYS [e = "A"] / _ [e = "O"]) / DISABLE [e = "D"])
+    -> new AlterEventTrigStmt{Trigname: $n, Tgenabled: e}
+
+// ---- CREATE RULE ----
+
+def RuleStmt: RuleStmt = [ins = false] CREATE r:b2_or_replace? RULE n:name AS ON
+    (SELECT [ev = "CMD_SELECT"] / UPDATE [ev = "CMD_UPDATE"] / DELETE [ev = "CMD_DELETE"] / INSERT [ev = "CMD_INSERT"])
+    TO rel:qualified_name w:where_clause? DO (INSTEAD [ins = true] / ALSO)? a:rule_actions
+    -> new RuleStmt{Relation: $rel, Rulename: $n, WhereClause: $w, Event: ev, Instead: ins, Actions: $a, Replace: len($r) > 0}
+def rule_actions: []RuleActionStmt = rule_nothing / rule_single / rule_multi
+def rule_nothing: []RuleActionStmt = NOTHING -> list()
+def rule_single: []RuleActionStmt = a:RuleActionStmt -> list($a)
+// (stmt; stmt; ...): empty statements are dropped
+def rule_multi: []RuleActionStmt = -LP -SEMI* l:rule_multi_body? -RP -> concat($l)
+def rule_multi_body: []RuleActionStmt = first:RuleActionStmt rest:(-SEMI+ x:RuleActionStmt)* -SEMI*
+    -> concat(list($first), map($rest, (r) => $r.x))
+def RuleActionStmt: RuleActionStmt = SelectStmt / InsertStmt / UpdateStmt / DeleteStmt / NotifyStmt
+
+// ---- CREATE POLICY, ALTER POLICY ----
+
+def CreatePolicyStmt: CreatePolicyStmt = [perm = true] [cmd = "all"] CREATE POLICY n:name ON t:qualified_name
+    (AS (policy_permissive [perm = true] / policy_restrictive [perm = false]))?
+    (FOR (ALL [cmd = "all"] / SELECT [cmd = "select"] / INSERT [cmd = "insert"] / UPDATE [cmd = "update"] / DELETE [cmd = "delete"]))?
+    r:policy_roles q:policy_using? c:policy_check?
+    -> new CreatePolicyStmt{PolicyName: $n, Table: $t, CmdName: cmd, Permissive: perm, Roles: $r, Qual: $q, WithCheck: $c}
+def AlterPolicyStmt: AlterPolicyStmt = ALTER POLICY n:name ON t:qualified_name r:policy_to? q:policy_using? c:policy_check? b2_end
+    -> new AlterPolicyStmt{PolicyName: $n, Table: $t, Roles: concat($r), Qual: $q, WithCheck: $c}
+// PERMISSIVE and RESTRICTIVE are IDENT in gram.y, any other word is an error
+def policy_permissive = w:b2_word [$w.V == "permissive"]
+def policy_restrictive = w:b2_word [$w.V == "restrictive"]
+def policy_to: []RoleSpec = TO l:role_list -> $l
+// CREATE POLICY without TO applies to PUBLIC
+def policy_roles: []RoleSpec = policy_to / policy_public
+def policy_public: []RoleSpec = _ -> list(new RoleSpec{Roletype: "ROLESPEC_PUBLIC"})
+def policy_using: Expr = USING -LP e:a_expr -RP -> $e
+def policy_check: Expr = WITH CHECK -LP e:a_expr -RP -> $e

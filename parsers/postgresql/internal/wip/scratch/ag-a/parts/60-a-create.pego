@@ -1,0 +1,249 @@
+// ==== CREATE TABLE and its elements, constraints, partitions (region A) ====
+
+// OptTemp and OptNoLog stand for the persistence of a relation: the RangeVar of the statement gets it
+def OptTemp: Persistence = [rp = "p"]
+    ( (TEMPORARY / TEMP / LOCAL TEMPORARY / LOCAL TEMP / GLOBAL TEMPORARY / GLOBAL TEMP) [rp = "t"] / UNLOGGED [rp = "u"] )?
+    -> new Persistence{Relpersistence: rp}
+def OptNoLog: Persistence = [rp = "p"] (UNLOGGED [rp = "u"])? -> new Persistence{Relpersistence: rp}
+
+// CREATE TABLE in its six forms: (columns), OF type, PARTITION OF parent, each with IF NOT EXISTS or without.
+// The parents of PARTITION OF are the only inheritance parent.
+def CreateStmt: CreateStmt =
+    CREATE p:OptTemp TABLE ine:(IF NOT EXISTS)? n:qualified_name
+    ( -LP el:table_element_list? -RP inh:OptInherit?
+    / oft:of_type el:typed_element_list?
+    / PARTITION OF par:partition_parent el:typed_element_list? pb:PartitionBoundSpec )
+    ps:PartitionSpec? am:table_access_method_clause? w:OptWith oc:OnCommitOption ts:OptTableSpace?
+    -> new CreateStmt{Relation: new RangeVar{Catalogname: $n.Catalogname, Schemaname: $n.Schemaname, Relname: $n.Relname, Inh: true, Relpersistence: $p.Relpersistence},
+        TableElts: concat($el), InhRelations: concat($inh, $par), Partbound: $pb, Partspec: $ps, OfTypename: $oft,
+        Options: $w, Oncommit: $oc.Oncommit, Tablespacename: $ts, AccessMethod: $am, IfNotExists: len($ine) > 0}
+def of_type: TypeName = OF n:any_name -> new TypeName{Names: $n, Typemod: -1}
+def partition_parent: []RangeVar = n:qualified_name -> list($n)
+def OptInherit: []RangeVar = INHERITS -LP l:qualified_name_list -RP -> $l
+def table_element_list: []TableElt = first:table_element rest:(-COMMA x:table_element)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+// EXCLUDE is the one word that starts a constraint and can also be a column name: the constraint is tried first
+def table_element: TableElt = TableConstraint / TableLikeClause / columnDef
+def typed_element_list: []TableElt = -LP first:typed_element rest:(-COMMA x:typed_element)* -RP
+    -> concat(list($first), map($rest, (r) => $r.x))
+def typed_element: TableElt = TableConstraint / columnOptions
+
+def OptWith: []DefElem = ( WITH l:reloptions / WITHOUT OIDS )? -> concat($l)
+def OnCommitOption: OnCommitSpec = [oc = "ONCOMMIT_NOOP"]
+    ( ON COMMIT (DROP [oc = "ONCOMMIT_DROP"] / DELETE ROWS [oc = "ONCOMMIT_DELETE_ROWS"] / PRESERVE ROWS [oc = "ONCOMMIT_PRESERVE_ROWS"]) )?
+    -> new OnCommitSpec{Oncommit: oc}
+def OptTableSpace: Ident = TABLESPACE n:name -> $n
+def OptConsTableSpace: Ident = USING INDEX TABLESPACE n:name -> $n
+def ExistingIndex: Ident = USING INDEX n:name -> $n
+def table_access_method_clause: Ident = USING n:name -> $n
+// USING method, or btree
+def access_method_clause: Str = a_using_method / a_btree
+def a_using_method: Ident = USING n:name -> $n
+def a_btree: String = _ -> new String{Sval: "btree"}
+def OptWhereClause: Expr = WHERE -LP e:a_expr -RP -> $e
+
+// ---- Columns ----
+
+def columnDef: ColumnDef = n:ColId t:Typename st:column_storage? cm:column_compression? fo:create_generic_options? q:ColQualList
+    -> new ColumnDef{Colname: $n, TypeName: $t, Compression: $cm, IsLocal: true, StorageName: $st, Fdwoptions: concat($fo),
+        CollClause: $q.CollClause, Constraints: $q.Constraints}
+def columnOptions: ColumnDef = n:ColId (WITH OPTIONS)? q:ColQualList
+    -> new ColumnDef{Colname: $n, IsLocal: true, CollClause: $q.CollClause, Constraints: $q.Constraints}
+def column_storage: NameStr = STORAGE s:(ColId / a_default) -> $s
+def column_compression: NameStr = COMPRESSION s:(ColId / a_default) -> $s
+def a_default: String = DEFAULT -> new String{Sval: "default"}
+
+// ColQualList: the constraints and at most one COLLATE clause, which SplitColQualList takes out of the list
+// (a second COLLATE is an error)
+def ColQualList: ColQuals = a:ColConstraint* (cc:opt_collate_clause b:ColConstraint*)?
+    -> new ColQuals{Constraints: concat($a, $b), CollClause: $cc}
+def ColConstraint: Constraint = col_constraint / col_references / ConstraintAttr
+
+// the constraints of a column except REFERENCES; the variables say what the action builds
+def col_constraint: Constraint = [ct = "CONSTR_NULL"] [en = false] [iv = false] [nnd = false] [gw = ""] [gk = ""]
+    (CONSTRAINT cn:name)?
+    ( NOT NULL [ct = "CONSTR_NOTNULL"] [en = true] [iv = true] ni:(NO INHERIT)?
+    / NULL
+    / UNIQUE [ct = "CONSTR_UNIQUE"] (NULLS (NOT [nnd = true])? DISTINCT)? o:opt_definition? ts:OptConsTableSpace?
+    / PRIMARY KEY [ct = "CONSTR_PRIMARY"] o:opt_definition? ts:OptConsTableSpace?
+    / CHECK [ct = "CONSTR_CHECK"] [en = true] [iv = true] -LP e:a_expr -RP ni:(NO INHERIT)?
+    / DEFAULT [ct = "CONSTR_DEFAULT"] e:b_expr
+    / GENERATED (ALWAYS [gw = "a"] / BY DEFAULT [gw = "d"]) AS
+      ( IDENTITY [ct = "CONSTR_IDENTITY"] o:OptParenthesizedSeqOptList
+      / -LP e:a_expr -RP [ct = "CONSTR_GENERATED"] [gw == "a"] [gk = "v"] (STORED [gk = "s"] / VIRTUAL)? ) )
+    -> new Constraint{Contype: ct, Conname: $cn, IsEnforced: en, InitiallyValid: iv, IsNoInherit: len($ni) > 0, RawExpr: $e,
+        GeneratedWhen: gw, GeneratedKind: gk, NullsNotDistinct: nnd, Options: concat($o), Indexspace: $ts}
+def col_references: Constraint = (CONSTRAINT cn:name)? REFERENCES t:qualified_name c:opt_column_list?
+    [fm = "s"] (MATCH (FULL [fm = "f"] / SIMPLE))? a:key_actions
+    -> new Constraint{Contype: "CONSTR_FOREIGN", Conname: $cn, IsEnforced: true, InitiallyValid: true, Pktable: $t, PkAttrs: concat($c),
+        FkMatchtype: fm, FkUpdAction: $a.Upd, FkDelAction: $a.Del, FkDelSetCols: $a.DelCols}
+// ConstraintAttr: the attributes of the constraint that precedes them, parsed as independent clauses
+def ConstraintAttr: Constraint =
+    ( DEFERRABLE [ct = "CONSTR_ATTR_DEFERRABLE"] / NOT DEFERRABLE [ct = "CONSTR_ATTR_NOT_DEFERRABLE"]
+    / INITIALLY DEFERRED [ct = "CONSTR_ATTR_DEFERRED"] / INITIALLY IMMEDIATE [ct = "CONSTR_ATTR_IMMEDIATE"]
+    / ENFORCED [ct = "CONSTR_ATTR_ENFORCED"] / NOT ENFORCED [ct = "CONSTR_ATTR_NOT_ENFORCED"] )
+    -> new Constraint{Contype: ct}
+
+// ON UPDATE and ON DELETE in either order; NO ACTION when missing. A column list is for ON DELETE only.
+def key_actions: KeyActions =
+    ( u:key_update d:(key_delete / key_noaction) / d:key_delete u:(key_update / key_noaction) / u:key_noaction d:key_noaction )
+    -> new KeyActions{Upd: $u.Action, Del: $d.Action, DelCols: $d.Cols}
+def key_update: KeyAction = ON UPDATE a:key_action [len($a.Cols) == 0] -> $a
+def key_delete: KeyAction = ON DELETE a:key_action -> $a
+def key_noaction: KeyAction = _ -> new KeyAction{Action: "a"}
+def key_action: KeyAction =
+    ( NO ACTION [ka = "a"] / RESTRICT [ka = "r"] / CASCADE [ka = "c"] / SET NULL [ka = "n"] c:opt_column_list? / SET DEFAULT [ka = "d"] c:opt_column_list? )
+    -> new KeyAction{Action: ka, Cols: concat($c)}
+
+// ---- Constraint attributes ----
+
+def ConstraintAttributeElem: CAS =
+    ( NOT DEFERRABLE [k = 1] / DEFERRABLE [k = 2] / INITIALLY IMMEDIATE [k = 3] / INITIALLY DEFERRED [k = 4]
+    / NOT VALID [k = 5] / NO INHERIT [k = 6] / NOT ENFORCED [k = 7] / ENFORCED [k = 8] )
+    -> new CAS{NotDeferrable: k == 1, Deferrable: k == 2, InitImmediate: k == 3, InitDeferred: k == 4, NotValid: k == 5,
+        NoInherit: k == 6, NotEnforced: k == 7, Enforced: k == 8}
+def cas_fold: CAS = xs:ConstraintAttributeElem*
+    -> foldl(new CAS{NotDeferrable: false, Deferrable: false, InitImmediate: false, InitDeferred: false, NotValid: false, NoInherit: false,
+        NotEnforced: false, Enforced: false}, $xs, (acc, i) => new CAS{NotDeferrable: $acc.NotDeferrable || $i.NotDeferrable,
+        Deferrable: $acc.Deferrable || $i.Deferrable, InitImmediate: $acc.InitImmediate || $i.InitImmediate,
+        InitDeferred: $acc.InitDeferred || $i.InitDeferred, NotValid: $acc.NotValid || $i.NotValid,
+        NoInherit: $acc.NoInherit || $i.NoInherit, NotEnforced: $acc.NotEnforced || $i.NotEnforced,
+        Enforced: $acc.Enforced || $i.Enforced})
+// conflicting attributes are errors: NOT DEFERRABLE with DEFERRABLE or INITIALLY DEFERRED, the two INITIALLY,
+// the two enforcement attributes
+def ConstraintAttributeSpec: CAS = c:cas_fold
+    [!($c.NotDeferrable && ($c.Deferrable || $c.InitDeferred)) && !($c.InitImmediate && $c.InitDeferred) && !($c.NotEnforced && $c.Enforced)]
+    -> $c
+
+// ---- Table constraints ----
+//
+// processCASbits turns the attributes into the fields of the constraint, and it is an error to write an attribute
+// that the kind of constraint does not support: the predicates after the attributes check that, and the actions
+// compute the fields with the same formulas (deferrable is set by DEFERRABLE and by INITIALLY DEFERRED, a constraint
+// that is NOT ENFORCED is also not valid).
+def TableConstraint: Constraint = tc_check / tc_notnull / tc_key / tc_exclude / tc_foreign
+def tc_check: Constraint = (CONSTRAINT cn:name)? CHECK -LP e:a_expr -RP c:ConstraintAttributeSpec [!$c.Deferrable && !$c.InitDeferred]
+    -> new Constraint{Contype: "CONSTR_CHECK", Conname: $cn, IsEnforced: !$c.NotEnforced, SkipValidation: $c.NotValid || $c.NotEnforced,
+        InitiallyValid: !($c.NotValid || $c.NotEnforced), IsNoInherit: $c.NoInherit, RawExpr: $e}
+def tc_notnull: Constraint = (CONSTRAINT cn:name)? NOT NULL k:ColId c:ConstraintAttributeSpec
+    [!$c.Deferrable && !$c.InitDeferred && !$c.NotEnforced && !$c.Enforced]
+    -> new Constraint{Contype: "CONSTR_NOTNULL", Conname: $cn, SkipValidation: $c.NotValid, InitiallyValid: !$c.NotValid,
+        IsNoInherit: $c.NoInherit, Keys: list($k)}
+// UNIQUE and PRIMARY KEY, with a column list or an existing index; NULLS [NOT] DISTINCT only with the column list
+def tc_key: Constraint = [ct = ""] [nnd = false] (CONSTRAINT cn:name)?
+    ( UNIQUE [ct = "CONSTR_UNIQUE"] nn:(NULLS (NOT [nnd = true])? DISTINCT)? / PRIMARY KEY [ct = "CONSTR_PRIMARY"] )
+    ( -LP k:column_list wo:(WITHOUT OVERLAPS)? -RP (INCLUDE -LP inc:column_list -RP)? o:opt_definition? ts:OptConsTableSpace?
+    / ix:ExistingIndex [len($nn) == 0] )
+    c:ConstraintAttributeSpec [!$c.NotValid && !$c.NoInherit && !$c.NotEnforced && !$c.Enforced]
+    -> new Constraint{Contype: ct, Conname: $cn, Deferrable: $c.Deferrable || $c.InitDeferred, Initdeferred: $c.InitDeferred,
+        NullsNotDistinct: nnd, Keys: concat($k), WithoutOverlaps: len($wo) > 0, Including: concat($inc), Options: concat($o),
+        Indexname: $ix, Indexspace: $ts}
+def tc_exclude: Constraint = (CONSTRAINT cn:name)? EXCLUDE am:access_method_clause -LP ex:exclusion_list -RP
+    (INCLUDE -LP inc:column_list -RP)? o:opt_definition? ts:OptConsTableSpace? wh:OptWhereClause?
+    c:ConstraintAttributeSpec [!$c.NotValid && !$c.NoInherit && !$c.NotEnforced && !$c.Enforced]
+    -> new Constraint{Contype: "CONSTR_EXCLUSION", Conname: $cn, Deferrable: $c.Deferrable || $c.InitDeferred, Initdeferred: $c.InitDeferred,
+        Including: concat($inc), Exclusions: $ex, Options: concat($o), Indexspace: $ts, AccessMethod: $am, WhereClause: $wh}
+def exclusion_list: []NodeList = first:exclusion_elem rest:(-COMMA x:exclusion_elem)* -> concat(list($first), map($rest, (r) => $r.x))
+// (index element, operator): a list of two items in the raw tree
+def exclusion_elem: NodeList = e:index_elem WITH (o:any_operator / OPERATOR -LP o:any_operator -RP)
+    -> new NodeList{Items: list($e, new NodeList{Items: $o})}
+def tc_foreign: Constraint = (CONSTRAINT cn:name)? FOREIGN KEY -LP k:fk_cols -RP REFERENCES t:qualified_name pk:fk_ref_cols
+    [fm = "s"] (MATCH (FULL [fm = "f"] / SIMPLE))? a:key_actions c:ConstraintAttributeSpec [!$c.NoInherit]
+    -> new Constraint{Contype: "CONSTR_FOREIGN", Conname: $cn, Deferrable: $c.Deferrable || $c.InitDeferred, Initdeferred: $c.InitDeferred,
+        IsEnforced: !$c.NotEnforced, SkipValidation: $c.NotValid || $c.NotEnforced, InitiallyValid: !($c.NotValid || $c.NotEnforced),
+        Pktable: $t, FkAttrs: $k.Cols, PkAttrs: $pk.Cols, FkWithPeriod: $k.Period, PkWithPeriod: $pk.Period,
+        FkMatchtype: fm, FkUpdAction: $a.Upd, FkDelAction: $a.Del, FkDelSetCols: $a.DelCols}
+// columnList optionalPeriodName: ", PERIOD name" ends the list, but a column may itself be named period
+def fk_cols: FkCols = first:ColId rest:(-COMMA !(PERIOD ColId) x:ColId)* p:period_name?
+    -> new FkCols{Cols: concat(list($first), map($rest, (r) => $r.x), $p), Period: len($p) > 0}
+def period_name: []Ident = -COMMA -PERIOD x:ColId -> list($x)
+def fk_ref_cols: FkCols = fk_ref_cols_paren / fk_ref_cols_none
+def fk_ref_cols_paren: FkCols = -LP x:fk_cols -RP -> $x
+def fk_ref_cols_none: FkCols = _ -> new FkCols{}
+
+// DomainConstraint: CHECK, and NOT NULL without a column
+def DomainConstraint: Constraint = dc_check / dc_notnull
+def dc_check: Constraint = (CONSTRAINT cn:name)? CHECK -LP e:a_expr -RP c:ConstraintAttributeSpec
+    [!$c.Deferrable && !$c.InitDeferred && !$c.NotEnforced && !$c.Enforced]
+    -> new Constraint{Contype: "CONSTR_CHECK", Conname: $cn, IsEnforced: true, SkipValidation: $c.NotValid, InitiallyValid: !$c.NotValid,
+        IsNoInherit: $c.NoInherit, RawExpr: $e}
+def dc_notnull: Constraint = (CONSTRAINT cn:name)? NOT NULL c:ConstraintAttributeSpec
+    [!$c.Deferrable && !$c.InitDeferred && !$c.NotValid && !$c.NoInherit && !$c.NotEnforced && !$c.Enforced]
+    -> new Constraint{Contype: "CONSTR_NOTNULL", Conname: $cn, InitiallyValid: true, Keys: list(new String{Sval: "value"})}
+
+// ---- LIKE ----
+//
+// The options set and clear bits of a mask: the option with its bit B (ALL is every bit, W = 0), and Inc = 1 for
+// INCLUDING and 0 for EXCLUDING. A bit b of acc is (acc / b) % 2, so the new mask is acc + b * (Inc - bit) for a
+// single bit and Inc * ALL for ALL.
+def TableLikeClause: TableLikeClause = LIKE n:qualified_name xs:like_option*
+    -> new TableLikeClause{Relation: $n, Options: foldl(0, $xs, (acc, i) => $i.W * $acc + $i.W * $i.B * ($i.Inc - ($acc / $i.B) % 2) + (1 - $i.W) * $i.B * $i.Inc)}
+def like_option: LikeOpt = [w = 1] (INCLUDING [inc = 1] / EXCLUDING [inc = 0])
+    ( COMMENTS [b = 1] / COMPRESSION [b = 2] / CONSTRAINTS [b = 4] / DEFAULTS [b = 8] / IDENTITY [b = 32] / GENERATED [b = 16]
+    / INDEXES [b = 64] / STATISTICS [b = 128] / STORAGE [b = 256] / ALL [b = 2147483647] [w = 0] )
+    -> new LikeOpt{Inc: inc, B: b, W: w}
+
+// ---- Partitioning ----
+
+// PARTITION BY strategy (columns): the strategy is a name that parsePartitionStrategy compares without regard
+// to case, so "Range" is accepted too
+def PartitionSpec: PartitionSpec = PARTITION BY (LIST_WORD [ps = "PARTITION_STRATEGY_LIST"] / RANGE_WORD [ps = "PARTITION_STRATEGY_RANGE"] / HASH_WORD [ps = "PARTITION_STRATEGY_HASH"])
+    -LP l:part_params -RP
+    -> new PartitionSpec{Strategy: ps, PartParams: $l}
+def part_params: []PartitionElem = first:part_elem rest:(-COMMA x:part_elem)* -> concat(list($first), map($rest, (r) => $r.x))
+def part_elem: PartitionElem = part_elem_name / part_elem_func / part_elem_expr
+def part_elem_name: PartitionElem = n:ColId !"(" c:opt_collate? o:any_name?
+    -> new PartitionElem{Name: $n, Collation: concat($c), Opclass: concat($o)}
+def part_elem_func: PartitionElem = e:func_expr_windowless c:opt_collate? o:any_name?
+    -> new PartitionElem{Expr: $e, Collation: concat($c), Opclass: concat($o)}
+def part_elem_expr: PartitionElem = -LP e:a_expr -RP c:opt_collate? o:any_name?
+    -> new PartitionElem{Expr: $e, Collation: concat($c), Opclass: concat($o)}
+def LIST_WORD = ((?lL)(?iI)(?sS)(?tT) / uq (?lL)(?iI)(?sS)(?tT) "\"") !ident_cont s
+def RANGE_WORD = ((?rR)(?aA)(?nN)(?gG)(?eE) / uq (?rR)(?aA)(?nN)(?gG)(?eE) "\"") !ident_cont s
+def HASH_WORD = ((?hH)(?aA)(?sS)(?hH) / uq (?hH)(?aA)(?sS)(?hH) "\"") !ident_cont s
+// the opening of a quoted name: "name" or U&"name" (the escapes of U&"..." are not decoded)
+def uq = ((?uU) "&")? "\""
+
+// PartitionBoundSpec: the elements of a hash bound are modulus and remainder, once each, in either order (the
+// names are compared exactly, so a quoted name must be in lower case)
+def PartitionBoundSpec: PartitionBoundSpec = [st = ""] [df = false]
+    ( FOR VALUES
+      ( WITH -LP ( MODULUS_WORD m:Iconst -COMMA REMAINDER_WORD r:Iconst / REMAINDER_WORD r:Iconst -COMMA MODULUS_WORD m:Iconst ) -RP [st = "h"]
+      / IN -LP l:expr_list -RP [st = "l"]
+      / FROM -LP lo:expr_list -RP TO -LP up:expr_list -RP [st = "r"] )
+    / DEFAULT [df = true] )
+    -> new PartitionBoundSpec{Strategy: st, IsDefault: df, Modulus: $m, Remainder: $r, Listdatums: concat($l), Lowerdatums: concat($lo),
+        Upperdatums: concat($up)}
+def MODULUS_WORD = ((?mM)(?oO)(?dD)(?uU)(?lL)(?uU)(?sS) / uq "modulus\"") !ident_cont s
+def REMAINDER_WORD = ((?rR)(?eE)(?mM)(?aA)(?iI)(?nN)(?dD)(?eE)(?rR) / uq "remainder\"") !ident_cont s
+
+// ---- CREATE TABLE AS, CREATE MATERIALIZED VIEW, REFRESH ----
+
+def CreateAsStmt: CreateTableAsStmt = CREATE p:OptTemp TABLE ine:(IF NOT EXISTS)? t:create_as_target AS q:(SelectStmt / a_ctas_execute) d:opt_with_data
+    -> new CreateTableAsStmt{Query: $q, Into: new IntoClause{Rel: new RangeVar{Catalogname: $t.Rel.Catalogname, Schemaname: $t.Rel.Schemaname, Relname: $t.Rel.Relname, Inh: true, Relpersistence: $p.Relpersistence},
+        ColNames: $t.ColNames, AccessMethod: $t.AccessMethod, Options: $t.Options, OnCommit: $t.OnCommit, TableSpaceName: $t.TableSpaceName, SkipData: $d.SkipData},
+        Objtype: "OBJECT_TABLE", IfNotExists: len($ine) > 0}
+// CREATE TABLE ... AS EXECUTE name (params) is a production of ExecuteStmt in gram.y; it is here with the rest of CREATE TABLE AS
+def a_ctas_execute: ExecuteStmt = EXECUTE n:name p:ctas_params? -> new ExecuteStmt{Name: $n, Params: concat($p)}
+def ctas_params: []Expr = -LP l:expr_list -RP -> $l
+def create_as_target: IntoClause = n:qualified_name c:opt_column_list? am:table_access_method_clause? w:OptWith oc:OnCommitOption ts:OptTableSpace?
+    -> new IntoClause{Rel: $n, ColNames: concat($c), AccessMethod: $am, Options: $w, OnCommit: $oc.Oncommit, TableSpaceName: $ts}
+def CreateMatViewStmt: CreateTableAsStmt = CREATE p:OptNoLog MATERIALIZED VIEW ine:(IF NOT EXISTS)? t:create_mv_target AS q:SelectStmt d:opt_with_data
+    -> new CreateTableAsStmt{Query: $q, Into: new IntoClause{Rel: new RangeVar{Catalogname: $t.Rel.Catalogname, Schemaname: $t.Rel.Schemaname, Relname: $t.Rel.Relname, Inh: true, Relpersistence: $p.Relpersistence},
+        ColNames: $t.ColNames, AccessMethod: $t.AccessMethod, Options: $t.Options, OnCommit: $t.OnCommit, TableSpaceName: $t.TableSpaceName, SkipData: $d.SkipData},
+        Objtype: "OBJECT_MATVIEW", IfNotExists: len($ine) > 0}
+def create_mv_target: IntoClause = n:qualified_name c:opt_column_list? am:table_access_method_clause? o:opt_reloptions? ts:OptTableSpace?
+    -> new IntoClause{Rel: $n, ColNames: concat($c), AccessMethod: $am, Options: concat($o), OnCommit: "ONCOMMIT_NOOP", TableSpaceName: $ts}
+def opt_with_data: WithData = [sk = false] (WITH (NO [sk = true])? DATA)? -> new WithData{SkipData: sk}
+def RefreshMatViewStmt: RefreshMatViewStmt = REFRESH MATERIALIZED VIEW c:CONCURRENTLY? n:qualified_name d:opt_with_data
+    -> new RefreshMatViewStmt{Concurrent: len($c) > 0, SkipData: $d.SkipData, Relation: $n}
+
+// ---- CREATE FOREIGN TABLE ----
+
+def CreateForeignTableStmt: CreateForeignTableStmt = CREATE FOREIGN TABLE ine:(IF NOT EXISTS)? n:qualified_name
+    ( -LP el:table_element_list? -RP inh:OptInherit?
+    / PARTITION OF par:partition_parent el:typed_element_list? pb:PartitionBoundSpec )
+    SERVER s:name o:create_generic_options?
+    -> new CreateForeignTableStmt{Base: new CreateStmt{Relation: new RangeVar{Catalogname: $n.Catalogname, Schemaname: $n.Schemaname, Relname: $n.Relname, Inh: true, Relpersistence: "p"},
+        TableElts: concat($el), InhRelations: concat($inh, $par), Partbound: $pb, IfNotExists: len($ine) > 0},
+        Servername: $s, Options: concat($o)}

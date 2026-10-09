@@ -1,0 +1,35 @@
+
+// ---- Windows ----
+
+def window_clause: []WindowDef = WINDOW l:window_definition_list -> $l
+def window_definition_list: []WindowDef = first:window_definition rest:(-COMMA x:window_definition)* -> concat(list($first), map($rest, (r) => $r.x))
+def window_definition: WindowDef = &(ColId AS) w:window_def -> $w
+
+// A window specification, with its name in a WINDOW clause, with the frame options of frame_extent
+// computed in the variable fo: the bits of FRAMEOPTION_* of parsenodes.h. fm is the unit of the frame
+// (RANGE, ROWS or GROUPS, with FRAMEOPTION_NONDEFAULT), fs and fe the bits of its start and its end.
+// The checks are those of frame_extent.
+def window_def: WindowDef =
+    wn:window_name_as?
+    -LP rn:existing_window_name? pc:partition_by? oc:opt_sort_clause
+    [fo = 1058]
+    ( ( RANGE [fm = 3] / ROWS [fm = 5] / GROUPS [fm = 9] )
+      ( BETWEEN
+        ( UNBOUNDED PRECEDING [fs = 32] / UNBOUNDED FOLLOWING [fs = 128] / CURRENT ROW [fs = 512]
+        / so:a_expr PRECEDING [fs = 2048] / so:a_expr FOLLOWING [fs = 8192] )
+        AND
+        ( UNBOUNDED PRECEDING [fe = 64] / UNBOUNDED FOLLOWING [fe = 256] / CURRENT ROW [fe = 1024]
+        / eo:a_expr PRECEDING [fe = 4096] / eo:a_expr FOLLOWING [fe = 16384] )
+        [fs != 128] [fe != 64] [!(fs == 512 && fe == 4096)] [!(fs == 8192 && (fe == 4096 || fe == 1024))]
+        [fo = fm + 16 + fs + fe]
+      / ( UNBOUNDED PRECEDING [fs = 32] / UNBOUNDED FOLLOWING [fs = 128] / CURRENT ROW [fs = 512]
+        / so:a_expr PRECEDING [fs = 2048] / so:a_expr FOLLOWING [fs = 8192] )
+        [fs != 128] [fs != 8192] [fo = fm + fs + 1024] )
+      ( EXCLUDE CURRENT ROW [fo = fo + 32768] / EXCLUDE GROUP [fo = fo + 65536] / EXCLUDE TIES [fo = fo + 131072] / EXCLUDE NO OTHERS )?
+    )?
+    -RP
+    -> new WindowDef{Name: $wn, Refname: $rn, PartitionClause: concat($pc), OrderClause: $oc, FrameOptions: fo, StartOffset: $so, EndOffset: $eo}
+def window_name_as: Ident = n:ColId AS -> $n
+// PARTITION, RANGE, ROWS and GROUPS start the specification, they are not the name of an existing window
+def existing_window_name: Ident = !(PARTITION / RANGE / ROWS / GROUPS) n:ColId -> $n
+def partition_by: []Expr = PARTITION BY l:expr_list -> $l

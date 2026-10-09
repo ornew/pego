@@ -1,0 +1,78 @@
+// ==== Foreign data: FDW, SERVER, USER MAPPING, IMPORT FOREIGN SCHEMA ====
+
+type CreateFdwStmt struct { Fdwname Ident, FuncOptions []DefElem, Options []DefElem }
+type AlterFdwStmt struct { Fdwname Ident, FuncOptions []DefElem, Options []DefElem }
+type CreateForeignServerStmt struct {
+    Servername Ident, Servertype *Sconst, Version *Sconst, Fdwname Ident, IfNotExists bool, Options []DefElem
+}
+type AlterForeignServerStmt struct { Servername Ident, Version *Sconst, Options []DefElem, HasVersion bool }
+type ImportForeignSchemaStmt struct {
+    ServerName Ident, RemoteSchema Ident, LocalSchema Ident, ListType string, TableList []RangeVar, Options []DefElem
+}
+type CreateUserMappingStmt struct { User RoleSpec, Servername Ident, IfNotExists bool, Options []DefElem }
+type AlterUserMappingStmt struct { User RoleSpec, Servername Ident, Options []DefElem }
+type DropUserMappingStmt struct { User RoleSpec, Servername Ident, MissingOk bool }
+
+// ---- Generic options (FDW, SERVER, USER MAPPING and the foreign table statements) ----
+
+def create_generic_options: []DefElem = OPTIONS -LP l:generic_option_list -RP -> $l
+def generic_option_list: []DefElem = first:generic_option_elem rest:(-COMMA x:generic_option_elem)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+def alter_generic_options: []DefElem = OPTIONS -LP l:alter_generic_option_list -RP -> $l
+def alter_generic_option_list: []DefElem = first:alter_generic_option_elem rest:(-COMMA x:alter_generic_option_elem)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+// DROP name, SET name value, ADD name value, or name value. An option may be called set, add or drop.
+def alter_generic_option_elem: DefElem = [a = "DEFELEM_UNSPEC"]
+    ( DROP n:generic_option_name [a = "DEFELEM_DROP"]
+    / SET [a = "DEFELEM_SET"] n:generic_option_name v:generic_option_arg
+    / ADD [a = "DEFELEM_ADD"] n:generic_option_name v:generic_option_arg
+    / n:generic_option_name v:generic_option_arg )
+    -> new DefElem{Defname: $n, Arg: $v, Defaction: a}
+def generic_option_elem: DefElem = n:generic_option_name v:generic_option_arg -> new DefElem{Defname: $n, Arg: $v}
+def generic_option_name = ColLabel
+// the spec only requires string literals
+def generic_option_arg = Sconst
+
+// ---- FOREIGN DATA WRAPPER ----
+
+def CreateFdwStmt: CreateFdwStmt = CREATE FOREIGN DATA WRAPPER n:name f:fdw_option* o:create_generic_options?
+    -> new CreateFdwStmt{Fdwname: $n, FuncOptions: $f, Options: concat($o)}
+// without options after the function options this is the second form: only function options
+def AlterFdwStmt: AlterFdwStmt = ALTER FOREIGN DATA WRAPPER n:name f:fdw_option* o:alter_generic_options? [len($f) + len($o) > 0]
+    -> new AlterFdwStmt{Fdwname: $n, FuncOptions: $f, Options: concat($o)}
+def fdw_option: DefElem = fdw_option_handler / fdw_option_no
+def fdw_option_handler: DefElem = (HANDLER [n = "handler"] / VALIDATOR [n = "validator"]) h:handler_name
+    -> new DefElem{Defname: new String{Sval: n}, Arg: new NodeList{Items: $h}}
+def fdw_option_no: DefElem = NO (HANDLER [n = "handler"] / VALIDATOR [n = "validator"])
+    -> new DefElem{Defname: new String{Sval: n}}
+
+// ---- SERVER ----
+
+// VERSION 'v' or VERSION NULL; the optional version is (VERSION (Sconst / NULL)) where it occurs
+def CreateForeignServerStmt: CreateForeignServerStmt = CREATE SERVER [ine = false] (IF NOT EXISTS [ine = true])? n:name
+    (TYPE t:Sconst)? (VERSION (v:Sconst / NULL))? FOREIGN DATA WRAPPER w:name o:create_generic_options?
+    -> new CreateForeignServerStmt{Servername: $n, Servertype: $t, Version: $v, Fdwname: $w, IfNotExists: ine, Options: concat($o)}
+def AlterForeignServerStmt: AlterForeignServerStmt = ALTER SERVER n:name [hv = false] (VERSION (v:Sconst / NULL) [hv = true])?
+    o:alter_generic_options? [hv || len($o) > 0]
+    -> new AlterForeignServerStmt{Servername: $n, Version: $v, Options: concat($o), HasVersion: hv}
+
+// ---- IMPORT FOREIGN SCHEMA ----
+
+def ImportForeignSchemaStmt: ImportForeignSchemaStmt = [lt = "FDW_IMPORT_SCHEMA_ALL"] IMPORT FOREIGN SCHEMA r:name
+    ((LIMIT TO [lt = "FDW_IMPORT_SCHEMA_LIMIT_TO"] / EXCEPT [lt = "FDW_IMPORT_SCHEMA_EXCEPT"]) -LP l:relation_expr_list -RP)?
+    FROM SERVER s:name INTO d:name o:create_generic_options?
+    -> new ImportForeignSchemaStmt{ServerName: $s, RemoteSchema: $r, LocalSchema: $d, ListType: lt, TableList: concat($l), Options: concat($o)}
+
+// ---- USER MAPPING ----
+
+// auth_ident: a role, or USER (the current user)
+def auth_ident: RoleSpec = RoleSpec / auth_user
+def auth_user: RoleSpec = USER -> new RoleSpec{Roletype: "ROLESPEC_CURRENT_USER"}
+
+def CreateUserMappingStmt: CreateUserMappingStmt = CREATE USER MAPPING [ine = false] (IF NOT EXISTS [ine = true])? FOR u:auth_ident SERVER s:name
+    o:create_generic_options?
+    -> new CreateUserMappingStmt{User: $u, Servername: $s, IfNotExists: ine, Options: concat($o)}
+def DropUserMappingStmt: DropUserMappingStmt = DROP USER MAPPING i:(IF EXISTS)? FOR u:auth_ident SERVER s:name
+    -> new DropUserMappingStmt{User: $u, Servername: $s, MissingOk: len($i) > 0}
+def AlterUserMappingStmt: AlterUserMappingStmt = ALTER USER MAPPING FOR u:auth_ident SERVER s:name o:alter_generic_options
+    -> new AlterUserMappingStmt{User: $u, Servername: $s, Options: $o}

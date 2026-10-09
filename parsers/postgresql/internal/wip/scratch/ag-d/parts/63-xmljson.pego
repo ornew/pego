@@ -1,0 +1,244 @@
+// ==== XML and JSON: expressions with special syntax and the tables XMLTABLE and JSON_TABLE ====
+//
+// The nodes are those of the raw tree (primnodes.h, parsenodes.h): XmlExpr, XmlSerialize, the Json*
+// constructors and functions, RangeTableFunc and JsonTable. The helper nonterminals of gram.y that only
+// choose an enumerator (json_wrapper_behavior, json_quotes_clause_opt, ...) return a String node that holds
+// its name, and the null and key uniqueness clauses return a Boolean: a rule cannot return a bare string or
+// boolean, and a variable set by a rule is not visible to the rule that called it.
+
+type XmlExpr struct { Op string, Name *Ident, NamedArgs []ResTarget, Args []Expr, Xmloption string }
+type XmlSerialize struct { Xmloption string, Expr Expr, TypeName TypeName, Indent bool }
+type JsonFormat struct { FormatType string, Encoding string }
+type JsonReturning struct { Format JsonFormat }
+type JsonOutput struct { TypeName TypeName, Returning JsonReturning }
+type JsonValueExpr struct { RawExpr Expr, Format JsonFormat }
+type JsonKeyValue struct { Key Expr, Value JsonValueExpr }
+type JsonArgument struct { Val JsonValueExpr, Name Ident }
+type JsonBehavior struct { Btype string, Expr *Expr }
+type JsonObjectConstructor struct { Exprs []JsonKeyValue, Output *JsonOutput, AbsentOnNull bool, Unique bool }
+type JsonArrayConstructor struct { Exprs []JsonValueExpr, Output *JsonOutput, AbsentOnNull bool }
+type JsonArrayQueryConstructor struct { Query SelectStmt, Output *JsonOutput, Format JsonFormat, AbsentOnNull bool }
+type JsonParseExpr struct { Expr JsonValueExpr, Output *JsonOutput, UniqueKeys bool }
+type JsonScalarExpr struct { Expr Expr, Output *JsonOutput }
+type JsonSerializeExpr struct { Expr JsonValueExpr, Output *JsonOutput }
+type JsonFuncExpr struct {
+    Op string, ContextItem JsonValueExpr, Pathspec Expr, Passing []JsonArgument, Output *JsonOutput,
+    OnEmpty *JsonBehavior, OnError *JsonBehavior, Wrapper string, Quotes string
+}
+type JsonAggConstructor struct { Output *JsonOutput, AggFilter *Expr, AggOrder []SortBy, Over *WindowDef }
+type JsonObjectAgg struct { Constructor JsonAggConstructor, Arg JsonKeyValue, AbsentOnNull bool, Unique bool }
+type JsonArrayAgg struct { Constructor JsonAggConstructor, Arg JsonValueExpr, AbsentOnNull bool }
+type JsonIsPredicate struct { Expr Expr, Format JsonFormat, ItemType string, UniqueKeys bool }
+// ON EMPTY and ON ERROR behaviors (json_behavior_clause_opt): not a node of the raw tree
+type JsonBehaviors struct { OnEmpty *JsonBehavior, OnError *JsonBehavior }
+type ExprD = XmlExpr | XmlSerialize | JsonObjectConstructor | JsonArrayConstructor | JsonArrayQueryConstructor |
+    JsonParseExpr | JsonScalarExpr | JsonSerializeExpr | JsonFuncExpr | JsonObjectAgg | JsonArrayAgg | JsonIsPredicate
+
+type RangeTableFuncCol struct {
+    Colname Ident, TypeName *TypeName, ForOrdinality bool, IsNotNull bool, Colexpr *Expr, Coldefexpr *Expr
+}
+type RangeTableFunc struct {
+    Lateral bool, Docexpr Expr, Rowexpr Expr, Namespaces []ResTarget, Columns []RangeTableFuncCol, Alias *Alias
+}
+type JsonTablePathSpec struct { String A_Const, Name *Ident }
+type JsonTableColumn struct {
+    Coltype string, Name *Ident, TypeName *TypeName, Pathspec *JsonTablePathSpec, Format *JsonFormat, Wrapper string,
+    Quotes string, Columns []JsonTableColumn, OnEmpty *JsonBehavior, OnError *JsonBehavior
+}
+type JsonTable struct {
+    Lateral bool, ContextItem JsonValueExpr, Pathspec JsonTablePathSpec, Passing []JsonArgument,
+    Columns []JsonTableColumn, OnError *JsonBehavior, Alias *Alias
+}
+type TableRefD = RangeTableFunc | JsonTable
+// The options of an XMLTABLE column, added up: the options may come in any order but each at most once.
+// Nn is 1 for NOT NULL and 10 for NULL (the sum tells whether both were given). Nil is never set.
+type XmlColOpts struct { Def []Expr, Path []Expr, Nn int, Nil *Expr }
+
+// ---- The functions of func_expr_common_subexpr ----
+//
+// The windowless variable is reset for the arguments: a window function is allowed there.
+def xmljson_expr: Expr = [windowless = false] x:(xmlconcat_expr / xmlelement_expr / xmlexists_expr / xmlforest_expr
+    / xmlparse_expr / xmlpi_expr / xmlroot_expr / xmlserialize_expr / json_object_expr / json_array_expr
+    / json_parse_expr / json_scalar_expr / json_serialize_expr / json_query_expr / json_exists_expr
+    / json_value_func_expr) -> $x
+
+// ---- XML ----
+
+def xmlconcat_expr: XmlExpr = XMLCONCAT -LP l:expr_list -RP -> new XmlExpr{Op: "IS_XMLCONCAT", Args: $l}
+def xmlelement_expr: XmlExpr = XMLELEMENT -LP NAME n:ColLabel
+    (-COMMA (a:xml_attributes -COMMA l:expr_list / a:xml_attributes / l:expr_list))? -RP
+    -> new XmlExpr{Op: "IS_XMLELEMENT", Name: $n, NamedArgs: concat($a), Args: concat($l)}
+def xmlexists_expr: FuncCall = XMLEXISTS -LP a:c_expr b:xmlexists_argument -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "xmlexists"}), Args: list($a, $b), Funcformat: "COERCE_SQL_SYNTAX"}
+def xmlforest_expr: XmlExpr = XMLFOREST -LP l:xml_attribute_list -RP -> new XmlExpr{Op: "IS_XMLFOREST", NamedArgs: $l}
+def xmlparse_expr: XmlExpr = XMLPARSE -LP d:document_or_content e:a_expr [ws = false]
+    (PRESERVE WHITESPACE [ws = true] / STRIP WHITESPACE)? -RP
+    -> new XmlExpr{Op: "IS_XMLPARSE", Args: list($e, new A_Const{Val: new Boolean{Boolval: ws}}), Xmloption: $d.Sval}
+def xmlpi_expr: XmlExpr = XMLPI -LP NAME n:ColLabel a:xmlpi_content? -RP
+    -> new XmlExpr{Op: "IS_XMLPI", Name: $n, Args: concat($a)}
+def xmlpi_content: []Expr = -COMMA e:a_expr -> list($e)
+// VERSION NO VALUE is a null constant; STANDALONE becomes an integer constant (YES 0, NO 1, NO VALUE 2, omitted 3)
+def xmlroot_expr: XmlExpr = XMLROOT -LP e:a_expr -COMMA v:xml_root_version [sa = 3]
+    (-COMMA STANDALONE (YES [sa = 0] / NO [sa = 1] (VALUE [sa = 2])?))? -RP
+    -> new XmlExpr{Op: "IS_XMLROOT", Args: list($e, $v, new A_Const{Val: new Integer{Ival: sa}})}
+def xml_root_version: Expr = xml_version_none / xml_version_expr
+def xml_version_none: A_Const = VERSION NO VALUE -> new A_Const{Isnull: true}
+def xml_version_expr: Expr = VERSION e:a_expr -> $e
+def xmlserialize_expr: XmlSerialize = XMLSERIALIZE -LP d:document_or_content e:a_expr AS t:SimpleTypename [ind = false]
+    (INDENT [ind = true] / NO INDENT)? -RP [len($t.ArrayBounds) == 0]
+    -> new XmlSerialize{Xmloption: $d.Sval, Expr: $e, TypeName: $t, Indent: ind}
+
+def xml_attributes: []ResTarget = XMLATTRIBUTES -LP l:xml_attribute_list -RP -> $l
+def xml_attribute_list: []ResTarget = first:xml_attribute_el rest:(-COMMA x:xml_attribute_el)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+def xml_attribute_el: ResTarget = e:a_expr (-AS n:ColLabel)? -> new ResTarget{Name: $n, Val: $e}
+// document_or_content: the name of the XmlOptionType enumerator
+def document_or_content: String = [x = "XMLOPTION_DOCUMENT"] (DOCUMENT / CONTENT [x = "XMLOPTION_CONTENT"]) -> new String{Sval: x}
+def xmlexists_argument: Expr = PASSING -xml_passing_mech? c:c_expr -xml_passing_mech? -> $c
+def xml_passing_mech = BY (REF / VALUE)
+
+// ---- XMLTABLE ----
+
+def xmltable: RangeTableFunc = lat:LATERAL? XMLTABLE -LP (XMLNAMESPACES -LP ns:xml_namespace_list -RP -COMMA)?
+    r:c_expr d:xmlexists_argument COLUMNS cols:xmltable_column_list -RP a:alias_clause?
+    -> new RangeTableFunc{Lateral: len($lat) > 0, Docexpr: $d, Rowexpr: $r, Namespaces: concat($ns), Columns: $cols, Alias: $a}
+def xml_namespace_list: []ResTarget = first:xml_namespace_el rest:(-COMMA x:xml_namespace_el)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+def xml_namespace_el: ResTarget = (DEFAULT e:b_expr / e:b_expr AS n:ColLabel) -> new ResTarget{Name: $n, Val: $e}
+def xmltable_column_list: []RangeTableFuncCol = first:xmltable_column_el rest:(-COMMA x:xmltable_column_el)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+def xmltable_column_el: RangeTableFuncCol = xml_col_ordinality / xml_col_typed
+def xml_col_ordinality: RangeTableFuncCol = n:ColId FOR ORDINALITY -> new RangeTableFuncCol{Colname: $n, ForOrdinality: true}
+def xml_col_typed: RangeTableFuncCol = n:ColId t:Typename o:xml_col_opts
+    [len($o.Def) <= 1 && len($o.Path) <= 1 && ($o.Nn == 0 || $o.Nn == 1 || $o.Nn == 10)]
+    -> new RangeTableFuncCol{Colname: $n, TypeName: $t, IsNotNull: $o.Nn == 1,
+        Colexpr: foldl($o.Nil, $o.Path, (a, i) => $i), Coldefexpr: foldl($o.Nil, $o.Def, (a, i) => $i)}
+def xml_col_opts: XmlColOpts = xs:xml_col_opt*
+    -> foldl(new XmlColOpts{Nn: 0}, $xs, (a, i) => new XmlColOpts{Def: concat($a.Def, $i.Def), Path: concat($a.Path, $i.Path), Nn: $a.Nn + $i.Nn})
+// An option name is an IDENT: only the quoted names "default" and "path" are accepted (anything else is an error)
+def xml_col_opt: XmlColOpts = [nn = 0]
+    ( (DEFAULT / "\"default\"" s) d:b_expr_list1 / (PATH / "\"path\"" s) p:b_expr_list1 / NOT NULL [nn = 1] / NULL [nn = 10] )
+    -> new XmlColOpts{Def: concat($d), Path: concat($p), Nn: nn}
+def b_expr_list1: []Expr = e:b_expr -> list($e)
+
+// ---- JSON: the pieces ----
+
+def json_value_expr: JsonValueExpr = e:a_expr f:json_format_opt -> new JsonValueExpr{RawExpr: $e, Format: $f}
+def json_value_expr_list: []JsonValueExpr = first:json_value_expr rest:(-COMMA x:json_value_expr)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+// FORMAT JSON [ENCODING name]: the encoding is utf8, utf16 or utf32 in any case, quoted or not
+def json_format: JsonFormat = FORMAT JSON e:json_encoding_opt -> new JsonFormat{FormatType: "JS_FORMAT_JSON", Encoding: $e.Sval}
+def json_encoding_opt: String = json_encoding / json_encoding_none
+def json_encoding_none: String = _ -> new String{Sval: "JS_ENC_DEFAULT"}
+def json_encoding: String = ENCODING w:json_enc_word
+    ([$w.V == "utf8"] [enc = "JS_ENC_UTF8"] / [$w.V == "utf16"] [enc = "JS_ENC_UTF16"] / [$w.V == "utf32"] [enc = "JS_ENC_UTF32"])
+    -> new String{Sval: enc}
+def json_enc_word: LcWord = (-"\"" w:lcword -"\"" / w:lcword) s -> $w
+def json_format_opt: JsonFormat = json_format / json_format_none
+def json_format_none: JsonFormat = _ -> new JsonFormat{}
+def json_returning: JsonOutput = RETURNING t:Typename f:json_format_opt
+    -> new JsonOutput{TypeName: $t, Returning: new JsonReturning{Format: $f}}
+// NULL ON NULL and ABSENT ON NULL: the default is false for an object and true for an array
+def json_absent_obj: Boolean = [a = false] (NULL ON NULL / ABSENT ON NULL [a = true])? -> new Boolean{Boolval: a}
+def json_absent_arr: Boolean = [a = true] (NULL ON NULL [a = false] / ABSENT ON NULL)? -> new Boolean{Boolval: a}
+// WITH UNIQUE [KEYS] is true; WITHOUT UNIQUE [KEYS] and the empty clause are false
+def json_unique: Boolean = [u = false] ((WITH UNIQUE [u = true] / WITHOUT UNIQUE) KEYS?)? -> new Boolean{Boolval: u}
+def json_kv: JsonKeyValue = (k:c_expr VALUE / k:a_expr COLON) v:json_value_expr -> new JsonKeyValue{Key: $k, Value: $v}
+def json_kv_list: []JsonKeyValue = first:json_kv rest:(-COMMA x:json_kv)* -> concat(list($first), map($rest, (r) => $r.x))
+def json_passing: []JsonArgument = PASSING first:json_argument rest:(-COMMA x:json_argument)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+def json_argument: JsonArgument = v:json_value_expr AS n:ColLabel -> new JsonArgument{Val: $v, Name: $n}
+// the wrapper: WITH [CONDITIONAL | UNCONDITIONAL] [ARRAY] WRAPPER is unconditional by default
+def json_wrapper: String = [w = "JSW_UNSPEC"]
+    (WITHOUT ARRAY? WRAPPER [w = "JSW_NONE"] / WITH [w = "JSW_UNCONDITIONAL"] (CONDITIONAL [w = "JSW_CONDITIONAL"] / UNCONDITIONAL)? ARRAY? WRAPPER)?
+    -> new String{Sval: w}
+def json_quotes: String = [q = "JS_QUOTES_UNSPEC"]
+    ((KEEP [q = "JS_QUOTES_KEEP"] / OMIT [q = "JS_QUOTES_OMIT"]) QUOTES (ON SCALAR STRING)?)? -> new String{Sval: q}
+def json_behavior: JsonBehavior = [b = ""]
+    ( DEFAULT e:a_expr [b = "JSON_BEHAVIOR_DEFAULT"] / ERROR [b = "JSON_BEHAVIOR_ERROR"] / NULL [b = "JSON_BEHAVIOR_NULL"]
+    / TRUE [b = "JSON_BEHAVIOR_TRUE"] / FALSE [b = "JSON_BEHAVIOR_FALSE"] / UNKNOWN [b = "JSON_BEHAVIOR_UNKNOWN"]
+    / EMPTY ARRAY [b = "JSON_BEHAVIOR_EMPTY_ARRAY"] / EMPTY OBJECT [b = "JSON_BEHAVIOR_EMPTY_OBJECT"]
+    / EMPTY [b = "JSON_BEHAVIOR_EMPTY_ARRAY"] )
+    -> new JsonBehavior{Btype: b, Expr: $e}
+// json_behavior_clause_opt: [behavior ON EMPTY] [behavior ON ERROR]
+def json_behaviors: JsonBehaviors = (e:json_behavior ON EMPTY (r:json_behavior ON ERROR)? / r:json_behavior ON ERROR)?
+    -> new JsonBehaviors{OnEmpty: $e, OnError: $r}
+
+// ---- JSON: constructors and query functions ----
+
+def json_object_expr: Expr = json_object_kv / json_object_empty / json_object_legacy
+def json_object_kv: JsonObjectConstructor = JSON_OBJECT -LP l:json_kv_list a:json_absent_obj u:json_unique o:json_returning? -RP
+    -> new JsonObjectConstructor{Exprs: $l, AbsentOnNull: $a.Boolval, Unique: $u.Boolval, Output: $o}
+def json_object_empty: JsonObjectConstructor = JSON_OBJECT -LP o:json_returning? -RP -> new JsonObjectConstructor{Output: $o}
+// the legacy json_object(text[]) and json_object(keys, values): a function call
+def json_object_legacy: FuncCall = JSON_OBJECT -LP l:func_arg_list -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "json_object"}), Args: $l, Funcformat: "COERCE_EXPLICIT_CALL"}
+def json_array_expr: Expr = json_array_values / json_array_query / json_array_empty
+def json_array_values: JsonArrayConstructor = JSON_ARRAY -LP l:json_value_expr_list a:json_absent_arr o:json_returning? -RP
+    -> new JsonArrayConstructor{Exprs: $l, Output: $o, AbsentOnNull: $a.Boolval}
+def json_array_query: JsonArrayQueryConstructor = JSON_ARRAY -LP q:select_no_parens f:json_format_opt o:json_returning? -RP
+    -> new JsonArrayQueryConstructor{Query: $q, Output: $o, Format: $f, AbsentOnNull: true}
+def json_array_empty: JsonArrayConstructor = JSON_ARRAY -LP o:json_returning? -RP
+    -> new JsonArrayConstructor{Output: $o, AbsentOnNull: true}
+def json_parse_expr: JsonParseExpr = JSON -LP e:json_value_expr u:json_unique -RP
+    -> new JsonParseExpr{Expr: $e, UniqueKeys: $u.Boolval}
+def json_scalar_expr: JsonScalarExpr = JSON_SCALAR -LP e:a_expr -RP -> new JsonScalarExpr{Expr: $e}
+def json_serialize_expr: JsonSerializeExpr = JSON_SERIALIZE -LP e:json_value_expr o:json_returning? -RP
+    -> new JsonSerializeExpr{Expr: $e, Output: $o}
+def json_query_expr: JsonFuncExpr = JSON_QUERY -LP c:json_value_expr -COMMA p:a_expr ps:json_passing? o:json_returning?
+    w:json_wrapper q:json_quotes b:json_behaviors -RP
+    -> new JsonFuncExpr{Op: "JSON_QUERY_OP", ContextItem: $c, Pathspec: $p, Passing: concat($ps), Output: $o, Wrapper: $w.Sval,
+        Quotes: $q.Sval, OnEmpty: $b.OnEmpty, OnError: $b.OnError}
+def json_exists_expr: JsonFuncExpr = JSON_EXISTS -LP c:json_value_expr -COMMA p:a_expr ps:json_passing? (e:json_behavior ON ERROR)? -RP
+    -> new JsonFuncExpr{Op: "JSON_EXISTS_OP", ContextItem: $c, Pathspec: $p, Passing: concat($ps), OnError: $e}
+def json_value_func_expr: JsonFuncExpr = JSON_VALUE -LP c:json_value_expr -COMMA p:a_expr ps:json_passing? o:json_returning?
+    b:json_behaviors -RP
+    -> new JsonFuncExpr{Op: "JSON_VALUE_OP", ContextItem: $c, Pathspec: $p, Passing: concat($ps), Output: $o,
+        OnEmpty: $b.OnEmpty, OnError: $b.OnError}
+
+// ---- JSON_OBJECTAGG and JSON_ARRAYAGG, with FILTER and OVER (not in a windowless call) ----
+//
+// The arguments are parsed with windowless false (wl keeps the caller's value for FILTER and OVER).
+def json_agg_expr: Expr = json_objectagg_expr / json_arrayagg_expr
+def json_objectagg_expr: JsonObjectAgg = [wl = windowless] JSON_OBJECTAGG -LP [windowless = false]
+    kv:json_kv a:json_absent_obj u:json_unique o:json_returning? -RP [windowless = wl] fc:filter_ok? ov:over_ok?
+    -> new JsonObjectAgg{Constructor: new JsonAggConstructor{Output: $o, AggFilter: $fc, Over: $ov}, Arg: $kv,
+        AbsentOnNull: $a.Boolval, Unique: $u.Boolval}
+def json_arrayagg_expr: JsonArrayAgg = [wl = windowless] JSON_ARRAYAGG -LP [windowless = false]
+    v:json_value_expr (ORDER BY ob:sortby_list)? a:json_absent_arr o:json_returning? -RP [windowless = wl] fc:filter_ok? ov:over_ok?
+    -> new JsonArrayAgg{Constructor: new JsonAggConstructor{Output: $o, AggFilter: $fc, AggOrder: concat($ob), Over: $ov}, Arg: $v,
+        AbsentOnNull: $a.Boolval}
+
+// ---- IS JSON (the tail after IS [NOT], used by the a_expr operators): the type and the uniqueness ----
+def json_is_tail: JsonIsPredicate = [it = "JS_TYPE_ANY"]
+    JSON (VALUE / ARRAY [it = "JS_TYPE_ARRAY"] / OBJECT [it = "JS_TYPE_OBJECT"] / SCALAR [it = "JS_TYPE_SCALAR"])? u:json_unique
+    -> new JsonIsPredicate{Format: new JsonFormat{}, ItemType: it, UniqueKeys: $u.Boolval}
+
+// ---- JSON_TABLE ----
+
+def json_table: JsonTable = lat:LATERAL? JSON_TABLE -LP c:json_value_expr -COMMA p:json_path (-AS n:name)? ps:json_passing?
+    COLUMNS -LP cols:json_table_column_list -RP (e:json_behavior ON ERROR)? -RP a:alias_clause?
+    -> new JsonTable{Lateral: len($lat) > 0, ContextItem: $c, Pathspec: new JsonTablePathSpec{String: $p, Name: $n},
+        Passing: concat($ps), Columns: $cols, OnError: $e, Alias: $a}
+// the path of JSON_TABLE must be a string constant (the reference checks it in the action), possibly in parentheses
+def json_path: A_Const = json_path_plain / json_path_paren
+def json_path_plain: A_Const = v:Sconst -> new A_Const{Val: $v}
+def json_path_paren: A_Const = -LP x:json_path -RP -> $x
+def json_table_column_list: []JsonTableColumn = first:json_table_column rest:(-COMMA x:json_table_column)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+def json_table_column: JsonTableColumn = jt_ordinality / jt_nested / jt_exists / jt_regular
+def jt_ordinality: JsonTableColumn = n:ColId FOR ORDINALITY -> new JsonTableColumn{Coltype: "JTC_FOR_ORDINALITY", Name: $n}
+def jt_nested: JsonTableColumn = NESTED PATH? p:Sconst (-AS n:name)? COLUMNS -LP cols:json_table_column_list -RP
+    -> new JsonTableColumn{Coltype: "JTC_NESTED", Pathspec: new JsonTablePathSpec{String: new A_Const{Val: $p}, Name: $n}, Columns: $cols}
+def jt_exists: JsonTableColumn = n:ColId t:Typename EXISTS p:json_col_path? (e:json_behavior ON ERROR)?
+    -> new JsonTableColumn{Coltype: "JTC_EXISTS", Name: $n, TypeName: $t, Format: new JsonFormat{}, Wrapper: "JSW_NONE",
+        Quotes: "JS_QUOTES_UNSPEC", Pathspec: $p, OnError: $e}
+// a regular column, or one with FORMAT JSON (JTC_FORMATTED)
+def jt_regular: JsonTableColumn = [ct = "JTC_REGULAR"] n:ColId t:Typename (&FORMAT [ct = "JTC_FORMATTED"])? f:json_format_opt
+    p:json_col_path? w:json_wrapper q:json_quotes b:json_behaviors
+    -> new JsonTableColumn{Coltype: ct, Name: $n, TypeName: $t, Format: $f, Pathspec: $p, Wrapper: $w.Sval, Quotes: $q.Sval,
+        OnEmpty: $b.OnEmpty, OnError: $b.OnError}
+def json_col_path: JsonTablePathSpec = PATH s:Sconst -> new JsonTablePathSpec{String: new A_Const{Val: $s}}
+
+// xmltable and json_table with their alias, as the alternatives of table_ref
+def xmljson_table: TableRefD = xmltable / json_table

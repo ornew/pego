@@ -109,25 +109,68 @@ def grouped(words):
     return " / ".join(alts)
 
 
+def member(words):
+    """A boolean expression that tells whether $w.V is one of the words."""
+    return " || ".join('$w.V == "%s"' % w for w in sorted(words))
+
+
+def bucketed(name, words):
+    """A rule that tells whether the word at the input is one of the words: the alternatives are the letters
+    the words begin with, so that a word is compared only with the words that begin like it."""
+    alts = []
+    for c in sorted({w[0] for w in words}):
+        alts.append("&(?%s%s) w:lcword [%s]" % (c.upper(), c, member([w for w in words if w[0] == c])))
+    return "def %s = %s" % (name, "\n    / ".join(alts))
+
+
+FOLD = """// A word folded to lower case: the keywords are matched by comparing it with their lower-case spelling. The
+// word is read once: the rule is memoized at its position, so all the keywords that are tried there share it.
+// lowercase runs are appended as they are, the upper-case letters one by one, a non-ASCII letter as a mark
+// that no keyword has.
+type LcWord struct { V string }
+def lcword: LcWord = w:lcword_read -> $w
+def lcword_read: LcWord = &(?A-Za-z_\\u{80}-\\u{10FFFF}) [lw = ""]
+    ( r:@((?a-z0-9_$)+) [lw = lw + text($r)]
+%s
+    / (?\\u{80}-\\u{10FFFF}) [lw = lw + "\\u{80}"] )+
+    -> new LcWord{V: lw}
+// A keyword rule sets the variable kwid to the keyword, and kw matches the word that follows if it is the one.
+def kw = w:lcword [$w.V == kwid] s"""
+
+
 def generate(grammar_text, kws):
     used = set(re.findall(r"\b([A-Z][A-Z_0-9]*)\b", re.sub(r"//[^\n]*", "", strip_generated(grammar_text))))
-    out = ["// BEGIN GENERATED KEYWORDS (python3 internal/refgen/keywords.py update postgresql.pego)",
-           "// One rule per keyword that the grammar uses; the sets of categories follow."]
+    out = ["// BEGIN GENERATED KEYWORDS (python3 internal/refgen/keywords.py update postgresql.pego)"]
+    upper = []
+    for i in range(26):
+        c = chr(65 + i)
+        upper.append('    / (?%s) [lw = lw + "%s"]' % (c, c.lower()))
+    lines = []
+    cur = ""
+    for u in upper:
+        if len(cur) + len(u) > 100:
+            lines.append(cur)
+            cur = ""
+        cur += u.lstrip() + " " if cur else u
+    lines.append(cur)
+    out.append(FOLD % "\n".join(l.rstrip() for l in lines))
     sets = {
         "reserved_word": [w for w, (c, b) in kws.items() if c == "R"],
         "type_func_name_word": [w for w, (c, b) in kws.items() if c == "T"],
         "col_name_word": [w for w, (c, b) in kws.items() if c == "C"],
         "label_only_word": [w for w, (c, b) in kws.items() if not b],
     }
-    inset = {w for ws in sets.values() for w in ws}
-    for w in sorted(kws):
-        if tokname(w) in used or w in inset:
-            out.append("def %s = %s !(?A-Za-z0-9_$\\u{80}-\\u{10FFFF}) s" % (tokname(w), ci(w)))
     out.append("")
+    for w in sorted(kws):
+        if tokname(w) in used:
+            out.append('def %s = &(?%s%s) [kwid = "%s"] kw' % (tokname(w), w[0].upper(), w[0], w))
+    out.append("")
+    out.append("// The categories of keywords that cannot be names: tests on the lower-case word.")
     for name, words in sets.items():
-        out.append("def %s = %s" % (name, grouped(words)))
-    out.append("def reserved_or_type_func_word = reserved_word / type_func_name_word")
-    out.append("def reserved_or_col_name_word = reserved_word / col_name_word")
+        out.append(bucketed(name, words))
+    both = lambda *cs: [w for w, (c, b) in kws.items() if c in cs]
+    out.append(bucketed("reserved_or_type_func_word", both("R", "T")))
+    out.append(bucketed("reserved_or_col_name_word", both("R", "C")))
     out.append("// END GENERATED KEYWORDS")
     return "\n".join(out)
 

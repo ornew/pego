@@ -1,0 +1,4 @@
+type Item struct { Name Match }
+type Out struct { A []Item, B [][]Item }
+def main: Out = ys:(xs:(n:item)* ";")* "|" xs:(n:item)* -> new Out{A: map($xs, (e) => $e.n), B: map($ys, (y) => map($y.xs, (e) => $e.n))}
+def item: Item = n:@"x" -> new Item{Name: $n}

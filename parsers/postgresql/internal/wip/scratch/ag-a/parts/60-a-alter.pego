@@ -1,0 +1,159 @@
+// ==== ALTER TABLE and its relatives (region A) ====
+//
+// gram.y accepts every subcommand for each kind of relation (the kind only matters at execution time), and so
+// does this grammar. A subcommand is one AlterTableCmd; the variables st (the subtype) and ok (missing_ok) say
+// what it is, the captures give its name and its definition.
+
+def AlterTableStmt: AlterTableStmt = [ok = false]
+    ALTER
+    ( TABLE [ot = "OBJECT_TABLE"] (IF EXISTS [ok = true])? r:relation_expr c:(alter_table_cmds / partition_cmds)
+    / FOREIGN TABLE [ot = "OBJECT_FOREIGN_TABLE"] (IF EXISTS [ok = true])? r:relation_expr c:alter_table_cmds
+    / INDEX [ot = "OBJECT_INDEX"] ( IF EXISTS [ok = true] r:qualified_name c:alter_table_cmds / r:qualified_name c:(alter_table_cmds / index_partition_cmds) )
+    / SEQUENCE [ot = "OBJECT_SEQUENCE"] (IF EXISTS [ok = true])? r:qualified_name c:alter_table_cmds
+    / VIEW [ot = "OBJECT_VIEW"] (IF EXISTS [ok = true])? r:qualified_name c:alter_table_cmds
+    / MATERIALIZED VIEW [ot = "OBJECT_MATVIEW"] (IF EXISTS [ok = true])? r:qualified_name c:alter_table_cmds )
+    -> new AlterTableStmt{Relation: $r, Cmds: $c, Objtype: ot, MissingOk: ok}
+
+// ALTER { TABLE | INDEX | MATERIALIZED VIEW } ALL IN TABLESPACE a [OWNED BY roles] SET TABLESPACE b [NOWAIT]
+def AlterTableMoveAllStmt: AlterTableMoveAllStmt =
+    ALTER ( TABLE [ot = "OBJECT_TABLE"] / INDEX [ot = "OBJECT_INDEX"] / MATERIALIZED VIEW [ot = "OBJECT_MATVIEW"] )
+    ALL IN TABLESPACE a:name (OWNED BY r:role_list)? SET TABLESPACE b:name nw:NOWAIT?
+    -> new AlterTableMoveAllStmt{OrigTablespacename: $a, Objtype: ot, Roles: concat($r), NewTablespacename: $b, Nowait: len($nw) > 0}
+
+def alter_table_cmds: []AlterTableCmd = first:alter_table_cmd rest:(-COMMA x:alter_table_cmd)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+def partition_cmds: []AlterTableCmd = c:partition_cmd -> list($c)
+def index_partition_cmds: []AlterTableCmd = c:index_partition_cmd -> list($c)
+
+def partition_cmd: AlterTableCmd =
+    ( ATTACH [st = "AT_AttachPartition"] PARTITION n:qualified_name b:PartitionBoundSpec
+    / DETACH [st = "AT_DetachPartition"] PARTITION n:qualified_name (c:CONCURRENTLY / FINALIZE [st = "AT_DetachPartitionFinalize"])? )
+    -> new AlterTableCmd{Subtype: st, Def: new PartitionCmd{Name: $n, Bound: $b, Concurrent: len($c) > 0}}
+def index_partition_cmd: AlterTableCmd = ATTACH PARTITION n:qualified_name
+    -> new AlterTableCmd{Subtype: "AT_AttachPartition", Def: new PartitionCmd{Name: $n}}
+
+def alter_table_cmd: AlterTableCmd = at_add / at_alter_constraint / at_alter / at_drop / at_misc
+
+def at_add: AlterTableCmd = ADD
+    ( -COLUMN? ine:(IF NOT EXISTS)? d:columnDef [st = "AT_AddColumn"]
+    / d:TableConstraint [st = "AT_AddConstraint"] )
+    -> new AlterTableCmd{Subtype: st, Def: $d, MissingOk: len($ine) > 0}
+
+def at_alter_constraint: AlterTableCmd = at_alter_constraint_inherit / at_alter_constraint_attrs
+def at_alter_constraint_inherit: AlterTableCmd = ALTER CONSTRAINT n:name INHERIT
+    -> new AlterTableCmd{Subtype: "AT_AlterConstraint", Def: new ATAlterConstraint{Conname: $n, AlterInheritability: true}}
+// ALTER CONSTRAINT name attributes: NOT VALID is an error, the others say what is altered
+def at_alter_constraint_attrs: AlterTableCmd = ALTER CONSTRAINT n:name c:ConstraintAttributeSpec [!$c.NotValid]
+    -> new AlterTableCmd{Subtype: "AT_AlterConstraint", Def: new ATAlterConstraint{Conname: $n,
+        AlterEnforceability: $c.NotEnforced || $c.Enforced,
+        AlterDeferrability: $c.NotDeferrable || $c.Deferrable || $c.InitImmediate || $c.InitDeferred,
+        AlterInheritability: $c.NoInherit, IsEnforced: !$c.NotEnforced, Deferrable: $c.Deferrable || $c.InitDeferred,
+        Initdeferred: $c.InitDeferred, Noinherit: $c.NoInherit}}
+
+// ALTER [COLUMN] column ...
+def at_alter: AlterTableCmd = [ok = false] ALTER -COLUMN?
+    ( n:ColId
+      ( SET DEFAULT d:a_expr [st = "AT_ColumnDefault"]
+      / DROP DEFAULT [st = "AT_ColumnDefault"]
+      / DROP NOT NULL [st = "AT_DropNotNull"]
+      / SET NOT NULL [st = "AT_SetNotNull"]
+      / SET EXPRESSION AS -LP d:a_expr -RP [st = "AT_SetExpression"]
+      / DROP EXPRESSION (IF EXISTS [ok = true])? [st = "AT_DropExpression"]
+      / SET STATISTICS (DEFAULT / d:SignedIconst) [st = "AT_SetStatistics"]
+      / SET d:a_reloptions [st = "AT_SetOptions"]
+      / RESET d:a_reloptions [st = "AT_ResetOptions"]
+      / SET d:column_storage [st = "AT_SetStorage"]
+      / SET d:column_compression [st = "AT_SetCompression"]
+      / ADD d:alter_add_identity [st = "AT_AddIdentity"]
+      / d:alter_identity_options [st = "AT_SetIdentity"]
+      / DROP IDENTITY (IF EXISTS [ok = true])? [st = "AT_DropIdentity"]
+      / d:alter_column_type [st = "AT_AlterColumnType"]
+      / d:a_gen_options [st = "AT_AlterColumnGenericOptions"] )
+    / num:column_number SET STATISTICS (DEFAULT / d:SignedIconst) [st = "AT_SetStatistics"] )
+    -> new AlterTableCmd{Subtype: st, Name: $n, Num: $num, Def: $d, MissingOk: ok}
+
+// the column number of ALTER COLUMN n SET STATISTICS must be in 1..32767; the forms of an integer are decimal
+// (with underscores and leading zeros), 0x, 0o and 0b
+def column_number: Iconst = &colnum_ok n:Iconst -> $n
+def colnum_ok = (colnum_dec / colnum_hex / colnum_oct / colnum_bin) !(?0-9a-zA-Z_)
+def cn_d = "_"? (?0-9)
+def colnum_dec = ("0" "_"?)*
+    ( (?12) cn_d{4} / "3" ((?01) cn_d{3} / "2" ((?0-6) cn_d{2} / "7" ((?0-5) cn_d / "6" (?0-7)))) / (?1-9) cn_d{0,3} )
+def colnum_hex = "0" (?xX) ("_"? "0")* ( "_"? (?1-7) ("_"? (?0-9a-fA-F)){3} / "_"? (?1-9a-fA-F) ("_"? (?0-9a-fA-F)){0,2} )
+def colnum_oct = "0" (?oO) ("_"? "0")* "_"? (?1-7) ("_"? (?0-7)){0,4}
+def colnum_bin = "0" (?bB) ("_"? "0")* "_"? "1" ("_"? (?01)){0,14}
+
+def alter_column_type: ColumnDef = -(SET DATA)? TYPE t:Typename c:opt_collate_clause? u:alter_using?
+    -> new ColumnDef{TypeName: $t, CollClause: $c, RawDefault: $u}
+def alter_using: Expr = USING e:a_expr -> $e
+def alter_add_identity: Constraint = [gw = "a"] GENERATED (ALWAYS / BY DEFAULT [gw = "d"]) AS IDENTITY o:OptParenthesizedSeqOptList
+    -> new Constraint{Contype: "CONSTR_IDENTITY", GeneratedWhen: gw, Options: $o}
+def alter_identity_options: NodeList = xs:alter_identity_option+ -> new NodeList{Items: $xs}
+def alter_identity_option: DefElem = aic_restart / aic_generated / aic_set
+def aic_restart: DefElem = RESTART a:restart_value?
+    -> new DefElem{Defname: new String{Sval: "restart"}, Arg: $a, Defaction: "DEFELEM_UNSPEC"}
+def aic_generated: DefElem = SET GENERATED (ALWAYS [gi = 97] / BY DEFAULT [gi = 100])
+    -> new DefElem{Defname: new String{Sval: "generated"}, Arg: new Integer{Ival: gi}, Defaction: "DEFELEM_UNSPEC"}
+// SET SeqOptElem, but not the options that make no sense for an existing column (AS, RESTART and OWNED BY)
+def aic_set: DefElem = SET e:seq_opt_common -> $e
+
+def a_reloptions: NodeList = l:reloptions -> new NodeList{Items: $l}
+def a_gen_options: NodeList = l:alter_generic_options -> new NodeList{Items: $l}
+
+// DROP [COLUMN] [IF EXISTS] column, DROP CONSTRAINT [IF EXISTS] name
+def at_drop: AlterTableCmd = [ok = false] DROP
+    ( -COLUMN? (IF EXISTS [ok = true])? n:ColId [st = "AT_DropColumn"] / CONSTRAINT (IF EXISTS [ok = true])? n:name [st = "AT_DropConstraint"] )
+    b:drop_behavior?
+    -> new AlterTableCmd{Subtype: st, Name: $n, Behavior: $b, MissingOk: ok}
+
+def at_misc: AlterTableCmd =
+    ( VALIDATE CONSTRAINT n:name [st = "AT_ValidateConstraint"]
+    / SET WITHOUT OIDS [st = "AT_DropOids"]
+    / SET WITHOUT CLUSTER [st = "AT_DropCluster"]
+    / CLUSTER ON n:name [st = "AT_ClusterOn"]
+    / SET LOGGED [st = "AT_SetLogged"]
+    / SET UNLOGGED [st = "AT_SetUnLogged"]
+    / ENABLE TRIGGER (ALL [st = "AT_EnableTrigAll"] / USER [st = "AT_EnableTrigUser"] / n:name [st = "AT_EnableTrig"])
+    / ENABLE ALWAYS TRIGGER n:name [st = "AT_EnableAlwaysTrig"]
+    / ENABLE REPLICA TRIGGER n:name [st = "AT_EnableReplicaTrig"]
+    / DISABLE TRIGGER (ALL [st = "AT_DisableTrigAll"] / USER [st = "AT_DisableTrigUser"] / n:name [st = "AT_DisableTrig"])
+    / ENABLE RULE n:name [st = "AT_EnableRule"]
+    / ENABLE ALWAYS RULE n:name [st = "AT_EnableAlwaysRule"]
+    / ENABLE REPLICA RULE n:name [st = "AT_EnableReplicaRule"]
+    / DISABLE RULE n:name [st = "AT_DisableRule"]
+    / INHERIT d:qualified_name [st = "AT_AddInherit"]
+    / NO INHERIT d:qualified_name [st = "AT_DropInherit"]
+    / d:of_type [st = "AT_AddOf"]
+    / NOT OF [st = "AT_DropOf"]
+    / OWNER TO o:RoleSpec [st = "AT_ChangeOwner"]
+    / SET ACCESS METHOD (DEFAULT / n:ColId) [st = "AT_SetAccessMethod"]
+    / SET TABLESPACE n:name [st = "AT_SetTableSpace"]
+    / SET d:a_reloptions [st = "AT_SetRelOptions"]
+    / RESET d:a_reloptions [st = "AT_ResetRelOptions"]
+    / REPLICA IDENTITY d:replica_identity [st = "AT_ReplicaIdentity"]
+    / ENABLE ROW LEVEL SECURITY [st = "AT_EnableRowSecurity"]
+    / DISABLE ROW LEVEL SECURITY [st = "AT_DisableRowSecurity"]
+    / FORCE ROW LEVEL SECURITY [st = "AT_ForceRowSecurity"]
+    / NO FORCE ROW LEVEL SECURITY [st = "AT_NoForceRowSecurity"]
+    / d:a_gen_options [st = "AT_GenericOptions"] )
+    -> new AlterTableCmd{Subtype: st, Name: $n, Newowner: $o, Def: $d}
+
+def replica_identity: ReplicaIdentityStmt =
+    ( NOTHING [ri = "n"] / FULL [ri = "f"] / DEFAULT [ri = "d"] / USING INDEX n:name [ri = "i"] )
+    -> new ReplicaIdentityStmt{IdentityType: ri, Name: $n}
+
+// ---- ALTER TYPE: the attributes of a composite type ----
+
+def AlterCompositeTypeStmt: AlterTableStmt = ALTER TYPE n:qualified_name c:alter_type_cmds
+    -> new AlterTableStmt{Relation: new RangeVar{Catalogname: $n.Catalogname, Schemaname: $n.Schemaname, Relname: $n.Relname, Relpersistence: "p"},
+        Cmds: $c, Objtype: "OBJECT_TYPE"}
+def alter_type_cmds: []AlterTableCmd = first:alter_type_cmd rest:(-COMMA x:alter_type_cmd)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+def alter_type_cmd: AlterTableCmd = [ok = false]
+    ( ADD ATTRIBUTE d:table_func_element [st = "AT_AddColumn"]
+    / DROP ATTRIBUTE (IF EXISTS [ok = true])? n:ColId [st = "AT_DropColumn"]
+    / ALTER ATTRIBUTE n:ColId d:alter_attribute_type [st = "AT_AlterColumnType"] )
+    b:drop_behavior?
+    -> new AlterTableCmd{Subtype: st, Name: $n, Def: $d, Behavior: $b, MissingOk: ok}
+def alter_attribute_type: ColumnDef = -(SET DATA)? TYPE t:Typename c:opt_collate_clause?
+    -> new ColumnDef{TypeName: $t, CollClause: $c}

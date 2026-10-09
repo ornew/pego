@@ -1,0 +1,83 @@
+
+// ==== Rules shared by the statements ====
+
+// ---- Numbers in options ----
+// A signed number: the sign is kept apart, rawjson.go folds it into the value (SignedNum is not a node of
+// the raw tree)
+def NumericOnly: NumericOnly = fconst_only / signed_fconst / SignedIconst
+def fconst_only: Fconst = x:Fconst -> $x
+def signed_fconst: SignedNum = (PLUS [neg = false] / MINUS [neg = true]) n:Fconst -> new SignedNum{Negative: neg, Number: $n}
+def SignedIconst: SignedIconst = Iconst / signed_iconst
+def signed_iconst: SignedNum = (PLUS [neg = false] / MINUS [neg = true]) n:Iconst -> new SignedNum{Negative: neg, Number: $n}
+def NumericOnly_list: []NumericOnly = first:NumericOnly rest:(-COMMA x:NumericOnly)* -> concat(list($first), map($rest, (r) => $r.x))
+
+// ---- Options: DefElem ----
+//
+// def_arg is the value of an option: a type, a reserved keyword, an operator, a number, a string or NONE.
+def def_arg: DefArg = func_type / reserved_keyword_ident / def_arg_op / NumericOnly / Sconst / def_arg_none
+def def_arg_op: NodeList = o:qual_all_Op -> new NodeList{Items: $o}
+def def_arg_none: String = NONE -> new String{Sval: "none"}
+def reserved_keyword_ident: Ident = t:reserved_keyword_text s -> $t
+def reserved_keyword_text: Ident = &reserved_word word
+
+def def_elem: DefElem = def_elem_arg / def_elem_plain
+def def_elem_arg: DefElem = n:ColLabel -EQ a:def_arg -> new DefElem{Defname: $n, Arg: $a, Defaction: "DEFELEM_UNSPEC"}
+def def_elem_plain: DefElem = n:ColLabel -> new DefElem{Defname: $n, Defaction: "DEFELEM_UNSPEC"}
+def def_list: []DefElem = first:def_elem rest:(-COMMA x:def_elem)* -> concat(list($first), map($rest, (r) => $r.x))
+def definition: []DefElem = -LP l:def_list -RP -> $l
+def opt_definition: []DefElem = WITH d:definition -> $d
+
+// reloptions: (name [= value], ...) with optional namespace (ns.name)
+def reloptions: []DefElem = -LP first:reloption_elem rest:(-COMMA x:reloption_elem)* -RP -> concat(list($first), map($rest, (r) => $r.x))
+def opt_reloptions: []DefElem = WITH r:reloptions -> $r
+def reloption_elem: DefElem = reloption_ns_arg / reloption_ns / reloption_arg / reloption_plain
+def reloption_ns_arg: DefElem = ns:ColLabel -DOT n:ColLabel -EQ a:def_arg -> new DefElem{Defnamespace: $ns, Defname: $n, Arg: $a, Defaction: "DEFELEM_UNSPEC"}
+def reloption_ns: DefElem = ns:ColLabel -DOT n:ColLabel -> new DefElem{Defnamespace: $ns, Defname: $n, Defaction: "DEFELEM_UNSPEC"}
+def reloption_arg: DefElem = n:ColLabel -EQ a:def_arg -> new DefElem{Defname: $n, Arg: $a, Defaction: "DEFELEM_UNSPEC"}
+def reloption_plain: DefElem = n:ColLabel -> new DefElem{Defname: $n, Defaction: "DEFELEM_UNSPEC"}
+
+// ---- Roles ----
+//
+// RoleSpec: a role name (PUBLIC is the pseudo-role), CURRENT_ROLE, CURRENT_USER or SESSION_USER.
+def RoleSpec: RoleSpec = role_public / role_current_role / role_current_user / role_session_user / role_name
+def role_public: RoleSpec = PUBLIC_WORD -> new RoleSpec{Roletype: "ROLESPEC_PUBLIC"}
+def role_current_role: RoleSpec = CURRENT_ROLE -> new RoleSpec{Roletype: "ROLESPEC_CURRENT_ROLE"}
+def role_current_user: RoleSpec = CURRENT_USER -> new RoleSpec{Roletype: "ROLESPEC_CURRENT_USER"}
+def role_session_user: RoleSpec = SESSION_USER -> new RoleSpec{Roletype: "ROLESPEC_SESSION_USER"}
+def role_name: RoleSpec = !NONE_WORD n:NonReservedWord -> new RoleSpec{Roletype: "ROLESPEC_CSTRING", Rolename: $n}
+def role_list: []RoleSpec = first:RoleSpec rest:(-COMMA x:RoleSpec)* -> concat(list($first), map($rest, (r) => $r.x))
+// the words PUBLIC and NONE: unquoted in any case, or quoted in lower case
+def PUBLIC_WORD = ((?pP)(?uU)(?bB)(?lL)(?iI)(?cC) / "\"public\"") !ident_cont s
+def NONE_WORD = ((?nN)(?oO)(?nN)(?eE) / "\"none\"") !ident_cont s
+
+// ---- Functions and operators as the objects of statements ----
+
+// A function argument: [mode] [name] type, or name mode type
+def func_arg: FunctionParameter = [m = "FUNC_PARAM_DEFAULT"]
+    ( ( IN OUT [m = "FUNC_PARAM_INOUT"] / IN [m = "FUNC_PARAM_IN"] / OUT [m = "FUNC_PARAM_OUT"] / INOUT [m = "FUNC_PARAM_INOUT"] / VARIADIC [m = "FUNC_PARAM_VARIADIC"] )
+      ( n:param_name t:func_type / t:func_type )
+    / n:param_name ( IN OUT [m = "FUNC_PARAM_INOUT"] / IN [m = "FUNC_PARAM_IN"] / OUT [m = "FUNC_PARAM_OUT"] / INOUT [m = "FUNC_PARAM_INOUT"] / VARIADIC [m = "FUNC_PARAM_VARIADIC"] ) t:func_type
+    / n:param_name t:func_type
+    / t:func_type )
+    -> new FunctionParameter{Name: $n, ArgType: $t, Mode: m}
+def func_args: []FunctionParameter = -LP l:func_arg_list_p? -RP -> concat($l)
+def func_arg_list_p: []FunctionParameter = first:func_arg rest:(-COMMA x:func_arg)* -> concat(list($first), map($rest, (r) => $r.x))
+
+// func_type: a type name, or a column type name%TYPE
+def func_type: TypeName = func_type_pct_setof / func_type_pct / Typename
+def func_type_pct: TypeName = n:type_function_name a:attrs -PERCENT TYPE
+    -> new TypeName{Names: concat(list($n), $a), PctType: true, Typemod: -1}
+def func_type_pct_setof: TypeName = SETOF n:type_function_name a:attrs -PERCENT TYPE
+    -> new TypeName{Names: concat(list($n), $a), PctType: true, Setof: true, Typemod: -1}
+
+// function_with_argtypes: name(args), or just a name. rawjson.go computes objargs from objfuncargs
+// (the types of the arguments that are not OUT).
+def function_with_argtypes: ObjectWithArgs = fwa_args / fwa_type_func_keyword / fwa_name
+def fwa_args: ObjectWithArgs = n:func_name a:func_args -> new ObjectWithArgs{Objname: $n, Objfuncargs: $a}
+def fwa_type_func_keyword: ObjectWithArgs = w:type_func_name_ident -> new ObjectWithArgs{Objname: list($w), ArgsUnspecified: true}
+def fwa_name: ObjectWithArgs = n:func_name_any -> new ObjectWithArgs{Objname: $n, ArgsUnspecified: true}
+def type_func_name_ident: Ident = t:type_func_name_text s -> $t
+def type_func_name_text: Ident = &type_func_name_word word
+def func_name_any: []Ident = first:ColId rest:(-DOT x:attr_name)* -> concat(list($first), map($rest, (r) => $r.x))
+def function_with_argtypes_list: []ObjectWithArgs = first:function_with_argtypes rest:(-COMMA x:function_with_argtypes)*
+    -> concat(list($first), map($rest, (r) => $r.x))

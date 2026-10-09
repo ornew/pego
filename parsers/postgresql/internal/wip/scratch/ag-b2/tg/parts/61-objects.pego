@@ -1,0 +1,5 @@
+
+// stub: replaced by the statements of group B
+type StmtStubB struct { }
+type StmtB = StmtStubB
+def stmt_b: StmtB = ALTER (!(RENAME / OWNER) ColLabel)+ (RENAME / OWNER) TO ColId -> new StmtStubB{}

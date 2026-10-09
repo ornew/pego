@@ -1,0 +1,285 @@
+// ==== Generic object statements (group C2) ====
+//
+// DROP, ALTER ... RENAME TO / OWNER TO / SET SCHEMA / DEPENDS ON EXTENSION, COMMENT, SECURITY LABEL, GRANT,
+// REVOKE and ALTER DEFAULT PRIVILEGES. gram.y has one production per kind of object (about 60 for
+// RenameStmt); here the kinds are grouped by the shape of what follows the keywords, and the kind itself is a
+// terminal of type ObjectType (the words that name it, such as MATERIALIZED VIEW), which the converter maps to
+// the ObjectType enumerator of the raw tree (OBJECT_MATVIEW). Where the raw parser sets an enumerator without
+// a keyword of its own, the action sets the string.
+//
+// The statements that the raw parser makes from the same words in different contexts differ in the kinds of
+// objects they accept. The variable op tells the shared rules which statement calls them (r: RENAME,
+// c: RENAME COLUMN, o: OWNER TO, s: SET SCHEMA), sl is true in SECURITY LABEL, and dflt is true in ALTER
+// DEFAULT PRIVILEGES (the same GRANT and REVOKE, with a kind of objects instead of objects).
+//
+// Because the choice of the statement commits to the first alternative that matches, these statements must not
+// come after a statement that can match only a prefix of them: ALTER ROLE r (all options are optional) would
+// take the beginning of ALTER ROLE r RENAME TO s. Put stmt_c2 before the statements of the other groups.
+
+type ObjectType terminal
+// An object type: the terminal of the words (mapped by the converter) or the enumerator itself
+type ObjType = ObjectType | string
+// A name of a function parameter: a.b.c is the string "a.b.c"
+type ParamName struct { Names []Ident }
+// What the raw parser stores in the object (or objects) of these statements, a name list being a List node
+type ObjNode = NodeList | Ident | TypeName | ObjectWithArgs | RangeVar | NumericOnly | ParamName
+
+type DropStmt struct { Objects []ObjNode, RemoveType ObjType, Behavior *DropBehavior, MissingOk bool, Concurrent bool }
+type RenameStmt struct {
+    RenameType ObjType, RelationType *ObjType, Relation *RangeVar, Object *ObjNode, Subname *Ident, Newname Ident,
+    Behavior *DropBehavior, MissingOk bool
+}
+type AlterObjectSchemaStmt struct { ObjectType ObjType, Relation *RangeVar, Object *ObjNode, Newschema Ident, MissingOk bool }
+type AlterOwnerStmt struct { ObjectType ObjType, Object ObjNode, Newowner RoleSpec }
+type AlterObjectDependsStmt struct { ObjectType ObjType, Relation *RangeVar, Object *ObjNode, Extname Ident, Remove bool }
+type CommentStmt struct { Objtype ObjType, Object ObjNode, Comment *Sconst }
+type SecLabelStmt struct { Objtype ObjType, Object ObjNode, Provider *NameOrString, Label *Sconst }
+// A privilege name: SELECT, a name, or "alter system"
+type PrivName = Ident | string
+type AccessPriv struct { PrivName *PrivName, Cols []Ident }
+type GrantStmt struct {
+    IsGrant bool, Targtype string, Objtype ObjType, Objects []ObjNode, Privileges []AccessPriv, Grantees []RoleSpec,
+    GrantOption bool, Grantor *RoleSpec, Behavior *DropBehavior
+}
+// An option of GRANT role (WITH ADMIN OPTION, INHERIT FALSE, ...): a DefElem with a Boolean
+type RoleOpt struct { Name Ident, Value bool }
+type GrantRoleStmt struct {
+    GrantedRoles []AccessPriv, GranteeRoles []RoleSpec, IsGrant bool, Opt []RoleOpt, Grantor *RoleSpec,
+    Behavior *DropBehavior
+}
+// An option of ALTER DEFAULT PRIVILEGES: the DefElem "schemas" or "roles"
+type DefaclOpt struct { Schemas []Ident, Roles []RoleSpec }
+type AlterDefaultPrivilegesStmt struct { Options []DefaclOpt, Action GrantStmt }
+
+type StmtC2 = DropStmt | RenameStmt | AlterObjectSchemaStmt | AlterOwnerStmt | AlterObjectDependsStmt | CommentStmt |
+    SecLabelStmt | GrantStmt | GrantRoleStmt | AlterDefaultPrivilegesStmt
+def stmt_c2: StmtC2 = DropStmt / RenameStmt / AlterObjectSchemaStmt / AlterOwnerStmt / AlterObjectDependsStmt
+    / CommentStmt / SecLabelStmt / GrantStmt / GrantRoleStmt / AlterDefaultPrivilegesStmt
+
+// ---- Kinds of objects ----
+
+def object_type_any_name: ObjectType = TABLE / SEQUENCE / VIEW / MATERIALIZED VIEW / INDEX / FOREIGN TABLE / COLLATION
+    / CONVERSION / STATISTICS / TEXT SEARCH (PARSER / DICTIONARY / TEMPLATE / CONFIGURATION)
+def object_type_name: ObjectType = drop_type_name / DATABASE / ROLE / SUBSCRIPTION / TABLESPACE
+def drop_type_name: ObjectType = ACCESS METHOD / EVENT TRIGGER / EXTENSION / FOREIGN DATA WRAPPER / opt_procedural LANGUAGE
+    / PUBLICATION / SCHEMA / SERVER
+def object_type_name_on_any_name: ObjectType = POLICY / RULE / TRIGGER
+
+// the kinds of objects by what follows them (see alter_obj)
+def ot_aggr: ObjectType = AGGREGATE
+def ot_routine: ObjectType = FUNCTION / PROCEDURE / ROUTINE
+def ot_oper: ObjectType = OPERATOR
+def ot_opclass: ObjectType = OPERATOR (CLASS / FAMILY)
+def ot_type: ObjectType = TYPE / DOMAIN
+def ot_any: ObjectType = COLLATION / CONVERSION / DOMAIN / STATISTICS / TYPE / TEXT SEARCH (DICTIONARY / CONFIGURATION)
+def ot_any_rs: ObjectType = TEXT SEARCH (PARSER / TEMPLATE)
+def ot_name: ObjectType = FOREIGN DATA WRAPPER / SERVER / EVENT TRIGGER / PUBLICATION / SUBSCRIPTION / opt_procedural LANGUAGE
+def ot_name_own: ObjectType = DATABASE / SCHEMA / TABLESPACE
+def ot_large: ObjectType = LARGE OBJECT
+
+// ---- Objects: the names of what the statements refer to ----
+
+def any_name_obj: NodeList = n:any_name -> new NodeList{Items: $n}
+def any_name_nodes: []NodeList = l:any_name_list -> map($l, (n) => new NodeList{Items: $n})
+// opclass_obj: any_name USING name, which the raw parser stores as (name, ...any_name)
+def opclass_obj: NodeList = a:any_name USING n:name -> new NodeList{Items: concat(list($n), $a)}
+// name ON any_name, stored as (...any_name, name)
+def name_on_obj: NodeList = n:name ON a:any_name -> new NodeList{Items: concat($a, list($n))}
+
+// The object of COMMENT, SECURITY LABEL and ALTER ... : its kind and the node
+type ObjSpec struct { ObjType ObjType, Object ObjNode }
+// alter_obj: the objects of RENAME TO (op r), OWNER TO (o) and SET SCHEMA (s) that are not relations
+def alter_obj: ObjSpec =
+    ( t:ot_aggr o:aggregate_with_argtypes
+    / t:ot_routine o:function_with_argtypes
+    / [op == "o" || op == "s"] t:ot_oper o:operator_with_argtypes
+    / t:ot_opclass o:opclass_obj
+    / t:ot_any o:any_name_obj
+    / [op != "o"] t:ot_any_rs o:any_name_obj
+    / [op != "s"] t:ot_name o:name
+    / [op == "o"] t:ot_name_own o:name
+    / [op == "s"] t:ot_ext o:name
+    / [op == "o"] t:ot_large o:NumericOnly )
+    -> new ObjSpec{ObjType: $t, Object: $o}
+def ot_ext: ObjectType = EXTENSION
+
+// alter_rel: the relations of RENAME TO, RENAME COLUMN (op c) and SET SCHEMA, with IF EXISTS
+type RelSpec struct { ObjType ObjType, Rel RangeVar, Missing bool }
+def alter_rel: RelSpec =
+    ( t:ot_tab m:(IF EXISTS)? r:relation_expr
+    / t:ot_view m:(IF EXISTS)? r:qualified_name
+    / [op != "c"] t:ot_seq m:(IF EXISTS)? r:qualified_name
+    / [op == "r"] t:ot_index m:(IF EXISTS)? r:qualified_name )
+    -> new RelSpec{ObjType: $t, Rel: $r, Missing: len($m) > 0}
+def ot_tab: ObjectType = TABLE / FOREIGN TABLE
+def ot_view: ObjectType = VIEW / MATERIALIZED VIEW
+def ot_seq: ObjectType = SEQUENCE
+def ot_index: ObjectType = INDEX
+
+// ---- DROP ----
+
+def DropStmt: DropStmt = drop_index_conc / drop_any / drop_name / drop_on / drop_type / drop_args
+def drop_index_conc: DropStmt = DROP INDEX CONCURRENTLY m:(IF EXISTS)? l:any_name_nodes b:drop_behavior?
+    -> new DropStmt{Objects: $l, RemoveType: "OBJECT_INDEX", Behavior: $b, MissingOk: len($m) > 0, Concurrent: true}
+def drop_any: DropStmt = DROP t:object_type_any_name m:(IF EXISTS)? l:any_name_nodes b:drop_behavior?
+    -> new DropStmt{Objects: $l, RemoveType: $t, Behavior: $b, MissingOk: len($m) > 0}
+def drop_name: DropStmt = DROP t:drop_type_name m:(IF EXISTS)? l:name_list b:drop_behavior?
+    -> new DropStmt{Objects: $l, RemoveType: $t, Behavior: $b, MissingOk: len($m) > 0}
+// DROP POLICY | RULE | TRIGGER name ON table: the object is (...table, name)
+def drop_on: DropStmt = DROP t:object_type_name_on_any_name m:(IF EXISTS)? n:name ON a:any_name b:drop_behavior?
+    -> new DropStmt{Objects: list(new NodeList{Items: concat($a, list($n))}), RemoveType: $t, Behavior: $b, MissingOk: len($m) > 0}
+def drop_type: DropStmt = DROP t:ot_type m:(IF EXISTS)? l:type_list b:drop_behavior?
+    -> new DropStmt{Objects: $l, RemoveType: $t, Behavior: $b, MissingOk: len($m) > 0}
+// RemoveFuncStmt, RemoveAggrStmt and RemoveOperStmt
+def drop_args: DropStmt = DROP ( t:ot_routine [k = 1] / t:ot_aggr [k = 2] / t:ot_oper [k = 3] ) m:(IF EXISTS)?
+    ( [k == 1] f:function_with_argtypes_list / [k == 2] a:aggregate_with_argtypes_list / [k == 3] o:operator_with_argtypes_list )
+    b:drop_behavior?
+    -> new DropStmt{Objects: concat($f, $a, $o), RemoveType: $t, Behavior: $b, MissingOk: len($m) > 0}
+
+// ---- ALTER ... RENAME TO ----
+
+def RenameStmt: RenameStmt = rename_obj / rename_rel / rename_col / rename_sub / rename_cstr / rename_domcstr / rename_on / rename_attr
+def rename_obj: RenameStmt = ALTER [op = "r"] s:alter_obj RENAME TO n:name
+    -> new RenameStmt{RenameType: $s.ObjType, Object: $s.Object, Newname: $n}
+def rename_rel: RenameStmt = ALTER [op = "r"] s:alter_rel RENAME TO n:name
+    -> new RenameStmt{RenameType: $s.ObjType, Relation: $s.Rel, Newname: $n, MissingOk: $s.Missing}
+def rename_col: RenameStmt = ALTER [op = "c"] s:alter_rel RENAME COLUMN? c:name TO n:name
+    -> new RenameStmt{RenameType: "OBJECT_COLUMN", RelationType: $s.ObjType, Relation: $s.Rel, Subname: $c, Newname: $n, MissingOk: $s.Missing}
+// the names of databases, schemas and tablespaces and of roles (RoleId: not public, none, ...) are subnames
+def rename_sub: RenameStmt = ALTER ( t:ot_name_own s:name RENAME TO n:name / t:ot_role s:RoleId RENAME TO n:RoleId )
+    -> new RenameStmt{RenameType: $t, Subname: $s, Newname: $n}
+def ot_role: ObjectType = GROUP / ROLE / USER
+def rename_cstr: RenameStmt = ALTER TABLE m:(IF EXISTS)? r:relation_expr RENAME CONSTRAINT c:name TO n:name
+    -> new RenameStmt{RenameType: "OBJECT_TABCONSTRAINT", Relation: $r, Subname: $c, Newname: $n, MissingOk: len($m) > 0}
+def rename_domcstr: RenameStmt = ALTER DOMAIN a:any_name RENAME CONSTRAINT c:name TO n:name
+    -> new RenameStmt{RenameType: "OBJECT_DOMCONSTRAINT", Object: new NodeList{Items: $a}, Subname: $c, Newname: $n}
+def rename_on: RenameStmt = ALTER ( t:ot_policy m:(IF EXISTS)? / t:ot_rule_trigger ) s:name ON r:qualified_name RENAME TO n:name
+    -> new RenameStmt{RenameType: $t, Relation: $r, Subname: $s, Newname: $n, MissingOk: len($m) > 0}
+def ot_policy: ObjectType = POLICY
+def ot_rule_trigger: ObjectType = RULE / TRIGGER
+// ALTER TYPE name RENAME ATTRIBUTE: the type is a RangeVar (makeRangeVarFromAnyName)
+def rename_attr: RenameStmt = ALTER TYPE r:qualified_name RENAME ATTRIBUTE s:name TO n:name b:drop_behavior?
+    -> new RenameStmt{RenameType: "OBJECT_ATTRIBUTE", RelationType: "OBJECT_TYPE", Subname: $s, Newname: $n, Behavior: $b,
+        Relation: new RangeVar{Catalogname: $r.Catalogname, Schemaname: $r.Schemaname, Relname: $r.Relname, Relpersistence: "p"}}
+
+// ---- ALTER ... OWNER TO, SET SCHEMA, DEPENDS ON EXTENSION ----
+
+def AlterOwnerStmt: AlterOwnerStmt = ALTER [op = "o"] s:alter_obj OWNER TO r:RoleSpec
+    -> new AlterOwnerStmt{ObjectType: $s.ObjType, Object: $s.Object, Newowner: $r}
+
+def AlterObjectSchemaStmt: AlterObjectSchemaStmt = schema_obj / schema_rel
+def schema_obj: AlterObjectSchemaStmt = ALTER [op = "s"] s:alter_obj SET SCHEMA n:name
+    -> new AlterObjectSchemaStmt{ObjectType: $s.ObjType, Object: $s.Object, Newschema: $n}
+def schema_rel: AlterObjectSchemaStmt = ALTER [op = "s"] s:alter_rel SET SCHEMA n:name
+    -> new AlterObjectSchemaStmt{ObjectType: $s.ObjType, Relation: $s.Rel, Newschema: $n, MissingOk: $s.Missing}
+
+def AlterObjectDependsStmt: AlterObjectDependsStmt = depends_routine / depends_trigger / depends_rel
+def depends_routine: AlterObjectDependsStmt = ALTER t:ot_routine o:function_with_argtypes r:depends_on_ext
+    -> new AlterObjectDependsStmt{ObjectType: $t, Object: $o, Extname: $r.Name, Remove: $r.No}
+def depends_trigger: AlterObjectDependsStmt = ALTER TRIGGER n:name ON q:qualified_name r:depends_on_ext
+    -> new AlterObjectDependsStmt{ObjectType: "OBJECT_TRIGGER", Relation: $q, Object: new NodeList{Items: list($n)}, Extname: $r.Name, Remove: $r.No}
+def depends_rel: AlterObjectDependsStmt = ALTER ( MATERIALIZED VIEW [t = "OBJECT_MATVIEW"] / INDEX [t = "OBJECT_INDEX"] ) q:qualified_name r:depends_on_ext
+    -> new AlterObjectDependsStmt{ObjectType: t, Relation: $q, Extname: $r.Name, Remove: $r.No}
+// [NO] DEPENDS ON EXTENSION name
+type DependsOn struct { No bool, Name Ident }
+def depends_on_ext: DependsOn = no:NO? DEPENDS ON EXTENSION n:name -> new DependsOn{No: len($no) > 0, Name: $n}
+
+// ---- COMMENT and SECURITY LABEL ----
+
+def CommentStmt: CommentStmt = COMMENT ON [sl = false] s:obj_spec IS (t:Sconst / NULL)
+    -> new CommentStmt{Objtype: $s.ObjType, Object: $s.Object, Comment: $t}
+def SecLabelStmt: SecLabelStmt = SECURITY LABEL p:opt_provider? ON [sl = true] s:obj_spec IS (l:Sconst / NULL)
+    -> new SecLabelStmt{Objtype: $s.ObjType, Object: $s.Object, Provider: $p, Label: $l}
+def opt_provider: NameOrString = FOR n:NonReservedWord_or_Sconst -> $n
+
+// obj_spec: the object of COMMENT ON (sl false) and of SECURITY LABEL (sl true, fewer kinds)
+def obj_spec: ObjSpec = obj_spec_simple / obj_cstr_dom / obj_cstr_tab / obj_transform / obj_cast
+def obj_spec_simple: ObjSpec =
+    ( t:comment_any_type o:any_name_obj
+    / t:object_type_name o:name
+    / t:ot_type o:Typename
+    / t:ot_aggr o:aggregate_with_argtypes
+    / t:ot_routine o:function_with_argtypes
+    / [!sl] t:ot_oper o:operator_with_argtypes
+    / t:ot_large o:NumericOnly
+    / [!sl] t:object_type_name_on_any_name o:name_on_obj
+    / [!sl] t:ot_opclass o:opclass_obj )
+    -> new ObjSpec{ObjType: $t, Object: $o}
+def comment_any_type: ObjectType = object_type_any_name / COLUMN
+// the table or domain of a constraint (the raw parser makes the domain a TypeName)
+def obj_cstr_dom: ObjSpec = [!sl] CONSTRAINT n:name ON DOMAIN a:any_name
+    -> new ObjSpec{ObjType: "OBJECT_DOMCONSTRAINT", Object: new NodeList{Items: list(new TypeName{Names: $a, Typemod: -1}, $n)}}
+def obj_cstr_tab: ObjSpec = [!sl] CONSTRAINT n:name ON a:any_name
+    -> new ObjSpec{ObjType: "OBJECT_TABCONSTRAINT", Object: new NodeList{Items: concat($a, list($n))}}
+def obj_transform: ObjSpec = [!sl] TRANSFORM FOR t:Typename LANGUAGE n:name
+    -> new ObjSpec{ObjType: "OBJECT_TRANSFORM", Object: new NodeList{Items: list($t, $n)}}
+def obj_cast: ObjSpec = [!sl] CAST -LP a:Typename AS b:Typename -RP
+    -> new ObjSpec{ObjType: "OBJECT_CAST", Object: new NodeList{Items: list($a, $b)}}
+
+// ---- GRANT and REVOKE ----
+
+def GrantStmt: GrantStmt = [dflt = false] a:acl_action -> $a
+// GRANT and REVOKE of a privilege on objects, or (in ALTER DEFAULT PRIVILEGES, dflt true) on a kind of objects
+def acl_action: GrantStmt = grant_stmt / revoke_stmt
+def grant_stmt: GrantStmt = GRANT p:privileges ON t:acl_target TO g:grantee_list
+    o:(WITH GRANT OPTION)? b:granted_by? [!dflt || $b == nil]
+    -> new GrantStmt{IsGrant: true, Targtype: $t.TargType, Objtype: $t.ObjType, Objects: $t.Objs, Privileges: $p, Grantees: $g, GrantOption: len($o) > 0, Grantor: $b}
+def revoke_stmt: GrantStmt = REVOKE o:(GRANT OPTION FOR)? p:privileges ON t:acl_target FROM g:grantee_list b:granted_by? [!dflt || $b == nil] d:drop_behavior?
+    -> new GrantStmt{Targtype: $t.TargType, Objtype: $t.ObjType, Objects: $t.Objs, Privileges: $p, Grantees: $g, GrantOption: len($o) > 0, Grantor: $b, Behavior: $d}
+def granted_by: RoleSpec = GRANTED BY r:RoleSpec -> $r
+def grantee_list: []RoleSpec = first:grantee rest:(-COMMA x:grantee)* -> concat(list($first), map($rest, (r) => $r.x))
+def grantee: RoleSpec = GROUP? r:RoleSpec -> $r
+
+// privileges: ALL [PRIVILEGES] [(columns)] (the list of privileges is empty for ALL), or a list of privileges
+def privileges: []AccessPriv = privilege_list / all_priv_cols / all_priv
+def all_priv_cols: []AccessPriv = ALL PRIVILEGES? -LP c:column_list -RP -> list(new AccessPriv{Cols: $c})
+def all_priv: []AccessPriv = ALL PRIVILEGES? -> list()
+def privilege_list: []AccessPriv = first:privilege rest:(-COMMA x:privilege)* -> concat(list($first), map($rest, (r) => $r.x))
+def privilege: AccessPriv = privilege_alter_system / privilege_name
+def privilege_alter_system: AccessPriv = ALTER SYSTEM -> new AccessPriv{PrivName: "alter system"}
+def privilege_name: AccessPriv = n:(priv_keyword / ColId) c:opt_column_list? -> new AccessPriv{PrivName: $n, Cols: concat($c)}
+// the reserved keywords that are privilege names
+def priv_keyword: Ident = t:priv_keyword_text s -> $t
+def priv_keyword_text: Ident = &(SELECT / REFERENCES / CREATE) word
+
+// privilege_target: the objects of GRANT and REVOKE
+type PrivTarget struct { TargType string, ObjType ObjType, Objs []ObjNode }
+def acl_target: PrivTarget = defacl_target / privilege_target
+def defacl_target: PrivTarget = [dflt] t:defacl_privilege_target -> new PrivTarget{TargType: "ACL_TARGET_DEFAULTS", ObjType: $t}
+def defacl_privilege_target: ObjectType = TABLES / FUNCTIONS / ROUTINES / SEQUENCES / TYPES / SCHEMAS / LARGE OBJECTS
+def privilege_target: PrivTarget = [!dflt] [tt = "ACL_TARGET_OBJECT"]
+    ( t:ot_all IN SCHEMA [tt = "ACL_TARGET_ALL_IN_SCHEMA"] o:name_list
+    / t:ot_pt_rel o:qualified_name_list
+    / t:ot_pt_name o:name_list
+    / t:ot_routine o:function_with_argtypes_list
+    / t:ot_pt_type o:any_name_nodes
+    / t:ot_large o:NumericOnly_list
+    / t:ot_param o:parameter_name_list
+    / t:ot_table_default o:qualified_name_list )
+    -> new PrivTarget{TargType: tt, ObjType: $t, Objs: $o}
+def ot_all: ObjectType = ALL (TABLES / SEQUENCES / FUNCTIONS / PROCEDURES / ROUTINES)
+def ot_pt_rel: ObjectType = TABLE / SEQUENCE
+// no keyword: a table (last, as most keywords of the alternatives before it can be table names)
+def ot_table_default: ObjectType = _
+def ot_pt_name: ObjectType = FOREIGN DATA WRAPPER / FOREIGN SERVER / DATABASE / LANGUAGE / SCHEMA / TABLESPACE
+def ot_pt_type: ObjectType = DOMAIN / TYPE
+def ot_param: ObjectType = PARAMETER
+def parameter_name_list: []ParamName = first:parameter_name rest:(-COMMA x:parameter_name)* -> concat(list($first), map($rest, (r) => $r.x))
+def parameter_name: ParamName = first:ColId rest:(-DOT x:ColId)* -> new ParamName{Names: concat(list($first), map($rest, (r) => $r.x))}
+
+// GRANT role TO role: the roles are parsed as privileges
+def GrantRoleStmt: GrantRoleStmt = grant_role / revoke_role
+def grant_role: GrantRoleStmt = GRANT l:privilege_list TO r:role_list o:grant_role_opts? b:granted_by?
+    -> new GrantRoleStmt{GrantedRoles: $l, GranteeRoles: $r, IsGrant: true, Opt: concat($o), Grantor: $b}
+def grant_role_opts: []RoleOpt = WITH first:grant_role_opt rest:(-COMMA x:grant_role_opt)* -> concat(list($first), map($rest, (r) => $r.x))
+def grant_role_opt: RoleOpt = n:ColLabel ( OPTION [v = true] / TRUE [v = true] / FALSE [v = false] ) -> new RoleOpt{Name: $n, Value: v}
+def revoke_role: GrantRoleStmt = REVOKE o:revoke_role_opt? l:privilege_list FROM r:role_list b:granted_by? d:drop_behavior?
+    -> new GrantRoleStmt{GrantedRoles: $l, GranteeRoles: $r, Opt: concat($o), Grantor: $b, Behavior: $d}
+def revoke_role_opt: []RoleOpt = n:ColId OPTION FOR -> list(new RoleOpt{Name: $n, Value: false})
+
+// ---- ALTER DEFAULT PRIVILEGES ----
+
+def AlterDefaultPrivilegesStmt: AlterDefaultPrivilegesStmt = ALTER DEFAULT PRIVILEGES o:defacl_option* [dflt = true] a:acl_action
+    -> new AlterDefaultPrivilegesStmt{Options: $o, Action: $a}
+def defacl_option: DefaclOpt = ( IN SCHEMA s:name_list / FOR (ROLE / USER) r:role_list )
+    -> new DefaclOpt{Schemas: concat($s), Roles: concat($r)}

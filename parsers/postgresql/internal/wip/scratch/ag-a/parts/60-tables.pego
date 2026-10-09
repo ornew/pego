@@ -1,0 +1,101 @@
+// ==== Sequences, statistics, indexes, views, domains (region A) and the statements of this region ====
+
+// The statements of this region. ALTER TYPE (AlterCompositeTypeStmt) and the two CREATE ... AS statements
+// build the nodes AlterTableStmt and CreateTableAsStmt.
+type StmtA = CreateStmt | CreateTableAsStmt | RefreshMatViewStmt | CreateSeqStmt | AlterSeqStmt | CreateStatsStmt |
+    AlterStatsStmt | IndexStmt | ViewStmt | AlterTableStmt | AlterTableMoveAllStmt | CreateDomainStmt |
+    AlterDomainStmt | CreateForeignTableStmt
+def stmt_a: StmtA = CreateStmt / CreateAsStmt / CreateForeignTableStmt / CreateMatViewStmt / CreateSeqStmt / CreateStatsStmt /
+    IndexStmt / ViewStmt / CreateDomainStmt / RefreshMatViewStmt / AlterSeqStmt / AlterTableMoveAllStmt / AlterTableStmt /
+    AlterCompositeTypeStmt / AlterStatsStmt / AlterDomainStmt
+
+// ---- Sequences ----
+
+def CreateSeqStmt: CreateSeqStmt = CREATE p:OptTemp SEQUENCE ine:(IF NOT EXISTS)? n:qualified_name o:OptSeqOptList
+    -> new CreateSeqStmt{Sequence: new RangeVar{Catalogname: $n.Catalogname, Schemaname: $n.Schemaname, Relname: $n.Relname, Inh: true, Relpersistence: $p.Relpersistence},
+        Options: $o, IfNotExists: len($ine) > 0}
+def AlterSeqStmt: AlterSeqStmt = ALTER SEQUENCE ie:(IF EXISTS)? n:qualified_name o:SeqOptList
+    -> new AlterSeqStmt{Sequence: $n, Options: $o, MissingOk: len($ie) > 0}
+def OptSeqOptList: []DefElem = l:SeqOptList? -> concat($l)
+def OptParenthesizedSeqOptList: []DefElem = (-LP l:SeqOptList -RP)? -> concat($l)
+def SeqOptList: []DefElem = xs:SeqOptElem+ -> $xs
+// SeqOptElem: the name of the option is the one the raw parser makes up ("owned_by")
+def SeqOptElem: DefElem = seq_opt_common / seq_opt_special
+def seq_opt_special: DefElem =
+    ( AS [nm = "as"] a:SimpleTypename
+    / OWNED BY [nm = "owned_by"] a:a_names
+    / RESTART [nm = "restart"] a:restart_value? )
+    -> new DefElem{Defname: new String{Sval: nm}, Arg: $a, Defaction: "DEFELEM_UNSPEC"}
+def seq_opt_common: DefElem =
+    ( CACHE [nm = "cache"] a:NumericOnly
+    / CYCLE [nm = "cycle"] a:a_true
+    / NO CYCLE [nm = "cycle"] a:a_false
+    / INCREMENT [nm = "increment"] -BY? a:NumericOnly
+    / LOGGED [nm = "logged"]
+    / MAXVALUE [nm = "maxvalue"] a:NumericOnly
+    / MINVALUE [nm = "minvalue"] a:NumericOnly
+    / NO MAXVALUE [nm = "maxvalue"]
+    / NO MINVALUE [nm = "minvalue"]
+    / SEQUENCE NAME [nm = "sequence_name"] a:a_names
+    / START [nm = "start"] -WITH? a:NumericOnly
+    / UNLOGGED [nm = "unlogged"] )
+    -> new DefElem{Defname: new String{Sval: nm}, Arg: $a, Defaction: "DEFELEM_UNSPEC"}
+def restart_value: NumericOnly = -WITH? v:NumericOnly -> $v
+def a_names: NodeList = n:any_name -> new NodeList{Items: $n}
+def a_true: Boolean = _ -> new Boolean{Boolval: true}
+def a_false: Boolean = _ -> new Boolean{Boolval: false}
+
+// ---- Statistics ----
+
+// CREATE STATISTICS [[IF NOT EXISTS] name] [(kinds)] ON columns-or-expressions FROM tables
+def CreateStatsStmt: CreateStatsStmt = CREATE STATISTICS ( ine:(IF NOT EXISTS) n:any_name / n:any_name? )
+    k:opt_name_list? ON l:stats_params FROM f:from_list
+    -> new CreateStatsStmt{Defnames: concat($n), StatTypes: concat($k), Exprs: $l, Relations: $f, IfNotExists: len($ine) > 0}
+def stats_params: []StatsElem = first:stats_param rest:(-COMMA x:stats_param)* -> concat(list($first), map($rest, (r) => $r.x))
+def stats_param: StatsElem = stats_param_name / stats_param_func / stats_param_expr
+def stats_param_name: StatsElem = n:ColId !"(" -> new StatsElem{Name: $n}
+def stats_param_func: StatsElem = e:func_expr_windowless -> new StatsElem{Expr: $e}
+def stats_param_expr: StatsElem = -LP e:a_expr -RP -> new StatsElem{Expr: $e}
+def AlterStatsStmt: AlterStatsStmt = ALTER STATISTICS ie:(IF EXISTS)? n:any_name SET STATISTICS (DEFAULT / v:SignedIconst)
+    -> new AlterStatsStmt{Defnames: $n, Stxstattarget: $v, MissingOk: len($ie) > 0}
+
+// ---- Indexes ----
+
+// CREATE INDEX: the name is optional unless IF NOT EXISTS is written
+def IndexStmt: IndexStmt = CREATE u:UNIQUE? INDEX c:CONCURRENTLY? ( ine:(IF NOT EXISTS) n:name / n:ColId )? ON r:relation_expr
+    am:access_method_clause -LP p:index_params -RP (INCLUDE -LP inc:index_params -RP)? (NULLS nn:(NOT)? DISTINCT)?
+    o:opt_reloptions? ts:OptTableSpace? w:where_clause?
+    -> new IndexStmt{Idxname: $n, Relation: $r, AccessMethod: $am, TableSpace: $ts, IndexParams: $p, IndexIncludingParams: concat($inc),
+        Options: concat($o), WhereClause: $w, Unique: len($u) > 0, NullsNotDistinct: len($nn) > 0, Concurrent: len($c) > 0,
+        IfNotExists: len($ine) > 0}
+
+// ---- Views ----
+
+def ViewStmt: ViewStmt = view_recursive / view_plain
+def view_plain: ViewStmt = CREATE r:(OR REPLACE)? p:OptTemp VIEW n:qualified_name c:opt_column_list? o:opt_reloptions? AS q:SelectStmt
+    [ck = "NO_CHECK_OPTION"] (WITH (CASCADED [ck = "CASCADED_CHECK_OPTION"] / LOCAL [ck = "LOCAL_CHECK_OPTION"] / [ck = "CASCADED_CHECK_OPTION"]) CHECK OPTION)?
+    -> new ViewStmt{View: new RangeVar{Catalogname: $n.Catalogname, Schemaname: $n.Schemaname, Relname: $n.Relname, Inh: true, Relpersistence: $p.Relpersistence},
+        Aliases: concat($c), Query: $q, Replace: len($r) > 0, Options: concat($o), WithCheckOption: ck}
+// CREATE RECURSIVE VIEW v (cols) AS q is WITH RECURSIVE v (cols) AS (q) SELECT cols FROM v; there is no CHECK OPTION
+def view_recursive: ViewStmt = CREATE r:(OR REPLACE)? p:OptTemp RECURSIVE VIEW n:qualified_name -LP c:column_list -RP o:opt_reloptions? AS q:SelectStmt
+    -> new ViewStmt{View: new RangeVar{Catalogname: $n.Catalogname, Schemaname: $n.Schemaname, Relname: $n.Relname, Inh: true, Relpersistence: $p.Relpersistence},
+        Aliases: $c, Replace: len($r) > 0, Options: concat($o),
+        Query: new SelectStmt{WithClause: new WithClause{Ctes: list(new CommonTableExpr{Ctename: $n.Relname, Aliascolnames: $c, Ctematerialized: "CTEMaterializeDefault", Ctequery: $q}), Recursive: true},
+            TargetList: map($c, (x) => new ResTarget{Val: new ColumnRef{Fields: list($x)}}),
+            FromClause: list(new RangeVar{Relname: $n.Relname, Inh: true, Relpersistence: "p"})}}
+
+// ---- Domains ----
+
+def CreateDomainStmt: CreateDomainStmt = CREATE DOMAIN n:any_name -AS? t:Typename q:ColQualList
+    -> new CreateDomainStmt{Domainname: $n, TypeName: $t, CollClause: $q.CollClause, Constraints: $q.Constraints}
+// the subtype is the character of the raw tree: T default, N drop not null, O set not null, C add constraint,
+// X drop constraint, V validate constraint
+def AlterDomainStmt: AlterDomainStmt = [ok = false] ALTER DOMAIN n:any_name
+    ( SET DEFAULT d:a_expr [st = "T"]
+    / DROP DEFAULT [st = "T"]
+    / DROP NOT NULL [st = "N"]
+    / SET NOT NULL [st = "O"]
+    / ADD d:DomainConstraint [st = "C"]
+    / DROP CONSTRAINT (IF EXISTS [ok = true])? nm:name b:drop_behavior? [st = "X"]
+    / VALIDATE CONSTRAINT nm:name [st = "V"] )
+    -> new AlterDomainStmt{Subtype: st, TypeName: $n, Name: $nm, Def: $d, Behavior: $b, MissingOk: ok}

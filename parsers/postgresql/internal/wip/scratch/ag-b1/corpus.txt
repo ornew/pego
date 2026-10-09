@@ -1,0 +1,12 @@
+accepted 25295 rejected 22699; agree with the reference on 25763, disagree on 22231; 6.664710792s for 3568921 bytes
+{'total': 47994, 'both_accept': 25278, 'tree_equal': 25230, 'accept_mismatch_mine_rej_ref_ok': 22214, 'both_reject': 485, 'tree_diff': 48, 'accept_mismatch_mine_ok_ref_rej': 17}
+18 []/SelectStmt/targetList[]/ResTarget/val/A_Expr/lexpr/A_Const/sval/sval
+9 []/SelectStmt/targetList[]/ResTarget/val/FuncCall/args[]/A_Const/sval/sval
+6 []/SelectStmt/targetList[]/ResTarget/val/A_Expr/lexpr/FuncCall/args[]/A_Const/sval/sval
+4 []/InsertStmt/selectStmt/SelectStmt/valuesLists[]/List/items[]/A_Const/sval/sval
+3 []/SelectStmt/limitOption
+2 []/InsertStmt/selectStmt/SelectStmt/valuesLists[]/List/items[]/A_ArrayExpr/elements[]/A_Const/sval/sval
+2 []/SelectStmt/targetList[]/ResTarget/val/A_Expr/lexpr/FuncCall/args[]/CollateClause/arg/A_Const/sval/sval
+2 []/SelectStmt/targetList[]/ResTarget/name
+1 []/InsertStmt/selectStmt/SelectStmt/valuesLists[]/List/items[]/A_Const/fval
+1 []/SelectStmt/targetList[]/ResTarget/val/A_Const/sval/sval

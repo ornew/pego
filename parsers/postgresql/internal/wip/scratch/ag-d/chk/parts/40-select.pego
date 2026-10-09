@@ -1,0 +1,69 @@
+
+// ==== SELECT ====
+//
+// In the raw parser the clauses after a query (ORDER BY, LIMIT, FOR UPDATE, WITH) are put into the node of
+// the query that precedes them. A PEG cannot change a node it has built, so select_core builds the node
+// once, with everything: the body (SELECT ..., VALUES, TABLE, a chain of UNION/INTERSECT/EXCEPT or a
+// parenthesized query) and the clauses that follow it. A set operation is built from its last operator:
+// ue_head and i_head are the chains before it (each step requires another operator to follow, so the
+// chain stops before the last one). The operands of a set operation have no clauses after them (the
+// variable tails_ok is false for them). A parenthesized query followed by clauses is a SelectStmt with only
+// Larg, which rawjson.go merges into one node as the raw parser does.
+
+def SelectStmt: SelectStmt = select_no_parens / select_with_parens
+def select_with_parens: SelectStmt = select_parens_plain / select_parens_nested
+def select_parens_plain: SelectStmt = -LP q:select_no_parens -RP -> $q
+def select_parens_nested: SelectStmt = -LP q:select_with_parens -RP -> $q
+def select_no_parens: SelectStmt = [tails_ok = true] x:select_core -> $x
+def select_operand: SelectStmt = [tails_ok = false] x:select_core -> $x
+// select_clause: an operand of a set operation
+def sop: SelectStmt = select_with_parens / select_operand
+// the intersect chain, whose operands bind tighter than UNION and EXCEPT
+def ic_operand: SelectStmt = i_chain
+def i_chain: SelectStmt = i_step / sop
+def i_step: SelectStmt = l:i_chain INTERSECT a:ALL? -DISTINCT? r:sop
+    -> new SelectStmt{Op: "SETOP_INTERSECT", All: len($a) > 0, Larg: $l, Rarg: $r}
+// the chains before the last operator
+def ue_head: SelectStmt = ue_union / ue_except / ue_first
+def ue_first: SelectStmt = x:ic_operand &(UNION / EXCEPT) -> $x
+def ue_union: SelectStmt = l:ue_head UNION a:ALL? -DISTINCT? r:ic_operand &(UNION / EXCEPT)
+    -> new SelectStmt{Op: "SETOP_UNION", All: len($a) > 0, Larg: $l, Rarg: $r}
+def ue_except: SelectStmt = l:ue_head EXCEPT a:ALL? -DISTINCT? r:ic_operand &(UNION / EXCEPT)
+    -> new SelectStmt{Op: "SETOP_EXCEPT", All: len($a) > 0, Larg: $l, Rarg: $r}
+def i_head: SelectStmt = i_head_step / i_head_first
+def i_head_first: SelectStmt = x:sop &INTERSECT -> $x
+def i_head_step: SelectStmt = l:i_head INTERSECT a:ALL? -DISTINCT? r:sop &INTERSECT
+    -> new SelectStmt{Op: "SETOP_INTERSECT", All: len($a) > 0, Larg: $l, Rarg: $r}
+
+def no_setop = [!tails_ok] / !(UNION / INTERSECT / EXCEPT)
+def with_if_tails: WithClause = [tails_ok] w:with_clause -> $w
+def sort_if_tails: []SortBy = [tails_ok] s:sort_clause -> $s
+def locking_if_tails: []LockingClause = [tails_ok] l:locking_clause -> $l
+
+def select_core: SelectStmt =
+    [k = "SETOP_NONE"] [ties = false] [paren = false]
+    w:with_if_tails?
+    ( SELECT (-ALL / d:DISTINCT don:distinct_on?)? tl:target_list? ic:into_clause? fr:from_clause? wh:where_clause?
+          (GROUP BY (gd:DISTINCT / -ALL)? gr:group_by_list)? hv:having_clause? wd:window_clause?
+          [len($d) == 0 || len($tl) > 0] no_setop
+    / VALUES vl:values_lists no_setop
+    / TABLE tf:table_from ts:table_star no_setop
+    / [tails_ok] l:ue_head (UNION [k = "SETOP_UNION"] / EXCEPT [k = "SETOP_EXCEPT"]) a:ALL? -DISTINCT? r:ic_operand
+    / [tails_ok] l:i_head INTERSECT [k = "SETOP_INTERSECT"] a:ALL? -DISTINCT? r:sop !(UNION / EXCEPT)
+    / [tails_ok] [paren = true] l:select_with_parens )
+    sc:sort_if_tails?
+    lk1:locking_if_tails?
+    ( [tails_ok]
+      ( ( LIMIT lc:limit_value / FETCH first_or_next (lc:fetch_one / lc:select_fetch_first_value) row_or_rows (ONLY / WITH TIES [ties = true]) )
+        ( OFFSET oc:offset_rows / OFFSET oc:select_offset_value )?
+      / ( OFFSET oc:offset_rows / OFFSET oc:select_offset_value )
+        ( LIMIT lc:limit_value / FETCH first_or_next (lc:fetch_one / lc:select_fetch_first_value) row_or_rows (ONLY / WITH TIES [ties = true]) )? )
+    )?
+    lk2:locking_if_tails?
+    [len($lk1) == 0 || len($lk2) == 0]
+    [!ties || paren || len($sc) > 0]
+    [!paren || len($w) + len($sc) + len($lk1) + len($lk2) + len(text($lc)) + len(text($oc)) > 0]
+    -> new SelectStmt{DistinctOn: concat($don), Distinct: len($d) > 0, TargetList: concat($tl, $ts), IntoClause: $ic, FromClause: concat($fr, $tf),
+        WhereClause: $wh, GroupClause: concat($gr), GroupDistinct: len($gd) > 0, HavingClause: $hv, WindowClause: concat($wd), ValuesLists: concat($vl), SortClause: concat($sc),
+        LimitOffset: $oc, LimitCount: $lc, LimitWithTies: ties, LockingClause: concat($lk1, $lk2), WithClause: $w,
+        Op: k, All: len($a) > 0, Larg: $l, Rarg: $r}

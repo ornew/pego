@@ -1,0 +1,1 @@
+GRANT SELECT (a ON t TO r;

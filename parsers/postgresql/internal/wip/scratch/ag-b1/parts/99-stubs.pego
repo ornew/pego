@@ -1,0 +1,29 @@
+// ==== Stubs of rules that other regions own (the coordinator deletes them when it merges) ====
+
+// ---- Region C1 (the SET family): FunctionSetResetClause and what it needs ----
+// SET var TO/= values, SET var FROM CURRENT, RESET var, RESET ALL (the cases that occur in functions; the
+// special syntaxes of set_rest_more, such as TIME ZONE and SCHEMA, belong to C1).
+// The name of a variable is the text of its dotted name: the converter normalizes it.
+type VarName terminal
+type VariableSetStmt struct { Kind string, Name *VarName, Args []Expr, JumbleArgs bool, IsLocal bool }
+def var_name: VarName = ColId (DOT ColId)*
+def FunctionSetResetClause: VariableSetStmt = fsr_value / fsr_default / fsr_current / fsr_reset_all / fsr_reset
+def fsr_value: VariableSetStmt = SET n:var_name (TO / EQ) v:var_list -> new VariableSetStmt{Kind: "VAR_SET_VALUE", Name: $n, Args: $v}
+def fsr_default: VariableSetStmt = SET n:var_name (TO / EQ) DEFAULT -> new VariableSetStmt{Kind: "VAR_SET_DEFAULT", Name: $n}
+def fsr_current: VariableSetStmt = SET n:var_name FROM CURRENT -> new VariableSetStmt{Kind: "VAR_SET_CURRENT", Name: $n}
+def fsr_reset_all: VariableSetStmt = RESET ALL -> new VariableSetStmt{Kind: "VAR_RESET_ALL"}
+def fsr_reset: VariableSetStmt = RESET n:var_name -> new VariableSetStmt{Kind: "VAR_RESET", Name: $n}
+def var_list: []Expr = first:var_value rest:(-COMMA x:var_value)* -> concat(list($first), map($rest, (r) => $r.x))
+def var_value: Expr = var_bool / var_word / var_num_plain / var_num_neg
+def var_bool: A_Const = (TRUE [w = "true"] / FALSE [w = "false"] / ON [w = "on"]) -> new A_Const{Val: new String{Sval: w}}
+def var_word: A_Const = v:NonReservedWord_or_Sconst -> new A_Const{Val: $v}
+def var_num_plain: A_Const = PLUS? v:(Iconst / Fconst) -> new A_Const{Val: $v}
+def var_num_neg: A_Expr = MINUS v:(Iconst / Fconst) -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "-"}), Rexpr: new A_Const{Val: $v}}
+
+// ---- Region C2 (DROP, COMMENT, ...): the object types ----
+// The terminal holds the keywords that were written; the converter maps them to OBJECT_xxx.
+def object_type_any_name: ObjectTypeTok = TABLE / SEQUENCE / VIEW / MATERIALIZED VIEW / INDEX / FOREIGN TABLE / COLLATION
+    / CONVERSION / STATISTICS / TEXT SEARCH (PARSER / DICTIONARY / TEMPLATE / CONFIGURATION)
+def object_type_name: ObjectTypeTok = drop_type_name / DATABASE / ROLE / SUBSCRIPTION / TABLESPACE
+def drop_type_name: ObjectTypeTok = ACCESS METHOD / EVENT TRIGGER / EXTENSION / FOREIGN DATA WRAPPER / opt_procedural LANGUAGE
+    / PUBLICATION / SCHEMA / SERVER

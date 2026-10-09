@@ -1,0 +1,3 @@
+type Box struct { Items []Match }
+def main: Box = "(" xs:items ")" -> new Box{Items: $xs}
+def items: []Match = (?x)+ #recover(skip=(?a-z)+)

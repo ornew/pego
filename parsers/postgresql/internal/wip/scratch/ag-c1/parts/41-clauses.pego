@@ -1,0 +1,165 @@
+
+// ---- Clauses of a query ----
+
+def distinct_on: []Expr = ON -LP l:expr_list -RP -> $l
+def target_list: []ResTarget = first:target_el rest:(-COMMA x:target_el)* -> concat(list($first), map($rest, (r) => $r.x))
+def target_el: ResTarget = target_as / target_bare / target_plain / target_star
+def target_as: ResTarget = e:a_expr AS n:ColLabel -> new ResTarget{Name: $n, Val: $e}
+def target_bare: ResTarget = e:a_expr n:BareColLabel -> new ResTarget{Name: $n, Val: $e}
+def target_plain: ResTarget = e:a_expr -> new ResTarget{Val: $e}
+def target_star: ResTarget = STAR -> new ResTarget{Val: new ColumnRef{Fields: list(new A_Star{})}}
+def table_star: []ResTarget = _ -> list(new ResTarget{Val: new ColumnRef{Fields: list(new A_Star{})}})
+def table_from: []TableRef = r:relation_expr -> list($r)
+
+def into_clause: IntoClause = INTO r:opt_temp_table_name -> new IntoClause{Rel: $r, OnCommit: "ONCOMMIT_NOOP"}
+// OptTempTableName: a table name with its persistence
+def opt_temp_table_name: RangeVar = temp_table_name / unlogged_table_name / table_table_name / qualified_name
+def temp_table_name: RangeVar =
+    (TEMPORARY / TEMP / LOCAL TEMPORARY / LOCAL TEMP / GLOBAL TEMPORARY / GLOBAL TEMP) TABLE? n:qualified_name
+    -> new RangeVar{Catalogname: $n.Catalogname, Schemaname: $n.Schemaname, Relname: $n.Relname, Inh: true, Relpersistence: "t"}
+def unlogged_table_name: RangeVar = UNLOGGED TABLE? n:qualified_name
+    -> new RangeVar{Catalogname: $n.Catalogname, Schemaname: $n.Schemaname, Relname: $n.Relname, Inh: true, Relpersistence: "u"}
+def table_table_name: RangeVar = TABLE n:qualified_name -> $n
+
+def from_clause: []TableRef = FROM l:from_list -> $l
+def from_list: []TableRef = first:table_ref rest:(-COMMA x:table_ref)* -> concat(list($first), map($rest, (r) => $r.x))
+def where_clause: Expr = WHERE e:a_expr -> $e
+def having_clause: Expr = HAVING e:a_expr -> $e
+
+def group_by_list: []Expr = first:group_by_item rest:(-COMMA x:group_by_item)* -> concat(list($first), map($rest, (r) => $r.x))
+def group_by_item: Expr = grouping_set_empty / rollup_clause / cube_clause / grouping_sets_clause / a_expr
+def grouping_set_empty: GroupingSet = -LP -RP -> new GroupingSet{Kind: "GROUPING_SET_EMPTY"}
+def rollup_clause: GroupingSet = ROLLUP -LP l:expr_list -RP -> new GroupingSet{Kind: "GROUPING_SET_ROLLUP", Content: $l}
+def cube_clause: GroupingSet = CUBE -LP l:expr_list -RP -> new GroupingSet{Kind: "GROUPING_SET_CUBE", Content: $l}
+def grouping_sets_clause: GroupingSet = GROUPING SETS -LP l:group_by_list -RP -> new GroupingSet{Kind: "GROUPING_SET_SETS", Content: $l}
+
+// ---- ORDER BY, LIMIT, FOR UPDATE ----
+
+def sort_clause: []SortBy = ORDER BY l:sortby_list -> $l
+def opt_sort_clause: []SortBy = l:sort_clause? -> concat($l)
+def sortby_list: []SortBy = first:sortby rest:(-COMMA x:sortby)* -> concat(list($first), map($rest, (r) => $r.x))
+def sortby: SortBy = sortby_using / sortby_dir
+def sortby_using: SortBy = [n = "SORTBY_NULLS_DEFAULT"] e:a_expr USING o:qual_all_Op (NULLS FIRST [n = "SORTBY_NULLS_FIRST"] / NULLS LAST [n = "SORTBY_NULLS_LAST"])?
+    -> new SortBy{Node: $e, SortbyDir: "SORTBY_USING", SortbyNulls: n, UseOp: $o}
+def sortby_dir: SortBy = [d = "SORTBY_DEFAULT"] [n = "SORTBY_NULLS_DEFAULT"] e:a_expr
+    (ASC [d = "SORTBY_ASC"] / DESC [d = "SORTBY_DESC"])? (NULLS FIRST [n = "SORTBY_NULLS_FIRST"] / NULLS LAST [n = "SORTBY_NULLS_LAST"])?
+    -> new SortBy{Node: $e, SortbyDir: d, SortbyNulls: n}
+
+def limit_value: Expr = a_expr / limit_all
+def limit_all: A_Const = ALL -> new A_Const{Isnull: true}
+def select_offset_value: Expr = a_expr
+def offset_rows: Expr = x:select_fetch_first_value row_or_rows -> $x
+def fetch_one: A_Const = &((ROW / ROWS) (ONLY / WITH TIES)) _ -> new A_Const{Val: new Integer{Ival: 1}}
+// FETCH FIRST n ROWS ONLY: a c_expr or a signed number
+def select_fetch_first_value: Expr = c_expr / signed_fetch_value
+def signed_fetch_value: A_Expr = signed_plus / signed_minus
+def signed_plus: A_Expr = PLUS v:i_or_f_const -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "+"}), Rexpr: $v}
+def signed_minus: A_Expr = MINUS v:i_or_f_const -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "-"}), Rexpr: $v}
+def i_or_f_const: A_Const = iconst_expr / fconst_expr
+def row_or_rows = ROW / ROWS
+def first_or_next = FIRST / NEXT
+
+def locking_clause: []LockingClause = for_locking_items / for_read_only
+def for_read_only: []LockingClause = FOR READ ONLY -> list()
+def for_locking_items: []LockingClause = xs:for_locking_item+ -> $xs
+def for_locking_item: LockingClause = [st = "LCS_FORUPDATE"] [wp = "LockWaitBlock"]
+    ( FOR UPDATE / FOR NO KEY UPDATE [st = "LCS_FORNOKEYUPDATE"] / FOR SHARE [st = "LCS_FORSHARE"] / FOR KEY SHARE [st = "LCS_FORKEYSHARE"] )
+    rels:locked_rels? (NOWAIT [wp = "LockWaitError"] / SKIP LOCKED [wp = "LockWaitSkip"])?
+    -> new LockingClause{LockedRels: concat($rels), Strength: st, WaitPolicy: wp}
+def locked_rels: []RangeVar = OF l:locked_rel_list -> $l
+def locked_rel_list: []RangeVar = qualified_name_list
+
+def values_lists: []NodeList = first:values_row rest:(-COMMA x:values_row)* -> concat(list($first), map($rest, (r) => $r.x))
+def values_row: NodeList = -LP l:expr_list -RP -> new NodeList{Items: $l}
+
+// ---- WITH ----
+
+def with_clause: WithClause = WITH r:RECURSIVE? l:cte_list -> new WithClause{Ctes: $l, Recursive: len($r) > 0}
+def opt_with_clause: WithClause = with_clause
+def cte_list: []CommonTableExpr = first:common_table_expr rest:(-COMMA x:common_table_expr)* -> concat(list($first), map($rest, (r) => $r.x))
+def common_table_expr: CommonTableExpr = [mat = "CTEMaterializeDefault"] n:name cols:opt_name_list? AS (MATERIALIZED [mat = "CTEMaterializeAlways"] / NOT MATERIALIZED [mat = "CTEMaterializeNever"])?
+    -LP q:PreparableStmt -RP s:search_clause? c:cycle_clause?
+    -> new CommonTableExpr{Ctename: $n, Aliascolnames: concat($cols), Ctematerialized: mat, Ctequery: $q, SearchClause: $s, CycleClause: $c}
+def opt_name_list: []Ident = -LP l:name_list -RP -> $l
+def search_clause: CTESearchClause = search_depth / search_breadth
+def search_depth: CTESearchClause = SEARCH DEPTH FIRST BY l:column_list SET n:ColId
+    -> new CTESearchClause{SearchColList: $l, SearchBreadthFirst: false, SearchSeqColumn: $n}
+def search_breadth: CTESearchClause = SEARCH BREADTH FIRST BY l:column_list SET n:ColId
+    -> new CTESearchClause{SearchColList: $l, SearchBreadthFirst: true, SearchSeqColumn: $n}
+def column_list: []Ident = first:ColId rest:(-COMMA x:ColId)* -> concat(list($first), map($rest, (r) => $r.x))
+def cycle_clause: CTECycleClause = cycle_values / cycle_plain
+def cycle_values: CTECycleClause = CYCLE l:column_list SET m:ColId TO v:AexprConst DEFAULT d:AexprConst USING p:ColId
+    -> new CTECycleClause{CycleColList: $l, CycleMarkColumn: $m, CycleMarkValue: $v, CycleMarkDefault: $d, CyclePathColumn: $p}
+def cycle_plain: CTECycleClause = CYCLE l:column_list SET m:ColId USING p:ColId
+    -> new CTECycleClause{CycleColList: $l, CycleMarkColumn: $m, CycleMarkValue: new A_Const{Val: new Boolean{Boolval: true}}, CycleMarkDefault: new A_Const{Val: new Boolean{Boolval: false}}, CyclePathColumn: $p}
+
+// ---- FROM items ----
+
+// A table reference: a table_primary followed by joins, folded to the left. The right operand of
+// CROSS JOIN and NATURAL JOIN is a table_primary, that of a join with ON or USING any table_ref (in
+// "a JOIN b JOIN c ON x ON y" the second JOIN belongs to b). A join part is a JoinExpr without its left
+// operand.
+def table_ref: TableRef = first:table_primary rest:join_part*
+    -> foldl($first, $rest, (acc, i) => new JoinExpr{Jointype: $i.Jointype, IsNatural: $i.IsNatural, Larg: $acc, Rarg: $i.Rarg, UsingClause: $i.UsingClause, JoinUsingAlias: $i.JoinUsingAlias, Quals: $i.Quals})
+// joined_table: a table_ref that has at least one join
+def joined_table: JoinExpr = first:table_primary p:join_part rest:join_part*
+    -> foldl(new JoinExpr{Jointype: $p.Jointype, IsNatural: $p.IsNatural, Larg: $first, Rarg: $p.Rarg, UsingClause: $p.UsingClause, JoinUsingAlias: $p.JoinUsingAlias, Quals: $p.Quals},
+        $rest, (acc, i) => new JoinExpr{Jointype: $i.Jointype, IsNatural: $i.IsNatural, Larg: $acc, Rarg: $i.Rarg, UsingClause: $i.UsingClause, JoinUsingAlias: $i.JoinUsingAlias, Quals: $i.Quals})
+def join_part: JoinExpr = join_cross / join_natural / join_qual
+def join_cross: JoinExpr = CROSS JOIN r:table_primary -> new JoinExpr{Jointype: "JOIN_INNER", Rarg: $r}
+def join_qual: JoinExpr = [jt = "JOIN_INNER"]
+    (FULL [jt = "JOIN_FULL"] OUTER? / LEFT [jt = "JOIN_LEFT"] OUTER? / RIGHT [jt = "JOIN_RIGHT"] OUTER? / INNER)? JOIN r:table_ref
+    (ON qe:a_expr / USING -LP un:name_list -RP ua:join_using_alias?)
+    -> new JoinExpr{Jointype: jt, Rarg: $r, UsingClause: concat($un), JoinUsingAlias: $ua, Quals: $qe}
+def join_using_alias: Alias = AS n:ColId -> new Alias{Aliasname: $n}
+def join_natural: JoinExpr = [jt = "JOIN_INNER"] NATURAL
+    (FULL [jt = "JOIN_FULL"] OUTER? / LEFT [jt = "JOIN_LEFT"] OUTER? / RIGHT [jt = "JOIN_RIGHT"] OUTER? / INNER)? JOIN r:table_primary
+    -> new JoinExpr{Jointype: jt, IsNatural: true, Rarg: $r}
+
+def table_primary: TableRef = relation_table / sample_table / func_table_ref / subselect_table / paren_join_alias / paren_join / xmljson_table
+
+// relation_expr: a table name, with * (the same as without it) or ONLY
+def relation_expr: RangeVar = rel_only_paren / rel_only / rel_plain
+def rel_plain: RangeVar = r:qualified_name -STAR? -> $r
+def rel_only: RangeVar = ONLY n:qualified_name
+    -> new RangeVar{Catalogname: $n.Catalogname, Schemaname: $n.Schemaname, Relname: $n.Relname, Inh: false, Relpersistence: "p"}
+def rel_only_paren: RangeVar = ONLY -LP n:qualified_name -RP
+    -> new RangeVar{Catalogname: $n.Catalogname, Schemaname: $n.Schemaname, Relname: $n.Relname, Inh: false, Relpersistence: "p"}
+def relation_expr_list: []RangeVar = first:relation_expr rest:(-COMMA x:relation_expr)* -> concat(list($first), map($rest, (r) => $r.x))
+// relation_expr opt_alias_clause
+def relation_alias: RangeVar = r:relation_expr !"(" a:alias_clause?
+    -> new RangeVar{Catalogname: $r.Catalogname, Schemaname: $r.Schemaname, Relname: $r.Relname, Inh: $r.Inh, Relpersistence: $r.Relpersistence, Alias: $a}
+def relation_table: RangeVar = r:relation_alias !TABLESAMPLE -> $r
+def sample_table: RangeTableSample = r:relation_alias TABLESAMPLE m:func_name -LP a:expr_list -RP rp:repeatable_clause?
+    -> new RangeTableSample{Relation: $r, Method: $m, Args: $a, Repeatable: $rp}
+def repeatable_clause: Expr = REPEATABLE -LP e:a_expr -RP -> $e
+
+def subselect_table: RangeSubselect = lat:LATERAL? q:select_with_parens a:alias_clause?
+    -> new RangeSubselect{Lateral: len($lat) > 0, Subquery: $q, Alias: $a}
+def paren_join: JoinExpr = -LP j:joined_table -RP -> $j
+def paren_join_alias: JoinExpr = -LP j:joined_table -RP a:alias_clause
+    -> new JoinExpr{Jointype: $j.Jointype, IsNatural: $j.IsNatural, Larg: $j.Larg, Rarg: $j.Rarg, UsingClause: $j.UsingClause, JoinUsingAlias: $j.JoinUsingAlias, Quals: $j.Quals, Alias: $a}
+
+def alias_clause: Alias = -AS? n:ColId cl:alias_cols? -> new Alias{Aliasname: $n, Colnames: concat($cl)}
+def alias_cols: []Ident = -LP l:name_list -RP -> $l
+def alias_name_only: Alias = n:ColId -> new Alias{Aliasname: $n}
+
+// Function calls in FROM: func_expr_windowless with WITH ORDINALITY and an alias or a column list.
+def func_table_ref: RangeFunction = func_table_plain / func_table_rows_from
+def func_table_plain: RangeFunction = lat:LATERAL? f:func_expr_windowless o:with_ordinality?
+    ( al:alias_clause / -AS -LP cd:table_func_element_list -RP / -AS al:alias_name_only -LP cd:table_func_element_list -RP / al:alias_name_only -LP cd:table_func_element_list -RP )?
+    -> new RangeFunction{Lateral: len($lat) > 0, Ordinality: len($o) > 0, Functions: list(new RangeFuncItem{Func: $f}), Alias: $al, Coldeflist: concat($cd)}
+def func_table_rows_from: RangeFunction = lat:LATERAL? ROWS FROM -LP l:rowsfrom_list -RP o:with_ordinality?
+    ( al:alias_clause / -AS -LP cd:table_func_element_list -RP / -AS al:alias_name_only -LP cd:table_func_element_list -RP / al:alias_name_only -LP cd:table_func_element_list -RP )?
+    -> new RangeFunction{Lateral: len($lat) > 0, Ordinality: len($o) > 0, IsRowsfrom: true, Functions: $l, Alias: $al, Coldeflist: concat($cd)}
+def with_ordinality = WITH ORDINALITY
+def rowsfrom_list: []RangeFuncItem = first:rowsfrom_item rest:(-COMMA x:rowsfrom_item)* -> concat(list($first), map($rest, (r) => $r.x))
+def rowsfrom_item: RangeFuncItem = f:func_expr_windowless cd:rowsfrom_coldef? -> new RangeFuncItem{Func: $f, Coldeflist: concat($cd)}
+def rowsfrom_coldef: []ColumnDef = AS -LP l:table_func_element_list -RP -> $l
+def table_func_element_list: []ColumnDef = first:table_func_element rest:(-COMMA x:table_func_element)* -> concat(list($first), map($rest, (r) => $r.x))
+def table_func_element: ColumnDef = n:ColId t:Typename c:opt_collate_clause? -> new ColumnDef{Colname: $n, TypeName: $t, CollClause: $c, IsLocal: true}
+def opt_collate_clause: CollateClause = COLLATE n:any_name -> new CollateClause{Collname: $n}
+
+// func_expr_windowless: a function call without WITHIN GROUP, FILTER and OVER
+def func_expr_windowless: Expr = [windowless = true] f:func_expr_w -> $f
+def func_expr_w: Expr = func_call_over / func_expr_common_subexpr / json_agg_expr

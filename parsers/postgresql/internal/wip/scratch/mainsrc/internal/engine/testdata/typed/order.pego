@@ -1,0 +1,2 @@
+type T struct { A int, B int }
+def main: T = d:"x" -> new T{B: 1 / (len($d) - 1), A: nope}

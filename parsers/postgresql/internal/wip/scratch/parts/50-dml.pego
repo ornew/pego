@@ -1,0 +1,90 @@
+
+// ==== INSERT, UPDATE, DELETE, MERGE ====
+
+def PreparableStmt: DmlStmt = stmt_dml
+
+def InsertStmt: InsertStmt = [ov = ""] w:with_clause? INSERT INTO t:insert_target
+    ( c:insert_columns? (OVERRIDING (USER [ov = "OVERRIDING_USER_VALUE"] / SYSTEM [ov = "OVERRIDING_SYSTEM_VALUE"]) VALUE)? sel:SelectStmt
+    / DEFAULT VALUES )
+    oc:on_conflict_clause? rt:returning_clause?
+    -> new InsertStmt{Relation: $t, Cols: concat($c), SelectStmt: $sel, OnConflictClause: $oc, ReturningClause: $rt, WithClause: $w, Override: ov}
+def insert_target: RangeVar = qualified_name_as / qualified_name
+def qualified_name_as: RangeVar = n:qualified_name AS a:ColId
+    -> new RangeVar{Catalogname: $n.Catalogname, Schemaname: $n.Schemaname, Relname: $n.Relname, Inh: true, Relpersistence: "p", Alias: new Alias{Aliasname: $a}}
+def insert_columns: []ResTarget = -LP l:insert_column_list -RP -> $l
+def insert_column_list: []ResTarget = first:set_target rest:(-COMMA x:set_target)* -> concat(list($first), map($rest, (r) => $r.x))
+// set_target and insert_column_item: a column with an indirection
+def set_target: ResTarget = n:ColId ind:indirection? -> new ResTarget{Name: $n, Indirection: concat($ind)}
+
+def on_conflict_clause: OnConflictClause = on_conflict_update / on_conflict_nothing
+def on_conflict_update: OnConflictClause = ON CONFLICT i:conf_expr? DO UPDATE SET l:set_clause_list w:where_clause?
+    -> new OnConflictClause{Action: "ONCONFLICT_UPDATE", Infer: $i, TargetList: $l, WhereClause: $w}
+def on_conflict_nothing: OnConflictClause = ON CONFLICT i:conf_expr? DO NOTHING
+    -> new OnConflictClause{Action: "ONCONFLICT_NOTHING", Infer: $i}
+def conf_expr: InferClause = conf_index / conf_constraint
+def conf_index: InferClause = -LP l:index_params -RP w:where_clause? -> new InferClause{IndexElems: $l, WhereClause: $w}
+def conf_constraint: InferClause = ON CONSTRAINT n:name -> new InferClause{Conname: $n}
+
+def returning_clause: ReturningClause = RETURNING o:returning_with? l:target_list -> new ReturningClause{Options: concat($o), Exprs: $l}
+def returning_with: []ReturningOption = WITH -LP first:returning_option rest:(-COMMA x:returning_option)* -RP
+    -> concat(list($first), map($rest, (r) => $r.x))
+def returning_option: ReturningOption = (OLD [k = "RETURNING_OPTION_OLD"] / NEW [k = "RETURNING_OPTION_NEW"]) AS n:ColId
+    -> new ReturningOption{Option: k, Value: $n}
+
+def DeleteStmt: DeleteStmt = w:with_clause? DELETE FROM r:relation_expr_opt_alias u:using_clause? wh:where_or_current_clause? rt:returning_clause?
+    -> new DeleteStmt{Relation: $r, UsingClause: concat($u), WhereClause: $wh, ReturningClause: $rt, WithClause: $w}
+def using_clause: []TableRef = USING l:from_list -> $l
+def where_or_current_clause: Expr = where_current_of / where_clause
+def where_current_of: CurrentOfExpr = WHERE CURRENT OF n:cursor_name -> new CurrentOfExpr{CursorName: $n}
+def cursor_name = name
+// relation_expr opt_alias_clause for UPDATE and DELETE: [AS] name; the name is not SET without AS
+def relation_expr_opt_alias: RangeVar = r:relation_expr a:dml_alias?
+    -> new RangeVar{Catalogname: $r.Catalogname, Schemaname: $r.Schemaname, Relname: $r.Relname, Inh: $r.Inh, Relpersistence: $r.Relpersistence, Alias: $a}
+def dml_alias: Alias = (AS / !SET) n:ColId -> new Alias{Aliasname: $n}
+
+def UpdateStmt: UpdateStmt = w:with_clause? UPDATE r:relation_expr_opt_alias SET l:set_clause_list f:from_clause? wh:where_or_current_clause? rt:returning_clause?
+    -> new UpdateStmt{Relation: $r, TargetList: $l, FromClause: concat($f), WhereClause: $wh, ReturningClause: $rt, WithClause: $w}
+def set_clause_list: []ResTarget = first:set_clause rest:(-COMMA x:set_clause)* -> foldl($first, $rest, (acc, i) => concat($acc, $i.x))
+def set_clause: []ResTarget = set_clause_single / set_clause_multi
+def set_clause_single: []ResTarget = t:set_target -EQ e:a_expr -> list(new ResTarget{Name: $t.Name, Indirection: $t.Indirection, Val: $e})
+// (a, b) = expr: every target gets a MultiAssignRef with its position
+def set_clause_multi: []ResTarget = -LP ts:insert_column_list -RP -EQ e:a_expr
+    -> foldl(list(), $ts, (acc, t) => concat($acc, list(new ResTarget{Name: $t.Name, Indirection: $t.Indirection, Val: new MultiAssignRef{Source: $e, Colno: len($acc) + 1, Ncolumns: len($ts)}})))
+
+def MergeStmt: MergeStmt = w:with_clause? MERGE INTO r:relation_expr_opt_alias USING s:table_ref ON c:a_expr l:merge_when_clause+ rt:returning_clause?
+    -> new MergeStmt{Relation: $r, SourceRelation: $s, JoinCondition: $c, MergeWhenClauses: $l, ReturningClause: $rt, WithClause: $w}
+def merge_when_clause: MergeWhenClause = merge_update / merge_delete / merge_insert / merge_nothing
+def merge_update: MergeWhenClause = WHEN (MATCHED [mk = "MERGE_WHEN_MATCHED"] / NOT MATCHED BY SOURCE [mk = "MERGE_WHEN_NOT_MATCHED_BY_SOURCE"])
+    c:merge_cond? THEN UPDATE SET l:set_clause_list
+    -> new MergeWhenClause{MatchKind: mk, CommandType: "CMD_UPDATE", Override: "OVERRIDING_NOT_SET", Condition: $c, TargetList: $l}
+def merge_delete: MergeWhenClause = WHEN (MATCHED [mk = "MERGE_WHEN_MATCHED"] / NOT MATCHED BY SOURCE [mk = "MERGE_WHEN_NOT_MATCHED_BY_SOURCE"])
+    c:merge_cond? THEN DELETE
+    -> new MergeWhenClause{MatchKind: mk, CommandType: "CMD_DELETE", Override: "OVERRIDING_NOT_SET", Condition: $c}
+def merge_insert: MergeWhenClause = [ov = "OVERRIDING_NOT_SET"] WHEN NOT MATCHED (BY TARGET)? c:merge_cond? THEN INSERT
+    cols:insert_columns? (OVERRIDING (USER [ov = "OVERRIDING_USER_VALUE"] / SYSTEM [ov = "OVERRIDING_SYSTEM_VALUE"]) VALUE)?
+    ( VALUES -LP v:expr_list -RP / DEFAULT VALUES )
+    -> new MergeWhenClause{MatchKind: "MERGE_WHEN_NOT_MATCHED_BY_TARGET", CommandType: "CMD_INSERT", Override: ov, Condition: $c, TargetList: concat($cols), Values: concat($v)}
+def merge_nothing: MergeWhenClause = WHEN (MATCHED [mk = "MERGE_WHEN_MATCHED"] / NOT MATCHED BY SOURCE [mk = "MERGE_WHEN_NOT_MATCHED_BY_SOURCE"] / NOT MATCHED (BY TARGET)? [mk = "MERGE_WHEN_NOT_MATCHED_BY_TARGET"])
+    c:merge_cond? THEN DO NOTHING
+    -> new MergeWhenClause{MatchKind: mk, CommandType: "CMD_NOTHING", Condition: $c}
+def merge_cond: Expr = AND e:a_expr -> $e
+
+// ---- Index elements (CREATE INDEX, ON CONFLICT, exclusion constraints) ----
+
+def index_params: []IndexElem = first:index_elem rest:(-COMMA x:index_elem)* -> concat(list($first), map($rest, (r) => $r.x))
+def index_elem: IndexElem = index_elem_name / index_elem_func / index_elem_expr
+def index_elem_name: IndexElem = c:ColId !"(" o:index_elem_options
+    -> new IndexElem{Name: $c, Collation: $o.Collation, Opclass: $o.Opclass, Opclassopts: $o.Opclassopts, Ordering: $o.Ordering, NullsOrdering: $o.NullsOrdering}
+def index_elem_func: IndexElem = e:func_expr_windowless o:index_elem_options
+    -> new IndexElem{Expr: $e, Collation: $o.Collation, Opclass: $o.Opclass, Opclassopts: $o.Opclassopts, Ordering: $o.Ordering, NullsOrdering: $o.NullsOrdering}
+def index_elem_expr: IndexElem = -LP e:a_expr -RP o:index_elem_options
+    -> new IndexElem{Expr: $e, Collation: $o.Collation, Opclass: $o.Opclass, Opclassopts: $o.Opclassopts, Ordering: $o.Ordering, NullsOrdering: $o.NullsOrdering}
+// the options of an index element; the node is a template (its other fields are empty)
+def index_elem_options: IndexElem = index_elem_options_reloptions / index_elem_options_plain
+def index_elem_options_plain: IndexElem = [d = "SORTBY_DEFAULT"] [n = "SORTBY_NULLS_DEFAULT"] c:opt_collate? o:any_name?
+    (ASC [d = "SORTBY_ASC"] / DESC [d = "SORTBY_DESC"])? (NULLS FIRST [n = "SORTBY_NULLS_FIRST"] / NULLS LAST [n = "SORTBY_NULLS_LAST"])?
+    -> new IndexElem{Collation: concat($c), Opclass: concat($o), Ordering: d, NullsOrdering: n}
+def index_elem_options_reloptions: IndexElem = [d = "SORTBY_DEFAULT"] [n = "SORTBY_NULLS_DEFAULT"] c:opt_collate? o:any_name ro:reloptions
+    (ASC [d = "SORTBY_ASC"] / DESC [d = "SORTBY_DESC"])? (NULLS FIRST [n = "SORTBY_NULLS_FIRST"] / NULLS LAST [n = "SORTBY_NULLS_LAST"])?
+    -> new IndexElem{Collation: concat($c), Opclass: $o, Opclassopts: $ro, Ordering: d, NullsOrdering: n}
+def opt_collate: []Ident = COLLATE n:any_name -> $n

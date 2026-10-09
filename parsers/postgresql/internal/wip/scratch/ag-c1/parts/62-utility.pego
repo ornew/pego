@@ -1,0 +1,171 @@
+// ==== Utility statements (group C1) ====
+//
+// SET/RESET/SHOW, transactions, COPY, EXPLAIN, VACUUM/ANALYZE, CLUSTER, REINDEX, LOCK, TRUNCATE, cursors,
+// PREPARE/EXECUTE, LISTEN/NOTIFY, LOAD, DO, CALL and ALTER SYSTEM. The nodes have the names and fields of
+// the raw tree. Where the raw parser computes a value that the grammar cannot (a name joined with dots,
+// the sign of a number in a count), the node keeps the source form and the converter does the same.
+
+type StmtC = VariableSetStmt | VariableShowStmt | ConstraintsSetStmt | CheckPointStmt | DiscardStmt |
+    TransactionStmt | CopyStmt | ExplainStmt | VacuumStmt | ClusterStmt | ReindexStmt | LockStmt | PrepareStmt |
+    ExecuteStmt | CreateTableAsStmt | DeallocateStmt | DeclareCursorStmt | FetchStmt | ClosePortalStmt |
+    ListenStmt | UnlistenStmt | NotifyStmt | LoadStmt | DoStmt | CallStmt | TruncateStmt | AlterSystemStmt
+
+// A string constant that is a plain string (not a String node) in the raw tree: the filename of COPY, the
+// gid of PREPARE TRANSACTION, the payload of NOTIFY. rawjson.go decodes it.
+type SconstStr terminal
+def SconstStr: SconstStr = t:sconst_str_text s -> $t
+def sconst_str_text: SconstStr = sconst_text
+
+type VarArg = A_Const | TypeCast | DefElem
+// Kind is VAR_SET_VALUE (the default), VAR_SET_DEFAULT, VAR_SET_CURRENT, VAR_SET_MULTI, VAR_RESET or
+// VAR_RESET_ALL. Name is a list of names that the converter joins with dots (var_name is a dotted name).
+type VariableSetStmt struct { Kind string, Name []Str, Args []VarArg, JumbleArgs bool, IsLocal bool }
+type VariableShowStmt struct { Name []Str }
+type ConstraintsSetStmt struct { Constraints []RangeVar, Deferred bool }
+type CheckPointStmt struct { }
+type DiscardStmt struct { Target string }
+type TransactionStmt struct { Kind string, Options []DefElem, SavepointName *Ident, Gid *SconstStr, Chain bool }
+type CopyStmt struct {
+    Relation *RangeVar, Query *DmlStmt, Attlist []Ident, IsFrom bool, IsProgram bool, Filename *SconstStr,
+    Options []DefElem, WhereClause *Expr
+}
+type ExplainableStmt = DmlStmt | DeclareCursorStmt | CreateTableAsStmt | RefreshMatViewStmt | ExecuteStmt
+type ExplainStmt struct { Query ExplainableStmt, Options []DefElem }
+type VacuumRelation struct { Relation RangeVar, VaCols []Ident }
+type VacuumStmt struct { Options []DefElem, Rels []VacuumRelation, IsVacuumcmd bool }
+type ClusterStmt struct { Relation *RangeVar, Indexname *Ident, Params []DefElem }
+type ReindexStmt struct { Kind string, Relation *RangeVar, Name *Ident, Params []DefElem }
+type LockStmt struct { Relations []RangeVar, Mode int, Nowait bool }
+type PrepareStmt struct { Name Ident, Argtypes []TypeName, Query DmlStmt }
+type ExecuteStmt struct { Name Ident, Params []Expr }
+type DeallocateStmt struct { Name *Ident, Isall bool }
+type DeclareCursorStmt struct { Portalname Ident, Options int, Query SelectStmt }
+// HowMany is the count of FETCH when it is not given in the statement (1, -1 for LAST, FETCH_ALL); Count
+// is the count that the statement gives, which the converter folds into howMany.
+type FetchStmt struct { Direction string, HowMany int, Count *SignedIconst, Portalname Ident, Ismove bool }
+type ClosePortalStmt struct { Portalname *Ident }
+type ListenStmt struct { Conditionname Ident }
+type UnlistenStmt struct { Conditionname *Ident }
+type NotifyStmt struct { Conditionname Ident, Payload *SconstStr }
+type LoadStmt struct { Filename SconstStr }
+type DoStmt struct { Args []DefElem }
+type CallStmt struct { Funccall FuncCall }
+type TruncateStmt struct { Relations []RangeVar, RestartSeqs bool, Behavior *DropBehavior }
+type AlterSystemStmt struct { Setstmt VariableSetStmt }
+type CursorOption struct { Bit int }
+type BoolOrString = String | Ident | Sconst
+
+// The statements of this group. TransactionStmtLegacy (BEGIN and END) is only valid at the top level of a
+// script: gram.y does not accept it in the body of a BEGIN ATOMIC routine, which uses stmt.
+def stmt_c: StmtC =
+    TransactionStmt / TransactionStmtLegacy / ConstraintsSetStmt / VariableSetStmt / VariableResetStmt / VariableShowStmt
+    / AlterSystemStmt / CheckPointStmt / DiscardStmt / CopyStmt / ExplainStmt / VacuumStmt / AnalyzeStmt / ClusterStmt
+    / ReindexStmt / LockStmt / PrepareStmt / ExecuteStmt / DeallocateStmt / DeclareCursorStmt / FetchStmt
+    / ClosePortalStmt / ListenStmt / UnlistenStmt / NotifyStmt / LoadStmt / DoStmt / CallStmt / TruncateStmt
+
+// ---- SET, RESET and SHOW ----
+
+// SET [LOCAL | SESSION] set_rest. The three forms are alternatives of the choice so that a variable named
+// local or session still works (SET session TO x).
+def VariableSetStmt: VariableSetStmt = [loc = false] SET (LOCAL [loc = true] r:set_rest / SESSION r:set_rest / r:set_rest)
+    -> new VariableSetStmt{Kind: $r.Kind, Name: $r.Name, Args: $r.Args, JumbleArgs: $r.JumbleArgs, IsLocal: loc}
+// set_rest: the node has no is_local; VariableSetStmt sets it.
+def set_rest: VariableSetStmt = set_transaction / set_rest_more
+def set_transaction: VariableSetStmt =
+    (TRANSACTION [nm = "TRANSACTION"] / SESSION CHARACTERISTICS AS TRANSACTION [nm = "SESSION CHARACTERISTICS"])
+    l:transaction_mode_list
+    -> new VariableSetStmt{Kind: "VAR_SET_MULTI", Name: list(new String{Sval: nm}), Args: $l, JumbleArgs: true}
+// The generic form comes first: SET names TO x and SET time TO x are variables, not NAMES and TIME ZONE.
+def set_rest_more: VariableSetStmt = generic_set / set_from_current / set_time_zone / set_special
+def generic_set: VariableSetStmt = [k = "VAR_SET_VALUE"] n:var_name (TO / EQ) (l:var_list / DEFAULT [k = "VAR_SET_DEFAULT"])
+    -> new VariableSetStmt{Kind: k, Name: $n, Args: concat($l)}
+def set_from_current: VariableSetStmt = n:var_name FROM CURRENT -> new VariableSetStmt{Kind: "VAR_SET_CURRENT", Name: $n}
+def set_time_zone: VariableSetStmt = [k = "VAR_SET_VALUE"] TIME ZONE ((DEFAULT / LOCAL) [k = "VAR_SET_DEFAULT"] / z:zone_value{1})
+    -> new VariableSetStmt{Kind: k, Name: list(new String{Sval: "timezone"}), Args: concat($z), JumbleArgs: true}
+// SET CATALOG 'x' is an error in gram.y ("current database cannot be changed") and is not accepted here.
+def set_special: VariableSetStmt = [k = "VAR_SET_VALUE"] [j = false]
+    ( SCHEMA [nm = "search_path"] a:sconst_expr{1}
+    / NAMES [nm = "client_encoding"] (a:sconst_expr{1} / DEFAULT [k = "VAR_SET_DEFAULT"] / _ [k = "VAR_SET_DEFAULT"])
+    / ROLE [nm = "role"] a:nrw_const{1}
+    / SESSION AUTHORIZATION [nm = "session_authorization"] (a:nrw_const{1} / DEFAULT [k = "VAR_SET_DEFAULT"])
+    / XML OPTION [nm = "xmloption"] [j = true] a:xmloption_const{1}
+    / TRANSACTION SNAPSHOT [nm = "TRANSACTION SNAPSHOT"] [k = "VAR_SET_MULTI"] a:sconst_expr{1} )
+    -> new VariableSetStmt{Kind: k, Name: list(new String{Sval: nm}), Args: concat($a), JumbleArgs: j}
+def nrw_const: A_Const = v:NonReservedWord_or_Sconst -> new A_Const{Val: $v}
+def xmloption_const: A_Const = (DOCUMENT [d = "DOCUMENT"] / CONTENT [d = "CONTENT"]) -> new A_Const{Val: new String{Sval: d}}
+
+def var_name: []Str = first:ColId rest:(-DOT x:ColId)* -> concat(list($first), map($rest, (r) => $r.x))
+def var_list: []VarArg = first:var_value rest:(-COMMA x:var_value)* -> concat(list($first), map($rest, (r) => $r.x))
+def var_value: A_Const = v:(opt_boolean_or_string / NumericOnly) -> new A_Const{Val: $v}
+// TRUE, FALSE and ON are keywords of their own; the other values (OFF too) are names or strings.
+def opt_boolean_or_string: BoolOrString = bool_word / NonReservedWord_or_Sconst
+def bool_word: String = (TRUE [b = "true"] / FALSE [b = "false"] / ON [b = "on"]) -> new String{Sval: b}
+
+// The value of SET TIME ZONE: a string, a name that is not a keyword, an interval limited to HOUR and MINUTE
+// (the check of gram.y), or a number.
+def zone_value: VarArg = sconst_expr / zone_ident / zone_interval / zone_number
+def zone_ident: A_Const = v:IDENT -> new A_Const{Val: $v}
+def zone_number: A_Const = v:NumericOnly -> new A_Const{Val: $v}
+def zone_interval: TypeCast = zone_interval_hm / interval_prec_const
+def zone_interval_hm: TypeCast = INTERVAL v:Sconst m:interval_hm?
+    -> new TypeCast{Arg: new A_Const{Val: $v}, TypeName: new TypeName{
+        Names: list(new String{Sval: "pg_catalog"}, new String{Sval: "interval"}), Typmods: concat($m), Typemod: -1}}
+def interval_hm: []Expr = (HOUR [m = 1024] (TO MINUTE [m = 3072])? / MINUTE [m = 2048])
+    -> list(new A_Const{Val: new Integer{Ival: m}})
+
+def VariableResetStmt: VariableSetStmt = RESET r:(reset_special / generic_reset) -> $r
+def reset_special: VariableSetStmt = n:special_name -> new VariableSetStmt{Kind: "VAR_RESET", Name: $n}
+def generic_reset: VariableSetStmt = [k = "VAR_RESET"] (ALL [k = "VAR_RESET_ALL"] / n:var_name)
+    -> new VariableSetStmt{Kind: k, Name: concat($n)}
+def special_name: []Str =
+    (TIME ZONE [nm = "timezone"] / TRANSACTION ISOLATION LEVEL [nm = "transaction_isolation"] / SESSION AUTHORIZATION [nm = "session_authorization"])
+    -> list(new String{Sval: nm})
+def VariableShowStmt: VariableShowStmt = SHOW n:(special_name / show_all / var_name) -> new VariableShowStmt{Name: $n}
+def show_all: []Str = ALL -> list(new String{Sval: "all"})
+
+// SET and RESET in the definition of a function or a role: SET without LOCAL
+def SetResetClause: VariableSetStmt = set_clause_set / VariableResetStmt
+def set_clause_set: VariableSetStmt = SET r:set_rest -> $r
+def FunctionSetResetClause: VariableSetStmt = function_set_clause / VariableResetStmt
+def function_set_clause: VariableSetStmt = SET r:set_rest_more -> $r
+
+def ConstraintsSetStmt: ConstraintsSetStmt = [d = false] SET CONSTRAINTS (ALL / l:qualified_name_list) (DEFERRED [d = true] / IMMEDIATE)
+    -> new ConstraintsSetStmt{Constraints: concat($l), Deferred: d}
+def AlterSystemStmt: AlterSystemStmt = ALTER SYSTEM (SET s:generic_set / RESET s:generic_reset) -> new AlterSystemStmt{Setstmt: $s}
+def CheckPointStmt: CheckPointStmt = CHECKPOINT -> new CheckPointStmt{}
+def DiscardStmt: DiscardStmt = DISCARD
+    (ALL [t = "DISCARD_ALL"] / (TEMP / TEMPORARY) [t = "DISCARD_TEMP"] / PLANS [t = "DISCARD_PLANS"] / SEQUENCES [t = "DISCARD_SEQUENCES"])
+    -> new DiscardStmt{Target: t}
+
+// ---- Transactions ----
+
+// The statements that are not in a BEGIN ATOMIC body are TransactionStmtLegacy: BEGIN and END.
+def TransactionStmt: TransactionStmt = [legacy = false] x:(txn_prepared / txn_rollback_to / txn_end / txn_savepoint / txn_start) -> $x
+def TransactionStmtLegacy: TransactionStmt = [legacy = true] x:(txn_begin / txn_end) -> $x
+def txn_prepared: TransactionStmt =
+    (PREPARE TRANSACTION [k = "TRANS_STMT_PREPARE"] / COMMIT PREPARED [k = "TRANS_STMT_COMMIT_PREPARED"] / ROLLBACK PREPARED [k = "TRANS_STMT_ROLLBACK_PREPARED"])
+    g:SconstStr -> new TransactionStmt{Kind: k, Gid: $g}
+def txn_rollback_to: TransactionStmt = ROLLBACK (WORK / TRANSACTION)? TO (SAVEPOINT c:ColId / c:ColId)
+    -> new TransactionStmt{Kind: "TRANS_STMT_ROLLBACK_TO", SavepointName: $c}
+def txn_end: TransactionStmt = [ch = false]
+    ( [!legacy] (ABORT [k = "TRANS_STMT_ROLLBACK"] / COMMIT [k = "TRANS_STMT_COMMIT"] / ROLLBACK [k = "TRANS_STMT_ROLLBACK"])
+    / [legacy] END [k = "TRANS_STMT_COMMIT"] )
+    (WORK / TRANSACTION)? (AND (CHAIN [ch = true] / NO CHAIN))?
+    -> new TransactionStmt{Kind: k, Chain: ch}
+def txn_savepoint: TransactionStmt =
+    ( SAVEPOINT [k = "TRANS_STMT_SAVEPOINT"] c:ColId / RELEASE [k = "TRANS_STMT_RELEASE"] (SAVEPOINT c:ColId / c:ColId) )
+    -> new TransactionStmt{Kind: k, SavepointName: $c}
+def txn_start: TransactionStmt = START TRANSACTION l:transaction_mode_list? -> new TransactionStmt{Kind: "TRANS_STMT_START", Options: concat($l)}
+def txn_begin: TransactionStmt = BEGIN (WORK / TRANSACTION)? l:transaction_mode_list?
+    -> new TransactionStmt{Kind: "TRANS_STMT_BEGIN", Options: concat($l)}
+// Modes are separated by commas, or by nothing.
+def transaction_mode_list: []DefElem = first:transaction_mode_item rest:(COMMA? x:transaction_mode_item)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+def transaction_mode_item: DefElem = mode_isolation / mode_flag
+def mode_isolation: DefElem = ISOLATION LEVEL
+    (READ UNCOMMITTED [v = "read uncommitted"] / READ COMMITTED [v = "read committed"] / REPEATABLE READ [v = "repeatable read"] / SERIALIZABLE [v = "serializable"])
+    -> new DefElem{Defname: new String{Sval: "transaction_isolation"}, Arg: new A_Const{Val: new String{Sval: v}}}
+def mode_flag: DefElem =
+    (READ ONLY [n = "transaction_read_only"] [i = 1] / READ WRITE [n = "transaction_read_only"] [i = 0]
+    / DEFERRABLE [n = "transaction_deferrable"] [i = 1] / NOT DEFERRABLE [n = "transaction_deferrable"] [i = 0])
+    -> new DefElem{Defname: new String{Sval: n}, Arg: new A_Const{Val: new Integer{Ival: i}}}

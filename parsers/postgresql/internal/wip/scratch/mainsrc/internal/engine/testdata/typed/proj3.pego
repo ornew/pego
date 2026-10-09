@@ -1,0 +1,2 @@
+type Out struct { A []Match, B []Match, T string }
+def main: Out = "(" xs:(n:@"x" " "*)* ")" -> new Out{A: map($xs, (e) => $e.n), B: map($2, (e) => $e.n), T: text($2)}

@@ -1,0 +1,48 @@
+
+// ---- Types of the statements and the rules they share ----
+
+type MultiAssignRef struct { Source Expr, Colno int, Ncolumns int }
+type CurrentOfExpr struct { CursorName Ident }
+type ReturningOption struct { Option string, Value Ident }
+type ReturningClause struct { Options []ReturningOption, Exprs []ResTarget }
+type InferClause struct { IndexElems []IndexElem, WhereClause *Expr, Conname *Ident }
+type OnConflictClause struct { Action string, Infer *InferClause, TargetList []ResTarget, WhereClause *Expr }
+type IndexElem struct {
+    Name *Ident, Expr *Expr, Indexcolname *Ident, Collation []Ident, Opclass []Ident, Opclassopts []DefElem,
+    Ordering string, NullsOrdering string
+}
+type InsertStmt struct {
+    Relation RangeVar, Cols []ResTarget, SelectStmt *SelectStmt, OnConflictClause *OnConflictClause,
+    ReturningClause *ReturningClause, WithClause *WithClause, Override string
+}
+type UpdateStmt struct {
+    Relation RangeVar, TargetList []ResTarget, WhereClause *Expr, FromClause []TableRef,
+    ReturningClause *ReturningClause, WithClause *WithClause
+}
+type DeleteStmt struct {
+    Relation RangeVar, UsingClause []TableRef, WhereClause *Expr, ReturningClause *ReturningClause,
+    WithClause *WithClause
+}
+type MergeWhenClause struct {
+    MatchKind string, CommandType string, Override string, Condition *Expr, TargetList []ResTarget,
+    Values []Expr
+}
+type MergeStmt struct {
+    Relation RangeVar, SourceRelation TableRef, JoinCondition Expr, MergeWhenClauses []MergeWhenClause,
+    ReturningClause *ReturningClause, WithClause *WithClause
+}
+
+// A signed number in an option (NumericOnly, SignedIconst): rawjson.go folds the sign into the number.
+type Num = Iconst | Fconst
+type SignedNum struct { Negative bool, Number Num }
+type NumericOnly = Iconst | Fconst | SignedNum
+type SignedIconst = Iconst | SignedNum
+
+type DefArg = TypeName | Ident | NodeList | NumericOnly | Sconst | String
+type DefElem struct { Defnamespace *Ident, Defname Ident, Arg *DefArg, Defaction string }
+type RoleSpec struct { Roletype string, Rolename *Ident }
+type FunctionParameter struct { Name *Ident, ArgType TypeName, Mode string, Defexpr *Expr }
+// ObjectWithArgs: objargs, the types of the arguments that are not OUT, is computed from Objfuncargs
+type ObjectWithArgs struct {
+    Objname []Str, Objargs []ObjArg, Objfuncargs []FunctionParameter, ArgsUnspecified bool, Aggr *AggrArgs
+}

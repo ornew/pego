@@ -1,0 +1,18 @@
+// Stubs of rules that other groups own (group A: CREATE TABLE AS, CREATE MATERIALIZED VIEW, REFRESH). The
+// coordinator deletes this file when the groups are merged. The names are those of gram.y.
+
+// The IntoClause (the core's type, extended with the fields of the raw node) and the persistence and the
+// data flag that group A's rules return.
+type CreateTableAsStmt struct { Query ExecuteOrCreateTableAsQuery, Into IntoClause, Objtype string, IsSelectInto bool, IfNotExists bool }
+type ExecuteOrCreateTableAsQuery = SelectStmt | ExecuteStmt
+type RefreshMatViewStmt struct { Concurrent bool, SkipData bool, Relation RangeVar }
+// OptTemp: the relpersistence of the table ("t", "u" or "p"); opt_with_data: SkipData is true for WITH NO DATA
+type OptTempValue struct { Relpersistence string }
+type WithDataValue struct { SkipData bool }
+
+def CreateAsStmt: CreateTableAsStmt = "@@never@@" -> new CreateTableAsStmt{}
+def CreateMatViewStmt: CreateTableAsStmt = "@@never@@" -> new CreateTableAsStmt{}
+def RefreshMatViewStmt: RefreshMatViewStmt = "@@never@@" -> new RefreshMatViewStmt{}
+def create_as_target: IntoClause = "@@never@@" -> new IntoClause{}
+def OptTemp: OptTempValue = "@@never@@" -> new OptTempValue{}
+def opt_with_data: WithDataValue = "@@never@@" -> new WithDataValue{}

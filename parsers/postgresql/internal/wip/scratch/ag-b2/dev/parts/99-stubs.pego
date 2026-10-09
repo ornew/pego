@@ -1,0 +1,23 @@
+// ==== Stubs of rules that other groups own (B2 uses them). The coordinator deletes this file when merging. ====
+
+// Group C1 (SET family): VariableSetStmt, SetResetClause (SET set_rest | VariableResetStmt). A working
+// subset, so that ALTER ROLE ... SET and ALTER DATABASE ... SET can be tested: SET name {TO | =} values,
+// SET name TO DEFAULT, SET name FROM CURRENT, RESET name, RESET ALL.
+type VariableSetStmt struct { Kind string, Name *Ident, Args []Expr, IsLocal bool }
+def SetResetClause: VariableSetStmt = stub_set_value / stub_set_default / stub_set_current / stub_reset
+def stub_set_value: VariableSetStmt = SET n:name (TO / EQ) first:stub_var_value rest:(-COMMA x:stub_var_value)*
+    -> new VariableSetStmt{Kind: "VAR_SET_VALUE", Name: $n, Args: concat(list($first), map($rest, (r) => $r.x))}
+def stub_set_default: VariableSetStmt = SET n:name (TO / EQ) DEFAULT -> new VariableSetStmt{Kind: "VAR_SET_DEFAULT", Name: $n}
+def stub_set_current: VariableSetStmt = SET n:name FROM CURRENT -> new VariableSetStmt{Kind: "VAR_SET_CURRENT", Name: $n}
+def stub_reset: VariableSetStmt = RESET (ALL [k = "VAR_RESET_ALL"] / n:name [k = "VAR_RESET"]) -> new VariableSetStmt{Kind: k, Name: $n}
+def stub_var_value: Expr = stub_var_kw / stub_var_string / stub_var_num
+def stub_var_kw: A_Const = ON -> new A_Const{Val: new String{Sval: "on"}}
+def stub_var_string: A_Const = v:(Sconst / NonReservedWord) -> new A_Const{Val: $v}
+def stub_var_num: A_Const = v:(Iconst / Fconst) -> new A_Const{Val: $v}
+
+// Group C1: NotifyStmt (a rule action of CREATE RULE)
+type NotifyStmt struct { Conditionname Ident, Payload *Sconst }
+def NotifyStmt: NotifyStmt = NOTIFY c:ColId (-COMMA p:Sconst)? -> new NotifyStmt{Conditionname: $c, Payload: $p}
+
+// Group B1: handler_name (the HANDLER and VALIDATOR options of a foreign data wrapper): a name, possibly qualified
+def handler_name: []Ident = any_name

@@ -1,0 +1,138 @@
+// PostgreSQL 18 SQL, parsed into a typed AST.
+//
+// The grammar follows gram.y and scan.l of the PostgreSQL 18 parser (the productions of gram.y are
+// restructured where a PEG needs it, and a comment says why), and the types follow the nodes of its raw
+// parse tree (src/include/nodes/parsenodes.h and primnodes.h) with the same names and fields, so that a
+// tree can be compared with the one libpg_query returns (see rawjson.go). They differ from the raw tree
+// where the parser's actions inspect and rewrite nodes that were built before (merging ORDER BY into a
+// select, splitting the qualifiers of a column, folding a negative number, ...); rawjson.go makes the
+// same changes when it converts a tree. Names and strings are kept as source text (Ident, Sconst, ...);
+// the functions of postgresql.go decode them.
+//
+// Tokens consume the white space and comments that follow them, so a node starts at its first token and
+// ends after the white space that follows its last token.
+package postgresql
+
+// ---- Tokens: values keep their source text ----
+
+type Ident terminal   // a name: unquoted (any case), "quoted", U&"unicode", or a keyword used as a name
+type OpTok terminal   // an operator
+type Iconst terminal  // an integer literal that fits in an int32
+type Fconst terminal  // any other number
+type Sconst terminal  // a string literal: 'text', E'text', U&'text', $$text$$
+type Bconst terminal  // B'101'
+type Xconst terminal  // X'1F'
+type Param terminal   // $1
+
+// ---- Values of the raw tree that have no source text ----
+
+type String struct { Sval string }
+type Integer struct { Ival int }
+type Boolean struct { Boolval bool }
+// A List node: a list that is a value of its own, not the field of a node.
+type NodeList struct { Items []Any }
+type A_Star struct { }
+
+// A name in a list of names: a source name, an operator, or a name the parser makes up (pg_catalog).
+type Str = String | Ident | OpTok
+
+// ---- Expressions ----
+
+type ConstVal = String | Ident | Integer | Iconst | Fconst | Sconst | Bconst | Xconst | Boolean | SignedNum
+type A_Const struct { Isnull bool, Val *ConstVal }
+type ParamRef struct { Number Param }
+type ColumnRef struct { Fields []ColField }
+type ColField = Ident | A_Star
+type Indirection = Ident | A_Star | A_Indices
+type A_Indices struct { IsSlice bool, Lidx *Expr, Uidx *Expr }
+type A_Indirection struct { Arg Expr, Indirection []Indirection }
+type A_ArrayExpr struct { Elements []Expr }
+type A_Expr struct { Kind string, Name []Str, Lexpr *Expr, Rexpr *Expr }
+type BoolExpr struct { Boolop string, Args []Expr }
+type FuncCall struct {
+    Funcname []Str, Args []Expr, AggOrder []SortBy, AggFilter *Expr, Over *WindowDef,
+    AggWithinGroup bool, AggStar bool, AggDistinct bool, FuncVariadic bool, Funcformat string
+}
+type NamedArgExpr struct { Arg Expr, Name Ident, Argnumber int }
+type TypeCast struct { Arg Expr, TypeName TypeName }
+type CollateClause struct { Arg Expr, Collname []Ident }
+type SubLink struct { SubLinkType string, Testexpr *Expr, OperName []Str, Subselect SelectStmt }
+type CaseExpr struct { Arg *Expr, Args []CaseWhen, Defresult *Expr }
+type CaseWhen struct { Expr Expr, Result Expr }
+type RowExpr struct { Args []Expr, RowFormat string }
+type CoalesceExpr struct { Args []Expr }
+type MinMaxExpr struct { Op string, Args []Expr }
+type SQLValueFunction struct { Op string, Typmod *Iconst }
+type NullTest struct { Arg Expr, Nulltesttype string }
+type BooleanTest struct { Arg Expr, Booltesttype string }
+type SetToDefault struct { }
+type GroupingFunc struct { Args []Expr }
+type MergeSupportFunc struct { }
+
+type TreatExpr struct { Arg Expr, TypeName TypeName }
+type GroupingSet struct { Kind string, Content []Expr }
+
+type Expr = A_Const | ParamRef | ColumnRef | A_Indirection | A_ArrayExpr | A_Expr | BoolExpr | FuncCall |
+    NamedArgExpr | TypeCast | CollateClause | SubLink | CaseExpr | RowExpr | CoalesceExpr | MinMaxExpr |
+    SQLValueFunction | NullTest | BooleanTest | SetToDefault | GroupingFunc | MergeSupportFunc | NodeList |
+    TreatExpr | GroupingSet | MultiAssignRef | CurrentOfExpr | ExprD
+
+type ArrayBound = Integer | Iconst
+type TypeName struct {
+    Names []Str, Setof bool, PctType bool, Typmods []Expr, Typemod int, ArrayBounds []ArrayBound
+}
+
+type SortBy struct { Node Expr, SortbyDir string, SortbyNulls string, UseOp []Str }
+type WindowDef struct {
+    Name *Ident, Refname *Ident, PartitionClause []Expr, OrderClause []SortBy, FrameOptions int,
+    StartOffset *Expr, EndOffset *Expr
+}
+
+// ---- Queries ----
+
+type Alias struct { Aliasname Ident, Colnames []Ident }
+type RangeVar struct {
+    Catalogname *Ident, Schemaname *Ident, Relname Ident, Inh bool, Relpersistence string, Alias *Alias
+}
+type ResTarget struct { Name *Ident, Indirection []Indirection, Val *Expr }
+type WithClause struct { Ctes []CommonTableExpr, Recursive bool }
+type CommonTableExpr struct {
+    Ctename Ident, Aliascolnames []Ident, Ctematerialized string, Ctequery DmlStmt,
+    SearchClause *CTESearchClause, CycleClause *CTECycleClause
+}
+type CTESearchClause struct { SearchColList []Ident, SearchBreadthFirst bool, SearchSeqColumn Ident }
+type CTECycleClause struct {
+    CycleColList []Ident, CycleMarkColumn Ident, CycleMarkValue Expr, CycleMarkDefault Expr, CyclePathColumn Ident
+}
+type IntoClause struct {
+    Rel RangeVar, ColNames []Ident, AccessMethod *Ident, Options []DefElem, OnCommit string, TableSpaceName *Ident,
+    SkipData bool
+}
+type LockingClause struct { LockedRels []RangeVar, Strength string, WaitPolicy string }
+type SelectStmt struct {
+    Distinct bool, DistinctOn []Expr, IntoClause *IntoClause, TargetList []ResTarget, FromClause []TableRef,
+    WhereClause *Expr, GroupClause []Expr, GroupDistinct bool, HavingClause *Expr, WindowClause []WindowDef,
+    ValuesLists []NodeList, SortClause []SortBy, LimitOffset *Expr, LimitCount *Expr, LimitWithTies bool,
+    LockingClause []LockingClause, WithClause *WithClause, Op string, All bool, Larg *SelectStmt,
+    Rarg *SelectStmt
+}
+
+type Script struct { Stmts []RawStmt }
+type RawStmt struct { Stmt Stmt }
+type DmlStmt = SelectStmt | InsertStmt | UpdateStmt | DeleteStmt | MergeStmt
+// Stmt: every statement. StmtA, StmtB and StmtC are the unions of the statements of the other files.
+type Stmt = DmlStmt | StmtC2 | StmtA | StmtB | StmtC | StmtB2
+
+type RangeSubselect struct { Lateral bool, Subquery SelectStmt, Alias *Alias }
+type RangeFunction struct {
+    Lateral bool, Ordinality bool, IsRowsfrom bool, Functions []RangeFuncItem, Alias *Alias, Coldeflist []ColumnDef
+}
+type RangeFuncItem struct { Func Expr, Coldeflist []ColumnDef }
+type RangeTableSample struct { Relation RangeVar, Method []Ident, Args []Expr, Repeatable *Expr }
+type JoinExpr struct {
+    Jointype string, IsNatural bool, Larg *TableRef, Rarg *TableRef, UsingClause []Ident,
+    JoinUsingAlias *Alias, Quals *Expr, Alias *Alias
+}
+type TableRef = RangeVar | RangeSubselect | RangeFunction | JoinExpr | RangeTableSample | TableRefD
+
+// The union of all node types is generated: see the end of the file.

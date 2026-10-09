@@ -1,0 +1,42 @@
+
+// ==== More rules shared by the statements ====
+
+type DropBehavior terminal   // CASCADE or RESTRICT (rawjson.go maps the keyword to DROP_CASCADE and DROP_RESTRICT)
+type NoneArg struct { }      // NONE in the argument types of an operator
+type ObjArg = TypeName | NoneArg
+// An aggregate's arguments: the direct arguments before ORDER BY, the ordered ones after it. (*) has none.
+type AggrArgs struct { Args []FunctionParameter, OrderedArgs []FunctionParameter, Star bool, OrderBy bool }
+
+def drop_behavior: DropBehavior = CASCADE / RESTRICT
+def opt_column_list: []Ident = -LP l:column_list -RP -> $l
+def any_name_list: [][]Ident = first:any_name rest:(-COMMA x:any_name)* -> concat(list($first), map($rest, (r) => $r.x))
+
+// aggregate_with_argtypes: name(args) of an aggregate
+def aggr_args: AggrArgs = aggr_args_star / aggr_args_order / aggr_args_list_order / aggr_args_plain
+def aggr_args_star: AggrArgs = -LP -STAR -RP -> new AggrArgs{Star: true}
+def aggr_args_order: AggrArgs = -LP ORDER BY o:aggr_arg_list -RP -> new AggrArgs{OrderedArgs: $o, OrderBy: true}
+// B1 change: makeOrderedSetArgs: a VARIADIC last direct argument needs exactly one VARIADIC ordered argument (gram.y also
+// requires the same type, which is not checked here)
+def aggr_args_list_order: AggrArgs = -LP l:aggr_arg_list ORDER BY o:aggr_arg_list -RP
+    [!foldl(false, $l, (acc, p) => $p.Mode == "FUNC_PARAM_VARIADIC") || (len($o) == 1 && foldl(false, $o, (acc, p) => $p.Mode == "FUNC_PARAM_VARIADIC"))]
+    -> new AggrArgs{Args: $l, OrderedArgs: $o, OrderBy: true}
+def aggr_args_plain: AggrArgs = -LP l:aggr_arg_list -RP -> new AggrArgs{Args: $l}
+def aggr_arg_list: []FunctionParameter = first:aggr_arg rest:(-COMMA x:aggr_arg)* -> concat(list($first), map($rest, (r) => $r.x))
+// aggregates cannot have output arguments
+def aggr_arg: FunctionParameter = a:func_arg [$a.Mode != "FUNC_PARAM_OUT" && $a.Mode != "FUNC_PARAM_INOUT"] -> $a
+def aggregate_with_argtypes: ObjectWithArgs = n:func_name a:aggr_args -> new ObjectWithArgs{Objname: $n, Aggr: $a}
+def aggregate_with_argtypes_list: []ObjectWithArgs = first:aggregate_with_argtypes rest:(-COMMA x:aggregate_with_argtypes)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+
+// operator_with_argtypes: an operator and the types of its one or two operands (NONE for a missing one)
+def operator_with_argtypes: ObjectWithArgs = o:any_operator a:oper_argtypes -> new ObjectWithArgs{Objname: $o, Objargs: $a}
+def oper_argtypes: []ObjArg = oper_args_both / oper_args_none_left / oper_args_none_right
+def oper_args_both: []ObjArg = -LP a:Typename -COMMA b:Typename -RP -> list($a, $b)
+def oper_args_none_left: []ObjArg = -LP NONE -COMMA b:Typename -RP -> list(new NoneArg{}, $b)
+def oper_args_none_right: []ObjArg = -LP a:Typename -COMMA NONE -RP -> list($a, new NoneArg{})
+def operator_with_argtypes_list: []ObjectWithArgs = first:operator_with_argtypes rest:(-COMMA x:operator_with_argtypes)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+
+// NonReservedWord_or_Sconst: a name or a string constant
+type NameOrString = Ident | Sconst
+def NonReservedWord_or_Sconst: NameOrString = NonReservedWord / Sconst

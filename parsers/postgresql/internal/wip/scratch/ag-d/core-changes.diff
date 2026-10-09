@@ -1,0 +1,62 @@
+--- main/parts/10-lexical.pego
++++ D/parts/10-lexical.pego
+@@ -85,3 +85,4 @@
+ def BareColLabel: Ident = t:bare_text s -> $t
+-def bare_text: Ident = quoted_ident / uident / !label_only_word word
++// FORMAT followed by JSON is the token FORMAT_LA of gram.y (the start of FORMAT JSON), not a label
++def bare_text: Ident = quoted_ident / uident / !label_only_word !(FORMAT JSON) word
+ 
+--- main/parts/30-expr.pego
++++ D/parts/30-expr.pego
+@@ -35,2 +35,10 @@
+         infix none IS NOT DISTINCT FROM -> new A_Expr{Kind: "AEXPR_NOT_DISTINCT", Name: list(new String{Sval: "="}), Lexpr: $lhs, Rexpr: $rhs}
++        postfix IS DOCUMENT -> new XmlExpr{Op: "IS_DOCUMENT", Args: list($lhs), Xmloption: "XMLOPTION_DOCUMENT"}
++        postfix IS NOT DOCUMENT -> new BoolExpr{Boolop: "NOT_EXPR", Args: list(new XmlExpr{Op: "IS_DOCUMENT", Args: list($lhs), Xmloption: "XMLOPTION_DOCUMENT"})}
++        postfix IS NORMALIZED -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "is_normalized"}), Args: list($lhs), Funcformat: "COERCE_SQL_SYNTAX"}
++        postfix IS f:unicode_normal_form NORMALIZED -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "is_normalized"}), Args: list($lhs, $f), Funcformat: "COERCE_SQL_SYNTAX"}
++        postfix IS NOT NORMALIZED -> new BoolExpr{Boolop: "NOT_EXPR", Args: list(new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "is_normalized"}), Args: list($lhs), Funcformat: "COERCE_SQL_SYNTAX"})}
++        postfix IS NOT f:unicode_normal_form NORMALIZED -> new BoolExpr{Boolop: "NOT_EXPR", Args: list(new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "is_normalized"}), Args: list($lhs, $f), Funcformat: "COERCE_SQL_SYNTAX"})}
++        postfix IS t:json_is_tail -> new JsonIsPredicate{Expr: $lhs, Format: new JsonFormat{}, ItemType: $t.ItemType, UniqueKeys: $t.UniqueKeys}
++        postfix IS NOT t:json_is_tail -> new BoolExpr{Boolop: "NOT_EXPR", Args: list(new JsonIsPredicate{Expr: $lhs, Format: new JsonFormat{}, ItemType: $t.ItemType, UniqueKeys: $t.UniqueKeys})}
+     }
+@@ -137,2 +145,4 @@
+         infix none IS NOT DISTINCT FROM -> new A_Expr{Kind: "AEXPR_NOT_DISTINCT", Name: list(new String{Sval: "="}), Lexpr: $lhs, Rexpr: $rhs}
++        postfix IS DOCUMENT -> new XmlExpr{Op: "IS_DOCUMENT", Args: list($lhs), Xmloption: "XMLOPTION_DOCUMENT"}
++        postfix IS NOT DOCUMENT -> new BoolExpr{Boolop: "NOT_EXPR", Args: list(new XmlExpr{Op: "IS_DOCUMENT", Args: list($lhs), Xmloption: "XMLOPTION_DOCUMENT"})}
+     }
+--- main/parts/31-cexpr.pego
++++ D/parts/31-cexpr.pego
+@@ -8,3 +8,3 @@
+ def c_expr: Expr = c_ident / c_paren / c_dollar / AexprConst
+-def c_ident: Expr = &ident_start x:(columnref_plain_guarded / func_call_expr / bool_null_expr / special_expr / typed_const
++def c_ident: Expr = &(ident_start / "\"") x:(columnref_plain_guarded / func_call_expr / bool_null_expr / special_expr / typed_const
+     / sconst_expr / bconst_expr / xconst_expr) -> $x
+--- main/parts/40-select.pego
++++ D/parts/40-select.pego
+@@ -64,3 +64,3 @@
+     [!ties || paren || len($sc) > 0]
+-    [!paren || len($w) + len($sc) + len($lk1) + len($lk2) + len($lc) + len($oc) > 0]
++    [!paren || len($w) + len($sc) + len($lk1) + len($lk2) + len(text($lc)) + len(text($oc)) > 0]
+     -> new SelectStmt{DistinctOn: concat($don), Distinct: len($d) > 0, TargetList: concat($tl, $ts), IntoClause: $ic, FromClause: concat($fr, $tf),
+--- main/parts/41-clauses.pego
++++ D/parts/41-clauses.pego
+@@ -131,3 +131,3 @@
+     -> new RangeVar{Catalogname: $r.Catalogname, Schemaname: $r.Schemaname, Relname: $r.Relname, Inh: $r.Inh, Relpersistence: $r.Relpersistence, Alias: $a}
+-def relation_table: RangeVar = r:relation_alias !TABLESAMPLE -> $r
++def relation_table: RangeVar = !(ROWS FROM LP) r:relation_alias !TABLESAMPLE -> $r
+ def sample_table: RangeTableSample = r:relation_alias TABLESAMPLE m:func_name -LP a:expr_list -RP rp:repeatable_clause?
+@@ -149,6 +149,6 @@
+ def func_table_plain: RangeFunction = lat:LATERAL? f:func_expr_windowless o:with_ordinality?
+-    ( al:alias_clause / -AS -LP cd:table_func_element_list -RP / -AS al:alias_name_only -LP cd:table_func_element_list -RP / al:alias_name_only -LP cd:table_func_element_list -RP )?
++    ( -AS -LP cd:table_func_element_list -RP / -AS al:alias_name_only -LP cd:table_func_element_list -RP / al:alias_name_only -LP cd:table_func_element_list -RP / al:alias_clause )?
+     -> new RangeFunction{Lateral: len($lat) > 0, Ordinality: len($o) > 0, Functions: list(new RangeFuncItem{Func: $f}), Alias: $al, Coldeflist: concat($cd)}
+ def func_table_rows_from: RangeFunction = lat:LATERAL? ROWS FROM -LP l:rowsfrom_list -RP o:with_ordinality?
+-    ( al:alias_clause / -AS -LP cd:table_func_element_list -RP / -AS al:alias_name_only -LP cd:table_func_element_list -RP / al:alias_name_only -LP cd:table_func_element_list -RP )?
++    ( -AS -LP cd:table_func_element_list -RP / -AS al:alias_name_only -LP cd:table_func_element_list -RP / al:alias_name_only -LP cd:table_func_element_list -RP / al:alias_clause )?
+     -> new RangeFunction{Lateral: len($lat) > 0, Ordinality: len($o) > 0, IsRowsfrom: true, Functions: $l, Alias: $al, Coldeflist: concat($cd)}
+@@ -164,3 +164,4 @@
+ def func_expr_windowless: Expr = [windowless = true] f:func_expr_w -> $f
+-def func_expr_w: Expr = func_call_over / func_expr_common_subexpr / json_agg_expr
++def func_expr_w: Expr = func_call_over / func_special_w / json_agg_expr
++def func_special_w: Expr = [windowless = false] f:func_expr_common_subexpr -> $f
+ 

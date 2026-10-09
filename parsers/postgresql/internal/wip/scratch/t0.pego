@@ -1,0 +1,12 @@
+package x
+type T struct { A Ia, B Ia }
+type Ia terminal
+type St struct { V string }
+type Kw terminal
+def main: T = a:ia b:ia $$ -> new T{A: $a, B: $b}
+def ia: Ia = (?a-z)+
+def probe: St = s:ia -> new St{V: text($s)}
+def probe2: St = p:probe -> new St{V: $p.V}
+def s = (? )*
+def ic = (?a-z)
+def mm = ia

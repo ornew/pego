@@ -1,0 +1,20 @@
+type Number terminal
+type Binary struct { Left Expr, Op Match, Right Expr }
+type Unary struct { Op Match, X *Expr }
+type Post struct { X Expr, Op Match, Args []Expr }
+type Expr = Number | Binary | Unary | Post
+def main: Expr = e:expr ws $$ -> $e
+def expr: Expr = pratt {
+    skip    ws
+    operand number
+    operand "(" -- e:expr ws ")" -> $e
+    operand "[" e:expr? ws "]" -> new Unary{Op: $1, X: $e}
+    level { infix left  o:("+" / "-") ws -> new Binary{Left: $lhs, Op: $o, Right: $rhs} }
+    level { infix left  "*" / "/" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { prefix      "-" -> new Unary{Op: $op, X: $rhs} }
+    level { postfix     "!" -> new Post{X: $lhs, Op: $op, Args: list()}
+            postfix     "{" -- a:(x:expr ws ",")* ws "}" -> new Post{X: $lhs, Op: $op, Args: map($a, (q) => $q.x)} }
+    level { infix right "^" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+}
+def number: Number = (?0-9)+ #recover(skip=(?a-z)+)
+def ws = (? )*

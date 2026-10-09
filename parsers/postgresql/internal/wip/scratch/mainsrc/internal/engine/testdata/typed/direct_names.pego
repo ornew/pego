@@ -1,0 +1,7 @@
+// Direct rules of the typed runtime: string literals, variable names and field names that read like
+// the Go variables of captures (k1, k2, ...) are not reads of those variables, so captures nothing
+// reads still compile.
+type R struct { S string, N int, T string }
+def main: R = [k1 = 1] a:"x" b:pair c:"w"? -> new R{S: "k1" + "k3", N: k1, T: text($b.k2)}
+def pair = k2:@"y" "z" k4:"v"?
+def other: R = a:"x" -> new R{S: "k1"}

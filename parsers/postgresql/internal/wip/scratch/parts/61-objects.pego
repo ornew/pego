@@ -1,0 +1,83 @@
+// ==== Group B1: functions, procedures, casts, transforms, user-defined types and operators,
+// operator classes and families, text search objects, collations, languages, extensions ====
+//
+// The statements of this file build the nodes of the raw parse tree with the names and fields of
+// parsenodes.h (see 00-types.pego). A few helper types are not nodes of the raw tree: the converter
+// (ext/b1-*.py) turns them into what libpg_query returns.
+
+// A DefElem whose name is a constant of the grammar (makeDefElem("strict", ...)): the converter makes a DefElem
+// of it. DefElem itself keeps the name as source text (Ident).
+type KArg = Boolean | String | Ident | Sconst | NumericOnly | NodeList | VariableSetStmt
+type DefElemK struct { Defname string, Arg *KArg }
+// the options of a DefineStmt: written by the user (DefElem) or made up by the grammar (DefElemK)
+type DefItem = DefElem | DefElemK
+
+type ReturnStmt struct { Returnval Expr }
+type FuncBody = ReturnStmt | NodeList
+type BodyStmt = Stmt | ReturnStmt
+type CreateFunctionStmt struct {
+    IsProcedure bool, Replace bool, Funcname []Ident, Parameters []FunctionParameter, ReturnType *TypeName,
+    Options []DefElemK, SqlBody *FuncBody
+}
+// RETURNS of CREATE FUNCTION: the declared type, or RETURNS TABLE (which adds parameters). Not a raw node.
+type FuncReturns struct { Declared bool, Table bool, Parameters []FunctionParameter, Type *TypeName }
+type AlterFunctionStmt struct { Objtype string, Func ObjectWithArgs, Actions []DefElemK }
+
+type CreateCastStmt struct { Sourcetype TypeName, Targettype TypeName, Func *ObjectWithArgs, Context string, Inout bool }
+type CreateTransformStmt struct { Replace bool, TypeName TypeName, Lang Ident, Fromsql *ObjectWithArgs, Tosql *ObjectWithArgs }
+
+
+type DefineStmt struct {
+    Kind string, Oldstyle bool, Defnames []Str, Args *AggrArgs, Definition []DefItem, IfNotExists bool, Replace bool
+}
+type CompositeTypeStmt struct { Typevar RangeVar, Coldeflist []ColumnDef }
+type CreateEnumStmt struct { TypeName []Ident, Vals []Sconst }
+type CreateRangeStmt struct { TypeName []Ident, Params []DefElem }
+type AlterEnumStmt struct {
+    TypeName []Ident, OldVal Sconst, NewVal Sconst, NewValNeighbor *Sconst, NewValIsAfter bool, SkipIfNewValExists bool
+}
+type AlterTypeStmt struct { TypeName []Ident, Options []DefElem }
+
+type CreateOpClassItem struct {
+    Itemtype int, Name *ObjectWithArgs, Number Iconst, OrderFamily []Ident, ClassArgs []TypeName, Storedtype *TypeName
+}
+type CreateOpClassStmt struct {
+    Opclassname []Ident, Opfamilyname []Ident, Amname Ident, Datatype TypeName, Items []CreateOpClassItem, IsDefault bool
+}
+type CreateOpFamilyStmt struct { Opfamilyname []Ident, Amname Ident }
+type AlterOpFamilyStmt struct { Opfamilyname []Ident, Amname Ident, IsDrop bool, Items []CreateOpClassItem }
+type AlterOperatorStmt struct { Opername ObjectWithArgs, Options []DefElem }
+
+type AlterTSDictionaryStmt struct { Dictname []Ident, Options []DefElem }
+type AlterTSConfigurationStmt struct {
+    Kind string, Cfgname []Ident, Tokentype []Ident, Dicts []NodeList, Override bool, Replace bool, MissingOk bool
+}
+type CreateConversionStmt struct {
+    ConversionName []Ident, ForEncodingName Sconst, ToEncodingName Sconst, FuncName []Ident, Def bool
+}
+type AlterCollationStmt struct { Collname []Ident }
+
+type CreatePLangStmt struct {
+    Replace bool, Plname Ident, Plhandler []Ident, Plinline []Ident, Plvalidator []Ident, Pltrusted bool
+}
+type CreateExtensionStmt struct { Extname Ident, IfNotExists bool, Options []DefElemK }
+type AlterExtensionStmt struct { Extname Ident, Options []DefElemK }
+type ExtObject = Ident | NodeList | ObjectWithArgs | TypeName
+type AlterExtensionContentsStmt struct { Extname Ident, Action int, Objtype ObjectType, Object ExtObject }
+// the object of ALTER EXTENSION ... ADD/DROP: its type and what names it. Not a raw node.
+type ExtObj struct { Objtype ObjectType, Object ExtObject }
+type CreateAmStmt struct { Amname Ident, HandlerName []Ident, Amtype string }
+
+type StmtB = CreateFunctionStmt | AlterFunctionStmt | CreateCastStmt | CreateTransformStmt | DropStmt | DefineStmt |
+    CompositeTypeStmt | CreateEnumStmt | CreateRangeStmt | AlterEnumStmt | AlterTypeStmt | CreateOpClassStmt |
+    CreateOpFamilyStmt | AlterOpFamilyStmt | AlterOperatorStmt | AlterTSDictionaryStmt | AlterTSConfigurationStmt |
+    CreateConversionStmt | AlterCollationStmt | CreatePLangStmt | CreateExtensionStmt | AlterExtensionStmt |
+    AlterExtensionContentsStmt | CreateAmStmt
+
+def stmt_b: StmtB =
+    CreateFunctionStmt / AlterFunctionStmt / CreateCastStmt / DropCastStmt / CreateTransformStmt / DropTransformStmt
+    / CompositeTypeStmt / CreateEnumStmt / CreateRangeStmt / DefineStmt
+    / AlterEnumStmt / AlterTypeStmt / CreateOpClassStmt / CreateOpFamilyStmt / AlterOpFamilyStmt / DropOpClassStmt
+    / DropOpFamilyStmt / AlterOperatorStmt / AlterTSDictionaryStmt / AlterTSConfigurationStmt / CreateConversionStmt
+    / AlterCollationStmt / CreatePLangStmt / CreateExtensionStmt / AlterExtensionStmt / AlterExtensionContentsStmt
+    / CreateAmStmt

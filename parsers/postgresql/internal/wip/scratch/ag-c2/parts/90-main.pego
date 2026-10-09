@@ -1,0 +1,10 @@
+
+// ==== Statements ====
+
+// The start rule: statements separated by semicolons (empty statements are dropped).
+def main: Script = [windowless = false] [tails_ok = true] [setof = false] [consttype = false] [dolq = ""]
+    s -SEMI* xs:(x:raw_stmt (-SEMI+ / $$))* $$
+    -> new Script{Stmts: map($xs, (r) => $r.x)}
+def raw_stmt: RawStmt = st:stmt -> new RawStmt{Stmt: $st}
+def stmt: Stmt = stmt_dml / stmt_a / stmt_b / stmt_c / stmt_c2
+def stmt_dml: DmlStmt = SelectStmt / InsertStmt / UpdateStmt / DeleteStmt / MergeStmt

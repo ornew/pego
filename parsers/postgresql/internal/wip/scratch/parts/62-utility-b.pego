@@ -1,0 +1,153 @@
+// ---- COPY ----
+
+// COPY table [(columns)] FROM|TO file [USING DELIMITERS 'c'] [WITH] options [WHERE ...], and COPY (query) TO.
+// The options are, in this order: BINARY (old syntax), DELIMITERS (old syntax), then the options. The checks
+// of gram.y: PROGRAM needs a file name, and WHERE only goes with FROM.
+def CopyStmt: CopyStmt = copy_table / copy_query
+def copy_table: CopyStmt = [isfrom = false] COPY b:copy_binary{0,1} r:qualified_name c:opt_column_list? (FROM [isfrom = true] / TO)
+    p:PROGRAM? (f:SconstStr / STDIN / STDOUT) d:copy_delimiter{0,1} WITH? o:copy_options w:where_clause?
+    [len($p) == 0 || len($f) > 0] [isfrom || $w == nil]
+    -> new CopyStmt{Relation: $r, Attlist: concat($c), IsFrom: isfrom, IsProgram: len($p) > 0, Filename: $f,
+        Options: concat($b, $d, $o), WhereClause: $w}
+def copy_query: CopyStmt = COPY -LP q:PreparableStmt -RP TO p:PROGRAM? (f:SconstStr / STDIN / STDOUT) WITH? o:copy_options
+    [len($p) == 0 || len($f) > 0]
+    -> new CopyStmt{Query: $q, IsProgram: len($p) > 0, Filename: $f, Options: $o}
+def copy_binary: DefElem = BINARY -> new DefElem{Defname: new String{Sval: "format"}, Arg: new String{Sval: "binary"}}
+def copy_delimiter: DefElem = USING? DELIMITERS v:Sconst -> new DefElem{Defname: new String{Sval: "delimiter"}, Arg: $v}
+// the options: (generic, comma separated) or the old keywords
+def copy_options: []DefElem = copy_generic_options / copy_opt_list
+def copy_opt_list: []DefElem = xs:copy_opt_item* -> $xs
+def copy_generic_options: []DefElem = -LP first:copy_generic_opt_elem rest:(-COMMA x:copy_generic_opt_elem)* -RP
+    -> concat(list($first), map($rest, (r) => $r.x))
+// FORMAT followed by JSON is the token FORMAT_LA, which is not a ColLabel
+def copy_generic_opt_elem: DefElem = !(FORMAT JSON) n:ColLabel a:copy_generic_opt_arg? -> new DefElem{Defname: $n, Arg: $a}
+def copy_generic_opt_arg: DefArg = opt_boolean_or_string / NumericOnly / copy_star / copy_default / copy_arg_list
+def copy_star: A_Star = STAR -> new A_Star{}
+def copy_default: String = DEFAULT -> new String{Sval: "default"}
+def copy_arg_list: NodeList = -LP first:opt_boolean_or_string rest:(-COMMA x:opt_boolean_or_string)* -RP
+    -> new NodeList{Items: concat(list($first), map($rest, (r) => $r.x))}
+// the old syntax
+def copy_opt_item: DefElem = copy_opt_flag / copy_opt_format / copy_opt_str / copy_opt_force
+def copy_opt_flag: DefElem = (FREEZE [n = "freeze"] / HEADER [n = "header"])
+    -> new DefElem{Defname: new String{Sval: n}, Arg: new Boolean{Boolval: true}}
+def copy_opt_format: DefElem = (BINARY [v = "binary"] / CSV [v = "csv"])
+    -> new DefElem{Defname: new String{Sval: "format"}, Arg: new String{Sval: v}}
+def copy_opt_str: DefElem =
+    ( (DELIMITER [n = "delimiter"] / NULL [n = "null"] / QUOTE [n = "quote"] / ESCAPE [n = "escape"]) AS? / ENCODING [n = "encoding"] )
+    v:Sconst -> new DefElem{Defname: new String{Sval: n}, Arg: $v}
+def copy_opt_force: DefElem = FORCE (QUOTE [n = "force_quote"] / NOT NULL [n = "force_not_null"] / NULL [n = "force_null"])
+    a:(copy_star / copy_columns) -> new DefElem{Defname: new String{Sval: n}, Arg: $a}
+def copy_columns: NodeList = l:column_list -> new NodeList{Items: $l}
+
+// ---- EXPLAIN, VACUUM, ANALYZE, CLUSTER, REINDEX ----
+
+// A flag of the old syntax that stands for an option without a value: the variable want says which one is
+// allowed here (the flags of VACUUM come in this order only).
+def flag_opt: DefElem =
+    ([want == "full"] FULL / [want == "freeze"] FREEZE / [want == "verbose"] VERBOSE / [want == "analyze"] analyze_keyword
+    / [want == "concurrently"] CONCURRENTLY)
+    -> new DefElem{Defname: new String{Sval: want}}
+def analyze_keyword = ANALYZE / ANALYSE
+def paren_options: []DefElem = -LP l:utility_option_list -RP -> $l
+def utility_option_list: []DefElem = first:utility_option_elem rest:(-COMMA x:utility_option_elem)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+def utility_option_elem: DefElem = n:(NonReservedWord / analyze_name) a:(opt_boolean_or_string / NumericOnly)?
+    -> new DefElem{Defname: $n, Arg: $a}
+def analyze_name: String = analyze_keyword -> new String{Sval: "analyze"}
+
+def ExplainStmt: ExplainStmt =
+    EXPLAIN (o:paren_options / [want = "analyze"] a:flag_opt{1} [want = "verbose"] v:flag_opt{0,1} / [want = "verbose"] v:flag_opt{1})?
+    q:ExplainableStmt -> new ExplainStmt{Query: $q, Options: concat($o, $a, $v)}
+def ExplainableStmt: ExplainableStmt = stmt_dml / DeclareCursorStmt / CreateAsStmt / CreateMatViewStmt / RefreshMatViewStmt / ExecuteStmt
+
+def VacuumStmt: VacuumStmt = VACUUM
+    ( o:paren_options
+    / [want = "full"] a:flag_opt{0,1} [want = "freeze"] b:flag_opt{0,1} [want = "verbose"] c:flag_opt{0,1} [want = "analyze"] d:flag_opt{0,1} )
+    r:vacuum_relation_list?
+    -> new VacuumStmt{Options: concat($o, $a, $b, $c, $d), Rels: concat($r), IsVacuumcmd: true}
+def AnalyzeStmt: VacuumStmt = analyze_keyword (o:paren_options / [want = "verbose"] v:flag_opt{0,1}) r:vacuum_relation_list?
+    -> new VacuumStmt{Options: concat($o, $v), Rels: concat($r)}
+def vacuum_relation_list: []VacuumRelation = first:vacuum_relation rest:(-COMMA x:vacuum_relation)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+def vacuum_relation: VacuumRelation = r:relation_expr c:opt_name_list? -> new VacuumRelation{Relation: $r, VaCols: concat($c)}
+
+def ClusterStmt: ClusterStmt = cluster_paren / cluster_plain
+def cluster_paren: ClusterStmt = CLUSTER o:paren_options (r:qualified_name (USING i:name)?)?
+    -> new ClusterStmt{Relation: $r, Indexname: $i, Params: $o}
+// CLUSTER index ON table is the syntax before 8.3
+def cluster_plain: ClusterStmt = CLUSTER [want = "verbose"] v:flag_opt{0,1} (i:name ON r:qualified_name / r:qualified_name (USING i:name)?)?
+    -> new ClusterStmt{Relation: $r, Indexname: $i, Params: $v}
+
+def ReindexStmt: ReindexStmt = REINDEX o:paren_options? [want = "concurrently"]
+    ( (INDEX [k = "REINDEX_OBJECT_INDEX"] / TABLE [k = "REINDEX_OBJECT_TABLE"]) c:flag_opt{0,1} r:qualified_name
+    / SCHEMA [k = "REINDEX_OBJECT_SCHEMA"] c:flag_opt{0,1} nm:name
+    / (SYSTEM [k = "REINDEX_OBJECT_SYSTEM"] / DATABASE [k = "REINDEX_OBJECT_DATABASE"]) c:flag_opt{0,1} nm:ColId? )
+    -> new ReindexStmt{Kind: k, Relation: $r, Name: $nm, Params: concat($o, $c)}
+
+// ---- LOCK, TRUNCATE ----
+
+// The lock mode is the number of the lock level: ACCESS SHARE is 1 up to ACCESS EXCLUSIVE, the default, 8.
+def LockStmt: LockStmt = LOCK TABLE? l:relation_expr_list [m = 8]
+    (IN (ACCESS SHARE [m = 1] / ROW SHARE [m = 2] / ROW EXCLUSIVE [m = 3] / SHARE UPDATE EXCLUSIVE [m = 4]
+        / SHARE ROW EXCLUSIVE [m = 6] / SHARE [m = 5] / EXCLUSIVE [m = 7] / ACCESS EXCLUSIVE [m = 8]) MODE)?
+    nw:NOWAIT? -> new LockStmt{Relations: $l, Mode: m, Nowait: len($nw) > 0}
+def TruncateStmt: TruncateStmt = TRUNCATE TABLE? l:relation_expr_list [rs = false] (CONTINUE IDENTITY / RESTART IDENTITY [rs = true])?
+    b:drop_behavior? -> new TruncateStmt{Relations: $l, RestartSeqs: rs, Behavior: $b}
+
+// ---- Prepared statements and cursors ----
+
+def PrepareStmt: PrepareStmt = PREPARE n:name t:prep_types? AS q:PreparableStmt
+    -> new PrepareStmt{Name: $n, Argtypes: concat($t), Query: $q}
+def prep_types: []TypeName = -LP l:type_list -RP -> $l
+type ExecuteOrCreateTableAs = ExecuteStmt | CreateTableAsStmt
+def ExecuteStmt: ExecuteOrCreateTableAs = execute_plain / execute_ctas
+def execute_plain: ExecuteStmt = EXECUTE n:name p:execute_params? -> new ExecuteStmt{Name: $n, Params: concat($p)}
+def execute_params: []Expr = -LP l:expr_list -RP -> $l
+// CREATE TABLE ... AS EXECUTE is a CreateTableAsStmt: the persistence and WITH [NO] DATA are put into the
+// IntoClause as in gram.y
+def execute_ctas: CreateTableAsStmt = [ine = false] CREATE p:OptTemp TABLE (IF NOT EXISTS [ine = true])? t:create_as_target AS
+    EXECUTE n:name a:execute_params? d:opt_with_data
+    -> new CreateTableAsStmt{Query: new ExecuteStmt{Name: $n, Params: concat($a)}, Objtype: "OBJECT_TABLE", IfNotExists: ine,
+        Into: new IntoClause{Rel: new RangeVar{Catalogname: $t.Rel.Catalogname, Schemaname: $t.Rel.Schemaname, Relname: $t.Rel.Relname,
+            Inh: $t.Rel.Inh, Relpersistence: $p.Relpersistence, Alias: $t.Rel.Alias}, ColNames: $t.ColNames, AccessMethod: $t.AccessMethod,
+            Options: $t.Options, OnCommit: $t.OnCommit, TableSpaceName: $t.TableSpaceName, SkipData: $d.SkipData}}
+def DeallocateStmt: DeallocateStmt = DEALLOCATE [al = false] (PREPARE (ALL [al = true] / n:name) / ALL [al = true] / n:name)
+    -> new DeallocateStmt{Name: $n, Isall: al}
+
+def DeclareCursorStmt: DeclareCursorStmt = DECLARE n:cursor_name o:cursor_option* CURSOR [hold = 0] (WITH HOLD [hold = 32] / WITHOUT HOLD)? FOR q:SelectStmt
+    -> new DeclareCursorStmt{Portalname: $n, Query: $q,
+        Options: 256 + hold + foldl(0, $o, (acc, i) => $acc + $i.Bit - $i.Bit * (($acc / $i.Bit) % 2))}
+// the bits of CURSOR_OPT_*; an option given twice counts once
+def cursor_option: CursorOption =
+    (NO SCROLL [b = 4] / SCROLL [b = 2] / BINARY [b = 1] / ASENSITIVE [b = 16] / INSENSITIVE [b = 8]) -> new CursorOption{Bit: b}
+
+// FETCH and MOVE: the direction and the count. A count that the statement gives is kept in Count.
+def FetchStmt: FetchStmt = [mv = false] (FETCH / MOVE [mv = true]) a:fetch_args
+    -> new FetchStmt{Direction: $a.Direction, HowMany: $a.HowMany, Count: $a.Count, Portalname: $a.Portalname, Ismove: mv}
+def fetch_args: FetchStmt = [d = "FETCH_FORWARD"] [h = 1]
+    ( NEXT c:from_cursor
+    / PRIOR [d = "FETCH_BACKWARD"] c:from_cursor
+    / FIRST [d = "FETCH_ABSOLUTE"] c:from_cursor
+    / LAST [d = "FETCH_ABSOLUTE"] [h = -1] c:from_cursor
+    / ABSOLUTE [d = "FETCH_ABSOLUTE"] n:SignedIconst c:from_cursor
+    / RELATIVE [d = "FETCH_RELATIVE"] n:SignedIconst c:from_cursor
+    / n:SignedIconst c:from_cursor
+    / ALL [h = 9223372036854775807] c:from_cursor
+    / FORWARD (ALL [h = 9223372036854775807] / n:SignedIconst)? c:from_cursor
+    / BACKWARD [d = "FETCH_BACKWARD"] (ALL [h = 9223372036854775807] / n:SignedIconst)? c:from_cursor
+    / c:from_cursor )
+    -> new FetchStmt{Direction: d, HowMany: h, Count: $n, Portalname: $c}
+def from_cursor: Ident = (FROM / IN)? c:cursor_name -> $c
+def ClosePortalStmt: ClosePortalStmt = CLOSE (ALL / n:cursor_name) -> new ClosePortalStmt{Portalname: $n}
+
+// ---- LISTEN, NOTIFY, LOAD, DO, CALL ----
+
+def ListenStmt: ListenStmt = LISTEN n:ColId -> new ListenStmt{Conditionname: $n}
+def UnlistenStmt: UnlistenStmt = UNLISTEN (STAR / n:ColId) -> new UnlistenStmt{Conditionname: $n}
+def NotifyStmt: NotifyStmt = NOTIFY n:ColId (COMMA p:SconstStr)? -> new NotifyStmt{Conditionname: $n, Payload: $p}
+def LoadStmt: LoadStmt = LOAD f:SconstStr -> new LoadStmt{Filename: $f}
+def DoStmt: DoStmt = DO l:dostmt_opt_item+ -> new DoStmt{Args: $l}
+def dostmt_opt_item: DefElem = ([n = "as"] a:Sconst / LANGUAGE [n = "language"] a:NonReservedWord_or_Sconst)
+    -> new DefElem{Defname: new String{Sval: n}, Arg: $a}
+// CALL takes a function call without WITHIN GROUP, FILTER and OVER (func_application)
+def CallStmt: CallStmt = CALL [windowless = true] f:func_call_over -> new CallStmt{Funccall: $f}

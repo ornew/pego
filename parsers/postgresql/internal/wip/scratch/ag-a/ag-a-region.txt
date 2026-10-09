@@ -1,0 +1,1 @@
+^\s*(create\s+((or\s+replace\s+)?(global\s+|local\s+)?(temp\s+|temporary\s+|unlogged\s+)?(recursive\s+)?(table|view|sequence|materialized\s+view|foreign\s+table|domain|statistics)|(unique\s+)?index|unlogged\s+materialized)|alter\s+(table|index|sequence|view|materialized\s+view|foreign\s+table|domain|statistics|type)|refresh\s+materialized)\b

@@ -1,0 +1,4 @@
+type W terminal
+type T struct { Ws []W, Any Match, L int, Txt string }
+def main: T = ws:(w:word " "?)* a:. $$ -> new T{Ws: map($ws, (e) => $e.w), Any: $a, L: len($a) + len(text($ws)), Txt: text($ws) + text($a)}
+def word: W = (?a-zé)+

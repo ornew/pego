@@ -1,0 +1,2124 @@
+// PostgreSQL 18 SQL, parsed into a typed AST.
+//
+// The grammar follows gram.y and scan.l of the PostgreSQL 18 parser (the productions of gram.y are
+// restructured where a PEG needs it, and a comment says why), and the types follow the nodes of its raw
+// parse tree (src/include/nodes/parsenodes.h and primnodes.h) with the same names and fields, so that a
+// tree can be compared with the one libpg_query returns (see rawjson.go). They differ from the raw tree
+// where the parser's actions inspect and rewrite nodes that were built before (merging ORDER BY into a
+// select, splitting the qualifiers of a column, folding a negative number, ...); rawjson.go makes the
+// same changes when it converts a tree. Names and strings are kept as source text (Ident, Sconst, ...);
+// the functions of postgresql.go decode them.
+//
+// Tokens consume the white space and comments that follow them, so a node starts at its first token and
+// ends after the white space that follows its last token.
+package postgresql
+
+// ---- Tokens: values keep their source text ----
+
+type Ident terminal   // a name: unquoted (any case), "quoted", U&"unicode", or a keyword used as a name
+type OpTok terminal   // an operator
+type Iconst terminal  // an integer literal that fits in an int32
+type Fconst terminal  // any other number
+type Sconst terminal  // a string literal: 'text', E'text', U&'text', $$text$$
+type Bconst terminal  // B'101'
+type Xconst terminal  // X'1F'
+type Param terminal   // $1
+
+// ---- Values of the raw tree that have no source text ----
+
+type String struct { Sval string }
+type Integer struct { Ival int }
+type Boolean struct { Boolval bool }
+// A List node: a list that is a value of its own, not the field of a node.
+type NodeList struct { Items []Any }
+type A_Star struct { }
+
+// A name in a list of names: a source name, an operator, or a name the parser makes up (pg_catalog).
+type Str = String | Ident | OpTok
+
+// ---- Expressions ----
+
+type ConstVal = String | Ident | Integer | Iconst | Fconst | Sconst | Bconst | Xconst | Boolean
+type A_Const struct { Isnull bool, Val *ConstVal }
+type ParamRef struct { Number Param }
+type ColumnRef struct { Fields []ColField }
+type ColField = Ident | A_Star
+type Indirection = Ident | A_Star | A_Indices
+type A_Indices struct { IsSlice bool, Lidx *Expr, Uidx *Expr }
+type A_Indirection struct { Arg Expr, Indirection []Indirection }
+type A_ArrayExpr struct { Elements []Expr }
+type A_Expr struct { Kind string, Name []Str, Lexpr *Expr, Rexpr *Expr }
+type BoolExpr struct { Boolop string, Args []Expr }
+type FuncCall struct {
+    Funcname []Str, Args []Expr, AggOrder []SortBy, AggFilter *Expr, Over *WindowDef,
+    AggWithinGroup bool, AggStar bool, AggDistinct bool, FuncVariadic bool, Funcformat string
+}
+type NamedArgExpr struct { Arg Expr, Name Ident, Argnumber int }
+type TypeCast struct { Arg Expr, TypeName TypeName }
+type CollateClause struct { Arg Expr, Collname []Ident }
+type SubLink struct { SubLinkType string, Testexpr *Expr, OperName []Str, Subselect SelectStmt }
+type CaseExpr struct { Arg *Expr, Args []CaseWhen, Defresult *Expr }
+type CaseWhen struct { Expr Expr, Result Expr }
+type RowExpr struct { Args []Expr, RowFormat string }
+type CoalesceExpr struct { Args []Expr }
+type MinMaxExpr struct { Op string, Args []Expr }
+type SQLValueFunction struct { Op string, Typmod *Iconst }
+type NullTest struct { Arg Expr, Nulltesttype string }
+type BooleanTest struct { Arg Expr, Booltesttype string }
+type SetToDefault struct { }
+type GroupingFunc struct { Args []Expr }
+type MergeSupportFunc struct { }
+
+type TreatExpr struct { Arg Expr, TypeName TypeName }
+type GroupingSet struct { Kind string, Content []Expr }
+
+type Expr = A_Const | ParamRef | ColumnRef | A_Indirection | A_ArrayExpr | A_Expr | BoolExpr | FuncCall |
+    NamedArgExpr | TypeCast | CollateClause | SubLink | CaseExpr | RowExpr | CoalesceExpr | MinMaxExpr |
+    SQLValueFunction | NullTest | BooleanTest | SetToDefault | GroupingFunc | MergeSupportFunc | NodeList |
+    TreatExpr | GroupingSet | MultiAssignRef | CurrentOfExpr | ExprD
+
+type ArrayBound = Integer | Iconst
+type TypeName struct {
+    Names []Str, Setof bool, PctType bool, Typmods []Expr, Typemod int, ArrayBounds []ArrayBound
+}
+
+type SortBy struct { Node Expr, SortbyDir string, SortbyNulls string, UseOp []Str }
+type WindowDef struct {
+    Name *Ident, Refname *Ident, PartitionClause []Expr, OrderClause []SortBy, FrameOptions int,
+    StartOffset *Expr, EndOffset *Expr
+}
+
+// ---- Queries ----
+
+type Alias struct { Aliasname Ident, Colnames []Ident }
+type RangeVar struct {
+    Catalogname *Ident, Schemaname *Ident, Relname Ident, Inh bool, Relpersistence string, Alias *Alias
+}
+type ResTarget struct { Name *Ident, Indirection []Indirection, Val *Expr }
+type WithClause struct { Ctes []CommonTableExpr, Recursive bool }
+type CommonTableExpr struct {
+    Ctename Ident, Aliascolnames []Ident, Ctematerialized string, Ctequery DmlStmt,
+    SearchClause *CTESearchClause, CycleClause *CTECycleClause
+}
+type CTESearchClause struct { SearchColList []Ident, SearchBreadthFirst bool, SearchSeqColumn Ident }
+type CTECycleClause struct {
+    CycleColList []Ident, CycleMarkColumn Ident, CycleMarkValue Expr, CycleMarkDefault Expr, CyclePathColumn Ident
+}
+type IntoClause struct { Rel RangeVar, OnCommit string }
+type LockingClause struct { LockedRels []RangeVar, Strength string, WaitPolicy string }
+type SelectStmt struct {
+    Distinct bool, DistinctOn []Expr, IntoClause *IntoClause, TargetList []ResTarget, FromClause []TableRef,
+    WhereClause *Expr, GroupClause []Expr, GroupDistinct bool, HavingClause *Expr, WindowClause []WindowDef,
+    ValuesLists []NodeList, SortClause []SortBy, LimitOffset *Expr, LimitCount *Expr, LimitWithTies bool,
+    LockingClause []LockingClause, WithClause *WithClause, Op string, All bool, Larg *SelectStmt,
+    Rarg *SelectStmt
+}
+
+type Script struct { Stmts []RawStmt }
+type RawStmt struct { Stmt Stmt }
+type DmlStmt = SelectStmt | InsertStmt | UpdateStmt | DeleteStmt | MergeStmt
+// Stmt: every statement. StmtA, StmtB and StmtC are the unions of the statements of the other files.
+type Stmt = DmlStmt | StmtA | StmtB | StmtC | StmtC2
+
+type RangeSubselect struct { Lateral bool, Subquery SelectStmt, Alias *Alias }
+type RangeFunction struct {
+    Lateral bool, Ordinality bool, IsRowsfrom bool, Functions []RangeFuncItem, Alias *Alias, Coldeflist []ColumnDef
+}
+type RangeFuncItem struct { Func Expr, Coldeflist []ColumnDef }
+type RangeTableSample struct { Relation RangeVar, Method []Ident, Args []Expr, Repeatable *Expr }
+type JoinExpr struct {
+    Jointype string, IsNatural bool, Larg *TableRef, Rarg *TableRef, UsingClause []Ident,
+    JoinUsingAlias *Alias, Quals *Expr, Alias *Alias
+}
+type TableRef = RangeVar | RangeSubselect | RangeFunction | JoinExpr | RangeTableSample | TableRefD
+
+// The union of all node types is generated: see the end of the file.
+
+// ---- Types of the statements and the rules they share ----
+
+type MultiAssignRef struct { Source Expr, Colno int, Ncolumns int }
+type CurrentOfExpr struct { CursorName Ident }
+type ReturningOption struct { Option string, Value Ident }
+type ReturningClause struct { Options []ReturningOption, Exprs []ResTarget }
+type InferClause struct { IndexElems []IndexElem, WhereClause *Expr, Conname *Ident }
+type OnConflictClause struct { Action string, Infer *InferClause, TargetList []ResTarget, WhereClause *Expr }
+type IndexElem struct {
+    Name *Ident, Expr *Expr, Indexcolname *Ident, Collation []Ident, Opclass []Ident, Opclassopts []DefElem,
+    Ordering string, NullsOrdering string
+}
+type InsertStmt struct {
+    Relation RangeVar, Cols []ResTarget, SelectStmt *SelectStmt, OnConflictClause *OnConflictClause,
+    ReturningClause *ReturningClause, WithClause *WithClause, Override string
+}
+type UpdateStmt struct {
+    Relation RangeVar, TargetList []ResTarget, WhereClause *Expr, FromClause []TableRef,
+    ReturningClause *ReturningClause, WithClause *WithClause
+}
+type DeleteStmt struct {
+    Relation RangeVar, UsingClause []TableRef, WhereClause *Expr, ReturningClause *ReturningClause,
+    WithClause *WithClause
+}
+type MergeWhenClause struct {
+    MatchKind string, CommandType string, Override string, Condition *Expr, TargetList []ResTarget,
+    Values []Expr
+}
+type MergeStmt struct {
+    Relation RangeVar, SourceRelation TableRef, JoinCondition Expr, MergeWhenClauses []MergeWhenClause,
+    ReturningClause *ReturningClause, WithClause *WithClause
+}
+
+// A signed number in an option (NumericOnly, SignedIconst): rawjson.go folds the sign into the number.
+type Num = Iconst | Fconst
+type SignedNum struct { Negative bool, Number Num }
+type NumericOnly = Iconst | Fconst | SignedNum
+type SignedIconst = Iconst | SignedNum
+
+type DefArg = TypeName | Ident | NodeList | NumericOnly | Sconst | String
+type DefElem struct { Defnamespace *Ident, Defname Ident, Arg *DefArg, Defaction string }
+type RoleSpec struct { Roletype string, Rolename *Ident }
+type FunctionParameter struct { Name *Ident, ArgType TypeName, Mode string, Defexpr *Expr }
+// ObjectWithArgs: objargs, the types of the arguments that are not OUT, is computed from Objfuncargs
+type ObjectWithArgs struct {
+    Objname []Str, Objargs []ObjArg, Objfuncargs []FunctionParameter, ArgsUnspecified bool, Aggr *AggrArgs
+}
+
+// ==== Lexical rules (scan.l) ====
+//
+// There is no separate scanner: every token rule consumes the white space and comments (s) that follow
+// it, so a node starts at its first token and ends after the white space that follows its last one.
+// Keywords are matched case-insensitively and must not be followed by an identifier character; the rules
+// of the keywords (and the lists that exclude them from names) are generated at the end of this file.
+
+// White space and comments: space, \t, \n, \r, \f and \v, "--" to the end of the line, and nested
+// "/* */" comments. The fast path is plain white space.
+def s = (? \t\n\r\f\v)* (("--" (?^\n\r)* / block_comment) (? \t\n\r\f\v)*)*
+def block_comment = "/*" ((?^*/)+ / block_comment / "*" !"/" / "/" !"*")* "*/"
+
+def ident_start = (?A-Za-z_\u{80}-\u{10FFFF})
+def ident_cont = (?A-Za-z0-9_$\u{80}-\u{10FFFF})
+
+// ---- Punctuation and operators ----
+//
+// An operator is a run of the characters ~!@#^&|`?+-*/%<>= that stops before "--" or "/*". As in scan.l,
+// a run that ends in + or - and has none of the characters ~!@#^&|`?% loses those trailing characters
+// (so that "=-" is = and -), and a run that is exactly one of the self characters, <=, >=, <>, != or =>
+// is that token and not an operator (Op).
+def cstart = "--" / "/*"
+def opc = !cstart (?~!@#%^&|`?+\-*/<>=)
+def pm = !cstart (?+\-)
+def plain_end = pm* !opc
+
+def COMMA = "," s
+def LP = "(" s
+def RP = ")" s
+def LB = "[" s
+def RB = "]" s
+def SEMI = ";" s
+def COLON = ":" !(?:=) s
+def DOT = "." !(?0-9.) s
+def TYPECAST = "::" s
+def COLON_EQUALS = ":=" s
+def PLUS = "+" &plain_end s
+def MINUS = "-" &plain_end s
+def STAR = "*" &plain_end s
+def SLASH = "/" &plain_end s
+def LT = "<" &plain_end s
+def GT = ">" &plain_end s
+def EQ = "=" &plain_end s
+def PERCENT = "%" !opc s
+def CARET = "^" !opc s
+def LESS_EQUALS = "<=" &plain_end s
+def GREATER_EQUALS = ">=" &plain_end s
+def EQUALS_GREATER = "=>" &plain_end s
+def NOT_EQUALS = ("<>" &plain_end / "!=" !opc) s
+
+// An operator other than the tokens above. t is its text, without the white space after it.
+def Op: OpTok = t:op_text s -> $t
+def op_text: OpTok =
+    !(("<=" / ">=" / "<>" / "=>") &plain_end) !(("!=" / "%" / "^") !opc)
+    ( &((!cstart (?*/<>=+\-))* !cstart (?~!@#%^&|`?)) opc+
+    / opc (pm* !cstart (?*/<>=))+ )
+
+// ---- Identifiers ----
+
+// A word, unless it is an E, B, X or N string or a U& literal. "n'x'" is the keyword NCHAR and a string.
+def word = !((?eEbBxXnN) "'" / (?uU) "&" (?'")) ident_start ident_cont*
+def quoted_ident = "\"" ((?^")+ / "\"\"")+ "\""
+// U&"..." with an optional UESCAPE 'c'
+def uident = (?uU) "&" "\"" ((?^")+ / "\"\"")+ "\"" (s (?uU)(?sS)(?cC)(?aA)(?pP)(?eE) !ident_cont s uescape_char)?
+def uescape_char = "'" (?^0-9a-fA-F+'" \t\n\r\f\v) "'"
+
+// IDENT: a name that is not a keyword.
+def IDENT: Ident = t:ident_text s -> $t
+def ident_text: Ident = quoted_ident / uident / !reserved_or_type_func_word !col_name_word word
+
+// ColId: any name that is not a reserved or type_func_name keyword.
+def ColId: Ident = t:colid_text s -> $t
+def colid_text: Ident = quoted_ident / uident / !reserved_or_type_func_word word
+// type_function_name: a name that is not a reserved or column-name keyword.
+def type_function_name: Ident = t:tfn_text s -> $t
+def tfn_text: Ident = quoted_ident / uident / !reserved_or_col_name_word word
+// NonReservedWord: a name that is not a reserved keyword.
+def NonReservedWord: Ident = t:nrw_text s -> $t
+def nrw_text: Ident = quoted_ident / uident / !reserved_word word
+// ColLabel: any name or keyword.
+def ColLabel: Ident = t:collabel_text s -> $t
+def collabel_text: Ident = quoted_ident / uident / word
+// BareColLabel: a name or a keyword that may follow an expression without AS.
+def BareColLabel: Ident = t:bare_text s -> $t
+def bare_text: Ident = quoted_ident / uident / !label_only_word word
+
+// ---- Numbers ----
+//
+// ICONST is an integer literal that fits in an int32, FCONST every other number. Underscores may separate
+// digits. A number must not be followed by an identifier character ("1a" is an error), and an integer not
+// by a fraction. The size of a decimal integer is compared with 2147483647 after its leading zeros; the
+// other forms (with underscores, 0x, 0o, 0b) are integers if they have at most 9 characters, which is
+// exact for them up to 7 hexadecimal, 9 octal... digits, and treats the larger ones that would fit as FCONST.
+def decinteger = (?0-9) ("_"? (?0-9))*
+def hexinteger = "0" (?xX) ("_"? (?0-9a-fA-F))+
+def octinteger = "0" (?oO) ("_"? (?0-7))+
+def bininteger = "0" (?bB) ("_"? (?01))+
+def numeric = decinteger "." !"." decinteger? / "." decinteger
+def real = (decinteger !("." !".") / numeric) (?eE) (?+\-)? decinteger
+def number_end = !ident_start
+
+// hexadecimal, octal and binary integers that fit in an int32 (the digits after the leading zeros are at
+// most 7 hexadecimal digits, or 8 with a first digit of at most 7; 10 octal, or 11 starting with 1; 30
+// binary, or 31 starting with 1)
+def int32_hex = "0" (?xX) ( ("_"? "0")+ !("_"? (?0-9a-fA-F))
+    / ("_"? "0")* "_"? (?1-9a-fA-F) ("_"? (?0-9a-fA-F)){0,6} !("_"? (?0-9a-fA-F))
+    / ("_"? "0")* "_"? (?1-7) ("_"? (?0-9a-fA-F)){7} !("_"? (?0-9a-fA-F)) )
+def int32_oct = "0" (?oO) ( ("_"? "0")+ !("_"? (?0-7))
+    / ("_"? "0")* "_"? (?1-7) ("_"? (?0-7)){0,9} !("_"? (?0-7))
+    / ("_"? "0")* "_"? "1" ("_"? (?0-7)){10} !("_"? (?0-7)) )
+def int32_bin = "0" (?bB) ( ("_"? "0")+ !("_"? (?01))
+    / ("_"? "0")* "_"? "1" ("_"? (?01)){0,30} !("_"? (?01)) )
+
+def Iconst: Iconst = t:iconst_text s -> $t
+def iconst_text: Iconst =
+    ( "0"* d:@((?1-9) (?0-9)*) [len($d) < 10 || (len($d) == 10 && text($d) <= "2147483647")] / "0"+ ) number_end !("." !".")
+    / &(int32_hex / int32_oct / int32_bin) (hexinteger / octinteger / bininteger) number_end
+    / x:@decinteger [len($x) <= 9] number_end !("." !".")
+def Fconst: Fconst = t:fconst_text s -> $t
+def fconst_text: Fconst =
+    (real / numeric) number_end
+    / !iconst_text (hexinteger / octinteger / bininteger / decinteger) number_end !("." !".")
+
+// A positional parameter, $1.
+def PARAM: Param = t:param_text s -> $t
+def param_text: Param = "$" (?0-9)+ number_end
+
+// ---- Strings ----
+//
+// SCONST: 'text' ('' is a quote), E'text' with backslash escapes, U&'text' with an optional UESCAPE, and
+// dollar-quoted $tag$text$tag$. Adjacent strings that are separated by white space with a newline are
+// one string. The Sconst keeps the source text; Value decodes it.
+def sq_text = ((?^')+ / "''")*
+def e_text = ((?^\\')+ / "''" / e_escape)*
+def e_escape = "\\" ( "u" hex4 / "U" hex4 hex4 / "x" hex hex? / (?0-7) (?0-7)? (?0-7)? / (?^0-7uUx) / "x" )
+def hex = (?0-9a-fA-F)
+def hex4 = hex hex hex hex
+// white space with at least one newline, between the parts of one string
+def str_cont = ((? \t\f\v) / "--" (?^\n\r)*)* (?\n\r) ((? \t\n\r\f\v)+ / "--" (?^\n\r)* (?\n\r))*
+def Sconst: Sconst = t:sconst_text s -> $t
+def sconst_text: Sconst = sq_string / e_string / u_string / dollar_string
+def sq_string = "'" sq_text "'" (str_cont "'" sq_text "'")*
+def e_string = (?eE) "'" e_text "'" (str_cont "'" e_text "'")*
+def u_string = (?uU) "&'" sq_text "'" (str_cont "'" sq_text "'")*
+    (s (?uU)(?sS)(?cC)(?aA)(?pP)(?eE) !ident_cont s uescape_char)?
+def dollar_string = "$" t:dollar_tag "$" [dolq = text($t)] dollar_body "$" dollar_tag "$"
+def dollar_tag = (?A-Za-z_\u{80}-\u{10FFFF}) (?A-Za-z0-9_\u{80}-\u{10FFFF})* / _
+def dollar_body = ((?^$)+ / !dollar_end "$")*
+def dollar_end = "$" e:dollar_tag "$" [text($e) == dolq]
+// B'101' and X'1F'
+def Bconst: Bconst = t:bconst_text s -> $t
+def bconst_text: Bconst = (?bB) "'" (?^')* "'" (str_cont "'" (?^')* "'")*
+def Xconst: Xconst = t:xconst_text s -> $t
+def xconst_text: Xconst = (?xX) "'" (?^')* "'" (str_cont "'" (?^')* "'")*
+
+// ==== Names ====
+
+def name = ColId
+def attr_name = ColLabel
+def any_name: []Ident = first:ColId rest:(-DOT x:attr_name)* -> concat(list($first), map($rest, (r) => $r.x))
+def attrs: []Ident = xs:(-DOT x:attr_name)+ -> map($xs, (r) => $r.x)
+def name_list: []Ident = first:name rest:(-COMMA x:name)* -> concat(list($first), map($rest, (r) => $r.x))
+
+// func_name: a type_function_name, or ColId followed by attributes
+def func_name: []Ident = func_name_qualified / func_name_simple
+def func_name_qualified: []Ident = first:ColId rest:(-DOT x:attr_name)+ -> concat(list($first), map($rest, (r) => $r.x))
+def func_name_simple: []Ident = x:type_function_name -> list($x)
+
+// qualified_name: the RangeVar of one, two or three names
+def qualified_name: RangeVar = qualified_name3 / qualified_name2 / qualified_name1
+def qualified_name1: RangeVar = r:ColId
+    -> new RangeVar{Relname: $r, Inh: true, Relpersistence: "p"}
+def qualified_name2: RangeVar = &(ColId DOT) s:ColId -DOT r:attr_name
+    -> new RangeVar{Schemaname: $s, Relname: $r, Inh: true, Relpersistence: "p"}
+def qualified_name3: RangeVar = &(ColId DOT attr_name DOT) c:ColId -DOT s:attr_name -DOT r:attr_name
+    -> new RangeVar{Catalogname: $c, Schemaname: $s, Relname: $r, Inh: true, Relpersistence: "p"}
+def qualified_name_list: []RangeVar = first:qualified_name rest:(-COMMA x:qualified_name)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+
+// ==== Constants ====
+
+// AexprConst. The typed forms (a type name and a string) come after the literals.
+def AexprConst: Expr = iconst_expr / fconst_expr / sconst_expr / bconst_expr / xconst_expr / typed_const
+    / true_expr / false_expr / null_expr
+def iconst_expr: A_Const = v:Iconst -> new A_Const{Val: $v}
+def fconst_expr: A_Const = v:Fconst -> new A_Const{Val: $v}
+def sconst_expr: A_Const = v:Sconst -> new A_Const{Val: $v}
+def bconst_expr: A_Const = v:Bconst -> new A_Const{Val: $v}
+def xconst_expr: A_Const = v:Xconst -> new A_Const{Val: $v}
+def true_expr: A_Const = TRUE -> new A_Const{Val: new Boolean{Boolval: true}}
+def false_expr: A_Const = FALSE -> new A_Const{Val: new Boolean{Boolval: false}}
+def null_expr: A_Const = NULL -> new A_Const{Isnull: true}
+
+// A string cast to a type: type 'text', with the type a keyword, an interval or a name.
+def typed_const: TypeCast = interval_const / interval_prec_const / const_typename_const / func_modifiers_const / func_name_const
+def const_typename_const: TypeCast = [setof = false] [consttype = true] t:typename_core v:Sconst
+    -> new TypeCast{Arg: new A_Const{Val: $v}, TypeName: $t}
+def func_name_const: TypeCast = n:func_name v:Sconst
+    -> new TypeCast{Arg: new A_Const{Val: $v}, TypeName: new TypeName{Names: $n, Typemod: -1}}
+def func_modifiers_const: TypeCast = n:func_name LP a:expr_list RP v:Sconst
+    -> new TypeCast{Arg: new A_Const{Val: $v}, TypeName: new TypeName{Names: $n, Typmods: $a, Typemod: -1}}
+def interval_const: TypeCast = INTERVAL v:Sconst tm:interval_fields?
+    -> new TypeCast{Arg: new A_Const{Val: $v}, TypeName: new TypeName{Names: list(new String{Sval: "pg_catalog"}, new String{Sval: "interval"}), Typmods: concat($tm), Typemod: -1}}
+def interval_prec_const: TypeCast = INTERVAL -LP p:Iconst -RP v:Sconst
+    -> new TypeCast{Arg: new A_Const{Val: $v}, TypeName: new TypeName{Names: list(new String{Sval: "pg_catalog"}, new String{Sval: "interval"}), Typmods: list(new A_Const{Val: new Integer{Ival: 32767}}, new A_Const{Val: $p}), Typemod: -1}}
+
+// ==== Type names ====
+//
+// The raw parser builds the TypeName of a SimpleTypename and then sets arrayBounds and setof on it. Here
+// one rule, typename_core, matches every form of a type name and builds the node; the variable setof is
+// set by SETOF, and the variable consttype restricts the rule to the keyword types that may be followed
+// by a string constant (and removes the defaults for CHAR and BIT without length).
+
+def Typename: TypeName = typename_setof / typename_plain
+def typename_setof: TypeName = SETOF [setof = true] [consttype = false] t:typename_core -> $t
+def typename_plain: TypeName = [setof = false] [consttype = false] t:typename_core -> $t
+def SimpleTypename: TypeName = typename_plain
+def type_list: []TypeName = first:Typename rest:(-COMMA x:Typename)* -> concat(list($first), map($rest, (r) => $r.x))
+
+def typename_core: TypeName =
+    ( n:ty_int4 / n:ty_int2 / n:ty_int8 / n:ty_float4 / n:ty_float8 / n:ty_bool
+    / n:ty_numeric tm:opt_type_modifiers?
+    / n:ty_varbit tm:opt_type_modifiers?
+    / n:ty_bit tm:opt_type_modifiers
+    / n:ty_bit d:bit_default?
+    / n:ty_varchar tm:char_length?
+    / n:ty_bpchar tm:char_length
+    / n:ty_bpchar d:char_default?
+    / TIMESTAMP tm:time_precision? WITH TIME ZONE n:ty_timestamptz
+    / TIMESTAMP tm:time_precision? (WITHOUT TIME ZONE)? n:ty_timestamp
+    / TIME tm:time_precision? WITH TIME ZONE n:ty_timetz
+    / TIME tm:time_precision? (WITHOUT TIME ZONE)? n:ty_time
+    / n:ty_json
+    / [!consttype] INTERVAL n:ty_interval tm:interval_typmods?
+    / [!consttype] n:generic_name tm:opt_type_modifiers? )
+    ab:array_suffix?
+    -> new TypeName{Names: $n, Setof: setof, Typmods: concat($tm, $d), Typemod: -1, ArrayBounds: concat($ab)}
+
+def generic_name: []Ident = first:type_function_name rest:(-DOT x:attr_name)* -> concat(list($first), map($rest, (r) => $r.x))
+def opt_type_modifiers: []Expr = -LP l:expr_list -RP -> $l
+
+def ty_int4: []Str = (INT / INTEGER) -> list(new String{Sval: "pg_catalog"}, new String{Sval: "int4"})
+def ty_int2: []Str = SMALLINT -> list(new String{Sval: "pg_catalog"}, new String{Sval: "int2"})
+def ty_int8: []Str = BIGINT -> list(new String{Sval: "pg_catalog"}, new String{Sval: "int8"})
+def ty_bool: []Str = BOOLEAN -> list(new String{Sval: "pg_catalog"}, new String{Sval: "bool"})
+def ty_numeric: []Str = (DECIMAL / DEC / NUMERIC) -> list(new String{Sval: "pg_catalog"}, new String{Sval: "numeric"})
+def ty_json: []Str = JSON -> list(new String{Sval: "pg_catalog"}, new String{Sval: "json"})
+def ty_interval: []Str = _ -> list(new String{Sval: "pg_catalog"}, new String{Sval: "interval"})
+def ty_timestamp: []Str = _ -> list(new String{Sval: "pg_catalog"}, new String{Sval: "timestamp"})
+def ty_timestamptz: []Str = _ -> list(new String{Sval: "pg_catalog"}, new String{Sval: "timestamptz"})
+def ty_time: []Str = _ -> list(new String{Sval: "pg_catalog"}, new String{Sval: "time"})
+def ty_timetz: []Str = _ -> list(new String{Sval: "pg_catalog"}, new String{Sval: "timetz"})
+// REAL, FLOAT and FLOAT(p): the precision 1..24 is float4 and 25..53 float8 (the others are errors)
+def ty_float4: []Str = ty_real / ty_float_p24
+def ty_real: []Str = REAL -> list(new String{Sval: "pg_catalog"}, new String{Sval: "float4"})
+def ty_float_p24: []Str = FLOAT -LP &float_p24 Iconst -RP -> list(new String{Sval: "pg_catalog"}, new String{Sval: "float4"})
+def ty_float8: []Str = ty_double / ty_float_p53 / ty_float_plain
+def ty_double: []Str = DOUBLE PRECISION -> list(new String{Sval: "pg_catalog"}, new String{Sval: "float8"})
+def ty_float_p53: []Str = FLOAT -LP &float_p53 Iconst -RP -> list(new String{Sval: "pg_catalog"}, new String{Sval: "float8"})
+def ty_float_plain: []Str = FLOAT !LP -> list(new String{Sval: "pg_catalog"}, new String{Sval: "float8"})
+def float_p24 = "0"* ("1" (?0-9) / "2" (?0-4) / (?1-9)) !(?0-9_)
+def float_p53 = "0"* ("2" (?5-9) / (?34) (?0-9) / "5" (?0-3)) !(?0-9_)
+
+// BIT, BIT VARYING, CHAR, VARCHAR and their synonyms
+def ty_varbit: []Str = BIT VARYING -> list(new String{Sval: "pg_catalog"}, new String{Sval: "varbit"})
+def ty_bit: []Str = BIT -> list(new String{Sval: "pg_catalog"}, new String{Sval: "bit"})
+def bit_default: []Expr = [!consttype] _ -> list(new A_Const{Val: new Integer{Ival: 1}})
+def ty_varchar: []Str = ((CHARACTER / CHAR / NCHAR) VARYING / VARCHAR / NATIONAL (CHARACTER / CHAR) VARYING)
+    -> list(new String{Sval: "pg_catalog"}, new String{Sval: "varchar"})
+def ty_bpchar: []Str = (CHARACTER / CHAR / NCHAR / NATIONAL (CHARACTER / CHAR))
+    -> list(new String{Sval: "pg_catalog"}, new String{Sval: "bpchar"})
+def char_length: []Expr = -LP v:Iconst -RP -> list(new A_Const{Val: $v})
+def char_default: []Expr = [!consttype] _ -> list(new A_Const{Val: new Integer{Ival: 1}})
+def time_precision: []Expr = -LP v:Iconst -RP -> list(new A_Const{Val: $v})
+
+// Array bounds: [] and [n] after the type, or ARRAY and ARRAY[n]
+def array_suffix: []ArrayBound = [!consttype] x:(array_dims / array_keyword) -> $x
+def array_dims: []ArrayBound = xs:array_dim+ -> $xs
+def array_dim: ArrayBound = array_dim_unsized / array_dim_sized
+def array_dim_unsized: Integer = -LB -RB -> new Integer{Ival: -1}
+def array_dim_sized: Iconst = -LB n:Iconst -RB -> $n
+def array_keyword: []ArrayBound = array_keyword_sized / array_keyword_plain
+def array_keyword_sized: []ArrayBound = ARRAY -LB n:Iconst -RB -> list($n)
+def array_keyword_plain: []ArrayBound = ARRAY -> list(new Integer{Ival: -1})
+
+// The fields of an interval type, as a bit mask (INTERVAL_MASK of YEAR, MONTH, ... added together).
+// interval_typmods is the typmods of the type name (INTERVAL(p) is the full range with a precision).
+def interval_typmods: []Expr = interval_fields / interval_full_precision
+def interval_full_precision: []Expr = -LP p:Iconst -RP
+    -> list(new A_Const{Val: new Integer{Ival: 32767}}, new A_Const{Val: $p})
+def interval_fields: []Expr =
+    ( YEAR [m = 4] (TO MONTH [m = 6])?
+    / MONTH [m = 2]
+    / DAY [m = 8] (TO (HOUR [m = 1032] / MINUTE [m = 3080] / SECOND [m = 7176] p:interval_precision?))?
+    / HOUR [m = 1024] (TO (MINUTE [m = 3072] / SECOND [m = 7168] p:interval_precision?))?
+    / MINUTE [m = 2048] (TO SECOND [m = 6144] p:interval_precision?)?
+    / SECOND [m = 4096] p:interval_precision? )
+    -> concat(list(new A_Const{Val: new Integer{Ival: m}}), $p)
+def interval_precision: []Expr = -LP v:Iconst -RP -> list(new A_Const{Val: $v})
+
+// ==== Expressions ====
+//
+// a_expr and b_expr are Pratt expressions; their levels are the precedence declarations of gram.y, from
+// the loosest (OR) to the tightest (the :: cast). The operators that gram.y gives a precedence of their
+// own (+, -, <, ...) are written out; the others (Op) share a level. Things that the precedence of
+// bison decides for a LALR parser are decided here by the order of the alternatives and by the operand
+// of an operator: the operand of LIKE and BETWEEN is a_expr(opl), which parses only the operators that
+// bind tighter than they do (those of the level opl and above).
+
+def expr_list: []Expr = first:a_expr rest:(-COMMA x:a_expr)* -> concat(list($first), map($rest, (r) => $r.x))
+
+def a_expr: Expr = pratt {
+    operand overlaps_expr
+    operand c_expr
+    operand default_expr
+
+    level { infix left OR -> new BoolExpr{Boolop: "OR_EXPR", Args: list($lhs, $rhs)} }
+    level { infix left AND -> new BoolExpr{Boolop: "AND_EXPR", Args: list($lhs, $rhs)} }
+    level { prefix NOT -> new BoolExpr{Boolop: "NOT_EXPR", Args: list($rhs)} }
+
+    // IS NULL, IS TRUE, ... (they may follow each other) and IS DISTINCT FROM
+    level {
+        postfix IS NULL -> new NullTest{Arg: $lhs, Nulltesttype: "IS_NULL"}
+        postfix ISNULL -> new NullTest{Arg: $lhs, Nulltesttype: "IS_NULL"}
+        postfix IS NOT NULL -> new NullTest{Arg: $lhs, Nulltesttype: "IS_NOT_NULL"}
+        postfix NOTNULL -> new NullTest{Arg: $lhs, Nulltesttype: "IS_NOT_NULL"}
+        postfix IS TRUE -> new BooleanTest{Arg: $lhs, Booltesttype: "IS_TRUE"}
+        postfix IS NOT TRUE -> new BooleanTest{Arg: $lhs, Booltesttype: "IS_NOT_TRUE"}
+        postfix IS FALSE -> new BooleanTest{Arg: $lhs, Booltesttype: "IS_FALSE"}
+        postfix IS NOT FALSE -> new BooleanTest{Arg: $lhs, Booltesttype: "IS_NOT_FALSE"}
+        postfix IS UNKNOWN -> new BooleanTest{Arg: $lhs, Booltesttype: "IS_UNKNOWN"}
+        postfix IS NOT UNKNOWN -> new BooleanTest{Arg: $lhs, Booltesttype: "IS_NOT_UNKNOWN"}
+        infix none IS DISTINCT FROM -> new A_Expr{Kind: "AEXPR_DISTINCT", Name: list(new String{Sval: "="}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none IS NOT DISTINCT FROM -> new A_Expr{Kind: "AEXPR_NOT_DISTINCT", Name: list(new String{Sval: "="}), Lexpr: $lhs, Rexpr: $rhs}
+    }
+
+    level {
+        infix none LT -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "<"}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none GT -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: ">"}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none EQ -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "="}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none LESS_EQUALS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "<="}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none GREATER_EQUALS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: ">="}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none NOT_EQUALS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "<>"}), Lexpr: $lhs, Rexpr: $rhs}
+    }
+
+    // BETWEEN, IN, LIKE, ILIKE, SIMILAR TO: the operand is a_expr(opl), and a second operator of this
+    // level may not follow (they do not chain)
+    level {
+        postfix BETWEEN ASYMMETRIC? l:b_expr AND r:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_BETWEEN", Name: list(new String{Sval: "BETWEEN"}), Lexpr: $lhs, Rexpr: new NodeList{Items: list($l, $r)}}
+        postfix NOT BETWEEN ASYMMETRIC? l:b_expr AND r:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_NOT_BETWEEN", Name: list(new String{Sval: "NOT BETWEEN"}), Lexpr: $lhs, Rexpr: new NodeList{Items: list($l, $r)}}
+        postfix BETWEEN SYMMETRIC l:b_expr AND r:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_BETWEEN_SYM", Name: list(new String{Sval: "BETWEEN SYMMETRIC"}), Lexpr: $lhs, Rexpr: new NodeList{Items: list($l, $r)}}
+        postfix NOT BETWEEN SYMMETRIC l:b_expr AND r:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_NOT_BETWEEN_SYM", Name: list(new String{Sval: "NOT BETWEEN SYMMETRIC"}), Lexpr: $lhs, Rexpr: new NodeList{Items: list($l, $r)}}
+        postfix IN q:select_with_parens !between_level_op
+            -> new SubLink{SubLinkType: "ANY_SUBLINK", Testexpr: $lhs, Subselect: $q}
+        postfix NOT IN q:select_with_parens !between_level_op
+            -> new BoolExpr{Boolop: "NOT_EXPR", Args: list(new SubLink{SubLinkType: "ANY_SUBLINK", Testexpr: $lhs, Subselect: $q})}
+        postfix IN LP l:expr_list RP !between_level_op
+            -> new A_Expr{Kind: "AEXPR_IN", Name: list(new String{Sval: "="}), Lexpr: $lhs, Rexpr: new NodeList{Items: $l}}
+        postfix NOT IN LP l:expr_list RP !between_level_op
+            -> new A_Expr{Kind: "AEXPR_IN", Name: list(new String{Sval: "<>"}), Lexpr: $lhs, Rexpr: new NodeList{Items: $l}}
+        postfix LIKE r:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_LIKE", Name: list(new String{Sval: "~~"}), Lexpr: $lhs, Rexpr: $r}
+        postfix LIKE r:a_expr(opl) ESCAPE e:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_LIKE", Name: list(new String{Sval: "~~"}), Lexpr: $lhs, Rexpr: new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "like_escape"}), Args: list($r, $e), Funcformat: "COERCE_EXPLICIT_CALL"}}
+        postfix NOT LIKE r:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_LIKE", Name: list(new String{Sval: "!~~"}), Lexpr: $lhs, Rexpr: $r}
+        postfix NOT LIKE r:a_expr(opl) ESCAPE e:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_LIKE", Name: list(new String{Sval: "!~~"}), Lexpr: $lhs, Rexpr: new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "like_escape"}), Args: list($r, $e), Funcformat: "COERCE_EXPLICIT_CALL"}}
+        postfix ILIKE r:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_ILIKE", Name: list(new String{Sval: "~~*"}), Lexpr: $lhs, Rexpr: $r}
+        postfix ILIKE r:a_expr(opl) ESCAPE e:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_ILIKE", Name: list(new String{Sval: "~~*"}), Lexpr: $lhs, Rexpr: new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "like_escape"}), Args: list($r, $e), Funcformat: "COERCE_EXPLICIT_CALL"}}
+        postfix NOT ILIKE r:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_ILIKE", Name: list(new String{Sval: "!~~*"}), Lexpr: $lhs, Rexpr: $r}
+        postfix NOT ILIKE r:a_expr(opl) ESCAPE e:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_ILIKE", Name: list(new String{Sval: "!~~*"}), Lexpr: $lhs, Rexpr: new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "like_escape"}), Args: list($r, $e), Funcformat: "COERCE_EXPLICIT_CALL"}}
+        postfix SIMILAR TO r:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_SIMILAR", Name: list(new String{Sval: "~"}), Lexpr: $lhs, Rexpr: new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "similar_to_escape"}), Args: list($r), Funcformat: "COERCE_EXPLICIT_CALL"}}
+        postfix SIMILAR TO r:a_expr(opl) ESCAPE e:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_SIMILAR", Name: list(new String{Sval: "~"}), Lexpr: $lhs, Rexpr: new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "similar_to_escape"}), Args: list($r, $e), Funcformat: "COERCE_EXPLICIT_CALL"}}
+        postfix NOT SIMILAR TO r:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_SIMILAR", Name: list(new String{Sval: "!~"}), Lexpr: $lhs, Rexpr: new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "similar_to_escape"}), Args: list($r), Funcformat: "COERCE_EXPLICIT_CALL"}}
+        postfix NOT SIMILAR TO r:a_expr(opl) ESCAPE e:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_SIMILAR", Name: list(new String{Sval: "!~"}), Lexpr: $lhs, Rexpr: new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "similar_to_escape"}), Args: list($r, $e), Funcformat: "COERCE_EXPLICIT_CALL"}}
+    }
+
+    // Other operators; the postfix forms are a comparison operator followed by ANY, SOME or ALL and a
+    // subquery or a parenthesized expression.
+    level opl {
+        postfix o:subquery_Op (ANY / SOME) q:select_with_parens
+            -> new SubLink{SubLinkType: "ANY_SUBLINK", Testexpr: $lhs, OperName: $o, Subselect: $q}
+        postfix o:subquery_Op ALL q:select_with_parens
+            -> new SubLink{SubLinkType: "ALL_SUBLINK", Testexpr: $lhs, OperName: $o, Subselect: $q}
+        postfix o:subquery_Op (ANY / SOME) LP r:a_expr RP
+            -> new A_Expr{Kind: "AEXPR_OP_ANY", Name: $o, Lexpr: $lhs, Rexpr: $r}
+        postfix o:subquery_Op ALL LP r:a_expr RP
+            -> new A_Expr{Kind: "AEXPR_OP_ALL", Name: $o, Lexpr: $lhs, Rexpr: $r}
+        infix left o:qual_Op -> new A_Expr{Kind: "AEXPR_OP", Name: $o, Lexpr: $lhs, Rexpr: $rhs}
+        prefix o:qual_Op -> new A_Expr{Kind: "AEXPR_OP", Name: $o, Rexpr: $rhs}
+    }
+    level {
+        infix left PLUS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "+"}), Lexpr: $lhs, Rexpr: $rhs}
+        infix left MINUS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "-"}), Lexpr: $lhs, Rexpr: $rhs}
+    }
+    level {
+        infix left STAR -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "*"}), Lexpr: $lhs, Rexpr: $rhs}
+        infix left SLASH -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "/"}), Lexpr: $lhs, Rexpr: $rhs}
+        infix left PERCENT -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "%"}), Lexpr: $lhs, Rexpr: $rhs}
+    }
+    level { infix left CARET -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "^"}), Lexpr: $lhs, Rexpr: $rhs} }
+    level {
+        infix left AT TIME ZONE -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "timezone"}), Args: list($rhs, $lhs), Funcformat: "COERCE_SQL_SYNTAX"}
+        postfix AT LOCAL -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "timezone"}), Args: list($lhs), Funcformat: "COERCE_SQL_SYNTAX"}
+    }
+    level { postfix COLLATE n:any_name -> new CollateClause{Arg: $lhs, Collname: $n} }
+    level {
+        prefix PLUS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "+"}), Rexpr: $rhs}
+        prefix MINUS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "-"}), Rexpr: $rhs}
+    }
+    level { postfix TYPECAST t:Typename -> new TypeCast{Arg: $lhs, TypeName: $t} }
+}
+// An operator of the level of BETWEEN and the like: it may not follow another one
+def between_level_op = NOT? (BETWEEN / IN / LIKE / ILIKE / SIMILAR)
+
+// b_expr: the expressions that may appear where a_expr would be ambiguous (the bounds of BETWEEN, the
+// default of a column, ...). It has no AND, OR, NOT, IN, LIKE, COLLATE, AT or IS NULL.
+def b_expr: Expr = pratt {
+    operand c_expr
+
+    level {
+        infix none IS DISTINCT FROM -> new A_Expr{Kind: "AEXPR_DISTINCT", Name: list(new String{Sval: "="}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none IS NOT DISTINCT FROM -> new A_Expr{Kind: "AEXPR_NOT_DISTINCT", Name: list(new String{Sval: "="}), Lexpr: $lhs, Rexpr: $rhs}
+    }
+    level {
+        infix none LT -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "<"}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none GT -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: ">"}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none EQ -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "="}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none LESS_EQUALS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "<="}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none GREATER_EQUALS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: ">="}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none NOT_EQUALS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "<>"}), Lexpr: $lhs, Rexpr: $rhs}
+    }
+    level {
+        infix left o:qual_Op -> new A_Expr{Kind: "AEXPR_OP", Name: $o, Lexpr: $lhs, Rexpr: $rhs}
+        prefix o:qual_Op -> new A_Expr{Kind: "AEXPR_OP", Name: $o, Rexpr: $rhs}
+    }
+    level {
+        infix left PLUS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "+"}), Lexpr: $lhs, Rexpr: $rhs}
+        infix left MINUS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "-"}), Lexpr: $lhs, Rexpr: $rhs}
+    }
+    level {
+        infix left STAR -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "*"}), Lexpr: $lhs, Rexpr: $rhs}
+        infix left SLASH -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "/"}), Lexpr: $lhs, Rexpr: $rhs}
+        infix left PERCENT -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "%"}), Lexpr: $lhs, Rexpr: $rhs}
+    }
+    level { infix left CARET -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "^"}), Lexpr: $lhs, Rexpr: $rhs} }
+    level {
+        prefix PLUS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "+"}), Rexpr: $rhs}
+        prefix MINUS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "-"}), Rexpr: $rhs}
+    }
+    level { postfix TYPECAST t:Typename -> new TypeCast{Arg: $lhs, TypeName: $t} }
+}
+
+def default_expr: SetToDefault = DEFAULT -> new SetToDefault{}
+// row OVERLAPS row: both rows have exactly two elements
+def overlaps_expr: FuncCall = a:row_pair OVERLAPS b:row_pair
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "overlaps"}), Args: concat($a, $b), Funcformat: "COERCE_SQL_SYNTAX"}
+def row_pair: []Expr = row_pair_explicit / row_pair_implicit
+def row_pair_explicit: []Expr = ROW -LP x:a_expr -COMMA y:a_expr -RP -> list($x, $y)
+def row_pair_implicit: []Expr = -LP x:a_expr -COMMA y:a_expr -RP -> list($x, $y)
+
+// ---- Operators ----
+
+def math_text: OpTok = "<=" &plain_end / ">=" &plain_end / "<>" &plain_end / "!=" !opc
+    / "+" &plain_end / "-" &plain_end / "*" &plain_end / "/" &plain_end / "<" &plain_end / ">" &plain_end
+    / "=" &plain_end / "%" !opc / "^" !opc
+def MathOp: OpTok = t:math_text s -> $t
+def all_Op = Op / MathOp
+// OPERATOR(schema.op): a schema-qualified operator
+def any_operator: []Str = any_operator_qualified / any_operator_simple
+def any_operator_simple: []Str = x:all_Op -> list($x)
+def any_operator_qualified: []Str = first:ColId -DOT rest:any_operator -> concat(list($first), $rest)
+def qual_Op: []Str = qual_op_plain / qual_op_schema
+def qual_op_plain: []Str = o:Op -> list($o)
+def qual_op_schema: []Str = OPERATOR -LP n:any_operator -RP -> $n
+def qual_all_Op: []Str = qual_all_plain / qual_op_schema
+def qual_all_plain: []Str = o:all_Op -> list($o)
+def subquery_Op: []Str = qual_all_plain / qual_op_schema / op_like / op_not_like / op_ilike / op_not_ilike
+def op_like: []Str = LIKE -> list(new String{Sval: "~~"})
+def op_not_like: []Str = NOT LIKE -> list(new String{Sval: "!~~"})
+def op_ilike: []Str = ILIKE -> list(new String{Sval: "~~*"})
+def op_not_ilike: []Str = NOT ILIKE -> list(new String{Sval: "!~~*"})
+
+// ==== Primary expressions (c_expr) and function calls ====
+//
+// The alternatives are ordered so that the common cases (column references) are tried first and
+// guarded by what follows them: a name followed by "(" is a function call, and a name followed by a
+// string is a type name and a constant; the keyword forms (CASE, COALESCE, ...) and those come after.
+
+def c_expr: Expr = c_ident / c_paren / c_dollar / AexprConst
+def c_ident: Expr = &ident_start x:(columnref_plain_guarded / func_call_expr / bool_null_expr / special_expr / typed_const
+    / sconst_expr / bconst_expr / xconst_expr) -> $x
+def c_paren: Expr = &"(" x:(sublink_indirect / sublink_expr / implicit_row_expr / paren_indirect / paren_expr) -> $x
+def c_dollar: Expr = &"$" x:(param_indirect / param_plain / sconst_expr) -> $x
+
+// A column reference not followed by "(" or a string: the common case
+def columnref_plain_guarded: Expr = x:columnref !"(" !sconst_text -> $x
+
+def bool_null_expr: A_Const = true_expr / false_expr / null_expr
+
+def special_expr: Expr = case_expr / exists_expr / array_sublink / array_literal / explicit_row_expr / grouping_expr
+    / func_expr_common_subexpr
+
+// ---- Column references and indirection ----
+
+// A name, the fields selected from it and, when there is a subscript, A_Indirection applied to it
+def columnref: Expr = columnref_indirect / columnref_simple
+def columnref_simple: ColumnRef = c:ColId fs:field_sel* -> new ColumnRef{Fields: concat(list($c), $fs)}
+def columnref_indirect: A_Indirection = c:ColId fs:field_sel* ind:subscript_tail
+    -> new A_Indirection{Arg: new ColumnRef{Fields: concat(list($c), $fs)}, Indirection: $ind}
+def field_sel: ColField = dot_name / dot_star
+def dot_name: Ident = -DOT x:attr_name -> $x
+def dot_star: A_Star = -DOT STAR !(DOT / LB) -> new A_Star{}
+def indirection_el: Indirection = dot_name / dot_star / subscript
+def indirection: []Indirection = xs:indirection_el+ -> $xs
+def subscript_tail: []Indirection = x:subscript xs:indirection_el* -> concat(list($x), $xs)
+def subscript: A_Indices = subscript_index / subscript_slice
+def subscript_index: A_Indices = -LB e:a_expr -RB -> new A_Indices{Uidx: $e}
+def subscript_slice: A_Indices = -LB l:a_expr? -COLON u:a_expr? -RB -> new A_Indices{IsSlice: true, Lidx: $l, Uidx: $u}
+
+def param_indirect: A_Indirection = p:PARAM ind:indirection -> new A_Indirection{Arg: new ParamRef{Number: $p}, Indirection: $ind}
+def param_plain: ParamRef = p:PARAM -> new ParamRef{Number: $p}
+
+// ---- Parentheses, subqueries, rows ----
+
+def paren_indirect: A_Indirection = -LP e:a_expr -RP ind:indirection -> new A_Indirection{Arg: $e, Indirection: $ind}
+def paren_expr: Expr = -LP e:a_expr -RP -> $e
+def sublink_expr: SubLink = q:select_with_parens -> new SubLink{SubLinkType: "EXPR_SUBLINK", Subselect: $q}
+def sublink_indirect: A_Indirection = q:select_with_parens ind:indirection
+    -> new A_Indirection{Arg: new SubLink{SubLinkType: "EXPR_SUBLINK", Subselect: $q}, Indirection: $ind}
+def exists_expr: SubLink = EXISTS q:select_with_parens -> new SubLink{SubLinkType: "EXISTS_SUBLINK", Subselect: $q}
+def array_sublink: SubLink = ARRAY q:select_with_parens -> new SubLink{SubLinkType: "ARRAY_SUBLINK", Subselect: $q}
+def array_literal: A_ArrayExpr = ARRAY a:array_expr -> $a
+def array_expr: A_ArrayExpr = -LB l:(array_expr_list / expr_list)? -RB -> new A_ArrayExpr{Elements: concat($l)}
+def array_expr_list: []A_ArrayExpr = first:array_expr rest:(-COMMA x:array_expr)* -> concat(list($first), map($rest, (r) => $r.x))
+def explicit_row_expr: RowExpr = ROW -LP l:expr_list? -RP -> new RowExpr{Args: concat($l), RowFormat: "COERCE_EXPLICIT_CALL"}
+def implicit_row_expr: RowExpr = -LP first:a_expr rest:(-COMMA x:a_expr)+ -RP
+    -> new RowExpr{Args: concat(list($first), map($rest, (r) => $r.x)), RowFormat: "COERCE_IMPLICIT_CAST"}
+def grouping_expr: GroupingFunc = GROUPING -LP l:expr_list -RP -> new GroupingFunc{Args: $l}
+
+// ---- CASE ----
+
+def case_expr: CaseExpr = CASE a:a_expr? ws:when_clause+ d:case_default? END
+    -> new CaseExpr{Arg: $a, Args: $ws, Defresult: $d}
+def when_clause: CaseWhen = WHEN c:a_expr THEN r:a_expr -> new CaseWhen{Expr: $c, Result: $r}
+def case_default: Expr = ELSE e:a_expr -> $e
+
+// ---- Function calls ----
+
+def func_call_expr: Expr = f:func_expr !sconst_text -> $f
+def func_expr: Expr = func_call_over / json_agg_expr
+
+// The call with its WITHIN GROUP, FILTER and OVER clauses. The arguments are, in the forms of gram.y:
+// (), (*), (DISTINCT list), (ALL list), (VARIADIC e), (list), (list, VARIADIC e), each with an
+// optional ORDER BY.
+def func_call_over: FuncCall =
+    n:func_name -LP
+    ( st:STAR
+    / d:DISTINCT a1:func_arg_list o1:opt_sort_clause
+    / -ALL a2:func_arg_list o2:opt_sort_clause
+    / a3:variadic_arg o3:opt_sort_clause
+    / a4:func_arg_list v4:comma_variadic? o4:opt_sort_clause )?
+    -RP
+    wg:within_group_ok? fc:filter_ok? ov:over_ok?
+    [len($wg) == 0 || (len($o1) + len($o2) + len($o3) + len($o4) == 0 && len($d) == 0 && len($a3) + len($v4) == 0)]
+    -> new FuncCall{Funcname: $n, Args: concat($a1, $a2, $a3, $a4, $v4), AggOrder: concat($o1, $o2, $o3, $o4, $wg),
+        AggFilter: $fc, Over: $ov, AggWithinGroup: len($wg) > 0, AggStar: len($st) > 0, AggDistinct: len($d) > 0,
+        FuncVariadic: len($a3) + len($v4) > 0, Funcformat: "COERCE_EXPLICIT_CALL"}
+def variadic_arg: []Expr = VARIADIC e:func_arg_expr -> list($e)
+def comma_variadic: []Expr = -COMMA v:variadic_arg -> $v
+def func_arg_list: []Expr = first:func_arg_expr rest:(-COMMA x:func_arg_expr)* -> concat(list($first), map($rest, (r) => $r.x))
+def func_arg_list_opt: []Expr = l:func_arg_list? -> concat($l)
+def func_arg_expr: Expr = [windowless = false] x:(named_arg / a_expr) -> $x
+// WITHIN GROUP, FILTER and OVER are not allowed where a function call is windowless
+def within_group_ok: []SortBy = [!windowless] x:within_group_clause -> $x
+def filter_ok: Expr = [!windowless] x:filter_clause -> $x
+def over_ok: WindowDef = [!windowless] x:over_clause -> $x
+def named_arg: NamedArgExpr = n:param_name -(COLON_EQUALS / EQUALS_GREATER) e:a_expr -> new NamedArgExpr{Arg: $e, Name: $n, Argnumber: -1}
+def param_name = type_function_name
+
+def within_group_clause: []SortBy = WITHIN GROUP -LP s:sort_clause -RP -> $s
+def filter_clause: Expr = FILTER -LP WHERE e:a_expr -RP -> $e
+def over_clause: WindowDef = over_spec / over_name
+def over_spec: WindowDef = OVER &LP w:window_def -> $w
+def over_name: WindowDef = OVER n:ColId -> new WindowDef{Name: $n, FrameOptions: 1058}
+
+// ==== Functions with special syntax (func_expr_common_subexpr) ====
+
+def func_expr_common_subexpr: Expr =
+    collation_for / sql_value_function / cast_expr / extract_expr / normalize_expr / overlay_expr / position_expr
+    / substring_expr / treat_expr / trim_expr / nullif_expr / coalesce_expr / greatest_expr / least_expr
+    / merge_action_expr / xmljson_expr
+
+def collation_for: FuncCall = COLLATION FOR -LP e:a_expr -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "pg_collation_for"}), Args: list($e), Funcformat: "COERCE_SQL_SYNTAX"}
+
+def sql_value_function: Expr = svf_simple / svf_time_n / system_user_expr
+def svf_simple: SQLValueFunction = svf_date / svf_time / svf_timestamp / svf_localtime / svf_localtimestamp
+    / svf_current_role / svf_current_user / svf_session_user / svf_user / svf_catalog / svf_schema
+def svf_date: SQLValueFunction = CURRENT_DATE -> new SQLValueFunction{Op: "SVFOP_CURRENT_DATE"}
+def svf_time: SQLValueFunction = CURRENT_TIME !LP -> new SQLValueFunction{Op: "SVFOP_CURRENT_TIME"}
+def svf_timestamp: SQLValueFunction = CURRENT_TIMESTAMP !LP -> new SQLValueFunction{Op: "SVFOP_CURRENT_TIMESTAMP"}
+def svf_localtime: SQLValueFunction = LOCALTIME !LP -> new SQLValueFunction{Op: "SVFOP_LOCALTIME"}
+def svf_localtimestamp: SQLValueFunction = LOCALTIMESTAMP !LP -> new SQLValueFunction{Op: "SVFOP_LOCALTIMESTAMP"}
+def svf_current_role: SQLValueFunction = CURRENT_ROLE -> new SQLValueFunction{Op: "SVFOP_CURRENT_ROLE"}
+def svf_current_user: SQLValueFunction = CURRENT_USER -> new SQLValueFunction{Op: "SVFOP_CURRENT_USER"}
+def svf_session_user: SQLValueFunction = SESSION_USER -> new SQLValueFunction{Op: "SVFOP_SESSION_USER"}
+def svf_user: SQLValueFunction = USER -> new SQLValueFunction{Op: "SVFOP_USER"}
+def svf_catalog: SQLValueFunction = CURRENT_CATALOG -> new SQLValueFunction{Op: "SVFOP_CURRENT_CATALOG"}
+def svf_schema: SQLValueFunction = CURRENT_SCHEMA -> new SQLValueFunction{Op: "SVFOP_CURRENT_SCHEMA"}
+def svf_time_n: SQLValueFunction = svf_time_p / svf_timestamp_p / svf_localtime_p / svf_localtimestamp_p
+def svf_time_p: SQLValueFunction = CURRENT_TIME -LP n:Iconst -RP -> new SQLValueFunction{Op: "SVFOP_CURRENT_TIME_N", Typmod: $n}
+def svf_timestamp_p: SQLValueFunction = CURRENT_TIMESTAMP -LP n:Iconst -RP -> new SQLValueFunction{Op: "SVFOP_CURRENT_TIMESTAMP_N", Typmod: $n}
+def svf_localtime_p: SQLValueFunction = LOCALTIME -LP n:Iconst -RP -> new SQLValueFunction{Op: "SVFOP_LOCALTIME_N", Typmod: $n}
+def svf_localtimestamp_p: SQLValueFunction = LOCALTIMESTAMP -LP n:Iconst -RP -> new SQLValueFunction{Op: "SVFOP_LOCALTIMESTAMP_N", Typmod: $n}
+def system_user_expr: FuncCall = SYSTEM_USER
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "system_user"}), Funcformat: "COERCE_SQL_SYNTAX"}
+
+def cast_expr: TypeCast = CAST -LP e:a_expr AS t:Typename -RP -> new TypeCast{Arg: $e, TypeName: $t}
+def treat_expr: TreatExpr = TREAT -LP e:a_expr AS t:Typename -RP -> new TreatExpr{Arg: $e, TypeName: $t}
+
+def extract_expr: FuncCall = EXTRACT -LP a:extract_arg FROM e:a_expr -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "extract"}), Args: list($a, $e), Funcformat: "COERCE_SQL_SYNTAX"}
+def extract_arg: A_Const = ea_ident / ea_year / ea_month / ea_day / ea_hour / ea_minute / ea_second / ea_sconst
+def ea_ident: A_Const = x:IDENT -> new A_Const{Val: $x}
+def ea_sconst: A_Const = x:Sconst -> new A_Const{Val: $x}
+def ea_year: A_Const = YEAR -> new A_Const{Val: new String{Sval: "year"}}
+def ea_month: A_Const = MONTH -> new A_Const{Val: new String{Sval: "month"}}
+def ea_day: A_Const = DAY -> new A_Const{Val: new String{Sval: "day"}}
+def ea_hour: A_Const = HOUR -> new A_Const{Val: new String{Sval: "hour"}}
+def ea_minute: A_Const = MINUTE -> new A_Const{Val: new String{Sval: "minute"}}
+def ea_second: A_Const = SECOND -> new A_Const{Val: new String{Sval: "second"}}
+
+def normalize_expr: FuncCall = normalize_form / normalize_plain
+def normalize_plain: FuncCall = NORMALIZE -LP e:a_expr -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "normalize"}), Args: list($e), Funcformat: "COERCE_SQL_SYNTAX"}
+def normalize_form: FuncCall = NORMALIZE -LP e:a_expr -COMMA f:unicode_normal_form -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "normalize"}), Args: list($e, $f), Funcformat: "COERCE_SQL_SYNTAX"}
+def unicode_normal_form: A_Const = nf_c / nf_d / nf_kc / nf_kd
+def nf_c: A_Const = NFC -> new A_Const{Val: new String{Sval: "NFC"}}
+def nf_d: A_Const = NFD -> new A_Const{Val: new String{Sval: "NFD"}}
+def nf_kc: A_Const = NFKC -> new A_Const{Val: new String{Sval: "NFKC"}}
+def nf_kd: A_Const = NFKD -> new A_Const{Val: new String{Sval: "NFKD"}}
+
+// OVERLAY and SUBSTRING also accept a plain argument list, as a function named like them
+def overlay_expr: FuncCall = overlay_special / overlay_plain
+def overlay_special: FuncCall = OVERLAY -LP a:a_expr PLACING b:a_expr FROM c:a_expr d:overlay_for? -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "overlay"}), Args: concat(list($a, $b, $c), $d), Funcformat: "COERCE_SQL_SYNTAX"}
+def overlay_for: []Expr = FOR e:a_expr -> list($e)
+def overlay_plain: FuncCall = OVERLAY -LP l:func_arg_list_opt -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "overlay"}), Args: $l, Funcformat: "COERCE_EXPLICIT_CALL"}
+
+def position_expr: FuncCall = POSITION -LP a:b_expr IN b:b_expr -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "position"}), Args: list($b, $a), Funcformat: "COERCE_SQL_SYNTAX"}
+
+def substring_expr: FuncCall = substring_special / substring_plain
+def substring_special: FuncCall = SUBSTRING -LP l:substr_list -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "substring"}), Args: $l, Funcformat: "COERCE_SQL_SYNTAX"}
+def substring_plain: FuncCall = SUBSTRING -LP l:func_arg_list_opt -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "substring"}), Args: $l, Funcformat: "COERCE_EXPLICIT_CALL"}
+def substr_list: []Expr = substr_from_for / substr_for_from / substr_from / substr_for / substr_similar
+def substr_from_for: []Expr = a:a_expr FROM b:a_expr FOR c:a_expr -> list($a, $b, $c)
+def substr_for_from: []Expr = a:a_expr FOR b:a_expr FROM c:a_expr -> list($a, $c, $b)
+def substr_from: []Expr = a:a_expr FROM b:a_expr -> list($a, $b)
+def substr_for: []Expr = a:a_expr FOR b:a_expr
+    -> list($a, new A_Const{Val: new Integer{Ival: 1}}, new TypeCast{Arg: $b, TypeName: new TypeName{Names: list(new String{Sval: "pg_catalog"}, new String{Sval: "int4"}), Typemod: -1}})
+def substr_similar: []Expr = a:a_expr SIMILAR b:a_expr ESCAPE c:a_expr -> list($a, $b, $c)
+
+def trim_expr: FuncCall = trim_both / trim_leading / trim_trailing / trim_plain
+def trim_both: FuncCall = TRIM -LP BOTH l:trim_list -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "btrim"}), Args: $l, Funcformat: "COERCE_SQL_SYNTAX"}
+def trim_leading: FuncCall = TRIM -LP LEADING l:trim_list -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "ltrim"}), Args: $l, Funcformat: "COERCE_SQL_SYNTAX"}
+def trim_trailing: FuncCall = TRIM -LP TRAILING l:trim_list -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "rtrim"}), Args: $l, Funcformat: "COERCE_SQL_SYNTAX"}
+def trim_plain: FuncCall = TRIM -LP l:trim_list -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "btrim"}), Args: $l, Funcformat: "COERCE_SQL_SYNTAX"}
+def trim_list: []Expr = trim_a_from / trim_from / expr_list
+def trim_a_from: []Expr = a:a_expr FROM l:expr_list -> concat($l, list($a))
+def trim_from: []Expr = FROM l:expr_list -> $l
+
+def nullif_expr: A_Expr = NULLIF -LP a:a_expr -COMMA b:a_expr -RP
+    -> new A_Expr{Kind: "AEXPR_NULLIF", Name: list(new String{Sval: "="}), Lexpr: $a, Rexpr: $b}
+def coalesce_expr: CoalesceExpr = COALESCE -LP l:expr_list -RP -> new CoalesceExpr{Args: $l}
+def greatest_expr: MinMaxExpr = GREATEST -LP l:expr_list -RP -> new MinMaxExpr{Op: "IS_GREATEST", Args: $l}
+def least_expr: MinMaxExpr = LEAST -LP l:expr_list -RP -> new MinMaxExpr{Op: "IS_LEAST", Args: $l}
+def merge_action_expr: MergeSupportFunc = MERGE_ACTION -LP -RP -> new MergeSupportFunc{}
+
+// ==== SELECT ====
+//
+// In the raw parser the clauses after a query (ORDER BY, LIMIT, FOR UPDATE, WITH) are put into the node of
+// the query that precedes them. A PEG cannot change a node it has built, so select_core builds the node
+// once, with everything: the body (SELECT ..., VALUES, TABLE, a chain of UNION/INTERSECT/EXCEPT or a
+// parenthesized query) and the clauses that follow it. A set operation is built from its last operator:
+// ue_head and i_head are the chains before it (each step requires another operator to follow, so the
+// chain stops before the last one). The operands of a set operation have no clauses after them (the
+// variable tails_ok is false for them). A parenthesized query followed by clauses is a SelectStmt with only
+// Larg, which rawjson.go merges into one node as the raw parser does.
+
+def SelectStmt: SelectStmt = select_no_parens / select_with_parens
+def select_with_parens: SelectStmt = select_parens_plain / select_parens_nested
+def select_parens_plain: SelectStmt = -LP q:select_no_parens -RP -> $q
+def select_parens_nested: SelectStmt = -LP q:select_with_parens -RP -> $q
+def select_no_parens: SelectStmt = [tails_ok = true] x:select_core -> $x
+def select_operand: SelectStmt = [tails_ok = false] x:select_core -> $x
+// select_clause: an operand of a set operation
+def sop: SelectStmt = select_with_parens / select_operand
+// the intersect chain, whose operands bind tighter than UNION and EXCEPT
+def ic_operand: SelectStmt = i_chain
+def i_chain: SelectStmt = i_step / sop
+def i_step: SelectStmt = l:i_chain INTERSECT a:ALL? -DISTINCT? r:sop
+    -> new SelectStmt{Op: "SETOP_INTERSECT", All: len($a) > 0, Larg: $l, Rarg: $r}
+// the chains before the last operator
+def ue_head: SelectStmt = ue_union / ue_except / ue_first
+def ue_first: SelectStmt = x:ic_operand &(UNION / EXCEPT) -> $x
+def ue_union: SelectStmt = l:ue_head UNION a:ALL? -DISTINCT? r:ic_operand &(UNION / EXCEPT)
+    -> new SelectStmt{Op: "SETOP_UNION", All: len($a) > 0, Larg: $l, Rarg: $r}
+def ue_except: SelectStmt = l:ue_head EXCEPT a:ALL? -DISTINCT? r:ic_operand &(UNION / EXCEPT)
+    -> new SelectStmt{Op: "SETOP_EXCEPT", All: len($a) > 0, Larg: $l, Rarg: $r}
+def i_head: SelectStmt = i_head_step / i_head_first
+def i_head_first: SelectStmt = x:sop &INTERSECT -> $x
+def i_head_step: SelectStmt = l:i_head INTERSECT a:ALL? -DISTINCT? r:sop &INTERSECT
+    -> new SelectStmt{Op: "SETOP_INTERSECT", All: len($a) > 0, Larg: $l, Rarg: $r}
+
+def no_setop = [!tails_ok] / !(UNION / INTERSECT / EXCEPT)
+def with_if_tails: WithClause = [tails_ok] w:with_clause -> $w
+def sort_if_tails: []SortBy = [tails_ok] s:sort_clause -> $s
+def locking_if_tails: []LockingClause = [tails_ok] l:locking_clause -> $l
+
+def select_core: SelectStmt =
+    [k = "SETOP_NONE"] [ties = false] [paren = false]
+    w:with_if_tails?
+    ( SELECT (-ALL / d:DISTINCT don:distinct_on?)? tl:target_list? ic:into_clause? fr:from_clause? wh:where_clause?
+          (GROUP BY (gd:DISTINCT / -ALL)? gr:group_by_list)? hv:having_clause? wd:window_clause?
+          [len($d) == 0 || len($tl) > 0] no_setop
+    / VALUES vl:values_lists no_setop
+    / TABLE tf:table_from ts:table_star no_setop
+    / [tails_ok] l:ue_head (UNION [k = "SETOP_UNION"] / EXCEPT [k = "SETOP_EXCEPT"]) a:ALL? -DISTINCT? r:ic_operand
+    / [tails_ok] l:i_head INTERSECT [k = "SETOP_INTERSECT"] a:ALL? -DISTINCT? r:sop !(UNION / EXCEPT)
+    / [tails_ok] [paren = true] l:select_with_parens )
+    sc:sort_if_tails?
+    lk1:locking_if_tails?
+    ( [tails_ok]
+      ( ( LIMIT lc:limit_value / FETCH first_or_next (lc:fetch_one / lc:select_fetch_first_value) row_or_rows (ONLY / WITH TIES [ties = true]) )
+        ( OFFSET oc:offset_rows / OFFSET oc:select_offset_value )?
+      / ( OFFSET oc:offset_rows / OFFSET oc:select_offset_value )
+        ( LIMIT lc:limit_value / FETCH first_or_next (lc:fetch_one / lc:select_fetch_first_value) row_or_rows (ONLY / WITH TIES [ties = true]) )? )
+    )?
+    lk2:locking_if_tails?
+    [len($lk1) == 0 || len($lk2) == 0]
+    [!ties || paren || len($sc) > 0]
+    [!paren || len($w) + len($sc) + len($lk1) + len($lk2) + len($lc) + len($oc) > 0]
+    -> new SelectStmt{DistinctOn: concat($don), Distinct: len($d) > 0, TargetList: concat($tl, $ts), IntoClause: $ic, FromClause: concat($fr, $tf),
+        WhereClause: $wh, GroupClause: concat($gr), GroupDistinct: len($gd) > 0, HavingClause: $hv, WindowClause: concat($wd), ValuesLists: concat($vl), SortClause: concat($sc),
+        LimitOffset: $oc, LimitCount: $lc, LimitWithTies: ties, LockingClause: concat($lk1, $lk2), WithClause: $w,
+        Op: k, All: len($a) > 0, Larg: $l, Rarg: $r}
+
+// ---- Clauses of a query ----
+
+def distinct_on: []Expr = ON -LP l:expr_list -RP -> $l
+def target_list: []ResTarget = first:target_el rest:(-COMMA x:target_el)* -> concat(list($first), map($rest, (r) => $r.x))
+def target_el: ResTarget = target_as / target_bare / target_plain / target_star
+def target_as: ResTarget = e:a_expr AS n:ColLabel -> new ResTarget{Name: $n, Val: $e}
+def target_bare: ResTarget = e:a_expr n:BareColLabel -> new ResTarget{Name: $n, Val: $e}
+def target_plain: ResTarget = e:a_expr -> new ResTarget{Val: $e}
+def target_star: ResTarget = STAR -> new ResTarget{Val: new ColumnRef{Fields: list(new A_Star{})}}
+def table_star: []ResTarget = _ -> list(new ResTarget{Val: new ColumnRef{Fields: list(new A_Star{})}})
+def table_from: []TableRef = r:relation_expr -> list($r)
+
+def into_clause: IntoClause = INTO r:opt_temp_table_name -> new IntoClause{Rel: $r, OnCommit: "ONCOMMIT_NOOP"}
+// OptTempTableName: a table name with its persistence
+def opt_temp_table_name: RangeVar = temp_table_name / unlogged_table_name / table_table_name / qualified_name
+def temp_table_name: RangeVar =
+    (TEMPORARY / TEMP / LOCAL TEMPORARY / LOCAL TEMP / GLOBAL TEMPORARY / GLOBAL TEMP) TABLE? n:qualified_name
+    -> new RangeVar{Catalogname: $n.Catalogname, Schemaname: $n.Schemaname, Relname: $n.Relname, Inh: true, Relpersistence: "t"}
+def unlogged_table_name: RangeVar = UNLOGGED TABLE? n:qualified_name
+    -> new RangeVar{Catalogname: $n.Catalogname, Schemaname: $n.Schemaname, Relname: $n.Relname, Inh: true, Relpersistence: "u"}
+def table_table_name: RangeVar = TABLE n:qualified_name -> $n
+
+def from_clause: []TableRef = FROM l:from_list -> $l
+def from_list: []TableRef = first:table_ref rest:(-COMMA x:table_ref)* -> concat(list($first), map($rest, (r) => $r.x))
+def where_clause: Expr = WHERE e:a_expr -> $e
+def having_clause: Expr = HAVING e:a_expr -> $e
+
+def group_by_list: []Expr = first:group_by_item rest:(-COMMA x:group_by_item)* -> concat(list($first), map($rest, (r) => $r.x))
+def group_by_item: Expr = grouping_set_empty / rollup_clause / cube_clause / grouping_sets_clause / a_expr
+def grouping_set_empty: GroupingSet = -LP -RP -> new GroupingSet{Kind: "GROUPING_SET_EMPTY"}
+def rollup_clause: GroupingSet = ROLLUP -LP l:expr_list -RP -> new GroupingSet{Kind: "GROUPING_SET_ROLLUP", Content: $l}
+def cube_clause: GroupingSet = CUBE -LP l:expr_list -RP -> new GroupingSet{Kind: "GROUPING_SET_CUBE", Content: $l}
+def grouping_sets_clause: GroupingSet = GROUPING SETS -LP l:group_by_list -RP -> new GroupingSet{Kind: "GROUPING_SET_SETS", Content: $l}
+
+// ---- ORDER BY, LIMIT, FOR UPDATE ----
+
+def sort_clause: []SortBy = ORDER BY l:sortby_list -> $l
+def opt_sort_clause: []SortBy = l:sort_clause? -> concat($l)
+def sortby_list: []SortBy = first:sortby rest:(-COMMA x:sortby)* -> concat(list($first), map($rest, (r) => $r.x))
+def sortby: SortBy = sortby_using / sortby_dir
+def sortby_using: SortBy = [n = "SORTBY_NULLS_DEFAULT"] e:a_expr USING o:qual_all_Op (NULLS FIRST [n = "SORTBY_NULLS_FIRST"] / NULLS LAST [n = "SORTBY_NULLS_LAST"])?
+    -> new SortBy{Node: $e, SortbyDir: "SORTBY_USING", SortbyNulls: n, UseOp: $o}
+def sortby_dir: SortBy = [d = "SORTBY_DEFAULT"] [n = "SORTBY_NULLS_DEFAULT"] e:a_expr
+    (ASC [d = "SORTBY_ASC"] / DESC [d = "SORTBY_DESC"])? (NULLS FIRST [n = "SORTBY_NULLS_FIRST"] / NULLS LAST [n = "SORTBY_NULLS_LAST"])?
+    -> new SortBy{Node: $e, SortbyDir: d, SortbyNulls: n}
+
+def limit_value: Expr = a_expr / limit_all
+def limit_all: A_Const = ALL -> new A_Const{Isnull: true}
+def select_offset_value: Expr = a_expr
+def offset_rows: Expr = x:select_fetch_first_value row_or_rows -> $x
+def fetch_one: A_Const = &((ROW / ROWS) (ONLY / WITH TIES)) _ -> new A_Const{Val: new Integer{Ival: 1}}
+// FETCH FIRST n ROWS ONLY: a c_expr or a signed number
+def select_fetch_first_value: Expr = c_expr / signed_fetch_value
+def signed_fetch_value: A_Expr = signed_plus / signed_minus
+def signed_plus: A_Expr = PLUS v:i_or_f_const -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "+"}), Rexpr: $v}
+def signed_minus: A_Expr = MINUS v:i_or_f_const -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "-"}), Rexpr: $v}
+def i_or_f_const: A_Const = iconst_expr / fconst_expr
+def row_or_rows = ROW / ROWS
+def first_or_next = FIRST / NEXT
+
+def locking_clause: []LockingClause = for_locking_items / for_read_only
+def for_read_only: []LockingClause = FOR READ ONLY -> list()
+def for_locking_items: []LockingClause = xs:for_locking_item+ -> $xs
+def for_locking_item: LockingClause = [st = "LCS_FORUPDATE"] [wp = "LockWaitBlock"]
+    ( FOR UPDATE / FOR NO KEY UPDATE [st = "LCS_FORNOKEYUPDATE"] / FOR SHARE [st = "LCS_FORSHARE"] / FOR KEY SHARE [st = "LCS_FORKEYSHARE"] )
+    rels:locked_rels? (NOWAIT [wp = "LockWaitError"] / SKIP LOCKED [wp = "LockWaitSkip"])?
+    -> new LockingClause{LockedRels: concat($rels), Strength: st, WaitPolicy: wp}
+def locked_rels: []RangeVar = OF l:locked_rel_list -> $l
+def locked_rel_list: []RangeVar = qualified_name_list
+
+def values_lists: []NodeList = first:values_row rest:(-COMMA x:values_row)* -> concat(list($first), map($rest, (r) => $r.x))
+def values_row: NodeList = -LP l:expr_list -RP -> new NodeList{Items: $l}
+
+// ---- WITH ----
+
+def with_clause: WithClause = WITH r:RECURSIVE? l:cte_list -> new WithClause{Ctes: $l, Recursive: len($r) > 0}
+def opt_with_clause: WithClause = with_clause
+def cte_list: []CommonTableExpr = first:common_table_expr rest:(-COMMA x:common_table_expr)* -> concat(list($first), map($rest, (r) => $r.x))
+def common_table_expr: CommonTableExpr = [mat = "CTEMaterializeDefault"] n:name cols:opt_name_list? AS (MATERIALIZED [mat = "CTEMaterializeAlways"] / NOT MATERIALIZED [mat = "CTEMaterializeNever"])?
+    -LP q:PreparableStmt -RP s:search_clause? c:cycle_clause?
+    -> new CommonTableExpr{Ctename: $n, Aliascolnames: concat($cols), Ctematerialized: mat, Ctequery: $q, SearchClause: $s, CycleClause: $c}
+def opt_name_list: []Ident = -LP l:name_list -RP -> $l
+def search_clause: CTESearchClause = search_depth / search_breadth
+def search_depth: CTESearchClause = SEARCH DEPTH FIRST BY l:column_list SET n:ColId
+    -> new CTESearchClause{SearchColList: $l, SearchBreadthFirst: false, SearchSeqColumn: $n}
+def search_breadth: CTESearchClause = SEARCH BREADTH FIRST BY l:column_list SET n:ColId
+    -> new CTESearchClause{SearchColList: $l, SearchBreadthFirst: true, SearchSeqColumn: $n}
+def column_list: []Ident = first:ColId rest:(-COMMA x:ColId)* -> concat(list($first), map($rest, (r) => $r.x))
+def cycle_clause: CTECycleClause = cycle_values / cycle_plain
+def cycle_values: CTECycleClause = CYCLE l:column_list SET m:ColId TO v:AexprConst DEFAULT d:AexprConst USING p:ColId
+    -> new CTECycleClause{CycleColList: $l, CycleMarkColumn: $m, CycleMarkValue: $v, CycleMarkDefault: $d, CyclePathColumn: $p}
+def cycle_plain: CTECycleClause = CYCLE l:column_list SET m:ColId USING p:ColId
+    -> new CTECycleClause{CycleColList: $l, CycleMarkColumn: $m, CycleMarkValue: new A_Const{Val: new Boolean{Boolval: true}}, CycleMarkDefault: new A_Const{Val: new Boolean{Boolval: false}}, CyclePathColumn: $p}
+
+// ---- FROM items ----
+
+// A table reference: a table_primary followed by joins, folded to the left. The right operand of
+// CROSS JOIN and NATURAL JOIN is a table_primary, that of a join with ON or USING any table_ref (in
+// "a JOIN b JOIN c ON x ON y" the second JOIN belongs to b). A join part is a JoinExpr without its left
+// operand.
+def table_ref: TableRef = first:table_primary rest:join_part*
+    -> foldl($first, $rest, (acc, i) => new JoinExpr{Jointype: $i.Jointype, IsNatural: $i.IsNatural, Larg: $acc, Rarg: $i.Rarg, UsingClause: $i.UsingClause, JoinUsingAlias: $i.JoinUsingAlias, Quals: $i.Quals})
+// joined_table: a table_ref that has at least one join
+def joined_table: JoinExpr = first:table_primary p:join_part rest:join_part*
+    -> foldl(new JoinExpr{Jointype: $p.Jointype, IsNatural: $p.IsNatural, Larg: $first, Rarg: $p.Rarg, UsingClause: $p.UsingClause, JoinUsingAlias: $p.JoinUsingAlias, Quals: $p.Quals},
+        $rest, (acc, i) => new JoinExpr{Jointype: $i.Jointype, IsNatural: $i.IsNatural, Larg: $acc, Rarg: $i.Rarg, UsingClause: $i.UsingClause, JoinUsingAlias: $i.JoinUsingAlias, Quals: $i.Quals})
+def join_part: JoinExpr = join_cross / join_natural / join_qual
+def join_cross: JoinExpr = CROSS JOIN r:table_primary -> new JoinExpr{Jointype: "JOIN_INNER", Rarg: $r}
+def join_qual: JoinExpr = [jt = "JOIN_INNER"]
+    (FULL [jt = "JOIN_FULL"] OUTER? / LEFT [jt = "JOIN_LEFT"] OUTER? / RIGHT [jt = "JOIN_RIGHT"] OUTER? / INNER)? JOIN r:table_ref
+    (ON qe:a_expr / USING -LP un:name_list -RP ua:join_using_alias?)
+    -> new JoinExpr{Jointype: jt, Rarg: $r, UsingClause: concat($un), JoinUsingAlias: $ua, Quals: $qe}
+def join_using_alias: Alias = AS n:ColId -> new Alias{Aliasname: $n}
+def join_natural: JoinExpr = [jt = "JOIN_INNER"] NATURAL
+    (FULL [jt = "JOIN_FULL"] OUTER? / LEFT [jt = "JOIN_LEFT"] OUTER? / RIGHT [jt = "JOIN_RIGHT"] OUTER? / INNER)? JOIN r:table_primary
+    -> new JoinExpr{Jointype: jt, IsNatural: true, Rarg: $r}
+
+def table_primary: TableRef = relation_table / sample_table / func_table_ref / subselect_table / paren_join_alias / paren_join / xmljson_table
+
+// relation_expr: a table name, with * (the same as without it) or ONLY
+def relation_expr: RangeVar = rel_only_paren / rel_only / rel_plain
+def rel_plain: RangeVar = r:qualified_name -STAR? -> $r
+def rel_only: RangeVar = ONLY n:qualified_name
+    -> new RangeVar{Catalogname: $n.Catalogname, Schemaname: $n.Schemaname, Relname: $n.Relname, Inh: false, Relpersistence: "p"}
+def rel_only_paren: RangeVar = ONLY -LP n:qualified_name -RP
+    -> new RangeVar{Catalogname: $n.Catalogname, Schemaname: $n.Schemaname, Relname: $n.Relname, Inh: false, Relpersistence: "p"}
+def relation_expr_list: []RangeVar = first:relation_expr rest:(-COMMA x:relation_expr)* -> concat(list($first), map($rest, (r) => $r.x))
+// relation_expr opt_alias_clause
+def relation_alias: RangeVar = r:relation_expr !"(" a:alias_clause?
+    -> new RangeVar{Catalogname: $r.Catalogname, Schemaname: $r.Schemaname, Relname: $r.Relname, Inh: $r.Inh, Relpersistence: $r.Relpersistence, Alias: $a}
+def relation_table: RangeVar = r:relation_alias !TABLESAMPLE -> $r
+def sample_table: RangeTableSample = r:relation_alias TABLESAMPLE m:func_name -LP a:expr_list -RP rp:repeatable_clause?
+    -> new RangeTableSample{Relation: $r, Method: $m, Args: $a, Repeatable: $rp}
+def repeatable_clause: Expr = REPEATABLE -LP e:a_expr -RP -> $e
+
+def subselect_table: RangeSubselect = lat:LATERAL? q:select_with_parens a:alias_clause?
+    -> new RangeSubselect{Lateral: len($lat) > 0, Subquery: $q, Alias: $a}
+def paren_join: JoinExpr = -LP j:joined_table -RP -> $j
+def paren_join_alias: JoinExpr = -LP j:joined_table -RP a:alias_clause
+    -> new JoinExpr{Jointype: $j.Jointype, IsNatural: $j.IsNatural, Larg: $j.Larg, Rarg: $j.Rarg, UsingClause: $j.UsingClause, JoinUsingAlias: $j.JoinUsingAlias, Quals: $j.Quals, Alias: $a}
+
+def alias_clause: Alias = -AS? n:ColId cl:alias_cols? -> new Alias{Aliasname: $n, Colnames: concat($cl)}
+def alias_cols: []Ident = -LP l:name_list -RP -> $l
+def alias_name_only: Alias = n:ColId -> new Alias{Aliasname: $n}
+
+// Function calls in FROM: func_expr_windowless with WITH ORDINALITY and an alias or a column list.
+def func_table_ref: RangeFunction = func_table_plain / func_table_rows_from
+def func_table_plain: RangeFunction = lat:LATERAL? f:func_expr_windowless o:with_ordinality?
+    ( al:alias_clause / -AS -LP cd:table_func_element_list -RP / -AS al:alias_name_only -LP cd:table_func_element_list -RP / al:alias_name_only -LP cd:table_func_element_list -RP )?
+    -> new RangeFunction{Lateral: len($lat) > 0, Ordinality: len($o) > 0, Functions: list(new RangeFuncItem{Func: $f}), Alias: $al, Coldeflist: concat($cd)}
+def func_table_rows_from: RangeFunction = lat:LATERAL? ROWS FROM -LP l:rowsfrom_list -RP o:with_ordinality?
+    ( al:alias_clause / -AS -LP cd:table_func_element_list -RP / -AS al:alias_name_only -LP cd:table_func_element_list -RP / al:alias_name_only -LP cd:table_func_element_list -RP )?
+    -> new RangeFunction{Lateral: len($lat) > 0, Ordinality: len($o) > 0, IsRowsfrom: true, Functions: $l, Alias: $al, Coldeflist: concat($cd)}
+def with_ordinality = WITH ORDINALITY
+def rowsfrom_list: []RangeFuncItem = first:rowsfrom_item rest:(-COMMA x:rowsfrom_item)* -> concat(list($first), map($rest, (r) => $r.x))
+def rowsfrom_item: RangeFuncItem = f:func_expr_windowless cd:rowsfrom_coldef? -> new RangeFuncItem{Func: $f, Coldeflist: concat($cd)}
+def rowsfrom_coldef: []ColumnDef = AS -LP l:table_func_element_list -RP -> $l
+def table_func_element_list: []ColumnDef = first:table_func_element rest:(-COMMA x:table_func_element)* -> concat(list($first), map($rest, (r) => $r.x))
+def table_func_element: ColumnDef = n:ColId t:Typename c:opt_collate_clause? -> new ColumnDef{Colname: $n, TypeName: $t, CollClause: $c, IsLocal: true}
+def opt_collate_clause: CollateClause = COLLATE n:any_name -> new CollateClause{Collname: $n}
+
+// func_expr_windowless: a function call without WITHIN GROUP, FILTER and OVER
+def func_expr_windowless: Expr = [windowless = true] f:func_expr_w -> $f
+def func_expr_w: Expr = func_call_over / func_expr_common_subexpr / json_agg_expr
+
+// ---- Windows ----
+
+def window_clause: []WindowDef = WINDOW l:window_definition_list -> $l
+def window_definition_list: []WindowDef = first:window_definition rest:(-COMMA x:window_definition)* -> concat(list($first), map($rest, (r) => $r.x))
+def window_definition: WindowDef = &(ColId AS) w:window_def -> $w
+
+// A window specification, with its name in a WINDOW clause, with the frame options of frame_extent
+// computed in the variable fo: the bits of FRAMEOPTION_* of parsenodes.h. fm is the unit of the frame
+// (RANGE, ROWS or GROUPS, with FRAMEOPTION_NONDEFAULT), fs and fe the bits of its start and its end.
+// The checks are those of frame_extent.
+def window_def: WindowDef =
+    wn:window_name_as?
+    -LP rn:existing_window_name? pc:partition_by? oc:opt_sort_clause
+    [fo = 1058]
+    ( ( RANGE [fm = 3] / ROWS [fm = 5] / GROUPS [fm = 9] )
+      ( BETWEEN
+        ( UNBOUNDED PRECEDING [fs = 32] / UNBOUNDED FOLLOWING [fs = 128] / CURRENT ROW [fs = 512]
+        / so:a_expr PRECEDING [fs = 2048] / so:a_expr FOLLOWING [fs = 8192] )
+        AND
+        ( UNBOUNDED PRECEDING [fe = 64] / UNBOUNDED FOLLOWING [fe = 256] / CURRENT ROW [fe = 1024]
+        / eo:a_expr PRECEDING [fe = 4096] / eo:a_expr FOLLOWING [fe = 16384] )
+        [fs != 128] [fe != 64] [!(fs == 512 && fe == 4096)] [!(fs == 8192 && (fe == 4096 || fe == 1024))]
+        [fo = fm + 16 + fs + fe]
+      / ( UNBOUNDED PRECEDING [fs = 32] / UNBOUNDED FOLLOWING [fs = 128] / CURRENT ROW [fs = 512]
+        / so:a_expr PRECEDING [fs = 2048] / so:a_expr FOLLOWING [fs = 8192] )
+        [fs != 128] [fs != 8192] [fo = fm + fs + 1024] )
+      ( EXCLUDE CURRENT ROW [fo = fo + 32768] / EXCLUDE GROUP [fo = fo + 65536] / EXCLUDE TIES [fo = fo + 131072] / EXCLUDE NO OTHERS )?
+    )?
+    -RP
+    -> new WindowDef{Name: $wn, Refname: $rn, PartitionClause: concat($pc), OrderClause: $oc, FrameOptions: fo, StartOffset: $so, EndOffset: $eo}
+def window_name_as: Ident = n:ColId AS -> $n
+// PARTITION, RANGE, ROWS and GROUPS start the specification, they are not the name of an existing window
+def existing_window_name: Ident = !(PARTITION / RANGE / ROWS / GROUPS) n:ColId -> $n
+def partition_by: []Expr = PARTITION BY l:expr_list -> $l
+
+// ==== INSERT, UPDATE, DELETE, MERGE ====
+
+def PreparableStmt: DmlStmt = stmt_dml
+
+def InsertStmt: InsertStmt = [ov = ""] w:with_clause? INSERT INTO t:insert_target
+    ( c:insert_columns? (OVERRIDING (USER [ov = "OVERRIDING_USER_VALUE"] / SYSTEM [ov = "OVERRIDING_SYSTEM_VALUE"]) VALUE)? sel:SelectStmt
+    / DEFAULT VALUES )
+    oc:on_conflict_clause? rt:returning_clause?
+    -> new InsertStmt{Relation: $t, Cols: concat($c), SelectStmt: $sel, OnConflictClause: $oc, ReturningClause: $rt, WithClause: $w, Override: ov}
+def insert_target: RangeVar = qualified_name_as / qualified_name
+def qualified_name_as: RangeVar = n:qualified_name AS a:ColId
+    -> new RangeVar{Catalogname: $n.Catalogname, Schemaname: $n.Schemaname, Relname: $n.Relname, Inh: true, Relpersistence: "p", Alias: new Alias{Aliasname: $a}}
+def insert_columns: []ResTarget = -LP l:insert_column_list -RP -> $l
+def insert_column_list: []ResTarget = first:set_target rest:(-COMMA x:set_target)* -> concat(list($first), map($rest, (r) => $r.x))
+// set_target and insert_column_item: a column with an indirection
+def set_target: ResTarget = n:ColId ind:indirection? -> new ResTarget{Name: $n, Indirection: concat($ind)}
+
+def on_conflict_clause: OnConflictClause = on_conflict_update / on_conflict_nothing
+def on_conflict_update: OnConflictClause = ON CONFLICT i:conf_expr? DO UPDATE SET l:set_clause_list w:where_clause?
+    -> new OnConflictClause{Action: "ONCONFLICT_UPDATE", Infer: $i, TargetList: $l, WhereClause: $w}
+def on_conflict_nothing: OnConflictClause = ON CONFLICT i:conf_expr? DO NOTHING
+    -> new OnConflictClause{Action: "ONCONFLICT_NOTHING", Infer: $i}
+def conf_expr: InferClause = conf_index / conf_constraint
+def conf_index: InferClause = -LP l:index_params -RP w:where_clause? -> new InferClause{IndexElems: $l, WhereClause: $w}
+def conf_constraint: InferClause = ON CONSTRAINT n:name -> new InferClause{Conname: $n}
+
+def returning_clause: ReturningClause = RETURNING o:returning_with? l:target_list -> new ReturningClause{Options: concat($o), Exprs: $l}
+def returning_with: []ReturningOption = WITH -LP first:returning_option rest:(-COMMA x:returning_option)* -RP
+    -> concat(list($first), map($rest, (r) => $r.x))
+def returning_option: ReturningOption = (OLD [k = "RETURNING_OPTION_OLD"] / NEW [k = "RETURNING_OPTION_NEW"]) AS n:ColId
+    -> new ReturningOption{Option: k, Value: $n}
+
+def DeleteStmt: DeleteStmt = w:with_clause? DELETE FROM r:relation_expr_opt_alias u:using_clause? wh:where_or_current_clause? rt:returning_clause?
+    -> new DeleteStmt{Relation: $r, UsingClause: concat($u), WhereClause: $wh, ReturningClause: $rt, WithClause: $w}
+def using_clause: []TableRef = USING l:from_list -> $l
+def where_or_current_clause: Expr = where_clause / where_current_of
+def where_current_of: CurrentOfExpr = WHERE CURRENT OF n:cursor_name -> new CurrentOfExpr{CursorName: $n}
+def cursor_name = name
+// relation_expr opt_alias_clause for UPDATE and DELETE: [AS] name; the name is not SET without AS
+def relation_expr_opt_alias: RangeVar = r:relation_expr a:dml_alias?
+    -> new RangeVar{Catalogname: $r.Catalogname, Schemaname: $r.Schemaname, Relname: $r.Relname, Inh: $r.Inh, Relpersistence: $r.Relpersistence, Alias: $a}
+def dml_alias: Alias = (AS / !SET) n:ColId -> new Alias{Aliasname: $n}
+
+def UpdateStmt: UpdateStmt = w:with_clause? UPDATE r:relation_expr_opt_alias SET l:set_clause_list f:from_clause? wh:where_or_current_clause? rt:returning_clause?
+    -> new UpdateStmt{Relation: $r, TargetList: $l, FromClause: concat($f), WhereClause: $wh, ReturningClause: $rt, WithClause: $w}
+def set_clause_list: []ResTarget = first:set_clause rest:(-COMMA x:set_clause)* -> foldl($first, $rest, (acc, i) => concat($acc, $i.x))
+def set_clause: []ResTarget = set_clause_single / set_clause_multi
+def set_clause_single: []ResTarget = t:set_target -EQ e:a_expr -> list(new ResTarget{Name: $t.Name, Indirection: $t.Indirection, Val: $e})
+// (a, b) = expr: every target gets a MultiAssignRef with its position
+def set_clause_multi: []ResTarget = -LP ts:insert_column_list -RP -EQ e:a_expr
+    -> foldl(list(), $ts, (acc, t) => concat($acc, list(new ResTarget{Name: $t.Name, Indirection: $t.Indirection, Val: new MultiAssignRef{Source: $e, Colno: len($acc) + 1, Ncolumns: len($ts)}})))
+
+def MergeStmt: MergeStmt = w:with_clause? MERGE INTO r:relation_expr_opt_alias USING s:table_ref ON c:a_expr l:merge_when_clause+ rt:returning_clause?
+    -> new MergeStmt{Relation: $r, SourceRelation: $s, JoinCondition: $c, MergeWhenClauses: $l, ReturningClause: $rt, WithClause: $w}
+def merge_when_clause: MergeWhenClause = merge_update / merge_delete / merge_insert / merge_nothing
+def merge_update: MergeWhenClause = WHEN (MATCHED [mk = "MERGE_WHEN_MATCHED"] / NOT MATCHED BY SOURCE [mk = "MERGE_WHEN_NOT_MATCHED_BY_SOURCE"])
+    c:merge_cond? THEN UPDATE SET l:set_clause_list
+    -> new MergeWhenClause{MatchKind: mk, CommandType: "CMD_UPDATE", Override: "OVERRIDING_NOT_SET", Condition: $c, TargetList: $l}
+def merge_delete: MergeWhenClause = WHEN (MATCHED [mk = "MERGE_WHEN_MATCHED"] / NOT MATCHED BY SOURCE [mk = "MERGE_WHEN_NOT_MATCHED_BY_SOURCE"])
+    c:merge_cond? THEN DELETE
+    -> new MergeWhenClause{MatchKind: mk, CommandType: "CMD_DELETE", Override: "OVERRIDING_NOT_SET", Condition: $c}
+def merge_insert: MergeWhenClause = [ov = "OVERRIDING_NOT_SET"] WHEN NOT MATCHED (BY TARGET)? c:merge_cond? THEN INSERT
+    cols:insert_columns? (OVERRIDING (USER [ov = "OVERRIDING_USER_VALUE"] / SYSTEM [ov = "OVERRIDING_SYSTEM_VALUE"]) VALUE)?
+    ( VALUES -LP v:expr_list -RP / DEFAULT VALUES )
+    -> new MergeWhenClause{MatchKind: "MERGE_WHEN_NOT_MATCHED_BY_TARGET", CommandType: "CMD_INSERT", Override: ov, Condition: $c, TargetList: concat($cols), Values: concat($v)}
+def merge_nothing: MergeWhenClause = WHEN (MATCHED [mk = "MERGE_WHEN_MATCHED"] / NOT MATCHED BY SOURCE [mk = "MERGE_WHEN_NOT_MATCHED_BY_SOURCE"] / NOT MATCHED (BY TARGET)? [mk = "MERGE_WHEN_NOT_MATCHED_BY_TARGET"])
+    c:merge_cond? THEN DO NOTHING
+    -> new MergeWhenClause{MatchKind: mk, CommandType: "CMD_NOTHING", Condition: $c}
+def merge_cond: Expr = AND e:a_expr -> $e
+
+// ---- Index elements (CREATE INDEX, ON CONFLICT, exclusion constraints) ----
+
+def index_params: []IndexElem = first:index_elem rest:(-COMMA x:index_elem)* -> concat(list($first), map($rest, (r) => $r.x))
+def index_elem: IndexElem = index_elem_name / index_elem_func / index_elem_expr
+def index_elem_name: IndexElem = c:ColId !"(" o:index_elem_options
+    -> new IndexElem{Name: $c, Collation: $o.Collation, Opclass: $o.Opclass, Opclassopts: $o.Opclassopts, Ordering: $o.Ordering, NullsOrdering: $o.NullsOrdering}
+def index_elem_func: IndexElem = e:func_expr_windowless o:index_elem_options
+    -> new IndexElem{Expr: $e, Collation: $o.Collation, Opclass: $o.Opclass, Opclassopts: $o.Opclassopts, Ordering: $o.Ordering, NullsOrdering: $o.NullsOrdering}
+def index_elem_expr: IndexElem = -LP e:a_expr -RP o:index_elem_options
+    -> new IndexElem{Expr: $e, Collation: $o.Collation, Opclass: $o.Opclass, Opclassopts: $o.Opclassopts, Ordering: $o.Ordering, NullsOrdering: $o.NullsOrdering}
+// the options of an index element; the node is a template (its other fields are empty)
+def index_elem_options: IndexElem = index_elem_options_reloptions / index_elem_options_plain
+def index_elem_options_plain: IndexElem = [d = "SORTBY_DEFAULT"] [n = "SORTBY_NULLS_DEFAULT"] c:opt_collate? o:any_name?
+    (ASC [d = "SORTBY_ASC"] / DESC [d = "SORTBY_DESC"])? (NULLS FIRST [n = "SORTBY_NULLS_FIRST"] / NULLS LAST [n = "SORTBY_NULLS_LAST"])?
+    -> new IndexElem{Collation: concat($c), Opclass: concat($o), Ordering: d, NullsOrdering: n}
+def index_elem_options_reloptions: IndexElem = [d = "SORTBY_DEFAULT"] [n = "SORTBY_NULLS_DEFAULT"] c:opt_collate? o:any_name ro:reloptions
+    (ASC [d = "SORTBY_ASC"] / DESC [d = "SORTBY_DESC"])? (NULLS FIRST [n = "SORTBY_NULLS_FIRST"] / NULLS LAST [n = "SORTBY_NULLS_LAST"])?
+    -> new IndexElem{Collation: concat($c), Opclass: $o, Opclassopts: $ro, Ordering: d, NullsOrdering: n}
+def opt_collate: []Ident = COLLATE n:any_name -> $n
+
+// ==== Rules shared by the statements ====
+
+// ---- Numbers in options ----
+// A signed number: the sign is kept apart, rawjson.go folds it into the value (SignedNum is not a node of
+// the raw tree)
+def NumericOnly: NumericOnly = fconst_only / signed_fconst / SignedIconst
+def fconst_only: Fconst = x:Fconst -> $x
+def signed_fconst: SignedNum = (PLUS [neg = false] / MINUS [neg = true]) n:Fconst -> new SignedNum{Negative: neg, Number: $n}
+def SignedIconst: SignedIconst = Iconst / signed_iconst
+def signed_iconst: SignedNum = (PLUS [neg = false] / MINUS [neg = true]) n:Iconst -> new SignedNum{Negative: neg, Number: $n}
+def NumericOnly_list: []NumericOnly = first:NumericOnly rest:(-COMMA x:NumericOnly)* -> concat(list($first), map($rest, (r) => $r.x))
+
+// ---- Options: DefElem ----
+//
+// def_arg is the value of an option: a type, a reserved keyword, an operator, a number, a string or NONE.
+def def_arg: DefArg = func_type / reserved_keyword_ident / def_arg_op / NumericOnly / Sconst / def_arg_none
+def def_arg_op: NodeList = o:qual_all_Op -> new NodeList{Items: $o}
+def def_arg_none: String = NONE -> new String{Sval: "none"}
+def reserved_keyword_ident: Ident = t:reserved_keyword_text s -> $t
+def reserved_keyword_text: Ident = &reserved_word word
+
+def def_elem: DefElem = def_elem_arg / def_elem_plain
+def def_elem_arg: DefElem = n:ColLabel -EQ a:def_arg -> new DefElem{Defname: $n, Arg: $a, Defaction: "DEFELEM_UNSPEC"}
+def def_elem_plain: DefElem = n:ColLabel -> new DefElem{Defname: $n, Defaction: "DEFELEM_UNSPEC"}
+def def_list: []DefElem = first:def_elem rest:(-COMMA x:def_elem)* -> concat(list($first), map($rest, (r) => $r.x))
+def definition: []DefElem = -LP l:def_list -RP -> $l
+def opt_definition: []DefElem = WITH d:definition -> $d
+
+// reloptions: (name [= value], ...) with optional namespace (ns.name)
+def reloptions: []DefElem = -LP first:reloption_elem rest:(-COMMA x:reloption_elem)* -RP -> concat(list($first), map($rest, (r) => $r.x))
+def opt_reloptions: []DefElem = WITH r:reloptions -> $r
+def reloption_elem: DefElem = reloption_ns_arg / reloption_ns / reloption_arg / reloption_plain
+def reloption_ns_arg: DefElem = ns:ColLabel -DOT n:ColLabel -EQ a:def_arg -> new DefElem{Defnamespace: $ns, Defname: $n, Arg: $a, Defaction: "DEFELEM_UNSPEC"}
+def reloption_ns: DefElem = ns:ColLabel -DOT n:ColLabel -> new DefElem{Defnamespace: $ns, Defname: $n, Defaction: "DEFELEM_UNSPEC"}
+def reloption_arg: DefElem = n:ColLabel -EQ a:def_arg -> new DefElem{Defname: $n, Arg: $a, Defaction: "DEFELEM_UNSPEC"}
+def reloption_plain: DefElem = n:ColLabel -> new DefElem{Defname: $n, Defaction: "DEFELEM_UNSPEC"}
+
+// ---- Roles ----
+//
+// RoleSpec: a role name (PUBLIC is the pseudo-role), CURRENT_ROLE, CURRENT_USER or SESSION_USER.
+def RoleSpec: RoleSpec = role_public / role_current_role / role_current_user / role_session_user / role_name
+def role_public: RoleSpec = PUBLIC_WORD -> new RoleSpec{Roletype: "ROLESPEC_PUBLIC"}
+def role_current_role: RoleSpec = CURRENT_ROLE -> new RoleSpec{Roletype: "ROLESPEC_CURRENT_ROLE"}
+def role_current_user: RoleSpec = CURRENT_USER -> new RoleSpec{Roletype: "ROLESPEC_CURRENT_USER"}
+def role_session_user: RoleSpec = SESSION_USER -> new RoleSpec{Roletype: "ROLESPEC_SESSION_USER"}
+def role_name: RoleSpec = !NONE_WORD n:NonReservedWord -> new RoleSpec{Roletype: "ROLESPEC_CSTRING", Rolename: $n}
+def role_list: []RoleSpec = first:RoleSpec rest:(-COMMA x:RoleSpec)* -> concat(list($first), map($rest, (r) => $r.x))
+// the words PUBLIC and NONE: unquoted in any case, or quoted in lower case
+def PUBLIC_WORD = ((?pP)(?uU)(?bB)(?lL)(?iI)(?cC) / "\"public\"") !ident_cont s
+def NONE_WORD = ((?nN)(?oO)(?nN)(?eE) / "\"none\"") !ident_cont s
+
+// ---- Functions and operators as the objects of statements ----
+
+// A function argument: [mode] [name] type, or name mode type
+def func_arg: FunctionParameter = [m = "FUNC_PARAM_DEFAULT"]
+    ( ( IN OUT [m = "FUNC_PARAM_INOUT"] / IN [m = "FUNC_PARAM_IN"] / OUT [m = "FUNC_PARAM_OUT"] / INOUT [m = "FUNC_PARAM_INOUT"] / VARIADIC [m = "FUNC_PARAM_VARIADIC"] )
+      ( n:param_name t:func_type / t:func_type )
+    / n:param_name ( IN OUT [m = "FUNC_PARAM_INOUT"] / IN [m = "FUNC_PARAM_IN"] / OUT [m = "FUNC_PARAM_OUT"] / INOUT [m = "FUNC_PARAM_INOUT"] / VARIADIC [m = "FUNC_PARAM_VARIADIC"] ) t:func_type
+    / n:param_name t:func_type
+    / t:func_type )
+    -> new FunctionParameter{Name: $n, ArgType: $t, Mode: m}
+def func_args: []FunctionParameter = -LP l:func_arg_list_p? -RP -> concat($l)
+def func_arg_list_p: []FunctionParameter = first:func_arg rest:(-COMMA x:func_arg)* -> concat(list($first), map($rest, (r) => $r.x))
+
+// func_type: a type name, or a column type name%TYPE
+def func_type: TypeName = func_type_pct_setof / func_type_pct / Typename
+def func_type_pct: TypeName = n:type_function_name a:attrs -PERCENT TYPE
+    -> new TypeName{Names: concat(list($n), $a), PctType: true, Typemod: -1}
+def func_type_pct_setof: TypeName = SETOF n:type_function_name a:attrs -PERCENT TYPE
+    -> new TypeName{Names: concat(list($n), $a), PctType: true, Setof: true, Typemod: -1}
+
+// function_with_argtypes: name(args), or just a name. rawjson.go computes objargs from objfuncargs
+// (the types of the arguments that are not OUT).
+def function_with_argtypes: ObjectWithArgs = fwa_args / fwa_type_func_keyword / fwa_name
+def fwa_args: ObjectWithArgs = n:func_name a:func_args -> new ObjectWithArgs{Objname: $n, Objfuncargs: $a}
+def fwa_type_func_keyword: ObjectWithArgs = w:type_func_name_ident -> new ObjectWithArgs{Objname: list($w), ArgsUnspecified: true}
+def fwa_name: ObjectWithArgs = n:func_name_any -> new ObjectWithArgs{Objname: $n, ArgsUnspecified: true}
+def type_func_name_ident: Ident = t:type_func_name_text s -> $t
+def type_func_name_text: Ident = &type_func_name_word word
+def func_name_any: []Ident = first:ColId rest:(-DOT x:attr_name)* -> concat(list($first), map($rest, (r) => $r.x))
+def function_with_argtypes_list: []ObjectWithArgs = first:function_with_argtypes rest:(-COMMA x:function_with_argtypes)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+
+// ==== More rules shared by the statements ====
+
+type DropBehavior terminal   // CASCADE or RESTRICT (rawjson.go maps the keyword to DROP_CASCADE and DROP_RESTRICT)
+type NoneArg struct { }      // NONE in the argument types of an operator
+type ObjArg = TypeName | NoneArg
+// An aggregate's arguments: the direct arguments before ORDER BY, the ordered ones after it. (*) has none.
+type AggrArgs struct { Args []FunctionParameter, OrderedArgs []FunctionParameter, Star bool, OrderBy bool }
+
+def drop_behavior: DropBehavior = CASCADE / RESTRICT
+def opt_column_list: []Ident = -LP l:column_list -RP -> $l
+def any_name_list: [][]Ident = first:any_name rest:(-COMMA x:any_name)* -> concat(list($first), map($rest, (r) => $r.x))
+
+// aggregate_with_argtypes: name(args) of an aggregate
+def aggr_args: AggrArgs = aggr_args_star / aggr_args_order / aggr_args_list_order / aggr_args_plain
+def aggr_args_star: AggrArgs = -LP -STAR -RP -> new AggrArgs{Star: true}
+def aggr_args_order: AggrArgs = -LP ORDER BY o:aggr_arg_list -RP -> new AggrArgs{OrderedArgs: $o, OrderBy: true}
+// (makeOrderedSetArgs: when the last direct argument is VARIADIC there must be one VARIADIC ordered argument, of
+// the same type; the type is not compared here)
+def aggr_args_list_order: AggrArgs = -LP l:aggr_arg_list ORDER BY o:aggr_arg_list -RP
+    [foldl(new FunctionParameter{Mode: ""}, $l, (a, i) => $i).Mode != "FUNC_PARAM_VARIADIC"
+     || (len($o) == 1 && foldl(new FunctionParameter{Mode: ""}, $o, (a, i) => $i).Mode == "FUNC_PARAM_VARIADIC")]
+    -> new AggrArgs{Args: $l, OrderedArgs: $o, OrderBy: true}
+def aggr_args_plain: AggrArgs = -LP l:aggr_arg_list -RP -> new AggrArgs{Args: $l}
+def aggr_arg_list: []FunctionParameter = first:aggr_arg rest:(-COMMA x:aggr_arg)* -> concat(list($first), map($rest, (r) => $r.x))
+// aggregates cannot have output arguments
+def aggr_arg: FunctionParameter = a:func_arg [$a.Mode != "FUNC_PARAM_OUT" && $a.Mode != "FUNC_PARAM_INOUT"] -> $a
+def aggregate_with_argtypes: ObjectWithArgs = n:func_name a:aggr_args -> new ObjectWithArgs{Objname: $n, Aggr: $a}
+def aggregate_with_argtypes_list: []ObjectWithArgs = first:aggregate_with_argtypes rest:(-COMMA x:aggregate_with_argtypes)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+
+// operator_with_argtypes: an operator and the types of its one or two operands (NONE for a missing one)
+def operator_with_argtypes: ObjectWithArgs = o:any_operator a:oper_argtypes -> new ObjectWithArgs{Objname: $o, Objargs: $a}
+def oper_argtypes: []ObjArg = oper_args_both / oper_args_none_left / oper_args_none_right
+def oper_args_both: []ObjArg = -LP a:Typename -COMMA b:Typename -RP -> list($a, $b)
+def oper_args_none_left: []ObjArg = -LP NONE -COMMA b:Typename -RP -> list(new NoneArg{}, $b)
+def oper_args_none_right: []ObjArg = -LP a:Typename -COMMA NONE -RP -> list($a, new NoneArg{})
+def operator_with_argtypes_list: []ObjectWithArgs = first:operator_with_argtypes rest:(-COMMA x:operator_with_argtypes)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+
+// NonReservedWord_or_Sconst: a name or a string constant
+type NameOrString = Ident | Sconst
+def NonReservedWord_or_Sconst: NameOrString = NonReservedWord / Sconst
+
+// stub: replaced by the statements of group A
+type StmtStubA struct { }
+type StmtA = StmtStubA
+type ColumnDef struct { Colname Ident, TypeName TypeName, CollClause *CollateClause, IsLocal bool }
+def stmt_a: StmtA = "@@never@@" -> new StmtStubA{}
+
+// stub: replaced by the statements of group B
+type StmtStubB struct { }
+type StmtB = StmtStubB
+def stmt_b: StmtB = "@@never@@" -> new StmtStubB{}
+
+// stub: replaced by the statements of group C
+type StmtStubC struct { }
+type StmtC = StmtStubC
+def stmt_c: StmtC = "@@never@@" -> new StmtStubC{}
+
+// stub: replaced by the XML and JSON expressions of group D
+type ExprStubD struct { }
+type ExprD = ExprStubD
+type TableRefStubD struct { }
+type TableRefD = TableRefStubD
+// the XML and JSON functions with special syntax (func_expr_common_subexpr of gram.y)
+def xmljson_expr: ExprD = "@@never@@" -> new ExprStubD{}
+// json_aggregate_func with its FILTER and OVER clauses
+def json_agg_expr: ExprD = "@@never@@" -> new ExprStubD{}
+// xmltable and json_table with their alias, as the alternatives of table_ref
+def xmljson_table: TableRefD = "@@never@@" -> new TableRefStubD{}
+// ==== Generic object statements (group C2) ====
+//
+// DROP, ALTER ... RENAME TO / OWNER TO / SET SCHEMA / DEPENDS ON EXTENSION, COMMENT, SECURITY LABEL, GRANT,
+// REVOKE and ALTER DEFAULT PRIVILEGES. gram.y has one production per kind of object (about 60 for
+// RenameStmt); here the kinds are grouped by the shape of what follows the keywords, and the kind itself is a
+// terminal of type ObjectType (the words that name it, such as MATERIALIZED VIEW), which the converter maps to
+// the ObjectType enumerator of the raw tree (OBJECT_MATVIEW). Where the raw parser sets an enumerator without
+// a keyword of its own, the action sets the string.
+//
+// The statements that the raw parser makes from the same words in different contexts differ in the kinds of
+// objects they accept. The variable op tells the shared rules which statement calls them (r: RENAME,
+// c: RENAME COLUMN, o: OWNER TO, s: SET SCHEMA), sl is true in SECURITY LABEL, and dflt is true in ALTER
+// DEFAULT PRIVILEGES (the same GRANT and REVOKE, with a kind of objects instead of objects).
+//
+// Because the choice of the statement commits to the first alternative that matches, these statements must not
+// come after a statement that can match only a prefix of them: ALTER ROLE r (all options are optional) would
+// take the beginning of ALTER ROLE r RENAME TO s. Put stmt_c2 before the statements of the other groups.
+
+type ObjectType terminal
+// An object type: the terminal of the words (mapped by the converter) or the enumerator itself
+type ObjType = ObjectType | string
+// A name of a function parameter: a.b.c is the string "a.b.c"
+type ParamName struct { Names []Ident }
+// What the raw parser stores in the object (or objects) of these statements, a name list being a List node
+type ObjNode = NodeList | Ident | TypeName | ObjectWithArgs | RangeVar | NumericOnly | ParamName
+
+type DropStmt struct { Objects []ObjNode, RemoveType ObjType, Behavior *DropBehavior, MissingOk bool, Concurrent bool }
+type RenameStmt struct {
+    RenameType ObjType, RelationType *ObjType, Relation *RangeVar, Object *ObjNode, Subname *Ident, Newname Ident,
+    Behavior *DropBehavior, MissingOk bool
+}
+type AlterObjectSchemaStmt struct { ObjectType ObjType, Relation *RangeVar, Object *ObjNode, Newschema Ident, MissingOk bool }
+type AlterOwnerStmt struct { ObjectType ObjType, Object ObjNode, Newowner RoleSpec }
+type AlterObjectDependsStmt struct { ObjectType ObjType, Relation *RangeVar, Object *ObjNode, Extname Ident, Remove bool }
+type CommentStmt struct { Objtype ObjType, Object ObjNode, Comment *Sconst }
+type SecLabelStmt struct { Objtype ObjType, Object ObjNode, Provider *NameOrString, Label *Sconst }
+// A privilege name: SELECT, a name, or "alter system"
+type PrivName = Ident | string
+type AccessPriv struct { PrivName *PrivName, Cols []Ident }
+type GrantStmt struct {
+    IsGrant bool, Targtype string, Objtype ObjType, Objects []ObjNode, Privileges []AccessPriv, Grantees []RoleSpec,
+    GrantOption bool, Grantor *RoleSpec, Behavior *DropBehavior
+}
+// An option of GRANT role (WITH ADMIN OPTION, INHERIT FALSE, ...): a DefElem with a Boolean
+type RoleOpt struct { Name Ident, Value bool }
+type GrantRoleStmt struct {
+    GrantedRoles []AccessPriv, GranteeRoles []RoleSpec, IsGrant bool, Opt []RoleOpt, Grantor *RoleSpec,
+    Behavior *DropBehavior
+}
+// An option of ALTER DEFAULT PRIVILEGES: the DefElem "schemas" or "roles"
+type DefaclOpt struct { Schemas []Ident, Roles []RoleSpec }
+type AlterDefaultPrivilegesStmt struct { Options []DefaclOpt, Action GrantStmt }
+
+type StmtC2 = DropStmt | RenameStmt | AlterObjectSchemaStmt | AlterOwnerStmt | AlterObjectDependsStmt | CommentStmt |
+    SecLabelStmt | GrantStmt | GrantRoleStmt | AlterDefaultPrivilegesStmt
+def stmt_c2: StmtC2 = DropStmt / RenameStmt / AlterObjectSchemaStmt / AlterOwnerStmt / AlterObjectDependsStmt
+    / CommentStmt / SecLabelStmt / GrantStmt / GrantRoleStmt / AlterDefaultPrivilegesStmt
+
+// ---- Kinds of objects ----
+
+def object_type_any_name: ObjectType = TABLE / SEQUENCE / VIEW / MATERIALIZED VIEW / INDEX / FOREIGN TABLE / COLLATION
+    / CONVERSION / STATISTICS / TEXT SEARCH (PARSER / DICTIONARY / TEMPLATE / CONFIGURATION)
+def object_type_name: ObjectType = drop_type_name / DATABASE / ROLE / SUBSCRIPTION / TABLESPACE
+def drop_type_name: ObjectType = ACCESS METHOD / EVENT TRIGGER / EXTENSION / FOREIGN DATA WRAPPER / opt_procedural LANGUAGE
+    / PUBLICATION / SCHEMA / SERVER
+def object_type_name_on_any_name: ObjectType = POLICY / RULE / TRIGGER
+
+// the kinds of objects by what follows them (see alter_obj)
+def ot_aggr: ObjectType = AGGREGATE
+def ot_routine: ObjectType = FUNCTION / PROCEDURE / ROUTINE
+def ot_oper: ObjectType = OPERATOR
+def ot_opclass: ObjectType = OPERATOR (CLASS / FAMILY)
+def ot_type: ObjectType = TYPE / DOMAIN
+def ot_any: ObjectType = COLLATION / CONVERSION / DOMAIN / STATISTICS / TYPE / TEXT SEARCH (DICTIONARY / CONFIGURATION)
+def ot_any_rs: ObjectType = TEXT SEARCH (PARSER / TEMPLATE)
+def ot_name: ObjectType = FOREIGN DATA WRAPPER / SERVER / EVENT TRIGGER / PUBLICATION / SUBSCRIPTION / opt_procedural LANGUAGE
+def ot_name_own: ObjectType = DATABASE / SCHEMA / TABLESPACE
+def ot_large: ObjectType = LARGE OBJECT
+
+// ---- Objects: the names of what the statements refer to ----
+
+def any_name_obj: NodeList = n:any_name -> new NodeList{Items: $n}
+def any_name_nodes: []NodeList = l:any_name_list -> map($l, (n) => new NodeList{Items: $n})
+// opclass_obj: any_name USING name, which the raw parser stores as (name, ...any_name)
+def opclass_obj: NodeList = a:any_name USING n:name -> new NodeList{Items: concat(list($n), $a)}
+// name ON any_name, stored as (...any_name, name)
+def name_on_obj: NodeList = n:name ON a:any_name -> new NodeList{Items: concat($a, list($n))}
+
+// The object of COMMENT, SECURITY LABEL and ALTER ... : its kind and the node
+type ObjSpec struct { ObjType ObjType, Object ObjNode }
+// alter_obj: the objects of RENAME TO (op r), OWNER TO (o) and SET SCHEMA (s) that are not relations
+def alter_obj: ObjSpec =
+    ( t:ot_aggr o:aggregate_with_argtypes
+    / t:ot_routine o:function_with_argtypes
+    / [op == "o" || op == "s"] t:ot_oper o:operator_with_argtypes
+    / t:ot_opclass o:opclass_obj
+    / t:ot_any o:any_name_obj
+    / [op != "o"] t:ot_any_rs o:any_name_obj
+    / [op != "s"] t:ot_name o:name
+    / [op == "o"] t:ot_name_own o:name
+    / [op == "s"] t:ot_ext o:name
+    / [op == "o"] t:ot_large o:NumericOnly )
+    -> new ObjSpec{ObjType: $t, Object: $o}
+def ot_ext: ObjectType = EXTENSION
+
+// alter_rel: the relations of RENAME TO, RENAME COLUMN (op c) and SET SCHEMA, with IF EXISTS
+type RelSpec struct { ObjType ObjType, Rel RangeVar, Missing bool }
+def alter_rel: RelSpec =
+    ( t:ot_tab m:(IF EXISTS)? r:relation_expr
+    / t:ot_view m:(IF EXISTS)? r:qualified_name
+    / [op != "c"] t:ot_seq m:(IF EXISTS)? r:qualified_name
+    / [op == "r"] t:ot_index m:(IF EXISTS)? r:qualified_name )
+    -> new RelSpec{ObjType: $t, Rel: $r, Missing: len($m) > 0}
+def ot_tab: ObjectType = TABLE / FOREIGN TABLE
+def ot_view: ObjectType = VIEW / MATERIALIZED VIEW
+def ot_seq: ObjectType = SEQUENCE
+def ot_index: ObjectType = INDEX
+
+// ---- DROP ----
+
+def DropStmt: DropStmt = drop_index_conc / drop_any / drop_name / drop_on / drop_type / drop_args
+def drop_index_conc: DropStmt = DROP INDEX CONCURRENTLY m:(IF EXISTS)? l:any_name_nodes b:drop_behavior?
+    -> new DropStmt{Objects: $l, RemoveType: "OBJECT_INDEX", Behavior: $b, MissingOk: len($m) > 0, Concurrent: true}
+def drop_any: DropStmt = DROP t:object_type_any_name m:(IF EXISTS)? l:any_name_nodes b:drop_behavior?
+    -> new DropStmt{Objects: $l, RemoveType: $t, Behavior: $b, MissingOk: len($m) > 0}
+def drop_name: DropStmt = DROP t:drop_type_name m:(IF EXISTS)? l:name_list b:drop_behavior?
+    -> new DropStmt{Objects: $l, RemoveType: $t, Behavior: $b, MissingOk: len($m) > 0}
+// DROP POLICY | RULE | TRIGGER name ON table: the object is (...table, name)
+def drop_on: DropStmt = DROP t:object_type_name_on_any_name m:(IF EXISTS)? n:name ON a:any_name b:drop_behavior?
+    -> new DropStmt{Objects: list(new NodeList{Items: concat($a, list($n))}), RemoveType: $t, Behavior: $b, MissingOk: len($m) > 0}
+def drop_type: DropStmt = DROP t:ot_type m:(IF EXISTS)? l:type_list b:drop_behavior?
+    -> new DropStmt{Objects: $l, RemoveType: $t, Behavior: $b, MissingOk: len($m) > 0}
+// RemoveFuncStmt, RemoveAggrStmt and RemoveOperStmt
+def drop_args: DropStmt = DROP ( t:ot_routine [k = 1] / t:ot_aggr [k = 2] / t:ot_oper [k = 3] ) m:(IF EXISTS)?
+    ( [k == 1] f:function_with_argtypes_list / [k == 2] a:aggregate_with_argtypes_list / [k == 3] o:operator_with_argtypes_list )
+    b:drop_behavior?
+    -> new DropStmt{Objects: concat($f, $a, $o), RemoveType: $t, Behavior: $b, MissingOk: len($m) > 0}
+
+// ---- ALTER ... RENAME TO ----
+
+def RenameStmt: RenameStmt = rename_obj / rename_rel / rename_col / rename_sub / rename_cstr / rename_domcstr / rename_on / rename_attr
+def rename_obj: RenameStmt = ALTER [op = "r"] s:alter_obj RENAME TO n:name
+    -> new RenameStmt{RenameType: $s.ObjType, Object: $s.Object, Newname: $n}
+def rename_rel: RenameStmt = ALTER [op = "r"] s:alter_rel RENAME TO n:name
+    -> new RenameStmt{RenameType: $s.ObjType, Relation: $s.Rel, Newname: $n, MissingOk: $s.Missing}
+def rename_col: RenameStmt = ALTER [op = "c"] s:alter_rel RENAME COLUMN? c:name TO n:name
+    -> new RenameStmt{RenameType: "OBJECT_COLUMN", RelationType: $s.ObjType, Relation: $s.Rel, Subname: $c, Newname: $n, MissingOk: $s.Missing}
+// the names of databases, schemas and tablespaces and of roles (RoleId: not public, none, ...) are subnames
+def rename_sub: RenameStmt = ALTER ( t:ot_name_own s:name RENAME TO n:name / t:ot_role s:RoleId RENAME TO n:RoleId )
+    -> new RenameStmt{RenameType: $t, Subname: $s, Newname: $n}
+def ot_role: ObjectType = GROUP / ROLE / USER
+def rename_cstr: RenameStmt = ALTER TABLE m:(IF EXISTS)? r:relation_expr RENAME CONSTRAINT c:name TO n:name
+    -> new RenameStmt{RenameType: "OBJECT_TABCONSTRAINT", Relation: $r, Subname: $c, Newname: $n, MissingOk: len($m) > 0}
+def rename_domcstr: RenameStmt = ALTER DOMAIN a:any_name RENAME CONSTRAINT c:name TO n:name
+    -> new RenameStmt{RenameType: "OBJECT_DOMCONSTRAINT", Object: new NodeList{Items: $a}, Subname: $c, Newname: $n}
+def rename_on: RenameStmt = ALTER ( t:ot_policy m:(IF EXISTS)? / t:ot_rule_trigger ) s:name ON r:qualified_name RENAME TO n:name
+    -> new RenameStmt{RenameType: $t, Relation: $r, Subname: $s, Newname: $n, MissingOk: len($m) > 0}
+def ot_policy: ObjectType = POLICY
+def ot_rule_trigger: ObjectType = RULE / TRIGGER
+// ALTER TYPE name RENAME ATTRIBUTE: the type is a RangeVar (makeRangeVarFromAnyName)
+def rename_attr: RenameStmt = ALTER TYPE r:qualified_name RENAME ATTRIBUTE s:name TO n:name b:drop_behavior?
+    -> new RenameStmt{RenameType: "OBJECT_ATTRIBUTE", RelationType: "OBJECT_TYPE", Subname: $s, Newname: $n, Behavior: $b,
+        Relation: new RangeVar{Catalogname: $r.Catalogname, Schemaname: $r.Schemaname, Relname: $r.Relname, Relpersistence: "p"}}
+
+// ---- ALTER ... OWNER TO, SET SCHEMA, DEPENDS ON EXTENSION ----
+
+def AlterOwnerStmt: AlterOwnerStmt = ALTER [op = "o"] s:alter_obj OWNER TO r:RoleSpec
+    -> new AlterOwnerStmt{ObjectType: $s.ObjType, Object: $s.Object, Newowner: $r}
+
+def AlterObjectSchemaStmt: AlterObjectSchemaStmt = schema_obj / schema_rel
+def schema_obj: AlterObjectSchemaStmt = ALTER [op = "s"] s:alter_obj SET SCHEMA n:name
+    -> new AlterObjectSchemaStmt{ObjectType: $s.ObjType, Object: $s.Object, Newschema: $n}
+def schema_rel: AlterObjectSchemaStmt = ALTER [op = "s"] s:alter_rel SET SCHEMA n:name
+    -> new AlterObjectSchemaStmt{ObjectType: $s.ObjType, Relation: $s.Rel, Newschema: $n, MissingOk: $s.Missing}
+
+def AlterObjectDependsStmt: AlterObjectDependsStmt = depends_routine / depends_trigger / depends_rel
+def depends_routine: AlterObjectDependsStmt = ALTER t:ot_routine o:function_with_argtypes r:depends_on_ext
+    -> new AlterObjectDependsStmt{ObjectType: $t, Object: $o, Extname: $r.Name, Remove: $r.No}
+def depends_trigger: AlterObjectDependsStmt = ALTER TRIGGER n:name ON q:qualified_name r:depends_on_ext
+    -> new AlterObjectDependsStmt{ObjectType: "OBJECT_TRIGGER", Relation: $q, Object: new NodeList{Items: list($n)}, Extname: $r.Name, Remove: $r.No}
+def depends_rel: AlterObjectDependsStmt = ALTER ( MATERIALIZED VIEW [t = "OBJECT_MATVIEW"] / INDEX [t = "OBJECT_INDEX"] ) q:qualified_name r:depends_on_ext
+    -> new AlterObjectDependsStmt{ObjectType: t, Relation: $q, Extname: $r.Name, Remove: $r.No}
+// [NO] DEPENDS ON EXTENSION name
+type DependsOn struct { No bool, Name Ident }
+def depends_on_ext: DependsOn = no:NO? DEPENDS ON EXTENSION n:name -> new DependsOn{No: len($no) > 0, Name: $n}
+
+// ---- COMMENT and SECURITY LABEL ----
+
+def CommentStmt: CommentStmt = COMMENT ON [sl = false] s:obj_spec IS (t:Sconst / NULL)
+    -> new CommentStmt{Objtype: $s.ObjType, Object: $s.Object, Comment: $t}
+def SecLabelStmt: SecLabelStmt = SECURITY LABEL p:opt_provider? ON [sl = true] s:obj_spec IS (l:Sconst / NULL)
+    -> new SecLabelStmt{Objtype: $s.ObjType, Object: $s.Object, Provider: $p, Label: $l}
+def opt_provider: NameOrString = FOR n:NonReservedWord_or_Sconst -> $n
+
+// obj_spec: the object of COMMENT ON (sl false) and of SECURITY LABEL (sl true, fewer kinds)
+def obj_spec: ObjSpec = obj_spec_simple / obj_cstr_dom / obj_cstr_tab / obj_transform / obj_cast
+def obj_spec_simple: ObjSpec =
+    ( t:comment_any_type o:any_name_obj
+    / t:object_type_name o:name
+    / t:ot_type o:Typename
+    / t:ot_aggr o:aggregate_with_argtypes
+    / t:ot_routine o:function_with_argtypes
+    / [!sl] t:ot_oper o:operator_with_argtypes
+    / t:ot_large o:NumericOnly
+    / [!sl] t:object_type_name_on_any_name o:name_on_obj
+    / [!sl] t:ot_opclass o:opclass_obj )
+    -> new ObjSpec{ObjType: $t, Object: $o}
+def comment_any_type: ObjectType = object_type_any_name / COLUMN
+// the table or domain of a constraint (the raw parser makes the domain a TypeName)
+def obj_cstr_dom: ObjSpec = [!sl] CONSTRAINT n:name ON DOMAIN a:any_name
+    -> new ObjSpec{ObjType: "OBJECT_DOMCONSTRAINT", Object: new NodeList{Items: list(new TypeName{Names: $a, Typemod: -1}, $n)}}
+def obj_cstr_tab: ObjSpec = [!sl] CONSTRAINT n:name ON a:any_name
+    -> new ObjSpec{ObjType: "OBJECT_TABCONSTRAINT", Object: new NodeList{Items: concat($a, list($n))}}
+def obj_transform: ObjSpec = [!sl] TRANSFORM FOR t:Typename LANGUAGE n:name
+    -> new ObjSpec{ObjType: "OBJECT_TRANSFORM", Object: new NodeList{Items: list($t, $n)}}
+def obj_cast: ObjSpec = [!sl] CAST -LP a:Typename AS b:Typename -RP
+    -> new ObjSpec{ObjType: "OBJECT_CAST", Object: new NodeList{Items: list($a, $b)}}
+
+// ---- GRANT and REVOKE ----
+
+def GrantStmt: GrantStmt = [dflt = false] a:acl_action -> $a
+// GRANT and REVOKE of a privilege on objects, or (in ALTER DEFAULT PRIVILEGES, dflt true) on a kind of objects
+def acl_action: GrantStmt = grant_stmt / revoke_stmt
+def grant_stmt: GrantStmt = GRANT p:privileges ON t:acl_target TO g:grantee_list
+    o:(WITH GRANT OPTION)? b:granted_by? [!dflt || $b == nil]
+    -> new GrantStmt{IsGrant: true, Targtype: $t.TargType, Objtype: $t.ObjType, Objects: $t.Objs, Privileges: $p, Grantees: $g, GrantOption: len($o) > 0, Grantor: $b}
+def revoke_stmt: GrantStmt = REVOKE o:(GRANT OPTION FOR)? p:privileges ON t:acl_target FROM g:grantee_list b:granted_by? [!dflt || $b == nil] d:drop_behavior?
+    -> new GrantStmt{Targtype: $t.TargType, Objtype: $t.ObjType, Objects: $t.Objs, Privileges: $p, Grantees: $g, GrantOption: len($o) > 0, Grantor: $b, Behavior: $d}
+def granted_by: RoleSpec = GRANTED BY r:RoleSpec -> $r
+def grantee_list: []RoleSpec = first:grantee rest:(-COMMA x:grantee)* -> concat(list($first), map($rest, (r) => $r.x))
+def grantee: RoleSpec = GROUP? r:RoleSpec -> $r
+
+// privileges: ALL [PRIVILEGES] [(columns)] (the list of privileges is empty for ALL), or a list of privileges
+def privileges: []AccessPriv = privilege_list / all_priv_cols / all_priv
+def all_priv_cols: []AccessPriv = ALL PRIVILEGES? -LP c:column_list -RP -> list(new AccessPriv{Cols: $c})
+def all_priv: []AccessPriv = ALL PRIVILEGES? -> list()
+def privilege_list: []AccessPriv = first:privilege rest:(-COMMA x:privilege)* -> concat(list($first), map($rest, (r) => $r.x))
+def privilege: AccessPriv = privilege_alter_system / privilege_name
+def privilege_alter_system: AccessPriv = ALTER SYSTEM -> new AccessPriv{PrivName: "alter system"}
+def privilege_name: AccessPriv = n:(priv_keyword / ColId) c:opt_column_list? -> new AccessPriv{PrivName: $n, Cols: concat($c)}
+// the reserved keywords that are privilege names
+def priv_keyword: Ident = t:priv_keyword_text s -> $t
+def priv_keyword_text: Ident = &(SELECT / REFERENCES / CREATE) word
+
+// privilege_target: the objects of GRANT and REVOKE
+type PrivTarget struct { TargType string, ObjType ObjType, Objs []ObjNode }
+def acl_target: PrivTarget = defacl_target / privilege_target
+def defacl_target: PrivTarget = [dflt] t:defacl_privilege_target -> new PrivTarget{TargType: "ACL_TARGET_DEFAULTS", ObjType: $t}
+def defacl_privilege_target: ObjectType = TABLES / FUNCTIONS / ROUTINES / SEQUENCES / TYPES / SCHEMAS / LARGE OBJECTS
+def privilege_target: PrivTarget = [!dflt] [tt = "ACL_TARGET_OBJECT"]
+    ( t:ot_all IN SCHEMA [tt = "ACL_TARGET_ALL_IN_SCHEMA"] o:name_list
+    / t:ot_pt_rel o:qualified_name_list
+    / t:ot_pt_name o:name_list
+    / t:ot_routine o:function_with_argtypes_list
+    / t:ot_pt_type o:any_name_nodes
+    / t:ot_large o:NumericOnly_list
+    / t:ot_param o:parameter_name_list
+    / t:ot_table_default o:qualified_name_list )
+    -> new PrivTarget{TargType: tt, ObjType: $t, Objs: $o}
+def ot_all: ObjectType = ALL (TABLES / SEQUENCES / FUNCTIONS / PROCEDURES / ROUTINES)
+def ot_pt_rel: ObjectType = TABLE / SEQUENCE
+// no keyword: a table (last, as most keywords of the alternatives before it can be table names)
+def ot_table_default: ObjectType = _
+def ot_pt_name: ObjectType = FOREIGN DATA WRAPPER / FOREIGN SERVER / DATABASE / LANGUAGE / SCHEMA / TABLESPACE
+def ot_pt_type: ObjectType = DOMAIN / TYPE
+def ot_param: ObjectType = PARAMETER
+def parameter_name_list: []ParamName = first:parameter_name rest:(-COMMA x:parameter_name)* -> concat(list($first), map($rest, (r) => $r.x))
+def parameter_name: ParamName = first:ColId rest:(-DOT x:ColId)* -> new ParamName{Names: concat(list($first), map($rest, (r) => $r.x))}
+
+// GRANT role TO role: the roles are parsed as privileges
+def GrantRoleStmt: GrantRoleStmt = grant_role / revoke_role
+def grant_role: GrantRoleStmt = GRANT l:privilege_list TO r:role_list o:grant_role_opts? b:granted_by?
+    -> new GrantRoleStmt{GrantedRoles: $l, GranteeRoles: $r, IsGrant: true, Opt: concat($o), Grantor: $b}
+def grant_role_opts: []RoleOpt = WITH first:grant_role_opt rest:(-COMMA x:grant_role_opt)* -> concat(list($first), map($rest, (r) => $r.x))
+def grant_role_opt: RoleOpt = n:ColLabel ( OPTION [v = true] / TRUE [v = true] / FALSE [v = false] ) -> new RoleOpt{Name: $n, Value: v}
+def revoke_role: GrantRoleStmt = REVOKE o:revoke_role_opt? l:privilege_list FROM r:role_list b:granted_by? d:drop_behavior?
+    -> new GrantRoleStmt{GrantedRoles: $l, GranteeRoles: $r, Opt: concat($o), Grantor: $b, Behavior: $d}
+def revoke_role_opt: []RoleOpt = n:ColId OPTION FOR -> list(new RoleOpt{Name: $n, Value: false})
+
+// ---- ALTER DEFAULT PRIVILEGES ----
+
+def AlterDefaultPrivilegesStmt: AlterDefaultPrivilegesStmt = ALTER DEFAULT PRIVILEGES o:defacl_option* [dflt = true] a:acl_action
+    -> new AlterDefaultPrivilegesStmt{Options: $o, Action: $a}
+def defacl_option: DefaclOpt = ( IN SCHEMA s:name_list / FOR (ROLE / USER) r:role_list )
+    -> new DefaclOpt{Schemas: concat($s), Roles: concat($r)}
+
+// ==== Statements ====
+
+// The start rule: statements separated by semicolons (empty statements are dropped).
+def main: Script = [windowless = false] [tails_ok = true] [setof = false] [consttype = false] [dolq = ""]
+    s -SEMI* xs:(x:raw_stmt (-SEMI+ / $$))* $$
+    -> new Script{Stmts: map($xs, (r) => $r.x)}
+def raw_stmt: RawStmt = st:stmt -> new RawStmt{Stmt: $st}
+def stmt: Stmt = stmt_dml / stmt_a / stmt_b / stmt_c / stmt_c2
+def stmt_dml: DmlStmt = SelectStmt / InsertStmt / UpdateStmt / DeleteStmt / MergeStmt
+// Stubs of rules that other regions own (named as in gram.y); the coordinator deletes them when merging.
+
+// RoleId (region B2): a role name; PUBLIC, NONE and CURRENT_USER, ... are errors
+def RoleId: Ident = !PUBLIC_WORD !NONE_WORD n:NonReservedWord -> $n
+// opt_procedural (region B1)
+def opt_procedural = PROCEDURAL?
+
+// BEGIN GENERATED KEYWORDS (python3 internal/refgen/keywords.py update postgresql.pego)
+// A word folded to lower case: the keywords are matched by comparing it with their lower-case spelling. The
+// word is read once: the rule is memoized at its position, so all the keywords that are tried there share it.
+// lowercase runs are appended as they are, the upper-case letters one by one, a non-ASCII letter as a mark
+// that no keyword has.
+type LcWord struct { V string }
+def lcword: LcWord = w:lcword_read -> $w
+def lcword_read: LcWord = &(?A-Za-z_\u{80}-\u{10FFFF}) [lw = ""]
+    ( r:@((?a-z0-9_$)+) [lw = lw + text($r)]
+    / (?A) [lw = lw + "a"]/ (?B) [lw = lw + "b"] / (?C) [lw = lw + "c"] / (?D) [lw = lw + "d"]
+    / (?E) [lw = lw + "e"]/ (?F) [lw = lw + "f"] / (?G) [lw = lw + "g"] / (?H) [lw = lw + "h"]
+    / (?I) [lw = lw + "i"]/ (?J) [lw = lw + "j"] / (?K) [lw = lw + "k"] / (?L) [lw = lw + "l"]
+    / (?M) [lw = lw + "m"]/ (?N) [lw = lw + "n"] / (?O) [lw = lw + "o"] / (?P) [lw = lw + "p"]
+    / (?Q) [lw = lw + "q"]/ (?R) [lw = lw + "r"] / (?S) [lw = lw + "s"] / (?T) [lw = lw + "t"]
+    / (?U) [lw = lw + "u"]/ (?V) [lw = lw + "v"] / (?W) [lw = lw + "w"] / (?X) [lw = lw + "x"]
+    / (?Y) [lw = lw + "y"]/ (?Z) [lw = lw + "z"]
+    / (?\u{80}-\u{10FFFF}) [lw = lw + "\u{80}"] )+
+    -> new LcWord{V: lw}
+// A keyword rule sets the variable kwid to the keyword, and kw matches the word that follows if it is the one.
+def kw = w:lcword [$w.V == kwid] s
+
+def ACCESS = &(?Aa) [kwid = "access"] kw
+def AGGREGATE = &(?Aa) [kwid = "aggregate"] kw
+def ALL = &(?Aa) [kwid = "all"] kw
+def ALTER = &(?Aa) [kwid = "alter"] kw
+def AND = &(?Aa) [kwid = "and"] kw
+def ANY = &(?Aa) [kwid = "any"] kw
+def ARRAY = &(?Aa) [kwid = "array"] kw
+def AS = &(?Aa) [kwid = "as"] kw
+def ASC = &(?Aa) [kwid = "asc"] kw
+def ASYMMETRIC = &(?Aa) [kwid = "asymmetric"] kw
+def AT = &(?Aa) [kwid = "at"] kw
+def ATTRIBUTE = &(?Aa) [kwid = "attribute"] kw
+def BETWEEN = &(?Bb) [kwid = "between"] kw
+def BIGINT = &(?Bb) [kwid = "bigint"] kw
+def BIT = &(?Bb) [kwid = "bit"] kw
+def BOOLEAN = &(?Bb) [kwid = "boolean"] kw
+def BOTH = &(?Bb) [kwid = "both"] kw
+def BREADTH = &(?Bb) [kwid = "breadth"] kw
+def BY = &(?Bb) [kwid = "by"] kw
+def CASCADE = &(?Cc) [kwid = "cascade"] kw
+def CASE = &(?Cc) [kwid = "case"] kw
+def CAST = &(?Cc) [kwid = "cast"] kw
+def CHAR = &(?Cc) [kwid = "char"] kw
+def CHARACTER = &(?Cc) [kwid = "character"] kw
+def CLASS = &(?Cc) [kwid = "class"] kw
+def COALESCE = &(?Cc) [kwid = "coalesce"] kw
+def COLLATE = &(?Cc) [kwid = "collate"] kw
+def COLLATION = &(?Cc) [kwid = "collation"] kw
+def COLUMN = &(?Cc) [kwid = "column"] kw
+def COMMENT = &(?Cc) [kwid = "comment"] kw
+def CONCURRENTLY = &(?Cc) [kwid = "concurrently"] kw
+def CONFIGURATION = &(?Cc) [kwid = "configuration"] kw
+def CONFLICT = &(?Cc) [kwid = "conflict"] kw
+def CONSTRAINT = &(?Cc) [kwid = "constraint"] kw
+def CONVERSION = &(?Cc) [kwid = "conversion"] kw
+def CREATE = &(?Cc) [kwid = "create"] kw
+def CROSS = &(?Cc) [kwid = "cross"] kw
+def CUBE = &(?Cc) [kwid = "cube"] kw
+def CURRENT = &(?Cc) [kwid = "current"] kw
+def CURRENT_CATALOG = &(?Cc) [kwid = "current_catalog"] kw
+def CURRENT_DATE = &(?Cc) [kwid = "current_date"] kw
+def CURRENT_ROLE = &(?Cc) [kwid = "current_role"] kw
+def CURRENT_SCHEMA = &(?Cc) [kwid = "current_schema"] kw
+def CURRENT_TIME = &(?Cc) [kwid = "current_time"] kw
+def CURRENT_TIMESTAMP = &(?Cc) [kwid = "current_timestamp"] kw
+def CURRENT_USER = &(?Cc) [kwid = "current_user"] kw
+def CYCLE = &(?Cc) [kwid = "cycle"] kw
+def DATA = &(?Dd) [kwid = "data"] kw
+def DATABASE = &(?Dd) [kwid = "database"] kw
+def DAY = &(?Dd) [kwid = "day"] kw
+def DEC = &(?Dd) [kwid = "dec"] kw
+def DECIMAL = &(?Dd) [kwid = "decimal"] kw
+def DEFAULT = &(?Dd) [kwid = "default"] kw
+def DELETE = &(?Dd) [kwid = "delete"] kw
+def DEPENDS = &(?Dd) [kwid = "depends"] kw
+def DEPTH = &(?Dd) [kwid = "depth"] kw
+def DESC = &(?Dd) [kwid = "desc"] kw
+def DICTIONARY = &(?Dd) [kwid = "dictionary"] kw
+def DISTINCT = &(?Dd) [kwid = "distinct"] kw
+def DO = &(?Dd) [kwid = "do"] kw
+def DOMAIN = &(?Dd) [kwid = "domain"] kw
+def DOUBLE = &(?Dd) [kwid = "double"] kw
+def DROP = &(?Dd) [kwid = "drop"] kw
+def ELSE = &(?Ee) [kwid = "else"] kw
+def END = &(?Ee) [kwid = "end"] kw
+def ESCAPE = &(?Ee) [kwid = "escape"] kw
+def EVENT = &(?Ee) [kwid = "event"] kw
+def EXCEPT = &(?Ee) [kwid = "except"] kw
+def EXCLUDE = &(?Ee) [kwid = "exclude"] kw
+def EXISTS = &(?Ee) [kwid = "exists"] kw
+def EXTENSION = &(?Ee) [kwid = "extension"] kw
+def EXTRACT = &(?Ee) [kwid = "extract"] kw
+def FALSE = &(?Ff) [kwid = "false"] kw
+def FAMILY = &(?Ff) [kwid = "family"] kw
+def FETCH = &(?Ff) [kwid = "fetch"] kw
+def FILTER = &(?Ff) [kwid = "filter"] kw
+def FIRST = &(?Ff) [kwid = "first"] kw
+def FLOAT = &(?Ff) [kwid = "float"] kw
+def FOLLOWING = &(?Ff) [kwid = "following"] kw
+def FOR = &(?Ff) [kwid = "for"] kw
+def FOREIGN = &(?Ff) [kwid = "foreign"] kw
+def FROM = &(?Ff) [kwid = "from"] kw
+def FULL = &(?Ff) [kwid = "full"] kw
+def FUNCTION = &(?Ff) [kwid = "function"] kw
+def FUNCTIONS = &(?Ff) [kwid = "functions"] kw
+def GLOBAL = &(?Gg) [kwid = "global"] kw
+def GRANT = &(?Gg) [kwid = "grant"] kw
+def GRANTED = &(?Gg) [kwid = "granted"] kw
+def GREATEST = &(?Gg) [kwid = "greatest"] kw
+def GROUP = &(?Gg) [kwid = "group"] kw
+def GROUPING = &(?Gg) [kwid = "grouping"] kw
+def GROUPS = &(?Gg) [kwid = "groups"] kw
+def HAVING = &(?Hh) [kwid = "having"] kw
+def HOUR = &(?Hh) [kwid = "hour"] kw
+def IF = &(?Ii) [kwid = "if"] kw
+def ILIKE = &(?Ii) [kwid = "ilike"] kw
+def IN = &(?Ii) [kwid = "in"] kw
+def INDEX = &(?Ii) [kwid = "index"] kw
+def INNER = &(?Ii) [kwid = "inner"] kw
+def INOUT = &(?Ii) [kwid = "inout"] kw
+def INSERT = &(?Ii) [kwid = "insert"] kw
+def INT = &(?Ii) [kwid = "int"] kw
+def INTEGER = &(?Ii) [kwid = "integer"] kw
+def INTERSECT = &(?Ii) [kwid = "intersect"] kw
+def INTERVAL = &(?Ii) [kwid = "interval"] kw
+def INTO = &(?Ii) [kwid = "into"] kw
+def IS = &(?Ii) [kwid = "is"] kw
+def ISNULL = &(?Ii) [kwid = "isnull"] kw
+def JOIN = &(?Jj) [kwid = "join"] kw
+def JSON = &(?Jj) [kwid = "json"] kw
+def KEY = &(?Kk) [kwid = "key"] kw
+def LABEL = &(?Ll) [kwid = "label"] kw
+def LANGUAGE = &(?Ll) [kwid = "language"] kw
+def LARGE = &(?Ll) [kwid = "large"] kw
+def LAST = &(?Ll) [kwid = "last"] kw
+def LATERAL = &(?Ll) [kwid = "lateral"] kw
+def LEADING = &(?Ll) [kwid = "leading"] kw
+def LEAST = &(?Ll) [kwid = "least"] kw
+def LEFT = &(?Ll) [kwid = "left"] kw
+def LIKE = &(?Ll) [kwid = "like"] kw
+def LIMIT = &(?Ll) [kwid = "limit"] kw
+def LOCAL = &(?Ll) [kwid = "local"] kw
+def LOCALTIME = &(?Ll) [kwid = "localtime"] kw
+def LOCALTIMESTAMP = &(?Ll) [kwid = "localtimestamp"] kw
+def LOCKED = &(?Ll) [kwid = "locked"] kw
+def MATCHED = &(?Mm) [kwid = "matched"] kw
+def MATERIALIZED = &(?Mm) [kwid = "materialized"] kw
+def MERGE = &(?Mm) [kwid = "merge"] kw
+def MERGE_ACTION = &(?Mm) [kwid = "merge_action"] kw
+def METHOD = &(?Mm) [kwid = "method"] kw
+def MINUTE = &(?Mm) [kwid = "minute"] kw
+def MONTH = &(?Mm) [kwid = "month"] kw
+def NATIONAL = &(?Nn) [kwid = "national"] kw
+def NATURAL = &(?Nn) [kwid = "natural"] kw
+def NCHAR = &(?Nn) [kwid = "nchar"] kw
+def NEW = &(?Nn) [kwid = "new"] kw
+def NEXT = &(?Nn) [kwid = "next"] kw
+def NFC = &(?Nn) [kwid = "nfc"] kw
+def NFD = &(?Nn) [kwid = "nfd"] kw
+def NFKC = &(?Nn) [kwid = "nfkc"] kw
+def NFKD = &(?Nn) [kwid = "nfkd"] kw
+def NO = &(?Nn) [kwid = "no"] kw
+def NONE = &(?Nn) [kwid = "none"] kw
+def NORMALIZE = &(?Nn) [kwid = "normalize"] kw
+def NOT = &(?Nn) [kwid = "not"] kw
+def NOTHING = &(?Nn) [kwid = "nothing"] kw
+def NOTNULL = &(?Nn) [kwid = "notnull"] kw
+def NOWAIT = &(?Nn) [kwid = "nowait"] kw
+def NULL = &(?Nn) [kwid = "null"] kw
+def NULLIF = &(?Nn) [kwid = "nullif"] kw
+def NULLS = &(?Nn) [kwid = "nulls"] kw
+def NUMERIC = &(?Nn) [kwid = "numeric"] kw
+def OBJECT = &(?Oo) [kwid = "object"] kw
+def OBJECTS = &(?Oo) [kwid = "objects"] kw
+def OF = &(?Oo) [kwid = "of"] kw
+def OFFSET = &(?Oo) [kwid = "offset"] kw
+def OLD = &(?Oo) [kwid = "old"] kw
+def ON = &(?Oo) [kwid = "on"] kw
+def ONLY = &(?Oo) [kwid = "only"] kw
+def OPERATOR = &(?Oo) [kwid = "operator"] kw
+def OPTION = &(?Oo) [kwid = "option"] kw
+def OR = &(?Oo) [kwid = "or"] kw
+def ORDER = &(?Oo) [kwid = "order"] kw
+def ORDINALITY = &(?Oo) [kwid = "ordinality"] kw
+def OTHERS = &(?Oo) [kwid = "others"] kw
+def OUT = &(?Oo) [kwid = "out"] kw
+def OUTER = &(?Oo) [kwid = "outer"] kw
+def OVER = &(?Oo) [kwid = "over"] kw
+def OVERLAPS = &(?Oo) [kwid = "overlaps"] kw
+def OVERLAY = &(?Oo) [kwid = "overlay"] kw
+def OVERRIDING = &(?Oo) [kwid = "overriding"] kw
+def OWNER = &(?Oo) [kwid = "owner"] kw
+def PARAMETER = &(?Pp) [kwid = "parameter"] kw
+def PARSER = &(?Pp) [kwid = "parser"] kw
+def PARTITION = &(?Pp) [kwid = "partition"] kw
+def PLACING = &(?Pp) [kwid = "placing"] kw
+def POLICY = &(?Pp) [kwid = "policy"] kw
+def POSITION = &(?Pp) [kwid = "position"] kw
+def PRECEDING = &(?Pp) [kwid = "preceding"] kw
+def PRECISION = &(?Pp) [kwid = "precision"] kw
+def PRIVILEGES = &(?Pp) [kwid = "privileges"] kw
+def PROCEDURAL = &(?Pp) [kwid = "procedural"] kw
+def PROCEDURE = &(?Pp) [kwid = "procedure"] kw
+def PROCEDURES = &(?Pp) [kwid = "procedures"] kw
+def PUBLICATION = &(?Pp) [kwid = "publication"] kw
+def RANGE = &(?Rr) [kwid = "range"] kw
+def READ = &(?Rr) [kwid = "read"] kw
+def REAL = &(?Rr) [kwid = "real"] kw
+def RECURSIVE = &(?Rr) [kwid = "recursive"] kw
+def REFERENCES = &(?Rr) [kwid = "references"] kw
+def RENAME = &(?Rr) [kwid = "rename"] kw
+def REPEATABLE = &(?Rr) [kwid = "repeatable"] kw
+def RESTRICT = &(?Rr) [kwid = "restrict"] kw
+def RETURNING = &(?Rr) [kwid = "returning"] kw
+def REVOKE = &(?Rr) [kwid = "revoke"] kw
+def RIGHT = &(?Rr) [kwid = "right"] kw
+def ROLE = &(?Rr) [kwid = "role"] kw
+def ROLLUP = &(?Rr) [kwid = "rollup"] kw
+def ROUTINE = &(?Rr) [kwid = "routine"] kw
+def ROUTINES = &(?Rr) [kwid = "routines"] kw
+def ROW = &(?Rr) [kwid = "row"] kw
+def ROWS = &(?Rr) [kwid = "rows"] kw
+def RULE = &(?Rr) [kwid = "rule"] kw
+def SCHEMA = &(?Ss) [kwid = "schema"] kw
+def SCHEMAS = &(?Ss) [kwid = "schemas"] kw
+def SEARCH = &(?Ss) [kwid = "search"] kw
+def SECOND = &(?Ss) [kwid = "second"] kw
+def SECURITY = &(?Ss) [kwid = "security"] kw
+def SELECT = &(?Ss) [kwid = "select"] kw
+def SEQUENCE = &(?Ss) [kwid = "sequence"] kw
+def SEQUENCES = &(?Ss) [kwid = "sequences"] kw
+def SERVER = &(?Ss) [kwid = "server"] kw
+def SESSION_USER = &(?Ss) [kwid = "session_user"] kw
+def SET = &(?Ss) [kwid = "set"] kw
+def SETOF = &(?Ss) [kwid = "setof"] kw
+def SETS = &(?Ss) [kwid = "sets"] kw
+def SHARE = &(?Ss) [kwid = "share"] kw
+def SIMILAR = &(?Ss) [kwid = "similar"] kw
+def SKIP = &(?Ss) [kwid = "skip"] kw
+def SMALLINT = &(?Ss) [kwid = "smallint"] kw
+def SOME = &(?Ss) [kwid = "some"] kw
+def SOURCE = &(?Ss) [kwid = "source"] kw
+def STATISTICS = &(?Ss) [kwid = "statistics"] kw
+def SUBSCRIPTION = &(?Ss) [kwid = "subscription"] kw
+def SUBSTRING = &(?Ss) [kwid = "substring"] kw
+def SYMMETRIC = &(?Ss) [kwid = "symmetric"] kw
+def SYSTEM = &(?Ss) [kwid = "system"] kw
+def SYSTEM_USER = &(?Ss) [kwid = "system_user"] kw
+def TABLE = &(?Tt) [kwid = "table"] kw
+def TABLES = &(?Tt) [kwid = "tables"] kw
+def TABLESAMPLE = &(?Tt) [kwid = "tablesample"] kw
+def TABLESPACE = &(?Tt) [kwid = "tablespace"] kw
+def TARGET = &(?Tt) [kwid = "target"] kw
+def TEMP = &(?Tt) [kwid = "temp"] kw
+def TEMPLATE = &(?Tt) [kwid = "template"] kw
+def TEMPORARY = &(?Tt) [kwid = "temporary"] kw
+def TEXT = &(?Tt) [kwid = "text"] kw
+def THEN = &(?Tt) [kwid = "then"] kw
+def TIES = &(?Tt) [kwid = "ties"] kw
+def TIME = &(?Tt) [kwid = "time"] kw
+def TIMESTAMP = &(?Tt) [kwid = "timestamp"] kw
+def TO = &(?Tt) [kwid = "to"] kw
+def TRAILING = &(?Tt) [kwid = "trailing"] kw
+def TRANSFORM = &(?Tt) [kwid = "transform"] kw
+def TREAT = &(?Tt) [kwid = "treat"] kw
+def TRIGGER = &(?Tt) [kwid = "trigger"] kw
+def TRIM = &(?Tt) [kwid = "trim"] kw
+def TRUE = &(?Tt) [kwid = "true"] kw
+def TYPE = &(?Tt) [kwid = "type"] kw
+def TYPES = &(?Tt) [kwid = "types"] kw
+def UNBOUNDED = &(?Uu) [kwid = "unbounded"] kw
+def UNION = &(?Uu) [kwid = "union"] kw
+def UNKNOWN = &(?Uu) [kwid = "unknown"] kw
+def UNLOGGED = &(?Uu) [kwid = "unlogged"] kw
+def UPDATE = &(?Uu) [kwid = "update"] kw
+def USER = &(?Uu) [kwid = "user"] kw
+def USING = &(?Uu) [kwid = "using"] kw
+def VALUE = &(?Vv) [kwid = "value"] kw
+def VALUES = &(?Vv) [kwid = "values"] kw
+def VARCHAR = &(?Vv) [kwid = "varchar"] kw
+def VARIADIC = &(?Vv) [kwid = "variadic"] kw
+def VARYING = &(?Vv) [kwid = "varying"] kw
+def VIEW = &(?Vv) [kwid = "view"] kw
+def WHEN = &(?Ww) [kwid = "when"] kw
+def WHERE = &(?Ww) [kwid = "where"] kw
+def WINDOW = &(?Ww) [kwid = "window"] kw
+def WITH = &(?Ww) [kwid = "with"] kw
+def WITHIN = &(?Ww) [kwid = "within"] kw
+def WITHOUT = &(?Ww) [kwid = "without"] kw
+def WRAPPER = &(?Ww) [kwid = "wrapper"] kw
+def YEAR = &(?Yy) [kwid = "year"] kw
+def ZONE = &(?Zz) [kwid = "zone"] kw
+
+// The categories of keywords that cannot be names: tests on the lower-case word.
+def reserved_word = &(?Aa) w:lcword [$w.V == "all" || $w.V == "analyse" || $w.V == "analyze" || $w.V == "and" || $w.V == "any" || $w.V == "array" || $w.V == "as" || $w.V == "asc" || $w.V == "asymmetric"]
+    / &(?Bb) w:lcword [$w.V == "both"]
+    / &(?Cc) w:lcword [$w.V == "case" || $w.V == "cast" || $w.V == "check" || $w.V == "collate" || $w.V == "column" || $w.V == "constraint" || $w.V == "create" || $w.V == "current_catalog" || $w.V == "current_date" || $w.V == "current_role" || $w.V == "current_time" || $w.V == "current_timestamp" || $w.V == "current_user"]
+    / &(?Dd) w:lcword [$w.V == "default" || $w.V == "deferrable" || $w.V == "desc" || $w.V == "distinct" || $w.V == "do"]
+    / &(?Ee) w:lcword [$w.V == "else" || $w.V == "end" || $w.V == "except"]
+    / &(?Ff) w:lcword [$w.V == "false" || $w.V == "fetch" || $w.V == "for" || $w.V == "foreign" || $w.V == "from"]
+    / &(?Gg) w:lcword [$w.V == "grant" || $w.V == "group"]
+    / &(?Hh) w:lcword [$w.V == "having"]
+    / &(?Ii) w:lcword [$w.V == "in" || $w.V == "initially" || $w.V == "intersect" || $w.V == "into"]
+    / &(?Ll) w:lcword [$w.V == "lateral" || $w.V == "leading" || $w.V == "limit" || $w.V == "localtime" || $w.V == "localtimestamp"]
+    / &(?Nn) w:lcword [$w.V == "not" || $w.V == "null"]
+    / &(?Oo) w:lcword [$w.V == "offset" || $w.V == "on" || $w.V == "only" || $w.V == "or" || $w.V == "order"]
+    / &(?Pp) w:lcword [$w.V == "placing" || $w.V == "primary"]
+    / &(?Rr) w:lcword [$w.V == "references" || $w.V == "returning"]
+    / &(?Ss) w:lcword [$w.V == "select" || $w.V == "session_user" || $w.V == "some" || $w.V == "symmetric" || $w.V == "system_user"]
+    / &(?Tt) w:lcword [$w.V == "table" || $w.V == "then" || $w.V == "to" || $w.V == "trailing" || $w.V == "true"]
+    / &(?Uu) w:lcword [$w.V == "union" || $w.V == "unique" || $w.V == "user" || $w.V == "using"]
+    / &(?Vv) w:lcword [$w.V == "variadic"]
+    / &(?Ww) w:lcword [$w.V == "when" || $w.V == "where" || $w.V == "window" || $w.V == "with"]
+def type_func_name_word = &(?Aa) w:lcword [$w.V == "authorization"]
+    / &(?Bb) w:lcword [$w.V == "binary"]
+    / &(?Cc) w:lcword [$w.V == "collation" || $w.V == "concurrently" || $w.V == "cross" || $w.V == "current_schema"]
+    / &(?Ff) w:lcword [$w.V == "freeze" || $w.V == "full"]
+    / &(?Ii) w:lcword [$w.V == "ilike" || $w.V == "inner" || $w.V == "is" || $w.V == "isnull"]
+    / &(?Jj) w:lcword [$w.V == "join"]
+    / &(?Ll) w:lcword [$w.V == "left" || $w.V == "like"]
+    / &(?Nn) w:lcword [$w.V == "natural" || $w.V == "notnull"]
+    / &(?Oo) w:lcword [$w.V == "outer" || $w.V == "overlaps"]
+    / &(?Rr) w:lcword [$w.V == "right"]
+    / &(?Ss) w:lcword [$w.V == "similar"]
+    / &(?Tt) w:lcword [$w.V == "tablesample"]
+    / &(?Vv) w:lcword [$w.V == "verbose"]
+def col_name_word = &(?Bb) w:lcword [$w.V == "between" || $w.V == "bigint" || $w.V == "bit" || $w.V == "boolean"]
+    / &(?Cc) w:lcword [$w.V == "char" || $w.V == "character" || $w.V == "coalesce"]
+    / &(?Dd) w:lcword [$w.V == "dec" || $w.V == "decimal"]
+    / &(?Ee) w:lcword [$w.V == "exists" || $w.V == "extract"]
+    / &(?Ff) w:lcword [$w.V == "float"]
+    / &(?Gg) w:lcword [$w.V == "greatest" || $w.V == "grouping"]
+    / &(?Ii) w:lcword [$w.V == "inout" || $w.V == "int" || $w.V == "integer" || $w.V == "interval"]
+    / &(?Jj) w:lcword [$w.V == "json" || $w.V == "json_array" || $w.V == "json_arrayagg" || $w.V == "json_exists" || $w.V == "json_object" || $w.V == "json_objectagg" || $w.V == "json_query" || $w.V == "json_scalar" || $w.V == "json_serialize" || $w.V == "json_table" || $w.V == "json_value"]
+    / &(?Ll) w:lcword [$w.V == "least"]
+    / &(?Mm) w:lcword [$w.V == "merge_action"]
+    / &(?Nn) w:lcword [$w.V == "national" || $w.V == "nchar" || $w.V == "none" || $w.V == "normalize" || $w.V == "nullif" || $w.V == "numeric"]
+    / &(?Oo) w:lcword [$w.V == "out" || $w.V == "overlay"]
+    / &(?Pp) w:lcword [$w.V == "position" || $w.V == "precision"]
+    / &(?Rr) w:lcword [$w.V == "real" || $w.V == "row"]
+    / &(?Ss) w:lcword [$w.V == "setof" || $w.V == "smallint" || $w.V == "substring"]
+    / &(?Tt) w:lcword [$w.V == "time" || $w.V == "timestamp" || $w.V == "treat" || $w.V == "trim"]
+    / &(?Vv) w:lcword [$w.V == "values" || $w.V == "varchar"]
+    / &(?Xx) w:lcword [$w.V == "xmlattributes" || $w.V == "xmlconcat" || $w.V == "xmlelement" || $w.V == "xmlexists" || $w.V == "xmlforest" || $w.V == "xmlnamespaces" || $w.V == "xmlparse" || $w.V == "xmlpi" || $w.V == "xmlroot" || $w.V == "xmlserialize" || $w.V == "xmltable"]
+def label_only_word = &(?Aa) w:lcword [$w.V == "array" || $w.V == "as"]
+    / &(?Cc) w:lcword [$w.V == "char" || $w.V == "character" || $w.V == "create"]
+    / &(?Dd) w:lcword [$w.V == "day"]
+    / &(?Ee) w:lcword [$w.V == "except"]
+    / &(?Ff) w:lcword [$w.V == "fetch" || $w.V == "filter" || $w.V == "for" || $w.V == "from"]
+    / &(?Gg) w:lcword [$w.V == "grant" || $w.V == "group"]
+    / &(?Hh) w:lcword [$w.V == "having" || $w.V == "hour"]
+    / &(?Ii) w:lcword [$w.V == "intersect" || $w.V == "into"]
+    / &(?Ll) w:lcword [$w.V == "limit"]
+    / &(?Mm) w:lcword [$w.V == "minute" || $w.V == "month"]
+    / &(?Oo) w:lcword [$w.V == "offset" || $w.V == "on" || $w.V == "order" || $w.V == "over" || $w.V == "overlaps"]
+    / &(?Pp) w:lcword [$w.V == "precision"]
+    / &(?Rr) w:lcword [$w.V == "returning"]
+    / &(?Ss) w:lcword [$w.V == "second"]
+    / &(?Tt) w:lcword [$w.V == "to"]
+    / &(?Uu) w:lcword [$w.V == "union"]
+    / &(?Vv) w:lcword [$w.V == "varying"]
+    / &(?Ww) w:lcword [$w.V == "where" || $w.V == "window" || $w.V == "with" || $w.V == "within" || $w.V == "without"]
+    / &(?Yy) w:lcword [$w.V == "year"]
+def reserved_or_type_func_word = &(?Aa) w:lcword [$w.V == "all" || $w.V == "analyse" || $w.V == "analyze" || $w.V == "and" || $w.V == "any" || $w.V == "array" || $w.V == "as" || $w.V == "asc" || $w.V == "asymmetric" || $w.V == "authorization"]
+    / &(?Bb) w:lcword [$w.V == "binary" || $w.V == "both"]
+    / &(?Cc) w:lcword [$w.V == "case" || $w.V == "cast" || $w.V == "check" || $w.V == "collate" || $w.V == "collation" || $w.V == "column" || $w.V == "concurrently" || $w.V == "constraint" || $w.V == "create" || $w.V == "cross" || $w.V == "current_catalog" || $w.V == "current_date" || $w.V == "current_role" || $w.V == "current_schema" || $w.V == "current_time" || $w.V == "current_timestamp" || $w.V == "current_user"]
+    / &(?Dd) w:lcword [$w.V == "default" || $w.V == "deferrable" || $w.V == "desc" || $w.V == "distinct" || $w.V == "do"]
+    / &(?Ee) w:lcword [$w.V == "else" || $w.V == "end" || $w.V == "except"]
+    / &(?Ff) w:lcword [$w.V == "false" || $w.V == "fetch" || $w.V == "for" || $w.V == "foreign" || $w.V == "freeze" || $w.V == "from" || $w.V == "full"]
+    / &(?Gg) w:lcword [$w.V == "grant" || $w.V == "group"]
+    / &(?Hh) w:lcword [$w.V == "having"]
+    / &(?Ii) w:lcword [$w.V == "ilike" || $w.V == "in" || $w.V == "initially" || $w.V == "inner" || $w.V == "intersect" || $w.V == "into" || $w.V == "is" || $w.V == "isnull"]
+    / &(?Jj) w:lcword [$w.V == "join"]
+    / &(?Ll) w:lcword [$w.V == "lateral" || $w.V == "leading" || $w.V == "left" || $w.V == "like" || $w.V == "limit" || $w.V == "localtime" || $w.V == "localtimestamp"]
+    / &(?Nn) w:lcword [$w.V == "natural" || $w.V == "not" || $w.V == "notnull" || $w.V == "null"]
+    / &(?Oo) w:lcword [$w.V == "offset" || $w.V == "on" || $w.V == "only" || $w.V == "or" || $w.V == "order" || $w.V == "outer" || $w.V == "overlaps"]
+    / &(?Pp) w:lcword [$w.V == "placing" || $w.V == "primary"]
+    / &(?Rr) w:lcword [$w.V == "references" || $w.V == "returning" || $w.V == "right"]
+    / &(?Ss) w:lcword [$w.V == "select" || $w.V == "session_user" || $w.V == "similar" || $w.V == "some" || $w.V == "symmetric" || $w.V == "system_user"]
+    / &(?Tt) w:lcword [$w.V == "table" || $w.V == "tablesample" || $w.V == "then" || $w.V == "to" || $w.V == "trailing" || $w.V == "true"]
+    / &(?Uu) w:lcword [$w.V == "union" || $w.V == "unique" || $w.V == "user" || $w.V == "using"]
+    / &(?Vv) w:lcword [$w.V == "variadic" || $w.V == "verbose"]
+    / &(?Ww) w:lcword [$w.V == "when" || $w.V == "where" || $w.V == "window" || $w.V == "with"]
+def reserved_or_col_name_word = &(?Aa) w:lcword [$w.V == "all" || $w.V == "analyse" || $w.V == "analyze" || $w.V == "and" || $w.V == "any" || $w.V == "array" || $w.V == "as" || $w.V == "asc" || $w.V == "asymmetric"]
+    / &(?Bb) w:lcword [$w.V == "between" || $w.V == "bigint" || $w.V == "bit" || $w.V == "boolean" || $w.V == "both"]
+    / &(?Cc) w:lcword [$w.V == "case" || $w.V == "cast" || $w.V == "char" || $w.V == "character" || $w.V == "check" || $w.V == "coalesce" || $w.V == "collate" || $w.V == "column" || $w.V == "constraint" || $w.V == "create" || $w.V == "current_catalog" || $w.V == "current_date" || $w.V == "current_role" || $w.V == "current_time" || $w.V == "current_timestamp" || $w.V == "current_user"]
+    / &(?Dd) w:lcword [$w.V == "dec" || $w.V == "decimal" || $w.V == "default" || $w.V == "deferrable" || $w.V == "desc" || $w.V == "distinct" || $w.V == "do"]
+    / &(?Ee) w:lcword [$w.V == "else" || $w.V == "end" || $w.V == "except" || $w.V == "exists" || $w.V == "extract"]
+    / &(?Ff) w:lcword [$w.V == "false" || $w.V == "fetch" || $w.V == "float" || $w.V == "for" || $w.V == "foreign" || $w.V == "from"]
+    / &(?Gg) w:lcword [$w.V == "grant" || $w.V == "greatest" || $w.V == "group" || $w.V == "grouping"]
+    / &(?Hh) w:lcword [$w.V == "having"]
+    / &(?Ii) w:lcword [$w.V == "in" || $w.V == "initially" || $w.V == "inout" || $w.V == "int" || $w.V == "integer" || $w.V == "intersect" || $w.V == "interval" || $w.V == "into"]
+    / &(?Jj) w:lcword [$w.V == "json" || $w.V == "json_array" || $w.V == "json_arrayagg" || $w.V == "json_exists" || $w.V == "json_object" || $w.V == "json_objectagg" || $w.V == "json_query" || $w.V == "json_scalar" || $w.V == "json_serialize" || $w.V == "json_table" || $w.V == "json_value"]
+    / &(?Ll) w:lcword [$w.V == "lateral" || $w.V == "leading" || $w.V == "least" || $w.V == "limit" || $w.V == "localtime" || $w.V == "localtimestamp"]
+    / &(?Mm) w:lcword [$w.V == "merge_action"]
+    / &(?Nn) w:lcword [$w.V == "national" || $w.V == "nchar" || $w.V == "none" || $w.V == "normalize" || $w.V == "not" || $w.V == "null" || $w.V == "nullif" || $w.V == "numeric"]
+    / &(?Oo) w:lcword [$w.V == "offset" || $w.V == "on" || $w.V == "only" || $w.V == "or" || $w.V == "order" || $w.V == "out" || $w.V == "overlay"]
+    / &(?Pp) w:lcword [$w.V == "placing" || $w.V == "position" || $w.V == "precision" || $w.V == "primary"]
+    / &(?Rr) w:lcword [$w.V == "real" || $w.V == "references" || $w.V == "returning" || $w.V == "row"]
+    / &(?Ss) w:lcword [$w.V == "select" || $w.V == "session_user" || $w.V == "setof" || $w.V == "smallint" || $w.V == "some" || $w.V == "substring" || $w.V == "symmetric" || $w.V == "system_user"]
+    / &(?Tt) w:lcword [$w.V == "table" || $w.V == "then" || $w.V == "time" || $w.V == "timestamp" || $w.V == "to" || $w.V == "trailing" || $w.V == "treat" || $w.V == "trim" || $w.V == "true"]
+    / &(?Uu) w:lcword [$w.V == "union" || $w.V == "unique" || $w.V == "user" || $w.V == "using"]
+    / &(?Vv) w:lcword [$w.V == "values" || $w.V == "varchar" || $w.V == "variadic"]
+    / &(?Ww) w:lcword [$w.V == "when" || $w.V == "where" || $w.V == "window" || $w.V == "with"]
+    / &(?Xx) w:lcword [$w.V == "xmlattributes" || $w.V == "xmlconcat" || $w.V == "xmlelement" || $w.V == "xmlexists" || $w.V == "xmlforest" || $w.V == "xmlnamespaces" || $w.V == "xmlparse" || $w.V == "xmlpi" || $w.V == "xmlroot" || $w.V == "xmlserialize" || $w.V == "xmltable"]
+// END GENERATED KEYWORDS
+
+// BEGIN GENERATED ANY (python3 internal/refgen/keywords.py update postgresql.pego)
+// Any is the union of all node types: the type of the nodes in lists of unknown contents.
+type Any = Ident | OpTok | Iconst | Fconst | Sconst | Bconst | Xconst | Param | String | Integer | Boolean |
+    NodeList | A_Star | A_Const | ParamRef | ColumnRef | A_Indices | A_Indirection | A_ArrayExpr | A_Expr |
+    BoolExpr | FuncCall | NamedArgExpr | TypeCast | CollateClause | SubLink | CaseExpr | CaseWhen | RowExpr |
+    CoalesceExpr | MinMaxExpr | SQLValueFunction | NullTest | BooleanTest | SetToDefault | GroupingFunc |
+    MergeSupportFunc | TreatExpr | GroupingSet | TypeName | SortBy | WindowDef | Alias | RangeVar | ResTarget |
+    WithClause | CommonTableExpr | CTESearchClause | CTECycleClause | IntoClause | LockingClause | SelectStmt |
+    Script | RawStmt | RangeSubselect | RangeFunction | RangeFuncItem | RangeTableSample | JoinExpr |
+    MultiAssignRef | CurrentOfExpr | ReturningOption | ReturningClause | InferClause | OnConflictClause |
+    IndexElem | InsertStmt | UpdateStmt | DeleteStmt | MergeWhenClause | MergeStmt | SignedNum | DefElem |
+    RoleSpec | FunctionParameter | ObjectWithArgs | DropBehavior | NoneArg | AggrArgs | StmtStubA | ColumnDef |
+    StmtStubB | StmtStubC | ExprStubD | TableRefStubD | ObjectType | ParamName | DropStmt | RenameStmt |
+    AlterObjectSchemaStmt | AlterOwnerStmt | AlterObjectDependsStmt | CommentStmt | SecLabelStmt | AccessPriv |
+    GrantStmt | RoleOpt | GrantRoleStmt | DefaclOpt | AlterDefaultPrivilegesStmt | ObjSpec | RelSpec |
+    DependsOn | PrivTarget
+// END GENERATED ANY

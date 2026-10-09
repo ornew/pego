@@ -1,0 +1,2 @@
+type Out struct { A []Match, N int }
+def main: Out = ys:(xs:@"y" ";")* "|" xs:(n:@"x")* -> new Out{A: map($xs, (e) => $e.n), N: len($ys)}

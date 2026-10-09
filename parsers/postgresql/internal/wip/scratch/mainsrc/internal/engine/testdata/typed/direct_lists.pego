@@ -1,0 +1,16 @@
+// Direct rules of the typed runtime: repetition elements with scopes of their own whose values are
+// records (nested), actions with built-ins, $n of sequence and non-sequence bodies, rules without
+// actions whose captures become fields, value-free calls (twins) and errors in actions.
+type Name terminal
+type Row struct { Cells []Name, Mark *Match, N int, Txt string, Pos int, End int, Ok bool }
+type KV struct { K *Name, V *Name, All string, Div int }
+type Tab struct { Rows []Row, Sum int, Neg int, Label string, Pairs []KV, One KV }
+def main: Tab = rows:(cells:(c:name -","?)* (m:"!")? ";")* ps:(p:kv -" "?)* -pair o:one t:@("#" (?a-z)*)? $$
+    -> new Tab{Rows: map($rows, (r) => new Row{Cells: map($r.cells, (x) => $x.c), Mark: $r.m, N: len($r.cells), Txt: text($r),
+           Pos: $r.startPos, End: $r.endPos, Ok: len($r.cells) > 1 && !(len($r.cells) > 3) || false}),
+       Sum: foldl(0, $rows, (acc, r) => $acc + len($r.cells)), Neg: -len($rows), Label: text($t) + "!",
+       Pairs: map($ps, (e) => $e.p), One: $o}
+def kv: KV = name "=" name -> new KV{K: $1, V: $3, All: text($0) + "/" + text($2)}
+def one: KV = pair -> new KV{K: $1.k, V: $1.v, Div: 10 / (len($1.k) - 1)}
+def pair = "@" k:name ":" v:name
+def name: Name = (?a-z)+

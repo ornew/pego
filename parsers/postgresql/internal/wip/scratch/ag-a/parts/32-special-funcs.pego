@@ -1,0 +1,102 @@
+
+// ==== Functions with special syntax (func_expr_common_subexpr) ====
+
+def func_expr_common_subexpr: Expr =
+    collation_for / sql_value_function / cast_expr / extract_expr / normalize_expr / overlay_expr / position_expr
+    / substring_expr / treat_expr / trim_expr / nullif_expr / coalesce_expr / greatest_expr / least_expr
+    / merge_action_expr / xmljson_expr
+
+def collation_for: FuncCall = COLLATION FOR -LP e:a_expr -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "pg_collation_for"}), Args: list($e), Funcformat: "COERCE_SQL_SYNTAX"}
+
+def sql_value_function: Expr = svf_simple / svf_time_n / system_user_expr
+def svf_simple: SQLValueFunction = svf_date / svf_time / svf_timestamp / svf_localtime / svf_localtimestamp
+    / svf_current_role / svf_current_user / svf_session_user / svf_user / svf_catalog / svf_schema
+def svf_date: SQLValueFunction = CURRENT_DATE -> new SQLValueFunction{Op: "SVFOP_CURRENT_DATE"}
+def svf_time: SQLValueFunction = CURRENT_TIME !LP -> new SQLValueFunction{Op: "SVFOP_CURRENT_TIME"}
+def svf_timestamp: SQLValueFunction = CURRENT_TIMESTAMP !LP -> new SQLValueFunction{Op: "SVFOP_CURRENT_TIMESTAMP"}
+def svf_localtime: SQLValueFunction = LOCALTIME !LP -> new SQLValueFunction{Op: "SVFOP_LOCALTIME"}
+def svf_localtimestamp: SQLValueFunction = LOCALTIMESTAMP !LP -> new SQLValueFunction{Op: "SVFOP_LOCALTIMESTAMP"}
+def svf_current_role: SQLValueFunction = CURRENT_ROLE -> new SQLValueFunction{Op: "SVFOP_CURRENT_ROLE"}
+def svf_current_user: SQLValueFunction = CURRENT_USER -> new SQLValueFunction{Op: "SVFOP_CURRENT_USER"}
+def svf_session_user: SQLValueFunction = SESSION_USER -> new SQLValueFunction{Op: "SVFOP_SESSION_USER"}
+def svf_user: SQLValueFunction = USER -> new SQLValueFunction{Op: "SVFOP_USER"}
+def svf_catalog: SQLValueFunction = CURRENT_CATALOG -> new SQLValueFunction{Op: "SVFOP_CURRENT_CATALOG"}
+def svf_schema: SQLValueFunction = CURRENT_SCHEMA -> new SQLValueFunction{Op: "SVFOP_CURRENT_SCHEMA"}
+def svf_time_n: SQLValueFunction = svf_time_p / svf_timestamp_p / svf_localtime_p / svf_localtimestamp_p
+def svf_time_p: SQLValueFunction = CURRENT_TIME -LP n:Iconst -RP -> new SQLValueFunction{Op: "SVFOP_CURRENT_TIME_N", Typmod: $n}
+def svf_timestamp_p: SQLValueFunction = CURRENT_TIMESTAMP -LP n:Iconst -RP -> new SQLValueFunction{Op: "SVFOP_CURRENT_TIMESTAMP_N", Typmod: $n}
+def svf_localtime_p: SQLValueFunction = LOCALTIME -LP n:Iconst -RP -> new SQLValueFunction{Op: "SVFOP_LOCALTIME_N", Typmod: $n}
+def svf_localtimestamp_p: SQLValueFunction = LOCALTIMESTAMP -LP n:Iconst -RP -> new SQLValueFunction{Op: "SVFOP_LOCALTIMESTAMP_N", Typmod: $n}
+def system_user_expr: FuncCall = SYSTEM_USER
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "system_user"}), Funcformat: "COERCE_SQL_SYNTAX"}
+
+def cast_expr: TypeCast = CAST -LP e:a_expr AS t:Typename -RP -> new TypeCast{Arg: $e, TypeName: $t}
+def treat_expr: TreatExpr = TREAT -LP e:a_expr AS t:Typename -RP -> new TreatExpr{Arg: $e, TypeName: $t}
+
+def extract_expr: FuncCall = EXTRACT -LP a:extract_arg FROM e:a_expr -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "extract"}), Args: list($a, $e), Funcformat: "COERCE_SQL_SYNTAX"}
+def extract_arg: A_Const = ea_ident / ea_year / ea_month / ea_day / ea_hour / ea_minute / ea_second / ea_sconst
+def ea_ident: A_Const = x:IDENT -> new A_Const{Val: $x}
+def ea_sconst: A_Const = x:Sconst -> new A_Const{Val: $x}
+def ea_year: A_Const = YEAR -> new A_Const{Val: new String{Sval: "year"}}
+def ea_month: A_Const = MONTH -> new A_Const{Val: new String{Sval: "month"}}
+def ea_day: A_Const = DAY -> new A_Const{Val: new String{Sval: "day"}}
+def ea_hour: A_Const = HOUR -> new A_Const{Val: new String{Sval: "hour"}}
+def ea_minute: A_Const = MINUTE -> new A_Const{Val: new String{Sval: "minute"}}
+def ea_second: A_Const = SECOND -> new A_Const{Val: new String{Sval: "second"}}
+
+def normalize_expr: FuncCall = normalize_form / normalize_plain
+def normalize_plain: FuncCall = NORMALIZE -LP e:a_expr -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "normalize"}), Args: list($e), Funcformat: "COERCE_SQL_SYNTAX"}
+def normalize_form: FuncCall = NORMALIZE -LP e:a_expr -COMMA f:unicode_normal_form -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "normalize"}), Args: list($e, $f), Funcformat: "COERCE_SQL_SYNTAX"}
+def unicode_normal_form: A_Const = nf_c / nf_d / nf_kc / nf_kd
+def nf_c: A_Const = NFC -> new A_Const{Val: new String{Sval: "NFC"}}
+def nf_d: A_Const = NFD -> new A_Const{Val: new String{Sval: "NFD"}}
+def nf_kc: A_Const = NFKC -> new A_Const{Val: new String{Sval: "NFKC"}}
+def nf_kd: A_Const = NFKD -> new A_Const{Val: new String{Sval: "NFKD"}}
+
+// OVERLAY and SUBSTRING also accept a plain argument list, as a function named like them
+def overlay_expr: FuncCall = overlay_special / overlay_plain
+def overlay_special: FuncCall = OVERLAY -LP a:a_expr PLACING b:a_expr FROM c:a_expr d:overlay_for? -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "overlay"}), Args: concat(list($a, $b, $c), $d), Funcformat: "COERCE_SQL_SYNTAX"}
+def overlay_for: []Expr = FOR e:a_expr -> list($e)
+def overlay_plain: FuncCall = OVERLAY -LP l:func_arg_list_opt -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "overlay"}), Args: $l, Funcformat: "COERCE_EXPLICIT_CALL"}
+
+def position_expr: FuncCall = POSITION -LP a:b_expr IN b:b_expr -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "position"}), Args: list($b, $a), Funcformat: "COERCE_SQL_SYNTAX"}
+
+def substring_expr: FuncCall = substring_special / substring_plain
+def substring_special: FuncCall = SUBSTRING -LP l:substr_list -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "substring"}), Args: $l, Funcformat: "COERCE_SQL_SYNTAX"}
+def substring_plain: FuncCall = SUBSTRING -LP l:func_arg_list_opt -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "substring"}), Args: $l, Funcformat: "COERCE_EXPLICIT_CALL"}
+def substr_list: []Expr = substr_from_for / substr_for_from / substr_from / substr_for / substr_similar
+def substr_from_for: []Expr = a:a_expr FROM b:a_expr FOR c:a_expr -> list($a, $b, $c)
+def substr_for_from: []Expr = a:a_expr FOR b:a_expr FROM c:a_expr -> list($a, $c, $b)
+def substr_from: []Expr = a:a_expr FROM b:a_expr -> list($a, $b)
+def substr_for: []Expr = a:a_expr FOR b:a_expr
+    -> list($a, new A_Const{Val: new Integer{Ival: 1}}, new TypeCast{Arg: $b, TypeName: new TypeName{Names: list(new String{Sval: "pg_catalog"}, new String{Sval: "int4"}), Typemod: -1}})
+def substr_similar: []Expr = a:a_expr SIMILAR b:a_expr ESCAPE c:a_expr -> list($a, $b, $c)
+
+def trim_expr: FuncCall = trim_both / trim_leading / trim_trailing / trim_plain
+def trim_both: FuncCall = TRIM -LP BOTH l:trim_list -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "btrim"}), Args: $l, Funcformat: "COERCE_SQL_SYNTAX"}
+def trim_leading: FuncCall = TRIM -LP LEADING l:trim_list -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "ltrim"}), Args: $l, Funcformat: "COERCE_SQL_SYNTAX"}
+def trim_trailing: FuncCall = TRIM -LP TRAILING l:trim_list -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "rtrim"}), Args: $l, Funcformat: "COERCE_SQL_SYNTAX"}
+def trim_plain: FuncCall = TRIM -LP l:trim_list -RP
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "btrim"}), Args: $l, Funcformat: "COERCE_SQL_SYNTAX"}
+def trim_list: []Expr = trim_a_from / trim_from / expr_list
+def trim_a_from: []Expr = a:a_expr FROM l:expr_list -> concat($l, list($a))
+def trim_from: []Expr = FROM l:expr_list -> $l
+
+def nullif_expr: A_Expr = NULLIF -LP a:a_expr -COMMA b:a_expr -RP
+    -> new A_Expr{Kind: "AEXPR_NULLIF", Name: list(new String{Sval: "="}), Lexpr: $a, Rexpr: $b}
+def coalesce_expr: CoalesceExpr = COALESCE -LP l:expr_list -RP -> new CoalesceExpr{Args: $l}
+def greatest_expr: MinMaxExpr = GREATEST -LP l:expr_list -RP -> new MinMaxExpr{Op: "IS_GREATEST", Args: $l}
+def least_expr: MinMaxExpr = LEAST -LP l:expr_list -RP -> new MinMaxExpr{Op: "IS_LEAST", Args: $l}
+def merge_action_expr: MergeSupportFunc = MERGE_ACTION -LP -RP -> new MergeSupportFunc{}

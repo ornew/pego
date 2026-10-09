@@ -1,0 +1,145 @@
+
+// ==== Names ====
+
+def name = ColId
+def attr_name = ColLabel
+def any_name: []Ident = first:ColId rest:(-DOT x:attr_name)* -> concat(list($first), map($rest, (r) => $r.x))
+def attrs: []Ident = xs:(-DOT x:attr_name)+ -> map($xs, (r) => $r.x)
+def name_list: []Ident = first:name rest:(-COMMA x:name)* -> concat(list($first), map($rest, (r) => $r.x))
+
+// func_name: a type_function_name, or ColId followed by attributes
+def func_name: []Ident = func_name_qualified / func_name_simple
+def func_name_qualified: []Ident = first:ColId rest:(-DOT x:attr_name)+ -> concat(list($first), map($rest, (r) => $r.x))
+def func_name_simple: []Ident = x:type_function_name -> list($x)
+
+// qualified_name: the RangeVar of one, two or three names
+def qualified_name: RangeVar = qualified_name3 / qualified_name2 / qualified_name1
+def qualified_name1: RangeVar = r:ColId
+    -> new RangeVar{Relname: $r, Inh: true, Relpersistence: "p"}
+def qualified_name2: RangeVar = &(ColId DOT) s:ColId -DOT r:attr_name
+    -> new RangeVar{Schemaname: $s, Relname: $r, Inh: true, Relpersistence: "p"}
+def qualified_name3: RangeVar = &(ColId DOT attr_name DOT) c:ColId -DOT s:attr_name -DOT r:attr_name
+    -> new RangeVar{Catalogname: $c, Schemaname: $s, Relname: $r, Inh: true, Relpersistence: "p"}
+def qualified_name_list: []RangeVar = first:qualified_name rest:(-COMMA x:qualified_name)*
+    -> concat(list($first), map($rest, (r) => $r.x))
+
+// ==== Constants ====
+
+// AexprConst. The typed forms (a type name and a string) come after the literals.
+def AexprConst: Expr = iconst_expr / fconst_expr / sconst_expr / bconst_expr / xconst_expr / typed_const
+    / true_expr / false_expr / null_expr
+def iconst_expr: A_Const = v:Iconst -> new A_Const{Val: $v}
+def fconst_expr: A_Const = v:Fconst -> new A_Const{Val: $v}
+def sconst_expr: A_Const = v:Sconst -> new A_Const{Val: $v}
+def bconst_expr: A_Const = v:Bconst -> new A_Const{Val: $v}
+def xconst_expr: A_Const = v:Xconst -> new A_Const{Val: $v}
+def true_expr: A_Const = TRUE -> new A_Const{Val: new Boolean{Boolval: true}}
+def false_expr: A_Const = FALSE -> new A_Const{Val: new Boolean{Boolval: false}}
+def null_expr: A_Const = NULL -> new A_Const{Isnull: true}
+
+// A string cast to a type: type 'text', with the type a keyword, an interval or a name.
+def typed_const: TypeCast = interval_const / interval_prec_const / const_typename_const / func_modifiers_const / func_name_const
+def const_typename_const: TypeCast = [setof = false] [consttype = true] t:typename_core v:Sconst
+    -> new TypeCast{Arg: new A_Const{Val: $v}, TypeName: $t}
+def func_name_const: TypeCast = n:func_name v:Sconst
+    -> new TypeCast{Arg: new A_Const{Val: $v}, TypeName: new TypeName{Names: $n, Typemod: -1}}
+def func_modifiers_const: TypeCast = n:func_name LP a:expr_list RP v:Sconst
+    -> new TypeCast{Arg: new A_Const{Val: $v}, TypeName: new TypeName{Names: $n, Typmods: $a, Typemod: -1}}
+def interval_const: TypeCast = INTERVAL v:Sconst tm:interval_fields?
+    -> new TypeCast{Arg: new A_Const{Val: $v}, TypeName: new TypeName{Names: list(new String{Sval: "pg_catalog"}, new String{Sval: "interval"}), Typmods: concat($tm), Typemod: -1}}
+def interval_prec_const: TypeCast = INTERVAL -LP p:Iconst -RP v:Sconst
+    -> new TypeCast{Arg: new A_Const{Val: $v}, TypeName: new TypeName{Names: list(new String{Sval: "pg_catalog"}, new String{Sval: "interval"}), Typmods: list(new A_Const{Val: new Integer{Ival: 32767}}, new A_Const{Val: $p}), Typemod: -1}}
+
+// ==== Type names ====
+//
+// The raw parser builds the TypeName of a SimpleTypename and then sets arrayBounds and setof on it. Here
+// one rule, typename_core, matches every form of a type name and builds the node; the variable setof is
+// set by SETOF, and the variable consttype restricts the rule to the keyword types that may be followed
+// by a string constant (and removes the defaults for CHAR and BIT without length).
+
+def Typename: TypeName = typename_setof / typename_plain
+def typename_setof: TypeName = SETOF [setof = true] [consttype = false] t:typename_core -> $t
+def typename_plain: TypeName = [setof = false] [consttype = false] t:typename_core -> $t
+def SimpleTypename: TypeName = typename_plain
+def type_list: []TypeName = first:Typename rest:(-COMMA x:Typename)* -> concat(list($first), map($rest, (r) => $r.x))
+
+def typename_core: TypeName =
+    ( n:ty_int4 / n:ty_int2 / n:ty_int8 / n:ty_float4 / n:ty_float8 / n:ty_bool
+    / n:ty_numeric tm:opt_type_modifiers?
+    / n:ty_varbit tm:opt_type_modifiers?
+    / n:ty_bit tm:opt_type_modifiers
+    / n:ty_bit d:bit_default?
+    / n:ty_varchar tm:char_length?
+    / n:ty_bpchar tm:char_length
+    / n:ty_bpchar d:char_default?
+    / TIMESTAMP tm:time_precision? WITH TIME ZONE n:ty_timestamptz
+    / TIMESTAMP tm:time_precision? (WITHOUT TIME ZONE)? n:ty_timestamp
+    / TIME tm:time_precision? WITH TIME ZONE n:ty_timetz
+    / TIME tm:time_precision? (WITHOUT TIME ZONE)? n:ty_time
+    / n:ty_json
+    / [!consttype] INTERVAL n:ty_interval tm:interval_typmods?
+    / [!consttype] n:generic_name tm:opt_type_modifiers? )
+    ab:array_suffix?
+    -> new TypeName{Names: $n, Setof: setof, Typmods: concat($tm, $d), Typemod: -1, ArrayBounds: concat($ab)}
+
+def generic_name: []Ident = first:type_function_name rest:(-DOT x:attr_name)* -> concat(list($first), map($rest, (r) => $r.x))
+def opt_type_modifiers: []Expr = -LP l:expr_list -RP -> $l
+
+def ty_int4: []Str = (INT / INTEGER) -> list(new String{Sval: "pg_catalog"}, new String{Sval: "int4"})
+def ty_int2: []Str = SMALLINT -> list(new String{Sval: "pg_catalog"}, new String{Sval: "int2"})
+def ty_int8: []Str = BIGINT -> list(new String{Sval: "pg_catalog"}, new String{Sval: "int8"})
+def ty_bool: []Str = BOOLEAN -> list(new String{Sval: "pg_catalog"}, new String{Sval: "bool"})
+def ty_numeric: []Str = (DECIMAL / DEC / NUMERIC) -> list(new String{Sval: "pg_catalog"}, new String{Sval: "numeric"})
+def ty_json: []Str = JSON -> list(new String{Sval: "pg_catalog"}, new String{Sval: "json"})
+def ty_interval: []Str = _ -> list(new String{Sval: "pg_catalog"}, new String{Sval: "interval"})
+def ty_timestamp: []Str = _ -> list(new String{Sval: "pg_catalog"}, new String{Sval: "timestamp"})
+def ty_timestamptz: []Str = _ -> list(new String{Sval: "pg_catalog"}, new String{Sval: "timestamptz"})
+def ty_time: []Str = _ -> list(new String{Sval: "pg_catalog"}, new String{Sval: "time"})
+def ty_timetz: []Str = _ -> list(new String{Sval: "pg_catalog"}, new String{Sval: "timetz"})
+// REAL, FLOAT and FLOAT(p): the precision 1..24 is float4 and 25..53 float8 (the others are errors)
+def ty_float4: []Str = ty_real / ty_float_p24
+def ty_real: []Str = REAL -> list(new String{Sval: "pg_catalog"}, new String{Sval: "float4"})
+def ty_float_p24: []Str = FLOAT -LP &float_p24 Iconst -RP -> list(new String{Sval: "pg_catalog"}, new String{Sval: "float4"})
+def ty_float8: []Str = ty_double / ty_float_p53 / ty_float_plain
+def ty_double: []Str = DOUBLE PRECISION -> list(new String{Sval: "pg_catalog"}, new String{Sval: "float8"})
+def ty_float_p53: []Str = FLOAT -LP &float_p53 Iconst -RP -> list(new String{Sval: "pg_catalog"}, new String{Sval: "float8"})
+def ty_float_plain: []Str = FLOAT !LP -> list(new String{Sval: "pg_catalog"}, new String{Sval: "float8"})
+def float_p24 = "0"* ("1" (?0-9) / "2" (?0-4) / (?1-9)) !(?0-9_)
+def float_p53 = "0"* ("2" (?5-9) / (?34) (?0-9) / "5" (?0-3)) !(?0-9_)
+
+// BIT, BIT VARYING, CHAR, VARCHAR and their synonyms
+def ty_varbit: []Str = BIT VARYING -> list(new String{Sval: "pg_catalog"}, new String{Sval: "varbit"})
+def ty_bit: []Str = BIT -> list(new String{Sval: "pg_catalog"}, new String{Sval: "bit"})
+def bit_default: []Expr = [!consttype] _ -> list(new A_Const{Val: new Integer{Ival: 1}})
+def ty_varchar: []Str = ((CHARACTER / CHAR / NCHAR) VARYING / VARCHAR / NATIONAL (CHARACTER / CHAR) VARYING)
+    -> list(new String{Sval: "pg_catalog"}, new String{Sval: "varchar"})
+def ty_bpchar: []Str = (CHARACTER / CHAR / NCHAR / NATIONAL (CHARACTER / CHAR))
+    -> list(new String{Sval: "pg_catalog"}, new String{Sval: "bpchar"})
+def char_length: []Expr = -LP v:Iconst -RP -> list(new A_Const{Val: $v})
+def char_default: []Expr = [!consttype] _ -> list(new A_Const{Val: new Integer{Ival: 1}})
+def time_precision: []Expr = -LP v:Iconst -RP -> list(new A_Const{Val: $v})
+
+// Array bounds: [] and [n] after the type, or ARRAY and ARRAY[n]
+def array_suffix: []ArrayBound = [!consttype] x:(array_dims / array_keyword) -> $x
+def array_dims: []ArrayBound = xs:array_dim+ -> $xs
+def array_dim: ArrayBound = array_dim_unsized / array_dim_sized
+def array_dim_unsized: Integer = -LB -RB -> new Integer{Ival: -1}
+def array_dim_sized: Iconst = -LB n:Iconst -RB -> $n
+def array_keyword: []ArrayBound = array_keyword_sized / array_keyword_plain
+def array_keyword_sized: []ArrayBound = ARRAY -LB n:Iconst -RB -> list($n)
+def array_keyword_plain: []ArrayBound = ARRAY -> list(new Integer{Ival: -1})
+
+// The fields of an interval type, as a bit mask (INTERVAL_MASK of YEAR, MONTH, ... added together).
+// interval_typmods is the typmods of the type name (INTERVAL(p) is the full range with a precision).
+def interval_typmods: []Expr = interval_fields / interval_full_precision
+def interval_full_precision: []Expr = -LP p:Iconst -RP
+    -> list(new A_Const{Val: new Integer{Ival: 32767}}, new A_Const{Val: $p})
+def interval_fields: []Expr =
+    ( YEAR [m = 4] (TO MONTH [m = 6])?
+    / MONTH [m = 2]
+    / DAY [m = 8] (TO (HOUR [m = 1032] / MINUTE [m = 3080] / SECOND [m = 7176] p:interval_precision?))?
+    / HOUR [m = 1024] (TO (MINUTE [m = 3072] / SECOND [m = 7168] p:interval_precision?))?
+    / MINUTE [m = 2048] (TO SECOND [m = 6144] p:interval_precision?)?
+    / SECOND [m = 4096] p:interval_precision? )
+    -> concat(list(new A_Const{Val: new Integer{Ival: m}}), $p)
+def interval_precision: []Expr = -LP v:Iconst -RP -> list(new A_Const{Val: $v})

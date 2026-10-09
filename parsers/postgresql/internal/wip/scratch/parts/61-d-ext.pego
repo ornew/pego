@@ -1,0 +1,52 @@
+// ==== CREATE LANGUAGE, CREATE/ALTER EXTENSION, CREATE ACCESS METHOD ====
+
+def CreateAmStmt: CreateAmStmt = CREATE ACCESS METHOD n:name TYPE (INDEX [t = "i"] / TABLE [t = "t"]) HANDLER h:handler_name
+    -> new CreateAmStmt{Amname: $n, HandlerName: $h, Amtype: t}
+
+// This ought to be func_name, but that conflicts in gram.y: simple names are used instead.
+def handler_name: []Ident = n:name a:attrs? -> concat(list($n), $a)
+def opt_procedural = PROCEDURAL?
+
+// CREATE LANGUAGE with a handler is a CreatePLangStmt. Without one it is CREATE EXTENSION (OR REPLACE means
+// IF NOT EXISTS, TRUSTED is ignored).
+def CreatePLangStmt: CreatePLangStmt = CREATE r:(OR REPLACE)? t:TRUSTED? opt_procedural LANGUAGE n:name HANDLER h:handler_name
+    (INLINE i:handler_name)? (VALIDATOR v:handler_name / NO VALIDATOR)?
+    -> new CreatePLangStmt{Replace: len($r) > 0, Plname: $n, Plhandler: $h, Plinline: concat($i), Plvalidator: concat($v), Pltrusted: len($t) > 0}
+
+def CreateExtensionStmt: CreateExtensionStmt = create_language_ext / create_extension
+def create_language_ext: CreateExtensionStmt = CREATE r:(OR REPLACE)? TRUSTED? opt_procedural LANGUAGE n:name !HANDLER
+    -> new CreateExtensionStmt{Extname: $n, IfNotExists: len($r) > 0}
+def create_extension: CreateExtensionStmt = CREATE EXTENSION ine:(IF NOT EXISTS)? n:name WITH? o:create_extension_opt_item*
+    -> new CreateExtensionStmt{Extname: $n, IfNotExists: len($ine) > 0, Options: $o}
+// CREATE EXTENSION ... FROM is no longer supported (an error in gram.y)
+def create_extension_opt_item: DefElemK = ext_opt_schema / ext_opt_version / ext_opt_cascade
+def ext_opt_schema: DefElemK = SCHEMA n:name -> new DefElemK{Defname: "schema", Arg: $n}
+def ext_opt_version: DefElemK = VERSION v:NonReservedWord_or_Sconst -> new DefElemK{Defname: "new_version", Arg: $v}
+def ext_opt_cascade: DefElemK = CASCADE -> new DefElemK{Defname: "cascade", Arg: new Boolean{Boolval: true}}
+
+def AlterExtensionStmt: AlterExtensionStmt = ALTER EXTENSION n:name UPDATE o:alter_extension_opt_item*
+    -> new AlterExtensionStmt{Extname: $n, Options: $o}
+def alter_extension_opt_item: DefElemK = TO v:NonReservedWord_or_Sconst -> new DefElemK{Defname: "new_version", Arg: $v}
+
+// ALTER EXTENSION name ADD/DROP object: the object type is the keyword(s) written
+def AlterExtensionContentsStmt: AlterExtensionContentsStmt = ALTER EXTENSION n:name (ADD [act = 1] / DROP [act = -1]) o:ext_obj
+    -> new AlterExtensionContentsStmt{Extname: $n, Action: act, Objtype: $o.Objtype, Object: $o.Object}
+def ext_obj: ExtObj = ext_obj_name / ext_obj_any / ext_obj_func / ext_obj_agg / ext_obj_oper / ext_obj_type / ext_obj_cast
+    / ext_obj_opclass / ext_obj_transform
+def ext_obj_name: ExtObj = t:object_type_name o:name -> new ExtObj{Objtype: $t, Object: $o}
+def ext_obj_any: ExtObj = t:object_type_any_name o:any_name -> new ExtObj{Objtype: $t, Object: new NodeList{Items: $o}}
+def ext_obj_func: ExtObj = t:ext_func_type o:function_with_argtypes -> new ExtObj{Objtype: $t, Object: $o}
+def ext_func_type: ObjectType = FUNCTION / PROCEDURE / ROUTINE
+def ext_obj_agg: ExtObj = t:ext_agg_type o:aggregate_with_argtypes -> new ExtObj{Objtype: $t, Object: $o}
+def ext_agg_type: ObjectType = AGGREGATE
+def ext_obj_oper: ExtObj = t:ext_oper_type o:operator_with_argtypes -> new ExtObj{Objtype: $t, Object: $o}
+def ext_oper_type: ObjectType = OPERATOR
+def ext_obj_type: ExtObj = t:ext_type_type o:Typename -> new ExtObj{Objtype: $t, Object: $o}
+def ext_type_type: ObjectType = DOMAIN / TYPE
+def ext_obj_cast: ExtObj = t:ext_cast_type -LP a:Typename AS b:Typename -RP -> new ExtObj{Objtype: $t, Object: new NodeList{Items: list($a, $b)}}
+def ext_cast_type: ObjectType = CAST
+def ext_obj_opclass: ExtObj = t:ext_opclass_type n:any_name USING a:name -> new ExtObj{Objtype: $t, Object: new NodeList{Items: concat(list($a), $n)}}
+def ext_opclass_type: ObjectType = OPERATOR CLASS / OPERATOR FAMILY
+def ext_obj_transform: ExtObj = t:ext_transform_type FOR a:Typename LANGUAGE l:name
+    -> new ExtObj{Objtype: $t, Object: new NodeList{Items: list($a, $l)}}
+def ext_transform_type: ObjectType = TRANSFORM

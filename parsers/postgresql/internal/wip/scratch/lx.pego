@@ -1,0 +1,180 @@
+package x
+type Ident terminal
+type OpTok terminal
+type Iconst terminal
+type Fconst terminal
+type Sconst terminal
+type Bconst terminal
+type Xconst terminal
+type Param terminal
+def main = s IDENT Iconst Fconst Sconst Bconst Xconst PARAM Op ColId type_function_name NonReservedWord ColLabel BareColLabel $$
+
+// ==== Lexical rules (scan.l) ====
+//
+// There is no separate scanner: every token rule consumes the white space and comments (s) that follow
+// it, so a node starts at its first token and ends after the white space that follows its last one.
+// Keywords are matched case-insensitively and must not be followed by an identifier character; the rules
+// of the keywords (and the lists that exclude them from names) are generated at the end of this file.
+
+// White space and comments: space, \t, \n, \r, \f and \v, "--" to the end of the line, and nested
+// "/* */" comments. The fast path is plain white space.
+def s = (? \t\n\r\f\v)* (("--" (?^\n\r)* / block_comment) (? \t\n\r\f\v)*)*
+def block_comment = "/*" ((?^*/)+ / block_comment / "*" !"/" / "/" !"*")* "*/"
+
+def ident_start = (?A-Za-z_\u{80}-\u{10FFFF})
+def ident_cont = (?A-Za-z0-9_$\u{80}-\u{10FFFF})
+
+// ---- Punctuation and operators ----
+//
+// An operator is a run of the characters ~!@#^&|`?+-*/%<>= that stops before "--" or "/*". As in scan.l,
+// a run that ends in + or - and has none of the characters ~!@#^&|`?% loses those trailing characters
+// (so that "=-" is = and -), and a run that is exactly one of the self characters, <=, >=, <>, != or =>
+// is that token and not an operator (Op).
+def cstart = "--" / "/*"
+def opc = !cstart (?~!@#%^&|`?+\-*/<>=)
+def pm = !cstart (?+\-)
+def plain_end = pm* !opc
+
+def COMMA = "," s
+def LP = "(" s
+def RP = ")" s
+def LB = "[" s
+def RB = "]" s
+def SEMI = ";" s
+def COLON = ":" !(?:=) s
+def DOT = "." !(?0-9.) s
+def TYPECAST = "::" s
+def COLON_EQUALS = ":=" s
+def PLUS = "+" &plain_end s
+def MINUS = "-" &plain_end s
+def STAR = "*" &plain_end s
+def SLASH = "/" &plain_end s
+def LT = "<" &plain_end s
+def GT = ">" &plain_end s
+def EQ = "=" &plain_end s
+def PERCENT = "%" !opc s
+def CARET = "^" !opc s
+def LESS_EQUALS = "<=" &plain_end s
+def GREATER_EQUALS = ">=" &plain_end s
+def EQUALS_GREATER = "=>" &plain_end s
+def NOT_EQUALS = ("<>" &plain_end / "!=" !opc) s
+
+// An operator other than the tokens above. t is its text, without the white space after it.
+def Op: OpTok = t:op_text s -> $t
+def op_text: OpTok =
+    !(("<=" / ">=" / "<>" / "=>") &plain_end) !("!=" !opc)
+    ( &((!cstart (?*/<>=+\-))* !cstart (?~!@#%^&|`?)) opc+
+    / opc (pm* !cstart (?*/<>=))+ )
+
+// ---- Identifiers ----
+
+// A word, unless it is an E, B, X or N string or a U& literal. "n'x'" is the keyword NCHAR and a string.
+def word = !((?eEbBxXnN) "'" / (?uU) "&" (?'")) ident_start ident_cont*
+def quoted_ident = "\"" ((?^")+ / "\"\"")+ "\""
+// U&"..." with an optional UESCAPE 'c'
+def uident = (?uU) "&" "\"" ((?^")+ / "\"\"")+ "\"" (s (?uU)(?sS)(?cC)(?aA)(?pP)(?eE) !ident_cont s uescape_char)?
+def uescape_char = "'" (?^0-9a-fA-F+'" \t\n\r\f\v) "'"
+
+// IDENT: a name that is not a keyword.
+def IDENT: Ident = t:ident_text s -> $t
+def ident_text: Ident = quoted_ident / uident / !any_keyword word
+
+// ColId: any name that is not a reserved or type_func_name keyword.
+def ColId: Ident = t:colid_text s -> $t
+def colid_text: Ident = quoted_ident / uident / !reserved_or_type_func_word word
+// type_function_name: a name that is not a reserved or column-name keyword.
+def type_function_name: Ident = t:tfn_text s -> $t
+def tfn_text: Ident = quoted_ident / uident / !reserved_or_col_name_word word
+// NonReservedWord: a name that is not a reserved keyword.
+def NonReservedWord: Ident = t:nrw_text s -> $t
+def nrw_text: Ident = quoted_ident / uident / !reserved_word word
+// ColLabel: any name or keyword.
+def ColLabel: Ident = t:collabel_text s -> $t
+def collabel_text: Ident = quoted_ident / uident / word
+// BareColLabel: a name or a keyword that may follow an expression without AS.
+def BareColLabel: Ident = t:bare_text s -> $t
+def bare_text: Ident = quoted_ident / uident / !label_only_word word
+
+// ---- Numbers ----
+//
+// ICONST is an integer literal that fits in an int32, FCONST every other number. Underscores may separate
+// digits. A number must not be followed by an identifier character ("1a" is an error), and a decimal
+// integer not by a fraction. The lookaheads below test the size of an integer: the digits after the
+// leading zeros, compared with 2147483647, 0x7FFFFFFF, 0o17777777777 and 31 binary digits.
+def decinteger = (?0-9) ("_"? (?0-9))*
+def hexinteger = "0" (?xX) ("_"? (?0-9a-fA-F))+
+def octinteger = "0" (?oO) ("_"? (?0-7))+
+def bininteger = "0" (?bB) ("_"? (?01))+
+def numeric = decinteger "." !"." decinteger? / "." decinteger
+def real = (decinteger !("." !".") / numeric) (?eE) (?+\-)? decinteger
+def number_end = !ident_start
+
+def int32_dec =
+    "0" ("_"? "0")* !("_"? (?0-9))
+    / ("0" "_"?)* (?1-9) ("_"? (?0-9)){0,8} !("_"? (?0-9))
+    / ("0" "_"?)* int32_dec10 !("_"? (?0-9))
+def int32_dec10 =
+    "1" ("_"? (?0-9)){9}
+    / "2" ( "_"? "0" ("_"? (?0-9)){8}
+          / "_"? "1" ( "_"? (?0-3) ("_"? (?0-9)){7}
+                     / "_"? "4" ( "_"? (?0-6) ("_"? (?0-9)){6}
+                                / "_"? "7" ( "_"? (?0-3) ("_"? (?0-9)){5}
+                                           / "_"? "4" ( "_"? (?0-7) ("_"? (?0-9)){4}
+                                                      / "_"? "8" ( "_"? (?0-2) ("_"? (?0-9)){3}
+                                                                 / "_"? "3" ( "_"? (?0-5) ("_"? (?0-9)){2}
+                                                                            / "_"? "6" ( "_"? (?0-3) ("_"? (?0-9))
+                                                                                       / "_"? "4" "_"? (?0-7) ) ) ) ) ) ) ) )
+def int32_hex = "0" (?xX) ( ("_"? "0")+ !("_"? (?0-9a-fA-F))
+    / ("_"? "0")* "_"? (?1-9a-fA-F) ("_"? (?0-9a-fA-F)){0,6} !("_"? (?0-9a-fA-F))
+    / ("_"? "0")* "_"? (?1-7) ("_"? (?0-9a-fA-F)){7} !("_"? (?0-9a-fA-F)) )
+def int32_oct = "0" (?oO) ( ("_"? "0")+ !("_"? (?0-7))
+    / ("_"? "0")* "_"? (?1-7) ("_"? (?0-7)){0,9} !("_"? (?0-7))
+    / ("_"? "0")* "_"? "1" ("_"? (?0-7)){10} !("_"? (?0-7)) )
+def int32_bin = "0" (?bB) ( ("_"? "0")+ !("_"? (?01))
+    / ("_"? "0")* "_"? "1" ("_"? (?01)){0,30} !("_"? (?01)) )
+
+def Iconst: Iconst = t:iconst_text s -> $t
+def iconst_text: Iconst =
+    ( &int32_hex hexinteger / &int32_oct octinteger / &int32_bin bininteger / &int32_dec decinteger )
+    number_end !("." !".")
+def Fconst: Fconst = t:fconst_text s -> $t
+def fconst_text: Fconst =
+    (real / numeric) number_end
+    / (hexinteger / octinteger / bininteger / decinteger) number_end !("." !".")
+
+// A positional parameter, $1.
+def PARAM: Param = t:param_text s -> $t
+def param_text: Param = "$" (?0-9)+ number_end
+
+// ---- Strings ----
+//
+// SCONST: 'text' ('' is a quote), E'text' with backslash escapes, U&'text' with an optional UESCAPE, and
+// dollar-quoted $tag$text$tag$. Adjacent strings that are separated by white space with a newline are
+// one string. The Sconst keeps the source text; Value decodes it.
+def sq_text = ((?^')+ / "''")*
+def e_text = ((?^\\')+ / "''" / e_escape)*
+def e_escape = "\\" ( "u" hex4 / "U" hex4 hex4 / "x" hex hex? / (?0-7) (?0-7)? (?0-7)? / (?^0-7uUx) / "x" )
+def hex = (?0-9a-fA-F)
+def hex4 = hex hex hex hex
+// white space with at least one newline, between the parts of one string
+def str_cont = ((? \t\f\v) / "--" (?^\n\r)*)* (?\n\r) ((? \t\n\r\f\v)+ / "--" (?^\n\r)* (?\n\r))*
+def Sconst: Sconst = t:sconst_text s -> $t
+def sconst_text: Sconst = sq_string / e_string / u_string / dollar_string
+def sq_string = "'" sq_text "'" (str_cont "'" sq_text "'")*
+def e_string = (?eE) "'" e_text "'" (str_cont "'" e_text "'")*
+def u_string = (?uU) "&'" sq_text "'" (str_cont "'" sq_text "'")*
+    (s (?uU)(?sS)(?cC)(?aA)(?pP)(?eE) !ident_cont s uescape_char)?
+def dollar_string = "$" t:dollar_tag "$" [dolq = text($t)] dollar_body "$" dollar_tag "$"
+def dollar_tag = (?A-Za-z_\u{80}-\u{10FFFF}) (?A-Za-z0-9_\u{80}-\u{10FFFF})* / _
+def dollar_body = ((?^$)+ / !dollar_end "$")*
+def dollar_end = "$" e:dollar_tag "$" [text($e) == dolq]
+// B'101' and X'1F'
+def Bconst: Bconst = t:bconst_text s -> $t
+def bconst_text: Bconst = (?bB) "'" (?^')* "'" (str_cont "'" (?^')* "'")*
+def Xconst: Xconst = t:xconst_text s -> $t
+def xconst_text: Xconst = (?xX) "'" (?^')* "'" (str_cont "'" (?^')* "'")*
+def reserved_word = "@@never@@"
+def reserved_or_type_func_word = "@@never@@"
+def reserved_or_col_name_word = "@@never@@"
+def label_only_word = "@@never@@"
+def any_keyword = "@@never@@"

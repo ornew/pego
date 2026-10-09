@@ -1,0 +1,150 @@
+// ==== Group B2: roles, databases, tablespaces, foreign data, publications, subscriptions, triggers, rules, policies ====
+//
+// CREATE/ALTER/DROP of ROLE, USER, GROUP, DATABASE, TABLESPACE, FOREIGN DATA WRAPPER, SERVER, USER MAPPING,
+// PUBLICATION, SUBSCRIPTION, EVENT TRIGGER, TRIGGER, RULE and POLICY, IMPORT FOREIGN SCHEMA, DROP OWNED and
+// REASSIGN OWNED. (CREATE ASSERTION is not here: gram.y always reports it as not implemented, so no tree
+// exists for it and the grammar rejects it.) The files 64-b-fdw, 64-c-pub and 64-d-trigger have the rest.
+
+type StmtB2 = CreateRoleStmt | AlterRoleStmt | AlterRoleSetStmt | DropRoleStmt | DropOwnedStmt | ReassignOwnedStmt |
+    CreatedbStmt | AlterDatabaseStmt | AlterDatabaseRefreshCollStmt | AlterDatabaseSetStmt | DropdbStmt |
+    CreateTableSpaceStmt | DropTableSpaceStmt | AlterTableSpaceOptionsStmt |
+    CreateFdwStmt | AlterFdwStmt | CreateForeignServerStmt | AlterForeignServerStmt | ImportForeignSchemaStmt |
+    CreateUserMappingStmt | AlterUserMappingStmt | DropUserMappingStmt |
+    CreatePublicationStmt | AlterPublicationStmt | CreateSubscriptionStmt | AlterSubscriptionStmt | DropSubscriptionStmt |
+    CreateEventTrigStmt | AlterEventTrigStmt | CreateTrigStmt | RuleStmt | CreatePolicyStmt | AlterPolicyStmt
+
+// The alternatives start with the same keywords in some cases: the specific ones come first (USER MAPPING
+// before USER role), and the statements whose last part is optional end with b2_end, so that a statement of
+// another group that begins the same way (ALTER ROLE r RENAME TO ...) is not cut short.
+def stmt_b2: StmtB2 =
+    CreateUserMappingStmt / AlterUserMappingStmt / DropUserMappingStmt
+    / CreateRoleStmt / AlterRoleSetStmt / AlterRoleStmt / AlterGroupStmt / DropRoleStmt / DropOwnedStmt / ReassignOwnedStmt
+    / CreatedbStmt / AlterDatabaseStmt / AlterDatabaseRefreshCollStmt / AlterDatabaseSetStmt / DropdbStmt
+    / CreateTableSpaceStmt / DropTableSpaceStmt / AlterTblSpcStmt
+    / CreateFdwStmt / AlterFdwStmt / CreateForeignServerStmt / AlterForeignServerStmt / ImportForeignSchemaStmt
+    / CreatePublicationStmt / AlterPublicationStmt / CreateSubscriptionStmt / AlterSubscriptionStmt / DropSubscriptionStmt
+    / CreateEventTrigStmt / AlterEventTrigStmt / CreateTrigStmt / RuleStmt / CreatePolicyStmt / AlterPolicyStmt
+
+// The end of a statement (without consuming it)
+def b2_end = &(SEMI / $$)
+def b2_or_replace = OR REPLACE
+def b2_with = WITH
+
+// ==== Roles ====
+
+type CreateRoleStmt struct { StmtType string, Role Ident, Options []DefElem }
+type AlterRoleStmt struct { Role RoleSpec, Options []DefElem, Action int }
+type AlterRoleSetStmt struct { Role *RoleSpec, Database *Ident, Setstmt VariableSetStmt }
+type DropRoleStmt struct { Roles []RoleSpec, MissingOk bool }
+type DropOwnedStmt struct { Roles []RoleSpec, Behavior *DropBehavior }
+type ReassignOwnedStmt struct { Roles []RoleSpec, Newrole RoleSpec }
+
+// RoleId: a role name that is not PUBLIC, NONE or one of the pseudo-roles (CURRENT_USER and the others are
+// reserved words, and NonReservedWord does not match them)
+def RoleId: Ident = !PUBLIC_WORD !NONE_WORD n:NonReservedWord -> $n
+
+def CreateRoleStmt: CreateRoleStmt = CREATE
+    (ROLE [t = "ROLESTMT_ROLE"] / USER [t = "ROLESTMT_USER"] / GROUP [t = "ROLESTMT_GROUP"])
+    n:RoleId b2_with? o:create_role_elem*
+    -> new CreateRoleStmt{StmtType: t, Role: $n, Options: $o}
+def AlterRoleStmt: AlterRoleStmt = ALTER (ROLE / USER) r:RoleSpec b2_with? o:alter_role_elem* b2_end
+    -> new AlterRoleStmt{Role: $r, Options: $o, Action: 1}
+def AlterGroupStmt: AlterRoleStmt = ALTER GROUP r:RoleSpec (ADD [a = 1] / DROP [a = -1]) USER l:role_list
+    -> new AlterRoleStmt{Role: $r, Options: list(new DefElem{Defname: new String{Sval: "rolemembers"}, Arg: new NodeList{Items: $l}}), Action: a}
+def AlterRoleSetStmt: AlterRoleSetStmt = ALTER (ROLE / USER) (r:RoleSpec / ALL) (IN DATABASE n:name)? s:SetResetClause
+    -> new AlterRoleSetStmt{Role: $r, Database: $n, Setstmt: $s}
+def DropRoleStmt: DropRoleStmt = DROP (ROLE / USER / GROUP) i:(IF EXISTS)? l:role_list
+    -> new DropRoleStmt{Roles: $l, MissingOk: len($i) > 0}
+def DropOwnedStmt: DropOwnedStmt = DROP OWNED BY l:role_list b:drop_behavior? -> new DropOwnedStmt{Roles: $l, Behavior: $b}
+def ReassignOwnedStmt: ReassignOwnedStmt = REASSIGN OWNED BY l:role_list TO r:RoleSpec -> new ReassignOwnedStmt{Roles: $l, Newrole: $r}
+
+// The options of CREATE ROLE and ALTER ROLE: DefElems with made-up names and Boolean, Integer, String or
+// list values. gram.y writes the flags (SUPERUSER, NOLOGIN, ...) as IDENT, so they are not keywords here
+// either; UNENCRYPTED PASSWORD and the other words are errors in gram.y, and not matched.
+def alter_role_elem: DefElem = role_password / role_password_null / role_inherit / role_connlimit / role_valid_until
+    / role_list_opt / role_flag
+def create_role_elem: DefElem = alter_role_elem / role_sysid / role_list_create
+def role_password: DefElem = (ENCRYPTED)? PASSWORD s:Sconst
+    -> new DefElem{Defname: new String{Sval: "password"}, Arg: $s}
+def role_password_null: DefElem = PASSWORD NULL -> new DefElem{Defname: new String{Sval: "password"}}
+def role_inherit: DefElem = INHERIT -> new DefElem{Defname: new String{Sval: "inherit"}, Arg: new Boolean{Boolval: true}}
+def role_connlimit: DefElem = CONNECTION LIMIT n:SignedIconst
+    -> new DefElem{Defname: new String{Sval: "connectionlimit"}, Arg: $n}
+def role_valid_until: DefElem = VALID UNTIL s:Sconst -> new DefElem{Defname: new String{Sval: "validUntil"}, Arg: $s}
+def role_list_opt: DefElem = USER l:role_list -> new DefElem{Defname: new String{Sval: "rolemembers"}, Arg: new NodeList{Items: $l}}
+def role_sysid: DefElem = SYSID n:Iconst -> new DefElem{Defname: new String{Sval: "sysid"}, Arg: $n}
+def role_list_create: DefElem =
+    (ADMIN [n = "adminmembers"] / ROLE [n = "rolemembers"] / IN (ROLE / GROUP) [n = "addroleto"]) l:role_list
+    -> new DefElem{Defname: new String{Sval: n}, Arg: new NodeList{Items: $l}}
+// superuser, nosuperuser, createrole, ..., noinherit (IDENT in gram.y): unquoted in any case, or quoted in lower case
+def role_flag: DefElem = w:b2_word
+    ( [$w.V == "superuser" || $w.V == "nosuperuser"] [n = "superuser"] [b = $w.V == "superuser"]
+    / [$w.V == "createrole" || $w.V == "nocreaterole"] [n = "createrole"] [b = $w.V == "createrole"]
+    / [$w.V == "createdb" || $w.V == "nocreatedb"] [n = "createdb"] [b = $w.V == "createdb"]
+    / [$w.V == "replication" || $w.V == "noreplication"] [n = "isreplication"] [b = $w.V == "replication"]
+    / [$w.V == "login" || $w.V == "nologin"] [n = "canlogin"] [b = $w.V == "login"]
+    / [$w.V == "bypassrls" || $w.V == "nobypassrls"] [n = "bypassrls"] [b = $w.V == "bypassrls"]
+    / [$w.V == "noinherit"] [n = "inherit"] [b = false] )
+    -> new DefElem{Defname: new String{Sval: n}, Arg: new Boolean{Boolval: b}}
+// A word that is an IDENT in gram.y: unquoted (the word folded to lower case), or quoted in lower case
+def b2_word: LcWord = b2_word_plain / b2_word_quoted
+def b2_word_plain: LcWord = x:lcword s -> $x
+def b2_word_quoted: LcWord = -"\"" r:@((?a-z)+) -"\"" s -> new LcWord{V: text($r)}
+
+// ==== Databases ====
+
+type CreatedbStmt struct { Dbname Ident, Options []DefElem }
+type AlterDatabaseStmt struct { Dbname Ident, Options []DefElem }
+type AlterDatabaseRefreshCollStmt struct { Dbname Ident }
+type AlterDatabaseSetStmt struct { Dbname Ident, Setstmt VariableSetStmt }
+type DropdbStmt struct { Dbname Ident, MissingOk bool, Options []DefElem }
+
+def CreatedbStmt: CreatedbStmt = CREATE DATABASE n:name b2_with? o:createdb_opt_item*
+    -> new CreatedbStmt{Dbname: $n, Options: $o}
+// ALTER DATABASE name [WITH] options (possibly none), SET TABLESPACE, REFRESH COLLATION VERSION
+def AlterDatabaseStmt: AlterDatabaseStmt = alter_db_tablespace / alter_db_options
+def alter_db_tablespace: AlterDatabaseStmt = ALTER DATABASE n:name SET TABLESPACE t:name
+    -> new AlterDatabaseStmt{Dbname: $n, Options: list(new DefElem{Defname: new String{Sval: "tablespace"}, Arg: $t})}
+def alter_db_options: AlterDatabaseStmt = ALTER DATABASE n:name b2_with? o:createdb_opt_item* b2_end
+    -> new AlterDatabaseStmt{Dbname: $n, Options: $o}
+def AlterDatabaseRefreshCollStmt: AlterDatabaseRefreshCollStmt = ALTER DATABASE n:name REFRESH COLLATION VERSION
+    -> new AlterDatabaseRefreshCollStmt{Dbname: $n}
+def AlterDatabaseSetStmt: AlterDatabaseSetStmt = ALTER DATABASE n:name s:SetResetClause
+    -> new AlterDatabaseSetStmt{Dbname: $n, Setstmt: $s}
+def DropdbStmt: DropdbStmt = DROP DATABASE i:(IF EXISTS)? n:name o:drop_options?
+    -> new DropdbStmt{Dbname: $n, MissingOk: len($i) > 0, Options: concat($o)}
+def drop_options: []DefElem = b2_with? -LP first:drop_option rest:(-COMMA x:drop_option)* -RP
+    -> concat(list($first), map($rest, (r) => $r.x))
+// the only drop option is FORCE
+def drop_option: DefElem = FORCE -> new DefElem{Defname: new String{Sval: "force"}}
+
+// An option of CREATE DATABASE: name [=] value. The name is an IDENT or one of a few keywords (gram.y does not
+// use ColId because of conflicts with ALTER DATABASE SET); CONNECTION LIMIT is connection_limit.
+// The value is NumericOnly, a boolean or string, or DEFAULT (no value).
+def createdb_opt_item: DefElem = n:createdb_opt_name b2_equal? (v:NumericOnly / v:b2_bool_or_string / DEFAULT)
+    -> new DefElem{Defname: $n, Arg: $v}
+def createdb_opt_name: DefName = createdb_opt_keyword / createdb_opt_ident
+// (the keywords that start another ALTER DATABASE are not option names here, IDENT of gram.y is no keyword at all)
+def createdb_opt_ident: Ident = !(CONNECTION / SET / RESET / REFRESH / RENAME) n:IDENT -> $n
+def createdb_opt_keyword: String =
+    (CONNECTION LIMIT [n = "connection_limit"] / ENCODING [n = "encoding"] / LOCATION [n = "location"] / OWNER [n = "owner"]
+    / TABLESPACE [n = "tablespace"] / TEMPLATE [n = "template"])
+    -> new String{Sval: n}
+def b2_equal = EQ
+def b2_bool_or_string: DefArg = b2_true / b2_false / b2_on / NonReservedWord_or_Sconst
+def b2_true: String = TRUE -> new String{Sval: "true"}
+def b2_false: String = FALSE -> new String{Sval: "false"}
+def b2_on: String = ON -> new String{Sval: "on"}
+
+// ==== Tablespaces ====
+
+type CreateTableSpaceStmt struct { Tablespacename Ident, Owner *RoleSpec, Location Sconst, Options []DefElem }
+type DropTableSpaceStmt struct { Tablespacename Ident, MissingOk bool }
+type AlterTableSpaceOptionsStmt struct { Tablespacename Ident, Options []DefElem, IsReset bool }
+
+def CreateTableSpaceStmt: CreateTableSpaceStmt = CREATE TABLESPACE n:name (OWNER r:RoleSpec)? LOCATION l:Sconst ro:opt_reloptions?
+    -> new CreateTableSpaceStmt{Tablespacename: $n, Owner: $r, Location: $l, Options: concat($ro)}
+def DropTableSpaceStmt: DropTableSpaceStmt = DROP TABLESPACE i:(IF EXISTS)? n:name
+    -> new DropTableSpaceStmt{Tablespacename: $n, MissingOk: len($i) > 0}
+def AlterTblSpcStmt: AlterTableSpaceOptionsStmt = ALTER TABLESPACE n:name (SET [r = false] / RESET [r = true]) o:reloptions
+    -> new AlterTableSpaceOptionsStmt{Tablespacename: $n, Options: $o, IsReset: r}

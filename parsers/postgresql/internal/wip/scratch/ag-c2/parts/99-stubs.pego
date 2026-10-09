@@ -1,0 +1,6 @@
+// Stubs of rules that other regions own (named as in gram.y); the coordinator deletes them when merging.
+
+// RoleId (region B2): a role name; PUBLIC, NONE and CURRENT_USER, ... are errors
+def RoleId: Ident = !PUBLIC_WORD !NONE_WORD n:NonReservedWord -> $n
+// opt_procedural (region B1)
+def opt_procedural = PROCEDURAL?

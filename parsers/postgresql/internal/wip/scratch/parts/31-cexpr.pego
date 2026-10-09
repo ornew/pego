@@ -1,0 +1,103 @@
+
+// ==== Primary expressions (c_expr) and function calls ====
+//
+// The alternatives are ordered so that the common cases (column references) are tried first and
+// guarded by what follows them: a name followed by "(" is a function call, and a name followed by a
+// string is a type name and a constant; the keyword forms (CASE, COALESCE, ...) and those come after.
+
+def c_expr: Expr = c_ident / c_paren / c_dollar / AexprConst
+def c_ident: Expr = &(ident_start / "\"") x:(columnref_plain_guarded / func_call_expr / bool_null_expr / special_expr / typed_const
+    / sconst_expr / bconst_expr / xconst_expr) -> $x
+def c_paren: Expr = &"(" x:(sublink_indirect / sublink_expr / implicit_row_expr / paren_indirect / paren_expr) -> $x
+def c_dollar: Expr = &"$" x:(param_indirect / param_plain / sconst_expr) -> $x
+
+// A column reference not followed by "(" or a string: the common case
+def columnref_plain_guarded: Expr = x:columnref !"(" !sconst_text -> $x
+
+def bool_null_expr: A_Const = true_expr / false_expr / null_expr
+
+def special_expr: Expr = case_expr / exists_expr / array_sublink / array_literal / explicit_row_expr / grouping_expr
+    / func_expr_common_subexpr
+
+// ---- Column references and indirection ----
+
+// A name, the fields selected from it and, when there is a subscript, A_Indirection applied to it
+def columnref: Expr = columnref_indirect / columnref_simple
+def columnref_simple: ColumnRef = c:ColId fs:field_sel* -> new ColumnRef{Fields: concat(list($c), $fs)}
+def columnref_indirect: A_Indirection = c:ColId fs:field_sel* ind:subscript_tail
+    -> new A_Indirection{Arg: new ColumnRef{Fields: concat(list($c), $fs)}, Indirection: $ind}
+def field_sel: ColField = dot_name / dot_star
+def dot_name: Ident = -DOT x:attr_name -> $x
+def dot_star: A_Star = -DOT STAR !(DOT / LB) -> new A_Star{}
+def indirection_el: Indirection = dot_name / dot_star / subscript
+def indirection: []Indirection = xs:indirection_el+ -> $xs
+def subscript_tail: []Indirection = x:subscript xs:indirection_el* -> concat(list($x), $xs)
+def subscript: A_Indices = subscript_index / subscript_slice
+def subscript_index: A_Indices = -LB e:a_expr -RB -> new A_Indices{Uidx: $e}
+def subscript_slice: A_Indices = -LB l:a_expr? -COLON u:a_expr? -RB -> new A_Indices{IsSlice: true, Lidx: $l, Uidx: $u}
+
+def param_indirect: A_Indirection = p:PARAM ind:indirection -> new A_Indirection{Arg: new ParamRef{Number: $p}, Indirection: $ind}
+def param_plain: ParamRef = p:PARAM -> new ParamRef{Number: $p}
+
+// ---- Parentheses, subqueries, rows ----
+
+def paren_indirect: A_Indirection = -LP e:a_expr -RP ind:indirection -> new A_Indirection{Arg: $e, Indirection: $ind}
+def paren_expr: Expr = -LP e:a_expr -RP -> $e
+def sublink_expr: SubLink = q:select_with_parens -> new SubLink{SubLinkType: "EXPR_SUBLINK", Subselect: $q}
+def sublink_indirect: A_Indirection = q:select_with_parens ind:indirection
+    -> new A_Indirection{Arg: new SubLink{SubLinkType: "EXPR_SUBLINK", Subselect: $q}, Indirection: $ind}
+def exists_expr: SubLink = EXISTS q:select_with_parens -> new SubLink{SubLinkType: "EXISTS_SUBLINK", Subselect: $q}
+def array_sublink: SubLink = ARRAY q:select_with_parens -> new SubLink{SubLinkType: "ARRAY_SUBLINK", Subselect: $q}
+def array_literal: A_ArrayExpr = ARRAY a:array_expr -> $a
+def array_expr: A_ArrayExpr = -LB l:(array_expr_list / expr_list)? -RB -> new A_ArrayExpr{Elements: concat($l)}
+def array_expr_list: []A_ArrayExpr = first:array_expr rest:(-COMMA x:array_expr)* -> concat(list($first), map($rest, (r) => $r.x))
+def explicit_row_expr: RowExpr = ROW -LP l:expr_list? -RP -> new RowExpr{Args: concat($l), RowFormat: "COERCE_EXPLICIT_CALL"}
+def implicit_row_expr: RowExpr = -LP first:a_expr rest:(-COMMA x:a_expr)+ -RP
+    -> new RowExpr{Args: concat(list($first), map($rest, (r) => $r.x)), RowFormat: "COERCE_IMPLICIT_CAST"}
+def grouping_expr: GroupingFunc = GROUPING -LP l:expr_list -RP -> new GroupingFunc{Args: $l}
+
+// ---- CASE ----
+
+def case_expr: CaseExpr = CASE a:a_expr? ws:when_clause+ d:case_default? END
+    -> new CaseExpr{Arg: $a, Args: $ws, Defresult: $d}
+def when_clause: CaseWhen = WHEN c:a_expr THEN r:a_expr -> new CaseWhen{Expr: $c, Result: $r}
+def case_default: Expr = ELSE e:a_expr -> $e
+
+// ---- Function calls ----
+
+def func_call_expr: Expr = f:func_expr !sconst_text -> $f
+def func_expr: Expr = func_call_over / json_agg_expr
+
+// The call with its WITHIN GROUP, FILTER and OVER clauses. The arguments are, in the forms of gram.y:
+// (), (*), (DISTINCT list), (ALL list), (VARIADIC e), (list), (list, VARIADIC e), each with an
+// optional ORDER BY.
+def func_call_over: FuncCall =
+    n:func_name -LP
+    ( st:STAR
+    / d:DISTINCT a1:func_arg_list o1:opt_sort_clause
+    / -ALL a2:func_arg_list o2:opt_sort_clause
+    / a3:variadic_arg o3:opt_sort_clause
+    / a4:func_arg_list v4:comma_variadic? o4:opt_sort_clause )?
+    -RP
+    wg:within_group_ok? fc:filter_ok? ov:over_ok?
+    [len($wg) == 0 || (len($o1) + len($o2) + len($o3) + len($o4) == 0 && len($d) == 0 && len($a3) + len($v4) == 0)]
+    -> new FuncCall{Funcname: $n, Args: concat($a1, $a2, $a3, $a4, $v4), AggOrder: concat($o1, $o2, $o3, $o4, $wg),
+        AggFilter: $fc, Over: $ov, AggWithinGroup: len($wg) > 0, AggStar: len($st) > 0, AggDistinct: len($d) > 0,
+        FuncVariadic: len($a3) + len($v4) > 0, Funcformat: "COERCE_EXPLICIT_CALL"}
+def variadic_arg: []Expr = VARIADIC e:func_arg_expr -> list($e)
+def comma_variadic: []Expr = -COMMA v:variadic_arg -> $v
+def func_arg_list: []Expr = first:func_arg_expr rest:(-COMMA x:func_arg_expr)* -> concat(list($first), map($rest, (r) => $r.x))
+def func_arg_list_opt: []Expr = l:func_arg_list? -> concat($l)
+def func_arg_expr: Expr = [windowless = false] x:(named_arg / a_expr) -> $x
+// WITHIN GROUP, FILTER and OVER are not allowed where a function call is windowless
+def within_group_ok: []SortBy = ![windowless] x:within_group_clause -> $x
+def filter_ok: Expr = ![windowless] x:filter_clause -> $x
+def over_ok: WindowDef = ![windowless] x:over_clause -> $x
+def named_arg: NamedArgExpr = n:param_name -(COLON_EQUALS / EQUALS_GREATER) e:a_expr -> new NamedArgExpr{Arg: $e, Name: $n, Argnumber: -1}
+def param_name = type_function_name
+
+def within_group_clause: []SortBy = WITHIN GROUP -LP s:sort_clause -RP -> $s
+def filter_clause: Expr = FILTER -LP WHERE e:a_expr -RP -> $e
+def over_clause: WindowDef = over_spec / over_name
+def over_spec: WindowDef = OVER &LP w:window_def -> $w
+def over_name: WindowDef = OVER n:ColId -> new WindowDef{Name: $n, FrameOptions: 1058}

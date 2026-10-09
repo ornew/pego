@@ -1,0 +1,206 @@
+
+// ==== Expressions ====
+//
+// a_expr and b_expr are Pratt expressions; their levels are the precedence declarations of gram.y, from
+// the loosest (OR) to the tightest (the :: cast). The operators that gram.y gives a precedence of their
+// own (+, -, <, ...) are written out; the others (Op) share a level. Things that the precedence of
+// bison decides for a LALR parser are decided here by the order of the alternatives and by the operand
+// of an operator: the operand of LIKE and BETWEEN is a_expr(opl), which parses only the operators that
+// bind tighter than they do (those of the level opl and above).
+
+def expr_list: []Expr = first:a_expr rest:(-COMMA x:a_expr)* -> concat(list($first), map($rest, (r) => $r.x))
+
+def a_expr: Expr = pratt {
+    operand overlaps_expr
+    operand c_expr
+    operand default_expr
+
+    level { infix left OR -> new BoolExpr{Boolop: "OR_EXPR", Args: list($lhs, $rhs)} }
+    level { infix left AND -> new BoolExpr{Boolop: "AND_EXPR", Args: list($lhs, $rhs)} }
+    level { prefix NOT -> new BoolExpr{Boolop: "NOT_EXPR", Args: list($rhs)} }
+
+    // IS NULL, IS TRUE, ... (they may follow each other) and IS DISTINCT FROM
+    level {
+        postfix IS NULL -> new NullTest{Arg: $lhs, Nulltesttype: "IS_NULL"}
+        postfix ISNULL -> new NullTest{Arg: $lhs, Nulltesttype: "IS_NULL"}
+        postfix IS NOT NULL -> new NullTest{Arg: $lhs, Nulltesttype: "IS_NOT_NULL"}
+        postfix NOTNULL -> new NullTest{Arg: $lhs, Nulltesttype: "IS_NOT_NULL"}
+        postfix IS TRUE -> new BooleanTest{Arg: $lhs, Booltesttype: "IS_TRUE"}
+        postfix IS NOT TRUE -> new BooleanTest{Arg: $lhs, Booltesttype: "IS_NOT_TRUE"}
+        postfix IS FALSE -> new BooleanTest{Arg: $lhs, Booltesttype: "IS_FALSE"}
+        postfix IS NOT FALSE -> new BooleanTest{Arg: $lhs, Booltesttype: "IS_NOT_FALSE"}
+        postfix IS UNKNOWN -> new BooleanTest{Arg: $lhs, Booltesttype: "IS_UNKNOWN"}
+        postfix IS NOT UNKNOWN -> new BooleanTest{Arg: $lhs, Booltesttype: "IS_NOT_UNKNOWN"}
+        infix none IS DISTINCT FROM -> new A_Expr{Kind: "AEXPR_DISTINCT", Name: list(new String{Sval: "="}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none IS NOT DISTINCT FROM -> new A_Expr{Kind: "AEXPR_NOT_DISTINCT", Name: list(new String{Sval: "="}), Lexpr: $lhs, Rexpr: $rhs}
+        postfix IS DOCUMENT -> new XmlExpr{Op: "IS_DOCUMENT", Args: list($lhs), Xmloption: "XMLOPTION_DOCUMENT"}
+        postfix IS NOT DOCUMENT -> new BoolExpr{Boolop: "NOT_EXPR", Args: list(new XmlExpr{Op: "IS_DOCUMENT", Args: list($lhs), Xmloption: "XMLOPTION_DOCUMENT"})}
+        postfix IS NORMALIZED -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "is_normalized"}), Args: list($lhs), Funcformat: "COERCE_SQL_SYNTAX"}
+        postfix IS f:unicode_normal_form NORMALIZED -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "is_normalized"}), Args: list($lhs, $f), Funcformat: "COERCE_SQL_SYNTAX"}
+        postfix IS NOT NORMALIZED -> new BoolExpr{Boolop: "NOT_EXPR", Args: list(new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "is_normalized"}), Args: list($lhs), Funcformat: "COERCE_SQL_SYNTAX"})}
+        postfix IS NOT f:unicode_normal_form NORMALIZED -> new BoolExpr{Boolop: "NOT_EXPR", Args: list(new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "is_normalized"}), Args: list($lhs, $f), Funcformat: "COERCE_SQL_SYNTAX"})}
+        postfix IS t:json_is_tail -> new JsonIsPredicate{Expr: $lhs, Format: new JsonFormat{}, ItemType: $t.ItemType, UniqueKeys: $t.UniqueKeys}
+        postfix IS NOT t:json_is_tail -> new BoolExpr{Boolop: "NOT_EXPR", Args: list(new JsonIsPredicate{Expr: $lhs, Format: new JsonFormat{}, ItemType: $t.ItemType, UniqueKeys: $t.UniqueKeys})}
+    }
+
+    level {
+        infix none LT -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "<"}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none GT -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: ">"}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none EQ -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "="}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none LESS_EQUALS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "<="}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none GREATER_EQUALS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: ">="}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none NOT_EQUALS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "<>"}), Lexpr: $lhs, Rexpr: $rhs}
+    }
+
+    // BETWEEN, IN, LIKE, ILIKE, SIMILAR TO: the operand is a_expr(opl), and a second operator of this
+    // level may not follow (they do not chain)
+    level {
+        postfix BETWEEN ASYMMETRIC? l:b_expr AND r:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_BETWEEN", Name: list(new String{Sval: "BETWEEN"}), Lexpr: $lhs, Rexpr: new NodeList{Items: list($l, $r)}}
+        postfix NOT BETWEEN ASYMMETRIC? l:b_expr AND r:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_NOT_BETWEEN", Name: list(new String{Sval: "NOT BETWEEN"}), Lexpr: $lhs, Rexpr: new NodeList{Items: list($l, $r)}}
+        postfix BETWEEN SYMMETRIC l:b_expr AND r:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_BETWEEN_SYM", Name: list(new String{Sval: "BETWEEN SYMMETRIC"}), Lexpr: $lhs, Rexpr: new NodeList{Items: list($l, $r)}}
+        postfix NOT BETWEEN SYMMETRIC l:b_expr AND r:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_NOT_BETWEEN_SYM", Name: list(new String{Sval: "NOT BETWEEN SYMMETRIC"}), Lexpr: $lhs, Rexpr: new NodeList{Items: list($l, $r)}}
+        postfix IN q:select_with_parens !between_level_op
+            -> new SubLink{SubLinkType: "ANY_SUBLINK", Testexpr: $lhs, Subselect: $q}
+        postfix NOT IN q:select_with_parens !between_level_op
+            -> new BoolExpr{Boolop: "NOT_EXPR", Args: list(new SubLink{SubLinkType: "ANY_SUBLINK", Testexpr: $lhs, Subselect: $q})}
+        postfix IN LP l:expr_list RP !between_level_op
+            -> new A_Expr{Kind: "AEXPR_IN", Name: list(new String{Sval: "="}), Lexpr: $lhs, Rexpr: new NodeList{Items: $l}}
+        postfix NOT IN LP l:expr_list RP !between_level_op
+            -> new A_Expr{Kind: "AEXPR_IN", Name: list(new String{Sval: "<>"}), Lexpr: $lhs, Rexpr: new NodeList{Items: $l}}
+        postfix LIKE r:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_LIKE", Name: list(new String{Sval: "~~"}), Lexpr: $lhs, Rexpr: $r}
+        postfix LIKE r:a_expr(opl) ESCAPE e:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_LIKE", Name: list(new String{Sval: "~~"}), Lexpr: $lhs, Rexpr: new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "like_escape"}), Args: list($r, $e), Funcformat: "COERCE_EXPLICIT_CALL"}}
+        postfix NOT LIKE r:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_LIKE", Name: list(new String{Sval: "!~~"}), Lexpr: $lhs, Rexpr: $r}
+        postfix NOT LIKE r:a_expr(opl) ESCAPE e:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_LIKE", Name: list(new String{Sval: "!~~"}), Lexpr: $lhs, Rexpr: new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "like_escape"}), Args: list($r, $e), Funcformat: "COERCE_EXPLICIT_CALL"}}
+        postfix ILIKE r:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_ILIKE", Name: list(new String{Sval: "~~*"}), Lexpr: $lhs, Rexpr: $r}
+        postfix ILIKE r:a_expr(opl) ESCAPE e:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_ILIKE", Name: list(new String{Sval: "~~*"}), Lexpr: $lhs, Rexpr: new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "like_escape"}), Args: list($r, $e), Funcformat: "COERCE_EXPLICIT_CALL"}}
+        postfix NOT ILIKE r:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_ILIKE", Name: list(new String{Sval: "!~~*"}), Lexpr: $lhs, Rexpr: $r}
+        postfix NOT ILIKE r:a_expr(opl) ESCAPE e:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_ILIKE", Name: list(new String{Sval: "!~~*"}), Lexpr: $lhs, Rexpr: new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "like_escape"}), Args: list($r, $e), Funcformat: "COERCE_EXPLICIT_CALL"}}
+        postfix SIMILAR TO r:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_SIMILAR", Name: list(new String{Sval: "~"}), Lexpr: $lhs, Rexpr: new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "similar_to_escape"}), Args: list($r), Funcformat: "COERCE_EXPLICIT_CALL"}}
+        postfix SIMILAR TO r:a_expr(opl) ESCAPE e:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_SIMILAR", Name: list(new String{Sval: "~"}), Lexpr: $lhs, Rexpr: new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "similar_to_escape"}), Args: list($r, $e), Funcformat: "COERCE_EXPLICIT_CALL"}}
+        postfix NOT SIMILAR TO r:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_SIMILAR", Name: list(new String{Sval: "!~"}), Lexpr: $lhs, Rexpr: new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "similar_to_escape"}), Args: list($r), Funcformat: "COERCE_EXPLICIT_CALL"}}
+        postfix NOT SIMILAR TO r:a_expr(opl) ESCAPE e:a_expr(opl) !between_level_op
+            -> new A_Expr{Kind: "AEXPR_SIMILAR", Name: list(new String{Sval: "!~"}), Lexpr: $lhs, Rexpr: new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "similar_to_escape"}), Args: list($r, $e), Funcformat: "COERCE_EXPLICIT_CALL"}}
+    }
+
+    // Other operators; the postfix forms are a comparison operator followed by ANY, SOME or ALL and a
+    // subquery or a parenthesized expression.
+    level opl {
+        postfix o:subquery_Op (ANY / SOME) q:select_with_parens
+            -> new SubLink{SubLinkType: "ANY_SUBLINK", Testexpr: $lhs, OperName: $o, Subselect: $q}
+        postfix o:subquery_Op ALL q:select_with_parens
+            -> new SubLink{SubLinkType: "ALL_SUBLINK", Testexpr: $lhs, OperName: $o, Subselect: $q}
+        postfix o:subquery_Op (ANY / SOME) LP r:a_expr RP
+            -> new A_Expr{Kind: "AEXPR_OP_ANY", Name: $o, Lexpr: $lhs, Rexpr: $r}
+        postfix o:subquery_Op ALL LP r:a_expr RP
+            -> new A_Expr{Kind: "AEXPR_OP_ALL", Name: $o, Lexpr: $lhs, Rexpr: $r}
+        infix left o:qual_Op -> new A_Expr{Kind: "AEXPR_OP", Name: $o, Lexpr: $lhs, Rexpr: $rhs}
+        prefix o:qual_Op -> new A_Expr{Kind: "AEXPR_OP", Name: $o, Rexpr: $rhs}
+    }
+    level {
+        infix left PLUS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "+"}), Lexpr: $lhs, Rexpr: $rhs}
+        infix left MINUS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "-"}), Lexpr: $lhs, Rexpr: $rhs}
+    }
+    level {
+        infix left STAR -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "*"}), Lexpr: $lhs, Rexpr: $rhs}
+        infix left SLASH -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "/"}), Lexpr: $lhs, Rexpr: $rhs}
+        infix left PERCENT -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "%"}), Lexpr: $lhs, Rexpr: $rhs}
+    }
+    level { infix left CARET -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "^"}), Lexpr: $lhs, Rexpr: $rhs} }
+    level {
+        infix left AT TIME ZONE -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "timezone"}), Args: list($rhs, $lhs), Funcformat: "COERCE_SQL_SYNTAX"}
+        postfix AT LOCAL -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "timezone"}), Args: list($lhs), Funcformat: "COERCE_SQL_SYNTAX"}
+    }
+    level { postfix COLLATE n:any_name -> new CollateClause{Arg: $lhs, Collname: $n} }
+    level {
+        prefix PLUS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "+"}), Rexpr: $rhs}
+        prefix MINUS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "-"}), Rexpr: $rhs}
+    }
+    level { postfix TYPECAST t:Typename -> new TypeCast{Arg: $lhs, TypeName: $t} }
+}
+// An operator of the level of BETWEEN and the like: it may not follow another one
+def between_level_op = NOT? (BETWEEN / IN / LIKE / ILIKE / SIMILAR)
+
+// b_expr: the expressions that may appear where a_expr would be ambiguous (the bounds of BETWEEN, the
+// default of a column, ...). It has no AND, OR, NOT, IN, LIKE, COLLATE, AT or IS NULL.
+def b_expr: Expr = pratt {
+    operand c_expr
+
+    level {
+        infix none IS DISTINCT FROM -> new A_Expr{Kind: "AEXPR_DISTINCT", Name: list(new String{Sval: "="}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none IS NOT DISTINCT FROM -> new A_Expr{Kind: "AEXPR_NOT_DISTINCT", Name: list(new String{Sval: "="}), Lexpr: $lhs, Rexpr: $rhs}
+        postfix IS DOCUMENT -> new XmlExpr{Op: "IS_DOCUMENT", Args: list($lhs), Xmloption: "XMLOPTION_DOCUMENT"}
+        postfix IS NOT DOCUMENT -> new BoolExpr{Boolop: "NOT_EXPR", Args: list(new XmlExpr{Op: "IS_DOCUMENT", Args: list($lhs), Xmloption: "XMLOPTION_DOCUMENT"})}
+    }
+    level {
+        infix none LT -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "<"}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none GT -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: ">"}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none EQ -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "="}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none LESS_EQUALS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "<="}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none GREATER_EQUALS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: ">="}), Lexpr: $lhs, Rexpr: $rhs}
+        infix none NOT_EQUALS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "<>"}), Lexpr: $lhs, Rexpr: $rhs}
+    }
+    level {
+        infix left o:qual_Op -> new A_Expr{Kind: "AEXPR_OP", Name: $o, Lexpr: $lhs, Rexpr: $rhs}
+        prefix o:qual_Op -> new A_Expr{Kind: "AEXPR_OP", Name: $o, Rexpr: $rhs}
+    }
+    level {
+        infix left PLUS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "+"}), Lexpr: $lhs, Rexpr: $rhs}
+        infix left MINUS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "-"}), Lexpr: $lhs, Rexpr: $rhs}
+    }
+    level {
+        infix left STAR -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "*"}), Lexpr: $lhs, Rexpr: $rhs}
+        infix left SLASH -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "/"}), Lexpr: $lhs, Rexpr: $rhs}
+        infix left PERCENT -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "%"}), Lexpr: $lhs, Rexpr: $rhs}
+    }
+    level { infix left CARET -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "^"}), Lexpr: $lhs, Rexpr: $rhs} }
+    level {
+        prefix PLUS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "+"}), Rexpr: $rhs}
+        prefix MINUS -> new A_Expr{Kind: "AEXPR_OP", Name: list(new String{Sval: "-"}), Rexpr: $rhs}
+    }
+    level { postfix TYPECAST t:Typename -> new TypeCast{Arg: $lhs, TypeName: $t} }
+}
+
+def default_expr: SetToDefault = DEFAULT -> new SetToDefault{}
+// row OVERLAPS row: both rows have exactly two elements
+def overlaps_expr: FuncCall = a:row_pair OVERLAPS b:row_pair
+    -> new FuncCall{Funcname: list(new String{Sval: "pg_catalog"}, new String{Sval: "overlaps"}), Args: concat($a, $b), Funcformat: "COERCE_SQL_SYNTAX"}
+def row_pair: []Expr = row_pair_explicit / row_pair_implicit
+def row_pair_explicit: []Expr = ROW -LP x:a_expr -COMMA y:a_expr -RP -> list($x, $y)
+def row_pair_implicit: []Expr = -LP x:a_expr -COMMA y:a_expr -RP -> list($x, $y)
+
+// ---- Operators ----
+
+def math_text: OpTok = "<=" &plain_end / ">=" &plain_end / "<>" &plain_end / "!=" !opc
+    / "+" &plain_end / "-" &plain_end / "*" &plain_end / "/" &plain_end / "<" &plain_end / ">" &plain_end
+    / "=" &plain_end / "%" !opc / "^" !opc
+def MathOp: OpTok = t:math_text s -> $t
+def all_Op = Op / MathOp
+// OPERATOR(schema.op): a schema-qualified operator
+def any_operator: []Str = any_operator_qualified / any_operator_simple
+def any_operator_simple: []Str = x:all_Op -> list($x)
+def any_operator_qualified: []Str = first:ColId -DOT rest:any_operator -> concat(list($first), $rest)
+def qual_Op: []Str = qual_op_plain / qual_op_schema
+def qual_op_plain: []Str = o:Op -> list($o)
+def qual_op_schema: []Str = OPERATOR -LP n:any_operator -RP -> $n
+def qual_all_Op: []Str = qual_all_plain / qual_op_schema
+def qual_all_plain: []Str = o:all_Op -> list($o)
+def subquery_Op: []Str = qual_all_plain / qual_op_schema / op_like / op_not_like / op_ilike / op_not_ilike
+def op_like: []Str = LIKE -> list(new String{Sval: "~~"})
+def op_not_like: []Str = NOT LIKE -> list(new String{Sval: "!~~"})
+def op_ilike: []Str = ILIKE -> list(new String{Sval: "~~*"})
+def op_not_ilike: []Str = NOT ILIKE -> list(new String{Sval: "!~~*"})

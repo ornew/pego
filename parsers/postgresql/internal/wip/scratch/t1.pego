@@ -1,0 +1,64 @@
+package x
+type T struct { A Ia, B Ia }
+type Ia terminal
+type St struct { V string }
+type Kw terminal
+def main: T = a:ia b:ia $$ -> new T{A: $a, B: $b}
+def ia: Ia = (?a-z)+
+def probe: St = s:ia -> new St{V: text($s)}
+def probe2: St = p:probe -> new St{V: $p.V}
+def s = (? )*
+def ic = (?a-z)
+def K0 = [kwid = "adgjmp"] kw
+def K1 = [kwid = "hknqtw"] kw
+def K2 = [kwid = "oruxad"] kw
+def K3 = [kwid = "vybehk"] kw
+def K4 = [kwid = "cfilor"] kw
+def K5 = [kwid = "jmpsvy"] kw
+def K6 = [kwid = "qtwzcf"] kw
+def K7 = [kwid = "xadgjm"] kw
+def K8 = [kwid = "ehknqt"] kw
+def K9 = [kwid = "loruxa"] kw
+def K10 = [kwid = "svybeh"] kw
+def K11 = [kwid = "zcfilo"] kw
+def K12 = [kwid = "gjmpsv"] kw
+def K13 = [kwid = "nqtwzc"] kw
+def K14 = [kwid = "uxadgj"] kw
+def K15 = [kwid = "behknq"] kw
+def K16 = [kwid = "ilorux"] kw
+def K17 = [kwid = "psvybe"] kw
+def K18 = [kwid = "wzcfil"] kw
+def K19 = [kwid = "dgjmps"] kw
+def K20 = [kwid = "knqtwz"] kw
+def K21 = [kwid = "ruxadg"] kw
+def K22 = [kwid = "ybehkn"] kw
+def K23 = [kwid = "filoru"] kw
+def K24 = [kwid = "mpsvyb"] kw
+def K25 = [kwid = "twzcfi"] kw
+def K26 = [kwid = "adgjmp"] kw
+def K27 = [kwid = "hknqtw"] kw
+def K28 = [kwid = "oruxad"] kw
+def K29 = [kwid = "vybehk"] kw
+def K30 = [kwid = "cfilor"] kw
+def K31 = [kwid = "jmpsvy"] kw
+def K32 = [kwid = "qtwzcf"] kw
+def K33 = [kwid = "xadgjm"] kw
+def K34 = [kwid = "ehknqt"] kw
+def K35 = [kwid = "loruxa"] kw
+def K36 = [kwid = "svybeh"] kw
+def K37 = [kwid = "zcfilo"] kw
+def K38 = [kwid = "gjmpsv"] kw
+def K39 = [kwid = "nqtwzc"] kw
+def K40 = [kwid = "uxadgj"] kw
+def K41 = [kwid = "behknq"] kw
+def K42 = [kwid = "ilorux"] kw
+def K43 = [kwid = "psvybe"] kw
+def K44 = [kwid = "wzcfil"] kw
+def K45 = [kwid = "dgjmps"] kw
+def K46 = [kwid = "knqtwz"] kw
+def K47 = [kwid = "ruxadg"] kw
+def K48 = [kwid = "ybehkn"] kw
+def K49 = [kwid = "filoru"] kw
+def lcw: St = ws:@((?A-Za-z)+) -> new St{V: text($ws)}
+def kw = w:lcw [$w.V == kwid] s
+def mainx = K0 / K1 / K2 / K3 / K4 / K5 / K6 / K7 / K8 / K9 / K10 / K11 / K12 / K13 / K14 / K15 / K16 / K17 / K18 / K19 / K20 / K21 / K22 / K23 / K24 / K25 / K26 / K27 / K28 / K29 / K30 / K31 / K32 / K33 / K34 / K35 / K36 / K37 / K38 / K39 / K40 / K41 / K42 / K43 / K44 / K45 / K46 / K47 / K48 / K49

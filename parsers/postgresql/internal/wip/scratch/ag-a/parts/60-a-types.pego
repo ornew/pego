@@ -1,0 +1,116 @@
+// ==== Tables, indexes, sequences, views, domains: types (region A) ====
+//
+// The nodes follow the raw tree (parsenodes.h). The values that gram.y builds in its actions out of lists
+// (SplitColQualList, processCASbits, the flag words of the table-like options) are computed in the actions
+// of the grammar, so that a tree holds the same fields as the raw tree does.
+
+// The elements of CREATE TABLE
+type TableElt = ColumnDef | Constraint | TableLikeClause
+// a name: a source name, or the one the parser makes up ("default")
+type NameStr = Ident | String
+type ColumnDef struct {
+    Colname Ident, TypeName *TypeName, Compression *NameStr, IsLocal bool, StorageName *NameStr, RawDefault *Expr,
+    CollClause *CollateClause, Constraints []Constraint, Fdwoptions []DefElem
+}
+// Contype is the raw enumerator (CONSTR_CHECK ...). The characters of the raw tree (GeneratedWhen, GeneratedKind,
+// FkMatchtype, FkUpdAction, FkDelAction) are one-letter strings. Keys is a list of names (a Str: NOT NULL in a
+// domain has the name "value" that the parser makes up). AccessMethod is "btree" when EXCLUDE has no USING.
+type Constraint struct {
+    Contype string, Conname *Ident, Deferrable bool, Initdeferred bool, IsEnforced bool, SkipValidation bool,
+    InitiallyValid bool, IsNoInherit bool, RawExpr *Expr, GeneratedWhen string, GeneratedKind string,
+    NullsNotDistinct bool, Keys []Str, WithoutOverlaps bool, Including []Ident, Exclusions []NodeList,
+    Options []DefElem, Indexname *Ident, Indexspace *Ident, AccessMethod *Str, WhereClause *Expr,
+    Pktable *RangeVar, FkAttrs []Ident, PkAttrs []Ident, FkWithPeriod bool, PkWithPeriod bool,
+    FkMatchtype string, FkUpdAction string, FkDelAction string, FkDelSetCols []Ident
+}
+// LIKE source [INCLUDING|EXCLUDING option ...]: Options is the bit mask the raw parser computes
+type TableLikeClause struct { Relation RangeVar, Options int }
+
+type PartitionSpec struct { Strategy string, PartParams []PartitionElem }
+type PartitionElem struct { Name *Ident, Expr *Expr, Collation []Ident, Opclass []Ident }
+// Strategy is "l", "r" or "h"; Modulus and Remainder are the numbers of a hash bound
+type PartitionBoundSpec struct {
+    Strategy string, IsDefault bool, Modulus *Iconst, Remainder *Iconst, Listdatums []Expr, Lowerdatums []Expr,
+    Upperdatums []Expr
+}
+type PartitionCmd struct { Name RangeVar, Bound *PartitionBoundSpec, Concurrent bool }
+
+// ---- Statements ----
+
+type CreateStmt struct {
+    Relation RangeVar, TableElts []TableElt, InhRelations []RangeVar, Partbound *PartitionBoundSpec,
+    Partspec *PartitionSpec, OfTypename *TypeName, Options []DefElem, Oncommit string, Tablespacename *Ident,
+    AccessMethod *Ident, IfNotExists bool
+}
+type CreateForeignTableStmt struct { Base CreateStmt, Servername Ident, Options []DefElem }
+// The query of CREATE TABLE AS is a SELECT or an EXECUTE (an ExecuteStmt; gram.y lists those forms with ExecuteStmt)
+type CTASQuery = SelectStmt | ExecuteStmt
+type CreateTableAsStmt struct { Query CTASQuery, Into IntoClause, Objtype string, IsSelectInto bool, IfNotExists bool }
+type RefreshMatViewStmt struct { Concurrent bool, SkipData bool, Relation RangeVar }
+type CreateSeqStmt struct { Sequence RangeVar, Options []DefElem, ForIdentity bool, IfNotExists bool }
+type AlterSeqStmt struct { Sequence RangeVar, Options []DefElem, ForIdentity bool, MissingOk bool }
+type StatsElem struct { Name *Ident, Expr *Expr }
+type CreateStatsStmt struct {
+    Defnames []Ident, StatTypes []Ident, Exprs []StatsElem, Relations []TableRef, IfNotExists bool
+}
+type AlterStatsStmt struct { Defnames []Ident, Stxstattarget *SignedIconst, MissingOk bool }
+// AccessMethod is "btree" without USING
+type IndexStmt struct {
+    Idxname *Ident, Relation RangeVar, AccessMethod Str, TableSpace *Ident, IndexParams []IndexElem,
+    IndexIncludingParams []IndexElem, Options []DefElem, WhereClause *Expr, Unique bool, NullsNotDistinct bool,
+    Concurrent bool, IfNotExists bool
+}
+type ViewStmt struct {
+    View RangeVar, Aliases []Ident, Query SelectStmt, Replace bool, Options []DefElem, WithCheckOption string
+}
+type CreateDomainStmt struct {
+    Domainname []Ident, TypeName TypeName, CollClause *CollateClause, Constraints []Constraint
+}
+type AlterDomainStmt struct {
+    Subtype string, TypeName []Ident, Name *Ident, Def *DomainDef, Behavior *DropBehavior, MissingOk bool
+}
+type DomainDef = Expr | Constraint
+
+// ALTER TABLE and its relatives
+type AlterTableStmt struct { Relation RangeVar, Cmds []AlterTableCmd, Objtype string, MissingOk bool }
+type AlterTableMoveAllStmt struct {
+    OrigTablespacename Ident, Objtype string, Roles []RoleSpec, NewTablespacename Ident, Nowait bool
+}
+// Subtype is the raw enumerator (AT_AddColumn ...). Def is a node of the kind the subcommand needs: a ColumnDef,
+// a Constraint, an expression, a TypeName, a RangeVar, a list of options (NodeList), a number or a name (a name
+// is a String node in the raw tree).
+type AlterTableCmd struct {
+    Subtype string, Name *Ident, Num *Iconst, Newowner *RoleSpec, Def *ATDef, Behavior *DropBehavior, MissingOk bool
+}
+type ATDef = ColumnDef | Constraint | Expr | ATAlterConstraint | ReplicaIdentityStmt | RangeVar | TypeName |
+    PartitionCmd | NodeList | Ident | String | SignedIconst
+type ATAlterConstraint struct {
+    Conname Ident, AlterEnforceability bool, IsEnforced bool, AlterDeferrability bool, Deferrable bool,
+    Initdeferred bool, AlterInheritability bool, Noinherit bool
+}
+// IdentityType is "n", "f", "d" or "i"
+type ReplicaIdentityStmt struct { IdentityType string, Name *Ident }
+
+// ---- Values of the nonterminals that the actions use (they are not nodes of the raw tree) ----
+
+// the persistence that OptTemp and OptNoLog stand for: "p", "t" or "u"
+type Persistence struct { Relpersistence string }
+// ON COMMIT: the raw enumerator
+type OnCommitSpec struct { Oncommit string }
+// the end of CREATE TABLE AS and REFRESH: SkipData is true for WITH NO DATA
+type WithData struct { SkipData bool }
+// The constraint attributes (DEFERRABLE, NOT VALID ...), one flag for each; ConstraintAttributeSpec is the
+// union of those that are written (gram.y keeps them in a word of bits, CAS_xxx, that processCASbits decodes).
+type CAS struct {
+    NotDeferrable bool, Deferrable bool, InitImmediate bool, InitDeferred bool, NotValid bool, NoInherit bool,
+    NotEnforced bool, Enforced bool
+}
+// the qualifiers of a column (ColQualList) after SplitColQualList: the constraints and the COLLATE clause
+type ColQuals struct { Constraints []Constraint, CollClause *CollateClause }
+// ON UPDATE and ON DELETE of a foreign key: the actions as the one-letter strings of the raw tree
+type KeyAction struct { Action string, Cols []Ident }
+type KeyActions struct { Upd string, Del string, DelCols []Ident }
+// the columns of a foreign key, with the PERIOD column last when there is one
+type FkCols struct { Cols []Ident, Period bool }
+// one INCLUDING/EXCLUDING option of LIKE: how it changes the bit mask (see like_option)
+type LikeOpt struct { Inc int, B int, W int }

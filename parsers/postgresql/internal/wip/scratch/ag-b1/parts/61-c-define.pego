@@ -1,0 +1,96 @@
+// ==== CREATE AGGREGATE / OPERATOR / TYPE / TEXT SEARCH / COLLATION, ALTER TYPE, operator classes ====
+
+// DefineStmt. CREATE TYPE with AS (composite, enum, range) are other nodes: see below. The old-style aggregate
+// definition (CREATE AGGREGATE name (basetype = ...)) has no argument list.
+def DefineStmt: DefineStmt = [os = false]
+    CREATE
+    ( r:(OR REPLACE)? AGGREGATE [k = "OBJECT_AGGREGATE"] n:func_name
+        (a:aggr_args d:definition / [os = true] d:old_aggr_definition)
+    / OPERATOR [k = "OBJECT_OPERATOR"] n:any_operator d:definition
+    / TYPE [k = "OBJECT_TYPE"] n:any_name d:definition?
+    / TEXT SEARCH (PARSER [k = "OBJECT_TSPARSER"] / DICTIONARY [k = "OBJECT_TSDICTIONARY"]
+        / TEMPLATE [k = "OBJECT_TSTEMPLATE"] / CONFIGURATION [k = "OBJECT_TSCONFIGURATION"]) n:any_name d:definition
+    / COLLATION [k = "OBJECT_COLLATION"] ine:(IF NOT EXISTS)? n:any_name d:(definition / collation_from) )
+    -> new DefineStmt{Kind: k, Oldstyle: os, Defnames: $n, Args: $a, Definition: concat($d), IfNotExists: len($ine) > 0, Replace: len($r) > 0}
+
+def collation_from: []DefElemK = FROM n:any_name -> list(new DefElemK{Defname: "from", Arg: new NodeList{Items: $n}})
+def old_aggr_definition: []DefElem = -LP first:old_aggr_elem rest:(-COMMA x:old_aggr_elem)* -RP
+    -> concat(list($first), map($rest, (r) => $r.x))
+// the name of an old-style aggregate option is an IDENT (not a keyword)
+def old_aggr_elem: DefElem = n:IDENT -EQ a:def_arg -> new DefElem{Defname: $n, Arg: $a, Defaction: "DEFELEM_UNSPEC"}
+
+def CompositeTypeStmt: CompositeTypeStmt = CREATE TYPE r:qualified_name AS -LP l:table_func_element_list? -RP
+    -> new CompositeTypeStmt{Typevar: new RangeVar{Catalogname: $r.Catalogname, Schemaname: $r.Schemaname, Relname: $r.Relname, Relpersistence: "p"}, Coldeflist: concat($l)}
+def CreateEnumStmt: CreateEnumStmt = CREATE TYPE n:any_name AS ENUM -LP l:enum_val_list? -RP
+    -> new CreateEnumStmt{TypeName: $n, Vals: concat($l)}
+def enum_val_list: []Sconst = first:Sconst rest:(-COMMA x:Sconst)* -> concat(list($first), map($rest, (r) => $r.x))
+def CreateRangeStmt: CreateRangeStmt = CREATE TYPE n:any_name AS RANGE d:definition -> new CreateRangeStmt{TypeName: $n, Params: $d}
+
+// ALTER TYPE: enum values (DROP VALUE is rejected by the parser) and SET (options)
+def AlterEnumStmt: AlterEnumStmt = alter_enum_add / alter_enum_rename
+def alter_enum_add: AlterEnumStmt = [after = true] ALTER TYPE n:any_name ADD VALUE ine:(IF NOT EXISTS)? v:Sconst
+    (BEFORE nb:Sconst [after = false] / AFTER nb:Sconst)?
+    -> new AlterEnumStmt{TypeName: $n, NewVal: $v, NewValNeighbor: $nb, NewValIsAfter: after, SkipIfNewValExists: len($ine) > 0}
+def alter_enum_rename: AlterEnumStmt = ALTER TYPE n:any_name RENAME VALUE o:Sconst TO v:Sconst
+    -> new AlterEnumStmt{TypeName: $n, OldVal: $o, NewVal: $v}
+def AlterTypeStmt: AlterTypeStmt = ALTER TYPE n:any_name SET -LP l:operator_def_list -RP -> new AlterTypeStmt{TypeName: $n, Options: $l}
+
+// ALTER OPERATOR ... SET (...): the options of ALTER TYPE too. NONE as a value is no value.
+def AlterOperatorStmt: AlterOperatorStmt = ALTER OPERATOR o:operator_with_argtypes SET -LP l:operator_def_list -RP
+    -> new AlterOperatorStmt{Opername: $o, Options: $l}
+def operator_def_list: []DefElem = first:operator_def_elem rest:(-COMMA x:operator_def_elem)* -> concat(list($first), map($rest, (r) => $r.x))
+def operator_def_elem: DefElem = operator_def_none / def_elem
+def operator_def_none: DefElem = n:ColLabel -EQ -NONE -> new DefElem{Defname: $n, Defaction: "DEFELEM_UNSPEC"}
+
+// ---- Operator classes and families ----
+
+def CreateOpClassStmt: CreateOpClassStmt = CREATE OPERATOR CLASS n:any_name d:DEFAULT? FOR TYPE t:Typename USING a:name
+    (FAMILY x:any_name)? AS l:opclass_item_list
+    -> new CreateOpClassStmt{Opclassname: $n, Opfamilyname: concat($x), Amname: $a, Datatype: $t, Items: $l, IsDefault: len($d) > 0}
+def opclass_item_list: []CreateOpClassItem = first:opclass_item rest:(-COMMA x:opclass_item)* -> concat(list($first), map($rest, (r) => $r.x))
+def opclass_item: CreateOpClassItem = opclass_item_oper / opclass_item_func / opclass_item_storage
+def opclass_item_oper: CreateOpClassItem = OPERATOR n:Iconst o:(operator_with_argtypes / opclass_oper_bare)
+    (FOR SEARCH / FOR ORDER BY f:any_name)?
+    -> new CreateOpClassItem{Itemtype: 1, Name: $o, Number: $n, OrderFamily: concat($f)}
+def opclass_oper_bare: ObjectWithArgs = o:any_operator -> new ObjectWithArgs{Objname: $o}
+def opclass_item_func: CreateOpClassItem = FUNCTION n:Iconst (-LP a:type_list -RP)? f:function_with_argtypes
+    -> new CreateOpClassItem{Itemtype: 2, Name: $f, Number: $n, ClassArgs: concat($a)}
+def opclass_item_storage: CreateOpClassItem = STORAGE t:Typename -> new CreateOpClassItem{Itemtype: 3, Storedtype: $t}
+
+def CreateOpFamilyStmt: CreateOpFamilyStmt = CREATE OPERATOR FAMILY n:any_name USING a:name
+    -> new CreateOpFamilyStmt{Opfamilyname: $n, Amname: $a}
+def AlterOpFamilyStmt: AlterOpFamilyStmt = [dr = false] ALTER OPERATOR FAMILY n:any_name USING a:name
+    (ADD l:opclass_item_list / DROP [dr = true] l:opclass_drop_list)
+    -> new AlterOpFamilyStmt{Opfamilyname: $n, Amname: $a, IsDrop: dr, Items: $l}
+def opclass_drop_list: []CreateOpClassItem = first:opclass_drop rest:(-COMMA x:opclass_drop)* -> concat(list($first), map($rest, (r) => $r.x))
+def opclass_drop: CreateOpClassItem = (OPERATOR [it = 1] / FUNCTION [it = 2]) n:Iconst -LP a:type_list -RP
+    -> new CreateOpClassItem{Itemtype: it, Number: $n, ClassArgs: $a}
+
+def DropOpClassStmt: DropStmt = DROP OPERATOR CLASS ie:(IF EXISTS)? n:any_name USING a:name b:drop_behavior?
+    -> new DropStmt{Objects: list(new NodeList{Items: concat(list($a), $n)}), RemoveType: "OBJECT_OPCLASS", Behavior: $b, MissingOk: len($ie) > 0}
+def DropOpFamilyStmt: DropStmt = DROP OPERATOR FAMILY ie:(IF EXISTS)? n:any_name USING a:name b:drop_behavior?
+    -> new DropStmt{Objects: list(new NodeList{Items: concat(list($a), $n)}), RemoveType: "OBJECT_OPFAMILY", Behavior: $b, MissingOk: len($ie) > 0}
+
+// ---- Text search, conversions, collations ----
+
+def AlterTSDictionaryStmt: AlterTSDictionaryStmt = ALTER TEXT SEARCH DICTIONARY n:any_name d:definition
+    -> new AlterTSDictionaryStmt{Dictname: $n, Options: $d}
+
+// ALTER TEXT SEARCH CONFIGURATION: the dictionaries are lists of names, the token types a list of names
+def AlterTSConfigurationStmt: AlterTSConfigurationStmt = [ov = false] [rp = false] [me = false]
+    ALTER TEXT SEARCH CONFIGURATION c:any_name
+    ( ADD MAPPING FOR t:name_list WITH d:ts_dict_list [k = "ALTER_TSCONFIG_ADD_MAPPING"]
+    / ALTER MAPPING
+        ( FOR t:name_list (WITH d:ts_dict_list [k = "ALTER_TSCONFIG_ALTER_MAPPING_FOR_TOKEN"] [ov = true]
+            / REPLACE d:ts_dict_pair [k = "ALTER_TSCONFIG_REPLACE_DICT_FOR_TOKEN"] [rp = true])
+        / REPLACE d:ts_dict_pair [k = "ALTER_TSCONFIG_REPLACE_DICT"] [rp = true] )
+    / DROP MAPPING (IF EXISTS [me = true])? FOR t:name_list [k = "ALTER_TSCONFIG_DROP_MAPPING"] )
+    -> new AlterTSConfigurationStmt{Kind: k, Cfgname: $c, Tokentype: concat($t), Dicts: concat($d), Override: ov, Replace: rp, MissingOk: me}
+def ts_dict: NodeList = n:any_name -> new NodeList{Items: $n}
+def ts_dict_list: []NodeList = first:ts_dict rest:(-COMMA x:ts_dict)* -> concat(list($first), map($rest, (r) => $r.x))
+def ts_dict_pair: []NodeList = a:ts_dict WITH b:ts_dict -> list($a, $b)
+
+def CreateConversionStmt: CreateConversionStmt = CREATE d:DEFAULT? CONVERSION n:any_name FOR a:Sconst TO b:Sconst FROM f:any_name
+    -> new CreateConversionStmt{ConversionName: $n, ForEncodingName: $a, ToEncodingName: $b, FuncName: $f, Def: len($d) > 0}
+
+def AlterCollationStmt: AlterCollationStmt = ALTER COLLATION n:any_name REFRESH VERSION -> new AlterCollationStmt{Collname: $n}

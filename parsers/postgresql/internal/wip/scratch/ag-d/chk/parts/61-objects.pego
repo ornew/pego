@@ -1,0 +1,5 @@
+
+// stub: replaced by the statements of group B
+type StmtStubB struct { }
+type StmtB = StmtStubB
+def stmt_b: StmtB = "@@never@@" -> new StmtStubB{}

@@ -1,0 +1,10 @@
+package x
+type LcWord struct { V string }
+type T struct { A LcWord }
+def main: T = s w:lcword s $$ -> new T{A: $w}
+def s = (? )*
+def lcword: LcWord = &(?A-Za-z_\u{80}-\u{10FFFF}) [lw = ""]
+    ( r:@((?a-z0-9_$)+) [lw = lw + text($r)]
+    / (?A) [lw = lw + "a"] / (?B) [lw = lw + "b"] / (?C) [lw = lw + "c"] / (?S) [lw = lw + "s"] / (?E) [lw = lw + "e"]
+    / (?\u{80}-\u{10FFFF}) [lw = lw + "\u{80}"] )+
+    -> new LcWord{V: lw}

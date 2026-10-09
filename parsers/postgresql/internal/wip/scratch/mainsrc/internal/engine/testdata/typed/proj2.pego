@@ -1,0 +1,2 @@
+type Out struct { A []*Match }
+def main: Out = "(" xs:(n:"a"?)* ")" -> new Out{A: map($xs, (e) => $e.n)}

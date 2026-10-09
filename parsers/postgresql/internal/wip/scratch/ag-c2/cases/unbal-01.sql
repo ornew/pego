@@ -1,0 +1,1 @@
+COMMENT ON FUNCTION f(int IS 'x';
