@@ -49,6 +49,15 @@ advances the position by that many, and each byte that is not part of a valid
 UTF-8 sequence counts as one position (and one character U+FFFD) in either
 unit.
 
+This decoding also applies to literals. A U+FFFD in a literal matches either
+its valid UTF-8 encoding or one invalid input byte, in either position unit.
+For example, `def main = "\uFFFD"` accepts the single byte `0xff`; the
+matched range ends at position 1. Two invalid bytes require two replacement
+characters. Position units do not change which Unicode characters match.
+The terminal's text is the matched input: byte mode keeps the invalid byte,
+while code-point mode substitutes U+FFFD. The literal's spelling need not have
+the same byte length as the matched input.
+
 The unit is selected with `pego.WithUnit(pego.Bytes)` in the Go API and with
 `pego parse -unit bytes` on the command line.
 

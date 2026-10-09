@@ -359,6 +359,11 @@ Choosing:
 - Use **code points** (the default) when positions are shown to people as character counts, or are exchanged with a
   system that counts characters (editors and language servers often count UTF-16 units, which neither unit matches).
 - Invalid UTF-8 is read as one U+FFFD character per invalid byte, so positions stay well defined.
+  Literals use this decoding too: `"\uFFFD"` matches a valid replacement character or one invalid byte in either
+  unit. Its byte range can therefore span three bytes or one byte. Normal literal input retains the UTF-8 byte
+  comparison path in byte mode; replacement-character mismatches are checked as decoded characters.
+  `Match.Text` preserves the matched input bytes in byte mode, including invalid bytes; code-point mode substitutes
+  U+FFFD. A text predicate can therefore distinguish an invalid byte from an encoded U+FFFD in byte mode.
 
 The [benchmarks](../benchmarks.md#parsing-time-position-unit-bytes) show almost no speed difference between the units.
 The CLI flag is `-unit codepoints|bytes`.

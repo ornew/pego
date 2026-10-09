@@ -23,7 +23,7 @@ This document describes the repository layout, the architecture of the implement
 | `playground/` | WebAssembly API used by the web playground (package `main`; `GOOS=js GOARCH=wasm`) |
 | `site/` | Web site generator (a separate Go module): landing page, docs, reference and playground; build with `site/build.sh` |
 | `netlify.toml` | Netlify build configuration for the site |
-| `bench/` | Benchmarks comparing the backends with each other and with standard-library parsers (`gen/` holds generated parsers). Results are in [benchmarks.md](benchmarks.md), generated with `go run ./bench/report` (`report/`) from the raw results in `results.txt`. |
+| `bench/` | Benchmarks comparing the backends with each other and with standard-library parsers (`gen/` holds generated parsers). Results are in [benchmarks.md](benchmarks.md), generated with `go run ./bench/report` (`report/`) from the raw results in `results.txt`. `node bench/ts-literal.mjs [runtime.ts]` measures the embedded TS literal matcher, excluding input/rule setup, trees and error construction; its optional path compares checkouts. |
 | `spec/` | Language specification, including the bytecode and VM specification ([bytecode.md](../spec/bytecode.md)) |
 | `docs/tutorial/` | Tutorials (getting started) |
 | `docs/guide/` | Task-oriented guides to each feature ([index](guide/README.md)) |
@@ -252,7 +252,10 @@ opt-in strict JSON intake remains proposed (F02).
 Bytecode lowering also canonicalizes every negative public-AST repetition maximum to -1 (C27), preserving
 unbounded semantics in ordinary/wide REPEAT and SCAN instructions and saved modules without mutating the AST.
 Byte-position streams emit complete elements without waiting for unrelated future bytes (C13), while split UTF-8
-prefixes still require continuation bytes or actual EOF. Follow with invalid-UTF-8 matching and edit equivalence fixes.
+prefixes still require continuation bytes or actual EOF. Replacement-character literals match invalid UTF-8 input in
+both position units across engines and generated Go/TS (C14), preserving encoded-byte success paths and matched
+input text; byte-mode text predicates can still distinguish invalid bytes from encoded U+FFFD. Follow with
+invalid-UTF-8 edit equivalence fixes and raw-invalid-byte AST literal normalization/validation.
 Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused

@@ -501,15 +501,23 @@ func (p *parser) matchLiteral(rs []rune, bs []byte) bool {
 			p.pos += n
 			return true
 		}
+		if p.unit == Bytes && slices.Contains(rs, utf8.RuneError) {
+			return p.matchLiteralRunes(rs)
+		}
 		p.touch(p.pos + k + 1)
 		p.pos += k
 		return false
 	}
 	if p.unit == Bytes {
+		start := p.pos
 		for _, b := range bs {
 			p.touch(p.pos + 1)
 			c, ok := p.byteAt(p.pos)
 			if !ok || c != b {
+				if slices.Contains(rs, utf8.RuneError) {
+					p.pos = start
+					return p.matchLiteralRunes(rs)
+				}
 				return false
 			}
 			p.pos++
@@ -522,6 +530,28 @@ func (p *parser) matchLiteral(rs []rune, bs []byte) bool {
 			return false
 		}
 		p.pos++
+	}
+	return true
+}
+
+// literalText preserves matched input bytes when replacement decoding accepts
+// a shorter spelling than the literal's valid UTF-8 encoding.
+func (p *parser) literalText(start int, text string) string {
+	if p.unit == Bytes && p.pos-start != len(text) {
+		return p.text(start, p.pos)
+	}
+	return text
+}
+
+// matchLiteralRunes handles replacement characters that can occupy one invalid
+// input byte or three valid UTF-8 bytes. peek records decoding dependencies.
+func (p *parser) matchLiteralRunes(rs []rune) bool {
+	for _, want := range rs {
+		got, size, ok := p.peek()
+		if !ok || got != want {
+			return false
+		}
+		p.pos += size
 	}
 	return true
 }

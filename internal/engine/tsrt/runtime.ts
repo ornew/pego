@@ -1517,13 +1517,11 @@ class Parser {
     if (this.unit === Bytes) {
       const b = lit.bytes;
       if (this.pos + b.length > this.n) {
-        this.expect(start, desc);
-        return undefined;
+        return this.matchReplacementLiteral(lit, desc, build);
       }
       for (let i = 0; i < b.length; i++) {
         if (this.bs[this.pos + i] !== b[i]) {
-          this.expect(start, desc);
-          return undefined;
+          return this.matchReplacementLiteral(lit, desc, build);
         }
       }
       this.pos += b.length;
@@ -1540,6 +1538,26 @@ class Parser {
       return null;
     }
     return new Node("Match", "", start, this.pos, lit.text, noNodes, noFields, true, true);
+  }
+
+  // Keep replacement decoding off the successful byte-comparison path.
+  matchReplacementLiteral(lit: Lit, desc: number, build: boolean): R {
+    const start = this.pos;
+    if (!lit.cps.includes(0xfffd)) {
+      this.expect(start, desc);
+      return undefined;
+    }
+    for (const want of lit.cps) {
+      if (this.peek() !== want) {
+        this.expect(start, desc);
+        return undefined;
+      }
+      this.pos += this.psize;
+    }
+    if (!build) {
+      return null;
+    }
+    return new Node("Match", "", start, this.pos, this.text(start, this.pos), noNodes, noFields, true, true);
   }
 
   matchAny(build: boolean): R {

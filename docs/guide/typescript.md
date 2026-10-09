@@ -210,6 +210,9 @@ the engine's:
   as `TextEncoder` does.
 - A **`Uint8Array`** is parsed as UTF-8 bytes, which is what the engine parses. An invalid sequence decodes as U+FFFD,
   one per byte, exactly as Go decodes it; in `Bytes` mode the positions count the original bytes.
+  A U+FFFD literal matches each such byte in either unit, just as a replacement-character class does; valid U+FFFD
+  instead occupies three bytes in `Bytes` mode.
+  The matched literal's text follows the byte-preserving convention below, including invalid input bytes.
 - In `Bytes` mode, text keeps the bytes, as Go strings do: in node text and in `text(...)`, each invalid byte *b* is
   the lone surrogate U+DC00+*b* (U+DC80–U+DCFF, like Python's `surrogateescape`), so `len`, comparisons and
   `toString` see the bytes the engine sees. `marshal` writes such a byte as the character U+FFFD, as Go's JSON does

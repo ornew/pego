@@ -746,7 +746,7 @@ func (p *tparser) matchLiteral(rs []rune, text string, desc expID, build bool) (
 	if !build {
 		return nil, true
 	}
-	return p.newMatch(start, p.pos, text, true), true
+	return p.newMatch(start, p.pos, p.literalText(start, text), true), true
 }
 
 func (p *tparser) matchAny(build bool) (any, bool) {

@@ -324,7 +324,11 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 			return "nil"
 		}
 		v := d.decl("v", "any")
-		d.line("%s = p.newMatch(%s, p.pos, %q, true)", v, d.rd(start), e.Value)
+		text := fmt.Sprintf("%q", e.Value)
+		if strings.ContainsRune(e.Value, '\uFFFD') {
+			text = fmt.Sprintf("p.literalText(%s, %q)", d.rd(start), e.Value)
+		}
+		d.line("%s = p.newMatch(%s, p.pos, %s, true)", v, d.rd(start), text)
 		return v
 	case *grammar.CharClass:
 		ch, size, ok := d.rd(d.shared("ch", "rune")), d.rd(d.shared("size", "int")), d.ok()

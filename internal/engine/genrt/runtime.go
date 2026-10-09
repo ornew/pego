@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -1213,12 +1214,20 @@ func nodeOrNil(n *Node) any {
 
 // --- Terminals ---
 
+// literalText returns source bytes if replacement decoding accepted a shorter
+// spelling than the literal, retaining the usual constant-text success path.
+func (p *parser) literalText(start int, text string) string {
+	if p.unit == Bytes && p.pos-start != len(text) {
+		return p.text(start, p.pos)
+	}
+	return text
+}
+
 func (p *parser) matchLiteral(rs []rune, text string, desc expID, build bool) (*Node, bool) {
 	start := p.pos
 	if p.unit == Bytes {
 		if !strings.HasPrefix(p.bs[p.pos:], text) {
-			p.expect(start, desc)
-			return nil, false
+			return p.matchReplacementLiteral(rs, text, desc, build)
 		}
 		p.pos += len(text)
 	} else {
@@ -1233,7 +1242,29 @@ func (p *parser) matchLiteral(rs []rune, text string, desc expID, build bool) (*
 	if !build {
 		return nil, true
 	}
-	return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: text, terminal: true, fresh: true}), true
+	return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.literalText(start, text), terminal: true, fresh: true}), true
+}
+
+// matchReplacementLiteral is the cold path for raw-byte mismatches. An
+// invalid input byte and valid U+FFFD decode alike, but occupy different sizes.
+func (p *parser) matchReplacementLiteral(rs []rune, text string, desc expID, build bool) (*Node, bool) {
+	start := p.pos
+	if !slices.Contains(rs, utf8.RuneError) {
+		p.expect(start, desc)
+		return nil, false
+	}
+	for _, want := range rs {
+		got, size, ok := p.peek()
+		if !ok || got != want {
+			p.expect(start, desc)
+			return nil, false
+		}
+		p.pos += size
+	}
+	if !build {
+		return nil, true
+	}
+	return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.literalText(start, text), terminal: true, fresh: true}), true
 }
 
 func (p *parser) matchAny(build bool) (*Node, bool) {

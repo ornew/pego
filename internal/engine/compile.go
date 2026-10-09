@@ -566,7 +566,7 @@ func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
 			if !build {
 				return nil, true
 			}
-			return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: e.Value, terminal: true, fresh: true}), true
+			return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.literalText(start, e.Value), terminal: true, fresh: true}), true
 		}
 
 	case *grammar.CharClass:

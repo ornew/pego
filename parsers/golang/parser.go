@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -1210,12 +1211,20 @@ func nodeOrNil(n *Node) any {
 
 // --- Terminals ---
 
+// literalText returns source bytes if replacement decoding accepted a shorter
+// spelling than the literal, retaining the usual constant-text success path.
+func (p *parser) literalText(start int, text string) string {
+	if p.unit == Bytes && p.pos-start != len(text) {
+		return p.text(start, p.pos)
+	}
+	return text
+}
+
 func (p *parser) matchLiteral(rs []rune, text string, desc expID, build bool) (*Node, bool) {
 	start := p.pos
 	if p.unit == Bytes {
 		if !strings.HasPrefix(p.bs[p.pos:], text) {
-			p.expect(start, desc)
-			return nil, false
+			return p.matchReplacementLiteral(rs, text, desc, build)
 		}
 		p.pos += len(text)
 	} else {
@@ -1230,7 +1239,29 @@ func (p *parser) matchLiteral(rs []rune, text string, desc expID, build bool) (*
 	if !build {
 		return nil, true
 	}
-	return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: text, terminal: true, fresh: true}), true
+	return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.literalText(start, text), terminal: true, fresh: true}), true
+}
+
+// matchReplacementLiteral is the cold path for raw-byte mismatches. An
+// invalid input byte and valid U+FFFD decode alike, but occupy different sizes.
+func (p *parser) matchReplacementLiteral(rs []rune, text string, desc expID, build bool) (*Node, bool) {
+	start := p.pos
+	if !slices.Contains(rs, utf8.RuneError) {
+		p.expect(start, desc)
+		return nil, false
+	}
+	for _, want := range rs {
+		got, size, ok := p.peek()
+		if !ok || got != want {
+			p.expect(start, desc)
+			return nil, false
+		}
+		p.pos += size
+	}
+	if !build {
+		return nil, true
+	}
+	return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.literalText(start, text), terminal: true, fresh: true}), true
 }
 
 func (p *parser) matchAny(build bool) (*Node, bool) {
@@ -2807,7 +2838,7 @@ func (p *tparser) matchLiteral(rs []rune, text string, desc expID, build bool) (
 	if !build {
 		return nil, true
 	}
-	return p.newMatch(start, p.pos, text, true), true
+	return p.newMatch(start, p.pos, p.literalText(start, text), true), true
 }
 
 func (p *tparser) matchAny(build bool) (any, bool) {
@@ -171895,7 +171926,7 @@ func (p *tparser) s243() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13675, "�", 104, false); !ok {
 				goto L79
 			}
-			v83 = p.newMatch(x82, p.pos, "�", true)
+			v83 = p.newMatch(x82, p.pos, p.literalText(x82, "�"), true)
 			k59 = v83
 			x81 = append(x81, v83)
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k59), any("�")) }) {
@@ -172132,7 +172163,7 @@ func (p *tparser) s243() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13684, "�", 104, false); !ok {
 				goto L165
 			}
-			v169 = p.newMatch(x168, p.pos, "�", true)
+			v169 = p.newMatch(x168, p.pos, p.literalText(x168, "�"), true)
 			k135 = v169
 			x167 = append(x167, v169)
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k135), any("�")) }) {
@@ -172442,7 +172473,7 @@ func (p *tparser) s243() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13696, "�", 104, false); !ok {
 				goto L246
 			}
-			v250 = p.newMatch(x249, p.pos, "�", true)
+			v250 = p.newMatch(x249, p.pos, p.literalText(x249, "�"), true)
 			k185 = v250
 			x248 = append(x248, v250)
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k185), any("�")) }) {
@@ -172786,7 +172817,7 @@ func (p *tparser) s243() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13706, "�", 104, false); !ok {
 				goto L341
 			}
-			v345 = p.newMatch(x344, p.pos, "�", true)
+			v345 = p.newMatch(x344, p.pos, p.literalText(x344, "�"), true)
 			k311 = v345
 			x343 = append(x343, v345)
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k311), any("�")) }) {
@@ -173022,7 +173053,7 @@ func (p *tparser) s243() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13713, "�", 104, false); !ok {
 				goto L405
 			}
-			v409 = p.newMatch(x408, p.pos, "�", true)
+			v409 = p.newMatch(x408, p.pos, p.literalText(x408, "�"), true)
 			k375 = v409
 			x407 = append(x407, v409)
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k375), any("�")) }) {
@@ -173274,7 +173305,7 @@ func (p *tparser) s243() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13721, "�", 104, false); !ok {
 				goto L472
 			}
-			v476 = p.newMatch(x475, p.pos, "�", true)
+			v476 = p.newMatch(x475, p.pos, p.literalText(x475, "�"), true)
 			k442 = v476
 			x474 = append(x474, v476)
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k442), any("�")) }) {
@@ -174323,7 +174354,7 @@ func (p *tparser) s244() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13728, "�", 104, false); !ok {
 				goto L115
 			}
-			v119 = p.newMatch(x118, p.pos, "�", true)
+			v119 = p.newMatch(x118, p.pos, p.literalText(x118, "�"), true)
 			k77 = v119
 			x117 = append(x117, v119)
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k77), any("�")) }) {
@@ -174733,7 +174764,7 @@ func (p *tparser) s244() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13740, "�", 104, false); !ok {
 				goto L232
 			}
-			v236 = p.newMatch(x235, p.pos, "�", true)
+			v236 = p.newMatch(x235, p.pos, p.literalText(x235, "�"), true)
 			k150 = v236
 			x234 = append(x234, v236)
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k150), any("�")) }) {
@@ -175102,7 +175133,7 @@ func (p *tparser) s244() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13750, "�", 104, false); !ok {
 				goto L335
 			}
-			v339 = p.newMatch(x338, p.pos, "�", true)
+			v339 = p.newMatch(x338, p.pos, p.literalText(x338, "�"), true)
 			k297 = v339
 			x337 = append(x337, v339)
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k297), any("�")) }) {
@@ -175404,7 +175435,7 @@ func (p *tparser) s244() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13758, "�", 104, false); !ok {
 				goto L422
 			}
-			v426 = p.newMatch(x425, p.pos, "�", true)
+			v426 = p.newMatch(x425, p.pos, p.literalText(x425, "�"), true)
 			k384 = v426
 			x424 = append(x424, v426)
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k384), any("�")) }) {
@@ -175675,7 +175706,7 @@ func (p *tparser) s244() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13766, "�", 104, false); !ok {
 				goto L496
 			}
-			v500 = p.newMatch(x499, p.pos, "�", true)
+			v500 = p.newMatch(x499, p.pos, p.literalText(x499, "�"), true)
 			k476 = v500
 			x498 = append(x498, v500)
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k476), any("�")) }) {
@@ -175861,7 +175892,7 @@ func (p *tparser) s244() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13772, "�", 104, false); !ok {
 				goto L573
 			}
-			v577 = p.newMatch(x576, p.pos, "�", true)
+			v577 = p.newMatch(x576, p.pos, p.literalText(x576, "�"), true)
 			k543 = v577
 			x575 = append(x575, v577)
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k543), any("�")) }) {
@@ -176171,7 +176202,7 @@ func (p *tparser) s244() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13784, "�", 104, false); !ok {
 				goto L654
 			}
-			v658 = p.newMatch(x657, p.pos, "�", true)
+			v658 = p.newMatch(x657, p.pos, p.literalText(x657, "�"), true)
 			k593 = v658
 			x656 = append(x656, v658)
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k593), any("�")) }) {
@@ -176515,7 +176546,7 @@ func (p *tparser) s244() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13794, "�", 104, false); !ok {
 				goto L749
 			}
-			v753 = p.newMatch(x752, p.pos, "�", true)
+			v753 = p.newMatch(x752, p.pos, p.literalText(x752, "�"), true)
 			k719 = v753
 			x751 = append(x751, v753)
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k719), any("�")) }) {
@@ -176751,7 +176782,7 @@ func (p *tparser) s244() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13801, "�", 104, false); !ok {
 				goto L813
 			}
-			v817 = p.newMatch(x816, p.pos, "�", true)
+			v817 = p.newMatch(x816, p.pos, p.literalText(x816, "�"), true)
 			k783 = v817
 			x815 = append(x815, v817)
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k783), any("�")) }) {
@@ -177003,7 +177034,7 @@ func (p *tparser) s244() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13809, "�", 104, false); !ok {
 				goto L880
 			}
-			v884 = p.newMatch(x883, p.pos, "�", true)
+			v884 = p.newMatch(x883, p.pos, p.literalText(x883, "�"), true)
 			k850 = v884
 			x882 = append(x882, v884)
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k850), any("�")) }) {
@@ -177543,7 +177574,7 @@ func (p *tparser) i247() (any, bool) {
 	} else if _, ok = p.parser.matchLiteral(lit13819, "�", 104, false); !ok {
 		goto fail
 	}
-	v5 = p.newMatch(x4, p.pos, "�", true)
+	v5 = p.newMatch(x4, p.pos, p.literalText(x4, "�"), true)
 	k3 = v5
 	x2 = append(x2, v5)
 	if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k3), any("�")) }) {
@@ -186688,7 +186719,7 @@ func (p *tparser) s305() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13935, "�", 104, false); !ok {
 				goto L74
 			}
-			v76 = p.newMatch(x75, p.pos, "�", true)
+			v76 = p.newMatch(x75, p.pos, p.literalText(x75, "�"), true)
 			k50 = v76
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k50), any("�")) }) {
 				goto L74
@@ -187074,7 +187105,7 @@ func (p *tparser) s305() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13946, "�", 104, false); !ok {
 				goto L173
 			}
-			v175 = p.newMatch(x174, p.pos, "�", true)
+			v175 = p.newMatch(x174, p.pos, p.literalText(x174, "�"), true)
 			k96 = v175
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k96), any("�")) }) {
 				goto L173
@@ -187381,7 +187412,7 @@ func (p *tparser) s305() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13955, "�", 104, false); !ok {
 				goto L233
 			}
-			v235 = p.newMatch(x234, p.pos, "�", true)
+			v235 = p.newMatch(x234, p.pos, p.literalText(x234, "�"), true)
 			k209 = v235
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k209), any("�")) }) {
 				goto L233
@@ -187628,7 +187659,7 @@ func (p *tparser) s305() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13962, "�", 104, false); !ok {
 				goto L285
 			}
-			v287 = p.newMatch(x286, p.pos, "�", true)
+			v287 = p.newMatch(x286, p.pos, p.literalText(x286, "�"), true)
 			k261 = v287
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k261), any("�")) }) {
 				goto L285
@@ -187848,7 +187879,7 @@ func (p *tparser) s305() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13969, "�", 104, false); !ok {
 				goto L327
 			}
-			v329 = p.newMatch(x328, p.pos, "�", true)
+			v329 = p.newMatch(x328, p.pos, p.literalText(x328, "�"), true)
 			k316 = v329
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k316), any("�")) }) {
 				goto L327
@@ -187987,7 +188018,7 @@ func (p *tparser) s305() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13974, "�", 104, false); !ok {
 				goto L370
 			}
-			v372 = p.newMatch(x371, p.pos, "�", true)
+			v372 = p.newMatch(x371, p.pos, p.literalText(x371, "�"), true)
 			k354 = v372
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k354), any("�")) }) {
 				goto L370
@@ -188271,7 +188302,7 @@ func (p *tparser) s305() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13985, "�", 104, false); !ok {
 				goto L431
 			}
-			v433 = p.newMatch(x432, p.pos, "�", true)
+			v433 = p.newMatch(x432, p.pos, p.literalText(x432, "�"), true)
 			k380 = v433
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k380), any("�")) }) {
 				goto L431
@@ -188553,7 +188584,7 @@ func (p *tparser) s305() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit13994, "�", 104, false); !ok {
 				goto L483
 			}
-			v485 = p.newMatch(x484, p.pos, "�", true)
+			v485 = p.newMatch(x484, p.pos, p.literalText(x484, "�"), true)
 			k467 = v485
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k467), any("�")) }) {
 				goto L483
@@ -188739,7 +188770,7 @@ func (p *tparser) s305() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit14000, "�", 104, false); !ok {
 				goto L515
 			}
-			v517 = p.newMatch(x516, p.pos, "�", true)
+			v517 = p.newMatch(x516, p.pos, p.literalText(x516, "�"), true)
 			k499 = v517
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k499), any("�")) }) {
 				goto L515
@@ -188941,7 +188972,7 @@ func (p *tparser) s305() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit14007, "�", 104, false); !ok {
 				goto L550
 			}
-			v552 = p.newMatch(x551, p.pos, "�", true)
+			v552 = p.newMatch(x551, p.pos, p.literalText(x551, "�"), true)
 			k534 = v552
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k534), any("�")) }) {
 				goto L550
@@ -189395,7 +189426,7 @@ func (p *tparser) s307() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit14011, "�", 104, false); !ok {
 				goto L46
 			}
-			v48 = p.newMatch(x47, p.pos, "�", true)
+			v48 = p.newMatch(x47, p.pos, p.literalText(x47, "�"), true)
 			k35 = v48
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k35), any("�")) }) {
 				goto L46
@@ -189585,7 +189616,7 @@ func (p *tparser) s307() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit14019, "�", 104, false); !ok {
 				goto L98
 			}
-			v100 = p.newMatch(x99, p.pos, "�", true)
+			v100 = p.newMatch(x99, p.pos, p.literalText(x99, "�"), true)
 			k82 = v100
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k82), any("�")) }) {
 				goto L98
@@ -189869,7 +189900,7 @@ func (p *tparser) s307() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit14030, "�", 104, false); !ok {
 				goto L159
 			}
-			v161 = p.newMatch(x160, p.pos, "�", true)
+			v161 = p.newMatch(x160, p.pos, p.literalText(x160, "�"), true)
 			k108 = v161
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k108), any("�")) }) {
 				goto L159
@@ -190151,7 +190182,7 @@ func (p *tparser) s307() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit14039, "�", 104, false); !ok {
 				goto L211
 			}
-			v213 = p.newMatch(x212, p.pos, "�", true)
+			v213 = p.newMatch(x212, p.pos, p.literalText(x212, "�"), true)
 			k195 = v213
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k195), any("�")) }) {
 				goto L211
@@ -190337,7 +190368,7 @@ func (p *tparser) s307() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit14045, "�", 104, false); !ok {
 				goto L243
 			}
-			v245 = p.newMatch(x244, p.pos, "�", true)
+			v245 = p.newMatch(x244, p.pos, p.literalText(x244, "�"), true)
 			k227 = v245
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k227), any("�")) }) {
 				goto L243
@@ -190539,7 +190570,7 @@ func (p *tparser) s307() (any, bool) {
 			} else if _, ok = p.parser.matchLiteral(lit14052, "�", 104, false); !ok {
 				goto L278
 			}
-			v280 = p.newMatch(x279, p.pos, "�", true)
+			v280 = p.newMatch(x279, p.pos, p.literalText(x279, "�"), true)
 			k262 = v280
 			if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k262), any("�")) }) {
 				goto L278
@@ -198548,7 +198579,7 @@ func (p *tparser) i367() (any, bool) {
 	} else if _, ok = p.parser.matchLiteral(lit14159, "�", 104, false); !ok {
 		goto fail
 	}
-	v3 = p.newMatch(x2, p.pos, "�", true)
+	v3 = p.newMatch(x2, p.pos, p.literalText(x2, "�"), true)
 	k1 = v3
 	if !p.predicate(func(c *tctx) any { return trtBinary("==", c.text(k1), any("�")) }) {
 		goto fail

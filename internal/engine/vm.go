@@ -405,7 +405,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 				goto fail
 			}
 			if in.C == 1 {
-				p.push(p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: m.Strings[in.A], terminal: true, fresh: true}))
+				p.push(p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.literalText(start, m.Strings[in.A]), terminal: true, fresh: true}))
 			}
 		case OpClass:
 			ch, size, ok := p.peek()
