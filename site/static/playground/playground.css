@@ -176,6 +176,8 @@
 .tree .row:hover { background: var(--mark-hover); }
 .tree .row.current { background: var(--mark-select); }
 .tree .row:focus { outline: 1px solid var(--accent); }
+.tree-page { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 4px; color: var(--fg-faint); }
+.tree-page button:disabled { opacity: .5; cursor: default; }
 .twisty { display: inline-block; width: 14px; flex: none; cursor: pointer; color: var(--fg-faint); text-align: center; }
 .twisty::before { content: "▾"; }
 li[aria-expanded="false"] > .row .twisty::before { content: "▸"; }

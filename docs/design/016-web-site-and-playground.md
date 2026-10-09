@@ -98,7 +98,18 @@ Positions in results are in the parse's unit (code points or bytes), and JavaScr
 code units. The page builds a map between the two for each parse, so highlighting is exact for any text, including
 characters outside the Basic Multilingual Plane, in both units.
 
-The tree view renders children only when a node is expanded, so large trees stay fast.
+The tree view renders at most 100 direct children per page. Previous/Next replace the page, and display its range and
+total; lazy child descriptors avoid building wrappers for every sibling. All node rows and page controls count toward
+a shared 400-row initial creation budget. **Expand shown** expands the displayed pages, with a 5,000-row live cap;
+it does not advance through every sibling page. Each child page has at most 100 child rows plus one control row.
+Reaching the live cap compacts other materialized branches, then recreates the requested path and its page within
+the cap. Removed pages release row mappings and selection references, and replacement controls restore focus.
+
+Moving the input caret follows the last containing child at each level, using half-open spans. It materializes only
+missing path children, so reaching a late sibling does not render the preceding siblings. If the ancestor path itself
+cannot fit with room for expansion, the view shows the selected subtree and a **Show complete tree** button. The
+original model remains available for later caret moves and returning to the bounded initial view. These limits bound
+DOM work independently of the worker's parse timeout; they do not reduce the parsed tree.
 
 **State in the URL.** The grammar, input and options are written to the URL fragment after each change, compressed
 with `CompressionStream("deflate-raw")` and encoded as base64url (`#z=`), or as plain JSON where compression is not
@@ -192,6 +203,11 @@ example is about to become visible.
   decoding and example fetching. It controls completion order across edits, options, tabs, examples, Share, startup
   and navigation, including fragment changes before event delivery and error paths. Real browser checks complement
   these controlled DOM/client/timer tests with the WebAssembly worker.
+- `site/testdata/tree_test.mjs` checks the actual tree module with a controlled DOM: initial and expansion row budgets,
+  lazy sibling access, page replacement, deferred-child reveal, deep-path subtree windows, cap boundaries, row-reference
+  cleanup and page focus. The controlled DOM does not model browser layout; browser checks exercise the real worker
+  and tree controls. `bench_tree.mjs` measures the actual parent/candidate sources in the same VM; small trees compare
+  equal displayed work, while wide trees intentionally display fewer rows.
 
 ## Alternatives considered
 
@@ -199,6 +215,10 @@ example is about to become visible.
   would not work offline. WebAssembly keeps everything in the browser.
 - **Running the WebAssembly module on the page's main thread.** Simpler, but a slow grammar or input would freeze the
   page with no way to stop it.
+- **Rendering every sibling when opening a node.** Lazy recursion alone does not bound a wide node's DOM work.
+  Replacing child pages gives explicit, bounded navigation; full virtualization would add scroll-height and focus
+  management that the present outline does not need. A subtree window preserves deep-node reachability when its
+  ancestors cannot all coexist under the row cap.
 - **Committing the built site, or building it with GitHub Actions and Pages.** Committing generated files invites drift
   and large diffs; Netlify builds from the repository on each push and also gives deploy previews for pull requests.
 - **Linking the reference to pkg.go.dev only.** It cannot show unreleased changes, and it does not show the fields and

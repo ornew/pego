@@ -42,6 +42,13 @@ The result panel has five tabs:
 | **Rules & types** | The rules with their declared types, and the types of the grammar. Click a name to jump to its definition, or "parse from here" to make the rule the start rule |
 | **Generated Go** | The code `pego gen` generates for the grammar, with the package name, `-types` and `-recognize` options |
 
+The Tree tab shows at most 100 direct children per page. **Previous children** and **Next children** replace that
+page and show its range and total. Initial automatic expansion creates at most 400 rows, including page controls.
+**Expand shown** expands the displayed pages up to a 5,000-row cap; use the page controls to browse other siblings.
+At the cap, expanding another branch compacts the display around its path. Caret moves reveal deferred children
+without displaying all preceding siblings. If an ancestor path itself cannot fit, a subtree view provides a
+**Show complete tree** button. The parsed tree and its JSON/S-expression remain complete.
+
 In the editors, Tab inserts indentation; press Escape first to move the focus with Tab instead. Inputs larger than
 200,000 characters are shown without highlighting to keep typing responsive.
 
@@ -186,6 +193,11 @@ incoming option-only links, omitted/invalid option defaults, parse requests, tab
 deferred encoding/decoding tests also cover reverse completion, Share, navigation before event delivery, autosave
 during link loading, local edits during initial example fetching, and failures in both playground and landing scripts.
 They do not replace checks in a browser with the real WebAssembly worker.
+Tree tests exercise initial/live row caps, wide pages, lazy sibling access, deferred-child reveal, deep subtree
+windows, exact cap boundaries, reference cleanup and page focus with a controlled DOM. The renderer lives in
+`site/static/playground/tree.js`. `node site/testdata/bench_tree.mjs [parent-app.js]` compares actual sources in the
+same VM: 50 children compare equal displayed work (100 warmups, 1,000 sets), while 10,000 children compare full
+versus bounded display (three warmups, 20 sets). These timings exclude browser layout, parsing and WASM.
 `node site/testdata/bench_playground_state.mjs [app.js]` measures unchanged-link dispatch in that harness, with
 10,000 warmups and 100,000 measured events. The optional application path compares another revision. Immediate
 decoding excludes compression/encoding, browser DOM, worker and WebAssembly costs.

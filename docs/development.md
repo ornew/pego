@@ -198,6 +198,11 @@ URL encoding/decoding is guarded by the latest user action and adopted fragment,
 delivery, startup and example fetching. Superseded Share requests do not copy, older parse completions cannot save
 during incoming link loading, and landing links keep the latest input. Deferred-promise tests exercise these orderings
 and error paths; browser checks complement them with the real WebAssembly worker.
+The tree renderer (`site/static/playground/tree.js`) pages direct children in groups of 100, counts node/control rows
+within a 400-row initial budget and 5,000-row live cap, and keeps deferred nodes reachable by caret or page controls.
+Explicit expansion at the cap compacts materialized branches; paths that cannot fit use a subtree window with a return
+control. Controlled row-count, reference/focus and boundary tests cover these resource limits. The tree benchmark
+distinguishes equivalent small-tree work from wide-tree display reduction; real browser checks cover DOM/WASM wiring.
 
 ## Language feature status
 
