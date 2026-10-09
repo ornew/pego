@@ -14,7 +14,8 @@
 // Check, and Valid, Events, Load and LoadAll, check what the syntax cannot show: a tag shorthand must
 // use a handle that the document declares, a document may have one YAML directive and one TAG
 // directive per handle, the major version of a YAML directive must be 1, and an alias must follow a
-// node with its anchor. Valid, Events, Load and LoadAll also require UTF-8.
+// node with its anchor. Verbatim and expanded shorthand tags must be local tags or valid global URIs.
+// Valid, Events, Load and LoadAll also require UTF-8.
 //
 // # Conformance
 //
@@ -377,6 +378,10 @@ func (d *Document) tagHandles() (map[string]string, error) {
 			if dir.Params[1].Text == "" {
 				return nil, errorAt(dir.Span, "TAG directive requires a non-empty prefix")
 			}
+			prefix := dir.Params[1].Text
+			if !tagCharacters(prefix, false) || prefix[0] != '!' && strings.ContainsAny(prefix[:1], ",[]{}") {
+				return nil, errorAt(dir.Span, "invalid TAG prefix "+prefix)
+			}
 			if declared[h] {
 				return nil, errorAt(dir.Span, "more than one TAG directive for the handle "+h)
 			}
@@ -462,7 +467,7 @@ func locate(input string, err error) error {
 // of its handle followed by its suffix with the % escapes decoded ("!!str" is "tag:yaml.org,2002:str",
 // "!local" is "!local" unless a TAG directive of the document changes the prefix of "!"); for a verbatim
 // tag, the tag between "!<" and ">"; for the non-specific tag, "!". A handle that the document does not
-// declare is an error.
+// declare, a malformed tag or a tag that is neither local nor a global URI is an error.
 func (d *Document) ResolveTag(t *Tag) (string, error) {
 	handles, err := d.tagHandles()
 	if err != nil {
@@ -473,26 +478,57 @@ func (d *Document) ResolveTag(t *Tag) (string, error) {
 
 // resolveTag returns the full name of a tag (see Document.ResolveTag).
 func resolveTag(t *Tag, handles map[string]string) (string, error) {
+	if t == nil {
+		return "", errorAt(Span{}, "nil tag")
+	}
 	s := t.Text
 	if strings.HasPrefix(s, "!<") {
-		return s[2 : len(s)-1], nil
+		if len(s) < 4 || s[len(s)-1] != '>' {
+			return "", errorAt(t.Span, "malformed verbatim tag")
+		}
+		tag := s[2 : len(s)-1]
+		if !tagCharacters(tag, false) || !validResolvedTag(tag) {
+			return "", errorAt(t.Span, "invalid verbatim tag "+tag)
+		}
+		return tag, nil
 	}
 	if s == "!" {
 		return "!", nil
+	}
+	if len(s) < 2 || s[0] != '!' {
+		return "", errorAt(t.Span, "malformed tag")
 	}
 	h := "!"
 	if i := strings.IndexByte(s[1:], '!'); i >= 0 {
 		h = s[:i+2]
 	}
+	encodedSuffix := s[len(h):]
+	if !validTagHandle(h) || encodedSuffix == "" || !tagCharacters(encodedSuffix, true) {
+		return "", errorAt(t.Span, "malformed tag shorthand "+s)
+	}
 	prefix, ok := handles[h]
 	if !ok {
 		return "", errorAt(t.Span, "undeclared tag handle "+h)
 	}
-	suffix, err := unescapeURI(s[len(h):])
+	encoded := prefix + encodedSuffix
+	if !validResolvedTag(encoded) {
+		return "", errorAt(t.Span, "invalid resolved tag "+encoded)
+	}
+	if !strings.Contains(encodedSuffix, "%") {
+		return encoded, nil
+	}
+	suffix, err := unescapeURI(encodedSuffix)
 	if err != nil {
 		return "", errorAt(t.Span, err.Error())
 	}
 	return prefix + suffix, nil
+}
+
+func validResolvedTag(tag string) bool {
+	if strings.HasPrefix(tag, "!") {
+		return len(tag) > 1
+	}
+	return validTagURI(tag)
 }
 
 func unescapeURI(s string) (string, error) {
@@ -521,7 +557,8 @@ func unescapeURI(s string) (string, error) {
 // Check reports the errors of the stream that are not syntax errors, which Valid, Events, Load and
 // LoadAll report too: a tag shorthand with a handle the document does not declare, more than one YAML
 // directive in a document or more than one TAG directive for a handle, a YAML version other than 1.x,
-// and an alias of an anchor that no node before it in the document has.
+// an invalid verbatim or expanded tag, and an alias of an anchor that no node before it in the
+// document has.
 func (s *Stream) Check() error {
 	for _, d := range s.Documents {
 		handles, err := d.tagHandles()

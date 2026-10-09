@@ -308,6 +308,11 @@ self-references remain errors. Composition tests include shared manually constru
 XML byte decoding checks encoding declarations beyond the former 256-byte prefix (M03), bounded by the declaration
 terminator. Long declarations retain supported transcoding, unsupported-encoding rejection, ASCII validation and
 BOM/UTF-16 agreement checks; generated grammar and parser output are unchanged.
+YAML semantic APIs validate verbatim and expanded shorthand tags as named local tags or generic global URIs (M04).
+Scheme-less TAG prefixes remain syntactically valid, but a use must expand to a valid tag. Encoded URI validation
+preserves verbatim text and decoded shorthand values; malformed public Tag objects report errors instead of panics.
+Measured repeated tag-resolution work is tracked separately for bounded per-operation reuse (P29), with equivalent
+tagged loading/events, tag-free controls, mutation/error-position correctness and allocation/retention gates.
 Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused

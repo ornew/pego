@@ -44,7 +44,7 @@ func TestDirectiveNameBoundaries(t *testing.T) {
 	for _, src := range []string{
 		"%YAMLfoo\n--- x\n", "%TAGx ignored parameter\n--- x\n", "%YAML#name\n--- x\n",
 		"%YAML 1.1\n--- x\n", "%YAML 1.3\n--- x\n", "%YAML 0001.02\n--- x\n",
-		"%TAG !e! notahandle\n--- !e!kind x\n",
+		"%TAG !e! notahandle\n--- x\n", "%TAG !e! notahandle\n--- !e!:kind x\n",
 		"%TAG ! !local-\n--- !kind x\n", "%TAG !! tag:example:\n--- !!kind x\n",
 		"%TAG !a-9! tag:example:\n--- !a-9!kind x\n",
 	} {
@@ -89,6 +89,10 @@ func TestMalformedDirectiveAST(t *testing.T) {
 		{"nil TAG handle", &yaml.Directive{Name: word("TAG"), Params: []*yaml.Word{nil, word("tag:x")}}},
 		{"nil TAG prefix", &yaml.Directive{Name: word("TAG"), Params: []*yaml.Word{word("!e!"), nil}}},
 		{"empty TAG prefix", &yaml.Directive{Name: word("TAG"), Params: []*yaml.Word{word("!e!"), word("")}}},
+		{"truncated prefix escape", &yaml.Directive{Name: word("TAG"), Params: []*yaml.Word{word("!e!"), word("tag:%")}}},
+		{"bad prefix escape", &yaml.Directive{Name: word("TAG"), Params: []*yaml.Word{word("!e!"), word("tag:%GG")}}},
+		{"prefix whitespace", &yaml.Directive{Name: word("TAG"), Params: []*yaml.Word{word("!e!"), word("tag:x y")}}},
+		{"global prefix initial flow indicator", &yaml.Directive{Name: word("TAG"), Params: []*yaml.Word{word("!e!"), word("[x")}}},
 		{"extra TAG parameter", &yaml.Directive{Name: word("TAG"), Params: []*yaml.Word{word("!e!"), word("tag:x"), word("extra")}}},
 		{"invalid TAG handle", &yaml.Directive{Name: word("TAG"), Params: []*yaml.Word{word("notahandle"), word("tag:x")}}},
 	} {

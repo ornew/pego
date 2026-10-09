@@ -65,10 +65,19 @@ reserved directives. Versions contain decimal major and minor parts; leading zer
 the supported major version is 1. TAG handles are `!`, `!!`, or a name of ASCII letters, digits and
 hyphens enclosed in `!` characters. Relative tag prefixes are allowed by the grammar.
 
+Verbatim tags and expanded shorthands must name a local tag (starting with `!`, with a name after it)
+or a global URI with a valid scheme and URI syntax. For example, `!<!>` and `!<$:?>` are semantic
+errors ([YAML 1.2.2 section 6.9.1](https://yaml.org/spec/1.2.2/#691-node-tags)); syntax-only parsing
+still accepts their shape. A prefix need not include a scheme, but its use must produce a valid tag:
+`%TAG !e! notahandle` with `!e!:kind` resolves to `notahandle:kind`, while `!e!kind` is invalid.
+URI characters and percent escapes are checked in encoded form. Verbatim text is preserved as-is;
+shorthand suffix escapes keep their decoded UTF-8 application values, including escaped Unicode,
+spaces and percent signs. Tags identify types; checking a URI does not fetch it or require a known scheme.
+
 For manually constructed ASTs, `Check`, stream `Events`, document `Load` and `ResolveTag` return a
 `SemanticError` for missing directives/names, wrong known-directive parameter counts, nil parameters,
-malformed versions/handles or empty tag prefixes. This checks directive shape; it is not validation
-of an arbitrary AST graph.
+malformed versions/handles/tags, invalid prefix characters/escapes or empty tag prefixes. This checks tag and
+directive shape; it is not validation of an arbitrary AST graph.
 
 ### Go values
 
