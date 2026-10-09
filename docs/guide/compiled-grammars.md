@@ -379,7 +379,7 @@ The consequences:
   was made from for the release that wrote it; files from other releases are loaded on the strength of the version
   numbers alone.
 
-The format is specified in [bytecode.md](../bytecode.md#file-format) and its design in
+The format is specified in [bytecode.md](../../spec/bytecode.md#file-format) and its design in
 [design record 009](../design/009-compiled-grammar-format.md).
 
 ## Loading untrusted data
@@ -453,4 +453,4 @@ PEGO source            not a compiled PEGO grammar
 - [Code generation](code-generation.md): the other way to skip compiling at run time.
 - [Benchmarks](../benchmarks.md#preparation-time-until-a-grammar-is-ready-to-use) and
   [performance notes](../performance.md#where-pego-stands): preparation times and sizes.
-- [bytecode.md](../bytecode.md#file-format): the file format, and [design record 009](../design/009-compiled-grammar-format.md).
+- [bytecode.md](../../spec/bytecode.md#file-format): the file format, and [design record 009](../design/009-compiled-grammar-format.md).

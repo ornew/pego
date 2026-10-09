@@ -682,7 +682,7 @@ func (p *parser) fail(format string, args ...any) {
 type SyntaxError struct {
 	Pos      int      // position, in the parse's position unit
 	Line     int      // 1-based line
-	Col      int      // 1-based column (in characters)
+	Col      int      // 1-based column, in the position unit of the parse
 	Expected []string // what was expected at that position
 	Messages []string // messages given by #error
 }

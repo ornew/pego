@@ -372,7 +372,7 @@ closure backend serves as the reference. They differ in speed, memory, how they 
 | Backend | Option | How it runs | Needs the grammar AST |
 |:--|:--|:--|:--|
 | Closure | `pego.Closure` | Compiles parsing expressions into Go closures | Yes |
-| Bytecode (recursive) | `pego.Bytecode` | A VM running [portable bytecode](../bytecode.md); rule calls use Go recursion | No |
+| Bytecode (recursive) | `pego.Bytecode` | A VM running [portable bytecode](../../spec/bytecode.md); rule calls use Go recursion | No |
 | Bytecode (iterative) | `pego.BytecodeIterative` | The same bytecode on a VM with its own call stack | No |
 | Generated Go | (not an option) | A Go parser generated ahead of time by `pego gen` | At generation time |
 
@@ -403,7 +403,7 @@ grammar and input.
 
 The recursive bytecode VM is 1.1–1.3× slower than the closure backend in the benchmarks and the iterative VM 1.3–1.9×
 slower; you pay that for portability (the same bytecode is specified for other runtimes in
-[bytecode.md](../bytecode.md)) and, for the iterative VM, for the independence from the Go stack. Do not pick bytecode
+[bytecode.md](../../spec/bytecode.md)) and, for the iterative VM, for the independence from the Go stack. Do not pick bytecode
 inside a Go program for speed.
 
 ### Deep nesting and `WithMaxDepth`

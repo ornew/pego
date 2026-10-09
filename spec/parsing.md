@@ -190,5 +190,5 @@ gives the results that an ordinary parse gives.
 | Incremental | A document that is edited and reparsed reuses results of the previous parse. The result of a parse is the same as that of a parse of the whole new text |
 
 The guides describe these modes from the user's side: see
-[Running parsers](../docs/guide/runtime.md) and
-[Streaming and incremental parsing](../docs/guide/streaming-and-incremental.md).
+[Running parsers](../docs/guide/runtime.md), [Streaming](../docs/guide/streaming.md) and
+[Incremental parsing](../docs/guide/incremental.md).

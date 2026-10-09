@@ -655,7 +655,8 @@ can call any rule; and the rules of a statement grammar call the rule that holds
 ## 8. Pitfalls
 
 **The word `operand` (and `level`, `skip`, `prefix`, `postfix`, `infix`, `pratt`) is a keyword.** A rule called
-`operand` is a syntax error; pick another name such as `atom`. The complete list is in
+`operand` can be defined, but every reference to it is a syntax error (`expected an expression, found 'operand'`);
+pick another name such as `atom`. The complete list is in
 [Lexical Structure](../../spec/lexical.md#keywords).
 
 **An operand cannot call its own rule at the start.** It would be left recursion inside the loop. The compiler says so:
