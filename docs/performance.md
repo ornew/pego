@@ -1075,7 +1075,7 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   recognition; time is within 4% on every backend/unit. Generated runtimes
   are unchanged. These are focused comparisons against f3a2c96 with an overlay
   of its memo allocator, rather than a refresh of the full benchmark report.
-  [Raw focused output](../bench/memo-lifecycle-results.txt) records both versions
+  [Raw focused output](../bench/measurements/memo-lifecycle-results.txt) records both versions
   and the memory regression measurements.
 - Reproduce the focused stream cases with
   `go test ./internal/engine -run '^$' -bench '^BenchmarkMemoLifecycle$' -benchmem`.
@@ -1107,7 +1107,7 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   the cleanup for bounded retention; these figures do not claim every action
   path is faster. TS retained-state/semantic tests pass, but TS timing is not
   measured here. The full benchmark refresh follows the stream-memory work.
-- [Raw focused output](../bench/action-lifecycle-results.txt) records the
+- [Raw focused output](../bench/measurements/action-lifecycle-results.txt) records the
   baseline at daa364d (code unchanged from 9353e09), overlays, six run pairs and
   retained-state regressions. Reproduce the focused workload with
   `go test ./internal/engine -run '^$' -bench '^BenchmarkNilActionStream$' -benchmem`.
