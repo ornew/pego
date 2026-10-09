@@ -94,6 +94,12 @@ normalized: nested unions are flattened and duplicate members are removed (so
 `Match | Match` is `Match`), and a union with an optional member is optional
 (`A | *B` is `*(A | B)`).
 
+An alias that resolves to a single struct or terminal type preserves that
+type's identity. `new` accepts aliases of struct types and produces a node of
+the underlying struct type. A rule declared with an alias of a terminal type
+has the same terminal conversion as a rule declared with that terminal type.
+This also applies to unions normalized to a single type, such as `T | T`.
+
 ### Terminal types
 
 `type T terminal` defines a terminal type: a node type for terminals, which have

@@ -290,6 +290,12 @@ uppercase letter; rule names are in a separate namespace, so `def name: Name` is
 `Operator` and `Error` are predefined node types, and `int`, `string`, `bool`, `node` and `terminal` are built in (a
 rule's value must be a node, but struct fields and action expressions may also hold `int`, `string` and `bool`).
 
+Aliases preserve the underlying type: with `type Token = Name`, a rule declared
+as `Token` produces a `Name` terminal. With `type Binding = Assign`,
+`new Binding{...}` produces an `Assign` node. Chained aliases and unions reduced
+to one member follow the same rule; an alias does not create a distinct node
+type.
+
 ### 4.2 Optional and list fields
 
 A field type can be `*T` (a `T` or `nil`) or `[]T` (a `List` whose elements are `T`). Both are checked at compile time:

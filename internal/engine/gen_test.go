@@ -89,6 +89,7 @@ def main = a:(?a-z)* -(?0-9){2,3} -.{1,2} -(?^,)+ "," rest:@.*`, []string{"ab12x
 	cases = append(cases, actionVariableCases...)
 	cases = append(cases, actionLifecycleCases...)
 	cases = append(cases, envBindingCases...)
+	cases = append(cases, aliasCases...)
 	// Grammars of typed values with their inputs, from reviews of the typed runtime: each was a
 	// case where it differed from converting the result of Parse.
 	typed, _ := filepath.Glob("testdata/typed/*.pego")
@@ -515,6 +516,9 @@ func main() {
 		for _, in := range c.inputs {
 			if got[k].Err != wantErr[k] {
 				t.Errorf("%s: input %q: error %s, want %s", c.name, in, got[k].Err, wantErr[k])
+			}
+			if want, ok := aliasTypedGoldens[c.name]; ok && in == "éé" && string(got[k].Value) != want {
+				t.Errorf("%s: typed alias value is %s, want %s", c.name, got[k].Value, want)
 			}
 			k++
 		}

@@ -272,9 +272,9 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 		}
 		r.transient = transient[r.name]
 		r.vars = vars[r.name]
-		if tr, ok := r.def.Type.(*grammar.TypeRef); ok {
-			if _, isTerm := prog.types[tr.Name].(*grammar.TerminalSpec); isTerm {
-				r.terminalType = tr.Name
+		if name, spec := prog.concreteType(r.def.Type); spec != nil {
+			if _, isTerm := spec.(*grammar.TerminalSpec); isTerm {
+				r.terminalType = name
 			}
 		}
 		if flags == nil {
@@ -308,7 +308,12 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 	prog.nseen = numberSeen(prog.rules, prog.twins)
 	prog.typeKinds = map[string]*nodeKind{}
 	for name := range prog.types {
-		prog.typeKinds[name] = kindOf(name, "")
+		canonical, st := prog.structType(name)
+		if st != nil {
+			prog.typeKinds[name] = kindOf(canonical, "")
+		} else {
+			prog.typeKinds[name] = kindOf(name, "")
+		}
 	}
 	for _, rs := range [][]*rule{prog.rules, prog.twins} {
 		for _, r := range rs {

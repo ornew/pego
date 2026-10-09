@@ -766,8 +766,8 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 	case *grammar.Member:
 		c.checkTerm(t.X, s, locals)
 	case *grammar.New:
-		st, ok := c.prog.types[t.Type].(*grammar.StructSpec)
-		if !ok {
+		_, st := c.prog.structType(t.Type)
+		if st == nil {
 			c.errorf(t.Pos, "%s is not a struct type", t.Type)
 		}
 		seen := map[string]bool{}
@@ -776,7 +776,7 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 				c.errorf(fi.Pos, "duplicate field %s", fi.Name)
 			}
 			seen[fi.Name] = true
-			if ok && fieldOf(st, fi.Name) == nil {
+			if st != nil && fieldOf(st, fi.Name) == nil {
 				c.errorf(fi.Pos, "%s has no field %s", t.Type, fi.Name)
 			}
 			c.checkTerm(fi.Value, s, locals)

@@ -508,13 +508,14 @@ func (c *bcompiler) term(t grammar.Term, s *scope, locals []string) {
 		c.term(t.X, s, locals)
 		c.eemit(EMember, c.str(t.Name), 0)
 	case *grammar.New:
+		name, _ := c.prog.structType(t.Type)
 		names := make([]string, len(t.Fields))
 		for i, f := range t.Fields {
 			c.term(f.Value, s, locals)
 			names[i] = f.Name
 		}
 		c.m.FieldLists = append(c.m.FieldLists, c.strs2(names))
-		c.eemit(ENew, c.str(t.Type), int32(len(c.m.FieldLists)-1))
+		c.eemit(ENew, c.str(name), int32(len(c.m.FieldLists)-1))
 	case *grammar.Call:
 		if t.Func == "concat" && fusable(t) {
 			// Gather the elements of list, map and concat arguments directly (see fusable).

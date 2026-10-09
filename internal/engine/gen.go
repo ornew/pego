@@ -904,12 +904,12 @@ func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) str
 	case *grammar.Member:
 		return fmt.Sprintf("c.member(%s, %q)", g.term(t.X, s, locals), t.Name)
 	case *grammar.New:
+		name, spec := g.prog.structType(t.Type)
 		if g.table == "trules" {
 			// The typed runtime calls the constructor of the type (tmk_T, see typedRuntime) with
 			// the fields in declaration order.
 			// The fields are evaluated in the order written (an error in one must win over the
 			// next), then passed in declaration order.
-			spec := g.prog.types[t.Type].(*grammar.StructSpec)
 			var b strings.Builder
 			b.WriteString("func() any { ")
 			vars := map[string]string{}
@@ -926,10 +926,10 @@ func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) str
 					args = append(args, "nil")
 				}
 			}
-			b.WriteString("return tmk_" + t.Type + "(" + strings.Join(args, ", ") + ") }()")
+			b.WriteString("return tmk_" + name + "(" + strings.Join(args, ", ") + ") }()")
 			return b.String()
 		}
-		args := []string{strconv.Quote(t.Type)}
+		args := []string{strconv.Quote(name)}
 		for _, f := range t.Fields {
 			args = append(args, strconv.Quote(f.Name), g.term(f.Value, s, locals))
 		}

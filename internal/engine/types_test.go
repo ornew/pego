@@ -14,6 +14,22 @@ func TestTypeErrors(t *testing.T) {
 		{`type A = B
 type B = A
 def main = "a"`, `type A refers to itself`},
+		{`type P struct { X Match }
+type Alias = P
+def main = "a" -> new Alias{X: 1}`, `cannot use int as Match in field X of Alias`},
+		{`type P struct { X Match }
+type Alias = P
+def main = "a" -> new Alias{Y: $1}`, `Alias has no field Y`},
+		{`type P struct {}
+type Q struct {}
+type Alias = P | Q
+def main = "a" -> new Alias{}`, `Alias is not a struct type`},
+		{`type P struct {}
+type Alias = *P
+def main = "a" -> new Alias{}`, `Alias is not a struct type`},
+		{`type A = B
+type B = A
+def main = "a" -> new A{}`, `A is not a struct type`},
 		{`type A struct { X Match, X Match }`, `duplicate field X in A`},
 		{`def main: int = "a"`, `rule main must produce a node, but its type is int`},
 		{`type P struct { X Match }

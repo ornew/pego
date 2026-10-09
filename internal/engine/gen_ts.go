@@ -706,7 +706,8 @@ func (g *tsGen) term(t grammar.Term, s *scope, locals map[string]string) string 
 	case *grammar.Member:
 		return fmt.Sprintf("c.member(%s, %s)", g.term(t.X, s, locals), tsString(t.Name))
 	case *grammar.New:
-		args := []string{tsString(t.Type)}
+		name, _ := g.prog.structType(t.Type)
+		args := []string{tsString(name)}
 		for _, f := range t.Fields {
 			args = append(args, tsString(f.Name), g.term(f.Value, s, locals))
 		}

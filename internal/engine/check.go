@@ -176,6 +176,38 @@ func (k *checker) resolve(t grammar.TypeExpr) ty {
 	return tyAny
 }
 
+// concreteType resolves aliases and normalized singleton unions to their node type.
+// It does not report errors; validation still uses the type expression as written.
+func (prog *Program) concreteType(t grammar.TypeExpr) (string, grammar.TypeSpec) {
+	if ref, ok := t.(*grammar.TypeRef); ok {
+		switch spec := prog.types[ref.Name].(type) {
+		case *grammar.StructSpec:
+			return ref.Name, spec
+		case *grammar.TerminalSpec:
+			return ref.Name, spec
+		}
+	}
+	k := &checker{prog: prog, resolving: map[string]bool{}}
+	if n, ok := k.resolve(t).(namedTy); ok && (n.kind == 's' || n.kind == 't') {
+		return n.name, prog.types[n.name]
+	}
+	return "", nil
+}
+
+func (prog *Program) structType(name string) (string, *grammar.StructSpec) {
+	switch spec := prog.types[name].(type) {
+	case *grammar.StructSpec:
+		return name, spec
+	case *grammar.AliasSpec:
+		// Resolve only aliases; ordinary constructors need no temporary type expression.
+	default:
+		return "", nil
+	}
+	canonical, spec := prog.concreteType(&grammar.TypeRef{Name: name})
+	st, _ := spec.(*grammar.StructSpec)
+	return canonical, st
+}
+
 func (k *checker) resolveNamed(name string, pos grammar.Pos) ty {
 	switch name {
 	case "int":
@@ -573,10 +605,10 @@ func (k *checker) term(t grammar.Term, env *termEnv) ty {
 	case *grammar.Member:
 		return k.member(k.term(t.X, env), t)
 	case *grammar.New:
-		st, ok := k.prog.types[t.Type].(*grammar.StructSpec)
+		name, st := k.prog.structType(t.Type)
 		for _, fi := range t.Fields {
 			vt := k.term(fi.Value, env)
-			if !ok {
+			if st == nil {
 				continue
 			}
 			if f := fieldOf(st, fi.Name); f != nil {
@@ -586,10 +618,10 @@ func (k *checker) term(t grammar.Term, env *termEnv) ty {
 				}
 			}
 		}
-		if !ok {
+		if st == nil {
 			return tyAny
 		}
-		return namedTy{t.Type, 's'}
+		return namedTy{name, 's'}
 	case *grammar.Call:
 		return k.call(t, env)
 	case *grammar.Lambda:
