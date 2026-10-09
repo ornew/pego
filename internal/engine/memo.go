@@ -13,6 +13,9 @@ type memoTable struct {
 	// chunks are the areas slab came from, kept by reset for later parses; used counts those in use.
 	chunks [][]memoEntry
 	used   int
+	// free links retired entries through next. Retiring clears their result
+	// references; reuse bounds slab growth in streams and edited Documents.
+	free *memoEntry
 	// Document edits splice positions in and out at the gap, slots[gap:gap+gapLen] (in Document
 	// tables, where base is 0): moving it costs only the distance to the next edit.
 	gap, gapLen int
@@ -111,6 +114,11 @@ func (t *memoTable) put(k memoKey, e *memoEntry) {
 		if x.rule == e.rule && x.min == e.min && slices.Equal(x.env, e.env) {
 			e.next = x.next
 			*link = e
+			if x != e {
+				// A replaced growth seed is no longer growState.best: the
+				// caller installs its new best before replacing the key.
+				t.retire(x)
+			}
 			return
 		}
 	}
@@ -127,6 +135,11 @@ func (t *memoTable) len() int {
 
 // alloc returns a new entry.
 func (t *memoTable) alloc() *memoEntry {
+	if e := t.free; e != nil {
+		t.free = e.next
+		e.next = nil
+		return e
+	}
 	if len(t.slab) == 0 {
 		if t.used < len(t.chunks) {
 			t.slab = t.chunks[t.used]
@@ -139,6 +152,13 @@ func (t *memoTable) alloc() *memoEntry {
 	e := &t.slab[0]
 	t.slab = t.slab[1:]
 	return e
+}
+
+// retire releases all result references and makes an unlinked entry reusable.
+// It must not be called on a seed still held by an active growState.
+func (t *memoTable) retire(e *memoEntry) {
+	*e = memoEntry{next: t.free}
+	t.free = e
 }
 
 // reset empties the table for another parse, keeping its memory, and reports whether that was
@@ -162,7 +182,19 @@ func (t *memoTable) prune(pos int) {
 	if k <= 0 {
 		return
 	}
+	for _, head := range t.slots[:min(k, len(t.slots))] {
+		for e := head; e != nil; {
+			next := e.next
+			// The start rule may still be growing across a commit. Its
+			// stack-owned best must survive even after its slot is gone.
+			if !e.growing {
+				t.retire(e)
+			}
+			e = next
+		}
+	}
 	if k >= len(t.slots) {
+		clear(t.slots)
 		t.slots = t.slots[:0]
 	} else {
 		// Compact the remaining part to the front so no references to discarded entries remain.
@@ -193,6 +225,8 @@ func (t *memoTable) splice(start, end, delta int, advance func(e *memoEntry) boo
 			next := e.next
 			if advance(e) {
 				e.next, stay = stay, e
+			} else {
+				t.retire(e)
 			}
 			e = next
 		}
