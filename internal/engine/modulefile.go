@@ -186,8 +186,9 @@ func (r *decoder) module() *Module {
 }
 
 // validateModule checks that every table and instruction reference in the module is in range
-// and that jumps go forward (only the NEXT of a repetition jumps backward). It does not check
-// that the instruction sequence uses the value stack and the entry stack correctly.
+// and that jumps go forward (only the NEXT of a repetition jumps backward).
+// Recovery regions must not enclose a stream commitment. Other value-stack
+// and entry-stack invariants are not checked.
 func validateModule(m *Module) error {
 	var err error
 	fail := func(format string, args ...any) {
@@ -396,7 +397,48 @@ func validateModule(m *Module) error {
 			fail("invalid expression instruction %d at %d", x.Op, ip)
 		}
 	}
-	return err
+	if err != nil {
+		return err
+	}
+	return validateStreamRecovery(m.Code)
+}
+
+// validateStreamRecovery checks recovery boundaries in lexical bytecode order.
+// Both the protected body and its skip region must finish before a stream NEXT:
+// recovery restores the saved input position, but streaming discards that input.
+// Element-local recovery ends before the enclosing repetition's NEXT and is safe.
+func validateStreamRecovery(code []Instr) error {
+	type region struct{ skip, end int }
+	var regions []region
+	for ip, in := range code {
+		for len(regions) > 0 && regions[len(regions)-1].end == ip {
+			regions = regions[:len(regions)-1]
+		}
+		if in.Op == OpRecover {
+			skip := int(in.A)
+			if skip <= ip+1 || skip >= len(code) || code[skip-1].Op != OpEndRecover {
+				return fmt.Errorf("invalid recovery body at %d", ip)
+			}
+			end := int(code[skip-1].A)
+			if end <= skip || end >= len(code) || code[end-1].Op != OpEndSkip {
+				return fmt.Errorf("invalid recovery skip at %d", ip)
+			}
+			if len(regions) > 0 {
+				parent := regions[len(regions)-1]
+				limit := parent.end
+				if ip < parent.skip {
+					limit = parent.skip
+				}
+				if end >= limit {
+					return fmt.Errorf("crossing recovery regions at %d", ip)
+				}
+			}
+			regions = append(regions, region{skip, end})
+		} else if in.Op == OpNext && in.B == 2 && len(regions) > 0 {
+			return fmt.Errorf("recovery region encloses a stream commitment at %d", ip)
+		}
+	}
+	return nil
 }
 
 // moduleProgram builds a program without an AST (it can only be run by the bytecode backend).

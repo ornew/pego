@@ -102,6 +102,10 @@ def main = ^^ header records:record* #stream $$
   level of a rule body: on the body itself, on an element of the body's
   sequence, or on the expression captured by such an element. A rule body MUST
   contain at most one `#stream`.
+- `#recover` MUST NOT wrap the same repetition as `#stream`, in either attribute
+  order. Recovery rewinds to the wrapped expression's start, where streamed
+  input may already have been discarded. Put recovery inside the repeated
+  element instead; `#error` may still label the streaming repetition.
 - Starting a stream parse with a rule that has no `#stream` is an error.
 - `#stream` takes no arguments.
 - In an ordinary parse (`Parser.Parse`), `#stream` has no effect: the

@@ -279,6 +279,10 @@ analysis and linter success proofs account for the same stopping rule. `Benchmar
 measures ordinary, nullable-tail and projected parsing/recognition of 1,000 elements across all backends.
 Sample generation's repetition search, prefix matcher and always-match proofs use the same stopping rule;
 `BenchmarkSampleRepetitionControl` checks equivalent ordinary and nullable minimum-one generation workloads.
+Recovery cannot wrap a streaming repetition (C19); source/public AST validation rejects either attribute order,
+and saved bytecode validates recovery boundaries before allowing a stream-mode `NEXT`, including AST-omitted files.
+Element-local recovery remains supported. `BenchmarkStreamRecoveryPreparation` measures compilation and bare-module
+loading with one or 100 recovery rules; existing stream workloads cover unchanged runtime paths.
 Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused

@@ -325,5 +325,6 @@ On load, a runtime checks the following and rejects the file if any check fails:
 - Every opcode is known, and every flag operand is within its range.
 - Wide bounds reference `EINT` constants, fit the runtime's implementation `int`, and satisfy minimum ≥ 0 and maximum = -1 or maximum ≥ minimum. Wide instructions require instruction-set version 4.
 - Every jump target is forward. Only `NEXT` jumps backward. The target of `EFUNC` is also forward.
+- Every `RECOVER` body ends at an `ENDRECOVER` immediately before its skip target; that instruction jumps past an `ENDSKIP`. These recovery regions are nested and contain no stream-mode `NEXT` (mode 2) in either the protected body or skip. Element-local recovery ends before the enclosing streaming repetition's `NEXT`.
 
 A runtime does not verify that instruction sequences use the value stack and the entry stack correctly. Runtime errors caused by invalid code are reported as parse errors, but termination is not guaranteed, so load files only from trusted sources.

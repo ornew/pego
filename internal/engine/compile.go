@@ -1188,6 +1188,11 @@ func (c *compiler) checkStream(body grammar.Expr) bool {
 		}
 		n++
 		a := e.(*grammar.Attributed)
+		for _, attr := range a.Attrs {
+			if attr.Name == "recover" {
+				c.errorf(attr.Pos, "#recover cannot wrap a #stream repetition; recover inside each element instead")
+			}
+		}
 		if !top[e] {
 			c.errorf(a.Attrs[0].Pos, "#stream is only allowed at the top level of a rule body")
 		} else if n > 1 {

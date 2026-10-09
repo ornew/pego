@@ -17,12 +17,17 @@ The design therefore lets the grammar author mark where the input may be split, 
 
 - `#stream` can be attached only to a repetition at the top level of the start rule's body. No choice encloses the top level of the start rule's body, so once an element of the repetition has matched, parsing never returns to a point before it.
 - Every repetition stops after its first successful iteration that consumes no input, then checks its minimum. The empty iteration counts once; a stream emits it before checking the minimum. Ordinary, projected, resumed and generated loops use the same rule. A reused empty tail must end resumption even if deletion has reduced the count below the minimum, rather than matching an extra empty element to make up the difference.
+- A `#recover` wrapper around the streaming repetition is rejected in either attribute order, because recovery rewinds to the wrapper's start after elements may have committed and discarded that input. Recovery inside each element remains supported. Saved modules reject a recovery region enclosing stream-mode `NEXT`, including files without an AST; old unsafe files must be recompiled after moving recovery into the element. The wire format and instruction set are unchanged.
 - After an element has been passed to the caller, the input and memo entries before it are discarded. Positions remain absolute offsets from the start of the input; line and column numbers are computed by counting the lines in the discarded part.
 - The preceding character is kept so that line-start checks (`^`) still work.
 
 Earlier batch/generated loops could repeat empty matches until satisfying the minimum, contrary to the language's stopping rule. Grammars that relied on that behavior now fail when the first empty iteration leaves the count below the minimum; regenerate Go/TypeScript parsers to apply the correction. Saved modules use the corrected VM behavior without changing the wire format or instruction set.
 
 An alternative considered was to commit when a cut is passed. A cut commits a choice, but its effect does not extend to choices outside the rule, so it is not a sufficient condition for discarding input. This alternative was not adopted.
+
+Deferring callbacks or retaining input until an enclosing recovery wrapper finishes would allow that wrapper to rewind,
+but would remove early delivery and bounded input retention. Rejecting the wrapper preserves the existing stream contract
+and the per-element recovery idiom without introducing a second commitment policy.
 
 ### Reading input
 

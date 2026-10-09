@@ -24,6 +24,9 @@ type genCase struct {
 // genCorpus returns the grammars and inputs used to compare backends and generated parsers with the engine.
 func genCorpus(t *testing.T) []genCase {
 	cases := []genCase{
+		{"stream element recovery", `
+def main=(("ab" #recover(skip=(?^a)+)) #recover(skip="!"))* #stream $$`,
+			[]string{"", "ab", "abab", "abX!ab", "X!", "a"}},
 		{"nullable minimum repetitions", `
 def main=("z" zero / "o" one / "t" two / "u" unbounded / "a" atomic / "d" discarded / "p" projected / "f" fallback) $$
 def zero=("é" / _){0} #stream
