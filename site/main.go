@@ -19,12 +19,15 @@ import (
 
 func main() {
 	var cfg Config
+	previous, deploy := deploymentURLs(os.Getenv)
 	flag.StringVar(&cfg.Repo, "repo", "..", "root of the PEGO repository")
 	flag.StringVar(&cfg.Out, "out", "dist", "output directory (replaced by each build)")
 	flag.BoolVar(&cfg.Wasm, "wasm", true, "build the playground's WebAssembly binary (needs the go command)")
 	flag.BoolVar(&cfg.Check, "check", true, "fail if a generated page links to a missing page or anchor")
 	flag.StringVar(&cfg.GitHub, "github", "https://github.com/ornew/pego", "repository URL for links to source files")
 	flag.StringVar(&cfg.Ref, "ref", "main", "branch or tag for links to source files")
+	flag.StringVar(&cfg.PreviousSite, "previous-site", previous, "retain the current WASM/runtime pair from this published site URL (automatic for Netlify production)")
+	flag.StringVar(&cfg.DeployURL, "deploy-url", deploy, "immutable URL of this deploy, for fetching its assets on the next production build")
 	serve := flag.String("serve", "", "after building, serve the site at this address (for example localhost:8080)")
 	flag.Parse()
 

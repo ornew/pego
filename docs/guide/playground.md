@@ -104,6 +104,8 @@ site/build.sh -serve localhost:8080    # build, then serve it at http://localhos
 | `-out` | `dist` | The output directory. It is replaced by each build, but only if a previous build wrote it |
 | `-wasm` | `true` | Build the playground's WebAssembly binary. Without it, the pages are built but the playground cannot run |
 | `-check` | `true` | Fail if a page links to a missing page, file or anchor |
+| `-previous-site` | Empty locally; production `URL` on Netlify | Import the published current WASM/runtime pair to retain it for one deploy; requires `-wasm` |
+| `-deploy-url` | Empty locally; production `DEPLOY_URL` on Netlify | Record this immutable deploy root for the next build's asset downloads |
 | `-serve` | | After building, serve the output at this address |
 | `-github`, `-ref` | `https://github.com/ornew/pego`, `main` | Where links to source files point |
 
@@ -123,7 +125,7 @@ The build output (`site/dist`) is not committed.
 | `/` | The landing page, assembled from [`README.md`](../../README.md): the tagline and introduction, a live example with the README's grammar, the feature list under "Why PEGO" as cards, and the following sections |
 | `/docs/tutorial/`, `/docs/guide/`, `/spec/`, `/docs/design/`, `/docs/…`, `/examples/` | The Markdown files of the repository, rendered at build time. Links between Markdown files (relative, relative to the repository root like `/spec/types.md`, or percent-encoded) become links between pages; links to other files of the repository go to GitHub. The design records get a generated index |
 | `/reference/` | The API reference of packages `pego` and `grammar`, generated from the Go source with `go/doc`, and the reference of the `pego` command, generated from what the command prints: its usage message and `pego <command> -h` for every command it lists. Types that are aliases of internal types (such as `Node`) show the definition and methods of the internal type |
-| `/playground/` | The playground: `app.js`, `worker.js`, `wasm/pego-<hash>.wasm` built from [`playground/`](../../playground/) (named after a hash of its content, which every page records in `<html data-wasm>`), and `wasm_exec.js` from the Go distribution |
+| `/playground/` | The playground: `app.js`, `worker.js`, content-hashed `wasm/pego-<hash>.wasm` and `runtime/wasm_exec-<hash>.js`, plus `assets.json` pairing the current/previous generations; every page records the current WASM in `<html data-wasm>`. The stable `wasm_exec.js` supports pre-manifest workers |
 | `/search-index.json` | The text of every page, for the search box in the header (press `/`) |
 
 Nothing is copied by hand, so the site cannot drift from the repository: rebuilding it picks up every change.
@@ -133,6 +135,18 @@ until the switch in the header is used), and work on phone screens.
 
 ## Deploying on Netlify
 
+Production builds download the currently published WASM and its matching Go runtime before generating the new site.
+The output retains at most the new pair and one previous pair; deploy/branch previews do not import production assets
+automatically. A page from the preceding deploy can therefore start its old parser after publication. The worker reads
+`assets.json` and imports the matching hashed runtime. Generations outside that window must reload.
+
+The first upgrade from a pre-manifest site reads its playground HTML and stable runtime. Later builds fetch from the
+immutable deploy URL recorded in the manifest. Missing or invalid published assets fail the build; a genuinely missing
+playground initializes a first deployment. Keep production publication sequential. Rollbacks and manually promoted
+previews need `-previous-site` set to the deployment being replaced; retention does not coordinate concurrent promotions.
+To deliberately reset retention, pass `-previous-site ''`. See [the asset-retention design](../design/023-playground-asset-retention.md)
+for the format, bounds and bootstrap limitations.
+
 [`netlify.toml`](../../netlify.toml) at the root of the repository configures Netlify: the build command is
 `sh site/build.sh`, the publish directory is `site/dist`, and `GO_VERSION` selects the Go version of `go.mod`. Connecting
 the repository to a Netlify site is enough to deploy it; each build runs the link check, so a broken link fails the
@@ -140,7 +154,7 @@ deploy instead of publishing it. The official site, [pego.ornew.net](https://peg
 
 The configuration also sets a strict `Content-Security-Policy`: the pages load scripts, styles and data only from the
 site itself, and need no inline scripts or styles; `'wasm-unsafe-eval'` allows compiling `pego.wasm`. The
-WebAssembly binary, whose name changes with its content, is cached for a year (`immutable`); the other files are
+WebAssembly binaries and their hashed runtime scripts are cached for a year (`immutable`); the other files are
 revalidated on each visit, Netlify's default.
 
 ## The WebAssembly API

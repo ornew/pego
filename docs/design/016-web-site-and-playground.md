@@ -170,10 +170,11 @@ this): the theme is applied by a small blocking script file, and Markdown tables
 The WebAssembly binary is the one large file of the site, and it changes only when the library or the Go version
 does. The build names it after a hash of its content (`playground/wasm/pego-<hash>.wasm`) and records the name in
 every page (`<html data-wasm>`), so `netlify.toml` can let browsers cache it for a year without revalidating
-(`Cache-Control: immutable`). The pages, scripts and `wasm_exec.js` keep Netlify's default, which revalidates on each
-visit, so a deploy is seen at once; `wasm_exec.js` must match the Go version that built the binary, and both change
-in the same deploy. A page loaded before a deploy may ask for a binary the new deploy no longer has; reloading it
-fixes that.
+(`Cache-Control: immutable`). [Asset retention](023-playground-asset-retention.md) imports the published current
+WASM/runtime pair on production builds, retaining one preceding generation without storing binaries in Git.
+The worker selects its matching content-hashed Go runtime from `playground/assets.json`; the stable `wasm_exec.js`
+supports pre-manifest workers. Pages, application scripts and the manifest revalidate on each visit. Older generations
+still require a reload; overlapping production promotions need serialized publication or explicit previous-site input.
 
 ## Sizes
 

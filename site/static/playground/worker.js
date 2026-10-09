@@ -5,7 +5,20 @@
 let ready = null;
 
 async function init(msg) {
-  importScripts(msg.base + "wasm_exec.js");
+  let runtime = msg.base + "wasm_exec.js";
+  const wasmURL = new URL(msg.wasm);
+  if (/\/wasm\/pego-[0-9a-f]{16}\.wasm$/.test(wasmURL.pathname)) {
+    const resp = await fetch(msg.base + "assets.json", { cache: "no-cache" });
+    if (!resp.ok) throw new Error(`cannot load playground assets: ${resp.status}`);
+    const manifest = await resp.json();
+    const asset = [manifest.current, manifest.previous].find((a) =>
+      a && new URL(a.wasm, msg.base).href === wasmURL.href);
+    if (manifest.version !== 1 || !asset || !/^runtime\/wasm_exec-[0-9a-f]{16}\.js$/.test(asset.runtime)) {
+      throw new Error("the requested parser is no longer available; reload this page");
+    }
+    runtime = new URL(asset.runtime, msg.base).href;
+  }
+  importScripts(runtime);
   const go = new Go();
   let instance;
   if (msg.module) {

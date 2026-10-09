@@ -23,12 +23,14 @@ import (
 
 // Config configures a build.
 type Config struct {
-	Repo   string // root of the repository
-	Out    string // output directory
-	Wasm   bool   // build the playground's WebAssembly binary
-	Check  bool   // fail on broken internal links
-	GitHub string // repository URL, for links to files that are not pages of the site
-	Ref    string // branch or tag for those links
+	Repo         string // root of the repository
+	Out          string // output directory
+	Wasm         bool   // build the playground's WebAssembly binary
+	Check        bool   // fail on broken internal links
+	GitHub       string // repository URL, for links to files that are not pages of the site
+	Ref          string // branch or tag for those links
+	PreviousSite string // published site whose current WASM/runtime pair should be retained
+	DeployURL    string // immutable URL of this deploy, recorded in the asset manifest
 }
 
 // Stats summarizes a build.
@@ -122,6 +124,18 @@ var docSections = []docSection{
 // Build builds the site.
 func Build(cfg Config) (Stats, error) {
 	s := &Site{cfg: cfg, bySrc: map[string]*Page{}, byDir: map[string]*Page{}}
+	if cfg.PreviousSite != "" && !cfg.Wasm {
+		return Stats{}, errors.New("-previous-site requires -wasm")
+	}
+	if cfg.DeployURL != "" {
+		if _, err := siteURL(cfg.DeployURL); err != nil {
+			return Stats{}, err
+		}
+	}
+	previous, err := readPreviousAssets(cfg.PreviousSite)
+	if err != nil {
+		return Stats{}, fmt.Errorf("retaining previous playground: %w", err)
+	}
 	if err := prepareOut(cfg.Out); err != nil {
 		return Stats{}, err
 	}
@@ -139,6 +153,9 @@ func Build(cfg Config) (Stats, error) {
 			return Stats{}, err
 		}
 		s.wasm = "playground/" + name
+		if err := publishAssets(filepath.Join(cfg.Out, "playground"), name, cfg.DeployURL, previous); err != nil {
+			return Stats{}, err
+		}
 	}
 	if err := s.writeAll(); err != nil {
 		return Stats{}, err
