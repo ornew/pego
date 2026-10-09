@@ -101,8 +101,16 @@ type parser struct {
 	runs, lastRuns map[runKey]*runRecord
 	// provisional counts the uses of provisional results of growing left recursions.
 	provisional int
-	resumed     int         // elements reused by resumeRepeat (for tests)
-	freeRuns    []*runState // runStates of finished VM repetitions (newRunState)
+	// memoSeedUses tracks unresolved seed dependencies of completed memo entries.
+	// Each growth discharges its own dependencies; provisional remains monotonic
+	// because repetition recording must still notice every use of a growing seed.
+	memoSeedUses int
+	// Completed dependent entries can come from an earlier, already closed head.
+	// Their dependencies are never discharged merely by finishing a new head.
+	memoProvisionalUses int
+	activeSeed          *memoEntry
+	resumed             int         // elements reused by resumeRepeat (for tests)
+	freeRuns            []*runState // runStates of finished VM repetitions (newRunState)
 	// scratch holds the pooled buffers the parser uses (newPooledParser), or nil.
 	scratch *scratch
 	// nodeChunks counts the node chunks allocated since the last splitChunks.
@@ -181,6 +189,9 @@ type memoEntry struct {
 	silent bool
 	// growing reports that this is a provisional result while a left recursion is growing.
 	growing bool
+	// provisional reports that this result depends on a growing LR seed. It may be reused
+	// during this parse generation, but its input range alone cannot validate an edit.
+	provisional bool
 	// positional reports that the result depends on position values (startPos, endPos). It cannot
 	// be shifted past an edit.
 	positional bool
@@ -465,11 +476,13 @@ func numberSeen(lists ...[]*rule) int {
 
 // callState is the state saved across a memoized rule call.
 type callState struct {
-	key              memoKey
-	start            int
-	savedHW, savedLW int
-	rec              int
-	exp              expMark
+	key                 memoKey
+	start               int
+	savedHW, savedLW    int
+	rec                 int
+	exp                 expMark
+	memoSeedUses        int
+	memoProvisionalUses int
 }
 
 // callBegin starts a memoized call (the caller has decided to memoize it: memoizes and not
@@ -493,8 +506,14 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit boo
 		p.stats.Reused++
 		if !e.growing {
 			p.mergeExpected(e.far, e.expected)
-		} else {
+		}
+		if e.growing || e.provisional {
 			p.provisional++
+			if e.growing && e == p.activeSeed {
+				p.memoSeedUses++
+			} else {
+				p.memoProvisionalUses++
+			}
 		}
 		if e.shifted {
 			p.moveResult(e)
@@ -506,7 +525,7 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit boo
 		p.recovered = append(p.recovered, e.errs...)
 		return st, e.node, true, true
 	}
-	st = callState{key: key, start: p.pos, savedHW: p.hw, savedLW: p.lw, rec: len(p.recovered)}
+	st = callState{key: key, start: p.pos, savedHW: p.hw, savedLW: p.lw, rec: len(p.recovered), memoSeedUses: p.memoSeedUses, memoProvisionalUses: p.memoProvisionalUses}
 	p.hw, p.lw = st.start, st.start
 	// A result stored in the memo also includes the expectations recorded in this call.
 	st.exp = p.isolate(st.start)
@@ -531,6 +550,12 @@ func (p *parser) callEnd(r *rule, st *callState, v *Node, ok bool) (*Node, bool)
 	far, inner := p.unisolate(st.exp)
 	if e != nil {
 		e.far, e.expected = far, p.keep(inner)
+		e.provisional = p.memoAll && (p.memoSeedUses != st.memoSeedUses || p.memoProvisionalUses != st.memoProvisionalUses)
+		if e.provisional {
+			// The completed intermediate result can outlive the seed it saw.
+			// Propagate that dependency even before a later memo hit imports it.
+			p.memoProvisionalUses++
+		}
 	}
 	p.mergeExpected(far, inner)
 	p.hw = max(st.savedHW, p.hw)
@@ -543,19 +568,22 @@ func (p *parser) callEnd(r *rule, st *callState, v *Node, ok bool) (*Node, bool)
 
 // growState is the grow-the-seed state of a left-recursion leader.
 type growState struct {
-	key   memoKey
-	start int
-	rec   int
-	best  *memoEntry
+	key          memoKey
+	start        int
+	rec          int
+	best         *memoEntry
+	memoSeedUses int
+	prevSeed     *memoEntry
 }
 
 // growBegin places a failure in the memo as the growing result and prepares the first body
 // evaluation. After seeding the memo with a failure, the body is evaluated repeatedly, and the
 // result at the point where the match stops growing is adopted.
 func (p *parser) growBegin(key memoKey) growState {
-	g := growState{key: key, start: p.pos, rec: len(p.recovered)}
+	g := growState{key: key, start: p.pos, rec: len(p.recovered), memoSeedUses: p.memoSeedUses, prevSeed: p.activeSeed}
 	g.best = p.memo.alloc()
 	*g.best = memoEntry{ok: false, end: g.start, examined: g.start, from: g.start, growing: true, gen: p.gen, vgen: p.gen}
+	p.activeSeed = g.best
 	p.memo.put(key, g.best)
 	return g
 }
@@ -568,6 +596,7 @@ func (p *parser) growStep(g *growState, v *Node, ok bool) bool {
 	}
 	g.best = p.memo.alloc()
 	*g.best = memoEntry{node: v, ok: true, end: p.pos, from: g.start, growing: true, gen: p.gen, vgen: p.gen, errs: append([]*SyntaxError(nil), p.recovered[g.rec:]...)}
+	p.activeSeed = g.best
 	p.memo.put(g.key, g.best)
 	p.pos = g.start
 	p.recovered = p.recovered[:g.rec]
@@ -576,6 +605,11 @@ func (p *parser) growStep(g *growState, v *Node, ok bool) bool {
 
 // growEnd finalizes and returns the last result.
 func (p *parser) growEnd(r *rule, g *growState) (*Node, bool) {
+	// This head has finished examining its whole growth, so its own seed
+	// reads are resolved. Reads of another growing head or completed
+	// dependent calls remain in memoProvisionalUses and cannot be discharged.
+	p.memoSeedUses = g.memoSeedUses
+	p.activeSeed = g.prevSeed
 	best := g.best
 	best.growing = false
 	best.silent = p.silent > 0

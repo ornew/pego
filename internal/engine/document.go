@@ -13,6 +13,8 @@ import "fmt"
 //     result depends on position values, and results containing recovered errors, cannot be
 //     shifted.
 //   - All other results are discarded.
+//   - Completed intermediate results that depended on an unfinished left-recursion
+//     seed are discarded after any edit, even outside their examined input range.
 //
 // Edit applies these rules only to the results at the edited positions; any other result applies
 // the edits made since its last use when it is next looked up (advanceEntry).
@@ -118,7 +120,7 @@ func (d *Document) Edit(start, end int, text string) error {
 // The entry is changed only if it is still valid: one that is not may be looked up again (when a
 // parse is aborted before the entry is replaced).
 func advanceEntry(e *memoEntry, edits []docEdit) bool {
-	if e.growing {
+	if e.growing || e.provisional && e.vgen != uint32(len(edits)) {
 		return false
 	}
 	from, examined, shift, shifted := e.from, e.examined, 0, e.shifted

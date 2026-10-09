@@ -41,6 +41,14 @@ running. A long repetition is not even run element by element: it **resumes** it
 `internal/engine/document_test.go` checks the node tree, the positions and the syntax errors against a fresh parse after
 each of 2,000 random edits, on every backend).
 
+Intermediate calls in an indirect left recursion can depend on an unfinished
+seed whose eventual input range is not part of the call's own range. These
+results, and calls that depend on them, are recomputed after any edit. A completed head retains
+ordinary range-based reuse when it only used its own growing seed and no
+completed seed-dependent calls. This includes independent nested heads. Calls
+that read an outer growing seed or completed dependent entries can have less
+reuse.
+
 ## The API
 
 | | |

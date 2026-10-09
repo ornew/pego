@@ -176,7 +176,7 @@ func TestDocumentEditKeepsMemo(t *testing.T) {
 					return // invalidated by an earlier edit, and not looked up since
 				}
 				switch {
-				case e.growing:
+				case e.growing || e.provisional:
 				case e.examined <= start:
 					want[e] = e.pos
 				case e.from >= end && !e.positional && len(e.errs) == 0:
