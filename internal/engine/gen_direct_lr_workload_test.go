@@ -51,7 +51,7 @@ func testTypedLRWorkload(t *testing.T, src, fixture, dir string) {
 	testGeneratedTypedBodyWorkload(t, src, fixture, dir, "(typed LR body inlined)", GenOptions{disableTypedLRBodies: true})
 }
 
-func testGeneratedTypedBodyWorkload(t *testing.T, src, fixture, dir, marker string, reference GenOptions) {
+func testGeneratedTypedBodyWorkload(t *testing.T, src, fixture, dir, marker string, reference GenOptions, unaffectedMarkers ...int) {
 	t.Helper()
 	g, err := syntax.Parse(src)
 	if err != nil {
@@ -68,7 +68,12 @@ func testGeneratedTypedBodyWorkload(t *testing.T, src, fixture, dir, marker stri
 		if err != nil {
 			t.Fatal(err)
 		}
-		if strings.Contains(string(code), marker) != (variant == "direct") {
+		count := 0
+		if len(unaffectedMarkers) != 0 {
+			count = unaffectedMarkers[0]
+		}
+		got := strings.Count(string(code), marker)
+		if (variant == "direct" && got <= count) || (variant == "general" && got != count) {
 			t.Fatalf("%s: incorrect generated body route", variant)
 		}
 		path := filepath.Join(dir, variant)

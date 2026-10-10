@@ -111,7 +111,7 @@ func TestGeneratedTypedLRBodies(t *testing.T) {
 			t.Fatalf("%s: typed runtime is not exercised", c.name)
 		}
 		inlined := strings.Contains(string(code), "(typed LR body inlined)")
-		if c.name == "typed/LR_unreachable_capture" || strings.HasSuffix(c.name, "_fallback") {
+		if strings.HasSuffix(c.name, "_fallback") {
 			if inlined {
 				t.Fatalf("%s: unsupported body must retain the general route", c.name)
 			}

@@ -74,7 +74,7 @@ func (d *dgen) nodeRepeat(e *grammar.Repeat, s *dscope, build bool, fail, field 
 	own := field != "" || elementScoped(e.Expr)
 	es := s
 	if own {
-		es = newDscope()
+		es = d.frameBodyScope(e.Expr, build && field == "")
 	}
 	var start, base, frame, prev, names string
 	if build {
@@ -186,6 +186,13 @@ func (g *generator) directFrameBody(r *rule, scope *scope, comment string) strin
 	d := &dgen{g: g, nodeBody: true, reads: map[string]bool{}, used: map[string]bool{}}
 	s := newDscope()
 	g.cur, g.proj = r, g.projections(r)
+	if g.table == "trules" && !g.disableTypedFrameLayouts {
+		// The Node rule owns LR frame metadata, including dead captures.
+		s.frame = newScope()
+		for _, name := range g.nodeScopes[r] {
+			s.frame.slot(name)
+		}
+	}
 	defer func() { g.proj = nil }()
 	d.frameCuts(r.def.Expr)
 	v := d.expr(r.def.Expr, s, !r.lean, "fail")
@@ -247,4 +254,61 @@ func (d *dgen) frameCuts(e grammar.Expr) {
 	d.localCuts = true
 	d.cut = d.decl("cut", "bool")
 	d.line("%s = p.cut", d.cut)
+}
+
+// frameBodyScope preserves the general emitter's layout even when
+// structural lowering omits an unreachable capture or alternative.
+func (d *dgen) frameBodyScope(e grammar.Expr, build bool) *dscope {
+	s := newDscope()
+	if d.g.table == "trules" && !d.g.disableTypedFrameLayouts {
+		s.frame = d.g.typedFrameLayout(e, build)
+	}
+	return s
+}
+
+// typedFrameLayout records frame slots without emitting general methods. It
+// follows generator.expr's build policy and visits unreachable syntax: the
+// runtime clears all slots before matching, so omitted captures remain nil.
+func (g *generator) typedFrameLayout(e grammar.Expr, build bool) *scope {
+	s := newScope()
+	var visit func(grammar.Expr, bool)
+	visit = func(e grammar.Expr, build bool) {
+		switch e := e.(type) {
+		case *grammar.Capture:
+			if !build && g.cur.predCaps != nil && !g.cur.predCaps[e.Name] {
+				visit(e.Expr, false)
+				return
+			}
+			s.slot(e.Name)
+			if g.proj[e.Name] == "" {
+				visit(e.Expr, true)
+			}
+		case *grammar.Seq:
+			for _, it := range e.Items {
+				visit(it, build)
+			}
+		case *grammar.Choice:
+			for _, alt := range e.Alts {
+				visit(alt, build)
+			}
+		case *grammar.Repeat:
+			if !elementScoped(e.Expr) {
+				visit(e.Expr, build)
+			}
+		case *grammar.Optional:
+			visit(e.Expr, build)
+		case *grammar.And:
+			visit(e.Expr, build && hasCaptures(e.Expr))
+		case *grammar.Not:
+			visit(e.Expr, false)
+		case *grammar.Atomic:
+			visit(e.Expr, false)
+		case *grammar.Discard:
+			visit(e.Expr, false)
+		case *grammar.Attributed:
+			visit(e.Expr, build)
+		}
+	}
+	visit(e, build)
+	return s
 }

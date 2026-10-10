@@ -9,11 +9,11 @@
   This isolates the body-inlining group without adding a parser-time option or
   branch. Ordinary typed direct rules and ordinary local-cut rules keep their
   existing routes.
-- Eligibility is limited to bodies the structural emitter can lower without
-  changing the leader's runtime frame layout. Leader bodies containing cuts,
-  `#recover`, action captures outside the structural frame layout and
-  frame-layout mismatches remain on the general typed path for this cut-free
-  route. Eligible cut-bearing LR/Pratt bodies use the framed emitter in
+- Eligibility is limited to bodies without cuts or `#recover` whose runtime
+  frame layout the structural emitter can match. [Record 82](082-match-typed-direct-frame-layouts.md) enables cases where
+  the earlier structural walk omitted or reordered dead captures; unresolved
+  action captures and layouts that still cannot match remain general. Eligible
+  cut-bearing LR/Pratt bodies use the framed emitter in
   [change 81](081-scoped-cuts-in-unfinished-typed-go-bodies.md); cut-free Pratt
   lines have their own matcher route in [change 80](080-inline-eligible-typed-pratt-lines.md).
   Eligible callees may still be direct.

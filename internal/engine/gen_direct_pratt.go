@@ -15,7 +15,7 @@ func (g *generator) directTypedPrattBody(e grammar.Expr, scope *scope, build boo
 	g.proj = nil // Pratt line actions do not use rule-level projections.
 	defer func() { g.proj = prevProj }()
 	d := &dgen{g: g, nodeBody: true, reads: map[string]bool{}, used: map[string]bool{}}
-	s := newDscope()
+	s := d.frameBodyScope(e, build)
 	d.frameCuts(e)
 	v := d.expr(e, s, build, "fail")
 	var locals []string

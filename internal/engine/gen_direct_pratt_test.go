@@ -177,12 +177,12 @@ func TestGeneratedTypedPrattBodies(t *testing.T) {
 			t.Fatalf("%s: typed runtime is not exercised", c.name)
 		}
 		inlined := strings.Contains(string(code), "(typed Pratt body inlined)")
-		fallback := strings.HasSuffix(c.name, "_fallback") || c.name == "typed/Pratt_unreachable_capture"
+		fallback := strings.HasSuffix(c.name, "_fallback")
 		if inlined == fallback {
 			t.Fatalf("%s: incorrect Pratt body route (inline=%v)", c.name, inlined)
 		}
-		if c.name == "typed/Pratt_mixed_routes" && strings.Count(string(code), "(typed Pratt body inlined)") != 2 {
-			t.Fatal("mixed routes: rejected body must preserve the two eligible lines")
+		if c.name == "typed/Pratt_mixed_routes" && strings.Count(string(code), "(typed Pratt body inlined)") != 3 {
+			t.Fatal("mixed routes: all three operands must use unfinished bodies")
 		}
 		opts.disableTypedPrattBodies = true
 		ref, err := Generate(g, opts)

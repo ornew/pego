@@ -12,8 +12,9 @@
   `cutExpr` and `cutFail` after restoring its full mark and dropping children.
 - The generation-only `disableTypedFramedCuts` reference control emits the
   same runtime with per-expression bodies. It adds no generated-parser option
-  or matching-time selector. `#recover` and structurally unsupported bodies
-  remain on general dispatch.
+  or matching-time selector. `#recover` and bodies whose frame layouts still
+  cannot be matched remain on general dispatch; [record 82](082-match-typed-direct-frame-layouts.md)
+  enables additional LR, Pratt and repetition layouts from the general emitter metadata.
 - The 14-case parity corpus checks ordinary cut expressions and actions in
   Pratt operands, left-recursion captures and repetitions, Pratt longest-match
   and trivia behavior, prefix-part cuts, rollback, nested scopes and
