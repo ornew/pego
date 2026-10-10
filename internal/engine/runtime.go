@@ -604,7 +604,7 @@ func (p *parser) growStep(g *growState, v *Node, ok bool) bool {
 		return false
 	}
 	g.best = p.memo.alloc()
-	*g.best = memoEntry{node: v, ok: true, end: p.pos, from: g.start, growing: true, gen: p.gen, vgen: p.gen, errs: append([]*SyntaxError(nil), p.recovered[g.rec:]...)}
+	*g.best = memoEntry{node: v, ok: true, end: p.pos, examined: p.hw, from: p.lw, growing: true, gen: p.gen, vgen: p.gen, errs: append([]*SyntaxError(nil), p.recovered[g.rec:]...)}
 	p.activeSeed = g.best
 	p.memo.put(g.key, g.best)
 	p.pos = g.start

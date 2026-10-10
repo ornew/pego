@@ -70,6 +70,9 @@ event.
   (`hw`, kept for `Document`), as a maximum that every character test raises. A traced call saves it, sets it to its
   start, reads it at the end and restores the maximum of both, exactly as `callBegin` and `callEnd` do for memoized
   calls. Since only the maximum is ever used, this leaves every memo entry's examined range unchanged.
+  Successful growing left-recursion seeds carry the input bounds accumulated when they grew. A seed hit
+  therefore propagates its dependency range even when a wrapper returns it without examining another character;
+  lookahead beyond the match and line-start checks before the call remain part of those bounds.
 - **Expectations** (`Failure`): likewise, a traced call records the expectations made during it separately
   (`isolate`) and merges them back (`mergeExpected`) when it ends, as memoized calls already do. The merge replays the
   recorded expectations into the caller's record, which keeps only those at the farthest position, so the final error
