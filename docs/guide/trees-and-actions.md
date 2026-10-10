@@ -919,8 +919,8 @@ formatter, say), capture them instead of discarding them.
 
 ## 10. Performance guidelines
 
-PEGO builds values only where something can observe them. The guidelines of
-[performance.md](../performance.md#grammar-authoring-guidelines-for-performance) boil down to helping the engine know
+PEGO builds values only where something can observe them. The guidelines in the
+[optimization catalog](../optimizations/README.md#grammar-authoring-guidelines-for-performance) boil down to helping the engine know
 what is unobserved:
 
 1. **Discard trivia inside captured expressions** with `-x`: `rest:(-ws -"," -ws v:value)*`. The engine cannot drop it
@@ -943,7 +943,7 @@ allocated, measured around a single `Parse` call with `runtime.MemStats`:
 
 The shipped example grammars follow the same rules. Discarding their trivia was part of a change that took the JSON
 example from 50.5 MB to 42.8 MB per parse and minilang from 32.8 MB to 23.0 MB, with identical ASTs (change 9 in the
-[tuning log](../performance.md#9-value-free-pratt-lines-discarding-trivia-in-example-grammars-936857c)).
+[optimization entry 009](../optimizations/009-value-free-pratt-lines-discarding-trivia-in-example-grammars-936857c.md)).
 
 If you only need to know whether the input is valid, use `pego parse -check` (`pego.RecognizeOnly()`): it builds no
 values and runs no actions.

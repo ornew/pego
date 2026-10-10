@@ -110,23 +110,46 @@ func TestBuild(t *testing.T) {
 		}
 	}
 
-	// The numbered changes moved to the catalog keep their old performance.md fragments.
+	// Legacy performance fragments are derived from the numbered detail-page headings.
 	perf, err := os.ReadFile(filepath.Join(out, "docs", "performance", "index.html"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	aliases := regexp.MustCompile(`<a id="([0-9]+)-[^"]+"></a>`).FindAllSubmatch(perf, -1)
-	if len(aliases) != 77 {
-		t.Fatalf("performance page has %d numbered change anchors, want 77", len(aliases))
+	entries, err := filepath.Glob(filepath.Join("..", "docs", "optimizations", "[0-9][0-9][0-9]-*.md"))
+	if err != nil {
+		t.Fatal(err)
 	}
-	seen := map[string]bool{}
-	for _, alias := range aliases {
-		seen[string(alias[1])] = true
-	}
-	for n := 1; n <= 77; n++ {
-		if !seen[strconv.Itoa(n)] {
-			t.Errorf("performance page is missing legacy anchor for change %d", n)
+	for _, entry := range entries {
+		src, err := os.ReadFile(entry)
+		if err != nil {
+			t.Fatal(err)
 		}
+		heading := regexp.MustCompile(`(?m)^# (.+)$`).FindSubmatch(src)
+		if heading == nil {
+			t.Fatalf("%s has no title", entry)
+		}
+		title := string(heading[1])
+		number := optimizationTitleNumberRe.FindStringSubmatch(title)
+		if number == nil {
+			t.Fatalf("%s has no numbered title: %q", entry, title)
+		}
+		n, err := strconv.Atoi(number[1])
+		if err != nil {
+			t.Fatal(err)
+		}
+		legacy := strconv.Itoa(n) + "-" + slug(strings.TrimPrefix(title, number[0]))
+		sourcePath := strings.TrimPrefix(filepath.ToSlash(entry), "../")
+		target := relURL("docs/performance/", urlOf(sourcePath)) + "#" + slug(title)
+		if !strings.Contains(string(perf), `id="`+legacy+`" data-moved-to="`+target+`"`) {
+			t.Errorf("performance page legacy anchor %q does not redirect to %q", legacy, target)
+		}
+	}
+	siteJS, err := os.ReadFile(filepath.Join("static", "assets", "site.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(siteJS), "location.replace(target)") {
+		t.Error("site script does not follow legacy optimization redirects")
 	}
 
 	// The reference of the pego command has a section for every command, with every flag.
@@ -518,7 +541,8 @@ func TestNavigation(t *testing.T) {
 	// The links of the navigation are relative to the page; this strips the "../" that leads to the root.
 	site := func(href string) string { return strings.TrimLeft(href, "./") }
 
-	// Only the index of a section is called "Introduction"; every other page has its own title.
+	// Only designated section indexes are called "Introduction". Design and optimization
+	// records remain rendered and searchable but are reached through their Project indexes.
 	secs := readSidebar(t, filepath.Join(out, "docs", "guide", "runtime", "index.html"))
 	var names []string
 	intro := map[string]bool{}
@@ -530,114 +554,68 @@ func TestNavigation(t *testing.T) {
 			}
 		}
 	}
-	if got, want := strings.Join(names, ", "), "Tutorial, Guides, Cookbook, Specification, Reference, Parsers, Design records, Optimizations, Project"; got != want {
+	if got, want := strings.Join(names, ", "), "Tutorial, Guides, Cookbook, Specification, Reference, Parsers, Project"; got != want {
 		t.Errorf("sections = %s, want %s", got, want)
 	}
-	if want := map[string]bool{"docs/guide/": true, "docs/cookbook/": true, "spec/": true, "parsers/": true, "docs/optimizations/": true}; !maps.Equal(intro, want) {
-		t.Errorf("pages titled Introduction = %v, want the indexes of Guides, Cookbook, Specification, Parsers and Optimizations", intro)
+	if want := map[string]bool{"docs/guide/": true, "docs/cookbook/": true, "spec/": true, "parsers/": true}; !maps.Equal(intro, want) {
+		t.Errorf("pages titled Introduction = %v, want %v", intro, want)
 	}
+	var project sidebarSection
 	for _, sec := range secs {
-		if sec.Name != "Parsers" {
-			continue
+		if sec.Name == "Project" {
+			project = sec
 		}
-		parsers := 0
-		for _, l := range sec.Links {
-			dir := site(l.Href)
-			if dir == "parsers/" {
-				continue
-			}
-			parsers++
-			// A parser is titled by the first heading of its page.
-			data, err := os.ReadFile(filepath.Join(out, filepath.FromSlash(dir), "index.html"))
-			if err != nil {
-				t.Fatal(err)
-			}
-			m := regexp.MustCompile(`(?s)<h1[^>]*>(.*?)</h1>`).FindSubmatch(data)
-			if m == nil {
-				t.Fatalf("%s has no heading", dir)
-			}
-			if h := html.UnescapeString(regexp.MustCompile(`<[^>]*>`).ReplaceAllString(string(m[1]), "")); l.Title != h {
-				t.Errorf("%s is titled %q in the navigation, want %q", dir, l.Title, h)
-			}
+	}
+	if project.Name == "" || project.Collapsible {
+		t.Fatal("Project section is missing or unexpectedly collapsible")
+	}
+	projectLinks := map[string]string{}
+	for _, link := range project.Links {
+		projectLinks[site(link.Href)] = link.Title
+		if strings.HasPrefix(site(link.Href), "docs/design/") && site(link.Href) != "docs/design/" {
+			t.Errorf("individual design record appears in the sidebar: %s", link.Href)
 		}
-		if parsers < 5 {
-			t.Errorf("the Parsers section lists %d parsers", parsers)
+		if strings.HasPrefix(site(link.Href), "docs/optimizations/") && site(link.Href) != "docs/optimizations/" {
+			t.Errorf("individual optimization appears in the sidebar: %s", link.Href)
 		}
+	}
+	if projectLinks["docs/design/"] != "Design Records" || projectLinks["docs/optimizations/"] != "Optimizations" {
+		t.Errorf("Project indexes = %v", projectLinks)
 	}
 
-	// Design records and optimizations fold outside their own section and open within it.
-	design := func(secs []sidebarSection) sidebarSection {
-		for _, sec := range secs {
-			if sec.Name == "Design records" {
-				return sec
-			}
-		}
-		t.Fatal("no Design records section")
-		return sidebarSection{}
+	// Individual records remain in search and the indexes point to their generated pages.
+	search, err := os.ReadFile(filepath.Join(out, "search-index.json"))
+	if err != nil {
+		t.Fatal(err)
 	}
-	for _, sec := range secs {
-		if sec.Collapsible != (sec.Name == "Design records" || sec.Name == "Optimizations") || sec.Open {
-			t.Errorf("section %s: collapsible=%v open=%v on a guide", sec.Name, sec.Collapsible, sec.Open)
-		}
+	var searchEntries []searchEntry
+	if err := json.Unmarshal(search, &searchEntries); err != nil {
+		t.Fatal(err)
 	}
-	if sec := design(secs); len(sec.Links) < 15 {
-		t.Errorf("Design records lists %d pages", len(sec.Links))
+	searchPages := map[string]bool{}
+	for _, e := range searchEntries {
+		searchPages[e.URL] = true
 	}
-	optimizationSection := func(secs []sidebarSection) sidebarSection {
-		for _, sec := range secs {
-			if sec.Name == "Optimizations" {
-				return sec
-			}
-		}
-		t.Fatal("no Optimizations section")
-		return sidebarSection{}
-	}
-	for _, tc := range []struct {
-		page, current string
-	}{
-		{"docs/optimizations/index.html", "Introduction"},
-		{"docs/optimizations/076-inline-value-free-plain-generated-go-rules/index.html", "76. Inline value-free plain generated Go rules"},
-		{"docs/optimizations/077-inline-node-expressions-in-generated-go-parsers/index.html", "77. Inline value-building and memoized Node expressions in generated Go parsers"},
-	} {
-		sec := optimizationSection(readSidebar(t, filepath.Join(out, filepath.FromSlash(tc.page))))
-		if !sec.Collapsible || !sec.Open {
-			t.Errorf("%s: Optimizations should be open and collapsible", tc.page)
-		}
-		if len(sec.Links) != 78 {
-			t.Errorf("%s: Optimizations lists %d pages, want 78", tc.page, len(sec.Links))
-		}
-		current := ""
-		for _, l := range sec.Links {
-			if l.Current {
-				current = l.Title
-			}
-		}
-		if current != tc.current {
-			t.Errorf("%s: current Optimizations entry = %q, want %q", tc.page, current, tc.current)
+	for _, page := range []string{"docs/design/012-typed-values/", "docs/optimizations/077-inline-node-expressions-in-generated-go-parsers/"} {
+		if !searchPages[page] {
+			t.Errorf("search index omits %s", page)
 		}
 	}
-	for _, tc := range []struct {
-		page, current string // current is the title of the entry of the page, if the section should be open
-	}{
-		{"docs/guide/runtime/index.html", ""},
-		{"parsers/json/index.html", ""},
-		{"docs/design/index.html", "Index"},
-		{"docs/design/012-typed-values/index.html", "012 Typed Values in Generated Parsers"},
-	} {
-		sec := design(readSidebar(t, filepath.Join(out, filepath.FromSlash(tc.page))))
-		if sec.Open != (tc.current != "") {
-			t.Errorf("%s: Design records open = %v, want %v", tc.page, sec.Open, tc.current != "")
-		}
-		current := ""
-		for _, l := range sec.Links {
-			if l.Current {
-				current = l.Title
-			}
-		}
-		if current != tc.current {
-			t.Errorf("%s: current entry of Design records = %q, want %q", tc.page, current, tc.current)
-		}
+	designIndex, err := os.ReadFile(filepath.Join(out, "docs", "design", "index.html"))
+	if err != nil {
+		t.Fatal(err)
 	}
+	if !strings.Contains(string(designIndex), "docs/design/012-typed-values/") {
+		t.Error("Design Records index omits its detail page")
+	}
+	optimizationIndex, err := os.ReadFile(filepath.Join(out, "docs", "optimizations", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(optimizationIndex), "077-inline-node-expressions-in-generated-go-parsers/") {
+		t.Error("Optimizations index omits its detail page")
+	}
+
 }
 
 func TestNavTitle(t *testing.T) {

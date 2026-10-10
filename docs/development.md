@@ -1,6 +1,6 @@
 # Development
 
-This document describes the repository layout, the architecture of the implementation, how to run the tests, the implementation status of the language features, and the roadmap.
+This document describes the repository layout and architecture, how to run tests, and the implementation status of language features. The living backlog is maintained in [Issue #1](https://github.com/ornew/pego/issues/1).
 
 ## Directory layout
 
@@ -40,169 +40,35 @@ This document describes the repository layout, the architecture of the implement
                                                                └── MarshalBinary ──▶ .pegoc
 ```
 
-| Component | Files | Responsibility |
+| Component | Main files | Responsibility |
 |:--|:--|:--|
-| Syntax | `internal/syntax/` | Parses PEGO source into an AST with source positions |
-| Static analysis | `analysis.go` | Nullability, left-recursion leaders, memoization, variable and position dependencies |
-| Type checking | `check.go`, `type_inference.go`, `types.go` | Type inference for undeclared rule types; checking of actions, predicates and struct fields |
-| Closure compiler | `compile.go` | Compiles parser expressions into Go closures |
-| Runtime | `runtime.go`, `memo.go`, `alloc.go`, `parse.go` | Rule calls, memoization, left recursion, backtracking, node allocation, parse entry points |
-| Attributes | `attrs.go` | `#error` and `#recover` |
-| Input | `input.go` | Position units, incremental reading and discarding of stream input |
-| Actions | `eval.go` | Evaluation of action and predicate expressions |
-| Pratt expressions | `pratt.go` | The Pratt loop and longest-match operator selection |
-| Incremental parsing | `document.go`, `resume.go` | Reuse of memo entries across edits; resuming long repetitions |
-| Tracing and profiling | `trace.go`, `profile.go` | Rule call events for `WithTrace`, the per-rule profile and its hints |
-| Language server | `internal/lsp/` | Analyzes open `.pego` documents (tokens, partial parse, compile, rule types) and answers LSP requests |
-| Bytecode | `bytecode.go`, `bcompile.go`, `disasm.go`, `vm.go`, `ivm.go` | Bytecode module, compiler, disassembler, recursive and iterative VMs |
-| Compiled grammars | `compiled.go`, `modulefile.go` | The `.pegoc` file format |
-| Code generation | `gen.go`, `gen_direct.go`, `genrt/`, `gen_ts.go`, `tsrt/` | Generation of standalone Go and TypeScript parsers |
+| Grammar intake | `internal/syntax/`, `grammar/` | Parses source or JSON into the public AST; formatting preserves comments and layout. |
+| Compiler and analysis | `internal/engine/compile.go`, `analysis.go`, `check.go` | Checks types, analyzes calls and dependencies, and compiles expressions. |
+| Runtime | `runtime.go`, `pratt.go`, `attrs.go`, `eval.go` | Implements ordered choice, backtracking, actions, recovery and Pratt selection. |
+| Bytecode | `bytecode.go`, `bcompile.go`, `vm.go`, `ivm.go` | Runs the same grammar semantics with recursive and iterative VMs; see the [bytecode specification](../spec/bytecode.md). |
+| Input and documents | `input.go`, `document.go`, `resume.go` | Tracks position units, streaming input, edits and resumable repetitions. |
+| Compiled grammars | `compiled.go`, `modulefile.go` | Saves and loads bytecode modules, optionally with AST and analysis data. |
+| Code generation | `gen.go`, `gen_direct.go`, `genrt/`, `gen_ts.go`, `tsrt/` | Emits standalone Go and TypeScript parsers; unsupported rules use general expression dispatch. |
+| Language tools | `internal/lint/`, `internal/lsp/`, `editors/vscode/` | Provides static checks, editor requests and the VS Code client. |
+| Input generation | `sample/` | Generates accepted inputs and coverage; generated inputs are checked by the parser. |
 
-Files without a directory are in `internal/engine/`. The sections below describe each component.
-
-### Syntax
-
-`internal/syntax` uses a hand-written lexer and recursive-descent parser to build an AST with source positions. When a definition contains an error, parsing resumes at the next definition, so a single run reports errors in several definitions. The parser also records comments and line breaks in the AST (`grammar.LineBreak`, excluded from JSON), which `grammar.Format` uses to format source without losing comments ([design](design/011-source-formatting.md)).
-
-### Closure compiler
-
-The compiler (`compile.go`) turns each parser expression into a function (a closure) that tries to match at the current input position. Where no value is needed (`@`, `-`, lookahead, and the bodies of terminal-type rules and of rules whose action does not use `$n`), it generates a value-free version, and for CST rules called from such places it also generates a value-free version of the rule.
-
-### Static analysis
-
-The analysis (`analysis.go`) computes nullability, the strongly connected components of the left-call graph, and the variables each rule reads (directly or through its callees), and from these decides for each rule whether it is memoized and whether it is a left-recursion leader. Rules that read variables are memoized per combination of those variables' values at the call.
-
-The left-call graph excludes zero-count repetition bodies and ordered-choice suffixes only when an earlier
-alternative is proven to succeed on every input. `internal/grammaranalysis` supplies this conservative proof,
-including cut scopes and recovery skips. Recovery skip calls start at the base expression's original position and
-participate unless the base is proven successful. Graph refinement repeats to a fixed point: removing an unreachable
-cycle can make another rule's success provable. Cyclic calls can read a failing seed and cannot prove success.
-Unknown predicates, Pratt and level-restricted calls remain conservative; the runtime grammar is not rewritten.
-
-Variable-read dependencies skip call-graph construction when the grammar has no direct reads. Otherwise,
-callee-first call components union direct peer reads and finalized external dependencies once, then share
-immutable sorted names within each recursive component. Syntactic calls, including recovery arguments and
-Pratt parts/actions, remain conservative; variable-sensitive memo keys are unchanged
-([measurements](performance.md#73-dependency-component-propagation-of-variable-reads)).
+Files without a directory are in `internal/engine/`. Optimization evidence is in the [catalog](optimizations/README.md); contracts and proposals are in `spec/` and `docs/design/`.
 
 ### Runtime
 
-The runtime (`runtime.go`) memoizes rule calls keyed by (rule, position, level), which is packrat parsing. Rules that call no other rule, and rules referenced only once in the grammar, are not memoized in normal parses, because their memo entries would never be reused; `Document` still memoizes them so that edits can reuse their results. In whole-input parses, the other rules are memoized at a position only from their second call there (`parser.firstCall`; a bit set records first calls), unless repeated calls of the rule turn out to be frequent, in which case it is memoized from the first call for the rest of the parse. Either way a rule is evaluated at most twice per position, so parse time stays linear.
-
-Left recursion is handled as in CPython's pegen (see the [reference note](ref-cpython-pegen-packrat-parsing.md)): only the leader rule, which breaks the cycle, is evaluated by growing the seed, and the other rules in the cycle are not memoized.
-
-Backtracking returns to a recorded point: the position, the variable environment (a persistent list) and the history of capture writes.
-The current environment holds at most one binding per variable name. Replacing a value copies only the preceding
-bindings, so saved environments remain immutable; assigning an equal value reuses the existing environment.
-Lookups depend on distinct names rather than assignment history. A parse-wide name hint avoids scanning for first
-assignments and records names from the first assignment, including abandoned branches.
-
-Nodes, child lists, field lists and capture frames are allocated from per-parse slabs (`alloc.go`), and the memo table is a per-position list of entries (`memo.go`). Scratch state of action and predicate evaluation lives in buffers owned by the parser and reused: an operand stack (`estack`, shared by the VMs' expression code and the closure backend's built-in calls), arenas for lambda calls, and the stack that gathers list elements (`kidStack`). A whole-input parse takes its decoded input, offset table, memo table and `kidStack` from a pool kept by the `Program` and returns them when it is done (`newPooledParser`). A call of a rule that is not memoized and has no captures takes a shorter path (`invokePlain`) than a full invocation. See [performance.md](performance.md) for the measurements behind these choices.
-
-Three parse options affect the runtime as a whole:
-
-- **Recognition only** (`pego.RecognizeOnly`): the parser builds no tree and only checks whether the input matches, returning the same syntax errors as a full parse. Actions are not evaluated. It is not available for stream parsing or `Document`.
-- **Nesting limit** (`pego.WithMaxDepth`): rule calls may nest at most 100,000 deep by default (10,000,000 for the iterative VM); deeper nesting is reported as an error.
-- **Tracing** (`pego.WithTrace`, `pego.WithProfile`): every rule call is reported to a function at its start and end. Calls are observed in `parser.call` (and the iterative VM's `traceFrame`); a traced parse sends plain calls through `call` too (`parser.noPlain`). An untraced parse pays one nil check per call through `call`. Calls that a `Document` skips by resuming a repetition are not reported. See [design 014](design/014-tracing-and-profiling.md).
-
-### Attributes
-
-`#error` (`attrs.go`) records the expectations inside its expression separately and replaces them with its message. `#recover` skips input when its expression fails and returns an `Error` node. Recovered errors are recorded so that backtracking can undo them, and they are stored in memo entries.
-
-### Input
-
-The input (`input.go`) is held in the chosen position unit (code points or UTF-8 bytes), and reading a character returns the character and its size. The tests check that byte-unit results, converted to code-point positions, equal the code-point results.
-
-### Streaming
-
-For stream parsing, input is read from a `bufio.Reader` only as far as needed (`fill` in `input.go`). Byte-unit decoding requests one byte first and reads further only while the UTF-8 prefix is incomplete; a complete character never requires unrelated future bytes. Each time an element of a `#stream` repetition is emitted, the input before it (except the preceding character) and the memo entries can be discarded (`commit` in `input.go`): the read buffer is compacted once half of it is consumed, and the memo is pruned in blocks. At element boundaries the parser also starts new allocation chunks from time to time (`splitChunks`), so that chunks shared with earlier elements do not keep them reachable. Positions remain absolute offsets from the start of the input; line and column numbers are computed by counting the lines in the discarded part. (For whole input, errors look their line up in a table of line starts.)
-
-### Incremental parsing
-
-Each memo entry records the range of input it examined (`document.go`). After an edit, entries that lie entirely before the edit are reused as they are, and entries that lie entirely after it are reused with shifted positions ([design](design/007-streaming-and-incremental-parsing.md)). Completed calls that depend on an unfinished left-recursion seed are marked transitively and invalidated after any edit: their own examined range may omit input influencing the final seed. Finishing a left-recursion head discharges its own growing-seed dependencies, while completed intermediate dependencies remain marked. Repetitions that an action only takes apart with `map($x, (e) => $e.f)` are compiled to gather the field directly in every backend (`project.go`). An edit splices the text, its offset table and the memo table in place (`input.replace`, `memoTable.splice`) and is recorded in the document's edit log. The memo table is a gap buffer, and an edit decides only the entries at the edited positions; any other entry applies the edits since its last use when it is next looked up (`advanceEntry`). A shifted entry's nodes are moved in place when the entry is first reused (`moveResult`): each node records how many edits its positions account for (`Node.gen`), and an edit never falls inside a reused node, so a non-empty node's positions tell which later edits move it. Empty nodes at an insertion point are ambiguous (they can belong to results on both sides) and are copied instead. A repetition of 16 elements or more records its run (in every backend; the VMs find such repetitions in the bytecode), and after an edit it reuses the elements before the edit and, once its elements line up with the old ones again, the rest of the old run (`resumeRepeat`), so that a reparse need not look up every line of a file in the memo table.
+The closure compiler is the reference execution path. The recursive and iterative VMs share rule-call, memoization,
+left-recursion and Pratt logic with it. Backtracking restores input position, the variable environment, recovered
+errors and capture history; farthest-failure expectations use separate isolation and merge scopes. Recognition
+returns no tree and skips value and action work that predicates do not need; predicate-dependent rules and callees
+can still evaluate actions.
+Nesting limits and tracing apply to rule calls. `Document` can reuse memo entries across edits and resume long
+repetitions; stream parsing emits elements and discards input already committed by the grammar.
 
 ### Code generation
 
-The generator (`gen.go`, `genrt/`) emits bodies for supported direct rules and a method per expression for the general fallback, then embeds `genrt/runtime.go` to produce a parser that depends only on the standard library. The Node path inlines eligible value-free plain recognition and skip rules, plus supported value-building and memoized rule bodies; existing wrappers retain depth, frame, action, recovery, memo and naming semantics, while unsupported cut/recovery, Pratt, left-recursion and unresolved-capture cases use the fallback. The tests compare generated results with the engine ([design](design/008-code-generation.md)). With `GenOptions.Recognize`, it also generates the recognizer (`Program.recognizer`) into a second rule table. With `GenOptions.Types` (`gen_types.go`), it emits Go types from inferred grammar types (`Program.typed`) and `ParseAST`, which uses a second typed runtime (`genrt/typed.go`) whose direct methods inline bodies with captures in Go variables and actions in place; rules with cuts, `#recover`, Pratt expressions and left-recursion leaders keep a method per expression. Grammars whose results include CST values use Node conversion ([design](design/012-typed-values.md)). TypeScript generation is unchanged.
-
-The TypeScript generator (`gen_ts.go`) walks the same analysis results and emits one function per expression into a module that embeds `tsrt/runtime.ts`, a port of `genrt/runtime.go` that hides JavaScript's differences (UTF-16 strings, 53-bit numbers, JSON escaping). `TestGeneratedTSParsersMatchEngine` runs the generated modules with Node.js on the corpus of the Go generator's test, plus prefixes and byte deletions of short inputs. It compares the JSON, `Node.String` and recognition with the engine, and type-checks the modules with `tsc` ([design](design/013-typescript-generation.md)).
-
-### Linting
-
-Package `internal/lint` analyzes the AST of a grammar that compiles (`pego.Lint` compiles it first). `analysis.go` computes nullability (separately at the end of the input and elsewhere), whether expressions can match at all (least fixed points), whether an expression certainly succeeds on every input that begins with a given string (`matchPrefix`), a prefix every match begins with, and structural equality. Calls of left-recursive rules are never taken as certain. `checks.go` builds the checks on these so that errors and warnings are proven; hints are heuristics. `lint:ignore` comments are read from `Grammar.AllComments` ([design](design/018-grammar-linting.md)).
-
-### Language server
-
-`internal/lsp` implements LSP 3.17 over standard input and output with the standard library. Each version of an open document is analyzed once: `syntax.Tokenize` gives every token with its span, `syntax.ParsePartial` the definitions that parse even when others have errors, and, when there is no syntax error, `engine.Compile` the compile and type errors and `Program.RuleType` the declared or inferred rule types. Positions are converted through byte offsets between LSP's UTF-16 columns and line ends and PEGO's code-point columns. Completion works on tokens, since the definition being written rarely parses ([design](design/017-language-server.md)).
-Definition and constructor name mapping skips intervening comment tokens while preserving original name spans
-and documentation comments. Framed-protocol tests cover symbols, hover, definitions, references and complete
-rename edits across repeated comments and LF/CRLF/CR line endings, including incomplete input (E01).
-Comment-separated attribute and Pratt associativity semantic highlighting remains tracked separately (E07).
-The VS Code extension serializes startup/restart/configuration/shutdown transitions, retains failed cleanup
-ownership for retry, and prevents startup after deactivation (E02). Deferred stand-in checks exercise the actual
-extension module. Installed-client checks cover actual ENOENT, rejected JSON-RPC initialization and connection-close
-cleanup before disposal, including single feature/diagnostic/output cleanup and fresh attempts. A narrow subclass
-adapts the dependency's failed-start shutdown through protected hooks; the extension owns its output channel.
-These checks do not establish live VS Code UI behavior. A sequential dispatch benchmark excludes host/IPC.
-
-### Input generation
-
-Package `sample` walks the grammar AST of a `Parser` with a bounded, seeded depth-first search in continuation-passing style (`gen.go`, `pratt.go`), prunes candidates that the parser would read differently with checks evaluated by a partial matcher (`match.go`) and with predicates evaluated on the generated text (`pred.go`), and returns only inputs that `Parse` accepts. It measures coverage of rules, alternatives and Pratt operands and operators (`analysis.go`) and mutates valid inputs into near-miss invalid ones (`mutate.go`) ([design](design/015-input-generation.md)).
-
-Constructor analysis evaluates acyclic callees before callers and revisits only callers of changed height/length
-estimates or reach sets (`analysis_dependencies.go`). A bounded worklist handles recursive fixed points, and
-contiguous reverse edges avoid one graph allocation per rule. Target numbering, negative-lookahead/recovery
-exclusions and seeded decisions retain their existing semantics; the attempt budget does not bound this analysis.
-
-Named-level Pratt sampling retains unrestricted prefixes and tracks the weaker tail bound opened by their right
-operands, with nonassociative restrictions scoped to each new prefix RHS. Coverage propagates reachable rule/entry
-states together, excluding nested targets and calls in blocked operator parts (C30). Explicit inner calls keep their
-own entry restrictions; seeded generation, budgets and mandatory Parse validation remain in place.
-Stop checks respect active nonassociative restrictions (C31) and select the longest part across all infix/postfix
-candidates in declaration order before applying entry-level and nonassociative eligibility (C32). Static queries
-are cached per weakest live entry minimum; pending checks retain immutable frames without accumulating scope
-states in the cache or assuming a machine-word level limit. Nested prefix and infix RHSs preserve each parent's
-nonassociative state and restore it on return (C33). Operator counts remain per chain, rule-depth bounds remain
-per call and scope walks consume budget. Stop checks follow the complete infix RHS for matcher-supported
-syntax, including nested prefixes, operand fallback, binding/association and uncommitted RHS failure (C34).
-One bounded allowance covers skip, competing parts, scope walks and recursive RHSs. Unresolved input remains
-pending and cuts/predicates/recursive references/recovery are inconclusive. A proven uncommitted tail can give
-early success evidence without an exact endpoint; otherwise a successful primary alone cannot prove the RHS.
-Mandatory final Parse and parser acceptance remain unchanged.
-
-### Compiled grammars
-
-A compiled grammar file (`compiled.go`, `modulefile.go`) stores the bytecode module and, optionally, the AST and the static-analysis results (version 2; the format is defined in [bytecode.md](../spec/bytecode.md#file-format)). Loading skips parsing, static analysis, type checking and compilation to bytecode. A file without the AST can be executed only by the bytecode backends. Version 1 files (AST only) can still be loaded ([design](design/009-compiled-grammar-format.md)).
-
-### Bytecode
-
-The bytecode compiler (`bytecode.go`, `bcompile.go`, `disasm.go`) compiles a program into a language-independent module of tables and instruction sequences. The instruction set is defined in [bytecode.md](../spec/bytecode.md).
-
-- The **recursive VM** (`vm.go`) uses the runtime shared with the closure backend (`runtime.go`, `pratt.go`) for rule calls, memoization, left recursion and Pratt operator selection, and executes rule bodies, actions and predicates as bytecode.
-- The **iterative VM** (`ivm.go`) calls the same runtime functions from a state machine kept on its own stack instead of the host call stack.
-
-The backend is selected with `ParseOptions.Backend` (`pego.WithBackend` in the public API, `-backend` in the CLI). The tests check that every backend returns the same result as the closure backend for every grammar and input ([design](design/010-bytecode-vm.md)).
-
-### Type checking
-
-The type checker (`check.go`, `type_inference.go`, `types.go`) processes inferred-rule dependency components in
-callee-first order, then checks actions, predicates and struct fields. Acyclic rules are inferred once; recursive
-components iterate using canonical type keys that ignore union-member order. Pratt operator actions introduce
-implicit self-dependencies. Per-rule recursive growth budgets and repeating-state detection permanently widen only
-affected rules to `any`, retaining stable peers and unrelated finite types ([specification](../spec/type-checking.md#type-inference)).
-
-Duplicate capture labels reuse structurally equal basic/named/list/record types without rendering
-nested records on each occurrence. Top-level optional and union values retain general normalization;
-ordered union display and capture availability are unchanged. This is a compiler/type-checker
-optimization with no generated matching-runtime change ([measurements](performance.md#72-reuse-structurally-equal-duplicate-capture-types)).
-
-### Actions
-
-`eval.go` evaluates action and predicate expressions.
-
-### Pratt expressions
-
-`pratt.go` tries every candidate operator part, selects the longest match, and evaluates the expression with a Pratt loop that recurses with the level (`min`) as an argument.
+Generated Go and TypeScript parsers embed their runtime and depend only on their standard libraries. Generated Go
+has direct paths for supported rules and general per-expression fallback; typed Go also emits inferred Go types
+and `ParseAST`. Generated paths preserve the engine's tree, error, depth, action and memo semantics.
 
 ## Testing
 
@@ -290,198 +156,4 @@ distinguishes equivalent small-tree work from wide-tree display reduction; real 
 
 ## Roadmap
 
-The [living backlog](https://github.com/ornew/pego/issues/1) is the source of individual defects, priorities and
-landing commits. Its body lists open work and links to dedicated priority, progress and category completion
-comments. Completed items move to their category comment with the landing commit. The 2026-10-09 audit found
-correctness/resource gaps despite the implemented feature coverage above.
-
-The current execution order prioritizes core correctness and performance (C/P), followed by code generation,
-CLI/reporting, web/playground and feature proposals (G/T/W/F). Editor and validation work (E/V) can accompany
-those changes when required by their contracts. Ready-made parser work is deferred, including parser-specific
-XML/YAML performance, parser capability proposals and XML conformance follow-ups. Core engine and generator
-changes still run the affected parser regression suites. The linked priority comment keeps per-item severity
-and dependency order distinct from these execution tiers.
-
-Raw-invalid-byte public-AST literals use the same decoded rune sequence in both position units (C28).
-Closure/VM comparison and generated Go/TypeScript normalize derived matching data while retaining caller
-ASTs, binary string tables, action constants and matched source text. Full/bare/old binary module, generated
-short/direct and long literal, suffix/choice and recognition checks cover this contract. Document repetition
-records now survive redundant no-edit parses, including root memo hits, without advancing their edit generation
-(P06). Nested runs, ordinary failure/recovery, multiple edits, edit-log rollover and interrupted memo hits have
-fresh-parse equivalence checks. Sample constructor analysis now uses dependency propagation instead of whole-grammar
-sweeps (P03); reordered chains and recursive graphs agree with the previous fixed point. Compiler variable-dependency analysis now uses
-callee-first component propagation and a no-read fast path (P27), with exact dependency/memo regressions
-and full-compilation measurements in tuning entry 73. The full benchmark checkpoint after
-this analysis optimization group was measured on 2026-10-10 at `98ef6db`; the next step is fresh-profiled
-core performance work. Duplicate capture-label checking now reuses structurally equal record/list/node types
-(P13), preserving ordered unions, optional normalization and capture availability; tuning entry 72 records
-checker-only measurements and ordinary grammar controls. Named-level Pratt calls restrict the outer infix/postfix
-tail while retaining unrestricted prefixes at operand positions (C22); a prefix's right operand uses its own
-binding level. Exact tree, Unicode span, memoization and generated-parser conformance checks cover that existing
-contract. Sampling and coverage now honor those prefix/RHS paths (C30), including nested calls and scoped nonassociative
-operators. Caller stop checks respect closed nonassociative parts (C31) and longest-before-eligibility selection (C32);
-nested RHSs now restore frame-local nonassociative state (C33). Bounded complete-RHS evidence fixes incomplete
-prefix caller continuations (C34), retaining conservative unknown results for unsupported semantics and shared
-work limits. Generated typed values and conversion now use small initial chunks with bounded geometric growth:
-8 to 256 values per type and 64 to 1,024 list elements, retaining exact allocation for lists over 256 elements.
-Small JSON and CEL controls reduce allocation bytes; large-input controls expose extra warm-up allocations
-([performance change 74](performance.md#74-smaller-first-chunks-for-generated-typed-values)).
-The full benchmark checkpoint measures clean `2c68ccf` on Go 1.27.1/Apple M3 Max: 131 cases, three samples
-per case, 459.013 seconds. The paired tiny JSON/CEL measurements and larger-input costs remain separate from
-that snapshot. Returned slab sibling retention (P28) remains a separate live-heap problem. Expectation recording
-(P20) now uses a fixed-size absence filter in Go, preserving ordered diagnostics and nested scope ownership.
-Python and recovery controls improve; tiny controls vary across schedules and TypeScript keeps its original
-implementation ([performance change 75](performance.md#75-exclude-absent-expectations-before-scanning)). The generated
-report and analysis are refreshed together. Generated Go recognition and ordinary Parse's value-free skip twins
-now inline eligible plain rule bodies, preserving depth, diagnostics and general fallback dispatch. The Node runtime also inlines supported value-building and memoized Node expression bodies, with unsupported rules falling back to general dispatch
-([performance change 76](performance.md#76-inline-value-free-plain-generated-go-rules); [change 77](performance.md#77-inline-value-building-and-memoized-node-expressions-in-generated-go-parsers)). The integrated full-suite checkpoint remains pending for P15.
-C23 now prevents operand fallback when no prefix part matches and a candidate failed after cut, across
-all engines and standalone Go/typed Go/TypeScript. Successful longest candidates retain their own cut scopes; analysis and runtime optimizations require
-fresh measurements. The DuckDB LIMIT-percent candidate is saved on [fix/duckdb-limit-percent](https://github.com/ornew/pego/tree/fix/duckdb-limit-percent)
-at [f44269f](https://github.com/ornew/pego/commit/f44269f09ddffa6739450d868581f61baa208246). Its focused engine/native
-acceptance and AST checks pass; full impact suites, canonical oracle checks and paired performance measurements
-remain before landing. It is absent from main, where the seven scanner/LIMIT deviations remain.
-
-Action-variable memo keys (C01), interrupted Document cache cleanup (C05), engine memo retirement (C02/P01) and
-nil-action construction tracking cleanup (C03, including generated runtimes) and bounded persistent variable
-bindings (C04/P02, including generated runtimes), safe YAML directive validation (M01) and iterative Pratt depth
-accounting (C06), finite stream/zero repetition bounds (C07) and adjacent-minus formatting integrity (C09) are
-implemented, along with staged in-place formatting writes (T01) and canonical terminal/struct aliases across
-engines, saved grammars and generated parsers (C10). Full-width repetition bounds (C08) preserve the grammar's
-implementation-int range through compact wide instructions ([design](design/020-wide-repetition-bounds.md)).
-Hidden/indirect left-recursion reuse (C20) tracks completed calls that depend on unfinished seeds and invalidates
-them after edits; finalized heads without outer-seed or completed intermediate dependencies retain range-based reuse.
-Left-recursion reachability (C21/C26) excludes proven-unreachable choice suffixes and zero-count repetition bodies,
-includes possible recovery skip calls, and refines the graph to stability. The linter also accounts for recovery skip
-cuts (C25). Dependency-ordered inference (C11) preserves long finite chains and unrelated rule types while bounding evolving
-recursive types. JSON/public AST validation (C12) rejects malformed children, pointer cycles, negative indexes,
-invalid repetition bounds and trailing JSON. Its public structural API is implemented ([design](design/021-grammar-ast-validation.md));
-opt-in strict JSON intake remains proposed (F02).
-Bytecode lowering also canonicalizes every negative public-AST repetition maximum to -1 (C27), preserving
-unbounded semantics in ordinary/wide REPEAT and SCAN instructions and saved modules without mutating the AST.
-Byte-position streams emit complete elements without waiting for unrelated future bytes (C13), while split UTF-8
-prefixes still require continuation bytes or actual EOF. Replacement-character literals match invalid UTF-8 input in
-both position units across engines and generated Go/TS (C14), preserving encoded-byte success paths and matched
-input text; byte-mode text predicates can still distinguish invalid bytes from encoded U+FFFD. Follow with
-raw-invalid-byte AST literal normalization/validation. Byte Document edits follow decoded UTF-8 boundaries,
-accepting separate invalid bytes, and invalidate EOF-truncated decoding when appended bytes complete a character
-(C15); deterministic malformed-input edits agree with fresh parses across backends and units.
-Unicode escapes and public AST/JSON character-range endpoints must be scalar values (C16), with ordered range
-bounds; valid endpoints may span the surrogate interval. YAML's redundant surrogate exclusions are removed.
-`BenchmarkCharacterRangeValidation` measures AST validation/compilation after source parsing, while
-`BenchmarkUnicodeEscapeSyntax` measures source intake. YAML's `BenchmarkUnicodeClasses` uses 500 sequence entries
-with ASCII/Unicode mapping values to measure generated Parse, ParseAST and Recognize in both position units.
-Integer and positional-reference source tokens share ASCII decimal digits and implementation-int bounds
-(C17); overflow or unsupported digits produce ranged diagnostics. Editor tokens retain original digits,
-including invalid indices and leading zeros; Unicode identifiers and `$0` semantics remain supported.
-`BenchmarkDecimalSource` compares valid plain, integer-heavy and positional-reference-heavy source intake.
-Recognition of capture-bearing `#stream` repetitions emits value-free VM iteration mode (C29), preserving
-captures read by predicates without attaching them to an absent element value. `#stream` remains inactive
-in recognition; ordinary batch values and streaming callbacks are retained.
-`BenchmarkStreamCaptureRecognition` uses 1,000 Unicode elements; its optional plain-grammar baseline checks
-equivalent successful recognition when a prior `#stream` implementation cannot run the capture-bearing case.
-Repetition stops after its first successful zero-consumption iteration and then checks the minimum (C18).
-Batch, recognition, streaming, projected values, recorded resumption and generated Go/TS loops share this rule;
-an empty iteration counts once, so larger minima require earlier consuming iterations. Nullability/left-call
-analysis and linter success proofs account for the same stopping rule. `BenchmarkNullableRepetitionControl`
-measures ordinary, nullable-tail and projected parsing/recognition of 1,000 elements across all backends.
-Sample generation's repetition search, prefix matcher and always-match proofs use the same stopping rule;
-`BenchmarkSampleRepetitionControl` checks equivalent ordinary and nullable minimum-one generation workloads.
-Recovery cannot wrap a streaming repetition (C19); source/public AST validation rejects either attribute order,
-and saved bytecode validates recovery boundaries before allowing a stream-mode `NEXT`, including AST-omitted files.
-Element-local recovery remains supported. `BenchmarkStreamRecoveryPreparation` measures compilation and bare-module
-loading with one or 100 recovery rules; existing stream workloads cover unchanged runtime paths.
-Typed generated Go parsers release discarded capture undo entries at rollback, generated/runtime call return and
-captured repetition boundaries (G01), and clear full trail/saved-capture storage when recycled. Parent undo records
-and returned values are preserved. `TestGeneratedTypedPoolRetention` checks both units after a 2 MiB overwritten
-capture, failed reuse, nested rollback and repeat captures. `PEGO_TYPED_POOL_DIR` preserves its generated fixture;
-`BenchmarkTypedCapturePool` and the verbose `TestTypedPoolHeap` measure throughput and explicitly retained scratch.
-The preserved pool fixture requires the repository's Go 1.27.1 baseline. Check each benchmark binary's
-`go version -m` metadata when recording the actual toolchain: the original dedicated capture/heap measurements
-at `0038cee` used Go 1.27.0, while its representative generated AST benchmarks used Go 1.27.1. Each comparison
-used the same toolchain on both sides; this corrects the broader version statement in that commit message.
-Returned typed values can independently retain discarded siblings in their allocation chunks; P28 tracks this
-optimization candidate separately, with result ownership and allocation/throughput measurement gates.
-Typed Go generation exports every declared alias (G02), including chained/list/scalar/optional/CST aliases and
-additional names for the same normalized node union. Canonical runtime types remain unchanged; external-consumer
-compilation tests cover both direct typed construction and conversion, assignment compatibility and name collisions.
-Go expectation recording uses a fixed 64-bit absence filter while preserving ordered IDs and exact scans on
-collisions (performance entry 75). Farthest resets and nested scopes keep the filter local to their records,
-including VM label/recovery state and generated plain/typed parser reuse. The engine and generated Go use it;
-TypeScript retains its existing implementation after a separate trial found no clear gain. Diagnostic regressions
-compare a linear oracle and public memo/lookahead/label/recovery cases. Paired throughput controls and costs are
-recorded in [the tuning log](performance.md#75-exclude-absent-expectations-before-scanning).
-Generated depth configuration (G04) is proposed in [design record 022](design/022-generated-parser-depth-limits.md).
-Baseline Go grammar probes accept 16,000 nested parentheses but return the 100,000-rule-call error at 17,000/30,000;
-a temporary 600,000-call overlay accepts all three in Recognize and ParseAST. The proposal preserves defaults and
-adds generation-time configuration and per-invocation overrides, using the generated value as the invocation default.
-This scope is selected; distributed Go reference-maximum parity is separate. Generated Go uses the existing
-entry points with `opts ...ParseOption`, `WithMaxDepth` and `WithUnit`; raw Unit arguments, function-value types
-and colliding generated type names require migration. TypeScript retains its unit arguments and adds
-options-aware entry points. No configurable limit or default change is implemented yet.
-YAML composition preserves the latest preceding anchor occurrence (M02), including nested definitions with the same
-name. Completing an outer collection cannot reclaim that name; aliases keep map/slice sharing, and pending
-self-references remain errors. Composition tests include shared manually constructed anchor objects and event order.
-XML byte decoding checks encoding declarations beyond the former 256-byte prefix (M03), bounded by the declaration
-terminator. Long declarations retain supported transcoding, unsupported-encoding rejection, ASCII validation and
-BOM/UTF-16 agreement checks; generated grammar and parser output are unchanged.
-YAML semantic APIs validate verbatim and expanded shorthand tags as named local tags or generic global URIs (M04).
-Scheme-less TAG prefixes remain syntactically valid, but a use must expand to a valid tag. Encoded URI validation
-preserves verbatim text and decoded shorthand values; malformed public Tag objects report errors instead of panics.
-Measured repeated tag-resolution work is tracked separately for bounded per-operation reuse (P29), with equivalent
-tagged loading/events, tag-free controls, mutation/error-position correctness and allocation/retention gates.
-TypeScript cooked literal helpers normalize actual template CR/CRLF to LF and preserve escaped surrogate pairs
-across zero-width LF/CR/CRLF/LS/PS continuations (M05). Parsed values in both units and an opt-in exact 5.9.3
-cooked-value oracle cover true intervening characters and unpaired surrogates; grammar/generated output is unchanged.
-CUE ParseFile encoding errors identify the first invalid UTF-8 byte in the selected span unit (M06), including
-multibyte prefixes and later lines. Semantic-error line/column locations retain their codepoint contract in both
-units; valid replacement characters remain accepted. Grammar/generated output is unchanged.
-DuckDB keyword classification matches every ASCII case while retaining category-specific identifier permissions
-and full word boundaries (M11, keyword stage). SETOF operands now follow the simple-type/qualified-ARRAY
-boundary, preserving ordinary constructed types and recursive member types (M11, type stage). Window frames
-preserve BETWEEN-as-column expressions as single bounds and reject bare NOT at the first two-bound offset,
-matching the reference AST and grammar conflict resolution (M11, frame stage). Vendored reference tests retain
-seven scanner/grammar deviations; transformer-only semantic checks and generated parser size remain
-open work. Expanded frame controls also expose existing canonical-oracle normalization gaps for unary
-OPERATOR(+) (M17); source AST operators retain their written syntax. The module README describes those limits
-separately from the corrected grammar behavior.
-Earlier backlog items now share current category IDs and priorities;
-their former L001–L058 labels are provenance only. Full benchmark
-results were refreshed after the core analysis optimization group on 2026-10-10 (`98ef6db`); tuning entries carry focused
-optimization measurements, and correctness-only performance impacts are recorded in commit messages. The full suite
-includes batch, recognition, incremental, stream and preparation workloads. The focused sample-constructor,
-duplicate-capture checker, variable-dependency graph and redundant no-edit Document schedules remain separate
-measurements; this checkpoint does not imply a uniform parsing-runtime speedup.
-
-The [incremental document and tree tooling proposal](design/019-incremental-document-and-tree-tooling.md) examines
-input updates, saved trees and downstream editor work. These stages are proposed, not implemented APIs or measured speedups. Preserve current PEG and mutable
-Document/Node contracts while designing additions; large changes need a dedicated design record.
-
-| Order after correctness gates | Planned capability | Backlog |
-|:--|:--|:--|
-| 1 | Cancellation and explicit work budgets | F01 |
-| 2 | Replayable edit fuzzing and grammar fixtures | F16, F06 |
-| 3 | Iterative Walker/Cursor and structured output schemas | F10, F17 |
-| 4 | Chunked Document input, measured against contiguous input | P10 |
-| 5 | Immutable/versioned snapshots and shared trees/sequences | F04 |
-| 6 | Conservative output change notifications, then structural queries/highlighting | F18, F19 |
-| 7 | Explicit missing-token recovery for editing | F20 |
-| 8 | Measured multi-character literal dispatch and compact-leaf experiments | P11, P12 |
-
-Other backlog features remain tracked; this order captures editor dependencies rather than removing them. Existing
-memo dependency tracking, lazy edit shifts and repetition resumption remain the foundation. Generated streams and
-Document, typed TypeScript, other-language generators and source maps for fragments require separate portable contracts.
-
-- [x] **AST construction:** implement every feature related to `->` actions (variable references, `fold`, `new`).
-- [x] **Detailed error reporting:** report the location (line and column) and the expected tokens when a parse fails.
-- [x] **Predicates:** implement variables to support context-sensitive grammars.
-- [ ] **Self-hosting:** write the parser for `.pego` files in PEGO itself (it is currently a hand-written Go parser).
-- [x] **Error recovery:** consume a grammar-specified skip on failure, returning error nodes and continuing parsing.
-- [x] **Documentation:** provide detailed documentation and tutorials for each feature ([tutorial](tutorial/getting-started.md), [guides](guide/README.md)).
-- [x] **Go code generator:** generate Go parser code that can be compiled and run directly.
-- [x] **Bytecode VM:** a language-independent bytecode and VMs for two execution models, recursive and iterative ([design](design/010-bytecode-vm.md)).
-- [x] **Editor support:** a language server (`pego lsp`) and a VS Code extension ([design](design/017-language-server.md)).
-- [x] **TypeScript code generator:** standalone TypeScript parsers that return the engine's results ([design](design/013-typescript-generation.md)).
-- [ ] **Code generators for other languages:** generate parsers in Python and other languages.
-- [x] **Streaming:** consume input as a stream and emit nodes as a stream.
-- [x] **Incremental parsing:** reuse memoized rules and long repetition results after edits in a mutable Document.
+[Issue #1](https://github.com/ornew/pego/issues/1)

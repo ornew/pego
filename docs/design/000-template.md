@@ -73,9 +73,9 @@ resource retention when applicable. Distinguish completed checks from the propos
 For resource/performance effects, define reproducible workloads, baseline/candidate revisions, tools, sampling and
 raw-result locations. Measure the affected operation separately from adjacent work and check representative normal
 paths for regressions. Report time, allocations and live memory as appropriate; state uncertainty and unmeasured
-paths. Record optimization methods and their effects in `docs/performance.md` with the code commit, and refresh the
+paths. Record optimization methods and their effects in `docs/optimizations/` with the code commit, and refresh the
 generated benchmark report at optimization milestones. For correctness-only changes, record measured performance
-impacts in the commit message; do not add them to the tuning log or optimization table. Keep routine raw output local.
+impacts in the commit message; do not add them to the optimization catalog. Keep routine raw output local.
 Omit this section if the design has no meaningful performance question.
 
 ## Limitations and open questions

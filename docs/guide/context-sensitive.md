@@ -294,14 +294,13 @@ A packrat parser caches the result of a rule at each input position, so that bac
 that reads variables does not depend on the position alone: the same rule at the same position can succeed with one
 `indent` and fail with another. PEGO therefore keys the cache by the position **and the values of the variables the rule
 can read** in predicates and actions, including Pratt actions, directly or through the rules it calls (see the
-[spec](../../spec/predicates.md#interaction-with-memoization) and [item 12 of
-docs/performance.md](../performance.md#12-memoizing-rules-that-read-variables)). A cached result is reused only when
+[spec](../../spec/predicates.md#interaction-with-memoization) and [optimization 012](../optimizations/012-memoizing-rules-that-read-variables.md)). A cached result is reused only when
 those values are equal, so memoization never changes what a parse returns, only what it costs.
 
 What this means when you write a grammar:
 
 - **Write it naturally.** Context-sensitive grammars used to be exponential in the worst case, because a rule that reads
-  a variable was not memoized at all (docs/performance.md, item 12, describes an early Python grammar being written in a
+  a variable was not memoized at all (optimization 012 describes an early Python grammar being written in a
   parse-once-then-fold style to avoid that). Now an ordered choice that re-parses a prefix is cached like any other:
 
 ```pego
@@ -331,7 +330,7 @@ Each current environment stores one value per distinct variable name. Repeated a
 paths; backtracking and rule returns still restore the earlier values. Assigning the same scalar value reuses the
 environment. Changing a value behind other names copies that prefix to preserve saved environments, so frequent
 changes to many distinct names can allocate more than a grammar with one variable. See
-[performance log entry 69](../performance.md#69-bound-persistent-variable-binding-histories) for measurements.
+[optimization 069](../optimizations/069-bound-persistent-variable-binding-histories.md) for measurements.
 
 ## 3. Recipes
 

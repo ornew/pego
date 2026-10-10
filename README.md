@@ -51,7 +51,7 @@ tree, err := p.Parse("1 + 2 * 3 ^ 2") // a *pego.Node, or a *pego.SyntaxError wi
 
 > [!NOTE]
 > PEGO is under active development; the language and the Go API may still change.
-> See the [implementation status and roadmap](docs/development.md) and the
+> See the [implementation status](docs/development.md) and the
 > [living backlog](https://github.com/ornew/pego/issues/1). The
 > [incremental document and tree tooling proposal](docs/design/019-incremental-document-and-tree-tooling.md)
 > describes input storage, snapshots and query capabilities, with validation gates before implementation.
@@ -180,9 +180,9 @@ left-recursive), an indentation-based outline format and a small programming lan
 | [Editor support](docs/guide/editor-support.md) | `pego lsp` and the VS Code extension: errors as you type, formatting, navigation, hover with inferred types, rename, completion |
 | [Web site and playground](docs/guide/playground.md) | Try grammars in the browser at [pego.ornew.net/playground](https://pego.ornew.net/playground/); build and preview the site locally |
 | [Language specification](spec/README.md) | The PEGO grammar language |
-| [Development guide](docs/development.md) | Architecture, repository layout, implementation status, roadmap |
+| [Development guide](docs/development.md) | Repository layout, architecture, language support and tests |
 | [Bytecode specification](spec/bytecode.md) | Instruction set and VM semantics, for porting the runtime |
-| [Benchmarks](docs/benchmarks.md) · [Performance analysis](docs/performance.md) · [Optimization catalog](docs/optimizations/README.md) | How fast, and how it got there |
+| [Benchmarks](docs/benchmarks.md) · [Performance](docs/performance.md) · [Optimization catalog](docs/optimizations/README.md) | How fast, and how it got there |
 | [Design records](docs/design/) | Decisions and their rationale |
 
 ## Contributing

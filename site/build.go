@@ -18,6 +18,7 @@ import (
 	"regexp"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -115,10 +116,9 @@ var docSections = []docSection{
 	{name: "Cookbook", globs: []string{"docs/cookbook/*.md"}, index: "docs/cookbook/README.md"},
 	{name: "Specification", globs: []string{"spec/*.md"}, index: "spec/README.md"},
 	{name: "Parsers", globs: []string{"parsers/README.md", "parsers/*/README.md"}, index: "parsers/README.md"},
-	{name: "Design records", globs: []string{"docs/design/*.md"}, collapsible: true},
-	{name: "Optimizations", globs: []string{"docs/optimizations/*.md"}, index: "docs/optimizations/README.md", collapsible: true},
-	{name: "Project", globs: []string{"examples/README.md", "docs/*.md"}, first: []string{
+	{name: "Project", globs: []string{"examples/README.md", "docs/*.md", "docs/design/*.md", "docs/optimizations/*.md"}, first: []string{
 		"examples/README.md", "docs/development.md", "docs/benchmarks.md", "docs/performance.md",
+		"docs/optimizations/README.md",
 	}},
 }
 
@@ -233,8 +233,8 @@ func (s *Site) collect() error {
 			return err
 		}
 		sec := &Section{Name: ds.name, Collapsible: ds.collapsible}
-		if ds.name == "Design records" {
-			idx := &Page{URL: "docs/design/", Kind: "doc", Title: "Design Records", Nav: "Index", Section: sec.Name}
+		if ds.name == "Project" {
+			idx := &Page{URL: "docs/design/", Kind: "doc", Title: "Design Records", Nav: "Design Records", Section: sec.Name}
 			s.add(idx)
 			s.byDir["docs/design"] = idx
 			sec.Pages = append(sec.Pages, idx)
@@ -245,8 +245,13 @@ func (s *Site) collect() error {
 			}
 			p := &Page{Src: f, URL: urlOf(f), Kind: "doc", Section: sec.Name, Index: f == ds.index,
 				SourceURL: s.cfg.GitHub + "/blob/" + s.cfg.Ref + "/" + f}
+			if f == "docs/optimizations/README.md" {
+				p.Nav = "Optimizations"
+			}
 			s.add(p)
-			sec.Pages = append(sec.Pages, p)
+			if ds.name != "Project" || !isProjectDetail(f) {
+				sec.Pages = append(sec.Pages, p)
+			}
 		}
 		s.sections = append(s.sections, sec)
 		if ds.name == "Specification" {
@@ -254,6 +259,13 @@ func (s *Site) collect() error {
 		}
 	}
 	return s.checkCoverage()
+}
+
+// isProjectDetail reports whether f is an individual design or optimization page. These pages
+// remain rendered and searchable, but their indexes are the only entries in Project navigation.
+func isProjectDetail(f string) bool {
+	return (strings.HasPrefix(f, "docs/design/") && f != "docs/design/README.md") ||
+		(strings.HasPrefix(f, "docs/optimizations/") && f != "docs/optimizations/README.md")
 }
 
 func (s *Site) sectionFiles(ds docSection) ([]string, error) {
@@ -386,6 +398,7 @@ func relURL(from, to string) string {
 }
 
 var titleNumberRe = regexp.MustCompile(`^(\d{3})[.:]\s+`)
+var optimizationTitleNumberRe = regexp.MustCompile(`^(\d+)[.:]\s+`)
 
 // navTitle shortens a page title for the navigation. The index of a section is called "Introduction";
 // other pages keep their own titles, even when their file is a README.md.
@@ -418,11 +431,14 @@ func (s *Site) renderAll() error {
 		if p.Title == "" {
 			p.Title = strings.TrimSuffix(path.Base(p.Src), ".md")
 		}
-		p.Nav = navTitle(p)
+		if p.Nav == "" {
+			p.Nav = navTitle(p)
+		}
 		p.TOC = m.toc()
 		p.Body = template.HTML(body)
 		p.Text = plainText(body)
 	}
+	s.addLegacyOptimizationAnchors()
 	if err := s.renderDesignIndex(); err != nil {
 		return err
 	}
@@ -433,6 +449,35 @@ func (s *Site) renderAll() error {
 		return err
 	}
 	return s.renderPlayground()
+}
+
+// addLegacyOptimizationAnchors keeps existing performance-page URLs working. The old fragment is
+// derived from each numbered optimization page's heading, so the detail page remains the source
+// of its title and the performance page does not duplicate the catalog.
+func (s *Site) addLegacyOptimizationAnchors() {
+	perf := s.bySrc["docs/performance.md"]
+	if perf == nil {
+		return
+	}
+	var b strings.Builder
+	for _, p := range s.pages {
+		if !strings.HasPrefix(p.Src, "docs/optimizations/") || p.Src == "docs/optimizations/README.md" {
+			continue
+		}
+		m := optimizationTitleNumberRe.FindStringSubmatch(p.Title)
+		if m == nil {
+			continue
+		}
+		n, err := strconv.Atoi(m[1])
+		if err != nil {
+			continue
+		}
+		title := strings.TrimPrefix(p.Title, m[0])
+		legacyID := fmt.Sprintf("%d-%s", n, slug(title))
+		target := relURL(perf.URL, p.URL) + "#" + slug(p.Title)
+		fmt.Fprintf(&b, `<a id="%s" data-moved-to="%s"></a>`+"\n", legacyID, template.HTMLEscapeString(target))
+	}
+	perf.Body = template.HTML(b.String() + string(perf.Body))
 }
 
 func (s *Site) renderPlayground() error {
@@ -460,29 +505,24 @@ func (s *Site) renderDesignIndex() error {
 <p>Each record explains a decision in the design of PEGO and the alternatives that were considered.</p>
 <table><thead><tr><th>Record</th><th>Status</th><th>Date</th></tr></thead><tbody>
 `)
-	for _, sec := range s.sections {
-		if sec.Name != "Design records" {
+	for _, p := range s.pages {
+		if !strings.HasPrefix(p.Src, "docs/design/") || p == idx {
 			continue
 		}
-		for _, p := range sec.Pages {
-			if p == idx {
-				continue
-			}
-			src, err := os.ReadFile(filepath.Join(s.cfg.Repo, filepath.FromSlash(p.Src)))
-			if err != nil {
-				return err
-			}
-			status, date := "", ""
-			if m := statusRe.FindSubmatch(src); m != nil {
-				status = string(m[1])
-			}
-			if m := dateRe.FindSubmatch(src); m != nil {
-				date = string(m[1])
-			}
-			fmt.Fprintf(&b, "<tr><td><a href=\"%s\">%s</a></td><td>%s</td><td>%s</td></tr>\n",
-				template.HTMLEscapeString(relURL(idx.URL, p.URL)), template.HTMLEscapeString(p.Title),
-				template.HTMLEscapeString(status), template.HTMLEscapeString(date))
+		src, err := os.ReadFile(filepath.Join(s.cfg.Repo, filepath.FromSlash(p.Src)))
+		if err != nil {
+			return err
 		}
+		status, date := "", ""
+		if m := statusRe.FindSubmatch(src); m != nil {
+			status = string(m[1])
+		}
+		if m := dateRe.FindSubmatch(src); m != nil {
+			date = string(m[1])
+		}
+		fmt.Fprintf(&b, "<tr><td><a href=\"%s\">%s</a></td><td>%s</td><td>%s</td></tr>\n",
+			template.HTMLEscapeString(relURL(idx.URL, p.URL)), template.HTMLEscapeString(p.Title),
+			template.HTMLEscapeString(status), template.HTMLEscapeString(date))
 	}
 	b.WriteString("</tbody></table>\n")
 	idx.Body = template.HTML(b.String())
@@ -567,14 +607,15 @@ type searchEntry struct {
 
 func (s *Site) writeSearchIndex() error {
 	var entries []searchEntry
-	for _, sec := range s.sections {
-		for _, p := range sec.Pages {
-			e := searchEntry{Title: p.Title, URL: p.URL, Section: sec.Name, Text: p.Text, Headings: [][2]string{}}
-			for _, h := range p.TOC {
-				e.Headings = append(e.Headings, [2]string{h.ID, h.Text})
-			}
-			entries = append(entries, e)
+	for _, p := range s.pages {
+		if p.Kind == "landing" || p.Kind == "playground" {
+			continue
 		}
+		e := searchEntry{Title: p.Title, URL: p.URL, Section: p.Section, Text: p.Text, Headings: [][2]string{}}
+		for _, h := range p.TOC {
+			e.Headings = append(e.Headings, [2]string{h.ID, h.Text})
+		}
+		entries = append(entries, e)
 	}
 	b, err := json.Marshal(entries)
 	if err != nil {

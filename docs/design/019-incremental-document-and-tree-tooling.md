@@ -25,7 +25,7 @@ PEGO's [input representation](../../internal/engine/input.go), [Document reuse](
 [incremental tests](../../internal/engine/document_test.go) and
 [interruption tests](../../internal/engine/document_abort_test.go) establish the current behavior.
 Equivalent PEGO and Tree-sitter workloads have not been benchmarked for this proposal. Expected performance benefits
-remain hypotheses; existing engine memo retirement has focused measurements in performance log entry 67.
+remain hypotheses; existing engine memo retirement has focused measurements in [optimization 067](../optimizations/067-retire-memo-entries-when-their-lookup-slots-are-removed.md).
 
 Relevant upstream interfaces include [chunked input](https://tree-sitter.github.io/tree-sitter/using-parsers/2-basic-parsing.html),
 [static node types](https://tree-sitter.github.io/tree-sitter/using-parsers/6-static-node-types.html),
@@ -92,8 +92,9 @@ alternatives and measurement gates below.
 ### Dependencies and acceptance gates
 
 Correctness/resource safety and fresh-vs-incremental equivalence gate these capabilities. Keep regression fixes
-separate from new public APIs. The [development roadmap](../development.md#roadmap) maintains current implementation
-priorities; the table below records dependencies and validation rather than release order or dates.
+separate from new public APIs. The [development guide](../development.md#language-feature-status) summarizes
+implemented language features; the backlog and execution order live in
+[Issue #1](https://github.com/ornew/pego/issues/1).
 
 | Stage | Backlog | Work and prerequisite | Acceptance evidence |
 |:--|:--|:--|:--|
@@ -157,7 +158,7 @@ old versions. Benchmark default batch parsing to catch abstraction overhead.
 
 A Tree-sitter comparison must pin both revisions and toolchains, match accepted language subsets, output/trivia,
 recovery behavior and units, and distinguish C/Go/runtime overhead. Recognition-only and direct typed AST output are
-not equivalent to building a CST. Record raw results and measured effects in the tuning log with the change, and
+not equivalent to building a CST. Record raw results and measured effects in the optimization catalog with the change, and
 refresh generated benchmark results at optimization milestones. No numeric comparative speedup is asserted here.
 
 ## Alternatives considered

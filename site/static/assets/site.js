@@ -8,6 +8,14 @@ import { search, snippet } from "./search.js";
 
 const root = siteRoot();
 
+// Old numbered optimization fragments now point to the corresponding catalog entry.
+if (location.hash) {
+  let id = location.hash.slice(1);
+  try { id = decodeURIComponent(id); } catch { /* Keep the literal fragment. */ }
+  const target = document.getElementById(id)?.dataset.movedTo;
+  if (target) location.replace(target);
+}
+
 function storage(key, value) {
   try {
     if (value === undefined) return localStorage.getItem(key);

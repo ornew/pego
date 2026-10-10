@@ -393,7 +393,7 @@ saved for backtracking or a caller remain immutable, but the current environment
 does not retain all previous assignments from consumed records. Lookup cost
 depends on distinct variable names. Large variable values, active rollback
 points and memo keys can still keep their own data alive; see
-[performance log entry 69](../performance.md#69-bound-persistent-variable-binding-histories).
+[optimization 069](../optimizations/069-bound-persistent-variable-binding-histories.md).
 
 What a stream parse releases as it goes:
 

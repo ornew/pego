@@ -853,5 +853,5 @@ Adapting it to a real editor:
 - [Linting grammars](linting.md): the `hint` findings that point at grammars that reuse poorly.
 - [Errors and recovery](errors-and-recovery.md): `#error`, `#recover` and the shape of `SyntaxError`.
 - [Runtime](runtime.md): backends, position units and the other parse options.
-- [docs/performance.md](../performance.md): the performance log, including the Document hotspot.
+- [docs/performance.md](../performance.md): measurement methods and current benchmark analysis; see the [optimization catalog](../optimizations/README.md) for historical changes.
 - [Design record 007](../design/007-streaming-and-incremental-parsing.md).
