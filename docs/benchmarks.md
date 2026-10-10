@@ -73,15 +73,15 @@ Bytes allocated / number of allocations.
 ### Typed values (`ParseAST` of `pego gen -types`)
 
 `ParseAST` builds the grammar's Go types directly when every value it can return has a Go type of its own ("direct");
-otherwise (the values include CST nodes, as in CSV and minilang) it runs `Parse` and converts the tree ("converted";
-for CSV, whose start rule's value is itself a list node, the tree is returned as it is).
+otherwise (the values include CST nodes, as in minilang and recovery) it runs `Parse` and converts the tree ("converted").
+CSV builds typed `File`, `Record`, and `Field` values directly.
 See [code generation](guide/code-generation.md#typed-values--types). The factor is relative to the generated parser's
 `Parse` (code points).
 
 | Workload | `ParseAST` | `Parse` | `ParseAST` | Memory (`Parse` → `ParseAST`) |
 |:--|:--|--:|--:|--:|
 | JSON | direct | 6.83 ms | 3.05 ms (0.45×) | 10.4 MB / 743 → 2.40 MB / 231 |
-| CSV | converted | 2.54 ms | 1.67 ms (0.65×) | 5.48 MB / 308 → 1.76 MB / 172 |
+| CSV | direct | 2.54 ms | 1.67 ms (0.65×) | 5.48 MB / 308 → 1.76 MB / 172 |
 | XML | direct | 6.67 ms | 3.60 ms (0.54×) | 12.7 MB / 816 → 3.05 MB / 249 |
 | Arith_Pratt | direct | 6.73 ms | 5.76 ms (0.86×) | 8.90 MB / 545 → 3.12 MB / 258 |
 | Arith_LeftRec | direct | 14.6 ms | 9.74 ms (0.67×) | 17.1 MB / 1.7 k → 4.25 MB / 496 |
