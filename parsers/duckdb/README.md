@@ -119,13 +119,13 @@ the script; for the SELECT statements of `tests` and `exprs` it also compares th
 | | tests | exprs | lexical | keywords | mutants | found |
 |:--|--:|--:|--:|--:|--:|--:|
 | Both accept | 45,537 | 6,166 | 852 | 64,053 | 3,894 | 91 |
-| Both reject (a syntax error) | 195 | 1,489 | 338 | 18,333 | 15,984 | 86 |
+| Both reject (a syntax error) | 195 | 1,489 | 338 | 18,333 | 15,984 | 87 |
 | DuckDB rejects after parsing, the parser accepts | 180 | 0 | 29 | 1,233 | 122 | 11 |
-| Known deviations ([testdata/deviations.jsonl](testdata/deviations.jsonl)) | 0 | 0 | 0 | 0 | 0 | 12 |
+| Known deviations ([testdata/deviations.jsonl](testdata/deviations.jsonl)) | 0 | 0 | 0 | 0 | 0 | 11 |
 | The parser rejects what DuckDB accepts, other | 0 | 0 | 0 | 0 | 0 | 0 |
 | The parser accepts what DuckDB rejects with a syntax error, other | 0 | 0 | 0 | 0 | 0 | 0 |
 
-**The parser and DuckDB agree on every text** where DuckDB's parser itself finds a syntax error or none, but the twelve
+**The parser and DuckDB agree on every text** where DuckDB's parser itself finds a syntax error or none, but the eleven
 known deviations (below). The third row counts the texts that DuckDB's parser rejects in the step after the Bison
 grammar, when it transforms the syntax tree into its own: the grammar cannot know. They are 1,575 texts, of which about 1,150 name a window that does not exist, 133 are
 an empty select list in a context the grammar accepts (`cte2 AS (SELECT )`), and the others are checks such as
@@ -171,14 +171,14 @@ AST in all of the 114,000 SELECT statements that they make.
 
 ### Known deviations and limits
 
-- **Twelve texts** ([testdata/deviations.jsonl](testdata/deviations.jsonl), each with its reason) on which the parser and DuckDB
+- **Eleven texts** ([testdata/deviations.jsonl](testdata/deviations.jsonl), each with its reason) on which the parser and DuckDB
   differ in acceptance. Six come from the pass with which DuckDB replaces Unicode white space before it parses: it does
   not close a dollar-quoted string when a letter follows the closing tag (`select $a$b$a$x<U+3000>x`), so it leaves the
-  white space inside the name that follows, where the parser reads a space. Six are constructs that are not understood:
+  white space inside the name that follows, where the parser reads a space. Five are grammar differences:
   DuckDB accepts the words `IN` and `AND` and, after `GROUPS BETWEEN`,
-  a lone dot as the first bound of a frame (before `PRECEDING`), rejects `NOT` at the start of that bound and `SETOF`
-  before a qualified type, and accepts a percent sign after a postfix operator (`LIMIT -1| %`). The other differences that mutating the tests found, in 1.4 million
-  texts, were fixed and are in the corpus `found`.
+  a lone dot as the first bound of a frame (before `PRECEDING`), rejects `NOT` at the start of that bound, and accepts
+  a percent sign after a postfix operator (`LIMIT -1| %`). The other differences that mutating the tests found,
+  in 1.4 million texts, were fixed and are in the corpus `found`.
 - **The checks after parsing** (above) are not made: a text such as `SELECT sum(x) OVER w` where the window `w` is not defined
   is accepted. A function that checks the most common of them is not part of this module.
 - **`Split` and statements that DuckDB expands**: `PIVOT`, `COPY FROM DATABASE` and `ALTER TABLE ... ADD COLUMN ... DEFAULT` are one
@@ -191,13 +191,19 @@ AST in all of the 114,000 SELECT statements that they make.
 - **Nesting** is limited by the depth limit of the generated parser, 100,000 rule calls: 16,600 levels of parentheses,
   14,200 of lists, 12,500 of `CASE`, 11,100 of derived tables, 10,000 of function calls, 7,100 of subqueries and 99,980
   prefix operators in a chain (`NOT NOT ... a`, `- - ... a`). Deeper input fails with an error.
-- **Compile time and size**: the generated `parser.go` is 15.5 MB (779,000 lines). The generator writes separate rules for
+- **Compile time and size**: the generated `parser.go` is 15.5 MB (780,000 lines). The generator writes separate rules for
   tree parsing, recognition and typed AST construction, including the case-insensitive keyword tries. Its first
   compilation is expensive; subsequent builds reuse the Go build cache. Reducing generated code size remains open work.
 - **DuckDB's extensions** (the parsers that extensions add, such as PRQL) and the settings that change how DuckDB parses
   (`SET` of an option of the parser) are not covered.
 
 ## Grammar
+
+`SETOF` accepts simple type names, including modifiers and array suffixes. Qualified names after `SETOF`
+require explicit `ARRAY` or `ARRAY[n]`; bare qualified names and bracket suffixes are rejected. Constructed
+`STRUCT`, `ROW`, `UNION` and `MAP` types cannot directly follow `SETOF`, but their member types may use it.
+Ordinary qualified and constructed types retain their array forms. The AST omits `SETOF` and keeps the
+underlying type name, modifiers, dimensions and span.
 
 [duckdb.pego](duckdb.pego) follows the grammar of DuckDB (`third_party/libpg_query/grammar`, the Bison files) and its
 scanner (`scan.l`). The ways in which it departs from the structure of the Bison grammar, where a PEG needs it or where

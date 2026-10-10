@@ -347,9 +347,10 @@ CUE ParseFile encoding errors identify the first invalid UTF-8 byte in the selec
 multibyte prefixes and later lines. Semantic-error line/column locations retain their codepoint contract in both
 units; valid replacement characters remain accepted. Grammar/generated output is unchanged.
 DuckDB keyword classification matches every ASCII case while retaining category-specific identifier permissions
-and full word boundaries (M11, keyword stage). Vendored reference tests retain twelve scanner/grammar deviations;
-transformer-only semantic checks and generated parser size remain open work. The module README describes those
-limits separately from the corrected keyword behavior.
+and full word boundaries (M11, keyword stage). SETOF operands now follow the simple-type/qualified-ARRAY
+boundary, preserving ordinary constructed types and recursive member types (M11, type stage). Vendored reference
+tests retain eleven scanner/grammar deviations; transformer-only semantic checks and generated parser size remain
+open work. The module README describes those limits separately from the corrected grammar behavior.
 Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused

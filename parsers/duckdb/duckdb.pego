@@ -946,10 +946,13 @@ def window_exclusion: Match = @(EXCLUDE ws (CURRENT ws ROW / GROUP / TIES / NO w
 
 def type_list: []Type = first:typename rest:(-ws -"," -ws t:typename)* -> concat(list($first), map($rest, (r) => $r.t))
 
-// Typename: a type name with modifiers, or a struct, map or union type, followed by array dimensions. SETOF is
-// accepted and ignored.
-def typename: Type = (SETOF ws)? t:type_base -> $t
-def type_base: Type = type_struct / type_map / type_interval / type_datetime / type_char / type_bit / type_numeric / type_qualified / type_generic
+// SETOF is ignored in the AST, but its operand follows SimpleTypename: constructed types are not eligible,
+// and qualified names require explicit ARRAY or ARRAY[n]. Recursive member types still use typename.
+def typename: Type = (SETOF ws t:type_setof / t:type_base) -> $t
+def type_base: Type = type_struct / type_map / type_qualified / type_simple
+def type_setof: Type = type_setof_qualified / type_simple
+def type_simple: Type = type_interval / type_datetime / type_char / type_bit / type_numeric / type_generic
+def type_setof_qualified: Type = n:@(ident_only (ws "." ws ident_only)+) &(ws ARRAY) ds:array_dims -> new Type{Name: text($n), Dims: $ds}
 
 // The array dimensions that may follow a type: [], [3], and ARRAY, ARRAY[3]
 def array_dims: []ArrayDim = array_dims_only / array_keyword_sized / array_keyword
