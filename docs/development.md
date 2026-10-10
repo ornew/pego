@@ -387,9 +387,10 @@ Generated depth configuration (G04) is proposed in [design record 022](design/02
 Baseline Go grammar probes accept 16,000 nested parentheses but return the 100,000-rule-call error at 17,000/30,000;
 a temporary 600,000-call overlay accepts all three in Recognize and ParseAST. The proposal preserves defaults and
 adds generation-time configuration and per-invocation overrides, using the generated value as the invocation default.
-This scope is selected; distributed Go reference-maximum parity is separate. Proposed options-aware APIs retain
-legacy call syntax, with an explicit migration for typed-name collisions. No configurable limit or default change
-is implemented yet.
+This scope is selected; distributed Go reference-maximum parity is separate. Generated Go uses the existing
+entry points with `opts ...ParseOption`, `WithMaxDepth` and `WithUnit`; raw Unit arguments, function-value types
+and colliding generated type names require migration. TypeScript retains its unit arguments and adds
+options-aware entry points. No configurable limit or default change is implemented yet.
 YAML composition preserves the latest preceding anchor occurrence (M02), including nested definitions with the same
 name. Completing an outer collection cannot reclaim that name; aliases keep map/slice sharing, and pending
 self-references remain errors. Composition tests include shared manually constructed anchor objects and event order.
