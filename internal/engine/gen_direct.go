@@ -9,7 +9,7 @@ import (
 	"github.com/ornew/pego/grammar"
 )
 
-// Direct rules of the typed runtime and value-free plain Node rules.
+// Direct rules of the typed runtime and inlined expression bodies of the Node runtime.
 //
 // The typed runtime (genrt/typed.go) runs a rule like the Node runtime does: a method per
 // expression, captures in a frame with a trail that backtracking undoes, and an action evaluated
@@ -30,8 +30,8 @@ import (
 // (callees set their own) or p.trail (callees truncate it to its length at the call), so it
 // leaves them alone. Rules with a cut or #recover, Pratt rules and leaders of left recursion
 // keep the general code. Value-free plain Node rules reuse the structural walk
-// without captures or predicates; value-building and memoized Node rules keep
-// the general code.
+// without captures or predicates. Other Node rules inline only their expression
+// bodies, retaining runtime ownership of frames, memoization and finalization.
 
 // directOK reports whether the rule r can be compiled as a direct rule.
 func directOK(r *rule) bool {
@@ -75,12 +75,15 @@ func directLeanOK(r *rule) bool {
 
 // dgen compiles the body of a direct rule into the statements of a method.
 type dgen struct {
-	g     *generator
-	b     strings.Builder
-	decls []dvar
-	reads map[string]bool // variables read
-	used  map[string]bool // labels jumped to
-	n     int
+	g *generator
+	// nodeBody emits an unfinished Node body under the ordinary runtime's
+	// frame, depth, memo and finish ownership.
+	nodeBody bool
+	b        strings.Builder
+	decls    []dvar
+	reads    map[string]bool // variables read
+	used     map[string]bool // labels jumped to
+	n        int
 	// dead reports that the current point is unreachable: statements are dropped (go vet
 	// rejects unreachable code) until a label that is jumped to is placed.
 	dead bool
@@ -95,6 +98,7 @@ type dvar struct{ name, typ string }
 type dscope struct {
 	vars  map[string]string
 	names []string
+	frame *scope
 }
 
 func newDscope() *dscope { return &dscope{vars: map[string]string{}} }
@@ -256,11 +260,17 @@ func assigns(e grammar.Expr) bool {
 // expression may set instead of the trail.
 type dmark struct {
 	pos, rec, env string
+	frameMark     string
 	saves         [][2]string // capture variable, saved value
 }
 
 // mark saves the state before e; with saves, also the captures e may set in the scope s.
 func (d *dgen) mark(s *dscope, e grammar.Expr, saves bool) dmark {
+	if d.nodeBody {
+		v := d.decl("x", "mark")
+		d.line("%s = p.mark()", v)
+		return dmark{pos: v + ".pos", frameMark: v}
+	}
 	m := dmark{pos: d.decl("x", "int"), rec: d.decl("x", "int")}
 	d.line("%s, %s = p.pos, len(p.recovered)", m.pos, m.rec)
 	if assigns(e) {
@@ -285,6 +295,10 @@ func (d *dgen) mark(s *dscope, e grammar.Expr, saves bool) dmark {
 
 // reset restores the state saved by m.
 func (d *dgen) reset(m dmark) {
+	if m.frameMark != "" {
+		d.line("p.reset(%s)", d.rd(m.frameMark))
+		return
+	}
 	d.line("p.pos = %s", d.rd(m.pos))
 	d.line("p.recovered = p.recovered[:%s]", d.rd(m.rec))
 	if m.env != "" {
@@ -342,12 +356,12 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		if !build {
 			return "nil"
 		}
-		v := d.decl("v", "any")
+		v := d.decl("v", d.g.valType())
 		text := fmt.Sprintf("%q", value)
 		if strings.ContainsRune(value, '\uFFFD') {
 			text = fmt.Sprintf("p.literalText(%s, %q)", d.rd(start), value)
 		}
-		d.line("%s = p.newMatch(%s, p.pos, %s, true)", v, d.rd(start), text)
+		d.line("%s = %s", v, d.match(d.rd(start), text))
 		return v
 	case *grammar.CharClass:
 		ch, size, ok := d.rd(d.shared("ch", "rune")), d.rd(d.shared("size", "int")), d.ok()
@@ -365,7 +379,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 			d.failIf(fmt.Sprintf("_, %s = %s; !%s", ok, call, ok), fail)
 			return "nil"
 		}
-		v := d.decl("v", "any")
+		v := d.decl("v", d.g.valType())
 		d.failIf(fmt.Sprintf("%s, %s = %s; !%s", v, ok, call, ok), fail)
 		return v
 	case *grammar.Seq:
@@ -377,9 +391,9 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 					nvis++
 				}
 			}
-			start, kids = d.decl("x", "int"), d.decl("x", "[]any")
+			start, kids = d.decl("x", "int"), d.decl("x", g.pick("[]*Node", "[]any"))
 			d.line("%s = p.pos", start)
-			d.line("%s = p.newVals(%d)[:0]", kids, nvis)
+			d.line("%s = p.%s(%d)[:0]", kids, g.pick("nodes", "newVals"), nvis)
 		}
 		for _, it := range e.Items {
 			v := d.expr(it, s, build, fail)
@@ -390,8 +404,8 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		if !build {
 			return "nil"
 		}
-		v := d.decl("v", "any")
-		d.line("%s = p.newNode(\"Seq\", %s, p.pos, %s)", v, d.rd(start), d.rd(kids))
+		v := d.decl("v", d.g.valType())
+		d.line("%s = %s", v, d.node("Seq", d.rd(start), d.rd(kids)))
 		return v
 	case *grammar.Choice:
 		return d.choice(e, s, build, fail)
@@ -401,7 +415,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		m := d.mark(s, e.Expr, true)
 		var v string
 		if build {
-			v = d.decl("v", "any")
+			v = d.decl("v", d.g.valType())
 		}
 		f, done := d.label(), d.label()
 		x := d.expr(e.Expr, s, build, f)
@@ -460,13 +474,16 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		if !build {
 			return "nil"
 		}
-		v := d.decl("v", "any")
-		d.line("%s = p.newMatch(%s, p.pos, p.text(%s, p.pos), true)", v, d.rd(start), start)
+		v := d.decl("v", d.g.valType())
+		d.line("%s = %s", v, d.match(d.rd(start), fmt.Sprintf("p.text(%s, p.pos)", start)))
 		return v
 	case *grammar.Discard:
 		d.expr(e.Expr, s, false, fail)
 		return "nil"
 	case *grammar.Capture:
+		if d.nodeBody {
+			return d.nodeCapture(e, s, build, fail)
+		}
 		if g.table != "trules" {
 			// Only value-free rules without predicates reach this emitter.
 			return d.expr(e.Expr, s, false, fail)
@@ -490,8 +507,8 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		if !build {
 			return "nil"
 		}
-		v := d.decl("v", "any")
-		d.line("%s = p.newMatch(p.pos, p.pos, \"\", true)", v)
+		v := d.decl("v", d.g.valType())
+		d.line("%s = %s", v, d.match("p.pos", `""`))
 		return v
 	case *grammar.Bottom:
 		d.jump(fail)
@@ -549,10 +566,10 @@ func (d *dgen) single(build bool) string {
 		d.line("p.pos += size")
 		return "nil"
 	}
-	start, v := d.decl("x", "int"), d.decl("v", "any")
+	start, v := d.decl("x", "int"), d.decl("v", d.g.valType())
 	d.line("%s = p.pos", start)
 	d.line("p.pos += size")
-	d.line("%s = p.newMatch(%s, p.pos, p.text(%s, p.pos), true)", v, d.rd(start), start)
+	d.line("%s = %s", v, d.match(d.rd(start), fmt.Sprintf("p.text(%s, p.pos)", start)))
 	return v
 }
 
@@ -561,7 +578,7 @@ func (d *dgen) choice(e *grammar.Choice, s *dscope, build bool, fail string) str
 	m := d.mark(s, e, true)
 	var v, ch, more string
 	if build {
-		v = d.decl("v", "any")
+		v = d.decl("v", d.g.valType())
 	}
 	done := d.label()
 	for _, alt := range e.Alts {
@@ -617,6 +634,9 @@ func (d *dgen) endLoop() {
 }
 
 func (d *dgen) repeat(e *grammar.Repeat, s *dscope, build bool, fail string) string {
+	if d.nodeBody {
+		return d.nodeRepeat(e, s, build, fail, "")
+	}
 	if !build {
 		if v, ok := d.scan(e, fail); ok {
 			return v
@@ -643,7 +663,7 @@ func (d *dgen) repeat(e *grammar.Repeat, s *dscope, build bool, fail string) str
 	f := d.label()
 	v := d.expr(e.Expr, es, build, f)
 	if own && build {
-		attached := d.decl("v", "any")
+		attached := d.decl("v", d.g.valType())
 		d.line("%s = p.attachCaptures(%s, %s, %s, %s, p.pos)", attached, d.rd(v), d.scopeVar(es), d.vals(es), d.rd(m.pos))
 		v = attached
 	}
@@ -669,8 +689,8 @@ func (d *dgen) repeat(e *grammar.Repeat, s *dscope, build bool, fail string) str
 	if !build {
 		return "nil"
 	}
-	list := d.decl("v", "any")
-	d.line("%s = p.newNode(\"List\", %s, p.pos, p.kids(%s))", list, d.rd(start), d.rd(base))
+	list := d.decl("v", d.g.valType())
+	d.line("%s = %s", list, d.node("List", d.rd(start), fmt.Sprintf("p.kids(%s)", d.rd(base))))
 	return list
 }
 
@@ -764,14 +784,32 @@ func (d *dgen) projectRepeat(e *grammar.Repeat, field, fail string) string {
 	if e.Min > 0 {
 		d.failIf(fmt.Sprintf("%s < %d", count, e.Min), fail, fmt.Sprintf("p.dropKids(%s)", d.rd(base)))
 	}
-	v := d.decl("v", "any")
-	d.line("%s = p.newNode(\"List\", %s, p.pos, p.kids(%s))", v, d.rd(start), d.rd(base))
+	v := d.decl("v", d.g.valType())
+	d.line("%s = %s", v, d.node("List", d.rd(start), fmt.Sprintf("p.kids(%s)", d.rd(base))))
 	return v
 }
 
 // predicate writes a predicate or an assignment; it reads the captures of the scope s that are
 // assigned so far, as the general code reads the frame.
 func (d *dgen) predicate(e *grammar.Predicate, s *dscope, fail string) string {
+	if d.nodeBody {
+		t := e.Term
+		if a, ok := t.(*grammar.Assign); ok {
+			t = a.Value
+		}
+		f := d.frameScope(s)
+		if !frameRefsKnown(t, f) {
+			d.bad = true
+			return "nil"
+		}
+		term := d.g.term(t, f, nil)
+		if a, ok := e.Term.(*grammar.Assign); ok {
+			d.failIf(fmt.Sprintf("!p.assign(%q, func(c *actx) any { return %s })", a.Name, term), fail)
+		} else {
+			d.failIf(fmt.Sprintf("!p.predicate(func(c *actx) any { return %s })", term), fail)
+		}
+		return "nil"
+	}
 	caps := map[string]string{}
 	for _, name := range s.names {
 		caps[name] = s.vars[name]

@@ -3846,38 +3846,39 @@ func ParseAST(input string, unit ...Unit) (*File, error) {
 }
 
 var lit1 = []rune("\ufeff")
-var lit14 = []rune(",")
-var lit24 = []rune("\"")
-var lit27 = []rune("\"\"")
-var lit32 = []rune("\"")
-var lit36 = []rune("\r")
-var lit45 = []rune("\r\n")
-var lit47 = []rune("\n")
-var lit49 = []rune("\r")
-var lit55 = []rune("\r\n")
-var lit56 = []rune("\n")
-var lit57 = []rune("\r")
-var lit59 = []rune("\ufeff")
-var lit61 = []rune(",")
-var lit63 = []rune("\"")
-var lit64 = []rune("\"\"")
-var lit65 = []rune("\"")
-var lit66 = []rune("\r")
-var lit68 = []rune("\r\n")
-var lit69 = []rune("\n")
-var lit70 = []rune("\r")
-var lit72 = []rune("\ufeff")
-var lit74 = []rune(",")
-var lit76 = []rune("\"")
-var lit77 = []rune("\"\"")
-var lit78 = []rune("\"")
-var lit79 = []rune("\r")
-var lit80 = []rune("\r\n")
-var lit81 = []rune("\n")
-var lit82 = []rune("\r")
-var lit83 = []rune("\r\n")
-var lit84 = []rune("\n")
-var lit85 = []rune("\r")
+var lit4 = []rune(",")
+var scope3 = []string{"f"}
+var lit6 = []rune("\"")
+var lit7 = []rune("\"\"")
+var lit8 = []rune("\"")
+var lit9 = []rune("\r")
+var lit11 = []rune("\r\n")
+var lit12 = []rune("\n")
+var lit13 = []rune("\r")
+var lit15 = []rune("\r\n")
+var lit16 = []rune("\n")
+var lit17 = []rune("\r")
+var lit19 = []rune("\ufeff")
+var lit21 = []rune(",")
+var lit23 = []rune("\"")
+var lit24 = []rune("\"\"")
+var lit25 = []rune("\"")
+var lit26 = []rune("\r")
+var lit28 = []rune("\r\n")
+var lit29 = []rune("\n")
+var lit30 = []rune("\r")
+var lit32 = []rune("\ufeff")
+var lit34 = []rune(",")
+var lit36 = []rune("\"")
+var lit37 = []rune("\"\"")
+var lit38 = []rune("\"")
+var lit39 = []rune("\r")
+var lit40 = []rune("\r\n")
+var lit41 = []rune("\n")
+var lit42 = []rune("\r")
+var lit43 = []rune("\r\n")
+var lit44 = []rune("\n")
+var lit45 = []rune("\r")
 
 func init() {
 	rules = []*rule{
@@ -3891,15 +3892,15 @@ func init() {
 		r.kinds = newRuleKinds(r.name, r.terminalType)
 	}
 	nseen = 0
-	rules[0].body = func(p *parser, _ int) (*Node, bool) { return p.e9() }
+	rules[0].body = func(p *parser, _ int) (*Node, bool) { return p.e2() }
 	rules[0].action = func(c *actx) any { return c.newStruct("File", "Records", c.cap(0)) }
-	rules[1].body = func(p *parser, _ int) (*Node, bool) { return p.e23() }
+	rules[1].body = func(p *parser, _ int) (*Node, bool) { return p.e5() }
 	rules[1].action = func(c *actx) any {
 		return c.newStruct("Record", "Fields", func() any { b := len(c.p.kidStack); c.pushList(c.cap(0)); c.pushItems(c.cap(1)); return c.endList(b) }())
 	}
-	rules[2].body = func(p *parser, _ int) (*Node, bool) { return p.e44() }
-	rules[3].body = func(p *parser, _ int) (*Node, bool) { return p.e54() }
-	rules[4].body = func(p *parser, _ int) (*Node, bool) { return p.e58() }
+	rules[2].body = func(p *parser, _ int) (*Node, bool) { return p.e10() }
+	rules[3].body = func(p *parser, _ int) (*Node, bool) { return p.e14() }
+	rules[4].body = func(p *parser, _ int) (*Node, bool) { return p.e18() }
 	structFields["File"] = map[string]bool{"Records": true}
 	typeKinds["File"] = kindOf("File", "")
 	structFields["Record"] = map[string]bool{"Fields": true}
@@ -3914,10 +3915,10 @@ func init() {
 		r.kinds = newRuleKinds(r.name, r.terminalType)
 	}
 	recNseen = 0
-	recRules[0].body = func(p *parser, _ int) (*Node, bool) { return p.e60() }
-	recRules[1].body = func(p *parser, _ int) (*Node, bool) { return p.e62() }
-	recRules[2].body = func(p *parser, _ int) (*Node, bool) { return p.e67() }
-	recRules[3].body = func(p *parser, _ int) (*Node, bool) { return p.e71() }
+	recRules[0].body = func(p *parser, _ int) (*Node, bool) { return p.e20() }
+	recRules[1].body = func(p *parser, _ int) (*Node, bool) { return p.e22() }
+	recRules[2].body = func(p *parser, _ int) (*Node, bool) { return p.e27() }
+	recRules[3].body = func(p *parser, _ int) (*Node, bool) { return p.e31() }
 	descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"\\ufeff\"", "\",\"", "\"\\\"\"", "(?^\")", "\"\\\"\\\"\"", "(?^,\"\\r\\n)", "\"\\r\"", "(?^\\n)", "\"\\r\\n\"", "\"\\n\""}
 	trules = []*trule{
 		{rule: rules[0]},
@@ -3934,594 +3935,375 @@ func init() {
 	trules[4].entry = (*tparser).s4
 }
 
-// "\u{feff}"
+// main (Node body inlined)
 func (p *parser) e2() (*Node, bool) {
-	return p.matchLiteral(lit1, "\ufeff", 5, false)
-}
-
-// "\u{feff}"?
-func (p *parser) e3() (*Node, bool) {
-	m0 := p.mark()
-	prevCut := p.cut
-	p.cut = false
-	v, ok := p.e2()
-	cut := p.cut
-	p.cut = prevCut
-	if ok {
-		return v, true
+	var (
+		x1  int
+		x2  []*Node
+		x3  mark
+		ok  bool
+		x6  int
+		x7  int
+		x8  int
+		x9  mark
+		v11 *Node
+		v12 *Node
+		v13 *Node
+	)
+	_ = x8
+	x1 = p.pos
+	x2 = p.nodes(1)[:0]
+	x3 = p.mark()
+	if p.pos < len(p.in) && p.in[p.pos] == 65279 {
+		p.pos++
+	} else if _, ok = p.matchLiteral(lit1, "\ufeff", 5, false); !ok {
+		goto L4
 	}
-	p.reset(m0)
-	if cut {
-		return nil, false
-	}
-	return nil, true
-}
-
-// -"\u{feff}"?
-func (p *parser) e4() (*Node, bool) {
-	_, ok := p.e3()
-	return nil, ok
-}
-
-// record
-func (p *parser) e5() (*Node, bool) {
-	return p.call(rules[1], 0)
-}
-
-// record*
-func (p *parser) e6() (*Node, bool) {
-	start := p.pos
-	base := len(p.kidStack)
-	count := 0
+	goto L5
+L4:
+	p.reset(x3)
+L5:
+	x6, x7 = p.pos, len(p.kidStack)
+	x8 = 0
 	for {
-		m0 := p.mark()
-		prevCut, prevFrame := p.cut, p.frame
-		p.cut = false
-		v, ok := p.e5()
-		cut := p.cut
-		p.cut, p.frame = prevCut, prevFrame
-		if !ok {
-			p.reset(m0)
-			if cut {
-				p.dropKids(base)
-				return nil, false
-			}
+		x9 = p.mark()
+		if v11, ok = p.call(rules[1], 0); !ok {
+			goto L10
+		}
+		x8++
+		p.kidStack = append(p.kidStack, v11)
+		if p.pos == x9.pos {
 			break
 		}
-		count++
-		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos {
-			break
-		}
+		continue
+	L10:
+		p.reset(x9)
+		break
 	}
-	if count < 0 {
-		p.dropKids(base)
-		return nil, false
+	v12 = p.newNode(Node{kind: kindList, Start: int32(x6), End: int32(p.pos), Children: p.kids(x7), fresh: true})
+	p.setCapture(0, v12)
+	x2 = append(x2, v12)
+	if !p.atEnd() {
+		p.expect(p.pos, idEndInput)
+		goto fail
 	}
-	return p.newNode(Node{kind: kindList, Start: int32(start), End: int32(p.pos), Children: p.kids(base), fresh: true}), true
-}
-
-// rs:record* #stream
-func (p *parser) e7() (*Node, bool) {
-	v, ok := p.e6()
-	if ok {
-		p.setCapture(0, v)
-	}
-	return v, ok
-}
-
-// $$
-func (p *parser) e8() (*Node, bool) {
-	return p.anchor(p.atEnd(), idEndInput)
-}
-
-// -"\u{feff}"? rs:record* #stream $$
-func (p *parser) e9() (*Node, bool) {
-	start := p.pos
-	kids := p.nodes(1)[:0]
-	if _, ok := p.e4(); !ok {
-		return nil, false
-	}
-	if v, ok := p.e7(); !ok {
-		return nil, false
-	} else {
-		kids = append(kids, v)
-	}
-	if _, ok := p.e8(); !ok {
-		return nil, false
-	}
-	return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
-}
-
-// $$
-func (p *parser) e10() (*Node, bool) {
-	return p.anchor(p.atEnd(), idEndInput)
-}
-
-// !$$
-func (p *parser) e11() (*Node, bool) {
-	m0 := p.mark()
-	prevCut := p.cut
-	p.silent++
-	_, ok := p.e10()
-	p.silent--
-	p.cut = prevCut
-	p.reset(m0)
-	return nil, !ok
-}
-
-// field
-func (p *parser) e12() (*Node, bool) {
-	return p.r2()
-}
-
-// first:field
-func (p *parser) e13() (*Node, bool) {
-	v, ok := p.e12()
-	if ok {
-		p.setCapture(0, v)
-	}
-	return nil, ok
-}
-
-// ","
-func (p *parser) e15() (*Node, bool) {
-	return p.matchLiteral(lit14, ",", 6, false)
-}
-
-// -","
-func (p *parser) e16() (*Node, bool) {
-	_, ok := p.e15()
-	return nil, ok
-}
-
-// field
-func (p *parser) e17() (*Node, bool) {
-	return p.r2()
-}
-
-// f:field
-func (p *parser) e18() (*Node, bool) {
-	v, ok := p.e17()
-	if ok {
-		p.setCapture(0, v)
-	}
-	return nil, ok
-}
-
-// -"," f:field
-func (p *parser) e19() (*Node, bool) {
-	if _, ok := p.e16(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e18(); !ok {
-		return nil, false
-	}
-	return nil, true
-}
-
-// (-"," f:field)* (projected to f)
-func (p *parser) e20() (*Node, bool) {
-	start := p.pos
-	base := len(p.kidStack)
-	f := p.newFrame(1)
-	count := 0
-	for {
-		clear(f.vals)
-		m0 := p.mark()
-		prevCut, prevFrame := p.cut, p.frame
-		p.cut = false
-		p.frame = f
-		_, ok := p.e19()
-		cut := p.cut
-		p.cut, p.frame = prevCut, prevFrame
-		if !ok {
-			p.reset(m0)
-			if cut {
-				p.dropKids(base)
-				return nil, false
-			}
-			break
-		}
-		count++
-		p.kidStack = append(p.kidStack, f.vals[0])
-		if p.pos == m0.pos {
-			break
-		}
-	}
-	if count < 0 {
-		p.dropKids(base)
-		return nil, false
-	}
-	return p.newNode(Node{kind: kindList, Start: int32(start), End: int32(p.pos), Children: p.kids(base), fresh: true}), true
-}
-
-// rest:(-"," f:field)*
-func (p *parser) e21() (*Node, bool) {
-	v, ok := p.e20()
-	if ok {
-		p.setCapture(1, v)
-	}
-	return nil, ok
-}
-
-// eol
-func (p *parser) e22() (*Node, bool) {
-	return p.r4()
-}
-
-// !$$ first:field rest:(-"," f:field)* eol
-func (p *parser) e23() (*Node, bool) {
-	if _, ok := p.e11(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e13(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e21(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e22(); !ok {
-		return nil, false
-	}
-	return nil, true
-}
-
-// "\""
-func (p *parser) e25() (*Node, bool) {
-	return p.matchLiteral(lit24, "\"", 7, false)
-}
-
-// (?^")*
-func (p *parser) e26() (*Node, bool) {
-	count := 0
-	for {
-		ch, size, ok := p.peek()
-		if !ok || (ch == 34) {
-			p.expect(p.pos, 8)
-			break
-		}
-		p.pos += size
-		count++
-	}
-	return nil, count >= 0
-}
-
-// "\"\""
-func (p *parser) e28() (*Node, bool) {
-	return p.matchLiteral(lit27, "\"\"", 9, false)
-}
-
-// (?^")*
-func (p *parser) e29() (*Node, bool) {
-	count := 0
-	for {
-		ch, size, ok := p.peek()
-		if !ok || (ch == 34) {
-			p.expect(p.pos, 8)
-			break
-		}
-		p.pos += size
-		count++
-	}
-	return nil, count >= 0
-}
-
-// "\"\"" (?^")*
-func (p *parser) e30() (*Node, bool) {
-	if _, ok := p.e28(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e29(); !ok {
-		return nil, false
-	}
-	return nil, true
-}
-
-// ("\"\"" (?^")*)*
-func (p *parser) e31() (*Node, bool) {
-	count := 0
-	for {
-		m0 := p.mark()
-		prevCut, prevFrame := p.cut, p.frame
-		p.cut = false
-		_, ok := p.e30()
-		cut := p.cut
-		p.cut, p.frame = prevCut, prevFrame
-		if !ok {
-			p.reset(m0)
-			if cut {
-				return nil, false
-			}
-			break
-		}
-		count++
-		if p.pos == m0.pos {
-			break
-		}
-	}
-	if count < 0 {
-		return nil, false
-	}
-	return nil, true
-}
-
-// "\""
-func (p *parser) e33() (*Node, bool) {
-	return p.matchLiteral(lit32, "\"", 7, false)
-}
-
-// "\"" (?^")* ("\"\"" (?^")*)* "\""
-func (p *parser) e34() (*Node, bool) {
-	if _, ok := p.e25(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e26(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e31(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e33(); !ok {
-		return nil, false
-	}
-	return nil, true
-}
-
-// (?^,"\r\n)*
-func (p *parser) e35() (*Node, bool) {
-	count := 0
-	for {
-		ch, size, ok := p.peek()
-		if !ok || (ch == 44 || ch == 34 || ch == 13 || ch == 10) {
-			p.expect(p.pos, 10)
-			break
-		}
-		p.pos += size
-		count++
-	}
-	return nil, count >= 0
-}
-
-// "\r"
-func (p *parser) e37() (*Node, bool) {
-	return p.matchLiteral(lit36, "\r", 11, false)
-}
-
-// (?^\n)
-func (p *parser) e38() (*Node, bool) {
-	ch, size, ok := p.peek()
-	if !ok || (ch == 10) {
-		p.expect(p.pos, 12)
-		return nil, false
-	}
-	return p.single(size, false)
-}
-
-// &(?^\n)
-func (p *parser) e39() (*Node, bool) {
-	start, prevCut := p.pos, p.cut
-	p.silent++
-	_, ok := p.e38()
-	p.silent--
-	p.cut = prevCut
-	p.pos = start
-	return nil, ok
-}
-
-// (?^,"\r\n)*
-func (p *parser) e40() (*Node, bool) {
-	count := 0
-	for {
-		ch, size, ok := p.peek()
-		if !ok || (ch == 44 || ch == 34 || ch == 13 || ch == 10) {
-			p.expect(p.pos, 10)
-			break
-		}
-		p.pos += size
-		count++
-	}
-	return nil, count >= 0
-}
-
-// "\r" &(?^\n) (?^,"\r\n)*
-func (p *parser) e41() (*Node, bool) {
-	if _, ok := p.e37(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e39(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e40(); !ok {
-		return nil, false
-	}
-	return nil, true
-}
-
-// ("\r" &(?^\n) (?^,"\r\n)*)*
-func (p *parser) e42() (*Node, bool) {
-	count := 0
-	for {
-		m0 := p.mark()
-		prevCut, prevFrame := p.cut, p.frame
-		p.cut = false
-		_, ok := p.e41()
-		cut := p.cut
-		p.cut, p.frame = prevCut, prevFrame
-		if !ok {
-			p.reset(m0)
-			if cut {
-				return nil, false
-			}
-			break
-		}
-		count++
-		if p.pos == m0.pos {
-			break
-		}
-	}
-	if count < 0 {
-		return nil, false
-	}
-	return nil, true
-}
-
-// (?^,"\r\n)* ("\r" &(?^\n) (?^,"\r\n)*)*
-func (p *parser) e43() (*Node, bool) {
-	if _, ok := p.e35(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e42(); !ok {
-		return nil, false
-	}
-	return nil, true
-}
-
-// "\"" (?^")* ("\"\"" (?^")*)* "\"" / (?^,"\r\n)* ("\r" &(?^\n) (?^,"\r\n)*)*
-func (p *parser) e44() (*Node, bool) {
-	m0 := p.mark()
-	ch, _, more := p.peek()
-	if !(more && (ch == 34)) && p.depth+0 <= maxDepth {
-		p.expect(p.pos, 7)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e34()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
-	}
-	{
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e43()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
-	}
+	v13 = p.newNode(Node{kind: kindSeq, Start: int32(x1), End: int32(p.pos), Children: x2, fresh: true})
+	return v13, true
+fail:
 	return nil, false
 }
 
-// "\r\n"
-func (p *parser) e46() (*Node, bool) {
-	return p.matchLiteral(lit45, "\r\n", 13, true)
-}
-
-// "\n"
-func (p *parser) e48() (*Node, bool) {
-	return p.matchLiteral(lit47, "\n", 14, true)
-}
-
-// "\r"
-func (p *parser) e50() (*Node, bool) {
-	return p.matchLiteral(lit49, "\r", 11, true)
-}
-
-// "\r"?
-func (p *parser) e51() (*Node, bool) {
-	m0 := p.mark()
-	prevCut := p.cut
-	p.cut = false
-	v, ok := p.e50()
-	cut := p.cut
-	p.cut = prevCut
-	if ok {
-		return v, true
+// record (Node body inlined)
+func (p *parser) e5() (*Node, bool) {
+	var (
+		x1  mark
+		ok  bool
+		v3  *Node
+		x4  int
+		x5  int
+		x6  *frame
+		x7  *frame
+		x8  int
+		x9  mark
+		v11 *Node
+		v12 *Node
+	)
+	_ = x8
+	x1 = p.mark()
+	p.silent++
+	if !p.atEnd() {
+		p.expect(p.pos, idEndInput)
+		goto L2
 	}
-	p.reset(m0)
-	if cut {
-		return nil, false
+	p.silent--
+	p.reset(x1)
+	goto fail
+L2:
+	p.silent--
+	p.reset(x1)
+	if v3, ok = p.r2(); !ok {
+		goto fail
 	}
+	p.setCapture(0, v3)
+	x4, x5 = p.pos, len(p.kidStack)
+	x6 = p.newFrame(len(scope3))
+	x8 = 0
+	for {
+		clear(x6.vals)
+		x9 = p.mark()
+		x7 = p.frame
+		p.frame = x6
+		if p.pos < len(p.in) && p.in[p.pos] == 44 {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit4, ",", 6, false); !ok {
+			goto L10
+		}
+		if v11, ok = p.r2(); !ok {
+			goto L10
+		}
+		p.setCapture(0, v11)
+		p.frame = x7
+		x8++
+		p.kidStack = append(p.kidStack, x6.vals[0])
+		if p.pos == x9.pos {
+			break
+		}
+		continue
+	L10:
+		p.frame = x7
+		p.reset(x9)
+		break
+	}
+	v12 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
+	p.setCapture(1, v12)
+	if _, ok = p.r4(); !ok {
+		goto fail
+	}
+	return nil, true
+fail:
+	return nil, false
+}
+
+// field (Node body inlined)
+func (p *parser) e10() (*Node, bool) {
+	var (
+		x1   mark
+		x3   rune
+		x4   bool
+		ok   bool
+		ch   rune
+		size int
+		x7   int
+		x8   mark
+		x11  int
+		x12  mark
+		x14  int
+	)
+	_, _ = x7, x11
+	x1 = p.mark()
+	if p.pos < len(p.in) {
+		x3, _, x4 = p.in[p.pos], 1, true
+	} else {
+		x3, _, x4 = p.peek()
+	}
+	if !(x4 && (x3 == 34)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 7)
+		goto L5
+	}
+	if p.pos < len(p.in) && p.in[p.pos] == 34 {
+		p.pos++
+	} else if _, ok = p.matchLiteral(lit6, "\"", 7, false); !ok {
+		goto L6
+	}
+	for {
+		if p.pos < len(p.in) {
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || (ch == 34) {
+			p.expect(p.pos, 8)
+			break
+		}
+		p.pos += size
+	}
+	x7 = 0
+	for {
+		x8 = p.mark()
+		if p.pos+2 <= len(p.in) && p.in[p.pos] == 34 && p.in[p.pos+1] == 34 {
+			p.pos += 2
+		} else if _, ok = p.matchLiteral(lit7, "\"\"", 9, false); !ok {
+			goto L9
+		}
+		for {
+			if p.pos < len(p.in) {
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || (ch == 34) {
+				p.expect(p.pos, 8)
+				break
+			}
+			p.pos += size
+		}
+		x7++
+		if p.pos == x8.pos {
+			break
+		}
+		continue
+	L9:
+		p.reset(x8)
+		break
+	}
+	if p.pos < len(p.in) && p.in[p.pos] == 34 {
+		p.pos++
+	} else if _, ok = p.matchLiteral(lit8, "\"", 7, false); !ok {
+		goto L6
+	}
+	goto L2
+L6:
+	p.reset(x1)
+L5:
+	for {
+		if p.pos < len(p.in) {
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || (ch == 44 || ch == 34 || ch == 13 || ch == 10) {
+			p.expect(p.pos, 10)
+			break
+		}
+		p.pos += size
+	}
+	x11 = 0
+	for {
+		x12 = p.mark()
+		if p.pos < len(p.in) && p.in[p.pos] == 13 {
+			p.pos++
+		} else if _, ok = p.matchLiteral(lit9, "\r", 11, false); !ok {
+			goto L13
+		}
+		x14 = p.pos
+		p.silent++
+		if p.pos < len(p.in) {
+			ch, size, ok = p.in[p.pos], 1, true
+		} else {
+			ch, size, ok = p.peek()
+		}
+		if !ok || (ch == 10) {
+			p.expect(p.pos, 12)
+			goto L15
+		}
+		p.pos += size
+		p.silent--
+		p.pos = x14
+		goto L16
+	L15:
+		p.silent--
+		p.pos = x14
+		goto L13
+	L16:
+		for {
+			if p.pos < len(p.in) {
+				ch, size, ok = p.in[p.pos], 1, true
+			} else {
+				ch, size, ok = p.peek()
+			}
+			if !ok || (ch == 44 || ch == 34 || ch == 13 || ch == 10) {
+				p.expect(p.pos, 10)
+				break
+			}
+			p.pos += size
+		}
+		x11++
+		if p.pos == x12.pos {
+			break
+		}
+		continue
+	L13:
+		p.reset(x12)
+		break
+	}
+	goto L2
+L2:
 	return nil, true
 }
 
-// $$
-func (p *parser) e52() (*Node, bool) {
-	return p.anchor(p.atEnd(), idEndInput)
-}
-
-// "\r"? $$
-func (p *parser) e53() (*Node, bool) {
-	start := p.pos
-	kids := p.nodes(1)[:0]
-	if v, ok := p.e51(); !ok {
-		return nil, false
+// eol (Node body inlined)
+func (p *parser) e14() (*Node, bool) {
+	var (
+		x1  mark
+		v2  *Node
+		x4  rune
+		x5  bool
+		x8  int
+		ok  bool
+		v9  *Node
+		x12 int
+		v13 *Node
+		x15 int
+		x16 []*Node
+		x17 mark
+		v18 *Node
+		x21 int
+		v22 *Node
+		v23 *Node
+	)
+	x1 = p.mark()
+	if p.pos < len(p.in) {
+		x4, _, x5 = p.in[p.pos], 1, true
 	} else {
-		kids = append(kids, v)
+		x4, _, x5 = p.peek()
 	}
-	if _, ok := p.e52(); !ok {
-		return nil, false
-	}
-	return p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}), true
-}
-
-// "\r\n" / "\n" / "\r"? $$
-func (p *parser) e54() (*Node, bool) {
-	m0 := p.mark()
-	ch, _, more := p.peek()
-	if !(more && (ch == 13)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 13)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 13)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e46()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L6
 	}
-	if !(more && (ch == 10)) && p.depth+0 <= maxDepth {
+	x8 = p.pos
+	if p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10 {
+		p.pos += 2
+	} else if _, ok = p.matchLiteral(lit11, "\r\n", 13, false); !ok {
+		goto L7
+	}
+	v9 = p.newNode(Node{kind: kindMatch, Start: int32(x8), End: int32(p.pos), Text: "\r\n", terminal: true, fresh: true})
+	v2 = v9
+	goto L3
+L7:
+	p.reset(x1)
+L6:
+	if !(x5 && (x4 == 10)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 14)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e48()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L10
 	}
-	{
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e53()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+	x12 = p.pos
+	if p.pos < len(p.in) && p.in[p.pos] == 10 {
+		p.pos++
+	} else if _, ok = p.matchLiteral(lit12, "\n", 14, false); !ok {
+		goto L11
 	}
+	v13 = p.newNode(Node{kind: kindMatch, Start: int32(x12), End: int32(p.pos), Text: "\n", terminal: true, fresh: true})
+	v2 = v13
+	goto L3
+L11:
+	p.reset(x1)
+L10:
+	x15 = p.pos
+	x16 = p.nodes(1)[:0]
+	x17 = p.mark()
+	x21 = p.pos
+	if p.pos < len(p.in) && p.in[p.pos] == 13 {
+		p.pos++
+	} else if _, ok = p.matchLiteral(lit13, "\r", 11, false); !ok {
+		goto L19
+	}
+	v22 = p.newNode(Node{kind: kindMatch, Start: int32(x21), End: int32(p.pos), Text: "\r", terminal: true, fresh: true})
+	v18 = v22
+	goto L20
+L19:
+	p.reset(x17)
+	v18 = nil
+L20:
+	x16 = append(x16, v18)
+	if !p.atEnd() {
+		p.expect(p.pos, idEndInput)
+		goto L14
+	}
+	v23 = p.newNode(Node{kind: kindSeq, Start: int32(x15), End: int32(p.pos), Children: x16, fresh: true})
+	v2 = v23
+	goto L3
+L14:
+	p.reset(x1)
+	goto fail
+L3:
+	return v2, true
+fail:
 	return nil, false
 }
 
 // eol (value-free body inlined)
-func (p *parser) e58() (*Node, bool) {
+func (p *parser) e18() (*Node, bool) {
 	var (
 		v   *Node
 		x1  int
@@ -4544,7 +4326,7 @@ func (p *parser) e58() (*Node, bool) {
 	}
 	if p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10 {
 		p.pos += 2
-	} else if _, ok = p.matchLiteral(lit55, "\r\n", 13, false); !ok {
+	} else if _, ok = p.matchLiteral(lit15, "\r\n", 13, false); !ok {
 		goto L7
 	}
 	goto L3
@@ -4558,7 +4340,7 @@ L6:
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 10 {
 		p.pos++
-	} else if _, ok = p.matchLiteral(lit56, "\n", 14, false); !ok {
+	} else if _, ok = p.matchLiteral(lit16, "\n", 14, false); !ok {
 		goto L9
 	}
 	goto L3
@@ -4569,7 +4351,7 @@ L8:
 	x11, x12 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) && p.in[p.pos] == 13 {
 		p.pos++
-	} else if _, ok = p.matchLiteral(lit57, "\r", 11, false); !ok {
+	} else if _, ok = p.matchLiteral(lit17, "\r", 11, false); !ok {
 		goto L13
 	}
 	goto L14
@@ -4602,7 +4384,7 @@ func (p *parser) r2() (*Node, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e44()
+	v, ok := p.e10()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -4625,7 +4407,7 @@ func (p *parser) r3() (*Node, bool) {
 	if p.depth > maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.e54()
+	v, ok := p.e14()
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:trail]
@@ -4670,7 +4452,7 @@ func (p *parser) r4() (*Node, bool) {
 	}
 	if p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10 {
 		p.pos += 2
-	} else if _, ok = p.matchLiteral(lit55, "\r\n", 13, false); !ok {
+	} else if _, ok = p.matchLiteral(lit15, "\r\n", 13, false); !ok {
 		goto L7
 	}
 	goto L3
@@ -4684,7 +4466,7 @@ L6:
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 10 {
 		p.pos++
-	} else if _, ok = p.matchLiteral(lit56, "\n", 14, false); !ok {
+	} else if _, ok = p.matchLiteral(lit16, "\n", 14, false); !ok {
 		goto L9
 	}
 	goto L3
@@ -4695,7 +4477,7 @@ L8:
 	x11, x12 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) && p.in[p.pos] == 13 {
 		p.pos++
-	} else if _, ok = p.matchLiteral(lit57, "\r", 11, false); !ok {
+	} else if _, ok = p.matchLiteral(lit17, "\r", 11, false); !ok {
 		goto L13
 	}
 	goto L14
@@ -4724,7 +4506,7 @@ fail:
 }
 
 // main (value-free body inlined)
-func (p *parser) e60() (*Node, bool) {
+func (p *parser) e20() (*Node, bool) {
 	var (
 		v  *Node
 		x1 int
@@ -4738,7 +4520,7 @@ func (p *parser) e60() (*Node, bool) {
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) && p.in[p.pos] == 65279 {
 		p.pos++
-	} else if _, ok = p.matchLiteral(lit59, "\ufeff", 5, false); !ok {
+	} else if _, ok = p.matchLiteral(lit19, "\ufeff", 5, false); !ok {
 		goto L3
 	}
 	goto L4
@@ -4773,7 +4555,7 @@ fail:
 }
 
 // record (value-free body inlined)
-func (p *parser) e62() (*Node, bool) {
+func (p *parser) e22() (*Node, bool) {
 	var (
 		v  *Node
 		x1 int
@@ -4806,7 +4588,7 @@ L3:
 		x5, x6 = p.pos, len(p.recovered)
 		if p.pos < len(p.in) && p.in[p.pos] == 44 {
 			p.pos++
-		} else if _, ok = p.matchLiteral(lit61, ",", 6, false); !ok {
+		} else if _, ok = p.matchLiteral(lit21, ",", 6, false); !ok {
 			goto L7
 		}
 		if _, ok = p.q2(); !ok {
@@ -4832,7 +4614,7 @@ fail:
 }
 
 // field (value-free body inlined)
-func (p *parser) e67() (*Node, bool) {
+func (p *parser) e27() (*Node, bool) {
 	var (
 		v    *Node
 		x1   int
@@ -4863,7 +4645,7 @@ func (p *parser) e67() (*Node, bool) {
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 34 {
 		p.pos++
-	} else if _, ok = p.matchLiteral(lit63, "\"", 7, false); !ok {
+	} else if _, ok = p.matchLiteral(lit23, "\"", 7, false); !ok {
 		goto L7
 	}
 	for {
@@ -4883,7 +4665,7 @@ func (p *parser) e67() (*Node, bool) {
 		x9, x10 = p.pos, len(p.recovered)
 		if p.pos+2 <= len(p.in) && p.in[p.pos] == 34 && p.in[p.pos+1] == 34 {
 			p.pos += 2
-		} else if _, ok = p.matchLiteral(lit64, "\"\"", 9, false); !ok {
+		} else if _, ok = p.matchLiteral(lit24, "\"\"", 9, false); !ok {
 			goto L11
 		}
 		for {
@@ -4910,7 +4692,7 @@ func (p *parser) e67() (*Node, bool) {
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 34 {
 		p.pos++
-	} else if _, ok = p.matchLiteral(lit65, "\"", 7, false); !ok {
+	} else if _, ok = p.matchLiteral(lit25, "\"", 7, false); !ok {
 		goto L7
 	}
 	goto L3
@@ -4935,7 +4717,7 @@ L6:
 		x14, x15 = p.pos, len(p.recovered)
 		if p.pos < len(p.in) && p.in[p.pos] == 13 {
 			p.pos++
-		} else if _, ok = p.matchLiteral(lit66, "\r", 11, false); !ok {
+		} else if _, ok = p.matchLiteral(lit26, "\r", 11, false); !ok {
 			goto L16
 		}
 		x17 = p.pos
@@ -4987,7 +4769,7 @@ L3:
 }
 
 // eol (value-free body inlined)
-func (p *parser) e71() (*Node, bool) {
+func (p *parser) e31() (*Node, bool) {
 	var (
 		v   *Node
 		x1  int
@@ -5010,7 +4792,7 @@ func (p *parser) e71() (*Node, bool) {
 	}
 	if p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10 {
 		p.pos += 2
-	} else if _, ok = p.matchLiteral(lit68, "\r\n", 13, false); !ok {
+	} else if _, ok = p.matchLiteral(lit28, "\r\n", 13, false); !ok {
 		goto L7
 	}
 	goto L3
@@ -5024,7 +4806,7 @@ L6:
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 10 {
 		p.pos++
-	} else if _, ok = p.matchLiteral(lit69, "\n", 14, false); !ok {
+	} else if _, ok = p.matchLiteral(lit29, "\n", 14, false); !ok {
 		goto L9
 	}
 	goto L3
@@ -5035,7 +4817,7 @@ L8:
 	x11, x12 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) && p.in[p.pos] == 13 {
 		p.pos++
-	} else if _, ok = p.matchLiteral(lit70, "\r", 11, false); !ok {
+	} else if _, ok = p.matchLiteral(lit30, "\r", 11, false); !ok {
 		goto L13
 	}
 	goto L14
@@ -5081,7 +4863,7 @@ func (p *parser) q0() (*Node, bool) {
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) && p.in[p.pos] == 65279 {
 		p.pos++
-	} else if _, ok = p.matchLiteral(lit59, "\ufeff", 5, false); !ok {
+	} else if _, ok = p.matchLiteral(lit19, "\ufeff", 5, false); !ok {
 		goto L3
 	}
 	goto L4
@@ -5160,7 +4942,7 @@ L3:
 		x5, x6 = p.pos, len(p.recovered)
 		if p.pos < len(p.in) && p.in[p.pos] == 44 {
 			p.pos++
-		} else if _, ok = p.matchLiteral(lit61, ",", 6, false); !ok {
+		} else if _, ok = p.matchLiteral(lit21, ",", 6, false); !ok {
 			goto L7
 		}
 		if _, ok = p.q2(); !ok {
@@ -5225,7 +5007,7 @@ func (p *parser) q2() (*Node, bool) {
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 34 {
 		p.pos++
-	} else if _, ok = p.matchLiteral(lit63, "\"", 7, false); !ok {
+	} else if _, ok = p.matchLiteral(lit23, "\"", 7, false); !ok {
 		goto L7
 	}
 	for {
@@ -5245,7 +5027,7 @@ func (p *parser) q2() (*Node, bool) {
 		x9, x10 = p.pos, len(p.recovered)
 		if p.pos+2 <= len(p.in) && p.in[p.pos] == 34 && p.in[p.pos+1] == 34 {
 			p.pos += 2
-		} else if _, ok = p.matchLiteral(lit64, "\"\"", 9, false); !ok {
+		} else if _, ok = p.matchLiteral(lit24, "\"\"", 9, false); !ok {
 			goto L11
 		}
 		for {
@@ -5272,7 +5054,7 @@ func (p *parser) q2() (*Node, bool) {
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 34 {
 		p.pos++
-	} else if _, ok = p.matchLiteral(lit65, "\"", 7, false); !ok {
+	} else if _, ok = p.matchLiteral(lit25, "\"", 7, false); !ok {
 		goto L7
 	}
 	goto L3
@@ -5297,7 +5079,7 @@ L6:
 		x14, x15 = p.pos, len(p.recovered)
 		if p.pos < len(p.in) && p.in[p.pos] == 13 {
 			p.pos++
-		} else if _, ok = p.matchLiteral(lit66, "\r", 11, false); !ok {
+		} else if _, ok = p.matchLiteral(lit26, "\r", 11, false); !ok {
 			goto L16
 		}
 		x17 = p.pos
@@ -5380,7 +5162,7 @@ func (p *parser) q3() (*Node, bool) {
 	}
 	if p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10 {
 		p.pos += 2
-	} else if _, ok = p.matchLiteral(lit68, "\r\n", 13, false); !ok {
+	} else if _, ok = p.matchLiteral(lit28, "\r\n", 13, false); !ok {
 		goto L7
 	}
 	goto L3
@@ -5394,7 +5176,7 @@ L6:
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 10 {
 		p.pos++
-	} else if _, ok = p.matchLiteral(lit69, "\n", 14, false); !ok {
+	} else if _, ok = p.matchLiteral(lit29, "\n", 14, false); !ok {
 		goto L9
 	}
 	goto L3
@@ -5405,7 +5187,7 @@ L8:
 	x11, x12 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) && p.in[p.pos] == 13 {
 		p.pos++
-	} else if _, ok = p.matchLiteral(lit70, "\r", 11, false); !ok {
+	} else if _, ok = p.matchLiteral(lit30, "\r", 11, false); !ok {
 		goto L13
 	}
 	goto L14
@@ -5476,7 +5258,7 @@ func (p *tparser) i0() (any, bool) {
 	x3, x4 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) && p.in[p.pos] == 65279 {
 		p.pos++
-	} else if _, ok = p.parser.matchLiteral(lit72, "\ufeff", 5, false); !ok {
+	} else if _, ok = p.parser.matchLiteral(lit32, "\ufeff", 5, false); !ok {
 		goto L5
 	}
 	goto L6
@@ -5512,7 +5294,7 @@ L6:
 	v16 = p.newNode("Seq", x1, p.pos, x2)
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 	p.where = "main"
-	v = func() any { f_73 := k7; return tmk_File(c, true, f_73) }()
+	v = func() any { f_33 := k7; return tmk_File(c, true, f_33) }()
 	p.depth--
 	return v, true
 fail:
@@ -5582,7 +5364,7 @@ L3:
 		k12 = nil
 		if p.pos < len(p.in) && p.in[p.pos] == 44 {
 			p.pos++
-		} else if _, ok = p.parser.matchLiteral(lit74, ",", 6, false); !ok {
+		} else if _, ok = p.parser.matchLiteral(lit34, ",", 6, false); !ok {
 			goto L13
 		}
 		if v14, ok = p.s2(); !ok {
@@ -5608,8 +5390,8 @@ L3:
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 	p.where = "record"
 	v = func() any {
-		f_75 := func() any { b := len(c.p.kidStack); c.pushList(k4); c.pushItems(k6); return c.endList(b) }()
-		return tmk_Record(c, true, f_75)
+		f_35 := func() any { b := len(c.p.kidStack); c.pushList(k4); c.pushItems(k6); return c.endList(b) }()
+		return tmk_Record(c, true, f_35)
 	}()
 	p.depth--
 	return v, true
@@ -5656,7 +5438,7 @@ func (p *tparser) s2() (any, bool) {
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 34 {
 		p.pos++
-	} else if _, ok = p.parser.matchLiteral(lit76, "\"", 7, false); !ok {
+	} else if _, ok = p.parser.matchLiteral(lit36, "\"", 7, false); !ok {
 		goto L7
 	}
 	for {
@@ -5676,7 +5458,7 @@ func (p *tparser) s2() (any, bool) {
 		x9, x10 = p.pos, len(p.recovered)
 		if p.pos+2 <= len(p.in) && p.in[p.pos] == 34 && p.in[p.pos+1] == 34 {
 			p.pos += 2
-		} else if _, ok = p.parser.matchLiteral(lit77, "\"\"", 9, false); !ok {
+		} else if _, ok = p.parser.matchLiteral(lit37, "\"\"", 9, false); !ok {
 			goto L11
 		}
 		for {
@@ -5703,7 +5485,7 @@ func (p *tparser) s2() (any, bool) {
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 34 {
 		p.pos++
-	} else if _, ok = p.parser.matchLiteral(lit78, "\"", 7, false); !ok {
+	} else if _, ok = p.parser.matchLiteral(lit38, "\"", 7, false); !ok {
 		goto L7
 	}
 	goto L3
@@ -5728,7 +5510,7 @@ L6:
 		x14, x15 = p.pos, len(p.recovered)
 		if p.pos < len(p.in) && p.in[p.pos] == 13 {
 			p.pos++
-		} else if _, ok = p.parser.matchLiteral(lit79, "\r", 11, false); !ok {
+		} else if _, ok = p.parser.matchLiteral(lit39, "\r", 11, false); !ok {
 			goto L16
 		}
 		x17 = p.pos
@@ -5823,7 +5605,7 @@ func (p *tparser) s3() (any, bool) {
 	x9 = p.pos
 	if p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10 {
 		p.pos += 2
-	} else if _, ok = p.parser.matchLiteral(lit80, "\r\n", 13, false); !ok {
+	} else if _, ok = p.parser.matchLiteral(lit40, "\r\n", 13, false); !ok {
 		goto L8
 	}
 	v10 = p.newMatch(x9, p.pos, "\r\n", true)
@@ -5840,7 +5622,7 @@ L7:
 	x13 = p.pos
 	if p.pos < len(p.in) && p.in[p.pos] == 10 {
 		p.pos++
-	} else if _, ok = p.parser.matchLiteral(lit81, "\n", 14, false); !ok {
+	} else if _, ok = p.parser.matchLiteral(lit41, "\n", 14, false); !ok {
 		goto L12
 	}
 	v14 = p.newMatch(x13, p.pos, "\n", true)
@@ -5856,7 +5638,7 @@ L11:
 	x23 = p.pos
 	if p.pos < len(p.in) && p.in[p.pos] == 13 {
 		p.pos++
-	} else if _, ok = p.parser.matchLiteral(lit82, "\r", 11, false); !ok {
+	} else if _, ok = p.parser.matchLiteral(lit42, "\r", 11, false); !ok {
 		goto L21
 	}
 	v24 = p.newMatch(x23, p.pos, "\r", true)
@@ -5924,7 +5706,7 @@ func (p *tparser) s4() (any, bool) {
 	}
 	if p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10 {
 		p.pos += 2
-	} else if _, ok = p.parser.matchLiteral(lit83, "\r\n", 13, false); !ok {
+	} else if _, ok = p.parser.matchLiteral(lit43, "\r\n", 13, false); !ok {
 		goto L7
 	}
 	goto L3
@@ -5938,7 +5720,7 @@ L6:
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 10 {
 		p.pos++
-	} else if _, ok = p.parser.matchLiteral(lit84, "\n", 14, false); !ok {
+	} else if _, ok = p.parser.matchLiteral(lit44, "\n", 14, false); !ok {
 		goto L9
 	}
 	goto L3
@@ -5949,7 +5731,7 @@ L8:
 	x11, x12 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) && p.in[p.pos] == 13 {
 		p.pos++
-	} else if _, ok = p.parser.matchLiteral(lit85, "\r", 11, false); !ok {
+	} else if _, ok = p.parser.matchLiteral(lit45, "\r", 11, false); !ok {
 		goto L13
 	}
 	goto L14

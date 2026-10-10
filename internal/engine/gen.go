@@ -206,6 +206,12 @@ func (g *generator) rules() {
 			}
 		}
 		if _, ok := r.def.Expr.(*grammar.Pratt); !ok {
+			if g.table != "trules" {
+				if body := g.directNodeBody(r, s); body != "" {
+					bodies[r] = body
+					continue
+				}
+			}
 			g.cur, g.proj = r, g.projections(r)
 			bodies[r] = g.expr(r.def.Expr, s, !r.lean)
 			g.proj = nil

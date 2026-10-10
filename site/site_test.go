@@ -91,8 +91,8 @@ func TestBuild(t *testing.T) {
 		"reference/grammar/index.html":  {`id="Format"`, `id="Grammar.Rules"`, "type RuleDef struct"},
 		"reference/cli/index.html":      {`id="cmd-parse"`, "<code>-g string</code>", "-backend string", `id="commands"`},
 		"docs/design/index.html":        {"012. Typed Values in Generated Parsers", "Implemented"},
-		"docs/optimizations/index.html": {"Optimization Catalog", "001. Value-free rule bodies", "076. Inline value-free plain generated Go rules"},
-		"docs/performance/index.html":   {`id="1-value-free-rule-bodies-value-free-twins-transient-rules-0b2c903"`, `id="76-inline-value-free-plain-generated-go-rules"`},
+		"docs/optimizations/index.html": {"Optimization Catalog", "001. Value-free rule bodies", "076. Inline value-free plain generated Go rules", "077. Inline value-building and memoized Node expressions in generated Go parsers"},
+		"docs/performance/index.html":   {`id="1-value-free-rule-bodies-value-free-twins-transient-rules-0b2c903"`, `id="76-inline-value-free-plain-generated-go-rules"`, `id="77-inline-value-building-and-memoized-node-expressions-in-generated-go-parsers"`},
 		"playground/index.html":         {`id="pg-grammar"`, `src="../playground/app.js"`, `href="../playground/playground.css"`},
 		"docs/guide/runtime/index.html": {
 			`id="compiled-grammars-pegoc"`, `href="../../../spec/"`, `<pre><code class="language-pego">`,
@@ -116,14 +116,14 @@ func TestBuild(t *testing.T) {
 		t.Fatal(err)
 	}
 	aliases := regexp.MustCompile(`<a id="([0-9]+)-[^"]+"></a>`).FindAllSubmatch(perf, -1)
-	if len(aliases) != 76 {
-		t.Fatalf("performance page has %d legacy change anchors, want 76", len(aliases))
+	if len(aliases) != 77 {
+		t.Fatalf("performance page has %d numbered change anchors, want 77", len(aliases))
 	}
 	seen := map[string]bool{}
 	for _, alias := range aliases {
 		seen[string(alias[1])] = true
 	}
-	for n := 1; n <= 76; n++ {
+	for n := 1; n <= 77; n++ {
 		if !seen[strconv.Itoa(n)] {
 			t.Errorf("performance page is missing legacy anchor for change %d", n)
 		}
@@ -597,13 +597,14 @@ func TestNavigation(t *testing.T) {
 	}{
 		{"docs/optimizations/index.html", "Introduction"},
 		{"docs/optimizations/076-inline-value-free-plain-generated-go-rules/index.html", "76. Inline value-free plain generated Go rules"},
+		{"docs/optimizations/077-inline-node-expressions-in-generated-go-parsers/index.html", "77. Inline value-building and memoized Node expressions in generated Go parsers"},
 	} {
 		sec := optimizationSection(readSidebar(t, filepath.Join(out, filepath.FromSlash(tc.page))))
 		if !sec.Collapsible || !sec.Open {
 			t.Errorf("%s: Optimizations should be open and collapsible", tc.page)
 		}
-		if len(sec.Links) != 77 {
-			t.Errorf("%s: Optimizations lists %d pages, want 77", tc.page, len(sec.Links))
+		if len(sec.Links) != 78 {
+			t.Errorf("%s: Optimizations lists %d pages, want 78", tc.page, len(sec.Links))
 		}
 		current := ""
 		for _, l := range sec.Links {

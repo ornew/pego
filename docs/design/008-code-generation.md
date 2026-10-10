@@ -16,39 +16,38 @@ Generate Go source code for a parser that depends only on the standard library, 
 |:--|:--|
 | Runtime | Parser state, memoization, left recursion, the Pratt loop, attributes and the built-in functions of actions. `internal/engine/genrt/runtime.go` is embedded as is. |
 | Rule table | For each rule: whether it is memoized, whether it is a left-recursion leader, its capture names and so on (the results of the engine's static analysis) |
-| Parser expressions | One method per expression. Constants (literals, character classes, capture slots, rule indices) are embedded. |
+| Parser expressions | General fallback: one method per expression. Supported direct Node rules inline their expressions into a shared raw body used by call wrappers and rule-table entries. |
 | Actions and predicates | Go expressions (returning `any`). Lambdas become Go function literals. |
 | Public API | `Parse(input)`, `ParseRule(name, input)`, `Node`, `SyntaxError`, `SyntaxErrors` |
 
 Because the grammar is not interpreted at run time, no grammar loading or compilation is needed, and expression evaluation is optimized by the Go compiler.
 The node representation (`Node`) and the JSON format are the same as the engine's, so replacing the engine with a generated parser, or the reverse, gives the same results.
 
-### Direct value-free rules
+### Direct rules
 
-The Node runtime also inlines the bodies of value-free plain rules into their call methods, reusing the typed
-runtime's structural emitter. This covers eligible `Recognize` rules and skip twins used by ordinary `Parse`.
-The rule must build no value, need no capture frame, and be unmemoized or transient. Local predicates,
-cuts, recovery, Pratt expressions and left-recursion leaders keep the general implementation. Captures unused
-by these predicate-free recognition rules are omitted. References can call either direct or general rules;
-callee eligibility does not restrict the caller.
+The Node generator inlines eligible value-free plain `Recognize` rules and skip twins used by `Parse`, plus
+supported value-building Node rules.
+The latter can include captures, actions, predicates, scoped repeats, projections and memoized bodies. Local
+cuts, recovery, Pratt expressions, left-recursion leaders and unresolved capture references keep general
+dispatch. References can call direct or general rules; callee eligibility does not restrict the caller.
 
-Each direct call still counts one rule call against the depth limit and restores failed input position and
-recovered errors. Nested alternatives retain ordered diagnostics, silent lookahead, labels and backtracking.
-The rule table retains a separate inlined body for external entry and generic runtime calls; that body's caller
-owns depth and failure rollback. This duplicates some generated statements, so source and compiler cost are
-measured alongside matching speed in [performance change 76](../performance.md#76-inline-value-free-plain-generated-go-rules).
-
-Value-building Node rules and memoized value-free rules still use the general path. Extending direct execution
-to them requires separate value ownership, capture/action, memo and performance gates. TypeScript is unchanged.
+Each direct call still counts one rule call against the depth limit and preserves input rollback, error state,
+ordered diagnostics, silent lookahead, labels, capture/action trails, variable environments, recovery and memo
+semantics. Existing `call`, `invoke`, `invokePlain` and `finish` wrappers retain ownership of those behaviors
+and node naming. Change 76 duplicates eligible value-free plain bodies between direct-call and generic-entry
+methods. Change 77 instead uses one raw Node expression body through the existing wrappers and rule-table entry.
+Source size and compiler cost are measured alongside matching speed in [changes 76 and
+77](../optimizations/README.md#optimization-history). TypeScript and typed-value emission are unchanged.
 
 ### Alternatives considered
 
 - **Generating a typed AST (a Go struct per grammar type)**: convenient for users, but it would need a separate design for representing union types, optional types and the `Error` nodes of error recovery as Go types. This time, identical behavior was prioritized, so the generated parser returns the same `Node` as the engine. Typed values were added later as an option on top of `Node` ([012](012-typed-values.md)).
 - **Making the engine a public package and calling it from generated code**: the generated code would be smaller, but the runtime internals would have to become public API. The ability to distribute the generated code on its own was prioritized.
-- **Sharing one value-free expression body between direct and generic calls**: this avoids duplicated statements,
-  but keeps an extra expression-body call on the hot direct path. The first implementation retains a separate
-  body for generic entry; its measured source/compiler cost bounds this tradeoff. Broader Node/memoized direct
-  execution remains a separate optimization.
+- **Sharing one value-free expression body between direct and generic calls**: this avoids duplicated
+  statements but keeps an extra expression-body call on the hot direct path. Change 76 retains separate bodies
+  for generic entry; its source/compiler cost is measured in that entry. Change 77 shares the unfinished Node
+  expression body through the existing wrappers, with wrapper ownership of depth, frames, actions, recovery,
+  memoization and node naming.
 
 ### Verifying identical behavior
 

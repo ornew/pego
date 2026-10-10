@@ -27,8 +27,8 @@ workload snapshot, not an interleaved estimate of any single optimization's effe
 duplicate-capture checker, variable-dependency graph and redundant no-edit Document schedules are outside
 this full suite; their paired measurements remain in entries 70–73. The tiny JSON and current 27-policy CEL
 controls are also outside this suite; entry 74 holds their interleaved before/after measurements. The large
-Python and tiny JSON controls in entry 75 are outside this suite too. Entry 76 describes later focused
-generated-recognition measurements; this full-suite snapshot predates that change. This run covers 131 cases in 459.013 seconds
+Python and tiny JSON controls in entry 75 are outside this suite too. Entries 76 and 77 describe later focused
+generated-Go measurements; this full-suite snapshot predates those changes. This run covers 131 cases in 459.013 seconds
 on a clean measured commit.
 
 **Backends.** For code-point Node parsing, generated Go parsers take 0.53–0.68× the time of the closure backend.
@@ -395,6 +395,9 @@ Numbered change details, evidence, and reproduction commands now live in the [op
 
 <a id="76-inline-value-free-plain-generated-go-rules"></a>
 - [76. Inline value-free plain generated Go rules](optimizations/076-inline-value-free-plain-generated-go-rules.md)
+
+<a id="77-inline-value-building-and-memoized-node-expressions-in-generated-go-parsers"></a>
+- [77. Inline value-building and memoized Node expressions in generated Go parsers](optimizations/077-inline-node-expressions-in-generated-go-parsers.md)
 
 ## Experiments that did not pay off
 
