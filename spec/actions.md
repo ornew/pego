@@ -31,9 +31,10 @@ def key_value = k:(?a-z)+ op:"=" v:(?0-9)+
 [Values and the concrete syntax tree](parser-expressions.md#values-and-the-concrete-syntax-tree)).
 If the rule body is not a sequence, `$1` is the value of the body. It is an
 error if `n` exceeds the number of elements with a value.
-The index uses ASCII decimal digits and must fit the implementation's `int`;
-leading zeros do not change its value. Invalid digits or overflow are syntax
-errors (see [capture references](lexical.md#capture-references)).
+The index uses ASCII decimal digits and must fit the target's `int` (signed
+32-bit or signed 64-bit, depending on the Go target); leading zeros do not
+change its value. Invalid digits or overflow are syntax errors (see
+[capture references](lexical.md#capture-references)).
 
 Captures are visible only within the rule that makes them; an action cannot
 refer to the captures of the rules that called it. A capture that did not match
@@ -136,7 +137,11 @@ The following fields are available on every node:
 | `&&`, `\|\|`, `!` | booleans; `&&` and `\|\|` short-circuit |
 | unary `-` | integers |
 
-Integer division truncates toward zero; `%` takes the sign of the dividend.
+Go action integers use the target's native `int` width; arithmetic overflow
+wraps at that width. Generated TypeScript actions always use signed 64-bit
+integers, so arithmetic beyond the 32-bit range can differ from Go on a
+32-bit target. Integer division truncates toward zero; `%` takes the sign
+of the dividend.
 
 Comparing nodes by identity tells whether two values are the same node, such as a capture and an element of a
 list. Whether two separate calls of a rule at the same position return the same node is not specified: it

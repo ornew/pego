@@ -121,8 +121,9 @@ sequence `(?` always starts a character class.
 
 An integer literal is a sequence of ASCII decimal digits (`0`–`9`). It is used
 as a repetition count in `a{n,m}` and in actions and predicates. A number that
-does not fit in an `int` of the implementation is an error. A negative number
-in an action is written with the unary `-` operator.
+does not fit in the target's implementation `int` is an error: the range is
+signed 32-bit on a 32-bit Go target and signed 64-bit on a 64-bit target. A
+negative number in an action is written with the unary `-` operator.
 
 ```pego
 "a"{2,3}   [len($s) > 4]
@@ -137,8 +138,8 @@ digits (`$1`) is a capture reference, used in
 [end-of-line anchor](parser-expressions.md#anchors), and `$$` is the end-of-input
 anchor.
 
-A positional index uses the same decimal-digit and implementation-`int` range
-as an integer literal. Leading zeros are allowed; `$0` selects all values, as
+A positional index uses the same decimal-digit and target `int` range as an
+integer literal. Leading zeros are allowed; `$0` selects all values, as
 defined in [capture references](actions.md#capture-references). Non-ASCII
 decimal digits and overflowing numbers are errors, including after `$`;
 they are not interpreted as a different index or as a line anchor.

@@ -192,6 +192,81 @@ func resultJSON(n *Node, err error) string {
 	return string(data)
 }
 
+// generatedNodeJSONHarness compares full trees at the nesting limit without
+// repeatedly encoding every subtree through Node.MarshalJSON. The ordinary
+// corpus still cross-checks the generated parser's public JSON representation.
+const generatedNodeJSONHarness = `
+type nodeNames interface {
+	Type() string
+	Rule() string
+}
+
+func resultJSON(n any, parseErr error) string {
+	var b strings.Builder
+	standardJSONSafe := true
+	var value func(any, int)
+	value = func(v any, depth int) {
+		node, ok := v.(nodeNames)
+		rv := reflect.ValueOf(v)
+		if !ok || rv.IsNil() {
+			data, err := json.Marshal(v)
+			if err != nil { panic(err) }
+			b.Write(data)
+			return
+		}
+		if depth > 1000 { standardJSONSafe = false }
+		x := rv.Elem()
+		str := func(s string) string { data, _ := json.Marshal(s); return string(data) }
+		b.WriteString("{\"type\":" + str(node.Type()))
+		if node.Rule() != "" { b.WriteString(",\"rule\":" + str(node.Rule())) }
+		fmt.Fprintf(&b, ",\"start\":%d,\"end\":%d", x.FieldByName("Start").Int(), x.FieldByName("End").Int())
+		if text := x.FieldByName("Text").String(); text != "" { b.WriteString(",\"text\":" + str(text)) }
+		children := x.FieldByName("Children")
+		if children.Len() > 0 {
+			b.WriteString(",\"children\":[")
+			for i := 0; i < children.Len(); i++ {
+				if i > 0 { b.WriteByte(',') }
+				value(children.Index(i).Interface(), depth+1)
+			}
+			b.WriteByte(']')
+		}
+		fields := x.FieldByName("Fields")
+		if fields.Len() > 0 {
+			order := make([]int, fields.Len())
+			for i := range order { order[i] = i }
+			sort.Slice(order, func(i, j int) bool {
+				return fields.Index(order[i]).FieldByName("Name").String() < fields.Index(order[j]).FieldByName("Name").String()
+			})
+			b.WriteString(",\"fields\":{")
+			for i, j := range order {
+				if i > 0 { b.WriteByte(',') }
+				f := fields.Index(j)
+				b.WriteString(str(f.FieldByName("Name").String()) + ":")
+				value(f.FieldByName("Value").Interface(), depth+1)
+			}
+			b.WriteByte('}')
+		}
+		b.WriteByte('}')
+	}
+	if parseErr != nil {
+		data, _ := json.Marshal(parseErr.Error())
+		b.WriteString("{\"err\":" + string(data) + ",\"node\":")
+	} else {
+		b.WriteString("{\"node\":")
+	}
+	value(n, 0)
+	b.WriteByte('}')
+	if standardJSONSafe {
+		out := map[string]any{"node": n}
+		if parseErr != nil { out["err"] = parseErr.Error() }
+		std, err := json.Marshal(out)
+		if err != nil { panic(err) }
+		if string(std) != b.String() { panic("tree JSON differs from public MarshalJSON") }
+	}
+	return b.String()
+}
+`
+
 // TestGeneratedParsersMatchEngine checks that generated parsers return the same results as the engine:
 // the same trees, positions included, and the same errors, and that Recognize returns the errors of
 // the engine's recognition.
@@ -203,7 +278,7 @@ func TestGeneratedParsersMatchEngine(t *testing.T) {
 	if _, err := os.Stat(goBin); err != nil {
 		t.Skip("go command not found")
 	}
-	cases := genCorpus(t)
+	cases := append(genCorpus(t), nativeIntegerGenCase())
 	// Exactly at and just beyond the default nesting limit (DefaultMaxDepth rule calls). Only
 	// here: the iterative VM, which other tests run on the corpus, has a higher default.
 	cases = append(cases, genCase{"nesting limit", `
@@ -256,7 +331,7 @@ def x = pratt {
 		for _, in := range c.inputs {
 			for _, unit := range []Unit{CodePoints, Bytes} {
 				n, err := prog.ParseWith("main", in, ParseOptions{Unit: unit})
-				out := resultJSON(n, err)
+				out := deepResultJSON(t, n, err)
 				_, err = prog.ParseWith("main", in, ParseOptions{Unit: unit, Recognize: true})
 				want = append(want, out+" recognize: "+strconv.Quote(fmt.Sprint(err)))
 			}
@@ -268,7 +343,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
+	"sort"
 	"strconv"
+	"strings"
 `+imports.String()+`)
 
 var parsers = []func(string, bool) (any, error){
@@ -276,6 +354,8 @@ var parsers = []func(string, bool) (any, error){
 
 var recognizers = []func(string, bool) error{
 `+recognizers.String()+`}
+
+`+generatedNodeJSONHarness+`
 
 func main() {
 	var inputs [][]string
@@ -285,12 +365,7 @@ func main() {
 		for _, s := range in {
 			for _, bytes := range []bool{false, true} {
 				n, err := parsers[i](s, bytes)
-				out := map[string]any{"node": n}
-				if err != nil {
-					out["err"] = err.Error()
-				}
-				b, _ := json.Marshal(out)
-				fmt.Println(string(b) + " recognize: " + strconv.Quote(fmt.Sprint(recognizers[i](s, bytes))))
+				fmt.Println(resultJSON(n, err) + " recognize: " + strconv.Quote(fmt.Sprint(recognizers[i](s, bytes))))
 			}
 		}
 	}
@@ -415,7 +490,7 @@ type R struct { T Match }
 def main: R = t:@n -> new R{T: $t}
 def n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x" + strings.Repeat(")", DefaultMaxDepth-2),
 		strings.Repeat("(", DefaultMaxDepth-1) + "x" + strings.Repeat(")", DefaultMaxDepth-1)}})
-	cases = append(cases, genCase{"typed", typedGrammar, []string{"f(1,x)!?;[3];zz", "f(1,(;g();", "f(a);"}})
+	cases = append(cases, nativeIntegerGenCase(), genCase{"typed", typedGrammar, []string{"f(1,x)!?;[3];zz", "f(1,(;g();", "f(a);"}})
 	// The grammars written for direct rules also get mutated inputs, which reach other partial
 	// matches and failures than the written ones.
 	for i := range cases {
@@ -623,4 +698,18 @@ func main() {
 			t.Errorf("typed %q:\n got %s\nwant %s", cases[len(cases)-1].inputs[i], got, want)
 		}
 	}
+}
+
+// Go generation preserves native-int arithmetic in Node, typed and recognize
+// output. Keep this case out of the shared TS corpus, whose arithmetic is 64-bit.
+func nativeIntegerGenCase() genCase {
+	max := strconv.Itoa(int(^uint(0) >> 1))
+	return genCase{"native integer boundaries", fmt.Sprintf(`
+type R struct { Max int, Min int, Wrap int, Quotient int }
+def main = x:@"é"* $$ -> new R{
+    Max: %s,
+    Min: -%s - 1,
+    Wrap: %s + len($x),
+    Quotient: (-%s - 1 + len($x)) / -1,
+}`, max, max, max, max), []string{"", "é", "éé", "éx"}}
 }

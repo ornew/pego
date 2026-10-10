@@ -119,9 +119,7 @@ check acceptance equivalence, not execution of that many iterations. Exact
 TypeScript counting beyond its safe-integer range remains a separate runtime
 representation question.
 
-The reference repository currently assumes 64-bit Go in other components:
-the TypeScript generator's safe-integer comparisons, the instruction operand
-decoder and Document resumption contain constants that prevent a linux/386
-build. That failure also occurs at the parent revision. This change specifies
-host-int range validation for wide bounds; it does not establish 32-bit Go
-support for the repository.
+The repository's target-width contract and 32-bit validation are described in
+[design record 025](025-native-int-portability.md). Wide bounds retain the
+native `int` range on 64-bit targets; narrower targets reject compiled values
+they cannot represent instead of truncating them.

@@ -93,7 +93,12 @@ go get github.com/ornew/pego                        # library
 go install github.com/ornew/pego/cmd/pego@latest    # command-line tool
 ```
 
-Go 1.27 or later. No dependencies outside the standard library.
+Go 1.27 or later on 32-bit and 64-bit targets. PEGO uses Go's native `int`
+range for grammar integers, positions and repetition bounds. On 32-bit targets,
+out-of-range source and serialized integers, positions and bounds are rejected;
+compiled grammars are checked before values are narrowed. Integer arithmetic
+uses the target's native width and wraps on overflow. No dependencies outside
+the standard library.
 
 ## Use it
 

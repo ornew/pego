@@ -55,9 +55,16 @@ An instruction consists of an opcode and up to three integer operands, `A`, `B` 
 
 Operands are signed 32-bit integers. Repetition bounds that exceed this range
 use `REPEATW` or `SCANW`, whose bound operands index `EINT` constants in the
-expression code. These constants preserve the full implementation-int range;
-they are read directly, without evaluating an action. Ordinary instructions
-retain their compact representation.
+expression code. These constants preserve the full implementation-`int`
+range; they are read directly, without evaluating an action. Ordinary
+instructions retain their compact representation.
+
+Values decoded into Go `int` fields must fit the runtime target's native range.
+On a 32-bit target, a module containing an out-of-range index, integer
+constant or repetition bound is rejected before narrowing; the same module
+can remain valid on a 64-bit target. Values that fit both targets keep the
+same encoding and decoded values. The encoding does not cap 64-bit bounds at
+2³¹−1.
 
 The public grammar AST treats every negative repetition maximum as unbounded.
 Compilation canonicalizes it to -1 before narrowing operands or creating wide

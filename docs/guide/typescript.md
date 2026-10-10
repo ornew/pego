@@ -24,8 +24,9 @@ generator's guide, [code generation](code-generation.md), only for the compariso
 
 Use it when a grammar has to run where Go does not: in a browser (a syntax checker, an editor, a playground), in a
 Node.js tool, or in a TypeScript service that shares a format with a Go one. Since both parsers come from the same
-`.pego` file and return identical results, the two sides cannot drift apart: a tree serialized on one side is the tree
-the other side would have built.
+`.pego` file, their trees and diagnostics agree for the common integer range.
+TypeScript uses 64-bit action arithmetic; Go uses its target's native `int`
+width, so overflow can differ on 32-bit Go targets.
 
 | | Engine (Go) | Generated Go | Generated TypeScript |
 |:--|:--|:--|:--|
@@ -229,8 +230,12 @@ error messages are sorted in the same order.
 
 ## Values of actions
 
-Ints in actions are 64-bit, as in Go: `9223372036854775807 + 1` wraps around to `-9223372036854775808`, `/` truncates
-toward zero and `%` takes the sign of the dividend. An int is a JavaScript `number` while it is a safe integer (within
+Ints in generated TypeScript actions are fixed at 64 bits: `9223372036854775807 + 1` wraps around to
+`-9223372036854775808`, `/` truncates toward zero and `%` takes the sign of the dividend. This matches Go on 64-bit
+targets. Go on 32-bit targets uses a 32-bit `int`, so source integer literals and repetition bounds outside that range
+are rejected there. Computed values wrap at 32 bits in Go on those targets,
+while TypeScript retains 64-bit arithmetic regardless of the generator's Go
+host. An int is a JavaScript `number` while it is a safe integer (within
 ±2<sup>53</sup>−1) and a `bigint` beyond, so equal ints are always `===`, and code that reads a field gets a `number` in
 all ordinary cases:
 

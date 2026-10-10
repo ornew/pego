@@ -677,7 +677,7 @@ func (g *tsGen) prattLine(e grammar.Expr, action grammar.Term, operator bool) st
 // bigint (see the runtime's ints).
 func tsInt(v int) string {
 	const maxSafe = 1<<53 - 1
-	if v >= -maxSafe && v <= maxSafe {
+	if int64(v) >= -maxSafe && int64(v) <= maxSafe {
 		return strconv.Itoa(v)
 	}
 	return "BigInt(\"" + strconv.Itoa(v) + "\")"

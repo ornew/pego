@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -100,11 +101,22 @@ func TestGeneratedTSParsersMatchEngine(t *testing.T) {
 def main = n
 def n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x" + strings.Repeat(")", DefaultMaxDepth-2),
 		strings.Repeat("(", DefaultMaxDepth-1) + "x" + strings.Repeat(")", DefaultMaxDepth-1)}})
-	// Values that JavaScript represents differently from Go: 64-bit ints that wrap around (the
-	// runtime switches to bigint beyond the safe integers), negative division, -0, strings
-	// compared and measured by code points or UTF-8 bytes (JavaScript strings are UTF-16), and
-	// variables holding big ints as memo keys.
-	cases = append(cases, genCase{"ints and strings", `
+	// String ordering/length, negative division, and negative zero remain
+	// portable even when the Go engine uses 32-bit integers.
+	cases = append(cases, genCase{"portable ints and strings", `
+type R struct { A int, B int, C bool, D bool, E int, F string }
+def main = x:@(?a-z)* ","? y:@(?^!)* -> new R{
+    A: -7 / 2 * len($x),
+    B: -7 % 2 + 0 * -1,
+    C: text($y) < "\u{1F600}",
+    D: "\u{FF01}" < "\u{1F600}",
+    E: len($y),
+    F: text($y) + "!",
+}`, []string{"", "a", "ab,c😀", ",！", "z,日本", "abc,😀x", "a,!!"}})
+	// The TS runtime always uses signed 64-bit arithmetic. Compare its wide
+	// overflow and bigint memo keys against the Go engine only on a 64-bit host.
+	if strconv.IntSize == 64 {
+		cases = append(cases, genCase{"ints and strings", `
 type R struct { A int, B int, C int, D int, E int, F int, G bool, H bool, I int, J string, K int, L bool, M int }
 def main = x:@(?a-z)* ","? y:@(?^!)* [big = 9007199254740992 + len($x)] z:big? -> new R{
     A: 9223372036854775807 + len($x),
@@ -122,6 +134,7 @@ def main = x:@(?a-z)* ","? y:@(?^!)* [big = 9007199254740992 + len($x)] z:big? -
     M: len($z),
 }
 def big = [big > 9007199254740992] @"!"+`, []string{"", "a", "ab,c😀", ",！", "z,日本", "abc,😀x", "a,!!"}})
+	}
 	// Variants of the short inputs: every prefix, and the input without each byte. They fail in many
 	// places (expectations, recovery, cuts, memoized failures), and some are not valid UTF-8.
 	for i := range cases {
@@ -311,8 +324,9 @@ func TestGenerateTSErrors(t *testing.T) {
 // where that succeeds.
 func deepResultJSON(t *testing.T, n *Node, err error) string {
 	var b strings.Builder
-	var value func(v any)
-	value = func(v any) {
+	standardJSONSafe := true
+	var value func(v any, depth int)
+	value = func(v any, depth int) {
 		x, ok := v.(*Node)
 		if !ok || x == nil {
 			data, err := json.Marshal(v)
@@ -321,6 +335,12 @@ func deepResultJSON(t *testing.T, n *Node, err error) string {
 			}
 			b.Write(data)
 			return
+		}
+		// Node.MarshalJSON re-encodes each subtree. Keep its independent
+		// cross-check for ordinary trees without quadratic work on the
+		// 100,000-level nesting fixtures, especially under emulation.
+		if depth > 1000 {
+			standardJSONSafe = false
 		}
 		str := func(s string) string { data, _ := json.Marshal(s); return string(data) }
 		b.WriteString(`{"type":` + str(x.Type()))
@@ -337,7 +357,7 @@ func deepResultJSON(t *testing.T, n *Node, err error) string {
 				if i > 0 {
 					b.WriteByte(',')
 				}
-				value(c)
+				value(c, depth+1)
 			}
 			b.WriteByte(']')
 		}
@@ -348,7 +368,7 @@ func deepResultJSON(t *testing.T, n *Node, err error) string {
 					b.WriteByte(',')
 				}
 				b.WriteString(str(f.Name) + ":")
-				value(f.Value)
+				value(f.Value, depth+1)
 			}
 			b.WriteByte('}')
 		}
@@ -360,10 +380,12 @@ func deepResultJSON(t *testing.T, n *Node, err error) string {
 	} else {
 		b.WriteString(`{"node":`)
 	}
-	value(n)
+	value(n, 0)
 	b.WriteByte('}')
-	if std := resultJSON(n, err); std != "" && std != b.String() {
-		t.Fatalf("deepResultJSON differs from resultJSON:\n %s\n %s", b.String(), std)
+	if standardJSONSafe {
+		if std := resultJSON(n, err); std != "" && std != b.String() {
+			t.Fatalf("deepResultJSON differs from resultJSON:\n %s\n %s", b.String(), std)
+		}
 	}
 	return b.String()
 }
@@ -551,5 +573,29 @@ for (const e of [internal, new RangeError("Maximum call stack size exceeded"), n
 		"threw RangeError: Invalid array length\n"
 	if out != want {
 		t.Errorf("got\n%s\nwant\n%s", out, want)
+	}
+}
+
+// Generating on a 32-bit Go host does not narrow TypeScript runtime arithmetic.
+// All source literals fit int32; the computed values require signed 64-bit ints.
+func TestGeneratedTSIntegerWidth(t *testing.T) {
+	out := runTSScript(t, `
+type R struct { Wide int, Wrapped int, Quotient int }
+def main = "é" [wide = 2147483647 + 1] [half = wide * wide] -> new R{
+    Wide: wide,
+    Wrapped: half * 2,
+    Quotient: half * 2 / -1,
+}`, `import { parse, CodePoints, Bytes } from "./parser.ts";
+for (const unit of [CodePoints, Bytes]) {
+  const r = parse("é", unit);
+  if (r.error !== null || r.node === null) throw new Error(String(r.error));
+  for (const name of ["Wide", "Wrapped", "Quotient"]) {
+    console.log(String(r.node.field(name)));
+  }
+}
+`)
+	want := strings.Repeat("2147483648\n-9223372036854775808\n-9223372036854775808\n", 2)
+	if out != want {
+		t.Fatalf("got %q; want %q", out, want)
 	}
 }
