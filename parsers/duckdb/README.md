@@ -118,14 +118,14 @@ the script; for the SELECT statements of `tests` and `exprs` it also compares th
 
 | | tests | exprs | lexical | keywords | mutants | found |
 |:--|--:|--:|--:|--:|--:|--:|
-| Both accept | 45,537 | 6,166 | 852 | 64,053 | 3,894 | 91 |
-| Both reject (a syntax error) | 195 | 1,489 | 338 | 18,333 | 15,984 | 87 |
+| Both accept | 45,537 | 6,166 | 852 | 64,053 | 3,894 | 94 |
+| Both reject (a syntax error) | 195 | 1,489 | 338 | 18,333 | 15,984 | 88 |
 | DuckDB rejects after parsing, the parser accepts | 180 | 0 | 29 | 1,233 | 122 | 11 |
-| Known deviations ([testdata/deviations.jsonl](testdata/deviations.jsonl)) | 0 | 0 | 0 | 0 | 0 | 11 |
+| Known deviations ([testdata/deviations.jsonl](testdata/deviations.jsonl)) | 0 | 0 | 0 | 0 | 0 | 7 |
 | The parser rejects what DuckDB accepts, other | 0 | 0 | 0 | 0 | 0 | 0 |
 | The parser accepts what DuckDB rejects with a syntax error, other | 0 | 0 | 0 | 0 | 0 | 0 |
 
-**The parser and DuckDB agree on every text** where DuckDB's parser itself finds a syntax error or none, but the eleven
+**The parser and DuckDB agree on every text** where DuckDB's parser itself finds a syntax error or none, but the seven
 known deviations (below). The third row counts the texts that DuckDB's parser rejects in the step after the Bison
 grammar, when it transforms the syntax tree into its own: the grammar cannot know. They are 1,575 texts, of which about 1,150 name a window that does not exist, 133 are
 an empty select list in a context the grammar accepts (`cte2 AS (SELECT )`), and the others are checks such as
@@ -141,6 +141,17 @@ because DuckDB expands a statement into several: `PIVOT` makes a `CREATE TYPE` f
 statements, and `ALTER TABLE ... ADD COLUMN ... DEFAULT` is five), 852 of `lexical` and 3,842 of `mutants`. The text DuckDB
 keeps for a statement is what lies between the semicolons that surround it, comments and white space included, and with
 the Unicode white space of the text replaced by spaces.
+
+DuckDB allows `BETWEEN` as a column name as well as a frame keyword. In all three frame units, forms such as
+`ROWS BETWEEN . PRECEDING AND 1 PRECEDING`, `RANGE BETWEEN IN PRECEDING AND -1 PRECEDING` and
+`GROUPS BETWEEN AND PRECEDING AND 1 PRECEDING` are single-bound frames: their offset expressions contain the
+column name `BETWEEN`, and the end defaults to `CURRENT ROW`. They are not special dot, `IN` or `AND` bound
+literals. This follows the conflict resolution of DuckDB 1.5.6's Bison grammar. An unparenthesized `NOT` cannot
+start the first bound of a two-bound frame; `(NOT 1)` can, and `NOT 1` can start a single or second bound.
+The same conflict state rejects `LIKE`, `ILIKE`, `GLOB`, `SIMILAR`, `BETWEEN` and the scanner's `NOT_LA` token
+immediately after the frame keyword `BETWEEN`, preserving the grammar's nonassociativity. Tokens that select
+the two-bound parse do not fall back to a single bound on failure: `ROWS BETWEEN - PRECEDING AND 1 FOLLOWING`
+remains a syntax error.
 
 ### The AST
 
@@ -163,7 +174,10 @@ A statement is not compared when it has a construct that the mapping does not co
 `UNPIVOT`, which DuckDB expands, `SAMPLE` clauses, `LATERAL`, the `VARIANT` and `GEOMETRY` types, `WITHIN GROUP`, `ARRAY(...)`
 with an `ORDER BY`, and `DESCRIBE`). The two statements that differ are `WITH RECURSIVE t(b) AS MATERIALIZED ((WITH helper(c) AS
 (SELECT 5) SELECT ...` (the aliases that DuckDB puts in a recursive CTE written with a parenthesized `WITH`) and a `NOT`
-applied to `NOT BETWEEN` in a fuzzer-made expression. The mapping is test code: it is not an API of the module.
+applied to `NOT BETWEEN` in a fuzzer-made expression. The mapping is test code: it is not an API of the module. Expanded frame controls also expose three
+mapping-only disagreements for unary `OPERATOR(+)`: the source AST retains the written operator, but the test
+mapping does not yet unwrap that spelling to the canonical `+` function name. This limitation is separate
+from syntax acceptance and the two corpus disagreements above.
 
 The precedence and the associativity of the operators were checked further with 250,000 random expressions made with
 other seeds than the corpus (`REFERENCE_FILE`, see [testdata/README.md](testdata/README.md)): the same acceptance, and the same
@@ -171,14 +185,12 @@ AST in all of the 114,000 SELECT statements that they make.
 
 ### Known deviations and limits
 
-- **Eleven texts** ([testdata/deviations.jsonl](testdata/deviations.jsonl), each with its reason) on which the parser and DuckDB
+- **Seven texts** ([testdata/deviations.jsonl](testdata/deviations.jsonl), each with its reason) on which the parser and DuckDB
   differ in acceptance. Six come from the pass with which DuckDB replaces Unicode white space before it parses: it does
   not close a dollar-quoted string when a letter follows the closing tag (`select $a$b$a$x<U+3000>x`), so it leaves the
-  white space inside the name that follows, where the parser reads a space. Five are grammar differences:
-  DuckDB accepts the words `IN` and `AND` and, after `GROUPS BETWEEN`,
-  a lone dot as the first bound of a frame (before `PRECEDING`), rejects `NOT` at the start of that bound, and accepts
-  a percent sign after a postfix operator (`LIMIT -1| %`). The other differences that mutating the tests found,
-  in 1.4 million texts, were fixed and are in the corpus `found`.
+  white space inside the name that follows, where the parser reads a space. The remaining grammar difference is a
+  percent sign after a postfix operator (`LIMIT -1| %`), which DuckDB accepts. The other differences that mutating
+  the tests found, in 1.4 million texts, were fixed and are in the corpus `found`.
 - **The checks after parsing** (above) are not made: a text such as `SELECT sum(x) OVER w` where the window `w` is not defined
   is accepted. A function that checks the most common of them is not part of this module.
 - **`Split` and statements that DuckDB expands**: `PIVOT`, `COPY FROM DATABASE` and `ALTER TABLE ... ADD COLUMN ... DEFAULT` are one
@@ -191,7 +203,7 @@ AST in all of the 114,000 SELECT statements that they make.
 - **Nesting** is limited by the depth limit of the generated parser, 100,000 rule calls: 16,600 levels of parentheses,
   14,200 of lists, 12,500 of `CASE`, 11,100 of derived tables, 10,000 of function calls, 7,100 of subqueries and 99,980
   prefix operators in a chain (`NOT NOT ... a`, `- - ... a`). Deeper input fails with an error.
-- **Compile time and size**: the generated `parser.go` is 15.5 MB (780,000 lines). The generator writes separate rules for
+- **Compile time and size**: the generated `parser.go` is 15.6 MB (780,000 lines). The generator writes separate rules for
   tree parsing, recognition and typed AST construction, including the case-insensitive keyword tries. Its first
   compilation is expensive; subsequent builds reuse the Go build cache. Reducing generated code size remains open work.
 - **DuckDB's extensions** (the parsers that extensions add, such as PRQL) and the settings that change how DuckDB parses
@@ -276,8 +288,9 @@ is not parsed twice to find that no string literal follows it, `IN`, `LIKE`, `IS
 the benchmarked version compared a word with unreserved keywords beginning with its letter, rather than all 330
 (that alone made a `CREATE TABLE` with a `TEXT` column 5 times as fast). The current grammar uses case-insensitive
 tries for complete keyword recognition; the historical measurements above predate that correctness change.
-`BenchmarkStatements` gives the speed on 35 kinds of statement, from 2.5 MB/s
-(`SELECT [1, 2, 3], {'a': 1, 'b': 2}, x[1], x.y`) to 19 MB/s (`ATTACH 'f.db' AS db`).
+`BenchmarkStatements` now covers 36 kinds of statement, including explicit window frames. The historical
+35-case measurements ranged from 2.5 MB/s (`SELECT [1, 2, 3], {'a': 1, 'b': 2}, x[1], x.y`) to 19 MB/s
+(`ATTACH 'f.db' AS db`).
 
 ## Development
 

@@ -23,7 +23,7 @@
 // every pair of operators, 1,219 literals, names and comments of the scanner, 83,619 uses of every keyword where
 // a name may stand, 20,000 mutations of the tests (a token deleted, duplicated, swapped, replaced, inserted,
 // or the statement cut short), and 200 texts that an earlier version got wrong. The data is vendored in
-// testdata/reference. On every one of them but eleven (testdata/deviations.jsonl) the parser and DuckDB agree on
+// testdata/reference. On every one of them but seven (testdata/deviations.jsonl) the parser and DuckDB agree on
 // whether the text has a syntax error: DuckDB rejects 1,575 of the texts that the parser
 // accepts, but not with a syntax error: after parsing, in the step that turns the syntax tree into its own
 // (the window that an OVER clause names does not exist, SELECT INTO is not supported, VALUES lists of
@@ -37,10 +37,9 @@
 //
 //   - DuckDB's parser also checks, after parsing, what the grammar cannot show; this parser does not. A text
 //     that has one of these errors is accepted (see the README for the list of those that the data shows).
-//   - Eleven texts, in testdata/deviations.jsonl, are read differently: six because DuckDB does not replace
-//     Unicode white space after a dollar-quoted string that a letter follows, and five because of grammar
-//     differences (the words IN and AND, or a dot, as the first
-//     bound of a frame, NOT at the start of that bound, a percent sign after a postfix operator in LIMIT).
+//   - Seven texts, in testdata/deviations.jsonl, are read differently: six because DuckDB does not replace
+//     Unicode white space after a dollar-quoted string that a letter follows, and one because it accepts
+//     a percent sign after a postfix operator in LIMIT.
 //   - Split gives one statement for the statements that DuckDB expands.
 //   - Nesting stops at the depth limit of the generated parser with an error: 7,000 to 16,000 levels of
 //     parentheses, subqueries, calls, lists, CASE and derived tables, and 99,980 prefix operators in a chain

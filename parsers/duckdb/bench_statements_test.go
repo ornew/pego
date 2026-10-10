@@ -18,6 +18,7 @@ func BenchmarkStatements(b *testing.B) {
 		{"select_alias", "SELECT a total, b AS other FROM t x;\n"},
 		{"select_case", "SELECT CASE WHEN a > 1 THEN 'x' WHEN a > 2 THEN 'y' ELSE 'z' END FROM t;\n"},
 		{"select_window", "SELECT row_number() OVER (PARTITION BY a ORDER BY b DESC) FROM t;\n"},
+		{"select_frame", "SELECT sum(a) OVER (ORDER BY b ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;\n"},
 		{"select_join", "SELECT * FROM a JOIN b ON a.id = b.id LEFT JOIN c USING (id);\n"},
 		{"select_group", "SELECT a, count(*) FROM t GROUP BY a HAVING count(*) > 1 ORDER BY 2 DESC LIMIT 10;\n"},
 		{"select_sub", "SELECT * FROM (SELECT a FROM t) s WHERE a IN (SELECT b FROM u);\n"},

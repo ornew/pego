@@ -348,9 +348,13 @@ multibyte prefixes and later lines. Semantic-error line/column locations retain 
 units; valid replacement characters remain accepted. Grammar/generated output is unchanged.
 DuckDB keyword classification matches every ASCII case while retaining category-specific identifier permissions
 and full word boundaries (M11, keyword stage). SETOF operands now follow the simple-type/qualified-ARRAY
-boundary, preserving ordinary constructed types and recursive member types (M11, type stage). Vendored reference
-tests retain eleven scanner/grammar deviations; transformer-only semantic checks and generated parser size remain
-open work. The module README describes those limits separately from the corrected grammar behavior.
+boundary, preserving ordinary constructed types and recursive member types (M11, type stage). Window frames
+preserve BETWEEN-as-column expressions as single bounds and reject bare NOT at the first two-bound offset,
+matching the reference AST and grammar conflict resolution (M11, frame stage). Vendored reference tests retain
+seven scanner/grammar deviations; transformer-only semantic checks and generated parser size remain
+open work. Expanded frame controls also expose existing canonical-oracle normalization gaps for unary
+OPERATOR(+) (M17); source AST operators retain their written syntax. The module README describes those limits
+separately from the corrected grammar behavior.
 Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
 results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused

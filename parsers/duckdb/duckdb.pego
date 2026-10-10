@@ -932,9 +932,18 @@ def over_clause: WindowOver = OVER ws (s:window_specification / n:col_id) -> new
 def window_specification: WindowSpec = "(" ws (!(PARTITION / RANGE / ROWS / GROUPS) b:col_id)?
     (ws PARTITION ws BY ws xs:expr_list)? (ws o:sort_clause)? (ws f:frame_clause)? ws ")"
     -> new WindowSpec{Base: $b, PartitionBy: concat($xs), OrderBy: $o, Frame: $f}
-def frame_clause: Frame = frame_between / frame_single
-def frame_single: Frame = u:(RANGE / ROWS / GROUPS) ws !BETWEEN b:frame_bound (ws e:window_exclusion)? -> new Frame{Unit: text($u), Start: $b, Exclude: text($e)}
-def frame_between: Frame = u:(RANGE / ROWS / GROUPS) ws BETWEEN ws b:frame_bound ws AND ws c:frame_bound (ws e:window_exclusion)?
+// BETWEEN can also name a column in a single-bound expression. Bison reduces
+// that keyword before NOT, so a two-bound frame cannot start with bare NOT.
+// Its nonassociative operator lookaheads reject either interpretation.
+def frame_clause: Frame = !frame_conflict f:(frame_between / frame_single) -> $f
+def frame_conflict = (RANGE / ROWS / GROUPS) ws BETWEEN ws
+    (BETWEEN / GLOB / ILIKE / LIKE / SIMILAR / NOT ws (BETWEEN / IN / LIKE / ILIKE / SIMILAR))
+// These shifted tokens could also extend or terminate a BETWEEN column
+// expression. Do not retry that interpretation after a two-bound failure.
+def frame_shift = AT / OPERATOR / PRECEDING / FOLLOWING / op_generic / op_plus / op_minus / op_star
+    / "[" / "(" / "?" / "{" / "#" / "$"
+def frame_single: Frame = u:(RANGE / ROWS / GROUPS) ws !(BETWEEN ws frame_shift) b:frame_bound (ws e:window_exclusion)? -> new Frame{Unit: text($u), Start: $b, Exclude: text($e)}
+def frame_between: Frame = u:(RANGE / ROWS / GROUPS) ws BETWEEN ws !NOT b:frame_bound ws AND ws c:frame_bound (ws e:window_exclusion)?
     -> new Frame{Unit: text($u), Start: $b, End: $c, Exclude: text($e)}
 def frame_bound: FrameBound = frame_bound_kw / frame_bound_expr
 def frame_bound_kw: FrameBound = k:@(UNBOUNDED ws (PRECEDING / FOLLOWING) / CURRENT ws ROW) -> new FrameBound{Kind: text($k)}
