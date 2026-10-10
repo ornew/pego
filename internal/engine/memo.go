@@ -1,6 +1,10 @@
 package engine
 
-import "slices"
+import (
+	"errors"
+	"slices"
+	"strconv"
+)
 
 // memoTable is the memo table ((rule, position, binding level) → result). It keeps a linked
 // list of entries per position. Positions are offsets from the start of the input; entries at
@@ -61,14 +65,45 @@ func (t *memoTable) firstCall(pos, r int) bool {
 func (t *memoTable) markSeen(pos, r int) bool {
 	i := pos*t.stride + r
 	w, b := i>>6, uint64(1)<<(i&63)
+	if strconv.IntSize == 32 {
+		w, b = seenBit(pos, r, t.stride)
+	}
 	if w >= len(t.seen) {
-		t.seen = append(t.seen, make([]uint64, max(w+1-len(t.seen), len(t.seen), 64))...)
+		if strconv.IntSize == 32 {
+			seen := make([]uint64, seenCapacity(len(t.seen), w))
+			copy(seen, t.seen)
+			t.seen = seen
+		} else {
+			t.seen = append(t.seen, make([]uint64, max(w+1-len(t.seen), len(t.seen), 64))...)
+		}
 	}
 	if t.seen[w]&b != 0 {
 		return false
 	}
 	t.seen[w] |= b
 	return true
+}
+
+// seenBit addresses a bit without requiring the intermediate bit number to
+// fit a native int. The 64-bit path keeps its original arithmetic; on 32-bit
+// hosts the word index can fit even when position*stride exceeds MaxInt.
+func seenBit(pos, r, stride int) (int, uint64) {
+	if strconv.IntSize == 32 {
+		i := uint64(pos)*uint64(stride) + uint64(r)
+		w := i >> 6
+		if w >= uint64(^uint(0))/8 {
+			panic(fatal{errors.New("deferred memoization bitset size overflows uintptr")})
+		}
+		return int(w), uint64(1) << (i & 63)
+	}
+	i := pos*stride + r
+	return i >> 6, uint64(1) << (i & 63)
+}
+
+// seenCapacity bounds both the requested word and geometric growth. The
+// caller uses exact make/copy on 32-bit hosts so append cannot overallocate.
+func seenCapacity(used, word int) int {
+	return max(word+1, min(2*used, int(^uint(0)/8)), 64)
 }
 
 func newMemoTable() *memoTable { return &memoTable{} }

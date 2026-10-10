@@ -6,6 +6,7 @@ package calc
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 	"sort"
@@ -548,8 +549,17 @@ func (p *parser) firstCall(r *rule) bool {
 	c.calls++
 	i := p.pos*t.stride + r.seen
 	w, b := i>>6, uint64(1)<<(i&63)
+	if strconv.IntSize == 32 {
+		w, b = seenBit(p.pos, r.seen, t.stride)
+	}
 	if w >= len(t.seen) {
-		t.seen = append(t.seen, make([]uint64, max(w+1-len(t.seen), len(t.seen), 64))...)
+		if strconv.IntSize == 32 {
+			seen := make([]uint64, seenCapacity(len(t.seen), w))
+			copy(seen, t.seen)
+			t.seen = seen
+		} else {
+			t.seen = append(t.seen, make([]uint64, max(w+1-len(t.seen), len(t.seen), 64))...)
+		}
 	}
 	if t.seen[w]&b == 0 {
 		t.seen[w] |= b
@@ -562,6 +572,26 @@ func (p *parser) firstCall(r *rule) bool {
 		c.eager = true
 	}
 	return false
+}
+
+// seenBit uses a wide intermediate on 32-bit hosts: the bit number can
+// exceed MaxInt while its word index and backing array remain addressable.
+func seenBit(pos, r, stride int) (int, uint64) {
+	if strconv.IntSize == 32 {
+		i := uint64(pos)*uint64(stride) + uint64(r)
+		w := i >> 6
+		if w >= uint64(^uint(0))/8 {
+			panic(fatal{errors.New("deferred memoization bitset size overflows uintptr")})
+		}
+		return int(w), uint64(1) << (i & 63)
+	}
+	i := pos*stride + r
+	return i >> 6, uint64(1) << (i & 63)
+}
+
+// seenCapacity bounds geometric growth before the 32-bit exact allocation.
+func seenCapacity(used, word int) int {
+	return max(word+1, min(2*used, int(^uint(0)/8)), 64)
 }
 
 type memoEntry struct {

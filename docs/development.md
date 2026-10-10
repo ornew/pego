@@ -89,6 +89,8 @@ each job so unrelated package builds do not compete with stress deadlines.
 The 32-bit target uses Go's
 native `int` range; loading a compiled grammar rejects values that do not fit
 that target rather than narrowing them.
+Deferred memoization computes bit addresses with a wide intermediate on
+32-bit targets and rejects bitset backing-byte sizes that overflow `uintptr`.
 
 `internal/lint` tests every check with positive and negative cases, lints every example grammar against a hand-checked list of findings, and `TestSoundness` checks the certain findings against the engine on random grammars, exhaustively over short inputs (`-soundness=N` for a longer run).
 
