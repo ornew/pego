@@ -104,6 +104,11 @@ Smaller bounds give smaller, more numerous distinct inputs; larger ones exercise
 large lengths make each attempt slower and can lower coverage on large grammars: the generator works within a budget of
 steps per attempt, and the defaults are a good compromise for the grammars in [examples](../../examples/).
 
+`New` first analyzes the grammar's minimum derivation depths, text lengths and coverage reach sets. It processes
+acyclic callees before callers and propagates changed estimates through a bounded worklist for recursive grammars.
+This avoids repeated whole-grammar sweeps caused by declaration order. `WithBudget` bounds generation attempts;
+it does not bound constructor analysis. Dense coverage sets still grow with the number of rules and targets.
+
 Three limits are hard, and each has a knob:
 
 - An attempt gives up after a budget of steps (`-budget`, `WithBudget`, default 20,000; a step is roughly one

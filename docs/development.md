@@ -142,6 +142,11 @@ These checks do not establish live VS Code UI behavior. A sequential dispatch be
 
 Package `sample` walks the grammar AST of a `Parser` with a bounded, seeded depth-first search in continuation-passing style (`gen.go`, `pratt.go`), prunes candidates that the parser would read differently with checks evaluated by a partial matcher (`match.go`) and with predicates evaluated on the generated text (`pred.go`), and returns only inputs that `Parse` accepts. It measures coverage of rules, alternatives and Pratt operands and operators (`analysis.go`) and mutates valid inputs into near-miss invalid ones (`mutate.go`) ([design](design/015-input-generation.md)).
 
+Constructor analysis evaluates acyclic callees before callers and revisits only callers of changed height/length
+estimates or reach sets (`analysis_dependencies.go`). A bounded worklist handles recursive fixed points, and
+contiguous reverse edges avoid one graph allocation per rule. Target numbering, negative-lookahead/recovery
+exclusions and seeded decisions retain their existing semantics; the attempt budget does not bound this analysis.
+
 ### Compiled grammars
 
 A compiled grammar file (`compiled.go`, `modulefile.go`) stores the bytecode module and, optionally, the AST and the static-analysis results (version 2; the format is defined in [bytecode.md](../spec/bytecode.md#file-format)). Loading skips parsing, static analysis, type checking and compilation to bytecode. A file without the AST can be executed only by the bytecode backends. Version 1 files (AST only) can still be loaded ([design](design/009-compiled-grammar-format.md)).
@@ -275,7 +280,9 @@ ASTs, binary string tables, action constants and matched source text. Full/bare/
 short/direct and long literal, suffix/choice and recognition checks cover this contract. Document repetition
 records now survive redundant no-edit parses, including root memo hits, without advancing their edit generation
 (P06). Nested runs, ordinary failure/recovery, multiple edits, edit-log rollover and interrupted memo hits have
-fresh-parse equivalence checks. Next are measured compiler/sample analysis optimizations (P03/P13/P27). C22/C23 require specification
+fresh-parse equivalence checks. Sample constructor analysis now uses dependency propagation instead of whole-grammar
+sweeps (P03); reordered chains and recursive graphs agree with the previous fixed point. Next are measured compiler
+analysis optimizations (P13/P27). C22/C23 require specification
 review before choosing Pratt behavior; analysis and runtime optimizations require fresh measurements. The
 DuckDB LIMIT-percent candidate is saved on [fix/duckdb-limit-percent](https://github.com/ornew/pego/tree/fix/duckdb-limit-percent)
 at [f44269f](https://github.com/ornew/pego/commit/f44269f09ddffa6739450d868581f61baa208246). Its focused engine/native

@@ -167,17 +167,16 @@ func analyze(g *grammar.Grammar, start string) *info {
 		})
 	}
 
-	// Minimal heights and lengths, by iteration to a fixed point.
-	for changed := true; changed; {
-		changed = false
-		for _, ri := range in.order {
-			h, l := in.height(ri.def.Expr), in.length(ri.def.Expr)
-			if h < ri.height || l < ri.length {
-				ri.height, ri.length = min(h, ri.height), min(l, ri.length)
-				changed = true
-			}
+	// Resolve callees first and revisit only callers of changed estimates.
+	deps := in.dependencies()
+	deps.fixedPoint(in, func(ri *ruleInfo) bool {
+		h, l := in.height(ri.def.Expr), in.length(ri.def.Expr)
+		if h >= ri.height && l >= ri.length {
+			return false
 		}
-	}
+		ri.height, ri.length = min(h, ri.height), min(l, ri.length)
+		return true
+	})
 	// Targets and calls in contexts that can match.
 	for _, ri := range in.order {
 		if ri.height >= inf {
@@ -212,16 +211,15 @@ func analyze(g *grammar.Grammar, start string) *info {
 		ri.reach.set(ri.index) // the target of a rule is its index
 		in.localTargets(ri.def.Expr, ri.reach)
 	}
-	for changed := true; changed; {
-		changed = false
-		for _, ri := range in.order {
-			for _, c := range ri.calls {
-				if callee := in.rules[c]; callee != nil && ri.reach.union(callee.reach) {
-					changed = true
-				}
+	deps.fixedPoint(in, func(ri *ruleInfo) bool {
+		changed := false
+		for _, c := range ri.calls {
+			if callee := in.rules[c]; callee != nil && ri.reach.union(callee.reach) {
+				changed = true
 			}
 		}
-	}
+		return changed
+	})
 	in.reachable = in.closure(func(ri *ruleInfo) []string { return ri.possibleCalls })
 	in.called = in.closure(func(ri *ruleInfo) []string { return ri.calls })
 	in.restrictLevels()

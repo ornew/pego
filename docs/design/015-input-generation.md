@@ -96,6 +96,9 @@ while an object in an array counts 1). Once the depth or the length of the text 
 reached, the generator takes the shortest way to finish: alternatives in order of their minimal text length once the
 text is long enough, or of their minimal derivation height (the fewest nested rule calls) once the recursion is deep
 enough, each computed by a fixed point over the rules; optional expressions skipped; repetitions at their minimum.
+Constructor analysis seeds its bounded worklist in callee-first DFS order, then reevaluates only callers of changed
+estimates. Recursive calls still iterate to the same fixed point. Reverse edges are stored contiguously, and graph
+construction deduplicates repeated calls without changing the grammar's target numbering or decision order.
 (Ordering by height alone, a long literal beat a short alternative that needs one more rule call.) Both bounds are soft:
 the search goes deeper or longer when the input requires it (`[d >= 12]` after twelve nested parentheses), up to the
 hard limits on nesting and iterations described above.
@@ -159,6 +162,9 @@ can never match (`"(" ("a" / "b") _|_`), are not counted either; a rule that can
 unreachable. Nor are the operators of Pratt levels that every call skips: if `e` is only called as `e(mul)`, the
 operators of the levels looser than `mul` are never generated. Each rule has a reach set (the targets that generating it can exercise), computed as a fixed point over
 the call graph; reach sets of subexpressions are computed on demand.
+The same dependency worklist propagates these sets. Dense bitsets remain per rule; this scheduling change does
+not change their representation, coverage exclusions or generated inputs. The constructor's analysis precedes
+generation attempts and is outside `WithBudget`.
 
 Coverage is recorded on the derivation the generator followed for each accepted input. The parser takes the same way
 unless a check could not be decided, so the numbers are close to, but not guaranteed to be, the parser's own coverage;
