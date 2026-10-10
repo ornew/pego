@@ -108,6 +108,8 @@ steps per attempt, and the defaults are a good compromise for the grammars in [e
 acyclic callees before callers and propagates changed estimates through a bounded worklist for recursive grammars.
 This avoids repeated whole-grammar sweeps caused by declaration order. `WithBudget` bounds generation attempts;
 it does not bound constructor analysis. Dense coverage sets still grow with the number of rules and targets.
+Minimum-length estimates saturate at 2³⁰ bytes on both Go integer widths, so
+recursive dependencies and large repetition bounds cannot wrap into negative estimates.
 
 Three limits are hard, and each has a knob:
 
