@@ -38,7 +38,7 @@ vet, all 10 standalone parser-module, regeneration and site checks, plus
 Linux/386 sparse lifecycle and real-corpus optimized/reference checks. The
 real-corpus sequence covers large, small, failed-large, small and large parses
 in both units. Final generated-source timing confirmations versus the exact
-prior build are reported below. The full 131-case snapshot remains pending.
+prior build are reported below.
 
 ## Measurements and limits
 
@@ -107,7 +107,17 @@ AST CodePoints at 0.9896 [0.9838, 1.0077], synthetic AST Bytes at 0.9987
 [0.9790, 1.0067], and short AST Bytes at 0.9968 [0.9852, 1.0282] versus
 prior. Each range includes parity. Median B/op deltas were +11, -1 and -2
 bytes respectively, with allocation medians unchanged. Earlier short-run
-variation remains part of the evidence; the full 131-case snapshot is pending.
+variation remains part of the evidence.
+
+The full-suite snapshot at `3da3d4a` showed an unpaired 1.0852× Recovery Node
+CodePoints ratio against the preceding snapshot at `75b9fe3`. A focused
+five-round, two-second comparison against the exact prior build and a
+same-source dense reference found all three Recovery timing ranges included
+parity. Versus the
+prior build, Node CodePoints was 1.0062 [0.9314, 1.0164], Node Bytes was
+1.0260 [0.9620, 1.0368], and AST was 0.9892 [0.9752, 1.0461]. The focused
+results do not establish a speed change; the full-suite comparison does not
+isolate this optimization.
 
 TypeScript cutoff timings use five interleaved Node 24 rounds against the
 prior implementation. All four large-input ranges include parity:
@@ -161,5 +171,6 @@ The generated fixture invokes `TestSparseGeneratedRealCorpusReuse`, which
 checks large, small, failed-large, small and large parses in both units. This
 is an ownership test, not the paired benchmark.
 
-The candidate is not ready to become the default on main. The full 131-case
-snapshot remains the next integration gate.
+The clean 131-case snapshot passed at source commit `3da3d4a`; it does not
+isolate this optimization. Candidate CI passed on amd64 and 386. The candidate
+remains on its work branch and has not been integrated into main.

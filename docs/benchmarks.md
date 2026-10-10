@@ -11,7 +11,7 @@ bench/results.txt` rewrites it from saved results. Do not edit it by hand: a tes
 
 ## Run
 
-Measured on 2026-10-11 at commit 75b9fe3 with go1.27.1 on Apple M3 Max (darwin/arm64, 16 cores).
+Measured on 2026-10-11 at commit 3da3d4a with go1.27.1 on Apple M3 Max (darwin/arm64, 16 cores).
 Times and memory are per operation, the median of 3 runs. Factors in parentheses are relative to the closure backend (lower is faster), except where a table says otherwise.
 
 ## Results
@@ -20,27 +20,27 @@ Times and memory are per operation, the median of 3 runs. Factors in parentheses
 
 | Workload | Closure | Bytecode (recursive) | Bytecode (iterative) | Generated Go | Generated Go, typed (`ParseAST`) | Standard library |
 |:--|--:|--:|--:|--:|--:|--:|
-| JSON | 11.3 ms | 13.0 ms (1.16×) | 15.1 ms (1.33×) | 5.01 ms (0.44×) | 2.83 ms (0.25×) | 3.59 ms (`encoding/json`) |
-| CSV | 4.56 ms | 5.62 ms (1.23×) | 6.04 ms (1.33×) | 2.08 ms (0.46×) | 1.61 ms (0.35×) | 755 µs (`encoding/csv`) |
-| XML | 11.4 ms | 13.5 ms (1.19×) | 15.6 ms (1.37×) | 5.54 ms (0.49×) | 3.58 ms (0.31×) | 3.94 ms (`encoding/xml`) |
-| Arith_Pratt | 9.65 ms | 12.7 ms (1.32×) | 18.8 ms (1.95×) | 5.95 ms (0.62×) | 5.36 ms (0.56×) | 2.13 ms (`go/parser`) |
-| Arith_LeftRec | 24.7 ms | 27.1 ms (1.10×) | 33.5 ms (1.36×) | 12.5 ms (0.51×) | 8.87 ms (0.36×) | 2.17 ms (`go/parser`) |
-| Minilang | 12.3 ms | 16.7 ms (1.36×) | 21.0 ms (1.70×) | 7.37 ms (0.60×) | 7.40 ms (0.60×) | – |
-| Recovery | 11.8 ms | 15.8 ms (1.34×) | 20.3 ms (1.73×) | 6.85 ms (0.58×) | 7.43 ms (0.63×) | – |
-| Outline | 5.69 ms | 6.86 ms (1.21×) | 7.33 ms (1.29×) | 3.31 ms (0.58×) | 2.08 ms (0.37×) | – |
+| JSON | 11.1 ms | 13.1 ms (1.18×) | 15.4 ms (1.39×) | 4.79 ms (0.43×) | 2.93 ms (0.26×) | 3.60 ms (`encoding/json`) |
+| CSV | 4.54 ms | 5.43 ms (1.20×) | 5.86 ms (1.29×) | 2.01 ms (0.44×) | 1.68 ms (0.37×) | 767 µs (`encoding/csv`) |
+| XML | 11.9 ms | 13.7 ms (1.15×) | 15.3 ms (1.29×) | 5.35 ms (0.45×) | 3.43 ms (0.29×) | 3.95 ms (`encoding/xml`) |
+| Arith_Pratt | 10.0 ms | 13.0 ms (1.30×) | 18.8 ms (1.87×) | 5.88 ms (0.59×) | 5.28 ms (0.53×) | 2.29 ms (`go/parser`) |
+| Arith_LeftRec | 24.9 ms | 28.1 ms (1.13×) | 34.6 ms (1.39×) | 12.5 ms (0.50×) | 8.73 ms (0.35×) | 2.29 ms (`go/parser`) |
+| Minilang | 12.2 ms | 16.9 ms (1.39×) | 21.7 ms (1.78×) | 7.25 ms (0.60×) | 7.50 ms (0.62×) | – |
+| Recovery | 12.2 ms | 16.4 ms (1.34×) | 20.5 ms (1.69×) | 7.43 ms (0.61×) | 7.37 ms (0.61×) | – |
+| Outline | 5.99 ms | 6.91 ms (1.15×) | 7.31 ms (1.22×) | 3.08 ms (0.51×) | 2.01 ms (0.33×) | – |
 
 ### Parsing time (position unit: bytes)
 
 | Workload | Closure | Bytecode (recursive) | Bytecode (iterative) | Generated Go |
 |:--|--:|--:|--:|--:|
-| JSON | 11.1 ms | 13.4 ms (1.21×) | 15.4 ms (1.39×) | 5.44 ms (0.49×) |
-| CSV | 4.43 ms | 5.38 ms (1.21×) | 5.78 ms (1.30×) | 2.38 ms (0.54×) |
-| XML | 11.6 ms | 13.5 ms (1.17×) | 15.9 ms (1.38×) | 5.88 ms (0.51×) |
-| Arith_Pratt | 10.1 ms | 13.2 ms (1.30×) | 18.9 ms (1.87×) | 6.18 ms (0.61×) |
-| Arith_LeftRec | 24.4 ms | 27.7 ms (1.14×) | 34.3 ms (1.41×) | 13.2 ms (0.54×) |
-| Minilang | 12.3 ms | 16.9 ms (1.37×) | 21.8 ms (1.77×) | 7.75 ms (0.63×) |
-| Recovery | 12.0 ms | 16.6 ms (1.38×) | 21.2 ms (1.77×) | 7.35 ms (0.61×) |
-| Outline | 5.89 ms | 6.97 ms (1.18×) | 7.14 ms (1.21×) | 3.41 ms (0.58×) |
+| JSON | 11.3 ms | 13.2 ms (1.17×) | 15.1 ms (1.33×) | 5.22 ms (0.46×) |
+| CSV | 4.48 ms | 5.64 ms (1.26×) | 6.01 ms (1.34×) | 2.34 ms (0.52×) |
+| XML | 11.5 ms | 13.8 ms (1.19×) | 15.7 ms (1.36×) | 5.97 ms (0.52×) |
+| Arith_Pratt | 10.1 ms | 13.0 ms (1.29×) | 18.9 ms (1.87×) | 6.51 ms (0.64×) |
+| Arith_LeftRec | 25.5 ms | 27.3 ms (1.07×) | 34.1 ms (1.34×) | 13.4 ms (0.52×) |
+| Minilang | 12.5 ms | 17.0 ms (1.36×) | 21.6 ms (1.73×) | 7.78 ms (0.62×) |
+| Recovery | 12.1 ms | 16.4 ms (1.35×) | 21.2 ms (1.74×) | 7.69 ms (0.63×) |
+| Outline | 5.66 ms | 6.96 ms (1.23×) | 7.38 ms (1.30×) | 3.58 ms (0.63×) |
 
 ### Memory per parse (position unit: code points)
 
@@ -48,13 +48,13 @@ Bytes allocated / number of allocations.
 
 | Workload | Closure | Bytecode (recursive) | Bytecode (iterative) | Generated Go | Generated Go, typed (`ParseAST`) | Standard library |
 |:--|--:|--:|--:|--:|--:|--:|
-| JSON | 10.6 MB / 767 | 11.6 MB / 945 | 11.6 MB / 984 | 10.4 MB / 742 | 2.40 MB / 265 | 2.19 MB / 53 k |
-| CSV | 5.48 MB / 318 | 6.95 MB / 547 | 6.95 MB / 557 | 5.48 MB / 308 | 1.75 MB / 183 | 1.20 MB / 10 k |
-| XML | 12.7 MB / 838 | 13.7 MB / 1.0 k | 13.6 MB / 1.1 k | 12.7 MB / 816 | 3.04 MB / 287 | 2.54 MB / 80 k |
-| Arith_Pratt | 9.01 MB / 569 | 9.01 MB / 568 | 9.04 MB / 724 | 8.90 MB / 545 | 3.12 MB / 270 | 2.41 MB / 69 k |
-| Arith_LeftRec | 17.2 MB / 1.7 k | 17.9 MB / 1.8 k | 18.1 MB / 2.2 k | 17.1 MB / 1.7 k | 4.23 MB / 508 | 2.41 MB / 69 k |
-| Minilang | 7.84 MB / 830 | 8.25 MB / 922 | 8.16 MB / 1.0 k | 7.77 MB / 802 | 9.90 MB / 1.0 k | – |
-| Recovery | 7.63 MB / 1.7 k | 8.02 MB / 1.8 k | 8.07 MB / 1.9 k | 7.57 MB / 1.7 k | 9.56 MB / 1.9 k | – |
+| JSON | 10.6 MB / 767 | 11.6 MB / 945 | 11.6 MB / 984 | 10.4 MB / 743 | 2.40 MB / 265 | 2.19 MB / 53 k |
+| CSV | 5.48 MB / 318 | 6.95 MB / 546 | 6.95 MB / 556 | 5.47 MB / 308 | 1.75 MB / 184 | 1.20 MB / 10 k |
+| XML | 12.7 MB / 838 | 13.7 MB / 1.0 k | 13.8 MB / 1.1 k | 12.7 MB / 816 | 3.00 MB / 287 | 2.54 MB / 80 k |
+| Arith_Pratt | 9.01 MB / 570 | 9.01 MB / 568 | 9.04 MB / 724 | 8.90 MB / 544 | 3.12 MB / 270 | 2.41 MB / 69 k |
+| Arith_LeftRec | 17.2 MB / 1.7 k | 17.9 MB / 1.8 k | 17.5 MB / 2.2 k | 17.1 MB / 1.7 k | 4.23 MB / 508 | 2.41 MB / 69 k |
+| Minilang | 7.83 MB / 830 | 8.25 MB / 922 | 8.29 MB / 1.0 k | 7.77 MB / 802 | 9.78 MB / 1.0 k | – |
+| Recovery | 7.64 MB / 1.7 k | 8.03 MB / 1.8 k | 8.07 MB / 1.9 k | 7.58 MB / 1.7 k | 9.54 MB / 1.9 k | – |
 | Outline | 10.2 MB / 2.2 k | 10.5 MB / 2.3 k | 10.5 MB / 2.4 k | 10.1 MB / 2.2 k | 2.62 MB / 1.9 k | – |
 
 ### Memory per parse (position unit: bytes)
@@ -62,12 +62,12 @@ Bytes allocated / number of allocations.
 | Workload | Closure | Bytecode (recursive) | Bytecode (iterative) | Generated Go |
 |:--|--:|--:|--:|--:|
 | JSON | 10.6 MB / 767 | 11.6 MB / 945 | 11.6 MB / 984 | 10.4 MB / 743 |
-| CSV | 5.48 MB / 319 | 6.94 MB / 547 | 6.94 MB / 557 | 5.47 MB / 309 |
+| CSV | 5.47 MB / 318 | 6.94 MB / 547 | 6.94 MB / 557 | 5.47 MB / 309 |
 | XML | 12.7 MB / 838 | 13.7 MB / 1.0 k | 13.7 MB / 1.1 k | 12.7 MB / 817 |
 | Arith_Pratt | 9.00 MB / 570 | 9.00 MB / 568 | 9.03 MB / 724 | 8.90 MB / 545 |
-| Arith_LeftRec | 17.2 MB / 1.7 k | 17.8 MB / 1.8 k | 18.0 MB / 2.2 k | 17.1 MB / 1.7 k |
-| Minilang | 7.83 MB / 830 | 8.15 MB / 920 | 8.28 MB / 1.0 k | 7.77 MB / 802 |
-| Recovery | 7.62 MB / 1.7 k | 8.02 MB / 1.8 k | 8.06 MB / 1.9 k | 7.57 MB / 1.7 k |
+| Arith_LeftRec | 17.2 MB / 1.7 k | 17.4 MB / 1.8 k | 18.0 MB / 2.2 k | 17.1 MB / 1.7 k |
+| Minilang | 7.83 MB / 830 | 8.24 MB / 922 | 8.28 MB / 1.0 k | 7.77 MB / 802 |
+| Recovery | 7.56 MB / 1.7 k | 8.02 MB / 1.8 k | 8.06 MB / 1.9 k | 7.57 MB / 1.7 k |
 | Outline | 10.2 MB / 2.2 k | 10.5 MB / 2.3 k | 10.5 MB / 2.4 k | 10.1 MB / 2.2 k |
 
 ### Typed values (`ParseAST` of `pego gen -types`)
@@ -80,65 +80,65 @@ See [code generation](guide/code-generation.md#typed-values--types). The factor 
 
 | Workload | `ParseAST` | `Parse` | `ParseAST` | Memory (`Parse` → `ParseAST`) |
 |:--|:--|--:|--:|--:|
-| JSON | direct | 5.01 ms | 2.83 ms (0.57×) | 10.4 MB / 742 → 2.40 MB / 265 |
-| CSV | direct | 2.08 ms | 1.61 ms (0.77×) | 5.48 MB / 308 → 1.75 MB / 183 |
-| XML | direct | 5.54 ms | 3.58 ms (0.65×) | 12.7 MB / 816 → 3.04 MB / 287 |
-| Arith_Pratt | direct | 5.95 ms | 5.36 ms (0.90×) | 8.90 MB / 545 → 3.12 MB / 270 |
-| Arith_LeftRec | direct | 12.5 ms | 8.87 ms (0.71×) | 17.1 MB / 1.7 k → 4.23 MB / 508 |
-| Minilang | converted | 7.37 ms | 7.40 ms (1.00×) | 7.77 MB / 802 → 9.90 MB / 1.0 k |
-| Recovery | converted | 6.85 ms | 7.43 ms (1.09×) | 7.57 MB / 1.7 k → 9.56 MB / 1.9 k |
-| Outline | direct | 3.31 ms | 2.08 ms (0.63×) | 10.1 MB / 2.2 k → 2.62 MB / 1.9 k |
+| JSON | direct | 4.79 ms | 2.93 ms (0.61×) | 10.4 MB / 743 → 2.40 MB / 265 |
+| CSV | direct | 2.01 ms | 1.68 ms (0.84×) | 5.47 MB / 308 → 1.75 MB / 184 |
+| XML | direct | 5.35 ms | 3.43 ms (0.64×) | 12.7 MB / 816 → 3.00 MB / 287 |
+| Arith_Pratt | direct | 5.88 ms | 5.28 ms (0.90×) | 8.90 MB / 544 → 3.12 MB / 270 |
+| Arith_LeftRec | direct | 12.5 ms | 8.73 ms (0.70×) | 17.1 MB / 1.7 k → 4.23 MB / 508 |
+| Minilang | converted | 7.25 ms | 7.50 ms (1.03×) | 7.77 MB / 802 → 9.78 MB / 1.0 k |
+| Recovery | converted | 7.43 ms | 7.37 ms (0.99×) | 7.58 MB / 1.7 k → 9.54 MB / 1.9 k |
+| Outline | direct | 3.08 ms | 2.01 ms (0.65×) | 10.1 MB / 2.2 k → 2.62 MB / 1.9 k |
 
 ### Recognition only (`RecognizeOnly`, no tree)
 
 | Workload | Closure | Bytecode (recursive) | Bytecode (iterative) | Generated Go (`Recognize`) | Standard library |
 |:--|--:|--:|--:|--:|--:|
-| JSON | 7.07 ms | 8.96 ms (1.27×) | 10.3 ms (1.45×) | 1.67 ms (0.24×) | 326 µs (`json.Valid`) |
-| CSV | 3.19 ms | 3.68 ms (1.16×) | 3.90 ms (1.23×) | 823 µs (0.26×) | – |
-| XML | 8.10 ms | 10.8 ms (1.33×) | 12.0 ms (1.48×) | 2.19 ms (0.27×) | – |
-| Arith_Pratt | 6.97 ms | 10.1 ms (1.44×) | 15.5 ms (2.22×) | 3.68 ms (0.53×) | – |
-| Arith_LeftRec | 17.4 ms | 20.6 ms (1.18×) | 26.0 ms (1.49×) | 7.30 ms (0.42×) | – |
-| Minilang | 8.99 ms | 14.1 ms (1.57×) | 17.9 ms (2.00×) | 4.56 ms (0.51×) | – |
-| Recovery | 8.61 ms | 13.6 ms (1.58×) | 17.3 ms (2.01×) | 4.46 ms (0.52×) | – |
-| Outline | 3.56 ms | 4.53 ms (1.27×) | 5.10 ms (1.43×) | 1.23 ms (0.35×) | – |
+| JSON | 7.21 ms | 9.00 ms (1.25×) | 10.4 ms (1.44×) | 1.74 ms (0.24×) | 323 µs (`json.Valid`) |
+| CSV | 3.29 ms | 3.62 ms (1.10×) | 3.92 ms (1.19×) | 836 µs (0.25×) | – |
+| XML | 8.32 ms | 10.8 ms (1.29×) | 12.1 ms (1.45×) | 2.20 ms (0.26×) | – |
+| Arith_Pratt | 6.99 ms | 9.89 ms (1.41×) | 15.6 ms (2.23×) | 3.70 ms (0.53×) | – |
+| Arith_LeftRec | 17.5 ms | 20.6 ms (1.18×) | 26.3 ms (1.51×) | 7.10 ms (0.41×) | – |
+| Minilang | 9.09 ms | 14.5 ms (1.59×) | 18.0 ms (1.97×) | 4.56 ms (0.50×) | – |
+| Recovery | 8.70 ms | 13.9 ms (1.59×) | 17.3 ms (1.99×) | 4.41 ms (0.51×) | – |
+| Outline | 3.61 ms | 4.51 ms (1.25×) | 5.13 ms (1.42×) | 1.25 ms (0.35×) | – |
 
 Memory per recognition (bytes allocated / number of allocations):
 
 | Workload | Closure | Bytecode (recursive) | Bytecode (iterative) | Generated Go (`Recognize`) | Standard library |
 |:--|--:|--:|--:|--:|--:|
-| JSON | 9.91 KB / 7 | 4.59 KB / 15 | 20.2 KB / 39 | 3.29 KB / 0 | 0 B / 0 |
-| CSV | 3.94 KB / 4 | 5.01 KB / 10 | 5.69 KB / 18 | 1.07 KB / 0 | – |
-| XML | 3.71 MB / 163 | 3.74 MB / 176 | 3.74 MB / 217 | 2.65 MB / 150 | – |
-| Arith_Pratt | 5.64 KB / 7 | 8.28 KB / 9 | 35.9 KB / 165 | 3.58 KB / 0 | – |
-| Arith_LeftRec | 1.25 MB / 254 | 1.30 MB / 262 | 1.46 MB / 587 | 1.10 MB / 240 | – |
-| Minilang | 558 KB / 135 | 595 KB / 150 | 623 KB / 219 | 526 KB / 123 | – |
-| Recovery | 681 KB / 414 | 716 KB / 429 | 745 KB / 498 | 652 KB / 402 | – |
+| JSON | 10.2 KB / 7 | 14.3 KB / 15 | 20.2 KB / 39 | 3.42 KB / 0 | 0 B / 0 |
+| CSV | 4.02 KB / 4 | 2.65 KB / 10 | 5.70 KB / 18 | 1.09 KB / 0 | – |
+| XML | 3.71 MB / 163 | 3.74 MB / 176 | 3.75 MB / 217 | 2.65 MB / 150 | – |
+| Arith_Pratt | 5.64 KB / 7 | 7.37 KB / 9 | 35.9 KB / 165 | 3.59 KB / 0 | – |
+| Arith_LeftRec | 1.25 MB / 254 | 1.30 MB / 262 | 1.46 MB / 586 | 1.09 MB / 240 | – |
+| Minilang | 558 KB / 135 | 595 KB / 150 | 625 KB / 219 | 526 KB / 123 | – |
+| Recovery | 682 KB / 414 | 717 KB / 429 | 746 KB / 498 | 652 KB / 402 | – |
 | Outline | 1.95 MB / 1.8 k | 2.05 MB / 1.8 k | 2.07 MB / 1.9 k | 1.63 MB / 1.8 k | – |
 
 ### Incremental parsing (minilang, one-character edit followed by a parse)
 
 | Backend | `Document`: time | `Document`: memory | Full parse each time: time | Full parse each time: memory |
 |:--|--:|--:|--:|--:|
-| Closure | 148 µs | 168 KB / 33 | 12.0 ms | 7.84 MB / 830 |
-| Bytecode (recursive) | 130 µs | 167 KB / 41 | 16.9 ms | 8.24 MB / 922 |
-| Bytecode (iterative) | 131 µs | 170 KB / 63 | 21.5 ms | 8.29 MB / 1.0 k |
+| Closure | 146 µs | 168 KB / 33 | 12.3 ms | 7.84 MB / 830 |
+| Bytecode (recursive) | 131 µs | 167 KB / 41 | 16.9 ms | 8.25 MB / 922 |
+| Bytecode (iterative) | 131 µs | 170 KB / 63 | 21.4 ms | 8.29 MB / 1.0 k |
 
 ### Incremental parsing of a long document (CSV, 50,000 records, one-character edit followed by a parse)
 
 | Backend | Time | Memory |
 |:--|--:|--:|
-| Closure | 2.26 ms | 2.70 MB / 23 |
-| Bytecode (recursive) | 2.39 ms | 2.72 MB / 41 |
-| Bytecode (iterative) | 2.41 ms | 2.72 MB / 52 |
+| Closure | 2.25 ms | 2.70 MB / 23 |
+| Bytecode (recursive) | 2.34 ms | 2.72 MB / 41 |
+| Bytecode (iterative) | 2.46 ms | 2.73 MB / 52 |
 
 ### Streaming (CSV, 50,000 rows, 2.17 MB)
 
 | Backend | Time | Throughput | Memory |
 |:--|--:|--:|--:|
-| Closure | 69.4 ms | 31 MB/s | 90.5 MB / 310 k |
-| Bytecode (recursive) | 82.3 ms | 26 MB/s | 99.1 MB / 310 k |
-| Bytecode (iterative) | 83.6 ms | 26 MB/s | 99.1 MB / 310 k |
-| `encoding/csv` (`Read` loop) | 7.12 ms | 300 MB/s | 6.98 MB / 100 k |
+| Closure | 72.1 ms | 30 MB/s | 90.5 MB / 310 k |
+| Bytecode (recursive) | 82.5 ms | 26 MB/s | 99.1 MB / 310 k |
+| Bytecode (iterative) | 83.5 ms | 26 MB/s | 99.1 MB / 310 k |
+| `encoding/csv` (`Read` loop) | 6.83 ms | 320 MB/s | 6.98 MB / 100 k |
 
 ### Preparation (time until a grammar is ready to use)
 
@@ -147,15 +147,15 @@ preparing the VM).
 
 | Grammar | Compile from source | `.pegoc` → closure | `.pegoc` → bytecode | `.pegoc` (no AST) → bytecode |
 |:--|--:|--:|--:|--:|
-| json | 159 µs | 97.0 µs | 122 µs | 51.0 µs |
-| minilang | 577 µs | 216 µs | 292 µs | 99.6 µs |
+| json | 168 µs | 83.6 µs | 121 µs | 44.4 µs |
+| minilang | 561 µs | 224 µs | 290 µs | 107 µs |
 
 Memory (bytes allocated / number of allocations) and file sizes:
 
 | Grammar | Source | Compile from source | `.pegoc` (with the AST) | `.pegoc` → closure | `.pegoc` → bytecode | `.pegoc` (no AST) | `.pegoc` (no AST) → bytecode |
 |:--|--:|--:|--:|--:|--:|--:|--:|
-| json | 1.51 KB | 275 KB / 2.4 k | 2.78 KB | 105 KB / 1.2 k | 132 KB / 1.5 k | 2.13 KB | 71.8 KB / 519 |
-| minilang | 4.42 KB | 910 KB / 7.3 k | 6.75 KB | 314 KB / 2.7 k | 388 KB / 3.5 k | 4.90 KB | 234 KB / 1.2 k |
+| json | 1.51 KB | 275 KB / 2.4 k | 2.78 KB | 105 KB / 1.2 k | 132 KB / 1.5 k | 2.13 KB | 71.9 KB / 519 |
+| minilang | 4.42 KB | 910 KB / 7.3 k | 6.75 KB | 314 KB / 2.7 k | 389 KB / 3.5 k | 4.90 KB | 234 KB / 1.2 k |
 
 ## All results
 
@@ -163,134 +163,134 @@ Every benchmark of the run, by its name under `bench/` (median of the runs; the 
 
 | Benchmark | Time | Throughput | Memory | Allocations | Other |
 |:--|--:|--:|--:|--:|:--|
-| `Parse/JSON/closure/codepoints` | 11.3 ms | 23.2 | 10.6 MB | 767 | – |
-| `Parse/JSON/closure/bytes` | 11.1 ms | 23.7 | 10.6 MB | 767 | – |
-| `Parse/JSON/bytecode/codepoints` | 13.0 ms | 20.1 | 11.6 MB | 945 | – |
-| `Parse/JSON/bytecode/bytes` | 13.4 ms | 19.5 | 11.6 MB | 945 | – |
-| `Parse/JSON/iterative/codepoints` | 15.1 ms | 17.4 | 11.6 MB | 984 | – |
-| `Parse/JSON/iterative/bytes` | 15.4 ms | 17.0 | 11.6 MB | 984 | – |
-| `Parse/JSON/generated/codepoints` | 5.01 ms | 52.3 | 10.4 MB | 742 | – |
-| `Parse/JSON/generated/bytes` | 5.44 ms | 48.2 | 10.4 MB | 743 | – |
-| `Parse/JSON/generated_ast` | 2.83 ms | 92.6 | 2.40 MB | 265 | – |
-| `Parse/JSON/encoding_json` | 3.59 ms | 73.0 | 2.19 MB | 53 k | – |
-| `Parse/CSV/closure/codepoints` | 4.56 ms | 46.4 | 5.48 MB | 318 | – |
-| `Parse/CSV/closure/bytes` | 4.43 ms | 47.7 | 5.48 MB | 319 | – |
-| `Parse/CSV/bytecode/codepoints` | 5.62 ms | 37.6 | 6.95 MB | 547 | – |
-| `Parse/CSV/bytecode/bytes` | 5.38 ms | 39.3 | 6.94 MB | 547 | – |
-| `Parse/CSV/iterative/codepoints` | 6.04 ms | 35.0 | 6.95 MB | 557 | – |
-| `Parse/CSV/iterative/bytes` | 5.78 ms | 36.5 | 6.94 MB | 557 | – |
-| `Parse/CSV/generated/codepoints` | 2.08 ms | 102 | 5.48 MB | 308 | – |
-| `Parse/CSV/generated/bytes` | 2.38 ms | 89.0 | 5.47 MB | 309 | – |
-| `Parse/CSV/generated_ast` | 1.61 ms | 131 | 1.75 MB | 183 | – |
-| `Parse/CSV/encoding_csv` | 755 µs | 280 | 1.20 MB | 10 k | – |
-| `Parse/XML/closure/codepoints` | 11.4 ms | 23.0 | 12.7 MB | 838 | – |
-| `Parse/XML/closure/bytes` | 11.6 ms | 22.7 | 12.7 MB | 838 | – |
-| `Parse/XML/bytecode/codepoints` | 13.5 ms | 19.4 | 13.7 MB | 1.0 k | – |
-| `Parse/XML/bytecode/bytes` | 13.5 ms | 19.4 | 13.7 MB | 1.0 k | – |
-| `Parse/XML/iterative/codepoints` | 15.6 ms | 16.8 | 13.6 MB | 1.1 k | – |
-| `Parse/XML/iterative/bytes` | 15.9 ms | 16.5 | 13.7 MB | 1.1 k | – |
-| `Parse/XML/generated/codepoints` | 5.54 ms | 47.3 | 12.7 MB | 816 | – |
-| `Parse/XML/generated/bytes` | 5.88 ms | 44.6 | 12.7 MB | 817 | – |
-| `Parse/XML/generated_ast` | 3.58 ms | 73.2 | 3.04 MB | 287 | – |
-| `Parse/XML/encoding_xml` | 3.94 ms | 66.5 | 2.54 MB | 80 k | – |
-| `Parse/Arith_Pratt/closure/codepoints` | 9.65 ms | 13.8 | 9.01 MB | 569 | – |
+| `Parse/JSON/closure/codepoints` | 11.1 ms | 23.7 | 10.6 MB | 767 | – |
+| `Parse/JSON/closure/bytes` | 11.3 ms | 23.2 | 10.6 MB | 767 | – |
+| `Parse/JSON/bytecode/codepoints` | 13.1 ms | 20.1 | 11.6 MB | 945 | – |
+| `Parse/JSON/bytecode/bytes` | 13.2 ms | 19.8 | 11.6 MB | 945 | – |
+| `Parse/JSON/iterative/codepoints` | 15.4 ms | 17.0 | 11.6 MB | 984 | – |
+| `Parse/JSON/iterative/bytes` | 15.1 ms | 17.4 | 11.6 MB | 984 | – |
+| `Parse/JSON/generated/codepoints` | 4.79 ms | 54.8 | 10.4 MB | 743 | – |
+| `Parse/JSON/generated/bytes` | 5.22 ms | 50.3 | 10.4 MB | 743 | – |
+| `Parse/JSON/generated_ast` | 2.93 ms | 89.6 | 2.40 MB | 265 | – |
+| `Parse/JSON/encoding_json` | 3.60 ms | 72.9 | 2.19 MB | 53 k | – |
+| `Parse/CSV/closure/codepoints` | 4.54 ms | 46.5 | 5.48 MB | 318 | – |
+| `Parse/CSV/closure/bytes` | 4.48 ms | 47.2 | 5.47 MB | 318 | – |
+| `Parse/CSV/bytecode/codepoints` | 5.43 ms | 38.9 | 6.95 MB | 546 | – |
+| `Parse/CSV/bytecode/bytes` | 5.64 ms | 37.5 | 6.94 MB | 547 | – |
+| `Parse/CSV/iterative/codepoints` | 5.86 ms | 36.1 | 6.95 MB | 556 | – |
+| `Parse/CSV/iterative/bytes` | 6.01 ms | 35.2 | 6.94 MB | 557 | – |
+| `Parse/CSV/generated/codepoints` | 2.01 ms | 105 | 5.47 MB | 308 | – |
+| `Parse/CSV/generated/bytes` | 2.34 ms | 90.4 | 5.47 MB | 309 | – |
+| `Parse/CSV/generated_ast` | 1.68 ms | 126 | 1.75 MB | 184 | – |
+| `Parse/CSV/encoding_csv` | 767 µs | 276 | 1.20 MB | 10 k | – |
+| `Parse/XML/closure/codepoints` | 11.9 ms | 22.0 | 12.7 MB | 838 | – |
+| `Parse/XML/closure/bytes` | 11.5 ms | 22.7 | 12.7 MB | 838 | – |
+| `Parse/XML/bytecode/codepoints` | 13.7 ms | 19.1 | 13.7 MB | 1.0 k | – |
+| `Parse/XML/bytecode/bytes` | 13.8 ms | 19.0 | 13.7 MB | 1.0 k | – |
+| `Parse/XML/iterative/codepoints` | 15.3 ms | 17.1 | 13.8 MB | 1.1 k | – |
+| `Parse/XML/iterative/bytes` | 15.7 ms | 16.7 | 13.7 MB | 1.1 k | – |
+| `Parse/XML/generated/codepoints` | 5.35 ms | 49.0 | 12.7 MB | 816 | – |
+| `Parse/XML/generated/bytes` | 5.97 ms | 43.9 | 12.7 MB | 817 | – |
+| `Parse/XML/generated_ast` | 3.43 ms | 76.4 | 3.00 MB | 287 | – |
+| `Parse/XML/encoding_xml` | 3.95 ms | 66.4 | 2.54 MB | 80 k | – |
+| `Parse/Arith_Pratt/closure/codepoints` | 10.0 ms | 13.3 | 9.01 MB | 570 | – |
 | `Parse/Arith_Pratt/closure/bytes` | 10.1 ms | 13.2 | 9.00 MB | 570 | – |
-| `Parse/Arith_Pratt/bytecode/codepoints` | 12.7 ms | 10.5 | 9.01 MB | 568 | – |
-| `Parse/Arith_Pratt/bytecode/bytes` | 13.2 ms | 10.1 | 9.00 MB | 568 | – |
-| `Parse/Arith_Pratt/iterative/codepoints` | 18.8 ms | 7.10 | 9.04 MB | 724 | – |
-| `Parse/Arith_Pratt/iterative/bytes` | 18.9 ms | 7.05 | 9.03 MB | 724 | – |
-| `Parse/Arith_Pratt/generated/codepoints` | 5.95 ms | 22.4 | 8.90 MB | 545 | – |
-| `Parse/Arith_Pratt/generated/bytes` | 6.18 ms | 21.6 | 8.90 MB | 545 | – |
-| `Parse/Arith_Pratt/generated_ast` | 5.36 ms | 24.9 | 3.12 MB | 270 | – |
-| `Parse/Arith_Pratt/go_parser` | 2.13 ms | 62.8 | 2.41 MB | 69 k | – |
-| `Parse/Arith_LeftRec/closure/codepoints` | 24.7 ms | 5.40 | 17.2 MB | 1.7 k | – |
-| `Parse/Arith_LeftRec/closure/bytes` | 24.4 ms | 5.48 | 17.2 MB | 1.7 k | – |
-| `Parse/Arith_LeftRec/bytecode/codepoints` | 27.1 ms | 4.92 | 17.9 MB | 1.8 k | – |
-| `Parse/Arith_LeftRec/bytecode/bytes` | 27.7 ms | 4.82 | 17.8 MB | 1.8 k | – |
-| `Parse/Arith_LeftRec/iterative/codepoints` | 33.5 ms | 3.98 | 18.1 MB | 2.2 k | – |
-| `Parse/Arith_LeftRec/iterative/bytes` | 34.3 ms | 3.89 | 18.0 MB | 2.2 k | – |
+| `Parse/Arith_Pratt/bytecode/codepoints` | 13.0 ms | 10.2 | 9.01 MB | 568 | – |
+| `Parse/Arith_Pratt/bytecode/bytes` | 13.0 ms | 10.2 | 9.00 MB | 568 | – |
+| `Parse/Arith_Pratt/iterative/codepoints` | 18.8 ms | 7.09 | 9.04 MB | 724 | – |
+| `Parse/Arith_Pratt/iterative/bytes` | 18.9 ms | 7.07 | 9.03 MB | 724 | – |
+| `Parse/Arith_Pratt/generated/codepoints` | 5.88 ms | 22.7 | 8.90 MB | 544 | – |
+| `Parse/Arith_Pratt/generated/bytes` | 6.51 ms | 20.5 | 8.90 MB | 545 | – |
+| `Parse/Arith_Pratt/generated_ast` | 5.28 ms | 25.3 | 3.12 MB | 270 | – |
+| `Parse/Arith_Pratt/go_parser` | 2.29 ms | 58.3 | 2.41 MB | 69 k | – |
+| `Parse/Arith_LeftRec/closure/codepoints` | 24.9 ms | 5.36 | 17.2 MB | 1.7 k | – |
+| `Parse/Arith_LeftRec/closure/bytes` | 25.5 ms | 5.24 | 17.2 MB | 1.7 k | – |
+| `Parse/Arith_LeftRec/bytecode/codepoints` | 28.1 ms | 4.75 | 17.9 MB | 1.8 k | – |
+| `Parse/Arith_LeftRec/bytecode/bytes` | 27.3 ms | 4.89 | 17.4 MB | 1.8 k | – |
+| `Parse/Arith_LeftRec/iterative/codepoints` | 34.6 ms | 3.85 | 17.5 MB | 2.2 k | – |
+| `Parse/Arith_LeftRec/iterative/bytes` | 34.1 ms | 3.91 | 18.0 MB | 2.2 k | – |
 | `Parse/Arith_LeftRec/generated/codepoints` | 12.5 ms | 10.7 | 17.1 MB | 1.7 k | – |
-| `Parse/Arith_LeftRec/generated/bytes` | 13.2 ms | 10.1 | 17.1 MB | 1.7 k | – |
-| `Parse/Arith_LeftRec/generated_ast` | 8.87 ms | 15.1 | 4.23 MB | 508 | – |
-| `Parse/Arith_LeftRec/go_parser` | 2.17 ms | 61.5 | 2.41 MB | 69 k | – |
-| `Parse/Minilang/closure/codepoints` | 12.3 ms | 7.21 | 7.84 MB | 830 | – |
-| `Parse/Minilang/closure/bytes` | 12.3 ms | 7.20 | 7.83 MB | 830 | – |
-| `Parse/Minilang/bytecode/codepoints` | 16.7 ms | 5.32 | 8.25 MB | 922 | – |
-| `Parse/Minilang/bytecode/bytes` | 16.9 ms | 5.25 | 8.15 MB | 920 | – |
-| `Parse/Minilang/iterative/codepoints` | 21.0 ms | 4.23 | 8.16 MB | 1.0 k | – |
-| `Parse/Minilang/iterative/bytes` | 21.8 ms | 4.08 | 8.28 MB | 1.0 k | – |
-| `Parse/Minilang/generated/codepoints` | 7.37 ms | 12.1 | 7.77 MB | 802 | – |
-| `Parse/Minilang/generated/bytes` | 7.75 ms | 11.5 | 7.77 MB | 802 | – |
-| `Parse/Minilang/generated_ast` | 7.40 ms | 12.0 | 9.90 MB | 1.0 k | – |
-| `Parse/Recovery/closure/codepoints` | 11.8 ms | 7.60 | 7.63 MB | 1.7 k | – |
-| `Parse/Recovery/closure/bytes` | 12.0 ms | 7.44 | 7.62 MB | 1.7 k | – |
-| `Parse/Recovery/bytecode/codepoints` | 15.8 ms | 5.66 | 8.02 MB | 1.8 k | – |
-| `Parse/Recovery/bytecode/bytes` | 16.6 ms | 5.40 | 8.02 MB | 1.8 k | – |
-| `Parse/Recovery/iterative/codepoints` | 20.3 ms | 4.40 | 8.07 MB | 1.9 k | – |
-| `Parse/Recovery/iterative/bytes` | 21.2 ms | 4.21 | 8.06 MB | 1.9 k | – |
-| `Parse/Recovery/generated/codepoints` | 6.85 ms | 13.1 | 7.57 MB | 1.7 k | – |
-| `Parse/Recovery/generated/bytes` | 7.35 ms | 12.2 | 7.57 MB | 1.7 k | – |
-| `Parse/Recovery/generated_ast` | 7.43 ms | 12.0 | 9.56 MB | 1.9 k | – |
-| `Parse/Outline/closure/codepoints` | 5.69 ms | 14.7 | 10.2 MB | 2.2 k | – |
-| `Parse/Outline/closure/bytes` | 5.89 ms | 14.2 | 10.2 MB | 2.2 k | – |
-| `Parse/Outline/bytecode/codepoints` | 6.86 ms | 12.2 | 10.5 MB | 2.3 k | – |
-| `Parse/Outline/bytecode/bytes` | 6.97 ms | 12.0 | 10.5 MB | 2.3 k | – |
-| `Parse/Outline/iterative/codepoints` | 7.33 ms | 11.4 | 10.5 MB | 2.4 k | – |
-| `Parse/Outline/iterative/bytes` | 7.14 ms | 11.7 | 10.5 MB | 2.4 k | – |
-| `Parse/Outline/generated/codepoints` | 3.31 ms | 25.2 | 10.1 MB | 2.2 k | – |
-| `Parse/Outline/generated/bytes` | 3.41 ms | 24.5 | 10.1 MB | 2.2 k | – |
-| `Parse/Outline/generated_ast` | 2.08 ms | 40.0 | 2.62 MB | 1.9 k | – |
-| `Recognize/JSON/closure` | 7.07 ms | 37.1 | 9.91 KB | 7 | – |
-| `Recognize/JSON/bytecode` | 8.96 ms | 29.2 | 4.59 KB | 15 | – |
-| `Recognize/JSON/iterative` | 10.3 ms | 25.5 | 20.2 KB | 39 | – |
-| `Recognize/JSON/generated` | 1.67 ms | 157 | 3.29 KB | 0 | – |
-| `Recognize/JSON/json_Valid` | 326 µs | 804 | 0 B | 0 | – |
-| `Recognize/CSV/closure` | 3.19 ms | 66.3 | 3.94 KB | 4 | – |
-| `Recognize/CSV/bytecode` | 3.68 ms | 57.4 | 5.01 KB | 10 | – |
-| `Recognize/CSV/iterative` | 3.90 ms | 54.2 | 5.69 KB | 18 | – |
-| `Recognize/CSV/generated` | 823 µs | 257 | 1.07 KB | 0 | – |
-| `Recognize/XML/closure` | 8.10 ms | 32.4 | 3.71 MB | 163 | – |
-| `Recognize/XML/bytecode` | 10.8 ms | 24.4 | 3.74 MB | 176 | – |
-| `Recognize/XML/iterative` | 12.0 ms | 21.9 | 3.74 MB | 217 | – |
-| `Recognize/XML/generated` | 2.19 ms | 120 | 2.65 MB | 150 | – |
-| `Recognize/Arith_Pratt/closure` | 6.97 ms | 19.1 | 5.64 KB | 7 | – |
-| `Recognize/Arith_Pratt/bytecode` | 10.1 ms | 13.3 | 8.28 KB | 9 | – |
-| `Recognize/Arith_Pratt/iterative` | 15.5 ms | 8.62 | 35.9 KB | 165 | – |
-| `Recognize/Arith_Pratt/generated` | 3.68 ms | 36.3 | 3.58 KB | 0 | – |
-| `Recognize/Arith_LeftRec/closure` | 17.4 ms | 7.65 | 1.25 MB | 254 | – |
-| `Recognize/Arith_LeftRec/bytecode` | 20.6 ms | 6.48 | 1.30 MB | 262 | – |
-| `Recognize/Arith_LeftRec/iterative` | 26.0 ms | 5.12 | 1.46 MB | 587 | – |
-| `Recognize/Arith_LeftRec/generated` | 7.30 ms | 18.3 | 1.10 MB | 240 | – |
-| `Recognize/Minilang/closure` | 8.99 ms | 9.89 | 558 KB | 135 | – |
-| `Recognize/Minilang/bytecode` | 14.1 ms | 6.29 | 595 KB | 150 | – |
-| `Recognize/Minilang/iterative` | 17.9 ms | 4.96 | 623 KB | 219 | – |
+| `Parse/Arith_LeftRec/generated/bytes` | 13.4 ms | 9.99 | 17.1 MB | 1.7 k | – |
+| `Parse/Arith_LeftRec/generated_ast` | 8.73 ms | 15.3 | 4.23 MB | 508 | – |
+| `Parse/Arith_LeftRec/go_parser` | 2.29 ms | 58.2 | 2.41 MB | 69 k | – |
+| `Parse/Minilang/closure/codepoints` | 12.2 ms | 7.32 | 7.83 MB | 830 | – |
+| `Parse/Minilang/closure/bytes` | 12.5 ms | 7.12 | 7.83 MB | 830 | – |
+| `Parse/Minilang/bytecode/codepoints` | 16.9 ms | 5.27 | 8.25 MB | 922 | – |
+| `Parse/Minilang/bytecode/bytes` | 17.0 ms | 5.23 | 8.24 MB | 922 | – |
+| `Parse/Minilang/iterative/codepoints` | 21.7 ms | 4.10 | 8.29 MB | 1.0 k | – |
+| `Parse/Minilang/iterative/bytes` | 21.6 ms | 4.12 | 8.28 MB | 1.0 k | – |
+| `Parse/Minilang/generated/codepoints` | 7.25 ms | 12.3 | 7.77 MB | 802 | – |
+| `Parse/Minilang/generated/bytes` | 7.78 ms | 11.4 | 7.77 MB | 802 | – |
+| `Parse/Minilang/generated_ast` | 7.50 ms | 11.9 | 9.78 MB | 1.0 k | – |
+| `Parse/Recovery/closure/codepoints` | 12.2 ms | 7.35 | 7.64 MB | 1.7 k | – |
+| `Parse/Recovery/closure/bytes` | 12.1 ms | 7.37 | 7.56 MB | 1.7 k | – |
+| `Parse/Recovery/bytecode/codepoints` | 16.4 ms | 5.47 | 8.03 MB | 1.8 k | – |
+| `Parse/Recovery/bytecode/bytes` | 16.4 ms | 5.45 | 8.02 MB | 1.8 k | – |
+| `Parse/Recovery/iterative/codepoints` | 20.5 ms | 4.36 | 8.07 MB | 1.9 k | – |
+| `Parse/Recovery/iterative/bytes` | 21.2 ms | 4.22 | 8.06 MB | 1.9 k | – |
+| `Parse/Recovery/generated/codepoints` | 7.43 ms | 12.0 | 7.58 MB | 1.7 k | – |
+| `Parse/Recovery/generated/bytes` | 7.69 ms | 11.6 | 7.57 MB | 1.7 k | – |
+| `Parse/Recovery/generated_ast` | 7.37 ms | 12.1 | 9.54 MB | 1.9 k | – |
+| `Parse/Outline/closure/codepoints` | 5.99 ms | 13.9 | 10.2 MB | 2.2 k | – |
+| `Parse/Outline/closure/bytes` | 5.66 ms | 14.7 | 10.2 MB | 2.2 k | – |
+| `Parse/Outline/bytecode/codepoints` | 6.91 ms | 12.1 | 10.5 MB | 2.3 k | – |
+| `Parse/Outline/bytecode/bytes` | 6.96 ms | 12.0 | 10.5 MB | 2.3 k | – |
+| `Parse/Outline/iterative/codepoints` | 7.31 ms | 11.4 | 10.5 MB | 2.4 k | – |
+| `Parse/Outline/iterative/bytes` | 7.38 ms | 11.3 | 10.5 MB | 2.4 k | – |
+| `Parse/Outline/generated/codepoints` | 3.08 ms | 27.1 | 10.1 MB | 2.2 k | – |
+| `Parse/Outline/generated/bytes` | 3.58 ms | 23.3 | 10.1 MB | 2.2 k | – |
+| `Parse/Outline/generated_ast` | 2.01 ms | 41.6 | 2.62 MB | 1.9 k | – |
+| `Recognize/JSON/closure` | 7.21 ms | 36.4 | 10.2 KB | 7 | – |
+| `Recognize/JSON/bytecode` | 9.00 ms | 29.1 | 14.3 KB | 15 | – |
+| `Recognize/JSON/iterative` | 10.4 ms | 25.2 | 20.2 KB | 39 | – |
+| `Recognize/JSON/generated` | 1.74 ms | 151 | 3.42 KB | 0 | – |
+| `Recognize/JSON/json_Valid` | 323 µs | 812 | 0 B | 0 | – |
+| `Recognize/CSV/closure` | 3.29 ms | 64.2 | 4.02 KB | 4 | – |
+| `Recognize/CSV/bytecode` | 3.62 ms | 58.5 | 2.65 KB | 10 | – |
+| `Recognize/CSV/iterative` | 3.92 ms | 53.9 | 5.70 KB | 18 | – |
+| `Recognize/CSV/generated` | 836 µs | 253 | 1.09 KB | 0 | – |
+| `Recognize/XML/closure` | 8.32 ms | 31.5 | 3.71 MB | 163 | – |
+| `Recognize/XML/bytecode` | 10.8 ms | 24.3 | 3.74 MB | 176 | – |
+| `Recognize/XML/iterative` | 12.1 ms | 21.7 | 3.75 MB | 217 | – |
+| `Recognize/XML/generated` | 2.20 ms | 119 | 2.65 MB | 150 | – |
+| `Recognize/Arith_Pratt/closure` | 6.99 ms | 19.1 | 5.64 KB | 7 | – |
+| `Recognize/Arith_Pratt/bytecode` | 9.89 ms | 13.5 | 7.37 KB | 9 | – |
+| `Recognize/Arith_Pratt/iterative` | 15.6 ms | 8.54 | 35.9 KB | 165 | – |
+| `Recognize/Arith_Pratt/generated` | 3.70 ms | 36.1 | 3.59 KB | 0 | – |
+| `Recognize/Arith_LeftRec/closure` | 17.5 ms | 7.64 | 1.25 MB | 254 | – |
+| `Recognize/Arith_LeftRec/bytecode` | 20.6 ms | 6.47 | 1.30 MB | 262 | – |
+| `Recognize/Arith_LeftRec/iterative` | 26.3 ms | 5.07 | 1.46 MB | 586 | – |
+| `Recognize/Arith_LeftRec/generated` | 7.10 ms | 18.8 | 1.09 MB | 240 | – |
+| `Recognize/Minilang/closure` | 9.09 ms | 9.77 | 558 KB | 135 | – |
+| `Recognize/Minilang/bytecode` | 14.5 ms | 6.14 | 595 KB | 150 | – |
+| `Recognize/Minilang/iterative` | 18.0 ms | 4.95 | 625 KB | 219 | – |
 | `Recognize/Minilang/generated` | 4.56 ms | 19.5 | 526 KB | 123 | – |
-| `Recognize/Recovery/closure` | 8.61 ms | 10.4 | 681 KB | 414 | – |
-| `Recognize/Recovery/bytecode` | 13.6 ms | 6.56 | 716 KB | 429 | – |
-| `Recognize/Recovery/iterative` | 17.3 ms | 5.16 | 745 KB | 498 | – |
-| `Recognize/Recovery/generated` | 4.46 ms | 20.0 | 652 KB | 402 | – |
-| `Recognize/Outline/closure` | 3.56 ms | 23.4 | 1.95 MB | 1.8 k | – |
-| `Recognize/Outline/bytecode` | 4.53 ms | 18.4 | 2.05 MB | 1.8 k | – |
-| `Recognize/Outline/iterative` | 5.10 ms | 16.3 | 2.07 MB | 1.9 k | – |
-| `Recognize/Outline/generated` | 1.23 ms | 67.6 | 1.63 MB | 1.8 k | – |
-| `Incremental/closure/document` | 148 µs | – | 168 KB | 33 | – |
-| `Incremental/closure/fresh` | 12.0 ms | – | 7.84 MB | 830 | – |
-| `Incremental/bytecode/document` | 130 µs | – | 167 KB | 41 | – |
-| `Incremental/bytecode/fresh` | 16.9 ms | – | 8.24 MB | 922 | – |
+| `Recognize/Recovery/closure` | 8.70 ms | 10.3 | 682 KB | 414 | – |
+| `Recognize/Recovery/bytecode` | 13.9 ms | 6.45 | 717 KB | 429 | – |
+| `Recognize/Recovery/iterative` | 17.3 ms | 5.16 | 746 KB | 498 | – |
+| `Recognize/Recovery/generated` | 4.41 ms | 20.3 | 652 KB | 402 | – |
+| `Recognize/Outline/closure` | 3.61 ms | 23.1 | 1.95 MB | 1.8 k | – |
+| `Recognize/Outline/bytecode` | 4.51 ms | 18.5 | 2.05 MB | 1.8 k | – |
+| `Recognize/Outline/iterative` | 5.13 ms | 16.2 | 2.07 MB | 1.9 k | – |
+| `Recognize/Outline/generated` | 1.25 ms | 66.8 | 1.63 MB | 1.8 k | – |
+| `Incremental/closure/document` | 146 µs | – | 168 KB | 33 | – |
+| `Incremental/closure/fresh` | 12.3 ms | – | 7.84 MB | 830 | – |
+| `Incremental/bytecode/document` | 131 µs | – | 167 KB | 41 | – |
+| `Incremental/bytecode/fresh` | 16.9 ms | – | 8.25 MB | 922 | – |
 | `Incremental/iterative/document` | 131 µs | – | 170 KB | 63 | – |
-| `Incremental/iterative/fresh` | 21.5 ms | – | 8.29 MB | 1.0 k | – |
-| `IncrementalLong/closure` | 2.26 ms | – | 2.70 MB | 23 | – |
-| `IncrementalLong/bytecode` | 2.39 ms | – | 2.72 MB | 41 | – |
-| `IncrementalLong/iterative` | 2.41 ms | – | 2.72 MB | 52 | – |
-| `Stream/closure` | 69.4 ms | 31.2 | 90.5 MB | 310 k | – |
-| `Stream/bytecode` | 82.3 ms | 26.3 | 99.1 MB | 310 k | – |
-| `Stream/iterative` | 83.6 ms | 25.9 | 99.1 MB | 310 k | – |
-| `Stream/encoding_csv` | 7.12 ms | 304 | 6.98 MB | 100 k | – |
-| `Prepare/json/source` | 159 µs | – | 275 KB | 2.4 k | – |
-| `Prepare/json/pegoc/closure` | 97.0 µs | – | 105 KB | 1.2 k | 2780 file-bytes |
-| `Prepare/json/pegoc/bytecode` | 122 µs | – | 132 KB | 1.5 k | 2780 file-bytes |
-| `Prepare/json/pegoc-noast/bytecode` | 51.0 µs | – | 71.8 KB | 519 | 2130 file-bytes |
-| `Prepare/minilang/source` | 577 µs | – | 910 KB | 7.3 k | – |
-| `Prepare/minilang/pegoc/closure` | 216 µs | – | 314 KB | 2.7 k | 6750 file-bytes |
-| `Prepare/minilang/pegoc/bytecode` | 292 µs | – | 388 KB | 3.5 k | 6750 file-bytes |
-| `Prepare/minilang/pegoc-noast/bytecode` | 99.6 µs | – | 234 KB | 1.2 k | 4900 file-bytes |
+| `Incremental/iterative/fresh` | 21.4 ms | – | 8.29 MB | 1.0 k | – |
+| `IncrementalLong/closure` | 2.25 ms | – | 2.70 MB | 23 | – |
+| `IncrementalLong/bytecode` | 2.34 ms | – | 2.72 MB | 41 | – |
+| `IncrementalLong/iterative` | 2.46 ms | – | 2.73 MB | 52 | – |
+| `Stream/closure` | 72.1 ms | 30.1 | 90.5 MB | 310 k | – |
+| `Stream/bytecode` | 82.5 ms | 26.3 | 99.1 MB | 310 k | – |
+| `Stream/iterative` | 83.5 ms | 26.0 | 99.1 MB | 310 k | – |
+| `Stream/encoding_csv` | 6.83 ms | 317 | 6.98 MB | 100 k | – |
+| `Prepare/json/source` | 168 µs | – | 275 KB | 2.4 k | – |
+| `Prepare/json/pegoc/closure` | 83.6 µs | – | 105 KB | 1.2 k | 2780 file-bytes |
+| `Prepare/json/pegoc/bytecode` | 121 µs | – | 132 KB | 1.5 k | 2780 file-bytes |
+| `Prepare/json/pegoc-noast/bytecode` | 44.4 µs | – | 71.9 KB | 519 | 2130 file-bytes |
+| `Prepare/minilang/source` | 561 µs | – | 910 KB | 7.3 k | – |
+| `Prepare/minilang/pegoc/closure` | 224 µs | – | 314 KB | 2.7 k | 6750 file-bytes |
+| `Prepare/minilang/pegoc/bytecode` | 290 µs | – | 389 KB | 3.5 k | 6750 file-bytes |
+| `Prepare/minilang/pegoc-noast/bytecode` | 107 µs | – | 234 KB | 1.2 k | 4900 file-bytes |
