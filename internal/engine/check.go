@@ -334,7 +334,19 @@ func (k *checker) expr(e grammar.Expr, sc *scopeCheck) ty {
 
 func (k *checker) addCapture(sc *scopeCheck, name string, ci capInfo) {
 	if old, ok := sc.caps[name]; ok {
-		ci = capInfo{t: union(old.t, ci.t), always: old.always || ci.always}
+		t := old.t
+		// Union normalizes top-level optional and union types even when
+		// both operands are equal. Other equal types can reuse the first
+		// value without formatting every nested record field.
+		switch t.(type) {
+		case basicTy, namedTy, listTy, recordTy:
+			if !sameTypeStructure(t, ci.t) {
+				t = union(t, ci.t)
+			}
+		default:
+			t = union(t, ci.t)
+		}
+		ci = capInfo{t: t, always: old.always || ci.always}
 	}
 	sc.caps[name] = ci
 }

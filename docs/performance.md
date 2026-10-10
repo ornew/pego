@@ -208,6 +208,7 @@ automatically in the others. This table records, for every change in the log bel
 | 69 | One current variable binding per name, persistent replacement and equal-value reuse | ✓ | ✓ | ✓ | ✓ | ✓ | TS also uses unique bindings; lookup scales with names, not assignment history; changed non-head values copy a prefix |
 | 70 | Keep repetition records across unchanged Document parses | ✓ | ✓ | ✓ | – | – | retain the same-generation map, including root memo hits; one-edit eligibility and abort/reset invalidation remain |
 | 71 | Dependency propagation for sample constructor analysis | ✓ | ✓ | ✓ | – | – | `sample.New` requires a grammar AST; shared constructor analysis, no matching-runtime change; contiguous reverse edges and bounded worklist |
+| 72 | Reuse equal capture types without formatting | ✓ | ✓ | ✓ | ✓ | ✓ | shared type checking before compilation/generation; no matching-runtime change; top-level optional/union normalization retained |
 | 62 | Short literals compared in place | – | – | – | ✗ | ✓ | typed: direct rules, up to 4 code points, code points only (the other backends match literals with their own loop, 32) |
 
 Not applied, and why:
@@ -1261,7 +1262,7 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   repeated whole-grammar work. Dense per-rule reach bitsets remain unchanged;
   their memory still scales with rules times targets. Sparse/shared sets need
   separate measurements and ownership design before changing representation.
-- The same pairs include five controls: a shuffled-graph fixture with shared
+- The same pairs include five controls: a mixed graph fixture with shared
   calls/finite and impossible cycles, a one-rule choice/repetition, and the
   unchanged calculator/minilang/outline example ASTs. Median analysis time
   changes −2.1%, +8.7%, −3.9%, −20.0%, −14.1%, respectively. The first three
@@ -1287,6 +1288,71 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   stay local. The full-suite checkpoint follows P13/P27 in the current core
   analysis optimization group; batch-runtime benchmark workloads are unchanged.
 
+
+### 72. Reuse structurally equal duplicate capture types
+
+- Every duplicate capture label previously called the general type union,
+  which formats, sorts and deduplicates nested record fields. Repeated
+  references to the same recursively inferred record allocate these strings
+  again for each occurrence in every inference round. The capture merger now
+  compares immutable type structures and reuses the previous equal basic,
+  named, list or record type. Ordered nested unions and named-node kinds are
+  compared conservatively; top-level optionals and unions still use the
+  general normalizer. Capture availability remains the logical OR of both
+  occurrences. This changes shared type checking before compilation or
+  generation, not the parsing runtimes or generated matching code.
+- Five alternating parent/candidate pairs with a 200 ms benchtime compare
+  baseline `0ab91da` with this change on Apple M3 Max, Go 1.27.1. Grammar parsing and Program
+  setup are outside the timer; each iteration runs the complete `checkTypes`,
+  including dependency analysis, recursive inference and diagnostic checking.
+  The recursive fixture repeats `"😀" x:main` in `main`; the record fixture
+  repeats `x:item`, where `item` captures a Match and a list of nested records.
+
+  | Shape | Occurrences | Time before → after | B/op before → after | Allocs/op before → after |
+  |:--|--:|:--|:--|:--|
+  | Recursive | 1,024 | 423.966 → 61.126 ms (−85.6%) | 1.188 GB → 32.16 MB | 8,204,256 → 274,551 |
+  | Recursive | 8,192 | 4,096.058 → 511.795 ms (−87.5%) | 9.528 GB → 274.67 MB | 65,628,207 → 2,139,000 |
+  | Record | 1,024 | 1.921 → 0.456 ms (−76.3%) | 2.065 → 1.067 MB | 51,277 → 4,219 |
+  | Record | 8,192 | 16.432 → 4.398 ms (−73.2%) | 16.500 → 8.505 MB | 409,698 → 32,912 |
+  | Record | 32,768 | 65.064 → 17.327 ms (−73.4%) | 68.765 → 36.784 MB | 1,638,524 → 131,239 |
+
+  All five time ranges are disjoint. Bytes are cumulative allocations over
+  one complete checker invocation, not retained heap. Current bounded
+  recursive inference scales approximately linearly in capture count in
+  these samples; an older quadratic description is not a current complexity
+  claim. Structural comparison still traverses nested types and expression
+  checking still processes every occurrence in each inference round.
+- Separate single-iteration diagnostics at 32,768/131,072 recursive captures
+  take 14.229 → 2.025 s and 55.894 → 8.210 s, respectively. At 131,072,
+  cumulative allocations fall 152.647 → 4.578 GB and allocation counts
+  1,050,020,237 → 34,088,466. These reproduce the original large case and
+  are diagnostic observations, not five-sample estimates. The remaining
+  inference/AST traversal work is still substantial.
+- Mixed `A`/optional `B` duplicates retain general union normalization:
+  1,024/8,192/32,768 pairs change +0.1%/+0.3%/−0.6% in time, with overlapping
+  ranges and essentially unchanged allocation counts/bytes. Distinct-label
+  record controls change −0.3%/−0.2%/−0.8%, also with overlapping ranges.
+  Unchanged calculator/minilang/JSON grammar AST controls change
+  +0.6%/approximately 0%/−4.2%, all with overlapping ranges and identical
+  bytes/allocation counts. These controls do not establish runtime speedups
+  or promise savings for growing heterogeneous unions.
+- Type regressions retain exact public types, recursive widening, nested
+  records/lists, optional and choice availability, repetition-local captures,
+  nil actions and capture-reading actions/predicates. Duplicate-label error
+  positions remain exact across Unicode sequences at several sizes.
+  A pairwise oracle compares the capture merger with the general union for
+  all availability flags, including reordered unions, nested optionals,
+  never/any/nil and equal names with differing node kinds. Independent source
+  review checks normalization, ordering and immutable type reuse.
+- Reproduce with
+  `go test ./internal/engine -run '^$' -bench '^BenchmarkCaptureChecking$' -benchtime=200ms -benchmem`.
+  Build parent/candidate binaries with the same benchmark source, restoring
+  `check.go` and `types.go` from `0ab91da` through a Go overlay for the parent.
+  Run five alternating pairs for recursive sizes 1,024/8,192 and all
+  record/mixed/unique/control cases, without concurrent tests/builds/probes.
+  Large recursive cases use separate single-iteration diagnostics. Raw
+  results stay local; the full suite checkpoint follows P27 in this core
+  analysis optimization group.
 
 ## Grammar authoring guidelines for performance
 

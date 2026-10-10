@@ -168,6 +168,11 @@ components iterate using canonical type keys that ignore union-member order. Pra
 implicit self-dependencies. Per-rule recursive growth budgets and repeating-state detection permanently widen only
 affected rules to `any`, retaining stable peers and unrelated finite types ([specification](../spec/type-checking.md#type-inference)).
 
+Duplicate capture labels reuse structurally equal basic/named/list/record types without rendering
+nested records on each occurrence. Top-level optional and union values retain general normalization;
+ordered union display and capture availability are unchanged. This is a compiler/type-checker
+optimization with no generated matching-runtime change ([measurements](performance.md#72-reuse-structurally-equal-duplicate-capture-types)).
+
 ### Actions
 
 `eval.go` evaluates action and predicate expressions.
@@ -281,8 +286,10 @@ short/direct and long literal, suffix/choice and recognition checks cover this c
 records now survive redundant no-edit parses, including root memo hits, without advancing their edit generation
 (P06). Nested runs, ordinary failure/recovery, multiple edits, edit-log rollover and interrupted memo hits have
 fresh-parse equivalence checks. Sample constructor analysis now uses dependency propagation instead of whole-grammar
-sweeps (P03); reordered chains and recursive graphs agree with the previous fixed point. Next are measured compiler
-analysis optimizations (P13/P27). C22/C23 require specification
+sweeps (P03); reordered chains and recursive graphs agree with the previous fixed point. Next is measured compiler
+variable-dependency propagation (P27). Duplicate capture-label checking now reuses structurally equal record/list/node types
+(P13), preserving ordered unions, optional normalization and capture availability; tuning entry 72 records
+checker-only measurements and ordinary grammar controls. C22/C23 require specification
 review before choosing Pratt behavior; analysis and runtime optimizations require fresh measurements. The
 DuckDB LIMIT-percent candidate is saved on [fix/duckdb-limit-percent](https://github.com/ornew/pego/tree/fix/duckdb-limit-percent)
 at [f44269f](https://github.com/ornew/pego/commit/f44269f09ddffa6739450d868581f61baa208246). Its focused engine/native

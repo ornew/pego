@@ -81,6 +81,49 @@ func typeTerm(t ty) string {
 	return t.String()
 }
 
+// sameTypeStructure compares immutable checker types without formatting them.
+// Union order is significant here: it determines public type display order.
+func sameTypeStructure(a, b ty) bool {
+	switch a := a.(type) {
+	case basicTy:
+		b, ok := b.(basicTy)
+		return ok && a == b
+	case namedTy:
+		b, ok := b.(namedTy)
+		return ok && a == b
+	case listTy:
+		b, ok := b.(listTy)
+		return ok && sameTypeStructure(a.elem, b.elem)
+	case optTy:
+		b, ok := b.(optTy)
+		return ok && sameTypeStructure(a.elem, b.elem)
+	case unionTy:
+		b, ok := b.(unionTy)
+		if !ok || len(a.alts) != len(b.alts) {
+			return false
+		}
+		for i, t := range a.alts {
+			if !sameTypeStructure(t, b.alts[i]) {
+				return false
+			}
+		}
+		return true
+	case recordTy:
+		b, ok := b.(recordTy)
+		if !ok || len(a.fields) != len(b.fields) {
+			return false
+		}
+		for name, t := range a.fields {
+			u, ok := b.fields[name]
+			if !ok || !sameTypeStructure(t, u) {
+				return false
+			}
+		}
+		return true
+	}
+	return false
+}
+
 // union builds the union of types. It flattens nested unions and removes duplicates and never.
 func union(ts ...ty) ty {
 	var alts []ty
