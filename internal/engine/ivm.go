@@ -403,6 +403,9 @@ func (f *nudFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult,
 		case nPrefix:
 			f.a = p.attempt
 			if f.a.op == nil {
+				if res.cutFailed {
+					return nil, iresult{}, true
+				}
 				f.state = nOperand
 				continue
 			}

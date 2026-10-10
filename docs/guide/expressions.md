@@ -686,6 +686,12 @@ pego: operand-lr.pego:2:9: operand of e calls e at its start (left recursion); u
 
 Write `!` as a postfix operator instead.
 
+**A cut can prevent prefix-to-operand fallback.** If no prefix part matches and a candidate failed after `--`,
+the Pratt expression fails. For example, `prefix "-" -- "z"` does not fall back to `operand "-x"` on `-x`.
+An ordinary mismatch before a cut still allows fallback. A different successfully matching prefix candidate is
+selected by the usual longest-match rule; that candidate's own cut controls a later RHS failure. See the
+[backtracking rules](../../spec/pratt.md#parsing-rules) for candidate and cut scopes.
+
 **`skip` is not inserted inside an operator part or an operand, and trailing whitespace is not consumed.** In
 `infix right "?" t:expr ":"` the `":"` must directly follow the end of `t`; write `ws` before it. Otherwise the operator
 part fails, the operator is not applied, and the error is reported at the farthest failure (below, the colon at column 7,

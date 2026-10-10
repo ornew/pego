@@ -1932,6 +1932,8 @@ class Parser {
         return undefined;
       }
       this.reset(m0pos, m0env, m0trail, m0rec);
+    } else if (this.cutFailed) {
+      return undefined;
     }
     for (const o of pr.operands) {
       const prevFrame = this.frame;

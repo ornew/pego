@@ -159,7 +159,18 @@ infix left _                            // application    f x (empty operator pa
   operator. For a prefix operator, the parser then tries the `operand` items at
   the same position instead. If the operator part passed a
   [cut](parser-expressions.md#cut) (`--`), the whole Pratt expression fails
-  instead.
+  instead. If no prefix operator part matches and any candidate failed after
+  passing a cut, the whole expression also fails instead of trying operands.
+  Failed candidates do not veto another successfully matching operator part;
+  only the selected operator's own cut controls a later right-operand failure.
+  Cuts remain local to their parser-expression choice or called rule. A prefix
+  or postfix part rejected for matching empty input contributes a cut failure
+  when it passed a cut, just as a part that failed while matching does.
+
+For example, `prefix "-" -- "z"` with `operand "-x"` rejects `-x`: no prefix
+candidate matches, and the attempted prefix passed a cut. Removing `--` allows
+operand fallback. This rule applies to every engine backend and standalone
+Go/TypeScript parsers.
 
 ## Level-restricted calls
 

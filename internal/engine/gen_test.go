@@ -113,6 +113,7 @@ def main = (^ @(?a-z)+ $ "\n"?)* $$ (?^\n)? _`, []string{"ab\ncd\n", "ab\n1", "�
 		{"scans", `
 def main = a:(?a-z)* -(?0-9){2,3} -.{1,2} -(?^,)+ "," rest:@.*`, []string{"ab12xy,z", "123,", "1", "abc12éq,é"}},
 	}
+	cases = append(cases, prefixPartCutCorpus())
 	cases = append(cases, actionVariableCases...)
 	cases = append(cases, actionLifecycleCases...)
 	cases = append(cases, envBindingCases...)
@@ -412,6 +413,9 @@ def n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x" 
 		}
 		if strings.Contains(string(code), "tparse(trules") {
 			typedRuntime++
+		}
+		if c.name == "Pratt prefix-part cuts" && !strings.Contains(string(code), "tparse(trules") {
+			t.Error("Pratt prefix-part cuts: typed runtime is not exercised")
 		}
 		// The grammars written for direct rules (gen_direct.go) must compile rules that way.
 		if strings.Contains(c.name, "typed/direct_") && !strings.Contains(string(code), "(body inlined)") {

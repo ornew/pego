@@ -1410,7 +1410,7 @@ func (p *tparser) prattNud(r *trule) (any, bool) {
 	pr := r.pratt
 	p.skipTrivia(pr)
 	m0 := p.mark()
-	if a, _ := p.longest(pr.prefix); a.op != nil {
+	if a, cutFailed := p.longest(pr.prefix); a.op != nil {
 		p.apply(&a)
 		rhs, ok := p.prattParse(r, a.op.level)
 		if ok {
@@ -1420,6 +1420,8 @@ func (p *tparser) prattNud(r *trule) (any, bool) {
 			return nil, false
 		}
 		p.reset(m0)
+	} else if cutFailed {
+		return nil, false
 	}
 	for _, o := range pr.operands {
 		prevFrame, prevCut := p.frame, p.cut

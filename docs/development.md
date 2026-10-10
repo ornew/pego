@@ -313,8 +313,8 @@ tail while retaining unrestricted prefixes at operand positions (C22); a prefix'
 binding level. Exact tree, Unicode span, memoization and generated-parser conformance checks cover that existing
 contract. Sampling and coverage now honor those prefix/RHS paths (C30), including nested calls and scoped nonassociative
 operators. Caller stop checks now omit closed nonassociative parts (C31); longest-before-eligibility checks (C32)
-and nested nonassociative scope restoration (C33) remain open. C23 will commit a failed-after-cut prefix part to failure of the whole Pratt expression;
-its engine/generator/specification implementation is still pending; analysis and runtime optimizations require
+and nested nonassociative scope restoration (C33) remain open. C23 now prevents operand fallback when no prefix part matches and a candidate failed after cut, across
+all engines and standalone Go/typed Go/TypeScript. Successful longest candidates retain their own cut scopes; analysis and runtime optimizations require
 fresh measurements. The DuckDB LIMIT-percent candidate is saved on [fix/duckdb-limit-percent](https://github.com/ornew/pego/tree/fix/duckdb-limit-percent)
 at [f44269f](https://github.com/ornew/pego/commit/f44269f09ddffa6739450d868581f61baa208246). Its focused engine/native
 acceptance and AST checks pass; full impact suites, canonical oracle checks and paired performance measurements
