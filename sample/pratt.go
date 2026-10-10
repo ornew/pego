@@ -14,8 +14,8 @@ type prattOp struct {
 	level int
 }
 
-// prattOps returns the operators of the kind in levels from minLevel on (a level-restricted call parses
-// only those).
+// prattOps returns operators of the kind from minLevel on. Prefix selection always starts at zero;
+// only the infix/postfix tail is restricted by a named entry or a prefix's right-hand binding level.
 func prattOps(pr *grammar.Pratt, minLevel int, kind string) []prattOp {
 	var ops []prattOp
 	for i := minLevel; i < len(pr.Levels); i++ {
@@ -34,8 +34,8 @@ type thunk func() bool
 func (g *gen) genPratt(ri *ruleInfo, minLevel int, k cont) bool {
 	start := len(g.out)
 	open := make([]bool, len(ri.pratt.Levels))
-	return g.prattPrimary(ri, minLevel, 0, func() bool {
-		return g.prattTail(ri, minLevel, 0, open, func() bool {
+	return g.prattPrimary(ri, len(ri.pratt.Levels), 0, func(prefixMin int) bool {
+		return g.prattTail(ri, min(minLevel, prefixMin), 0, open, func() bool {
 			return k(val{kind: vUnknown, start: start, end: len(g.out)})
 		})
 	})
@@ -85,21 +85,24 @@ func (g *gen) opOptions(ops []prattOp) []int {
 	return g.order(opts)
 }
 
-// prattPrimary generates prefix operators followed by an operand.
-func (g *gen) prattPrimary(ri *ruleInfo, minLevel, prefixes int, k thunk) bool {
+// prattPrimary generates unrestricted prefixes followed by an operand. prefixMin is the weakest
+// right-hand tail bound opened by those prefixes, or len(Levels) when none was generated. A prefix at
+// level l admits operators strictly tighter than l in its RHS, even at a tighter named entry.
+func (g *gen) prattPrimary(ri *ruleInfo, prefixMin, prefixes int, k func(int) bool) bool {
 	pr := ri.pratt
 	s0 := g.steps
 	operand := func() bool {
-		return g.prattSkip(pr, func() bool { return g.prattOperand(pr, k) })
+		return g.prattSkip(pr, func() bool { return g.prattOperand(pr, prefixMin, k) })
 	}
 	prefix := func() bool {
-		ops := prattOps(pr, minLevel, grammar.Prefix)
+		ops := prattOps(pr, 0, grammar.Prefix)
 		if len(ops) == 0 || prefixes >= g.cfg.maxRepeat {
 			return false
 		}
 		return g.prattSkip(pr, func() bool {
 			for _, i := range g.opOptions(ops) {
-				if g.prattPart(ops[i].op, func() bool { return g.prattPrimary(ri, minLevel, prefixes+1, k) }) {
+				o := ops[i]
+				if g.prattPart(o.op, func() bool { return g.prattPrimary(ri, min(prefixMin, o.level+1), prefixes+1, k) }) {
 					return true
 				}
 				if !g.retry(s0) {
@@ -111,7 +114,7 @@ func (g *gen) prattPrimary(ri *ruleInfo, minLevel, prefixes int, k thunk) bool {
 	}
 	prefixFirst := !g.minimal() && g.rng.IntN(5) == 0
 	if g.cfg.coverage && !g.minimal() {
-		for _, o := range prattOps(pr, minLevel, grammar.Prefix) {
+		for _, o := range prattOps(pr, 0, grammar.Prefix) {
 			if g.wanted(g.in.ops[o.op]) {
 				prefixFirst = true
 			}
@@ -124,7 +127,7 @@ func (g *gen) prattPrimary(ri *ruleInfo, minLevel, prefixes int, k thunk) bool {
 }
 
 // prattOperand generates one of the operands, which form an ordered choice.
-func (g *gen) prattOperand(pr *grammar.Pratt, k thunk) bool {
+func (g *gen) prattOperand(pr *grammar.Pratt, prefixMin int, k func(int) bool) bool {
 	opts := make([]option, len(pr.Operands))
 	for i, o := range pr.Operands {
 		opts[i] = option{height: g.in.height(o.Expr), length: g.in.length(o.Expr), own: g.in.operands[o], reach: g.in.reach(o.Expr)}
@@ -143,7 +146,7 @@ func (g *gen) prattOperand(pr *grammar.Pratt, k thunk) bool {
 			ok = g.gen(pr.Operands[i].Expr, func(val) bool {
 				inner := g.caps
 				g.caps = caps
-				ok := k()
+				ok := k(prefixMin)
 				g.caps = inner
 				return ok
 			})
@@ -219,7 +222,20 @@ func (g *gen) prattTail(ri *ruleInfo, minLevel, count int, open []bool, k thunk)
 				o := ops[i]
 				next := after(o.level, o.op.Assoc == grammar.AssocNone)
 				if g.prattPart(o.op, func() bool {
-					return g.prattPrimary(ri, minLevel, 0, func() bool { return g.prattTail(ri, minLevel, count+1, next, k) })
+					return g.prattPrimary(ri, len(pr.Levels), 0, func(prefixMin int) bool {
+						// A prefix's fresh RHS may contain another non-associative operator at
+						// a tighter level. Preserve restrictions outside that RHS, and do not
+						// mutate next: a failed prefix branch can retry an ordinary operand.
+						inner := next
+						for l := prefixMin; l < len(next); l++ {
+							if next[l] {
+								inner = append([]bool(nil), next...)
+								clear(inner[prefixMin:])
+								break
+							}
+						}
+						return g.prattTail(ri, min(minLevel, prefixMin), count+1, inner, k)
+					})
 				}) {
 					return true
 				}
@@ -280,7 +296,7 @@ func (g *gen) prattStopCheck(ri *ruleInfo, minLevel int) grammar.Expr {
 		return &grammar.Seq{Items: items}
 	}
 	var starts []grammar.Expr
-	for _, o := range prattOps(pr, minLevel, grammar.Prefix) {
+	for _, o := range prattOps(pr, 0, grammar.Prefix) {
 		if g.in.length(o.op.Expr) > 0 {
 			starts = append(starts, o.op.Expr)
 		}

@@ -414,12 +414,15 @@ parser would read differently:
   so indentation (as in [examples/outline](../../examples/outline/outline.pego)) and matching tags (as in
   [parsers/xml](../../parsers/xml/xml.pego)) work;
 - Pratt expressions are generated as chains of operands and operators, avoiding chains of `infix none` operators,
-  with tail operators filtered by level-restricted calls.
+  with the outer infix/postfix tail filtered by level-restricted calls. Prefixes remain available at every operand
+  position, including prefixes below the entry level. Their right operands can use operators tighter than the
+  prefix's own level; coverage includes these RHS paths and the rules they call. Operators and nested targets
+  that no reachable entry or prefix RHS permits are excluded. See the
+  [prefix exception](expressions.md#4-level-restricted-calls) for the parser's contract.
 
-There is currently a gap for prefixes below a named entry level: the generator omits them even though the parser
-accepts them, and coverage omits those valid paths. A grammar requiring such a prefix can return `ErrNoInput`.
-Operators allowed only inside that prefix's right operand can also be omitted. See the
-[prefix exception](expressions.md#4-level-restricted-calls) for the parser's contract.
+One remaining stop-check limitation affects a caller that continues with the same token as an already-used
+nonassociative operator: `e "<" e` with `infix none "<"` can parse `a<a<a`, while sampling that exact input can return
+`ErrNoInput`. The generator's stop check currently treats the caller's `<` as a further Pratt continuation.
 
 What the generator cannot evaluate, it leaves to the parser: predicates over values built by actions or over struct
 fields, and lookaheads into Pratt expressions or left-recursive rules. Those constructs are handled only by generating

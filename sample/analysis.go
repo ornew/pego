@@ -43,9 +43,6 @@ type ruleInfo struct {
 	length   int            // minimal length in bytes of a match
 	reach    bitset         // targets that generating the rule can exercise, its own included
 	calls    []string
-	// possibleCalls are the calls in contexts that can match, and possibleRefs the calls themselves.
-	possibleCalls []string
-	possibleRefs  []*grammar.Ref
 	// always caches alwaysMatches for the body: 0 not computed yet, 1 being computed, 2 yes, 3 no.
 	always int
 	// stops caches, per minimum level, the expression that must not match where a chain of
@@ -177,34 +174,6 @@ func analyze(g *grammar.Grammar, start string) *info {
 		ri.height, ri.length = min(h, ri.height), min(l, ri.length)
 		return true
 	})
-	// Targets and calls in contexts that can match.
-	for _, ri := range in.order {
-		if ri.height >= inf {
-			continue
-		}
-		in.targets[ri.index].possible = true
-		in.walkPossible(ri.def.Expr, func(e grammar.Expr) {
-			switch e := e.(type) {
-			case *grammar.Ref:
-				ri.possibleCalls = append(ri.possibleCalls, e.Name)
-				ri.possibleRefs = append(ri.possibleRefs, e)
-			case *grammar.Choice:
-				for j, a := range e.Alts {
-					in.targets[in.altBase[e]+j].possible = in.height(a) < inf
-				}
-			case *grammar.Pratt:
-				for _, o := range e.Operands {
-					in.targets[in.operands[o]].possible = in.height(o.Expr) < inf
-				}
-				for _, l := range e.Levels {
-					for _, op := range l.Operators {
-						in.targets[in.ops[op]].possible = in.height(op.Expr) < inf
-					}
-				}
-			}
-		})
-	}
-
 	// Reach sets of rules: their own targets and those of the rules they call, transitively.
 	for _, ri := range in.order {
 		ri.reach = newBitset(len(in.targets))
@@ -220,9 +189,8 @@ func analyze(g *grammar.Grammar, start string) *info {
 		}
 		return changed
 	})
-	in.reachable = in.closure(func(ri *ruleInfo) []string { return ri.possibleCalls })
 	in.called = in.closure(func(ri *ruleInfo) []string { return ri.calls })
-	in.restrictLevels()
+	in.possibleTargets()
 	return in
 }
 
@@ -509,32 +477,77 @@ func (in *info) length(e grammar.Expr) int {
 	return 0
 }
 
-// restrictLevels leaves out of the coverage the operators of Pratt levels that no call reaches: when a
-// Pratt rule is only called with a level (e(mul)), the operators of looser levels are never generated.
-func (in *info) restrictLevels() {
-	lowest := map[*ruleInfo]int{}
-	if in.start != nil && in.start.pratt != nil {
-		lowest[in.start] = 0
+// possibleTargets propagates reachable rules and their weakest Pratt entry together. Only parts
+// enabled in a reachable context can introduce more calls: a blocked tail must not lower its own
+// rule's entry or make its nested choices and callees appear reachable. Prefixes are unrestricted and
+// can open weaker tail levels in their RHS, independently of the named entry.
+func (in *info) possibleTargets() {
+	type state struct {
+		minLevel int
+		queued   bool
 	}
-	for _, ri := range in.order {
-		if !in.reachable[ri.index] {
+	states := make([]state, len(in.order))
+	for i := range states {
+		states[i].minLevel = inf
+	}
+	in.reachable = make([]bool, len(in.order))
+	queue := make([]int, 0, len(in.order))
+	enqueue := func(ri *ruleInfo, level int) {
+		if ri == nil || ri.height >= inf || level >= states[ri.index].minLevel {
+			return
+		}
+		s := &states[ri.index]
+		s.minLevel = level
+		if !s.queued {
+			s.queued = true
+			queue = append(queue, ri.index)
+		}
+	}
+	visit := func(e grammar.Expr) {
+		switch e := e.(type) {
+		case *grammar.Ref:
+			if callee := in.rules[e.Name]; callee != nil {
+				enqueue(callee, callee.levels[e.Level]) // zero for unrestricted/ordinary calls
+			}
+		case *grammar.Choice:
+			for j, a := range e.Alts {
+				in.targets[in.altBase[e]+j].possible = in.height(a) < inf
+			}
+		}
+	}
+	enqueue(in.start, 0)
+	for len(queue) > 0 {
+		i := queue[len(queue)-1]
+		queue = queue[:len(queue)-1]
+		states[i].queued = false
+		ri := in.order[i]
+		in.reachable[i] = true
+		in.targets[i].possible = true
+		if ri.pratt == nil {
+			in.walkPossible(ri.def.Expr, visit)
 			continue
 		}
-		for _, r := range ri.possibleRefs {
-			callee := in.rules[r.Name]
-			if callee == nil || callee.pratt == nil {
-				continue
-			}
-			l := callee.levels[r.Level] // 0 without a level
-			if old, ok := lowest[callee]; !ok || l < old {
-				lowest[callee] = l
+		pr := ri.pratt
+		minLevel := states[i].minLevel
+		for l, level := range pr.Levels {
+			for _, op := range level.Operators {
+				if op.Kind == grammar.Prefix && in.height(op.Expr) < inf {
+					minLevel = min(minLevel, l+1)
+				}
 			}
 		}
-	}
-	for ri, l := range lowest {
-		for i := 0; i < l; i++ {
-			for _, op := range ri.pratt.Levels[i].Operators {
-				in.targets[in.ops[op]].possible = false
+		in.walkPossible(pr.Skip, visit)
+		for _, o := range pr.Operands {
+			in.targets[in.operands[o]].possible = in.height(o.Expr) < inf
+			in.walkPossible(o.Expr, visit)
+		}
+		for l, level := range pr.Levels {
+			for _, op := range level.Operators {
+				if op.Kind != grammar.Prefix && l < minLevel {
+					continue
+				}
+				in.targets[in.ops[op]].possible = in.height(op.Expr) < inf
+				in.walkPossible(op.Expr, visit)
 			}
 		}
 	}

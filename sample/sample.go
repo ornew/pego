@@ -223,7 +223,7 @@ type Coverage struct {
 	RulesCovered int `json:"rulesCovered"`
 	// Alternatives counts the alternatives of ordered choices and the operands and operators of Pratt
 	// expressions in those rules, leaving out those that can never match or that occur only inside an
-	// expression that can never match.
+	// expression that can never match, or in Pratt tails that no reachable entry or prefix RHS permits.
 	Alternatives        int `json:"alternatives"`
 	AlternativesCovered int `json:"alternativesCovered"`
 	// MissedRules and MissedAlternatives list what was not exercised.
@@ -231,9 +231,9 @@ type Coverage struct {
 	MissedAlternatives []Alternative `json:"missedAlternatives,omitempty"`
 	// Unreachable lists the rules that generation cannot exercise from the start rule: rules that are
 	// not called, or called only inside negative lookaheads (!keyword), the skip of #recover, or
-	// expressions that can never match. Impossible lists the rules that the start rule calls (outside
-	// negative lookaheads and #recover) but that can never match, such as rules that end in _|_ to
-	// report an error. Neither is counted in Rules.
+	// expressions that can never match or blocked Pratt operator parts. Impossible lists the rules
+	// that the start rule calls (outside negative lookaheads and #recover) but that can never match,
+	// such as rules that end in _|_ to report an error. Neither is counted in Rules.
 	Unreachable []string `json:"unreachable,omitempty"`
 	Impossible  []string `json:"impossible,omitempty"`
 }

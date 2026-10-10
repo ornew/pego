@@ -145,11 +145,17 @@ The generator prunes candidates that the parser would read differently from how 
   operators each followed by another operand, with the skip expression before each operand and operator part. The
   parser builds the tree from the binding levels, so any chain is accepted except where an operator part is read
   differently or an `infix none` operator would chain; the generator tracks the latter per level (an operator of a
-  looser level in between allows it again). A level-restricted call (`e(add)`) uses only the operators of that level
-  and tighter ones. Where a chain ends, no further postfix operator part may match after the skip, and no infix
+  looser level in between allows it again). A level-restricted call (`e(add)`) restricts the outer infix/postfix
+  tail to that level and tighter ones; prefixes at every operand position remain unrestricted. A prefix at level
+  `l` opens a RHS tail strictly tighter than `l`, even below the caller's entry. The flat chain carries the weakest
+  bound opened by its prefixes. Each new primary starts without a prefix bound; prefixes in that primary clear
+  nonassociative restrictions only at levels inside their fresh RHS, preserving restrictions outside it. Explicit
+  rule calls initialize their own entry independently. Prefix and tail counts retain their existing per-chain
+  bounds. Where a chain ends, no further postfix operator part may match after the skip, and no infix
   operator part followed by the start of an operand (the parser ends the expression before an infix operator that no
   operand follows, so `a+` is accepted by `e "+"`). Prefix and postfix parts that would match the empty string are not
-  used, as in the parser.
+  used, as in the parser. The stop check does not yet account for active nonassociative restrictions, so a caller
+  continuing with the same token can be rejected by sampling even when parsing accepts it.
 - **Left recursion** needs nothing special: the recursion is bounded like any other, and the parser grows the seed.
 
 ### Coverage
@@ -159,11 +165,15 @@ Rules that the start rule reaches only inside negative lookaheads (`!keyword`) o
 as unreachable, and rules that are called but can never match (bodies that end in `_|_` to report an error) as
 impossible; neither counts in the totals. Alternatives that can never match, and everything inside an expression that
 can never match (`"(" ("a" / "b") _|_`), are not counted either; a rule that can match but is called only there is
-unreachable. Nor are the operators of Pratt levels that every call skips: if `e` is only called as `e(mul)`, the
-operators of the levels looser than `mul` are never generated. Each rule has a reach set (the targets that generating it can exercise), computed as a fixed point over
+unreachable. For a Pratt rule, reachable calls and their minimum levels are propagated together: skip, operands
+and viable prefixes are visited at every entry, while infix/postfix parts are visited only if a reachable entry
+or prefix RHS permits their level. Calls and nested choices inside blocked operator parts do not contribute
+reachable targets, and an unrestricted self-call there cannot widen the rule's entry. A prefix whose shortest
+match is empty may still consume on another alternative, so its RHS remains conservatively possible.
+Each rule has a reach set used to bias the search, computed as a fixed point over
 the call graph; reach sets of subexpressions are computed on demand.
-The same dependency worklist propagates these sets. Dense bitsets remain per rule; this scheduling change does
-not change their representation, coverage exclusions or generated inputs. The constructor's analysis precedes
+Height/length estimates and these broad bias reach sets use the callee-first dependency worklist. Dense bitsets
+remain per rule; the separate joint rule/entry analysis determines public coverage exclusions. The constructor's analysis precedes
 generation attempts and is outside `WithBudget`.
 
 Coverage is recorded on the derivation the generator followed for each accepted input. The parser takes the same way

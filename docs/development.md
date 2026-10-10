@@ -153,9 +153,12 @@ estimates or reach sets (`analysis_dependencies.go`). A bounded worklist handles
 contiguous reverse edges avoid one graph allocation per rule. Target numbering, negative-lookahead/recovery
 exclusions and seeded decisions retain their existing semantics; the attempt budget does not bound this analysis.
 
-Named-level Pratt sampling still omits prefixes below the entry level and can omit operators permitted inside
-their right operands. Coverage omits those valid paths, and a grammar requiring such a prefix
-can return `ErrNoInput` despite accepting inputs (C30). This generator limitation does not restrict parser acceptance.
+Named-level Pratt sampling retains unrestricted prefixes and tracks the weaker tail bound opened by their right
+operands, with nonassociative restrictions scoped to each new prefix RHS. Coverage propagates reachable rule/entry
+states together, excluding nested targets and calls in blocked operator parts (C30). Explicit inner calls keep their
+own entry restrictions; seeded generation, budgets and mandatory Parse validation remain in place.
+Stop checks still omit active nonassociative restrictions: a valid caller suffix with the same operator token can
+cause `ErrNoInput` (C31). This generator limitation does not restrict parser acceptance.
 
 ### Compiled grammars
 
@@ -305,7 +308,9 @@ core performance work. Duplicate capture-label checking now reuses structurally 
 checker-only measurements and ordinary grammar controls. Named-level Pratt calls restrict the outer infix/postfix
 tail while retaining unrestricted prefixes at operand positions (C22); a prefix's right operand uses its own
 binding level. Exact tree, Unicode span, memoization and generated-parser conformance checks cover that existing
-contract. C23 still requires a decision on failed-after-cut prefix parts; analysis and runtime optimizations require
+contract. Sampling and coverage now honor those prefix/RHS paths (C30), including nested calls and scoped nonassociative
+operators; the remaining nonassociative caller stop-check gap is C31. C23 still requires a decision on failed-after-cut
+prefix parts; analysis and runtime optimizations require
 fresh measurements. The DuckDB LIMIT-percent candidate is saved on [fix/duckdb-limit-percent](https://github.com/ornew/pego/tree/fix/duckdb-limit-percent)
 at [f44269f](https://github.com/ornew/pego/commit/f44269f09ddffa6739450d868581f61baa208246). Its focused engine/native
 acceptance and AST checks pass; full impact suites, canonical oracle checks and paired performance measurements
