@@ -26,15 +26,22 @@ import (
 //     undoes through the trail, which only setCapture into the rule's own frame extends.
 //   - The action is a Go expression over the capture variables, evaluated in place.
 //
-// A direct rule never reads or sets p.cut (it has no cut, and every callee restores it), p.frame
+// A direct rule never reads or sets p.cut (its flags are local and callees restore it), p.frame
 // (callees set their own) or p.trail (callees truncate it to its length at the call), so it
-// leaves them alone. Rules with a cut or #recover, Pratt rules and leaders of left recursion
-// keep the general code. Value-free plain Node rules reuse the structural walk
+// leaves them alone. Typed cuts use scope-local flags; rules with #recover,
+// Pratt rules and leaders of left recursion keep the general code. Node rules
+// containing cuts also retain the general code. Value-free plain Node rules reuse the structural walk
 // without captures or predicates. Other Node rules inline only their expression
 // bodies, retaining runtime ownership of frames, memoization and finalization.
 
 // directOK reports whether the rule r can be compiled as a direct rule.
 func directOK(r *rule) bool {
+	return directEligible(r, false)
+}
+
+// directEligible keeps cut support local to typed direct rules. Node bodies
+// retain their existing eligibility and runtime-owned cut scopes.
+func directEligible(r *rule, cuts bool) bool {
 	if r.leader {
 		return false
 	}
@@ -44,7 +51,11 @@ func directOK(r *rule) bool {
 	ok := true
 	walkExpr(r.def.Expr, func(e grammar.Expr) {
 		switch e := e.(type) {
-		case *grammar.Cut, *grammar.Pratt:
+		case *grammar.Cut:
+			if !cuts {
+				ok = false
+			}
+		case *grammar.Pratt:
 			ok = false
 		case *grammar.Attributed:
 			for _, a := range e.Attrs {
@@ -78,12 +89,16 @@ type dgen struct {
 	g *generator
 	// nodeBody emits an unfinished Node body under the ordinary runtime's
 	// frame, depth, memo and finish ownership.
-	nodeBody bool
-	b        strings.Builder
-	decls    []dvar
-	reads    map[string]bool // variables read
-	used     map[string]bool // labels jumped to
-	n        int
+	nodeBody  bool
+	localCuts bool // typed rule contains cuts
+	// cut is the local flag of the active choice, optional or repeat scope.
+	// An empty name discards cuts at rule entry and inside lookahead.
+	cut   string
+	b     strings.Builder
+	decls []dvar
+	reads map[string]bool // variables read
+	used  map[string]bool // labels jumped to
+	n     int
 	// dead reports that the current point is unreachable: statements are dropped (go vet
 	// rejects unreachable code) until a label that is jumped to is placed.
 	dead bool
@@ -418,7 +433,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 			v = d.decl("v", d.g.valType())
 		}
 		f, done := d.label(), d.label()
-		x := d.expr(e.Expr, s, build, f)
+		x, cut := d.cutExpr(e.Expr, s, build, f)
 		if build {
 			d.line("%s = %s", v, d.rd(x))
 		}
@@ -426,6 +441,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 			d.jump(done)
 			d.place(f)
 			d.reset(m)
+			d.cutFail(cut, fail)
 			if build {
 				d.line("%s = nil", v)
 			}
@@ -440,7 +456,10 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		d.line("%s = p.pos", start)
 		d.line("p.silent++")
 		f, done := d.label(), d.label()
+		prevCut := d.cut
+		d.cut = ""
 		d.expr(e.Expr, s, build && hasCaptures(e.Expr), f)
+		d.cut = prevCut
 		d.line("p.silent--")
 		d.line("p.pos = %s", d.rd(start))
 		if d.used[f] {
@@ -456,7 +475,10 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		m := d.mark(s, e.Expr, true)
 		d.line("p.silent++")
 		f := d.label()
+		prevCut := d.cut
+		d.cut = ""
 		d.expr(e.Expr, s, false, f)
+		d.cut = prevCut
 		d.line("p.silent--")
 		d.reset(m)
 		d.jump(fail)
@@ -513,6 +535,13 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 	case *grammar.Bottom:
 		d.jump(fail)
 		return "nil"
+	case *grammar.Cut:
+		if g.table != "trules" || d.nodeBody {
+			d.bad = true
+		} else if d.cut != "" {
+			d.line("%s = true", d.cut)
+		}
+		return "nil"
 	case *grammar.BeginInput:
 		d.failIf("p.pos != 0", fail, "p.expect(p.pos, idBeginInput)")
 		return "nil"
@@ -530,7 +559,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 	case *grammar.Attributed:
 		return d.attr(e, len(e.Attrs)-1, s, build, fail)
 	}
-	d.bad = true // a cut, or anything else the general code handles
+	d.bad = true // anything the general code handles
 	return "nil"
 }
 
@@ -573,6 +602,37 @@ func (d *dgen) single(build bool) string {
 	return v
 }
 
+// cutExpr gives a backtracking child its own cut flag. The compile-time scope
+// is restored even when the emitted child exits through a failure label.
+func (d *dgen) cutExpr(e grammar.Expr, s *dscope, build bool, fail string) (string, string) {
+	if !d.localCuts {
+		return d.expr(e, s, build, fail), ""
+	}
+	prev := d.cut
+	cut := d.decl("cut", "bool")
+	d.line("%s = false", cut)
+	d.cut = cut
+	v := d.expr(e, s, build, fail)
+	d.cut = prev
+	return v, cut
+}
+
+func (d *dgen) cutFail(cut, fail string, cleanup ...string) {
+	if cut != "" {
+		d.failIf(d.rd(cut), fail, cleanup...)
+	}
+}
+
+func directCuts(e grammar.Expr) bool {
+	found := false
+	walkExpr(e, func(e grammar.Expr) {
+		if _, ok := e.(*grammar.Cut); ok {
+			found = true
+		}
+	})
+	return found
+}
+
 func (d *dgen) choice(e *grammar.Choice, s *dscope, build bool, fail string) string {
 	g := d.g
 	m := d.mark(s, e, true)
@@ -597,13 +657,14 @@ func (d *dgen) choice(e *grammar.Choice, s *dscope, build bool, fail string) str
 				fmt.Sprintf("p.expect(p.pos, %d)", desc))
 		}
 		f := d.label()
-		x := d.expr(alt, s, build, f)
+		x, cut := d.cutExpr(alt, s, build, f)
 		if build {
 			d.line("%s = %s", v, d.rd(x))
 		}
 		d.jump(done)
 		d.place(f)
 		d.reset(m)
+		d.cutFail(cut, fail)
 		if skip != "" {
 			d.place(skip)
 		}
@@ -661,7 +722,7 @@ func (d *dgen) repeat(e *grammar.Repeat, s *dscope, build bool, fail string) str
 		d.clearScope(es, e.Expr)
 	}
 	f := d.label()
-	v := d.expr(e.Expr, es, build, f)
+	v, cut := d.cutExpr(e.Expr, es, build, f)
 	if own && build {
 		attached := d.decl("v", d.g.valType())
 		d.line("%s = p.attachCaptures(%s, %s, %s, %s, p.pos)", attached, d.rd(v), d.scopeVar(es), d.vals(es), d.rd(m.pos))
@@ -676,6 +737,11 @@ func (d *dgen) repeat(e *grammar.Repeat, s *dscope, build bool, fail string) str
 		d.exit("continue")
 		d.place(f)
 		d.reset(m)
+		if build {
+			d.cutFail(cut, fail, fmt.Sprintf("p.dropKids(%s)", d.rd(base)))
+		} else {
+			d.cutFail(cut, fail)
+		}
 		d.exit("break")
 	}
 	d.endLoop()
@@ -765,7 +831,7 @@ func (d *dgen) projectRepeat(e *grammar.Repeat, field, fail string) string {
 	m := d.mark(es, e.Expr, false)
 	d.clearScope(es, e.Expr)
 	f := d.label()
-	d.expr(e.Expr, es, false, f)
+	_, cut := d.cutExpr(e.Expr, es, false, f)
 	fv, ok := es.vars[field]
 	if !ok {
 		d.bad = true
@@ -778,6 +844,7 @@ func (d *dgen) projectRepeat(e *grammar.Repeat, field, fail string) string {
 		d.exit("continue")
 		d.place(f)
 		d.reset(m)
+		d.cutFail(cut, fail, fmt.Sprintf("p.dropKids(%s)", d.rd(base)))
 		d.exit("break")
 	}
 	d.endLoop()
@@ -965,11 +1032,11 @@ type direct struct {
 
 // directRule compiles the rule r as a direct rule, or returns nil if it keeps the general code.
 func (g *generator) directRule(r *rule) *direct {
-	if g.table == "trules" && !directOK(r) || g.table != "trules" && !directLeanOK(r) {
+	if g.table == "trules" && !directEligible(r, !g.disableTypedCuts) || g.table != "trules" && !directLeanOK(r) {
 		return nil
 	}
 	snap := g.snapshot()
-	d := &dgen{g: g, reads: map[string]bool{}, used: map[string]bool{}}
+	d := &dgen{g: g, localCuts: g.table == "trules" && directCuts(r.def.Expr), reads: map[string]bool{}, used: map[string]bool{}}
 	s := newDscope()
 	g.cur, g.proj = r, g.projections(r)
 	defer func() { g.proj = nil }()

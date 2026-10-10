@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/syntax"
@@ -24,27 +25,44 @@ def repeated: A = (x:"b"){2} --`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := Generate(g, GenOptions{Package: "poolfixture", Start: "main", Types: true})
-	if err != nil {
-		t.Fatal(err)
-	}
-	dir := os.Getenv("PEGO_TYPED_POOL_DIR")
-	if dir == "" {
-		dir = t.TempDir()
-	} else if err := os.MkdirAll(dir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	for name, contents := range map[string][]byte{
-		"parser.go": code, "pool_test.go": []byte(typedPoolFixture), "go.mod": []byte("module poolfixture\n\ngo 1.27.1\n"),
-	} {
-		if err := os.WriteFile(filepath.Join(dir, name), contents, 0o644); err != nil {
-			t.Fatal(err)
+	for _, reference := range []bool{false, true} {
+		name := "direct"
+		if reference {
+			name = "general"
 		}
-	}
-	cmd := exec.Command("go", "test", "-count=1", "-run", "^TestTypedPool")
-	cmd.Dir = dir
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("generated typed pool: %v\n%s", err, out)
+		t.Run(name, func(t *testing.T) {
+			code, err := Generate(g, GenOptions{Package: "poolfixture", Start: "main", Types: true, disableTypedCuts: reference})
+			if err != nil {
+				t.Fatal(err)
+			}
+			dir := os.Getenv("PEGO_TYPED_POOL_DIR")
+			if dir == "" {
+				dir = t.TempDir()
+			} else {
+				if reference {
+					dir = filepath.Join(dir, name)
+				}
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+			}
+			fixture := typedPoolFixture
+			if reference {
+				fixture = strings.Replace(fixture, "const generalCapture = false", "const generalCapture = true", 1)
+			}
+			for name, contents := range map[string][]byte{
+				"parser.go": code, "pool_test.go": []byte(fixture), "go.mod": []byte("module poolfixture\n\ngo 1.27.1\n"),
+			} {
+				if err := os.WriteFile(filepath.Join(dir, name), contents, 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			cmd := exec.Command("go", "test", "-count=1", "-run", "^TestTypedPool")
+			cmd.Dir = dir
+			if out, err := cmd.CombinedOutput(); err != nil {
+				t.Fatalf("generated typed pool: %v\n%s", err, out)
+			}
+		})
 	}
 }
 
@@ -56,6 +74,8 @@ import (
 	"strings"
 	"testing"
 )
+
+const generalCapture = false
 
 func checkTrail(t *testing.T, p *tparser) {
 	t.Helper()
@@ -73,8 +93,8 @@ func TestTypedPoolRules(t *testing.T) {
 		if err != nil || v.(*A).Text != "b" {
 			t.Fatalf("large parse: %v", err)
 		}
-		if cap(p.trail) == 0 || len(p.trail) != 0 {
-			t.Fatal("general capture rule did not discard its undo trail")
+		if len(p.trail) != 0 || (generalCapture && cap(p.trail) == 0) || (!generalCapture && cap(p.trail) != 0) {
+			t.Fatal("capture rule did not use and discard the expected undo trail")
 		}
 		checkTrail(t, p)
 		p.recycle()

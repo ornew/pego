@@ -133,6 +133,7 @@ def main = (^ @(?a-z)+ $ "\n"?)* $$ (?^\n)? _`, []string{"ab\ncd\n", "ab\n1", "�
 def main = a:(?a-z)* -(?0-9){2,3} -.{1,2} -(?^,)+ "," rest:@.*`, []string{"ab12xy,z", "123,", "1", "abc12éq,é"}},
 	}
 	cases = append(cases, prefixPartCutCorpus())
+	cases = append(cases, typedDirectCutCases...)
 	cases = append(cases, actionVariableCases...)
 	cases = append(cases, actionLifecycleCases...)
 	cases = append(cases, envBindingCases...)
@@ -416,6 +417,11 @@ def n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x" 
 			cases[i].inputs = append(cases[i].inputs, mutants(cases[i].inputs, 8, uint64(i))...)
 		}
 	}
+	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true})
+}
+
+func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, reference GenOptions) {
+	t.Helper()
 	dir := t.TempDir()
 	write := func(name, content string) {
 		path := filepath.Join(dir, name)
@@ -449,8 +455,11 @@ def n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x" 
 			t.Errorf("%s: no direct rules", c.name)
 		}
 		write(fmt.Sprintf("g%d/parser.go", i), string(code))
-		// The same with ParseAST converting the result of Parse, which the typed runtime must equal.
-		code, err = Generate(g, GenOptions{Package: fmt.Sprintf("c%d", i), Start: "main", Types: true, convertTypes: true})
+		// The same through the reference route: Node conversion for the full
+		// corpus, or a disabled optimization for focused differential tests.
+		refOpts := reference
+		refOpts.Package, refOpts.Start, refOpts.Types = fmt.Sprintf("c%d", i), "main", true
+		code, err = Generate(g, refOpts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -545,7 +554,7 @@ func main() {
 		t.Fatalf("go run: %v\n%s", err, stderr.String())
 	}
 	if stderr.Len() > 0 {
-		t.Errorf("the typed runtime differs from converting the result of Parse:\n%s", stderr.String())
+		t.Errorf("the typed runtime differs from the reference route:\n%s", stderr.String())
 	}
 	if typedRuntime < 5 {
 		t.Errorf("only %d of %d grammars use the typed runtime", typedRuntime, len(cases))
@@ -582,6 +591,9 @@ func main() {
 			}
 			k++
 		}
+	}
+	if cases[len(cases)-1].name != "typed" {
+		return
 	}
 	typed := got[len(got)-3:]
 	for i, want := range []string{

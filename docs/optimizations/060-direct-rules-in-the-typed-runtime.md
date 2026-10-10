@@ -19,3 +19,4 @@
   Arith_LeftRec 14.3 → 10.3 ms (−28%), Outline 3.32 → 2.46 ms (−26%), Arith_Pratt 6.40 → 6.03 ms (−6%); XML 4.3 →
   3.2 MB (no frames), the others unchanged in bytes. JSON `ParseAST` now takes the time of `Recognize` (3.9 ms) and
   about half that of `Parse` (7.2 ms). Generated `Parse` and `Recognize` are unchanged.
+- The original implementation kept cut-bearing rules on general dispatch. [Change 78](078-local-cuts-in-typed-direct-rules.md) adds direct execution for eligible ordinary typed rules with local cuts; `#recover`, Pratt and left-recursion leaders remain on general dispatch.

@@ -38,12 +38,16 @@ type GenOptions struct {
 	// convertTypes makes ParseAST convert the result of Parse even when the typed runtime could
 	// build it (for tests).
 	convertTypes bool
+	// disableTypedCuts keeps the general typed cut route for differential tests
+	// and latest-generator performance controls. It adds no parser-time branch.
+	disableTypedCuts bool
 }
 
 // Generate generates the source code of a Go parser for a grammar.
 //
-// The generated code depends only on the standard library. Each parsing expression becomes a Go method and
-// actions and predicates become Go expressions; the embedded runtime (genrt) behaves exactly like the engine
+// The generated code depends only on the standard library. Eligible rule bodies inline their expressions;
+// other expressions become Go methods. Actions and predicates become Go expressions, and the embedded
+// runtime (genrt) behaves exactly like the engine
 // in this package. Stream and incremental parsing are not generated (#stream becomes a plain repetition).
 func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	prog, err := Compile(g, Options{})
@@ -60,7 +64,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if !token.IsIdentifier(opts.Package) || opts.Package == "_" {
 		return nil, fmt.Errorf("invalid package name %q", opts.Package)
 	}
-	gen := &generator{prog: prog, table: "rules"}
+	gen := &generator{prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
 	var rec *Program
@@ -133,9 +137,10 @@ func ParseRule(name, input string, unit ...Unit) (*Node, error) {
 }
 
 type generator struct {
-	prog  *Program
-	table string // the rule table being generated: rules, or recRules for Recognize
-	cur   *rule  // the rule being generated
+	disableTypedCuts bool
+	prog             *Program
+	table            string // the rule table being generated: rules, or recRules for Recognize
+	cur              *rule  // the rule being generated
 	// proj holds the projected repetition captures of the rule being generated (projections).
 	proj map[string]string
 	// final is the struct constructor that makes an action's result in the typed runtime: its

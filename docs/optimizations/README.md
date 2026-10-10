@@ -48,7 +48,7 @@ automatically in the others. This table records, for every change in the log bel
 | [55](055-tracing-hook-on-the-call-path.md#55-tracing-hook-on-the-call-path)| Tracing hook (cost only) | ✓ | ✓ | ✓ | – | – | generated parsers have no tracing |
 | [57](057-pooling-the-scratch-memory-of-whole-input-parses.md#57-pooling-the-scratch-memory-of-whole-input-parses), [58](058-pooling-the-scratch-memory-of-generated-parse-and-recognize.md#58-pooling-the-scratch-memory-of-generated-parse-and-recognize)| Scratch memory pooled across whole-input parses (input, offsets, memo, value stack) | ✓ | ✓ | ✓ | ✓ | ✓ | typed: since 48; generated `Parse` and `Recognize`: 58 |
 | [63](063-a-smaller-node.md#63-a-smaller-node), [64](064-a-smaller-node-in-generated-parsers.md#64-a-smaller-node-in-generated-parsers)| Smaller `Node` (88 bytes: `int32` positions, interned type and rule names) | ✓ | ✓ | ✓ | ✓ | – | generated `Parse` since 64; the typed runtime builds no nodes |
-| [60](060-direct-rules-in-the-typed-runtime.md#60-direct-rules-in-the-typed-runtime)| Direct rules: a rule's body inlined into its call method, captures in Go variables, the action in place | – | – | – | Partial | ✓ | generated since 76: supported value-free rules; since 77: supported Node/value-building rules; typed excludes cut, `#recover`, Pratt and LR leaders |
+| [60](060-direct-rules-in-the-typed-runtime.md#60-direct-rules-in-the-typed-runtime)| Direct rules: a rule's body inlined into its call method, captures in Go variables, the action in place | – | – | – | Partial | ✓ | generated supports eligible value-free and Node bodies, with cuts still general; typed supports ordinary local cuts; `#recover`, Pratt and LR leaders remain general |
 | [61](061-reading-code-points-directly-in-direct-rules.md#61-reading-code-points-directly-in-direct-rules)| Character tests read code points without calling `peek` | – | – | – | Partial | ✓ | direct rules only; generated supported Node and value-free rules since 76/77; Bytes retains decoding fallback |
 | [66](066-no-memo-key-allocated-for-variables-where-none-is-defined.md#66-no-memo-key-allocated-for-variables-where-none-is-defined)| No memo key allocated for variables where none is defined | ✓ | ✓ | ✓ | ✓ | ✓ | |
 | [67](067-retire-memo-entries-when-their-lookup-slots-are-removed.md#67-retire-memo-entries-when-their-lookup-slots-are-removed)| Retire/reuse memo entries on replacement, pruning and edit invalidation | ✓ | ✓ | ✓ | ✗ | ✗ | streams and Documents are engine-only; generated batch memo recycling has not been measured |
@@ -62,6 +62,7 @@ automatically in the others. This table records, for every change in the log bel
 | [75](075-exclude-absent-expectations-before-scanning.md#75-exclude-absent-expectations-before-scanning)| Fixed-size absence filter for ordered expectations | ✓ | ✓ | ✓ | ✓ | ✓ | Go only; Node, recognition, typed direct/conversion; collisions retain exact scans, TypeScript unchanged |
 | [76](076-inline-value-free-plain-generated-go-rules.md#76-inline-value-free-plain-generated-go-rules)| Inline value-free plain rule bodies | – | – | – | ✓ | – | Go recognition and Node skip twins; typed direct rules already use this emitter; see 77 for supported Node/value-building paths; TypeScript unchanged |
 | [77](077-inline-node-expressions-in-generated-go-parsers.md#77-inline-value-building-and-memoized-node-expressions-in-generated-go-parsers)| Inline value-building and memoized Node expressions | – | – | – | Partial | – | Generated Go Node only; unsupported cut/recovery/Pratt/LR leaders and unresolved captures fall back; typed and TypeScript unchanged |
+| [78](078-local-cuts-in-typed-direct-rules.md#78-local-cuts-in-typed-direct-rules)| Local cuts in typed direct rules | – | – | – | – | ✓ | ordinary cut-bearing typed Go rules; `#recover`, Pratt and LR leaders remain general |
 | [62](062-comparing-short-literals-in-place-in-direct-rules.md#62-comparing-short-literals-in-place-in-direct-rules)| Short literals compared in place | – | – | – | Partial | ✓ | direct rules, up to 4 code points; generated value-free and supported Node rules since 76/77; CodePoints only, Bytes retains the literal matcher |
 
 Not applied, and why:
@@ -126,7 +127,7 @@ Not applied, and why:
 - [048. A typed runtime for ParseAST](048-a-typed-runtime-for-parseast.md)
 - [049. First-character dispatch in generated choices](049-first-character-dispatch-in-generated-choices.md)
 - [050. First-character dispatch in the closure backend](050-first-character-dispatch-in-the-closure-backend.md)
-## Changes 51–77
+## Changes 51–78
 - [051. First-character dispatch in the VMs (instruction set 3)](051-first-character-dispatch-in-the-vms-instruction-set-3.md)
 - [052. Projected repetitions in generated `Parse`](052-projected-repetitions-in-generated-parse.md)
 - [053. Projected repetitions in the engine and the VMs](053-projected-repetitions-in-the-engine-and-the-vms.md)
@@ -154,6 +155,7 @@ Not applied, and why:
 - [075. Exclude absent expectations before scanning](075-exclude-absent-expectations-before-scanning.md)
 - [076. Inline value-free plain generated Go rules](076-inline-value-free-plain-generated-go-rules.md)
 - [077. Inline value-building and memoized Node expressions in generated Go parsers](077-inline-node-expressions-in-generated-go-parsers.md)
+- [078. Local cuts in typed direct rules](078-local-cuts-in-typed-direct-rules.md)
 
 ## Experiments that did not pay off
 

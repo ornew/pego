@@ -73,21 +73,27 @@ errors and memoization decisions are literally shared. The generator writes the 
   generated call methods. Live caller undo entries remain available. Recycling clears the full trail and Pratt
   saved-capture backing slices, since their lengths may have shrunk after retaining overwritten values. This releases
   discarded captures from pooled scratch while preserving returned terminals/structs; it does not rely on a later pool GC.
-- **Direct rules** (`gen_direct.go`). Most rules are not written as a method per expression at all: the body is
-  inlined into the method that calls the rule (`s<id>`, `v<id>` or `i<id>`), each expression jumping to a label when
-  it fails, with captures in Go variables of that method instead of a frame. Where the general code resets to a
-  mark, which undoes the trail, a direct rule restores the position, the number of recovered errors, the variable
-  environment if the expression assigns variables, and the capture variables the expression may set, saved when it
-  began: the trail of a rule's own captures is only ever extended by setCapture into its frame, so this is the same
-  state. A repetition element with captures of its own clears its variables at each iteration (a new frame) and
-  attaches them as before when its value is used. The action is a Go expression over the variables, evaluated in
-  place: no frame, no function value, and for an action that makes a struct with the rule's range none of the checks
-  of `tctx.result`, which hold by construction. Character tests and short literals read code points from the decoded
-  input without calling `peek` or `matchLiteral`, which the compiler does not inline. A direct rule leaves `p.cut`, `p.frame` and `p.trail` alone: it has
-  no cut, and the rules it calls restore all three. The general code remains for rules with a cut or `#recover`,
-  Pratt rules and the leaders of left recursion (and anything they call keeps working, since calls are the same
-  methods either way); in the benchmark grammars that is the Pratt expression of the calculator and the three
-  left-recursive rules of the other calculator.
+- **Direct rules** (`gen_direct.go`). Eligible rule bodies are inlined into the
+  method that calls the rule (`s<id>`, `v<id>` or `i<id>`), each expression
+  jumping to a label when it fails, with captures in Go variables instead of a
+  frame. Where the general code resets to a mark, which undoes the trail, a
+  direct rule restores the position, recovered-error count, variable
+  environment when assigned, and capture variables the expression may set.
+  A repetition element with its own captures clears them at each iteration and
+  attaches them as before when its value is used. The action is a Go expression
+  over those variables; a struct action uses the rule range directly.
+  Character tests and short literals read decoded code points without calling
+  `peek` or `matchLiteral`.
+
+  The typed direct path now supports ordinary local cuts as well as rules
+  without cuts. It emits scope-local cut state for choices, optionals and
+  repetitions; nested scopes and callees retain their own cut boundaries.
+  Failed alternatives restore captures, variable bindings and recovered
+  errors. The generated wrappers retain rule call depth, memo and result
+  ownership. Rules that use `#recover`, Pratt
+  expressions or lead left recursion still use general expression dispatch;
+  their callees can use either path. The measured cut extension is recorded
+  separately in [change 78](../optimizations/078-local-cuts-in-typed-direct-rules.md).
 
 The parity test generates every corpus grammar twice, with the typed runtime and with conversion (below), and checks
 that `ParseAST` returns the same values and errors, also when parsing concurrently. The corpus includes the cases two
@@ -132,11 +138,12 @@ built lists directly had taken 4.5 ms.
 
 ## Alternatives considered
 
-- **Statically typed code for every expression** (captures as Go variables of their Go types, lists as typed
-  slices, as in the prototype). Direct rules take the part of it that paid: captures in Go variables, the action in
-  place. Values stay `any`, so the actions, the memo and the general code share one representation, and constructs
-  that are rare in practice (cuts, `#recover`, Pratt lines, left recursion) keep the general code instead of code of
-  their own.
+- **Statically typed code for every expression** (captures as Go variables of
+  their Go types, lists as typed slices, as in the prototype). Direct rules
+  take the part of it that paid: captures in Go variables and actions in place.
+  Values stay `any`, so actions, memo and general code share one representation.
+  Local ordinary cuts have a direct path; `#recover`, Pratt expressions and
+  left-recursion leaders remain on general dispatch.
 - **Converting through JSON.** No generated code, but slower than the parse itself and lossy for unions (the
   member type would have to be decoded from `type`).
 - **Exposing typed values from the engine (`pego.Parser`).** Go types cannot be created at run time, so the engine
