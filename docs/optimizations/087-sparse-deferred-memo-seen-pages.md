@@ -62,9 +62,14 @@ cases, B/op differs by -215 to +937 bytes and allocations by at most one,
 within pooled variation.
 
 All six small generated-Go comparisons (Node, AST and recognition across both
-units) include parity in their 500 ms paired ranges, except a longer AST Bytes
-confirmation: 1.0324 [1.0226, 1.0506] versus prior, a confirmed 3.2%
-slowdown. On the large synthetic input, Node and recognition median ratios
+units) include parity in their 500 ms paired ranges. Short typed AST Bytes
+timing remains unresolved: one five-round, two-second series measured 1.0324
+[1.0226, 1.0506] versus prior, while a later five-round series measured
+1.0039 [0.9516, 1.0110]. A separate six-case, 500 ms matrix measured
+1.0148 [0.9684, 1.0614]. Each result describes its own run; the later results
+do not supersede the earlier series, and the evidence does not establish
+neutrality. Resolve this variation before adoption. On the large synthetic
+input, Node and recognition median ratios
 versus the prior implementation are 0.8991–0.9105, with every paired range
 below 1; B/op is 39–42% lower, with about 837–839 fewer allocations. AST
 CodePoints is 1.002 [0.939, 1.015] in the initial pairs; a longer confirmation
@@ -117,6 +122,6 @@ calls. The short control uses one line, warms 1,000 times and times 10,000
 calls. Keep the short-input controls in the report because they currently fail
 the adoption gate.
 
-The candidate is not ready to become the default on main. Tune the dense path
-for small typed Bytes inputs and repeat the short-input controls before
-proposing integration.
+The candidate is not ready to become the default on main. Resolve the
+inconsistent short typed AST Bytes evidence, tune the dense path as needed, and
+repeat the short-input controls before proposing integration.
