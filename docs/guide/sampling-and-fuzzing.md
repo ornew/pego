@@ -112,7 +112,8 @@ it does not bound constructor analysis. Dense coverage sets still grow with the 
 Three limits are hard, and each has a knob:
 
 - An attempt gives up after a budget of steps (`-budget`, `WithBudget`, default 20,000; a step is roughly one
-  expression generated). An input that needs more, such as `"a"{25000}`, is found only with a larger budget.
+  expression generated or Pratt scope inspected). An input that needs more, such as `"a"{25000}`, is found only
+  with a larger budget.
 - A repetition never takes more than `8 × max-repeat + 4` iterations beyond its minimum (28 by default), even when a
   predicate wants more: `x:"a"* [len($x) == 29]` needs `-max-repeat 4`.
 - Recursive rule calls never nest more than `max-depth + 8` deep (13 by default): an input that must nest 15 levels
@@ -424,18 +425,22 @@ After an already-used nonassociative operator closes its level, the stop check a
 that token: `e "<" e` with `infix none "<"` can generate `a<a<a`. Other applicable infix and postfix operators still
 prevent an early stop.
 
+Nonassociative restrictions belong to each Pratt invocation, including prefix and infix right operands. Returning
+from a tighter RHS restores the parent's restriction: with low `infix none "<"` and higher `infix none "="`, the
+generator can produce `a<a=a=a`, using `=` once inside `<`'s RHS and once in the enclosing frame. It still rejects
+`a=a=a`, which repeats `=` in the same frame. Explicit rule calls start their own state. Scope traversal consumes
+the generation budget; the operator-count bound remains per chain.
+
 For overlapping parts, stop checks compare all infix/postfix candidates by consumed length and declaration
 order before checking the winning part's level or nonassociative restriction. A longer disabled part can therefore
 belong to the caller even when it starts with a shorter enabled part. Skip, competing parts and the possible RHS
-start share one bounded matcher allowance; incomplete input keeps the check pending, while unsupported matching
+start and scope traversal share one bounded matcher allowance; incomplete input keeps the check pending, while unsupported matching
 leaves the decision to the parser.
 
-Two remaining Pratt approximations can return `ErrNoInput` for valid texts: with different nonassociative levels, a
-restriction set inside a tighter RHS can persist after that RHS returns. Low `infix none "<"` and higher
-`infix none "="` accept `a<a=a=a`, but sampling that exact text can fail. This affects finding derivations;
-every returned input is still parsed and accepted. The stop heuristic can also treat a prefix part as proof of
+One remaining Pratt approximation can return `ErrNoInput` for valid texts. The stop heuristic can treat a prefix part as proof of
 a complete infix RHS: with prefix `"~"` and infix `"!"`, `e "!~"` accepts `a!~` after an uncommitted RHS failure,
-but sampling that exact text can fail because the prefix has no operand.
+but sampling that exact text can fail because the prefix has no operand. This affects finding derivations;
+every returned input is still parsed and accepted.
 
 What the generator cannot evaluate, it leaves to the parser: predicates over values built by actions or over struct
 fields, and lookaheads into Pratt expressions or left-recursive rules. Those constructs are handled only by generating

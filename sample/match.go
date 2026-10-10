@@ -51,7 +51,7 @@ func (m *matcher) run(e grammar.Expr, text []byte, pos int, final bool) (status,
 	return m.match(e, pos)
 }
 
-// runPrattStop shares one work allowance across skip, all competing parts and the RHS start.
+// runPrattStop shares one work allowance across skip, all competing parts, scope walks and the RHS start.
 // An unresolved part can change the longest winner, so it cannot justify a rejection.
 func (m *matcher) runPrattStop(c *prattCheck, text []byte, pos int, final bool) (status, int) {
 	m.text, m.final, m.steps, m.active = text, final, 0, m.active[:0]
@@ -89,9 +89,18 @@ func (m *matcher) runPrattStop(c *prattCheck, text []byte, pos int, final bool) 
 	if incomplete {
 		return more, pos
 	}
-	if best == nil || best.level < s.minLevel || best.op.Kind == grammar.Infix && best.op.Assoc == grammar.AssocNone && len(c.closed) > best.level && c.closed[best.level] {
+	if best == nil {
 		return failed, pos
 	}
+	owner, work, complete := c.scope.owner(*best, matchSteps-m.steps)
+	m.steps += work
+	if !complete {
+		return unknown, pos
+	}
+	if owner == nil {
+		return failed, pos
+	}
+
 	if best.op.Kind == grammar.Postfix {
 		return matched, end
 	}

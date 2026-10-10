@@ -144,25 +144,27 @@ The generator prunes candidates that the parser would read differently from how 
 - **Pratt expressions** are generated as a flat chain: prefix operators, an operand, then postfix operators and infix
   operators each followed by another operand, with the skip expression before each operand and operator part. The
   parser builds the tree from the binding levels, so any chain is accepted except where an operator part is read
-  differently or an `infix none` operator would chain; the generator tracks the latter per level (an operator of a
-  looser level in between allows it again). A level-restricted call (`e(add)`) restricts the outer infix/postfix
+  differently or an `infix none` operator would chain. Immutable frames track the minimum binding level and last
+  nonassociative level of each recursive Pratt invocation. A level-restricted call (`e(add)`) restricts the outer infix/postfix
   tail to that level and tighter ones; prefixes at every operand position remain unrestricted. A prefix at level
-  `l` opens a RHS tail strictly tighter than `l`, even below the caller's entry. The flat chain carries the weakest
-  bound opened by its prefixes. Each new primary starts without a prefix bound; prefixes in that primary clear
-  nonassociative restrictions only at levels inside their fresh RHS, preserving restrictions outside it. Explicit
-  rule calls initialize their own entry independently. Prefix and tail counts retain their existing per-chain
-  bounds. At a chain end, a bounded query first compares all infix/postfix parts by consumed length and
+  `l` opens a fresh RHS frame strictly tighter than `l`, even below the caller's entry. Left and nonassociative
+  infix operators likewise open a strictly tighter RHS; a right-associative operator permits its own level there.
+  A selected operator is offered from the innermost frame through its parents until a frame can consume it.
+  Completed inner frames are discarded, restoring the parent's own nonassociative restriction; an ordinary infix
+  or postfix resets only its owning frame. Prefixes and explicit rule calls start fresh state without erasing
+  suspended parents. Tail counts remain global to the emitted chain and prefix counts remain per primary;
+  virtual frames do not count as recursive rule calls. Every frame inspected consumes a generation-budget step.
+  At a chain end, a bounded query first compares all infix/postfix parts by consumed length and
   declaration order, then checks the winning part's entry-level and nonassociative eligibility. A disabled winner
   ends the expression without retrying a shorter part. An eligible postfix continues when its part consumes
   input; an eligible infix also needs a plausible operand or prefix start, so `a+` can belong to `e "+"` when no
   operand follows. Empty prefix/postfix matches are excluded, while empty infix parts can represent juxtaposition.
-  Skip, competing operator parts and an infix RHS start share one matcher allowance. Incomplete input retains a
+  Skip, competing operator parts, scope traversal and an infix RHS start share one matcher allowance. Incomplete input retains a
   pending check; unsupported matching or exhausted work is inconclusive and leaves acceptance to the real parser.
-  Static descriptors are cached by entry minimum; pending checks own any closed-level snapshot and never add
-  cache entries for arbitrary masks or assume a machine-word level limit. A caller can continue with the same
-  token after a closed nonassociative application. Two remaining approximations can omit valid derivations: the
-  flat none mask can retain a tighter restriction after returning from an infix RHS, and a matched prefix start
-  does not prove its operand exists. For example, prefix `"~"` with infix `"!"` accepts `a!~` in `e "!~"` by
+  Static descriptors are cached by the weakest live entry minimum; pending checks retain immutable frames and
+  never add cache entries for arbitrary scope states or assume a machine-word level limit. A caller can continue
+  with the same token after a closed nonassociative application. A remaining approximation can omit valid
+  derivations: a matched prefix start does not prove its operand exists. For example, prefix `"~"` with infix `"!"` accepts `a!~` in `e "!~"` by
   abandoning an uncommitted incomplete RHS, but the start-only check can prevent generating that text. The parser
   remains the final acceptance check.
 - **Left recursion** needs nothing special: the recursion is bounded like any other, and the parser grows the seed.

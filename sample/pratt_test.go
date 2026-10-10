@@ -431,3 +431,48 @@ def e = pratt { operand "a" level { infix none "<" } }`},
 		}
 	}
 }
+
+// Both the previous flat representation and scoped representation accept these
+// exact chains. Alternating loose operators return from the tighter RHS frames.
+func BenchmarkSamplePrattScopes(b *testing.B) {
+	for _, n := range []int{8, 32, 128} {
+		input := strings.Repeat("a<a|", n) + "a<a"
+		src := fmt.Sprintf(`def main = &(%q $$) e $$
+def e = pratt { operand "a" level { infix left "|" } level { infix none "<" } }`, input)
+		p, err := pego.CompileSource(src, "main")
+		if err != nil {
+			b.Fatal(err)
+		}
+		for _, coverage := range []bool{false, true} {
+			opts := []sample.Option{sample.WithSeed(17), sample.WithMaxRepeat(2*n + 1), sample.WithBudget(200000)}
+			if coverage {
+				opts = append(opts, sample.WithCoverage())
+			}
+			b.Run(fmt.Sprintf("pairs=%d/coverage=%t/New", n, coverage), func(b *testing.B) {
+				b.ReportAllocs()
+				for range b.N {
+					if _, err := sample.New(p, opts...); err != nil {
+						b.Fatal(err)
+					}
+				}
+			})
+			b.Run(fmt.Sprintf("pairs=%d/coverage=%t/Next", n, coverage), func(b *testing.B) {
+				g, err := sample.New(p, opts...)
+				if err != nil {
+					b.Fatal(err)
+				}
+				b.ReportAllocs()
+				b.ResetTimer()
+				for range b.N {
+					s, err := g.Next()
+					if err != nil || s != input {
+						b.Fatalf("Next() = %q, %v; want %q", s, err, input)
+					}
+				}
+				b.ReportMetric(float64(len(input)), "input-B/op")
+				b.ReportMetric(float64(g.Stats().Rejected)/float64(b.N), "rejected/op")
+				b.ReportMetric(float64(g.Stats().Failed)/float64(b.N), "failed/op")
+			})
+		}
+	}
+}

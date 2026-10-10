@@ -8,8 +8,8 @@ import (
 	"github.com/ornew/pego"
 )
 
-// Filtered checks can outlive the next stop-check call while a caller's continuation runs. Their
-// backing arrays must stay independent, and different masks must not grow the static stop cache.
+// Pending scopes can outlive later choices and caller continuations. Their immutable state remains
+// independent, and different frame states must not grow the static entry-level cache.
 func TestPrattStopCheckOwnershipAndCacheBound(t *testing.T) {
 	const levels = 70
 	var src strings.Builder
@@ -25,43 +25,86 @@ func TestPrattStopCheckOwnershipAndCacheBound(t *testing.T) {
 	in := analyze(ast, "main")
 	ri := in.rules["e"]
 	g := newGen(in, &config{})
-	open := make([]bool, levels)
-	open[levels-1] = true
-	first := g.prattStopCheck(ri, 0, open)
+	closed := newPrattScope(0, levels-1, nil)
+	first := g.prattStopCheck(ri, closed)
 	m := matcher{in: in}
-	check := func(allowLast bool) {
-		t.Helper()
+	for n := range 256 {
 		st, _ := m.runPrattStop(first, []byte("<69>a"), 0, true)
 		if st != failed {
-			t.Fatalf("previous check changed after a new mask: %v", st)
+			t.Fatalf("previous scope changed: %v", st)
 		}
-		st = failed
-		if c := g.prattStopCheck(ri, 0, open); c != nil {
-			st, _ = m.runPrattStop(c, []byte("<69>a"), 0, true)
+		current := newPrattScope(0, n%(levels-1), nil)
+		c := g.prattStopCheck(ri, current)
+		st, _ = m.runPrattStop(c, []byte("<69>a"), 0, true)
+		if st != matched {
+			t.Fatalf("current scope: %v", st)
 		}
-		want := failed
-		if allowLast {
-			want = matched
-		}
-		if st != want {
-			t.Fatalf("current mask: status %v, want %v", st, want)
-		}
-	}
-	for n := range 256 {
-		clear(open)
-		for i := range levels - 1 {
-			open[i] = (n >> (i % 8) & 1) != 0
-		}
-		check(true)
 		if len(ri.stops) != 1 {
-			t.Fatalf("static cache grew with masks: %d", len(ri.stops))
+			t.Fatalf("static cache grew with scopes: %d", len(ri.stops))
 		}
 	}
-	for i := range open {
-		open[i] = true
+}
+
+func TestPrattPendingNestedScopes(t *testing.T) {
+	ast, err := pego.ParseGrammar(`def main=e $$ def e=pratt { operand "a" level { infix none "<" } level { infix none "=" } }`)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if c := g.prattStopCheck(ri, 0, open); c != nil {
-		t.Fatal("fully closed none levels still forbid a caller continuation")
+	in := analyze(ast, "main")
+	g := newGen(in, &config{})
+	ri := in.rules["e"]
+	root := newPrattScope(0, 0, nil)
+	inner := newPrattScope(1, 1, root)
+	deepest := newPrattScope(2, -1, inner)
+	saved := g.prattStopCheck(ri, deepest)
+	m := matcher{in: in}
+	for range 128 {
+		// A later branch resets a different root; it must not change a saved pending scope.
+		later := g.prattStopCheck(ri, newPrattScope(0, -1, nil))
+		st, _ := m.runPrattStop(later, []byte("<a"), 0, true)
+		if st != matched {
+			t.Fatal("fresh scope did not admit <")
+		}
+		st, _ = m.runPrattStop(saved, []byte("<a"), 0, true)
+		if st != failed {
+			t.Fatal("nested scope changed parent none restriction")
+		}
+		st, _ = m.runPrattStop(saved, []byte("=a"), 0, true)
+		if st != matched {
+			t.Fatal("nested none should return to an accepting parent")
+		}
 	}
-	check(false)
+	if len(ri.stops) != 1 {
+		t.Fatalf("cache grew with scopes: %d", len(ri.stops))
+	}
+}
+
+func TestPrattScopeWorkBudget(t *testing.T) {
+	ast, err := pego.ParseGrammar(`def main=e $$ def e=pratt { operand "a" level { postfix "!" } }`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	in := analyze(ast, "main")
+	g := newGen(in, &config{budget: 2})
+	op := prattOp{op: in.rules["e"].pratt.Levels[0].Operators[0]}
+	scope := newPrattScope(0, -1, nil)
+	for range 3 {
+		scope = newPrattScope(1, -1, scope)
+	}
+	if _, work, complete := scope.owner(op, 2); complete || work != 3 {
+		t.Fatalf("owner work=%d complete=%t", work, complete)
+	}
+	if owner := g.prattOwner(scope, op); owner != nil || !g.exhausted() {
+		t.Fatalf("generation owner=%v steps=%d", owner, g.steps)
+	}
+	deep := newPrattScope(1, -1, nil)
+	for range matchSteps {
+		deep = newPrattScope(1, -1, deep)
+	}
+	c := g.prattStopCheck(in.rules["e"], deep)
+	m := matcher{in: in}
+	st, _ := m.runPrattStop(c, []byte("!"), 0, true)
+	if st != unknown || m.steps != matchSteps+1 {
+		t.Fatalf("matching status=%v steps=%d", st, m.steps)
+	}
 }

@@ -83,11 +83,11 @@ func WithMaxRepeat(n int) Option { return func(c *config) { c.maxRepeat = max(n,
 func WithMaxLen(n int) Option { return func(c *config) { c.maxLen = max(n, 0) } }
 
 // WithBudget sets the number of steps one attempt may take before it gives up (default DefaultBudget).
-// A step is a parsing expression generated; checks have a budget of their own in proportion. Past
-// WithMaxDepth and WithMaxLen, the generator only prefers the shortest way to finish, so the budget and
-// the limits on nesting and iterations (see WithMaxDepth and WithMaxRepeat) are what bound an attempt. Inputs that need many steps (an
-// expression repeated 25,000 times) need a larger budget; the budget also bounds the stack the search
-// uses, which grows with the steps of an attempt.
+// A step is a parsing expression generated or a Pratt scope inspected; checks have a budget of their
+// own in proportion. Past WithMaxDepth and WithMaxLen, the generator only prefers the shortest way to
+// finish. The budget and the nesting/iteration limits (see WithMaxDepth and WithMaxRepeat) bound an
+// attempt. Inputs that need many steps, such as an expression repeated 25,000 times, need a larger
+// budget; the budget also bounds the search stack, which grows with the steps of an attempt.
 func WithBudget(steps int) Option { return func(c *config) { c.budget = max(steps, 1) } }
 
 // WithAttempts sets how many candidates the generator tries for one input before giving up (default

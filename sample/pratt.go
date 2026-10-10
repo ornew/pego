@@ -2,11 +2,9 @@ package sample
 
 import "github.com/ornew/pego/grammar"
 
-// A Pratt expression is generated as a flat chain: prefix operators, an operand, and then postfix
-// operators and infix operators each followed by another such operand. The parser determines the tree
-// from the binding levels; any chain is accepted except where an operator part is read differently
-// (the longest match wins) and where an infix none operator would chain. The generator avoids the
-// latter and leaves the rest to the checks and the parser.
+// A Pratt expression is emitted as a flat chain while immutable scopes track the parser's recursive
+// prefix and infix RHS frames. Returning to a parent restores its own nonassociative restriction.
+// Longest operator selection and full input validity remain checked by the matcher and real parser.
 
 // prattOp is an operator together with its level.
 type prattOp struct {
@@ -24,11 +22,46 @@ type prattStop struct {
 	base     *prattCheck
 }
 
-// prattCheck owns any active nonassociative state independently of later calls and backtracking.
-// No cache is indexed by an arbitrary mask of closed levels.
+// prattScope is an immutable frame. minimum is the weakest bound in the live frame chain.
+type prattScope struct {
+	minLevel, lastNone, minimum int
+	parent                      *prattScope
+}
+
+func newPrattScope(minLevel, lastNone int, parent *prattScope) *prattScope {
+	minimum := minLevel
+	if parent != nil {
+		minimum = min(minimum, parent.minimum)
+	}
+	return &prattScope{minLevel: minLevel, lastNone: lastNone, minimum: minimum, parent: parent}
+}
+
+// owner returns the innermost frame that can consume the selected operator. Disabled or repeated
+// none operators return from inner frames before the parent considers that same winning part.
+// Every visited frame costs work; incomplete means the caller must not infer an owner or rejection.
+func (s *prattScope) owner(o prattOp, budget int) (owner *prattScope, work int, complete bool) {
+	for f := s; f != nil; f = f.parent {
+		work++
+		if work > budget {
+			return nil, work, false
+		}
+		if o.level >= f.minLevel && !(o.op.Kind == grammar.Infix && o.op.Assoc == grammar.AssocNone && f.lastNone == o.level) {
+			return f, work, true
+		}
+	}
+	return nil, work, true
+}
+
+// prattCheck retains immutable scopes independently of later choices and backtracking.
 type prattCheck struct {
-	stop   *prattStop
-	closed []bool
+	stop  *prattStop
+	scope *prattScope
+}
+
+func (g *gen) prattOwner(scope *prattScope, o prattOp) *prattScope {
+	owner, work, _ := scope.owner(o, g.cfg.budget-g.steps)
+	g.steps += work
+	return owner
 }
 
 // prattOps returns operators of the kind from minLevel on. Prefix selection always starts at zero;
@@ -50,9 +83,9 @@ type thunk func() bool
 
 func (g *gen) genPratt(ri *ruleInfo, minLevel int, k cont) bool {
 	start := len(g.out)
-	open := make([]bool, len(ri.pratt.Levels))
-	return g.prattPrimary(ri, len(ri.pratt.Levels), 0, func(prefixMin int) bool {
-		return g.prattTail(ri, min(minLevel, prefixMin), 0, open, func() bool {
+	scope := newPrattScope(minLevel, -1, nil)
+	return g.prattPrimary(ri, scope, 0, func(inner *prattScope) bool {
+		return g.prattTail(ri, 0, inner, func() bool {
 			return k(val{kind: vUnknown, start: start, end: len(g.out)})
 		})
 	})
@@ -102,14 +135,13 @@ func (g *gen) opOptions(ops []prattOp) []int {
 	return g.order(opts)
 }
 
-// prattPrimary generates unrestricted prefixes followed by an operand. prefixMin is the weakest
-// right-hand tail bound opened by those prefixes, or len(Levels) when none was generated. A prefix at
-// level l admits operators strictly tighter than l in its RHS, even at a tighter named entry.
-func (g *gen) prattPrimary(ri *ruleInfo, prefixMin, prefixes int, k func(int) bool) bool {
+// prattPrimary generates unrestricted prefixes followed by an operand. Each prefix opens a fresh
+// RHS frame at its own binding level, even below a tighter named entry. Prefix counts stay per primary.
+func (g *gen) prattPrimary(ri *ruleInfo, scope *prattScope, prefixes int, k func(*prattScope) bool) bool {
 	pr := ri.pratt
 	s0 := g.steps
 	operand := func() bool {
-		return g.prattSkip(pr, func() bool { return g.prattOperand(pr, prefixMin, k) })
+		return g.prattSkip(pr, func() bool { return g.prattOperand(pr, func() bool { return k(scope) }) })
 	}
 	prefix := func() bool {
 		ops := prattOps(pr, 0, grammar.Prefix)
@@ -119,7 +151,7 @@ func (g *gen) prattPrimary(ri *ruleInfo, prefixMin, prefixes int, k func(int) bo
 		return g.prattSkip(pr, func() bool {
 			for _, i := range g.opOptions(ops) {
 				o := ops[i]
-				if g.prattPart(o.op, func() bool { return g.prattPrimary(ri, min(prefixMin, o.level+1), prefixes+1, k) }) {
+				if g.prattPart(o.op, func() bool { return g.prattPrimary(ri, newPrattScope(o.level+1, -1, scope), prefixes+1, k) }) {
 					return true
 				}
 				if !g.retry(s0) {
@@ -144,7 +176,7 @@ func (g *gen) prattPrimary(ri *ruleInfo, prefixMin, prefixes int, k func(int) bo
 }
 
 // prattOperand generates one of the operands, which form an ordered choice.
-func (g *gen) prattOperand(pr *grammar.Pratt, prefixMin int, k func(int) bool) bool {
+func (g *gen) prattOperand(pr *grammar.Pratt, k thunk) bool {
 	opts := make([]option, len(pr.Operands))
 	for i, o := range pr.Operands {
 		opts[i] = option{height: g.in.height(o.Expr), length: g.in.length(o.Expr), own: g.in.operands[o], reach: g.in.reach(o.Expr)}
@@ -163,7 +195,7 @@ func (g *gen) prattOperand(pr *grammar.Pratt, prefixMin int, k func(int) bool) b
 			ok = g.gen(pr.Operands[i].Expr, func(val) bool {
 				inner := g.caps
 				g.caps = caps
-				ok := k(prefixMin)
+				ok := k()
 				g.caps = inner
 				return ok
 			})
@@ -181,25 +213,15 @@ func (g *gen) prattOperand(pr *grammar.Pratt, prefixMin int, k func(int) bool) b
 	return false
 }
 
-// prattTail generates postfix and infix operators after an operand, or ends the chain. open[l] is true if
-// an infix none operator of level l was applied and no looser operator came after it: another one of
-// that level would not chain.
-func (g *gen) prattTail(ri *ruleInfo, minLevel, count int, open []bool, k thunk) bool {
+// prattTail emits a tail with a global per-chain operator count. Inner RHS frames are popped only
+// when the selected operator belongs to a parent; that parent's lastNone survives the nested RHS.
+func (g *gen) prattTail(ri *ruleInfo, count int, scope *prattScope, k thunk) bool {
 	pr := ri.pratt
 	s0 := g.steps
-	// after returns open updated for an operator of level l.
-	after := func(l int, none bool) []bool {
-		o := append([]bool(nil), open...)
-		for i := l + 1; i < len(o); i++ {
-			o[i] = false
-		}
-		o[l] = none
-		return o
-	}
 	stop := func() bool {
 		pending := g.pending
 		ok := true
-		if c := g.prattStopCheck(ri, minLevel, open); c != nil {
+		if c := g.prattStopCheck(ri, scope); c != nil {
 			ok = g.addPrattCheck(c)
 		}
 		ok = ok && k()
@@ -207,14 +229,24 @@ func (g *gen) prattTail(ri *ruleInfo, minLevel, count int, open []bool, k thunk)
 		return ok
 	}
 	postfix := func() bool {
-		ops := prattOps(pr, minLevel, grammar.Postfix)
-		if len(ops) == 0 || count >= g.cfg.maxRepeat {
+		if count >= g.cfg.maxRepeat {
+			return false
+		}
+		ops := prattOps(pr, scope.minimum, grammar.Postfix)
+		if len(ops) == 0 {
 			return false
 		}
 		return g.prattSkip(pr, func() bool {
 			for _, i := range g.opOptions(ops) {
 				o := ops[i]
-				if g.prattPart(o.op, func() bool { return g.prattTail(ri, minLevel, count+1, after(o.level, false), k) }) {
+				owner := g.prattOwner(scope, o)
+				if g.exhausted() {
+					return false
+				}
+				if owner == nil {
+					continue
+				}
+				if g.prattPart(o.op, func() bool { return g.prattTail(ri, count+1, newPrattScope(owner.minLevel, -1, owner.parent), k) }) {
 					return true
 				}
 				if !g.retry(s0) {
@@ -225,33 +257,43 @@ func (g *gen) prattTail(ri *ruleInfo, minLevel, count int, open []bool, k thunk)
 		})
 	}
 	infix := func() bool {
+		if count >= g.cfg.maxRepeat {
+			return false
+		}
 		var ops []prattOp
-		for _, o := range prattOps(pr, minLevel, grammar.Infix) {
-			if !(o.op.Assoc == grammar.AssocNone && open[o.level]) {
+		for _, o := range prattOps(pr, scope.minimum, grammar.Infix) {
+			if g.prattOwner(scope, o) != nil {
 				ops = append(ops, o)
 			}
+			if g.exhausted() {
+				return false
+			}
 		}
-		if len(ops) == 0 || count >= g.cfg.maxRepeat {
+		if len(ops) == 0 {
 			return false
 		}
 		return g.prattSkip(pr, func() bool {
 			for _, i := range g.opOptions(ops) {
 				o := ops[i]
-				next := after(o.level, o.op.Assoc == grammar.AssocNone)
+				owner := g.prattOwner(scope, o)
+				if g.exhausted() {
+					return false
+				}
+				if owner == nil {
+					continue
+				}
+				lastNone := -1
+				if o.op.Assoc == grammar.AssocNone {
+					lastNone = o.level
+				}
+				parent := newPrattScope(owner.minLevel, lastNone, owner.parent)
+				rhsMin := o.level + 1
+				if o.op.Assoc == grammar.AssocRight {
+					rhsMin = o.level
+				}
 				if g.prattPart(o.op, func() bool {
-					return g.prattPrimary(ri, len(pr.Levels), 0, func(prefixMin int) bool {
-						// A prefix's fresh RHS may contain another non-associative operator at
-						// a tighter level. Preserve restrictions outside that RHS, and do not
-						// mutate next: a failed prefix branch can retry an ordinary operand.
-						inner := next
-						for l := prefixMin; l < len(next); l++ {
-							if next[l] {
-								inner = append([]bool(nil), next...)
-								clear(inner[prefixMin:])
-								break
-							}
-						}
-						return g.prattTail(ri, min(minLevel, prefixMin), count+1, inner, k)
+					return g.prattPrimary(ri, newPrattScope(rhsMin, -1, parent), 0, func(inner *prattScope) bool {
+						return g.prattTail(ri, count+1, inner, k)
 					})
 				}) {
 					return true
@@ -272,12 +314,12 @@ func (g *gen) prattTail(ri *ruleInfo, minLevel, count int, open []bool, k thunk)
 			options = []thunk{postfix, infix, stop}
 		}
 		if g.cfg.coverage {
-			for _, o := range prattOps(pr, minLevel, grammar.Infix) {
+			for _, o := range prattOps(pr, scope.minimum, grammar.Infix) {
 				if g.wanted(g.in.ops[o.op]) {
 					options = []thunk{infix, postfix, stop}
 				}
 			}
-			for _, o := range prattOps(pr, minLevel, grammar.Postfix) {
+			for _, o := range prattOps(pr, scope.minimum, grammar.Postfix) {
 				if g.wanted(g.in.ops[o.op]) {
 					options = []thunk{postfix, infix, stop}
 				}
@@ -298,30 +340,19 @@ func (g *gen) prattTail(ri *ruleInfo, minLevel, count int, open []bool, k thunk)
 // prattStopCheck returns a bounded query for a continuation where a chain ends. Compare all led
 // parts before filtering the winner by the entry level or active nonassociative scope. An infix
 // continuation also needs a plausible operand/prefix start; the real parser validates the full RHS.
-func (g *gen) prattStopCheck(ri *ruleInfo, minLevel int, open []bool) *prattCheck {
-	s, ok := ri.stops[minLevel]
+func (g *gen) prattStopCheck(ri *ruleInfo, scope *prattScope) *prattCheck {
+	s, ok := ri.stops[scope.minimum]
 	if !ok {
-		s = g.prattStopParts(ri, minLevel)
-		ri.stops[minLevel] = s
+		s = g.prattStopParts(ri, scope.minimum)
+		ri.stops[scope.minimum] = s
 	}
-	possible, filtered := false, false
-	for _, o := range s.ops {
-		if o.level < minLevel {
-			continue
-		}
-		if o.op.Kind == grammar.Infix && o.op.Assoc == grammar.AssocNone && open[o.level] {
-			filtered = true
-		} else {
-			possible = true
-		}
-	}
-	if !possible {
+	if len(s.ops) == 0 {
 		return nil
 	}
-	if !filtered {
+	if scope.parent == nil && scope.lastNone == -1 {
 		return s.base
 	}
-	return &prattCheck{stop: s, closed: append([]bool(nil), open...)}
+	return &prattCheck{stop: s, scope: scope}
 }
 
 func (g *gen) prattStopParts(ri *ruleInfo, minLevel int) *prattStop {
@@ -344,6 +375,6 @@ func (g *gen) prattStopParts(ri *ruleInfo, minLevel int) *prattStop {
 		starts = append(starts, o.Expr)
 	}
 	s.starts = &grammar.Choice{Alts: starts}
-	s.base = &prattCheck{stop: s}
+	s.base = &prattCheck{stop: s, scope: newPrattScope(minLevel, -1, nil)}
 	return s
 }

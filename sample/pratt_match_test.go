@@ -31,9 +31,11 @@ func TestPrattStopSelectionStatus(t *testing.T) {
 			in := analyze(ast, "main")
 			g := newGen(in, &config{})
 			ri := in.rules["e"]
-			open := make([]bool, len(ri.pratt.Levels))
-			open[0] = c.closed
-			check := g.prattStopCheck(ri, c.min, open)
+			lastNone := -1
+			if c.closed {
+				lastNone = 0
+			}
+			check := g.prattStopCheck(ri, newPrattScope(c.min, lastNone, nil))
 			if check == nil {
 				t.Fatal("expected a possible continuation")
 			}
@@ -56,7 +58,7 @@ func TestPrattStopSharedWorkBudget(t *testing.T) {
 		s.ops = append(s.ops, prattOp{op: op})
 	}
 	m := matcher{}
-	st, _ := m.runPrattStop(&prattCheck{stop: s}, []byte("?"), 0, true)
+	st, _ := m.runPrattStop(&prattCheck{stop: s, scope: newPrattScope(0, -1, nil)}, []byte("?"), 0, true)
 	if st != unknown || m.steps != matchSteps+1 {
 		t.Fatalf("status=%v, shared steps=%d", st, m.steps)
 	}
