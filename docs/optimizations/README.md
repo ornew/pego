@@ -55,7 +55,7 @@ inventory of current mechanisms or reference controls.
 | [55](055-tracing-hook-on-the-call-path.md#55-tracing-hook-on-the-call-path)| Tracing hook (cost only) | ✓ | ✓ | ✓ | – | – | generated parsers have no tracing |
 | [57](057-pooling-the-scratch-memory-of-whole-input-parses.md#57-pooling-the-scratch-memory-of-whole-input-parses), [58](058-pooling-the-scratch-memory-of-generated-parse-and-recognize.md#58-pooling-the-scratch-memory-of-generated-parse-and-recognize)| Scratch memory pooled across whole-input parses (input, offsets, memo, value stack) | ✓ | ✓ | ✓ | ✓ | ✓ | typed: since 48; generated `Parse` and `Recognize`: 58 |
 | [63](063-a-smaller-node.md#63-a-smaller-node), [64](064-a-smaller-node-in-generated-parsers.md#64-a-smaller-node-in-generated-parsers)| Smaller `Node` (88 bytes: `int32` positions, interned type and rule names) | ✓ | ✓ | ✓ | ✓ | – | generated `Parse` since 64; the typed runtime builds no nodes |
-| [60](060-direct-rules-in-the-typed-runtime.md#60-direct-rules-in-the-typed-runtime)| Direct rules: a rule's body inlined into its call method, captures in Go variables, the action in place | – | – | – | Partial | ✓ | generated supports eligible value-free and Node bodies, with cuts still general; typed supports ordinary local cuts, eligible LR bodies and Pratt lines; see 78–80; `#recover`, cut-bearing Pratt/LR bodies and unsupported layouts remain general |
+| [60](060-direct-rules-in-the-typed-runtime.md#60-direct-rules-in-the-typed-runtime)| Direct rules: a rule's body inlined into its call method, captures in Go variables, the action in place | – | – | – | Partial | ✓ | generated supports eligible value-free and Node bodies, with cuts still general; typed supports ordinary cuts, eligible LR/Pratt bodies and framed cut-bearing LR/Pratt bodies; see 78–81; `#recover` and unsupported layouts remain general |
 | [61](061-reading-code-points-directly-in-direct-rules.md#61-reading-code-points-directly-in-direct-rules)| Character tests read code points without calling `peek` | – | – | – | Partial | ✓ | direct rules only; generated supported Node and value-free rules since 76/77; Bytes retains decoding fallback |
 | [66](066-no-memo-key-allocated-for-variables-where-none-is-defined.md#66-no-memo-key-allocated-for-variables-where-none-is-defined)| No memo key allocated for variables where none is defined | ✓ | ✓ | ✓ | ✓ | ✓ | |
 | [67](067-retire-memo-entries-when-their-lookup-slots-are-removed.md#67-retire-memo-entries-when-their-lookup-slots-are-removed)| Retire/reuse memo entries on replacement, pruning and edit invalidation | ✓ | ✓ | ✓ | ✗ | ✗ | streams and Documents are engine-only; generated batch memo recycling has not been measured |
@@ -69,9 +69,10 @@ inventory of current mechanisms or reference controls.
 | [75](075-exclude-absent-expectations-before-scanning.md#75-exclude-absent-expectations-before-scanning)| Fixed-size absence filter for ordered expectations | ✓ | ✓ | ✓ | ✓ | ✓ | Go only; Node, recognition, typed direct/conversion; collisions retain exact scans, TypeScript unchanged |
 | [76](076-inline-value-free-plain-generated-go-rules.md#76-inline-value-free-plain-generated-go-rules)| Inline value-free plain rule bodies | – | – | – | ✓ | – | Go recognition and Node skip twins; typed direct rules already use this emitter; see 77 for supported Node/value-building paths; TypeScript unchanged |
 | [77](077-inline-node-expressions-in-generated-go-parsers.md#77-inline-value-building-and-memoized-node-expressions-in-generated-go-parsers)| Inline value-building and memoized Node expressions | – | – | – | Partial | – | Generated Go Node only; unsupported cut/recovery/Pratt/LR leaders and unresolved captures fall back; typed and TypeScript unchanged |
-| [78](078-local-cuts-in-typed-direct-rules.md#78-local-cuts-in-typed-direct-rules)| Local cuts in typed direct rules | – | – | – | – | ✓ | ordinary cut-bearing typed Go rules; `#recover` and cut-bearing LR leaders remain general; eligible cut-free LR bodies are in 79; eligible Pratt lines are in 80 |
-| [79](079-inline-eligible-typed-left-recursion-bodies.md#79-inline-eligible-typed-left-recursion-bodies)| Inline eligible typed left-recursion leader bodies | – | – | – | – | ✓ | typed Go only; runtime retains growth and invocation ownership; cut-bearing LR, recovery and frame-layout mismatches fall back; Pratt lines use the separate matcher route in 80 |
-| [80](080-inline-eligible-typed-pratt-lines.md#80-inline-eligible-typed-pratt-line-matchers)| Inline eligible typed Pratt line matchers | – | – | – | – | ✓ | typed Go only; eligible cut-free/no-recover operand, operator and skip matchers; each line owns its scope while runtime retains precedence, longest-match, frames and actions; cut-bearing, recovery and unsupported lines fall back |
+| [78](078-local-cuts-in-typed-direct-rules.md#78-local-cuts-in-typed-direct-rules)| Local cuts in typed direct rules | – | – | – | – | ✓ | ordinary cut-bearing typed Go rules; eligible cut-bearing LR/Pratt bodies are in 81; `#recover` and unsupported layouts remain general; eligible cut-free LR/Pratt bodies are in 79/80 |
+| [79](079-inline-eligible-typed-left-recursion-bodies.md#79-inline-eligible-typed-left-recursion-bodies)| Inline eligible typed left-recursion leader bodies | – | – | – | – | ✓ | typed Go only; runtime retains growth and invocation ownership; eligible cut-bearing LR bodies use the framed route in 81; recovery and unsupported layouts fall back; Pratt lines use 80 |
+| [80](080-inline-eligible-typed-pratt-lines.md#80-inline-eligible-typed-pratt-line-matchers)| Inline eligible typed Pratt line matchers | – | – | – | – | ✓ | typed Go only; eligible cut-free/no-recover operand, operator and skip matchers; each line owns its scope while runtime retains precedence, longest-match, frames and actions; eligible cut-bearing bodies use 81; recovery and unsupported lines fall back |
+| [81](081-scoped-cuts-in-unfinished-typed-go-bodies.md#81-scoped-cuts-in-unfinished-typed-go-bodies)| Scoped cuts in unfinished typed Go bodies | – | – | – | – | ✓ | typed Go only; eligible cut-bearing LR and Pratt bodies use the structural emitter while runtime retains frames, growth, Pratt selection and actions; `#recover` and unsupported layouts fall back |
 | [62](062-comparing-short-literals-in-place-in-direct-rules.md#62-comparing-short-literals-in-place-in-direct-rules)| Short literals compared in place | – | – | – | Partial | ✓ | direct rules, up to 4 code points; generated value-free and supported Node rules since 76/77; CodePoints only, Bytes retains the literal matcher |
 
 Not applied, and why:
@@ -138,7 +139,7 @@ Not applied, and why:
 - [048. A typed runtime for ParseAST](048-a-typed-runtime-for-parseast.md)
 - [049. First-character dispatch in generated choices](049-first-character-dispatch-in-generated-choices.md)
 - [050. First-character dispatch in the closure backend](050-first-character-dispatch-in-the-closure-backend.md)
-## Records 51–80
+## Records 51–81
 - [051. First-character dispatch in the VMs (instruction set 3)](051-first-character-dispatch-in-the-vms-instruction-set-3.md)
 - [052. Projected repetitions in generated `Parse`](052-projected-repetitions-in-generated-parse.md)
 - [053. Projected repetitions in the engine and the VMs](053-projected-repetitions-in-the-engine-and-the-vms.md)
@@ -169,6 +170,7 @@ Not applied, and why:
 - [078. Local cuts in typed direct rules](078-local-cuts-in-typed-direct-rules.md)
 - [079. Inline eligible typed left-recursion bodies](079-inline-eligible-typed-left-recursion-bodies.md)
 - [080. Inline eligible typed Pratt line matchers](080-inline-eligible-typed-pratt-lines.md)
+- [081. Scoped cuts in unfinished typed Go bodies](081-scoped-cuts-in-unfinished-typed-go-bodies.md)
 
 ## Experiments that did not pay off
 

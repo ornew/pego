@@ -81,7 +81,7 @@ type Doc struct { Text string }
 def main: Doc = e:expr $$ -> $e
 def expr: Doc = (expr "+" @"é" / @"é") -> new Doc{Text: text($0)}
 `, []string{"é", "é+é+é", "é+", "é+é?", "", "a"}},
-	{"typed/LR_cut_fallback", `
+	{"typed/LR_framed_cuts", `
 type Doc struct { Text Match }
 def main: Doc = x:@expr $$ -> new Doc{Text: $x}
 def expr = expr "+" -- "a" / "a"

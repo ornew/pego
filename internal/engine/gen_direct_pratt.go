@@ -7,7 +7,7 @@ import "github.com/ornew/pego/grammar"
 // Each typed line declares its own frame layout, unlike an LR leader that
 // shares the ordinary rule's metadata.
 func (g *generator) directTypedPrattBody(e grammar.Expr, scope *scope, build bool, action grammar.Term, operator bool) string {
-	if g.table != "trules" || g.disableTypedPrattBodies || !directExprOK(e, false) {
+	if g.table != "trules" || g.disableTypedPrattBodies || !directExprOK(e, !g.disableTypedFramedCuts) {
 		return ""
 	}
 	snap := g.snapshot()
@@ -16,6 +16,7 @@ func (g *generator) directTypedPrattBody(e grammar.Expr, scope *scope, build boo
 	defer func() { g.proj = prevProj }()
 	d := &dgen{g: g, nodeBody: true, reads: map[string]bool{}, used: map[string]bool{}}
 	s := newDscope()
+	d.frameCuts(e)
 	v := d.expr(e, s, build, "fail")
 	var locals []string
 	if operator {

@@ -103,7 +103,7 @@ func (d *dgen) nodeRepeat(e *grammar.Repeat, s *dscope, build bool, fail, field 
 		d.line("p.frame = %s", d.rd(frame))
 	}
 	f := d.label()
-	v := d.expr(e.Expr, es, build && field == "", f)
+	v, cut := d.cutExpr(e.Expr, es, build && field == "", f)
 	if own {
 		d.line("p.frame = %s", d.rd(prev))
 		if build {
@@ -141,6 +141,11 @@ func (d *dgen) nodeRepeat(e *grammar.Repeat, s *dscope, build bool, fail, field 
 			d.line("p.frame = %s", d.rd(prev))
 		}
 		d.reset(m)
+		if build {
+			d.cutFail(cut, fail, fmt.Sprintf("p.dropKids(%s)", d.rd(base)))
+		} else {
+			d.cutFail(cut, fail)
+		}
 		d.exit("break")
 	}
 	d.endLoop()
@@ -170,7 +175,7 @@ func (g *generator) directNodeBody(r *rule, scope *scope) string {
 }
 
 func (g *generator) directTypedLRBody(r *rule, scope *scope) string {
-	if g.disableTypedLRBodies || !r.leader || !directExprEligible(r, false) {
+	if g.disableTypedLRBodies || !r.leader || !directExprEligible(r, !g.disableTypedFramedCuts) {
 		return ""
 	}
 	return g.directFrameBody(r, scope, "typed LR body inlined")
@@ -182,6 +187,7 @@ func (g *generator) directFrameBody(r *rule, scope *scope, comment string) strin
 	s := newDscope()
 	g.cur, g.proj = r, g.projections(r)
 	defer func() { g.proj = nil }()
+	d.frameCuts(r.def.Expr)
 	v := d.expr(r.def.Expr, s, !r.lean, "fail")
 	if r.action != nil && !frameRefsKnown(r.action, d.frameScope(s)) {
 		d.bad = true
@@ -202,10 +208,16 @@ func (g *generator) directFrameBody(r *rule, scope *scope, comment string) strin
 // action, rule finalization and recursion/depth bookkeeping.
 func (g *generator) finishFrameBody(d *dgen, s *dscope, scope *scope, v, comment string) string {
 	if !d.dead {
+		if d.localCuts {
+			d.line("p.cut = %s", d.rd(d.cut))
+		}
 		d.line("return %s, true", d.rd(v))
 	}
 	if d.used["fail"] {
 		d.place("fail")
+		if d.localCuts {
+			d.line("p.cut = %s", d.rd(d.cut))
+		}
 		d.line("return nil, false")
 	}
 	var b strings.Builder
@@ -224,4 +236,15 @@ func (g *generator) finishFrameBody(d *dgen, s *dscope, scope *scope, v, comment
 	b.WriteString(d.b.String())
 	*scope = *d.frameScope(s)
 	return g.method(comment, b.String())
+}
+
+// frameCuts preserves the caller's root cut scope while nested backtracking
+// constructs use their own lexical flags. Only typed unfinished bodies use it.
+func (d *dgen) frameCuts(e grammar.Expr) {
+	if d.g.table != "trules" || !directCuts(e) {
+		return
+	}
+	d.localCuts = true
+	d.cut = d.decl("cut", "bool")
+	d.line("%s = p.cut", d.cut)
 }

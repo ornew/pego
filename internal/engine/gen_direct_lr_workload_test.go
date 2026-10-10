@@ -128,6 +128,9 @@ func TestLRWorkload(t *testing.T) {
 		for _, input := range []string{lrInput(1), lrInput(128), "a,b,c,", "a,b,", "a,b,c,;", "a,b,c,d,", "a,b,c,;d,é,f,", ""} {
 			v, err := p.run(trules[0], input, []Unit{unit}, &tslabs{})
 			data, _ := json.Marshal(struct { Value any; Error string }{v, fmt.Sprint(err)})
+			pooled, pooledErr := ParseAST(input, unit)
+			pooledData, _ := json.Marshal(struct { Value any; Error string }{pooled, fmt.Sprint(pooledErr)})
+			if string(data) != string(pooledData) { t.Fatal("pooled and reused LR parsers differ") }
 			fmt.Printf("OBS %v %q %s\n", unit, input, data)
 			if (err == nil) != (input == lrInput(1) || input == lrInput(128) || input == "a,b,c,") {
 				t.Fatalf("acceptance %q: %v", input, err)

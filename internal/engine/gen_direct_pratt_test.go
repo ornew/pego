@@ -107,7 +107,7 @@ def expr: Expr = pratt {
 }
 def atom: Atom = "a"?
 `, []string{"", "a", "aa", "b"}},
-	{"typed/Pratt_cut_fallback", `
+	{"typed/Pratt_framed_cuts", `
 type Doc struct { Text Match }
 def main: Doc = e:expr $$ -> $e
 def expr: Doc = pratt {

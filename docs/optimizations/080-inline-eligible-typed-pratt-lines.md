@@ -7,9 +7,11 @@
 - A generation-time reference control emits per-expression methods for those
   matchers while keeping the same Pratt runtime. It adds no parser-time option
   or branch. Node generation, recognition and TypeScript output are unchanged.
-- Cut-bearing, `#recover` and structurally unsupported matchers remain on the
-  general typed path. A line whose action references values outside its local
-  direct frame also falls back; eligible callees may still use direct bodies.
+- This cut-free route leaves cut-bearing matchers to the framed body emitter
+  in [change 81](081-scoped-cuts-in-unfinished-typed-go-bodies.md).
+  `#recover`, structurally unsupported matchers and lines whose action
+  references values outside their local direct frame remain on the general
+  typed path; eligible callees may still use direct bodies.
 - The 14-case typed corpus compares the direct and same-generator reference
   routes across associativity, longest-match ties, captures, rollback,
   lookahead, nullable parts, cut/recovery fallback, unreachable captures,

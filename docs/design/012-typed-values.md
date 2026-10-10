@@ -97,10 +97,13 @@ errors and memoization decisions are literally shared. The generator writes the 
   ([record 79](../optimizations/079-inline-eligible-typed-left-recursion-bodies.md)).
   Eligible unfinished operand, operator and skip matchers on typed Pratt lines
   can also be inlined ([record 80](../optimizations/080-inline-eligible-typed-pratt-lines.md)).
+  Eligible cut-bearing left-recursion and Pratt bodies use a separate framed
+  route ([record 81](../optimizations/081-scoped-cuts-in-unfinished-typed-go-bodies.md)).
   Each line owns its `tprattLine.scope`; the runtime retains precedence,
-  longest-match selection, frames and action finalization. `#recover`,
-  cut-bearing matchers and unsupported frame layouts remain on general
-  expression dispatch; their callees can use either path.
+  longest-match selection, frames and action finalization. Left-recursion
+  runtime frames and growth remain in place. `#recover` and structurally
+  unsupported layouts remain on general expression dispatch; their callees
+  can use either path.
 
 The parity test generates every corpus grammar twice, with the typed runtime and with conversion (below), and checks
 that `ParseAST` returns the same values and errors, also when parsing concurrently. The corpus includes the cases two
@@ -150,9 +153,10 @@ built lists directly had taken 4.5 ms.
   take the part of it that paid: captures in Go variables and actions in place.
   Values stay `any`, so actions, memo and general code share one representation.
   Ordinary local cuts, eligible left-recursion leader bodies and eligible
-  Pratt line matchers have direct paths; the runtime retains growth and
-  invocation wrappers. `#recover`, cut-bearing Pratt/LR bodies and unsupported
-  layouts remain general.
+  Pratt line matchers have direct paths. Eligible cut-bearing left-recursion
+  and Pratt bodies use framed direct paths while runtime wrappers retain
+  growth, invocation and Pratt-selection ownership. `#recover` and
+  structurally unsupported layouts remain general.
 - **Converting through JSON.** No generated code, but slower than the parse itself and lossy for unions (the
   member type would have to be decoded from `type`).
 - **Exposing typed values from the engine (`pego.Parser`).** Go types cannot be created at run time, so the engine

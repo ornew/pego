@@ -12,8 +12,10 @@
 - Eligibility is limited to bodies the structural emitter can lower without
   changing the leader's runtime frame layout. Leader bodies containing cuts,
   `#recover`, action captures outside the structural frame layout and
-  frame-layout mismatches remain on the general typed path. Pratt lines have
-  their own matcher route in [change 80](080-inline-eligible-typed-pratt-lines.md).
+  frame-layout mismatches remain on the general typed path for this cut-free
+  route. Eligible cut-bearing LR/Pratt bodies use the framed emitter in
+  [change 81](081-scoped-cuts-in-unfinished-typed-go-bodies.md); cut-free Pratt
+  lines have their own matcher route in [change 80](080-inline-eligible-typed-pratt-lines.md).
   Eligible callees may still be direct.
 - The parity corpus compares the enabled and same-generator reference routes
   for direct and indirect recursion, hidden and nullable seeds, failed or

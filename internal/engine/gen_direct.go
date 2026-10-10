@@ -31,8 +31,10 @@ import (
 // leaves them alone. Typed cuts use scope-local flags; rules with #recover
 // keep the general code. Pratt rules retain runtime dispatch, with eligible
 // typed line bodies inlined. Left-recursion leaders retain runtime
-// growth and finalization, with eligible typed expression bodies inlined. Node rules
-// containing cuts also retain the general code. Value-free plain Node rules reuse the structural walk
+// growth and finalization, with eligible typed expression bodies inlined.
+// Unfinished typed bodies keep runtime-owned capture frames and publish their
+// root cut flag when returning; nested backtracking constructs use local flags.
+// Node rules containing cuts also retain the general code. Value-free plain Node rules reuse the structural walk
 // without captures or predicates. Other Node rules inline only their expression
 // bodies, retaining runtime ownership of frames, memoization and finalization.
 
@@ -99,7 +101,7 @@ type dgen struct {
 	// nodeBody emits an unfinished frame-based body under the selected runtime's
 	// frame, depth, memo and finish ownership.
 	nodeBody  bool
-	localCuts bool // typed rule contains cuts
+	localCuts bool // typed rule or unfinished frame body contains cuts
 	// cut is the local flag of the active choice, optional or repeat scope.
 	// An empty name discards cuts at rule entry and inside lookahead.
 	cut   string
@@ -545,7 +547,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		d.jump(fail)
 		return "nil"
 	case *grammar.Cut:
-		if g.table != "trules" || d.nodeBody {
+		if g.table != "trules" {
 			d.bad = true
 		} else if d.cut != "" {
 			d.line("%s = true", d.cut)
