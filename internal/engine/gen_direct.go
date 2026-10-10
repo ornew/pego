@@ -9,7 +9,7 @@ import (
 	"github.com/ornew/pego/grammar"
 )
 
-// Direct rules of the typed runtime.
+// Direct rules of the typed runtime and value-free plain Node rules.
 //
 // The typed runtime (genrt/typed.go) runs a rule like the Node runtime does: a method per
 // expression, captures in a frame with a trail that backtracking undoes, and an action evaluated
@@ -29,7 +29,9 @@ import (
 // A direct rule never reads or sets p.cut (it has no cut, and every callee restores it), p.frame
 // (callees set their own) or p.trail (callees truncate it to its length at the call), so it
 // leaves them alone. Rules with a cut or #recover, Pratt rules and leaders of left recursion
-// keep the general code.
+// keep the general code. Value-free plain Node rules reuse the structural walk
+// without captures or predicates; value-building and memoized Node rules keep
+// the general code.
 
 // directOK reports whether the rule r can be compiled as a direct rule.
 func directOK(r *rule) bool {
@@ -50,6 +52,22 @@ func directOK(r *rule) bool {
 					ok = false
 				}
 			}
+		}
+	})
+	return ok
+}
+
+// directLeanOK selects value-free plain rules of the Node runtime. Captures
+// unused by recognition are omitted; predicates keep the general code because
+// they can require values, capture frames and variable assignment.
+func directLeanOK(r *rule) bool {
+	if !r.plain || !r.lean || !r.novalue || !directOK(r) {
+		return false
+	}
+	ok := true
+	walkExpr(r.def.Expr, func(e grammar.Expr) {
+		if _, predicate := e.(*grammar.Predicate); predicate {
+			ok = false
 		}
 	})
 	return ok
@@ -249,7 +267,7 @@ func (d *dgen) mark(s *dscope, e grammar.Expr, saves bool) dmark {
 		m.env = d.decl("x", "*env")
 		d.line("%s = p.env", m.env)
 	}
-	if saves {
+	if saves && d.g.table == "trules" {
 		seen := map[string]bool{}
 		capSets(e, func(name string) {
 			if seen[name] {
@@ -299,7 +317,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 			d.line("%s = p.pos", start)
 		}
 		ok := d.ok()
-		match := fmt.Sprintf("_, %s = p.parser.matchLiteral(%s, %q, %d, false); !%s", ok, lit, value, desc, ok)
+		match := fmt.Sprintf("_, %s = p.%smatchLiteral(%s, %q, %d, false); !%s", ok, g.pick("", "parser."), lit, value, desc, ok)
 		if rs := []rune(value); len(rs) > 0 && len(rs) <= maxInlineLiteral {
 			// The code points compared in place (see peek); matchLiteral records the expectation
 			// when they differ, and does the work in Bytes.
@@ -449,6 +467,10 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 		d.expr(e.Expr, s, false, fail)
 		return "nil"
 	case *grammar.Capture:
+		if g.table != "trules" {
+			// Only value-free rules without predicates reach this emitter.
+			return d.expr(e.Expr, s, false, fail)
+		}
 		k := d.capVar(s, e.Name)
 		if _, ok := indexOf(s.names, e.Name); !ok {
 			s.names = append(s.names, e.Name)
@@ -615,7 +637,7 @@ func (d *dgen) repeat(e *grammar.Repeat, s *dscope, build bool, fail string) str
 	d.line("%s = 0", count)
 	d.loop(e.Max)
 	m := d.mark(s, e.Expr, !own)
-	if own {
+	if own && d.g.table == "trules" {
 		d.clearScope(es, e.Expr)
 	}
 	f := d.label()
@@ -905,7 +927,7 @@ type direct struct {
 
 // directRule compiles the rule r as a direct rule, or returns nil if it keeps the general code.
 func (g *generator) directRule(r *rule) *direct {
-	if !directOK(r) {
+	if g.table == "trules" && !directOK(r) || g.table != "trules" && !directLeanOK(r) {
 		return nil
 	}
 	snap := g.snapshot()
@@ -1007,14 +1029,14 @@ func (d *dgen) finish(r *rule, s *dscope, body string) (start, ctx bool) {
 // (restoring the position and the recovered errors when it fails), otherwise as invoke does.
 func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain bool) {
 	m := &g.methods
-	fmt.Fprintf(m, "// %s, %s (body inlined)\nfunc (p *tparser) %s() (any, bool) {\n", r.name, comment, name)
+	fmt.Fprintf(m, "// %s, %s (body inlined)\nfunc (p *%s) %s() (%s, bool) {\n", r.name, comment, g.recv(), name, g.valType())
 	start, rec := d.start || plain && d.fail, plain && d.fail
 	m.WriteString("\tvar (\n")
 	if start {
 		m.WriteString("\t\tstart int\n")
 	}
 	if d.succeed {
-		m.WriteString("\t\tv any\n")
+		fmt.Fprintf(m, "\t\tv %s\n", g.valType())
 	}
 	if d.ctx {
 		m.WriteString("\t\tc *tctx\n")
@@ -1056,4 +1078,24 @@ func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain
 		m.WriteString("\treturn nil, false\n")
 	}
 	m.WriteString("}\n\n")
+}
+
+// directLeanBody provides the rule-table body for external entry and generic
+// fallback calls. Its caller owns depth and failure rollback, so it adds neither.
+func (g *generator) directLeanBody(r *rule, d *direct) string {
+	var b strings.Builder
+	b.WriteString("var (\n")
+	if d.succeed {
+		b.WriteString("v *Node\n")
+	}
+	b.WriteString(d.decls)
+	b.WriteString(")\n")
+	b.WriteString(d.body)
+	if d.succeed {
+		b.WriteString("return v, true\n")
+	}
+	if d.fail {
+		b.WriteString("fail:\nreturn nil, false\n")
+	}
+	return g.method(r.name+" (value-free body inlined)", b.String())
 }

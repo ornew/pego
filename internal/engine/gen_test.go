@@ -24,6 +24,24 @@ type genCase struct {
 // genCorpus returns the grammars and inputs used to compare backends and generated parsers with the engine.
 func genCorpus(t *testing.T) []genCase {
 	cases := []genCase{
+		{"direct value-free rollback", `
+def main = "a" ("é" "!" / "é" "?") $$ / "o" ("é" "!")? "é"? $$ / "r" ("é" "!"){1,3} "é"? $$ / "z" (x:_){2,} $$ / "p" &("é" "!") "é" !"?" "!" $$ / "l" (@"é" #error(message="letter")) "!" $$ / "e" ("ab" #error(message="pair")) $$
+`, []string{"aé!", "aé?", "aé@", "aé", "o", "oé!", "oé", "oé?", "ré!é!é", "ré!é", "ré", "z", "zé", "zéé", "zééé", "pé!", "pé?", "pé", "lé!", "lé?", "l?", "eab", "ea?", "e", ""}},
+		{"direct value-free fallback calls", `
+def main = "m" &(cached "!") cached "!" $$ / "c" -- plain "!" $$ / "v" [n = 1] plain "?" $$ / "g" [n = 2] plain $$ / "h" recovering $$ / "j" prefixed $$ / "k" left $$
+def cached = "é" / "ab"
+def plain = "é" / guarded
+def guarded = [n == 2] "a"
+def recovering = ("é" ";") #recover(skip="?")
+def prefixed = pratt {
+ operand "é"
+ level { prefix "-" }
+}
+def left = left "+" "é" / "é"
+`, []string{"mé!", "mab!", "mé?", "mab", "cé!", "cé?", "ca!", "vé?", "va?", "ga", "gé", "g?", "hé;", "h?", "h", "j-é", "j--é", "j-", "ké+é", "ké+", ""}},
+		{"direct value-free decoding and anchors", `
+def main = "u" a:@("é" / "\uFFFD" / "\uFFFDé" / "\u{1F600}") $$ / ^^ "na" $ "\n" ^ "é" $$ / "s" (?a-z){1,3} $$ / "t" ("x" / _){2,} $$
+`, []string{"ué", "u�", "u�é", "u😀", "u?", "na\né", "na\n?", "sabc", "sab", "sabcd", "s", "t", "tx", "txx", "txxx"}},
 		{"wide expectation scopes", wideExpectationsGrammar(), []string{"sé00!", "sé@", "mé@", "mé00!", "mé00?", "mé00@", "ré@;é!;", "ré79", "eé@", "eé79", ""}},
 		{"stream element recovery", `
 def main=(("ab" #recover(skip=(?^a)+)) #recover(skip="!"))* #stream $$`,
@@ -184,6 +202,13 @@ func TestGeneratedParsersMatchEngine(t *testing.T) {
 def main = n
 def n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x" + strings.Repeat(")", DefaultMaxDepth-2),
 		strings.Repeat("(", DefaultMaxDepth-1) + "x" + strings.Repeat(")", DefaultMaxDepth-1)}})
+	// A direct leaf still counts as a rule call, including when a generic
+	// recursive rule invokes it or a rule-table entry reaches its body.
+	cases = append(cases, genCase{"direct leaf nesting limit", `
+def main = n
+def n = "(" n ")" / leaf
+def leaf = "x"`, []string{strings.Repeat("(", DefaultMaxDepth-3) + "x" + strings.Repeat(")", DefaultMaxDepth-3),
+		strings.Repeat("(", DefaultMaxDepth-2) + "x" + strings.Repeat(")", DefaultMaxDepth-2)}})
 	// Chains of prefix and right-associative operators count against the limit too (a Pratt
 	// expression parses them by recursion).
 	cases = append(cases, genCase{"pratt nesting limit", `

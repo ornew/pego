@@ -331,8 +331,11 @@ that snapshot. Returned slab sibling retention (P28) remains a separate live-hea
 (P20) now uses a fixed-size absence filter in Go, preserving ordered diagnostics and nested scope ownership.
 Python and recovery controls improve; tiny controls vary across schedules and TypeScript keeps its original
 implementation ([performance change 75](performance.md#75-exclude-absent-expectations-before-scanning)). The generated
-report and analysis are refreshed together; next, prototype direct rules for generated Node parsing/recognition
-(P15) with exact semantic, source-size and paired-performance gates before the remaining core performance items.
+report and analysis are refreshed together. Generated Go recognition and ordinary Parse's value-free skip twins
+now inline eligible plain rule bodies, preserving depth, diagnostics and general fallback dispatch
+([performance change 76](performance.md#76-inline-value-free-plain-generated-go-rules)). P15 remains open for
+value-building Node and memoized direct rules. Complete their semantic, source/compiler-cost and paired-performance
+gates before the group's next full-suite checkpoint and the remaining core performance items.
 C23 now prevents operand fallback when no prefix part matches and a candidate failed after cut, across
 all engines and standalone Go/typed Go/TypeScript. Successful longest candidates retain their own cut scopes; analysis and runtime optimizations require
 fresh measurements. The DuckDB LIMIT-percent candidate is saved on [fix/duckdb-limit-percent](https://github.com/ornew/pego/tree/fix/duckdb-limit-percent)

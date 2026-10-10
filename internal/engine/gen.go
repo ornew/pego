@@ -194,10 +194,14 @@ func (g *generator) rules() {
 	for _, r := range all {
 		s := newScope()
 		scopes[r] = s
-		if g.table == "trules" {
-			// A rule compiled into the method that calls it has no body of its own.
+		if g.table == "trules" || directLeanOK(r) {
+			// Typed direct rules need no separate body. Value-free Node rules retain
+			// one for generic calls and external entry, whose caller owns depth.
 			if d := g.directRule(r); d != nil {
 				directs[r] = d
+				if g.table != "trules" {
+					bodies[r] = g.directLeanBody(r, d)
+				}
 				continue
 			}
 		}
@@ -230,7 +234,7 @@ func (g *generator) rules() {
 			g.pratt(r, pr)
 			continue
 		}
-		if d := directs[r]; d != nil {
+		if d := directs[r]; d != nil && g.table == "trules" {
 			g.typedCall(r, "", scopes[r], d)
 			continue
 		}
@@ -249,7 +253,11 @@ func (g *generator) rules() {
 		if g.table == "trules" {
 			g.typedCall(r, bodies[r], scopes[r], nil)
 		} else if r.plain {
-			g.plainCall(r, bodies[r])
+			if d := directs[r]; d != nil {
+				g.directMethod(r, d, fmt.Sprintf("%s%d", g.plainPrefix(), r.id), "called as by invokePlain", true)
+			} else {
+				g.plainCall(r, bodies[r])
+			}
 		}
 	}
 	if g.table != "rules" {
