@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/ornew/pego/grammar"
@@ -78,7 +79,7 @@ func (d *dgen) nodeRepeat(e *grammar.Repeat, s *dscope, build bool, fail, field 
 		d.line("%s, %s = p.pos, len(p.kidStack)", start, base)
 	}
 	if own {
-		frame, prev = d.decl("x", "*frame"), d.decl("x", "*frame")
+		frame, prev = d.decl("x", d.g.pick("*frame", "*tframe")), d.decl("x", d.g.pick("*frame", "*tframe"))
 		names = d.g.name("scope")
 		if field != "" {
 			d.line("%s = p.newFrame(len(%s))", frame, names)
@@ -110,12 +111,20 @@ func (d *dgen) nodeRepeat(e *grammar.Repeat, s *dscope, build bool, fail, field 
 				}
 				v = fmt.Sprintf("%s.vals[%d]", d.rd(frame), slot)
 			} else {
-				attached := d.decl("v", "*Node")
-				d.line("%s = p.attachCaptures(%s, %s, %s, %s, p.pos)", attached, d.rd(v), names, d.rd(frame), d.rd(m.pos))
+				attached := d.decl("v", d.g.valType())
+				vals := d.rd(frame)
+				if d.g.table == "trules" {
+					vals += ".vals"
+				}
+				d.line("%s = p.attachCaptures(%s, %s, %s, %s, p.pos)", attached, d.rd(v), names, vals, d.rd(m.pos))
 				v = attached
 			}
 		}
 		fmt.Fprintf(&d.g.vars, "var %s = %s\n", names, goStrings(d.frameScope(es).names))
+		if d.g.table == "trules" && field == "" {
+			d.line("p.dropTrail(%s.trail)", d.rd(m.frameMark))
+			d.line("p.freeFrame(%s)", d.rd(frame))
+		}
 	}
 	d.line("%s++", count)
 	if build {
@@ -142,7 +151,7 @@ func (d *dgen) nodeRepeat(e *grammar.Repeat, s *dscope, build bool, fail, field 
 	if !build {
 		return "nil"
 	}
-	list := d.decl("v", "*Node")
+	list := d.decl("v", d.g.valType())
 	d.line("%s = %s", list, d.node("List", d.rd(start), fmt.Sprintf("p.kids(%s)", d.rd(base))))
 	return list
 }
@@ -154,6 +163,17 @@ func (g *generator) directNodeBody(r *rule, scope *scope) string {
 	if !directOK(r) {
 		return ""
 	}
+	return g.directFrameBody(r, scope, "Node body inlined")
+}
+
+func (g *generator) directTypedLRBody(r *rule, scope *scope) string {
+	if g.disableTypedLRBodies || !r.leader || !directExprEligible(r, false) {
+		return ""
+	}
+	return g.directFrameBody(r, scope, "typed LR body inlined")
+}
+
+func (g *generator) directFrameBody(r *rule, scope *scope, comment string) string {
 	snap := g.snapshot()
 	d := &dgen{g: g, nodeBody: true, reads: map[string]bool{}, used: map[string]bool{}}
 	s := newDscope()
@@ -162,6 +182,11 @@ func (g *generator) directNodeBody(r *rule, scope *scope) string {
 	v := d.expr(r.def.Expr, s, !r.lean, "fail")
 	succeed := !d.dead
 	if r.action != nil && !frameRefsKnown(r.action, d.frameScope(s)) {
+		d.bad = true
+	}
+	if g.table == "trules" && !slices.Equal(d.frameScope(s).names, g.nodeScopes[r]) {
+		// Runtime-owned frames use the Node rule's shared scope metadata.
+		// Keep the general body when structural lowering changes that layout.
 		d.bad = true
 	}
 	if d.bad {
@@ -190,5 +215,5 @@ func (g *generator) directNodeBody(r *rule, scope *scope) string {
 	}
 	b.WriteString(d.b.String())
 	*scope = *d.frameScope(s)
-	return g.method(r.name+" (Node body inlined)", b.String())
+	return g.method(r.name+" ("+comment+")", b.String())
 }

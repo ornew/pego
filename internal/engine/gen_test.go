@@ -141,6 +141,7 @@ def main = a:(?a-z)* -(?0-9){2,3} -.{1,2} -(?^,)+ "," rest:@.*`, []string{"ab12x
 	cases = append(cases, wideRepetitionCases()...)
 	cases = append(cases, reachabilityGeneratedCases...)
 	cases = append(cases, nodeDirectCases...)
+	cases = append(cases, typedLRBodyCases...)
 	// Grammars of typed values with their inputs, from reviews of the typed runtime: each was a
 	// case where it differed from converting the result of Parse.
 	typed, _ := filepath.Glob("testdata/typed/*.pego")

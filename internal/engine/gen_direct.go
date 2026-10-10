@@ -28,8 +28,9 @@ import (
 //
 // A direct rule never reads or sets p.cut (its flags are local and callees restore it), p.frame
 // (callees set their own) or p.trail (callees truncate it to its length at the call), so it
-// leaves them alone. Typed cuts use scope-local flags; rules with #recover,
-// Pratt rules and leaders of left recursion keep the general code. Node rules
+// leaves them alone. Typed cuts use scope-local flags; rules with #recover and
+// Pratt rules keep the general code. Left-recursion leaders retain runtime
+// growth and finalization, with eligible typed expression bodies inlined. Node rules
 // containing cuts also retain the general code. Value-free plain Node rules reuse the structural walk
 // without captures or predicates. Other Node rules inline only their expression
 // bodies, retaining runtime ownership of frames, memoization and finalization.
@@ -45,6 +46,12 @@ func directEligible(r *rule, cuts bool) bool {
 	if r.leader {
 		return false
 	}
+	return directExprEligible(r, cuts)
+}
+
+// Unfinished left-recursion bodies can use the structural expression emitter
+// while retaining the runtime's seed, frame and finalization ownership.
+func directExprEligible(r *rule, cuts bool) bool {
 	if _, pratt := r.def.Expr.(*grammar.Pratt); pratt {
 		return false
 	}
@@ -87,7 +94,7 @@ func directLeanOK(r *rule) bool {
 // dgen compiles the body of a direct rule into the statements of a method.
 type dgen struct {
 	g *generator
-	// nodeBody emits an unfinished Node body under the ordinary runtime's
+	// nodeBody emits an unfinished frame-based body under the selected runtime's
 	// frame, depth, memo and finish ownership.
 	nodeBody  bool
 	localCuts bool // typed rule contains cuts
@@ -871,9 +878,9 @@ func (d *dgen) predicate(e *grammar.Predicate, s *dscope, fail string) string {
 		}
 		term := d.g.term(t, f, nil)
 		if a, ok := e.Term.(*grammar.Assign); ok {
-			d.failIf(fmt.Sprintf("!p.assign(%q, func(c *actx) any { return %s })", a.Name, term), fail)
+			d.failIf(fmt.Sprintf("!p.assign(%q, func(c *%s) any { return %s })", a.Name, d.g.ctxType(), term), fail)
 		} else {
-			d.failIf(fmt.Sprintf("!p.predicate(func(c *actx) any { return %s })", term), fail)
+			d.failIf(fmt.Sprintf("!p.predicate(func(c *%s) any { return %s })", d.g.ctxType(), term), fail)
 		}
 		return "nil"
 	}

@@ -90,10 +90,13 @@ errors and memoization decisions are literally shared. The generator writes the 
   repetitions; nested scopes and callees retain their own cut boundaries.
   Failed alternatives restore captures, variable bindings and recovered
   errors. The generated wrappers retain rule call depth, memo and result
-  ownership. Rules that use `#recover`, Pratt
-  expressions or lead left recursion still use general expression dispatch;
-  their callees can use either path. The measured cut extension is recorded
-  separately in [change 78](../optimizations/078-local-cuts-in-typed-direct-rules.md).
+  ownership. Ordinary cut-bearing rules use the scoped direct path
+  ([record 78](../optimizations/078-local-cuts-in-typed-direct-rules.md)).
+  Eligible left-recursion leaders can inline their unfinished typed body
+  while the runtime retains seed growth and invocation ownership
+  ([record 79](../optimizations/079-inline-eligible-typed-left-recursion-bodies.md)).
+  `#recover`, Pratt expressions and unsupported leader bodies use general
+  expression dispatch; their callees can use either path.
 
 The parity test generates every corpus grammar twice, with the typed runtime and with conversion (below), and checks
 that `ParseAST` returns the same values and errors, also when parsing concurrently. The corpus includes the cases two
@@ -142,8 +145,9 @@ built lists directly had taken 4.5 ms.
   their Go types, lists as typed slices, as in the prototype). Direct rules
   take the part of it that paid: captures in Go variables and actions in place.
   Values stay `any`, so actions, memo and general code share one representation.
-  Local ordinary cuts have a direct path; `#recover`, Pratt expressions and
-  left-recursion leaders remain on general dispatch.
+  Ordinary local cuts and eligible left-recursion leader bodies have direct
+  paths; the latter keep runtime-owned growth and invocation wrappers.
+  `#recover`, Pratt expressions and unsupported leader bodies remain general.
 - **Converting through JSON.** No generated code, but slower than the parse itself and lossy for unions (the
   member type would have to be decoded from `type`).
 - **Exposing typed values from the engine (`pego.Parser`).** Go types cannot be created at run time, so the engine

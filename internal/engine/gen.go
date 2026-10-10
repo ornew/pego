@@ -41,6 +41,9 @@ type GenOptions struct {
 	// disableTypedCuts keeps the general typed cut route for differential tests
 	// and latest-generator performance controls. It adds no parser-time branch.
 	disableTypedCuts bool
+	// disableTypedLRBodies keeps per-expression bodies under the unchanged
+	// left-recursion runtime, for same-revision tests and measurements.
+	disableTypedLRBodies bool
 }
 
 // Generate generates the source code of a Go parser for a grammar.
@@ -64,7 +67,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if !token.IsIdentifier(opts.Package) || opts.Package == "_" {
 		return nil, fmt.Errorf("invalid package name %q", opts.Package)
 	}
-	gen := &generator{prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts}
+	gen := &generator{prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
 	var rec *Program
@@ -137,10 +140,13 @@ func ParseRule(name, input string, unit ...Unit) (*Node, error) {
 }
 
 type generator struct {
-	disableTypedCuts bool
-	prog             *Program
-	table            string // the rule table being generated: rules, or recRules for Recognize
-	cur              *rule  // the rule being generated
+	disableTypedCuts     bool
+	disableTypedLRBodies bool
+	// nodeScopes records the frame layouts shared by typed rule metadata.
+	nodeScopes map[*rule][]string
+	prog       *Program
+	table      string // the rule table being generated: rules, or recRules for Recognize
+	cur        *rule  // the rule being generated
 	// proj holds the projected repetition captures of the rule being generated (projections).
 	proj map[string]string
 	// final is the struct constructor that makes an action's result in the typed runtime: its
@@ -216,10 +222,19 @@ func (g *generator) rules() {
 					bodies[r] = body
 					continue
 				}
+			} else if body := g.directTypedLRBody(r, s); body != "" {
+				bodies[r] = body
+				continue
 			}
 			g.cur, g.proj = r, g.projections(r)
 			bodies[r] = g.expr(r.def.Expr, s, !r.lean)
 			g.proj = nil
+		}
+	}
+	if g.table == "rules" {
+		g.nodeScopes = make(map[*rule][]string, len(all))
+		for _, r := range all {
+			g.nodeScopes[r] = append([]string(nil), scopes[r].names...)
 		}
 	}
 	if g.table == "trules" {

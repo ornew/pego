@@ -3841,17 +3841,17 @@ var lit49 = []rune("^")
 var lit52 = []rune("(")
 var lit53 = []rune(")")
 var lit55 = []rune(".")
-var lit61 = []rune("+")
-var lit62 = []rune("-")
-var lit69 = []rune("*")
-var lit70 = []rune("/")
-var lit71 = []rune("%")
-var lit75 = []rune("-")
-var lit76 = []rune("+")
-var lit79 = []rune("^")
-var lit83 = []rune("(")
-var lit84 = []rune(")")
-var lit85 = []rune(".")
+var lit59 = []rune("+")
+var lit60 = []rune("-")
+var lit65 = []rune("*")
+var lit66 = []rune("/")
+var lit67 = []rune("%")
+var lit71 = []rune("-")
+var lit72 = []rune("+")
+var lit75 = []rune("^")
+var lit79 = []rune("(")
+var lit80 = []rune(")")
+var lit81 = []rune(".")
 
 func init() {
 	rules = []*rule{
@@ -3950,9 +3950,9 @@ func init() {
 	}
 	defer tinit()
 	trules[0].entry = (*tparser).u0
-	trules[1].body = func(p *tparser, _ int) (any, bool) { return p.e60() }
+	trules[1].body = func(p *tparser, _ int) (any, bool) { return p.e58() }
 	trules[2].entry = (*tparser).u2
-	trules[3].body = func(p *tparser, _ int) (any, bool) { return p.e68() }
+	trules[3].body = func(p *tparser, _ int) (any, bool) { return p.e64() }
 	trules[4].entry = (*tparser).u4
 	trules[5].entry = (*tparser).u5
 	trules[6].entry = (*tparser).u6
@@ -5698,91 +5698,65 @@ func (p *parser) q12() (*Node, bool) {
 	return v, true
 }
 
-// add
+// expr (typed LR body inlined)
 func (p *tparser) e58() (any, bool) {
-	return p.u2()
-}
-
-// term
-func (p *tparser) e59() (any, bool) {
-	return p.call(trules[3], 0)
-}
-
-// add / term
-func (p *tparser) e60() (any, bool) {
-	m0 := p.mark()
-	{
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e58()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+	var (
+		x1 mark
+		v2 any
+		ok bool
+		v5 any
+		v7 any
+	)
+	x1 = p.mark()
+	if v5, ok = p.u2(); !ok {
+		goto L4
 	}
-	{
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e59()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+	v2 = v5
+	goto L3
+L4:
+	p.reset(x1)
+	if v7, ok = p.call(trules[3], 0); !ok {
+		goto L6
 	}
+	v2 = v7
+	goto L3
+L6:
+	p.reset(x1)
+	goto fail
+L3:
+	return v2, true
+fail:
 	return nil, false
 }
 
-// mul
-func (p *tparser) e66() (any, bool) {
-	return p.u4()
-}
-
-// unary
-func (p *tparser) e67() (any, bool) {
-	return p.u5()
-}
-
-// mul / unary
-func (p *tparser) e68() (any, bool) {
-	m0 := p.mark()
-	{
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e66()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+// term (typed LR body inlined)
+func (p *tparser) e64() (any, bool) {
+	var (
+		x1 mark
+		v2 any
+		ok bool
+		v5 any
+		v7 any
+	)
+	x1 = p.mark()
+	if v5, ok = p.u4(); !ok {
+		goto L4
 	}
-	{
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e67()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+	v2 = v5
+	goto L3
+L4:
+	p.reset(x1)
+	if v7, ok = p.u5(); !ok {
+		goto L6
 	}
+	v2 = v7
+	goto L3
+L6:
+	p.reset(x1)
+	goto fail
+L3:
+	return v2, true
+fail:
 	return nil, false
 }
 
@@ -5889,7 +5863,7 @@ func (p *tparser) i2() (any, bool) {
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 43 {
 		p.pos++
-	} else if _, ok = p.parser.matchLiteral(lit61, "+", 5, false); !ok {
+	} else if _, ok = p.parser.matchLiteral(lit59, "+", 5, false); !ok {
 		goto L11
 	}
 	goto L7
@@ -5903,7 +5877,7 @@ L10:
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 45 {
 		p.pos++
-	} else if _, ok = p.parser.matchLiteral(lit62, "-", 6, false); !ok {
+	} else if _, ok = p.parser.matchLiteral(lit60, "-", 6, false); !ok {
 		goto L13
 	}
 	goto L7
@@ -5921,7 +5895,7 @@ L7:
 	k15 = v16
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 	p.where = "add"
-	v = func() any { f_63 := k1; f_64 := k3; f_65 := k15; return tmk_Binary(c, true, f_63, f_64, f_65) }()
+	v = func() any { f_61 := k1; f_62 := k3; f_63 := k15; return tmk_Binary(c, true, f_61, f_62, f_63) }()
 	p.depth--
 	return v, true
 fail:
@@ -5984,7 +5958,7 @@ func (p *tparser) i4() (any, bool) {
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 42 {
 		p.pos++
-	} else if _, ok = p.parser.matchLiteral(lit69, "*", 7, false); !ok {
+	} else if _, ok = p.parser.matchLiteral(lit65, "*", 7, false); !ok {
 		goto L11
 	}
 	goto L7
@@ -5998,7 +5972,7 @@ L10:
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 47 {
 		p.pos++
-	} else if _, ok = p.parser.matchLiteral(lit70, "/", 8, false); !ok {
+	} else if _, ok = p.parser.matchLiteral(lit66, "/", 8, false); !ok {
 		goto L13
 	}
 	goto L7
@@ -6012,7 +5986,7 @@ L12:
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 37 {
 		p.pos++
-	} else if _, ok = p.parser.matchLiteral(lit71, "%", 9, false); !ok {
+	} else if _, ok = p.parser.matchLiteral(lit67, "%", 9, false); !ok {
 		goto L15
 	}
 	goto L7
@@ -6030,7 +6004,7 @@ L7:
 	k17 = v18
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 	p.where = "mul"
-	v = func() any { f_72 := k1; f_73 := k3; f_74 := k17; return tmk_Binary(c, true, f_72, f_73, f_74) }()
+	v = func() any { f_68 := k1; f_69 := k3; f_70 := k17; return tmk_Binary(c, true, f_68, f_69, f_70) }()
 	p.depth--
 	return v, true
 fail:
@@ -6190,7 +6164,7 @@ func (p *tparser) i6() (any, bool) {
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 45 {
 		p.pos++
-	} else if _, ok = p.parser.matchLiteral(lit75, "-", 6, false); !ok {
+	} else if _, ok = p.parser.matchLiteral(lit71, "-", 6, false); !ok {
 		goto L9
 	}
 	goto L5
@@ -6204,7 +6178,7 @@ L8:
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 43 {
 		p.pos++
-	} else if _, ok = p.parser.matchLiteral(lit76, "+", 5, false); !ok {
+	} else if _, ok = p.parser.matchLiteral(lit72, "+", 5, false); !ok {
 		goto L11
 	}
 	goto L5
@@ -6222,7 +6196,7 @@ L5:
 	k13 = v14
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 	p.where = "neg"
-	v = func() any { f_77 := k1; f_78 := k13; return tmk_Unary(c, true, f_77, f_78) }()
+	v = func() any { f_73 := k1; f_74 := k13; return tmk_Unary(c, true, f_73, f_74) }()
 	p.depth--
 	return v, true
 fail:
@@ -6321,7 +6295,7 @@ func (p *tparser) i8() (any, bool) {
 	x4 = p.pos
 	if p.pos < len(p.in) && p.in[p.pos] == 94 {
 		p.pos++
-	} else if _, ok = p.parser.matchLiteral(lit79, "^", 10, false); !ok {
+	} else if _, ok = p.parser.matchLiteral(lit75, "^", 10, false); !ok {
 		goto fail
 	}
 	v5 = p.newMatch(x4, p.pos, "^", true)
@@ -6332,7 +6306,7 @@ func (p *tparser) i8() (any, bool) {
 	k6 = v7
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 	p.where = "pow"
-	v = func() any { f_80 := k1; f_81 := k3; f_82 := k6; return tmk_Binary(c, true, f_80, f_81, f_82) }()
+	v = func() any { f_76 := k1; f_77 := k3; f_78 := k6; return tmk_Binary(c, true, f_76, f_77, f_78) }()
 	p.depth--
 	return v, true
 fail:
@@ -6447,7 +6421,7 @@ func (p *tparser) i10() (any, bool) {
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 40 {
 		p.pos++
-	} else if _, ok = p.parser.matchLiteral(lit83, "(", 11, false); !ok {
+	} else if _, ok = p.parser.matchLiteral(lit79, "(", 11, false); !ok {
 		goto fail
 	}
 	if v2, ok = p.call(trules[1], 0); !ok {
@@ -6459,7 +6433,7 @@ func (p *tparser) i10() (any, bool) {
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 41 {
 		p.pos++
-	} else if _, ok = p.parser.matchLiteral(lit84, ")", 12, false); !ok {
+	} else if _, ok = p.parser.matchLiteral(lit80, ")", 12, false); !ok {
 		goto fail
 	}
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
@@ -6512,7 +6486,7 @@ func (p *tparser) s11() (any, bool) {
 	x2, x3 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) && p.in[p.pos] == 46 {
 		p.pos++
-	} else if _, ok = p.parser.matchLiteral(lit85, ".", 14, false); !ok {
+	} else if _, ok = p.parser.matchLiteral(lit81, ".", 14, false); !ok {
 		goto L4
 	}
 	x6 = 0
