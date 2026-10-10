@@ -278,7 +278,9 @@ var tpool sync.Pool
 func (p *tparser) recycle() {
 	q := p.parser
 	memo := memoTable{seen: q.memo.seen, calls: q.memo.calls, pages: q.memo.pages, bitPages: q.memo.bitPages}
-	memo.resetSeen()
+	// Retain useful sparse pages for large inputs, capped at 32 MiB of backing
+	// storage. The next small parse trims this cache when it finishes.
+	memo.resetSeen(max(1<<20, min(q.n, 4<<20)))
 	in, offs := q.in[:0], q.offs[:0]
 	if cap(in) > 1<<20 { // do not keep the buffers of a large input for every later parse
 		in, offs = nil, nil

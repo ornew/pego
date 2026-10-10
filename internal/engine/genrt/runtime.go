@@ -429,7 +429,7 @@ func (p *parser) release() {
 	for _, c := range m.chunks[:m.used] {
 		clear(c)
 	}
-	m.resetSeen()
+	m.resetSeen(1 << 20)
 	clear(p.kidStack[:cap(p.kidStack)])
 	clear(p.trail[:cap(p.trail)])
 	clear(p.saved[:cap(p.saved)])
@@ -611,13 +611,13 @@ func (a *seenPageArena) reset() {
 	a.n = 0
 }
 
-// resetSeen clears first-call state and bounds all sparse scratch storage,
-// including unused directory capacity and the complete arena chunks.
-func (t *memoTable) resetSeen() {
+// resetSeen clears first-call state and bounds sparse scratch storage by limit
+// words, including unused directories and complete arena chunks. Pointer words
+// are counted as eight bytes even on 32-bit targets, making the bound conservative.
+func (t *memoTable) resetSeen(limit int) {
 	clear(t.seen)
 	clear(t.calls)
-	const limit = 1 << 20
-	if cap(t.seen) > limit {
+	if cap(t.seen) > 1<<20 {
 		t.seen = nil
 	}
 	if cap(t.pages) > limit/5 || len(t.bitPages.chunks) > limit/(64*16) || cap(t.bitPages.chunks) > limit {

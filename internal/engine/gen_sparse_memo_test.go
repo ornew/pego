@@ -231,6 +231,32 @@ func TestSparseGeneratedInputSelection(t *testing.T) {
     }
 }
 
+// An optional real corpus exercises retained scratch across successful and
+// failed large parses, with small parses between them, in the same parser.
+func TestSparseGeneratedRealCorpusReuse(t *testing.T) {
+    path := os.Getenv("PEGO_SPARSE_MEMO_INPUT")
+    if path == "" { t.Skip("PEGO_SPARSE_MEMO_INPUT not set") }
+    data, err := os.ReadFile(path); if err != nil { t.Fatal(err) }
+    for _, unit := range []Unit{CodePoints, Bytes} {
+        p := &tparser{parser: &parser{}}
+        for i, input := range []string{string(data), "const x=1;", string(data)+"\nfunction (", "const x=1;", string(data)} {
+            _, err := p.run(trules[0], input, []Unit{unit}, &tslabs{})
+            if (err != nil) != (i == 2) { t.Fatalf("unit=%d step=%d err=%v", unit, i, err) }
+            p.recycle()
+            if p.memo.bitPages.n != 0 { t.Fatal("used pages survived recycle") }
+            for _, dir := range p.memo.pages {
+                if dir.last != nil || dir.at != 0 { t.Fatal("cached pointer survived recycle") }
+                for _, page := range dir.pages { if page != nil { t.Fatal("directory pointer survived recycle") } }
+            }
+            for _, chunk := range p.memo.bitPages.chunks {
+                for _, page := range chunk {
+                    for _, word := range page { if word != 0 { t.Fatal("seen bits survived recycle") } }
+                }
+            }
+        }
+    }
+}
+
 func BenchmarkSparseMemoGenerated(b *testing.B) {
     inputs := []struct{name, text string}{{"synthetic", strings.Repeat("const 日本語 = 1 + 2;\n", 12000)}, {"small", "const 日本語 = 1 + 2;\n"}}
     if path := os.Getenv("PEGO_SPARSE_MEMO_INPUT"); path != "" {

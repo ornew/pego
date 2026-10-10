@@ -1,22 +1,23 @@
 # 87. Store deferred-memo seen positions sparsely
 
-**Status:** Candidate on `perf/sparse-deferred-memo`; not integrated into main.
+**Status:** Candidate on `perf/sparse-deferred-memo`; the bounded typed-reuse
+policy is implemented and locally validated. It is not integrated into main.
 
 Deferred-memo bookkeeping can be sparse when a grammar has many rules but a
 parse visits only a small subset of rule/position pairs. The candidate selects
 sparse storage once per run when the grammar has more than 64 rules and the
 input has more than 1,024 decoded units. It stores seen positions in
-1,024-position pages grouped into stable 64-page chunks. The Go runtime caches
-the latest page and reuses bounded page and directory storage; core and
-generated Go share the inline `cachedSeenPage` and `markSeenPage` helpers.
+1,024-position pages grouped into stable 64-page chunks. Each Go runtime caches
+the latest page and reuses bounded page and directory storage with inline
+`cachedSeenPage` and `markSeenPage` helpers.
 TypeScript uses integer page offsets rather than allocating a typed array for
 each page. Smaller runs retain the dense path.
 
 The core reference build uses `pego_reference_sparse_memo`; generated Go and
 TypeScript use a private generation-time reference switch. No public option or
-runtime optimization-disable flag is introduced. The typed Go runtime drops an
-oversized dense seen buffer on recycle above 1<<20 words. The reference shares
-that cap, so it is not attributed to sparse paging. Sparse bookkeeping adds
+runtime optimization-disable flag is introduced. The generated typed Go
+runtime drops an oversized dense seen buffer on recycle above 1<<20 words. The
+reference shares that cap, so it is not attributed to sparse paging. Sparse bookkeeping adds
 64 bytes to the core memo-table layout on 64-bit Go and 32 bytes on 32-bit Go
 relative to the original dense-only layout. The per-run selector contributes
 8 and 4 bytes respectively; both same-source variants include the full layout.
@@ -26,18 +27,18 @@ relative to the original dense-only layout. The per-run selector contributes
 The mechanism covers deferred-memo bookkeeping for whole-input parses in the
 core closure and VM engines, generated Go runtimes, and generated TypeScript.
 Documents and streams use eager memoization and do not use these sparse pages.
-Core controls cover 48 pairs of result/work fingerprints. Generated-Go
-checks cover one TypeScript grammar across two units, four inputs and three
-replays (24 combined fingerprints for Node, AST and recognition). Additional
-typed-run tests cover 1,024/1,025-unit cutoff boundaries and reuse. TypeScript checks cover that grammar across two units, four
-inputs and string/byte forms (16 results for Node and recognition), including
-Unicode split and cutoff boundaries. These focused controls pass. Final
-Linux/386 checks match all 48 core semantic/work fingerprints and 24
-generated-Go fingerprints against the dense reference; generated-runtime
-sparse-boundary, reset, dense-release and cutoff tests pass. Native root
-tests, `go vet`, parser regeneration, all 10 standalone parser-module suites
-and site checks pass. The full 131-case snapshot remains deferred until the
-design settles; do not treat the candidate as ready for main integration.
+Core controls cover 48 pairs of result/work fingerprints. Generated-Go checks
+cover one TypeScript grammar across two units, four inputs and three replays
+(24 combined fingerprints for Node, AST and recognition), with additional
+cutoff-boundary and reuse tests. TypeScript checks cover that grammar across
+two units, four inputs and string/byte forms (16 results for Node and
+recognition), including Unicode split and cutoff boundaries. The focused
+controls pass. The bounded typed-reuse policy also passes full native root,
+vet, all 10 standalone parser-module, regeneration and site checks, plus
+Linux/386 sparse lifecycle and real-corpus optimized/reference checks. The
+real-corpus sequence covers large, small, failed-large, small and large parses
+in both units. Final generated-source timing confirmations versus the exact
+prior build are reported below. The full 131-case snapshot remains pending.
 
 ## Measurements and limits
 
@@ -62,21 +63,51 @@ cases, B/op differs by -215 to +937 bytes and allocations by at most one,
 within pooled variation.
 
 All six small generated-Go comparisons (Node, AST and recognition across both
-units) include parity in their 500 ms paired ranges. Short typed AST Bytes
-timing remains unresolved: one five-round, two-second series measured 1.0324
-[1.0226, 1.0506] versus prior, while a later five-round series measured
-1.0039 [0.9516, 1.0110]. A separate six-case, 500 ms matrix measured
-1.0148 [0.9684, 1.0614]. Each result describes its own run; the later results
-do not supersede the earlier series, and the evidence does not establish
-neutrality. Resolve this variation before adoption. On the large synthetic
-input, Node and recognition median ratios
-versus the prior implementation are 0.8991–0.9105, with every paired range
-below 1; B/op is 39–42% lower, with about 837–839 fewer allocations. AST
-CodePoints is 1.002 [0.939, 1.015] in the initial pairs; a longer confirmation
-measured 1.0275 [0.9975, 1.0414], whose range includes parity. AST Bytes is
-0.9678 [0.961, 0.992] versus prior. AST allocation and byte counts remain
-effectively unchanged versus prior. These are synthetic workloads, not a
-general speedup claim.
+units) include parity in their 500 ms paired ranges. Earlier short typed AST
+Bytes series varied: one five-round, two-second series measured 1.0324
+[1.0226, 1.0506] versus prior, while later runs measured 1.0039
+[0.9516, 1.0110] and 1.0148 [0.9684, 1.0614]. A final five-round,
+two-second confirmation measured 0.9968 [0.9852, 1.0282]. The final series
+does not repeat the earlier slowdown, but the runs remain distinct evidence.
+On the large synthetic input, Node and recognition median ratios versus prior
+are 0.8991–0.9105, with every paired range below 1; B/op is 39–42% lower, with
+about 837–839 fewer allocations. AST CodePoints initially measured 1.002
+[0.939, 1.015], then 1.0275 [0.9975, 1.0414] in a longer confirmation; AST
+Bytes is 0.9678 [0.961, 0.992]. These are synthetic workloads, not a general
+speedup claim.
+
+### Real-corpus typed storage and reuse
+
+The real TypeScript 5.9.3 `lib/_tsc.js` input is 6,213,092 bytes
+(SHA-256 `e8f349eabd48486bdb2bf9dc1a00c89d58297270c54b745838879e2859194419`).
+Its sparse backing reaches 29,202,016 bytes: 23,724,032 bytes in bit chunks
+and 5,444,536 bytes in directories. The committed fixed 8 MiB typed cap
+discards this backing at recycle. The bounded typed-reuse policy instead
+limits reusable sparse storage to
+`max(1<<20, min(decoded_units, 4<<20))` words, or 8–32 MiB on the measured
+64-bit target. Generated-Go dense and plain-parser caps remain 8 MiB. The limit
+covers full backing storage, including unused chunk and directory capacity; it
+is not a total-heap bound. Trimming occurs after a following parse, not at parse
+entry.
+
+Across five interleaved one-second rounds, all six timings versus the exact
+prior build include parity. Typed AST CodePoints measured 0.99598
+[0.95233, 1.00218], with 1,632 fewer B/op and one fewer allocation; AST Bytes
+measured 1.03620 [0.98275, 1.10299], with 536 more B/op and no allocation
+change in this earlier series. Compared with the committed fixed-cap candidate,
+the bounded policy reduces
+AST B/op by 34,524,216 bytes in CodePoints and 34,523,160 bytes in Bytes,
+about 3,691–3,692 allocations. Generated Node and recognition retain their
+previous real-corpus B/op ratios of 0.7476–0.7561 versus prior, about 3,676
+additional allocations, and are unaffected by the typed reuse policy. These
+real-corpus measurements do not establish a general speedup.
+
+A final five-round, two-second generated-source confirmation measured synthetic
+AST CodePoints at 0.9896 [0.9838, 1.0077], synthetic AST Bytes at 0.9987
+[0.9790, 1.0067], and short AST Bytes at 0.9968 [0.9852, 1.0282] versus
+prior. Each range includes parity. Median B/op deltas were +11, -1 and -2
+bytes respectively, with allocation medians unchanged. Earlier short-run
+variation remains part of the evidence; the full 131-case snapshot is pending.
 
 TypeScript cutoff timings use five interleaved Node 24 rounds against the
 prior implementation. All four large-input ranges include parity:
@@ -119,9 +150,16 @@ with the `bench.mjs` driver; run five interleaved rounds using
 `node --expose-gc bench.mjs` on Node 24. The large input repeats
 `const 日本語 = 1 + 2;` 12,000 times. It warms three times and times three
 calls. The short control uses one line, warms 1,000 times and times 10,000
-calls. Keep the short-input controls in the report because they currently fail
-the adoption gate.
+calls. Earlier short typed AST Bytes runs varied; the latest five-round,
+two-second confirmation includes parity. Keep those distinct results together
+rather than treating one run as definitive.
 
-The candidate is not ready to become the default on main. Resolve the
-inconsistent short typed AST Bytes evidence, tune the dense path as needed, and
-repeat the short-input controls before proposing integration.
+To exercise real-corpus typed reuse, set `PEGO_SPARSE_MEMO_INPUT` to the
+TypeScript 5.9.3 `lib/_tsc.js` file and run
+`go test ./internal/engine -run '^TestGeneratedSparseMemoControls$' -count=1`.
+The generated fixture invokes `TestSparseGeneratedRealCorpusReuse`, which
+checks large, small, failed-large, small and large parses in both units. This
+is an ownership test, not the paired benchmark.
+
+The candidate is not ready to become the default on main. The full 131-case
+snapshot remains the next integration gate.
