@@ -50,6 +50,11 @@ receive-or-channel-type reassociation, `go` and `defer` calls, type switch guard
 the literal checks of the scanner. Where `go/parser` accepts more than the specification (a type where an expression is
 expected, `x.(type)` outside a type switch), so does this parser.
 
+Directive numbers follow the executing Go target's integer width, including `go/scanner`'s conversion of native
+unsigned values above `MaxInt` to negative integers. A Go parser generated on a 64-bit host therefore follows the
+32-bit standard parser when executed on a 32-bit target. Ordinary line and column values retain the `1..2^30`
+range; numeric overflow in an earlier colon field can instead make that field part of the filename.
+
 Every test compares the parser with the `go/parser` of the Go toolchain that runs it: acceptance, and when both accept,
 the whole tree (every node, every position, the line table and the comments). Measured with go1.27.1 (`go version`),
 `cd parsers/golang && go test -v -count=1 .`:

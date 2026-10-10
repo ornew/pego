@@ -28407,9 +28407,13 @@ func (p *parser) e608() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(0)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(0)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(0)), any("4294967295")) })
 			})
 		}) {
 			goto L221
@@ -28486,8 +28490,16 @@ func (p *parser) e608() (*Node, bool) {
 		goto L238
 	L253:
 		if !p.predicate(func(c *actx) any {
-			return rtOr(rtBinary(">", c.length(c.cap(1)), any(20)), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(1)), any(20)), func() any { return rtBinary(">", c.text(c.cap(1)), any("18446744073709551615")) })
+			return rtOr(rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return rtOr(rtBinary(">", c.length(c.cap(1)), any(20)), func() any {
+					return rtAnd(rtBinary("==", c.length(c.cap(1)), any(20)), func() any { return rtBinary(">", c.text(c.cap(1)), any("18446744073709551615")) })
+				})
+			}), func() any {
+				return rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtBinary(">", c.length(c.cap(1)), any(10)), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(1)), any(10)), func() any { return rtBinary(">", c.text(c.cap(1)), any("4294967295")) })
+					})
+				})
 			})
 		}) {
 			goto L238
@@ -28735,9 +28747,13 @@ func (p *parser) e608() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(2)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(2)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(2)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(2)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(2)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(2)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(2)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(2)), any("4294967295")) })
 			})
 		}) {
 			goto L148
@@ -28947,9 +28963,13 @@ func (p *parser) e608() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(3)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(3)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(3)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(3)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(3)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(3)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(3)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(3)), any("4294967295")) })
 			})
 		}) {
 			goto L317
@@ -30447,9 +30467,13 @@ func (p *parser) e697() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(0)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(0)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(0)), any("4294967295")) })
 			})
 		}) {
 			goto L204
@@ -30526,8 +30550,16 @@ func (p *parser) e697() (*Node, bool) {
 		goto L221
 	L236:
 		if !p.predicate(func(c *actx) any {
-			return rtOr(rtBinary(">", c.length(c.cap(1)), any(20)), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(1)), any(20)), func() any { return rtBinary(">", c.text(c.cap(1)), any("18446744073709551615")) })
+			return rtOr(rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return rtOr(rtBinary(">", c.length(c.cap(1)), any(20)), func() any {
+					return rtAnd(rtBinary("==", c.length(c.cap(1)), any(20)), func() any { return rtBinary(">", c.text(c.cap(1)), any("18446744073709551615")) })
+				})
+			}), func() any {
+				return rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtBinary(">", c.length(c.cap(1)), any(10)), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(1)), any(10)), func() any { return rtBinary(">", c.text(c.cap(1)), any("4294967295")) })
+					})
+				})
 			})
 		}) {
 			goto L221
@@ -30836,9 +30868,13 @@ func (p *parser) e697() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(2)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(2)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(2)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(2)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(2)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(2)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(2)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(2)), any("4294967295")) })
 			})
 		}) {
 			goto L113
@@ -31109,9 +31145,13 @@ func (p *parser) e697() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(3)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(3)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(3)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(3)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(3)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(3)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(3)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(3)), any("4294967295")) })
 			})
 		}) {
 			goto L320
@@ -31773,9 +31813,13 @@ func (p *parser) e697() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(4)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(4)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(4)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(4)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(4)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(4)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(4)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(4)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(4)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(4)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(4)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(4)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(4)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(4)), any("4294967295")) })
 			})
 		}) {
 			goto L576
@@ -31852,8 +31896,16 @@ func (p *parser) e697() (*Node, bool) {
 		goto L593
 	L608:
 		if !p.predicate(func(c *actx) any {
-			return rtOr(rtBinary(">", c.length(c.cap(5)), any(20)), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(5)), any(20)), func() any { return rtBinary(">", c.text(c.cap(5)), any("18446744073709551615")) })
+			return rtOr(rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return rtOr(rtBinary(">", c.length(c.cap(5)), any(20)), func() any {
+					return rtAnd(rtBinary("==", c.length(c.cap(5)), any(20)), func() any { return rtBinary(">", c.text(c.cap(5)), any("18446744073709551615")) })
+				})
+			}), func() any {
+				return rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtBinary(">", c.length(c.cap(5)), any(10)), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(5)), any(10)), func() any { return rtBinary(">", c.text(c.cap(5)), any("4294967295")) })
+					})
+				})
 			})
 		}) {
 			goto L593
@@ -32101,9 +32153,13 @@ func (p *parser) e697() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(6)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(6)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(6)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(6)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(6)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(6)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(6)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(6)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(6)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(6)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(6)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(6)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(6)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(6)), any("4294967295")) })
 			})
 		}) {
 			goto L503
@@ -32313,9 +32369,13 @@ func (p *parser) e697() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(7)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(7)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(7)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(7)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(7)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(7)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(7)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(7)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(7)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(7)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(7)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(7)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(7)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(7)), any("4294967295")) })
 			})
 		}) {
 			goto L672
@@ -33394,9 +33454,13 @@ func (p *parser) e728() (*Node, bool) {
 		return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
 			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("1073741824")) })
 		}), func() any {
-			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) })
+			return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return rtOr(rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) }), func() any {
+					return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+				})
+			})
 		}), func() any {
-			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+			return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(0)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(0)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(0)), any("4294967295")) })
 		})
 	}) {
 		goto fail
@@ -33506,8 +33570,16 @@ L17:
 	p.setCapture(0, v18)
 	x2 = append(x2, v18)
 	if !p.predicate(func(c *actx) any {
-		return rtOr(rtBinary("<", c.length(c.cap(0)), any(20)), func() any {
-			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+		return rtOr(rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+			return rtOr(rtBinary("<", c.length(c.cap(0)), any(20)), func() any {
+				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+			})
+		}), func() any {
+			return rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
+					return rtAnd(rtBinary("==", c.length(c.cap(0)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("4294967295")) })
+				})
+			})
 		})
 	}) {
 		goto fail
@@ -38456,9 +38528,13 @@ func (p *parser) e962() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(0)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(0)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(0)), any("4294967295")) })
 			})
 		}) {
 			goto L137
@@ -38524,8 +38600,16 @@ func (p *parser) e962() (*Node, bool) {
 		goto L146
 	L154:
 		if !p.predicate(func(c *actx) any {
-			return rtOr(rtBinary(">", c.length(c.cap(1)), any(20)), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(1)), any(20)), func() any { return rtBinary(">", c.text(c.cap(1)), any("18446744073709551615")) })
+			return rtOr(rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return rtOr(rtBinary(">", c.length(c.cap(1)), any(20)), func() any {
+					return rtAnd(rtBinary("==", c.length(c.cap(1)), any(20)), func() any { return rtBinary(">", c.text(c.cap(1)), any("18446744073709551615")) })
+				})
+			}), func() any {
+				return rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtBinary(">", c.length(c.cap(1)), any(10)), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(1)), any(10)), func() any { return rtBinary(">", c.text(c.cap(1)), any("4294967295")) })
+					})
+				})
 			})
 		}) {
 			goto L146
@@ -38780,9 +38864,13 @@ func (p *parser) e962() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(2)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(2)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(2)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(2)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(2)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(2)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(2)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(2)), any("4294967295")) })
 			})
 		}) {
 			goto L64
@@ -39002,9 +39090,13 @@ func (p *parser) e962() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(3)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(3)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(3)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(3)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(3)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(3)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(3)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(3)), any("4294967295")) })
 			})
 		}) {
 			goto L203
@@ -39545,9 +39637,13 @@ func (p *parser) e962() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(4)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(4)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(4)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(4)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(4)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(4)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(4)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(4)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(4)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(4)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(4)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(4)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(4)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(4)), any("4294967295")) })
 			})
 		}) {
 			goto L349
@@ -39613,8 +39709,16 @@ func (p *parser) e962() (*Node, bool) {
 		goto L358
 	L366:
 		if !p.predicate(func(c *actx) any {
-			return rtOr(rtBinary(">", c.length(c.cap(5)), any(20)), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(5)), any(20)), func() any { return rtBinary(">", c.text(c.cap(5)), any("18446744073709551615")) })
+			return rtOr(rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return rtOr(rtBinary(">", c.length(c.cap(5)), any(20)), func() any {
+					return rtAnd(rtBinary("==", c.length(c.cap(5)), any(20)), func() any { return rtBinary(">", c.text(c.cap(5)), any("18446744073709551615")) })
+				})
+			}), func() any {
+				return rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtBinary(">", c.length(c.cap(5)), any(10)), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(5)), any(10)), func() any { return rtBinary(">", c.text(c.cap(5)), any("4294967295")) })
+					})
+				})
 			})
 		}) {
 			goto L358
@@ -39813,9 +39917,13 @@ func (p *parser) e962() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(6)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(6)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(6)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(6)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(6)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(6)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(6)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(6)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(6)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(6)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(6)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(6)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(6)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(6)), any("4294967295")) })
 			})
 		}) {
 			goto L299
@@ -39979,9 +40087,13 @@ func (p *parser) e962() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(7)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(7)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(7)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(7)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(7)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(7)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(7)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(7)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(7)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(7)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(7)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(7)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(7)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(7)), any("4294967295")) })
 			})
 		}) {
 			goto L398
@@ -40946,9 +41058,13 @@ func (p *parser) e1016() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(0)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(0)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(0)), any("4294967295")) })
 			})
 		}) {
 			goto L127
@@ -41014,8 +41130,16 @@ func (p *parser) e1016() (*Node, bool) {
 		goto L136
 	L144:
 		if !p.predicate(func(c *actx) any {
-			return rtOr(rtBinary(">", c.length(c.cap(1)), any(20)), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(1)), any(20)), func() any { return rtBinary(">", c.text(c.cap(1)), any("18446744073709551615")) })
+			return rtOr(rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return rtOr(rtBinary(">", c.length(c.cap(1)), any(20)), func() any {
+					return rtAnd(rtBinary("==", c.length(c.cap(1)), any(20)), func() any { return rtBinary(">", c.text(c.cap(1)), any("18446744073709551615")) })
+				})
+			}), func() any {
+				return rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtBinary(">", c.length(c.cap(1)), any(10)), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(1)), any(10)), func() any { return rtBinary(">", c.text(c.cap(1)), any("4294967295")) })
+					})
+				})
 			})
 		}) {
 			goto L136
@@ -41214,9 +41338,13 @@ func (p *parser) e1016() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(2)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(2)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(2)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(2)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(2)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(2)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(2)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(2)), any("4294967295")) })
 			})
 		}) {
 			goto L77
@@ -41380,9 +41508,13 @@ func (p *parser) e1016() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(3)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(3)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(3)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(3)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(3)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(3)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(3)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(3)), any("4294967295")) })
 			})
 		}) {
 			goto L176
@@ -44476,8 +44608,16 @@ L10:
 	v11 = p.newNode(Node{kind: kindMatch, Start: int32(x7), End: int32(p.pos), Text: p.text(x7, p.pos), terminal: true, fresh: true})
 	p.setCapture(0, v11)
 	if !p.predicate(func(c *actx) any {
-		return rtOr(rtBinary("<", c.length(c.cap(0)), any(20)), func() any {
-			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+		return rtOr(rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+			return rtOr(rtBinary("<", c.length(c.cap(0)), any(20)), func() any {
+				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+			})
+		}), func() any {
+			return rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
+					return rtAnd(rtBinary("==", c.length(c.cap(0)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("4294967295")) })
+				})
+			})
 		})
 	}) {
 		goto fail
@@ -47436,9 +47576,13 @@ func (p *parser) e1267() (*Node, bool) {
 		return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
 			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("1073741824")) })
 		}), func() any {
-			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) })
+			return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return rtOr(rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) }), func() any {
+					return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+				})
+			})
 		}), func() any {
-			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+			return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(0)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(0)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(0)), any("4294967295")) })
 		})
 	}) {
 		goto fail
@@ -72841,9 +72985,13 @@ func (p *parser) e2555() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(0)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(0)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(0)), any("4294967295")) })
 			})
 		}) {
 			goto L221
@@ -72920,8 +73068,16 @@ func (p *parser) e2555() (*Node, bool) {
 		goto L238
 	L253:
 		if !p.predicate(func(c *actx) any {
-			return rtOr(rtBinary(">", c.length(c.cap(1)), any(20)), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(1)), any(20)), func() any { return rtBinary(">", c.text(c.cap(1)), any("18446744073709551615")) })
+			return rtOr(rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return rtOr(rtBinary(">", c.length(c.cap(1)), any(20)), func() any {
+					return rtAnd(rtBinary("==", c.length(c.cap(1)), any(20)), func() any { return rtBinary(">", c.text(c.cap(1)), any("18446744073709551615")) })
+				})
+			}), func() any {
+				return rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtBinary(">", c.length(c.cap(1)), any(10)), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(1)), any(10)), func() any { return rtBinary(">", c.text(c.cap(1)), any("4294967295")) })
+					})
+				})
 			})
 		}) {
 			goto L238
@@ -73169,9 +73325,13 @@ func (p *parser) e2555() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(2)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(2)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(2)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(2)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(2)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(2)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(2)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(2)), any("4294967295")) })
 			})
 		}) {
 			goto L148
@@ -73381,9 +73541,13 @@ func (p *parser) e2555() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(3)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(3)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(3)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(3)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(3)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(3)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(3)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(3)), any("4294967295")) })
 			})
 		}) {
 			goto L317
@@ -74881,9 +75045,13 @@ func (p *parser) e2644() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(0)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(0)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(0)), any("4294967295")) })
 			})
 		}) {
 			goto L204
@@ -74960,8 +75128,16 @@ func (p *parser) e2644() (*Node, bool) {
 		goto L221
 	L236:
 		if !p.predicate(func(c *actx) any {
-			return rtOr(rtBinary(">", c.length(c.cap(1)), any(20)), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(1)), any(20)), func() any { return rtBinary(">", c.text(c.cap(1)), any("18446744073709551615")) })
+			return rtOr(rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return rtOr(rtBinary(">", c.length(c.cap(1)), any(20)), func() any {
+					return rtAnd(rtBinary("==", c.length(c.cap(1)), any(20)), func() any { return rtBinary(">", c.text(c.cap(1)), any("18446744073709551615")) })
+				})
+			}), func() any {
+				return rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtBinary(">", c.length(c.cap(1)), any(10)), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(1)), any(10)), func() any { return rtBinary(">", c.text(c.cap(1)), any("4294967295")) })
+					})
+				})
 			})
 		}) {
 			goto L221
@@ -75270,9 +75446,13 @@ func (p *parser) e2644() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(2)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(2)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(2)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(2)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(2)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(2)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(2)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(2)), any("4294967295")) })
 			})
 		}) {
 			goto L113
@@ -75543,9 +75723,13 @@ func (p *parser) e2644() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(3)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(3)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(3)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(3)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(3)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(3)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(3)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(3)), any("4294967295")) })
 			})
 		}) {
 			goto L320
@@ -76207,9 +76391,13 @@ func (p *parser) e2644() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(4)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(4)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(4)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(4)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(4)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(4)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(4)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(4)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(4)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(4)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(4)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(4)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(4)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(4)), any("4294967295")) })
 			})
 		}) {
 			goto L576
@@ -76286,8 +76474,16 @@ func (p *parser) e2644() (*Node, bool) {
 		goto L593
 	L608:
 		if !p.predicate(func(c *actx) any {
-			return rtOr(rtBinary(">", c.length(c.cap(5)), any(20)), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(5)), any(20)), func() any { return rtBinary(">", c.text(c.cap(5)), any("18446744073709551615")) })
+			return rtOr(rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return rtOr(rtBinary(">", c.length(c.cap(5)), any(20)), func() any {
+					return rtAnd(rtBinary("==", c.length(c.cap(5)), any(20)), func() any { return rtBinary(">", c.text(c.cap(5)), any("18446744073709551615")) })
+				})
+			}), func() any {
+				return rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtBinary(">", c.length(c.cap(5)), any(10)), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(5)), any(10)), func() any { return rtBinary(">", c.text(c.cap(5)), any("4294967295")) })
+					})
+				})
 			})
 		}) {
 			goto L593
@@ -76535,9 +76731,13 @@ func (p *parser) e2644() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(6)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(6)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(6)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(6)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(6)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(6)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(6)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(6)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(6)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(6)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(6)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(6)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(6)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(6)), any("4294967295")) })
 			})
 		}) {
 			goto L503
@@ -76747,9 +76947,13 @@ func (p *parser) e2644() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(7)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(7)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(7)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(7)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(7)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(7)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(7)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(7)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(7)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(7)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(7)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(7)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(7)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(7)), any("4294967295")) })
 			})
 		}) {
 			goto L672
@@ -77828,9 +78032,13 @@ func (p *parser) e2675() (*Node, bool) {
 		return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
 			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("1073741824")) })
 		}), func() any {
-			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) })
+			return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return rtOr(rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) }), func() any {
+					return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+				})
+			})
 		}), func() any {
-			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+			return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(0)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(0)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(0)), any("4294967295")) })
 		})
 	}) {
 		goto fail
@@ -77940,8 +78148,16 @@ L17:
 	p.setCapture(0, v18)
 	x2 = append(x2, v18)
 	if !p.predicate(func(c *actx) any {
-		return rtOr(rtBinary("<", c.length(c.cap(0)), any(20)), func() any {
-			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+		return rtOr(rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+			return rtOr(rtBinary("<", c.length(c.cap(0)), any(20)), func() any {
+				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+			})
+		}), func() any {
+			return rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
+					return rtAnd(rtBinary("==", c.length(c.cap(0)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("4294967295")) })
+				})
+			})
 		})
 	}) {
 		goto fail
@@ -82878,9 +83094,13 @@ func (p *parser) e2909() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(0)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(0)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(0)), any("4294967295")) })
 			})
 		}) {
 			goto L137
@@ -82946,8 +83166,16 @@ func (p *parser) e2909() (*Node, bool) {
 		goto L146
 	L154:
 		if !p.predicate(func(c *actx) any {
-			return rtOr(rtBinary(">", c.length(c.cap(1)), any(20)), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(1)), any(20)), func() any { return rtBinary(">", c.text(c.cap(1)), any("18446744073709551615")) })
+			return rtOr(rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return rtOr(rtBinary(">", c.length(c.cap(1)), any(20)), func() any {
+					return rtAnd(rtBinary("==", c.length(c.cap(1)), any(20)), func() any { return rtBinary(">", c.text(c.cap(1)), any("18446744073709551615")) })
+				})
+			}), func() any {
+				return rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtBinary(">", c.length(c.cap(1)), any(10)), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(1)), any(10)), func() any { return rtBinary(">", c.text(c.cap(1)), any("4294967295")) })
+					})
+				})
 			})
 		}) {
 			goto L146
@@ -83202,9 +83430,13 @@ func (p *parser) e2909() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(2)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(2)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(2)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(2)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(2)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(2)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(2)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(2)), any("4294967295")) })
 			})
 		}) {
 			goto L64
@@ -83424,9 +83656,13 @@ func (p *parser) e2909() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(3)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(3)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(3)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(3)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(3)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(3)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(3)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(3)), any("4294967295")) })
 			})
 		}) {
 			goto L203
@@ -83967,9 +84203,13 @@ func (p *parser) e2909() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(4)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(4)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(4)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(4)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(4)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(4)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(4)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(4)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(4)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(4)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(4)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(4)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(4)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(4)), any("4294967295")) })
 			})
 		}) {
 			goto L349
@@ -84035,8 +84275,16 @@ func (p *parser) e2909() (*Node, bool) {
 		goto L358
 	L366:
 		if !p.predicate(func(c *actx) any {
-			return rtOr(rtBinary(">", c.length(c.cap(5)), any(20)), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(5)), any(20)), func() any { return rtBinary(">", c.text(c.cap(5)), any("18446744073709551615")) })
+			return rtOr(rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return rtOr(rtBinary(">", c.length(c.cap(5)), any(20)), func() any {
+					return rtAnd(rtBinary("==", c.length(c.cap(5)), any(20)), func() any { return rtBinary(">", c.text(c.cap(5)), any("18446744073709551615")) })
+				})
+			}), func() any {
+				return rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtBinary(">", c.length(c.cap(5)), any(10)), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(5)), any(10)), func() any { return rtBinary(">", c.text(c.cap(5)), any("4294967295")) })
+					})
+				})
 			})
 		}) {
 			goto L358
@@ -84235,9 +84483,13 @@ func (p *parser) e2909() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(6)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(6)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(6)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(6)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(6)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(6)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(6)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(6)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(6)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(6)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(6)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(6)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(6)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(6)), any("4294967295")) })
 			})
 		}) {
 			goto L299
@@ -84401,9 +84653,13 @@ func (p *parser) e2909() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(7)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(7)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(7)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(7)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(7)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(7)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(7)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(7)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(7)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(7)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(7)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(7)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(7)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(7)), any("4294967295")) })
 			})
 		}) {
 			goto L398
@@ -85338,9 +85594,13 @@ func (p *parser) e2961() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(0)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(0)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(0)), any("4294967295")) })
 			})
 		}) {
 			goto L127
@@ -85406,8 +85666,16 @@ func (p *parser) e2961() (*Node, bool) {
 		goto L136
 	L144:
 		if !p.predicate(func(c *actx) any {
-			return rtOr(rtBinary(">", c.length(c.cap(1)), any(20)), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(1)), any(20)), func() any { return rtBinary(">", c.text(c.cap(1)), any("18446744073709551615")) })
+			return rtOr(rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return rtOr(rtBinary(">", c.length(c.cap(1)), any(20)), func() any {
+					return rtAnd(rtBinary("==", c.length(c.cap(1)), any(20)), func() any { return rtBinary(">", c.text(c.cap(1)), any("18446744073709551615")) })
+				})
+			}), func() any {
+				return rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtBinary(">", c.length(c.cap(1)), any(10)), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(1)), any(10)), func() any { return rtBinary(">", c.text(c.cap(1)), any("4294967295")) })
+					})
+				})
 			})
 		}) {
 			goto L136
@@ -85606,9 +85874,13 @@ func (p *parser) e2961() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(2)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(2)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(2)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(2)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(2)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(2)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(2)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(2)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(2)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(2)), any("4294967295")) })
 			})
 		}) {
 			goto L77
@@ -85772,9 +86044,13 @@ func (p *parser) e2961() (*Node, bool) {
 			return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(3)), any(10)), func() any {
 				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("1073741824")) })
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(3)), any("9223372036854775808")) })
+				return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return rtOr(rtAnd(rtBinary("==", c.length(c.cap(3)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(3)), any("9223372036854775808")) }), func() any {
+						return rtAnd(rtBinary("==", c.length(c.cap(3)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return rtAnd(rtBinary("==", c.length(c.cap(3)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(3)), any("18446744073709551615")) })
+				return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(3)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(3)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(3)), any("4294967295")) })
 			})
 		}) {
 			goto L176
@@ -88838,8 +89114,16 @@ L10:
 	v11 = p.newNode(Node{kind: kindMatch, Start: int32(x7), End: int32(p.pos), Text: p.text(x7, p.pos), terminal: true, fresh: true})
 	p.setCapture(0, v11)
 	if !p.predicate(func(c *actx) any {
-		return rtOr(rtBinary("<", c.length(c.cap(0)), any(20)), func() any {
-			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+		return rtOr(rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+			return rtOr(rtBinary("<", c.length(c.cap(0)), any(20)), func() any {
+				return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+			})
+		}), func() any {
+			return rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
+					return rtAnd(rtBinary("==", c.length(c.cap(0)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("4294967295")) })
+				})
+			})
 		})
 	}) {
 		goto fail
@@ -91798,9 +92082,13 @@ func (p *parser) e3210() (*Node, bool) {
 		return rtOr(rtOr(rtOr(rtBinary("<", c.length(c.cap(0)), any(10)), func() any {
 			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(10)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("1073741824")) })
 		}), func() any {
-			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) })
+			return rtAnd(rtBinary(">", rtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return rtOr(rtAnd(rtBinary("==", c.length(c.cap(0)), any(19)), func() any { return rtBinary(">=", c.text(c.cap(0)), any("9223372036854775808")) }), func() any {
+					return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+				})
+			})
 		}), func() any {
-			return rtAnd(rtBinary("==", c.length(c.cap(0)), any(20)), func() any { return rtBinary("<=", c.text(c.cap(0)), any("18446744073709551615")) })
+			return rtAnd(rtAnd(rtAnd(rtBinary("<", rtBinary("+", any(2147483647), any(1)), any(0)), func() any { return rtBinary("==", c.length(c.cap(0)), any(10)) }), func() any { return rtBinary(">=", c.text(c.cap(0)), any("2147483648")) }), func() any { return rtBinary("<=", c.text(c.cap(0)), any("4294967295")) })
 		})
 	}) {
 		goto fail
@@ -129691,9 +129979,13 @@ func (p *tparser) s243() (any, bool) {
 			return trtOr(trtOr(trtOr(trtBinary("<", c.length(k6), any(10)), func() any {
 				return trtAnd(trtBinary("==", c.length(k6), any(10)), func() any { return trtBinary("<=", c.text(k6), any("1073741824")) })
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k6), any(19)), func() any { return trtBinary(">=", c.text(k6), any("9223372036854775808")) })
+				return trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtAnd(trtBinary("==", c.length(k6), any(19)), func() any { return trtBinary(">=", c.text(k6), any("9223372036854775808")) }), func() any {
+						return trtAnd(trtBinary("==", c.length(k6), any(20)), func() any { return trtBinary("<=", c.text(k6), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k6), any(20)), func() any { return trtBinary("<=", c.text(k6), any("18446744073709551615")) })
+				return trtAnd(trtAnd(trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any { return trtBinary("==", c.length(k6), any(10)) }), func() any { return trtBinary(">=", c.text(k6), any("2147483648")) }), func() any { return trtBinary("<=", c.text(k6), any("4294967295")) })
 			})
 		}) {
 			goto L263
@@ -129774,8 +130066,16 @@ func (p *tparser) s243() (any, bool) {
 		goto L281
 	L297:
 		if !p.predicate(func(c *tctx) any {
-			return trtOr(trtBinary(">", c.length(k7), any(20)), func() any {
-				return trtAnd(trtBinary("==", c.length(k7), any(20)), func() any { return trtBinary(">", c.text(k7), any("18446744073709551615")) })
+			return trtOr(trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return trtOr(trtBinary(">", c.length(k7), any(20)), func() any {
+					return trtAnd(trtBinary("==", c.length(k7), any(20)), func() any { return trtBinary(">", c.text(k7), any("18446744073709551615")) })
+				})
+			}), func() any {
+				return trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtBinary(">", c.length(k7), any(10)), func() any {
+						return trtAnd(trtBinary("==", c.length(k7), any(10)), func() any { return trtBinary(">", c.text(k7), any("4294967295")) })
+					})
+				})
 			})
 		}) {
 			goto L281
@@ -130039,9 +130339,13 @@ func (p *tparser) s243() (any, bool) {
 			return trtOr(trtOr(trtOr(trtBinary("<", c.length(k8), any(10)), func() any {
 				return trtAnd(trtBinary("==", c.length(k8), any(10)), func() any { return trtBinary("<=", c.text(k8), any("1073741824")) })
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k8), any(19)), func() any { return trtBinary(">=", c.text(k8), any("9223372036854775808")) })
+				return trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtAnd(trtBinary("==", c.length(k8), any(19)), func() any { return trtBinary(">=", c.text(k8), any("9223372036854775808")) }), func() any {
+						return trtAnd(trtBinary("==", c.length(k8), any(20)), func() any { return trtBinary("<=", c.text(k8), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k8), any(20)), func() any { return trtBinary("<=", c.text(k8), any("18446744073709551615")) })
+				return trtAnd(trtAnd(trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any { return trtBinary("==", c.length(k8), any(10)) }), func() any { return trtBinary(">=", c.text(k8), any("2147483648")) }), func() any { return trtBinary("<=", c.text(k8), any("4294967295")) })
 			})
 		}) {
 			goto L177
@@ -130264,9 +130568,13 @@ func (p *tparser) s243() (any, bool) {
 			return trtOr(trtOr(trtOr(trtBinary("<", c.length(k9), any(10)), func() any {
 				return trtAnd(trtBinary("==", c.length(k9), any(10)), func() any { return trtBinary("<=", c.text(k9), any("1073741824")) })
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k9), any(19)), func() any { return trtBinary(">=", c.text(k9), any("9223372036854775808")) })
+				return trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtAnd(trtBinary("==", c.length(k9), any(19)), func() any { return trtBinary(">=", c.text(k9), any("9223372036854775808")) }), func() any {
+						return trtAnd(trtBinary("==", c.length(k9), any(20)), func() any { return trtBinary("<=", c.text(k9), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k9), any(20)), func() any { return trtBinary("<=", c.text(k9), any("18446744073709551615")) })
+				return trtAnd(trtAnd(trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any { return trtBinary("==", c.length(k9), any(10)) }), func() any { return trtBinary(">=", c.text(k9), any("2147483648")) }), func() any { return trtBinary("<=", c.text(k9), any("4294967295")) })
 			})
 		}) {
 			goto L367
@@ -131983,9 +132291,13 @@ func (p *tparser) s244() (any, bool) {
 			return trtOr(trtOr(trtOr(trtBinary("<", c.length(k6), any(10)), func() any {
 				return trtAnd(trtBinary("==", c.length(k6), any(10)), func() any { return trtBinary("<=", c.text(k6), any("1073741824")) })
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k6), any(19)), func() any { return trtBinary(">=", c.text(k6), any("9223372036854775808")) })
+				return trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtAnd(trtBinary("==", c.length(k6), any(19)), func() any { return trtBinary(">=", c.text(k6), any("9223372036854775808")) }), func() any {
+						return trtAnd(trtBinary("==", c.length(k6), any(20)), func() any { return trtBinary("<=", c.text(k6), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k6), any(20)), func() any { return trtBinary("<=", c.text(k6), any("18446744073709551615")) })
+				return trtAnd(trtAnd(trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any { return trtBinary("==", c.length(k6), any(10)) }), func() any { return trtBinary(">=", c.text(k6), any("2147483648")) }), func() any { return trtBinary("<=", c.text(k6), any("4294967295")) })
 			})
 		}) {
 			goto L249
@@ -132066,8 +132378,16 @@ func (p *tparser) s244() (any, bool) {
 		goto L267
 	L283:
 		if !p.predicate(func(c *tctx) any {
-			return trtOr(trtBinary(">", c.length(k7), any(20)), func() any {
-				return trtAnd(trtBinary("==", c.length(k7), any(20)), func() any { return trtBinary(">", c.text(k7), any("18446744073709551615")) })
+			return trtOr(trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return trtOr(trtBinary(">", c.length(k7), any(20)), func() any {
+					return trtAnd(trtBinary("==", c.length(k7), any(20)), func() any { return trtBinary(">", c.text(k7), any("18446744073709551615")) })
+				})
+			}), func() any {
+				return trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtBinary(">", c.length(k7), any(10)), func() any {
+						return trtAnd(trtBinary("==", c.length(k7), any(10)), func() any { return trtBinary(">", c.text(k7), any("4294967295")) })
+					})
+				})
 			})
 		}) {
 			goto L267
@@ -132397,9 +132717,13 @@ func (p *tparser) s244() (any, bool) {
 			return trtOr(trtOr(trtOr(trtBinary("<", c.length(k8), any(10)), func() any {
 				return trtAnd(trtBinary("==", c.length(k8), any(10)), func() any { return trtBinary("<=", c.text(k8), any("1073741824")) })
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k8), any(19)), func() any { return trtBinary(">=", c.text(k8), any("9223372036854775808")) })
+				return trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtAnd(trtBinary("==", c.length(k8), any(19)), func() any { return trtBinary(">=", c.text(k8), any("9223372036854775808")) }), func() any {
+						return trtAnd(trtBinary("==", c.length(k8), any(20)), func() any { return trtBinary("<=", c.text(k8), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k8), any(20)), func() any { return trtBinary("<=", c.text(k8), any("18446744073709551615")) })
+				return trtAnd(trtAnd(trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any { return trtBinary("==", c.length(k8), any(10)) }), func() any { return trtBinary(">=", c.text(k8), any("2147483648")) }), func() any { return trtBinary("<=", c.text(k8), any("4294967295")) })
 			})
 		}) {
 			goto L142
@@ -132688,9 +133012,13 @@ func (p *tparser) s244() (any, bool) {
 			return trtOr(trtOr(trtOr(trtBinary("<", c.length(k9), any(10)), func() any {
 				return trtAnd(trtBinary("==", c.length(k9), any(10)), func() any { return trtBinary("<=", c.text(k9), any("1073741824")) })
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k9), any(19)), func() any { return trtBinary(">=", c.text(k9), any("9223372036854775808")) })
+				return trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtAnd(trtBinary("==", c.length(k9), any(19)), func() any { return trtBinary(">=", c.text(k9), any("9223372036854775808")) }), func() any {
+						return trtAnd(trtBinary("==", c.length(k9), any(20)), func() any { return trtBinary("<=", c.text(k9), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k9), any(20)), func() any { return trtBinary("<=", c.text(k9), any("18446744073709551615")) })
+				return trtAnd(trtAnd(trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any { return trtBinary("==", c.length(k9), any(10)) }), func() any { return trtBinary(">=", c.text(k9), any("2147483648")) }), func() any { return trtBinary("<=", c.text(k9), any("4294967295")) })
 			})
 		}) {
 			goto L376
@@ -133421,9 +133749,13 @@ func (p *tparser) s244() (any, bool) {
 			return trtOr(trtOr(trtOr(trtBinary("<", c.length(k10), any(10)), func() any {
 				return trtAnd(trtBinary("==", c.length(k10), any(10)), func() any { return trtBinary("<=", c.text(k10), any("1073741824")) })
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k10), any(19)), func() any { return trtBinary(">=", c.text(k10), any("9223372036854775808")) })
+				return trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtAnd(trtBinary("==", c.length(k10), any(19)), func() any { return trtBinary(">=", c.text(k10), any("9223372036854775808")) }), func() any {
+						return trtAnd(trtBinary("==", c.length(k10), any(20)), func() any { return trtBinary("<=", c.text(k10), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k10), any(20)), func() any { return trtBinary("<=", c.text(k10), any("18446744073709551615")) })
+				return trtAnd(trtAnd(trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any { return trtBinary("==", c.length(k10), any(10)) }), func() any { return trtBinary(">=", c.text(k10), any("2147483648")) }), func() any { return trtBinary("<=", c.text(k10), any("4294967295")) })
 			})
 		}) {
 			goto L671
@@ -133504,8 +133836,16 @@ func (p *tparser) s244() (any, bool) {
 		goto L689
 	L705:
 		if !p.predicate(func(c *tctx) any {
-			return trtOr(trtBinary(">", c.length(k11), any(20)), func() any {
-				return trtAnd(trtBinary("==", c.length(k11), any(20)), func() any { return trtBinary(">", c.text(k11), any("18446744073709551615")) })
+			return trtOr(trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return trtOr(trtBinary(">", c.length(k11), any(20)), func() any {
+					return trtAnd(trtBinary("==", c.length(k11), any(20)), func() any { return trtBinary(">", c.text(k11), any("18446744073709551615")) })
+				})
+			}), func() any {
+				return trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtBinary(">", c.length(k11), any(10)), func() any {
+						return trtAnd(trtBinary("==", c.length(k11), any(10)), func() any { return trtBinary(">", c.text(k11), any("4294967295")) })
+					})
+				})
 			})
 		}) {
 			goto L689
@@ -133769,9 +134109,13 @@ func (p *tparser) s244() (any, bool) {
 			return trtOr(trtOr(trtOr(trtBinary("<", c.length(k12), any(10)), func() any {
 				return trtAnd(trtBinary("==", c.length(k12), any(10)), func() any { return trtBinary("<=", c.text(k12), any("1073741824")) })
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k12), any(19)), func() any { return trtBinary(">=", c.text(k12), any("9223372036854775808")) })
+				return trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtAnd(trtBinary("==", c.length(k12), any(19)), func() any { return trtBinary(">=", c.text(k12), any("9223372036854775808")) }), func() any {
+						return trtAnd(trtBinary("==", c.length(k12), any(20)), func() any { return trtBinary("<=", c.text(k12), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k12), any(20)), func() any { return trtBinary("<=", c.text(k12), any("18446744073709551615")) })
+				return trtAnd(trtAnd(trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any { return trtBinary("==", c.length(k12), any(10)) }), func() any { return trtBinary(">=", c.text(k12), any("2147483648")) }), func() any { return trtBinary("<=", c.text(k12), any("4294967295")) })
 			})
 		}) {
 			goto L585
@@ -133994,9 +134338,13 @@ func (p *tparser) s244() (any, bool) {
 			return trtOr(trtOr(trtOr(trtBinary("<", c.length(k13), any(10)), func() any {
 				return trtAnd(trtBinary("==", c.length(k13), any(10)), func() any { return trtBinary("<=", c.text(k13), any("1073741824")) })
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k13), any(19)), func() any { return trtBinary(">=", c.text(k13), any("9223372036854775808")) })
+				return trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtAnd(trtBinary("==", c.length(k13), any(19)), func() any { return trtBinary(">=", c.text(k13), any("9223372036854775808")) }), func() any {
+						return trtAnd(trtBinary("==", c.length(k13), any(20)), func() any { return trtBinary("<=", c.text(k13), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k13), any(20)), func() any { return trtBinary("<=", c.text(k13), any("18446744073709551615")) })
+				return trtAnd(trtAnd(trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any { return trtBinary("==", c.length(k13), any(10)) }), func() any { return trtBinary(">=", c.text(k13), any("2147483648")) }), func() any { return trtBinary("<=", c.text(k13), any("4294967295")) })
 			})
 		}) {
 			goto L775
@@ -135587,9 +135935,13 @@ func (p *tparser) i252() (any, bool) {
 		return trtOr(trtOr(trtOr(trtBinary("<", c.length(k12), any(10)), func() any {
 			return trtAnd(trtBinary("==", c.length(k12), any(10)), func() any { return trtBinary("<=", c.text(k12), any("1073741824")) })
 		}), func() any {
-			return trtAnd(trtBinary("==", c.length(k12), any(19)), func() any { return trtBinary(">=", c.text(k12), any("9223372036854775808")) })
+			return trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return trtOr(trtAnd(trtBinary("==", c.length(k12), any(19)), func() any { return trtBinary(">=", c.text(k12), any("9223372036854775808")) }), func() any {
+					return trtAnd(trtBinary("==", c.length(k12), any(20)), func() any { return trtBinary("<=", c.text(k12), any("18446744073709551615")) })
+				})
+			})
 		}), func() any {
-			return trtAnd(trtBinary("==", c.length(k12), any(20)), func() any { return trtBinary("<=", c.text(k12), any("18446744073709551615")) })
+			return trtAnd(trtAnd(trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any { return trtBinary("==", c.length(k12), any(10)) }), func() any { return trtBinary(">=", c.text(k12), any("2147483648")) }), func() any { return trtBinary("<=", c.text(k12), any("4294967295")) })
 		})
 	}) {
 		goto fail
@@ -135728,8 +136080,16 @@ L20:
 	k15 = v21
 	x2 = append(x2, v21)
 	if !p.predicate(func(c *tctx) any {
-		return trtOr(trtBinary("<", c.length(k15), any(20)), func() any {
-			return trtAnd(trtBinary("==", c.length(k15), any(20)), func() any { return trtBinary("<=", c.text(k15), any("18446744073709551615")) })
+		return trtOr(trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+			return trtOr(trtBinary("<", c.length(k15), any(20)), func() any {
+				return trtAnd(trtBinary("==", c.length(k15), any(20)), func() any { return trtBinary("<=", c.text(k15), any("18446744073709551615")) })
+			})
+		}), func() any {
+			return trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return trtOr(trtBinary("<", c.length(k15), any(10)), func() any {
+					return trtAnd(trtBinary("==", c.length(k15), any(10)), func() any { return trtBinary("<=", c.text(k15), any("4294967295")) })
+				})
+			})
 		})
 	}) {
 		goto fail
@@ -144318,9 +144678,13 @@ func (p *tparser) s305() (any, bool) {
 			return trtOr(trtOr(trtOr(trtBinary("<", c.length(k4), any(10)), func() any {
 				return trtAnd(trtBinary("==", c.length(k4), any(10)), func() any { return trtBinary("<=", c.text(k4), any("1073741824")) })
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k4), any(19)), func() any { return trtBinary(">=", c.text(k4), any("9223372036854775808")) })
+				return trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtAnd(trtBinary("==", c.length(k4), any(19)), func() any { return trtBinary(">=", c.text(k4), any("9223372036854775808")) }), func() any {
+						return trtAnd(trtBinary("==", c.length(k4), any(20)), func() any { return trtBinary("<=", c.text(k4), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k4), any(20)), func() any { return trtBinary("<=", c.text(k4), any("18446744073709551615")) })
+				return trtAnd(trtAnd(trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any { return trtBinary("==", c.length(k4), any(10)) }), func() any { return trtBinary(">=", c.text(k4), any("2147483648")) }), func() any { return trtBinary("<=", c.text(k4), any("4294967295")) })
 			})
 		}) {
 			goto L181
@@ -144390,8 +144754,16 @@ func (p *tparser) s305() (any, bool) {
 		goto L191
 	L200:
 		if !p.predicate(func(c *tctx) any {
-			return trtOr(trtBinary(">", c.length(k5), any(20)), func() any {
-				return trtAnd(trtBinary("==", c.length(k5), any(20)), func() any { return trtBinary(">", c.text(k5), any("18446744073709551615")) })
+			return trtOr(trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return trtOr(trtBinary(">", c.length(k5), any(20)), func() any {
+					return trtAnd(trtBinary("==", c.length(k5), any(20)), func() any { return trtBinary(">", c.text(k5), any("18446744073709551615")) })
+				})
+			}), func() any {
+				return trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtBinary(">", c.length(k5), any(10)), func() any {
+						return trtAnd(trtBinary("==", c.length(k5), any(10)), func() any { return trtBinary(">", c.text(k5), any("4294967295")) })
+					})
+				})
 			})
 		}) {
 			goto L191
@@ -144666,9 +145038,13 @@ func (p *tparser) s305() (any, bool) {
 			return trtOr(trtOr(trtOr(trtBinary("<", c.length(k6), any(10)), func() any {
 				return trtAnd(trtBinary("==", c.length(k6), any(10)), func() any { return trtBinary("<=", c.text(k6), any("1073741824")) })
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k6), any(19)), func() any { return trtBinary(">=", c.text(k6), any("9223372036854775808")) })
+				return trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtAnd(trtBinary("==", c.length(k6), any(19)), func() any { return trtBinary(">=", c.text(k6), any("9223372036854775808")) }), func() any {
+						return trtAnd(trtBinary("==", c.length(k6), any(20)), func() any { return trtBinary("<=", c.text(k6), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k6), any(20)), func() any { return trtBinary("<=", c.text(k6), any("18446744073709551615")) })
+				return trtAnd(trtAnd(trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any { return trtBinary("==", c.length(k6), any(10)) }), func() any { return trtBinary(">=", c.text(k6), any("2147483648")) }), func() any { return trtBinary("<=", c.text(k6), any("4294967295")) })
 			})
 		}) {
 			goto L92
@@ -144905,9 +145281,13 @@ func (p *tparser) s305() (any, bool) {
 			return trtOr(trtOr(trtOr(trtBinary("<", c.length(k7), any(10)), func() any {
 				return trtAnd(trtBinary("==", c.length(k7), any(10)), func() any { return trtBinary("<=", c.text(k7), any("1073741824")) })
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k7), any(19)), func() any { return trtBinary(">=", c.text(k7), any("9223372036854775808")) })
+				return trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtAnd(trtBinary("==", c.length(k7), any(19)), func() any { return trtBinary(">=", c.text(k7), any("9223372036854775808")) }), func() any {
+						return trtAnd(trtBinary("==", c.length(k7), any(20)), func() any { return trtBinary("<=", c.text(k7), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k7), any(20)), func() any { return trtBinary("<=", c.text(k7), any("18446744073709551615")) })
+				return trtAnd(trtAnd(trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any { return trtBinary("==", c.length(k7), any(10)) }), func() any { return trtBinary(">=", c.text(k7), any("2147483648")) }), func() any { return trtBinary("<=", c.text(k7), any("4294967295")) })
 			})
 		}) {
 			goto L257
@@ -145515,9 +145895,13 @@ func (p *tparser) s305() (any, bool) {
 			return trtOr(trtOr(trtOr(trtBinary("<", c.length(k8), any(10)), func() any {
 				return trtAnd(trtBinary("==", c.length(k8), any(10)), func() any { return trtBinary("<=", c.text(k8), any("1073741824")) })
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k8), any(19)), func() any { return trtBinary(">=", c.text(k8), any("9223372036854775808")) })
+				return trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtAnd(trtBinary("==", c.length(k8), any(19)), func() any { return trtBinary(">=", c.text(k8), any("9223372036854775808")) }), func() any {
+						return trtAnd(trtBinary("==", c.length(k8), any(20)), func() any { return trtBinary("<=", c.text(k8), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k8), any(20)), func() any { return trtBinary("<=", c.text(k8), any("18446744073709551615")) })
+				return trtAnd(trtAnd(trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any { return trtBinary("==", c.length(k8), any(10)) }), func() any { return trtBinary(">=", c.text(k8), any("2147483648")) }), func() any { return trtBinary("<=", c.text(k8), any("4294967295")) })
 			})
 		}) {
 			goto L439
@@ -145587,8 +145971,16 @@ func (p *tparser) s305() (any, bool) {
 		goto L449
 	L458:
 		if !p.predicate(func(c *tctx) any {
-			return trtOr(trtBinary(">", c.length(k9), any(20)), func() any {
-				return trtAnd(trtBinary("==", c.length(k9), any(20)), func() any { return trtBinary(">", c.text(k9), any("18446744073709551615")) })
+			return trtOr(trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return trtOr(trtBinary(">", c.length(k9), any(20)), func() any {
+					return trtAnd(trtBinary("==", c.length(k9), any(20)), func() any { return trtBinary(">", c.text(k9), any("18446744073709551615")) })
+				})
+			}), func() any {
+				return trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtBinary(">", c.length(k9), any(10)), func() any {
+						return trtAnd(trtBinary("==", c.length(k9), any(10)), func() any { return trtBinary(">", c.text(k9), any("4294967295")) })
+					})
+				})
 			})
 		}) {
 			goto L449
@@ -145802,9 +146194,13 @@ func (p *tparser) s305() (any, bool) {
 			return trtOr(trtOr(trtOr(trtBinary("<", c.length(k10), any(10)), func() any {
 				return trtAnd(trtBinary("==", c.length(k10), any(10)), func() any { return trtBinary("<=", c.text(k10), any("1073741824")) })
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k10), any(19)), func() any { return trtBinary(">=", c.text(k10), any("9223372036854775808")) })
+				return trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtAnd(trtBinary("==", c.length(k10), any(19)), func() any { return trtBinary(">=", c.text(k10), any("9223372036854775808")) }), func() any {
+						return trtAnd(trtBinary("==", c.length(k10), any(20)), func() any { return trtBinary("<=", c.text(k10), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k10), any(20)), func() any { return trtBinary("<=", c.text(k10), any("18446744073709551615")) })
+				return trtAnd(trtAnd(trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any { return trtBinary("==", c.length(k10), any(10)) }), func() any { return trtBinary(">=", c.text(k10), any("2147483648")) }), func() any { return trtBinary("<=", c.text(k10), any("4294967295")) })
 			})
 		}) {
 			goto L376
@@ -145980,9 +146376,13 @@ func (p *tparser) s305() (any, bool) {
 			return trtOr(trtOr(trtOr(trtBinary("<", c.length(k11), any(10)), func() any {
 				return trtAnd(trtBinary("==", c.length(k11), any(10)), func() any { return trtBinary("<=", c.text(k11), any("1073741824")) })
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k11), any(19)), func() any { return trtBinary(">=", c.text(k11), any("9223372036854775808")) })
+				return trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtAnd(trtBinary("==", c.length(k11), any(19)), func() any { return trtBinary(">=", c.text(k11), any("9223372036854775808")) }), func() any {
+						return trtAnd(trtBinary("==", c.length(k11), any(20)), func() any { return trtBinary("<=", c.text(k11), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k11), any(20)), func() any { return trtBinary("<=", c.text(k11), any("18446744073709551615")) })
+				return trtAnd(trtAnd(trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any { return trtBinary("==", c.length(k11), any(10)) }), func() any { return trtBinary(">=", c.text(k11), any("2147483648")) }), func() any { return trtBinary("<=", c.text(k11), any("4294967295")) })
 			})
 		}) {
 			goto L495
@@ -147114,9 +147514,13 @@ func (p *tparser) s307() (any, bool) {
 			return trtOr(trtOr(trtOr(trtBinary("<", c.length(k4), any(10)), func() any {
 				return trtAnd(trtBinary("==", c.length(k4), any(10)), func() any { return trtBinary("<=", c.text(k4), any("1073741824")) })
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k4), any(19)), func() any { return trtBinary(">=", c.text(k4), any("9223372036854775808")) })
+				return trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtAnd(trtBinary("==", c.length(k4), any(19)), func() any { return trtBinary(">=", c.text(k4), any("9223372036854775808")) }), func() any {
+						return trtAnd(trtBinary("==", c.length(k4), any(20)), func() any { return trtBinary("<=", c.text(k4), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k4), any(20)), func() any { return trtBinary("<=", c.text(k4), any("18446744073709551615")) })
+				return trtAnd(trtAnd(trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any { return trtBinary("==", c.length(k4), any(10)) }), func() any { return trtBinary(">=", c.text(k4), any("2147483648")) }), func() any { return trtBinary("<=", c.text(k4), any("4294967295")) })
 			})
 		}) {
 			goto L167
@@ -147186,8 +147590,16 @@ func (p *tparser) s307() (any, bool) {
 		goto L177
 	L186:
 		if !p.predicate(func(c *tctx) any {
-			return trtOr(trtBinary(">", c.length(k5), any(20)), func() any {
-				return trtAnd(trtBinary("==", c.length(k5), any(20)), func() any { return trtBinary(">", c.text(k5), any("18446744073709551615")) })
+			return trtOr(trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return trtOr(trtBinary(">", c.length(k5), any(20)), func() any {
+					return trtAnd(trtBinary("==", c.length(k5), any(20)), func() any { return trtBinary(">", c.text(k5), any("18446744073709551615")) })
+				})
+			}), func() any {
+				return trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtBinary(">", c.length(k5), any(10)), func() any {
+						return trtAnd(trtBinary("==", c.length(k5), any(10)), func() any { return trtBinary(">", c.text(k5), any("4294967295")) })
+					})
+				})
 			})
 		}) {
 			goto L177
@@ -147401,9 +147813,13 @@ func (p *tparser) s307() (any, bool) {
 			return trtOr(trtOr(trtOr(trtBinary("<", c.length(k6), any(10)), func() any {
 				return trtAnd(trtBinary("==", c.length(k6), any(10)), func() any { return trtBinary("<=", c.text(k6), any("1073741824")) })
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k6), any(19)), func() any { return trtBinary(">=", c.text(k6), any("9223372036854775808")) })
+				return trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtAnd(trtBinary("==", c.length(k6), any(19)), func() any { return trtBinary(">=", c.text(k6), any("9223372036854775808")) }), func() any {
+						return trtAnd(trtBinary("==", c.length(k6), any(20)), func() any { return trtBinary("<=", c.text(k6), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k6), any(20)), func() any { return trtBinary("<=", c.text(k6), any("18446744073709551615")) })
+				return trtAnd(trtAnd(trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any { return trtBinary("==", c.length(k6), any(10)) }), func() any { return trtBinary(">=", c.text(k6), any("2147483648")) }), func() any { return trtBinary("<=", c.text(k6), any("4294967295")) })
 			})
 		}) {
 			goto L104
@@ -147579,9 +147995,13 @@ func (p *tparser) s307() (any, bool) {
 			return trtOr(trtOr(trtOr(trtBinary("<", c.length(k7), any(10)), func() any {
 				return trtAnd(trtBinary("==", c.length(k7), any(10)), func() any { return trtBinary("<=", c.text(k7), any("1073741824")) })
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k7), any(19)), func() any { return trtBinary(">=", c.text(k7), any("9223372036854775808")) })
+				return trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+					return trtOr(trtAnd(trtBinary("==", c.length(k7), any(19)), func() any { return trtBinary(">=", c.text(k7), any("9223372036854775808")) }), func() any {
+						return trtAnd(trtBinary("==", c.length(k7), any(20)), func() any { return trtBinary("<=", c.text(k7), any("18446744073709551615")) })
+					})
+				})
 			}), func() any {
-				return trtAnd(trtBinary("==", c.length(k7), any(20)), func() any { return trtBinary("<=", c.text(k7), any("18446744073709551615")) })
+				return trtAnd(trtAnd(trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any { return trtBinary("==", c.length(k7), any(10)) }), func() any { return trtBinary(">=", c.text(k7), any("2147483648")) }), func() any { return trtBinary("<=", c.text(k7), any("4294967295")) })
 			})
 		}) {
 			goto L223
@@ -154246,8 +154666,16 @@ L13:
 	v14 = p.newMatch(x9, p.pos, p.text(x9, p.pos), true)
 	k8 = v14
 	if !p.predicate(func(c *tctx) any {
-		return trtOr(trtBinary("<", c.length(k8), any(20)), func() any {
-			return trtAnd(trtBinary("==", c.length(k8), any(20)), func() any { return trtBinary("<=", c.text(k8), any("18446744073709551615")) })
+		return trtOr(trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+			return trtOr(trtBinary("<", c.length(k8), any(20)), func() any {
+				return trtAnd(trtBinary("==", c.length(k8), any(20)), func() any { return trtBinary("<=", c.text(k8), any("18446744073709551615")) })
+			})
+		}), func() any {
+			return trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return trtOr(trtBinary("<", c.length(k8), any(10)), func() any {
+					return trtAnd(trtBinary("==", c.length(k8), any(10)), func() any { return trtBinary("<=", c.text(k8), any("4294967295")) })
+				})
+			})
 		})
 	}) {
 		goto fail
@@ -158545,9 +158973,13 @@ func (p *tparser) i386() (any, bool) {
 		return trtOr(trtOr(trtOr(trtBinary("<", c.length(k5), any(10)), func() any {
 			return trtAnd(trtBinary("==", c.length(k5), any(10)), func() any { return trtBinary("<=", c.text(k5), any("1073741824")) })
 		}), func() any {
-			return trtAnd(trtBinary("==", c.length(k5), any(19)), func() any { return trtBinary(">=", c.text(k5), any("9223372036854775808")) })
+			return trtAnd(trtBinary(">", trtBinary("+", any(2147483647), any(1)), any(0)), func() any {
+				return trtOr(trtAnd(trtBinary("==", c.length(k5), any(19)), func() any { return trtBinary(">=", c.text(k5), any("9223372036854775808")) }), func() any {
+					return trtAnd(trtBinary("==", c.length(k5), any(20)), func() any { return trtBinary("<=", c.text(k5), any("18446744073709551615")) })
+				})
+			})
 		}), func() any {
-			return trtAnd(trtBinary("==", c.length(k5), any(20)), func() any { return trtBinary("<=", c.text(k5), any("18446744073709551615")) })
+			return trtAnd(trtAnd(trtAnd(trtBinary("<", trtBinary("+", any(2147483647), any(1)), any(0)), func() any { return trtBinary("==", c.length(k5), any(10)) }), func() any { return trtBinary(">=", c.text(k5), any("2147483648")) }), func() any { return trtBinary("<=", c.text(k5), any("4294967295")) })
 		})
 	}) {
 		goto fail

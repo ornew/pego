@@ -72,8 +72,8 @@ native maximum integer rather than a fixed 64-bit constant. TypeScript
 generation compares Go `int` values after widening them to `int64`; this keeps
 the existing JavaScript safe-integer decision valid on both Go widths.
 
-These checks occur during generation, decoding, or validation. The generated
-parser and matching loops have no architecture selector. Closure, recursive
+These core boundary checks occur during generation, decoding, or validation.
+Runtime code keeps native arithmetic without a new architecture dispatch. Closure, recursive
 VM, iterative VM and generated Go use their existing native-`int` behavior;
 TypeScript keeps its signed 64-bit arithmetic on either Go host. A 32-bit
 generation host accepts only source constants within its native range, but
@@ -144,10 +144,23 @@ The Python grammar now uses separate native-integer columns and a bounded
 block depth packed with bracket/string state; [design 026](026-portable-python-block-state.md)
 describes its tests and measured allocation tradeoff. It passes the native
 64-bit and Linux/386 module suites, but adoption of that tradeoff is pending.
-The Go grammar still assumes the 64-bit standard parser's acceptance of
-extremely large `//line` numbers; three reference comparisons differ from
-the 32-bit standard parser. Complete ready-made parser support and the CI
-matrix therefore remain unresolved.
+The Go grammar follows the executing target's `go/scanner` directive-number
+conversion. The ordinary interval remains `1..2^30`; converting native unsigned
+values above `MaxInt` to negative `int` also passes the scanner's upper-bound
+check. Those wrapped intervals are `2^31..2^32-1` on Go32 and
+`2^63..2^64-1` on Go64. A numeric middle field beyond native `MaxUint` is
+interpreted as part of the filename; an invalid final field rejects the
+directive. Go32 and Go64 module tests compare acceptance, complete ASTs,
+positions, line tables and comments with the executing standard parser.
+
+The width predicate computes `2147483647 + 1` with native arithmetic, rather
+than a generation-host constant. Go generated on a 64-bit host consequently
+keeps Go32 behavior when executed there. The predicate is evaluated at the
+directive-number boundary after the ordinary interval fails, or when resolving
+an unsigned middle field; core matching code gains no architecture selector.
+Generated TypeScript keeps its signed 64-bit arithmetic and Go64 intervals.
+Complete CI validation and acceptance of the Python allocation tradeoff remain
+unresolved.
 Validation also covers:
 
 - Cross-compile root and every parser module for `linux/386`; run the supported
