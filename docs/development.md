@@ -61,6 +61,8 @@ left-recursion and Pratt logic with it. Backtracking restores input position, th
 errors and capture history; farthest-failure expectations use separate isolation and merge scopes. Recognition
 returns no tree and skips value and action work that predicates do not need; predicate-dependent rules and callees
 can still evaluate actions.
+Deferred memoization switches to eager reuse when repeated calls exceed one sixteenth of a rule's calls.
+Its compact counters halve before overflowing, discounting old observations while retaining the decision once made.
 Nesting limits and tracing apply to rule calls. `Document` can reuse memo entries across edits and resume long
 repetitions; stream parsing emits elements and discards input already committed by the grammar.
 

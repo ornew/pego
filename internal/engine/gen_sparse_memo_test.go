@@ -28,6 +28,11 @@ func TestGeneratedSparseMemoControls(t *testing.T) {
 	if dir == "" {
 		dir = t.TempDir()
 	}
+	adaptiveTests, err := os.ReadFile("genrt/adaptive_memo_test.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	adaptiveTests = []byte(strings.Replace(string(adaptiveTests), "package genrt", "package memofixture", 1))
 	var fingerprints [2]string
 	for i, name := range []string{"optimized", "reference"} {
 		code, err := Generate(g, GenOptions{Package: "memofixture", Start: "main", Types: true,
@@ -45,12 +50,13 @@ func TestGeneratedSparseMemoControls(t *testing.T) {
 		for file, data := range map[string][]byte{
 			"go.mod":    []byte("module memofixture\n\ngo 1.24\n"),
 			"parser.go": code, "memo_test.go": []byte(sparseMemoGeneratedFixture),
+			"adaptive_test.go": adaptiveTests,
 		} {
 			if err := os.WriteFile(filepath.Join(path, file), data, 0o644); err != nil {
 				t.Fatal(err)
 			}
 		}
-		cmd := exec.Command("go", "test", "-count=1", "-v", "-run", "^TestSparseGenerated")
+		cmd := exec.Command("go", "test", "-count=1", "-v", "-run", "^Test(SparseGenerated|AdaptiveMemoCounters)")
 		cmd.Dir = path
 		output, err := cmd.CombinedOutput()
 		if err != nil {
@@ -143,6 +149,46 @@ export function testMemoBoundaries(): void {
     ] as const) {
       const p = new Parser(input, unit, stride);
       if (p.sparse !== (sparseSeen && stride > 64 && large)) throw new Error("input cutoff mismatch");
+    }
+  }
+  for (const sparse of [false, true]) {
+    for (const [calls, repeats, repeat, wantCalls, wantRepeats, eager] of [
+      [15, 0, true, 16, 1, false], [14, 0, true, 15, 1, true],
+      [16, 0, true, 17, 1, false],
+      [2 ** 31 - 2, 2 ** 27 - 1, true, 2 ** 31 - 1, 2 ** 27, true],
+      [2 ** 30 - 1, 2 ** 26 - 1, true, 2 ** 30, 2 ** 26, false],
+      [2 ** 30 - 2, 2 ** 26 - 1, true, 2 ** 30 - 1, 2 ** 26, true],
+      [2 ** 31 - 2, 1, false, 2 ** 31 - 1, 1, false],
+      [2 ** 31 - 1, 1, false, 2 ** 30, 0, false],
+      [2 ** 31 - 1, 3, true, 2 ** 30, 2, false],
+      [2 ** 31 - 1, 0, false, 2 ** 30, 0, false],
+      [2 ** 31 - 1, 0, true, 2 ** 30, 1, false],
+      [2 ** 31 - 1, 2 ** 27 - 3, true, 2 ** 30, 2 ** 26 - 1, false],
+      [2 ** 31 - 1, 2 ** 27 - 1, true, 2 ** 30, 2 ** 26, false],
+      [2 ** 31 - 1, 2 ** 27, true, 2 ** 30, 2 ** 26 + 1, true],
+    ] as const) {
+      const p = new Parser("", CodePoints, 1);
+      p.sparse = sparseSeen && sparse;
+      const r = {seen: 0} as Rule;
+      if (repeat) {
+        if (p.sparse) p.markSparseSeen(0, 0); else p.markSeen(0, 0);
+      }
+      p.calls[0] = calls;
+      p.repeats[0] = repeats;
+      if (p.firstCall(r) !== !repeat || p.calls[0] !== wantCalls ||
+          p.repeats[0] !== wantRepeats || (p.eager[0] !== 0) !== eager) {
+        throw new Error("adaptive memo threshold or rescaling mismatch");
+      }
+      if (eager && (p.firstCall(r) || p.calls[0] !== wantCalls || p.repeats[0] !== wantRepeats)) {
+        throw new Error("eager mode resumed counting");
+      }
+    }
+    const p = new Parser("", CodePoints, 1);
+    p.sparse = sparseSeen && sparse;
+    p.calls[0] = 2 ** 31 - 1;
+    const r = {seen: 0} as Rule;
+    if (!p.firstCall(r) || p.firstCall(r) || p.eager[0] !== 0) {
+      throw new Error("fresh then repeated calls became eager after rescaling");
     }
   }
   const p = new Parser("", CodePoints, 175);
