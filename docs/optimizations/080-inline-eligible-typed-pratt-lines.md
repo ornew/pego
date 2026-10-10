@@ -9,8 +9,10 @@
   or branch. Node generation, recognition and TypeScript output are unchanged.
 - This cut-free route leaves cut-bearing matchers to the framed body emitter
   in [change 81](081-scoped-cuts-in-unfinished-typed-go-bodies.md).
-  `#recover`, action captures absent from the actual general frame and
-  layouts the collector cannot represent remain on the general typed path.
+  Recovery bodies have a separate structural route in
+  [record 83](083-inline-typed-recovery-bodies.md); recovery layouts the
+  collector cannot represent, action captures absent from the actual general
+  frame and other unmatched layouts remain on the general typed path.
   [Record 82](082-match-typed-direct-frame-layouts.md) recovers cases where the earlier structural walk omitted or
   reordered dead captures. Eligible callees may still use direct bodies.
 - The 14-case typed corpus compares the direct and same-generator reference

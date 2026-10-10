@@ -86,7 +86,7 @@ type Doc struct { Text Match }
 def main: Doc = x:@expr $$ -> new Doc{Text: $x}
 def expr = expr "+" -- "a" / "a"
 `, []string{"a", "a+a+a", "a+", "a+a?", "", "b"}},
-	{"typed/LR_recovery_fallback", `
+	{"typed/LR_recovery", `
 type Doc struct { Text Match }
 def main: Doc = x:@expr $$ -> new Doc{Text: $x}
 def expr = (expr "+" "a" / "a") #recover(skip=";")

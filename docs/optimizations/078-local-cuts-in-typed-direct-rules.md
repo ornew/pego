@@ -9,7 +9,9 @@
   cut-free leader bodies, [record 80](080-inline-eligible-typed-pratt-lines.md)
   adds eligible cut-free Pratt-line matchers, and [record 81](081-scoped-cuts-in-unfinished-typed-go-bodies.md)
   adds eligible cut-bearing LR/Pratt bodies. Node generation, recognition and
-  TypeScript output are unchanged.
+  TypeScript output are unchanged. Eligible recovery bodies now use a separate
+  route ([record 83](083-inline-typed-recovery-bodies.md)); unsupported
+  recovery layouts remain general.
 - The cut control is a generation-time internal option used for differential
   tests and benchmarks. It adds no generated parser option or matching-time
   branch. Both routes are emitted by the same latest generator; the general

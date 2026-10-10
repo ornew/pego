@@ -12,7 +12,9 @@
 - Eligibility is limited to bodies without cuts or `#recover` whose runtime
   frame layout the structural emitter can match. [Record 82](082-match-typed-direct-frame-layouts.md) enables cases where
   the earlier structural walk omitted or reordered dead captures; unresolved
-  action captures and layouts that still cannot match remain general. Eligible
+  action captures and layouts that still cannot match remain general. This
+  record's body is recovery-free; eligible recovery bodies have a separate
+  route in [record 83](083-inline-typed-recovery-bodies.md). Eligible
   cut-bearing LR/Pratt bodies use the framed emitter in
   [change 81](081-scoped-cuts-in-unfinished-typed-go-bodies.md); cut-free Pratt
   lines have their own matcher route in [change 80](080-inline-eligible-typed-pratt-lines.md).

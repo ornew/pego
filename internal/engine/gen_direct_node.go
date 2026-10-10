@@ -174,11 +174,20 @@ func (g *generator) directNodeBody(r *rule, scope *scope) string {
 	return g.directFrameBody(r, scope, "Node body inlined")
 }
 
-func (g *generator) directTypedLRBody(r *rule, scope *scope) string {
-	if g.disableTypedLRBodies || !r.leader || !directExprEligible(r, !g.disableTypedFramedCuts) {
+func (g *generator) directTypedFrameBody(r *rule, scope *scope) string {
+	comment := "typed recovery body inlined"
+	if r.leader {
+		if g.disableTypedLRBodies {
+			return ""
+		}
+		comment = "typed LR body inlined"
+	} else if !directHasRecovery(r.def.Expr) {
 		return ""
 	}
-	return g.directFrameBody(r, scope, "typed LR body inlined")
+	if !directFrameExprOK(r.def.Expr, !g.disableTypedFramedCuts, !g.disableTypedRecoveryBodies) {
+		return ""
+	}
+	return g.directFrameBody(r, scope, comment)
 }
 
 func (g *generator) directFrameBody(r *rule, scope *scope, comment string) string {
@@ -307,6 +316,12 @@ func (g *generator) typedFrameLayout(e grammar.Expr, build bool) *scope {
 			visit(e.Expr, false)
 		case *grammar.Attributed:
 			visit(e.Expr, build)
+			for _, a := range e.Attrs {
+				if a.Name == "recover" {
+					skip, _ := a.Arg("skip")
+					visit(skip, false)
+				}
+			}
 		}
 	}
 	visit(e, build)

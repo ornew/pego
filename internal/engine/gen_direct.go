@@ -28,8 +28,9 @@ import (
 //
 // A direct rule never reads or sets p.cut (its flags are local and callees restore it), p.frame
 // (callees set their own) or p.trail (callees truncate it to its length at the call), so it
-// leaves them alone. Typed cuts use scope-local flags; rules with #recover
-// keep the general code. Pratt rules retain runtime dispatch, with eligible
+// leaves them alone. Typed cuts use scope-local flags. Ordinary Go-local
+// direct methods exclude recovery; eligible recovery bodies use runtime-owned
+// frames and preserve full-mark rollback. Pratt rules retain runtime dispatch, with eligible
 // typed line bodies inlined. Left-recursion leaders retain runtime
 // growth and finalization, with eligible typed expression bodies inlined.
 // Unfinished typed bodies keep runtime-owned capture frames and publish their
@@ -59,6 +60,10 @@ func directExprEligible(r *rule, cuts bool) bool {
 }
 
 func directExprOK(expr grammar.Expr, cuts bool) bool {
+	return directFrameExprOK(expr, cuts, false)
+}
+
+func directFrameExprOK(expr grammar.Expr, cuts, recovery bool) bool {
 	ok := true
 	walkExpr(expr, func(e grammar.Expr) {
 		switch e := e.(type) {
@@ -70,7 +75,7 @@ func directExprOK(expr grammar.Expr, cuts bool) bool {
 			ok = false
 		case *grammar.Attributed:
 			for _, a := range e.Attrs {
-				if a.Name == "recover" {
+				if a.Name == "recover" && !recovery {
 					ok = false
 				}
 			}
@@ -1004,8 +1009,7 @@ func (d *dgen) attr(e *grammar.Attributed, i int, s *dscope, build bool, fail st
 		}
 		return v
 	case "recover":
-		d.bad = true
-		return "nil"
+		return d.recoverAttr(e, i, s, build, fail)
 	}
 	return d.attr(e, i-1, s, build, fail)
 }
@@ -1214,4 +1218,71 @@ func (g *generator) directLeanBody(r *rule, d *direct) string {
 		b.WriteString("fail:\nreturn nil, false\n")
 	}
 	return g.method(r.name+" (value-free body inlined)", b.String())
+}
+
+// recoverAttr mirrors the typed runtime's full-mark recovery without general
+// matcher callbacks. Only unfinished typed bodies use runtime-owned frames.
+func (d *dgen) recoverAttr(e *grammar.Attributed, i int, s *dscope, build bool, fail string) string {
+	if !d.nodeBody || d.g.table != "trules" {
+		d.bad = true
+		return "nil"
+	}
+	d.line("// Recovery inlined under the runtime-owned frame.")
+	m := d.mark(s, e, true)
+	mark, far, expected := d.decl("x", "expMark"), d.decl("x", "int"), d.decl("x", "[]expID")
+	d.line("%s = p.isolate(p.pos)", mark)
+	f, done := d.label(), d.label()
+	var v string
+	if build {
+		v = d.decl("v", d.g.valType())
+	}
+	inner := d.attr(e, i-1, s, build, f)
+	if build {
+		d.line("%s = %s", v, d.rd(inner))
+	}
+	d.line("%s, %s = p.unisolate(%s)", far, expected, d.rd(mark))
+	d.line("p.mergeExpected(%s, %s)", d.rd(far), d.rd(expected))
+	if d.used[f] {
+		d.jump(done)
+		d.place(f)
+		d.line("%s, %s = p.unisolate(%s)", far, expected, mark)
+		d.line("%s = p.keep(%s)", expected, d.rd(expected))
+		d.reset(m)
+		skipFail := d.label()
+		skip, _ := e.Attrs[i].Arg("skip")
+		d.expr(skip, s, false, skipFail)
+		d.failIf("p.pos == "+d.rd(m.pos), skipFail)
+		err := d.decl("x", "*SyntaxError")
+		d.line("%s = p.makeError(%s, %s)", err, d.rd(far), d.rd(expected))
+		d.line("p.recovered = append(p.recovered, %s)", d.rd(err))
+		if build && visible(e.Expr) {
+			d.line("%s = &terror{Error{%s: %s{%s, p.pos}, Text: p.text(%s, p.pos), Message: %s.Error()}, true}", v, d.g.typedSpan, d.g.typedSpan, d.rd(m.pos), d.rd(m.pos), d.rd(err))
+		} else if build {
+			d.line("%s = nil", v)
+		}
+		d.jump(done)
+		d.place(skipFail)
+		d.reset(m)
+		d.line("p.mergeExpected(%s, %s)", d.rd(far), d.rd(expected))
+		d.jump(fail)
+		d.place(done)
+	}
+	if !build {
+		return "nil"
+	}
+	return v
+}
+
+func directHasRecovery(e grammar.Expr) bool {
+	found := false
+	walkExpr(e, func(e grammar.Expr) {
+		if e, ok := e.(*grammar.Attributed); ok {
+			for _, a := range e.Attrs {
+				if a.Name == "recover" {
+					found = true
+				}
+			}
+		}
+	})
+	return found
 }

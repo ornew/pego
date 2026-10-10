@@ -9,8 +9,10 @@
   The runtime clears slots that are not live for a match. Additional required
   slots can widen a frame or pool class, so unchanged allocations in these
   workloads do not establish zero memory cost for every grammar. Node
-  generation, recognition and TypeScript output are unchanged; `#recover`
-  remains on general dispatch.
+  generation, recognition and TypeScript output are unchanged. Eligible
+  recovery bodies use the separate structural route in
+  [record 83](083-inline-typed-recovery-bodies.md); unmatched recovery layouts
+  remain on general dispatch.
 - The generation-only `disableTypedFrameLayouts` control retains the previous
   discovery and fallback route for same-generator comparisons. It selects no
   runtime branch. Layouts that still cannot be represented by the structural

@@ -131,12 +131,13 @@ func TestTypedFrameLayoutMetadata(t *testing.T) {
 	cases = append(cases, typedLRBodyCases...)
 	cases = append(cases, typedPrattBodyCases...)
 	cases = append(cases, typedDirectCutCases...)
+	cases = append(cases, typedRecoveryCases...)
 	for _, c := range cases {
 		p := compile(t, c.src)
 		for _, r := range append(append([]*rule(nil), p.rules...), p.twins...) {
 			var exprs []grammar.Expr
 			walkExpr(r.def.Expr, func(e grammar.Expr) {
-				if directExprOK(e, true) {
+				if directFrameExprOK(e, true, true) {
 					exprs = append(exprs, e)
 				}
 			})

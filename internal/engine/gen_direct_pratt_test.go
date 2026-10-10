@@ -115,7 +115,7 @@ def expr: Doc = pratt {
     level { prefix "-" -- "z" -> new Doc{Text: $op} }
 }
 `, []string{"a", "-za", "-a", "-z", "a?", "", "-x"}},
-	{"typed/Pratt_recovery_fallback", `
+	{"typed/Pratt_recovery", `
 type Doc struct { Text Match }
 def main: Doc = e:expr $$ -> $e
 def expr: Doc = pratt {

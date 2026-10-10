@@ -53,6 +53,9 @@ type GenOptions struct {
 	// disableTypedFrameLayouts retains structural capture discovery for
 	// same-generator tests and measurements without a parser-time option.
 	disableTypedFrameLayouts bool
+	// disableTypedRecoveryBodies retains general recovery dispatch for
+	// same-generator tests and measurements without a parser-time option.
+	disableTypedRecoveryBodies bool
 }
 
 // Generate generates the source code of a Go parser for a grammar.
@@ -76,7 +79,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if !token.IsIdentifier(opts.Package) || opts.Package == "_" {
 		return nil, fmt.Errorf("invalid package name %q", opts.Package)
 	}
-	gen := &generator{prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedPrattBodies: opts.disableTypedPrattBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts}
+	gen := &generator{prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedPrattBodies: opts.disableTypedPrattBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
 	var rec *Program
@@ -149,13 +152,15 @@ func ParseRule(name, input string, unit ...Unit) (*Node, error) {
 }
 
 type generator struct {
-	disableTypedCuts         bool
-	disableTypedLRBodies     bool
-	disableTypedPrattBodies  bool
-	disableTypedFramedCuts   bool
-	disableTypedFrameLayouts bool
+	disableTypedCuts           bool
+	disableTypedLRBodies       bool
+	disableTypedPrattBodies    bool
+	disableTypedFramedCuts     bool
+	disableTypedFrameLayouts   bool
+	disableTypedRecoveryBodies bool
 	// nodeScopes records the frame layouts shared by typed rule metadata.
 	nodeScopes map[*rule][]string
+	typedSpan  string // generated helper name, avoiding grammar type and field names
 	prog       *Program
 	table      string // the rule table being generated: rules, or recRules for Recognize
 	cur        *rule  // the rule being generated
@@ -234,7 +239,7 @@ func (g *generator) rules() {
 					bodies[r] = body
 					continue
 				}
-			} else if body := g.directTypedLRBody(r, s); body != "" {
+			} else if body := g.directTypedFrameBody(r, s); body != "" {
 				bodies[r] = body
 				continue
 			}

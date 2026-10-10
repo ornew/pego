@@ -37,6 +37,7 @@ func (g *generator) typedGo(start *rule, conv bool) (string, string, error) {
 	}
 	t := &typedGen{g: g, info: info, names: map[string]string{}, unions: map[string]string{}, lists: map[string]string{}, tlists: map[string]string{}}
 	t.name()
+	g.typedSpan = t.span
 	st := info.rules[start.name]
 	if st == nil {
 		st = tyAny

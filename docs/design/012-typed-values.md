@@ -103,11 +103,16 @@ errors and memoization decisions are literally shared. The generator writes the 
   predicate-capture, projection and slot-order rules, including dead syntax.
   It enables additional left-recursion, Pratt and owned-repetition bodies
   without changing runtime frame ownership ([record 82](../optimizations/082-match-typed-direct-frame-layouts.md)).
+  Eligible unfinished ordinary, left-recursion and Pratt bodies containing
+  `#recover` also use a structural typed path
+  ([record 83](../optimizations/083-inline-typed-recovery-bodies.md)). Generated
+  recovery control flow preserves expectation handling, full-mark
+  rollback and progress checks through the existing runtime helpers;
+  unsupported layouts remain general.
   Each Pratt line owns its `tprattLine.scope`; the runtime retains precedence,
   longest-match selection, frames and action finalization. Left-recursion
-  runtime frames and growth remain in place. `#recover` and layouts the
-  structural emitter cannot match remain on general expression dispatch; their
-  callees can use either path.
+  runtime frames and growth remain in place; eligible callees can use either
+  path.
 
 The parity test generates every corpus grammar twice, with the typed runtime and with conversion (below), and checks
 that `ParseAST` returns the same values and errors, also when parsing concurrently. The corpus includes the cases two
@@ -159,9 +164,10 @@ built lists directly had taken 4.5 ms.
   Ordinary local cuts, eligible left-recursion leader bodies and eligible
   Pratt line matchers have direct paths. Eligible cut-bearing left-recursion
   and Pratt bodies use framed direct paths while runtime wrappers retain
-  growth, invocation and Pratt-selection ownership. `#recover` and
-  layouts the structural emitter cannot match remain general; record 82 adds
-  eligible layouts by reusing the general emitter's slot metadata.
+  growth, invocation and Pratt-selection ownership. Eligible `#recover` bodies
+  also use a framed direct path (record 83); unmatched recovery layouts remain
+  general. Record 82 adds eligible layouts by reusing the general emitter's
+  slot metadata.
 - **Converting through JSON.** No generated code, but slower than the parse itself and lossy for unions (the
   member type would have to be decoded from `type`).
 - **Exposing typed values from the engine (`pego.Parser`).** Go types cannot be created at run time, so the engine
