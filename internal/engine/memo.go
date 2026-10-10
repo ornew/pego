@@ -27,9 +27,21 @@ type memoTable struct {
 	// bits per position. It is used only by whole-input parses, so base is 0.
 	seen   []uint64
 	stride int
+	// pages allocate bits only for a rule's visited 1,024-position regions.
+	// Small grammars keep the dense bitset to avoid directory overhead.
+	pages    []seenRulePages
+	bitPages arena[[16]uint64]
 	// calls counts, per rule number, the calls and the repeated calls at a position; once repeats
 	// are frequent, the rule is memoized on the first call (eager).
 	calls []seenCalls
+}
+
+// seenRulePages caches the last visited page beside its directory. Most calls
+// of a rule stay within one region, avoiding a second dependent pointer lookup.
+type seenRulePages struct {
+	pages []*[16]uint64
+	last  *[16]uint64
+	at    int
 }
 
 type seenCalls struct {
@@ -49,7 +61,13 @@ func (t *memoTable) firstCall(pos, r int) bool {
 		return false
 	}
 	c.calls++
-	if t.markSeen(pos, r) {
+	var first bool
+	if sparseMemo && t.stride > 64 {
+		first = t.markSparseSeen(pos, r)
+	} else {
+		first = t.markSeen(pos, r)
+	}
+	if first {
 		return true
 	}
 	// Deferring costs an extra evaluation for each position where the rule is called again, and
@@ -63,6 +81,7 @@ func (t *memoTable) firstCall(pos, r int) bool {
 
 // markSeen records a call of rule number r at position pos and reports whether it is the first.
 func (t *memoTable) markSeen(pos, r int) bool {
+
 	i := pos*t.stride + r
 	w, b := i>>6, uint64(1)<<(i&63)
 	if strconv.IntSize == 32 {
@@ -81,6 +100,42 @@ func (t *memoTable) markSeen(pos, r int) bool {
 		return false
 	}
 	t.seen[w] |= b
+	return true
+}
+
+// markSparseSeen records only visited per-rule regions, with page allocation
+// batched to keep the directory savings from adding one allocation per page.
+func (t *memoTable) markSparseSeen(pos, r int) bool {
+	if len(t.pages) != t.stride {
+		t.pages = make([]seenRulePages, t.stride)
+	}
+	dir := &t.pages[r]
+	at := pos >> 10
+	page := dir.last
+	if page == nil || dir.at != at {
+		pages := dir.pages
+		if at >= len(pages) {
+			if at < cap(pages) {
+				pages = pages[:at+1]
+			} else {
+				grown := make([]*[16]uint64, at+1, max(at+1, 2*cap(pages), 4))
+				copy(grown, pages)
+				pages = grown
+			}
+			dir.pages = pages
+		}
+		page = pages[at]
+		if page == nil {
+			page = t.bitPages.alloc()
+			pages[at] = page
+		}
+		dir.last, dir.at = page, at
+	}
+	w, b := (pos>>6)&15, uint64(1)<<(pos&63)
+	if page[w]&b != 0 {
+		return false
+	}
+	page[w] |= b
 	return true
 }
 
@@ -199,15 +254,32 @@ func (t *memoTable) retire(e *memoEntry) {
 // reset empties the table for another parse, keeping its memory, and reports whether that was
 // worth keeping (it is not when it is very large).
 func (t *memoTable) reset() bool {
-	if cap(t.slots) > maxScratch || len(t.chunks)*256 > maxScratch || len(t.seen) > maxScratch {
+	if cap(t.slots) > maxScratch || len(t.chunks)*256 > maxScratch || len(t.seen) > maxScratch || cap(t.pages) > maxScratch/5 || len(t.bitPages.chunks) > maxScratch/(64*16) || cap(t.bitPages.chunks) > maxScratch {
 		return false
+	}
+	// Bound directory backing arrays and the complete stable page chunks.
+	words := 5*cap(t.pages) + len(t.bitPages.chunks)*64*16 + cap(t.bitPages.chunks)
+	if words > maxScratch {
+		return false
+	}
+	for _, dir := range t.pages {
+		if cap(dir.pages) > maxScratch-words {
+			return false
+		}
+		words += cap(dir.pages)
 	}
 	clear(t.slots)
 	for _, c := range t.chunks[:t.used] {
 		clear(c)
 	}
 	clear(t.seen)
-	*t = memoTable{slots: t.slots[:0], chunks: t.chunks, seen: t.seen[:0]}
+	for i := range t.pages {
+		dir := &t.pages[i]
+		clear(dir.pages)
+		dir.last, dir.at = nil, 0
+	}
+	t.bitPages.reset(0)
+	*t = memoTable{slots: t.slots[:0], chunks: t.chunks, seen: t.seen[:0], pages: t.pages, bitPages: t.bitPages}
 	return true
 }
 

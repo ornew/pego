@@ -560,6 +560,9 @@ function ruleIn(table: Rule[], name: string): Rule | null {
 // maxDepth is the maximum nesting of rule calls, the same default as the engine.
 const maxDepth = 100_000;
 
+// Selected at generation time; large rule tables allocate visited regions only.
+const sparseSeen = true;
+
 // run parses the whole input with rule r of a rule table with seen rules that have rule.seen set.
 function run(r: Rule, seen: number, input: string | Uint8Array, unit: Unit | undefined): ParseResult {
   let p: Parser | null = null;
@@ -885,6 +888,9 @@ class Parser {
   // position.
   seen: Int32Array = new Int32Array(0);
   stride: number;
+  seenPages: ((number | undefined)[] | undefined)[] | null = null;
+  seenPageChunks: Int32Array[] | null = null;
+  seenPageCount = 0;
   // calls and repeats count, per rule number, the calls and the repeated calls at a position; once
   // repeats are frequent, the rule is memoized on the first call (eager).
   calls: Int32Array;
@@ -1047,16 +1053,10 @@ class Parser {
       return false;
     }
     this.calls[s]!++;
-    const i = this.pos * this.stride + s;
-    const w = Math.floor(i / 32);
-    const bit = 1 << i % 32;
-    if (w >= this.seen.length) {
-      const grown = new Int32Array(Math.max(w + 1, 2 * this.seen.length, 64));
-      grown.set(this.seen);
-      this.seen = grown;
-    }
-    if ((this.seen[w]! & bit) === 0) {
-      this.seen[w]! |= bit;
+    const first = sparseSeen && this.stride > 64
+      ? this.markSparseSeen(this.pos, s)
+      : this.markSeen(this.pos, s);
+    if (first) {
       return true;
     }
     // Deferring costs an extra evaluation for each position where the rule is called again, and
@@ -1282,6 +1282,53 @@ class Parser {
       }
     }
     return new SyntaxError(pos, lo, pos - this.lines[lo - 1]! + 1, exp, msgs);
+  }
+
+  markSeen(pos: number, s: number): boolean {
+    const i = pos * this.stride + s;
+    const w = Math.floor(i / 32);
+    const bit = 1 << i % 32;
+    if (w >= this.seen.length) {
+      const grown = new Int32Array(Math.max(w + 1, 2 * this.seen.length, 64));
+      grown.set(this.seen);
+      this.seen = grown;
+    }
+    if ((this.seen[w]! & bit) === 0) {
+      this.seen[w]! |= bit;
+      return true;
+    }
+    return false;
+  }
+
+  // Page directories hold integer arena offsets, avoiding one typed-array
+  // object per page. Chunks contain 64 pages of 1,024 position bits each.
+  markSparseSeen(pos: number, s: number): boolean {
+    if (this.seenPages === null) {
+      this.seenPages = [];
+      this.seenPageChunks = [];
+    }
+    let pages = this.seenPages[s];
+    if (pages === undefined) {
+      pages = [];
+      this.seenPages[s] = pages;
+    }
+    const at = Math.floor(pos / 1024);
+    let page = pages[at];
+    if (page === undefined) {
+      page = this.seenPageCount++;
+      if (page % 64 === 0) {
+        this.seenPageChunks!.push(new Int32Array(64 * 32));
+      }
+      pages[at] = page;
+    }
+    const chunk = this.seenPageChunks![Math.floor(page / 64)]!;
+    const word = (page % 64) * 32 + Math.floor((pos % 1024) / 32);
+    const bit = 1 << (pos % 32);
+    if ((chunk[word]! & bit) !== 0) {
+      return false;
+    }
+    chunk[word]! |= bit;
+    return true;
   }
 
   // --- Rule calls ---

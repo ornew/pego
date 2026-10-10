@@ -60,7 +60,7 @@ func TestDeferredMemoGrowthCapacity(t *testing.T) {
 	// then change the rule at a previously visited position.
 	for _, pos := range []int{0, 1, 63, 64, 65, 1023, 1024, 4096} {
 		p.pos = pos
-		if !p.firstCall(&r) {
+		if !p.memo.markSeen(p.pos, r.seen) {
 			t.Fatal("first call treated as repeated")
 		}
 	}
@@ -71,7 +71,7 @@ func TestDeferredMemoGrowthCapacity(t *testing.T) {
 		}
 		p.pos = pos
 		r.seen = 63
-		if !p.firstCall(&r) {
+		if !p.memo.markSeen(p.pos, r.seen) {
 			t.Fatal("different rule treated as repeated")
 		}
 	}

@@ -276,15 +276,14 @@ var tpool sync.Pool
 // recycle clears the parser for the next parse, keeping its scratch memory.
 func (p *tparser) recycle() {
 	q := p.parser
-	seen, calls := q.memo.seen, q.memo.calls
-	clear(seen)
-	clear(calls)
+	memo := memoTable{seen: q.memo.seen, calls: q.memo.calls, pages: q.memo.pages, bitPages: q.memo.bitPages}
+	memo.resetSeen()
 	in, offs := q.in[:0], q.offs[:0]
 	if cap(in) > 1<<20 { // do not keep the buffers of a large input for every later parse
 		in, offs = nil, nil
 	}
 	*q = parser{in: in, offs: offs, exp: q.exp[:0], arena: q.arena[:0]}
-	q.memo.seen, q.memo.calls = seen, calls
+	q.memo = memo
 	p.nodes.reset()
 	p.vals.reset()
 	p.frames.reset()

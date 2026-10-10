@@ -16,7 +16,7 @@ typed runtime of generated parsers (`genrt/typed.go`, behind `ParseAST`). An opt
 automatically in the others. This table records where the numbered records below apply; it is not yet a complete
 inventory of current mechanisms or reference controls.
 
-✓ applied · Partial applied to the subset in the note · ✗ not applied (see the note) · – not applicable (the backend has no such code path or feature)
+✓ applied · Partial applied to the subset in the note · Candidate enabled only on an unmerged branch · ✗ not applied (see the note) · – not applicable (the backend has no such code path or feature)
 
 | # | Optimization | Closure | VM | Iter. VM | Generated | Typed | Notes |
 |--:|:--|:-:|:-:|:-:|:-:|:-:|:--|
@@ -78,6 +78,7 @@ inventory of current mechanisms or reference controls.
 | [84](084-complete-typed-local-capture-layouts.md#84-complete-typed-go-local-capture-layouts)| Complete typed Go-local capture layouts | – | – | – | – | Partial | typed Go ordinary direct rules and owned/projected repetition scopes preserve complete capture-name layouts, including dead syntax; Go locals are emitted as needed, with no runtime frame or selector |
 | [85](085-reuse-stream-capture-frames.md#85-reuse-stream-capture-frames-at-element-commit)| Reuse stream capture frames at element commit | ✓ | ✓ | ✓ | – | – | engine streaming only; reuses completed element's frame structs while preserving the live root and immutable result storage |
 | [86](086-reuse-document-vm-values.md#86-reuse-the-document-vm-value-stack)| Reuse the Document VM value stack | – | ✓ | ✓ | – | – | engine `Document` reparses only; retains cleared VM stack capacity within an input-relative bound; ordinary parsing and closure documents unchanged |
+| [87](087-sparse-deferred-memo-seen-pages.md#87-store-deferred-memo-seen-positions-sparsely) | Sparse deferred-memo seen pages | Candidate | Candidate | Candidate | Candidate | Candidate | Core, generated Go and TypeScript; reduces measured seen/page/directory storage, but short high-rule-count cases need a cutoff before main integration |
 | [62](062-comparing-short-literals-in-place-in-direct-rules.md#62-comparing-short-literals-in-place-in-direct-rules)| Short literals compared in place | – | – | – | Partial | ✓ | direct rules, up to 4 code points; generated value-free and supported Node rules since 76/77; CodePoints only, Bytes retains the literal matcher |
 
 Not applied, and why:
@@ -146,7 +147,7 @@ Not applied, and why:
 - [048. A typed runtime for ParseAST](048-a-typed-runtime-for-parseast.md)
 - [049. First-character dispatch in generated choices](049-first-character-dispatch-in-generated-choices.md)
 - [050. First-character dispatch in the closure backend](050-first-character-dispatch-in-the-closure-backend.md)
-## Records 51–85
+## Records 51–100
 - [051. First-character dispatch in the VMs (instruction set 3)](051-first-character-dispatch-in-the-vms-instruction-set-3.md)
 - [052. Projected repetitions in generated `Parse`](052-projected-repetitions-in-generated-parse.md)
 - [053. Projected repetitions in the engine and the VMs](053-projected-repetitions-in-the-engine-and-the-vms.md)
@@ -183,6 +184,7 @@ Not applied, and why:
 - [084. Complete typed Go-local capture layouts](084-complete-typed-local-capture-layouts.md)
 - [085. Reuse stream capture frames at element commit](085-reuse-stream-capture-frames.md)
 - [086. Reuse the Document VM value stack](086-reuse-document-vm-values.md)
+- [087. Store deferred-memo seen positions sparsely](087-sparse-deferred-memo-seen-pages.md)
 
 ## Experiments that did not pay off
 

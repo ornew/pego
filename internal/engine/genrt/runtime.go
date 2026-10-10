@@ -423,12 +423,12 @@ var ppool sync.Pool
 // the stacks unless they are very large.
 func (p *parser) release() {
 	m := &p.memo
+	discardMemo := cap(m.slots) > 1<<20 || len(m.chunks) > 1<<12 || cap(m.seen) > 1<<20
 	clear(m.slots)
 	for _, c := range m.chunks[:m.used] {
 		clear(c)
 	}
-	clear(m.seen)
-	clear(m.calls)
+	m.resetSeen()
 	clear(p.kidStack[:cap(p.kidStack)])
 	clear(p.trail[:cap(p.trail)])
 	clear(p.saved[:cap(p.saved)])
@@ -436,8 +436,8 @@ func (p *parser) release() {
 	if cap(in) > 1<<20 { // do not keep the buffers of a large input for every later parse
 		in, offs = nil, nil
 	}
-	memo := memoTable{slots: m.slots[:0], chunks: m.chunks, seen: m.seen[:0], calls: m.calls}
-	if cap(m.slots) > 1<<20 || len(m.chunks) > 1<<12 || cap(m.seen) > 1<<20 {
+	memo := memoTable{slots: m.slots[:0], chunks: m.chunks, seen: m.seen[:0], calls: m.calls, pages: m.pages, bitPages: m.bitPages}
+	if discardMemo {
 		memo = memoTable{}
 	}
 	*p = parser{in: in, offs: offs, exp: p.exp[:0], arena: p.arena[:0], kidStack: p.kidStack[:0],
@@ -521,9 +521,20 @@ type memoTable struct {
 	// position.
 	seen   []uint64
 	stride int
+	// Large rule tables allocate only visited per-rule 1,024-position regions.
+	pages    []seenRulePages
+	bitPages seenPageArena
 	// calls counts, per rule number, the calls and the repeated calls at a position; once repeats
 	// are frequent, the rule is memoized on the first call (eager).
 	calls []seenCalls
+}
+
+// seenRulePages caches the last visited page beside its directory. Most calls
+// of a rule stay within one region, avoiding a second dependent pointer lookup.
+type seenRulePages struct {
+	pages []*[16]uint64
+	last  *[16]uint64
+	at    int
 }
 
 type seenCalls struct {
@@ -549,10 +560,90 @@ func (p *parser) firstCall(r *rule) bool {
 		return false
 	}
 	c.calls++
-	i := p.pos*t.stride + r.seen
+	var first bool
+	if sparseSeen && t.stride > 64 {
+		first = t.markSparseSeen(p.pos, r.seen)
+	} else {
+		first = t.markSeen(p.pos, r.seen)
+	}
+	if first {
+		return true
+	}
+	// Deferring costs an extra evaluation for each position where the rule is called again, and
+	// saves a memo entry for each position where it is not.
+	c.repeats++
+	if c.repeats*16 > c.calls {
+		c.eager = true
+	}
+	return false
+}
+
+// sparseSeen is selected when generating the source, with no parser-time option.
+const sparseSeen = true
+
+// seenPageArena batches stable bit pages without one allocation per page.
+type seenPageArena struct {
+	chunks []*[64][16]uint64
+	n      int
+}
+
+func (a *seenPageArena) alloc() *[16]uint64 {
+	c := a.n / 64
+	if c == len(a.chunks) {
+		a.chunks = append(a.chunks, new([64][16]uint64))
+	}
+	page := &a.chunks[c][a.n%64]
+	a.n++
+	return page
+}
+
+func (a *seenPageArena) reset() {
+	for i := 0; i < a.n; i++ {
+		a.chunks[i/64][i%64] = [16]uint64{}
+	}
+	a.n = 0
+}
+
+// resetSeen clears first-call state and bounds all sparse scratch storage,
+// including unused directory capacity and the complete arena chunks.
+func (t *memoTable) resetSeen() {
+	clear(t.seen)
+	clear(t.calls)
+	const limit = 1 << 20
+	if cap(t.seen) > limit {
+		t.seen = nil
+	}
+	if cap(t.pages) > limit/5 || len(t.bitPages.chunks) > limit/(64*16) || cap(t.bitPages.chunks) > limit {
+		t.pages, t.bitPages = nil, seenPageArena{}
+		return
+	}
+	words := 5*cap(t.pages) + len(t.bitPages.chunks)*64*16 + cap(t.bitPages.chunks)
+	if words <= limit {
+		for _, dir := range t.pages {
+			if cap(dir.pages) > limit-words {
+				words = limit + 1
+				break
+			}
+			words += cap(dir.pages)
+		}
+	}
+	if words > limit {
+		t.pages, t.bitPages = nil, seenPageArena{}
+		return
+	}
+	for i := range t.pages {
+		dir := &t.pages[i]
+		clear(dir.pages)
+		dir.last, dir.at = nil, 0
+	}
+	t.bitPages.reset()
+}
+
+func (t *memoTable) markSeen(pos, r int) bool {
+	i := pos*t.stride + r
 	w, b := i>>6, uint64(1)<<(i&63)
 	if strconv.IntSize == 32 {
-		w, b = seenBit(p.pos, r.seen, t.stride)
+		w, b = seenBit(pos, r, t.stride)
 	}
 	if w >= len(t.seen) {
 		if strconv.IntSize == 32 {
@@ -563,17 +654,47 @@ func (p *parser) firstCall(r *rule) bool {
 			t.seen = append(t.seen, make([]uint64, max(w+1-len(t.seen), len(t.seen), 64))...)
 		}
 	}
-	if t.seen[w]&b == 0 {
-		t.seen[w] |= b
-		return true
+	if t.seen[w]&b != 0 {
+		return false
 	}
-	// Deferring costs an extra evaluation for each position where the rule is called again, and
-	// saves a memo entry for each position where it is not.
-	c.repeats++
-	if c.repeats*16 > c.calls {
-		c.eager = true
+	t.seen[w] |= b
+	return true
+}
+
+// markSparseSeen records only visited per-rule regions, with page allocation
+// batched to keep the directory savings from adding one allocation per page.
+func (t *memoTable) markSparseSeen(pos, r int) bool {
+	if len(t.pages) != t.stride {
+		t.pages = make([]seenRulePages, t.stride)
 	}
-	return false
+	dir := &t.pages[r]
+	at := pos >> 10
+	page := dir.last
+	if page == nil || dir.at != at {
+		pages := dir.pages
+		if at >= len(pages) {
+			if at < cap(pages) {
+				pages = pages[:at+1]
+			} else {
+				grown := make([]*[16]uint64, at+1, max(at+1, 2*cap(pages), 4))
+				copy(grown, pages)
+				pages = grown
+			}
+			dir.pages = pages
+		}
+		page = pages[at]
+		if page == nil {
+			page = t.bitPages.alloc()
+			pages[at] = page
+		}
+		dir.last, dir.at = page, at
+	}
+	w, b := (pos>>6)&15, uint64(1)<<(pos&63)
+	if page[w]&b != 0 {
+		return false
+	}
+	page[w] |= b
+	return true
 }
 
 // seenBit uses a wide intermediate on 32-bit hosts: the bit number can
