@@ -325,13 +325,15 @@ work limits. Generated typed values and conversion now use small initial chunks 
 8 to 256 values per type and 64 to 1,024 list elements, retaining exact allocation for lists over 256 elements.
 Small JSON and CEL controls reduce allocation bytes; large-input controls expose extra warm-up allocations
 ([performance change 74](performance.md#74-smaller-first-chunks-for-generated-typed-values)).
-The full benchmark checkpoint measures clean `5610082` on Go 1.27.1/Apple M3 Max: 131 cases, three samples
-per case. Tiny JSON/CEL measurements and large-input allocation costs remain separate from that snapshot.
-Returned slab sibling retention (P28) remains a separate live-heap problem. Expectation recording (P20) now
-uses a fixed-size absence filter in Go, preserving ordered diagnostics and nested scope ownership. Python and
-recovery controls improve; tiny controls vary across schedules and TypeScript keeps its original implementation
-([performance change 75](performance.md#75-exclude-absent-expectations-before-scanning)). A clean-commit full-suite
-checkpoint follows this optimization before the remaining core performance work. C23 now prevents operand fallback when no prefix part matches and a candidate failed after cut, across
+The full benchmark checkpoint measures clean `2c68ccf` on Go 1.27.1/Apple M3 Max: 131 cases, three samples
+per case, 459.013 seconds. The paired tiny JSON/CEL measurements and larger-input costs remain separate from
+that snapshot. Returned slab sibling retention (P28) remains a separate live-heap problem. Expectation recording
+(P20) now uses a fixed-size absence filter in Go, preserving ordered diagnostics and nested scope ownership.
+Python and recovery controls improve; tiny controls vary across schedules and TypeScript keeps its original
+implementation ([performance change 75](performance.md#75-exclude-absent-expectations-before-scanning)). The generated
+report and analysis are refreshed together; next, prototype direct rules for generated Node parsing/recognition
+(P15) with exact semantic, source-size and paired-performance gates before the remaining core performance items.
+C23 now prevents operand fallback when no prefix part matches and a candidate failed after cut, across
 all engines and standalone Go/typed Go/TypeScript. Successful longest candidates retain their own cut scopes; analysis and runtime optimizations require
 fresh measurements. The DuckDB LIMIT-percent candidate is saved on [fix/duckdb-limit-percent](https://github.com/ornew/pego/tree/fix/duckdb-limit-percent)
 at [f44269f](https://github.com/ornew/pego/commit/f44269f09ddffa6739450d868581f61baa208246). Its focused engine/native
