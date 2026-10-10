@@ -261,6 +261,22 @@ The [living backlog](https://github.com/ornew/pego/issues/1) is the source of in
 landing commits. Its body lists open work and links to dedicated priority, progress and category completion
 comments. Completed items move to their category comment with the landing commit. The 2026-10-09 audit found
 correctness/resource gaps despite the implemented feature coverage above.
+
+The current execution order prioritizes core correctness and performance (C/P), followed by code generation,
+CLI/reporting, web/playground and feature proposals (G/T/W/F). Editor and validation work (E/V) can accompany
+those changes when required by their contracts. Ready-made parser work is deferred, including parser-specific
+XML/YAML performance, parser capability proposals and XML conformance follow-ups. Core engine and generator
+changes still run the affected parser regression suites. The linked priority comment keeps per-item severity
+and dependency order distinct from these execution tiers.
+
+The next confirmed core correctness gap is raw-invalid-byte public-AST literal consistency (C28), followed
+by preserving Document repetition reuse across redundant no-edit parses (P06). C22/C23 require specification
+review before choosing Pratt behavior; analysis and runtime optimizations require fresh measurements. The
+DuckDB LIMIT-percent candidate is saved on [codex/duckdb-limit-percent](https://github.com/ornew/pego/tree/codex/duckdb-limit-percent)
+at [f44269f](https://github.com/ornew/pego/commit/f44269f09ddffa6739450d868581f61baa208246). Its focused engine/native
+acceptance and AST checks pass; full impact suites, canonical oracle checks and paired performance measurements
+remain before landing. It is absent from main, where the seven scanner/LIMIT deviations remain.
+
 Action-variable memo keys (C01), interrupted Document cache cleanup (C05), engine memo retirement (C02/P01) and
 nil-action construction tracking cleanup (C03, including generated runtimes) and bounded persistent variable
 bindings (C04/P02, including generated runtimes), safe YAML directive validation (M01) and iterative Pratt depth
