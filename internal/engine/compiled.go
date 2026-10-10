@@ -479,11 +479,12 @@ func (r *decoder) byte() byte {
 }
 
 func (r *decoder) uint() int {
+	const maxUint = min(uint64(1<<31), uint64(^uint(0)>>1))
 	if r.err != nil {
 		return 0
 	}
 	n, k := binary.Uvarint(r.data[r.pos:])
-	if k <= 0 || n > 1<<31 {
+	if k <= 0 || n > maxUint {
 		r.fail("invalid integer")
 		return 0
 	}
@@ -509,6 +510,10 @@ func (r *decoder) int() int {
 	n, k := binary.Varint(r.data[r.pos:])
 	if k <= 0 {
 		r.fail("invalid integer")
+		return 0
+	}
+	if int64(int(n)) != n {
+		r.fail("integer %d out of range", n)
 		return 0
 	}
 	r.pos += k

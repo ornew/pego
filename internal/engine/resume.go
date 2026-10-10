@@ -125,7 +125,7 @@ type runState struct {
 func (p *parser) startRun(r *runState, id, min, max int, shiftable bool) {
 	start := p.pos
 	*r = runState{key: runKey{id, start}, min: min, max: max, shiftable: shiftable, j: -1,
-		edit: docEdit{start: 1<<62 - 1, end: 1<<62 - 1}, rec0: len(p.recovered), prov0: p.provisional,
+		edit: docEdit{start: int(^uint(0) >> 1), end: int(^uint(0) >> 1)}, rec0: len(p.recovered), prov0: p.provisional,
 		mid: r.mid[:0], post: r.post[:0]}
 	if rec := p.runs[r.key]; rec != nil {
 		r.old = rec.elems // the same repetition ran here earlier in this parse

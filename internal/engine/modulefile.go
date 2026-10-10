@@ -97,7 +97,7 @@ func (w *encoder) module(m *Module) {
 // int32 reads an instruction operand.
 func (r *decoder) int32() int32 {
 	n := r.int()
-	if n < -1<<31 || n >= 1<<31 {
+	if n < -1<<31 || n > 1<<31-1 {
 		r.fail("integer %d out of range", n)
 		return 0
 	}
@@ -371,7 +371,12 @@ func validateModule(m *Module) error {
 	}
 	for ip, x := range m.Exprs {
 		switch x.Op {
-		case EInt, ENil, ERet, ETextChk, EListBegin, EMapPush, EListEnd:
+		case EInt:
+			n := x.integer()
+			if int64(int(n)) != n {
+				fail("integer constant %d out of range", n)
+			}
+		case ENil, ERet, ETextChk, EListBegin, EMapPush, EListEnd:
 		case ETextEq:
 			flag(x.A, 1)
 		case EListPush:
