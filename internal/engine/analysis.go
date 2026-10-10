@@ -264,42 +264,62 @@ func allCalls(e grammar.Expr, acc []string) []string {
 // undone when it returns.
 func ruleVariables(rules []*grammar.RuleDef) map[string][]string {
 	direct := map[string]map[string]bool{}
-	calls := map[string][]string{}
 	for _, r := range rules {
-		set := map[string]bool{}
+		var set map[string]bool
 		walkRuleTerms(r, func(t grammar.Term) {
 			if v, ok := t.(*grammar.VarRef); ok {
+				if set == nil {
+					set = map[string]bool{}
+				}
 				set[v.Name] = true
 			}
 		})
-		direct[r.Name] = set
-		calls[r.Name] = allCalls(r.Expr, nil)
+		if len(set) > 0 {
+			direct[r.Name] = set
+		} else {
+			delete(direct, r.Name)
+		}
 	}
 	out := map[string][]string{}
+	// With no direct variable reads there is nothing to propagate, even
+	// through cycles. Avoid building a graph or visiting transitive closures.
+	if len(direct) == 0 {
+		return out
+	}
+	calls := make(map[string][]string, len(rules))
 	for _, r := range rules {
-		seen := map[string]bool{r.Name: true}
+		calls[r.Name] = allCalls(r.Expr, nil)
+	}
+	// Tarjan emits callees before their callers. Every rule in a recursive
+	// component reaches all its peers, so compute their union only once.
+	// A worklist repeatedly copying evolving sets is costly when many peers
+	// introduce different variables, including in long acyclic chains.
+	for _, component := range tarjan(rules, calls) {
 		all := map[string]bool{}
-		stack := []string{r.Name}
-		for len(stack) > 0 {
-			n := stack[len(stack)-1]
-			stack = stack[:len(stack)-1]
-			for v := range direct[n] {
+		for _, name := range component {
+			for v := range direct[name] {
 				all[v] = true
 			}
-			for _, c := range calls[n] {
-				if !seen[c] {
-					seen[c] = true
-					stack = append(stack, c)
+			for _, callee := range calls[name] {
+				// Internal edges have no published result yet; direct peer reads
+				// above already account for them. Missing rules contribute nothing.
+				for _, v := range out[callee] {
+					all[v] = true
 				}
 			}
 		}
-		if len(all) > 0 {
-			names := make([]string, 0, len(all))
-			for v := range all {
-				names = append(names, v)
-			}
-			sort.Strings(names)
-			out[r.Name] = names
+		if len(all) == 0 {
+			continue
+		}
+		names := make([]string, 0, len(all))
+		for v := range all {
+			names = append(names, v)
+		}
+		sort.Strings(names)
+		// Rule metadata only reads these sorted keys. Share the immutable
+		// result within the component, rather than allocating it per peer.
+		for _, name := range component {
+			out[name] = names
 		}
 	}
 	return out

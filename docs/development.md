@@ -78,6 +78,12 @@ participate unless the base is proven successful. Graph refinement repeats to a 
 cycle can make another rule's success provable. Cyclic calls can read a failing seed and cannot prove success.
 Unknown predicates, Pratt and level-restricted calls remain conservative; the runtime grammar is not rewritten.
 
+Variable-read dependencies skip call-graph construction when the grammar has no direct reads. Otherwise,
+callee-first call components union direct peer reads and finalized external dependencies once, then share
+immutable sorted names within each recursive component. Syntactic calls, including recovery arguments and
+Pratt parts/actions, remain conservative; variable-sensitive memo keys are unchanged
+([measurements](performance.md#73-dependency-component-propagation-of-variable-reads)).
+
 ### Runtime
 
 The runtime (`runtime.go`) memoizes rule calls keyed by (rule, position, level), which is packrat parsing. Rules that call no other rule, and rules referenced only once in the grammar, are not memoized in normal parses, because their memo entries would never be reused; `Document` still memoizes them so that edits can reuse their results. In whole-input parses, the other rules are memoized at a position only from their second call there (`parser.firstCall`; a bit set records first calls), unless repeated calls of the rule turn out to be frequent, in which case it is memoized from the first call for the rest of the parse. Either way a rule is evaluated at most twice per position, so parse time stays linear.
@@ -286,8 +292,10 @@ short/direct and long literal, suffix/choice and recognition checks cover this c
 records now survive redundant no-edit parses, including root memo hits, without advancing their edit generation
 (P06). Nested runs, ordinary failure/recovery, multiple edits, edit-log rollover and interrupted memo hits have
 fresh-parse equivalence checks. Sample constructor analysis now uses dependency propagation instead of whole-grammar
-sweeps (P03); reordered chains and recursive graphs agree with the previous fixed point. Next is measured compiler
-variable-dependency propagation (P27). Duplicate capture-label checking now reuses structurally equal record/list/node types
+sweeps (P03); reordered chains and recursive graphs agree with the previous fixed point. Compiler variable-dependency analysis now uses
+callee-first component propagation and a no-read fast path (P27), with exact dependency/memo regressions
+and full-compilation measurements in tuning entry 73. The next step is the full benchmark checkpoint for
+this analysis optimization group, followed by fresh-profiled core performance work. Duplicate capture-label checking now reuses structurally equal record/list/node types
 (P13), preserving ordered unions, optional normalization and capture availability; tuning entry 72 records
 checker-only measurements and ordinary grammar controls. C22/C23 require specification
 review before choosing Pratt behavior; analysis and runtime optimizations require fresh measurements. The
