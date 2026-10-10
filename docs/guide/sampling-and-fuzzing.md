@@ -433,14 +433,18 @@ the generation budget; the operator-count bound remains per chain.
 
 For overlapping parts, stop checks compare all infix/postfix candidates by consumed length and declaration
 order before checking the winning part's level or nonassociative restriction. A longer disabled part can therefore
-belong to the caller even when it starts with a shorter enabled part. Skip, competing parts and the possible RHS
-start and scope traversal share one bounded matcher allowance; incomplete input keeps the check pending, while unsupported matching
+belong to the caller even when it starts with a shorter enabled part. Skip, competing parts, scope traversal and
+recursive RHS checks share one bounded matcher allowance; incomplete input keeps the check pending, while unsupported matching
 leaves the decision to the parser.
 
-One remaining Pratt approximation can return `ErrNoInput` for valid texts. The stop heuristic can treat a prefix part as proof of
-a complete infix RHS: with prefix `"~"` and infix `"!"`, `e "!~"` accepts `a!~` after an uncommitted RHS failure,
-but sampling that exact text can fail because the prefix has no operand. This affects finding derivations;
-every returned input is still parsed and accepted.
+An infix continuation must have a successful whole RHS. With prefix `"~"` and infix `"!"`, the generator can
+produce `a!~` for `e "!~"`: the attempted RHS has no operand, so the ordinary infix rewinds for the caller.
+Conversely, `a!~a` has a complete RHS and cannot be assigned to that caller suffix. The bounded check follows
+nested prefix and infix/postfix paths for supported syntax, preserving declaration ties, binding, operand
+fallback and nonassociative scopes. It does not equate a prefix token or successful primary with RHS success;
+a later cut can still make that RHS fail. When led parts cannot commit, the check can prove success despite an
+unfinished future tail; its endpoint is only a witness. Unsupported cuts, predicates, Pratt references, left
+recursion, recovery and exhausted matching remain inconclusive. Every returned input is still parsed and accepted.
 
 What the generator cannot evaluate, it leaves to the parser: predicates over values built by actions or over struct
 fields, and lookaheads into Pratt expressions or left-recursive rules. Those constructs are handled only by generating

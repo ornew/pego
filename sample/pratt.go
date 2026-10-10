@@ -12,14 +12,13 @@ type prattOp struct {
 	level int
 }
 
-// prattStop caches operator parts in declaration order and possible RHS starts per entry level.
+// prattStop caches operator parts in declaration order and the RHS grammar per entry level.
 // Longest selection must precede level and nonassociative eligibility checks.
 type prattStop struct {
-	ops      []prattOp
-	starts   grammar.Expr
-	skip     grammar.Expr
-	minLevel int
-	base     *prattCheck
+	ops, prefixes []prattOp
+	pr            *grammar.Pratt
+	base          *prattCheck
+	uncommitted   bool // every led part is known unable to commit a failed application
 }
 
 // prattScope is an immutable frame. minimum is the weakest bound in the live frame chain.
@@ -339,7 +338,7 @@ func (g *gen) prattTail(ri *ruleInfo, count int, scope *prattScope, k thunk) boo
 
 // prattStopCheck returns a bounded query for a continuation where a chain ends. Compare all led
 // parts before filtering the winner by the entry level or active nonassociative scope. An infix
-// continuation also needs a plausible operand/prefix start; the real parser validates the full RHS.
+// continuation also needs a complete RHS; unsupported matching leaves the decision to the real parser.
 func (g *gen) prattStopCheck(ri *ruleInfo, scope *prattScope) *prattCheck {
 	s, ok := ri.stops[scope.minimum]
 	if !ok {
@@ -357,24 +356,54 @@ func (g *gen) prattStopCheck(ri *ruleInfo, scope *prattScope) *prattCheck {
 
 func (g *gen) prattStopParts(ri *ruleInfo, minLevel int) *prattStop {
 	pr := ri.pratt
-	s := &prattStop{skip: pr.Skip, minLevel: minLevel}
+	s := &prattStop{pr: pr, prefixes: prattOps(pr, 0, grammar.Prefix), uncommitted: true}
 	for l, level := range pr.Levels {
 		for _, op := range level.Operators {
 			if op.Kind == grammar.Infix || op.Kind == grammar.Postfix {
 				s.ops = append(s.ops, prattOp{op, l})
+				s.uncommitted = s.uncommitted && prattUncommitted(op.Expr)
 			}
 		}
 	}
-	var starts []grammar.Expr
-	for _, o := range prattOps(pr, 0, grammar.Prefix) {
-		if g.in.length(o.op.Expr) > 0 {
-			starts = append(starts, o.op.Expr)
-		}
-	}
-	for _, o := range pr.Operands {
-		starts = append(starts, o.Expr)
-	}
-	s.starts = &grammar.Choice{Alts: starts}
 	s.base = &prattCheck{stop: s, scope: newPrattScope(minLevel, -1, nil)}
 	return s
+}
+
+// prattUncommitted proves that a part cannot commit a later failed RHS or fail after a cut.
+// References and unsupported constructs remain conservative, even if one current match succeeds.
+func prattUncommitted(e grammar.Expr) bool {
+	switch e := e.(type) {
+	case *grammar.Literal, *grammar.CharClass, *grammar.Any, *grammar.Top, *grammar.Bottom,
+		*grammar.BeginInput, *grammar.EndInput, *grammar.BeginLine, *grammar.EndLine:
+		return true
+	case *grammar.Seq:
+		for _, it := range e.Items {
+			if !prattUncommitted(it) {
+				return false
+			}
+		}
+		return true
+	case *grammar.Choice:
+		for _, a := range e.Alts {
+			if !prattUncommitted(a) {
+				return false
+			}
+		}
+		return true
+	case *grammar.Repeat:
+		return prattUncommitted(e.Expr)
+	case *grammar.Optional:
+		return prattUncommitted(e.Expr)
+	case *grammar.And:
+		return prattUncommitted(e.Expr)
+	case *grammar.Not:
+		return prattUncommitted(e.Expr)
+	case *grammar.Atomic:
+		return prattUncommitted(e.Expr)
+	case *grammar.Discard:
+		return prattUncommitted(e.Expr)
+	case *grammar.Capture:
+		return prattUncommitted(e.Expr)
+	}
+	return false
 }

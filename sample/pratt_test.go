@@ -391,6 +391,10 @@ def e=pratt { operand "a" level { postfix "!" postfix "!?" infix left "?" } }`},
 def e=pratt { operand "a" level { postfix "?" } level tight { postfix "!" } }`},
 		{"required-none-caller", `def main = &("a<a<a" $$) e "<" e $$
 def e = pratt { operand "a" level { infix none "<" } }`},
+		{"complete-rhs", "def main = &(\"a!~a\" $$) e $$\n" + sampleRHSLevels},
+		{"nested-rhs", "def main = &(\"a!~~a\" $$) e $$\n" + sampleRHSLevels},
+		{"unicode-rhs", `def main = &("α ! ¬ α" $$) e $$
+def e = pratt { skip " "* operand "α" level { prefix "¬" infix left "!" } }`},
 	} {
 		p, err := pego.CompileSource(c.src, "main")
 		if err != nil {

@@ -53,7 +53,7 @@ func TestPrattStopSelectionStatus(t *testing.T) {
 
 func TestPrattStopSharedWorkBudget(t *testing.T) {
 	op := &grammar.PrattOperator{Kind: grammar.Postfix, Expr: &grammar.Literal{Value: "!"}}
-	s := &prattStop{starts: &grammar.Literal{Value: "a"}}
+	s := &prattStop{pr: &grammar.Pratt{}}
 	for range matchSteps + 1 {
 		s.ops = append(s.ops, prattOp{op: op})
 	}

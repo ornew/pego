@@ -157,16 +157,23 @@ The generator prunes candidates that the parser would read differently from how 
   At a chain end, a bounded query first compares all infix/postfix parts by consumed length and
   declaration order, then checks the winning part's entry-level and nonassociative eligibility. A disabled winner
   ends the expression without retrying a shorter part. An eligible postfix continues when its part consumes
-  input; an eligible infix also needs a plausible operand or prefix start, so `a+` can belong to `e "+"` when no
-  operand follows. Empty prefix/postfix matches are excluded, while empty infix parts can represent juxtaposition.
-  Skip, competing operator parts, scope traversal and an infix RHS start share one matcher allowance. Incomplete input retains a
-  pending check; unsupported matching or exhausted work is inconclusive and leaves acceptance to the real parser.
+  input; an eligible infix needs evidence that its whole RHS succeeds. A bounded matcher follows prefix
+  longest selection, operand fallback after an ordinary prefix RHS failure, and recursive infix/postfix tails
+  with local nonassociative state. A failed ordinary infix RHS restores the position before its skip and part;
+  `a+` can therefore belong to `e "+"`, and `a!~` with an incomplete prefix RHS can belong to `e "!~"`.
+  Empty prefix/postfix matches are excluded by actual consumed length, including consuming nullable prefixes;
+  empty infix parts can represent juxtaposition, with a whole-application progress guard.
+  Skip, operator comparisons, scope traversal and every recursive RHS invocation share one matcher allowance.
+  Incomplete input retains a pending check; cuts, predicates, Pratt references, left recursion, recovery and
+  exhausted work are inconclusive and leave acceptance to the real parser. A completed primary can still fail
+  when a later tighter operator commits, so primary success alone is insufficient. When every led part is
+  structurally proven uncommitted, an unresolved future tail cannot invalidate an established primary; the
+  matcher can prove success early without claiming its final extent. Such witness endpoints are propagated
+  without resuming a parent tail. Unsupported matching never uses this proof.
   Static descriptors are cached by the weakest live entry minimum; pending checks retain immutable frames and
-  never add cache entries for arbitrary scope states or assume a machine-word level limit. A caller can continue
-  with the same token after a closed nonassociative application. A remaining approximation can omit valid
-  derivations: a matched prefix start does not prove its operand exists. For example, prefix `"~"` with infix `"!"` accepts `a!~` in `e "!~"` by
-  abandoning an uncommitted incomplete RHS, but the start-only check can prevent generating that text. The parser
-  remains the final acceptance check.
+  never add cache entries for arbitrary scope states or input positions, or assume a machine-word level limit.
+  A caller can continue with the same token after a closed nonassociative application. The matcher steers
+  derivations for supported syntax; the parser remains the final acceptance check.
 - **Left recursion** needs nothing special: the recursion is bounded like any other, and the parser grows the seed.
 
 ### Coverage
