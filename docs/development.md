@@ -294,8 +294,9 @@ records now survive redundant no-edit parses, including root memo hits, without 
 fresh-parse equivalence checks. Sample constructor analysis now uses dependency propagation instead of whole-grammar
 sweeps (P03); reordered chains and recursive graphs agree with the previous fixed point. Compiler variable-dependency analysis now uses
 callee-first component propagation and a no-read fast path (P27), with exact dependency/memo regressions
-and full-compilation measurements in tuning entry 73. The next step is the full benchmark checkpoint for
-this analysis optimization group, followed by fresh-profiled core performance work. Duplicate capture-label checking now reuses structurally equal record/list/node types
+and full-compilation measurements in tuning entry 73. The full benchmark checkpoint after
+this analysis optimization group was measured on 2026-10-10 at `98ef6db`; the next step is fresh-profiled
+core performance work. Duplicate capture-label checking now reuses structurally equal record/list/node types
 (P13), preserving ordered unions, optional normalization and capture availability; tuning entry 72 records
 checker-only measurements and ordinary grammar controls. C22/C23 require specification
 review before choosing Pratt behavior; analysis and runtime optimizations require fresh measurements. The
@@ -400,9 +401,11 @@ OPERATOR(+) (M17); source AST operators retain their written syntax. The module 
 separately from the corrected grammar behavior.
 Earlier backlog items now share current category IDs and priorities;
 their former L001–L058 labels are provenance only. Full benchmark
-results were refreshed at the streaming-memory checkpoint on 2026-10-09 (`f8d6c2a`); tuning entries carry focused
+results were refreshed after the core analysis optimization group on 2026-10-10 (`98ef6db`); tuning entries carry focused
 optimization measurements, and correctness-only performance impacts are recorded in commit messages. The full suite
-includes batch, recognition, incremental, stream and preparation workloads.
+includes batch, recognition, incremental, stream and preparation workloads. The focused sample-constructor,
+duplicate-capture checker, variable-dependency graph and redundant no-edit Document schedules remain separate
+measurements; this checkpoint does not imply a uniform parsing-runtime speedup.
 
 The [incremental document and tree tooling proposal](design/019-incremental-document-and-tree-tooling.md) examines
 input updates, saved trees and downstream editor work. These stages are proposed, not implemented APIs or measured speedups. Preserve current PEG and mutable

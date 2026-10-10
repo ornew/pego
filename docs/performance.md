@@ -21,63 +21,69 @@ document describes the benchmarks, analyzes the results, and records how they ca
 
 ## Where PEGO stands
 
-An analysis of the results in [benchmarks.md](benchmarks.md) as measured on 2026-10-09 at commit f8d6c2a (Apple M3
+An analysis of the results in [benchmarks.md](benchmarks.md) as measured on 2026-10-10 at commit 98ef6db (Apple M3
 Max, Go 1.27.1). The figures below are rounded from that run; regenerating the results does not update this analysis,
 so check the commit above against the one in [benchmarks.md](benchmarks.md) before relying on it.
 
-**Backends.** Generated Go parsers take 0.55–0.71× the time of the closure backend. The recursive bytecode VM takes
-1.10–1.30× and the iterative VM 1.26–1.88×; the iterative VM pays most on Pratt expressions (1.88×), whose loop runs
+This checkpoint uses three samples per case after the core analysis optimizations. It is a current
+workload snapshot, not an interleaved estimate of their individual speedups. The focused sample-constructor,
+duplicate-capture checker, variable-dependency graph and redundant no-edit Document schedules are outside
+this full suite; their paired measurements remain in entries 70–73.
+
+**Backends.** For code-point Node parsing, generated Go parsers take 0.55–0.72× the time of the closure backend.
+The recursive bytecode VM takes 1.14–1.32× and the iterative VM 1.26–1.88×; the iterative VM pays most on Pratt expressions (1.88×), whose loop runs
 as a state machine on its own stack. The closure backend is the default for this reason (see the
 [runtime guide](guide/runtime.md#backends)); the VMs are for grammars without their AST and, iteratively, for deep
 nesting.
 
 **Typed values.** Where `ParseAST` builds the grammar's Go types directly (JSON, CSV, XML, the calculators, outline),
-it takes 0.45–0.86× the time of generated `Parse` and 0.23–0.35 of its memory (0.29–0.85 of its allocations;
+it takes 0.47–0.91× the time of generated `Parse` and 0.23–0.35 of its memory (0.29–0.85 of its allocations;
 outline keeps most of them, in lists). CSV now returns a dedicated typed AST, rather than the Node tree measured
-in older runs. On JSON and XML, typed parsing takes 0.83× and 0.88× the time of `encoding/json` and `encoding/xml`,
+in older runs. On JSON and XML, typed parsing takes 0.82× and 0.90× the time of `encoding/json` and `encoding/xml`,
 with 1.10× and 1.20× their bytes and about 231 and 323 times fewer allocations, while recording positions and error
-expectations. Where values include CST nodes (minilang), `ParseAST` converts the Node tree: 1.04× the time and
-1.24× the memory of generated `Parse`.
+expectations. Where values include CST nodes (minilang), `ParseAST` converts the Node tree: 1.02× the time and
+1.26× the memory of generated `Parse`.
 
 **Allocations.** Every backend makes a few hundred to about two thousand allocations per Node parse (318 for CSV,
 767 for JSON, about 2,250 for outline on Closure), against 10,000–80,000 for the standard-library parsers: nodes, lists and fields come from
 slabs, and the memo, the input buffers and the stacks are reused across parses. The bytes are another matter: a tree
-of `Node`s takes 26–131 bytes per input byte (left recursion the most, through the intermediate results it grows), which
-is what typed values save.
+of `Node`s on the closure backend takes 26–130 bytes per input byte (left recursion the most, through the
+intermediate results it grows), which is what typed values save.
 
-**Recognition.** `RecognizeOnly` takes 0.62–0.78× the time of a full parse on the closure backend. Most simple
-workloads allocate only 4–11 KB; predicates reading values (XML's tag names, outline's indentation) take 3.71 MB and
-1.95 MB, left-recursion growth takes 1.25 MB, and minilang/recovery take 0.57–0.64 MB. Generated `Recognize` takes
-0.48–0.77× the time of generated `Parse`, yet is slower than typed `ParseAST` on JSON (1.12×), XML (1.07×) and the
+**Recognition.** `RecognizeOnly` takes 0.63–0.77× the time of a full parse on the closure backend. Most simple
+workloads allocate only 2–6 KB; predicates reading values (XML's tag names, outline's indentation) take 3.71 MB and
+1.95 MB, left-recursion growth takes 1.25 MB, and minilang/recovery take 0.57–0.70 MB. Generated `Recognize` takes
+0.49–0.75× the time of generated `Parse`, yet is slower than typed `ParseAST` on JSON (1.16×), XML (1.10×) and the
 left-recursive calculator (1.06×): `ParseAST` runs direct rules, one method per rule, while `Parse` and `Recognize` still run a method
 per expression. Direct rules for the Node runtime and the recognizer are the most promising optimization left (see
 [the backlog](https://github.com/ornew/pego/issues/1)).
 
-**The standard library** is 1.6–6.5 times as fast as generated `Parse` where it applies. The gap is widest where
-PEGO's work is structurally different: left recursion (6.5×, against `go/parser`'s hand-written precedence climbing)
-and CSV (3.4×, `encoding/csv` builds no tree at all). `json.Valid`, a hand-written state machine, is 10.5 times as fast
+**The standard library** is 1.7–6.4 times as fast as generated `Parse` where it applies. The gap is widest where
+PEGO's work is structurally different: left recursion (6.4×, against `go/parser`'s hand-written precedence climbing)
+and CSV (3.6×, `encoding/csv` builds no tree at all). `json.Valid`, a hand-written state machine, is 10.8 times as fast
 as generated `Recognize` in this run.
 
 **Grammar style.** The same expressions take 2.5 times as long with left recursion as with a Pratt expression on the
-closure backend (2.2 generated, 1.7 typed), as you would expect from growing a seed at every level. Error recovery
-costs nothing measurable in this workload: minilang with one line in seven broken parses in 0.97× the time of the clean one,
+closure backend (2.3 generated, 1.6 typed), as you would expect from growing a seed at every level. Error recovery
+costs nothing measurable in this workload: minilang with one line in seven broken parses in 0.99× the time of the clean one,
 since recovered statements are skipped rather than parsed.
 
-**Position units** make no consistent difference: byte positions take 0.98–1.05× the time of code points.
+**Position units** make no consistent difference: byte positions take 0.97–1.08× the time of code points.
 
-**Incremental parsing.** An edit and a reparse of the 300-function minilang program take 140–153 µs, 91–161 times
-less than a full parse, on every backend. On the 50,000-record CSV document they take 2.5–3.0 ms, most of it moving
+**Incremental parsing.** An edit and a reparse of the 300-function minilang program take 135–153 µs, 92–162 times
+less than a full parse, on every backend. On the 50,000-record CSV document they take 2.5–2.9 ms, most of it moving
 the reused records after the edit; there the VMs allocate 2.6 times as much as the closure backend (7.1 MB against
 2.7 MB).
 
-**Streaming** runs at 0.65–0.70 of batch throughput, allocating 48–52 bytes per input byte and about 6.2 allocations
-per record, against 26 bytes per input byte and 0.06 allocations per record for a batch parse. These are cumulative
-allocations over the 50,000-record CSV workload, not retained heap measurements. The stream-memory checkpoint
+**Streaming** of 50,000 CSV records runs at 0.64–0.70 of the throughput of the 5,000-record batch workload,
+a normalized comparison across different input sizes. Streaming allocates 48–52 bytes per input byte and about
+6.2 allocations per record, against 26 bytes per input byte and 0.06 allocations per record for the closure batch parse.
+These are cumulative allocations for each workload, not retained heap measurements. The stream-memory checkpoint
 includes memo retirement, construction-reference cleanup and bounded variable histories (changes 67–69); separate
 long-stream tests verify retained state and heap growth. Per-element scratch still causes more allocations than batch reuse.
 
-**Preparation.** Loading a `.pegoc` file takes 0.41–0.52× the time of compiling the grammar from source for the
-closure backend, 0.49–0.68× for bytecode, and 0.18–0.27× for a file without the AST.
+**Preparation.** Loading a `.pegoc` file takes 0.44–0.49× the time of compiling the grammar from source for the
+closure backend, 0.52–0.71× for bytecode, and 0.21–0.26× for a file without the AST.
 
 ## How to measure
 
