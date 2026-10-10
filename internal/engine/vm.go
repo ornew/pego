@@ -277,6 +277,7 @@ type labState struct {
 	msg  int32   // eLabel: message
 	far  int     // eLabel, eRecover: saved farthest failure. eSkip: recovered failure
 	base int     // eLabel, eRecover: saved start of the expectation record (expMark)
+	bits uint64  // eLabel, eRecover: saved membership filter
 	exp  []expID // eSkip: expectations of the recovered failure
 }
 
@@ -688,21 +689,21 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			}
 		case OpLabel:
 			mk := p.isolate(p.pos)
-			p.pushLab(eLabel, 0, vmSave{}, labState{msg: in.A, far: mk.far, base: mk.base})
+			p.pushLab(eLabel, 0, vmSave{}, labState{msg: in.A, far: mk.far, base: mk.base, bits: mk.bits})
 		case OpEndLabel:
 			e := p.ents[len(p.ents)-1]
 			p.ents = p.ents[:len(p.ents)-1]
 			l := p.popLab(&e)
-			far, inner := p.unisolate(expMark{l.far, l.base})
+			far, inner := p.unisolate(expMark{l.far, l.base, l.bits})
 			p.mergeExpected(far, inner)
 		case OpRecover:
 			mk := p.isolate(p.pos)
-			p.pushLab(eRecover, in.A, p.save(), labState{far: mk.far, base: mk.base})
+			p.pushLab(eRecover, in.A, p.save(), labState{far: mk.far, base: mk.base, bits: mk.bits})
 		case OpEndRecover:
 			e := p.ents[len(p.ents)-1]
 			p.ents = p.ents[:len(p.ents)-1]
 			l := p.popLab(&e)
-			far, inner := p.unisolate(expMark{l.far, l.base})
+			far, inner := p.unisolate(expMark{l.far, l.base, l.bits})
 			p.mergeExpected(far, inner)
 			ip = int(in.A)
 			continue
@@ -776,12 +777,12 @@ func (p *parser) unwind(m *Module, ebase int) (ip int, ok bool) {
 			return int(e.ip), true
 		case eLabel:
 			l := p.popLab(&e)
-			far, _ := p.unisolate(expMark{l.far, l.base})
+			far, _ := p.unisolate(expMark{l.far, l.base, l.bits})
 			p.expect(far, msgBit|(numFixedDescs+expID(l.msg)))
 			continue
 		case eRecover:
 			l := p.popLab(&e)
-			far, inner := p.unisolate(expMark{l.far, l.base})
+			far, inner := p.unisolate(expMark{l.far, l.base, l.bits})
 			exp := p.keep(inner) // keep them while skip runs
 			p.restore(&e.save)
 			p.pushLab(eSkip, 0, e.save, labState{far: far, exp: exp})

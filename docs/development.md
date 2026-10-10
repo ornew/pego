@@ -327,9 +327,11 @@ Small JSON and CEL controls reduce allocation bytes; large-input controls expose
 ([performance change 74](performance.md#74-smaller-first-chunks-for-generated-typed-values)).
 The full benchmark checkpoint measures clean `5610082` on Go 1.27.1/Apple M3 Max: 131 cases, three samples
 per case. Tiny JSON/CEL measurements and large-input allocation costs remain separate from that snapshot.
-Returned slab sibling retention (P28) remains a separate live-heap problem. Next, profile expectation-set
-membership and memo merges (P20), preserving ordered diagnostics and nested scope ownership; continue the
-remaining core performance items with fresh resource/ownership gates. C23 now prevents operand fallback when no prefix part matches and a candidate failed after cut, across
+Returned slab sibling retention (P28) remains a separate live-heap problem. Expectation recording (P20) now
+uses a fixed-size absence filter in Go, preserving ordered diagnostics and nested scope ownership. Python and
+recovery controls improve; tiny controls vary across schedules and TypeScript keeps its original implementation
+([performance change 75](performance.md#75-exclude-absent-expectations-before-scanning)). A clean-commit full-suite
+checkpoint follows this optimization before the remaining core performance work. C23 now prevents operand fallback when no prefix part matches and a candidate failed after cut, across
 all engines and standalone Go/typed Go/TypeScript. Successful longest candidates retain their own cut scopes; analysis and runtime optimizations require
 fresh measurements. The DuckDB LIMIT-percent candidate is saved on [fix/duckdb-limit-percent](https://github.com/ornew/pego/tree/fix/duckdb-limit-percent)
 at [f44269f](https://github.com/ornew/pego/commit/f44269f09ddffa6739450d868581f61baa208246). Its focused engine/native
@@ -399,6 +401,12 @@ optimization candidate separately, with result ownership and allocation/throughp
 Typed Go generation exports every declared alias (G02), including chained/list/scalar/optional/CST aliases and
 additional names for the same normalized node union. Canonical runtime types remain unchanged; external-consumer
 compilation tests cover both direct typed construction and conversion, assignment compatibility and name collisions.
+Go expectation recording uses a fixed 64-bit absence filter while preserving ordered IDs and exact scans on
+collisions (performance entry 75). Farthest resets and nested scopes keep the filter local to their records,
+including VM label/recovery state and generated plain/typed parser reuse. The engine and generated Go use it;
+TypeScript retains its existing implementation after a separate trial found no clear gain. Diagnostic regressions
+compare a linear oracle and public memo/lookahead/label/recovery cases. Paired throughput controls and costs are
+recorded in [the tuning log](performance.md#75-exclude-absent-expectations-before-scanning).
 Generated depth configuration (G04) is proposed in [design record 022](design/022-generated-parser-depth-limits.md).
 Baseline Go grammar probes accept 16,000 nested parentheses but return the 100,000-rule-call error at 17,000/30,000;
 a temporary 600,000-call overlay accepts all three in Recognize and ParseAST. The proposal preserves defaults and

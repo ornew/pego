@@ -485,6 +485,8 @@ type parser struct {
 	// farthest.
 	exp     []expID
 	expBase int
+	// expBits cheaply excludes IDs absent from the current record. Collisions still scan.
+	expBits uint64
 	// arena holds expectation sets kept by memo entries and recoveries (append-only chunks).
 	arena    []expID
 	lastKept []expID
@@ -897,22 +899,30 @@ func (p *parser) expect(pos int, id expID) {
 	if pos > p.farthest {
 		p.farthest = pos
 		p.exp = p.exp[:p.expBase]
+		p.expBits = 0
 	}
-	for _, e := range p.exp[p.expBase:] {
-		if e == id {
-			return
+	bit := uint64(1) << (uint32(id) * 0x9e3779b1 >> 26)
+	if p.expBits&bit != 0 {
+		for _, e := range p.exp[p.expBase:] {
+			if e == id {
+				return
+			}
 		}
 	}
+	p.expBits |= bit
 	p.exp = append(p.exp, id)
 }
 
 // expMark is the expectation record before isolate.
-type expMark struct{ far, base int }
+type expMark struct {
+	far, base int
+	bits      uint64
+}
 
 // isolate starts a separate expectation record whose farthest position is pos.
 func (p *parser) isolate(pos int) expMark {
-	m := expMark{p.farthest, p.expBase}
-	p.expBase, p.farthest = len(p.exp), pos
+	m := expMark{p.farthest, p.expBase, p.expBits}
+	p.expBase, p.farthest, p.expBits = len(p.exp), pos, 0
 	return m
 }
 
@@ -922,7 +932,7 @@ func (p *parser) isolate(pos int) expMark {
 func (p *parser) unisolate(m expMark) (far int, inner []expID) {
 	far, inner = p.farthest, p.exp[p.expBase:]
 	p.exp = p.exp[:p.expBase]
-	p.expBase, p.farthest = m.base, m.far
+	p.expBase, p.farthest, p.expBits = m.base, m.far, m.bits
 	return far, inner
 }
 

@@ -37,6 +37,8 @@ type parser struct {
 	// with msgBit set (expID).
 	exp     []expID
 	expBase int
+	// expBits cheaply excludes IDs absent from the current record. Collisions still scan.
+	expBits uint64
 	// arena is an append-only area for expectations kept in memo entries and recovery (referenced by
 	// slices).
 	arena    []expID
@@ -323,33 +325,40 @@ func (p *parser) expect(pos int, id expID) {
 	if pos > p.farthest {
 		p.farthest = pos
 		p.exp = p.exp[:p.expBase]
+		p.expBits = 0
 	}
-	for _, e := range p.exp[p.expBase:] {
-		if e == id {
-			return
+	bit := uint64(1) << (uint32(id) * 0x9e3779b1 >> 26)
+	if p.expBits&bit != 0 {
+		for _, e := range p.exp[p.expBase:] {
+			if e == id {
+				return
+			}
 		}
 	}
+	p.expBits |= bit
 	p.exp = append(p.exp, id)
 }
 
-// expMark is the expectation record from before a separate record was started.
-type expMark struct{ far, base int }
+// expMark is the expectation record before isolate.
+type expMark struct {
+	far, base int
+	bits      uint64
+}
 
-// isolate starts recording subsequent expectations separately from the existing record, with pos
-// as the farthest position.
+// isolate starts a separate expectation record whose farthest position is pos.
 func (p *parser) isolate(pos int) expMark {
-	m := expMark{p.farthest, p.expBase}
-	p.expBase, p.farthest = len(p.exp), pos
+	m := expMark{p.farthest, p.expBase, p.expBits}
+	p.expBase, p.farthest, p.expBits = len(p.exp), pos, 0
 	return m
 }
 
 // unisolate ends the separate record and returns its farthest position and expectations. The
-// expectations point into the stack area, so they are valid only until the next recording
-// (passing them to mergeExpected is fine; to retain them, copy them with keep).
+// expectations alias the stack and are valid only until the next record (passing them to
+// mergeExpected is fine; keep copies them).
 func (p *parser) unisolate(m expMark) (far int, inner []expID) {
 	far, inner = p.farthest, p.exp[p.expBase:]
 	p.exp = p.exp[:p.expBase]
-	p.expBase, p.farthest = m.base, m.far
+	p.expBase, p.farthest, p.expBits = m.base, m.far, m.bits
 	return far, inner
 }
 

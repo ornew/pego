@@ -24,6 +24,7 @@ type genCase struct {
 // genCorpus returns the grammars and inputs used to compare backends and generated parsers with the engine.
 func genCorpus(t *testing.T) []genCase {
 	cases := []genCase{
+		{"wide expectation scopes", wideExpectationsGrammar(), []string{"sé00!", "sé@", "mé@", "mé00!", "mé00?", "mé00@", "ré@;é!;", "ré79", "eé@", "eé79", ""}},
 		{"stream element recovery", `
 def main=(("ab" #recover(skip=(?^a)+)) #recover(skip="!"))* #stream $$`,
 			[]string{"", "ab", "abab", "abX!ab", "X!", "a"}},

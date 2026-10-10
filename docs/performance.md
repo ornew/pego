@@ -218,6 +218,7 @@ automatically in the others. This table records, for every change in the log bel
 | 72 | Reuse equal capture types without formatting | ✓ | ✓ | ✓ | ✓ | ✓ | shared type checking before compilation/generation; no matching-runtime change; top-level optional/union normalization retained |
 | 73 | Propagate variable reads once per dependency component | ✓ | ✓ | ✓ | ✓ | ✓ | shared compiler metadata; no-read fast path; callee-first SCCs and immutable sorted peer keys; no matching-runtime change |
 | 74 | Smaller first chunks with bounded growth for typed values | – | – | – | – | ✓ | generated `ParseAST`, both direct construction and Node conversion; fresh per-call owners, no returned-chunk reuse |
+| 75 | Fixed-size absence filter for ordered expectations | ✓ | ✓ | ✓ | ✓ | ✓ | Go only; Node, recognition, typed direct/conversion; collisions retain exact scans, TypeScript unchanged |
 | 62 | Short literals compared in place | – | – | – | ✗ | ✓ | typed: direct rules, up to 4 code points, code points only (the other backends match literals with their own loop, 32) |
 
 Not applied, and why:
@@ -1517,6 +1518,86 @@ Each entry lists the commit, the change, the reason, and the measured effect at 
   The current backend, recognition, incremental and stream analysis is
   recorded under [Where PEGO stands](#where-pego-stands).
 
+### 75. Exclude absent expectations before scanning
+
+- Each active expectation record in the Go engine and generated Go runtime
+  keeps a 64-bit membership filter. An unsigned multiplicative hash selects
+  one bit for the complete expectation ID, including the message flag.
+  An unset bit proves the ID is absent; a set bit still uses the existing
+  exact ordered scan. Collisions cannot discard distinct expectations.
+  Farthest-position resets clear the bits; isolation saves and restores
+  them alongside the record bounds, including VM label/recovery state.
+  Memo and recovery copies keep their existing representation and order.
+- The filter needs no descriptor-sized array or extra allocation. It adds
+  8 bytes to parser state, changes the saved record mark from 16 to 24 bytes
+  on darwin/arm64, and adds 8 bytes to VM label/recovery state. Scope marks
+  held by call frames also grow. Every recorded expectation pays the hash
+  cost, and saturated filters retain linear worst-case duplicate work.
+  Plain and typed generated parser recycling clears the filter with the
+  active record. TypeScript is unchanged.
+- Compare baseline `896c64d` with this filter on Go 1.27.1, Apple M3 Max,
+  darwin/arm64. Five alternating 300 ms pairs of prebuilt binaries, without
+  competing builds/tests, cover 38 conditions. CPython 3.14.0's vendored
+  `_pydecimal.py` and `typing.py` are 229,038 and 134,633 bytes. Medians:
+
+  | Workload | Time before → after | B/op before → after | Allocs/op before → after |
+  |:--|:--|:--|:--|
+  | Python `_pydecimal.py`, typed, CodePoints | 26.723 → 23.026 ms | 12,143,699 → 11,824,733 | 121,749 → 121,741 |
+  | Python `_pydecimal.py`, typed, Bytes | 26.736 → 23.325 ms | 12,000,285 → 11,691,197 | 121,741 → 121,733 |
+  | Python `typing.py`, typed, CodePoints | 13.052 → 11.539 ms | 4,982,032 → 4,852,572 | 61,630 → 61,627 |
+  | Python `typing.py`, typed, Bytes | 13.875 → 12.282 ms | 4,938,526 → 4,851,950 | 61,629 → 61,627 |
+  | Recovery, generated Node, CodePoints | 9.137 → 7.621 ms | 7,700,184 → 7,677,203 | 1,696 → 1,695 |
+  | Recovery, generated conversion, CodePoints | 9.539 → 8.173 ms | 9,690,103 → 9,858,460 | 1,916 → 1,921 |
+
+  The four typed Python ranges do not overlap (0.862–0.885× time).
+  Generated Python recognition takes 0.930/0.948× for these files;
+  only the first range does not overlap. Recovery takes 0.881–0.948× on
+  the three engine backends and both units, and 0.832–0.857× on generated
+  Node/conversion paths. The recursive VM CodePoints recovery ranges
+  overlap; the other recovery ranges do not. Conversion allocates about
+  168 KB more and adds five allocations in this schedule. These are
+  observed cumulative medians: the filter itself allocates nothing, while
+  GC timing and scratch-pool reuse change allocation traffic. Do not
+  attribute all measured byte differences to a smaller object layout.
+- JSON and Pratt Node controls range 0.956–1.018× across the engine and
+  generated paths, with overlapping ranges. Generated typed JSON in the
+  root workload takes 0.927× with disjoint ranges; the parser module's
+  different JSON workload takes 0.925× with overlapping ranges. The tiny
+  29-byte JSON controls take 1.092/1.022× at the median in this schedule,
+  with unchanged seven allocations and overlapping ranges. Five separate alternating 700 ms
+  confirmation pairs give 1.111 → 1.049 µs (0.944×) and
+  1.195 → 1.118 µs (0.936×), again with overlapping ranges and seven
+  allocations. The conflicting schedules do not establish a tiny-input
+  gain or regression. Range overlap is not evidence
+  of statistical equivalence or a universal speedup.
+- A fresh three-second baseline Python profile attributes 17.0% of sampled
+  CPU to `expect`; the earlier no-op diagnostic and historical profiles
+  are not current cost estimates. A descriptor-to-stack-index hint with
+  full-ID/range validation was correct but made both Python typed inputs
+  about 12% slower in three alternating 500 ms pairs, so it was rejected.
+  A separate 32-bit TypeScript filter on Node 24.19.0, three alternating
+  500 ms pairs after three warm-up parses, gives ratios
+  0.988/1.022/1.023/0.995 for `_pydecimal.py` CodePoints/Bytes and
+  `typing.py` CodePoints/Bytes. All ranges overlap; no clear gain was
+  established, so that runtime keeps its exact linear implementation.
+- Regression tests compare 12,000 deterministic recording/scope/reset/
+  silence/aliased-merge operations with an independent linear oracle and
+  retained expectation copies. Recording 320 distinct plain/message IDs
+  forces collisions without depending on hash assignments. The same test
+  runs in generated plain, typed direct and conversion packages. Pool
+  tests cover successful and failing calls in both units. An 80-choice
+  Unicode corpus checks public diagnostics through memo, lookahead,
+  labels and recovery on Go and unchanged TypeScript paths.
+- Reproduce Python with
+  `cd parsers/python && go test -run '^$' -bench '^(BenchmarkParseAST|BenchmarkParseASTBytes|BenchmarkRecognize)$' -benchtime=300ms -count=1`;
+  JSON controls with
+  `cd parsers/json && go test -run '^$' -bench '^(BenchmarkSmallParseAST|BenchmarkParseAST)$' -benchtime=300ms -count=1`;
+  and engine/recovery controls with
+  `cd bench && go test -run '^$' -bench '^BenchmarkParse$/(JSON|Arith_Pratt|Recovery)$' -benchtime=300ms -count=1`.
+  Use the final benchmark sources on both versions, regenerate standalone
+  parsers, and alternate five pairs of the prebuilt binaries. Focused raw
+  records stay local; a clean-commit full-suite checkpoint follows.
+
 ## Grammar authoring guidelines for performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
@@ -1555,9 +1636,10 @@ From profiles after change 41 (JSON, XML, minilang, error recovery; full parse a
    `madvise` when spans are reused) is a large share of benchmark profiles. Allocations per parse are down to about a
    thousand objects, so what remains is bytes: nodes (120 bytes each, a public struct) dominate. Freeing scratch
    memory early did not pay (see the experiments table).
-2. **Expectation recording** (`expect`): 5–8% in most profiles, mostly the duplicate check against the expectations
-   already recorded at the farthest position. An index of the last append per expectation does not help, because it
-   goes stale whenever the farthest position advances, which is the common case.
+2. **Expectation recording** (`expect`): historical profiles after change 41 put it at 5–8%; a fresh large-Python
+   baseline before change 75 samples 17.0%. Go now excludes definitely absent IDs with a fixed-size filter;
+   duplicates and hash collisions still scan the ordered record. Validated last-index hints were slower on the
+   measured Python workloads; the separately measured TypeScript filter did not establish a clear gain (75).
 3. **The iterative VM** dispatches every frame through an interface (the VMs got changes 36 and 37 in change 44).
    Two ways of avoiding it did not pay (see the experiments table): the remaining cost is the work each frame does,
    such as saving and restoring the parser state that the recursive model keeps in Go locals.

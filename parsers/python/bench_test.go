@@ -42,6 +42,11 @@ func BenchmarkParseAST(b *testing.B) {
 	benchmark(b, func(src string) error { _, err := python.ParseAST(src); return err })
 }
 
+// BenchmarkParseASTBytes measures the same typed inputs with byte positions.
+func BenchmarkParseASTBytes(b *testing.B) {
+	benchmark(b, func(src string) error { _, err := python.ParseAST(src, python.Bytes); return err })
+}
+
 // BenchmarkParseModule is ParseAST and the checks that ast.parse makes outside its grammar.
 func BenchmarkParseModule(b *testing.B) {
 	benchmark(b, func(src string) error { _, err := python.ParseModule(src); return err })
