@@ -272,8 +272,10 @@ and dependency order distinct from these execution tiers.
 Raw-invalid-byte public-AST literals use the same decoded rune sequence in both position units (C28).
 Closure/VM comparison and generated Go/TypeScript normalize derived matching data while retaining caller
 ASTs, binary string tables, action constants and matched source text. Full/bare/old binary module, generated
-short/direct and long literal, suffix/choice and recognition checks cover this contract. Next is preserving
-Document repetition reuse across redundant no-edit parses (P06). C22/C23 require specification
+short/direct and long literal, suffix/choice and recognition checks cover this contract. Document repetition
+records now survive redundant no-edit parses, including root memo hits, without advancing their edit generation
+(P06). Nested runs, ordinary failure/recovery, multiple edits, edit-log rollover and interrupted memo hits have
+fresh-parse equivalence checks. Next are measured compiler/sample analysis optimizations (P03/P13/P27). C22/C23 require specification
 review before choosing Pratt behavior; analysis and runtime optimizations require fresh measurements. The
 DuckDB LIMIT-percent candidate is saved on [fix/duckdb-limit-percent](https://github.com/ornew/pego/tree/fix/duckdb-limit-percent)
 at [f44269f](https://github.com/ornew/pego/commit/f44269f09ddffa6739450d868581f61baa208246). Its focused engine/native

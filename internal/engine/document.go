@@ -22,17 +22,18 @@ import "fmt"
 // The nodes of a shifted result are moved in place when the result is reused (moveResult), so
 // trees returned by earlier parses change with them.
 type Document struct {
-	prog  *Program
-	start string
-	back  Backend
-	depth int // limit on call nesting depth
-	trace func(TraceEvent)
-	in    input // current text (fully loaded)
-	memo  *memoTable
-	stats Stats
-	edits []docEdit // all edits so far; nodes record how many their positions account for
-	runs  map[runKey]*runRecord
-	kids  []*Node // the parser's stack of repetition values, kept for the next parse
+	prog   *Program
+	start  string
+	back   Backend
+	depth  int // limit on call nesting depth
+	trace  func(TraceEvent)
+	in     input // current text (fully loaded)
+	memo   *memoTable
+	stats  Stats
+	edits  []docEdit // all edits so far; nodes record how many their positions account for
+	runs   map[runKey]*runRecord
+	runGen uint32  // edit generation of runs; unchanged parses keep this map
+	kids   []*Node // the parser's stack of repetition values, kept for the next parse
 	// resumed is the number of repetition elements the last Parse resumed (for tests).
 	resumed int
 }
@@ -67,8 +68,17 @@ func (d *Document) Stats() Stats { return d.stats }
 
 // Parse parses the current text.
 func (d *Document) Parse() (*Node, error) {
-	p := &parser{prog: d.prog, input: d.in, memo: d.memo, memoAll: true, noPlain: true, maxDepth: d.depth, gen: uint32(len(d.edits)), edits: d.edits,
-		runs: map[runKey]*runRecord{}, lastRuns: d.runs, kidStack: d.kids}
+	runs, lastRuns := d.runs, d.runs
+	gen := uint32(len(d.edits))
+	if runs != nil && d.runGen == gen {
+		// Memo hits may skip every repetition. Keep valid same-generation
+		// records without copying the map or advancing their edit generation.
+		lastRuns = nil
+	} else {
+		runs = map[runKey]*runRecord{}
+	}
+	p := &parser{prog: d.prog, input: d.in, memo: d.memo, memoAll: true, noPlain: true, maxDepth: d.depth, gen: gen, edits: d.edits,
+		runs: runs, lastRuns: lastRuns, kidStack: d.kids}
 	p.setTrace(d.trace)
 	defer func() {
 		d.stats = p.stats
@@ -83,6 +93,7 @@ func (d *Document) Parse() (*Node, error) {
 			d.runs, d.kids, d.resumed = nil, nil, 0
 		} else {
 			d.runs, d.resumed = p.runs, p.resumed
+			d.runGen = p.gen
 		}
 	}()
 	return d.prog.run(p, d.back, d.start)

@@ -241,6 +241,11 @@ a predicate (`[...]`) or calls a rule that reads variables, when its run recover
 that was still growing, and its elements are not moved past an edit that changed the length when their values may
 contain positions. Every backend resumes repetitions.
 
+Calling `Parse` again without an edit keeps the current generation's repetition records, even when the start
+rule returns entirely from the memo. It does not consume the next edit's opportunity to resume. Records are
+still eligible only across one edit; two edits without an intervening parse do not promote an older run.
+An aborted parse and an edit-log reset discard the records together with the memo.
+
 ## Writing grammars that reuse well
 
 The table shows what one edit costs after a first parse, for eight grammars of a 1,000-line `item_a = 0` file. The
