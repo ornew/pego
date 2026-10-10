@@ -177,6 +177,14 @@ It differs from PEG's ordered choice, but since the declaration order of operato
 A prefix operator at the head position is not restricted by `min`.
 For example, even if `**` is in a stronger level than unary `-`, the right operand of `2 ** -1` can be parsed as an expression that begins with the prefix operator `-`.
 
+This also applies when `min` comes from a named-level call. The minimum limits
+the tail of that call, not the prefix at its head. A selected prefix parses its
+right operand with its own level, so that operand can include tail operators
+below the caller's minimum if they bind more tightly than the prefix. Explicit
+calls inside an operand or operator part use their own minimum as well. A
+grammar that must reject a lower-level prefix at entry needs an explicit guard;
+named-level calls do not remove those operators from the entire result tree.
+
 ### Backtracking and cut
 
 - If an operator part matches but its right operand fails to parse, the operator is not applied: parsing backs up to before the operator and returns `lhs` (as in PEG, the failure is absorbed by backtracking).

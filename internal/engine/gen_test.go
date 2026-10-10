@@ -50,6 +50,9 @@ def main = t:@("f" (?\u0000-\u{10FFFF}) / "e" (?\uD7FF-\uE000) / "n" (?^\uD7FF-\
 		{"long inferred chain", inferredChain(64, false, ""), []string{"a", "", "aa", "b"}},
 		{"arith", arith, []string{"1+2*3", "-2^2", "3!!", "(1+2)*3", "1==2==3", "1+", ""}},
 		{"ast", ast, []string{"a ? b : c ? d : e", "f(a = 1, b), c", "-a(1)[2]", "a->b-c", "f()", "f(,)"}},
+		{"restricted Pratt prefixes", restrictedPrefix, []string{"~é", "~~x", "x*y", "é!", "x^y^z", "~é+y", "x*~y+z", "x^~y+z", "x+y", "x|y", "é?", "~é|y", "~é?", "~", ""}},
+		{"restricted Pratt prefix memo", strings.Replace(restrictedPrefix,
+			`def main = x:e(mul) $$ -> $x`, `def main = &(e(mul) "|") x:e $$ -> $x`, 1), []string{"~é+y|z", "~é+y", "x|y", "é|z"}},
 		{"incremental", incrementalGrammar, []string{"x = 1+2\nab,cd\n@pos\n\ny = (3)*-4\n", "x = (1\n", "@\n"}},
 		{"records", records, []string{"#records\na=1\nbc=22\n", "#records\nx\n"}},
 		{"indent", `

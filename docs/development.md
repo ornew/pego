@@ -153,6 +153,10 @@ estimates or reach sets (`analysis_dependencies.go`). A bounded worklist handles
 contiguous reverse edges avoid one graph allocation per rule. Target numbering, negative-lookahead/recovery
 exclusions and seeded decisions retain their existing semantics; the attempt budget does not bound this analysis.
 
+Named-level Pratt sampling still omits prefixes below the entry level and can omit operators permitted inside
+their right operands. Coverage omits those valid paths, and a grammar requiring such a prefix
+can return `ErrNoInput` despite accepting inputs (C30). This generator limitation does not restrict parser acceptance.
+
 ### Compiled grammars
 
 A compiled grammar file (`compiled.go`, `modulefile.go`) stores the bytecode module and, optionally, the AST and the static-analysis results (version 2; the format is defined in [bytecode.md](../spec/bytecode.md#file-format)). Loading skips parsing, static analysis, type checking and compilation to bytecode. A file without the AST can be executed only by the bytecode backends. Version 1 files (AST only) can still be loaded ([design](design/009-compiled-grammar-format.md)).
@@ -298,9 +302,11 @@ and full-compilation measurements in tuning entry 73. The full benchmark checkpo
 this analysis optimization group was measured on 2026-10-10 at `98ef6db`; the next step is fresh-profiled
 core performance work. Duplicate capture-label checking now reuses structurally equal record/list/node types
 (P13), preserving ordered unions, optional normalization and capture availability; tuning entry 72 records
-checker-only measurements and ordinary grammar controls. C22/C23 require specification
-review before choosing Pratt behavior; analysis and runtime optimizations require fresh measurements. The
-DuckDB LIMIT-percent candidate is saved on [fix/duckdb-limit-percent](https://github.com/ornew/pego/tree/fix/duckdb-limit-percent)
+checker-only measurements and ordinary grammar controls. Named-level Pratt calls restrict the outer infix/postfix
+tail while retaining unrestricted prefixes at operand positions (C22); a prefix's right operand uses its own
+binding level. Exact tree, Unicode span, memoization and generated-parser conformance checks cover that existing
+contract. C23 still requires a decision on failed-after-cut prefix parts; analysis and runtime optimizations require
+fresh measurements. The DuckDB LIMIT-percent candidate is saved on [fix/duckdb-limit-percent](https://github.com/ornew/pego/tree/fix/duckdb-limit-percent)
 at [f44269f](https://github.com/ornew/pego/commit/f44269f09ddffa6739450d868581f61baa208246). Its focused engine/native
 acceptance and AST checks pass; full impact suites, canonical oracle checks and paired performance measurements
 remain before landing. It is absent from main, where the seven scanner/LIMIT deviations remain.

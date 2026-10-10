@@ -183,6 +183,59 @@ def e = pratt {
 	)
 }
 
+const restrictedPrefix = `
+type Atom terminal
+type Prefix struct { Op Match, X Expr }
+type Binary struct { L Expr, Op Match, R Expr }
+type Postfix struct { X Expr, Op Match }
+type Expr = Atom | Prefix | Binary | Postfix
+
+def main = x:e(mul) $$ -> $x
+def atom: Atom = "é" / "x" / "y" / "z"
+def e: Expr = pratt {
+    operand atom
+    level loose {
+        prefix "~" -> new Prefix{Op: $op, X: $rhs}
+        infix left "|" -> new Binary{L: $lhs, Op: $op, R: $rhs}
+        postfix "?" -> new Postfix{X: $lhs, Op: $op}
+    }
+    level add { infix left "+" -> new Binary{L: $lhs, Op: $op, R: $rhs} }
+    level mul { infix left "*" -> new Binary{L: $lhs, Op: $op, R: $rhs} }
+    level power {
+        infix right "^" -> new Binary{L: $lhs, Op: $op, R: $rhs}
+        postfix "!" -> new Postfix{X: $lhs, Op: $op}
+    }
+}`
+
+func TestPrattRestrictedPrefix(t *testing.T) {
+	check(t, restrictedPrefix,
+		ok("~é", `(Prefix Op="~" X=Atom"é"@atom)`),
+		ok("~~x", `(Prefix Op="~" X=(Prefix Op="~" X=Atom"x"@atom))`),
+		ok("x*y", `(Binary L=Atom"x"@atom Op="*" R=Atom"y"@atom)`),
+		ok("é!", `(Postfix Op="!" X=Atom"é"@atom)`),
+		ok("x^y^z", `(Binary L=Atom"x"@atom Op="^" R=(Binary L=Atom"y"@atom Op="^" R=Atom"z"@atom))`),
+		// A lower-level prefix still uses its own level for its right operand.
+		ok("~é+y", `(Prefix Op="~" X=(Binary L=Atom"é"@atom Op="+" R=Atom"y"@atom))`),
+		ok("x*~y+z", `(Binary L=Atom"x"@atom Op="*" R=(Prefix Op="~" X=(Binary L=Atom"y"@atom Op="+" R=Atom"z"@atom)))`),
+		ok("x^~y+z", `(Binary L=Atom"x"@atom Op="^" R=(Prefix Op="~" X=(Binary L=Atom"y"@atom Op="+" R=Atom"z"@atom)))`),
+		// Tail operators below the active minimum are left for the caller.
+		fails("x+y", "end of input"),
+		fails("x|y", "end of input"),
+		fails("é?", "end of input"),
+		fails("~é|y", "end of input"),
+		fails("~é?", "end of input"),
+		fails("~", "expected"),
+	)
+
+	// A restricted lookahead and an unrestricted call at the same position must
+	// not share a result with a different minimum level, even after a prefix.
+	check(t, strings.Replace(restrictedPrefix, `def main = x:e(mul) $$ -> $x`,
+		`def main = &(e(mul) "|") x:e $$ -> $x`, 1),
+		ok("~é+y|z", `(Binary L=(Prefix Op="~" X=(Binary L=Atom"é"@atom Op="+" R=Atom"y"@atom)) Op="|" R=Atom"z"@atom)`),
+		fails("~é+y", `1:1: syntax error`),
+	)
+}
+
 func TestPrattCompileErrors(t *testing.T) {
 	for _, tc := range []struct{ src, want string }{
 		{`def e = pratt { operand e "x" / "1" }`, `operand of e calls e at its start (left recursion)`},

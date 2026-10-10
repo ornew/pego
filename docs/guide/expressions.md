@@ -339,8 +339,14 @@ pego: 1:7: syntax error: expected " ", "+", "-", end of input
 Some constructs contain an expression that must not use the loosest operators. The classic example is the argument list
 of a call: in `f(a, b)` the comma separates arguments, so the arguments must be parsed *without* the comma operator,
 while `(a, b)` in parentheses is a comma expression. A Pratt expression handles this with a **named level** and a call
-with that level, `expr(assignment)`: it parses only operators of the named level and tighter ones. A call without a
-level (`expr`) parses all levels. The rule name and `(` must be adjacent.
+with that level, `expr(assignment)`: its tail applies only infix and postfix operators of the named level and tighter
+ones. A call without a level (`expr`) allows tail operators of all levels. The rule name and `(` must be adjacent.
+
+Prefix operators can still start an operand at any level, including the head of a restricted call. A selected prefix
+parses its right operand using its own precedence, so a looser prefix can absorb operators below the caller's entry
+level inside that operand. For example, with prefix `~` looser than addition, `expr(multiplication)` accepts `~x+y`
+as `~(x+y)`, but stops before `+` in bare `x+y`. A named level does not exclude those operators from every subtree.
+If a construct forbids a prefix at entry, guard its input explicitly, accounting for the rule's whitespace skip.
 
 The grammar below is the one from the specification: it has every kind of operator.
 

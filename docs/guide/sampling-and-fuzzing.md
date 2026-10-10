@@ -414,7 +414,12 @@ parser would read differently:
   so indentation (as in [examples/outline](../../examples/outline/outline.pego)) and matching tags (as in
   [parsers/xml](../../parsers/xml/xml.pego)) work;
 - Pratt expressions are generated as chains of operands and operators, avoiding chains of `infix none` operators,
-  and level-restricted calls use only the allowed operators.
+  with tail operators filtered by level-restricted calls.
+
+There is currently a gap for prefixes below a named entry level: the generator omits them even though the parser
+accepts them, and coverage omits those valid paths. A grammar requiring such a prefix can return `ErrNoInput`.
+Operators allowed only inside that prefix's right operand can also be omitted. See the
+[prefix exception](expressions.md#4-level-restricted-calls) for the parser's contract.
 
 What the generator cannot evaluate, it leaves to the parser: predicates over values built by actions or over struct
 fields, and lookaheads into Pratt expressions or left-recursive rules. Those constructs are handled only by generating

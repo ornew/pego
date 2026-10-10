@@ -164,15 +164,31 @@ infix left _                            // application    f x (empty operator pa
 ## Level-restricted calls
 
 When a rule that has a Pratt expression is called with a level name, as in
-`expr(assignment)`, it parses **only operators of the named level and of the
-levels that bind more tightly**. Calling the rule without a level name (`expr`)
-parses operators of all levels. The rule name and `(` MUST be adjacent, and the
-named level MUST exist in the called rule.
+`expr(assignment)`, its tail applies **only infix and postfix operators of the
+named level and of the levels that bind more tightly**. Calling the rule
+without a level name (`expr`) allows tail operators of all levels. The rule
+name and `(` MUST be adjacent, and the named level MUST exist in the called rule.
+
+The [prefix-operator exception](#parsing-rules) still applies: an operand
+position, including the start of a level-restricted call, MAY begin with a
+prefix operator from any level. Its right operand uses that prefix operator's
+own binding level, rather than the caller's minimum. Consequently, operators
+looser than the entry level can occur inside that right operand if they bind
+more tightly than the prefix. Level restriction is not a filter over every
+operator in the resulting tree. Calls written inside operator parts or operands
+also use their own level restrictions.
 
 ```pego
 // Function arguments do not parse the comma operator (only assignment and tighter).
 def args = first:expr(assignment) rest:(-ws "," x:expr(assignment))*
 ```
+
+For example, if `~` is a prefix in a level looser than addition and
+`multiplication` is a named tighter level, `expr(multiplication)` accepts
+`~x+y` as `~(x+y)`. Without the prefix, it stops before the `+` in `x+y`.
+To exclude a lower-level prefix at entry, the caller must guard that input
+explicitly, accounting for any whitespace skip. For a rule without `skip`,
+`!"~" expr(multiplication)` excludes `~` at entry.
 
 ## Actions
 
