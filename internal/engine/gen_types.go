@@ -400,12 +400,12 @@ func (a *astConv) toError(n *Node) *Error {
 	}
 	// The converter, written last because the list converters are known only now: a chunk of
 	// values per type and of elements per list type.
-	b.WriteString("// astConv converts nodes into typed values.\ntype astConv struct {\n\tmatch []Match\n\terror []Error\n")
+	b.WriteString("// astConv converts nodes into typed values.\ntype astConv struct {\n\tmatch astChunk[Match]\n\terror astChunk[Error]\n")
 	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
-		fmt.Fprintf(b, "\tt%s []%s\n", t.names[name], t.names[name])
+		fmt.Fprintf(b, "\tt%s astChunk[%s]\n", t.names[name], t.names[name])
 	}
 	for _, l := range t.listOrder {
-		fmt.Fprintf(b, "\t%sChunk []%s\n", l.name, t.goType(l.elem))
+		fmt.Fprintf(b, "\t%sChunk astChunk[%s]\n", l.name, t.goType(l.elem))
 	}
 	b.WriteString("}\n\n")
 }
@@ -634,10 +634,10 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 	b.WriteString(convs.String())
 	b.WriteString("// tslabs holds the chunks the typed values of a parse are allocated from.\ntype tslabs struct {\n")
 	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
-		fmt.Fprintf(b, "\tt%s []%s\n", t.names[name], t.names[name])
+		fmt.Fprintf(b, "\tt%s astChunk[%s]\n", t.names[name], t.names[name])
 	}
 	for _, l := range t.tlistOrder {
-		fmt.Fprintf(b, "\t%sChunk []%s\n", l.name, t.goType(l.elem))
+		fmt.Fprintf(b, "\t%sChunk astChunk[%s]\n", l.name, t.goType(l.elem))
 	}
 	b.WriteString("}\n\n")
 }
@@ -666,31 +666,55 @@ func astPtrBool(v any) *bool {
 	return nil
 }
 
-// astNew returns a new zero value from the chunk *s.
-func astNew[T any](s *[]T) *T {
-	if len(*s) == 0 {
-		*s = make([]T, 256)
+// astChunk owns unused values and the next allocation size for one type.
+// Handed-out values are never reused, even when a parse discards them.
+type astChunk[T any] struct {
+	free []T
+	next int
+}
+
+// grow starts small and doubles up to limit. The request is always satisfied.
+func (s *astChunk[T]) grow(n, initial, limit int) {
+	size := s.next
+	if size == 0 {
+		size = initial
 	}
-	v := &(*s)[0]
-	*s = (*s)[1:]
+	for size < n {
+		size *= 2
+	}
+	s.free = make([]T, size)
+	s.next = size * 2
+	if s.next > limit {
+		s.next = limit
+	}
+}
+
+// astNew returns a new zero value from a chunk that grows from 8 to 256 values.
+func astNew[T any](s *astChunk[T]) *T {
+	if len(s.free) == 0 {
+		s.grow(1, 8, 256)
+	}
+	v := &s.free[0]
+	s.free = s.free[1:]
 	return v
 }
 
-// astSlice returns a slice of n zero values from the chunk *s. Its capacity is n, so appending
-// to it does not overwrite other slices.
-func astSlice[T any](s *[]T, n int) []T {
+// astSlice returns n zero values with capacity n, so appending cannot overwrite
+// another returned slice. Small-list chunks grow from 64 to 1,024 elements.
+func astSlice[T any](s *astChunk[T], n int) []T {
 	if n == 0 {
 		return []T{} // an empty list, not nil
 	}
 	if n > 256 {
 		return make([]T, n)
 	}
-	if len(*s) < n {
-		*s = make([]T, 1024)
+	if len(s.free) < n {
+		s.grow(n, 64, 1024)
 	}
-	v := (*s)[:n:n]
-	*s = (*s)[n:]
+	v := s.free[:n:n]
+	s.free = s.free[n:]
 	return v
 }
+
 
 `

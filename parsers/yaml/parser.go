@@ -3951,30 +3951,53 @@ func astPtrBool(v any) *bool {
 	return nil
 }
 
-// astNew returns a new zero value from the chunk *s.
-func astNew[T any](s *[]T) *T {
-	if len(*s) == 0 {
-		*s = make([]T, 256)
+// astChunk owns unused values and the next allocation size for one type.
+// Handed-out values are never reused, even when a parse discards them.
+type astChunk[T any] struct {
+	free []T
+	next int
+}
+
+// grow starts small and doubles up to limit. The request is always satisfied.
+func (s *astChunk[T]) grow(n, initial, limit int) {
+	size := s.next
+	if size == 0 {
+		size = initial
 	}
-	v := &(*s)[0]
-	*s = (*s)[1:]
+	for size < n {
+		size *= 2
+	}
+	s.free = make([]T, size)
+	s.next = size * 2
+	if s.next > limit {
+		s.next = limit
+	}
+}
+
+// astNew returns a new zero value from a chunk that grows from 8 to 256 values.
+func astNew[T any](s *astChunk[T]) *T {
+	if len(s.free) == 0 {
+		s.grow(1, 8, 256)
+	}
+	v := &s.free[0]
+	s.free = s.free[1:]
 	return v
 }
 
-// astSlice returns a slice of n zero values from the chunk *s. Its capacity is n, so appending
-// to it does not overwrite other slices.
-func astSlice[T any](s *[]T, n int) []T {
+// astSlice returns n zero values with capacity n, so appending cannot overwrite
+// another returned slice. Small-list chunks grow from 64 to 1,024 elements.
+func astSlice[T any](s *astChunk[T], n int) []T {
 	if n == 0 {
 		return []T{} // an empty list, not nil
 	}
 	if n > 256 {
 		return make([]T, n)
 	}
-	if len(*s) < n {
-		*s = make([]T, 1024)
+	if len(s.free) < n {
+		s.grow(n, 64, 1024)
 	}
-	v := (*s)[:n:n]
-	*s = (*s)[n:]
+	v := s.free[:n:n]
+	s.free = s.free[n:]
 	return v
 }
 
@@ -4262,24 +4285,24 @@ func tl4(a *tslabs, v any) []*Document {
 
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
-	tAlias      []Alias
-	tAnchor     []Anchor
-	tMarker     []Marker
-	tTag        []Tag
-	tWord       []Word
-	tDirective  []Directive
-	tDocument   []Document
-	tMapping    []Mapping
-	tPair       []Pair
-	tProperties []Properties
-	tScalar     []Scalar
-	tSequence   []Sequence
-	tStream     []Stream
-	tl0Chunk    []*Word
-	tl1Chunk    []*Directive
-	tl2Chunk    []*Pair
-	tl3Chunk    []Value
-	tl4Chunk    []*Document
+	tAlias      astChunk[Alias]
+	tAnchor     astChunk[Anchor]
+	tMarker     astChunk[Marker]
+	tTag        astChunk[Tag]
+	tWord       astChunk[Word]
+	tDirective  astChunk[Directive]
+	tDocument   astChunk[Document]
+	tMapping    astChunk[Mapping]
+	tPair       astChunk[Pair]
+	tProperties astChunk[Properties]
+	tScalar     astChunk[Scalar]
+	tSequence   astChunk[Sequence]
+	tStream     astChunk[Stream]
+	tl0Chunk    astChunk[*Word]
+	tl1Chunk    astChunk[*Directive]
+	tl2Chunk    astChunk[*Pair]
+	tl3Chunk    astChunk[Value]
+	tl4Chunk    astChunk[*Document]
 }
 
 // ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered

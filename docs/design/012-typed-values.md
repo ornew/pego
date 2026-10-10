@@ -103,6 +103,20 @@ list type, looks fields up by name, and allocates the values of each type, and t
 the runtime does nodes. The parse itself is unchanged, so the typed result is exactly the engine's tree in another
 form.
 
+### Allocation and ownership
+
+Both paths allocate typed values in separate chunks for each struct, terminal and list element type. Value chunks
+start at 8 elements and double up to 256; list chunks start at 64 and double up to 1,024, accommodating the requested
+list length. Lists longer than 256 elements use an exact-size allocation. Each allocator keeps its next chunk size
+separately from its unused slice, so exhausting a chunk does not reset growth. A new `ParseAST` invocation starts
+fresh allocators; the parser pool never recycles arrays that returned typed values can still reference.
+
+Every handed-out value stays at its original address. Returned lists have capacity equal to their length, so an
+append cannot overwrite another returned list. Empty lists remain non-nil and omitted optional fields retain their
+zero values. Growing a chunk allocates a distinct zeroed array; it never copies, clears or reuses earlier values,
+including values a failed or overwritten capture may still reference. Returned pointers can therefore still retain
+discarded siblings in the same array. Allocation granularity does not solve that separate retention problem.
+
 ### Cost
 
 On the benchmarks (Apple M3 Max, min of 6–8 runs), the typed runtime makes `ParseAST` 35–55% faster than `Parse`
@@ -127,6 +141,10 @@ built lists directly had taken 4.5 ms.
   member type would have to be decoded from `type`).
 - **Exposing typed values from the engine (`pego.Parser`).** Go types cannot be created at run time, so the engine
   can only return `*Node`; typed values are a property of generated code.
+- **Sizing every type's first chunk from input length.** Input length does not predict how many values of each
+  type will escape. Bounded geometric growth keeps unused types unallocated and limits the first-use cost of rare
+  types. Keeping the previous 256-value and 1,024-list-element maximum chunks retains large-output amortization;
+  the measured tradeoff is extra allocations while warming up, documented in performance change 74.
 
 ## Limitations
 

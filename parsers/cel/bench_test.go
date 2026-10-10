@@ -63,7 +63,7 @@ func TestPolicies(t *testing.T) {
 	}
 }
 
-// The benchmarks parse every policy in turn, so that the time per op is that of parsing 28 typical expressions.
+// The benchmarks parse every policy in turn, so that the time per op is that of parsing the full suite of typical expressions.
 
 func BenchmarkPoliciesParseAST(b *testing.B) {
 	b.SetBytes(policyBytes())

@@ -321,8 +321,10 @@ contract. Sampling and coverage now honor those prefix/RHS paths (C30), includin
 operators. Caller stop checks respect closed nonassociative parts (C31) and longest-before-eligibility selection (C32);
 nested RHSs now restore frame-local nonassociative state (C33). Bounded complete-RHS evidence fixes incomplete
 prefix caller continuations (C34), retaining conservative unknown results for unsupported semantics and shared
-work limits. Next, measure smaller initial typed-runtime chunks and bounded growth for small inputs (P21),
-retaining large-input controls and pointer ownership. Returned slab sibling retention (P28) remains a separate
+work limits. Generated typed values and conversion now use small initial chunks with bounded geometric growth:
+8 to 256 values per type and 64 to 1,024 list elements, retaining exact allocation for lists over 256 elements.
+Small JSON and CEL controls reduce allocation bytes; large-input controls expose extra warm-up allocations
+([performance change 74](performance.md#74-smaller-first-chunks-for-generated-typed-values)). Returned slab sibling retention (P28) remains a separate
 live-heap problem. Continue the remaining core performance items with fresh profiles and resource/ownership
 gates. C23 now prevents operand fallback when no prefix part matches and a candidate failed after cut, across
 all engines and standalone Go/typed Go/TypeScript. Successful longest candidates retain their own cut scopes; analysis and runtime optimizations require

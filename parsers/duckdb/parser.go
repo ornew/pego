@@ -9584,30 +9584,53 @@ func astPtrBool(v any) *bool {
 	return nil
 }
 
-// astNew returns a new zero value from the chunk *s.
-func astNew[T any](s *[]T) *T {
-	if len(*s) == 0 {
-		*s = make([]T, 256)
+// astChunk owns unused values and the next allocation size for one type.
+// Handed-out values are never reused, even when a parse discards them.
+type astChunk[T any] struct {
+	free []T
+	next int
+}
+
+// grow starts small and doubles up to limit. The request is always satisfied.
+func (s *astChunk[T]) grow(n, initial, limit int) {
+	size := s.next
+	if size == 0 {
+		size = initial
 	}
-	v := &(*s)[0]
-	*s = (*s)[1:]
+	for size < n {
+		size *= 2
+	}
+	s.free = make([]T, size)
+	s.next = size * 2
+	if s.next > limit {
+		s.next = limit
+	}
+}
+
+// astNew returns a new zero value from a chunk that grows from 8 to 256 values.
+func astNew[T any](s *astChunk[T]) *T {
+	if len(s.free) == 0 {
+		s.grow(1, 8, 256)
+	}
+	v := &s.free[0]
+	s.free = s.free[1:]
 	return v
 }
 
-// astSlice returns a slice of n zero values from the chunk *s. Its capacity is n, so appending
-// to it does not overwrite other slices.
-func astSlice[T any](s *[]T, n int) []T {
+// astSlice returns n zero values with capacity n, so appending cannot overwrite
+// another returned slice. Small-list chunks grow from 64 to 1,024 elements.
+func astSlice[T any](s *astChunk[T], n int) []T {
 	if n == 0 {
 		return []T{} // an empty list, not nil
 	}
 	if n > 256 {
 		return make([]T, n)
 	}
-	if len(*s) < n {
-		*s = make([]T, 1024)
+	if len(s.free) < n {
+		s.grow(n, 64, 1024)
 	}
-	v := (*s)[:n:n]
-	*s = (*s)[n:]
+	v := s.free[:n:n]
+	s.free = s.free[n:]
 	return v
 }
 
@@ -13528,218 +13551,218 @@ func tl42(a *tslabs, v any) []*CTE {
 
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
-	tBitLit                []BitLit
-	tBoolLit               []BoolLit
-	tDefaultExpr           []DefaultExpr
-	tIdent                 []Ident
-	tIntervalUnit          []IntervalUnit
-	tNullLit               []NullLit
-	tNumber                []Number
-	tParam                 []Param
-	tStringLit             []StringLit
-	tAlterCmd              []AlterCmd
-	tAlterDatabaseStmt     []AlterDatabaseStmt
-	tAlterObjectSchemaStmt []AlterObjectSchemaStmt
-	tAlterSequenceStmt     []AlterSequenceStmt
-	tAlterTableStmt        []AlterTableStmt
-	tAnalyzeStmt           []AnalyzeStmt
-	tAnyAll                []AnyAll
-	tArrayDim              []ArrayDim
-	tArrayLit              []ArrayLit
-	tArraySubquery         []ArraySubquery
-	tAtClause              []AtClause
-	tAtTimeZone            []AtTimeZone
-	tAttachStmt            []AttachStmt
-	tBaseTable             []BaseTable
-	tBetween               []Between
-	tBinary                []Binary
-	tCTE                   []CTE
-	tCallStmt              []CallStmt
-	tCase                  []Case
-	tCast                  []Cast
-	tCheckpointStmt        []CheckpointStmt
-	tColDef                []ColDef
-	tCollate               []Collate
-	tColumnConstraint      []ColumnConstraint
-	tColumnDef             []ColumnDef
-	tColumnRef             []ColumnRef
-	tColumnsExpr           []ColumnsExpr
-	tCommentStmt           []CommentStmt
-	tCopyDatabaseStmt      []CopyDatabaseStmt
-	tCopyOption            []CopyOption
-	tCopyStmt              []CopyStmt
-	tCreateIndexStmt       []CreateIndexStmt
-	tCreateMacroStmt       []CreateMacroStmt
-	tCreateSchemaStmt      []CreateSchemaStmt
-	tCreateSecretStmt      []CreateSecretStmt
-	tCreateSequenceStmt    []CreateSequenceStmt
-	tCreateTableAsStmt     []CreateTableAsStmt
-	tCreateTableStmt       []CreateTableStmt
-	tCreateTypeStmt        []CreateTypeStmt
-	tCreateViewStmt        []CreateViewStmt
-	tDeallocateStmt        []DeallocateStmt
-	tDefElem               []DefElem
-	tDeleteStmt            []DeleteStmt
-	tDetachStmt            []DetachStmt
-	tDistinctClause        []DistinctClause
-	tDistinctFrom          []DistinctFrom
-	tDropSecretStmt        []DropSecretStmt
-	tDropStmt              []DropStmt
-	tExecuteStmt           []ExecuteStmt
-	tExists                []Exists
-	tExplainOption         []ExplainOption
-	tExplainStmt           []ExplainStmt
-	tExportStmt            []ExportStmt
-	tFieldStep             []FieldStep
-	tFrame                 []Frame
-	tFrameBound            []FrameBound
-	tFuncCall              []FuncCall
-	tFuncTable             []FuncTable
-	tGeneratedColumn       []GeneratedColumn
-	tGenericAlterOption    []GenericAlterOption
-	tGenericOption         []GenericOption
-	tGroupBy               []GroupBy
-	tGrouping              []Grouping
-	tGroupingSet           []GroupingSet
-	tImportStmt            []ImportStmt
-	tIn                    []In
-	tIndexElem             []IndexElem
-	tIndexStep             []IndexStep
-	tIndirection           []Indirection
-	tInsertStmt            []InsertStmt
-	tIntervalLit           []IntervalLit
-	tIntoClause            []IntoClause
-	tIsExpr                []IsExpr
-	tIsOf                  []IsOf
-	tJoin                  []Join
-	tLambda                []Lambda
-	tLike                  []Like
-	tLimitClause           []LimitClause
-	tListComp              []ListComp
-	tListLit               []ListLit
-	tLoadStmt              []LoadStmt
-	tLockClause            []LockClause
-	tMacroDef              []MacroDef
-	tMacroParam            []MacroParam
-	tMapEntry              []MapEntry
-	tMapLit                []MapLit
-	tMergeAction           []MergeAction
-	tMergeStmt             []MergeStmt
-	tMergeWhen             []MergeWhen
-	tName                  []Name
-	tNamedArg              []NamedArg
-	tNot                   []Not
-	tOffsetClause          []OffsetClause
-	tOnConflict            []OnConflict
-	tOrderBy               []OrderBy
-	tParen                 []Paren
-	tParenQuery            []ParenQuery
-	tParenTable            []ParenTable
-	tPartitionSorted       []PartitionSorted
-	tPivotColumn           []PivotColumn
-	tPivotQuery            []PivotQuery
-	tPivotRef              []PivotRef
-	tPivotValue            []PivotValue
-	tPositionalRef         []PositionalRef
-	tPostfixOp             []PostfixOp
-	tPragmaStmt            []PragmaStmt
-	tPrepareStmt           []PrepareStmt
-	tReference             []Reference
-	tReloption             []Reloption
-	tRenameItem            []RenameItem
-	tRenameStmt            []RenameStmt
-	tReplaceItem           []ReplaceItem
-	tResetStmt             []ResetStmt
-	tRow                   []Row
-	tRowsFromItem          []RowsFromItem
-	tSampleClause          []SampleClause
-	tScript                []Script
-	tSecretOption          []SecretOption
-	tSelect                []Select
-	tSelectCore            []SelectCore
-	tSelectItem            []SelectItem
-	tSeqOption             []SeqOption
-	tSetClause             []SetClause
-	tSetOp                 []SetOp
-	tSetStmt               []SetStmt
-	tShowStmt              []ShowStmt
-	tSliceStep             []SliceStep
-	tSortItem              []SortItem
-	tSpecialCall           []SpecialCall
-	tStar                  []Star
-	tStructField           []StructField
-	tStructLit             []StructLit
-	tSubquery              []Subquery
-	tSubqueryRef           []SubqueryRef
-	tTableAlias            []TableAlias
-	tTableConstraint       []TableConstraint
-	tTableLike             []TableLike
-	tTableQuery            []TableQuery
-	tTargetTable           []TargetTable
-	tTransactionStmt       []TransactionStmt
-	tType                  []Type
-	tTypeField             []TypeField
-	tTypedLit              []TypedLit
-	tUnary                 []Unary
-	tUnpackExpr            []UnpackExpr
-	tUnpivotQuery          []UnpivotQuery
-	tUnpivotRef            []UnpivotRef
-	tUnpivotValue          []UnpivotValue
-	tUpdateExtensionsStmt  []UpdateExtensionsStmt
-	tUpdateStmt            []UpdateStmt
-	tUseStmt               []UseStmt
-	tVacuumStmt            []VacuumStmt
-	tValuesClause          []ValuesClause
-	tValuesRef             []ValuesRef
-	tValuesRow             []ValuesRow
-	tWhen                  []When
-	tWindowDef             []WindowDef
-	tWindowOver            []WindowOver
-	tWindowSpec            []WindowSpec
-	tWith                  []With
-	tl0Chunk               []*ColumnConstraint
-	tl1Chunk               []Expr
-	tl2Chunk               []*SortItem
-	tl3Chunk               []*Reloption
-	tl4Chunk               []*SeqOption
-	tl5Chunk               []*GenericAlterOption
-	tl6Chunk               []*AlterCmd
-	tl7Chunk               []*Ident
-	tl8Chunk               []*GenericOption
-	tl9Chunk               []*When
-	tl10Chunk              []*DefElem
-	tl11Chunk              []*CopyOption
-	tl12Chunk              []*IndexElem
-	tl13Chunk              []*MacroDef
-	tl14Chunk              []Statement
-	tl15Chunk              []*SecretOption
-	tl16Chunk              []*PartitionSorted
-	tl17Chunk              []TableElement
-	tl18Chunk              []*StringLit
-	tl19Chunk              []TableRef
-	tl20Chunk              []*SelectItem
-	tl21Chunk              []*Name
-	tl22Chunk              []*ExplainOption
-	tl23Chunk              []*RowsFromItem
-	tl24Chunk              []*Type
-	tl25Chunk              []*MacroParam
-	tl26Chunk              []*MapEntry
-	tl27Chunk              []*SetClause
-	tl28Chunk              []*MergeWhen
-	tl29Chunk              []*PivotColumn
-	tl30Chunk              []*PivotValue
-	tl31Chunk              []*ColDef
-	tl32Chunk              []*LockClause
-	tl33Chunk              []*WindowDef
-	tl34Chunk              []*ReplaceItem
-	tl35Chunk              []*RenameItem
-	tl36Chunk              []*StructField
-	tl37Chunk              []*Match
-	tl38Chunk              []*TypeField
-	tl39Chunk              []*ArrayDim
-	tl40Chunk              []*UnpivotValue
-	tl41Chunk              []*ValuesRow
-	tl42Chunk              []*CTE
+	tBitLit                astChunk[BitLit]
+	tBoolLit               astChunk[BoolLit]
+	tDefaultExpr           astChunk[DefaultExpr]
+	tIdent                 astChunk[Ident]
+	tIntervalUnit          astChunk[IntervalUnit]
+	tNullLit               astChunk[NullLit]
+	tNumber                astChunk[Number]
+	tParam                 astChunk[Param]
+	tStringLit             astChunk[StringLit]
+	tAlterCmd              astChunk[AlterCmd]
+	tAlterDatabaseStmt     astChunk[AlterDatabaseStmt]
+	tAlterObjectSchemaStmt astChunk[AlterObjectSchemaStmt]
+	tAlterSequenceStmt     astChunk[AlterSequenceStmt]
+	tAlterTableStmt        astChunk[AlterTableStmt]
+	tAnalyzeStmt           astChunk[AnalyzeStmt]
+	tAnyAll                astChunk[AnyAll]
+	tArrayDim              astChunk[ArrayDim]
+	tArrayLit              astChunk[ArrayLit]
+	tArraySubquery         astChunk[ArraySubquery]
+	tAtClause              astChunk[AtClause]
+	tAtTimeZone            astChunk[AtTimeZone]
+	tAttachStmt            astChunk[AttachStmt]
+	tBaseTable             astChunk[BaseTable]
+	tBetween               astChunk[Between]
+	tBinary                astChunk[Binary]
+	tCTE                   astChunk[CTE]
+	tCallStmt              astChunk[CallStmt]
+	tCase                  astChunk[Case]
+	tCast                  astChunk[Cast]
+	tCheckpointStmt        astChunk[CheckpointStmt]
+	tColDef                astChunk[ColDef]
+	tCollate               astChunk[Collate]
+	tColumnConstraint      astChunk[ColumnConstraint]
+	tColumnDef             astChunk[ColumnDef]
+	tColumnRef             astChunk[ColumnRef]
+	tColumnsExpr           astChunk[ColumnsExpr]
+	tCommentStmt           astChunk[CommentStmt]
+	tCopyDatabaseStmt      astChunk[CopyDatabaseStmt]
+	tCopyOption            astChunk[CopyOption]
+	tCopyStmt              astChunk[CopyStmt]
+	tCreateIndexStmt       astChunk[CreateIndexStmt]
+	tCreateMacroStmt       astChunk[CreateMacroStmt]
+	tCreateSchemaStmt      astChunk[CreateSchemaStmt]
+	tCreateSecretStmt      astChunk[CreateSecretStmt]
+	tCreateSequenceStmt    astChunk[CreateSequenceStmt]
+	tCreateTableAsStmt     astChunk[CreateTableAsStmt]
+	tCreateTableStmt       astChunk[CreateTableStmt]
+	tCreateTypeStmt        astChunk[CreateTypeStmt]
+	tCreateViewStmt        astChunk[CreateViewStmt]
+	tDeallocateStmt        astChunk[DeallocateStmt]
+	tDefElem               astChunk[DefElem]
+	tDeleteStmt            astChunk[DeleteStmt]
+	tDetachStmt            astChunk[DetachStmt]
+	tDistinctClause        astChunk[DistinctClause]
+	tDistinctFrom          astChunk[DistinctFrom]
+	tDropSecretStmt        astChunk[DropSecretStmt]
+	tDropStmt              astChunk[DropStmt]
+	tExecuteStmt           astChunk[ExecuteStmt]
+	tExists                astChunk[Exists]
+	tExplainOption         astChunk[ExplainOption]
+	tExplainStmt           astChunk[ExplainStmt]
+	tExportStmt            astChunk[ExportStmt]
+	tFieldStep             astChunk[FieldStep]
+	tFrame                 astChunk[Frame]
+	tFrameBound            astChunk[FrameBound]
+	tFuncCall              astChunk[FuncCall]
+	tFuncTable             astChunk[FuncTable]
+	tGeneratedColumn       astChunk[GeneratedColumn]
+	tGenericAlterOption    astChunk[GenericAlterOption]
+	tGenericOption         astChunk[GenericOption]
+	tGroupBy               astChunk[GroupBy]
+	tGrouping              astChunk[Grouping]
+	tGroupingSet           astChunk[GroupingSet]
+	tImportStmt            astChunk[ImportStmt]
+	tIn                    astChunk[In]
+	tIndexElem             astChunk[IndexElem]
+	tIndexStep             astChunk[IndexStep]
+	tIndirection           astChunk[Indirection]
+	tInsertStmt            astChunk[InsertStmt]
+	tIntervalLit           astChunk[IntervalLit]
+	tIntoClause            astChunk[IntoClause]
+	tIsExpr                astChunk[IsExpr]
+	tIsOf                  astChunk[IsOf]
+	tJoin                  astChunk[Join]
+	tLambda                astChunk[Lambda]
+	tLike                  astChunk[Like]
+	tLimitClause           astChunk[LimitClause]
+	tListComp              astChunk[ListComp]
+	tListLit               astChunk[ListLit]
+	tLoadStmt              astChunk[LoadStmt]
+	tLockClause            astChunk[LockClause]
+	tMacroDef              astChunk[MacroDef]
+	tMacroParam            astChunk[MacroParam]
+	tMapEntry              astChunk[MapEntry]
+	tMapLit                astChunk[MapLit]
+	tMergeAction           astChunk[MergeAction]
+	tMergeStmt             astChunk[MergeStmt]
+	tMergeWhen             astChunk[MergeWhen]
+	tName                  astChunk[Name]
+	tNamedArg              astChunk[NamedArg]
+	tNot                   astChunk[Not]
+	tOffsetClause          astChunk[OffsetClause]
+	tOnConflict            astChunk[OnConflict]
+	tOrderBy               astChunk[OrderBy]
+	tParen                 astChunk[Paren]
+	tParenQuery            astChunk[ParenQuery]
+	tParenTable            astChunk[ParenTable]
+	tPartitionSorted       astChunk[PartitionSorted]
+	tPivotColumn           astChunk[PivotColumn]
+	tPivotQuery            astChunk[PivotQuery]
+	tPivotRef              astChunk[PivotRef]
+	tPivotValue            astChunk[PivotValue]
+	tPositionalRef         astChunk[PositionalRef]
+	tPostfixOp             astChunk[PostfixOp]
+	tPragmaStmt            astChunk[PragmaStmt]
+	tPrepareStmt           astChunk[PrepareStmt]
+	tReference             astChunk[Reference]
+	tReloption             astChunk[Reloption]
+	tRenameItem            astChunk[RenameItem]
+	tRenameStmt            astChunk[RenameStmt]
+	tReplaceItem           astChunk[ReplaceItem]
+	tResetStmt             astChunk[ResetStmt]
+	tRow                   astChunk[Row]
+	tRowsFromItem          astChunk[RowsFromItem]
+	tSampleClause          astChunk[SampleClause]
+	tScript                astChunk[Script]
+	tSecretOption          astChunk[SecretOption]
+	tSelect                astChunk[Select]
+	tSelectCore            astChunk[SelectCore]
+	tSelectItem            astChunk[SelectItem]
+	tSeqOption             astChunk[SeqOption]
+	tSetClause             astChunk[SetClause]
+	tSetOp                 astChunk[SetOp]
+	tSetStmt               astChunk[SetStmt]
+	tShowStmt              astChunk[ShowStmt]
+	tSliceStep             astChunk[SliceStep]
+	tSortItem              astChunk[SortItem]
+	tSpecialCall           astChunk[SpecialCall]
+	tStar                  astChunk[Star]
+	tStructField           astChunk[StructField]
+	tStructLit             astChunk[StructLit]
+	tSubquery              astChunk[Subquery]
+	tSubqueryRef           astChunk[SubqueryRef]
+	tTableAlias            astChunk[TableAlias]
+	tTableConstraint       astChunk[TableConstraint]
+	tTableLike             astChunk[TableLike]
+	tTableQuery            astChunk[TableQuery]
+	tTargetTable           astChunk[TargetTable]
+	tTransactionStmt       astChunk[TransactionStmt]
+	tType                  astChunk[Type]
+	tTypeField             astChunk[TypeField]
+	tTypedLit              astChunk[TypedLit]
+	tUnary                 astChunk[Unary]
+	tUnpackExpr            astChunk[UnpackExpr]
+	tUnpivotQuery          astChunk[UnpivotQuery]
+	tUnpivotRef            astChunk[UnpivotRef]
+	tUnpivotValue          astChunk[UnpivotValue]
+	tUpdateExtensionsStmt  astChunk[UpdateExtensionsStmt]
+	tUpdateStmt            astChunk[UpdateStmt]
+	tUseStmt               astChunk[UseStmt]
+	tVacuumStmt            astChunk[VacuumStmt]
+	tValuesClause          astChunk[ValuesClause]
+	tValuesRef             astChunk[ValuesRef]
+	tValuesRow             astChunk[ValuesRow]
+	tWhen                  astChunk[When]
+	tWindowDef             astChunk[WindowDef]
+	tWindowOver            astChunk[WindowOver]
+	tWindowSpec            astChunk[WindowSpec]
+	tWith                  astChunk[With]
+	tl0Chunk               astChunk[*ColumnConstraint]
+	tl1Chunk               astChunk[Expr]
+	tl2Chunk               astChunk[*SortItem]
+	tl3Chunk               astChunk[*Reloption]
+	tl4Chunk               astChunk[*SeqOption]
+	tl5Chunk               astChunk[*GenericAlterOption]
+	tl6Chunk               astChunk[*AlterCmd]
+	tl7Chunk               astChunk[*Ident]
+	tl8Chunk               astChunk[*GenericOption]
+	tl9Chunk               astChunk[*When]
+	tl10Chunk              astChunk[*DefElem]
+	tl11Chunk              astChunk[*CopyOption]
+	tl12Chunk              astChunk[*IndexElem]
+	tl13Chunk              astChunk[*MacroDef]
+	tl14Chunk              astChunk[Statement]
+	tl15Chunk              astChunk[*SecretOption]
+	tl16Chunk              astChunk[*PartitionSorted]
+	tl17Chunk              astChunk[TableElement]
+	tl18Chunk              astChunk[*StringLit]
+	tl19Chunk              astChunk[TableRef]
+	tl20Chunk              astChunk[*SelectItem]
+	tl21Chunk              astChunk[*Name]
+	tl22Chunk              astChunk[*ExplainOption]
+	tl23Chunk              astChunk[*RowsFromItem]
+	tl24Chunk              astChunk[*Type]
+	tl25Chunk              astChunk[*MacroParam]
+	tl26Chunk              astChunk[*MapEntry]
+	tl27Chunk              astChunk[*SetClause]
+	tl28Chunk              astChunk[*MergeWhen]
+	tl29Chunk              astChunk[*PivotColumn]
+	tl30Chunk              astChunk[*PivotValue]
+	tl31Chunk              astChunk[*ColDef]
+	tl32Chunk              astChunk[*LockClause]
+	tl33Chunk              astChunk[*WindowDef]
+	tl34Chunk              astChunk[*ReplaceItem]
+	tl35Chunk              astChunk[*RenameItem]
+	tl36Chunk              astChunk[*StructField]
+	tl37Chunk              astChunk[*Match]
+	tl38Chunk              astChunk[*TypeField]
+	tl39Chunk              astChunk[*ArrayDim]
+	tl40Chunk              astChunk[*UnpivotValue]
+	tl41Chunk              astChunk[*ValuesRow]
+	tl42Chunk              astChunk[*CTE]
 }
 
 // ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered

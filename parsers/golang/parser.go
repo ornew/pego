@@ -5046,30 +5046,53 @@ func astPtrBool(v any) *bool {
 	return nil
 }
 
-// astNew returns a new zero value from the chunk *s.
-func astNew[T any](s *[]T) *T {
-	if len(*s) == 0 {
-		*s = make([]T, 256)
+// astChunk owns unused values and the next allocation size for one type.
+// Handed-out values are never reused, even when a parse discards them.
+type astChunk[T any] struct {
+	free []T
+	next int
+}
+
+// grow starts small and doubles up to limit. The request is always satisfied.
+func (s *astChunk[T]) grow(n, initial, limit int) {
+	size := s.next
+	if size == 0 {
+		size = initial
 	}
-	v := &(*s)[0]
-	*s = (*s)[1:]
+	for size < n {
+		size *= 2
+	}
+	s.free = make([]T, size)
+	s.next = size * 2
+	if s.next > limit {
+		s.next = limit
+	}
+}
+
+// astNew returns a new zero value from a chunk that grows from 8 to 256 values.
+func astNew[T any](s *astChunk[T]) *T {
+	if len(s.free) == 0 {
+		s.grow(1, 8, 256)
+	}
+	v := &s.free[0]
+	s.free = s.free[1:]
 	return v
 }
 
-// astSlice returns a slice of n zero values from the chunk *s. Its capacity is n, so appending
-// to it does not overwrite other slices.
-func astSlice[T any](s *[]T, n int) []T {
+// astSlice returns n zero values with capacity n, so appending cannot overwrite
+// another returned slice. Small-list chunks grow from 64 to 1,024 elements.
+func astSlice[T any](s *astChunk[T], n int) []T {
 	if n == 0 {
 		return []T{} // an empty list, not nil
 	}
 	if n > 256 {
 		return make([]T, n)
 	}
-	if len(*s) < n {
-		*s = make([]T, 1024)
+	if len(s.free) < n {
+		s.grow(n, 64, 1024)
 	}
-	v := (*s)[:n:n]
-	*s = (*s)[n:]
+	v := s.free[:n:n]
+	s.free = s.free[n:]
 	return v
 }
 
@@ -5999,66 +6022,66 @@ func tl5(a *tslabs, v any) []Spec {
 
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
-	tCharLit        []CharLit
-	tFloatLit       []FloatLit
-	tIdent          []Ident
-	tImagLit        []ImagLit
-	tIntLit         []IntLit
-	tStringLit      []StringLit
-	tArrayType      []ArrayType
-	tAssignStmt     []AssignStmt
-	tBinaryExpr     []BinaryExpr
-	tBlockStmt      []BlockStmt
-	tBranchStmt     []BranchStmt
-	tCallExpr       []CallExpr
-	tCaseClause     []CaseClause
-	tChanType       []ChanType
-	tCommClause     []CommClause
-	tCompositeLit   []CompositeLit
-	tDeclStmt       []DeclStmt
-	tDeferStmt      []DeferStmt
-	tEllipsis       []Ellipsis
-	tEmptyStmt      []EmptyStmt
-	tExprStmt       []ExprStmt
-	tField          []Field
-	tFieldList      []FieldList
-	tFile           []File
-	tForStmt        []ForStmt
-	tFuncDecl       []FuncDecl
-	tFuncLit        []FuncLit
-	tFuncType       []FuncType
-	tGenDecl        []GenDecl
-	tGoStmt         []GoStmt
-	tIfStmt         []IfStmt
-	tImportSpec     []ImportSpec
-	tIncDecStmt     []IncDecStmt
-	tIndexExpr      []IndexExpr
-	tIndexListExpr  []IndexListExpr
-	tInterfaceType  []InterfaceType
-	tKeyValueExpr   []KeyValueExpr
-	tLabeledStmt    []LabeledStmt
-	tMapType        []MapType
-	tParenExpr      []ParenExpr
-	tRangeStmt      []RangeStmt
-	tReturnStmt     []ReturnStmt
-	tSelectStmt     []SelectStmt
-	tSelectorExpr   []SelectorExpr
-	tSendStmt       []SendStmt
-	tSliceExpr      []SliceExpr
-	tStarExpr       []StarExpr
-	tStructType     []StructType
-	tSwitchStmt     []SwitchStmt
-	tTypeAssertExpr []TypeAssertExpr
-	tTypeSpec       []TypeSpec
-	tTypeSwitchStmt []TypeSwitchStmt
-	tUnaryExpr      []UnaryExpr
-	tValueSpec      []ValueSpec
-	tl0Chunk        []Expr
-	tl1Chunk        []Stmt
-	tl2Chunk        []*Ident
-	tl3Chunk        []*Field
-	tl4Chunk        []Decl
-	tl5Chunk        []Spec
+	tCharLit        astChunk[CharLit]
+	tFloatLit       astChunk[FloatLit]
+	tIdent          astChunk[Ident]
+	tImagLit        astChunk[ImagLit]
+	tIntLit         astChunk[IntLit]
+	tStringLit      astChunk[StringLit]
+	tArrayType      astChunk[ArrayType]
+	tAssignStmt     astChunk[AssignStmt]
+	tBinaryExpr     astChunk[BinaryExpr]
+	tBlockStmt      astChunk[BlockStmt]
+	tBranchStmt     astChunk[BranchStmt]
+	tCallExpr       astChunk[CallExpr]
+	tCaseClause     astChunk[CaseClause]
+	tChanType       astChunk[ChanType]
+	tCommClause     astChunk[CommClause]
+	tCompositeLit   astChunk[CompositeLit]
+	tDeclStmt       astChunk[DeclStmt]
+	tDeferStmt      astChunk[DeferStmt]
+	tEllipsis       astChunk[Ellipsis]
+	tEmptyStmt      astChunk[EmptyStmt]
+	tExprStmt       astChunk[ExprStmt]
+	tField          astChunk[Field]
+	tFieldList      astChunk[FieldList]
+	tFile           astChunk[File]
+	tForStmt        astChunk[ForStmt]
+	tFuncDecl       astChunk[FuncDecl]
+	tFuncLit        astChunk[FuncLit]
+	tFuncType       astChunk[FuncType]
+	tGenDecl        astChunk[GenDecl]
+	tGoStmt         astChunk[GoStmt]
+	tIfStmt         astChunk[IfStmt]
+	tImportSpec     astChunk[ImportSpec]
+	tIncDecStmt     astChunk[IncDecStmt]
+	tIndexExpr      astChunk[IndexExpr]
+	tIndexListExpr  astChunk[IndexListExpr]
+	tInterfaceType  astChunk[InterfaceType]
+	tKeyValueExpr   astChunk[KeyValueExpr]
+	tLabeledStmt    astChunk[LabeledStmt]
+	tMapType        astChunk[MapType]
+	tParenExpr      astChunk[ParenExpr]
+	tRangeStmt      astChunk[RangeStmt]
+	tReturnStmt     astChunk[ReturnStmt]
+	tSelectStmt     astChunk[SelectStmt]
+	tSelectorExpr   astChunk[SelectorExpr]
+	tSendStmt       astChunk[SendStmt]
+	tSliceExpr      astChunk[SliceExpr]
+	tStarExpr       astChunk[StarExpr]
+	tStructType     astChunk[StructType]
+	tSwitchStmt     astChunk[SwitchStmt]
+	tTypeAssertExpr astChunk[TypeAssertExpr]
+	tTypeSpec       astChunk[TypeSpec]
+	tTypeSwitchStmt astChunk[TypeSwitchStmt]
+	tUnaryExpr      astChunk[UnaryExpr]
+	tValueSpec      astChunk[ValueSpec]
+	tl0Chunk        astChunk[Expr]
+	tl1Chunk        astChunk[Stmt]
+	tl2Chunk        astChunk[*Ident]
+	tl3Chunk        astChunk[*Field]
+	tl4Chunk        astChunk[Decl]
+	tl5Chunk        astChunk[Spec]
 }
 
 // ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered

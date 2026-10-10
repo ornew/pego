@@ -6269,30 +6269,53 @@ func astPtrBool(v any) *bool {
 	return nil
 }
 
-// astNew returns a new zero value from the chunk *s.
-func astNew[T any](s *[]T) *T {
-	if len(*s) == 0 {
-		*s = make([]T, 256)
+// astChunk owns unused values and the next allocation size for one type.
+// Handed-out values are never reused, even when a parse discards them.
+type astChunk[T any] struct {
+	free []T
+	next int
+}
+
+// grow starts small and doubles up to limit. The request is always satisfied.
+func (s *astChunk[T]) grow(n, initial, limit int) {
+	size := s.next
+	if size == 0 {
+		size = initial
 	}
-	v := &(*s)[0]
-	*s = (*s)[1:]
+	for size < n {
+		size *= 2
+	}
+	s.free = make([]T, size)
+	s.next = size * 2
+	if s.next > limit {
+		s.next = limit
+	}
+}
+
+// astNew returns a new zero value from a chunk that grows from 8 to 256 values.
+func astNew[T any](s *astChunk[T]) *T {
+	if len(s.free) == 0 {
+		s.grow(1, 8, 256)
+	}
+	v := &s.free[0]
+	s.free = s.free[1:]
 	return v
 }
 
-// astSlice returns a slice of n zero values from the chunk *s. Its capacity is n, so appending
-// to it does not overwrite other slices.
-func astSlice[T any](s *[]T, n int) []T {
+// astSlice returns n zero values with capacity n, so appending cannot overwrite
+// another returned slice. Small-list chunks grow from 64 to 1,024 elements.
+func astSlice[T any](s *astChunk[T], n int) []T {
 	if n == 0 {
 		return []T{} // an empty list, not nil
 	}
 	if n > 256 {
 		return make([]T, n)
 	}
-	if len(*s) < n {
-		*s = make([]T, 1024)
+	if len(s.free) < n {
+		s.grow(n, 64, 1024)
 	}
-	v := (*s)[:n:n]
-	*s = (*s)[n:]
+	v := s.free[:n:n]
+	s.free = s.free[n:]
 	return v
 }
 
@@ -7933,101 +7956,101 @@ func tl13(a *tslabs, v any) []*ExceptHandler {
 
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
-	tConstant         []Constant
-	tFStringMiddle    []FStringMiddle
-	tFStringRawMiddle []FStringRawMiddle
-	tIdentifier       []Identifier
-	tOp               []Op
-	tAlias            []Alias
-	tAnnAssign        []AnnAssign
-	tArg              []Arg
-	tArguments        []Arguments
-	tAssert           []Assert
-	tAssign           []Assign
-	tAsyncFor         []AsyncFor
-	tAsyncFunctionDef []AsyncFunctionDef
-	tAsyncWith        []AsyncWith
-	tAttribute        []Attribute
-	tAugAssign        []AugAssign
-	tAwait            []Await
-	tBinOp            []BinOp
-	tBoolOp           []BoolOp
-	tBreak            []Break
-	tCall             []Call
-	tClassDef         []ClassDef
-	tCompare          []Compare
-	tComprehension    []Comprehension
-	tContinue         []Continue
-	tDelete           []Delete
-	tDict             []Dict
-	tDictComp         []DictComp
-	tExceptHandler    []ExceptHandler
-	tExprStmt         []ExprStmt
-	tFor              []For
-	tFormattedValue   []FormattedValue
-	tFunctionDef      []FunctionDef
-	tGeneratorExp     []GeneratorExp
-	tGlobal           []Global
-	tIf               []If
-	tIfExp            []IfExp
-	tImport           []Import
-	tImportFrom       []ImportFrom
-	tInterpolation    []Interpolation
-	tJoinedStr        []JoinedStr
-	tKeyword          []Keyword
-	tLambda           []Lambda
-	tListComp         []ListComp
-	tListExpr         []ListExpr
-	tMatchAs          []MatchAs
-	tMatchCase        []MatchCase
-	tMatchClass       []MatchClass
-	tMatchMapping     []MatchMapping
-	tMatchOr          []MatchOr
-	tMatchSequence    []MatchSequence
-	tMatchSingleton   []MatchSingleton
-	tMatchStar        []MatchStar
-	tMatchStmt        []MatchStmt
-	tMatchValue       []MatchValue
-	tModule           []Module
-	tName             []Name
-	tNamedExpr        []NamedExpr
-	tNonlocal         []Nonlocal
-	tParamSpec        []ParamSpec
-	tPass             []Pass
-	tRaise            []Raise
-	tReturn           []Return
-	tSet              []Set
-	tSetComp          []SetComp
-	tSlice            []Slice
-	tStarred          []Starred
-	tSubscript        []Subscript
-	tTemplateStr      []TemplateStr
-	tTry              []Try
-	tTryStar          []TryStar
-	tTuple            []Tuple
-	tTypeAlias        []TypeAlias
-	tTypeVar          []TypeVar
-	tTypeVarTuple     []TypeVarTuple
-	tUnaryOp          []UnaryOp
-	tWhile            []While
-	tWith             []With
-	tWithItem         []WithItem
-	tYield            []Yield
-	tYieldFrom        []YieldFrom
-	tl0Chunk          []*Arg
-	tl1Chunk          []Expr
-	tl2Chunk          []Stmt
-	tl3Chunk          []TypeParam
-	tl4Chunk          []*WithItem
-	tl5Chunk          []*Keyword
-	tl6Chunk          []*Op
-	tl7Chunk          []*Comprehension
-	tl8Chunk          []*Identifier
-	tl9Chunk          []*Alias
-	tl10Chunk         []StrPart
-	tl11Chunk         []Pattern
-	tl12Chunk         []*MatchCase
-	tl13Chunk         []*ExceptHandler
+	tConstant         astChunk[Constant]
+	tFStringMiddle    astChunk[FStringMiddle]
+	tFStringRawMiddle astChunk[FStringRawMiddle]
+	tIdentifier       astChunk[Identifier]
+	tOp               astChunk[Op]
+	tAlias            astChunk[Alias]
+	tAnnAssign        astChunk[AnnAssign]
+	tArg              astChunk[Arg]
+	tArguments        astChunk[Arguments]
+	tAssert           astChunk[Assert]
+	tAssign           astChunk[Assign]
+	tAsyncFor         astChunk[AsyncFor]
+	tAsyncFunctionDef astChunk[AsyncFunctionDef]
+	tAsyncWith        astChunk[AsyncWith]
+	tAttribute        astChunk[Attribute]
+	tAugAssign        astChunk[AugAssign]
+	tAwait            astChunk[Await]
+	tBinOp            astChunk[BinOp]
+	tBoolOp           astChunk[BoolOp]
+	tBreak            astChunk[Break]
+	tCall             astChunk[Call]
+	tClassDef         astChunk[ClassDef]
+	tCompare          astChunk[Compare]
+	tComprehension    astChunk[Comprehension]
+	tContinue         astChunk[Continue]
+	tDelete           astChunk[Delete]
+	tDict             astChunk[Dict]
+	tDictComp         astChunk[DictComp]
+	tExceptHandler    astChunk[ExceptHandler]
+	tExprStmt         astChunk[ExprStmt]
+	tFor              astChunk[For]
+	tFormattedValue   astChunk[FormattedValue]
+	tFunctionDef      astChunk[FunctionDef]
+	tGeneratorExp     astChunk[GeneratorExp]
+	tGlobal           astChunk[Global]
+	tIf               astChunk[If]
+	tIfExp            astChunk[IfExp]
+	tImport           astChunk[Import]
+	tImportFrom       astChunk[ImportFrom]
+	tInterpolation    astChunk[Interpolation]
+	tJoinedStr        astChunk[JoinedStr]
+	tKeyword          astChunk[Keyword]
+	tLambda           astChunk[Lambda]
+	tListComp         astChunk[ListComp]
+	tListExpr         astChunk[ListExpr]
+	tMatchAs          astChunk[MatchAs]
+	tMatchCase        astChunk[MatchCase]
+	tMatchClass       astChunk[MatchClass]
+	tMatchMapping     astChunk[MatchMapping]
+	tMatchOr          astChunk[MatchOr]
+	tMatchSequence    astChunk[MatchSequence]
+	tMatchSingleton   astChunk[MatchSingleton]
+	tMatchStar        astChunk[MatchStar]
+	tMatchStmt        astChunk[MatchStmt]
+	tMatchValue       astChunk[MatchValue]
+	tModule           astChunk[Module]
+	tName             astChunk[Name]
+	tNamedExpr        astChunk[NamedExpr]
+	tNonlocal         astChunk[Nonlocal]
+	tParamSpec        astChunk[ParamSpec]
+	tPass             astChunk[Pass]
+	tRaise            astChunk[Raise]
+	tReturn           astChunk[Return]
+	tSet              astChunk[Set]
+	tSetComp          astChunk[SetComp]
+	tSlice            astChunk[Slice]
+	tStarred          astChunk[Starred]
+	tSubscript        astChunk[Subscript]
+	tTemplateStr      astChunk[TemplateStr]
+	tTry              astChunk[Try]
+	tTryStar          astChunk[TryStar]
+	tTuple            astChunk[Tuple]
+	tTypeAlias        astChunk[TypeAlias]
+	tTypeVar          astChunk[TypeVar]
+	tTypeVarTuple     astChunk[TypeVarTuple]
+	tUnaryOp          astChunk[UnaryOp]
+	tWhile            astChunk[While]
+	tWith             astChunk[With]
+	tWithItem         astChunk[WithItem]
+	tYield            astChunk[Yield]
+	tYieldFrom        astChunk[YieldFrom]
+	tl0Chunk          astChunk[*Arg]
+	tl1Chunk          astChunk[Expr]
+	tl2Chunk          astChunk[Stmt]
+	tl3Chunk          astChunk[TypeParam]
+	tl4Chunk          astChunk[*WithItem]
+	tl5Chunk          astChunk[*Keyword]
+	tl6Chunk          astChunk[*Op]
+	tl7Chunk          astChunk[*Comprehension]
+	tl8Chunk          astChunk[*Identifier]
+	tl9Chunk          astChunk[*Alias]
+	tl10Chunk         astChunk[StrPart]
+	tl11Chunk         astChunk[Pattern]
+	tl12Chunk         astChunk[*MatchCase]
+	tl13Chunk         astChunk[*ExceptHandler]
 }
 
 // ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered

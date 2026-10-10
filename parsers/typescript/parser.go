@@ -8714,30 +8714,53 @@ func astPtrBool(v any) *bool {
 	return nil
 }
 
-// astNew returns a new zero value from the chunk *s.
-func astNew[T any](s *[]T) *T {
-	if len(*s) == 0 {
-		*s = make([]T, 256)
+// astChunk owns unused values and the next allocation size for one type.
+// Handed-out values are never reused, even when a parse discards them.
+type astChunk[T any] struct {
+	free []T
+	next int
+}
+
+// grow starts small and doubles up to limit. The request is always satisfied.
+func (s *astChunk[T]) grow(n, initial, limit int) {
+	size := s.next
+	if size == 0 {
+		size = initial
 	}
-	v := &(*s)[0]
-	*s = (*s)[1:]
+	for size < n {
+		size *= 2
+	}
+	s.free = make([]T, size)
+	s.next = size * 2
+	if s.next > limit {
+		s.next = limit
+	}
+}
+
+// astNew returns a new zero value from a chunk that grows from 8 to 256 values.
+func astNew[T any](s *astChunk[T]) *T {
+	if len(s.free) == 0 {
+		s.grow(1, 8, 256)
+	}
+	v := &s.free[0]
+	s.free = s.free[1:]
 	return v
 }
 
-// astSlice returns a slice of n zero values from the chunk *s. Its capacity is n, so appending
-// to it does not overwrite other slices.
-func astSlice[T any](s *[]T, n int) []T {
+// astSlice returns n zero values with capacity n, so appending cannot overwrite
+// another returned slice. Small-list chunks grow from 64 to 1,024 elements.
+func astSlice[T any](s *astChunk[T], n int) []T {
 	if n == 0 {
 		return []T{} // an empty list, not nil
 	}
 	if n > 256 {
 		return make([]T, n)
 	}
-	if len(*s) < n {
-		*s = make([]T, 1024)
+	if len(s.free) < n {
+		s.grow(n, 64, 1024)
 	}
-	v := (*s)[:n:n]
-	*s = (*s)[n:]
+	v := s.free[:n:n]
+	s.free = s.free[n:]
 	return v
 }
 
@@ -11850,193 +11873,193 @@ func tl22(a *tslabs, v any) []*VariableDeclaration {
 
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
-	tBigIntLiteral                 []BigIntLiteral
-	tBooleanLiteral                []BooleanLiteral
-	tDebuggerStatement             []DebuggerStatement
-	tEmptyStatement                []EmptyStatement
-	tEndOfFileToken                []EndOfFileToken
-	tIdentifier                    []Identifier
-	tImportExpression              []ImportExpression
-	tJSDocAllType                  []JSDocAllType
-	tJSDocUnknownType              []JSDocUnknownType
-	tJsxClosingFragment            []JsxClosingFragment
-	tJsxOpeningFragment            []JsxOpeningFragment
-	tJsxText                       []JsxText
-	tKeywordTypeNode               []KeywordTypeNode
-	tModifier                      []Modifier
-	tNoSubstitutionTemplateLiteral []NoSubstitutionTemplateLiteral
-	tNullLiteral                   []NullLiteral
-	tNumericLiteral                []NumericLiteral
-	tOmittedExpression             []OmittedExpression
-	tPrivateIdentifier             []PrivateIdentifier
-	tRegularExpressionLiteral      []RegularExpressionLiteral
-	tSemicolonClassElement         []SemicolonClassElement
-	tStringLiteral                 []StringLiteral
-	tSuperExpression               []SuperExpression
-	tTemplateHead                  []TemplateHead
-	tTemplateMiddle                []TemplateMiddle
-	tTemplateTail                  []TemplateTail
-	tThisExpression                []ThisExpression
-	tThisTypeNode                  []ThisTypeNode
-	tToken                         []Token
-	tArrayBindingPattern           []ArrayBindingPattern
-	tArrayLiteralExpression        []ArrayLiteralExpression
-	tArrayType                     []ArrayType
-	tArrowFunction                 []ArrowFunction
-	tAsExpression                  []AsExpression
-	tAwaitExpression               []AwaitExpression
-	tBinaryExpression              []BinaryExpression
-	tBindingElement                []BindingElement
-	tBlock                         []Block
-	tBreakStatement                []BreakStatement
-	tCallExpression                []CallExpression
-	tCallSignature                 []CallSignature
-	tCaseBlock                     []CaseBlock
-	tCaseClause                    []CaseClause
-	tCatchClause                   []CatchClause
-	tClassDeclaration              []ClassDeclaration
-	tClassExpression               []ClassExpression
-	tClassStaticBlockDeclaration   []ClassStaticBlockDeclaration
-	tComputedPropertyName          []ComputedPropertyName
-	tConditionalExpression         []ConditionalExpression
-	tConditionalType               []ConditionalType
-	tConstructSignature            []ConstructSignature
-	tConstructor                   []Constructor
-	tConstructorType               []ConstructorType
-	tContinueStatement             []ContinueStatement
-	tDecorator                     []Decorator
-	tDefaultClause                 []DefaultClause
-	tDeleteExpression              []DeleteExpression
-	tDoStatement                   []DoStatement
-	tElementAccessExpression       []ElementAccessExpression
-	tEnumDeclaration               []EnumDeclaration
-	tEnumMember                    []EnumMember
-	tExportAssignment              []ExportAssignment
-	tExportDeclaration             []ExportDeclaration
-	tExportSpecifier               []ExportSpecifier
-	tExpressionStatement           []ExpressionStatement
-	tExpressionWithTypeArguments   []ExpressionWithTypeArguments
-	tExternalModuleReference       []ExternalModuleReference
-	tForInStatement                []ForInStatement
-	tForOfStatement                []ForOfStatement
-	tForStatement                  []ForStatement
-	tFunctionDeclaration           []FunctionDeclaration
-	tFunctionExpression            []FunctionExpression
-	tFunctionType                  []FunctionType
-	tGetAccessor                   []GetAccessor
-	tHeritageClause                []HeritageClause
-	tIfStatement                   []IfStatement
-	tImportAttribute               []ImportAttribute
-	tImportAttributes              []ImportAttributes
-	tImportClause                  []ImportClause
-	tImportDeclaration             []ImportDeclaration
-	tImportEqualsDeclaration       []ImportEqualsDeclaration
-	tImportSpecifier               []ImportSpecifier
-	tImportType                    []ImportType
-	tIndexSignature                []IndexSignature
-	tIndexedAccessType             []IndexedAccessType
-	tInferType                     []InferType
-	tInterfaceDeclaration          []InterfaceDeclaration
-	tIntersectionType              []IntersectionType
-	tJSDocFunctionType             []JSDocFunctionType
-	tJSDocNonNullableType          []JSDocNonNullableType
-	tJSDocNullableType             []JSDocNullableType
-	tJsxAttribute                  []JsxAttribute
-	tJsxAttributes                 []JsxAttributes
-	tJsxClosingElement             []JsxClosingElement
-	tJsxElement                    []JsxElement
-	tJsxExpression                 []JsxExpression
-	tJsxFragment                   []JsxFragment
-	tJsxNamespacedName             []JsxNamespacedName
-	tJsxOpeningElement             []JsxOpeningElement
-	tJsxSelfClosingElement         []JsxSelfClosingElement
-	tJsxSpreadAttribute            []JsxSpreadAttribute
-	tLabeledStatement              []LabeledStatement
-	tLiteralType                   []LiteralType
-	tMappedType                    []MappedType
-	tMetaProperty                  []MetaProperty
-	tMethodDeclaration             []MethodDeclaration
-	tMethodSignature               []MethodSignature
-	tModuleBlock                   []ModuleBlock
-	tModuleDeclaration             []ModuleDeclaration
-	tNamedExports                  []NamedExports
-	tNamedImports                  []NamedImports
-	tNamedTupleMember              []NamedTupleMember
-	tNamespaceExport               []NamespaceExport
-	tNamespaceExportDeclaration    []NamespaceExportDeclaration
-	tNamespaceImport               []NamespaceImport
-	tNewExpression                 []NewExpression
-	tNonNullExpression             []NonNullExpression
-	tObjectBindingPattern          []ObjectBindingPattern
-	tObjectLiteralExpression       []ObjectLiteralExpression
-	tOptionalType                  []OptionalType
-	tParameter                     []Parameter
-	tParenthesizedExpression       []ParenthesizedExpression
-	tParenthesizedType             []ParenthesizedType
-	tPostfixUnaryExpression        []PostfixUnaryExpression
-	tPrefixUnaryExpression         []PrefixUnaryExpression
-	tPropertyAccessExpression      []PropertyAccessExpression
-	tPropertyAssignment            []PropertyAssignment
-	tPropertyDeclaration           []PropertyDeclaration
-	tPropertySignature             []PropertySignature
-	tQualifiedName                 []QualifiedName
-	tRestType                      []RestType
-	tReturnStatement               []ReturnStatement
-	tSatisfiesExpression           []SatisfiesExpression
-	tSetAccessor                   []SetAccessor
-	tShorthandPropertyAssignment   []ShorthandPropertyAssignment
-	tSourceFile                    []SourceFile
-	tSpreadAssignment              []SpreadAssignment
-	tSpreadElement                 []SpreadElement
-	tSwitchStatement               []SwitchStatement
-	tTaggedTemplateExpression      []TaggedTemplateExpression
-	tTemplateExpression            []TemplateExpression
-	tTemplateLiteralType           []TemplateLiteralType
-	tTemplateLiteralTypeSpan       []TemplateLiteralTypeSpan
-	tTemplateSpan                  []TemplateSpan
-	tThrowStatement                []ThrowStatement
-	tTryStatement                  []TryStatement
-	tTupleType                     []TupleType
-	tTypeAliasDeclaration          []TypeAliasDeclaration
-	tTypeAssertionExpression       []TypeAssertionExpression
-	tTypeLiteral                   []TypeLiteral
-	tTypeOfExpression              []TypeOfExpression
-	tTypeOperator                  []TypeOperator
-	tTypeParameter                 []TypeParameter
-	tTypePredicate                 []TypePredicate
-	tTypeQuery                     []TypeQuery
-	tTypeReference                 []TypeReference
-	tUnionType                     []UnionType
-	tVariableDeclaration           []VariableDeclaration
-	tVariableDeclarationList       []VariableDeclarationList
-	tVariableStatement             []VariableStatement
-	tVoidExpression                []VoidExpression
-	tWhileStatement                []WhileStatement
-	tWithStatement                 []WithStatement
-	tYieldExpression               []YieldExpression
-	tl0Chunk                       []ArrayBindingElement
-	tl1Chunk                       []Expression
-	tl2Chunk                       []ModifierLike
-	tl3Chunk                       []*TypeParameter
-	tl4Chunk                       []*Parameter
-	tl5Chunk                       []Statement
-	tl6Chunk                       []TypeNode
-	tl7Chunk                       []CaseOrDefaultClause
-	tl8Chunk                       []*HeritageClause
-	tl9Chunk                       []ClassElement
-	tl10Chunk                      []*EnumMember
-	tl11Chunk                      []*ExpressionWithTypeArguments
-	tl12Chunk                      []*ImportAttribute
-	tl13Chunk                      []TypeElement
-	tl14Chunk                      []JsxAttributeLike
-	tl15Chunk                      []JsxChild
-	tl16Chunk                      []*ExportSpecifier
-	tl17Chunk                      []*ImportSpecifier
-	tl18Chunk                      []*BindingElement
-	tl19Chunk                      []ObjectLiteralElement
-	tl20Chunk                      []*TemplateSpan
-	tl21Chunk                      []*TemplateLiteralTypeSpan
-	tl22Chunk                      []*VariableDeclaration
+	tBigIntLiteral                 astChunk[BigIntLiteral]
+	tBooleanLiteral                astChunk[BooleanLiteral]
+	tDebuggerStatement             astChunk[DebuggerStatement]
+	tEmptyStatement                astChunk[EmptyStatement]
+	tEndOfFileToken                astChunk[EndOfFileToken]
+	tIdentifier                    astChunk[Identifier]
+	tImportExpression              astChunk[ImportExpression]
+	tJSDocAllType                  astChunk[JSDocAllType]
+	tJSDocUnknownType              astChunk[JSDocUnknownType]
+	tJsxClosingFragment            astChunk[JsxClosingFragment]
+	tJsxOpeningFragment            astChunk[JsxOpeningFragment]
+	tJsxText                       astChunk[JsxText]
+	tKeywordTypeNode               astChunk[KeywordTypeNode]
+	tModifier                      astChunk[Modifier]
+	tNoSubstitutionTemplateLiteral astChunk[NoSubstitutionTemplateLiteral]
+	tNullLiteral                   astChunk[NullLiteral]
+	tNumericLiteral                astChunk[NumericLiteral]
+	tOmittedExpression             astChunk[OmittedExpression]
+	tPrivateIdentifier             astChunk[PrivateIdentifier]
+	tRegularExpressionLiteral      astChunk[RegularExpressionLiteral]
+	tSemicolonClassElement         astChunk[SemicolonClassElement]
+	tStringLiteral                 astChunk[StringLiteral]
+	tSuperExpression               astChunk[SuperExpression]
+	tTemplateHead                  astChunk[TemplateHead]
+	tTemplateMiddle                astChunk[TemplateMiddle]
+	tTemplateTail                  astChunk[TemplateTail]
+	tThisExpression                astChunk[ThisExpression]
+	tThisTypeNode                  astChunk[ThisTypeNode]
+	tToken                         astChunk[Token]
+	tArrayBindingPattern           astChunk[ArrayBindingPattern]
+	tArrayLiteralExpression        astChunk[ArrayLiteralExpression]
+	tArrayType                     astChunk[ArrayType]
+	tArrowFunction                 astChunk[ArrowFunction]
+	tAsExpression                  astChunk[AsExpression]
+	tAwaitExpression               astChunk[AwaitExpression]
+	tBinaryExpression              astChunk[BinaryExpression]
+	tBindingElement                astChunk[BindingElement]
+	tBlock                         astChunk[Block]
+	tBreakStatement                astChunk[BreakStatement]
+	tCallExpression                astChunk[CallExpression]
+	tCallSignature                 astChunk[CallSignature]
+	tCaseBlock                     astChunk[CaseBlock]
+	tCaseClause                    astChunk[CaseClause]
+	tCatchClause                   astChunk[CatchClause]
+	tClassDeclaration              astChunk[ClassDeclaration]
+	tClassExpression               astChunk[ClassExpression]
+	tClassStaticBlockDeclaration   astChunk[ClassStaticBlockDeclaration]
+	tComputedPropertyName          astChunk[ComputedPropertyName]
+	tConditionalExpression         astChunk[ConditionalExpression]
+	tConditionalType               astChunk[ConditionalType]
+	tConstructSignature            astChunk[ConstructSignature]
+	tConstructor                   astChunk[Constructor]
+	tConstructorType               astChunk[ConstructorType]
+	tContinueStatement             astChunk[ContinueStatement]
+	tDecorator                     astChunk[Decorator]
+	tDefaultClause                 astChunk[DefaultClause]
+	tDeleteExpression              astChunk[DeleteExpression]
+	tDoStatement                   astChunk[DoStatement]
+	tElementAccessExpression       astChunk[ElementAccessExpression]
+	tEnumDeclaration               astChunk[EnumDeclaration]
+	tEnumMember                    astChunk[EnumMember]
+	tExportAssignment              astChunk[ExportAssignment]
+	tExportDeclaration             astChunk[ExportDeclaration]
+	tExportSpecifier               astChunk[ExportSpecifier]
+	tExpressionStatement           astChunk[ExpressionStatement]
+	tExpressionWithTypeArguments   astChunk[ExpressionWithTypeArguments]
+	tExternalModuleReference       astChunk[ExternalModuleReference]
+	tForInStatement                astChunk[ForInStatement]
+	tForOfStatement                astChunk[ForOfStatement]
+	tForStatement                  astChunk[ForStatement]
+	tFunctionDeclaration           astChunk[FunctionDeclaration]
+	tFunctionExpression            astChunk[FunctionExpression]
+	tFunctionType                  astChunk[FunctionType]
+	tGetAccessor                   astChunk[GetAccessor]
+	tHeritageClause                astChunk[HeritageClause]
+	tIfStatement                   astChunk[IfStatement]
+	tImportAttribute               astChunk[ImportAttribute]
+	tImportAttributes              astChunk[ImportAttributes]
+	tImportClause                  astChunk[ImportClause]
+	tImportDeclaration             astChunk[ImportDeclaration]
+	tImportEqualsDeclaration       astChunk[ImportEqualsDeclaration]
+	tImportSpecifier               astChunk[ImportSpecifier]
+	tImportType                    astChunk[ImportType]
+	tIndexSignature                astChunk[IndexSignature]
+	tIndexedAccessType             astChunk[IndexedAccessType]
+	tInferType                     astChunk[InferType]
+	tInterfaceDeclaration          astChunk[InterfaceDeclaration]
+	tIntersectionType              astChunk[IntersectionType]
+	tJSDocFunctionType             astChunk[JSDocFunctionType]
+	tJSDocNonNullableType          astChunk[JSDocNonNullableType]
+	tJSDocNullableType             astChunk[JSDocNullableType]
+	tJsxAttribute                  astChunk[JsxAttribute]
+	tJsxAttributes                 astChunk[JsxAttributes]
+	tJsxClosingElement             astChunk[JsxClosingElement]
+	tJsxElement                    astChunk[JsxElement]
+	tJsxExpression                 astChunk[JsxExpression]
+	tJsxFragment                   astChunk[JsxFragment]
+	tJsxNamespacedName             astChunk[JsxNamespacedName]
+	tJsxOpeningElement             astChunk[JsxOpeningElement]
+	tJsxSelfClosingElement         astChunk[JsxSelfClosingElement]
+	tJsxSpreadAttribute            astChunk[JsxSpreadAttribute]
+	tLabeledStatement              astChunk[LabeledStatement]
+	tLiteralType                   astChunk[LiteralType]
+	tMappedType                    astChunk[MappedType]
+	tMetaProperty                  astChunk[MetaProperty]
+	tMethodDeclaration             astChunk[MethodDeclaration]
+	tMethodSignature               astChunk[MethodSignature]
+	tModuleBlock                   astChunk[ModuleBlock]
+	tModuleDeclaration             astChunk[ModuleDeclaration]
+	tNamedExports                  astChunk[NamedExports]
+	tNamedImports                  astChunk[NamedImports]
+	tNamedTupleMember              astChunk[NamedTupleMember]
+	tNamespaceExport               astChunk[NamespaceExport]
+	tNamespaceExportDeclaration    astChunk[NamespaceExportDeclaration]
+	tNamespaceImport               astChunk[NamespaceImport]
+	tNewExpression                 astChunk[NewExpression]
+	tNonNullExpression             astChunk[NonNullExpression]
+	tObjectBindingPattern          astChunk[ObjectBindingPattern]
+	tObjectLiteralExpression       astChunk[ObjectLiteralExpression]
+	tOptionalType                  astChunk[OptionalType]
+	tParameter                     astChunk[Parameter]
+	tParenthesizedExpression       astChunk[ParenthesizedExpression]
+	tParenthesizedType             astChunk[ParenthesizedType]
+	tPostfixUnaryExpression        astChunk[PostfixUnaryExpression]
+	tPrefixUnaryExpression         astChunk[PrefixUnaryExpression]
+	tPropertyAccessExpression      astChunk[PropertyAccessExpression]
+	tPropertyAssignment            astChunk[PropertyAssignment]
+	tPropertyDeclaration           astChunk[PropertyDeclaration]
+	tPropertySignature             astChunk[PropertySignature]
+	tQualifiedName                 astChunk[QualifiedName]
+	tRestType                      astChunk[RestType]
+	tReturnStatement               astChunk[ReturnStatement]
+	tSatisfiesExpression           astChunk[SatisfiesExpression]
+	tSetAccessor                   astChunk[SetAccessor]
+	tShorthandPropertyAssignment   astChunk[ShorthandPropertyAssignment]
+	tSourceFile                    astChunk[SourceFile]
+	tSpreadAssignment              astChunk[SpreadAssignment]
+	tSpreadElement                 astChunk[SpreadElement]
+	tSwitchStatement               astChunk[SwitchStatement]
+	tTaggedTemplateExpression      astChunk[TaggedTemplateExpression]
+	tTemplateExpression            astChunk[TemplateExpression]
+	tTemplateLiteralType           astChunk[TemplateLiteralType]
+	tTemplateLiteralTypeSpan       astChunk[TemplateLiteralTypeSpan]
+	tTemplateSpan                  astChunk[TemplateSpan]
+	tThrowStatement                astChunk[ThrowStatement]
+	tTryStatement                  astChunk[TryStatement]
+	tTupleType                     astChunk[TupleType]
+	tTypeAliasDeclaration          astChunk[TypeAliasDeclaration]
+	tTypeAssertionExpression       astChunk[TypeAssertionExpression]
+	tTypeLiteral                   astChunk[TypeLiteral]
+	tTypeOfExpression              astChunk[TypeOfExpression]
+	tTypeOperator                  astChunk[TypeOperator]
+	tTypeParameter                 astChunk[TypeParameter]
+	tTypePredicate                 astChunk[TypePredicate]
+	tTypeQuery                     astChunk[TypeQuery]
+	tTypeReference                 astChunk[TypeReference]
+	tUnionType                     astChunk[UnionType]
+	tVariableDeclaration           astChunk[VariableDeclaration]
+	tVariableDeclarationList       astChunk[VariableDeclarationList]
+	tVariableStatement             astChunk[VariableStatement]
+	tVoidExpression                astChunk[VoidExpression]
+	tWhileStatement                astChunk[WhileStatement]
+	tWithStatement                 astChunk[WithStatement]
+	tYieldExpression               astChunk[YieldExpression]
+	tl0Chunk                       astChunk[ArrayBindingElement]
+	tl1Chunk                       astChunk[Expression]
+	tl2Chunk                       astChunk[ModifierLike]
+	tl3Chunk                       astChunk[*TypeParameter]
+	tl4Chunk                       astChunk[*Parameter]
+	tl5Chunk                       astChunk[Statement]
+	tl6Chunk                       astChunk[TypeNode]
+	tl7Chunk                       astChunk[CaseOrDefaultClause]
+	tl8Chunk                       astChunk[*HeritageClause]
+	tl9Chunk                       astChunk[ClassElement]
+	tl10Chunk                      astChunk[*EnumMember]
+	tl11Chunk                      astChunk[*ExpressionWithTypeArguments]
+	tl12Chunk                      astChunk[*ImportAttribute]
+	tl13Chunk                      astChunk[TypeElement]
+	tl14Chunk                      astChunk[JsxAttributeLike]
+	tl15Chunk                      astChunk[JsxChild]
+	tl16Chunk                      astChunk[*ExportSpecifier]
+	tl17Chunk                      astChunk[*ImportSpecifier]
+	tl18Chunk                      astChunk[*BindingElement]
+	tl19Chunk                      astChunk[ObjectLiteralElement]
+	tl20Chunk                      astChunk[*TemplateSpan]
+	tl21Chunk                      astChunk[*TemplateLiteralTypeSpan]
+	tl22Chunk                      astChunk[*VariableDeclaration]
 }
 
 // ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
