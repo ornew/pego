@@ -555,7 +555,8 @@ func quote(s string) string { return strconv.Quote(s) }
 func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
 	switch e := e.(type) {
 	case *grammar.Literal:
-		rs, bs := []rune(e.Value), []byte(e.Value)
+		value := literalValue(e.Value)
+		rs, bs := []rune(value), []byte(value)
 		desc := c.desc(quote(e.Value))
 		return func(p *parser) (*Node, bool) {
 			start := p.pos
@@ -566,7 +567,7 @@ func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
 			if !build {
 				return nil, true
 			}
-			return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.literalText(start, e.Value), terminal: true, fresh: true}), true
+			return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.literalText(start, value), terminal: true, fresh: true}), true
 		}
 
 	case *grammar.CharClass:

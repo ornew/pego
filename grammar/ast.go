@@ -162,7 +162,9 @@ type Ref struct {
 	Level string `json:"level,omitempty"`
 }
 
-// Literal is a string literal "...".
+// Literal is a string literal "...". Matching uses its decoded rune sequence:
+// malformed UTF-8 bytes become U+FFFD in both position units. Compilation and
+// generation derive matching data without changing Value.
 type Literal struct {
 	Pos   Pos    `json:"-"`
 	Value string `json:"value"`

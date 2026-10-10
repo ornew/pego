@@ -36,16 +36,17 @@ func (b Backend) String() string {
 // end-of-rule processing use the runtime shared with the closure engine (runtime.go), while rule
 // bodies, Pratt sections, actions, and predicates run as bytecode.
 type vmProgram struct {
-	m      *Module
-	rules  []*rule
-	byName map[string]*rule
-	nseen  int        // number of rules with rule.seen set
-	runes  [][]rune   // code points of each string in the string table
-	bytes  [][]byte   // UTF-8 of each string in the string table
-	scopes [][]string // names in the scope table
-	fields [][]string // names in the field lists
-	ascii  []asciiSet // the ASCII part of each class, as a bitmap
-	descs  []string   // expectation table: fixedDescs followed by the string table (string i has index numFixedDescs+i)
+	m        *Module
+	rules    []*rule
+	byName   map[string]*rule
+	nseen    int        // number of rules with rule.seen set
+	runes    [][]rune   // code points of each string in the string table
+	bytes    [][]byte   // UTF-8 of the decoded literal strings
+	literals []string   // matching text; aliases m.Strings unless normalization is needed
+	scopes   [][]string // names in the scope table
+	fields   [][]string // names in the field lists
+	ascii    []asciiSet // the ASCII part of each class, as a bitmap
+	descs    []string   // expectation table: fixedDescs followed by the string table (string i has index numFixedDescs+i)
 	// runSites holds, at the index of each REPEAT that a Document can resume, how to resume it.
 	runSites []*vmRunSite
 }
@@ -98,9 +99,19 @@ func (vm *vmProgram) runSite(ip int) *vmRunSite {
 // newVMProgram prepares a module for execution. If iterative, it runs with the iterative model.
 func newVMProgram(m *Module, iterative bool) *vmProgram {
 	vm := &vmProgram{m: m, byName: map[string]*rule{}, descs: append(append([]string(nil), fixedDescs...), m.Strings...)}
-	for _, s := range m.Strings {
-		vm.runes = append(vm.runes, []rune(s))
-		vm.bytes = append(vm.bytes, []byte(s))
+	vm.literals = m.Strings
+	normalized := false
+	for i, s := range m.Strings {
+		value := literalValue(s)
+		if value != s {
+			if !normalized {
+				vm.literals = append([]string(nil), m.Strings...)
+				normalized = true
+			}
+			vm.literals[i] = value
+		}
+		vm.runes = append(vm.runes, []rune(value))
+		vm.bytes = append(vm.bytes, []byte(value))
 	}
 	for _, sc := range m.Scopes {
 		vm.scopes = append(vm.scopes, vm.names(sc))
@@ -405,7 +416,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 				goto fail
 			}
 			if in.C == 1 {
-				p.push(p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.literalText(start, m.Strings[in.A]), terminal: true, fresh: true}))
+				p.push(p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.literalText(start, vm.literals[in.A]), terminal: true, fresh: true}))
 			}
 		case OpClass:
 			ch, size, ok := p.peek()

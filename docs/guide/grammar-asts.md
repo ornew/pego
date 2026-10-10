@@ -41,6 +41,19 @@ existing meanings. Invalid endpoints are reported at paths such as
 compilation and generation. Remove unreachable surrogate exclusions from
 older grammars and recompile AST-bearing saved parsers that contain them.
 
+A matching `grammar.Literal.Value` uses its decoded Unicode rune sequence. Each malformed UTF-8 byte
+becomes U+FFFD, so a value containing `"\xc3"` matches a replacement character and cannot match the
+leading byte of `"é"`. Both position units, saved modules and generated Go/TypeScript share this
+rule. Compile and generation derive matching data without rewriting the caller's AST; binary
+serialization preserves the original literal value. JSON strings follow `encoding/json`'s UTF-8
+replacement behavior. String constants in actions are separate from matching literals.
+
+Match text follows the input: byte positions preserve consumed source bytes, while code-point
+positions return decoded text. For example, the same raw-invalid-byte literal can match either
+valid U+FFFD or an invalid input byte, but byte-mode `text($capture)` distinguishes their spellings.
+Rebuild generated parsers from older invalid-byte ASTs to update their embedded matching data;
+existing full and AST-omitted binary modules gain the corrected comparison when loaded.
+
 Both VMs and generated parsers honor negative unbounded maxima. Saving a
 compiled grammar preserves the original maximum in its AST and uses the
 standard unbounded representation in its bytecode. Recompile older artifacts

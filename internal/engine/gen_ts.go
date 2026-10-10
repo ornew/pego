@@ -373,8 +373,9 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 	var b strings.Builder
 	switch e := e.(type) {
 	case *grammar.Literal:
+		value := literalValue(e.Value)
 		v := g.name("lit")
-		fmt.Fprintf(&g.vars, "const %s: Lit = { text: %s, cps: %s, bytes: %s };\n", v, tsString(e.Value), tsInts([]rune(e.Value)), tsInts([]byte(e.Value)))
+		fmt.Fprintf(&g.vars, "const %s: Lit = { text: %s, cps: %s, bytes: %s };\n", v, tsString(value), tsInts([]rune(value)), tsInts([]byte(value)))
 		return fmt.Sprintf("p.matchLiteral(%s, %d, %v)", v, g.desc(strconv.Quote(e.Value)), build)
 	case *grammar.CharClass:
 		fmt.Fprintf(&b, "  const ch = p.peek();\n  if (ch < 0 || %s) {\n    p.expect(p.pos, %d);\n    return undefined;\n  }\n",

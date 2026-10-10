@@ -119,7 +119,11 @@ For example, `@(?0-9)+` is `@((?0-9)+)`, `x:a*` is `x:(a*)`, and
 
 ### Literals
 
-A literal `"..."` matches exactly the given string and produces a terminal.
+A literal `"..."` matches the given decoded character sequence and produces a terminal.
+For public grammar ASTs, malformed UTF-8 bytes in `Literal.Value` each decode as U+FFFD;
+comparison uses the same sequence in both position units. This does not rewrite the AST
+or change string constants in actions. Matched text retains the input spelling according
+to the selected position unit (see [grammar ASTs](../docs/guide/grammar-asts.md)).
 
 ```pego
 def a = "abc"

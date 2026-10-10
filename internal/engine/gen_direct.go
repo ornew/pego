@@ -289,8 +289,9 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 	g := d.g
 	switch e := e.(type) {
 	case *grammar.Literal:
+		value := literalValue(e.Value)
 		lit := g.name("lit")
-		fmt.Fprintf(&g.vars, "var %s = []rune(%q)\n", lit, e.Value)
+		fmt.Fprintf(&g.vars, "var %s = []rune(%q)\n", lit, value)
 		desc := g.desc(strconv.Quote(e.Value))
 		var start string
 		if build {
@@ -298,8 +299,8 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 			d.line("%s = p.pos", start)
 		}
 		ok := d.ok()
-		match := fmt.Sprintf("_, %s = p.parser.matchLiteral(%s, %q, %d, false); !%s", ok, lit, e.Value, desc, ok)
-		if rs := []rune(e.Value); len(rs) > 0 && len(rs) <= maxInlineLiteral {
+		match := fmt.Sprintf("_, %s = p.parser.matchLiteral(%s, %q, %d, false); !%s", ok, lit, value, desc, ok)
+		if rs := []rune(value); len(rs) > 0 && len(rs) <= maxInlineLiteral {
 			// The code points compared in place (see peek); matchLiteral records the expectation
 			// when they differ, and does the work in Bytes.
 			cond := fmt.Sprintf("p.pos+%d <= len(p.in)", len(rs))
@@ -324,9 +325,9 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 			return "nil"
 		}
 		v := d.decl("v", "any")
-		text := fmt.Sprintf("%q", e.Value)
-		if strings.ContainsRune(e.Value, '\uFFFD') {
-			text = fmt.Sprintf("p.literalText(%s, %q)", d.rd(start), e.Value)
+		text := fmt.Sprintf("%q", value)
+		if strings.ContainsRune(value, '\uFFFD') {
+			text = fmt.Sprintf("p.literalText(%s, %q)", d.rd(start), value)
 		}
 		d.line("%s = p.newMatch(%s, p.pos, %s, true)", v, d.rd(start), text)
 		return v

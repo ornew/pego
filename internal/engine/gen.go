@@ -480,9 +480,10 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 	var b strings.Builder
 	switch e := e.(type) {
 	case *grammar.Literal:
+		value := literalValue(e.Value)
 		v := g.name("lit")
-		fmt.Fprintf(&g.vars, "var %s = []rune(%q)\n", v, e.Value)
-		fmt.Fprintf(&b, "\treturn p.matchLiteral(%s, %q, %d, %v)\n", v, e.Value, g.desc(strconv.Quote(e.Value)), build)
+		fmt.Fprintf(&g.vars, "var %s = []rune(%q)\n", v, value)
+		fmt.Fprintf(&b, "\treturn p.matchLiteral(%s, %q, %d, %v)\n", v, value, g.desc(strconv.Quote(e.Value)), build)
 	case *grammar.CharClass:
 		fmt.Fprintf(&b, "\tch, size, ok := p.peek()\n\tif !ok || %s {\n\t\tp.expect(p.pos, %d)\n\t\treturn nil, false\n\t}\n",
 			classReject(e), g.desc(charClassString(e)))

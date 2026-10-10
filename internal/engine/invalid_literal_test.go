@@ -117,7 +117,7 @@ func TestInvalidUTF8LiteralStream(t *testing.T) {
 }
 
 func invalidLiteralCorpus() []genCase {
-	return []genCase{
+	cases := []genCase{
 		{"text predicate", `type N struct { T Match }
 def main:N = t:"�" [len(text($t))==len($t)] $$ -> new N{T:$t}`, []string{"\xff", "\x80", "\xc3", "�", "é"}},
 		{"replacement", `type N struct { T Match }
@@ -133,6 +133,7 @@ def main:N = t:("x" / "�") $$ -> new N{T:$t}`, []string{"\xff", "\x80", "\xc3"
 		{"class", `type N struct { T Match }
 def main:N = t:(?�) $$ -> new N{T:$t}`, []string{"\xff", "\x80", "\xc3", "�", "é"}},
 	}
+	return append(cases, rawLiteralGenCorpus()...)
 }
 
 // Go string literals preserve invalid bytes; JSON input fixtures would replace
@@ -157,11 +158,11 @@ func TestGeneratedInvalidUTF8Literals(t *testing.T) {
 	harness.WriteString(`func main(){`)
 	i := 0
 	for _, tc := range invalidLiteralCorpus() {
-		g, err := syntax.Parse(tc.src)
+		g := literalCorpusGrammar(t, tc)
+		prog, err := Compile(g, Options{})
 		if err != nil {
 			t.Fatal(err)
 		}
-		prog := compile(t, tc.src)
 		for _, mode := range []string{"untyped", "direct", "convert"} {
 			pkg := fmt.Sprintf("g%d", i)
 			i++
@@ -218,11 +219,11 @@ func literalTextUnits(input string, unit Unit) []rune {
 func TestGeneratedTSInvalidUTF8Literals(t *testing.T) {
 	for _, tc := range invalidLiteralCorpus() {
 		t.Run(tc.name, func(t *testing.T) {
-			g, err := syntax.Parse(tc.src)
+			g := literalCorpusGrammar(t, tc)
+			prog, err := Compile(g, Options{})
 			if err != nil {
 				t.Fatal(err)
 			}
-			prog := compile(t, tc.src)
 			code, err := GenerateTS(g, GenOptions{Start: "main", Recognize: true})
 			if err != nil {
 				t.Fatal(err)
