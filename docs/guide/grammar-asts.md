@@ -68,6 +68,11 @@ input; call `Validate` first for ASTs your tool constructs. The validator walks
 iteratively, though later formatting, serialization and compilation have
 their own nesting costs. Do not mutate the AST concurrently with these calls.
 
+Integer constants use Go's native `int` range. Formatting the minimum integer
+uses `-MaxInt - 1`, with parentheses where required: its absolute value cannot
+be a positive source token. Parsing the formatted grammar preserves the value,
+though that constant becomes a subtraction expression in the source AST.
+
 ## Load JSON
 
 `grammar.UnmarshalJSON(data)` accepts exactly one complete JSON value,

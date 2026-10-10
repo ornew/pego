@@ -646,6 +646,11 @@ func FormatTerm(t Term) string { return formatTerm(t, 0) }
 func formatTerm(t Term, outer int) string {
 	switch t := t.(type) {
 	case *IntLit:
+		if t.Value == -int(^uint(0)>>1)-1 {
+			// The absolute minimum cannot be a positive source token. Use
+			// representable operands and honor the surrounding precedence.
+			return formatTerm(&Binary{Op: "-", L: &IntLit{Value: t.Value + 1}, R: &IntLit{Value: 1}}, outer)
+		}
 		return strconv.Itoa(t.Value)
 	case *StringLit:
 		return quote(t.Value)
