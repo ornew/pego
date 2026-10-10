@@ -5,16 +5,10 @@ import { escapeHTML, highlight, highlightJSON } from "./highlight.js";
 import { encodeState } from "./state.js";
 import { siteRoot } from "./pego-client.js";
 import { search, snippet } from "./search.js";
+import { installLegacyOptimizationRedirects } from "./legacy-redirect.js";
 
 const root = siteRoot();
-
-// Old numbered optimization fragments now point to the corresponding catalog entry.
-if (location.hash) {
-  let id = location.hash.slice(1);
-  try { id = decodeURIComponent(id); } catch { /* Keep the literal fragment. */ }
-  const target = document.getElementById(id)?.dataset.movedTo;
-  if (target) location.replace(target);
-}
+installLegacyOptimizationRedirects(window);
 
 function storage(key, value) {
   try {

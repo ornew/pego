@@ -148,8 +148,8 @@ func TestBuild(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(siteJS), "location.replace(target)") {
-		t.Error("site script does not follow legacy optimization redirects")
+	if !strings.Contains(string(siteJS), "installLegacyOptimizationRedirects(window)") {
+		t.Error("site script does not install legacy optimization redirects")
 	}
 
 	// The reference of the pego command has a section for every command, with every flag.
