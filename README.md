@@ -182,7 +182,7 @@ left-recursive), an indentation-based outline format and a small programming lan
 | [Language specification](spec/README.md) | The PEGO grammar language |
 | [Development guide](docs/development.md) | Architecture, repository layout, implementation status, roadmap |
 | [Bytecode specification](spec/bytecode.md) | Instruction set and VM semantics, for porting the runtime |
-| [Benchmarks](docs/benchmarks.md) · [Performance log](docs/performance.md) | How fast, and how it got there |
+| [Benchmarks](docs/benchmarks.md) · [Performance analysis](docs/performance.md) · [Optimization catalog](docs/optimizations/README.md) | How fast, and how it got there |
 | [Design records](docs/design/) | Decisions and their rationale |
 
 ## Contributing

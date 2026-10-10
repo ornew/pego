@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -87,10 +88,12 @@ func TestBuild(t *testing.T) {
 		"reference/pego/index.html": {
 			`id="CompileSource"`, `id="Parser.Parse"`, "type Node struct", `id="Node.Clone"`, "pkg.go.dev",
 		},
-		"reference/grammar/index.html": {`id="Format"`, `id="Grammar.Rules"`, "type RuleDef struct"},
-		"reference/cli/index.html":     {`id="cmd-parse"`, "<code>-g string</code>", "-backend string", `id="commands"`},
-		"docs/design/index.html":       {"012. Typed Values in Generated Parsers", "Implemented"},
-		"playground/index.html":        {`id="pg-grammar"`, `src="../playground/app.js"`, `href="../playground/playground.css"`},
+		"reference/grammar/index.html":  {`id="Format"`, `id="Grammar.Rules"`, "type RuleDef struct"},
+		"reference/cli/index.html":      {`id="cmd-parse"`, "<code>-g string</code>", "-backend string", `id="commands"`},
+		"docs/design/index.html":        {"012. Typed Values in Generated Parsers", "Implemented"},
+		"docs/optimizations/index.html": {"Optimization Catalog", "001. Value-free rule bodies", "076. Inline value-free plain generated Go rules"},
+		"docs/performance/index.html":   {`id="1-value-free-rule-bodies-value-free-twins-transient-rules-0b2c903"`, `id="76-inline-value-free-plain-generated-go-rules"`},
+		"playground/index.html":         {`id="pg-grammar"`, `src="../playground/app.js"`, `href="../playground/playground.css"`},
 		"docs/guide/runtime/index.html": {
 			`id="compiled-grammars-pegoc"`, `href="../../../spec/"`, `<pre><code class="language-pego">`,
 		},
@@ -104,6 +107,25 @@ func TestBuild(t *testing.T) {
 			if !strings.Contains(string(data), w) {
 				t.Errorf("%s does not contain %q", page, w)
 			}
+		}
+	}
+
+	// The numbered changes moved to the catalog keep their old performance.md fragments.
+	perf, err := os.ReadFile(filepath.Join(out, "docs", "performance", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	aliases := regexp.MustCompile(`<a id="([0-9]+)-[^"]+"></a>`).FindAllSubmatch(perf, -1)
+	if len(aliases) != 76 {
+		t.Fatalf("performance page has %d legacy change anchors, want 76", len(aliases))
+	}
+	seen := map[string]bool{}
+	for _, alias := range aliases {
+		seen[string(alias[1])] = true
+	}
+	for n := 1; n <= 76; n++ {
+		if !seen[strconv.Itoa(n)] {
+			t.Errorf("performance page is missing legacy anchor for change %d", n)
 		}
 	}
 
@@ -508,11 +530,11 @@ func TestNavigation(t *testing.T) {
 			}
 		}
 	}
-	if got, want := strings.Join(names, ", "), "Tutorial, Guides, Cookbook, Specification, Reference, Parsers, Design records, Project"; got != want {
+	if got, want := strings.Join(names, ", "), "Tutorial, Guides, Cookbook, Specification, Reference, Parsers, Design records, Optimizations, Project"; got != want {
 		t.Errorf("sections = %s, want %s", got, want)
 	}
-	if want := map[string]bool{"docs/guide/": true, "docs/cookbook/": true, "spec/": true, "parsers/": true}; !maps.Equal(intro, want) {
-		t.Errorf("pages titled Introduction = %v, want the indexes of Guides, Cookbook, Specification and Parsers", intro)
+	if want := map[string]bool{"docs/guide/": true, "docs/cookbook/": true, "spec/": true, "parsers/": true, "docs/optimizations/": true}; !maps.Equal(intro, want) {
+		t.Errorf("pages titled Introduction = %v, want the indexes of Guides, Cookbook, Specification, Parsers and Optimizations", intro)
 	}
 	for _, sec := range secs {
 		if sec.Name != "Parsers" {
@@ -543,7 +565,7 @@ func TestNavigation(t *testing.T) {
 		}
 	}
 
-	// Design records folds: closed on a page of the guides, open on a page of the section.
+	// Design records and optimizations fold outside their own section and open within it.
 	design := func(secs []sidebarSection) sidebarSection {
 		for _, sec := range secs {
 			if sec.Name == "Design records" {
@@ -554,12 +576,44 @@ func TestNavigation(t *testing.T) {
 		return sidebarSection{}
 	}
 	for _, sec := range secs {
-		if sec.Collapsible != (sec.Name == "Design records") || sec.Open {
+		if sec.Collapsible != (sec.Name == "Design records" || sec.Name == "Optimizations") || sec.Open {
 			t.Errorf("section %s: collapsible=%v open=%v on a guide", sec.Name, sec.Collapsible, sec.Open)
 		}
 	}
 	if sec := design(secs); len(sec.Links) < 15 {
 		t.Errorf("Design records lists %d pages", len(sec.Links))
+	}
+	optimizationSection := func(secs []sidebarSection) sidebarSection {
+		for _, sec := range secs {
+			if sec.Name == "Optimizations" {
+				return sec
+			}
+		}
+		t.Fatal("no Optimizations section")
+		return sidebarSection{}
+	}
+	for _, tc := range []struct {
+		page, current string
+	}{
+		{"docs/optimizations/index.html", "Introduction"},
+		{"docs/optimizations/076-inline-value-free-plain-generated-go-rules/index.html", "76. Inline value-free plain generated Go rules"},
+	} {
+		sec := optimizationSection(readSidebar(t, filepath.Join(out, filepath.FromSlash(tc.page))))
+		if !sec.Collapsible || !sec.Open {
+			t.Errorf("%s: Optimizations should be open and collapsible", tc.page)
+		}
+		if len(sec.Links) != 77 {
+			t.Errorf("%s: Optimizations lists %d pages, want 77", tc.page, len(sec.Links))
+		}
+		current := ""
+		for _, l := range sec.Links {
+			if l.Current {
+				current = l.Title
+			}
+		}
+		if current != tc.current {
+			t.Errorf("%s: current Optimizations entry = %q, want %q", tc.page, current, tc.current)
+		}
 	}
 	for _, tc := range []struct {
 		page, current string // current is the title of the entry of the page, if the section should be open
