@@ -140,12 +140,14 @@ exceeded their limits during the concurrent emulated run and pass when run
 alone. Eight standalone parser-module vet/test suites pass on Go32: CEL,
 CSV, CUE, DuckDB, JSON, TypeScript, XML and YAML.
 
-The Python grammar's indentation state packs values using a 2⁴⁴ multiplier
-and requires 64-bit Go arithmetic. The Go grammar also assumes the 64-bit
-standard parser's acceptance of extremely large `//line` numbers; three
-reference comparisons differ from the 32-bit standard parser. Ready-made
-parser support and the architecture-aware CI scope remain unresolved, so
-these results do not establish complete 32-bit support for every module.
+The Python grammar now uses separate native-integer columns and a bounded
+block depth packed with bracket/string state; [design 026](026-portable-python-block-state.md)
+describes its tests and measured allocation tradeoff. It passes the native
+64-bit and Linux/386 module suites, but adoption of that tradeoff is pending.
+The Go grammar still assumes the 64-bit standard parser's acceptance of
+extremely large `//line` numbers; three reference comparisons differ from
+the 32-bit standard parser. Complete ready-made parser support and the CI
+matrix therefore remain unresolved.
 Validation also covers:
 
 - Cross-compile root and every parser module for `linux/386`; run the supported

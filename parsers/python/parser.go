@@ -10612,22 +10612,22 @@ var lit4344 = []rune("..")
 
 func init() {
 	rules = []*rule{
-		{id: 0, name: "main", scope: []string{"b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 1, name: "first_stmts", scope: []string{"i", "s"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
+		{id: 0, name: "main", scope: []string{"b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 1, name: "first_stmts", scope: []string{"i", "s"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
 		{id: 2, name: "module_end", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
-		{id: 3, name: "stmts", scope: []string{"f", "r"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 0, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 4, name: "stmt_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "lv"}},
-		{id: 5, name: "block", scope: []string{"b"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 6, name: "indented_block", scope: []string{"i", "s"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
+		{id: 3, name: "stmts", scope: []string{"f", "r"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 0, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 4, name: "stmt_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "lv"}},
+		{id: 5, name: "block", scope: []string{"b"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 6, name: "indented_block", scope: []string{"i", "s"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
 		{id: 7, name: "simple_stmts", scope: []string{"f", "r"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
-		{id: 8, name: "clause_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 2, novalue: false, vars: []string{"ind", "lv"}},
+		{id: 8, name: "clause_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 2, novalue: false, vars: []string{"indAlt", "indCol", "lv"}},
 		{id: 9, name: "indentation", scope: []string{"segs", "tail"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 3, novalue: false, vars: []string{}},
 		{id: 10, name: "blank", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 4, novalue: false, vars: []string{}},
 		{id: 11, name: "eol", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 5, novalue: false, vars: []string{"lv"}},
 		{id: 12, name: "newline", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 13, name: "comment", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 14, name: "ws", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
-		{id: 15, name: "stmt", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, seen: 6, novalue: false, vars: []string{"ind", "isdict", "lv"}},
+		{id: 15, name: "stmt", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, seen: 6, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
 		{id: 16, name: "simple_stmt", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, seen: 7, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 17, name: "expr_stmt", scope: []string{"e"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 18, name: "assignment", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
@@ -10660,44 +10660,44 @@ func init() {
 		{id: 45, name: "star_import", scope: []string{"a"}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 46, name: "star_alias", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 47, name: "import_from_as_name", scope: []string{"n", "a"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 10, novalue: false, vars: []string{"lv"}},
-		{id: 48, name: "compound_stmt", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 49, name: "if_stmt", scope: []string{"t", "b", "o"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 50, name: "elif_part", scope: []string{"e"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 11, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 51, name: "elif_stmt", scope: []string{"t", "b", "o"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 52, name: "else_part", scope: []string{"b"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 12, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 53, name: "while_stmt", scope: []string{"t", "b", "o"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 54, name: "for_stmt", scope: []string{"t", "i", "b", "o"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 55, name: "async_for", scope: []string{"t", "i", "b", "o"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 56, name: "with_stmt", scope: []string{"is", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 57, name: "async_with", scope: []string{"is", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
+		{id: 48, name: "compound_stmt", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 49, name: "if_stmt", scope: []string{"t", "b", "o"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 50, name: "elif_part", scope: []string{"e"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 11, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 51, name: "elif_stmt", scope: []string{"t", "b", "o"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 52, name: "else_part", scope: []string{"b"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 12, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 53, name: "while_stmt", scope: []string{"t", "b", "o"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 54, name: "for_stmt", scope: []string{"t", "i", "b", "o"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 55, name: "async_for", scope: []string{"t", "i", "b", "o"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 56, name: "with_stmt", scope: []string{"is", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 57, name: "async_with", scope: []string{"is", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
 		{id: 58, name: "with_items", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, seen: 13, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 59, name: "paren_with_items", scope: []string{"f", "r"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 60, name: "plain_with_items", scope: []string{"f", "r"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 61, name: "with_item", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, seen: 14, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 62, name: "with_item_as", scope: []string{"e", "t"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 63, name: "with_item_plain", scope: []string{"e"}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
-		{id: 64, name: "try_stmt", scope: []string{"b", "hs", "xs", "e", "f"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 65, name: "finally_part", scope: []string{"b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 66, name: "except_handler", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 67, name: "except_as", scope: []string{"t", "n", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 68, name: "except_plain", scope: []string{"t", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 69, name: "except_bare", scope: []string{"b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 70, name: "except_star_handler", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 71, name: "except_star_as", scope: []string{"t", "n", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 72, name: "except_star_plain", scope: []string{"t", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 73, name: "decorators", scope: []string{"ds"}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, seen: 15, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 74, name: "dec_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "lv"}},
-		{id: 75, name: "funcdef", scope: []string{"ds", "n", "p", "a", "r", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 76, name: "async_funcdef", scope: []string{"ds", "n", "p", "a", "r", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
+		{id: 64, name: "try_stmt", scope: []string{"b", "hs", "xs", "e", "f"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 65, name: "finally_part", scope: []string{"b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 66, name: "except_handler", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 67, name: "except_as", scope: []string{"t", "n", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 68, name: "except_plain", scope: []string{"t", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 69, name: "except_bare", scope: []string{"b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 70, name: "except_star_handler", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 71, name: "except_star_as", scope: []string{"t", "n", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 72, name: "except_star_plain", scope: []string{"t", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 73, name: "decorators", scope: []string{"ds"}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, seen: 15, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 74, name: "dec_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "lv"}},
+		{id: 75, name: "funcdef", scope: []string{"ds", "n", "p", "a", "r", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 76, name: "async_funcdef", scope: []string{"ds", "n", "p", "a", "r", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
 		{id: 77, name: "def_params", scope: []string{"a"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 16, novalue: false, vars: []string{"isdict", "lv"}},
-		{id: 78, name: "classdef", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 79, name: "classdef_args", scope: []string{"ds", "n", "p", "c", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 80, name: "classdef_plain", scope: []string{"ds", "n", "p", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 81, name: "match_stmt", scope: []string{"s", "cs"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
+		{id: 78, name: "classdef", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 79, name: "classdef_args", scope: []string{"ds", "n", "p", "c", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 80, name: "classdef_plain", scope: []string{"ds", "n", "p", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 81, name: "match_stmt", scope: []string{"s", "cs"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
 		{id: 82, name: "subject_expr", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 83, name: "subject_tuple", scope: []string{"f", "r", "l"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
-		{id: 84, name: "case_blocks", scope: []string{"i", "f", "r"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 85, name: "case_block", scope: []string{"p", "g", "b"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 17, novalue: false, vars: []string{"ind", "isdict", "lv"}},
+		{id: 84, name: "case_blocks", scope: []string{"i", "f", "r"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 85, name: "case_block", scope: []string{"p", "g", "b"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 17, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
 		{id: 86, name: "patterns", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 87, name: "open_sequence_pattern", scope: []string{"s"}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 88, name: "open_seq_items", scope: []string{"f", "r", "l"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 18, novalue: false, vars: []string{"isdict", "lv"}},
@@ -10952,7 +10952,7 @@ func init() {
 		{id: 337, name: "blank", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 117, novalue: true, vars: []string{}},
 		{id: 338, name: "module_end", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"lv"}},
 		{id: 339, name: "ws", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"lv"}},
-		{id: 340, name: "stmt_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"ind", "lv"}},
+		{id: 340, name: "stmt_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"indAlt", "indCol", "lv"}},
 		{id: 341, name: "eol", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 118, novalue: true, vars: []string{"lv"}},
 		{id: 342, name: "newline", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 343, name: "kw_pass", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
@@ -10969,7 +10969,7 @@ func init() {
 		{id: 354, name: "kw_import", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 120, novalue: true, vars: []string{}},
 		{id: 355, name: "kw_as", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 121, novalue: true, vars: []string{}},
 		{id: 356, name: "kw_if", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 122, novalue: true, vars: []string{}},
-		{id: 357, name: "clause_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 123, novalue: true, vars: []string{"ind", "lv"}},
+		{id: 357, name: "clause_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 123, novalue: true, vars: []string{"indAlt", "indCol", "lv"}},
 		{id: 358, name: "kw_elif", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 359, name: "kw_else", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 124, novalue: true, vars: []string{}},
 		{id: 360, name: "kw_while", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
@@ -10980,7 +10980,7 @@ func init() {
 		{id: 365, name: "kw_try", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 366, name: "kw_finally", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 367, name: "kw_except", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 129, novalue: true, vars: []string{}},
-		{id: 368, name: "dec_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"ind", "lv"}},
+		{id: 368, name: "dec_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"indAlt", "indCol", "lv"}},
 		{id: 369, name: "kw_def", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 130, novalue: true, vars: []string{}},
 		{id: 370, name: "kw_class", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 131, novalue: true, vars: []string{}},
 		{id: 371, name: "kw_match", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
@@ -12138,22 +12138,22 @@ func init() {
 	structFields["YieldFrom"] = map[string]bool{"Value": true}
 	typeKinds["YieldFrom"] = kindOf("YieldFrom", "")
 	recRules = []*rule{
-		{id: 0, name: "main", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"ind", "isdict", "lv"}},
-		{id: 1, name: "first_stmts", scope: []string{"i", "s"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"ind", "isdict", "lv"}},
+		{id: 0, name: "main", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 1, name: "first_stmts", scope: []string{"i", "s"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
 		{id: 2, name: "module_end", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"lv"}},
-		{id: 3, name: "stmts", scope: []string{"f", "r"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 0, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 4, name: "stmt_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "lv"}},
-		{id: 5, name: "block", scope: []string{"b"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 6, name: "indented_block", scope: []string{"i", "s"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
+		{id: 3, name: "stmts", scope: []string{"f", "r"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 0, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 4, name: "stmt_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "lv"}},
+		{id: 5, name: "block", scope: []string{"b"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 6, name: "indented_block", scope: []string{"i", "s"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
 		{id: 7, name: "simple_stmts", scope: []string{"f", "r"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
-		{id: 8, name: "clause_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 2, novalue: false, vars: []string{"ind", "lv"}},
+		{id: 8, name: "clause_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 2, novalue: false, vars: []string{"indAlt", "indCol", "lv"}},
 		{id: 9, name: "indentation", scope: []string{"segs", "tail"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 3, novalue: false, vars: []string{}},
 		{id: 10, name: "blank", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 4, novalue: false, vars: []string{}},
 		{id: 11, name: "eol", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 5, novalue: false, vars: []string{"lv"}},
 		{id: 12, name: "newline", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 13, name: "comment", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 14, name: "ws", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"lv"}},
-		{id: 15, name: "stmt", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, seen: 6, novalue: false, vars: []string{"ind", "isdict", "lv"}},
+		{id: 15, name: "stmt", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, seen: 6, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
 		{id: 16, name: "simple_stmt", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, seen: 7, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 17, name: "expr_stmt", scope: []string{"e"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 18, name: "assignment", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
@@ -12186,44 +12186,44 @@ func init() {
 		{id: 45, name: "star_import", scope: []string{"a"}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 46, name: "star_alias", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 47, name: "import_from_as_name", scope: []string{"n", "a"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 10, novalue: false, vars: []string{"lv"}},
-		{id: 48, name: "compound_stmt", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 49, name: "if_stmt", scope: []string{"t", "b", "o"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 50, name: "elif_part", scope: []string{"e"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 11, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 51, name: "elif_stmt", scope: []string{"t", "b", "o"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 52, name: "else_part", scope: []string{"b"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 12, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 53, name: "while_stmt", scope: []string{"t", "b", "o"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 54, name: "for_stmt", scope: []string{"t", "i", "b", "o"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 55, name: "async_for", scope: []string{"t", "i", "b", "o"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 56, name: "with_stmt", scope: []string{"is", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 57, name: "async_with", scope: []string{"is", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
+		{id: 48, name: "compound_stmt", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 49, name: "if_stmt", scope: []string{"t", "b", "o"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 50, name: "elif_part", scope: []string{"e"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 11, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 51, name: "elif_stmt", scope: []string{"t", "b", "o"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 52, name: "else_part", scope: []string{"b"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 12, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 53, name: "while_stmt", scope: []string{"t", "b", "o"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 54, name: "for_stmt", scope: []string{"t", "i", "b", "o"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 55, name: "async_for", scope: []string{"t", "i", "b", "o"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 56, name: "with_stmt", scope: []string{"is", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 57, name: "async_with", scope: []string{"is", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
 		{id: 58, name: "with_items", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, seen: 13, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 59, name: "paren_with_items", scope: []string{"f", "r"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 60, name: "plain_with_items", scope: []string{"f", "r"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 61, name: "with_item", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, seen: 14, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 62, name: "with_item_as", scope: []string{"e", "t"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 63, name: "with_item_plain", scope: []string{"e"}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
-		{id: 64, name: "try_stmt", scope: []string{"b", "hs", "xs", "e", "f"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 65, name: "finally_part", scope: []string{"b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 66, name: "except_handler", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 67, name: "except_as", scope: []string{"t", "n", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 68, name: "except_plain", scope: []string{"t", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 69, name: "except_bare", scope: []string{"b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 70, name: "except_star_handler", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 71, name: "except_star_as", scope: []string{"t", "n", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 72, name: "except_star_plain", scope: []string{"t", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 73, name: "decorators", scope: []string{"ds"}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, seen: 15, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 74, name: "dec_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "lv"}},
-		{id: 75, name: "funcdef", scope: []string{"ds", "n", "p", "a", "r", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 76, name: "async_funcdef", scope: []string{"ds", "n", "p", "a", "r", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
+		{id: 64, name: "try_stmt", scope: []string{"b", "hs", "xs", "e", "f"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 65, name: "finally_part", scope: []string{"b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 66, name: "except_handler", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 67, name: "except_as", scope: []string{"t", "n", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 68, name: "except_plain", scope: []string{"t", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 69, name: "except_bare", scope: []string{"b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 70, name: "except_star_handler", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 71, name: "except_star_as", scope: []string{"t", "n", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 72, name: "except_star_plain", scope: []string{"t", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 73, name: "decorators", scope: []string{"ds"}, bodyIsSeq: false, terminalType: "", memo: true, leader: false, seen: 15, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 74, name: "dec_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "lv"}},
+		{id: 75, name: "funcdef", scope: []string{"ds", "n", "p", "a", "r", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 76, name: "async_funcdef", scope: []string{"ds", "n", "p", "a", "r", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
 		{id: 77, name: "def_params", scope: []string{"a"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 16, novalue: false, vars: []string{"isdict", "lv"}},
-		{id: 78, name: "classdef", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 79, name: "classdef_args", scope: []string{"ds", "n", "p", "c", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 80, name: "classdef_plain", scope: []string{"ds", "n", "p", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 81, name: "match_stmt", scope: []string{"s", "cs"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
+		{id: 78, name: "classdef", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 79, name: "classdef_args", scope: []string{"ds", "n", "p", "c", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 80, name: "classdef_plain", scope: []string{"ds", "n", "p", "b"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 81, name: "match_stmt", scope: []string{"s", "cs"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
 		{id: 82, name: "subject_expr", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 83, name: "subject_tuple", scope: []string{"f", "r", "l"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
-		{id: 84, name: "case_blocks", scope: []string{"i", "f", "r"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"ind", "isdict", "lv"}},
-		{id: 85, name: "case_block", scope: []string{"p", "g", "b"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 17, novalue: false, vars: []string{"ind", "isdict", "lv"}},
+		{id: 84, name: "case_blocks", scope: []string{"i", "f", "r"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
+		{id: 85, name: "case_block", scope: []string{"p", "g", "b"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 17, novalue: false, vars: []string{"indAlt", "indCol", "isdict", "lv"}},
 		{id: 86, name: "patterns", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 87, name: "open_sequence_pattern", scope: []string{"s"}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{"isdict", "lv"}},
 		{id: 88, name: "open_seq_items", scope: []string{"f", "r", "l"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 18, novalue: false, vars: []string{"isdict", "lv"}},
@@ -12480,7 +12480,7 @@ func init() {
 		{id: 339, name: "eol", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 118, novalue: true, vars: []string{"lv"}},
 		{id: 340, name: "newline", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 341, name: "comment", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
-		{id: 342, name: "stmt_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"ind", "lv"}},
+		{id: 342, name: "stmt_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"indAlt", "indCol", "lv"}},
 		{id: 343, name: "kw_pass", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 344, name: "kw_break", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 345, name: "kw_continue", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
@@ -12495,7 +12495,7 @@ func init() {
 		{id: 354, name: "kw_import", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 120, novalue: true, vars: []string{}},
 		{id: 355, name: "kw_as", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 121, novalue: true, vars: []string{}},
 		{id: 356, name: "kw_if", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 122, novalue: true, vars: []string{}},
-		{id: 357, name: "clause_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 123, novalue: true, vars: []string{"ind", "lv"}},
+		{id: 357, name: "clause_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 123, novalue: true, vars: []string{"indAlt", "indCol", "lv"}},
 		{id: 358, name: "kw_elif", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 359, name: "kw_else", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 124, novalue: true, vars: []string{}},
 		{id: 360, name: "kw_while", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
@@ -12506,7 +12506,7 @@ func init() {
 		{id: 365, name: "kw_try", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 366, name: "kw_finally", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
 		{id: 367, name: "kw_except", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 129, novalue: true, vars: []string{}},
-		{id: 368, name: "dec_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"ind", "lv"}},
+		{id: 368, name: "dec_sep", scope: []string{"i"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{"indAlt", "indCol", "lv"}},
 		{id: 369, name: "kw_def", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 130, novalue: true, vars: []string{}},
 		{id: 370, name: "kw_class", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 131, novalue: true, vars: []string{}},
 		{id: 371, name: "kw_match", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: true, vars: []string{}},
@@ -14565,7 +14565,10 @@ func (p *parser) e1() (*Node, bool) {
 		x11 []expID
 	)
 	_ = x1
-	if !p.assign("ind", func(c *actx) any { return any(0) }) {
+	if !p.assign("indCol", func(c *actx) any { return any(0) }) {
+		goto fail
+	}
+	if !p.assign("indAlt", func(c *actx) any { return any(0) }) {
 		goto fail
 	}
 	if !p.assign("lv", func(c *actx) any { return any(0) }) {
@@ -15053,11 +15056,13 @@ L6:
 	p.setCapture(0, v21)
 	x2 = append(x2, v21)
 	if !p.predicate(func(c *actx) any {
-		return rtBinary("==", rtBinary("+", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_14, l_15 any) any {
+		return rtAnd(rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_14, l_15 any) any {
 			return rtBinary("+", rtBinary("*", rtBinary("/", rtBinary("+", l_14, c.length(c.member(l_15, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(c.cap(0), "tail"))), rtBinary("*", any(4194304), rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_16, l_17 any) any {
-			return rtBinary("+", rtBinary("+", l_16, c.length(c.member(l_17, "sp"))), any(1))
-		}), c.length(c.member(c.cap(0), "tail"))))), rtBinary("%", c.lookup("ind"), rtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indCol")), func() any {
+			return rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_16, l_17 any) any {
+				return rtBinary("+", rtBinary("+", l_16, c.length(c.member(l_17, "sp"))), any(1))
+			}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indAlt"))
+		})
 	}) {
 		goto fail
 	}
@@ -15144,10 +15149,10 @@ func (p *parser) e28() (*Node, bool) {
 	if !p.predicate(func(c *actx) any {
 		return rtAnd(rtBinary(">", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_20, l_21 any) any {
 			return rtBinary("+", rtBinary("*", rtBinary("/", rtBinary("+", l_20, c.length(c.member(l_21, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(c.cap(0), "tail"))), rtBinary("%", c.lookup("ind"), any(4194304))), func() any {
+		}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indCol")), func() any {
 			return rtBinary(">", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_22, l_23 any) any {
 				return rtBinary("+", rtBinary("+", l_22, c.length(c.member(l_23, "sp"))), any(1))
-			}), c.length(c.member(c.cap(0), "tail"))), rtBinary("%", rtBinary("/", c.lookup("ind"), any(4194304)), any(4194304)))
+			}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indAlt"))
 		})
 	}) {
 		goto L8
@@ -15161,9 +15166,7 @@ L8:
 	goto fail
 L9:
 	x10 = p.isolate(p.pos)
-	if !p.predicate(func(c *actx) any {
-		return rtBinary("<", rtBinary("/", c.lookup("ind"), rtBinary("*", any(4194304), any(4194304))), any(99))
-	}) {
+	if !p.predicate(func(c *actx) any { return rtBinary("<", rtBinary("/", c.lookup("lv"), any(32768)), any(99)) }) {
 		goto L13
 	}
 	x11, x12 = p.unisolate(x10)
@@ -15174,13 +15177,21 @@ L13:
 	p.expect(x11, msgBit|11)
 	goto fail
 L14:
-	if !p.assign("ind", func(c *actx) any {
-		return rtBinary("+", rtBinary("+", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_24, l_25 any) any {
+	if !p.assign("indCol", func(c *actx) any {
+		return rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_24, l_25 any) any {
 			return rtBinary("+", rtBinary("*", rtBinary("/", rtBinary("+", l_24, c.length(c.member(l_25, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(c.cap(0), "tail"))), rtBinary("*", any(4194304), rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_26, l_27 any) any {
-			return rtBinary("+", rtBinary("+", l_26, c.length(c.member(l_27, "sp"))), any(1))
-		}), c.length(c.member(c.cap(0), "tail"))))), rtBinary("*", rtBinary("+", rtBinary("/", c.lookup("ind"), rtBinary("*", any(4194304), any(4194304))), any(1)), rtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(c.cap(0), "tail")))
 	}) {
+		goto fail
+	}
+	if !p.assign("indAlt", func(c *actx) any {
+		return rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_26, l_27 any) any {
+			return rtBinary("+", rtBinary("+", l_26, c.length(c.member(l_27, "sp"))), any(1))
+		}), c.length(c.member(c.cap(0), "tail")))
+	}) {
+		goto fail
+	}
+	if !p.assign("lv", func(c *actx) any { return rtBinary("+", c.lookup("lv"), any(32768)) }) {
 		goto fail
 	}
 	if v15, ok = p.call(rules[3], 0); !ok {
@@ -15332,11 +15343,13 @@ L6:
 	p.setCapture(0, v21)
 	x2 = append(x2, v21)
 	if !p.predicate(func(c *actx) any {
-		return rtBinary("==", rtBinary("+", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_33, l_34 any) any {
+		return rtAnd(rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_33, l_34 any) any {
 			return rtBinary("+", rtBinary("*", rtBinary("/", rtBinary("+", l_33, c.length(c.member(l_34, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(c.cap(0), "tail"))), rtBinary("*", any(4194304), rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_35, l_36 any) any {
-			return rtBinary("+", rtBinary("+", l_35, c.length(c.member(l_36, "sp"))), any(1))
-		}), c.length(c.member(c.cap(0), "tail"))))), rtBinary("%", c.lookup("ind"), rtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indCol")), func() any {
+			return rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_35, l_36 any) any {
+				return rtBinary("+", rtBinary("+", l_35, c.length(c.member(l_36, "sp"))), any(1))
+			}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indAlt"))
+		})
 	}) {
 		goto fail
 	}
@@ -20051,11 +20064,13 @@ func (p *parser) e215() (*Node, bool) {
 	p.setCapture(0, v11)
 	x2 = append(x2, v11)
 	if !p.predicate(func(c *actx) any {
-		return rtBinary("==", rtBinary("+", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_211, l_212 any) any {
+		return rtAnd(rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_211, l_212 any) any {
 			return rtBinary("+", rtBinary("*", rtBinary("/", rtBinary("+", l_211, c.length(c.member(l_212, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(c.cap(0), "tail"))), rtBinary("*", any(4194304), rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_213, l_214 any) any {
-			return rtBinary("+", rtBinary("+", l_213, c.length(c.member(l_214, "sp"))), any(1))
-		}), c.length(c.member(c.cap(0), "tail"))))), rtBinary("%", c.lookup("ind"), rtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indCol")), func() any {
+			return rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_213, l_214 any) any {
+				return rtBinary("+", rtBinary("+", l_213, c.length(c.member(l_214, "sp"))), any(1))
+			}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indAlt"))
+		})
 	}) {
 		goto fail
 	}
@@ -20662,10 +20677,10 @@ func (p *parser) e247() (*Node, bool) {
 	if !p.predicate(func(c *actx) any {
 		return rtAnd(rtBinary(">", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_238, l_239 any) any {
 			return rtBinary("+", rtBinary("*", rtBinary("/", rtBinary("+", l_238, c.length(c.member(l_239, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(c.cap(0), "tail"))), rtBinary("%", c.lookup("ind"), any(4194304))), func() any {
+		}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indCol")), func() any {
 			return rtBinary(">", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_240, l_241 any) any {
 				return rtBinary("+", rtBinary("+", l_240, c.length(c.member(l_241, "sp"))), any(1))
-			}), c.length(c.member(c.cap(0), "tail"))), rtBinary("%", rtBinary("/", c.lookup("ind"), any(4194304)), any(4194304)))
+			}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indAlt"))
 		})
 	}) {
 		goto L8
@@ -20679,9 +20694,7 @@ L8:
 	goto fail
 L9:
 	x10 = p.isolate(p.pos)
-	if !p.predicate(func(c *actx) any {
-		return rtBinary("<", rtBinary("/", c.lookup("ind"), rtBinary("*", any(4194304), any(4194304))), any(99))
-	}) {
+	if !p.predicate(func(c *actx) any { return rtBinary("<", rtBinary("/", c.lookup("lv"), any(32768)), any(99)) }) {
 		goto L13
 	}
 	x11, x12 = p.unisolate(x10)
@@ -20692,13 +20705,21 @@ L13:
 	p.expect(x11, msgBit|11)
 	goto fail
 L14:
-	if !p.assign("ind", func(c *actx) any {
-		return rtBinary("+", rtBinary("+", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_242, l_243 any) any {
+	if !p.assign("indCol", func(c *actx) any {
+		return rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_242, l_243 any) any {
 			return rtBinary("+", rtBinary("*", rtBinary("/", rtBinary("+", l_242, c.length(c.member(l_243, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(c.cap(0), "tail"))), rtBinary("*", any(4194304), rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_244, l_245 any) any {
-			return rtBinary("+", rtBinary("+", l_244, c.length(c.member(l_245, "sp"))), any(1))
-		}), c.length(c.member(c.cap(0), "tail"))))), rtBinary("*", rtBinary("+", rtBinary("/", c.lookup("ind"), rtBinary("*", any(4194304), any(4194304))), any(1)), rtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(c.cap(0), "tail")))
 	}) {
+		goto fail
+	}
+	if !p.assign("indAlt", func(c *actx) any {
+		return rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_244, l_245 any) any {
+			return rtBinary("+", rtBinary("+", l_244, c.length(c.member(l_245, "sp"))), any(1))
+		}), c.length(c.member(c.cap(0), "tail")))
+	}) {
+		goto fail
+	}
+	if !p.assign("lv", func(c *actx) any { return rtBinary("+", c.lookup("lv"), any(32768)) }) {
 		goto fail
 	}
 	if v15, ok = p.call(rules[85], 0); !ok {
@@ -35879,7 +35900,9 @@ func (p *parser) e813() (*Node, bool) {
 		goto L6
 	}
 	p.pos += size
-	if !p.assign("lv", func(c *actx) any { return rtBinary("+", rtBinary("%", c.lookup("lv"), any(512)), any(4096)) }) {
+	if !p.assign("lv", func(c *actx) any {
+		return rtBinary("+", rtBinary("+", rtBinary("*", rtBinary("/", c.lookup("lv"), any(32768)), any(32768)), rtBinary("%", c.lookup("lv"), any(512))), any(4096))
+	}) {
 		goto L6
 	}
 	goto L2
@@ -35910,7 +35933,9 @@ L5:
 		goto L8
 	}
 	p.pos += size
-	if !p.assign("lv", func(c *actx) any { return rtBinary("+", rtBinary("%", c.lookup("lv"), any(512)), any(4096)) }) {
+	if !p.assign("lv", func(c *actx) any {
+		return rtBinary("+", rtBinary("+", rtBinary("*", rtBinary("/", c.lookup("lv"), any(32768)), any(32768)), rtBinary("%", c.lookup("lv"), any(512))), any(4096))
+	}) {
 		goto L8
 	}
 	goto L2
@@ -35931,7 +35956,9 @@ L7:
 		goto L10
 	}
 	p.pos += size
-	if !p.assign("lv", func(c *actx) any { return rtBinary("%", c.lookup("lv"), any(512)) }) {
+	if !p.assign("lv", func(c *actx) any {
+		return rtBinary("+", rtBinary("*", rtBinary("/", c.lookup("lv"), any(32768)), any(32768)), rtBinary("%", c.lookup("lv"), any(512)))
+	}) {
 		goto L10
 	}
 	goto L2
@@ -36101,7 +36128,9 @@ func (p *parser) e818() (*Node, bool) {
 		goto L6
 	}
 	p.pos += size
-	if !p.assign("lv", func(c *actx) any { return rtBinary("+", rtBinary("%", c.lookup("lv"), any(512)), any(4096)) }) {
+	if !p.assign("lv", func(c *actx) any {
+		return rtBinary("+", rtBinary("+", rtBinary("*", rtBinary("/", c.lookup("lv"), any(32768)), any(32768)), rtBinary("%", c.lookup("lv"), any(512))), any(4096))
+	}) {
 		goto L6
 	}
 	goto L2
@@ -36132,7 +36161,9 @@ L5:
 		goto L8
 	}
 	p.pos += size
-	if !p.assign("lv", func(c *actx) any { return rtBinary("+", rtBinary("%", c.lookup("lv"), any(512)), any(4096)) }) {
+	if !p.assign("lv", func(c *actx) any {
+		return rtBinary("+", rtBinary("+", rtBinary("*", rtBinary("/", c.lookup("lv"), any(32768)), any(32768)), rtBinary("%", c.lookup("lv"), any(512))), any(4096))
+	}) {
 		goto L8
 	}
 	goto L2
@@ -36153,7 +36184,9 @@ L7:
 		goto L10
 	}
 	p.pos += size
-	if !p.assign("lv", func(c *actx) any { return rtBinary("%", c.lookup("lv"), any(512)) }) {
+	if !p.assign("lv", func(c *actx) any {
+		return rtBinary("+", rtBinary("*", rtBinary("/", c.lookup("lv"), any(32768)), any(32768)), rtBinary("%", c.lookup("lv"), any(512)))
+	}) {
 		goto L10
 	}
 	goto L2
@@ -37471,7 +37504,9 @@ func (p *parser) e855() (*Node, bool) {
 		goto fail
 	}
 	x1 = p.isolate(p.pos)
-	if !p.predicate(func(c *actx) any { return rtBinary("<=", rtBinary("/", c.lookup("lv"), any(8192)), any(2)) }) {
+	if !p.predicate(func(c *actx) any {
+		return rtBinary("<=", rtBinary("%", rtBinary("/", c.lookup("lv"), any(8192)), any(4)), any(2))
+	}) {
 		goto L4
 	}
 	x2, x3 = p.unisolate(x1)
@@ -37579,7 +37614,9 @@ func (p *parser) e858() (*Node, bool) {
 		goto fail
 	}
 	x1 = p.isolate(p.pos)
-	if !p.predicate(func(c *actx) any { return rtBinary("<=", rtBinary("/", c.lookup("lv"), any(8192)), any(2)) }) {
+	if !p.predicate(func(c *actx) any {
+		return rtBinary("<=", rtBinary("%", rtBinary("/", c.lookup("lv"), any(8192)), any(4)), any(2))
+	}) {
 		goto L4
 	}
 	x2, x3 = p.unisolate(x1)
@@ -41984,11 +42021,13 @@ L3:
 	}
 	p.setCapture(0, v7)
 	if !p.predicate(func(c *actx) any {
-		return rtBinary("==", rtBinary("+", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1015, l_1016 any) any {
+		return rtAnd(rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1015, l_1016 any) any {
 			return rtBinary("+", rtBinary("*", rtBinary("/", rtBinary("+", l_1015, c.length(c.member(l_1016, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(c.cap(0), "tail"))), rtBinary("*", any(4194304), rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1017, l_1018 any) any {
-			return rtBinary("+", rtBinary("+", l_1017, c.length(c.member(l_1018, "sp"))), any(1))
-		}), c.length(c.member(c.cap(0), "tail"))))), rtBinary("%", c.lookup("ind"), rtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indCol")), func() any {
+			return rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1017, l_1018 any) any {
+				return rtBinary("+", rtBinary("+", l_1017, c.length(c.member(l_1018, "sp"))), any(1))
+			}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indAlt"))
+		})
 	}) {
 		goto fail
 	}
@@ -42553,11 +42592,13 @@ L3:
 	}
 	p.setCapture(0, v7)
 	if !p.predicate(func(c *actx) any {
-		return rtBinary("==", rtBinary("+", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1052, l_1053 any) any {
+		return rtAnd(rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1052, l_1053 any) any {
 			return rtBinary("+", rtBinary("*", rtBinary("/", rtBinary("+", l_1052, c.length(c.member(l_1053, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(c.cap(0), "tail"))), rtBinary("*", any(4194304), rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1054, l_1055 any) any {
-			return rtBinary("+", rtBinary("+", l_1054, c.length(c.member(l_1055, "sp"))), any(1))
-		}), c.length(c.member(c.cap(0), "tail"))))), rtBinary("%", c.lookup("ind"), rtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indCol")), func() any {
+			return rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1054, l_1055 any) any {
+				return rtBinary("+", rtBinary("+", l_1054, c.length(c.member(l_1055, "sp"))), any(1))
+			}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indAlt"))
+		})
 	}) {
 		goto fail
 	}
@@ -42880,11 +42921,13 @@ func (p *parser) e1081() (*Node, bool) {
 	}
 	p.setCapture(0, v4)
 	if !p.predicate(func(c *actx) any {
-		return rtBinary("==", rtBinary("+", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1077, l_1078 any) any {
+		return rtAnd(rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1077, l_1078 any) any {
 			return rtBinary("+", rtBinary("*", rtBinary("/", rtBinary("+", l_1077, c.length(c.member(l_1078, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(c.cap(0), "tail"))), rtBinary("*", any(4194304), rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1079, l_1080 any) any {
-			return rtBinary("+", rtBinary("+", l_1079, c.length(c.member(l_1080, "sp"))), any(1))
-		}), c.length(c.member(c.cap(0), "tail"))))), rtBinary("%", c.lookup("ind"), rtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indCol")), func() any {
+			return rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1079, l_1080 any) any {
+				return rtBinary("+", rtBinary("+", l_1079, c.length(c.member(l_1080, "sp"))), any(1))
+			}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indAlt"))
+		})
 	}) {
 		goto fail
 	}
@@ -55284,7 +55327,10 @@ func (p *parser) e1498() (*Node, bool) {
 		x9 []expID
 	)
 	_ = x1
-	if !p.assign("ind", func(c *actx) any { return any(0) }) {
+	if !p.assign("indCol", func(c *actx) any { return any(0) }) {
+		goto fail
+	}
+	if !p.assign("indAlt", func(c *actx) any { return any(0) }) {
 		goto fail
 	}
 	if !p.assign("lv", func(c *actx) any { return any(0) }) {
@@ -55685,11 +55731,13 @@ L6:
 	p.setCapture(0, v21)
 	x2 = append(x2, v21)
 	if !p.predicate(func(c *actx) any {
-		return rtBinary("==", rtBinary("+", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1511, l_1512 any) any {
+		return rtAnd(rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1511, l_1512 any) any {
 			return rtBinary("+", rtBinary("*", rtBinary("/", rtBinary("+", l_1511, c.length(c.member(l_1512, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(c.cap(0), "tail"))), rtBinary("*", any(4194304), rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1513, l_1514 any) any {
-			return rtBinary("+", rtBinary("+", l_1513, c.length(c.member(l_1514, "sp"))), any(1))
-		}), c.length(c.member(c.cap(0), "tail"))))), rtBinary("%", c.lookup("ind"), rtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indCol")), func() any {
+			return rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1513, l_1514 any) any {
+				return rtBinary("+", rtBinary("+", l_1513, c.length(c.member(l_1514, "sp"))), any(1))
+			}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indAlt"))
+		})
 	}) {
 		goto fail
 	}
@@ -55776,10 +55824,10 @@ func (p *parser) e1525() (*Node, bool) {
 	if !p.predicate(func(c *actx) any {
 		return rtAnd(rtBinary(">", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1517, l_1518 any) any {
 			return rtBinary("+", rtBinary("*", rtBinary("/", rtBinary("+", l_1517, c.length(c.member(l_1518, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(c.cap(0), "tail"))), rtBinary("%", c.lookup("ind"), any(4194304))), func() any {
+		}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indCol")), func() any {
 			return rtBinary(">", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1519, l_1520 any) any {
 				return rtBinary("+", rtBinary("+", l_1519, c.length(c.member(l_1520, "sp"))), any(1))
-			}), c.length(c.member(c.cap(0), "tail"))), rtBinary("%", rtBinary("/", c.lookup("ind"), any(4194304)), any(4194304)))
+			}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indAlt"))
 		})
 	}) {
 		goto L8
@@ -55793,9 +55841,7 @@ L8:
 	goto fail
 L9:
 	x10 = p.isolate(p.pos)
-	if !p.predicate(func(c *actx) any {
-		return rtBinary("<", rtBinary("/", c.lookup("ind"), rtBinary("*", any(4194304), any(4194304))), any(99))
-	}) {
+	if !p.predicate(func(c *actx) any { return rtBinary("<", rtBinary("/", c.lookup("lv"), any(32768)), any(99)) }) {
 		goto L13
 	}
 	x11, x12 = p.unisolate(x10)
@@ -55806,13 +55852,21 @@ L13:
 	p.expect(x11, msgBit|11)
 	goto fail
 L14:
-	if !p.assign("ind", func(c *actx) any {
-		return rtBinary("+", rtBinary("+", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1521, l_1522 any) any {
+	if !p.assign("indCol", func(c *actx) any {
+		return rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1521, l_1522 any) any {
 			return rtBinary("+", rtBinary("*", rtBinary("/", rtBinary("+", l_1521, c.length(c.member(l_1522, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(c.cap(0), "tail"))), rtBinary("*", any(4194304), rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1523, l_1524 any) any {
-			return rtBinary("+", rtBinary("+", l_1523, c.length(c.member(l_1524, "sp"))), any(1))
-		}), c.length(c.member(c.cap(0), "tail"))))), rtBinary("*", rtBinary("+", rtBinary("/", c.lookup("ind"), rtBinary("*", any(4194304), any(4194304))), any(1)), rtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(c.cap(0), "tail")))
 	}) {
+		goto fail
+	}
+	if !p.assign("indAlt", func(c *actx) any {
+		return rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1523, l_1524 any) any {
+			return rtBinary("+", rtBinary("+", l_1523, c.length(c.member(l_1524, "sp"))), any(1))
+		}), c.length(c.member(c.cap(0), "tail")))
+	}) {
+		goto fail
+	}
+	if !p.assign("lv", func(c *actx) any { return rtBinary("+", c.lookup("lv"), any(32768)) }) {
 		goto fail
 	}
 	if v15, ok = p.call(recRules[3], 0); !ok {
@@ -55972,11 +56026,13 @@ L6:
 	p.setCapture(0, v21)
 	x2 = append(x2, v21)
 	if !p.predicate(func(c *actx) any {
-		return rtBinary("==", rtBinary("+", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1530, l_1531 any) any {
+		return rtAnd(rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1530, l_1531 any) any {
 			return rtBinary("+", rtBinary("*", rtBinary("/", rtBinary("+", l_1530, c.length(c.member(l_1531, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(c.cap(0), "tail"))), rtBinary("*", any(4194304), rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1532, l_1533 any) any {
-			return rtBinary("+", rtBinary("+", l_1532, c.length(c.member(l_1533, "sp"))), any(1))
-		}), c.length(c.member(c.cap(0), "tail"))))), rtBinary("%", c.lookup("ind"), rtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indCol")), func() any {
+			return rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1532, l_1533 any) any {
+				return rtBinary("+", rtBinary("+", l_1532, c.length(c.member(l_1533, "sp"))), any(1))
+			}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indAlt"))
+		})
 	}) {
 		goto fail
 	}
@@ -60755,11 +60811,13 @@ func (p *parser) e1712() (*Node, bool) {
 	p.setCapture(0, v11)
 	x2 = append(x2, v11)
 	if !p.predicate(func(c *actx) any {
-		return rtBinary("==", rtBinary("+", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1708, l_1709 any) any {
+		return rtAnd(rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1708, l_1709 any) any {
 			return rtBinary("+", rtBinary("*", rtBinary("/", rtBinary("+", l_1708, c.length(c.member(l_1709, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(c.cap(0), "tail"))), rtBinary("*", any(4194304), rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1710, l_1711 any) any {
-			return rtBinary("+", rtBinary("+", l_1710, c.length(c.member(l_1711, "sp"))), any(1))
-		}), c.length(c.member(c.cap(0), "tail"))))), rtBinary("%", c.lookup("ind"), rtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indCol")), func() any {
+			return rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1710, l_1711 any) any {
+				return rtBinary("+", rtBinary("+", l_1710, c.length(c.member(l_1711, "sp"))), any(1))
+			}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indAlt"))
+		})
 	}) {
 		goto fail
 	}
@@ -61370,10 +61428,10 @@ func (p *parser) e1744() (*Node, bool) {
 	if !p.predicate(func(c *actx) any {
 		return rtAnd(rtBinary(">", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1735, l_1736 any) any {
 			return rtBinary("+", rtBinary("*", rtBinary("/", rtBinary("+", l_1735, c.length(c.member(l_1736, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(c.cap(0), "tail"))), rtBinary("%", c.lookup("ind"), any(4194304))), func() any {
+		}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indCol")), func() any {
 			return rtBinary(">", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1737, l_1738 any) any {
 				return rtBinary("+", rtBinary("+", l_1737, c.length(c.member(l_1738, "sp"))), any(1))
-			}), c.length(c.member(c.cap(0), "tail"))), rtBinary("%", rtBinary("/", c.lookup("ind"), any(4194304)), any(4194304)))
+			}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indAlt"))
 		})
 	}) {
 		goto L8
@@ -61387,9 +61445,7 @@ L8:
 	goto fail
 L9:
 	x10 = p.isolate(p.pos)
-	if !p.predicate(func(c *actx) any {
-		return rtBinary("<", rtBinary("/", c.lookup("ind"), rtBinary("*", any(4194304), any(4194304))), any(99))
-	}) {
+	if !p.predicate(func(c *actx) any { return rtBinary("<", rtBinary("/", c.lookup("lv"), any(32768)), any(99)) }) {
 		goto L13
 	}
 	x11, x12 = p.unisolate(x10)
@@ -61400,13 +61456,21 @@ L13:
 	p.expect(x11, msgBit|11)
 	goto fail
 L14:
-	if !p.assign("ind", func(c *actx) any {
-		return rtBinary("+", rtBinary("+", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1739, l_1740 any) any {
+	if !p.assign("indCol", func(c *actx) any {
+		return rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1739, l_1740 any) any {
 			return rtBinary("+", rtBinary("*", rtBinary("/", rtBinary("+", l_1739, c.length(c.member(l_1740, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(c.cap(0), "tail"))), rtBinary("*", any(4194304), rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1741, l_1742 any) any {
-			return rtBinary("+", rtBinary("+", l_1741, c.length(c.member(l_1742, "sp"))), any(1))
-		}), c.length(c.member(c.cap(0), "tail"))))), rtBinary("*", rtBinary("+", rtBinary("/", c.lookup("ind"), rtBinary("*", any(4194304), any(4194304))), any(1)), rtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(c.cap(0), "tail")))
 	}) {
+		goto fail
+	}
+	if !p.assign("indAlt", func(c *actx) any {
+		return rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_1741, l_1742 any) any {
+			return rtBinary("+", rtBinary("+", l_1741, c.length(c.member(l_1742, "sp"))), any(1))
+		}), c.length(c.member(c.cap(0), "tail")))
+	}) {
+		goto fail
+	}
+	if !p.assign("lv", func(c *actx) any { return rtBinary("+", c.lookup("lv"), any(32768)) }) {
 		goto fail
 	}
 	if v15, ok = p.call(recRules[85], 0); !ok {
@@ -76639,7 +76703,9 @@ func (p *parser) e2310() (*Node, bool) {
 		goto L6
 	}
 	p.pos += size
-	if !p.assign("lv", func(c *actx) any { return rtBinary("+", rtBinary("%", c.lookup("lv"), any(512)), any(4096)) }) {
+	if !p.assign("lv", func(c *actx) any {
+		return rtBinary("+", rtBinary("+", rtBinary("*", rtBinary("/", c.lookup("lv"), any(32768)), any(32768)), rtBinary("%", c.lookup("lv"), any(512))), any(4096))
+	}) {
 		goto L6
 	}
 	goto L2
@@ -76670,7 +76736,9 @@ L5:
 		goto L8
 	}
 	p.pos += size
-	if !p.assign("lv", func(c *actx) any { return rtBinary("+", rtBinary("%", c.lookup("lv"), any(512)), any(4096)) }) {
+	if !p.assign("lv", func(c *actx) any {
+		return rtBinary("+", rtBinary("+", rtBinary("*", rtBinary("/", c.lookup("lv"), any(32768)), any(32768)), rtBinary("%", c.lookup("lv"), any(512))), any(4096))
+	}) {
 		goto L8
 	}
 	goto L2
@@ -76691,7 +76759,9 @@ L7:
 		goto L10
 	}
 	p.pos += size
-	if !p.assign("lv", func(c *actx) any { return rtBinary("%", c.lookup("lv"), any(512)) }) {
+	if !p.assign("lv", func(c *actx) any {
+		return rtBinary("+", rtBinary("*", rtBinary("/", c.lookup("lv"), any(32768)), any(32768)), rtBinary("%", c.lookup("lv"), any(512)))
+	}) {
 		goto L10
 	}
 	goto L2
@@ -76861,7 +76931,9 @@ func (p *parser) e2315() (*Node, bool) {
 		goto L6
 	}
 	p.pos += size
-	if !p.assign("lv", func(c *actx) any { return rtBinary("+", rtBinary("%", c.lookup("lv"), any(512)), any(4096)) }) {
+	if !p.assign("lv", func(c *actx) any {
+		return rtBinary("+", rtBinary("+", rtBinary("*", rtBinary("/", c.lookup("lv"), any(32768)), any(32768)), rtBinary("%", c.lookup("lv"), any(512))), any(4096))
+	}) {
 		goto L6
 	}
 	goto L2
@@ -76892,7 +76964,9 @@ L5:
 		goto L8
 	}
 	p.pos += size
-	if !p.assign("lv", func(c *actx) any { return rtBinary("+", rtBinary("%", c.lookup("lv"), any(512)), any(4096)) }) {
+	if !p.assign("lv", func(c *actx) any {
+		return rtBinary("+", rtBinary("+", rtBinary("*", rtBinary("/", c.lookup("lv"), any(32768)), any(32768)), rtBinary("%", c.lookup("lv"), any(512))), any(4096))
+	}) {
 		goto L8
 	}
 	goto L2
@@ -76913,7 +76987,9 @@ L7:
 		goto L10
 	}
 	p.pos += size
-	if !p.assign("lv", func(c *actx) any { return rtBinary("%", c.lookup("lv"), any(512)) }) {
+	if !p.assign("lv", func(c *actx) any {
+		return rtBinary("+", rtBinary("*", rtBinary("/", c.lookup("lv"), any(32768)), any(32768)), rtBinary("%", c.lookup("lv"), any(512)))
+	}) {
 		goto L10
 	}
 	goto L2
@@ -78231,7 +78307,9 @@ func (p *parser) e2352() (*Node, bool) {
 		goto fail
 	}
 	x1 = p.isolate(p.pos)
-	if !p.predicate(func(c *actx) any { return rtBinary("<=", rtBinary("/", c.lookup("lv"), any(8192)), any(2)) }) {
+	if !p.predicate(func(c *actx) any {
+		return rtBinary("<=", rtBinary("%", rtBinary("/", c.lookup("lv"), any(8192)), any(4)), any(2))
+	}) {
 		goto L4
 	}
 	x2, x3 = p.unisolate(x1)
@@ -78339,7 +78417,9 @@ func (p *parser) e2355() (*Node, bool) {
 		goto fail
 	}
 	x1 = p.isolate(p.pos)
-	if !p.predicate(func(c *actx) any { return rtBinary("<=", rtBinary("/", c.lookup("lv"), any(8192)), any(2)) }) {
+	if !p.predicate(func(c *actx) any {
+		return rtBinary("<=", rtBinary("%", rtBinary("/", c.lookup("lv"), any(8192)), any(4)), any(2))
+	}) {
 		goto L4
 	}
 	x2, x3 = p.unisolate(x1)
@@ -82755,11 +82835,13 @@ L3:
 	}
 	p.setCapture(0, v7)
 	if !p.predicate(func(c *actx) any {
-		return rtBinary("==", rtBinary("+", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_2515, l_2516 any) any {
+		return rtAnd(rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_2515, l_2516 any) any {
 			return rtBinary("+", rtBinary("*", rtBinary("/", rtBinary("+", l_2515, c.length(c.member(l_2516, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(c.cap(0), "tail"))), rtBinary("*", any(4194304), rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_2517, l_2518 any) any {
-			return rtBinary("+", rtBinary("+", l_2517, c.length(c.member(l_2518, "sp"))), any(1))
-		}), c.length(c.member(c.cap(0), "tail"))))), rtBinary("%", c.lookup("ind"), rtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indCol")), func() any {
+			return rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_2517, l_2518 any) any {
+				return rtBinary("+", rtBinary("+", l_2517, c.length(c.member(l_2518, "sp"))), any(1))
+			}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indAlt"))
+		})
 	}) {
 		goto fail
 	}
@@ -83226,11 +83308,13 @@ L3:
 	}
 	p.setCapture(0, v7)
 	if !p.predicate(func(c *actx) any {
-		return rtBinary("==", rtBinary("+", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_2549, l_2550 any) any {
+		return rtAnd(rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_2549, l_2550 any) any {
 			return rtBinary("+", rtBinary("*", rtBinary("/", rtBinary("+", l_2549, c.length(c.member(l_2550, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(c.cap(0), "tail"))), rtBinary("*", any(4194304), rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_2551, l_2552 any) any {
-			return rtBinary("+", rtBinary("+", l_2551, c.length(c.member(l_2552, "sp"))), any(1))
-		}), c.length(c.member(c.cap(0), "tail"))))), rtBinary("%", c.lookup("ind"), rtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indCol")), func() any {
+			return rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_2551, l_2552 any) any {
+				return rtBinary("+", rtBinary("+", l_2551, c.length(c.member(l_2552, "sp"))), any(1))
+			}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indAlt"))
+		})
 	}) {
 		goto fail
 	}
@@ -83553,11 +83637,13 @@ func (p *parser) e2578() (*Node, bool) {
 	}
 	p.setCapture(0, v4)
 	if !p.predicate(func(c *actx) any {
-		return rtBinary("==", rtBinary("+", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_2574, l_2575 any) any {
+		return rtAnd(rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_2574, l_2575 any) any {
 			return rtBinary("+", rtBinary("*", rtBinary("/", rtBinary("+", l_2574, c.length(c.member(l_2575, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(c.cap(0), "tail"))), rtBinary("*", any(4194304), rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_2576, l_2577 any) any {
-			return rtBinary("+", rtBinary("+", l_2576, c.length(c.member(l_2577, "sp"))), any(1))
-		}), c.length(c.member(c.cap(0), "tail"))))), rtBinary("%", c.lookup("ind"), rtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indCol")), func() any {
+			return rtBinary("==", rtBinary("+", rtFold("foldl", false, any(0), c.member(c.cap(0), "segs"), func(l_2576, l_2577 any) any {
+				return rtBinary("+", rtBinary("+", l_2576, c.length(c.member(l_2577, "sp"))), any(1))
+			}), c.length(c.member(c.cap(0), "tail"))), c.lookup("indAlt"))
+		})
 	}) {
 		goto fail
 	}
@@ -95952,7 +96038,10 @@ func (p *tparser) i0() (any, bool) {
 		p.tooDeep()
 	}
 	_ = x1
-	if !p.assign("ind", func(c *tctx) any { return any(0) }) {
+	if !p.assign("indCol", func(c *tctx) any { return any(0) }) {
+		goto fail
+	}
+	if !p.assign("indAlt", func(c *tctx) any { return any(0) }) {
 		goto fail
 	}
 	if !p.assign("lv", func(c *tctx) any { return any(0) }) {
@@ -96565,11 +96654,13 @@ L7:
 	k23 = v24
 	x2 = append(x2, v24)
 	if !p.predicate(func(c *tctx) any {
-		return trtBinary("==", trtBinary("+", trtBinary("+", trtFold("foldl", false, any(0), c.member(k23, "segs"), func(l_3020, l_3021 any) any {
+		return trtAnd(trtBinary("==", trtBinary("+", trtFold("foldl", false, any(0), c.member(k23, "segs"), func(l_3020, l_3021 any) any {
 			return trtBinary("+", trtBinary("*", trtBinary("/", trtBinary("+", l_3020, c.length(c.member(l_3021, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(k23, "tail"))), trtBinary("*", any(4194304), trtBinary("+", trtFold("foldl", false, any(0), c.member(k23, "segs"), func(l_3022, l_3023 any) any {
-			return trtBinary("+", trtBinary("+", l_3022, c.length(c.member(l_3023, "sp"))), any(1))
-		}), c.length(c.member(k23, "tail"))))), trtBinary("%", c.lookup("ind"), trtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(k23, "tail"))), c.lookup("indCol")), func() any {
+			return trtBinary("==", trtBinary("+", trtFold("foldl", false, any(0), c.member(k23, "segs"), func(l_3022, l_3023 any) any {
+				return trtBinary("+", trtBinary("+", l_3022, c.length(c.member(l_3023, "sp"))), any(1))
+			}), c.length(c.member(k23, "tail"))), c.lookup("indAlt"))
+		})
 	}) {
 		goto fail
 	}
@@ -96719,10 +96810,10 @@ func (p *tparser) i6() (any, bool) {
 	if !p.predicate(func(c *tctx) any {
 		return trtAnd(trtBinary(">", trtBinary("+", trtFold("foldl", false, any(0), c.member(k5, "segs"), func(l_3025, l_3026 any) any {
 			return trtBinary("+", trtBinary("*", trtBinary("/", trtBinary("+", l_3025, c.length(c.member(l_3026, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(k5, "tail"))), trtBinary("%", c.lookup("ind"), any(4194304))), func() any {
+		}), c.length(c.member(k5, "tail"))), c.lookup("indCol")), func() any {
 			return trtBinary(">", trtBinary("+", trtFold("foldl", false, any(0), c.member(k5, "segs"), func(l_3027, l_3028 any) any {
 				return trtBinary("+", trtBinary("+", l_3027, c.length(c.member(l_3028, "sp"))), any(1))
-			}), c.length(c.member(k5, "tail"))), trtBinary("%", trtBinary("/", c.lookup("ind"), any(4194304)), any(4194304)))
+			}), c.length(c.member(k5, "tail"))), c.lookup("indAlt"))
 		})
 	}) {
 		goto L10
@@ -96736,9 +96827,7 @@ L10:
 	goto fail
 L11:
 	x12 = p.isolate(p.pos)
-	if !p.predicate(func(c *tctx) any {
-		return trtBinary("<", trtBinary("/", c.lookup("ind"), trtBinary("*", any(4194304), any(4194304))), any(99))
-	}) {
+	if !p.predicate(func(c *tctx) any { return trtBinary("<", trtBinary("/", c.lookup("lv"), any(32768)), any(99)) }) {
 		goto L15
 	}
 	x13, x14 = p.unisolate(x12)
@@ -96749,13 +96838,21 @@ L15:
 	p.expect(x13, msgBit|11)
 	goto fail
 L16:
-	if !p.assign("ind", func(c *tctx) any {
-		return trtBinary("+", trtBinary("+", trtBinary("+", trtFold("foldl", false, any(0), c.member(k5, "segs"), func(l_3029, l_3030 any) any {
+	if !p.assign("indCol", func(c *tctx) any {
+		return trtBinary("+", trtFold("foldl", false, any(0), c.member(k5, "segs"), func(l_3029, l_3030 any) any {
 			return trtBinary("+", trtBinary("*", trtBinary("/", trtBinary("+", l_3029, c.length(c.member(l_3030, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(k5, "tail"))), trtBinary("*", any(4194304), trtBinary("+", trtFold("foldl", false, any(0), c.member(k5, "segs"), func(l_3031, l_3032 any) any {
-			return trtBinary("+", trtBinary("+", l_3031, c.length(c.member(l_3032, "sp"))), any(1))
-		}), c.length(c.member(k5, "tail"))))), trtBinary("*", trtBinary("+", trtBinary("/", c.lookup("ind"), trtBinary("*", any(4194304), any(4194304))), any(1)), trtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(k5, "tail")))
 	}) {
+		goto fail
+	}
+	if !p.assign("indAlt", func(c *tctx) any {
+		return trtBinary("+", trtFold("foldl", false, any(0), c.member(k5, "segs"), func(l_3031, l_3032 any) any {
+			return trtBinary("+", trtBinary("+", l_3031, c.length(c.member(l_3032, "sp"))), any(1))
+		}), c.length(c.member(k5, "tail")))
+	}) {
+		goto fail
+	}
+	if !p.assign("lv", func(c *tctx) any { return trtBinary("+", c.lookup("lv"), any(32768)) }) {
 		goto fail
 	}
 	if v18, ok = p.u3(); !ok {
@@ -96963,11 +97060,13 @@ L7:
 	k23 = v24
 	x2 = append(x2, v24)
 	if !p.predicate(func(c *tctx) any {
-		return trtBinary("==", trtBinary("+", trtBinary("+", trtFold("foldl", false, any(0), c.member(k23, "segs"), func(l_3035, l_3036 any) any {
+		return trtAnd(trtBinary("==", trtBinary("+", trtFold("foldl", false, any(0), c.member(k23, "segs"), func(l_3035, l_3036 any) any {
 			return trtBinary("+", trtBinary("*", trtBinary("/", trtBinary("+", l_3035, c.length(c.member(l_3036, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(k23, "tail"))), trtBinary("*", any(4194304), trtBinary("+", trtFold("foldl", false, any(0), c.member(k23, "segs"), func(l_3037, l_3038 any) any {
-			return trtBinary("+", trtBinary("+", l_3037, c.length(c.member(l_3038, "sp"))), any(1))
-		}), c.length(c.member(k23, "tail"))))), trtBinary("%", c.lookup("ind"), trtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(k23, "tail"))), c.lookup("indCol")), func() any {
+			return trtBinary("==", trtBinary("+", trtFold("foldl", false, any(0), c.member(k23, "segs"), func(l_3037, l_3038 any) any {
+				return trtBinary("+", trtBinary("+", l_3037, c.length(c.member(l_3038, "sp"))), any(1))
+			}), c.length(c.member(k23, "tail"))), c.lookup("indAlt"))
+		})
 	}) {
 		goto fail
 	}
@@ -104276,11 +104375,13 @@ func (p *tparser) i74() (any, bool) {
 	k12 = v13
 	x2 = append(x2, v13)
 	if !p.predicate(func(c *tctx) any {
-		return trtBinary("==", trtBinary("+", trtBinary("+", trtFold("foldl", false, any(0), c.member(k12, "segs"), func(l_3235, l_3236 any) any {
+		return trtAnd(trtBinary("==", trtBinary("+", trtFold("foldl", false, any(0), c.member(k12, "segs"), func(l_3235, l_3236 any) any {
 			return trtBinary("+", trtBinary("*", trtBinary("/", trtBinary("+", l_3235, c.length(c.member(l_3236, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(k12, "tail"))), trtBinary("*", any(4194304), trtBinary("+", trtFold("foldl", false, any(0), c.member(k12, "segs"), func(l_3237, l_3238 any) any {
-			return trtBinary("+", trtBinary("+", l_3237, c.length(c.member(l_3238, "sp"))), any(1))
-		}), c.length(c.member(k12, "tail"))))), trtBinary("%", c.lookup("ind"), trtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(k12, "tail"))), c.lookup("indCol")), func() any {
+			return trtBinary("==", trtBinary("+", trtFold("foldl", false, any(0), c.member(k12, "segs"), func(l_3237, l_3238 any) any {
+				return trtBinary("+", trtBinary("+", l_3237, c.length(c.member(l_3238, "sp"))), any(1))
+			}), c.length(c.member(k12, "tail"))), c.lookup("indAlt"))
+		})
 	}) {
 		goto fail
 	}
@@ -105224,10 +105325,10 @@ func (p *tparser) i84() (any, bool) {
 	if !p.predicate(func(c *tctx) any {
 		return trtAnd(trtBinary(">", trtBinary("+", trtFold("foldl", false, any(0), c.member(k5, "segs"), func(l_3287, l_3288 any) any {
 			return trtBinary("+", trtBinary("*", trtBinary("/", trtBinary("+", l_3287, c.length(c.member(l_3288, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(k5, "tail"))), trtBinary("%", c.lookup("ind"), any(4194304))), func() any {
+		}), c.length(c.member(k5, "tail"))), c.lookup("indCol")), func() any {
 			return trtBinary(">", trtBinary("+", trtFold("foldl", false, any(0), c.member(k5, "segs"), func(l_3289, l_3290 any) any {
 				return trtBinary("+", trtBinary("+", l_3289, c.length(c.member(l_3290, "sp"))), any(1))
-			}), c.length(c.member(k5, "tail"))), trtBinary("%", trtBinary("/", c.lookup("ind"), any(4194304)), any(4194304)))
+			}), c.length(c.member(k5, "tail"))), c.lookup("indAlt"))
 		})
 	}) {
 		goto L10
@@ -105241,9 +105342,7 @@ L10:
 	goto fail
 L11:
 	x12 = p.isolate(p.pos)
-	if !p.predicate(func(c *tctx) any {
-		return trtBinary("<", trtBinary("/", c.lookup("ind"), trtBinary("*", any(4194304), any(4194304))), any(99))
-	}) {
+	if !p.predicate(func(c *tctx) any { return trtBinary("<", trtBinary("/", c.lookup("lv"), any(32768)), any(99)) }) {
 		goto L15
 	}
 	x13, x14 = p.unisolate(x12)
@@ -105254,13 +105353,21 @@ L15:
 	p.expect(x13, msgBit|11)
 	goto fail
 L16:
-	if !p.assign("ind", func(c *tctx) any {
-		return trtBinary("+", trtBinary("+", trtBinary("+", trtFold("foldl", false, any(0), c.member(k5, "segs"), func(l_3291, l_3292 any) any {
+	if !p.assign("indCol", func(c *tctx) any {
+		return trtBinary("+", trtFold("foldl", false, any(0), c.member(k5, "segs"), func(l_3291, l_3292 any) any {
 			return trtBinary("+", trtBinary("*", trtBinary("/", trtBinary("+", l_3291, c.length(c.member(l_3292, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(k5, "tail"))), trtBinary("*", any(4194304), trtBinary("+", trtFold("foldl", false, any(0), c.member(k5, "segs"), func(l_3293, l_3294 any) any {
-			return trtBinary("+", trtBinary("+", l_3293, c.length(c.member(l_3294, "sp"))), any(1))
-		}), c.length(c.member(k5, "tail"))))), trtBinary("*", trtBinary("+", trtBinary("/", c.lookup("ind"), trtBinary("*", any(4194304), any(4194304))), any(1)), trtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(k5, "tail")))
 	}) {
+		goto fail
+	}
+	if !p.assign("indAlt", func(c *tctx) any {
+		return trtBinary("+", trtFold("foldl", false, any(0), c.member(k5, "segs"), func(l_3293, l_3294 any) any {
+			return trtBinary("+", trtBinary("+", l_3293, c.length(c.member(l_3294, "sp"))), any(1))
+		}), c.length(c.member(k5, "tail")))
+	}) {
+		goto fail
+	}
+	if !p.assign("lv", func(c *tctx) any { return trtBinary("+", c.lookup("lv"), any(32768)) }) {
 		goto fail
 	}
 	if v18, ok = p.u85(); !ok {
@@ -129793,7 +129900,9 @@ func (p *tparser) i267() (any, bool) {
 		goto L8
 	}
 	p.pos += size
-	if !p.assign("lv", func(c *tctx) any { return trtBinary("+", trtBinary("%", c.lookup("lv"), any(512)), any(4096)) }) {
+	if !p.assign("lv", func(c *tctx) any {
+		return trtBinary("+", trtBinary("+", trtBinary("*", trtBinary("/", c.lookup("lv"), any(32768)), any(32768)), trtBinary("%", c.lookup("lv"), any(512))), any(4096))
+	}) {
 		goto L8
 	}
 	goto L4
@@ -129826,7 +129935,9 @@ L7:
 		goto L10
 	}
 	p.pos += size
-	if !p.assign("lv", func(c *tctx) any { return trtBinary("+", trtBinary("%", c.lookup("lv"), any(512)), any(4096)) }) {
+	if !p.assign("lv", func(c *tctx) any {
+		return trtBinary("+", trtBinary("+", trtBinary("*", trtBinary("/", c.lookup("lv"), any(32768)), any(32768)), trtBinary("%", c.lookup("lv"), any(512))), any(4096))
+	}) {
 		goto L10
 	}
 	goto L4
@@ -129849,7 +129960,9 @@ L9:
 		goto L12
 	}
 	p.pos += size
-	if !p.assign("lv", func(c *tctx) any { return trtBinary("%", c.lookup("lv"), any(512)) }) {
+	if !p.assign("lv", func(c *tctx) any {
+		return trtBinary("+", trtBinary("*", trtBinary("/", c.lookup("lv"), any(32768)), any(32768)), trtBinary("%", c.lookup("lv"), any(512)))
+	}) {
 		goto L12
 	}
 	goto L4
@@ -130070,7 +130183,9 @@ func (p *tparser) i268() (any, bool) {
 		goto L8
 	}
 	p.pos += size
-	if !p.assign("lv", func(c *tctx) any { return trtBinary("+", trtBinary("%", c.lookup("lv"), any(512)), any(4096)) }) {
+	if !p.assign("lv", func(c *tctx) any {
+		return trtBinary("+", trtBinary("+", trtBinary("*", trtBinary("/", c.lookup("lv"), any(32768)), any(32768)), trtBinary("%", c.lookup("lv"), any(512))), any(4096))
+	}) {
 		goto L8
 	}
 	goto L4
@@ -130103,7 +130218,9 @@ L7:
 		goto L10
 	}
 	p.pos += size
-	if !p.assign("lv", func(c *tctx) any { return trtBinary("+", trtBinary("%", c.lookup("lv"), any(512)), any(4096)) }) {
+	if !p.assign("lv", func(c *tctx) any {
+		return trtBinary("+", trtBinary("+", trtBinary("*", trtBinary("/", c.lookup("lv"), any(32768)), any(32768)), trtBinary("%", c.lookup("lv"), any(512))), any(4096))
+	}) {
 		goto L10
 	}
 	goto L4
@@ -130126,7 +130243,9 @@ L9:
 		goto L12
 	}
 	p.pos += size
-	if !p.assign("lv", func(c *tctx) any { return trtBinary("%", c.lookup("lv"), any(512)) }) {
+	if !p.assign("lv", func(c *tctx) any {
+		return trtBinary("+", trtBinary("*", trtBinary("/", c.lookup("lv"), any(32768)), any(32768)), trtBinary("%", c.lookup("lv"), any(512)))
+	}) {
 		goto L12
 	}
 	goto L4
@@ -132655,7 +132774,9 @@ func (p *tparser) i277() (any, bool) {
 		goto fail
 	}
 	x1 = p.isolate(p.pos)
-	if !p.predicate(func(c *tctx) any { return trtBinary("<=", trtBinary("/", c.lookup("lv"), any(8192)), any(2)) }) {
+	if !p.predicate(func(c *tctx) any {
+		return trtBinary("<=", trtBinary("%", trtBinary("/", c.lookup("lv"), any(8192)), any(4)), any(2))
+	}) {
 		goto L4
 	}
 	x2, x3 = p.unisolate(x1)
@@ -132814,7 +132935,9 @@ func (p *tparser) i278() (any, bool) {
 		goto fail
 	}
 	x1 = p.isolate(p.pos)
-	if !p.predicate(func(c *tctx) any { return trtBinary("<=", trtBinary("/", c.lookup("lv"), any(8192)), any(2)) }) {
+	if !p.predicate(func(c *tctx) any {
+		return trtBinary("<=", trtBinary("%", trtBinary("/", c.lookup("lv"), any(8192)), any(4)), any(2))
+	}) {
 		goto L4
 	}
 	x2, x3 = p.unisolate(x1)
@@ -140053,11 +140176,13 @@ L4:
 	}
 	k9 = v10
 	if !p.predicate(func(c *tctx) any {
-		return trtBinary("==", trtBinary("+", trtBinary("+", trtFold("foldl", false, any(0), c.member(k9, "segs"), func(l_4073, l_4074 any) any {
+		return trtAnd(trtBinary("==", trtBinary("+", trtFold("foldl", false, any(0), c.member(k9, "segs"), func(l_4073, l_4074 any) any {
 			return trtBinary("+", trtBinary("*", trtBinary("/", trtBinary("+", l_4073, c.length(c.member(l_4074, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(k9, "tail"))), trtBinary("*", any(4194304), trtBinary("+", trtFold("foldl", false, any(0), c.member(k9, "segs"), func(l_4075, l_4076 any) any {
-			return trtBinary("+", trtBinary("+", l_4075, c.length(c.member(l_4076, "sp"))), any(1))
-		}), c.length(c.member(k9, "tail"))))), trtBinary("%", c.lookup("ind"), trtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(k9, "tail"))), c.lookup("indCol")), func() any {
+			return trtBinary("==", trtBinary("+", trtFold("foldl", false, any(0), c.member(k9, "segs"), func(l_4075, l_4076 any) any {
+				return trtBinary("+", trtBinary("+", l_4075, c.length(c.member(l_4076, "sp"))), any(1))
+			}), c.length(c.member(k9, "tail"))), c.lookup("indAlt"))
+		})
 	}) {
 		goto fail
 	}
@@ -141094,11 +141219,13 @@ L4:
 	}
 	k9 = v10
 	if !p.predicate(func(c *tctx) any {
-		return trtBinary("==", trtBinary("+", trtBinary("+", trtFold("foldl", false, any(0), c.member(k9, "segs"), func(l_4093, l_4094 any) any {
+		return trtAnd(trtBinary("==", trtBinary("+", trtFold("foldl", false, any(0), c.member(k9, "segs"), func(l_4093, l_4094 any) any {
 			return trtBinary("+", trtBinary("*", trtBinary("/", trtBinary("+", l_4093, c.length(c.member(l_4094, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(k9, "tail"))), trtBinary("*", any(4194304), trtBinary("+", trtFold("foldl", false, any(0), c.member(k9, "segs"), func(l_4095, l_4096 any) any {
-			return trtBinary("+", trtBinary("+", l_4095, c.length(c.member(l_4096, "sp"))), any(1))
-		}), c.length(c.member(k9, "tail"))))), trtBinary("%", c.lookup("ind"), trtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(k9, "tail"))), c.lookup("indCol")), func() any {
+			return trtBinary("==", trtBinary("+", trtFold("foldl", false, any(0), c.member(k9, "segs"), func(l_4095, l_4096 any) any {
+				return trtBinary("+", trtBinary("+", l_4095, c.length(c.member(l_4096, "sp"))), any(1))
+			}), c.length(c.member(k9, "tail"))), c.lookup("indAlt"))
+		})
 	}) {
 		goto fail
 	}
@@ -141855,11 +141982,13 @@ func (p *tparser) i368() (any, bool) {
 	}
 	k5 = v6
 	if !p.predicate(func(c *tctx) any {
-		return trtBinary("==", trtBinary("+", trtBinary("+", trtFold("foldl", false, any(0), c.member(k5, "segs"), func(l_4107, l_4108 any) any {
+		return trtAnd(trtBinary("==", trtBinary("+", trtFold("foldl", false, any(0), c.member(k5, "segs"), func(l_4107, l_4108 any) any {
 			return trtBinary("+", trtBinary("*", trtBinary("/", trtBinary("+", l_4107, c.length(c.member(l_4108, "sp"))), any(8)), any(8)), any(8))
-		}), c.length(c.member(k5, "tail"))), trtBinary("*", any(4194304), trtBinary("+", trtFold("foldl", false, any(0), c.member(k5, "segs"), func(l_4109, l_4110 any) any {
-			return trtBinary("+", trtBinary("+", l_4109, c.length(c.member(l_4110, "sp"))), any(1))
-		}), c.length(c.member(k5, "tail"))))), trtBinary("%", c.lookup("ind"), trtBinary("*", any(4194304), any(4194304))))
+		}), c.length(c.member(k5, "tail"))), c.lookup("indCol")), func() any {
+			return trtBinary("==", trtBinary("+", trtFold("foldl", false, any(0), c.member(k5, "segs"), func(l_4109, l_4110 any) any {
+				return trtBinary("+", trtBinary("+", l_4109, c.length(c.member(l_4110, "sp"))), any(1))
+			}), c.length(c.member(k5, "tail"))), c.lookup("indAlt"))
+		})
 	}) {
 		goto fail
 	}

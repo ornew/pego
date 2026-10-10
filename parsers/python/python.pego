@@ -11,29 +11,27 @@
 //     top level of an f-string or t-string replacement field (where a lambda would end at the ':' of
 //     the format spec, and CPython rejects it). Every rule that opens a bracket defines `lv` anew, so
 //     the depth is restored when it returns; CPython allows 200 levels.
-//   - Indentation. The variable `ind` packs the indentation of the current block: its column (tabs to
-//     the next multiple of 8, a form feed resets it), its column with tabs counted as one (CPython's
-//     "altcol", which detects inconsistent use of tabs: TabError), and the number of enclosing blocks
-//     (at most 99): ind = col + 2^22 * altcol + 2^44 * depth. A statement must start at exactly the
-//     block's indentation; a block opens a deeper one by defining `ind` in its own rule, so returning
-//     restores the enclosing one (INDENT and DEDENT without tokens). A line that matches no enclosing
-//     indentation is an error, as in CPython.
+//   - Indentation. `indCol` is the current block's column (tabs advance to a multiple of 8;
+//     a form feed resets it), and `indAlt` counts tabs as one to detect inconsistent tab use.
+//     The block depth is lv / 32768, at most 99. A block defines both columns and increments that
+//     depth in its own rule; returning restores the enclosing state (INDENT and DEDENT without
+//     tokens). A line that matches no enclosing indentation is an error, as in CPython.
 //   - Line ends. A statement does not consume the end of its line: the separator before the next
 //     statement does, so compound statements end with their last statement.
 //   - Tokens. Operators are matched with the longest-match rule of the tokenizer written out as
 //     lookaheads (`"<" !(?<=>)`), keywords and names with `!idcont` after them, and numbers with the
 //     tokenizer's check of what may follow them.
-//   - f-strings and t-strings (PEP 701, 750). The rest of `lv` (lv / 512) holds the kind of the
+//   - f-strings and t-strings (PEP 701, 750). The middle of `lv` holds the kind of the
 //     innermost string's quote (1 ', 2 ", 3 ''', 4 """; lv / 512 % 8), whether it is raw (lv / 4096 % 2),
-//     and the number of enclosing format specs (lv / 8192; fields may be nested in format specs
-//     twice). Replacement fields contain any expression, including strings with the same quotes.
+//     and the number of enclosing format specs (lv / 8192 % 4; fields may be nested in format specs
+//     twice). String entry resets these middle bits while preserving block depth. Replacement fields
+//     contain any expression, including strings with the same quotes. The combined state is less
+//     than 100 * 32768 and fits a 32-bit int.
 //
-// All the state but the indentation is packed in `lv` because a rule is memoized once for every value
-// of the variables it reads: with the separate variables the grammar once had (the quote kind, whether
-// the parameters of a lambda are being parsed, whether `barry_as_FLUFL` was imported), the parser was
-// 10% slower and allocated 25% more on the standard library's largest modules. `from __future__
-// import barry_as_FLUFL` (which makes '<>' the inequality operator and '!=' an error) is checked
-// after the parse, in Check; the grammar accepts both operators.
+// Bracket, string and block depths share `lv` to keep variable-dependent memo keys small. Indentation
+// columns remain separate native integers, without a fixed radix or an artificial column limit.
+// `from __future__ import barry_as_FLUFL` (which makes '<>' the inequality operator and '!=' an error)
+// is checked after the parse, in Check; the grammar accepts both operators.
 //
 // The AST follows Python's ast module, with these differences: identifiers are strings, and an absent
 // one (Python's None) is ""; ctx is the string "Load", "Store" or "Del"; operators are the source
@@ -198,7 +196,7 @@ type Op terminal
 // Module, blocks and lines
 // ============================================================================
 
-def main: Module = [ind = 0] [lv = 0]
+def main: Module = [indCol = 0] [indAlt = 0] [lv = 0]
     -blank* b:first_stmts? -module_end $$ #error(message="invalid syntax") -> new Module{Body: concat($b)}
 // The first statement must not be indented.
 def first_stmts = i:indentation
@@ -218,19 +216,19 @@ def stmts = f:stmt r:(-ws -";" -ws s:simple_stmt / -stmt_sep s:stmt)*
     -> concat(list($f), map($r, (x) => $x.s))
 def stmt_sep = (ws ";")? eol blank* i:indentation
     [foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail)
-        + 4194304 * (foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail)) == ind % (4194304 * 4194304)]
+        == indCol && foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail) == indAlt]
 
 // The body of a compound statement, after its ':': simple statements on the same line, or an
 // indented block on the following lines.
 def block = -ws b:(indented_block / simple_stmts) -> $b
 def indented_block = -eol -blank* i:indentation
-    [foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail) > ind % 4194304
-        && foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail) > ind / 4194304 % 4194304]
+    [foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail) > indCol
+        && foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail) > indAlt]
         #error(message="expected an indented block")
-    [ind / (4194304 * 4194304) < 99] #error(message="too many levels of indentation")
-    [ind = foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail)
-        + 4194304 * (foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail))
-        + (ind / (4194304 * 4194304) + 1) * (4194304 * 4194304)]
+    [lv / 32768 < 99] #error(message="too many levels of indentation")
+    [indCol = foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail)]
+    [indAlt = foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail)]
+    [lv = lv + 32768]
     s:stmts -> $s
 def simple_stmts = f:simple_stmt r:(-ws -";" -ws s:simple_stmt)* -> concat(list($f), map($r, (x) => $x.s))
 
@@ -238,7 +236,7 @@ def simple_stmts = f:simple_stmt r:(-ws -";" -ws s:simple_stmt)* -> concat(list(
 // (elif, else, except, finally, case) or before the next decorator: the indentation of the block.
 def clause_sep = (ws ";")? eol blank* i:indentation
     [foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail)
-        + 4194304 * (foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail)) == ind % (4194304 * 4194304)]
+        == indCol && foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail) == indAlt]
 
 // The indentation of a line: segments of spaces ended by a tab, then spaces. Only what follows the
 // last form feed counts. A backslash continuation at the start of the line is skipped (CPython then
@@ -386,7 +384,7 @@ def except_star_plain: ExceptHandler = kw_except -ws "*" -ws t:expressions -ws "
 def decorators = ds:("@" -ws e:named_expression -dec_sep)* -> map($ds, (x) => $x.e)
 def dec_sep = eol blank* i:indentation
     [foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail)
-        + 4194304 * (foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail)) == ind % (4194304 * 4194304)]
+        == indCol && foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail) == indAlt]
 
 def funcdef: FunctionDef = ds:decorators kw_def -ws n:ident (-ws p:type_params)? -ws a:def_params
     (-ws "->" -ws r:expression)? -ws ":" b:block
@@ -411,13 +409,13 @@ def subject_tuple: Tuple = f:star_named_expression -ws "," r:(-ws x:star_named_e
     l:(-ws y:star_named_expression){0,1}
     -> new Tuple{Elts: concat(list($f), map($r, (z) => $z.x), map($l, (z) => $z.y)), Ctx: "Load"}
 def case_blocks = -ws -eol -blank* i:indentation
-    [foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail) > ind % 4194304
-        && foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail) > ind / 4194304 % 4194304]
+    [foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail) > indCol
+        && foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail) > indAlt]
         #error(message="expected an indented block")
-    [ind / (4194304 * 4194304) < 99] #error(message="too many levels of indentation")
-    [ind = foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail)
-        + 4194304 * (foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail))
-        + (ind / (4194304 * 4194304) + 1) * (4194304 * 4194304)]
+    [lv / 32768 < 99] #error(message="too many levels of indentation")
+    [indCol = foldl(0, $i.segs, (a, s) => ($a + len($s.sp)) / 8 * 8 + 8) + len($i.tail)]
+    [indAlt = foldl(0, $i.segs, (a, s) => $a + len($s.sp) + 1) + len($i.tail)]
+    [lv = lv + 32768]
     f:case_block r:(-clause_sep c:case_block)* -> concat(list($f), map($r, (x) => $x.c))
 def case_block: MatchCase = kw_case -ws p:patterns (-ws kw_if -ws g:named_expression)? -ws ":" b:block
     -> new MatchCase{Pattern: $p, Guard: $g, Body: $b}
@@ -846,10 +844,10 @@ def hex = (?0-9a-fA-F)
 // --- f-strings and t-strings ---
 // The prefix and the opening quote define the quote and the rawness in lv (see the top of the file); the parts are the literal
 // text between replacement fields and the fields.
-def fstring = ((?rR) (?fF) [lv = lv % 512 + 4096] / (?fF) (?rR) [lv = lv % 512 + 4096] / (?fF) [lv = lv % 512])
+def fstring = ((?rR) (?fF) [lv = lv / 32768 * 32768 + lv % 512 + 4096] / (?fF) (?rR) [lv = lv / 32768 * 32768 + lv % 512 + 4096] / (?fF) [lv = lv / 32768 * 32768 + lv % 512])
     ("'''" [lv = lv + 3 * 512] / "\"\"\"" [lv = lv + 4 * 512] / "'" [lv = lv + 512] / "\"" [lv = lv + 2 * 512])
     ps:fpart* fclose #error(message="unterminated f-string literal") -> $ps
-def tstring = ((?rR) (?tT) [lv = lv % 512 + 4096] / (?tT) (?rR) [lv = lv % 512 + 4096] / (?tT) [lv = lv % 512])
+def tstring = ((?rR) (?tT) [lv = lv / 32768 * 32768 + lv % 512 + 4096] / (?tT) (?rR) [lv = lv / 32768 * 32768 + lv % 512 + 4096] / (?tT) [lv = lv / 32768 * 32768 + lv % 512])
     ("'''" [lv = lv + 3 * 512] / "\"\"\"" [lv = lv + 4 * 512] / "'" [lv = lv + 512] / "\"" [lv = lv + 2 * 512])
     ps:tpart* fclose #error(message="unterminated t-string literal") -> $ps
 def fclose = [lv / 512 % 8 == 1] "'" / [lv / 512 % 8 == 2] "\"" / [lv / 512 % 8 == 3] "'''" / [lv / 512 % 8 == 4] "\"\"\""
@@ -870,11 +868,11 @@ def frawesc = "\\" ("\r\n" / (?^{}\u{0}) / &(?{}))
 // A replacement field: the expression (any expression, including strings with the same quotes;
 // inside the braces, newlines are whitespace), an optional '=', conversion and format spec.
 def ffield: FormattedValue = "{" [lv % 512 < 400] [lv = lv / 2 * 2 + 3]
-    [lv / 8192 <= 2] #error(message="f-string: expressions nested too deeply")
+    [lv / 8192 % 4 <= 2] #error(message="f-string: expressions nested too deeply")
     s:(-ws v:annotated_rhs) d:fdebug? c:fconv? (-ws f:fspec / -ws) "}"
     -> new FormattedValue{Value: $v, Str: text($s), Debug: text($d), Conversion: text($c), FormatSpec: $f}
 def tfield: Interpolation = "{" [lv % 512 < 400] [lv = lv / 2 * 2 + 3]
-    [lv / 8192 <= 2] #error(message="t-string: expressions nested too deeply")
+    [lv / 8192 % 4 <= 2] #error(message="t-string: expressions nested too deeply")
     s:(-ws v:annotated_rhs) d:fdebug? c:fconv? (-ws f:fspec / -ws) "}"
     -> new Interpolation{Value: $v, Str: text($s), Debug: text($d), Conversion: text($c), FormatSpec: $f}
 def fdebug = ws "=" ws

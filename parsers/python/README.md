@@ -72,6 +72,10 @@ counts bytes). It differs from Python's in that it is a tree of the source:
 - Python's `List`, `Match` and `Expr` are `ListExpr`, `MatchStmt` and `ExprStmt`; booleans replace the ints of
   `AnnAssign.simple` and `comprehension.is_async`.
 
+The grammar keeps indentation columns in separate native integers and packs bounded block, bracket and string
+state into an integer that fits both 32-bit and 64-bit Go. The portable state layout and its measured costs are
+described in [design 026](../../docs/design/026-portable-python-block-state.md).
+
 ## Conformance
 
 The reference is CPython 3.14.0 (`ast.parse`, mode `exec`): the same programs must be accepted and rejected, with the
