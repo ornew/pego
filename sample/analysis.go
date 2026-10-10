@@ -45,9 +45,9 @@ type ruleInfo struct {
 	calls    []string
 	// always caches alwaysMatches for the body: 0 not computed yet, 1 being computed, 2 yes, 3 no.
 	always int
-	// stops caches, per minimum level, the expression that must not match where a chain of
-	// operators of the Pratt expression ends (see gen.prattStopCheck).
-	stops map[int]grammar.Expr
+	// stops caches static continuation parts per minimum level, never per nonassociative mask
+	// (see gen.prattStopCheck).
+	stops map[int]*prattStop
 }
 
 // info is the analysis of a grammar shared by the generator and the matcher.
@@ -90,7 +90,7 @@ func analyze(g *grammar.Grammar, start string) *info {
 		}
 	}
 	for i, r := range g.Rules() {
-		ri := &ruleInfo{def: r, index: i, height: inf, length: inf, stops: map[int]grammar.Expr{}}
+		ri := &ruleInfo{def: r, index: i, height: inf, length: inf, stops: map[int]*prattStop{}}
 		if pr, ok := r.Expr.(*grammar.Pratt); ok {
 			ri.pratt = pr
 			ri.levels = map[string]int{}

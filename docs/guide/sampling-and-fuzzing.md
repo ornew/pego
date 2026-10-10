@@ -420,9 +420,15 @@ parser would read differently:
   that no reachable entry or prefix RHS permits are excluded. See the
   [prefix exception](expressions.md#4-level-restricted-calls) for the parser's contract.
 
-One remaining stop-check limitation affects a caller that continues with the same token as an already-used
-nonassociative operator: `e "<" e` with `infix none "<"` can parse `a<a<a`, while sampling that exact input can return
-`ErrNoInput`. The generator's stop check currently treats the caller's `<` as a further Pratt continuation.
+After an already-used nonassociative operator closes its level, the stop check allows a caller to continue with
+that token: `e "<" e` with `infix none "<"` can generate `a<a<a`. Other applicable infix and postfix operators still
+prevent an early stop.
+
+Two remaining Pratt approximations can return `ErrNoInput` for valid texts. With overlapping operator parts, the
+stop check can treat a shorter eligible part as a continuation even when the parser selects a longer disabled
+part and stops. With different nonassociative levels, a restriction set inside a tighter RHS can persist after
+that RHS returns: low `infix none "<"` and higher `infix none "="` accept `a<a=a=a`, but sampling that exact text
+can fail. These affect finding derivations; every returned input is still parsed and accepted.
 
 What the generator cannot evaluate, it leaves to the parser: predicates over values built by actions or over struct
 fields, and lookaheads into Pratt expressions or left-recursive rules. Those constructs are handled only by generating

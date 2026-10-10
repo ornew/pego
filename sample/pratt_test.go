@@ -250,8 +250,129 @@ func TestSamplePrattPrefixBoundsAndDeterminism(t *testing.T) {
 	}
 }
 
+const sampleNoneLevels = `def e = pratt {
+    operand "a"
+    level { prefix "~" infix left "|" }
+    level compare { infix none "<" postfix "!" }
+    level { prefix "@" infix left "+" }
+}`
+
+func TestSamplePrattNoneCallerStops(t *testing.T) {
+	const simple = `def e = pratt { operand "a" level { infix none "<" } }`
+	cases := []struct{ name, body, rules, input string }{
+		{"caller none", `e "<" e`, simple, "a<a<a"},
+		{"punctuation", `e ";"`, simple, "a<a;"},
+		{"restricted caller", `e(compare) "<" e(compare)`, sampleNoneLevels, "a<a<a"},
+		{"tighter tail preserves none", `e "<" e`, sampleNoneLevels, "a<a+a<a"},
+		{"looser tail resets none", "e", sampleNoneLevels, "a<a|a<a"},
+		{"same-level postfix resets none", "e", sampleNoneLevels, "a<a!<a"},
+		{"tighter prefix preserves none", `e "<" e`, sampleNoneLevels, "a<@a<a"},
+		{"loose prefix inner none", `e "<" e`, sampleNoneLevels, "a<~a<a<a"},
+		{"fresh caller scope", `e "<" e`, sampleNoneLevels, "a<a<a<a"},
+		{"same-level left retained", "e", `def e = pratt { operand "a" level { infix none "<" infix left "+" } }`, "a<a+a<a"},
+		{"same-level right retained", "e", `def e = pratt { operand "a" level { infix none "<" infix right "+" } }`, "a<a+a<a"},
+		{"Unicode skip", `e " < " e`, `def e = pratt {
+    skip " "*
+    operand "α"
+    level { infix none "<" prefix "¬" }
+}`, " α < ¬ α < α"},
+		{"beyond 64 levels", `e "<" e`, "def e = pratt { operand \"a\" " + strings.Repeat("level {} ", 69) + `level { infix none "<" } }`, "a<a<a"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			p := compile(t, "def main = &("+strconv.Quote(c.input)+" $$) "+c.body+" $$\n"+c.rules)
+			for _, unit := range []pego.Unit{pego.CodePoints, pego.Bytes} {
+				for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
+					if _, err := p.Parse(c.input, pego.WithUnit(unit), pego.WithBackend(backend)); err != nil {
+						t.Fatalf("fresh unit=%v backend=%v: %v", unit, backend, err)
+					}
+				}
+			}
+			for _, coverage := range []bool{false, true} {
+				opts := []sample.Option{sample.WithSeed(1), sample.WithMaxRepeat(4), sample.WithBudget(4000), sample.WithAttempts(8)}
+				if coverage {
+					opts = append(opts, sample.WithCoverage())
+				}
+				g, err := sample.New(p, opts...)
+				if err != nil {
+					t.Fatal(err)
+				}
+				got, err := g.Generate(1)
+				if err != nil || !slices.Equal(got, []string{c.input}) {
+					t.Fatalf("coverage=%t: Generate=%q, %v; stats=%+v", coverage, got, err, g.Stats())
+				}
+				if c.name == "caller none" {
+					if report := g.Coverage(); report.Rules != 2 || report.RulesCovered != 2 || report.Alternatives != 2 || report.AlternativesCovered != 2 {
+						t.Fatalf("caller coverage: %+v", report)
+					}
+				}
+			}
+		})
+	}
+	// Other operators at a closed none level, and looser/tighter tails, must still prevent an
+	// early stop. These caller decompositions are invalid because the first e consumes the suffix.
+	for _, c := range []struct{ name, body, rules, input string }{
+		{"bare none chain", "e", simple, "a<a<a"},
+		{"remaining postfix", `e "!"`, sampleNoneLevels, "a<a!"},
+		{"remaining looser infix", `e "|" e`, sampleNoneLevels, "a<a|a"},
+		{"remaining tighter infix", `e "+" e`, sampleNoneLevels, "a<a+a"},
+		{"remaining same-level infix", `e "+" e`, `def e = pratt { operand "a" level { infix none "<" infix left "+" } }`, "a<a+a"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			p := compile(t, "def main = &("+strconv.Quote(c.input)+" $$) "+c.body+" $$\n"+c.rules)
+			for _, unit := range []pego.Unit{pego.CodePoints, pego.Bytes} {
+				for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
+					if _, err := p.Parse(c.input, pego.WithUnit(unit), pego.WithBackend(backend)); err == nil {
+						t.Fatalf("invalid caller accepted: unit=%v backend=%v", unit, backend)
+					}
+				}
+			}
+			g, err := sample.New(p, sample.WithSeed(1), sample.WithAttempts(2), sample.WithBudget(500))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := g.Next(); !errors.Is(err, sample.ErrNoInput) || g.Stats().Candidates != 0 {
+				t.Fatalf("real continuation was not pruned: %v; %+v", err, g.Stats())
+			}
+		})
+	}
+}
+
+func TestSamplePrattNoneStopsDeterminism(t *testing.T) {
+	p := compile(t, `def main = e "<" e $$`+"\n"+sampleNoneLevels)
+	makeGen := func() *sample.Generator {
+		t.Helper()
+		g, err := sample.New(p, sample.WithSeed(29), sample.WithCoverage(), sample.WithMaxRepeat(2), sample.WithMaxDepth(0), sample.WithMaxLen(8), sample.WithBudget(1000))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return g
+	}
+	a, b := makeGen(), makeGen()
+	for range 30 {
+		x, err := a.Next()
+		y, other := b.Next()
+		if x != y || !errors.Is(err, other) || a.Stats() != b.Stats() || !reflect.DeepEqual(a.Coverage(), b.Coverage()) {
+			t.Fatalf("same seed diverged: %q/%v versus %q/%v", x, err, y, other)
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		checkParse(t, p, []string{x})
+	}
+	for _, option := range []sample.Option{sample.WithMaxRepeat(0), sample.WithBudget(1)} {
+		g, err := sample.New(p, option, sample.WithAttempts(2))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := g.Next(); !errors.Is(err, sample.ErrNoInput) || g.Stats().Failed != 2 {
+			t.Fatalf("bounded none search: %v; %+v", err, g.Stats())
+		}
+	}
+}
+
 // Compile is outside the timer. New measures constructor analysis separately from steady-state
-// Next (which includes candidate search and mandatory Parse validation). A required-prefix workload
+// Next (which includes candidate search and mandatory Parse validation). A required-input workload
 // cannot be compared as equivalent successful work on versions that return ErrNoInput.
 func BenchmarkSamplePratt(b *testing.B) {
 	for _, c := range []struct{ name, src string }{
@@ -260,6 +381,12 @@ def e = pratt { operand "x" level { infix left "+" } level tight { infix left "*
 		{"unrestricted-prefix", "def main = e $$\n" + samplePrefixLevels},
 		{"restricted-prefix", "def main = e(tight) $$\n" + samplePrefixLevels},
 		{"required-prefix", `def main = &"~" e(tight) $$` + "\n" + samplePrefixLevels},
+		{"none-simple", `def main = e $$
+def e = pratt { operand "a" level { infix none "<" } }`},
+		{"none-mixed", "def main = e $$\n" + sampleNoneLevels},
+		{"none-wide", "def main = e $$\ndef e = pratt { operand \"a\" " + strings.Repeat("level {} ", 69) + `level { infix none "<" } }`},
+		{"required-none-caller", `def main = &("a<a<a" $$) e "<" e $$
+def e = pratt { operand "a" level { infix none "<" } }`},
 	} {
 		p, err := pego.CompileSource(c.src, "main")
 		if err != nil {

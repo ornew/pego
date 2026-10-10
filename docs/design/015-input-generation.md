@@ -154,8 +154,13 @@ The generator prunes candidates that the parser would read differently from how 
   bounds. Where a chain ends, no further postfix operator part may match after the skip, and no infix
   operator part followed by the start of an operand (the parser ends the expression before an infix operator that no
   operand follows, so `a+` is accepted by `e "+"`). Prefix and postfix parts that would match the empty string are not
-  used, as in the parser. The stop check does not yet account for active nonassociative restrictions, so a caller
-  continuing with the same token can be rejected by sampling even when parsing accepts it.
+  used, as in the parser. Stop checks omit already-closed nonassociative infix parts while retaining other infix
+  and postfix parts, including ones at the same level. Static continuation parts are cached by entry minimum;
+  filtered choices own temporary backing storage and never add cache entries for arbitrary combinations of
+  closed levels. A caller can therefore continue with the same token after a closed nonassociative application.
+  Two remaining approximations can omit valid derivations: the union of candidate checks does not reproduce
+  longest-part selection before minimum/nonassociative eligibility, and the flat none mask can retain a tighter
+  restriction after returning from an infix RHS. The parser remains the final acceptance check.
 - **Left recursion** needs nothing special: the recursion is bounded like any other, and the parser grows the seed.
 
 ### Coverage
