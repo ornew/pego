@@ -18,7 +18,10 @@ const (
 // (large elements, after which the loss is small in comparison).
 func (p *parser) splitChunks() {
 	if len(p.nodeSlab) < nodeChunk/8 || p.nodeChunks >= 2 {
-		p.nodeSlab, p.ptrSlab, p.frameSlab, p.fieldSlab, p.funcSlab = nil, nil, nil, nil, nil
+		p.nodeSlab, p.ptrSlab, p.fieldSlab, p.funcSlab = nil, nil, nil, nil
+		if !streamFrameScratch {
+			p.frameSlab = nil
+		}
 		p.nodeChunks = 0
 	}
 }
@@ -118,13 +121,40 @@ func (p *parser) newFrame(n int) *frame {
 	if n == 0 {
 		return emptyFrame // shared because it is never written to
 	}
-	if len(p.frameSlab) == 0 {
-		p.frameSlab = make([]frame, nodeChunk)
+	var f *frame
+	if streamFrameScratch {
+		// Keep the used prefix so commits can clear and rewind it without
+		// an extra buffer pointer in every parser.
+		if len(p.frameSlab) == cap(p.frameSlab) {
+			p.frameSlab = make([]frame, 0, nodeChunk)
+		}
+		p.frameSlab = p.frameSlab[:len(p.frameSlab)+1]
+		f = &p.frameSlab[len(p.frameSlab)-1]
+	} else {
+		if len(p.frameSlab) == 0 {
+			p.frameSlab = make([]frame, nodeChunk)
+		}
+		f = &p.frameSlab[0]
+		p.frameSlab = p.frameSlab[1:]
 	}
-	f := &p.frameSlab[0]
-	p.frameSlab = p.frameSlab[1:]
 	f.vals = p.nodes(n)
 	return f
+}
+
+// resetStreamFrames reuses capture-frame storage after an emitted element.
+// The top-level frame stays live across the commit; nested calls and element
+// scopes have finished. Results copy captures and never retain frame structs.
+// Child-pointer storage remains immutable and follows the usual chunk split.
+func (p *parser) resetStreamFrames() {
+	keep := 0
+	for i := range p.frameSlab {
+		if &p.frameSlab[i] == p.frame {
+			keep = i + 1
+			break
+		}
+	}
+	clear(p.frameSlab[keep:])
+	p.frameSlab = p.frameSlab[:keep]
 }
 
 // useCtx places the evaluation context for actions and predicates in a single area owned by

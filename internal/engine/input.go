@@ -468,6 +468,9 @@ func (in *input) discard(keep int) {
 func (p *parser) commit(pos int) {
 	p.discard(pos - 1)
 	p.trail = p.trail[:0]
+	if streamFrameScratch {
+		p.resetStreamFrames()
+	}
 	p.splitChunks()
 	if pos-p.pruned >= 1024 {
 		p.memo.prune(pos)

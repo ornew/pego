@@ -76,13 +76,16 @@ inventory of current mechanisms or reference controls.
 | [82](082-match-typed-direct-frame-layouts.md#82-match-typed-direct-bodies-to-general-frame-layouts)| Match typed direct bodies to general frame layouts | – | – | – | – | ✓ | typed Go only; derives LR, Pratt and owned repetition slot layouts from general-emitter metadata; runtime ownership is unchanged; eligible recovery bodies use 83; unsupported layouts remain general; generation-only reference control |
 | [83](083-inline-typed-recovery-bodies.md#83-inline-eligible-typed-recovery-bodies)| Inline eligible typed recovery bodies | – | – | – | – | Partial | typed Go ordinary/LR/Pratt bodies with `#recover`; runtime recovery and frame ownership are unchanged; Node/TS and unsupported layouts remain general |
 | [84](084-complete-typed-local-capture-layouts.md#84-complete-typed-go-local-capture-layouts)| Complete typed Go-local capture layouts | – | – | – | – | Partial | typed Go ordinary direct rules and owned/projected repetition scopes preserve complete capture-name layouts, including dead syntax; Go locals are emitted as needed, with no runtime frame or selector |
+| [85](085-reuse-stream-capture-frames.md#85-reuse-stream-capture-frames-at-element-commit)| Reuse stream capture frames at element commit | ✓ | ✓ | ✓ | – | – | engine streaming only; reuses completed element's frame structs while preserving the live root and immutable result storage |
 | [62](062-comparing-short-literals-in-place-in-direct-rules.md#62-comparing-short-literals-in-place-in-direct-rules)| Short literals compared in place | – | – | – | Partial | ✓ | direct rules, up to 4 code points; generated value-free and supported Node rules since 76/77; CodePoints only, Bytes retains the literal matcher |
 
 Not applied, and why:
 
-- **Reusing frames when their rule returns (48):** in the Node runtimes, capture frames share their chunks with the
-  child lists of the result, so they cannot be freed or pooled without separating them; freeing frames in the engine
-  was measured slower (see the experiments table). The scratch memory that results do not share is pooled (57, 58).
+- **Returning capture frames at ordinary rule return points (48):** freeing frames in the engine
+  was measured slower (see the experiments table). Pooling must preserve child-value storage reachable
+  from results. Stream parsing separately reuses completed elements' frame structs at commit while
+  preserving the live root and independent result storage (85). Other scratch memory that results do
+  not share is pooled (57, 58).
 - **General per-rule call methods for value-building generated `Parse`** (the typed runtime's `typedCall`) measured within noise (48).
 - Experiments that did not pay off in some backends are in the experiments table at the end.
 
@@ -142,7 +145,7 @@ Not applied, and why:
 - [048. A typed runtime for ParseAST](048-a-typed-runtime-for-parseast.md)
 - [049. First-character dispatch in generated choices](049-first-character-dispatch-in-generated-choices.md)
 - [050. First-character dispatch in the closure backend](050-first-character-dispatch-in-the-closure-backend.md)
-## Records 51–84
+## Records 51–85
 - [051. First-character dispatch in the VMs (instruction set 3)](051-first-character-dispatch-in-the-vms-instruction-set-3.md)
 - [052. Projected repetitions in generated `Parse`](052-projected-repetitions-in-generated-parse.md)
 - [053. Projected repetitions in the engine and the VMs](053-projected-repetitions-in-the-engine-and-the-vms.md)
@@ -177,6 +180,7 @@ Not applied, and why:
 - [082. Match typed direct bodies to general frame layouts](082-match-typed-direct-frame-layouts.md)
 - [083. Inline eligible typed recovery bodies](083-inline-typed-recovery-bodies.md)
 - [084. Complete typed Go-local capture layouts](084-complete-typed-local-capture-layouts.md)
+- [085. Reuse stream capture frames at element commit](085-reuse-stream-capture-frames.md)
 
 ## Experiments that did not pay off
 
