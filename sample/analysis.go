@@ -443,7 +443,7 @@ func (in *info) length(e grammar.Expr) int {
 	case *grammar.Seq:
 		l := 0
 		for _, it := range e.Items {
-			l = min(inf, l+in.length(it))
+			l = int(min(uint(inf), uint(l)+uint(in.length(it))))
 		}
 		return l
 	case *grammar.Choice:
@@ -456,7 +456,9 @@ func (in *info) length(e grammar.Expr) int {
 		if e.Min == 0 {
 			return 0
 		}
-		return min(inf, e.Min*in.length(e.Expr))
+		// Clamp both nonnegative factors before multiplying: their product
+		// then fits int64 even when a native int is only 32 bits wide.
+		return int(min(int64(inf), int64(min(inf, e.Min))*int64(min(inf, in.length(e.Expr)))))
 	case *grammar.Optional, *grammar.Not, *grammar.And:
 		return 0
 	case *grammar.Atomic:
