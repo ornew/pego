@@ -18,72 +18,68 @@ document describes the benchmarks, analyzes the results, and records how they ca
 
 ## Where PEGO stands
 
-An analysis of the results in [benchmarks.md](benchmarks.md) as measured on 2026-10-10 at commit 2c68ccf (Apple M3
-Max, Go 1.27.1). The figures below are rounded from that run; regenerating the results does not update this analysis,
-so check the commit above against the one in [benchmarks.md](benchmarks.md) before relying on it.
+An analysis of the results in [benchmarks.md](benchmarks.md) measured on 2026-10-10 at commit `afc3129` (Apple M3
+Max, Go 1.27.1, darwin/arm64, 16 cores). The figures below are rounded from that run; regenerating the results does
+not update this analysis, so check the measured commit against [benchmarks.md](benchmarks.md) before relying on it.
 
-This checkpoint uses three samples per case after the Go expectation-filter change (75). It is a current
-workload snapshot, not an interleaved estimate of any single optimization's effect. The focused sample-constructor,
-duplicate-capture checker, variable-dependency graph and redundant no-edit Document schedules are outside
-this full suite; their paired measurements remain in entries 70–73. The tiny JSON and current 27-policy CEL
-controls are also outside this suite; entry 74 holds their interleaved before/after measurements. The large
-Python and tiny JSON controls in entry 75 are outside this suite too. Entries 76 and 77 describe later focused
-generated-Go measurements; this full-suite snapshot predates those changes. This run covers 131 cases in 459.013 seconds
-on a clean measured commit.
+This clean-checkout snapshot covers 131 cases, with three samples per case, in 458.132 seconds. It is not an
+interleaved estimate of any single optimization's effect. It includes changes 74–77; their focused paired
+measurements in the [catalog](optimizations/README.md) use narrower controls and establish attribution. The sample
+constructor, duplicate-capture checker, variable-dependency graph and unchanged-Document schedules in changes 70–73
+are also focused measurements outside this full suite. Unless labeled Bytes, the ratios below use CodePoints;
+typed-value and standard-library comparisons use CodePoints.
 
-**Backends.** For code-point Node parsing, generated Go parsers take 0.53–0.68× the time of the closure backend.
-The recursive bytecode VM takes 1.08–1.37× and the iterative VM 1.30–1.91×; the iterative VM pays most on Pratt expressions (1.91×), whose loop runs
-as a state machine on its own stack. The closure backend is the default for this reason (see the
-[runtime guide](guide/runtime.md#backends)); the VMs are for grammars without their AST and, iteratively, for deep
-nesting.
+**Backends.** Generated Go Node parsing takes 0.41–0.60× the closure time in CodePoints and 0.47–0.62× in Bytes.
+Across both units the recursive VM takes 1.12–1.39× closure time, and the iterative VM takes 1.20–1.87×. The
+iterative VM pays most on Pratt expressions (1.87× in CodePoints), whose loop runs as a state machine on its own
+stack. The closure backend remains the default (see the [runtime guide](guide/runtime.md#backends)); the VMs are for
+grammars without their AST and, iteratively, for deep nesting.
 
-**Typed values.** Where `ParseAST` builds the grammar's Go types directly (JSON, CSV, XML, the calculators, outline),
-it takes 0.46–0.93× the time of generated `Parse` and 0.23–0.35 of its memory (0.30–0.85 of its allocations;
-outline keeps most of them, in lists). CSV now returns a dedicated typed AST, rather than the Node tree measured
-in older runs. On JSON and XML, typed parsing takes 0.79× and 0.88× the time of `encoding/json` and `encoding/xml`,
-with 1.10× and 1.18× their bytes and about 201 and 280 times fewer allocations, while recording positions and error
-expectations. Where values include CST nodes (minilang), `ParseAST` converts the Node tree: 1.06× the time and
-1.26× the memory of generated `Parse`.
+**Typed values.** For grammars whose values have direct Go types (`ParseAST` for JSON, CSV, XML, both calculators and
+outline), time is 0.63–1.02× generated `Parse` time, memory is 0.23–0.35×, and allocations are 0.30–0.86×. The Pratt
+calculator is near parity in time; CSV returns its dedicated typed AST. On JSON and XML, `ParseAST` takes 0.79× and
+0.82× the corresponding standard-library time, with 1.10× and 1.20× its bytes and about 201× and 279× fewer
+allocations, while recording positions and error expectations. Minilang and Recovery include CST nodes and convert
+the Node tree: `ParseAST` takes 1.13× and 1.07× generated `Parse` time and 1.25× and 1.28× its memory.
 
-**Allocations.** Every backend makes a few hundred to about two thousand allocations per Node parse (318 for CSV,
-767 for JSON, about 2,250 for outline on Closure), against 10,000–80,000 for the standard-library parsers: nodes, lists and fields come from
-slabs, and the memo, the input buffers and the stacks are reused across parses. The bytes are another matter: a tree
-of `Node`s on the closure backend takes 26–130 bytes per input byte (left recursion the most, through the
-intermediate results it grows), which is what typed values save.
+**Allocations.** PEGO makes about 300–2,250 allocations per Node parse, against roughly 10,000–80,000 for the
+standard-library parsers. Nodes, lists and fields come from slabs, and the memo, input buffers and stacks are reused
+across parses. The allocated bytes are still substantial: closure-backend Node trees take 26–130 bytes per input
+byte, with left recursion highest because it grows intermediate results.
 
-**Recognition.** `RecognizeOnly` takes 0.61–0.74× the time of a full parse on the closure backend. Most simple
-workloads allocate only 4–10 KB; predicates reading values (XML's tag names, outline's indentation) take 3.71 MB and
-1.95 MB, left-recursion growth takes 1.25 MB, and minilang/recovery take 0.56–0.68 MB. Generated `Recognize` takes
-0.48–0.70× the time of generated `Parse`, yet is slower than typed `ParseAST` on JSON (1.13×), XML (1.07×) and the
-left-recursive calculator (1.03×): `ParseAST` runs direct rules, one method per rule, while `Parse` and `Recognize` still run a method
-per expression. Direct rules for the Node runtime and the recognizer are the most promising optimization left (see
-[the backlog](https://github.com/ornew/pego/issues/1)).
+**Recognition.** `RecognizeOnly` takes 0.58–0.73× full-parse time on the closure backend. Generated `Recognize`
+takes 0.37–0.65× generated Node `Parse` time. Simple grammars can recognize with zero allocations; predicates that
+read values (XML tag names, outline indentation), left-recursion growth and recovery still require values or state.
+Typed `ParseAST` takes 1.69× the generated `Recognize` time on JSON, 1.60× on XML and 1.29× on the
+left-recursive calculator; these paths return different results because `ParseAST` builds typed values.
 
-**The standard library** is 1.7–6.4 times as fast as generated `Parse` where it applies. The gap is widest where
-PEGO's work is structurally different: left recursion (6.4×, against `go/parser`'s hand-written precedence climbing)
-and CSV (3.3×, `encoding/csv` builds no tree at all). `json.Valid`, a hand-written state machine, is 9.8 times as fast
-as generated `Recognize` in this run.
+**The standard library** takes 1.3–5.6× less time than generated `Parse` where a comparable parser exists. The gap is
+widest for left recursion (5.6× against `go/parser`'s hand-written precedence climbing) and CSV (2.7×;
+`encoding/csv` builds no tree). `json.Valid`, a hand-written state machine, takes 5.2× less time than generated
+`Recognize` here.
 
-**Grammar style.** The same expressions take 2.6 times as long with left recursion as with a Pratt expression on the
-closure backend (2.2 generated, 1.5 typed), as you would expect from growing a seed at every level. Minilang with one line in seven broken parses in 0.98× the time of the clean
-control in this run. Recovered statements are skipped, so those two inputs perform different matching work.
+**Grammar style.** The calculator workload takes 2.46× as long with left recursion as with Pratt parsing on the
+closure backend (2.18× generated, 1.55× typed), consistent with growing a seed at every level. The generated
+Recovery workload takes 1.02× the Minilang control's time, but skips broken statements and therefore performs
+different matching work.
 
-**Position units** make no consistent difference: byte positions take 0.94–1.08× the time of code points.
+**Position units** vary by workload and backend; the tables report both so users can choose based on the positions
+their application needs.
 
-**Incremental parsing.** An edit and a reparse of the 300-function minilang program take 129–142 µs, 86–155 times
-less than a full parse, on every backend. On the 50,000-record CSV document they take 2.3–2.6 ms, most of it moving
-the reused records after the edit; there the VMs allocate 2.6 times as much as the closure backend (7.1 MB against
-2.7 MB).
+**Incremental parsing.** An edit and reparse of the 300-function Minilang document takes 134–150 µs across the three
+backends, compared with 12.3–21.6 ms for a full parse. For the 50,000-record CSV document the edit and reparse take
+2.33–2.75 ms; the VMs allocate 7.08 MB against 2.70 MB for closure.
 
-**Streaming** of 50,000 CSV records runs at 0.67–0.73 of the throughput of the 5,000-record batch workload,
-a normalized CodePoints comparison across different input sizes. Streaming allocates 48–52 bytes per input byte and about
-6.2 allocations per record, against 26 bytes per input byte and 0.06 allocations per record for the closure batch parse.
-These are cumulative allocations for each workload, not retained heap measurements. The stream-memory checkpoint
-includes memo retirement, construction-reference cleanup and bounded variable histories (changes 67–69); separate
-long-stream tests verify retained state and heap growth. Per-element scratch still causes more allocations than batch reuse.
+**Streaming** 50,000 CSV records (2.17 MB) takes 71.6–87.9 ms, with 25–30 MB/s
+throughput. It cumulatively allocates 48–52 bytes per input byte and about 6.2
+allocations per record, against 26 bytes per input byte and 0.06 allocations
+per record for closure batch parsing of 5,000 records (211 KB). These are
+cumulative allocations, not retained-heap measurements; separate long-stream
+tests check retained state and heap growth. Per-element scratch still causes
+more allocations than batch reuse.
 
-**Preparation.** Loading a `.pegoc` file takes 0.44–0.49× the time of compiling the grammar from source for the
-closure backend, 0.51–0.66× for bytecode, and 0.21–0.27× for a file without the AST.
+**Preparation.** Loading a `.pegoc` file takes 0.41–0.60× source-compilation time for the closure backend, 0.53–0.79×
+for bytecode and 0.18–0.29× for a file without the AST.
 
 ## How to measure
 
@@ -155,10 +151,11 @@ The 2026-10-09 run and the current analysis use the ready-made grammars in `pars
 Older runs used the simpler grammars of `examples/csv` and `examples/xml`, since removed. Their figures do not
 isolate the effect of a runtime change across that grammar transition; use the paired measurements in each tuning entry.
 
-The entries of the change log record the effect of each change when it was made; entries before change 13 were
+The optimization catalog records the effect of each change when it was made; entries before change 13 were
 measured on a 4-vCPU Intel Xeon virtual machine and are several times slower in absolute terms.
 
-Starting point (first benchmark run, on the virtual machine): JSON took ~510 ms and allocated 206 MB in 2.6 M allocations.
+The first benchmark run on that virtual machine took about 510 ms for JSON and allocated 206 MB in 2.6 million
+allocations.
 
 ## Where each optimization applies
 

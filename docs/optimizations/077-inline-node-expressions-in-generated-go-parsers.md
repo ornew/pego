@@ -26,8 +26,10 @@
   ParseAST direct controls show no systematic change. Node-conversion
   controls save about 188 KB/six allocations for Minilang and 273 KB/six
   allocations for Recovery in this schedule; this is Node-construction
-  propagation, not typed-emitter adoption or retained-heap evidence. These
-  focused results do not replace the pending full-suite checkpoint.
+  propagation, not typed-emitter adoption or retained-heap evidence.
+  The full-suite snapshot at `afc3129` includes this change; see
+  [Where PEGO stands](../performance.md#where-pego-stands) for current
+  comparisons. That run is not paired attribution for this optimization.
 - Three paired isolated compiler runs (`go tool compile -pack`, shared
   standard-library export files) measured median candidate/baseline ratios
   JSON 0.967×, XML 0.743×, Minilang 0.886× and DuckDB 0.343×; JSON ranges

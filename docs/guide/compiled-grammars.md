@@ -415,7 +415,7 @@ Three ways to get a grammar into a Go program:
 |:--|:--|:--|:--|
 | What the program holds | The `.pego` text | A binary file, embedded or read | Go source, compiled in |
 | Start-up | Compiles: tens of microseconds to tens of milliseconds, by size | Loads: a fraction of that (see above) | None |
-| Parsing speed | Closure backend | Closure with the AST, bytecode without | The fastest: 28 to 45% faster than the closure backend ([benchmarks](../benchmarks.md)) |
+| Parsing speed | Closure backend | Closure with the AST, bytecode without | Generated Go takes 0.41–0.60× closure time in CodePoints and 0.47–0.62× in Bytes across current workloads ([benchmarks](../benchmarks.md)) |
 | Depends on PEGO at run time | Yes | Yes (the engine and `LoadParser`) | No: standard library only |
 | Change the grammar without rebuilding the program | Yes (read the file) | Yes (read the file) | No |
 | Streaming, incremental parsing, backend choice, recognition mode | Yes | Yes (recognition needs the AST) | No |

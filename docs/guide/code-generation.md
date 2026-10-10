@@ -22,7 +22,7 @@ This guide shows how to generate a parser, how to call it, what it supports comp
 
 | | Engine (`pego.CompileSource`) | Generated parser |
 |:--|:--|:--|
-| Speed | Closure backend by default | The fastest backend: 28–45% faster than the closure backend, and typed values faster still ([benchmarks](../benchmarks.md), [analysis](../performance.md#where-pego-stands)) |
+| Speed | Closure backend by default | Generated Go takes 0.41–0.60× closure time in CodePoints and 0.47–0.62× in Bytes; direct typed values take 0.63–1.02× generated `Parse` time ([benchmarks](../benchmarks.md), [analysis](../performance.md#where-pego-stands)) |
 | Dependencies | `github.com/ornew/pego` | Standard library only |
 | Grammar at run time | Loaded and compiled (or loaded from `.pegoc`) | Gone: it is compiled into Go code |
 | Grammar changes | Edit the grammar, restart | Regenerate and rebuild |
@@ -542,10 +542,11 @@ and inputs that exercise each feature of your grammar.
 
 ## Trade-offs
 
-- **Speed.** The benchmarks in [benchmarks.md](../benchmarks.md) measure the generated parsers 28–45% faster than the
-  closure backend on every workload (for example JSON 6.7 ms against 11.8 ms for the closure backend and 3.6 ms for
-  `encoding/json`, on a 262 KB input), and `ParseAST` faster still (JSON 3.1 ms). The standard library is still faster where it applies, because it builds no
-  positioned typed tree. The numbers are from one machine and one commit; run `go run ./bench/report` to measure yours.
+- **Speed.** In the current [benchmark results](../benchmarks.md), generated Go takes 0.41–0.60× closure time in
+  CodePoints and 0.47–0.62× in Bytes across eight workloads. Direct `ParseAST` values take 0.63–1.02× generated
+  `Parse` time; conversion workloads that include CST nodes can take longer. Standard-library comparisons produce
+  different outputs and remain faster where they apply. These measurements are from one machine and commit; run
+  `go run ./bench/report` to measure yours.
 - **Binary and repository size.** Each generated parser adds tens of kilobytes of source (see the sizes above) that
   you commit and that compiles into your binary. It does not pull in PEGO's compiler, analyzer or VMs; the imports are
   `bytes`, `encoding/json`, `fmt`, `sort`, `strconv`, `strings` and `unicode/utf8`.

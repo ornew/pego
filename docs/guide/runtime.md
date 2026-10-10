@@ -401,12 +401,12 @@ grammar and input.
 | You want | Choose | Why |
 |:--|:--|:--|
 | The best default for a Go program that loads a grammar at start-up | Closure (the default) | It is faster than both VMs on every benchmarked workload. |
-| The fastest parsing, with a fixed grammar | [Generated Go](code-generation.md) | The benchmarks show it 28–45% faster than the closure backend, and its typed values (`-types`) faster still. |
+| The fastest parsing, with a fixed grammar | [Generated Go](code-generation.md) | Current benchmarks show it at 0.41–0.60× closure time in CodePoints and 0.47–0.62× in Bytes; direct typed values are 0.63–1.02× generated `Parse`. |
 | Input that can nest very deeply (untrusted JSON-like data, generated code) | Bytecode (iterative) | Rule calls live on the VM's own stack, not the Go stack. |
 | A grammar distributed as a data file, not source | Bytecode, from a `.pegoc` | See the [compiled grammars guide](compiled-grammars.md). |
 | Checking validity only | Any backend with [`RecognizeOnly`](#recognition-mode) | No tree is built. |
 
-The recursive bytecode VM is 1.1–1.3× slower than the closure backend in the benchmarks and the iterative VM 1.3–1.9×
+Across both units, the recursive bytecode VM is 1.12–1.39× slower than the closure backend in the benchmarks and the iterative VM 1.20–1.87×
 slower; you pay that for portability (the same bytecode is specified for other runtimes in
 [bytecode.md](../../spec/bytecode.md)) and, for the iterative VM, for the independence from the Go stack. Do not pick bytecode
 inside a Go program for speed.
