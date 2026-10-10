@@ -77,6 +77,7 @@ inventory of current mechanisms or reference controls.
 | [83](083-inline-typed-recovery-bodies.md#83-inline-eligible-typed-recovery-bodies)| Inline eligible typed recovery bodies | – | – | – | – | Partial | typed Go ordinary/LR/Pratt bodies with `#recover`; runtime recovery and frame ownership are unchanged; Node/TS and unsupported layouts remain general |
 | [84](084-complete-typed-local-capture-layouts.md#84-complete-typed-go-local-capture-layouts)| Complete typed Go-local capture layouts | – | – | – | – | Partial | typed Go ordinary direct rules and owned/projected repetition scopes preserve complete capture-name layouts, including dead syntax; Go locals are emitted as needed, with no runtime frame or selector |
 | [85](085-reuse-stream-capture-frames.md#85-reuse-stream-capture-frames-at-element-commit)| Reuse stream capture frames at element commit | ✓ | ✓ | ✓ | – | – | engine streaming only; reuses completed element's frame structs while preserving the live root and immutable result storage |
+| [86](086-reuse-document-vm-values.md#86-reuse-the-document-vm-value-stack)| Reuse the Document VM value stack | – | ✓ | ✓ | – | – | engine `Document` reparses only; retains cleared VM stack capacity within an input-relative bound; ordinary parsing and closure documents unchanged |
 | [62](062-comparing-short-literals-in-place-in-direct-rules.md#62-comparing-short-literals-in-place-in-direct-rules)| Short literals compared in place | – | – | – | Partial | ✓ | direct rules, up to 4 code points; generated value-free and supported Node rules since 76/77; CodePoints only, Bytes retains the literal matcher |
 
 Not applied, and why:
@@ -181,6 +182,7 @@ Not applied, and why:
 - [083. Inline eligible typed recovery bodies](083-inline-typed-recovery-bodies.md)
 - [084. Complete typed Go-local capture layouts](084-complete-typed-local-capture-layouts.md)
 - [085. Reuse stream capture frames at element commit](085-reuse-stream-capture-frames.md)
+- [086. Reuse the Document VM value stack](086-reuse-document-vm-values.md)
 
 ## Experiments that did not pay off
 

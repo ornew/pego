@@ -39,7 +39,7 @@ def e = pratt { operand "x" level { prefix "-" } }`, "---x", "x", "nesting too d
 						if got, want := resultJSON(n, err), resultJSON(prog.ParseWith("main", doc.Text(), opts)); got != want {
 							t.Fatalf("parse %d: got %s; fresh %s", i, got, want)
 						}
-						if doc.memo.len() != 0 || len(doc.runs) != 0 || len(doc.kids) != 0 {
+						if doc.memo.len() != 0 || len(doc.runs) != 0 || len(doc.kids) != 0 || doc.vals != nil {
 							t.Fatal("aborted parse retained reusable state")
 						}
 					}
@@ -81,7 +81,7 @@ def x = x "a" / "a"`)
 					}()
 					doc.Parse()
 				}()
-				if doc.memo.len() != 0 || len(doc.runs) != 0 || len(doc.kids) != 0 {
+				if doc.memo.len() != 0 || len(doc.runs) != 0 || len(doc.kids) != 0 || doc.vals != nil {
 					t.Fatal("trace panic retained reusable state")
 				}
 				doc.trace, opts.Trace = nil, nil
