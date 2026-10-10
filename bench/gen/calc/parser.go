@@ -3843,15 +3843,15 @@ var lit62 = []rune("+")
 var lit65 = []rune("^")
 var lit67 = []rune(".")
 var lit70 = []rune("(")
-var lit75 = []rune(")")
-var lit78 = []rune("+")
-var lit80 = []rune("-")
-var lit86 = []rune("*")
-var lit88 = []rune("/")
-var lit90 = []rune("%")
-var lit96 = []rune("-")
-var lit98 = []rune("+")
-var lit103 = []rune("^")
+var lit71 = []rune(")")
+var lit73 = []rune("+")
+var lit74 = []rune("-")
+var lit79 = []rune("*")
+var lit80 = []rune("/")
+var lit81 = []rune("%")
+var lit86 = []rune("-")
+var lit87 = []rune("+")
+var lit91 = []rune("^")
 
 func init() {
 	rules = []*rule{
@@ -3925,24 +3925,19 @@ func init() {
 		skip: (*tparser).e68,
 		operands: []*tprattLine{
 			&tprattLine{scope: []string{}, m: (*tparser).e69, action: nil, isSeq: false},
-			&tprattLine{scope: []string{"e"}, m: (*tparser).e77, action: func(c *tctx) any { return c.cap(0) }, isSeq: true},
+			&tprattLine{scope: []string{"e"}, m: (*tparser).e72, action: func(c *tctx) any { return c.cap(0) }, isSeq: true},
 		},
-		prefix: []*tprattOp{{id: 2, kind: "prefix", assoc: "", level: 3, line: &tprattLine{scope: []string{}, m: (*tparser).e100, action: func(c *tctx) any {
-			return func() any { f_101 := c.op; f_102 := c.rhs; return tmk_Unary(c, true, f_101, f_102) }()
+		prefix: []*tprattOp{{id: 2, kind: "prefix", assoc: "", level: 3, line: &tprattLine{scope: []string{}, m: (*tparser).e88, action: func(c *tctx) any {
+			return func() any { f_89 := c.op; f_90 := c.rhs; return tmk_Unary(c, true, f_89, f_90) }()
 		}, isSeq: false}}},
-		led: []*tprattOp{{id: 0, kind: "infix", assoc: "left", level: 1, line: &tprattLine{scope: []string{}, m: (*tparser).e82, action: func(c *tctx) any {
-			return func() any { f_83 := c.lhs; f_84 := c.op; f_85 := c.rhs; return tmk_Binary(c, true, f_83, f_84, f_85) }()
+		led: []*tprattOp{{id: 0, kind: "infix", assoc: "left", level: 1, line: &tprattLine{scope: []string{}, m: (*tparser).e75, action: func(c *tctx) any {
+			return func() any { f_76 := c.lhs; f_77 := c.op; f_78 := c.rhs; return tmk_Binary(c, true, f_76, f_77, f_78) }()
 		}, isSeq: false}},
-			{id: 1, kind: "infix", assoc: "left", level: 2, line: &tprattLine{scope: []string{}, m: (*tparser).e92, action: func(c *tctx) any {
-				return func() any { f_93 := c.lhs; f_94 := c.op; f_95 := c.rhs; return tmk_Binary(c, true, f_93, f_94, f_95) }()
+			{id: 1, kind: "infix", assoc: "left", level: 2, line: &tprattLine{scope: []string{}, m: (*tparser).e82, action: func(c *tctx) any {
+				return func() any { f_83 := c.lhs; f_84 := c.op; f_85 := c.rhs; return tmk_Binary(c, true, f_83, f_84, f_85) }()
 			}, isSeq: false}},
-			{id: 3, kind: "infix", assoc: "right", level: 4, line: &tprattLine{scope: []string{}, m: (*tparser).e104, action: func(c *tctx) any {
-				return func() any {
-					f_105 := c.lhs
-					f_106 := c.op
-					f_107 := c.rhs
-					return tmk_Binary(c, true, f_105, f_106, f_107)
-				}()
+			{id: 3, kind: "infix", assoc: "right", level: 4, line: &tprattLine{scope: []string{}, m: (*tparser).e92, action: func(c *tctx) any {
+				return func() any { f_93 := c.lhs; f_94 := c.op; f_95 := c.rhs; return tmk_Binary(c, true, f_93, f_94, f_95) }()
 			}, isSeq: false}}},
 	}
 	trules[1].body = func(p *tparser, min int) (any, bool) { return p.prattParse(trules[1], min) }
@@ -4918,233 +4913,228 @@ fail:
 	return nil, false
 }
 
-// ws
+// expr (typed Pratt body inlined)
 func (p *tparser) e68() (any, bool) {
-	return p.s4()
-}
-
-// number
-func (p *tparser) e69() (any, bool) {
-	return p.s2()
-}
-
-// "("
-func (p *tparser) e71() (any, bool) {
-	return p.matchLiteral(lit70, "(", 8, false)
-}
-
-// expr
-func (p *tparser) e72() (any, bool) {
-	return p.call(trules[1], 0)
-}
-
-// e:expr
-func (p *tparser) e73() (any, bool) {
-	v, ok := p.e72()
-	if ok {
-		p.setCapture(0, v)
-	}
-	return nil, ok
-}
-
-// ws
-func (p *tparser) e74() (any, bool) {
-	return p.s4()
-}
-
-// ")"
-func (p *tparser) e76() (any, bool) {
-	return p.matchLiteral(lit75, ")", 9, false)
-}
-
-// "(" e:expr ws ")"
-func (p *tparser) e77() (any, bool) {
-	if _, ok := p.e71(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e73(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e74(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e76(); !ok {
-		return nil, false
+	var (
+		ok bool
+	)
+	if _, ok = p.s4(); !ok {
+		goto fail
 	}
 	return nil, true
+fail:
+	return nil, false
 }
 
-// "+"
-func (p *tparser) e79() (any, bool) {
-	return p.matchLiteral(lit78, "+", 10, false)
+// expr (typed Pratt body inlined)
+func (p *tparser) e69() (any, bool) {
+	var (
+		ok bool
+		v1 any
+	)
+	if v1, ok = p.s2(); !ok {
+		goto fail
+	}
+	return v1, true
+fail:
+	return nil, false
 }
 
-// "-"
-func (p *tparser) e81() (any, bool) {
-	return p.matchLiteral(lit80, "-", 11, false)
+// expr (typed Pratt body inlined)
+func (p *tparser) e72() (any, bool) {
+	var (
+		ok bool
+		v1 any
+	)
+	if p.pos < len(p.in) && p.in[p.pos] == 40 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit70, "(", 8, false); !ok {
+		goto fail
+	}
+	if v1, ok = p.call(trules[1], 0); !ok {
+		goto fail
+	}
+	p.setCapture(0, v1)
+	if _, ok = p.s4(); !ok {
+		goto fail
+	}
+	if p.pos < len(p.in) && p.in[p.pos] == 41 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit71, ")", 9, false); !ok {
+		goto fail
+	}
+	return nil, true
+fail:
+	return nil, false
 }
 
-// "+" / "-"
+// expr (typed Pratt body inlined)
+func (p *tparser) e75() (any, bool) {
+	var (
+		x1 mark
+		x3 rune
+		x4 bool
+		ok bool
+	)
+	x1 = p.mark()
+	if p.pos < len(p.in) {
+		x3, _, x4 = p.in[p.pos], 1, true
+	} else {
+		x3, _, x4 = p.peek()
+	}
+	if !(x4 && (x3 == 43)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 10)
+		goto L5
+	}
+	if p.pos < len(p.in) && p.in[p.pos] == 43 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit73, "+", 10, false); !ok {
+		goto L6
+	}
+	goto L2
+L6:
+	p.reset(x1)
+L5:
+	if !(x4 && (x3 == 45)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 11)
+		goto L7
+	}
+	if p.pos < len(p.in) && p.in[p.pos] == 45 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit74, "-", 11, false); !ok {
+		goto L8
+	}
+	goto L2
+L8:
+	p.reset(x1)
+L7:
+	goto fail
+L2:
+	return nil, true
+fail:
+	return nil, false
+}
+
+// expr (typed Pratt body inlined)
 func (p *tparser) e82() (any, bool) {
-	m0 := p.mark()
-	ch, _, more := p.peek()
-	if !(more && (ch == 43)) && p.depth+0 <= maxDepth {
-		p.expect(p.pos, 10)
+	var (
+		x1 mark
+		x3 rune
+		x4 bool
+		ok bool
+	)
+	x1 = p.mark()
+	if p.pos < len(p.in) {
+		x3, _, x4 = p.in[p.pos], 1, true
 	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e79()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		x3, _, x4 = p.peek()
 	}
-	if !(more && (ch == 45)) && p.depth+0 <= maxDepth {
-		p.expect(p.pos, 11)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e81()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
-	}
-	return nil, false
-}
-
-// "*"
-func (p *tparser) e87() (any, bool) {
-	return p.matchLiteral(lit86, "*", 12, false)
-}
-
-// "/"
-func (p *tparser) e89() (any, bool) {
-	return p.matchLiteral(lit88, "/", 13, false)
-}
-
-// "%"
-func (p *tparser) e91() (any, bool) {
-	return p.matchLiteral(lit90, "%", 14, false)
-}
-
-// "*" / "/" / "%"
-func (p *tparser) e92() (any, bool) {
-	m0 := p.mark()
-	ch, _, more := p.peek()
-	if !(more && (ch == 42)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 42)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 12)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e87()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L5
 	}
-	if !(more && (ch == 47)) && p.depth+0 <= maxDepth {
+	if p.pos < len(p.in) && p.in[p.pos] == 42 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit79, "*", 12, false); !ok {
+		goto L6
+	}
+	goto L2
+L6:
+	p.reset(x1)
+L5:
+	if !(x4 && (x3 == 47)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 13)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e89()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L7
 	}
-	if !(more && (ch == 37)) && p.depth+0 <= maxDepth {
+	if p.pos < len(p.in) && p.in[p.pos] == 47 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit80, "/", 13, false); !ok {
+		goto L8
+	}
+	goto L2
+L8:
+	p.reset(x1)
+L7:
+	if !(x4 && (x3 == 37)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 14)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e91()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L9
 	}
+	if p.pos < len(p.in) && p.in[p.pos] == 37 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit81, "%", 14, false); !ok {
+		goto L10
+	}
+	goto L2
+L10:
+	p.reset(x1)
+L9:
+	goto fail
+L2:
+	return nil, true
+fail:
 	return nil, false
 }
 
-// "-"
-func (p *tparser) e97() (any, bool) {
-	return p.matchLiteral(lit96, "-", 11, false)
-}
-
-// "+"
-func (p *tparser) e99() (any, bool) {
-	return p.matchLiteral(lit98, "+", 10, false)
-}
-
-// "-" / "+"
-func (p *tparser) e100() (any, bool) {
-	m0 := p.mark()
-	ch, _, more := p.peek()
-	if !(more && (ch == 45)) && p.depth+0 <= maxDepth {
+// expr (typed Pratt body inlined)
+func (p *tparser) e88() (any, bool) {
+	var (
+		x1 mark
+		x3 rune
+		x4 bool
+		ok bool
+	)
+	x1 = p.mark()
+	if p.pos < len(p.in) {
+		x3, _, x4 = p.in[p.pos], 1, true
+	} else {
+		x3, _, x4 = p.peek()
+	}
+	if !(x4 && (x3 == 45)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 11)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e97()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L5
 	}
-	if !(more && (ch == 43)) && p.depth+0 <= maxDepth {
+	if p.pos < len(p.in) && p.in[p.pos] == 45 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit86, "-", 11, false); !ok {
+		goto L6
+	}
+	goto L2
+L6:
+	p.reset(x1)
+L5:
+	if !(x4 && (x3 == 43)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 10)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e99()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L7
 	}
+	if p.pos < len(p.in) && p.in[p.pos] == 43 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit87, "+", 10, false); !ok {
+		goto L8
+	}
+	goto L2
+L8:
+	p.reset(x1)
+L7:
+	goto fail
+L2:
+	return nil, true
+fail:
 	return nil, false
 }
 
-// "^"
-func (p *tparser) e104() (any, bool) {
-	return p.matchLiteral(lit103, "^", 15, false)
+// expr (typed Pratt body inlined)
+func (p *tparser) e92() (any, bool) {
+	var (
+		ok bool
+	)
+	if p.pos < len(p.in) && p.in[p.pos] == 94 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit91, "^", 15, false); !ok {
+		goto fail
+	}
+	return nil, true
+fail:
+	return nil, false
 }
 
 // number, called as by invokePlain (body inlined)

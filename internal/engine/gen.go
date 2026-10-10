@@ -44,6 +44,9 @@ type GenOptions struct {
 	// disableTypedLRBodies keeps per-expression bodies under the unchanged
 	// left-recursion runtime, for same-revision tests and measurements.
 	disableTypedLRBodies bool
+	// disableTypedPrattBodies retains per-expression Pratt line dispatch for
+	// same-generator tests and measurements without a parser-time option.
+	disableTypedPrattBodies bool
 }
 
 // Generate generates the source code of a Go parser for a grammar.
@@ -67,7 +70,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if !token.IsIdentifier(opts.Package) || opts.Package == "_" {
 		return nil, fmt.Errorf("invalid package name %q", opts.Package)
 	}
-	gen := &generator{prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies}
+	gen := &generator{prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedPrattBodies: opts.disableTypedPrattBodies}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
 	var rec *Program
@@ -140,8 +143,9 @@ func ParseRule(name, input string, unit ...Unit) (*Node, error) {
 }
 
 type generator struct {
-	disableTypedCuts     bool
-	disableTypedLRBodies bool
+	disableTypedCuts        bool
+	disableTypedLRBodies    bool
+	disableTypedPrattBodies bool
 	// nodeScopes records the frame layouts shared by typed rule metadata.
 	nodeScopes map[*rule][]string
 	prog       *Program
@@ -855,7 +859,12 @@ func (g *generator) pratt(r *rule, e *grammar.Pratt) {
 	var b strings.Builder
 	fmt.Fprintf(&b, "\t%s[%d].pratt = &%s{\n", g.table, r.id, g.pick("pratt", "tpratt"))
 	if e.Skip != nil {
-		fmt.Fprintf(&b, "\t\tskip: (*%s).%s,\n", g.recv(), g.expr(e.Skip, newScope(), false))
+		s := newScope()
+		m := g.directTypedPrattBody(e.Skip, s, false, nil, false)
+		if m == "" {
+			m = g.expr(e.Skip, s, false)
+		}
+		fmt.Fprintf(&b, "\t\tskip: (*%s).%s,\n", g.recv(), m)
 	}
 	fmt.Fprintf(&b, "\t\toperands: []*%s{\n", g.pick("prattLine", "tprattLine"))
 	for _, o := range e.Operands {
@@ -891,7 +900,11 @@ func (g *generator) prattLine(e grammar.Expr, action grammar.Term, operator bool
 	}
 	// Lines whose value is unused are matched without values, as in the engine; so are all lines
 	// of a rule without a value (in the recognizer).
-	m := g.expr(e, s, !g.cur.novalue && !leanLine(action, locals))
+	build := !g.cur.novalue && !leanLine(action, locals)
+	m := g.directTypedPrattBody(e, s, build, action, operator)
+	if m == "" {
+		m = g.expr(e, s, build)
+	}
 	_, isSeq := e.(*grammar.Seq)
 	act := "nil"
 	if action != nil && !g.cur.novalue {

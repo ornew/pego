@@ -31,9 +31,12 @@ func (d *dgen) frameScope(s *dscope) *scope {
 	return s.frame
 }
 
-func frameRefsKnown(t grammar.Term, s *scope) bool {
+func frameRefsKnown(t grammar.Term, s *scope, locals ...string) bool {
 	ok := true
 	capRefs(t, func(name string) {
+		if slices.Contains(locals, name) {
+			return
+		}
 		if _, found := s.slots[name]; !found {
 			ok = false
 		}
@@ -60,7 +63,7 @@ func (d *dgen) nodeCapture(e *grammar.Capture, s *dscope, build bool, fail strin
 	return v
 }
 
-// nodeRepeat keeps capture frames and the undo trail owned by the Node runtime.
+// nodeRepeat keeps capture frames and the undo trail owned by the selected runtime.
 // Projected repeats reuse a cleared element frame, as projectRepeat does.
 func (d *dgen) nodeRepeat(e *grammar.Repeat, s *dscope, build bool, fail, field string) string {
 	if !build && field == "" {
@@ -180,7 +183,6 @@ func (g *generator) directFrameBody(r *rule, scope *scope, comment string) strin
 	g.cur, g.proj = r, g.projections(r)
 	defer func() { g.proj = nil }()
 	v := d.expr(r.def.Expr, s, !r.lean, "fail")
-	succeed := !d.dead
 	if r.action != nil && !frameRefsKnown(r.action, d.frameScope(s)) {
 		d.bad = true
 	}
@@ -193,7 +195,13 @@ func (g *generator) directFrameBody(r *rule, scope *scope, comment string) strin
 		g.rollback(snap)
 		return ""
 	}
-	if succeed {
+	return g.finishFrameBody(d, s, scope, v, r.name+" ("+comment+")")
+}
+
+// finishFrameBody emits only an expression matcher. Its caller owns the frame,
+// action, rule finalization and recursion/depth bookkeeping.
+func (g *generator) finishFrameBody(d *dgen, s *dscope, scope *scope, v, comment string) string {
+	if !d.dead {
 		d.line("return %s, true", d.rd(v))
 	}
 	if d.used["fail"] {
@@ -215,5 +223,5 @@ func (g *generator) directFrameBody(r *rule, scope *scope, comment string) strin
 	}
 	b.WriteString(d.b.String())
 	*scope = *d.frameScope(s)
-	return g.method(r.name+" ("+comment+")", b.String())
+	return g.method(comment, b.String())
 }

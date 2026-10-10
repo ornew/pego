@@ -6732,50 +6732,50 @@ var lit2272 = []rune("0")
 var lit2273 = []rune("0")
 var lit2274 = []rune(".")
 var lit2277 = []rune("|")
-var lit2285 = []rune("&")
-var lit2293 = []rune("||")
-var lit2301 = []rune("&&")
-var lit2309 = []rune("==")
-var lit2311 = []rune("!=")
-var lit2313 = []rune("=~")
-var lit2315 = []rune("!~")
-var lit2317 = []rune("<=")
-var lit2319 = []rune(">=")
-var lit2321 = []rune("<")
-var lit2323 = []rune("-")
-var lit2327 = []rune(">")
-var lit2337 = []rune("+")
-var lit2339 = []rune("-")
-var lit2348 = []rune("*")
-var lit2350 = []rune("/")
-var lit2352 = []rune("/")
-var lit2366 = []rune("+")
-var lit2368 = []rune("-")
-var lit2370 = []rune("!=")
-var lit2372 = []rune("!~")
-var lit2374 = []rune("!")
-var lit2376 = []rune("*")
-var lit2378 = []rune("<=")
-var lit2380 = []rune(">=")
-var lit2382 = []rune("<")
-var lit2384 = []rune("-")
-var lit2388 = []rune(">")
-var lit2390 = []rune("=~")
-var lit2392 = []rune("==")
-var lit2401 = []rune(".")
-var lit2407 = []rune("?")
-var lit2415 = []rune(".")
-var lit2423 = []rune("[")
-var lit2431 = []rune("]")
-var lit2435 = []rune("?")
-var lit2444 = []rune("[")
-var lit2452 = []rune("]")
-var lit2459 = []rune("[")
-var lit2470 = []rune("]")
-var lit2476 = []rune("(")
-var scope2483 = []string{"a"}
-var lit2486 = []rune(")")
-var lit2492 = []rune("...")
+var lit2282 = []rune("&")
+var lit2287 = []rune("||")
+var lit2292 = []rune("&&")
+var lit2297 = []rune("==")
+var lit2298 = []rune("!=")
+var lit2299 = []rune("=~")
+var lit2300 = []rune("!~")
+var lit2301 = []rune("<=")
+var lit2302 = []rune(">=")
+var lit2303 = []rune("<")
+var lit2304 = []rune("-")
+var lit2305 = []rune(">")
+var lit2310 = []rune("+")
+var lit2311 = []rune("-")
+var lit2316 = []rune("*")
+var lit2317 = []rune("/")
+var lit2318 = []rune("/")
+var lit2323 = []rune("+")
+var lit2324 = []rune("-")
+var lit2325 = []rune("!=")
+var lit2326 = []rune("!~")
+var lit2327 = []rune("!")
+var lit2328 = []rune("*")
+var lit2329 = []rune("<=")
+var lit2330 = []rune(">=")
+var lit2331 = []rune("<")
+var lit2332 = []rune("-")
+var lit2333 = []rune(">")
+var lit2334 = []rune("=~")
+var lit2335 = []rune("==")
+var lit2339 = []rune(".")
+var lit2340 = []rune("?")
+var lit2346 = []rune(".")
+var lit2350 = []rune("[")
+var lit2351 = []rune("]")
+var lit2352 = []rune("?")
+var lit2359 = []rune("[")
+var lit2360 = []rune("]")
+var lit2365 = []rune("[")
+var lit2366 = []rune("]")
+var lit2371 = []rune("(")
+var scope2372 = []string{"a"}
+var lit2373 = []rune(")")
+var lit2378 = []rune("...")
 
 func init() {
 	rules = []*rule{
@@ -8449,112 +8449,112 @@ func init() {
 		operands: []*tprattLine{
 			&tprattLine{scope: []string{}, m: (*tparser).e2276, action: nil, isSeq: false},
 		},
-		prefix: []*tprattOp{{id: 7, kind: "prefix", assoc: "", level: 8, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e2398, action: func(c *tctx) any {
-			return func() any { f_2399 := c.cap(0); f_2400 := c.rhs; return tmk_UnaryExpr(c, true, f_2399, f_2400) }()
+		prefix: []*tprattOp{{id: 7, kind: "prefix", assoc: "", level: 8, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e2336, action: func(c *tctx) any {
+			return func() any { f_2337 := c.cap(0); f_2338 := c.rhs; return tmk_UnaryExpr(c, true, f_2337, f_2338) }()
 		}, isSeq: true}}},
-		led: []*tprattOp{{id: 0, kind: "infix", assoc: "left", level: 1, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e2281, action: func(c *tctx) any {
+		led: []*tprattOp{{id: 0, kind: "infix", assoc: "left", level: 1, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e2278, action: func(c *tctx) any {
 			return func() any {
-				f_2282 := c.lhs
-				f_2283 := c.cap(0)
-				f_2284 := c.rhs
-				return tmk_BinaryExpr(c, true, f_2282, f_2283, f_2284)
+				f_2279 := c.lhs
+				f_2280 := c.cap(0)
+				f_2281 := c.rhs
+				return tmk_BinaryExpr(c, true, f_2279, f_2280, f_2281)
 			}()
 		}, isSeq: true}},
-			{id: 1, kind: "infix", assoc: "left", level: 2, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e2289, action: func(c *tctx) any {
+			{id: 1, kind: "infix", assoc: "left", level: 2, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e2283, action: func(c *tctx) any {
 				return func() any {
-					f_2290 := c.lhs
-					f_2291 := c.cap(0)
-					f_2292 := c.rhs
-					return tmk_BinaryExpr(c, true, f_2290, f_2291, f_2292)
+					f_2284 := c.lhs
+					f_2285 := c.cap(0)
+					f_2286 := c.rhs
+					return tmk_BinaryExpr(c, true, f_2284, f_2285, f_2286)
 				}()
 			}, isSeq: true}},
-			{id: 2, kind: "infix", assoc: "left", level: 3, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e2297, action: func(c *tctx) any {
+			{id: 2, kind: "infix", assoc: "left", level: 3, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e2288, action: func(c *tctx) any {
 				return func() any {
-					f_2298 := c.lhs
-					f_2299 := c.cap(0)
-					f_2300 := c.rhs
-					return tmk_BinaryExpr(c, true, f_2298, f_2299, f_2300)
+					f_2289 := c.lhs
+					f_2290 := c.cap(0)
+					f_2291 := c.rhs
+					return tmk_BinaryExpr(c, true, f_2289, f_2290, f_2291)
 				}()
 			}, isSeq: true}},
-			{id: 3, kind: "infix", assoc: "left", level: 4, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e2305, action: func(c *tctx) any {
+			{id: 3, kind: "infix", assoc: "left", level: 4, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e2293, action: func(c *tctx) any {
 				return func() any {
-					f_2306 := c.lhs
-					f_2307 := c.cap(0)
-					f_2308 := c.rhs
-					return tmk_BinaryExpr(c, true, f_2306, f_2307, f_2308)
+					f_2294 := c.lhs
+					f_2295 := c.cap(0)
+					f_2296 := c.rhs
+					return tmk_BinaryExpr(c, true, f_2294, f_2295, f_2296)
 				}()
 			}, isSeq: true}},
-			{id: 4, kind: "infix", assoc: "left", level: 5, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e2333, action: func(c *tctx) any {
+			{id: 4, kind: "infix", assoc: "left", level: 5, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e2306, action: func(c *tctx) any {
 				return func() any {
-					f_2334 := c.lhs
-					f_2335 := c.cap(0)
-					f_2336 := c.rhs
-					return tmk_BinaryExpr(c, true, f_2334, f_2335, f_2336)
+					f_2307 := c.lhs
+					f_2308 := c.cap(0)
+					f_2309 := c.rhs
+					return tmk_BinaryExpr(c, true, f_2307, f_2308, f_2309)
 				}()
 			}, isSeq: true}},
-			{id: 5, kind: "infix", assoc: "left", level: 6, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e2344, action: func(c *tctx) any {
+			{id: 5, kind: "infix", assoc: "left", level: 6, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e2312, action: func(c *tctx) any {
 				return func() any {
-					f_2345 := c.lhs
-					f_2346 := c.cap(0)
-					f_2347 := c.rhs
-					return tmk_BinaryExpr(c, true, f_2345, f_2346, f_2347)
+					f_2313 := c.lhs
+					f_2314 := c.cap(0)
+					f_2315 := c.rhs
+					return tmk_BinaryExpr(c, true, f_2313, f_2314, f_2315)
 				}()
 			}, isSeq: true}},
-			{id: 6, kind: "infix", assoc: "left", level: 7, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e2360, action: func(c *tctx) any {
+			{id: 6, kind: "infix", assoc: "left", level: 7, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e2319, action: func(c *tctx) any {
 				return func() any {
-					f_2361 := c.lhs
-					f_2362 := c.cap(0)
-					f_2363 := c.rhs
-					return tmk_BinaryExpr(c, true, f_2361, f_2362, f_2363)
+					f_2320 := c.lhs
+					f_2321 := c.cap(0)
+					f_2322 := c.rhs
+					return tmk_BinaryExpr(c, true, f_2320, f_2321, f_2322)
 				}()
 			}, isSeq: true}},
-			{id: 8, kind: "postfix", assoc: "", level: 9, line: &tprattLine{scope: []string{"s", "q"}, m: (*tparser).e2410, action: func(c *tctx) any {
+			{id: 8, kind: "postfix", assoc: "", level: 9, line: &tprattLine{scope: []string{"s", "q"}, m: (*tparser).e2341, action: func(c *tctx) any {
 				return func() any {
-					f_2411 := func() any { f_2412 := c.lhs; f_2413 := c.cap(0); return tmk_SelectorExpr(c, false, f_2412, f_2413) }()
-					f_2414 := c.cap(1)
-					return tmk_PostfixExpr(c, true, f_2411, f_2414)
+					f_2342 := func() any { f_2343 := c.lhs; f_2344 := c.cap(0); return tmk_SelectorExpr(c, false, f_2343, f_2344) }()
+					f_2345 := c.cap(1)
+					return tmk_PostfixExpr(c, true, f_2342, f_2345)
 				}()
 			}, isSeq: true}},
-			{id: 9, kind: "postfix", assoc: "", level: 9, line: &tprattLine{scope: []string{"s"}, m: (*tparser).e2420, action: func(c *tctx) any {
-				return func() any { f_2421 := c.lhs; f_2422 := c.cap(0); return tmk_SelectorExpr(c, true, f_2421, f_2422) }()
+			{id: 9, kind: "postfix", assoc: "", level: 9, line: &tprattLine{scope: []string{"s"}, m: (*tparser).e2347, action: func(c *tctx) any {
+				return func() any { f_2348 := c.lhs; f_2349 := c.cap(0); return tmk_SelectorExpr(c, true, f_2348, f_2349) }()
 			}, isSeq: true}},
-			{id: 10, kind: "postfix", assoc: "", level: 9, line: &tprattLine{scope: []string{"i", "r", "q"}, m: (*tparser).e2438, action: func(c *tctx) any {
+			{id: 10, kind: "postfix", assoc: "", level: 9, line: &tprattLine{scope: []string{"i", "r", "q"}, m: (*tparser).e2353, action: func(c *tctx) any {
 				return func() any {
-					f_2439 := func() any {
-						f_2440 := c.lhs
-						f_2441 := c.cap(0)
-						f_2442 := c.cap(1)
-						return tmk_IndexExpr(c, false, f_2440, f_2441, f_2442)
+					f_2354 := func() any {
+						f_2355 := c.lhs
+						f_2356 := c.cap(0)
+						f_2357 := c.cap(1)
+						return tmk_IndexExpr(c, false, f_2355, f_2356, f_2357)
 					}()
-					f_2443 := c.cap(2)
-					return tmk_PostfixExpr(c, true, f_2439, f_2443)
+					f_2358 := c.cap(2)
+					return tmk_PostfixExpr(c, true, f_2354, f_2358)
 				}()
 			}, isSeq: true}},
-			{id: 11, kind: "postfix", assoc: "", level: 9, line: &tprattLine{scope: []string{"i", "r"}, m: (*tparser).e2455, action: func(c *tctx) any {
+			{id: 11, kind: "postfix", assoc: "", level: 9, line: &tprattLine{scope: []string{"i", "r"}, m: (*tparser).e2361, action: func(c *tctx) any {
 				return func() any {
-					f_2456 := c.lhs
-					f_2457 := c.cap(0)
-					f_2458 := c.cap(1)
-					return tmk_IndexExpr(c, true, f_2456, f_2457, f_2458)
+					f_2362 := c.lhs
+					f_2363 := c.cap(0)
+					f_2364 := c.cap(1)
+					return tmk_IndexExpr(c, true, f_2362, f_2363, f_2364)
 				}()
 			}, isSeq: true}},
-			{id: 12, kind: "postfix", assoc: "", level: 9, line: &tprattLine{scope: []string{"lo", "hi"}, m: (*tparser).e2472, action: func(c *tctx) any {
+			{id: 12, kind: "postfix", assoc: "", level: 9, line: &tprattLine{scope: []string{"lo", "hi"}, m: (*tparser).e2367, action: func(c *tctx) any {
 				return func() any {
-					f_2473 := c.lhs
-					f_2474 := c.cap(0)
-					f_2475 := c.cap(1)
-					return tmk_SliceExpr(c, true, f_2473, f_2474, f_2475)
+					f_2368 := c.lhs
+					f_2369 := c.cap(0)
+					f_2370 := c.cap(1)
+					return tmk_SliceExpr(c, true, f_2368, f_2369, f_2370)
 				}()
 			}, isSeq: true}},
-			{id: 13, kind: "postfix", assoc: "", level: 9, line: &tprattLine{scope: []string{"as"}, m: (*tparser).e2488, action: func(c *tctx) any {
+			{id: 13, kind: "postfix", assoc: "", level: 9, line: &tprattLine{scope: []string{"as"}, m: (*tparser).e2374, action: func(c *tctx) any {
 				return func() any {
-					f_2489 := c.lhs
-					f_2490 := c.mapList(c.cap(0), func(l_2491 any) any { return c.member(l_2491, "a") })
-					return tmk_CallExpr(c, true, f_2489, f_2490)
+					f_2375 := c.lhs
+					f_2376 := c.mapList(c.cap(0), func(l_2377 any) any { return c.member(l_2377, "a") })
+					return tmk_CallExpr(c, true, f_2375, f_2376)
 				}()
 			}, isSeq: true}},
-			{id: 14, kind: "postfix", assoc: "", level: 9, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e2494, action: func(c *tctx) any {
-				return func() any { f_2495 := c.lhs; f_2496 := c.cap(0); return tmk_PostfixExpr(c, true, f_2495, f_2496) }()
+			{id: 14, kind: "postfix", assoc: "", level: 9, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e2379, action: func(c *tctx) any {
+				return func() any { f_2380 := c.lhs; f_2381 := c.cap(0); return tmk_PostfixExpr(c, true, f_2380, f_2381) }()
 			}, isSeq: false}}},
 	}
 	trules[115].body = func(p *tparser, min int) (any, bool) { return p.prattParse(trules[115], min) }
@@ -74065,1474 +74065,943 @@ fail:
 	return nil, false
 }
 
-// sp
+// full_expr (typed Pratt body inlined)
 func (p *tparser) e2275() (any, bool) {
-	return p.s220()
+	var (
+		ok bool
+	)
+	if _, ok = p.s220(); !ok {
+		goto fail
+	}
+	return nil, true
+fail:
+	return nil, false
 }
 
-// operand_any
+// full_expr (typed Pratt body inlined)
 func (p *tparser) e2276() (any, bool) {
-	return p.u109()
+	var (
+		ok bool
+		v1 any
+	)
+	if v1, ok = p.u109(); !ok {
+		goto fail
+	}
+	return v1, true
+fail:
+	return nil, false
 }
 
-// "|"
+// full_expr (typed Pratt body inlined)
 func (p *tparser) e2278() (any, bool) {
-	return p.matchLiteral(lit2277, "|", 100, true)
-}
-
-// o:"|"
-func (p *tparser) e2279() (any, bool) {
-	v, ok := p.e2278()
-	if ok {
-		p.setCapture(0, v)
+	var (
+		x1 int
+		ok bool
+		v2 any
+	)
+	x1 = p.pos
+	if p.pos < len(p.in) && p.in[p.pos] == 124 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2277, "|", 100, false); !ok {
+		goto fail
 	}
-	return nil, ok
-}
-
-// ws
-func (p *tparser) e2280() (any, bool) {
-	return p.u217()
-}
-
-// o:"|" ws
-func (p *tparser) e2281() (any, bool) {
-	if _, ok := p.e2279(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2280(); !ok {
-		return nil, false
+	v2 = p.newMatch(x1, p.pos, "|", true)
+	p.setCapture(0, v2)
+	if _, ok = p.u217(); !ok {
+		goto fail
 	}
 	return nil, true
+fail:
+	return nil, false
 }
 
-// "&"
-func (p *tparser) e2286() (any, bool) {
-	return p.matchLiteral(lit2285, "&", 101, true)
-}
-
-// o:"&"
-func (p *tparser) e2287() (any, bool) {
-	v, ok := p.e2286()
-	if ok {
-		p.setCapture(0, v)
+// full_expr (typed Pratt body inlined)
+func (p *tparser) e2283() (any, bool) {
+	var (
+		x1 int
+		ok bool
+		v2 any
+	)
+	x1 = p.pos
+	if p.pos < len(p.in) && p.in[p.pos] == 38 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2282, "&", 101, false); !ok {
+		goto fail
 	}
-	return nil, ok
+	v2 = p.newMatch(x1, p.pos, "&", true)
+	p.setCapture(0, v2)
+	if _, ok = p.u217(); !ok {
+		goto fail
+	}
+	return nil, true
+fail:
+	return nil, false
 }
 
-// ws
+// full_expr (typed Pratt body inlined)
 func (p *tparser) e2288() (any, bool) {
-	return p.u217()
-}
-
-// o:"&" ws
-func (p *tparser) e2289() (any, bool) {
-	if _, ok := p.e2287(); !ok {
-		return nil, false
+	var (
+		x1 int
+		ok bool
+		v2 any
+	)
+	x1 = p.pos
+	if p.pos+2 <= len(p.in) && p.in[p.pos] == 124 && p.in[p.pos+1] == 124 {
+		p.pos += 2
+	} else if _, ok = p.parser.matchLiteral(lit2287, "||", 102, false); !ok {
+		goto fail
 	}
-	if _, ok := p.e2288(); !ok {
-		return nil, false
-	}
-	return nil, true
-}
-
-// "||"
-func (p *tparser) e2294() (any, bool) {
-	return p.matchLiteral(lit2293, "||", 102, true)
-}
-
-// o:"||"
-func (p *tparser) e2295() (any, bool) {
-	v, ok := p.e2294()
-	if ok {
-		p.setCapture(0, v)
-	}
-	return nil, ok
-}
-
-// ws
-func (p *tparser) e2296() (any, bool) {
-	return p.u217()
-}
-
-// o:"||" ws
-func (p *tparser) e2297() (any, bool) {
-	if _, ok := p.e2295(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2296(); !ok {
-		return nil, false
+	v2 = p.newMatch(x1, p.pos, "||", true)
+	p.setCapture(0, v2)
+	if _, ok = p.u217(); !ok {
+		goto fail
 	}
 	return nil, true
+fail:
+	return nil, false
 }
 
-// "&&"
-func (p *tparser) e2302() (any, bool) {
-	return p.matchLiteral(lit2301, "&&", 103, true)
-}
-
-// o:"&&"
-func (p *tparser) e2303() (any, bool) {
-	v, ok := p.e2302()
-	if ok {
-		p.setCapture(0, v)
+// full_expr (typed Pratt body inlined)
+func (p *tparser) e2293() (any, bool) {
+	var (
+		x1 int
+		ok bool
+		v2 any
+	)
+	x1 = p.pos
+	if p.pos+2 <= len(p.in) && p.in[p.pos] == 38 && p.in[p.pos+1] == 38 {
+		p.pos += 2
+	} else if _, ok = p.parser.matchLiteral(lit2292, "&&", 103, false); !ok {
+		goto fail
 	}
-	return nil, ok
-}
-
-// ws
-func (p *tparser) e2304() (any, bool) {
-	return p.u217()
-}
-
-// o:"&&" ws
-func (p *tparser) e2305() (any, bool) {
-	if _, ok := p.e2303(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2304(); !ok {
-		return nil, false
+	v2 = p.newMatch(x1, p.pos, "&&", true)
+	p.setCapture(0, v2)
+	if _, ok = p.u217(); !ok {
+		goto fail
 	}
 	return nil, true
+fail:
+	return nil, false
 }
 
-// "=="
-func (p *tparser) e2310() (any, bool) {
-	return p.matchLiteral(lit2309, "==", 104, false)
-}
-
-// "!="
-func (p *tparser) e2312() (any, bool) {
-	return p.matchLiteral(lit2311, "!=", 105, false)
-}
-
-// "=~"
-func (p *tparser) e2314() (any, bool) {
-	return p.matchLiteral(lit2313, "=~", 106, false)
-}
-
-// "!~"
-func (p *tparser) e2316() (any, bool) {
-	return p.matchLiteral(lit2315, "!~", 107, false)
-}
-
-// "<="
-func (p *tparser) e2318() (any, bool) {
-	return p.matchLiteral(lit2317, "<=", 108, false)
-}
-
-// ">="
-func (p *tparser) e2320() (any, bool) {
-	return p.matchLiteral(lit2319, ">=", 109, false)
-}
-
-// "<"
-func (p *tparser) e2322() (any, bool) {
-	return p.matchLiteral(lit2321, "<", 110, false)
-}
-
-// "-"
-func (p *tparser) e2324() (any, bool) {
-	return p.matchLiteral(lit2323, "-", 111, false)
-}
-
-// !"-"
-func (p *tparser) e2325() (any, bool) {
-	m0 := p.mark()
-	prevCut := p.cut
-	p.silent++
-	_, ok := p.e2324()
-	p.silent--
-	p.cut = prevCut
-	p.reset(m0)
-	return nil, !ok
-}
-
-// "<" !"-"
-func (p *tparser) e2326() (any, bool) {
-	if _, ok := p.e2322(); !ok {
-		return nil, false
+// full_expr (typed Pratt body inlined)
+func (p *tparser) e2306() (any, bool) {
+	var (
+		x1  int
+		x2  mark
+		x4  rune
+		x5  bool
+		ok  bool
+		x20 mark
+		v24 any
+	)
+	x1 = p.pos
+	x2 = p.mark()
+	if p.pos < len(p.in) {
+		x4, _, x5 = p.in[p.pos], 1, true
+	} else {
+		x4, _, x5 = p.peek()
 	}
-	if _, ok := p.e2325(); !ok {
-		return nil, false
-	}
-	return nil, true
-}
-
-// ">"
-func (p *tparser) e2328() (any, bool) {
-	return p.matchLiteral(lit2327, ">", 112, false)
-}
-
-// "==" / "!=" / "=~" / "!~" / "<=" / ">=" / "<" !"-" / ">"
-func (p *tparser) e2329() (any, bool) {
-	m0 := p.mark()
-	ch, _, more := p.peek()
-	if !(more && (ch == 61)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 61)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 104)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2310()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L6
 	}
-	if !(more && (ch == 33)) && p.depth+0 <= maxDepth {
+	if p.pos+2 <= len(p.in) && p.in[p.pos] == 61 && p.in[p.pos+1] == 61 {
+		p.pos += 2
+	} else if _, ok = p.parser.matchLiteral(lit2297, "==", 104, false); !ok {
+		goto L7
+	}
+	goto L3
+L7:
+	p.reset(x2)
+L6:
+	if !(x5 && (x4 == 33)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 105)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2312()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L8
 	}
-	if !(more && (ch == 61)) && p.depth+0 <= maxDepth {
+	if p.pos+2 <= len(p.in) && p.in[p.pos] == 33 && p.in[p.pos+1] == 61 {
+		p.pos += 2
+	} else if _, ok = p.parser.matchLiteral(lit2298, "!=", 105, false); !ok {
+		goto L9
+	}
+	goto L3
+L9:
+	p.reset(x2)
+L8:
+	if !(x5 && (x4 == 61)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 106)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2314()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L10
 	}
-	if !(more && (ch == 33)) && p.depth+0 <= maxDepth {
+	if p.pos+2 <= len(p.in) && p.in[p.pos] == 61 && p.in[p.pos+1] == 126 {
+		p.pos += 2
+	} else if _, ok = p.parser.matchLiteral(lit2299, "=~", 106, false); !ok {
+		goto L11
+	}
+	goto L3
+L11:
+	p.reset(x2)
+L10:
+	if !(x5 && (x4 == 33)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 107)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2316()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L12
 	}
-	if !(more && (ch == 60)) && p.depth+0 <= maxDepth {
+	if p.pos+2 <= len(p.in) && p.in[p.pos] == 33 && p.in[p.pos+1] == 126 {
+		p.pos += 2
+	} else if _, ok = p.parser.matchLiteral(lit2300, "!~", 107, false); !ok {
+		goto L13
+	}
+	goto L3
+L13:
+	p.reset(x2)
+L12:
+	if !(x5 && (x4 == 60)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 108)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2318()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L14
 	}
-	if !(more && (ch == 62)) && p.depth+0 <= maxDepth {
+	if p.pos+2 <= len(p.in) && p.in[p.pos] == 60 && p.in[p.pos+1] == 61 {
+		p.pos += 2
+	} else if _, ok = p.parser.matchLiteral(lit2301, "<=", 108, false); !ok {
+		goto L15
+	}
+	goto L3
+L15:
+	p.reset(x2)
+L14:
+	if !(x5 && (x4 == 62)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 109)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2320()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L16
 	}
-	if !(more && (ch == 60)) && p.depth+0 <= maxDepth {
+	if p.pos+2 <= len(p.in) && p.in[p.pos] == 62 && p.in[p.pos+1] == 61 {
+		p.pos += 2
+	} else if _, ok = p.parser.matchLiteral(lit2302, ">=", 109, false); !ok {
+		goto L17
+	}
+	goto L3
+L17:
+	p.reset(x2)
+L16:
+	if !(x5 && (x4 == 60)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 110)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2326()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L18
 	}
-	if !(more && (ch == 62)) && p.depth+0 <= maxDepth {
-		p.expect(p.pos, 112)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2328()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+	if p.pos < len(p.in) && p.in[p.pos] == 60 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2303, "<", 110, false); !ok {
+		goto L19
 	}
-	return nil, false
-}
-
-// @("==" / "!=" / "=~" / "!~" / "<=" / ">=" / "<" !"-" / ">")
-func (p *tparser) e2330() (any, bool) {
-	start := p.pos
-	if _, ok := p.e2329(); !ok {
-		return nil, false
-	}
-	return p.newMatch(start, p.pos, p.text(start, p.pos), true), true
-}
-
-// o:@("==" / "!=" / "=~" / "!~" / "<=" / ">=" / "<" !"-" / ">")
-func (p *tparser) e2331() (any, bool) {
-	v, ok := p.e2330()
-	if ok {
-		p.setCapture(0, v)
-	}
-	return nil, ok
-}
-
-// ws
-func (p *tparser) e2332() (any, bool) {
-	return p.u217()
-}
-
-// o:@("==" / "!=" / "=~" / "!~" / "<=" / ">=" / "<" !"-" / ">") ws
-func (p *tparser) e2333() (any, bool) {
-	if _, ok := p.e2331(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2332(); !ok {
-		return nil, false
-	}
-	return nil, true
-}
-
-// "+"
-func (p *tparser) e2338() (any, bool) {
-	return p.matchLiteral(lit2337, "+", 113, true)
-}
-
-// "-"
-func (p *tparser) e2340() (any, bool) {
-	return p.matchLiteral(lit2339, "-", 111, true)
-}
-
-// "+" / "-"
-func (p *tparser) e2341() (any, bool) {
-	m0 := p.mark()
-	ch, _, more := p.peek()
-	if !(more && (ch == 43)) && p.depth+0 <= maxDepth {
-		p.expect(p.pos, 113)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2338()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
-	}
-	if !(more && (ch == 45)) && p.depth+0 <= maxDepth {
-		p.expect(p.pos, 111)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2340()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
-	}
-	return nil, false
-}
-
-// o:("+" / "-")
-func (p *tparser) e2342() (any, bool) {
-	v, ok := p.e2341()
-	if ok {
-		p.setCapture(0, v)
-	}
-	return nil, ok
-}
-
-// ws
-func (p *tparser) e2343() (any, bool) {
-	return p.u217()
-}
-
-// o:("+" / "-") ws
-func (p *tparser) e2344() (any, bool) {
-	if _, ok := p.e2342(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2343(); !ok {
-		return nil, false
-	}
-	return nil, true
-}
-
-// "*"
-func (p *tparser) e2349() (any, bool) {
-	return p.matchLiteral(lit2348, "*", 114, false)
-}
-
-// "/"
-func (p *tparser) e2351() (any, bool) {
-	return p.matchLiteral(lit2350, "/", 115, false)
-}
-
-// "/"
-func (p *tparser) e2353() (any, bool) {
-	return p.matchLiteral(lit2352, "/", 115, false)
-}
-
-// !"/"
-func (p *tparser) e2354() (any, bool) {
-	m0 := p.mark()
-	prevCut := p.cut
+	x20 = p.mark()
 	p.silent++
-	_, ok := p.e2353()
-	p.silent--
-	p.cut = prevCut
-	p.reset(m0)
-	return nil, !ok
-}
-
-// "/" !"/"
-func (p *tparser) e2355() (any, bool) {
-	if _, ok := p.e2351(); !ok {
-		return nil, false
+	if p.pos < len(p.in) && p.in[p.pos] == 45 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2304, "-", 111, false); !ok {
+		goto L21
 	}
-	if _, ok := p.e2354(); !ok {
-		return nil, false
+	p.silent--
+	p.reset(x20)
+	goto L19
+L21:
+	p.silent--
+	p.reset(x20)
+	goto L3
+L19:
+	p.reset(x2)
+L18:
+	if !(x5 && (x4 == 62)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 112)
+		goto L22
+	}
+	if p.pos < len(p.in) && p.in[p.pos] == 62 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2305, ">", 112, false); !ok {
+		goto L23
+	}
+	goto L3
+L23:
+	p.reset(x2)
+L22:
+	goto fail
+L3:
+	v24 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	p.setCapture(0, v24)
+	if _, ok = p.u217(); !ok {
+		goto fail
 	}
 	return nil, true
-}
-
-// "*" / "/" !"/"
-func (p *tparser) e2356() (any, bool) {
-	m0 := p.mark()
-	ch, _, more := p.peek()
-	if !(more && (ch == 42)) && p.depth+0 <= maxDepth {
-		p.expect(p.pos, 114)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2349()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
-	}
-	if !(more && (ch == 47)) && p.depth+0 <= maxDepth {
-		p.expect(p.pos, 115)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2355()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
-	}
+fail:
 	return nil, false
 }
 
-// @("*" / "/" !"/")
-func (p *tparser) e2357() (any, bool) {
-	start := p.pos
-	if _, ok := p.e2356(); !ok {
-		return nil, false
+// full_expr (typed Pratt body inlined)
+func (p *tparser) e2312() (any, bool) {
+	var (
+		x1  mark
+		v2  any
+		x4  rune
+		x5  bool
+		x8  int
+		ok  bool
+		v9  any
+		x12 int
+		v13 any
+	)
+	x1 = p.mark()
+	if p.pos < len(p.in) {
+		x4, _, x5 = p.in[p.pos], 1, true
+	} else {
+		x4, _, x5 = p.peek()
 	}
-	return p.newMatch(start, p.pos, p.text(start, p.pos), true), true
-}
-
-// o:@("*" / "/" !"/")
-func (p *tparser) e2358() (any, bool) {
-	v, ok := p.e2357()
-	if ok {
-		p.setCapture(0, v)
+	if !(x5 && (x4 == 43)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 113)
+		goto L6
 	}
-	return nil, ok
-}
-
-// ws
-func (p *tparser) e2359() (any, bool) {
-	return p.u217()
-}
-
-// o:@("*" / "/" !"/") ws
-func (p *tparser) e2360() (any, bool) {
-	if _, ok := p.e2358(); !ok {
-		return nil, false
+	x8 = p.pos
+	if p.pos < len(p.in) && p.in[p.pos] == 43 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2310, "+", 113, false); !ok {
+		goto L7
 	}
-	if _, ok := p.e2359(); !ok {
-		return nil, false
+	v9 = p.newMatch(x8, p.pos, "+", true)
+	v2 = v9
+	goto L3
+L7:
+	p.reset(x1)
+L6:
+	if !(x5 && (x4 == 45)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 111)
+		goto L10
+	}
+	x12 = p.pos
+	if p.pos < len(p.in) && p.in[p.pos] == 45 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2311, "-", 111, false); !ok {
+		goto L11
+	}
+	v13 = p.newMatch(x12, p.pos, "-", true)
+	v2 = v13
+	goto L3
+L11:
+	p.reset(x1)
+L10:
+	goto fail
+L3:
+	p.setCapture(0, v2)
+	if _, ok = p.u217(); !ok {
+		goto fail
 	}
 	return nil, true
+fail:
+	return nil, false
 }
 
-// (?+\-!*<>=)
-func (p *tparser) e2364() (any, bool) {
-	ch, size, ok := p.peek()
+// full_expr (typed Pratt body inlined)
+func (p *tparser) e2319() (any, bool) {
+	var (
+		x1  int
+		x2  mark
+		x4  rune
+		x5  bool
+		ok  bool
+		x10 mark
+		v12 any
+	)
+	x1 = p.pos
+	x2 = p.mark()
+	if p.pos < len(p.in) {
+		x4, _, x5 = p.in[p.pos], 1, true
+	} else {
+		x4, _, x5 = p.peek()
+	}
+	if !(x5 && (x4 == 42)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 114)
+		goto L6
+	}
+	if p.pos < len(p.in) && p.in[p.pos] == 42 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2316, "*", 114, false); !ok {
+		goto L7
+	}
+	goto L3
+L7:
+	p.reset(x2)
+L6:
+	if !(x5 && (x4 == 47)) && p.depth+0 <= maxDepth {
+		p.expect(p.pos, 115)
+		goto L8
+	}
+	if p.pos < len(p.in) && p.in[p.pos] == 47 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2317, "/", 115, false); !ok {
+		goto L9
+	}
+	x10 = p.mark()
+	p.silent++
+	if p.pos < len(p.in) && p.in[p.pos] == 47 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2318, "/", 115, false); !ok {
+		goto L11
+	}
+	p.silent--
+	p.reset(x10)
+	goto L9
+L11:
+	p.silent--
+	p.reset(x10)
+	goto L3
+L9:
+	p.reset(x2)
+L8:
+	goto fail
+L3:
+	v12 = p.newMatch(x1, p.pos, p.text(x1, p.pos), true)
+	p.setCapture(0, v12)
+	if _, ok = p.u217(); !ok {
+		goto fail
+	}
+	return nil, true
+fail:
+	return nil, false
+}
+
+// full_expr (typed Pratt body inlined)
+func (p *tparser) e2336() (any, bool) {
+	var (
+		x1   int
+		ch   rune
+		size int
+		ok   bool
+		x4   int
+		x5   mark
+		x7   rune
+		x8   bool
+		x27  mark
+		v35  any
+	)
+	x1 = p.pos
+	p.silent++
+	if p.pos < len(p.in) {
+		ch, size, ok = p.in[p.pos], 1, true
+	} else {
+		ch, size, ok = p.peek()
+	}
 	if !ok || !(ch == 43 || ch == 45 || ch == 33 || ch == 42 || ch == 60 || ch == 62 || ch == 61) {
 		p.expect(p.pos, 116)
-		return nil, false
+		goto L2
 	}
-	return p.single(size, false)
-}
-
-// &(?+\-!*<>=)
-func (p *tparser) e2365() (any, bool) {
-	start, prevCut := p.pos, p.cut
-	p.silent++
-	_, ok := p.e2364()
+	p.pos += size
 	p.silent--
-	p.cut = prevCut
-	p.pos = start
-	return nil, ok
-}
-
-// "+"
-func (p *tparser) e2367() (any, bool) {
-	return p.matchLiteral(lit2366, "+", 113, false)
-}
-
-// "-"
-func (p *tparser) e2369() (any, bool) {
-	return p.matchLiteral(lit2368, "-", 111, false)
-}
-
-// "!="
-func (p *tparser) e2371() (any, bool) {
-	return p.matchLiteral(lit2370, "!=", 105, false)
-}
-
-// "!~"
-func (p *tparser) e2373() (any, bool) {
-	return p.matchLiteral(lit2372, "!~", 107, false)
-}
-
-// "!"
-func (p *tparser) e2375() (any, bool) {
-	return p.matchLiteral(lit2374, "!", 22, false)
-}
-
-// "*"
-func (p *tparser) e2377() (any, bool) {
-	return p.matchLiteral(lit2376, "*", 114, false)
-}
-
-// "<="
-func (p *tparser) e2379() (any, bool) {
-	return p.matchLiteral(lit2378, "<=", 108, false)
-}
-
-// ">="
-func (p *tparser) e2381() (any, bool) {
-	return p.matchLiteral(lit2380, ">=", 109, false)
-}
-
-// "<"
-func (p *tparser) e2383() (any, bool) {
-	return p.matchLiteral(lit2382, "<", 110, false)
-}
-
-// "-"
-func (p *tparser) e2385() (any, bool) {
-	return p.matchLiteral(lit2384, "-", 111, false)
-}
-
-// !"-"
-func (p *tparser) e2386() (any, bool) {
-	m0 := p.mark()
-	prevCut := p.cut
-	p.silent++
-	_, ok := p.e2385()
+	p.pos = x1
+	goto L3
+L2:
 	p.silent--
-	p.cut = prevCut
-	p.reset(m0)
-	return nil, !ok
-}
-
-// "<" !"-"
-func (p *tparser) e2387() (any, bool) {
-	if _, ok := p.e2383(); !ok {
-		return nil, false
+	p.pos = x1
+	goto fail
+L3:
+	x4 = p.pos
+	x5 = p.mark()
+	if p.pos < len(p.in) {
+		x7, _, x8 = p.in[p.pos], 1, true
+	} else {
+		x7, _, x8 = p.peek()
 	}
-	if _, ok := p.e2386(); !ok {
-		return nil, false
-	}
-	return nil, true
-}
-
-// ">"
-func (p *tparser) e2389() (any, bool) {
-	return p.matchLiteral(lit2388, ">", 112, false)
-}
-
-// "=~"
-func (p *tparser) e2391() (any, bool) {
-	return p.matchLiteral(lit2390, "=~", 106, false)
-}
-
-// "=="
-func (p *tparser) e2393() (any, bool) {
-	return p.matchLiteral(lit2392, "==", 104, false)
-}
-
-// "+" / "-" / "!=" / "!~" / "!" / "*" / "<=" / ">=" / "<" !"-" / ">" / "=~" / "=="
-func (p *tparser) e2394() (any, bool) {
-	m0 := p.mark()
-	ch, _, more := p.peek()
-	if !(more && (ch == 43)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 43)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 113)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2367()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L9
 	}
-	if !(more && (ch == 45)) && p.depth+0 <= maxDepth {
+	if p.pos < len(p.in) && p.in[p.pos] == 43 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2323, "+", 113, false); !ok {
+		goto L10
+	}
+	goto L6
+L10:
+	p.reset(x5)
+L9:
+	if !(x8 && (x7 == 45)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 111)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2369()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L11
 	}
-	if !(more && (ch == 33)) && p.depth+0 <= maxDepth {
+	if p.pos < len(p.in) && p.in[p.pos] == 45 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2324, "-", 111, false); !ok {
+		goto L12
+	}
+	goto L6
+L12:
+	p.reset(x5)
+L11:
+	if !(x8 && (x7 == 33)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 105)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2371()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L13
 	}
-	if !(more && (ch == 33)) && p.depth+0 <= maxDepth {
+	if p.pos+2 <= len(p.in) && p.in[p.pos] == 33 && p.in[p.pos+1] == 61 {
+		p.pos += 2
+	} else if _, ok = p.parser.matchLiteral(lit2325, "!=", 105, false); !ok {
+		goto L14
+	}
+	goto L6
+L14:
+	p.reset(x5)
+L13:
+	if !(x8 && (x7 == 33)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 107)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2373()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L15
 	}
-	if !(more && (ch == 33)) && p.depth+0 <= maxDepth {
+	if p.pos+2 <= len(p.in) && p.in[p.pos] == 33 && p.in[p.pos+1] == 126 {
+		p.pos += 2
+	} else if _, ok = p.parser.matchLiteral(lit2326, "!~", 107, false); !ok {
+		goto L16
+	}
+	goto L6
+L16:
+	p.reset(x5)
+L15:
+	if !(x8 && (x7 == 33)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 22)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2375()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L17
 	}
-	if !(more && (ch == 42)) && p.depth+0 <= maxDepth {
+	if p.pos < len(p.in) && p.in[p.pos] == 33 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2327, "!", 22, false); !ok {
+		goto L18
+	}
+	goto L6
+L18:
+	p.reset(x5)
+L17:
+	if !(x8 && (x7 == 42)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 114)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2377()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L19
 	}
-	if !(more && (ch == 60)) && p.depth+0 <= maxDepth {
+	if p.pos < len(p.in) && p.in[p.pos] == 42 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2328, "*", 114, false); !ok {
+		goto L20
+	}
+	goto L6
+L20:
+	p.reset(x5)
+L19:
+	if !(x8 && (x7 == 60)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 108)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2379()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L21
 	}
-	if !(more && (ch == 62)) && p.depth+0 <= maxDepth {
+	if p.pos+2 <= len(p.in) && p.in[p.pos] == 60 && p.in[p.pos+1] == 61 {
+		p.pos += 2
+	} else if _, ok = p.parser.matchLiteral(lit2329, "<=", 108, false); !ok {
+		goto L22
+	}
+	goto L6
+L22:
+	p.reset(x5)
+L21:
+	if !(x8 && (x7 == 62)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 109)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2381()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L23
 	}
-	if !(more && (ch == 60)) && p.depth+0 <= maxDepth {
+	if p.pos+2 <= len(p.in) && p.in[p.pos] == 62 && p.in[p.pos+1] == 61 {
+		p.pos += 2
+	} else if _, ok = p.parser.matchLiteral(lit2330, ">=", 109, false); !ok {
+		goto L24
+	}
+	goto L6
+L24:
+	p.reset(x5)
+L23:
+	if !(x8 && (x7 == 60)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 110)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2387()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L25
 	}
-	if !(more && (ch == 62)) && p.depth+0 <= maxDepth {
+	if p.pos < len(p.in) && p.in[p.pos] == 60 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2331, "<", 110, false); !ok {
+		goto L26
+	}
+	x27 = p.mark()
+	p.silent++
+	if p.pos < len(p.in) && p.in[p.pos] == 45 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2332, "-", 111, false); !ok {
+		goto L28
+	}
+	p.silent--
+	p.reset(x27)
+	goto L26
+L28:
+	p.silent--
+	p.reset(x27)
+	goto L6
+L26:
+	p.reset(x5)
+L25:
+	if !(x8 && (x7 == 62)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 112)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2389()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L29
 	}
-	if !(more && (ch == 61)) && p.depth+0 <= maxDepth {
+	if p.pos < len(p.in) && p.in[p.pos] == 62 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2333, ">", 112, false); !ok {
+		goto L30
+	}
+	goto L6
+L30:
+	p.reset(x5)
+L29:
+	if !(x8 && (x7 == 61)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 106)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2391()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L31
 	}
-	if !(more && (ch == 61)) && p.depth+0 <= maxDepth {
+	if p.pos+2 <= len(p.in) && p.in[p.pos] == 61 && p.in[p.pos+1] == 126 {
+		p.pos += 2
+	} else if _, ok = p.parser.matchLiteral(lit2334, "=~", 106, false); !ok {
+		goto L32
+	}
+	goto L6
+L32:
+	p.reset(x5)
+L31:
+	if !(x8 && (x7 == 61)) && p.depth+0 <= maxDepth {
 		p.expect(p.pos, 104)
-	} else {
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2393()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
+		goto L33
 	}
+	if p.pos+2 <= len(p.in) && p.in[p.pos] == 61 && p.in[p.pos+1] == 61 {
+		p.pos += 2
+	} else if _, ok = p.parser.matchLiteral(lit2335, "==", 104, false); !ok {
+		goto L34
+	}
+	goto L6
+L34:
+	p.reset(x5)
+L33:
+	goto fail
+L6:
+	v35 = p.newMatch(x4, p.pos, p.text(x4, p.pos), true)
+	p.setCapture(0, v35)
+	if _, ok = p.u217(); !ok {
+		goto fail
+	}
+	return nil, true
+fail:
 	return nil, false
 }
 
-// @("+" / "-" / "!=" / "!~" / "!" / "*" / "<=" / ">=" / "<" !"-" / ">" / "=~" / "==")
-func (p *tparser) e2395() (any, bool) {
-	start := p.pos
-	if _, ok := p.e2394(); !ok {
-		return nil, false
+// full_expr (typed Pratt body inlined)
+func (p *tparser) e2341() (any, bool) {
+	var (
+		ok bool
+		v1 any
+		x2 int
+		v3 any
+	)
+	if p.pos < len(p.in) && p.in[p.pos] == 46 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2339, ".", 24, false); !ok {
+		goto fail
 	}
-	return p.newMatch(start, p.pos, p.text(start, p.pos), true), true
-}
-
-// o:@("+" / "-" / "!=" / "!~" / "!" / "*" / "<=" / ">=" / "<" !"-" / ">" / "=~" / "==")
-func (p *tparser) e2396() (any, bool) {
-	v, ok := p.e2395()
-	if ok {
-		p.setCapture(0, v)
+	if _, ok = p.u217(); !ok {
+		goto fail
 	}
-	return nil, ok
-}
-
-// ws
-func (p *tparser) e2397() (any, bool) {
-	return p.u217()
-}
-
-func (p *tparser) e2398() (any, bool) {
-	if _, ok := p.e2365(); !ok {
-		return nil, false
+	if v1, ok = p.u117(); !ok {
+		goto fail
 	}
-	if _, ok := p.e2396(); !ok {
-		return nil, false
+	p.setCapture(0, v1)
+	if _, ok = p.s220(); !ok {
+		goto fail
 	}
-	if _, ok := p.e2397(); !ok {
-		return nil, false
+	x2 = p.pos
+	if p.pos < len(p.in) && p.in[p.pos] == 63 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2340, "?", 21, false); !ok {
+		goto fail
 	}
+	v3 = p.newMatch(x2, p.pos, "?", true)
+	p.setCapture(1, v3)
 	return nil, true
-}
-
-// "."
-func (p *tparser) e2402() (any, bool) {
-	return p.matchLiteral(lit2401, ".", 24, false)
-}
-
-// ws
-func (p *tparser) e2403() (any, bool) {
-	return p.u217()
-}
-
-// selector
-func (p *tparser) e2404() (any, bool) {
-	return p.u117()
-}
-
-// s:selector
-func (p *tparser) e2405() (any, bool) {
-	v, ok := p.e2404()
-	if ok {
-		p.setCapture(0, v)
-	}
-	return nil, ok
-}
-
-// sp
-func (p *tparser) e2406() (any, bool) {
-	return p.s220()
-}
-
-// "?"
-func (p *tparser) e2408() (any, bool) {
-	return p.matchLiteral(lit2407, "?", 21, true)
-}
-
-// q:"?"
-func (p *tparser) e2409() (any, bool) {
-	v, ok := p.e2408()
-	if ok {
-		p.setCapture(1, v)
-	}
-	return nil, ok
-}
-
-// "." ws s:selector sp q:"?"
-func (p *tparser) e2410() (any, bool) {
-	if _, ok := p.e2402(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2403(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2405(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2406(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2409(); !ok {
-		return nil, false
-	}
-	return nil, true
-}
-
-// "."
-func (p *tparser) e2416() (any, bool) {
-	return p.matchLiteral(lit2415, ".", 24, false)
-}
-
-// ws
-func (p *tparser) e2417() (any, bool) {
-	return p.u217()
-}
-
-// selector
-func (p *tparser) e2418() (any, bool) {
-	return p.u117()
-}
-
-// s:selector
-func (p *tparser) e2419() (any, bool) {
-	v, ok := p.e2418()
-	if ok {
-		p.setCapture(0, v)
-	}
-	return nil, ok
-}
-
-// "." ws s:selector
-func (p *tparser) e2420() (any, bool) {
-	if _, ok := p.e2416(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2417(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2419(); !ok {
-		return nil, false
-	}
-	return nil, true
-}
-
-// "["
-func (p *tparser) e2424() (any, bool) {
-	return p.matchLiteral(lit2423, "[", 35, false)
-}
-
-// ws
-func (p *tparser) e2425() (any, bool) {
-	return p.u217()
-}
-
-// expr
-func (p *tparser) e2426() (any, bool) {
-	return p.u107()
-}
-
-// i:expr
-func (p *tparser) e2427() (any, bool) {
-	v, ok := p.e2426()
-	if ok {
-		p.setCapture(0, v)
-	}
-	return nil, ok
-}
-
-// comma
-func (p *tparser) e2428() (any, bool) {
-	return p.u231()
-}
-
-// sp
-func (p *tparser) e2429() (any, bool) {
-	return p.s220()
-}
-
-// comma / sp
-func (p *tparser) e2430() (any, bool) {
-	m0 := p.mark()
-	{
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2428()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
-	}
-	{
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2429()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
-	}
+fail:
 	return nil, false
 }
 
-// "]"
-func (p *tparser) e2432() (any, bool) {
-	return p.matchLiteral(lit2431, "]", 41, true)
-}
-
-// r:"]"
-func (p *tparser) e2433() (any, bool) {
-	v, ok := p.e2432()
-	if ok {
-		p.setCapture(1, v)
+// full_expr (typed Pratt body inlined)
+func (p *tparser) e2347() (any, bool) {
+	var (
+		ok bool
+		v1 any
+	)
+	if p.pos < len(p.in) && p.in[p.pos] == 46 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2346, ".", 24, false); !ok {
+		goto fail
 	}
-	return nil, ok
-}
-
-// sp
-func (p *tparser) e2434() (any, bool) {
-	return p.s220()
-}
-
-// "?"
-func (p *tparser) e2436() (any, bool) {
-	return p.matchLiteral(lit2435, "?", 21, true)
-}
-
-// q:"?"
-func (p *tparser) e2437() (any, bool) {
-	v, ok := p.e2436()
-	if ok {
-		p.setCapture(2, v)
+	if _, ok = p.u217(); !ok {
+		goto fail
 	}
-	return nil, ok
-}
-
-// "[" ws i:expr (comma / sp) r:"]" sp q:"?"
-func (p *tparser) e2438() (any, bool) {
-	if _, ok := p.e2424(); !ok {
-		return nil, false
+	if v1, ok = p.u117(); !ok {
+		goto fail
 	}
-	if _, ok := p.e2425(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2427(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2430(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2433(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2434(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2437(); !ok {
-		return nil, false
-	}
+	p.setCapture(0, v1)
 	return nil, true
-}
-
-// "["
-func (p *tparser) e2445() (any, bool) {
-	return p.matchLiteral(lit2444, "[", 35, false)
-}
-
-// ws
-func (p *tparser) e2446() (any, bool) {
-	return p.u217()
-}
-
-// expr
-func (p *tparser) e2447() (any, bool) {
-	return p.u107()
-}
-
-// i:expr
-func (p *tparser) e2448() (any, bool) {
-	v, ok := p.e2447()
-	if ok {
-		p.setCapture(0, v)
-	}
-	return nil, ok
-}
-
-// comma
-func (p *tparser) e2449() (any, bool) {
-	return p.u231()
-}
-
-// sp
-func (p *tparser) e2450() (any, bool) {
-	return p.s220()
-}
-
-// comma / sp
-func (p *tparser) e2451() (any, bool) {
-	m0 := p.mark()
-	{
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2449()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
-	}
-	{
-		prevCut := p.cut
-		p.cut = false
-		v, ok := p.e2450()
-		cut := p.cut
-		p.cut = prevCut
-		if ok {
-			return v, true
-		}
-		p.reset(m0)
-		if cut {
-			return nil, false
-		}
-	}
+fail:
 	return nil, false
 }
 
-// "]"
-func (p *tparser) e2453() (any, bool) {
-	return p.matchLiteral(lit2452, "]", 41, true)
+// full_expr (typed Pratt body inlined)
+func (p *tparser) e2353() (any, bool) {
+	var (
+		ok bool
+		v1 any
+		x2 mark
+		x6 int
+		v7 any
+		x8 int
+		v9 any
+	)
+	if p.pos < len(p.in) && p.in[p.pos] == 91 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2350, "[", 35, false); !ok {
+		goto fail
+	}
+	if _, ok = p.u217(); !ok {
+		goto fail
+	}
+	if v1, ok = p.u107(); !ok {
+		goto fail
+	}
+	p.setCapture(0, v1)
+	x2 = p.mark()
+	if _, ok = p.u231(); !ok {
+		goto L4
+	}
+	goto L3
+L4:
+	p.reset(x2)
+	if _, ok = p.s220(); !ok {
+		goto L5
+	}
+	goto L3
+L5:
+	p.reset(x2)
+	goto fail
+L3:
+	x6 = p.pos
+	if p.pos < len(p.in) && p.in[p.pos] == 93 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2351, "]", 41, false); !ok {
+		goto fail
+	}
+	v7 = p.newMatch(x6, p.pos, "]", true)
+	p.setCapture(1, v7)
+	if _, ok = p.s220(); !ok {
+		goto fail
+	}
+	x8 = p.pos
+	if p.pos < len(p.in) && p.in[p.pos] == 63 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2352, "?", 21, false); !ok {
+		goto fail
+	}
+	v9 = p.newMatch(x8, p.pos, "?", true)
+	p.setCapture(2, v9)
+	return nil, true
+fail:
+	return nil, false
 }
 
-// r:"]"
-func (p *tparser) e2454() (any, bool) {
-	v, ok := p.e2453()
-	if ok {
-		p.setCapture(1, v)
+// full_expr (typed Pratt body inlined)
+func (p *tparser) e2361() (any, bool) {
+	var (
+		ok bool
+		v1 any
+		x2 mark
+		x6 int
+		v7 any
+	)
+	if p.pos < len(p.in) && p.in[p.pos] == 91 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2359, "[", 35, false); !ok {
+		goto fail
 	}
-	return nil, ok
+	if _, ok = p.u217(); !ok {
+		goto fail
+	}
+	if v1, ok = p.u107(); !ok {
+		goto fail
+	}
+	p.setCapture(0, v1)
+	x2 = p.mark()
+	if _, ok = p.u231(); !ok {
+		goto L4
+	}
+	goto L3
+L4:
+	p.reset(x2)
+	if _, ok = p.s220(); !ok {
+		goto L5
+	}
+	goto L3
+L5:
+	p.reset(x2)
+	goto fail
+L3:
+	x6 = p.pos
+	if p.pos < len(p.in) && p.in[p.pos] == 93 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2360, "]", 41, false); !ok {
+		goto fail
+	}
+	v7 = p.newMatch(x6, p.pos, "]", true)
+	p.setCapture(1, v7)
+	return nil, true
+fail:
+	return nil, false
 }
 
-// "[" ws i:expr (comma / sp) r:"]"
-func (p *tparser) e2455() (any, bool) {
-	if _, ok := p.e2445(); !ok {
-		return nil, false
+// full_expr (typed Pratt body inlined)
+func (p *tparser) e2367() (any, bool) {
+	var (
+		ok  bool
+		x1  mark
+		v2  any
+		v5  any
+		x6  mark
+		v7  any
+		v10 any
+	)
+	if p.pos < len(p.in) && p.in[p.pos] == 91 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2365, "[", 35, false); !ok {
+		goto fail
 	}
-	if _, ok := p.e2446(); !ok {
-		return nil, false
+	if _, ok = p.u217(); !ok {
+		goto fail
 	}
-	if _, ok := p.e2448(); !ok {
-		return nil, false
+	x1 = p.mark()
+	if v5, ok = p.u107(); !ok {
+		goto L3
 	}
-	if _, ok := p.e2451(); !ok {
-		return nil, false
+	v2 = v5
+	goto L4
+L3:
+	p.reset(x1)
+	v2 = nil
+L4:
+	p.setCapture(0, v2)
+	if _, ok = p.u228(); !ok {
+		goto fail
 	}
-	if _, ok := p.e2454(); !ok {
-		return nil, false
+	x6 = p.mark()
+	if v10, ok = p.u107(); !ok {
+		goto L8
+	}
+	v7 = v10
+	goto L9
+L8:
+	p.reset(x6)
+	v7 = nil
+L9:
+	p.setCapture(1, v7)
+	if _, ok = p.s220(); !ok {
+		goto fail
+	}
+	if p.pos < len(p.in) && p.in[p.pos] == 93 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2366, "]", 41, false); !ok {
+		goto fail
 	}
 	return nil, true
+fail:
+	return nil, false
 }
 
-// "["
-func (p *tparser) e2460() (any, bool) {
-	return p.matchLiteral(lit2459, "[", 35, false)
-}
-
-// ws
-func (p *tparser) e2461() (any, bool) {
-	return p.u217()
-}
-
-// expr
-func (p *tparser) e2462() (any, bool) {
-	return p.u107()
-}
-
-// expr?
-func (p *tparser) e2463() (any, bool) {
-	m0 := p.mark()
-	prevCut := p.cut
-	p.cut = false
-	v, ok := p.e2462()
-	cut := p.cut
-	p.cut = prevCut
-	if ok {
-		return v, true
+// full_expr (typed Pratt body inlined)
+func (p *tparser) e2374() (any, bool) {
+	var (
+		ok  bool
+		x1  int
+		x2  int
+		x3  *tframe
+		x4  *tframe
+		x5  int
+		x6  mark
+		x8  int
+		x9  []any
+		v10 any
+		v11 any
+		v12 any
+		v13 any
+		v14 any
+	)
+	_ = x5
+	if p.pos < len(p.in) && p.in[p.pos] == 40 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2371, "(", 8, false); !ok {
+		goto fail
 	}
-	p.reset(m0)
-	if cut {
-		return nil, false
+	if _, ok = p.u217(); !ok {
+		goto fail
 	}
-	return nil, true
-}
-
-// lo:expr?
-func (p *tparser) e2464() (any, bool) {
-	v, ok := p.e2463()
-	if ok {
-		p.setCapture(0, v)
-	}
-	return nil, ok
-}
-
-// colon_ec
-func (p *tparser) e2465() (any, bool) {
-	return p.u228()
-}
-
-// expr
-func (p *tparser) e2466() (any, bool) {
-	return p.u107()
-}
-
-// expr?
-func (p *tparser) e2467() (any, bool) {
-	m0 := p.mark()
-	prevCut := p.cut
-	p.cut = false
-	v, ok := p.e2466()
-	cut := p.cut
-	p.cut = prevCut
-	if ok {
-		return v, true
-	}
-	p.reset(m0)
-	if cut {
-		return nil, false
-	}
-	return nil, true
-}
-
-// hi:expr?
-func (p *tparser) e2468() (any, bool) {
-	v, ok := p.e2467()
-	if ok {
-		p.setCapture(1, v)
-	}
-	return nil, ok
-}
-
-// sp
-func (p *tparser) e2469() (any, bool) {
-	return p.s220()
-}
-
-// "]"
-func (p *tparser) e2471() (any, bool) {
-	return p.matchLiteral(lit2470, "]", 41, false)
-}
-
-// "[" ws lo:expr? colon_ec hi:expr? sp "]"
-func (p *tparser) e2472() (any, bool) {
-	if _, ok := p.e2460(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2461(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2464(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2465(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2468(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2469(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2471(); !ok {
-		return nil, false
-	}
-	return nil, true
-}
-
-// "("
-func (p *tparser) e2477() (any, bool) {
-	return p.matchLiteral(lit2476, "(", 8, false)
-}
-
-// ws
-func (p *tparser) e2478() (any, bool) {
-	return p.u217()
-}
-
-// expr
-func (p *tparser) e2479() (any, bool) {
-	return p.u107()
-}
-
-// a:expr
-func (p *tparser) e2480() (any, bool) {
-	v, ok := p.e2479()
-	if ok {
-		p.setCapture(0, v)
-	}
-	return v, ok
-}
-
-// asep
-func (p *tparser) e2481() (any, bool) {
-	return p.s116()
-}
-
-// a:expr asep
-func (p *tparser) e2482() (any, bool) {
-	start := p.pos
-	kids := p.newVals(2)[:0]
-	if v, ok := p.e2480(); !ok {
-		return nil, false
-	} else {
-		kids = append(kids, v)
-	}
-	if v, ok := p.e2481(); !ok {
-		return nil, false
-	} else {
-		kids = append(kids, v)
-	}
-	return p.newNode("Seq", start, p.pos, kids), true
-}
-
-// (a:expr asep)*
-func (p *tparser) e2484() (any, bool) {
-	start := p.pos
-	base := len(p.kidStack)
-	count := 0
+	x1, x2 = p.pos, len(p.kidStack)
+	x5 = 0
 	for {
-		m0 := p.mark()
-		prevCut, prevFrame := p.cut, p.frame
-		p.cut = false
-		f := p.newFrame(1)
-		p.frame = f
-		v, ok := p.e2482()
-		cut := p.cut
-		p.cut, p.frame = prevCut, prevFrame
-		if !ok {
-			p.reset(m0)
-			if cut {
-				p.dropKids(base)
-				return nil, false
-			}
+		x6 = p.mark()
+		x4 = p.frame
+		x3 = p.newFrame(len(scope2372))
+		p.frame = x3
+		x8 = p.pos
+		x9 = p.newVals(2)[:0]
+		if v10, ok = p.u107(); !ok {
+			goto L7
+		}
+		p.setCapture(0, v10)
+		x9 = append(x9, v10)
+		if v11, ok = p.s116(); !ok {
+			goto L7
+		}
+		x9 = append(x9, v11)
+		v12 = p.newNode("Seq", x8, p.pos, x9)
+		p.frame = x4
+		v13 = p.attachCaptures(v12, scope2372, x3.vals, x6.pos, p.pos)
+		p.dropTrail(x6.trail)
+		p.freeFrame(x3)
+		x5++
+		p.kidStack = append(p.kidStack, v13)
+		if p.pos == x6.pos {
 			break
 		}
-		v = p.attachCaptures(v, scope2483, f.vals, m0.pos, p.pos)
-		p.dropTrail(m0.trail)
-		p.freeFrame(f)
-		count++
-		p.kidStack = append(p.kidStack, v)
-		if p.pos == m0.pos {
-			break
-		}
+		continue
+	L7:
+		p.frame = x4
+		p.reset(x6)
+		break
 	}
-	if count < 0 {
-		p.dropKids(base)
-		return nil, false
-	}
-	return p.newNode("List", start, p.pos, p.kids(base)), true
-}
-
-// as:(a:expr asep)*
-func (p *tparser) e2485() (any, bool) {
-	v, ok := p.e2484()
-	if ok {
-		p.setCapture(0, v)
-	}
-	return nil, ok
-}
-
-// ")"
-func (p *tparser) e2487() (any, bool) {
-	return p.matchLiteral(lit2486, ")", 9, false)
-}
-
-// "(" ws as:(a:expr asep)* ")"
-func (p *tparser) e2488() (any, bool) {
-	if _, ok := p.e2477(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2478(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2485(); !ok {
-		return nil, false
-	}
-	if _, ok := p.e2487(); !ok {
-		return nil, false
+	v14 = p.newNode("List", x1, p.pos, p.kids(x2))
+	p.setCapture(0, v14)
+	if p.pos < len(p.in) && p.in[p.pos] == 41 {
+		p.pos++
+	} else if _, ok = p.parser.matchLiteral(lit2373, ")", 9, false); !ok {
+		goto fail
 	}
 	return nil, true
+fail:
+	return nil, false
 }
 
-// "..."
-func (p *tparser) e2493() (any, bool) {
-	return p.matchLiteral(lit2492, "...", 25, true)
-}
-
-// o:"..."
-func (p *tparser) e2494() (any, bool) {
-	v, ok := p.e2493()
-	if ok {
-		p.setCapture(0, v)
+// full_expr (typed Pratt body inlined)
+func (p *tparser) e2379() (any, bool) {
+	var (
+		x1 int
+		ok bool
+		v2 any
+	)
+	x1 = p.pos
+	if p.pos+3 <= len(p.in) && p.in[p.pos] == 46 && p.in[p.pos+1] == 46 && p.in[p.pos+2] == 46 {
+		p.pos += 3
+	} else if _, ok = p.parser.matchLiteral(lit2378, "...", 25, false); !ok {
+		goto fail
 	}
-	return nil, ok
+	v2 = p.newMatch(x1, p.pos, "...", true)
+	p.setCapture(0, v2)
+	return nil, true
+fail:
+	return nil, false
 }
 
 // asep, called as by invokePlain (body inlined)

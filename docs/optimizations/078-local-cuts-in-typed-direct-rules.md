@@ -3,11 +3,11 @@
 - The typed Go generator now inlines eligible ordinary rules whose bodies
   contain local cuts. The direct emitter represents cut scopes locally while
   keeping capture, variable-environment, recovered-error and input rollback
-  aligned with the general typed path. `#recover`, Pratt expressions and
-  cut-bearing left-recursion leaders remain on general dispatch;
-  [record 79](079-inline-eligible-typed-left-recursion-bodies.md) adds eligible
-  cut-free leader bodies. Node generation,
-  recognition and TypeScript output are unchanged.
+  aligned with the general typed path. `#recover` and cut-bearing left-recursion
+  leaders remain on general dispatch; [record 79](079-inline-eligible-typed-left-recursion-bodies.md)
+  adds eligible cut-free leader bodies, and [record 80](080-inline-eligible-typed-pratt-lines.md)
+  adds eligible Pratt-line matchers. Node generation, recognition and
+  TypeScript output are unchanged.
 - The cut control is a generation-time internal option used for differential
   tests and benchmarks. It adds no generated parser option or matching-time
   branch. Both routes are emitted by the same latest generator; the general

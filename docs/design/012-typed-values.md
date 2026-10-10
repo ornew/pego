@@ -95,7 +95,11 @@ errors and memoization decisions are literally shared. The generator writes the 
   Eligible left-recursion leaders can inline their unfinished typed body
   while the runtime retains seed growth and invocation ownership
   ([record 79](../optimizations/079-inline-eligible-typed-left-recursion-bodies.md)).
-  `#recover`, Pratt expressions and unsupported leader bodies use general
+  Eligible unfinished operand, operator and skip matchers on typed Pratt lines
+  can also be inlined ([record 80](../optimizations/080-inline-eligible-typed-pratt-lines.md)).
+  Each line owns its `tprattLine.scope`; the runtime retains precedence,
+  longest-match selection, frames and action finalization. `#recover`,
+  cut-bearing matchers and unsupported frame layouts remain on general
   expression dispatch; their callees can use either path.
 
 The parity test generates every corpus grammar twice, with the typed runtime and with conversion (below), and checks
@@ -128,10 +132,10 @@ discarded siblings in the same array. Allocation granularity does not solve that
 
 ### Cost
 
-On the benchmarks (Apple M3 Max, min of 6–8 runs), the typed runtime makes `ParseAST` 35–55% faster than `Parse`
+In the earlier benchmark snapshot (Apple M3 Max, min of 6–8 runs), the typed runtime made `ParseAST` 35–55% faster than `Parse`
 with a fifth to a third of the memory: JSON (262 KB) 7.2 → 3.3 ms and 12.8 → 2.9 MB, XML 7.5 → 4.0 ms, the
-left-recursive calculator 15.1 → 9.8 ms, the outline 4.0 → 2.1 ms; the Pratt calculator, whose Pratt loop is the
-general one, 6.4 → 5.8 ms. JSON `ParseAST` is faster than `Recognize` (3.8 ms), which builds nothing but runs the
+left-recursive calculator 15.1 → 9.8 ms, the outline 4.0 → 2.1 ms; at that time, the Pratt calculator used the
+general Pratt loop and took 6.4 → 5.8 ms. JSON `ParseAST` is faster than `Recognize` (3.8 ms), which builds nothing but runs the
 general code. Conversion costs about 6% more than `Parse`.
 
 Direct rules made most of that difference (performance.md, changes 60–62): before them, with every rule run by the
@@ -145,9 +149,10 @@ built lists directly had taken 4.5 ms.
   their Go types, lists as typed slices, as in the prototype). Direct rules
   take the part of it that paid: captures in Go variables and actions in place.
   Values stay `any`, so actions, memo and general code share one representation.
-  Ordinary local cuts and eligible left-recursion leader bodies have direct
-  paths; the latter keep runtime-owned growth and invocation wrappers.
-  `#recover`, Pratt expressions and unsupported leader bodies remain general.
+  Ordinary local cuts, eligible left-recursion leader bodies and eligible
+  Pratt line matchers have direct paths; the runtime retains growth and
+  invocation wrappers. `#recover`, cut-bearing Pratt/LR bodies and unsupported
+  layouts remain general.
 - **Converting through JSON.** No generated code, but slower than the parse itself and lossy for unions (the
   member type would have to be decoded from `type`).
 - **Exposing typed values from the engine (`pego.Parser`).** Go types cannot be created at run time, so the engine

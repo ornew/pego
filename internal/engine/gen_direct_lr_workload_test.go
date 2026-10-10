@@ -48,18 +48,28 @@ def expr: Doc = (previous:expr ";" items:(x:@(?a-z) -","){3}
 
 func testTypedLRWorkload(t *testing.T, src, fixture, dir string) {
 	t.Helper()
+	testGeneratedTypedBodyWorkload(t, src, fixture, dir, "(typed LR body inlined)", GenOptions{disableTypedLRBodies: true})
+}
+
+func testGeneratedTypedBodyWorkload(t *testing.T, src, fixture, dir, marker string, reference GenOptions) {
+	t.Helper()
 	g, err := syntax.Parse(src)
 	if err != nil {
 		t.Fatal(err)
 	}
 	var want []byte
 	for _, variant := range []string{"direct", "general"} {
-		code, err := Generate(g, GenOptions{Package: "lrfixture", Start: "main", Types: true, Recognize: true, disableTypedLRBodies: variant == "general"})
+		opts := GenOptions{}
+		if variant == "general" {
+			opts = reference
+		}
+		opts.Package, opts.Start, opts.Types, opts.Recognize = "lrfixture", "main", true, true
+		code, err := Generate(g, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if strings.Contains(string(code), "(typed LR body inlined)") != (variant == "direct") {
-			t.Fatalf("%s: incorrect LR generation route", variant)
+		if strings.Contains(string(code), marker) != (variant == "direct") {
+			t.Fatalf("%s: incorrect generated body route", variant)
 		}
 		path := filepath.Join(dir, variant)
 		if err := os.MkdirAll(path, 0o755); err != nil {
@@ -72,7 +82,7 @@ func testTypedLRWorkload(t *testing.T, src, fixture, dir string) {
 				t.Fatal(err)
 			}
 		}
-		cmd := exec.Command("go", "test", "-count=1", "-run", "^TestLRWorkload$", "-v")
+		cmd := exec.Command("go", "test", "-count=1", "-run", "^Test.*Workload$", "-v")
 		cmd.Dir = path
 		out, err := cmd.CombinedOutput()
 		if err != nil {

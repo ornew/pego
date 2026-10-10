@@ -28,8 +28,9 @@ import (
 //
 // A direct rule never reads or sets p.cut (its flags are local and callees restore it), p.frame
 // (callees set their own) or p.trail (callees truncate it to its length at the call), so it
-// leaves them alone. Typed cuts use scope-local flags; rules with #recover and
-// Pratt rules keep the general code. Left-recursion leaders retain runtime
+// leaves them alone. Typed cuts use scope-local flags; rules with #recover
+// keep the general code. Pratt rules retain runtime dispatch, with eligible
+// typed line bodies inlined. Left-recursion leaders retain runtime
 // growth and finalization, with eligible typed expression bodies inlined. Node rules
 // containing cuts also retain the general code. Value-free plain Node rules reuse the structural walk
 // without captures or predicates. Other Node rules inline only their expression
@@ -52,11 +53,12 @@ func directEligible(r *rule, cuts bool) bool {
 // Unfinished left-recursion bodies can use the structural expression emitter
 // while retaining the runtime's seed, frame and finalization ownership.
 func directExprEligible(r *rule, cuts bool) bool {
-	if _, pratt := r.def.Expr.(*grammar.Pratt); pratt {
-		return false
-	}
+	return directExprOK(r.def.Expr, cuts)
+}
+
+func directExprOK(expr grammar.Expr, cuts bool) bool {
 	ok := true
-	walkExpr(r.def.Expr, func(e grammar.Expr) {
+	walkExpr(expr, func(e grammar.Expr) {
 		switch e := e.(type) {
 		case *grammar.Cut:
 			if !cuts {
