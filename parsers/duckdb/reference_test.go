@@ -83,7 +83,7 @@ func loadRef(t testing.TB, name string) []refCase {
 }
 
 // refCorpora are the reference files that the tests compare with.
-var refCorpora = []string{"tests", "exprs", "lexical", "keywords", "mutants", "found"}
+var refCorpora = []string{"tests", "exprs", "lexical", "keywords", "mutants", "found", "limit_percent"}
 
 // readDeviations reads testdata/deviations.jsonl: one JSON object per line, {"sql": ..., "why": ...}, for a text on
 // which the parser and DuckDB's parser are known to differ in acceptance (the README explains each).
@@ -246,7 +246,7 @@ func expanded(s duckdb.Statement) bool {
 // TestReferenceStatements compares how a script is split into statements, the types DuckDB gives the statements
 // and their texts.
 func TestReferenceStatements(t *testing.T) {
-	for _, name := range []string{"tests", "lexical", "mutants", "found"} {
+	for _, name := range []string{"tests", "lexical", "mutants", "found", "limit_percent"} {
 		t.Run(name, func(t *testing.T) {
 			cases := sample(loadRef(t, name), 8)
 			var compared, textsCompared, expandedN int

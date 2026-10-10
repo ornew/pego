@@ -351,8 +351,9 @@ and full word boundaries (M11, keyword stage). SETOF operands now follow the sim
 boundary, preserving ordinary constructed types and recursive member types (M11, type stage). Window frames
 preserve BETWEEN-as-column expressions as single bounds and reject bare NOT at the first two-bound offset,
 matching the reference AST and grammar conflict resolution (M11, frame stage). Vendored reference tests retain
-seven scanner/grammar deviations; transformer-only semantic checks and generated parser size remain
-open work. Expanded frame controls also expose existing canonical-oracle normalization gaps for unary
+six scanner-prepass deviations. LIMIT percentages now track completed and pending expression chains,
+preserving source ASTs and both position units (M11, LIMIT stage); transformer-only semantic checks and
+generated parser size remain open work. Expanded frame controls also expose existing canonical-oracle normalization gaps for unary
 OPERATOR(+) (M17); source AST operators retain their written syntax. The module README describes those limits
 separately from the corrected grammar behavior.
 Earlier backlog items now share current category IDs and priorities;

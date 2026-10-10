@@ -1,6 +1,9 @@
 package parsers_test
 
 import (
+	"bufio"
+	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"os"
 	"testing"
@@ -135,5 +138,51 @@ func TestDuckDBFrameBounds(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// TestDuckDBLimitPercent covers complete and pending expression chains, comma values and OFFSET order.
+func TestDuckDBLimitPercent(t *testing.T) {
+	src, err := os.ReadFile("duckdb/duckdb.pego")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := pego.CompileSource(string(src), "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Open("duckdb/testdata/reference/limit_percent.jsonl.gz")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	z, err := gzip.NewReader(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer z.Close()
+	scan := bufio.NewScanner(z)
+	scan.Buffer(make([]byte, 4096), 1<<20)
+	for scan.Scan() {
+		var tc struct {
+			SQL  string `json:"sql"`
+			OK   bool   `json:"ok"`
+			Kind string `json:"kind"`
+		}
+		if err := json.Unmarshal(scan.Bytes(), &tc); err != nil {
+			t.Fatal(err)
+		}
+		want := tc.OK || tc.Kind == "semantic"
+		for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
+			for _, unit := range []pego.Unit{pego.CodePoints, pego.Bytes} {
+				_, err := p.Parse(tc.SQL, pego.WithBackend(backend), pego.WithUnit(unit))
+				if (err == nil) != want {
+					t.Errorf("Parse(%q, backend=%v, unit=%v): %v", tc.SQL, backend, unit, err)
+				}
+			}
+		}
+	}
+	if err := scan.Err(); err != nil {
+		t.Fatal(err)
 	}
 }

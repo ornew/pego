@@ -8,7 +8,7 @@ generated parser. Rewrite them with `go test ./parsers -update`.
 
 ## Reference data
 
-`reference/*.jsonl.gz` is what DuckDB 1.5.6 says about each text of six corpora. The tests compare the parser
+`reference/*.jsonl.gz` is what DuckDB 1.5.6 says about each text of seven corpora. The tests compare the parser
 with it (see the README of the module for the numbers). One JSON object per line:
 
 | Field | Contents |
@@ -29,6 +29,13 @@ with it (see the README of the module for the numbers). One JSON object per line
 | `keywords.jsonl.gz` | 83,619 | every keyword where a name may stand, in three spellings |
 | `mutants.jsonl.gz` | 20,000 | statements of the tests with a token deleted, duplicated, swapped, replaced or inserted, or cut short (seeded: the same on every run) |
 | `found.jsonl.gz` | 200 | the texts of `internal/refgen/found.txt`: those on which an earlier version of the parser and DuckDB disagreed, found by mutating the tests with other seeds (1.4 million texts) and by trying the constructs around them |
+| `limit_percent.jsonl.gz` | 583 | Source-backed completion controls for LIMIT percentages: operators/prefixes, closed predicates, mixed chains, arithmetic, parentheses, comma forms and OFFSET order (acceptance and statement splitting; no mapper shapes) |
+
+The LIMIT-percent controls use DuckDB 1.5.6's `select_limit_value` production and Bison precedence declarations.
+Completed `IN`, `IS`, `ANY` and postfix rules are checked alongside pending lower-precedence operands and high
+arithmetic wrapping unresolved prefixes. Their `sql` fields are the reproducible inputs: extract them as JSON
+lines with `file` and `gen` preserved, run `refgen.py INPUT OUTPUT --no-shapes` with the exact pinned module,
+and compare acceptance/splitting with the fixture. These are durable conformance inputs, not benchmark logs.
 
 `deviations.jsonl` lists the texts of these files on which the parser and DuckDB differ in acceptance, one JSON object
 per line with the text (`sql`) and the reason (`why`); the tests tolerate them, and fail if a text listed there no longer

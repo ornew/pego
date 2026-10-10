@@ -654,6 +654,83 @@ def expr: Expr = pratt {
     }
 }
 
+// DuckDB 1.5.6 select_limit_value shares '%' with binary modulo. A trailing percent is valid only when
+// every pending expression production can reduce on it. Mirror expr's syntax and precedence here:
+// closed suffixes reset completion, high arithmetic propagates its RHS, and lower-precedence roots
+// remain pending. Parentheses and other chained atoms close their enclosed expressions.
+// Rules must return nodes: list(nil) is a one-element completion marker, list() marks pending work.
+// These marker values stay inside lookahead; ordinary expr builds the public AST and source spans.
+def limit_percent_ready: []*Match = pratt {
+    skip ws
+    operand star_primary -> list(nil)
+    operand chained -> list(nil)
+
+    // a -> b and a ->> b. As a token, ->> has the lowest precedence (an expression on its left side is complete),
+    // but its rule has the precedence of Op, so its right side is an operand of the arithmetic operators.
+    level lv_arrow {
+        infix left &"-" op_arrow -> list()
+        postfix &"-" op_darrow ws expr(lv_add) -> list()
+    }
+    level lv_or {
+        infix left &(?oO) OR -> list()
+    }
+    level lv_and {
+        infix left &(?aA) AND -> list()
+    }
+    level lv_not {
+        prefix NOT -> list()
+    }
+    // IS and its relatives take no right operand (except IS DISTINCT FROM)
+    level lv_is {
+        postfix &(?iInN) (IS ws NOT? ws (NULL / TRUE / FALSE / UNKNOWN) / ISNULL / NOT ws NULL) -> list(nil)
+        postfix &(?nN) NOTNULL -> list(nil)
+        postfix &(?iI) IS ws NOT? ws DISTINCT ws FROM ws expr(lv_cmp) !(ws is_start) -> list()
+        postfix &(?iI) IS ws NOT? ws OF ws "(" ws type_list ws ")" !(ws is_start) -> list(nil)
+    }
+    level lv_cmp {
+        postfix &(?<>=!) cmp_op ws expr(lv_like) !(ws cmp_op) -> list()
+        postfix &(?+\-*/<>=~!@^&|`%oOnNlLgGiI) subquery_op ws (ANY / SOME / ALL) ws any_source -> list(nil)
+    }
+    // BETWEEN, IN, LIKE, ILIKE, GLOB and SIMILAR TO: the rule of each has this precedence, so its operands do not
+    // contain an operator of this level; ESCAPE belongs to the rule.
+    level lv_like {
+        postfix &(?nNlLiIsS) (NOT ws)? (LIKE / ILIKE / @(SIMILAR ws TO)) ws expr(lv_op) (ws ESCAPE ws expr(lv_op))? !(ws like_start)
+            -> list()
+        postfix &(?gG) GLOB ws expr(lv_op) !(ws like_start) -> list()
+        postfix &(?nNiI) (NOT ws)? IN ws (select_with_parens / "(" ws expr_list_opt_comma ws ")" / in_source) -> list(nil)
+        postfix &(?nNbB) (NOT ws)? BETWEEN ws SYMMETRIC? ws ASYMMETRIC? ws b_expr ws AND ws expr(lv_op) !(ws like_start)
+            -> list()
+    }
+    // Op (the operators that are not one of the others) and OPERATOR(...); it may be a postfix operator.
+    level lv_op {
+        prefix qual_op -> list()
+        postfix &(?+\-*/<>=~!@^&|`%oO) qual_op ws !(BETWEEN / ESCAPE / NOT / LIKE / ILIKE / SIMILAR) (op_rhs_prefix / expr(lv_add)) -> list()
+        postfix &(?+\-*/<>=~!@^&|`%oO) qual_op !(ws AT) !(ws qual_op) -> list(nil)
+    }
+    level lv_add {
+        infix left &(?+\-) op_plus / op_minus -> list()
+    }
+    level lv_mul {
+        infix left &(?*/%) op_star / op_slash / op_idiv / op_percent -> $rhs
+    }
+    level lv_pow {
+        infix left &(?*^) op_caret / op_pow -> $rhs
+    }
+    level lv_at {
+        postfix &(?aA) AT ws TIME ws ZONE ws z:limit_percent_ready(lv_collate) -> $z
+    }
+    level lv_collate {
+        postfix &(?cC) COLLATE ws any_name -> list(nil)
+    }
+    level lv_uminus {
+        prefix op_plus / op_minus -> $rhs
+    }
+    level lv_cast {
+        postfix &":" "::" ws typename -> list(nil)
+    }
+}
+
+
 // The right operand of an operator: an expression of the levels above Op, or a prefix operator and its operand.
 def op_rhs_prefix: Unary = o:qual_op ws x:(op_rhs_prefix / expr(lv_add)) -> new Unary{Op: $o, X: $x}
 
@@ -1150,12 +1227,13 @@ def asc_desc = ASC / DESC
 def nulls_order: Match = @(NULLS ws (FIRST / LAST))
 def qual_all_op: Match = all_op / operator_call
 
-def limit_clause: LimitClause = limit_comma / limit_all / limit_percent / limit_plain / limit_percent_sign / fetch_value_clause / fetch_clause
-def limit_comma: LimitClause = k:LIMIT ws v:expr ws "," ws o:expr -> new LimitClause{Keyword: text($k), Value: $v, Offset: $o}
-def limit_all: LimitClause = k:LIMIT ws ALL -> new LimitClause{Keyword: text($k), All: true}
-def limit_percent: LimitClause = k:LIMIT ws p:number ws pc:PERCENT -> new LimitClause{Keyword: text($k), Value: $p, Percent: text($pc)}
-def limit_percent_sign: LimitClause = k:LIMIT ws !(NOT / qual_op) v:expr(lv_mul) ws pc:op_percent -> new LimitClause{Keyword: text($k), Value: $v, Percent: text($pc)}
-def limit_plain: LimitClause = k:LIMIT ws v:expr !(ws op_percent) -> new LimitClause{Keyword: text($k), Value: $v}
+def limit_clause: LimitClause = limit_sql / fetch_value_clause / fetch_clause
+// Comma LIMIT uses the same value grammar, including ALL and percentages. DuckDB rejects that form after parsing.
+def limit_sql: LimitClause = k:LIMIT ws
+ (a:ALL / v:number ws pc:PERCENT / v:expr !(ws op_percent)
+  / &(r:limit_percent_ready [len($r) > 0] ws op_percent) v:expr ws pc:op_percent)
+ (ws "," ws o:expr)?
+ -> new LimitClause{Keyword: text($k), All: len($a) > 0, Value: $v, Percent: text($pc), Offset: $o}
 def fetch_value_clause: LimitClause = k:FETCH ws (FIRST / NEXT) ws v:fetch_value ws (ROW / ROWS) ws ONLY -> new LimitClause{Keyword: text($k), Value: $v}
 def fetch_clause: LimitClause = k:FETCH ws (FIRST / NEXT) ws (ROW / ROWS) ws ONLY -> new LimitClause{Keyword: text($k)}
 def fetch_value: Expr = fetch_signed / c_expr

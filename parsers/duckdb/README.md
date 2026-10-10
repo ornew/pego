@@ -101,7 +101,7 @@ replaces by spaces.
 
 ## Conformance
 
-The tests compare the parser with DuckDB 1.5.6 on 158,605 texts, all vendored in [testdata/reference](testdata/):
+The tests compare the parser with DuckDB 1.5.6 on 159,188 texts, all vendored in [testdata/reference](testdata/):
 
 | Corpus | Texts | What it is |
 |:--|--:|:--|
@@ -111,23 +111,24 @@ The tests compare the parser with DuckDB 1.5.6 on 158,605 texts, all vendored in
 | `keywords` | 83,619 | Every keyword where a name may stand (column, table, alias, function, type, ...) |
 | `mutants` | 20,000 | Statements of the tests with a token deleted, duplicated, swapped, replaced or inserted, or cut short |
 | `found` | 200 | Texts on which an earlier version of the parser and DuckDB disagreed, found by 1.4 million more mutations (other seeds) and by trying the constructs around them: tables with `*` and `ONLY`, `PIVOT` without clauses, operators followed by `NOT`, `LIMIT 10%`, ... |
+| `limit_percent` | 583 | Completed and pending LIMIT-percent expression chains, postfix/prefix operators, predicates, arithmetic, comma forms and OFFSET order, checked against DuckDB 1.5.6 |
 
 `go test` checks, for each text, what DuckDB's `extract_statements` says, and for each accepted text how it splits
 the script; for the SELECT statements of `tests` and `exprs` it also compares the AST (below). The numbers (`go test
 -v -run 'TestReference'`):
 
-| | tests | exprs | lexical | keywords | mutants | found |
-|:--|--:|--:|--:|--:|--:|--:|
-| Both accept | 45,537 | 6,166 | 852 | 64,053 | 3,894 | 94 |
-| Both reject (a syntax error) | 195 | 1,489 | 338 | 18,333 | 15,984 | 88 |
-| DuckDB rejects after parsing, the parser accepts | 180 | 0 | 29 | 1,233 | 122 | 11 |
-| Known deviations ([testdata/deviations.jsonl](testdata/deviations.jsonl)) | 0 | 0 | 0 | 0 | 0 | 7 |
-| The parser rejects what DuckDB accepts, other | 0 | 0 | 0 | 0 | 0 | 0 |
-| The parser accepts what DuckDB rejects with a syntax error, other | 0 | 0 | 0 | 0 | 0 | 0 |
+| | tests | exprs | lexical | keywords | mutants | found | limit_percent |
+|:--|--:|--:|--:|--:|--:|--:|--:|
+| Both accept | 45,537 | 6,166 | 852 | 64,053 | 3,894 | 95 | 420 |
+| Both reject (a syntax error) | 195 | 1,489 | 338 | 18,333 | 15,984 | 88 | 152 |
+| DuckDB rejects after parsing, the parser accepts | 180 | 0 | 29 | 1,233 | 122 | 11 | 11 |
+| Known deviations ([testdata/deviations.jsonl](testdata/deviations.jsonl)) | 0 | 0 | 0 | 0 | 0 | 6 | 0 |
+| The parser rejects what DuckDB accepts, other | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| The parser accepts what DuckDB rejects with a syntax error, other | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 
-**The parser and DuckDB agree on every text** where DuckDB's parser itself finds a syntax error or none, but the seven
+**The parser and DuckDB agree on every text** where DuckDB's parser itself finds a syntax error or none, but the six
 known deviations (below). The third row counts the texts that DuckDB's parser rejects in the step after the Bison
-grammar, when it transforms the syntax tree into its own: the grammar cannot know. They are 1,575 texts, of which about 1,150 name a window that does not exist, 133 are
+grammar, when it transforms the syntax tree into its own: the grammar cannot know. They are 1,586 texts, of which about 1,150 name a window that does not exist, 133 are
 an empty select list in a context the grammar accepts (`cte2 AS (SELECT )`), and the others are checks such as
 VALUES lists of different lengths (19), `U&'...'` and `\u` escapes, which DuckDB reads but does not implement (28), a
 type modifier that is not a constant (13), `LIMIT` or `ORDER BY` in a recursive query (16), `PIVOT ON NULL` (11),
@@ -185,11 +186,10 @@ AST in all of the 114,000 SELECT statements that they make.
 
 ### Known deviations and limits
 
-- **Seven texts** ([testdata/deviations.jsonl](testdata/deviations.jsonl), each with its reason) on which the parser and DuckDB
-  differ in acceptance. Six come from the pass with which DuckDB replaces Unicode white space before it parses: it does
+- **Six texts** ([testdata/deviations.jsonl](testdata/deviations.jsonl), each with its reason) on which the parser and DuckDB
+  differ in acceptance. They come from the pass with which DuckDB replaces Unicode white space before it parses: it does
   not close a dollar-quoted string when a letter follows the closing tag (`select $a$b$a$x<U+3000>x`), so it leaves the
-  white space inside the name that follows, where the parser reads a space. The remaining grammar difference is a
-  percent sign after a postfix operator (`LIMIT -1| %`), which DuckDB accepts. The other differences that mutating
+  white space inside the name that follows, where the parser reads a space. The other differences that mutating
   the tests found, in 1.4 million texts, were fixed and are in the corpus `found`.
 - **The checks after parsing** (above) are not made: a text such as `SELECT sum(x) OVER w` where the window `w` is not defined
   is accepted. A function that checks the most common of them is not part of this module.
@@ -203,7 +203,7 @@ AST in all of the 114,000 SELECT statements that they make.
 - **Nesting** is limited by the depth limit of the generated parser, 100,000 rule calls: 16,600 levels of parentheses,
   14,200 of lists, 12,500 of `CASE`, 11,100 of derived tables, 10,000 of function calls, 7,100 of subqueries and 99,980
   prefix operators in a chain (`NOT NOT ... a`, `- - ... a`). Deeper input fails with an error.
-- **Compile time and size**: the generated `parser.go` is 15.6 MB (780,000 lines). The generator writes separate rules for
+- **Compile time and size**: the generated `parser.go` is 17.5 MB (880,000 lines). The generator writes separate rules for
   tree parsing, recognition and typed AST construction, including the case-insensitive keyword tries. Its first
   compilation is expensive; subsequent builds reuse the Go build cache. Reducing generated code size remains open work.
 - **DuckDB's extensions** (the parsers that extensions add, such as PRQL) and the settings that change how DuckDB parses
@@ -232,6 +232,13 @@ it measurably pays, are commented in the grammar:
   takes an arithmetic expression on its right, and a postfix operator (`a !`) is read where the Bison grammar would shift
   it. `NOT` before `BETWEEN`, `IN`, `LIKE`, `ILIKE` and `SIMILAR`, `NULLS` before `FIRST` and `LAST`, and `WITH` before `TIME` and `ORDINALITY` are
   tokens of their own in the Bison grammar (`NOT_LA`, `NULLS_LA`, `WITH_LA`): the rules look at the word that follows.
+- **LIMIT percentages share `%` with modulo.** DuckDB permits a percent suffix only when all pending
+  expression productions can reduce on it. A completion recognizer mirrors the expression precedence while
+  tracking only that condition; the ordinary expression parser builds the AST and spans. Closed `IN`, `IS`
+  and `ANY` predicates and postfix operators can complete an expression, as in `LIMIT 1 ISNULL + 2 ISNULL %`
+  or `LIMIT -1| %`. Pending `+`, `NOT` or a generic prefix remain errors (`LIMIT 1+2 %`, `LIMIT - |1 %`);
+  parentheses close an inner expression. Comma LIMIT shares the same value grammar, including percentages,
+  but DuckDB rejects comma forms after parsing. The dedicated reference corpus covers these distinctions.
 - **Where a keyword may be a name** is decided by its category (`unreserved`, `column_name`, `type_function`, `reserved`),
   with the exceptions of the grammar: `CUBE`, `ROLLUP`, `ENUM`, `BETWEEN` and `OPERATOR` that the parser shifts as keywords
   in some positions.
@@ -288,7 +295,7 @@ is not parsed twice to find that no string literal follows it, `IN`, `LIKE`, `IS
 the benchmarked version compared a word with unreserved keywords beginning with its letter, rather than all 330
 (that alone made a `CREATE TABLE` with a `TEXT` column 5 times as fast). The current grammar uses case-insensitive
 tries for complete keyword recognition; the historical measurements above predate that correctness change.
-`BenchmarkStatements` now covers 36 kinds of statement, including explicit window frames. The historical
+`BenchmarkStatements` now covers 37 kinds of statement, including explicit window frames. The historical
 35-case measurements ranged from 2.5 MB/s (`SELECT [1, 2, 3], {'a': 1, 'b': 2}, x[1], x.y`) to 19 MB/s
 (`ATTACH 'f.db' AS db`).
 

@@ -2,6 +2,5 @@
 {"sql": "select $ü$b$ü$x　x", "why": "the same: the pass that replaces Unicode white space does not close the dollar-quoted string, because a letter follows its closing tag"}
 {"sql": "select $$b$$x　x", "why": "the same, with an empty tag"}
 {"sql": "select $ü$x insensitive  = $ü$x　x$ü$;", "why": "the same: for the pass, the string goes on to the last $ü$, and the space inside the name x　x$ü$ is not replaced"}
-{"sql": "SELECT * FROM generate_series(0,10,1) LIMIT -1| %", "why": "DuckDB accepts the percent sign after a postfix operator (-1| %); the parser rejects it, as it does after + and the other operators that bind more loosely than %"}
 {"sql": "select $ü$x ; = $ü$x　x$ü$x$ü$", "why": "the pass that replaces Unicode white space (see above) makes DuckDB see an unterminated dollar-quoted string where the scanner finds the end of one"}
 {"sql": "CALL check_peg_parser(TEST_PEG_PARSER$ $TEST_PEG_PARSER$);", "why": "the same pass that replaces Unicode white space: it takes the dollar after the name for the start of a dollar-quoted string, leaves the space (U+2002) alone, and the scanner then reads it as part of an identifier"}
