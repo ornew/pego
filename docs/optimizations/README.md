@@ -79,6 +79,7 @@ inventory of current mechanisms or reference controls.
 | [85](085-reuse-stream-capture-frames.md#85-reuse-stream-capture-frames-at-element-commit)| Reuse stream capture frames at element commit | ✓ | ✓ | ✓ | – | – | engine streaming only; reuses completed element's frame structs while preserving the live root and immutable result storage |
 | [86](086-reuse-document-vm-values.md#86-reuse-the-document-vm-value-stack)| Reuse the Document VM value stack | – | ✓ | ✓ | – | – | engine `Document` reparses only; retains cleared VM stack capacity within an input-relative bound; ordinary parsing and closure documents unchanged |
 | [87](087-sparse-deferred-memo-seen-pages.md#87-store-deferred-memo-seen-positions-sparsely) | Sparse deferred-memo seen pages | Candidate | Candidate | Candidate | Candidate | Candidate | Per-run cutoff and bounded typed sparse reuse; clean 131-case snapshot and amd64/386 CI pass, but snapshot is descriptive rather than paired attribution; candidate remains unintegrated |
+| [88](088-share-bounded-stream-text-snapshots.md#88-share-bounded-stream-text-snapshots) | Share bounded stream text snapshots | Candidate | Candidate | Candidate | – | – | Engine streaming only; immutable snapshots share already-loaded text with bounded retention; copy fallback remains; validated candidate awaits a clean full benchmark checkpoint and integration |
 | [62](062-comparing-short-literals-in-place-in-direct-rules.md#62-comparing-short-literals-in-place-in-direct-rules)| Short literals compared in place | – | – | – | Partial | ✓ | direct rules, up to 4 code points; generated value-free and supported Node rules since 76/77; CodePoints only, Bytes retains the literal matcher |
 
 Not applied, and why:
@@ -185,6 +186,7 @@ Not applied, and why:
 - [085. Reuse stream capture frames at element commit](085-reuse-stream-capture-frames.md)
 - [086. Reuse the Document VM value stack](086-reuse-document-vm-values.md)
 - [087. Store deferred-memo seen positions sparsely](087-sparse-deferred-memo-seen-pages.md)
+- [088. Share bounded stream text snapshots](088-share-bounded-stream-text-snapshots.md)
 
 ## Experiments that did not pay off
 

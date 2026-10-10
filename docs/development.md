@@ -46,7 +46,7 @@ This document describes the repository layout and architecture, how to run tests
 | Compiler and analysis | `internal/engine/compile.go`, `analysis.go`, `check.go` | Checks types, analyzes calls and dependencies, and compiles expressions. |
 | Runtime | `runtime.go`, `pratt.go`, `attrs.go`, `eval.go`, `alloc.go`, `document.go` | Implements ordered choice, backtracking, actions, recovery and Pratt selection; streaming commits reuse completed capture frames ([record 085](optimizations/085-reuse-stream-capture-frames.md)), and VM-backed Documents retain a cleared value stack across reparses ([record 086](optimizations/086-reuse-document-vm-values.md)). |
 | Bytecode | `bytecode.go`, `bcompile.go`, `vm.go`, `ivm.go` | Runs the same grammar semantics with recursive and iterative VMs; see the [bytecode specification](../spec/bytecode.md). |
-| Input and documents | `input.go`, `document.go`, `resume.go` | Tracks position units, streaming input, edits and resumable repetitions. |
+| Input and documents | `input.go`, `stream_text.go`, `document.go`, `resume.go` | Tracks position units, streaming input, edits and resumable repetitions; a candidate stream path shares bounded immutable text snapshots ([record 088](optimizations/088-share-bounded-stream-text-snapshots.md)). |
 | Compiled grammars | `compiled.go`, `modulefile.go` | Saves and loads bytecode modules, optionally with AST and analysis data. |
 | Code generation | `gen.go`, `gen_direct.go`, `genrt/`, `gen_ts.go`, `tsrt/` | Emits standalone Go and TypeScript parsers; unsupported rules use general expression dispatch. |
 | Language tools | `internal/lint/`, `internal/lsp/`, `editors/vscode/` | Provides static checks, editor requests and the VS Code client. |
