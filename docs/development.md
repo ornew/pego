@@ -272,7 +272,7 @@ and dependency order distinct from these execution tiers.
 The next confirmed core correctness gap is raw-invalid-byte public-AST literal consistency (C28), followed
 by preserving Document repetition reuse across redundant no-edit parses (P06). C22/C23 require specification
 review before choosing Pratt behavior; analysis and runtime optimizations require fresh measurements. The
-DuckDB LIMIT-percent candidate is saved on [codex/duckdb-limit-percent](https://github.com/ornew/pego/tree/codex/duckdb-limit-percent)
+DuckDB LIMIT-percent candidate is saved on [fix/duckdb-limit-percent](https://github.com/ornew/pego/tree/fix/duckdb-limit-percent)
 at [f44269f](https://github.com/ornew/pego/commit/f44269f09ddffa6739450d868581f61baa208246). Its focused engine/native
 acceptance and AST checks pass; full impact suites, canonical oracle checks and paired performance measurements
 remain before landing. It is absent from main, where the seven scanner/LIMIT deviations remain.
