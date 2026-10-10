@@ -324,9 +324,12 @@ prefix caller continuations (C34), retaining conservative unknown results for un
 work limits. Generated typed values and conversion now use small initial chunks with bounded geometric growth:
 8 to 256 values per type and 64 to 1,024 list elements, retaining exact allocation for lists over 256 elements.
 Small JSON and CEL controls reduce allocation bytes; large-input controls expose extra warm-up allocations
-([performance change 74](performance.md#74-smaller-first-chunks-for-generated-typed-values)). Returned slab sibling retention (P28) remains a separate
-live-heap problem. Continue the remaining core performance items with fresh profiles and resource/ownership
-gates. C23 now prevents operand fallback when no prefix part matches and a candidate failed after cut, across
+([performance change 74](performance.md#74-smaller-first-chunks-for-generated-typed-values)).
+The full benchmark checkpoint measures clean `5610082` on Go 1.27.1/Apple M3 Max: 131 cases, three samples
+per case. Tiny JSON/CEL measurements and large-input allocation costs remain separate from that snapshot.
+Returned slab sibling retention (P28) remains a separate live-heap problem. Next, profile expectation-set
+membership and memo merges (P20), preserving ordered diagnostics and nested scope ownership; continue the
+remaining core performance items with fresh resource/ownership gates. C23 now prevents operand fallback when no prefix part matches and a candidate failed after cut, across
 all engines and standalone Go/typed Go/TypeScript. Successful longest candidates retain their own cut scopes; analysis and runtime optimizations require
 fresh measurements. The DuckDB LIMIT-percent candidate is saved on [fix/duckdb-limit-percent](https://github.com/ornew/pego/tree/fix/duckdb-limit-percent)
 at [f44269f](https://github.com/ornew/pego/commit/f44269f09ddffa6739450d868581f61baa208246). Its focused engine/native
