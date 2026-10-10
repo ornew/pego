@@ -45,7 +45,7 @@ type ruleInfo struct {
 	calls    []string
 	// always caches alwaysMatches for the body: 0 not computed yet, 1 being computed, 2 yes, 3 no.
 	always int
-	// stops caches static continuation parts per minimum level, never per nonassociative mask
+	// stops caches static longest-selection queries per minimum level, never per nonassociative mask
 	// (see gen.prattStopCheck).
 	stops map[int]*prattStop
 }

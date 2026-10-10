@@ -385,6 +385,10 @@ def e = pratt { operand "x" level { infix left "+" } level tight { infix left "*
 def e = pratt { operand "a" level { infix none "<" } }`},
 		{"none-mixed", "def main = e $$\n" + sampleNoneLevels},
 		{"none-wide", "def main = e $$\ndef e = pratt { operand \"a\" " + strings.Repeat("level {} ", 69) + `level { infix none "<" } }`},
+		{"overlapping-led", `def main=e $$
+def e=pratt { operand "a" level { postfix "!" postfix "!?" infix left "?" } }`},
+		{"nonoverlap-entry", `def main=e(tight) $$
+def e=pratt { operand "a" level { postfix "?" } level tight { postfix "!" } }`},
 		{"required-none-caller", `def main = &("a<a<a" $$) e "<" e $$
 def e = pratt { operand "a" level { infix none "<" } }`},
 	} {

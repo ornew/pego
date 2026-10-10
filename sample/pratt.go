@@ -14,29 +14,21 @@ type prattOp struct {
 	level int
 }
 
-// prattStop caches static continuation parts per entry level. Filtering an active nonassociative
-// state builds only a temporary outer choice, never a cache entry for an arbitrary mask of levels.
+// prattStop caches operator parts in declaration order and possible RHS starts per entry level.
+// Longest selection must precede level and nonassociative eligibility checks.
 type prattStop struct {
-	base  grammar.Expr
-	parts []prattStopPart
-	skip  grammar.Expr
+	ops      []prattOp
+	starts   grammar.Expr
+	skip     grammar.Expr
+	minLevel int
+	base     *prattCheck
 }
 
-type prattStopPart struct {
-	expr  grammar.Expr
-	level int
-	none  bool
-}
-
-func (s *prattStop) choice(alts []grammar.Expr) grammar.Expr {
-	if len(alts) == 0 {
-		return nil
-	}
-	items := []grammar.Expr{&grammar.Choice{Alts: alts}}
-	if s.skip != nil {
-		items = append([]grammar.Expr{s.skip}, items...)
-	}
-	return &grammar.Seq{Items: items}
+// prattCheck owns any active nonassociative state independently of later calls and backtracking.
+// No cache is indexed by an arbitrary mask of closed levels.
+type prattCheck struct {
+	stop   *prattStop
+	closed []bool
 }
 
 // prattOps returns operators of the kind from minLevel on. Prefix selection always starts at zero;
@@ -208,7 +200,7 @@ func (g *gen) prattTail(ri *ruleInfo, minLevel, count int, open []bool, k thunk)
 		pending := g.pending
 		ok := true
 		if c := g.prattStopCheck(ri, minLevel, open); c != nil {
-			ok = g.addCheck(c, true, true)
+			ok = g.addPrattCheck(c)
 		}
 		ok = ok && k()
 		g.pending = pending
@@ -303,53 +295,44 @@ func (g *gen) prattTail(ri *ruleInfo, minLevel, count int, open []bool, k thunk)
 	return false
 }
 
-// prattStopCheck returns the expression that must not match where a chain ends: the parser would
-// otherwise continue the chain. A postfix operator applies when its part matches; an infix operator only
-// when an operand follows it (otherwise the parser ends the expression before the operator), so the check
-// requires the operand too: a prefix operator part or an operand. Parts that match the empty string are
-// not candidates for prefix and postfix operators; for infix operators (juxtaposition) the operand
-// after them decides. A nonassociative infix already closed at its level cannot extend the chain;
-// omit its continuation without omitting other infix or postfix parts at that level.
-func (g *gen) prattStopCheck(ri *ruleInfo, minLevel int, open []bool) grammar.Expr {
+// prattStopCheck returns a bounded query for a continuation where a chain ends. Compare all led
+// parts before filtering the winner by the entry level or active nonassociative scope. An infix
+// continuation also needs a plausible operand/prefix start; the real parser validates the full RHS.
+func (g *gen) prattStopCheck(ri *ruleInfo, minLevel int, open []bool) *prattCheck {
 	s, ok := ri.stops[minLevel]
 	if !ok {
 		s = g.prattStopParts(ri, minLevel)
 		ri.stops[minLevel] = s
 	}
-	count := len(s.parts)
-	for _, p := range s.parts {
-		if p.none && open[p.level] {
-			count--
+	possible, filtered := false, false
+	for _, o := range s.ops {
+		if o.level < minLevel {
+			continue
+		}
+		if o.op.Kind == grammar.Infix && o.op.Assoc == grammar.AssocNone && open[o.level] {
+			filtered = true
+		} else {
+			possible = true
 		}
 	}
-	if count == len(s.parts) {
-		return s.base
-	}
-	if count == 0 {
+	if !possible {
 		return nil
 	}
-	// Pending checks can survive into a caller's continuation: their alternatives must own their
-	// backing storage, independently of later stop checks and backtracking.
-	alts := make([]grammar.Expr, 0, count)
-	for _, p := range s.parts {
-		if !(p.none && open[p.level]) {
-			alts = append(alts, p.expr)
-		}
+	if !filtered {
+		return s.base
 	}
-	return s.choice(alts)
+	return &prattCheck{stop: s, closed: append([]bool(nil), open...)}
 }
 
 func (g *gen) prattStopParts(ri *ruleInfo, minLevel int) *prattStop {
 	pr := ri.pratt
-	s := &prattStop{}
-	if pr.Skip != nil {
-		s.skip = &grammar.Optional{Expr: pr.Skip}
-	}
-	skip := func(items ...grammar.Expr) grammar.Expr {
-		if pr.Skip != nil {
-			items = append([]grammar.Expr{&grammar.Optional{Expr: pr.Skip}}, items...)
+	s := &prattStop{skip: pr.Skip, minLevel: minLevel}
+	for l, level := range pr.Levels {
+		for _, op := range level.Operators {
+			if op.Kind == grammar.Infix || op.Kind == grammar.Postfix {
+				s.ops = append(s.ops, prattOp{op, l})
+			}
 		}
-		return &grammar.Seq{Items: items}
 	}
 	var starts []grammar.Expr
 	for _, o := range prattOps(pr, 0, grammar.Prefix) {
@@ -360,18 +343,7 @@ func (g *gen) prattStopParts(ri *ruleInfo, minLevel int) *prattStop {
 	for _, o := range pr.Operands {
 		starts = append(starts, o.Expr)
 	}
-	var alts []grammar.Expr
-	for _, o := range prattOps(pr, minLevel, grammar.Postfix) {
-		if g.in.length(o.op.Expr) > 0 {
-			alts = append(alts, o.op.Expr)
-			s.parts = append(s.parts, prattStopPart{expr: o.op.Expr, level: o.level})
-		}
-	}
-	for _, o := range prattOps(pr, minLevel, grammar.Infix) {
-		part := &grammar.Seq{Items: []grammar.Expr{o.op.Expr, skip(&grammar.Choice{Alts: starts})}}
-		alts = append(alts, part)
-		s.parts = append(s.parts, prattStopPart{expr: part, level: o.level, none: o.op.Assoc == grammar.AssocNone})
-	}
-	s.base = s.choice(alts)
+	s.starts = &grammar.Choice{Alts: starts}
+	s.base = &prattCheck{stop: s}
 	return s
 }

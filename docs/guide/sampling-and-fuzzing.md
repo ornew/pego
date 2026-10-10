@@ -424,11 +424,18 @@ After an already-used nonassociative operator closes its level, the stop check a
 that token: `e "<" e` with `infix none "<"` can generate `a<a<a`. Other applicable infix and postfix operators still
 prevent an early stop.
 
-Two remaining Pratt approximations can return `ErrNoInput` for valid texts. With overlapping operator parts, the
-stop check can treat a shorter eligible part as a continuation even when the parser selects a longer disabled
-part and stops. With different nonassociative levels, a restriction set inside a tighter RHS can persist after
-that RHS returns: low `infix none "<"` and higher `infix none "="` accept `a<a=a=a`, but sampling that exact text
-can fail. These affect finding derivations; every returned input is still parsed and accepted.
+For overlapping parts, stop checks compare all infix/postfix candidates by consumed length and declaration
+order before checking the winning part's level or nonassociative restriction. A longer disabled part can therefore
+belong to the caller even when it starts with a shorter enabled part. Skip, competing parts and the possible RHS
+start share one bounded matcher allowance; incomplete input keeps the check pending, while unsupported matching
+leaves the decision to the parser.
+
+Two remaining Pratt approximations can return `ErrNoInput` for valid texts: with different nonassociative levels, a
+restriction set inside a tighter RHS can persist after that RHS returns. Low `infix none "<"` and higher
+`infix none "="` accept `a<a=a=a`, but sampling that exact text can fail. This affects finding derivations;
+every returned input is still parsed and accepted. The stop heuristic can also treat a prefix part as proof of
+a complete infix RHS: with prefix `"~"` and infix `"!"`, `e "!~"` accepts `a!~` after an uncommitted RHS failure,
+but sampling that exact text can fail because the prefix has no operand.
 
 What the generator cannot evaluate, it leaves to the parser: predicates over values built by actions or over struct
 fields, and lookaheads into Pratt expressions or left-recursive rules. Those constructs are handled only by generating

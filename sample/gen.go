@@ -57,6 +57,7 @@ type cont func(v val) bool
 type check struct {
 	pos      int
 	e        grammar.Expr
+	pratt    *prattCheck
 	neg      bool // e must not match (otherwise it must match)
 	progress bool // with neg, only a match that consumes input violates the check
 	next     *check
@@ -247,7 +248,13 @@ func (g *gen) text() []byte {
 func (g *gen) evalCheck(c *check, final bool) (violated, keep bool) {
 	// The input is complete at the end, or where $$ requires it to end.
 	final = g.forced == "" && (final || g.endAt == len(g.out))
-	st, end := g.m.run(c.e, g.text(), c.pos, final)
+	var st status
+	var end int
+	if c.pratt != nil {
+		st, end = g.m.runPrattStop(c.pratt, g.text(), c.pos, final)
+	} else {
+		st, end = g.m.run(c.e, g.text(), c.pos, final)
+	}
 	g.matchWork += g.m.steps
 	switch st {
 	case matched:
@@ -258,6 +265,20 @@ func (g *gen) evalCheck(c *check, final bool) (violated, keep bool) {
 		return false, true
 	}
 	return false, false // unknown: the parser decides
+}
+
+// addPrattCheck installs a longest-selection check with its own immutable scope snapshot.
+func (g *gen) addPrattCheck(p *prattCheck) bool {
+	c := &check{pos: len(g.out), pratt: p, neg: true, progress: true}
+	violated, keep := g.evalCheck(c, false)
+	if violated {
+		return false
+	}
+	if keep {
+		c.next = g.pending
+		g.pending = c
+	}
+	return true
 }
 
 // addCheck adds a check at the current position. It returns false if the check already fails. The
@@ -290,7 +311,7 @@ func (g *gen) recheck() bool {
 			return false
 		}
 		if keep {
-			kept = &check{pos: c.pos, e: c.e, neg: c.neg, progress: c.progress, next: kept}
+			kept = &check{pos: c.pos, e: c.e, pratt: c.pratt, neg: c.neg, progress: c.progress, next: kept}
 		} else {
 			changed = true
 		}

@@ -151,16 +151,20 @@ The generator prunes candidates that the parser would read differently from how 
   bound opened by its prefixes. Each new primary starts without a prefix bound; prefixes in that primary clear
   nonassociative restrictions only at levels inside their fresh RHS, preserving restrictions outside it. Explicit
   rule calls initialize their own entry independently. Prefix and tail counts retain their existing per-chain
-  bounds. Where a chain ends, no further postfix operator part may match after the skip, and no infix
-  operator part followed by the start of an operand (the parser ends the expression before an infix operator that no
-  operand follows, so `a+` is accepted by `e "+"`). Prefix and postfix parts that would match the empty string are not
-  used, as in the parser. Stop checks omit already-closed nonassociative infix parts while retaining other infix
-  and postfix parts, including ones at the same level. Static continuation parts are cached by entry minimum;
-  filtered choices own temporary backing storage and never add cache entries for arbitrary combinations of
-  closed levels. A caller can therefore continue with the same token after a closed nonassociative application.
-  Two remaining approximations can omit valid derivations: the union of candidate checks does not reproduce
-  longest-part selection before minimum/nonassociative eligibility, and the flat none mask can retain a tighter
-  restriction after returning from an infix RHS. The parser remains the final acceptance check.
+  bounds. At a chain end, a bounded query first compares all infix/postfix parts by consumed length and
+  declaration order, then checks the winning part's entry-level and nonassociative eligibility. A disabled winner
+  ends the expression without retrying a shorter part. An eligible postfix continues when its part consumes
+  input; an eligible infix also needs a plausible operand or prefix start, so `a+` can belong to `e "+"` when no
+  operand follows. Empty prefix/postfix matches are excluded, while empty infix parts can represent juxtaposition.
+  Skip, competing operator parts and an infix RHS start share one matcher allowance. Incomplete input retains a
+  pending check; unsupported matching or exhausted work is inconclusive and leaves acceptance to the real parser.
+  Static descriptors are cached by entry minimum; pending checks own any closed-level snapshot and never add
+  cache entries for arbitrary masks or assume a machine-word level limit. A caller can continue with the same
+  token after a closed nonassociative application. Two remaining approximations can omit valid derivations: the
+  flat none mask can retain a tighter restriction after returning from an infix RHS, and a matched prefix start
+  does not prove its operand exists. For example, prefix `"~"` with infix `"!"` accepts `a!~` in `e "!~"` by
+  abandoning an uncommitted incomplete RHS, but the start-only check can prevent generating that text. The parser
+  remains the final acceptance check.
 - **Left recursion** needs nothing special: the recursion is bounded like any other, and the parser grows the seed.
 
 ### Coverage

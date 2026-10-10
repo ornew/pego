@@ -157,11 +157,13 @@ Named-level Pratt sampling retains unrestricted prefixes and tracks the weaker t
 operands, with nonassociative restrictions scoped to each new prefix RHS. Coverage propagates reachable rule/entry
 states together, excluding nested targets and calls in blocked operator parts (C30). Explicit inner calls keep their
 own entry restrictions; seeded generation, budgets and mandatory Parse validation remain in place.
-Stop checks now respect active nonassociative restrictions, allowing a caller suffix with the same token while
-retaining other applicable infix/postfix checks (C31). Static continuation parts are cached per entry minimum;
-filtered checks own temporary alternatives without accumulating masks or assuming a machine-word level limit.
-Longest-part selection before eligibility (C32) and nonassociative state after returning from nested RHSs (C33)
-remain conservative sampling gaps that can cause `ErrNoInput` for valid texts; parser acceptance is unchanged.
+Stop checks respect active nonassociative restrictions (C31) and select the longest part across all infix/postfix
+candidates in declaration order before applying entry-level and nonassociative eligibility (C32). Static queries
+are cached per entry minimum; pending checks own scope snapshots without accumulating masks or assuming a
+machine-word level limit. One bounded matching allowance covers skip, competing parts and a plausible RHS start;
+unresolved input remains pending and unsupported matching is inconclusive. Nonassociative state after returning
+from nested RHSs (C33), and treating a prefix start as proof of a complete infix RHS (C34), remain sampling gaps
+that can cause `ErrNoInput` for valid texts; parser acceptance is unchanged.
 
 ### Compiled grammars
 
@@ -312,8 +314,8 @@ checker-only measurements and ordinary grammar controls. Named-level Pratt calls
 tail while retaining unrestricted prefixes at operand positions (C22); a prefix's right operand uses its own
 binding level. Exact tree, Unicode span, memoization and generated-parser conformance checks cover that existing
 contract. Sampling and coverage now honor those prefix/RHS paths (C30), including nested calls and scoped nonassociative
-operators. Caller stop checks now omit closed nonassociative parts (C31); longest-before-eligibility checks (C32)
-and nested nonassociative scope restoration (C33) remain open. C23 now prevents operand fallback when no prefix part matches and a candidate failed after cut, across
+operators. Caller stop checks respect closed nonassociative parts (C31) and longest-before-eligibility selection (C32);
+nested nonassociative scope restoration (C33) and complete-RHS continuation checks (C34) remain open. C23 now prevents operand fallback when no prefix part matches and a candidate failed after cut, across
 all engines and standalone Go/typed Go/TypeScript. Successful longest candidates retain their own cut scopes; analysis and runtime optimizations require
 fresh measurements. The DuckDB LIMIT-percent candidate is saved on [fix/duckdb-limit-percent](https://github.com/ornew/pego/tree/fix/duckdb-limit-percent)
 at [f44269f](https://github.com/ornew/pego/commit/f44269f09ddffa6739450d868581f61baa208246). Its focused engine/native

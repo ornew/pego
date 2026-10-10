@@ -31,13 +31,13 @@ func TestPrattStopCheckOwnershipAndCacheBound(t *testing.T) {
 	m := matcher{in: in}
 	check := func(allowLast bool) {
 		t.Helper()
-		st, _ := m.run(first, []byte("<69>a"), 0, true)
+		st, _ := m.runPrattStop(first, []byte("<69>a"), 0, true)
 		if st != failed {
 			t.Fatalf("previous check changed after a new mask: %v", st)
 		}
 		st = failed
 		if c := g.prattStopCheck(ri, 0, open); c != nil {
-			st, _ = m.run(c, []byte("<69>a"), 0, true)
+			st, _ = m.runPrattStop(c, []byte("<69>a"), 0, true)
 		}
 		want := failed
 		if allowLast {

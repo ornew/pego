@@ -51,6 +51,62 @@ func (m *matcher) run(e grammar.Expr, text []byte, pos int, final bool) (status,
 	return m.match(e, pos)
 }
 
+// runPrattStop shares one work allowance across skip, all competing parts and the RHS start.
+// An unresolved part can change the longest winner, so it cannot justify a rejection.
+func (m *matcher) runPrattStop(c *prattCheck, text []byte, pos int, final bool) (status, int) {
+	m.text, m.final, m.steps, m.active = text, final, 0, m.active[:0]
+	s := c.stop
+	start := pos
+	if s.skip != nil {
+		st, end := m.match(s.skip, start)
+		switch st {
+		case matched:
+			start = end
+		case more, unknown:
+			return st, pos
+		}
+	}
+	var best *prattOp
+	end := start
+	incomplete := false
+	for i := range s.ops {
+		o := &s.ops[i]
+		st, p := m.match(o.op.Expr, start)
+		switch st {
+		case unknown:
+			return unknown, pos
+		case more:
+			incomplete = true
+		case matched:
+			if p == start && o.op.Kind != grammar.Infix {
+				continue
+			}
+			if best == nil || p > end {
+				best, end = o, p
+			}
+		}
+	}
+	if incomplete {
+		return more, pos
+	}
+	if best == nil || best.level < s.minLevel || best.op.Kind == grammar.Infix && best.op.Assoc == grammar.AssocNone && len(c.closed) > best.level && c.closed[best.level] {
+		return failed, pos
+	}
+	if best.op.Kind == grammar.Postfix {
+		return matched, end
+	}
+	if s.skip != nil {
+		st, p := m.match(s.skip, end)
+		switch st {
+		case matched:
+			end = p
+		case more, unknown:
+			return st, pos
+		}
+	}
+	return m.match(s.starts, end)
+}
+
 // end is the status of reading past the end of the text.
 func (m *matcher) end() status {
 	if m.final {
