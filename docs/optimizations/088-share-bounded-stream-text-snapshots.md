@@ -116,8 +116,16 @@ not throughput.
 Batch controls use `BenchmarkParse` for JSON, CSV and Minilang. Build those
 benchmark binaries from the same source revision and alternate reference and
 candidate order, keeping backend and position unit fixed within each pair.
-The focused correctness, portability and retention gates pass; a clean full
-benchmark checkpoint remains required before integration.
+A clean 131-case, three-sample full benchmark checkpoint completed on source
+`efcd2db` on 2026-10-11 at default GOMAXPROCS=16. It is a descriptive snapshot,
+not attribution to this optimization. Compared unpaired with the prior full
+snapshot at `3da3d4a`, JSON no-AST load time was 12.37% higher, with the same
+allocation count and three fewer bytes. A focused five-round comparison of
+that path gave a 1.019 median time ratio and 0.971–1.099 paired range, which
+includes parity; the unpaired difference did not recur consistently. The
+candidate remains on its development branch. Undo-trail and old live-root
+sibling retention are broader follow-ups outside this snapshot's ownership
+scope.
 
 ## Limits
 

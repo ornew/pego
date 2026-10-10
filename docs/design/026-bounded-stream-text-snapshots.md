@@ -134,12 +134,16 @@ time and are not throughput results. A 56-byte 64-bit / 28-byte 32-bit input
 field is present in both candidate and same-source reference builds, so it is
 outside that comparison.
 
-The measurements are focused, not the full-suite checkpoint. They do not
-measure maximum live heap or establish the cost of stale undo-trail references.
+Focused and full-suite measurements cover different questions. The retained-heap
+measurements do not establish a maximum live heap or the cost of stale
+undo-trail references; the full-suite snapshot does not isolate this change.
 
 ## Limitations and open questions
 
-- A clean full benchmark checkpoint remains required before integration.
+- The clean 131-case, three-sample benchmark checkpoint completed on
+  `efcd2db` at default GOMAXPROCS=16. It is descriptive and does not isolate
+  this change. The candidate remains on a development branch; broader
+  undo-trail and old live-root sibling retention are separate follow-ups.
 - Retained-text tests cover emitted values across stream commits; stale
   sibling references still require a separate ownership investigation.
 - Undo-trail references and older live-root sibling references can retain

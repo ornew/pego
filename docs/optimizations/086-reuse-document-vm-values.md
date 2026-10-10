@@ -1,5 +1,7 @@
 # 86. Reuse the Document VM value stack
 
+**Status:** Candidate; implemented on a development branch, awaiting integration.
+
 Measured 2026-10-11 on Go 1.27.1, darwin/arm64, Apple M3 Max (16 CPUs).
 
 Repeated `Document.Parse` calls already reuse memoized results, but VM rule

@@ -1,5 +1,7 @@
 # 85. Reuse stream capture frames at element commit
 
+**Status:** Candidate; implemented on a development branch, awaiting integration.
+
 **Scope:** closure, recursive VM and iterative VM stream parsing. Generated
 Node, typed and TypeScript parsers do not expose a streaming API.
 
