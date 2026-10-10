@@ -79,6 +79,29 @@ TypeScript keeps its signed 64-bit arithmetic on either Go host. A 32-bit
 generation host accepts only source constants within its native range, but
 the emitted parser can compute and retain larger signed 64-bit values.
 
+### Ready-made parser behavior
+
+The Python grammar uses separate native-integer columns and bounded block
+depth packed with bracket and string state. [Design 026](026-portable-python-block-state.md)
+records its representation and native-64 allocation tradeoff.
+
+The Go grammar follows the executing target's `go/scanner` directive-number
+conversion. Its ordinary line-number interval remains `1..2^30`; converting
+an unsigned value above native `MaxInt` to a negative `int` also passes the
+scanner's upper-bound check. The resulting wrapped intervals are
+`2^31..2^32-1` on Go32 and `2^63..2^64-1` on Go64. A numeric middle field above
+native `MaxUint` is treated as part of the filename; an invalid final field
+rejects the directive. Module tests compare acceptance, complete ASTs,
+positions, line tables and comments with the standard parser for the
+executing target.
+
+Generated Go computes the width predicate `2147483647 + 1` with native
+arithmetic rather than folding it for the generator host. A parser generated
+on a 64-bit host therefore retains Go32 behavior when run there. This
+predicate is evaluated only at directive-number boundaries; matching adds no
+architecture selector. Generated TypeScript keeps its signed 64-bit
+arithmetic and Go64 intervals.
+
 ### Implementation and invariants
 
 The narrow fix addresses the architecture-dependent boundaries without
@@ -113,69 +136,32 @@ positive value as negative or a large repetition maximum as unbounded.
   affect hot paths even though a process's integer width is fixed. Compile-time
   constants and boundary validation avoid that recurring cost.
 
-## Testing
+## Validation
 
-Targeted signed and unsigned decoder boundaries, AST-omitted integer
-constants, externally constructed wide repetition bounds and TypeScript
-literal generation pass on native 64-bit Go and on linux/386 under Docker
-QEMU. Representable constants and bounds remain valid; out-of-range values
-are rejected. Native 64-bit root and all ten parser-module vet/test suites
-pass. Final Go and TypeScript generation comparisons pass on both widths,
-including strict TypeScript 5.9.3 checks: 17,828 TypeScript results from 194
-grammars on Go64, and 17,060 results from 172 grammars on Go32. Wide source
-literal fixtures are retained on Go64; Go32 separately verifies rejection of
-unrepresentable constants and bounds. An independent generated TypeScript
-test computes signed 64-bit boundaries from 32-bit source constants on
-either host.
+The native 64-bit `ci/test.sh -count=1 -p=1` run passes, including vet, the
+root module and all ten standalone parser modules. Targeted signed and
+unsigned decoder boundaries, AST-omitted integer constants, wide repetition
+bounds, `Document` reuse and TypeScript literal generation pass on both Go
+widths. Strict TypeScript 5.9.3 checks compare 17,828 results from 194
+grammars on Go64 and 17,060 results from 172 grammars on Go32. Regeneration
+leaves all 17 tracked generated parsers unchanged.
 
-Generation-test JSON oracles encode full deep trees directly, retaining the
-100,000-rule-call fixtures. Ordinary trees also cross-check public
-`MarshalJSON`. The secondary standard encoder check is omitted above 1,000
-tree levels because repeated subtree encoding is quadratic; production JSON
-serialization is unchanged.
+The Linux/386 standalone parser-module matrix passes all ten modules. The
+emulated Linux/386 root run passes every package except one `internal/lsp`
+hostile-input check that exceeds its message deadline during the full run;
+the same check passes when run alone. Treat that as an unresolved full-run
+timing failure, not a passing root suite. The new workflow runs the same
+serial test script on Linux `amd64` and `386`; remote CI results are not yet
+available.
 
-The Go32 engine suite passes, as do the other core package suites after
-correcting sample-analysis length saturation. Two LSP wall-clock checks
-exceeded their limits during the concurrent emulated run and pass when run
-alone. Eight standalone parser-module vet/test suites pass on Go32: CEL,
-CSV, CUE, DuckDB, JSON, TypeScript, XML and YAML.
-
-The Python grammar now uses separate native-integer columns and a bounded
-block depth packed with bracket/string state; [design 026](026-portable-python-block-state.md)
-describes its tests and measured allocation tradeoff. It passes the native
-64-bit and Linux/386 module suites, but adoption of that tradeoff is pending.
-The Go grammar follows the executing target's `go/scanner` directive-number
-conversion. The ordinary interval remains `1..2^30`; converting native unsigned
-values above `MaxInt` to negative `int` also passes the scanner's upper-bound
-check. Those wrapped intervals are `2^31..2^32-1` on Go32 and
-`2^63..2^64-1` on Go64. A numeric middle field beyond native `MaxUint` is
-interpreted as part of the filename; an invalid final field rejects the
-directive. Go32 and Go64 module tests compare acceptance, complete ASTs,
-positions, line tables and comments with the executing standard parser.
-
-The width predicate computes `2147483647 + 1` with native arithmetic, rather
-than a generation-host constant. Go generated on a 64-bit host consequently
-keeps Go32 behavior when executed there. The predicate is evaluated at the
-directive-number boundary after the ordinary interval fails, or when resolving
-an unsigned middle field; core matching code gains no architecture selector.
-Generated TypeScript keeps its signed 64-bit arithmetic and Go64 intervals.
-Complete CI validation and acceptance of the Python allocation tradeoff remain
-unresolved.
-Validation also covers:
-
-- Cross-compile root and every parser module for `linux/386`; run the supported
-  subset in a 32-bit environment and report skips explicitly.
-- Test signed and unsigned decoder boundaries at `MinInt32`, `MaxInt32`, one
-  below and one above, plus `MinInt64`/`MaxInt64` encodings where relevant.
-- Load modules containing wide repetition bounds and integer constants on
-  both architectures: retain full-width values on 64-bit and reject
-  unrepresentable values on 32-bit without truncation.
-- Exercise `Document` first parse, unchanged reparse, edits, and resumption in
-  both position units and all three engine backends.
-- Verify TypeScript generation at Go `int` boundaries and its existing
-  JavaScript safe-integer boundary.
-- Re-run native 64-bit engine, parser-module and site suites, plus generated
-  parser regeneration, before declaring target support.
+The Python grammar uses separate native-integer columns and bounded block
+depth packed with bracket and string state; [design 026](026-portable-python-block-state.md)
+records its implementation and allocation tradeoff. Its tests pass on both
+widths, but adoption of the native-64 allocation cost remains pending. Go
+directive tests on both widths compare acceptance, ASTs, positions, line
+tables and comments with the executing standard parser. Generation-test JSON
+oracles preserve the 100,000-rule-call fixtures without quadratic secondary
+serialization of deeply nested trees.
 
 ## Performance and results
 
@@ -224,10 +210,11 @@ go test -c -o /tmp/pego-portability.test ./internal/engine
 
 ## Limitations and remaining validation
 
-- The core implementation is validated on both integer widths. Ready-made
-  parser support and architecture-aware CI remain to be finalized before
-  declaring the portability work complete.
+- The complete Linux/386 root wrapper needs a clean pass; one LSP hostile-input
+  deadline failed only in the full emulated run and passed in isolation. The
+  standalone module matrix is green, but remote CI results are not yet
+  available.
+- Python's native-64 allocation tradeoff still needs acceptance before its
+  change is integrated into `main`.
 - Native `int` limits still constrain bounds and addressable input size on
   32-bit systems. The proposal preserves, rather than removes, those limits.
-- Cross-building alone does not establish that every test or parser module
-  runs in a 32-bit environment; runtime coverage is required.

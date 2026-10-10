@@ -81,6 +81,15 @@ The `check` helper also verifies that the result is the same with memoization di
 
 The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for its type check, `tsc`; it is skipped when they are missing.
 
+The Go portability matrix targets Linux `amd64` and `386`. CI runs
+[`ci/test.sh`](../ci/test.sh) on both: it vets and tests the root module, then
+runs every standalone parser module. The workflow supplies Node.js 24 and
+TypeScript 5.9.3 for generated-TypeScript checks and serializes packages within
+each job so unrelated package builds do not compete with stress deadlines.
+The 32-bit target uses Go's
+native `int` range; loading a compiled grammar rejects values that do not fit
+that target rather than narrowing them.
+
 `internal/lint` tests every check with positive and negative cases, lints every example grammar against a hand-checked list of findings, and `TestSoundness` checks the certain findings against the engine on random grammars, exhaustively over short inputs (`-soundness=N` for a longer run).
 
 `internal/lsp` tests talk to the server in process over pipes (lifecycle, malformed messages, incremental edits with non-ASCII and astral characters and `\r\n`, every request) and analyze every example grammar. In `editors/vscode`, `npm install && npm run check` compiles the TextMate grammar's regular expressions with Oniguruma and checks the scopes of a sample and the example grammars; `npm run check-server -- <path to pego>` talks to the server with the VS Code client's JSON-RPC library.
