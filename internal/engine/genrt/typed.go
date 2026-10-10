@@ -238,6 +238,7 @@ func (p *tparser) run(r *trule, input string, units []Unit, ext any) (v any, err
 	} else {
 		p.setSource(input)
 	}
+	p.memo.sparse = sparseSeen && p.memo.stride > 64 && p.n > 1024
 	defer func() {
 		if x := recover(); x != nil {
 			switch x := x.(type) {

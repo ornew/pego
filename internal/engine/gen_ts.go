@@ -58,11 +58,12 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	rt := tsRuntimeSource[i+len(tsRuntimeMarker):]
 	rt = strings.Replace(rt, "const sparseSeen = true;\n", "", 1)
 	if opts.disableSparseMemo {
-		rt = strings.Replace(rt, "sparseSeen && this.stride > 64", "false", 1)
+		rt = strings.Replace(rt, "sparseSeen && stride > 64 && this.n > 1024", "false", 1)
+		rt = strings.Replace(rt, "const first = this.sparse", "const first = false", 1)
 	} else {
 		// Emit only the representation threshold, without a matching-time
 		// read of a module-level control binding.
-		rt = strings.Replace(rt, "sparseSeen && this.stride > 64", "this.stride > 64", 1)
+		rt = strings.Replace(rt, "sparseSeen && stride > 64 && this.n > 1024", "stride > 64 && this.n > 1024", 1)
 	}
 	out.WriteString(rt)
 	out.WriteString("\n// --- Generated code ---\n\n")

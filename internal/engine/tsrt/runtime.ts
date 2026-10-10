@@ -888,6 +888,7 @@ class Parser {
   // position.
   seen: Int32Array = new Int32Array(0);
   stride: number;
+  sparse: boolean;
   seenPages: ((number | undefined)[] | undefined)[] | null = null;
   seenPageChunks: Int32Array[] | null = null;
   seenPageCount = 0;
@@ -935,6 +936,7 @@ class Parser {
       this.src = this.decodeCodePoints(input);
       this.n = this.cps.length;
     }
+    this.sparse = sparseSeen && stride > 64 && this.n > 1024;
   }
 
   // decodeString sets cps (and offs) from s, with lone surrogates as U+FFFD, and returns s with the
@@ -1053,7 +1055,7 @@ class Parser {
       return false;
     }
     this.calls[s]!++;
-    const first = sparseSeen && this.stride > 64
+    const first = this.sparse
       ? this.markSparseSeen(this.pos, s)
       : this.markSeen(this.pos, s);
     if (first) {

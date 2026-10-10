@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ornew/pego/internal/syntax"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -101,13 +102,55 @@ func TestSparseMemoParseControls(t *testing.T) {
 	if prog.nseen <= 64 {
 		t.Fatal("control no longer exercises sparse rule count")
 	}
-	for i, input := range []string{"const 日本語 = \"😀\";\nconst v = [1, 2].map(x => x + 1);\n", "function f( { return 1;"} {
+	for i, input := range []string{"const 日本語 = \"😀\";\nconst v = [1, 2].map(x => x + 1);\n", "function f( { return 1;", strings.Repeat("const 日本語 = 1 + 2;\n", 100), strings.Repeat("const a = 1;\n", 100) + "function f( { return 1;"} {
 		for _, unit := range []Unit{CodePoints, Bytes} {
 			for _, recognize := range []bool{false, true} {
 				checkTrace(t, prog, "main", input, ParseOptions{Unit: unit, Recognize: recognize})
 				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 					work, result := parseWork(prog, "main", input, ParseOptions{Backend: backend, Unit: unit, Recognize: recognize})
 					t.Logf("semantic=%d/%s/%s/%t result=%x work=%x", i, backend, unit, recognize, sha256.Sum256([]byte(result)), sha256.Sum256([]byte(fmt.Sprintf("%+v", work))))
+				}
+			}
+		}
+	}
+}
+
+func TestSparseMemoInputSelection(t *testing.T) {
+	data, err := os.ReadFile("../../parsers/typescript/typescript.pego")
+	if err != nil {
+		t.Fatal(err)
+	}
+	g, err := syntax.Parse(string(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+	prog, err := Compile(g, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, text := range []string{
+		"/*" + strings.Repeat("a", 1020) + "*/",
+		"/*" + strings.Repeat("a", 1021) + "*/",
+		"/*" + strings.Repeat("é", 512) + "*/",
+		"/*" + strings.Repeat("a", 1020) + "*/",
+	} {
+		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+			for _, unit := range []Unit{CodePoints, Bytes} {
+				p := newParser(prog, text, unit, true)
+				p.deferMemo = true
+				if _, err := prog.run(p, backend, "main"); err != nil {
+					t.Fatal(err)
+				}
+				want := len([]rune(text)) > 1024
+				if unit == Bytes {
+					want = len(text) > 1024
+				}
+				want = want && sparseMemo
+				if p.memo.sparse != want {
+					t.Fatalf("%s/%s: sparse=%t want=%t", backend, unit, p.memo.sparse, want)
+				}
+				if !want && len(p.memo.pages) != 0 {
+					t.Fatal("short input allocated sparse directory")
 				}
 			}
 		}

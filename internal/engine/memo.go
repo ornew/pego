@@ -27,8 +27,9 @@ type memoTable struct {
 	// bits per position. It is used only by whole-input parses, so base is 0.
 	seen   []uint64
 	stride int
+	sparse bool // selected once from rule count and input length
 	// pages allocate bits only for a rule's visited 1,024-position regions.
-	// Small grammars keep the dense bitset to avoid directory overhead.
+	// Small grammars and inputs keep the dense bitset to avoid directory overhead.
 	pages    []seenRulePages
 	bitPages arena[[16]uint64]
 	// calls counts, per rule number, the calls and the repeated calls at a position; once repeats
@@ -62,8 +63,12 @@ func (t *memoTable) firstCall(pos, r int) bool {
 	}
 	c.calls++
 	var first bool
-	if sparseMemo && t.stride > 64 {
-		first = t.markSparseSeen(pos, r)
+	if sparseMemo && t.sparse {
+		page := t.cachedSeenPage(pos, r)
+		if page == nil {
+			page = t.sparsePage(pos, r)
+		}
+		first = markSeenPage(page, pos)
 	} else {
 		first = t.markSeen(pos, r)
 	}
@@ -106,6 +111,34 @@ func (t *memoTable) markSeen(pos, r int) bool {
 // markSparseSeen records only visited per-rule regions, with page allocation
 // batched to keep the directory savings from adding one allocation per page.
 func (t *memoTable) markSparseSeen(pos, r int) bool {
+	page := t.cachedSeenPage(pos, r)
+	if page == nil {
+		page = t.sparsePage(pos, r)
+	}
+	return markSeenPage(page, pos)
+}
+
+// cachedSeenPage and markSeenPage inline into firstCall. Keeping allocation
+// separate avoids another function call when a rule remains in its last page.
+func (t *memoTable) cachedSeenPage(pos, r int) *[16]uint64 {
+	if r < len(t.pages) {
+		dir := &t.pages[r]
+		if dir.at == pos>>10 {
+			return dir.last
+		}
+	}
+	return nil
+}
+
+func markSeenPage(page *[16]uint64, pos int) bool {
+	w, b := (pos>>6)&15, uint64(1)<<(pos&63)
+	first := page[w]&b == 0
+	page[w] |= b
+	return first
+}
+
+// sparsePage handles directory growth and page allocation off the hot path.
+func (t *memoTable) sparsePage(pos, r int) *[16]uint64 {
 	if len(t.pages) != t.stride {
 		t.pages = make([]seenRulePages, t.stride)
 	}
@@ -131,12 +164,7 @@ func (t *memoTable) markSparseSeen(pos, r int) bool {
 		}
 		dir.last, dir.at = page, at
 	}
-	w, b := (pos>>6)&15, uint64(1)<<(pos&63)
-	if page[w]&b != 0 {
-		return false
-	}
-	page[w] |= b
-	return true
+	return page
 }
 
 // seenBit addresses a bit without requiring the intermediate bit number to

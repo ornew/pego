@@ -41,7 +41,7 @@ func TestSparseMemoBoundariesAndReset(t *testing.T) {
 
 func TestSparseMemoPoolReuse(t *testing.T) {
 	for _, typed := range []bool{false, true} {
-		p := &parser{memo: memoTable{stride: 65}}
+		p := &parser{memo: memoTable{stride: 65, sparse: true}}
 		r := &rule{seen: 64}
 		p.pos = 1024
 		if !p.firstCall(r) || p.firstCall(r) {
@@ -69,7 +69,7 @@ func TestSparseMemoPoolReuse(t *testing.T) {
 			}
 			continue
 		}
-		p.memo.stride, p.pos = 65, 1024
+		p.memo.stride, p.memo.sparse, p.pos = 65, true, 1024
 		if !p.firstCall(r) {
 			t.Fatal("page bit or eager decision survived pool reset")
 		}

@@ -93,6 +93,9 @@ func TestGeneratedTSSparseMemoControls(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		if i == 1 && strings.Contains(string(code), "const first = this.sparse") {
+			t.Fatal("reference output retains matching-time representation selector")
+		}
 		path := filepath.Join(dir, name)
 		if err := os.MkdirAll(path, 0o755); err != nil {
 			t.Fatal(err)
@@ -131,6 +134,15 @@ export function testMemoBoundaries(): void {
         const mark = () => sparseSeen && stride > 64 ? p.markSparseSeen(pos, r) : p.markSeen(pos, r);
         if (!mark() || mark()) throw new Error("first/repeated mismatch");
       }
+    }
+  }
+  for (const stride of [64, 65, 175]) {
+    for (const [input, unit, large] of [
+      ["a".repeat(1024), CodePoints, false], ["a".repeat(1025), CodePoints, true],
+      ["é".repeat(513), CodePoints, false], ["é".repeat(513), Bytes, true],
+    ] as const) {
+      const p = new Parser(input, unit, stride);
+      if (p.sparse !== (sparseSeen && stride > 64 && large)) throw new Error("input cutoff mismatch");
     }
   }
   const p = new Parser("", CodePoints, 175);
@@ -196,6 +208,25 @@ func TestSparseGeneratedResults(t *testing.T) {
                 if jerr != nil { t.Fatal(jerr) }
                 t.Logf("MEMO_RESULT %d/%d/%d %x", unit, i, pass, sha256.Sum256(data))
             }
+        }
+    }
+}
+
+func TestSparseGeneratedInputSelection(t *testing.T) {
+    p := &tparser{parser: &parser{}, ext: &tslabs{}}
+    for _, input := range []string{
+        "/*" + strings.Repeat("a", 1020) + "*/",
+        "/*" + strings.Repeat("a", 1021) + "*/",
+        "/*" + strings.Repeat("é", 512) + "*/",
+        "/*" + strings.Repeat("a", 1020) + "*/",
+    } {
+        for _, unit := range []Unit{CodePoints, Bytes} {
+            _, err := p.run(trules[0], input, []Unit{unit}, &tslabs{})
+            if err != nil { t.Fatal(err) }
+            want := len([]rune(input)) > 1024
+            if unit == Bytes { want = len(input) > 1024 }
+            if p.memo.sparse != (sparseSeen && want) { t.Fatal("typed input cutoff mismatch") }
+            p.recycle()
         }
     }
 }

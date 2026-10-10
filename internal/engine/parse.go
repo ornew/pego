@@ -151,6 +151,7 @@ func (prog *Program) run(p *parser, b Backend, start string) (n *Node, err error
 	if be := prog.backend(b); be == Bytecode || be == BytecodeIterative {
 		p.memo.stride = prog.vmFor(be).nseen
 	}
+	p.memo.sparse = sparseMemo && p.memo.stride > 64 && p.loaded() > 1024
 	defer func() {
 		if x := recover(); x != nil {
 			p.aborted = true
