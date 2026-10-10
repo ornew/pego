@@ -109,6 +109,11 @@ errors and memoization decisions are literally shared. The generator writes the 
   recovery control flow preserves expectation handling, full-mark
   rollback and progress checks through the existing runtime helpers;
   unsupported layouts remain general.
+  Ordinary typed direct rules also use the complete capture-name layout from
+  shared Node-rule metadata. Owned repetition and projected-repetition element
+  scopes use the general emitter's collector at the same build mode, including
+  captures in dead syntax, so omitted slots retain their zero/nil value without
+  allocating a runtime frame ([record 84](../optimizations/084-complete-typed-local-capture-layouts.md)).
   Each Pratt line owns its `tprattLine.scope`; the runtime retains precedence,
   longest-match selection, frames and action finalization. Left-recursion
   runtime frames and growth remain in place; eligible callees can use either

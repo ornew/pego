@@ -134,6 +134,23 @@ type dscope struct {
 
 func newDscope() *dscope { return &dscope{vars: map[string]string{}} }
 
+// localScope records the complete layout before structural emission can omit
+// unreachable captures. Locals are declared when matching or a term needs
+// them, preserving declaration order for already supported bodies. Their zero
+// values represent nil slots without allocating a runtime capture frame.
+func (d *dgen) localScope(names []string) *dscope {
+	s := newDscope()
+	s.names = append([]string(nil), names...)
+	return s
+}
+
+func (d *dgen) localElementScope(e grammar.Expr, build bool) *dscope {
+	if d.g.table == "trules" && !d.g.disableTypedLocalLayouts {
+		return d.localScope(d.g.typedFrameLayout(e, build).names)
+	}
+	return newDscope()
+}
+
 func (d *dgen) decl(prefix, typ string) string {
 	d.n++
 	name := fmt.Sprintf("%s%d", prefix, d.n)
@@ -723,7 +740,7 @@ func (d *dgen) repeat(e *grammar.Repeat, s *dscope, build bool, fail string) str
 	own := elementScoped(e.Expr)
 	es := s
 	if own {
-		es = newDscope()
+		es = d.localElementScope(e.Expr, build)
 	}
 	var start, base string
 	if build {
@@ -798,7 +815,7 @@ func (d *dgen) scopeVar(es *dscope) string {
 func (d *dgen) vals(es *dscope) string {
 	var xs []string
 	for _, name := range es.names {
-		xs = append(xs, d.rd(es.vars[name]))
+		xs = append(xs, d.rd(d.capVar(es, name)))
 	}
 	return "[]any{" + strings.Join(xs, ", ") + "}"
 }
@@ -840,7 +857,7 @@ func (d *dgen) scan(e *grammar.Repeat, fail string) (string, bool) {
 // projectRepeat writes a repetition that gathers the values of the capture field of its elements
 // (see generator.projectRepeat).
 func (d *dgen) projectRepeat(e *grammar.Repeat, field, fail string) string {
-	es := newDscope()
+	es := d.localElementScope(e.Expr, false)
 	start, base, count := d.decl("x", "int"), d.decl("x", "int"), d.decl("x", "int")
 	d.line("%s, %s, %s = p.pos, len(p.kidStack), 0", start, base, count)
 	d.loop(e.Max)
@@ -872,8 +889,8 @@ func (d *dgen) projectRepeat(e *grammar.Repeat, field, fail string) string {
 	return v
 }
 
-// predicate writes a predicate or an assignment; it reads the captures of the scope s that are
-// assigned so far, as the general code reads the frame.
+// predicate writes a predicate or an assignment; it reads the captures of the
+// scope s as the general code reads its frame, including nil omitted slots.
 func (d *dgen) predicate(e *grammar.Predicate, s *dscope, fail string) string {
 	if d.nodeBody {
 		t := e.Term
@@ -895,15 +912,26 @@ func (d *dgen) predicate(e *grammar.Predicate, s *dscope, fail string) string {
 	}
 	caps := map[string]string{}
 	for _, name := range s.names {
-		caps[name] = s.vars[name]
+		if v, ok := s.vars[name]; ok {
+			caps[name] = v
+		}
 	}
 	t := e.Term
 	if a, ok := t.(*grammar.Assign); ok {
 		t = a.Value
 	}
 	if !refsKnown(t, caps) {
-		d.bad = true
-		return "nil"
+		// A known capture omitted by structural emission still reads nil.
+		// Do not declare unrelated later captures merely for this predicate.
+		capRefs(t, func(name string) {
+			if _, known := indexOf(s.names, name); known {
+				caps[name] = d.capVar(s, name)
+			}
+		})
+		if !refsKnown(t, caps) {
+			d.bad = true
+			return "nil"
+		}
 	}
 	g := d.g
 	prev := g.caps
@@ -1054,6 +1082,9 @@ func (g *generator) directRule(r *rule) *direct {
 	d := &dgen{g: g, localCuts: g.table == "trules" && directCuts(r.def.Expr), reads: map[string]bool{}, used: map[string]bool{}}
 	s := newDscope()
 	g.cur, g.proj = r, g.projections(r)
+	if g.table == "trules" && !g.disableTypedLocalLayouts {
+		s = d.localScope(g.nodeScopes[r])
+	}
 	defer func() { g.proj = nil }()
 	const fail = "fail"
 	body := d.expr(r.def.Expr, s, !r.lean, fail)
@@ -1092,7 +1123,7 @@ func (d *dgen) finish(r *rule, s *dscope, body string) (start, ctx bool) {
 	case r.action != nil:
 		caps := map[string]string{}
 		for _, name := range s.names {
-			caps[name] = s.vars[name]
+			caps[name] = d.capVar(s, name)
 		}
 		if !refsKnown(r.action, caps) {
 			d.bad = true

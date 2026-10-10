@@ -53,6 +53,9 @@ type GenOptions struct {
 	// disableTypedFrameLayouts retains structural capture discovery for
 	// same-generator tests and measurements without a parser-time option.
 	disableTypedFrameLayouts bool
+	// disableTypedLocalLayouts retains structural discovery of Go-local captures
+	// for same-generator controls without a matching-time selector.
+	disableTypedLocalLayouts bool
 	// disableTypedRecoveryBodies retains general recovery dispatch for
 	// same-generator tests and measurements without a parser-time option.
 	disableTypedRecoveryBodies bool
@@ -79,7 +82,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if !token.IsIdentifier(opts.Package) || opts.Package == "_" {
 		return nil, fmt.Errorf("invalid package name %q", opts.Package)
 	}
-	gen := &generator{prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedPrattBodies: opts.disableTypedPrattBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies}
+	gen := &generator{prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedPrattBodies: opts.disableTypedPrattBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
 	var rec *Program
@@ -157,6 +160,7 @@ type generator struct {
 	disableTypedPrattBodies    bool
 	disableTypedFramedCuts     bool
 	disableTypedFrameLayouts   bool
+	disableTypedLocalLayouts   bool
 	disableTypedRecoveryBodies bool
 	// nodeScopes records the frame layouts shared by typed rule metadata.
 	nodeScopes map[*rule][]string

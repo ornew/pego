@@ -20,13 +20,15 @@
   3.2 MB (no frames), the others unchanged in bytes. JSON `ParseAST` now takes the time of `Recognize` (3.9 ms) and
   about half that of `Parse` (7.2 ms). Generated `Parse` and `Recognize` are unchanged.
 - The original implementation kept cut-bearing rules and left-recursion
-  leaders on general dispatch. [Changes 78](078-local-cuts-in-typed-direct-rules.md),
+  leaders on general dispatch. [78](078-local-cuts-in-typed-direct-rules.md),
   [79](079-inline-eligible-typed-left-recursion-bodies.md),
   [80](080-inline-eligible-typed-pratt-lines.md),
   [81](081-scoped-cuts-in-unfinished-typed-go-bodies.md),
-  [82](082-match-typed-direct-frame-layouts.md) and
-  [83](083-inline-typed-recovery-bodies.md) add eligible ordinary rules with
-  local cuts, LR bodies under the runtime-owned growth wrapper, Pratt-line
-  matchers, scoped cut-bearing LR/Pratt bodies, layouts matching the general
-  emitter and recovery bodies. Recovery layouts the structural emitter cannot
-  match remain general.
+  [82](082-match-typed-direct-frame-layouts.md),
+  [83](083-inline-typed-recovery-bodies.md) and
+  [84](084-complete-typed-local-capture-layouts.md) extend eligible ordinary
+  rules with local cuts and complete capture-name layouts, including dead
+  captures. Other paths cover LR bodies under runtime-owned growth, Pratt-line
+  matchers, framed cut-bearing LR/Pratt bodies and recovery. Record 84 also
+  covers owned/projected repetitions. Recovery layouts the structural emitter
+  cannot match remain general.

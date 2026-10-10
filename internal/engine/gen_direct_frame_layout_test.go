@@ -132,6 +132,7 @@ func TestTypedFrameLayoutMetadata(t *testing.T) {
 	cases = append(cases, typedPrattBodyCases...)
 	cases = append(cases, typedDirectCutCases...)
 	cases = append(cases, typedRecoveryCases...)
+	cases = append(cases, typedLocalLayoutCases...)
 	for _, c := range cases {
 		p := compile(t, c.src)
 		for _, r := range append(append([]*rule(nil), p.rules...), p.twins...) {
