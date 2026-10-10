@@ -1,6 +1,11 @@
 # Performance
 
-This document describes benchmark workloads and methods, analyzes the latest full-suite results, and links to the optimization catalog. The catalog preserves the numbered change history, evidence, applicability table, and experiments that did not pay off.
+This document defines benchmark workloads and methods and analyzes the latest
+full-suite results. The [optimization catalog](optimizations/README.md)
+describes mechanisms and their evidence; commits provide chronology. Its
+numbered records and applicability table remain a partial view until the
+mechanism-inventory proposal in
+[design 024](design/024-optimization-mechanism-controls.md) is implemented.
 Update the catalog in the same commit as an optimization. Correctness-only fixes do not belong in the catalog; record measured performance impact in their commit messages.
 
 Keep a summary with the baseline commit, candidate change, workload, environment, sample method,
@@ -14,7 +19,8 @@ document describes the benchmarks, analyzes the results, and records how they ca
 
 - [Where PEGO stands](#where-pego-stands): an analysis of the latest results
 - [How to measure](#how-to-measure): the benchmarks, their workloads and method, and tools for measuring a change
-- [Optimization catalog](optimizations/README.md): applicability, numbered changes, and experiments
+- [Optimization catalog](optimizations/README.md): mechanisms, applicability,
+  numbered evidence records and experiments
 
 ## Where PEGO stands
 
@@ -151,8 +157,8 @@ The 2026-10-09 run and the current analysis use the ready-made grammars in `pars
 Older runs used the simpler grammars of `examples/csv` and `examples/xml`, since removed. Their figures do not
 isolate the effect of a runtime change across that grammar transition; use the paired measurements in each tuning entry.
 
-The optimization catalog records the effect of each change when it was made; entries before change 13 were
-measured on a 4-vCPU Intel Xeon virtual machine and are several times slower in absolute terms.
+The numbered records preserve evidence for individual changes; commits provide their chronology. Records before 13
+were measured on a 4-vCPU Intel Xeon virtual machine and are several times slower in absolute terms.
 
 The first benchmark run on that virtual machine took about 510 ms for JSON and allocated 206 MB in 2.6 million
 allocations.

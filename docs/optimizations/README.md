@@ -1,13 +1,20 @@
 # Optimization Catalog
 
-This catalog contains PEGO's numbered optimization history. Each entry preserves its original change number, implementation details, measurements, tradeoffs, and reproduction commands. The [performance document](../performance.md) keeps the current benchmark analysis and measurement method.
+This catalog describes optimization mechanisms, their backend scope and
+measured evidence. Numbered records preserve the implementation details,
+tradeoffs and reproduction commands for individual changes; commits provide
+chronology. The [performance document](../performance.md) keeps the
+measurement method and latest full-suite analysis. A current mechanism
+inventory is proposed in [design 024](../design/024-optimization-mechanism-controls.md);
+its migration is deferred.
 
 ## Where each optimization applies
 
 The runtimes are separate code: the closure backend (`compile.go`, `runtime.go`), the recursive and iterative bytecode
 VMs (`vm.go`, `ivm.go`), the generated parsers' runtime (`genrt/runtime.go`, behind `Parse` and `Recognize`) and the
 typed runtime of generated parsers (`genrt/typed.go`, behind `ParseAST`). An optimization made in one of them is not
-automatically in the others. This table records, for every change in the log below, where it is in effect.
+automatically in the others. This table records where the numbered records below apply; it is not yet a complete
+inventory of current mechanisms or reference controls.
 
 ✓ applied · Partial applied to the subset in the note · ✗ not applied (see the note) · – not applicable (the backend has no such code path or feature)
 
@@ -73,9 +80,11 @@ Not applied, and why:
 - **General per-rule call methods for value-building generated `Parse`** (the typed runtime's `typedCall`) measured within noise (48).
 - Experiments that did not pay off in some backends are in the experiments table at the end.
 
-## Optimization history
+<a id="optimization-history"></a>
 
-## Changes 1–25
+## Optimization records
+
+## Records 1–25
 - [001. Value-free rule bodies, value-free twins, transient rules (0b2c903)](001-value-free-rule-bodies-value-free-twins-transient-rules-0b2c903.md)
 - [002. Frame pooling in the iterative VM (8fab402)](002-frame-pooling-in-the-iterative-vm-8fab402.md)
 - [003. Node fields as a slice (54a5774)](003-node-fields-as-a-slice-54a5774.md)
@@ -101,7 +110,7 @@ Not applied, and why:
 - [023. Splicing the text of a Document in place](023-splicing-the-text-of-a-document-in-place.md)
 - [024. The plain call path in the iterative VM](024-the-plain-call-path-in-the-iterative-vm.md)
 - [025. Discarding separators in the example grammars](025-discarding-separators-in-the-example-grammars.md)
-## Changes 26–50
+## Records 26–50
 - [026. Lambda calls without allocation in the closure backend](026-lambda-calls-without-allocation-in-the-closure-backend.md)
 - [027. Struct and call operands on the expression stack in the closure backend](027-struct-and-call-operands-on-the-expression-stack-in-the-closure-backend.md)
 - [028. Field lists and list built-ins without allocation in the generated parsers](028-field-lists-and-list-built-ins-without-allocation-in-the-generated-parsers.md)
@@ -127,7 +136,7 @@ Not applied, and why:
 - [048. A typed runtime for ParseAST](048-a-typed-runtime-for-parseast.md)
 - [049. First-character dispatch in generated choices](049-first-character-dispatch-in-generated-choices.md)
 - [050. First-character dispatch in the closure backend](050-first-character-dispatch-in-the-closure-backend.md)
-## Changes 51–78
+## Records 51–78
 - [051. First-character dispatch in the VMs (instruction set 3)](051-first-character-dispatch-in-the-vms-instruction-set-3.md)
 - [052. Projected repetitions in generated `Parse`](052-projected-repetitions-in-generated-parse.md)
 - [053. Projected repetitions in the engine and the VMs](053-projected-repetitions-in-the-engine-and-the-vms.md)
