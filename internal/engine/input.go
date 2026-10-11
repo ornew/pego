@@ -313,7 +313,7 @@ func newStreamParser(prog *Program, r io.Reader, unit Unit) *parser {
 func newControlledStreamParser(prog *Program, r io.Reader, unit Unit, control *workControl) *parser {
 	p := &parser{prog: prog, input: input{unit: unit, control: control, baseLine: 1, baseCol: 1}, memo: newMemoTable(), maxDepth: DefaultMaxDepth}
 	if workControlsEnabled && control != nil {
-		r = &streamReaderObserver{reader: r, result: &p.readerResult}
+		r = &streamReaderObserver{reader: r, result: &p.readerResult, control: control}
 	}
 	p.reader = bufio.NewReader(r)
 	if streamPrefixIsolation {

@@ -4,17 +4,20 @@ import (
 	"io"
 )
 
-// Only controlled streams wrap the caller's Reader. bufio may defer an error
-// returned together with data; remember it across that read's cancellation check.
+// Only controlled streams wrap the caller's Reader. Check actual caller reads,
+// including bufio refills, and remember errors returned together with data.
 // Ordinary streams retain their original buffer reuse and prefetch path.
 type streamReaderObserver struct {
-	reader io.Reader
-	result *error
+	reader  io.Reader
+	result  *error
+	control *workControl
 }
 
 func (r *streamReaderObserver) Read(dst []byte) (int, error) {
+	r.control.check()
 	n, err := r.reader.Read(dst)
 	*r.result = err
+	r.control.checkAfterReader(err)
 	return n, err
 }
 

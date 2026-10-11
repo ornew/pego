@@ -639,7 +639,10 @@ control references without changing event metadata or delivered Nodes.
 
 Controlled reads reserve one step per staged byte/code point and check before
 and after synchronous reader calls. An observer inside an invocation-local
-bufio.Reader records the caller's returned error before buffering can defer it.
+bufio.Reader checks immediately before and after each underlying Read, including
+empty-read retries and refills that complete a UTF-8 rune. Cancellation prevents
+a further caller read even while ReadByte or ReadRune is still running. The
+observer records the caller's returned error before buffering can defer it.
 A non-EOF error returned with data therefore wins over cancellation first
 observed after that read. Without cancellation, buffered data is still delivered
 before its saved error. Only controlled calls add this wrapper; inactive calls
@@ -664,8 +667,9 @@ with weak references and strong-reference positive controls across successful,
 syntax, budget, cancellation, reader/emit-error and caller-panic exits. This
 establishes release of those fixture objects, not a retained-byte or timing bound.
 The controlled observer/storage/accounting costs and inactive branch/call costs
-are unmeasured. Generated-runtime lifecycles and setup/default-cost gates remain
-pending before full contract adoption.
+are unmeasured. Raw-reader checks add a controller pointer to the observer and
+extra Context polls only on controlled caller reads. Generated-runtime lifecycles
+and setup/default-cost gates remain pending before full contract adoption.
 
 
 Controlled stream snapshots reserve source copying through the bounded
