@@ -761,7 +761,8 @@ Those costs are unmeasured while timing is paused.
 
 ## Testing
 
-These are proposed gates, not completed validation:
+The implementation must satisfy these gates across each supported scope.
+Generated Go and TypeScript require separate consumer checks.
 
 - Pre-cancelled/deadline contexts, cancellation at deterministic checkpoints,
   nil/unlimited defaults, last-option wins, exact once/reentrant option callbacks,

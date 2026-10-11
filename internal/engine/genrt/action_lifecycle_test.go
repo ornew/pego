@@ -44,7 +44,7 @@ func TestTypedActionTrackingReleasesReferences(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			prefix := &tnode{typ: "keep"}
 			made := &tnode{fresh: true}
-			p := &tparser{created: []tval{prefix, made}}
+			p := &tparser{parser: &parser{}, created: []tval{prefix, made}}
 			c := &tctx{p: p, cbase: 1, start: 3, end: 4}
 			var got any
 			var panicValue any

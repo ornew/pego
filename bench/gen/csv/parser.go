@@ -5,8 +5,11 @@ package csv
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"math"
 	"slices"
 	"sort"
 	"strconv"
@@ -378,6 +381,10 @@ type ParseOption func(*parseOptions)
 type parseOptions struct {
 	unit     Unit
 	maxDepth int
+	context  context.Context
+	limits   WorkLimits
+	control  *workControl
+	prepared bool
 }
 
 // WithUnit selects the unit of input positions (CodePoints by default).
@@ -387,6 +394,16 @@ func WithUnit(unit Unit) ParseOption { return func(o *parseOptions) { o.unit = u
 // a negative effective limit returns an error before parsing.
 // A larger limit does not guarantee that the host stack can accommodate it.
 func WithMaxDepth(n int) ParseOption { return func(o *parseOptions) { o.maxDepth = n } }
+
+// WithContext selects cooperative cancellation for one invocation.
+// A nil context is equivalent to context.Background.
+func WithContext(ctx context.Context) ParseOption { return func(o *parseOptions) { o.context = ctx } }
+
+// WithWorkLimits bounds cumulative examined input and execution work.
+// Zero leaves a counter unlimited; counters are never rolled back.
+func WithWorkLimits(limits WorkLimits) ParseOption {
+	return func(o *parseOptions) { o.limits = limits }
+}
 
 func resolveOptions(opts []ParseOption) (parseOptions, error) {
 	if len(opts) == 0 {
@@ -402,7 +419,38 @@ func resolveOptions(opts []ParseOption) (parseOptions, error) {
 	if o.maxDepth == 0 {
 		o.maxDepth = defaultMaxDepth
 	}
+	if !workControlsEnabled && (o.context != nil || o.limits != (WorkLimits{})) {
+		return o, fmt.Errorf("work controls are disabled in this generated reference parser")
+	}
 	return o, nil
+}
+
+// prepareOptions is called after fixed option and rule-name validation.
+// The resolved state can be shared with a result converter without new counters.
+func prepareOptions(o parseOptions) parseOptions {
+	if !o.prepared {
+		o.prepared = true
+		if workControlsEnabled && (o.context != nil || o.limits != (WorkLimits{})) {
+			o.control = newWorkControl(o.context, o.limits)
+		}
+	}
+	o.control.check()
+	return o
+}
+
+// recoverParse returns engine interruptions and preserves caller panic identity.
+func recoverParse[T any](v *T, err *error) {
+	if x := recover(); x != nil {
+		switch x := x.(type) {
+		case fatal:
+			var zero T
+			*v, *err = zero, x.err
+		case contextPanic:
+			panic(x.value)
+		default:
+			panic(x)
+		}
+	}
 }
 
 // parse parses the whole input with rule r of a rule table with seen rules that have rule.seen
@@ -416,11 +464,20 @@ func parse(r *rule, seen int, input string, opts []ParseOption) (n *Node, err er
 }
 
 func parseResolved(r *rule, seen int, input string, o parseOptions) (n *Node, err error) {
+	defer recoverParse(&n, &err)
+	return parseResolvedWork(r, seen, input, o)
+}
+
+// parseResolvedWork lets a conversion boundary distinguish engine interruption
+// from an ordinary nil result without inspecting caller-owned error values.
+func parseResolvedWork(r *rule, seen int, input string, o parseOptions) (n *Node, err error) {
+	o = prepareOptions(o)
 	p, _ := ppool.Get().(*parser)
 	if p == nil {
 		p = &parser{}
 	}
 	defer p.release()
+	p.control = o.control
 	p.maxDepth = o.maxDepth
 	p.memo.stride = seen
 	if len(p.memo.calls) != seen {
@@ -431,16 +488,9 @@ func parseResolved(r *rule, seen int, input string, o parseOptions) (n *Node, er
 	} else {
 		p.setSource(input)
 	}
-	defer func() {
-		if x := recover(); x != nil {
-			f, ok := x.(fatal)
-			if !ok {
-				panic(x)
-			}
-			n, err = nil, f.err
-		}
-	}()
+	p.control.check()
 	v, ok := p.call(r, 0)
+	p.control.check()
 	if ok && p.pos == p.n {
 		if len(p.recovered) > 0 {
 			return v, SyntaxErrors(p.recovered)
@@ -505,10 +555,11 @@ const (
 )
 
 type parser struct {
-	unit Unit
-	in   []rune // code points (CodePoints)
-	bs   string // the input (Bytes)
-	n    int    // input length in units
+	control *workControl
+	unit    Unit
+	in      []rune // code points (CodePoints)
+	bs      string // the input (Bytes)
+	n       int    // input length in units
 	// src and offs give token text without copying in CodePoints mode: offs[i] is the byte offset
 	// of code point i (len(in)+1 entries). offs is nil for invalid UTF-8, whose text is built
 	// from in so that U+FFFD replacement stays the same.
@@ -583,6 +634,13 @@ type seenCalls struct {
 // so memoizing every first call cost an entry each for nothing; deferring memoization to the
 // second call evaluates a rule at most twice per position, which keeps parse time linear.
 func (p *parser) firstCall(r *rule) bool {
+	if workControlsEnabled && p.control != nil {
+		return p.controlledFirstCall(r)
+	}
+	return p.firstCallOrdinary(r)
+}
+
+func (p *parser) firstCallOrdinary(r *rule) bool {
 	if r.seen < 0 {
 		return false
 	}
@@ -694,6 +752,10 @@ var noVals [16]any
 
 // envValues returns the current values of the variables names (nil for an undefined variable).
 func (p *parser) envValues(names []string) []any {
+	if workControlsEnabled && p.control != nil {
+		return p.controlledEnvValues(names)
+	}
+
 	if len(names) == 0 {
 		return nil
 	}
@@ -739,6 +801,7 @@ const (
 // newNode returns a copy of v allocated from the node slab. A slab stays alive while any of its
 // nodes is referenced.
 func (p *parser) newNode(v Node) *Node {
+	p.stepWork()
 	if len(p.nodeSlab) == 0 {
 		p.nodeSlab = make([]Node, nodeChunk)
 	}
@@ -781,7 +844,7 @@ func (p *parser) fields(n int) Fields {
 // kids returns p.kidStack[base:] as a child list and pops it.
 func (p *parser) kids(base int) []*Node {
 	ks := p.nodes(len(p.kidStack) - base)
-	copy(ks, p.kidStack[base:])
+	copyWork(p, ks, p.kidStack[base:])
 	p.dropKids(base)
 	return ks
 }
@@ -889,6 +952,11 @@ type env struct {
 // bound tracks names ever assigned, so first assignments need no linear search.
 // Names from abandoned branches may be absent now; that only causes a search.
 func (p *parser) bind(name string, val any) {
+	if workControlsEnabled && p.control != nil {
+		p.bindControlled(name, val)
+		return
+	}
+
 	e := p.env
 	if p.bound == nil {
 		p.bound = make(map[string]bool)
@@ -944,14 +1012,12 @@ func (p *parser) reset(m mark) {
 	p.pos = m.pos
 	p.env = m.env
 	p.recovered = p.recovered[:m.recovered]
-	for i := len(p.trail) - 1; i >= m.trail; i-- {
-		u := p.trail[i]
-		u.f.vals[u.slot] = u.old
-	}
+	p.undoCaptures(m.trail)
 	p.trail = p.trail[:m.trail]
 }
 
 func (p *parser) setCapture(slot int, v *Node) {
+	p.stepWork()
 	p.trail = append(p.trail, undo{f: p.frame, slot: slot, old: p.frame.vals[slot]})
 	p.frame.vals[slot] = v
 }
@@ -959,6 +1025,10 @@ func (p *parser) setCapture(slot int, v *Node) {
 // setSource decodes the input s into code points and, if s is valid UTF-8, records the offset
 // table for token text, all in one pass (a U+FFFD that decodes from three bytes is valid).
 func (p *parser) setSource(s string) {
+	if workControlsEnabled && p.control != nil {
+		p.setControlledSource(s)
+		return
+	}
 	n := utf8.RuneCountInString(s)
 	// The buffers of a parser used before are reused (the typed runtime keeps parsers).
 	if cap(p.in) >= n {
@@ -995,6 +1065,7 @@ func (p *parser) setSource(s string) {
 
 // peek returns the character at the current position and its size in units.
 func (p *parser) peek() (rune, int, bool) {
+	p.inputWork(1)
 	if p.pos >= p.n {
 		return 0, 0, false
 	}
@@ -1002,6 +1073,7 @@ func (p *parser) peek() (rune, int, bool) {
 		if c := p.bs[p.pos]; c < utf8.RuneSelf {
 			return rune(c), 1, true
 		}
+		p.inputWork(uint64(min(utf8.UTFMax, p.n-p.pos)))
 		r, size := utf8.DecodeRuneInString(p.bs[p.pos:])
 		return r, size, true
 	}
@@ -1009,6 +1081,17 @@ func (p *parser) peek() (rune, int, bool) {
 }
 
 func (p *parser) unitLen(s string) int {
+	if workControlsEnabled && p.control != nil && p.unit != Bytes {
+		count := 0
+		for off := 0; off < len(s); {
+			p.valueWork(min(utf8.UTFMax, len(s)-off))
+			_, size := utf8.DecodeRuneInString(s[off:])
+			off += size
+			count++
+		}
+		return count
+	}
+
 	if p.unit == Bytes {
 		return len(s)
 	}
@@ -1028,6 +1111,7 @@ func (p *parser) expect(pos int, id expID) {
 	bit := uint64(1) << (uint32(id) * 0x9e3779b1 >> 26)
 	if p.expBits&bit != 0 {
 		for _, e := range p.exp[p.expBase:] {
+			p.stepWork()
 			if e == id {
 				return
 			}
@@ -1065,7 +1149,7 @@ func (p *parser) keep(ids []expID) []expID {
 	if len(ids) == 0 {
 		return nil
 	}
-	if slicesEqual(ids, p.lastKept) { // the same set often repeats
+	if p.equalExpected(ids, p.lastKept) { // the same set often repeats
 		return p.lastKept
 	}
 	if cap(p.arena)-len(p.arena) < len(ids) {
@@ -1073,7 +1157,7 @@ func (p *parser) keep(ids []expID) []expID {
 		p.arena = make([]expID, 0, max(1024, len(ids)))
 	}
 	off := len(p.arena)
-	p.arena = append(p.arena, ids...)
+	p.arena = appendWork(p, p.arena, ids)
 	p.lastKept = p.arena[off:len(p.arena):len(p.arena)]
 	return p.lastKept
 }
@@ -1094,6 +1178,7 @@ func slicesEqual(a, b []expID) bool {
 // current record (writes only happen below the read position).
 func (p *parser) mergeExpected(far int, ids []expID) {
 	for _, x := range ids {
+		p.stepWork()
 		p.expect(far, x)
 	}
 }
@@ -1105,12 +1190,18 @@ func (p *parser) text(start, end int) string {
 	if p.offs != nil {
 		return p.src[p.offs[start]:p.offs[end]]
 	}
+	if workControlsEnabled && p.control != nil {
+		return p.detachedText(start, end)
+	}
 	return string(p.in[start:end])
 }
 
 type fatal struct{ err error }
 
 func (p *parser) makeError(pos int, expected []expID) *SyntaxError {
+	if workControlsEnabled && p.control != nil {
+		return p.makeControlledError(pos, expected)
+	}
 	e := &SyntaxError{Pos: pos}
 	for _, x := range expected {
 		if x&msgBit != 0 {
@@ -1140,6 +1231,7 @@ func (p *parser) makeError(pos int, expected []expID) *SyntaxError {
 
 // call calls rule r at level min.
 func (p *parser) call(r *rule, min int) (*Node, bool) {
+	p.control.charge(0, 1)
 	start := p.pos
 	if !r.memo && !r.leader || p.firstCall(r) {
 		// Unmemoized call: no memo bookkeeping, and expectations need no isolation.
@@ -1157,7 +1249,7 @@ func (p *parser) call(r *rule, min int) (*Node, bool) {
 	env := p.envValues(r.vars)
 	// See the engine's callBegin: entries with recovered errors are reused only in the same kind of
 	// context (inside or outside a lookahead) they were computed in.
-	if e := p.memo.get(r.id, start, min, env); e != nil && (e.growing || (!e.silent || p.silent > 0) && (len(e.errs) == 0 || e.silent == (p.silent > 0))) {
+	if e := p.memoGet(r.id, start, min, env); e != nil && (e.growing || (!e.silent || p.silent > 0) && (len(e.errs) == 0 || e.silent == (p.silent > 0))) {
 		if !e.growing {
 			p.mergeExpected(e.far, e.expected)
 		}
@@ -1165,7 +1257,7 @@ func (p *parser) call(r *rule, min int) (*Node, bool) {
 			return nil, false
 		}
 		p.pos = e.end
-		p.recovered = append(p.recovered, e.errs...)
+		p.recovered = p.copyErrors(p.recovered, e.errs)
 		return e.node, true
 	}
 	rec := len(p.recovered)
@@ -1176,7 +1268,7 @@ func (p *parser) call(r *rule, min int) (*Node, bool) {
 	var e *memoEntry
 	if r.leader {
 		v, ok = p.grow(r, min, env)
-		e = p.memo.get(r.id, start, min, env)
+		e = p.memoGet(r.id, start, min, env)
 	} else {
 		v, ok = p.invoke(r, min)
 		if !ok {
@@ -1184,8 +1276,8 @@ func (p *parser) call(r *rule, min int) (*Node, bool) {
 		}
 		e = p.memo.alloc()
 		*e = memoEntry{node: v, ok: ok, end: p.pos, silent: p.silent > 0,
-			errs: append([]*SyntaxError(nil), p.recovered[rec:]...)}
-		p.memo.put(r.id, start, min, env, e)
+			errs: p.copyErrors(nil, p.recovered[rec:])}
+		p.memoPut(r.id, start, min, env, e)
 	}
 	far, inner := p.unisolate(m)
 	e.far, e.expected = far, p.keep(inner)
@@ -1203,22 +1295,22 @@ func (p *parser) grow(r *rule, min int, env []any) (*Node, bool) {
 	rec := len(p.recovered)
 	best := p.memo.alloc()
 	*best = memoEntry{end: start, growing: true}
-	p.memo.put(r.id, start, min, env, best)
+	p.memoPut(r.id, start, min, env, best)
 	for {
 		v, ok := p.invoke(r, min)
 		if !ok || (best.ok && p.pos <= best.end) {
 			break
 		}
 		best = p.memo.alloc()
-		*best = memoEntry{node: v, ok: true, end: p.pos, growing: true, errs: append([]*SyntaxError(nil), p.recovered[rec:]...)}
-		p.memo.put(r.id, start, min, env, best)
+		*best = memoEntry{node: v, ok: true, end: p.pos, growing: true, errs: p.copyErrors(nil, p.recovered[rec:])}
+		p.memoPut(r.id, start, min, env, best)
 		p.pos = start
 		p.recovered = p.recovered[:rec]
 	}
 	best.growing = false
 	best.silent = p.silent > 0
 	p.pos = best.end
-	p.recovered = append(p.recovered[:rec], best.errs...)
+	p.recovered = p.copyErrors(p.recovered[:rec], best.errs)
 	return best.node, best.ok
 }
 
@@ -1312,6 +1404,7 @@ func (p *parser) attachCaptures(v *Node, names []string, f *frame, start, end in
 	found := false
 	wrap := v == nil || !v.fresh
 	for _, c := range f.vals {
+		p.stepWork()
 		if c != nil {
 			found = true
 		}
@@ -1329,8 +1422,9 @@ func (p *parser) attachCaptures(v *Node, names []string, f *frame, start, end in
 		v.Fields = p.fields(len(names))
 	}
 	for i, name := range names {
+		p.stepWork()
 		if f.vals[i] != nil {
-			v.Fields.set(name, f.vals[i])
+			p.setValueField(&v.Fields, name, f.vals[i])
 		}
 	}
 	return v
@@ -1357,12 +1451,13 @@ func (p *parser) literalText(start int, text string) string {
 func (p *parser) matchLiteral(rs []rune, text string, desc expID, build bool) (*Node, bool) {
 	start := p.pos
 	if p.unit == Bytes {
-		if !strings.HasPrefix(p.bs[p.pos:], text) {
+		if !p.hasLiteralPrefix(text) {
 			return p.matchReplacementLiteral(rs, text, desc, build)
 		}
 		p.pos += len(text)
 	} else {
 		for _, r := range rs {
+			p.inputWork(1)
 			if p.pos >= p.n || p.in[p.pos] != r {
 				p.expect(start, desc)
 				return nil, false
@@ -1380,7 +1475,7 @@ func (p *parser) matchLiteral(rs []rune, text string, desc expID, build bool) (*
 // invalid input byte and valid U+FFFD decode alike, but occupy different sizes.
 func (p *parser) matchReplacementLiteral(rs []rune, text string, desc expID, build bool) (*Node, bool) {
 	start := p.pos
-	if !slices.Contains(rs, utf8.RuneError) {
+	if !p.literalHasReplacement(rs) {
 		p.expect(start, desc)
 		return nil, false
 	}
@@ -1488,7 +1583,7 @@ func (p *parser) recoverAttr(m, skip matcher, build bool) (*Node, bool) {
 	if !build {
 		return nil, true
 	}
-	return p.newNode(Node{kind: kindError, Start: int32(m0.pos), End: int32(p.pos), Text: p.text(m0.pos, p.pos), Fields: Fields{{"message", e.Error()}}, fresh: true, terminal: true}), true
+	return p.newNode(Node{kind: kindError, Start: int32(m0.pos), End: int32(p.pos), Text: p.text(m0.pos, p.pos), Fields: Fields{{"message", p.recoveryErrorText(e)}}, fresh: true, terminal: true}), true
 }
 
 // --- Actions and predicates ---
@@ -1526,7 +1621,7 @@ func (c *actx) result(action func(*actx) any, where string) (n *Node) {
 			if !ok {
 				panic(x)
 			}
-			panic(fatal{fmt.Errorf("action in %s: %s", where, e.msg)})
+			panic(fatal{c.p.wrapEvalError(where, e.msg)})
 		}
 	}()
 	v := action(c)
@@ -1535,9 +1630,10 @@ func (c *actx) result(action func(*actx) any, where string) (n *Node) {
 	}
 	n, ok := v.(*Node)
 	if !ok {
-		evalErrorf("result must be a node, got %s", typeName(v))
+		c.p.evalErrorf("result must be a node, got %s", typeName(v))
 	}
 	for _, x := range c.p.created[c.cbase:] {
+		c.p.stepWork()
 		if x == n {
 			n.Start, n.End = int32(c.start), int32(c.end)
 			break
@@ -1603,18 +1699,26 @@ func (c *actx) item(n int) any {
 		return c.newList(c.items)
 	}
 	if n > len(c.items) {
-		evalErrorf("$%d is out of range (%d elements)", n, len(c.items))
+		c.p.evalErrorf("$%d is out of range (%d elements)", n, len(c.items))
 	}
 	return nodeOrNil(c.items[n-1])
 }
 
 func (c *actx) lookup(name string) any {
+	if workControlsEnabled && c.p.control != nil {
+		if v, ok := c.p.lookupEnvControlled(name); ok {
+			return v
+		}
+		c.p.evalErrorf("variable %s is not defined", name)
+		return nil
+	}
+
 	for e := c.p.env; e != nil; e = e.next {
 		if e.name == name {
 			return e.val
 		}
 	}
-	evalErrorf("variable %s is not defined", name)
+	c.p.evalErrorf("variable %s is not defined", name)
 	return nil
 }
 
@@ -1645,8 +1749,9 @@ func (c *actx) newStruct(typ string, kv ...any) any {
 	n := c.p.newNode(Node{kind: k, Fields: c.p.fields(len(kv) / 2)})
 	first := true
 	for i := 0; i < len(kv); i += 2 {
+		c.p.stepWork()
 		v := kv[i+1]
-		n.Fields.set(kv[i].(string), v)
+		c.p.setValueField(&n.Fields, kv[i].(string), v)
 		if child, ok := v.(*Node); ok && child != nil {
 			if first || child.Start < n.Start {
 				n.Start = child.Start
@@ -1665,7 +1770,9 @@ func (c *actx) newStruct(typ string, kv ...any) any {
 }
 
 func (c *actx) newList(items []*Node) *Node {
-	return c.listNode(append(c.p.nodes(len(items))[:0], items...))
+	kids := c.p.nodes(len(items))
+	copyWork(c.p, kids, items)
+	return c.listNode(kids)
 }
 
 // listNode returns a List node with the child list kids (which it takes over).
@@ -1673,6 +1780,7 @@ func (c *actx) listNode(kids []*Node) *Node {
 	n := c.p.newNode(Node{kind: kindList, Children: kids, Start: int32(c.start), End: int32(c.start)})
 	first := true
 	for _, it := range kids {
+		c.p.stepWork()
 		if it == nil {
 			continue
 		}
@@ -1690,7 +1798,7 @@ func (c *actx) listNode(kids []*Node) *Node {
 func (c *actx) member(x any, name string) any {
 	n, ok := x.(*Node)
 	if !ok || n == nil {
-		evalErrorf("cannot access .%s of %s", name, typeName(x))
+		c.p.evalErrorf("cannot access .%s of %s", name, typeName(x))
 	}
 	switch name {
 	case "startPos":
@@ -1701,9 +1809,9 @@ func (c *actx) member(x any, name string) any {
 		return c.newList(n.Children)
 	}
 	if fields, ok := structFields[n.Type()]; ok && !fields[name] {
-		evalErrorf("%s has no field %s", n.Type(), name)
+		c.p.evalErrorf("%s has no field %s", n.Type(), name)
 	}
-	v, _ := n.Fields.Get(name)
+	v, _ := c.p.valueField(n.Fields, name)
 	return v
 }
 
@@ -1833,7 +1941,7 @@ func (c *actx) length(x any) any {
 	case nil:
 		return 0
 	}
-	evalErrorf("len: invalid argument %s", typeName(x))
+	c.p.evalErrorf("len: invalid argument %s", typeName(x))
 	return nil
 }
 
@@ -1856,7 +1964,7 @@ func (c *actx) textStr(x any) string {
 		}
 		return c.p.text(int(x.Start), int(x.End))
 	}
-	evalErrorf("text: invalid argument %s", typeName(x))
+	c.p.evalErrorf("text: invalid argument %s", typeName(x))
 	return ""
 }
 
@@ -1916,6 +2024,7 @@ func (c *actx) list(args ...any) any {
 func (c *actx) concat(args ...any) any {
 	base := len(c.p.kidStack)
 	for _, a := range args {
+		c.p.stepWork()
 		c.pushItems(a)
 	}
 	return c.endList(base)
@@ -1926,19 +2035,21 @@ func (c *actx) concat(args ...any) any {
 // as pushes for its arguments followed by endList, so that they build no intermediate list.
 
 func (c *actx) pushMap(list any, f func(item any) any) {
-	for _, it := range listItems("map", list) {
-		c.p.kidStack = append(c.p.kidStack, asNode("map", f(nodeOrNil(it))))
+	for _, it := range c.listItems("map", list) {
+		c.p.stepWork()
+		c.p.kidStack = append(c.p.kidStack, c.asNode("map", f(nodeOrNil(it))))
 	}
 }
 
 func (c *actx) pushList(args ...any) {
 	for _, a := range args {
-		c.p.kidStack = append(c.p.kidStack, asNode("list", a))
+		c.p.stepWork()
+		c.p.kidStack = append(c.p.kidStack, c.asNode("list", a))
 	}
 }
 
 func (c *actx) pushItems(v any) {
-	c.p.kidStack = append(c.p.kidStack, listItems("concat", v)...)
+	c.p.kidStack = appendWork(c.p, c.p.kidStack, c.listItems("concat", v))
 }
 
 // endList returns a list of the elements pushed since base.
@@ -1999,6 +2110,7 @@ func (p *parser) skipTrivia(pr *pratt) {
 func (p *parser) longest(ops []*prattOp) (best prattAttempt, cutFailed bool) {
 	m0 := p.mark()
 	for _, op := range ops {
+		p.stepWork()
 		prevFrame, prevCut := p.frame, p.cut
 		f := p.newFrame(len(op.line.scope))
 		p.frame, p.cut = f, false
@@ -2010,7 +2122,7 @@ func (p *parser) longest(ops []*prattOp) (best prattAttempt, cutFailed bool) {
 		}
 		if ok && (best.op == nil || p.pos > best.end) {
 			best = prattAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
-				errs: append([]*SyntaxError(nil), p.recovered[m0.recovered:]...)}
+				errs: p.copyErrors(nil, p.recovered[m0.recovered:])}
 		}
 		if !ok && cut {
 			cutFailed = true
@@ -2021,16 +2133,16 @@ func (p *parser) longest(ops []*prattOp) (best prattAttempt, cutFailed bool) {
 		}
 		// reset undoes this candidate's captures; restore them. Nothing parses between saving
 		// and restoring, so one buffer per parser suffices.
-		p.saved = append(p.saved[:0], f.vals...)
+		p.saved = appendWork(p, p.saved[:0], f.vals)
 		p.reset(m0)
-		copy(f.vals, p.saved)
+		copyWork(p, f.vals, p.saved)
 	}
 	return best, cutFailed
 }
 
 func (p *parser) apply(a *prattAttempt) {
 	p.pos, p.env = a.end, a.env
-	p.recovered = append(p.recovered, a.errs...)
+	p.recovered = p.copyErrors(p.recovered, a.errs)
 }
 
 // prattParse parses an expression with operators that bind tighter than min. Each level of its
@@ -2121,6 +2233,7 @@ func (p *parser) prattNud(r *rule) (*Node, bool) {
 		return nil, false
 	}
 	for _, o := range pr.operands {
+		p.stepWork()
 		prevFrame, prevCut := p.frame, p.cut
 		f := p.newFrame(len(o.scope))
 		p.frame, p.cut = f, false
@@ -2204,17 +2317,1064 @@ func (p *parser) prattBuild(r *rule, a *prattAttempt, lhs, rhs *Node) *Node {
 	return p.newNode(Node{kind: r.kinds.reserved[kindOperator.reserved], Start: int32(start), End: int32(end), Children: kids, Fields: Fields{{"operator", a.op.id}}})
 }
 
+func rtUnaryWork(p *parser, op string, x any) any {
+	switch op {
+	case "-":
+		if i, ok := x.(int); ok {
+			return -i
+		}
+	case "!":
+		if b, ok := x.(bool); ok {
+			return !b
+		}
+	}
+	p.evalErrorf("invalid operand %s for unary %s", typeName(x), op)
+	return nil
+}
+
+func rtBoolWork(p *parser, op string, v any) bool {
+	b, ok := v.(bool)
+	if !ok {
+		p.evalErrorf("invalid operand %s for %s", typeName(v), op)
+	}
+	return b
+}
+
+func rtBinaryWork(p *parser, op string, l, r any) any {
+	switch op {
+	case "==":
+		return rtEqual(l, r)
+	case "!=":
+		return !rtEqual(l, r)
+	}
+	switch l := l.(type) {
+	case int:
+		if r, ok := r.(int); ok {
+			switch op {
+			case "+":
+				return l + r
+			case "-":
+				return l - r
+			case "*":
+				return l * r
+			case "/", "%":
+				if r == 0 {
+					p.evalErrorf("division by zero")
+				}
+				if op == "/" {
+					return l / r
+				}
+				return l % r
+			case "<":
+				return l < r
+			case "<=":
+				return l <= r
+			case ">":
+				return l > r
+			case ">=":
+				return l >= r
+			}
+		}
+	case string:
+		if r, ok := r.(string); ok {
+			switch op {
+			case "+":
+				return l + r
+			case "<":
+				return l < r
+			case "<=":
+				return l <= r
+			case ">":
+				return l > r
+			case ">=":
+				return l >= r
+			}
+		}
+	}
+	p.evalErrorf("invalid operands %s and %s for %s", typeName(l), typeName(r), op)
+	return nil
+}
+
+func listItemsWork(p *parser, fn string, v any) []*Node {
+	switch x := v.(type) {
+	case nil:
+		return nil
+	case *Node:
+		if x == nil {
+			return nil
+		}
+		return x.Children
+	}
+	p.evalErrorf("%s: expected a list, got %s", fn, typeName(v))
+	return nil
+}
+
+func asNodeWork(p *parser, fn string, v any) *Node {
+	switch x := v.(type) {
+	case nil:
+		return nil
+	case *Node:
+		return x
+	}
+	p.evalErrorf("%s: list elements must be nodes, got %s", fn, typeName(v))
+	return nil
+}
+
+// --- Invocation work controls ---
+
+// WorkLimits bounds cumulative engine work for one parse invocation. A zero
+// limit leaves that counter unlimited.
+type WorkLimits struct {
+	MaxInputWork uint64
+	MaxSteps     uint64
+}
+
+// ErrWorkLimit is matched by errors.Is for any WorkLimitError.
+var ErrWorkLimit = errors.New("parse work limit exceeded")
+
+// WorkLimitKind identifies the counter that exhausted its limit.
+type WorkLimitKind uint8
+
+const (
+	InputWorkLimit WorkLimitKind = iota
+	StepWorkLimit
+)
+
+// WorkLimitError reports a reservation that would exceed one work limit.
+// Used is the counter value before the rejected reservation; Requested is the
+// complete atomic reservation that could not be made.
+type WorkLimitError struct {
+	Kind      WorkLimitKind
+	Limit     uint64
+	Used      uint64
+	Requested uint64
+}
+
+func (e *WorkLimitError) Error() string {
+	if e == nil {
+		return ErrWorkLimit.Error()
+	}
+	name := "input work"
+	if e.Kind == StepWorkLimit {
+		name = "steps"
+	}
+	return fmt.Sprintf("parse %s limit exceeded: limit %d, used %d, requested %d", name, e.Limit, e.Used, e.Requested)
+}
+
+// Is reports whether target is the work-limit sentinel.
+func (e *WorkLimitError) Is(target error) bool { return e != nil && target == ErrWorkLimit }
+
+const workControlsEnabled = true
+
+const (
+	workCheckStepInterval  = uint64(256)
+	workCheckInputInterval = uint64(4096)
+)
+
+// workControl is private state for a single parser invocation. Callers must
+// split long operations into bounded reservations so cancellation can be
+// observed between chunks.
+type workControl struct {
+	ctx    context.Context
+	limits WorkLimits
+
+	inputUsed uint64
+	stepsUsed uint64
+
+	inputSinceCheck uint64
+	stepsSinceCheck uint64
+}
+
+// newWorkControl returns nil when neither cancellation nor a finite budget is
+// active. A nil context is equivalent to context.Background.
+func newWorkControl(ctx context.Context, limits WorkLimits) *workControl {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if ctx.Done() == nil && limits.MaxInputWork == 0 && limits.MaxSteps == 0 {
+		return nil
+	}
+	return &workControl{ctx: ctx, limits: limits}
+}
+
+// contextPanic attributes a panic to caller-owned context code rather than VM
+// execution. Parse boundaries re-raise its original value after cleanup.
+type contextPanic struct{ value any }
+
+func contextErr(ctx context.Context) error {
+	defer func() {
+		if x := recover(); x != nil {
+			switch x.(type) {
+			case fatal, contextPanic:
+				panic(x) // preserve engine interruption and an already attributed panic
+			default:
+				panic(contextPanic{value: x})
+			}
+		}
+	}()
+	return ctx.Err()
+}
+
+// check observes cancellation at an explicit engine checkpoint. It is safe on
+// a nil receiver.
+func (c *workControl) check() {
+	if c == nil || c.ctx == nil {
+		return
+	}
+	if err := contextErr(c.ctx); err != nil {
+		panic(fatal{err: err})
+	}
+	c.inputSinceCheck = 0
+	c.stepsSinceCheck = 0
+}
+
+// charge atomically reserves input-work and step units. Cancellation wins when
+// it is observed at a poll or when either reservation would fail; otherwise
+// input-work exhaustion takes priority over step exhaustion. A failed
+// reservation leaves both counters unchanged.
+func (c *workControl) charge(inputWork, steps uint64) {
+	if !workControlsEnabled || c == nil {
+		return
+	}
+
+	inputExceeded := exceedsLimit(c.inputUsed, inputWork, c.limits.MaxInputWork)
+	stepsExceeded := exceedsLimit(c.stepsUsed, steps, c.limits.MaxSteps)
+	poll := reachesInterval(c.inputSinceCheck, inputWork, workCheckInputInterval) ||
+		reachesInterval(c.stepsSinceCheck, steps, workCheckStepInterval)
+
+	// Check on each poll boundary and on a failed reservation so an already
+	// canceled invocation wins over a simultaneously exhausted budget.
+	if poll || inputExceeded || stepsExceeded {
+		if c.ctx != nil {
+			if err := contextErr(c.ctx); err != nil {
+				panic(fatal{err: err})
+			}
+		}
+	}
+	if inputExceeded {
+		panic(fatal{err: &WorkLimitError{
+			Kind: InputWorkLimit, Limit: c.limits.MaxInputWork,
+			Used: c.inputUsed, Requested: inputWork,
+		}})
+	}
+	if stepsExceeded {
+		panic(fatal{err: &WorkLimitError{
+			Kind: StepWorkLimit, Limit: c.limits.MaxSteps,
+			Used: c.stepsUsed, Requested: steps,
+		}})
+	}
+
+	c.inputUsed = saturatingAdd(c.inputUsed, inputWork)
+	c.stepsUsed = saturatingAdd(c.stepsUsed, steps)
+	if poll {
+		c.inputSinceCheck = 0
+		c.stepsSinceCheck = 0
+		return
+	}
+	c.inputSinceCheck = saturatingAdd(c.inputSinceCheck, inputWork)
+	c.stepsSinceCheck = saturatingAdd(c.stepsSinceCheck, steps)
+}
+
+// exceedsLimit checks a reservation without computing a potentially
+// overflowing used+requested sum. A zero limit is unlimited.
+func exceedsLimit(used, requested, limit uint64) bool {
+	return limit != 0 && (used > limit || requested > limit-used)
+}
+
+// reachesInterval checks whether adding requested would meet or cross interval
+// without overflowing. Progress counters are kept below their interval.
+func reachesInterval(used, requested, interval uint64) bool {
+	return used >= interval || requested >= interval-used
+}
+
+func saturatingAdd(a, b uint64) uint64 {
+	if math.MaxUint64-a < b {
+		return math.MaxUint64
+	}
+	return a + b
+}
+
+// Work helpers keep long engine-owned scans between bounded reservations.
+func (p *parser) inputWork(n uint64) {
+	if workControlsEnabled {
+		p.control.charge(n, 1)
+	}
+}
+func (p *parser) stepWork() {
+	if workControlsEnabled {
+		p.control.charge(0, 1)
+	}
+}
+
+func (p *parser) setControlledSource(s string) {
+	n, valid := 0, len(s) <= 1<<31-1
+	for off := 0; off < len(s); {
+		p.inputWork(uint64(min(utf8.UTFMax, len(s)-off)))
+		r, size := utf8.DecodeRuneInString(s[off:])
+		if r == utf8.RuneError && size == 1 {
+			valid = false
+		}
+		n++
+		off += size
+	}
+	if cap(p.in) >= n {
+		p.in = p.in[:n]
+	} else {
+		p.in = make([]rune, n)
+	}
+	p.n = n
+	var offs []int32
+	if valid {
+		if cap(p.offs) >= n+1 {
+			offs = p.offs[:n+1]
+		} else {
+			offs = make([]int32, n+1)
+		}
+		offs[n] = int32(len(s))
+	}
+	for off, i := 0, 0; off < len(s); i++ {
+		p.inputWork(uint64(min(utf8.UTFMax, len(s)-off)))
+		r, size := utf8.DecodeRuneInString(s[off:])
+		p.in[i] = r
+		if valid {
+			offs[i] = int32(off)
+		}
+		off += size
+	}
+	p.src, p.offs = "", nil
+	if valid {
+		p.src, p.offs = s, offs
+	}
+}
+
+func (p *parser) literalHasReplacement(rs []rune) bool {
+	if !workControlsEnabled || p.control == nil {
+		return slices.Contains(rs, utf8.RuneError)
+	}
+	for _, r := range rs {
+		p.stepWork()
+		if r == utf8.RuneError {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *parser) hasLiteralPrefix(text string) bool {
+	src := p.bs[p.pos:]
+	if !workControlsEnabled || p.control == nil {
+		return strings.HasPrefix(src, text)
+	}
+	if len(src) < len(text) {
+		p.inputWork(1)
+		return false
+	}
+	for off := 0; off < len(text); {
+		n := min(4096, len(text)-off)
+		p.inputWork(uint64(n))
+		if src[off:off+n] != text[off:off+n] {
+			return false
+		}
+		off += n
+	}
+	return true
+}
+
+// parseConverted shares admission and counters with a Node-to-typed converter.
+func parseConverted[T any](r *rule, seen int, input string, o parseOptions, conv func(*Node, *workControl) T) (res T, err error) {
+	defer recoverParse(&res, &err)
+	o = prepareOptions(o)
+	n, err := parseResolvedWork(r, seen, input, o)
+	o.control.check()
+	res = conv(n, o.control)
+	o.control.check()
+	return res, err
+}
+
+type workRange struct{ lo, hi rune }
+
+func (p *parser) rejectWorkClass(ch rune, ranges []workRange, negated bool) bool {
+	for _, r := range ranges {
+		p.stepWork()
+		if ch >= r.lo && ch <= r.hi {
+			return negated
+		}
+	}
+	return !negated
+}
+
+// Value strings may be action-created, so their scans consume steps alone.
+const valueWorkChunk = 128
+
+func (p *parser) valueWork(n int) {
+	if workControlsEnabled {
+		p.control.charge(0, uint64(n))
+	}
+}
+
+func (p *parser) compareText(l, r string) int {
+	if !workControlsEnabled || p.control == nil {
+		return strings.Compare(l, r)
+	}
+	for off, end := 0, min(len(l), len(r)); off < end; {
+		n := min(valueWorkChunk, end-off)
+		p.valueWork(2 * n)
+		if order := strings.Compare(l[off:off+n], r[off:off+n]); order != 0 {
+			return order
+		}
+		off += n
+	}
+	if len(l) < len(r) {
+		return -1
+	}
+	if len(l) > len(r) {
+		return 1
+	}
+	return 0
+}
+
+func (p *parser) textEqual(l, r string) bool {
+	return len(l) == len(r) && p.compareText(l, r) == 0
+}
+
+// stringBinary handles only string pairs; callers retain their existing
+// runtime's scalar, pointer-identity and invalid-operand behavior.
+func (p *parser) stringBinary(op string, l, r any) (any, bool) {
+	if !workControlsEnabled || p.control == nil {
+		return nil, false
+	}
+	ls, lok := l.(string)
+	rs, rok := r.(string)
+	if !lok || !rok {
+		return nil, false
+	}
+	switch op {
+	case "==":
+		return p.textEqual(ls, rs), true
+	case "!=":
+		return !p.textEqual(ls, rs), true
+	case "<":
+		return p.compareText(ls, rs) < 0, true
+	case "<=":
+		return p.compareText(ls, rs) <= 0, true
+	case ">":
+		return p.compareText(ls, rs) > 0, true
+	case ">=":
+		return p.compareText(ls, rs) >= 0, true
+	case "+":
+		var out strings.Builder
+		out.Grow(checkedTextSize(len(ls), len(rs)))
+		for _, s := range [...]string{ls, rs} {
+			for off := 0; off < len(s); {
+				n := min(valueWorkChunk, len(s)-off)
+				p.valueWork(n)
+				out.WriteString(s[off : off+n])
+				off += n
+			}
+		}
+		return out.String(), true
+	}
+	return nil, false
+}
+
+func (c *actx) binary(op string, l, r any) any {
+	if v, ok := c.p.stringBinary(op, l, r); ok {
+		return v
+	}
+	if workControlsEnabled && c.p.control != nil {
+		return rtBinaryWork(c.p, op, l, r)
+	}
+	return rtBinary(op, l, r)
+}
+
+// detachedText constructs normalized text when malformed source bytes prevent
+// slicing the original string. Allocation and Grow remain nonpreemptible.
+func (p *parser) detachedText(start, end int) string {
+	src := p.in[start:end]
+	size := 0
+	for off := 0; off < len(src); {
+		n := min(valueWorkChunk, len(src)-off)
+		p.control.charge(uint64(n), uint64(n))
+		for _, r := range src[off : off+n] {
+			width := utf8.RuneLen(r)
+			if width < 0 {
+				width = utf8.RuneLen(utf8.RuneError)
+			}
+			size = checkedTextSize(size, width)
+		}
+		off += n
+	}
+	var out strings.Builder
+	out.Grow(size)
+	for off := 0; off < len(src); {
+		n := min(valueWorkChunk, len(src)-off)
+		p.control.charge(uint64(n), uint64(n))
+		for _, r := range src[off : off+n] {
+			out.WriteRune(r)
+		}
+		off += n
+	}
+	return out.String()
+}
+
+func checkedTextSize(size, width int) int {
+	if size < 0 || width < 0 || size > int(^uint(0)>>1)-width {
+		panic(fatal{err: fmt.Errorf("input text exceeds maximum string size")})
+	}
+	return size + width
+}
+
+func copyWork[T any](p *parser, dst, src []T) {
+	if !workControlsEnabled || p.control == nil {
+		copy(dst, src)
+		return
+	}
+	// Engine callers use disjoint storage; overlapping moves need their own
+	// direction-aware implementation rather than a chunked forward copy.
+	for off, end := 0, min(len(dst), len(src)); off < end; {
+		n := min(valueWorkChunk, end-off)
+		p.valueWork(n)
+		copy(dst[off:off+n], src[off:off+n])
+		off += n
+	}
+}
+
+func appendWork[T any](p *parser, dst, src []T) []T {
+	if !workControlsEnabled || p.control == nil {
+		return append(dst, src...)
+	}
+	for off := 0; off < len(src); {
+		n := min(valueWorkChunk, len(src)-off)
+		p.valueWork(n)
+		dst = append(dst, src[off:off+n]...)
+		off += n
+	}
+	return dst
+}
+
+// equalExpected preserves the native snapshot-identity fast path while charging
+// each comparison under active work controls. Snapshots are never modified.
+func (p *parser) equalExpected(a, b []expID) bool {
+	if !workControlsEnabled || p.control == nil {
+		return slices.Equal(a, b)
+	}
+	if len(a) != len(b) {
+		return false
+	}
+	for i, x := range a {
+		p.stepWork()
+		if x != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// sortExpected sorts a newly constructed, parser-owned diagnostic. Comparisons
+// and explicit moves are bounded; allocation and GC remain nonpreemptible.
+// Published or memoized errors must never be passed to this helper.
+func (p *parser) sortExpected(values []string) {
+	if !workControlsEnabled || p.control == nil {
+		sort.Strings(values)
+		return
+	}
+	if len(values) < 2 {
+		return
+	}
+	src, dst := values, make([]string, len(values))
+	for width := 1; width < len(values); {
+		for lo := 0; lo < len(values); {
+			mid := lo + min(width, len(values)-lo)
+			hi := mid + min(width, len(values)-mid)
+			i, j, k := lo, mid, lo
+			for i < mid && j < hi {
+				order := p.compareText(src[i], src[j])
+				p.stepWork()
+				if order <= 0 {
+					dst[k] = src[i]
+					i++
+				} else {
+					dst[k] = src[j]
+					j++
+				}
+				k++
+			}
+			copyWork(p, dst[k:k+mid-i], src[i:mid])
+			k += mid - i
+			copyWork(p, dst[k:hi], src[j:hi])
+			lo = hi
+		}
+		src, dst = dst, src
+		// Stop before doubling can overflow; this pass merged the last run.
+		if width >= len(values)-width {
+			break
+		}
+		width *= 2
+	}
+	if &src[0] != &values[0] {
+		copyWork(p, values, src)
+	}
+}
+
+// recoveryErrorText is only for engine-owned Error-node materialization.
+// Public post-return Error/Message calls remain caller work. The local builder
+// owns its immutable output and is never pooled or written after return.
+func (p *parser) recoveryErrorText(e *SyntaxError) string {
+	if !workControlsEnabled || p.control == nil {
+		return e.Error()
+	}
+	prefix := fmt.Sprintf("%d:%d: ", e.Line, e.Col) // bounded integer formatting
+	intro, sep := "", "; "
+	parts := e.Messages
+	if len(parts) == 0 {
+		parts, sep = e.Expected, ", "
+		intro = "syntax error"
+		if len(parts) > 0 {
+			intro += ": expected "
+		}
+	}
+	size := checkedDiagnosticSize(len(prefix), len(intro))
+	for i, part := range parts {
+		p.stepWork()
+		if i > 0 {
+			size = checkedDiagnosticSize(size, len(sep))
+		}
+		size = checkedDiagnosticSize(size, len(part))
+	}
+	var out strings.Builder
+	out.Grow(size)
+	p.writeDiagnosticText(&out, prefix)
+	p.writeDiagnosticText(&out, intro)
+	for i, part := range parts {
+		p.stepWork()
+		if i > 0 {
+			p.writeDiagnosticText(&out, sep)
+		}
+		p.writeDiagnosticText(&out, part)
+	}
+	return out.String()
+}
+
+func (p *parser) writeDiagnosticText(out *strings.Builder, text string) {
+	for off := 0; off < len(text); {
+		n := min(valueWorkChunk, len(text)-off)
+		p.valueWork(n)
+		out.WriteString(text[off : off+n])
+		off += n
+	}
+}
+
+func checkedDiagnosticSize(size, width int) int {
+	if size < 0 || width < 0 || size > int(^uint(0)>>1)-width {
+		panic(fatal{err: fmt.Errorf("diagnostic text exceeds maximum string size")})
+	}
+	return size + width
+}
+
+// makeControlledError owns any partially assembled diagnostic until completion.
+// Interrupted invocations release their partial line table with parser scratch.
+func (p *parser) makeControlledError(pos int, expected []expID) *SyntaxError {
+	e := &SyntaxError{Pos: pos}
+	for _, x := range expected {
+		p.stepWork()
+		if x&msgBit != 0 {
+			e.Messages = append(e.Messages, descs[x & ^msgBit])
+		} else {
+			e.Expected = append(e.Expected, descs[x])
+		}
+	}
+	p.sortExpected(e.Expected)
+	if p.lines == nil {
+		p.lines = append(p.lines, 0)
+		for i := 0; i < p.n; i++ {
+			p.inputWork(1)
+			if p.unit == Bytes && p.bs[i] == '\n' || p.unit == CodePoints && p.in[i] == '\n' {
+				p.lines = append(p.lines, i+1)
+			}
+		}
+	}
+	pos = min(pos, p.n)
+	lo, hi := 0, len(p.lines)
+	for lo < hi {
+		p.stepWork()
+		mid := lo + (hi-lo)/2
+		if p.lines[mid] < pos+1 {
+			lo = mid + 1
+		} else {
+			hi = mid
+		}
+	}
+	e.Line, e.Col = lo, pos-p.lines[lo-1]+1
+	p.control.check()
+	return e
+}
+
+func (p *parser) copyErrors(dst, src []*SyntaxError) []*SyntaxError { return appendWork(p, dst, src) }
+
+// rawValueEqual preserves the interface equality of memo keys and bindings.
+// In particular, a typed nil pointer differs from a nil interface. Action
+// valueEqual has different nil semantics and must not be used for these keys.
+func (p *parser) rawValueEqual(l, r any) bool {
+	if s, ok := l.(string); ok {
+		t, ok := r.(string)
+		return ok && len(s) == len(t) && p.compareText(s, t) == 0
+	}
+	return l == r
+}
+
+func (p *parser) memoKeyEqual(l, r []any) bool {
+	if len(l) != len(r) {
+		return false
+	}
+	for i, v := range l {
+		p.stepWork()
+		if !p.rawValueEqual(v, r[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (p *parser) bindControlled(name string, val any) {
+	p.stepWork()
+	e := p.env
+	if p.bound == nil {
+		p.bound = make(map[string]bool)
+	}
+	if e == nil {
+		p.bound[name] = true
+		p.env = &env{name: name, val: val}
+		return
+	}
+	if p.rawValueEqual(e.name, name) {
+		if !p.rawValueEqual(e.val, val) {
+			p.env = &env{name: name, val: val, next: e.next}
+		}
+		return
+	}
+	// Map hashing and allocation are runtime operations that cannot be split
+	// into engine checkpoints. Explicit name comparisons above/below can be.
+	if !p.bound[name] {
+		p.bound[name] = true
+		p.env = &env{name: name, val: val, next: e}
+		return
+	}
+	old := e
+	for old != nil {
+		p.stepWork()
+		if p.rawValueEqual(old.name, name) {
+			break
+		}
+		old = old.next
+	}
+	if old == nil {
+		p.env = &env{name: name, val: val, next: e}
+		return
+	}
+	if p.rawValueEqual(old.val, val) {
+		return
+	}
+	head := &env{name: name, val: val}
+	tail := head
+	for cur := e; cur != old; cur = cur.next {
+		p.stepWork()
+		tail.next = &env{name: cur.name, val: cur.val}
+		tail = tail.next
+	}
+	tail.next = old.next
+	// Saved environments are immutable; only publish a completed prefix.
+	p.env = head
+}
+
+func clearWork[T any](p *parser, values []T) {
+	if !workControlsEnabled || p.control == nil {
+		clear(values)
+		return
+	}
+	for off := 0; off < len(values); {
+		n := min(valueWorkChunk, len(values)-off)
+		p.valueWork(n)
+		clear(values[off : off+n])
+		off += n
+	}
+}
+
+func (p *parser) controlledEnvValues(names []string) []any {
+	p.stepWork()
+	if len(names) == 0 {
+		return nil
+	}
+	if p.env == nil && len(names) <= len(noVals) {
+		return noVals[:len(names):len(names)]
+	}
+	vals := make([]any, len(names))
+	for i, name := range names {
+		p.stepWork()
+		for e := p.env; e != nil; e = e.next {
+			p.stepWork()
+			if p.rawValueEqual(e.name, name) {
+				vals[i] = e.val
+				break
+			}
+		}
+	}
+	return vals
+}
+
+func (p *parser) lookupEnvControlled(name string) (any, bool) {
+	for e := p.env; e != nil; e = e.next {
+		p.stepWork()
+		if p.rawValueEqual(e.name, name) {
+			return e.val, true
+		}
+	}
+	return nil, false
+}
+
+func (p *parser) memoGet(rule, pos, min int, key []any) *memoEntry {
+	if !workControlsEnabled || p.control == nil {
+		return p.memo.get(rule, pos, min, key)
+	}
+	p.stepWork()
+	if pos >= len(p.memo.slots) {
+		return nil
+	}
+	for e := p.memo.slots[pos]; e != nil; e = e.next {
+		p.stepWork()
+		if e.rule == int32(rule) && e.min == int32(min) && p.memoKeyEqual(e.env, key) {
+			return e
+		}
+	}
+	return nil
+}
+
+func (p *parser) memoPut(rule, pos, min int, key []any, e *memoEntry) {
+	if !workControlsEnabled || p.control == nil {
+		p.memo.put(rule, pos, min, key, e)
+		return
+	}
+	p.stepWork()
+	slots := p.memo.slots
+	if pos >= len(slots) {
+		if pos < cap(slots) {
+			slots = slots[:pos+1]
+		} else {
+			grown := make([]*memoEntry, pos+1, max(2*cap(slots), pos+1, 64))
+			copyWork(p, grown, slots)
+			slots = grown
+		}
+	}
+	link := &slots[pos]
+	var replaced *memoEntry
+	for x := *link; x != nil; link, x = &x.next, x.next {
+		p.stepWork()
+		if x == e || x.rule == int32(rule) && x.min == int32(min) && p.memoKeyEqual(x.env, key) {
+			replaced = x
+			break
+		}
+	}
+	p.stepWork()
+	// Commit the completed key/slot array and link together, with no further
+	// checkpoint between mutations. A resident self-entry retains its successor.
+	p.memo.slots = slots
+	e.rule, e.min, e.env = int32(rule), int32(min), key
+	if replaced != nil {
+		e.next = replaced.next
+		*link = e
+		return
+	}
+	e.next = slots[pos]
+	slots[pos] = e
+}
+
+func (p *parser) controlledFirstCall(r *rule) bool {
+	if r.seen < 0 {
+		return false
+	}
+	p.stepWork()
+	t := &p.memo
+	if t.calls == nil {
+		t.calls = make([]seenCalls, t.stride)
+	}
+	if !t.calls[r.seen].eager {
+		w := (p.pos*t.stride + r.seen) >> 6
+		if w >= len(t.seen) {
+			n := len(t.seen) + max(w+1-len(t.seen), len(t.seen), 64)
+			seen := t.seen
+			if n <= cap(seen) {
+				seen = seen[:n]
+				clearWork(p, seen[len(t.seen):])
+			} else {
+				seen = make([]uint64, n)
+				copyWork(p, seen, t.seen)
+			}
+			t.seen = seen
+		}
+	}
+	return p.firstCallOrdinary(r)
+}
+
+// Graph helpers account for normal construction and capture restoration.
+// Release/recycle, dropKids/dropTrail and arena reset remain unconditional.
+func (p *parser) valueField(fs Fields, name string) (any, bool) {
+	if !workControlsEnabled || p.control == nil {
+		return fs.Get(name)
+	}
+	for _, f := range fs {
+		p.stepWork()
+		if p.rawValueEqual(f.Name, name) {
+			return f.Value, true
+		}
+	}
+	return nil, false
+}
+func (p *parser) setValueField(fs *Fields, name string, v any) {
+	if !workControlsEnabled || p.control == nil {
+		fs.set(name, v)
+		return
+	}
+	for i := range *fs {
+		p.stepWork()
+		if p.rawValueEqual((*fs)[i].Name, name) {
+			(*fs)[i].Value = v
+			return
+		}
+	}
+	p.stepWork()
+	*fs = append(*fs, NodeField{name, v})
+}
+func (p *parser) pushKid(v *Node) { p.stepWork(); p.kidStack = append(p.kidStack, v) }
+func (p *parser) undoCaptures(from int) {
+	for i := len(p.trail) - 1; i >= from; i-- {
+		p.stepWork()
+		u := p.trail[i]
+		u.f.vals[u.slot] = u.old
+	}
+}
+
+func (c *actx) fold(fn string, right bool, acc, list any, f func(acc, item any) any) any {
+	if !workControlsEnabled || c.p.control == nil {
+		return rtFold(fn, right, acc, list, f)
+	}
+	items := c.listItems(fn, list)
+	for i := range items {
+		c.p.stepWork()
+		item := items[i]
+		if right {
+			item = items[len(items)-1-i]
+		}
+		acc = f(acc, nodeOrNil(item))
+	}
+	return acc
+}
+
+// actionErrorText accounts for eager engine-owned error text, including errors
+// discarded by predicates. Counter reservations precede each fragment copy.
+func (p *parser) actionErrorText(parts ...string) string {
+	size := 0
+	for _, part := range parts {
+		p.stepWork()
+		size = checkedDiagnosticSize(size, len(part))
+	}
+	var out strings.Builder
+	out.Grow(size)
+	for _, part := range parts {
+		p.stepWork()
+		p.writeDiagnosticText(&out, part)
+	}
+	return out.String()
+}
+
+// evalErrorf accepts the engine's fixed %s/%d leaf formats. The inactive path
+// retains fmt semantics; active formatting splits known pieces before copying.
+func (p *parser) evalErrorf(format string, args ...any) {
+	if !workControlsEnabled || p == nil || p.control == nil {
+		evalErrorf(format, args...)
+		return
+	}
+	parts := make([]string, 0, 2*len(args)+1)
+	arg, start := 0, 0
+	for i := 0; i < len(format); i++ {
+		if format[i] != '%' {
+			continue
+		}
+		parts = append(parts, format[start:i])
+		i++
+		if i >= len(format) || arg >= len(args) {
+			panic("invalid internal action-error format")
+		}
+		switch format[i] {
+		case 's':
+			parts = append(parts, args[arg].(string))
+		case 'd':
+			parts = append(parts, strconv.Itoa(args[arg].(int)))
+		default:
+			panic("unsupported internal action-error format")
+		}
+		arg++
+		start = i + 1
+	}
+	if arg != len(args) {
+		panic("invalid internal action-error arguments")
+	}
+	parts = append(parts, format[start:])
+	panic(evalError{p.actionErrorText(parts...)})
+}
+func (p *parser) wrapEvalError(where, message string) error {
+	if !workControlsEnabled || p.control == nil {
+		return fmt.Errorf("action in %s: %s", where, message)
+	}
+	return errors.New(p.actionErrorText("action in ", where, ": ", message))
+}
+
+func (c *actx) unary(op string, v any) any {
+	if !workControlsEnabled || c.p.control == nil {
+		return rtUnary(op, v)
+	}
+	return rtUnaryWork(c.p, op, v)
+}
+func (c *actx) and(l any, r func() any) any {
+	if !workControlsEnabled || c.p.control == nil {
+		return rtAnd(l, r)
+	}
+	if !rtBoolWork(c.p, "&&", l) {
+		return false
+	}
+	return rtBoolWork(c.p, "&&", r())
+}
+func (c *actx) or(l any, r func() any) any {
+	if !workControlsEnabled || c.p.control == nil {
+		return rtOr(l, r)
+	}
+	if rtBoolWork(c.p, "||", l) {
+		return true
+	}
+	return rtBoolWork(c.p, "||", r())
+}
+func (c *actx) listItems(fn string, v any) []*Node {
+	if !workControlsEnabled || c.p.control == nil {
+		return listItems(fn, v)
+	}
+	return listItemsWork(c.p, fn, v)
+}
+func (c *actx) asNode(fn string, v any) *Node {
+	if !workControlsEnabled || c.p.control == nil {
+		return asNode(fn, v)
+	}
+	return asNodeWork(c.p, fn, v)
+}
+
 // --- Generated code ---
 
-// Parse parses the whole input with the rule main. Options select position units and the rule-call limit.
+// Parse parses the whole input with the rule main. Options select position units, depth, cancellation and work limits.
 // If the parse recovered from errors with #recover, it returns the node together with SyntaxErrors.
 func Parse(input string, opts ...ParseOption) (*Node, error) {
 	return parse(rules[0], nseen, input, opts)
 }
 
 // Recognize checks that the whole input matches the rule main without building a tree, and returns the
-// syntax errors Parse would return (SyntaxErrors for errors recovered with #recover). Actions are not
-// evaluated, so it does not report runtime errors in actions.
+// syntax errors Parse would return (SyntaxErrors for errors recovered with #recover). Actions needed by
+// predicates are evaluated and can report runtime errors; other actions are skipped.
 func Recognize(input string, opts ...ParseOption) error {
 	_, err := parse(recRules[0], recNseen, input, opts)
 	return err
@@ -2460,15 +3620,28 @@ func tparse[T any](r *trule, input string, opts []ParseOption, ext any, conv fun
 }
 
 // tparseResolved consumes options already applied by the public entry point.
-func tparseResolved[T any](r *trule, input string, o parseOptions, ext any, conv func(any) T) (T, error) {
+func tparseResolved[T any](r *trule, input string, o parseOptions, ext any, conv func(any) T) (res T, err error) {
+	defer recoverParse(&res, &err)
+	o = prepareOptions(o)
 	p, _ := tpool.Get().(*tparser)
 	if p == nil {
 		p = &tparser{parser: &parser{}}
 	}
+	defer func() { p.recycle(); tpool.Put(p) }()
+	p.control = o.control
+	if o.control != nil {
+		if target, ok := ext.(interface{ setWorkControl(*workControl) }); ok {
+			target.setWorkControl(o.control)
+			defer target.setWorkControl(nil)
+		}
+	}
 	v, err := p.run(r, input, o, ext)
-	res := conv(v)
-	p.recycle()
-	tpool.Put(p)
+	if v == nil {
+		return res, err
+	}
+	o.control.check()
+	res = conv(v)
+	o.control.check()
 	return res, err
 }
 
@@ -2489,7 +3662,7 @@ func (p *tparser) run(r *trule, input string, o parseOptions, ext any) (v any, e
 			case fatal:
 				v, err = nil, x.err
 			case evalError: // in an action (predicates recover their own)
-				v, err = nil, fmt.Errorf("action in %s: %s", p.where, x.msg)
+				v, err = nil, p.wrapEvalError(p.where, x.msg)
 			default:
 				panic(x)
 			}
@@ -2501,16 +3674,23 @@ func (p *tparser) run(r *trule, input string, o parseOptions, ext any) (v any, e
 	} else {
 		v, ok = p.call(r, 0)
 	}
+	// Normal completion polls even for a nil typed value. Fatal unwinding
+	// returns through the recovery above without replacing its established error.
+	p.control.check()
 	if ok && p.pos == p.n {
 		if len(p.recovered) > 0 {
-			return v, SyntaxErrors(append([]*SyntaxError(nil), p.recovered...))
+			errors := p.copyErrors(nil, p.recovered)
+			p.control.check()
+			return v, SyntaxErrors(errors)
 		}
 		return v, nil
 	}
 	if ok {
 		p.expect(p.pos, idEndInput)
 	}
-	return nil, p.makeError(p.farthest, p.exp[p.expBase:])
+	e := p.makeError(p.farthest, p.exp[p.expBase:])
+	p.control.check()
+	return nil, e
 }
 
 // tpool keeps parsers of the typed runtime, with their scratch memory, for later parses. What a
@@ -2635,10 +3815,7 @@ func (p *tparser) reset(m mark) {
 	p.pos = m.pos
 	p.env = m.env
 	p.recovered = p.recovered[:m.recovered]
-	for i := len(p.trail) - 1; i >= m.trail; i-- {
-		u := p.trail[i]
-		u.f.vals[u.slot] = u.old
-	}
+	p.undoCaptures(m.trail)
 	p.dropTrail(m.trail)
 }
 
@@ -2650,6 +3827,7 @@ func (p *tparser) dropTrail(base int) {
 }
 
 func (p *tparser) setCapture(slot int, v any) {
+	p.stepWork()
 	p.trail = append(p.trail, tundo{f: p.frame, slot: slot, old: p.frame.vals[slot]})
 	p.frame.vals[slot] = v
 }
@@ -2657,12 +3835,14 @@ func (p *tparser) setCapture(slot int, v any) {
 // --- Allocation ---
 
 func (p *tparser) newNode(typ string, start, end int, kids []any) *tnode {
+	p.stepWork()
 	n := p.nodes.one()
 	*n = tnode{Span: Span{start, end}, typ: typ, kids: kids, fresh: true}
 	return n
 }
 
 func (p *tparser) newMatch(start, end int, text string, fresh bool) *tmatch {
+	p.stepWork()
 	if len(p.matches) == 0 {
 		p.matches = make([]tmatch, nodeChunk)
 	}
@@ -2687,7 +3867,7 @@ func (p *tparser) tfields(n int) []tfield {
 // kids returns p.kidStack[base:] as a value list and pops it.
 func (p *tparser) kids(base int) []any {
 	ks := p.newVals(len(p.kidStack) - base)
-	copy(ks, p.kidStack[base:])
+	copyWork(p.parser, ks, p.kidStack[base:])
 	p.dropKids(base)
 	return ks
 }
@@ -2732,7 +3912,24 @@ type tmemoEntry struct {
 	growing  bool
 }
 
-func (p *tparser) memoGet(rule, pos, min int, env []any) *tmemoEntry {
+func (p *tparser) memoGet(rule, pos, min int, key []any) *tmemoEntry {
+	if !workControlsEnabled || p.control == nil {
+		return p.memoGetOrdinary(rule, pos, min, key)
+	}
+	p.stepWork()
+	if pos >= len(p.memoSlots) {
+		return nil
+	}
+	for e := p.memoSlots[pos]; e != nil; e = e.next {
+		p.stepWork()
+		if e.rule == int32(rule) && e.min == int32(min) && p.memoKeyEqual(e.env, key) {
+			return e
+		}
+	}
+	return nil
+}
+
+func (p *tparser) memoGetOrdinary(rule, pos, min int, env []any) *tmemoEntry {
 	if pos >= len(p.memoSlots) {
 		return nil
 	}
@@ -2744,7 +3941,44 @@ func (p *tparser) memoGet(rule, pos, min int, env []any) *tmemoEntry {
 	return nil
 }
 
-func (p *tparser) memoPut(rule, pos, min int, env []any, e *tmemoEntry) {
+func (p *tparser) memoPut(rule, pos, min int, key []any, e *tmemoEntry) {
+	if !workControlsEnabled || p.control == nil {
+		p.memoPutOrdinary(rule, pos, min, key, e)
+		return
+	}
+	p.stepWork()
+	slots := p.memoSlots
+	if pos >= len(slots) {
+		if pos < cap(slots) {
+			slots = slots[:pos+1]
+		} else {
+			grown := make([]*tmemoEntry, pos+1, max(2*cap(slots), pos+1, 64))
+			copyWork(p.parser, grown, slots)
+			slots = grown
+		}
+	}
+	link := &slots[pos]
+	var replaced *tmemoEntry
+	for x := *link; x != nil; link, x = &x.next, x.next {
+		p.stepWork()
+		if x == e || x.rule == int32(rule) && x.min == int32(min) && p.memoKeyEqual(x.env, key) {
+			replaced = x
+			break
+		}
+	}
+	p.stepWork()
+	p.memoSlots = slots
+	e.rule, e.min, e.env = int32(rule), int32(min), key
+	if replaced != nil {
+		e.next = replaced.next
+		*link = e
+		return
+	}
+	e.next = slots[pos]
+	slots[pos] = e
+}
+
+func (p *tparser) memoPutOrdinary(rule, pos, min int, env []any, e *tmemoEntry) {
 	if pos >= len(p.memoSlots) {
 		if pos < cap(p.memoSlots) {
 			p.memoSlots = p.memoSlots[:pos+1]
@@ -2770,6 +4004,7 @@ func (p *tparser) memoPut(rule, pos, min int, env []any, e *tmemoEntry) {
 // --- Rule calls ---
 
 func (p *tparser) call(r *trule, min int) (any, bool) {
+	p.stepWork()
 	start := p.pos
 	if !r.memo && !r.leader || p.firstCall(r.rule) {
 		if len(r.scope) == 0 {
@@ -2792,7 +4027,7 @@ func (p *tparser) call(r *trule, min int) (any, bool) {
 			return nil, false
 		}
 		p.pos = e.end
-		p.recovered = append(p.recovered, e.errs...)
+		p.recovered = p.copyErrors(p.recovered, e.errs)
 		return e.val, true
 	}
 	rec := len(p.recovered)
@@ -2810,7 +4045,7 @@ func (p *tparser) call(r *trule, min int) (any, bool) {
 		}
 		e = p.memoSlab.one()
 		*e = tmemoEntry{val: v, ok: ok, end: p.pos, silent: p.silent > 0,
-			errs: append([]*SyntaxError(nil), p.recovered[rec:]...)}
+			errs: p.copyErrors(nil, p.recovered[rec:])}
 		p.memoPut(r.id, start, min, env, e)
 	}
 	far, inner := p.unisolate(m)
@@ -2835,7 +4070,7 @@ func (p *tparser) callMemo(r *trule, inv func(*tparser) (any, bool)) (any, bool)
 			return nil, false
 		}
 		p.pos = e.end
-		p.recovered = append(p.recovered, e.errs...)
+		p.recovered = p.copyErrors(p.recovered, e.errs)
 		return e.val, true
 	}
 	rec := len(p.recovered)
@@ -2846,7 +4081,7 @@ func (p *tparser) callMemo(r *trule, inv func(*tparser) (any, bool)) (any, bool)
 	}
 	e := p.memoSlab.one()
 	*e = tmemoEntry{val: v, ok: ok, end: p.pos, silent: p.silent > 0,
-		errs: append([]*SyntaxError(nil), p.recovered[rec:]...)}
+		errs: p.copyErrors(nil, p.recovered[rec:])}
 	p.memoPut(r.id, start, 0, env, e)
 	far, inner := p.unisolate(m)
 	e.far, e.expected = far, p.keep(inner)
@@ -2869,7 +4104,7 @@ func (p *tparser) grow(r *trule, min int, env []any) (any, bool) {
 			break
 		}
 		best = p.memoSlab.one()
-		*best = tmemoEntry{val: v, ok: true, end: p.pos, growing: true, errs: append([]*SyntaxError(nil), p.recovered[rec:]...)}
+		*best = tmemoEntry{val: v, ok: true, end: p.pos, growing: true, errs: p.copyErrors(nil, p.recovered[rec:])}
 		p.memoPut(r.id, start, min, env, best)
 		p.pos = start
 		p.recovered = p.recovered[:rec]
@@ -2877,7 +4112,7 @@ func (p *tparser) grow(r *trule, min int, env []any) (any, bool) {
 	best.growing = false
 	best.silent = p.silent > 0
 	p.pos = best.end
-	p.recovered = append(p.recovered[:rec], best.errs...)
+	p.recovered = p.copyErrors(p.recovered[:rec], best.errs)
 	return best.val, best.ok
 }
 
@@ -2961,6 +4196,7 @@ func (p *tparser) attachCaptures(v any, names []string, vals []any, start, end i
 	found := false
 	wrap := n == nil || !n.tfresh()
 	for _, c := range vals {
+		p.stepWork()
 		if c != nil {
 			found = true
 		}
@@ -2981,8 +4217,9 @@ func (p *tparser) attachCaptures(v any, names []string, vals []any, start, end i
 		t.fields = p.tfields(len(names))
 	}
 	for i, name := range names {
+		p.stepWork()
 		if vals[i] != nil {
-			t.set(name, vals[i])
+			p.setValueField(t, name, vals[i])
 		}
 	}
 	return t
@@ -3067,7 +4304,7 @@ func (p *tparser) recoverAttr(m, skip tmatcher, build bool) (any, bool) {
 	if !build {
 		return nil, true
 	}
-	return &terror{Error{Span: Span{m0.pos, p.pos}, Text: p.text(m0.pos, p.pos), Message: e.Error()}, true}, true
+	return &terror{Error{Span: Span{m0.pos, p.pos}, Text: p.text(m0.pos, p.pos), Message: p.recoveryErrorText(e)}, true}, true
 }
 
 // --- Actions and predicates ---
@@ -3104,6 +4341,7 @@ func (c *tctx) finish(v any) any {
 	t := asTval(v)
 	if t != nil {
 		for _, x := range c.p.created[c.cbase:] {
+			c.p.stepWork()
 			if x == t {
 				t.tsetSpan(c.start, c.end)
 				break
@@ -3115,7 +4353,7 @@ func (c *tctx) finish(v any) any {
 		return nil
 	}
 	if t == nil {
-		evalErrorf("result must be a node, got %s", ttypeName(v))
+		c.p.evalErrorf("result must be a node, got %s", ttypeName(v))
 	}
 	t.tsetFresh(false)
 	return t
@@ -3177,18 +4415,26 @@ func (c *tctx) item(n int) any {
 		return c.newList(c.items)
 	}
 	if n > len(c.items) {
-		evalErrorf("$%d is out of range (%d elements)", n, len(c.items))
+		c.p.evalErrorf("$%d is out of range (%d elements)", n, len(c.items))
 	}
 	return tvalOrNil(c.items[n-1])
 }
 
 func (c *tctx) lookup(name string) any {
+	if workControlsEnabled && c.p.control != nil {
+		if v, ok := c.p.lookupEnvControlled(name); ok {
+			return v
+		}
+		c.p.evalErrorf("variable %s is not defined", name)
+		return nil
+	}
+
 	for e := c.p.env; e != nil; e = e.next {
 		if e.name == name {
 			return e.val
 		}
 	}
-	evalErrorf("variable %s is not defined", name)
+	c.p.evalErrorf("variable %s is not defined", name)
 	return nil
 }
 
@@ -3238,7 +4484,9 @@ func (c *tctx) made(n tval, first bool, start, end int) any {
 }
 
 func (c *tctx) newList(items []any) any {
-	return c.listNode(append(c.p.newVals(len(items))[:0], items...))
+	kids := c.p.newVals(len(items))
+	copyWork(c.p.parser, kids, items)
+	return c.listNode(kids)
 }
 
 // listNode returns a List node with the child list kids (which it takes over).
@@ -3247,6 +4495,7 @@ func (c *tctx) listNode(kids []any) *tnode {
 	n.fresh = false
 	first := true
 	for _, it := range kids {
+		c.p.stepWork()
 		t := asTval(it)
 		if t == nil {
 			continue
@@ -3266,7 +4515,7 @@ func (c *tctx) listNode(kids []any) *tnode {
 func (c *tctx) member(x any, name string) any {
 	n := asTval(x)
 	if n == nil {
-		evalErrorf("cannot access .%s of %s", name, ttypeName(x))
+		c.p.evalErrorf("cannot access .%s of %s", name, ttypeName(x))
 	}
 	switch name {
 	case "startPos":
@@ -3278,9 +4527,9 @@ func (c *tctx) member(x any, name string) any {
 	case "children":
 		return c.newList(n.tkids())
 	}
-	v, ok := n.tfield(name)
+	v, ok := c.p.valueField(n, name)
 	if !ok {
-		evalErrorf("%s has no field %s", n.tname(), name)
+		c.p.evalErrorf("%s has no field %s", n.tname(), name)
 	}
 	return tvalOrNil(v)
 }
@@ -3405,7 +4654,7 @@ func (c *tctx) length(x any) any {
 		}
 		return len(n.tkids())
 	}
-	evalErrorf("len: invalid argument %s", ttypeName(x))
+	c.p.evalErrorf("len: invalid argument %s", ttypeName(x))
 	return nil
 }
 
@@ -3425,7 +4674,7 @@ func (c *tctx) textStr(x any) string {
 		s, e := n.tspan()
 		return c.p.text(s, e)
 	}
-	evalErrorf("text: invalid argument %s", ttypeName(x))
+	c.p.evalErrorf("text: invalid argument %s", ttypeName(x))
 	return ""
 }
 
@@ -3478,25 +4727,28 @@ func (c *tctx) list(args ...any) any {
 func (c *tctx) concat(args ...any) any {
 	base := len(c.p.kidStack)
 	for _, a := range args {
+		c.p.stepWork()
 		c.pushItems(a)
 	}
 	return c.endList(base)
 }
 
 func (c *tctx) pushMap(list any, f func(item any) any) {
-	for _, it := range tlistItems("map", list) {
-		c.p.kidStack = append(c.p.kidStack, tasNode("map", f(tvalOrNil(it))))
+	for _, it := range c.listItems("map", list) {
+		c.p.stepWork()
+		c.p.kidStack = append(c.p.kidStack, c.asNode("map", f(tvalOrNil(it))))
 	}
 }
 
 func (c *tctx) pushList(args ...any) {
 	for _, a := range args {
-		c.p.kidStack = append(c.p.kidStack, tasNode("list", a))
+		c.p.stepWork()
+		c.p.kidStack = append(c.p.kidStack, c.asNode("list", a))
 	}
 }
 
 func (c *tctx) pushItems(v any) {
-	c.p.kidStack = append(c.p.kidStack, tlistItems("concat", v)...)
+	c.p.kidStack = appendWork(c.p.parser, c.p.kidStack, c.listItems("concat", v))
 }
 
 func (c *tctx) endList(base int) any {
@@ -3553,6 +4805,7 @@ func (p *tparser) skipTrivia(pr *tpratt) {
 func (p *tparser) longest(ops []*tprattOp) (best tprattAttempt, cutFailed bool) {
 	m0 := p.mark()
 	for _, op := range ops {
+		p.stepWork()
 		prevFrame, prevCut := p.frame, p.cut
 		f := p.newFrame(len(op.line.scope))
 		p.frame, p.cut = f, false
@@ -3564,7 +4817,7 @@ func (p *tparser) longest(ops []*tprattOp) (best tprattAttempt, cutFailed bool) 
 		}
 		if ok && (best.op == nil || p.pos > best.end) {
 			best = tprattAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
-				errs: append([]*SyntaxError(nil), p.recovered[m0.recovered:]...)}
+				errs: p.copyErrors(nil, p.recovered[m0.recovered:])}
 		}
 		if !ok && cut {
 			cutFailed = true
@@ -3573,16 +4826,16 @@ func (p *tparser) longest(ops []*tprattOp) (best tprattAttempt, cutFailed bool) 
 			p.reset(m0)
 			continue
 		}
-		p.saved = append(p.saved[:0], f.vals...)
+		p.saved = appendWork(p.parser, p.saved[:0], f.vals)
 		p.reset(m0)
-		copy(f.vals, p.saved)
+		copyWork(p.parser, f.vals, p.saved)
 	}
 	return best, cutFailed
 }
 
 func (p *tparser) apply(a *tprattAttempt) {
 	p.pos, p.env = a.end, a.env
-	p.recovered = append(p.recovered, a.errs...)
+	p.recovered = p.copyErrors(p.recovered, a.errs)
 }
 
 // prattParse is parser.prattParse for typed values.
@@ -3669,6 +4922,7 @@ func (p *tparser) prattNud(r *trule) (any, bool) {
 		return nil, false
 	}
 	for _, o := range pr.operands {
+		p.stepWork()
 		prevFrame, prevCut := p.frame, p.cut
 		f := p.newFrame(len(o.scope))
 		p.frame, p.cut = f, false
@@ -3754,6 +5008,237 @@ func (p *tparser) prattBuild(r *trule, a *tprattAttempt, lhs, rhs any) any {
 	return n
 }
 
+func (c *tctx) binary(op string, l, r any) any {
+	if v, ok := c.p.stringBinary(op, l, r); ok {
+		return v
+	}
+	if workControlsEnabled && c.p.control != nil {
+		return trtBinaryWork(c.p.parser, op, l, r)
+	}
+	return trtBinary(op, l, r)
+}
+
+func (p *tparser) pushKid(v any) { p.stepWork(); p.kidStack = append(p.kidStack, v) }
+func (p *tparser) setValueField(n *tnode, name string, v any) {
+	if !workControlsEnabled || p.control == nil {
+		n.set(name, v)
+		return
+	}
+	for i := range n.fields {
+		p.stepWork()
+		if p.rawValueEqual(n.fields[i].name, name) {
+			n.fields[i].val = v
+			return
+		}
+	}
+	p.stepWork()
+	n.fields = append(n.fields, tfield{name, v})
+}
+func (p *tparser) undoCaptures(from int) {
+	for i := len(p.trail) - 1; i >= from; i-- {
+		p.stepWork()
+		u := p.trail[i]
+		u.f.vals[u.slot] = u.old
+	}
+}
+
+func (p *tparser) valueField(n tval, name string) (any, bool) {
+	if !workControlsEnabled || p.control == nil {
+		return n.tfield(name)
+	}
+	t, transient := n.(*tnode)
+	if !transient {
+		if controlled, ok := n.(interface {
+			tfieldWork(*tparser, string) (any, bool)
+		}); ok {
+			return controlled.tfieldWork(p, name)
+		}
+		return n.tfield(name)
+	}
+	for _, field := range t.fields {
+		p.stepWork()
+		if p.rawValueEqual(field.name, name) {
+			return field.val, true
+		}
+	}
+	return nil, true
+}
+func (c *tctx) fold(fn string, right bool, acc, list any, f func(acc, item any) any) any {
+	if !workControlsEnabled || c.p.control == nil {
+		return trtFold(fn, right, acc, list, f)
+	}
+	items := c.listItems(fn, list)
+	for i := range items {
+		c.p.stepWork()
+		item := items[i]
+		if right {
+			item = items[len(items)-1-i]
+		}
+		acc = f(acc, tvalOrNil(item))
+	}
+	return acc
+}
+
+// listField materializes a typed struct's list field during an action read.
+// The ordinary tfield path remains independent of a parser or work controller.
+func (p *tparser) listField(kids []any) any {
+	n := &tnode{typ: "List", kids: kids}
+	first := true
+	for _, it := range kids {
+		p.stepWork()
+		t := asTval(it)
+		if t == nil {
+			continue
+		}
+		start, end := t.tspan()
+		if first || start < n.Start {
+			n.Start = start
+		}
+		if first || end > n.End {
+			n.End = end
+		}
+		first = false
+	}
+	return n
+}
+
+func trtUnaryWork(p *parser, op string, x any) any {
+	switch op {
+	case "-":
+		if i, ok := x.(int); ok {
+			return -i
+		}
+	case "!":
+		if b, ok := x.(bool); ok {
+			return !b
+		}
+	}
+	p.evalErrorf("invalid operand %s for unary %s", ttypeName(x), op)
+	return nil
+}
+
+func trtBoolWork(p *parser, op string, v any) bool {
+	b, ok := v.(bool)
+	if !ok {
+		p.evalErrorf("invalid operand %s for %s", ttypeName(v), op)
+	}
+	return b
+}
+
+func trtBinaryWork(p *parser, op string, l, r any) any {
+	switch op {
+	case "==":
+		return trtEqual(l, r)
+	case "!=":
+		return !trtEqual(l, r)
+	}
+	switch l := l.(type) {
+	case int:
+		if r, ok := r.(int); ok {
+			switch op {
+			case "+":
+				return l + r
+			case "-":
+				return l - r
+			case "*":
+				return l * r
+			case "/", "%":
+				if r == 0 {
+					p.evalErrorf("division by zero")
+				}
+				if op == "/" {
+					return l / r
+				}
+				return l % r
+			case "<":
+				return l < r
+			case "<=":
+				return l <= r
+			case ">":
+				return l > r
+			case ">=":
+				return l >= r
+			}
+		}
+	case string:
+		if r, ok := r.(string); ok {
+			switch op {
+			case "+":
+				return l + r
+			case "<":
+				return l < r
+			case "<=":
+				return l <= r
+			case ">":
+				return l > r
+			case ">=":
+				return l >= r
+			}
+		}
+	}
+	p.evalErrorf("invalid operands %s and %s for %s", ttypeName(l), ttypeName(r), op)
+	return nil
+}
+
+func tlistItemsWork(p *parser, fn string, v any) []any {
+	if v == nil {
+		return nil
+	}
+	if n, ok := v.(tval); ok {
+		return n.tkids()
+	}
+	p.evalErrorf("%s: expected a list, got %s", fn, ttypeName(v))
+	return nil
+}
+
+func tasNodeWork(p *parser, fn string, v any) any {
+	if v == nil {
+		return nil
+	}
+	if _, ok := v.(tval); ok {
+		return v
+	}
+	p.evalErrorf("%s: list elements must be nodes, got %s", fn, ttypeName(v))
+	return nil
+}
+
+func (c *tctx) unary(op string, v any) any {
+	if !workControlsEnabled || c.p.control == nil {
+		return trtUnary(op, v)
+	}
+	return trtUnaryWork(c.p.parser, op, v)
+}
+func (c *tctx) and(l any, r func() any) any {
+	if !workControlsEnabled || c.p.control == nil {
+		return trtAnd(l, r)
+	}
+	if !trtBoolWork(c.p.parser, "&&", l) {
+		return false
+	}
+	return trtBoolWork(c.p.parser, "&&", r())
+}
+func (c *tctx) or(l any, r func() any) any {
+	if !workControlsEnabled || c.p.control == nil {
+		return trtOr(l, r)
+	}
+	if trtBoolWork(c.p.parser, "||", l) {
+		return true
+	}
+	return trtBoolWork(c.p.parser, "||", r())
+}
+func (c *tctx) listItems(fn string, v any) []any {
+	if !workControlsEnabled || c.p.control == nil {
+		return tlistItems(fn, v)
+	}
+	return tlistItemsWork(c.p.parser, fn, v)
+}
+func (c *tctx) asNode(fn string, v any) any {
+	if !workControlsEnabled || c.p.control == nil {
+		return tasNode(fn, v)
+	}
+	return tasNodeWork(c.p.parser, fn, v)
+}
+
 // --- Typed values (pego gen -types; Span, Match and Error are in the typed runtime above) ---
 
 // Field is the terminal type Field.
@@ -3805,6 +5290,24 @@ func (v *File) tfield(name string) (any, bool) {
 	return nil, false
 }
 
+func (v *File) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Records":
+		return func() any {
+			if v.Records == nil {
+				return nil
+			}
+			kids := make([]any, len(v.Records))
+			for i, x := range v.Records {
+				p.stepWork()
+				kids[i] = tptr(x)
+			}
+			return p.listField(kids)
+		}(), true
+	}
+	return nil, false
+}
+
 func (v *Record) tname() string         { return "Record" }
 func (v *Record) ttext() (string, bool) { return "", false }
 func (v *Record) tkids() []any          { return nil }
@@ -3823,6 +5326,24 @@ func (v *Record) tfield(name string) (any, bool) {
 				kids[i] = tptr(x)
 			}
 			return tlistOf(kids)
+		}(), true
+	}
+	return nil, false
+}
+
+func (v *Record) tfieldWork(p *tparser, name string) (any, bool) {
+	switch name {
+	case "Fields":
+		return func() any {
+			if v.Fields == nil {
+				return nil
+			}
+			kids := make([]any, len(v.Fields))
+			for i, x := range v.Fields {
+				p.stepWork()
+				kids[i] = tptr(x)
+			}
+			return p.listField(kids)
 		}(), true
 	}
 	return nil, false
@@ -3904,6 +5425,7 @@ func astSlice[T any](s *astChunk[T], n int) []T {
 // tinit sets up the typed rules (called at the end of init, after the rule tables).
 func tinit() {
 	trules[2].term = func(p *tparser, start, end int, text string) tval {
+		p.stepWork()
 		v := astNew(&p.ext.(*tslabs).tField)
 		*v = Field{Span: Span{start, end}, Text: text}
 		return v
@@ -3912,33 +5434,40 @@ func tinit() {
 
 // tmk_File makes a File in an action (newStruct in the typed runtime).
 func tmk_File(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tFile)
+	c.p.stepWork()
 	v.Records = tl0(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
 	}
 	first, start, end := true, 0, 0
+	c.p.stepWork()
 	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
 // tmk_Record makes a Record in an action (newStruct in the typed runtime).
 func tmk_Record(c *tctx, final bool, f0 any) any {
+	c.p.stepWork()
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tRecord)
+	c.p.stepWork()
 	v.Fields = tl1(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
 	}
 	first, start, end := true, 0, 0
+	c.p.stepWork()
 	spanOf(f0, &first, &start, &end)
 	return c.made(v, first, start, end)
 }
 
 func tl0(a *tslabs, v any) []*Record {
+	a.stepWork()
 	if v == nil {
 		return nil
 	}
@@ -3948,12 +5477,14 @@ func tl0(a *tslabs, v any) []*Record {
 	}
 	out := astSlice(&a.tl0Chunk, len(n.kids))
 	for i, c := range n.kids {
+		a.stepWork()
 		out[i] = tAs[*Record](c)
 	}
 	return out
 }
 
 func tl1(a *tslabs, v any) []*Field {
+	a.stepWork()
 	if v == nil {
 		return nil
 	}
@@ -3963,6 +5494,7 @@ func tl1(a *tslabs, v any) []*Field {
 	}
 	out := astSlice(&a.tl1Chunk, len(n.kids))
 	for i, c := range n.kids {
+		a.stepWork()
 		out[i] = tAs[*Field](c)
 	}
 	return out
@@ -3970,6 +5502,7 @@ func tl1(a *tslabs, v any) []*Field {
 
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
+	control  *workControl
 	tField   astChunk[Field]
 	tFile    astChunk[File]
 	tRecord  astChunk[Record]
@@ -3977,7 +5510,15 @@ type tslabs struct {
 	tl1Chunk astChunk[*Field]
 }
 
+func (a *tslabs) setWorkControl(c *workControl) { a.control = c }
+func (a *tslabs) stepWork() {
+	if workControlsEnabled {
+		a.control.charge(0, 1)
+	}
+}
+
 func (a *astConv) toMatch(n *Node) *Match {
+	a.stepWork()
 	if n == nil || n.Type() != "Match" {
 		return nil
 	}
@@ -3987,10 +5528,11 @@ func (a *astConv) toMatch(n *Node) *Match {
 }
 
 func (a *astConv) toError(n *Node) *Error {
+	a.stepWork()
 	if n == nil || n.Type() != "Error" {
 		return nil
 	}
-	msg, _ := n.Field("message").(string)
+	msg, _ := a.field(n, "message").(string)
 	v := astNew(&a.error)
 	*v = Error{Span: Span{int(n.Start), int(n.End)}, Text: n.Text, Message: msg}
 	return v
@@ -3999,6 +5541,7 @@ func (a *astConv) toError(n *Node) *Error {
 // anyValue converts a value of a statically unknown type into the typed value of its type (CST
 // nodes stay *Node).
 func (a *astConv) anyValue(v any) any {
+	a.stepWork()
 	n, ok := v.(*Node)
 	if !ok || n == nil {
 		return v
@@ -4019,6 +5562,7 @@ func (a *astConv) anyValue(v any) any {
 }
 
 func (a *astConv) toField(n *Node) *Field {
+	a.stepWork()
 	if n == nil || n.Type() != "Field" {
 		return nil
 	}
@@ -4028,42 +5572,48 @@ func (a *astConv) toField(n *Node) *Field {
 }
 
 func (a *astConv) toFile(n *Node) *File {
+	a.stepWork()
 	if n == nil || n.Type() != "File" {
 		return nil
 	}
 	v := astNew(&a.tFile)
 	v.Span = Span{int(n.Start), int(n.End)}
-	v.Records = a.list0(astNode(n.Field("Records")))
+	v.Records = a.list0(astNode(a.field(n, "Records")))
 	return v
 }
 
 func (a *astConv) toRecord(n *Node) *Record {
+	a.stepWork()
 	if n == nil || n.Type() != "Record" {
 		return nil
 	}
 	v := astNew(&a.tRecord)
 	v.Span = Span{int(n.Start), int(n.End)}
-	v.Fields = a.list1(astNode(n.Field("Fields")))
+	v.Fields = a.list1(astNode(a.field(n, "Fields")))
 	return v
 }
 
 func (a *astConv) list0(n *Node) []*Record {
+	a.stepWork()
 	if n == nil {
 		return nil
 	}
 	out := astSlice(&a.list0Chunk, len(n.Children))
 	for i, c := range n.Children {
+		a.stepWork()
 		out[i] = a.toRecord(astNode(c))
 	}
 	return out
 }
 
 func (a *astConv) list1(n *Node) []*Field {
+	a.stepWork()
 	if n == nil {
 		return nil
 	}
 	out := astSlice(&a.list1Chunk, len(n.Children))
 	for i, c := range n.Children {
+		a.stepWork()
 		out[i] = a.toField(astNode(c))
 	}
 	return out
@@ -4071,6 +5621,7 @@ func (a *astConv) list1(n *Node) []*Field {
 
 // astConv converts nodes into typed values.
 type astConv struct {
+	control    *workControl
 	match      astChunk[Match]
 	error      astChunk[Error]
 	tField     astChunk[Field]
@@ -4078,6 +5629,27 @@ type astConv struct {
 	tRecord    astChunk[Record]
 	list0Chunk astChunk[*Record]
 	list1Chunk astChunk[*Field]
+}
+
+func (a *astConv) stepWork() {
+	if workControlsEnabled {
+		a.control.charge(0, 1)
+	}
+}
+func (a *astConv) field(n *Node, name string) any {
+	if !workControlsEnabled || a.control == nil {
+		return n.Field(name)
+	}
+	if n == nil {
+		return nil
+	}
+	for _, f := range n.Fields {
+		a.stepWork()
+		if f.Name == name {
+			return f.Value
+		}
+	}
+	return nil
 }
 
 // ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
@@ -4113,13 +5685,14 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
 		a := &tslabs{}
 		return tparseResolved(trules[2], input, o, a, func(v any) *Field { return tAs[*Field](v) })
 	case "eol":
-		n, err := parseResolved(rules[3], nseen, input, o)
-		if n == nil {
-			var zero any
-			return zero, err
-		}
-		a := &astConv{}
-		return a.anyValue(n), err
+		return parseConverted(rules[3], nseen, input, o, func(n *Node, c *workControl) any {
+			if n == nil {
+				var zero any
+				return zero
+			}
+			a := &astConv{control: c}
+			return a.anyValue(n)
+		})
 	default:
 		return nil, fmt.Errorf("rule %s is not defined", name)
 	}
@@ -4147,10 +5720,26 @@ func init() {
 	}
 	nseen = 0
 	rules[0].body = func(p *parser, _ int) (*Node, bool) { return p.e2() }
-	rules[0].action = func(c *actx) any { return c.newStruct("File", "Records", c.cap(0)) }
+	rules[0].action = func(c *actx) any {
+		return func() any {
+			c.p.stepWork()
+			return c.newStruct("File", "Records", func() any { c.p.stepWork(); return c.cap(0) }())
+		}()
+	}
 	rules[1].body = func(p *parser, _ int) (*Node, bool) { return p.e5() }
 	rules[1].action = func(c *actx) any {
-		return c.newStruct("Record", "Fields", func() any { b := len(c.p.kidStack); c.pushList(c.cap(0)); c.pushItems(c.cap(1)); return c.endList(b) }())
+		return func() any {
+			c.p.stepWork()
+			return c.newStruct("Record", "Fields", func() any {
+				c.p.stepWork()
+				return func() any {
+					b := len(c.p.kidStack)
+					c.pushList(func() any { c.p.stepWork(); return c.cap(0) }())
+					c.pushItems(func() any { c.p.stepWork(); return c.cap(1) }())
+					return c.endList(b)
+				}()
+			}())
+		}()
 	}
 	rules[2].body = func(p *parser, _ int) (*Node, bool) { return p.e9() }
 	rules[3].body = func(p *parser, _ int) (*Node, bool) { return p.e12() }
@@ -4191,6 +5780,7 @@ func init() {
 
 // main (Node body inlined)
 func (p *parser) e2() (*Node, bool) {
+	p.stepWork()
 	var (
 		x1  int
 		x2  []*Node
@@ -4205,10 +5795,14 @@ func (p *parser) e2() (*Node, bool) {
 		v13 *Node
 	)
 	_ = x8
+	p.stepWork()
 	x1 = p.pos
 	x2 = p.nodes(1)[:0]
+	p.stepWork()
+	p.stepWork()
 	x3 = p.mark()
-	if p.pos < len(p.in) && p.in[p.pos] == 65279 {
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 65279) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit1, "\ufeff", 5, false); !ok {
 		goto L4
@@ -4217,10 +5811,14 @@ func (p *parser) e2() (*Node, bool) {
 L4:
 	p.reset(x3)
 L5:
+	p.stepWork()
+	p.stepWork()
+	p.stepWork()
 	x6, x7 = p.pos, len(p.kidStack)
 	x8 = 0
 	for {
 		x9 = p.mark()
+		p.stepWork()
 		if v11, ok = p.call(rules[1], 0); !ok {
 			goto L10
 		}
@@ -4237,6 +5835,7 @@ L5:
 	v12 = p.newNode(Node{kind: kindList, Start: int32(x6), End: int32(p.pos), Children: p.kids(x7), fresh: true})
 	p.setCapture(0, v12)
 	x2 = append(x2, v12)
+	p.stepWork()
 	if !p.atEnd() {
 		p.expect(p.pos, idEndInput)
 		goto fail
@@ -4249,6 +5848,7 @@ fail:
 
 // record (Node body inlined)
 func (p *parser) e5() (*Node, bool) {
+	p.stepWork()
 	var (
 		x1  mark
 		ok  bool
@@ -4263,8 +5863,11 @@ func (p *parser) e5() (*Node, bool) {
 		v12 *Node
 	)
 	_ = x8
+	p.stepWork()
+	p.stepWork()
 	x1 = p.mark()
 	p.silent++
+	p.stepWork()
 	if !p.atEnd() {
 		p.expect(p.pos, idEndInput)
 		goto L2
@@ -4275,10 +5878,13 @@ func (p *parser) e5() (*Node, bool) {
 L2:
 	p.silent--
 	p.reset(x1)
+	p.stepWork()
+	p.stepWork()
 	if v3, ok = p.r2(); !ok {
 		goto fail
 	}
 	p.setCapture(0, v3)
+	p.stepWork()
 	x4, x5 = p.pos, len(p.kidStack)
 	x6 = p.newFrame(len(scope3))
 	x8 = 0
@@ -4287,11 +5893,16 @@ L2:
 		x9 = p.mark()
 		x7 = p.frame
 		p.frame = x6
-		if p.pos < len(p.in) && p.in[p.pos] == 44 {
+		p.stepWork()
+		p.stepWork()
+		p.stepWork()
+		if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 44) {
 			p.pos++
 		} else if _, ok = p.matchLiteral(lit4, ",", 6, false); !ok {
 			goto L10
 		}
+		p.stepWork()
+		p.stepWork()
 		if v11, ok = p.r2(); !ok {
 			goto L10
 		}
@@ -4310,6 +5921,7 @@ L2:
 	}
 	v12 = p.newNode(Node{kind: kindList, Start: int32(x4), End: int32(p.pos), Children: p.kids(x5), fresh: true})
 	p.setCapture(1, v12)
+	p.stepWork()
 	if _, ok = p.r4(); !ok {
 		goto fail
 	}
@@ -4320,6 +5932,7 @@ fail:
 
 // field (Node body inlined)
 func (p *parser) e9() (*Node, bool) {
+	p.stepWork()
 	var (
 		x1   mark
 		x3   rune
@@ -4334,8 +5947,10 @@ func (p *parser) e9() (*Node, bool) {
 		x14  int
 	)
 	_, _ = x7, x11
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
+		p.inputWork(1)
 		x3, _, x4 = p.in[p.pos], 1, true
 	} else {
 		x3, _, x4 = p.peek()
@@ -4344,13 +5959,17 @@ func (p *parser) e9() (*Node, bool) {
 		p.expect(p.pos, 7)
 		goto L5
 	}
-	if p.pos < len(p.in) && p.in[p.pos] == 34 {
+	p.stepWork()
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 34) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit6, "\"", 7, false); !ok {
 		goto L6
 	}
+	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
+			p.inputWork(1)
 			ch, size, ok = p.in[p.pos], 1, true
 		} else {
 			ch, size, ok = p.peek()
@@ -4361,16 +5980,21 @@ func (p *parser) e9() (*Node, bool) {
 		}
 		p.pos += size
 	}
+	p.stepWork()
 	x7 = 0
 	for {
 		x8 = p.mark()
-		if p.pos+2 <= len(p.in) && p.in[p.pos] == 34 && p.in[p.pos+1] == 34 {
+		p.stepWork()
+		p.stepWork()
+		if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 34 && p.in[p.pos+1] == 34) {
 			p.pos += 2
 		} else if _, ok = p.matchLiteral(lit7, "\"\"", 9, false); !ok {
 			goto L9
 		}
+		p.stepWork()
 		for {
 			if p.pos < len(p.in) {
+				p.inputWork(1)
 				ch, size, ok = p.in[p.pos], 1, true
 			} else {
 				ch, size, ok = p.peek()
@@ -4390,7 +6014,8 @@ func (p *parser) e9() (*Node, bool) {
 		p.reset(x8)
 		break
 	}
-	if p.pos < len(p.in) && p.in[p.pos] == 34 {
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 34) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit6, "\"", 7, false); !ok {
 		goto L6
@@ -4399,8 +6024,11 @@ func (p *parser) e9() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
+	p.stepWork()
+	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
+			p.inputWork(1)
 			ch, size, ok = p.in[p.pos], 1, true
 		} else {
 			ch, size, ok = p.peek()
@@ -4411,17 +6039,23 @@ L5:
 		}
 		p.pos += size
 	}
+	p.stepWork()
 	x11 = 0
 	for {
 		x12 = p.mark()
-		if p.pos < len(p.in) && p.in[p.pos] == 13 {
+		p.stepWork()
+		p.stepWork()
+		if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 13) {
 			p.pos++
 		} else if _, ok = p.matchLiteral(lit8, "\r", 11, false); !ok {
 			goto L13
 		}
+		p.stepWork()
 		x14 = p.pos
 		p.silent++
+		p.stepWork()
 		if p.pos < len(p.in) {
+			p.inputWork(1)
 			ch, size, ok = p.in[p.pos], 1, true
 		} else {
 			ch, size, ok = p.peek()
@@ -4439,8 +6073,10 @@ L5:
 		p.pos = x14
 		goto L13
 	L16:
+		p.stepWork()
 		for {
 			if p.pos < len(p.in) {
+				p.inputWork(1)
 				ch, size, ok = p.in[p.pos], 1, true
 			} else {
 				ch, size, ok = p.peek()
@@ -4467,6 +6103,7 @@ L2:
 
 // eol (Node body inlined)
 func (p *parser) e12() (*Node, bool) {
+	p.stepWork()
 	var (
 		x1  mark
 		v2  *Node
@@ -4485,8 +6122,10 @@ func (p *parser) e12() (*Node, bool) {
 		v22 *Node
 		v23 *Node
 	)
+	p.stepWork()
 	x1 = p.mark()
 	if p.pos < len(p.in) {
+		p.inputWork(1)
 		x4, _, x5 = p.in[p.pos], 1, true
 	} else {
 		x4, _, x5 = p.peek()
@@ -4495,8 +6134,9 @@ func (p *parser) e12() (*Node, bool) {
 		p.expect(p.pos, 13)
 		goto L6
 	}
+	p.stepWork()
 	x8 = p.pos
-	if p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10 {
+	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10) {
 		p.pos += 2
 	} else if _, ok = p.matchLiteral(lit10, "\r\n", 13, false); !ok {
 		goto L7
@@ -4511,8 +6151,9 @@ L6:
 		p.expect(p.pos, 14)
 		goto L10
 	}
+	p.stepWork()
 	x12 = p.pos
-	if p.pos < len(p.in) && p.in[p.pos] == 10 {
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 10) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit11, "\n", 14, false); !ok {
 		goto L11
@@ -4523,11 +6164,14 @@ L6:
 L11:
 	p.reset(x1)
 L10:
+	p.stepWork()
 	x15 = p.pos
 	x16 = p.nodes(1)[:0]
+	p.stepWork()
 	x17 = p.mark()
+	p.stepWork()
 	x21 = p.pos
-	if p.pos < len(p.in) && p.in[p.pos] == 13 {
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 13) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit8, "\r", 11, false); !ok {
 		goto L19
@@ -4540,6 +6184,7 @@ L19:
 	v18 = nil
 L20:
 	x16 = append(x16, v18)
+	p.stepWork()
 	if !p.atEnd() {
 		p.expect(p.pos, idEndInput)
 		goto L14
@@ -4558,6 +6203,7 @@ fail:
 
 // eol (value-free body inlined)
 func (p *parser) e13() (*Node, bool) {
+	p.stepWork()
 	var (
 		v   *Node
 		x1  int
@@ -4568,8 +6214,10 @@ func (p *parser) e13() (*Node, bool) {
 		x11 int
 		x12 int
 	)
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
+		p.inputWork(1)
 		x4, _, x5 = p.in[p.pos], 1, true
 	} else {
 		x4, _, x5 = p.peek()
@@ -4578,7 +6226,8 @@ func (p *parser) e13() (*Node, bool) {
 		p.expect(p.pos, 13)
 		goto L6
 	}
-	if p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10 {
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10) {
 		p.pos += 2
 	} else if _, ok = p.matchLiteral(lit10, "\r\n", 13, false); !ok {
 		goto L7
@@ -4592,7 +6241,8 @@ L6:
 		p.expect(p.pos, 14)
 		goto L8
 	}
-	if p.pos < len(p.in) && p.in[p.pos] == 10 {
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 10) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit11, "\n", 14, false); !ok {
 		goto L9
@@ -4602,8 +6252,11 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
+	p.stepWork()
+	p.stepWork()
 	x11, x12 = p.pos, len(p.recovered)
-	if p.pos < len(p.in) && p.in[p.pos] == 13 {
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 13) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit8, "\r", 11, false); !ok {
 		goto L13
@@ -4613,6 +6266,7 @@ L13:
 	p.pos = x11
 	p.recovered = p.recovered[:x12]
 L14:
+	p.stepWork()
 	if !p.atEnd() {
 		p.expect(p.pos, idEndInput)
 		goto L10
@@ -4631,6 +6285,7 @@ fail:
 
 // field, called as by invokePlain
 func (p *parser) r2() (*Node, bool) {
+	p.stepWork()
 	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
@@ -4654,6 +6309,7 @@ func (p *parser) r2() (*Node, bool) {
 
 // eol, called as by invokePlain
 func (p *parser) r3() (*Node, bool) {
+	p.stepWork()
 	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
@@ -4677,6 +6333,7 @@ func (p *parser) r3() (*Node, bool) {
 
 // eol, called as by invokePlain (body inlined)
 func (p *parser) r4() (*Node, bool) {
+	p.stepWork()
 	var (
 		start int
 		v     *Node
@@ -4694,8 +6351,10 @@ func (p *parser) r4() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
+		p.inputWork(1)
 		x4, _, x5 = p.in[p.pos], 1, true
 	} else {
 		x4, _, x5 = p.peek()
@@ -4704,7 +6363,8 @@ func (p *parser) r4() (*Node, bool) {
 		p.expect(p.pos, 13)
 		goto L6
 	}
-	if p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10 {
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10) {
 		p.pos += 2
 	} else if _, ok = p.matchLiteral(lit10, "\r\n", 13, false); !ok {
 		goto L7
@@ -4718,7 +6378,8 @@ L6:
 		p.expect(p.pos, 14)
 		goto L8
 	}
-	if p.pos < len(p.in) && p.in[p.pos] == 10 {
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 10) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit11, "\n", 14, false); !ok {
 		goto L9
@@ -4728,8 +6389,11 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
+	p.stepWork()
+	p.stepWork()
 	x11, x12 = p.pos, len(p.recovered)
-	if p.pos < len(p.in) && p.in[p.pos] == 13 {
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 13) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit8, "\r", 11, false); !ok {
 		goto L13
@@ -4739,6 +6403,7 @@ L13:
 	p.pos = x11
 	p.recovered = p.recovered[:x12]
 L14:
+	p.stepWork()
 	if !p.atEnd() {
 		p.expect(p.pos, idEndInput)
 		goto L10
@@ -4761,6 +6426,7 @@ fail:
 
 // main (value-free body inlined)
 func (p *parser) e14() (*Node, bool) {
+	p.stepWork()
 	var (
 		v  *Node
 		x1 int
@@ -4771,8 +6437,12 @@ func (p *parser) e14() (*Node, bool) {
 		x7 int
 	)
 	_ = x5
+	p.stepWork()
+	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
-	if p.pos < len(p.in) && p.in[p.pos] == 65279 {
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 65279) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit1, "\ufeff", 5, false); !ok {
 		goto L3
@@ -4782,9 +6452,13 @@ L3:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L4:
+	p.stepWork()
+	p.stepWork()
+	p.stepWork()
 	x5 = 0
 	for {
 		x6, x7 = p.pos, len(p.recovered)
+		p.stepWork()
 		if _, ok = p.q1(); !ok {
 			goto L8
 		}
@@ -4798,6 +6472,7 @@ L4:
 		p.recovered = p.recovered[:x7]
 		break
 	}
+	p.stepWork()
 	if !p.atEnd() {
 		p.expect(p.pos, idEndInput)
 		goto fail
@@ -4810,6 +6485,7 @@ fail:
 
 // record (value-free body inlined)
 func (p *parser) e15() (*Node, bool) {
+	p.stepWork()
 	var (
 		v  *Node
 		x1 int
@@ -4820,8 +6496,11 @@ func (p *parser) e15() (*Node, bool) {
 		x6 int
 	)
 	_ = x4
+	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	p.silent++
+	p.stepWork()
 	if !p.atEnd() {
 		p.expect(p.pos, idEndInput)
 		goto L3
@@ -4834,17 +6513,26 @@ L3:
 	p.silent--
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
+	p.stepWork()
+	p.stepWork()
 	if _, ok = p.q2(); !ok {
 		goto fail
 	}
+	p.stepWork()
+	p.stepWork()
 	x4 = 0
 	for {
 		x5, x6 = p.pos, len(p.recovered)
-		if p.pos < len(p.in) && p.in[p.pos] == 44 {
+		p.stepWork()
+		p.stepWork()
+		p.stepWork()
+		if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 44) {
 			p.pos++
 		} else if _, ok = p.matchLiteral(lit4, ",", 6, false); !ok {
 			goto L7
 		}
+		p.stepWork()
+		p.stepWork()
 		if _, ok = p.q2(); !ok {
 			goto L7
 		}
@@ -4858,6 +6546,7 @@ L3:
 		p.recovered = p.recovered[:x6]
 		break
 	}
+	p.stepWork()
 	if _, ok = p.q3(); !ok {
 		goto fail
 	}
@@ -4869,6 +6558,7 @@ fail:
 
 // field (value-free body inlined)
 func (p *parser) e16() (*Node, bool) {
+	p.stepWork()
 	var (
 		v    *Node
 		x1   int
@@ -4887,8 +6577,10 @@ func (p *parser) e16() (*Node, bool) {
 		x17  int
 	)
 	_, _ = x8, x13
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
+		p.inputWork(1)
 		x4, _, x5 = p.in[p.pos], 1, true
 	} else {
 		x4, _, x5 = p.peek()
@@ -4897,13 +6589,17 @@ func (p *parser) e16() (*Node, bool) {
 		p.expect(p.pos, 7)
 		goto L6
 	}
-	if p.pos < len(p.in) && p.in[p.pos] == 34 {
+	p.stepWork()
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 34) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit6, "\"", 7, false); !ok {
 		goto L7
 	}
+	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
+			p.inputWork(1)
 			ch, size, ok = p.in[p.pos], 1, true
 		} else {
 			ch, size, ok = p.peek()
@@ -4914,16 +6610,21 @@ func (p *parser) e16() (*Node, bool) {
 		}
 		p.pos += size
 	}
+	p.stepWork()
 	x8 = 0
 	for {
 		x9, x10 = p.pos, len(p.recovered)
-		if p.pos+2 <= len(p.in) && p.in[p.pos] == 34 && p.in[p.pos+1] == 34 {
+		p.stepWork()
+		p.stepWork()
+		if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 34 && p.in[p.pos+1] == 34) {
 			p.pos += 2
 		} else if _, ok = p.matchLiteral(lit7, "\"\"", 9, false); !ok {
 			goto L11
 		}
+		p.stepWork()
 		for {
 			if p.pos < len(p.in) {
+				p.inputWork(1)
 				ch, size, ok = p.in[p.pos], 1, true
 			} else {
 				ch, size, ok = p.peek()
@@ -4944,7 +6645,8 @@ func (p *parser) e16() (*Node, bool) {
 		p.recovered = p.recovered[:x10]
 		break
 	}
-	if p.pos < len(p.in) && p.in[p.pos] == 34 {
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 34) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit6, "\"", 7, false); !ok {
 		goto L7
@@ -4954,8 +6656,11 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
+	p.stepWork()
+	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
+			p.inputWork(1)
 			ch, size, ok = p.in[p.pos], 1, true
 		} else {
 			ch, size, ok = p.peek()
@@ -4966,17 +6671,23 @@ L6:
 		}
 		p.pos += size
 	}
+	p.stepWork()
 	x13 = 0
 	for {
 		x14, x15 = p.pos, len(p.recovered)
-		if p.pos < len(p.in) && p.in[p.pos] == 13 {
+		p.stepWork()
+		p.stepWork()
+		if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 13) {
 			p.pos++
 		} else if _, ok = p.matchLiteral(lit8, "\r", 11, false); !ok {
 			goto L16
 		}
+		p.stepWork()
 		x17 = p.pos
 		p.silent++
+		p.stepWork()
 		if p.pos < len(p.in) {
+			p.inputWork(1)
 			ch, size, ok = p.in[p.pos], 1, true
 		} else {
 			ch, size, ok = p.peek()
@@ -4994,8 +6705,10 @@ L6:
 		p.pos = x17
 		goto L16
 	L19:
+		p.stepWork()
 		for {
 			if p.pos < len(p.in) {
+				p.inputWork(1)
 				ch, size, ok = p.in[p.pos], 1, true
 			} else {
 				ch, size, ok = p.peek()
@@ -5024,6 +6737,7 @@ L3:
 
 // main, called as by invokePlain (body inlined)
 func (p *parser) q0() (*Node, bool) {
+	p.stepWork()
 	var (
 		start int
 		v     *Node
@@ -5041,8 +6755,12 @@ func (p *parser) q0() (*Node, bool) {
 		p.tooDeep()
 	}
 	_ = x5
+	p.stepWork()
+	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
-	if p.pos < len(p.in) && p.in[p.pos] == 65279 {
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 65279) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit1, "\ufeff", 5, false); !ok {
 		goto L3
@@ -5052,9 +6770,13 @@ L3:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L4:
+	p.stepWork()
+	p.stepWork()
+	p.stepWork()
 	x5 = 0
 	for {
 		x6, x7 = p.pos, len(p.recovered)
+		p.stepWork()
 		if _, ok = p.q1(); !ok {
 			goto L8
 		}
@@ -5068,6 +6790,7 @@ L4:
 		p.recovered = p.recovered[:x7]
 		break
 	}
+	p.stepWork()
 	if !p.atEnd() {
 		p.expect(p.pos, idEndInput)
 		goto fail
@@ -5084,6 +6807,7 @@ fail:
 
 // record, called as by invokePlain (body inlined)
 func (p *parser) q1() (*Node, bool) {
+	p.stepWork()
 	var (
 		start int
 		v     *Node
@@ -5101,8 +6825,11 @@ func (p *parser) q1() (*Node, bool) {
 		p.tooDeep()
 	}
 	_ = x4
+	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	p.silent++
+	p.stepWork()
 	if !p.atEnd() {
 		p.expect(p.pos, idEndInput)
 		goto L3
@@ -5115,17 +6842,26 @@ L3:
 	p.silent--
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
+	p.stepWork()
+	p.stepWork()
 	if _, ok = p.q2(); !ok {
 		goto fail
 	}
+	p.stepWork()
+	p.stepWork()
 	x4 = 0
 	for {
 		x5, x6 = p.pos, len(p.recovered)
-		if p.pos < len(p.in) && p.in[p.pos] == 44 {
+		p.stepWork()
+		p.stepWork()
+		p.stepWork()
+		if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 44) {
 			p.pos++
 		} else if _, ok = p.matchLiteral(lit4, ",", 6, false); !ok {
 			goto L7
 		}
+		p.stepWork()
+		p.stepWork()
 		if _, ok = p.q2(); !ok {
 			goto L7
 		}
@@ -5139,6 +6875,7 @@ L3:
 		p.recovered = p.recovered[:x6]
 		break
 	}
+	p.stepWork()
 	if _, ok = p.q3(); !ok {
 		goto fail
 	}
@@ -5154,6 +6891,7 @@ fail:
 
 // field, called as by invokePlain (body inlined)
 func (p *parser) q2() (*Node, bool) {
+	p.stepWork()
 	var (
 		v    *Node
 		x1   int
@@ -5176,8 +6914,10 @@ func (p *parser) q2() (*Node, bool) {
 		p.tooDeep()
 	}
 	_, _ = x8, x13
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
+		p.inputWork(1)
 		x4, _, x5 = p.in[p.pos], 1, true
 	} else {
 		x4, _, x5 = p.peek()
@@ -5186,13 +6926,17 @@ func (p *parser) q2() (*Node, bool) {
 		p.expect(p.pos, 7)
 		goto L6
 	}
-	if p.pos < len(p.in) && p.in[p.pos] == 34 {
+	p.stepWork()
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 34) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit6, "\"", 7, false); !ok {
 		goto L7
 	}
+	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
+			p.inputWork(1)
 			ch, size, ok = p.in[p.pos], 1, true
 		} else {
 			ch, size, ok = p.peek()
@@ -5203,16 +6947,21 @@ func (p *parser) q2() (*Node, bool) {
 		}
 		p.pos += size
 	}
+	p.stepWork()
 	x8 = 0
 	for {
 		x9, x10 = p.pos, len(p.recovered)
-		if p.pos+2 <= len(p.in) && p.in[p.pos] == 34 && p.in[p.pos+1] == 34 {
+		p.stepWork()
+		p.stepWork()
+		if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 34 && p.in[p.pos+1] == 34) {
 			p.pos += 2
 		} else if _, ok = p.matchLiteral(lit7, "\"\"", 9, false); !ok {
 			goto L11
 		}
+		p.stepWork()
 		for {
 			if p.pos < len(p.in) {
+				p.inputWork(1)
 				ch, size, ok = p.in[p.pos], 1, true
 			} else {
 				ch, size, ok = p.peek()
@@ -5233,7 +6982,8 @@ func (p *parser) q2() (*Node, bool) {
 		p.recovered = p.recovered[:x10]
 		break
 	}
-	if p.pos < len(p.in) && p.in[p.pos] == 34 {
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 34) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit6, "\"", 7, false); !ok {
 		goto L7
@@ -5243,8 +6993,11 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
+	p.stepWork()
+	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
+			p.inputWork(1)
 			ch, size, ok = p.in[p.pos], 1, true
 		} else {
 			ch, size, ok = p.peek()
@@ -5255,17 +7008,23 @@ L6:
 		}
 		p.pos += size
 	}
+	p.stepWork()
 	x13 = 0
 	for {
 		x14, x15 = p.pos, len(p.recovered)
-		if p.pos < len(p.in) && p.in[p.pos] == 13 {
+		p.stepWork()
+		p.stepWork()
+		if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 13) {
 			p.pos++
 		} else if _, ok = p.matchLiteral(lit8, "\r", 11, false); !ok {
 			goto L16
 		}
+		p.stepWork()
 		x17 = p.pos
 		p.silent++
+		p.stepWork()
 		if p.pos < len(p.in) {
+			p.inputWork(1)
 			ch, size, ok = p.in[p.pos], 1, true
 		} else {
 			ch, size, ok = p.peek()
@@ -5283,8 +7042,10 @@ L6:
 		p.pos = x17
 		goto L16
 	L19:
+		p.stepWork()
 		for {
 			if p.pos < len(p.in) {
+				p.inputWork(1)
 				ch, size, ok = p.in[p.pos], 1, true
 			} else {
 				ch, size, ok = p.peek()
@@ -5314,6 +7075,7 @@ L3:
 
 // eol, called as by invokePlain (body inlined)
 func (p *parser) q3() (*Node, bool) {
+	p.stepWork()
 	var (
 		start int
 		v     *Node
@@ -5331,8 +7093,10 @@ func (p *parser) q3() (*Node, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
+		p.inputWork(1)
 		x4, _, x5 = p.in[p.pos], 1, true
 	} else {
 		x4, _, x5 = p.peek()
@@ -5341,7 +7105,8 @@ func (p *parser) q3() (*Node, bool) {
 		p.expect(p.pos, 13)
 		goto L6
 	}
-	if p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10 {
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10) {
 		p.pos += 2
 	} else if _, ok = p.matchLiteral(lit10, "\r\n", 13, false); !ok {
 		goto L7
@@ -5355,7 +7120,8 @@ L6:
 		p.expect(p.pos, 14)
 		goto L8
 	}
-	if p.pos < len(p.in) && p.in[p.pos] == 10 {
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 10) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit11, "\n", 14, false); !ok {
 		goto L9
@@ -5365,8 +7131,11 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
+	p.stepWork()
+	p.stepWork()
 	x11, x12 = p.pos, len(p.recovered)
-	if p.pos < len(p.in) && p.in[p.pos] == 13 {
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 13) {
 		p.pos++
 	} else if _, ok = p.matchLiteral(lit8, "\r", 11, false); !ok {
 		goto L13
@@ -5376,6 +7145,7 @@ L13:
 	p.pos = x11
 	p.recovered = p.recovered[:x12]
 L14:
+	p.stepWork()
 	if !p.atEnd() {
 		p.expect(p.pos, idEndInput)
 		goto L10
@@ -5409,6 +7179,7 @@ func (p *tparser) u0() (any, bool) {
 
 // main, invoked as by invoke (body inlined)
 func (p *tparser) i0() (any, bool) {
+	p.stepWork()
 	var (
 		start int
 		v     any
@@ -5434,10 +7205,14 @@ func (p *tparser) i0() (any, bool) {
 		p.tooDeep()
 	}
 	_, _ = x10, v16
+	p.stepWork()
 	x1 = p.pos
 	x2 = p.newVals(1)[:0]
+	p.stepWork()
+	p.stepWork()
 	x3, x4 = p.pos, len(p.recovered)
-	if p.pos < len(p.in) && p.in[p.pos] == 65279 {
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 65279) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit1, "\ufeff", 5, false); !ok {
 		goto L5
@@ -5447,15 +7222,19 @@ L5:
 	p.pos = x3
 	p.recovered = p.recovered[:x4]
 L6:
+	p.stepWork()
+	p.stepWork()
+	p.stepWork()
 	x8, x9 = p.pos, len(p.kidStack)
 	x10 = 0
 	for {
 		x11, x12 = p.pos, len(p.recovered)
+		p.stepWork()
 		if v14, ok = p.u1(); !ok {
 			goto L13
 		}
 		x10++
-		p.kidStack = append(p.kidStack, v14)
+		p.pushKid(v14)
 		if p.pos == x11 {
 			break
 		}
@@ -5468,6 +7247,7 @@ L6:
 	v15 = p.newNode("List", x8, p.pos, p.kids(x9))
 	k7 = v15
 	x2 = append(x2, v15)
+	p.stepWork()
 	if !p.atEnd() {
 		p.expect(p.pos, idEndInput)
 		goto fail
@@ -5475,7 +7255,10 @@ L6:
 	v16 = p.newNode("Seq", x1, p.pos, x2)
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 	p.where = "main"
-	v = func() any { f_17 := k7; return tmk_File(c, true, f_17) }()
+	v = func() any {
+		c.p.stepWork()
+		return func() any { f_17 := func() any { c.p.stepWork(); return k7 }(); return tmk_File(c, true, f_17) }()
+	}()
 	p.depth--
 	return v, true
 fail:
@@ -5496,6 +7279,7 @@ func (p *tparser) u1() (any, bool) {
 
 // record, invoked as by invoke (body inlined)
 func (p *tparser) i1() (any, bool) {
+	p.stepWork()
 	var (
 		start int
 		v     any
@@ -5521,8 +7305,11 @@ func (p *tparser) i1() (any, bool) {
 		p.tooDeep()
 	}
 	_ = x9
+	p.stepWork()
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	p.silent++
+	p.stepWork()
 	if !p.atEnd() {
 		p.expect(p.pos, idEndInput)
 		goto L3
@@ -5535,25 +7322,34 @@ L3:
 	p.silent--
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
+	p.stepWork()
+	p.stepWork()
 	if v5, ok = p.s2(); !ok {
 		goto fail
 	}
 	k4 = v5
+	p.stepWork()
 	x7, x8, x9 = p.pos, len(p.kidStack), 0
 	for {
 		x10, x11 = p.pos, len(p.recovered)
+		p.stepWork()
 		k12 = nil
-		if p.pos < len(p.in) && p.in[p.pos] == 44 {
+		p.stepWork()
+		p.stepWork()
+		p.stepWork()
+		if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 44) {
 			p.pos++
 		} else if _, ok = p.parser.matchLiteral(lit4, ",", 6, false); !ok {
 			goto L13
 		}
+		p.stepWork()
+		p.stepWork()
 		if v14, ok = p.s2(); !ok {
 			goto L13
 		}
 		k12 = v14
 		x9++
-		p.kidStack = append(p.kidStack, k12)
+		p.pushKid(k12)
 		if p.pos == x10 {
 			break
 		}
@@ -5565,14 +7361,26 @@ L3:
 	}
 	v15 = p.newNode("List", x7, p.pos, p.kids(x8))
 	k6 = v15
+	p.stepWork()
 	if _, ok = p.s4(); !ok {
 		goto fail
 	}
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 	p.where = "record"
 	v = func() any {
-		f_18 := func() any { b := len(c.p.kidStack); c.pushList(k4); c.pushItems(k6); return c.endList(b) }()
-		return tmk_Record(c, true, f_18)
+		c.p.stepWork()
+		return func() any {
+			f_18 := func() any {
+				c.p.stepWork()
+				return func() any {
+					b := len(c.p.kidStack)
+					c.pushList(func() any { c.p.stepWork(); return k4 }())
+					c.pushItems(func() any { c.p.stepWork(); return k6 }())
+					return c.endList(b)
+				}()
+			}()
+			return tmk_Record(c, true, f_18)
+		}()
 	}()
 	p.depth--
 	return v, true
@@ -5583,6 +7391,7 @@ fail:
 
 // field, called as by invokePlain (body inlined)
 func (p *tparser) s2() (any, bool) {
+	p.stepWork()
 	var (
 		start int
 		v     any
@@ -5607,8 +7416,10 @@ func (p *tparser) s2() (any, bool) {
 		p.tooDeep()
 	}
 	_, _ = x8, x13
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
+		p.inputWork(1)
 		x4, _, x5 = p.in[p.pos], 1, true
 	} else {
 		x4, _, x5 = p.peek()
@@ -5617,13 +7428,17 @@ func (p *tparser) s2() (any, bool) {
 		p.expect(p.pos, 7)
 		goto L6
 	}
-	if p.pos < len(p.in) && p.in[p.pos] == 34 {
+	p.stepWork()
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 34) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit6, "\"", 7, false); !ok {
 		goto L7
 	}
+	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
+			p.inputWork(1)
 			ch, size, ok = p.in[p.pos], 1, true
 		} else {
 			ch, size, ok = p.peek()
@@ -5634,16 +7449,21 @@ func (p *tparser) s2() (any, bool) {
 		}
 		p.pos += size
 	}
+	p.stepWork()
 	x8 = 0
 	for {
 		x9, x10 = p.pos, len(p.recovered)
-		if p.pos+2 <= len(p.in) && p.in[p.pos] == 34 && p.in[p.pos+1] == 34 {
+		p.stepWork()
+		p.stepWork()
+		if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 34 && p.in[p.pos+1] == 34) {
 			p.pos += 2
 		} else if _, ok = p.parser.matchLiteral(lit7, "\"\"", 9, false); !ok {
 			goto L11
 		}
+		p.stepWork()
 		for {
 			if p.pos < len(p.in) {
+				p.inputWork(1)
 				ch, size, ok = p.in[p.pos], 1, true
 			} else {
 				ch, size, ok = p.peek()
@@ -5664,7 +7484,8 @@ func (p *tparser) s2() (any, bool) {
 		p.recovered = p.recovered[:x10]
 		break
 	}
-	if p.pos < len(p.in) && p.in[p.pos] == 34 {
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 34) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit6, "\"", 7, false); !ok {
 		goto L7
@@ -5674,8 +7495,11 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
+	p.stepWork()
+	p.stepWork()
 	for {
 		if p.pos < len(p.in) {
+			p.inputWork(1)
 			ch, size, ok = p.in[p.pos], 1, true
 		} else {
 			ch, size, ok = p.peek()
@@ -5686,17 +7510,23 @@ L6:
 		}
 		p.pos += size
 	}
+	p.stepWork()
 	x13 = 0
 	for {
 		x14, x15 = p.pos, len(p.recovered)
-		if p.pos < len(p.in) && p.in[p.pos] == 13 {
+		p.stepWork()
+		p.stepWork()
+		if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 13) {
 			p.pos++
 		} else if _, ok = p.parser.matchLiteral(lit8, "\r", 11, false); !ok {
 			goto L16
 		}
+		p.stepWork()
 		x17 = p.pos
 		p.silent++
+		p.stepWork()
 		if p.pos < len(p.in) {
+			p.inputWork(1)
 			ch, size, ok = p.in[p.pos], 1, true
 		} else {
 			ch, size, ok = p.peek()
@@ -5714,8 +7544,10 @@ L6:
 		p.pos = x17
 		goto L16
 	L19:
+		p.stepWork()
 		for {
 			if p.pos < len(p.in) {
+				p.inputWork(1)
 				ch, size, ok = p.in[p.pos], 1, true
 			} else {
 				ch, size, ok = p.peek()
@@ -5745,6 +7577,7 @@ L3:
 
 // eol, called as by invokePlain (body inlined)
 func (p *tparser) s3() (any, bool) {
+	p.stepWork()
 	var (
 		start int
 		v     any
@@ -5773,8 +7606,10 @@ func (p *tparser) s3() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
+		p.inputWork(1)
 		x5, _, x6 = p.in[p.pos], 1, true
 	} else {
 		x5, _, x6 = p.peek()
@@ -5783,8 +7618,9 @@ func (p *tparser) s3() (any, bool) {
 		p.expect(p.pos, 13)
 		goto L7
 	}
+	p.stepWork()
 	x9 = p.pos
-	if p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10 {
+	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10) {
 		p.pos += 2
 	} else if _, ok = p.parser.matchLiteral(lit10, "\r\n", 13, false); !ok {
 		goto L8
@@ -5800,8 +7636,9 @@ L7:
 		p.expect(p.pos, 14)
 		goto L11
 	}
+	p.stepWork()
 	x13 = p.pos
-	if p.pos < len(p.in) && p.in[p.pos] == 10 {
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 10) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit11, "\n", 14, false); !ok {
 		goto L12
@@ -5813,11 +7650,14 @@ L12:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L11:
+	p.stepWork()
 	x16 = p.pos
 	x17 = p.newVals(1)[:0]
+	p.stepWork()
 	x18, x19 = p.pos, len(p.recovered)
+	p.stepWork()
 	x23 = p.pos
-	if p.pos < len(p.in) && p.in[p.pos] == 13 {
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 13) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit8, "\r", 11, false); !ok {
 		goto L21
@@ -5831,6 +7671,7 @@ L21:
 	v20 = nil
 L22:
 	x17 = append(x17, v20)
+	p.stepWork()
 	if !p.atEnd() {
 		p.expect(p.pos, idEndInput)
 		goto L15
@@ -5858,6 +7699,7 @@ fail:
 
 // eol, called as by invokePlain (body inlined)
 func (p *tparser) s4() (any, bool) {
+	p.stepWork()
 	var (
 		start int
 		v     any
@@ -5875,8 +7717,10 @@ func (p *tparser) s4() (any, bool) {
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
+	p.stepWork()
 	x1, x2 = p.pos, len(p.recovered)
 	if p.pos < len(p.in) {
+		p.inputWork(1)
 		x4, _, x5 = p.in[p.pos], 1, true
 	} else {
 		x4, _, x5 = p.peek()
@@ -5885,7 +7729,8 @@ func (p *tparser) s4() (any, bool) {
 		p.expect(p.pos, 13)
 		goto L6
 	}
-	if p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10 {
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos+2 <= len(p.in) && p.in[p.pos] == 13 && p.in[p.pos+1] == 10) {
 		p.pos += 2
 	} else if _, ok = p.parser.matchLiteral(lit10, "\r\n", 13, false); !ok {
 		goto L7
@@ -5899,7 +7744,8 @@ L6:
 		p.expect(p.pos, 14)
 		goto L8
 	}
-	if p.pos < len(p.in) && p.in[p.pos] == 10 {
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 10) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit11, "\n", 14, false); !ok {
 		goto L9
@@ -5909,8 +7755,11 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
+	p.stepWork()
+	p.stepWork()
 	x11, x12 = p.pos, len(p.recovered)
-	if p.pos < len(p.in) && p.in[p.pos] == 13 {
+	p.stepWork()
+	if (!workControlsEnabled || p.control == nil) && (p.pos < len(p.in) && p.in[p.pos] == 13) {
 		p.pos++
 	} else if _, ok = p.parser.matchLiteral(lit8, "\r", 11, false); !ok {
 		goto L13
@@ -5920,6 +7769,7 @@ L13:
 	p.pos = x11
 	p.recovered = p.recovered[:x12]
 L14:
+	p.stepWork()
 	if !p.atEnd() {
 		p.expect(p.pos, idEndInput)
 		goto L10
