@@ -328,17 +328,17 @@ streaming, code-generation and TypeScript guides with the applicable stage.
 The `feat/parse-work-controls` branch starts the core batch stage. It provides
 invocation-local context and overflow-safe work reservations, controlled input
 preparation, scanner and execution-dispatch checkpoints, action-value checkpoints,
-and cleanup after
-initialization interruption or caller panic. Recognition uses the same batch
-lifecycle. Individual trace-option callbacks stop before a subsequent callback
+large character-class membership checkpoints, and cleanup after initialization
+interruption or caller panic. Recognition uses the same batch lifecycle. Individual trace-option callbacks stop before a subsequent callback
 when cancellation is observed.
 
 This foundation is not an adopted implementation of the full contract above.
 Document and stream calls reject active controls until their lifecycle stages
-are implemented. Input text materialization, memo/environment maintenance, graph,
-rollback and resumption loops still require the coverage map and regression gates
-before adoption. First-use setup ordering also needs a separate validation gate. The
-prototype remains separate from main until contract and performance gates pass.
+are implemented. Other matcher loops, input text materialization, memo/environment
+maintenance, graph, rollback and resumption loops still require the coverage map
+and regression gates before adoption. First-use setup ordering also needs a
+separate validation gate. The prototype remains separate from main until contract
+and performance gates pass.
 
 The private `pego_work_controls_reference` build tag removes execution
 instrumentation and rejects active controls. It retains the new state layout;
@@ -365,6 +365,16 @@ Allocations, implicit buffer-growth copies, map hashing, and GC remain
 nonpreemptible runtime intervals. With absent controls or the private reference
 build, bulk operations retain their ordinary paths. This source-level separation
 does not establish the default path's performance cost.
+
+Large character classes charge one step before each non-ASCII range comparison,
+including choice guards and value-free scans in closure and both bytecode VMs.
+This bounds searches within an otherwise single matching operation. ASCII bitmap
+lookups and fixed one/two-range comparisons are covered by their surrounding
+scanner/dispatch charges; they do not add per-range charges. Range comparisons
+consume steps only, since the input probe is already charged. Compile-time bitmap
+construction remains outside parse work controls. Absent controls and the private
+reference build retain uninstrumented range searches. Loaded bytecode uses the
+same runtime checks; interruption is fatal through choice and recovery.
 
 ## Alternatives considered
 
