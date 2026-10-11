@@ -3,8 +3,7 @@
 This guide explains how PEGO reports syntax errors, how to make the messages useful, and how to keep parsing after an
 error so that one run reports every problem in a file. It is a companion to the normative text in
 [spec/attributes.md](../../spec/attributes.md) (`#error`, `#recover` and
-[syntax errors](../../spec/parsing.md#syntax-errors)); the reasoning behind the design is recorded in
-[docs/design/006](../design/006-error-reporting-and-recovery.md).
+[syntax errors](../../spec/parsing.md#syntax-errors)).
 
 Contents:
 

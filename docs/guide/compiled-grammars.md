@@ -71,8 +71,8 @@ A few more facts:
 - A loaded parser is an ordinary `*pego.Parser`: it is safe for concurrent use, `WithStart` changes its start rule, and
   `Parse`, `ParseStream`, `NewDocument` and the options of the [runtime guide](runtime.md) work on it, within the limits
   of the next section.
-- A parser that was loaded from a file is the same as one compiled from source for every grammar of `examples/` and of
-  the engine tests (the node tree, positions and errors are compared); `internal/engine/compiled_test.go` is the test.
+- A parser loaded from a file preserves the same tree, positions and errors as one compiled from source. Keep a
+  round-trip comparison in your own test suite for the grammars your application depends on.
 
 ## With and without the AST
 

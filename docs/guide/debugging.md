@@ -2,8 +2,7 @@
 
 This guide is about finding out what a grammar does with an input: which rules it calls where, why an input is
 rejected, and where the time of a parse goes. It covers three commands, `pego explain`, `pego trace` and
-`pego profile`, and the Go API behind them (`pego.WithTrace`, `pego.WithProfile`). The design is recorded in
-[docs/design/014](../design/014-tracing-and-profiling.md).
+`pego profile`, and the Go API behind them (`pego.WithTrace`, `pego.WithProfile`).
 
 Contents:
 

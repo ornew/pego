@@ -21,8 +21,8 @@ This document describes the repository layout and architecture, how to run tests
 | `examples/` | Small example grammars that show the features, with golden tests |
 | `parsers/` | Ready-made parsers for common languages, each a Go module of its own (`parsers/<language>/`, with the grammar, the generated parser and conformance tests); `generate.go` and `parsers_test.go` (main module) generate them and check them on every backend ([README](../parsers/README.md)) |
 | `playground/` | WebAssembly API used by the web playground (package `main`; `GOOS=js GOARCH=wasm`) |
-| `site/` | Web site generator (a separate Go module): landing page, docs, reference and playground; build with `site/build.sh` |
-| `netlify.toml` | Netlify build, headers and canonical-domain redirects |
+| `site/` | Web site generator (a separate Go module): landing page, docs, reference and playground; see [website maintenance](site.md) |
+| `netlify.toml` | Netlify build, headers and canonical-domain redirects; see [website maintenance](site.md) |
 | `bench/` | Benchmarks comparing the backends with each other and with standard-library parsers (`gen/` holds generated parsers). Results are in [benchmarks.md](benchmarks.md), generated with `go run ./bench/report` (`report/`) from the raw results in `results.txt`. `node bench/ts-literal.mjs [runtime.ts]` measures the embedded TS literal matcher, excluding input/rule setup, trees and error construction; its optional path compares checkouts. |
 | `spec/` | Language specification, including the bytecode and VM specification ([bytecode.md](../spec/bytecode.md)) |
 | `docs/tutorial/` | Tutorials (getting started) |
@@ -131,6 +131,20 @@ Required-tool checks fail before tests if a required runtime or the TypeScript c
 reference data; the additional CPython `Lib/test` corpus (`PEGO_CPYTHON_SRC`) and DuckDB `REFERENCE_FILE` corpus are
 not supplied. DuckDB checks use vendored reference results, not a live DuckDB oracle. These jobs do not claim
 browser-engine or deployed-site validation.
+
+## Repository grammar test coverage
+
+The guides show how to test a grammar in an application. The repository uses the same layers across its examples and parser corpus:
+
+| Coverage | Location |
+|:--|:--|
+| Example grammar golden files | [`examples/examples_test.go`](../examples/examples_test.go) |
+| Ready-made parser goldens across engine backends and generated parsers | [`parsers/parsers_test.go`](../parsers/parsers_test.go) |
+| Reference-implementation and conformance tests with fuzz targets | Each parser module's tests, for example [`parsers/json/json_test.go`](../parsers/json/json_test.go) |
+| Generated inputs and backend comparisons | [`sample/example_test.go`](../sample/example_test.go) |
+| Compiled grammars, Documents and backend equivalence | `internal/engine/` tests such as `compiled_test.go` and `document_test.go` |
+
+Root `go test ./...` covers the main module. Run [`parsers/test.sh`](../parsers/test.sh) to vet and test all standalone parser modules; `cd site && go test ./...` covers the site module.
 
 ## Language feature status
 

@@ -15,7 +15,7 @@ backend, a compiled file, generated code, an incremental reparse) behave like th
 | [Fuzzing](#fuzzing) | Inputs nobody thought of | The same property function |
 | [Reference implementations](#reference-implementations) | Differences from another parser of the same language | A comparison function |
 | [Other forms of the grammar](#other-forms-of-the-grammar) | A compiled file, generated code or an incremental parse that differs from the engine | One comparison per form |
-| [The grammar itself](#the-grammar-itself) | Mistakes in the grammar, formatting, stale generated files | Commands in CI |
+| [The grammar itself](#the-grammar-itself) | Mistakes in the grammar, formatting, stale generated files | Repeatable checks |
 
 - [The grammar under test](#the-grammar-under-test)
 - [Examples: what is accepted and rejected](#examples-what-is-accepted-and-rejected)
@@ -26,8 +26,7 @@ backend, a compiled file, generated code, an incremental reparse) behave like th
 - [Reference implementations](#reference-implementations)
 - [Other forms of the grammar](#other-forms-of-the-grammar)
 - [The grammar itself](#the-grammar-itself)
-- [In CI](#in-ci)
-- [How the repository tests its grammars](#how-the-repository-tests-its-grammars)
+- [In your CI](#in-your-ci)
 
 ## The grammar under test
 
@@ -574,7 +573,7 @@ Check the grammar as a file, too:
   compares: [code generation](code-generation.md#keeping-generated-code-up-to-date) and
   [compiled grammars](compiled-grammars.md#embedding-with-goembed).
 
-## In CI
+## In your CI
 
 ```bash
 go vet ./...
@@ -585,18 +584,6 @@ test -z "$(pego fmt -l *.pego)"
 ```
 
 Fuzz for longer on a schedule rather than on every commit.
-
-## How the repository tests its grammars
-
-Everything above is used in the PEGO repository itself, so there are examples of each to read:
-
-| What | Where |
-|:--|:--|
-| Golden files for every example grammar, with `-update` | [examples/examples_test.go](../../examples/examples_test.go) |
-| Golden files for each ready-made parser, run on every backend of the engine and on the generated parser | [parsers/parsers_test.go](../../parsers/parsers_test.go) |
-| Tests against reference implementations and conformance suites, with fuzz targets | `*_test.go` of each module in [parsers/](../../parsers/), for example [parsers/json/json_test.go](../../parsers/json/json_test.go) |
-| Fuzz target seeded with generated inputs, comparing the three backends | [sample/example_test.go](../../sample/example_test.go) |
-| Backends, saved and loaded grammars and documents compared with a fresh parse, on every grammar | `internal/engine/` tests, for example `compiled_test.go` and `document_test.go` |
 
 ## See also
 

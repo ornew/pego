@@ -37,9 +37,7 @@ character that was examined to decide, such as the character after a `+` that en
 edited, an entry stays valid if the edit lies outside the range it examined, and is dropped otherwise. The next `Parse`
 runs the grammar from the start rule as usual, but each rule call that finds a valid entry returns its result without
 running. A long repetition is not even run element by element: it **resumes** its run from the last parse (see
-[What is reused, and why](#what-is-reused-and-why)). The result is always the same as parsing the new text from scratch (a randomized test in
-`internal/engine/document_test.go` checks the node tree, the positions and the syntax errors against a fresh parse after
-each of 2,000 random edits, on every backend).
+[What is reused, and why](#what-is-reused-and-why)). The result is always the same as parsing the new text from scratch. For an application-level check, compare the tree, positions and syntax errors after representative edits with a fresh parse.
 
 Intermediate calls in an indirect left recursion can depend on an unfinished
 seed whose eventual input range is not part of the call's own range. These
@@ -853,5 +851,4 @@ Adapting it to a real editor:
 - [Linting grammars](linting.md): the `hint` findings that point at grammars that reuse poorly.
 - [Errors and recovery](errors-and-recovery.md): `#error`, `#recover` and the shape of `SyntaxError`.
 - [Runtime](runtime.md): backends, position units and the other parse options.
-- [docs/performance.md](../performance.md): measurement methods and current benchmark analysis; see the [optimization catalog](../optimizations/README.md) for historical changes.
-- [Design record 007](../design/007-streaming-and-incremental-parsing.md).
+- [Performance](../performance.md): current benchmark results and how to measure your grammar.

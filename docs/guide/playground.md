@@ -1,21 +1,13 @@
-# The Web Site and the Playground
+# The Playground
 
-PEGO has a static web site at **[pego.ornew.net](https://pego.ornew.net/)**: a landing page, this documentation, an API
-reference and a **[playground](https://pego.ornew.net/playground/)** where you write a grammar, type an input and see the
-tree as you type. Everything in the playground runs in your browser: the PEGO library
-is compiled to WebAssembly, so nothing is sent to a server.
+The [PEGO playground](https://pego.ornew.net/playground/) lets you write a grammar, type an input and inspect the parse tree as you edit. Everything runs in your browser: PEGO is compiled to WebAssembly, so grammar text and input are not sent to a server.
 
-This guide explains what the playground shows, how to build and preview the whole site locally, how it is deployed, and
-the small JavaScript API of the WebAssembly module. The design is recorded in
-[design record 016](../design/016-web-site-and-playground.md).
+This guide covers the playground's controls, shared links, limits and WebAssembly API. For repository site builds, tests and deployment, see [Website maintenance](../site.md).
 
 - [Using the playground](#using-the-playground)
-- [Building and previewing the site](#building-and-previewing-the-site)
-- [What the site is made of](#what-the-site-is-made-of)
-- [Deploying on Netlify](#deploying-on-netlify)
+- [Nesting limits](#nesting-limits)
+- [Shared links](#shared-links)
 - [The WebAssembly API](#the-webassembly-api)
-- [Tests](#tests)
-- [Changing the site](#changing-the-site)
 
 ## Using the playground
 
@@ -87,82 +79,6 @@ the existing state/link is retained and the browser console reports the failure.
 
 Code blocks of grammars in this documentation have a **Playground** button that opens them in the playground.
 
-## Building and previewing the site
-
-The site is built by a Go program in [`site/`](../../site/), so Go is the only requirement:
-
-```bash
-site/build.sh                          # build into site/dist
-site/build.sh -serve localhost:8080    # build, then serve it at http://localhost:8080/
-```
-
-`site/build.sh` runs `go run . -repo .. -out dist` in `site/`. The flags are:
-
-| Flag | Default | Meaning |
-|:--|:--|:--|
-| `-repo` | `..` | The root of the repository |
-| `-out` | `dist` | The output directory. It is replaced by each build, but only if a previous build wrote it |
-| `-wasm` | `true` | Build the playground's WebAssembly binary. Without it, the pages are built but the playground cannot run |
-| `-check` | `true` | Fail if a page links to a missing page, file or anchor |
-| `-previous-site` | Empty locally; production `URL` on Netlify | Import the published current WASM/runtime pair to retain it for one deploy; requires `-wasm` |
-| `-deploy-url` | Empty locally; production `DEPLOY_URL` on Netlify | Record this immutable deploy root for the next build's asset downloads |
-| `-serve` | | After building, serve the output at this address |
-| `-github`, `-ref` | `https://github.com/ornew/pego`, `main` | Where links to source files point |
-
-The output is plain static files. Any static server works, as long as it serves the files over HTTP (the playground
-cannot run from `file://` URLs, because browsers do not load WebAssembly or workers from them):
-
-```bash
-python3 -m http.server -d site/dist 8080
-```
-
-The build output (`site/dist`) is not committed.
-
-## What the site is made of
-
-| URL | Source |
-|:--|:--|
-| `/` | The landing page, assembled from [`README.md`](../../README.md): the tagline and introduction, a live example with the README's grammar, the feature list under "Why PEGO" as cards, and the following sections |
-| `/docs/tutorial/`, `/docs/guide/`, `/spec/`, `/docs/design/`, `/docs/…`, `/examples/` | The Markdown files of the repository, rendered at build time. Links between Markdown files (relative, relative to the repository root like `/spec/types.md`, or percent-encoded) become links between pages; links to other files of the repository go to GitHub. The design records get a generated index |
-| `/reference/` | The API reference of packages `pego` and `grammar`, generated from the Go source with `go/doc`, and the reference of the `pego` command, generated from what the command prints: its usage message and `pego <command> -h` for every command it lists. Types that are aliases of internal types (such as `Node`) show the definition and methods of the internal type |
-| `/playground/` | The playground: `app.js`, `worker.js`, content-hashed `wasm/pego-<hash>.wasm` and `runtime/wasm_exec-<hash>.js`, plus `assets.json` pairing the current/previous generations; every page records the current WASM in `<html data-wasm>`. The stable `wasm_exec.js` supports pre-manifest workers |
-| `/search-index.json` | The text of every page, for the search box in the header (press `/`) |
-
-Nothing is copied by hand, so the site cannot drift from the repository: rebuilding it picks up every change.
-
-The pages need no external resources (no CDN, fonts or analytics), have light and dark themes (following the system
-until the switch in the header is used), and work on phone screens.
-
-## Deploying on Netlify
-
-Production builds download the currently published WASM and its matching Go runtime before generating the new site.
-The output retains at most the new pair and one previous pair; deploy/branch previews do not import production assets
-automatically. A page from the preceding deploy can therefore start its old parser after publication. The worker reads
-`assets.json` and imports the matching hashed runtime. Generations outside that window must reload.
-
-The first upgrade from a pre-manifest site reads its playground HTML and stable runtime. Later builds fetch from the
-immutable deploy URL recorded in the manifest. Missing or invalid published assets fail the build; a genuinely missing
-playground initializes a first deployment. Keep production publication sequential. Rollbacks and manually promoted
-previews need `-previous-site` set to the deployment being replaced; retention does not coordinate concurrent promotions.
-To deliberately reset retention, pass `-previous-site ''`. See [the asset-retention design](../design/023-playground-asset-retention.md)
-for the format, bounds and bootstrap limitations.
-
-[`netlify.toml`](../../netlify.toml) at the root of the repository configures Netlify: the build command is
-`sh site/build.sh`, the publish directory is `site/dist`, and `GO_VERSION` selects the Go version of `go.mod`. Connecting
-the repository to a Netlify site is enough to deploy it; each build runs the link check, so a broken link fails the
-deploy instead of publishing it. The official site, [pego.ornew.net](https://pego.ornew.net/), is deployed this way.
-
-Requests to `pego-go.netlify.app` over HTTP or HTTPS receive a permanent `301`
-redirect to `https://pego.ornew.net`, preserving the path and query parameters.
-The forced, host-specific rules also redirect published files and leave deploy
-preview hosts available. These rules take effect when Netlify deploys the
-updated configuration; the local preview server does not apply them.
-
-The configuration also sets a strict `Content-Security-Policy`: the pages load scripts, styles and data only from the
-site itself, and need no inline scripts or styles; `'wasm-unsafe-eval'` allows compiling `pego.wasm`. The
-WebAssembly binaries and their hashed runtime scripts are cached for a year (`immutable`); the other files are
-revalidated on each visit, Netlify's default.
-
 ## The WebAssembly API
 
 `pego.wasm` (built from `playground/` with `GOOS=js GOARCH=wasm`) installs a global object `pego` when it starts. Each
@@ -197,39 +113,4 @@ go.run(instance);
 const res = JSON.parse(pego.parse(JSON.stringify({ grammar: 'def main = "a"+', input: "aaa" })));
 ```
 
-The binary is about 8.3 MB, 2.2 MB compressed with gzip and 1.6 MB with Brotli (static hosts such as Netlify compress
-it). The landing page loads it only when its live example scrolls into view.
-
-## Tests
-
-| Test | What it checks |
-|:--|:--|
-| `go test ./playground` | The API natively (it has no build tags), and `TestWasmSmoke`: it builds `pego.wasm` and the `pego` command, and runs [`playground/testdata/smoke.mjs`](../../playground/testdata/smoke.mjs) in Node, which compares every example of [`playground/examples.txt`](../../playground/examples.txt) with the command: JSON, S-expression, errors, `-check`, every backend, byte positions, `pego fmt` and `pego gen -types`. It is skipped when `node` is not installed and in `-short` mode |
-| `cd site && go test ./...` | Builds the whole site and checks that every Markdown file of `docs/` and `spec/` became a page, that the generated pages and the search index are complete, that no page needs inline scripts or styles, and that every internal link and anchor resolves. `TestJavaScript` runs the tests of the page scripts in `site/testdata/*_test.mjs` with `node --test` (skipped without Node) |
-
-The site is a separate Go module, so `go test ./...` at the root does not run its tests.
-The playground state tests execute the actual application with a controlled DOM, client and timers. They check
-incoming option-only links, omitted/invalid option defaults, parse requests, tabs, editor scroll and named examples;
-deferred encoding/decoding tests also cover reverse completion, Share, navigation before event delivery, autosave
-during link loading, local edits during initial example fetching, and failures in both playground and landing scripts.
-They do not replace checks in a browser with the real WebAssembly worker.
-Tree tests exercise initial/live row caps, wide pages, lazy sibling access, deferred-child reveal, deep subtree
-windows, exact cap boundaries, reference cleanup and page focus with a controlled DOM. The renderer lives in
-`site/static/playground/tree.js`. `node site/testdata/bench_tree.mjs [parent-app.js]` compares actual sources in the
-same VM: 50 children compare equal displayed work (100 warmups, 1,000 sets), while 10,000 children compare full
-versus bounded display (three warmups, 20 sets). These timings exclude browser layout, parsing and WASM.
-`node site/testdata/bench_playground_state.mjs [app.js]` measures unchanged-link dispatch in that harness, with
-10,000 warmups and 100,000 measured events. The optional application path compares another revision. Immediate
-decoding excludes compression/encoding, browser DOM, worker and WebAssembly costs.
-
-## Changing the site
-
-- **A new document** in `docs/guide/`, `docs/tutorial/`, `spec/`, `docs/design/` or `docs/` appears in its section
-  automatically. A Markdown file in a new directory under `docs/` or `spec/` makes the build fail until `docSections` in
-  [`site/build.go`](../../site/build.go) includes it, so that nothing is left out silently.
-- **The order** of the guides and of the specification follows the links in `docs/guide/README.md` and
-  `spec/README.md`; other sections are sorted by file name.
-- **An example** for the playground is a line in [`playground/examples.txt`](../../playground/examples.txt): a name, a
-  grammar, an input and a description. The smoke test then checks it too.
-- **Templates, styles and scripts** are in `site/templates/` and `site/static/`. They are plain HTML, CSS and JavaScript
-  modules: there is no build step and no npm dependency.
+The binary is about 8.3 MB before compression (2.2 MB with gzip or 1.6 MB with Brotli). The landing page loads it only when its live example scrolls into view.

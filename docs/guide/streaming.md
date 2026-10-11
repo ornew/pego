@@ -392,8 +392,8 @@ Repeated variable assignments keep one current binding per name. Environments
 saved for backtracking or a caller remain immutable, but the current environment
 does not retain all previous assignments from consumed records. Lookup cost
 depends on distinct variable names. Large variable values, active rollback
-points and memo keys can still keep their own data alive; see
-[optimization 069](../optimizations/069-bound-persistent-variable-binding-histories.md).
+points and memo keys can still keep their own data alive. To measure these costs
+in your workload, see the [performance measurement method](../performance.md#how-to-measure).
 
 What a stream parse releases as it goes:
 

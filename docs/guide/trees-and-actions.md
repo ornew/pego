@@ -919,9 +919,7 @@ formatter, say), capture them instead of discarding them.
 
 ## 10. Performance guidelines
 
-PEGO builds values only where something can observe them. The guidelines in the
-[optimization catalog](../optimizations/README.md#grammar-authoring-guidelines-for-performance) boil down to helping the engine know
-what is unobserved:
+PEGO builds values only where something can observe them. To reduce allocations, help the engine identify what your grammar does not need:
 
 1. **Discard trivia inside captured expressions** with `-x`: `rest:(-ws -"," -ws v:value)*`. The engine cannot drop it
    automatically, because a captured value exposes its full CST.
@@ -941,9 +939,7 @@ allocated, measured around a single `Parse` call with `runtime.MemStats`:
 | Whitespace discarded, but `ident` without a type: `def ident = (?a-z)+` (a list of `Match` nodes) | 16.4 MB |
 | Same, with `def ident = @(?a-z)+` | 11.9 MB |
 
-The shipped example grammars follow the same rules. Discarding their trivia was part of a change that took the JSON
-example from 50.5 MB to 42.8 MB per parse and minilang from 32.8 MB to 23.0 MB, with identical ASTs (change 9 in the
-[optimization entry 009](../optimizations/009-value-free-pratt-lines-discarding-trivia-in-example-grammars-936857c.md)).
+These choices matter most when a grammar captures many repeated values. Measure your own input and inspect the resulting tree to ensure that discarding text does not remove information your application needs.
 
 If you only need to know whether the input is valid, use `pego parse -check` (`pego.RecognizeOnly()`): it builds no
 values and runs no actions.
