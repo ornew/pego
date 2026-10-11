@@ -254,6 +254,23 @@ an alternative or be swallowed by predicate/action error recovery or #recover.
 Do not construct ordinary syntax diagnostics after the terminal interruption
 merely to fill in a location; that would perform additional unbudgeted scans.
 
+### Caller-context panic boundaries
+
+`Context.Err` and `Done` are caller-owned methods and remain nonpreemptible.
+Preserve their original panic values, including values implementing
+`runtime.Error`, through initialization, execution, nested trace recovery, and
+result publication. A caller panic must not become an invalid-bytecode error,
+a cancellation error, or a partially returned result. Actual VM runtime faults
+retain their existing invalid-bytecode classification.
+
+Use private attribution around `Err` calls and remove it before re-panicking to
+the caller. `Done` runs outside VM recovery during setup. An engine interruption
+raised by a trace accessor within a context call still follows the fatal path;
+already attributed panics must not accumulate additional wrappers. Preserve
+cancellation-error identity and reservation precedence for returning contexts.
+Release invocation scratch before a caller panic escapes, and keep earlier
+results independently owned through retry.
+
 ### Results and cleanup
 
 Batch Node parsing returns nil on interruption; recognition returns the same
@@ -511,6 +528,25 @@ and position unit, in Node
 and recognition modes. Fatal interruption bypasses negation and fallback rules,
 releases scratch, and preserves retained results through pooled retry. Removing
 only the skipped-alternative charge makes the isolated regression tests fail.
+
+Caller-context panic tests cover setup, controlled input preparation, trace
+prechecks and postchecks, result publication, rejected reservations, and counted
+work. Every backend and position unit is exercised in Node and recognition
+modes, with a public-option smoke test as well. AST-omitted VM programs are
+tested for Node parsing; recognition still requires an AST.
+The counted-work test arms its context after setup and asserts the polling
+counters, independently of preparation and trace work. Earlier Nodes remain
+unchanged through interruption and retry; observed scratch/control references
+are released before the panic escapes.
+
+Private attribution preserves exact caller panic identity through nested trace
+recovery and recursive context polls. A trace accessor's work interruption inside
+a context method stays fatal. Corrupting an already prepared VM still returns
+its ordinary invalid-bytecode error, with cleanup and retry after restoration.
+Disabling context attribution or outer unwrapping makes the corresponding
+regression tests fail. Context calls remain nonpreemptible, and the active-poll
+cost needs later measurement; this establishes no default-cost or full-feature
+adoption claim.
 
 ## Alternatives considered
 

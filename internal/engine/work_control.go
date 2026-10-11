@@ -80,13 +80,31 @@ func newWorkControl(ctx context.Context, limits WorkLimits) *workControl {
 	return &workControl{ctx: ctx, limits: limits}
 }
 
+// contextPanic attributes a panic to caller-owned context code rather than VM
+// execution. Parse boundaries re-raise its original value after cleanup.
+type contextPanic struct{ value any }
+
+func contextErr(ctx context.Context) error {
+	defer func() {
+		if x := recover(); x != nil {
+			switch x.(type) {
+			case fatal, contextPanic:
+				panic(x) // preserve engine interruption and an already attributed panic
+			default:
+				panic(contextPanic{value: x})
+			}
+		}
+	}()
+	return ctx.Err()
+}
+
 // check observes cancellation at an explicit engine checkpoint. It is safe on
 // a nil receiver.
 func (c *workControl) check() {
 	if c == nil || c.ctx == nil {
 		return
 	}
-	if err := c.ctx.Err(); err != nil {
+	if err := contextErr(c.ctx); err != nil {
 		panic(fatal{err: err})
 	}
 	c.inputSinceCheck = 0
@@ -111,7 +129,7 @@ func (c *workControl) charge(inputWork, steps uint64) {
 	// canceled invocation wins over a simultaneously exhausted budget.
 	if poll || inputExceeded || stepsExceeded {
 		if c.ctx != nil {
-			if err := c.ctx.Err(); err != nil {
+			if err := contextErr(c.ctx); err != nil {
 				panic(fatal{err: err})
 			}
 		}
