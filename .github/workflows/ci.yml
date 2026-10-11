@@ -1,0 +1,142 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  go-native:
+    name: Go root and all parser modules
+    timeout-minutes: 90
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.27.1
+          check-latest: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.18.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.14.0
+      - name: Install pinned TypeScript reference compiler
+        run: |
+          npm install --prefix "$RUNNER_TEMP/pego-typescript" --no-save --ignore-scripts typescript@5.9.3
+          echo "$RUNNER_TEMP/pego-typescript/node_modules/.bin" >> "$GITHUB_PATH"
+      - uses: actions/checkout@v4
+        with:
+          repository: microsoft/TypeScript
+          ref: v5.9.3
+          path: typescript-reference
+          sparse-checkout: tests/cases
+          sparse-checkout-cone-mode: true
+      - name: Verify required runtimes and references
+        env:
+          REQUIRE_NODE: "1"
+          REQUIRE_PYTHON: "1"
+          REQUIRE_TSC: "1"
+          REQUIRE_TYPESCRIPT_CORPUS: "1"
+          PEGO_PYTHON: python
+          PEGO_TYPESCRIPT: ${{ runner.temp }}/pego-typescript/node_modules/typescript
+          PEGO_TYPESCRIPT_TESTS: ${{ github.workspace }}/typescript-reference/tests/cases
+        run: .github/scripts/require-toolchain.sh
+      - name: Record test provenance
+        env:
+          PEGO_PYTHON: python
+          PEGO_TYPESCRIPT: ${{ runner.temp }}/pego-typescript/node_modules/typescript
+          PEGO_TYPESCRIPT_REF: ${{ github.workspace }}/typescript-reference
+          PEGO_TYPESCRIPT_TESTS: ${{ github.workspace }}/typescript-reference/tests/cases
+        run: .github/scripts/write-provenance.sh "$RUNNER_TEMP/pego-ci-provenance.log"
+      - name: Test root module
+        run: go test -v -timeout=45m ./... 2>&1 | tee "$RUNNER_TEMP/pego-root-test.log"
+      - name: Vet root module
+        run: go vet ./... 2>&1 | tee "$RUNNER_TEMP/pego-root-vet.log"
+      - name: Test and vet parsers plus every parser module
+        env:
+          PEGO_PYTHON: python
+          PEGO_TYPESCRIPT: ${{ runner.temp }}/pego-typescript/node_modules/typescript
+          PEGO_TYPESCRIPT_TESTS: ${{ github.workspace }}/typescript-reference/tests/cases
+        run: parsers/test.sh -v -timeout=30m 2>&1 | tee "$RUNNER_TEMP/pego-parser-modules.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: go-native-test-logs
+          path: ${{ runner.temp }}/pego-*.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+  site:
+    name: Site build and JavaScript checks
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.27.1
+          check-latest: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.18.0
+      - name: Require Node.js used by site tests
+        env:
+          REQUIRE_NODE: "1"
+        run: .github/scripts/require-toolchain.sh
+      - name: Record test provenance
+        run: .github/scripts/write-provenance.sh "$RUNNER_TEMP/pego-ci-provenance.log"
+      - name: Test site module
+        run: cd site && go test -v -timeout=45m ./... 2>&1 | tee "$RUNNER_TEMP/pego-site-test.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: site-test-logs
+          path: |
+            ${{ runner.temp }}/pego-site-test.log
+            ${{ runner.temp }}/pego-ci-provenance.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+  node-wasm-typescript:
+    name: Node.js WASM and generated TypeScript
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.27.1
+          check-latest: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.18.0
+      - name: Install pinned TypeScript checker
+        run: npm install --global --ignore-scripts typescript@5.9.3
+      - name: Require Node.js and TypeScript checker
+        env:
+          REQUIRE_NODE: "1"
+          REQUIRE_TSC: "1"
+        run: .github/scripts/require-toolchain.sh
+      - name: Record test provenance
+        run: PEGO_TYPESCRIPT="$(npm root -g)/typescript" .github/scripts/write-provenance.sh "$RUNNER_TEMP/pego-ci-provenance.log"
+      - name: Run WebAssembly smoke test in Node.js
+        run: go test -v -timeout=20m ./playground -run '^TestWasmSmoke$' -count=1 2>&1 | tee "$RUNNER_TEMP/pego-wasm-test.log"
+      - name: Run generated TypeScript parser tests and strict type checks
+        run: go test -v -timeout=20m ./internal/engine -run '^TestGeneratedTS' -count=1 2>&1 | tee "$RUNNER_TEMP/pego-generated-ts-test.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: node-wasm-typescript-test-logs
+          path: |
+            ${{ runner.temp }}/pego-*-test.log
+            ${{ runner.temp }}/pego-ci-provenance.log
+          if-no-files-found: ignore
+          retention-days: 14
