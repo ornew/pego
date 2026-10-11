@@ -22,38 +22,6 @@ func batchRetentionParser(t *testing.T, e TraceEvent) *parser {
 	return e.p
 }
 
-func batchRetentionAssertDetached(t *testing.T, p *parser, aborted bool) {
-	t.Helper()
-	if p == nil {
-		t.Fatal("trace callback did not expose a parser")
-	}
-	if p.aborted != aborted {
-		t.Fatalf("aborted=%t want %t", p.aborted, aborted)
-	}
-	var inspect func(reflect.Value, string)
-	inspect = func(v reflect.Value, path string) {
-		switch v.Kind() {
-		case reflect.Pointer, reflect.Map, reflect.Slice, reflect.Func, reflect.Chan, reflect.Interface, reflect.UnsafePointer:
-			if !v.IsNil() {
-				t.Errorf("finished parser retains %s (%s)", path, v.Kind())
-			}
-		case reflect.String:
-			if v.Len() != 0 {
-				t.Errorf("finished parser retains %s (string)", path)
-			}
-		case reflect.Struct:
-			for i := range v.NumField() {
-				inspect(v.Field(i), path+"."+v.Type().Field(i).Name)
-			}
-		case reflect.Array:
-			for i := range v.Len() {
-				inspect(v.Index(i), fmt.Sprintf("%s[%d]", path, i))
-			}
-		}
-	}
-	inspect(reflect.ValueOf(*p), "parser")
-}
-
 func batchRetentionJSON(t *testing.T, n *Node) []byte {
 	t.Helper()
 	b, err := json.Marshal(n)
@@ -127,14 +95,14 @@ def entry = key:@(?a-z)+ ":" value:@(?0-9)+ -> new Entry{Key: text($key), Value:
 						if event.Kind != TraceEnter || event.Rule != "main" || event.Depth != 1 || event.Pos != 0 {
 							t.Fatalf("retained event metadata changed: %+v", event)
 						}
-						batchRetentionAssertDetached(t, batchRetentionParser(t, event), false)
+						assertTraceParserDetached(t, batchRetentionParser(t, event), false)
 
 						// A later parse reuses scratch; the caller-owned prior Node stays intact.
 						retry, retryErr, retryEvent := parse("!beta:45?", false)
 						if retryErr != nil || recognize && retry != nil || !recognize && (retry == nil || retry.Children[1].Field("Key") != "beta" || retry.Children[1].Field("Count") != 2) {
 							t.Fatalf("retry node=%v err=%v", retry, retryErr)
 						}
-						batchRetentionAssertDetached(t, batchRetentionParser(t, retryEvent), false)
+						assertTraceParserDetached(t, batchRetentionParser(t, retryEvent), false)
 						if node != nil && !reflect.DeepEqual(batchRetentionJSON(t, node), before) {
 							t.Fatal("retry changed the earlier successful Node")
 						}
@@ -144,7 +112,7 @@ def entry = key:@(?a-z)+ ":" value:@(?0-9)+ -> new Entry{Key: text($key), Value:
 						if failed != nil || !errors.As(failedErr, &syntaxErr) {
 							t.Fatalf("syntax failure node=%v err=%v", failed, failedErr)
 						}
-						batchRetentionAssertDetached(t, batchRetentionParser(t, failedEvent), false)
+						assertTraceParserDetached(t, batchRetentionParser(t, failedEvent), false)
 						if node != nil && !reflect.DeepEqual(batchRetentionJSON(t, node), before) {
 							t.Fatal("syntax failure changed the earlier successful Node")
 						}
@@ -176,7 +144,7 @@ func TestWorkBatchTraceCallbackPanicDetachesParserAndPreservesRetry(t *testing.T
 				if got != token || node != nil || err != nil {
 					t.Fatalf("panic=%#v node=%v err=%v, want callback panic identity", got, node, err)
 				}
-				batchRetentionAssertDetached(t, observed, true)
+				assertTraceParserDetached(t, observed, true)
 				if n, err := prog.ParseWith("main", text, ParseOptions{Backend: backend, Unit: unit}); n == nil || err != nil {
 					t.Fatalf("retry node=%v err=%v", n, err)
 				}
@@ -256,7 +224,7 @@ func TestWorkBatchTraceInterruptionDetachesParser(t *testing.T) {
 							}
 						}
 						// Publication checks follow a completed run; they do not mark that run aborted.
-						batchRetentionAssertDetached(t, observed, cause != "publication-panic")
+						assertTraceParserDetached(t, observed, cause != "publication-panic")
 						if !reflect.DeepEqual(batchRetentionJSON(t, held), before) {
 							t.Fatal("interruption changed prior Node")
 						}
@@ -346,7 +314,7 @@ func TestWorkBatchTraceEventReleasesCapturedContextAfterReturn(t *testing.T) {
 					if !released {
 						t.Fatal("stored event still retains its trace-captured context after bounded GC")
 					}
-					batchRetentionAssertDetached(t, event.p, false)
+					assertTraceParserDetached(t, event.p, false)
 				})
 			}
 		}

@@ -288,13 +288,15 @@ reuse. Returned values from previous successful invocations remain independently
 owned. Accounting and cancellation state must not enter saved modules, memo keys,
 public Nodes, or result arenas retained by consumers.
 
-For traced batch calls, retaining an event's exported metadata must not keep
-the finished parser's input, callback or execution references alive. Detach
-these references after recycling scratch on every terminal path, without
-mutating storage owned by returned Nodes or recycled scratch. Expectation and
+For native traced calls, retaining an event's exported metadata must not keep
+the finished parser's input, reader, callback or execution references alive.
+Detach these references on every terminal path: after scratch recycling for
+batch calls, after reusable state transfer and abort invalidation for Documents,
+and after error recovery and prefix delivery for streams. Do not mutate storage
+owned by returned Nodes, live Document caches or recycled scratch. Do not close
+caller-owned readers or undo delivered stream prefixes. Expectation and
 recovered-error slices copied directly into events keep their existing ownership;
-resetting the parser does not mutate their backing arrays. Document and stream
-lifecycles require separate teardown decisions.
+resetting the parser does not mutate their backing arrays.
 
 Mandatory unwind/recycle after a terminal interruption runs to completion without
 further cancellation or budget failures; otherwise a second interruption could
@@ -572,8 +574,29 @@ Strong-reference positive controls precede bounded forced-GC checks. Both active
 and inactive calls release those fixture objects; disabling batch teardown makes
 the isolated GC tests fail. This proves these objects' release, not a retained
 heap-volume or throughput result. The untraced teardown nil-check and traced
-fixed-size reset need later cost measurement. Copied event slices and Document,
-stream and generated-runtime lifecycles remain separate acceptance surfaces.
+fixed-size reset need later cost measurement. Copied event slices and
+generated-runtime lifecycles remain separate acceptance surfaces.
+
+Traced Document and stream calls use the same parser-reference detachment, with
+owner-specific deferred ordering. Document tests preserve transferred memo state
+on success and ordinary failure, invalidate provisional state after trace panic,
+and compare retries with fresh parsing. Cloned historical trees survive edits.
+Stream tests retain delivered records across success, syntax failure, reader and
+emit errors, and trace/emit panics. They check trace panic identity and ordinary
+pointer-valued emit panics, alongside caller reader ownership. Caller runtime.Error
+panics from reader/emit code still need separate attribution at the VM boundary.
+Both matrices cover every backend and position unit.
+Exported event metadata remains available after the callback; state-reading
+accessors are exercised only during callbacks.
+
+Bounded weak-GC fixtures drop the Document and its returned Node before observing
+original source and captured-callback allocations. Stream fixtures drop reader
+and callback locals while retaining an independently owned emitted Node. Both
+keep saved events and Programs alive, with strong-reference controls first.
+Disabling only Document/stream teardown retains all observed fixture targets.
+These checks establish specific object release, not heap volume or throughput.
+The added untraced teardown checks and traced resets remain unmeasured. Active
+Document/stream work controls and generated-runtime lifecycles are still pending.
 
 ## Alternatives considered
 

@@ -285,6 +285,12 @@ func (p *parser) releaseScratch() {
 // Node storage is separately allocated and remains owned by returned results.
 func (p *parser) releaseBatchScratch() {
 	p.releaseScratch()
+	p.releaseTraceReferences()
+}
+
+// releaseTraceReferences detaches a finished traced parser after its owner has
+// transferred reusable state. It does not mutate result or event backing arrays.
+func (p *parser) releaseTraceReferences() {
 	if p.tr != nil {
 		*p = parser{aborted: p.aborted}
 	}
