@@ -10,6 +10,19 @@
   # The go directive of go.mod and site/go.mod.
   GO_VERSION = "1.27.1"
 
+# Use the canonical domain even when the requested path names a published file.
+[[redirects]]
+  from = "https://pego-go.netlify.app/*"
+  to = "https://pego.ornew.net/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "http://pego-go.netlify.app/*"
+  to = "https://pego.ornew.net/:splat"
+  status = 301
+  force = true
+
 [[headers]]
   for = "/*"
   [headers.values]

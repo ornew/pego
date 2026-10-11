@@ -152,6 +152,12 @@ for the format, bounds and bootstrap limitations.
 the repository to a Netlify site is enough to deploy it; each build runs the link check, so a broken link fails the
 deploy instead of publishing it. The official site, [pego.ornew.net](https://pego.ornew.net/), is deployed this way.
 
+Requests to `pego-go.netlify.app` over HTTP or HTTPS receive a permanent `301`
+redirect to `https://pego.ornew.net`, preserving the path and query parameters.
+The forced, host-specific rules also redirect published files and leave deploy
+preview hosts available. These rules take effect when Netlify deploys the
+updated configuration; the local preview server does not apply them.
+
 The configuration also sets a strict `Content-Security-Policy`: the pages load scripts, styles and data only from the
 site itself, and need no inline scripts or styles; `'wasm-unsafe-eval'` allows compiling `pego.wasm`. The
 WebAssembly binaries and their hashed runtime scripts are cached for a year (`immutable`); the other files are
