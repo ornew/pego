@@ -140,7 +140,7 @@ func (p *parser) valueBinary(op string, l, r any) (any, error) {
 			return p.compareText(ls, rs) >= 0, nil
 		}
 	}
-	return binaryOp(op, l, r)
+	return p.binaryOperation(op, l, r)
 }
 
 func (p *parser) valueTextLen(s string) int {

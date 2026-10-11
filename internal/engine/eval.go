@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/ornew/pego/grammar"
@@ -72,13 +71,13 @@ func (p *parser) actionResult(ctx *evalCtx, act evaluator, where string) *Node {
 	}
 	p.dropCreated(ctx.cbase)
 	if err != nil {
-		p.fail("action in %s: %v", where, err)
+		p.failAction(where, err)
 	}
 	if v == nil {
 		return nil
 	}
 	if !ok {
-		p.fail("action in %s: result must be a node, got %s", where, typeName(v))
+		p.failAction(where, p.actionError("result must be a node, got ", typeName(v)))
 	}
 	if n != nil {
 		// The value of an action is final: a node it returns from the rule body (-> $1) is not
@@ -137,21 +136,21 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 		if i, ok := c.scope.slots[t.Name]; ok && c.frame != nil {
 			return nodeOrNil(c.frame.vals[i]), nil
 		}
-		return nil, fmt.Errorf("undefined capture $%s", t.Name)
+		return nil, c.p.actionError("undefined capture $", t.Name)
 
 	case *grammar.IndexRef:
 		if t.Index == 0 {
 			return c.newList(c.items), nil
 		}
 		if t.Index > len(c.items) {
-			return nil, fmt.Errorf("$%d is out of range (%d elements)", t.Index, len(c.items))
+			return nil, c.p.actionIndexError(t.Index, len(c.items))
 		}
 		return nodeOrNil(c.items[t.Index-1]), nil
 
 	case *grammar.VarRef:
 		v, ok := c.p.lookupValue(t.Name)
 		if !ok {
-			return nil, fmt.Errorf("variable %s is not defined", t.Name)
+			return nil, c.p.actionError("variable ", t.Name, " is not defined")
 		}
 		return v, nil
 
@@ -192,7 +191,7 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 			if err != nil {
 				return nil, err
 			}
-			items, err := listItems("map", x)
+			items, err := c.p.valueListItems("map", x)
 			if err != nil {
 				return nil, err
 			}
@@ -236,13 +235,13 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		return unaryOp(t.Op, x)
+		return c.p.valueUnary(t.Op, x)
 
 	case *grammar.Binary:
 		return c.binary(t)
 
 	case *grammar.Assign:
-		return nil, fmt.Errorf("assignment %s = ... is only allowed as a whole predicate", t.Name)
+		return nil, c.p.actionError("assignment ", t.Name, " = ... is only allowed as a whole predicate")
 	}
 	return nil, fmt.Errorf("unsupported term %T", t)
 }
@@ -250,7 +249,7 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 func (c *evalCtx) member(x any, name string) (any, error) {
 	n, ok := x.(*Node)
 	if !ok || n == nil {
-		return nil, fmt.Errorf("cannot access .%s of %s", name, typeName(x))
+		return nil, c.p.actionError("cannot access .", name, " of ", typeName(x))
 	}
 	switch name {
 	case "startPos":
@@ -261,7 +260,7 @@ func (c *evalCtx) member(x any, name string) (any, error) {
 		return c.newList(n.Children), nil
 	}
 	if st, ok := c.p.prog.types[n.Type()].(*grammar.StructSpec); ok && !c.p.hasValueField(st, name) {
-		return nil, fmt.Errorf("%s has no field %s", n.Type(), name)
+		return nil, c.p.actionError(n.Type(), " has no field ", name)
 	}
 	// Unset fields and unmatched captures are nil.
 	v, _ := c.p.valueField(n.Fields, name)
@@ -277,7 +276,7 @@ func (c *evalCtx) newStruct(typ string, names []string, vals []any) (*Node, erro
 		c.p.stepWork()
 		v := vals[i]
 		if _, isFn := v.(function); isFn {
-			return nil, fmt.Errorf("field %s: cannot store a function", name)
+			return nil, c.p.actionError("field ", name, ": cannot store a function")
 		}
 		c.p.setValueField(&n.Fields, name, v)
 		if child, ok := v.(*Node); ok && child != nil {
@@ -298,6 +297,10 @@ func (c *evalCtx) newStruct(typ string, names []string, vals []any) (*Node, erro
 }
 
 func unaryOp(op string, x any) (any, error) {
+	return (*parser)(nil).valueUnary(op, x)
+}
+
+func (p *parser) valueUnary(op string, x any) (any, error) {
 	switch op {
 	case "-":
 		if i, ok := x.(int); ok {
@@ -307,6 +310,9 @@ func unaryOp(op string, x any) (any, error) {
 		if b, ok := x.(bool); ok {
 			return !b, nil
 		}
+	}
+	if workControlsEnabled && p != nil && p.control != nil {
+		return nil, p.actionError("invalid operand ", typeName(x), " for unary ", op)
 	}
 	return nil, fmt.Errorf("invalid operand %s for unary %s", typeName(x), op)
 }
@@ -363,7 +369,7 @@ func (c *evalCtx) binary(t *grammar.Binary) (any, error) {
 	if t.Op == "&&" || t.Op == "||" {
 		lb, ok := l.(bool)
 		if !ok {
-			return nil, fmt.Errorf("invalid operand %s for %s", typeName(l), t.Op)
+			return nil, c.p.actionError("invalid operand ", typeName(l), " for ", t.Op)
 		}
 		if lb == (t.Op == "||") {
 			return lb, nil
@@ -374,7 +380,7 @@ func (c *evalCtx) binary(t *grammar.Binary) (any, error) {
 		}
 		rb, ok := r.(bool)
 		if !ok {
-			return nil, fmt.Errorf("invalid operand %s for %s", typeName(r), t.Op)
+			return nil, c.p.actionError("invalid operand ", typeName(r), " for ", t.Op)
 		}
 		return rb, nil
 	}
@@ -387,6 +393,10 @@ func (c *evalCtx) binary(t *grammar.Binary) (any, error) {
 
 // binaryOp performs a binary operation other than a logical one.
 func binaryOp(op string, l, r any) (any, error) {
+	return (*parser)(nil).binaryOperation(op, l, r)
+}
+
+func (p *parser) binaryOperation(op string, l, r any) (any, error) {
 	switch op {
 	case "==":
 		return equal(l, r), nil
@@ -405,7 +415,7 @@ func binaryOp(op string, l, r any) (any, error) {
 				return l * r, nil
 			case "/", "%":
 				if r == 0 {
-					return nil, errors.New("division by zero")
+					return nil, p.actionError("division by zero")
 				}
 				if op == "/" {
 					return l / r, nil
@@ -436,6 +446,9 @@ func binaryOp(op string, l, r any) (any, error) {
 				return l >= r, nil
 			}
 		}
+	}
+	if workControlsEnabled && p != nil && p.control != nil {
+		return nil, p.actionError("invalid operands ", typeName(l), " and ", typeName(r), " for ", op)
 	}
 	return nil, fmt.Errorf("invalid operands %s and %s for %s", typeName(l), typeName(r), op)
 }
@@ -491,9 +504,9 @@ func (c *evalCtx) builtin(fn string, args []any) (any, error) {
 	case "foldl", "foldr":
 		f, ok := args[2].(function)
 		if !ok || f.arity() != 2 {
-			return nil, fmt.Errorf("%s: third argument must be a function of two parameters", fn)
+			return nil, c.p.actionError(fn, ": third argument must be a function of two parameters")
 		}
-		items, err := listItems(fn, args[1])
+		items, err := c.p.valueListItems(fn, args[1])
 		if err != nil {
 			return nil, err
 		}
@@ -518,9 +531,9 @@ func (c *evalCtx) builtin(fn string, args []any) (any, error) {
 		}
 		return c.listNode(c.p.kids(base)), nil
 	default:
-		return nil, fmt.Errorf("unknown function %s", fn)
+		return nil, c.p.actionError("unknown function ", fn)
 	}
-	return nil, fmt.Errorf("%s: invalid argument %s", fn, typeName(args[0]))
+	return nil, c.p.actionError(fn, ": invalid argument ", typeName(args[0]))
 }
 
 // textArg returns the argument of t if t is a call text(x).
@@ -556,7 +569,7 @@ func (c *evalCtx) textString(v any) (string, error) {
 		}
 		return c.p.text(int(v.Start), int(v.End)), nil
 	}
-	return "", fmt.Errorf("text: invalid argument %s", typeName(v))
+	return "", c.p.actionError("text: invalid argument ", typeName(v))
 }
 
 // pushElems pushes onto kidStack the elements of the list that the list built-in fn (map, list
@@ -566,9 +579,9 @@ func (c *evalCtx) pushElems(fn string, args []any) error {
 	case "map":
 		f, ok := args[1].(function)
 		if !ok || f.arity() != 1 {
-			return errors.New("map: second argument must be a function of one parameter")
+			return c.p.actionError("map: second argument must be a function of one parameter")
 		}
-		items, err := listItems("map", args[0])
+		items, err := c.p.valueListItems("map", args[0])
 		if err != nil {
 			return err
 		}
@@ -578,7 +591,7 @@ func (c *evalCtx) pushElems(fn string, args []any) error {
 			if err != nil {
 				return err
 			}
-			n, err := asNode("map", v)
+			n, err := c.p.valueAsNode("map", v)
 			if err != nil {
 				return err
 			}
@@ -587,7 +600,7 @@ func (c *evalCtx) pushElems(fn string, args []any) error {
 	case "list":
 		for _, a := range args {
 			c.p.stepWork()
-			n, err := asNode("list", a)
+			n, err := c.p.valueAsNode("list", a)
 			if err != nil {
 				return err
 			}
@@ -596,7 +609,7 @@ func (c *evalCtx) pushElems(fn string, args []any) error {
 	case "concat":
 		for _, a := range args {
 			c.p.stepWork()
-			items, err := listItems("concat", a)
+			items, err := c.p.valueListItems("concat", a)
 			if err != nil {
 				return err
 			}
@@ -668,6 +681,10 @@ func (c *evalCtx) pushConcatArg(t grammar.Term) error {
 }
 
 func listItems(fn string, v any) ([]*Node, error) {
+	return (*parser)(nil).valueListItems(fn, v)
+}
+
+func (p *parser) valueListItems(fn string, v any) ([]*Node, error) {
 	switch x := v.(type) {
 	case nil:
 		return nil, nil
@@ -677,15 +694,25 @@ func listItems(fn string, v any) ([]*Node, error) {
 		}
 		return x.Children, nil
 	}
+	if workControlsEnabled && p != nil && p.control != nil {
+		return nil, p.actionError(fn, ": expected a list, got ", typeName(v))
+	}
 	return nil, fmt.Errorf("%s: expected a list, got %s", fn, typeName(v))
 }
 
 func asNode(fn string, v any) (*Node, error) {
+	return (*parser)(nil).valueAsNode(fn, v)
+}
+
+func (p *parser) valueAsNode(fn string, v any) (*Node, error) {
 	switch x := v.(type) {
 	case nil:
 		return nil, nil
 	case *Node:
 		return x, nil
+	}
+	if workControlsEnabled && p != nil && p.control != nil {
+		return nil, p.actionError(fn, ": list elements must be nodes, got ", typeName(v))
 	}
 	return nil, fmt.Errorf("%s: list elements must be nodes, got %s", fn, typeName(v))
 }
