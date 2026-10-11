@@ -74,6 +74,9 @@ type input struct {
 	baseCol  int
 	reader   *bufio.Reader // nil if the whole input has been read
 	eof      bool
+
+	// readerCall distinguishes buffered reader execution from VM execution.
+	readerCall bool
 	// src is the whole input as a string (unused for streams). If srcOK, text returns substrings
 	// of src without building new strings. In code points, offs[i] is the byte offset of position i
 	// (its length is the number of characters + 1); it is built when text first needs it, which a
@@ -304,14 +307,19 @@ func (in *input) fill(n int) bool {
 
 func (in *input) read() {
 	var err error
+	in.readerCall = true
 	if in.unit == Bytes {
 		var b byte
-		if b, err = in.reader.ReadByte(); err == nil {
+		b, err = in.reader.ReadByte()
+		in.readerCall = false
+		if err == nil {
 			in.bs = append(in.bs, b)
 		}
 	} else {
 		var r rune
-		if r, _, err = in.reader.ReadRune(); err == nil {
+		r, _, err = in.reader.ReadRune()
+		in.readerCall = false
+		if err == nil {
 			in.in = append(in.in, r)
 		}
 	}

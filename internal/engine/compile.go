@@ -1070,7 +1070,7 @@ func (c *compiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) match
 				if v != nil {
 					v.fresh = false
 				}
-				if err := p.emit(v); err != nil {
+				if err := p.emitStream(v); err != nil {
 					panic(fatal{err})
 				}
 				p.commit(p.pos)
