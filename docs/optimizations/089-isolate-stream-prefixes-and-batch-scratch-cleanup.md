@@ -68,6 +68,29 @@ nil callback, allocation counts are unchanged and bytes vary by only 1–2 B.
 Unicode frame-scratch controls add about 136–159 B and 3–4 allocations per
 operation. These are measured tradeoffs of prefix isolation.
 
+A clean 131-case, three-sample snapshot at `04fe467` (default
+`GOMAXPROCS=16`) reports streaming times of 68.9/81.5/84.4 ms for
+closure/recursive/iterative backends. The snapshot is descriptive and does not
+attribute changes to this optimization.
+
+Relative to the prior full snapshot, JSON no-AST preparation is 0.89× and
+Minilang closure preparation is 1.11×. These unpaired differences do not
+attribute changes to an individual mechanism. Preparation follow-ups used
+five alternating fresh-process rounds at `GOMAXPROCS=16`, comparing `04fe467`
+with the exact prior code `66a1680` and its same-source combined reference.
+One-second Minilang comparisons measured 1.058× [1.043–1.088] against the
+prior code and 1.038× [0.987–1.070] against the reference. Longer three-second
+comparisons measured 1.017× [0.969–1.028] and 0.984× [0.923–1.050],
+respectively. Both longer ranges include parity; the shorter increase did
+not persist. Allocations stayed at 2,749 per operation, with about 77–78
+additional bytes versus the prior code.
+
+One-second JSON no-AST comparisons measured 1.060× [0.988–1.092] against the
+prior code and 1.005× [0.969–1.061] against the same-source reference. Both
+ranges include parity, with 519 allocations per operation and two additional
+bytes. Neither preparation workload establishes a causal gain or a
+persistent material slowdown.
+
 Across 12 forced-GC retained-heap cases, the combined candidate retained about
 164–442 KB versus 2.04–2.34 MB for the combined reference, an 81–92% reduction.
 The single-mechanism controls generally did not release the full retained
