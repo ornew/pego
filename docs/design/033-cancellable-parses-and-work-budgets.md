@@ -583,8 +583,11 @@ on success and ordinary failure, invalidate provisional state after trace panic,
 and compare retries with fresh parsing. Cloned historical trees survive edits.
 Stream tests retain delivered records across success, syntax failure, reader and
 emit errors, and trace/emit panics. They check trace panic identity and ordinary
-pointer-valued emit panics, alongside caller reader ownership. Caller runtime.Error
-panics from reader/emit code still need separate attribution at the VM boundary.
+pointer-valued emit panics, alongside caller reader ownership. Stream recovery
+also attributes reader and emit panics, including runtime.Error, to caller code.
+Normal caller returns clear that attribution before engine work, preserving the
+invalid-bytecode classification of later VM faults. Separate regression cases
+cover returned-error identity, retry, buffered-reader reuse and nested tracing.
 Both matrices cover every backend and position unit.
 Exported event metadata remains available after the callback; state-reading
 accessors are exercised only during callbacks.
