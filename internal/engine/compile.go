@@ -1129,7 +1129,7 @@ func (c *compiler) projectRepeat(e *grammar.Repeat, field string) matcher {
 		f := p.newFrame(n)
 		count := 0
 		for i := 0; max < 0 || i < max; i++ {
-			clear(f.vals)
+			clearWork(p, f.vals)
 			m0 := p.mark()
 			prevCut, prevFrame := p.cut, p.frame
 			p.cut, p.frame = false, f

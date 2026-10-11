@@ -328,16 +328,17 @@ streaming, code-generation and TypeScript guides with the applicable stage.
 The `feat/parse-work-controls` branch starts the core batch stage. It provides
 invocation-local context and overflow-safe work reservations, controlled input
 preparation, scanner and execution-dispatch checkpoints, action-value checkpoints,
-large character-class, batch memo/binding, and detached input-text checkpoints,
-and cleanup after initialization interruption or caller panic. Recognition uses
+large character-class, batch memo/binding, detached input-text, and capture-state
+checkpoints, and cleanup after initialization interruption or caller panic. Recognition uses
 the same batch
 lifecycle. Individual trace-option callbacks stop before a subsequent callback
 when cancellation is observed.
 
 This foundation is not an adopted implementation of the full contract above.
 Document and stream calls reject active controls until their lifecycle stages
-are implemented. Other matcher loops, graph, rollback and resumption loops still
-require the coverage map and regression gates before adoption. First-use setup
+are implemented. Diagnostic processing and remaining matcher loops still require batch coverage
+and regression gates. Document graph movement, rollback, and resumption require
+their lifecycle gates before adoption. First-use setup
 ordering also needs a separate validation gate. The prototype remains separate
 from main until contract and performance gates pass.
 
@@ -409,6 +410,19 @@ constant-time when their offsets are ready. Allocations and builder growth remai
 nonpreemptible. Trace text accessors propagate engine interruption through the
 normal fatal boundary. Inactive/reference conversions retain the native paths;
 stream snapshots remain for the stream lifecycle stage.
+
+Batch capture-state work consumes steps: one before each reverse undo assignment,
+frame/scope visit, VM child assignment, cut-stack entry inspection, and failure
+unwind pop. Field assignment uses controlled name comparisons and traversal.
+Pratt frame snapshots and restores and projected-repetition slot clears reserve
+chunks of at most 128 pointers. Undo order, nil captures, field order, self-capture
+wrapping, and longest-operator tie selection retain their existing semantics.
+Only private slots and containers are restored or cleared; retained public Node
+pointees are never changed. A midway interruption aborts the whole batch, with
+no partial result, alternative, recovery, or charged rollback during mandatory
+scratch cleanup. Inactive/reference undo, copy, clear, and field paths retain
+native operations. Diagnostic storage/copies/sorting and remaining matcher and
+lifecycle gates are still pending.
 
 ## Alternatives considered
 

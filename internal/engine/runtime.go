@@ -304,10 +304,7 @@ func (p *parser) reset(m mark) {
 	p.pos = m.pos
 	p.env = m.env
 	p.recovered = p.recovered[:m.recovered]
-	for i := len(p.trail) - 1; i >= m.trail; i-- {
-		u := p.trail[i]
-		u.f.vals[u.slot] = u.old
-	}
+	p.undoCaptures(m.trail)
 	p.trail = p.trail[:m.trail]
 }
 
@@ -750,6 +747,7 @@ func (p *parser) attachCaptures(v *Node, s *scope, f *frame, start, end int) *No
 	found := false
 	wrap := v == nil || !v.fresh
 	for _, c := range f.vals {
+		p.stepWork()
 		if c != nil {
 			found = true
 		}
@@ -768,8 +766,9 @@ func (p *parser) attachCaptures(v *Node, s *scope, f *frame, start, end int) *No
 		v.Fields = p.fields(len(s.names))
 	}
 	for i, name := range s.names {
+		p.stepWork()
 		if f.vals[i] != nil {
-			v.Fields.set(name, f.vals[i])
+			p.setValueField(&v.Fields, name, f.vals[i])
 		}
 	}
 	return v

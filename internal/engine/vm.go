@@ -318,10 +318,7 @@ func (p *parser) restore(s *vmSave) {
 	p.pos = s.pos
 	p.vals = p.vals[:s.vals]
 	p.reps = p.reps[:s.reps]
-	for i := len(p.trail) - 1; i >= int(s.trail); i-- {
-		u := p.trail[i]
-		u.f.vals[u.slot] = u.old
-	}
+	p.undoCaptures(int(s.trail))
 	p.trail = p.trail[:min2(int(s.trail), len(p.trail))]
 	p.recovered = p.recovered[:s.recovered]
 	p.env = s.env
@@ -499,6 +496,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 		case OpCut:
 			marked := false
 			for k := len(p.ents) - 1; k >= ebase; k-- {
+				p.stepWork()
 				e := &p.ents[k]
 				if e.kind == eChoice || e.kind == eIter || e.kind == eRunIter {
 					e.cut = true
@@ -522,6 +520,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			kids := p.nodes(n)
 			top := len(p.vals)
 			for k := 0; k < n; k++ {
+				p.stepWork()
 				kids[k] = asNodeValue(p.vals[top-n+k])
 			}
 			start := *p.vals[top-n-1].(*int)
@@ -654,6 +653,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			if in.A == 1 {
 				kids := p.nodes(len(p.vals) - rep.base)
 				for k := range kids {
+					p.stepWork()
 					kids[k] = asNodeValue(p.vals[rep.base+k])
 				}
 				start := *p.vals[rep.base-1].(*int)
@@ -755,6 +755,7 @@ func (p *parser) unwind(m *Module, ebase int) (ip int, ok bool) {
 		if len(p.ents) == ebase {
 			return 0, false
 		}
+		p.stepWork()
 		e := p.ents[len(p.ents)-1]
 		p.ents = p.ents[:len(p.ents)-1]
 		switch e.kind {
