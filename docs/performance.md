@@ -140,6 +140,29 @@ Notes:
   just a binary built from the old code. Generated parsers embed their grammar.
 - The numbers in the optimization catalog are for the closure backend with code-point positions unless stated otherwise.
 
+### Generated typed-output retention
+
+`internal/engine/gen_typed_output_retention_test.go` exports a generated fixture
+and checks escaped terminal, shared-structure and returned-list values in both
+position units. Clone reachable text before dropping the parser and input so
+legitimate input-string retention does not count as slab retention.
+
+```bash
+PEGO_TYPED_OUTPUT_RETENTION_DIR=/tmp/typed-output-retention \
+  go test ./internal/engine -run '^TestGeneratedTypedOutputRetentionFixture$' -count=1
+cd /tmp/typed-output-retention
+go test -c -o typed-retention.test .
+./typed-retention.test -test.run '^$' -test.bench '^BenchmarkTypedOutputParse$' -test.benchmem -test.benchtime=500ms
+./typed-retention.test -test.run '^$' -test.bench '^BenchmarkTypedOutputRetainedHeap$' -test.benchtime=1x
+```
+
+The throughput benchmark prebuilds each input and parses without cloning.
+For retained-heap comparisons, alternate parser and manual-control
+processes for each shape and unit across five fresh-process pairs. The heap
+diagnostic clones text, warms both variants, drops the parser/input owners and
+forces three GCs before reporting the last escaped result's live-heap delta.
+This is retained heap, not peak or cumulative allocation.
+
 ### Benchmark workloads
 
 `TestWorkloads` in `bench/` checks, on reduced inputs, that every input can be parsed by every backend and that the
