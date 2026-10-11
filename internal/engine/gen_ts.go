@@ -58,7 +58,18 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	out.WriteString("// A parser generated from a PEGO grammar. It has no dependencies; see parse below.\n\n")
 	out.WriteString("/* eslint-disable */\n\n")
 	i := strings.Index(tsRuntimeSource, tsRuntimeMarker)
-	out.WriteString(strings.Replace(tsRuntimeSource[i+len(tsRuntimeMarker):], "const defaultMaxDepth = 100_000;", fmt.Sprintf("const defaultMaxDepth = %d;", opts.generatedMaxDepth()), 1))
+	rt := tsRuntimeSource[i+len(tsRuntimeMarker):]
+	rt = strings.Replace(rt, "const defaultMaxDepth = 100_000;", fmt.Sprintf("const defaultMaxDepth = %d;", opts.generatedMaxDepth()), 1)
+	rt = strings.Replace(rt, "const sparseSeen = true;\n", "", 1)
+	if opts.disableSparseMemo {
+		rt = strings.Replace(rt, "sparseSeen && stride > 64 && this.n > 1024", "false", 1)
+		rt = strings.Replace(rt, "const first = this.sparse", "const first = false", 1)
+	} else {
+		// Emit only the representation threshold, without a matching-time
+		// read of a module-level control binding.
+		rt = strings.Replace(rt, "sparseSeen && stride > 64 && this.n > 1024", "stride > 64 && this.n > 1024", 1)
+	}
+	out.WriteString(rt)
 	out.WriteString("\n// --- Generated code ---\n\n")
 	fmt.Fprintf(&out, "/**\n * Parses the whole input with the rule %s. unit selects the position unit (CodePoints by default).\n", start.name)
 	out.WriteString(" * A string is parsed as its UTF-8 encoding would be (lone surrogates as U+FFFD), and bytes are\n")
