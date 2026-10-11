@@ -29,33 +29,38 @@ def token: Token = "é"`)
 		t.Fatal(err)
 	}
 	for _, conv := range []bool{false, true} {
-		t.Run(strconv.FormatBool(conv), func(t *testing.T) {
-			code, err := Generate(g, GenOptions{Package: "chunks", Start: "main", Types: true, convertTypes: conv})
-			if err != nil {
-				t.Fatal(err)
-			}
-			dir := os.Getenv("PEGO_TYPED_CHUNK_DIR")
-			if dir == "" {
-				dir = t.TempDir()
-			} else {
-				dir = filepath.Join(dir, strconv.FormatBool(conv))
-				if err := os.MkdirAll(dir, 0o755); err != nil {
+		for _, variant := range typedAllocatorControls {
+			t.Run(strconv.FormatBool(conv)+"/"+variant.name, func(t *testing.T) {
+				code, err := Generate(g, GenOptions{Package: "chunks", Start: "main", Types: true, convertTypes: conv, disableTypedObjectSlabs: variant.objects, disableTypedListSlabs: variant.lists})
+				if err != nil {
 					t.Fatal(err)
 				}
-			}
-			for name, data := range map[string][]byte{
-				"parser.go": code, "chunks_test.go": []byte(typedChunksFixture), "go.mod": []byte("module chunks\n\ngo 1.27.1\n"),
-			} {
-				if err := os.WriteFile(filepath.Join(dir, name), data, 0o644); err != nil {
-					t.Fatal(err)
+				dir := os.Getenv("PEGO_TYPED_CHUNK_DIR")
+				if dir == "" {
+					dir = t.TempDir()
+				} else {
+					dir = filepath.Join(dir, strconv.FormatBool(conv))
+					if variant.name != "slabs" {
+						dir = filepath.Join(dir, variant.name)
+					}
+					if err := os.MkdirAll(dir, 0o755); err != nil {
+						t.Fatal(err)
+					}
 				}
-			}
-			cmd := exec.Command("go", "test", "-count=1", "-run", "^TestChunk")
-			cmd.Dir = dir
-			if out, err := cmd.CombinedOutput(); err != nil {
-				t.Fatalf("generated chunk ownership: %v\n%s", err, out)
-			}
-		})
+				for name, data := range map[string][]byte{
+					"parser.go": code, "chunks_test.go": []byte(typedChunksFixture), "go.mod": []byte("module chunks\n\ngo 1.27.1\n"),
+				} {
+					if err := os.WriteFile(filepath.Join(dir, name), data, 0o644); err != nil {
+						t.Fatal(err)
+					}
+				}
+				cmd := exec.Command("go", "test", "-count=1", "-run", "^TestChunk")
+				cmd.Dir = dir
+				if out, err := cmd.CombinedOutput(); err != nil {
+					t.Fatalf("generated chunk ownership: %v\n%s", err, out)
+				}
+			})
+		}
 	}
 }
 

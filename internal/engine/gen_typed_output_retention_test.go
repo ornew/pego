@@ -4,10 +4,21 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/ornew/pego/internal/syntax"
 )
+
+var typedAllocatorControls = []struct {
+	name           string
+	objects, lists bool
+}{
+	{"slabs", false, false},
+	{"objects", true, false},
+	{"slices", false, true},
+	{"individual", true, true},
+}
 
 // PEGO_TYPED_OUTPUT_RETENTION_DIR preserves the generated fixture for the
 // retained-heap and parse-throughput benchmarks below. Normal tests clean it up.
@@ -17,12 +28,20 @@ func TestGeneratedTypedOutputRetentionFixture(t *testing.T) {
 	}
 	g, err := syntax.Parse(`
 type Token terminal
-type Pair struct { Left Token, Right Token }
+type Pair struct { Text string, Left Token, Right Token }
 type Values struct { Items []Token }
+type LargeValues struct { Items []Pair }
+type SmallValues struct { Items []Pair }
 def main = leaf
 def leaf: Token = x:discarded x:small -> $x
-def structure: Pair = discarded y:small -> new Pair{Left: $y, Right: $y}
+def structure: Pair = discardedPair y:small -> new Pair{Text: "b", Left: $y, Right: $y}
 def list: Values = discarded ys:small+ -> new Values{Items: $ys}
+def slice: SmallValues = discardedHolder filler filler filler filler filler filler filler xs:smallPair+ -> new SmallValues{Items: $xs}
+def discardedHolder: LargeValues = xs:largePair{1} -> new LargeValues{Items: $xs}
+def largePair: Pair = x:@("é"+) -> new Pair{Text: text($x)}
+def filler: Pair = "f" -> new Pair{Text: "f"}
+def smallPair: Pair = "b" -> new Pair{Text: "b"}
+def discardedPair: Pair = x:@("é"+) -> new Pair{Text: text($x)}
 def discarded: Token = large "!" / large
 def large: Token = "é"+
 def small: Token = "b"
@@ -30,30 +49,40 @@ def small: Token = "b"
 	if err != nil {
 		t.Fatal(err)
 	}
-	code, err := Generate(g, GenOptions{Package: "typedoutput", Start: "main", Types: true})
-	if err != nil {
-		t.Fatal(err)
-	}
-	dir := os.Getenv("PEGO_TYPED_OUTPUT_RETENTION_DIR")
-	if dir == "" {
-		dir = t.TempDir()
-	}
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	for name, contents := range map[string][]byte{
-		"parser.go": code,
-		"output_retention_test.go": []byte(typedOutputRetentionFixture),
-		"go.mod": []byte("module typedoutput\n\ngo 1.27.1\n"),
-	} {
-		if err := os.WriteFile(filepath.Join(dir, name), contents, 0o644); err != nil {
-			t.Fatal(err)
-		}
-	}
-	cmd := exec.Command("go", "test", "-count=1", "-run", "^TestTypedOutputOwnership$")
-	cmd.Dir = dir
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("generated typed output fixture: %v\n%s", err, out)
+	for _, variant := range typedAllocatorControls {
+		t.Run(variant.name, func(t *testing.T) {
+			code, err := Generate(g, GenOptions{Package: "typedoutput", Start: "main", Types: true,
+				disableTypedObjectSlabs: variant.objects, disableTypedListSlabs: variant.lists})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if strings.Contains(string(code), "disableTypedObjectSlabs") || strings.Contains(string(code), "disableTypedListSlabs") {
+				t.Fatal("generation-only allocator controls leaked into the parser")
+			}
+			dir := os.Getenv("PEGO_TYPED_OUTPUT_RETENTION_DIR")
+			if dir == "" {
+				dir = t.TempDir()
+			} else {
+				dir = filepath.Join(dir, variant.name)
+			}
+			if err := os.MkdirAll(dir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			for name, contents := range map[string][]byte{
+				"parser.go":                code,
+				"output_retention_test.go": []byte(typedOutputRetentionFixture),
+				"go.mod":                   []byte("module typedoutput\n\ngo 1.27.1\n"),
+			} {
+				if err := os.WriteFile(filepath.Join(dir, name), contents, 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			cmd := exec.Command("go", "test", "-count=1", "-run", "^TestTypedOutputOwnership$")
+			cmd.Dir = dir
+			if out, err := cmd.CombinedOutput(); err != nil {
+				t.Fatalf("generated typed output fixture: %v\n%s", err, out)
+			}
+		})
 	}
 }
 
@@ -80,6 +109,8 @@ func sampleInput(kind string, runes int) string {
 	suffix := "b"
 	if kind == "list" {
 		suffix = "bb"
+	} else if kind == "slice" {
+		suffix = "fffffffbb"
 	}
 	return strings.Repeat("é", runes) + suffix
 }
@@ -119,11 +150,16 @@ func cloneReachableText(value any) {
 	case *Token:
 		v.Text = strings.Clone(v.Text)
 	case *Pair:
+		v.Text = strings.Clone(v.Text)
 		v.Left.Text = strings.Clone(v.Left.Text)
 		if v.Right != v.Left {
 			v.Right.Text = strings.Clone(v.Right.Text)
 		}
 	case *Values:
+		for _, item := range v.Items {
+			item.Text = strings.Clone(item.Text)
+		}
+	case *SmallValues:
 		for _, item := range v.Items {
 			item.Text = strings.Clone(item.Text)
 		}
@@ -143,9 +179,14 @@ func controlResult(kind string, start int) any {
 		return token(0)
 	case "structure":
 		x := token(0)
-		return &Pair{Span: Span{Start: 0, End: start + 1}, Left: x, Right: x}
+		return &Pair{Span: Span{Start: 0, End: start + 1}, Text: "b", Left: x, Right: x}
 	case "list":
 		return &Values{Span: Span{Start: 0, End: start + 2}, Items: []*Token{token(0), token(1)}}
+	case "slice":
+		return &SmallValues{Span: Span{Start: 0, End: start + 9}, Items: []*Pair{
+			{Span: Span{Start: start + 7, End: start + 8}, Text: "b"},
+			{Span: Span{Start: start + 8, End: start + 9}, Text: "b"},
+		}}
 	default:
 		panic("unknown result kind: " + kind)
 	}
@@ -153,7 +194,7 @@ func controlResult(kind string, start int) any {
 
 func TestTypedOutputOwnership(t *testing.T) {
 	for _, unit := range []Unit{CodePoints, Bytes} {
-		for _, kind := range []string{"terminal", "structure", "list"} {
+		for _, kind := range []string{"terminal", "structure", "list", "slice"} {
 			t.Run(fmt.Sprintf("%s/%v", kind, unit), func(t *testing.T) {
 				value := parseAndClone(kind, unit, largeRunes)
 				want := controlResult(kind, unitStart(unit))
@@ -169,9 +210,35 @@ func TestTypedOutputOwnership(t *testing.T) {
 					if v.Left == nil || v.Left != v.Right {
 						t.Fatal("struct lost shared terminal identity")
 					}
+					if v.Start != 0 || v.End != unitStart(unit)+1 || v.Left.Start != unitStart(unit) || v.Left.End != unitStart(unit)+1 || v.Text != "b" {
+						t.Fatalf("pair spans/text: %+v", v)
+					}
 				case *Values:
 					if len(v.Items) != 2 || v.Items[0] == nil || v.Items[1] == nil || v.Items[0] == v.Items[1] {
 						t.Fatal("list values or element identities changed")
+					}
+					if cap(v.Items) != len(v.Items) || v.Start != 0 || v.End != unitStart(unit)+2 {
+						t.Fatal("list slice extent or rule span changed")
+					}
+					_ = append(v.Items, &Token{Text: "c"})
+					if len(v.Items) != 2 || v.Items[0].Text != "b" || v.Items[1].Text != "b" {
+						t.Fatal("append changed saved list result")
+					}
+				case *SmallValues:
+					if len(v.Items) != 2 || cap(v.Items) != len(v.Items) || v.Start != 0 || v.End != unitStart(unit)+9 {
+						t.Fatalf("slice result: %#v len=%d cap=%d", v.Items, len(v.Items), cap(v.Items))
+					}
+					for i, item := range v.Items {
+						if item == nil || item.Text != "b" || item.Start != unitStart(unit)+7+i || item.End != item.Start+1 {
+							t.Fatalf("slice item %d: %+v", i, item)
+						}
+					}
+					if v.Items[0] == v.Items[1] {
+						t.Fatal("slice elements share a Pair pointer")
+					}
+					_ = append(v.Items, &Pair{Text: "c"})
+					if len(v.Items) != 2 || v.Items[0].Text != "b" || v.Items[1].Text != "b" {
+						t.Fatal("append changed saved slice result")
 					}
 				}
 				if _, err := ParseRuleAST(ruleForKind(kind), "?", WithUnit(unit)); err == nil {
@@ -194,7 +261,7 @@ func TestTypedOutputOwnership(t *testing.T) {
 func BenchmarkTypedOutputParse(b *testing.B) {
 	for _, unit := range []Unit{CodePoints, Bytes} {
 		for _, runes := range []int{8, largeRunes} {
-			for _, kind := range []string{"terminal", "structure", "list"} {
+			for _, kind := range []string{"terminal", "structure", "list", "slice"} {
 				name := fmt.Sprintf("%s/%v/%d-runes", kind, unit, runes)
 				b.Run(name, func(b *testing.B) {
 					input := sampleInput(kind, runes)
@@ -221,7 +288,7 @@ func BenchmarkTypedOutputParse(b *testing.B) {
 // final collection and heap snapshot happen after the timer stops.
 func BenchmarkTypedOutputRetainedHeap(b *testing.B) {
 	for _, unit := range []Unit{CodePoints, Bytes} {
-		for _, kind := range []string{"terminal", "structure", "list"} {
+		for _, kind := range []string{"terminal", "structure", "list", "slice"} {
 			for _, control := range []bool{false, true} {
 				name := fmt.Sprintf("%s/%v/control=%t", kind, unit, control)
 				b.Run(name, func(b *testing.B) {

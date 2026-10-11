@@ -73,3 +73,22 @@
   this method; the alternating controls above remain the causal comparison.
   The current backend, recognition, incremental and stream analysis is
   recorded under [Where PEGO stands](../performance.md#where-pego-stands).
+
+## Same-revision allocation controls
+
+Internal `GenOptions.disableTypedObjectSlabs` and
+`GenOptions.disableTypedListSlabs` independently emit `new(T)` and
+`make([]T, n)` references. Selection occurs during generation; the default
+parser source stays identical and has no runtime selector. Both direct typed
+construction and Node conversion use the selected allocator. These controls
+disable each entire slab mechanism; they do **not** reproduce the historical
+256/1,024 initial sizes used in the comparison above.
+
+`TestGeneratedTypedChunkOwnership` tests all four combinations on both typed
+paths and position units, including empty lists, growth boundaries, pointer
+uniqueness and saved results. `TestGeneratedTypedOutputRetentionFixture`
+separately isolates discarded objects and unused list backing cells. See the
+[retention measurement method](../performance.md#generated-typed-output-retention)
+for exporting the four same-generator fixtures and measuring live heap and
+parse time separately. Individual allocation is a measurement reference;
+it is not the generated default or a public parser option.

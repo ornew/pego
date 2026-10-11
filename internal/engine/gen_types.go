@@ -110,6 +110,16 @@ func ParseAST(input string, opts ...ParseOption) (%s, error) {
 	}
 	named.WriteString("\tdefault:\n\t\treturn nil, fmt.Errorf(\"rule %s is not defined\", name)\n\t}\n}\n")
 	b.WriteString(astHelpers)
+	if g.disableTypedObjectSlabs {
+		b.WriteString(astIndividualObjectHelper)
+	} else {
+		b.WriteString(astObjectSlabHelper)
+	}
+	if g.disableTypedListSlabs {
+		b.WriteString(astIndividualListHelper)
+	} else {
+		b.WriteString(astListSlabHelper)
+	}
 	if needTyped {
 		// Emit the typed table if any public entry point can use it.
 		g.table = "trules"
@@ -735,7 +745,9 @@ func (s *astChunk[T]) grow(n, initial, limit int) {
 	}
 }
 
-// astNew returns a new zero value from a chunk that grows from 8 to 256 values.
+`
+
+const astObjectSlabHelper = `// astNew returns a new zero value from a chunk that grows from 8 to 256 values.
 func astNew[T any](s *astChunk[T]) *T {
 	if len(s.free) == 0 {
 		s.grow(1, 8, 256)
@@ -745,7 +757,9 @@ func astNew[T any](s *astChunk[T]) *T {
 	return v
 }
 
-// astSlice returns n zero values with capacity n, so appending cannot overwrite
+`
+
+const astListSlabHelper = `// astSlice returns n zero values with capacity n, so appending cannot overwrite
 // another returned slice. Small-list chunks grow from 64 to 1,024 elements.
 func astSlice[T any](s *astChunk[T], n int) []T {
 	if n == 0 {
@@ -760,6 +774,23 @@ func astSlice[T any](s *astChunk[T], n int) []T {
 	v := s.free[:n:n]
 	s.free = s.free[n:]
 	return v
+}
+
+
+`
+
+// Separate allocation is a same-generator reference for retained-heap and
+// throughput measurements. Selecting it adds no generated runtime selector.
+const astIndividualObjectHelper = `// astNew returns an independently allocated zero value.
+func astNew[T any](_ *astChunk[T]) *T {
+	return new(T)
+}
+
+`
+
+const astIndividualListHelper = `// astSlice returns an independent list with capacity n, including non-nil empties.
+func astSlice[T any](_ *astChunk[T], n int) []T {
+	return make([]T, n)
 }
 
 

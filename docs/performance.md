@@ -144,13 +144,15 @@ Notes:
 
 `internal/engine/gen_typed_output_retention_test.go` exports a generated fixture
 and checks escaped terminal, shared-structure and returned-list values in both
-position units. Clone reachable text before dropping the parser and input so
+position units. It exports `slabs`, `objects`, `slices` and `individual`
+subdirectories; the latter three disable object slabs, list slabs or both at
+generation time. The default generated parser is unchanged. Clone reachable text before dropping the parser and input so
 legitimate input-string retention does not count as slab retention.
 
 ```bash
 PEGO_TYPED_OUTPUT_RETENTION_DIR=/tmp/typed-output-retention \
   go test ./internal/engine -run '^TestGeneratedTypedOutputRetentionFixture$' -count=1
-cd /tmp/typed-output-retention
+cd /tmp/typed-output-retention/slabs
 go test -c -o typed-retention.test .
 ./typed-retention.test -test.run '^$' -test.bench '^BenchmarkTypedOutputParse$' -test.benchmem -test.benchtime=500ms
 ./typed-retention.test -test.run '^$' -test.bench '^BenchmarkTypedOutputRetainedHeap$' -test.benchtime=1x
@@ -162,6 +164,15 @@ processes for each shape and unit across five fresh-process pairs. The heap
 diagnostic clones text, warms both variants, drops the parser/input owners and
 forces three GCs before reporting the last escaped result's live-heap delta.
 This is retained heap, not peak or cumulative allocation.
+
+The `structure` fixture discards a large scalar field in the same object
+chunk as the returned structure. The `slice` fixture fills the first object
+chunk before producing returned elements; its distinct large/small holder
+types isolate retention through unused list backing cells. Compile the same
+test binary in each exported subdirectory and alternate all four variants
+to measure the mechanisms independently. Reference controls preserve values,
+sharing, spans, non-nil empty lists and append isolation; they are internal
+measurement tools rather than public parser options.
 
 ### Benchmark workloads
 
