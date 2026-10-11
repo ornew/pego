@@ -40,7 +40,7 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if start == nil {
 		return nil, fmt.Errorf("start rule %s is not defined", opts.Start)
 	}
-	gen := &tsGen{generator: &generator{prog: prog, table: "rules", disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing || !opts.enableTSLiteralSharing}, plainUsed: map[*rule]bool{}}
+	gen := &tsGen{generator: &generator{prog: prog, table: "rules", disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing || !opts.enableTSLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch}, plainUsed: map[*rule]bool{}}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
 	var rec *Program
@@ -549,7 +549,7 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 		if a, ok := e.Term.(*grammar.Assign); ok {
 			fmt.Fprintf(&b, "  return p.assign(%s, %s) ? null : undefined;\n", tsString(a.Name), g.action(a.Value, s, nil))
 		} else {
-			fmt.Fprintf(&b, "  return p.predicate(%s) ? null : undefined;\n", g.action(e.Term, s, nil))
+			fmt.Fprintf(&b, "  return p.predicate((c) => %s) ? null : undefined;\n", g.predicateTerm(e.Term, s))
 		}
 	case *grammar.Attributed:
 		return g.attributed(e, s, build)
@@ -800,6 +800,23 @@ func (g *tsGen) term(t grammar.Term, s *scope, locals map[string]string) string 
 		return fmt.Sprintf("rtUnary(%s, %s)", tsString(t.Op), g.term(t.X, s, locals))
 	}
 	panic(fmt.Sprintf("unsupported term %T", t))
+}
+
+func (g *tsGen) predicateTerm(t grammar.Term, s *scope) string {
+	if !g.disableLiteralTextDispatch {
+		if name, literals, ok := literalTextMembership(t); ok {
+			var cases []string
+			seen := map[string]bool{}
+			for _, literal := range literals {
+				if !seen[literal] {
+					seen[literal] = true
+					cases = append(cases, "case "+tsString(literal)+":")
+				}
+			}
+			return fmt.Sprintf("((): Value => { switch (c.textStr(%s)) { %s return true; default: return false; } })()", g.term(&grammar.CaptureRef{Name: name}, s, nil), strings.Join(cases, " "))
+		}
+	}
+	return g.term(t, s, nil)
 }
 
 // concatParts writes the statements that push the elements of the arguments of the concat call t.

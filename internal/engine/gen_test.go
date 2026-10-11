@@ -61,6 +61,34 @@ def fallback=("é" / _){3} / "é"`,
 type N struct { T []Match }
 def main=items:(x:@"é" [text($x)=="é"]){0,2} #stream $$ -> new N{T: map($items, (i) => $i.x)}`,
 			[]string{"", "é", "éé", "ééé", "a", "éa"}},
+		{"literal text predicate dispatch", `
+type R struct { X *Match }
+def main = w:@(?^!)+ [text($w)=="a" || "b"==text($w) || text($w)=="c" || text($w)=="é" || text($w)=="😀" || text($w)=="λ" || text($w)=="日本語" || text($w)=="long-literal"] $$ -> new R{X:$w}`,
+			[]string{"a", "b", "c", "é", "😀", "λ", "日本語", "long-literal", "absent", "A", ""}},
+		{"literal text predicate controls", `
+type R struct { X *Match }
+def main = n:@(?0-9)+ [len($n)==1 || len($n)==2] [text($n)!="0" && text($n)!="00"] $$ -> new R{X:$n}`,
+			[]string{"1", "2", "0", "00", "123", "x", ""}},
+		{"literal text mixed control", `
+type R struct { X *Match }
+def main = w:@(?a-z)+ [text($w)=="a" || len($w)==1] $$ -> new R{X:$w}`,
+			[]string{"a", "b", "ab", ""}},
+		{"literal text different captures control", `
+type R struct { X *Match }
+def main = x:@(?a-z) y:@(?a-z) [text($x)=="a" || text($y)=="b"] $$ -> new R{X:$x}`,
+			[]string{"ab", "ac", "cb", "ca", "a", ""}},
+		{"literal text negation control", `
+type R struct { X *Match }
+def main = w:@(?a-z)+ [text($w)=="a" || !(text($w)=="b")] $$ -> new R{X:$w}`,
+			[]string{"a", "b", "c", ""}},
+		{"literal text missing capture", `
+type R struct { X *Match }
+def main = (w:@(?a-z))? [text($w)=="" || text($w)=="a" || text($w)=="b" || text($w)=="a"] $$ -> new R{X:$w}`,
+			[]string{"", "a", "b", "c"}},
+		{"literal text variable alias control", `
+type R struct { X Match }
+def main = w:@(?a-z)+ [alias=text($w)] [alias=="a" || alias=="b"] $$ -> new R{X:$w}`,
+			[]string{"a", "b", "c", ""}},
 		{"stream empty capture recognition", `def main=(x:_){1} #stream $$`, []string{"", "a", "é"}},
 		{"unicode scalar boundaries", `
 type N struct { T Match }

@@ -70,6 +70,9 @@ type GenOptions struct {
 	// literal tables can hurt TypeScript warm-up; production shares helpers
 	// only. An explicit disableLiteralSharing takes precedence.
 	enableTSLiteralSharing bool
+	// disableLiteralTextDispatch keeps literal text disjunctions on the general
+	// expression path for differential tests and same-generator measurements.
+	disableLiteralTextDispatch bool
 }
 
 // Generate generates the source code of a Go parser for a grammar.
@@ -96,7 +99,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if !token.IsIdentifier(opts.Package) || opts.Package == "_" {
 		return nil, fmt.Errorf("invalid package name %q", opts.Package)
 	}
-	gen := &generator{prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedPrattBodies: opts.disableTypedPrattBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing}
+	gen := &generator{prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedPrattBodies: opts.disableTypedPrattBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
 	var rec *Program
@@ -202,10 +205,11 @@ type generator struct {
 	disableLiteralSharing      bool
 	// Only exact emitted bodies with the same signature share a helper. Rule
 	// wrappers, memo IDs, frame layouts and expectation IDs remain in the code.
-	methodNames  map[generatedMethod]string
-	literalNames map[string]string
-	methodKeys   []generatedMethod
-	literalKeys  []string
+	methodNames                map[generatedMethod]string
+	literalNames               map[string]string
+	methodKeys                 []generatedMethod
+	literalKeys                []string
+	disableLiteralTextDispatch bool
 	// nodeScopes records the frame layouts shared by typed rule metadata.
 	nodeScopes map[*rule][]string
 	typedSpan  string // generated helper name, avoiding grammar type and field names
@@ -756,7 +760,7 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 		if a, ok := e.Term.(*grammar.Assign); ok {
 			fmt.Fprintf(&b, "\treturn nil, p.assign(%q, func(c *%s) any { return %s })\n", a.Name, g.ctxType(), g.term(a.Value, s, nil))
 		} else {
-			fmt.Fprintf(&b, "\treturn nil, p.predicate(func(c *%s) any { return %s })\n", g.ctxType(), g.term(e.Term, s, nil))
+			fmt.Fprintf(&b, "\treturn nil, p.predicate(func(c *%s) any { return %s })\n", g.ctxType(), g.predicateTerm(e.Term, s, nil))
 		}
 	case *grammar.Attributed:
 		return g.attributed(e, s, build)
@@ -1143,6 +1147,64 @@ func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) str
 		return fmt.Sprintf("%sUnary(%q, %s)", g.rt(), t.Op, g.term(t.X, s, locals))
 	}
 	panic(fmt.Sprintf("unsupported term %T", t))
+}
+
+// literalTextMembership recognizes a side-effect-free disjunction of text
+// equality checks against one captured value. Restricting the capture to a
+// direct reference makes evaluating text once observably equivalent to the
+// original ordered comparisons.
+func literalTextMembership(t grammar.Term) (string, []string, bool) {
+	var name string
+	var literals []string
+	var walk func(grammar.Term) bool
+	walk = func(t grammar.Term) bool {
+		if b, ok := t.(*grammar.Binary); ok && b.Op == "||" {
+			return walk(b.L) && walk(b.R)
+		}
+		b, ok := t.(*grammar.Binary)
+		if !ok || b.Op != "==" {
+			return false
+		}
+		var capture *grammar.CaptureRef
+		var literal *grammar.StringLit
+		if x, ok := textArg(b.L); ok {
+			capture, _ = x.(*grammar.CaptureRef)
+			literal, _ = b.R.(*grammar.StringLit)
+		}
+		if capture == nil || literal == nil {
+			if x, ok := textArg(b.R); ok {
+				capture, _ = x.(*grammar.CaptureRef)
+				literal, _ = b.L.(*grammar.StringLit)
+			}
+		}
+		if capture == nil || literal == nil || (name != "" && name != capture.Name) {
+			return false
+		}
+		name = capture.Name
+		literals = append(literals, literal.Value)
+		return true
+	}
+	if !walk(t) || len(literals) < 2 {
+		return "", nil, false
+	}
+	return name, literals, true
+}
+
+func (g *generator) predicateTerm(t grammar.Term, s *scope, locals map[string]string) string {
+	if !g.disableLiteralTextDispatch {
+		if name, literals, ok := literalTextMembership(t); ok {
+			var cases []string
+			seen := map[string]bool{}
+			for _, literal := range literals {
+				if !seen[literal] {
+					seen[literal] = true
+					cases = append(cases, strconv.Quote(literal))
+				}
+			}
+			return fmt.Sprintf("func() any { switch c.textStr(%s) { case %s: return true; default: return false } }()", g.term(&grammar.CaptureRef{Name: name}, s, locals), strings.Join(cases, ", "))
+		}
+	}
+	return g.term(t, s, locals)
 }
 
 // concatParts writes the statements that push the elements of the arguments of the concat call t.

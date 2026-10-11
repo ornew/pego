@@ -901,7 +901,12 @@ func (d *dgen) predicate(e *grammar.Predicate, s *dscope, fail string) string {
 			d.bad = true
 			return "nil"
 		}
-		term := d.g.term(t, f, nil)
+		var term string
+		if _, assignment := e.Term.(*grammar.Assign); assignment {
+			term = d.g.term(t, f, nil)
+		} else {
+			term = d.g.predicateTerm(t, f, nil)
+		}
 		if a, ok := e.Term.(*grammar.Assign); ok {
 			d.failIf(fmt.Sprintf("!p.assign(%q, func(c *%s) any { return %s })", a.Name, d.g.ctxType(), term), fail)
 		} else {
@@ -935,7 +940,12 @@ func (d *dgen) predicate(e *grammar.Predicate, s *dscope, fail string) string {
 	g := d.g
 	prev := g.caps
 	g.caps = caps
-	term := g.term(t, newScope(), nil)
+	var term string
+	if _, assignment := e.Term.(*grammar.Assign); assignment {
+		term = g.term(t, newScope(), nil)
+	} else {
+		term = g.predicateTerm(t, newScope(), nil)
+	}
 	d.rdTerm(t, caps)
 	g.caps = prev
 	if a, ok := e.Term.(*grammar.Assign); ok {

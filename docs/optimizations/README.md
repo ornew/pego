@@ -79,6 +79,7 @@ inventory of current mechanisms or reference controls.
 | [85](085-reuse-stream-capture-frames.md#85-reuse-stream-capture-frames-at-element-commit)| Reuse stream capture frames at element commit | ✓ | ✓ | ✓ | – | – | engine streaming only; reuses completed element's frame structs while preserving the live root and immutable result storage |
 | [86](086-reuse-document-vm-values.md#86-reuse-the-document-vm-value-stack)| Reuse the Document VM value stack | – | ✓ | ✓ | – | – | engine `Document` reparses only; retains cleared VM stack capacity within an input-relative bound; ordinary parsing and closure documents unchanged |
 | [90](090-share-identical-generated-helpers.md#90-share-identical-generated-helpers-and-literal-tables)| Share identical generated helpers and literal tables | – | – | – | ✓ | ✓ | Go Node/typed output shares exact helper bodies and literals; TypeScript shares exact helper bodies, while literal sharing remains private opt-in |
+| [91](091-specialize-pure-literal-text-disjunctions.md#91-specialize-pure-literal-text-disjunctions)| Specialize pure literal-text disjunctions | – | – | – | ✓ | ✓ | generated Go Node/typed outputs and TypeScript; complete OR of at least two text comparisons against one direct capture and string literals; other predicate shapes retain general evaluation |
 | [62](062-comparing-short-literals-in-place-in-direct-rules.md#62-comparing-short-literals-in-place-in-direct-rules)| Short literals compared in place | – | – | – | Partial | ✓ | direct rules, up to 4 code points; generated value-free and supported Node rules since 76/77; CodePoints only, Bytes retains the literal matcher |
 
 Not applied, and why:
@@ -185,6 +186,7 @@ Not applied, and why:
 - [085. Reuse stream capture frames at element commit](085-reuse-stream-capture-frames.md)
 - [086. Reuse the Document VM value stack](086-reuse-document-vm-values.md)
 - [090. Share identical generated helpers and literal tables](090-share-identical-generated-helpers.md)
+- [091. Specialize pure literal-text disjunctions](091-specialize-pure-literal-text-disjunctions.md)
 
 ## Experiments that did not pay off
 
