@@ -405,7 +405,7 @@ reuse, text materialization and normal commit work. Known engine-owned action
 errors and the final rule prefix use eager, bounded text construction.
 Guard-rejected closure alternatives also consume steps independently of
 diagnostic collection. Remaining matcher coverage, generated-runtime lifecycles,
-copied-event ownership and first-use setup ordering need separate validation
+copied-event ownership and default-cost evaluation need separate validation
 gates. The prototype remains separate
 from main until contract and performance gates pass.
 
@@ -527,8 +527,8 @@ batch tests cover all three backends and both position units, fallback bypass,
 predicate-dependent recognition actions, ordinary message parity, and pooled
 retry. Replacing only the bounded builder with an uncharged native join makes
 the public interruption tests fail. These gates establish scoped correctness;
-remaining matcher work, lifecycle, generated-output, setup, and default-cost
-gates are still pending.
+remaining matcher work, lifecycle, generated-output, and default-cost gates
+are still pending.
 
 Guarded-choice tests isolate the rejected-alternative loop after input setup.
 Exact and one-short budgets cover silent lookahead, suppressed older
@@ -669,7 +669,7 @@ establishes release of those fixture objects, not a retained-byte or timing boun
 The controlled observer/storage/accounting costs and inactive branch/call costs
 are unmeasured. Raw-reader checks add a controller pointer to the observer and
 extra Context polls only on controlled caller reads. Generated-runtime lifecycles
-and setup/default-cost gates remain pending before full contract adoption.
+and default-cost gates remain pending before full contract adoption.
 
 
 Controlled stream snapshots reserve source copying through the bounded
@@ -690,6 +690,28 @@ small offset table to avoid mutating the previous cache during interruption;
 its allocation and timing costs remain unmeasured while benchmarks are paused.
 Inactive snapshots retain their existing copy and offset-table reuse paths.
 
+Admission with a context or finite work quota validates rule names, backend
+availability and stream or recognition constraints from immutable compilation
+metadata before calling the Context. AST-backed programs use their existing rule map. Programs loaded without
+an AST inspect their already loaded module; checking a stream marker does not
+construct a VM. Fixed rejection therefore does not perform lazy backend setup
+or invoke caller Context methods.
+
+Valid controlled calls check immediately around Module preparation, VM or
+iterative-VM construction, and recognizer construction. Recognition prepares
+only its selected recognizer backend, before controlled input initialization;
+it does not prepare an unused ordinary VM. A pre-cancelled call performs none of
+this setup. Cancellation observed after a component completes returns before
+input, trace, stream reader or result publication. A later fresh invocation may
+reuse the completed setup and always receives fresh counters. Existing Documents
+already have their selected backend prepared at construction.
+
+Validation, compilation and waiting for shared once-only setup are outside work
+budgets and remain nonpreemptible. Calls with no context or quotas retain their
+existing preparation order. The shared admission helper adds a default-path call
+and option branches; controlled AST-omitted calls add metadata lookup work.
+Those costs are unmeasured while timing is paused.
+
 ## Alternatives considered
 
 - **Depth limits only.** Existing compatibility baseline, but shallow scans and
@@ -705,6 +727,10 @@ Inactive snapshots retain their existing copy and offset-table reuse paths.
   successful ReadByte/ReadRune. A post-read cancellation would then replace the
   reader error. Observe the caller result only for controlled streams, retaining
   ordinary buffered-data/error ordering when no cancellation is observed.
+- **Check only after lazy backend lookup.** Keeps validation and setup together,
+  but a pre-cancelled valid call still builds a VM, and invalid rule/stream
+  checks can invoke expensive setup first. Separate pure metadata validation
+  from cancellation-aware setup admission while keeping compilation uncharged.
 - **One universal backend-independent instruction count.** Attractive for portable
   settings but would require a new normalized evaluator and charge optimized
   skipped work artificially. Use documented backend-local abstract work events.
