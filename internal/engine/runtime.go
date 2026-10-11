@@ -2,8 +2,6 @@ package engine
 
 import (
 	"fmt"
-	"slices"
-	"sort"
 	"strings"
 )
 
@@ -332,6 +330,7 @@ func (p *parser) expect(pos int, id expID) {
 	bit := uint64(1) << (uint32(id) * 0x9e3779b1 >> 26)
 	if p.expBits&bit != 0 {
 		for _, e := range p.exp[p.expBase:] {
+			p.stepWork()
 			if e == id {
 				return
 			}
@@ -369,7 +368,7 @@ func (p *parser) keep(ids []expID) []expID {
 	if len(ids) == 0 {
 		return nil
 	}
-	if slices.Equal(ids, p.lastKept) { // the same sequence of expectations often repeats
+	if p.equalExpected(ids, p.lastKept) { // the same sequence of expectations often repeats
 		return p.lastKept
 	}
 	if cap(p.arena)-len(p.arena) < len(ids) {
@@ -377,7 +376,7 @@ func (p *parser) keep(ids []expID) []expID {
 		p.arena = make([]expID, 0, max(1024, len(ids)))
 	}
 	off := len(p.arena)
-	p.arena = append(p.arena, ids...)
+	p.arena = appendWork(p, p.arena, ids)
 	p.lastKept = p.arena[off:len(p.arena):len(p.arena)]
 	return p.lastKept
 }
@@ -386,6 +385,7 @@ func (p *parser) keep(ids []expID) []expID {
 // stack beyond the current record (writes only happen before the position already read).
 func (p *parser) mergeExpected(far int, ids []expID) {
 	for _, x := range ids {
+		p.stepWork()
 		p.expect(far, x)
 	}
 }
@@ -541,7 +541,7 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit boo
 			return st, nil, false, true
 		}
 		p.pos = e.end
-		p.recovered = append(p.recovered, e.errs...)
+		p.recovered = appendWork(p, p.recovered, e.errs)
 		return st, e.node, true, true
 	}
 	st = callState{key: key, start: p.pos, savedHW: p.hw, savedLW: p.lw, rec: len(p.recovered), memoSeedUses: p.memoSeedUses, memoProvisionalUses: p.memoProvisionalUses}
@@ -563,7 +563,7 @@ func (p *parser) callEnd(r *rule, st *callState, v *Node, ok bool) (*Node, bool)
 		}
 		e = p.memo.alloc()
 		*e = memoEntry{node: v, ok: ok, end: p.pos, examined: p.hw, from: p.lw, silent: p.silent > 0, gen: p.gen, vgen: p.gen,
-			positional: r.positional, errs: append([]*SyntaxError(nil), p.recovered[st.rec:]...)}
+			positional: r.positional, errs: appendWork(p, []*SyntaxError(nil), p.recovered[st.rec:])}
 		p.memoPut(st.key, e)
 	}
 	far, inner := p.unisolate(st.exp)
@@ -615,7 +615,7 @@ func (p *parser) growStep(g *growState, v *Node, ok bool) bool {
 		return false
 	}
 	g.best = p.memo.alloc()
-	*g.best = memoEntry{node: v, ok: true, end: p.pos, examined: p.hw, from: p.lw, growing: true, gen: p.gen, vgen: p.gen, errs: append([]*SyntaxError(nil), p.recovered[g.rec:]...)}
+	*g.best = memoEntry{node: v, ok: true, end: p.pos, examined: p.hw, from: p.lw, growing: true, gen: p.gen, vgen: p.gen, errs: appendWork(p, []*SyntaxError(nil), p.recovered[g.rec:])}
 	p.activeSeed = g.best
 	p.memoPut(g.key, g.best)
 	p.pos = g.start
@@ -637,7 +637,7 @@ func (p *parser) growEnd(r *rule, g *growState) (*Node, bool) {
 	best.from = p.lw
 	best.positional = r.positional
 	p.pos = best.end
-	p.recovered = append(p.recovered[:g.rec], best.errs...)
+	p.recovered = appendWork(p, p.recovered[:g.rec], best.errs)
 	return best.node, best.ok
 }
 
@@ -837,13 +837,14 @@ func (p *parser) syntaxError() *SyntaxError {
 func (p *parser) makeError(pos int, expected []expID) *SyntaxError {
 	e := &SyntaxError{Pos: pos}
 	for _, x := range expected {
+		p.stepWork()
 		if x&msgBit != 0 {
 			e.Messages = append(e.Messages, p.descs[x&^msgBit])
 		} else {
 			e.Expected = append(e.Expected, p.descs[x])
 		}
 	}
-	sort.Strings(e.Expected)
+	p.sortExpected(e.Expected)
 	e.Line, e.Col = p.lineCol(pos)
 	return e
 }

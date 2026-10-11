@@ -343,7 +343,7 @@ func (f *longestFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, ires
 		}
 		if res.ok && (f.best.op == nil || p.pos > f.best.end) {
 			f.best = prattAttempt{op: op, frame: f.f, v: res.v, start: f.m0.pos, end: p.pos, env: p.env, cut: cut,
-				errs: append([]*SyntaxError(nil), p.recovered[f.m0.recovered:]...)}
+				errs: appendWork(p, []*SyntaxError(nil), p.recovered[f.m0.recovered:])}
 		}
 		if !res.ok && cut {
 			f.cutFailed = true
