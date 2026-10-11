@@ -120,4 +120,5 @@ decoding excludes compression/encoding, browser DOM, worker and WebAssembly cost
   modules; there is no build step and no npm dependency.
   The client-side code highlighter is in `site/static/assets/highlight.js`; fenced code language aliases are mapped in
   `site/static/assets/site.js` and tested through the controlled-DOM harness in `site/testdata/site_highlight_test.mjs`.
+  Inline code wraps long tokens only when necessary; table code stays unbroken within a horizontally scrolling table.
   On page load, the sidebar scrolls a current link inside a closed disclosure to its visible summary.

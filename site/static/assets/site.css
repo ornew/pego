@@ -401,8 +401,9 @@ code, kbd, pre { font-family: var(--mono); font-size: 0.9em; }
   border-radius: 4px;
   padding: 0.05em 0.3em;
   font-size: 0.86em;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
+.prose table code { white-space: nowrap; overflow-wrap: normal; }
 .prose pre, pre.code-block {
   position: relative;
   background: var(--code-bg);
