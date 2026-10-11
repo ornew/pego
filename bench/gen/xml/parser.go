@@ -2449,6 +2449,11 @@ func tparse[T any](r *trule, input string, opts []ParseOption, ext any, conv fun
 		var zero T
 		return zero, err
 	}
+	return tparseResolved(r, input, o, ext, conv)
+}
+
+// tparseResolved consumes options already applied by the public entry point.
+func tparseResolved[T any](r *trule, input string, o parseOptions, ext any, conv func(any) T) (T, error) {
 	p, _ := tpool.Get().(*tparser)
 	if p == nil {
 		p = &tparser{parser: &parser{}}
@@ -4816,7 +4821,7 @@ func tmk_AttlistDecl(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tAttlistDecl)
 	v.Name = tAs[*Name](f0)
-	v.Defs = tl0(a, f1)
+	v.Defs = tl4(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -4847,7 +4852,7 @@ func tmk_Attribute(c *tctx, final bool, f0 any, f1 any) any {
 func tmk_Choice(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tChoice)
-	v.Items = tl1(a, f0)
+	v.Items = tl5(a, f0)
 	v.Occur = tAs[*Occurrence](f1)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -4865,7 +4870,7 @@ func tmk_Doctype(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	v := astNew(&a.tDoctype)
 	v.Name = tAs[*Name](f0)
 	v.ExternalID = tAs[*ExternalID](f1)
-	v.Subset = tl2(a, f2)
+	v.Subset = tl1(a, f2)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -4882,10 +4887,10 @@ func tmk_Document(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) a
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tDocument)
 	v.Decl = tAs[*XMLDecl](f0)
-	v.Prolog = tl3(a, f1)
+	v.Prolog = tl0(a, f1)
 	v.Doctype = tAs[*Doctype](f2)
 	v.Root = tAs[*Element](f3)
-	v.Epilog = tl3(a, f4)
+	v.Epilog = tl0(a, f4)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -4904,8 +4909,8 @@ func tmk_Element(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tElement)
 	v.Name = tAs[*Name](f0)
-	v.Attrs = tl4(a, f1)
-	v.Content = tl5(a, f2)
+	v.Attrs = tl6(a, f1)
+	v.Content = tl2(a, f2)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -4959,7 +4964,7 @@ func tmk_EntityDecl(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any)
 func tmk_Enumeration(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tEnumeration)
-	v.Values = tl6(a, f0)
+	v.Values = tl7(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -4989,7 +4994,7 @@ func tmk_ExternalID(c *tctx, final bool, f0 any, f1 any) any {
 func tmk_Mixed(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tMixed)
-	v.Names = tl7(a, f0)
+	v.Names = tl8(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -5035,7 +5040,7 @@ func tmk_NotationDecl(c *tctx, final bool, f0 any, f1 any) any {
 func tmk_NotationType(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tNotationType)
-	v.Names = tl7(a, f0)
+	v.Names = tl8(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -5065,7 +5070,7 @@ func tmk_PI(c *tctx, final bool, f0 any, f1 any) any {
 func tmk_Sequence(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tSequence)
-	v.Items = tl1(a, f0)
+	v.Items = tl5(a, f0)
 	v.Occur = tAs[*Occurrence](f1)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -5095,52 +5100,7 @@ func tmk_XMLDecl(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	return c.made(v, first, start, end)
 }
 
-func tl0(a *tslabs, v any) []*AttDef {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*AttDef{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl0Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*AttDef](c)
-	}
-	return out
-}
-
-func tl1(a *tslabs, v any) []Particle {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []Particle{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl1Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[Particle](tpub(c))
-	}
-	return out
-}
-
-func tl2(a *tslabs, v any) []Decl {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []Decl{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl2Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[Decl](tpub(c))
-	}
-	return out
-}
-
-func tl3(a *tslabs, v any) []Misc {
+func tl0(a *tslabs, v any) []Misc {
 	if v == nil {
 		return nil
 	}
@@ -5148,29 +5108,29 @@ func tl3(a *tslabs, v any) []Misc {
 	if n == nil {
 		return []Misc{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl3Chunk, len(n.kids))
+	out := astSlice(&a.tl0Chunk, len(n.kids))
 	for i, c := range n.kids {
 		out[i] = tAs[Misc](tpub(c))
 	}
 	return out
 }
 
-func tl4(a *tslabs, v any) []*Attribute {
+func tl1(a *tslabs, v any) []Decl {
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*tnode)
 	if n == nil {
-		return []*Attribute{} // another node (an Error), as conversion makes an empty list of it
+		return []Decl{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl4Chunk, len(n.kids))
+	out := astSlice(&a.tl1Chunk, len(n.kids))
 	for i, c := range n.kids {
-		out[i] = tAs[*Attribute](c)
+		out[i] = tAs[Decl](tpub(c))
 	}
 	return out
 }
 
-func tl5(a *tslabs, v any) []Content {
+func tl2(a *tslabs, v any) []Content {
 	if v == nil {
 		return nil
 	}
@@ -5178,14 +5138,74 @@ func tl5(a *tslabs, v any) []Content {
 	if n == nil {
 		return []Content{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl5Chunk, len(n.kids))
+	out := astSlice(&a.tl2Chunk, len(n.kids))
 	for i, c := range n.kids {
 		out[i] = tAs[Content](tpub(c))
 	}
 	return out
 }
 
-func tl6(a *tslabs, v any) []*Nmtoken {
+func tl3(a *tslabs, v any) []*Match {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*Match{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl3Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tpubMatch(c)
+	}
+	return out
+}
+
+func tl4(a *tslabs, v any) []*AttDef {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*AttDef{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl4Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*AttDef](c)
+	}
+	return out
+}
+
+func tl5(a *tslabs, v any) []Particle {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []Particle{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl5Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[Particle](tpub(c))
+	}
+	return out
+}
+
+func tl6(a *tslabs, v any) []*Attribute {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*Attribute{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl6Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*Attribute](c)
+	}
+	return out
+}
+
+func tl7(a *tslabs, v any) []*Nmtoken {
 	if v == nil {
 		return nil
 	}
@@ -5193,14 +5213,14 @@ func tl6(a *tslabs, v any) []*Nmtoken {
 	if n == nil {
 		return []*Nmtoken{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl6Chunk, len(n.kids))
+	out := astSlice(&a.tl7Chunk, len(n.kids))
 	for i, c := range n.kids {
 		out[i] = tAs[*Nmtoken](c)
 	}
 	return out
 }
 
-func tl7(a *tslabs, v any) []*Name {
+func tl8(a *tslabs, v any) []*Name {
 	if v == nil {
 		return nil
 	}
@@ -5208,7 +5228,7 @@ func tl7(a *tslabs, v any) []*Name {
 	if n == nil {
 		return []*Name{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl7Chunk, len(n.kids))
+	out := astSlice(&a.tl8Chunk, len(n.kids))
 	for i, c := range n.kids {
 		out[i] = tAs[*Name](c)
 	}
@@ -5253,14 +5273,746 @@ type tslabs struct {
 	tPI            astChunk[PI]
 	tSequence      astChunk[Sequence]
 	tXMLDecl       astChunk[XMLDecl]
-	tl0Chunk       astChunk[*AttDef]
-	tl1Chunk       astChunk[Particle]
-	tl2Chunk       astChunk[Decl]
-	tl3Chunk       astChunk[Misc]
-	tl4Chunk       astChunk[*Attribute]
-	tl5Chunk       astChunk[Content]
-	tl6Chunk       astChunk[*Nmtoken]
-	tl7Chunk       astChunk[*Name]
+	tl0Chunk       astChunk[Misc]
+	tl1Chunk       astChunk[Decl]
+	tl2Chunk       astChunk[Content]
+	tl3Chunk       astChunk[*Match]
+	tl4Chunk       astChunk[*AttDef]
+	tl5Chunk       astChunk[Particle]
+	tl6Chunk       astChunk[*Attribute]
+	tl7Chunk       astChunk[*Nmtoken]
+	tl8Chunk       astChunk[*Name]
+}
+
+func (a *astConv) toMatch(n *Node) *Match {
+	if n == nil || n.Type() != "Match" {
+		return nil
+	}
+	v := astNew(&a.match)
+	*v = Match{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toError(n *Node) *Error {
+	if n == nil || n.Type() != "Error" {
+		return nil
+	}
+	msg, _ := n.Field("message").(string)
+	v := astNew(&a.error)
+	*v = Error{Span: Span{int(n.Start), int(n.End)}, Text: n.Text, Message: msg}
+	return v
+}
+
+// anyValue converts a value of a statically unknown type into the typed value of its type (CST
+// nodes stay *Node).
+func (a *astConv) anyValue(v any) any {
+	n, ok := v.(*Node)
+	if !ok || n == nil {
+		return v
+	}
+	switch n.Type() {
+	case "Match":
+		return a.toMatch(n)
+	case "Error":
+		return a.toError(n)
+	case "AttValue":
+		return a.toAttValue(n)
+	case "CDSect":
+		return a.toCDSect(n)
+	case "CharData":
+		return a.toCharData(n)
+	case "CharRef":
+		return a.toCharRef(n)
+	case "Comment":
+		return a.toComment(n)
+	case "EncName":
+		return a.toEncName(n)
+	case "EntityRef":
+		return a.toEntityRef(n)
+	case "EntityValue":
+		return a.toEntityValue(n)
+	case "Keyword":
+		return a.toKeyword(n)
+	case "Name":
+		return a.toName(n)
+	case "Nmtoken":
+		return a.toNmtoken(n)
+	case "Occurrence":
+		return a.toOccurrence(n)
+	case "PERef":
+		return a.toPERef(n)
+	case "PIData":
+		return a.toPIData(n)
+	case "PubidLiteral":
+		return a.toPubidLiteral(n)
+	case "SystemLiteral":
+		return a.toSystemLiteral(n)
+	case "Version":
+		return a.toVersion(n)
+	case "YesNo":
+		return a.toYesNo(n)
+	case "AttDef":
+		return a.toAttDef(n)
+	case "AttlistDecl":
+		return a.toAttlistDecl(n)
+	case "Attribute":
+		return a.toAttribute(n)
+	case "Choice":
+		return a.toChoice(n)
+	case "Doctype":
+		return a.toDoctype(n)
+	case "Document":
+		return a.toDocument(n)
+	case "Element":
+		return a.toElement(n)
+	case "ElementDecl":
+		return a.toElementDecl(n)
+	case "EntityDecl":
+		return a.toEntityDecl(n)
+	case "Enumeration":
+		return a.toEnumeration(n)
+	case "ExternalID":
+		return a.toExternalID(n)
+	case "Mixed":
+		return a.toMixed(n)
+	case "NameParticle":
+		return a.toNameParticle(n)
+	case "NotationDecl":
+		return a.toNotationDecl(n)
+	case "NotationType":
+		return a.toNotationType(n)
+	case "PI":
+		return a.toPI(n)
+	case "Sequence":
+		return a.toSequence(n)
+	case "XMLDecl":
+		return a.toXMLDecl(n)
+	}
+	return n
+}
+
+func (a *astConv) toAttValue(n *Node) *AttValue {
+	if n == nil || n.Type() != "AttValue" {
+		return nil
+	}
+	v := astNew(&a.tAttValue)
+	*v = AttValue{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toCDSect(n *Node) *CDSect {
+	if n == nil || n.Type() != "CDSect" {
+		return nil
+	}
+	v := astNew(&a.tCDSect)
+	*v = CDSect{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toCharData(n *Node) *CharData {
+	if n == nil || n.Type() != "CharData" {
+		return nil
+	}
+	v := astNew(&a.tCharData)
+	*v = CharData{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toCharRef(n *Node) *CharRef {
+	if n == nil || n.Type() != "CharRef" {
+		return nil
+	}
+	v := astNew(&a.tCharRef)
+	*v = CharRef{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toComment(n *Node) *Comment {
+	if n == nil || n.Type() != "Comment" {
+		return nil
+	}
+	v := astNew(&a.tComment)
+	*v = Comment{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toEncName(n *Node) *EncName {
+	if n == nil || n.Type() != "EncName" {
+		return nil
+	}
+	v := astNew(&a.tEncName)
+	*v = EncName{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toEntityRef(n *Node) *EntityRef {
+	if n == nil || n.Type() != "EntityRef" {
+		return nil
+	}
+	v := astNew(&a.tEntityRef)
+	*v = EntityRef{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toEntityValue(n *Node) *EntityValue {
+	if n == nil || n.Type() != "EntityValue" {
+		return nil
+	}
+	v := astNew(&a.tEntityValue)
+	*v = EntityValue{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toKeyword(n *Node) *Keyword {
+	if n == nil || n.Type() != "Keyword" {
+		return nil
+	}
+	v := astNew(&a.tKeyword)
+	*v = Keyword{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toName(n *Node) *Name {
+	if n == nil || n.Type() != "Name" {
+		return nil
+	}
+	v := astNew(&a.tName)
+	*v = Name{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toNmtoken(n *Node) *Nmtoken {
+	if n == nil || n.Type() != "Nmtoken" {
+		return nil
+	}
+	v := astNew(&a.tNmtoken)
+	*v = Nmtoken{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toOccurrence(n *Node) *Occurrence {
+	if n == nil || n.Type() != "Occurrence" {
+		return nil
+	}
+	v := astNew(&a.tOccurrence)
+	*v = Occurrence{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toPERef(n *Node) *PERef {
+	if n == nil || n.Type() != "PERef" {
+		return nil
+	}
+	v := astNew(&a.tPERef)
+	*v = PERef{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toPIData(n *Node) *PIData {
+	if n == nil || n.Type() != "PIData" {
+		return nil
+	}
+	v := astNew(&a.tPIData)
+	*v = PIData{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toPubidLiteral(n *Node) *PubidLiteral {
+	if n == nil || n.Type() != "PubidLiteral" {
+		return nil
+	}
+	v := astNew(&a.tPubidLiteral)
+	*v = PubidLiteral{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toSystemLiteral(n *Node) *SystemLiteral {
+	if n == nil || n.Type() != "SystemLiteral" {
+		return nil
+	}
+	v := astNew(&a.tSystemLiteral)
+	*v = SystemLiteral{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toVersion(n *Node) *Version {
+	if n == nil || n.Type() != "Version" {
+		return nil
+	}
+	v := astNew(&a.tVersion)
+	*v = Version{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toYesNo(n *Node) *YesNo {
+	if n == nil || n.Type() != "YesNo" {
+		return nil
+	}
+	v := astNew(&a.tYesNo)
+	*v = YesNo{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toAttDef(n *Node) *AttDef {
+	if n == nil || n.Type() != "AttDef" {
+		return nil
+	}
+	v := astNew(&a.tAttDef)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Type = a.toAttType(astNode(n.Field("Type")))
+	v.Default = a.toKeyword(astNode(n.Field("Default")))
+	v.Value = a.toAttValue(astNode(n.Field("Value")))
+	return v
+}
+
+func (a *astConv) toAttlistDecl(n *Node) *AttlistDecl {
+	if n == nil || n.Type() != "AttlistDecl" {
+		return nil
+	}
+	v := astNew(&a.tAttlistDecl)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Defs = a.list0(astNode(n.Field("Defs")))
+	return v
+}
+
+func (a *astConv) toAttribute(n *Node) *Attribute {
+	if n == nil || n.Type() != "Attribute" {
+		return nil
+	}
+	v := astNew(&a.tAttribute)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Value = a.toAttValue(astNode(n.Field("Value")))
+	return v
+}
+
+func (a *astConv) toChoice(n *Node) *Choice {
+	if n == nil || n.Type() != "Choice" {
+		return nil
+	}
+	v := astNew(&a.tChoice)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Items = a.list1(astNode(n.Field("Items")))
+	v.Occur = a.toOccurrence(astNode(n.Field("Occur")))
+	return v
+}
+
+func (a *astConv) toDoctype(n *Node) *Doctype {
+	if n == nil || n.Type() != "Doctype" {
+		return nil
+	}
+	v := astNew(&a.tDoctype)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.ExternalID = a.toExternalID(astNode(n.Field("ExternalID")))
+	v.Subset = a.list2(astNode(n.Field("Subset")))
+	return v
+}
+
+func (a *astConv) toDocument(n *Node) *Document {
+	if n == nil || n.Type() != "Document" {
+		return nil
+	}
+	v := astNew(&a.tDocument)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Decl = a.toXMLDecl(astNode(n.Field("Decl")))
+	v.Prolog = a.list3(astNode(n.Field("Prolog")))
+	v.Doctype = a.toDoctype(astNode(n.Field("Doctype")))
+	v.Root = a.toElement(astNode(n.Field("Root")))
+	v.Epilog = a.list3(astNode(n.Field("Epilog")))
+	return v
+}
+
+func (a *astConv) toElement(n *Node) *Element {
+	if n == nil || n.Type() != "Element" {
+		return nil
+	}
+	v := astNew(&a.tElement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Attrs = a.list4(astNode(n.Field("Attrs")))
+	v.Content = a.list5(astNode(n.Field("Content")))
+	return v
+}
+
+func (a *astConv) toElementDecl(n *Node) *ElementDecl {
+	if n == nil || n.Type() != "ElementDecl" {
+		return nil
+	}
+	v := astNew(&a.tElementDecl)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Content = a.toContentSpec(astNode(n.Field("Content")))
+	return v
+}
+
+func (a *astConv) toEntityDecl(n *Node) *EntityDecl {
+	if n == nil || n.Type() != "EntityDecl" {
+		return nil
+	}
+	v := astNew(&a.tEntityDecl)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Parameter = astBool(n.Field("Parameter"))
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Value = a.toEntityValue(astNode(n.Field("Value")))
+	v.ExternalID = a.toExternalID(astNode(n.Field("ExternalID")))
+	v.NData = a.toName(astNode(n.Field("NData")))
+	return v
+}
+
+func (a *astConv) toEnumeration(n *Node) *Enumeration {
+	if n == nil || n.Type() != "Enumeration" {
+		return nil
+	}
+	v := astNew(&a.tEnumeration)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Values = a.list6(astNode(n.Field("Values")))
+	return v
+}
+
+func (a *astConv) toExternalID(n *Node) *ExternalID {
+	if n == nil || n.Type() != "ExternalID" {
+		return nil
+	}
+	v := astNew(&a.tExternalID)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Public = a.toPubidLiteral(astNode(n.Field("Public")))
+	v.System = a.toSystemLiteral(astNode(n.Field("System")))
+	return v
+}
+
+func (a *astConv) toMixed(n *Node) *Mixed {
+	if n == nil || n.Type() != "Mixed" {
+		return nil
+	}
+	v := astNew(&a.tMixed)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Names = a.list7(astNode(n.Field("Names")))
+	return v
+}
+
+func (a *astConv) toNameParticle(n *Node) *NameParticle {
+	if n == nil || n.Type() != "NameParticle" {
+		return nil
+	}
+	v := astNew(&a.tNameParticle)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Occur = a.toOccurrence(astNode(n.Field("Occur")))
+	return v
+}
+
+func (a *astConv) toNotationDecl(n *Node) *NotationDecl {
+	if n == nil || n.Type() != "NotationDecl" {
+		return nil
+	}
+	v := astNew(&a.tNotationDecl)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.ExternalID = a.toExternalID(astNode(n.Field("ExternalID")))
+	return v
+}
+
+func (a *astConv) toNotationType(n *Node) *NotationType {
+	if n == nil || n.Type() != "NotationType" {
+		return nil
+	}
+	v := astNew(&a.tNotationType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Names = a.list7(astNode(n.Field("Names")))
+	return v
+}
+
+func (a *astConv) toPI(n *Node) *PI {
+	if n == nil || n.Type() != "PI" {
+		return nil
+	}
+	v := astNew(&a.tPI)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Target = a.toName(astNode(n.Field("Target")))
+	v.Data = a.toPIData(astNode(n.Field("Data")))
+	return v
+}
+
+func (a *astConv) toSequence(n *Node) *Sequence {
+	if n == nil || n.Type() != "Sequence" {
+		return nil
+	}
+	v := astNew(&a.tSequence)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Items = a.list1(astNode(n.Field("Items")))
+	v.Occur = a.toOccurrence(astNode(n.Field("Occur")))
+	return v
+}
+
+func (a *astConv) toXMLDecl(n *Node) *XMLDecl {
+	if n == nil || n.Type() != "XMLDecl" {
+		return nil
+	}
+	v := astNew(&a.tXMLDecl)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Version = a.toVersion(astNode(n.Field("Version")))
+	v.Encoding = a.toEncName(astNode(n.Field("Encoding")))
+	v.Standalone = a.toYesNo(astNode(n.Field("Standalone")))
+	return v
+}
+
+func (a *astConv) toAttType(n *Node) AttType {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Keyword":
+		return a.toKeyword(n)
+	case "Enumeration":
+		return a.toEnumeration(n)
+	case "NotationType":
+		return a.toNotationType(n)
+	}
+	return nil
+}
+
+func (a *astConv) toContent(n *Node) Content {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Element":
+		return a.toElement(n)
+	case "CharData":
+		return a.toCharData(n)
+	case "EntityRef":
+		return a.toEntityRef(n)
+	case "CharRef":
+		return a.toCharRef(n)
+	case "CDSect":
+		return a.toCDSect(n)
+	case "PI":
+		return a.toPI(n)
+	case "Comment":
+		return a.toComment(n)
+	}
+	return nil
+}
+
+func (a *astConv) toContentSpec(n *Node) ContentSpec {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Keyword":
+		return a.toKeyword(n)
+	case "Mixed":
+		return a.toMixed(n)
+	case "Choice":
+		return a.toChoice(n)
+	case "Sequence":
+		return a.toSequence(n)
+	}
+	return nil
+}
+
+func (a *astConv) toDecl(n *Node) Decl {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "ElementDecl":
+		return a.toElementDecl(n)
+	case "AttlistDecl":
+		return a.toAttlistDecl(n)
+	case "EntityDecl":
+		return a.toEntityDecl(n)
+	case "NotationDecl":
+		return a.toNotationDecl(n)
+	case "PI":
+		return a.toPI(n)
+	case "Comment":
+		return a.toComment(n)
+	case "PERef":
+		return a.toPERef(n)
+	}
+	return nil
+}
+
+func (a *astConv) toMisc(n *Node) Misc {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Comment":
+		return a.toComment(n)
+	case "PI":
+		return a.toPI(n)
+	}
+	return nil
+}
+
+func (a *astConv) toParticle(n *Node) Particle {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "NameParticle":
+		return a.toNameParticle(n)
+	case "Choice":
+		return a.toChoice(n)
+	case "Sequence":
+		return a.toSequence(n)
+	}
+	return nil
+}
+
+func (a *astConv) list0(n *Node) []*AttDef {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list0Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toAttDef(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list1(n *Node) []Particle {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list1Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toParticle(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list2(n *Node) []Decl {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list2Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toDecl(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list3(n *Node) []Misc {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list3Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toMisc(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list4(n *Node) []*Attribute {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list4Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toAttribute(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list5(n *Node) []Content {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list5Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toContent(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list6(n *Node) []*Nmtoken {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list6Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toNmtoken(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list7(n *Node) []*Name {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list7Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toName(astNode(c))
+	}
+	return out
+}
+
+// astConv converts nodes into typed values.
+type astConv struct {
+	match          astChunk[Match]
+	error          astChunk[Error]
+	tAttValue      astChunk[AttValue]
+	tCDSect        astChunk[CDSect]
+	tCharData      astChunk[CharData]
+	tCharRef       astChunk[CharRef]
+	tComment       astChunk[Comment]
+	tEncName       astChunk[EncName]
+	tEntityRef     astChunk[EntityRef]
+	tEntityValue   astChunk[EntityValue]
+	tKeyword       astChunk[Keyword]
+	tName          astChunk[Name]
+	tNmtoken       astChunk[Nmtoken]
+	tOccurrence    astChunk[Occurrence]
+	tPERef         astChunk[PERef]
+	tPIData        astChunk[PIData]
+	tPubidLiteral  astChunk[PubidLiteral]
+	tSystemLiteral astChunk[SystemLiteral]
+	tVersion       astChunk[Version]
+	tYesNo         astChunk[YesNo]
+	tAttDef        astChunk[AttDef]
+	tAttlistDecl   astChunk[AttlistDecl]
+	tAttribute     astChunk[Attribute]
+	tChoice        astChunk[Choice]
+	tDoctype       astChunk[Doctype]
+	tDocument      astChunk[Document]
+	tElement       astChunk[Element]
+	tElementDecl   astChunk[ElementDecl]
+	tEntityDecl    astChunk[EntityDecl]
+	tEnumeration   astChunk[Enumeration]
+	tExternalID    astChunk[ExternalID]
+	tMixed         astChunk[Mixed]
+	tNameParticle  astChunk[NameParticle]
+	tNotationDecl  astChunk[NotationDecl]
+	tNotationType  astChunk[NotationType]
+	tPI            astChunk[PI]
+	tSequence      astChunk[Sequence]
+	tXMLDecl       astChunk[XMLDecl]
+	list0Chunk     astChunk[*AttDef]
+	list1Chunk     astChunk[Particle]
+	list2Chunk     astChunk[Decl]
+	list3Chunk     astChunk[Misc]
+	list4Chunk     astChunk[*Attribute]
+	list5Chunk     astChunk[Content]
+	list6Chunk     astChunk[*Nmtoken]
+	list7Chunk     astChunk[*Name]
 }
 
 // ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
@@ -5270,6 +6022,326 @@ type tslabs struct {
 func ParseAST(input string, opts ...ParseOption) (*Document, error) {
 	a := &tslabs{}
 	return tparse(trules[0], input, opts, a, func(v any) *Document { return tAs[*Document](v) })
+}
+
+// ParseRuleAST parses the whole input with the named rule and returns its typed value.
+// Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.
+// Invalid options and undefined names return nil with an error. Rule result types:
+//
+//	main: *Document
+//	misc_list: []Misc
+//	misc: Misc
+//	xml_decl: *XMLDecl
+//	version_info: *Version
+//	version_num: *Version
+//	encoding_decl: *EncName
+//	enc_name: *EncName
+//	sd_decl: *YesNo
+//	yes_no: *YesNo
+//	eq: *Node
+//	comment: *Comment
+//	comment_text: *Comment
+//	pi: *PI
+//	pi_data: *PIData
+//	doctype: *Doctype
+//	int_subset: []Decl
+//	decl: Decl
+//	pe_ref: *PERef
+//	external_id: *ExternalID
+//	system_id: *ExternalID
+//	public_id: *ExternalID
+//	system_literal: *SystemLiteral
+//	system_dq: *SystemLiteral
+//	system_sq: *SystemLiteral
+//	pubid_literal: *PubidLiteral
+//	pubid_dq: *PubidLiteral
+//	pubid_sq: *PubidLiteral
+//	element_decl: *ElementDecl
+//	content_spec: ContentSpec
+//	kw_empty: *Keyword
+//	kw_any: *Keyword
+//	mixed: *Mixed
+//	choice: *Choice
+//	sequence: *Sequence
+//	cp: Particle
+//	name_particle: *NameParticle
+//	occurrence: *Occurrence
+//	attlist_decl: *AttlistDecl
+//	att_def: *AttDef
+//	kw_required: *Keyword
+//	kw_fixed: *Keyword
+//	att_type: AttType
+//	kw_type: *Keyword
+//	notation_type: *NotationType
+//	enumeration: *Enumeration
+//	entity_decl: *EntityDecl
+//	ge_decl: *EntityDecl
+//	pe_decl: *EntityDecl
+//	entity_value: *EntityValue
+//	entity_dq: *EntityValue
+//	entity_sq: *EntityValue
+//	notation_decl: *NotationDecl
+//	notation_id: *ExternalID
+//	public_notation: *ExternalID
+//	element: *Element
+//	attribute: *Attribute
+//	att_value: *AttValue
+//	att_dq: *AttValue
+//	att_sq: *AttValue
+//	content: []Content
+//	content_item: Content
+//	markup: Content
+//	char_data: *CharData
+//	cdsect: *CDSect
+//	cdata: *CDSect
+//	reference: any
+//	char_ref: *CharRef
+//	entity_ref: *EntityRef
+//	name: *Name
+//	name_char: *Match
+//	nmtoken: *Nmtoken
+//	s: []*Match
+//	ws: []*Match
+func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
+	o, err := resolveOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+	switch name {
+	case "main":
+		a := &tslabs{}
+		return tparseResolved(trules[0], input, o, a, func(v any) *Document { return tAs[*Document](v) })
+	case "misc_list":
+		a := &tslabs{}
+		return tparseResolved(trules[1], input, o, a, func(v any) []Misc { return tl0(a, v) })
+	case "misc":
+		a := &tslabs{}
+		return tparseResolved(trules[2], input, o, a, func(v any) Misc { return tAs[Misc](tpub(v)) })
+	case "xml_decl":
+		a := &tslabs{}
+		return tparseResolved(trules[3], input, o, a, func(v any) *XMLDecl { return tAs[*XMLDecl](v) })
+	case "version_info":
+		a := &tslabs{}
+		return tparseResolved(trules[4], input, o, a, func(v any) *Version { return tAs[*Version](v) })
+	case "version_num":
+		a := &tslabs{}
+		return tparseResolved(trules[5], input, o, a, func(v any) *Version { return tAs[*Version](v) })
+	case "encoding_decl":
+		a := &tslabs{}
+		return tparseResolved(trules[6], input, o, a, func(v any) *EncName { return tAs[*EncName](v) })
+	case "enc_name":
+		a := &tslabs{}
+		return tparseResolved(trules[7], input, o, a, func(v any) *EncName { return tAs[*EncName](v) })
+	case "sd_decl":
+		a := &tslabs{}
+		return tparseResolved(trules[8], input, o, a, func(v any) *YesNo { return tAs[*YesNo](v) })
+	case "yes_no":
+		a := &tslabs{}
+		return tparseResolved(trules[9], input, o, a, func(v any) *YesNo { return tAs[*YesNo](v) })
+	case "eq":
+		n, err := parseResolved(rules[10], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "comment":
+		a := &tslabs{}
+		return tparseResolved(trules[11], input, o, a, func(v any) *Comment { return tAs[*Comment](v) })
+	case "comment_text":
+		a := &tslabs{}
+		return tparseResolved(trules[12], input, o, a, func(v any) *Comment { return tAs[*Comment](v) })
+	case "pi":
+		a := &tslabs{}
+		return tparseResolved(trules[13], input, o, a, func(v any) *PI { return tAs[*PI](v) })
+	case "pi_data":
+		a := &tslabs{}
+		return tparseResolved(trules[14], input, o, a, func(v any) *PIData { return tAs[*PIData](v) })
+	case "doctype":
+		a := &tslabs{}
+		return tparseResolved(trules[15], input, o, a, func(v any) *Doctype { return tAs[*Doctype](v) })
+	case "int_subset":
+		a := &tslabs{}
+		return tparseResolved(trules[16], input, o, a, func(v any) []Decl { return tl1(a, v) })
+	case "decl":
+		a := &tslabs{}
+		return tparseResolved(trules[17], input, o, a, func(v any) Decl { return tAs[Decl](tpub(v)) })
+	case "pe_ref":
+		a := &tslabs{}
+		return tparseResolved(trules[18], input, o, a, func(v any) *PERef { return tAs[*PERef](v) })
+	case "external_id":
+		a := &tslabs{}
+		return tparseResolved(trules[19], input, o, a, func(v any) *ExternalID { return tAs[*ExternalID](v) })
+	case "system_id":
+		a := &tslabs{}
+		return tparseResolved(trules[20], input, o, a, func(v any) *ExternalID { return tAs[*ExternalID](v) })
+	case "public_id":
+		a := &tslabs{}
+		return tparseResolved(trules[21], input, o, a, func(v any) *ExternalID { return tAs[*ExternalID](v) })
+	case "system_literal":
+		a := &tslabs{}
+		return tparseResolved(trules[22], input, o, a, func(v any) *SystemLiteral { return tAs[*SystemLiteral](v) })
+	case "system_dq":
+		a := &tslabs{}
+		return tparseResolved(trules[23], input, o, a, func(v any) *SystemLiteral { return tAs[*SystemLiteral](v) })
+	case "system_sq":
+		a := &tslabs{}
+		return tparseResolved(trules[24], input, o, a, func(v any) *SystemLiteral { return tAs[*SystemLiteral](v) })
+	case "pubid_literal":
+		a := &tslabs{}
+		return tparseResolved(trules[25], input, o, a, func(v any) *PubidLiteral { return tAs[*PubidLiteral](v) })
+	case "pubid_dq":
+		a := &tslabs{}
+		return tparseResolved(trules[26], input, o, a, func(v any) *PubidLiteral { return tAs[*PubidLiteral](v) })
+	case "pubid_sq":
+		a := &tslabs{}
+		return tparseResolved(trules[27], input, o, a, func(v any) *PubidLiteral { return tAs[*PubidLiteral](v) })
+	case "element_decl":
+		a := &tslabs{}
+		return tparseResolved(trules[28], input, o, a, func(v any) *ElementDecl { return tAs[*ElementDecl](v) })
+	case "content_spec":
+		a := &tslabs{}
+		return tparseResolved(trules[29], input, o, a, func(v any) ContentSpec { return tAs[ContentSpec](tpub(v)) })
+	case "kw_empty":
+		a := &tslabs{}
+		return tparseResolved(trules[30], input, o, a, func(v any) *Keyword { return tAs[*Keyword](v) })
+	case "kw_any":
+		a := &tslabs{}
+		return tparseResolved(trules[31], input, o, a, func(v any) *Keyword { return tAs[*Keyword](v) })
+	case "mixed":
+		a := &tslabs{}
+		return tparseResolved(trules[32], input, o, a, func(v any) *Mixed { return tAs[*Mixed](v) })
+	case "choice":
+		a := &tslabs{}
+		return tparseResolved(trules[33], input, o, a, func(v any) *Choice { return tAs[*Choice](v) })
+	case "sequence":
+		a := &tslabs{}
+		return tparseResolved(trules[34], input, o, a, func(v any) *Sequence { return tAs[*Sequence](v) })
+	case "cp":
+		a := &tslabs{}
+		return tparseResolved(trules[35], input, o, a, func(v any) Particle { return tAs[Particle](tpub(v)) })
+	case "name_particle":
+		a := &tslabs{}
+		return tparseResolved(trules[36], input, o, a, func(v any) *NameParticle { return tAs[*NameParticle](v) })
+	case "occurrence":
+		a := &tslabs{}
+		return tparseResolved(trules[37], input, o, a, func(v any) *Occurrence { return tAs[*Occurrence](v) })
+	case "attlist_decl":
+		a := &tslabs{}
+		return tparseResolved(trules[38], input, o, a, func(v any) *AttlistDecl { return tAs[*AttlistDecl](v) })
+	case "att_def":
+		a := &tslabs{}
+		return tparseResolved(trules[39], input, o, a, func(v any) *AttDef { return tAs[*AttDef](v) })
+	case "kw_required":
+		a := &tslabs{}
+		return tparseResolved(trules[40], input, o, a, func(v any) *Keyword { return tAs[*Keyword](v) })
+	case "kw_fixed":
+		a := &tslabs{}
+		return tparseResolved(trules[41], input, o, a, func(v any) *Keyword { return tAs[*Keyword](v) })
+	case "att_type":
+		a := &tslabs{}
+		return tparseResolved(trules[42], input, o, a, func(v any) AttType { return tAs[AttType](tpub(v)) })
+	case "kw_type":
+		a := &tslabs{}
+		return tparseResolved(trules[43], input, o, a, func(v any) *Keyword { return tAs[*Keyword](v) })
+	case "notation_type":
+		a := &tslabs{}
+		return tparseResolved(trules[44], input, o, a, func(v any) *NotationType { return tAs[*NotationType](v) })
+	case "enumeration":
+		a := &tslabs{}
+		return tparseResolved(trules[45], input, o, a, func(v any) *Enumeration { return tAs[*Enumeration](v) })
+	case "entity_decl":
+		a := &tslabs{}
+		return tparseResolved(trules[46], input, o, a, func(v any) *EntityDecl { return tAs[*EntityDecl](v) })
+	case "ge_decl":
+		a := &tslabs{}
+		return tparseResolved(trules[47], input, o, a, func(v any) *EntityDecl { return tAs[*EntityDecl](v) })
+	case "pe_decl":
+		a := &tslabs{}
+		return tparseResolved(trules[48], input, o, a, func(v any) *EntityDecl { return tAs[*EntityDecl](v) })
+	case "entity_value":
+		a := &tslabs{}
+		return tparseResolved(trules[49], input, o, a, func(v any) *EntityValue { return tAs[*EntityValue](v) })
+	case "entity_dq":
+		a := &tslabs{}
+		return tparseResolved(trules[50], input, o, a, func(v any) *EntityValue { return tAs[*EntityValue](v) })
+	case "entity_sq":
+		a := &tslabs{}
+		return tparseResolved(trules[51], input, o, a, func(v any) *EntityValue { return tAs[*EntityValue](v) })
+	case "notation_decl":
+		a := &tslabs{}
+		return tparseResolved(trules[52], input, o, a, func(v any) *NotationDecl { return tAs[*NotationDecl](v) })
+	case "notation_id":
+		a := &tslabs{}
+		return tparseResolved(trules[53], input, o, a, func(v any) *ExternalID { return tAs[*ExternalID](v) })
+	case "public_notation":
+		a := &tslabs{}
+		return tparseResolved(trules[54], input, o, a, func(v any) *ExternalID { return tAs[*ExternalID](v) })
+	case "element":
+		a := &tslabs{}
+		return tparseResolved(trules[55], input, o, a, func(v any) *Element { return tAs[*Element](v) })
+	case "attribute":
+		a := &tslabs{}
+		return tparseResolved(trules[56], input, o, a, func(v any) *Attribute { return tAs[*Attribute](v) })
+	case "att_value":
+		a := &tslabs{}
+		return tparseResolved(trules[57], input, o, a, func(v any) *AttValue { return tAs[*AttValue](v) })
+	case "att_dq":
+		a := &tslabs{}
+		return tparseResolved(trules[58], input, o, a, func(v any) *AttValue { return tAs[*AttValue](v) })
+	case "att_sq":
+		a := &tslabs{}
+		return tparseResolved(trules[59], input, o, a, func(v any) *AttValue { return tAs[*AttValue](v) })
+	case "content":
+		a := &tslabs{}
+		return tparseResolved(trules[60], input, o, a, func(v any) []Content { return tl2(a, v) })
+	case "content_item":
+		a := &tslabs{}
+		return tparseResolved(trules[61], input, o, a, func(v any) Content { return tAs[Content](tpub(v)) })
+	case "markup":
+		a := &tslabs{}
+		return tparseResolved(trules[62], input, o, a, func(v any) Content { return tAs[Content](tpub(v)) })
+	case "char_data":
+		a := &tslabs{}
+		return tparseResolved(trules[63], input, o, a, func(v any) *CharData { return tAs[*CharData](v) })
+	case "cdsect":
+		a := &tslabs{}
+		return tparseResolved(trules[64], input, o, a, func(v any) *CDSect { return tAs[*CDSect](v) })
+	case "cdata":
+		a := &tslabs{}
+		return tparseResolved(trules[65], input, o, a, func(v any) *CDSect { return tAs[*CDSect](v) })
+	case "reference":
+		n, err := parseResolved(rules[66], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "char_ref":
+		a := &tslabs{}
+		return tparseResolved(trules[67], input, o, a, func(v any) *CharRef { return tAs[*CharRef](v) })
+	case "entity_ref":
+		a := &tslabs{}
+		return tparseResolved(trules[68], input, o, a, func(v any) *EntityRef { return tAs[*EntityRef](v) })
+	case "name":
+		a := &tslabs{}
+		return tparseResolved(trules[69], input, o, a, func(v any) *Name { return tAs[*Name](v) })
+	case "name_char":
+		a := &tslabs{}
+		return tparseResolved(trules[70], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "nmtoken":
+		a := &tslabs{}
+		return tparseResolved(trules[71], input, o, a, func(v any) *Nmtoken { return tAs[*Nmtoken](v) })
+	case "s":
+		a := &tslabs{}
+		return tparseResolved(trules[72], input, o, a, func(v any) []*Match { return tl3(a, v) })
+	case "ws":
+		a := &tslabs{}
+		return tparseResolved(trules[73], input, o, a, func(v any) []*Match { return tl3(a, v) })
+	default:
+		return nil, fmt.Errorf("rule %s is not defined", name)
+	}
 }
 
 var lit1 = []rune("\ufeff")

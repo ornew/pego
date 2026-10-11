@@ -2449,6 +2449,11 @@ func tparse[T any](r *trule, input string, opts []ParseOption, ext any, conv fun
 		var zero T
 		return zero, err
 	}
+	return tparseResolved(r, input, o, ext, conv)
+}
+
+// tparseResolved consumes options already applied by the public entry point.
+func tparseResolved[T any](r *trule, input string, o parseOptions, ext any, conv func(any) T) (T, error) {
 	p, _ := tpool.Get().(*tparser)
 	if p == nil {
 		p = &tparser{parser: &parser{}}
@@ -3931,11 +3936,27 @@ func tmk_Unary(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
+func tl0(a *tslabs, v any) []*Match {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*Match{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl0Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tpubMatch(c)
+	}
+	return out
+}
+
 // tslabs holds the chunks the typed values of a parse are allocated from.
 type tslabs struct {
-	tNumber astChunk[Number]
-	tBinary astChunk[Binary]
-	tUnary  astChunk[Unary]
+	tNumber  astChunk[Number]
+	tBinary  astChunk[Binary]
+	tUnary   astChunk[Unary]
+	tl0Chunk astChunk[*Match]
 }
 
 // ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
@@ -3945,6 +3966,73 @@ type tslabs struct {
 func ParseAST(input string, opts ...ParseOption) (Expr, error) {
 	a := &tslabs{}
 	return tparse(trules[0], input, opts, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+}
+
+// ParseRuleAST parses the whole input with the named rule and returns its typed value.
+// Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.
+// Invalid options and undefined names return nil with an error. Rule result types:
+//
+//	main: Expr
+//	expr: Expr
+//	add: Expr
+//	term: Expr
+//	mul: Expr
+//	unary: Expr
+//	neg: Expr
+//	power: Expr
+//	pow: Expr
+//	primary: Expr
+//	group: Expr
+//	number: *Number
+//	ws: []*Match
+func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
+	o, err := resolveOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+	switch name {
+	case "main":
+		a := &tslabs{}
+		return tparseResolved(trules[0], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "expr":
+		a := &tslabs{}
+		return tparseResolved(trules[1], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "add":
+		a := &tslabs{}
+		return tparseResolved(trules[2], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "term":
+		a := &tslabs{}
+		return tparseResolved(trules[3], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "mul":
+		a := &tslabs{}
+		return tparseResolved(trules[4], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "unary":
+		a := &tslabs{}
+		return tparseResolved(trules[5], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "neg":
+		a := &tslabs{}
+		return tparseResolved(trules[6], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "power":
+		a := &tslabs{}
+		return tparseResolved(trules[7], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "pow":
+		a := &tslabs{}
+		return tparseResolved(trules[8], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "primary":
+		a := &tslabs{}
+		return tparseResolved(trules[9], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "group":
+		a := &tslabs{}
+		return tparseResolved(trules[10], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "number":
+		a := &tslabs{}
+		return tparseResolved(trules[11], input, o, a, func(v any) *Number { return tAs[*Number](v) })
+	case "ws":
+		a := &tslabs{}
+		return tparseResolved(trules[12], input, o, a, func(v any) []*Match { return tl0(a, v) })
+	default:
+		return nil, fmt.Errorf("rule %s is not defined", name)
+	}
 }
 
 var lit5 = []rune("+")

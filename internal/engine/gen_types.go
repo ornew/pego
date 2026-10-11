@@ -38,43 +38,90 @@ func (g *generator) typedGo(start *rule, conv bool) (string, string, error) {
 	t := &typedGen{g: g, info: info, names: map[string]string{}, unions: map[string]string{}, lists: map[string]string{}, tlists: map[string]string{}}
 	t.name()
 	g.typedSpan = t.span
-	st := info.rules[start.name]
-	if st == nil {
-		st = tyAny
+	ruleType := func(r *rule) ty {
+		if x := info.rules[r.name]; x != nil {
+			return x
+		}
+		return tyAny
 	}
-	var b strings.Builder
+	var b, entries, named strings.Builder
 	t.decls(&b)
 	t.valueMethods(&b)
 	doc := `// ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
 // from errors, the result is returned together with SyntaxErrors; an Error node where a struct or
 // terminal type is expected becomes nil.
 `
-	if !conv && t.runtimeOK(st) {
-		// The typed rules: the rules generated once more for the typed runtime.
-		g.table = "trules"
-		g.rules()
-		g.table = "rules"
-		result := t.dconv(st, "v", "a") // before the converters are written
-		t.typedRuntime(&b)
-		fmt.Fprintf(&b, `%s// It builds the values directly, without the nodes Parse returns.
+	st := ruleType(start)
+	directStart := !conv && t.runtimeOK(st)
+	needTyped, needNodes := false, false
+	if directStart {
+		needTyped = true
+		result := t.dconv(st, "v", "a")
+		fmt.Fprintf(&entries, `%s// It builds the values directly, without the nodes Parse returns.
 func ParseAST(input string, opts ...ParseOption) (%s, error) {
 	a := &tslabs{}
 	return tparse(trules[%d], input, opts, a, func(v any) %s { return %s })
 }
+
 `, doc, t.goType(st), start.id, t.goType(st), result)
-		return b.String(), t.span, nil
-	}
-	result := t.conv(st, "n") // before the converters are written: it may need a list converter
-	newConv := ""
-	if strings.Contains(result, "a.") {
-		newConv = "\ta := &astConv{}\n"
-	}
-	t.converters(&b)
-	fmt.Fprintf(&b, `%sfunc ParseAST(input string, opts ...ParseOption) (%s, error) {
+	} else {
+		needNodes = true
+		result := t.conv(st, "n")
+		newConv := ""
+		if strings.Contains(result, "a.") {
+			newConv = "\ta := &astConv{}\n"
+		}
+		fmt.Fprintf(&entries, `%sfunc ParseAST(input string, opts ...ParseOption) (%s, error) {
 	n, err := Parse(input, opts...)
 %s	return %s, err
 }
+
 `, doc, t.goType(st), newConv, result)
+	}
+	named.WriteString("// ParseRuleAST parses the whole input with the named rule and returns its typed value.\n")
+	named.WriteString("// Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.\n// Invalid options and undefined names return nil with an error. Rule result types:\n")
+	for _, r := range g.prog.rules {
+		fmt.Fprintf(&named, "//\t%s: %s\n", r.name, t.goType(ruleType(r)))
+	}
+	named.WriteString(`func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
+	o, err := resolveOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+	switch name {
+`)
+	for _, r := range g.prog.rules {
+		x := ruleType(r)
+		fmt.Fprintf(&named, "\tcase %q:\n", r.name)
+		if !conv && t.runtimeOK(x) {
+			needTyped = true
+			result := t.dconv(x, "v", "a")
+			fmt.Fprintf(&named, "\t\ta := &tslabs{}\n\t\treturn tparseResolved(trules[%d], input, o, a, func(v any) %s { return %s })\n", r.id, t.goType(x), result)
+		} else {
+			needNodes = true
+			result := t.conv(x, "n")
+			fmt.Fprintf(&named, "\t\tn, err := parseResolved(rules[%d], nseen, input, o)\n", r.id)
+			fmt.Fprintf(&named, "\t\tif n == nil {\n\t\t\tvar zero %s\n\t\t\treturn zero, err\n\t\t}\n", t.goType(x))
+			if strings.Contains(result, "a.") {
+				named.WriteString("\t\ta := &astConv{}\n")
+			}
+			fmt.Fprintf(&named, "\t\treturn %s, err\n", result)
+		}
+	}
+	named.WriteString("\tdefault:\n\t\treturn nil, fmt.Errorf(\"rule %s is not defined\", name)\n\t}\n}\n")
+	b.WriteString(astHelpers)
+	if needTyped {
+		// Emit the typed table if any public entry point can use it.
+		g.table = "trules"
+		g.rules()
+		g.table = "rules"
+		t.typedRuntime(&b)
+	}
+	if needNodes {
+		t.converters(&b)
+	}
+	b.WriteString(entries.String())
+	b.WriteString(named.String())
 	return b.String(), t.span, nil
 }
 
@@ -107,7 +154,7 @@ type listConv struct {
 // runtimeNames are the exported names of the generated runtime, which typed values must avoid.
 var runtimeNames = map[string]bool{
 	"Node": true, "NodeField": true, "Fields": true, "SyntaxError": true, "SyntaxErrors": true, "Unit": true,
-	"ParseOption": true, "WithUnit": true, "WithMaxDepth": true, "CodePoints": true, "Bytes": true, "Parse": true, "ParseRule": true, "ParseAST": true, "Recognize": true, "Match": true, "Error": true,
+	"ParseOption": true, "WithUnit": true, "WithMaxDepth": true, "CodePoints": true, "Bytes": true, "Parse": true, "ParseRule": true, "ParseAST": true, "ParseRuleAST": true, "Recognize": true, "Match": true, "Error": true,
 }
 
 // name assigns Go names: grammar type names stay unless they clash with the runtime (then "_" is
@@ -332,7 +379,6 @@ func (t *typedGen) decls(b *strings.Builder) {
 // each type, and the elements of lists, in chunks, as the parser does nodes.
 func (t *typedGen) converters(b *strings.Builder) {
 	span := t.span
-	b.WriteString(astHelpers)
 	fmt.Fprintf(b, `func (a *astConv) toMatch(n *Node) *Match {
 	if n == nil || n.Type() != "Match" {
 		return nil
@@ -411,7 +457,7 @@ func (a *astConv) toError(n *Node) *Error {
 	b.WriteString("}\n\n")
 }
 
-// runtimeOK reports whether the typed runtime can build every value ParseAST may return: the
+// runtimeOK reports whether the typed runtime can build every value an entry point may return: the
 // result type and the field types of every struct type have Go types of their own (no CST
 // node types, node, terminal or any).
 func (t *typedGen) runtimeOK(st ty) bool {
@@ -596,7 +642,6 @@ func (t *typedGen) dconv(x ty, v, a string) string {
 // of the typed runtime, and the chunks they allocate from.
 func (t *typedGen) typedRuntime(b *strings.Builder) {
 	span := t.span
-	b.WriteString(astHelpers)
 	var reg strings.Builder
 	for _, r := range append(append([]*rule(nil), t.g.prog.rules...), t.g.prog.twins...) {
 		if r.terminalType == "" {

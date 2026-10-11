@@ -2448,6 +2448,11 @@ func tparse[T any](r *trule, input string, opts []ParseOption, ext any, conv fun
 		var zero T
 		return zero, err
 	}
+	return tparseResolved(r, input, o, ext, conv)
+}
+
+// tparseResolved consumes options already applied by the public entry point.
+func tparseResolved[T any](r *trule, input string, o parseOptions, ext any, conv func(any) T) (T, error) {
 	p, _ := tpool.Get().(*tparser)
 	if p == nil {
 		p = &tparser{parser: &parser{}}
@@ -5308,9 +5313,9 @@ func tmk_ArrayType(c *tctx, final bool, f0 any, f1 any) any {
 func tmk_AssignStmt(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tAssignStmt)
-	v.Lhs = tl0(a, f0)
+	v.Lhs = tl3(a, f0)
 	v.Tok = astString(f1)
-	v.Rhs = tl0(a, f2)
+	v.Rhs = tl3(a, f2)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -5344,7 +5349,7 @@ func tmk_BinaryExpr(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 func tmk_BlockStmt(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tBlockStmt)
-	v.List = tl1(a, f0)
+	v.List = tl6(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -5375,7 +5380,7 @@ func tmk_CallExpr(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tCallExpr)
 	v.Fun = tAs[Expr](tpub(f0))
-	v.Args = tl0(a, f1)
+	v.Args = tl3(a, f1)
 	v.Ellipsis = tpubMatch(f2)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -5392,8 +5397,8 @@ func tmk_CallExpr(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 func tmk_CaseClause(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tCaseClause)
-	v.List = tl0(a, f0)
-	v.Body = tl1(a, f1)
+	v.List = tl3(a, f0)
+	v.Body = tl6(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -5425,7 +5430,7 @@ func tmk_CommClause(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tCommClause)
 	v.Comm = tAs[Stmt](tpub(f0))
-	v.Body = tl1(a, f1)
+	v.Body = tl6(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -5441,7 +5446,7 @@ func tmk_CompositeLit(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tCompositeLit)
 	v.Type = tAs[Expr](tpub(f0))
-	v.Elts = tl0(a, f1)
+	v.Elts = tl3(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -5542,7 +5547,7 @@ func tmk_Field(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 func tmk_FieldList(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tFieldList)
-	v.List = tl3(a, f0)
+	v.List = tl5(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -5557,7 +5562,7 @@ func tmk_File(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tFile)
 	v.Name = tAs[*Ident](f0)
-	v.Decls = tl4(a, f1)
+	v.Decls = tl7(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -5647,7 +5652,7 @@ func tmk_GenDecl(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tGenDecl)
 	v.Tok = astString(f0)
-	v.Specs = tl5(a, f1)
+	v.Specs = tl8(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -5745,7 +5750,7 @@ func tmk_IndexListExpr(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tIndexListExpr)
 	v.X = tAs[Expr](tpub(f0))
-	v.Indices = tl0(a, f1)
+	v.Indices = tl3(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -5858,7 +5863,7 @@ func tmk_RangeStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) 
 func tmk_ReturnStmt(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tReturnStmt)
-	v.Results = tl0(a, f0)
+	v.Results = tl3(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -6056,7 +6061,7 @@ func tmk_ValueSpec(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	v := astNew(&a.tValueSpec)
 	v.Names = tl2(a, f0)
 	v.Type = tAs[Expr](tpub(f1))
-	v.Values = tl0(a, f2)
+	v.Values = tl3(a, f2)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -6068,32 +6073,32 @@ func tmk_ValueSpec(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	return c.made(v, first, start, end)
 }
 
-func tl0(a *tslabs, v any) []Expr {
+func tl0(a *tslabs, v any) []*ImportSpec {
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*tnode)
 	if n == nil {
-		return []Expr{} // another node (an Error), as conversion makes an empty list of it
+		return []*ImportSpec{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl0Chunk, len(n.kids))
 	for i, c := range n.kids {
-		out[i] = tAs[Expr](tpub(c))
+		out[i] = tAs[*ImportSpec](c)
 	}
 	return out
 }
 
-func tl1(a *tslabs, v any) []Stmt {
+func tl1(a *tslabs, v any) []*ValueSpec {
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*tnode)
 	if n == nil {
-		return []Stmt{} // another node (an Error), as conversion makes an empty list of it
+		return []*ValueSpec{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl1Chunk, len(n.kids))
 	for i, c := range n.kids {
-		out[i] = tAs[Stmt](tpub(c))
+		out[i] = tAs[*ValueSpec](c)
 	}
 	return out
 }
@@ -6113,7 +6118,37 @@ func tl2(a *tslabs, v any) []*Ident {
 	return out
 }
 
-func tl3(a *tslabs, v any) []*Field {
+func tl3(a *tslabs, v any) []Expr {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []Expr{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl3Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[Expr](tpub(c))
+	}
+	return out
+}
+
+func tl4(a *tslabs, v any) []*TypeSpec {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*TypeSpec{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl4Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*TypeSpec](c)
+	}
+	return out
+}
+
+func tl5(a *tslabs, v any) []*Field {
 	if v == nil {
 		return nil
 	}
@@ -6121,14 +6156,29 @@ func tl3(a *tslabs, v any) []*Field {
 	if n == nil {
 		return []*Field{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl3Chunk, len(n.kids))
+	out := astSlice(&a.tl5Chunk, len(n.kids))
 	for i, c := range n.kids {
 		out[i] = tAs[*Field](c)
 	}
 	return out
 }
 
-func tl4(a *tslabs, v any) []Decl {
+func tl6(a *tslabs, v any) []Stmt {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []Stmt{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl6Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[Stmt](tpub(c))
+	}
+	return out
+}
+
+func tl7(a *tslabs, v any) []Decl {
 	if v == nil {
 		return nil
 	}
@@ -6136,14 +6186,14 @@ func tl4(a *tslabs, v any) []Decl {
 	if n == nil {
 		return []Decl{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl4Chunk, len(n.kids))
+	out := astSlice(&a.tl7Chunk, len(n.kids))
 	for i, c := range n.kids {
 		out[i] = tAs[Decl](tpub(c))
 	}
 	return out
 }
 
-func tl5(a *tslabs, v any) []Spec {
+func tl8(a *tslabs, v any) []Spec {
 	if v == nil {
 		return nil
 	}
@@ -6151,7 +6201,7 @@ func tl5(a *tslabs, v any) []Spec {
 	if n == nil {
 		return []Spec{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl5Chunk, len(n.kids))
+	out := astSlice(&a.tl8Chunk, len(n.kids))
 	for i, c := range n.kids {
 		out[i] = tAs[Spec](tpub(c))
 	}
@@ -6214,12 +6264,1048 @@ type tslabs struct {
 	tTypeSwitchStmt astChunk[TypeSwitchStmt]
 	tUnaryExpr      astChunk[UnaryExpr]
 	tValueSpec      astChunk[ValueSpec]
-	tl0Chunk        astChunk[Expr]
-	tl1Chunk        astChunk[Stmt]
+	tl0Chunk        astChunk[*ImportSpec]
+	tl1Chunk        astChunk[*ValueSpec]
 	tl2Chunk        astChunk[*Ident]
-	tl3Chunk        astChunk[*Field]
-	tl4Chunk        astChunk[Decl]
-	tl5Chunk        astChunk[Spec]
+	tl3Chunk        astChunk[Expr]
+	tl4Chunk        astChunk[*TypeSpec]
+	tl5Chunk        astChunk[*Field]
+	tl6Chunk        astChunk[Stmt]
+	tl7Chunk        astChunk[Decl]
+	tl8Chunk        astChunk[Spec]
+}
+
+func (a *astConv) toMatch(n *Node) *Match {
+	if n == nil || n.Type() != "Match" {
+		return nil
+	}
+	v := astNew(&a.match)
+	*v = Match{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toError(n *Node) *Error {
+	if n == nil || n.Type() != "Error" {
+		return nil
+	}
+	msg, _ := n.Field("message").(string)
+	v := astNew(&a.error)
+	*v = Error{Span: Span{int(n.Start), int(n.End)}, Text: n.Text, Message: msg}
+	return v
+}
+
+// anyValue converts a value of a statically unknown type into the typed value of its type (CST
+// nodes stay *Node).
+func (a *astConv) anyValue(v any) any {
+	n, ok := v.(*Node)
+	if !ok || n == nil {
+		return v
+	}
+	switch n.Type() {
+	case "Match":
+		return a.toMatch(n)
+	case "Error":
+		return a.toError(n)
+	case "CharLit":
+		return a.toCharLit(n)
+	case "FloatLit":
+		return a.toFloatLit(n)
+	case "Ident":
+		return a.toIdent(n)
+	case "ImagLit":
+		return a.toImagLit(n)
+	case "IntLit":
+		return a.toIntLit(n)
+	case "StringLit":
+		return a.toStringLit(n)
+	case "ArrayType":
+		return a.toArrayType(n)
+	case "AssignStmt":
+		return a.toAssignStmt(n)
+	case "BinaryExpr":
+		return a.toBinaryExpr(n)
+	case "BlockStmt":
+		return a.toBlockStmt(n)
+	case "BranchStmt":
+		return a.toBranchStmt(n)
+	case "CallExpr":
+		return a.toCallExpr(n)
+	case "CaseClause":
+		return a.toCaseClause(n)
+	case "ChanType":
+		return a.toChanType(n)
+	case "CommClause":
+		return a.toCommClause(n)
+	case "CompositeLit":
+		return a.toCompositeLit(n)
+	case "DeclStmt":
+		return a.toDeclStmt(n)
+	case "DeferStmt":
+		return a.toDeferStmt(n)
+	case "Ellipsis":
+		return a.toEllipsis(n)
+	case "EmptyStmt":
+		return a.toEmptyStmt(n)
+	case "ExprStmt":
+		return a.toExprStmt(n)
+	case "Field":
+		return a.toField(n)
+	case "FieldList":
+		return a.toFieldList(n)
+	case "File":
+		return a.toFile(n)
+	case "ForStmt":
+		return a.toForStmt(n)
+	case "FuncDecl":
+		return a.toFuncDecl(n)
+	case "FuncLit":
+		return a.toFuncLit(n)
+	case "FuncType":
+		return a.toFuncType(n)
+	case "GenDecl":
+		return a.toGenDecl(n)
+	case "GoStmt":
+		return a.toGoStmt(n)
+	case "IfStmt":
+		return a.toIfStmt(n)
+	case "ImportSpec":
+		return a.toImportSpec(n)
+	case "IncDecStmt":
+		return a.toIncDecStmt(n)
+	case "IndexExpr":
+		return a.toIndexExpr(n)
+	case "IndexListExpr":
+		return a.toIndexListExpr(n)
+	case "InterfaceType":
+		return a.toInterfaceType(n)
+	case "KeyValueExpr":
+		return a.toKeyValueExpr(n)
+	case "LabeledStmt":
+		return a.toLabeledStmt(n)
+	case "MapType":
+		return a.toMapType(n)
+	case "ParenExpr":
+		return a.toParenExpr(n)
+	case "RangeStmt":
+		return a.toRangeStmt(n)
+	case "ReturnStmt":
+		return a.toReturnStmt(n)
+	case "SelectStmt":
+		return a.toSelectStmt(n)
+	case "SelectorExpr":
+		return a.toSelectorExpr(n)
+	case "SendStmt":
+		return a.toSendStmt(n)
+	case "SliceExpr":
+		return a.toSliceExpr(n)
+	case "StarExpr":
+		return a.toStarExpr(n)
+	case "StructType":
+		return a.toStructType(n)
+	case "SwitchStmt":
+		return a.toSwitchStmt(n)
+	case "TypeAssertExpr":
+		return a.toTypeAssertExpr(n)
+	case "TypeSpec":
+		return a.toTypeSpec(n)
+	case "TypeSwitchStmt":
+		return a.toTypeSwitchStmt(n)
+	case "UnaryExpr":
+		return a.toUnaryExpr(n)
+	case "ValueSpec":
+		return a.toValueSpec(n)
+	}
+	return n
+}
+
+func (a *astConv) toCharLit(n *Node) *CharLit {
+	if n == nil || n.Type() != "CharLit" {
+		return nil
+	}
+	v := astNew(&a.tCharLit)
+	*v = CharLit{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toFloatLit(n *Node) *FloatLit {
+	if n == nil || n.Type() != "FloatLit" {
+		return nil
+	}
+	v := astNew(&a.tFloatLit)
+	*v = FloatLit{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toIdent(n *Node) *Ident {
+	if n == nil || n.Type() != "Ident" {
+		return nil
+	}
+	v := astNew(&a.tIdent)
+	*v = Ident{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toImagLit(n *Node) *ImagLit {
+	if n == nil || n.Type() != "ImagLit" {
+		return nil
+	}
+	v := astNew(&a.tImagLit)
+	*v = ImagLit{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toIntLit(n *Node) *IntLit {
+	if n == nil || n.Type() != "IntLit" {
+		return nil
+	}
+	v := astNew(&a.tIntLit)
+	*v = IntLit{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toStringLit(n *Node) *StringLit {
+	if n == nil || n.Type() != "StringLit" {
+		return nil
+	}
+	v := astNew(&a.tStringLit)
+	*v = StringLit{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toArrayType(n *Node) *ArrayType {
+	if n == nil || n.Type() != "ArrayType" {
+		return nil
+	}
+	v := astNew(&a.tArrayType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Len = a.toExpr(astNode(n.Field("Len")))
+	v.Elt = a.toExpr(astNode(n.Field("Elt")))
+	return v
+}
+
+func (a *astConv) toAssignStmt(n *Node) *AssignStmt {
+	if n == nil || n.Type() != "AssignStmt" {
+		return nil
+	}
+	v := astNew(&a.tAssignStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Lhs = a.list2(astNode(n.Field("Lhs")))
+	v.Tok = astString(n.Field("Tok"))
+	v.Rhs = a.list2(astNode(n.Field("Rhs")))
+	return v
+}
+
+func (a *astConv) toBinaryExpr(n *Node) *BinaryExpr {
+	if n == nil || n.Type() != "BinaryExpr" {
+		return nil
+	}
+	v := astNew(&a.tBinaryExpr)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Op = astString(n.Field("Op"))
+	v.Y = a.toExpr(astNode(n.Field("Y")))
+	return v
+}
+
+func (a *astConv) toBlockStmt(n *Node) *BlockStmt {
+	if n == nil || n.Type() != "BlockStmt" {
+		return nil
+	}
+	v := astNew(&a.tBlockStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.List = a.list3(astNode(n.Field("List")))
+	return v
+}
+
+func (a *astConv) toBranchStmt(n *Node) *BranchStmt {
+	if n == nil || n.Type() != "BranchStmt" {
+		return nil
+	}
+	v := astNew(&a.tBranchStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Tok = astString(n.Field("Tok"))
+	v.Label = a.toIdent(astNode(n.Field("Label")))
+	return v
+}
+
+func (a *astConv) toCallExpr(n *Node) *CallExpr {
+	if n == nil || n.Type() != "CallExpr" {
+		return nil
+	}
+	v := astNew(&a.tCallExpr)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Fun = a.toExpr(astNode(n.Field("Fun")))
+	v.Args = a.list2(astNode(n.Field("Args")))
+	v.Ellipsis = a.toMatch(astNode(n.Field("Ellipsis")))
+	return v
+}
+
+func (a *astConv) toCaseClause(n *Node) *CaseClause {
+	if n == nil || n.Type() != "CaseClause" {
+		return nil
+	}
+	v := astNew(&a.tCaseClause)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.List = a.list2(astNode(n.Field("List")))
+	v.Body = a.list3(astNode(n.Field("Body")))
+	return v
+}
+
+func (a *astConv) toChanType(n *Node) *ChanType {
+	if n == nil || n.Type() != "ChanType" {
+		return nil
+	}
+	v := astNew(&a.tChanType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Dir = astInt(n.Field("Dir"))
+	v.Value = a.toExpr(astNode(n.Field("Value")))
+	return v
+}
+
+func (a *astConv) toCommClause(n *Node) *CommClause {
+	if n == nil || n.Type() != "CommClause" {
+		return nil
+	}
+	v := astNew(&a.tCommClause)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Comm = a.toStmt(astNode(n.Field("Comm")))
+	v.Body = a.list3(astNode(n.Field("Body")))
+	return v
+}
+
+func (a *astConv) toCompositeLit(n *Node) *CompositeLit {
+	if n == nil || n.Type() != "CompositeLit" {
+		return nil
+	}
+	v := astNew(&a.tCompositeLit)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Type = a.toExpr(astNode(n.Field("Type")))
+	v.Elts = a.list2(astNode(n.Field("Elts")))
+	return v
+}
+
+func (a *astConv) toDeclStmt(n *Node) *DeclStmt {
+	if n == nil || n.Type() != "DeclStmt" {
+		return nil
+	}
+	v := astNew(&a.tDeclStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Decl = a.toGenDecl(astNode(n.Field("Decl")))
+	return v
+}
+
+func (a *astConv) toDeferStmt(n *Node) *DeferStmt {
+	if n == nil || n.Type() != "DeferStmt" {
+		return nil
+	}
+	v := astNew(&a.tDeferStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Call = a.toCallExpr(astNode(n.Field("Call")))
+	return v
+}
+
+func (a *astConv) toEllipsis(n *Node) *Ellipsis {
+	if n == nil || n.Type() != "Ellipsis" {
+		return nil
+	}
+	v := astNew(&a.tEllipsis)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Elt = a.toExpr(astNode(n.Field("Elt")))
+	return v
+}
+
+func (a *astConv) toEmptyStmt(n *Node) *EmptyStmt {
+	if n == nil || n.Type() != "EmptyStmt" {
+		return nil
+	}
+	v := astNew(&a.tEmptyStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	return v
+}
+
+func (a *astConv) toExprStmt(n *Node) *ExprStmt {
+	if n == nil || n.Type() != "ExprStmt" {
+		return nil
+	}
+	v := astNew(&a.tExprStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	return v
+}
+
+func (a *astConv) toField(n *Node) *Field {
+	if n == nil || n.Type() != "Field" {
+		return nil
+	}
+	v := astNew(&a.tField)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Names = a.list4(astNode(n.Field("Names")))
+	v.Type = a.toExpr(astNode(n.Field("Type")))
+	v.Tag = a.toStringLit(astNode(n.Field("Tag")))
+	return v
+}
+
+func (a *astConv) toFieldList(n *Node) *FieldList {
+	if n == nil || n.Type() != "FieldList" {
+		return nil
+	}
+	v := astNew(&a.tFieldList)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.List = a.list5(astNode(n.Field("List")))
+	return v
+}
+
+func (a *astConv) toFile(n *Node) *File {
+	if n == nil || n.Type() != "File" {
+		return nil
+	}
+	v := astNew(&a.tFile)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Decls = a.list6(astNode(n.Field("Decls")))
+	return v
+}
+
+func (a *astConv) toForStmt(n *Node) *ForStmt {
+	if n == nil || n.Type() != "ForStmt" {
+		return nil
+	}
+	v := astNew(&a.tForStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Init = a.toStmt(astNode(n.Field("Init")))
+	v.Cond = a.toExpr(astNode(n.Field("Cond")))
+	v.Post = a.toStmt(astNode(n.Field("Post")))
+	v.Body = a.toBlockStmt(astNode(n.Field("Body")))
+	return v
+}
+
+func (a *astConv) toFuncDecl(n *Node) *FuncDecl {
+	if n == nil || n.Type() != "FuncDecl" {
+		return nil
+	}
+	v := astNew(&a.tFuncDecl)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Recv = a.toFieldList(astNode(n.Field("Recv")))
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Type = a.toFuncType(astNode(n.Field("Type")))
+	v.Body = a.toBlockStmt(astNode(n.Field("Body")))
+	return v
+}
+
+func (a *astConv) toFuncLit(n *Node) *FuncLit {
+	if n == nil || n.Type() != "FuncLit" {
+		return nil
+	}
+	v := astNew(&a.tFuncLit)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Type = a.toFuncType(astNode(n.Field("Type")))
+	v.Body = a.toBlockStmt(astNode(n.Field("Body")))
+	return v
+}
+
+func (a *astConv) toFuncType(n *Node) *FuncType {
+	if n == nil || n.Type() != "FuncType" {
+		return nil
+	}
+	v := astNew(&a.tFuncType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.TypeParams = a.toFieldList(astNode(n.Field("TypeParams")))
+	v.Params = a.toFieldList(astNode(n.Field("Params")))
+	v.Results = a.toFieldList(astNode(n.Field("Results")))
+	return v
+}
+
+func (a *astConv) toGenDecl(n *Node) *GenDecl {
+	if n == nil || n.Type() != "GenDecl" {
+		return nil
+	}
+	v := astNew(&a.tGenDecl)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Tok = astString(n.Field("Tok"))
+	v.Specs = a.list7(astNode(n.Field("Specs")))
+	return v
+}
+
+func (a *astConv) toGoStmt(n *Node) *GoStmt {
+	if n == nil || n.Type() != "GoStmt" {
+		return nil
+	}
+	v := astNew(&a.tGoStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Call = a.toCallExpr(astNode(n.Field("Call")))
+	return v
+}
+
+func (a *astConv) toIfStmt(n *Node) *IfStmt {
+	if n == nil || n.Type() != "IfStmt" {
+		return nil
+	}
+	v := astNew(&a.tIfStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Init = a.toStmt(astNode(n.Field("Init")))
+	v.Cond = a.toExpr(astNode(n.Field("Cond")))
+	v.Body = a.toBlockStmt(astNode(n.Field("Body")))
+	v.Else = a.toStmt(astNode(n.Field("Else")))
+	return v
+}
+
+func (a *astConv) toImportSpec(n *Node) *ImportSpec {
+	if n == nil || n.Type() != "ImportSpec" {
+		return nil
+	}
+	v := astNew(&a.tImportSpec)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Path = a.toStringLit(astNode(n.Field("Path")))
+	return v
+}
+
+func (a *astConv) toIncDecStmt(n *Node) *IncDecStmt {
+	if n == nil || n.Type() != "IncDecStmt" {
+		return nil
+	}
+	v := astNew(&a.tIncDecStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Tok = astString(n.Field("Tok"))
+	return v
+}
+
+func (a *astConv) toIndexExpr(n *Node) *IndexExpr {
+	if n == nil || n.Type() != "IndexExpr" {
+		return nil
+	}
+	v := astNew(&a.tIndexExpr)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Index = a.toExpr(astNode(n.Field("Index")))
+	return v
+}
+
+func (a *astConv) toIndexListExpr(n *Node) *IndexListExpr {
+	if n == nil || n.Type() != "IndexListExpr" {
+		return nil
+	}
+	v := astNew(&a.tIndexListExpr)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Indices = a.list2(astNode(n.Field("Indices")))
+	return v
+}
+
+func (a *astConv) toInterfaceType(n *Node) *InterfaceType {
+	if n == nil || n.Type() != "InterfaceType" {
+		return nil
+	}
+	v := astNew(&a.tInterfaceType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Methods = a.toFieldList(astNode(n.Field("Methods")))
+	return v
+}
+
+func (a *astConv) toKeyValueExpr(n *Node) *KeyValueExpr {
+	if n == nil || n.Type() != "KeyValueExpr" {
+		return nil
+	}
+	v := astNew(&a.tKeyValueExpr)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Key = a.toExpr(astNode(n.Field("Key")))
+	v.Value = a.toExpr(astNode(n.Field("Value")))
+	return v
+}
+
+func (a *astConv) toLabeledStmt(n *Node) *LabeledStmt {
+	if n == nil || n.Type() != "LabeledStmt" {
+		return nil
+	}
+	v := astNew(&a.tLabeledStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Label = a.toIdent(astNode(n.Field("Label")))
+	v.Stmt = a.toStmt(astNode(n.Field("Stmt")))
+	return v
+}
+
+func (a *astConv) toMapType(n *Node) *MapType {
+	if n == nil || n.Type() != "MapType" {
+		return nil
+	}
+	v := astNew(&a.tMapType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Key = a.toExpr(astNode(n.Field("Key")))
+	v.Value = a.toExpr(astNode(n.Field("Value")))
+	return v
+}
+
+func (a *astConv) toParenExpr(n *Node) *ParenExpr {
+	if n == nil || n.Type() != "ParenExpr" {
+		return nil
+	}
+	v := astNew(&a.tParenExpr)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	return v
+}
+
+func (a *astConv) toRangeStmt(n *Node) *RangeStmt {
+	if n == nil || n.Type() != "RangeStmt" {
+		return nil
+	}
+	v := astNew(&a.tRangeStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Key = a.toExpr(astNode(n.Field("Key")))
+	v.Value = a.toExpr(astNode(n.Field("Value")))
+	v.Tok = astString(n.Field("Tok"))
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Body = a.toBlockStmt(astNode(n.Field("Body")))
+	return v
+}
+
+func (a *astConv) toReturnStmt(n *Node) *ReturnStmt {
+	if n == nil || n.Type() != "ReturnStmt" {
+		return nil
+	}
+	v := astNew(&a.tReturnStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Results = a.list2(astNode(n.Field("Results")))
+	return v
+}
+
+func (a *astConv) toSelectStmt(n *Node) *SelectStmt {
+	if n == nil || n.Type() != "SelectStmt" {
+		return nil
+	}
+	v := astNew(&a.tSelectStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Body = a.toBlockStmt(astNode(n.Field("Body")))
+	return v
+}
+
+func (a *astConv) toSelectorExpr(n *Node) *SelectorExpr {
+	if n == nil || n.Type() != "SelectorExpr" {
+		return nil
+	}
+	v := astNew(&a.tSelectorExpr)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Sel = a.toIdent(astNode(n.Field("Sel")))
+	return v
+}
+
+func (a *astConv) toSendStmt(n *Node) *SendStmt {
+	if n == nil || n.Type() != "SendStmt" {
+		return nil
+	}
+	v := astNew(&a.tSendStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Chan = a.toExpr(astNode(n.Field("Chan")))
+	v.Value = a.toExpr(astNode(n.Field("Value")))
+	return v
+}
+
+func (a *astConv) toSliceExpr(n *Node) *SliceExpr {
+	if n == nil || n.Type() != "SliceExpr" {
+		return nil
+	}
+	v := astNew(&a.tSliceExpr)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Low = a.toExpr(astNode(n.Field("Low")))
+	v.High = a.toExpr(astNode(n.Field("High")))
+	v.Max = a.toExpr(astNode(n.Field("Max")))
+	return v
+}
+
+func (a *astConv) toStarExpr(n *Node) *StarExpr {
+	if n == nil || n.Type() != "StarExpr" {
+		return nil
+	}
+	v := astNew(&a.tStarExpr)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	return v
+}
+
+func (a *astConv) toStructType(n *Node) *StructType {
+	if n == nil || n.Type() != "StructType" {
+		return nil
+	}
+	v := astNew(&a.tStructType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Fields = a.toFieldList(astNode(n.Field("Fields")))
+	return v
+}
+
+func (a *astConv) toSwitchStmt(n *Node) *SwitchStmt {
+	if n == nil || n.Type() != "SwitchStmt" {
+		return nil
+	}
+	v := astNew(&a.tSwitchStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Init = a.toStmt(astNode(n.Field("Init")))
+	v.Tag = a.toExpr(astNode(n.Field("Tag")))
+	v.Body = a.toBlockStmt(astNode(n.Field("Body")))
+	return v
+}
+
+func (a *astConv) toTypeAssertExpr(n *Node) *TypeAssertExpr {
+	if n == nil || n.Type() != "TypeAssertExpr" {
+		return nil
+	}
+	v := astNew(&a.tTypeAssertExpr)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Type = a.toExpr(astNode(n.Field("Type")))
+	return v
+}
+
+func (a *astConv) toTypeSpec(n *Node) *TypeSpec {
+	if n == nil || n.Type() != "TypeSpec" {
+		return nil
+	}
+	v := astNew(&a.tTypeSpec)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.TypeParams = a.toFieldList(astNode(n.Field("TypeParams")))
+	v.Assign = a.toMatch(astNode(n.Field("Assign")))
+	v.Type = a.toExpr(astNode(n.Field("Type")))
+	return v
+}
+
+func (a *astConv) toTypeSwitchStmt(n *Node) *TypeSwitchStmt {
+	if n == nil || n.Type() != "TypeSwitchStmt" {
+		return nil
+	}
+	v := astNew(&a.tTypeSwitchStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Init = a.toStmt(astNode(n.Field("Init")))
+	v.Assign = a.toStmt(astNode(n.Field("Assign")))
+	v.Body = a.toBlockStmt(astNode(n.Field("Body")))
+	return v
+}
+
+func (a *astConv) toUnaryExpr(n *Node) *UnaryExpr {
+	if n == nil || n.Type() != "UnaryExpr" {
+		return nil
+	}
+	v := astNew(&a.tUnaryExpr)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Op = astString(n.Field("Op"))
+	v.X = a.toExpr(astNode(n.Field("X")))
+	return v
+}
+
+func (a *astConv) toValueSpec(n *Node) *ValueSpec {
+	if n == nil || n.Type() != "ValueSpec" {
+		return nil
+	}
+	v := astNew(&a.tValueSpec)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Names = a.list4(astNode(n.Field("Names")))
+	v.Type = a.toExpr(astNode(n.Field("Type")))
+	v.Values = a.list2(astNode(n.Field("Values")))
+	return v
+}
+
+func (a *astConv) toDecl(n *Node) Decl {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "GenDecl":
+		return a.toGenDecl(n)
+	case "FuncDecl":
+		return a.toFuncDecl(n)
+	}
+	return nil
+}
+
+func (a *astConv) toExpr(n *Node) Expr {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Ident":
+		return a.toIdent(n)
+	case "IntLit":
+		return a.toIntLit(n)
+	case "FloatLit":
+		return a.toFloatLit(n)
+	case "ImagLit":
+		return a.toImagLit(n)
+	case "CharLit":
+		return a.toCharLit(n)
+	case "StringLit":
+		return a.toStringLit(n)
+	case "Ellipsis":
+		return a.toEllipsis(n)
+	case "CompositeLit":
+		return a.toCompositeLit(n)
+	case "FuncLit":
+		return a.toFuncLit(n)
+	case "ParenExpr":
+		return a.toParenExpr(n)
+	case "SelectorExpr":
+		return a.toSelectorExpr(n)
+	case "IndexExpr":
+		return a.toIndexExpr(n)
+	case "IndexListExpr":
+		return a.toIndexListExpr(n)
+	case "SliceExpr":
+		return a.toSliceExpr(n)
+	case "TypeAssertExpr":
+		return a.toTypeAssertExpr(n)
+	case "CallExpr":
+		return a.toCallExpr(n)
+	case "StarExpr":
+		return a.toStarExpr(n)
+	case "UnaryExpr":
+		return a.toUnaryExpr(n)
+	case "BinaryExpr":
+		return a.toBinaryExpr(n)
+	case "KeyValueExpr":
+		return a.toKeyValueExpr(n)
+	case "ArrayType":
+		return a.toArrayType(n)
+	case "StructType":
+		return a.toStructType(n)
+	case "FuncType":
+		return a.toFuncType(n)
+	case "InterfaceType":
+		return a.toInterfaceType(n)
+	case "MapType":
+		return a.toMapType(n)
+	case "ChanType":
+		return a.toChanType(n)
+	}
+	return nil
+}
+
+func (a *astConv) toSpec(n *Node) Spec {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "ImportSpec":
+		return a.toImportSpec(n)
+	case "ValueSpec":
+		return a.toValueSpec(n)
+	case "TypeSpec":
+		return a.toTypeSpec(n)
+	}
+	return nil
+}
+
+func (a *astConv) toStmt(n *Node) Stmt {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "DeclStmt":
+		return a.toDeclStmt(n)
+	case "EmptyStmt":
+		return a.toEmptyStmt(n)
+	case "LabeledStmt":
+		return a.toLabeledStmt(n)
+	case "ExprStmt":
+		return a.toExprStmt(n)
+	case "SendStmt":
+		return a.toSendStmt(n)
+	case "IncDecStmt":
+		return a.toIncDecStmt(n)
+	case "AssignStmt":
+		return a.toAssignStmt(n)
+	case "GoStmt":
+		return a.toGoStmt(n)
+	case "DeferStmt":
+		return a.toDeferStmt(n)
+	case "ReturnStmt":
+		return a.toReturnStmt(n)
+	case "BranchStmt":
+		return a.toBranchStmt(n)
+	case "BlockStmt":
+		return a.toBlockStmt(n)
+	case "IfStmt":
+		return a.toIfStmt(n)
+	case "CaseClause":
+		return a.toCaseClause(n)
+	case "SwitchStmt":
+		return a.toSwitchStmt(n)
+	case "TypeSwitchStmt":
+		return a.toTypeSwitchStmt(n)
+	case "CommClause":
+		return a.toCommClause(n)
+	case "SelectStmt":
+		return a.toSelectStmt(n)
+	case "ForStmt":
+		return a.toForStmt(n)
+	case "RangeStmt":
+		return a.toRangeStmt(n)
+	}
+	return nil
+}
+
+func (a *astConv) list0(n *Node) []any {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list0Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.anyValue(c)
+	}
+	return out
+}
+
+func (a *astConv) list1(n *Node) []*Node {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list1Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = astNode(c)
+	}
+	return out
+}
+
+func (a *astConv) list2(n *Node) []Expr {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list2Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toExpr(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list3(n *Node) []Stmt {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list3Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toStmt(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list4(n *Node) []*Ident {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list4Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toIdent(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list5(n *Node) []*Field {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list5Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toField(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list6(n *Node) []Decl {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list6Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toDecl(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list7(n *Node) []Spec {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list7Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toSpec(astNode(c))
+	}
+	return out
+}
+
+// astConv converts nodes into typed values.
+type astConv struct {
+	match           astChunk[Match]
+	error           astChunk[Error]
+	tCharLit        astChunk[CharLit]
+	tFloatLit       astChunk[FloatLit]
+	tIdent          astChunk[Ident]
+	tImagLit        astChunk[ImagLit]
+	tIntLit         astChunk[IntLit]
+	tStringLit      astChunk[StringLit]
+	tArrayType      astChunk[ArrayType]
+	tAssignStmt     astChunk[AssignStmt]
+	tBinaryExpr     astChunk[BinaryExpr]
+	tBlockStmt      astChunk[BlockStmt]
+	tBranchStmt     astChunk[BranchStmt]
+	tCallExpr       astChunk[CallExpr]
+	tCaseClause     astChunk[CaseClause]
+	tChanType       astChunk[ChanType]
+	tCommClause     astChunk[CommClause]
+	tCompositeLit   astChunk[CompositeLit]
+	tDeclStmt       astChunk[DeclStmt]
+	tDeferStmt      astChunk[DeferStmt]
+	tEllipsis       astChunk[Ellipsis]
+	tEmptyStmt      astChunk[EmptyStmt]
+	tExprStmt       astChunk[ExprStmt]
+	tField          astChunk[Field]
+	tFieldList      astChunk[FieldList]
+	tFile           astChunk[File]
+	tForStmt        astChunk[ForStmt]
+	tFuncDecl       astChunk[FuncDecl]
+	tFuncLit        astChunk[FuncLit]
+	tFuncType       astChunk[FuncType]
+	tGenDecl        astChunk[GenDecl]
+	tGoStmt         astChunk[GoStmt]
+	tIfStmt         astChunk[IfStmt]
+	tImportSpec     astChunk[ImportSpec]
+	tIncDecStmt     astChunk[IncDecStmt]
+	tIndexExpr      astChunk[IndexExpr]
+	tIndexListExpr  astChunk[IndexListExpr]
+	tInterfaceType  astChunk[InterfaceType]
+	tKeyValueExpr   astChunk[KeyValueExpr]
+	tLabeledStmt    astChunk[LabeledStmt]
+	tMapType        astChunk[MapType]
+	tParenExpr      astChunk[ParenExpr]
+	tRangeStmt      astChunk[RangeStmt]
+	tReturnStmt     astChunk[ReturnStmt]
+	tSelectStmt     astChunk[SelectStmt]
+	tSelectorExpr   astChunk[SelectorExpr]
+	tSendStmt       astChunk[SendStmt]
+	tSliceExpr      astChunk[SliceExpr]
+	tStarExpr       astChunk[StarExpr]
+	tStructType     astChunk[StructType]
+	tSwitchStmt     astChunk[SwitchStmt]
+	tTypeAssertExpr astChunk[TypeAssertExpr]
+	tTypeSpec       astChunk[TypeSpec]
+	tTypeSwitchStmt astChunk[TypeSwitchStmt]
+	tUnaryExpr      astChunk[UnaryExpr]
+	tValueSpec      astChunk[ValueSpec]
+	list0Chunk      astChunk[any]
+	list1Chunk      astChunk[*Node]
+	list2Chunk      astChunk[Expr]
+	list3Chunk      astChunk[Stmt]
+	list4Chunk      astChunk[*Ident]
+	list5Chunk      astChunk[*Field]
+	list6Chunk      astChunk[Decl]
+	list7Chunk      astChunk[Spec]
 }
 
 // ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
@@ -6229,6 +7315,1593 @@ type tslabs struct {
 func ParseAST(input string, opts ...ParseOption) (*File, error) {
 	a := &tslabs{}
 	return tparse(trules[0], input, opts, a, func(v any) *File { return tAs[*File](v) })
+}
+
+// ParseRuleAST parses the whole input with the named rule and returns its typed value.
+// Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.
+// Invalid options and undefined names return nil with an error. Rule result types:
+//
+//	main: *File
+//	topDecl: Decl
+//	importDecl: *GenDecl
+//	importOne: []*ImportSpec
+//	importGroup: []*ImportSpec
+//	importSpec: *ImportSpec
+//	importName: *Ident
+//	dotName: *Ident
+//	constDecl: *GenDecl
+//	constOne: []*ValueSpec
+//	constGroup: []*ValueSpec
+//	constSpec: *ValueSpec
+//	typeSp: Expr
+//	identList: []*Ident
+//	valuesSp: []Expr
+//	varDecl: *GenDecl
+//	varOne: []*ValueSpec
+//	varGroup: []*ValueSpec
+//	varSpec: *ValueSpec
+//	varSpecTyped: *ValueSpec
+//	varSpecUntyped: *ValueSpec
+//	typeDecl: *GenDecl
+//	typeOne: []*TypeSpec
+//	typeGroup: []*TypeSpec
+//	typeSpec: *TypeSpec
+//	typeSpecGeneric: *TypeSpec
+//	typeSpecArray: *TypeSpec
+//	typeSpecPlain: *TypeSpec
+//	aliasEq: *Match
+//	genericStart: *Node
+//	generalStart: *Node
+//	genericParams: *FieldList
+//	splitParams: *FieldList
+//	splitType: Expr
+//	splitHead: Expr
+//	splitStar: *StarExpr
+//	splitParen: *ParenExpr
+//	splitDecision: *Node
+//	splitHeadShape: *Node
+//	splitHeadTE: *Node
+//	unaryTE: any
+//	exprTE: *Node
+//	termTE: *Node
+//	funcDecl: *FuncDecl
+//	recvSp: *FieldList
+//	typeParamsSp: *FieldList
+//	bodySp: *BlockStmt
+//	params: *FieldList
+//	paramList: []*Field
+//	namedParams: []*Field
+//	paramGroup: *Field
+//	variadicGroup: *Field
+//	namedGroup: *Field
+//	namedParamType: Expr
+//	variadicType: *Ellipsis
+//	unnamedParams: []*Field
+//	unnamedParam: *Field
+//	unnamedType: Expr
+//	resultsSp: *FieldList
+//	results: *FieldList
+//	resultType: *FieldList
+//	resultParams: *FieldList
+//	resultList: []*Field
+//	namedResults: []*Field
+//	unnamedResults: []*Field
+//	unnamedResult: *Field
+//	typeParams: *FieldList
+//	typeParam: *Field
+//	constraint: Expr
+//	constraintFirst: Expr
+//	embeddedTerm: Expr
+//	tildeTerm: *UnaryExpr
+//	arrayFieldType: *ArrayType
+//	exprSp: Expr
+//	identIndex: *IndexExpr
+//	identIndexList: *IndexListExpr
+//	typ: Expr
+//	typeGuard: any
+//	typeStart: any
+//	parenType: *ParenExpr
+//	pointerType: *StarExpr
+//	typeName: Expr
+//	qualifiedInstance: Expr
+//	typeInstance: *IndexExpr
+//	typeInstanceList: *IndexListExpr
+//	qualifiedIdent: Expr
+//	selectorIdent: *SelectorExpr
+//	arrayType: *ArrayType
+//	arrayLen: Expr
+//	ellipsisLen: *Ellipsis
+//	mapType: *MapType
+//	chanType: *ChanType
+//	sendChanType: *ChanType
+//	bothChanType: *ChanType
+//	recvChanTypeT: *ChanType
+//	funcType: *FuncType
+//	structType: *StructType
+//	fieldBlock: *FieldList
+//	fieldDecl: *Field
+//	embeddedField: *Field
+//	starField: *Field
+//	starEmbedded: *StarExpr
+//	multiNameField: *Field
+//	arrayNameField: *Field
+//	oneNameField: *Field
+//	instanceField: *Field
+//	tagSp: *StringLit
+//	interfaceType: *InterfaceType
+//	methodBlock: *FieldList
+//	interfaceElem: *Field
+//	methodSpec: *Field
+//	signature: *FuncType
+//	embeddedElem: *Field
+//	embeddedFirst: Expr
+//	embeddedIndex: *IndexExpr
+//	embeddedIndexList: *IndexListExpr
+//	block: *BlockStmt
+//	stmt: Stmt
+//	terminatedStmt: Stmt
+//	emptyStmt: *EmptyStmt
+//	implicitEmpty: *EmptyStmt
+//	labeledEmpty: *LabeledStmt
+//	labeledStmt: *LabeledStmt
+//	clauseBody: []Stmt
+//	clauseStmt: Stmt
+//	clauseTerminated: Stmt
+//	lastClauseStmt: []any
+//	lastClauseTerminated: Stmt
+//	clauseEnd: any
+//	plainStmt: Stmt
+//	declStmt: *DeclStmt
+//	simpleStmt: Stmt
+//	assignStmt: *AssignStmt
+//	sendStmt: *SendStmt
+//	incDecStmt: *IncDecStmt
+//	exprStmt: *ExprStmt
+//	hsimpleStmt: Stmt
+//	hassignStmt: *AssignStmt
+//	hsendStmt: *SendStmt
+//	hincDecStmt: *IncDecStmt
+//	hexprStmt: *ExprStmt
+//	goStmt: *GoStmt
+//	deferStmt: *DeferStmt
+//	goCall: *CallExpr
+//	goCallEmpty: *CallExpr
+//	goCallArgs: *CallExpr
+//	dotsWs: *Match
+//	returnStmt: *ReturnStmt
+//	returnValues: []Expr
+//	branchStmt: *BranchStmt
+//	breakStmt: *BranchStmt
+//	continueStmt: *BranchStmt
+//	gotoStmt: *BranchStmt
+//	fallthroughStmt: *BranchStmt
+//	labelSp: *Ident
+//	ifStmt: *IfStmt
+//	hsimpleSemi: Stmt
+//	elseSp: Stmt
+//	switchStmt: Stmt
+//	switchInit: Stmt
+//	exprSwitchStmt: *SwitchStmt
+//	typeSwitchStmt: *TypeSwitchStmt
+//	typeSwitchGuard: Stmt
+//	guardAssign: *AssignStmt
+//	guardExpr: *ExprStmt
+//	guardAssert: *TypeAssertExpr
+//	caseBlock: *BlockStmt
+//	caseClause: *CaseClause
+//	caseClauseList: *CaseClause
+//	caseClauseDefault: *CaseClause
+//	selectStmt: *SelectStmt
+//	commBlock: *BlockStmt
+//	commClause: *CommClause
+//	commClauseCase: *CommClause
+//	commClauseDefault: *CommClause
+//	commStmt: Stmt
+//	commRecv: *AssignStmt
+//	forStmt: Stmt
+//	forInfinite: *ForStmt
+//	forCond: *ForStmt
+//	forClause: *ForStmt
+//	forRange: *RangeStmt
+//	rangeValue: Expr
+//	expr: Expr
+//	exprList: []Expr
+//	orExpr: Expr
+//	andExpr: Expr
+//	cmpExpr: Expr
+//	addExpr: Expr
+//	mulExpr: Expr
+//	unaryExpr: Expr
+//	recvChanType: *ChanType
+//	recvExpr: *UnaryExpr
+//	unaryOpExpr: *UnaryExpr
+//	starExpr: *StarExpr
+//	primaryExpr: Expr
+//	prattExpr: Expr
+//	primaryOperand: Expr
+//	operandGuard: any
+//	literalOperand: Expr
+//	indexList: []Expr
+//	parenExpr: *ParenExpr
+//	funcLit: *FuncLit
+//	litValue: []Expr
+//	elements: []Expr
+//	element: Expr
+//	keyValue: *KeyValueExpr
+//	elementValue: Expr
+//	elidedLit: *CompositeLit
+//	goPrimary: Expr
+//	goEnd: any
+//	hexpr: Expr
+//	hexprList: []Expr
+//	horExpr: Expr
+//	handExpr: Expr
+//	hcmpExpr: Expr
+//	haddExpr: Expr
+//	hmulExpr: Expr
+//	hunaryExpr: Expr
+//	hrecvExpr: *UnaryExpr
+//	hunaryOpExpr: *UnaryExpr
+//	hstarExpr: *StarExpr
+//	hprimaryExpr: Expr
+//	hprattExpr: Expr
+//	hoperand: Expr
+//	compositeLitH: *CompositeLit
+//	parenCompositeType: *Node
+//	guardPrimary: Expr
+//	dot: *Node
+//	binaryOp: *Node
+//	orOp: *Node
+//	andOp: *Node
+//	relOp: *Node
+//	addOp: *Node
+//	mulOp: *Node
+//	unaryOp: *Node
+//	assignOp: *Node
+//	incDecOp: *Node
+//	semi: any
+//	stmtTerm: any
+//	fieldTerm: any
+//	groupTerm: any
+//	hsemi: any
+//	sp: []*Node
+//	ws: []*Node
+//	blockComment: *Node
+//	blockText: []any
+//	validFFFD: *Node
+//	dirBlock: *Node
+//	dirCharBlock: any
+//	dirSegBlock: []any
+//	dirMidBlock: *Node
+//	dirNum: *Node
+//	dirUint: *Node
+//	ident: *Ident
+//	idStart: any
+//	idRest: []*Node
+//	idChar: *Match
+//	keyword: *Node
+//	kw_break: *Node
+//	kw_case: *Node
+//	kw_chan: *Node
+//	kw_const: *Node
+//	kw_continue: *Node
+//	kw_default: *Node
+//	kw_defer: *Node
+//	kw_else: *Node
+//	kw_fallthrough: *Node
+//	kw_for: *Node
+//	kw_func: *Node
+//	kw_go: *Node
+//	kw_goto: *Node
+//	kw_if: *Node
+//	kw_import: *Node
+//	kw_interface: *Node
+//	kw_map: *Node
+//	kw_package: *Node
+//	kw_range: *Node
+//	kw_return: *Node
+//	kw_select: *Node
+//	kw_struct: *Node
+//	kw_switch: *Node
+//	kw_type: *Node
+//	kw_var: *Node
+//	basicLit: Expr
+//	intLit: *IntLit
+//	floatLit: *FloatLit
+//	imagLit: *ImagLit
+//	imagInt: *Node
+//	decimalFloat: *Node
+//	decimalExp: *Node
+//	hexFloat: *Node
+//	decDigits: *Node
+//	hexDigits: *Node
+//	octDigits: *Node
+//	binDigits: *Node
+//	charLit: *CharLit
+//	stringLit: *StringLit
+//	srcChar: any
+//	charEscape: *Node
+//	stringEscape: *Node
+//	escapeValue: *Node
+//	hexDigit: *Match
+//	uLetter: *Node
+//	uDigit: *Node
+func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
+	o, err := resolveOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+	switch name {
+	case "main":
+		a := &tslabs{}
+		return tparseResolved(trules[0], input, o, a, func(v any) *File { return tAs[*File](v) })
+	case "topDecl":
+		a := &tslabs{}
+		return tparseResolved(trules[1], input, o, a, func(v any) Decl { return tAs[Decl](tpub(v)) })
+	case "importDecl":
+		a := &tslabs{}
+		return tparseResolved(trules[2], input, o, a, func(v any) *GenDecl { return tAs[*GenDecl](v) })
+	case "importOne":
+		a := &tslabs{}
+		return tparseResolved(trules[3], input, o, a, func(v any) []*ImportSpec { return tl0(a, v) })
+	case "importGroup":
+		a := &tslabs{}
+		return tparseResolved(trules[4], input, o, a, func(v any) []*ImportSpec { return tl0(a, v) })
+	case "importSpec":
+		a := &tslabs{}
+		return tparseResolved(trules[5], input, o, a, func(v any) *ImportSpec { return tAs[*ImportSpec](v) })
+	case "importName":
+		a := &tslabs{}
+		return tparseResolved(trules[6], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "dotName":
+		a := &tslabs{}
+		return tparseResolved(trules[7], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "constDecl":
+		a := &tslabs{}
+		return tparseResolved(trules[8], input, o, a, func(v any) *GenDecl { return tAs[*GenDecl](v) })
+	case "constOne":
+		a := &tslabs{}
+		return tparseResolved(trules[9], input, o, a, func(v any) []*ValueSpec { return tl1(a, v) })
+	case "constGroup":
+		a := &tslabs{}
+		return tparseResolved(trules[10], input, o, a, func(v any) []*ValueSpec { return tl1(a, v) })
+	case "constSpec":
+		a := &tslabs{}
+		return tparseResolved(trules[11], input, o, a, func(v any) *ValueSpec { return tAs[*ValueSpec](v) })
+	case "typeSp":
+		a := &tslabs{}
+		return tparseResolved(trules[12], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "identList":
+		a := &tslabs{}
+		return tparseResolved(trules[13], input, o, a, func(v any) []*Ident { return tl2(a, v) })
+	case "valuesSp":
+		a := &tslabs{}
+		return tparseResolved(trules[14], input, o, a, func(v any) []Expr { return tl3(a, v) })
+	case "varDecl":
+		a := &tslabs{}
+		return tparseResolved(trules[15], input, o, a, func(v any) *GenDecl { return tAs[*GenDecl](v) })
+	case "varOne":
+		a := &tslabs{}
+		return tparseResolved(trules[16], input, o, a, func(v any) []*ValueSpec { return tl1(a, v) })
+	case "varGroup":
+		a := &tslabs{}
+		return tparseResolved(trules[17], input, o, a, func(v any) []*ValueSpec { return tl1(a, v) })
+	case "varSpec":
+		a := &tslabs{}
+		return tparseResolved(trules[18], input, o, a, func(v any) *ValueSpec { return tAs[*ValueSpec](v) })
+	case "varSpecTyped":
+		a := &tslabs{}
+		return tparseResolved(trules[19], input, o, a, func(v any) *ValueSpec { return tAs[*ValueSpec](v) })
+	case "varSpecUntyped":
+		a := &tslabs{}
+		return tparseResolved(trules[20], input, o, a, func(v any) *ValueSpec { return tAs[*ValueSpec](v) })
+	case "typeDecl":
+		a := &tslabs{}
+		return tparseResolved(trules[21], input, o, a, func(v any) *GenDecl { return tAs[*GenDecl](v) })
+	case "typeOne":
+		a := &tslabs{}
+		return tparseResolved(trules[22], input, o, a, func(v any) []*TypeSpec { return tl4(a, v) })
+	case "typeGroup":
+		a := &tslabs{}
+		return tparseResolved(trules[23], input, o, a, func(v any) []*TypeSpec { return tl4(a, v) })
+	case "typeSpec":
+		a := &tslabs{}
+		return tparseResolved(trules[24], input, o, a, func(v any) *TypeSpec { return tAs[*TypeSpec](v) })
+	case "typeSpecGeneric":
+		a := &tslabs{}
+		return tparseResolved(trules[25], input, o, a, func(v any) *TypeSpec { return tAs[*TypeSpec](v) })
+	case "typeSpecArray":
+		a := &tslabs{}
+		return tparseResolved(trules[26], input, o, a, func(v any) *TypeSpec { return tAs[*TypeSpec](v) })
+	case "typeSpecPlain":
+		a := &tslabs{}
+		return tparseResolved(trules[27], input, o, a, func(v any) *TypeSpec { return tAs[*TypeSpec](v) })
+	case "aliasEq":
+		a := &tslabs{}
+		return tparseResolved(trules[28], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "genericStart":
+		n, err := parseResolved(rules[29], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "generalStart":
+		n, err := parseResolved(rules[30], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "genericParams":
+		a := &tslabs{}
+		return tparseResolved(trules[31], input, o, a, func(v any) *FieldList { return tAs[*FieldList](v) })
+	case "splitParams":
+		a := &tslabs{}
+		return tparseResolved(trules[32], input, o, a, func(v any) *FieldList { return tAs[*FieldList](v) })
+	case "splitType":
+		a := &tslabs{}
+		return tparseResolved(trules[33], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "splitHead":
+		a := &tslabs{}
+		return tparseResolved(trules[34], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "splitStar":
+		a := &tslabs{}
+		return tparseResolved(trules[35], input, o, a, func(v any) *StarExpr { return tAs[*StarExpr](v) })
+	case "splitParen":
+		a := &tslabs{}
+		return tparseResolved(trules[36], input, o, a, func(v any) *ParenExpr { return tAs[*ParenExpr](v) })
+	case "splitDecision":
+		n, err := parseResolved(rules[37], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "splitHeadShape":
+		n, err := parseResolved(rules[38], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "splitHeadTE":
+		n, err := parseResolved(rules[39], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "unaryTE":
+		n, err := parseResolved(rules[40], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "exprTE":
+		n, err := parseResolved(rules[41], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "termTE":
+		n, err := parseResolved(rules[42], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "funcDecl":
+		a := &tslabs{}
+		return tparseResolved(trules[43], input, o, a, func(v any) *FuncDecl { return tAs[*FuncDecl](v) })
+	case "recvSp":
+		a := &tslabs{}
+		return tparseResolved(trules[44], input, o, a, func(v any) *FieldList { return tAs[*FieldList](v) })
+	case "typeParamsSp":
+		a := &tslabs{}
+		return tparseResolved(trules[45], input, o, a, func(v any) *FieldList { return tAs[*FieldList](v) })
+	case "bodySp":
+		a := &tslabs{}
+		return tparseResolved(trules[46], input, o, a, func(v any) *BlockStmt { return tAs[*BlockStmt](v) })
+	case "params":
+		a := &tslabs{}
+		return tparseResolved(trules[47], input, o, a, func(v any) *FieldList { return tAs[*FieldList](v) })
+	case "paramList":
+		a := &tslabs{}
+		return tparseResolved(trules[48], input, o, a, func(v any) []*Field { return tl5(a, v) })
+	case "namedParams":
+		a := &tslabs{}
+		return tparseResolved(trules[49], input, o, a, func(v any) []*Field { return tl5(a, v) })
+	case "paramGroup":
+		a := &tslabs{}
+		return tparseResolved(trules[50], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "variadicGroup":
+		a := &tslabs{}
+		return tparseResolved(trules[51], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "namedGroup":
+		a := &tslabs{}
+		return tparseResolved(trules[52], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "namedParamType":
+		a := &tslabs{}
+		return tparseResolved(trules[53], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "variadicType":
+		a := &tslabs{}
+		return tparseResolved(trules[54], input, o, a, func(v any) *Ellipsis { return tAs[*Ellipsis](v) })
+	case "unnamedParams":
+		a := &tslabs{}
+		return tparseResolved(trules[55], input, o, a, func(v any) []*Field { return tl5(a, v) })
+	case "unnamedParam":
+		a := &tslabs{}
+		return tparseResolved(trules[56], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "unnamedType":
+		a := &tslabs{}
+		return tparseResolved(trules[57], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "resultsSp":
+		a := &tslabs{}
+		return tparseResolved(trules[58], input, o, a, func(v any) *FieldList { return tAs[*FieldList](v) })
+	case "results":
+		a := &tslabs{}
+		return tparseResolved(trules[59], input, o, a, func(v any) *FieldList { return tAs[*FieldList](v) })
+	case "resultType":
+		a := &tslabs{}
+		return tparseResolved(trules[60], input, o, a, func(v any) *FieldList { return tAs[*FieldList](v) })
+	case "resultParams":
+		a := &tslabs{}
+		return tparseResolved(trules[61], input, o, a, func(v any) *FieldList { return tAs[*FieldList](v) })
+	case "resultList":
+		a := &tslabs{}
+		return tparseResolved(trules[62], input, o, a, func(v any) []*Field { return tl5(a, v) })
+	case "namedResults":
+		a := &tslabs{}
+		return tparseResolved(trules[63], input, o, a, func(v any) []*Field { return tl5(a, v) })
+	case "unnamedResults":
+		a := &tslabs{}
+		return tparseResolved(trules[64], input, o, a, func(v any) []*Field { return tl5(a, v) })
+	case "unnamedResult":
+		a := &tslabs{}
+		return tparseResolved(trules[65], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "typeParams":
+		a := &tslabs{}
+		return tparseResolved(trules[66], input, o, a, func(v any) *FieldList { return tAs[*FieldList](v) })
+	case "typeParam":
+		a := &tslabs{}
+		return tparseResolved(trules[67], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "constraint":
+		a := &tslabs{}
+		return tparseResolved(trules[68], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "constraintFirst":
+		a := &tslabs{}
+		return tparseResolved(trules[69], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "embeddedTerm":
+		a := &tslabs{}
+		return tparseResolved(trules[70], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "tildeTerm":
+		a := &tslabs{}
+		return tparseResolved(trules[71], input, o, a, func(v any) *UnaryExpr { return tAs[*UnaryExpr](v) })
+	case "arrayFieldType":
+		a := &tslabs{}
+		return tparseResolved(trules[72], input, o, a, func(v any) *ArrayType { return tAs[*ArrayType](v) })
+	case "exprSp":
+		a := &tslabs{}
+		return tparseResolved(trules[73], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "identIndex":
+		a := &tslabs{}
+		return tparseResolved(trules[74], input, o, a, func(v any) *IndexExpr { return tAs[*IndexExpr](v) })
+	case "identIndexList":
+		a := &tslabs{}
+		return tparseResolved(trules[75], input, o, a, func(v any) *IndexListExpr { return tAs[*IndexListExpr](v) })
+	case "typ":
+		a := &tslabs{}
+		return tparseResolved(trules[76], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "typeGuard":
+		n, err := parseResolved(rules[77], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "typeStart":
+		n, err := parseResolved(rules[78], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "parenType":
+		a := &tslabs{}
+		return tparseResolved(trules[79], input, o, a, func(v any) *ParenExpr { return tAs[*ParenExpr](v) })
+	case "pointerType":
+		a := &tslabs{}
+		return tparseResolved(trules[80], input, o, a, func(v any) *StarExpr { return tAs[*StarExpr](v) })
+	case "typeName":
+		a := &tslabs{}
+		return tparseResolved(trules[81], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "qualifiedInstance":
+		a := &tslabs{}
+		return tparseResolved(trules[82], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "typeInstance":
+		a := &tslabs{}
+		return tparseResolved(trules[83], input, o, a, func(v any) *IndexExpr { return tAs[*IndexExpr](v) })
+	case "typeInstanceList":
+		a := &tslabs{}
+		return tparseResolved(trules[84], input, o, a, func(v any) *IndexListExpr { return tAs[*IndexListExpr](v) })
+	case "qualifiedIdent":
+		a := &tslabs{}
+		return tparseResolved(trules[85], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "selectorIdent":
+		a := &tslabs{}
+		return tparseResolved(trules[86], input, o, a, func(v any) *SelectorExpr { return tAs[*SelectorExpr](v) })
+	case "arrayType":
+		a := &tslabs{}
+		return tparseResolved(trules[87], input, o, a, func(v any) *ArrayType { return tAs[*ArrayType](v) })
+	case "arrayLen":
+		a := &tslabs{}
+		return tparseResolved(trules[88], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "ellipsisLen":
+		a := &tslabs{}
+		return tparseResolved(trules[89], input, o, a, func(v any) *Ellipsis { return tAs[*Ellipsis](v) })
+	case "mapType":
+		a := &tslabs{}
+		return tparseResolved(trules[90], input, o, a, func(v any) *MapType { return tAs[*MapType](v) })
+	case "chanType":
+		a := &tslabs{}
+		return tparseResolved(trules[91], input, o, a, func(v any) *ChanType { return tAs[*ChanType](v) })
+	case "sendChanType":
+		a := &tslabs{}
+		return tparseResolved(trules[92], input, o, a, func(v any) *ChanType { return tAs[*ChanType](v) })
+	case "bothChanType":
+		a := &tslabs{}
+		return tparseResolved(trules[93], input, o, a, func(v any) *ChanType { return tAs[*ChanType](v) })
+	case "recvChanTypeT":
+		a := &tslabs{}
+		return tparseResolved(trules[94], input, o, a, func(v any) *ChanType { return tAs[*ChanType](v) })
+	case "funcType":
+		a := &tslabs{}
+		return tparseResolved(trules[95], input, o, a, func(v any) *FuncType { return tAs[*FuncType](v) })
+	case "structType":
+		a := &tslabs{}
+		return tparseResolved(trules[96], input, o, a, func(v any) *StructType { return tAs[*StructType](v) })
+	case "fieldBlock":
+		a := &tslabs{}
+		return tparseResolved(trules[97], input, o, a, func(v any) *FieldList { return tAs[*FieldList](v) })
+	case "fieldDecl":
+		a := &tslabs{}
+		return tparseResolved(trules[98], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "embeddedField":
+		a := &tslabs{}
+		return tparseResolved(trules[99], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "starField":
+		a := &tslabs{}
+		return tparseResolved(trules[100], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "starEmbedded":
+		a := &tslabs{}
+		return tparseResolved(trules[101], input, o, a, func(v any) *StarExpr { return tAs[*StarExpr](v) })
+	case "multiNameField":
+		a := &tslabs{}
+		return tparseResolved(trules[102], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "arrayNameField":
+		a := &tslabs{}
+		return tparseResolved(trules[103], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "oneNameField":
+		a := &tslabs{}
+		return tparseResolved(trules[104], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "instanceField":
+		a := &tslabs{}
+		return tparseResolved(trules[105], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "tagSp":
+		a := &tslabs{}
+		return tparseResolved(trules[106], input, o, a, func(v any) *StringLit { return tAs[*StringLit](v) })
+	case "interfaceType":
+		a := &tslabs{}
+		return tparseResolved(trules[107], input, o, a, func(v any) *InterfaceType { return tAs[*InterfaceType](v) })
+	case "methodBlock":
+		a := &tslabs{}
+		return tparseResolved(trules[108], input, o, a, func(v any) *FieldList { return tAs[*FieldList](v) })
+	case "interfaceElem":
+		a := &tslabs{}
+		return tparseResolved(trules[109], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "methodSpec":
+		a := &tslabs{}
+		return tparseResolved(trules[110], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "signature":
+		a := &tslabs{}
+		return tparseResolved(trules[111], input, o, a, func(v any) *FuncType { return tAs[*FuncType](v) })
+	case "embeddedElem":
+		a := &tslabs{}
+		return tparseResolved(trules[112], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "embeddedFirst":
+		a := &tslabs{}
+		return tparseResolved(trules[113], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "embeddedIndex":
+		a := &tslabs{}
+		return tparseResolved(trules[114], input, o, a, func(v any) *IndexExpr { return tAs[*IndexExpr](v) })
+	case "embeddedIndexList":
+		a := &tslabs{}
+		return tparseResolved(trules[115], input, o, a, func(v any) *IndexListExpr { return tAs[*IndexListExpr](v) })
+	case "block":
+		a := &tslabs{}
+		return tparseResolved(trules[116], input, o, a, func(v any) *BlockStmt { return tAs[*BlockStmt](v) })
+	case "stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[117], input, o, a, func(v any) Stmt { return tAs[Stmt](tpub(v)) })
+	case "terminatedStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[118], input, o, a, func(v any) Stmt { return tAs[Stmt](tpub(v)) })
+	case "emptyStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[119], input, o, a, func(v any) *EmptyStmt { return tAs[*EmptyStmt](v) })
+	case "implicitEmpty":
+		a := &tslabs{}
+		return tparseResolved(trules[120], input, o, a, func(v any) *EmptyStmt { return tAs[*EmptyStmt](v) })
+	case "labeledEmpty":
+		a := &tslabs{}
+		return tparseResolved(trules[121], input, o, a, func(v any) *LabeledStmt { return tAs[*LabeledStmt](v) })
+	case "labeledStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[122], input, o, a, func(v any) *LabeledStmt { return tAs[*LabeledStmt](v) })
+	case "clauseBody":
+		a := &tslabs{}
+		return tparseResolved(trules[123], input, o, a, func(v any) []Stmt { return tl6(a, v) })
+	case "clauseStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[124], input, o, a, func(v any) Stmt { return tAs[Stmt](tpub(v)) })
+	case "clauseTerminated":
+		a := &tslabs{}
+		return tparseResolved(trules[125], input, o, a, func(v any) Stmt { return tAs[Stmt](tpub(v)) })
+	case "lastClauseStmt":
+		n, err := parseResolved(rules[126], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "lastClauseTerminated":
+		a := &tslabs{}
+		return tparseResolved(trules[127], input, o, a, func(v any) Stmt { return tAs[Stmt](tpub(v)) })
+	case "clauseEnd":
+		n, err := parseResolved(rules[128], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "plainStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[129], input, o, a, func(v any) Stmt { return tAs[Stmt](tpub(v)) })
+	case "declStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[130], input, o, a, func(v any) *DeclStmt { return tAs[*DeclStmt](v) })
+	case "simpleStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[131], input, o, a, func(v any) Stmt { return tAs[Stmt](tpub(v)) })
+	case "assignStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[132], input, o, a, func(v any) *AssignStmt { return tAs[*AssignStmt](v) })
+	case "sendStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[133], input, o, a, func(v any) *SendStmt { return tAs[*SendStmt](v) })
+	case "incDecStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[134], input, o, a, func(v any) *IncDecStmt { return tAs[*IncDecStmt](v) })
+	case "exprStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[135], input, o, a, func(v any) *ExprStmt { return tAs[*ExprStmt](v) })
+	case "hsimpleStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[136], input, o, a, func(v any) Stmt { return tAs[Stmt](tpub(v)) })
+	case "hassignStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[137], input, o, a, func(v any) *AssignStmt { return tAs[*AssignStmt](v) })
+	case "hsendStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[138], input, o, a, func(v any) *SendStmt { return tAs[*SendStmt](v) })
+	case "hincDecStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[139], input, o, a, func(v any) *IncDecStmt { return tAs[*IncDecStmt](v) })
+	case "hexprStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[140], input, o, a, func(v any) *ExprStmt { return tAs[*ExprStmt](v) })
+	case "goStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[141], input, o, a, func(v any) *GoStmt { return tAs[*GoStmt](v) })
+	case "deferStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[142], input, o, a, func(v any) *DeferStmt { return tAs[*DeferStmt](v) })
+	case "goCall":
+		a := &tslabs{}
+		return tparseResolved(trules[143], input, o, a, func(v any) *CallExpr { return tAs[*CallExpr](v) })
+	case "goCallEmpty":
+		a := &tslabs{}
+		return tparseResolved(trules[144], input, o, a, func(v any) *CallExpr { return tAs[*CallExpr](v) })
+	case "goCallArgs":
+		a := &tslabs{}
+		return tparseResolved(trules[145], input, o, a, func(v any) *CallExpr { return tAs[*CallExpr](v) })
+	case "dotsWs":
+		a := &tslabs{}
+		return tparseResolved(trules[146], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "returnStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[147], input, o, a, func(v any) *ReturnStmt { return tAs[*ReturnStmt](v) })
+	case "returnValues":
+		a := &tslabs{}
+		return tparseResolved(trules[148], input, o, a, func(v any) []Expr { return tl3(a, v) })
+	case "branchStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[149], input, o, a, func(v any) *BranchStmt { return tAs[*BranchStmt](v) })
+	case "breakStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[150], input, o, a, func(v any) *BranchStmt { return tAs[*BranchStmt](v) })
+	case "continueStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[151], input, o, a, func(v any) *BranchStmt { return tAs[*BranchStmt](v) })
+	case "gotoStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[152], input, o, a, func(v any) *BranchStmt { return tAs[*BranchStmt](v) })
+	case "fallthroughStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[153], input, o, a, func(v any) *BranchStmt { return tAs[*BranchStmt](v) })
+	case "labelSp":
+		a := &tslabs{}
+		return tparseResolved(trules[154], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "ifStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[155], input, o, a, func(v any) *IfStmt { return tAs[*IfStmt](v) })
+	case "hsimpleSemi":
+		a := &tslabs{}
+		return tparseResolved(trules[156], input, o, a, func(v any) Stmt { return tAs[Stmt](tpub(v)) })
+	case "elseSp":
+		a := &tslabs{}
+		return tparseResolved(trules[157], input, o, a, func(v any) Stmt { return tAs[Stmt](tpub(v)) })
+	case "switchStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[158], input, o, a, func(v any) Stmt { return tAs[Stmt](tpub(v)) })
+	case "switchInit":
+		a := &tslabs{}
+		return tparseResolved(trules[159], input, o, a, func(v any) Stmt { return tAs[Stmt](tpub(v)) })
+	case "exprSwitchStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[160], input, o, a, func(v any) *SwitchStmt { return tAs[*SwitchStmt](v) })
+	case "typeSwitchStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[161], input, o, a, func(v any) *TypeSwitchStmt { return tAs[*TypeSwitchStmt](v) })
+	case "typeSwitchGuard":
+		a := &tslabs{}
+		return tparseResolved(trules[162], input, o, a, func(v any) Stmt { return tAs[Stmt](tpub(v)) })
+	case "guardAssign":
+		a := &tslabs{}
+		return tparseResolved(trules[163], input, o, a, func(v any) *AssignStmt { return tAs[*AssignStmt](v) })
+	case "guardExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[164], input, o, a, func(v any) *ExprStmt { return tAs[*ExprStmt](v) })
+	case "guardAssert":
+		a := &tslabs{}
+		return tparseResolved(trules[165], input, o, a, func(v any) *TypeAssertExpr { return tAs[*TypeAssertExpr](v) })
+	case "caseBlock":
+		a := &tslabs{}
+		return tparseResolved(trules[166], input, o, a, func(v any) *BlockStmt { return tAs[*BlockStmt](v) })
+	case "caseClause":
+		a := &tslabs{}
+		return tparseResolved(trules[167], input, o, a, func(v any) *CaseClause { return tAs[*CaseClause](v) })
+	case "caseClauseList":
+		a := &tslabs{}
+		return tparseResolved(trules[168], input, o, a, func(v any) *CaseClause { return tAs[*CaseClause](v) })
+	case "caseClauseDefault":
+		a := &tslabs{}
+		return tparseResolved(trules[169], input, o, a, func(v any) *CaseClause { return tAs[*CaseClause](v) })
+	case "selectStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[170], input, o, a, func(v any) *SelectStmt { return tAs[*SelectStmt](v) })
+	case "commBlock":
+		a := &tslabs{}
+		return tparseResolved(trules[171], input, o, a, func(v any) *BlockStmt { return tAs[*BlockStmt](v) })
+	case "commClause":
+		a := &tslabs{}
+		return tparseResolved(trules[172], input, o, a, func(v any) *CommClause { return tAs[*CommClause](v) })
+	case "commClauseCase":
+		a := &tslabs{}
+		return tparseResolved(trules[173], input, o, a, func(v any) *CommClause { return tAs[*CommClause](v) })
+	case "commClauseDefault":
+		a := &tslabs{}
+		return tparseResolved(trules[174], input, o, a, func(v any) *CommClause { return tAs[*CommClause](v) })
+	case "commStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[175], input, o, a, func(v any) Stmt { return tAs[Stmt](tpub(v)) })
+	case "commRecv":
+		a := &tslabs{}
+		return tparseResolved(trules[176], input, o, a, func(v any) *AssignStmt { return tAs[*AssignStmt](v) })
+	case "forStmt":
+		a := &tslabs{}
+		return tparseResolved(trules[177], input, o, a, func(v any) Stmt { return tAs[Stmt](tpub(v)) })
+	case "forInfinite":
+		a := &tslabs{}
+		return tparseResolved(trules[178], input, o, a, func(v any) *ForStmt { return tAs[*ForStmt](v) })
+	case "forCond":
+		a := &tslabs{}
+		return tparseResolved(trules[179], input, o, a, func(v any) *ForStmt { return tAs[*ForStmt](v) })
+	case "forClause":
+		a := &tslabs{}
+		return tparseResolved(trules[180], input, o, a, func(v any) *ForStmt { return tAs[*ForStmt](v) })
+	case "forRange":
+		a := &tslabs{}
+		return tparseResolved(trules[181], input, o, a, func(v any) *RangeStmt { return tAs[*RangeStmt](v) })
+	case "rangeValue":
+		a := &tslabs{}
+		return tparseResolved(trules[182], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "expr":
+		a := &tslabs{}
+		return tparseResolved(trules[183], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "exprList":
+		a := &tslabs{}
+		return tparseResolved(trules[184], input, o, a, func(v any) []Expr { return tl3(a, v) })
+	case "orExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[185], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "andExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[186], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "cmpExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[187], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "addExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[188], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "mulExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[189], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "unaryExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[190], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "recvChanType":
+		a := &tslabs{}
+		return tparseResolved(trules[191], input, o, a, func(v any) *ChanType { return tAs[*ChanType](v) })
+	case "recvExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[192], input, o, a, func(v any) *UnaryExpr { return tAs[*UnaryExpr](v) })
+	case "unaryOpExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[193], input, o, a, func(v any) *UnaryExpr { return tAs[*UnaryExpr](v) })
+	case "starExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[194], input, o, a, func(v any) *StarExpr { return tAs[*StarExpr](v) })
+	case "primaryExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[195], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "prattExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[196], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "primaryOperand":
+		a := &tslabs{}
+		return tparseResolved(trules[197], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "operandGuard":
+		n, err := parseResolved(rules[198], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "literalOperand":
+		a := &tslabs{}
+		return tparseResolved(trules[199], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "indexList":
+		a := &tslabs{}
+		return tparseResolved(trules[200], input, o, a, func(v any) []Expr { return tl3(a, v) })
+	case "parenExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[201], input, o, a, func(v any) *ParenExpr { return tAs[*ParenExpr](v) })
+	case "funcLit":
+		a := &tslabs{}
+		return tparseResolved(trules[202], input, o, a, func(v any) *FuncLit { return tAs[*FuncLit](v) })
+	case "litValue":
+		a := &tslabs{}
+		return tparseResolved(trules[203], input, o, a, func(v any) []Expr { return tl3(a, v) })
+	case "elements":
+		a := &tslabs{}
+		return tparseResolved(trules[204], input, o, a, func(v any) []Expr { return tl3(a, v) })
+	case "element":
+		a := &tslabs{}
+		return tparseResolved(trules[205], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "keyValue":
+		a := &tslabs{}
+		return tparseResolved(trules[206], input, o, a, func(v any) *KeyValueExpr { return tAs[*KeyValueExpr](v) })
+	case "elementValue":
+		a := &tslabs{}
+		return tparseResolved(trules[207], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "elidedLit":
+		a := &tslabs{}
+		return tparseResolved(trules[208], input, o, a, func(v any) *CompositeLit { return tAs[*CompositeLit](v) })
+	case "goPrimary":
+		a := &tslabs{}
+		return tparseResolved(trules[209], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "goEnd":
+		n, err := parseResolved(rules[210], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "hexpr":
+		a := &tslabs{}
+		return tparseResolved(trules[211], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "hexprList":
+		a := &tslabs{}
+		return tparseResolved(trules[212], input, o, a, func(v any) []Expr { return tl3(a, v) })
+	case "horExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[213], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "handExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[214], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "hcmpExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[215], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "haddExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[216], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "hmulExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[217], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "hunaryExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[218], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "hrecvExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[219], input, o, a, func(v any) *UnaryExpr { return tAs[*UnaryExpr](v) })
+	case "hunaryOpExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[220], input, o, a, func(v any) *UnaryExpr { return tAs[*UnaryExpr](v) })
+	case "hstarExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[221], input, o, a, func(v any) *StarExpr { return tAs[*StarExpr](v) })
+	case "hprimaryExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[222], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "hprattExpr":
+		a := &tslabs{}
+		return tparseResolved(trules[223], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "hoperand":
+		a := &tslabs{}
+		return tparseResolved(trules[224], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "compositeLitH":
+		a := &tslabs{}
+		return tparseResolved(trules[225], input, o, a, func(v any) *CompositeLit { return tAs[*CompositeLit](v) })
+	case "parenCompositeType":
+		n, err := parseResolved(rules[226], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "guardPrimary":
+		a := &tslabs{}
+		return tparseResolved(trules[227], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "dot":
+		n, err := parseResolved(rules[228], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "binaryOp":
+		n, err := parseResolved(rules[229], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "orOp":
+		n, err := parseResolved(rules[230], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "andOp":
+		n, err := parseResolved(rules[231], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "relOp":
+		n, err := parseResolved(rules[232], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "addOp":
+		n, err := parseResolved(rules[233], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "mulOp":
+		n, err := parseResolved(rules[234], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "unaryOp":
+		n, err := parseResolved(rules[235], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "assignOp":
+		n, err := parseResolved(rules[236], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "incDecOp":
+		n, err := parseResolved(rules[237], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "semi":
+		n, err := parseResolved(rules[238], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "stmtTerm":
+		n, err := parseResolved(rules[239], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "fieldTerm":
+		n, err := parseResolved(rules[240], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "groupTerm":
+		n, err := parseResolved(rules[241], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "hsemi":
+		n, err := parseResolved(rules[242], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "sp":
+		n, err := parseResolved(rules[243], nseen, input, o)
+		if n == nil {
+			var zero []*Node
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list1(astNode(n)), err
+	case "ws":
+		n, err := parseResolved(rules[244], nseen, input, o)
+		if n == nil {
+			var zero []*Node
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list1(astNode(n)), err
+	case "blockComment":
+		n, err := parseResolved(rules[245], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "blockText":
+		n, err := parseResolved(rules[246], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "validFFFD":
+		n, err := parseResolved(rules[247], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "dirBlock":
+		n, err := parseResolved(rules[248], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "dirCharBlock":
+		n, err := parseResolved(rules[249], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "dirSegBlock":
+		n, err := parseResolved(rules[250], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "dirMidBlock":
+		n, err := parseResolved(rules[251], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "dirNum":
+		n, err := parseResolved(rules[252], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "dirUint":
+		n, err := parseResolved(rules[253], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ident":
+		a := &tslabs{}
+		return tparseResolved(trules[254], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "idStart":
+		n, err := parseResolved(rules[255], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "idRest":
+		n, err := parseResolved(rules[256], nseen, input, o)
+		if n == nil {
+			var zero []*Node
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list1(astNode(n)), err
+	case "idChar":
+		a := &tslabs{}
+		return tparseResolved(trules[257], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "keyword":
+		n, err := parseResolved(rules[258], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_break":
+		n, err := parseResolved(rules[259], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_case":
+		n, err := parseResolved(rules[260], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_chan":
+		n, err := parseResolved(rules[261], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_const":
+		n, err := parseResolved(rules[262], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_continue":
+		n, err := parseResolved(rules[263], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_default":
+		n, err := parseResolved(rules[264], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_defer":
+		n, err := parseResolved(rules[265], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_else":
+		n, err := parseResolved(rules[266], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_fallthrough":
+		n, err := parseResolved(rules[267], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_for":
+		n, err := parseResolved(rules[268], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_func":
+		n, err := parseResolved(rules[269], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_go":
+		n, err := parseResolved(rules[270], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_goto":
+		n, err := parseResolved(rules[271], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_if":
+		n, err := parseResolved(rules[272], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_import":
+		n, err := parseResolved(rules[273], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_interface":
+		n, err := parseResolved(rules[274], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_map":
+		n, err := parseResolved(rules[275], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_package":
+		n, err := parseResolved(rules[276], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_range":
+		n, err := parseResolved(rules[277], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_return":
+		n, err := parseResolved(rules[278], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_select":
+		n, err := parseResolved(rules[279], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_struct":
+		n, err := parseResolved(rules[280], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_switch":
+		n, err := parseResolved(rules[281], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_type":
+		n, err := parseResolved(rules[282], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_var":
+		n, err := parseResolved(rules[283], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "basicLit":
+		a := &tslabs{}
+		return tparseResolved(trules[284], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "intLit":
+		a := &tslabs{}
+		return tparseResolved(trules[285], input, o, a, func(v any) *IntLit { return tAs[*IntLit](v) })
+	case "floatLit":
+		a := &tslabs{}
+		return tparseResolved(trules[286], input, o, a, func(v any) *FloatLit { return tAs[*FloatLit](v) })
+	case "imagLit":
+		a := &tslabs{}
+		return tparseResolved(trules[287], input, o, a, func(v any) *ImagLit { return tAs[*ImagLit](v) })
+	case "imagInt":
+		n, err := parseResolved(rules[288], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "decimalFloat":
+		n, err := parseResolved(rules[289], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "decimalExp":
+		n, err := parseResolved(rules[290], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "hexFloat":
+		n, err := parseResolved(rules[291], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "decDigits":
+		n, err := parseResolved(rules[292], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "hexDigits":
+		n, err := parseResolved(rules[293], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "octDigits":
+		n, err := parseResolved(rules[294], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "binDigits":
+		n, err := parseResolved(rules[295], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "charLit":
+		a := &tslabs{}
+		return tparseResolved(trules[296], input, o, a, func(v any) *CharLit { return tAs[*CharLit](v) })
+	case "stringLit":
+		a := &tslabs{}
+		return tparseResolved(trules[297], input, o, a, func(v any) *StringLit { return tAs[*StringLit](v) })
+	case "srcChar":
+		n, err := parseResolved(rules[298], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "charEscape":
+		n, err := parseResolved(rules[299], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "stringEscape":
+		n, err := parseResolved(rules[300], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "escapeValue":
+		n, err := parseResolved(rules[301], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "hexDigit":
+		a := &tslabs{}
+		return tparseResolved(trules[302], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "uLetter":
+		n, err := parseResolved(rules[303], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "uDigit":
+		n, err := parseResolved(rules[304], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	default:
+		return nil, fmt.Errorf("rule %s is not defined", name)
+	}
 }
 
 var lit1 = []rune("\ufeff")

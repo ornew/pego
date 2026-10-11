@@ -2449,6 +2449,11 @@ func tparse[T any](r *trule, input string, opts []ParseOption, ext any, conv fun
 		var zero T
 		return zero, err
 	}
+	return tparseResolved(r, input, o, ext, conv)
+}
+
+// tparseResolved consumes options already applied by the public entry point.
+func tparseResolved[T any](r *trule, input string, o parseOptions, ext any, conv func(any) T) (T, error) {
 	p, _ := tpool.Get().(*tparser)
 	if p == nil {
 		p = &tparser{parser: &parser{}}
@@ -3965,6 +3970,109 @@ type tslabs struct {
 	tl1Chunk astChunk[*Field]
 }
 
+func (a *astConv) toMatch(n *Node) *Match {
+	if n == nil || n.Type() != "Match" {
+		return nil
+	}
+	v := astNew(&a.match)
+	*v = Match{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toError(n *Node) *Error {
+	if n == nil || n.Type() != "Error" {
+		return nil
+	}
+	msg, _ := n.Field("message").(string)
+	v := astNew(&a.error)
+	*v = Error{Span: Span{int(n.Start), int(n.End)}, Text: n.Text, Message: msg}
+	return v
+}
+
+// anyValue converts a value of a statically unknown type into the typed value of its type (CST
+// nodes stay *Node).
+func (a *astConv) anyValue(v any) any {
+	n, ok := v.(*Node)
+	if !ok || n == nil {
+		return v
+	}
+	switch n.Type() {
+	case "Match":
+		return a.toMatch(n)
+	case "Error":
+		return a.toError(n)
+	case "Field":
+		return a.toField(n)
+	case "File":
+		return a.toFile(n)
+	case "Record":
+		return a.toRecord(n)
+	}
+	return n
+}
+
+func (a *astConv) toField(n *Node) *Field {
+	if n == nil || n.Type() != "Field" {
+		return nil
+	}
+	v := astNew(&a.tField)
+	*v = Field{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toFile(n *Node) *File {
+	if n == nil || n.Type() != "File" {
+		return nil
+	}
+	v := astNew(&a.tFile)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Records = a.list0(astNode(n.Field("Records")))
+	return v
+}
+
+func (a *astConv) toRecord(n *Node) *Record {
+	if n == nil || n.Type() != "Record" {
+		return nil
+	}
+	v := astNew(&a.tRecord)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Fields = a.list1(astNode(n.Field("Fields")))
+	return v
+}
+
+func (a *astConv) list0(n *Node) []*Record {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list0Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toRecord(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list1(n *Node) []*Field {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list1Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toField(astNode(c))
+	}
+	return out
+}
+
+// astConv converts nodes into typed values.
+type astConv struct {
+	match      astChunk[Match]
+	error      astChunk[Error]
+	tField     astChunk[Field]
+	tFile      astChunk[File]
+	tRecord    astChunk[Record]
+	list0Chunk astChunk[*Record]
+	list1Chunk astChunk[*Field]
+}
+
 // ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
 // from errors, the result is returned together with SyntaxErrors; an Error node where a struct or
 // terminal type is expected becomes nil.
@@ -3972,6 +4080,42 @@ type tslabs struct {
 func ParseAST(input string, opts ...ParseOption) (*File, error) {
 	a := &tslabs{}
 	return tparse(trules[0], input, opts, a, func(v any) *File { return tAs[*File](v) })
+}
+
+// ParseRuleAST parses the whole input with the named rule and returns its typed value.
+// Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.
+// Invalid options and undefined names return nil with an error. Rule result types:
+//
+//	main: *File
+//	record: *Record
+//	field: *Field
+//	eol: any
+func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
+	o, err := resolveOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+	switch name {
+	case "main":
+		a := &tslabs{}
+		return tparseResolved(trules[0], input, o, a, func(v any) *File { return tAs[*File](v) })
+	case "record":
+		a := &tslabs{}
+		return tparseResolved(trules[1], input, o, a, func(v any) *Record { return tAs[*Record](v) })
+	case "field":
+		a := &tslabs{}
+		return tparseResolved(trules[2], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "eol":
+		n, err := parseResolved(rules[3], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	default:
+		return nil, fmt.Errorf("rule %s is not defined", name)
+	}
 }
 
 var lit1 = []rune("\ufeff")

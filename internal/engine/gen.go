@@ -28,8 +28,8 @@ type GenOptions struct {
 	MaxDepth int
 	// Start is the start rule of the generated Parse function.
 	Start string
-	// Types also generates a Go type for each type of the grammar and ParseAST, which returns the
-	// result as values of those types (see gen_types.go).
+	// Types generates Go types, ParseAST for the start rule, and ParseRuleAST
+	// for a named rule as values of those types (see gen_types.go).
 	Types bool
 	// Recognize also generates Recognize, which checks the input without building a tree (as the
 	// engine's ParseOptions.Recognize does).
@@ -37,8 +37,8 @@ type GenOptions struct {
 	// OmitPackageDoc leaves out the package comment, for a package that documents itself in another
 	// file.
 	OmitPackageDoc bool
-	// convertTypes makes ParseAST convert the result of Parse even when the typed runtime could
-	// build it (for tests).
+	// convertTypes makes typed entry points convert Node results even when the
+	// typed runtime could build them (for tests).
 	convertTypes bool
 	// disableTypedCuts keeps the general typed cut route for differential tests
 	// and latest-generator performance controls. It adds no parser-time branch.

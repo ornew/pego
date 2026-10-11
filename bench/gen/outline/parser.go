@@ -2449,6 +2449,11 @@ func tparse[T any](r *trule, input string, opts []ParseOption, ext any, conv fun
 		var zero T
 		return zero, err
 	}
+	return tparseResolved(r, input, o, ext, conv)
+}
+
+// tparseResolved consumes options already applied by the public entry point.
+func tparseResolved[T any](r *trule, input string, o parseOptions, ext any, conv func(any) T) (T, error) {
 	p, _ := tpool.Get().(*tparser)
 	if p == nil {
 		p = &tparser{parser: &parser{}}
@@ -3890,6 +3895,73 @@ type tslabs struct {
 	tl0Chunk astChunk[*Item]
 }
 
+func (a *astConv) toMatch(n *Node) *Match {
+	if n == nil || n.Type() != "Match" {
+		return nil
+	}
+	v := astNew(&a.match)
+	*v = Match{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toError(n *Node) *Error {
+	if n == nil || n.Type() != "Error" {
+		return nil
+	}
+	msg, _ := n.Field("message").(string)
+	v := astNew(&a.error)
+	*v = Error{Span: Span{int(n.Start), int(n.End)}, Text: n.Text, Message: msg}
+	return v
+}
+
+// anyValue converts a value of a statically unknown type into the typed value of its type (CST
+// nodes stay *Node).
+func (a *astConv) anyValue(v any) any {
+	n, ok := v.(*Node)
+	if !ok || n == nil {
+		return v
+	}
+	switch n.Type() {
+	case "Match":
+		return a.toMatch(n)
+	case "Error":
+		return a.toError(n)
+	case "Item":
+		return a.toItem(n)
+	}
+	return n
+}
+
+func (a *astConv) toItem(n *Node) *Item {
+	if n == nil || n.Type() != "Item" {
+		return nil
+	}
+	v := astNew(&a.tItem)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Text = a.toMatch(astNode(n.Field("Text")))
+	v.Children = a.list0(astNode(n.Field("Children")))
+	return v
+}
+
+func (a *astConv) list0(n *Node) []*Item {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list0Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toItem(astNode(c))
+	}
+	return out
+}
+
+// astConv converts nodes into typed values.
+type astConv struct {
+	match      astChunk[Match]
+	error      astChunk[Error]
+	tItem      astChunk[Item]
+	list0Chunk astChunk[*Item]
+}
+
 // ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
 // from errors, the result is returned together with SyntaxErrors; an Error node where a struct or
 // terminal type is expected becomes nil.
@@ -3897,6 +3969,57 @@ type tslabs struct {
 func ParseAST(input string, opts ...ParseOption) ([]*Item, error) {
 	a := &tslabs{}
 	return tparse(trules[0], input, opts, a, func(v any) []*Item { return tl0(a, v) })
+}
+
+// ParseRuleAST parses the whole input with the named rule and returns its typed value.
+// Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.
+// Invalid options and undefined names return nil with an error. Rule result types:
+//
+//	main: []*Item
+//	block: []*Item
+//	item: *Item
+//	children: []*Item
+//	spaces: *Match
+//	line: *Match
+//	eol: *Match
+//	blank: *Node
+func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
+	o, err := resolveOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+	switch name {
+	case "main":
+		a := &tslabs{}
+		return tparseResolved(trules[0], input, o, a, func(v any) []*Item { return tl0(a, v) })
+	case "block":
+		a := &tslabs{}
+		return tparseResolved(trules[1], input, o, a, func(v any) []*Item { return tl0(a, v) })
+	case "item":
+		a := &tslabs{}
+		return tparseResolved(trules[2], input, o, a, func(v any) *Item { return tAs[*Item](v) })
+	case "children":
+		a := &tslabs{}
+		return tparseResolved(trules[3], input, o, a, func(v any) []*Item { return tl0(a, v) })
+	case "spaces":
+		a := &tslabs{}
+		return tparseResolved(trules[4], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "line":
+		a := &tslabs{}
+		return tparseResolved(trules[5], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "eol":
+		a := &tslabs{}
+		return tparseResolved(trules[6], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "blank":
+		n, err := parseResolved(rules[7], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	default:
+		return nil, fmt.Errorf("rule %s is not defined", name)
+	}
 }
 
 var scope2 = []string{"i"}

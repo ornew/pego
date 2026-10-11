@@ -2448,6 +2448,11 @@ func tparse[T any](r *trule, input string, opts []ParseOption, ext any, conv fun
 		var zero T
 		return zero, err
 	}
+	return tparseResolved(r, input, o, ext, conv)
+}
+
+// tparseResolved consumes options already applied by the public entry point.
+func tparseResolved[T any](r *trule, input string, o parseOptions, ext any, conv func(any) T) (T, error) {
 	p, _ := tpool.Get().(*tparser)
 	if p == nil {
 		p = &tparser{parser: &parser{}}
@@ -9916,20 +9921,20 @@ func tmk_AlterCmd(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f
 	v.Column = tAs[*Name](f3)
 	v.Type = tAs[*Type](f4)
 	v.Generated = tAs[*GeneratedColumn](f5)
-	v.Constraints = tl0(a, f6)
+	v.Constraints = tl34(a, f6)
 	v.Constraint = tAs[*TableConstraint](f7)
 	v.Name = tAs[*Ident](f8)
 	v.Expr = tAs[Expr](tpub(f9))
-	v.Exprs = tl1(a, f10)
-	v.SortBy = tl2(a, f11)
+	v.Exprs = tl4(a, f10)
+	v.SortBy = tl30(a, f11)
 	v.Collate = tAs[*Name](f12)
 	v.Using = tAs[Expr](tpub(f13))
 	v.Value = astString(f14)
-	v.Options = tl3(a, f15)
-	v.Identity = tl4(a, f16)
+	v.Options = tl22(a, f15)
+	v.Identity = tl24(a, f16)
 	v.When = astString(f17)
 	v.Behavior = astString(f18)
-	v.Generic = tl5(a, f19)
+	v.Generic = tl31(a, f19)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10004,7 +10009,7 @@ func tmk_AlterSequenceStmt(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	v := astNew(&a.tAlterSequenceStmt)
 	v.IfExists = astBool(f0)
 	v.Name = tAs[*Name](f1)
-	v.Options = tl4(a, f2)
+	v.Options = tl24(a, f2)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10025,7 +10030,7 @@ func tmk_AlterTableStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 
 	v.Name = tAs[*Name](f2)
 	v.Only = astBool(f3)
 	v.Star = astBool(f4)
-	v.Commands = tl6(a, f5)
+	v.Commands = tl29(a, f5)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10046,7 +10051,7 @@ func tmk_AnalyzeStmt(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	v := astNew(&a.tAnalyzeStmt)
 	v.Verbose = astBool(f0)
 	v.Table = tAs[*Name](f1)
-	v.Columns = tl7(a, f2)
+	v.Columns = tl1(a, f2)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10096,7 +10101,7 @@ func tmk_ArrayDim(c *tctx, final bool, f0 any) any {
 func tmk_ArrayLit(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tArrayLit)
-	v.Items = tl1(a, f0)
+	v.Items = tl4(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10161,7 +10166,7 @@ func tmk_AttachStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any,
 	v.Database = astBool(f2)
 	v.Path = tAs[*StringLit](f3)
 	v.Alias = tAs[*Ident](f4)
-	v.Options = tl8(a, f5)
+	v.Options = tl32(a, f5)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10247,8 +10252,8 @@ func tmk_CTE(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tCTE)
 	v.Name = tAs[*Ident](f0)
-	v.Columns = tl7(a, f1)
-	v.UsingKey = tl7(a, f2)
+	v.Columns = tl1(a, f1)
+	v.UsingKey = tl1(a, f2)
 	v.Materialized = tpubMatch(f3)
 	v.Query = tAs[Statement](tpub(f4))
 	if final {
@@ -10283,7 +10288,7 @@ func tmk_Case(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tCase)
 	v.Arg = tAs[Expr](tpub(f0))
-	v.Whens = tl9(a, f1)
+	v.Whens = tl3(a, f1)
 	v.Else = tAs[Expr](tpub(f2))
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -10376,7 +10381,7 @@ func tmk_ColumnConstraint(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f
 	v.Reference = tAs[*Reference](f3)
 	v.Collation = tAs[*Name](f4)
 	v.Compression = tAs[*Ident](f5)
-	v.Options = tl10(a, f6)
+	v.Options = tl23(a, f6)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10399,7 +10404,7 @@ func tmk_ColumnDef(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	v.Name = tAs[*Ident](f0)
 	v.Type = tAs[*Type](f1)
 	v.Generated = tAs[*GeneratedColumn](f2)
-	v.Constraints = tl0(a, f3)
+	v.Constraints = tl34(a, f3)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10416,7 +10421,7 @@ func tmk_ColumnDef(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 func tmk_ColumnRef(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tColumnRef)
-	v.Parts = tl7(a, f0)
+	v.Parts = tl1(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10486,7 +10491,7 @@ func tmk_CopyOption(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	v := astNew(&a.tCopyOption)
 	v.Name = astString(f0)
 	v.Value = astString(f1)
-	v.Columns = tl7(a, f2)
+	v.Columns = tl1(a, f2)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10504,15 +10509,15 @@ func tmk_CopyStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f
 	v := astNew(&a.tCopyStmt)
 	v.Binary = astBool(f0)
 	v.Table = tAs[*Name](f1)
-	v.Columns = tl7(a, f2)
+	v.Columns = tl1(a, f2)
 	v.Query = tAs[*Select](f3)
 	v.Direction = astString(f4)
 	v.Program = astBool(f5)
 	v.File = tAs[Expr](tpub(f6))
 	v.Std = astString(f7)
 	v.Delimiters = tAs[*StringLit](f8)
-	v.Legacy = tl11(a, f9)
-	v.Options = tl8(a, f10)
+	v.Legacy = tl35(a, f9)
+	v.Options = tl32(a, f10)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10542,8 +10547,8 @@ func tmk_CreateIndexStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4
 	v.Name = tAs[*Ident](f3)
 	v.Table = tAs[*Name](f4)
 	v.Method = tAs[*Ident](f5)
-	v.Params = tl12(a, f6)
-	v.Options = tl3(a, f7)
+	v.Params = tl19(a, f6)
+	v.Options = tl22(a, f7)
 	v.Where = tAs[Expr](tpub(f8))
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -10571,7 +10576,7 @@ func tmk_CreateMacroStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4
 	v.Function = astBool(f2)
 	v.IfNotExists = astBool(f3)
 	v.Name = tAs[*Name](f4)
-	v.Definitions = tl13(a, f5)
+	v.Definitions = tl26(a, f5)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10593,7 +10598,7 @@ func tmk_CreateSchemaStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) a
 	v.OrReplace = astBool(f0)
 	v.IfNotExists = astBool(f1)
 	v.Name = tAs[*Name](f2)
-	v.Elements = tl14(a, f3)
+	v.Elements = tl36(a, f3)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10615,7 +10620,7 @@ func tmk_CreateSecretStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f
 	v.IfNotExists = astBool(f2)
 	v.Name = tAs[*Ident](f3)
 	v.Storage = tAs[*Ident](f4)
-	v.Options = tl15(a, f5)
+	v.Options = tl28(a, f5)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10638,7 +10643,7 @@ func tmk_CreateSequenceStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any,
 	v.Temp = astString(f1)
 	v.IfNotExists = astBool(f2)
 	v.Name = tAs[*Name](f3)
-	v.Options = tl4(a, f4)
+	v.Options = tl24(a, f4)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10660,9 +10665,9 @@ func tmk_CreateTableAsStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, 
 	v.Temp = astString(f1)
 	v.IfNotExists = astBool(f2)
 	v.Name = tAs[*Name](f3)
-	v.Columns = tl7(a, f4)
-	v.PartitionSorted = tl16(a, f5)
-	v.With = tl3(a, f6)
+	v.Columns = tl1(a, f4)
+	v.PartitionSorted = tl37(a, f5)
+	v.With = tl22(a, f6)
 	v.OnCommit = astString(f7)
 	v.Source = tAs[Statement](tpub(f8))
 	v.WithData = astString(f9)
@@ -10692,9 +10697,9 @@ func tmk_CreateTableStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4
 	v.Temp = astString(f1)
 	v.IfNotExists = astBool(f2)
 	v.Name = tAs[*Name](f3)
-	v.Elements = tl17(a, f4)
-	v.PartitionSorted = tl16(a, f5)
-	v.With = tl3(a, f6)
+	v.Elements = tl21(a, f4)
+	v.PartitionSorted = tl37(a, f5)
+	v.With = tl22(a, f6)
 	v.OnCommit = astString(f7)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -10721,7 +10726,7 @@ func tmk_CreateTypeStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 
 	v.IfNotExists = astBool(f2)
 	v.Name = tAs[*Name](f3)
 	v.Enum = astBool(f4)
-	v.Values = tl18(a, f5)
+	v.Values = tl25(a, f5)
 	v.Query = tAs[*ParenQuery](f6)
 	v.Type = tAs[*Type](f7)
 	if final {
@@ -10749,8 +10754,8 @@ func tmk_CreateViewStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 
 	v.Recursive = astBool(f2)
 	v.IfNotExists = astBool(f3)
 	v.Name = tAs[*Name](f4)
-	v.Columns = tl7(a, f5)
-	v.Options = tl3(a, f6)
+	v.Columns = tl1(a, f5)
+	v.Options = tl22(a, f6)
 	v.Query = tAs[*Select](f7)
 	v.CheckOption = astString(f8)
 	if final {
@@ -10808,9 +10813,9 @@ func tmk_DeleteStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any,
 	v := astNew(&a.tDeleteStmt)
 	v.With = tAs[*With](f0)
 	v.Table = tAs[*TargetTable](f1)
-	v.Using = tl19(a, f2)
+	v.Using = tl15(a, f2)
 	v.Where = tAs[Expr](tpub(f3))
-	v.Returning = tl20(a, f4)
+	v.Returning = tl11(a, f4)
 	v.Truncate = astBool(f5)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -10848,7 +10853,7 @@ func tmk_DetachStmt(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 func tmk_DistinctClause(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tDistinctClause)
-	v.On = tl1(a, f0)
+	v.On = tl4(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10902,7 +10907,7 @@ func tmk_DropStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) a
 	v := astNew(&a.tDropStmt)
 	v.Type = astString(f0)
 	v.IfExists = astBool(f1)
-	v.Names = tl21(a, f2)
+	v.Names = tl5(a, f2)
 	v.On = tAs[*Name](f3)
 	v.Behavior = astString(f4)
 	if final {
@@ -10923,7 +10928,7 @@ func tmk_ExecuteStmt(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tExecuteStmt)
 	v.Name = tAs[*Ident](f0)
-	v.Params = tl1(a, f1)
+	v.Params = tl4(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10970,7 +10975,7 @@ func tmk_ExplainStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	v := astNew(&a.tExplainStmt)
 	v.Analyze = astString(f0)
 	v.Verbose = astBool(f1)
-	v.Options = tl22(a, f2)
+	v.Options = tl33(a, f2)
 	v.Stmt = tAs[Statement](tpub(f3))
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -10990,8 +10995,8 @@ func tmk_ExportStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	v := astNew(&a.tExportStmt)
 	v.Database = tAs[*Ident](f0)
 	v.Path = tAs[*StringLit](f1)
-	v.Legacy = tl11(a, f2)
-	v.Options = tl8(a, f3)
+	v.Legacy = tl35(a, f2)
+	v.Options = tl32(a, f3)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -11010,7 +11015,7 @@ func tmk_FieldStep(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	v := astNew(&a.tFieldStep)
 	v.Name = tAs[*Ident](f0)
 	v.Call = astBool(f1)
-	v.Args = tl1(a, f2)
+	v.Args = tl4(a, f2)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -11064,7 +11069,7 @@ func tmk_FuncCall(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f
 	v := astNew(&a.tFuncCall)
 	v.Name = tAs[*Name](f0)
 	v.Quantifier = astString(f1)
-	v.Args = tl1(a, f2)
+	v.Args = tl4(a, f2)
 	v.Variadic = tAs[Expr](tpub(f3))
 	v.OrderBy = tAs[*OrderBy](f4)
 	v.Nulls = astString(f5)
@@ -11096,7 +11101,7 @@ func tmk_FuncTable(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, 
 	v := astNew(&a.tFuncTable)
 	v.Prefix = tAs[*Ident](f0)
 	v.Func = tAs[Expr](tpub(f1))
-	v.RowsFrom = tl23(a, f2)
+	v.RowsFrom = tl38(a, f2)
 	v.Lateral = astBool(f3)
 	v.Ordinality = astBool(f4)
 	v.Alias = tAs[*TableAlias](f5)
@@ -11122,7 +11127,7 @@ func tmk_GeneratedColumn(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4
 	v := astNew(&a.tGeneratedColumn)
 	v.When = astString(f0)
 	v.Identity = astBool(f1)
-	v.SeqOptions = tl4(a, f2)
+	v.SeqOptions = tl24(a, f2)
 	v.Expr = tAs[Expr](tpub(f3))
 	v.Storage = astString(f4)
 	if final {
@@ -11177,7 +11182,7 @@ func tmk_GroupBy(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tGroupBy)
 	v.All = astBool(f0)
-	v.Items = tl1(a, f1)
+	v.Items = tl4(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -11193,7 +11198,7 @@ func tmk_Grouping(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tGrouping)
 	v.Name = astString(f0)
-	v.Args = tl1(a, f1)
+	v.Args = tl4(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -11209,7 +11214,7 @@ func tmk_GroupingSet(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tGroupingSet)
 	v.Kind = astString(f0)
-	v.Items = tl1(a, f1)
+	v.Items = tl4(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -11241,7 +11246,7 @@ func tmk_In(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	v.X = tAs[Expr](tpub(f0))
 	v.Negated = astBool(f1)
 	v.Query = tAs[*ParenQuery](f2)
-	v.Items = tl1(a, f3)
+	v.Items = tl4(a, f3)
 	v.Source = tAs[Expr](tpub(f4))
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -11317,12 +11322,12 @@ func tmk_InsertStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any,
 	v.Table = tAs[*Name](f2)
 	v.Alias = tAs[*Ident](f3)
 	v.By = astString(f4)
-	v.Columns = tl21(a, f5)
+	v.Columns = tl5(a, f5)
 	v.Overriding = astString(f6)
 	v.Query = tAs[*Select](f7)
 	v.DefaultValues = astBool(f8)
 	v.OnConflict = tAs[*OnConflict](f9)
-	v.Returning = tl20(a, f10)
+	v.Returning = tl11(a, f10)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -11397,7 +11402,7 @@ func tmk_IsOf(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tIsOf)
 	v.X = tAs[Expr](tpub(f0))
-	v.Types = tl24(a, f1)
+	v.Types = tl8(a, f1)
 	v.Negated = astBool(f2)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -11418,7 +11423,7 @@ func tmk_Join(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	v.Kind = astString(f1)
 	v.Right = tAs[TableRef](tpub(f2))
 	v.On = tAs[Expr](tpub(f3))
-	v.Using = tl7(a, f4)
+	v.Using = tl1(a, f4)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -11436,7 +11441,7 @@ func tmk_Join(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 func tmk_Lambda(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tLambda)
-	v.Params = tl7(a, f0)
+	v.Params = tl1(a, f0)
 	v.Body = tAs[Expr](tpub(f1))
 	v.Keyword = astBool(f2)
 	if final {
@@ -11499,7 +11504,7 @@ func tmk_ListComp(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tListComp)
 	v.Expr = tAs[Expr](tpub(f0))
-	v.Vars = tl7(a, f1)
+	v.Vars = tl1(a, f1)
 	v.Source = tAs[Expr](tpub(f2))
 	v.Cond = tAs[Expr](tpub(f3))
 	if final {
@@ -11518,7 +11523,7 @@ func tmk_ListComp(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 func tmk_ListLit(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tListLit)
-	v.Items = tl1(a, f0)
+	v.Items = tl4(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -11555,7 +11560,7 @@ func tmk_LockClause(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tLockClause)
 	v.Strength = astString(f0)
-	v.Of = tl21(a, f1)
+	v.Of = tl5(a, f1)
 	v.Wait = astString(f2)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -11572,7 +11577,7 @@ func tmk_LockClause(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 func tmk_MacroDef(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tMacroDef)
-	v.Params = tl25(a, f0)
+	v.Params = tl27(a, f0)
 	v.Expr = tAs[Expr](tpub(f1))
 	v.Query = tAs[ParenContent](tpub(f2))
 	if final {
@@ -11626,7 +11631,7 @@ func tmk_MapEntry(c *tctx, final bool, f0 any, f1 any) any {
 func tmk_MapLit(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tMapLit)
-	v.Entries = tl26(a, f0)
+	v.Entries = tl2(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -11641,11 +11646,11 @@ func tmk_MergeAction(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tMergeAction)
 	v.Kind = astString(f0)
-	v.Set = tl27(a, f1)
+	v.Set = tl20(a, f1)
 	v.ByName = astString(f2)
 	v.Star = astBool(f3)
-	v.Columns = tl7(a, f4)
-	v.Values = tl1(a, f5)
+	v.Columns = tl1(a, f4)
+	v.Values = tl4(a, f5)
 	v.DefaultValues = astBool(f6)
 	v.Message = tAs[Expr](tpub(f7))
 	if final {
@@ -11672,9 +11677,9 @@ func tmk_MergeStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, 
 	v.Target = tAs[*TargetTable](f1)
 	v.Source = tAs[TableRef](tpub(f2))
 	v.On = tAs[Expr](tpub(f3))
-	v.Using = tl7(a, f4)
-	v.Whens = tl28(a, f5)
-	v.Returning = tl20(a, f6)
+	v.Using = tl1(a, f4)
+	v.Whens = tl39(a, f5)
+	v.Returning = tl11(a, f6)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -11714,7 +11719,7 @@ func tmk_MergeWhen(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 func tmk_Name(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tName)
-	v.Parts = tl7(a, f0)
+	v.Parts = tl1(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -11776,11 +11781,11 @@ func tmk_OffsetClause(c *tctx, final bool, f0 any, f1 any) any {
 func tmk_OnConflict(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tOnConflict)
-	v.Target = tl12(a, f0)
+	v.Target = tl19(a, f0)
 	v.TargetWhere = tAs[Expr](tpub(f1))
 	v.Constraint = tAs[*Ident](f2)
 	v.Nothing = astBool(f3)
-	v.Set = tl27(a, f4)
+	v.Set = tl20(a, f4)
 	v.Where = tAs[Expr](tpub(f5))
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -11800,7 +11805,7 @@ func tmk_OnConflict(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any,
 func tmk_OrderBy(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tOrderBy)
-	v.Items = tl2(a, f0)
+	v.Items = tl30(a, f0)
 	v.All = astBool(f1)
 	v.Direction = astString(f2)
 	v.Nulls = astString(f3)
@@ -11867,7 +11872,7 @@ func tmk_PartitionSorted(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tPartitionSorted)
 	v.Kind = tpubMatch(f0)
-	v.Exprs = tl1(a, f1)
+	v.Exprs = tl4(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -11883,7 +11888,7 @@ func tmk_PivotColumn(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tPivotColumn)
 	v.Expr = tAs[Expr](tpub(f0))
-	v.In = tl20(a, f1)
+	v.In = tl11(a, f1)
 	v.Query = tAs[*Select](f2)
 	v.Enum = tAs[*Ident](f3)
 	if final {
@@ -11903,9 +11908,9 @@ func tmk_PivotQuery(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tPivotQuery)
 	v.Source = tAs[TableRef](tpub(f0))
-	v.On = tl29(a, f1)
-	v.Using = tl20(a, f2)
-	v.GroupBy = tl7(a, f3)
+	v.On = tl13(a, f1)
+	v.Using = tl11(a, f2)
+	v.GroupBy = tl1(a, f3)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -11923,9 +11928,9 @@ func tmk_PivotRef(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) a
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tPivotRef)
 	v.Source = tAs[TableRef](tpub(f0))
-	v.Aggregates = tl20(a, f1)
-	v.Values = tl30(a, f2)
-	v.GroupBy = tl7(a, f3)
+	v.Aggregates = tl11(a, f1)
+	v.Values = tl17(a, f2)
+	v.GroupBy = tl1(a, f3)
 	v.Alias = tAs[*TableAlias](f4)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -11944,8 +11949,8 @@ func tmk_PivotRef(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) a
 func tmk_PivotValue(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tPivotValue)
-	v.Header = tl1(a, f0)
-	v.Items = tl20(a, f1)
+	v.Header = tl4(a, f0)
+	v.Items = tl11(a, f1)
 	v.Enum = tAs[*Ident](f2)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -11993,8 +11998,8 @@ func tmk_PragmaStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tPragmaStmt)
 	v.Name = tAs[*Ident](f0)
-	v.Values = tl1(a, f1)
-	v.Args = tl1(a, f2)
+	v.Values = tl4(a, f1)
+	v.Args = tl4(a, f2)
 	v.Call = astBool(f3)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -12013,7 +12018,7 @@ func tmk_PrepareStmt(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tPrepareStmt)
 	v.Name = tAs[*Ident](f0)
-	v.Types = tl24(a, f1)
+	v.Types = tl8(a, f1)
 	v.Stmt = tAs[Statement](tpub(f2))
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -12031,7 +12036,7 @@ func tmk_Reference(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) 
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tReference)
 	v.Table = tAs[*Name](f0)
-	v.Columns = tl7(a, f1)
+	v.Columns = tl1(a, f1)
 	v.Match = tpubMatch(f2)
 	v.OnUpdate = tpubMatch(f3)
 	v.OnDelete = tpubMatch(f4)
@@ -12146,7 +12151,7 @@ func tmk_ResetStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 func tmk_Row(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tRow)
-	v.Items = tl1(a, f0)
+	v.Items = tl4(a, f0)
 	v.Keyword = astBool(f1)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -12163,7 +12168,7 @@ func tmk_RowsFromItem(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tRowsFromItem)
 	v.Func = tAs[Expr](tpub(f0))
-	v.ColDefs = tl31(a, f1)
+	v.ColDefs = tl18(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -12200,7 +12205,7 @@ func tmk_SampleClause(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 an
 func tmk_Script(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tScript)
-	v.Statements = tl14(a, f0)
+	v.Statements = tl36(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -12235,7 +12240,7 @@ func tmk_Select(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 
 	v.OrderBy = tAs[*OrderBy](f2)
 	v.Limit = tAs[*LimitClause](f3)
 	v.Offset = tAs[*OffsetClause](f4)
-	v.Locking = tl32(a, f5)
+	v.Locking = tl14(a, f5)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -12256,13 +12261,13 @@ func tmk_SelectCore(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any,
 	v := astNew(&a.tSelectCore)
 	v.FromFirst = astBool(f0)
 	v.Distinct = tAs[*DistinctClause](f1)
-	v.Items = tl20(a, f2)
+	v.Items = tl11(a, f2)
 	v.Into = tAs[*IntoClause](f3)
-	v.From = tl19(a, f4)
+	v.From = tl15(a, f4)
 	v.Where = tAs[Expr](tpub(f5))
 	v.GroupBy = tAs[*GroupBy](f6)
 	v.Having = tAs[Expr](tpub(f7))
-	v.Windows = tl33(a, f8)
+	v.Windows = tl12(a, f8)
 	v.Qualify = tAs[Expr](tpub(f9))
 	v.Sample = tAs[*SampleClause](f10)
 	if final {
@@ -12328,7 +12333,7 @@ func tmk_SeqOption(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 func tmk_SetClause(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tSetClause)
-	v.Targets = tl21(a, f0)
+	v.Targets = tl5(a, f0)
 	v.Value = tAs[Expr](tpub(f1))
 	v.Paren = astBool(f2)
 	if final {
@@ -12370,7 +12375,7 @@ func tmk_SetStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5
 	v := astNew(&a.tSetStmt)
 	v.Scope = astString(f0)
 	v.Name = tAs[*Name](f1)
-	v.Values = tl1(a, f2)
+	v.Values = tl4(a, f2)
 	v.TimeZone = astString(f3)
 	v.FromCurrent = astBool(f4)
 	v.Schema = tAs[*StringLit](f5)
@@ -12460,8 +12465,8 @@ func tmk_SpecialCall(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any
 	v := astNew(&a.tSpecialCall)
 	v.Name = astString(f0)
 	v.Spec = astString(f1)
-	v.Args = tl1(a, f2)
-	v.From = tl1(a, f3)
+	v.Args = tl4(a, f2)
+	v.From = tl4(a, f3)
 	v.For = tAs[Expr](tpub(f4))
 	v.Placing = tAs[Expr](tpub(f5))
 	v.Chars = tAs[Expr](tpub(f6))
@@ -12487,9 +12492,9 @@ func tmk_Star(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tStar)
 	v.Qualifier = tAs[*Ident](f0)
-	v.Exclude = tl21(a, f1)
-	v.Replace = tl34(a, f2)
-	v.Rename = tl35(a, f3)
+	v.Exclude = tl5(a, f1)
+	v.Replace = tl6(a, f2)
+	v.Rename = tl7(a, f3)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -12522,7 +12527,7 @@ func tmk_StructField(c *tctx, final bool, f0 any, f1 any) any {
 func tmk_StructLit(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tStructLit)
-	v.Fields = tl36(a, f0)
+	v.Fields = tl40(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -12573,8 +12578,8 @@ func tmk_TableAlias(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tTableAlias)
 	v.Name = tAs[*Ident](f0)
-	v.Columns = tl7(a, f1)
-	v.ColDefs = tl31(a, f2)
+	v.Columns = tl1(a, f1)
+	v.ColDefs = tl18(a, f2)
 	v.As = astBool(f3)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -12594,12 +12599,12 @@ func tmk_TableConstraint(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4
 	v := astNew(&a.tTableConstraint)
 	v.Name = tAs[*Ident](f0)
 	v.Kind = astString(f1)
-	v.Columns = tl7(a, f2)
+	v.Columns = tl1(a, f2)
 	v.Expr = tAs[Expr](tpub(f3))
 	v.Reference = tAs[*Reference](f4)
 	v.Index = tAs[*Ident](f5)
-	v.Options = tl10(a, f6)
-	v.Attributes = tl37(a, f7)
+	v.Options = tl23(a, f6)
+	v.Attributes = tl0(a, f7)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -12621,7 +12626,7 @@ func tmk_TableLike(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tTableLike)
 	v.Table = tAs[*Name](f0)
-	v.Options = tl37(a, f1)
+	v.Options = tl0(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -12691,10 +12696,10 @@ func tmk_Type(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 an
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tType)
 	v.Name = astString(f0)
-	v.Mods = tl1(a, f1)
-	v.Fields = tl38(a, f2)
-	v.Elems = tl24(a, f3)
-	v.Dims = tl39(a, f4)
+	v.Mods = tl4(a, f1)
+	v.Fields = tl10(a, f2)
+	v.Elems = tl8(a, f3)
+	v.Dims = tl9(a, f4)
 	v.Zone = astString(f5)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -12777,9 +12782,9 @@ func tmk_UnpivotQuery(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tUnpivotQuery)
 	v.Source = tAs[TableRef](tpub(f0))
-	v.On = tl20(a, f1)
+	v.On = tl11(a, f1)
 	v.Name = tAs[*Ident](f2)
-	v.Values = tl7(a, f3)
+	v.Values = tl1(a, f3)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -12798,8 +12803,8 @@ func tmk_UnpivotRef(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any)
 	v := astNew(&a.tUnpivotRef)
 	v.Source = tAs[TableRef](tpub(f0))
 	v.IncludeNulls = tpubMatch(f1)
-	v.Header = tl7(a, f2)
-	v.Values = tl40(a, f3)
+	v.Header = tl1(a, f2)
+	v.Values = tl16(a, f3)
 	v.Alias = tAs[*TableAlias](f4)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -12818,8 +12823,8 @@ func tmk_UnpivotRef(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any)
 func tmk_UnpivotValue(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tUnpivotValue)
-	v.Header = tl7(a, f0)
-	v.Items = tl20(a, f1)
+	v.Header = tl1(a, f0)
+	v.Items = tl11(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -12835,7 +12840,7 @@ func tmk_UpdateExtensionsStmt(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tUpdateExtensionsStmt)
 	v.With = tAs[*With](f0)
-	v.Names = tl7(a, f1)
+	v.Names = tl1(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -12852,10 +12857,10 @@ func tmk_UpdateStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any,
 	v := astNew(&a.tUpdateStmt)
 	v.With = tAs[*With](f0)
 	v.Table = tAs[*TargetTable](f1)
-	v.Set = tl27(a, f2)
-	v.From = tl19(a, f3)
+	v.Set = tl20(a, f2)
+	v.From = tl15(a, f3)
 	v.Where = tAs[Expr](tpub(f4))
-	v.Returning = tl20(a, f5)
+	v.Returning = tl11(a, f5)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -12891,10 +12896,10 @@ func tmk_VacuumStmt(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any,
 	v.Full = astBool(f0)
 	v.Freeze = astBool(f1)
 	v.Verbose = astBool(f2)
-	v.Options = tl37(a, f3)
+	v.Options = tl0(a, f3)
 	v.Analyze = tAs[*AnalyzeStmt](f4)
 	v.Table = tAs[*Name](f5)
-	v.Columns = tl7(a, f6)
+	v.Columns = tl1(a, f6)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -12948,7 +12953,7 @@ func tmk_ValuesRef(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 func tmk_ValuesRow(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tValuesRow)
-	v.Items = tl1(a, f0)
+	v.Items = tl4(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -13011,7 +13016,7 @@ func tmk_WindowSpec(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tWindowSpec)
 	v.Base = tAs[*Ident](f0)
-	v.PartitionBy = tl1(a, f1)
+	v.PartitionBy = tl4(a, f1)
 	v.OrderBy = tAs[*OrderBy](f2)
 	v.Frame = tAs[*Frame](f3)
 	if final {
@@ -13042,562 +13047,7 @@ func tmk_With(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
-func tl0(a *tslabs, v any) []*ColumnConstraint {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*ColumnConstraint{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl0Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*ColumnConstraint](c)
-	}
-	return out
-}
-
-func tl1(a *tslabs, v any) []Expr {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []Expr{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl1Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[Expr](tpub(c))
-	}
-	return out
-}
-
-func tl2(a *tslabs, v any) []*SortItem {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*SortItem{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl2Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*SortItem](c)
-	}
-	return out
-}
-
-func tl3(a *tslabs, v any) []*Reloption {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*Reloption{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl3Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*Reloption](c)
-	}
-	return out
-}
-
-func tl4(a *tslabs, v any) []*SeqOption {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*SeqOption{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl4Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*SeqOption](c)
-	}
-	return out
-}
-
-func tl5(a *tslabs, v any) []*GenericAlterOption {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*GenericAlterOption{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl5Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*GenericAlterOption](c)
-	}
-	return out
-}
-
-func tl6(a *tslabs, v any) []*AlterCmd {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*AlterCmd{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl6Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*AlterCmd](c)
-	}
-	return out
-}
-
-func tl7(a *tslabs, v any) []*Ident {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*Ident{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl7Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*Ident](c)
-	}
-	return out
-}
-
-func tl8(a *tslabs, v any) []*GenericOption {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*GenericOption{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl8Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*GenericOption](c)
-	}
-	return out
-}
-
-func tl9(a *tslabs, v any) []*When {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*When{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl9Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*When](c)
-	}
-	return out
-}
-
-func tl10(a *tslabs, v any) []*DefElem {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*DefElem{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl10Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*DefElem](c)
-	}
-	return out
-}
-
-func tl11(a *tslabs, v any) []*CopyOption {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*CopyOption{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl11Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*CopyOption](c)
-	}
-	return out
-}
-
-func tl12(a *tslabs, v any) []*IndexElem {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*IndexElem{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl12Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*IndexElem](c)
-	}
-	return out
-}
-
-func tl13(a *tslabs, v any) []*MacroDef {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*MacroDef{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl13Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*MacroDef](c)
-	}
-	return out
-}
-
-func tl14(a *tslabs, v any) []Statement {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []Statement{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl14Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[Statement](tpub(c))
-	}
-	return out
-}
-
-func tl15(a *tslabs, v any) []*SecretOption {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*SecretOption{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl15Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*SecretOption](c)
-	}
-	return out
-}
-
-func tl16(a *tslabs, v any) []*PartitionSorted {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*PartitionSorted{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl16Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*PartitionSorted](c)
-	}
-	return out
-}
-
-func tl17(a *tslabs, v any) []TableElement {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []TableElement{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl17Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[TableElement](tpub(c))
-	}
-	return out
-}
-
-func tl18(a *tslabs, v any) []*StringLit {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*StringLit{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl18Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*StringLit](c)
-	}
-	return out
-}
-
-func tl19(a *tslabs, v any) []TableRef {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []TableRef{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl19Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[TableRef](tpub(c))
-	}
-	return out
-}
-
-func tl20(a *tslabs, v any) []*SelectItem {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*SelectItem{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl20Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*SelectItem](c)
-	}
-	return out
-}
-
-func tl21(a *tslabs, v any) []*Name {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*Name{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl21Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*Name](c)
-	}
-	return out
-}
-
-func tl22(a *tslabs, v any) []*ExplainOption {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*ExplainOption{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl22Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*ExplainOption](c)
-	}
-	return out
-}
-
-func tl23(a *tslabs, v any) []*RowsFromItem {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*RowsFromItem{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl23Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*RowsFromItem](c)
-	}
-	return out
-}
-
-func tl24(a *tslabs, v any) []*Type {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*Type{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl24Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*Type](c)
-	}
-	return out
-}
-
-func tl25(a *tslabs, v any) []*MacroParam {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*MacroParam{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl25Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*MacroParam](c)
-	}
-	return out
-}
-
-func tl26(a *tslabs, v any) []*MapEntry {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*MapEntry{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl26Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*MapEntry](c)
-	}
-	return out
-}
-
-func tl27(a *tslabs, v any) []*SetClause {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*SetClause{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl27Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*SetClause](c)
-	}
-	return out
-}
-
-func tl28(a *tslabs, v any) []*MergeWhen {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*MergeWhen{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl28Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*MergeWhen](c)
-	}
-	return out
-}
-
-func tl29(a *tslabs, v any) []*PivotColumn {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*PivotColumn{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl29Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*PivotColumn](c)
-	}
-	return out
-}
-
-func tl30(a *tslabs, v any) []*PivotValue {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*PivotValue{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl30Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*PivotValue](c)
-	}
-	return out
-}
-
-func tl31(a *tslabs, v any) []*ColDef {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*ColDef{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl31Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*ColDef](c)
-	}
-	return out
-}
-
-func tl32(a *tslabs, v any) []*LockClause {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*LockClause{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl32Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*LockClause](c)
-	}
-	return out
-}
-
-func tl33(a *tslabs, v any) []*WindowDef {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*WindowDef{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl33Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*WindowDef](c)
-	}
-	return out
-}
-
-func tl34(a *tslabs, v any) []*ReplaceItem {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*ReplaceItem{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl34Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*ReplaceItem](c)
-	}
-	return out
-}
-
-func tl35(a *tslabs, v any) []*RenameItem {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*RenameItem{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl35Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*RenameItem](c)
-	}
-	return out
-}
-
-func tl36(a *tslabs, v any) []*StructField {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*StructField{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl36Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*StructField](c)
-	}
-	return out
-}
-
-func tl37(a *tslabs, v any) []*Match {
+func tl0(a *tslabs, v any) []*Match {
 	if v == nil {
 		return nil
 	}
@@ -13605,29 +13055,134 @@ func tl37(a *tslabs, v any) []*Match {
 	if n == nil {
 		return []*Match{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl37Chunk, len(n.kids))
+	out := astSlice(&a.tl0Chunk, len(n.kids))
 	for i, c := range n.kids {
 		out[i] = tpubMatch(c)
 	}
 	return out
 }
 
-func tl38(a *tslabs, v any) []*TypeField {
+func tl1(a *tslabs, v any) []*Ident {
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*tnode)
 	if n == nil {
-		return []*TypeField{} // another node (an Error), as conversion makes an empty list of it
+		return []*Ident{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl38Chunk, len(n.kids))
+	out := astSlice(&a.tl1Chunk, len(n.kids))
 	for i, c := range n.kids {
-		out[i] = tAs[*TypeField](c)
+		out[i] = tAs[*Ident](c)
 	}
 	return out
 }
 
-func tl39(a *tslabs, v any) []*ArrayDim {
+func tl2(a *tslabs, v any) []*MapEntry {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*MapEntry{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl2Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*MapEntry](c)
+	}
+	return out
+}
+
+func tl3(a *tslabs, v any) []*When {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*When{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl3Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*When](c)
+	}
+	return out
+}
+
+func tl4(a *tslabs, v any) []Expr {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []Expr{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl4Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[Expr](tpub(c))
+	}
+	return out
+}
+
+func tl5(a *tslabs, v any) []*Name {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*Name{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl5Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*Name](c)
+	}
+	return out
+}
+
+func tl6(a *tslabs, v any) []*ReplaceItem {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*ReplaceItem{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl6Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*ReplaceItem](c)
+	}
+	return out
+}
+
+func tl7(a *tslabs, v any) []*RenameItem {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*RenameItem{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl7Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*RenameItem](c)
+	}
+	return out
+}
+
+func tl8(a *tslabs, v any) []*Type {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*Type{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl8Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*Type](c)
+	}
+	return out
+}
+
+func tl9(a *tslabs, v any) []*ArrayDim {
 	if v == nil {
 		return nil
 	}
@@ -13635,14 +13190,104 @@ func tl39(a *tslabs, v any) []*ArrayDim {
 	if n == nil {
 		return []*ArrayDim{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl39Chunk, len(n.kids))
+	out := astSlice(&a.tl9Chunk, len(n.kids))
 	for i, c := range n.kids {
 		out[i] = tAs[*ArrayDim](c)
 	}
 	return out
 }
 
-func tl40(a *tslabs, v any) []*UnpivotValue {
+func tl10(a *tslabs, v any) []*TypeField {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*TypeField{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl10Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*TypeField](c)
+	}
+	return out
+}
+
+func tl11(a *tslabs, v any) []*SelectItem {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*SelectItem{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl11Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*SelectItem](c)
+	}
+	return out
+}
+
+func tl12(a *tslabs, v any) []*WindowDef {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*WindowDef{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl12Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*WindowDef](c)
+	}
+	return out
+}
+
+func tl13(a *tslabs, v any) []*PivotColumn {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*PivotColumn{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl13Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*PivotColumn](c)
+	}
+	return out
+}
+
+func tl14(a *tslabs, v any) []*LockClause {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*LockClause{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl14Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*LockClause](c)
+	}
+	return out
+}
+
+func tl15(a *tslabs, v any) []TableRef {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []TableRef{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl15Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[TableRef](tpub(c))
+	}
+	return out
+}
+
+func tl16(a *tslabs, v any) []*UnpivotValue {
 	if v == nil {
 		return nil
 	}
@@ -13650,9 +13295,369 @@ func tl40(a *tslabs, v any) []*UnpivotValue {
 	if n == nil {
 		return []*UnpivotValue{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl40Chunk, len(n.kids))
+	out := astSlice(&a.tl16Chunk, len(n.kids))
 	for i, c := range n.kids {
 		out[i] = tAs[*UnpivotValue](c)
+	}
+	return out
+}
+
+func tl17(a *tslabs, v any) []*PivotValue {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*PivotValue{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl17Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*PivotValue](c)
+	}
+	return out
+}
+
+func tl18(a *tslabs, v any) []*ColDef {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*ColDef{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl18Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*ColDef](c)
+	}
+	return out
+}
+
+func tl19(a *tslabs, v any) []*IndexElem {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*IndexElem{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl19Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*IndexElem](c)
+	}
+	return out
+}
+
+func tl20(a *tslabs, v any) []*SetClause {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*SetClause{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl20Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*SetClause](c)
+	}
+	return out
+}
+
+func tl21(a *tslabs, v any) []TableElement {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []TableElement{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl21Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[TableElement](tpub(c))
+	}
+	return out
+}
+
+func tl22(a *tslabs, v any) []*Reloption {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*Reloption{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl22Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*Reloption](c)
+	}
+	return out
+}
+
+func tl23(a *tslabs, v any) []*DefElem {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*DefElem{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl23Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*DefElem](c)
+	}
+	return out
+}
+
+func tl24(a *tslabs, v any) []*SeqOption {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*SeqOption{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl24Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*SeqOption](c)
+	}
+	return out
+}
+
+func tl25(a *tslabs, v any) []*StringLit {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*StringLit{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl25Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*StringLit](c)
+	}
+	return out
+}
+
+func tl26(a *tslabs, v any) []*MacroDef {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*MacroDef{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl26Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*MacroDef](c)
+	}
+	return out
+}
+
+func tl27(a *tslabs, v any) []*MacroParam {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*MacroParam{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl27Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*MacroParam](c)
+	}
+	return out
+}
+
+func tl28(a *tslabs, v any) []*SecretOption {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*SecretOption{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl28Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*SecretOption](c)
+	}
+	return out
+}
+
+func tl29(a *tslabs, v any) []*AlterCmd {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*AlterCmd{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl29Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*AlterCmd](c)
+	}
+	return out
+}
+
+func tl30(a *tslabs, v any) []*SortItem {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*SortItem{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl30Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*SortItem](c)
+	}
+	return out
+}
+
+func tl31(a *tslabs, v any) []*GenericAlterOption {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*GenericAlterOption{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl31Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*GenericAlterOption](c)
+	}
+	return out
+}
+
+func tl32(a *tslabs, v any) []*GenericOption {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*GenericOption{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl32Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*GenericOption](c)
+	}
+	return out
+}
+
+func tl33(a *tslabs, v any) []*ExplainOption {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*ExplainOption{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl33Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*ExplainOption](c)
+	}
+	return out
+}
+
+func tl34(a *tslabs, v any) []*ColumnConstraint {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*ColumnConstraint{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl34Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*ColumnConstraint](c)
+	}
+	return out
+}
+
+func tl35(a *tslabs, v any) []*CopyOption {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*CopyOption{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl35Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*CopyOption](c)
+	}
+	return out
+}
+
+func tl36(a *tslabs, v any) []Statement {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []Statement{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl36Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[Statement](tpub(c))
+	}
+	return out
+}
+
+func tl37(a *tslabs, v any) []*PartitionSorted {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*PartitionSorted{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl37Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*PartitionSorted](c)
+	}
+	return out
+}
+
+func tl38(a *tslabs, v any) []*RowsFromItem {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*RowsFromItem{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl38Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*RowsFromItem](c)
+	}
+	return out
+}
+
+func tl39(a *tslabs, v any) []*MergeWhen {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*MergeWhen{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl39Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*MergeWhen](c)
+	}
+	return out
+}
+
+func tl40(a *tslabs, v any) []*StructField {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*StructField{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl40Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*StructField](c)
 	}
 	return out
 }
@@ -13858,49 +13863,3571 @@ type tslabs struct {
 	tWindowOver            astChunk[WindowOver]
 	tWindowSpec            astChunk[WindowSpec]
 	tWith                  astChunk[With]
-	tl0Chunk               astChunk[*ColumnConstraint]
-	tl1Chunk               astChunk[Expr]
-	tl2Chunk               astChunk[*SortItem]
-	tl3Chunk               astChunk[*Reloption]
-	tl4Chunk               astChunk[*SeqOption]
-	tl5Chunk               astChunk[*GenericAlterOption]
-	tl6Chunk               astChunk[*AlterCmd]
-	tl7Chunk               astChunk[*Ident]
-	tl8Chunk               astChunk[*GenericOption]
-	tl9Chunk               astChunk[*When]
-	tl10Chunk              astChunk[*DefElem]
-	tl11Chunk              astChunk[*CopyOption]
-	tl12Chunk              astChunk[*IndexElem]
-	tl13Chunk              astChunk[*MacroDef]
-	tl14Chunk              astChunk[Statement]
-	tl15Chunk              astChunk[*SecretOption]
-	tl16Chunk              astChunk[*PartitionSorted]
-	tl17Chunk              astChunk[TableElement]
-	tl18Chunk              astChunk[*StringLit]
-	tl19Chunk              astChunk[TableRef]
-	tl20Chunk              astChunk[*SelectItem]
-	tl21Chunk              astChunk[*Name]
-	tl22Chunk              astChunk[*ExplainOption]
-	tl23Chunk              astChunk[*RowsFromItem]
-	tl24Chunk              astChunk[*Type]
-	tl25Chunk              astChunk[*MacroParam]
-	tl26Chunk              astChunk[*MapEntry]
-	tl27Chunk              astChunk[*SetClause]
-	tl28Chunk              astChunk[*MergeWhen]
-	tl29Chunk              astChunk[*PivotColumn]
-	tl30Chunk              astChunk[*PivotValue]
-	tl31Chunk              astChunk[*ColDef]
-	tl32Chunk              astChunk[*LockClause]
-	tl33Chunk              astChunk[*WindowDef]
-	tl34Chunk              astChunk[*ReplaceItem]
-	tl35Chunk              astChunk[*RenameItem]
-	tl36Chunk              astChunk[*StructField]
-	tl37Chunk              astChunk[*Match]
-	tl38Chunk              astChunk[*TypeField]
-	tl39Chunk              astChunk[*ArrayDim]
-	tl40Chunk              astChunk[*UnpivotValue]
+	tl0Chunk               astChunk[*Match]
+	tl1Chunk               astChunk[*Ident]
+	tl2Chunk               astChunk[*MapEntry]
+	tl3Chunk               astChunk[*When]
+	tl4Chunk               astChunk[Expr]
+	tl5Chunk               astChunk[*Name]
+	tl6Chunk               astChunk[*ReplaceItem]
+	tl7Chunk               astChunk[*RenameItem]
+	tl8Chunk               astChunk[*Type]
+	tl9Chunk               astChunk[*ArrayDim]
+	tl10Chunk              astChunk[*TypeField]
+	tl11Chunk              astChunk[*SelectItem]
+	tl12Chunk              astChunk[*WindowDef]
+	tl13Chunk              astChunk[*PivotColumn]
+	tl14Chunk              astChunk[*LockClause]
+	tl15Chunk              astChunk[TableRef]
+	tl16Chunk              astChunk[*UnpivotValue]
+	tl17Chunk              astChunk[*PivotValue]
+	tl18Chunk              astChunk[*ColDef]
+	tl19Chunk              astChunk[*IndexElem]
+	tl20Chunk              astChunk[*SetClause]
+	tl21Chunk              astChunk[TableElement]
+	tl22Chunk              astChunk[*Reloption]
+	tl23Chunk              astChunk[*DefElem]
+	tl24Chunk              astChunk[*SeqOption]
+	tl25Chunk              astChunk[*StringLit]
+	tl26Chunk              astChunk[*MacroDef]
+	tl27Chunk              astChunk[*MacroParam]
+	tl28Chunk              astChunk[*SecretOption]
+	tl29Chunk              astChunk[*AlterCmd]
+	tl30Chunk              astChunk[*SortItem]
+	tl31Chunk              astChunk[*GenericAlterOption]
+	tl32Chunk              astChunk[*GenericOption]
+	tl33Chunk              astChunk[*ExplainOption]
+	tl34Chunk              astChunk[*ColumnConstraint]
+	tl35Chunk              astChunk[*CopyOption]
+	tl36Chunk              astChunk[Statement]
+	tl37Chunk              astChunk[*PartitionSorted]
+	tl38Chunk              astChunk[*RowsFromItem]
+	tl39Chunk              astChunk[*MergeWhen]
+	tl40Chunk              astChunk[*StructField]
 	tl41Chunk              astChunk[*ValuesRow]
 	tl42Chunk              astChunk[*CTE]
+}
+
+func (a *astConv) toMatch(n *Node) *Match {
+	if n == nil || n.Type() != "Match" {
+		return nil
+	}
+	v := astNew(&a.match)
+	*v = Match{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toError(n *Node) *Error {
+	if n == nil || n.Type() != "Error" {
+		return nil
+	}
+	msg, _ := n.Field("message").(string)
+	v := astNew(&a.error)
+	*v = Error{Span: Span{int(n.Start), int(n.End)}, Text: n.Text, Message: msg}
+	return v
+}
+
+// anyValue converts a value of a statically unknown type into the typed value of its type (CST
+// nodes stay *Node).
+func (a *astConv) anyValue(v any) any {
+	n, ok := v.(*Node)
+	if !ok || n == nil {
+		return v
+	}
+	switch n.Type() {
+	case "Match":
+		return a.toMatch(n)
+	case "Error":
+		return a.toError(n)
+	case "BitLit":
+		return a.toBitLit(n)
+	case "BoolLit":
+		return a.toBoolLit(n)
+	case "DefaultExpr":
+		return a.toDefaultExpr(n)
+	case "Ident":
+		return a.toIdent(n)
+	case "IntervalUnit":
+		return a.toIntervalUnit(n)
+	case "NullLit":
+		return a.toNullLit(n)
+	case "Number":
+		return a.toNumber(n)
+	case "Param":
+		return a.toParam(n)
+	case "StringLit":
+		return a.toStringLit(n)
+	case "AlterCmd":
+		return a.toAlterCmd(n)
+	case "AlterDatabaseStmt":
+		return a.toAlterDatabaseStmt(n)
+	case "AlterObjectSchemaStmt":
+		return a.toAlterObjectSchemaStmt(n)
+	case "AlterSequenceStmt":
+		return a.toAlterSequenceStmt(n)
+	case "AlterTableStmt":
+		return a.toAlterTableStmt(n)
+	case "AnalyzeStmt":
+		return a.toAnalyzeStmt(n)
+	case "AnyAll":
+		return a.toAnyAll(n)
+	case "ArrayDim":
+		return a.toArrayDim(n)
+	case "ArrayLit":
+		return a.toArrayLit(n)
+	case "ArraySubquery":
+		return a.toArraySubquery(n)
+	case "AtClause":
+		return a.toAtClause(n)
+	case "AtTimeZone":
+		return a.toAtTimeZone(n)
+	case "AttachStmt":
+		return a.toAttachStmt(n)
+	case "BaseTable":
+		return a.toBaseTable(n)
+	case "Between":
+		return a.toBetween(n)
+	case "Binary":
+		return a.toBinary(n)
+	case "CTE":
+		return a.toCTE(n)
+	case "CallStmt":
+		return a.toCallStmt(n)
+	case "Case":
+		return a.toCase(n)
+	case "Cast":
+		return a.toCast(n)
+	case "CheckpointStmt":
+		return a.toCheckpointStmt(n)
+	case "ColDef":
+		return a.toColDef(n)
+	case "Collate":
+		return a.toCollate(n)
+	case "ColumnConstraint":
+		return a.toColumnConstraint(n)
+	case "ColumnDef":
+		return a.toColumnDef(n)
+	case "ColumnRef":
+		return a.toColumnRef(n)
+	case "ColumnsExpr":
+		return a.toColumnsExpr(n)
+	case "CommentStmt":
+		return a.toCommentStmt(n)
+	case "CopyDatabaseStmt":
+		return a.toCopyDatabaseStmt(n)
+	case "CopyOption":
+		return a.toCopyOption(n)
+	case "CopyStmt":
+		return a.toCopyStmt(n)
+	case "CreateIndexStmt":
+		return a.toCreateIndexStmt(n)
+	case "CreateMacroStmt":
+		return a.toCreateMacroStmt(n)
+	case "CreateSchemaStmt":
+		return a.toCreateSchemaStmt(n)
+	case "CreateSecretStmt":
+		return a.toCreateSecretStmt(n)
+	case "CreateSequenceStmt":
+		return a.toCreateSequenceStmt(n)
+	case "CreateTableAsStmt":
+		return a.toCreateTableAsStmt(n)
+	case "CreateTableStmt":
+		return a.toCreateTableStmt(n)
+	case "CreateTypeStmt":
+		return a.toCreateTypeStmt(n)
+	case "CreateViewStmt":
+		return a.toCreateViewStmt(n)
+	case "DeallocateStmt":
+		return a.toDeallocateStmt(n)
+	case "DefElem":
+		return a.toDefElem(n)
+	case "DeleteStmt":
+		return a.toDeleteStmt(n)
+	case "DetachStmt":
+		return a.toDetachStmt(n)
+	case "DistinctClause":
+		return a.toDistinctClause(n)
+	case "DistinctFrom":
+		return a.toDistinctFrom(n)
+	case "DropSecretStmt":
+		return a.toDropSecretStmt(n)
+	case "DropStmt":
+		return a.toDropStmt(n)
+	case "ExecuteStmt":
+		return a.toExecuteStmt(n)
+	case "Exists":
+		return a.toExists(n)
+	case "ExplainOption":
+		return a.toExplainOption(n)
+	case "ExplainStmt":
+		return a.toExplainStmt(n)
+	case "ExportStmt":
+		return a.toExportStmt(n)
+	case "FieldStep":
+		return a.toFieldStep(n)
+	case "Frame":
+		return a.toFrame(n)
+	case "FrameBound":
+		return a.toFrameBound(n)
+	case "FuncCall":
+		return a.toFuncCall(n)
+	case "FuncTable":
+		return a.toFuncTable(n)
+	case "GeneratedColumn":
+		return a.toGeneratedColumn(n)
+	case "GenericAlterOption":
+		return a.toGenericAlterOption(n)
+	case "GenericOption":
+		return a.toGenericOption(n)
+	case "GroupBy":
+		return a.toGroupBy(n)
+	case "Grouping":
+		return a.toGrouping(n)
+	case "GroupingSet":
+		return a.toGroupingSet(n)
+	case "ImportStmt":
+		return a.toImportStmt(n)
+	case "In":
+		return a.toIn(n)
+	case "IndexElem":
+		return a.toIndexElem(n)
+	case "IndexStep":
+		return a.toIndexStep(n)
+	case "Indirection":
+		return a.toIndirection(n)
+	case "InsertStmt":
+		return a.toInsertStmt(n)
+	case "IntervalLit":
+		return a.toIntervalLit(n)
+	case "IntoClause":
+		return a.toIntoClause(n)
+	case "IsExpr":
+		return a.toIsExpr(n)
+	case "IsOf":
+		return a.toIsOf(n)
+	case "Join":
+		return a.toJoin(n)
+	case "Lambda":
+		return a.toLambda(n)
+	case "Like":
+		return a.toLike(n)
+	case "LimitClause":
+		return a.toLimitClause(n)
+	case "ListComp":
+		return a.toListComp(n)
+	case "ListLit":
+		return a.toListLit(n)
+	case "LoadStmt":
+		return a.toLoadStmt(n)
+	case "LockClause":
+		return a.toLockClause(n)
+	case "MacroDef":
+		return a.toMacroDef(n)
+	case "MacroParam":
+		return a.toMacroParam(n)
+	case "MapEntry":
+		return a.toMapEntry(n)
+	case "MapLit":
+		return a.toMapLit(n)
+	case "MergeAction":
+		return a.toMergeAction(n)
+	case "MergeStmt":
+		return a.toMergeStmt(n)
+	case "MergeWhen":
+		return a.toMergeWhen(n)
+	case "Name":
+		return a.toName(n)
+	case "NamedArg":
+		return a.toNamedArg(n)
+	case "Not":
+		return a.toNot(n)
+	case "OffsetClause":
+		return a.toOffsetClause(n)
+	case "OnConflict":
+		return a.toOnConflict(n)
+	case "OrderBy":
+		return a.toOrderBy(n)
+	case "Paren":
+		return a.toParen(n)
+	case "ParenQuery":
+		return a.toParenQuery(n)
+	case "ParenTable":
+		return a.toParenTable(n)
+	case "PartitionSorted":
+		return a.toPartitionSorted(n)
+	case "PivotColumn":
+		return a.toPivotColumn(n)
+	case "PivotQuery":
+		return a.toPivotQuery(n)
+	case "PivotRef":
+		return a.toPivotRef(n)
+	case "PivotValue":
+		return a.toPivotValue(n)
+	case "PositionalRef":
+		return a.toPositionalRef(n)
+	case "PostfixOp":
+		return a.toPostfixOp(n)
+	case "PragmaStmt":
+		return a.toPragmaStmt(n)
+	case "PrepareStmt":
+		return a.toPrepareStmt(n)
+	case "Reference":
+		return a.toReference(n)
+	case "Reloption":
+		return a.toReloption(n)
+	case "RenameItem":
+		return a.toRenameItem(n)
+	case "RenameStmt":
+		return a.toRenameStmt(n)
+	case "ReplaceItem":
+		return a.toReplaceItem(n)
+	case "ResetStmt":
+		return a.toResetStmt(n)
+	case "Row":
+		return a.toRow(n)
+	case "RowsFromItem":
+		return a.toRowsFromItem(n)
+	case "SampleClause":
+		return a.toSampleClause(n)
+	case "Script":
+		return a.toScript(n)
+	case "SecretOption":
+		return a.toSecretOption(n)
+	case "Select":
+		return a.toSelect(n)
+	case "SelectCore":
+		return a.toSelectCore(n)
+	case "SelectItem":
+		return a.toSelectItem(n)
+	case "SeqOption":
+		return a.toSeqOption(n)
+	case "SetClause":
+		return a.toSetClause(n)
+	case "SetOp":
+		return a.toSetOp(n)
+	case "SetStmt":
+		return a.toSetStmt(n)
+	case "ShowStmt":
+		return a.toShowStmt(n)
+	case "SliceStep":
+		return a.toSliceStep(n)
+	case "SortItem":
+		return a.toSortItem(n)
+	case "SpecialCall":
+		return a.toSpecialCall(n)
+	case "Star":
+		return a.toStar(n)
+	case "StructField":
+		return a.toStructField(n)
+	case "StructLit":
+		return a.toStructLit(n)
+	case "Subquery":
+		return a.toSubquery(n)
+	case "SubqueryRef":
+		return a.toSubqueryRef(n)
+	case "TableAlias":
+		return a.toTableAlias(n)
+	case "TableConstraint":
+		return a.toTableConstraint(n)
+	case "TableLike":
+		return a.toTableLike(n)
+	case "TableQuery":
+		return a.toTableQuery(n)
+	case "TargetTable":
+		return a.toTargetTable(n)
+	case "TransactionStmt":
+		return a.toTransactionStmt(n)
+	case "Type":
+		return a.toType(n)
+	case "TypeField":
+		return a.toTypeField(n)
+	case "TypedLit":
+		return a.toTypedLit(n)
+	case "Unary":
+		return a.toUnary(n)
+	case "UnpackExpr":
+		return a.toUnpackExpr(n)
+	case "UnpivotQuery":
+		return a.toUnpivotQuery(n)
+	case "UnpivotRef":
+		return a.toUnpivotRef(n)
+	case "UnpivotValue":
+		return a.toUnpivotValue(n)
+	case "UpdateExtensionsStmt":
+		return a.toUpdateExtensionsStmt(n)
+	case "UpdateStmt":
+		return a.toUpdateStmt(n)
+	case "UseStmt":
+		return a.toUseStmt(n)
+	case "VacuumStmt":
+		return a.toVacuumStmt(n)
+	case "ValuesClause":
+		return a.toValuesClause(n)
+	case "ValuesRef":
+		return a.toValuesRef(n)
+	case "ValuesRow":
+		return a.toValuesRow(n)
+	case "When":
+		return a.toWhen(n)
+	case "WindowDef":
+		return a.toWindowDef(n)
+	case "WindowOver":
+		return a.toWindowOver(n)
+	case "WindowSpec":
+		return a.toWindowSpec(n)
+	case "With":
+		return a.toWith(n)
+	}
+	return n
+}
+
+func (a *astConv) toBitLit(n *Node) *BitLit {
+	if n == nil || n.Type() != "BitLit" {
+		return nil
+	}
+	v := astNew(&a.tBitLit)
+	*v = BitLit{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toBoolLit(n *Node) *BoolLit {
+	if n == nil || n.Type() != "BoolLit" {
+		return nil
+	}
+	v := astNew(&a.tBoolLit)
+	*v = BoolLit{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toDefaultExpr(n *Node) *DefaultExpr {
+	if n == nil || n.Type() != "DefaultExpr" {
+		return nil
+	}
+	v := astNew(&a.tDefaultExpr)
+	*v = DefaultExpr{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toIdent(n *Node) *Ident {
+	if n == nil || n.Type() != "Ident" {
+		return nil
+	}
+	v := astNew(&a.tIdent)
+	*v = Ident{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toIntervalUnit(n *Node) *IntervalUnit {
+	if n == nil || n.Type() != "IntervalUnit" {
+		return nil
+	}
+	v := astNew(&a.tIntervalUnit)
+	*v = IntervalUnit{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toNullLit(n *Node) *NullLit {
+	if n == nil || n.Type() != "NullLit" {
+		return nil
+	}
+	v := astNew(&a.tNullLit)
+	*v = NullLit{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toNumber(n *Node) *Number {
+	if n == nil || n.Type() != "Number" {
+		return nil
+	}
+	v := astNew(&a.tNumber)
+	*v = Number{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toParam(n *Node) *Param {
+	if n == nil || n.Type() != "Param" {
+		return nil
+	}
+	v := astNew(&a.tParam)
+	*v = Param{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toStringLit(n *Node) *StringLit {
+	if n == nil || n.Type() != "StringLit" {
+		return nil
+	}
+	v := astNew(&a.tStringLit)
+	*v = StringLit{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toAlterCmd(n *Node) *AlterCmd {
+	if n == nil || n.Type() != "AlterCmd" {
+		return nil
+	}
+	v := astNew(&a.tAlterCmd)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Kind = astString(n.Field("Kind"))
+	v.IfExists = astBool(n.Field("IfExists"))
+	v.IfNotExists = astBool(n.Field("IfNotExists"))
+	v.Column = a.toName(astNode(n.Field("Column")))
+	v.Type = a.toType(astNode(n.Field("Type")))
+	v.Generated = a.toGeneratedColumn(astNode(n.Field("Generated")))
+	v.Constraints = a.list2(astNode(n.Field("Constraints")))
+	v.Constraint = a.toTableConstraint(astNode(n.Field("Constraint")))
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Expr = a.toExpr(astNode(n.Field("Expr")))
+	v.Exprs = a.list3(astNode(n.Field("Exprs")))
+	v.SortBy = a.list4(astNode(n.Field("SortBy")))
+	v.Collate = a.toName(astNode(n.Field("Collate")))
+	v.Using = a.toExpr(astNode(n.Field("Using")))
+	v.Value = astString(n.Field("Value"))
+	v.Options = a.list5(astNode(n.Field("Options")))
+	v.Identity = a.list6(astNode(n.Field("Identity")))
+	v.When = astString(n.Field("When"))
+	v.Behavior = astString(n.Field("Behavior"))
+	v.Generic = a.list7(astNode(n.Field("Generic")))
+	return v
+}
+
+func (a *astConv) toAlterDatabaseStmt(n *Node) *AlterDatabaseStmt {
+	if n == nil || n.Type() != "AlterDatabaseStmt" {
+		return nil
+	}
+	v := astNew(&a.tAlterDatabaseStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.IfExists = astBool(n.Field("IfExists"))
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Setting = a.toIdent(astNode(n.Field("Setting")))
+	v.Value = a.toIdent(astNode(n.Field("Value")))
+	return v
+}
+
+func (a *astConv) toAlterObjectSchemaStmt(n *Node) *AlterObjectSchemaStmt {
+	if n == nil || n.Type() != "AlterObjectSchemaStmt" {
+		return nil
+	}
+	v := astNew(&a.tAlterObjectSchemaStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Object = astString(n.Field("Object"))
+	v.IfExists = astBool(n.Field("IfExists"))
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Schema = a.toIdent(astNode(n.Field("Schema")))
+	return v
+}
+
+func (a *astConv) toAlterSequenceStmt(n *Node) *AlterSequenceStmt {
+	if n == nil || n.Type() != "AlterSequenceStmt" {
+		return nil
+	}
+	v := astNew(&a.tAlterSequenceStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.IfExists = astBool(n.Field("IfExists"))
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Options = a.list6(astNode(n.Field("Options")))
+	return v
+}
+
+func (a *astConv) toAlterTableStmt(n *Node) *AlterTableStmt {
+	if n == nil || n.Type() != "AlterTableStmt" {
+		return nil
+	}
+	v := astNew(&a.tAlterTableStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Object = astString(n.Field("Object"))
+	v.IfExists = astBool(n.Field("IfExists"))
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Only = astBool(n.Field("Only"))
+	v.Star = astBool(n.Field("Star"))
+	v.Commands = a.list8(astNode(n.Field("Commands")))
+	return v
+}
+
+func (a *astConv) toAnalyzeStmt(n *Node) *AnalyzeStmt {
+	if n == nil || n.Type() != "AnalyzeStmt" {
+		return nil
+	}
+	v := astNew(&a.tAnalyzeStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Verbose = astBool(n.Field("Verbose"))
+	v.Table = a.toName(astNode(n.Field("Table")))
+	v.Columns = a.list9(astNode(n.Field("Columns")))
+	return v
+}
+
+func (a *astConv) toAnyAll(n *Node) *AnyAll {
+	if n == nil || n.Type() != "AnyAll" {
+		return nil
+	}
+	v := astNew(&a.tAnyAll)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Op = astString(n.Field("Op"))
+	v.Quantifier = astString(n.Field("Quantifier"))
+	v.Source = a.toExpr(astNode(n.Field("Source")))
+	return v
+}
+
+func (a *astConv) toArrayDim(n *Node) *ArrayDim {
+	if n == nil || n.Type() != "ArrayDim" {
+		return nil
+	}
+	v := astNew(&a.tArrayDim)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Size = a.toNumber(astNode(n.Field("Size")))
+	return v
+}
+
+func (a *astConv) toArrayLit(n *Node) *ArrayLit {
+	if n == nil || n.Type() != "ArrayLit" {
+		return nil
+	}
+	v := astNew(&a.tArrayLit)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Items = a.list3(astNode(n.Field("Items")))
+	return v
+}
+
+func (a *astConv) toArraySubquery(n *Node) *ArraySubquery {
+	if n == nil || n.Type() != "ArraySubquery" {
+		return nil
+	}
+	v := astNew(&a.tArraySubquery)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Query = a.toParenQuery(astNode(n.Field("Query")))
+	return v
+}
+
+func (a *astConv) toAtClause(n *Node) *AtClause {
+	if n == nil || n.Type() != "AtClause" {
+		return nil
+	}
+	v := astNew(&a.tAtClause)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Unit = astString(n.Field("Unit"))
+	v.Value = a.toExpr(astNode(n.Field("Value")))
+	return v
+}
+
+func (a *astConv) toAtTimeZone(n *Node) *AtTimeZone {
+	if n == nil || n.Type() != "AtTimeZone" {
+		return nil
+	}
+	v := astNew(&a.tAtTimeZone)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Zone = a.toExpr(astNode(n.Field("Zone")))
+	return v
+}
+
+func (a *astConv) toAttachStmt(n *Node) *AttachStmt {
+	if n == nil || n.Type() != "AttachStmt" {
+		return nil
+	}
+	v := astNew(&a.tAttachStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.OrReplace = astBool(n.Field("OrReplace"))
+	v.IfNotExists = astBool(n.Field("IfNotExists"))
+	v.Database = astBool(n.Field("Database"))
+	v.Path = a.toStringLit(astNode(n.Field("Path")))
+	v.Alias = a.toIdent(astNode(n.Field("Alias")))
+	v.Options = a.list10(astNode(n.Field("Options")))
+	return v
+}
+
+func (a *astConv) toBaseTable(n *Node) *BaseTable {
+	if n == nil || n.Type() != "BaseTable" {
+		return nil
+	}
+	v := astNew(&a.tBaseTable)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Prefix = a.toIdent(astNode(n.Field("Prefix")))
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Only = astBool(n.Field("Only"))
+	v.Star = astBool(n.Field("Star"))
+	v.Alias = a.toTableAlias(astNode(n.Field("Alias")))
+	v.At = a.toAtClause(astNode(n.Field("At")))
+	v.Sample = a.toSampleClause(astNode(n.Field("Sample")))
+	return v
+}
+
+func (a *astConv) toBetween(n *Node) *Between {
+	if n == nil || n.Type() != "Between" {
+		return nil
+	}
+	v := astNew(&a.tBetween)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Lo = a.toExpr(astNode(n.Field("Lo")))
+	v.Hi = a.toExpr(astNode(n.Field("Hi")))
+	v.Negated = astBool(n.Field("Negated"))
+	v.Symmetric = astBool(n.Field("Symmetric"))
+	return v
+}
+
+func (a *astConv) toBinary(n *Node) *Binary {
+	if n == nil || n.Type() != "Binary" {
+		return nil
+	}
+	v := astNew(&a.tBinary)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Left = a.toExpr(astNode(n.Field("Left")))
+	v.Op = a.toMatch(astNode(n.Field("Op")))
+	v.Right = a.toExpr(astNode(n.Field("Right")))
+	return v
+}
+
+func (a *astConv) toCTE(n *Node) *CTE {
+	if n == nil || n.Type() != "CTE" {
+		return nil
+	}
+	v := astNew(&a.tCTE)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Columns = a.list9(astNode(n.Field("Columns")))
+	v.UsingKey = a.list9(astNode(n.Field("UsingKey")))
+	v.Materialized = a.toMatch(astNode(n.Field("Materialized")))
+	v.Query = a.toStatement(astNode(n.Field("Query")))
+	return v
+}
+
+func (a *astConv) toCallStmt(n *Node) *CallStmt {
+	if n == nil || n.Type() != "CallStmt" {
+		return nil
+	}
+	v := astNew(&a.tCallStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Func = a.toFuncCall(astNode(n.Field("Func")))
+	return v
+}
+
+func (a *astConv) toCase(n *Node) *Case {
+	if n == nil || n.Type() != "Case" {
+		return nil
+	}
+	v := astNew(&a.tCase)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Arg = a.toExpr(astNode(n.Field("Arg")))
+	v.Whens = a.list11(astNode(n.Field("Whens")))
+	v.Else = a.toExpr(astNode(n.Field("Else")))
+	return v
+}
+
+func (a *astConv) toCast(n *Node) *Cast {
+	if n == nil || n.Type() != "Cast" {
+		return nil
+	}
+	v := astNew(&a.tCast)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Type = a.toType(astNode(n.Field("Type")))
+	v.Try = astBool(n.Field("Try"))
+	v.Shorthand = astBool(n.Field("Shorthand"))
+	return v
+}
+
+func (a *astConv) toCheckpointStmt(n *Node) *CheckpointStmt {
+	if n == nil || n.Type() != "CheckpointStmt" {
+		return nil
+	}
+	v := astNew(&a.tCheckpointStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Force = astBool(n.Field("Force"))
+	v.Database = a.toIdent(astNode(n.Field("Database")))
+	return v
+}
+
+func (a *astConv) toColDef(n *Node) *ColDef {
+	if n == nil || n.Type() != "ColDef" {
+		return nil
+	}
+	v := astNew(&a.tColDef)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Type = a.toType(astNode(n.Field("Type")))
+	v.Collate = a.toName(astNode(n.Field("Collate")))
+	return v
+}
+
+func (a *astConv) toCollate(n *Node) *Collate {
+	if n == nil || n.Type() != "Collate" {
+		return nil
+	}
+	v := astNew(&a.tCollate)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Collation = a.toName(astNode(n.Field("Collation")))
+	return v
+}
+
+func (a *astConv) toColumnConstraint(n *Node) *ColumnConstraint {
+	if n == nil || n.Type() != "ColumnConstraint" {
+		return nil
+	}
+	v := astNew(&a.tColumnConstraint)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Kind = astString(n.Field("Kind"))
+	v.Expr = a.toExpr(astNode(n.Field("Expr")))
+	v.Reference = a.toReference(astNode(n.Field("Reference")))
+	v.Collation = a.toName(astNode(n.Field("Collation")))
+	v.Compression = a.toIdent(astNode(n.Field("Compression")))
+	v.Options = a.list12(astNode(n.Field("Options")))
+	return v
+}
+
+func (a *astConv) toColumnDef(n *Node) *ColumnDef {
+	if n == nil || n.Type() != "ColumnDef" {
+		return nil
+	}
+	v := astNew(&a.tColumnDef)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Type = a.toType(astNode(n.Field("Type")))
+	v.Generated = a.toGeneratedColumn(astNode(n.Field("Generated")))
+	v.Constraints = a.list2(astNode(n.Field("Constraints")))
+	return v
+}
+
+func (a *astConv) toColumnRef(n *Node) *ColumnRef {
+	if n == nil || n.Type() != "ColumnRef" {
+		return nil
+	}
+	v := astNew(&a.tColumnRef)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Parts = a.list9(astNode(n.Field("Parts")))
+	return v
+}
+
+func (a *astConv) toColumnsExpr(n *Node) *ColumnsExpr {
+	if n == nil || n.Type() != "ColumnsExpr" {
+		return nil
+	}
+	v := astNew(&a.tColumnsExpr)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Arg = a.toExpr(astNode(n.Field("Arg")))
+	v.Star = astBool(n.Field("Star"))
+	return v
+}
+
+func (a *astConv) toCommentStmt(n *Node) *CommentStmt {
+	if n == nil || n.Type() != "CommentStmt" {
+		return nil
+	}
+	v := astNew(&a.tCommentStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Object = astString(n.Field("Object"))
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Column = a.toExpr(astNode(n.Field("Column")))
+	v.Comment = a.toStringLit(astNode(n.Field("Comment")))
+	return v
+}
+
+func (a *astConv) toCopyDatabaseStmt(n *Node) *CopyDatabaseStmt {
+	if n == nil || n.Type() != "CopyDatabaseStmt" {
+		return nil
+	}
+	v := astNew(&a.tCopyDatabaseStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.From = a.toIdent(astNode(n.Field("From")))
+	v.To = a.toIdent(astNode(n.Field("To")))
+	v.Flag = astString(n.Field("Flag"))
+	return v
+}
+
+func (a *astConv) toCopyOption(n *Node) *CopyOption {
+	if n == nil || n.Type() != "CopyOption" {
+		return nil
+	}
+	v := astNew(&a.tCopyOption)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = astString(n.Field("Name"))
+	v.Value = astString(n.Field("Value"))
+	v.Columns = a.list9(astNode(n.Field("Columns")))
+	return v
+}
+
+func (a *astConv) toCopyStmt(n *Node) *CopyStmt {
+	if n == nil || n.Type() != "CopyStmt" {
+		return nil
+	}
+	v := astNew(&a.tCopyStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Binary = astBool(n.Field("Binary"))
+	v.Table = a.toName(astNode(n.Field("Table")))
+	v.Columns = a.list9(astNode(n.Field("Columns")))
+	v.Query = a.toSelect(astNode(n.Field("Query")))
+	v.Direction = astString(n.Field("Direction"))
+	v.Program = astBool(n.Field("Program"))
+	v.File = a.toExpr(astNode(n.Field("File")))
+	v.Std = astString(n.Field("Std"))
+	v.Delimiters = a.toStringLit(astNode(n.Field("Delimiters")))
+	v.Legacy = a.list13(astNode(n.Field("Legacy")))
+	v.Options = a.list10(astNode(n.Field("Options")))
+	return v
+}
+
+func (a *astConv) toCreateIndexStmt(n *Node) *CreateIndexStmt {
+	if n == nil || n.Type() != "CreateIndexStmt" {
+		return nil
+	}
+	v := astNew(&a.tCreateIndexStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Unique = astBool(n.Field("Unique"))
+	v.Concurrently = astBool(n.Field("Concurrently"))
+	v.IfNotExists = astBool(n.Field("IfNotExists"))
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Table = a.toName(astNode(n.Field("Table")))
+	v.Method = a.toIdent(astNode(n.Field("Method")))
+	v.Params = a.list14(astNode(n.Field("Params")))
+	v.Options = a.list5(astNode(n.Field("Options")))
+	v.Where = a.toExpr(astNode(n.Field("Where")))
+	return v
+}
+
+func (a *astConv) toCreateMacroStmt(n *Node) *CreateMacroStmt {
+	if n == nil || n.Type() != "CreateMacroStmt" {
+		return nil
+	}
+	v := astNew(&a.tCreateMacroStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.OrReplace = astBool(n.Field("OrReplace"))
+	v.Temp = astString(n.Field("Temp"))
+	v.Function = astBool(n.Field("Function"))
+	v.IfNotExists = astBool(n.Field("IfNotExists"))
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Definitions = a.list15(astNode(n.Field("Definitions")))
+	return v
+}
+
+func (a *astConv) toCreateSchemaStmt(n *Node) *CreateSchemaStmt {
+	if n == nil || n.Type() != "CreateSchemaStmt" {
+		return nil
+	}
+	v := astNew(&a.tCreateSchemaStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.OrReplace = astBool(n.Field("OrReplace"))
+	v.IfNotExists = astBool(n.Field("IfNotExists"))
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Elements = a.list16(astNode(n.Field("Elements")))
+	return v
+}
+
+func (a *astConv) toCreateSecretStmt(n *Node) *CreateSecretStmt {
+	if n == nil || n.Type() != "CreateSecretStmt" {
+		return nil
+	}
+	v := astNew(&a.tCreateSecretStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.OrReplace = astBool(n.Field("OrReplace"))
+	v.Persist = astString(n.Field("Persist"))
+	v.IfNotExists = astBool(n.Field("IfNotExists"))
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Storage = a.toIdent(astNode(n.Field("Storage")))
+	v.Options = a.list17(astNode(n.Field("Options")))
+	return v
+}
+
+func (a *astConv) toCreateSequenceStmt(n *Node) *CreateSequenceStmt {
+	if n == nil || n.Type() != "CreateSequenceStmt" {
+		return nil
+	}
+	v := astNew(&a.tCreateSequenceStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.OrReplace = astBool(n.Field("OrReplace"))
+	v.Temp = astString(n.Field("Temp"))
+	v.IfNotExists = astBool(n.Field("IfNotExists"))
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Options = a.list6(astNode(n.Field("Options")))
+	return v
+}
+
+func (a *astConv) toCreateTableAsStmt(n *Node) *CreateTableAsStmt {
+	if n == nil || n.Type() != "CreateTableAsStmt" {
+		return nil
+	}
+	v := astNew(&a.tCreateTableAsStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.OrReplace = astBool(n.Field("OrReplace"))
+	v.Temp = astString(n.Field("Temp"))
+	v.IfNotExists = astBool(n.Field("IfNotExists"))
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Columns = a.list9(astNode(n.Field("Columns")))
+	v.PartitionSorted = a.list18(astNode(n.Field("PartitionSorted")))
+	v.With = a.list5(astNode(n.Field("With")))
+	v.OnCommit = astString(n.Field("OnCommit"))
+	v.Source = a.toStatement(astNode(n.Field("Source")))
+	v.WithData = astString(n.Field("WithData"))
+	return v
+}
+
+func (a *astConv) toCreateTableStmt(n *Node) *CreateTableStmt {
+	if n == nil || n.Type() != "CreateTableStmt" {
+		return nil
+	}
+	v := astNew(&a.tCreateTableStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.OrReplace = astBool(n.Field("OrReplace"))
+	v.Temp = astString(n.Field("Temp"))
+	v.IfNotExists = astBool(n.Field("IfNotExists"))
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Elements = a.list19(astNode(n.Field("Elements")))
+	v.PartitionSorted = a.list18(astNode(n.Field("PartitionSorted")))
+	v.With = a.list5(astNode(n.Field("With")))
+	v.OnCommit = astString(n.Field("OnCommit"))
+	return v
+}
+
+func (a *astConv) toCreateTypeStmt(n *Node) *CreateTypeStmt {
+	if n == nil || n.Type() != "CreateTypeStmt" {
+		return nil
+	}
+	v := astNew(&a.tCreateTypeStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.OrReplace = astBool(n.Field("OrReplace"))
+	v.Temp = astString(n.Field("Temp"))
+	v.IfNotExists = astBool(n.Field("IfNotExists"))
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Enum = astBool(n.Field("Enum"))
+	v.Values = a.list20(astNode(n.Field("Values")))
+	v.Query = a.toParenQuery(astNode(n.Field("Query")))
+	v.Type = a.toType(astNode(n.Field("Type")))
+	return v
+}
+
+func (a *astConv) toCreateViewStmt(n *Node) *CreateViewStmt {
+	if n == nil || n.Type() != "CreateViewStmt" {
+		return nil
+	}
+	v := astNew(&a.tCreateViewStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.OrReplace = astBool(n.Field("OrReplace"))
+	v.Temp = astString(n.Field("Temp"))
+	v.Recursive = astBool(n.Field("Recursive"))
+	v.IfNotExists = astBool(n.Field("IfNotExists"))
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Columns = a.list9(astNode(n.Field("Columns")))
+	v.Options = a.list5(astNode(n.Field("Options")))
+	v.Query = a.toSelect(astNode(n.Field("Query")))
+	v.CheckOption = astString(n.Field("CheckOption"))
+	return v
+}
+
+func (a *astConv) toDeallocateStmt(n *Node) *DeallocateStmt {
+	if n == nil || n.Type() != "DeallocateStmt" {
+		return nil
+	}
+	v := astNew(&a.tDeallocateStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.All = astBool(n.Field("All"))
+	return v
+}
+
+func (a *astConv) toDefElem(n *Node) *DefElem {
+	if n == nil || n.Type() != "DefElem" {
+		return nil
+	}
+	v := astNew(&a.tDefElem)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Value = astString(n.Field("Value"))
+	return v
+}
+
+func (a *astConv) toDeleteStmt(n *Node) *DeleteStmt {
+	if n == nil || n.Type() != "DeleteStmt" {
+		return nil
+	}
+	v := astNew(&a.tDeleteStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.With = a.toWith(astNode(n.Field("With")))
+	v.Table = a.toTargetTable(astNode(n.Field("Table")))
+	v.Using = a.list21(astNode(n.Field("Using")))
+	v.Where = a.toExpr(astNode(n.Field("Where")))
+	v.Returning = a.list22(astNode(n.Field("Returning")))
+	v.Truncate = astBool(n.Field("Truncate"))
+	return v
+}
+
+func (a *astConv) toDetachStmt(n *Node) *DetachStmt {
+	if n == nil || n.Type() != "DetachStmt" {
+		return nil
+	}
+	v := astNew(&a.tDetachStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Database = astBool(n.Field("Database"))
+	v.IfExists = astBool(n.Field("IfExists"))
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	return v
+}
+
+func (a *astConv) toDistinctClause(n *Node) *DistinctClause {
+	if n == nil || n.Type() != "DistinctClause" {
+		return nil
+	}
+	v := astNew(&a.tDistinctClause)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.On = a.list3(astNode(n.Field("On")))
+	return v
+}
+
+func (a *astConv) toDistinctFrom(n *Node) *DistinctFrom {
+	if n == nil || n.Type() != "DistinctFrom" {
+		return nil
+	}
+	v := astNew(&a.tDistinctFrom)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Left = a.toExpr(astNode(n.Field("Left")))
+	v.Right = a.toExpr(astNode(n.Field("Right")))
+	v.Negated = astBool(n.Field("Negated"))
+	return v
+}
+
+func (a *astConv) toDropSecretStmt(n *Node) *DropSecretStmt {
+	if n == nil || n.Type() != "DropSecretStmt" {
+		return nil
+	}
+	v := astNew(&a.tDropSecretStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Persist = astString(n.Field("Persist"))
+	v.IfExists = astBool(n.Field("IfExists"))
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Storage = a.toIdent(astNode(n.Field("Storage")))
+	return v
+}
+
+func (a *astConv) toDropStmt(n *Node) *DropStmt {
+	if n == nil || n.Type() != "DropStmt" {
+		return nil
+	}
+	v := astNew(&a.tDropStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Type = astString(n.Field("Type"))
+	v.IfExists = astBool(n.Field("IfExists"))
+	v.Names = a.list23(astNode(n.Field("Names")))
+	v.On = a.toName(astNode(n.Field("On")))
+	v.Behavior = astString(n.Field("Behavior"))
+	return v
+}
+
+func (a *astConv) toExecuteStmt(n *Node) *ExecuteStmt {
+	if n == nil || n.Type() != "ExecuteStmt" {
+		return nil
+	}
+	v := astNew(&a.tExecuteStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Params = a.list3(astNode(n.Field("Params")))
+	return v
+}
+
+func (a *astConv) toExists(n *Node) *Exists {
+	if n == nil || n.Type() != "Exists" {
+		return nil
+	}
+	v := astNew(&a.tExists)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Query = a.toParenQuery(astNode(n.Field("Query")))
+	return v
+}
+
+func (a *astConv) toExplainOption(n *Node) *ExplainOption {
+	if n == nil || n.Type() != "ExplainOption" {
+		return nil
+	}
+	v := astNew(&a.tExplainOption)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = astString(n.Field("Name"))
+	v.Value = astString(n.Field("Value"))
+	return v
+}
+
+func (a *astConv) toExplainStmt(n *Node) *ExplainStmt {
+	if n == nil || n.Type() != "ExplainStmt" {
+		return nil
+	}
+	v := astNew(&a.tExplainStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Analyze = astString(n.Field("Analyze"))
+	v.Verbose = astBool(n.Field("Verbose"))
+	v.Options = a.list24(astNode(n.Field("Options")))
+	v.Stmt = a.toStatement(astNode(n.Field("Stmt")))
+	return v
+}
+
+func (a *astConv) toExportStmt(n *Node) *ExportStmt {
+	if n == nil || n.Type() != "ExportStmt" {
+		return nil
+	}
+	v := astNew(&a.tExportStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Database = a.toIdent(astNode(n.Field("Database")))
+	v.Path = a.toStringLit(astNode(n.Field("Path")))
+	v.Legacy = a.list13(astNode(n.Field("Legacy")))
+	v.Options = a.list10(astNode(n.Field("Options")))
+	return v
+}
+
+func (a *astConv) toFieldStep(n *Node) *FieldStep {
+	if n == nil || n.Type() != "FieldStep" {
+		return nil
+	}
+	v := astNew(&a.tFieldStep)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Call = astBool(n.Field("Call"))
+	v.Args = a.list3(astNode(n.Field("Args")))
+	return v
+}
+
+func (a *astConv) toFrame(n *Node) *Frame {
+	if n == nil || n.Type() != "Frame" {
+		return nil
+	}
+	v := astNew(&a.tFrame)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Unit = astString(n.Field("Unit"))
+	v.Start = a.toFrameBound(astNode(n.Field("Start")))
+	v.End = a.toFrameBound(astNode(n.Field("End")))
+	v.Exclude = astString(n.Field("Exclude"))
+	return v
+}
+
+func (a *astConv) toFrameBound(n *Node) *FrameBound {
+	if n == nil || n.Type() != "FrameBound" {
+		return nil
+	}
+	v := astNew(&a.tFrameBound)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Kind = astString(n.Field("Kind"))
+	v.Expr = a.toExpr(astNode(n.Field("Expr")))
+	return v
+}
+
+func (a *astConv) toFuncCall(n *Node) *FuncCall {
+	if n == nil || n.Type() != "FuncCall" {
+		return nil
+	}
+	v := astNew(&a.tFuncCall)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Quantifier = astString(n.Field("Quantifier"))
+	v.Args = a.list3(astNode(n.Field("Args")))
+	v.Variadic = a.toExpr(astNode(n.Field("Variadic")))
+	v.OrderBy = a.toOrderBy(astNode(n.Field("OrderBy")))
+	v.Nulls = astString(n.Field("Nulls"))
+	v.WithinGroup = a.toOrderBy(astNode(n.Field("WithinGroup")))
+	v.Filter = a.toExpr(astNode(n.Field("Filter")))
+	v.ExportState = astBool(n.Field("ExportState"))
+	v.Over = a.toWindowOver(astNode(n.Field("Over")))
+	return v
+}
+
+func (a *astConv) toFuncTable(n *Node) *FuncTable {
+	if n == nil || n.Type() != "FuncTable" {
+		return nil
+	}
+	v := astNew(&a.tFuncTable)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Prefix = a.toIdent(astNode(n.Field("Prefix")))
+	v.Func = a.toExpr(astNode(n.Field("Func")))
+	v.RowsFrom = a.list25(astNode(n.Field("RowsFrom")))
+	v.Lateral = astBool(n.Field("Lateral"))
+	v.Ordinality = astBool(n.Field("Ordinality"))
+	v.Alias = a.toTableAlias(astNode(n.Field("Alias")))
+	v.Sample = a.toSampleClause(astNode(n.Field("Sample")))
+	return v
+}
+
+func (a *astConv) toGeneratedColumn(n *Node) *GeneratedColumn {
+	if n == nil || n.Type() != "GeneratedColumn" {
+		return nil
+	}
+	v := astNew(&a.tGeneratedColumn)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.When = astString(n.Field("When"))
+	v.Identity = astBool(n.Field("Identity"))
+	v.SeqOptions = a.list6(astNode(n.Field("SeqOptions")))
+	v.Expr = a.toExpr(astNode(n.Field("Expr")))
+	v.Storage = astString(n.Field("Storage"))
+	return v
+}
+
+func (a *astConv) toGenericAlterOption(n *Node) *GenericAlterOption {
+	if n == nil || n.Type() != "GenericAlterOption" {
+		return nil
+	}
+	v := astNew(&a.tGenericAlterOption)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Action = astString(n.Field("Action"))
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Value = a.toStringLit(astNode(n.Field("Value")))
+	return v
+}
+
+func (a *astConv) toGenericOption(n *Node) *GenericOption {
+	if n == nil || n.Type() != "GenericOption" {
+		return nil
+	}
+	v := astNew(&a.tGenericOption)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Value = a.toExpr(astNode(n.Field("Value")))
+	return v
+}
+
+func (a *astConv) toGroupBy(n *Node) *GroupBy {
+	if n == nil || n.Type() != "GroupBy" {
+		return nil
+	}
+	v := astNew(&a.tGroupBy)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.All = astBool(n.Field("All"))
+	v.Items = a.list3(astNode(n.Field("Items")))
+	return v
+}
+
+func (a *astConv) toGrouping(n *Node) *Grouping {
+	if n == nil || n.Type() != "Grouping" {
+		return nil
+	}
+	v := astNew(&a.tGrouping)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = astString(n.Field("Name"))
+	v.Args = a.list3(astNode(n.Field("Args")))
+	return v
+}
+
+func (a *astConv) toGroupingSet(n *Node) *GroupingSet {
+	if n == nil || n.Type() != "GroupingSet" {
+		return nil
+	}
+	v := astNew(&a.tGroupingSet)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Kind = astString(n.Field("Kind"))
+	v.Items = a.list3(astNode(n.Field("Items")))
+	return v
+}
+
+func (a *astConv) toImportStmt(n *Node) *ImportStmt {
+	if n == nil || n.Type() != "ImportStmt" {
+		return nil
+	}
+	v := astNew(&a.tImportStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Path = a.toStringLit(astNode(n.Field("Path")))
+	return v
+}
+
+func (a *astConv) toIn(n *Node) *In {
+	if n == nil || n.Type() != "In" {
+		return nil
+	}
+	v := astNew(&a.tIn)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Negated = astBool(n.Field("Negated"))
+	v.Query = a.toParenQuery(astNode(n.Field("Query")))
+	v.Items = a.list3(astNode(n.Field("Items")))
+	v.Source = a.toExpr(astNode(n.Field("Source")))
+	return v
+}
+
+func (a *astConv) toIndexElem(n *Node) *IndexElem {
+	if n == nil || n.Type() != "IndexElem" {
+		return nil
+	}
+	v := astNew(&a.tIndexElem)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expr = a.toExpr(astNode(n.Field("Expr")))
+	v.Collate = a.toName(astNode(n.Field("Collate")))
+	v.Class = a.toName(astNode(n.Field("Class")))
+	v.Direction = astString(n.Field("Direction"))
+	v.Nulls = astString(n.Field("Nulls"))
+	return v
+}
+
+func (a *astConv) toIndexStep(n *Node) *IndexStep {
+	if n == nil || n.Type() != "IndexStep" {
+		return nil
+	}
+	v := astNew(&a.tIndexStep)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Index = a.toExpr(astNode(n.Field("Index")))
+	return v
+}
+
+func (a *astConv) toIndirection(n *Node) *Indirection {
+	if n == nil || n.Type() != "Indirection" {
+		return nil
+	}
+	v := astNew(&a.tIndirection)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Step = a.toStep(astNode(n.Field("Step")))
+	return v
+}
+
+func (a *astConv) toInsertStmt(n *Node) *InsertStmt {
+	if n == nil || n.Type() != "InsertStmt" {
+		return nil
+	}
+	v := astNew(&a.tInsertStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.With = a.toWith(astNode(n.Field("With")))
+	v.OrAction = astString(n.Field("OrAction"))
+	v.Table = a.toName(astNode(n.Field("Table")))
+	v.Alias = a.toIdent(astNode(n.Field("Alias")))
+	v.By = astString(n.Field("By"))
+	v.Columns = a.list23(astNode(n.Field("Columns")))
+	v.Overriding = astString(n.Field("Overriding"))
+	v.Query = a.toSelect(astNode(n.Field("Query")))
+	v.DefaultValues = astBool(n.Field("DefaultValues"))
+	v.OnConflict = a.toOnConflict(astNode(n.Field("OnConflict")))
+	v.Returning = a.list22(astNode(n.Field("Returning")))
+	return v
+}
+
+func (a *astConv) toIntervalLit(n *Node) *IntervalLit {
+	if n == nil || n.Type() != "IntervalLit" {
+		return nil
+	}
+	v := astNew(&a.tIntervalLit)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Value = a.toExpr(astNode(n.Field("Value")))
+	v.Unit = a.toIntervalUnit(astNode(n.Field("Unit")))
+	return v
+}
+
+func (a *astConv) toIntoClause(n *Node) *IntoClause {
+	if n == nil || n.Type() != "IntoClause" {
+		return nil
+	}
+	v := astNew(&a.tIntoClause)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Temp = astString(n.Field("Temp"))
+	v.Table = a.toName(astNode(n.Field("Table")))
+	return v
+}
+
+func (a *astConv) toIsExpr(n *Node) *IsExpr {
+	if n == nil || n.Type() != "IsExpr" {
+		return nil
+	}
+	v := astNew(&a.tIsExpr)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Negated = astBool(n.Field("Negated"))
+	v.Test = astString(n.Field("Test"))
+	return v
+}
+
+func (a *astConv) toIsOf(n *Node) *IsOf {
+	if n == nil || n.Type() != "IsOf" {
+		return nil
+	}
+	v := astNew(&a.tIsOf)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Types = a.list26(astNode(n.Field("Types")))
+	v.Negated = astBool(n.Field("Negated"))
+	return v
+}
+
+func (a *astConv) toJoin(n *Node) *Join {
+	if n == nil || n.Type() != "Join" {
+		return nil
+	}
+	v := astNew(&a.tJoin)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Left = a.toTableRef(astNode(n.Field("Left")))
+	v.Kind = astString(n.Field("Kind"))
+	v.Right = a.toTableRef(astNode(n.Field("Right")))
+	v.On = a.toExpr(astNode(n.Field("On")))
+	v.Using = a.list9(astNode(n.Field("Using")))
+	return v
+}
+
+func (a *astConv) toLambda(n *Node) *Lambda {
+	if n == nil || n.Type() != "Lambda" {
+		return nil
+	}
+	v := astNew(&a.tLambda)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Params = a.list9(astNode(n.Field("Params")))
+	v.Body = a.toExpr(astNode(n.Field("Body")))
+	v.Keyword = astBool(n.Field("Keyword"))
+	return v
+}
+
+func (a *astConv) toLike(n *Node) *Like {
+	if n == nil || n.Type() != "Like" {
+		return nil
+	}
+	v := astNew(&a.tLike)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Negated = astBool(n.Field("Negated"))
+	v.Op = astString(n.Field("Op"))
+	v.Pattern = a.toExpr(astNode(n.Field("Pattern")))
+	v.Escape = a.toExpr(astNode(n.Field("Escape")))
+	return v
+}
+
+func (a *astConv) toLimitClause(n *Node) *LimitClause {
+	if n == nil || n.Type() != "LimitClause" {
+		return nil
+	}
+	v := astNew(&a.tLimitClause)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Keyword = astString(n.Field("Keyword"))
+	v.All = astBool(n.Field("All"))
+	v.Value = a.toExpr(astNode(n.Field("Value")))
+	v.Percent = astString(n.Field("Percent"))
+	v.Offset = a.toExpr(astNode(n.Field("Offset")))
+	return v
+}
+
+func (a *astConv) toListComp(n *Node) *ListComp {
+	if n == nil || n.Type() != "ListComp" {
+		return nil
+	}
+	v := astNew(&a.tListComp)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expr = a.toExpr(astNode(n.Field("Expr")))
+	v.Vars = a.list9(astNode(n.Field("Vars")))
+	v.Source = a.toExpr(astNode(n.Field("Source")))
+	v.Cond = a.toExpr(astNode(n.Field("Cond")))
+	return v
+}
+
+func (a *astConv) toListLit(n *Node) *ListLit {
+	if n == nil || n.Type() != "ListLit" {
+		return nil
+	}
+	v := astNew(&a.tListLit)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Items = a.list3(astNode(n.Field("Items")))
+	return v
+}
+
+func (a *astConv) toLoadStmt(n *Node) *LoadStmt {
+	if n == nil || n.Type() != "LoadStmt" {
+		return nil
+	}
+	v := astNew(&a.tLoadStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Install = astBool(n.Field("Install"))
+	v.Force = astBool(n.Field("Force"))
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Source = a.toIdent(astNode(n.Field("Source")))
+	v.Version = a.toIdent(astNode(n.Field("Version")))
+	return v
+}
+
+func (a *astConv) toLockClause(n *Node) *LockClause {
+	if n == nil || n.Type() != "LockClause" {
+		return nil
+	}
+	v := astNew(&a.tLockClause)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Strength = astString(n.Field("Strength"))
+	v.Of = a.list23(astNode(n.Field("Of")))
+	v.Wait = astString(n.Field("Wait"))
+	return v
+}
+
+func (a *astConv) toMacroDef(n *Node) *MacroDef {
+	if n == nil || n.Type() != "MacroDef" {
+		return nil
+	}
+	v := astNew(&a.tMacroDef)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Params = a.list27(astNode(n.Field("Params")))
+	v.Expr = a.toExpr(astNode(n.Field("Expr")))
+	v.Query = a.toParenContent(astNode(n.Field("Query")))
+	return v
+}
+
+func (a *astConv) toMacroParam(n *Node) *MacroParam {
+	if n == nil || n.Type() != "MacroParam" {
+		return nil
+	}
+	v := astNew(&a.tMacroParam)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Type = a.toType(astNode(n.Field("Type")))
+	v.Default = a.toExpr(astNode(n.Field("Default")))
+	v.Arrow = astBool(n.Field("Arrow"))
+	return v
+}
+
+func (a *astConv) toMapEntry(n *Node) *MapEntry {
+	if n == nil || n.Type() != "MapEntry" {
+		return nil
+	}
+	v := astNew(&a.tMapEntry)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Key = a.toExpr(astNode(n.Field("Key")))
+	v.Value = a.toExpr(astNode(n.Field("Value")))
+	return v
+}
+
+func (a *astConv) toMapLit(n *Node) *MapLit {
+	if n == nil || n.Type() != "MapLit" {
+		return nil
+	}
+	v := astNew(&a.tMapLit)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Entries = a.list28(astNode(n.Field("Entries")))
+	return v
+}
+
+func (a *astConv) toMergeAction(n *Node) *MergeAction {
+	if n == nil || n.Type() != "MergeAction" {
+		return nil
+	}
+	v := astNew(&a.tMergeAction)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Kind = astString(n.Field("Kind"))
+	v.Set = a.list29(astNode(n.Field("Set")))
+	v.ByName = astString(n.Field("ByName"))
+	v.Star = astBool(n.Field("Star"))
+	v.Columns = a.list9(astNode(n.Field("Columns")))
+	v.Values = a.list3(astNode(n.Field("Values")))
+	v.DefaultValues = astBool(n.Field("DefaultValues"))
+	v.Message = a.toExpr(astNode(n.Field("Message")))
+	return v
+}
+
+func (a *astConv) toMergeStmt(n *Node) *MergeStmt {
+	if n == nil || n.Type() != "MergeStmt" {
+		return nil
+	}
+	v := astNew(&a.tMergeStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.With = a.toWith(astNode(n.Field("With")))
+	v.Target = a.toTargetTable(astNode(n.Field("Target")))
+	v.Source = a.toTableRef(astNode(n.Field("Source")))
+	v.On = a.toExpr(astNode(n.Field("On")))
+	v.Using = a.list9(astNode(n.Field("Using")))
+	v.Whens = a.list30(astNode(n.Field("Whens")))
+	v.Returning = a.list22(astNode(n.Field("Returning")))
+	return v
+}
+
+func (a *astConv) toMergeWhen(n *Node) *MergeWhen {
+	if n == nil || n.Type() != "MergeWhen" {
+		return nil
+	}
+	v := astNew(&a.tMergeWhen)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Not = astBool(n.Field("Not"))
+	v.By = astString(n.Field("By"))
+	v.Cond = a.toExpr(astNode(n.Field("Cond")))
+	v.Action = a.toMergeAction(astNode(n.Field("Action")))
+	return v
+}
+
+func (a *astConv) toName(n *Node) *Name {
+	if n == nil || n.Type() != "Name" {
+		return nil
+	}
+	v := astNew(&a.tName)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Parts = a.list9(astNode(n.Field("Parts")))
+	return v
+}
+
+func (a *astConv) toNamedArg(n *Node) *NamedArg {
+	if n == nil || n.Type() != "NamedArg" {
+		return nil
+	}
+	v := astNew(&a.tNamedArg)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Value = a.toExpr(astNode(n.Field("Value")))
+	v.Arrow = astBool(n.Field("Arrow"))
+	return v
+}
+
+func (a *astConv) toNot(n *Node) *Not {
+	if n == nil || n.Type() != "Not" {
+		return nil
+	}
+	v := astNew(&a.tNot)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	return v
+}
+
+func (a *astConv) toOffsetClause(n *Node) *OffsetClause {
+	if n == nil || n.Type() != "OffsetClause" {
+		return nil
+	}
+	v := astNew(&a.tOffsetClause)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Value = a.toExpr(astNode(n.Field("Value")))
+	v.Rows = astString(n.Field("Rows"))
+	return v
+}
+
+func (a *astConv) toOnConflict(n *Node) *OnConflict {
+	if n == nil || n.Type() != "OnConflict" {
+		return nil
+	}
+	v := astNew(&a.tOnConflict)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Target = a.list14(astNode(n.Field("Target")))
+	v.TargetWhere = a.toExpr(astNode(n.Field("TargetWhere")))
+	v.Constraint = a.toIdent(astNode(n.Field("Constraint")))
+	v.Nothing = astBool(n.Field("Nothing"))
+	v.Set = a.list29(astNode(n.Field("Set")))
+	v.Where = a.toExpr(astNode(n.Field("Where")))
+	return v
+}
+
+func (a *astConv) toOrderBy(n *Node) *OrderBy {
+	if n == nil || n.Type() != "OrderBy" {
+		return nil
+	}
+	v := astNew(&a.tOrderBy)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Items = a.list4(astNode(n.Field("Items")))
+	v.All = astBool(n.Field("All"))
+	v.Direction = astString(n.Field("Direction"))
+	v.Nulls = astString(n.Field("Nulls"))
+	return v
+}
+
+func (a *astConv) toParen(n *Node) *Paren {
+	if n == nil || n.Type() != "Paren" {
+		return nil
+	}
+	v := astNew(&a.tParen)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	return v
+}
+
+func (a *astConv) toParenQuery(n *Node) *ParenQuery {
+	if n == nil || n.Type() != "ParenQuery" {
+		return nil
+	}
+	v := astNew(&a.tParenQuery)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Query = a.toParenContent(astNode(n.Field("Query")))
+	return v
+}
+
+func (a *astConv) toParenTable(n *Node) *ParenTable {
+	if n == nil || n.Type() != "ParenTable" {
+		return nil
+	}
+	v := astNew(&a.tParenTable)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Prefix = a.toIdent(astNode(n.Field("Prefix")))
+	v.Table = a.toTableRef(astNode(n.Field("Table")))
+	v.Alias = a.toTableAlias(astNode(n.Field("Alias")))
+	return v
+}
+
+func (a *astConv) toPartitionSorted(n *Node) *PartitionSorted {
+	if n == nil || n.Type() != "PartitionSorted" {
+		return nil
+	}
+	v := astNew(&a.tPartitionSorted)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Kind = a.toMatch(astNode(n.Field("Kind")))
+	v.Exprs = a.list3(astNode(n.Field("Exprs")))
+	return v
+}
+
+func (a *astConv) toPivotColumn(n *Node) *PivotColumn {
+	if n == nil || n.Type() != "PivotColumn" {
+		return nil
+	}
+	v := astNew(&a.tPivotColumn)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expr = a.toExpr(astNode(n.Field("Expr")))
+	v.In = a.list22(astNode(n.Field("In")))
+	v.Query = a.toSelect(astNode(n.Field("Query")))
+	v.Enum = a.toIdent(astNode(n.Field("Enum")))
+	return v
+}
+
+func (a *astConv) toPivotQuery(n *Node) *PivotQuery {
+	if n == nil || n.Type() != "PivotQuery" {
+		return nil
+	}
+	v := astNew(&a.tPivotQuery)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Source = a.toTableRef(astNode(n.Field("Source")))
+	v.On = a.list31(astNode(n.Field("On")))
+	v.Using = a.list22(astNode(n.Field("Using")))
+	v.GroupBy = a.list9(astNode(n.Field("GroupBy")))
+	return v
+}
+
+func (a *astConv) toPivotRef(n *Node) *PivotRef {
+	if n == nil || n.Type() != "PivotRef" {
+		return nil
+	}
+	v := astNew(&a.tPivotRef)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Source = a.toTableRef(astNode(n.Field("Source")))
+	v.Aggregates = a.list22(astNode(n.Field("Aggregates")))
+	v.Values = a.list32(astNode(n.Field("Values")))
+	v.GroupBy = a.list9(astNode(n.Field("GroupBy")))
+	v.Alias = a.toTableAlias(astNode(n.Field("Alias")))
+	return v
+}
+
+func (a *astConv) toPivotValue(n *Node) *PivotValue {
+	if n == nil || n.Type() != "PivotValue" {
+		return nil
+	}
+	v := astNew(&a.tPivotValue)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Header = a.list3(astNode(n.Field("Header")))
+	v.Items = a.list22(astNode(n.Field("Items")))
+	v.Enum = a.toIdent(astNode(n.Field("Enum")))
+	return v
+}
+
+func (a *astConv) toPositionalRef(n *Node) *PositionalRef {
+	if n == nil || n.Type() != "PositionalRef" {
+		return nil
+	}
+	v := astNew(&a.tPositionalRef)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Index = a.toNumber(astNode(n.Field("Index")))
+	return v
+}
+
+func (a *astConv) toPostfixOp(n *Node) *PostfixOp {
+	if n == nil || n.Type() != "PostfixOp" {
+		return nil
+	}
+	v := astNew(&a.tPostfixOp)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Op = a.toMatch(astNode(n.Field("Op")))
+	return v
+}
+
+func (a *astConv) toPragmaStmt(n *Node) *PragmaStmt {
+	if n == nil || n.Type() != "PragmaStmt" {
+		return nil
+	}
+	v := astNew(&a.tPragmaStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Values = a.list3(astNode(n.Field("Values")))
+	v.Args = a.list3(astNode(n.Field("Args")))
+	v.Call = astBool(n.Field("Call"))
+	return v
+}
+
+func (a *astConv) toPrepareStmt(n *Node) *PrepareStmt {
+	if n == nil || n.Type() != "PrepareStmt" {
+		return nil
+	}
+	v := astNew(&a.tPrepareStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Types = a.list26(astNode(n.Field("Types")))
+	v.Stmt = a.toStatement(astNode(n.Field("Stmt")))
+	return v
+}
+
+func (a *astConv) toReference(n *Node) *Reference {
+	if n == nil || n.Type() != "Reference" {
+		return nil
+	}
+	v := astNew(&a.tReference)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Table = a.toName(astNode(n.Field("Table")))
+	v.Columns = a.list9(astNode(n.Field("Columns")))
+	v.Match = a.toMatch(astNode(n.Field("Match")))
+	v.OnUpdate = a.toMatch(astNode(n.Field("OnUpdate")))
+	v.OnDelete = a.toMatch(astNode(n.Field("OnDelete")))
+	return v
+}
+
+func (a *astConv) toReloption(n *Node) *Reloption {
+	if n == nil || n.Type() != "Reloption" {
+		return nil
+	}
+	v := astNew(&a.tReloption)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Value = a.toExpr(astNode(n.Field("Value")))
+	v.Arg = a.toMatch(astNode(n.Field("Arg")))
+	return v
+}
+
+func (a *astConv) toRenameItem(n *Node) *RenameItem {
+	if n == nil || n.Type() != "RenameItem" {
+		return nil
+	}
+	v := astNew(&a.tRenameItem)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.From = a.toName(astNode(n.Field("From")))
+	v.To = a.toIdent(astNode(n.Field("To")))
+	return v
+}
+
+func (a *astConv) toRenameStmt(n *Node) *RenameStmt {
+	if n == nil || n.Type() != "RenameStmt" {
+		return nil
+	}
+	v := astNew(&a.tRenameStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Object = astString(n.Field("Object"))
+	v.IfExists = astBool(n.Field("IfExists"))
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Column = a.toName(astNode(n.Field("Column")))
+	v.Constraint = a.toIdent(astNode(n.Field("Constraint")))
+	v.NewName = a.toIdent(astNode(n.Field("NewName")))
+	return v
+}
+
+func (a *astConv) toReplaceItem(n *Node) *ReplaceItem {
+	if n == nil || n.Type() != "ReplaceItem" {
+		return nil
+	}
+	v := astNew(&a.tReplaceItem)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expr = a.toExpr(astNode(n.Field("Expr")))
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	return v
+}
+
+func (a *astConv) toResetStmt(n *Node) *ResetStmt {
+	if n == nil || n.Type() != "ResetStmt" {
+		return nil
+	}
+	v := astNew(&a.tResetStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Scope = astString(n.Field("Scope"))
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.All = astBool(n.Field("All"))
+	v.Special = astString(n.Field("Special"))
+	return v
+}
+
+func (a *astConv) toRow(n *Node) *Row {
+	if n == nil || n.Type() != "Row" {
+		return nil
+	}
+	v := astNew(&a.tRow)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Items = a.list3(astNode(n.Field("Items")))
+	v.Keyword = astBool(n.Field("Keyword"))
+	return v
+}
+
+func (a *astConv) toRowsFromItem(n *Node) *RowsFromItem {
+	if n == nil || n.Type() != "RowsFromItem" {
+		return nil
+	}
+	v := astNew(&a.tRowsFromItem)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Func = a.toExpr(astNode(n.Field("Func")))
+	v.ColDefs = a.list33(astNode(n.Field("ColDefs")))
+	return v
+}
+
+func (a *astConv) toSampleClause(n *Node) *SampleClause {
+	if n == nil || n.Type() != "SampleClause" {
+		return nil
+	}
+	v := astNew(&a.tSampleClause)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Method = a.toIdent(astNode(n.Field("Method")))
+	v.Value = a.toExpr(astNode(n.Field("Value")))
+	v.Unit = astString(n.Field("Unit"))
+	v.Repeatable = a.toNumber(astNode(n.Field("Repeatable")))
+	v.Seed = a.toNumber(astNode(n.Field("Seed")))
+	return v
+}
+
+func (a *astConv) toScript(n *Node) *Script {
+	if n == nil || n.Type() != "Script" {
+		return nil
+	}
+	v := astNew(&a.tScript)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Statements = a.list16(astNode(n.Field("Statements")))
+	return v
+}
+
+func (a *astConv) toSecretOption(n *Node) *SecretOption {
+	if n == nil || n.Type() != "SecretOption" {
+		return nil
+	}
+	v := astNew(&a.tSecretOption)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Value = a.toExpr(astNode(n.Field("Value")))
+	return v
+}
+
+func (a *astConv) toSelect(n *Node) *Select {
+	if n == nil || n.Type() != "Select" {
+		return nil
+	}
+	v := astNew(&a.tSelect)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.With = a.toWith(astNode(n.Field("With")))
+	v.Body = a.toQueryBody(astNode(n.Field("Body")))
+	v.OrderBy = a.toOrderBy(astNode(n.Field("OrderBy")))
+	v.Limit = a.toLimitClause(astNode(n.Field("Limit")))
+	v.Offset = a.toOffsetClause(astNode(n.Field("Offset")))
+	v.Locking = a.list34(astNode(n.Field("Locking")))
+	return v
+}
+
+func (a *astConv) toSelectCore(n *Node) *SelectCore {
+	if n == nil || n.Type() != "SelectCore" {
+		return nil
+	}
+	v := astNew(&a.tSelectCore)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.FromFirst = astBool(n.Field("FromFirst"))
+	v.Distinct = a.toDistinctClause(astNode(n.Field("Distinct")))
+	v.Items = a.list22(astNode(n.Field("Items")))
+	v.Into = a.toIntoClause(astNode(n.Field("Into")))
+	v.From = a.list21(astNode(n.Field("From")))
+	v.Where = a.toExpr(astNode(n.Field("Where")))
+	v.GroupBy = a.toGroupBy(astNode(n.Field("GroupBy")))
+	v.Having = a.toExpr(astNode(n.Field("Having")))
+	v.Windows = a.list35(astNode(n.Field("Windows")))
+	v.Qualify = a.toExpr(astNode(n.Field("Qualify")))
+	v.Sample = a.toSampleClause(astNode(n.Field("Sample")))
+	return v
+}
+
+func (a *astConv) toSelectItem(n *Node) *SelectItem {
+	if n == nil || n.Type() != "SelectItem" {
+		return nil
+	}
+	v := astNew(&a.tSelectItem)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expr = a.toExpr(astNode(n.Field("Expr")))
+	v.Alias = a.toIdent(astNode(n.Field("Alias")))
+	v.As = astBool(n.Field("As"))
+	v.Prefix = astBool(n.Field("Prefix"))
+	return v
+}
+
+func (a *astConv) toSeqOption(n *Node) *SeqOption {
+	if n == nil || n.Type() != "SeqOption" {
+		return nil
+	}
+	v := astNew(&a.tSeqOption)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Kind = astString(n.Field("Kind"))
+	v.Type = a.toType(astNode(n.Field("Type")))
+	v.Value = astString(n.Field("Value"))
+	v.Owner = a.toName(astNode(n.Field("Owner")))
+	return v
+}
+
+func (a *astConv) toSetClause(n *Node) *SetClause {
+	if n == nil || n.Type() != "SetClause" {
+		return nil
+	}
+	v := astNew(&a.tSetClause)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Targets = a.list23(astNode(n.Field("Targets")))
+	v.Value = a.toExpr(astNode(n.Field("Value")))
+	v.Paren = astBool(n.Field("Paren"))
+	return v
+}
+
+func (a *astConv) toSetOp(n *Node) *SetOp {
+	if n == nil || n.Type() != "SetOp" {
+		return nil
+	}
+	v := astNew(&a.tSetOp)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Left = a.toQueryBody(astNode(n.Field("Left")))
+	v.Op = astString(n.Field("Op"))
+	v.Quantifier = astString(n.Field("Quantifier"))
+	v.ByName = astBool(n.Field("ByName"))
+	v.Right = a.toQueryBody(astNode(n.Field("Right")))
+	return v
+}
+
+func (a *astConv) toSetStmt(n *Node) *SetStmt {
+	if n == nil || n.Type() != "SetStmt" {
+		return nil
+	}
+	v := astNew(&a.tSetStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Scope = astString(n.Field("Scope"))
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Values = a.list3(astNode(n.Field("Values")))
+	v.TimeZone = astString(n.Field("TimeZone"))
+	v.FromCurrent = astBool(n.Field("FromCurrent"))
+	v.Schema = a.toStringLit(astNode(n.Field("Schema")))
+	return v
+}
+
+func (a *astConv) toShowStmt(n *Node) *ShowStmt {
+	if n == nil || n.Type() != "ShowStmt" {
+		return nil
+	}
+	v := astNew(&a.tShowStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Kind = astString(n.Field("Kind"))
+	v.Query = a.toSelect(astNode(n.Field("Query")))
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Tables = astBool(n.Field("Tables"))
+	v.From = a.toName(astNode(n.Field("From")))
+	v.Special = astString(n.Field("Special"))
+	v.All = astBool(n.Field("All"))
+	return v
+}
+
+func (a *astConv) toSliceStep(n *Node) *SliceStep {
+	if n == nil || n.Type() != "SliceStep" {
+		return nil
+	}
+	v := astNew(&a.tSliceStep)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Lo = a.toExpr(astNode(n.Field("Lo")))
+	v.Hi = a.toExpr(astNode(n.Field("Hi")))
+	v.Stride = a.toExpr(astNode(n.Field("Stride")))
+	v.Dash = astBool(n.Field("Dash"))
+	return v
+}
+
+func (a *astConv) toSortItem(n *Node) *SortItem {
+	if n == nil || n.Type() != "SortItem" {
+		return nil
+	}
+	v := astNew(&a.tSortItem)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expr = a.toExpr(astNode(n.Field("Expr")))
+	v.Using = astString(n.Field("Using"))
+	v.Direction = astString(n.Field("Direction"))
+	v.Nulls = astString(n.Field("Nulls"))
+	return v
+}
+
+func (a *astConv) toSpecialCall(n *Node) *SpecialCall {
+	if n == nil || n.Type() != "SpecialCall" {
+		return nil
+	}
+	v := astNew(&a.tSpecialCall)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = astString(n.Field("Name"))
+	v.Spec = astString(n.Field("Spec"))
+	v.Args = a.list3(astNode(n.Field("Args")))
+	v.From = a.list3(astNode(n.Field("From")))
+	v.For = a.toExpr(astNode(n.Field("For")))
+	v.Placing = a.toExpr(astNode(n.Field("Placing")))
+	v.Chars = a.toExpr(astNode(n.Field("Chars")))
+	v.Type = a.toType(astNode(n.Field("Type")))
+	return v
+}
+
+func (a *astConv) toStar(n *Node) *Star {
+	if n == nil || n.Type() != "Star" {
+		return nil
+	}
+	v := astNew(&a.tStar)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Qualifier = a.toIdent(astNode(n.Field("Qualifier")))
+	v.Exclude = a.list23(astNode(n.Field("Exclude")))
+	v.Replace = a.list36(astNode(n.Field("Replace")))
+	v.Rename = a.list37(astNode(n.Field("Rename")))
+	return v
+}
+
+func (a *astConv) toStructField(n *Node) *StructField {
+	if n == nil || n.Type() != "StructField" {
+		return nil
+	}
+	v := astNew(&a.tStructField)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Value = a.toExpr(astNode(n.Field("Value")))
+	return v
+}
+
+func (a *astConv) toStructLit(n *Node) *StructLit {
+	if n == nil || n.Type() != "StructLit" {
+		return nil
+	}
+	v := astNew(&a.tStructLit)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Fields = a.list38(astNode(n.Field("Fields")))
+	return v
+}
+
+func (a *astConv) toSubquery(n *Node) *Subquery {
+	if n == nil || n.Type() != "Subquery" {
+		return nil
+	}
+	v := astNew(&a.tSubquery)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Query = a.toParenQuery(astNode(n.Field("Query")))
+	return v
+}
+
+func (a *astConv) toSubqueryRef(n *Node) *SubqueryRef {
+	if n == nil || n.Type() != "SubqueryRef" {
+		return nil
+	}
+	v := astNew(&a.tSubqueryRef)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Prefix = a.toIdent(astNode(n.Field("Prefix")))
+	v.Query = a.toParenQuery(astNode(n.Field("Query")))
+	v.Lateral = astBool(n.Field("Lateral"))
+	v.Alias = a.toTableAlias(astNode(n.Field("Alias")))
+	v.Sample = a.toSampleClause(astNode(n.Field("Sample")))
+	return v
+}
+
+func (a *astConv) toTableAlias(n *Node) *TableAlias {
+	if n == nil || n.Type() != "TableAlias" {
+		return nil
+	}
+	v := astNew(&a.tTableAlias)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Columns = a.list9(astNode(n.Field("Columns")))
+	v.ColDefs = a.list33(astNode(n.Field("ColDefs")))
+	v.As = astBool(n.Field("As"))
+	return v
+}
+
+func (a *astConv) toTableConstraint(n *Node) *TableConstraint {
+	if n == nil || n.Type() != "TableConstraint" {
+		return nil
+	}
+	v := astNew(&a.tTableConstraint)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Kind = astString(n.Field("Kind"))
+	v.Columns = a.list9(astNode(n.Field("Columns")))
+	v.Expr = a.toExpr(astNode(n.Field("Expr")))
+	v.Reference = a.toReference(astNode(n.Field("Reference")))
+	v.Index = a.toIdent(astNode(n.Field("Index")))
+	v.Options = a.list12(astNode(n.Field("Options")))
+	v.Attributes = a.list39(astNode(n.Field("Attributes")))
+	return v
+}
+
+func (a *astConv) toTableLike(n *Node) *TableLike {
+	if n == nil || n.Type() != "TableLike" {
+		return nil
+	}
+	v := astNew(&a.tTableLike)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Table = a.toName(astNode(n.Field("Table")))
+	v.Options = a.list39(astNode(n.Field("Options")))
+	return v
+}
+
+func (a *astConv) toTableQuery(n *Node) *TableQuery {
+	if n == nil || n.Type() != "TableQuery" {
+		return nil
+	}
+	v := astNew(&a.tTableQuery)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Table = a.toName(astNode(n.Field("Table")))
+	return v
+}
+
+func (a *astConv) toTargetTable(n *Node) *TargetTable {
+	if n == nil || n.Type() != "TargetTable" {
+		return nil
+	}
+	v := astNew(&a.tTargetTable)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toName(astNode(n.Field("Name")))
+	v.Only = astBool(n.Field("Only"))
+	v.Star = astBool(n.Field("Star"))
+	v.Alias = a.toIdent(astNode(n.Field("Alias")))
+	v.As = astBool(n.Field("As"))
+	return v
+}
+
+func (a *astConv) toTransactionStmt(n *Node) *TransactionStmt {
+	if n == nil || n.Type() != "TransactionStmt" {
+		return nil
+	}
+	v := astNew(&a.tTransactionStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Kind = astString(n.Field("Kind"))
+	v.Work = astString(n.Field("Work"))
+	v.Mode = astString(n.Field("Mode"))
+	return v
+}
+
+func (a *astConv) toType(n *Node) *Type {
+	if n == nil || n.Type() != "Type" {
+		return nil
+	}
+	v := astNew(&a.tType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = astString(n.Field("Name"))
+	v.Mods = a.list3(astNode(n.Field("Mods")))
+	v.Fields = a.list40(astNode(n.Field("Fields")))
+	v.Elems = a.list26(astNode(n.Field("Elems")))
+	v.Dims = a.list41(astNode(n.Field("Dims")))
+	v.Zone = astString(n.Field("Zone"))
+	return v
+}
+
+func (a *astConv) toTypeField(n *Node) *TypeField {
+	if n == nil || n.Type() != "TypeField" {
+		return nil
+	}
+	v := astNew(&a.tTypeField)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Type = a.toType(astNode(n.Field("Type")))
+	return v
+}
+
+func (a *astConv) toTypedLit(n *Node) *TypedLit {
+	if n == nil || n.Type() != "TypedLit" {
+		return nil
+	}
+	v := astNew(&a.tTypedLit)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Type = a.toType(astNode(n.Field("Type")))
+	v.Value = a.toStringLit(astNode(n.Field("Value")))
+	return v
+}
+
+func (a *astConv) toUnary(n *Node) *Unary {
+	if n == nil || n.Type() != "Unary" {
+		return nil
+	}
+	v := astNew(&a.tUnary)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Op = a.toMatch(astNode(n.Field("Op")))
+	v.X = a.toExpr(astNode(n.Field("X")))
+	return v
+}
+
+func (a *astConv) toUnpackExpr(n *Node) *UnpackExpr {
+	if n == nil || n.Type() != "UnpackExpr" {
+		return nil
+	}
+	v := astNew(&a.tUnpackExpr)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Arg = a.toExpr(astNode(n.Field("Arg")))
+	return v
+}
+
+func (a *astConv) toUnpivotQuery(n *Node) *UnpivotQuery {
+	if n == nil || n.Type() != "UnpivotQuery" {
+		return nil
+	}
+	v := astNew(&a.tUnpivotQuery)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Source = a.toTableRef(astNode(n.Field("Source")))
+	v.On = a.list22(astNode(n.Field("On")))
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Values = a.list9(astNode(n.Field("Values")))
+	return v
+}
+
+func (a *astConv) toUnpivotRef(n *Node) *UnpivotRef {
+	if n == nil || n.Type() != "UnpivotRef" {
+		return nil
+	}
+	v := astNew(&a.tUnpivotRef)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Source = a.toTableRef(astNode(n.Field("Source")))
+	v.IncludeNulls = a.toMatch(astNode(n.Field("IncludeNulls")))
+	v.Header = a.list9(astNode(n.Field("Header")))
+	v.Values = a.list42(astNode(n.Field("Values")))
+	v.Alias = a.toTableAlias(astNode(n.Field("Alias")))
+	return v
+}
+
+func (a *astConv) toUnpivotValue(n *Node) *UnpivotValue {
+	if n == nil || n.Type() != "UnpivotValue" {
+		return nil
+	}
+	v := astNew(&a.tUnpivotValue)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Header = a.list9(astNode(n.Field("Header")))
+	v.Items = a.list22(astNode(n.Field("Items")))
+	return v
+}
+
+func (a *astConv) toUpdateExtensionsStmt(n *Node) *UpdateExtensionsStmt {
+	if n == nil || n.Type() != "UpdateExtensionsStmt" {
+		return nil
+	}
+	v := astNew(&a.tUpdateExtensionsStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.With = a.toWith(astNode(n.Field("With")))
+	v.Names = a.list9(astNode(n.Field("Names")))
+	return v
+}
+
+func (a *astConv) toUpdateStmt(n *Node) *UpdateStmt {
+	if n == nil || n.Type() != "UpdateStmt" {
+		return nil
+	}
+	v := astNew(&a.tUpdateStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.With = a.toWith(astNode(n.Field("With")))
+	v.Table = a.toTargetTable(astNode(n.Field("Table")))
+	v.Set = a.list29(astNode(n.Field("Set")))
+	v.From = a.list21(astNode(n.Field("From")))
+	v.Where = a.toExpr(astNode(n.Field("Where")))
+	v.Returning = a.list22(astNode(n.Field("Returning")))
+	return v
+}
+
+func (a *astConv) toUseStmt(n *Node) *UseStmt {
+	if n == nil || n.Type() != "UseStmt" {
+		return nil
+	}
+	v := astNew(&a.tUseStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toName(astNode(n.Field("Name")))
+	return v
+}
+
+func (a *astConv) toVacuumStmt(n *Node) *VacuumStmt {
+	if n == nil || n.Type() != "VacuumStmt" {
+		return nil
+	}
+	v := astNew(&a.tVacuumStmt)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Full = astBool(n.Field("Full"))
+	v.Freeze = astBool(n.Field("Freeze"))
+	v.Verbose = astBool(n.Field("Verbose"))
+	v.Options = a.list39(astNode(n.Field("Options")))
+	v.Analyze = a.toAnalyzeStmt(astNode(n.Field("Analyze")))
+	v.Table = a.toName(astNode(n.Field("Table")))
+	v.Columns = a.list9(astNode(n.Field("Columns")))
+	return v
+}
+
+func (a *astConv) toValuesClause(n *Node) *ValuesClause {
+	if n == nil || n.Type() != "ValuesClause" {
+		return nil
+	}
+	v := astNew(&a.tValuesClause)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Rows = a.list43(astNode(n.Field("Rows")))
+	return v
+}
+
+func (a *astConv) toValuesRef(n *Node) *ValuesRef {
+	if n == nil || n.Type() != "ValuesRef" {
+		return nil
+	}
+	v := astNew(&a.tValuesRef)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Prefix = a.toIdent(astNode(n.Field("Prefix")))
+	v.Values = a.toValuesClause(astNode(n.Field("Values")))
+	v.Alias = a.toTableAlias(astNode(n.Field("Alias")))
+	v.Sample = a.toSampleClause(astNode(n.Field("Sample")))
+	return v
+}
+
+func (a *astConv) toValuesRow(n *Node) *ValuesRow {
+	if n == nil || n.Type() != "ValuesRow" {
+		return nil
+	}
+	v := astNew(&a.tValuesRow)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Items = a.list3(astNode(n.Field("Items")))
+	return v
+}
+
+func (a *astConv) toWhen(n *Node) *When {
+	if n == nil || n.Type() != "When" {
+		return nil
+	}
+	v := astNew(&a.tWhen)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Cond = a.toExpr(astNode(n.Field("Cond")))
+	v.Then = a.toExpr(astNode(n.Field("Then")))
+	return v
+}
+
+func (a *astConv) toWindowDef(n *Node) *WindowDef {
+	if n == nil || n.Type() != "WindowDef" {
+		return nil
+	}
+	v := astNew(&a.tWindowDef)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Spec = a.toWindowSpec(astNode(n.Field("Spec")))
+	return v
+}
+
+func (a *astConv) toWindowOver(n *Node) *WindowOver {
+	if n == nil || n.Type() != "WindowOver" {
+		return nil
+	}
+	v := astNew(&a.tWindowOver)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Spec = a.toWindowSpec(astNode(n.Field("Spec")))
+	return v
+}
+
+func (a *astConv) toWindowSpec(n *Node) *WindowSpec {
+	if n == nil || n.Type() != "WindowSpec" {
+		return nil
+	}
+	v := astNew(&a.tWindowSpec)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Base = a.toIdent(astNode(n.Field("Base")))
+	v.PartitionBy = a.list3(astNode(n.Field("PartitionBy")))
+	v.OrderBy = a.toOrderBy(astNode(n.Field("OrderBy")))
+	v.Frame = a.toFrame(astNode(n.Field("Frame")))
+	return v
+}
+
+func (a *astConv) toWith(n *Node) *With {
+	if n == nil || n.Type() != "With" {
+		return nil
+	}
+	v := astNew(&a.tWith)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Recursive = astBool(n.Field("Recursive"))
+	v.CTEs = a.list44(astNode(n.Field("CTEs")))
+	return v
+}
+
+func (a *astConv) toExpr(n *Node) Expr {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Number":
+		return a.toNumber(n)
+	case "StringLit":
+		return a.toStringLit(n)
+	case "BitLit":
+		return a.toBitLit(n)
+	case "BoolLit":
+		return a.toBoolLit(n)
+	case "NullLit":
+		return a.toNullLit(n)
+	case "Param":
+		return a.toParam(n)
+	case "Paren":
+		return a.toParen(n)
+	case "ColumnRef":
+		return a.toColumnRef(n)
+	case "DefaultExpr":
+		return a.toDefaultExpr(n)
+	case "PositionalRef":
+		return a.toPositionalRef(n)
+	case "Star":
+		return a.toStar(n)
+	case "ColumnsExpr":
+		return a.toColumnsExpr(n)
+	case "UnpackExpr":
+		return a.toUnpackExpr(n)
+	case "Binary":
+		return a.toBinary(n)
+	case "Unary":
+		return a.toUnary(n)
+	case "PostfixOp":
+		return a.toPostfixOp(n)
+	case "Not":
+		return a.toNot(n)
+	case "IsExpr":
+		return a.toIsExpr(n)
+	case "DistinctFrom":
+		return a.toDistinctFrom(n)
+	case "IsOf":
+		return a.toIsOf(n)
+	case "Between":
+		return a.toBetween(n)
+	case "In":
+		return a.toIn(n)
+	case "Like":
+		return a.toLike(n)
+	case "AnyAll":
+		return a.toAnyAll(n)
+	case "AtTimeZone":
+		return a.toAtTimeZone(n)
+	case "Collate":
+		return a.toCollate(n)
+	case "Cast":
+		return a.toCast(n)
+	case "Case":
+		return a.toCase(n)
+	case "Row":
+		return a.toRow(n)
+	case "ListLit":
+		return a.toListLit(n)
+	case "ArrayLit":
+		return a.toArrayLit(n)
+	case "StructLit":
+		return a.toStructLit(n)
+	case "MapLit":
+		return a.toMapLit(n)
+	case "ListComp":
+		return a.toListComp(n)
+	case "Lambda":
+		return a.toLambda(n)
+	case "Subquery":
+		return a.toSubquery(n)
+	case "Exists":
+		return a.toExists(n)
+	case "ArraySubquery":
+		return a.toArraySubquery(n)
+	case "Grouping":
+		return a.toGrouping(n)
+	case "TypedLit":
+		return a.toTypedLit(n)
+	case "IntervalLit":
+		return a.toIntervalLit(n)
+	case "NamedArg":
+		return a.toNamedArg(n)
+	case "FuncCall":
+		return a.toFuncCall(n)
+	case "SpecialCall":
+		return a.toSpecialCall(n)
+	case "Indirection":
+		return a.toIndirection(n)
+	case "GroupingSet":
+		return a.toGroupingSet(n)
+	}
+	return nil
+}
+
+func (a *astConv) toParenContent(n *Node) ParenContent {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Select":
+		return a.toSelect(n)
+	case "ParenQuery":
+		return a.toParenQuery(n)
+	case "ShowStmt":
+		return a.toShowStmt(n)
+	}
+	return nil
+}
+
+func (a *astConv) toQueryBody(n *Node) QueryBody {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "SelectCore":
+		return a.toSelectCore(n)
+	case "ValuesClause":
+		return a.toValuesClause(n)
+	case "TableQuery":
+		return a.toTableQuery(n)
+	case "PivotQuery":
+		return a.toPivotQuery(n)
+	case "UnpivotQuery":
+		return a.toUnpivotQuery(n)
+	case "SetOp":
+		return a.toSetOp(n)
+	case "ParenQuery":
+		return a.toParenQuery(n)
+	}
+	return nil
+}
+
+func (a *astConv) toStatement(n *Node) Statement {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Select":
+		return a.toSelect(n)
+	case "InsertStmt":
+		return a.toInsertStmt(n)
+	case "UpdateStmt":
+		return a.toUpdateStmt(n)
+	case "DeleteStmt":
+		return a.toDeleteStmt(n)
+	case "MergeStmt":
+		return a.toMergeStmt(n)
+	case "CreateTableStmt":
+		return a.toCreateTableStmt(n)
+	case "CreateTableAsStmt":
+		return a.toCreateTableAsStmt(n)
+	case "CreateViewStmt":
+		return a.toCreateViewStmt(n)
+	case "CreateIndexStmt":
+		return a.toCreateIndexStmt(n)
+	case "CreateSchemaStmt":
+		return a.toCreateSchemaStmt(n)
+	case "CreateSequenceStmt":
+		return a.toCreateSequenceStmt(n)
+	case "CreateTypeStmt":
+		return a.toCreateTypeStmt(n)
+	case "CreateMacroStmt":
+		return a.toCreateMacroStmt(n)
+	case "CreateSecretStmt":
+		return a.toCreateSecretStmt(n)
+	case "AlterTableStmt":
+		return a.toAlterTableStmt(n)
+	case "AlterSequenceStmt":
+		return a.toAlterSequenceStmt(n)
+	case "AlterDatabaseStmt":
+		return a.toAlterDatabaseStmt(n)
+	case "AlterObjectSchemaStmt":
+		return a.toAlterObjectSchemaStmt(n)
+	case "RenameStmt":
+		return a.toRenameStmt(n)
+	case "DropStmt":
+		return a.toDropStmt(n)
+	case "DropSecretStmt":
+		return a.toDropSecretStmt(n)
+	case "CopyStmt":
+		return a.toCopyStmt(n)
+	case "CopyDatabaseStmt":
+		return a.toCopyDatabaseStmt(n)
+	case "ExportStmt":
+		return a.toExportStmt(n)
+	case "ImportStmt":
+		return a.toImportStmt(n)
+	case "AttachStmt":
+		return a.toAttachStmt(n)
+	case "DetachStmt":
+		return a.toDetachStmt(n)
+	case "UseStmt":
+		return a.toUseStmt(n)
+	case "LoadStmt":
+		return a.toLoadStmt(n)
+	case "PragmaStmt":
+		return a.toPragmaStmt(n)
+	case "SetStmt":
+		return a.toSetStmt(n)
+	case "ResetStmt":
+		return a.toResetStmt(n)
+	case "ShowStmt":
+		return a.toShowStmt(n)
+	case "ExplainStmt":
+		return a.toExplainStmt(n)
+	case "PrepareStmt":
+		return a.toPrepareStmt(n)
+	case "ExecuteStmt":
+		return a.toExecuteStmt(n)
+	case "DeallocateStmt":
+		return a.toDeallocateStmt(n)
+	case "TransactionStmt":
+		return a.toTransactionStmt(n)
+	case "VacuumStmt":
+		return a.toVacuumStmt(n)
+	case "AnalyzeStmt":
+		return a.toAnalyzeStmt(n)
+	case "CheckpointStmt":
+		return a.toCheckpointStmt(n)
+	case "CallStmt":
+		return a.toCallStmt(n)
+	case "CommentStmt":
+		return a.toCommentStmt(n)
+	case "UpdateExtensionsStmt":
+		return a.toUpdateExtensionsStmt(n)
+	}
+	return nil
+}
+
+func (a *astConv) toStep(n *Node) Step {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "FieldStep":
+		return a.toFieldStep(n)
+	case "IndexStep":
+		return a.toIndexStep(n)
+	case "SliceStep":
+		return a.toSliceStep(n)
+	}
+	return nil
+}
+
+func (a *astConv) toTableElement(n *Node) TableElement {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "ColumnDef":
+		return a.toColumnDef(n)
+	case "TableConstraint":
+		return a.toTableConstraint(n)
+	case "TableLike":
+		return a.toTableLike(n)
+	}
+	return nil
+}
+
+func (a *astConv) toTableRef(n *Node) TableRef {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "BaseTable":
+		return a.toBaseTable(n)
+	case "FuncTable":
+		return a.toFuncTable(n)
+	case "SubqueryRef":
+		return a.toSubqueryRef(n)
+	case "ValuesRef":
+		return a.toValuesRef(n)
+	case "ParenTable":
+		return a.toParenTable(n)
+	case "Join":
+		return a.toJoin(n)
+	case "PivotRef":
+		return a.toPivotRef(n)
+	case "UnpivotRef":
+		return a.toUnpivotRef(n)
+	}
+	return nil
+}
+
+func (a *astConv) list0(n *Node) []any {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list0Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.anyValue(c)
+	}
+	return out
+}
+
+func (a *astConv) list1(n *Node) []*Node {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list1Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = astNode(c)
+	}
+	return out
+}
+
+func (a *astConv) list2(n *Node) []*ColumnConstraint {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list2Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toColumnConstraint(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list3(n *Node) []Expr {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list3Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toExpr(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list4(n *Node) []*SortItem {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list4Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toSortItem(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list5(n *Node) []*Reloption {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list5Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toReloption(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list6(n *Node) []*SeqOption {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list6Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toSeqOption(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list7(n *Node) []*GenericAlterOption {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list7Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toGenericAlterOption(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list8(n *Node) []*AlterCmd {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list8Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toAlterCmd(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list9(n *Node) []*Ident {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list9Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toIdent(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list10(n *Node) []*GenericOption {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list10Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toGenericOption(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list11(n *Node) []*When {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list11Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toWhen(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list12(n *Node) []*DefElem {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list12Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toDefElem(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list13(n *Node) []*CopyOption {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list13Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toCopyOption(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list14(n *Node) []*IndexElem {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list14Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toIndexElem(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list15(n *Node) []*MacroDef {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list15Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toMacroDef(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list16(n *Node) []Statement {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list16Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toStatement(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list17(n *Node) []*SecretOption {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list17Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toSecretOption(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list18(n *Node) []*PartitionSorted {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list18Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toPartitionSorted(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list19(n *Node) []TableElement {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list19Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toTableElement(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list20(n *Node) []*StringLit {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list20Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toStringLit(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list21(n *Node) []TableRef {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list21Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toTableRef(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list22(n *Node) []*SelectItem {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list22Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toSelectItem(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list23(n *Node) []*Name {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list23Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toName(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list24(n *Node) []*ExplainOption {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list24Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toExplainOption(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list25(n *Node) []*RowsFromItem {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list25Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toRowsFromItem(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list26(n *Node) []*Type {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list26Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toType(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list27(n *Node) []*MacroParam {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list27Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toMacroParam(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list28(n *Node) []*MapEntry {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list28Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toMapEntry(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list29(n *Node) []*SetClause {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list29Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toSetClause(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list30(n *Node) []*MergeWhen {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list30Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toMergeWhen(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list31(n *Node) []*PivotColumn {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list31Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toPivotColumn(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list32(n *Node) []*PivotValue {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list32Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toPivotValue(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list33(n *Node) []*ColDef {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list33Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toColDef(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list34(n *Node) []*LockClause {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list34Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toLockClause(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list35(n *Node) []*WindowDef {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list35Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toWindowDef(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list36(n *Node) []*ReplaceItem {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list36Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toReplaceItem(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list37(n *Node) []*RenameItem {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list37Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toRenameItem(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list38(n *Node) []*StructField {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list38Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toStructField(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list39(n *Node) []*Match {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list39Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toMatch(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list40(n *Node) []*TypeField {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list40Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toTypeField(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list41(n *Node) []*ArrayDim {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list41Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toArrayDim(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list42(n *Node) []*UnpivotValue {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list42Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toUnpivotValue(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list43(n *Node) []*ValuesRow {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list43Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toValuesRow(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list44(n *Node) []*CTE {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list44Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toCTE(astNode(c))
+	}
+	return out
+}
+
+// astConv converts nodes into typed values.
+type astConv struct {
+	match                  astChunk[Match]
+	error                  astChunk[Error]
+	tBitLit                astChunk[BitLit]
+	tBoolLit               astChunk[BoolLit]
+	tDefaultExpr           astChunk[DefaultExpr]
+	tIdent                 astChunk[Ident]
+	tIntervalUnit          astChunk[IntervalUnit]
+	tNullLit               astChunk[NullLit]
+	tNumber                astChunk[Number]
+	tParam                 astChunk[Param]
+	tStringLit             astChunk[StringLit]
+	tAlterCmd              astChunk[AlterCmd]
+	tAlterDatabaseStmt     astChunk[AlterDatabaseStmt]
+	tAlterObjectSchemaStmt astChunk[AlterObjectSchemaStmt]
+	tAlterSequenceStmt     astChunk[AlterSequenceStmt]
+	tAlterTableStmt        astChunk[AlterTableStmt]
+	tAnalyzeStmt           astChunk[AnalyzeStmt]
+	tAnyAll                astChunk[AnyAll]
+	tArrayDim              astChunk[ArrayDim]
+	tArrayLit              astChunk[ArrayLit]
+	tArraySubquery         astChunk[ArraySubquery]
+	tAtClause              astChunk[AtClause]
+	tAtTimeZone            astChunk[AtTimeZone]
+	tAttachStmt            astChunk[AttachStmt]
+	tBaseTable             astChunk[BaseTable]
+	tBetween               astChunk[Between]
+	tBinary                astChunk[Binary]
+	tCTE                   astChunk[CTE]
+	tCallStmt              astChunk[CallStmt]
+	tCase                  astChunk[Case]
+	tCast                  astChunk[Cast]
+	tCheckpointStmt        astChunk[CheckpointStmt]
+	tColDef                astChunk[ColDef]
+	tCollate               astChunk[Collate]
+	tColumnConstraint      astChunk[ColumnConstraint]
+	tColumnDef             astChunk[ColumnDef]
+	tColumnRef             astChunk[ColumnRef]
+	tColumnsExpr           astChunk[ColumnsExpr]
+	tCommentStmt           astChunk[CommentStmt]
+	tCopyDatabaseStmt      astChunk[CopyDatabaseStmt]
+	tCopyOption            astChunk[CopyOption]
+	tCopyStmt              astChunk[CopyStmt]
+	tCreateIndexStmt       astChunk[CreateIndexStmt]
+	tCreateMacroStmt       astChunk[CreateMacroStmt]
+	tCreateSchemaStmt      astChunk[CreateSchemaStmt]
+	tCreateSecretStmt      astChunk[CreateSecretStmt]
+	tCreateSequenceStmt    astChunk[CreateSequenceStmt]
+	tCreateTableAsStmt     astChunk[CreateTableAsStmt]
+	tCreateTableStmt       astChunk[CreateTableStmt]
+	tCreateTypeStmt        astChunk[CreateTypeStmt]
+	tCreateViewStmt        astChunk[CreateViewStmt]
+	tDeallocateStmt        astChunk[DeallocateStmt]
+	tDefElem               astChunk[DefElem]
+	tDeleteStmt            astChunk[DeleteStmt]
+	tDetachStmt            astChunk[DetachStmt]
+	tDistinctClause        astChunk[DistinctClause]
+	tDistinctFrom          astChunk[DistinctFrom]
+	tDropSecretStmt        astChunk[DropSecretStmt]
+	tDropStmt              astChunk[DropStmt]
+	tExecuteStmt           astChunk[ExecuteStmt]
+	tExists                astChunk[Exists]
+	tExplainOption         astChunk[ExplainOption]
+	tExplainStmt           astChunk[ExplainStmt]
+	tExportStmt            astChunk[ExportStmt]
+	tFieldStep             astChunk[FieldStep]
+	tFrame                 astChunk[Frame]
+	tFrameBound            astChunk[FrameBound]
+	tFuncCall              astChunk[FuncCall]
+	tFuncTable             astChunk[FuncTable]
+	tGeneratedColumn       astChunk[GeneratedColumn]
+	tGenericAlterOption    astChunk[GenericAlterOption]
+	tGenericOption         astChunk[GenericOption]
+	tGroupBy               astChunk[GroupBy]
+	tGrouping              astChunk[Grouping]
+	tGroupingSet           astChunk[GroupingSet]
+	tImportStmt            astChunk[ImportStmt]
+	tIn                    astChunk[In]
+	tIndexElem             astChunk[IndexElem]
+	tIndexStep             astChunk[IndexStep]
+	tIndirection           astChunk[Indirection]
+	tInsertStmt            astChunk[InsertStmt]
+	tIntervalLit           astChunk[IntervalLit]
+	tIntoClause            astChunk[IntoClause]
+	tIsExpr                astChunk[IsExpr]
+	tIsOf                  astChunk[IsOf]
+	tJoin                  astChunk[Join]
+	tLambda                astChunk[Lambda]
+	tLike                  astChunk[Like]
+	tLimitClause           astChunk[LimitClause]
+	tListComp              astChunk[ListComp]
+	tListLit               astChunk[ListLit]
+	tLoadStmt              astChunk[LoadStmt]
+	tLockClause            astChunk[LockClause]
+	tMacroDef              astChunk[MacroDef]
+	tMacroParam            astChunk[MacroParam]
+	tMapEntry              astChunk[MapEntry]
+	tMapLit                astChunk[MapLit]
+	tMergeAction           astChunk[MergeAction]
+	tMergeStmt             astChunk[MergeStmt]
+	tMergeWhen             astChunk[MergeWhen]
+	tName                  astChunk[Name]
+	tNamedArg              astChunk[NamedArg]
+	tNot                   astChunk[Not]
+	tOffsetClause          astChunk[OffsetClause]
+	tOnConflict            astChunk[OnConflict]
+	tOrderBy               astChunk[OrderBy]
+	tParen                 astChunk[Paren]
+	tParenQuery            astChunk[ParenQuery]
+	tParenTable            astChunk[ParenTable]
+	tPartitionSorted       astChunk[PartitionSorted]
+	tPivotColumn           astChunk[PivotColumn]
+	tPivotQuery            astChunk[PivotQuery]
+	tPivotRef              astChunk[PivotRef]
+	tPivotValue            astChunk[PivotValue]
+	tPositionalRef         astChunk[PositionalRef]
+	tPostfixOp             astChunk[PostfixOp]
+	tPragmaStmt            astChunk[PragmaStmt]
+	tPrepareStmt           astChunk[PrepareStmt]
+	tReference             astChunk[Reference]
+	tReloption             astChunk[Reloption]
+	tRenameItem            astChunk[RenameItem]
+	tRenameStmt            astChunk[RenameStmt]
+	tReplaceItem           astChunk[ReplaceItem]
+	tResetStmt             astChunk[ResetStmt]
+	tRow                   astChunk[Row]
+	tRowsFromItem          astChunk[RowsFromItem]
+	tSampleClause          astChunk[SampleClause]
+	tScript                astChunk[Script]
+	tSecretOption          astChunk[SecretOption]
+	tSelect                astChunk[Select]
+	tSelectCore            astChunk[SelectCore]
+	tSelectItem            astChunk[SelectItem]
+	tSeqOption             astChunk[SeqOption]
+	tSetClause             astChunk[SetClause]
+	tSetOp                 astChunk[SetOp]
+	tSetStmt               astChunk[SetStmt]
+	tShowStmt              astChunk[ShowStmt]
+	tSliceStep             astChunk[SliceStep]
+	tSortItem              astChunk[SortItem]
+	tSpecialCall           astChunk[SpecialCall]
+	tStar                  astChunk[Star]
+	tStructField           astChunk[StructField]
+	tStructLit             astChunk[StructLit]
+	tSubquery              astChunk[Subquery]
+	tSubqueryRef           astChunk[SubqueryRef]
+	tTableAlias            astChunk[TableAlias]
+	tTableConstraint       astChunk[TableConstraint]
+	tTableLike             astChunk[TableLike]
+	tTableQuery            astChunk[TableQuery]
+	tTargetTable           astChunk[TargetTable]
+	tTransactionStmt       astChunk[TransactionStmt]
+	tType                  astChunk[Type]
+	tTypeField             astChunk[TypeField]
+	tTypedLit              astChunk[TypedLit]
+	tUnary                 astChunk[Unary]
+	tUnpackExpr            astChunk[UnpackExpr]
+	tUnpivotQuery          astChunk[UnpivotQuery]
+	tUnpivotRef            astChunk[UnpivotRef]
+	tUnpivotValue          astChunk[UnpivotValue]
+	tUpdateExtensionsStmt  astChunk[UpdateExtensionsStmt]
+	tUpdateStmt            astChunk[UpdateStmt]
+	tUseStmt               astChunk[UseStmt]
+	tVacuumStmt            astChunk[VacuumStmt]
+	tValuesClause          astChunk[ValuesClause]
+	tValuesRef             astChunk[ValuesRef]
+	tValuesRow             astChunk[ValuesRow]
+	tWhen                  astChunk[When]
+	tWindowDef             astChunk[WindowDef]
+	tWindowOver            astChunk[WindowOver]
+	tWindowSpec            astChunk[WindowSpec]
+	tWith                  astChunk[With]
+	list0Chunk             astChunk[any]
+	list1Chunk             astChunk[*Node]
+	list2Chunk             astChunk[*ColumnConstraint]
+	list3Chunk             astChunk[Expr]
+	list4Chunk             astChunk[*SortItem]
+	list5Chunk             astChunk[*Reloption]
+	list6Chunk             astChunk[*SeqOption]
+	list7Chunk             astChunk[*GenericAlterOption]
+	list8Chunk             astChunk[*AlterCmd]
+	list9Chunk             astChunk[*Ident]
+	list10Chunk            astChunk[*GenericOption]
+	list11Chunk            astChunk[*When]
+	list12Chunk            astChunk[*DefElem]
+	list13Chunk            astChunk[*CopyOption]
+	list14Chunk            astChunk[*IndexElem]
+	list15Chunk            astChunk[*MacroDef]
+	list16Chunk            astChunk[Statement]
+	list17Chunk            astChunk[*SecretOption]
+	list18Chunk            astChunk[*PartitionSorted]
+	list19Chunk            astChunk[TableElement]
+	list20Chunk            astChunk[*StringLit]
+	list21Chunk            astChunk[TableRef]
+	list22Chunk            astChunk[*SelectItem]
+	list23Chunk            astChunk[*Name]
+	list24Chunk            astChunk[*ExplainOption]
+	list25Chunk            astChunk[*RowsFromItem]
+	list26Chunk            astChunk[*Type]
+	list27Chunk            astChunk[*MacroParam]
+	list28Chunk            astChunk[*MapEntry]
+	list29Chunk            astChunk[*SetClause]
+	list30Chunk            astChunk[*MergeWhen]
+	list31Chunk            astChunk[*PivotColumn]
+	list32Chunk            astChunk[*PivotValue]
+	list33Chunk            astChunk[*ColDef]
+	list34Chunk            astChunk[*LockClause]
+	list35Chunk            astChunk[*WindowDef]
+	list36Chunk            astChunk[*ReplaceItem]
+	list37Chunk            astChunk[*RenameItem]
+	list38Chunk            astChunk[*StructField]
+	list39Chunk            astChunk[*Match]
+	list40Chunk            astChunk[*TypeField]
+	list41Chunk            astChunk[*ArrayDim]
+	list42Chunk            astChunk[*UnpivotValue]
+	list43Chunk            astChunk[*ValuesRow]
+	list44Chunk            astChunk[*CTE]
 }
 
 // ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
@@ -13910,6 +17437,5767 @@ type tslabs struct {
 func ParseAST(input string, opts ...ParseOption) (*Script, error) {
 	a := &tslabs{}
 	return tparse(trules[652], input, opts, a, func(v any) *Script { return tAs[*Script](v) })
+}
+
+// ParseRuleAST parses the whole input with the named rule and returns its typed value.
+// Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.
+// Invalid options and undefined names return nil with an error. Rule result types:
+//
+//	ws: *Node
+//	comment: *Node
+//	block_comment: *Node
+//	wc: *Match
+//	ident_start: *Match
+//	word: *Node
+//	quoted_ident: *Node
+//	uquoted_ident: *Node
+//	col_id: *Ident
+//	type_function_name: *Ident
+//	function_name_token: *Ident
+//	type_name_token: *Ident
+//	ident_only: *Ident
+//	col_label: *Ident
+//	non_reserved_word: *Ident
+//	sq_cont: *Node
+//	sq_string: *Node
+//	e_body: []any
+//	e_string: *Node
+//	u_string: *Node
+//	hex4: []*Match
+//	dollar_string: *Node
+//	dq_close: *Node
+//	dq_tag: any
+//	bit_string: *Node
+//	sconst: *StringLit
+//	bit_lit: *BitLit
+//	digits: *Node
+//	number: *Number
+//	exp: *Node
+//	iconst: *Number
+//	int_lit: *Match
+//	opc: *Match
+//	cut: *Match
+//	rc: *Node
+//	pm_end: *Node
+//	op_plus: *Match
+//	op_minus: *Match
+//	op_star: *Match
+//	op_slash: *Match
+//	op_lt: *Match
+//	op_gt: *Match
+//	op_eq: *Match
+//	op_le: *Match
+//	op_ge: *Match
+//	op_ne: *Match
+//	op_eq_gt: *Match
+//	op_percent: *Match
+//	op_caret: *Match
+//	op_pow: *Match
+//	op_idiv: *Match
+//	op_arrow: *Match
+//	op_darrow: *Match
+//	op_generic: *Match
+//	op_special: *Node
+//	op_plain: *Node
+//	core: []*Node
+//	core_long: *Node
+//	col_id_or_string: *Ident
+//	name: *Ident
+//	attr_name: *Ident
+//	param_name: *Ident
+//	qualified_name: *Name
+//	qn_dotted: *Name
+//	qn_string: *Name
+//	any_name: *Name
+//	name_list: []*Ident
+//	name_list_opt_comma: []*Ident
+//	col_id_list: []*Ident
+//	func_name: *Name
+//	fn_dotted: *Name
+//	fn_single: *Name
+//	expr: Expr
+//	op_rhs_prefix: *Unary
+//	b_expr: Expr
+//	colon: *Node
+//	cmp_op: *Match
+//	like_start: *Node
+//	is_start: *Node
+//	qual_op: *Match
+//	operator_call: *Match
+//	any_operator: *Node
+//	all_op: *Match
+//	subquery_op: any
+//	any_source: Expr
+//	any_source_query: *Subquery
+//	in_source: Expr
+//	in_column: Expr
+//	c_expr: Expr
+//	chained: Expr
+//	col_chained: Expr
+//	call_chained: Expr
+//	primary_other: Expr
+//	literal_primary: Expr
+//	plain_literal: Expr
+//	string_literal: Expr
+//	param: *Param
+//	dollar_name: *Node
+//	positional_ref: *PositionalRef
+//	plain_column: *ColumnRef
+//	column_ref: *ColumnRef
+//	dotted_idents: []*Ident
+//	paren_primary: Expr
+//	subquery_expr: *Subquery
+//	row_expr: *Row
+//	paren_expr: *Paren
+//	indirection_expr: Expr
+//	func_expr: Expr
+//	func_call_plain: *FuncCall
+//	list_lit: *ListLit
+//	array_expr: Expr
+//	array_subquery: *ArraySubquery
+//	array_lit: *ArrayLit
+//	struct_lit: *StructLit
+//	struct_field: *StructField
+//	map_lit: *MapLit
+//	map_entries: []*MapEntry
+//	map_entry: *MapEntry
+//	list_comprehension: *ListComp
+//	list_comp_if: *ListComp
+//	list_comp: *ListComp
+//	case_expr: *Case
+//	when_clause_list: []*When
+//	when_clause: *When
+//	qualified_row: *Row
+//	expr_list: []Expr
+//	expr_list_opt_comma: []Expr
+//	star_primary: Expr
+//	default_expr: *DefaultExpr
+//	columns_expr: *ColumnsExpr
+//	star_columns: *ColumnsExpr
+//	unpack_expr: *UnpackExpr
+//	star_expr: *Star
+//	qualified_star: *Star
+//	lambda_expr: *Lambda
+//	except_name: *Name
+//	except_name_list: []*Name
+//	exclude_list: []*Name
+//	exclude_paren: []*Name
+//	exclude_single: []*Name
+//	replace_item: *ReplaceItem
+//	replace_list: []*ReplaceItem
+//	replace_paren: []*ReplaceItem
+//	replace_single: []*ReplaceItem
+//	rename_item: *RenameItem
+//	rename_list: []*RenameItem
+//	rename_paren: []*RenameItem
+//	rename_single: []*RenameItem
+//	keyword_primary: Expr
+//	bool_lit: *BoolLit
+//	null_lit: *NullLit
+//	exists_expr: *Exists
+//	grouping_expr: *Grouping
+//	cast_expr: *Cast
+//	cast_plain: *Cast
+//	cast_try: *Cast
+//	interval_lit: *IntervalLit
+//	interval_paren: *IntervalLit
+//	interval_const: *IntervalLit
+//	interval_unit: *IntervalUnit
+//	interval_to: *Node
+//	interval_field: *Node
+//	special_call: Expr
+//	sc_coalesce: *SpecialCall
+//	sc_nullif: *SpecialCall
+//	sc_extract: *SpecialCall
+//	sc_extract_empty: *SpecialCall
+//	sc_overlay: *SpecialCall
+//	sc_position: *SpecialCall
+//	sc_position_empty: *SpecialCall
+//	sc_substring_from: *SpecialCall
+//	sc_substring_for_from: *SpecialCall
+//	sc_substring_for: *SpecialCall
+//	sc_substring_list: *SpecialCall
+//	sc_substring_empty: *SpecialCall
+//	sc_treat: *SpecialCall
+//	sc_trim_chars: *SpecialCall
+//	sc_trim: *SpecialCall
+//	sc_collation: *SpecialCall
+//	extract_arg: *Match
+//	year_kw: *Node
+//	trim_from: []Expr
+//	func_call: *FuncCall
+//	typed_literal_args: *TypedLit
+//	func_name_type: *Match
+//	func_arg_list: []Expr
+//	func_arg_expr: Expr
+//	named_arg: *NamedArg
+//	opt_ignore_nulls: *Match
+//	filter_clause: Expr
+//	over_clause: *WindowOver
+//	window_specification: *WindowSpec
+//	frame_clause: *Frame
+//	frame_conflict: *Node
+//	frame_shift: any
+//	frame_single: *Frame
+//	frame_between: *Frame
+//	frame_bound: *FrameBound
+//	frame_bound_kw: *FrameBound
+//	frame_bound_expr: *FrameBound
+//	window_exclusion: *Match
+//	type_list: []*Type
+//	typename: *Type
+//	type_base: *Type
+//	type_setof: *Type
+//	type_simple: *Type
+//	type_setof_qualified: *Type
+//	array_dims: []*ArrayDim
+//	array_dim: *ArrayDim
+//	array_dims_only: []*ArrayDim
+//	array_keyword_sized: []*ArrayDim
+//	array_keyword: []*ArrayDim
+//	type_mods: []Expr
+//	type_struct: *Type
+//	colid_type_list: []*TypeField
+//	colid_type: *TypeField
+//	type_map: *Type
+//	type_interval: *Type
+//	type_datetime: *Type
+//	time_zone_spec: *Match
+//	type_char: *Type
+//	char_name: *Match
+//	type_bit: *Type
+//	type_numeric: *Type
+//	type_double: *Type
+//	type_numeric_mods: *Type
+//	type_float: *Type
+//	type_decimal: *Type
+//	type_numeric_plain: *Type
+//	type_qualified: *Type
+//	type_generic: *Type
+//	typed_literal: *TypedLit
+//	typed_literal_nchar: *TypedLit
+//	typed_literal_const: *TypedLit
+//	typed_literal_name: *TypedLit
+//	const_type: *Type
+//	type_numeric_const: *Type
+//	type_double_const: *Type
+//	type_numeric_mods_const: *Type
+//	type_float_const: *Type
+//	type_decimal_const: *Type
+//	type_numeric_plain_const: *Type
+//	type_char_const: *Type
+//	type_bit_const: *Type
+//	type_datetime_const: *Type
+//	select_stmt: *Select
+//	select_paren_stmt: *Select
+//	select_with_parens: *ParenQuery
+//	paren_content: ParenContent
+//	select_no_parens: *Select
+//	with_clause: *With
+//	with_recursive: *With
+//	with_plain: *With
+//	cte: *CTE
+//	materialized: *Match
+//	select_body: QueryBody
+//	select_core: *SelectCore
+//	from_first: *SelectCore
+//	distinct_clause: *DistinctClause
+//	target_list_opt_comma: []*SelectItem
+//	select_item: *SelectItem
+//	item_prefixed: *SelectItem
+//	item_plain: *SelectItem
+//	col_label_or_string: *Ident
+//	into_clause: *IntoClause
+//	opt_temp_table_name: *IntoClause
+//	into_temp: *IntoClause
+//	into_table: *IntoClause
+//	into_plain: *IntoClause
+//	group_clause: *GroupBy
+//	group_all: *GroupBy
+//	group_list: *GroupBy
+//	group_by_item: Expr
+//	group_expr: Expr
+//	grouping_set: *GroupingSet
+//	gs_rollup: *GroupingSet
+//	gs_sets: *GroupingSet
+//	gs_empty: *GroupingSet
+//	group_by_list_opt_comma: []Expr
+//	window_clause: []*WindowDef
+//	window_definition: *WindowDef
+//	values_clause: *ValuesClause
+//	values_row: *ValuesRow
+//	table_query: *TableQuery
+//	pivot_query: *PivotQuery
+//	pivot_keyword: *Node
+//	unpivot_keyword: *Node
+//	unpivot_query: *UnpivotQuery
+//	name_list_opt_comma_opt_bracket: []*Ident
+//	bracketed_names: []*Ident
+//	pivot_column_list: []*PivotColumn
+//	pivot_column_entry: *PivotColumn
+//	sort_clause: *OrderBy
+//	sort_all: *OrderBy
+//	sort_list: *OrderBy
+//	sortby: *SortItem
+//	sortby_using: *SortItem
+//	sortby_plain: *SortItem
+//	asc_desc: *Node
+//	nulls_order: *Match
+//	qual_all_op: *Match
+//	limit_clause: *LimitClause
+//	limit_comma: *LimitClause
+//	limit_all: *LimitClause
+//	limit_percent: *LimitClause
+//	limit_percent_sign: *LimitClause
+//	limit_plain: *LimitClause
+//	fetch_value_clause: *LimitClause
+//	fetch_clause: *LimitClause
+//	fetch_value: Expr
+//	fetch_signed: *Number
+//	offset_clause: *OffsetClause
+//	offset_plain: *OffsetClause
+//	offset_rows: *OffsetClause
+//	locking_clauses: []*LockClause
+//	locking_clause: *LockClause
+//	lock_read_only: *LockClause
+//	lock_for: *LockClause
+//	qualified_name_list: []*Name
+//	sample_clause: *SampleClause
+//	tablesample_clause: *SampleClause
+//	sample_value: Expr
+//	tablesample_entry: *SampleClause
+//	sample_func: *SampleClause
+//	sample_seeded: *SampleClause
+//	sample_count: *SampleClause
+//	sample_unit: any
+//	from_list: []TableRef
+//	from_list_opt_comma: []TableRef
+//	table_ref: TableRef
+//	join_type: *Match
+//	join_qual_on: Expr
+//	join_qual_using: []*Ident
+//	include_nulls: *Match
+//	unpivot_header: []*Ident
+//	unpivot_single: []*Ident
+//	unpivot_value_list: []*UnpivotValue
+//	unpivot_value: *UnpivotValue
+//	pivot_value_list: []*PivotValue
+//	pivot_value: *PivotValue
+//	pivot_header: []Expr
+//	pivot_header_list: []Expr
+//	pivot_header_single: []Expr
+//	c_expr_list_opt_comma: []Expr
+//	table_primary: TableRef
+//	alias_prefix: *Ident
+//	base_ref: *BaseTable
+//	at_clause: *AtClause
+//	subquery_ref: *SubqueryRef
+//	paren_table: *ParenTable
+//	join_start: *Node
+//	values_ref: *ValuesRef
+//	func_ref: *FuncTable
+//	rows_from_ref: *FuncTable
+//	rowsfrom_item: *RowsFromItem
+//	func_expr_windowless: Expr
+//	func_call_bare: *FuncCall
+//	alias_clause: *TableAlias
+//	alias_as_cols: *TableAlias
+//	alias_as: *TableAlias
+//	alias_cols: *TableAlias
+//	alias_bare: *TableAlias
+//	func_alias_clause: *TableAlias
+//	falias_as_defs: *TableAlias
+//	falias_defs_only: *TableAlias
+//	falias_defs: *TableAlias
+//	table_func_element_list: []*ColDef
+//	table_func_element: *ColDef
+//	target_list: []*SelectItem
+//	insert_stmt: *InsertStmt
+//	insert_columns: []*Name
+//	insert_column_list: []*Name
+//	set_target: *Name
+//	overriding: *Match
+//	on_conflict: *OnConflict
+//	index_params: []*IndexElem
+//	index_elem: *IndexElem
+//	index_elem_col: *IndexElem
+//	index_elem_func: *IndexElem
+//	index_elem_expr: *IndexElem
+//	opt_class: *Name
+//	set_clause_list_opt_comma: []*SetClause
+//	set_clause: *SetClause
+//	set_clause_one: *SetClause
+//	set_clause_paren: *SetClause
+//	target_table: *TargetTable
+//	update_stmt: *UpdateStmt
+//	delete_stmt: *DeleteStmt
+//	truncate_stmt: *DeleteStmt
+//	merge_stmt: *MergeStmt
+//	merge_when: *MergeWhen
+//	merge_when_matched: *MergeWhen
+//	merge_when_not: *MergeWhen
+//	merge_action: *MergeAction
+//	ma_update_set: *MergeAction
+//	ma_update_star: *MergeAction
+//	ma_update: *MergeAction
+//	ma_delete: *MergeAction
+//	ma_insert_values: *MergeAction
+//	insert_column_ident_list: []*Ident
+//	ma_insert_default: *MergeAction
+//	ma_insert: *MergeAction
+//	ma_nothing: *MergeAction
+//	ma_error: *MergeAction
+//	opt_temp: *Match
+//	if_not_exists: *Match
+//	if_exists: *Match
+//	or_replace: *Match
+//	create_table_stmt: *CreateTableStmt
+//	table_element_list: []TableElement
+//	table_element: TableElement
+//	partition_sorted_option: *PartitionSorted
+//	opt_with_options: []*Reloption
+//	with_reloptions: []*Reloption
+//	with_oids: []*Reloption
+//	on_commit_option: *Match
+//	reloption_list: []*Reloption
+//	reloption_elem: *Reloption
+//	reloption_def: *Reloption
+//	reloption_expr: *Reloption
+//	reloption_name: *Name
+//	def_arg: *Match
+//	numeric_only: *Match
+//	def_list: []*DefElem
+//	def_elem: *DefElem
+//	definition: []*DefElem
+//	opt_definition: []*DefElem
+//	column_def: *ColumnDef
+//	column_def_regular: *ColumnDef
+//	column_def_generated: *ColumnDef
+//	generated_constraint: *GeneratedColumn
+//	gen_identity: *GeneratedColumn
+//	gen_expr: *GeneratedColumn
+//	gen_as: *GeneratedColumn
+//	generated_when: *Match
+//	generated_storage: *Node
+//	constraint_name: *Ident
+//	col_constraint: *ColumnConstraint
+//	cc_not_null: *ColumnConstraint
+//	cc_null: *ColumnConstraint
+//	cc_unique: *ColumnConstraint
+//	cc_primary: *ColumnConstraint
+//	cc_check: *ColumnConstraint
+//	cc_compression: *ColumnConstraint
+//	cc_default: *ColumnConstraint
+//	cc_references: *ColumnConstraint
+//	cc_attr: *ColumnConstraint
+//	cc_collate: *ColumnConstraint
+//	constraint_attr: *Match
+//	reference: *Reference
+//	column_list: []*Ident
+//	column_list_opt_comma: []*Ident
+//	key_match: *Match
+//	key_update: *Match
+//	key_delete: *Match
+//	key_action: *Node
+//	table_constraint: *TableConstraint
+//	constraint_attrs: []*Match
+//	constraint_attribute: *Match
+//	tc_check: *TableConstraint
+//	tc_unique: *TableConstraint
+//	tc_unique_index: *TableConstraint
+//	tc_primary: *TableConstraint
+//	tc_primary_index: *TableConstraint
+//	tc_foreign: *TableConstraint
+//	table_like: *TableLike
+//	table_like_option: *Match
+//	create_table_as_stmt: *CreateTableAsStmt
+//	with_data: *Match
+//	create_view_stmt: *CreateViewStmt
+//	check_option: *Match
+//	create_index_stmt: *CreateIndexStmt
+//	create_schema_stmt: *CreateSchemaStmt
+//	schema_stmt: Statement
+//	create_sequence_stmt: *CreateSequenceStmt
+//	seq_opt_list: []*SeqOption
+//	seq_opt_elem: *SeqOption
+//	so_as: *SeqOption
+//	so_num: *SeqOption
+//	so_flag: *SeqOption
+//	so_owned: *SeqOption
+//	so_seqname: *SeqOption
+//	so_restart: *SeqOption
+//	create_type_stmt: *CreateTypeStmt
+//	enum_val_list: []*StringLit
+//	create_macro_stmt: *CreateMacroStmt
+//	macro_definitions: []*MacroDef
+//	macro_expr_list: []*MacroDef
+//	macro_expr_def: *MacroDef
+//	macro_table_list: []*MacroDef
+//	macro_table_one_end: []*MacroDef
+//	macro_table_one: []*MacroDef
+//	macro_table_many: []*MacroDef
+//	macro_table_paren: *MacroDef
+//	param_list: []*MacroParam
+//	macro_params: []*MacroParam
+//	macro_param: *MacroParam
+//	create_secret_stmt: *CreateSecretStmt
+//	secret_options: []*SecretOption
+//	secret_option: *SecretOption
+//	alter_table_stmt: *AlterTableStmt
+//	alter_relation_stmt: *AlterTableStmt
+//	alter_name_stmt: *AlterTableStmt
+//	alter_table_cmds: []*AlterCmd
+//	qualified_column: *Name
+//	alter_table_cmd: *AlterCmd
+//	ac_add_constraint: *AlterCmd
+//	ac_add_column: *AlterCmd
+//	ac_add_generated: *AlterCmd
+//	ac_set_partitioned: *AlterCmd
+//	ac_reset_partitioned: *AlterCmd
+//	ac_set_sorted: *AlterCmd
+//	ac_reset_sorted: *AlterCmd
+//	sortby_list: []*SortItem
+//	ac_alter_column: *AlterCmd
+//	alter_column_head: *Match
+//	ac_col_default: *AlterCmd
+//	ac_col_drop_default: *AlterCmd
+//	ac_col_not_null: *AlterCmd
+//	ac_col_statistics: *AlterCmd
+//	ac_col_set_options: *AlterCmd
+//	ac_col_reset_options: *AlterCmd
+//	ac_col_storage: *AlterCmd
+//	ac_col_add_identity: *AlterCmd
+//	ac_col_drop_identity: *AlterCmd
+//	ac_col_identity: *AlterCmd
+//	identity_options: []*SeqOption
+//	identity_option: *SeqOption
+//	io_set: *SeqOption
+//	io_generated: *SeqOption
+//	ac_col_type: *AlterCmd
+//	ac_col_generic: *AlterCmd
+//	signed_iconst: *Match
+//	ac_drop_column: *AlterCmd
+//	ac_alter_constraint: *AlterCmd
+//	ac_validate: *AlterCmd
+//	ac_drop_constraint: *AlterCmd
+//	ac_set_logged: *AlterCmd
+//	ac_set_options: *AlterCmd
+//	ac_reset_options: *AlterCmd
+//	ac_generic: *AlterCmd
+//	alter_generic_options: []*GenericAlterOption
+//	alter_generic_list: []*GenericAlterOption
+//	alter_generic_option: *GenericAlterOption
+//	ago_value: *GenericAlterOption
+//	ago_drop: *GenericAlterOption
+//	drop_behavior: *Node
+//	alter_sequence_stmt: *AlterSequenceStmt
+//	alter_database_stmt: *AlterDatabaseStmt
+//	alter_object_schema_stmt: *AlterObjectSchemaStmt
+//	alter_schema_relation: *AlterObjectSchemaStmt
+//	alter_schema_name: *AlterObjectSchemaStmt
+//	rename_stmt: *RenameStmt
+//	rename_schema: *RenameStmt
+//	rename_object: *RenameStmt
+//	rename_relation: *RenameStmt
+//	rename_name: *RenameStmt
+//	rename_column: *RenameStmt
+//	rename_constraint: *RenameStmt
+//	drop_stmt: *DropStmt
+//	drop_any_name: *DropStmt
+//	drop_name: *DropStmt
+//	drop_on: *DropStmt
+//	drop_type_any_name: *Match
+//	drop_type_name: *Match
+//	any_name_list: []*Name
+//	name_as_name_list: []*Name
+//	drop_secret_stmt: *DropSecretStmt
+//	copy_stmt: Statement
+//	copy_table: *CopyStmt
+//	copy_query: *CopyStmt
+//	copy_database: *CopyDatabaseStmt
+//	copy_database_flag: *Match
+//	copy_file: Expr
+//	copy_ident_file: *ColumnRef
+//	generic_opt_list: []*GenericOption
+//	generic_opt_elem: *GenericOption
+//	copy_opt_item: *CopyOption
+//	co_flag: *CopyOption
+//	co_string: *CopyOption
+//	co_force_cols: *CopyOption
+//	co_force_star: *CopyOption
+//	co_partition_cols: *CopyOption
+//	co_partition_star: *CopyOption
+//	export_stmt: *ExportStmt
+//	import_stmt: *ImportStmt
+//	attach_stmt: *AttachStmt
+//	detach_stmt: *DetachStmt
+//	detach_database: *DetachStmt
+//	detach_plain: *DetachStmt
+//	use_stmt: *UseStmt
+//	load_stmt: *LoadStmt
+//	load_load: *LoadStmt
+//	load_install: *LoadStmt
+//	pragma_stmt: *PragmaStmt
+//	pragma_call: *PragmaStmt
+//	pragma_set: *PragmaStmt
+//	pragma_plain: *PragmaStmt
+//	var_name: *Name
+//	set_scope: *Node
+//	set_stmt: *SetStmt
+//	set_scoped: *SetStmt
+//	set_unscoped: *SetStmt
+//	zone_value: *Match
+//	reset_stmt: *ResetStmt
+//	reset_scoped: *ResetStmt
+//	reset_unscoped: *ResetStmt
+//	show_stmt: *ShowStmt
+//	show_word: *Node
+//	show_query: *ShowStmt
+//	summarize_query: *ShowStmt
+//	summarize_table: *ShowStmt
+//	show_tables: *ShowStmt
+//	show_time_zone: *ShowStmt
+//	show_isolation: *ShowStmt
+//	show_all: *ShowStmt
+//	show_name: *ShowStmt
+//	show_bare: *ShowStmt
+//	explain_stmt: *ExplainStmt
+//	explain_options: *ExplainStmt
+//	explain_analyze: *ExplainStmt
+//	explain_verbose: *ExplainStmt
+//	explain_plain: *ExplainStmt
+//	explain_option_list: []*ExplainOption
+//	explain_option: *ExplainOption
+//	explainable: Statement
+//	prepare_stmt: *PrepareStmt
+//	preparable: Statement
+//	execute_stmt: *ExecuteStmt
+//	execute_params: []Expr
+//	execute_param: Expr
+//	deallocate_stmt: *DeallocateStmt
+//	deallocate_prepare: *DeallocateStmt
+//	deallocate_plain: *DeallocateStmt
+//	transaction_stmt: *TransactionStmt
+//	tx_start: *TransactionStmt
+//	tx_end: *TransactionStmt
+//	vacuum_stmt: *VacuumStmt
+//	vacuum_options: *VacuumStmt
+//	vacuum_option_list: []*Match
+//	vacuum_option: *Match
+//	vacuum_plain: *VacuumStmt
+//	analyze_stmt: *AnalyzeStmt
+//	checkpoint_stmt: *CheckpointStmt
+//	call_stmt: *CallStmt
+//	comment_stmt: *CommentStmt
+//	comment_column: *CommentStmt
+//	comment_object: *CommentStmt
+//	comment_value: *StringLit
+//	null_text: *StringLit
+//	update_extensions_stmt: *UpdateExtensionsStmt
+//	stmt_end: *Node
+//	main: *Script
+//	statement: Statement
+//	ABORT: *Node
+//	ACCESS: *Node
+//	ACTION: *Node
+//	ADD: *Node
+//	ALL: *Node
+//	ALTER: *Node
+//	ALWAYS: *Node
+//	ANALYSE: *Node
+//	ANALYZE: *Node
+//	AND: *Node
+//	ANTI: *Node
+//	ANY: *Node
+//	ARRAY: *Node
+//	AS: *Node
+//	ASC: *Node
+//	ASOF: *Node
+//	ASYMMETRIC: *Node
+//	AT: *Node
+//	ATTACH: *Node
+//	BEGIN: *Node
+//	BETWEEN: *Node
+//	BIGINT: *Node
+//	BINARY: *Node
+//	BIT: *Node
+//	BOOLEAN: *Node
+//	BOTH: *Node
+//	BY: *Node
+//	CACHE: *Node
+//	CALL: *Node
+//	CASCADE: *Node
+//	CASCADED: *Node
+//	CASE: *Node
+//	CAST: *Node
+//	CENTURIES: *Node
+//	CENTURY: *Node
+//	CHAR: *Node
+//	CHARACTER: *Node
+//	CHECK: *Node
+//	CHECKPOINT: *Node
+//	COALESCE: *Node
+//	COLLATE: *Node
+//	COLLATION: *Node
+//	COLUMN: *Node
+//	COLUMNS: *Node
+//	COMMENT: *Node
+//	COMMENTS: *Node
+//	COMMIT: *Node
+//	COMPRESSION: *Node
+//	CONCURRENTLY: *Node
+//	CONFIGURATION: *Node
+//	CONFLICT: *Node
+//	CONSTRAINT: *Node
+//	CONSTRAINTS: *Node
+//	CONVERSION: *Node
+//	COPY: *Node
+//	CREATE: *Node
+//	CROSS: *Node
+//	CSV: *Node
+//	CUBE: *Node
+//	CURRENT: *Node
+//	CYCLE: *Node
+//	DATA: *Node
+//	DATABASE: *Node
+//	DAY: *Node
+//	DAYS: *Node
+//	DEALLOCATE: *Node
+//	DEC: *Node
+//	DECADE: *Node
+//	DECADES: *Node
+//	DECIMAL: *Node
+//	DEFAULT: *Node
+//	DEFAULTS: *Node
+//	DEFERRABLE: *Node
+//	DEFERRED: *Node
+//	DELETE: *Node
+//	DELIMITER: *Node
+//	DELIMITERS: *Node
+//	DESC: *Node
+//	DESCRIBE: *Node
+//	DETACH: *Node
+//	DICTIONARY: *Node
+//	DISTINCT: *Node
+//	DO: *Node
+//	DOUBLE: *Node
+//	DROP: *Node
+//	ELSE: *Node
+//	ENCODING: *Node
+//	END: *Node
+//	ENUM: *Node
+//	ERROR: *Node
+//	ESCAPE: *Node
+//	EVENT: *Node
+//	EXCEPT: *Node
+//	EXCLUDE: *Node
+//	EXCLUDING: *Node
+//	EXECUTE: *Node
+//	EXISTS: *Node
+//	EXPLAIN: *Node
+//	EXPORT: *Node
+//	EXPORT_STATE: *Node
+//	EXTENSION: *Node
+//	EXTENSIONS: *Node
+//	EXTRACT: *Node
+//	FALSE: *Node
+//	FETCH: *Node
+//	FILTER: *Node
+//	FIRST: *Node
+//	FLOAT: *Node
+//	FOLLOWING: *Node
+//	FOR: *Node
+//	FORCE: *Node
+//	FOREIGN: *Node
+//	FREEZE: *Node
+//	FROM: *Node
+//	FULL: *Node
+//	FUNCTION: *Node
+//	GENERATED: *Node
+//	GLOB: *Node
+//	GLOBAL: *Node
+//	GROUP: *Node
+//	GROUPING: *Node
+//	GROUPING_ID: *Node
+//	GROUPS: *Node
+//	HAVING: *Node
+//	HEADER: *Node
+//	HOUR: *Node
+//	HOURS: *Node
+//	IDENTITY: *Node
+//	IF: *Node
+//	IGNORE: *Node
+//	ILIKE: *Node
+//	IMMEDIATE: *Node
+//	IMPORT: *Node
+//	IN: *Node
+//	INCLUDE: *Node
+//	INCLUDING: *Node
+//	INCREMENT: *Node
+//	INDEX: *Node
+//	INDEXES: *Node
+//	INHERIT: *Node
+//	INITIALLY: *Node
+//	INNER: *Node
+//	INSERT: *Node
+//	INSTALL: *Node
+//	INT: *Node
+//	INTEGER: *Node
+//	INTERSECT: *Node
+//	INTERVAL: *Node
+//	INTO: *Node
+//	IS: *Node
+//	ISNULL: *Node
+//	ISOLATION: *Node
+//	JOIN: *Node
+//	KEY: *Node
+//	LAMBDA: *Node
+//	LAST: *Node
+//	LATERAL: *Node
+//	LEADING: *Node
+//	LEFT: *Node
+//	LEVEL: *Node
+//	LIKE: *Node
+//	LIMIT: *Node
+//	LOAD: *Node
+//	LOCAL: *Node
+//	LOCKED: *Node
+//	LOGGED: *Node
+//	MACRO: *Node
+//	MAP: *Node
+//	MATCH: *Node
+//	MATCHED: *Node
+//	MATERIALIZED: *Node
+//	MAXVALUE: *Node
+//	MERGE: *Node
+//	METHOD: *Node
+//	MICROSECOND: *Node
+//	MICROSECONDS: *Node
+//	MILLENNIA: *Node
+//	MILLENNIUM: *Node
+//	MILLISECOND: *Node
+//	MILLISECONDS: *Node
+//	MINUTE: *Node
+//	MINUTES: *Node
+//	MINVALUE: *Node
+//	MONTH: *Node
+//	MONTHS: *Node
+//	NAME: *Node
+//	NATIONAL: *Node
+//	NATURAL: *Node
+//	NCHAR: *Node
+//	NEXT: *Node
+//	NO: *Node
+//	NONE: *Node
+//	NOT: *Node
+//	NOTHING: *Node
+//	NOTNULL: *Node
+//	NOWAIT: *Node
+//	NULL: *Node
+//	NULLIF: *Node
+//	NULLS: *Node
+//	NUMERIC: *Node
+//	OF: *Node
+//	OFFSET: *Node
+//	OIDS: *Node
+//	ON: *Node
+//	ONLY: *Node
+//	OPERATOR: *Node
+//	OPTION: *Node
+//	OPTIONS: *Node
+//	OR: *Node
+//	ORDER: *Node
+//	ORDINALITY: *Node
+//	OTHERS: *Node
+//	OUTER: *Node
+//	OVER: *Node
+//	OVERLAY: *Node
+//	OVERRIDING: *Node
+//	OWNED: *Node
+//	PARSER: *Node
+//	PARTIAL: *Node
+//	PARTITION: *Node
+//	PARTITIONED: *Node
+//	PERCENT: *Node
+//	PERSISTENT: *Node
+//	PIVOT: *Node
+//	PIVOT_LONGER: *Node
+//	PIVOT_WIDER: *Node
+//	PLACING: *Node
+//	POLICY: *Node
+//	POSITION: *Node
+//	POSITIONAL: *Node
+//	PRAGMA: *Node
+//	PRECEDING: *Node
+//	PRECISION: *Node
+//	PREPARE: *Node
+//	PRESERVE: *Node
+//	PRIMARY: *Node
+//	PROGRAM: *Node
+//	PUBLICATION: *Node
+//	QUALIFY: *Node
+//	QUARTER: *Node
+//	QUARTERS: *Node
+//	QUOTE: *Node
+//	RANGE: *Node
+//	READ: *Node
+//	REAL: *Node
+//	RECURSIVE: *Node
+//	REFERENCES: *Node
+//	RENAME: *Node
+//	REPEATABLE: *Node
+//	REPLACE: *Node
+//	RESET: *Node
+//	RESPECT: *Node
+//	RESTART: *Node
+//	RESTRICT: *Node
+//	RETURNING: *Node
+//	RIGHT: *Node
+//	ROLLBACK: *Node
+//	ROLLUP: *Node
+//	ROW: *Node
+//	ROWS: *Node
+//	RULE: *Node
+//	SAMPLE: *Node
+//	SCHEMA: *Node
+//	SEARCH: *Node
+//	SECOND: *Node
+//	SECONDS: *Node
+//	SECRET: *Node
+//	SELECT: *Node
+//	SEMI: *Node
+//	SEQUENCE: *Node
+//	SERVER: *Node
+//	SESSION: *Node
+//	SET: *Node
+//	SETOF: *Node
+//	SETS: *Node
+//	SHARE: *Node
+//	SHOW: *Node
+//	SIMILAR: *Node
+//	SIMPLE: *Node
+//	SKIP: *Node
+//	SMALLINT: *Node
+//	SOME: *Node
+//	SORTED: *Node
+//	SOURCE: *Node
+//	START: *Node
+//	STATISTICS: *Node
+//	STDIN: *Node
+//	STDOUT: *Node
+//	STORAGE: *Node
+//	STORED: *Node
+//	STRUCT: *Node
+//	SUBSTRING: *Node
+//	SUMMARIZE: *Node
+//	SYMMETRIC: *Node
+//	SYSTEM: *Node
+//	TABLE: *Node
+//	TABLES: *Node
+//	TABLESAMPLE: *Node
+//	TARGET: *Node
+//	TEMP: *Node
+//	TEMPLATE: *Node
+//	TEMPORARY: *Node
+//	TEXT: *Node
+//	THEN: *Node
+//	TIES: *Node
+//	TIME: *Node
+//	TIMESTAMP: *Node
+//	TO: *Node
+//	TRAILING: *Node
+//	TRANSACTION: *Node
+//	TREAT: *Node
+//	TRIGGER: *Node
+//	TRIM: *Node
+//	TRUE: *Node
+//	TRUNCATE: *Node
+//	TRY_CAST: *Node
+//	TYPE: *Node
+//	UNBOUNDED: *Node
+//	UNION: *Node
+//	UNIQUE: *Node
+//	UNKNOWN: *Node
+//	UNLOGGED: *Node
+//	UNPACK: *Node
+//	UNPIVOT: *Node
+//	UPDATE: *Node
+//	USE: *Node
+//	USER: *Node
+//	USING: *Node
+//	VACUUM: *Node
+//	VALID: *Node
+//	VALIDATE: *Node
+//	VALUE: *Node
+//	VALUES: *Node
+//	VARCHAR: *Node
+//	VARIABLE: *Node
+//	VARIADIC: *Node
+//	VARYING: *Node
+//	VERBOSE: *Node
+//	VERSION: *Node
+//	VIEW: *Node
+//	VIRTUAL: *Node
+//	WEEK: *Node
+//	WEEKS: *Node
+//	WHEN: *Node
+//	WHERE: *Node
+//	WINDOW: *Node
+//	WITH: *Node
+//	WITHIN: *Node
+//	WITHOUT: *Node
+//	WORK: *Node
+//	WRAPPER: *Node
+//	WRITE: *Node
+//	YEAR: *Node
+//	YEARS: *Node
+//	ZONE: *Node
+//	kw_r: *Node
+//	kw_c: *Node
+//	kw_cf: *Node
+//	kw_ct: *Node
+//	kw_t: *Node
+//	kw_tf: *Node
+//	kw_u: *Node
+//	kw_not_col_id: *Node
+//	kw_not_func_name: *Node
+//	kw_not_type_name: *Node
+//	kw_not_type_func: *Node
+//	kw_reserved: *Node
+//	kw_any: *Node
+func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
+	o, err := resolveOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+	switch name {
+	case "ws":
+		n, err := parseResolved(rules[0], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "comment":
+		n, err := parseResolved(rules[1], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "block_comment":
+		n, err := parseResolved(rules[2], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "wc":
+		a := &tslabs{}
+		return tparseResolved(trules[3], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "ident_start":
+		a := &tslabs{}
+		return tparseResolved(trules[4], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "word":
+		n, err := parseResolved(rules[5], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "quoted_ident":
+		n, err := parseResolved(rules[6], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "uquoted_ident":
+		n, err := parseResolved(rules[7], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "col_id":
+		a := &tslabs{}
+		return tparseResolved(trules[8], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "type_function_name":
+		a := &tslabs{}
+		return tparseResolved(trules[9], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "function_name_token":
+		a := &tslabs{}
+		return tparseResolved(trules[10], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "type_name_token":
+		a := &tslabs{}
+		return tparseResolved(trules[11], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "ident_only":
+		a := &tslabs{}
+		return tparseResolved(trules[12], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "col_label":
+		a := &tslabs{}
+		return tparseResolved(trules[13], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "non_reserved_word":
+		a := &tslabs{}
+		return tparseResolved(trules[14], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "sq_cont":
+		n, err := parseResolved(rules[15], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "sq_string":
+		n, err := parseResolved(rules[16], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "e_body":
+		n, err := parseResolved(rules[17], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "e_string":
+		n, err := parseResolved(rules[18], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "u_string":
+		n, err := parseResolved(rules[19], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "hex4":
+		a := &tslabs{}
+		return tparseResolved(trules[20], input, o, a, func(v any) []*Match { return tl0(a, v) })
+	case "dollar_string":
+		n, err := parseResolved(rules[21], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "dq_close":
+		n, err := parseResolved(rules[22], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "dq_tag":
+		n, err := parseResolved(rules[23], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "bit_string":
+		n, err := parseResolved(rules[24], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "sconst":
+		a := &tslabs{}
+		return tparseResolved(trules[25], input, o, a, func(v any) *StringLit { return tAs[*StringLit](v) })
+	case "bit_lit":
+		a := &tslabs{}
+		return tparseResolved(trules[26], input, o, a, func(v any) *BitLit { return tAs[*BitLit](v) })
+	case "digits":
+		n, err := parseResolved(rules[27], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "number":
+		a := &tslabs{}
+		return tparseResolved(trules[28], input, o, a, func(v any) *Number { return tAs[*Number](v) })
+	case "exp":
+		n, err := parseResolved(rules[29], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "iconst":
+		a := &tslabs{}
+		return tparseResolved(trules[30], input, o, a, func(v any) *Number { return tAs[*Number](v) })
+	case "int_lit":
+		a := &tslabs{}
+		return tparseResolved(trules[31], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "opc":
+		a := &tslabs{}
+		return tparseResolved(trules[32], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "cut":
+		a := &tslabs{}
+		return tparseResolved(trules[33], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "rc":
+		n, err := parseResolved(rules[34], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "pm_end":
+		n, err := parseResolved(rules[35], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "op_plus":
+		a := &tslabs{}
+		return tparseResolved(trules[36], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "op_minus":
+		a := &tslabs{}
+		return tparseResolved(trules[37], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "op_star":
+		a := &tslabs{}
+		return tparseResolved(trules[38], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "op_slash":
+		a := &tslabs{}
+		return tparseResolved(trules[39], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "op_lt":
+		a := &tslabs{}
+		return tparseResolved(trules[40], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "op_gt":
+		a := &tslabs{}
+		return tparseResolved(trules[41], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "op_eq":
+		a := &tslabs{}
+		return tparseResolved(trules[42], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "op_le":
+		a := &tslabs{}
+		return tparseResolved(trules[43], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "op_ge":
+		a := &tslabs{}
+		return tparseResolved(trules[44], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "op_ne":
+		a := &tslabs{}
+		return tparseResolved(trules[45], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "op_eq_gt":
+		a := &tslabs{}
+		return tparseResolved(trules[46], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "op_percent":
+		a := &tslabs{}
+		return tparseResolved(trules[47], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "op_caret":
+		a := &tslabs{}
+		return tparseResolved(trules[48], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "op_pow":
+		a := &tslabs{}
+		return tparseResolved(trules[49], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "op_idiv":
+		a := &tslabs{}
+		return tparseResolved(trules[50], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "op_arrow":
+		a := &tslabs{}
+		return tparseResolved(trules[51], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "op_darrow":
+		a := &tslabs{}
+		return tparseResolved(trules[52], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "op_generic":
+		a := &tslabs{}
+		return tparseResolved(trules[53], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "op_special":
+		n, err := parseResolved(rules[54], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "op_plain":
+		n, err := parseResolved(rules[55], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "core":
+		n, err := parseResolved(rules[56], nseen, input, o)
+		if n == nil {
+			var zero []*Node
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list1(astNode(n)), err
+	case "core_long":
+		n, err := parseResolved(rules[57], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "col_id_or_string":
+		a := &tslabs{}
+		return tparseResolved(trules[58], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "name":
+		a := &tslabs{}
+		return tparseResolved(trules[59], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "attr_name":
+		a := &tslabs{}
+		return tparseResolved(trules[60], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "param_name":
+		a := &tslabs{}
+		return tparseResolved(trules[61], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "qualified_name":
+		a := &tslabs{}
+		return tparseResolved(trules[62], input, o, a, func(v any) *Name { return tAs[*Name](v) })
+	case "qn_dotted":
+		a := &tslabs{}
+		return tparseResolved(trules[63], input, o, a, func(v any) *Name { return tAs[*Name](v) })
+	case "qn_string":
+		a := &tslabs{}
+		return tparseResolved(trules[64], input, o, a, func(v any) *Name { return tAs[*Name](v) })
+	case "any_name":
+		a := &tslabs{}
+		return tparseResolved(trules[65], input, o, a, func(v any) *Name { return tAs[*Name](v) })
+	case "name_list":
+		a := &tslabs{}
+		return tparseResolved(trules[66], input, o, a, func(v any) []*Ident { return tl1(a, v) })
+	case "name_list_opt_comma":
+		a := &tslabs{}
+		return tparseResolved(trules[67], input, o, a, func(v any) []*Ident { return tl1(a, v) })
+	case "col_id_list":
+		a := &tslabs{}
+		return tparseResolved(trules[68], input, o, a, func(v any) []*Ident { return tl1(a, v) })
+	case "func_name":
+		a := &tslabs{}
+		return tparseResolved(trules[69], input, o, a, func(v any) *Name { return tAs[*Name](v) })
+	case "fn_dotted":
+		a := &tslabs{}
+		return tparseResolved(trules[70], input, o, a, func(v any) *Name { return tAs[*Name](v) })
+	case "fn_single":
+		a := &tslabs{}
+		return tparseResolved(trules[71], input, o, a, func(v any) *Name { return tAs[*Name](v) })
+	case "expr":
+		a := &tslabs{}
+		return tparseResolved(trules[72], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "op_rhs_prefix":
+		a := &tslabs{}
+		return tparseResolved(trules[73], input, o, a, func(v any) *Unary { return tAs[*Unary](v) })
+	case "b_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[74], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "colon":
+		n, err := parseResolved(rules[75], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "cmp_op":
+		a := &tslabs{}
+		return tparseResolved(trules[76], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "like_start":
+		n, err := parseResolved(rules[77], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "is_start":
+		n, err := parseResolved(rules[78], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "qual_op":
+		a := &tslabs{}
+		return tparseResolved(trules[79], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "operator_call":
+		a := &tslabs{}
+		return tparseResolved(trules[80], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "any_operator":
+		n, err := parseResolved(rules[81], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "all_op":
+		a := &tslabs{}
+		return tparseResolved(trules[82], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "subquery_op":
+		n, err := parseResolved(rules[83], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "any_source":
+		a := &tslabs{}
+		return tparseResolved(trules[84], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "any_source_query":
+		a := &tslabs{}
+		return tparseResolved(trules[85], input, o, a, func(v any) *Subquery { return tAs[*Subquery](v) })
+	case "in_source":
+		a := &tslabs{}
+		return tparseResolved(trules[86], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "in_column":
+		a := &tslabs{}
+		return tparseResolved(trules[87], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "c_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[88], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "chained":
+		a := &tslabs{}
+		return tparseResolved(trules[89], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "col_chained":
+		a := &tslabs{}
+		return tparseResolved(trules[90], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "call_chained":
+		a := &tslabs{}
+		return tparseResolved(trules[91], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "primary_other":
+		a := &tslabs{}
+		return tparseResolved(trules[92], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "literal_primary":
+		a := &tslabs{}
+		return tparseResolved(trules[93], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "plain_literal":
+		a := &tslabs{}
+		return tparseResolved(trules[94], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "string_literal":
+		a := &tslabs{}
+		return tparseResolved(trules[95], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "param":
+		a := &tslabs{}
+		return tparseResolved(trules[96], input, o, a, func(v any) *Param { return tAs[*Param](v) })
+	case "dollar_name":
+		n, err := parseResolved(rules[97], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "positional_ref":
+		a := &tslabs{}
+		return tparseResolved(trules[98], input, o, a, func(v any) *PositionalRef { return tAs[*PositionalRef](v) })
+	case "plain_column":
+		a := &tslabs{}
+		return tparseResolved(trules[99], input, o, a, func(v any) *ColumnRef { return tAs[*ColumnRef](v) })
+	case "column_ref":
+		a := &tslabs{}
+		return tparseResolved(trules[100], input, o, a, func(v any) *ColumnRef { return tAs[*ColumnRef](v) })
+	case "dotted_idents":
+		a := &tslabs{}
+		return tparseResolved(trules[101], input, o, a, func(v any) []*Ident { return tl1(a, v) })
+	case "paren_primary":
+		a := &tslabs{}
+		return tparseResolved(trules[102], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "subquery_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[103], input, o, a, func(v any) *Subquery { return tAs[*Subquery](v) })
+	case "row_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[104], input, o, a, func(v any) *Row { return tAs[*Row](v) })
+	case "paren_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[105], input, o, a, func(v any) *Paren { return tAs[*Paren](v) })
+	case "indirection_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[106], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "func_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[107], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "func_call_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[108], input, o, a, func(v any) *FuncCall { return tAs[*FuncCall](v) })
+	case "list_lit":
+		a := &tslabs{}
+		return tparseResolved(trules[109], input, o, a, func(v any) *ListLit { return tAs[*ListLit](v) })
+	case "array_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[110], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "array_subquery":
+		a := &tslabs{}
+		return tparseResolved(trules[111], input, o, a, func(v any) *ArraySubquery { return tAs[*ArraySubquery](v) })
+	case "array_lit":
+		a := &tslabs{}
+		return tparseResolved(trules[112], input, o, a, func(v any) *ArrayLit { return tAs[*ArrayLit](v) })
+	case "struct_lit":
+		a := &tslabs{}
+		return tparseResolved(trules[113], input, o, a, func(v any) *StructLit { return tAs[*StructLit](v) })
+	case "struct_field":
+		a := &tslabs{}
+		return tparseResolved(trules[114], input, o, a, func(v any) *StructField { return tAs[*StructField](v) })
+	case "map_lit":
+		a := &tslabs{}
+		return tparseResolved(trules[115], input, o, a, func(v any) *MapLit { return tAs[*MapLit](v) })
+	case "map_entries":
+		a := &tslabs{}
+		return tparseResolved(trules[116], input, o, a, func(v any) []*MapEntry { return tl2(a, v) })
+	case "map_entry":
+		a := &tslabs{}
+		return tparseResolved(trules[117], input, o, a, func(v any) *MapEntry { return tAs[*MapEntry](v) })
+	case "list_comprehension":
+		a := &tslabs{}
+		return tparseResolved(trules[118], input, o, a, func(v any) *ListComp { return tAs[*ListComp](v) })
+	case "list_comp_if":
+		a := &tslabs{}
+		return tparseResolved(trules[119], input, o, a, func(v any) *ListComp { return tAs[*ListComp](v) })
+	case "list_comp":
+		a := &tslabs{}
+		return tparseResolved(trules[120], input, o, a, func(v any) *ListComp { return tAs[*ListComp](v) })
+	case "case_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[121], input, o, a, func(v any) *Case { return tAs[*Case](v) })
+	case "when_clause_list":
+		a := &tslabs{}
+		return tparseResolved(trules[122], input, o, a, func(v any) []*When { return tl3(a, v) })
+	case "when_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[123], input, o, a, func(v any) *When { return tAs[*When](v) })
+	case "qualified_row":
+		a := &tslabs{}
+		return tparseResolved(trules[124], input, o, a, func(v any) *Row { return tAs[*Row](v) })
+	case "expr_list":
+		a := &tslabs{}
+		return tparseResolved(trules[125], input, o, a, func(v any) []Expr { return tl4(a, v) })
+	case "expr_list_opt_comma":
+		a := &tslabs{}
+		return tparseResolved(trules[126], input, o, a, func(v any) []Expr { return tl4(a, v) })
+	case "star_primary":
+		a := &tslabs{}
+		return tparseResolved(trules[127], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "default_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[128], input, o, a, func(v any) *DefaultExpr { return tAs[*DefaultExpr](v) })
+	case "columns_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[129], input, o, a, func(v any) *ColumnsExpr { return tAs[*ColumnsExpr](v) })
+	case "star_columns":
+		a := &tslabs{}
+		return tparseResolved(trules[130], input, o, a, func(v any) *ColumnsExpr { return tAs[*ColumnsExpr](v) })
+	case "unpack_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[131], input, o, a, func(v any) *UnpackExpr { return tAs[*UnpackExpr](v) })
+	case "star_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[132], input, o, a, func(v any) *Star { return tAs[*Star](v) })
+	case "qualified_star":
+		a := &tslabs{}
+		return tparseResolved(trules[133], input, o, a, func(v any) *Star { return tAs[*Star](v) })
+	case "lambda_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[134], input, o, a, func(v any) *Lambda { return tAs[*Lambda](v) })
+	case "except_name":
+		a := &tslabs{}
+		return tparseResolved(trules[135], input, o, a, func(v any) *Name { return tAs[*Name](v) })
+	case "except_name_list":
+		a := &tslabs{}
+		return tparseResolved(trules[136], input, o, a, func(v any) []*Name { return tl5(a, v) })
+	case "exclude_list":
+		a := &tslabs{}
+		return tparseResolved(trules[137], input, o, a, func(v any) []*Name { return tl5(a, v) })
+	case "exclude_paren":
+		a := &tslabs{}
+		return tparseResolved(trules[138], input, o, a, func(v any) []*Name { return tl5(a, v) })
+	case "exclude_single":
+		a := &tslabs{}
+		return tparseResolved(trules[139], input, o, a, func(v any) []*Name { return tl5(a, v) })
+	case "replace_item":
+		a := &tslabs{}
+		return tparseResolved(trules[140], input, o, a, func(v any) *ReplaceItem { return tAs[*ReplaceItem](v) })
+	case "replace_list":
+		a := &tslabs{}
+		return tparseResolved(trules[141], input, o, a, func(v any) []*ReplaceItem { return tl6(a, v) })
+	case "replace_paren":
+		a := &tslabs{}
+		return tparseResolved(trules[142], input, o, a, func(v any) []*ReplaceItem { return tl6(a, v) })
+	case "replace_single":
+		a := &tslabs{}
+		return tparseResolved(trules[143], input, o, a, func(v any) []*ReplaceItem { return tl6(a, v) })
+	case "rename_item":
+		a := &tslabs{}
+		return tparseResolved(trules[144], input, o, a, func(v any) *RenameItem { return tAs[*RenameItem](v) })
+	case "rename_list":
+		a := &tslabs{}
+		return tparseResolved(trules[145], input, o, a, func(v any) []*RenameItem { return tl7(a, v) })
+	case "rename_paren":
+		a := &tslabs{}
+		return tparseResolved(trules[146], input, o, a, func(v any) []*RenameItem { return tl7(a, v) })
+	case "rename_single":
+		a := &tslabs{}
+		return tparseResolved(trules[147], input, o, a, func(v any) []*RenameItem { return tl7(a, v) })
+	case "keyword_primary":
+		a := &tslabs{}
+		return tparseResolved(trules[148], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "bool_lit":
+		a := &tslabs{}
+		return tparseResolved(trules[149], input, o, a, func(v any) *BoolLit { return tAs[*BoolLit](v) })
+	case "null_lit":
+		a := &tslabs{}
+		return tparseResolved(trules[150], input, o, a, func(v any) *NullLit { return tAs[*NullLit](v) })
+	case "exists_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[151], input, o, a, func(v any) *Exists { return tAs[*Exists](v) })
+	case "grouping_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[152], input, o, a, func(v any) *Grouping { return tAs[*Grouping](v) })
+	case "cast_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[153], input, o, a, func(v any) *Cast { return tAs[*Cast](v) })
+	case "cast_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[154], input, o, a, func(v any) *Cast { return tAs[*Cast](v) })
+	case "cast_try":
+		a := &tslabs{}
+		return tparseResolved(trules[155], input, o, a, func(v any) *Cast { return tAs[*Cast](v) })
+	case "interval_lit":
+		a := &tslabs{}
+		return tparseResolved(trules[156], input, o, a, func(v any) *IntervalLit { return tAs[*IntervalLit](v) })
+	case "interval_paren":
+		a := &tslabs{}
+		return tparseResolved(trules[157], input, o, a, func(v any) *IntervalLit { return tAs[*IntervalLit](v) })
+	case "interval_const":
+		a := &tslabs{}
+		return tparseResolved(trules[158], input, o, a, func(v any) *IntervalLit { return tAs[*IntervalLit](v) })
+	case "interval_unit":
+		a := &tslabs{}
+		return tparseResolved(trules[159], input, o, a, func(v any) *IntervalUnit { return tAs[*IntervalUnit](v) })
+	case "interval_to":
+		n, err := parseResolved(rules[160], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "interval_field":
+		n, err := parseResolved(rules[161], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "special_call":
+		a := &tslabs{}
+		return tparseResolved(trules[162], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "sc_coalesce":
+		a := &tslabs{}
+		return tparseResolved(trules[163], input, o, a, func(v any) *SpecialCall { return tAs[*SpecialCall](v) })
+	case "sc_nullif":
+		a := &tslabs{}
+		return tparseResolved(trules[164], input, o, a, func(v any) *SpecialCall { return tAs[*SpecialCall](v) })
+	case "sc_extract":
+		a := &tslabs{}
+		return tparseResolved(trules[165], input, o, a, func(v any) *SpecialCall { return tAs[*SpecialCall](v) })
+	case "sc_extract_empty":
+		a := &tslabs{}
+		return tparseResolved(trules[166], input, o, a, func(v any) *SpecialCall { return tAs[*SpecialCall](v) })
+	case "sc_overlay":
+		a := &tslabs{}
+		return tparseResolved(trules[167], input, o, a, func(v any) *SpecialCall { return tAs[*SpecialCall](v) })
+	case "sc_position":
+		a := &tslabs{}
+		return tparseResolved(trules[168], input, o, a, func(v any) *SpecialCall { return tAs[*SpecialCall](v) })
+	case "sc_position_empty":
+		a := &tslabs{}
+		return tparseResolved(trules[169], input, o, a, func(v any) *SpecialCall { return tAs[*SpecialCall](v) })
+	case "sc_substring_from":
+		a := &tslabs{}
+		return tparseResolved(trules[170], input, o, a, func(v any) *SpecialCall { return tAs[*SpecialCall](v) })
+	case "sc_substring_for_from":
+		a := &tslabs{}
+		return tparseResolved(trules[171], input, o, a, func(v any) *SpecialCall { return tAs[*SpecialCall](v) })
+	case "sc_substring_for":
+		a := &tslabs{}
+		return tparseResolved(trules[172], input, o, a, func(v any) *SpecialCall { return tAs[*SpecialCall](v) })
+	case "sc_substring_list":
+		a := &tslabs{}
+		return tparseResolved(trules[173], input, o, a, func(v any) *SpecialCall { return tAs[*SpecialCall](v) })
+	case "sc_substring_empty":
+		a := &tslabs{}
+		return tparseResolved(trules[174], input, o, a, func(v any) *SpecialCall { return tAs[*SpecialCall](v) })
+	case "sc_treat":
+		a := &tslabs{}
+		return tparseResolved(trules[175], input, o, a, func(v any) *SpecialCall { return tAs[*SpecialCall](v) })
+	case "sc_trim_chars":
+		a := &tslabs{}
+		return tparseResolved(trules[176], input, o, a, func(v any) *SpecialCall { return tAs[*SpecialCall](v) })
+	case "sc_trim":
+		a := &tslabs{}
+		return tparseResolved(trules[177], input, o, a, func(v any) *SpecialCall { return tAs[*SpecialCall](v) })
+	case "sc_collation":
+		a := &tslabs{}
+		return tparseResolved(trules[178], input, o, a, func(v any) *SpecialCall { return tAs[*SpecialCall](v) })
+	case "extract_arg":
+		a := &tslabs{}
+		return tparseResolved(trules[179], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "year_kw":
+		n, err := parseResolved(rules[180], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "trim_from":
+		a := &tslabs{}
+		return tparseResolved(trules[181], input, o, a, func(v any) []Expr { return tl4(a, v) })
+	case "func_call":
+		a := &tslabs{}
+		return tparseResolved(trules[182], input, o, a, func(v any) *FuncCall { return tAs[*FuncCall](v) })
+	case "typed_literal_args":
+		a := &tslabs{}
+		return tparseResolved(trules[183], input, o, a, func(v any) *TypedLit { return tAs[*TypedLit](v) })
+	case "func_name_type":
+		a := &tslabs{}
+		return tparseResolved(trules[184], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "func_arg_list":
+		a := &tslabs{}
+		return tparseResolved(trules[185], input, o, a, func(v any) []Expr { return tl4(a, v) })
+	case "func_arg_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[186], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "named_arg":
+		a := &tslabs{}
+		return tparseResolved(trules[187], input, o, a, func(v any) *NamedArg { return tAs[*NamedArg](v) })
+	case "opt_ignore_nulls":
+		a := &tslabs{}
+		return tparseResolved(trules[188], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "filter_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[189], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "over_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[190], input, o, a, func(v any) *WindowOver { return tAs[*WindowOver](v) })
+	case "window_specification":
+		a := &tslabs{}
+		return tparseResolved(trules[191], input, o, a, func(v any) *WindowSpec { return tAs[*WindowSpec](v) })
+	case "frame_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[192], input, o, a, func(v any) *Frame { return tAs[*Frame](v) })
+	case "frame_conflict":
+		n, err := parseResolved(rules[193], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "frame_shift":
+		n, err := parseResolved(rules[194], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "frame_single":
+		a := &tslabs{}
+		return tparseResolved(trules[195], input, o, a, func(v any) *Frame { return tAs[*Frame](v) })
+	case "frame_between":
+		a := &tslabs{}
+		return tparseResolved(trules[196], input, o, a, func(v any) *Frame { return tAs[*Frame](v) })
+	case "frame_bound":
+		a := &tslabs{}
+		return tparseResolved(trules[197], input, o, a, func(v any) *FrameBound { return tAs[*FrameBound](v) })
+	case "frame_bound_kw":
+		a := &tslabs{}
+		return tparseResolved(trules[198], input, o, a, func(v any) *FrameBound { return tAs[*FrameBound](v) })
+	case "frame_bound_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[199], input, o, a, func(v any) *FrameBound { return tAs[*FrameBound](v) })
+	case "window_exclusion":
+		a := &tslabs{}
+		return tparseResolved(trules[200], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "type_list":
+		a := &tslabs{}
+		return tparseResolved(trules[201], input, o, a, func(v any) []*Type { return tl8(a, v) })
+	case "typename":
+		a := &tslabs{}
+		return tparseResolved(trules[202], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_base":
+		a := &tslabs{}
+		return tparseResolved(trules[203], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_setof":
+		a := &tslabs{}
+		return tparseResolved(trules[204], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_simple":
+		a := &tslabs{}
+		return tparseResolved(trules[205], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_setof_qualified":
+		a := &tslabs{}
+		return tparseResolved(trules[206], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "array_dims":
+		a := &tslabs{}
+		return tparseResolved(trules[207], input, o, a, func(v any) []*ArrayDim { return tl9(a, v) })
+	case "array_dim":
+		a := &tslabs{}
+		return tparseResolved(trules[208], input, o, a, func(v any) *ArrayDim { return tAs[*ArrayDim](v) })
+	case "array_dims_only":
+		a := &tslabs{}
+		return tparseResolved(trules[209], input, o, a, func(v any) []*ArrayDim { return tl9(a, v) })
+	case "array_keyword_sized":
+		a := &tslabs{}
+		return tparseResolved(trules[210], input, o, a, func(v any) []*ArrayDim { return tl9(a, v) })
+	case "array_keyword":
+		a := &tslabs{}
+		return tparseResolved(trules[211], input, o, a, func(v any) []*ArrayDim { return tl9(a, v) })
+	case "type_mods":
+		a := &tslabs{}
+		return tparseResolved(trules[212], input, o, a, func(v any) []Expr { return tl4(a, v) })
+	case "type_struct":
+		a := &tslabs{}
+		return tparseResolved(trules[213], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "colid_type_list":
+		a := &tslabs{}
+		return tparseResolved(trules[214], input, o, a, func(v any) []*TypeField { return tl10(a, v) })
+	case "colid_type":
+		a := &tslabs{}
+		return tparseResolved(trules[215], input, o, a, func(v any) *TypeField { return tAs[*TypeField](v) })
+	case "type_map":
+		a := &tslabs{}
+		return tparseResolved(trules[216], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_interval":
+		a := &tslabs{}
+		return tparseResolved(trules[217], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_datetime":
+		a := &tslabs{}
+		return tparseResolved(trules[218], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "time_zone_spec":
+		a := &tslabs{}
+		return tparseResolved(trules[219], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "type_char":
+		a := &tslabs{}
+		return tparseResolved(trules[220], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "char_name":
+		a := &tslabs{}
+		return tparseResolved(trules[221], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "type_bit":
+		a := &tslabs{}
+		return tparseResolved(trules[222], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_numeric":
+		a := &tslabs{}
+		return tparseResolved(trules[223], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_double":
+		a := &tslabs{}
+		return tparseResolved(trules[224], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_numeric_mods":
+		a := &tslabs{}
+		return tparseResolved(trules[225], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_float":
+		a := &tslabs{}
+		return tparseResolved(trules[226], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_decimal":
+		a := &tslabs{}
+		return tparseResolved(trules[227], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_numeric_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[228], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_qualified":
+		a := &tslabs{}
+		return tparseResolved(trules[229], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_generic":
+		a := &tslabs{}
+		return tparseResolved(trules[230], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "typed_literal":
+		a := &tslabs{}
+		return tparseResolved(trules[231], input, o, a, func(v any) *TypedLit { return tAs[*TypedLit](v) })
+	case "typed_literal_nchar":
+		a := &tslabs{}
+		return tparseResolved(trules[232], input, o, a, func(v any) *TypedLit { return tAs[*TypedLit](v) })
+	case "typed_literal_const":
+		a := &tslabs{}
+		return tparseResolved(trules[233], input, o, a, func(v any) *TypedLit { return tAs[*TypedLit](v) })
+	case "typed_literal_name":
+		a := &tslabs{}
+		return tparseResolved(trules[234], input, o, a, func(v any) *TypedLit { return tAs[*TypedLit](v) })
+	case "const_type":
+		a := &tslabs{}
+		return tparseResolved(trules[235], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_numeric_const":
+		a := &tslabs{}
+		return tparseResolved(trules[236], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_double_const":
+		a := &tslabs{}
+		return tparseResolved(trules[237], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_numeric_mods_const":
+		a := &tslabs{}
+		return tparseResolved(trules[238], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_float_const":
+		a := &tslabs{}
+		return tparseResolved(trules[239], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_decimal_const":
+		a := &tslabs{}
+		return tparseResolved(trules[240], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_numeric_plain_const":
+		a := &tslabs{}
+		return tparseResolved(trules[241], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_char_const":
+		a := &tslabs{}
+		return tparseResolved(trules[242], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_bit_const":
+		a := &tslabs{}
+		return tparseResolved(trules[243], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "type_datetime_const":
+		a := &tslabs{}
+		return tparseResolved(trules[244], input, o, a, func(v any) *Type { return tAs[*Type](v) })
+	case "select_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[245], input, o, a, func(v any) *Select { return tAs[*Select](v) })
+	case "select_paren_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[246], input, o, a, func(v any) *Select { return tAs[*Select](v) })
+	case "select_with_parens":
+		a := &tslabs{}
+		return tparseResolved(trules[247], input, o, a, func(v any) *ParenQuery { return tAs[*ParenQuery](v) })
+	case "paren_content":
+		a := &tslabs{}
+		return tparseResolved(trules[248], input, o, a, func(v any) ParenContent { return tAs[ParenContent](tpub(v)) })
+	case "select_no_parens":
+		a := &tslabs{}
+		return tparseResolved(trules[249], input, o, a, func(v any) *Select { return tAs[*Select](v) })
+	case "with_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[250], input, o, a, func(v any) *With { return tAs[*With](v) })
+	case "with_recursive":
+		a := &tslabs{}
+		return tparseResolved(trules[251], input, o, a, func(v any) *With { return tAs[*With](v) })
+	case "with_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[252], input, o, a, func(v any) *With { return tAs[*With](v) })
+	case "cte":
+		a := &tslabs{}
+		return tparseResolved(trules[253], input, o, a, func(v any) *CTE { return tAs[*CTE](v) })
+	case "materialized":
+		a := &tslabs{}
+		return tparseResolved(trules[254], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "select_body":
+		a := &tslabs{}
+		return tparseResolved(trules[255], input, o, a, func(v any) QueryBody { return tAs[QueryBody](tpub(v)) })
+	case "select_core":
+		a := &tslabs{}
+		return tparseResolved(trules[256], input, o, a, func(v any) *SelectCore { return tAs[*SelectCore](v) })
+	case "from_first":
+		a := &tslabs{}
+		return tparseResolved(trules[257], input, o, a, func(v any) *SelectCore { return tAs[*SelectCore](v) })
+	case "distinct_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[258], input, o, a, func(v any) *DistinctClause { return tAs[*DistinctClause](v) })
+	case "target_list_opt_comma":
+		a := &tslabs{}
+		return tparseResolved(trules[259], input, o, a, func(v any) []*SelectItem { return tl11(a, v) })
+	case "select_item":
+		a := &tslabs{}
+		return tparseResolved(trules[260], input, o, a, func(v any) *SelectItem { return tAs[*SelectItem](v) })
+	case "item_prefixed":
+		a := &tslabs{}
+		return tparseResolved(trules[261], input, o, a, func(v any) *SelectItem { return tAs[*SelectItem](v) })
+	case "item_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[262], input, o, a, func(v any) *SelectItem { return tAs[*SelectItem](v) })
+	case "col_label_or_string":
+		a := &tslabs{}
+		return tparseResolved(trules[263], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "into_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[264], input, o, a, func(v any) *IntoClause { return tAs[*IntoClause](v) })
+	case "opt_temp_table_name":
+		a := &tslabs{}
+		return tparseResolved(trules[265], input, o, a, func(v any) *IntoClause { return tAs[*IntoClause](v) })
+	case "into_temp":
+		a := &tslabs{}
+		return tparseResolved(trules[266], input, o, a, func(v any) *IntoClause { return tAs[*IntoClause](v) })
+	case "into_table":
+		a := &tslabs{}
+		return tparseResolved(trules[267], input, o, a, func(v any) *IntoClause { return tAs[*IntoClause](v) })
+	case "into_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[268], input, o, a, func(v any) *IntoClause { return tAs[*IntoClause](v) })
+	case "group_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[269], input, o, a, func(v any) *GroupBy { return tAs[*GroupBy](v) })
+	case "group_all":
+		a := &tslabs{}
+		return tparseResolved(trules[270], input, o, a, func(v any) *GroupBy { return tAs[*GroupBy](v) })
+	case "group_list":
+		a := &tslabs{}
+		return tparseResolved(trules[271], input, o, a, func(v any) *GroupBy { return tAs[*GroupBy](v) })
+	case "group_by_item":
+		a := &tslabs{}
+		return tparseResolved(trules[272], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "group_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[273], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "grouping_set":
+		a := &tslabs{}
+		return tparseResolved(trules[274], input, o, a, func(v any) *GroupingSet { return tAs[*GroupingSet](v) })
+	case "gs_rollup":
+		a := &tslabs{}
+		return tparseResolved(trules[275], input, o, a, func(v any) *GroupingSet { return tAs[*GroupingSet](v) })
+	case "gs_sets":
+		a := &tslabs{}
+		return tparseResolved(trules[276], input, o, a, func(v any) *GroupingSet { return tAs[*GroupingSet](v) })
+	case "gs_empty":
+		a := &tslabs{}
+		return tparseResolved(trules[277], input, o, a, func(v any) *GroupingSet { return tAs[*GroupingSet](v) })
+	case "group_by_list_opt_comma":
+		a := &tslabs{}
+		return tparseResolved(trules[278], input, o, a, func(v any) []Expr { return tl4(a, v) })
+	case "window_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[279], input, o, a, func(v any) []*WindowDef { return tl12(a, v) })
+	case "window_definition":
+		a := &tslabs{}
+		return tparseResolved(trules[280], input, o, a, func(v any) *WindowDef { return tAs[*WindowDef](v) })
+	case "values_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[281], input, o, a, func(v any) *ValuesClause { return tAs[*ValuesClause](v) })
+	case "values_row":
+		a := &tslabs{}
+		return tparseResolved(trules[282], input, o, a, func(v any) *ValuesRow { return tAs[*ValuesRow](v) })
+	case "table_query":
+		a := &tslabs{}
+		return tparseResolved(trules[283], input, o, a, func(v any) *TableQuery { return tAs[*TableQuery](v) })
+	case "pivot_query":
+		a := &tslabs{}
+		return tparseResolved(trules[284], input, o, a, func(v any) *PivotQuery { return tAs[*PivotQuery](v) })
+	case "pivot_keyword":
+		n, err := parseResolved(rules[285], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "unpivot_keyword":
+		n, err := parseResolved(rules[286], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "unpivot_query":
+		a := &tslabs{}
+		return tparseResolved(trules[287], input, o, a, func(v any) *UnpivotQuery { return tAs[*UnpivotQuery](v) })
+	case "name_list_opt_comma_opt_bracket":
+		a := &tslabs{}
+		return tparseResolved(trules[288], input, o, a, func(v any) []*Ident { return tl1(a, v) })
+	case "bracketed_names":
+		a := &tslabs{}
+		return tparseResolved(trules[289], input, o, a, func(v any) []*Ident { return tl1(a, v) })
+	case "pivot_column_list":
+		a := &tslabs{}
+		return tparseResolved(trules[290], input, o, a, func(v any) []*PivotColumn { return tl13(a, v) })
+	case "pivot_column_entry":
+		a := &tslabs{}
+		return tparseResolved(trules[291], input, o, a, func(v any) *PivotColumn { return tAs[*PivotColumn](v) })
+	case "sort_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[292], input, o, a, func(v any) *OrderBy { return tAs[*OrderBy](v) })
+	case "sort_all":
+		a := &tslabs{}
+		return tparseResolved(trules[293], input, o, a, func(v any) *OrderBy { return tAs[*OrderBy](v) })
+	case "sort_list":
+		a := &tslabs{}
+		return tparseResolved(trules[294], input, o, a, func(v any) *OrderBy { return tAs[*OrderBy](v) })
+	case "sortby":
+		a := &tslabs{}
+		return tparseResolved(trules[295], input, o, a, func(v any) *SortItem { return tAs[*SortItem](v) })
+	case "sortby_using":
+		a := &tslabs{}
+		return tparseResolved(trules[296], input, o, a, func(v any) *SortItem { return tAs[*SortItem](v) })
+	case "sortby_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[297], input, o, a, func(v any) *SortItem { return tAs[*SortItem](v) })
+	case "asc_desc":
+		n, err := parseResolved(rules[298], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "nulls_order":
+		a := &tslabs{}
+		return tparseResolved(trules[299], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "qual_all_op":
+		a := &tslabs{}
+		return tparseResolved(trules[300], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "limit_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[301], input, o, a, func(v any) *LimitClause { return tAs[*LimitClause](v) })
+	case "limit_comma":
+		a := &tslabs{}
+		return tparseResolved(trules[302], input, o, a, func(v any) *LimitClause { return tAs[*LimitClause](v) })
+	case "limit_all":
+		a := &tslabs{}
+		return tparseResolved(trules[303], input, o, a, func(v any) *LimitClause { return tAs[*LimitClause](v) })
+	case "limit_percent":
+		a := &tslabs{}
+		return tparseResolved(trules[304], input, o, a, func(v any) *LimitClause { return tAs[*LimitClause](v) })
+	case "limit_percent_sign":
+		a := &tslabs{}
+		return tparseResolved(trules[305], input, o, a, func(v any) *LimitClause { return tAs[*LimitClause](v) })
+	case "limit_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[306], input, o, a, func(v any) *LimitClause { return tAs[*LimitClause](v) })
+	case "fetch_value_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[307], input, o, a, func(v any) *LimitClause { return tAs[*LimitClause](v) })
+	case "fetch_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[308], input, o, a, func(v any) *LimitClause { return tAs[*LimitClause](v) })
+	case "fetch_value":
+		a := &tslabs{}
+		return tparseResolved(trules[309], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "fetch_signed":
+		a := &tslabs{}
+		return tparseResolved(trules[310], input, o, a, func(v any) *Number { return tAs[*Number](v) })
+	case "offset_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[311], input, o, a, func(v any) *OffsetClause { return tAs[*OffsetClause](v) })
+	case "offset_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[312], input, o, a, func(v any) *OffsetClause { return tAs[*OffsetClause](v) })
+	case "offset_rows":
+		a := &tslabs{}
+		return tparseResolved(trules[313], input, o, a, func(v any) *OffsetClause { return tAs[*OffsetClause](v) })
+	case "locking_clauses":
+		a := &tslabs{}
+		return tparseResolved(trules[314], input, o, a, func(v any) []*LockClause { return tl14(a, v) })
+	case "locking_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[315], input, o, a, func(v any) *LockClause { return tAs[*LockClause](v) })
+	case "lock_read_only":
+		a := &tslabs{}
+		return tparseResolved(trules[316], input, o, a, func(v any) *LockClause { return tAs[*LockClause](v) })
+	case "lock_for":
+		a := &tslabs{}
+		return tparseResolved(trules[317], input, o, a, func(v any) *LockClause { return tAs[*LockClause](v) })
+	case "qualified_name_list":
+		a := &tslabs{}
+		return tparseResolved(trules[318], input, o, a, func(v any) []*Name { return tl5(a, v) })
+	case "sample_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[319], input, o, a, func(v any) *SampleClause { return tAs[*SampleClause](v) })
+	case "tablesample_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[320], input, o, a, func(v any) *SampleClause { return tAs[*SampleClause](v) })
+	case "sample_value":
+		a := &tslabs{}
+		return tparseResolved(trules[321], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "tablesample_entry":
+		a := &tslabs{}
+		return tparseResolved(trules[322], input, o, a, func(v any) *SampleClause { return tAs[*SampleClause](v) })
+	case "sample_func":
+		a := &tslabs{}
+		return tparseResolved(trules[323], input, o, a, func(v any) *SampleClause { return tAs[*SampleClause](v) })
+	case "sample_seeded":
+		a := &tslabs{}
+		return tparseResolved(trules[324], input, o, a, func(v any) *SampleClause { return tAs[*SampleClause](v) })
+	case "sample_count":
+		a := &tslabs{}
+		return tparseResolved(trules[325], input, o, a, func(v any) *SampleClause { return tAs[*SampleClause](v) })
+	case "sample_unit":
+		n, err := parseResolved(rules[326], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "from_list":
+		a := &tslabs{}
+		return tparseResolved(trules[327], input, o, a, func(v any) []TableRef { return tl15(a, v) })
+	case "from_list_opt_comma":
+		a := &tslabs{}
+		return tparseResolved(trules[328], input, o, a, func(v any) []TableRef { return tl15(a, v) })
+	case "table_ref":
+		a := &tslabs{}
+		return tparseResolved(trules[329], input, o, a, func(v any) TableRef { return tAs[TableRef](tpub(v)) })
+	case "join_type":
+		a := &tslabs{}
+		return tparseResolved(trules[330], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "join_qual_on":
+		a := &tslabs{}
+		return tparseResolved(trules[331], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "join_qual_using":
+		a := &tslabs{}
+		return tparseResolved(trules[332], input, o, a, func(v any) []*Ident { return tl1(a, v) })
+	case "include_nulls":
+		a := &tslabs{}
+		return tparseResolved(trules[333], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "unpivot_header":
+		a := &tslabs{}
+		return tparseResolved(trules[334], input, o, a, func(v any) []*Ident { return tl1(a, v) })
+	case "unpivot_single":
+		a := &tslabs{}
+		return tparseResolved(trules[335], input, o, a, func(v any) []*Ident { return tl1(a, v) })
+	case "unpivot_value_list":
+		a := &tslabs{}
+		return tparseResolved(trules[336], input, o, a, func(v any) []*UnpivotValue { return tl16(a, v) })
+	case "unpivot_value":
+		a := &tslabs{}
+		return tparseResolved(trules[337], input, o, a, func(v any) *UnpivotValue { return tAs[*UnpivotValue](v) })
+	case "pivot_value_list":
+		a := &tslabs{}
+		return tparseResolved(trules[338], input, o, a, func(v any) []*PivotValue { return tl17(a, v) })
+	case "pivot_value":
+		a := &tslabs{}
+		return tparseResolved(trules[339], input, o, a, func(v any) *PivotValue { return tAs[*PivotValue](v) })
+	case "pivot_header":
+		a := &tslabs{}
+		return tparseResolved(trules[340], input, o, a, func(v any) []Expr { return tl4(a, v) })
+	case "pivot_header_list":
+		a := &tslabs{}
+		return tparseResolved(trules[341], input, o, a, func(v any) []Expr { return tl4(a, v) })
+	case "pivot_header_single":
+		a := &tslabs{}
+		return tparseResolved(trules[342], input, o, a, func(v any) []Expr { return tl4(a, v) })
+	case "c_expr_list_opt_comma":
+		a := &tslabs{}
+		return tparseResolved(trules[343], input, o, a, func(v any) []Expr { return tl4(a, v) })
+	case "table_primary":
+		a := &tslabs{}
+		return tparseResolved(trules[344], input, o, a, func(v any) TableRef { return tAs[TableRef](tpub(v)) })
+	case "alias_prefix":
+		a := &tslabs{}
+		return tparseResolved(trules[345], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "base_ref":
+		a := &tslabs{}
+		return tparseResolved(trules[346], input, o, a, func(v any) *BaseTable { return tAs[*BaseTable](v) })
+	case "at_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[347], input, o, a, func(v any) *AtClause { return tAs[*AtClause](v) })
+	case "subquery_ref":
+		a := &tslabs{}
+		return tparseResolved(trules[348], input, o, a, func(v any) *SubqueryRef { return tAs[*SubqueryRef](v) })
+	case "paren_table":
+		a := &tslabs{}
+		return tparseResolved(trules[349], input, o, a, func(v any) *ParenTable { return tAs[*ParenTable](v) })
+	case "join_start":
+		n, err := parseResolved(rules[350], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "values_ref":
+		a := &tslabs{}
+		return tparseResolved(trules[351], input, o, a, func(v any) *ValuesRef { return tAs[*ValuesRef](v) })
+	case "func_ref":
+		a := &tslabs{}
+		return tparseResolved(trules[352], input, o, a, func(v any) *FuncTable { return tAs[*FuncTable](v) })
+	case "rows_from_ref":
+		a := &tslabs{}
+		return tparseResolved(trules[353], input, o, a, func(v any) *FuncTable { return tAs[*FuncTable](v) })
+	case "rowsfrom_item":
+		a := &tslabs{}
+		return tparseResolved(trules[354], input, o, a, func(v any) *RowsFromItem { return tAs[*RowsFromItem](v) })
+	case "func_expr_windowless":
+		a := &tslabs{}
+		return tparseResolved(trules[355], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "func_call_bare":
+		a := &tslabs{}
+		return tparseResolved(trules[356], input, o, a, func(v any) *FuncCall { return tAs[*FuncCall](v) })
+	case "alias_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[357], input, o, a, func(v any) *TableAlias { return tAs[*TableAlias](v) })
+	case "alias_as_cols":
+		a := &tslabs{}
+		return tparseResolved(trules[358], input, o, a, func(v any) *TableAlias { return tAs[*TableAlias](v) })
+	case "alias_as":
+		a := &tslabs{}
+		return tparseResolved(trules[359], input, o, a, func(v any) *TableAlias { return tAs[*TableAlias](v) })
+	case "alias_cols":
+		a := &tslabs{}
+		return tparseResolved(trules[360], input, o, a, func(v any) *TableAlias { return tAs[*TableAlias](v) })
+	case "alias_bare":
+		a := &tslabs{}
+		return tparseResolved(trules[361], input, o, a, func(v any) *TableAlias { return tAs[*TableAlias](v) })
+	case "func_alias_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[362], input, o, a, func(v any) *TableAlias { return tAs[*TableAlias](v) })
+	case "falias_as_defs":
+		a := &tslabs{}
+		return tparseResolved(trules[363], input, o, a, func(v any) *TableAlias { return tAs[*TableAlias](v) })
+	case "falias_defs_only":
+		a := &tslabs{}
+		return tparseResolved(trules[364], input, o, a, func(v any) *TableAlias { return tAs[*TableAlias](v) })
+	case "falias_defs":
+		a := &tslabs{}
+		return tparseResolved(trules[365], input, o, a, func(v any) *TableAlias { return tAs[*TableAlias](v) })
+	case "table_func_element_list":
+		a := &tslabs{}
+		return tparseResolved(trules[366], input, o, a, func(v any) []*ColDef { return tl18(a, v) })
+	case "table_func_element":
+		a := &tslabs{}
+		return tparseResolved(trules[367], input, o, a, func(v any) *ColDef { return tAs[*ColDef](v) })
+	case "target_list":
+		a := &tslabs{}
+		return tparseResolved(trules[368], input, o, a, func(v any) []*SelectItem { return tl11(a, v) })
+	case "insert_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[369], input, o, a, func(v any) *InsertStmt { return tAs[*InsertStmt](v) })
+	case "insert_columns":
+		a := &tslabs{}
+		return tparseResolved(trules[370], input, o, a, func(v any) []*Name { return tl5(a, v) })
+	case "insert_column_list":
+		a := &tslabs{}
+		return tparseResolved(trules[371], input, o, a, func(v any) []*Name { return tl5(a, v) })
+	case "set_target":
+		a := &tslabs{}
+		return tparseResolved(trules[372], input, o, a, func(v any) *Name { return tAs[*Name](v) })
+	case "overriding":
+		a := &tslabs{}
+		return tparseResolved(trules[373], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "on_conflict":
+		a := &tslabs{}
+		return tparseResolved(trules[374], input, o, a, func(v any) *OnConflict { return tAs[*OnConflict](v) })
+	case "index_params":
+		a := &tslabs{}
+		return tparseResolved(trules[375], input, o, a, func(v any) []*IndexElem { return tl19(a, v) })
+	case "index_elem":
+		a := &tslabs{}
+		return tparseResolved(trules[376], input, o, a, func(v any) *IndexElem { return tAs[*IndexElem](v) })
+	case "index_elem_col":
+		a := &tslabs{}
+		return tparseResolved(trules[377], input, o, a, func(v any) *IndexElem { return tAs[*IndexElem](v) })
+	case "index_elem_func":
+		a := &tslabs{}
+		return tparseResolved(trules[378], input, o, a, func(v any) *IndexElem { return tAs[*IndexElem](v) })
+	case "index_elem_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[379], input, o, a, func(v any) *IndexElem { return tAs[*IndexElem](v) })
+	case "opt_class":
+		a := &tslabs{}
+		return tparseResolved(trules[380], input, o, a, func(v any) *Name { return tAs[*Name](v) })
+	case "set_clause_list_opt_comma":
+		a := &tslabs{}
+		return tparseResolved(trules[381], input, o, a, func(v any) []*SetClause { return tl20(a, v) })
+	case "set_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[382], input, o, a, func(v any) *SetClause { return tAs[*SetClause](v) })
+	case "set_clause_one":
+		a := &tslabs{}
+		return tparseResolved(trules[383], input, o, a, func(v any) *SetClause { return tAs[*SetClause](v) })
+	case "set_clause_paren":
+		a := &tslabs{}
+		return tparseResolved(trules[384], input, o, a, func(v any) *SetClause { return tAs[*SetClause](v) })
+	case "target_table":
+		a := &tslabs{}
+		return tparseResolved(trules[385], input, o, a, func(v any) *TargetTable { return tAs[*TargetTable](v) })
+	case "update_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[386], input, o, a, func(v any) *UpdateStmt { return tAs[*UpdateStmt](v) })
+	case "delete_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[387], input, o, a, func(v any) *DeleteStmt { return tAs[*DeleteStmt](v) })
+	case "truncate_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[388], input, o, a, func(v any) *DeleteStmt { return tAs[*DeleteStmt](v) })
+	case "merge_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[389], input, o, a, func(v any) *MergeStmt { return tAs[*MergeStmt](v) })
+	case "merge_when":
+		a := &tslabs{}
+		return tparseResolved(trules[390], input, o, a, func(v any) *MergeWhen { return tAs[*MergeWhen](v) })
+	case "merge_when_matched":
+		a := &tslabs{}
+		return tparseResolved(trules[391], input, o, a, func(v any) *MergeWhen { return tAs[*MergeWhen](v) })
+	case "merge_when_not":
+		a := &tslabs{}
+		return tparseResolved(trules[392], input, o, a, func(v any) *MergeWhen { return tAs[*MergeWhen](v) })
+	case "merge_action":
+		a := &tslabs{}
+		return tparseResolved(trules[393], input, o, a, func(v any) *MergeAction { return tAs[*MergeAction](v) })
+	case "ma_update_set":
+		a := &tslabs{}
+		return tparseResolved(trules[394], input, o, a, func(v any) *MergeAction { return tAs[*MergeAction](v) })
+	case "ma_update_star":
+		a := &tslabs{}
+		return tparseResolved(trules[395], input, o, a, func(v any) *MergeAction { return tAs[*MergeAction](v) })
+	case "ma_update":
+		a := &tslabs{}
+		return tparseResolved(trules[396], input, o, a, func(v any) *MergeAction { return tAs[*MergeAction](v) })
+	case "ma_delete":
+		a := &tslabs{}
+		return tparseResolved(trules[397], input, o, a, func(v any) *MergeAction { return tAs[*MergeAction](v) })
+	case "ma_insert_values":
+		a := &tslabs{}
+		return tparseResolved(trules[398], input, o, a, func(v any) *MergeAction { return tAs[*MergeAction](v) })
+	case "insert_column_ident_list":
+		a := &tslabs{}
+		return tparseResolved(trules[399], input, o, a, func(v any) []*Ident { return tl1(a, v) })
+	case "ma_insert_default":
+		a := &tslabs{}
+		return tparseResolved(trules[400], input, o, a, func(v any) *MergeAction { return tAs[*MergeAction](v) })
+	case "ma_insert":
+		a := &tslabs{}
+		return tparseResolved(trules[401], input, o, a, func(v any) *MergeAction { return tAs[*MergeAction](v) })
+	case "ma_nothing":
+		a := &tslabs{}
+		return tparseResolved(trules[402], input, o, a, func(v any) *MergeAction { return tAs[*MergeAction](v) })
+	case "ma_error":
+		a := &tslabs{}
+		return tparseResolved(trules[403], input, o, a, func(v any) *MergeAction { return tAs[*MergeAction](v) })
+	case "opt_temp":
+		a := &tslabs{}
+		return tparseResolved(trules[404], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "if_not_exists":
+		a := &tslabs{}
+		return tparseResolved(trules[405], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "if_exists":
+		a := &tslabs{}
+		return tparseResolved(trules[406], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "or_replace":
+		a := &tslabs{}
+		return tparseResolved(trules[407], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "create_table_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[408], input, o, a, func(v any) *CreateTableStmt { return tAs[*CreateTableStmt](v) })
+	case "table_element_list":
+		a := &tslabs{}
+		return tparseResolved(trules[409], input, o, a, func(v any) []TableElement { return tl21(a, v) })
+	case "table_element":
+		a := &tslabs{}
+		return tparseResolved(trules[410], input, o, a, func(v any) TableElement { return tAs[TableElement](tpub(v)) })
+	case "partition_sorted_option":
+		a := &tslabs{}
+		return tparseResolved(trules[411], input, o, a, func(v any) *PartitionSorted { return tAs[*PartitionSorted](v) })
+	case "opt_with_options":
+		a := &tslabs{}
+		return tparseResolved(trules[412], input, o, a, func(v any) []*Reloption { return tl22(a, v) })
+	case "with_reloptions":
+		a := &tslabs{}
+		return tparseResolved(trules[413], input, o, a, func(v any) []*Reloption { return tl22(a, v) })
+	case "with_oids":
+		a := &tslabs{}
+		return tparseResolved(trules[414], input, o, a, func(v any) []*Reloption { return tl22(a, v) })
+	case "on_commit_option":
+		a := &tslabs{}
+		return tparseResolved(trules[415], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "reloption_list":
+		a := &tslabs{}
+		return tparseResolved(trules[416], input, o, a, func(v any) []*Reloption { return tl22(a, v) })
+	case "reloption_elem":
+		a := &tslabs{}
+		return tparseResolved(trules[417], input, o, a, func(v any) *Reloption { return tAs[*Reloption](v) })
+	case "reloption_def":
+		a := &tslabs{}
+		return tparseResolved(trules[418], input, o, a, func(v any) *Reloption { return tAs[*Reloption](v) })
+	case "reloption_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[419], input, o, a, func(v any) *Reloption { return tAs[*Reloption](v) })
+	case "reloption_name":
+		a := &tslabs{}
+		return tparseResolved(trules[420], input, o, a, func(v any) *Name { return tAs[*Name](v) })
+	case "def_arg":
+		a := &tslabs{}
+		return tparseResolved(trules[421], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "numeric_only":
+		a := &tslabs{}
+		return tparseResolved(trules[422], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "def_list":
+		a := &tslabs{}
+		return tparseResolved(trules[423], input, o, a, func(v any) []*DefElem { return tl23(a, v) })
+	case "def_elem":
+		a := &tslabs{}
+		return tparseResolved(trules[424], input, o, a, func(v any) *DefElem { return tAs[*DefElem](v) })
+	case "definition":
+		a := &tslabs{}
+		return tparseResolved(trules[425], input, o, a, func(v any) []*DefElem { return tl23(a, v) })
+	case "opt_definition":
+		a := &tslabs{}
+		return tparseResolved(trules[426], input, o, a, func(v any) []*DefElem { return tl23(a, v) })
+	case "column_def":
+		a := &tslabs{}
+		return tparseResolved(trules[427], input, o, a, func(v any) *ColumnDef { return tAs[*ColumnDef](v) })
+	case "column_def_regular":
+		a := &tslabs{}
+		return tparseResolved(trules[428], input, o, a, func(v any) *ColumnDef { return tAs[*ColumnDef](v) })
+	case "column_def_generated":
+		a := &tslabs{}
+		return tparseResolved(trules[429], input, o, a, func(v any) *ColumnDef { return tAs[*ColumnDef](v) })
+	case "generated_constraint":
+		a := &tslabs{}
+		return tparseResolved(trules[430], input, o, a, func(v any) *GeneratedColumn { return tAs[*GeneratedColumn](v) })
+	case "gen_identity":
+		a := &tslabs{}
+		return tparseResolved(trules[431], input, o, a, func(v any) *GeneratedColumn { return tAs[*GeneratedColumn](v) })
+	case "gen_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[432], input, o, a, func(v any) *GeneratedColumn { return tAs[*GeneratedColumn](v) })
+	case "gen_as":
+		a := &tslabs{}
+		return tparseResolved(trules[433], input, o, a, func(v any) *GeneratedColumn { return tAs[*GeneratedColumn](v) })
+	case "generated_when":
+		a := &tslabs{}
+		return tparseResolved(trules[434], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "generated_storage":
+		n, err := parseResolved(rules[435], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "constraint_name":
+		a := &tslabs{}
+		return tparseResolved(trules[436], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "col_constraint":
+		a := &tslabs{}
+		return tparseResolved(trules[437], input, o, a, func(v any) *ColumnConstraint { return tAs[*ColumnConstraint](v) })
+	case "cc_not_null":
+		a := &tslabs{}
+		return tparseResolved(trules[438], input, o, a, func(v any) *ColumnConstraint { return tAs[*ColumnConstraint](v) })
+	case "cc_null":
+		a := &tslabs{}
+		return tparseResolved(trules[439], input, o, a, func(v any) *ColumnConstraint { return tAs[*ColumnConstraint](v) })
+	case "cc_unique":
+		a := &tslabs{}
+		return tparseResolved(trules[440], input, o, a, func(v any) *ColumnConstraint { return tAs[*ColumnConstraint](v) })
+	case "cc_primary":
+		a := &tslabs{}
+		return tparseResolved(trules[441], input, o, a, func(v any) *ColumnConstraint { return tAs[*ColumnConstraint](v) })
+	case "cc_check":
+		a := &tslabs{}
+		return tparseResolved(trules[442], input, o, a, func(v any) *ColumnConstraint { return tAs[*ColumnConstraint](v) })
+	case "cc_compression":
+		a := &tslabs{}
+		return tparseResolved(trules[443], input, o, a, func(v any) *ColumnConstraint { return tAs[*ColumnConstraint](v) })
+	case "cc_default":
+		a := &tslabs{}
+		return tparseResolved(trules[444], input, o, a, func(v any) *ColumnConstraint { return tAs[*ColumnConstraint](v) })
+	case "cc_references":
+		a := &tslabs{}
+		return tparseResolved(trules[445], input, o, a, func(v any) *ColumnConstraint { return tAs[*ColumnConstraint](v) })
+	case "cc_attr":
+		a := &tslabs{}
+		return tparseResolved(trules[446], input, o, a, func(v any) *ColumnConstraint { return tAs[*ColumnConstraint](v) })
+	case "cc_collate":
+		a := &tslabs{}
+		return tparseResolved(trules[447], input, o, a, func(v any) *ColumnConstraint { return tAs[*ColumnConstraint](v) })
+	case "constraint_attr":
+		a := &tslabs{}
+		return tparseResolved(trules[448], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "reference":
+		a := &tslabs{}
+		return tparseResolved(trules[449], input, o, a, func(v any) *Reference { return tAs[*Reference](v) })
+	case "column_list":
+		a := &tslabs{}
+		return tparseResolved(trules[450], input, o, a, func(v any) []*Ident { return tl1(a, v) })
+	case "column_list_opt_comma":
+		a := &tslabs{}
+		return tparseResolved(trules[451], input, o, a, func(v any) []*Ident { return tl1(a, v) })
+	case "key_match":
+		a := &tslabs{}
+		return tparseResolved(trules[452], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "key_update":
+		a := &tslabs{}
+		return tparseResolved(trules[453], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "key_delete":
+		a := &tslabs{}
+		return tparseResolved(trules[454], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "key_action":
+		n, err := parseResolved(rules[455], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "table_constraint":
+		a := &tslabs{}
+		return tparseResolved(trules[456], input, o, a, func(v any) *TableConstraint { return tAs[*TableConstraint](v) })
+	case "constraint_attrs":
+		a := &tslabs{}
+		return tparseResolved(trules[457], input, o, a, func(v any) []*Match { return tl0(a, v) })
+	case "constraint_attribute":
+		a := &tslabs{}
+		return tparseResolved(trules[458], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "tc_check":
+		a := &tslabs{}
+		return tparseResolved(trules[459], input, o, a, func(v any) *TableConstraint { return tAs[*TableConstraint](v) })
+	case "tc_unique":
+		a := &tslabs{}
+		return tparseResolved(trules[460], input, o, a, func(v any) *TableConstraint { return tAs[*TableConstraint](v) })
+	case "tc_unique_index":
+		a := &tslabs{}
+		return tparseResolved(trules[461], input, o, a, func(v any) *TableConstraint { return tAs[*TableConstraint](v) })
+	case "tc_primary":
+		a := &tslabs{}
+		return tparseResolved(trules[462], input, o, a, func(v any) *TableConstraint { return tAs[*TableConstraint](v) })
+	case "tc_primary_index":
+		a := &tslabs{}
+		return tparseResolved(trules[463], input, o, a, func(v any) *TableConstraint { return tAs[*TableConstraint](v) })
+	case "tc_foreign":
+		a := &tslabs{}
+		return tparseResolved(trules[464], input, o, a, func(v any) *TableConstraint { return tAs[*TableConstraint](v) })
+	case "table_like":
+		a := &tslabs{}
+		return tparseResolved(trules[465], input, o, a, func(v any) *TableLike { return tAs[*TableLike](v) })
+	case "table_like_option":
+		a := &tslabs{}
+		return tparseResolved(trules[466], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "create_table_as_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[467], input, o, a, func(v any) *CreateTableAsStmt { return tAs[*CreateTableAsStmt](v) })
+	case "with_data":
+		a := &tslabs{}
+		return tparseResolved(trules[468], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "create_view_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[469], input, o, a, func(v any) *CreateViewStmt { return tAs[*CreateViewStmt](v) })
+	case "check_option":
+		a := &tslabs{}
+		return tparseResolved(trules[470], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "create_index_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[471], input, o, a, func(v any) *CreateIndexStmt { return tAs[*CreateIndexStmt](v) })
+	case "create_schema_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[472], input, o, a, func(v any) *CreateSchemaStmt { return tAs[*CreateSchemaStmt](v) })
+	case "schema_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[473], input, o, a, func(v any) Statement { return tAs[Statement](tpub(v)) })
+	case "create_sequence_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[474], input, o, a, func(v any) *CreateSequenceStmt { return tAs[*CreateSequenceStmt](v) })
+	case "seq_opt_list":
+		a := &tslabs{}
+		return tparseResolved(trules[475], input, o, a, func(v any) []*SeqOption { return tl24(a, v) })
+	case "seq_opt_elem":
+		a := &tslabs{}
+		return tparseResolved(trules[476], input, o, a, func(v any) *SeqOption { return tAs[*SeqOption](v) })
+	case "so_as":
+		a := &tslabs{}
+		return tparseResolved(trules[477], input, o, a, func(v any) *SeqOption { return tAs[*SeqOption](v) })
+	case "so_num":
+		a := &tslabs{}
+		return tparseResolved(trules[478], input, o, a, func(v any) *SeqOption { return tAs[*SeqOption](v) })
+	case "so_flag":
+		a := &tslabs{}
+		return tparseResolved(trules[479], input, o, a, func(v any) *SeqOption { return tAs[*SeqOption](v) })
+	case "so_owned":
+		a := &tslabs{}
+		return tparseResolved(trules[480], input, o, a, func(v any) *SeqOption { return tAs[*SeqOption](v) })
+	case "so_seqname":
+		a := &tslabs{}
+		return tparseResolved(trules[481], input, o, a, func(v any) *SeqOption { return tAs[*SeqOption](v) })
+	case "so_restart":
+		a := &tslabs{}
+		return tparseResolved(trules[482], input, o, a, func(v any) *SeqOption { return tAs[*SeqOption](v) })
+	case "create_type_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[483], input, o, a, func(v any) *CreateTypeStmt { return tAs[*CreateTypeStmt](v) })
+	case "enum_val_list":
+		a := &tslabs{}
+		return tparseResolved(trules[484], input, o, a, func(v any) []*StringLit { return tl25(a, v) })
+	case "create_macro_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[485], input, o, a, func(v any) *CreateMacroStmt { return tAs[*CreateMacroStmt](v) })
+	case "macro_definitions":
+		a := &tslabs{}
+		return tparseResolved(trules[486], input, o, a, func(v any) []*MacroDef { return tl26(a, v) })
+	case "macro_expr_list":
+		a := &tslabs{}
+		return tparseResolved(trules[487], input, o, a, func(v any) []*MacroDef { return tl26(a, v) })
+	case "macro_expr_def":
+		a := &tslabs{}
+		return tparseResolved(trules[488], input, o, a, func(v any) *MacroDef { return tAs[*MacroDef](v) })
+	case "macro_table_list":
+		a := &tslabs{}
+		return tparseResolved(trules[489], input, o, a, func(v any) []*MacroDef { return tl26(a, v) })
+	case "macro_table_one_end":
+		a := &tslabs{}
+		return tparseResolved(trules[490], input, o, a, func(v any) []*MacroDef { return tl26(a, v) })
+	case "macro_table_one":
+		a := &tslabs{}
+		return tparseResolved(trules[491], input, o, a, func(v any) []*MacroDef { return tl26(a, v) })
+	case "macro_table_many":
+		a := &tslabs{}
+		return tparseResolved(trules[492], input, o, a, func(v any) []*MacroDef { return tl26(a, v) })
+	case "macro_table_paren":
+		a := &tslabs{}
+		return tparseResolved(trules[493], input, o, a, func(v any) *MacroDef { return tAs[*MacroDef](v) })
+	case "param_list":
+		a := &tslabs{}
+		return tparseResolved(trules[494], input, o, a, func(v any) []*MacroParam { return tl27(a, v) })
+	case "macro_params":
+		a := &tslabs{}
+		return tparseResolved(trules[495], input, o, a, func(v any) []*MacroParam { return tl27(a, v) })
+	case "macro_param":
+		a := &tslabs{}
+		return tparseResolved(trules[496], input, o, a, func(v any) *MacroParam { return tAs[*MacroParam](v) })
+	case "create_secret_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[497], input, o, a, func(v any) *CreateSecretStmt { return tAs[*CreateSecretStmt](v) })
+	case "secret_options":
+		a := &tslabs{}
+		return tparseResolved(trules[498], input, o, a, func(v any) []*SecretOption { return tl28(a, v) })
+	case "secret_option":
+		a := &tslabs{}
+		return tparseResolved(trules[499], input, o, a, func(v any) *SecretOption { return tAs[*SecretOption](v) })
+	case "alter_table_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[500], input, o, a, func(v any) *AlterTableStmt { return tAs[*AlterTableStmt](v) })
+	case "alter_relation_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[501], input, o, a, func(v any) *AlterTableStmt { return tAs[*AlterTableStmt](v) })
+	case "alter_name_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[502], input, o, a, func(v any) *AlterTableStmt { return tAs[*AlterTableStmt](v) })
+	case "alter_table_cmds":
+		a := &tslabs{}
+		return tparseResolved(trules[503], input, o, a, func(v any) []*AlterCmd { return tl29(a, v) })
+	case "qualified_column":
+		a := &tslabs{}
+		return tparseResolved(trules[504], input, o, a, func(v any) *Name { return tAs[*Name](v) })
+	case "alter_table_cmd":
+		a := &tslabs{}
+		return tparseResolved(trules[505], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_add_constraint":
+		a := &tslabs{}
+		return tparseResolved(trules[506], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_add_column":
+		a := &tslabs{}
+		return tparseResolved(trules[507], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_add_generated":
+		a := &tslabs{}
+		return tparseResolved(trules[508], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_set_partitioned":
+		a := &tslabs{}
+		return tparseResolved(trules[509], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_reset_partitioned":
+		a := &tslabs{}
+		return tparseResolved(trules[510], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_set_sorted":
+		a := &tslabs{}
+		return tparseResolved(trules[511], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_reset_sorted":
+		a := &tslabs{}
+		return tparseResolved(trules[512], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "sortby_list":
+		a := &tslabs{}
+		return tparseResolved(trules[513], input, o, a, func(v any) []*SortItem { return tl30(a, v) })
+	case "ac_alter_column":
+		a := &tslabs{}
+		return tparseResolved(trules[514], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "alter_column_head":
+		a := &tslabs{}
+		return tparseResolved(trules[515], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "ac_col_default":
+		a := &tslabs{}
+		return tparseResolved(trules[516], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_col_drop_default":
+		a := &tslabs{}
+		return tparseResolved(trules[517], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_col_not_null":
+		a := &tslabs{}
+		return tparseResolved(trules[518], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_col_statistics":
+		a := &tslabs{}
+		return tparseResolved(trules[519], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_col_set_options":
+		a := &tslabs{}
+		return tparseResolved(trules[520], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_col_reset_options":
+		a := &tslabs{}
+		return tparseResolved(trules[521], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_col_storage":
+		a := &tslabs{}
+		return tparseResolved(trules[522], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_col_add_identity":
+		a := &tslabs{}
+		return tparseResolved(trules[523], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_col_drop_identity":
+		a := &tslabs{}
+		return tparseResolved(trules[524], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_col_identity":
+		a := &tslabs{}
+		return tparseResolved(trules[525], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "identity_options":
+		a := &tslabs{}
+		return tparseResolved(trules[526], input, o, a, func(v any) []*SeqOption { return tl24(a, v) })
+	case "identity_option":
+		a := &tslabs{}
+		return tparseResolved(trules[527], input, o, a, func(v any) *SeqOption { return tAs[*SeqOption](v) })
+	case "io_set":
+		a := &tslabs{}
+		return tparseResolved(trules[528], input, o, a, func(v any) *SeqOption { return tAs[*SeqOption](v) })
+	case "io_generated":
+		a := &tslabs{}
+		return tparseResolved(trules[529], input, o, a, func(v any) *SeqOption { return tAs[*SeqOption](v) })
+	case "ac_col_type":
+		a := &tslabs{}
+		return tparseResolved(trules[530], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_col_generic":
+		a := &tslabs{}
+		return tparseResolved(trules[531], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "signed_iconst":
+		a := &tslabs{}
+		return tparseResolved(trules[532], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "ac_drop_column":
+		a := &tslabs{}
+		return tparseResolved(trules[533], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_alter_constraint":
+		a := &tslabs{}
+		return tparseResolved(trules[534], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_validate":
+		a := &tslabs{}
+		return tparseResolved(trules[535], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_drop_constraint":
+		a := &tslabs{}
+		return tparseResolved(trules[536], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_set_logged":
+		a := &tslabs{}
+		return tparseResolved(trules[537], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_set_options":
+		a := &tslabs{}
+		return tparseResolved(trules[538], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_reset_options":
+		a := &tslabs{}
+		return tparseResolved(trules[539], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "ac_generic":
+		a := &tslabs{}
+		return tparseResolved(trules[540], input, o, a, func(v any) *AlterCmd { return tAs[*AlterCmd](v) })
+	case "alter_generic_options":
+		a := &tslabs{}
+		return tparseResolved(trules[541], input, o, a, func(v any) []*GenericAlterOption { return tl31(a, v) })
+	case "alter_generic_list":
+		a := &tslabs{}
+		return tparseResolved(trules[542], input, o, a, func(v any) []*GenericAlterOption { return tl31(a, v) })
+	case "alter_generic_option":
+		a := &tslabs{}
+		return tparseResolved(trules[543], input, o, a, func(v any) *GenericAlterOption { return tAs[*GenericAlterOption](v) })
+	case "ago_value":
+		a := &tslabs{}
+		return tparseResolved(trules[544], input, o, a, func(v any) *GenericAlterOption { return tAs[*GenericAlterOption](v) })
+	case "ago_drop":
+		a := &tslabs{}
+		return tparseResolved(trules[545], input, o, a, func(v any) *GenericAlterOption { return tAs[*GenericAlterOption](v) })
+	case "drop_behavior":
+		n, err := parseResolved(rules[546], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "alter_sequence_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[547], input, o, a, func(v any) *AlterSequenceStmt { return tAs[*AlterSequenceStmt](v) })
+	case "alter_database_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[548], input, o, a, func(v any) *AlterDatabaseStmt { return tAs[*AlterDatabaseStmt](v) })
+	case "alter_object_schema_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[549], input, o, a, func(v any) *AlterObjectSchemaStmt { return tAs[*AlterObjectSchemaStmt](v) })
+	case "alter_schema_relation":
+		a := &tslabs{}
+		return tparseResolved(trules[550], input, o, a, func(v any) *AlterObjectSchemaStmt { return tAs[*AlterObjectSchemaStmt](v) })
+	case "alter_schema_name":
+		a := &tslabs{}
+		return tparseResolved(trules[551], input, o, a, func(v any) *AlterObjectSchemaStmt { return tAs[*AlterObjectSchemaStmt](v) })
+	case "rename_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[552], input, o, a, func(v any) *RenameStmt { return tAs[*RenameStmt](v) })
+	case "rename_schema":
+		a := &tslabs{}
+		return tparseResolved(trules[553], input, o, a, func(v any) *RenameStmt { return tAs[*RenameStmt](v) })
+	case "rename_object":
+		a := &tslabs{}
+		return tparseResolved(trules[554], input, o, a, func(v any) *RenameStmt { return tAs[*RenameStmt](v) })
+	case "rename_relation":
+		a := &tslabs{}
+		return tparseResolved(trules[555], input, o, a, func(v any) *RenameStmt { return tAs[*RenameStmt](v) })
+	case "rename_name":
+		a := &tslabs{}
+		return tparseResolved(trules[556], input, o, a, func(v any) *RenameStmt { return tAs[*RenameStmt](v) })
+	case "rename_column":
+		a := &tslabs{}
+		return tparseResolved(trules[557], input, o, a, func(v any) *RenameStmt { return tAs[*RenameStmt](v) })
+	case "rename_constraint":
+		a := &tslabs{}
+		return tparseResolved(trules[558], input, o, a, func(v any) *RenameStmt { return tAs[*RenameStmt](v) })
+	case "drop_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[559], input, o, a, func(v any) *DropStmt { return tAs[*DropStmt](v) })
+	case "drop_any_name":
+		a := &tslabs{}
+		return tparseResolved(trules[560], input, o, a, func(v any) *DropStmt { return tAs[*DropStmt](v) })
+	case "drop_name":
+		a := &tslabs{}
+		return tparseResolved(trules[561], input, o, a, func(v any) *DropStmt { return tAs[*DropStmt](v) })
+	case "drop_on":
+		a := &tslabs{}
+		return tparseResolved(trules[562], input, o, a, func(v any) *DropStmt { return tAs[*DropStmt](v) })
+	case "drop_type_any_name":
+		a := &tslabs{}
+		return tparseResolved(trules[563], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "drop_type_name":
+		a := &tslabs{}
+		return tparseResolved(trules[564], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "any_name_list":
+		a := &tslabs{}
+		return tparseResolved(trules[565], input, o, a, func(v any) []*Name { return tl5(a, v) })
+	case "name_as_name_list":
+		a := &tslabs{}
+		return tparseResolved(trules[566], input, o, a, func(v any) []*Name { return tl5(a, v) })
+	case "drop_secret_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[567], input, o, a, func(v any) *DropSecretStmt { return tAs[*DropSecretStmt](v) })
+	case "copy_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[568], input, o, a, func(v any) Statement { return tAs[Statement](tpub(v)) })
+	case "copy_table":
+		a := &tslabs{}
+		return tparseResolved(trules[569], input, o, a, func(v any) *CopyStmt { return tAs[*CopyStmt](v) })
+	case "copy_query":
+		a := &tslabs{}
+		return tparseResolved(trules[570], input, o, a, func(v any) *CopyStmt { return tAs[*CopyStmt](v) })
+	case "copy_database":
+		a := &tslabs{}
+		return tparseResolved(trules[571], input, o, a, func(v any) *CopyDatabaseStmt { return tAs[*CopyDatabaseStmt](v) })
+	case "copy_database_flag":
+		a := &tslabs{}
+		return tparseResolved(trules[572], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "copy_file":
+		a := &tslabs{}
+		return tparseResolved(trules[573], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "copy_ident_file":
+		a := &tslabs{}
+		return tparseResolved(trules[574], input, o, a, func(v any) *ColumnRef { return tAs[*ColumnRef](v) })
+	case "generic_opt_list":
+		a := &tslabs{}
+		return tparseResolved(trules[575], input, o, a, func(v any) []*GenericOption { return tl32(a, v) })
+	case "generic_opt_elem":
+		a := &tslabs{}
+		return tparseResolved(trules[576], input, o, a, func(v any) *GenericOption { return tAs[*GenericOption](v) })
+	case "copy_opt_item":
+		a := &tslabs{}
+		return tparseResolved(trules[577], input, o, a, func(v any) *CopyOption { return tAs[*CopyOption](v) })
+	case "co_flag":
+		a := &tslabs{}
+		return tparseResolved(trules[578], input, o, a, func(v any) *CopyOption { return tAs[*CopyOption](v) })
+	case "co_string":
+		a := &tslabs{}
+		return tparseResolved(trules[579], input, o, a, func(v any) *CopyOption { return tAs[*CopyOption](v) })
+	case "co_force_cols":
+		a := &tslabs{}
+		return tparseResolved(trules[580], input, o, a, func(v any) *CopyOption { return tAs[*CopyOption](v) })
+	case "co_force_star":
+		a := &tslabs{}
+		return tparseResolved(trules[581], input, o, a, func(v any) *CopyOption { return tAs[*CopyOption](v) })
+	case "co_partition_cols":
+		a := &tslabs{}
+		return tparseResolved(trules[582], input, o, a, func(v any) *CopyOption { return tAs[*CopyOption](v) })
+	case "co_partition_star":
+		a := &tslabs{}
+		return tparseResolved(trules[583], input, o, a, func(v any) *CopyOption { return tAs[*CopyOption](v) })
+	case "export_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[584], input, o, a, func(v any) *ExportStmt { return tAs[*ExportStmt](v) })
+	case "import_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[585], input, o, a, func(v any) *ImportStmt { return tAs[*ImportStmt](v) })
+	case "attach_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[586], input, o, a, func(v any) *AttachStmt { return tAs[*AttachStmt](v) })
+	case "detach_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[587], input, o, a, func(v any) *DetachStmt { return tAs[*DetachStmt](v) })
+	case "detach_database":
+		a := &tslabs{}
+		return tparseResolved(trules[588], input, o, a, func(v any) *DetachStmt { return tAs[*DetachStmt](v) })
+	case "detach_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[589], input, o, a, func(v any) *DetachStmt { return tAs[*DetachStmt](v) })
+	case "use_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[590], input, o, a, func(v any) *UseStmt { return tAs[*UseStmt](v) })
+	case "load_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[591], input, o, a, func(v any) *LoadStmt { return tAs[*LoadStmt](v) })
+	case "load_load":
+		a := &tslabs{}
+		return tparseResolved(trules[592], input, o, a, func(v any) *LoadStmt { return tAs[*LoadStmt](v) })
+	case "load_install":
+		a := &tslabs{}
+		return tparseResolved(trules[593], input, o, a, func(v any) *LoadStmt { return tAs[*LoadStmt](v) })
+	case "pragma_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[594], input, o, a, func(v any) *PragmaStmt { return tAs[*PragmaStmt](v) })
+	case "pragma_call":
+		a := &tslabs{}
+		return tparseResolved(trules[595], input, o, a, func(v any) *PragmaStmt { return tAs[*PragmaStmt](v) })
+	case "pragma_set":
+		a := &tslabs{}
+		return tparseResolved(trules[596], input, o, a, func(v any) *PragmaStmt { return tAs[*PragmaStmt](v) })
+	case "pragma_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[597], input, o, a, func(v any) *PragmaStmt { return tAs[*PragmaStmt](v) })
+	case "var_name":
+		a := &tslabs{}
+		return tparseResolved(trules[598], input, o, a, func(v any) *Name { return tAs[*Name](v) })
+	case "set_scope":
+		n, err := parseResolved(rules[599], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "set_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[600], input, o, a, func(v any) *SetStmt { return tAs[*SetStmt](v) })
+	case "set_scoped":
+		a := &tslabs{}
+		return tparseResolved(trules[601], input, o, a, func(v any) *SetStmt { return tAs[*SetStmt](v) })
+	case "set_unscoped":
+		a := &tslabs{}
+		return tparseResolved(trules[602], input, o, a, func(v any) *SetStmt { return tAs[*SetStmt](v) })
+	case "zone_value":
+		a := &tslabs{}
+		return tparseResolved(trules[603], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "reset_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[604], input, o, a, func(v any) *ResetStmt { return tAs[*ResetStmt](v) })
+	case "reset_scoped":
+		a := &tslabs{}
+		return tparseResolved(trules[605], input, o, a, func(v any) *ResetStmt { return tAs[*ResetStmt](v) })
+	case "reset_unscoped":
+		a := &tslabs{}
+		return tparseResolved(trules[606], input, o, a, func(v any) *ResetStmt { return tAs[*ResetStmt](v) })
+	case "show_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[607], input, o, a, func(v any) *ShowStmt { return tAs[*ShowStmt](v) })
+	case "show_word":
+		n, err := parseResolved(rules[608], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "show_query":
+		a := &tslabs{}
+		return tparseResolved(trules[609], input, o, a, func(v any) *ShowStmt { return tAs[*ShowStmt](v) })
+	case "summarize_query":
+		a := &tslabs{}
+		return tparseResolved(trules[610], input, o, a, func(v any) *ShowStmt { return tAs[*ShowStmt](v) })
+	case "summarize_table":
+		a := &tslabs{}
+		return tparseResolved(trules[611], input, o, a, func(v any) *ShowStmt { return tAs[*ShowStmt](v) })
+	case "show_tables":
+		a := &tslabs{}
+		return tparseResolved(trules[612], input, o, a, func(v any) *ShowStmt { return tAs[*ShowStmt](v) })
+	case "show_time_zone":
+		a := &tslabs{}
+		return tparseResolved(trules[613], input, o, a, func(v any) *ShowStmt { return tAs[*ShowStmt](v) })
+	case "show_isolation":
+		a := &tslabs{}
+		return tparseResolved(trules[614], input, o, a, func(v any) *ShowStmt { return tAs[*ShowStmt](v) })
+	case "show_all":
+		a := &tslabs{}
+		return tparseResolved(trules[615], input, o, a, func(v any) *ShowStmt { return tAs[*ShowStmt](v) })
+	case "show_name":
+		a := &tslabs{}
+		return tparseResolved(trules[616], input, o, a, func(v any) *ShowStmt { return tAs[*ShowStmt](v) })
+	case "show_bare":
+		a := &tslabs{}
+		return tparseResolved(trules[617], input, o, a, func(v any) *ShowStmt { return tAs[*ShowStmt](v) })
+	case "explain_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[618], input, o, a, func(v any) *ExplainStmt { return tAs[*ExplainStmt](v) })
+	case "explain_options":
+		a := &tslabs{}
+		return tparseResolved(trules[619], input, o, a, func(v any) *ExplainStmt { return tAs[*ExplainStmt](v) })
+	case "explain_analyze":
+		a := &tslabs{}
+		return tparseResolved(trules[620], input, o, a, func(v any) *ExplainStmt { return tAs[*ExplainStmt](v) })
+	case "explain_verbose":
+		a := &tslabs{}
+		return tparseResolved(trules[621], input, o, a, func(v any) *ExplainStmt { return tAs[*ExplainStmt](v) })
+	case "explain_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[622], input, o, a, func(v any) *ExplainStmt { return tAs[*ExplainStmt](v) })
+	case "explain_option_list":
+		a := &tslabs{}
+		return tparseResolved(trules[623], input, o, a, func(v any) []*ExplainOption { return tl33(a, v) })
+	case "explain_option":
+		a := &tslabs{}
+		return tparseResolved(trules[624], input, o, a, func(v any) *ExplainOption { return tAs[*ExplainOption](v) })
+	case "explainable":
+		a := &tslabs{}
+		return tparseResolved(trules[625], input, o, a, func(v any) Statement { return tAs[Statement](tpub(v)) })
+	case "prepare_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[626], input, o, a, func(v any) *PrepareStmt { return tAs[*PrepareStmt](v) })
+	case "preparable":
+		a := &tslabs{}
+		return tparseResolved(trules[627], input, o, a, func(v any) Statement { return tAs[Statement](tpub(v)) })
+	case "execute_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[628], input, o, a, func(v any) *ExecuteStmt { return tAs[*ExecuteStmt](v) })
+	case "execute_params":
+		a := &tslabs{}
+		return tparseResolved(trules[629], input, o, a, func(v any) []Expr { return tl4(a, v) })
+	case "execute_param":
+		a := &tslabs{}
+		return tparseResolved(trules[630], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "deallocate_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[631], input, o, a, func(v any) *DeallocateStmt { return tAs[*DeallocateStmt](v) })
+	case "deallocate_prepare":
+		a := &tslabs{}
+		return tparseResolved(trules[632], input, o, a, func(v any) *DeallocateStmt { return tAs[*DeallocateStmt](v) })
+	case "deallocate_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[633], input, o, a, func(v any) *DeallocateStmt { return tAs[*DeallocateStmt](v) })
+	case "transaction_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[634], input, o, a, func(v any) *TransactionStmt { return tAs[*TransactionStmt](v) })
+	case "tx_start":
+		a := &tslabs{}
+		return tparseResolved(trules[635], input, o, a, func(v any) *TransactionStmt { return tAs[*TransactionStmt](v) })
+	case "tx_end":
+		a := &tslabs{}
+		return tparseResolved(trules[636], input, o, a, func(v any) *TransactionStmt { return tAs[*TransactionStmt](v) })
+	case "vacuum_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[637], input, o, a, func(v any) *VacuumStmt { return tAs[*VacuumStmt](v) })
+	case "vacuum_options":
+		a := &tslabs{}
+		return tparseResolved(trules[638], input, o, a, func(v any) *VacuumStmt { return tAs[*VacuumStmt](v) })
+	case "vacuum_option_list":
+		a := &tslabs{}
+		return tparseResolved(trules[639], input, o, a, func(v any) []*Match { return tl0(a, v) })
+	case "vacuum_option":
+		a := &tslabs{}
+		return tparseResolved(trules[640], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "vacuum_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[641], input, o, a, func(v any) *VacuumStmt { return tAs[*VacuumStmt](v) })
+	case "analyze_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[642], input, o, a, func(v any) *AnalyzeStmt { return tAs[*AnalyzeStmt](v) })
+	case "checkpoint_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[643], input, o, a, func(v any) *CheckpointStmt { return tAs[*CheckpointStmt](v) })
+	case "call_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[644], input, o, a, func(v any) *CallStmt { return tAs[*CallStmt](v) })
+	case "comment_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[645], input, o, a, func(v any) *CommentStmt { return tAs[*CommentStmt](v) })
+	case "comment_column":
+		a := &tslabs{}
+		return tparseResolved(trules[646], input, o, a, func(v any) *CommentStmt { return tAs[*CommentStmt](v) })
+	case "comment_object":
+		a := &tslabs{}
+		return tparseResolved(trules[647], input, o, a, func(v any) *CommentStmt { return tAs[*CommentStmt](v) })
+	case "comment_value":
+		a := &tslabs{}
+		return tparseResolved(trules[648], input, o, a, func(v any) *StringLit { return tAs[*StringLit](v) })
+	case "null_text":
+		a := &tslabs{}
+		return tparseResolved(trules[649], input, o, a, func(v any) *StringLit { return tAs[*StringLit](v) })
+	case "update_extensions_stmt":
+		a := &tslabs{}
+		return tparseResolved(trules[650], input, o, a, func(v any) *UpdateExtensionsStmt { return tAs[*UpdateExtensionsStmt](v) })
+	case "stmt_end":
+		n, err := parseResolved(rules[651], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "main":
+		a := &tslabs{}
+		return tparseResolved(trules[652], input, o, a, func(v any) *Script { return tAs[*Script](v) })
+	case "statement":
+		a := &tslabs{}
+		return tparseResolved(trules[653], input, o, a, func(v any) Statement { return tAs[Statement](tpub(v)) })
+	case "ABORT":
+		n, err := parseResolved(rules[654], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ACCESS":
+		n, err := parseResolved(rules[655], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ACTION":
+		n, err := parseResolved(rules[656], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ADD":
+		n, err := parseResolved(rules[657], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ALL":
+		n, err := parseResolved(rules[658], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ALTER":
+		n, err := parseResolved(rules[659], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ALWAYS":
+		n, err := parseResolved(rules[660], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ANALYSE":
+		n, err := parseResolved(rules[661], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ANALYZE":
+		n, err := parseResolved(rules[662], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "AND":
+		n, err := parseResolved(rules[663], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ANTI":
+		n, err := parseResolved(rules[664], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ANY":
+		n, err := parseResolved(rules[665], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ARRAY":
+		n, err := parseResolved(rules[666], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "AS":
+		n, err := parseResolved(rules[667], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ASC":
+		n, err := parseResolved(rules[668], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ASOF":
+		n, err := parseResolved(rules[669], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ASYMMETRIC":
+		n, err := parseResolved(rules[670], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "AT":
+		n, err := parseResolved(rules[671], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ATTACH":
+		n, err := parseResolved(rules[672], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "BEGIN":
+		n, err := parseResolved(rules[673], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "BETWEEN":
+		n, err := parseResolved(rules[674], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "BIGINT":
+		n, err := parseResolved(rules[675], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "BINARY":
+		n, err := parseResolved(rules[676], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "BIT":
+		n, err := parseResolved(rules[677], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "BOOLEAN":
+		n, err := parseResolved(rules[678], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "BOTH":
+		n, err := parseResolved(rules[679], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "BY":
+		n, err := parseResolved(rules[680], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CACHE":
+		n, err := parseResolved(rules[681], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CALL":
+		n, err := parseResolved(rules[682], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CASCADE":
+		n, err := parseResolved(rules[683], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CASCADED":
+		n, err := parseResolved(rules[684], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CASE":
+		n, err := parseResolved(rules[685], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CAST":
+		n, err := parseResolved(rules[686], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CENTURIES":
+		n, err := parseResolved(rules[687], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CENTURY":
+		n, err := parseResolved(rules[688], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CHAR":
+		n, err := parseResolved(rules[689], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CHARACTER":
+		n, err := parseResolved(rules[690], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CHECK":
+		n, err := parseResolved(rules[691], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CHECKPOINT":
+		n, err := parseResolved(rules[692], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "COALESCE":
+		n, err := parseResolved(rules[693], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "COLLATE":
+		n, err := parseResolved(rules[694], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "COLLATION":
+		n, err := parseResolved(rules[695], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "COLUMN":
+		n, err := parseResolved(rules[696], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "COLUMNS":
+		n, err := parseResolved(rules[697], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "COMMENT":
+		n, err := parseResolved(rules[698], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "COMMENTS":
+		n, err := parseResolved(rules[699], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "COMMIT":
+		n, err := parseResolved(rules[700], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "COMPRESSION":
+		n, err := parseResolved(rules[701], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CONCURRENTLY":
+		n, err := parseResolved(rules[702], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CONFIGURATION":
+		n, err := parseResolved(rules[703], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CONFLICT":
+		n, err := parseResolved(rules[704], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CONSTRAINT":
+		n, err := parseResolved(rules[705], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CONSTRAINTS":
+		n, err := parseResolved(rules[706], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CONVERSION":
+		n, err := parseResolved(rules[707], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "COPY":
+		n, err := parseResolved(rules[708], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CREATE":
+		n, err := parseResolved(rules[709], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CROSS":
+		n, err := parseResolved(rules[710], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CSV":
+		n, err := parseResolved(rules[711], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CUBE":
+		n, err := parseResolved(rules[712], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CURRENT":
+		n, err := parseResolved(rules[713], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "CYCLE":
+		n, err := parseResolved(rules[714], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DATA":
+		n, err := parseResolved(rules[715], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DATABASE":
+		n, err := parseResolved(rules[716], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DAY":
+		n, err := parseResolved(rules[717], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DAYS":
+		n, err := parseResolved(rules[718], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DEALLOCATE":
+		n, err := parseResolved(rules[719], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DEC":
+		n, err := parseResolved(rules[720], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DECADE":
+		n, err := parseResolved(rules[721], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DECADES":
+		n, err := parseResolved(rules[722], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DECIMAL":
+		n, err := parseResolved(rules[723], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DEFAULT":
+		n, err := parseResolved(rules[724], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DEFAULTS":
+		n, err := parseResolved(rules[725], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DEFERRABLE":
+		n, err := parseResolved(rules[726], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DEFERRED":
+		n, err := parseResolved(rules[727], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DELETE":
+		n, err := parseResolved(rules[728], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DELIMITER":
+		n, err := parseResolved(rules[729], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DELIMITERS":
+		n, err := parseResolved(rules[730], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DESC":
+		n, err := parseResolved(rules[731], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DESCRIBE":
+		n, err := parseResolved(rules[732], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DETACH":
+		n, err := parseResolved(rules[733], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DICTIONARY":
+		n, err := parseResolved(rules[734], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DISTINCT":
+		n, err := parseResolved(rules[735], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DO":
+		n, err := parseResolved(rules[736], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DOUBLE":
+		n, err := parseResolved(rules[737], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "DROP":
+		n, err := parseResolved(rules[738], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ELSE":
+		n, err := parseResolved(rules[739], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ENCODING":
+		n, err := parseResolved(rules[740], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "END":
+		n, err := parseResolved(rules[741], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ENUM":
+		n, err := parseResolved(rules[742], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ERROR":
+		n, err := parseResolved(rules[743], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ESCAPE":
+		n, err := parseResolved(rules[744], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "EVENT":
+		n, err := parseResolved(rules[745], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "EXCEPT":
+		n, err := parseResolved(rules[746], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "EXCLUDE":
+		n, err := parseResolved(rules[747], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "EXCLUDING":
+		n, err := parseResolved(rules[748], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "EXECUTE":
+		n, err := parseResolved(rules[749], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "EXISTS":
+		n, err := parseResolved(rules[750], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "EXPLAIN":
+		n, err := parseResolved(rules[751], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "EXPORT":
+		n, err := parseResolved(rules[752], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "EXPORT_STATE":
+		n, err := parseResolved(rules[753], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "EXTENSION":
+		n, err := parseResolved(rules[754], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "EXTENSIONS":
+		n, err := parseResolved(rules[755], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "EXTRACT":
+		n, err := parseResolved(rules[756], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "FALSE":
+		n, err := parseResolved(rules[757], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "FETCH":
+		n, err := parseResolved(rules[758], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "FILTER":
+		n, err := parseResolved(rules[759], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "FIRST":
+		n, err := parseResolved(rules[760], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "FLOAT":
+		n, err := parseResolved(rules[761], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "FOLLOWING":
+		n, err := parseResolved(rules[762], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "FOR":
+		n, err := parseResolved(rules[763], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "FORCE":
+		n, err := parseResolved(rules[764], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "FOREIGN":
+		n, err := parseResolved(rules[765], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "FREEZE":
+		n, err := parseResolved(rules[766], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "FROM":
+		n, err := parseResolved(rules[767], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "FULL":
+		n, err := parseResolved(rules[768], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "FUNCTION":
+		n, err := parseResolved(rules[769], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "GENERATED":
+		n, err := parseResolved(rules[770], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "GLOB":
+		n, err := parseResolved(rules[771], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "GLOBAL":
+		n, err := parseResolved(rules[772], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "GROUP":
+		n, err := parseResolved(rules[773], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "GROUPING":
+		n, err := parseResolved(rules[774], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "GROUPING_ID":
+		n, err := parseResolved(rules[775], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "GROUPS":
+		n, err := parseResolved(rules[776], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "HAVING":
+		n, err := parseResolved(rules[777], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "HEADER":
+		n, err := parseResolved(rules[778], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "HOUR":
+		n, err := parseResolved(rules[779], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "HOURS":
+		n, err := parseResolved(rules[780], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "IDENTITY":
+		n, err := parseResolved(rules[781], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "IF":
+		n, err := parseResolved(rules[782], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "IGNORE":
+		n, err := parseResolved(rules[783], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ILIKE":
+		n, err := parseResolved(rules[784], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "IMMEDIATE":
+		n, err := parseResolved(rules[785], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "IMPORT":
+		n, err := parseResolved(rules[786], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "IN":
+		n, err := parseResolved(rules[787], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "INCLUDE":
+		n, err := parseResolved(rules[788], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "INCLUDING":
+		n, err := parseResolved(rules[789], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "INCREMENT":
+		n, err := parseResolved(rules[790], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "INDEX":
+		n, err := parseResolved(rules[791], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "INDEXES":
+		n, err := parseResolved(rules[792], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "INHERIT":
+		n, err := parseResolved(rules[793], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "INITIALLY":
+		n, err := parseResolved(rules[794], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "INNER":
+		n, err := parseResolved(rules[795], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "INSERT":
+		n, err := parseResolved(rules[796], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "INSTALL":
+		n, err := parseResolved(rules[797], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "INT":
+		n, err := parseResolved(rules[798], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "INTEGER":
+		n, err := parseResolved(rules[799], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "INTERSECT":
+		n, err := parseResolved(rules[800], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "INTERVAL":
+		n, err := parseResolved(rules[801], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "INTO":
+		n, err := parseResolved(rules[802], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "IS":
+		n, err := parseResolved(rules[803], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ISNULL":
+		n, err := parseResolved(rules[804], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ISOLATION":
+		n, err := parseResolved(rules[805], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "JOIN":
+		n, err := parseResolved(rules[806], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "KEY":
+		n, err := parseResolved(rules[807], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "LAMBDA":
+		n, err := parseResolved(rules[808], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "LAST":
+		n, err := parseResolved(rules[809], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "LATERAL":
+		n, err := parseResolved(rules[810], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "LEADING":
+		n, err := parseResolved(rules[811], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "LEFT":
+		n, err := parseResolved(rules[812], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "LEVEL":
+		n, err := parseResolved(rules[813], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "LIKE":
+		n, err := parseResolved(rules[814], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "LIMIT":
+		n, err := parseResolved(rules[815], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "LOAD":
+		n, err := parseResolved(rules[816], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "LOCAL":
+		n, err := parseResolved(rules[817], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "LOCKED":
+		n, err := parseResolved(rules[818], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "LOGGED":
+		n, err := parseResolved(rules[819], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "MACRO":
+		n, err := parseResolved(rules[820], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "MAP":
+		n, err := parseResolved(rules[821], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "MATCH":
+		n, err := parseResolved(rules[822], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "MATCHED":
+		n, err := parseResolved(rules[823], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "MATERIALIZED":
+		n, err := parseResolved(rules[824], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "MAXVALUE":
+		n, err := parseResolved(rules[825], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "MERGE":
+		n, err := parseResolved(rules[826], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "METHOD":
+		n, err := parseResolved(rules[827], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "MICROSECOND":
+		n, err := parseResolved(rules[828], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "MICROSECONDS":
+		n, err := parseResolved(rules[829], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "MILLENNIA":
+		n, err := parseResolved(rules[830], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "MILLENNIUM":
+		n, err := parseResolved(rules[831], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "MILLISECOND":
+		n, err := parseResolved(rules[832], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "MILLISECONDS":
+		n, err := parseResolved(rules[833], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "MINUTE":
+		n, err := parseResolved(rules[834], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "MINUTES":
+		n, err := parseResolved(rules[835], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "MINVALUE":
+		n, err := parseResolved(rules[836], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "MONTH":
+		n, err := parseResolved(rules[837], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "MONTHS":
+		n, err := parseResolved(rules[838], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "NAME":
+		n, err := parseResolved(rules[839], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "NATIONAL":
+		n, err := parseResolved(rules[840], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "NATURAL":
+		n, err := parseResolved(rules[841], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "NCHAR":
+		n, err := parseResolved(rules[842], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "NEXT":
+		n, err := parseResolved(rules[843], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "NO":
+		n, err := parseResolved(rules[844], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "NONE":
+		n, err := parseResolved(rules[845], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "NOT":
+		n, err := parseResolved(rules[846], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "NOTHING":
+		n, err := parseResolved(rules[847], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "NOTNULL":
+		n, err := parseResolved(rules[848], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "NOWAIT":
+		n, err := parseResolved(rules[849], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "NULL":
+		n, err := parseResolved(rules[850], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "NULLIF":
+		n, err := parseResolved(rules[851], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "NULLS":
+		n, err := parseResolved(rules[852], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "NUMERIC":
+		n, err := parseResolved(rules[853], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "OF":
+		n, err := parseResolved(rules[854], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "OFFSET":
+		n, err := parseResolved(rules[855], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "OIDS":
+		n, err := parseResolved(rules[856], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ON":
+		n, err := parseResolved(rules[857], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ONLY":
+		n, err := parseResolved(rules[858], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "OPERATOR":
+		n, err := parseResolved(rules[859], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "OPTION":
+		n, err := parseResolved(rules[860], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "OPTIONS":
+		n, err := parseResolved(rules[861], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "OR":
+		n, err := parseResolved(rules[862], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ORDER":
+		n, err := parseResolved(rules[863], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ORDINALITY":
+		n, err := parseResolved(rules[864], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "OTHERS":
+		n, err := parseResolved(rules[865], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "OUTER":
+		n, err := parseResolved(rules[866], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "OVER":
+		n, err := parseResolved(rules[867], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "OVERLAY":
+		n, err := parseResolved(rules[868], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "OVERRIDING":
+		n, err := parseResolved(rules[869], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "OWNED":
+		n, err := parseResolved(rules[870], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "PARSER":
+		n, err := parseResolved(rules[871], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "PARTIAL":
+		n, err := parseResolved(rules[872], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "PARTITION":
+		n, err := parseResolved(rules[873], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "PARTITIONED":
+		n, err := parseResolved(rules[874], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "PERCENT":
+		n, err := parseResolved(rules[875], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "PERSISTENT":
+		n, err := parseResolved(rules[876], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "PIVOT":
+		n, err := parseResolved(rules[877], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "PIVOT_LONGER":
+		n, err := parseResolved(rules[878], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "PIVOT_WIDER":
+		n, err := parseResolved(rules[879], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "PLACING":
+		n, err := parseResolved(rules[880], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "POLICY":
+		n, err := parseResolved(rules[881], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "POSITION":
+		n, err := parseResolved(rules[882], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "POSITIONAL":
+		n, err := parseResolved(rules[883], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "PRAGMA":
+		n, err := parseResolved(rules[884], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "PRECEDING":
+		n, err := parseResolved(rules[885], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "PRECISION":
+		n, err := parseResolved(rules[886], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "PREPARE":
+		n, err := parseResolved(rules[887], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "PRESERVE":
+		n, err := parseResolved(rules[888], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "PRIMARY":
+		n, err := parseResolved(rules[889], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "PROGRAM":
+		n, err := parseResolved(rules[890], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "PUBLICATION":
+		n, err := parseResolved(rules[891], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "QUALIFY":
+		n, err := parseResolved(rules[892], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "QUARTER":
+		n, err := parseResolved(rules[893], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "QUARTERS":
+		n, err := parseResolved(rules[894], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "QUOTE":
+		n, err := parseResolved(rules[895], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "RANGE":
+		n, err := parseResolved(rules[896], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "READ":
+		n, err := parseResolved(rules[897], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "REAL":
+		n, err := parseResolved(rules[898], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "RECURSIVE":
+		n, err := parseResolved(rules[899], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "REFERENCES":
+		n, err := parseResolved(rules[900], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "RENAME":
+		n, err := parseResolved(rules[901], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "REPEATABLE":
+		n, err := parseResolved(rules[902], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "REPLACE":
+		n, err := parseResolved(rules[903], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "RESET":
+		n, err := parseResolved(rules[904], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "RESPECT":
+		n, err := parseResolved(rules[905], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "RESTART":
+		n, err := parseResolved(rules[906], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "RESTRICT":
+		n, err := parseResolved(rules[907], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "RETURNING":
+		n, err := parseResolved(rules[908], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "RIGHT":
+		n, err := parseResolved(rules[909], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ROLLBACK":
+		n, err := parseResolved(rules[910], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ROLLUP":
+		n, err := parseResolved(rules[911], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ROW":
+		n, err := parseResolved(rules[912], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ROWS":
+		n, err := parseResolved(rules[913], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "RULE":
+		n, err := parseResolved(rules[914], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SAMPLE":
+		n, err := parseResolved(rules[915], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SCHEMA":
+		n, err := parseResolved(rules[916], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SEARCH":
+		n, err := parseResolved(rules[917], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SECOND":
+		n, err := parseResolved(rules[918], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SECONDS":
+		n, err := parseResolved(rules[919], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SECRET":
+		n, err := parseResolved(rules[920], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SELECT":
+		n, err := parseResolved(rules[921], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SEMI":
+		n, err := parseResolved(rules[922], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SEQUENCE":
+		n, err := parseResolved(rules[923], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SERVER":
+		n, err := parseResolved(rules[924], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SESSION":
+		n, err := parseResolved(rules[925], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SET":
+		n, err := parseResolved(rules[926], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SETOF":
+		n, err := parseResolved(rules[927], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SETS":
+		n, err := parseResolved(rules[928], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SHARE":
+		n, err := parseResolved(rules[929], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SHOW":
+		n, err := parseResolved(rules[930], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SIMILAR":
+		n, err := parseResolved(rules[931], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SIMPLE":
+		n, err := parseResolved(rules[932], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SKIP":
+		n, err := parseResolved(rules[933], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SMALLINT":
+		n, err := parseResolved(rules[934], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SOME":
+		n, err := parseResolved(rules[935], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SORTED":
+		n, err := parseResolved(rules[936], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SOURCE":
+		n, err := parseResolved(rules[937], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "START":
+		n, err := parseResolved(rules[938], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "STATISTICS":
+		n, err := parseResolved(rules[939], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "STDIN":
+		n, err := parseResolved(rules[940], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "STDOUT":
+		n, err := parseResolved(rules[941], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "STORAGE":
+		n, err := parseResolved(rules[942], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "STORED":
+		n, err := parseResolved(rules[943], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "STRUCT":
+		n, err := parseResolved(rules[944], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SUBSTRING":
+		n, err := parseResolved(rules[945], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SUMMARIZE":
+		n, err := parseResolved(rules[946], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SYMMETRIC":
+		n, err := parseResolved(rules[947], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "SYSTEM":
+		n, err := parseResolved(rules[948], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "TABLE":
+		n, err := parseResolved(rules[949], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "TABLES":
+		n, err := parseResolved(rules[950], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "TABLESAMPLE":
+		n, err := parseResolved(rules[951], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "TARGET":
+		n, err := parseResolved(rules[952], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "TEMP":
+		n, err := parseResolved(rules[953], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "TEMPLATE":
+		n, err := parseResolved(rules[954], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "TEMPORARY":
+		n, err := parseResolved(rules[955], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "TEXT":
+		n, err := parseResolved(rules[956], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "THEN":
+		n, err := parseResolved(rules[957], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "TIES":
+		n, err := parseResolved(rules[958], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "TIME":
+		n, err := parseResolved(rules[959], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "TIMESTAMP":
+		n, err := parseResolved(rules[960], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "TO":
+		n, err := parseResolved(rules[961], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "TRAILING":
+		n, err := parseResolved(rules[962], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "TRANSACTION":
+		n, err := parseResolved(rules[963], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "TREAT":
+		n, err := parseResolved(rules[964], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "TRIGGER":
+		n, err := parseResolved(rules[965], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "TRIM":
+		n, err := parseResolved(rules[966], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "TRUE":
+		n, err := parseResolved(rules[967], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "TRUNCATE":
+		n, err := parseResolved(rules[968], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "TRY_CAST":
+		n, err := parseResolved(rules[969], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "TYPE":
+		n, err := parseResolved(rules[970], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "UNBOUNDED":
+		n, err := parseResolved(rules[971], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "UNION":
+		n, err := parseResolved(rules[972], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "UNIQUE":
+		n, err := parseResolved(rules[973], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "UNKNOWN":
+		n, err := parseResolved(rules[974], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "UNLOGGED":
+		n, err := parseResolved(rules[975], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "UNPACK":
+		n, err := parseResolved(rules[976], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "UNPIVOT":
+		n, err := parseResolved(rules[977], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "UPDATE":
+		n, err := parseResolved(rules[978], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "USE":
+		n, err := parseResolved(rules[979], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "USER":
+		n, err := parseResolved(rules[980], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "USING":
+		n, err := parseResolved(rules[981], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "VACUUM":
+		n, err := parseResolved(rules[982], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "VALID":
+		n, err := parseResolved(rules[983], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "VALIDATE":
+		n, err := parseResolved(rules[984], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "VALUE":
+		n, err := parseResolved(rules[985], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "VALUES":
+		n, err := parseResolved(rules[986], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "VARCHAR":
+		n, err := parseResolved(rules[987], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "VARIABLE":
+		n, err := parseResolved(rules[988], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "VARIADIC":
+		n, err := parseResolved(rules[989], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "VARYING":
+		n, err := parseResolved(rules[990], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "VERBOSE":
+		n, err := parseResolved(rules[991], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "VERSION":
+		n, err := parseResolved(rules[992], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "VIEW":
+		n, err := parseResolved(rules[993], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "VIRTUAL":
+		n, err := parseResolved(rules[994], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "WEEK":
+		n, err := parseResolved(rules[995], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "WEEKS":
+		n, err := parseResolved(rules[996], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "WHEN":
+		n, err := parseResolved(rules[997], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "WHERE":
+		n, err := parseResolved(rules[998], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "WINDOW":
+		n, err := parseResolved(rules[999], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "WITH":
+		n, err := parseResolved(rules[1000], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "WITHIN":
+		n, err := parseResolved(rules[1001], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "WITHOUT":
+		n, err := parseResolved(rules[1002], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "WORK":
+		n, err := parseResolved(rules[1003], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "WRAPPER":
+		n, err := parseResolved(rules[1004], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "WRITE":
+		n, err := parseResolved(rules[1005], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "YEAR":
+		n, err := parseResolved(rules[1006], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "YEARS":
+		n, err := parseResolved(rules[1007], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ZONE":
+		n, err := parseResolved(rules[1008], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_r":
+		n, err := parseResolved(rules[1009], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_c":
+		n, err := parseResolved(rules[1010], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_cf":
+		n, err := parseResolved(rules[1011], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_ct":
+		n, err := parseResolved(rules[1012], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_t":
+		n, err := parseResolved(rules[1013], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_tf":
+		n, err := parseResolved(rules[1014], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_u":
+		n, err := parseResolved(rules[1015], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_not_col_id":
+		n, err := parseResolved(rules[1016], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_not_func_name":
+		n, err := parseResolved(rules[1017], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_not_type_name":
+		n, err := parseResolved(rules[1018], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_not_type_func":
+		n, err := parseResolved(rules[1019], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_reserved":
+		n, err := parseResolved(rules[1020], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_any":
+		n, err := parseResolved(rules[1021], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	default:
+		return nil, fmt.Errorf("rule %s is not defined", name)
+	}
 }
 
 var lit2 = []rune("--")

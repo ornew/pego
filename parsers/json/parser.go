@@ -2448,6 +2448,11 @@ func tparse[T any](r *trule, input string, opts []ParseOption, ext any, conv fun
 		var zero T
 		return zero, err
 	}
+	return tparseResolved(r, input, o, ext, conv)
+}
+
+// tparseResolved consumes options already applied by the public entry point.
+func tparseResolved[T any](r *trule, input string, o parseOptions, ext any, conv func(any) T) (T, error) {
 	p, _ := tpool.Get().(*tparser)
 	if p == nil {
 		p = &tparser{parser: &parser{}}
@@ -3992,7 +3997,7 @@ func tinit() {
 func tmk_Array(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tArray)
-	v.Elements = tl0(a, f0)
+	v.Elements = tl1(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -4022,7 +4027,7 @@ func tmk_Member(c *tctx, final bool, f0 any, f1 any) any {
 func tmk_Object(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tObject)
-	v.Members = tl1(a, f0)
+	v.Members = tl0(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -4032,22 +4037,7 @@ func tmk_Object(c *tctx, final bool, f0 any) any {
 	return c.made(v, first, start, end)
 }
 
-func tl0(a *tslabs, v any) []Value {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []Value{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl0Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[Value](tpub(c))
-	}
-	return out
-}
-
-func tl1(a *tslabs, v any) []*Member {
+func tl0(a *tslabs, v any) []*Member {
 	if v == nil {
 		return nil
 	}
@@ -4055,9 +4045,39 @@ func tl1(a *tslabs, v any) []*Member {
 	if n == nil {
 		return []*Member{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl1Chunk, len(n.kids))
+	out := astSlice(&a.tl0Chunk, len(n.kids))
 	for i, c := range n.kids {
 		out[i] = tAs[*Member](c)
+	}
+	return out
+}
+
+func tl1(a *tslabs, v any) []Value {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []Value{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl1Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[Value](tpub(c))
+	}
+	return out
+}
+
+func tl2(a *tslabs, v any) []*Match {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*Match{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl2Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tpubMatch(c)
 	}
 	return out
 }
@@ -4071,8 +4091,185 @@ type tslabs struct {
 	tArray   astChunk[Array]
 	tMember  astChunk[Member]
 	tObject  astChunk[Object]
-	tl0Chunk astChunk[Value]
-	tl1Chunk astChunk[*Member]
+	tl0Chunk astChunk[*Member]
+	tl1Chunk astChunk[Value]
+	tl2Chunk astChunk[*Match]
+}
+
+func (a *astConv) toMatch(n *Node) *Match {
+	if n == nil || n.Type() != "Match" {
+		return nil
+	}
+	v := astNew(&a.match)
+	*v = Match{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toError(n *Node) *Error {
+	if n == nil || n.Type() != "Error" {
+		return nil
+	}
+	msg, _ := n.Field("message").(string)
+	v := astNew(&a.error)
+	*v = Error{Span: Span{int(n.Start), int(n.End)}, Text: n.Text, Message: msg}
+	return v
+}
+
+// anyValue converts a value of a statically unknown type into the typed value of its type (CST
+// nodes stay *Node).
+func (a *astConv) anyValue(v any) any {
+	n, ok := v.(*Node)
+	if !ok || n == nil {
+		return v
+	}
+	switch n.Type() {
+	case "Match":
+		return a.toMatch(n)
+	case "Error":
+		return a.toError(n)
+	case "Bool":
+		return a.toBool(n)
+	case "Null":
+		return a.toNull(n)
+	case "Number":
+		return a.toNumber(n)
+	case "String":
+		return a.toString(n)
+	case "Array":
+		return a.toArray(n)
+	case "Member":
+		return a.toMember(n)
+	case "Object":
+		return a.toObject(n)
+	}
+	return n
+}
+
+func (a *astConv) toBool(n *Node) *Bool {
+	if n == nil || n.Type() != "Bool" {
+		return nil
+	}
+	v := astNew(&a.tBool)
+	*v = Bool{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toNull(n *Node) *Null {
+	if n == nil || n.Type() != "Null" {
+		return nil
+	}
+	v := astNew(&a.tNull)
+	*v = Null{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toNumber(n *Node) *Number {
+	if n == nil || n.Type() != "Number" {
+		return nil
+	}
+	v := astNew(&a.tNumber)
+	*v = Number{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toString(n *Node) *String {
+	if n == nil || n.Type() != "String" {
+		return nil
+	}
+	v := astNew(&a.tString)
+	*v = String{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toArray(n *Node) *Array {
+	if n == nil || n.Type() != "Array" {
+		return nil
+	}
+	v := astNew(&a.tArray)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Elements = a.list0(astNode(n.Field("Elements")))
+	return v
+}
+
+func (a *astConv) toMember(n *Node) *Member {
+	if n == nil || n.Type() != "Member" {
+		return nil
+	}
+	v := astNew(&a.tMember)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Key = a.toString(astNode(n.Field("Key")))
+	v.Value = a.toValue(astNode(n.Field("Value")))
+	return v
+}
+
+func (a *astConv) toObject(n *Node) *Object {
+	if n == nil || n.Type() != "Object" {
+		return nil
+	}
+	v := astNew(&a.tObject)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Members = a.list1(astNode(n.Field("Members")))
+	return v
+}
+
+func (a *astConv) toValue(n *Node) Value {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Object":
+		return a.toObject(n)
+	case "Array":
+		return a.toArray(n)
+	case "String":
+		return a.toString(n)
+	case "Number":
+		return a.toNumber(n)
+	case "Bool":
+		return a.toBool(n)
+	case "Null":
+		return a.toNull(n)
+	}
+	return nil
+}
+
+func (a *astConv) list0(n *Node) []Value {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list0Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toValue(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list1(n *Node) []*Member {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list1Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toMember(astNode(c))
+	}
+	return out
+}
+
+// astConv converts nodes into typed values.
+type astConv struct {
+	match      astChunk[Match]
+	error      astChunk[Error]
+	tBool      astChunk[Bool]
+	tNull      astChunk[Null]
+	tNumber    astChunk[Number]
+	tString    astChunk[String]
+	tArray     astChunk[Array]
+	tMember    astChunk[Member]
+	tObject    astChunk[Object]
+	list0Chunk astChunk[Value]
+	list1Chunk astChunk[*Member]
 }
 
 // ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
@@ -4082,6 +4279,110 @@ type tslabs struct {
 func ParseAST(input string, opts ...ParseOption) (Value, error) {
 	a := &tslabs{}
 	return tparse(trules[0], input, opts, a, func(v any) Value { return tAs[Value](tpub(v)) })
+}
+
+// ParseRuleAST parses the whole input with the named rule and returns its typed value.
+// Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.
+// Invalid options and undefined names return nil with an error. Rule result types:
+//
+//	main: Value
+//	value: Value
+//	object: *Object
+//	members: []*Member
+//	member: *Member
+//	array: *Array
+//	elements: []Value
+//	string: *String
+//	chars: *String
+//	escape: *Node
+//	hex: *Match
+//	number: *Number
+//	int: any
+//	frac: *Node
+//	exp: *Node
+//	bool: *Bool
+//	null: *Null
+//	ws: []*Match
+func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
+	o, err := resolveOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+	switch name {
+	case "main":
+		a := &tslabs{}
+		return tparseResolved(trules[0], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "value":
+		a := &tslabs{}
+		return tparseResolved(trules[1], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "object":
+		a := &tslabs{}
+		return tparseResolved(trules[2], input, o, a, func(v any) *Object { return tAs[*Object](v) })
+	case "members":
+		a := &tslabs{}
+		return tparseResolved(trules[3], input, o, a, func(v any) []*Member { return tl0(a, v) })
+	case "member":
+		a := &tslabs{}
+		return tparseResolved(trules[4], input, o, a, func(v any) *Member { return tAs[*Member](v) })
+	case "array":
+		a := &tslabs{}
+		return tparseResolved(trules[5], input, o, a, func(v any) *Array { return tAs[*Array](v) })
+	case "elements":
+		a := &tslabs{}
+		return tparseResolved(trules[6], input, o, a, func(v any) []Value { return tl1(a, v) })
+	case "string":
+		a := &tslabs{}
+		return tparseResolved(trules[7], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "chars":
+		a := &tslabs{}
+		return tparseResolved(trules[8], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "escape":
+		n, err := parseResolved(rules[9], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "hex":
+		a := &tslabs{}
+		return tparseResolved(trules[10], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "number":
+		a := &tslabs{}
+		return tparseResolved(trules[11], input, o, a, func(v any) *Number { return tAs[*Number](v) })
+	case "int":
+		n, err := parseResolved(rules[12], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "frac":
+		n, err := parseResolved(rules[13], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "exp":
+		n, err := parseResolved(rules[14], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "bool":
+		a := &tslabs{}
+		return tparseResolved(trules[15], input, o, a, func(v any) *Bool { return tAs[*Bool](v) })
+	case "null":
+		a := &tslabs{}
+		return tparseResolved(trules[16], input, o, a, func(v any) *Null { return tAs[*Null](v) })
+	case "ws":
+		a := &tslabs{}
+		return tparseResolved(trules[17], input, o, a, func(v any) []*Match { return tl2(a, v) })
+	default:
+		return nil, fmt.Errorf("rule %s is not defined", name)
+	}
 }
 
 var lit3 = []rune("{")

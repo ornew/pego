@@ -243,8 +243,8 @@ func (d *Document) Stats() ParseStats { return d.doc.Stats() }
 // GenOption configures code generation.
 type GenOption func(*engine.GenOptions)
 
-// WithTypes also generates a Go type for each type of the grammar and a function ParseAST, which
-// returns the result of the start rule as values of those types instead of *Node.
+// WithTypes generates a Go type for each grammar type, ParseAST for the start
+// rule and ParseRuleAST for a named rule. They return typed values instead of *Node.
 // Declared aliases name the target's Go value type; names colliding with the runtime gain underscores.
 func WithTypes() GenOption {
 	return func(o *engine.GenOptions) { o.Types = true }

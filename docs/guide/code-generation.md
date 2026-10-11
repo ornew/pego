@@ -325,6 +325,7 @@ function that returns the result as values of those types:
 ```go
 // ParseAST parses the input like Parse and returns the result as typed values.
 func ParseAST(input string, opts ...ParseOption) (T, error) // T: the Go type of the start rule's type
+func ParseRuleAST(name, input string, opts ...ParseOption) (any, error)
 ```
 
 For the JSON grammar ([parsers/json](../../parsers/json/json.pego)), whose start rule has the type `Value`, the
@@ -423,7 +424,24 @@ Details:
   repetition elements. Parser recycling also clears saved-capture backing slices, so overwritten values do not remain
   reachable through pooled scratch after a later failed parse. Returned values remain valid. Regenerate existing typed
   parsers to receive this cleanup; output strings may still retain their own backing storage.
-- `ParseRule` still returns `*Node`; typed values exist for the start rule only.
+- **Named rules.** `ParseRuleAST("expr", input)` returns the selected rule's typed value as `any`.
+  Its generated documentation lists each rule's Go result type; use a type assertion or type switch.
+  It consumes the whole input and applies options once before looking up the name. Unknown names and
+  invalid options return plain nil with an error. Ordinary parse failure returns the selected type's
+  zero value: nil pointers and slices retain their dynamic type in `any`, while a nil interface stays
+  nil. A successful rule whose value is nil also returns the selected type's zero value, with no error.
+  This includes plain nil for `any`, `node` and union-interface results; legacy `ParseAST` keeps its
+  existing conversion mapping, which can box a nil `*Node` in an `any` result.
+  Recovery and conversion follow `ParseAST`, including `Error` values in unions and nil where
+  a struct or terminal is expected. Direct typed execution uses the same full grammar guard as
+  `ParseAST`; unsupported result or struct-field types and field-reading actions use Node conversion.
+  Rules still must produce nodes; scalar aliases and scalar fields do not enable scalar rule results.
+  `ParseRule` continues to return `*Node`, and `ParseAST` continues to use the configured start rule.
+- **Regeneration migration.** `ParseRuleAST` is now reserved in typed generated Go. A grammar type
+  named `ParseRuleAST` becomes `ParseRuleAST_`; a type already named `ParseRuleAST_` becomes
+  `ParseRuleAST__` because names are assigned in sorted order. Update consumers that name those
+  generated types, including function values whose `ParseAST` return type uses a renamed type.
+  Untyped Go and TypeScript entry points are unchanged. See [design 029](../design/029-typed-named-rule-parsing.md).
 
 ## Recognition (`-recognize`)
 
@@ -448,7 +466,7 @@ node, err := pairsparser.Parse(input,
     pairsparser.WithUnit(pairsparser.Bytes), pairsparser.WithMaxDepth(600_000))
 ```
 
-`Parse`, `ParseRule`, `Recognize` (when generated) and `ParseAST` (with `-types`) accept the same functional options.
+`Parse`, `ParseRule`, `Recognize` (when generated) and `ParseAST`/`ParseRuleAST` (with `-types`) accept the same functional options.
 No options preserves CodePoints and the generated depth default, normally 100,000. A positive `WithMaxDepth(n)`
 overrides that default for one invocation, including typed direct parsing and node conversion. Zero resets the
 field to the generated default. Options apply in order; only a negative final limit returns a configuration error,

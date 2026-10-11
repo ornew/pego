@@ -2448,6 +2448,11 @@ func tparse[T any](r *trule, input string, opts []ParseOption, ext any, conv fun
 		var zero T
 		return zero, err
 	}
+	return tparseResolved(r, input, o, ext, conv)
+}
+
+// tparseResolved consumes options already applied by the public entry point.
+func tparseResolved[T any](r *trule, input string, o parseOptions, ext any, conv func(any) T) (T, error) {
 	p, _ := tpool.Get().(*tparser)
 	if p == nil {
 		p = &tparser{parser: &parser{}}
@@ -9340,7 +9345,7 @@ func tinit() {
 func tmk_ArrayBindingPattern(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tArrayBindingPattern)
-	v.Elements = tl0(a, f0)
+	v.Elements = tl14(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -9354,7 +9359,7 @@ func tmk_ArrayBindingPattern(c *tctx, final bool, f0 any) any {
 func tmk_ArrayLiteralExpression(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tArrayLiteralExpression)
-	v.Elements = tl1(a, f0)
+	v.Elements = tl10(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -9382,9 +9387,9 @@ func tmk_ArrayType(c *tctx, final bool, f0 any) any {
 func tmk_ArrowFunction(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tArrowFunction)
-	v.Modifiers = tl2(a, f0)
-	v.TypeParameters = tl3(a, f1)
-	v.Parameters = tl4(a, f2)
+	v.Modifiers = tl21(a, f0)
+	v.TypeParameters = tl8(a, f1)
+	v.Parameters = tl1(a, f2)
 	v.Type = tAs[TypeNode](tpub(f3))
 	v.EqualsGreaterThanToken = tAs[*Token](f4)
 	v.Body = tAs[ConciseBody](tpub(f5))
@@ -9474,7 +9479,7 @@ func tmk_BindingElement(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any
 func tmk_Block(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tBlock)
-	v.Statements = tl5(a, f0)
+	v.Statements = tl22(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -9504,8 +9509,8 @@ func tmk_CallExpression(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any
 	v := astNew(&a.tCallExpression)
 	v.Expression = tAs[Expression](tpub(f0))
 	v.QuestionDotToken = tAs[*Token](f1)
-	v.TypeArguments = tl6(a, f2)
-	v.Arguments = tl1(a, f3)
+	v.TypeArguments = tl9(a, f2)
+	v.Arguments = tl10(a, f3)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -9522,8 +9527,8 @@ func tmk_CallExpression(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any
 func tmk_CallSignature(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tCallSignature)
-	v.TypeParameters = tl3(a, f0)
-	v.Parameters = tl4(a, f1)
+	v.TypeParameters = tl8(a, f0)
+	v.Parameters = tl1(a, f1)
 	v.Type = tAs[TypeNode](tpub(f2))
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -9540,7 +9545,7 @@ func tmk_CallSignature(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 func tmk_CaseBlock(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tCaseBlock)
-	v.Clauses = tl7(a, f0)
+	v.Clauses = tl23(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -9555,7 +9560,7 @@ func tmk_CaseClause(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tCaseClause)
 	v.Expression = tAs[Expression](tpub(f0))
-	v.Statements = tl5(a, f1)
+	v.Statements = tl22(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -9586,11 +9591,11 @@ func tmk_CatchClause(c *tctx, final bool, f0 any, f1 any) any {
 func tmk_ClassDeclaration(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tClassDeclaration)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.Name = tAs[*Identifier](f1)
-	v.TypeParameters = tl3(a, f2)
-	v.HeritageClauses = tl8(a, f3)
-	v.Members = tl9(a, f4)
+	v.TypeParameters = tl8(a, f2)
+	v.HeritageClauses = tl2(a, f3)
+	v.Members = tl4(a, f4)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -9608,11 +9613,11 @@ func tmk_ClassDeclaration(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f
 func tmk_ClassExpression(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tClassExpression)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.Name = tAs[*Identifier](f1)
-	v.TypeParameters = tl3(a, f2)
-	v.HeritageClauses = tl8(a, f3)
-	v.Members = tl9(a, f4)
+	v.TypeParameters = tl8(a, f2)
+	v.HeritageClauses = tl2(a, f3)
+	v.Members = tl4(a, f4)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -9630,7 +9635,7 @@ func tmk_ClassExpression(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4
 func tmk_ClassStaticBlockDeclaration(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tClassStaticBlockDeclaration)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.Body = tAs[*Block](f1)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -9702,8 +9707,8 @@ func tmk_ConditionalType(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) an
 func tmk_ConstructSignature(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tConstructSignature)
-	v.TypeParameters = tl3(a, f0)
-	v.Parameters = tl4(a, f1)
+	v.TypeParameters = tl8(a, f0)
+	v.Parameters = tl1(a, f1)
 	v.Type = tAs[TypeNode](tpub(f2))
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -9720,9 +9725,9 @@ func tmk_ConstructSignature(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 func tmk_Constructor(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tConstructor)
-	v.Modifiers = tl2(a, f0)
-	v.TypeParameters = tl3(a, f1)
-	v.Parameters = tl4(a, f2)
+	v.Modifiers = tl21(a, f0)
+	v.TypeParameters = tl8(a, f1)
+	v.Parameters = tl1(a, f2)
 	v.Type = tAs[TypeNode](tpub(f3))
 	v.Body = tAs[*Block](f4)
 	if final {
@@ -9742,9 +9747,9 @@ func tmk_Constructor(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any
 func tmk_ConstructorType(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tConstructorType)
-	v.Modifiers = tl2(a, f0)
-	v.TypeParameters = tl3(a, f1)
-	v.Parameters = tl4(a, f2)
+	v.Modifiers = tl21(a, f0)
+	v.TypeParameters = tl8(a, f1)
+	v.Parameters = tl1(a, f2)
 	v.Type = tAs[TypeNode](tpub(f3))
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -9790,7 +9795,7 @@ func tmk_Decorator(c *tctx, final bool, f0 any) any {
 func tmk_DefaultClause(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tDefaultClause)
-	v.Statements = tl5(a, f0)
+	v.Statements = tl22(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -9852,9 +9857,9 @@ func tmk_ElementAccessExpression(c *tctx, final bool, f0 any, f1 any, f2 any) an
 func tmk_EnumDeclaration(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tEnumDeclaration)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.Name = tAs[*Identifier](f1)
-	v.Members = tl10(a, f2)
+	v.Members = tl16(a, f2)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -9886,7 +9891,7 @@ func tmk_EnumMember(c *tctx, final bool, f0 any, f1 any) any {
 func tmk_ExportAssignment(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tExportAssignment)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.Expression = tAs[Expression](tpub(f1))
 	v.IsExportEquals = astBool(f2)
 	if final {
@@ -9904,7 +9909,7 @@ func tmk_ExportAssignment(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 func tmk_ExportDeclaration(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tExportDeclaration)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.ExportClause = tAs[NamedExportBindings](tpub(f1))
 	v.ModuleSpecifier = tAs[Expression](tpub(f2))
 	v.Attributes = tAs[*ImportAttributes](f3)
@@ -9959,7 +9964,7 @@ func tmk_ExpressionWithTypeArguments(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tExpressionWithTypeArguments)
 	v.Expression = tAs[Expression](tpub(f0))
-	v.TypeArguments = tl6(a, f1)
+	v.TypeArguments = tl9(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10046,11 +10051,11 @@ func tmk_ForStatement(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 func tmk_FunctionDeclaration(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tFunctionDeclaration)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.AsteriskToken = tAs[*Token](f1)
 	v.Name = tAs[*Identifier](f2)
-	v.TypeParameters = tl3(a, f3)
-	v.Parameters = tl4(a, f4)
+	v.TypeParameters = tl8(a, f3)
+	v.Parameters = tl1(a, f4)
 	v.Type = tAs[TypeNode](tpub(f5))
 	v.Body = tAs[*Block](f6)
 	if final {
@@ -10072,11 +10077,11 @@ func tmk_FunctionDeclaration(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any
 func tmk_FunctionExpression(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tFunctionExpression)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.AsteriskToken = tAs[*Token](f1)
 	v.Name = tAs[*Identifier](f2)
-	v.TypeParameters = tl3(a, f3)
-	v.Parameters = tl4(a, f4)
+	v.TypeParameters = tl8(a, f3)
+	v.Parameters = tl1(a, f4)
 	v.Type = tAs[TypeNode](tpub(f5))
 	v.Body = tAs[*Block](f6)
 	if final {
@@ -10098,8 +10103,8 @@ func tmk_FunctionExpression(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any,
 func tmk_FunctionType(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tFunctionType)
-	v.TypeParameters = tl3(a, f0)
-	v.Parameters = tl4(a, f1)
+	v.TypeParameters = tl8(a, f0)
+	v.Parameters = tl1(a, f1)
 	v.Type = tAs[TypeNode](tpub(f2))
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -10116,10 +10121,10 @@ func tmk_FunctionType(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 func tmk_GetAccessor(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tGetAccessor)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.Name = tAs[PropertyName](tpub(f1))
-	v.TypeParameters = tl3(a, f2)
-	v.Parameters = tl4(a, f3)
+	v.TypeParameters = tl8(a, f2)
+	v.Parameters = tl1(a, f3)
 	v.Type = tAs[TypeNode](tpub(f4))
 	v.Body = tAs[*Block](f5)
 	if final {
@@ -10141,7 +10146,7 @@ func tmk_HeritageClause(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tHeritageClause)
 	v.Token = astString(f0)
-	v.Types = tl11(a, f1)
+	v.Types = tl3(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10190,7 +10195,7 @@ func tmk_ImportAttribute(c *tctx, final bool, f0 any, f1 any) any {
 func tmk_ImportAttributes(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tImportAttributes)
-	v.Elements = tl12(a, f0)
+	v.Elements = tl5(a, f0)
 	v.Token = astString(f1)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -10224,7 +10229,7 @@ func tmk_ImportClause(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 func tmk_ImportDeclaration(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tImportDeclaration)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.ImportClause = tAs[*ImportClause](f1)
 	v.ModuleSpecifier = tAs[Expression](tpub(f2))
 	v.Attributes = tAs[*ImportAttributes](f3)
@@ -10244,7 +10249,7 @@ func tmk_ImportDeclaration(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) 
 func tmk_ImportEqualsDeclaration(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tImportEqualsDeclaration)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.Name = tAs[*Identifier](f1)
 	v.ModuleReference = tAs[ModuleReference](tpub(f2))
 	v.IsTypeOnly = astBool(f3)
@@ -10285,7 +10290,7 @@ func tmk_ImportType(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any)
 	v.Argument = tAs[TypeNode](tpub(f0))
 	v.Attributes = tAs[*ImportAttributes](f1)
 	v.Qualifier = tAs[EntityName](tpub(f2))
-	v.TypeArguments = tl6(a, f3)
+	v.TypeArguments = tl9(a, f3)
 	v.IsTypeOf = astBool(f4)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -10304,8 +10309,8 @@ func tmk_ImportType(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any)
 func tmk_IndexSignature(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tIndexSignature)
-	v.Modifiers = tl2(a, f0)
-	v.Parameters = tl4(a, f1)
+	v.Modifiers = tl21(a, f0)
+	v.Parameters = tl1(a, f1)
 	v.Type = tAs[TypeNode](tpub(f2))
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -10352,10 +10357,10 @@ func tmk_InferType(c *tctx, final bool, f0 any) any {
 func tmk_InterfaceDeclaration(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tInterfaceDeclaration)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.Name = tAs[*Identifier](f1)
-	v.TypeParameters = tl3(a, f2)
-	v.HeritageClauses = tl8(a, f3)
+	v.TypeParameters = tl8(a, f2)
+	v.HeritageClauses = tl2(a, f3)
 	v.Members = tl13(a, f4)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -10374,7 +10379,7 @@ func tmk_InterfaceDeclaration(c *tctx, final bool, f0 any, f1 any, f2 any, f3 an
 func tmk_IntersectionType(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tIntersectionType)
-	v.Types = tl6(a, f0)
+	v.Types = tl9(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10388,7 +10393,7 @@ func tmk_IntersectionType(c *tctx, final bool, f0 any) any {
 func tmk_JSDocFunctionType(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tJSDocFunctionType)
-	v.Parameters = tl4(a, f0)
+	v.Parameters = tl1(a, f0)
 	v.Type = tAs[TypeNode](tpub(f1))
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -10452,7 +10457,7 @@ func tmk_JsxAttribute(c *tctx, final bool, f0 any, f1 any) any {
 func tmk_JsxAttributes(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tJsxAttributes)
-	v.Properties = tl14(a, f0)
+	v.Properties = tl19(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10481,7 +10486,7 @@ func tmk_JsxElement(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tJsxElement)
 	v.OpeningElement = tAs[*JsxOpeningElement](f0)
-	v.Children = tl15(a, f1)
+	v.Children = tl24(a, f1)
 	v.ClosingElement = tAs[*JsxClosingElement](f2)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -10515,7 +10520,7 @@ func tmk_JsxFragment(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tJsxFragment)
 	v.OpeningFragment = tAs[*JsxOpeningFragment](f0)
-	v.Children = tl15(a, f1)
+	v.Children = tl24(a, f1)
 	v.ClosingFragment = tAs[*JsxClosingFragment](f2)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -10549,7 +10554,7 @@ func tmk_JsxOpeningElement(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tJsxOpeningElement)
 	v.TagName = tAs[JsxTagName](tpub(f0))
-	v.TypeArguments = tl6(a, f1)
+	v.TypeArguments = tl9(a, f1)
 	v.Attributes = tAs[*JsxAttributes](f2)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -10567,7 +10572,7 @@ func tmk_JsxSelfClosingElement(c *tctx, final bool, f0 any, f1 any, f2 any) any 
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tJsxSelfClosingElement)
 	v.TagName = tAs[JsxTagName](tpub(f0))
-	v.TypeArguments = tl6(a, f1)
+	v.TypeArguments = tl9(a, f1)
 	v.Attributes = tAs[*JsxAttributes](f2)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -10668,13 +10673,13 @@ func tmk_MetaProperty(c *tctx, final bool, f0 any, f1 any) any {
 func tmk_MethodDeclaration(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any, f6 any, f7 any, f8 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tMethodDeclaration)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.AsteriskToken = tAs[*Token](f1)
 	v.Name = tAs[PropertyName](tpub(f2))
 	v.QuestionToken = tAs[*Token](f3)
 	v.ExclamationToken = tAs[*Token](f4)
-	v.TypeParameters = tl3(a, f5)
-	v.Parameters = tl4(a, f6)
+	v.TypeParameters = tl8(a, f5)
+	v.Parameters = tl1(a, f6)
 	v.Type = tAs[TypeNode](tpub(f7))
 	v.Body = tAs[*Block](f8)
 	if final {
@@ -10698,11 +10703,11 @@ func tmk_MethodDeclaration(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, 
 func tmk_MethodSignature(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tMethodSignature)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.Name = tAs[PropertyName](tpub(f1))
 	v.QuestionToken = tAs[*Token](f2)
-	v.TypeParameters = tl3(a, f3)
-	v.Parameters = tl4(a, f4)
+	v.TypeParameters = tl8(a, f3)
+	v.Parameters = tl1(a, f4)
 	v.Type = tAs[TypeNode](tpub(f5))
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -10722,7 +10727,7 @@ func tmk_MethodSignature(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4
 func tmk_ModuleBlock(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tModuleBlock)
-	v.Statements = tl5(a, f0)
+	v.Statements = tl22(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10736,7 +10741,7 @@ func tmk_ModuleBlock(c *tctx, final bool, f0 any) any {
 func tmk_ModuleDeclaration(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tModuleDeclaration)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.Name = tAs[ImportAttributeName](tpub(f1))
 	v.Body = tAs[ModuleBody](tpub(f2))
 	if final {
@@ -10754,7 +10759,7 @@ func tmk_ModuleDeclaration(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 func tmk_NamedExports(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tNamedExports)
-	v.Elements = tl16(a, f0)
+	v.Elements = tl17(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10768,7 +10773,7 @@ func tmk_NamedExports(c *tctx, final bool, f0 any) any {
 func tmk_NamedImports(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tNamedImports)
-	v.Elements = tl17(a, f0)
+	v.Elements = tl18(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10816,7 +10821,7 @@ func tmk_NamespaceExport(c *tctx, final bool, f0 any) any {
 func tmk_NamespaceExportDeclaration(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tNamespaceExportDeclaration)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.Name = tAs[*Identifier](f1)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -10847,8 +10852,8 @@ func tmk_NewExpression(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tNewExpression)
 	v.Expression = tAs[Expression](tpub(f0))
-	v.TypeArguments = tl6(a, f1)
-	v.Arguments = tl1(a, f2)
+	v.TypeArguments = tl9(a, f1)
+	v.Arguments = tl10(a, f2)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10878,7 +10883,7 @@ func tmk_NonNullExpression(c *tctx, final bool, f0 any) any {
 func tmk_ObjectBindingPattern(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tObjectBindingPattern)
-	v.Elements = tl18(a, f0)
+	v.Elements = tl15(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10892,7 +10897,7 @@ func tmk_ObjectBindingPattern(c *tctx, final bool, f0 any) any {
 func tmk_ObjectLiteralExpression(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tObjectLiteralExpression)
-	v.Properties = tl19(a, f0)
+	v.Properties = tl20(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -10920,7 +10925,7 @@ func tmk_OptionalType(c *tctx, final bool, f0 any) any {
 func tmk_Parameter(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tParameter)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.DotDotDotToken = tAs[*Token](f1)
 	v.Name = tAs[BindingName](tpub(f2))
 	v.QuestionToken = tAs[*Token](f3)
@@ -11022,7 +11027,7 @@ func tmk_PropertyAccessExpression(c *tctx, final bool, f0 any, f1 any, f2 any) a
 func tmk_PropertyAssignment(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tPropertyAssignment)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.Name = tAs[PropertyName](tpub(f1))
 	v.QuestionToken = tAs[*Token](f2)
 	v.ExclamationToken = tAs[*Token](f3)
@@ -11044,7 +11049,7 @@ func tmk_PropertyAssignment(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any,
 func tmk_PropertyDeclaration(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tPropertyDeclaration)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.Name = tAs[PropertyName](tpub(f1))
 	v.QuestionToken = tAs[*Token](f2)
 	v.ExclamationToken = tAs[*Token](f3)
@@ -11068,7 +11073,7 @@ func tmk_PropertyDeclaration(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any
 func tmk_PropertySignature(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tPropertySignature)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.Name = tAs[PropertyName](tpub(f1))
 	v.QuestionToken = tAs[*Token](f2)
 	v.Type = tAs[TypeNode](tpub(f3))
@@ -11150,10 +11155,10 @@ func tmk_SatisfiesExpression(c *tctx, final bool, f0 any, f1 any) any {
 func tmk_SetAccessor(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tSetAccessor)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.Name = tAs[PropertyName](tpub(f1))
-	v.TypeParameters = tl3(a, f2)
-	v.Parameters = tl4(a, f3)
+	v.TypeParameters = tl8(a, f2)
+	v.Parameters = tl1(a, f3)
 	v.Type = tAs[TypeNode](tpub(f4))
 	v.Body = tAs[*Block](f5)
 	if final {
@@ -11174,7 +11179,7 @@ func tmk_SetAccessor(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any
 func tmk_ShorthandPropertyAssignment(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any, f5 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tShorthandPropertyAssignment)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.Name = tAs[*Identifier](f1)
 	v.QuestionToken = tAs[*Token](f2)
 	v.ExclamationToken = tAs[*Token](f3)
@@ -11198,7 +11203,7 @@ func tmk_ShorthandPropertyAssignment(c *tctx, final bool, f0 any, f1 any, f2 any
 func tmk_SourceFile(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tSourceFile)
-	v.Statements = tl5(a, f0)
+	v.Statements = tl22(a, f0)
 	v.EndOfFileToken = tAs[*EndOfFileToken](f1)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -11260,7 +11265,7 @@ func tmk_TaggedTemplateExpression(c *tctx, final bool, f0 any, f1 any, f2 any, f
 	v := astNew(&a.tTaggedTemplateExpression)
 	v.Tag = tAs[Expression](tpub(f0))
 	v.QuestionDotToken = tAs[*Token](f1)
-	v.TypeArguments = tl6(a, f2)
+	v.TypeArguments = tl9(a, f2)
 	v.Template = tAs[TemplateLiteral](tpub(f3))
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -11279,7 +11284,7 @@ func tmk_TemplateExpression(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tTemplateExpression)
 	v.Head = tAs[*TemplateHead](f0)
-	v.TemplateSpans = tl20(a, f1)
+	v.TemplateSpans = tl11(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -11295,7 +11300,7 @@ func tmk_TemplateLiteralType(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tTemplateLiteralType)
 	v.Head = tAs[*TemplateHead](f0)
-	v.TemplateSpans = tl21(a, f1)
+	v.TemplateSpans = tl12(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -11374,7 +11379,7 @@ func tmk_TryStatement(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 func tmk_TupleType(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tTupleType)
-	v.Elements = tl6(a, f0)
+	v.Elements = tl9(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -11388,9 +11393,9 @@ func tmk_TupleType(c *tctx, final bool, f0 any) any {
 func tmk_TypeAliasDeclaration(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tTypeAliasDeclaration)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.Name = tAs[*Identifier](f1)
-	v.TypeParameters = tl3(a, f2)
+	v.TypeParameters = tl8(a, f2)
 	v.Type = tAs[TypeNode](tpub(f3))
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -11468,7 +11473,7 @@ func tmk_TypeOperator(c *tctx, final bool, f0 any, f1 any) any {
 func tmk_TypeParameter(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tTypeParameter)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.Name = tAs[*Identifier](f1)
 	v.Constraint = tAs[TypeNode](tpub(f2))
 	v.Default = tAs[TypeNode](tpub(f3))
@@ -11509,7 +11514,7 @@ func tmk_TypeQuery(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tTypeQuery)
 	v.ExprName = tAs[EntityName](tpub(f0))
-	v.TypeArguments = tl6(a, f1)
+	v.TypeArguments = tl9(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -11525,7 +11530,7 @@ func tmk_TypeReference(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tTypeReference)
 	v.TypeName = tAs[EntityName](tpub(f0))
-	v.TypeArguments = tl6(a, f1)
+	v.TypeArguments = tl9(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -11540,7 +11545,7 @@ func tmk_TypeReference(c *tctx, final bool, f0 any, f1 any) any {
 func tmk_UnionType(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tUnionType)
-	v.Types = tl6(a, f0)
+	v.Types = tl9(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -11575,7 +11580,7 @@ func tmk_VariableDeclarationList(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tVariableDeclarationList)
 	v.Keyword = astString(f0)
-	v.Declarations = tl22(a, f1)
+	v.Declarations = tl0(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -11590,7 +11595,7 @@ func tmk_VariableDeclarationList(c *tctx, final bool, f0 any, f1 any) any {
 func tmk_VariableStatement(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tVariableStatement)
-	v.Modifiers = tl2(a, f0)
+	v.Modifiers = tl21(a, f0)
 	v.DeclarationList = tAs[*VariableDeclarationList](f1)
 	if final {
 		v.Span = Span{c.start, c.end}
@@ -11664,67 +11669,22 @@ func tmk_YieldExpression(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
-func tl0(a *tslabs, v any) []ArrayBindingElement {
+func tl0(a *tslabs, v any) []*VariableDeclaration {
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*tnode)
 	if n == nil {
-		return []ArrayBindingElement{} // another node (an Error), as conversion makes an empty list of it
+		return []*VariableDeclaration{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl0Chunk, len(n.kids))
 	for i, c := range n.kids {
-		out[i] = tAs[ArrayBindingElement](tpub(c))
+		out[i] = tAs[*VariableDeclaration](c)
 	}
 	return out
 }
 
-func tl1(a *tslabs, v any) []Expression {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []Expression{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl1Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[Expression](tpub(c))
-	}
-	return out
-}
-
-func tl2(a *tslabs, v any) []ModifierLike {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []ModifierLike{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl2Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[ModifierLike](tpub(c))
-	}
-	return out
-}
-
-func tl3(a *tslabs, v any) []*TypeParameter {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*TypeParameter{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl3Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*TypeParameter](c)
-	}
-	return out
-}
-
-func tl4(a *tslabs, v any) []*Parameter {
+func tl1(a *tslabs, v any) []*Parameter {
 	if v == nil {
 		return nil
 	}
@@ -11732,59 +11692,14 @@ func tl4(a *tslabs, v any) []*Parameter {
 	if n == nil {
 		return []*Parameter{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl4Chunk, len(n.kids))
+	out := astSlice(&a.tl1Chunk, len(n.kids))
 	for i, c := range n.kids {
 		out[i] = tAs[*Parameter](c)
 	}
 	return out
 }
 
-func tl5(a *tslabs, v any) []Statement {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []Statement{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl5Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[Statement](tpub(c))
-	}
-	return out
-}
-
-func tl6(a *tslabs, v any) []TypeNode {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []TypeNode{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl6Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[TypeNode](tpub(c))
-	}
-	return out
-}
-
-func tl7(a *tslabs, v any) []CaseOrDefaultClause {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []CaseOrDefaultClause{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl7Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[CaseOrDefaultClause](tpub(c))
-	}
-	return out
-}
-
-func tl8(a *tslabs, v any) []*HeritageClause {
+func tl2(a *tslabs, v any) []*HeritageClause {
 	if v == nil {
 		return nil
 	}
@@ -11792,44 +11707,14 @@ func tl8(a *tslabs, v any) []*HeritageClause {
 	if n == nil {
 		return []*HeritageClause{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl8Chunk, len(n.kids))
+	out := astSlice(&a.tl2Chunk, len(n.kids))
 	for i, c := range n.kids {
 		out[i] = tAs[*HeritageClause](c)
 	}
 	return out
 }
 
-func tl9(a *tslabs, v any) []ClassElement {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []ClassElement{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl9Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[ClassElement](tpub(c))
-	}
-	return out
-}
-
-func tl10(a *tslabs, v any) []*EnumMember {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*EnumMember{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl10Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*EnumMember](c)
-	}
-	return out
-}
-
-func tl11(a *tslabs, v any) []*ExpressionWithTypeArguments {
+func tl3(a *tslabs, v any) []*ExpressionWithTypeArguments {
 	if v == nil {
 		return nil
 	}
@@ -11837,14 +11722,29 @@ func tl11(a *tslabs, v any) []*ExpressionWithTypeArguments {
 	if n == nil {
 		return []*ExpressionWithTypeArguments{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl11Chunk, len(n.kids))
+	out := astSlice(&a.tl3Chunk, len(n.kids))
 	for i, c := range n.kids {
 		out[i] = tAs[*ExpressionWithTypeArguments](c)
 	}
 	return out
 }
 
-func tl12(a *tslabs, v any) []*ImportAttribute {
+func tl4(a *tslabs, v any) []ClassElement {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []ClassElement{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl4Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[ClassElement](tpub(c))
+	}
+	return out
+}
+
+func tl5(a *tslabs, v any) []*ImportAttribute {
 	if v == nil {
 		return nil
 	}
@@ -11852,9 +11752,114 @@ func tl12(a *tslabs, v any) []*ImportAttribute {
 	if n == nil {
 		return []*ImportAttribute{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl12Chunk, len(n.kids))
+	out := astSlice(&a.tl5Chunk, len(n.kids))
 	for i, c := range n.kids {
 		out[i] = tAs[*ImportAttribute](c)
+	}
+	return out
+}
+
+func tl6(a *tslabs, v any) []*Decorator {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*Decorator{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl6Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*Decorator](c)
+	}
+	return out
+}
+
+func tl7(a *tslabs, v any) []*Modifier {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*Modifier{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl7Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*Modifier](c)
+	}
+	return out
+}
+
+func tl8(a *tslabs, v any) []*TypeParameter {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*TypeParameter{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl8Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*TypeParameter](c)
+	}
+	return out
+}
+
+func tl9(a *tslabs, v any) []TypeNode {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []TypeNode{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl9Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[TypeNode](tpub(c))
+	}
+	return out
+}
+
+func tl10(a *tslabs, v any) []Expression {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []Expression{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl10Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[Expression](tpub(c))
+	}
+	return out
+}
+
+func tl11(a *tslabs, v any) []*TemplateSpan {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*TemplateSpan{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl11Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*TemplateSpan](c)
+	}
+	return out
+}
+
+func tl12(a *tslabs, v any) []*TemplateLiteralTypeSpan {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*TemplateLiteralTypeSpan{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl12Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*TemplateLiteralTypeSpan](c)
 	}
 	return out
 }
@@ -11874,67 +11879,22 @@ func tl13(a *tslabs, v any) []TypeElement {
 	return out
 }
 
-func tl14(a *tslabs, v any) []JsxAttributeLike {
+func tl14(a *tslabs, v any) []ArrayBindingElement {
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*tnode)
 	if n == nil {
-		return []JsxAttributeLike{} // another node (an Error), as conversion makes an empty list of it
+		return []ArrayBindingElement{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl14Chunk, len(n.kids))
 	for i, c := range n.kids {
-		out[i] = tAs[JsxAttributeLike](tpub(c))
+		out[i] = tAs[ArrayBindingElement](tpub(c))
 	}
 	return out
 }
 
-func tl15(a *tslabs, v any) []JsxChild {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []JsxChild{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl15Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[JsxChild](tpub(c))
-	}
-	return out
-}
-
-func tl16(a *tslabs, v any) []*ExportSpecifier {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*ExportSpecifier{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl16Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*ExportSpecifier](c)
-	}
-	return out
-}
-
-func tl17(a *tslabs, v any) []*ImportSpecifier {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*ImportSpecifier{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl17Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*ImportSpecifier](c)
-	}
-	return out
-}
-
-func tl18(a *tslabs, v any) []*BindingElement {
+func tl15(a *tslabs, v any) []*BindingElement {
 	if v == nil {
 		return nil
 	}
@@ -11942,14 +11902,74 @@ func tl18(a *tslabs, v any) []*BindingElement {
 	if n == nil {
 		return []*BindingElement{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl18Chunk, len(n.kids))
+	out := astSlice(&a.tl15Chunk, len(n.kids))
 	for i, c := range n.kids {
 		out[i] = tAs[*BindingElement](c)
 	}
 	return out
 }
 
-func tl19(a *tslabs, v any) []ObjectLiteralElement {
+func tl16(a *tslabs, v any) []*EnumMember {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*EnumMember{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl16Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*EnumMember](c)
+	}
+	return out
+}
+
+func tl17(a *tslabs, v any) []*ExportSpecifier {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*ExportSpecifier{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl17Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*ExportSpecifier](c)
+	}
+	return out
+}
+
+func tl18(a *tslabs, v any) []*ImportSpecifier {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*ImportSpecifier{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl18Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*ImportSpecifier](c)
+	}
+	return out
+}
+
+func tl19(a *tslabs, v any) []JsxAttributeLike {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []JsxAttributeLike{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl19Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[JsxAttributeLike](tpub(c))
+	}
+	return out
+}
+
+func tl20(a *tslabs, v any) []ObjectLiteralElement {
 	if v == nil {
 		return nil
 	}
@@ -11957,54 +11977,69 @@ func tl19(a *tslabs, v any) []ObjectLiteralElement {
 	if n == nil {
 		return []ObjectLiteralElement{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl19Chunk, len(n.kids))
+	out := astSlice(&a.tl20Chunk, len(n.kids))
 	for i, c := range n.kids {
 		out[i] = tAs[ObjectLiteralElement](tpub(c))
 	}
 	return out
 }
 
-func tl20(a *tslabs, v any) []*TemplateSpan {
+func tl21(a *tslabs, v any) []ModifierLike {
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*tnode)
 	if n == nil {
-		return []*TemplateSpan{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl20Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*TemplateSpan](c)
-	}
-	return out
-}
-
-func tl21(a *tslabs, v any) []*TemplateLiteralTypeSpan {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*TemplateLiteralTypeSpan{} // another node (an Error), as conversion makes an empty list of it
+		return []ModifierLike{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl21Chunk, len(n.kids))
 	for i, c := range n.kids {
-		out[i] = tAs[*TemplateLiteralTypeSpan](c)
+		out[i] = tAs[ModifierLike](tpub(c))
 	}
 	return out
 }
 
-func tl22(a *tslabs, v any) []*VariableDeclaration {
+func tl22(a *tslabs, v any) []Statement {
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*tnode)
 	if n == nil {
-		return []*VariableDeclaration{} // another node (an Error), as conversion makes an empty list of it
+		return []Statement{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl22Chunk, len(n.kids))
 	for i, c := range n.kids {
-		out[i] = tAs[*VariableDeclaration](c)
+		out[i] = tAs[Statement](tpub(c))
+	}
+	return out
+}
+
+func tl23(a *tslabs, v any) []CaseOrDefaultClause {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []CaseOrDefaultClause{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl23Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[CaseOrDefaultClause](tpub(c))
+	}
+	return out
+}
+
+func tl24(a *tslabs, v any) []JsxChild {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []JsxChild{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl24Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[JsxChild](tpub(c))
 	}
 	return out
 }
@@ -12175,29 +12210,3580 @@ type tslabs struct {
 	tWhileStatement                astChunk[WhileStatement]
 	tWithStatement                 astChunk[WithStatement]
 	tYieldExpression               astChunk[YieldExpression]
-	tl0Chunk                       astChunk[ArrayBindingElement]
-	tl1Chunk                       astChunk[Expression]
-	tl2Chunk                       astChunk[ModifierLike]
-	tl3Chunk                       astChunk[*TypeParameter]
-	tl4Chunk                       astChunk[*Parameter]
-	tl5Chunk                       astChunk[Statement]
-	tl6Chunk                       astChunk[TypeNode]
-	tl7Chunk                       astChunk[CaseOrDefaultClause]
-	tl8Chunk                       astChunk[*HeritageClause]
-	tl9Chunk                       astChunk[ClassElement]
-	tl10Chunk                      astChunk[*EnumMember]
-	tl11Chunk                      astChunk[*ExpressionWithTypeArguments]
-	tl12Chunk                      astChunk[*ImportAttribute]
+	tl0Chunk                       astChunk[*VariableDeclaration]
+	tl1Chunk                       astChunk[*Parameter]
+	tl2Chunk                       astChunk[*HeritageClause]
+	tl3Chunk                       astChunk[*ExpressionWithTypeArguments]
+	tl4Chunk                       astChunk[ClassElement]
+	tl5Chunk                       astChunk[*ImportAttribute]
+	tl6Chunk                       astChunk[*Decorator]
+	tl7Chunk                       astChunk[*Modifier]
+	tl8Chunk                       astChunk[*TypeParameter]
+	tl9Chunk                       astChunk[TypeNode]
+	tl10Chunk                      astChunk[Expression]
+	tl11Chunk                      astChunk[*TemplateSpan]
+	tl12Chunk                      astChunk[*TemplateLiteralTypeSpan]
 	tl13Chunk                      astChunk[TypeElement]
-	tl14Chunk                      astChunk[JsxAttributeLike]
-	tl15Chunk                      astChunk[JsxChild]
-	tl16Chunk                      astChunk[*ExportSpecifier]
-	tl17Chunk                      astChunk[*ImportSpecifier]
-	tl18Chunk                      astChunk[*BindingElement]
-	tl19Chunk                      astChunk[ObjectLiteralElement]
-	tl20Chunk                      astChunk[*TemplateSpan]
-	tl21Chunk                      astChunk[*TemplateLiteralTypeSpan]
-	tl22Chunk                      astChunk[*VariableDeclaration]
+	tl14Chunk                      astChunk[ArrayBindingElement]
+	tl15Chunk                      astChunk[*BindingElement]
+	tl16Chunk                      astChunk[*EnumMember]
+	tl17Chunk                      astChunk[*ExportSpecifier]
+	tl18Chunk                      astChunk[*ImportSpecifier]
+	tl19Chunk                      astChunk[JsxAttributeLike]
+	tl20Chunk                      astChunk[ObjectLiteralElement]
+	tl21Chunk                      astChunk[ModifierLike]
+	tl22Chunk                      astChunk[Statement]
+	tl23Chunk                      astChunk[CaseOrDefaultClause]
+	tl24Chunk                      astChunk[JsxChild]
+}
+
+func (a *astConv) toMatch(n *Node) *Match {
+	if n == nil || n.Type() != "Match" {
+		return nil
+	}
+	v := astNew(&a.match)
+	*v = Match{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toError(n *Node) *Error {
+	if n == nil || n.Type() != "Error" {
+		return nil
+	}
+	msg, _ := n.Field("message").(string)
+	v := astNew(&a.error)
+	*v = Error{Span: Span{int(n.Start), int(n.End)}, Text: n.Text, Message: msg}
+	return v
+}
+
+// anyValue converts a value of a statically unknown type into the typed value of its type (CST
+// nodes stay *Node).
+func (a *astConv) anyValue(v any) any {
+	n, ok := v.(*Node)
+	if !ok || n == nil {
+		return v
+	}
+	switch n.Type() {
+	case "Match":
+		return a.toMatch(n)
+	case "Error":
+		return a.toError(n)
+	case "BigIntLiteral":
+		return a.toBigIntLiteral(n)
+	case "BooleanLiteral":
+		return a.toBooleanLiteral(n)
+	case "DebuggerStatement":
+		return a.toDebuggerStatement(n)
+	case "EmptyStatement":
+		return a.toEmptyStatement(n)
+	case "EndOfFileToken":
+		return a.toEndOfFileToken(n)
+	case "Identifier":
+		return a.toIdentifier(n)
+	case "ImportExpression":
+		return a.toImportExpression(n)
+	case "JSDocAllType":
+		return a.toJSDocAllType(n)
+	case "JSDocUnknownType":
+		return a.toJSDocUnknownType(n)
+	case "JsxClosingFragment":
+		return a.toJsxClosingFragment(n)
+	case "JsxOpeningFragment":
+		return a.toJsxOpeningFragment(n)
+	case "JsxText":
+		return a.toJsxText(n)
+	case "KeywordTypeNode":
+		return a.toKeywordTypeNode(n)
+	case "Modifier":
+		return a.toModifier(n)
+	case "NoSubstitutionTemplateLiteral":
+		return a.toNoSubstitutionTemplateLiteral(n)
+	case "NullLiteral":
+		return a.toNullLiteral(n)
+	case "NumericLiteral":
+		return a.toNumericLiteral(n)
+	case "OmittedExpression":
+		return a.toOmittedExpression(n)
+	case "PrivateIdentifier":
+		return a.toPrivateIdentifier(n)
+	case "RegularExpressionLiteral":
+		return a.toRegularExpressionLiteral(n)
+	case "SemicolonClassElement":
+		return a.toSemicolonClassElement(n)
+	case "StringLiteral":
+		return a.toStringLiteral(n)
+	case "SuperExpression":
+		return a.toSuperExpression(n)
+	case "TemplateHead":
+		return a.toTemplateHead(n)
+	case "TemplateMiddle":
+		return a.toTemplateMiddle(n)
+	case "TemplateTail":
+		return a.toTemplateTail(n)
+	case "ThisExpression":
+		return a.toThisExpression(n)
+	case "ThisTypeNode":
+		return a.toThisTypeNode(n)
+	case "Token":
+		return a.toToken(n)
+	case "ArrayBindingPattern":
+		return a.toArrayBindingPattern(n)
+	case "ArrayLiteralExpression":
+		return a.toArrayLiteralExpression(n)
+	case "ArrayType":
+		return a.toArrayType(n)
+	case "ArrowFunction":
+		return a.toArrowFunction(n)
+	case "AsExpression":
+		return a.toAsExpression(n)
+	case "AwaitExpression":
+		return a.toAwaitExpression(n)
+	case "BinaryExpression":
+		return a.toBinaryExpression(n)
+	case "BindingElement":
+		return a.toBindingElement(n)
+	case "Block":
+		return a.toBlock(n)
+	case "BreakStatement":
+		return a.toBreakStatement(n)
+	case "CallExpression":
+		return a.toCallExpression(n)
+	case "CallSignature":
+		return a.toCallSignature(n)
+	case "CaseBlock":
+		return a.toCaseBlock(n)
+	case "CaseClause":
+		return a.toCaseClause(n)
+	case "CatchClause":
+		return a.toCatchClause(n)
+	case "ClassDeclaration":
+		return a.toClassDeclaration(n)
+	case "ClassExpression":
+		return a.toClassExpression(n)
+	case "ClassStaticBlockDeclaration":
+		return a.toClassStaticBlockDeclaration(n)
+	case "ComputedPropertyName":
+		return a.toComputedPropertyName(n)
+	case "ConditionalExpression":
+		return a.toConditionalExpression(n)
+	case "ConditionalType":
+		return a.toConditionalType(n)
+	case "ConstructSignature":
+		return a.toConstructSignature(n)
+	case "Constructor":
+		return a.toConstructor(n)
+	case "ConstructorType":
+		return a.toConstructorType(n)
+	case "ContinueStatement":
+		return a.toContinueStatement(n)
+	case "Decorator":
+		return a.toDecorator(n)
+	case "DefaultClause":
+		return a.toDefaultClause(n)
+	case "DeleteExpression":
+		return a.toDeleteExpression(n)
+	case "DoStatement":
+		return a.toDoStatement(n)
+	case "ElementAccessExpression":
+		return a.toElementAccessExpression(n)
+	case "EnumDeclaration":
+		return a.toEnumDeclaration(n)
+	case "EnumMember":
+		return a.toEnumMember(n)
+	case "ExportAssignment":
+		return a.toExportAssignment(n)
+	case "ExportDeclaration":
+		return a.toExportDeclaration(n)
+	case "ExportSpecifier":
+		return a.toExportSpecifier(n)
+	case "ExpressionStatement":
+		return a.toExpressionStatement(n)
+	case "ExpressionWithTypeArguments":
+		return a.toExpressionWithTypeArguments(n)
+	case "ExternalModuleReference":
+		return a.toExternalModuleReference(n)
+	case "ForInStatement":
+		return a.toForInStatement(n)
+	case "ForOfStatement":
+		return a.toForOfStatement(n)
+	case "ForStatement":
+		return a.toForStatement(n)
+	case "FunctionDeclaration":
+		return a.toFunctionDeclaration(n)
+	case "FunctionExpression":
+		return a.toFunctionExpression(n)
+	case "FunctionType":
+		return a.toFunctionType(n)
+	case "GetAccessor":
+		return a.toGetAccessor(n)
+	case "HeritageClause":
+		return a.toHeritageClause(n)
+	case "IfStatement":
+		return a.toIfStatement(n)
+	case "ImportAttribute":
+		return a.toImportAttribute(n)
+	case "ImportAttributes":
+		return a.toImportAttributes(n)
+	case "ImportClause":
+		return a.toImportClause(n)
+	case "ImportDeclaration":
+		return a.toImportDeclaration(n)
+	case "ImportEqualsDeclaration":
+		return a.toImportEqualsDeclaration(n)
+	case "ImportSpecifier":
+		return a.toImportSpecifier(n)
+	case "ImportType":
+		return a.toImportType(n)
+	case "IndexSignature":
+		return a.toIndexSignature(n)
+	case "IndexedAccessType":
+		return a.toIndexedAccessType(n)
+	case "InferType":
+		return a.toInferType(n)
+	case "InterfaceDeclaration":
+		return a.toInterfaceDeclaration(n)
+	case "IntersectionType":
+		return a.toIntersectionType(n)
+	case "JSDocFunctionType":
+		return a.toJSDocFunctionType(n)
+	case "JSDocNonNullableType":
+		return a.toJSDocNonNullableType(n)
+	case "JSDocNullableType":
+		return a.toJSDocNullableType(n)
+	case "JsxAttribute":
+		return a.toJsxAttribute(n)
+	case "JsxAttributes":
+		return a.toJsxAttributes(n)
+	case "JsxClosingElement":
+		return a.toJsxClosingElement(n)
+	case "JsxElement":
+		return a.toJsxElement(n)
+	case "JsxExpression":
+		return a.toJsxExpression(n)
+	case "JsxFragment":
+		return a.toJsxFragment(n)
+	case "JsxNamespacedName":
+		return a.toJsxNamespacedName(n)
+	case "JsxOpeningElement":
+		return a.toJsxOpeningElement(n)
+	case "JsxSelfClosingElement":
+		return a.toJsxSelfClosingElement(n)
+	case "JsxSpreadAttribute":
+		return a.toJsxSpreadAttribute(n)
+	case "LabeledStatement":
+		return a.toLabeledStatement(n)
+	case "LiteralType":
+		return a.toLiteralType(n)
+	case "MappedType":
+		return a.toMappedType(n)
+	case "MetaProperty":
+		return a.toMetaProperty(n)
+	case "MethodDeclaration":
+		return a.toMethodDeclaration(n)
+	case "MethodSignature":
+		return a.toMethodSignature(n)
+	case "ModuleBlock":
+		return a.toModuleBlock(n)
+	case "ModuleDeclaration":
+		return a.toModuleDeclaration(n)
+	case "NamedExports":
+		return a.toNamedExports(n)
+	case "NamedImports":
+		return a.toNamedImports(n)
+	case "NamedTupleMember":
+		return a.toNamedTupleMember(n)
+	case "NamespaceExport":
+		return a.toNamespaceExport(n)
+	case "NamespaceExportDeclaration":
+		return a.toNamespaceExportDeclaration(n)
+	case "NamespaceImport":
+		return a.toNamespaceImport(n)
+	case "NewExpression":
+		return a.toNewExpression(n)
+	case "NonNullExpression":
+		return a.toNonNullExpression(n)
+	case "ObjectBindingPattern":
+		return a.toObjectBindingPattern(n)
+	case "ObjectLiteralExpression":
+		return a.toObjectLiteralExpression(n)
+	case "OptionalType":
+		return a.toOptionalType(n)
+	case "Parameter":
+		return a.toParameter(n)
+	case "ParenthesizedExpression":
+		return a.toParenthesizedExpression(n)
+	case "ParenthesizedType":
+		return a.toParenthesizedType(n)
+	case "PostfixUnaryExpression":
+		return a.toPostfixUnaryExpression(n)
+	case "PrefixUnaryExpression":
+		return a.toPrefixUnaryExpression(n)
+	case "PropertyAccessExpression":
+		return a.toPropertyAccessExpression(n)
+	case "PropertyAssignment":
+		return a.toPropertyAssignment(n)
+	case "PropertyDeclaration":
+		return a.toPropertyDeclaration(n)
+	case "PropertySignature":
+		return a.toPropertySignature(n)
+	case "QualifiedName":
+		return a.toQualifiedName(n)
+	case "RestType":
+		return a.toRestType(n)
+	case "ReturnStatement":
+		return a.toReturnStatement(n)
+	case "SatisfiesExpression":
+		return a.toSatisfiesExpression(n)
+	case "SetAccessor":
+		return a.toSetAccessor(n)
+	case "ShorthandPropertyAssignment":
+		return a.toShorthandPropertyAssignment(n)
+	case "SourceFile":
+		return a.toSourceFile(n)
+	case "SpreadAssignment":
+		return a.toSpreadAssignment(n)
+	case "SpreadElement":
+		return a.toSpreadElement(n)
+	case "SwitchStatement":
+		return a.toSwitchStatement(n)
+	case "TaggedTemplateExpression":
+		return a.toTaggedTemplateExpression(n)
+	case "TemplateExpression":
+		return a.toTemplateExpression(n)
+	case "TemplateLiteralType":
+		return a.toTemplateLiteralType(n)
+	case "TemplateLiteralTypeSpan":
+		return a.toTemplateLiteralTypeSpan(n)
+	case "TemplateSpan":
+		return a.toTemplateSpan(n)
+	case "ThrowStatement":
+		return a.toThrowStatement(n)
+	case "TryStatement":
+		return a.toTryStatement(n)
+	case "TupleType":
+		return a.toTupleType(n)
+	case "TypeAliasDeclaration":
+		return a.toTypeAliasDeclaration(n)
+	case "TypeAssertionExpression":
+		return a.toTypeAssertionExpression(n)
+	case "TypeLiteral":
+		return a.toTypeLiteral(n)
+	case "TypeOfExpression":
+		return a.toTypeOfExpression(n)
+	case "TypeOperator":
+		return a.toTypeOperator(n)
+	case "TypeParameter":
+		return a.toTypeParameter(n)
+	case "TypePredicate":
+		return a.toTypePredicate(n)
+	case "TypeQuery":
+		return a.toTypeQuery(n)
+	case "TypeReference":
+		return a.toTypeReference(n)
+	case "UnionType":
+		return a.toUnionType(n)
+	case "VariableDeclaration":
+		return a.toVariableDeclaration(n)
+	case "VariableDeclarationList":
+		return a.toVariableDeclarationList(n)
+	case "VariableStatement":
+		return a.toVariableStatement(n)
+	case "VoidExpression":
+		return a.toVoidExpression(n)
+	case "WhileStatement":
+		return a.toWhileStatement(n)
+	case "WithStatement":
+		return a.toWithStatement(n)
+	case "YieldExpression":
+		return a.toYieldExpression(n)
+	}
+	return n
+}
+
+func (a *astConv) toBigIntLiteral(n *Node) *BigIntLiteral {
+	if n == nil || n.Type() != "BigIntLiteral" {
+		return nil
+	}
+	v := astNew(&a.tBigIntLiteral)
+	*v = BigIntLiteral{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toBooleanLiteral(n *Node) *BooleanLiteral {
+	if n == nil || n.Type() != "BooleanLiteral" {
+		return nil
+	}
+	v := astNew(&a.tBooleanLiteral)
+	*v = BooleanLiteral{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toDebuggerStatement(n *Node) *DebuggerStatement {
+	if n == nil || n.Type() != "DebuggerStatement" {
+		return nil
+	}
+	v := astNew(&a.tDebuggerStatement)
+	*v = DebuggerStatement{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toEmptyStatement(n *Node) *EmptyStatement {
+	if n == nil || n.Type() != "EmptyStatement" {
+		return nil
+	}
+	v := astNew(&a.tEmptyStatement)
+	*v = EmptyStatement{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toEndOfFileToken(n *Node) *EndOfFileToken {
+	if n == nil || n.Type() != "EndOfFileToken" {
+		return nil
+	}
+	v := astNew(&a.tEndOfFileToken)
+	*v = EndOfFileToken{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toIdentifier(n *Node) *Identifier {
+	if n == nil || n.Type() != "Identifier" {
+		return nil
+	}
+	v := astNew(&a.tIdentifier)
+	*v = Identifier{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toImportExpression(n *Node) *ImportExpression {
+	if n == nil || n.Type() != "ImportExpression" {
+		return nil
+	}
+	v := astNew(&a.tImportExpression)
+	*v = ImportExpression{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toJSDocAllType(n *Node) *JSDocAllType {
+	if n == nil || n.Type() != "JSDocAllType" {
+		return nil
+	}
+	v := astNew(&a.tJSDocAllType)
+	*v = JSDocAllType{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toJSDocUnknownType(n *Node) *JSDocUnknownType {
+	if n == nil || n.Type() != "JSDocUnknownType" {
+		return nil
+	}
+	v := astNew(&a.tJSDocUnknownType)
+	*v = JSDocUnknownType{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toJsxClosingFragment(n *Node) *JsxClosingFragment {
+	if n == nil || n.Type() != "JsxClosingFragment" {
+		return nil
+	}
+	v := astNew(&a.tJsxClosingFragment)
+	*v = JsxClosingFragment{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toJsxOpeningFragment(n *Node) *JsxOpeningFragment {
+	if n == nil || n.Type() != "JsxOpeningFragment" {
+		return nil
+	}
+	v := astNew(&a.tJsxOpeningFragment)
+	*v = JsxOpeningFragment{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toJsxText(n *Node) *JsxText {
+	if n == nil || n.Type() != "JsxText" {
+		return nil
+	}
+	v := astNew(&a.tJsxText)
+	*v = JsxText{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toKeywordTypeNode(n *Node) *KeywordTypeNode {
+	if n == nil || n.Type() != "KeywordTypeNode" {
+		return nil
+	}
+	v := astNew(&a.tKeywordTypeNode)
+	*v = KeywordTypeNode{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toModifier(n *Node) *Modifier {
+	if n == nil || n.Type() != "Modifier" {
+		return nil
+	}
+	v := astNew(&a.tModifier)
+	*v = Modifier{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toNoSubstitutionTemplateLiteral(n *Node) *NoSubstitutionTemplateLiteral {
+	if n == nil || n.Type() != "NoSubstitutionTemplateLiteral" {
+		return nil
+	}
+	v := astNew(&a.tNoSubstitutionTemplateLiteral)
+	*v = NoSubstitutionTemplateLiteral{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toNullLiteral(n *Node) *NullLiteral {
+	if n == nil || n.Type() != "NullLiteral" {
+		return nil
+	}
+	v := astNew(&a.tNullLiteral)
+	*v = NullLiteral{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toNumericLiteral(n *Node) *NumericLiteral {
+	if n == nil || n.Type() != "NumericLiteral" {
+		return nil
+	}
+	v := astNew(&a.tNumericLiteral)
+	*v = NumericLiteral{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toOmittedExpression(n *Node) *OmittedExpression {
+	if n == nil || n.Type() != "OmittedExpression" {
+		return nil
+	}
+	v := astNew(&a.tOmittedExpression)
+	*v = OmittedExpression{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toPrivateIdentifier(n *Node) *PrivateIdentifier {
+	if n == nil || n.Type() != "PrivateIdentifier" {
+		return nil
+	}
+	v := astNew(&a.tPrivateIdentifier)
+	*v = PrivateIdentifier{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toRegularExpressionLiteral(n *Node) *RegularExpressionLiteral {
+	if n == nil || n.Type() != "RegularExpressionLiteral" {
+		return nil
+	}
+	v := astNew(&a.tRegularExpressionLiteral)
+	*v = RegularExpressionLiteral{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toSemicolonClassElement(n *Node) *SemicolonClassElement {
+	if n == nil || n.Type() != "SemicolonClassElement" {
+		return nil
+	}
+	v := astNew(&a.tSemicolonClassElement)
+	*v = SemicolonClassElement{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toStringLiteral(n *Node) *StringLiteral {
+	if n == nil || n.Type() != "StringLiteral" {
+		return nil
+	}
+	v := astNew(&a.tStringLiteral)
+	*v = StringLiteral{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toSuperExpression(n *Node) *SuperExpression {
+	if n == nil || n.Type() != "SuperExpression" {
+		return nil
+	}
+	v := astNew(&a.tSuperExpression)
+	*v = SuperExpression{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toTemplateHead(n *Node) *TemplateHead {
+	if n == nil || n.Type() != "TemplateHead" {
+		return nil
+	}
+	v := astNew(&a.tTemplateHead)
+	*v = TemplateHead{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toTemplateMiddle(n *Node) *TemplateMiddle {
+	if n == nil || n.Type() != "TemplateMiddle" {
+		return nil
+	}
+	v := astNew(&a.tTemplateMiddle)
+	*v = TemplateMiddle{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toTemplateTail(n *Node) *TemplateTail {
+	if n == nil || n.Type() != "TemplateTail" {
+		return nil
+	}
+	v := astNew(&a.tTemplateTail)
+	*v = TemplateTail{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toThisExpression(n *Node) *ThisExpression {
+	if n == nil || n.Type() != "ThisExpression" {
+		return nil
+	}
+	v := astNew(&a.tThisExpression)
+	*v = ThisExpression{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toThisTypeNode(n *Node) *ThisTypeNode {
+	if n == nil || n.Type() != "ThisTypeNode" {
+		return nil
+	}
+	v := astNew(&a.tThisTypeNode)
+	*v = ThisTypeNode{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toToken(n *Node) *Token {
+	if n == nil || n.Type() != "Token" {
+		return nil
+	}
+	v := astNew(&a.tToken)
+	*v = Token{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toArrayBindingPattern(n *Node) *ArrayBindingPattern {
+	if n == nil || n.Type() != "ArrayBindingPattern" {
+		return nil
+	}
+	v := astNew(&a.tArrayBindingPattern)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Elements = a.list2(astNode(n.Field("Elements")))
+	return v
+}
+
+func (a *astConv) toArrayLiteralExpression(n *Node) *ArrayLiteralExpression {
+	if n == nil || n.Type() != "ArrayLiteralExpression" {
+		return nil
+	}
+	v := astNew(&a.tArrayLiteralExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Elements = a.list3(astNode(n.Field("Elements")))
+	return v
+}
+
+func (a *astConv) toArrayType(n *Node) *ArrayType {
+	if n == nil || n.Type() != "ArrayType" {
+		return nil
+	}
+	v := astNew(&a.tArrayType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.ElementType = a.toTypeNode(astNode(n.Field("ElementType")))
+	return v
+}
+
+func (a *astConv) toArrowFunction(n *Node) *ArrowFunction {
+	if n == nil || n.Type() != "ArrowFunction" {
+		return nil
+	}
+	v := astNew(&a.tArrowFunction)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.TypeParameters = a.list5(astNode(n.Field("TypeParameters")))
+	v.Parameters = a.list6(astNode(n.Field("Parameters")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	v.EqualsGreaterThanToken = a.toToken(astNode(n.Field("EqualsGreaterThanToken")))
+	v.Body = a.toConciseBody(astNode(n.Field("Body")))
+	return v
+}
+
+func (a *astConv) toAsExpression(n *Node) *AsExpression {
+	if n == nil || n.Type() != "AsExpression" {
+		return nil
+	}
+	v := astNew(&a.tAsExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	return v
+}
+
+func (a *astConv) toAwaitExpression(n *Node) *AwaitExpression {
+	if n == nil || n.Type() != "AwaitExpression" {
+		return nil
+	}
+	v := astNew(&a.tAwaitExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	return v
+}
+
+func (a *astConv) toBinaryExpression(n *Node) *BinaryExpression {
+	if n == nil || n.Type() != "BinaryExpression" {
+		return nil
+	}
+	v := astNew(&a.tBinaryExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Left = a.toExpression(astNode(n.Field("Left")))
+	v.OperatorToken = a.toToken(astNode(n.Field("OperatorToken")))
+	v.Right = a.toExpression(astNode(n.Field("Right")))
+	return v
+}
+
+func (a *astConv) toBindingElement(n *Node) *BindingElement {
+	if n == nil || n.Type() != "BindingElement" {
+		return nil
+	}
+	v := astNew(&a.tBindingElement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.DotDotDotToken = a.toToken(astNode(n.Field("DotDotDotToken")))
+	v.PropertyName = a.toPropertyName(astNode(n.Field("PropertyName")))
+	v.Name = a.toBindingName(astNode(n.Field("Name")))
+	v.Initializer = a.toExpression(astNode(n.Field("Initializer")))
+	return v
+}
+
+func (a *astConv) toBlock(n *Node) *Block {
+	if n == nil || n.Type() != "Block" {
+		return nil
+	}
+	v := astNew(&a.tBlock)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Statements = a.list7(astNode(n.Field("Statements")))
+	return v
+}
+
+func (a *astConv) toBreakStatement(n *Node) *BreakStatement {
+	if n == nil || n.Type() != "BreakStatement" {
+		return nil
+	}
+	v := astNew(&a.tBreakStatement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Label = a.toIdentifier(astNode(n.Field("Label")))
+	return v
+}
+
+func (a *astConv) toCallExpression(n *Node) *CallExpression {
+	if n == nil || n.Type() != "CallExpression" {
+		return nil
+	}
+	v := astNew(&a.tCallExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	v.QuestionDotToken = a.toToken(astNode(n.Field("QuestionDotToken")))
+	v.TypeArguments = a.list8(astNode(n.Field("TypeArguments")))
+	v.Arguments = a.list3(astNode(n.Field("Arguments")))
+	return v
+}
+
+func (a *astConv) toCallSignature(n *Node) *CallSignature {
+	if n == nil || n.Type() != "CallSignature" {
+		return nil
+	}
+	v := astNew(&a.tCallSignature)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.TypeParameters = a.list5(astNode(n.Field("TypeParameters")))
+	v.Parameters = a.list6(astNode(n.Field("Parameters")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	return v
+}
+
+func (a *astConv) toCaseBlock(n *Node) *CaseBlock {
+	if n == nil || n.Type() != "CaseBlock" {
+		return nil
+	}
+	v := astNew(&a.tCaseBlock)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Clauses = a.list9(astNode(n.Field("Clauses")))
+	return v
+}
+
+func (a *astConv) toCaseClause(n *Node) *CaseClause {
+	if n == nil || n.Type() != "CaseClause" {
+		return nil
+	}
+	v := astNew(&a.tCaseClause)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	v.Statements = a.list7(astNode(n.Field("Statements")))
+	return v
+}
+
+func (a *astConv) toCatchClause(n *Node) *CatchClause {
+	if n == nil || n.Type() != "CatchClause" {
+		return nil
+	}
+	v := astNew(&a.tCatchClause)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.VariableDeclaration = a.toVariableDeclaration(astNode(n.Field("VariableDeclaration")))
+	v.Block = a.toBlock(astNode(n.Field("Block")))
+	return v
+}
+
+func (a *astConv) toClassDeclaration(n *Node) *ClassDeclaration {
+	if n == nil || n.Type() != "ClassDeclaration" {
+		return nil
+	}
+	v := astNew(&a.tClassDeclaration)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.Name = a.toIdentifier(astNode(n.Field("Name")))
+	v.TypeParameters = a.list5(astNode(n.Field("TypeParameters")))
+	v.HeritageClauses = a.list10(astNode(n.Field("HeritageClauses")))
+	v.Members = a.list11(astNode(n.Field("Members")))
+	return v
+}
+
+func (a *astConv) toClassExpression(n *Node) *ClassExpression {
+	if n == nil || n.Type() != "ClassExpression" {
+		return nil
+	}
+	v := astNew(&a.tClassExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.Name = a.toIdentifier(astNode(n.Field("Name")))
+	v.TypeParameters = a.list5(astNode(n.Field("TypeParameters")))
+	v.HeritageClauses = a.list10(astNode(n.Field("HeritageClauses")))
+	v.Members = a.list11(astNode(n.Field("Members")))
+	return v
+}
+
+func (a *astConv) toClassStaticBlockDeclaration(n *Node) *ClassStaticBlockDeclaration {
+	if n == nil || n.Type() != "ClassStaticBlockDeclaration" {
+		return nil
+	}
+	v := astNew(&a.tClassStaticBlockDeclaration)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.Body = a.toBlock(astNode(n.Field("Body")))
+	return v
+}
+
+func (a *astConv) toComputedPropertyName(n *Node) *ComputedPropertyName {
+	if n == nil || n.Type() != "ComputedPropertyName" {
+		return nil
+	}
+	v := astNew(&a.tComputedPropertyName)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	return v
+}
+
+func (a *astConv) toConditionalExpression(n *Node) *ConditionalExpression {
+	if n == nil || n.Type() != "ConditionalExpression" {
+		return nil
+	}
+	v := astNew(&a.tConditionalExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Condition = a.toExpression(astNode(n.Field("Condition")))
+	v.QuestionToken = a.toToken(astNode(n.Field("QuestionToken")))
+	v.WhenTrue = a.toExpression(astNode(n.Field("WhenTrue")))
+	v.ColonToken = a.toToken(astNode(n.Field("ColonToken")))
+	v.WhenFalse = a.toExpression(astNode(n.Field("WhenFalse")))
+	return v
+}
+
+func (a *astConv) toConditionalType(n *Node) *ConditionalType {
+	if n == nil || n.Type() != "ConditionalType" {
+		return nil
+	}
+	v := astNew(&a.tConditionalType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.CheckType = a.toTypeNode(astNode(n.Field("CheckType")))
+	v.ExtendsType = a.toTypeNode(astNode(n.Field("ExtendsType")))
+	v.TrueType = a.toTypeNode(astNode(n.Field("TrueType")))
+	v.FalseType = a.toTypeNode(astNode(n.Field("FalseType")))
+	return v
+}
+
+func (a *astConv) toConstructSignature(n *Node) *ConstructSignature {
+	if n == nil || n.Type() != "ConstructSignature" {
+		return nil
+	}
+	v := astNew(&a.tConstructSignature)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.TypeParameters = a.list5(astNode(n.Field("TypeParameters")))
+	v.Parameters = a.list6(astNode(n.Field("Parameters")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	return v
+}
+
+func (a *astConv) toConstructor(n *Node) *Constructor {
+	if n == nil || n.Type() != "Constructor" {
+		return nil
+	}
+	v := astNew(&a.tConstructor)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.TypeParameters = a.list5(astNode(n.Field("TypeParameters")))
+	v.Parameters = a.list6(astNode(n.Field("Parameters")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	v.Body = a.toBlock(astNode(n.Field("Body")))
+	return v
+}
+
+func (a *astConv) toConstructorType(n *Node) *ConstructorType {
+	if n == nil || n.Type() != "ConstructorType" {
+		return nil
+	}
+	v := astNew(&a.tConstructorType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.TypeParameters = a.list5(astNode(n.Field("TypeParameters")))
+	v.Parameters = a.list6(astNode(n.Field("Parameters")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	return v
+}
+
+func (a *astConv) toContinueStatement(n *Node) *ContinueStatement {
+	if n == nil || n.Type() != "ContinueStatement" {
+		return nil
+	}
+	v := astNew(&a.tContinueStatement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Label = a.toIdentifier(astNode(n.Field("Label")))
+	return v
+}
+
+func (a *astConv) toDecorator(n *Node) *Decorator {
+	if n == nil || n.Type() != "Decorator" {
+		return nil
+	}
+	v := astNew(&a.tDecorator)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	return v
+}
+
+func (a *astConv) toDefaultClause(n *Node) *DefaultClause {
+	if n == nil || n.Type() != "DefaultClause" {
+		return nil
+	}
+	v := astNew(&a.tDefaultClause)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Statements = a.list7(astNode(n.Field("Statements")))
+	return v
+}
+
+func (a *astConv) toDeleteExpression(n *Node) *DeleteExpression {
+	if n == nil || n.Type() != "DeleteExpression" {
+		return nil
+	}
+	v := astNew(&a.tDeleteExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	return v
+}
+
+func (a *astConv) toDoStatement(n *Node) *DoStatement {
+	if n == nil || n.Type() != "DoStatement" {
+		return nil
+	}
+	v := astNew(&a.tDoStatement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Statement = a.toStatement(astNode(n.Field("Statement")))
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	return v
+}
+
+func (a *astConv) toElementAccessExpression(n *Node) *ElementAccessExpression {
+	if n == nil || n.Type() != "ElementAccessExpression" {
+		return nil
+	}
+	v := astNew(&a.tElementAccessExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	v.QuestionDotToken = a.toToken(astNode(n.Field("QuestionDotToken")))
+	v.ArgumentExpression = a.toExpression(astNode(n.Field("ArgumentExpression")))
+	return v
+}
+
+func (a *astConv) toEnumDeclaration(n *Node) *EnumDeclaration {
+	if n == nil || n.Type() != "EnumDeclaration" {
+		return nil
+	}
+	v := astNew(&a.tEnumDeclaration)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.Name = a.toIdentifier(astNode(n.Field("Name")))
+	v.Members = a.list12(astNode(n.Field("Members")))
+	return v
+}
+
+func (a *astConv) toEnumMember(n *Node) *EnumMember {
+	if n == nil || n.Type() != "EnumMember" {
+		return nil
+	}
+	v := astNew(&a.tEnumMember)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toPropertyName(astNode(n.Field("Name")))
+	v.Initializer = a.toExpression(astNode(n.Field("Initializer")))
+	return v
+}
+
+func (a *astConv) toExportAssignment(n *Node) *ExportAssignment {
+	if n == nil || n.Type() != "ExportAssignment" {
+		return nil
+	}
+	v := astNew(&a.tExportAssignment)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	v.IsExportEquals = astBool(n.Field("IsExportEquals"))
+	return v
+}
+
+func (a *astConv) toExportDeclaration(n *Node) *ExportDeclaration {
+	if n == nil || n.Type() != "ExportDeclaration" {
+		return nil
+	}
+	v := astNew(&a.tExportDeclaration)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.ExportClause = a.toNamedExportBindings(astNode(n.Field("ExportClause")))
+	v.ModuleSpecifier = a.toExpression(astNode(n.Field("ModuleSpecifier")))
+	v.Attributes = a.toImportAttributes(astNode(n.Field("Attributes")))
+	v.IsTypeOnly = astBool(n.Field("IsTypeOnly"))
+	return v
+}
+
+func (a *astConv) toExportSpecifier(n *Node) *ExportSpecifier {
+	if n == nil || n.Type() != "ExportSpecifier" {
+		return nil
+	}
+	v := astNew(&a.tExportSpecifier)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.PropertyName = a.toImportAttributeName(astNode(n.Field("PropertyName")))
+	v.Name = a.toImportAttributeName(astNode(n.Field("Name")))
+	v.IsTypeOnly = astBool(n.Field("IsTypeOnly"))
+	return v
+}
+
+func (a *astConv) toExpressionStatement(n *Node) *ExpressionStatement {
+	if n == nil || n.Type() != "ExpressionStatement" {
+		return nil
+	}
+	v := astNew(&a.tExpressionStatement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	return v
+}
+
+func (a *astConv) toExpressionWithTypeArguments(n *Node) *ExpressionWithTypeArguments {
+	if n == nil || n.Type() != "ExpressionWithTypeArguments" {
+		return nil
+	}
+	v := astNew(&a.tExpressionWithTypeArguments)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	v.TypeArguments = a.list8(astNode(n.Field("TypeArguments")))
+	return v
+}
+
+func (a *astConv) toExternalModuleReference(n *Node) *ExternalModuleReference {
+	if n == nil || n.Type() != "ExternalModuleReference" {
+		return nil
+	}
+	v := astNew(&a.tExternalModuleReference)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	return v
+}
+
+func (a *astConv) toForInStatement(n *Node) *ForInStatement {
+	if n == nil || n.Type() != "ForInStatement" {
+		return nil
+	}
+	v := astNew(&a.tForInStatement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Initializer = a.toForInitializer(astNode(n.Field("Initializer")))
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	v.Statement = a.toStatement(astNode(n.Field("Statement")))
+	return v
+}
+
+func (a *astConv) toForOfStatement(n *Node) *ForOfStatement {
+	if n == nil || n.Type() != "ForOfStatement" {
+		return nil
+	}
+	v := astNew(&a.tForOfStatement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.AwaitModifier = a.toToken(astNode(n.Field("AwaitModifier")))
+	v.Initializer = a.toForInitializer(astNode(n.Field("Initializer")))
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	v.Statement = a.toStatement(astNode(n.Field("Statement")))
+	return v
+}
+
+func (a *astConv) toForStatement(n *Node) *ForStatement {
+	if n == nil || n.Type() != "ForStatement" {
+		return nil
+	}
+	v := astNew(&a.tForStatement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Initializer = a.toForInitializer(astNode(n.Field("Initializer")))
+	v.Condition = a.toExpression(astNode(n.Field("Condition")))
+	v.Incrementor = a.toExpression(astNode(n.Field("Incrementor")))
+	v.Statement = a.toStatement(astNode(n.Field("Statement")))
+	return v
+}
+
+func (a *astConv) toFunctionDeclaration(n *Node) *FunctionDeclaration {
+	if n == nil || n.Type() != "FunctionDeclaration" {
+		return nil
+	}
+	v := astNew(&a.tFunctionDeclaration)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.AsteriskToken = a.toToken(astNode(n.Field("AsteriskToken")))
+	v.Name = a.toIdentifier(astNode(n.Field("Name")))
+	v.TypeParameters = a.list5(astNode(n.Field("TypeParameters")))
+	v.Parameters = a.list6(astNode(n.Field("Parameters")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	v.Body = a.toBlock(astNode(n.Field("Body")))
+	return v
+}
+
+func (a *astConv) toFunctionExpression(n *Node) *FunctionExpression {
+	if n == nil || n.Type() != "FunctionExpression" {
+		return nil
+	}
+	v := astNew(&a.tFunctionExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.AsteriskToken = a.toToken(astNode(n.Field("AsteriskToken")))
+	v.Name = a.toIdentifier(astNode(n.Field("Name")))
+	v.TypeParameters = a.list5(astNode(n.Field("TypeParameters")))
+	v.Parameters = a.list6(astNode(n.Field("Parameters")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	v.Body = a.toBlock(astNode(n.Field("Body")))
+	return v
+}
+
+func (a *astConv) toFunctionType(n *Node) *FunctionType {
+	if n == nil || n.Type() != "FunctionType" {
+		return nil
+	}
+	v := astNew(&a.tFunctionType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.TypeParameters = a.list5(astNode(n.Field("TypeParameters")))
+	v.Parameters = a.list6(astNode(n.Field("Parameters")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	return v
+}
+
+func (a *astConv) toGetAccessor(n *Node) *GetAccessor {
+	if n == nil || n.Type() != "GetAccessor" {
+		return nil
+	}
+	v := astNew(&a.tGetAccessor)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.Name = a.toPropertyName(astNode(n.Field("Name")))
+	v.TypeParameters = a.list5(astNode(n.Field("TypeParameters")))
+	v.Parameters = a.list6(astNode(n.Field("Parameters")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	v.Body = a.toBlock(astNode(n.Field("Body")))
+	return v
+}
+
+func (a *astConv) toHeritageClause(n *Node) *HeritageClause {
+	if n == nil || n.Type() != "HeritageClause" {
+		return nil
+	}
+	v := astNew(&a.tHeritageClause)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Token = astString(n.Field("Token"))
+	v.Types = a.list13(astNode(n.Field("Types")))
+	return v
+}
+
+func (a *astConv) toIfStatement(n *Node) *IfStatement {
+	if n == nil || n.Type() != "IfStatement" {
+		return nil
+	}
+	v := astNew(&a.tIfStatement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	v.ThenStatement = a.toStatement(astNode(n.Field("ThenStatement")))
+	v.ElseStatement = a.toStatement(astNode(n.Field("ElseStatement")))
+	return v
+}
+
+func (a *astConv) toImportAttribute(n *Node) *ImportAttribute {
+	if n == nil || n.Type() != "ImportAttribute" {
+		return nil
+	}
+	v := astNew(&a.tImportAttribute)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toImportAttributeName(astNode(n.Field("Name")))
+	v.Value = a.toExpression(astNode(n.Field("Value")))
+	return v
+}
+
+func (a *astConv) toImportAttributes(n *Node) *ImportAttributes {
+	if n == nil || n.Type() != "ImportAttributes" {
+		return nil
+	}
+	v := astNew(&a.tImportAttributes)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Elements = a.list14(astNode(n.Field("Elements")))
+	v.Token = astString(n.Field("Token"))
+	return v
+}
+
+func (a *astConv) toImportClause(n *Node) *ImportClause {
+	if n == nil || n.Type() != "ImportClause" {
+		return nil
+	}
+	v := astNew(&a.tImportClause)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdentifier(astNode(n.Field("Name")))
+	v.NamedBindings = a.toNamedImportBindings(astNode(n.Field("NamedBindings")))
+	v.PhaseModifier = astString(n.Field("PhaseModifier"))
+	return v
+}
+
+func (a *astConv) toImportDeclaration(n *Node) *ImportDeclaration {
+	if n == nil || n.Type() != "ImportDeclaration" {
+		return nil
+	}
+	v := astNew(&a.tImportDeclaration)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.ImportClause = a.toImportClause(astNode(n.Field("ImportClause")))
+	v.ModuleSpecifier = a.toExpression(astNode(n.Field("ModuleSpecifier")))
+	v.Attributes = a.toImportAttributes(astNode(n.Field("Attributes")))
+	return v
+}
+
+func (a *astConv) toImportEqualsDeclaration(n *Node) *ImportEqualsDeclaration {
+	if n == nil || n.Type() != "ImportEqualsDeclaration" {
+		return nil
+	}
+	v := astNew(&a.tImportEqualsDeclaration)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.Name = a.toIdentifier(astNode(n.Field("Name")))
+	v.ModuleReference = a.toModuleReference(astNode(n.Field("ModuleReference")))
+	v.IsTypeOnly = astBool(n.Field("IsTypeOnly"))
+	return v
+}
+
+func (a *astConv) toImportSpecifier(n *Node) *ImportSpecifier {
+	if n == nil || n.Type() != "ImportSpecifier" {
+		return nil
+	}
+	v := astNew(&a.tImportSpecifier)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.PropertyName = a.toImportAttributeName(astNode(n.Field("PropertyName")))
+	v.Name = a.toIdentifier(astNode(n.Field("Name")))
+	v.IsTypeOnly = astBool(n.Field("IsTypeOnly"))
+	return v
+}
+
+func (a *astConv) toImportType(n *Node) *ImportType {
+	if n == nil || n.Type() != "ImportType" {
+		return nil
+	}
+	v := astNew(&a.tImportType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Argument = a.toTypeNode(astNode(n.Field("Argument")))
+	v.Attributes = a.toImportAttributes(astNode(n.Field("Attributes")))
+	v.Qualifier = a.toEntityName(astNode(n.Field("Qualifier")))
+	v.TypeArguments = a.list8(astNode(n.Field("TypeArguments")))
+	v.IsTypeOf = astBool(n.Field("IsTypeOf"))
+	return v
+}
+
+func (a *astConv) toIndexSignature(n *Node) *IndexSignature {
+	if n == nil || n.Type() != "IndexSignature" {
+		return nil
+	}
+	v := astNew(&a.tIndexSignature)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.Parameters = a.list6(astNode(n.Field("Parameters")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	return v
+}
+
+func (a *astConv) toIndexedAccessType(n *Node) *IndexedAccessType {
+	if n == nil || n.Type() != "IndexedAccessType" {
+		return nil
+	}
+	v := astNew(&a.tIndexedAccessType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.ObjectType = a.toTypeNode(astNode(n.Field("ObjectType")))
+	v.IndexType = a.toTypeNode(astNode(n.Field("IndexType")))
+	return v
+}
+
+func (a *astConv) toInferType(n *Node) *InferType {
+	if n == nil || n.Type() != "InferType" {
+		return nil
+	}
+	v := astNew(&a.tInferType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.TypeParameter = a.toTypeParameter(astNode(n.Field("TypeParameter")))
+	return v
+}
+
+func (a *astConv) toInterfaceDeclaration(n *Node) *InterfaceDeclaration {
+	if n == nil || n.Type() != "InterfaceDeclaration" {
+		return nil
+	}
+	v := astNew(&a.tInterfaceDeclaration)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.Name = a.toIdentifier(astNode(n.Field("Name")))
+	v.TypeParameters = a.list5(astNode(n.Field("TypeParameters")))
+	v.HeritageClauses = a.list10(astNode(n.Field("HeritageClauses")))
+	v.Members = a.list15(astNode(n.Field("Members")))
+	return v
+}
+
+func (a *astConv) toIntersectionType(n *Node) *IntersectionType {
+	if n == nil || n.Type() != "IntersectionType" {
+		return nil
+	}
+	v := astNew(&a.tIntersectionType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Types = a.list8(astNode(n.Field("Types")))
+	return v
+}
+
+func (a *astConv) toJSDocFunctionType(n *Node) *JSDocFunctionType {
+	if n == nil || n.Type() != "JSDocFunctionType" {
+		return nil
+	}
+	v := astNew(&a.tJSDocFunctionType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Parameters = a.list6(astNode(n.Field("Parameters")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	return v
+}
+
+func (a *astConv) toJSDocNonNullableType(n *Node) *JSDocNonNullableType {
+	if n == nil || n.Type() != "JSDocNonNullableType" {
+		return nil
+	}
+	v := astNew(&a.tJSDocNonNullableType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	v.Postfix = astBool(n.Field("Postfix"))
+	return v
+}
+
+func (a *astConv) toJSDocNullableType(n *Node) *JSDocNullableType {
+	if n == nil || n.Type() != "JSDocNullableType" {
+		return nil
+	}
+	v := astNew(&a.tJSDocNullableType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	v.Postfix = astBool(n.Field("Postfix"))
+	return v
+}
+
+func (a *astConv) toJsxAttribute(n *Node) *JsxAttribute {
+	if n == nil || n.Type() != "JsxAttribute" {
+		return nil
+	}
+	v := astNew(&a.tJsxAttribute)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toJsxAttributeName(astNode(n.Field("Name")))
+	v.Initializer = a.toJsxAttributeValue(astNode(n.Field("Initializer")))
+	return v
+}
+
+func (a *astConv) toJsxAttributes(n *Node) *JsxAttributes {
+	if n == nil || n.Type() != "JsxAttributes" {
+		return nil
+	}
+	v := astNew(&a.tJsxAttributes)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Properties = a.list16(astNode(n.Field("Properties")))
+	return v
+}
+
+func (a *astConv) toJsxClosingElement(n *Node) *JsxClosingElement {
+	if n == nil || n.Type() != "JsxClosingElement" {
+		return nil
+	}
+	v := astNew(&a.tJsxClosingElement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.TagName = a.toJsxTagName(astNode(n.Field("TagName")))
+	return v
+}
+
+func (a *astConv) toJsxElement(n *Node) *JsxElement {
+	if n == nil || n.Type() != "JsxElement" {
+		return nil
+	}
+	v := astNew(&a.tJsxElement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.OpeningElement = a.toJsxOpeningElement(astNode(n.Field("OpeningElement")))
+	v.Children = a.list17(astNode(n.Field("Children")))
+	v.ClosingElement = a.toJsxClosingElement(astNode(n.Field("ClosingElement")))
+	return v
+}
+
+func (a *astConv) toJsxExpression(n *Node) *JsxExpression {
+	if n == nil || n.Type() != "JsxExpression" {
+		return nil
+	}
+	v := astNew(&a.tJsxExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.DotDotDotToken = a.toToken(astNode(n.Field("DotDotDotToken")))
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	return v
+}
+
+func (a *astConv) toJsxFragment(n *Node) *JsxFragment {
+	if n == nil || n.Type() != "JsxFragment" {
+		return nil
+	}
+	v := astNew(&a.tJsxFragment)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.OpeningFragment = a.toJsxOpeningFragment(astNode(n.Field("OpeningFragment")))
+	v.Children = a.list17(astNode(n.Field("Children")))
+	v.ClosingFragment = a.toJsxClosingFragment(astNode(n.Field("ClosingFragment")))
+	return v
+}
+
+func (a *astConv) toJsxNamespacedName(n *Node) *JsxNamespacedName {
+	if n == nil || n.Type() != "JsxNamespacedName" {
+		return nil
+	}
+	v := astNew(&a.tJsxNamespacedName)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Namespace = a.toIdentifier(astNode(n.Field("Namespace")))
+	v.Name = a.toIdentifier(astNode(n.Field("Name")))
+	return v
+}
+
+func (a *astConv) toJsxOpeningElement(n *Node) *JsxOpeningElement {
+	if n == nil || n.Type() != "JsxOpeningElement" {
+		return nil
+	}
+	v := astNew(&a.tJsxOpeningElement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.TagName = a.toJsxTagName(astNode(n.Field("TagName")))
+	v.TypeArguments = a.list8(astNode(n.Field("TypeArguments")))
+	v.Attributes = a.toJsxAttributes(astNode(n.Field("Attributes")))
+	return v
+}
+
+func (a *astConv) toJsxSelfClosingElement(n *Node) *JsxSelfClosingElement {
+	if n == nil || n.Type() != "JsxSelfClosingElement" {
+		return nil
+	}
+	v := astNew(&a.tJsxSelfClosingElement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.TagName = a.toJsxTagName(astNode(n.Field("TagName")))
+	v.TypeArguments = a.list8(astNode(n.Field("TypeArguments")))
+	v.Attributes = a.toJsxAttributes(astNode(n.Field("Attributes")))
+	return v
+}
+
+func (a *astConv) toJsxSpreadAttribute(n *Node) *JsxSpreadAttribute {
+	if n == nil || n.Type() != "JsxSpreadAttribute" {
+		return nil
+	}
+	v := astNew(&a.tJsxSpreadAttribute)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	return v
+}
+
+func (a *astConv) toLabeledStatement(n *Node) *LabeledStatement {
+	if n == nil || n.Type() != "LabeledStatement" {
+		return nil
+	}
+	v := astNew(&a.tLabeledStatement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Label = a.toIdentifier(astNode(n.Field("Label")))
+	v.Statement = a.toStatement(astNode(n.Field("Statement")))
+	return v
+}
+
+func (a *astConv) toLiteralType(n *Node) *LiteralType {
+	if n == nil || n.Type() != "LiteralType" {
+		return nil
+	}
+	v := astNew(&a.tLiteralType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Literal = a.toLiteralTypeLiteral(astNode(n.Field("Literal")))
+	return v
+}
+
+func (a *astConv) toMappedType(n *Node) *MappedType {
+	if n == nil || n.Type() != "MappedType" {
+		return nil
+	}
+	v := astNew(&a.tMappedType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.ReadonlyToken = a.toToken(astNode(n.Field("ReadonlyToken")))
+	v.TypeParameter = a.toTypeParameter(astNode(n.Field("TypeParameter")))
+	v.NameType = a.toTypeNode(astNode(n.Field("NameType")))
+	v.QuestionToken = a.toToken(astNode(n.Field("QuestionToken")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	v.Members = a.list15(astNode(n.Field("Members")))
+	return v
+}
+
+func (a *astConv) toMetaProperty(n *Node) *MetaProperty {
+	if n == nil || n.Type() != "MetaProperty" {
+		return nil
+	}
+	v := astNew(&a.tMetaProperty)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.KeywordToken = astString(n.Field("KeywordToken"))
+	v.Name = a.toIdentifier(astNode(n.Field("Name")))
+	return v
+}
+
+func (a *astConv) toMethodDeclaration(n *Node) *MethodDeclaration {
+	if n == nil || n.Type() != "MethodDeclaration" {
+		return nil
+	}
+	v := astNew(&a.tMethodDeclaration)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.AsteriskToken = a.toToken(astNode(n.Field("AsteriskToken")))
+	v.Name = a.toPropertyName(astNode(n.Field("Name")))
+	v.QuestionToken = a.toToken(astNode(n.Field("QuestionToken")))
+	v.ExclamationToken = a.toToken(astNode(n.Field("ExclamationToken")))
+	v.TypeParameters = a.list5(astNode(n.Field("TypeParameters")))
+	v.Parameters = a.list6(astNode(n.Field("Parameters")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	v.Body = a.toBlock(astNode(n.Field("Body")))
+	return v
+}
+
+func (a *astConv) toMethodSignature(n *Node) *MethodSignature {
+	if n == nil || n.Type() != "MethodSignature" {
+		return nil
+	}
+	v := astNew(&a.tMethodSignature)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.Name = a.toPropertyName(astNode(n.Field("Name")))
+	v.QuestionToken = a.toToken(astNode(n.Field("QuestionToken")))
+	v.TypeParameters = a.list5(astNode(n.Field("TypeParameters")))
+	v.Parameters = a.list6(astNode(n.Field("Parameters")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	return v
+}
+
+func (a *astConv) toModuleBlock(n *Node) *ModuleBlock {
+	if n == nil || n.Type() != "ModuleBlock" {
+		return nil
+	}
+	v := astNew(&a.tModuleBlock)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Statements = a.list7(astNode(n.Field("Statements")))
+	return v
+}
+
+func (a *astConv) toModuleDeclaration(n *Node) *ModuleDeclaration {
+	if n == nil || n.Type() != "ModuleDeclaration" {
+		return nil
+	}
+	v := astNew(&a.tModuleDeclaration)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.Name = a.toImportAttributeName(astNode(n.Field("Name")))
+	v.Body = a.toModuleBody(astNode(n.Field("Body")))
+	return v
+}
+
+func (a *astConv) toNamedExports(n *Node) *NamedExports {
+	if n == nil || n.Type() != "NamedExports" {
+		return nil
+	}
+	v := astNew(&a.tNamedExports)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Elements = a.list18(astNode(n.Field("Elements")))
+	return v
+}
+
+func (a *astConv) toNamedImports(n *Node) *NamedImports {
+	if n == nil || n.Type() != "NamedImports" {
+		return nil
+	}
+	v := astNew(&a.tNamedImports)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Elements = a.list19(astNode(n.Field("Elements")))
+	return v
+}
+
+func (a *astConv) toNamedTupleMember(n *Node) *NamedTupleMember {
+	if n == nil || n.Type() != "NamedTupleMember" {
+		return nil
+	}
+	v := astNew(&a.tNamedTupleMember)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.DotDotDotToken = a.toToken(astNode(n.Field("DotDotDotToken")))
+	v.Name = a.toIdentifier(astNode(n.Field("Name")))
+	v.QuestionToken = a.toToken(astNode(n.Field("QuestionToken")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	return v
+}
+
+func (a *astConv) toNamespaceExport(n *Node) *NamespaceExport {
+	if n == nil || n.Type() != "NamespaceExport" {
+		return nil
+	}
+	v := astNew(&a.tNamespaceExport)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toImportAttributeName(astNode(n.Field("Name")))
+	return v
+}
+
+func (a *astConv) toNamespaceExportDeclaration(n *Node) *NamespaceExportDeclaration {
+	if n == nil || n.Type() != "NamespaceExportDeclaration" {
+		return nil
+	}
+	v := astNew(&a.tNamespaceExportDeclaration)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.Name = a.toIdentifier(astNode(n.Field("Name")))
+	return v
+}
+
+func (a *astConv) toNamespaceImport(n *Node) *NamespaceImport {
+	if n == nil || n.Type() != "NamespaceImport" {
+		return nil
+	}
+	v := astNew(&a.tNamespaceImport)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdentifier(astNode(n.Field("Name")))
+	return v
+}
+
+func (a *astConv) toNewExpression(n *Node) *NewExpression {
+	if n == nil || n.Type() != "NewExpression" {
+		return nil
+	}
+	v := astNew(&a.tNewExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	v.TypeArguments = a.list8(astNode(n.Field("TypeArguments")))
+	v.Arguments = a.list3(astNode(n.Field("Arguments")))
+	return v
+}
+
+func (a *astConv) toNonNullExpression(n *Node) *NonNullExpression {
+	if n == nil || n.Type() != "NonNullExpression" {
+		return nil
+	}
+	v := astNew(&a.tNonNullExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	return v
+}
+
+func (a *astConv) toObjectBindingPattern(n *Node) *ObjectBindingPattern {
+	if n == nil || n.Type() != "ObjectBindingPattern" {
+		return nil
+	}
+	v := astNew(&a.tObjectBindingPattern)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Elements = a.list20(astNode(n.Field("Elements")))
+	return v
+}
+
+func (a *astConv) toObjectLiteralExpression(n *Node) *ObjectLiteralExpression {
+	if n == nil || n.Type() != "ObjectLiteralExpression" {
+		return nil
+	}
+	v := astNew(&a.tObjectLiteralExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Properties = a.list21(astNode(n.Field("Properties")))
+	return v
+}
+
+func (a *astConv) toOptionalType(n *Node) *OptionalType {
+	if n == nil || n.Type() != "OptionalType" {
+		return nil
+	}
+	v := astNew(&a.tOptionalType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	return v
+}
+
+func (a *astConv) toParameter(n *Node) *Parameter {
+	if n == nil || n.Type() != "Parameter" {
+		return nil
+	}
+	v := astNew(&a.tParameter)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.DotDotDotToken = a.toToken(astNode(n.Field("DotDotDotToken")))
+	v.Name = a.toBindingName(astNode(n.Field("Name")))
+	v.QuestionToken = a.toToken(astNode(n.Field("QuestionToken")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	v.Initializer = a.toExpression(astNode(n.Field("Initializer")))
+	return v
+}
+
+func (a *astConv) toParenthesizedExpression(n *Node) *ParenthesizedExpression {
+	if n == nil || n.Type() != "ParenthesizedExpression" {
+		return nil
+	}
+	v := astNew(&a.tParenthesizedExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	return v
+}
+
+func (a *astConv) toParenthesizedType(n *Node) *ParenthesizedType {
+	if n == nil || n.Type() != "ParenthesizedType" {
+		return nil
+	}
+	v := astNew(&a.tParenthesizedType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	return v
+}
+
+func (a *astConv) toPostfixUnaryExpression(n *Node) *PostfixUnaryExpression {
+	if n == nil || n.Type() != "PostfixUnaryExpression" {
+		return nil
+	}
+	v := astNew(&a.tPostfixUnaryExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Operand = a.toExpression(astNode(n.Field("Operand")))
+	v.Operator = astString(n.Field("Operator"))
+	return v
+}
+
+func (a *astConv) toPrefixUnaryExpression(n *Node) *PrefixUnaryExpression {
+	if n == nil || n.Type() != "PrefixUnaryExpression" {
+		return nil
+	}
+	v := astNew(&a.tPrefixUnaryExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Operator = astString(n.Field("Operator"))
+	v.Operand = a.toExpression(astNode(n.Field("Operand")))
+	return v
+}
+
+func (a *astConv) toPropertyAccessExpression(n *Node) *PropertyAccessExpression {
+	if n == nil || n.Type() != "PropertyAccessExpression" {
+		return nil
+	}
+	v := astNew(&a.tPropertyAccessExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	v.QuestionDotToken = a.toToken(astNode(n.Field("QuestionDotToken")))
+	v.Name = a.toMemberName(astNode(n.Field("Name")))
+	return v
+}
+
+func (a *astConv) toPropertyAssignment(n *Node) *PropertyAssignment {
+	if n == nil || n.Type() != "PropertyAssignment" {
+		return nil
+	}
+	v := astNew(&a.tPropertyAssignment)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.Name = a.toPropertyName(astNode(n.Field("Name")))
+	v.QuestionToken = a.toToken(astNode(n.Field("QuestionToken")))
+	v.ExclamationToken = a.toToken(astNode(n.Field("ExclamationToken")))
+	v.Initializer = a.toExpression(astNode(n.Field("Initializer")))
+	return v
+}
+
+func (a *astConv) toPropertyDeclaration(n *Node) *PropertyDeclaration {
+	if n == nil || n.Type() != "PropertyDeclaration" {
+		return nil
+	}
+	v := astNew(&a.tPropertyDeclaration)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.Name = a.toPropertyName(astNode(n.Field("Name")))
+	v.QuestionToken = a.toToken(astNode(n.Field("QuestionToken")))
+	v.ExclamationToken = a.toToken(astNode(n.Field("ExclamationToken")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	v.Initializer = a.toExpression(astNode(n.Field("Initializer")))
+	return v
+}
+
+func (a *astConv) toPropertySignature(n *Node) *PropertySignature {
+	if n == nil || n.Type() != "PropertySignature" {
+		return nil
+	}
+	v := astNew(&a.tPropertySignature)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.Name = a.toPropertyName(astNode(n.Field("Name")))
+	v.QuestionToken = a.toToken(astNode(n.Field("QuestionToken")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	v.Initializer = a.toExpression(astNode(n.Field("Initializer")))
+	return v
+}
+
+func (a *astConv) toQualifiedName(n *Node) *QualifiedName {
+	if n == nil || n.Type() != "QualifiedName" {
+		return nil
+	}
+	v := astNew(&a.tQualifiedName)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Left = a.toEntityName(astNode(n.Field("Left")))
+	v.Right = a.toIdentifier(astNode(n.Field("Right")))
+	return v
+}
+
+func (a *astConv) toRestType(n *Node) *RestType {
+	if n == nil || n.Type() != "RestType" {
+		return nil
+	}
+	v := astNew(&a.tRestType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	return v
+}
+
+func (a *astConv) toReturnStatement(n *Node) *ReturnStatement {
+	if n == nil || n.Type() != "ReturnStatement" {
+		return nil
+	}
+	v := astNew(&a.tReturnStatement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	return v
+}
+
+func (a *astConv) toSatisfiesExpression(n *Node) *SatisfiesExpression {
+	if n == nil || n.Type() != "SatisfiesExpression" {
+		return nil
+	}
+	v := astNew(&a.tSatisfiesExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	return v
+}
+
+func (a *astConv) toSetAccessor(n *Node) *SetAccessor {
+	if n == nil || n.Type() != "SetAccessor" {
+		return nil
+	}
+	v := astNew(&a.tSetAccessor)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.Name = a.toPropertyName(astNode(n.Field("Name")))
+	v.TypeParameters = a.list5(astNode(n.Field("TypeParameters")))
+	v.Parameters = a.list6(astNode(n.Field("Parameters")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	v.Body = a.toBlock(astNode(n.Field("Body")))
+	return v
+}
+
+func (a *astConv) toShorthandPropertyAssignment(n *Node) *ShorthandPropertyAssignment {
+	if n == nil || n.Type() != "ShorthandPropertyAssignment" {
+		return nil
+	}
+	v := astNew(&a.tShorthandPropertyAssignment)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.Name = a.toIdentifier(astNode(n.Field("Name")))
+	v.QuestionToken = a.toToken(astNode(n.Field("QuestionToken")))
+	v.ExclamationToken = a.toToken(astNode(n.Field("ExclamationToken")))
+	v.EqualsToken = a.toToken(astNode(n.Field("EqualsToken")))
+	v.ObjectAssignmentInitializer = a.toExpression(astNode(n.Field("ObjectAssignmentInitializer")))
+	return v
+}
+
+func (a *astConv) toSourceFile(n *Node) *SourceFile {
+	if n == nil || n.Type() != "SourceFile" {
+		return nil
+	}
+	v := astNew(&a.tSourceFile)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Statements = a.list7(astNode(n.Field("Statements")))
+	v.EndOfFileToken = a.toEndOfFileToken(astNode(n.Field("EndOfFileToken")))
+	return v
+}
+
+func (a *astConv) toSpreadAssignment(n *Node) *SpreadAssignment {
+	if n == nil || n.Type() != "SpreadAssignment" {
+		return nil
+	}
+	v := astNew(&a.tSpreadAssignment)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	return v
+}
+
+func (a *astConv) toSpreadElement(n *Node) *SpreadElement {
+	if n == nil || n.Type() != "SpreadElement" {
+		return nil
+	}
+	v := astNew(&a.tSpreadElement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	return v
+}
+
+func (a *astConv) toSwitchStatement(n *Node) *SwitchStatement {
+	if n == nil || n.Type() != "SwitchStatement" {
+		return nil
+	}
+	v := astNew(&a.tSwitchStatement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	v.CaseBlock = a.toCaseBlock(astNode(n.Field("CaseBlock")))
+	return v
+}
+
+func (a *astConv) toTaggedTemplateExpression(n *Node) *TaggedTemplateExpression {
+	if n == nil || n.Type() != "TaggedTemplateExpression" {
+		return nil
+	}
+	v := astNew(&a.tTaggedTemplateExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Tag = a.toExpression(astNode(n.Field("Tag")))
+	v.QuestionDotToken = a.toToken(astNode(n.Field("QuestionDotToken")))
+	v.TypeArguments = a.list8(astNode(n.Field("TypeArguments")))
+	v.Template = a.toTemplateLiteral(astNode(n.Field("Template")))
+	return v
+}
+
+func (a *astConv) toTemplateExpression(n *Node) *TemplateExpression {
+	if n == nil || n.Type() != "TemplateExpression" {
+		return nil
+	}
+	v := astNew(&a.tTemplateExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Head = a.toTemplateHead(astNode(n.Field("Head")))
+	v.TemplateSpans = a.list22(astNode(n.Field("TemplateSpans")))
+	return v
+}
+
+func (a *astConv) toTemplateLiteralType(n *Node) *TemplateLiteralType {
+	if n == nil || n.Type() != "TemplateLiteralType" {
+		return nil
+	}
+	v := astNew(&a.tTemplateLiteralType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Head = a.toTemplateHead(astNode(n.Field("Head")))
+	v.TemplateSpans = a.list23(astNode(n.Field("TemplateSpans")))
+	return v
+}
+
+func (a *astConv) toTemplateLiteralTypeSpan(n *Node) *TemplateLiteralTypeSpan {
+	if n == nil || n.Type() != "TemplateLiteralTypeSpan" {
+		return nil
+	}
+	v := astNew(&a.tTemplateLiteralTypeSpan)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	v.Literal = a.toTemplateMiddleOrTail(astNode(n.Field("Literal")))
+	return v
+}
+
+func (a *astConv) toTemplateSpan(n *Node) *TemplateSpan {
+	if n == nil || n.Type() != "TemplateSpan" {
+		return nil
+	}
+	v := astNew(&a.tTemplateSpan)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	v.Literal = a.toTemplateMiddleOrTail(astNode(n.Field("Literal")))
+	return v
+}
+
+func (a *astConv) toThrowStatement(n *Node) *ThrowStatement {
+	if n == nil || n.Type() != "ThrowStatement" {
+		return nil
+	}
+	v := astNew(&a.tThrowStatement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	return v
+}
+
+func (a *astConv) toTryStatement(n *Node) *TryStatement {
+	if n == nil || n.Type() != "TryStatement" {
+		return nil
+	}
+	v := astNew(&a.tTryStatement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.TryBlock = a.toBlock(astNode(n.Field("TryBlock")))
+	v.CatchClause = a.toCatchClause(astNode(n.Field("CatchClause")))
+	v.FinallyBlock = a.toBlock(astNode(n.Field("FinallyBlock")))
+	return v
+}
+
+func (a *astConv) toTupleType(n *Node) *TupleType {
+	if n == nil || n.Type() != "TupleType" {
+		return nil
+	}
+	v := astNew(&a.tTupleType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Elements = a.list8(astNode(n.Field("Elements")))
+	return v
+}
+
+func (a *astConv) toTypeAliasDeclaration(n *Node) *TypeAliasDeclaration {
+	if n == nil || n.Type() != "TypeAliasDeclaration" {
+		return nil
+	}
+	v := astNew(&a.tTypeAliasDeclaration)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.Name = a.toIdentifier(astNode(n.Field("Name")))
+	v.TypeParameters = a.list5(astNode(n.Field("TypeParameters")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	return v
+}
+
+func (a *astConv) toTypeAssertionExpression(n *Node) *TypeAssertionExpression {
+	if n == nil || n.Type() != "TypeAssertionExpression" {
+		return nil
+	}
+	v := astNew(&a.tTypeAssertionExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	return v
+}
+
+func (a *astConv) toTypeLiteral(n *Node) *TypeLiteral {
+	if n == nil || n.Type() != "TypeLiteral" {
+		return nil
+	}
+	v := astNew(&a.tTypeLiteral)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Members = a.list15(astNode(n.Field("Members")))
+	return v
+}
+
+func (a *astConv) toTypeOfExpression(n *Node) *TypeOfExpression {
+	if n == nil || n.Type() != "TypeOfExpression" {
+		return nil
+	}
+	v := astNew(&a.tTypeOfExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	return v
+}
+
+func (a *astConv) toTypeOperator(n *Node) *TypeOperator {
+	if n == nil || n.Type() != "TypeOperator" {
+		return nil
+	}
+	v := astNew(&a.tTypeOperator)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Operator = astString(n.Field("Operator"))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	return v
+}
+
+func (a *astConv) toTypeParameter(n *Node) *TypeParameter {
+	if n == nil || n.Type() != "TypeParameter" {
+		return nil
+	}
+	v := astNew(&a.tTypeParameter)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.Name = a.toIdentifier(astNode(n.Field("Name")))
+	v.Constraint = a.toTypeNode(astNode(n.Field("Constraint")))
+	v.Default = a.toTypeNode(astNode(n.Field("Default")))
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	return v
+}
+
+func (a *astConv) toTypePredicate(n *Node) *TypePredicate {
+	if n == nil || n.Type() != "TypePredicate" {
+		return nil
+	}
+	v := astNew(&a.tTypePredicate)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.AssertsModifier = a.toToken(astNode(n.Field("AssertsModifier")))
+	v.ParameterName = a.toTypePredicateParameterName(astNode(n.Field("ParameterName")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	return v
+}
+
+func (a *astConv) toTypeQuery(n *Node) *TypeQuery {
+	if n == nil || n.Type() != "TypeQuery" {
+		return nil
+	}
+	v := astNew(&a.tTypeQuery)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.ExprName = a.toEntityName(astNode(n.Field("ExprName")))
+	v.TypeArguments = a.list8(astNode(n.Field("TypeArguments")))
+	return v
+}
+
+func (a *astConv) toTypeReference(n *Node) *TypeReference {
+	if n == nil || n.Type() != "TypeReference" {
+		return nil
+	}
+	v := astNew(&a.tTypeReference)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.TypeName = a.toEntityName(astNode(n.Field("TypeName")))
+	v.TypeArguments = a.list8(astNode(n.Field("TypeArguments")))
+	return v
+}
+
+func (a *astConv) toUnionType(n *Node) *UnionType {
+	if n == nil || n.Type() != "UnionType" {
+		return nil
+	}
+	v := astNew(&a.tUnionType)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Types = a.list8(astNode(n.Field("Types")))
+	return v
+}
+
+func (a *astConv) toVariableDeclaration(n *Node) *VariableDeclaration {
+	if n == nil || n.Type() != "VariableDeclaration" {
+		return nil
+	}
+	v := astNew(&a.tVariableDeclaration)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toBindingName(astNode(n.Field("Name")))
+	v.ExclamationToken = a.toToken(astNode(n.Field("ExclamationToken")))
+	v.Type = a.toTypeNode(astNode(n.Field("Type")))
+	v.Initializer = a.toExpression(astNode(n.Field("Initializer")))
+	return v
+}
+
+func (a *astConv) toVariableDeclarationList(n *Node) *VariableDeclarationList {
+	if n == nil || n.Type() != "VariableDeclarationList" {
+		return nil
+	}
+	v := astNew(&a.tVariableDeclarationList)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Keyword = astString(n.Field("Keyword"))
+	v.Declarations = a.list24(astNode(n.Field("Declarations")))
+	return v
+}
+
+func (a *astConv) toVariableStatement(n *Node) *VariableStatement {
+	if n == nil || n.Type() != "VariableStatement" {
+		return nil
+	}
+	v := astNew(&a.tVariableStatement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Modifiers = a.list4(astNode(n.Field("Modifiers")))
+	v.DeclarationList = a.toVariableDeclarationList(astNode(n.Field("DeclarationList")))
+	return v
+}
+
+func (a *astConv) toVoidExpression(n *Node) *VoidExpression {
+	if n == nil || n.Type() != "VoidExpression" {
+		return nil
+	}
+	v := astNew(&a.tVoidExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	return v
+}
+
+func (a *astConv) toWhileStatement(n *Node) *WhileStatement {
+	if n == nil || n.Type() != "WhileStatement" {
+		return nil
+	}
+	v := astNew(&a.tWhileStatement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	v.Statement = a.toStatement(astNode(n.Field("Statement")))
+	return v
+}
+
+func (a *astConv) toWithStatement(n *Node) *WithStatement {
+	if n == nil || n.Type() != "WithStatement" {
+		return nil
+	}
+	v := astNew(&a.tWithStatement)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	v.Statement = a.toStatement(astNode(n.Field("Statement")))
+	return v
+}
+
+func (a *astConv) toYieldExpression(n *Node) *YieldExpression {
+	if n == nil || n.Type() != "YieldExpression" {
+		return nil
+	}
+	v := astNew(&a.tYieldExpression)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.AsteriskToken = a.toToken(astNode(n.Field("AsteriskToken")))
+	v.Expression = a.toExpression(astNode(n.Field("Expression")))
+	return v
+}
+
+func (a *astConv) toArrayBindingElement(n *Node) ArrayBindingElement {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "BindingElement":
+		return a.toBindingElement(n)
+	case "OmittedExpression":
+		return a.toOmittedExpression(n)
+	}
+	return nil
+}
+
+func (a *astConv) toBindingName(n *Node) BindingName {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Identifier":
+		return a.toIdentifier(n)
+	case "ObjectBindingPattern":
+		return a.toObjectBindingPattern(n)
+	case "ArrayBindingPattern":
+		return a.toArrayBindingPattern(n)
+	}
+	return nil
+}
+
+func (a *astConv) toCaseOrDefaultClause(n *Node) CaseOrDefaultClause {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "CaseClause":
+		return a.toCaseClause(n)
+	case "DefaultClause":
+		return a.toDefaultClause(n)
+	}
+	return nil
+}
+
+func (a *astConv) toClassElement(n *Node) ClassElement {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "PropertyDeclaration":
+		return a.toPropertyDeclaration(n)
+	case "MethodDeclaration":
+		return a.toMethodDeclaration(n)
+	case "Constructor":
+		return a.toConstructor(n)
+	case "SemicolonClassElement":
+		return a.toSemicolonClassElement(n)
+	case "GetAccessor":
+		return a.toGetAccessor(n)
+	case "SetAccessor":
+		return a.toSetAccessor(n)
+	case "IndexSignature":
+		return a.toIndexSignature(n)
+	case "ClassStaticBlockDeclaration":
+		return a.toClassStaticBlockDeclaration(n)
+	}
+	return nil
+}
+
+func (a *astConv) toConciseBody(n *Node) ConciseBody {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Block":
+		return a.toBlock(n)
+	case "Identifier":
+		return a.toIdentifier(n)
+	case "PrivateIdentifier":
+		return a.toPrivateIdentifier(n)
+	case "NumericLiteral":
+		return a.toNumericLiteral(n)
+	case "BigIntLiteral":
+		return a.toBigIntLiteral(n)
+	case "StringLiteral":
+		return a.toStringLiteral(n)
+	case "RegularExpressionLiteral":
+		return a.toRegularExpressionLiteral(n)
+	case "NoSubstitutionTemplateLiteral":
+		return a.toNoSubstitutionTemplateLiteral(n)
+	case "TemplateExpression":
+		return a.toTemplateExpression(n)
+	case "ThisExpression":
+		return a.toThisExpression(n)
+	case "SuperExpression":
+		return a.toSuperExpression(n)
+	case "NullLiteral":
+		return a.toNullLiteral(n)
+	case "BooleanLiteral":
+		return a.toBooleanLiteral(n)
+	case "ImportExpression":
+		return a.toImportExpression(n)
+	case "OmittedExpression":
+		return a.toOmittedExpression(n)
+	case "ArrayLiteralExpression":
+		return a.toArrayLiteralExpression(n)
+	case "ObjectLiteralExpression":
+		return a.toObjectLiteralExpression(n)
+	case "PropertyAccessExpression":
+		return a.toPropertyAccessExpression(n)
+	case "ElementAccessExpression":
+		return a.toElementAccessExpression(n)
+	case "CallExpression":
+		return a.toCallExpression(n)
+	case "NewExpression":
+		return a.toNewExpression(n)
+	case "TaggedTemplateExpression":
+		return a.toTaggedTemplateExpression(n)
+	case "TypeAssertionExpression":
+		return a.toTypeAssertionExpression(n)
+	case "ParenthesizedExpression":
+		return a.toParenthesizedExpression(n)
+	case "FunctionExpression":
+		return a.toFunctionExpression(n)
+	case "ArrowFunction":
+		return a.toArrowFunction(n)
+	case "DeleteExpression":
+		return a.toDeleteExpression(n)
+	case "TypeOfExpression":
+		return a.toTypeOfExpression(n)
+	case "VoidExpression":
+		return a.toVoidExpression(n)
+	case "AwaitExpression":
+		return a.toAwaitExpression(n)
+	case "PrefixUnaryExpression":
+		return a.toPrefixUnaryExpression(n)
+	case "PostfixUnaryExpression":
+		return a.toPostfixUnaryExpression(n)
+	case "BinaryExpression":
+		return a.toBinaryExpression(n)
+	case "ConditionalExpression":
+		return a.toConditionalExpression(n)
+	case "YieldExpression":
+		return a.toYieldExpression(n)
+	case "SpreadElement":
+		return a.toSpreadElement(n)
+	case "ClassExpression":
+		return a.toClassExpression(n)
+	case "ExpressionWithTypeArguments":
+		return a.toExpressionWithTypeArguments(n)
+	case "AsExpression":
+		return a.toAsExpression(n)
+	case "SatisfiesExpression":
+		return a.toSatisfiesExpression(n)
+	case "NonNullExpression":
+		return a.toNonNullExpression(n)
+	case "MetaProperty":
+		return a.toMetaProperty(n)
+	case "JsxElement":
+		return a.toJsxElement(n)
+	case "JsxSelfClosingElement":
+		return a.toJsxSelfClosingElement(n)
+	case "JsxFragment":
+		return a.toJsxFragment(n)
+	}
+	return nil
+}
+
+func (a *astConv) toEntityName(n *Node) EntityName {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Identifier":
+		return a.toIdentifier(n)
+	case "QualifiedName":
+		return a.toQualifiedName(n)
+	}
+	return nil
+}
+
+func (a *astConv) toExpression(n *Node) Expression {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Identifier":
+		return a.toIdentifier(n)
+	case "PrivateIdentifier":
+		return a.toPrivateIdentifier(n)
+	case "NumericLiteral":
+		return a.toNumericLiteral(n)
+	case "BigIntLiteral":
+		return a.toBigIntLiteral(n)
+	case "StringLiteral":
+		return a.toStringLiteral(n)
+	case "RegularExpressionLiteral":
+		return a.toRegularExpressionLiteral(n)
+	case "NoSubstitutionTemplateLiteral":
+		return a.toNoSubstitutionTemplateLiteral(n)
+	case "TemplateExpression":
+		return a.toTemplateExpression(n)
+	case "ThisExpression":
+		return a.toThisExpression(n)
+	case "SuperExpression":
+		return a.toSuperExpression(n)
+	case "NullLiteral":
+		return a.toNullLiteral(n)
+	case "BooleanLiteral":
+		return a.toBooleanLiteral(n)
+	case "ImportExpression":
+		return a.toImportExpression(n)
+	case "OmittedExpression":
+		return a.toOmittedExpression(n)
+	case "ArrayLiteralExpression":
+		return a.toArrayLiteralExpression(n)
+	case "ObjectLiteralExpression":
+		return a.toObjectLiteralExpression(n)
+	case "PropertyAccessExpression":
+		return a.toPropertyAccessExpression(n)
+	case "ElementAccessExpression":
+		return a.toElementAccessExpression(n)
+	case "CallExpression":
+		return a.toCallExpression(n)
+	case "NewExpression":
+		return a.toNewExpression(n)
+	case "TaggedTemplateExpression":
+		return a.toTaggedTemplateExpression(n)
+	case "TypeAssertionExpression":
+		return a.toTypeAssertionExpression(n)
+	case "ParenthesizedExpression":
+		return a.toParenthesizedExpression(n)
+	case "FunctionExpression":
+		return a.toFunctionExpression(n)
+	case "ArrowFunction":
+		return a.toArrowFunction(n)
+	case "DeleteExpression":
+		return a.toDeleteExpression(n)
+	case "TypeOfExpression":
+		return a.toTypeOfExpression(n)
+	case "VoidExpression":
+		return a.toVoidExpression(n)
+	case "AwaitExpression":
+		return a.toAwaitExpression(n)
+	case "PrefixUnaryExpression":
+		return a.toPrefixUnaryExpression(n)
+	case "PostfixUnaryExpression":
+		return a.toPostfixUnaryExpression(n)
+	case "BinaryExpression":
+		return a.toBinaryExpression(n)
+	case "ConditionalExpression":
+		return a.toConditionalExpression(n)
+	case "YieldExpression":
+		return a.toYieldExpression(n)
+	case "SpreadElement":
+		return a.toSpreadElement(n)
+	case "ClassExpression":
+		return a.toClassExpression(n)
+	case "ExpressionWithTypeArguments":
+		return a.toExpressionWithTypeArguments(n)
+	case "AsExpression":
+		return a.toAsExpression(n)
+	case "SatisfiesExpression":
+		return a.toSatisfiesExpression(n)
+	case "NonNullExpression":
+		return a.toNonNullExpression(n)
+	case "MetaProperty":
+		return a.toMetaProperty(n)
+	case "JsxElement":
+		return a.toJsxElement(n)
+	case "JsxSelfClosingElement":
+		return a.toJsxSelfClosingElement(n)
+	case "JsxFragment":
+		return a.toJsxFragment(n)
+	}
+	return nil
+}
+
+func (a *astConv) toForInitializer(n *Node) ForInitializer {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "VariableDeclarationList":
+		return a.toVariableDeclarationList(n)
+	case "Identifier":
+		return a.toIdentifier(n)
+	case "PrivateIdentifier":
+		return a.toPrivateIdentifier(n)
+	case "NumericLiteral":
+		return a.toNumericLiteral(n)
+	case "BigIntLiteral":
+		return a.toBigIntLiteral(n)
+	case "StringLiteral":
+		return a.toStringLiteral(n)
+	case "RegularExpressionLiteral":
+		return a.toRegularExpressionLiteral(n)
+	case "NoSubstitutionTemplateLiteral":
+		return a.toNoSubstitutionTemplateLiteral(n)
+	case "TemplateExpression":
+		return a.toTemplateExpression(n)
+	case "ThisExpression":
+		return a.toThisExpression(n)
+	case "SuperExpression":
+		return a.toSuperExpression(n)
+	case "NullLiteral":
+		return a.toNullLiteral(n)
+	case "BooleanLiteral":
+		return a.toBooleanLiteral(n)
+	case "ImportExpression":
+		return a.toImportExpression(n)
+	case "OmittedExpression":
+		return a.toOmittedExpression(n)
+	case "ArrayLiteralExpression":
+		return a.toArrayLiteralExpression(n)
+	case "ObjectLiteralExpression":
+		return a.toObjectLiteralExpression(n)
+	case "PropertyAccessExpression":
+		return a.toPropertyAccessExpression(n)
+	case "ElementAccessExpression":
+		return a.toElementAccessExpression(n)
+	case "CallExpression":
+		return a.toCallExpression(n)
+	case "NewExpression":
+		return a.toNewExpression(n)
+	case "TaggedTemplateExpression":
+		return a.toTaggedTemplateExpression(n)
+	case "TypeAssertionExpression":
+		return a.toTypeAssertionExpression(n)
+	case "ParenthesizedExpression":
+		return a.toParenthesizedExpression(n)
+	case "FunctionExpression":
+		return a.toFunctionExpression(n)
+	case "ArrowFunction":
+		return a.toArrowFunction(n)
+	case "DeleteExpression":
+		return a.toDeleteExpression(n)
+	case "TypeOfExpression":
+		return a.toTypeOfExpression(n)
+	case "VoidExpression":
+		return a.toVoidExpression(n)
+	case "AwaitExpression":
+		return a.toAwaitExpression(n)
+	case "PrefixUnaryExpression":
+		return a.toPrefixUnaryExpression(n)
+	case "PostfixUnaryExpression":
+		return a.toPostfixUnaryExpression(n)
+	case "BinaryExpression":
+		return a.toBinaryExpression(n)
+	case "ConditionalExpression":
+		return a.toConditionalExpression(n)
+	case "YieldExpression":
+		return a.toYieldExpression(n)
+	case "SpreadElement":
+		return a.toSpreadElement(n)
+	case "ClassExpression":
+		return a.toClassExpression(n)
+	case "ExpressionWithTypeArguments":
+		return a.toExpressionWithTypeArguments(n)
+	case "AsExpression":
+		return a.toAsExpression(n)
+	case "SatisfiesExpression":
+		return a.toSatisfiesExpression(n)
+	case "NonNullExpression":
+		return a.toNonNullExpression(n)
+	case "MetaProperty":
+		return a.toMetaProperty(n)
+	case "JsxElement":
+		return a.toJsxElement(n)
+	case "JsxSelfClosingElement":
+		return a.toJsxSelfClosingElement(n)
+	case "JsxFragment":
+		return a.toJsxFragment(n)
+	}
+	return nil
+}
+
+func (a *astConv) toImportAttributeName(n *Node) ImportAttributeName {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Identifier":
+		return a.toIdentifier(n)
+	case "StringLiteral":
+		return a.toStringLiteral(n)
+	}
+	return nil
+}
+
+func (a *astConv) toJsxAttributeLike(n *Node) JsxAttributeLike {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "JsxAttribute":
+		return a.toJsxAttribute(n)
+	case "JsxSpreadAttribute":
+		return a.toJsxSpreadAttribute(n)
+	}
+	return nil
+}
+
+func (a *astConv) toJsxAttributeName(n *Node) JsxAttributeName {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Identifier":
+		return a.toIdentifier(n)
+	case "JsxNamespacedName":
+		return a.toJsxNamespacedName(n)
+	}
+	return nil
+}
+
+func (a *astConv) toJsxAttributeValue(n *Node) JsxAttributeValue {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "StringLiteral":
+		return a.toStringLiteral(n)
+	case "JsxExpression":
+		return a.toJsxExpression(n)
+	case "JsxElement":
+		return a.toJsxElement(n)
+	case "JsxSelfClosingElement":
+		return a.toJsxSelfClosingElement(n)
+	case "JsxFragment":
+		return a.toJsxFragment(n)
+	}
+	return nil
+}
+
+func (a *astConv) toJsxChild(n *Node) JsxChild {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "JsxText":
+		return a.toJsxText(n)
+	case "JsxExpression":
+		return a.toJsxExpression(n)
+	case "JsxElement":
+		return a.toJsxElement(n)
+	case "JsxSelfClosingElement":
+		return a.toJsxSelfClosingElement(n)
+	case "JsxFragment":
+		return a.toJsxFragment(n)
+	}
+	return nil
+}
+
+func (a *astConv) toJsxTagName(n *Node) JsxTagName {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Identifier":
+		return a.toIdentifier(n)
+	case "ThisExpression":
+		return a.toThisExpression(n)
+	case "JsxNamespacedName":
+		return a.toJsxNamespacedName(n)
+	case "PropertyAccessExpression":
+		return a.toPropertyAccessExpression(n)
+	}
+	return nil
+}
+
+func (a *astConv) toJsxTagNameStart(n *Node) JsxTagNameStart {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Identifier":
+		return a.toIdentifier(n)
+	case "ThisExpression":
+		return a.toThisExpression(n)
+	}
+	return nil
+}
+
+func (a *astConv) toLiteralTypeLiteral(n *Node) LiteralTypeLiteral {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "StringLiteral":
+		return a.toStringLiteral(n)
+	case "NumericLiteral":
+		return a.toNumericLiteral(n)
+	case "BigIntLiteral":
+		return a.toBigIntLiteral(n)
+	case "BooleanLiteral":
+		return a.toBooleanLiteral(n)
+	case "NullLiteral":
+		return a.toNullLiteral(n)
+	case "PrefixUnaryExpression":
+		return a.toPrefixUnaryExpression(n)
+	case "NoSubstitutionTemplateLiteral":
+		return a.toNoSubstitutionTemplateLiteral(n)
+	}
+	return nil
+}
+
+func (a *astConv) toMemberName(n *Node) MemberName {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Identifier":
+		return a.toIdentifier(n)
+	case "PrivateIdentifier":
+		return a.toPrivateIdentifier(n)
+	}
+	return nil
+}
+
+func (a *astConv) toModifierLike(n *Node) ModifierLike {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Modifier":
+		return a.toModifier(n)
+	case "Decorator":
+		return a.toDecorator(n)
+	}
+	return nil
+}
+
+func (a *astConv) toModuleBody(n *Node) ModuleBody {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "ModuleBlock":
+		return a.toModuleBlock(n)
+	case "ModuleDeclaration":
+		return a.toModuleDeclaration(n)
+	}
+	return nil
+}
+
+func (a *astConv) toModuleReference(n *Node) ModuleReference {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Identifier":
+		return a.toIdentifier(n)
+	case "QualifiedName":
+		return a.toQualifiedName(n)
+	case "ExternalModuleReference":
+		return a.toExternalModuleReference(n)
+	}
+	return nil
+}
+
+func (a *astConv) toNamedExportBindings(n *Node) NamedExportBindings {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "NamedExports":
+		return a.toNamedExports(n)
+	case "NamespaceExport":
+		return a.toNamespaceExport(n)
+	}
+	return nil
+}
+
+func (a *astConv) toNamedImportBindings(n *Node) NamedImportBindings {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "NamespaceImport":
+		return a.toNamespaceImport(n)
+	case "NamedImports":
+		return a.toNamedImports(n)
+	}
+	return nil
+}
+
+func (a *astConv) toObjectLiteralElement(n *Node) ObjectLiteralElement {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "PropertyAssignment":
+		return a.toPropertyAssignment(n)
+	case "ShorthandPropertyAssignment":
+		return a.toShorthandPropertyAssignment(n)
+	case "SpreadAssignment":
+		return a.toSpreadAssignment(n)
+	case "MethodDeclaration":
+		return a.toMethodDeclaration(n)
+	case "GetAccessor":
+		return a.toGetAccessor(n)
+	case "SetAccessor":
+		return a.toSetAccessor(n)
+	}
+	return nil
+}
+
+func (a *astConv) toPropertyName(n *Node) PropertyName {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Identifier":
+		return a.toIdentifier(n)
+	case "StringLiteral":
+		return a.toStringLiteral(n)
+	case "NumericLiteral":
+		return a.toNumericLiteral(n)
+	case "BigIntLiteral":
+		return a.toBigIntLiteral(n)
+	case "ComputedPropertyName":
+		return a.toComputedPropertyName(n)
+	case "PrivateIdentifier":
+		return a.toPrivateIdentifier(n)
+	case "NoSubstitutionTemplateLiteral":
+		return a.toNoSubstitutionTemplateLiteral(n)
+	}
+	return nil
+}
+
+func (a *astConv) toStatement(n *Node) Statement {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Block":
+		return a.toBlock(n)
+	case "EmptyStatement":
+		return a.toEmptyStatement(n)
+	case "VariableStatement":
+		return a.toVariableStatement(n)
+	case "ExpressionStatement":
+		return a.toExpressionStatement(n)
+	case "IfStatement":
+		return a.toIfStatement(n)
+	case "DoStatement":
+		return a.toDoStatement(n)
+	case "WhileStatement":
+		return a.toWhileStatement(n)
+	case "ForStatement":
+		return a.toForStatement(n)
+	case "ForInStatement":
+		return a.toForInStatement(n)
+	case "ForOfStatement":
+		return a.toForOfStatement(n)
+	case "ContinueStatement":
+		return a.toContinueStatement(n)
+	case "BreakStatement":
+		return a.toBreakStatement(n)
+	case "ReturnStatement":
+		return a.toReturnStatement(n)
+	case "WithStatement":
+		return a.toWithStatement(n)
+	case "SwitchStatement":
+		return a.toSwitchStatement(n)
+	case "LabeledStatement":
+		return a.toLabeledStatement(n)
+	case "ThrowStatement":
+		return a.toThrowStatement(n)
+	case "TryStatement":
+		return a.toTryStatement(n)
+	case "DebuggerStatement":
+		return a.toDebuggerStatement(n)
+	case "FunctionDeclaration":
+		return a.toFunctionDeclaration(n)
+	case "ClassDeclaration":
+		return a.toClassDeclaration(n)
+	case "InterfaceDeclaration":
+		return a.toInterfaceDeclaration(n)
+	case "TypeAliasDeclaration":
+		return a.toTypeAliasDeclaration(n)
+	case "EnumDeclaration":
+		return a.toEnumDeclaration(n)
+	case "ModuleDeclaration":
+		return a.toModuleDeclaration(n)
+	case "ImportEqualsDeclaration":
+		return a.toImportEqualsDeclaration(n)
+	case "ImportDeclaration":
+		return a.toImportDeclaration(n)
+	case "ExportAssignment":
+		return a.toExportAssignment(n)
+	case "ExportDeclaration":
+		return a.toExportDeclaration(n)
+	case "NamespaceExportDeclaration":
+		return a.toNamespaceExportDeclaration(n)
+	}
+	return nil
+}
+
+func (a *astConv) toTemplateLiteral(n *Node) TemplateLiteral {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "NoSubstitutionTemplateLiteral":
+		return a.toNoSubstitutionTemplateLiteral(n)
+	case "TemplateExpression":
+		return a.toTemplateExpression(n)
+	}
+	return nil
+}
+
+func (a *astConv) toTemplateMiddleOrTail(n *Node) TemplateMiddleOrTail {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "TemplateMiddle":
+		return a.toTemplateMiddle(n)
+	case "TemplateTail":
+		return a.toTemplateTail(n)
+	}
+	return nil
+}
+
+func (a *astConv) toTypeElement(n *Node) TypeElement {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "CallSignature":
+		return a.toCallSignature(n)
+	case "ConstructSignature":
+		return a.toConstructSignature(n)
+	case "PropertySignature":
+		return a.toPropertySignature(n)
+	case "MethodSignature":
+		return a.toMethodSignature(n)
+	case "IndexSignature":
+		return a.toIndexSignature(n)
+	case "GetAccessor":
+		return a.toGetAccessor(n)
+	case "SetAccessor":
+		return a.toSetAccessor(n)
+	}
+	return nil
+}
+
+func (a *astConv) toTypeNode(n *Node) TypeNode {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "KeywordTypeNode":
+		return a.toKeywordTypeNode(n)
+	case "ThisTypeNode":
+		return a.toThisTypeNode(n)
+	case "TypePredicate":
+		return a.toTypePredicate(n)
+	case "TypeReference":
+		return a.toTypeReference(n)
+	case "FunctionType":
+		return a.toFunctionType(n)
+	case "ConstructorType":
+		return a.toConstructorType(n)
+	case "TypeQuery":
+		return a.toTypeQuery(n)
+	case "TypeLiteral":
+		return a.toTypeLiteral(n)
+	case "ArrayType":
+		return a.toArrayType(n)
+	case "TupleType":
+		return a.toTupleType(n)
+	case "OptionalType":
+		return a.toOptionalType(n)
+	case "RestType":
+		return a.toRestType(n)
+	case "UnionType":
+		return a.toUnionType(n)
+	case "IntersectionType":
+		return a.toIntersectionType(n)
+	case "ConditionalType":
+		return a.toConditionalType(n)
+	case "InferType":
+		return a.toInferType(n)
+	case "ParenthesizedType":
+		return a.toParenthesizedType(n)
+	case "TypeOperator":
+		return a.toTypeOperator(n)
+	case "IndexedAccessType":
+		return a.toIndexedAccessType(n)
+	case "MappedType":
+		return a.toMappedType(n)
+	case "LiteralType":
+		return a.toLiteralType(n)
+	case "NamedTupleMember":
+		return a.toNamedTupleMember(n)
+	case "TemplateLiteralType":
+		return a.toTemplateLiteralType(n)
+	case "ImportType":
+		return a.toImportType(n)
+	case "JSDocAllType":
+		return a.toJSDocAllType(n)
+	case "JSDocUnknownType":
+		return a.toJSDocUnknownType(n)
+	case "JSDocNullableType":
+		return a.toJSDocNullableType(n)
+	case "JSDocNonNullableType":
+		return a.toJSDocNonNullableType(n)
+	case "JSDocFunctionType":
+		return a.toJSDocFunctionType(n)
+	}
+	return nil
+}
+
+func (a *astConv) toTypePredicateParameterName(n *Node) TypePredicateParameterName {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Identifier":
+		return a.toIdentifier(n)
+	case "ThisTypeNode":
+		return a.toThisTypeNode(n)
+	}
+	return nil
+}
+
+func (a *astConv) list0(n *Node) []any {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list0Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.anyValue(c)
+	}
+	return out
+}
+
+func (a *astConv) list1(n *Node) []*Node {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list1Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = astNode(c)
+	}
+	return out
+}
+
+func (a *astConv) list2(n *Node) []ArrayBindingElement {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list2Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toArrayBindingElement(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list3(n *Node) []Expression {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list3Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toExpression(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list4(n *Node) []ModifierLike {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list4Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toModifierLike(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list5(n *Node) []*TypeParameter {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list5Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toTypeParameter(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list6(n *Node) []*Parameter {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list6Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toParameter(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list7(n *Node) []Statement {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list7Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toStatement(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list8(n *Node) []TypeNode {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list8Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toTypeNode(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list9(n *Node) []CaseOrDefaultClause {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list9Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toCaseOrDefaultClause(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list10(n *Node) []*HeritageClause {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list10Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toHeritageClause(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list11(n *Node) []ClassElement {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list11Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toClassElement(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list12(n *Node) []*EnumMember {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list12Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toEnumMember(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list13(n *Node) []*ExpressionWithTypeArguments {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list13Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toExpressionWithTypeArguments(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list14(n *Node) []*ImportAttribute {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list14Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toImportAttribute(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list15(n *Node) []TypeElement {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list15Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toTypeElement(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list16(n *Node) []JsxAttributeLike {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list16Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toJsxAttributeLike(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list17(n *Node) []JsxChild {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list17Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toJsxChild(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list18(n *Node) []*ExportSpecifier {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list18Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toExportSpecifier(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list19(n *Node) []*ImportSpecifier {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list19Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toImportSpecifier(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list20(n *Node) []*BindingElement {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list20Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toBindingElement(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list21(n *Node) []ObjectLiteralElement {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list21Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toObjectLiteralElement(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list22(n *Node) []*TemplateSpan {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list22Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toTemplateSpan(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list23(n *Node) []*TemplateLiteralTypeSpan {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list23Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toTemplateLiteralTypeSpan(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list24(n *Node) []*VariableDeclaration {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list24Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toVariableDeclaration(astNode(c))
+	}
+	return out
+}
+
+// astConv converts nodes into typed values.
+type astConv struct {
+	match                          astChunk[Match]
+	error                          astChunk[Error]
+	tBigIntLiteral                 astChunk[BigIntLiteral]
+	tBooleanLiteral                astChunk[BooleanLiteral]
+	tDebuggerStatement             astChunk[DebuggerStatement]
+	tEmptyStatement                astChunk[EmptyStatement]
+	tEndOfFileToken                astChunk[EndOfFileToken]
+	tIdentifier                    astChunk[Identifier]
+	tImportExpression              astChunk[ImportExpression]
+	tJSDocAllType                  astChunk[JSDocAllType]
+	tJSDocUnknownType              astChunk[JSDocUnknownType]
+	tJsxClosingFragment            astChunk[JsxClosingFragment]
+	tJsxOpeningFragment            astChunk[JsxOpeningFragment]
+	tJsxText                       astChunk[JsxText]
+	tKeywordTypeNode               astChunk[KeywordTypeNode]
+	tModifier                      astChunk[Modifier]
+	tNoSubstitutionTemplateLiteral astChunk[NoSubstitutionTemplateLiteral]
+	tNullLiteral                   astChunk[NullLiteral]
+	tNumericLiteral                astChunk[NumericLiteral]
+	tOmittedExpression             astChunk[OmittedExpression]
+	tPrivateIdentifier             astChunk[PrivateIdentifier]
+	tRegularExpressionLiteral      astChunk[RegularExpressionLiteral]
+	tSemicolonClassElement         astChunk[SemicolonClassElement]
+	tStringLiteral                 astChunk[StringLiteral]
+	tSuperExpression               astChunk[SuperExpression]
+	tTemplateHead                  astChunk[TemplateHead]
+	tTemplateMiddle                astChunk[TemplateMiddle]
+	tTemplateTail                  astChunk[TemplateTail]
+	tThisExpression                astChunk[ThisExpression]
+	tThisTypeNode                  astChunk[ThisTypeNode]
+	tToken                         astChunk[Token]
+	tArrayBindingPattern           astChunk[ArrayBindingPattern]
+	tArrayLiteralExpression        astChunk[ArrayLiteralExpression]
+	tArrayType                     astChunk[ArrayType]
+	tArrowFunction                 astChunk[ArrowFunction]
+	tAsExpression                  astChunk[AsExpression]
+	tAwaitExpression               astChunk[AwaitExpression]
+	tBinaryExpression              astChunk[BinaryExpression]
+	tBindingElement                astChunk[BindingElement]
+	tBlock                         astChunk[Block]
+	tBreakStatement                astChunk[BreakStatement]
+	tCallExpression                astChunk[CallExpression]
+	tCallSignature                 astChunk[CallSignature]
+	tCaseBlock                     astChunk[CaseBlock]
+	tCaseClause                    astChunk[CaseClause]
+	tCatchClause                   astChunk[CatchClause]
+	tClassDeclaration              astChunk[ClassDeclaration]
+	tClassExpression               astChunk[ClassExpression]
+	tClassStaticBlockDeclaration   astChunk[ClassStaticBlockDeclaration]
+	tComputedPropertyName          astChunk[ComputedPropertyName]
+	tConditionalExpression         astChunk[ConditionalExpression]
+	tConditionalType               astChunk[ConditionalType]
+	tConstructSignature            astChunk[ConstructSignature]
+	tConstructor                   astChunk[Constructor]
+	tConstructorType               astChunk[ConstructorType]
+	tContinueStatement             astChunk[ContinueStatement]
+	tDecorator                     astChunk[Decorator]
+	tDefaultClause                 astChunk[DefaultClause]
+	tDeleteExpression              astChunk[DeleteExpression]
+	tDoStatement                   astChunk[DoStatement]
+	tElementAccessExpression       astChunk[ElementAccessExpression]
+	tEnumDeclaration               astChunk[EnumDeclaration]
+	tEnumMember                    astChunk[EnumMember]
+	tExportAssignment              astChunk[ExportAssignment]
+	tExportDeclaration             astChunk[ExportDeclaration]
+	tExportSpecifier               astChunk[ExportSpecifier]
+	tExpressionStatement           astChunk[ExpressionStatement]
+	tExpressionWithTypeArguments   astChunk[ExpressionWithTypeArguments]
+	tExternalModuleReference       astChunk[ExternalModuleReference]
+	tForInStatement                astChunk[ForInStatement]
+	tForOfStatement                astChunk[ForOfStatement]
+	tForStatement                  astChunk[ForStatement]
+	tFunctionDeclaration           astChunk[FunctionDeclaration]
+	tFunctionExpression            astChunk[FunctionExpression]
+	tFunctionType                  astChunk[FunctionType]
+	tGetAccessor                   astChunk[GetAccessor]
+	tHeritageClause                astChunk[HeritageClause]
+	tIfStatement                   astChunk[IfStatement]
+	tImportAttribute               astChunk[ImportAttribute]
+	tImportAttributes              astChunk[ImportAttributes]
+	tImportClause                  astChunk[ImportClause]
+	tImportDeclaration             astChunk[ImportDeclaration]
+	tImportEqualsDeclaration       astChunk[ImportEqualsDeclaration]
+	tImportSpecifier               astChunk[ImportSpecifier]
+	tImportType                    astChunk[ImportType]
+	tIndexSignature                astChunk[IndexSignature]
+	tIndexedAccessType             astChunk[IndexedAccessType]
+	tInferType                     astChunk[InferType]
+	tInterfaceDeclaration          astChunk[InterfaceDeclaration]
+	tIntersectionType              astChunk[IntersectionType]
+	tJSDocFunctionType             astChunk[JSDocFunctionType]
+	tJSDocNonNullableType          astChunk[JSDocNonNullableType]
+	tJSDocNullableType             astChunk[JSDocNullableType]
+	tJsxAttribute                  astChunk[JsxAttribute]
+	tJsxAttributes                 astChunk[JsxAttributes]
+	tJsxClosingElement             astChunk[JsxClosingElement]
+	tJsxElement                    astChunk[JsxElement]
+	tJsxExpression                 astChunk[JsxExpression]
+	tJsxFragment                   astChunk[JsxFragment]
+	tJsxNamespacedName             astChunk[JsxNamespacedName]
+	tJsxOpeningElement             astChunk[JsxOpeningElement]
+	tJsxSelfClosingElement         astChunk[JsxSelfClosingElement]
+	tJsxSpreadAttribute            astChunk[JsxSpreadAttribute]
+	tLabeledStatement              astChunk[LabeledStatement]
+	tLiteralType                   astChunk[LiteralType]
+	tMappedType                    astChunk[MappedType]
+	tMetaProperty                  astChunk[MetaProperty]
+	tMethodDeclaration             astChunk[MethodDeclaration]
+	tMethodSignature               astChunk[MethodSignature]
+	tModuleBlock                   astChunk[ModuleBlock]
+	tModuleDeclaration             astChunk[ModuleDeclaration]
+	tNamedExports                  astChunk[NamedExports]
+	tNamedImports                  astChunk[NamedImports]
+	tNamedTupleMember              astChunk[NamedTupleMember]
+	tNamespaceExport               astChunk[NamespaceExport]
+	tNamespaceExportDeclaration    astChunk[NamespaceExportDeclaration]
+	tNamespaceImport               astChunk[NamespaceImport]
+	tNewExpression                 astChunk[NewExpression]
+	tNonNullExpression             astChunk[NonNullExpression]
+	tObjectBindingPattern          astChunk[ObjectBindingPattern]
+	tObjectLiteralExpression       astChunk[ObjectLiteralExpression]
+	tOptionalType                  astChunk[OptionalType]
+	tParameter                     astChunk[Parameter]
+	tParenthesizedExpression       astChunk[ParenthesizedExpression]
+	tParenthesizedType             astChunk[ParenthesizedType]
+	tPostfixUnaryExpression        astChunk[PostfixUnaryExpression]
+	tPrefixUnaryExpression         astChunk[PrefixUnaryExpression]
+	tPropertyAccessExpression      astChunk[PropertyAccessExpression]
+	tPropertyAssignment            astChunk[PropertyAssignment]
+	tPropertyDeclaration           astChunk[PropertyDeclaration]
+	tPropertySignature             astChunk[PropertySignature]
+	tQualifiedName                 astChunk[QualifiedName]
+	tRestType                      astChunk[RestType]
+	tReturnStatement               astChunk[ReturnStatement]
+	tSatisfiesExpression           astChunk[SatisfiesExpression]
+	tSetAccessor                   astChunk[SetAccessor]
+	tShorthandPropertyAssignment   astChunk[ShorthandPropertyAssignment]
+	tSourceFile                    astChunk[SourceFile]
+	tSpreadAssignment              astChunk[SpreadAssignment]
+	tSpreadElement                 astChunk[SpreadElement]
+	tSwitchStatement               astChunk[SwitchStatement]
+	tTaggedTemplateExpression      astChunk[TaggedTemplateExpression]
+	tTemplateExpression            astChunk[TemplateExpression]
+	tTemplateLiteralType           astChunk[TemplateLiteralType]
+	tTemplateLiteralTypeSpan       astChunk[TemplateLiteralTypeSpan]
+	tTemplateSpan                  astChunk[TemplateSpan]
+	tThrowStatement                astChunk[ThrowStatement]
+	tTryStatement                  astChunk[TryStatement]
+	tTupleType                     astChunk[TupleType]
+	tTypeAliasDeclaration          astChunk[TypeAliasDeclaration]
+	tTypeAssertionExpression       astChunk[TypeAssertionExpression]
+	tTypeLiteral                   astChunk[TypeLiteral]
+	tTypeOfExpression              astChunk[TypeOfExpression]
+	tTypeOperator                  astChunk[TypeOperator]
+	tTypeParameter                 astChunk[TypeParameter]
+	tTypePredicate                 astChunk[TypePredicate]
+	tTypeQuery                     astChunk[TypeQuery]
+	tTypeReference                 astChunk[TypeReference]
+	tUnionType                     astChunk[UnionType]
+	tVariableDeclaration           astChunk[VariableDeclaration]
+	tVariableDeclarationList       astChunk[VariableDeclarationList]
+	tVariableStatement             astChunk[VariableStatement]
+	tVoidExpression                astChunk[VoidExpression]
+	tWhileStatement                astChunk[WhileStatement]
+	tWithStatement                 astChunk[WithStatement]
+	tYieldExpression               astChunk[YieldExpression]
+	list0Chunk                     astChunk[any]
+	list1Chunk                     astChunk[*Node]
+	list2Chunk                     astChunk[ArrayBindingElement]
+	list3Chunk                     astChunk[Expression]
+	list4Chunk                     astChunk[ModifierLike]
+	list5Chunk                     astChunk[*TypeParameter]
+	list6Chunk                     astChunk[*Parameter]
+	list7Chunk                     astChunk[Statement]
+	list8Chunk                     astChunk[TypeNode]
+	list9Chunk                     astChunk[CaseOrDefaultClause]
+	list10Chunk                    astChunk[*HeritageClause]
+	list11Chunk                    astChunk[ClassElement]
+	list12Chunk                    astChunk[*EnumMember]
+	list13Chunk                    astChunk[*ExpressionWithTypeArguments]
+	list14Chunk                    astChunk[*ImportAttribute]
+	list15Chunk                    astChunk[TypeElement]
+	list16Chunk                    astChunk[JsxAttributeLike]
+	list17Chunk                    astChunk[JsxChild]
+	list18Chunk                    astChunk[*ExportSpecifier]
+	list19Chunk                    astChunk[*ImportSpecifier]
+	list20Chunk                    astChunk[*BindingElement]
+	list21Chunk                    astChunk[ObjectLiteralElement]
+	list22Chunk                    astChunk[*TemplateSpan]
+	list23Chunk                    astChunk[*TemplateLiteralTypeSpan]
+	list24Chunk                    astChunk[*VariableDeclaration]
 }
 
 // ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
@@ -12207,6 +15793,2260 @@ type tslabs struct {
 func ParseAST(input string, opts ...ParseOption) (*SourceFile, error) {
 	a := &tslabs{}
 	return tparse(trules[0], input, opts, a, func(v any) *SourceFile { return tAs[*SourceFile](v) })
+}
+
+// ParseRuleAST parses the whole input with the named rule and returns its typed value.
+// Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.
+// Invalid options and undefined names return nil with an error. Rule result types:
+//
+//	main: *SourceFile
+//	sourceFile: *SourceFile
+//	topLevelStatement: Statement
+//	otherTopLevelStatement: Statement
+//	awaitFreeTopLevelStatement: Statement
+//	topLevelAwaitFreeStart: *Node
+//	endOfFile: *EndOfFileToken
+//	hashbang: *Node
+//	statement: Statement
+//	specialStatement: Statement
+//	statementSpecialStart: any
+//	statementKeyword: *Match
+//	plainStatement: Statement
+//	plainFunctionDeclaration: *FunctionDeclaration
+//	plainClassDeclaration: *ClassDeclaration
+//	decoratedDeclaration: Statement
+//	contextualDeclaration: Statement
+//	declarationKeyword: *Match
+//	block: *Block
+//	emptyStatement: *EmptyStatement
+//	variableStatement: *VariableStatement
+//	variableStatementStart: *Node
+//	letFollows: *Node
+//	usingFollows: *Node
+//	ifStatement: *IfStatement
+//	doStatement: *DoStatement
+//	whileStatement: *WhileStatement
+//	withStatement: *WithStatement
+//	forStatement: Statement
+//	forOfStatement: *ForOfStatement
+//	forInStatement: *ForInStatement
+//	forClassicStatement: *ForStatement
+//	awaitToken: *Token
+//	forInitializer: ForInitializer
+//	forDeclarationList: *VariableDeclarationList
+//	forUsingFollows: *Node
+//	continueStatement: *ContinueStatement
+//	breakStatement: *BreakStatement
+//	returnStatement: *ReturnStatement
+//	throwStatement: *ThrowStatement
+//	missingIdentifier: *Identifier
+//	debuggerStatement: *DebuggerStatement
+//	switchStatement: *SwitchStatement
+//	caseBlock: *CaseBlock
+//	caseOrDefaultClause: CaseOrDefaultClause
+//	caseClause: *CaseClause
+//	defaultClause: *DefaultClause
+//	clauseStatement: Statement
+//	tryStatement: *TryStatement
+//	catchClause: *CatchClause
+//	expressionOrLabeledStatement: Statement
+//	labeledStatement: *LabeledStatement
+//	expressionStatement: *ExpressionStatement
+//	declareStatement: *ExpressionStatement
+//	declareIdentifier: *Identifier
+//	eos: *Node
+//	canParseSemicolon: *Node
+//	nlAhead: *Node
+//	declarationStart: *Node
+//	declaration: Statement
+//	variableStatementWithModifiers: *VariableStatement
+//	variableDeclarationList: *VariableDeclarationList
+//	declarationListKeyword: *Match
+//	variableDeclarations: []*VariableDeclaration
+//	variableDeclaration: *VariableDeclaration
+//	initializer: Expression
+//	typeAnnotation: TypeNode
+//	bindingName: BindingName
+//	bindingPattern: BindingName
+//	objectBindingPattern: *ObjectBindingPattern
+//	bindingElement: *BindingElement
+//	bindingElementWithPropertyName: *BindingElement
+//	bindingElementShorthand: *BindingElement
+//	arrayBindingPattern: *ArrayBindingPattern
+//	arrayBindingElement: ArrayBindingElement
+//	omittedExpression: *OmittedExpression
+//	functionDeclaration: *FunctionDeclaration
+//	defaultModifierScan: *Match
+//	asyncModifierScan: *Match
+//	parameterList: []*Parameter
+//	parameters: []*Parameter
+//	parameter: *Parameter
+//	thisParameter: *Parameter
+//	thisIdentifier: *Identifier
+//	regularParameter: *Parameter
+//	returnType: TypeNode
+//	classDeclaration: *ClassDeclaration
+//	classExpression: *ClassExpression
+//	className: *Identifier
+//	heritageClauses: []*HeritageClause
+//	heritageClause: *HeritageClause
+//	heritageElementStart: *Node
+//	leftHandSideExpressionStart: any
+//	heritageTypes: []*ExpressionWithTypeArguments
+//	expressionWithTypeArguments: *ExpressionWithTypeArguments
+//	classMembers: []ClassElement
+//	classMemberStart: any
+//	nonMemberModifier: *Node
+//	memberModifier: *Node
+//	classMemberNameFollows: *Node
+//	classElement: ClassElement
+//	classAccessor: ClassElement
+//	classMemberNotAccessor: ClassElement
+//	accessorKeyword: *Node
+//	semicolonClassElement: *SemicolonClassElement
+//	classStaticBlock: *ClassStaticBlockDeclaration
+//	getAccessor: *GetAccessor
+//	setAccessor: *SetAccessor
+//	canFollowGetOrSet: any
+//	constructorDeclaration: *Constructor
+//	constructorName: *Node
+//	classIndexSignature: *IndexSignature
+//	methodDeclaration: *MethodDeclaration
+//	propertyDeclaration: *PropertyDeclaration
+//	interfaceDeclaration: *InterfaceDeclaration
+//	typeAliasDeclaration: *TypeAliasDeclaration
+//	intrinsicKeyword: *KeywordTypeNode
+//	enumDeclaration: *EnumDeclaration
+//	enumMember: *EnumMember
+//	moduleDeclaration: *ModuleDeclaration
+//	namespaceDeclaration: *ModuleDeclaration
+//	namespaceBody: ModuleBody
+//	nestedNamespace: *ModuleDeclaration
+//	externalModuleDeclaration: *ModuleDeclaration
+//	globalDeclaration: *ModuleDeclaration
+//	globalIdentifier: *Identifier
+//	moduleBlock: *ModuleBlock
+//	importEqualsDeclaration: *ImportEqualsDeclaration
+//	moduleReference: ModuleReference
+//	externalModuleReference: *ExternalModuleReference
+//	importDeclaration: *ImportDeclaration
+//	importClause: *ImportClause
+//	importPhase: *Match
+//	namedImportBindings: NamedImportBindings
+//	namespaceImport: *NamespaceImport
+//	namedImports: *NamedImports
+//	importSpecifier: *ImportSpecifier
+//	importSpecifierTypeAsAs: *ImportSpecifier
+//	importSpecifierTypeAsName: *ImportSpecifier
+//	importSpecifierTypeAs: *ImportSpecifier
+//	importSpecifierType: *ImportSpecifier
+//	importSpecifierPlain: *ImportSpecifier
+//	typeIdentifier: *Identifier
+//	importedName: *Identifier
+//	privateName: *Identifier
+//	asIdentifier: *Identifier
+//	moduleExportName: ImportAttributeName
+//	moduleExportNameStart: any
+//	moduleSpecifier: Expression
+//	importAttributes: *ImportAttributes
+//	importAttributesBraces: []*ImportAttribute
+//	importAttribute: *ImportAttribute
+//	exportAssignment: *ExportAssignment
+//	namespaceExportDeclaration: *NamespaceExportDeclaration
+//	exportDeclaration: *ExportDeclaration
+//	exportStarDeclaration: *ExportDeclaration
+//	exportNamedDeclaration: *ExportDeclaration
+//	namespaceExport: *NamespaceExport
+//	namedExports: *NamedExports
+//	exportSpecifier: *ExportSpecifier
+//	exportSpecifierTypeAsAs: *ExportSpecifier
+//	exportSpecifierTypeAsName: *ExportSpecifier
+//	exportSpecifierTypeAs: *ExportSpecifier
+//	exportSpecifierType: *ExportSpecifier
+//	exportSpecifierPlain: *ExportSpecifier
+//	modifiers: []any
+//	decoratorList: []*Decorator
+//	modifierList: []*Modifier
+//	staticModifierList: []*Modifier
+//	modifier: *Modifier
+//	staticModifier: *Modifier
+//	exportModifierFollows: *Node
+//	canFollowExportModifier: any
+//	defaultModifierFollows: any
+//	canFollowModifier: any
+//	literalPropertyNameStart: any
+//	classModifiers: []any
+//	classModifierList: []*Modifier
+//	classStaticModifierList: []*Modifier
+//	classModifier: *Modifier
+//	classStaticModifier: *Modifier
+//	typeMemberModifiers: []*Modifier
+//	typeParameterModifiers: []*Modifier
+//	decorator: *Decorator
+//	expression: Expression
+//	expressionAllowIn: Expression
+//	commaExpression: Expression
+//	assignmentExpression: Expression
+//	assignmentExpressionAllowIn: Expression
+//	assignmentExpressionInner: Expression
+//	yieldExpression: *YieldExpression
+//	identifierOrKeywordOrLiteralStart: any
+//	nlStart: *Match
+//	assignment: *BinaryExpression
+//	assignmentOperator: *Token
+//	conditionalOrBinaryExpression: Expression
+//	conditionalWhenTrue: Expression
+//	conditionalWhenFalse: Expression
+//	conditionalQuestionToken: *Token
+//	arrowFunction: *ArrowFunction
+//	arrowAsyncModifier: []*Modifier
+//	asyncKeywordModifier: *Modifier
+//	arrowTypeParameters: []*TypeParameter
+//	tsxArrowTypeParametersStart: *Node
+//	arrowParenthesisIsNotParameterList: *Node
+//	simpleArrowFunction: *ArrowFunction
+//	simpleArrowParameter: *Parameter
+//	asyncSimpleArrowFunction: *ArrowFunction
+//	arrowBody: ConciseBody
+//	binaryExpression: Expression
+//	coalesceOrToken: *Token
+//	ampersandAmpersandToken: *Token
+//	barToken: *Token
+//	caretToken: *Token
+//	ampersandToken: *Token
+//	equalityToken: *Token
+//	relationalToken: *Token
+//	shiftToken: *Token
+//	additiveToken: *Token
+//	multiplicativeToken: *Token
+//	asteriskAsteriskToken: *Token
+//	binaryOperatorStart: any
+//	unaryExpression: Expression
+//	unaryOperatorStart: *Node
+//	simpleUnaryExpression: Expression
+//	prefixUnaryExpression: *PrefixUnaryExpression
+//	deleteExpression: *DeleteExpression
+//	typeOfExpression: *TypeOfExpression
+//	voidExpression: *VoidExpression
+//	awaitExpression: *AwaitExpression
+//	typeAssertion: *TypeAssertionExpression
+//	jsxUnaryExpression: Expression
+//	updateExpression: Expression
+//	postfixOrLeftHandSideExpression: Expression
+//	prefixUpdateExpression: *PrefixUnaryExpression
+//	jsxPrimaryExpression: Expression
+//	leftHandSideExpression: Expression
+//	heritageExpression: Expression
+//	newTarget: Expression
+//	memberName: MemberName
+//	questionDotToken: *Token
+//	typeArgumentsInExpression: []TypeNode
+//	typeArgumentsCanFollow: *Node
+//	expressionStart: any
+//	arguments: []Expression
+//	argumentList: []Expression
+//	argument: Expression
+//	spreadElement: *SpreadElement
+//	superExpression: *SuperExpression
+//	superKeyword: *SuperExpression
+//	importCallee: *ImportExpression
+//	importMetaProperty: *MetaProperty
+//	primaryExpression: Expression
+//	wordPrimary: Expression
+//	symbolPrimary: Expression
+//	numericOrBigIntLiteral: Expression
+//	thisKeyword: *ThisExpression
+//	nullKeyword: *NullLiteral
+//	booleanKeyword: *BooleanLiteral
+//	parenthesizedExpression: *ParenthesizedExpression
+//	arrayLiteralExpression: *ArrayLiteralExpression
+//	arrayElement: Expression
+//	objectLiteralExpression: *ObjectLiteralExpression
+//	objectLiteralElement: ObjectLiteralElement
+//	objectAccessor: ObjectLiteralElement
+//	objectMemberNotAccessor: ObjectLiteralElement
+//	objectLiteralElementStart: any
+//	spreadAssignment: *SpreadAssignment
+//	objectGetAccessor: *GetAccessor
+//	objectSetAccessor: *SetAccessor
+//	objectMethod: *MethodDeclaration
+//	shorthandPropertyAssignment: *ShorthandPropertyAssignment
+//	propertyAssignment: *PropertyAssignment
+//	functionExpression: *FunctionExpression
+//	asyncFunctionModifier: []*Modifier
+//	classExpressionPrimary: *ClassExpression
+//	newExpression: Expression
+//	newTargetMetaProperty: *MetaProperty
+//	newExpressionWithTarget: *NewExpression
+//	templateExpression: *TemplateExpression
+//	templateSpans: []*TemplateSpan
+//	templateSpanMiddle: *TemplateSpan
+//	templateSpanTail: *TemplateSpan
+//	taggedTemplate: TemplateLiteral
+//	rawTemplateExpression: *TemplateExpression
+//	rawTemplateSpans: []*TemplateSpan
+//	rawTemplateSpanMiddle: *TemplateSpan
+//	rawTemplateSpanTail: *TemplateSpan
+//	jsxElementOrFragment: Expression
+//	jsxSelfClosingElement: *JsxSelfClosingElement
+//	jsxElement: *JsxElement
+//	jsxOpeningElement: *JsxOpeningElement
+//	jsxClosingElement: *JsxClosingElement
+//	jsxFragment: *JsxFragment
+//	jsxOpeningFragment: *JsxOpeningFragment
+//	jsxClosingFragment: *JsxClosingFragment
+//	jsxElementName: JsxTagName
+//	jsxMemberName: JsxTagName
+//	jsxTagNameStart: JsxTagNameStart
+//	jsxThis: *ThisExpression
+//	jsxIdentifier: *Identifier
+//	jsxNamespacedName: *JsxNamespacedName
+//	jsxAttributes: *JsxAttributes
+//	jsxAttributeLike: JsxAttributeLike
+//	jsxAttribute: *JsxAttribute
+//	jsxAttributeName: JsxAttributeName
+//	jsxAttributeValue: JsxAttributeValue
+//	jsxElementOrFragmentValue: JsxAttributeValue
+//	jsxAttributeString: *StringLiteral
+//	jsxAttributeExpression: *JsxExpression
+//	jsxSpreadAttribute: *JsxSpreadAttribute
+//	jsxChild: JsxChild
+//	jsxText: *JsxText
+//	jsxChildExpression: *JsxExpression
+//	jsxChildElement: JsxChild
+//	typeNode: TypeNode
+//	typeInner: TypeNode
+//	typeNoConditional: TypeNode
+//	typeAllowConditional: TypeNode
+//	conditionalOrHigher: TypeNode
+//	typeOrTypePredicate: TypeNode
+//	typePredicate: *TypePredicate
+//	functionType: *FunctionType
+//	constructorType: *ConstructorType
+//	abstractModifier: []*Modifier
+//	abstractKeywordModifier: *Modifier
+//	returnTypeOfType: TypeNode
+//	unionOrHigher: TypeNode
+//	leadingUnionType: *UnionType
+//	plainOrUnionType: TypeNode
+//	intersectionOrHigher: TypeNode
+//	leadingIntersectionType: *IntersectionType
+//	plainOrIntersectionType: TypeNode
+//	typeOperatorOrHigher: TypeNode
+//	postfixTypeAllowConditional: TypeNode
+//	typeOperator: *TypeOperator
+//	inferType: *InferType
+//	inferTypeParameter: *TypeParameter
+//	postfixType: TypeNode
+//	postfixTypeNoQuestion: TypeNode
+//	nonArrayType: TypeNode
+//	wordType: TypeNode
+//	specialWordType: TypeNode
+//	symbolType: TypeNode
+//	keywordType: *KeywordTypeNode
+//	literalType: *LiteralType
+//	negativeLiteral: *PrefixUnaryExpression
+//	thisType: *ThisTypeNode
+//	thisTypePredicate: *TypePredicate
+//	assertsTypePredicate: *TypePredicate
+//	assertsToken: *Token
+//	identifierOrKeywordStart: any
+//	typeQuery: *TypeQuery
+//	importType: *ImportType
+//	importTypeAttributes: *ImportAttributes
+//	typeReference: *TypeReference
+//	functionTypeReference: *TypeReference
+//	functionIdentifier: *Identifier
+//	parenthesizedType: *ParenthesizedType
+//	unambiguousFunctionTypeStart: *Node
+//	templateLiteralType: *TemplateLiteralType
+//	templateTypeSpans: []*TemplateLiteralTypeSpan
+//	templateTypeSpanMiddle: *TemplateLiteralTypeSpan
+//	templateTypeSpanTail: *TemplateLiteralTypeSpan
+//	jsdocAllType: *JSDocAllType
+//	jsdocUnknownType: *JSDocUnknownType
+//	jsdocNullableType: *JSDocNullableType
+//	jsdocNonNullableType: *JSDocNonNullableType
+//	jsdocFunctionType: *JSDocFunctionType
+//	jsdocParameter: *Parameter
+//	jsdocParameterName: *Identifier
+//	entityName: EntityName
+//	entityNameAllowReserved: EntityName
+//	typeArguments: []TypeNode
+//	typeList: []TypeNode
+//	typeParameters: []*TypeParameter
+//	typeParameter: *TypeParameter
+//	tupleType: *TupleType
+//	tupleElement: TypeNode
+//	namedTupleMember: *NamedTupleMember
+//	tupleElementType: TypeNode
+//	restType: *RestType
+//	optionalType: *OptionalType
+//	typeLiteral: *TypeLiteral
+//	objectTypeMembers: []TypeElement
+//	typeMemberStart: any
+//	typeMemberNameFollows: *Node
+//	literalPropertyNameToken: any
+//	mappedTypeStart: *Node
+//	mappedType: *MappedType
+//	mappedTypeParameter: *TypeParameter
+//	mappedReadonlyToken: *Token
+//	mappedPlusMinusReadonly: *Token
+//	mappedQuestionToken: *Token
+//	mappedPlusMinusQuestion: *Token
+//	plusMinusToken: *Token
+//	readonlyToken: *Token
+//	typeMember: TypeElement
+//	typeAccessor: TypeElement
+//	typeMemberNotAccessor: TypeElement
+//	callSignature: *CallSignature
+//	constructSignature: *ConstructSignature
+//	typeGetAccessor: *GetAccessor
+//	typeSetAccessor: *SetAccessor
+//	typeIndexSignature: *IndexSignature
+//	indexSignatureStart: *Node
+//	modifierKeyword: *Node
+//	methodSignature: *MethodSignature
+//	propertySignature: *PropertySignature
+//	typeMemberSemicolon: *Node
+//	typeStart: any
+//	propertyName: PropertyName
+//	computedPropertyName: *ComputedPropertyName
+//	questionToken: *Token
+//	exclamationToken: *Token
+//	asteriskToken: *Token
+//	dotDotDotToken: *Token
+//	equalsGreaterThanToken: *Token
+//	colonToken: *Token
+//	equalsToken: *Token
+//	commaToken: *Token
+//	identifier: *Identifier
+//	bindingIdentifier: *Identifier
+//	identifierName: *Identifier
+//	privateIdentifier: *PrivateIdentifier
+//	identifierNameOrPrivate: *Identifier
+//	anyKeyword: *Node
+//	reservedWord: *Node
+//	identifierRest: *Node
+//	idStart: any
+//	idStartOther: *Node
+//	idPart: any
+//	identifierStartEscape: *Node
+//	identifierPartEscape: *Node
+//	surrogate: *Node
+//	asciiIdentifierStartHex: any
+//	nonASCIIBraced: *Node
+//	unicodeEscape: *Node
+//	unicodeBraced: *Node
+//	hex: *Match
+//	numericLiteral: *NumericLiteral
+//	bigIntLiteral: *BigIntLiteral
+//	decimalLiteral: *Node
+//	decimalInteger: *Node
+//	decimalDigits: *Node
+//	exponentPart: *Node
+//	hexLiteral: *Node
+//	binaryLiteral: *Node
+//	octalLiteral: *Node
+//	stringLiteral: *StringLiteral
+//	escapeSequence: *Node
+//	noSubstitutionTemplateLiteral: *NoSubstitutionTemplateLiteral
+//	templateHead: *TemplateHead
+//	templateMiddle: *TemplateMiddle
+//	templateTail: *TemplateTail
+//	templateCharacters: []any
+//	rawNoSubstitutionTemplateLiteral: *NoSubstitutionTemplateLiteral
+//	rawTemplateHead: *TemplateHead
+//	rawTemplateMiddle: *TemplateMiddle
+//	rawTemplateTail: *TemplateTail
+//	rawTemplateCharacters: []any
+//	regularExpressionLiteral: *RegularExpressionLiteral
+//	ws: []*Node
+//	sp: []*Node
+//	arrayBindingElementList: []ArrayBindingElement
+//	arrayElementList: []Expression
+//	bindingElementList: []*BindingElement
+//	enumMemberList: []*EnumMember
+//	exportSpecifierList: []*ExportSpecifier
+//	importAttributeList: []*ImportAttribute
+//	importSpecifierList: []*ImportSpecifier
+//	jsdocParameterList: []*Parameter
+//	jsxAttributeLikeList: []JsxAttributeLike
+//	objectLiteralElementList: []ObjectLiteralElement
+//	tupleElementList: []TypeNode
+//	typeParameterList: []*TypeParameter
+//	typeParameterStart: any
+//	uniIdStart: *Node
+//	uniIdPart: *Node
+func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
+	o, err := resolveOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+	switch name {
+	case "main":
+		a := &tslabs{}
+		return tparseResolved(trules[0], input, o, a, func(v any) *SourceFile { return tAs[*SourceFile](v) })
+	case "sourceFile":
+		a := &tslabs{}
+		return tparseResolved(trules[1], input, o, a, func(v any) *SourceFile { return tAs[*SourceFile](v) })
+	case "topLevelStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[2], input, o, a, func(v any) Statement { return tAs[Statement](tpub(v)) })
+	case "otherTopLevelStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[3], input, o, a, func(v any) Statement { return tAs[Statement](tpub(v)) })
+	case "awaitFreeTopLevelStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[4], input, o, a, func(v any) Statement { return tAs[Statement](tpub(v)) })
+	case "topLevelAwaitFreeStart":
+		n, err := parseResolved(rules[5], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "endOfFile":
+		a := &tslabs{}
+		return tparseResolved(trules[6], input, o, a, func(v any) *EndOfFileToken { return tAs[*EndOfFileToken](v) })
+	case "hashbang":
+		n, err := parseResolved(rules[7], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "statement":
+		a := &tslabs{}
+		return tparseResolved(trules[8], input, o, a, func(v any) Statement { return tAs[Statement](tpub(v)) })
+	case "specialStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[9], input, o, a, func(v any) Statement { return tAs[Statement](tpub(v)) })
+	case "statementSpecialStart":
+		n, err := parseResolved(rules[10], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "statementKeyword":
+		a := &tslabs{}
+		return tparseResolved(trules[11], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "plainStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[12], input, o, a, func(v any) Statement { return tAs[Statement](tpub(v)) })
+	case "plainFunctionDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[13], input, o, a, func(v any) *FunctionDeclaration { return tAs[*FunctionDeclaration](v) })
+	case "plainClassDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[14], input, o, a, func(v any) *ClassDeclaration { return tAs[*ClassDeclaration](v) })
+	case "decoratedDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[15], input, o, a, func(v any) Statement { return tAs[Statement](tpub(v)) })
+	case "contextualDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[16], input, o, a, func(v any) Statement { return tAs[Statement](tpub(v)) })
+	case "declarationKeyword":
+		a := &tslabs{}
+		return tparseResolved(trules[17], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "block":
+		a := &tslabs{}
+		return tparseResolved(trules[18], input, o, a, func(v any) *Block { return tAs[*Block](v) })
+	case "emptyStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[19], input, o, a, func(v any) *EmptyStatement { return tAs[*EmptyStatement](v) })
+	case "variableStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[20], input, o, a, func(v any) *VariableStatement { return tAs[*VariableStatement](v) })
+	case "variableStatementStart":
+		n, err := parseResolved(rules[21], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "letFollows":
+		n, err := parseResolved(rules[22], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "usingFollows":
+		n, err := parseResolved(rules[23], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ifStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[24], input, o, a, func(v any) *IfStatement { return tAs[*IfStatement](v) })
+	case "doStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[25], input, o, a, func(v any) *DoStatement { return tAs[*DoStatement](v) })
+	case "whileStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[26], input, o, a, func(v any) *WhileStatement { return tAs[*WhileStatement](v) })
+	case "withStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[27], input, o, a, func(v any) *WithStatement { return tAs[*WithStatement](v) })
+	case "forStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[28], input, o, a, func(v any) Statement { return tAs[Statement](tpub(v)) })
+	case "forOfStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[29], input, o, a, func(v any) *ForOfStatement { return tAs[*ForOfStatement](v) })
+	case "forInStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[30], input, o, a, func(v any) *ForInStatement { return tAs[*ForInStatement](v) })
+	case "forClassicStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[31], input, o, a, func(v any) *ForStatement { return tAs[*ForStatement](v) })
+	case "awaitToken":
+		a := &tslabs{}
+		return tparseResolved(trules[32], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "forInitializer":
+		a := &tslabs{}
+		return tparseResolved(trules[33], input, o, a, func(v any) ForInitializer { return tAs[ForInitializer](tpub(v)) })
+	case "forDeclarationList":
+		a := &tslabs{}
+		return tparseResolved(trules[34], input, o, a, func(v any) *VariableDeclarationList { return tAs[*VariableDeclarationList](v) })
+	case "forUsingFollows":
+		n, err := parseResolved(rules[35], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "continueStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[36], input, o, a, func(v any) *ContinueStatement { return tAs[*ContinueStatement](v) })
+	case "breakStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[37], input, o, a, func(v any) *BreakStatement { return tAs[*BreakStatement](v) })
+	case "returnStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[38], input, o, a, func(v any) *ReturnStatement { return tAs[*ReturnStatement](v) })
+	case "throwStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[39], input, o, a, func(v any) *ThrowStatement { return tAs[*ThrowStatement](v) })
+	case "missingIdentifier":
+		a := &tslabs{}
+		return tparseResolved(trules[40], input, o, a, func(v any) *Identifier { return tAs[*Identifier](v) })
+	case "debuggerStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[41], input, o, a, func(v any) *DebuggerStatement { return tAs[*DebuggerStatement](v) })
+	case "switchStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[42], input, o, a, func(v any) *SwitchStatement { return tAs[*SwitchStatement](v) })
+	case "caseBlock":
+		a := &tslabs{}
+		return tparseResolved(trules[43], input, o, a, func(v any) *CaseBlock { return tAs[*CaseBlock](v) })
+	case "caseOrDefaultClause":
+		a := &tslabs{}
+		return tparseResolved(trules[44], input, o, a, func(v any) CaseOrDefaultClause { return tAs[CaseOrDefaultClause](tpub(v)) })
+	case "caseClause":
+		a := &tslabs{}
+		return tparseResolved(trules[45], input, o, a, func(v any) *CaseClause { return tAs[*CaseClause](v) })
+	case "defaultClause":
+		a := &tslabs{}
+		return tparseResolved(trules[46], input, o, a, func(v any) *DefaultClause { return tAs[*DefaultClause](v) })
+	case "clauseStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[47], input, o, a, func(v any) Statement { return tAs[Statement](tpub(v)) })
+	case "tryStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[48], input, o, a, func(v any) *TryStatement { return tAs[*TryStatement](v) })
+	case "catchClause":
+		a := &tslabs{}
+		return tparseResolved(trules[49], input, o, a, func(v any) *CatchClause { return tAs[*CatchClause](v) })
+	case "expressionOrLabeledStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[50], input, o, a, func(v any) Statement { return tAs[Statement](tpub(v)) })
+	case "labeledStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[51], input, o, a, func(v any) *LabeledStatement { return tAs[*LabeledStatement](v) })
+	case "expressionStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[52], input, o, a, func(v any) *ExpressionStatement { return tAs[*ExpressionStatement](v) })
+	case "declareStatement":
+		a := &tslabs{}
+		return tparseResolved(trules[53], input, o, a, func(v any) *ExpressionStatement { return tAs[*ExpressionStatement](v) })
+	case "declareIdentifier":
+		a := &tslabs{}
+		return tparseResolved(trules[54], input, o, a, func(v any) *Identifier { return tAs[*Identifier](v) })
+	case "eos":
+		n, err := parseResolved(rules[55], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "canParseSemicolon":
+		n, err := parseResolved(rules[56], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "nlAhead":
+		n, err := parseResolved(rules[57], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "declarationStart":
+		n, err := parseResolved(rules[58], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "declaration":
+		a := &tslabs{}
+		return tparseResolved(trules[59], input, o, a, func(v any) Statement { return tAs[Statement](tpub(v)) })
+	case "variableStatementWithModifiers":
+		a := &tslabs{}
+		return tparseResolved(trules[60], input, o, a, func(v any) *VariableStatement { return tAs[*VariableStatement](v) })
+	case "variableDeclarationList":
+		a := &tslabs{}
+		return tparseResolved(trules[61], input, o, a, func(v any) *VariableDeclarationList { return tAs[*VariableDeclarationList](v) })
+	case "declarationListKeyword":
+		a := &tslabs{}
+		return tparseResolved(trules[62], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "variableDeclarations":
+		a := &tslabs{}
+		return tparseResolved(trules[63], input, o, a, func(v any) []*VariableDeclaration { return tl0(a, v) })
+	case "variableDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[64], input, o, a, func(v any) *VariableDeclaration { return tAs[*VariableDeclaration](v) })
+	case "initializer":
+		a := &tslabs{}
+		return tparseResolved(trules[65], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "typeAnnotation":
+		a := &tslabs{}
+		return tparseResolved(trules[66], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "bindingName":
+		a := &tslabs{}
+		return tparseResolved(trules[67], input, o, a, func(v any) BindingName { return tAs[BindingName](tpub(v)) })
+	case "bindingPattern":
+		a := &tslabs{}
+		return tparseResolved(trules[68], input, o, a, func(v any) BindingName { return tAs[BindingName](tpub(v)) })
+	case "objectBindingPattern":
+		a := &tslabs{}
+		return tparseResolved(trules[69], input, o, a, func(v any) *ObjectBindingPattern { return tAs[*ObjectBindingPattern](v) })
+	case "bindingElement":
+		a := &tslabs{}
+		return tparseResolved(trules[70], input, o, a, func(v any) *BindingElement { return tAs[*BindingElement](v) })
+	case "bindingElementWithPropertyName":
+		a := &tslabs{}
+		return tparseResolved(trules[71], input, o, a, func(v any) *BindingElement { return tAs[*BindingElement](v) })
+	case "bindingElementShorthand":
+		a := &tslabs{}
+		return tparseResolved(trules[72], input, o, a, func(v any) *BindingElement { return tAs[*BindingElement](v) })
+	case "arrayBindingPattern":
+		a := &tslabs{}
+		return tparseResolved(trules[73], input, o, a, func(v any) *ArrayBindingPattern { return tAs[*ArrayBindingPattern](v) })
+	case "arrayBindingElement":
+		a := &tslabs{}
+		return tparseResolved(trules[74], input, o, a, func(v any) ArrayBindingElement { return tAs[ArrayBindingElement](tpub(v)) })
+	case "omittedExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[75], input, o, a, func(v any) *OmittedExpression { return tAs[*OmittedExpression](v) })
+	case "functionDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[76], input, o, a, func(v any) *FunctionDeclaration { return tAs[*FunctionDeclaration](v) })
+	case "defaultModifierScan":
+		a := &tslabs{}
+		return tparseResolved(trules[77], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "asyncModifierScan":
+		a := &tslabs{}
+		return tparseResolved(trules[78], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "parameterList":
+		a := &tslabs{}
+		return tparseResolved(trules[79], input, o, a, func(v any) []*Parameter { return tl1(a, v) })
+	case "parameters":
+		a := &tslabs{}
+		return tparseResolved(trules[80], input, o, a, func(v any) []*Parameter { return tl1(a, v) })
+	case "parameter":
+		a := &tslabs{}
+		return tparseResolved(trules[81], input, o, a, func(v any) *Parameter { return tAs[*Parameter](v) })
+	case "thisParameter":
+		a := &tslabs{}
+		return tparseResolved(trules[82], input, o, a, func(v any) *Parameter { return tAs[*Parameter](v) })
+	case "thisIdentifier":
+		a := &tslabs{}
+		return tparseResolved(trules[83], input, o, a, func(v any) *Identifier { return tAs[*Identifier](v) })
+	case "regularParameter":
+		a := &tslabs{}
+		return tparseResolved(trules[84], input, o, a, func(v any) *Parameter { return tAs[*Parameter](v) })
+	case "returnType":
+		a := &tslabs{}
+		return tparseResolved(trules[85], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "classDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[86], input, o, a, func(v any) *ClassDeclaration { return tAs[*ClassDeclaration](v) })
+	case "classExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[87], input, o, a, func(v any) *ClassExpression { return tAs[*ClassExpression](v) })
+	case "className":
+		a := &tslabs{}
+		return tparseResolved(trules[88], input, o, a, func(v any) *Identifier { return tAs[*Identifier](v) })
+	case "heritageClauses":
+		a := &tslabs{}
+		return tparseResolved(trules[89], input, o, a, func(v any) []*HeritageClause { return tl2(a, v) })
+	case "heritageClause":
+		a := &tslabs{}
+		return tparseResolved(trules[90], input, o, a, func(v any) *HeritageClause { return tAs[*HeritageClause](v) })
+	case "heritageElementStart":
+		n, err := parseResolved(rules[91], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "leftHandSideExpressionStart":
+		n, err := parseResolved(rules[92], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "heritageTypes":
+		a := &tslabs{}
+		return tparseResolved(trules[93], input, o, a, func(v any) []*ExpressionWithTypeArguments { return tl3(a, v) })
+	case "expressionWithTypeArguments":
+		a := &tslabs{}
+		return tparseResolved(trules[94], input, o, a, func(v any) *ExpressionWithTypeArguments { return tAs[*ExpressionWithTypeArguments](v) })
+	case "classMembers":
+		a := &tslabs{}
+		return tparseResolved(trules[95], input, o, a, func(v any) []ClassElement { return tl4(a, v) })
+	case "classMemberStart":
+		n, err := parseResolved(rules[96], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "nonMemberModifier":
+		n, err := parseResolved(rules[97], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "memberModifier":
+		n, err := parseResolved(rules[98], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "classMemberNameFollows":
+		n, err := parseResolved(rules[99], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "classElement":
+		a := &tslabs{}
+		return tparseResolved(trules[100], input, o, a, func(v any) ClassElement { return tAs[ClassElement](tpub(v)) })
+	case "classAccessor":
+		a := &tslabs{}
+		return tparseResolved(trules[101], input, o, a, func(v any) ClassElement { return tAs[ClassElement](tpub(v)) })
+	case "classMemberNotAccessor":
+		a := &tslabs{}
+		return tparseResolved(trules[102], input, o, a, func(v any) ClassElement { return tAs[ClassElement](tpub(v)) })
+	case "accessorKeyword":
+		n, err := parseResolved(rules[103], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "semicolonClassElement":
+		a := &tslabs{}
+		return tparseResolved(trules[104], input, o, a, func(v any) *SemicolonClassElement { return tAs[*SemicolonClassElement](v) })
+	case "classStaticBlock":
+		a := &tslabs{}
+		return tparseResolved(trules[105], input, o, a, func(v any) *ClassStaticBlockDeclaration { return tAs[*ClassStaticBlockDeclaration](v) })
+	case "getAccessor":
+		a := &tslabs{}
+		return tparseResolved(trules[106], input, o, a, func(v any) *GetAccessor { return tAs[*GetAccessor](v) })
+	case "setAccessor":
+		a := &tslabs{}
+		return tparseResolved(trules[107], input, o, a, func(v any) *SetAccessor { return tAs[*SetAccessor](v) })
+	case "canFollowGetOrSet":
+		n, err := parseResolved(rules[108], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "constructorDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[109], input, o, a, func(v any) *Constructor { return tAs[*Constructor](v) })
+	case "constructorName":
+		n, err := parseResolved(rules[110], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "classIndexSignature":
+		a := &tslabs{}
+		return tparseResolved(trules[111], input, o, a, func(v any) *IndexSignature { return tAs[*IndexSignature](v) })
+	case "methodDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[112], input, o, a, func(v any) *MethodDeclaration { return tAs[*MethodDeclaration](v) })
+	case "propertyDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[113], input, o, a, func(v any) *PropertyDeclaration { return tAs[*PropertyDeclaration](v) })
+	case "interfaceDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[114], input, o, a, func(v any) *InterfaceDeclaration { return tAs[*InterfaceDeclaration](v) })
+	case "typeAliasDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[115], input, o, a, func(v any) *TypeAliasDeclaration { return tAs[*TypeAliasDeclaration](v) })
+	case "intrinsicKeyword":
+		a := &tslabs{}
+		return tparseResolved(trules[116], input, o, a, func(v any) *KeywordTypeNode { return tAs[*KeywordTypeNode](v) })
+	case "enumDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[117], input, o, a, func(v any) *EnumDeclaration { return tAs[*EnumDeclaration](v) })
+	case "enumMember":
+		a := &tslabs{}
+		return tparseResolved(trules[118], input, o, a, func(v any) *EnumMember { return tAs[*EnumMember](v) })
+	case "moduleDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[119], input, o, a, func(v any) *ModuleDeclaration { return tAs[*ModuleDeclaration](v) })
+	case "namespaceDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[120], input, o, a, func(v any) *ModuleDeclaration { return tAs[*ModuleDeclaration](v) })
+	case "namespaceBody":
+		a := &tslabs{}
+		return tparseResolved(trules[121], input, o, a, func(v any) ModuleBody { return tAs[ModuleBody](tpub(v)) })
+	case "nestedNamespace":
+		a := &tslabs{}
+		return tparseResolved(trules[122], input, o, a, func(v any) *ModuleDeclaration { return tAs[*ModuleDeclaration](v) })
+	case "externalModuleDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[123], input, o, a, func(v any) *ModuleDeclaration { return tAs[*ModuleDeclaration](v) })
+	case "globalDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[124], input, o, a, func(v any) *ModuleDeclaration { return tAs[*ModuleDeclaration](v) })
+	case "globalIdentifier":
+		a := &tslabs{}
+		return tparseResolved(trules[125], input, o, a, func(v any) *Identifier { return tAs[*Identifier](v) })
+	case "moduleBlock":
+		a := &tslabs{}
+		return tparseResolved(trules[126], input, o, a, func(v any) *ModuleBlock { return tAs[*ModuleBlock](v) })
+	case "importEqualsDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[127], input, o, a, func(v any) *ImportEqualsDeclaration { return tAs[*ImportEqualsDeclaration](v) })
+	case "moduleReference":
+		a := &tslabs{}
+		return tparseResolved(trules[128], input, o, a, func(v any) ModuleReference { return tAs[ModuleReference](tpub(v)) })
+	case "externalModuleReference":
+		a := &tslabs{}
+		return tparseResolved(trules[129], input, o, a, func(v any) *ExternalModuleReference { return tAs[*ExternalModuleReference](v) })
+	case "importDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[130], input, o, a, func(v any) *ImportDeclaration { return tAs[*ImportDeclaration](v) })
+	case "importClause":
+		a := &tslabs{}
+		return tparseResolved(trules[131], input, o, a, func(v any) *ImportClause { return tAs[*ImportClause](v) })
+	case "importPhase":
+		a := &tslabs{}
+		return tparseResolved(trules[132], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "namedImportBindings":
+		a := &tslabs{}
+		return tparseResolved(trules[133], input, o, a, func(v any) NamedImportBindings { return tAs[NamedImportBindings](tpub(v)) })
+	case "namespaceImport":
+		a := &tslabs{}
+		return tparseResolved(trules[134], input, o, a, func(v any) *NamespaceImport { return tAs[*NamespaceImport](v) })
+	case "namedImports":
+		a := &tslabs{}
+		return tparseResolved(trules[135], input, o, a, func(v any) *NamedImports { return tAs[*NamedImports](v) })
+	case "importSpecifier":
+		a := &tslabs{}
+		return tparseResolved(trules[136], input, o, a, func(v any) *ImportSpecifier { return tAs[*ImportSpecifier](v) })
+	case "importSpecifierTypeAsAs":
+		a := &tslabs{}
+		return tparseResolved(trules[137], input, o, a, func(v any) *ImportSpecifier { return tAs[*ImportSpecifier](v) })
+	case "importSpecifierTypeAsName":
+		a := &tslabs{}
+		return tparseResolved(trules[138], input, o, a, func(v any) *ImportSpecifier { return tAs[*ImportSpecifier](v) })
+	case "importSpecifierTypeAs":
+		a := &tslabs{}
+		return tparseResolved(trules[139], input, o, a, func(v any) *ImportSpecifier { return tAs[*ImportSpecifier](v) })
+	case "importSpecifierType":
+		a := &tslabs{}
+		return tparseResolved(trules[140], input, o, a, func(v any) *ImportSpecifier { return tAs[*ImportSpecifier](v) })
+	case "importSpecifierPlain":
+		a := &tslabs{}
+		return tparseResolved(trules[141], input, o, a, func(v any) *ImportSpecifier { return tAs[*ImportSpecifier](v) })
+	case "typeIdentifier":
+		a := &tslabs{}
+		return tparseResolved(trules[142], input, o, a, func(v any) *Identifier { return tAs[*Identifier](v) })
+	case "importedName":
+		a := &tslabs{}
+		return tparseResolved(trules[143], input, o, a, func(v any) *Identifier { return tAs[*Identifier](v) })
+	case "privateName":
+		a := &tslabs{}
+		return tparseResolved(trules[144], input, o, a, func(v any) *Identifier { return tAs[*Identifier](v) })
+	case "asIdentifier":
+		a := &tslabs{}
+		return tparseResolved(trules[145], input, o, a, func(v any) *Identifier { return tAs[*Identifier](v) })
+	case "moduleExportName":
+		a := &tslabs{}
+		return tparseResolved(trules[146], input, o, a, func(v any) ImportAttributeName { return tAs[ImportAttributeName](tpub(v)) })
+	case "moduleExportNameStart":
+		n, err := parseResolved(rules[147], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "moduleSpecifier":
+		a := &tslabs{}
+		return tparseResolved(trules[148], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "importAttributes":
+		a := &tslabs{}
+		return tparseResolved(trules[149], input, o, a, func(v any) *ImportAttributes { return tAs[*ImportAttributes](v) })
+	case "importAttributesBraces":
+		a := &tslabs{}
+		return tparseResolved(trules[150], input, o, a, func(v any) []*ImportAttribute { return tl5(a, v) })
+	case "importAttribute":
+		a := &tslabs{}
+		return tparseResolved(trules[151], input, o, a, func(v any) *ImportAttribute { return tAs[*ImportAttribute](v) })
+	case "exportAssignment":
+		a := &tslabs{}
+		return tparseResolved(trules[152], input, o, a, func(v any) *ExportAssignment { return tAs[*ExportAssignment](v) })
+	case "namespaceExportDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[153], input, o, a, func(v any) *NamespaceExportDeclaration { return tAs[*NamespaceExportDeclaration](v) })
+	case "exportDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[154], input, o, a, func(v any) *ExportDeclaration { return tAs[*ExportDeclaration](v) })
+	case "exportStarDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[155], input, o, a, func(v any) *ExportDeclaration { return tAs[*ExportDeclaration](v) })
+	case "exportNamedDeclaration":
+		a := &tslabs{}
+		return tparseResolved(trules[156], input, o, a, func(v any) *ExportDeclaration { return tAs[*ExportDeclaration](v) })
+	case "namespaceExport":
+		a := &tslabs{}
+		return tparseResolved(trules[157], input, o, a, func(v any) *NamespaceExport { return tAs[*NamespaceExport](v) })
+	case "namedExports":
+		a := &tslabs{}
+		return tparseResolved(trules[158], input, o, a, func(v any) *NamedExports { return tAs[*NamedExports](v) })
+	case "exportSpecifier":
+		a := &tslabs{}
+		return tparseResolved(trules[159], input, o, a, func(v any) *ExportSpecifier { return tAs[*ExportSpecifier](v) })
+	case "exportSpecifierTypeAsAs":
+		a := &tslabs{}
+		return tparseResolved(trules[160], input, o, a, func(v any) *ExportSpecifier { return tAs[*ExportSpecifier](v) })
+	case "exportSpecifierTypeAsName":
+		a := &tslabs{}
+		return tparseResolved(trules[161], input, o, a, func(v any) *ExportSpecifier { return tAs[*ExportSpecifier](v) })
+	case "exportSpecifierTypeAs":
+		a := &tslabs{}
+		return tparseResolved(trules[162], input, o, a, func(v any) *ExportSpecifier { return tAs[*ExportSpecifier](v) })
+	case "exportSpecifierType":
+		a := &tslabs{}
+		return tparseResolved(trules[163], input, o, a, func(v any) *ExportSpecifier { return tAs[*ExportSpecifier](v) })
+	case "exportSpecifierPlain":
+		a := &tslabs{}
+		return tparseResolved(trules[164], input, o, a, func(v any) *ExportSpecifier { return tAs[*ExportSpecifier](v) })
+	case "modifiers":
+		n, err := parseResolved(rules[165], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "decoratorList":
+		a := &tslabs{}
+		return tparseResolved(trules[166], input, o, a, func(v any) []*Decorator { return tl6(a, v) })
+	case "modifierList":
+		a := &tslabs{}
+		return tparseResolved(trules[167], input, o, a, func(v any) []*Modifier { return tl7(a, v) })
+	case "staticModifierList":
+		a := &tslabs{}
+		return tparseResolved(trules[168], input, o, a, func(v any) []*Modifier { return tl7(a, v) })
+	case "modifier":
+		a := &tslabs{}
+		return tparseResolved(trules[169], input, o, a, func(v any) *Modifier { return tAs[*Modifier](v) })
+	case "staticModifier":
+		a := &tslabs{}
+		return tparseResolved(trules[170], input, o, a, func(v any) *Modifier { return tAs[*Modifier](v) })
+	case "exportModifierFollows":
+		n, err := parseResolved(rules[171], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "canFollowExportModifier":
+		n, err := parseResolved(rules[172], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "defaultModifierFollows":
+		n, err := parseResolved(rules[173], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "canFollowModifier":
+		n, err := parseResolved(rules[174], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "literalPropertyNameStart":
+		n, err := parseResolved(rules[175], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "classModifiers":
+		n, err := parseResolved(rules[176], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "classModifierList":
+		a := &tslabs{}
+		return tparseResolved(trules[177], input, o, a, func(v any) []*Modifier { return tl7(a, v) })
+	case "classStaticModifierList":
+		a := &tslabs{}
+		return tparseResolved(trules[178], input, o, a, func(v any) []*Modifier { return tl7(a, v) })
+	case "classModifier":
+		a := &tslabs{}
+		return tparseResolved(trules[179], input, o, a, func(v any) *Modifier { return tAs[*Modifier](v) })
+	case "classStaticModifier":
+		a := &tslabs{}
+		return tparseResolved(trules[180], input, o, a, func(v any) *Modifier { return tAs[*Modifier](v) })
+	case "typeMemberModifiers":
+		a := &tslabs{}
+		return tparseResolved(trules[181], input, o, a, func(v any) []*Modifier { return tl7(a, v) })
+	case "typeParameterModifiers":
+		a := &tslabs{}
+		return tparseResolved(trules[182], input, o, a, func(v any) []*Modifier { return tl7(a, v) })
+	case "decorator":
+		a := &tslabs{}
+		return tparseResolved(trules[183], input, o, a, func(v any) *Decorator { return tAs[*Decorator](v) })
+	case "expression":
+		a := &tslabs{}
+		return tparseResolved(trules[184], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "expressionAllowIn":
+		a := &tslabs{}
+		return tparseResolved(trules[185], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "commaExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[186], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "assignmentExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[187], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "assignmentExpressionAllowIn":
+		a := &tslabs{}
+		return tparseResolved(trules[188], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "assignmentExpressionInner":
+		a := &tslabs{}
+		return tparseResolved(trules[189], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "yieldExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[190], input, o, a, func(v any) *YieldExpression { return tAs[*YieldExpression](v) })
+	case "identifierOrKeywordOrLiteralStart":
+		n, err := parseResolved(rules[191], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "nlStart":
+		a := &tslabs{}
+		return tparseResolved(trules[192], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "assignment":
+		a := &tslabs{}
+		return tparseResolved(trules[193], input, o, a, func(v any) *BinaryExpression { return tAs[*BinaryExpression](v) })
+	case "assignmentOperator":
+		a := &tslabs{}
+		return tparseResolved(trules[194], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "conditionalOrBinaryExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[195], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "conditionalWhenTrue":
+		a := &tslabs{}
+		return tparseResolved(trules[196], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "conditionalWhenFalse":
+		a := &tslabs{}
+		return tparseResolved(trules[197], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "conditionalQuestionToken":
+		a := &tslabs{}
+		return tparseResolved(trules[198], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "arrowFunction":
+		a := &tslabs{}
+		return tparseResolved(trules[199], input, o, a, func(v any) *ArrowFunction { return tAs[*ArrowFunction](v) })
+	case "arrowAsyncModifier":
+		a := &tslabs{}
+		return tparseResolved(trules[200], input, o, a, func(v any) []*Modifier { return tl7(a, v) })
+	case "asyncKeywordModifier":
+		a := &tslabs{}
+		return tparseResolved(trules[201], input, o, a, func(v any) *Modifier { return tAs[*Modifier](v) })
+	case "arrowTypeParameters":
+		a := &tslabs{}
+		return tparseResolved(trules[202], input, o, a, func(v any) []*TypeParameter { return tl8(a, v) })
+	case "tsxArrowTypeParametersStart":
+		n, err := parseResolved(rules[203], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "arrowParenthesisIsNotParameterList":
+		n, err := parseResolved(rules[204], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "simpleArrowFunction":
+		a := &tslabs{}
+		return tparseResolved(trules[205], input, o, a, func(v any) *ArrowFunction { return tAs[*ArrowFunction](v) })
+	case "simpleArrowParameter":
+		a := &tslabs{}
+		return tparseResolved(trules[206], input, o, a, func(v any) *Parameter { return tAs[*Parameter](v) })
+	case "asyncSimpleArrowFunction":
+		a := &tslabs{}
+		return tparseResolved(trules[207], input, o, a, func(v any) *ArrowFunction { return tAs[*ArrowFunction](v) })
+	case "arrowBody":
+		a := &tslabs{}
+		return tparseResolved(trules[208], input, o, a, func(v any) ConciseBody { return tAs[ConciseBody](tpub(v)) })
+	case "binaryExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[209], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "coalesceOrToken":
+		a := &tslabs{}
+		return tparseResolved(trules[210], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "ampersandAmpersandToken":
+		a := &tslabs{}
+		return tparseResolved(trules[211], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "barToken":
+		a := &tslabs{}
+		return tparseResolved(trules[212], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "caretToken":
+		a := &tslabs{}
+		return tparseResolved(trules[213], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "ampersandToken":
+		a := &tslabs{}
+		return tparseResolved(trules[214], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "equalityToken":
+		a := &tslabs{}
+		return tparseResolved(trules[215], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "relationalToken":
+		a := &tslabs{}
+		return tparseResolved(trules[216], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "shiftToken":
+		a := &tslabs{}
+		return tparseResolved(trules[217], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "additiveToken":
+		a := &tslabs{}
+		return tparseResolved(trules[218], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "multiplicativeToken":
+		a := &tslabs{}
+		return tparseResolved(trules[219], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "asteriskAsteriskToken":
+		a := &tslabs{}
+		return tparseResolved(trules[220], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "binaryOperatorStart":
+		n, err := parseResolved(rules[221], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "unaryExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[222], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "unaryOperatorStart":
+		n, err := parseResolved(rules[223], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "simpleUnaryExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[224], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "prefixUnaryExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[225], input, o, a, func(v any) *PrefixUnaryExpression { return tAs[*PrefixUnaryExpression](v) })
+	case "deleteExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[226], input, o, a, func(v any) *DeleteExpression { return tAs[*DeleteExpression](v) })
+	case "typeOfExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[227], input, o, a, func(v any) *TypeOfExpression { return tAs[*TypeOfExpression](v) })
+	case "voidExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[228], input, o, a, func(v any) *VoidExpression { return tAs[*VoidExpression](v) })
+	case "awaitExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[229], input, o, a, func(v any) *AwaitExpression { return tAs[*AwaitExpression](v) })
+	case "typeAssertion":
+		a := &tslabs{}
+		return tparseResolved(trules[230], input, o, a, func(v any) *TypeAssertionExpression { return tAs[*TypeAssertionExpression](v) })
+	case "jsxUnaryExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[231], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "updateExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[232], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "postfixOrLeftHandSideExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[233], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "prefixUpdateExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[234], input, o, a, func(v any) *PrefixUnaryExpression { return tAs[*PrefixUnaryExpression](v) })
+	case "jsxPrimaryExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[235], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "leftHandSideExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[236], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "heritageExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[237], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "newTarget":
+		a := &tslabs{}
+		return tparseResolved(trules[238], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "memberName":
+		a := &tslabs{}
+		return tparseResolved(trules[239], input, o, a, func(v any) MemberName { return tAs[MemberName](tpub(v)) })
+	case "questionDotToken":
+		a := &tslabs{}
+		return tparseResolved(trules[240], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "typeArgumentsInExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[241], input, o, a, func(v any) []TypeNode { return tl9(a, v) })
+	case "typeArgumentsCanFollow":
+		n, err := parseResolved(rules[242], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "expressionStart":
+		n, err := parseResolved(rules[243], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "arguments":
+		a := &tslabs{}
+		return tparseResolved(trules[244], input, o, a, func(v any) []Expression { return tl10(a, v) })
+	case "argumentList":
+		a := &tslabs{}
+		return tparseResolved(trules[245], input, o, a, func(v any) []Expression { return tl10(a, v) })
+	case "argument":
+		a := &tslabs{}
+		return tparseResolved(trules[246], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "spreadElement":
+		a := &tslabs{}
+		return tparseResolved(trules[247], input, o, a, func(v any) *SpreadElement { return tAs[*SpreadElement](v) })
+	case "superExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[248], input, o, a, func(v any) *SuperExpression { return tAs[*SuperExpression](v) })
+	case "superKeyword":
+		a := &tslabs{}
+		return tparseResolved(trules[249], input, o, a, func(v any) *SuperExpression { return tAs[*SuperExpression](v) })
+	case "importCallee":
+		a := &tslabs{}
+		return tparseResolved(trules[250], input, o, a, func(v any) *ImportExpression { return tAs[*ImportExpression](v) })
+	case "importMetaProperty":
+		a := &tslabs{}
+		return tparseResolved(trules[251], input, o, a, func(v any) *MetaProperty { return tAs[*MetaProperty](v) })
+	case "primaryExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[252], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "wordPrimary":
+		a := &tslabs{}
+		return tparseResolved(trules[253], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "symbolPrimary":
+		a := &tslabs{}
+		return tparseResolved(trules[254], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "numericOrBigIntLiteral":
+		a := &tslabs{}
+		return tparseResolved(trules[255], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "thisKeyword":
+		a := &tslabs{}
+		return tparseResolved(trules[256], input, o, a, func(v any) *ThisExpression { return tAs[*ThisExpression](v) })
+	case "nullKeyword":
+		a := &tslabs{}
+		return tparseResolved(trules[257], input, o, a, func(v any) *NullLiteral { return tAs[*NullLiteral](v) })
+	case "booleanKeyword":
+		a := &tslabs{}
+		return tparseResolved(trules[258], input, o, a, func(v any) *BooleanLiteral { return tAs[*BooleanLiteral](v) })
+	case "parenthesizedExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[259], input, o, a, func(v any) *ParenthesizedExpression { return tAs[*ParenthesizedExpression](v) })
+	case "arrayLiteralExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[260], input, o, a, func(v any) *ArrayLiteralExpression { return tAs[*ArrayLiteralExpression](v) })
+	case "arrayElement":
+		a := &tslabs{}
+		return tparseResolved(trules[261], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "objectLiteralExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[262], input, o, a, func(v any) *ObjectLiteralExpression { return tAs[*ObjectLiteralExpression](v) })
+	case "objectLiteralElement":
+		a := &tslabs{}
+		return tparseResolved(trules[263], input, o, a, func(v any) ObjectLiteralElement { return tAs[ObjectLiteralElement](tpub(v)) })
+	case "objectAccessor":
+		a := &tslabs{}
+		return tparseResolved(trules[264], input, o, a, func(v any) ObjectLiteralElement { return tAs[ObjectLiteralElement](tpub(v)) })
+	case "objectMemberNotAccessor":
+		a := &tslabs{}
+		return tparseResolved(trules[265], input, o, a, func(v any) ObjectLiteralElement { return tAs[ObjectLiteralElement](tpub(v)) })
+	case "objectLiteralElementStart":
+		n, err := parseResolved(rules[266], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "spreadAssignment":
+		a := &tslabs{}
+		return tparseResolved(trules[267], input, o, a, func(v any) *SpreadAssignment { return tAs[*SpreadAssignment](v) })
+	case "objectGetAccessor":
+		a := &tslabs{}
+		return tparseResolved(trules[268], input, o, a, func(v any) *GetAccessor { return tAs[*GetAccessor](v) })
+	case "objectSetAccessor":
+		a := &tslabs{}
+		return tparseResolved(trules[269], input, o, a, func(v any) *SetAccessor { return tAs[*SetAccessor](v) })
+	case "objectMethod":
+		a := &tslabs{}
+		return tparseResolved(trules[270], input, o, a, func(v any) *MethodDeclaration { return tAs[*MethodDeclaration](v) })
+	case "shorthandPropertyAssignment":
+		a := &tslabs{}
+		return tparseResolved(trules[271], input, o, a, func(v any) *ShorthandPropertyAssignment { return tAs[*ShorthandPropertyAssignment](v) })
+	case "propertyAssignment":
+		a := &tslabs{}
+		return tparseResolved(trules[272], input, o, a, func(v any) *PropertyAssignment { return tAs[*PropertyAssignment](v) })
+	case "functionExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[273], input, o, a, func(v any) *FunctionExpression { return tAs[*FunctionExpression](v) })
+	case "asyncFunctionModifier":
+		a := &tslabs{}
+		return tparseResolved(trules[274], input, o, a, func(v any) []*Modifier { return tl7(a, v) })
+	case "classExpressionPrimary":
+		a := &tslabs{}
+		return tparseResolved(trules[275], input, o, a, func(v any) *ClassExpression { return tAs[*ClassExpression](v) })
+	case "newExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[276], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "newTargetMetaProperty":
+		a := &tslabs{}
+		return tparseResolved(trules[277], input, o, a, func(v any) *MetaProperty { return tAs[*MetaProperty](v) })
+	case "newExpressionWithTarget":
+		a := &tslabs{}
+		return tparseResolved(trules[278], input, o, a, func(v any) *NewExpression { return tAs[*NewExpression](v) })
+	case "templateExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[279], input, o, a, func(v any) *TemplateExpression { return tAs[*TemplateExpression](v) })
+	case "templateSpans":
+		a := &tslabs{}
+		return tparseResolved(trules[280], input, o, a, func(v any) []*TemplateSpan { return tl11(a, v) })
+	case "templateSpanMiddle":
+		a := &tslabs{}
+		return tparseResolved(trules[281], input, o, a, func(v any) *TemplateSpan { return tAs[*TemplateSpan](v) })
+	case "templateSpanTail":
+		a := &tslabs{}
+		return tparseResolved(trules[282], input, o, a, func(v any) *TemplateSpan { return tAs[*TemplateSpan](v) })
+	case "taggedTemplate":
+		a := &tslabs{}
+		return tparseResolved(trules[283], input, o, a, func(v any) TemplateLiteral { return tAs[TemplateLiteral](tpub(v)) })
+	case "rawTemplateExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[284], input, o, a, func(v any) *TemplateExpression { return tAs[*TemplateExpression](v) })
+	case "rawTemplateSpans":
+		a := &tslabs{}
+		return tparseResolved(trules[285], input, o, a, func(v any) []*TemplateSpan { return tl11(a, v) })
+	case "rawTemplateSpanMiddle":
+		a := &tslabs{}
+		return tparseResolved(trules[286], input, o, a, func(v any) *TemplateSpan { return tAs[*TemplateSpan](v) })
+	case "rawTemplateSpanTail":
+		a := &tslabs{}
+		return tparseResolved(trules[287], input, o, a, func(v any) *TemplateSpan { return tAs[*TemplateSpan](v) })
+	case "jsxElementOrFragment":
+		a := &tslabs{}
+		return tparseResolved(trules[288], input, o, a, func(v any) Expression { return tAs[Expression](tpub(v)) })
+	case "jsxSelfClosingElement":
+		a := &tslabs{}
+		return tparseResolved(trules[289], input, o, a, func(v any) *JsxSelfClosingElement { return tAs[*JsxSelfClosingElement](v) })
+	case "jsxElement":
+		a := &tslabs{}
+		return tparseResolved(trules[290], input, o, a, func(v any) *JsxElement { return tAs[*JsxElement](v) })
+	case "jsxOpeningElement":
+		a := &tslabs{}
+		return tparseResolved(trules[291], input, o, a, func(v any) *JsxOpeningElement { return tAs[*JsxOpeningElement](v) })
+	case "jsxClosingElement":
+		a := &tslabs{}
+		return tparseResolved(trules[292], input, o, a, func(v any) *JsxClosingElement { return tAs[*JsxClosingElement](v) })
+	case "jsxFragment":
+		a := &tslabs{}
+		return tparseResolved(trules[293], input, o, a, func(v any) *JsxFragment { return tAs[*JsxFragment](v) })
+	case "jsxOpeningFragment":
+		a := &tslabs{}
+		return tparseResolved(trules[294], input, o, a, func(v any) *JsxOpeningFragment { return tAs[*JsxOpeningFragment](v) })
+	case "jsxClosingFragment":
+		a := &tslabs{}
+		return tparseResolved(trules[295], input, o, a, func(v any) *JsxClosingFragment { return tAs[*JsxClosingFragment](v) })
+	case "jsxElementName":
+		a := &tslabs{}
+		return tparseResolved(trules[296], input, o, a, func(v any) JsxTagName { return tAs[JsxTagName](tpub(v)) })
+	case "jsxMemberName":
+		a := &tslabs{}
+		return tparseResolved(trules[297], input, o, a, func(v any) JsxTagName { return tAs[JsxTagName](tpub(v)) })
+	case "jsxTagNameStart":
+		a := &tslabs{}
+		return tparseResolved(trules[298], input, o, a, func(v any) JsxTagNameStart { return tAs[JsxTagNameStart](tpub(v)) })
+	case "jsxThis":
+		a := &tslabs{}
+		return tparseResolved(trules[299], input, o, a, func(v any) *ThisExpression { return tAs[*ThisExpression](v) })
+	case "jsxIdentifier":
+		a := &tslabs{}
+		return tparseResolved(trules[300], input, o, a, func(v any) *Identifier { return tAs[*Identifier](v) })
+	case "jsxNamespacedName":
+		a := &tslabs{}
+		return tparseResolved(trules[301], input, o, a, func(v any) *JsxNamespacedName { return tAs[*JsxNamespacedName](v) })
+	case "jsxAttributes":
+		a := &tslabs{}
+		return tparseResolved(trules[302], input, o, a, func(v any) *JsxAttributes { return tAs[*JsxAttributes](v) })
+	case "jsxAttributeLike":
+		a := &tslabs{}
+		return tparseResolved(trules[303], input, o, a, func(v any) JsxAttributeLike { return tAs[JsxAttributeLike](tpub(v)) })
+	case "jsxAttribute":
+		a := &tslabs{}
+		return tparseResolved(trules[304], input, o, a, func(v any) *JsxAttribute { return tAs[*JsxAttribute](v) })
+	case "jsxAttributeName":
+		a := &tslabs{}
+		return tparseResolved(trules[305], input, o, a, func(v any) JsxAttributeName { return tAs[JsxAttributeName](tpub(v)) })
+	case "jsxAttributeValue":
+		a := &tslabs{}
+		return tparseResolved(trules[306], input, o, a, func(v any) JsxAttributeValue { return tAs[JsxAttributeValue](tpub(v)) })
+	case "jsxElementOrFragmentValue":
+		a := &tslabs{}
+		return tparseResolved(trules[307], input, o, a, func(v any) JsxAttributeValue { return tAs[JsxAttributeValue](tpub(v)) })
+	case "jsxAttributeString":
+		a := &tslabs{}
+		return tparseResolved(trules[308], input, o, a, func(v any) *StringLiteral { return tAs[*StringLiteral](v) })
+	case "jsxAttributeExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[309], input, o, a, func(v any) *JsxExpression { return tAs[*JsxExpression](v) })
+	case "jsxSpreadAttribute":
+		a := &tslabs{}
+		return tparseResolved(trules[310], input, o, a, func(v any) *JsxSpreadAttribute { return tAs[*JsxSpreadAttribute](v) })
+	case "jsxChild":
+		a := &tslabs{}
+		return tparseResolved(trules[311], input, o, a, func(v any) JsxChild { return tAs[JsxChild](tpub(v)) })
+	case "jsxText":
+		a := &tslabs{}
+		return tparseResolved(trules[312], input, o, a, func(v any) *JsxText { return tAs[*JsxText](v) })
+	case "jsxChildExpression":
+		a := &tslabs{}
+		return tparseResolved(trules[313], input, o, a, func(v any) *JsxExpression { return tAs[*JsxExpression](v) })
+	case "jsxChildElement":
+		a := &tslabs{}
+		return tparseResolved(trules[314], input, o, a, func(v any) JsxChild { return tAs[JsxChild](tpub(v)) })
+	case "typeNode":
+		a := &tslabs{}
+		return tparseResolved(trules[315], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "typeInner":
+		a := &tslabs{}
+		return tparseResolved(trules[316], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "typeNoConditional":
+		a := &tslabs{}
+		return tparseResolved(trules[317], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "typeAllowConditional":
+		a := &tslabs{}
+		return tparseResolved(trules[318], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "conditionalOrHigher":
+		a := &tslabs{}
+		return tparseResolved(trules[319], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "typeOrTypePredicate":
+		a := &tslabs{}
+		return tparseResolved(trules[320], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "typePredicate":
+		a := &tslabs{}
+		return tparseResolved(trules[321], input, o, a, func(v any) *TypePredicate { return tAs[*TypePredicate](v) })
+	case "functionType":
+		a := &tslabs{}
+		return tparseResolved(trules[322], input, o, a, func(v any) *FunctionType { return tAs[*FunctionType](v) })
+	case "constructorType":
+		a := &tslabs{}
+		return tparseResolved(trules[323], input, o, a, func(v any) *ConstructorType { return tAs[*ConstructorType](v) })
+	case "abstractModifier":
+		a := &tslabs{}
+		return tparseResolved(trules[324], input, o, a, func(v any) []*Modifier { return tl7(a, v) })
+	case "abstractKeywordModifier":
+		a := &tslabs{}
+		return tparseResolved(trules[325], input, o, a, func(v any) *Modifier { return tAs[*Modifier](v) })
+	case "returnTypeOfType":
+		a := &tslabs{}
+		return tparseResolved(trules[326], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "unionOrHigher":
+		a := &tslabs{}
+		return tparseResolved(trules[327], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "leadingUnionType":
+		a := &tslabs{}
+		return tparseResolved(trules[328], input, o, a, func(v any) *UnionType { return tAs[*UnionType](v) })
+	case "plainOrUnionType":
+		a := &tslabs{}
+		return tparseResolved(trules[329], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "intersectionOrHigher":
+		a := &tslabs{}
+		return tparseResolved(trules[330], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "leadingIntersectionType":
+		a := &tslabs{}
+		return tparseResolved(trules[331], input, o, a, func(v any) *IntersectionType { return tAs[*IntersectionType](v) })
+	case "plainOrIntersectionType":
+		a := &tslabs{}
+		return tparseResolved(trules[332], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "typeOperatorOrHigher":
+		a := &tslabs{}
+		return tparseResolved(trules[333], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "postfixTypeAllowConditional":
+		a := &tslabs{}
+		return tparseResolved(trules[334], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "typeOperator":
+		a := &tslabs{}
+		return tparseResolved(trules[335], input, o, a, func(v any) *TypeOperator { return tAs[*TypeOperator](v) })
+	case "inferType":
+		a := &tslabs{}
+		return tparseResolved(trules[336], input, o, a, func(v any) *InferType { return tAs[*InferType](v) })
+	case "inferTypeParameter":
+		a := &tslabs{}
+		return tparseResolved(trules[337], input, o, a, func(v any) *TypeParameter { return tAs[*TypeParameter](v) })
+	case "postfixType":
+		a := &tslabs{}
+		return tparseResolved(trules[338], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "postfixTypeNoQuestion":
+		a := &tslabs{}
+		return tparseResolved(trules[339], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "nonArrayType":
+		a := &tslabs{}
+		return tparseResolved(trules[340], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "wordType":
+		a := &tslabs{}
+		return tparseResolved(trules[341], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "specialWordType":
+		a := &tslabs{}
+		return tparseResolved(trules[342], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "symbolType":
+		a := &tslabs{}
+		return tparseResolved(trules[343], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "keywordType":
+		a := &tslabs{}
+		return tparseResolved(trules[344], input, o, a, func(v any) *KeywordTypeNode { return tAs[*KeywordTypeNode](v) })
+	case "literalType":
+		a := &tslabs{}
+		return tparseResolved(trules[345], input, o, a, func(v any) *LiteralType { return tAs[*LiteralType](v) })
+	case "negativeLiteral":
+		a := &tslabs{}
+		return tparseResolved(trules[346], input, o, a, func(v any) *PrefixUnaryExpression { return tAs[*PrefixUnaryExpression](v) })
+	case "thisType":
+		a := &tslabs{}
+		return tparseResolved(trules[347], input, o, a, func(v any) *ThisTypeNode { return tAs[*ThisTypeNode](v) })
+	case "thisTypePredicate":
+		a := &tslabs{}
+		return tparseResolved(trules[348], input, o, a, func(v any) *TypePredicate { return tAs[*TypePredicate](v) })
+	case "assertsTypePredicate":
+		a := &tslabs{}
+		return tparseResolved(trules[349], input, o, a, func(v any) *TypePredicate { return tAs[*TypePredicate](v) })
+	case "assertsToken":
+		a := &tslabs{}
+		return tparseResolved(trules[350], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "identifierOrKeywordStart":
+		n, err := parseResolved(rules[351], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "typeQuery":
+		a := &tslabs{}
+		return tparseResolved(trules[352], input, o, a, func(v any) *TypeQuery { return tAs[*TypeQuery](v) })
+	case "importType":
+		a := &tslabs{}
+		return tparseResolved(trules[353], input, o, a, func(v any) *ImportType { return tAs[*ImportType](v) })
+	case "importTypeAttributes":
+		a := &tslabs{}
+		return tparseResolved(trules[354], input, o, a, func(v any) *ImportAttributes { return tAs[*ImportAttributes](v) })
+	case "typeReference":
+		a := &tslabs{}
+		return tparseResolved(trules[355], input, o, a, func(v any) *TypeReference { return tAs[*TypeReference](v) })
+	case "functionTypeReference":
+		a := &tslabs{}
+		return tparseResolved(trules[356], input, o, a, func(v any) *TypeReference { return tAs[*TypeReference](v) })
+	case "functionIdentifier":
+		a := &tslabs{}
+		return tparseResolved(trules[357], input, o, a, func(v any) *Identifier { return tAs[*Identifier](v) })
+	case "parenthesizedType":
+		a := &tslabs{}
+		return tparseResolved(trules[358], input, o, a, func(v any) *ParenthesizedType { return tAs[*ParenthesizedType](v) })
+	case "unambiguousFunctionTypeStart":
+		n, err := parseResolved(rules[359], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "templateLiteralType":
+		a := &tslabs{}
+		return tparseResolved(trules[360], input, o, a, func(v any) *TemplateLiteralType { return tAs[*TemplateLiteralType](v) })
+	case "templateTypeSpans":
+		a := &tslabs{}
+		return tparseResolved(trules[361], input, o, a, func(v any) []*TemplateLiteralTypeSpan { return tl12(a, v) })
+	case "templateTypeSpanMiddle":
+		a := &tslabs{}
+		return tparseResolved(trules[362], input, o, a, func(v any) *TemplateLiteralTypeSpan { return tAs[*TemplateLiteralTypeSpan](v) })
+	case "templateTypeSpanTail":
+		a := &tslabs{}
+		return tparseResolved(trules[363], input, o, a, func(v any) *TemplateLiteralTypeSpan { return tAs[*TemplateLiteralTypeSpan](v) })
+	case "jsdocAllType":
+		a := &tslabs{}
+		return tparseResolved(trules[364], input, o, a, func(v any) *JSDocAllType { return tAs[*JSDocAllType](v) })
+	case "jsdocUnknownType":
+		a := &tslabs{}
+		return tparseResolved(trules[365], input, o, a, func(v any) *JSDocUnknownType { return tAs[*JSDocUnknownType](v) })
+	case "jsdocNullableType":
+		a := &tslabs{}
+		return tparseResolved(trules[366], input, o, a, func(v any) *JSDocNullableType { return tAs[*JSDocNullableType](v) })
+	case "jsdocNonNullableType":
+		a := &tslabs{}
+		return tparseResolved(trules[367], input, o, a, func(v any) *JSDocNonNullableType { return tAs[*JSDocNonNullableType](v) })
+	case "jsdocFunctionType":
+		a := &tslabs{}
+		return tparseResolved(trules[368], input, o, a, func(v any) *JSDocFunctionType { return tAs[*JSDocFunctionType](v) })
+	case "jsdocParameter":
+		a := &tslabs{}
+		return tparseResolved(trules[369], input, o, a, func(v any) *Parameter { return tAs[*Parameter](v) })
+	case "jsdocParameterName":
+		a := &tslabs{}
+		return tparseResolved(trules[370], input, o, a, func(v any) *Identifier { return tAs[*Identifier](v) })
+	case "entityName":
+		a := &tslabs{}
+		return tparseResolved(trules[371], input, o, a, func(v any) EntityName { return tAs[EntityName](tpub(v)) })
+	case "entityNameAllowReserved":
+		a := &tslabs{}
+		return tparseResolved(trules[372], input, o, a, func(v any) EntityName { return tAs[EntityName](tpub(v)) })
+	case "typeArguments":
+		a := &tslabs{}
+		return tparseResolved(trules[373], input, o, a, func(v any) []TypeNode { return tl9(a, v) })
+	case "typeList":
+		a := &tslabs{}
+		return tparseResolved(trules[374], input, o, a, func(v any) []TypeNode { return tl9(a, v) })
+	case "typeParameters":
+		a := &tslabs{}
+		return tparseResolved(trules[375], input, o, a, func(v any) []*TypeParameter { return tl8(a, v) })
+	case "typeParameter":
+		a := &tslabs{}
+		return tparseResolved(trules[376], input, o, a, func(v any) *TypeParameter { return tAs[*TypeParameter](v) })
+	case "tupleType":
+		a := &tslabs{}
+		return tparseResolved(trules[377], input, o, a, func(v any) *TupleType { return tAs[*TupleType](v) })
+	case "tupleElement":
+		a := &tslabs{}
+		return tparseResolved(trules[378], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "namedTupleMember":
+		a := &tslabs{}
+		return tparseResolved(trules[379], input, o, a, func(v any) *NamedTupleMember { return tAs[*NamedTupleMember](v) })
+	case "tupleElementType":
+		a := &tslabs{}
+		return tparseResolved(trules[380], input, o, a, func(v any) TypeNode { return tAs[TypeNode](tpub(v)) })
+	case "restType":
+		a := &tslabs{}
+		return tparseResolved(trules[381], input, o, a, func(v any) *RestType { return tAs[*RestType](v) })
+	case "optionalType":
+		a := &tslabs{}
+		return tparseResolved(trules[382], input, o, a, func(v any) *OptionalType { return tAs[*OptionalType](v) })
+	case "typeLiteral":
+		a := &tslabs{}
+		return tparseResolved(trules[383], input, o, a, func(v any) *TypeLiteral { return tAs[*TypeLiteral](v) })
+	case "objectTypeMembers":
+		a := &tslabs{}
+		return tparseResolved(trules[384], input, o, a, func(v any) []TypeElement { return tl13(a, v) })
+	case "typeMemberStart":
+		n, err := parseResolved(rules[385], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "typeMemberNameFollows":
+		n, err := parseResolved(rules[386], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "literalPropertyNameToken":
+		n, err := parseResolved(rules[387], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "mappedTypeStart":
+		n, err := parseResolved(rules[388], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "mappedType":
+		a := &tslabs{}
+		return tparseResolved(trules[389], input, o, a, func(v any) *MappedType { return tAs[*MappedType](v) })
+	case "mappedTypeParameter":
+		a := &tslabs{}
+		return tparseResolved(trules[390], input, o, a, func(v any) *TypeParameter { return tAs[*TypeParameter](v) })
+	case "mappedReadonlyToken":
+		a := &tslabs{}
+		return tparseResolved(trules[391], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "mappedPlusMinusReadonly":
+		a := &tslabs{}
+		return tparseResolved(trules[392], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "mappedQuestionToken":
+		a := &tslabs{}
+		return tparseResolved(trules[393], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "mappedPlusMinusQuestion":
+		a := &tslabs{}
+		return tparseResolved(trules[394], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "plusMinusToken":
+		a := &tslabs{}
+		return tparseResolved(trules[395], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "readonlyToken":
+		a := &tslabs{}
+		return tparseResolved(trules[396], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "typeMember":
+		a := &tslabs{}
+		return tparseResolved(trules[397], input, o, a, func(v any) TypeElement { return tAs[TypeElement](tpub(v)) })
+	case "typeAccessor":
+		a := &tslabs{}
+		return tparseResolved(trules[398], input, o, a, func(v any) TypeElement { return tAs[TypeElement](tpub(v)) })
+	case "typeMemberNotAccessor":
+		a := &tslabs{}
+		return tparseResolved(trules[399], input, o, a, func(v any) TypeElement { return tAs[TypeElement](tpub(v)) })
+	case "callSignature":
+		a := &tslabs{}
+		return tparseResolved(trules[400], input, o, a, func(v any) *CallSignature { return tAs[*CallSignature](v) })
+	case "constructSignature":
+		a := &tslabs{}
+		return tparseResolved(trules[401], input, o, a, func(v any) *ConstructSignature { return tAs[*ConstructSignature](v) })
+	case "typeGetAccessor":
+		a := &tslabs{}
+		return tparseResolved(trules[402], input, o, a, func(v any) *GetAccessor { return tAs[*GetAccessor](v) })
+	case "typeSetAccessor":
+		a := &tslabs{}
+		return tparseResolved(trules[403], input, o, a, func(v any) *SetAccessor { return tAs[*SetAccessor](v) })
+	case "typeIndexSignature":
+		a := &tslabs{}
+		return tparseResolved(trules[404], input, o, a, func(v any) *IndexSignature { return tAs[*IndexSignature](v) })
+	case "indexSignatureStart":
+		n, err := parseResolved(rules[405], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "modifierKeyword":
+		n, err := parseResolved(rules[406], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "methodSignature":
+		a := &tslabs{}
+		return tparseResolved(trules[407], input, o, a, func(v any) *MethodSignature { return tAs[*MethodSignature](v) })
+	case "propertySignature":
+		a := &tslabs{}
+		return tparseResolved(trules[408], input, o, a, func(v any) *PropertySignature { return tAs[*PropertySignature](v) })
+	case "typeMemberSemicolon":
+		n, err := parseResolved(rules[409], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "typeStart":
+		n, err := parseResolved(rules[410], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "propertyName":
+		a := &tslabs{}
+		return tparseResolved(trules[411], input, o, a, func(v any) PropertyName { return tAs[PropertyName](tpub(v)) })
+	case "computedPropertyName":
+		a := &tslabs{}
+		return tparseResolved(trules[412], input, o, a, func(v any) *ComputedPropertyName { return tAs[*ComputedPropertyName](v) })
+	case "questionToken":
+		a := &tslabs{}
+		return tparseResolved(trules[413], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "exclamationToken":
+		a := &tslabs{}
+		return tparseResolved(trules[414], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "asteriskToken":
+		a := &tslabs{}
+		return tparseResolved(trules[415], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "dotDotDotToken":
+		a := &tslabs{}
+		return tparseResolved(trules[416], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "equalsGreaterThanToken":
+		a := &tslabs{}
+		return tparseResolved(trules[417], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "colonToken":
+		a := &tslabs{}
+		return tparseResolved(trules[418], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "equalsToken":
+		a := &tslabs{}
+		return tparseResolved(trules[419], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "commaToken":
+		a := &tslabs{}
+		return tparseResolved(trules[420], input, o, a, func(v any) *Token { return tAs[*Token](v) })
+	case "identifier":
+		a := &tslabs{}
+		return tparseResolved(trules[421], input, o, a, func(v any) *Identifier { return tAs[*Identifier](v) })
+	case "bindingIdentifier":
+		a := &tslabs{}
+		return tparseResolved(trules[422], input, o, a, func(v any) *Identifier { return tAs[*Identifier](v) })
+	case "identifierName":
+		a := &tslabs{}
+		return tparseResolved(trules[423], input, o, a, func(v any) *Identifier { return tAs[*Identifier](v) })
+	case "privateIdentifier":
+		a := &tslabs{}
+		return tparseResolved(trules[424], input, o, a, func(v any) *PrivateIdentifier { return tAs[*PrivateIdentifier](v) })
+	case "identifierNameOrPrivate":
+		a := &tslabs{}
+		return tparseResolved(trules[425], input, o, a, func(v any) *Identifier { return tAs[*Identifier](v) })
+	case "anyKeyword":
+		n, err := parseResolved(rules[426], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "reservedWord":
+		n, err := parseResolved(rules[427], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "identifierRest":
+		n, err := parseResolved(rules[428], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "idStart":
+		n, err := parseResolved(rules[429], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "idStartOther":
+		n, err := parseResolved(rules[430], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "idPart":
+		n, err := parseResolved(rules[431], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "identifierStartEscape":
+		n, err := parseResolved(rules[432], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "identifierPartEscape":
+		n, err := parseResolved(rules[433], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "surrogate":
+		n, err := parseResolved(rules[434], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "asciiIdentifierStartHex":
+		n, err := parseResolved(rules[435], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "nonASCIIBraced":
+		n, err := parseResolved(rules[436], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "unicodeEscape":
+		n, err := parseResolved(rules[437], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "unicodeBraced":
+		n, err := parseResolved(rules[438], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "hex":
+		a := &tslabs{}
+		return tparseResolved(trules[439], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "numericLiteral":
+		a := &tslabs{}
+		return tparseResolved(trules[440], input, o, a, func(v any) *NumericLiteral { return tAs[*NumericLiteral](v) })
+	case "bigIntLiteral":
+		a := &tslabs{}
+		return tparseResolved(trules[441], input, o, a, func(v any) *BigIntLiteral { return tAs[*BigIntLiteral](v) })
+	case "decimalLiteral":
+		n, err := parseResolved(rules[442], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "decimalInteger":
+		n, err := parseResolved(rules[443], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "decimalDigits":
+		n, err := parseResolved(rules[444], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "exponentPart":
+		n, err := parseResolved(rules[445], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "hexLiteral":
+		n, err := parseResolved(rules[446], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "binaryLiteral":
+		n, err := parseResolved(rules[447], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "octalLiteral":
+		n, err := parseResolved(rules[448], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "stringLiteral":
+		a := &tslabs{}
+		return tparseResolved(trules[449], input, o, a, func(v any) *StringLiteral { return tAs[*StringLiteral](v) })
+	case "escapeSequence":
+		n, err := parseResolved(rules[450], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "noSubstitutionTemplateLiteral":
+		a := &tslabs{}
+		return tparseResolved(trules[451], input, o, a, func(v any) *NoSubstitutionTemplateLiteral { return tAs[*NoSubstitutionTemplateLiteral](v) })
+	case "templateHead":
+		a := &tslabs{}
+		return tparseResolved(trules[452], input, o, a, func(v any) *TemplateHead { return tAs[*TemplateHead](v) })
+	case "templateMiddle":
+		a := &tslabs{}
+		return tparseResolved(trules[453], input, o, a, func(v any) *TemplateMiddle { return tAs[*TemplateMiddle](v) })
+	case "templateTail":
+		a := &tslabs{}
+		return tparseResolved(trules[454], input, o, a, func(v any) *TemplateTail { return tAs[*TemplateTail](v) })
+	case "templateCharacters":
+		n, err := parseResolved(rules[455], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "rawNoSubstitutionTemplateLiteral":
+		a := &tslabs{}
+		return tparseResolved(trules[456], input, o, a, func(v any) *NoSubstitutionTemplateLiteral { return tAs[*NoSubstitutionTemplateLiteral](v) })
+	case "rawTemplateHead":
+		a := &tslabs{}
+		return tparseResolved(trules[457], input, o, a, func(v any) *TemplateHead { return tAs[*TemplateHead](v) })
+	case "rawTemplateMiddle":
+		a := &tslabs{}
+		return tparseResolved(trules[458], input, o, a, func(v any) *TemplateMiddle { return tAs[*TemplateMiddle](v) })
+	case "rawTemplateTail":
+		a := &tslabs{}
+		return tparseResolved(trules[459], input, o, a, func(v any) *TemplateTail { return tAs[*TemplateTail](v) })
+	case "rawTemplateCharacters":
+		n, err := parseResolved(rules[460], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "regularExpressionLiteral":
+		a := &tslabs{}
+		return tparseResolved(trules[461], input, o, a, func(v any) *RegularExpressionLiteral { return tAs[*RegularExpressionLiteral](v) })
+	case "ws":
+		n, err := parseResolved(rules[462], nseen, input, o)
+		if n == nil {
+			var zero []*Node
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list1(astNode(n)), err
+	case "sp":
+		n, err := parseResolved(rules[463], nseen, input, o)
+		if n == nil {
+			var zero []*Node
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list1(astNode(n)), err
+	case "arrayBindingElementList":
+		a := &tslabs{}
+		return tparseResolved(trules[464], input, o, a, func(v any) []ArrayBindingElement { return tl14(a, v) })
+	case "arrayElementList":
+		a := &tslabs{}
+		return tparseResolved(trules[465], input, o, a, func(v any) []Expression { return tl10(a, v) })
+	case "bindingElementList":
+		a := &tslabs{}
+		return tparseResolved(trules[466], input, o, a, func(v any) []*BindingElement { return tl15(a, v) })
+	case "enumMemberList":
+		a := &tslabs{}
+		return tparseResolved(trules[467], input, o, a, func(v any) []*EnumMember { return tl16(a, v) })
+	case "exportSpecifierList":
+		a := &tslabs{}
+		return tparseResolved(trules[468], input, o, a, func(v any) []*ExportSpecifier { return tl17(a, v) })
+	case "importAttributeList":
+		a := &tslabs{}
+		return tparseResolved(trules[469], input, o, a, func(v any) []*ImportAttribute { return tl5(a, v) })
+	case "importSpecifierList":
+		a := &tslabs{}
+		return tparseResolved(trules[470], input, o, a, func(v any) []*ImportSpecifier { return tl18(a, v) })
+	case "jsdocParameterList":
+		a := &tslabs{}
+		return tparseResolved(trules[471], input, o, a, func(v any) []*Parameter { return tl1(a, v) })
+	case "jsxAttributeLikeList":
+		a := &tslabs{}
+		return tparseResolved(trules[472], input, o, a, func(v any) []JsxAttributeLike { return tl19(a, v) })
+	case "objectLiteralElementList":
+		a := &tslabs{}
+		return tparseResolved(trules[473], input, o, a, func(v any) []ObjectLiteralElement { return tl20(a, v) })
+	case "tupleElementList":
+		a := &tslabs{}
+		return tparseResolved(trules[474], input, o, a, func(v any) []TypeNode { return tl9(a, v) })
+	case "typeParameterList":
+		a := &tslabs{}
+		return tparseResolved(trules[475], input, o, a, func(v any) []*TypeParameter { return tl8(a, v) })
+	case "typeParameterStart":
+		n, err := parseResolved(rules[476], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "uniIdStart":
+		n, err := parseResolved(rules[477], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "uniIdPart":
+		n, err := parseResolved(rules[478], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	default:
+		return nil, fmt.Errorf("rule %s is not defined", name)
+	}
 }
 
 var lit1 = []rune("\x00")

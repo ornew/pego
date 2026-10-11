@@ -2448,6 +2448,11 @@ func tparse[T any](r *trule, input string, opts []ParseOption, ext any, conv fun
 		var zero T
 		return zero, err
 	}
+	return tparseResolved(r, input, o, ext, conv)
+}
+
+// tparseResolved consumes options already applied by the public entry point.
+func tparseResolved[T any](r *trule, input string, o parseOptions, ext any, conv func(any) T) (T, error) {
 	p, _ := tpool.Get().(*tparser)
 	if p == nil {
 		p = &tparser{parser: &parser{}}
@@ -4213,7 +4218,7 @@ func tmk_Directive(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tDirective)
 	v.Name = tAs[*Word](f0)
-	v.Params = tl0(a, f1)
+	v.Params = tl3(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -4228,7 +4233,7 @@ func tmk_Directive(c *tctx, final bool, f0 any, f1 any) any {
 func tmk_Document(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tDocument)
-	v.Directives = tl1(a, f0)
+	v.Directives = tl4(a, f0)
 	v.Start = tAs[*Marker](f1)
 	v.Root = tAs[Value](tpub(f2))
 	v.End = tAs[*Marker](f3)
@@ -4250,7 +4255,7 @@ func tmk_Mapping(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	v := astNew(&a.tMapping)
 	v.Props = tAs[*Properties](f0)
 	v.Flow = astBool(f1)
-	v.Pairs = tl2(a, f2)
+	v.Pairs = tl1(a, f2)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -4320,7 +4325,7 @@ func tmk_Sequence(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	v := astNew(&a.tSequence)
 	v.Props = tAs[*Properties](f0)
 	v.Flow = astBool(f1)
-	v.Items = tl3(a, f2)
+	v.Items = tl0(a, f2)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -4336,7 +4341,7 @@ func tmk_Sequence(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 func tmk_Stream(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tStream)
-	v.Documents = tl4(a, f0)
+	v.Documents = tl5(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -4346,52 +4351,7 @@ func tmk_Stream(c *tctx, final bool, f0 any) any {
 	return c.made(v, first, start, end)
 }
 
-func tl0(a *tslabs, v any) []*Word {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*Word{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl0Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*Word](c)
-	}
-	return out
-}
-
-func tl1(a *tslabs, v any) []*Directive {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*Directive{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl1Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*Directive](c)
-	}
-	return out
-}
-
-func tl2(a *tslabs, v any) []*Pair {
-	if v == nil {
-		return nil
-	}
-	n, _ := v.(*tnode)
-	if n == nil {
-		return []*Pair{} // another node (an Error), as conversion makes an empty list of it
-	}
-	out := astSlice(&a.tl2Chunk, len(n.kids))
-	for i, c := range n.kids {
-		out[i] = tAs[*Pair](c)
-	}
-	return out
-}
-
-func tl3(a *tslabs, v any) []Value {
+func tl0(a *tslabs, v any) []Value {
 	if v == nil {
 		return nil
 	}
@@ -4399,14 +4359,74 @@ func tl3(a *tslabs, v any) []Value {
 	if n == nil {
 		return []Value{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl3Chunk, len(n.kids))
+	out := astSlice(&a.tl0Chunk, len(n.kids))
 	for i, c := range n.kids {
 		out[i] = tAs[Value](tpub(c))
 	}
 	return out
 }
 
-func tl4(a *tslabs, v any) []*Document {
+func tl1(a *tslabs, v any) []*Pair {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*Pair{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl1Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*Pair](c)
+	}
+	return out
+}
+
+func tl2(a *tslabs, v any) []*Match {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*Match{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl2Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tpubMatch(c)
+	}
+	return out
+}
+
+func tl3(a *tslabs, v any) []*Word {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*Word{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl3Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*Word](c)
+	}
+	return out
+}
+
+func tl4(a *tslabs, v any) []*Directive {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []*Directive{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl4Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[*Directive](c)
+	}
+	return out
+}
+
+func tl5(a *tslabs, v any) []*Document {
 	if v == nil {
 		return nil
 	}
@@ -4414,7 +4434,7 @@ func tl4(a *tslabs, v any) []*Document {
 	if n == nil {
 		return []*Document{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl4Chunk, len(n.kids))
+	out := astSlice(&a.tl5Chunk, len(n.kids))
 	for i, c := range n.kids {
 		out[i] = tAs[*Document](c)
 	}
@@ -4436,11 +4456,321 @@ type tslabs struct {
 	tScalar     astChunk[Scalar]
 	tSequence   astChunk[Sequence]
 	tStream     astChunk[Stream]
-	tl0Chunk    astChunk[*Word]
-	tl1Chunk    astChunk[*Directive]
-	tl2Chunk    astChunk[*Pair]
-	tl3Chunk    astChunk[Value]
-	tl4Chunk    astChunk[*Document]
+	tl0Chunk    astChunk[Value]
+	tl1Chunk    astChunk[*Pair]
+	tl2Chunk    astChunk[*Match]
+	tl3Chunk    astChunk[*Word]
+	tl4Chunk    astChunk[*Directive]
+	tl5Chunk    astChunk[*Document]
+}
+
+func (a *astConv) toMatch(n *Node) *Match {
+	if n == nil || n.Type() != "Match" {
+		return nil
+	}
+	v := astNew(&a.match)
+	*v = Match{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toError(n *Node) *Error {
+	if n == nil || n.Type() != "Error" {
+		return nil
+	}
+	msg, _ := n.Field("message").(string)
+	v := astNew(&a.error)
+	*v = Error{Span: Span{int(n.Start), int(n.End)}, Text: n.Text, Message: msg}
+	return v
+}
+
+// anyValue converts a value of a statically unknown type into the typed value of its type (CST
+// nodes stay *Node).
+func (a *astConv) anyValue(v any) any {
+	n, ok := v.(*Node)
+	if !ok || n == nil {
+		return v
+	}
+	switch n.Type() {
+	case "Match":
+		return a.toMatch(n)
+	case "Error":
+		return a.toError(n)
+	case "Alias":
+		return a.toAlias(n)
+	case "Anchor":
+		return a.toAnchor(n)
+	case "Marker":
+		return a.toMarker(n)
+	case "Tag":
+		return a.toTag(n)
+	case "Word":
+		return a.toWord(n)
+	case "Directive":
+		return a.toDirective(n)
+	case "Document":
+		return a.toDocument(n)
+	case "Mapping":
+		return a.toMapping(n)
+	case "Pair":
+		return a.toPair(n)
+	case "Properties":
+		return a.toProperties(n)
+	case "Scalar":
+		return a.toScalar(n)
+	case "Sequence":
+		return a.toSequence(n)
+	case "Stream":
+		return a.toStream(n)
+	}
+	return n
+}
+
+func (a *astConv) toAlias(n *Node) *Alias {
+	if n == nil || n.Type() != "Alias" {
+		return nil
+	}
+	v := astNew(&a.tAlias)
+	*v = Alias{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toAnchor(n *Node) *Anchor {
+	if n == nil || n.Type() != "Anchor" {
+		return nil
+	}
+	v := astNew(&a.tAnchor)
+	*v = Anchor{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toMarker(n *Node) *Marker {
+	if n == nil || n.Type() != "Marker" {
+		return nil
+	}
+	v := astNew(&a.tMarker)
+	*v = Marker{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toTag(n *Node) *Tag {
+	if n == nil || n.Type() != "Tag" {
+		return nil
+	}
+	v := astNew(&a.tTag)
+	*v = Tag{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toWord(n *Node) *Word {
+	if n == nil || n.Type() != "Word" {
+		return nil
+	}
+	v := astNew(&a.tWord)
+	*v = Word{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toDirective(n *Node) *Directive {
+	if n == nil || n.Type() != "Directive" {
+		return nil
+	}
+	v := astNew(&a.tDirective)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toWord(astNode(n.Field("Name")))
+	v.Params = a.list1(astNode(n.Field("Params")))
+	return v
+}
+
+func (a *astConv) toDocument(n *Node) *Document {
+	if n == nil || n.Type() != "Document" {
+		return nil
+	}
+	v := astNew(&a.tDocument)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Directives = a.list2(astNode(n.Field("Directives")))
+	v.Start = a.toMarker(astNode(n.Field("Start")))
+	v.Root = a.toValue(astNode(n.Field("Root")))
+	v.End = a.toMarker(astNode(n.Field("End")))
+	return v
+}
+
+func (a *astConv) toMapping(n *Node) *Mapping {
+	if n == nil || n.Type() != "Mapping" {
+		return nil
+	}
+	v := astNew(&a.tMapping)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Props = a.toProperties(astNode(n.Field("Props")))
+	v.Flow = astBool(n.Field("Flow"))
+	v.Pairs = a.list3(astNode(n.Field("Pairs")))
+	return v
+}
+
+func (a *astConv) toPair(n *Node) *Pair {
+	if n == nil || n.Type() != "Pair" {
+		return nil
+	}
+	v := astNew(&a.tPair)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Key = a.toValue(astNode(n.Field("Key")))
+	v.Value = a.toValue(astNode(n.Field("Value")))
+	return v
+}
+
+func (a *astConv) toProperties(n *Node) *Properties {
+	if n == nil || n.Type() != "Properties" {
+		return nil
+	}
+	v := astNew(&a.tProperties)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Tag = a.toTag(astNode(n.Field("Tag")))
+	v.Anchor = a.toAnchor(astNode(n.Field("Anchor")))
+	return v
+}
+
+func (a *astConv) toScalar(n *Node) *Scalar {
+	if n == nil || n.Type() != "Scalar" {
+		return nil
+	}
+	v := astNew(&a.tScalar)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Props = a.toProperties(astNode(n.Field("Props")))
+	v.Style = astInt(n.Field("Style"))
+	v.Indent = astInt(n.Field("Indent"))
+	v.Text = astString(n.Field("Text"))
+	return v
+}
+
+func (a *astConv) toSequence(n *Node) *Sequence {
+	if n == nil || n.Type() != "Sequence" {
+		return nil
+	}
+	v := astNew(&a.tSequence)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Props = a.toProperties(astNode(n.Field("Props")))
+	v.Flow = astBool(n.Field("Flow"))
+	v.Items = a.list4(astNode(n.Field("Items")))
+	return v
+}
+
+func (a *astConv) toStream(n *Node) *Stream {
+	if n == nil || n.Type() != "Stream" {
+		return nil
+	}
+	v := astNew(&a.tStream)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Documents = a.list5(astNode(n.Field("Documents")))
+	return v
+}
+
+func (a *astConv) toValue(n *Node) Value {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Mapping":
+		return a.toMapping(n)
+	case "Sequence":
+		return a.toSequence(n)
+	case "Scalar":
+		return a.toScalar(n)
+	case "Alias":
+		return a.toAlias(n)
+	}
+	return nil
+}
+
+func (a *astConv) list0(n *Node) []any {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list0Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.anyValue(c)
+	}
+	return out
+}
+
+func (a *astConv) list1(n *Node) []*Word {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list1Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toWord(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list2(n *Node) []*Directive {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list2Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toDirective(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list3(n *Node) []*Pair {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list3Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toPair(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list4(n *Node) []Value {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list4Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toValue(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list5(n *Node) []*Document {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list5Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toDocument(astNode(c))
+	}
+	return out
+}
+
+// astConv converts nodes into typed values.
+type astConv struct {
+	match       astChunk[Match]
+	error       astChunk[Error]
+	tAlias      astChunk[Alias]
+	tAnchor     astChunk[Anchor]
+	tMarker     astChunk[Marker]
+	tTag        astChunk[Tag]
+	tWord       astChunk[Word]
+	tDirective  astChunk[Directive]
+	tDocument   astChunk[Document]
+	tMapping    astChunk[Mapping]
+	tPair       astChunk[Pair]
+	tProperties astChunk[Properties]
+	tScalar     astChunk[Scalar]
+	tSequence   astChunk[Sequence]
+	tStream     astChunk[Stream]
+	list0Chunk  astChunk[any]
+	list1Chunk  astChunk[*Word]
+	list2Chunk  astChunk[*Directive]
+	list3Chunk  astChunk[*Pair]
+	list4Chunk  astChunk[Value]
+	list5Chunk  astChunk[*Document]
 }
 
 // ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
@@ -4450,6 +4780,753 @@ type tslabs struct {
 func ParseAST(input string, opts ...ParseOption) (*Stream, error) {
 	a := &tslabs{}
 	return tparse(trules[0], input, opts, a, func(v any) *Stream { return tAs[*Stream](v) })
+}
+
+// ParseRuleAST parses the whole input with the named rule and returns its typed value.
+// Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.
+// Invalid options and undefined names return nil with an error. Rule result types:
+//
+//	main: *Stream
+//	l_yaml_stream: *Stream
+//	l_document_prefix: any
+//	l_document_suffix: *Node
+//	c_directives_end: *Marker
+//	c_document_end: *Marker
+//	c_forbidden: *Node
+//	l_any_document: *Document
+//	l_directive_document: *Document
+//	l_explicit_document: *Document
+//	explicit_root: Value
+//	l_bare_document: *Document
+//	bare_root: Value
+//	document_end: *Marker
+//	l_directive: *Directive
+//	ns_yaml_directive: *Directive
+//	yaml_name: *Word
+//	ns_yaml_version: *Word
+//	ns_tag_directive: *Directive
+//	tag_name: *Word
+//	tag_handle: *Word
+//	ns_tag_prefix: *Word
+//	ns_reserved_directive: *Directive
+//	ns_directive_name: *Word
+//	ns_directive_parameter: *Word
+//	c_ns_properties: *Properties
+//	c_ns_tag_property: *Tag
+//	c_tag_handle: any
+//	c_ns_anchor_property: *Anchor
+//	c_ns_alias_node: *Alias
+//	ns_anchor_char: *Match
+//	ns_uri_char: any
+//	ns_tag_char: any
+//	ns_hex_digit: *Match
+//	s_l_block_node: Value
+//	s_l_flow_in_block: Value
+//	flow_out_node: Value
+//	plain_out_node: *Scalar
+//	s_l_block_collection: Value
+//	block_sequence_node: *Sequence
+//	block_mapping_node: *Mapping
+//	block_collection_start: *Properties
+//	block_sequence_start: *Properties
+//	block_collection_properties: *Properties
+//	block_collection_property: *Properties
+//	seq_space: []Value
+//	l_block_sequence: []Value
+//	c_l_block_seq_entry: Value
+//	s_l_block_indented: Value
+//	compact_collection: Value
+//	ns_l_compact_sequence: *Sequence
+//	l_block_mapping: []*Pair
+//	ns_l_compact_mapping: *Mapping
+//	ns_l_block_map_entry: *Pair
+//	c_l_block_map_explicit_entry: *Pair
+//	c_l_block_map_explicit_key: Value
+//	l_block_map_explicit_value: Value
+//	ns_l_block_map_implicit_entry: *Pair
+//	ns_s_block_map_implicit_key: Value
+//	plain_key_node: *Scalar
+//	c_l_block_map_implicit_value: Value
+//	block_out_node: Value
+//	s_l_block_scalar: *Scalar
+//	s_separate_n1: *Node
+//	block_scalar_properties: *Properties
+//	l_block_content: *Node
+//	l_nb_literal_text: *Node
+//	l_empty_block: *Node
+//	l_trail_comments: *Node
+//	ns_flow_node: Value
+//	ns_flow_yaml_node: Value
+//	c_flow_json_node: Value
+//	properties_node: *Scalar
+//	properties_separate: *Properties
+//	e_node: *Scalar
+//	e_node_comments: *Scalar
+//	c_flow_sequence: *Sequence
+//	ns_s_flow_seq_entries: []Value
+//	ns_flow_seq_entry: Value
+//	c_flow_mapping: *Mapping
+//	ns_s_flow_map_entries: []*Pair
+//	ns_flow_map_entry: *Pair
+//	flow_map_explicit: *Pair
+//	ns_flow_map_explicit_entry: *Pair
+//	empty_pair: *Pair
+//	ns_flow_map_implicit_entry: *Pair
+//	ns_flow_map_yaml_key_entry: *Pair
+//	separate_value: Value
+//	c_ns_flow_map_empty_key_entry: *Pair
+//	c_ns_flow_map_separate_value: Value
+//	separated_flow_node: Value
+//	c_ns_flow_map_json_key_entry: *Pair
+//	adjacent_value: Value
+//	c_ns_flow_map_adjacent_value: Value
+//	optionally_separated_flow_node: Value
+//	ns_flow_pair: *Mapping
+//	ns_flow_pair_entry: *Pair
+//	ns_flow_pair_yaml_key_entry: *Pair
+//	flow_pair_yaml_key: Value
+//	c_ns_flow_pair_json_key_entry: *Pair
+//	flow_pair_json_key: Value
+//	plain_node: *Scalar
+//	ns_plain: *Node
+//	ns_plain_safe: *Node
+//	ns_plain_safe_in: *Match
+//	ns_plain_one_out: *Node
+//	nb_ns_plain_in_line_out: []any
+//	ns_plain_multi_out: *Node
+//	ns_plain_one_in: *Node
+//	nb_ns_plain_in_line_in: []any
+//	ns_plain_multi_in: *Node
+//	c_double_quoted: *Scalar
+//	double_quoted: *Node
+//	nb_double_one_line: []any
+//	c_ns_esc_char: *Node
+//	nb_double_multi_line: *Node
+//	nb_ns_double_in_line: []any
+//	ns_double_char: any
+//	s_double_break: *Node
+//	c_single_quoted: *Scalar
+//	single_quoted: *Node
+//	nb_single_one_line: []any
+//	nb_single_multi_line: *Node
+//	nb_ns_single_in_line: []any
+//	ns_single_char: *Match
+//	s_flow_folded: *Node
+//	l_empty_flow: *Node
+//	s_flow_line_prefix: *Node
+//	s_separate: *Node
+//	s_separate_lines: any
+//	s_separate_in_line: []*Match
+//	s_l_comments: *Node
+//	s_b_comment: *Node
+//	l_comment: *Node
+//	c_nb_comment_text: *Node
+//	b_comment: *Match
+//	s_indent: *Node
+//	b_break: *Match
+//	ns_char: *Match
+//	nb_char: *Match
+func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
+	o, err := resolveOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+	switch name {
+	case "main":
+		a := &tslabs{}
+		return tparseResolved(trules[0], input, o, a, func(v any) *Stream { return tAs[*Stream](v) })
+	case "l_yaml_stream":
+		a := &tslabs{}
+		return tparseResolved(trules[1], input, o, a, func(v any) *Stream { return tAs[*Stream](v) })
+	case "l_document_prefix":
+		n, err := parseResolved(rules[2], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "l_document_suffix":
+		n, err := parseResolved(rules[3], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "c_directives_end":
+		a := &tslabs{}
+		return tparseResolved(trules[4], input, o, a, func(v any) *Marker { return tAs[*Marker](v) })
+	case "c_document_end":
+		a := &tslabs{}
+		return tparseResolved(trules[5], input, o, a, func(v any) *Marker { return tAs[*Marker](v) })
+	case "c_forbidden":
+		n, err := parseResolved(rules[6], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "l_any_document":
+		a := &tslabs{}
+		return tparseResolved(trules[7], input, o, a, func(v any) *Document { return tAs[*Document](v) })
+	case "l_directive_document":
+		a := &tslabs{}
+		return tparseResolved(trules[8], input, o, a, func(v any) *Document { return tAs[*Document](v) })
+	case "l_explicit_document":
+		a := &tslabs{}
+		return tparseResolved(trules[9], input, o, a, func(v any) *Document { return tAs[*Document](v) })
+	case "explicit_root":
+		a := &tslabs{}
+		return tparseResolved(trules[10], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "l_bare_document":
+		a := &tslabs{}
+		return tparseResolved(trules[11], input, o, a, func(v any) *Document { return tAs[*Document](v) })
+	case "bare_root":
+		a := &tslabs{}
+		return tparseResolved(trules[12], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "document_end":
+		a := &tslabs{}
+		return tparseResolved(trules[13], input, o, a, func(v any) *Marker { return tAs[*Marker](v) })
+	case "l_directive":
+		a := &tslabs{}
+		return tparseResolved(trules[14], input, o, a, func(v any) *Directive { return tAs[*Directive](v) })
+	case "ns_yaml_directive":
+		a := &tslabs{}
+		return tparseResolved(trules[15], input, o, a, func(v any) *Directive { return tAs[*Directive](v) })
+	case "yaml_name":
+		a := &tslabs{}
+		return tparseResolved(trules[16], input, o, a, func(v any) *Word { return tAs[*Word](v) })
+	case "ns_yaml_version":
+		a := &tslabs{}
+		return tparseResolved(trules[17], input, o, a, func(v any) *Word { return tAs[*Word](v) })
+	case "ns_tag_directive":
+		a := &tslabs{}
+		return tparseResolved(trules[18], input, o, a, func(v any) *Directive { return tAs[*Directive](v) })
+	case "tag_name":
+		a := &tslabs{}
+		return tparseResolved(trules[19], input, o, a, func(v any) *Word { return tAs[*Word](v) })
+	case "tag_handle":
+		a := &tslabs{}
+		return tparseResolved(trules[20], input, o, a, func(v any) *Word { return tAs[*Word](v) })
+	case "ns_tag_prefix":
+		a := &tslabs{}
+		return tparseResolved(trules[21], input, o, a, func(v any) *Word { return tAs[*Word](v) })
+	case "ns_reserved_directive":
+		a := &tslabs{}
+		return tparseResolved(trules[22], input, o, a, func(v any) *Directive { return tAs[*Directive](v) })
+	case "ns_directive_name":
+		a := &tslabs{}
+		return tparseResolved(trules[23], input, o, a, func(v any) *Word { return tAs[*Word](v) })
+	case "ns_directive_parameter":
+		a := &tslabs{}
+		return tparseResolved(trules[24], input, o, a, func(v any) *Word { return tAs[*Word](v) })
+	case "c_ns_properties":
+		a := &tslabs{}
+		return tparseResolved(trules[25], input, o, a, func(v any) *Properties { return tAs[*Properties](v) })
+	case "c_ns_tag_property":
+		a := &tslabs{}
+		return tparseResolved(trules[26], input, o, a, func(v any) *Tag { return tAs[*Tag](v) })
+	case "c_tag_handle":
+		n, err := parseResolved(rules[27], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "c_ns_anchor_property":
+		a := &tslabs{}
+		return tparseResolved(trules[28], input, o, a, func(v any) *Anchor { return tAs[*Anchor](v) })
+	case "c_ns_alias_node":
+		a := &tslabs{}
+		return tparseResolved(trules[29], input, o, a, func(v any) *Alias { return tAs[*Alias](v) })
+	case "ns_anchor_char":
+		a := &tslabs{}
+		return tparseResolved(trules[30], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "ns_uri_char":
+		n, err := parseResolved(rules[31], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "ns_tag_char":
+		n, err := parseResolved(rules[32], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "ns_hex_digit":
+		a := &tslabs{}
+		return tparseResolved(trules[33], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "s_l_block_node":
+		a := &tslabs{}
+		return tparseResolved(trules[34], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "s_l_flow_in_block":
+		a := &tslabs{}
+		return tparseResolved(trules[35], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "flow_out_node":
+		a := &tslabs{}
+		return tparseResolved(trules[36], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "plain_out_node":
+		a := &tslabs{}
+		return tparseResolved(trules[37], input, o, a, func(v any) *Scalar { return tAs[*Scalar](v) })
+	case "s_l_block_collection":
+		a := &tslabs{}
+		return tparseResolved(trules[38], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "block_sequence_node":
+		a := &tslabs{}
+		return tparseResolved(trules[39], input, o, a, func(v any) *Sequence { return tAs[*Sequence](v) })
+	case "block_mapping_node":
+		a := &tslabs{}
+		return tparseResolved(trules[40], input, o, a, func(v any) *Mapping { return tAs[*Mapping](v) })
+	case "block_collection_start":
+		a := &tslabs{}
+		return tparseResolved(trules[41], input, o, a, func(v any) *Properties { return tAs[*Properties](v) })
+	case "block_sequence_start":
+		a := &tslabs{}
+		return tparseResolved(trules[42], input, o, a, func(v any) *Properties { return tAs[*Properties](v) })
+	case "block_collection_properties":
+		a := &tslabs{}
+		return tparseResolved(trules[43], input, o, a, func(v any) *Properties { return tAs[*Properties](v) })
+	case "block_collection_property":
+		a := &tslabs{}
+		return tparseResolved(trules[44], input, o, a, func(v any) *Properties { return tAs[*Properties](v) })
+	case "seq_space":
+		a := &tslabs{}
+		return tparseResolved(trules[45], input, o, a, func(v any) []Value { return tl0(a, v) })
+	case "l_block_sequence":
+		a := &tslabs{}
+		return tparseResolved(trules[46], input, o, a, func(v any) []Value { return tl0(a, v) })
+	case "c_l_block_seq_entry":
+		a := &tslabs{}
+		return tparseResolved(trules[47], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "s_l_block_indented":
+		a := &tslabs{}
+		return tparseResolved(trules[48], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "compact_collection":
+		a := &tslabs{}
+		return tparseResolved(trules[49], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "ns_l_compact_sequence":
+		a := &tslabs{}
+		return tparseResolved(trules[50], input, o, a, func(v any) *Sequence { return tAs[*Sequence](v) })
+	case "l_block_mapping":
+		a := &tslabs{}
+		return tparseResolved(trules[51], input, o, a, func(v any) []*Pair { return tl1(a, v) })
+	case "ns_l_compact_mapping":
+		a := &tslabs{}
+		return tparseResolved(trules[52], input, o, a, func(v any) *Mapping { return tAs[*Mapping](v) })
+	case "ns_l_block_map_entry":
+		a := &tslabs{}
+		return tparseResolved(trules[53], input, o, a, func(v any) *Pair { return tAs[*Pair](v) })
+	case "c_l_block_map_explicit_entry":
+		a := &tslabs{}
+		return tparseResolved(trules[54], input, o, a, func(v any) *Pair { return tAs[*Pair](v) })
+	case "c_l_block_map_explicit_key":
+		a := &tslabs{}
+		return tparseResolved(trules[55], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "l_block_map_explicit_value":
+		a := &tslabs{}
+		return tparseResolved(trules[56], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "ns_l_block_map_implicit_entry":
+		a := &tslabs{}
+		return tparseResolved(trules[57], input, o, a, func(v any) *Pair { return tAs[*Pair](v) })
+	case "ns_s_block_map_implicit_key":
+		a := &tslabs{}
+		return tparseResolved(trules[58], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "plain_key_node":
+		a := &tslabs{}
+		return tparseResolved(trules[59], input, o, a, func(v any) *Scalar { return tAs[*Scalar](v) })
+	case "c_l_block_map_implicit_value":
+		a := &tslabs{}
+		return tparseResolved(trules[60], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "block_out_node":
+		a := &tslabs{}
+		return tparseResolved(trules[61], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "s_l_block_scalar":
+		a := &tslabs{}
+		return tparseResolved(trules[62], input, o, a, func(v any) *Scalar { return tAs[*Scalar](v) })
+	case "s_separate_n1":
+		n, err := parseResolved(rules[63], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "block_scalar_properties":
+		a := &tslabs{}
+		return tparseResolved(trules[64], input, o, a, func(v any) *Properties { return tAs[*Properties](v) })
+	case "l_block_content":
+		n, err := parseResolved(rules[65], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "l_nb_literal_text":
+		n, err := parseResolved(rules[66], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "l_empty_block":
+		n, err := parseResolved(rules[67], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "l_trail_comments":
+		n, err := parseResolved(rules[68], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ns_flow_node":
+		a := &tslabs{}
+		return tparseResolved(trules[69], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "ns_flow_yaml_node":
+		a := &tslabs{}
+		return tparseResolved(trules[70], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "c_flow_json_node":
+		a := &tslabs{}
+		return tparseResolved(trules[71], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "properties_node":
+		a := &tslabs{}
+		return tparseResolved(trules[72], input, o, a, func(v any) *Scalar { return tAs[*Scalar](v) })
+	case "properties_separate":
+		a := &tslabs{}
+		return tparseResolved(trules[73], input, o, a, func(v any) *Properties { return tAs[*Properties](v) })
+	case "e_node":
+		a := &tslabs{}
+		return tparseResolved(trules[74], input, o, a, func(v any) *Scalar { return tAs[*Scalar](v) })
+	case "e_node_comments":
+		a := &tslabs{}
+		return tparseResolved(trules[75], input, o, a, func(v any) *Scalar { return tAs[*Scalar](v) })
+	case "c_flow_sequence":
+		a := &tslabs{}
+		return tparseResolved(trules[76], input, o, a, func(v any) *Sequence { return tAs[*Sequence](v) })
+	case "ns_s_flow_seq_entries":
+		a := &tslabs{}
+		return tparseResolved(trules[77], input, o, a, func(v any) []Value { return tl0(a, v) })
+	case "ns_flow_seq_entry":
+		a := &tslabs{}
+		return tparseResolved(trules[78], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "c_flow_mapping":
+		a := &tslabs{}
+		return tparseResolved(trules[79], input, o, a, func(v any) *Mapping { return tAs[*Mapping](v) })
+	case "ns_s_flow_map_entries":
+		a := &tslabs{}
+		return tparseResolved(trules[80], input, o, a, func(v any) []*Pair { return tl1(a, v) })
+	case "ns_flow_map_entry":
+		a := &tslabs{}
+		return tparseResolved(trules[81], input, o, a, func(v any) *Pair { return tAs[*Pair](v) })
+	case "flow_map_explicit":
+		a := &tslabs{}
+		return tparseResolved(trules[82], input, o, a, func(v any) *Pair { return tAs[*Pair](v) })
+	case "ns_flow_map_explicit_entry":
+		a := &tslabs{}
+		return tparseResolved(trules[83], input, o, a, func(v any) *Pair { return tAs[*Pair](v) })
+	case "empty_pair":
+		a := &tslabs{}
+		return tparseResolved(trules[84], input, o, a, func(v any) *Pair { return tAs[*Pair](v) })
+	case "ns_flow_map_implicit_entry":
+		a := &tslabs{}
+		return tparseResolved(trules[85], input, o, a, func(v any) *Pair { return tAs[*Pair](v) })
+	case "ns_flow_map_yaml_key_entry":
+		a := &tslabs{}
+		return tparseResolved(trules[86], input, o, a, func(v any) *Pair { return tAs[*Pair](v) })
+	case "separate_value":
+		a := &tslabs{}
+		return tparseResolved(trules[87], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "c_ns_flow_map_empty_key_entry":
+		a := &tslabs{}
+		return tparseResolved(trules[88], input, o, a, func(v any) *Pair { return tAs[*Pair](v) })
+	case "c_ns_flow_map_separate_value":
+		a := &tslabs{}
+		return tparseResolved(trules[89], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "separated_flow_node":
+		a := &tslabs{}
+		return tparseResolved(trules[90], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "c_ns_flow_map_json_key_entry":
+		a := &tslabs{}
+		return tparseResolved(trules[91], input, o, a, func(v any) *Pair { return tAs[*Pair](v) })
+	case "adjacent_value":
+		a := &tslabs{}
+		return tparseResolved(trules[92], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "c_ns_flow_map_adjacent_value":
+		a := &tslabs{}
+		return tparseResolved(trules[93], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "optionally_separated_flow_node":
+		a := &tslabs{}
+		return tparseResolved(trules[94], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "ns_flow_pair":
+		a := &tslabs{}
+		return tparseResolved(trules[95], input, o, a, func(v any) *Mapping { return tAs[*Mapping](v) })
+	case "ns_flow_pair_entry":
+		a := &tslabs{}
+		return tparseResolved(trules[96], input, o, a, func(v any) *Pair { return tAs[*Pair](v) })
+	case "ns_flow_pair_yaml_key_entry":
+		a := &tslabs{}
+		return tparseResolved(trules[97], input, o, a, func(v any) *Pair { return tAs[*Pair](v) })
+	case "flow_pair_yaml_key":
+		a := &tslabs{}
+		return tparseResolved(trules[98], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "c_ns_flow_pair_json_key_entry":
+		a := &tslabs{}
+		return tparseResolved(trules[99], input, o, a, func(v any) *Pair { return tAs[*Pair](v) })
+	case "flow_pair_json_key":
+		a := &tslabs{}
+		return tparseResolved(trules[100], input, o, a, func(v any) Value { return tAs[Value](tpub(v)) })
+	case "plain_node":
+		a := &tslabs{}
+		return tparseResolved(trules[101], input, o, a, func(v any) *Scalar { return tAs[*Scalar](v) })
+	case "ns_plain":
+		n, err := parseResolved(rules[102], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ns_plain_safe":
+		n, err := parseResolved(rules[103], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ns_plain_safe_in":
+		a := &tslabs{}
+		return tparseResolved(trules[104], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "ns_plain_one_out":
+		n, err := parseResolved(rules[105], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "nb_ns_plain_in_line_out":
+		n, err := parseResolved(rules[106], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "ns_plain_multi_out":
+		n, err := parseResolved(rules[107], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ns_plain_one_in":
+		n, err := parseResolved(rules[108], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "nb_ns_plain_in_line_in":
+		n, err := parseResolved(rules[109], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "ns_plain_multi_in":
+		n, err := parseResolved(rules[110], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "c_double_quoted":
+		a := &tslabs{}
+		return tparseResolved(trules[111], input, o, a, func(v any) *Scalar { return tAs[*Scalar](v) })
+	case "double_quoted":
+		n, err := parseResolved(rules[112], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "nb_double_one_line":
+		n, err := parseResolved(rules[113], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "c_ns_esc_char":
+		n, err := parseResolved(rules[114], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "nb_double_multi_line":
+		n, err := parseResolved(rules[115], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "nb_ns_double_in_line":
+		n, err := parseResolved(rules[116], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "ns_double_char":
+		n, err := parseResolved(rules[117], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "s_double_break":
+		n, err := parseResolved(rules[118], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "c_single_quoted":
+		a := &tslabs{}
+		return tparseResolved(trules[119], input, o, a, func(v any) *Scalar { return tAs[*Scalar](v) })
+	case "single_quoted":
+		n, err := parseResolved(rules[120], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "nb_single_one_line":
+		n, err := parseResolved(rules[121], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "nb_single_multi_line":
+		n, err := parseResolved(rules[122], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "nb_ns_single_in_line":
+		n, err := parseResolved(rules[123], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "ns_single_char":
+		a := &tslabs{}
+		return tparseResolved(trules[124], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "s_flow_folded":
+		n, err := parseResolved(rules[125], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "l_empty_flow":
+		n, err := parseResolved(rules[126], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "s_flow_line_prefix":
+		n, err := parseResolved(rules[127], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "s_separate":
+		n, err := parseResolved(rules[128], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "s_separate_lines":
+		n, err := parseResolved(rules[129], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "s_separate_in_line":
+		a := &tslabs{}
+		return tparseResolved(trules[130], input, o, a, func(v any) []*Match { return tl2(a, v) })
+	case "s_l_comments":
+		n, err := parseResolved(rules[131], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "s_b_comment":
+		n, err := parseResolved(rules[132], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "l_comment":
+		n, err := parseResolved(rules[133], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "c_nb_comment_text":
+		n, err := parseResolved(rules[134], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "b_comment":
+		a := &tslabs{}
+		return tparseResolved(trules[135], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "s_indent":
+		n, err := parseResolved(rules[136], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "b_break":
+		a := &tslabs{}
+		return tparseResolved(trules[137], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "ns_char":
+		a := &tslabs{}
+		return tparseResolved(trules[138], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "nb_char":
+		a := &tslabs{}
+		return tparseResolved(trules[139], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	default:
+		return nil, fmt.Errorf("rule %s is not defined", name)
+	}
 }
 
 var scope2 = []string{"d"}

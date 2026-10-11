@@ -2448,6 +2448,11 @@ func tparse[T any](r *trule, input string, opts []ParseOption, ext any, conv fun
 		var zero T
 		return zero, err
 	}
+	return tparseResolved(r, input, o, ext, conv)
+}
+
+// tparseResolved consumes options already applied by the public entry point.
+func tparseResolved[T any](r *trule, input string, o parseOptions, ext any, conv func(any) T) (T, error) {
 	p, _ := tpool.Get().(*tparser)
 	if p == nil {
 		p = &tparser{parser: &parser{}}
@@ -4939,7 +4944,7 @@ func tmk_CallExpr(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tCallExpr)
 	v.Fun = tAs[Expr](tpub(f0))
-	v.Args = tl0(a, f1)
+	v.Args = tl3(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -4954,7 +4959,7 @@ func tmk_CallExpr(c *tctx, final bool, f0 any, f1 any) any {
 func tmk_Comprehension(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tComprehension)
-	v.Clauses = tl1(a, f0)
+	v.Clauses = tl4(a, f0)
 	v.Value = tAs[*StructLit](f1)
 	v.Fallback = tAs[*FallbackClause](f2)
 	if final {
@@ -5038,7 +5043,7 @@ func tmk_Field(c *tctx, final bool, f0 any, f1 any, f2 any, f3 any, f4 any) any 
 func tmk_File(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tFile)
-	v.Decls = tl3(a, f0)
+	v.Decls = tl1(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -5085,7 +5090,7 @@ func tmk_ImportDecl(c *tctx, final bool, f0 any, f1 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tImportDecl)
 	v.Lparen = tpubMatch(f0)
-	v.Specs = tl4(a, f1)
+	v.Specs = tl5(a, f1)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -5134,7 +5139,7 @@ func tmk_IndexExpr(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 func tmk_Interpolation(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tInterpolation)
-	v.Elts = tl0(a, f0)
+	v.Elts = tl3(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -5164,7 +5169,7 @@ func tmk_LetClause(c *tctx, final bool, f0 any, f1 any) any {
 func tmk_ListLit(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tListLit)
-	v.Elts = tl0(a, f0)
+	v.Elts = tl3(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -5272,7 +5277,7 @@ func tmk_SliceExpr(c *tctx, final bool, f0 any, f1 any, f2 any) any {
 func tmk_StructLit(c *tctx, final bool, f0 any) any {
 	a := c.p.ext.(*tslabs)
 	v := astNew(&a.tStructLit)
-	v.Elts = tl3(a, f0)
+	v.Elts = tl1(a, f0)
 	if final {
 		v.Span = Span{c.start, c.end}
 		return v
@@ -5314,32 +5319,32 @@ func tmk_UnaryExpr(c *tctx, final bool, f0 any, f1 any) any {
 	return c.made(v, first, start, end)
 }
 
-func tl0(a *tslabs, v any) []Expr {
+func tl0(a *tslabs, v any) []*Match {
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*tnode)
 	if n == nil {
-		return []Expr{} // another node (an Error), as conversion makes an empty list of it
+		return []*Match{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl0Chunk, len(n.kids))
 	for i, c := range n.kids {
-		out[i] = tAs[Expr](tpub(c))
+		out[i] = tpubMatch(c)
 	}
 	return out
 }
 
-func tl1(a *tslabs, v any) []Clause {
+func tl1(a *tslabs, v any) []Decl {
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*tnode)
 	if n == nil {
-		return []Clause{} // another node (an Error), as conversion makes an empty list of it
+		return []Decl{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl1Chunk, len(n.kids))
 	for i, c := range n.kids {
-		out[i] = tAs[Clause](tpub(c))
+		out[i] = tAs[Decl](tpub(c))
 	}
 	return out
 }
@@ -5359,22 +5364,37 @@ func tl2(a *tslabs, v any) []*Attribute {
 	return out
 }
 
-func tl3(a *tslabs, v any) []Decl {
+func tl3(a *tslabs, v any) []Expr {
 	if v == nil {
 		return nil
 	}
 	n, _ := v.(*tnode)
 	if n == nil {
-		return []Decl{} // another node (an Error), as conversion makes an empty list of it
+		return []Expr{} // another node (an Error), as conversion makes an empty list of it
 	}
 	out := astSlice(&a.tl3Chunk, len(n.kids))
 	for i, c := range n.kids {
-		out[i] = tAs[Decl](tpub(c))
+		out[i] = tAs[Expr](tpub(c))
 	}
 	return out
 }
 
-func tl4(a *tslabs, v any) []*ImportSpec {
+func tl4(a *tslabs, v any) []Clause {
+	if v == nil {
+		return nil
+	}
+	n, _ := v.(*tnode)
+	if n == nil {
+		return []Clause{} // another node (an Error), as conversion makes an empty list of it
+	}
+	out := astSlice(&a.tl4Chunk, len(n.kids))
+	for i, c := range n.kids {
+		out[i] = tAs[Clause](tpub(c))
+	}
+	return out
+}
+
+func tl5(a *tslabs, v any) []*ImportSpec {
 	if v == nil {
 		return nil
 	}
@@ -5382,7 +5402,7 @@ func tl4(a *tslabs, v any) []*ImportSpec {
 	if n == nil {
 		return []*ImportSpec{} // another node (an Error), as conversion makes an empty list of it
 	}
-	out := astSlice(&a.tl4Chunk, len(n.kids))
+	out := astSlice(&a.tl5Chunk, len(n.kids))
 	for i, c := range n.kids {
 		out[i] = tAs[*ImportSpec](c)
 	}
@@ -5425,11 +5445,755 @@ type tslabs struct {
 	tStructLit      astChunk[StructLit]
 	tTryClause      astChunk[TryClause]
 	tUnaryExpr      astChunk[UnaryExpr]
-	tl0Chunk        astChunk[Expr]
-	tl1Chunk        astChunk[Clause]
+	tl0Chunk        astChunk[*Match]
+	tl1Chunk        astChunk[Decl]
 	tl2Chunk        astChunk[*Attribute]
-	tl3Chunk        astChunk[Decl]
-	tl4Chunk        astChunk[*ImportSpec]
+	tl3Chunk        astChunk[Expr]
+	tl4Chunk        astChunk[Clause]
+	tl5Chunk        astChunk[*ImportSpec]
+}
+
+func (a *astConv) toMatch(n *Node) *Match {
+	if n == nil || n.Type() != "Match" {
+		return nil
+	}
+	v := astNew(&a.match)
+	*v = Match{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toError(n *Node) *Error {
+	if n == nil || n.Type() != "Error" {
+		return nil
+	}
+	msg, _ := n.Field("message").(string)
+	v := astNew(&a.error)
+	*v = Error{Span: Span{int(n.Start), int(n.End)}, Text: n.Text, Message: msg}
+	return v
+}
+
+// anyValue converts a value of a statically unknown type into the typed value of its type (CST
+// nodes stay *Node).
+func (a *astConv) anyValue(v any) any {
+	n, ok := v.(*Node)
+	if !ok || n == nil {
+		return v
+	}
+	switch n.Type() {
+	case "Match":
+		return a.toMatch(n)
+	case "Error":
+		return a.toError(n)
+	case "Attribute":
+		return a.toAttribute(n)
+	case "Bool":
+		return a.toBool(n)
+	case "Bottom":
+		return a.toBottom(n)
+	case "Float":
+		return a.toFloat(n)
+	case "Ident":
+		return a.toIdent(n)
+	case "Int":
+		return a.toInt(n)
+	case "Null":
+		return a.toNull(n)
+	case "String":
+		return a.toString(n)
+	case "Alias":
+		return a.toAlias(n)
+	case "BinaryExpr":
+		return a.toBinaryExpr(n)
+	case "CallExpr":
+		return a.toCallExpr(n)
+	case "Comprehension":
+		return a.toComprehension(n)
+	case "Ellipsis":
+		return a.toEllipsis(n)
+	case "EmbedDecl":
+		return a.toEmbedDecl(n)
+	case "FallbackClause":
+		return a.toFallbackClause(n)
+	case "Field":
+		return a.toField(n)
+	case "File":
+		return a.toFile(n)
+	case "ForClause":
+		return a.toForClause(n)
+	case "IfClause":
+		return a.toIfClause(n)
+	case "ImportDecl":
+		return a.toImportDecl(n)
+	case "ImportSpec":
+		return a.toImportSpec(n)
+	case "IndexExpr":
+		return a.toIndexExpr(n)
+	case "Interpolation":
+		return a.toInterpolation(n)
+	case "LetClause":
+		return a.toLetClause(n)
+	case "ListLit":
+		return a.toListLit(n)
+	case "Package":
+		return a.toPackage(n)
+	case "ParenExpr":
+		return a.toParenExpr(n)
+	case "PostfixAlias":
+		return a.toPostfixAlias(n)
+	case "PostfixExpr":
+		return a.toPostfixExpr(n)
+	case "SelectorExpr":
+		return a.toSelectorExpr(n)
+	case "SliceExpr":
+		return a.toSliceExpr(n)
+	case "StructLit":
+		return a.toStructLit(n)
+	case "TryClause":
+		return a.toTryClause(n)
+	case "UnaryExpr":
+		return a.toUnaryExpr(n)
+	}
+	return n
+}
+
+func (a *astConv) toAttribute(n *Node) *Attribute {
+	if n == nil || n.Type() != "Attribute" {
+		return nil
+	}
+	v := astNew(&a.tAttribute)
+	*v = Attribute{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toBool(n *Node) *Bool {
+	if n == nil || n.Type() != "Bool" {
+		return nil
+	}
+	v := astNew(&a.tBool)
+	*v = Bool{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toBottom(n *Node) *Bottom {
+	if n == nil || n.Type() != "Bottom" {
+		return nil
+	}
+	v := astNew(&a.tBottom)
+	*v = Bottom{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toFloat(n *Node) *Float {
+	if n == nil || n.Type() != "Float" {
+		return nil
+	}
+	v := astNew(&a.tFloat)
+	*v = Float{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toIdent(n *Node) *Ident {
+	if n == nil || n.Type() != "Ident" {
+		return nil
+	}
+	v := astNew(&a.tIdent)
+	*v = Ident{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toInt(n *Node) *Int {
+	if n == nil || n.Type() != "Int" {
+		return nil
+	}
+	v := astNew(&a.tInt)
+	*v = Int{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toNull(n *Node) *Null {
+	if n == nil || n.Type() != "Null" {
+		return nil
+	}
+	v := astNew(&a.tNull)
+	*v = Null{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toString(n *Node) *String {
+	if n == nil || n.Type() != "String" {
+		return nil
+	}
+	v := astNew(&a.tString)
+	*v = String{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	return v
+}
+
+func (a *astConv) toAlias(n *Node) *Alias {
+	if n == nil || n.Type() != "Alias" {
+		return nil
+	}
+	v := astNew(&a.tAlias)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Ident = a.toIdent(astNode(n.Field("Ident")))
+	v.Expr = a.toExpr(astNode(n.Field("Expr")))
+	return v
+}
+
+func (a *astConv) toBinaryExpr(n *Node) *BinaryExpr {
+	if n == nil || n.Type() != "BinaryExpr" {
+		return nil
+	}
+	v := astNew(&a.tBinaryExpr)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Op = a.toMatch(astNode(n.Field("Op")))
+	v.Y = a.toExpr(astNode(n.Field("Y")))
+	return v
+}
+
+func (a *astConv) toCallExpr(n *Node) *CallExpr {
+	if n == nil || n.Type() != "CallExpr" {
+		return nil
+	}
+	v := astNew(&a.tCallExpr)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Fun = a.toExpr(astNode(n.Field("Fun")))
+	v.Args = a.list1(astNode(n.Field("Args")))
+	return v
+}
+
+func (a *astConv) toComprehension(n *Node) *Comprehension {
+	if n == nil || n.Type() != "Comprehension" {
+		return nil
+	}
+	v := astNew(&a.tComprehension)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Clauses = a.list2(astNode(n.Field("Clauses")))
+	v.Value = a.toStructLit(astNode(n.Field("Value")))
+	v.Fallback = a.toFallbackClause(astNode(n.Field("Fallback")))
+	return v
+}
+
+func (a *astConv) toEllipsis(n *Node) *Ellipsis {
+	if n == nil || n.Type() != "Ellipsis" {
+		return nil
+	}
+	v := astNew(&a.tEllipsis)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Type = a.toExpr(astNode(n.Field("Type")))
+	return v
+}
+
+func (a *astConv) toEmbedDecl(n *Node) *EmbedDecl {
+	if n == nil || n.Type() != "EmbedDecl" {
+		return nil
+	}
+	v := astNew(&a.tEmbedDecl)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Expr = a.toExpr(astNode(n.Field("Expr")))
+	v.Alias = a.toPostfixAlias(astNode(n.Field("Alias")))
+	return v
+}
+
+func (a *astConv) toFallbackClause(n *Node) *FallbackClause {
+	if n == nil || n.Type() != "FallbackClause" {
+		return nil
+	}
+	v := astNew(&a.tFallbackClause)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Body = a.toStructLit(astNode(n.Field("Body")))
+	return v
+}
+
+func (a *astConv) toField(n *Node) *Field {
+	if n == nil || n.Type() != "Field" {
+		return nil
+	}
+	v := astNew(&a.tField)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Label = a.toLabel(astNode(n.Field("Label")))
+	v.Alias = a.toPostfixAlias(astNode(n.Field("Alias")))
+	v.Constraint = a.toMatch(astNode(n.Field("Constraint")))
+	v.Value = a.toExpr(astNode(n.Field("Value")))
+	v.Attrs = a.list3(astNode(n.Field("Attrs")))
+	return v
+}
+
+func (a *astConv) toFile(n *Node) *File {
+	if n == nil || n.Type() != "File" {
+		return nil
+	}
+	v := astNew(&a.tFile)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Decls = a.list4(astNode(n.Field("Decls")))
+	return v
+}
+
+func (a *astConv) toForClause(n *Node) *ForClause {
+	if n == nil || n.Type() != "ForClause" {
+		return nil
+	}
+	v := astNew(&a.tForClause)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Key = a.toIdent(astNode(n.Field("Key")))
+	v.Value = a.toIdent(astNode(n.Field("Value")))
+	v.Source = a.toExpr(astNode(n.Field("Source")))
+	return v
+}
+
+func (a *astConv) toIfClause(n *Node) *IfClause {
+	if n == nil || n.Type() != "IfClause" {
+		return nil
+	}
+	v := astNew(&a.tIfClause)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Condition = a.toExpr(astNode(n.Field("Condition")))
+	return v
+}
+
+func (a *astConv) toImportDecl(n *Node) *ImportDecl {
+	if n == nil || n.Type() != "ImportDecl" {
+		return nil
+	}
+	v := astNew(&a.tImportDecl)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Lparen = a.toMatch(astNode(n.Field("Lparen")))
+	v.Specs = a.list5(astNode(n.Field("Specs")))
+	return v
+}
+
+func (a *astConv) toImportSpec(n *Node) *ImportSpec {
+	if n == nil || n.Type() != "ImportSpec" {
+		return nil
+	}
+	v := astNew(&a.tImportSpec)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	v.Path = a.toString(astNode(n.Field("Path")))
+	return v
+}
+
+func (a *astConv) toIndexExpr(n *Node) *IndexExpr {
+	if n == nil || n.Type() != "IndexExpr" {
+		return nil
+	}
+	v := astNew(&a.tIndexExpr)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Index = a.toExpr(astNode(n.Field("Index")))
+	v.Rbrack = a.toMatch(astNode(n.Field("Rbrack")))
+	return v
+}
+
+func (a *astConv) toInterpolation(n *Node) *Interpolation {
+	if n == nil || n.Type() != "Interpolation" {
+		return nil
+	}
+	v := astNew(&a.tInterpolation)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Elts = a.list1(astNode(n.Field("Elts")))
+	return v
+}
+
+func (a *astConv) toLetClause(n *Node) *LetClause {
+	if n == nil || n.Type() != "LetClause" {
+		return nil
+	}
+	v := astNew(&a.tLetClause)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Ident = a.toIdent(astNode(n.Field("Ident")))
+	v.Expr = a.toExpr(astNode(n.Field("Expr")))
+	return v
+}
+
+func (a *astConv) toListLit(n *Node) *ListLit {
+	if n == nil || n.Type() != "ListLit" {
+		return nil
+	}
+	v := astNew(&a.tListLit)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Elts = a.list1(astNode(n.Field("Elts")))
+	return v
+}
+
+func (a *astConv) toPackage(n *Node) *Package {
+	if n == nil || n.Type() != "Package" {
+		return nil
+	}
+	v := astNew(&a.tPackage)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Name = a.toIdent(astNode(n.Field("Name")))
+	return v
+}
+
+func (a *astConv) toParenExpr(n *Node) *ParenExpr {
+	if n == nil || n.Type() != "ParenExpr" {
+		return nil
+	}
+	v := astNew(&a.tParenExpr)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	return v
+}
+
+func (a *astConv) toPostfixAlias(n *Node) *PostfixAlias {
+	if n == nil || n.Type() != "PostfixAlias" {
+		return nil
+	}
+	v := astNew(&a.tPostfixAlias)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Label = a.toIdent(astNode(n.Field("Label")))
+	v.Field = a.toIdent(astNode(n.Field("Field")))
+	return v
+}
+
+func (a *astConv) toPostfixExpr(n *Node) *PostfixExpr {
+	if n == nil || n.Type() != "PostfixExpr" {
+		return nil
+	}
+	v := astNew(&a.tPostfixExpr)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Op = a.toMatch(astNode(n.Field("Op")))
+	return v
+}
+
+func (a *astConv) toSelectorExpr(n *Node) *SelectorExpr {
+	if n == nil || n.Type() != "SelectorExpr" {
+		return nil
+	}
+	v := astNew(&a.tSelectorExpr)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Sel = a.toSelector(astNode(n.Field("Sel")))
+	return v
+}
+
+func (a *astConv) toSliceExpr(n *Node) *SliceExpr {
+	if n == nil || n.Type() != "SliceExpr" {
+		return nil
+	}
+	v := astNew(&a.tSliceExpr)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.X = a.toExpr(astNode(n.Field("X")))
+	v.Low = a.toExpr(astNode(n.Field("Low")))
+	v.High = a.toExpr(astNode(n.Field("High")))
+	return v
+}
+
+func (a *astConv) toStructLit(n *Node) *StructLit {
+	if n == nil || n.Type() != "StructLit" {
+		return nil
+	}
+	v := astNew(&a.tStructLit)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Elts = a.list4(astNode(n.Field("Elts")))
+	return v
+}
+
+func (a *astConv) toTryClause(n *Node) *TryClause {
+	if n == nil || n.Type() != "TryClause" {
+		return nil
+	}
+	v := astNew(&a.tTryClause)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Ident = a.toIdent(astNode(n.Field("Ident")))
+	v.Expr = a.toExpr(astNode(n.Field("Expr")))
+	return v
+}
+
+func (a *astConv) toUnaryExpr(n *Node) *UnaryExpr {
+	if n == nil || n.Type() != "UnaryExpr" {
+		return nil
+	}
+	v := astNew(&a.tUnaryExpr)
+	v.Span = Span{int(n.Start), int(n.End)}
+	v.Op = a.toMatch(astNode(n.Field("Op")))
+	v.X = a.toExpr(astNode(n.Field("X")))
+	return v
+}
+
+func (a *astConv) toClause(n *Node) Clause {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "ForClause":
+		return a.toForClause(n)
+	case "IfClause":
+		return a.toIfClause(n)
+	case "LetClause":
+		return a.toLetClause(n)
+	case "TryClause":
+		return a.toTryClause(n)
+	}
+	return nil
+}
+
+func (a *astConv) toDecl(n *Node) Decl {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Package":
+		return a.toPackage(n)
+	case "Attribute":
+		return a.toAttribute(n)
+	case "ImportDecl":
+		return a.toImportDecl(n)
+	case "Field":
+		return a.toField(n)
+	case "EmbedDecl":
+		return a.toEmbedDecl(n)
+	case "LetClause":
+		return a.toLetClause(n)
+	case "Ellipsis":
+		return a.toEllipsis(n)
+	case "Comprehension":
+		return a.toComprehension(n)
+	}
+	return nil
+}
+
+func (a *astConv) toExpr(n *Node) Expr {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Ident":
+		return a.toIdent(n)
+	case "Int":
+		return a.toInt(n)
+	case "Float":
+		return a.toFloat(n)
+	case "String":
+		return a.toString(n)
+	case "Bool":
+		return a.toBool(n)
+	case "Null":
+		return a.toNull(n)
+	case "Bottom":
+		return a.toBottom(n)
+	case "Interpolation":
+		return a.toInterpolation(n)
+	case "StructLit":
+		return a.toStructLit(n)
+	case "ListLit":
+		return a.toListLit(n)
+	case "ParenExpr":
+		return a.toParenExpr(n)
+	case "SelectorExpr":
+		return a.toSelectorExpr(n)
+	case "IndexExpr":
+		return a.toIndexExpr(n)
+	case "SliceExpr":
+		return a.toSliceExpr(n)
+	case "CallExpr":
+		return a.toCallExpr(n)
+	case "UnaryExpr":
+		return a.toUnaryExpr(n)
+	case "BinaryExpr":
+		return a.toBinaryExpr(n)
+	case "PostfixExpr":
+		return a.toPostfixExpr(n)
+	case "Alias":
+		return a.toAlias(n)
+	case "Ellipsis":
+		return a.toEllipsis(n)
+	case "Comprehension":
+		return a.toComprehension(n)
+	}
+	return nil
+}
+
+func (a *astConv) toLabel(n *Node) Label {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Ident":
+		return a.toIdent(n)
+	case "String":
+		return a.toString(n)
+	case "Interpolation":
+		return a.toInterpolation(n)
+	case "Bool":
+		return a.toBool(n)
+	case "Null":
+		return a.toNull(n)
+	case "ParenExpr":
+		return a.toParenExpr(n)
+	case "ListLit":
+		return a.toListLit(n)
+	case "Alias":
+		return a.toAlias(n)
+	}
+	return nil
+}
+
+func (a *astConv) toNumber(n *Node) Number {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Int":
+		return a.toInt(n)
+	case "Float":
+		return a.toFloat(n)
+	}
+	return nil
+}
+
+func (a *astConv) toSelector(n *Node) Selector {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "Ident":
+		return a.toIdent(n)
+	case "String":
+		return a.toString(n)
+	}
+	return nil
+}
+
+func (a *astConv) toStrLit(n *Node) StrLit {
+	if n == nil {
+		return nil
+	}
+	switch n.Type() {
+	case "Error":
+		return a.toError(n)
+	case "String":
+		return a.toString(n)
+	case "Interpolation":
+		return a.toInterpolation(n)
+	}
+	return nil
+}
+
+func (a *astConv) list0(n *Node) []any {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list0Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.anyValue(c)
+	}
+	return out
+}
+
+func (a *astConv) list1(n *Node) []Expr {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list1Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toExpr(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list2(n *Node) []Clause {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list2Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toClause(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list3(n *Node) []*Attribute {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list3Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toAttribute(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list4(n *Node) []Decl {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list4Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toDecl(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list5(n *Node) []*ImportSpec {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list5Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toImportSpec(astNode(c))
+	}
+	return out
+}
+
+// astConv converts nodes into typed values.
+type astConv struct {
+	match           astChunk[Match]
+	error           astChunk[Error]
+	tAttribute      astChunk[Attribute]
+	tBool           astChunk[Bool]
+	tBottom         astChunk[Bottom]
+	tFloat          astChunk[Float]
+	tIdent          astChunk[Ident]
+	tInt            astChunk[Int]
+	tNull           astChunk[Null]
+	tString         astChunk[String]
+	tAlias          astChunk[Alias]
+	tBinaryExpr     astChunk[BinaryExpr]
+	tCallExpr       astChunk[CallExpr]
+	tComprehension  astChunk[Comprehension]
+	tEllipsis       astChunk[Ellipsis]
+	tEmbedDecl      astChunk[EmbedDecl]
+	tFallbackClause astChunk[FallbackClause]
+	tField          astChunk[Field]
+	tFile           astChunk[File]
+	tForClause      astChunk[ForClause]
+	tIfClause       astChunk[IfClause]
+	tImportDecl     astChunk[ImportDecl]
+	tImportSpec     astChunk[ImportSpec]
+	tIndexExpr      astChunk[IndexExpr]
+	tInterpolation  astChunk[Interpolation]
+	tLetClause      astChunk[LetClause]
+	tListLit        astChunk[ListLit]
+	tPackage        astChunk[Package]
+	tParenExpr      astChunk[ParenExpr]
+	tPostfixAlias   astChunk[PostfixAlias]
+	tPostfixExpr    astChunk[PostfixExpr]
+	tSelectorExpr   astChunk[SelectorExpr]
+	tSliceExpr      astChunk[SliceExpr]
+	tStructLit      astChunk[StructLit]
+	tTryClause      astChunk[TryClause]
+	tUnaryExpr      astChunk[UnaryExpr]
+	list0Chunk      astChunk[any]
+	list1Chunk      astChunk[Expr]
+	list2Chunk      astChunk[Clause]
+	list3Chunk      astChunk[*Attribute]
+	list4Chunk      astChunk[Decl]
+	list5Chunk      astChunk[*ImportSpec]
 }
 
 // ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
@@ -5439,6 +6203,1152 @@ type tslabs struct {
 func ParseAST(input string, opts ...ParseOption) (*File, error) {
 	a := &tslabs{}
 	return tparse(trules[0], input, opts, a, func(v any) *File { return tAs[*File](v) })
+}
+
+// ParseRuleAST parses the whole input with the named rule and returns its typed value.
+// Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.
+// Invalid options and undefined names return nil with an error. Rule result types:
+//
+//	main: *File
+//	main_fast: *File
+//	file: *File
+//	package_clause: *Package
+//	import_decl: *ImportDecl
+//	import_paren: *ImportDecl
+//	import_single: *ImportDecl
+//	import_spec: *ImportSpec
+//	import_name: *Ident
+//	import_path: *String
+//	isep: *Node
+//	bind: *Node
+//	sp: []*Match
+//	nlws: []*Match
+//	ws: []any
+//	comment: *Node
+//	comma: *Node
+//	icomma: *Node
+//	sep: *Node
+//	colon_ec: *Node
+//	colon_ec0: *Node
+//	colon_ne: *Node
+//	colon_ahead: *Node
+//	decls: []Decl
+//	decl_item: Decl
+//	item_normal: Decl
+//	item_tail: Decl
+//	embed_tail: *EmbedDecl
+//	tail_end: *Node
+//	tail_mark_end: *Node
+//	after_ec: *Node
+//	after_ne: *Node
+//	tail_mark: *Node
+//	decl: Decl
+//	comp_decl: *Comprehension
+//	ellipsis_decl: *Ellipsis
+//	let_decl: *LetClause
+//	embed_decl: *EmbedDecl
+//	embed_plain: *EmbedDecl
+//	embed_bare: *EmbedDecl
+//	kw4: *Node
+//	func_bare: *Node
+//	bare_for: *Ident
+//	bare_if: *Ident
+//	bare_let: *Ident
+//	field: *Field
+//	field_plain: *Field
+//	field_alias: *Field
+//	nfield: *Field
+//	nfield_plain: *Field
+//	nfield_alias: *Field
+//	field_value: Expr
+//	fv_label: Expr
+//	fv_choice: Expr
+//	let_skip: Expr
+//	let_value: *Ident
+//	expr_nolet: Expr
+//	nested: *StructLit
+//	alias_value: *Alias
+//	attrs: []*Attribute
+//	postfix_alias_at: *PostfixAlias
+//	postfix_alias: *PostfixAlias
+//	alias_dual: *PostfixAlias
+//	alias_paren: *PostfixAlias
+//	alias_simple: *PostfixAlias
+//	label_plain: Label
+//	ident_label: *Ident
+//	kw_label: *Ident
+//	for_label: *Ident
+//	if_label: *Ident
+//	let_label: *Ident
+//	alias_label: *Alias
+//	nlabel_plain: Label
+//	nident_label: *Ident
+//	nkw_label: *Ident
+//	alias_nlabel: *Alias
+//	alias_rhs: Expr
+//	ident_any: *Ident
+//	comprehension: *Comprehension
+//	comp_single: *Comprehension
+//	comp_multi: *Comprehension
+//	fb_else: *FallbackClause
+//	fb_other: *FallbackClause
+//	else_clause: *FallbackClause
+//	otherwise_clause: *FallbackClause
+//	clause_gap: any
+//	gate_for_if: *Node
+//	start_clause: Clause
+//	clause: Clause
+//	for_clause: *ForClause
+//	for_kv: *ForClause
+//	for_v: *ForClause
+//	if_clause: *IfClause
+//	try_clause: *TryClause
+//	try_assign: *TryClause
+//	try_plain: *TryClause
+//	struct_lit: *StructLit
+//	list_lit: *ListLit
+//	esep: *Node
+//	list_elem: Expr
+//	elem_expr: Expr
+//	gate_kw3: *Node
+//	bare_for_if: *Ident
+//	alias_elem: *Alias
+//	list_dots: *Ellipsis
+//	dots_type: Expr
+//	paren_expr: *ParenExpr
+//	expr: Expr
+//	atom_expr: Expr
+//	operand_any: Expr
+//	operand_word: Expr
+//	word_any: Expr
+//	operand_digit: Expr
+//	operand_other: Expr
+//	ident_q: Expr
+//	full_expr: Expr
+//	asep: *Node
+//	selector: Selector
+//	bool_ident_sel: *Ident
+//	sel_string: *String
+//	interp_expr: Expr
+//	attribute: *Attribute
+//	attribute_d: *Attribute
+//	attr_body: []any
+//	attr_group: *Node
+//	attr_tok: any
+//	attr_num: *Node
+//	num_exp: *Node
+//	num_mult: *Node
+//	bad_num: *Node
+//	zero_ok: *Node
+//	attr_str: *String
+//	idchar: any
+//	uidchar: *Node
+//	idchars: *Node
+//	idstart: any
+//	digit_any: any
+//	ident_text: *Node
+//	hashrest: []any
+//	ident: *Ident
+//	kw: *Node
+//	kwident: *Ident
+//	bool_lit: *Bool
+//	null_lit: *Null
+//	bottom: *Bottom
+//	number: Number
+//	number_any: Number
+//	hexd: *Match
+//	based: *Int
+//	d10: *Node
+//	dec_ip: *Node
+//	fracpart: *Node
+//	exppart: *Node
+//	mult: *Node
+//	float_lit: *Float
+//	int_lit: *Int
+//	strlit: StrLit
+//	str_any: StrLit
+//	hexd4: *Node
+//	bigu: *Node
+//	esc_dq: any
+//	esc_sq: any
+//	dqbody: []any
+//	dq_plain: *String
+//	dq_open: *String
+//	dq_mid: *String
+//	dq_end: *String
+//	dq_interp: *Interpolation
+//	dq_rest: []Expr
+//	dq_more: []Expr
+//	dq_last: []Expr
+//	sqbody: []any
+//	sq_plain: *String
+//	sq_open: *String
+//	sq_mid: *String
+//	sq_end: *String
+//	sq_interp: *Interpolation
+//	sq_rest: []Expr
+//	sq_more: []Expr
+//	sq_last: []Expr
+//	gstring: StrLit
+//	qc: *Node
+//	hq: *Node
+//	g_escbody: *Node
+//	gs_esc: *Node
+//	g_interp_open: *Node
+//	ml_nl: *Match
+//	ml_open_tail: *Node
+//	ml_close_tail: *Node
+//	gtriple: *String
+//	gs_body: []any
+//	gs_quote: *Node
+//	gsl_plain: *String
+//	gsl_open: *String
+//	gsl_mid: *String
+//	gsl_end: *String
+//	gsl_interp: *Interpolation
+//	gsl_interp_s: *Interpolation
+//	gsl_rest: []Expr
+//	gsl_more: []Expr
+//	gsl_last: []Expr
+//	ml_body: []any
+//	ml_line: *Node
+//	ml_close: *Match
+//	gml_plain: *String
+//	ml_frag: []any
+//	gml_open: *String
+//	gml_mid: *String
+//	gml_end: *String
+//	gml_interp: *Interpolation
+//	gml_interp_s: *Interpolation
+//	gml_rest: []Expr
+//	gml_more: []Expr
+//	gml_last: []Expr
+//	gstr_plain: *String
+//	uletter: *Match
+//	udigit: *Match
+func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
+	o, err := resolveOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+	switch name {
+	case "main":
+		a := &tslabs{}
+		return tparseResolved(trules[0], input, o, a, func(v any) *File { return tAs[*File](v) })
+	case "main_fast":
+		a := &tslabs{}
+		return tparseResolved(trules[1], input, o, a, func(v any) *File { return tAs[*File](v) })
+	case "file":
+		a := &tslabs{}
+		return tparseResolved(trules[2], input, o, a, func(v any) *File { return tAs[*File](v) })
+	case "package_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[3], input, o, a, func(v any) *Package { return tAs[*Package](v) })
+	case "import_decl":
+		a := &tslabs{}
+		return tparseResolved(trules[4], input, o, a, func(v any) *ImportDecl { return tAs[*ImportDecl](v) })
+	case "import_paren":
+		a := &tslabs{}
+		return tparseResolved(trules[5], input, o, a, func(v any) *ImportDecl { return tAs[*ImportDecl](v) })
+	case "import_single":
+		a := &tslabs{}
+		return tparseResolved(trules[6], input, o, a, func(v any) *ImportDecl { return tAs[*ImportDecl](v) })
+	case "import_spec":
+		a := &tslabs{}
+		return tparseResolved(trules[7], input, o, a, func(v any) *ImportSpec { return tAs[*ImportSpec](v) })
+	case "import_name":
+		a := &tslabs{}
+		return tparseResolved(trules[8], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "import_path":
+		a := &tslabs{}
+		return tparseResolved(trules[9], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "isep":
+		n, err := parseResolved(rules[10], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "bind":
+		n, err := parseResolved(rules[11], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "sp":
+		a := &tslabs{}
+		return tparseResolved(trules[12], input, o, a, func(v any) []*Match { return tl0(a, v) })
+	case "nlws":
+		a := &tslabs{}
+		return tparseResolved(trules[13], input, o, a, func(v any) []*Match { return tl0(a, v) })
+	case "ws":
+		n, err := parseResolved(rules[14], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "comment":
+		n, err := parseResolved(rules[15], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "comma":
+		n, err := parseResolved(rules[16], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "icomma":
+		n, err := parseResolved(rules[17], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "sep":
+		n, err := parseResolved(rules[18], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "colon_ec":
+		n, err := parseResolved(rules[19], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "colon_ec0":
+		n, err := parseResolved(rules[20], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "colon_ne":
+		n, err := parseResolved(rules[21], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "colon_ahead":
+		n, err := parseResolved(rules[22], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "decls":
+		a := &tslabs{}
+		return tparseResolved(trules[23], input, o, a, func(v any) []Decl { return tl1(a, v) })
+	case "decl_item":
+		a := &tslabs{}
+		return tparseResolved(trules[24], input, o, a, func(v any) Decl { return tAs[Decl](tpub(v)) })
+	case "item_normal":
+		a := &tslabs{}
+		return tparseResolved(trules[25], input, o, a, func(v any) Decl { return tAs[Decl](tpub(v)) })
+	case "item_tail":
+		a := &tslabs{}
+		return tparseResolved(trules[26], input, o, a, func(v any) Decl { return tAs[Decl](tpub(v)) })
+	case "embed_tail":
+		a := &tslabs{}
+		return tparseResolved(trules[27], input, o, a, func(v any) *EmbedDecl { return tAs[*EmbedDecl](v) })
+	case "tail_end":
+		n, err := parseResolved(rules[28], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "tail_mark_end":
+		n, err := parseResolved(rules[29], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "after_ec":
+		n, err := parseResolved(rules[30], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "after_ne":
+		n, err := parseResolved(rules[31], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "tail_mark":
+		n, err := parseResolved(rules[32], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "decl":
+		a := &tslabs{}
+		return tparseResolved(trules[33], input, o, a, func(v any) Decl { return tAs[Decl](tpub(v)) })
+	case "comp_decl":
+		a := &tslabs{}
+		return tparseResolved(trules[34], input, o, a, func(v any) *Comprehension { return tAs[*Comprehension](v) })
+	case "ellipsis_decl":
+		a := &tslabs{}
+		return tparseResolved(trules[35], input, o, a, func(v any) *Ellipsis { return tAs[*Ellipsis](v) })
+	case "let_decl":
+		a := &tslabs{}
+		return tparseResolved(trules[36], input, o, a, func(v any) *LetClause { return tAs[*LetClause](v) })
+	case "embed_decl":
+		a := &tslabs{}
+		return tparseResolved(trules[37], input, o, a, func(v any) *EmbedDecl { return tAs[*EmbedDecl](v) })
+	case "embed_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[38], input, o, a, func(v any) *EmbedDecl { return tAs[*EmbedDecl](v) })
+	case "embed_bare":
+		a := &tslabs{}
+		return tparseResolved(trules[39], input, o, a, func(v any) *EmbedDecl { return tAs[*EmbedDecl](v) })
+	case "kw4":
+		n, err := parseResolved(rules[40], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "func_bare":
+		n, err := parseResolved(rules[41], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "bare_for":
+		a := &tslabs{}
+		return tparseResolved(trules[42], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "bare_if":
+		a := &tslabs{}
+		return tparseResolved(trules[43], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "bare_let":
+		a := &tslabs{}
+		return tparseResolved(trules[44], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "field":
+		a := &tslabs{}
+		return tparseResolved(trules[45], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "field_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[46], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "field_alias":
+		a := &tslabs{}
+		return tparseResolved(trules[47], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "nfield":
+		a := &tslabs{}
+		return tparseResolved(trules[48], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "nfield_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[49], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "nfield_alias":
+		a := &tslabs{}
+		return tparseResolved(trules[50], input, o, a, func(v any) *Field { return tAs[*Field](v) })
+	case "field_value":
+		a := &tslabs{}
+		return tparseResolved(trules[51], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "fv_label":
+		a := &tslabs{}
+		return tparseResolved(trules[52], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "fv_choice":
+		a := &tslabs{}
+		return tparseResolved(trules[53], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "let_skip":
+		a := &tslabs{}
+		return tparseResolved(trules[54], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "let_value":
+		a := &tslabs{}
+		return tparseResolved(trules[55], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "expr_nolet":
+		a := &tslabs{}
+		return tparseResolved(trules[56], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "nested":
+		a := &tslabs{}
+		return tparseResolved(trules[57], input, o, a, func(v any) *StructLit { return tAs[*StructLit](v) })
+	case "alias_value":
+		a := &tslabs{}
+		return tparseResolved(trules[58], input, o, a, func(v any) *Alias { return tAs[*Alias](v) })
+	case "attrs":
+		a := &tslabs{}
+		return tparseResolved(trules[59], input, o, a, func(v any) []*Attribute { return tl2(a, v) })
+	case "postfix_alias_at":
+		a := &tslabs{}
+		return tparseResolved(trules[60], input, o, a, func(v any) *PostfixAlias { return tAs[*PostfixAlias](v) })
+	case "postfix_alias":
+		a := &tslabs{}
+		return tparseResolved(trules[61], input, o, a, func(v any) *PostfixAlias { return tAs[*PostfixAlias](v) })
+	case "alias_dual":
+		a := &tslabs{}
+		return tparseResolved(trules[62], input, o, a, func(v any) *PostfixAlias { return tAs[*PostfixAlias](v) })
+	case "alias_paren":
+		a := &tslabs{}
+		return tparseResolved(trules[63], input, o, a, func(v any) *PostfixAlias { return tAs[*PostfixAlias](v) })
+	case "alias_simple":
+		a := &tslabs{}
+		return tparseResolved(trules[64], input, o, a, func(v any) *PostfixAlias { return tAs[*PostfixAlias](v) })
+	case "label_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[65], input, o, a, func(v any) Label { return tAs[Label](tpub(v)) })
+	case "ident_label":
+		a := &tslabs{}
+		return tparseResolved(trules[66], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "kw_label":
+		a := &tslabs{}
+		return tparseResolved(trules[67], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "for_label":
+		a := &tslabs{}
+		return tparseResolved(trules[68], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "if_label":
+		a := &tslabs{}
+		return tparseResolved(trules[69], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "let_label":
+		a := &tslabs{}
+		return tparseResolved(trules[70], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "alias_label":
+		a := &tslabs{}
+		return tparseResolved(trules[71], input, o, a, func(v any) *Alias { return tAs[*Alias](v) })
+	case "nlabel_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[72], input, o, a, func(v any) Label { return tAs[Label](tpub(v)) })
+	case "nident_label":
+		a := &tslabs{}
+		return tparseResolved(trules[73], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "nkw_label":
+		a := &tslabs{}
+		return tparseResolved(trules[74], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "alias_nlabel":
+		a := &tslabs{}
+		return tparseResolved(trules[75], input, o, a, func(v any) *Alias { return tAs[*Alias](v) })
+	case "alias_rhs":
+		a := &tslabs{}
+		return tparseResolved(trules[76], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "ident_any":
+		a := &tslabs{}
+		return tparseResolved(trules[77], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "comprehension":
+		a := &tslabs{}
+		return tparseResolved(trules[78], input, o, a, func(v any) *Comprehension { return tAs[*Comprehension](v) })
+	case "comp_single":
+		a := &tslabs{}
+		return tparseResolved(trules[79], input, o, a, func(v any) *Comprehension { return tAs[*Comprehension](v) })
+	case "comp_multi":
+		a := &tslabs{}
+		return tparseResolved(trules[80], input, o, a, func(v any) *Comprehension { return tAs[*Comprehension](v) })
+	case "fb_else":
+		a := &tslabs{}
+		return tparseResolved(trules[81], input, o, a, func(v any) *FallbackClause { return tAs[*FallbackClause](v) })
+	case "fb_other":
+		a := &tslabs{}
+		return tparseResolved(trules[82], input, o, a, func(v any) *FallbackClause { return tAs[*FallbackClause](v) })
+	case "else_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[83], input, o, a, func(v any) *FallbackClause { return tAs[*FallbackClause](v) })
+	case "otherwise_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[84], input, o, a, func(v any) *FallbackClause { return tAs[*FallbackClause](v) })
+	case "clause_gap":
+		n, err := parseResolved(rules[85], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "gate_for_if":
+		n, err := parseResolved(rules[86], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "start_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[87], input, o, a, func(v any) Clause { return tAs[Clause](tpub(v)) })
+	case "clause":
+		a := &tslabs{}
+		return tparseResolved(trules[88], input, o, a, func(v any) Clause { return tAs[Clause](tpub(v)) })
+	case "for_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[89], input, o, a, func(v any) *ForClause { return tAs[*ForClause](v) })
+	case "for_kv":
+		a := &tslabs{}
+		return tparseResolved(trules[90], input, o, a, func(v any) *ForClause { return tAs[*ForClause](v) })
+	case "for_v":
+		a := &tslabs{}
+		return tparseResolved(trules[91], input, o, a, func(v any) *ForClause { return tAs[*ForClause](v) })
+	case "if_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[92], input, o, a, func(v any) *IfClause { return tAs[*IfClause](v) })
+	case "try_clause":
+		a := &tslabs{}
+		return tparseResolved(trules[93], input, o, a, func(v any) *TryClause { return tAs[*TryClause](v) })
+	case "try_assign":
+		a := &tslabs{}
+		return tparseResolved(trules[94], input, o, a, func(v any) *TryClause { return tAs[*TryClause](v) })
+	case "try_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[95], input, o, a, func(v any) *TryClause { return tAs[*TryClause](v) })
+	case "struct_lit":
+		a := &tslabs{}
+		return tparseResolved(trules[96], input, o, a, func(v any) *StructLit { return tAs[*StructLit](v) })
+	case "list_lit":
+		a := &tslabs{}
+		return tparseResolved(trules[97], input, o, a, func(v any) *ListLit { return tAs[*ListLit](v) })
+	case "esep":
+		n, err := parseResolved(rules[98], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "list_elem":
+		a := &tslabs{}
+		return tparseResolved(trules[99], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "elem_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[100], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "gate_kw3":
+		n, err := parseResolved(rules[101], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "bare_for_if":
+		a := &tslabs{}
+		return tparseResolved(trules[102], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "alias_elem":
+		a := &tslabs{}
+		return tparseResolved(trules[103], input, o, a, func(v any) *Alias { return tAs[*Alias](v) })
+	case "list_dots":
+		a := &tslabs{}
+		return tparseResolved(trules[104], input, o, a, func(v any) *Ellipsis { return tAs[*Ellipsis](v) })
+	case "dots_type":
+		a := &tslabs{}
+		return tparseResolved(trules[105], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "paren_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[106], input, o, a, func(v any) *ParenExpr { return tAs[*ParenExpr](v) })
+	case "expr":
+		a := &tslabs{}
+		return tparseResolved(trules[107], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "atom_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[108], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "operand_any":
+		a := &tslabs{}
+		return tparseResolved(trules[109], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "operand_word":
+		a := &tslabs{}
+		return tparseResolved(trules[110], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "word_any":
+		a := &tslabs{}
+		return tparseResolved(trules[111], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "operand_digit":
+		a := &tslabs{}
+		return tparseResolved(trules[112], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "operand_other":
+		a := &tslabs{}
+		return tparseResolved(trules[113], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "ident_q":
+		a := &tslabs{}
+		return tparseResolved(trules[114], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "full_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[115], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "asep":
+		n, err := parseResolved(rules[116], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "selector":
+		a := &tslabs{}
+		return tparseResolved(trules[117], input, o, a, func(v any) Selector { return tAs[Selector](tpub(v)) })
+	case "bool_ident_sel":
+		a := &tslabs{}
+		return tparseResolved(trules[118], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "sel_string":
+		a := &tslabs{}
+		return tparseResolved(trules[119], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "interp_expr":
+		a := &tslabs{}
+		return tparseResolved(trules[120], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
+	case "attribute":
+		a := &tslabs{}
+		return tparseResolved(trules[121], input, o, a, func(v any) *Attribute { return tAs[*Attribute](v) })
+	case "attribute_d":
+		a := &tslabs{}
+		return tparseResolved(trules[122], input, o, a, func(v any) *Attribute { return tAs[*Attribute](v) })
+	case "attr_body":
+		n, err := parseResolved(rules[123], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "attr_group":
+		n, err := parseResolved(rules[124], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "attr_tok":
+		n, err := parseResolved(rules[125], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "attr_num":
+		n, err := parseResolved(rules[126], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "num_exp":
+		n, err := parseResolved(rules[127], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "num_mult":
+		n, err := parseResolved(rules[128], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "bad_num":
+		n, err := parseResolved(rules[129], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "zero_ok":
+		n, err := parseResolved(rules[130], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "attr_str":
+		a := &tslabs{}
+		return tparseResolved(trules[131], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "idchar":
+		n, err := parseResolved(rules[132], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "uidchar":
+		n, err := parseResolved(rules[133], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "idchars":
+		n, err := parseResolved(rules[134], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "idstart":
+		n, err := parseResolved(rules[135], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "digit_any":
+		n, err := parseResolved(rules[136], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "ident_text":
+		n, err := parseResolved(rules[137], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "hashrest":
+		n, err := parseResolved(rules[138], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "ident":
+		a := &tslabs{}
+		return tparseResolved(trules[139], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "kw":
+		n, err := parseResolved(rules[140], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kwident":
+		a := &tslabs{}
+		return tparseResolved(trules[141], input, o, a, func(v any) *Ident { return tAs[*Ident](v) })
+	case "bool_lit":
+		a := &tslabs{}
+		return tparseResolved(trules[142], input, o, a, func(v any) *Bool { return tAs[*Bool](v) })
+	case "null_lit":
+		a := &tslabs{}
+		return tparseResolved(trules[143], input, o, a, func(v any) *Null { return tAs[*Null](v) })
+	case "bottom":
+		a := &tslabs{}
+		return tparseResolved(trules[144], input, o, a, func(v any) *Bottom { return tAs[*Bottom](v) })
+	case "number":
+		a := &tslabs{}
+		return tparseResolved(trules[145], input, o, a, func(v any) Number { return tAs[Number](tpub(v)) })
+	case "number_any":
+		a := &tslabs{}
+		return tparseResolved(trules[146], input, o, a, func(v any) Number { return tAs[Number](tpub(v)) })
+	case "hexd":
+		a := &tslabs{}
+		return tparseResolved(trules[147], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "based":
+		a := &tslabs{}
+		return tparseResolved(trules[148], input, o, a, func(v any) *Int { return tAs[*Int](v) })
+	case "d10":
+		n, err := parseResolved(rules[149], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "dec_ip":
+		n, err := parseResolved(rules[150], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "fracpart":
+		n, err := parseResolved(rules[151], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "exppart":
+		n, err := parseResolved(rules[152], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "mult":
+		n, err := parseResolved(rules[153], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "float_lit":
+		a := &tslabs{}
+		return tparseResolved(trules[154], input, o, a, func(v any) *Float { return tAs[*Float](v) })
+	case "int_lit":
+		a := &tslabs{}
+		return tparseResolved(trules[155], input, o, a, func(v any) *Int { return tAs[*Int](v) })
+	case "strlit":
+		a := &tslabs{}
+		return tparseResolved(trules[156], input, o, a, func(v any) StrLit { return tAs[StrLit](tpub(v)) })
+	case "str_any":
+		a := &tslabs{}
+		return tparseResolved(trules[157], input, o, a, func(v any) StrLit { return tAs[StrLit](tpub(v)) })
+	case "hexd4":
+		n, err := parseResolved(rules[158], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "bigu":
+		n, err := parseResolved(rules[159], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "esc_dq":
+		n, err := parseResolved(rules[160], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "esc_sq":
+		n, err := parseResolved(rules[161], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "dqbody":
+		n, err := parseResolved(rules[162], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "dq_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[163], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "dq_open":
+		a := &tslabs{}
+		return tparseResolved(trules[164], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "dq_mid":
+		a := &tslabs{}
+		return tparseResolved(trules[165], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "dq_end":
+		a := &tslabs{}
+		return tparseResolved(trules[166], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "dq_interp":
+		a := &tslabs{}
+		return tparseResolved(trules[167], input, o, a, func(v any) *Interpolation { return tAs[*Interpolation](v) })
+	case "dq_rest":
+		a := &tslabs{}
+		return tparseResolved(trules[168], input, o, a, func(v any) []Expr { return tl3(a, v) })
+	case "dq_more":
+		a := &tslabs{}
+		return tparseResolved(trules[169], input, o, a, func(v any) []Expr { return tl3(a, v) })
+	case "dq_last":
+		a := &tslabs{}
+		return tparseResolved(trules[170], input, o, a, func(v any) []Expr { return tl3(a, v) })
+	case "sqbody":
+		n, err := parseResolved(rules[171], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "sq_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[172], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "sq_open":
+		a := &tslabs{}
+		return tparseResolved(trules[173], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "sq_mid":
+		a := &tslabs{}
+		return tparseResolved(trules[174], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "sq_end":
+		a := &tslabs{}
+		return tparseResolved(trules[175], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "sq_interp":
+		a := &tslabs{}
+		return tparseResolved(trules[176], input, o, a, func(v any) *Interpolation { return tAs[*Interpolation](v) })
+	case "sq_rest":
+		a := &tslabs{}
+		return tparseResolved(trules[177], input, o, a, func(v any) []Expr { return tl3(a, v) })
+	case "sq_more":
+		a := &tslabs{}
+		return tparseResolved(trules[178], input, o, a, func(v any) []Expr { return tl3(a, v) })
+	case "sq_last":
+		a := &tslabs{}
+		return tparseResolved(trules[179], input, o, a, func(v any) []Expr { return tl3(a, v) })
+	case "gstring":
+		a := &tslabs{}
+		return tparseResolved(trules[180], input, o, a, func(v any) StrLit { return tAs[StrLit](tpub(v)) })
+	case "qc":
+		n, err := parseResolved(rules[181], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "hq":
+		n, err := parseResolved(rules[182], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "g_escbody":
+		n, err := parseResolved(rules[183], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "gs_esc":
+		n, err := parseResolved(rules[184], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "g_interp_open":
+		n, err := parseResolved(rules[185], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ml_nl":
+		a := &tslabs{}
+		return tparseResolved(trules[186], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "ml_open_tail":
+		n, err := parseResolved(rules[187], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ml_close_tail":
+		n, err := parseResolved(rules[188], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "gtriple":
+		a := &tslabs{}
+		return tparseResolved(trules[189], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "gs_body":
+		n, err := parseResolved(rules[190], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "gs_quote":
+		n, err := parseResolved(rules[191], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "gsl_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[192], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "gsl_open":
+		a := &tslabs{}
+		return tparseResolved(trules[193], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "gsl_mid":
+		a := &tslabs{}
+		return tparseResolved(trules[194], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "gsl_end":
+		a := &tslabs{}
+		return tparseResolved(trules[195], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "gsl_interp":
+		a := &tslabs{}
+		return tparseResolved(trules[196], input, o, a, func(v any) *Interpolation { return tAs[*Interpolation](v) })
+	case "gsl_interp_s":
+		a := &tslabs{}
+		return tparseResolved(trules[197], input, o, a, func(v any) *Interpolation { return tAs[*Interpolation](v) })
+	case "gsl_rest":
+		a := &tslabs{}
+		return tparseResolved(trules[198], input, o, a, func(v any) []Expr { return tl3(a, v) })
+	case "gsl_more":
+		a := &tslabs{}
+		return tparseResolved(trules[199], input, o, a, func(v any) []Expr { return tl3(a, v) })
+	case "gsl_last":
+		a := &tslabs{}
+		return tparseResolved(trules[200], input, o, a, func(v any) []Expr { return tl3(a, v) })
+	case "ml_body":
+		n, err := parseResolved(rules[201], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "ml_line":
+		n, err := parseResolved(rules[202], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ml_close":
+		a := &tslabs{}
+		return tparseResolved(trules[203], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "gml_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[204], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "ml_frag":
+		n, err := parseResolved(rules[205], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "gml_open":
+		a := &tslabs{}
+		return tparseResolved(trules[206], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "gml_mid":
+		a := &tslabs{}
+		return tparseResolved(trules[207], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "gml_end":
+		a := &tslabs{}
+		return tparseResolved(trules[208], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "gml_interp":
+		a := &tslabs{}
+		return tparseResolved(trules[209], input, o, a, func(v any) *Interpolation { return tAs[*Interpolation](v) })
+	case "gml_interp_s":
+		a := &tslabs{}
+		return tparseResolved(trules[210], input, o, a, func(v any) *Interpolation { return tAs[*Interpolation](v) })
+	case "gml_rest":
+		a := &tslabs{}
+		return tparseResolved(trules[211], input, o, a, func(v any) []Expr { return tl3(a, v) })
+	case "gml_more":
+		a := &tslabs{}
+		return tparseResolved(trules[212], input, o, a, func(v any) []Expr { return tl3(a, v) })
+	case "gml_last":
+		a := &tslabs{}
+		return tparseResolved(trules[213], input, o, a, func(v any) []Expr { return tl3(a, v) })
+	case "gstr_plain":
+		a := &tslabs{}
+		return tparseResolved(trules[214], input, o, a, func(v any) *String { return tAs[*String](v) })
+	case "uletter":
+		a := &tslabs{}
+		return tparseResolved(trules[215], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	case "udigit":
+		a := &tslabs{}
+		return tparseResolved(trules[216], input, o, a, func(v any) *Match { return tpubMatch(v) })
+	default:
+		return nil, fmt.Errorf("rule %s is not defined", name)
+	}
 }
 
 var lit3 = []rune("\ufeff")

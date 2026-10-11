@@ -2449,6 +2449,11 @@ func tparse[T any](r *trule, input string, opts []ParseOption, ext any, conv fun
 		var zero T
 		return zero, err
 	}
+	return tparseResolved(r, input, o, ext, conv)
+}
+
+// tparseResolved consumes options already applied by the public entry point.
+func tparseResolved[T any](r *trule, input string, o parseOptions, ext any, conv func(any) T) (T, error) {
 	p, _ := tpool.Get().(*tparser)
 	if p == nil {
 		p = &tparser{parser: &parser{}}
@@ -4428,7 +4433,7 @@ func (a *astConv) toArrayLit(n *Node) *ArrayLit {
 	}
 	v := astNew(&a.tArrayLit)
 	v.Span = Span{int(n.Start), int(n.End)}
-	v.Elems = a.list0(astNode(n.Field("Elems")))
+	v.Elems = a.list2(astNode(n.Field("Elems")))
 	return v
 }
 
@@ -4461,7 +4466,7 @@ func (a *astConv) toBlock(n *Node) *Block {
 	}
 	v := astNew(&a.tBlock)
 	v.Span = Span{int(n.Start), int(n.End)}
-	v.Body = a.list1(astNode(n.Field("Body")))
+	v.Body = a.list0(astNode(n.Field("Body")))
 	return v
 }
 
@@ -4472,7 +4477,7 @@ func (a *astConv) toCall(n *Node) *Call {
 	v := astNew(&a.tCall)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Fn = a.toExpr(astNode(n.Field("Fn")))
-	v.Args = a.list0(astNode(n.Field("Args")))
+	v.Args = a.list2(astNode(n.Field("Args")))
 	return v
 }
 
@@ -4505,7 +4510,7 @@ func (a *astConv) toFunc(n *Node) *Func {
 	v := astNew(&a.tFunc)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Name = a.toIdent(astNode(n.Field("Name")))
-	v.Params = a.list2(astNode(n.Field("Params")))
+	v.Params = a.list1(astNode(n.Field("Params")))
 	v.Body = a.toBlock(astNode(n.Field("Body")))
 	return v
 }
@@ -4561,7 +4566,7 @@ func (a *astConv) toProgram(n *Node) *Program {
 	}
 	v := astNew(&a.tProgram)
 	v.Span = Span{int(n.Start), int(n.End)}
-	v.Body = a.list1(astNode(n.Field("Body")))
+	v.Body = a.list0(astNode(n.Field("Body")))
 	return v
 }
 
@@ -4657,35 +4662,46 @@ func (a *astConv) toStmt(n *Node) Stmt {
 	return nil
 }
 
-func (a *astConv) list0(n *Node) []Expr {
+func (a *astConv) list0(n *Node) []Stmt {
 	if n == nil {
 		return nil
 	}
 	out := astSlice(&a.list0Chunk, len(n.Children))
-	for i, c := range n.Children {
-		out[i] = a.toExpr(astNode(c))
-	}
-	return out
-}
-
-func (a *astConv) list1(n *Node) []Stmt {
-	if n == nil {
-		return nil
-	}
-	out := astSlice(&a.list1Chunk, len(n.Children))
 	for i, c := range n.Children {
 		out[i] = a.toStmt(astNode(c))
 	}
 	return out
 }
 
-func (a *astConv) list2(n *Node) []*Ident {
+func (a *astConv) list1(n *Node) []*Ident {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list1Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.toIdent(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list2(n *Node) []Expr {
 	if n == nil {
 		return nil
 	}
 	out := astSlice(&a.list2Chunk, len(n.Children))
 	for i, c := range n.Children {
-		out[i] = a.toIdent(astNode(c))
+		out[i] = a.toExpr(astNode(c))
+	}
+	return out
+}
+
+func (a *astConv) list3(n *Node) []any {
+	if n == nil {
+		return nil
+	}
+	out := astSlice(&a.list3Chunk, len(n.Children))
+	for i, c := range n.Children {
+		out[i] = a.anyValue(c)
 	}
 	return out
 }
@@ -4714,9 +4730,10 @@ type astConv struct {
 	tReturn    astChunk[Return]
 	tUnary     astChunk[Unary]
 	tWhile     astChunk[While]
-	list0Chunk astChunk[Expr]
-	list1Chunk astChunk[Stmt]
-	list2Chunk astChunk[*Ident]
+	list0Chunk astChunk[Stmt]
+	list1Chunk astChunk[*Ident]
+	list2Chunk astChunk[Expr]
+	list3Chunk astChunk[any]
 }
 
 // ParseAST parses the input like Parse and returns the result as typed values. If the parse recovered
@@ -4726,6 +4743,293 @@ func ParseAST(input string, opts ...ParseOption) (*Program, error) {
 	n, err := Parse(input, opts...)
 	a := &astConv{}
 	return a.toProgram(astNode(n)), err
+}
+
+// ParseRuleAST parses the whole input with the named rule and returns its typed value.
+// Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.
+// Invalid options and undefined names return nil with an error. Rule result types:
+//
+//	main: *Program
+//	stmts: []Stmt
+//	block: *Block
+//	stmt: Stmt
+//	let: *Let
+//	assign: *Assign
+//	if: *If
+//	else: any
+//	while: *While
+//	return: *Return
+//	func: *Func
+//	params: []*Ident
+//	exprStmt: *ExprStmt
+//	expr: Expr
+//	operation: Expr
+//	args: []Expr
+//	ident: *Ident
+//	name: *Ident
+//	keyword: *Node
+//	idchar: *Match
+//	number: *Number
+//	string: *String
+//	strchars: *String
+//	bool: *Bool
+//	kw_let: *Node
+//	kw_fn: *Node
+//	kw_if: *Node
+//	kw_else: *Node
+//	kw_while: *Node
+//	kw_return: *Node
+//	ws: []any
+func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
+	o, err := resolveOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+	switch name {
+	case "main":
+		n, err := parseResolved(rules[0], nseen, input, o)
+		if n == nil {
+			var zero *Program
+			return zero, err
+		}
+		a := &astConv{}
+		return a.toProgram(astNode(n)), err
+	case "stmts":
+		n, err := parseResolved(rules[1], nseen, input, o)
+		if n == nil {
+			var zero []Stmt
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list0(astNode(n)), err
+	case "block":
+		n, err := parseResolved(rules[2], nseen, input, o)
+		if n == nil {
+			var zero *Block
+			return zero, err
+		}
+		a := &astConv{}
+		return a.toBlock(astNode(n)), err
+	case "stmt":
+		n, err := parseResolved(rules[3], nseen, input, o)
+		if n == nil {
+			var zero Stmt
+			return zero, err
+		}
+		a := &astConv{}
+		return a.toStmt(astNode(n)), err
+	case "let":
+		n, err := parseResolved(rules[4], nseen, input, o)
+		if n == nil {
+			var zero *Let
+			return zero, err
+		}
+		a := &astConv{}
+		return a.toLet(astNode(n)), err
+	case "assign":
+		n, err := parseResolved(rules[5], nseen, input, o)
+		if n == nil {
+			var zero *Assign
+			return zero, err
+		}
+		a := &astConv{}
+		return a.toAssign(astNode(n)), err
+	case "if":
+		n, err := parseResolved(rules[6], nseen, input, o)
+		if n == nil {
+			var zero *If
+			return zero, err
+		}
+		a := &astConv{}
+		return a.toIf(astNode(n)), err
+	case "else":
+		n, err := parseResolved(rules[7], nseen, input, o)
+		if n == nil {
+			var zero any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.anyValue(n), err
+	case "while":
+		n, err := parseResolved(rules[8], nseen, input, o)
+		if n == nil {
+			var zero *While
+			return zero, err
+		}
+		a := &astConv{}
+		return a.toWhile(astNode(n)), err
+	case "return":
+		n, err := parseResolved(rules[9], nseen, input, o)
+		if n == nil {
+			var zero *Return
+			return zero, err
+		}
+		a := &astConv{}
+		return a.toReturn(astNode(n)), err
+	case "func":
+		n, err := parseResolved(rules[10], nseen, input, o)
+		if n == nil {
+			var zero *Func
+			return zero, err
+		}
+		a := &astConv{}
+		return a.toFunc(astNode(n)), err
+	case "params":
+		n, err := parseResolved(rules[11], nseen, input, o)
+		if n == nil {
+			var zero []*Ident
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list1(astNode(n)), err
+	case "exprStmt":
+		n, err := parseResolved(rules[12], nseen, input, o)
+		if n == nil {
+			var zero *ExprStmt
+			return zero, err
+		}
+		a := &astConv{}
+		return a.toExprStmt(astNode(n)), err
+	case "expr":
+		n, err := parseResolved(rules[13], nseen, input, o)
+		if n == nil {
+			var zero Expr
+			return zero, err
+		}
+		a := &astConv{}
+		return a.toExpr(astNode(n)), err
+	case "operation":
+		n, err := parseResolved(rules[14], nseen, input, o)
+		if n == nil {
+			var zero Expr
+			return zero, err
+		}
+		a := &astConv{}
+		return a.toExpr(astNode(n)), err
+	case "args":
+		n, err := parseResolved(rules[15], nseen, input, o)
+		if n == nil {
+			var zero []Expr
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list2(astNode(n)), err
+	case "ident":
+		n, err := parseResolved(rules[16], nseen, input, o)
+		if n == nil {
+			var zero *Ident
+			return zero, err
+		}
+		a := &astConv{}
+		return a.toIdent(astNode(n)), err
+	case "name":
+		n, err := parseResolved(rules[17], nseen, input, o)
+		if n == nil {
+			var zero *Ident
+			return zero, err
+		}
+		a := &astConv{}
+		return a.toIdent(astNode(n)), err
+	case "keyword":
+		n, err := parseResolved(rules[18], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "idchar":
+		n, err := parseResolved(rules[19], nseen, input, o)
+		if n == nil {
+			var zero *Match
+			return zero, err
+		}
+		a := &astConv{}
+		return a.toMatch(astNode(n)), err
+	case "number":
+		n, err := parseResolved(rules[20], nseen, input, o)
+		if n == nil {
+			var zero *Number
+			return zero, err
+		}
+		a := &astConv{}
+		return a.toNumber(astNode(n)), err
+	case "string":
+		n, err := parseResolved(rules[21], nseen, input, o)
+		if n == nil {
+			var zero *String
+			return zero, err
+		}
+		a := &astConv{}
+		return a.toString(astNode(n)), err
+	case "strchars":
+		n, err := parseResolved(rules[22], nseen, input, o)
+		if n == nil {
+			var zero *String
+			return zero, err
+		}
+		a := &astConv{}
+		return a.toString(astNode(n)), err
+	case "bool":
+		n, err := parseResolved(rules[23], nseen, input, o)
+		if n == nil {
+			var zero *Bool
+			return zero, err
+		}
+		a := &astConv{}
+		return a.toBool(astNode(n)), err
+	case "kw_let":
+		n, err := parseResolved(rules[24], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_fn":
+		n, err := parseResolved(rules[25], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_if":
+		n, err := parseResolved(rules[26], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_else":
+		n, err := parseResolved(rules[27], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_while":
+		n, err := parseResolved(rules[28], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "kw_return":
+		n, err := parseResolved(rules[29], nseen, input, o)
+		if n == nil {
+			var zero *Node
+			return zero, err
+		}
+		return astNode(n), err
+	case "ws":
+		n, err := parseResolved(rules[30], nseen, input, o)
+		if n == nil {
+			var zero []any
+			return zero, err
+		}
+		a := &astConv{}
+		return a.list3(astNode(n)), err
+	default:
+		return nil, fmt.Errorf("rule %s is not defined", name)
+	}
 }
 
 var scope2 = []string{"s"}
