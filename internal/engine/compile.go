@@ -552,7 +552,16 @@ func hasCaptures(e grammar.Expr) bool {
 func quote(s string) string { return strconv.Quote(s) }
 
 // expr compiles the expression. If build is false, it only matches without building values.
+// expr adds the closure expression-dispatch charge around the compiled matcher.
 func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
+	m := c.exprMatcher(e, s, build)
+	if !workControlsEnabled {
+		return m
+	}
+	return func(p *parser) (*Node, bool) { p.stepWork(); return m(p) }
+}
+
+func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 	switch e := e.(type) {
 	case *grammar.Literal:
 		value := literalValue(e.Value)

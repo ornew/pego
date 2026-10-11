@@ -408,6 +408,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 		}
 	}
 	for {
+		p.stepWork()
 		in := &code[ip]
 		switch in.Op {
 		case OpStr:
@@ -945,6 +946,7 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 		}
 	}()
 	for {
+		p.stepWork()
 		in := &m.Exprs[ip]
 		switch in.Op {
 		case EInt:

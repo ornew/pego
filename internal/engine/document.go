@@ -52,6 +52,9 @@ func (prog *Program) NewDocument(start, text string) (*Document, error) {
 // NewDocumentWith creates a Document with options such as the position unit. Positions passed
 // to Edit use the same unit.
 func (prog *Program) NewDocumentWith(start, text string, o ParseOptions) (*Document, error) {
+	if newWorkControl(o.Context, o.WorkLimits) != nil {
+		return nil, fmt.Errorf("work controls are not implemented for documents yet")
+	}
 	if o.Recognize {
 		return nil, fmt.Errorf("recognition is not supported for documents")
 	}

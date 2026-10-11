@@ -115,6 +115,7 @@ func typeName(v any) string {
 }
 
 func (c *evalCtx) eval(t grammar.Term) (any, error) {
+	c.p.stepWork()
 	switch t := t.(type) {
 	case *grammar.IntLit:
 		return t.Value, nil
