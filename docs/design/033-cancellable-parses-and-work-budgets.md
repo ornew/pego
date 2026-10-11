@@ -328,15 +328,16 @@ streaming, code-generation and TypeScript guides with the applicable stage.
 The `feat/parse-work-controls` branch starts the core batch stage. It provides
 invocation-local context and overflow-safe work reservations, controlled input
 preparation, scanner and execution-dispatch checkpoints, action-value checkpoints,
-large character-class membership checkpoints, and cleanup after initialization
-interruption or caller panic. Recognition uses the same batch lifecycle. Individual trace-option callbacks stop before a subsequent callback
+large character-class and batch memo/binding checkpoints, and cleanup after
+initialization interruption or caller panic. Recognition uses the same batch
+lifecycle. Individual trace-option callbacks stop before a subsequent callback
 when cancellation is observed.
 
 This foundation is not an adopted implementation of the full contract above.
 Document and stream calls reject active controls until their lifecycle stages
-are implemented. Other matcher loops, input text materialization, memo/environment
-maintenance, graph, rollback and resumption loops still require the coverage map
-and regression gates before adoption. First-use setup ordering also needs a
+are implemented. Other matcher loops, input text materialization, graph, rollback
+and resumption loops still require the coverage map and regression gates before
+adoption. First-use setup ordering also needs a
 separate validation gate. The prototype remains separate from main until contract
 and performance gates pass.
 
@@ -375,6 +376,26 @@ consume steps only, since the input probe is already charged. Compile-time bitma
 construction remains outside parse work controls. Absent controls and the private
 reference build retain uninstrumented range searches. Loaded bytecode uses the
 same runtime checks; interruption is fatal through choice and recovery.
+
+Batch memo/binding maintenance consumes steps, not input work. Key construction,
+linked environment and memo-entry visits, key elements, and copied binding-prefix
+nodes are charged. Each memo lookup/put or adaptive first-call operation also
+charges fixed maintenance work; put reserves a final step before its atomic link
+swap and retirement. String key/name comparisons use bounded byte comparisons,
+while unequal string/key lengths are constant-time rejections. Interface equality
+is preserved: a typed nil pointer is distinct from a nil interface. The shared
+all-nil key for an absent environment and at most 16 variables performs no
+fictional environment traversal.
+
+Slot/seen-buffer copies and spare seen-word clears use chunks of at most 128
+cells. Replacement prefixes and grown buffers are published only after their
+explicit work completes. No checkpoint separates replacing an entry from retiring
+its bookkeeping, and retirement never clears its public Node pointee. Mandatory
+scratch release disables controls before resetting used memo cells, including
+unpublished growth candidates. Runtime allocation/zeroing, map hashing, and GC
+remain nonpreemptible; these budgets are not memory limits. Inactive/reference
+calls retain the ordinary memo and binding paths and adaptive thresholds. Stream
+pruning and Document edits/resumption remain for their lifecycle stages.
 
 ## Alternatives considered
 

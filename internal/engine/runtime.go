@@ -241,6 +241,10 @@ func (e *env) lookup(name string) (any, bool) {
 // environment. A name assigned only on an abandoned branch may be absent now;
 // that false positive only causes a search, not a different binding.
 func (p *parser) bind(name string, val any) {
+	if workControlsEnabled && p.control != nil {
+		p.bindControlled(name, val)
+		return
+	}
 	e := p.env
 	if p.bound == nil {
 		p.bound = make(map[string]bool)
@@ -445,8 +449,15 @@ func (p *parser) envValues(names []string) []any {
 		return noVals[:len(names):len(names)]
 	}
 	vals := make([]any, len(names))
+	if !workControlsEnabled || p.control == nil {
+		for i, name := range names {
+			vals[i], _ = p.env.lookup(name)
+		}
+		return vals
+	}
 	for i, name := range names {
-		vals[i], _ = p.env.lookup(name)
+		p.stepWork()
+		vals[i], _ = p.lookupValue(name)
 	}
 	return vals
 }
@@ -466,7 +477,7 @@ func (p *parser) firstCall(r *rule) bool {
 	if !p.deferMemo || r.seen < 0 {
 		return false
 	}
-	return p.memo.firstCall(p.pos, r.seen)
+	return p.memoFirstCall(p.pos, r.seen)
 }
 
 // numberSeen numbers the rules whose memoization firstCall may defer (rule.seen) and returns
@@ -507,7 +518,7 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit boo
 	// A result computed inside a lookahead recorded no expectations, so it is not reused outside
 	// one; and errors recovered inside a lookahead carry no expectations either, so a result with
 	// recovered errors is reused only in the same kind of context it was computed in.
-	e, found := p.memo.get(key)
+	e, found := p.memoGet(key)
 	if found && e.vgen != p.gen && !advanceEntry(e, p.edits[:p.gen]) {
 		found = false // an edit since invalidated it
 	}
@@ -548,7 +559,7 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit boo
 func (p *parser) callEnd(r *rule, st *callState, v *Node, ok bool) (*Node, bool) {
 	var e *memoEntry
 	if r.leader {
-		e, _ = p.memo.get(st.key)
+		e, _ = p.memoGet(st.key)
 	} else {
 		if !ok {
 			p.recovered = p.recovered[:st.rec]
@@ -556,7 +567,7 @@ func (p *parser) callEnd(r *rule, st *callState, v *Node, ok bool) (*Node, bool)
 		e = p.memo.alloc()
 		*e = memoEntry{node: v, ok: ok, end: p.pos, examined: p.hw, from: p.lw, silent: p.silent > 0, gen: p.gen, vgen: p.gen,
 			positional: r.positional, errs: append([]*SyntaxError(nil), p.recovered[st.rec:]...)}
-		p.memo.put(st.key, e)
+		p.memoPut(st.key, e)
 	}
 	far, inner := p.unisolate(st.exp)
 	if e != nil {
@@ -595,7 +606,7 @@ func (p *parser) growBegin(key memoKey) growState {
 	g.best = p.memo.alloc()
 	*g.best = memoEntry{ok: false, end: g.start, examined: g.start, from: g.start, growing: true, gen: p.gen, vgen: p.gen}
 	p.activeSeed = g.best
-	p.memo.put(key, g.best)
+	p.memoPut(key, g.best)
 	return g
 }
 
@@ -609,7 +620,7 @@ func (p *parser) growStep(g *growState, v *Node, ok bool) bool {
 	g.best = p.memo.alloc()
 	*g.best = memoEntry{node: v, ok: true, end: p.pos, examined: p.hw, from: p.lw, growing: true, gen: p.gen, vgen: p.gen, errs: append([]*SyntaxError(nil), p.recovered[g.rec:]...)}
 	p.activeSeed = g.best
-	p.memo.put(g.key, g.best)
+	p.memoPut(g.key, g.best)
 	p.pos = g.start
 	p.recovered = p.recovered[:g.rec]
 	return true
