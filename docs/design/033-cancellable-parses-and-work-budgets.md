@@ -215,6 +215,17 @@ messages use bounded private construction and are flattened before publication.
 Avoid routing every error through a new wrapper or changing generic `p.fail`
 formatting.
 
+### Replacement-rune literal fallback
+
+After a byte mismatch, native whole-input and stream matchers search the grammar
+literal for U+FFFD before replacement-decoding fallback. Active controls reserve
+one step before each visited literal rune and stop at the first hit. This search
+reads grammar data, so it adds no input work. Exact and one-short limits, early
+hits, absent/late hits, cancellation during the search, and public lookahead
+interruption are tested independently of diagnostic construction. Inactive and
+reference paths retain `slices.Contains`; the extra inactive-path check remains
+unmeasured while benchmarks are paused. Generated matchers need the same boundary.
+
 ### Guard-rejected choice alternatives
 
 The closure backend charges one step before skipping each alternative rejected
