@@ -143,8 +143,8 @@ Notes:
 ### Generated typed-output retention
 
 `internal/engine/gen_typed_output_retention_test.go` exports a generated fixture
-and checks escaped terminal, shared-structure and returned-list values in both
-position units. It exports `slabs`, `objects`, `slices` and `individual`
+and checks escaped terminal, Match, shared-structure and returned-list values
+in both position units. It exports `slabs`, `objects`, `slices` and `individual`
 subdirectories; the latter three disable object slabs, list slabs or both at
 generation time. The default generated parser is unchanged. Clone reachable text before dropping the parser and input so
 legitimate input-string retention does not count as slab retention.
@@ -173,6 +173,12 @@ test binary in each exported subdirectory and alternate all four variants
 to measure the mechanisms independently. Reference controls preserve values,
 sharing, spans, non-nil empty lists and append isolation; they are internal
 measurement tools rather than public parser options.
+
+The `match` fixture discards a large public Match before returning a small
+one from the same typed-runtime Match block. Object/list reference controls
+do not change that block: treat Match ownership as a separate domain when
+evaluating a cleanup strategy. Clone the returned Match text just like
+terminal text, and retain the manual Match control in both position units.
 
 ### Benchmark workloads
 

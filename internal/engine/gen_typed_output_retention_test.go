@@ -34,6 +34,8 @@ type LargeValues struct { Items []Pair }
 type SmallValues struct { Items []Pair }
 def main = leaf
 def leaf: Token = x:discarded x:small -> $x
+def match: Match = discardedMatch y:@("b") -> $y
+def discardedMatch: Match = x:@("é"+) -> $x
 def structure: Pair = discardedPair y:small -> new Pair{Text: "b", Left: $y, Right: $y}
 def list: Values = discarded ys:small+ -> new Values{Items: $ys}
 def slice: SmallValues = discardedHolder filler filler filler filler filler filler filler xs:smallPair+ -> new SmallValues{Items: $xs}
@@ -149,6 +151,8 @@ func cloneReachableText(value any) {
 	switch v := value.(type) {
 	case *Token:
 		v.Text = strings.Clone(v.Text)
+	case *Match:
+		v.Text = strings.Clone(v.Text)
 	case *Pair:
 		v.Text = strings.Clone(v.Text)
 		v.Left.Text = strings.Clone(v.Left.Text)
@@ -177,6 +181,8 @@ func controlResult(kind string, start int) any {
 	switch kind {
 	case "terminal":
 		return token(0)
+	case "match":
+		return &Match{Span: Span{Start: start, End: start + 1}, Text: "b"}
 	case "structure":
 		x := token(0)
 		return &Pair{Span: Span{Start: 0, End: start + 1}, Text: "b", Left: x, Right: x}
@@ -194,7 +200,7 @@ func controlResult(kind string, start int) any {
 
 func TestTypedOutputOwnership(t *testing.T) {
 	for _, unit := range []Unit{CodePoints, Bytes} {
-		for _, kind := range []string{"terminal", "structure", "list", "slice"} {
+		for _, kind := range []string{"terminal", "match", "structure", "list", "slice"} {
 			t.Run(fmt.Sprintf("%s/%v", kind, unit), func(t *testing.T) {
 				value := parseAndClone(kind, unit, largeRunes)
 				want := controlResult(kind, unitStart(unit))
@@ -205,6 +211,10 @@ func TestTypedOutputOwnership(t *testing.T) {
 				case *Token:
 					if v.Text != "b" || v.Start != unitStart(unit) || v.End != v.Start+1 {
 						t.Fatalf("terminal: %+v", v)
+					}
+				case *Match:
+					if v.Text != "b" || v.Start != unitStart(unit) || v.End != v.Start+1 {
+						t.Fatalf("match: %+v", v)
 					}
 				case *Pair:
 					if v.Left == nil || v.Left != v.Right {
@@ -261,7 +271,7 @@ func TestTypedOutputOwnership(t *testing.T) {
 func BenchmarkTypedOutputParse(b *testing.B) {
 	for _, unit := range []Unit{CodePoints, Bytes} {
 		for _, runes := range []int{8, largeRunes} {
-			for _, kind := range []string{"terminal", "structure", "list", "slice"} {
+			for _, kind := range []string{"terminal", "match", "structure", "list", "slice"} {
 				name := fmt.Sprintf("%s/%v/%d-runes", kind, unit, runes)
 				b.Run(name, func(b *testing.B) {
 					input := sampleInput(kind, runes)
@@ -288,7 +298,7 @@ func BenchmarkTypedOutputParse(b *testing.B) {
 // final collection and heap snapshot happen after the timer stops.
 func BenchmarkTypedOutputRetainedHeap(b *testing.B) {
 	for _, unit := range []Unit{CodePoints, Bytes} {
-		for _, kind := range []string{"terminal", "structure", "list", "slice"} {
+		for _, kind := range []string{"terminal", "match", "structure", "list", "slice"} {
 			for _, control := range []bool{false, true} {
 				name := fmt.Sprintf("%s/%v/control=%t", kind, unit, control)
 				b.Run(name, func(b *testing.B) {
