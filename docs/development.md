@@ -48,7 +48,7 @@ This document describes the repository layout and architecture, how to run tests
 | Bytecode | `bytecode.go`, `bcompile.go`, `vm.go`, `ivm.go` | Runs the same grammar semantics with recursive and iterative VMs; see the [bytecode specification](../spec/bytecode.md). |
 | Input and documents | `input.go`, `document.go`, `resume.go` | Tracks position units, streaming input, edits and resumable repetitions; VM-backed Documents reuse cleared stacks ([record 086](optimizations/086-reuse-document-vm-values.md)). |
 | Compiled grammars | `compiled.go`, `modulefile.go` | Saves and loads bytecode modules, optionally with AST and analysis data. |
-| Code generation | `gen.go`, `gen_direct.go`, `genrt/`, `gen_ts.go`, `tsrt/` | Emits standalone Go and TypeScript parsers; unsupported rules use general expression dispatch. |
+| Code generation | `gen.go`, `gen_direct.go`, `genrt/`, `gen_ts.go`, `tsrt/` | Emits standalone Go and TypeScript parsers; unsupported rules use general expression dispatch, with identical generated helpers shared where enabled ([090](optimizations/090-share-identical-generated-helpers.md)). |
 | Language tools | `internal/lint/`, `internal/lsp/`, `editors/vscode/` | Provides static checks, editor requests and the VS Code client. |
 | Input generation | `sample/` | Generates accepted inputs and coverage; generated inputs are checked by the parser. |
 

@@ -143,6 +143,11 @@ def big = [big > 9007199254740992] @"!"+`, []string{"", "a", "ab,c😀", ",！",
 			}
 		}
 	}
+	testGeneratedTSParsersCorpus(t, node, cases, GenOptions{})
+}
+
+func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []genCase, opts GenOptions) {
+	t.Helper()
 	dir := t.TempDir()
 	write := func(name, content string) {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
@@ -164,7 +169,8 @@ def big = [big > 9007199254740992] @"!"+`, []string{"", "a", "ab,c😀", ",！",
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := GenerateTS(g, GenOptions{Start: "main", Recognize: true})
+		opts.Start, opts.Recognize = "main", true
+		code, err := GenerateTS(g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}

@@ -37,7 +37,7 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if start == nil {
 		return nil, fmt.Errorf("start rule %s is not defined", opts.Start)
 	}
-	gen := &tsGen{generator: &generator{prog: prog, table: "rules"}, plainUsed: map[*rule]bool{}}
+	gen := &tsGen{generator: &generator{prog: prog, table: "rules", disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing || !opts.enableTSLiteralSharing}, plainUsed: map[*rule]bool{}}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
 	var rec *Program
@@ -176,7 +176,10 @@ func (g *tsGen) plainPrefix() string {
 // The functions of expressions are called through call expressions (see expr), and fn turns a
 // call expression into a function.
 func (g *tsGen) method(comment, body string) string {
-	name := g.name("e")
+	name, shared := g.methodName("Parser/R", body)
+	if shared {
+		return name
+	}
 	if comment != "" {
 		fmt.Fprintf(&g.methods, "// %s\n", comment)
 	}
@@ -374,8 +377,10 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 	switch e := e.(type) {
 	case *grammar.Literal:
 		value := literalValue(e.Value)
-		v := g.name("lit")
-		fmt.Fprintf(&g.vars, "const %s: Lit = { text: %s, cps: %s, bytes: %s };\n", v, tsString(value), tsInts([]rune(value)), tsInts([]byte(value)))
+		v, shared := g.literalName(value)
+		if !shared {
+			fmt.Fprintf(&g.vars, "const %s: Lit = { text: %s, cps: %s, bytes: %s };\n", v, tsString(value), tsInts([]rune(value)), tsInts([]byte(value)))
+		}
 		return fmt.Sprintf("p.matchLiteral(%s, %d, %v)", v, g.desc(strconv.Quote(e.Value)), build)
 	case *grammar.CharClass:
 		fmt.Fprintf(&b, "  const ch = p.peek();\n  if (ch < 0 || %s) {\n    p.expect(p.pos, %d);\n    return undefined;\n  }\n",

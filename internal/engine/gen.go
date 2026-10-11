@@ -59,6 +59,15 @@ type GenOptions struct {
 	// disableTypedRecoveryBodies retains general recovery dispatch for
 	// same-generator tests and measurements without a parser-time option.
 	disableTypedRecoveryBodies bool
+	// disableMethodSharing and disableLiteralSharing retain duplicate generated
+	// helpers and read-only tables for independent generation-time controls.
+	// Neither adds a selector to the generated parser.
+	disableMethodSharing  bool
+	disableLiteralSharing bool
+	// enableTSLiteralSharing retains a generation-only experiment. Sharing
+	// literal tables can hurt TypeScript warm-up; production shares helpers
+	// only. An explicit disableLiteralSharing takes precedence.
+	enableTSLiteralSharing bool
 }
 
 // Generate generates the source code of a Go parser for a grammar.
@@ -82,7 +91,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if !token.IsIdentifier(opts.Package) || opts.Package == "_" {
 		return nil, fmt.Errorf("invalid package name %q", opts.Package)
 	}
-	gen := &generator{prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedPrattBodies: opts.disableTypedPrattBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies}
+	gen := &generator{prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedPrattBodies: opts.disableTypedPrattBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
 	var rec *Program
@@ -162,6 +171,14 @@ type generator struct {
 	disableTypedFrameLayouts   bool
 	disableTypedLocalLayouts   bool
 	disableTypedRecoveryBodies bool
+	disableMethodSharing       bool
+	disableLiteralSharing      bool
+	// Only exact emitted bodies with the same signature share a helper. Rule
+	// wrappers, memo IDs, frame layouts and expectation IDs remain in the code.
+	methodNames  map[generatedMethod]string
+	literalNames map[string]string
+	methodKeys   []generatedMethod
+	literalKeys  []string
 	// nodeScopes records the frame layouts shared by typed rule metadata.
 	nodeScopes map[*rule][]string
 	typedSpan  string // generated helper name, avoiding grammar type and field names
@@ -184,6 +201,56 @@ type generator struct {
 	// description to its ID.
 	descs   []string
 	descIDs map[string]expID
+}
+
+type generatedMethod struct {
+	signature string
+	body      string
+}
+
+// methodName returns an existing exact helper or reserves the next name.
+// The signature keeps Node, typed Go and TypeScript functions distinct.
+func (g *generator) methodName(signature, body string) (string, bool) {
+	if g.disableMethodSharing {
+		return g.name("e"), false
+	}
+	key := generatedMethod{signature, body}
+	if name, ok := g.methodNames[key]; ok {
+		return name, true
+	}
+	if g.methodNames == nil {
+		g.methodNames = make(map[generatedMethod]string)
+	}
+	name := g.name("e")
+	g.methodNames[key] = name
+	g.methodKeys = append(g.methodKeys, key)
+	return name, false
+}
+
+// literalName shares immutable literal tables by decoded text. Descriptions
+// belong to each matcher, so spellings with different expectations stay distinct.
+func (g *generator) literalName(value string) (string, bool) {
+	if g.disableLiteralSharing {
+		return g.name("lit"), false
+	}
+	if name, ok := g.literalNames[value]; ok {
+		return name, true
+	}
+	if g.literalNames == nil {
+		g.literalNames = make(map[string]string)
+	}
+	name := g.name("lit")
+	g.literalNames[value] = name
+	g.literalKeys = append(g.literalKeys, value)
+	return name, false
+}
+
+func (g *generator) literal(value string) string {
+	name, shared := g.literalName(value)
+	if !shared {
+		fmt.Fprintf(&g.vars, "var %s = []rune(%q)\n", name, value)
+	}
+	return name
 }
 
 // desc returns the expectation ID of description s, adding it to the table.
@@ -447,7 +514,10 @@ func (g *generator) seenVar() string {
 
 // method emits a method with the given body and returns its name.
 func (g *generator) method(comment, body string) string {
-	name := g.name("e")
+	name, shared := g.methodName(g.recv()+"/"+g.valType(), body)
+	if shared {
+		return name
+	}
 	if comment != "" {
 		fmt.Fprintf(&g.methods, "// %s\n", comment)
 	}
@@ -536,8 +606,7 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 	switch e := e.(type) {
 	case *grammar.Literal:
 		value := literalValue(e.Value)
-		v := g.name("lit")
-		fmt.Fprintf(&g.vars, "var %s = []rune(%q)\n", v, value)
+		v := g.literal(value)
 		fmt.Fprintf(&b, "\treturn p.matchLiteral(%s, %q, %d, %v)\n", v, value, g.desc(strconv.Quote(e.Value)), build)
 	case *grammar.CharClass:
 		fmt.Fprintf(&b, "\tch, size, ok := p.peek()\n\tif !ok || %s {\n\t\tp.expect(p.pos, %d)\n\t\treturn nil, false\n\t}\n",

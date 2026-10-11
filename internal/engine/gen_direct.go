@@ -370,8 +370,7 @@ func (d *dgen) expr(e grammar.Expr, s *dscope, build bool, fail string) string {
 	switch e := e.(type) {
 	case *grammar.Literal:
 		value := literalValue(e.Value)
-		lit := g.name("lit")
-		fmt.Fprintf(&g.vars, "var %s = []rune(%q)\n", lit, value)
+		lit := g.literal(value)
 		desc := g.desc(strconv.Quote(e.Value))
 		var start string
 		if build {
@@ -1044,18 +1043,32 @@ func (d *dgen) attr(e *grammar.Attributed, i int, s *dscope, build bool, fail st
 
 // genSnapshot is the state of the generator a failed direct compilation rolls back.
 type genSnapshot struct {
-	vars  string
-	n     int
-	descs int
+	vars, methods                  string
+	n, descs, literals, methodKeys int
 }
 
 func (g *generator) snapshot() genSnapshot {
-	return genSnapshot{vars: g.vars.String(), n: g.n, descs: len(g.descs)}
+	return genSnapshot{vars: g.vars.String(), methods: g.methods.String(), n: g.n,
+		descs: len(g.descs), literals: len(g.literalKeys), methodKeys: len(g.methodKeys)}
 }
 
 func (g *generator) rollback(s genSnapshot) {
 	g.vars.Reset()
 	g.vars.WriteString(s.vars)
+	if g.methods.Len() != len(s.methods) {
+		g.methods.Reset()
+		g.methods.WriteString(s.methods)
+	}
+	for _, value := range g.literalKeys[s.literals:] {
+		delete(g.literalNames, value)
+	}
+	clear(g.literalKeys[s.literals:])
+	g.literalKeys = g.literalKeys[:s.literals]
+	for _, key := range g.methodKeys[s.methodKeys:] {
+		delete(g.methodNames, key)
+	}
+	clear(g.methodKeys[s.methodKeys:])
+	g.methodKeys = g.methodKeys[:s.methodKeys]
 	g.n = s.n
 	for _, x := range g.descs[s.descs:] {
 		delete(g.descIDs, x)

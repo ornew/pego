@@ -226,6 +226,11 @@ def x = pratt {
     level { infix right "^" }
     level { prefix "-" }
 }`, []string{strings.Repeat("-", 3*DefaultMaxDepth) + "x", strings.Repeat("x^", 3*DefaultMaxDepth) + "x", strings.Repeat("-", DefaultMaxDepth/4) + "x"}})
+	testGeneratedParsersCorpus(t, goBin, cases, GenOptions{})
+}
+
+func testGeneratedParsersCorpus(t *testing.T, goBin string, cases []genCase, opts GenOptions) {
+	t.Helper()
 	dir := t.TempDir()
 	write := func(name, content string) {
 		path := filepath.Join(dir, name)
@@ -243,7 +248,8 @@ def x = pratt {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		code, err := Generate(g, GenOptions{Package: fmt.Sprintf("g%d", i), Start: "main", Recognize: true})
+		opts.Package, opts.Start, opts.Recognize = fmt.Sprintf("g%d", i), "main", true
+		code, err := Generate(g, opts)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
