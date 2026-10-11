@@ -1,0 +1,407 @@
+# 033. Cancellable Parses and Work Budgets
+
+- **Status**: Proposed
+- **Author**: @ornew
+- **Date**: 2026-10-11
+
+## Summary
+
+Add invocation-local cancellation and optional input-work/execution-step limits
+to parsing. Start with the core Go API, including Document and streams, then
+apply the same interruption contract to generated Go and portable generated
+TypeScript. Existing depth limits remain independent. Ordinary calls with no
+controls keep their result and callback semantics.
+
+The limits bound counted engine work, not elapsed time, memory, compilation, or
+arbitrary caller code. Cancellation is cooperative at defined engine checkpoints;
+it cannot make a blocking io.Reader or callback return. Interrupted parses
+publish no partial batch result and release their mutable execution state.
+
+## Motivation
+
+A shallow grammar can repeatedly scan long input, backtrack across alternatives,
+or perform many LR/Pratt growth rounds without reaching its depth limit. Editors
+also need to abandon outdated work while preserving a Document for retry.
+
+Source inspection at `6fac14632cbf933d91fee7f8e5df9e82fb134c56` establishes the
+existing boundary:
+
+- [`ParseOptions`](../../internal/engine/input.go) carries unit, backend,
+  recognition, depth, and tracing; [`public APIs`](../../pego.go) use functional
+  ParseOption arguments. Document stores its construction settings; Parse has
+  no per-call arguments today.
+- [`run`/`recoverParse`](../../internal/engine/parse.go) distinguish completed
+  syntax/recovery outcomes from fatal interruptions. Recognition skips actions
+  whose values predicates do not need; predicate-dependent rules and callees
+  can still execute actions. Streams synchronously call a caller-owned reader
+  and emission callback.
+- [`Document.Parse`](../../internal/engine/document.go) discards memo, repetition,
+  and VM scratch state after an aborted parse because completed entries can depend
+  on unfinished LR seeds. Ordinary failures retain reusable caches.
+- [VM execution](../../internal/engine/vm.go), [iterative frames](../../internal/engine/ivm.go),
+  [input loops](../../internal/engine/input.go), and
+  [repetition resumption](../../internal/engine/resume.go) contain work outside a
+  rule-entry depth check.
+- [Generated Go](../../internal/engine/genrt/runtime.go) resolves options per
+  invocation, pools private scratch, and separately supports
+  [typed execution](../../internal/engine/genrt/typed.go). Depth options already
+  apply to Node, recognition, and typed entry points under
+  [design 022](022-generated-parser-depth-limits.md).
+
+No overhead or latency measurements are supplied here. A state/layout change can
+alter allocation and GC costs even when a new control is inactive. Static
+reference and exact-parent controls are required, rather than inferring zero
+cost from a disabled branch.
+
+## Goals
+
+- Cancel or exhaust a budget across ordinary calls, scans, actions/predicates,
+  repetition, LR/Pratt, memo hits, resumption, and result conversion.
+- Return identifiable interruption errors and safe zero results; consuming
+  grammar recovery must not absorb an interruption.
+- Reset all provisional/reusable execution state after active interruption while
+  preserving Document text/options and already delivered stream elements.
+- Define counter units, reset points, callback ownership, polling bounds, and
+  implementation-dependent counts honestly.
+- Validate default-path cost against an exact parent and a same-revision static
+  reference, including GC-phase costs, before adopting the implementation.
+
+## Non-goals
+
+This proposal does not impose default finite budgets, change depth defaults,
+preempt arbitrary goroutines, close caller readers, add asynchronous parsing,
+limit heap allocations, or time compilation/Load/serialization. It does not add
+snapshot, editor transaction, or generated Document/stream APIs. Future public
+snapshot conversion may reuse these controls through its own API design.
+
+## Design
+
+### Proposed Go API
+
+Use the existing functional-options convention. The following additions and
+Document signature change are proposals:
+
+```go
+type WorkLimits struct {
+    MaxInputWork uint64
+    MaxSteps     uint64
+}
+func WithContext(ctx context.Context) ParseOption
+func WithWorkLimits(limits WorkLimits) ParseOption
+
+// Existing Parse/ParseStream/RecognizeOnly calls accept the same options.
+func (d *Document) Parse(opts ...ParseOption) (*Node, error)
+
+var ErrWorkLimit error
+
+type WorkLimitKind uint8
+const (
+    InputWorkLimit WorkLimitKind = iota
+    StepWorkLimit
+)
+type WorkLimitError struct {
+    Kind      WorkLimitKind
+    Limit     uint64
+    Used      uint64
+    Requested uint64
+}
+func (e *WorkLimitError) Error() string
+func (e *WorkLimitError) Is(target error) bool // target == ErrWorkLimit
+```
+
+Nil context means context.Background; zero limits mean unlimited. Options apply
+once in order, and the last context or entire WorkLimits value wins. There is no
+shared mutable counter, global cancellation token, deadline timer goroutine, or
+runtime polling-frequency option. Unsigned limits avoid a new negative-value
+interpretation. Existing option/depth validation remains unchanged.
+
+Resolve/validate options and rule/backend availability before entering counted
+execution. Check cancellation before input initialization and immediately before
+publishing a completed result. Options and first-use compilation/backend setup
+are outside the budgets; check cancellation before and after that setup, without
+claiming it is interruptible. A pre-cancelled context prevents input reading and
+engine evaluation after validation. Errors.Is identifies context.Canceled or
+context.DeadlineExceeded through the returned context error; custom cancellation
+causes remain available through context.Cause on the caller's context.
+
+Document construction options become defaults for each Parse call. Construction
+input initialization uses a fresh control instance; each later Parse resets both
+counters and uses fresh invocation state. Prefer per-call WithContext for an
+editor task so a cancelled construction-default context does not govern every
+future parse. The same caller-selected default context is otherwise retained
+until the Document is released. Edit remains outside parse controls.
+
+Per-call Document options may override context, limits, depth, and trace using
+construction defaults as their starting point. Unit/backend/recognition mode
+must remain the constructed document's mode; an effective incompatible value
+returns an error before execution. Existing multiple-trace composition applies
+once in order. No-argument calls are unchanged. A stored method value typed as
+`func() (*Node, error)` needs a wrapper around `d.Parse()` after the variadic
+signature change; document this small source migration explicitly.
+
+Generated Go emits corresponding package-local WorkLimits/errors/options and
+uses one resolved control instance across Parse, ParseRule, Recognize, ParseAST,
+and named ParseRuleAST where available. Named typed dispatch resolves options
+once before lookup, then shares the resolved state through direct execution or
+Node conversion; it must not reevaluate callbacks to establish a budget.
+
+### What the limits count
+
+Counters are cumulative per invocation and never rolled back on backtracking,
+failed lookahead, recovery, LR growth, or repeated work. Zero disables that
+counter. A charge is checked before the charged operation; limit N permits N
+charged units. If a next atomic operation requests more than the remaining
+allowance, abort before it, with Used unchanged and Requested explaining the
+failed reservation. Use subtraction/checks rather than overflowing counters.
+
+**Steps** are backend execution work events, not source characters or CPU
+instructions. Charge VM expression/action instruction dispatches; closure and
+generated expression/action operations at their emitted execution boundaries;
+rule/memo dispatch and LR/Pratt selection/growth iterations; repetition/resume
+iterations; and per-element work in unbounded engine loops. Include graph edges
+visited during position movement, collection construction, and typed conversion,
+so a memo hit or converter cannot bypass the limit by returning a large graph.
+Bulk copies/materialization use bounded chunks with explicit step charges.
+
+**Input work** counts cumulative inspected input representation elements, not
+unique positions, the farthest examined offset, or the current input length.
+Charge decoding/preparation, terminal scans/comparisons, lookahead rereads, text
+extraction copies, offset/line-table scans, and engine text comparisons. One byte
+access costs one in byte storage; one rune access costs one in decoded storage.
+An EOF probe costs one. A repeated probe is charged again. Bulk comparisons
+reserve their declared compared range; a fast mismatch need not refund that
+reservation. Scalar/action string work and graph work also consume steps, even
+when they do not read the original input. An O(1) existing substring reference
+or completed table lookup does not charge the substring/table's entire size.
+
+These are deterministic abstract charges for a fixed backend, generated artifact,
+input representation, and version. Preparation may inspect raw bytes and later
+matching may inspect decoded runes; both count. Therefore counts may differ
+between position units, backends, optimized/reference generation, memo state,
+and releases. They are not cross-backend instruction equivalence or a stable
+complexity score. Publish the charging table with the implementation and test
+its threshold behavior; do not claim equal budget success across implementations.
+A prepared Document can need less counted input work than a new batch parse.
+
+A resumed repetition charges the records/values actually processed, not all
+historical input it skips. A constant-time memo hit consumes dispatch work but
+no fictional scan of its whole examined range. Position/diagnostic updates and
+actual traversal of a reused graph are still charged. Limits bound current work,
+not the amount of data originally needed to construct a memo result.
+
+### Cancellation checkpoints and long operations
+
+Check context before execution, before/after reader and user callback calls, and
+before result publication. Within controlled engine execution, target at most
+256 charged steps or 4,096 charged input elements between cancellation checks,
+whichever comes first. Budget checks apply to each charge/reservation regardless
+of the cancellation polling interval. These initial internal constants are
+measurement targets, not a configurable API or a wall-clock latency guarantee.
+
+Chunk long literal/class scans, input decoding/copying, text operations, line/
+offset tables, rollback clearing, run/memo traversal, LR/Pratt loops, and typed
+conversion. Polling only at rule entry or VM dispatch is insufficient when one
+operation contains a large loop. A one-time bounds check before an unbounded
+host-library copy does not establish bounded cancellation latency. Split such
+work where possible; allocation, GC, stack growth, first-use setup, and caller
+code remain nonpreemptible intervals to measure and disclose.
+
+At a checkpoint where several conditions are observed together, cancellation
+wins, then input-work exhaustion, then step exhaustion. Otherwise the first
+observed terminal condition wins. A budget can win before cancellation is next
+polled; this is deterministic work accounting, not a race-resolution promise.
+Cancellation/limit failures take the fatal interruption route and cannot match
+an alternative or be swallowed by predicate/action error recovery or #recover.
+Do not construct ordinary syntax diagnostics after the terminal interruption
+merely to fill in a location; that would perform additional unbudgeted scans.
+
+### Results and cleanup
+
+Batch Node parsing returns nil on interruption; recognition returns the same
+interruption error. Typed Go returns the selected entry point's established zero
+value, preserving typed pointer/slice zeros and named-rule boxing semantics.
+No partly converted typed object or earlier recovered tree is returned. A typed
+conversion cancellation is an interruption of the whole invocation. Ordinary
+completed syntax and consuming-recovery outcomes remain unchanged.
+
+Arm cleanup immediately after acquiring scratch/control state, including input
+initialization and conversion; do not rely on a normal-return recycle call.
+Clear control/context references, capture frames, trails, stacks, pending
+conversion maps/arenas, LR seeds and provisional memo dependencies before pool
+reuse. Returned values from previous successful invocations remain independently
+owned. Accounting and cancellation state must not enter saved modules, memo keys,
+public Nodes, or result arenas retained by consumers.
+
+Mandatory unwind/recycle after a terminal interruption runs to completion without
+further cancellation or budget failures; otherwise a second interruption could
+leave unsafe state in a pool. This cleanup is outside the exhausted budget and
+is a separately measured nonpreemptible interval before the error returns.
+Normal backtracking/rollback work during execution remains charged and polled.
+
+For an active Document interruption, follow the existing abort rule: drop the
+whole memo and repetition maps, clear VM/value/kid/undo scratch, and retain only
+valid text/options/input tables. Completed entries can depend on unfinished LR
+seeds; dropping only growing entries is insufficient. If initialization of an
+input table was interrupted, discard that partial table. Stats describes the
+attempt, with its existing meaning; work counters are reported on limit errors,
+not silently added to rule-evaluation statistics. Pre-execution option rejection
+or cancellation, before reusable state is touched, leaves the existing caches
+and last stats intact. Retry with a fresh context/budget must match fresh parsing.
+
+Document remains single-owner, and old mutable trees can still move during a
+subsequent parse. Interruption is not a transactional rollback of legacy Nodes
+already moved. Use Clone under its current contract to retain earlier results.
+
+### Reader and callback ownership
+
+Reader, trace, and emit callbacks run synchronously in the caller's goroutine.
+The parser never closes the reader or starts an unmanaged goroutine to interrupt
+Read. A blocked io.Reader is cancellable only through the caller's own reader/
+deadline/closure arrangement; otherwise cancellation is observed after Read
+returns. Likewise a callback that blocks is outside the engine's polling bound.
+No further call starts after interruption has been observed.
+Preserve a reader's returned non-EOF error; it wins over cancellation newly
+observed after that same Read returns, just as an emit error does below.
+
+Buffered reading may consume ahead of the parsed position. Input-work limits
+are not a maximum reader-byte-consumption promise, and cancellation cannot unread
+prefetched data. After stream interruption, restart requires caller-managed input
+replay; starting another parser at the current reader offset is not a promised
+continuation mechanism.
+
+Check immediately before emitting a completed element and after emit returns.
+Previously delivered elements, including nil-valued elements, remain delivered
+and caller-owned; cancellation does not roll them back or emit them again. If
+emit returns an error, preserve that error rather than replace it with a newly
+observed cancellation. Callback panics propagate unchanged after cleanup and
+must not be mistaken for malformed-bytecode faults. Trace callbacks keep their
+existing synchronous order/reentrancy ownership; no synthetic balanced exit
+events are promised after an interrupted call. Option callbacks themselves are
+caller code and are evaluated exactly once before execution controls apply.
+
+### Portable generated equivalent
+
+After core Go and generated Go meet their gates, extend existing TS options-aware
+entry points with optional `signal`, `maxInputWork`, and `maxSteps`. Preserve the
+existing plain/default functions and typed conversion path. Use an exported
+structural cancellation-signal interface with readonly aborted/reason properties,
+so an AbortSignal fits without requiring a browser DOM typing dependency.
+Validate finite nonnegative safe-integer limits; zero means unlimited. Go uint64
+limits outside the TS safe-integer range are not portable literal settings.
+
+Return a distinct exported interruption error with cancellation/limit kind and
+limit accounting; preserve an observed signal reason as cause without retaining
+the signal after return. Use invocation-local counters and conversion state.
+Cancellation and limits return null Node/typed value with the interruption error;
+ordinary nil success still has no error. Generated recognition reports it too.
+
+A synchronous TS parse does not yield to event-loop timers: AbortController on
+the same thread cannot acquire new cancellation while a long parse monopolizes
+that thread. Pre-aborted or externally changing host signals can be observed at
+polls; deterministic work limits remain effective without event-loop scheduling.
+Do not promise timer-driven responsiveness or add async yields implicitly.
+Direct typed/Node conversion and recognition controls require their own actual
+consumer/runtime tests. New helper names participate in the existing deterministic
+export-name collision allocator.
+
+### Implementation sequence and compatibility
+
+1. Core Go batch controls, charging table, input/VM/closure loops, ownership and
+   exact-parent/static-reference tests. Then Document invocation overrides and
+   stream boundaries, with interrupted LR retry and callback tests.
+2. Generated Go Node/recognition, direct typed and conversion routes; include
+   selected named-rule dispatch when present. Prove option resolution once,
+   typed-zero/error behavior, and private pool clearing.
+3. TS portable limits/signal/errors using its existing options-aware convention;
+   strict declaration consumers and actual runtimes, including synchronous
+   scheduling limitations and deep/shared conversion graphs.
+
+Each stage has a separate code/evidence review; none is implemented here. Core
+Closure, recursive Bytecode and BytecodeIterative all require coverage, including
+available AST-omitted bytecode parsers. Generated runtimes gain controls only
+where entry points already exist; no streams/Documents are implied. Saved module
+formats and grammar/action semantics stay unchanged. Update runtime, incremental,
+streaming, code-generation and TypeScript guides with the applicable stage.
+
+## Alternatives considered
+
+- **Depth limits only.** Existing compatibility baseline, but shallow scans and
+  backtracking can perform broad work. Keep depth plus optional independent limits.
+- **Only context, checked at rule entry.** Small change but misses terminal/action
+  loops, reused graph work, and blocked I/O. Poll long engine work and document
+  the caller-code boundary instead.
+- **Wall-clock timeout goroutine or forced reader Close.** Can interrupt some I/O
+  but introduces reader ownership, races, and goroutine leaks for arbitrary
+  readers/callbacks. Prefer caller-owned I/O cancellation and cooperative checks.
+- **One universal backend-independent instruction count.** Attractive for portable
+  settings but would require a new normalized evaluator and charge optimized
+  skipped work artificially. Use documented backend-local abstract work events.
+- **Lifetime Document budget.** Can cap an editor session, but becomes exhausted
+  after earlier unrelated edits and makes retry stateful. Reset per invocation;
+  callers can apply their own session policy.
+- **Return the best partial tree on cancellation.** Useful in some editors but
+  exposes provisional LR/capture/conversion state and changes result guarantees.
+  Return zero plus an identifiable interruption; preserve completed prior snapshots
+  separately when that API is available.
+
+## Testing
+
+These are proposed gates, not completed validation:
+
+- Pre-cancelled/deadline contexts, cancellation at deterministic checkpoints,
+  nil/unlimited defaults, last-option wins, exact once/reentrant option callbacks,
+  exact budget boundary/reservation failure and uint64 overflow prevention.
+- Long atomic/literal/class scans, empty/nullable loops, shallow alternatives and
+  backtracking, lookahead, predicates/actions and long text operations, LF/CRLF
+  table scans, malformed/truncated UTF-8 and raw text, both position units.
+- Every backend; recursive/indirect LR and provisional completed dependencies,
+  Pratt, cuts, recovery, memo hits, resumed long repeats, position-valued actions,
+  deep/shared graph movement/conversion. Interruption bypasses recovery and
+  ordinary error translation; errors.Is/As and typed zeros are preserved.
+- Document interrupt/retry and edit/retry against fresh parsing; no-edit memo-hit
+  cancellation; active abort drops complete reusable state while pre-entry
+  rejection leaves it untouched. Retained old Clone/results remain owned.
+- Reader blocking/return/error behavior, buffered prefetch, emit errors, panics,
+  cancellation inside callbacks, previously emitted ownership, nested parses,
+  concurrent independent calls, pool reuse, partial initialization/conversion,
+  and context/large-input release after forced GC. Race checks use one Document
+  owner, not unsupported concurrent Document mutation.
+- Strict generated Go/TS consumers, native context error classification, portable
+  cancellation reason, invalid TS limit values, export collisions, actual Node
+  runtime and same-thread signal scheduling. No timer test may claim a synchronous
+  parser yields without an explicit asynchronous API.
+
+## Performance and results
+
+No performance promise or measured result. Pin exact parent and candidate,
+backend/unit, generated controls, compiler/runtime versions, grammar/input hashes,
+and normal GC settings. Compare three controls: exact parent; same-revision
+static build/generation with controls and added state/layout removed; candidate
+with absent controls. Then measure context-only, budgets-only, combined controls,
+and cancellation latency in engine work versus caller-blocked intervals.
+
+Use ordinary small/large batch Node, recognition, direct typed and conversion
+workloads; shallow scanning/backtracking; Document no-edit/edit/reparse/resume;
+streams; LR/Pratt and capture-heavy results. Separate initialization, evaluation,
+conversion, cleanup, and first-use setup. Report paired time, B/op, allocations,
+peak/post-GC heap, retained context/input release, and work charged. Include runs
+that cross normal GC phases; an inactive parser field can change object size,
+allocation cadence and scanning costs even without an executed poll. Do not
+change production GC settings to mask those costs.
+
+Test a small invocation-owned sidecar against added parser fields before choosing
+storage; a nil sidecar still changes layout and access costs. Static references
+are test/build or private generation controls, not public mutable switches.
+Check latency at the proposed polling quanta and worst single library/allocation
+intervals. Adoption needs measured default-path costs and declared tradeoffs;
+record actual results with the implementation, without claiming zero overhead.
+
+## Limitations and open questions
+
+The proposed defaults form one coherent contract: no controls unless requested,
+per-invocation counters, cooperative context/signal polling, backend-local work
+charges, zero results on interruption, and caller-owned blocking operations.
+No owner approval choice is required to draft or test those defaults. Measured
+coverage and latency must determine internal polling/chunk sizes and state
+storage; if any long operation cannot be chunked safely, document that specific
+unbounded interval before claiming a completed cancellation stage.
