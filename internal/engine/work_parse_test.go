@@ -98,8 +98,8 @@ func TestWorkParseRecognitionAndUnsupportedRoutes(t *testing.T) {
 			t.Fatalf("%v recognition: node=%v err=%v", b, n, err)
 		}
 	}
-	if _, err := prog.NewDocumentWith("main", "abc", ParseOptions{WorkLimits: WorkLimits{MaxSteps: 1}}); err == nil {
-		t.Fatal("document ignored unsupported work control")
+	if d, err := prog.NewDocumentWith("main", "abc", ParseOptions{Context: ctx}); d != nil || !errors.Is(err, context.Canceled) {
+		t.Fatalf("document ignored construction cancellation: document=%v error=%v", d, err)
 	}
 	if err := prog.ParseStreamWith("main", strings.NewReader("abc"), nil, ParseOptions{Context: ctx}); err == nil {
 		t.Fatal("stream ignored unsupported work control")

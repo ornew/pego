@@ -51,9 +51,9 @@ reuse.
 
 | | |
 |:--|:--|
-| `p.NewDocument(text, opts...)` | A document holding `text`. Options: `WithUnit` (also the unit of `Edit`) and `WithBackend`. Fails for `RecognizeOnly`, for an unavailable backend (`Closure` on a parser saved without its AST), and for an unknown start rule. Nothing is parsed yet. |
+| `p.NewDocument(text, opts...)` | A document holding `text`. `WithUnit` (also the unit of `Edit`) and `WithBackend` fix its mode; context, work limits, depth and trace become defaults for later parses. Fails for `RecognizeOnly`, for an unavailable backend (`Closure` on a parser saved without its AST), and for an unknown start rule. Nothing is parsed yet. |
 | `doc.Edit(start, end, text)` | Replace `[start, end)` with `text`, in the document's unit. `start == end` inserts, an empty `text` deletes. An error if the range is outside the text, and with `Bytes`, if `start` or `end` is inside a character. Does not parse. |
-| `doc.Parse()` | Parse the current text. Results and errors are those of `Parser.Parse`, including `SyntaxErrors` returned with a tree for recovered errors. |
+| `doc.Parse(opts...)` | Parse the current text using construction defaults with invocation overrides. Results and errors are those of `Parser.Parse`, including `SyntaxErrors` returned with a tree for recovered errors. |
 | `doc.Stats()` | `ParseStats{Evaluated, Reused}` of the last `Parse`: rule bodies run, and results used again (memo results and the elements of resumed repetitions). |
 | `doc.Text()` | The current text. |
 
@@ -66,12 +66,28 @@ have already been replaced with U+FFFD; editing that normalized text does not re
 A `Document` is not safe for concurrent use; a `Parser` is, so use one `Document` per goroutine and share the `Parser`.
 Several `Edit` calls can precede one `Parse`.
 
-An action error, a nesting-limit error, or a panic in a trace callback interrupts
-the parse. A `Document` discards its memo and repetition caches after such an
-interruption, because partial results can depend on unfinished left-recursion
-seeds. The text and options stay available for retry or editing; trace panics
-still propagate to the caller. Ordinary syntax errors and recovered errors are
+A cancellation, work-limit failure, action error, nesting-limit error, or panic in caller context or trace code interrupts
+the parse. An interruption before execution preserves the previous caches and
+statistics. Once execution starts, a `Document` discards its memo and repetition
+caches on interruption, because partial results can depend on unfinished
+left-recursion seeds. The text and options stay available for retry or editing; caller context
+and trace panics still propagate to the caller. Ordinary syntax errors and recovered errors are
 completed parse outcomes and keep their reusable caches.
+
+Pass `WithContext(ctx)`, `WithWorkLimits(limits)` or `WithMaxDepth(n)` to
+`doc.Parse` to override a construction default for one invocation. Omitted
+options retain their defaults; `WithContext(nil)` disables default cancellation
+and zero work limits disable default budgets. Multiple trace callbacks compose
+in order, once. Unit, effective backend and recognition mode cannot change.
+Construction and each Parse have separate counters; Edit does not use them.
+Use a fresh per-call context to retry a document whose default context was
+cancelled. A stored method value of type `func() (*pego.Node, error)` needs a
+wrapper such as `func() (*pego.Node, error) { return doc.Parse() }`.
+
+Depth and work limits bound the execution performed by this invocation.
+Reusing a memoized result can skip nested calls and require less counted work
+than a fresh parse of the same text; a cached parse can therefore succeed under
+a limit that would interrupt fresh parsing.
 
 ## A walkthrough with `Stats`
 

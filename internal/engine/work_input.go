@@ -23,6 +23,9 @@ func newControlledTextInput(s string, unit Unit, offsets bool, sc *scratch, c *w
 	if !workControlsEnabled || c == nil {
 		return newTextInputIn(s, unit, offsets, sc)
 	}
+	if sc == nil {
+		sc = &scratch{}
+	}
 	in := input{unit: unit, eof: true, baseLine: 1, baseCol: 1, control: c}
 	if unit == Bytes {
 		in.bs = grow(sc.bytes, len(s))

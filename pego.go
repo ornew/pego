@@ -241,8 +241,10 @@ type Document struct {
 // ParseStats counts rule evaluations and reused results in a Document.Parse.
 type ParseStats = engine.Stats
 
-// NewDocument creates a Document for text. opts select the position unit, which Edit also uses, and the
-// backend. It returns an error if the backend is unavailable (Closure on a parser saved without the AST).
+// NewDocument creates a Document for text. opts select its fixed unit and backend
+// and the defaults for later Parse calls. Construction and each Parse use fresh
+// work counters. Edit uses the same unit and is outside parse work controls.
+// It returns an error if the backend is unavailable (Closure without the AST).
 func (p *Parser) NewDocument(text string, opts ...ParseOption) (*Document, error) {
 	d, err := p.prog.NewDocumentWith(p.start, text, parseOptions(opts))
 	if err != nil {
@@ -260,8 +262,18 @@ func (d *Document) Text() string { return d.doc.Text() }
 // a valid UTF-8 character.
 func (d *Document) Edit(start, end int, text string) error { return d.doc.Edit(start, end, text) }
 
-// Parse parses the current text. Its results and errors are those of Parser.Parse.
-func (d *Document) Parse() (*Node, error) { return d.doc.Parse() }
+// Parse parses the current text. opts apply once over construction defaults and
+// may change context, work limits, depth and trace, but not unit, effective backend
+// or recognition mode. Overrides do not change future defaults. Pre-execution
+// interruption preserves caches and statistics; execution or publication
+// interruption discards reusable state while preserving text for retry.
+func (d *Document) Parse(opts ...ParseOption) (*Node, error) {
+	o := d.doc.ParseDefaults()
+	for _, opt := range opts {
+		opt(&o)
+	}
+	return d.doc.ParseWith(o)
+}
 
 // Stats returns the evaluation and reuse counts of the last Parse.
 func (d *Document) Stats() ParseStats { return d.doc.Stats() }

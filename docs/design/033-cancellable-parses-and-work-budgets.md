@@ -400,8 +400,8 @@ caller panic. Recognition uses the same batch lifecycle. Individual trace-option
 when cancellation is observed.
 
 This foundation is not an adopted implementation of the full contract above.
-Document and stream calls reject active controls until their lifecycle stages
-are implemented. Known engine-owned action errors and the final rule prefix
+Stream calls reject active controls until their lifecycle stage
+is implemented. Known engine-owned action errors and the final rule prefix
 now use eager, bounded text construction. Guard-rejected closure alternatives
 also consume steps independently of diagnostic collection. Other matcher paths
 still need batch coverage and regression gates. Document graph movement,
@@ -599,7 +599,18 @@ keep saved events and Programs alive, with strong-reference controls first.
 Disabling only Document/stream teardown retains all observed fixture targets.
 These checks establish specific object release, not heap volume or throughput.
 The added untraced teardown checks and traced resets remain unmeasured. Active
-Document/stream work controls and generated-runtime lifecycles are still pending.
+Document entry points now resolve construction defaults and per-call overrides
+once, with fresh construction and invocation counters. Fixed unit, effective
+backend and recognition mode reject incompatible values before mutation.
+Constructor preparation and admission/execution/publication checks preserve
+caller-context panic identity. Pre-execution interruption preserves prior caches
+and statistics; execution and publication interruptions invalidate reusable state.
+Temporary control and traced parser references are detached before returning an
+error or rethrowing a caller panic.
+
+Document-specific edit replay, run resumption and node movement still need
+bounded checkpoints; Edit remains outside parse controls. Stream work controls,
+generated-runtime lifecycles and default-cost measurements are still pending.
 
 ## Alternatives considered
 
