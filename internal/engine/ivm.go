@@ -27,6 +27,7 @@ func (p *parser) iterate(vm *vmProgram, root iframe) iresult {
 	stack := []iframe{root}
 	var res iresult
 	for {
+		p.stepWork()
 		child, out, done := stack[len(stack)-1].next(p, vm, res)
 		if !done {
 			stack = append(stack, child)

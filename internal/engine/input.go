@@ -2,6 +2,7 @@ package engine
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"slices"
@@ -27,6 +28,10 @@ func (u Unit) String() string {
 
 // ParseOptions holds per-parse settings.
 type ParseOptions struct {
+	// Context cooperatively interrupts this invocation. Nil means no cancellation.
+	Context context.Context
+	// WorkLimits optionally bound cumulative input inspections and execution work.
+	WorkLimits WorkLimits
 	// Unit is the position unit. Matching is done per code point regardless of the unit.
 	Unit Unit
 	// Backend is the backend that runs the parse.
@@ -66,6 +71,7 @@ func (o ParseOptions) maxDepth(b Backend) int {
 // base. When parsing a stream, more input is read from reader as needed and the committed part is
 // discarded.
 type input struct {
+	control  *workControl // invocation-local; never retained by results
 	unit     Unit
 	in       []rune // for CodePoints
 	bs       []byte // for Bytes
@@ -96,11 +102,14 @@ func (in *input) setSource(s string) {
 
 // buildOffs builds the offset table of src (code points).
 func (in *input) buildOffs() {
-	in.offs = make([]int32, 0, len(in.in)+1)
-	for i := range in.src {
-		in.offs = append(in.offs, int32(i))
+	offs := make([]int32, 0, len(in.in)+1)
+	for i := 0; i < len(in.src); {
+		in.inputWork(uint64(min(utf8.UTFMax, len(in.src)-i)))
+		offs = append(offs, int32(i))
+		_, size := utf8.DecodeRuneInString(in.src[i:])
+		i += size
 	}
-	in.offs = append(in.offs, int32(len(in.src)))
+	in.offs = append(offs, int32(len(in.src)))
 }
 
 // replace replaces the positions [start, end) of a fully loaded input with text and returns the
@@ -222,17 +231,26 @@ const maxScratch = 1 << 22
 // newPooledParser is newParser with buffers left by earlier parses of prog. The caller passes the
 // parser to releaseScratch when the parse has returned.
 func newPooledParser(prog *Program, s string, unit Unit, offsets bool) *parser {
+	p := acquirePooledParser(prog)
+	p.input = newTextInputIn(s, unit, offsets, p.scratch)
+	return p
+}
+
+// acquirePooledParser separates scratch acquisition from input initialization,
+// so a caller can arm release before controlled decoding can interrupt.
+func acquirePooledParser(prog *Program) *parser {
 	sc, _ := prog.scratch.Get().(*scratch)
 	if sc == nil {
 		sc = &scratch{}
 	}
-	p := &parser{prog: prog, input: newTextInputIn(s, unit, offsets, sc), memo: &sc.memo, maxDepth: DefaultMaxDepth, kidStack: sc.kids[:0]}
+	p := &parser{prog: prog, memo: &sc.memo, maxDepth: DefaultMaxDepth, kidStack: sc.kids[:0]}
 	p.scratch = sc
 	return p
 }
 
 // releaseScratch returns the buffers of a parser made by newPooledParser for later parses.
 func (p *parser) releaseScratch() {
+	p.control = nil
 	sc := p.scratch
 	if sc == nil {
 		return
@@ -326,6 +344,7 @@ func (in *input) read() {
 // decode returns the character at position i, its size (in units), and the end of the examined
 // range.
 func (in *input) decode(i int) (r rune, size, examined int, ok bool) {
+	in.inputWork(1)
 	if i < in.base {
 		return 0, 0, i + 1, false
 	}
@@ -348,6 +367,7 @@ func (in *input) decode(i int) (r rune, size, examined int, ok bool) {
 		in.fill(in.loaded() + 1)
 		b = in.bs[i-in.base:]
 	}
+	in.inputWork(uint64(min(utf8.UTFMax, len(b))))
 	r, size = utf8.DecodeRune(b)
 	examined = i + size
 	if r == utf8.RuneError && size == 1 {
@@ -364,6 +384,7 @@ func (in *input) decode(i int) (r rune, size, examined int, ok bool) {
 
 // byteAt returns the byte at position i when the unit is Bytes.
 func (in *input) byteAt(i int) (byte, bool) {
+	in.inputWork(1)
 	if i < in.base || !in.fill(i+1) {
 		return 0, false
 	}
@@ -419,6 +440,7 @@ func (in *input) lineCol(pos int) (int, int) {
 	line, col := in.baseLine, in.baseCol
 	n := in.loaded()
 	for i := in.base; i < pos && i < n; i++ {
+		in.inputWork(1)
 		var nl bool
 		if in.unit == Bytes {
 			nl = in.bs[i-in.base] == '\n'
@@ -439,14 +461,18 @@ func (in *input) lineCol(pos int) (int, int) {
 func (in *input) buildLines() {
 	in.lines = append(in.lines[:0], 0)
 	if in.unit == Bytes {
-		for i, b := range in.bs {
+		for i := range in.bs {
+			in.inputWork(1)
+			b := in.bs[i]
 			if b == '\n' {
 				in.lines = append(in.lines, i+1)
 			}
 		}
 		return
 	}
-	for i, r := range in.in {
+	for i := range in.in {
+		in.inputWork(1)
+		r := in.in[i]
 		if r == '\n' {
 			in.lines = append(in.lines, i+1)
 		}
@@ -514,13 +540,21 @@ func (p *parser) matchLiteral(rs []rune, bs []byte) bool {
 		if p.unit == Bytes {
 			in := p.bs[p.pos-p.base:]
 			n = len(bs)
-			for k < n && k < len(in) && in[k] == bs[k] {
+			for k < n {
+				p.inputWork(1)
+				if k >= len(in) || in[k] != bs[k] {
+					break
+				}
 				k++
 			}
 		} else {
 			in := p.in[p.pos-p.base:]
 			n = len(rs)
-			for k < n && k < len(in) && in[k] == rs[k] {
+			for k < n {
+				p.inputWork(1)
+				if k >= len(in) || in[k] != rs[k] {
+					break
+				}
 				k++
 			}
 		}
@@ -553,6 +587,7 @@ func (p *parser) matchLiteral(rs []rune, bs []byte) bool {
 		return true
 	}
 	for _, r := range rs {
+		p.inputWork(1)
 		p.touch(p.pos + 1)
 		if p.pos < p.base || !p.fill(p.pos+1) || p.in[p.pos-p.base] != r {
 			return false
@@ -585,6 +620,7 @@ func (p *parser) matchLiteralRunes(rs []rune) bool {
 }
 
 func (p *parser) atEOF() bool {
+	p.inputWork(1)
 	p.touch(p.pos + 1)
 	return !p.fill(p.pos + 1)
 }

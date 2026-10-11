@@ -323,6 +323,34 @@ where entry points already exist; no streams/Documents are implied. Saved module
 formats and grammar/action semantics stay unchanged. Update runtime, incremental,
 streaming, code-generation and TypeScript guides with the applicable stage.
 
+## Prototype coverage
+
+The `feat/parse-work-controls` branch starts the core batch stage. It provides
+invocation-local context and overflow-safe work reservations, controlled input
+preparation, scanner and execution-dispatch checkpoints, and cleanup after
+initialization interruption or caller panic. Recognition uses the same batch
+lifecycle. Individual trace-option callbacks stop before a subsequent callback
+when cancellation is observed.
+
+This foundation is not an adopted implementation of the full contract above.
+Document and stream calls reject active controls until their lifecycle stages
+are implemented. Unbounded action/string/graph, rollback and resumption loops
+still require the coverage map and regression gates before adoption. The
+prototype remains separate from main until contract and performance gates pass.
+
+The private `pego_work_controls_reference` build tag removes execution
+instrumentation and rejects active controls. It retains the new state layout;
+compare an exact parent as well to assess layout, compilation, and GC costs.
+No timing conclusion is available while benchmark measurement is paused.
+
+Current input charges reserve up to four raw bytes for each UTF-8 decoder call
+in both sizing and storage preparation passes, one element per literal probe
+or decoded-storage probe, and an EOF probe. A reservation can overcount an early
+mismatch; counters do not roll back. Each scan operation also charges a step.
+Backend dispatch and rule/growth charges differ between runtimes. The final
+charging table must include remaining operations before these limits can be
+presented as complete work bounds.
+
 ## Alternatives considered
 
 - **Depth limits only.** Existing compatibility baseline, but shallow scans and

@@ -393,6 +393,7 @@ func (p *parser) mergeExpected(far int, ids []expID) {
 // The work is split into callBegin, growBegin/growStep/growEnd, invoke, and callEnd, and the
 // iterative-model VM (ivm.go) calls the same functions from its own stack.
 func (p *parser) call(r *rule, min int) (*Node, bool) {
+	p.stepWork()
 	if p.tr != nil {
 		// A traced parse: report the call (tracedCall calls back here with direct set).
 		if !p.tr.direct {
@@ -601,6 +602,7 @@ func (p *parser) growBegin(key memoKey) growState {
 // growStep receives the body's result; if the match grew, it stores the result in the memo,
 // prepares the next evaluation, and returns true.
 func (p *parser) growStep(g *growState, v *Node, ok bool) bool {
+	p.stepWork()
 	if !ok || (g.best.ok && p.pos <= g.best.end) {
 		return false
 	}
@@ -642,6 +644,7 @@ func (p *parser) invoke(r *rule, min int) (*Node, bool) {
 // invokeBegin and invokeEnd inlined, minus the capture frame (the body never writes one, so the
 // caller's stays current), and with the failure handling of call.
 func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
+	p.stepWork()
 	start, rec, trail := p.pos, len(p.recovered), len(p.trail)
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
@@ -675,6 +678,7 @@ type invokeState struct {
 }
 
 func (p *parser) invokeBegin(r *rule) invokeState {
+	p.stepWork()
 	st := invokeState{f: p.newFrame(len(r.scope.names)), prevFrame: p.frame, prevEnv: p.env, prevCut: p.cut, trail: len(p.trail), start: p.pos}
 	p.frame, p.cut = st.f, false
 	p.depth++

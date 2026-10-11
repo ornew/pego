@@ -15,26 +15,49 @@ func (prog *Program) Parse(start, input string) (*Node, error) {
 }
 
 // ParseWith parses with options such as the position unit.
-func (prog *Program) ParseWith(start, input string, o ParseOptions) (*Node, error) {
+func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *Node, err error) {
+	// Initialization can interrupt before run installs its execution recovery.
+	// Preserve caller panics: run already distinguishes bytecode faults from
+	// trace panics, so an outer boundary must not classify them again.
+	defer func() {
+		if x := recover(); x != nil {
+			if f, ok := x.(fatal); ok {
+				n, err = nil, f.err
+			} else {
+				panic(x)
+			}
+		}
+	}()
+	if _, err := prog.rule(o.Backend, start); err != nil {
+		return nil, err
+	}
+	control := newWorkControl(o.Context, o.WorkLimits)
+	control.check()
+	if !workControlsEnabled && control != nil {
+		return nil, fmt.Errorf("work controls are unavailable in the reference build")
+	}
+	active := prog
 	if o.Recognize {
 		rp, err := prog.recognizer()
 		if err != nil {
 			return nil, err
 		}
-		p := newPooledParser(rp, input, o.Unit, false) // recognition rarely needs token text
-		p.maxDepth = o.maxDepth(o.Backend)
-		p.deferMemo = true
-		p.setTrace(o.Trace)
-		_, err = rp.run(p, o.Backend, start)
-		p.releaseScratch()
-		return nil, err
+		active = rp
 	}
-	p := newPooledParser(prog, input, o.Unit, true)
+	control.check()
+	p := acquirePooledParser(active)
+	defer p.releaseScratch()
+	p.input = newControlledTextInput(input, o.Unit, !o.Recognize, p.scratch, control)
 	p.maxDepth = o.maxDepth(o.Backend)
 	p.deferMemo = true
 	p.setTrace(o.Trace)
-	n, err := prog.run(p, o.Backend, start)
-	p.releaseScratch()
+	n, err = active.run(p, o.Backend, start)
+	if !p.aborted {
+		control.check()
+	}
+	if o.Recognize {
+		n = nil
+	}
 	return n, err
 }
 
@@ -203,6 +226,9 @@ func (prog *Program) ParseStream(start string, r io.Reader, emit func(*Node) err
 
 // ParseStreamWith parses a stream with options such as the position unit.
 func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node) error, o ParseOptions) (err error) {
+	if newWorkControl(o.Context, o.WorkLimits) != nil {
+		return fmt.Errorf("work controls are not implemented for streams yet")
+	}
 	if o.Recognize {
 		return fmt.Errorf("recognition is not supported for stream parsing")
 	}

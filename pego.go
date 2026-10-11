@@ -5,6 +5,7 @@
 package pego
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"slices"
@@ -68,6 +69,34 @@ const (
 
 // ParseOption configures a single parse.
 type ParseOption func(*engine.ParseOptions)
+
+// WorkLimits configures cumulative engine work for a parse invocation.
+// Zero limits are unlimited. Counts depend on backend, input unit and version.
+type WorkLimits = engine.WorkLimits
+
+// WorkLimitError describes a reservation that would exceed a work limit.
+type WorkLimitError = engine.WorkLimitError
+
+// WorkLimitKind identifies the exhausted counter.
+type WorkLimitKind = engine.WorkLimitKind
+
+const (
+	InputWorkLimit = engine.InputWorkLimit
+	StepWorkLimit  = engine.StepWorkLimit
+)
+
+// ErrWorkLimit identifies engine work-limit failures through errors.Is.
+var ErrWorkLimit = engine.ErrWorkLimit
+
+// WithContext selects invocation-local cooperative cancellation. Nil disables it.
+func WithContext(ctx context.Context) ParseOption {
+	return func(o *engine.ParseOptions) { o.Context = ctx }
+}
+
+// WithWorkLimits sets both invocation-local work limits. Zero means unlimited.
+func WithWorkLimits(limits WorkLimits) ParseOption {
+	return func(o *engine.ParseOptions) { o.WorkLimits = limits }
+}
 
 // WithUnit selects the position unit. Matching always proceeds by code point, whatever the unit.
 func WithUnit(u Unit) ParseOption {
@@ -144,10 +173,7 @@ func WithTrace(f func(TraceEvent)) ParseOption {
 			return
 		}
 		if prev := o.Trace; prev != nil {
-			o.Trace = func(e TraceEvent) {
-				prev(e)
-				f(e)
-			}
+			o.Trace = engine.ComposeTrace(prev, f)
 			return
 		}
 		o.Trace = f
