@@ -977,7 +977,7 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 			if n == 0 {
 				stack = append(stack, ctx.newList(ctx.items))
 			} else if n > len(ctx.items) {
-				return nil, fmt.Errorf("$%d is out of range (%d elements)", n, len(ctx.items))
+				return nil, p.actionIndexError(n, len(ctx.items))
 			} else {
 				stack = append(stack, nodeOrNil(ctx.items[n-1]))
 			}
@@ -986,7 +986,7 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 		case EVar:
 			v, ok := ctx.p.lookupValue(m.Strings[in.A])
 			if !ok {
-				return nil, fmt.Errorf("variable %s is not defined", m.Strings[in.A])
+				return nil, p.actionError("variable ", m.Strings[in.A], " is not defined")
 			}
 			stack = append(stack, v)
 		case EMember:
@@ -1012,7 +1012,7 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 			}
 			stack = append(stack, v)
 		case EUnary:
-			v, err := unaryOp(m.Strings[in.A], pop())
+			v, err := p.valueUnary(m.Strings[in.A], pop())
 			if err != nil {
 				return nil, err
 			}
@@ -1025,7 +1025,7 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 			top := stack[len(stack)-1]
 			b, ok := top.(bool)
 			if !ok {
-				return nil, fmt.Errorf("invalid operand %s for %s", typeName(top), op)
+				return nil, p.actionError("invalid operand ", typeName(top), " for ", op)
 			}
 			if b == (in.Op == EOr) {
 				ip = int(in.A)
@@ -1035,7 +1035,7 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 		case EBoolChk:
 			top := stack[len(stack)-1]
 			if _, ok := top.(bool); !ok {
-				return nil, fmt.Errorf("invalid operand %s for %s", typeName(top), m.Strings[in.A])
+				return nil, p.actionError("invalid operand ", typeName(top), " for ", m.Strings[in.A])
 			}
 		case EFunc:
 			if len(locals) > 0 {

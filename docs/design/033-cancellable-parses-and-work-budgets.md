@@ -189,6 +189,32 @@ no fictional scan of its whole examined range. Position/diagnostic updates and
 actual traversal of a reused graph are still charged. Limits bound current work,
 not the amount of data originally needed to construct a memo result.
 
+### Budgeted action-error text
+
+Action failures whose messages can include grammar-controlled names or input text
+must charge the work while those fragments are constructed. Build known
+engine-owned leaf messages eagerly, even if a predicate or assignment may later
+discard the returned error. Charge one step per fragment during sizing and
+another during writing, including empty fragments, and reserve output bytes in
+bounded chunks before copying them. Apply the same accounting to the final `action in <rule>: <cause>` prefix. Do not
+format an unbounded string first and charge its size afterward; that permits a
+failed expression or final wrapper to bypass the work budget.
+
+On successful construction, preserve the existing public error text, evaluation
+order, and native flat-error behavior. The final action prefix contains the
+cause text but does not unwrap or expose the cause identity. Do not add `%w`,
+sentinels, quoting, truncation, or new location text. Release action-created
+scratch before wrapping or publishing the error.
+
+Keep arbitrary formatter behavior at a private opaque boundary. A foreign
+`error` may implement `fmt.Formatter` or `Error()` with caller code, so it cannot
+be made preemptible without changing semantics. Preserve native formatting for
+unrecognized errors, checking cancellation immediately before and after that
+call; document that the call itself is not interruptible. Known engine-owned
+messages use bounded private construction and are flattened before publication.
+Avoid routing every error through a new wrapper or changing generic `p.fail`
+formatting.
+
 ### Cancellation checkpoints and long operations
 
 Check context before execution, before/after reader and user callback calls, and
@@ -335,9 +361,10 @@ when cancellation is observed.
 
 This foundation is not an adopted implementation of the full contract above.
 Document and stream calls reject active controls until their lifecycle stages
-are implemented. Fatal action-error formatting and remaining matcher loops still
-require batch coverage and regression gates. Document graph movement, rollback, and resumption require
-their lifecycle gates before adoption. First-use setup
+are implemented. Known engine-owned action errors and the final rule prefix
+now use eager, bounded text construction. Remaining matcher loops still need
+batch coverage and regression gates. Document graph movement, rollback, and
+resumption require their lifecycle gates before adoption. First-use setup
 ordering also needs a separate validation gate. The prototype remains separate
 from main until contract and performance gates pass.
 
@@ -439,8 +466,27 @@ interruption during diagnostic construction, including a TraceEvent failure
 accessor, bypasses recovery and alternatives; retained results survive scratch
 reuse. Inactive/reference paths retain native equality, copying, sorting and error
 formatting. Allocation, implicit slice growth, map hashing and GC remain
-nonpreemptible. Fatal action-error formatting, remaining matcher work, lifecycle,
-generated-output, setup and default-cost gates are still pending.
+nonpreemptible.
+
+Engine-owned action errors construct their text eagerly, so a failed predicate
+cannot discard an uncharged large diagnostic. A private text-only error owns the
+immutable leaf message; the final action prefix copies it with the same bounded
+builder and publishes a flat error with no cause unwrapping. Sizing and writing
+each charge one visit per fragment, including empty strings; copying reserves
+steps in chunks of at most 128 bytes. These charges consume no input-work units.
+Inactive paths use native string joining or formatting. Shared unary, arithmetic,
+and collection helpers preserve their successful results and evaluation order.
+Private opaque errors keep native `%v` formatting with cancellation checks before
+and after it; arbitrary formatting code itself remains nonpreemptible.
+
+Exact and one-short builder budgets, atomic chunk rejection, empty-fragment and
+copy cancellation, and immutable text retention isolate formatting work. Public
+batch tests cover all three backends and both position units, fallback bypass,
+predicate-dependent recognition actions, ordinary message parity, and pooled
+retry. Replacing only the bounded builder with an uncharged native join makes
+the public interruption tests fail. These gates establish scoped correctness;
+remaining matcher work, lifecycle, generated-output, setup, and default-cost
+gates are still pending.
 
 ## Alternatives considered
 
