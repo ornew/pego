@@ -85,7 +85,12 @@ For example, a null struct field reports
 The representation uses the AST fields' `json` tags. Each interface node has
 an `"@type"` member, such as `"RuleDef"` or `"Literal"`; source positions and
 layout are omitted. Unknown fields are ignored and duplicate object keys
-follow `encoding/json`'s behavior. There is no opt-in strict decoder yet.
+follow `encoding/json`'s behavior. Use `grammar.DecodeJSON(data)` when the
+input should reject unknown fields and duplicate keys at every object. Its
+`*grammar.JSONDecodeError` reports a JSON path and zero-based byte offset for
+those strictness errors; malformed JSON wraps the standard syntax error. Both
+entry points check one complete value and run structural validation, while
+the legacy `UnmarshalJSON` signature and permissive behavior remain unchanged.
 
 After loading, use `pego.Compile(g, "main")` to perform semantic checking.
 Compile and the generators also run structural validation themselves, including

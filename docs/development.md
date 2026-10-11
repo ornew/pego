@@ -7,7 +7,7 @@ This document describes the repository layout and architecture, how to run tests
 | Path | Contents |
 |:--|:--|
 | `pego.go`, `lint.go` | Public API of package `pego` (`ParseGrammar`, `Compile`, `CompileSource`, `Parser.Parse`, `Lint`, and others) |
-| `grammar/` | Grammar AST, structural validation (`Validate`), JSON conversion (`MarshalJSON`, `UnmarshalJSON`) and formatting as PEGO source (`Format`, which preserves comments). Public package. |
+| `grammar/` | Grammar AST, structural validation (`Validate`), JSON conversion (`MarshalJSON`, `UnmarshalJSON`, strict `DecodeJSON`) and formatting as PEGO source (`Format`, which preserves comments). Public package. |
 | `internal/grammaranalysis/` | Conservative success and cut proofs shared by the compiler and linter |
 | `internal/lint/` | Grammar linter behind `pego.Lint` and `pego lint`: shared static analysis (`analysis.go`) and checks (`checks.go`) |
 | `internal/lsp/` | Language Server Protocol server for `.pego` files (`pego lsp`): JSON-RPC over standard input and output, document sync, diagnostics, formatting, navigation, hover, rename, completion, semantic tokens |
@@ -42,7 +42,7 @@ This document describes the repository layout and architecture, how to run tests
 
 | Component | Main files | Responsibility |
 |:--|:--|:--|
-| Grammar intake | `internal/syntax/`, `grammar/` | Parses source or JSON into the public AST; formatting preserves comments and layout. |
+| Grammar intake | `internal/syntax/`, `grammar/` | Parses source or JSON into the public AST; opt-in strict JSON intake checks unknown and duplicate keys ([design 028](design/028-strict-grammar-json-intake.md)); formatting preserves comments and layout. |
 | Compiler and analysis | `internal/engine/compile.go`, `analysis.go`, `check.go` | Checks types, analyzes calls and dependencies, and compiles expressions. |
 | Runtime | `runtime.go`, `pratt.go`, `attrs.go`, `eval.go`, `alloc.go` | Implements ordered choice, backtracking, actions, recovery and Pratt selection; streaming commits reuse completed capture frames ([record 085](optimizations/085-reuse-stream-capture-frames.md)). |
 | Bytecode | `bytecode.go`, `bcompile.go`, `vm.go`, `ivm.go` | Runs the same grammar semantics with recursive and iterative VMs; see the [bytecode specification](../spec/bytecode.md). |
