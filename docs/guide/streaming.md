@@ -682,7 +682,8 @@ Text materialization also consumes work, including building a cached stream
 snapshot and its CodePoints position table. Reading an already cached substring
 requires no additional materialization work; snapshot creation never reads ahead.
 
-The engine checks immediately before and after reader and emit calls. An emit
+The engine checks immediately before and after each underlying reader and emit
+call, including reader retries for empty reads or incomplete characters. An emit
 error or a reader's non-EOF error wins over cancellation first observed after
 that same call, including a reader returning data together with an error.
 Elements already passed to emit remain caller-owned, including when cancellation
