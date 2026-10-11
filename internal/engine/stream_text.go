@@ -21,6 +21,9 @@ func (in *input) snapshotText(start, end int) string {
 		}
 		return c.source[c.offsets[start-c.base]:c.offsets[end-c.base]]
 	}
+	if workControlsEnabled && in.control != nil {
+		return in.controlledSnapshotText(start, end)
+	}
 	// Do not read ahead for text or repeatedly copy tiny reader fragments.
 	// Oversized ranges use the ordinary detached-string path.
 	if end-start > streamTextChunk || in.loaded()-start < 64 {
