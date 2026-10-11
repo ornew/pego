@@ -517,7 +517,7 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit boo
 	// one; and errors recovered inside a lookahead carry no expectations either, so a result with
 	// recovered errors is reused only in the same kind of context it was computed in.
 	e, found := p.memoGet(key)
-	if found && e.vgen != p.gen && !advanceEntry(e, p.edits[:p.gen]) {
+	if found && e.vgen != p.gen && !p.advanceEntry(e, p.edits[:p.gen]) {
 		found = false // an edit since invalidated it
 	}
 	if found && (e.growing || (!e.silent || p.silent > 0) && (len(e.errs) == 0 || e.silent == (p.silent > 0))) {
@@ -880,12 +880,7 @@ func (p *parser) moveResult(e *memoEntry) {
 	} else if n.gen < p.gen {
 		p.moveTree(n, p.shiftOf(n))
 	}
-	if len(p.moved) > 1024 {
-		p.moved = nil
-	} else {
-		clear(p.moved)
-	}
-	clear(p.shifts)
+	p.clearMovementWork()
 }
 
 // shiftOf returns how far the non-empty node n of the result being moved moves with the edits
@@ -901,6 +896,7 @@ func (p *parser) shiftOf(n *Node) int {
 	}
 	s := int(n.Start)
 	for _, ed := range p.edits[n.gen:p.gen] {
+		p.stepWork()
 		if s >= ed.end {
 			s += ed.delta
 		}
@@ -914,16 +910,19 @@ func (p *parser) shiftOf(n *Node) int {
 
 // moveTree moves the non-empty node n by shift (shiftOf(n)), and its descendants, in place.
 func (p *parser) moveTree(n *Node, shift int) {
+	p.stepWork()
 	gen := n.gen
 	n.Start += int32(shift)
 	n.End += int32(shift)
 	n.gen = p.gen
 	for i, c := range n.Children {
+		p.stepWork()
 		if c != nil && c.gen < p.gen {
 			n.Children[i] = p.moveChild(c, gen, shift)
 		}
 	}
 	for i := range n.Fields {
+		p.stepWork()
 		if c, ok := n.Fields[i].Value.(*Node); ok && c != nil && c.gen < p.gen {
 			n.Fields[i].Value = p.moveChild(c, gen, shift)
 		}
@@ -952,6 +951,7 @@ func (p *parser) moveChild(c *Node, gen uint32, shift int) *Node {
 // ones are copied the same way, and non-empty ones (captured in a lookahead) are moved in place.
 // Copies made in the same moveResult are shared.
 func (p *parser) moveEmpty(n *Node, shift int) *Node {
+	p.stepWork()
 	if c, ok := p.moved[n]; ok {
 		return c
 	}
@@ -962,12 +962,14 @@ func (p *parser) moveEmpty(n *Node, shift int) *Node {
 	if n.Children != nil {
 		c.Children = p.nodes(len(n.Children))
 		for i, ch := range n.Children {
+			p.stepWork()
 			c.Children[i] = p.moveDescendant(ch, n.gen, shift)
 		}
 	}
 	if n.Fields != nil {
 		c.Fields = p.fields(len(n.Fields))[:len(n.Fields)]
 		for i, f := range n.Fields {
+			p.stepWork()
 			if vn, ok := f.Value.(*Node); ok {
 				f.Value = p.moveDescendant(vn, n.gen, shift)
 			}

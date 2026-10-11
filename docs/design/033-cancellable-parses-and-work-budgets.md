@@ -608,9 +608,30 @@ and statistics; execution and publication interruptions invalidate reusable stat
 Temporary control and traced parser references are detached before returning an
 error or rethrowing a caller panic.
 
-Document-specific edit replay, run resumption and node movement still need
-bounded checkpoints; Edit remains outside parse controls. Stream work controls,
-generated-runtime lifecycles and default-cost measurements are still pending.
+Parse-time Document edit replay now reserves a step for each historical edit,
+committing memo coordinates only after the complete replay remains valid.
+Repetition prefix/tail reuse, binary-search probes and suffix validation are
+counted, as are historical node shifts and child/field traversal. Empty-node
+copies preserve shared descendants; existing mutable nodes can move before an
+interruption, without transactional rollback. Historical Clone ownership remains
+unchanged. Edit still uses the ordinary replay helper outside parse controls.
+
+Explicit run/child-stack growth copies and run-state clearing use bounded chunks.
+Controlled growth keeps geometric capacity to avoid copying the accumulated
+prefix on every appended element. Controlled run assembly uses private storage
+and publishes the run record only after every copy finishes; the inactive path
+keeps its existing in-place splice and storage reuse. Successful movement-map
+cleanup is counted, while mandatory fatal Document cleanup remains unbudgeted.
+Allocation, runtime zeroing, map operations and GC remain nonpreemptible intervals.
+
+Regression fixtures cover stale memo calls, search/tail reservations, provisional
+run publication, growth/clear interruption, shared empty/non-empty node movement,
+and partial prefix or shifted-tail cancellation on all native backends and both
+units. The interrupted call returns no result, discards reusable state, preserves
+text/defaults and a historical Clone, and retries against fresh parsing. The
+additional controlled storage and inactive-path branch/call costs are unmeasured.
+Stream work controls, generated-runtime lifecycles and setup/default-cost gates
+remain pending before full contract adoption.
 
 ## Alternatives considered
 

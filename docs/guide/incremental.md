@@ -80,6 +80,9 @@ options retain their defaults; `WithContext(nil)` disables default cancellation
 and zero work limits disable default budgets. Multiple trace callbacks compose
 in order, once. Unit, effective backend and recognition mode cannot change.
 Construction and each Parse have separate counters; Edit does not use them.
+Parse budgets also count reused work: checking edit history, searching and
+replaying repetition records, moving reused nodes, and copying or clearing
+reusable storage consume steps even when their rules need no new evaluation.
 Use a fresh per-call context to retry a document whose default context was
 cancelled. A stored method value of type `func() (*pego.Node, error)` needs a
 wrapper such as `func() (*pego.Node, error) { return doc.Parse() }`.
