@@ -18,11 +18,13 @@ func (prog *Program) Parse(start, input string) (*Node, error) {
 func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *Node, err error) {
 	// Initialization can interrupt before run installs its execution recovery.
 	// Preserve caller panics: run already distinguishes bytecode faults from
-	// trace panics, so an outer boundary must not classify them again.
+	// caller panics, so an outer boundary must not classify them again.
 	defer func() {
 		if x := recover(); x != nil {
 			if f, ok := x.(fatal); ok {
 				n, err = nil, f.err
+			} else if cp, ok := x.(contextPanic); ok {
+				panic(cp.value)
 			} else {
 				panic(x)
 			}
@@ -154,6 +156,9 @@ func recoverParse(x any, b Backend, err *error) {
 	}
 	if tp, ok := x.(tracePanic); ok {
 		panic(tp.value) // a panic of the trace function, not of the parse
+	}
+	if cp, ok := x.(contextPanic); ok {
+		panic(cp.value)
 	}
 	if re, ok := x.(runtime.Error); ok && (b == Bytecode || b == BytecodeIterative) {
 		*err = fmt.Errorf("invalid bytecode: %v", re)
