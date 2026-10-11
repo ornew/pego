@@ -456,12 +456,12 @@ func parseResolved(r *rule, seen int, input string, o parseOptions) (n *Node, er
 }
 
 // ppool keeps parsers of parse, with their scratch memory, for later parses. What a parse returns
-// never refers to that memory: nodes, child lists, fields and frames come from slabs that are not
-// kept, and node text slices the input string.
+// never refers to that memory: nodes, child lists and fields come from slabs that are not kept,
+// capture frames and slots are private scratch, and node text slices the input string.
 var ppool sync.Pool
 
-// release clears the parser and returns it to ppool, keeping the decoded input, the memo table and
-// the stacks unless they are very large.
+// release clears the parser and returns it to ppool, keeping decoded input, memo storage,
+// capture scratch and construction stacks within their retention bounds.
 func (p *parser) release() {
 	m := &p.memo
 	clear(m.slots)
@@ -473,6 +473,10 @@ func (p *parser) release() {
 	clear(p.kidStack[:cap(p.kidStack)])
 	clear(p.trail[:cap(p.trail)])
 	clear(p.saved[:cap(p.saved)])
+	frames := p.captureScratch
+	if nodeFrameScratch && (frames.frames != nil || frames.slots != nil) {
+		frames.reset()
+	}
 	in, offs := p.in[:0], p.offs[:0]
 	if cap(in) > 1<<20 { // do not keep the buffers of a large input for every later parse
 		in, offs = nil, nil
@@ -482,7 +486,7 @@ func (p *parser) release() {
 		memo = memoTable{}
 	}
 	*p = parser{in: in, offs: offs, exp: p.exp[:0], arena: p.arena[:0], kidStack: p.kidStack[:0],
-		trail: p.trail[:0], saved: p.saved[:0], memo: memo}
+		trail: p.trail[:0], saved: p.saved[:0], memo: memo, captureScratch: frames}
 	ppool.Put(p)
 }
 
@@ -539,16 +543,18 @@ type parser struct {
 
 	recovered []*SyntaxError
 
-	// Per-parse slabs for nodes, child lists and frames, the stack that gathers repetition
-	// children, and the reused evaluation context.
+	// Result slabs, the stack that gathers repetition children, and the reused
+	// evaluation context.
 	nodeSlab  []Node
 	ptrSlab   []*Node
 	kidStack  []*Node
-	frameSlab []frame
-	fieldSlab []NodeField
-	lines     []int // positions where lines start (makeError)
-	ac        actx
-	saved     []*Node // captures saved across a reset in longest
+	frameSlab []frame // per-parse reference allocation only
+	// Capture slots are private scratch, separate from returned child lists.
+	captureScratch frameScratch
+	fieldSlab      []NodeField
+	lines          []int // positions where lines start (makeError)
+	ac             actx
+	saved          []*Node // captures saved across a reset in longest
 }
 
 // memoTable maps (rule, position, level) to results. Each position has a chain of entries;
@@ -786,6 +792,9 @@ func (p *parser) newFrame(n int) *frame {
 	if n == 0 {
 		return emptyFrame // never written, so shared
 	}
+	if nodeFrameScratch {
+		return p.captureScratch.alloc(n)
+	}
 	if len(p.frameSlab) == 0 {
 		p.frameSlab = make([]frame, nodeChunk)
 	}
@@ -793,6 +802,70 @@ func (p *parser) newFrame(n int) *frame {
 	p.frameSlab = p.frameSlab[1:]
 	f.vals = p.nodes(n)
 	return f
+}
+
+// nodeFrameScratch is selected at generation time, not by a parsing option.
+const nodeFrameScratch = true
+
+// frameScratch keeps stable capture frames and slots until the parse returns.
+// Neither array can be reached through a returned Node's children or fields.
+// Append-only allocation also preserves retained Pratt attempts and undo marks.
+type frameScratch struct {
+	frames  []*[nodeChunk]frame
+	slots   []*[ptrChunk]*Node
+	frameN  int
+	slotCI  int
+	slotOff int
+}
+
+const frameScratchLimit = 1 << 20 // native words of complete reusable backing
+
+func (a *frameScratch) alloc(n int) *frame {
+	if n > ptrChunk/4 {
+		// Large individual scopes are exact allocations, never pooled.
+		return &frame{vals: make([]*Node, n)}
+	}
+	ci := a.frameN / nodeChunk
+	if ci == len(a.frames) {
+		a.frames = append(a.frames, new([nodeChunk]frame))
+	}
+	f := &a.frames[ci][a.frameN%nodeChunk]
+	a.frameN++
+	if a.slotOff+n > ptrChunk {
+		a.slotCI++
+		a.slotOff = 0
+	}
+	if a.slotCI == len(a.slots) {
+		a.slots = append(a.slots, new([ptrChunk]*Node))
+	}
+	f.vals = a.slots[a.slotCI][a.slotOff : a.slotOff+n : a.slotOff+n]
+	a.slotOff += n
+	return f
+}
+
+// reset clears the complete pointer-bearing backing before reuse or discard.
+// Count three native words per frame slice header and nine for the arena state,
+// plus whole chunks and directory capacity, including their unused elements.
+func (a *frameScratch) reset() {
+	for _, chunk := range a.frames {
+		clear(chunk[:])
+	}
+	for _, chunk := range a.slots {
+		clear(chunk[:])
+	}
+	clear(a.frames[len(a.frames):cap(a.frames)])
+	clear(a.slots[len(a.slots):cap(a.slots)])
+	if len(a.frames) > frameScratchLimit/(3*nodeChunk) || len(a.slots) > frameScratchLimit/ptrChunk ||
+		cap(a.frames) > frameScratchLimit || cap(a.slots) > frameScratchLimit {
+		*a = frameScratch{}
+		return
+	}
+	words := 9 + 3*nodeChunk*len(a.frames) + ptrChunk*len(a.slots) + cap(a.frames) + cap(a.slots)
+	if words > frameScratchLimit {
+		*a = frameScratch{}
+		return
+	}
+	a.frameN, a.slotCI, a.slotOff = 0, 0, 0
 }
 
 type undo struct {

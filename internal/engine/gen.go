@@ -73,6 +73,9 @@ type GenOptions struct {
 	// disableLiteralTextDispatch keeps literal text disjunctions on the general
 	// expression path for differential tests and same-generator measurements.
 	disableLiteralTextDispatch bool
+	// disableNodeFrameScratch retains per-parse Node capture frames for
+	// same-generator controls without a parser-time option.
+	disableNodeFrameScratch bool
 }
 
 // Generate generates the source code of a Go parser for a grammar.
@@ -123,6 +126,10 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	rt := runtimeSource[strings.Index(runtimeSource, "package genrt"):]
 	rt = strings.Replace(rt, "package genrt", "package "+opts.Package, 1)
 	rt = strings.Replace(rt, "const defaultMaxDepth = 100_000", fmt.Sprintf("const defaultMaxDepth = %d", opts.generatedMaxDepth()), 1)
+	if opts.disableNodeFrameScratch {
+		rt = strings.Replace(rt, "const nodeFrameScratch = true", "const nodeFrameScratch = false", 1)
+	}
+
 	out.WriteString(rt)
 	out.WriteString("\n// --- Generated code ---\n\n")
 	fmt.Fprintf(&out, "// Parse parses the whole input with the rule %s. Options select position units and the rule-call limit.\n", start.name)
