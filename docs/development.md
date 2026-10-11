@@ -81,6 +81,9 @@ go test ./...
 Engine tests write grammars in PEGO source and compare results using the S-expression form of nodes (`Node.String`).
 The `check` helper also verifies that the result is the same with memoization disabled, with every backend (closure, recursive bytecode, iterative bytecode), with both position units, in recognition-only mode, and with tracing on.
 
+`internal/engine/gen_pool_lifecycle_test.go` checks generated Node and typed parser cleanup after oversized
+inputs, retained results, and error/retry reuse in both position units.
+
 The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for its type check, `tsc`; it is skipped when they are missing.
 
 `internal/lint` tests every check with positive and negative cases, lints every example grammar against a hand-checked list of findings, and `TestSoundness` checks the certain findings against the engine on random grammars, exhaustively over short inputs (`-soundness=N` for a longer run).

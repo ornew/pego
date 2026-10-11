@@ -66,6 +66,121 @@ def repeated: A = (x:"b"){2} --`)
 	}
 }
 
+// TestGeneratedUntypedPoolRetention verifies that the untyped generated parser
+// does not keep an oversized source after release, and that a returned short
+// terminal remains valid while the parser is reset.
+func TestGeneratedUntypedPoolRetention(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds generated code")
+	}
+	g, err := syntax.Parse(`
+type A terminal
+def main: A = lead value:small -> $value
+def lead = (?^b)*
+def small: A = "b"`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	code, err := Generate(g, GenOptions{Package: "main", Start: "main"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	for name, contents := range map[string][]byte{
+		"parser.go": code, "pool_test.go": []byte(untypedPoolFixture), "go.mod": []byte("module untypedpool\n\ngo 1.27.1\n"),
+	} {
+		if err := os.WriteFile(filepath.Join(dir, name), contents, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cmd := exec.Command("go", "test", "-count=1", "-run", "^TestUntypedPoolRetention$")
+	cmd.Dir = dir
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("generated untyped pool: %v\n%s", err, out)
+	}
+}
+
+const untypedPoolFixture = `package main
+
+import (
+	"encoding/json"
+	"strings"
+	"testing"
+)
+
+func TestUntypedPoolRetention(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		unit Unit
+		prefix string
+		start int32
+		retry string
+		retryStart int32
+	}{
+		{"code points", CodePoints, strings.Repeat("é", (1<<20)+1), 1<<20 + 1, "ééb", 2},
+		{"bytes with invalid UTF-8", Bytes, strings.Repeat("é", 1<<19) + "\xff", 1<<20 + 1, "\xffb", 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			input := tc.prefix + "b"
+			p := &parser{maxDepth: defaultMaxDepth}
+			p.memo.stride = nseen
+			if tc.unit == Bytes {
+				p.unit, p.bs, p.n = Bytes, input, len(input)
+			} else {
+				p.setSource(input)
+			}
+			n, ok := p.call(rules[0], 0)
+			if !ok || p.pos != p.n {
+				t.Fatalf("large parse failed at %d/%d", p.pos, p.n)
+			}
+			before, err := json.Marshal(n)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if n.Type() != "A" || n.Text != "b" || n.Start != tc.start || n.End != tc.start+1 {
+				t.Fatalf("large result: type=%s span=[%d,%d) text=%q", n.Type(), n.Start, n.End, n.Text)
+			}
+
+			p.release()
+			if p.bs != "" || p.src != "" || p.n != 0 || p.pos != 0 || len(p.in) != 0 || len(p.offs) != 0 {
+				t.Fatal("released parser still references the input")
+			}
+			if cap(p.in) != 0 || cap(p.offs) != 0 {
+				t.Fatalf("oversized input buffers retained: in=%d offsets=%d", cap(p.in), cap(p.offs))
+			}
+			for i, entry := range p.memo.slots[:cap(p.memo.slots)] {
+				if entry != nil {
+					t.Fatalf("memo slot %d retains an entry", i)
+				}
+			}
+			for i, chunk := range p.memo.chunks {
+				for j, entry := range chunk {
+					if entry.node != nil || entry.errs != nil || entry.expected != nil || entry.next != nil || entry.env != nil {
+						t.Fatalf("memo chunk %d entry %d retains parse state", i, j)
+					}
+				}
+			}
+			after, err := json.Marshal(n)
+			if err != nil || string(after) != string(before) {
+				t.Fatalf("release changed returned node: %s / %s (error %v)", before, after, err)
+			}
+
+			if _, err := Parse("x", WithUnit(tc.unit)); err == nil {
+				t.Fatal("invalid small input accepted")
+			}
+			got, err := Parse(tc.retry, WithUnit(tc.unit))
+			if err != nil || got == nil || got.Type() != "A" || got.Text != "b" || got.Start != tc.retryStart || got.End != tc.retryStart+1 {
+				t.Fatalf("small retry: node=%v error=%v", got, err)
+			}
+			after, err = json.Marshal(n)
+			if err != nil || string(after) != string(before) {
+				t.Fatalf("later parse changed returned node: %s / %s (error %v)", before, after, err)
+			}
+		})
+	}
+}
+`
+
 const typedPoolFixture = `package poolfixture
 
 import (
