@@ -288,6 +288,14 @@ reuse. Returned values from previous successful invocations remain independently
 owned. Accounting and cancellation state must not enter saved modules, memo keys,
 public Nodes, or result arenas retained by consumers.
 
+For traced batch calls, retaining an event's exported metadata must not keep
+the finished parser's input, callback or execution references alive. Detach
+these references after recycling scratch on every terminal path, without
+mutating storage owned by returned Nodes or recycled scratch. Expectation and
+recovered-error slices copied directly into events keep their existing ownership;
+resetting the parser does not mutate their backing arrays. Document and stream
+lifecycles require separate teardown decisions.
+
 Mandatory unwind/recycle after a terminal interruption runs to completion without
 further cancellation or budget failures; otherwise a second interruption could
 leave unsafe state in a pool. This cleanup is outside the exhausted budget and
@@ -547,6 +555,25 @@ Disabling context attribution or outer unwrapping makes the corresponding
 regression tests fail. Context calls remain nonpreemptible, and the active-poll
 cost needs later measurement; this establishes no default-cost or full-feature
 adoption claim.
+
+Batch trace-event lifecycle tests retain exported event metadata after active
+and inactive Node/recognition calls on every backend and position unit. They
+check successful action fields and terminals, ordinary syntax failures, and
+earlier Nodes across retries with different input. Cancellation, step exhaustion,
+caller-context panic and final-publication panic detach parser references; trace
+callback panic tests cover Node parsing on every backend and unit. The batch
+teardown preserves the run's aborted flag, recycles scratch first, then clears
+the finished traced parser without mutating separately allocated result storage.
+Low-level scratch recycling remains unchanged.
+
+Recognition fixtures deliberately keep events and Programs alive while weak
+references observe the original input allocation and a trace-captured Context.
+Strong-reference positive controls precede bounded forced-GC checks. Both active
+and inactive calls release those fixture objects; disabling batch teardown makes
+the isolated GC tests fail. This proves these objects' release, not a retained
+heap-volume or throughput result. The untraced teardown nil-check and traced
+fixed-size reset need later cost measurement. Copied event slices and Document,
+stream and generated-runtime lifecycles remain separate acceptance surfaces.
 
 ## Alternatives considered
 

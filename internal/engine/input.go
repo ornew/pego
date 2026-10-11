@@ -280,6 +280,16 @@ func (p *parser) releaseScratch() {
 	p.prog.scratch.Put(sc)
 }
 
+// releaseBatchScratch finishes a whole-input invocation. Saved trace events
+// may retain its parser, so detach private references after recycling scratch.
+// Node storage is separately allocated and remains owned by returned results.
+func (p *parser) releaseBatchScratch() {
+	p.releaseScratch()
+	if p.tr != nil {
+		*p = parser{aborted: p.aborted}
+	}
+}
+
 // grow returns a slice of n elements, reusing buf if it is large enough. The elements are not
 // cleared.
 func grow[T any](buf []T, n int) []T {
