@@ -111,7 +111,8 @@ control. Controlled row-count, reference/focus and boundary tests cover these re
 distinguishes equivalent small-tree work from wide-tree display reduction; real browser checks cover DOM/WASM wiring.
 
 GitHub Actions runs the root module and `parsers/test.sh` (including `go vet` for every parser module), site tests, and
-Node.js/WebAssembly/generated-TypeScript checks as separate jobs. CI uses Go 1.27.1, Node.js 22.18.0, CPython 3.14.0
+Node.js/WebAssembly/generated-TypeScript checks as separate jobs. A newer run on the same branch or pull-request
+ref cancels the superseded run. CI uses Go 1.27.1, Node.js 22.18.0, CPython 3.14.0
 and TypeScript 5.9.3. Native tests have a 45-minute root timeout and a 30-minute
 per-parser timeout within a 90-minute job budget, allowing generated-consumer builds on CI hosts.
 The TypeScript differential harness uses the upstream
