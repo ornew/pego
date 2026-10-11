@@ -84,7 +84,8 @@ type input struct {
 	offs  []int32
 	// lines holds the positions where lines start, for lineCol on fully loaded input (built on
 	// first use; nil until then).
-	lines []int
+	lines      []int
+	streamText streamTextSnapshot
 }
 
 // setSource records the whole input string s for use by text.
@@ -378,6 +379,9 @@ func (in *input) text(start, end int) string {
 		}
 		return in.src[in.offs[start]:in.offs[end]]
 	}
+	if streamTextSnapshots && in.reader != nil {
+		return in.snapshotText(start, end)
+	}
 	if in.unit == Bytes {
 		return string(in.bs[start-in.base : end-in.base])
 	}
@@ -460,6 +464,9 @@ func (in *input) discard(keep int) {
 		in.in = in.in[:copy(in.in, in.in[n:])]
 	}
 	in.base = keep
+	if streamTextSnapshots && in.streamText.end <= keep {
+		in.streamText.source = ""
+	}
 }
 
 // commit makes it final that the parse never backtracks before position pos, and discards the
