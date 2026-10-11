@@ -415,16 +415,19 @@ code, kbd, pre { font-family: var(--mono); font-size: 0.9em; }
   font-size: 14px;
 }
 .prose pre code { font-size: inherit; background: none; border: 0; padding: 0; }
+.code-frame { position: relative; margin: 0 0 1em; }
+.code-frame > pre { margin: 0; }
 .code-actions {
   position: absolute;
   top: 6px;
   right: 6px;
+  z-index: 1;
   display: flex;
   gap: 4px;
   opacity: 0;
   transition: opacity 0.15s;
 }
-pre:hover .code-actions, pre:focus-within .code-actions { opacity: 1; }
+.code-frame:hover .code-actions, .code-frame:focus-within .code-actions { opacity: 1; }
 @media (hover: none) { .code-actions { opacity: 1; } }
 .code-actions button, .code-actions a {
   font: 12px/1 var(--font);

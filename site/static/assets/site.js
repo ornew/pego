@@ -82,7 +82,11 @@ for (const code of document.querySelectorAll("pre > code")) {
     setTimeout(() => (copy.textContent = "Copy"), 1500);
   });
   actions.append(copy);
-  pre.append(actions);
+  const frame = document.createElement("div");
+  frame.className = "code-frame";
+  const parent = pre.parentElement;
+  parent.insertBefore(frame, pre);
+  frame.append(pre, actions);
 }
 
 // Table of contents: mark the section being read.

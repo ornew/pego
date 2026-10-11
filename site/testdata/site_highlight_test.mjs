@@ -6,18 +6,48 @@ import { test } from "node:test";
 
 import { highlight, highlightJSON, tokenize } from "../static/assets/highlight.js";
 
+class FakeElement {
+  constructor(tagName) {
+    this.tagName = tagName;
+    this.children = [];
+    this.listeners = {};
+    this.attributes = {};
+  }
+  append(...nodes) {
+    for (const node of nodes) {
+      node.remove();
+      node.parentElement = this;
+      this.children.push(node);
+    }
+  }
+  insertBefore(node, reference) {
+    node.remove();
+    const index = this.children.indexOf(reference);
+    node.parentElement = this;
+    this.children.splice(index, 0, node);
+  }
+  remove() {
+    if (this.parentElement) this.parentElement.children = this.parentElement.children.filter((node) => node !== this);
+    this.parentElement = null;
+  }
+  addEventListener(type, listener) { (this.listeners[type] ??= []).push(listener); }
+  async click(event = { preventDefault() {} }) {
+    for (const listener of this.listeners.click || []) await listener(event);
+  }
+  setAttribute(name, value) { this.attributes[name] = String(value); }
+  closest() { return this.excluded ? this : null; }
+}
+
 function codeBlock(className, textContent) {
-  const pre = {
-    children: [],
-    closest() { return null; },
-    append(child) { this.children.push(child); },
-  };
-  return {
-    className,
-    textContent,
-    innerHTML: "unchanged",
-    parentElement: pre,
-  };
+  const container = new FakeElement("article");
+  const pre = new FakeElement("pre");
+  const code = new FakeElement("code");
+  code.className = className;
+  code.textContent = textContent;
+  code.innerHTML = "unchanged";
+  pre.append(code);
+  container.append(pre);
+  return { code, pre, container };
 }
 
 async function pageHighlight(codes) {
@@ -25,21 +55,23 @@ async function pageHighlight(codes) {
   const start = source.indexOf("// Code blocks.");
   const end = source.indexOf("// Table of contents:", start);
   assert.ok(start >= 0 && end > start, "site.js has a code-block initialization section");
+  const clipboardWrites = [];
+  const encodedStates = [];
+  const location = {};
   const document = {
     querySelectorAll(selector) {
       assert.equal(selector, "pre > code");
-      return codes;
+      return codes.map(({ code }) => code);
     },
-    createElement(tag) {
-      return {
-        tagName: tag,
-        addEventListener() {},
-        append() {},
-        setAttribute() {},
-      };
-    },
+    createElement(tag) { return new FakeElement(tag); },
   };
-  new vm.Script(source.slice(start, end)).runInNewContext({ document, highlight, highlightJSON });
+  new vm.Script(source.slice(start, end)).runInNewContext({
+    document, highlight, highlightJSON, root: "/", location,
+    encodeState: async (state) => (encodedStates.push(state), "encoded-state"),
+    navigator: { clipboard: { async writeText(value) { clipboardWrites.push(value); } } },
+    setTimeout() {},
+  });
+  return { clipboardWrites, encodedStates, location };
 }
 
 test("TypeScript tokenizer recognizes declarations, types, operators and comments", () => {
@@ -57,17 +89,37 @@ test("TypeScript highlighting escapes code and both fence aliases use the page h
   const ts = codeBlock("language-ts", source);
   const typescript = codeBlock("language-typescript", "type Box<T> = { readonly value: T };");
   const unknown = codeBlock("language-rust", "<script>alert(1)</script>");
-  await pageHighlight([ts, typescript, unknown]);
+  const grammar = 'def main = "hello"';
+  const pego = codeBlock("language-pego", `${grammar}\n`);
+  const h = await pageHighlight([ts, typescript, unknown, pego]);
 
-  assert.match(ts.innerHTML, /tok-keyword">const<\/span>/);
-  assert.match(ts.innerHTML, /tok-type">string<\/span>/);
-  assert.match(ts.innerHTML, /tok-string">&quot;&lt;img src=x&gt;&quot;<\/span>/);
-  assert.match(ts.innerHTML, /tok-comment">\/\/ safe<\/span>/);
-  assert.doesNotMatch(ts.innerHTML, /<img|<script/);
-  assert.match(typescript.innerHTML, /tok-keyword">type<\/span>/);
-  assert.match(typescript.innerHTML, /tok-keyword">readonly<\/span>/);
-  assert.equal(unknown.innerHTML, "unchanged", "unknown fence languages keep their original contents");
-  assert.equal(ts.parentElement.children.length, 1, "copy controls remain attached to highlighted fences");
+  assert.match(ts.code.innerHTML, /tok-keyword">const<\/span>/);
+  assert.match(ts.code.innerHTML, /tok-type">string<\/span>/);
+  assert.match(ts.code.innerHTML, /tok-string">&quot;&lt;img src=x&gt;&quot;<\/span>/);
+  assert.match(ts.code.innerHTML, /tok-comment">\/\/ safe<\/span>/);
+  assert.doesNotMatch(ts.code.innerHTML, /<img|<script/);
+  assert.match(typescript.code.innerHTML, /tok-keyword">type<\/span>/);
+  assert.match(typescript.code.innerHTML, /tok-keyword">readonly<\/span>/);
+  assert.equal(unknown.code.innerHTML, "unchanged", "unknown fence languages keep their original contents");
+
+  for (const block of [ts, typescript, unknown, pego]) {
+    const frame = block.pre.parentElement;
+    assert.equal(frame.className, "code-frame");
+    assert.equal(frame.children[0], block.pre);
+    assert.equal(frame.children[1].className, "code-actions");
+    assert.equal(block.pre.children[0], block.code, "controls are siblings of the horizontally scrolling pre");
+  }
+  const tsActions = ts.pre.parentElement.children[1];
+  await tsActions.children.find((control) => control.tagName === "button").click();
+  assert.deepEqual(h.clipboardWrites, [source.replace(/\n$/, "")], "Copy writes original code text, without highlight markup");
+
+  const playground = pego.pre.parentElement.children[1].children.find((control) => control.tagName === "a");
+  assert.ok(playground, "PEGO blocks retain their Playground action outside the pre");
+  await playground.click();
+  assert.equal(h.encodedStates.length, 1);
+  assert.equal(h.encodedStates[0].g, `${grammar}\n`);
+  assert.equal(h.encodedStates[0].i, "");
+  assert.equal(h.location.href, "/playground/#encoded-state");
 });
 
 // This is a lexical highlighter, so ordinary identifiers must remain ordinary
