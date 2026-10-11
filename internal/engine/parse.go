@@ -254,7 +254,16 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node)
 	p.descs = prog.descs(o.Backend)
 	p.setTrace(o.Trace)
 	defer func() {
-		recoverParse(recover(), prog.backend(o.Backend), &err)
+		x := recover()
+		if x != nil && (p.readerCall || p.emitCall) {
+			// A caller panic is not a VM fault. Trace callbacks may have
+			// already attributed a nested reader panic; unwrap it as usual.
+			if tp, ok := x.(tracePanic); ok {
+				panic(tp.value)
+			}
+			panic(x)
+		}
+		recoverParse(x, prog.backend(o.Backend), &err)
 	}()
 	_, ok := p.call(rule, 0)
 	if ok && p.atEOF() {
@@ -267,4 +276,13 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node)
 		p.expect(p.pos, idEndInput)
 	}
 	return p.syntaxError()
+}
+
+// emitStream marks only caller execution. Reset before handling a returned
+// error or committing the prefix, so later VM faults retain their attribution.
+func (p *parser) emitStream(n *Node) error {
+	p.emitCall = true
+	err := p.emit(n)
+	p.emitCall = false
+	return err
 }

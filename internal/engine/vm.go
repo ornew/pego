@@ -623,7 +623,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 				if v != nil {
 					v.fresh = false
 				}
-				if err := p.emit(v); err != nil {
+				if err := p.emitStream(v); err != nil {
 					panic(fatal{err})
 				}
 				p.commit(p.pos)

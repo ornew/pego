@@ -376,6 +376,10 @@ recovered errors:
    very large input with an error on every line holds one `SyntaxError` per line.
    See [Errors and recovery](errors-and-recovery.md).
 
+A panic from your reader or callback propagates with its original value on every backend,
+including values implementing Go's `runtime.Error`. Already delivered elements remain valid;
+the parser does not close your reader.
+
 Because what you received is provisional, side effects of the callback deserve some thought. If an element has to be
 written to a database only when the whole input is valid, buffer by batches and commit at the end, or write to a staging
 table. If a valid prefix is acceptable, the position in the error tells you how much of the input was good: everything
