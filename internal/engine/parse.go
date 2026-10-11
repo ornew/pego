@@ -245,6 +245,7 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node)
 		return fmt.Errorf("rule %s has no #stream repetition", start)
 	}
 	p := newStreamParser(prog, r, o.Unit)
+	defer p.releaseTraceReferences() // after error recovery, including rethrown panics
 	p.maxDepth = o.maxDepth(o.Backend)
 	p.emit = emit
 	if streamPrefixIsolation && emit == nil {

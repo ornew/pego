@@ -83,6 +83,7 @@ func (d *Document) Parse() (*Node, error) {
 	}
 	p := &parser{prog: d.prog, input: d.in, memo: d.memo, memoAll: true, noPlain: true, maxDepth: d.depth, gen: gen, edits: d.edits,
 		runs: runs, lastRuns: lastRuns, kidStack: d.kids}
+	defer p.releaseTraceReferences() // after the state-transfer defer below
 	if reuseDocumentVMValues {
 		// A large document may have been replaced with a small input.
 		// Bound cached capacity by the current size, with room for small
