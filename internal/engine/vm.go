@@ -422,14 +422,14 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			}
 		case OpClass:
 			ch, size, ok := p.peek()
-			if !ok || !vm.has(in.A, ch) {
+			if !ok || !vm.has(p, in.A, ch) {
 				p.expect(p.pos, numFixedDescs+expID(in.B))
 				goto fail
 			}
 			p.single(size, in.C == 1)
 		case OpGuard:
 			ch, _, ok := p.peek()
-			if !(ok && vm.has(in.A, ch)) && p.depth+int(in.B) <= p.maxDepth {
+			if !(ok && vm.has(p, in.A, ch)) && p.depth+int(in.B) <= p.maxDepth {
 				p.expect(p.pos, numFixedDescs+expID(m.Classes[in.A].Desc))
 				ip = int(in.C)
 				continue
@@ -442,7 +442,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			count := 0
 			for max < 0 || count < max {
 				ch, size, ok := p.peek()
-				if !ok || in.A >= 0 && !vm.has(in.A, ch) {
+				if !ok || in.A >= 0 && !vm.has(p, in.A, ch) {
 					if in.A >= 0 {
 						p.expect(p.pos, numFixedDescs+expID(m.Classes[in.A].Desc))
 					} else {
@@ -813,11 +813,21 @@ func newASCIISet(cl *Class) asciiSet {
 }
 
 // has reports whether the character ch is in class a.
-func (vm *vmProgram) has(a int32, ch rune) bool {
+func (vm *vmProgram) has(p *parser, a int32, ch rune) bool {
 	if uint32(ch) < 128 {
 		return vm.ascii[a][ch>>6]&(1<<(ch&63)) != 0
 	}
-	return vm.m.Classes[a].has(ch)
+	cl := &vm.m.Classes[a]
+	if !workControlsEnabled || p.control == nil || len(cl.Ranges) <= 4 {
+		return cl.has(ch)
+	}
+	for k := 0; k < len(cl.Ranges); k += 2 {
+		p.stepWork()
+		if cl.Ranges[k] <= ch && ch <= cl.Ranges[k+1] {
+			return !cl.Negated
+		}
+	}
+	return cl.Negated
 }
 
 // has reports whether the character ch is in the class.
