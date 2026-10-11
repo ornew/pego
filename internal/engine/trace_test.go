@@ -114,6 +114,15 @@ func parseWork(prog *Program, start, input string, o ParseOptions) (parseWorkSta
 	for _, x := range p.memo.seen {
 		w.firstCalls += bits.OnesCount64(x)
 	}
+	for _, dir := range p.memo.pages {
+		for _, page := range dir.pages {
+			if page != nil {
+				for _, x := range page {
+					w.firstCalls += bits.OnesCount64(x)
+				}
+			}
+		}
+	}
 	w.eager = fmt.Sprint(slices.Collect(func(yield func(bool) bool) {
 		for _, c := range p.memo.calls {
 			if !yield(c.eager) {
