@@ -48,7 +48,7 @@ func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *Node, er
 	}
 	control.check()
 	p := acquirePooledParser(active)
-	defer p.releaseScratch()
+	defer p.releaseBatchScratch()
 	p.input = newControlledTextInput(input, o.Unit, !o.Recognize, p.scratch, control)
 	p.maxDepth = o.maxDepth(o.Backend)
 	p.deferMemo = true
