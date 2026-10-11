@@ -30,21 +30,9 @@ func (prog *Program) ParseWith(start, input string, o ParseOptions) (n *Node, er
 			}
 		}
 	}()
-	if _, err := prog.rule(o.Backend, start); err != nil {
+	active, _, control, err := prog.admitParse(start, o, false)
+	if err != nil {
 		return nil, err
-	}
-	control := newWorkControl(o.Context, o.WorkLimits)
-	control.check()
-	if !workControlsEnabled && control != nil {
-		return nil, fmt.Errorf("work controls are unavailable in the reference build")
-	}
-	active := prog
-	if o.Recognize {
-		rp, err := prog.recognizer()
-		if err != nil {
-			return nil, err
-		}
-		active = rp
 	}
 	control.check()
 	p := acquirePooledParser(active)
@@ -247,20 +235,14 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node)
 	if o.Recognize {
 		return fmt.Errorf("recognition is not supported for stream parsing")
 	}
-	rule, err := prog.rule(o.Backend, start)
+	_, rule, control, err := prog.admitParse(start, o, true)
 	if err != nil {
 		return err
-	}
-	if !rule.stream {
-		return fmt.Errorf("rule %s has no #stream repetition", start)
-	}
-	control := newWorkControl(o.Context, o.WorkLimits)
-	if !workControlsEnabled && control != nil {
-		return fmt.Errorf("work controls are unavailable in the reference build")
 	}
 	control.check()
 	p := newControlledStreamParser(prog, r, o.Unit, control)
 	defer p.releaseTraceReferences() // after error recovery, including rethrown panics
+	control.check()
 	p.maxDepth = o.maxDepth(o.Backend)
 	p.emit = emit
 	if streamPrefixIsolation && emit == nil {

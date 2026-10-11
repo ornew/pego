@@ -691,6 +691,11 @@ is observed after emit succeeds. Restarting requires replaying the input yoursel
 the current reader offset is not a continuation token. Buffered read-ahead means
 an input-work limit does not cap bytes consumed from the reader.
 
+First-use backend preparation is synchronous and outside work limits. A context
+cancelled before a valid call prevents that preparation; cancellation during it
+is observed after preparation finishes. Compilation through `CompileSource`
+remains separate from the parse invocation.
+
 The parser still blocks inside `Read` while it waits for input. A context cannot
 make an arbitrary reader or callback return. To give up on a quiet connection,
 make `Read` fail from outside: close the connection, set a read deadline, or close

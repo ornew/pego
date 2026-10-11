@@ -175,15 +175,7 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 
 // streams reports whether the rule body (from entry to RETURN) has a #stream repetition.
 func (vm *vmProgram) streams(entry int) bool {
-	for _, in := range vm.m.Code[entry:] {
-		switch {
-		case in.Op == OpReturn:
-			return false
-		case in.Op == OpNext && in.B == 2:
-			return true
-		}
-	}
-	return false
+	return moduleStreams(vm.m, entry)
 }
 
 func (vm *vmProgram) names(ids []int) []string {

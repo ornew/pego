@@ -98,18 +98,18 @@ func workContextVariantName(opts ParseOptions) string {
 	return opts.Backend.String() + "/" + opts.Unit.String() + "/recognize=" + strconv.FormatBool(opts.Recognize)
 }
 
-func TestWorkContextErrPanicIdentityAtSetupAndPreparation(t *testing.T) {
+func TestWorkContextErrPanicIdentityBeforeExecution(t *testing.T) {
 	text := strings.Repeat("a", 8192)
 	prog := compile(t, `def main = "`+text+`" $$`)
 	for _, base := range workContextVariants() {
-		for _, phase := range []string{"setup", "preparation", "Done"} {
+		for _, phase := range []string{"admission", "later-check", "Done"} {
 			t.Run(workContextVariantName(base)+"/"+phase, func(t *testing.T) {
 				token := &workContextPanicToken{phase: phase}
 				opts := base
 				ctx := newWorkContextErrPanic(token, 1)
 				ctx.armed = true
 				opts.Context = ctx
-				if phase == "preparation" {
+				if phase == "later-check" {
 					ctx.panicAt = 3
 				}
 				if phase == "Done" {
@@ -130,9 +130,9 @@ func TestWorkContextErrPanicIdentityAtSetupAndPreparation(t *testing.T) {
 				if phase != "Done" && ctx.calls != ctx.panicAt {
 					t.Fatalf("Err calls=%d want %d at %s", ctx.calls, ctx.panicAt, phase)
 				}
-				// Two explicit setup checks precede controlled input storage.
-				// Bytes polls on its first 4096-byte copy; CodePoints at its
-				// first sizing-pass poll. Both precede execution tracing.
+				// This fixture checks identity before execution, without assigning
+				// an ordinal Context call to a specific lazy-setup component.
+				// Phase predicates and direct input tests isolate those boundaries.
 				retry, err := prog.ParseWith("main", text, base)
 				if err != nil || base.Recognize && retry != nil || !base.Recognize && retry == nil {
 					t.Fatalf("setup/preparation retry node=%v error=%v", retry, err)
