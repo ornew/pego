@@ -61,6 +61,8 @@ left-recursion and Pratt logic with it. Backtracking restores input position, th
 errors and capture history; farthest-failure expectations use separate isolation and merge scopes. Recognition
 returns no tree and skips value and action work that predicates do not need; predicate-dependent rules and callees
 can still evaluate actions.
+Adaptive memoization enters eager mode when repeated calls exceed one sixteenth of a rule's calls. Its compact
+counters halve before overflow, and the eager decision remains sticky for that parse.
 Nesting limits and tracing apply to rule calls. `Document` can reuse memo entries across edits and resume long
 repetitions; stream parsing emits elements and discards input already committed by the grammar.
 

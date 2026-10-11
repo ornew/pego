@@ -596,7 +596,14 @@ func (p *parser) firstCall(r *rule) bool {
 	if c.eager {
 		return false
 	}
-	c.calls++
+	// Discount old observations before the compact counters can wrap. Eager
+	// mode is sticky; this estimator only chooses when to enter it.
+	calls := uint32(c.calls) + 1
+	if calls&(1<<31) != 0 {
+		calls >>= 1
+		c.repeats >>= 1
+	}
+	c.calls = int32(calls)
 	i := p.pos*t.stride + r.seen
 	w, b := i>>6, uint64(1)<<(i&63)
 	if w >= len(t.seen) {
@@ -609,7 +616,7 @@ func (p *parser) firstCall(r *rule) bool {
 	// Deferring costs an extra evaluation for each position where the rule is called again, and
 	// saves a memo entry for each position where it is not.
 	c.repeats++
-	if c.repeats*16 > c.calls {
+	if c.repeats > c.calls>>4 {
 		c.eager = true
 	}
 	return false

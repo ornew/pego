@@ -1063,7 +1063,14 @@ class Parser {
     if (this.eager[s] !== 0) {
       return false;
     }
-    this.calls[s]!++;
+    // Discount old observations before the compact counters can wrap. Eager
+    // mode is sticky; this estimator only chooses when to enter it.
+    let calls = (this.calls[s]! + 1) >>> 0;
+    if ((calls & 0x80000000) !== 0) {
+      calls >>>= 1;
+      this.repeats[s] = this.repeats[s]! >> 1;
+    }
+    this.calls[s] = calls;
     const i = this.pos * this.stride + s;
     const w = Math.floor(i / 32);
     const bit = 1 << i % 32;
@@ -1079,7 +1086,7 @@ class Parser {
     // Deferring costs an extra evaluation for each position where the rule is called again, and
     // saves a memo entry for each position where it is not.
     this.repeats[s]!++;
-    if (this.repeats[s]! * 16 > this.calls[s]!) {
+    if (this.repeats[s]! > (calls >> 4)) {
       this.eager[s] = 1;
     }
     return false;
