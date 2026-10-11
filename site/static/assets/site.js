@@ -47,7 +47,7 @@ const current = sidebar?.querySelector('[aria-current="page"]');
 if (current) sidebar.scrollTop = current.offsetTop - sidebar.clientHeight / 2;
 
 // Code blocks.
-const LANGS = { pego: "pego", go: "go", json: "json", bash: "bash", console: "console", sh: "bash", shell: "bash" };
+const LANGS = { pego: "pego", go: "go", json: "json", typescript: "typescript", ts: "typescript", bash: "bash", console: "console", sh: "bash", shell: "bash" };
 for (const code of document.querySelectorAll("pre > code")) {
   const pre = code.parentElement;
   const lang = LANGS[(code.className.match(/language-(\w+)/) || [])[1]];

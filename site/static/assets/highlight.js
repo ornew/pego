@@ -1,4 +1,4 @@
-// A small syntax highlighter for the languages of the documentation: pego, go, json and shell.
+// A small syntax highlighter for the languages of the documentation: pego, Go, TypeScript, JSON and shell.
 // tokenize returns non-overlapping tokens {from, to, cls}; highlight returns HTML.
 
 const PEGO_KEYWORDS = new Set([
@@ -13,6 +13,21 @@ const GO_KEYWORDS = new Set([
 const GO_TYPES = new Set([
   "bool", "byte", "error", "float32", "float64", "int", "int8", "int16", "int32", "int64", "rune",
   "string", "uint", "uint8", "uint16", "uint32", "uint64", "uintptr", "any",
+]);
+const TS_KEYWORDS = new Set([
+  "abstract", "as", "asserts", "async", "await", "break", "case", "catch", "class",
+  "const", "constructor", "continue", "debugger", "declare", "default", "delete", "do", "else", "enum",
+  "export", "extends", "false", "finally", "for", "from", "function", "get", "if", "implements", "import",
+  "in", "infer", "instanceof", "interface", "is", "keyof", "let", "module", "namespace", "new", "null",
+  "of", "package", "private", "protected", "public", "readonly", "require",
+  "return", "set", "static", "super", "switch", "this", "throw", "true", "try", "type", "typeof",
+  "unique", "var", "while", "with", "yield",
+]);
+const TS_TYPES = new Set([
+  "Array", "BigInt", "Boolean", "Date", "Error", "Function", "Map", "Number", "Object", "Promise", "Record",
+  "RegExp", "Set", "String", "Symbol", "WeakMap", "WeakSet", "Readonly", "Partial", "Pick", "Omit",
+  "Exclude", "Extract", "NonNullable", "ReturnType", "Parameters", "InstanceType", "any", "boolean", "never",
+  "number", "object", "string", "symbol", "undefined", "unknown", "void",
 ]);
 
 const rules = {
@@ -31,6 +46,13 @@ const rules = {
     ["string", /"(?:[^"\\\n]|\\.)*"?|`[^`]*`?|'(?:[^'\\\n]|\\.)*'?/y],
     ["number", /\d[\w.]*/y],
     ["ident", /[\p{L}_][\p{L}\p{N}_]*/uy],
+  ],
+  typescript: [
+    ["comment", /\/\/[^\n]*|\/\*[\s\S]*?(?:\*\/|$)/y],
+    ["string", /`(?:[^`\\]|\\.)*`?|"(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?/y],
+    ["number", /(?:\b\d[\w.]*|\b0[xX][\da-fA-F]+)n?/y],
+    ["ident", /[\p{L}_$][\p{L}\p{N}_$]*/uy],
+    ["punct", /===|!==|=>|\.\.\.|\?\.|\?\?|&&|\|\||==|!=|<=|>=|\+=|-=|\*=|\/=|\*\*|[=<>!~?:;,.+*/%&|^()[\]{}@\-]/y],
   ],
   json: [
     ["string", /"(?:[^"\\\n]|\\.)*"?/y],
@@ -91,6 +113,12 @@ function classifyIdent(lang, word, code, end, prev) {
     if (GO_KEYWORDS.has(word)) return "keyword";
     if (GO_TYPES.has(word)) return "type";
     if (code[end] === "(") return "rule";
+    return null;
+  }
+  if (lang === "typescript") {
+    if (TS_KEYWORDS.has(word)) return "keyword";
+    if (TS_TYPES.has(word) || /^\p{Lu}/u.test(word)) return "type";
+    if (prev === "interface" || prev === "type" || prev === "class" || prev === "enum") return "type";
     return null;
   }
   return null;

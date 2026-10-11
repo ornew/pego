@@ -115,4 +115,6 @@ decoding excludes compression/encoding, browser DOM, worker and WebAssembly cost
 - **An example** for the playground is a line in [`playground/examples.txt`](../playground/examples.txt): a name, a
   grammar, an input and a description. The smoke test then checks it too.
 - **Templates, styles and scripts** are in `site/templates/` and `site/static/`. They are plain HTML, CSS and JavaScript
-  modules: there is no build step and no npm dependency.
+  modules; there is no build step and no npm dependency.
+  The client-side code highlighter is in `site/static/assets/highlight.js`; fenced code language aliases are mapped in
+  `site/static/assets/site.js` and tested through the controlled-DOM harness in `site/testdata/site_highlight_test.mjs`.
