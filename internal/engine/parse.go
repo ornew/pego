@@ -231,9 +231,19 @@ func (prog *Program) ParseStream(start string, r io.Reader, emit func(*Node) err
 
 // ParseStreamWith parses a stream with options such as the position unit.
 func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node) error, o ParseOptions) (err error) {
-	if newWorkControl(o.Context, o.WorkLimits) != nil {
-		return fmt.Errorf("work controls are not implemented for streams yet")
-	}
+	// Admission invokes caller-owned Context methods before execution recovery.
+	// Preserve their panic values rather than classifying them as VM faults.
+	defer func() {
+		if x := recover(); x != nil {
+			if f, ok := x.(fatal); ok {
+				err = f.err
+			} else if cp, ok := x.(contextPanic); ok {
+				panic(cp.value)
+			} else {
+				panic(x)
+			}
+		}
+	}()
 	if o.Recognize {
 		return fmt.Errorf("recognition is not supported for stream parsing")
 	}
@@ -244,7 +254,12 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node)
 	if !rule.stream {
 		return fmt.Errorf("rule %s has no #stream repetition", start)
 	}
-	p := newStreamParser(prog, r, o.Unit)
+	control := newWorkControl(o.Context, o.WorkLimits)
+	if !workControlsEnabled && control != nil {
+		return fmt.Errorf("work controls are unavailable in the reference build")
+	}
+	control.check()
+	p := newControlledStreamParser(prog, r, o.Unit, control)
 	defer p.releaseTraceReferences() // after error recovery, including rethrown panics
 	p.maxDepth = o.maxDepth(o.Backend)
 	p.emit = emit
@@ -265,8 +280,10 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node)
 		}
 		recoverParse(x, prog.backend(o.Backend), &err)
 	}()
+	control.check()
 	_, ok := p.call(rule, 0)
 	if ok && p.atEOF() {
+		control.check()
 		if len(p.recovered) > 0 {
 			return SyntaxErrors(p.recovered)
 		}
@@ -275,14 +292,22 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node)
 	if ok {
 		p.expect(p.pos, idEndInput)
 	}
-	return p.syntaxError()
+	err = p.syntaxError()
+	control.check()
+	return err
 }
 
 // emitStream marks only caller execution. Reset before handling a returned
 // error or committing the prefix, so later VM faults retain their attribution.
 func (p *parser) emitStream(n *Node) error {
+	if workControlsEnabled {
+		p.control.check()
+	}
 	p.emitCall = true
 	err := p.emit(n)
 	p.emitCall = false
+	if err == nil && workControlsEnabled {
+		p.control.check()
+	}
 	return err
 }

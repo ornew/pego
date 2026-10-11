@@ -82,7 +82,8 @@ type input struct {
 	eof      bool
 
 	// readerCall distinguishes buffered reader execution from VM execution.
-	readerCall bool
+	readerCall   bool
+	readerResult error // most recent caller Read result, before bufio defers its error
 	// src is the whole input as a string (unused for streams). If srcOK, text returns substrings
 	// of src without building new strings. In code points, offs[i] is the byte offset of position i
 	// (its length is the number of characters + 1); it is built when text first needs it, which a
@@ -306,7 +307,15 @@ func grow[T any](buf []T, n int) []T {
 }
 
 func newStreamParser(prog *Program, r io.Reader, unit Unit) *parser {
-	p := &parser{prog: prog, input: input{unit: unit, reader: bufio.NewReader(r), baseLine: 1, baseCol: 1}, memo: newMemoTable(), maxDepth: DefaultMaxDepth}
+	return newControlledStreamParser(prog, r, unit, nil)
+}
+
+func newControlledStreamParser(prog *Program, r io.Reader, unit Unit, control *workControl) *parser {
+	p := &parser{prog: prog, input: input{unit: unit, control: control, baseLine: 1, baseCol: 1}, memo: newMemoTable(), maxDepth: DefaultMaxDepth}
+	if workControlsEnabled && control != nil {
+		r = &streamReaderObserver{reader: r, result: &p.readerResult}
+	}
+	p.reader = bufio.NewReader(r)
 	if streamPrefixIsolation {
 		p.nodeChunks = -nodeChunk / 8 // Small prefixes use private exact-size storage.
 	}
@@ -340,28 +349,34 @@ func (in *input) fill(n int) bool {
 }
 
 func (in *input) read() {
+	if workControlsEnabled && in.control != nil {
+		in.control.check()
+		in.control.charge(0, 1) // reading and staging one byte or code point
+	}
 	var err error
+	var b byte
+	var r rune
 	in.readerCall = true
 	if in.unit == Bytes {
-		var b byte
 		b, err = in.reader.ReadByte()
-		in.readerCall = false
-		if err == nil {
-			in.bs = append(in.bs, b)
-		}
 	} else {
-		var r rune
 		r, _, err = in.reader.ReadRune()
-		in.readerCall = false
-		if err == nil {
-			in.in = append(in.in, r)
-		}
 	}
-	if err != nil {
-		if err != io.EOF {
-			panic(fatal{err})
-		}
+	in.readerCall = false
+	if err != nil && err != io.EOF {
+		panic(fatal{err})
+	}
+	if workControlsEnabled && in.control != nil {
+		returned := in.readerResult
+		in.readerResult = nil
+		in.control.checkAfterReader(returned)
+	}
+	if err == io.EOF {
 		in.eof = true
+	} else if in.unit == Bytes {
+		in.bs = append(in.bs, b)
+	} else {
+		in.in = append(in.in, r)
 	}
 }
 
@@ -516,9 +531,9 @@ func (in *input) discard(keep int) {
 	}
 	in.baseLine, in.baseCol = in.lineCol(keep)
 	if in.unit == Bytes {
-		in.bs = in.bs[:copy(in.bs, in.bs[n:])]
+		in.bs = in.bs[:copyStreamPrefix(in.control, in.bs, in.bs[n:])]
 	} else {
-		in.in = in.in[:copy(in.in, in.in[n:])]
+		in.in = in.in[:copyStreamPrefix(in.control, in.in, in.in[n:])]
 	}
 	in.base = keep
 	if streamTextSnapshots && in.streamText.end <= keep {
@@ -541,12 +556,12 @@ func (p *parser) commit(pos int) {
 		// Clear their inactive capacity along with memo pruning, so a large
 		// element's references do not survive indefinitely in small streams.
 		if streamUndoCleanup {
-			clear(p.trail[:cap(p.trail)])
+			clearWork(p, p.trail[:cap(p.trail)])
 		}
 		if streamStackCleanup {
-			clear(p.vals[len(p.vals):cap(p.vals)])
+			clearWork(p, p.vals[len(p.vals):cap(p.vals)])
 		}
-		p.memo.prune(pos)
+		p.pruneStreamMemo(pos)
 		p.pruned = pos
 	}
 }

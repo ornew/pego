@@ -319,7 +319,7 @@ func TestWorkDocumentStaleMemoCallReplayIsBounded(t *testing.T) {
 func TestWorkDocumentGrowthRejectsNegativeCapacity(t *testing.T) {
 	panicOf := func(run func()) (got any) { defer func() { got = recover() }(); run(); return nil }
 	values := []int{1}
-	want := panicOf(func() { slices.Grow(values, -1) })
+	want := panicOf(func() { _ = slices.Grow(values, -1) })
 	for _, p := range []*parser{{}, stateWorkParser(WorkLimits{MaxSteps: 1})} {
 		got := panicOf(func() { growWork(p, values, -1) })
 		if got == nil || !reflect.DeepEqual(got, want) {
