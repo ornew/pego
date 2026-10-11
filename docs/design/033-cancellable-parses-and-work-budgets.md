@@ -215,6 +215,19 @@ messages use bounded private construction and are flattened before publication.
 Avoid routing every error through a new wrapper or changing generic `p.fail`
 formatting.
 
+### Guard-rejected choice alternatives
+
+The closure backend charges one step before skipping each alternative rejected
+by a first-rune guard. This charge applies even when silent lookahead or an
+older failure position suppresses expectation collection. An alternative that
+passes its guard retains the existing matcher-dispatch accounting, without an
+extra skip charge. Bytecode backends already charge guard instructions.
+
+Interruption in the skipped-alternative loop is fatal, including inside
+negative lookahead. It cannot become a successful negation, select another
+alternative, or publish ordinary diagnostics. These backend-local steps do not
+promise identical budget thresholds across implementations.
+
 ### Cancellation checkpoints and long operations
 
 Check context before execution, before/after reader and user callback calls, and
@@ -362,10 +375,11 @@ when cancellation is observed.
 This foundation is not an adopted implementation of the full contract above.
 Document and stream calls reject active controls until their lifecycle stages
 are implemented. Known engine-owned action errors and the final rule prefix
-now use eager, bounded text construction. Remaining matcher loops still need
-batch coverage and regression gates. Document graph movement, rollback, and
-resumption require their lifecycle gates before adoption. First-use setup
-ordering also needs a separate validation gate. The prototype remains separate
+now use eager, bounded text construction. Guard-rejected closure alternatives
+also consume steps independently of diagnostic collection. Other matcher paths
+still need batch coverage and regression gates. Document graph movement,
+rollback, and resumption require their lifecycle gates before adoption.
+First-use setup ordering also needs a separate validation gate. The prototype remains separate
 from main until contract and performance gates pass.
 
 The private `pego_work_controls_reference` build tag removes execution
@@ -487,6 +501,16 @@ retry. Replacing only the bounded builder with an uncharged native join makes
 the public interruption tests fail. These gates establish scoped correctness;
 remaining matcher work, lifecycle, generated-output, setup, and default-cost
 gates are still pending.
+
+Guarded-choice tests isolate the rejected-alternative loop after input setup.
+Exact and one-short budgets cover silent lookahead, suppressed older
+expectations, and EOF; deterministic cancellation interrupts the silent loop,
+and passing guards retain their matcher charges. Public tests compare successful
+and ordinary failed parses with absent or generous controls on every backend
+and position unit, in Node
+and recognition modes. Fatal interruption bypasses negation and fallback rules,
+releases scratch, and preserves retained results through pooled retry. Removing
+only the skipped-alternative charge makes the isolated regression tests fail.
 
 ## Alternatives considered
 

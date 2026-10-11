@@ -659,6 +659,7 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 							peeked = true
 						}
 						if !(more && g.accept(p, ch)) && p.depth+g.depth <= p.maxDepth {
+							p.stepWork() // a skipped matcher still consumes dispatch work
 							p.expect(p.pos, g.desc) // what the alternative would record
 							continue
 						}
