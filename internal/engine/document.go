@@ -34,6 +34,7 @@ type Document struct {
 	runs   map[runKey]*runRecord
 	runGen uint32  // edit generation of runs; unchanged parses keep this map
 	kids   []*Node // the parser's stack of repetition values, kept for the next parse
+	vals   []any   // cleared VM value-stack storage, kept for the next parse
 	// resumed is the number of repetition elements the last Parse resumed (for tests).
 	resumed int
 }
@@ -79,11 +80,31 @@ func (d *Document) Parse() (*Node, error) {
 	}
 	p := &parser{prog: d.prog, input: d.in, memo: d.memo, memoAll: true, noPlain: true, maxDepth: d.depth, gen: gen, edits: d.edits,
 		runs: runs, lastRuns: lastRuns, kidStack: d.kids}
+	if reuseDocumentVMValues {
+		// A large document may have been replaced with a small input.
+		// Bound cached capacity by the current size, with room for small
+		// grammars' fixed stack overhead. Division avoids int overflow.
+		if cap(d.vals)/2 > max(512, d.in.loaded()) {
+			d.vals = nil
+		}
+		p.vals = d.vals
+	}
 	p.setTrace(d.trace)
 	defer func() {
 		d.stats = p.stats
 		d.kids = p.kidStack[:0]
 		clear(d.kids[:cap(d.kids)]) // let go of the nodes, even on a trace panic
+		if reuseDocumentVMValues {
+			d.vals = p.vals[:0]
+			if cap(d.vals)/2 > max(512, d.in.loaded()) {
+				d.vals = nil
+			}
+			// A whole-rule memo hit evaluates no bodies and never writes the
+			// VM stack. Its already cleared storage needs no second scan.
+			if p.stats.Evaluated != 0 {
+				clear(d.vals[:cap(d.vals)])
+			}
+		}
 		// Keep the tables the parse built on demand, so later parses and edits reuse them.
 		d.in.offs, d.in.lines = p.offs, p.lines
 		if p.aborted {
@@ -91,6 +112,7 @@ func (d *Document) Parse() (*Node, error) {
 			// removing only entries marked growing is insufficient.
 			d.memo = newMemoTable()
 			d.runs, d.kids, d.resumed = nil, nil, 0
+			d.vals = nil
 		} else {
 			d.runs, d.resumed = p.runs, p.resumed
 			d.runGen = p.gen
