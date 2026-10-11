@@ -80,6 +80,9 @@ type GenOptions struct {
 	// Reference parsers allocate each object or list separately.
 	disableTypedObjectSlabs bool
 	disableTypedListSlabs   bool
+	// disableSparseMemo keeps the dense first-call bitset for same-generator
+	// comparisons without a parser-time selector.
+	disableSparseMemo bool
 }
 
 // Generate generates the source code of a Go parser for a grammar.
@@ -134,6 +137,9 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 		rt = strings.Replace(rt, "const nodeFrameScratch = true", "const nodeFrameScratch = false", 1)
 	}
 
+	if opts.disableSparseMemo {
+		rt = strings.Replace(rt, "const sparseSeen = true", "const sparseSeen = false", 1)
+	}
 	out.WriteString(rt)
 	out.WriteString("\n// --- Generated code ---\n\n")
 	fmt.Fprintf(&out, "// Parse parses the whole input with the rule %s. Options select position units and the rule-call limit.\n", start.name)
