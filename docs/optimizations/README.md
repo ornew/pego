@@ -79,6 +79,7 @@ inventory of current mechanisms or reference controls.
 | [85](085-reuse-stream-capture-frames.md#85-reuse-stream-capture-frames-at-element-commit)| Reuse stream capture frames at element commit | ✓ | ✓ | ✓ | – | – | engine streaming only; reuses completed element's frame structs while preserving the live root and immutable result storage |
 | [86](086-reuse-document-vm-values.md#86-reuse-the-document-vm-value-stack)| Reuse the Document VM value stack | – | ✓ | ✓ | – | – | engine `Document` reparses only; retains cleared VM stack capacity within an input-relative bound; ordinary parsing and closure documents unchanged |
 | [88](088-share-bounded-stream-text-snapshots.md#88-share-bounded-stream-text-snapshots) | Share bounded stream text snapshots | ✓ | ✓ | ✓ | – | – | Engine streaming only; bounded immutable snapshots share already-loaded text, with copy fallback for other ranges; focused measurements include small recursive-VM CodePoints cost |
+| [89](089-isolate-stream-prefixes-and-batch-scratch-cleanup.md#89-isolate-stream-prefixes-and-batch-scratch-cleanup) | Isolate stream prefixes and batch scratch cleanup | ✓ | ✓ | ✓ | – | – | Engine streaming only; bounded private prefix allocation and prune-batched cleanup of inactive undo/VM references; paired GC samples release 81–92% of retained storage |
 | [90](090-share-identical-generated-helpers.md#90-share-identical-generated-helpers-and-literal-tables)| Share identical generated helpers and literal tables | – | – | – | ✓ | ✓ | Go Node/typed output shares exact helper bodies and literals; TypeScript shares exact helper bodies, while literal sharing remains private opt-in |
 | [91](091-specialize-pure-literal-text-disjunctions.md#91-specialize-pure-literal-text-disjunctions)| Specialize pure literal-text disjunctions | – | – | – | ✓ | ✓ | generated Go Node/typed outputs and TypeScript; complete OR of at least two text comparisons against one direct capture and string literals; other predicate shapes retain general evaluation |
 | [92](092-reuse-generated-node-capture-scratch.md#92-reuse-generated-node-capture-scratch) | Reuse generated Node capture scratch | – | – | – | ✓ | – | Generated plain-Go Node parsing and capture-dependent recognition; frames/slots use separate bounded scratch, preserving public result storage |
@@ -188,6 +189,7 @@ Not applied, and why:
 - [085. Reuse stream capture frames at element commit](085-reuse-stream-capture-frames.md)
 - [086. Reuse the Document VM value stack](086-reuse-document-vm-values.md)
 - [088. Share bounded stream text snapshots](088-share-bounded-stream-text-snapshots.md)
+- [089. Isolate stream prefixes and batch scratch cleanup](089-isolate-stream-prefixes-and-batch-scratch-cleanup.md)
 - [090. Share identical generated helpers and literal tables](090-share-identical-generated-helpers.md)
 - [091. Specialize pure literal-text disjunctions](091-specialize-pure-literal-text-disjunctions.md)
 - [092. Reuse generated Node capture scratch](092-reuse-generated-node-capture-scratch.md)

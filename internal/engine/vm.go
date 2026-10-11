@@ -537,6 +537,9 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 				p.vals = p.vals[:len(p.vals)-1]
 			}
 		case OpRepeat, OpRepeatWide:
+			if streamPrefixIsolation && p.emit != nil && p.depth == 1 && vm.isStreamRepeat(ip) {
+				p.startStreamChunks()
+			}
 			min, max := int(in.A), int(in.B)
 			if in.Op == OpRepeatWide {
 				min, max = int(m.Exprs[in.A].integer()), int(m.Exprs[in.B].integer())
@@ -1074,4 +1077,13 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 		}
 		ip++
 	}
+}
+
+func (vm *vmProgram) isStreamRepeat(ip int) bool {
+	code := vm.m.Code
+	if ip+1 >= len(code) || code[ip+1].Op != OpIter {
+		return false
+	}
+	end := int(code[ip+1].A)
+	return end > ip+2 && end < len(code) && code[end].Op == OpEndRepeat && code[end-1].Op == OpNext && code[end-1].B == 2
 }

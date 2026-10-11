@@ -269,7 +269,11 @@ func grow[T any](buf []T, n int) []T {
 }
 
 func newStreamParser(prog *Program, r io.Reader, unit Unit) *parser {
-	return &parser{prog: prog, input: input{unit: unit, reader: bufio.NewReader(r), baseLine: 1, baseCol: 1}, memo: newMemoTable(), maxDepth: DefaultMaxDepth}
+	p := &parser{prog: prog, input: input{unit: unit, reader: bufio.NewReader(r), baseLine: 1, baseCol: 1}, memo: newMemoTable(), maxDepth: DefaultMaxDepth}
+	if streamPrefixIsolation {
+		p.nodeChunks = -nodeChunk / 8 // Small prefixes use private exact-size storage.
+	}
+	return p
 }
 
 // loaded returns the position of the end of the input read so far.
@@ -480,6 +484,15 @@ func (p *parser) commit(pos int) {
 	}
 	p.splitChunks()
 	if pos-p.pruned >= 1024 {
+		// Completed calls may have shortened these slices before commit.
+		// Clear their inactive capacity along with memo pruning, so a large
+		// element's references do not survive indefinitely in small streams.
+		if streamUndoCleanup {
+			clear(p.trail[:cap(p.trail)])
+		}
+		if streamStackCleanup {
+			clear(p.vals[len(p.vals):cap(p.vals)])
+		}
 		p.memo.prune(pos)
 		p.pruned = pos
 	}

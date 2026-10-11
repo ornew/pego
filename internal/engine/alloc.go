@@ -26,9 +26,26 @@ func (p *parser) splitChunks() {
 	}
 }
 
+// privatePrefixAlloc reserves a small number of exact-size prefix objects.
+// Larger prefixes fall back to slabs, whose tails are sealed at #stream.
+// The existing chunk counter stores this bounded prefix budget until then.
+func (p *parser) privatePrefixAlloc() bool {
+	if streamPrefixIsolation && p.nodeChunks < 0 {
+		p.nodeChunks++
+		return true
+	}
+	return false
+}
+
 // newNode allocates a copy of v from a chunk and returns it.
 func (p *parser) newNode(v Node) *Node {
 	if len(p.nodeSlab) == 0 {
+		if p.privatePrefixAlloc() {
+			n := new(Node)
+			*n = v
+			n.gen = p.gen
+			return n
+		}
 		p.nodeSlab = make([]Node, nodeChunk)
 		p.nodeChunks++
 	}
@@ -48,6 +65,9 @@ func (p *parser) nodes(n int) []*Node {
 		return make([]*Node, n)
 	}
 	if len(p.ptrSlab) < n {
+		if p.privatePrefixAlloc() {
+			return make([]*Node, n)
+		}
 		p.ptrSlab = make([]*Node, ptrChunk)
 	}
 	s := p.ptrSlab[:n:n]
@@ -80,6 +100,11 @@ func (p *parser) newPos(pos int) *int {
 // newFunc allocates a copy of the lambda f from a chunk and returns it.
 func (p *parser) newFunc(f vmFunc) *vmFunc {
 	if len(p.funcSlab) == 0 {
+		if p.privatePrefixAlloc() {
+			n := new(vmFunc)
+			*n = f
+			return n
+		}
 		p.funcSlab = make([]vmFunc, nodeChunk/4)
 	}
 	n := &p.funcSlab[0]
@@ -101,6 +126,9 @@ func (p *parser) fields(n int) Fields {
 		return make(Fields, 0, n)
 	}
 	if len(p.fieldSlab) < n {
+		if p.privatePrefixAlloc() {
+			return make(Fields, 0, n)
+		}
 		p.fieldSlab = make([]NodeField, nodeChunk)
 	}
 	fs := p.fieldSlab[:0:n]
@@ -126,12 +154,18 @@ func (p *parser) newFrame(n int) *frame {
 		// Keep the used prefix so commits can clear and rewind it without
 		// an extra buffer pointer in every parser.
 		if len(p.frameSlab) == cap(p.frameSlab) {
+			if p.privatePrefixAlloc() {
+				return &frame{vals: make([]*Node, n)}
+			}
 			p.frameSlab = make([]frame, 0, nodeChunk)
 		}
 		p.frameSlab = p.frameSlab[:len(p.frameSlab)+1]
 		f = &p.frameSlab[len(p.frameSlab)-1]
 	} else {
 		if len(p.frameSlab) == 0 {
+			if p.privatePrefixAlloc() {
+				return &frame{vals: make([]*Node, n)}
+			}
 			p.frameSlab = make([]frame, nodeChunk)
 		}
 		f = &p.frameSlab[0]
@@ -192,4 +226,15 @@ func (a *arena[T]) reset(n int) {
 		a.chunks[i/64][i%64] = zero
 	}
 	a.n = n
+}
+
+// startStreamChunks separates live prefix values from element storage.
+// Only the top-level frame remains active at a stream repetition boundary.
+func (p *parser) startStreamChunks() {
+	p.nodeSlab, p.ptrSlab, p.fieldSlab, p.funcSlab = nil, nil, nil, nil
+	p.nodeChunks = 0
+	if streamFrameScratch {
+		p.resetStreamFrames()
+	}
+	p.frameSlab = nil
 }
