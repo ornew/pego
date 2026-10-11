@@ -63,6 +63,7 @@ func (p *parser) actionResult(ctx *evalCtx, act evaluator, where string) *Node {
 	n, ok := v.(*Node)
 	if err == nil && n != nil {
 		for _, c := range p.created[ctx.cbase:] {
+			p.stepWork()
 			if c == n {
 				n.Start, n.End = int32(ctx.start), int32(ctx.end)
 				break
@@ -89,7 +90,7 @@ func (p *parser) actionResult(ctx *evalCtx, act evaluator, where string) *Node {
 
 // dropCreated releases tracking references without changing the created values.
 func (p *parser) dropCreated(base int) {
-	clear(p.created[base:])
+	clearWork(p, p.created[base:])
 	p.created = p.created[:base]
 }
 
@@ -128,7 +129,8 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 
 	case *grammar.CaptureRef:
 		for l := c.locals; l != nil; l = l.next {
-			if l.name == t.Name {
+			c.p.stepWork()
+			if c.p.valueEqual(l.name, t.Name) {
 				return l.val, nil
 			}
 		}
@@ -147,7 +149,7 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 		return nodeOrNil(c.items[t.Index-1]), nil
 
 	case *grammar.VarRef:
-		v, ok := c.p.env.lookup(t.Name)
+		v, ok := c.p.lookupValue(t.Name)
 		if !ok {
 			return nil, fmt.Errorf("variable %s is not defined", t.Name)
 		}
@@ -166,6 +168,7 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 		p := c.p
 		base := len(p.estack)
 		for _, fi := range t.Fields {
+			p.stepWork()
 			v, err := c.eval(fi.Value)
 			if err != nil {
 				p.estack = p.estack[:base]
@@ -175,6 +178,7 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 		}
 		p.names = p.names[:0]
 		for _, fi := range t.Fields {
+			p.stepWork()
 			p.names = append(p.names, fi.Name)
 		}
 		n, err := c.newStruct(t.Type, p.names, p.estack[base:])
@@ -194,9 +198,10 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 			}
 			return c.newList(items), nil
 		}
-		if t.Func == "concat" && fusable(t) {
+		if t.Func == "concat" && c.p.fusable(t) {
 			base := len(c.p.kidStack)
 			for _, a := range t.Args {
+				c.p.stepWork()
 				if err := c.pushConcatArg(a); err != nil {
 					c.p.dropKids(base)
 					return nil, err
@@ -209,6 +214,7 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 		p := c.p
 		base := len(p.estack)
 		for _, a := range t.Args {
+			c.p.stepWork()
 			v, err := c.eval(a)
 			if err != nil {
 				p.estack = p.estack[:base]
@@ -254,11 +260,11 @@ func (c *evalCtx) member(x any, name string) (any, error) {
 	case "children":
 		return c.newList(n.Children), nil
 	}
-	if st, ok := c.p.prog.types[n.Type()].(*grammar.StructSpec); ok && fieldOf(st, name) == nil {
+	if st, ok := c.p.prog.types[n.Type()].(*grammar.StructSpec); ok && !c.p.hasValueField(st, name) {
 		return nil, fmt.Errorf("%s has no field %s", n.Type(), name)
 	}
 	// Unset fields and unmatched captures are nil.
-	v, _ := n.Fields.Get(name)
+	v, _ := c.p.valueField(n.Fields, name)
 	return v, nil
 }
 
@@ -268,11 +274,12 @@ func (c *evalCtx) newStruct(typ string, names []string, vals []any) (*Node, erro
 	n := c.p.newNode(Node{kind: c.p.prog.typeKind(typ), Fields: c.p.fields(len(names))})
 	first := true
 	for i, name := range names {
+		c.p.stepWork()
 		v := vals[i]
 		if _, isFn := v.(function); isFn {
 			return nil, fmt.Errorf("field %s: cannot store a function", name)
 		}
-		n.Fields.set(name, v)
+		c.p.setValueField(&n.Fields, name, v)
 		if child, ok := v.(*Node); ok && child != nil {
 			if first || child.Start < n.Start {
 				n.Start = child.Start
@@ -305,7 +312,9 @@ func unaryOp(op string, x any) (any, error) {
 }
 
 func (c *evalCtx) newList(items []*Node) *Node {
-	return c.listNode(append(c.p.nodes(len(items))[:0], items...))
+	kids := c.p.nodes(len(items))
+	copyWork(c.p, kids, items)
+	return c.listNode(kids)
 }
 
 // listNode returns a List node with the child slice kids (which it takes over).
@@ -313,6 +322,7 @@ func (c *evalCtx) listNode(kids []*Node) *Node {
 	n := c.p.newNode(Node{kind: kindList, Children: kids, Start: int32(c.start), End: int32(c.start)})
 	first := true
 	for _, it := range kids {
+		c.p.stepWork()
 		if it == nil {
 			continue
 		}
@@ -341,7 +351,7 @@ func (c *evalCtx) binary(t *grammar.Binary) (any, error) {
 				if err != nil {
 					return nil, err
 				}
-				return (ls == rs) == (t.Op == "=="), nil
+				return c.p.valueEqual(ls, rs) == (t.Op == "=="), nil
 			}
 		}
 	}
@@ -372,7 +382,7 @@ func (c *evalCtx) binary(t *grammar.Binary) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	return binaryOp(t.Op, l, r)
+	return c.p.valueBinary(t.Op, l, r)
 }
 
 // binaryOp performs a binary operation other than a logical one.
@@ -460,13 +470,13 @@ func (c *evalCtx) builtin(fn string, args []any) (any, error) {
 	case "len":
 		switch x := args[0].(type) {
 		case string:
-			return c.p.unit.textLen(x), nil
+			return c.p.valueTextLen(x), nil
 		case *Node:
 			if x == nil {
 				return 0, nil
 			}
 			if x.terminal {
-				return c.p.unit.textLen(x.Text), nil
+				return c.p.valueTextLen(x.Text), nil
 			}
 			return len(x.Children), nil
 		case nil:
@@ -489,6 +499,7 @@ func (c *evalCtx) builtin(fn string, args []any) (any, error) {
 		}
 		acc := args[0]
 		for i := range items {
+			c.p.stepWork()
 			it := items[i]
 			if fn == "foldr" {
 				it = items[len(items)-1-i]
@@ -562,6 +573,7 @@ func (c *evalCtx) pushElems(fn string, args []any) error {
 			return err
 		}
 		for _, it := range items {
+			c.p.stepWork()
 			v, err := f.apply(nodeOrNil(it), nil)
 			if err != nil {
 				return err
@@ -574,6 +586,7 @@ func (c *evalCtx) pushElems(fn string, args []any) error {
 		}
 	case "list":
 		for _, a := range args {
+			c.p.stepWork()
 			n, err := asNode("list", a)
 			if err != nil {
 				return err
@@ -582,11 +595,12 @@ func (c *evalCtx) pushElems(fn string, args []any) error {
 		}
 	case "concat":
 		for _, a := range args {
+			c.p.stepWork()
 			items, err := listItems("concat", a)
 			if err != nil {
 				return err
 			}
-			c.p.kidStack = append(c.p.kidStack, items...)
+			c.p.kidStack = appendWork(c.p, c.p.kidStack, items)
 		}
 	}
 	return nil
@@ -613,6 +627,7 @@ func fusable(t *grammar.Call) bool {
 
 // pushConcatArg pushes onto kidStack the elements of t, an argument of a fusable concat call.
 func (c *evalCtx) pushConcatArg(t grammar.Term) error {
+	c.p.stepWork()
 	if call, ok := t.(*grammar.Call); ok && c.p.prog.projected[call] {
 		v, err := c.eval(call.Args[0])
 		if err != nil {
@@ -624,6 +639,7 @@ func (c *evalCtx) pushConcatArg(t grammar.Term) error {
 		p := c.p
 		base := len(p.estack)
 		for _, a := range call.Args {
+			c.p.stepWork()
 			v, err := c.eval(a)
 			if err != nil {
 				p.estack = p.estack[:base]
@@ -637,6 +653,7 @@ func (c *evalCtx) pushConcatArg(t grammar.Term) error {
 	}
 	if call, ok := t.(*grammar.Call); ok && call.Func == "concat" {
 		for _, a := range call.Args {
+			c.p.stepWork()
 			if err := c.pushConcatArg(a); err != nil {
 				return err
 			}
@@ -677,18 +694,20 @@ func (f *closure) apply(x, y any) (any, error) {
 	// The context and the parameters are freed when the call returns; a lambda created by the body
 	// keeps a copy of them (keep).
 	p := f.ctx.p
+	p.stepWork()
 	mc, ml := p.lctxs.n, p.locals.n
 	ctx := p.lctxs.alloc()
 	*ctx = *f.ctx
 	args := [2]any{x, y}
 	for i, name := range f.params {
+		p.stepWork()
 		l := p.locals.alloc()
 		*l = local{name: name, val: args[i], next: ctx.locals}
 		ctx.locals = l
 	}
 	v, err := ctx.eval(f.body)
-	p.lctxs.reset(mc)
-	p.locals.reset(ml)
+	resetWork(p, &p.lctxs, mc)
+	resetWork(p, &p.locals, ml)
 	return v, err
 }
 
@@ -702,6 +721,7 @@ func (c *evalCtx) keep() *evalCtx {
 	k := *c
 	var head *local
 	for l, link := c.locals, &head; l != nil; l = l.next {
+		c.p.stepWork()
 		*link = &local{name: l.name, val: l.val}
 		link = &(*link).next
 	}

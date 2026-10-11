@@ -860,8 +860,9 @@ func (f *vmFunc) arity() int { return f.n }
 func (f *vmFunc) apply(x, y any) (any, error) {
 	// The locals are placed on the expression stack below the operands of the body.
 	p := f.ctx.p
+	p.stepWork()
 	base := len(p.estack)
-	p.estack = append(append(p.estack, f.locals...), x)
+	p.estack = append(appendWork(p, p.estack, f.locals), x)
 	if f.n == 2 {
 		p.estack = append(p.estack, y)
 	}
@@ -882,6 +883,7 @@ func (vm *vmProgram) evaluator(entry int, operator bool) evaluator {
 		p.estack = append(p.estack, nil, nil, nil)
 		locals := p.estack[base : base+3 : base+3]
 		for l := ctx.locals; l != nil; l = l.next {
+			p.stepWork()
 			switch l.name {
 			case "lhs":
 				locals[0] = l.val
@@ -971,7 +973,7 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 		case ELocal:
 			stack = append(stack, locals[in.A])
 		case EVar:
-			v, ok := ctx.p.env.lookup(m.Strings[in.A])
+			v, ok := ctx.p.lookupValue(m.Strings[in.A])
 			if !ok {
 				return nil, fmt.Errorf("variable %s is not defined", m.Strings[in.A])
 			}
@@ -993,7 +995,7 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 		case EBin:
 			r := pop()
 			l := pop()
-			v, err := binaryOp(m.Strings[in.A], l, r)
+			v, err := p.valueBinary(m.Strings[in.A], l, r)
 			if err != nil {
 				return nil, err
 			}
@@ -1028,7 +1030,7 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 			if len(locals) > 0 {
 				// The locals may be on the expression stack, and a function can outlive the lambda that
 				// created it (when the lambda returns it).
-				locals = append([]any(nil), locals...)
+				locals = appendWork(p, []any(nil), locals)
 			}
 			stack = append(stack, p.newFunc(vmFunc{vm: vm, entry: int(in.A), n: int(in.B), locals: locals, ctx: ctx}))
 		case ECall:
@@ -1050,7 +1052,7 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 			// Both values were checked by ETEXTCHK.
 			ls, _ := ctx.textString(stack[len(stack)-2])
 			rs, _ := ctx.textString(stack[len(stack)-1])
-			stack = append(stack[:len(stack)-2], (ls == rs) != (in.A == 1))
+			stack = append(stack[:len(stack)-2], p.valueEqual(ls, rs) != (in.A == 1))
 		case EListBegin:
 			p.lists = append(p.lists, len(p.kidStack))
 		case EListPush:
