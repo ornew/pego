@@ -678,6 +678,9 @@ Pass `pego.WithContext(ctx)` to interrupt engine work cooperatively, or
 one invocation. A zero limit is unlimited. Work counts depend on the backend,
 position unit and implementation; reused or copied storage also consumes work.
 Exhaustion matches `pego.ErrWorkLimit` through `errors.Is`.
+Text materialization also consumes work, including building a cached stream
+snapshot and its CodePoints position table. Reading an already cached substring
+requires no additional materialization work; snapshot creation never reads ahead.
 
 The engine checks immediately before and after reader and emit calls. An emit
 error or a reader's non-EOF error wins over cancellation first observed after

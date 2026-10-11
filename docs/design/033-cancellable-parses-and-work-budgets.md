@@ -400,13 +400,13 @@ caller panic. Recognition uses the same batch lifecycle. Individual trace-option
 when cancellation is observed.
 
 This foundation is not an adopted implementation of the full contract above.
-Stream calls reject active controls until their lifecycle stage
-is implemented. Known engine-owned action errors and the final rule prefix
-now use eager, bounded text construction. Guard-rejected closure alternatives
-also consume steps independently of diagnostic collection. Other matcher paths
-still need batch coverage and regression gates. Document graph movement,
-rollback, and resumption require their lifecycle gates before adoption.
-First-use setup ordering also needs a separate validation gate. The prototype remains separate
+Native Document and stream calls now use invocation-local controls through
+reuse, text materialization and normal commit work. Known engine-owned action
+errors and the final rule prefix use eager, bounded text construction.
+Guard-rejected closure alternatives also consume steps independently of
+diagnostic collection. Remaining matcher coverage, generated-runtime lifecycles,
+copied-event ownership and first-use setup ordering need separate validation
+gates. The prototype remains separate
 from main until contract and performance gates pass.
 
 The private `pego_work_controls_reference` build tag removes execution
@@ -475,8 +475,9 @@ allocation, and only a complete immutable string is returned; input and scratch
 buffers are never borrowed by the result. Original-source substrings remain
 constant-time when their offsets are ready. Allocations and builder growth remain
 nonpreemptible. Trace text accessors propagate engine interruption through the
-normal fatal boundary. Inactive/reference conversions retain the native paths;
-stream snapshots remain for the stream lifecycle stage.
+normal fatal boundary. Inactive/reference conversions retain the native paths.
+Stream snapshots use the same controlled detached-text conversion, described
+below.
 
 Batch capture-state work consumes steps: one before each reverse undo assignment,
 frame/scope visit, VM child assignment, cut-stack entry inspection, and failure
@@ -665,6 +666,25 @@ establishes release of those fixture objects, not a retained-byte or timing boun
 The controlled observer/storage/accounting costs and inactive branch/call costs
 are unmeasured. Generated-runtime lifecycles and setup/default-cost gates remain
 pending before full contract adoption.
+
+
+Controlled stream snapshots reserve source copying through the bounded
+materialization path. CodePoints snapshots additionally charge decoder visits
+while building their small position table. A new source and offset table are
+private until both complete; interruption leaves the previous cache intact.
+Already returned immutable substrings remain unchanged after cache replacement.
+Cache hits remain constant-time and materialization does not read ahead. Tiny
+loaded fragments and oversized ranges use the bounded detached-text fallback.
+Invalid UTF-8 and invalid scalar values retain the existing replacement policy.
+
+Fixtures isolate sizing, encoding and final-offset budget boundaries, decoder
+cancellation, exact and one-short quotas, no read-ahead, cache reuse, malformed
+input and near-limit absolute positions. Public traced streams propagate text
+interruption, detach terminal state and permit fresh replay on every native
+backend and position unit. Controlled CodePoints cache misses allocate a new
+small offset table to avoid mutating the previous cache during interruption;
+its allocation and timing costs remain unmeasured while benchmarks are paused.
+Inactive snapshots retain their existing copy and offset-table reuse paths.
 
 ## Alternatives considered
 
