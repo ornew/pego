@@ -96,16 +96,16 @@ separate from new public APIs. The [development guide](../development.md#languag
 implemented language features; the backlog and execution order live in
 [Issue #1](https://github.com/ornew/pego/issues/1).
 
-| Stage | Backlog | Work and prerequisite | Acceptance evidence |
-|:--|:--|:--|:--|
-| 1 | F01 | Cancellation and work budgets; reuse interruption cleanup | Bound cancellation latency in calls, scans, repeats and LR; retry/edited Document equals fresh parse; quantify uncancelled overhead |
-| 2 | F16, F06, V01 | Grammar-author edit-fuzz CLI/API, then reusable fixtures | Corpus + seed + replayable/minimized failures; compare values, spans and errors against fresh parsing after edits/undo/redo on every backend/unit |
-| 3 | F10, F17 | Iterative Walker/Cursor and versioned output schema | Define child/field order, shared identities, cycles, scalar fields and range filtering; schema marks unknown/dynamic output explicitly |
-| 4 | P10 | Chunked Document input, initially internal | Edit-only and parse benchmarks at multiple sizes/positions; UTF-8/chunk boundaries, invalid bytes and position conversion; retain fast contiguous batch path |
-| 5 | F04 | Versioned shared snapshots and shared sequence representation | Old versions stay immutable; action-position dependencies remain valid; compare Clone cost, position updates, concurrent reads and retained versions |
-| 6 | F18, F19 | Conservative change notifications, then minimal structural queries | No omitted updates for text/scalar changes; compare incremental indexes/highlights with full recomputation; budget and cancel query work |
-| 7 | F20 | Explicit missing-token recovery for editing | Zero-width missing tokens distinguished from skipped Error nodes; progress/limits, rollback, EOF and typed/backend equivalence |
-| 8 | P11, P12 | Literal dispatch and compact leaf experiments | Adopt only measured wins with unchanged PEG ordering, diagnostics, trace policy and lookahead dependencies |
+| Stage | Work and prerequisite | Acceptance evidence |
+|:--|:--|:--|
+| 1 | Cancellation and work budgets; reuse interruption cleanup | Bound cancellation latency in calls, scans, repeats and LR; retry/edited Document equals fresh parse; quantify uncancelled overhead |
+| 2 | Grammar-author edit-fuzz CLI/API, then reusable fixtures | Corpus + seed + replayable/minimized failures; compare values, spans and errors against fresh parsing after edits/undo/redo on every backend/unit |
+| 3 | Iterative Walker/Cursor and versioned output schema | Define child/field order, shared identities, cycles, scalar fields and range filtering; schema marks unknown/dynamic output explicitly |
+| 4 | Chunked Document input, initially internal | Edit-only and parse benchmarks at multiple sizes/positions; UTF-8/chunk boundaries, invalid bytes and position conversion; retain fast contiguous batch path |
+| 5 | Versioned shared snapshots and shared sequence representation | Old versions stay immutable; action-position dependencies remain valid; compare Clone cost, position updates, concurrent reads and retained versions |
+| 6 | Conservative change notifications, then minimal structural queries | No omitted updates for text/scalar changes; compare incremental indexes/highlights with full recomputation; budget and cancel query work |
+| 7 | Explicit missing-token recovery for editing | Zero-width missing tokens distinguished from skipped Error nodes; progress/limits, rollback, EOF and typed/backend equivalence |
+| 8 | Literal dispatch and compact leaf experiments | Adopt only measured wins with unchanged PEG ordering, diagnostics, trace policy and lookahead dependencies |
 
 Stages 4–7 need separate design records with concrete contracts before code. Stage 3 can precede shared trees: APIs
 should state their ownership and allow later snapshot implementations. Stage 6 can begin with conservative ranges
@@ -144,9 +144,9 @@ scope coloring does not promise full name resolution or type checking.
 recovery points with an insertion count/budget, same-position progress guard, backtracking rollback and typed result
 representation. Merely allowing a zero-consumption skip would risk an infinite recovery loop.
 
-**Embedded languages.** F15 starts with contiguous fragments and an explicit source-position map. Discontiguous
-included ranges, escaped strings and edit-tracking source maps come later, once notifications and ownership are
-defined. Host scanners/functions, if added, must snapshot/restore their state and include it in reuse dependencies.
+**Embedded languages.** Start with contiguous fragments and an explicit source-position map. Discontiguous included ranges, escaped strings and edit-tracking source maps come later, once notifications and
+ownership are defined. Host scanners/functions, if added, must snapshot/restore their state and include it in reuse
+dependencies.
 
 ## Testing and performance measurement
 
@@ -197,8 +197,9 @@ for a demonstrated gap with a separate design and compatibility decision.
 
 ## Limitations and open questions
 
-- API signatures, deterministic work units and cancellation polling intervals need a concrete F01 design and latency
-  measurements. Blocking reader interruption is a separate ownership problem.
+- API signatures, deterministic work units and cancellation polling intervals proposed in
+  [cancellable parses and work budgets](033-cancellable-parses-and-work-budgets.md) still require full implementation
+  and latency validation. Blocking reader interruption is a separate ownership problem.
 - A chunk/piece-table implementation may reduce edits while slowing character reads or text materialization. The
   representation and public input boundary remain open until size/position benchmarks and malformed-UTF-8 tests pass.
 - Shared snapshots can retain substantial history. Define release/history limits and concurrent-read ownership, and

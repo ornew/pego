@@ -54,5 +54,5 @@
   Build parent/candidate binaries with the same benchmark source; restore only
   `sample/analysis.go` from `9159f94` through a Go overlay for the parent. Run
   five alternating pairs with no tests/builds/probes concurrently. Raw results
-  stay local. The full-suite checkpoint follows P13/P27 in the current core
+  stay local. The full-suite checkpoint follows the current core compiler
   analysis optimization group; batch-runtime benchmark workloads are unchanged.

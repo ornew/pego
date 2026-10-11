@@ -72,6 +72,6 @@
   `go test ./bench -run '^$' -bench '^BenchmarkParse$/./generated_ast$' -benchtime=300ms -count=1`.
   For Bytes recognition use the same workloads and loop with each generated
   package's `Recognize(input, Bytes)` instead of its default invocation.
-  Prebuild identical benchmark sources and alternate five pairs. P15 stays
-  open for value-building Node and memoized direct rules; complete the
+  Prebuild identical benchmark sources and alternate five pairs. Value-building
+  Node output and memoized direct rules remain open; complete the
   broader full-suite checkpoint after that optimization group.
