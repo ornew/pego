@@ -172,7 +172,7 @@ func (p *parser) longest(ops []*prattOp) (best prattAttempt, cutFailed bool) {
 		}
 		if ok && (best.op == nil || p.pos > best.end) {
 			best = prattAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
-				errs: append([]*SyntaxError(nil), p.recovered[m0.recovered:]...)}
+				errs: appendWork(p, []*SyntaxError(nil), p.recovered[m0.recovered:])}
 		}
 		if !ok && cut {
 			cutFailed = true
@@ -192,7 +192,7 @@ func (p *parser) longest(ops []*prattOp) (best prattAttempt, cutFailed bool) {
 
 func (p *parser) apply(a *prattAttempt) {
 	p.pos, p.env = a.end, a.env
-	p.recovered = append(p.recovered, a.errs...)
+	p.recovered = appendWork(p, p.recovered, a.errs)
 }
 
 // prattParse parses an expression, absorbing only operators that bind tighter than binding level

@@ -723,7 +723,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			se := p.makeError(l.far, l.exp)
 			p.recovered = append(p.recovered, se)
 			if in.A == 1 {
-				p.push(p.newNode(Node{kind: kindError, Start: int32(e.save.pos), End: int32(p.pos), Text: p.text(e.save.pos, p.pos), Fields: Fields{{"message", se.Error()}}, fresh: true, terminal: true}))
+				p.push(p.newNode(Node{kind: kindError, Start: int32(e.save.pos), End: int32(p.pos), Text: p.text(e.save.pos, p.pos), Fields: Fields{{"message", p.recoveryErrorText(se)}}, fresh: true, terminal: true}))
 			}
 		case OpReturn, OpEnd:
 			var v *Node

@@ -328,16 +328,15 @@ streaming, code-generation and TypeScript guides with the applicable stage.
 The `feat/parse-work-controls` branch starts the core batch stage. It provides
 invocation-local context and overflow-safe work reservations, controlled input
 preparation, scanner and execution-dispatch checkpoints, action-value checkpoints,
-large character-class, batch memo/binding, detached input-text, and capture-state
-checkpoints, and cleanup after initialization interruption or caller panic. Recognition uses
-the same batch
-lifecycle. Individual trace-option callbacks stop before a subsequent callback
+large character-class, batch memo/binding, detached input-text, capture-state,
+and diagnostic checkpoints, and cleanup after initialization interruption or
+caller panic. Recognition uses the same batch lifecycle. Individual trace-option callbacks stop before a subsequent callback
 when cancellation is observed.
 
 This foundation is not an adopted implementation of the full contract above.
 Document and stream calls reject active controls until their lifecycle stages
-are implemented. Diagnostic processing and remaining matcher loops still require batch coverage
-and regression gates. Document graph movement, rollback, and resumption require
+are implemented. Fatal action-error formatting and remaining matcher loops still
+require batch coverage and regression gates. Document graph movement, rollback, and resumption require
 their lifecycle gates before adoption. First-use setup
 ordering also needs a separate validation gate. The prototype remains separate
 from main until contract and performance gates pass.
@@ -421,8 +420,27 @@ Only private slots and containers are restored or cleared; retained public Node
 pointees are never changed. A midway interruption aborts the whole batch, with
 no partial result, alternative, recovery, or charged rollback during mandatory
 scratch cleanup. Inactive/reference undo, copy, clear, and field paths retain
-native operations. Diagnostic storage/copies/sorting and remaining matcher and
-lifecycle gates are still pending.
+native operations.
+
+Batch diagnostics charge expectation-bucket collisions, snapshot equality and
+copying, expected-ID merge visits, and error descriptor traversal. Sorting a new
+private Expected list uses bounded byte comparisons and explicit reference moves;
+message encounter order and Go string byte ordering remain unchanged. Previously
+published or memoized errors are never sorted or mutated. Recovered-error pointer
+snapshots and replay in memo, left recursion, and Pratt parsing use bounded copies
+and preserve order and pointer identity. Partial snapshots are not published.
+
+Engine-owned recovery Error-node messages reserve sizing visits and copy text in
+chunks of at most 128 bytes into an unpooled immutable builder. Empty message
+parts still consume visits, and output sizing rejects integer overflow before
+allocation. Recognition avoids this materialization because it builds no Error
+node. Public post-return Error and Message methods remain caller work. Fatal
+interruption during diagnostic construction, including a TraceEvent failure
+accessor, bypasses recovery and alternatives; retained results survive scratch
+reuse. Inactive/reference paths retain native equality, copying, sorting and error
+formatting. Allocation, implicit slice growth, map hashing and GC remain
+nonpreemptible. Fatal action-error formatting, remaining matcher work, lifecycle,
+generated-output, setup and default-cost gates are still pending.
 
 ## Alternatives considered
 
