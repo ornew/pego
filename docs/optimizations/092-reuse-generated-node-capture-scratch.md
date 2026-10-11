@@ -40,8 +40,11 @@ pass. Three generated fixture pairs cover capture-heavy parsing, capture-free
 parsing, and a TypeScript grammar parsed by the generated Go parser. Across
 those fixtures, optimized, reference and parent outputs match in 216 checked
 fingerprints. Full root and parser-module suites, generation freshness, vet and
-site tests pass. Shipped and benchmark Go parsers are regenerated; a full
-optimization-group snapshot follows this phase.
+site tests and shipped/benchmark parser regeneration pass. The clean 131-case,
+three-sample full snapshot at
+[f8c2399](https://github.com/ornew/pego/commit/f8c2399e4679af46e98dca39d1bd7ccc9c2a4b49)
+is recorded in [the full results](../benchmarks.md), without attributing it to
+this optimization.
 
 ## Measurements and limits
 
@@ -67,11 +70,22 @@ unchanged.
 The typed AST controls kept allocation counts unchanged. One large capture
 AST Bytes case measured 1.038× against the parent and 1.012× against the
 same-source reference; both paired ranges include parity, so no typed-AST
-speedup is claimed. No parent-comparison case was slower in all five rounds.
+speedup is claimed. In that 36-case sample, no parent-comparison case was slower in all five rounds.
 Each fixture parser source grew by 2,403 bytes versus its parent. Build time and
 executable size were not measured; test-binary size includes harness and test
 code. These results describe selected capture workloads and do not establish a
 general parser speedup.
+
+A subsequent full snapshot exposed an XML cost absent from those fixtures.
+Five alternating 500 ms runs against the exact parent `d16f33e` measured XML
+`Parse` at 1.254× CodePoints and 1.394× Bytes, and `Recognize` at 1.380×.
+Allocated bytes fell by about 15–17%, but all five pairs were slower. Scratch
+versus the same-source disabled reference took 0.966×/0.976×/0.922× time;
+both builds remained slower than the exact parent. Five fixed-iteration
+(50x) pairs with `GOGC=off` overlapped parity; that is a diagnostic control,
+not a recommended execution setting. Moving the added state to the parser's
+tail did not mitigate the slowdown, and compiler inspection ruled out lost
+inlining. The normal-GC regression remains unresolved.
 
 ## Reproduction
 
@@ -92,5 +106,5 @@ PEGO_NODE_FRAME_DIR=/tmp/pego-node-frame \
 reference and scratch binaries with matching grammar, options, unit and input;
 alternate run order across five rounds. The same-source reference contains the
 added parser state, so use the exact parent as a separate footprint control.
-Preserve raw timing samples locally. The full optimization-group checkpoint
-remains scheduled after the P25 phase.
+Preserve raw timing samples locally. The full snapshot complements, and does
+not replace, the focused paired evidence above.

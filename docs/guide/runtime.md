@@ -401,12 +401,12 @@ grammar and input.
 | You want | Choose | Why |
 |:--|:--|:--|
 | The best default for a Go program that loads a grammar at start-up | Closure (the default) | It is faster than both VMs on every benchmarked workload. |
-| The fastest parsing, with a fixed grammar | [Generated Go](code-generation.md) | Current benchmarks show it at 0.41–0.60× closure time in CodePoints and 0.47–0.62× in Bytes; direct typed values are 0.63–1.02× generated `Parse`. |
+| The fastest parsing, with a fixed grammar | [Generated Go](code-generation.md) | Current benchmarks show it at 0.41–0.59× closure time in CodePoints and 0.45–0.64× in Bytes; direct typed values are 0.52–0.88× generated `Parse`. |
 | Input that can nest very deeply (untrusted JSON-like data, generated code) | Bytecode (iterative) | Rule calls live on the VM's own stack, not the Go stack. |
 | A grammar distributed as a data file, not source | Bytecode, from a `.pegoc` | See the [compiled grammars guide](compiled-grammars.md). |
 | Checking validity only | Any backend with [`RecognizeOnly`](#recognition-mode) | No tree is built. |
 
-Across both units, the recursive bytecode VM is 1.12–1.39× slower than the closure backend in the benchmarks and the iterative VM 1.20–1.87×
+Across both units, the recursive bytecode VM is 1.08–1.39× slower than the closure backend in the benchmarks and the iterative VM 1.19–1.94×
 slower; you pay that for portability (the same bytecode is specified for other runtimes in
 [bytecode.md](../../spec/bytecode.md)) and, for the iterative VM, for the independence from the Go stack. Do not pick bytecode
 inside a Go program for speed.
@@ -456,7 +456,7 @@ bound acceptance even when the configured limit is higher.
 ## Recognition mode
 
 `RecognizeOnly()` checks whether the input matches without building a tree. `Parse` then returns a `nil` node and the
-same syntax errors as a full parse. It is faster and allocates less: the benchmarks measure recognition at 1.2–1.6×
+same syntax errors as a full parse. It is faster and allocates less: the benchmarks measure recognition at 1.4–1.8×
 faster than a full parse on the closure backend.
 
 ```go
