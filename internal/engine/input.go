@@ -605,7 +605,7 @@ func (p *parser) matchLiteral(rs []rune, bs []byte) bool {
 			p.pos += n
 			return true
 		}
-		if p.unit == Bytes && slices.Contains(rs, utf8.RuneError) {
+		if p.unit == Bytes && p.literalHasReplacement(rs) {
 			return p.matchLiteralRunes(rs)
 		}
 		p.touch(p.pos + k + 1)
@@ -618,7 +618,7 @@ func (p *parser) matchLiteral(rs []rune, bs []byte) bool {
 			p.touch(p.pos + 1)
 			c, ok := p.byteAt(p.pos)
 			if !ok || c != b {
-				if slices.Contains(rs, utf8.RuneError) {
+				if p.literalHasReplacement(rs) {
 					p.pos = start
 					return p.matchLiteralRunes(rs)
 				}
@@ -637,6 +637,21 @@ func (p *parser) matchLiteral(rs []rune, bs []byte) bool {
 		p.pos++
 	}
 	return true
+}
+
+// literalHasReplacement bounds the grammar-side scan after a byte mismatch.
+// Only visited literal runes consume steps; they do not inspect input.
+func (p *parser) literalHasReplacement(rs []rune) bool {
+	if !workControlsEnabled || p.control == nil {
+		return slices.Contains(rs, utf8.RuneError)
+	}
+	for _, r := range rs {
+		p.stepWork()
+		if r == utf8.RuneError {
+			return true
+		}
+	}
+	return false
 }
 
 // literalText preserves matched input bytes when replacement decoding accepts
