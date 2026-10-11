@@ -71,6 +71,10 @@ type Section struct {
 	Name        string
 	Collapsible bool // the navigation folds the pages under the name, open only if the current page is one of them
 	Pages       []*Page
+	// NavPages are shown directly in the section. Pages also contains nested design records so
+	// the page pager follows their numeric sequence.
+	NavPages      []*Page
+	DesignRecords []*Page
 }
 
 // Contains reports whether the section lists p.
@@ -234,10 +238,11 @@ func (s *Site) collect() error {
 		}
 		sec := &Section{Name: ds.name, Collapsible: ds.collapsible}
 		if ds.name == "Project" {
-			idx := &Page{URL: "docs/design/", Kind: "doc", Title: "Design Records", Nav: "Design Records", Section: sec.Name}
+			idx := &Page{URL: "docs/design/", Kind: "doc", Title: "Design Records", Nav: "Overview", Section: sec.Name}
 			s.add(idx)
 			s.byDir["docs/design"] = idx
 			sec.Pages = append(sec.Pages, idx)
+			sec.DesignRecords = append(sec.DesignRecords, idx)
 		}
 		for _, f := range files {
 			if s.bySrc[f] != nil {
@@ -249,24 +254,37 @@ func (s *Site) collect() error {
 				p.Nav = "Optimizations"
 			}
 			s.add(p)
-			if ds.name != "Project" || !isProjectDetail(f) {
-				sec.Pages = append(sec.Pages, p)
+			if ds.name == "Project" && isOptimizationDetail(f) {
+				continue
+			}
+			sec.Pages = append(sec.Pages, p)
+			if ds.name == "Project" && isDesignRecord(f) {
+				sec.DesignRecords = append(sec.DesignRecords, p)
+			} else {
+				sec.NavPages = append(sec.NavPages, p)
 			}
 		}
 		s.sections = append(s.sections, sec)
 		if ds.name == "Specification" {
-			s.sections = append(s.sections, s.referencePages())
+			ref := s.referencePages()
+			// Reference pages are all direct navigation items; unlike Project, they
+			// have no nested presentation group.
+			ref.NavPages = ref.Pages
+			s.sections = append(s.sections, ref)
 		}
 	}
 	return s.checkCoverage()
 }
 
-// isProjectDetail reports whether f is an individual design or optimization page. These pages
-// remain rendered and searchable, but their indexes are the only entries in Project navigation.
-func isProjectDetail(f string) bool {
-	return (strings.HasPrefix(f, "docs/design/") && f != "docs/design/README.md") ||
-		(strings.HasPrefix(f, "docs/optimizations/") && f != "docs/optimizations/README.md")
+// isOptimizationDetail reports whether f is an individual optimization page. Such pages remain
+// rendered and searchable, but only their index appears in Project navigation.
+func isOptimizationDetail(f string) bool {
+	return strings.HasPrefix(f, "docs/optimizations/") && f != "docs/optimizations/README.md"
 }
+
+var designRecordFileRe = regexp.MustCompile(`^docs/design/[0-9]{3}-.+\.md$`)
+
+func isDesignRecord(f string) bool { return designRecordFileRe.MatchString(f) }
 
 func (s *Site) sectionFiles(ds docSection) ([]string, error) {
 	var files []string
@@ -503,7 +521,7 @@ func (s *Site) renderDesignIndex() error {
 	var b strings.Builder
 	b.WriteString(`<h1 id="design-records">Design Records</h1>
 <p>Each record explains a decision in the design of PEGO and the alternatives that were considered.</p>
-<table><thead><tr><th>Record</th><th>Status</th><th>Date</th></tr></thead><tbody>
+<table class="design-index"><thead><tr><th>Record</th><th>Status</th><th>Date</th></tr></thead><tbody>
 `)
 	for _, p := range s.pages {
 		if !strings.HasPrefix(p.Src, "docs/design/") || p == idx {

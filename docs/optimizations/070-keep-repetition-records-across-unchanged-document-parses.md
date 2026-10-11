@@ -46,4 +46,4 @@
   Build separate baseline/candidate binaries with the same benchmark source;
   restore only `internal/engine/document.go` from the baseline via a Go overlay
   and alternate their runs. Raw samples remain local. The next full benchmark
-  checkpoint follows the core analysis optimization group (P03/P13/P27).
+  checkpoint follows the core compiler analysis optimization group.

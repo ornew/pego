@@ -60,5 +60,5 @@
   Run five alternating pairs for recursive sizes 1,024/8,192 and all
   record/mixed/unique/control cases, without concurrent tests/builds/probes.
   Large recursive cases use separate single-iteration diagnostics. Raw
-  results stay local; the full suite checkpoint follows P27 in this core
+  results stay local; the full suite checkpoint follows this core compiler
   analysis optimization group.
