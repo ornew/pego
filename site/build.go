@@ -238,11 +238,11 @@ func (s *Site) collect() error {
 		}
 		sec := &Section{Name: ds.name, Collapsible: ds.collapsible}
 		if ds.name == "Project" {
-			idx := &Page{URL: "docs/design/", Kind: "doc", Title: "Design Records", Nav: "Design Records", Section: sec.Name}
+			idx := &Page{URL: "docs/design/", Kind: "doc", Title: "Design Records", Nav: "Overview", Section: sec.Name}
 			s.add(idx)
 			s.byDir["docs/design"] = idx
 			sec.Pages = append(sec.Pages, idx)
-			sec.NavPages = append(sec.NavPages, idx)
+			sec.DesignRecords = append(sec.DesignRecords, idx)
 		}
 		for _, f := range files {
 			if s.bySrc[f] != nil {
@@ -521,7 +521,7 @@ func (s *Site) renderDesignIndex() error {
 	var b strings.Builder
 	b.WriteString(`<h1 id="design-records">Design Records</h1>
 <p>Each record explains a decision in the design of PEGO and the alternatives that were considered.</p>
-<table><thead><tr><th>Record</th><th>Status</th><th>Date</th></tr></thead><tbody>
+<table class="design-index"><thead><tr><th>Record</th><th>Status</th><th>Date</th></tr></thead><tbody>
 `)
 	for _, p := range s.pages {
 		if !strings.HasPrefix(p.Src, "docs/design/") || p == idx {

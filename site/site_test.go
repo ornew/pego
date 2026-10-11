@@ -580,11 +580,18 @@ func TestNavigation(t *testing.T) {
 	}
 	projectHTML := string(projectBlock[1])
 	groupStart := `<details class="nav-fold nav-subfold">`
-	groupAt := strings.Index(projectHTML, groupStart)
-	if groupAt < 0 {
+	groupRe := regexp.MustCompile(`(?s)<details class="nav-fold nav-subfold">(.*?)</details>`)
+	groupAt := groupRe.FindStringSubmatchIndex(projectHTML)
+	if groupAt == nil {
 		t.Fatal("Project navigation has no nested numbered-record disclosure")
 	}
-	ordinaryHTML := projectHTML[:groupAt]
+	if got := strings.TrimSpace(projectHTML[:groupAt[0]]); got != "<ul><li>" {
+		t.Errorf("Design Records disclosure is not the first Project item: prefix %q", got)
+	}
+	if strings.Count(projectHTML, groupStart) != 1 {
+		t.Errorf("Project navigation has %d Design Records disclosures, want one", strings.Count(projectHTML, groupStart))
+	}
+	ordinaryHTML := projectHTML[:groupAt[0]] + projectHTML[groupAt[1]:]
 	ordinaryLinks := sidebarLinkRe.FindAllStringSubmatch(ordinaryHTML, -1)
 	ordinary := map[string]string{}
 	for _, link := range ordinaryLinks {
@@ -597,19 +604,32 @@ func TestNavigation(t *testing.T) {
 			t.Errorf("individual optimization appears in the sidebar: %s", href)
 		}
 	}
-	if ordinary["docs/design/"] != "Design Records" || ordinary["docs/optimizations/"] != "Optimizations" || ordinary["docs/development/"] != "Development" {
+	if ordinary["docs/design/"] != "" || ordinary["docs/optimizations/"] != "Optimizations" || ordinary["docs/development/"] != "Development" {
 		t.Errorf("ordinary Project links are missing: %v", ordinary)
 	}
-	group := regexp.MustCompile(`(?s)<details class="nav-fold nav-subfold">(.*?)</details>`).FindStringSubmatch(projectHTML[groupAt:])
+	group := groupRe.FindStringSubmatch(projectHTML)
 	if group == nil {
 		t.Fatal("numbered-record disclosure is not closed properly")
 	}
-	openTag := regexp.MustCompile(`<details class="nav-fold nav-subfold"[^>]*>`).FindString(projectHTML[groupAt:])
+	openTag := regexp.MustCompile(`<details class="nav-fold nav-subfold"[^>]*>`).FindString(projectHTML)
 	if strings.Contains(openTag, " open") {
 		t.Error("numbered-record disclosure opened automatically on a record page")
 	}
 	if !strings.Contains(group[1], "Design Records") {
 		t.Error("numbered-record disclosure has no visible summary")
+	}
+	groupLinks := sidebarLinkRe.FindAllStringSubmatch(group[1], -1)
+	if len(groupLinks) == 0 || html.UnescapeString(groupLinks[0][3]) != "Overview" || site(groupLinks[0][1]) != "docs/design/" {
+		t.Errorf("Design Records disclosure does not start with its Overview link: %v", groupLinks)
+	}
+	overviewCount := 0
+	for _, link := range groupLinks {
+		if site(link[1]) == "docs/design/" {
+			overviewCount++
+		}
+	}
+	if overviewCount != 1 {
+		t.Errorf("Design Records disclosure has %d Overview links, want one", overviewCount)
 	}
 	entries, err := filepath.Glob(filepath.Join("..", "docs", "design", "[0-9][0-9][0-9]-*.md"))
 	if err != nil {
@@ -620,6 +640,7 @@ func TestNavigation(t *testing.T) {
 		sourcePath := strings.TrimPrefix(filepath.ToSlash(entry), "../")
 		wantDesignPages = append(wantDesignPages, urlOf(sourcePath))
 	}
+	wantDesignPages = append([]string{"docs/design/"}, wantDesignPages...)
 	var designPages []string
 	var currentIsActive bool
 	for _, link := range sidebarLinkRe.FindAllStringSubmatch(group[1], -1) {
@@ -634,6 +655,18 @@ func TestNavigation(t *testing.T) {
 	}
 	if !currentIsActive {
 		t.Error("current design record is not marked active inside the closed disclosure")
+	}
+	indexPage, err := os.ReadFile(filepath.Join(out, "docs", "design", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	indexGroup := regexp.MustCompile(`(?s)<details class="nav-fold nav-subfold">(.*?)</details>`).FindSubmatch(indexPage)
+	if indexGroup == nil || !regexp.MustCompile(`<a href="[^"]*" aria-current="page">Overview</a>`).Match(indexGroup[1]) {
+		t.Error("Design Records overview is not marked active inside its disclosure")
+	}
+	indexDetails := regexp.MustCompile(`<details class="nav-fold nav-subfold"[^>]*>`).Find(indexPage)
+	if strings.Contains(string(indexDetails), " open") {
+		t.Error("Design Records disclosure opened automatically on the overview page")
 	}
 	pager := regexp.MustCompile(`(?s)<nav class="pager"[^>]*>(.*?)</nav>`).FindSubmatch(record)
 	if pager == nil {

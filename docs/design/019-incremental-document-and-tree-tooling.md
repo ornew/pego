@@ -1,6 +1,6 @@
 # 019. Incremental Document Storage and Tree Tooling
 
-- **Status**: Proposed; no new public API is accepted by this record
+- **Status**: Proposed
 - **Author**: @ornew
 - **Date**: 2026-10-09
 

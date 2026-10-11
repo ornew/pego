@@ -331,8 +331,9 @@ code, kbd, pre { font-family: var(--mono); font-size: 0.9em; }
 .nav-fold[open] > summary::after { transform: rotate(45deg); }
 .nav-fold > summary:hover h2 { color: var(--fg-soft); }
 .nav-fold > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.nav-subfold > summary { margin: 0 8px; padding: 4px 8px; font-size: 14px; color: var(--fg-soft); }
-.nav-subfold > summary:hover { color: var(--fg); }
+.nav-subfold > summary { margin: 0; padding: 4px 8px; font: inherit; line-height: 1.4; color: var(--fg-soft); }
+.nav-subfold > summary:hover { background: var(--bg-soft); color: var(--fg); }
+.nav-subfold > ul { padding-left: 12px; }
 @media (prefers-reduced-motion: reduce) { .nav-fold > summary::after { transition: none; } }
 
 .doc-main { min-width: 0; padding: 32px 48px 64px; }
@@ -438,6 +439,7 @@ pre:hover .code-actions, pre:focus-within .code-actions { opacity: 1; }
 .prose table { border-collapse: collapse; display: block; overflow-x: auto; max-width: 100%; font-size: 15px; }
 .prose th, .prose td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; vertical-align: top; }
 .prose th { background: var(--bg-soft); }
+.prose table.design-index th:nth-child(n+2), .prose table.design-index td:nth-child(n+2) { white-space: nowrap; }
 
 .prose blockquote {
   margin-left: 0;

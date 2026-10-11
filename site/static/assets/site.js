@@ -44,7 +44,8 @@ document.addEventListener("click", (e) => {
 // Scroll the navigation (not the page) to the current page.
 const sidebar = document.querySelector(".sidebar");
 const current = sidebar?.querySelector('[aria-current="page"]');
-if (current) sidebar.scrollTop = current.offsetTop - sidebar.clientHeight / 2;
+const scrollTarget = current?.closest("details:not([open])")?.querySelector(":scope > summary") ?? current;
+if (scrollTarget) sidebar.scrollTop = scrollTarget.offsetTop - sidebar.clientHeight / 2;
 
 // Code blocks.
 const LANGS = { pego: "pego", go: "go", json: "json", typescript: "typescript", ts: "typescript", bash: "bash", console: "console", sh: "bash", shell: "bash" };

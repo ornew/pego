@@ -58,14 +58,13 @@
     </details>
     {{else}}<div class="nav-section">
       <h2>{{.Name}}</h2>
-      <ul>{{range .NavPages}}
-        <li><a href="{{$.URL .URL}}"{{if eq .URL $.Page.URL}} aria-current="page"{{end}}>{{.Nav}}</a></li>{{end}}
-        {{if .DesignRecords}}<li><details class="nav-fold nav-subfold">
+      <ul>{{if .DesignRecords}}<li><details class="nav-fold nav-subfold">
           <summary><span>Design Records</span></summary>
           <ul>{{range .DesignRecords}}
             <li><a href="{{$.URL .URL}}"{{if eq .URL $.Page.URL}} aria-current="page"{{end}}>{{.Nav}}</a></li>{{end}}
           </ul>
         </details></li>{{end}}
+        {{range .NavPages}}<li><a href="{{$.URL .URL}}"{{if eq .URL $.Page.URL}} aria-current="page"{{end}}>{{.Nav}}</a></li>{{end}}
       </ul>
     </div>
     {{end}}{{end}}

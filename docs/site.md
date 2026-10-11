@@ -108,13 +108,16 @@ decoding excludes compression/encoding, browser DOM, worker and WebAssembly cost
   automatically. A Markdown file in a new directory under `docs/` or `spec/` makes the build fail until `docSections` in
   [`site/build.go`](../site/build.go) includes it, so that nothing is left out silently.
 - **The order** of the guides and of the specification follows the links in `docs/guide/README.md` and
-  `spec/README.md`; other sections are sorted by file name. Project links remain visible. Its Design Records index is
-  a direct link, and a nested disclosure lists numbered design records in numeric file-name order; that disclosure
-  stays closed by default, including on a record page. Record footers link to adjacent records. Numbered optimization
-  records remain available through the Optimizations index and search, not the sidebar.
+  `spec/README.md`; other sections are sorted by file name. The Project section and its ordinary links remain visible.
+  The Design Records index appears as the first Overview link inside a nested Design Records disclosure, followed by
+  numbered records in numeric file-name order. The disclosure stays closed by default, including on a record page.
+  Record footers link to adjacent records. Keep record Status metadata concise, and keep the Design Records index's
+  Status and Date cells on one line; its table scrolls horizontally on narrow screens. Numbered optimization records
+  remain available through the Optimizations index and search, not the sidebar.
 - **An example** for the playground is a line in [`playground/examples.txt`](../playground/examples.txt): a name, a
   grammar, an input and a description. The smoke test then checks it too.
 - **Templates, styles and scripts** are in `site/templates/` and `site/static/`. They are plain HTML, CSS and JavaScript
   modules; there is no build step and no npm dependency.
   The client-side code highlighter is in `site/static/assets/highlight.js`; fenced code language aliases are mapped in
   `site/static/assets/site.js` and tested through the controlled-DOM harness in `site/testdata/site_highlight_test.mjs`.
+  On page load, the sidebar scrolls a current link inside a closed disclosure to its visible summary.
