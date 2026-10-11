@@ -327,15 +327,17 @@ streaming, code-generation and TypeScript guides with the applicable stage.
 
 The `feat/parse-work-controls` branch starts the core batch stage. It provides
 invocation-local context and overflow-safe work reservations, controlled input
-preparation, scanner and execution-dispatch checkpoints, and cleanup after
+preparation, scanner and execution-dispatch checkpoints, action-value checkpoints,
+and cleanup after
 initialization interruption or caller panic. Recognition uses the same batch
 lifecycle. Individual trace-option callbacks stop before a subsequent callback
 when cancellation is observed.
 
 This foundation is not an adopted implementation of the full contract above.
 Document and stream calls reject active controls until their lifecycle stages
-are implemented. Unbounded action/string/graph, rollback and resumption loops
-still require the coverage map and regression gates before adoption. The
+are implemented. Input text materialization, memo/environment maintenance, graph,
+rollback and resumption loops still require the coverage map and regression gates
+before adoption. First-use setup ordering also needs a separate validation gate. The
 prototype remains separate from main until contract and performance gates pass.
 
 The private `pego_work_controls_reference` build tag removes execution
@@ -350,6 +352,19 @@ mismatch; counters do not roll back. Each scan operation also charges a step.
 Backend dispatch and rule/growth charges differ between runtimes. The final
 charging table must include remaining operations before these limits can be
 presented as complete work bounds.
+
+Action work consumes steps independently of input work: constructed strings and
+collections need not refer to source text. Collection elements, fields, linked
+locals/environments, lambda calls, ordinary action-arena resets, and runtime
+concat analysis have step charges.
+Explicit value copies and clears use chunks of at most 128 elements; scalar string
+comparisons inspect at most 128 bytes from each operand per reservation, and
+concatenation copies at most 128 bytes. Rune-length decoding reserves up to four
+bytes of step work per decoder call, preserving malformed UTF-8 semantics.
+Allocations, implicit buffer-growth copies, map hashing, and GC remain
+nonpreemptible runtime intervals. With absent controls or the private reference
+build, bulk operations retain their ordinary paths. This source-level separation
+does not establish the default path's performance cost.
 
 ## Alternatives considered
 

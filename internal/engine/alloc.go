@@ -78,8 +78,8 @@ func (p *parser) nodes(n int) []*Node {
 // kids returns p.kidStack[base:] as a child slice and resets the stack to base.
 func (p *parser) kids(base int) []*Node {
 	ks := p.nodes(len(p.kidStack) - base)
-	copy(ks, p.kidStack[base:])
-	clear(p.kidStack[base:])
+	copyWork(p, ks, p.kidStack[base:])
+	clearWork(p, p.kidStack[base:])
 	p.kidStack = p.kidStack[:base]
 	return ks
 }
@@ -115,7 +115,7 @@ func (p *parser) newFunc(f vmFunc) *vmFunc {
 
 // dropKids discards p.kidStack[base:].
 func (p *parser) dropKids(base int) {
-	clear(p.kidStack[base:])
+	clearWork(p, p.kidStack[base:])
 	p.kidStack = p.kidStack[:base]
 }
 
@@ -197,7 +197,7 @@ func (p *parser) resetStreamFrames() {
 // can be reused, and so can the lambdas of the previous evaluation.
 func (p *parser) useCtx(c evalCtx) *evalCtx {
 	p.ectx = c
-	p.closures.reset(0)
+	resetWork(p, &p.closures, 0)
 	return &p.ectx
 }
 
