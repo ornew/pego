@@ -12,6 +12,7 @@ generator's guide, [code generation](code-generation.md), only for the compariso
 - [Quick start](#quick-start)
 - [The command](#the-command)
 - [The generated API](#the-generated-api)
+- [Typed values](#typed-values)
 - [Input, positions and units](#input-positions-and-units)
 - [Values of actions](#values-of-actions)
 - [Errors](#errors)
@@ -33,7 +34,7 @@ the other side would have built.
 | Dependencies | `github.com/ornew/pego` | Standard library | None |
 | Trees and errors | Reference | Identical | Identical (also as JSON, byte for byte) |
 | Recognition (no tree) | `RecognizeOnly` | `Recognize` | `recognize`, with `-recognize` |
-| Typed values (`-types`) | — | Yes | No |
+| Typed values (`-types`) | — | Yes | Yes: Node conversion |
 | Streaming, incremental, backends | Yes | No | No |
 
 ## Quick start
@@ -112,7 +113,7 @@ prints for the same grammar and inputs.
 ## The command
 
 ```bash
-pego gen -lang ts -g <grammar> [-s <rule>] [-o <file>] [-recognize]
+pego gen -lang ts -g <grammar> [-s <rule>] [-o <file>] [-types] [-recognize]
 ```
 
 | Flag | Default | Meaning |
@@ -121,10 +122,11 @@ pego gen -lang ts -g <grammar> [-s <rule>] [-o <file>] [-recognize]
 | `-g` | (required) | The grammar: `.pego`, `.json`, or a `.pegoc` that contains the AST |
 | `-s` | saved in a `.pegoc`, otherwise `main` | The start rule of `parse` |
 | `-o` | standard output | The output file |
+| `-types` | off | Export grammar interfaces/aliases and configured-start `parseAST`/`parseASTWithOptions` |
 | `-recognize` | off | Also generate `recognize` and `recognizeWithOptions`, which check input without building a tree |
 | `-max-depth` | `0` | Generated nested rule-call default; zero selects 100,000, otherwise a positive safe integer |
 
-`-pkg` and `-types` are for Go and are rejected with `-lang ts`. As for Go, the output is deterministic (generating
+`-pkg` and `-nodoc` are for Go and are rejected with `-lang ts`. As for Go, the output is deterministic (generating
 twice gives identical files), and grammar errors are reported with positions before any file is written.
 
 The same generator is available from Go, for build tools:
@@ -134,7 +136,7 @@ code, err := pego.GenerateTypeScript(g, "main") // grammar, start rule
 code, err = pego.GenerateTypeScript(g, "main", pego.WithRecognize(), pego.WithGeneratedMaxDepth(600_000))
 ```
 
-`pego.WithTypes()` makes it return an error: typed values are generated for Go only.
+`pego.WithTypes()` enables typed TypeScript declarations and result conversion: `pego.GenerateTypeScript(g, "main", pego.WithTypes())`.
 
 ## The generated API
 
@@ -207,6 +209,123 @@ The tests type-check every generated parser with `tsc --strict` and also `--noUn
 `--noUncheckedIndexedAccess`, `--exactOptionalPropertyTypes` and `--erasableSyntaxOnly`, so it compiles under strict
 project settings. Exclude it from linters and formatters: it starts with `/* eslint-disable */`.
 
+## Typed values
+
+Add `-types` to generation to export a declaration for every grammar struct,
+terminal and alias, plus `parseAST` and `parseASTWithOptions`. They parse the
+configured start rule once, then convert its completed Node result. `parse`,
+`parseRule`, recognition and `marshal` retain their existing APIs. Named typed
+parsing is outside this API.
+
+For the quick-start grammar, generate and consume typed values:
+
+```bash
+pego gen -lang ts -types -g pairs.pego -o pairs.ts
+```
+
+```ts
+import { parseAST, parseASTWithOptions, Bytes } from "./pairs.ts";
+import type { Pair } from "./pairs.ts";
+
+const { value, error } = parseAST("abc=12; あい=3");
+if (error !== null) throw error;
+for (const pair of value ?? []) {
+  const p: Pair | null = pair;
+  if (p === null || p.Key === null) continue;
+  console.log(p.type, p.Key.text, p.Key.start, p.Key.end);
+}
+const bytes = parseASTWithOptions("あい=3", { unit: Bytes, maxDepth: 0 });
+console.log(bytes.value?.[0]?.end);
+```
+
+The result has `{ value, error }`, with `value` statically inferred from the
+start rule. A successful nil result has null value and null error. Failure
+returns null value with the original error. Recovery keeps the converted value
+and `SyntaxErrors`; a recovered Error in a specific struct/terminal field
+converts to null, while a declared node union retains a `RecoveredError` value.
+Check `error`, rather than interpreting null value alone as failure. Options
+are read and validated once; zero `maxDepth` selects the generated default.
+
+Converted values are plain objects with readonly fields, lowercase `type`
+discriminators and `start`/`end` spans. Grammar field spelling is unchanged.
+Terminal values also have `text`; recovered Errors have `text` and `message`.
+`readonly` is a type-checking contract; the objects are not frozen.
+
+| Grammar type | Generated value |
+| --- | --- |
+| struct/terminal | interface; nullable where an absent or incompatible recovered value becomes nil |
+| `[]T` | readonly array of converted elements, or null; null differs from an empty array |
+| `*T` | nullable target, including nullable scalar fields |
+| `int` | `number \| bigint`, preserving signed 64-bit arithmetic and safe-number canonicalization |
+| `string`, `bool` | `string`, `boolean`; absent nonoptional scalar fields use `""` and `false` (`int` uses `0`) |
+| declared aliases | complete target type, preserving optional/list/CST representations |
+| canonical declared pure node union | member interfaces plus `RecoveredError` and null; CST members retain `Node` |
+| mixed/open or undeclared union, `any`, `node`, `terminal` | conservative `TypedValue`, following Go's any-conversion semantics |
+| CST/record | existing `Node` |
+
+Inferred nil/never starts also use `TypedValue`: recovery can return a converted
+Error even when the normal rule produces no value.
+
+The broad `TypedValue` union covers converted declarations, `Match`,
+`RecoveredError`, Node and action scalars/null. Mixed unions can preserve
+recovered or dynamically typed values beyond their written members, so they
+are not exported with an unsound narrow type. In dynamically typed conversion,
+a List remains Node; a statically known list becomes an array. A pure node
+union with CST members can retain unmatched Nodes, as the Go converter does.
+Use `instanceof Node` first when narrowing a union containing Node, whose
+`type` property is a general string. Top-level scalar-producing rules remain
+rejected by the existing type checker; scalar fields and aliases are supported.
+
+Grammar names are allocated in sorted order. Every top-level runtime and
+generated declaration is reserved, including private `Parser`, `Actx`, `Rule`,
+`PrattLine`, generated symbols such as `R0`, globals used by the runtime, and
+new helpers `Span`, `Match`, `RecoveredError`, `TypedValue`, `TypedParseResult`.
+Collisions append underscores until the name is free: grammar `Parser` exports
+`Parser_`; `R0` and `R0_` can export `R0_` and `R0__`. Discriminators retain the
+original grammar name. Regeneration can therefore change a collision cascade
+and require consumer import/type spelling updates. Unicode spelling is retained.
+
+Conversion uses an explicit work stack and a per-call cache keyed by Node and
+canonical conversion representation. Deep fold/LR output does not add recursive
+JS calls, and repeated captures share converted objects instead of duplicating
+all DAG paths. Different representations of the same Error or list remain
+separate. Returned values survive subsequent and reentrant parses; no conversion
+cache is pooled across calls. CST Nodes retain their existing mutable class
+representation. Object identity is not promised to match Go pointer identity.
+
+Text and spans copy the Node values exactly: code-point/byte offsets are not
+UTF-16 indices, and byte-unit text preserves invalid-byte surrogate escapes.
+Large integers remain bigint, so ordinary `JSON.stringify` can throw. Choose an
+explicit transport convention rather than coercing them to Number:
+
+```ts
+const json = JSON.stringify(value, (_key, v: unknown) =>
+  typeof v === "bigint" ? { int64: v.toString() } : v,
+);
+```
+
+This convention preserves large integer digits but is not the Node `marshal`
+format. If transporting raw byte-unit terminal text, preserve its surrogate
+escapes explicitly. For example, in Node.js:
+
+```ts
+import { Buffer } from "node:buffer";
+function byteTextHex(text: string): string {
+  const bytes: number[] = [];
+  for (const ch of text) {
+    const cp = ch.codePointAt(0)!;
+    if (cp >= 0xdc80 && cp <= 0xdcff) bytes.push(cp & 0xff);
+    else bytes.push(...Buffer.from(ch, "utf8"));
+  }
+  return Buffer.from(bytes).toString("hex");
+}
+```
+
+Use this for text from a Bytes parse; CodePoints text is decoded and normalized.
+There is no typed serializer or direct typed matcher in this implementation.
+See [design 030](../design/030-typed-typescript-values.md) for ownership and
+validation gates.
+
 ## Input, positions and units
 
 JavaScript strings are UTF-16, but positions count Unicode code points (the default) or UTF-8 bytes (`Bytes`), as in
@@ -236,7 +355,7 @@ error messages are sorted in the same order.
 
 ## Values of actions
 
-Ints in actions are 64-bit, as in Go: `9223372036854775807 + 1` wraps around to `-9223372036854775808`, `/` truncates
+Ints in TypeScript actions are signed 64-bit: `9223372036854775807 + 1` wraps around to `-9223372036854775808`, `/` truncates
 toward zero and `%` takes the sign of the dividend. An int is a JavaScript `number` while it is a safe integer (within
 ±2<sup>53</sup>−1) and a `bigint` beyond, so equal ints are always `===`, and code that reads a field gets a `number` in
 all ordinary cases:
@@ -348,7 +467,7 @@ Everything `pego gen` supports for Go, except typed values:
 | Position units (code points, bytes) | `unit` argument |
 | Another start rule | `parseRule` |
 | Recognition without a tree | `recognize`, with `-recognize` |
-| Typed values (`-types`) | **No**: trees are `Node`s |
+| Typed values (`-types`) | Interfaces, aliases and configured-start `parseAST`/`parseASTWithOptions`; `parse` still returns Nodes |
 | `#stream` and `ParseStream`, `Document` | **No** (`#stream` is an ordinary repetition, as in Go) |
 | Per-call depth | `maxDepth` in the options-aware entry points; generated default is configurable, and the host stack still bounds nesting |
 
@@ -400,5 +519,6 @@ inputs as strings and as bytes ([design record 013](../design/013-typescript-gen
   generated parser for formats that have no native parser.
 - **Stack.** Deep nesting needs a bigger stack than JavaScript gives by default (see
   [above](#deep-nesting-and-the-javascript-stack)).
-- **No typed values.** Trees are generic `Node`s, as from `Parse` in Go. Write a small conversion to your own types,
-  or read fields with `field(name)` and `instanceof Node`.
+- **Typed conversion costs.** With `-types`, `parseAST` builds the Node result and then converts it. Both graphs can
+  remain live during conversion, and per-call caching adds bookkeeping. Shared fold/LR subgraphs stay shared; ordinary
+  tree workloads still pay conversion allocation and lookup costs. This API does not imply a parsing speedup.

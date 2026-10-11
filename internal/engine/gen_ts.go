@@ -24,13 +24,10 @@ const tsRuntimeMarker = "// --- Runtime ---\n"
 //
 // Each parsing expression becomes a function and actions and predicates become TypeScript
 // expressions, as in Generate; the embedded runtime (tsrt/runtime.ts) mirrors genrt. opts.Package
-// is not used, and opts.Types is not supported.
+// is not used. opts.Types adds declarations and Node-to-value conversion entry points.
 func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if err := opts.validateMaxDepth(true); err != nil {
 		return nil, err
-	}
-	if opts.Types {
-		return nil, fmt.Errorf("typed values are not supported for TypeScript")
 	}
 	prog, err := Compile(g, Options{})
 	if err != nil {
@@ -107,6 +104,13 @@ export function recognizeWithOptions(input: string | Uint8Array, options?: Parse
 }
 
 `, rec.byName[start.name].id)
+	}
+	if opts.Types {
+		typed, err := gen.typedTS(start, out.String())
+		if err != nil {
+			return nil, err
+		}
+		out.WriteString(typed)
 	}
 	out.WriteString(gen.vars.String())
 	fmt.Fprintf(&out, "\ndescs = %s;\n", tsStrings(gen.descs))

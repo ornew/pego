@@ -266,10 +266,13 @@ func TestGenTypeScript(t *testing.T) {
 	if data, err := os.ReadFile(path); err != nil || !strings.Contains(string(data), "export function recognize(") {
 		t.Errorf("-recognize: no recognize: %v", err)
 	}
+	typed, err := runCLI(t, "", "gen", "-lang", "ts", "-g", g, "-types")
+	if err != nil || !strings.Contains(typed, "export function parseAST(") || !strings.Contains(typed, "export function parseASTWithOptions(") {
+		t.Errorf("TS -types: missing typed entry points: %v", err)
+	}
 	for _, args := range [][]string{
 		{"gen", "-lang", "ts"},
 		{"gen", "-lang", "ts", "-g", g, "-pkg", "kv"},
-		{"gen", "-lang", "ts", "-g", g, "-types"},
 		{"gen", "-lang", "ts", "-g", g, "-nodoc"},
 		{"gen", "-lang", "rust", "-g", g, "-pkg", "kv"},
 	} {

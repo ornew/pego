@@ -288,8 +288,8 @@ func TestGenerateTSErrors(t *testing.T) {
 	if _, err := GenerateTS(g, GenOptions{Start: "nope"}); err == nil || err.Error() != "start rule nope is not defined" {
 		t.Errorf("got %v", err)
 	}
-	if _, err := GenerateTS(g, GenOptions{Start: "main", Types: true}); err == nil || err.Error() != "typed values are not supported for TypeScript" {
-		t.Errorf("got %v", err)
+	if code, err := GenerateTS(g, GenOptions{Start: "main", Types: true}); err != nil || !strings.Contains(string(code), "export function parseAST(") {
+		t.Errorf("Types: %v", err)
 	}
 	bad, _ := syntax.Parse(`def main = x`)
 	if _, err := GenerateTS(bad, GenOptions{Start: "main"}); err == nil || !strings.Contains(err.Error(), "undefined rule x") {

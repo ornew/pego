@@ -65,15 +65,16 @@ tree, err := p.Parse("1 + 2 * 3 ^ 2") // a *pego.Node, or a *pego.SyntaxError wi
 - **Write once, run anywhere.** Grammars compile to a language-independent bytecode with a
   [published specification](spec/bytecode.md). Precompiled `.pegoc` files load in tens of microseconds, and
   `pego gen` emits a standalone parser: Go that needs nothing but the standard library, or a TypeScript module with
-  no dependencies for Node.js, Deno, Bun and browsers.
+  no dependencies for Node.js, Deno, Bun and browsers. With `-types`, TypeScript also exports declarations and
+  `parseAST` conversion (see the [TypeScript guide](docs/guide/typescript.md#typed-values)).
 - **Fast out of the box.** A 262 KB JSON document becomes a fully typed, positioned tree in about 3 ms with a
   generated parser — less time than merely validating it. Recognition mode validates without building a tree at all.
 - **Every backend, one answer.** Closure engine, recursive VM, iterative VM, generated Go and TypeScript: the test
   suite checks that all of them return identical trees, positions and errors.
 - **No nesting too deep.** The iterative VM runs on its own stack, up to 10 million nested rule calls.
 - **Types all the way down.** Declare struct, union and terminal types and build them in actions. Rule types are
-  inferred and checked when the grammar compiles, and `pego gen -types` emits matching Go types that the parser
-  builds directly — in half the time of its own tree and a quarter of the memory.
+  inferred and checked when the grammar compiles. `pego gen -types` emits matching Go values directly; TypeScript
+  `parseAST` converts its Node tree into typed values (see the [guide](docs/guide/typescript.md#typed-values)).
 - **Precedence without the pain.** Operators are `pratt` levels, not a ladder of rules. Left recursion, direct or
   indirect, just works.
 - **Errors that point the way.** Failures report the farthest position and what was expected there. `#error`
@@ -133,6 +134,7 @@ pego gen -g grammar.pego -pkg calc -o parser.go  # generate a standalone Go pars
 pego gen -g grammar.pego -pkg calc -types        # ... with Go types for the grammar's types
 pego gen -g grammar.pego -pkg calc -recognize    # ... with Recognize, which validates without a tree
 pego gen -lang ts -g grammar.pego -o parser.ts     # generate a standalone TypeScript module
+pego gen -lang ts -g grammar.pego -types -o parser.ts # also emit declarations and parseAST
 pego gen -g grammar.pego -pkg parser -max-depth 600000 -o parser.go # set its nested rule-call default
 pego sample -g grammar.pego -n 20 -coverage      # generate inputs the grammar accepts (tests, fuzz seeds)
 ```

@@ -81,10 +81,10 @@ The runtime hides each difference, so that results are the engine's, not merely 
 has both a tree and errors, as Go's `(node, err)` does. Errors are `SyntaxError` and `SyntaxErrors` (subclasses of
 `Error`, whose `message` is Go's `Error()`), or a plain `Error` for runtime errors in actions and too deep nesting.
 
-`pego.GenerateTypeScript(g, start, opts...)` is a function of its own rather than an option of `GenerateGo`: the Go
-generator needs a package name and supports typed values, neither of which applies to TypeScript, so an option would
-leave parameters that mean nothing for one of the languages. `GenOption`s are shared: `WithRecognize` works for both,
-and `WithTypes` is an error for TypeScript. The command keeps one `gen` command with `-lang go|ts`.
+`pego.GenerateTypeScript(g, start, opts...)` is a function of its own rather than an option of `GenerateGo`:
+TypeScript needs no Go package name. `GenOption`s are shared: `WithRecognize` works for both.
+The initial TypeScript implementation rejected `WithTypes`; typed conversion was added later
+(see [design 030](030-typed-typescript-values.md)). The command keeps one `gen` command with `-lang go|ts`.
 
 The module uses only erasable TypeScript (no enums, namespaces or parameter properties), so Node.js, Deno and Bun run it
 without a build step, and only the ES2020 library (for `BigInt`), so it needs no DOM or Node.js types.
@@ -123,7 +123,9 @@ The test is skipped without `node`, and the type check without `tsc`.
 
 ## Limitations
 
-- Typed values (`-types`) are not generated for TypeScript, nor stream or incremental parsing.
+- Typed values are now available in generated TypeScript with `-types`: the generator exports declarations and
+  configured-start `parseAST` conversion ([guide](../guide/typescript.md#typed-values), [design 030](030-typed-typescript-values.md)).
+  Streaming and incremental parsing are not generated.
 - Deep nesting is limited by the JavaScript stack (see above) as well as by the limit of 100,000 nested rule calls.
 - In byte mode, Go concatenates bytes: `text($a) + text($b)` of two halves of a character is that character, while
   the runtime's two surrogates stay two surrogates. Only input that is not valid UTF-8 can tell.

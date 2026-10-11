@@ -53,11 +53,11 @@ Commands:
 
   gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-recognize] [-max-depth <n>]
         [-nodoc]
-  gen -lang ts -g <grammar> [-s <rule>] [-o <file>] [-recognize] [-max-depth <n>]
+  gen -lang ts -g <grammar> [-s <rule>] [-o <file>] [-types] [-recognize] [-max-depth <n>]
       Generate a Go parser (or, with -lang ts, a TypeScript module) from a
       grammar. Without -o, the code is written to standard output. With
-      -types, Go types for the grammar's types and ParseAST, which returns
-      the result as values of those types, are generated too (Go only);
+      -types, types for the grammar's types and ParseAST (parseAST in TypeScript),
+      which returns the result as typed values, are generated too;
       with -recognize, Recognize (recognize in TypeScript), which checks
       input without building a tree. -nodoc leaves out the package comment
       of the Go code, for a package documented in another file. -max-depth
@@ -488,7 +488,7 @@ func gen(args []string, stdout io.Writer) error {
 	pkg := fs.String("pkg", "", "package name of the generated code (Go)")
 	start := fs.String("s", "", "start rule of the generated Parse function (default: the one saved in a .pegoc, otherwise main)")
 	output := fs.String("o", "", "output file (default: standard output)")
-	types := fs.Bool("types", false, "also generate Go types for the grammar's types and ParseAST (Go)")
+	types := fs.Bool("types", false, "also generate typed values and ParseAST (parseAST in TypeScript)")
 	recognize := fs.Bool("recognize", false, "also generate Recognize, which checks input without building a tree")
 	maxDepth := fs.Int("max-depth", 0, "generated default nested rule-call limit (0 selects 100000)")
 	nodoc := fs.Bool("nodoc", false, "leave out the package comment (Go)")
@@ -504,8 +504,8 @@ func gen(args []string, stdout io.Writer) error {
 		if *grammarPath == "" {
 			return fmt.Errorf("-g is required")
 		}
-		if *pkg != "" || *types || *nodoc {
-			return fmt.Errorf("-pkg, -types and -nodoc are not supported with -lang ts")
+		if *pkg != "" || *nodoc {
+			return fmt.Errorf("-pkg and -nodoc are not supported with -lang ts")
 		}
 	default:
 		return fmt.Errorf("unknown language %q (want go or ts)", *lang)

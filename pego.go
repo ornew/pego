@@ -243,9 +243,11 @@ func (d *Document) Stats() ParseStats { return d.doc.Stats() }
 // GenOption configures code generation.
 type GenOption func(*engine.GenOptions)
 
-// WithTypes generates a Go type for each grammar type, ParseAST for the start
-// rule and ParseRuleAST for a named rule. They return typed values instead of *Node.
-// Declared aliases name the target's Go value type; names colliding with the runtime gain underscores.
+// WithTypes generates declarations for the grammar's types and typed results.
+// Go adds ParseAST for the start rule and ParseRuleAST for named rules.
+// TypeScript adds parseAST and parseASTWithOptions, converting the completed
+// Node result into plain objects and arrays. Declared aliases preserve the target value type.
+// Names colliding with runtime declarations gain underscores.
 func WithTypes() GenOption {
 	return func(o *engine.GenOptions) { o.Types = true }
 }
@@ -282,8 +284,9 @@ func GenerateGo(g *grammar.Grammar, pkg, start string, opts ...GenOption) ([]byt
 
 // GenerateTypeScript generates the source code of a standalone TypeScript parser for g: a single ES
 // module without dependencies, whose parse(input) parses from the rule start and returns the same
-// trees and errors as the engine. WithRecognize also generates recognize; WithTypes is not
-// supported. Like GenerateGo, it does not support stream or incremental parsing.
+// trees and errors as the engine. WithRecognize also generates recognize; WithTypes adds typed
+// declarations and configured-start parseAST/parseASTWithOptions. Like GenerateGo, it does not
+// support stream or incremental parsing.
 func GenerateTypeScript(g *grammar.Grammar, start string, opts ...GenOption) ([]byte, error) {
 	o := engine.GenOptions{Start: start}
 	for _, opt := range opts {

@@ -73,7 +73,10 @@ has direct paths for supported rules and general per-expression fallback; typed 
 and `ParseAST`/`ParseRuleAST` for configured-start and named rules
 ([design 029](design/029-typed-named-rule-parsing.md)). Generation defaults (`WithGeneratedMaxDepth`, `gen -max-depth`) and invocation-local depth
 options are implemented ([design 022](design/022-generated-parser-depth-limits.md)); Go entry points accept
-functional `ParseOption`s, and TypeScript adds options-aware entry points. Generated paths preserve the engine's tree, error, depth, action and memo semantics.
+functional `ParseOption`s, and TypeScript adds options-aware entry points. With `WithTypes` or `-types`, TypeScript
+exports grammar declarations and configured-start `parseAST` conversion ([guide](guide/typescript.md#typed-values),
+[design 030](design/030-typed-typescript-values.md)). Generated paths preserve the engine's tree, error, depth,
+action and memo semantics.
 
 ## Testing
 
