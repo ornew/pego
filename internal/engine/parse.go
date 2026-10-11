@@ -217,6 +217,9 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node)
 	p := newStreamParser(prog, r, o.Unit)
 	p.maxDepth = o.maxDepth(o.Backend)
 	p.emit = emit
+	if streamPrefixIsolation && emit == nil {
+		p.nodeChunks = 0 // No callback: collect the ordinary repetition instead.
+	}
 	p.descs = prog.descs(o.Backend)
 	p.setTrace(o.Trace)
 	defer func() {

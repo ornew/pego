@@ -116,6 +116,7 @@ type parser struct {
 	// scratch holds the pooled buffers the parser uses (newPooledParser), or nil.
 	scratch *scratch
 	// nodeChunks counts the node chunks allocated since the last splitChunks.
+	// A negative count tracks the exact-size prefix budget before #stream.
 	nodeChunks int
 	funcSlab   []vmFunc
 	ectx       evalCtx // area for useCtx

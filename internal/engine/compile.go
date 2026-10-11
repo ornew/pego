@@ -1037,6 +1037,9 @@ func (c *compiler) repeat(e *grammar.Repeat, s *scope, build, stream bool) match
 		}
 		start := p.pos
 		base := len(p.kidStack) // collect the element values
+		if streamPrefixIsolation && stream && p.emit != nil && p.depth == 1 {
+			p.startStreamChunks()
+		}
 		count := 0
 		for n := 0; max < 0 || n < max; n++ {
 			m0 := p.mark()
