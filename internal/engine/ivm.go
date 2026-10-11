@@ -351,9 +351,9 @@ func (f *longestFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, ires
 		if len(f.f.vals) == 0 {
 			p.reset(f.m0)
 		} else {
-			p.saved = append(p.saved[:0], f.f.vals...) // see parser.longest
+			p.saved = appendWork(p, p.saved[:0], f.f.vals) // see parser.longest
 			p.reset(f.m0)
-			copy(f.f.vals, p.saved)
+			copyWork(p, f.f.vals, p.saved)
 		}
 		f.i++
 	}

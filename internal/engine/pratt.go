@@ -183,9 +183,9 @@ func (p *parser) longest(ops []*prattOp) (best prattAttempt, cutFailed bool) {
 		}
 		// reset undoes this candidate's captures; restore them. Nothing is parsed between saving
 		// and restoring, so one buffer per parser suffices.
-		p.saved = append(p.saved[:0], f.vals...)
+		p.saved = appendWork(p, p.saved[:0], f.vals)
 		p.reset(m0)
-		copy(f.vals, p.saved)
+		copyWork(p, f.vals, p.saved)
 	}
 	return best, cutFailed
 }
