@@ -64,6 +64,10 @@ can still evaluate actions.
 Nesting limits and tracing apply to rule calls. `Document` can reuse memo entries across edits and resume long
 repetitions; stream parsing emits elements and discards input already committed by the grammar.
 
+Go `Node.WriteJSON` and direct `Node.MarshalJSON` use iterative output for deep node graphs, nested `[]any`,
+and scalar field values. Passing a Node through `encoding/json` still subjects the marshaled bytes to the standard
+library's nesting scan limit; command output through `json.Encoder` is not depth-safe by this API change.
+
 ### Code generation
 
 Generated Go and TypeScript parsers embed their runtime and depend only on their standard libraries. Generated Go

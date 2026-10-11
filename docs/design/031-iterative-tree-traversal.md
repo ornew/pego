@@ -8,7 +8,9 @@
 
 PEGO exposes mutable parse-result `Node` values, but has no general-purpose traversal or range-navigation API. This proposal first makes Go JSON output iterative and adds a streaming writer, then adds an explicit-stack walker and cursor for `Node` graphs. It defines edge order, shared-node behavior, cycles, range units, empty spans, and ownership without changing the existing JSON representation.
 
-The API sketches below are proposals, not implemented signatures.
+The Walker and Cursor API sketches below are proposals, not implemented signatures. The Go JSON writer described below is implemented in this branch.
+
+This branch implements the Go JSON output stage below. Walker, cursor, and additional TypeScript traversal APIs remain proposed; the record status stays Proposed until those contracts are completed or explicitly split into later work.
 
 ## Motivation
 
@@ -94,6 +96,8 @@ The implementation keeps an explicit stack of node, field, array, and `[]any` fr
 
 This writer handles node graphs, nested `[]any`, `[]byte`, and declared scalar field values. Other container types, maps, and custom marshalers are delegated to `encoding/json` as leaves; nested Nodes inside those unsupported containers are outside the iterative guarantee. The implementation must not silently route a recognized Node or `[]any` back through recursive `json.Marshal`.
 
+`Fields.MarshalJSON` uses the same iterative value encoder for each field while retaining its existing sorted-key object shape, so directly marshaling a `Fields` value also handles supported nested Node and `[]any` edges.
+
 Today `Node.MarshalJSON` errors encountered while `encoding/json` marshals a node graph are wrapped by `encoding/json` in `*json.MarshalerError`; nested Node boundaries can add wrappers. The iterative implementation must preserve `errors.As` behavior and the underlying custom error identity. Whether exact wrapper nesting and error strings can remain identical depends on where `WriteJSON` returns errors and must be pinned by tests before making that stronger compatibility claim. Byte-for-byte compatibility applies to successful acyclic output.
 
 #### TypeScript output
@@ -114,7 +118,7 @@ Generated Go parsers embed `internal/engine/genrt/runtime.go`, so the core and g
 
 ### Compatibility and backend support
 
-The Go traversal/cursor APIs are tested against both `internal/engine` and generated Go runtime behavior. The Go JSON stage changes implementation but not successful acyclic output bytes. TypeScript keeps the existing `marshal` and `toJSON` API contracts. No grammar syntax, parser execution, parse positions, mutable ownership, or generated parser API changes are required.
+The proposed Go traversal/cursor APIs will be tested against both `internal/engine` and generated Go runtime behavior. The implemented Go JSON stage preserves successful acyclic output bytes and is present in both `internal/engine` and the embedded `internal/engine/genrt/runtime.go`. TypeScript keeps the existing `marshal` and `toJSON` API contracts. No grammar syntax, parser execution, parse positions, mutable ownership, or generated parser API changes are required.
 
 ### Implementation sequence
 
@@ -142,12 +146,12 @@ The proposed test plan covers:
 - Child order, sorted field order, list order, scalar and nil field callbacks, empty child/field/list cases, and `__proto__` field names in TypeScript.
 - Shared DAGs with multiple parents are visited per edge; cycles through children, fields, and nested `[]any` return deterministic errors.
 - Cursor point and range boundaries for non-empty and zero-width nodes, empty query ranges, and both code-point and byte positions using multibyte text.
-- Byte-for-byte JSON comparisons against existing acyclic output, including escaping, omitted optional members, numbers, nulls, field values, and nested nodes; standard-library-compatible errors for unsupported scalar values and cycles.
+- Byte-for-byte JSON comparisons against existing acyclic output, including escaping, omitted optional members, numbers, nulls, nil versus empty `[]any`, field values, and nested nodes; standard-library-compatible errors for unsupported scalar values and cycles.
 - Core versus generated Go parity, TypeScript `marshal` versus established engine JSON (including BigInt, null children, and escaping), and `toJSON`'s existing BigInt-to-Number behavior.
 - Nil receiver behavior for `WriteJSON` and `MarshalJSON`, plus `errors.As`, underlying custom-error identity, and actual `json.MarshalerError` nesting when core nodes and generated nodes are marshaled through `encoding/json`.
 - Mutation ownership: a walk reports the values present during the call and performs no writes; concurrent mutation is documented as unsupported rather than tested as safe.
 
-No tests or performance measurements are completed by this proposal.
+The Go JSON stage passed focused tests on Go 1.27.1: core and generated-runtime JSON cases, generated parser parity, nil values, nil versus empty `[]any`, shared and cyclic graphs, nested `[]any`, `[]byte`, scalar/custom errors, and 12,000-level direct writer calls. The same deep node passed `Node.WriteJSON` and direct `Node.MarshalJSON`, while `json.Marshal` returned the standard scanner error wrapped in `json.MarshalerError`. This does not validate the full engine suite or command output at that depth. No performance measurements were run.
 
 ## Performance and results
 
@@ -157,4 +161,5 @@ The proposal adds per-call traversal frames and cycle bookkeeping. No timings, a
 
 - Cycle detection is mandatory for supported graph edges. Consider a trusted fast path only if measurements establish a cost that matters to a concrete consumer.
 - What non-Node Go container types, if any, should be traversed/encoded iteratively beyond nested `[]any` and `[]byte`? Keep the initial guarantee narrow and expand after a concrete need.
-- Exact error wrapper nesting and cycle text need tests against current behavior before implementation; preserve `errors.As` and underlying custom-error identity as the minimum contract.
+- Exact error wrapper nesting and cycle text remain unpinned; focused tests establish `errors.As` and underlying custom-error identity for the implemented paths.
+- `Node.String` remains recursive in this stage. `encoding/json` validates `MarshalJSON` output with a 10,000-level nesting limit, so passing deep Nodes through `json.Marshal` or the CLI's `json.Encoder` is not depth-safe; use direct `Node.WriteJSON` for this stage's deep-output guarantee.

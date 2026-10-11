@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"sort"
 	"strconv"
 	"strings"
@@ -51,20 +52,23 @@ func (n *Node) Type() string { return n.kind.typeName() }
 // an action, or "".
 func (n *Node) Rule() string { return n.kind.ruleName() }
 
-// nodeJSON is the JSON form of a Node.
-type nodeJSON struct {
-	Type     string  `json:"type"`
-	Rule     string  `json:"rule,omitempty"`
-	Start    int32   `json:"start"`
-	End      int32   `json:"end"`
-	Text     string  `json:"text,omitempty"`
-	Children []*Node `json:"children,omitempty"`
-	Fields   Fields  `json:"fields,omitempty"`
-}
-
 // MarshalJSON encodes the node as an object (see Node).
 func (n *Node) MarshalJSON() ([]byte, error) {
-	return json.Marshal(nodeJSON{n.Type(), n.Rule(), n.Start, n.End, n.Text, n.Children, n.Fields})
+	var b bytes.Buffer
+	if err := n.WriteJSON(&b); err != nil {
+		return nil, err
+	}
+	return b.Bytes(), nil
+}
+
+// WriteJSON writes n as JSON. It uses an explicit stack so deeply nested node graphs do not
+// recurse through Node.MarshalJSON. A nil receiver is encoded as null. It does not close w; on
+// error, w may contain a valid JSON prefix.
+func (n *Node) WriteJSON(w io.Writer) error {
+	if n == nil {
+		return writeJSONBytes(w, []byte("null"))
+	}
+	return writeJSONValue(w, n)
 }
 
 // nodeKind is the pair of type and rule names of nodes. Kinds are interned (kindOf), so that a node
@@ -203,11 +207,9 @@ func (fs Fields) MarshalJSON() ([]byte, error) {
 		k, _ := json.Marshal(f.Name)
 		b.Write(k)
 		b.WriteByte(':')
-		v, err := json.Marshal(f.Value)
-		if err != nil {
+		if err := writeJSONValue(&b, f.Value); err != nil {
 			return nil, err
 		}
-		b.Write(v)
 	}
 	b.WriteByte('}')
 	return b.Bytes(), nil
