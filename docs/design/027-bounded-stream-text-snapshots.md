@@ -1,4 +1,4 @@
-# 026. Bounded Stream Text Snapshots
+# 027. Bounded Stream Text Snapshots
 
 - **Status**: Proposed
 - **Author**: @ornew

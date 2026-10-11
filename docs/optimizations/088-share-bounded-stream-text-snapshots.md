@@ -9,7 +9,7 @@ positions. Text wholly inside it can share its backing string. A cache miss may
 build a new snapshot at the requested start when the range is at most 1,024
 positions and at least 64 positions are already loaded. Empty requests return
 an empty string; oversized requests and requests with too little loaded input
-use the existing detached copy. See [design 026](../design/026-bounded-stream-text-snapshots.md)
+use the existing detached copy. See [design 027](../design/027-bounded-stream-text-snapshots.md)
 for the ownership and boundary contract.
 Cache construction never reads from the reader. Byte snapshots preserve raw
 bytes; code-point snapshots preserve existing U+FFFD substitution for malformed
