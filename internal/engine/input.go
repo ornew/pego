@@ -407,6 +407,9 @@ func (in *input) text(start, end int) string {
 	if streamTextSnapshots && in.reader != nil {
 		return in.snapshotText(start, end)
 	}
+	if workControlsEnabled && in.control != nil {
+		return in.detachedText(start-in.base, end-in.base)
+	}
 	if in.unit == Bytes {
 		return string(in.bs[start-in.base : end-in.base])
 	}
