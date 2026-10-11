@@ -108,7 +108,10 @@ decoding excludes compression/encoding, browser DOM, worker and WebAssembly cost
   automatically. A Markdown file in a new directory under `docs/` or `spec/` makes the build fail until `docSections` in
   [`site/build.go`](../site/build.go) includes it, so that nothing is left out silently.
 - **The order** of the guides and of the specification follows the links in `docs/guide/README.md` and
-  `spec/README.md`; other sections are sorted by file name.
+  `spec/README.md`; other sections are sorted by file name. Project links remain visible. Its Design Records index is
+  a direct link, and a nested disclosure lists numbered design records in numeric file-name order; that disclosure
+  stays closed by default, including on a record page. Record footers link to adjacent records. Numbered optimization
+  records remain available through the Optimizations index and search, not the sidebar.
 - **An example** for the playground is a line in [`playground/examples.txt`](../playground/examples.txt): a name, a
   grammar, an input and a description. The smoke test then checks it too.
 - **Templates, styles and scripts** are in `site/templates/` and `site/static/`. They are plain HTML, CSS and JavaScript

@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -531,8 +532,7 @@ func readSidebar(t *testing.T, page string) []sidebarSection {
 	return secs
 }
 
-// TestNavigation checks the navigation of the documentation: the titles of the pages of each section,
-// and the collapsible section of design records, closed unless the current page is one of its entries.
+// TestNavigation checks the navigation of the documentation, including the nested numbered design records.
 func TestNavigation(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "dist")
 	if _, err := Build(Config{Repo: "..", Out: out, Check: true, GitHub: "https://github.com/ornew/pego", Ref: "main"}); err != nil {
@@ -542,7 +542,7 @@ func TestNavigation(t *testing.T) {
 	site := func(href string) string { return strings.TrimLeft(href, "./") }
 
 	// Only designated section indexes are called "Introduction". Design and optimization
-	// records remain rendered and searchable but are reached through their Project indexes.
+	// records remain rendered and searchable; design records also appear in their disclosure.
 	secs := readSidebar(t, filepath.Join(out, "docs", "guide", "runtime", "index.html"))
 	var names []string
 	intro := map[string]bool{}
@@ -567,20 +567,85 @@ func TestNavigation(t *testing.T) {
 		}
 	}
 	if project.Name == "" || project.Collapsible {
-		t.Fatal("Project section is missing or unexpectedly collapsible")
+		t.Fatal("Project links should remain visible in an ordinary section")
 	}
-	projectLinks := map[string]string{}
-	for _, link := range project.Links {
-		projectLinks[site(link.Href)] = link.Title
-		if strings.HasPrefix(site(link.Href), "docs/design/") && site(link.Href) != "docs/design/" {
-			t.Errorf("individual design record appears in the sidebar: %s", link.Href)
+	designPage := filepath.Join(out, "docs", "design", "042-responsive-lsp-analysis-and-code-actions", "index.html")
+	record, err := os.ReadFile(designPage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	projectBlock := regexp.MustCompile(`(?s)<div class="nav-section">\s*<h2>Project</h2>(.*?)</div>`).FindSubmatch(record)
+	if projectBlock == nil {
+		t.Fatal("Project navigation section is missing")
+	}
+	projectHTML := string(projectBlock[1])
+	groupStart := `<details class="nav-fold nav-subfold">`
+	groupAt := strings.Index(projectHTML, groupStart)
+	if groupAt < 0 {
+		t.Fatal("Project navigation has no nested numbered-record disclosure")
+	}
+	ordinaryHTML := projectHTML[:groupAt]
+	ordinaryLinks := sidebarLinkRe.FindAllStringSubmatch(ordinaryHTML, -1)
+	ordinary := map[string]string{}
+	for _, link := range ordinaryLinks {
+		href := site(link[1])
+		ordinary[href] = html.UnescapeString(link[3])
+		if strings.HasPrefix(href, "docs/design/") && href != "docs/design/" {
+			t.Errorf("numbered design record is directly exposed outside its disclosure: %s", href)
 		}
-		if strings.HasPrefix(site(link.Href), "docs/optimizations/") && site(link.Href) != "docs/optimizations/" {
-			t.Errorf("individual optimization appears in the sidebar: %s", link.Href)
+		if strings.HasPrefix(href, "docs/optimizations/") && href != "docs/optimizations/" {
+			t.Errorf("individual optimization appears in the sidebar: %s", href)
 		}
 	}
-	if projectLinks["docs/design/"] != "Design Records" || projectLinks["docs/optimizations/"] != "Optimizations" {
-		t.Errorf("Project indexes = %v", projectLinks)
+	if ordinary["docs/design/"] != "Design Records" || ordinary["docs/optimizations/"] != "Optimizations" || ordinary["docs/development/"] != "Development" {
+		t.Errorf("ordinary Project links are missing: %v", ordinary)
+	}
+	group := regexp.MustCompile(`(?s)<details class="nav-fold nav-subfold">(.*?)</details>`).FindStringSubmatch(projectHTML[groupAt:])
+	if group == nil {
+		t.Fatal("numbered-record disclosure is not closed properly")
+	}
+	openTag := regexp.MustCompile(`<details class="nav-fold nav-subfold"[^>]*>`).FindString(projectHTML[groupAt:])
+	if strings.Contains(openTag, " open") {
+		t.Error("numbered-record disclosure opened automatically on a record page")
+	}
+	if !strings.Contains(group[1], "Design Records") {
+		t.Error("numbered-record disclosure has no visible summary")
+	}
+	entries, err := filepath.Glob(filepath.Join("..", "docs", "design", "[0-9][0-9][0-9]-*.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wantDesignPages []string
+	for _, entry := range entries {
+		sourcePath := strings.TrimPrefix(filepath.ToSlash(entry), "../")
+		wantDesignPages = append(wantDesignPages, urlOf(sourcePath))
+	}
+	var designPages []string
+	var currentIsActive bool
+	for _, link := range sidebarLinkRe.FindAllStringSubmatch(group[1], -1) {
+		href := site(link[1])
+		designPages = append(designPages, href)
+		if href == "docs/design/042-responsive-lsp-analysis-and-code-actions/" && link[2] == " aria-current=\"page\"" {
+			currentIsActive = true
+		}
+	}
+	if !slices.Equal(designPages, wantDesignPages) {
+		t.Errorf("nested design links = %v, want numeric record order %v", designPages, wantDesignPages)
+	}
+	if !currentIsActive {
+		t.Error("current design record is not marked active inside the closed disclosure")
+	}
+	pager := regexp.MustCompile(`(?s)<nav class="pager"[^>]*>(.*?)</nav>`).FindSubmatch(record)
+	if pager == nil {
+		t.Fatal("design record footer pager is missing")
+	}
+	pagerLinks := map[string]string{}
+	for _, link := range regexp.MustCompile(`<a class="(prev|next)" href="([^"]*)"`).FindAllStringSubmatch(string(pager[1]), -1) {
+		pagerLinks[link[1]] = site(link[2])
+	}
+	wantPager := map[string]string{"prev": "docs/design/041-missing-token-recovery/", "next": "docs/design/043-generated-parser-observability/"}
+	if !maps.Equal(pagerLinks, wantPager) {
+		t.Errorf("design record footer pager = %v, want %v", pagerLinks, wantPager)
 	}
 
 	// Individual records remain in search and the indexes point to their generated pages.
