@@ -62,7 +62,7 @@ func ParseTSX(input string, unit ...Unit) (*SourceFile, error) {
 // RecognizeTSX checks that input is a valid .tsx file without building anything, and returns the syntax
 // errors ParseTSX would return.
 func RecognizeTSX(input string, unit ...Unit) error {
-	return shiftError(Recognize(tsxMarker+input, unit...), len(tsxMarker))
+	return shiftError(Recognize(tsxMarker+input, unitOptions(unit)...), len(tsxMarker))
 }
 
 // ParseFile parses the source of the file name as the TypeScript compiler does (ts.createSourceFile): as a
@@ -171,9 +171,9 @@ const (
 // parseWith parses the input after the markers, and moves the positions back past them.
 func parseWith(markers, input string, unit []Unit) (*SourceFile, error) {
 	if markers == "" {
-		return ParseAST(input, unit...)
+		return ParseAST(input, unitOptions(unit)...)
 	}
-	f, err := ParseAST(markers+input, unit...)
+	f, err := ParseAST(markers+input, unitOptions(unit)...)
 	if f != nil {
 		shiftSpans(f, len(markers))
 	}
@@ -212,4 +212,12 @@ func shiftError(err error, d int) error {
 		shift(se)
 	}
 	return err
+}
+
+// unitOptions preserves the first-unit policy of the handwritten convenience API.
+func unitOptions(units []Unit) []ParseOption {
+	if len(units) == 0 {
+		return nil
+	}
+	return []ParseOption{WithUnit(units[0])}
 }

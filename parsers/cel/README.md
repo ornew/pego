@@ -46,10 +46,10 @@ ok := cel.Valid(`1 +`) // false
 
 | | |
 |:--|:--|
-| `ParseAST(input, unit...) (Expr, error)` | The expression as the typed values below, each with its `Span` |
+| `ParseAST(input, opts...) (Expr, error)` | The expression as the typed values below, each with its `Span` |
 | `ParseExpr(input, opts...) (Expr, error)` | `ParseAST`, then `Check`; the size of the input is checked first. It returns a `*SyntaxError` or a `*CheckError` |
-| `Valid(input, opts...) bool`, `Recognize(input, unit...) error` | Only check the input: `Valid` as `ParseExpr` does, `Recognize` the syntax and nothing else |
-| `Parse(input, unit...) (*Node, error)` | The tree of `*Node`, as the engine returns it |
+| `Valid(input, opts...) bool`, `Recognize(input, opts...) error` | Only check the input: `Valid` as `ParseExpr` does, `Recognize` the syntax and nothing else |
+| `Parse(input, opts...) (*Node, error)` | The tree of `*Node`, as the engine returns it |
 | `Check(e, opts...) error` | What the grammar does not check: literals out of range, the limits of depth, and with `WithMacros` the macros |
 | `CheckLimits(e, Limits) error`, `DefaultLimits` | The depth of recursion and the size that cel-go allows (250 and 100,000 code points) |
 | `CheckMacros(e) error`, `IsMacroCall(*Call) bool` | The calls of the standard macros that cel-go rejects, and the calls that are macros |
@@ -60,7 +60,7 @@ ok := cel.Valid(`1 +`) // false
 | `(*IntLit).Value()`, `(*UintLit).Value()`, `(*DoubleLit).Value()`, `(*StringLit).Value()`, `(*BytesLit).Value()`, `(*BoolLit).Value()` | The values of the literals, decoded as cel-go does (`Text` is the source) |
 | `(*Ident).Name()`, `(*Ident).Rooted()`, `(*Name).Value()` | Names, without the leading dot and the whitespace in them; field names without backquotes |
 
-Positions are in code points by default; `cel.ParseAST(src, cel.Bytes)` counts bytes (`ParseExpr` and the errors of
+Positions are in code points by default; `cel.ParseAST(src, cel.WithUnit(cel.Bytes))` counts bytes (`ParseExpr` and the errors of
 `Check` count code points).
 
 ## The tree

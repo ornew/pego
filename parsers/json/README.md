@@ -35,16 +35,16 @@ if errors.As(err, &se) {
 
 | | |
 |:--|:--|
-| `ParseAST(input, unit...) (Value, error)` | The value: `*Object`, `*Array`, `*String`, `*Number`, `*Bool` or `*Null`, each with its `Span` |
+| `ParseAST(input, opts...) (Value, error)` | The value: `*Object`, `*Array`, `*String`, `*Number`, `*Bool` or `*Null`, each with its `Span` |
 | `Decode(input) (any, error)` | Go values, as `encoding/json` decodes into an `any` |
 | `ToAny(Value) (any, error)` | The conversion `Decode` uses |
-| `Valid(input) bool`, `Recognize(input, unit...) error` | Only check the input |
-| `Parse(input, unit...) (*Node, error)` | The tree of `*Node`, as the engine returns it |
+| `Valid(input) bool`, `Recognize(input, opts...) error` | Only check the input |
+| `Parse(input, opts...) (*Node, error)` | The tree of `*Node`, as the engine returns it |
 | `(*String).Value() string` | The string with its escapes decoded (`Text` is the source between the quotes) |
 | `(*Number).Float64()`, `(*Number).Int64()` | The number (`Text` is the source) |
 | `(*Bool).Value() bool` | The boolean |
 
-Positions are in code points by default; `json.ParseAST(src, json.Bytes)` counts bytes.
+Positions are in code points by default; `json.ParseAST(src, json.WithUnit(json.Bytes))` counts bytes.
 
 ## Conformance
 

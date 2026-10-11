@@ -16,7 +16,7 @@ export function benchmarkLiteralMatchers() {
   for(const match of [true,false]){
    const input=encodeUTF8(match?text:chars.slice(0,-1).join("")+"!");
    for(const unit of [Bytes,CodePoints]){
-    const p=new Parser(input,unit,0);p.silent=1;
+    const p=new Parser(input,unit,0,100_000);p.silent=1;
     const once=()=>{p.pos=0;const got=p.matchLiteral(lit,0,false)!==undefined;if(got!==match)throw new Error("incorrect match")};
     for(let i=0;i<100000;i++)once();
     let count=0;const begin=performance.now();let elapsed=0;

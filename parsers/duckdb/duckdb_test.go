@@ -48,7 +48,7 @@ func TestGolden(t *testing.T) {
 // find returns the nodes of type T of the tree that parsing sql gives.
 func find[T any](t *testing.T, sql string) []*T {
 	t.Helper()
-	script, err := duckdb.ParseAST(sql, duckdb.Bytes)
+	script, err := duckdb.ParseAST(sql, duckdb.WithUnit(duckdb.Bytes))
 	if err != nil {
 		t.Fatalf("%q: %v", sql, err)
 	}
@@ -349,7 +349,7 @@ func TestSpans(t *testing.T) {
 			t.Fatal(err)
 		}
 		src := string(data)
-		script, err := duckdb.ParseAST(src, duckdb.Bytes)
+		script, err := duckdb.ParseAST(src, duckdb.WithUnit(duckdb.Bytes))
 		if err != nil {
 			continue // syntax_error.txt
 		}

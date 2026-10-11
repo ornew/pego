@@ -218,7 +218,7 @@ func TestAgreement(t *testing.T) {
 		_, aerr := cel.ParseAST(src)
 		_, nerr := cel.Parse(src)
 		rerr := cel.Recognize(src)
-		_, berr := cel.ParseAST(src, cel.Bytes)
+		_, berr := cel.ParseAST(src, cel.WithUnit(cel.Bytes))
 		if (aerr == nil) != (nerr == nil) || (aerr == nil) != (rerr == nil) || (aerr == nil) != (berr == nil) {
 			t.Fatalf("%q: ParseAST: %v, Parse: %v, Recognize: %v, ParseAST in bytes: %v", src, aerr, nerr, rerr, berr)
 		}
@@ -276,7 +276,7 @@ func TestSpans(t *testing.T) {
 		if e, err := cel.ParseAST(src); err == nil {
 			checkSpans(t, src, e, false)
 		}
-		if e, err := cel.ParseAST(src, cel.Bytes); err == nil {
+		if e, err := cel.ParseAST(src, cel.WithUnit(cel.Bytes)); err == nil {
 			checkSpans(t, src, e, true)
 		}
 	}

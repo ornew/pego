@@ -44,11 +44,11 @@ err = typescript.Recognize("interface A { x: number }") // nil
 
 | | |
 |:--|:--|
-| `ParseAST(input, unit...) (*SourceFile, error)` | A `.ts` file as typed values: `Statements` and `EndOfFileToken`, every node a pointer to a struct or terminal type of this package, with its `Span` (`Start`, `End`) |
+| `ParseAST(input, opts...) (*SourceFile, error)` | A `.ts` file as typed values: `Statements` and `EndOfFileToken`, every node a pointer to a struct or terminal type of this package, with its `Span` (`Start`, `End`) |
 | `ParseTSX(input, unit...)`, `RecognizeTSX(input, unit...)` | The same for a `.tsx` file, where `<T>x` is not a type assertion and `<` starts JSX |
 | `ParseFile(name, input, unit...)` | By the name of the file (`IsTSX`); a module (see `IsExternalModule`) that may contain `await` at its top level is read in the await context, as the compiler reparses it, except `.d.ts` files |
-| `Recognize(input, unit...) error` | Only checks a `.ts` source, without building anything |
-| `Parse(input, unit...) (*Node, error)` | The tree of `*Node`, as the engine returns it; a `.tsx` source is parsed by prefixing U+0000 (the positions are then one more) |
+| `Recognize(input, opts...) error` | Only checks a `.ts` source, without building anything |
+| `Parse(input, opts...) (*Node, error)` | The tree of `*Node`, as the engine returns it; a `.tsx` source is parsed by prefixing U+0000 (the positions are then one more) |
 | `Kind(node) string` | The `SyntaxKind` name of a node (`"CallExpression"`, `"PlusToken"`, `"ExportKeyword"`, `"ThisKeyword"`) |
 | `ForEachChild(node, f)`, `Inspect(node, f)` | The children of a node in the order of `ts.forEachChild`, and the depth-first walk (`f(nil)` after the children) |
 | `AsNode(v) ASTNode` | A value of a union field (`Expression`, `Statement`, `TypeNode`, `BindingName`, ...) as a node, with `Range()` |
@@ -58,7 +58,7 @@ err = typescript.Recognize("interface A { x: number }") // nil
 | `(*Identifier).Value()`, `(*PrivateIdentifier).Value()` | The name with its unicode escapes decoded |
 | `*SyntaxError`, `SyntaxErrors` | `Line`, `Col`, `Pos` and the expected tokens (or `Message()`) of the first syntax error, after which parsing stops |
 
-Positions are in code points by default; `ParseAST(src, typescript.Bytes)` counts bytes. A node's `Span` covers its
+Positions are in code points by default; `typescript.ParseAST(src, typescript.WithUnit(typescript.Bytes))` counts bytes. A node's `Span` covers its
 tokens without the white space and comments before it, and the tree has the nodes the compiler's `forEachChild`
 visits: modifiers, decorators and type parameters are lists, tokens such as `?`, `!`, `...` and `=>` are nodes (only
 where the compiler keeps them), and `Identifier`, `Token`, `Modifier`, `KeywordTypeNode` and the literals hold their

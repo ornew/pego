@@ -133,6 +133,7 @@ pego gen -g grammar.pego -pkg calc -o parser.go  # generate a standalone Go pars
 pego gen -g grammar.pego -pkg calc -types        # ... with Go types for the grammar's types
 pego gen -g grammar.pego -pkg calc -recognize    # ... with Recognize, which validates without a tree
 pego gen -lang ts -g grammar.pego -o parser.ts     # generate a standalone TypeScript module
+pego gen -g grammar.pego -pkg parser -max-depth 600000 -o parser.go # set its nested rule-call default
 pego sample -g grammar.pego -n 20 -coverage      # generate inputs the grammar accepts (tests, fuzz seeds)
 ```
 

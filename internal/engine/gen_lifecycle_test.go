@@ -41,7 +41,7 @@ def main = "a" -> new Outer{Inner: new Inner{N: 1}}`, "a"},
 import "fmt"
 func main() {
     for _, unit := range []Unit{CodePoints, Bytes} {
-        p := &parser{}
+        p := &parser{maxDepth: defaultMaxDepth}
         if unit == Bytes { p.unit, p.bs, p.n = Bytes, %[1]q, len(%[1]q) } else { p.setSource(%[1]q) }
         p.memo.stride = nseen
         n, ok := p.call(rules[0], 0)
@@ -51,7 +51,7 @@ func main() {
         // Clearing tracking must preserve the returned result and its fields.
         if _, err := n.MarshalJSON(); err != nil { panic(err) }
         tp := &tparser{parser: &parser{}}
-        v, err := tp.run(trules[0], %[1]q, []Unit{unit}, &tslabs{})
+        v, err := tp.run(trules[0], %[1]q, parseOptions{unit: unit, maxDepth: defaultMaxDepth}, &tslabs{})
         if err != nil || v == nil { panic(fmt.Sprintf("typed parse: %%v", err)) }
         if len(tp.created) != 0 { panic("typed tracking length") }
         for _, n := range tp.created[:cap(tp.created)] { if n != nil { panic("typed tracking tail") } }
@@ -93,7 +93,7 @@ func TestGeneratedTSActionTracking(t *testing.T) {
 	// without adding test hooks to its public API.
 	code = append(code, []byte(`
 for (const unit of [CodePoints, Bytes]) {
-  const p = new Parser("aaaa", unit, nseen);
+  const p = new Parser("aaaa", unit, nseen, defaultMaxDepth);
   const n = p.call(rules[0]!, 0);
   if (n === undefined || n === null || p.pos !== p.n) throw new Error("parse failed");
   if (p.created.length !== 0) throw new Error("nil actions retain tracking");
@@ -149,7 +149,7 @@ import "strings"
 func main() {
  for _, unit := range []Unit{CodePoints, Bytes} {
   input := strings.Repeat("a", 10000)
-  p := &parser{}
+  p := &parser{maxDepth: defaultMaxDepth}
   if unit == Bytes { p.unit, p.bs, p.n = Bytes, input, len(input) } else { p.setSource(input) }
   p.memo.stride = nseen
   p.frame = p.newFrame(len(rules[0].scope))
@@ -192,7 +192,7 @@ func TestGeneratedTSEnvironmentBindings(t *testing.T) {
 	}
 	code = append(code, []byte(`
 for (const unit of [CodePoints, Bytes]) {
- const p = new Parser("a".repeat(10000), unit, nseen);
+ const p = new Parser("a".repeat(10000), unit, nseen, defaultMaxDepth);
  if (rules[0]!.body(p,0) === undefined || p.pos !== p.n) throw new Error("parse failed");
  const names = new Set<string>();
  for (let e = p.env; e !== null; e = e.next) {
@@ -210,7 +210,7 @@ for (const unit of [CodePoints, Bytes]) {
  p.bind("w", false);
  p.bind("z", 2);
  if (saved!.val !== 1) throw new Error("saved environment mutated");
- const q = new Parser("", unit, nseen);
+ const q = new Parser("", unit, nseen, defaultMaxDepth);
  q.bind("x",1);
  const first = q.env as Env | null;
  q.env = null;

@@ -24,6 +24,8 @@ var typedSource string
 type GenOptions struct {
 	// Package is the package name of the generated code.
 	Package string
+	// MaxDepth is the generated default rule-call limit. Zero selects 100,000.
+	MaxDepth int
 	// Start is the start rule of the generated Parse function.
 	Start string
 	// Types also generates a Go type for each type of the grammar and ParseAST, which returns the
@@ -77,6 +79,9 @@ type GenOptions struct {
 // runtime (genrt) behaves exactly like the engine
 // in this package. Stream and incremental parsing are not generated (#stream becomes a plain repetition).
 func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
+	if err := opts.validateMaxDepth(false); err != nil {
+		return nil, err
+	}
 	prog, err := Compile(g, Options{})
 	if err != nil {
 		return nil, err
@@ -114,24 +119,29 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	}
 	rt := runtimeSource[strings.Index(runtimeSource, "package genrt"):]
 	rt = strings.Replace(rt, "package genrt", "package "+opts.Package, 1)
+	rt = strings.Replace(rt, "const defaultMaxDepth = 100_000", fmt.Sprintf("const defaultMaxDepth = %d", opts.generatedMaxDepth()), 1)
 	out.WriteString(rt)
 	out.WriteString("\n// --- Generated code ---\n\n")
-	fmt.Fprintf(&out, "// Parse parses the whole input with the rule %s. unit selects the position unit (CodePoints by default).\n", start.name)
+	fmt.Fprintf(&out, "// Parse parses the whole input with the rule %s. Options select position units and the rule-call limit.\n", start.name)
 	out.WriteString("// If the parse recovered from errors with #recover, it returns the node together with SyntaxErrors.\n")
-	fmt.Fprintf(&out, "func Parse(input string, unit ...Unit) (*Node, error) { return parse(rules[%d], nseen, input, unit) }\n\n", start.id)
+	fmt.Fprintf(&out, "func Parse(input string, opts ...ParseOption) (*Node, error) { return parse(rules[%d], nseen, input, opts) }\n\n", start.id)
 	if rec != nil {
 		fmt.Fprintf(&out, "// Recognize checks that the whole input matches the rule %s without building a tree, and returns the\n", start.name)
 		out.WriteString("// syntax errors Parse would return (SyntaxErrors for errors recovered with #recover). Actions are not\n// evaluated, so it does not report runtime errors in actions.\n")
-		fmt.Fprintf(&out, "func Recognize(input string, unit ...Unit) error {\n\t_, err := parse(recRules[%d], recNseen, input, unit)\n\treturn err\n}\n\n", rec.byName[start.name].id)
+		fmt.Fprintf(&out, "func Recognize(input string, opts ...ParseOption) error {\n\t_, err := parse(recRules[%d], recNseen, input, opts)\n\treturn err\n}\n\n", rec.byName[start.name].id)
 		out.WriteString("// recRules is the rule table of Recognize, and recNseen its number of rules with rule.seen set.\nvar recRules []*rule\nvar recNseen int\n\n")
 	}
 	out.WriteString(`// ParseRule parses the whole input with the rule name.
-func ParseRule(name, input string, unit ...Unit) (*Node, error) {
+func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
+	o, err := resolveOptions(opts)
+	if err != nil {
+		return nil, err
+	}
 	r := ruleByName(name)
 	if r == nil {
 		return nil, fmt.Errorf("rule %s is not defined", name)
 	}
-	return parse(r, nseen, input, unit)
+	return parseResolved(r, nseen, input, o)
 }
 
 `)
@@ -161,6 +171,23 @@ func ParseRule(name, input string, unit ...Unit) (*Node, error) {
 		return []byte(out.String()), fmt.Errorf("generated code does not compile: %w", err)
 	}
 	return src, nil
+}
+
+func (o GenOptions) generatedMaxDepth() int {
+	if o.MaxDepth == 0 {
+		return DefaultMaxDepth
+	}
+	return o.MaxDepth
+}
+
+func (o GenOptions) validateMaxDepth(ts bool) error {
+	if o.MaxDepth < 0 {
+		return fmt.Errorf("generated max depth must be non-negative: %d", o.MaxDepth)
+	}
+	if ts && uint64(o.MaxDepth) > 9007199254740991 {
+		return fmt.Errorf("generated max depth must be a safe JavaScript integer: %d", o.MaxDepth)
+	}
+	return nil
 }
 
 type generator struct {
@@ -446,7 +473,7 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 			return
 		}
 		fmt.Fprintf(m, "// %s, called as by invokePlain\nfunc (p *tparser) %s() (any, bool) {\n", r.name, name)
-		m.WriteString("\tstart, rec, trail := p.pos, len(p.recovered), len(p.trail)\n\tprevEnv, prevCut := p.env, p.cut\n\tp.cut = false\n\tp.depth++\n\tif p.depth > maxDepth {\n\t\tp.tooDeep()\n\t}\n")
+		m.WriteString("\tstart, rec, trail := p.pos, len(p.recovered), len(p.trail)\n\tprevEnv, prevCut := p.env, p.cut\n\tp.cut = false\n\tp.depth++\n\tif p.depth > p.maxDepth {\n\t\tp.tooDeep()\n\t}\n")
 		fmt.Fprintf(m, "\tv, ok := p.%s()\n\tp.depth--\n\tp.cut = prevCut\n\tp.dropTrail(trail)\n\tif ok {\n", body)
 		finish("emptyTFrame")
 		m.WriteString("\t} else {\n\t\tp.pos = start\n\t\tp.recovered = p.recovered[:rec]\n\t}\n\tp.env = prevEnv\n\treturn v, ok\n}\n\n")
@@ -473,7 +500,7 @@ func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
 		return
 	}
 	fmt.Fprintf(m, "// %s, invoked as by invoke\nfunc (p *tparser) i%d() (any, bool) {\n", r.name, r.id)
-	fmt.Fprintf(m, "\tf := p.newFrame(%d)\n\tprevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)\n\tp.frame, p.cut = f, false\n\tp.depth++\n\tif p.depth > maxDepth {\n\t\tp.tooDeep()\n\t}\n\tstart := p.pos\n\t_ = start\n", len(s.names))
+	fmt.Fprintf(m, "\tf := p.newFrame(%d)\n\tprevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)\n\tp.frame, p.cut = f, false\n\tp.depth++\n\tif p.depth > p.maxDepth {\n\t\tp.tooDeep()\n\t}\n\tstart := p.pos\n\t_ = start\n", len(s.names))
 	fmt.Fprintf(m, "\tv, ok := p.%s()\n\tp.depth--\n\tp.frame, p.cut = prevFrame, prevCut\n\tp.dropTrail(trail)\n\tif ok {\n", body)
 	finish("f")
 	m.WriteString("\t}\n\tp.env = prevEnv\n\tp.freeFrame(f)\n\treturn v, ok\n}\n\n")
@@ -541,7 +568,7 @@ func (g *generator) plainCall(r *rule, body string) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 `)
@@ -655,7 +682,7 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 					b.WriteString("\tch, _, more := p.peek()\n")
 					peeked = true
 				}
-				fmt.Fprintf(&b, "\tif !(more && (%s)) && p.depth+%d <= maxDepth {\n\t\tp.expect(p.pos, %d)\n\t} else ", cond, depth, desc)
+				fmt.Fprintf(&b, "\tif !(more && (%s)) && p.depth+%d <= p.maxDepth {\n\t\tp.expect(p.pos, %d)\n\t} else ", cond, depth, desc)
 			}
 			fmt.Fprintf(&b, "\t{\n\t\tprevCut := p.cut\n\t\tp.cut = false\n\t\tv, ok := p.%s()\n\t\tcut := p.cut\n\t\tp.cut = prevCut\n"+
 				"\t\tif ok {\n\t\t\treturn v, true\n\t\t}\n\t\tp.reset(m0)\n\t\tif cut {\n\t\t\treturn nil, false\n\t\t}\n\t}\n", m)

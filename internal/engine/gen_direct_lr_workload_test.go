@@ -124,16 +124,16 @@ func lrInput(n int) string { return "a,b,c," + strings.Repeat(";d,e,f,", n) }
 
 func TestLRWorkload(t *testing.T) {
 	for _, unit := range []Unit{CodePoints, Bytes} {
-		saved, err := ParseAST(lrInput(1), unit)
+		saved, err := ParseAST(lrInput(1), WithUnit(unit))
 		if err != nil || saved.N != 3 || len(saved.Items) != 3 || saved.Items[0].Text != "d" {
 			t.Fatalf("typed capture result: %v %v", saved, err)
 		}
 		before, _ := json.Marshal(saved)
 		p := &tparser{parser: &parser{}}
 		for _, input := range []string{lrInput(1), lrInput(128), "a,b,c,", "a,b,", "a,b,c,;", "a,b,c,d,", "a,b,c,;d,é,f,", ""} {
-			v, err := p.run(trules[0], input, []Unit{unit}, &tslabs{})
+			v, err := p.run(trules[0], input, parseOptions{unit: unit, maxDepth: defaultMaxDepth}, &tslabs{})
 			data, _ := json.Marshal(struct { Value any; Error string }{v, fmt.Sprint(err)})
-			pooled, pooledErr := ParseAST(input, unit)
+			pooled, pooledErr := ParseAST(input, WithUnit(unit))
 			pooledData, _ := json.Marshal(struct { Value any; Error string }{pooled, fmt.Sprint(pooledErr)})
 			if string(data) != string(pooledData) { t.Fatal("pooled and reused LR parsers differ") }
 			fmt.Printf("OBS %v %q %s\n", unit, input, data)
@@ -160,10 +160,10 @@ func BenchmarkTypedLR(b *testing.B) {
 		input := lrInput(n)
 		for _, unit := range []Unit{CodePoints, Bytes} {
 			b.Run(fmt.Sprintf("%d/%v", n, unit), func(b *testing.B) {
-				if _, err := ParseAST(input, unit); err != nil { b.Fatal(err) }
+				if _, err := ParseAST(input, WithUnit(unit)); err != nil { b.Fatal(err) }
 				b.ReportAllocs()
 				for b.Loop() {
-					v, err := ParseAST(input, unit)
+					v, err := ParseAST(input, WithUnit(unit))
 					if err != nil { b.Fatal(err) }
 					lrResult = v
 				}
@@ -186,17 +186,17 @@ func lrInput(n int) string { return "1" + strings.Repeat("+2*3", n) }
 
 func TestLRWorkload(t *testing.T) {
 	for _, unit := range []Unit{CodePoints, Bytes} {
-		saved, err := ParseAST("1+2*3", unit)
+		saved, err := ParseAST("1+2*3", WithUnit(unit))
 		if err != nil {
 			t.Fatal(err)
 		}
 		before, _ := json.Marshal(saved)
 		p := &tparser{parser: &parser{}}
 		for _, input := range []string{"1", "1+2*3", lrInput(32), "(1+2)*3", "2^-1", "1+", "1+2*", "(1+2", "é+1", ""} {
-			v, err := p.run(trules[0], input, []Unit{unit}, &tslabs{})
+			v, err := p.run(trules[0], input, parseOptions{unit: unit, maxDepth: defaultMaxDepth}, &tslabs{})
 			data, _ := json.Marshal(struct { Value any; Error string }{v, fmt.Sprint(err)})
 			fmt.Printf("OBS %v %q %s\n", unit, input, data)
-			if _, err := ParseAST(input, unit); (err == nil) != (input == "1" || input == "1+2*3" || input == lrInput(32) || input == "(1+2)*3" || input == "2^-1") {
+			if _, err := ParseAST(input, WithUnit(unit)); (err == nil) != (input == "1" || input == "1+2*3" || input == lrInput(32) || input == "(1+2)*3" || input == "2^-1") {
 				t.Fatalf("acceptance %q: %v", input, err)
 			}
 			if p.depth != 0 || len(p.trail) != 0 || p.frame != nil {
@@ -223,12 +223,12 @@ func BenchmarkTypedLR(b *testing.B) {
 		input := lrInput(n)
 		for _, unit := range []Unit{CodePoints, Bytes} {
 			b.Run(fmt.Sprintf("%d/%v", n, unit), func(b *testing.B) {
-				if _, err := ParseAST(input, unit); err != nil {
+				if _, err := ParseAST(input, WithUnit(unit)); err != nil {
 					b.Fatal(err)
 				}
 				b.ReportAllocs()
 				for b.Loop() {
-					v, err := ParseAST(input, unit)
+					v, err := ParseAST(input, WithUnit(unit))
 					if err != nil { b.Fatal(err) }
 					lrResult = v
 				}
@@ -243,11 +243,11 @@ func BenchmarkLRPublic(b *testing.B) {
 	for _, unit := range []Unit{CodePoints, Bytes} {
 		b.Run(fmt.Sprintf("Node/%v", unit), func(b *testing.B) {
 			b.ReportAllocs()
-			for b.Loop() { if _, err := Parse(input, unit); err != nil { b.Fatal(err) } }
+			for b.Loop() { if _, err := Parse(input, WithUnit(unit)); err != nil { b.Fatal(err) } }
 		})
 		b.Run(fmt.Sprintf("Recognize/%v", unit), func(b *testing.B) {
 			b.ReportAllocs()
-			for b.Loop() { if err := Recognize(input, unit); err != nil { b.Fatal(err) } }
+			for b.Loop() { if err := Recognize(input, WithUnit(unit)); err != nil { b.Fatal(err) } }
 		})
 	}
 }

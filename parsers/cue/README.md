@@ -56,9 +56,9 @@ var ce *cue.SemanticError // found after the syntax: Msg, Line, Col, Span
 |:--|:--|
 | `ParseFile(input, unit...) (*File, error)` | The syntax tree, accepted exactly when `cue/parser.ParseFile` accepts the input: `ParseAST`, then `Check`, and an error for invalid UTF-8 |
 | `Valid(input) bool` | Whether `ParseFile` accepts the input |
-| `ParseAST(input, unit...) (*File, error)` | The syntax tree as the grammar reads it: the syntax of every experiment, without the checks of `Check` |
+| `ParseAST(input, opts...) (*File, error)` | The syntax tree as the grammar reads it: the syntax of every experiment, without the checks of `Check` |
 | `(*File).Check() error` | The errors `cue/parser` reports besides those of the syntax (see Conformance), as a `*SemanticError` |
-| `Parse(input, unit...) (*Node, error)`, `Recognize(input, unit...) error` | The tree of `*Node`, as the engine returns it; only checking (the same syntax as `ParseAST`) |
+| `Parse(input, opts...) (*Node, error)`, `Recognize(input, opts...) error` | The tree of `*Node`, as the engine returns it; only checking (the same syntax as `ParseAST`) |
 | `File`, `Package`, `ImportDecl`, `Field`, `Comprehension`, `StructLit`, `ListLit`, `BinaryExpr`, ... | The syntax tree, modeled on `cuelang.org/go/cue/ast`, each node with its `Span` |
 | `Inspect(node, f)`, `SpanOf(node)` | Depth-first traversal as `ast.Inspect`; the span of any node |
 | `Comments(src, unit...) []Comment` | The comments of the source, in order, with their spans |

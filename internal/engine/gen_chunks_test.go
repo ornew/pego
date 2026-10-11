@@ -71,13 +71,13 @@ import (
 
 func TestChunkValues(t *testing.T) {
 	for _, unit := range []Unit{CodePoints, Bytes} {
-		empty, err := ParseAST("", unit)
+		empty, err := ParseAST("", WithUnit(unit))
 		if err != nil || empty == nil || empty.Groups == nil || len(empty.Groups) != 0 { t.Fatal("empty root list") }
 		for _, count := range []int{0, 1, 7, 8, 9, 23, 24, 25, 55, 56, 57, 63, 64, 65, 119, 120, 121, 255, 256, 257, 511, 512, 513, 1025} {
 			// Several lists exhaust a partial chunk; empty and exact-size large
 			// lists exercise the other list-allocation paths in the same parse.
 			input := strings.Repeat("["+strings.Repeat("é", count)+"]", 3)+"[]"
-			v, err := ParseAST(input, unit)
+			v, err := ParseAST(input, WithUnit(unit))
 			if err != nil { t.Fatal(err) }
 			if v.Missing != nil || len(v.Groups) != 4 { t.Fatal("root fields") }
 			seen := map[*Token]bool{}
@@ -104,8 +104,8 @@ func TestChunkValues(t *testing.T) {
 			// A caller's append must not overwrite the following returned list.
 			original := v.Groups[0].Items
 			_ = append(original, &Item{})
-			if _, err := ParseAST("[", unit); err == nil { t.Fatal("invalid input accepted") }
-			if _, err := ParseAST("[é]", unit); err != nil { t.Fatal(err) }
+			if _, err := ParseAST("[", WithUnit(unit)); err == nil { t.Fatal("invalid input accepted") }
+			if _, err := ParseAST("[é]", WithUnit(unit)); err != nil { t.Fatal(err) }
 			after, err := json.Marshal(v)
 			if err != nil || !bytes.Equal(before, after) { t.Fatal("retained result changed after append or later parse") }
 		}

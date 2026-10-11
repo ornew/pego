@@ -68,7 +68,9 @@ repetitions; stream parsing emits elements and discards input already committed 
 
 Generated Go and TypeScript parsers embed their runtime and depend only on their standard libraries. Generated Go
 has direct paths for supported rules and general per-expression fallback; typed Go also emits inferred Go types
-and `ParseAST`. Generated paths preserve the engine's tree, error, depth, action and memo semantics.
+and `ParseAST`. Generation defaults (`WithGeneratedMaxDepth`, `gen -max-depth`) and invocation-local depth
+options are implemented ([design 022](design/022-generated-parser-depth-limits.md)); Go entry points accept
+functional `ParseOption`s, and TypeScript adds options-aware entry points. Generated paths preserve the engine's tree, error, depth, action and memo semantics.
 
 ## Testing
 

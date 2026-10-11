@@ -57,9 +57,9 @@ func (g *generator) typedGo(start *rule, conv bool) (string, string, error) {
 		result := t.dconv(st, "v", "a") // before the converters are written
 		t.typedRuntime(&b)
 		fmt.Fprintf(&b, `%s// It builds the values directly, without the nodes Parse returns.
-func ParseAST(input string, unit ...Unit) (%s, error) {
+func ParseAST(input string, opts ...ParseOption) (%s, error) {
 	a := &tslabs{}
-	return tparse(trules[%d], input, unit, a, func(v any) %s { return %s })
+	return tparse(trules[%d], input, opts, a, func(v any) %s { return %s })
 }
 `, doc, t.goType(st), start.id, t.goType(st), result)
 		return b.String(), t.span, nil
@@ -70,8 +70,8 @@ func ParseAST(input string, unit ...Unit) (%s, error) {
 		newConv = "\ta := &astConv{}\n"
 	}
 	t.converters(&b)
-	fmt.Fprintf(&b, `%sfunc ParseAST(input string, unit ...Unit) (%s, error) {
-	n, err := Parse(input, unit...)
+	fmt.Fprintf(&b, `%sfunc ParseAST(input string, opts ...ParseOption) (%s, error) {
+	n, err := Parse(input, opts...)
 %s	return %s, err
 }
 `, doc, t.goType(st), newConv, result)
@@ -107,7 +107,7 @@ type listConv struct {
 // runtimeNames are the exported names of the generated runtime, which typed values must avoid.
 var runtimeNames = map[string]bool{
 	"Node": true, "NodeField": true, "Fields": true, "SyntaxError": true, "SyntaxErrors": true, "Unit": true,
-	"CodePoints": true, "Bytes": true, "Parse": true, "ParseRule": true, "ParseAST": true, "Recognize": true, "Match": true, "Error": true,
+	"ParseOption": true, "WithUnit": true, "WithMaxDepth": true, "CodePoints": true, "Bytes": true, "Parse": true, "ParseRule": true, "ParseAST": true, "Recognize": true, "Match": true, "Error": true,
 }
 
 // name assigns Go names: grammar type names stay unless they clash with the runtime (then "_" is

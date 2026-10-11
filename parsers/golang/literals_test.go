@@ -8,7 +8,7 @@ import (
 
 func TestLiterals(t *testing.T) {
 	file, err := golang.ParseAST("package p; var _ = []any{\"a\\tb\\u00e9\", `r\\n`, 'x', '\\n', '\\xff', '\\u00e9', "+
-		"0, 0x1F, 0b101, 0o17, 017, 1_000, 123456789012345678901234567890, 1.5, 0x1p-2, .5e3, 1e400, 2i, 1.5i}", golang.Bytes)
+		"0, 0x1F, 0b101, 0o17, 017, 1_000, 123456789012345678901234567890, 1.5, 0x1p-2, .5e3, 1e400, 2i, 1.5i}", golang.WithUnit(golang.Bytes))
 	if err != nil {
 		t.Fatal(err)
 	}

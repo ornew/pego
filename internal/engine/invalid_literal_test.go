@@ -177,9 +177,9 @@ func TestGeneratedInvalidUTF8Literals(t *testing.T) {
 				for _, unit := range []Unit{CodePoints, Bytes} {
 					n, err := prog.ParseWith("main", input, ParseOptions{Unit: unit})
 					want.WriteString(resultJSON(n, err) + "\n")
-					fmt.Fprintf(&harness, "{ input:=%q; unit:=%s.%s; n,err:=%s.Parse(input,unit); rec:=%s.Recognize(input,unit); if fmt.Sprint(rec)!=fmt.Sprint(err){panic(\"recognition differs\")}\n", input, pkg, map[Unit]string{CodePoints: "CodePoints", Bytes: "Bytes"}[unit], pkg, pkg)
+					fmt.Fprintf(&harness, "{ input:=%q; unit:=%s.%s; n,err:=%s.Parse(input,%[4]s.WithUnit(unit)); rec:=%s.Recognize(input,%[4]s.WithUnit(unit)); if fmt.Sprint(rec)!=fmt.Sprint(err){panic(\"recognition differs\")}\n", input, pkg, map[Unit]string{CodePoints: "CodePoints", Bytes: "Bytes"}[unit], pkg, pkg)
 					if mode != "untyped" {
-						fmt.Fprintf(&harness, `ast,ae:=%s.ParseAST(input,unit); if fmt.Sprint(ae)!=fmt.Sprint(err){panic("typed error differs")}; if err==nil {child:=n.Field("T").(*%s.Node); wantText:=input; if unit==%s.CodePoints{wantText=string([]rune(input))};if child.Text!=wantText{panic("matched text differs from input")}; if ast==nil || ast.T==nil || ast.T.Start!=int(child.Start) || ast.T.End!=int(child.End) || ast.T.Text!=child.Text {panic("typed literal value differs")}}`+"\n", pkg, pkg, pkg)
+						fmt.Fprintf(&harness, `ast,ae:=%s.ParseAST(input,%[1]s.WithUnit(unit)); if fmt.Sprint(ae)!=fmt.Sprint(err){panic("typed error differs")}; if err==nil {child:=n.Field("T").(*%s.Node); wantText:=input; if unit==%s.CodePoints{wantText=string([]rune(input))};if child.Text!=wantText{panic("matched text differs from input")}; if ast==nil || ast.T==nil || ast.T.Start!=int(child.Start) || ast.T.End!=int(child.End) || ast.T.Text!=child.Text {panic("typed literal value differs")}}`+"\n", pkg, pkg, pkg)
 					}
 					harness.WriteString(`out:=map[string]any{"node":n};if err!=nil{out["err"]=err.Error()};data,_:=json.Marshal(out);fmt.Println(string(data))}` + "\n")
 				}

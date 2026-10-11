@@ -59,7 +59,7 @@ func ParseFile(input string, unit ...Unit) (*File, error) {
 		}
 		return nil, locate(input, &SemanticError{Span: Span{Start: pos, End: pos}, Msg: "illegal UTF-8 encoding"}, unit)
 	}
-	f, err := ParseAST(input, unit...)
+	f, err := ParseAST(input, unitOptions(unit)...)
 	if err != nil {
 		return nil, err
 	}
@@ -96,4 +96,12 @@ func locate(input string, err error, unit []Unit) error {
 		i++
 	}
 	return e
+}
+
+// unitOptions preserves the first-unit policy of the handwritten convenience API.
+func unitOptions(units []Unit) []ParseOption {
+	if len(units) == 0 {
+		return nil
+	}
+	return []ParseOption{WithUnit(units[0])}
 }

@@ -45,7 +45,7 @@ func BenchmarkSmallParseAST(b *testing.B) {
 			b.SetBytes(int64(len(input)))
 			b.ReportAllocs()
 			for b.Loop() {
-				if _, err := json.ParseAST(input, unit); err != nil {
+				if _, err := json.ParseAST(input, json.WithUnit(unit)); err != nil {
 					b.Fatal(err)
 				}
 			}

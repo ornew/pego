@@ -21,7 +21,7 @@ func TestInvalidUTF8(t *testing.T) {
 		"package p; var x\xff = 1",
 		"package p; var _ = \"\xed\xa0\x80\"", // a surrogate half
 	} {
-		if err := golang.Recognize(src, golang.Bytes); err == nil {
+		if err := golang.Recognize(src, golang.WithUnit(golang.Bytes)); err == nil {
 			t.Errorf("%q: Recognize(Bytes) accepted invalid UTF-8", src)
 		}
 		if golang.Valid(src) {
@@ -35,7 +35,7 @@ func TestInvalidUTF8(t *testing.T) {
 		"package p; var _ = `\xef\xbf\xbd`",
 		"package p; var _ = '\xef\xbf\xbd'",
 	} {
-		if err := golang.Recognize(src, golang.Bytes); err != nil {
+		if err := golang.Recognize(src, golang.WithUnit(golang.Bytes)); err != nil {
 			t.Errorf("%q: Recognize(Bytes): %v", src, err)
 		}
 		if err := golang.Recognize(src); err != nil {

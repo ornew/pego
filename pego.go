@@ -256,6 +256,13 @@ func WithRecognize() GenOption {
 	return func(o *engine.GenOptions) { o.Recognize = true }
 }
 
+// WithGeneratedMaxDepth sets the generated parser's default nested rule-call limit.
+// Zero selects 100,000; negative values fail generation. TypeScript additionally
+// requires an exact JavaScript integer. Individual invocations may override it.
+func WithGeneratedMaxDepth(n int) GenOption {
+	return func(o *engine.GenOptions) { o.MaxDepth = n }
+}
+
 // WithoutPackageDoc leaves the package comment out of a generated Go parser, for a package that has
 // its own documentation in another file.
 func WithoutPackageDoc() GenOption {

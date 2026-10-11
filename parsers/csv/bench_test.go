@@ -48,7 +48,7 @@ func BenchmarkParseASTBytes(b *testing.B) {
 	b.SetBytes(int64(len(benchInput)))
 	b.ReportAllocs()
 	for b.Loop() {
-		if _, err := csv.ParseAST(benchInput, csv.Bytes); err != nil {
+		if _, err := csv.ParseAST(benchInput, csv.WithUnit(csv.Bytes)); err != nil {
 			b.Fatal(err)
 		}
 	}

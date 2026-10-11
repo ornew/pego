@@ -88,8 +88,8 @@ func checkTrail(t *testing.T, p *tparser) {
 
 func TestTypedPoolRules(t *testing.T) {
 	for _, unit := range []Unit{CodePoints, Bytes} {
-		p := &tparser{parser: &parser{}}
-		v, err := p.run(trules[0], strings.Repeat("a", 2<<20)+"b", []Unit{unit}, &tslabs{})
+		p := &tparser{parser: &parser{maxDepth: defaultMaxDepth}}
+		v, err := p.run(trules[0], strings.Repeat("a", 2<<20)+"b", parseOptions{unit: unit, maxDepth: defaultMaxDepth}, &tslabs{})
 		if err != nil || v.(*A).Text != "b" {
 			t.Fatalf("large parse: %v", err)
 		}
@@ -103,16 +103,16 @@ func TestTypedPoolRules(t *testing.T) {
 		if v.(*A).Text != "b" {
 			t.Fatal("returned value changed")
 		}
-		if _, err := p.run(trules[0], "", []Unit{unit}, &tslabs{}); err == nil {
+		if _, err := p.run(trules[0], "", parseOptions{unit: unit, maxDepth: defaultMaxDepth}, &tslabs{}); err == nil {
 			t.Fatal("empty parse accepted")
 		}
 		p.recycle()
 		checkTrail(t, p)
-		if v, err := p.run(trules[0], "ab", []Unit{unit}, &tslabs{}); err != nil || v.(*A).Text != "b" {
+		if v, err := p.run(trules[0], "ab", parseOptions{unit: unit, maxDepth: defaultMaxDepth}, &tslabs{}); err != nil || v.(*A).Text != "b" {
 			t.Fatalf("small followup: %v", err)
 		}
 		p.recycle()
-		if v, err := p.run(trules[3], "bb", []Unit{unit}, &tslabs{}); err != nil || v.(*A).Text != "bb" {
+		if v, err := p.run(trules[3], "bb", parseOptions{unit: unit, maxDepth: defaultMaxDepth}, &tslabs{}); err != nil || v.(*A).Text != "bb" {
 			t.Fatalf("repeated capture: %v", err)
 		}
 		checkTrail(t, p)
@@ -121,7 +121,7 @@ func TestTypedPoolRules(t *testing.T) {
 }
 
 func TestTypedPoolUndoAndSaved(t *testing.T) {
-	p := &tparser{parser: &parser{}}
+	p := &tparser{parser: &parser{maxDepth: defaultMaxDepth}}
 	f := &tframe{vals: []any{"before"}}
 	p.frame = f
 	m := p.mark()
@@ -176,8 +176,8 @@ func TestTypedPoolUndoAndSaved(t *testing.T) {
 // The parser is kept explicitly, so GC cannot hide references by emptying
 // sync.Pool. Returned terminals are dropped before measuring scratch retention.
 func retainedTypedParser(unit Unit, n int) *tparser {
-	p := &tparser{parser: &parser{}}
-	v, err := p.run(trules[0], strings.Repeat("a", n)+"b", []Unit{unit}, &tslabs{})
+	p := &tparser{parser: &parser{maxDepth: defaultMaxDepth}}
+	v, err := p.run(trules[0], strings.Repeat("a", n)+"b", parseOptions{unit: unit, maxDepth: defaultMaxDepth}, &tslabs{})
 	if err != nil || v.(*A).Text != "b" {
 		panic(err)
 	}
@@ -206,12 +206,12 @@ func BenchmarkTypedCapturePool(b *testing.B) {
 		input := strings.Repeat("a", n) + "b"
 		for _, unit := range []Unit{CodePoints, Bytes} {
 			b.Run(fmt.Sprintf("%d/%v", n, unit), func(b *testing.B) {
-				if _, err := ParseAST(input, unit); err != nil {
+				if _, err := ParseAST(input, WithUnit(unit)); err != nil {
 					b.Fatal(err)
 				}
 				b.ReportAllocs()
 				for b.Loop() {
-					if v, err := ParseAST(input, unit); err != nil || v.Text != "b" {
+					if v, err := ParseAST(input, WithUnit(unit)); err != nil || v.Text != "b" {
 						b.Fatalf("parse: %v", err)
 					}
 				}

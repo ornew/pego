@@ -32,9 +32,9 @@ Every parser has the API of a parser generated with `pego gen -types -recognize`
 
 | | |
 |:--|:--|
-| `ParseAST(input, unit...)` | The document as the Go types the grammar declares, each with its `Span` in the input |
-| `Parse(input, unit...)` | The document as a tree of `*Node`, as the engine returns it |
-| `Recognize(input, unit...)` | Only checks the input, without building anything |
+| `ParseAST(input, opts...)` | The document as the Go types the grammar declares, each with its `Span` in the input |
+| `Parse(input, opts...)` | The document as a tree of `*Node`, as the engine returns it |
+| `Recognize(input, opts...)` | Only checks the input, without building anything |
 | `*SyntaxError` | The position (`Line`, `Col`, `Pos`) and the expected tokens of a syntax error |
 
 Positions are in code points by default; pass `Bytes` for byte offsets.

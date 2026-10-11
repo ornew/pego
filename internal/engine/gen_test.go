@@ -255,8 +255,8 @@ func testGeneratedParsersCorpus(t *testing.T, goBin string, cases []genCase, opt
 		}
 		write(fmt.Sprintf("g%d/parser.go", i), string(code))
 		fmt.Fprintf(&imports, "\tg%d \"gentest/g%d\"\n", i, i)
-		fmt.Fprintf(&parsers, "\tfunc(s string, b bool) (any, error) { u := g%d.CodePoints; if b { u = g%d.Bytes }; n, err := g%d.Parse(s, u); return n, err },\n", i, i, i)
-		fmt.Fprintf(&recognizers, "\tfunc(s string, b bool) error { u := g%d.CodePoints; if b { u = g%d.Bytes }; return g%d.Recognize(s, u) },\n", i, i, i)
+		fmt.Fprintf(&parsers, "\tfunc(s string, b bool) (any, error) { u := g%d.CodePoints; if b { u = g%d.Bytes }; n, err := g%d.Parse(s, g%[3]d.WithUnit(u)); return n, err },\n", i, i, i)
+		fmt.Fprintf(&recognizers, "\tfunc(s string, b bool) error { u := g%d.CodePoints; if b { u = g%d.Bytes }; return g%d.Recognize(s, g%[3]d.WithUnit(u)) },\n", i, i, i)
 		inputs = append(inputs, c.inputs)
 		prog := compile(t, c.src, Options{noProjections: true}) // the generated code projects (project.go)
 		for _, in := range c.inputs {
@@ -477,8 +477,8 @@ func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, refer
 		}
 		write(fmt.Sprintf("c%d/parser.go", i), string(code))
 		fmt.Fprintf(&imports, "\tg%d \"gentest/g%d\"\n\tc%d \"gentest/c%d\"\n", i, i, i, i)
-		fmt.Fprintf(&parsers, "\tfunc(s string, b bool) (any, error) { u := g%d.CodePoints; if b { u = g%d.Bytes }; return g%d.ParseAST(s, u) },\n", i, i, i)
-		fmt.Fprintf(&converters, "\tfunc(s string, b bool) (any, error) { u := c%d.CodePoints; if b { u = c%d.Bytes }; return c%d.ParseAST(s, u) },\n", i, i, i)
+		fmt.Fprintf(&parsers, "\tfunc(s string, b bool) (any, error) { u := g%d.CodePoints; if b { u = g%d.Bytes }; return g%d.ParseAST(s, g%[3]d.WithUnit(u)) },\n", i, i, i)
+		fmt.Fprintf(&converters, "\tfunc(s string, b bool) (any, error) { u := c%d.CodePoints; if b { u = c%d.Bytes }; return c%d.ParseAST(s, c%[3]d.WithUnit(u)) },\n", i, i, i)
 		inputs = append(inputs, c.inputs)
 		prog := compile(t, c.src)
 		for _, in := range c.inputs {

@@ -90,7 +90,7 @@ func TestCorpus(t *testing.T) {
 		}
 		if err != nil {
 			rejected++
-			if _, aerr := ParseAST(c.src, Bytes); aerr == nil {
+			if _, aerr := ParseAST(c.src, WithUnit(Bytes)); aerr == nil {
 				checkOnly++ // the syntax is valid; Check rejects it
 			}
 			continue

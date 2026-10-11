@@ -37,7 +37,7 @@ func FuzzParse(f *testing.F) {
 		e, aerr := cel.ParseAST(src)
 		rerr := cel.Recognize(src)
 		_, nerr := cel.Parse(src)
-		_, berr := cel.ParseAST(src, cel.Bytes)
+		_, berr := cel.ParseAST(src, cel.WithUnit(cel.Bytes))
 		if (aerr == nil) != (rerr == nil) || (aerr == nil) != (nerr == nil) || (aerr == nil) != (berr == nil) {
 			t.Fatalf("ParseAST: %v, Recognize: %v, Parse: %v, in bytes: %v", aerr, rerr, nerr, berr)
 		}
@@ -46,7 +46,7 @@ func FuzzParse(f *testing.F) {
 		}
 		if utf8.ValidString(src) {
 			checkSpans(t, src, e, false)
-			if b, err := cel.ParseAST(src, cel.Bytes); err == nil {
+			if b, err := cel.ParseAST(src, cel.WithUnit(cel.Bytes)); err == nil {
 				checkSpans(t, src, b, true)
 			}
 		}

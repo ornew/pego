@@ -1,6 +1,6 @@
 # 022. Configurable Depth Limits in Generated Parsers
 
-- **Status**: Proposed
+- **Status**: Implemented
 - **Author**: @ornew
 - **Date**: 2026-10-10
 
@@ -11,9 +11,9 @@ individual parsing invocation. Keep the existing default of 100,000 calls. The g
 parser's default; a positive per-call override replaces it for that invocation only. Preserve calls without options while moving Go/typed Go entry points to functional options; keep TypeScript's existing
 unit arguments and add options-aware entry points there.
 
-The proposed generation API is `pego.WithGeneratedMaxDepth(n)` and the CLI flag is `pego gen -max-depth n`.
+The generation API is `pego.WithGeneratedMaxDepth(n)` and the CLI flag is `pego gen -max-depth n`.
 Generated Go uses `Parse(input, opts ...ParseOption)`, `WithMaxDepth(n)` and `WithUnit(unit)`; TypeScript exposes
-`ParseOptions` and `parseWithOptions`. This record describes proposed APIs, not implemented behavior.
+`ParseOptions` and `parseWithOptions`. The APIs and parser-local accounting described here are implemented.
 
 ## Motivation
 
@@ -117,7 +117,7 @@ parseRuleWithOptions(name, input, options?)
 recognizeWithOptions(input, options?)
 ```
 
-These proposed functions accept the existing input types and return the same result types as their corresponding
+These functions accept the existing input types and return the same result types as their corresponding
 entry points. Existing `parse`, `parseRule` and `recognize` keep their signatures. Omitted `maxDepth` and zero use
 the generated default; a positive safe integer overrides it. Reject negative numbers, fractions, NaN, infinity
 and integers outside JavaScript's exact range through the existing result/error mechanism before matching. Unit
@@ -185,7 +185,29 @@ APIs while retaining their current defaults and documented reference deviations.
 
 ## Testing
 
-The reference/depth probes above are complete. Implementation checks remain proposed:
+The reference/depth probes above are complete. The implementation adds the following regression coverage:
+
+- `TestGeneratedMaxDepthValidation` and `TestWithGeneratedMaxDepth` check generation/API default equivalence,
+  custom defaults, invalid/range errors and last-setting precedence. `TestGenMaxDepth` checks the same CLI defaults
+  and confirms invalid options preserve an existing output file.
+- `TestGeneratedDepthOptions` compares small limits with equally configured engines across ordinary recursion,
+  left recursion, Pratt prefixes/RHS operands, first-character dispatch and recovery, both position units and typed
+  direct/conversion output. It also covers sequential pool reuse, concurrent invocations, reentrant option evaluation,
+  zero/custom defaults, largest native int, negatives, function-value signatures and nil options.
+- `TestGeneratedDepthNameCollisions` compiles external direct/conversion consumers and checks deterministic
+  underscore mappings for `ParseOption`, `ParseOption_`, `WithUnit` and `WithMaxDepth`, including aliases and typed
+  function values.
+- `TestGeneratedTSDepthOptions` runs the corresponding recursion/dispatch/recovery matrix on string and byte inputs,
+  rejects negative/fractional/nonfinite/unsafe limits, accepts the maximum safe integer, verifies immediate scalar
+  option resolution during an action and action-free recognition, and type-checks with strict TypeScript.
+- `TestGeneratedDepthBenchmarkWorkloads` generates and validates standalone paired benchmark controls without
+  timing them. Its same source works on the pinned baseline and the candidate, preserving comparable default
+  entry points and separate small, large and deep inputs. See the performance section for the measurement gate.
+
+The integrated root suite, all ten standalone parser module suites and vet checks, parser freshness,
+regeneration and site tests pass on Go 1.27.1 and Node.js 24.19.0, including strict `tsc`.
+Timed measurements are separate from these correctness checks.
+The complete acceptance checklist is:
 
 - Compile/run unchanged no-option consumers and migrated option/function-value consumers for every entry point,
   both Go position units,
@@ -204,20 +226,84 @@ The reference/depth probes above are complete. Implementation checks remain prop
 
 ## Performance and results
 
-The baseline/600,000 overlay establishes acceptance at the three measured Go depths, not reference maximum parity
-or throughput. Implementation measurements remain pending. Compare ordinary parsing with the old generated parser,
-new no-option entry points, zero/default options and an equal explicit override. Measure node, recognition, typed
-direct/conversion and TypeScript paths separately; then measure deep inputs with sufficient limits separately from
-source generation and compilation. Record source/binary size, time, allocations and relevant retained state.
+Measurements compare `e45ff82` with the depth-option implementation on the same
+source base, using Go 1.27.1, Node.js 24.19.0, Apple M3 Max and `GOMAXPROCS=4`.
+Three alternating baseline/candidate rounds run without competing builds or
+benchmarks. The standalone grammar is `n+`, with `n = "(" n ")" / "é"`: small
+inputs nest eight parentheses, large inputs repeat that item 1,024 times, and
+deep inputs nest 8,192 parentheses. Both units, Node, recognition and typed
+direct/conversion paths are measured separately. Go runs use 400ms per case;
+TypeScript uses 20,000/100/20 timed iterations after warmup for small/large/deep.
 
-Resolving an override once avoids validation in every nested call, but replacing a constant comparison with a field
-access and adding wrappers may affect performance. That is a hypothesis to measure, not a claim of zero overhead.
-Use pinned baseline/candidate commits and toolchains, paired samples without competing CPU work, and preserve scoped
-uncertainty. Record measured correctness costs in the implementation commit; keep routine raw logs local.
+The Go direct-entry controls report these candidate/baseline median time
+ratios. Three pairs establish scoped measurements, not a significance test:
+
+| Scope | Median ratio across measured cases |
+|:--|:--|
+| Small inputs, all APIs and units | 1.005–1.239 |
+| Large inputs, all APIs and units | 0.953–1.171 |
+| Deep inputs, all APIs and units | 0.989–1.055 |
+
+Small CodePoints recognition costs 183–186ns versus 177–180ns in direct
+output (median ratio 1.038, paired range 1.016–1.041); conversion output
+is 183–184ns versus 178–180ns (1.026, 1.021–1.031). Bytes recognition,
+which now passes `WithUnit(Bytes)`, costs 269–286ns versus 219–226ns
+(1.219, 1.189–1.310); conversion is 275–277ns versus 222–225ns
+(1.239, 1.226–1.245). Large CodePoints Node parsing in direct output has
+a measured median increase of 17.1% (paired range 3.9–19.3%); the other
+large median ratios span 0.953–1.045. Do not promise zero overhead.
+
+Callsites matter: the separate callback-adapter controls retain a larger
+small-recognition increase, with median ratios 1.649/1.677 for CodePoints
+and 1.512/1.601 for Bytes in direct/conversion output. Removing dynamic
+guards or moving the parser field in isolated diagnostic builds did not
+remove that difference. These probes do not establish its mechanism or
+a general throughput penalty; the direct-entry and callback observations
+are both retained here.
+
+No-option CodePoints calls add no allocation. Passing any functional option,
+including an equal or zero depth and a byte-unit option, adds 16 bytes and
+one allocation per invocation because the configuration is passed by pointer
+to option functions. The captured option slice/functions are not retained by
+parsers. On measured large/deep cases, this remains one extra allocation per
+call rather than per rule. A future optimization must preserve ordering,
+validation precedence, reentrancy and independent pooled invocations.
+
+TypeScript legacy-call median ratios span 0.841–1.039 across these workloads;
+all three-pair ranges span 0.833–1.051. Options and high-depth controls pass
+independently. JIT warmup and host-stack behavior make these observations
+insufficient to claim a general TypeScript speedup.
+
+The existing approximately 256KiB JSON corpus uses three alternating 1s rounds
+with the same toolchain and isolated CPU policy. Its generated CodePoints Node,
+Bytes Node, typed AST and recognition median ratios are respectively
+0.982 [0.942–1.090], 0.947 [0.921–1.040], 0.965 [0.957–1.027] and
+1.011 [0.977–1.041]. Each paired range includes parity; this corpus does not
+establish a consistent throughput regression or improvement. No-option Node
+and typed AST allocation counts are unchanged; byte-unit Node parsing adds
+the configuration allocation, with small amortized pool differences across
+samples. These larger inputs do not erase the small-input costs above.
+Reproduce with `BenchmarkParse/JSON/generated`, `generated_ast` and
+`BenchmarkRecognize/JSON/generated` in `bench`, keeping baseline unit calls
+and migrated `WithUnit` calls aligned.
+
+Generated source grows from 99,946 to 101,512 bytes for typed direct Go,
+96,847 to 98,399 for conversion Go, and 80,444 to 82,291 for TypeScript.
+An identical production consumer linking both Go variants and calling
+Node/AST/recognition without options grows from 2,981,746 to 2,998,626 bytes
+(+0.57%). These are consumer executable sizes, not benchmark test-binary
+sizes, whose additional benchmark controls would confound attribution.
+
+Reproduce the standalone controls with `TestGeneratedDepthBenchmarkWorkloads`
+and `PEGO_DEPTH_BENCH_DIR`, copying that test to the pinned baseline. Build
+fixture binaries before measuring `BenchmarkDepthDirect` and
+`BenchmarkDepthOptions`; run `node ts/bench.mjs` separately. Routine raw
+results stay outside Git.
 
 ## Limitations and open questions
 
 The generation-time plus per-invocation scope and preserved 100,000-call default are selected. The Go functional-option form and TypeScript options-aware form are selected;
-compatibility/collision handling and implementation details require implementation review; no new depth API has landed. Raising an override
+compatibility/collision handling, runtime ownership, regression tests and serialized measurements
+are complete. Functional options have the measured allocation/callsite costs above. Raising an override
 does not guarantee host-stack capacity or reference-parser nesting parity. Broader per-invocation cancellation/work
 budgets can extend these APIs in their own designs without changing this depth contract.

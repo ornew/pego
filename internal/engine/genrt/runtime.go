@@ -371,22 +371,64 @@ const (
 	Bytes
 )
 
-// maxDepth is the maximum nesting of rule calls, the same default as the engine.
-const maxDepth = 100_000
+// defaultMaxDepth is the generated default maximum nesting of rule calls.
+const defaultMaxDepth = 100_000
+
+// ParseOption configures an individual parsing invocation. Options apply in order.
+type ParseOption func(*parseOptions)
+
+type parseOptions struct {
+	unit     Unit
+	maxDepth int
+}
+
+// WithUnit selects the unit of input positions (CodePoints by default).
+func WithUnit(unit Unit) ParseOption { return func(o *parseOptions) { o.unit = unit } }
+
+// WithMaxDepth limits nested rule calls. Zero selects the generated default;
+// a negative effective limit returns an error before parsing.
+// A larger limit does not guarantee that the host stack can accommodate it.
+func WithMaxDepth(n int) ParseOption { return func(o *parseOptions) { o.maxDepth = n } }
+
+func resolveOptions(opts []ParseOption) (parseOptions, error) {
+	if len(opts) == 0 {
+		return parseOptions{maxDepth: defaultMaxDepth}, nil
+	}
+	o := parseOptions{maxDepth: defaultMaxDepth}
+	for _, opt := range opts {
+		opt(&o)
+	}
+	if o.maxDepth < 0 {
+		return o, fmt.Errorf("max depth must be non-negative: %d", o.maxDepth)
+	}
+	if o.maxDepth == 0 {
+		o.maxDepth = defaultMaxDepth
+	}
+	return o, nil
+}
 
 // parse parses the whole input with rule r of a rule table with seen rules that have rule.seen
 // set.
-func parse(r *rule, seen int, input string, units []Unit) (n *Node, err error) {
+func parse(r *rule, seen int, input string, opts []ParseOption) (n *Node, err error) {
+	o, err := resolveOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+	return parseResolved(r, seen, input, o)
+}
+
+func parseResolved(r *rule, seen int, input string, o parseOptions) (n *Node, err error) {
 	p, _ := ppool.Get().(*parser)
 	if p == nil {
 		p = &parser{}
 	}
 	defer p.release()
+	p.maxDepth = o.maxDepth
 	p.memo.stride = seen
 	if len(p.memo.calls) != seen {
 		p.memo.calls = nil // kept from a parse with another rule table (Recognize)
 	}
-	if len(units) > 0 && units[0] == Bytes {
+	if o.unit == Bytes {
 		p.unit, p.bs, p.n = Bytes, input, len(input)
 	} else {
 		p.setSource(input)
@@ -472,14 +514,15 @@ type parser struct {
 	offs []int32
 	pos  int
 
-	depth   int     // nesting of rule calls
-	created []*Node // struct nodes made by the action being evaluated (from actx.cbase)
-	env     *env
-	bound   map[string]bool // names assigned anywhere in this parse (a lookup hint)
-	frame   *frame
-	trail   []undo
-	cut     bool
-	memo    memoTable
+	maxDepth int     // invocation-local maximum nesting
+	depth    int     // nesting of rule calls
+	created  []*Node // struct nodes made by the action being evaluated (from actx.cbase)
+	env      *env
+	bound    map[string]bool // names assigned anywhere in this parse (a lookup hint)
+	frame    *frame
+	trail    []undo
+	cut      bool
+	memo     memoTable
 
 	// silent is positive inside lookaheads, where expectations are not recorded.
 	silent   int
@@ -1107,8 +1150,8 @@ func (p *parser) invoke(r *rule, min int) (*Node, bool) {
 	prevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)
 	p.frame, p.cut = f, false
 	p.depth++
-	if p.depth > maxDepth {
-		panic(fatal{fmt.Errorf("nesting too deep: more than %d rule calls", maxDepth)})
+	if p.depth > p.maxDepth {
+		panic(fatal{fmt.Errorf("nesting too deep: more than %d rule calls", p.maxDepth)})
 	}
 	start := p.pos
 	v, ok := r.body(p, min)
@@ -1130,7 +1173,7 @@ func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := r.body(p, min)
@@ -1149,7 +1192,7 @@ func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
 
 // tooDeep fails the parse for exceeding the nesting limit.
 func (p *parser) tooDeep() {
-	panic(fatal{fmt.Errorf("nesting too deep: more than %d rule calls", maxDepth)})
+	panic(fatal{fmt.Errorf("nesting too deep: more than %d rule calls", p.maxDepth)})
 }
 
 // finish makes the rule's value from the value of its body.
@@ -1917,7 +1960,7 @@ func (p *parser) apply(a *prattAttempt) {
 // against the nesting limit, like a rule call.
 func (p *parser) prattParse(r *rule, min int) (*Node, bool) {
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.prattExpr(r, min)

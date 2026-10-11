@@ -105,7 +105,7 @@ func main() {
 - **Two levels of API.** `Load` gives Go values (`map[string]any`, `[]any`, `int64`, ...) with the YAML core schema, and
   reports what the syntax cannot show: here a repeated key, with a line and a column. `ParseAST` gives the typed tree,
   with a `Span` (start and end offsets) on every node and the style of every scalar.
-- **Positions are offsets.** A `Span` counts code points (bytes with `yaml.ParseAST(src, yaml.Bytes)`), so `lineCol` turns
+- **Positions are offsets.** A `Span` counts code points (bytes with `yaml.ParseAST(src, yaml.WithUnit(yaml.Bytes))`), so `lineCol` turns
   an offset into the line and column that people read. [Report an error with its source line and a
   caret](error-carets.md) prints the line and a caret under it.
 - **The YAML syntax error is verbose** on purpose: it lists what could have come at the farthest position, as every PEGO

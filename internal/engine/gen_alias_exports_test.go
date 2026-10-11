@@ -101,7 +101,7 @@ func Test%s(t *testing.T) {
  for _,unit := range []P.Unit{P.CodePoints,P.Bytes} {
   var result P.Alias
   var err error
-  result,err=P.ParseAST("a",unit)
+  result,err=P.ParseAST("a",P.WithUnit(unit))
   if err!=nil || result.Text!="a" {t.Fatalf("parse: %%v",err)}
  }
 }

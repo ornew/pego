@@ -31,7 +31,7 @@ func TestWriteMutant(t *testing.T) {
 			if err := os.WriteFile(out, in, 0o644); err != nil {
 				t.Fatal(err)
 			}
-			_, err := ParseAST(string(in), Bytes)
+			_, err := ParseAST(string(in), WithUnit(Bytes))
 			t.Logf("%s mutant %d: %v", name, n, err)
 			return
 		}

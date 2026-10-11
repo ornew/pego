@@ -685,7 +685,7 @@ func (d *dgen) choice(e *grammar.Choice, s *dscope, build bool, fail string) str
 				d.line("%s", peek(ch, "_", more))
 			}
 			skip = d.label()
-			d.failIf(fmt.Sprintf("!(%s && (%s)) && p.depth+%d <= maxDepth", d.rd(more), chIdent.ReplaceAllString(cond, d.rd(ch)), depth), skip,
+			d.failIf(fmt.Sprintf("!(%s && (%s)) && p.depth+%d <= p.maxDepth", d.rd(more), chIdent.ReplaceAllString(cond, d.rd(ch)), depth), skip,
 				fmt.Sprintf("p.expect(p.pos, %d)", desc))
 		}
 		f := d.label()
@@ -1222,7 +1222,7 @@ func (g *generator) directMethod(r *rule, d *direct, name, comment string, plain
 	if d.assigns {
 		m.WriteString("\tprevEnv = p.env\n")
 	}
-	m.WriteString("\tp.depth++\n\tif p.depth > maxDepth {\n\t\tp.tooDeep()\n\t}\n")
+	m.WriteString("\tp.depth++\n\tif p.depth > p.maxDepth {\n\t\tp.tooDeep()\n\t}\n")
 	m.WriteString(d.body)
 	if d.succeed {
 		m.WriteString("\tp.depth--\n")

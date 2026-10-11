@@ -41,15 +41,15 @@ if errors.As(err, &se) {
 |:--|:--|
 | `Records(input) ([][]string, error)` | The records, each a list of field values; empty lines left out |
 | `Table(input) (header []string, rows [][]string, err error)` | The first record as the header and the others, each with as many fields as the header (`*FieldCountError` otherwise; `ErrNoHeader` for an input without records) |
-| `ParseAST(input, unit...) (*File, error)` | The file: a `*File` of `*Record`s of `*Field`s, each with its `Span` |
-| `Valid(input) bool`, `Recognize(input, unit...) error` | Only check the input |
-| `Parse(input, unit...) (*Node, error)` | The tree of `*Node`, as the engine returns it |
+| `ParseAST(input, opts...) (*File, error)` | The file: a `*File` of `*Record`s of `*Field`s, each with its `Span` |
+| `Valid(input) bool`, `Recognize(input, opts...) error` | Only check the input |
+| `Parse(input, opts...) (*Node, error)` | The tree of `*Node`, as the engine returns it |
 | `(*Field).Value() string` | The field's value: quotes removed and `""` decoded (`Text` is the source) |
 | `(*Field).Quoted() bool` | Whether the field is quoted |
 | `(*Record).Strings() []string`, `(*File).Strings() [][]string` | The values of a record, of a file (as `Records` returns them) |
 | `(*Record).Blank() bool` | Whether the record is an empty line |
 
-Positions are in code points by default; `csv.ParseAST(src, csv.Bytes)` counts bytes. A record's span includes its line
+Positions are in code points by default; `csv.ParseAST(src, csv.WithUnit(csv.Bytes))` counts bytes. A record's span includes its line
 break; its fields end at the `End` of the last one. With code points, the `Text` of a field holds U+FFFD for each byte
 that is not part of valid UTF-8; with `Bytes` it keeps the bytes, and so do `Records` and `Table`.
 

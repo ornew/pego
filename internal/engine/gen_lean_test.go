@@ -53,10 +53,10 @@ def left = left "+" "é" / "é"
 			t.Fatalf("unsupported direct route for %s", name)
 		}
 	}
-	if !strings.Contains(string(code), "const maxDepth = 100_000") {
+	if !strings.Contains(string(code), "const defaultMaxDepth = 100000") {
 		t.Fatal("generated depth constant not found")
 	}
-	code = []byte(strings.Replace(string(code), "const maxDepth = 100_000", "const maxDepth = 5", 1))
+	code = []byte(strings.Replace(string(code), "const defaultMaxDepth = 100000", "const defaultMaxDepth = 5", 1))
 	prog := compile(t, src)
 	var rows strings.Builder
 	// Go literals preserve invalid UTF-8 bytes; the JSON-transport corpus would
@@ -77,7 +77,7 @@ func TestRoutesAndReuse(t *testing.T) {
   var selected *rule
   for _,r:=range recRules {if r.name==c.name {selected=r;break}}
   if selected==nil {t.Fatal(c.name)}
-  n,err:=parse(selected,recNseen,c.input,[]Unit{c.unit})
+  n,err:=parse(selected,recNseen,c.input,[]ParseOption{WithUnit(c.unit)})
   if n!=nil {t.Fatalf("recognition built a value for %s",c.name)}
   if got:=fmt.Sprint(err);got!=c.want {t.Fatalf("%s %q unit%d: got %s want %s",c.name,c.input,c.unit,got,c.want)}
  }}

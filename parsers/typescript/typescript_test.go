@@ -154,11 +154,9 @@ func TestInvalid(t *testing.T) {
 // order of the input.
 func TestSpans(t *testing.T) {
 	for _, src := range append(append([]string{}, valid...), "x = <div a={1}>{b}</div>") {
-		parse := typescript.ParseAST
+		parse := func(s string) (*typescript.SourceFile, error) { return typescript.ParseAST(s) }
 		if strings.HasPrefix(src, "x = <div") {
-			parse = func(s string, u ...typescript.Unit) (*typescript.SourceFile, error) {
-				return typescript.ParseTSX(s, u...)
-			}
+			parse = func(s string) (*typescript.SourceFile, error) { return typescript.ParseTSX(s) }
 		}
 		f, err := parse(src)
 		if err != nil {
@@ -191,7 +189,7 @@ func TestUnits(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	by, err := typescript.ParseAST(src, typescript.Bytes)
+	by, err := typescript.ParseAST(src, typescript.WithUnit(typescript.Bytes))
 	if err != nil {
 		t.Fatal(err)
 	}

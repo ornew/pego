@@ -11,13 +11,13 @@ func TestUnicodeScalarContent(t *testing.T) {
 	for _, r := range []rune{0xd7ff, 0xe000, 0xfdd0, 0xfffd, 0x10000, 0x10ffff} {
 		input := "key: " + string(r) + "\n"
 		for _, unit := range []yaml.Unit{yaml.CodePoints, yaml.Bytes} {
-			if _, err := yaml.Parse(input, unit); err != nil {
+			if _, err := yaml.Parse(input, yaml.WithUnit(unit)); err != nil {
 				t.Fatalf("Parse %U unit %v: %v", r, unit, err)
 			}
-			if _, err := yaml.ParseAST(input, unit); err != nil {
+			if _, err := yaml.ParseAST(input, yaml.WithUnit(unit)); err != nil {
 				t.Fatalf("ParseAST %U unit %v: %v", r, unit, err)
 			}
-			if err := yaml.Recognize(input, unit); err != nil {
+			if err := yaml.Recognize(input, yaml.WithUnit(unit)); err != nil {
 				t.Fatalf("Recognize %U unit %v: %v", r, unit, err)
 			}
 		}
@@ -47,11 +47,11 @@ func BenchmarkUnicodeClasses(b *testing.B) {
 						var err error
 						switch api {
 						case "Parse":
-							_, err = yaml.Parse(input, unit)
+							_, err = yaml.Parse(input, yaml.WithUnit(unit))
 						case "ParseAST":
-							_, err = yaml.ParseAST(input, unit)
+							_, err = yaml.ParseAST(input, yaml.WithUnit(unit))
 						case "Recognize":
-							err = yaml.Recognize(input, unit)
+							err = yaml.Recognize(input, yaml.WithUnit(unit))
 						}
 						if err != nil {
 							b.Fatal(err)

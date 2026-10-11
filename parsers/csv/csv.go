@@ -62,7 +62,7 @@ import (
 
 // Valid reports whether input is a CSV file.
 func Valid(input string) bool {
-	return Recognize(input, Bytes) == nil // about 5% faster than with code points
+	return Recognize(input, WithUnit(Bytes)) == nil // about 5% faster than with code points
 }
 
 // Records parses input and returns its records, each a list of the values of its fields (see
@@ -85,7 +85,7 @@ func parseFile(input string) (*File, Unit, error) {
 	if !utf8.ValidString(input) {
 		unit = Bytes
 	}
-	f, err := ParseAST(input, unit)
+	f, err := ParseAST(input, WithUnit(unit))
 	return f, unit, err
 }
 

@@ -41,7 +41,7 @@ err = duckdb.Recognize("SELECT 1 UNION")      // a *duckdb.SyntaxError with Line
 
 | | |
 |:--|:--|
-| `ParseAST(input, unit...) (*Script, error)` | The script: `Statements`, each a `Select`, `InsertStmt`, `CreateTableStmt`, ... (the `Statement` union), with expressions, types and table references below them, and their `Span` |
+| `ParseAST(input, opts...) (*Script, error)` | The script: `Statements`, each a `Select`, `InsertStmt`, `CreateTableStmt`, ... (the `Statement` union), with expressions, types and table references below them, and their `Span` |
 | `Split(input) ([]StatementText, error)` | The statements as DuckDB splits the script: `Statement`, `Text`, `Start`, `End` |
 | `Kind(Statement) string` | The type DuckDB gives it: `SELECT`, `INSERT`, `CREATE`, `ALTER`, `COPY`, `SET`, ... |
 | `Walk(node, fn)`, `SpanOf(node)` | The nodes in the order of the input (`fn` returns false to skip the children), and the span of any node |
@@ -53,11 +53,11 @@ err = duckdb.Recognize("SELECT 1 UNION")      // a *duckdb.SyntaxError with Line
 | `(*Param).Index()`, `.ParamName()`, `.Positional()` | `$1` and `?1`, `$name`, and `?` |
 | `Keyword(word)`, `Keywords()` | The category of a keyword (`Unreserved`, `ColumnName`, `TypeFunction`, `Reserved`), as `duckdb_keywords()` says |
 | `QuoteIdent(name) string` | The name written so that it reads back as one identifier: between double quotes unless it is a plain word that is not a keyword that forbids it |
-| `Recognize(input, unit...) error` | Only checks the syntax |
-| `Parse(input, unit...) (*Node, error)` | The tree of `*Node`, as the engine returns it |
+| `Recognize(input, opts...) error` | Only checks the syntax |
+| `Parse(input, opts...) (*Node, error)` | The tree of `*Node`, as the engine returns it |
 | `*SyntaxError` | The position (`Line`, `Col`, `Pos`) and the expected tokens of a syntax error |
 
-Positions are in code points by default; `duckdb.ParseAST(src, duckdb.Bytes)` counts bytes (`Split` uses bytes).
+Positions are in code points by default; `duckdb.ParseAST(src, duckdb.WithUnit(duckdb.Bytes))` counts bytes (`Split` uses bytes).
 
 ## The syntax tree
 

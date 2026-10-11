@@ -283,14 +283,14 @@ func TestGeneratedNegativeMaximum(t *testing.T) {
 			}
 			astCheck := ""
 			if typed {
-				astCheck = `ast, ae := ParseAST(input, unit); if fmt.Sprint(ae) != fmt.Sprint(err) || err == nil && len(ast) != len([]rune(input)) { panic("typed negative-maximum result differs") }`
+				astCheck = `ast, ae := ParseAST(input, WithUnit(unit)); if fmt.Sprint(ae) != fmt.Sprint(err) || err == nil && len(ast) != len([]rune(input)) { panic("typed negative-maximum result differs") }`
 			}
 			harness := `package main
 import ("encoding/json";"fmt")
 func main() {
  for _, input := range []string{"","é","ééé","x","éx"} {
   for _, unit := range []Unit{CodePoints,Bytes} {
-   n, err := Parse(input,unit)
+   n, err := Parse(input,WithUnit(unit))
    ` + astCheck + `
    out := map[string]any{"node":n}
    if err != nil {out["err"]=err.Error()}

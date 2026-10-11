@@ -447,8 +447,11 @@ Two things to know:
   `WithMaxDepth(1_000_000)`, but 1,000,000 levels with `WithMaxDepth(2_000_000)` on the recursive bytecode backend
   crashed. If you need depth beyond the default, use `BytecodeIterative` rather than raising the limit.
 
-Generated parsers have the same default of 100,000 and no option to change it (see
-[code-generation.md](code-generation.md#what-is-supported)).
+Generated parsers have the same default of 100,000. `pego.WithGeneratedMaxDepth` or `pego gen -max-depth` sets a
+generated default; generated Go `WithMaxDepth` and TypeScript options-aware entry points override it per invocation
+(see [code generation](code-generation.md#invocation-options-and-migration) and
+[TypeScript depth options](typescript.md#deep-nesting-and-the-javascript-stack)). Their recursive host stacks still
+bound acceptance even when the configured limit is higher.
 
 ## Recognition mode
 

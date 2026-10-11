@@ -76,7 +76,7 @@ func ParseFile(fset *token.FileSet, filename string, src []byte, mode Mode) (*as
 
 // Valid reports whether src is a Go source file that go/parser accepts.
 func Valid(src string) bool {
-	return utf8.ValidString(src) && Recognize(src, Bytes) == nil
+	return utf8.ValidString(src) && Recognize(src, WithUnit(Bytes)) == nil
 }
 
 // errInvalidUTF8 is returned for source that is not valid UTF-8.
@@ -93,7 +93,7 @@ func parseBytes(src string) (*File, error) {
 			}
 		}
 	}
-	return ParseAST(src, Bytes)
+	return ParseAST(src, WithUnit(Bytes))
 }
 
 func countNewlines(s string) int {

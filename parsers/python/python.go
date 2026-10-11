@@ -66,7 +66,7 @@ import (
 // ParseModule parses a module (a file of Python source) like ParseAST and then makes the checks
 // that CPython's ast.parse makes outside its grammar (see Check).
 func ParseModule(src string, unit ...Unit) (*Module, error) {
-	m, err := ParseAST(src, unit...)
+	m, err := ParseAST(src, unitOptions(unit)...)
 	if err != nil {
 		return nil, err
 	}
@@ -338,4 +338,12 @@ func inspect(v reflect.Value, f func(any) bool) {
 			inspect(v.Index(i), f)
 		}
 	}
+}
+
+// unitOptions preserves the first-unit policy of the handwritten convenience API.
+func unitOptions(units []Unit) []ParseOption {
+	if len(units) == 0 {
+		return nil
+	}
+	return []ParseOption{WithUnit(units[0])}
 }

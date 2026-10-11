@@ -20,7 +20,7 @@ func TestNesting(t *testing.T) {
 		}
 	}
 	// go/parser accepts 30,000 levels; the parser reports an error, and does not run out of stack.
-	err := golang.Recognize(deep(30000), golang.Bytes)
+	err := golang.Recognize(deep(30000), golang.WithUnit(golang.Bytes))
 	if err == nil {
 		t.Error("30,000 levels: accepted; the documentation of the deviation is out of date")
 	} else if !strings.Contains(err.Error(), "nesting too deep") {

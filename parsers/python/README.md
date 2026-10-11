@@ -50,9 +50,9 @@ if errors.As(err, &se) {
 | | |
 |:--|:--|
 | `ParseModule(src, unit...) (*Module, error)` | Parses a module, as `ast.parse(src)` does, and makes the checks below |
-| `ParseAST(src, unit...) (*Module, error)` | The parser alone, to the typed AST |
+| `ParseAST(src, opts...) (*Module, error)` | The parser alone, to the typed AST |
 | `Check(m, src, unit...) error` | The checks of `ast.parse` that are not in its grammar: `\N{...}` names, the limit of 4300 digits of integers, `from __future__` features, identifiers that normalize to `None`/`True`/`False`, `<>` and `!=` (with `barry_as_FLUFL`) |
-| `Recognize(src, unit...) error`, `Parse(src, unit...) (*Node, error)` | Only check the syntax; the generic tree of `*Node`, as the engine returns it |
+| `Recognize(src, opts...) error`, `Parse(src, opts...) (*Node, error)` | Only check the syntax; the generic tree of `*Node`, as the engine returns it |
 | `Dump(node) string`, `DumpWithPositions(node, src, unit...) string` | The tree printed as `ast.dump` does, without and with `include_attributes=True` |
 | `Inspect(node, f)` | Walks the tree depth first |
 | `(*Constant).Value()`, `(*Constant).StringValue()` | The value of a constant: integers (`*big.Int`), floats, imaginary numbers, strings (adjacent literals concatenated, escapes decoded), bytes, `True`, `False`, `None`, `...` |

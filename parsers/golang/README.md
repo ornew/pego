@@ -17,7 +17,7 @@ fset := token.NewFileSet()
 f, err := golang.ParseFile(fset, "x.go", src, 0) // golang.ParseComments collects File.Comments too
 
 // Typed values modeled on go/ast, each with its Span in the input (Bytes counts bytes).
-file, err := golang.ParseAST(string(src), golang.Bytes)
+file, err := golang.ParseAST(string(src), golang.WithUnit(golang.Bytes))
 for _, d := range file.Decls {
 	if fn, ok := d.(*golang.FuncDecl); ok {
 		fmt.Println(fn.Name.Text, fn.Start, fn.End)
@@ -31,10 +31,10 @@ ok := golang.Valid(string(src))
 | | |
 |:--|:--|
 | `ParseFile(fset, filename, src, mode) (*ast.File, error)` | The `go/ast` tree, with the line table, `//line` directives and comment groups of `go/parser`; an error is a `scanner.ErrorList` with one error |
-| `ParseAST(input, unit...) (*File, error)` | The tree as the Go types of the grammar (`File`, `GenDecl`, `FuncDecl`, `CallExpr`, ...), each with its `Span` |
+| `ParseAST(input, opts...) (*File, error)` | The tree as the Go types of the grammar (`File`, `GenDecl`, `FuncDecl`, `CallExpr`, ...), each with its `Span` |
 | `ToGoAST(fset, filename, src, f, mode) *ast.File` | The conversion `ParseFile` uses; `f` must be parsed with `Bytes` |
-| `Valid(src) bool`, `Recognize(input, unit...) error` | Only check the input |
-| `Parse(input, unit...) (*Node, error)` | The tree of `*Node`, as the engine returns it |
+| `Valid(src) bool`, `Recognize(input, opts...) error` | Only check the input |
+| `Parse(input, opts...) (*Node, error)` | The tree of `*Node`, as the engine returns it |
 | `(*StringLit).Value()`, `(*CharLit).Value()` | The string or rune a literal denotes |
 | `(*IntLit).Constant()`, `(*FloatLit).Constant()`, `(*ImagLit).Constant()` | The `go/constant` value of a number |
 | `*SyntaxError` | The position (`Line`, `Col`, `Pos`) and the expected tokens of a syntax error |

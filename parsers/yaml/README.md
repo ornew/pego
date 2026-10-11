@@ -34,12 +34,12 @@ ok := yaml.Valid("a: b: c") // false
 
 | | |
 |:--|:--|
-| `ParseAST(input, unit...) (*Stream, error)` | The stream: `Documents`, each with its `Directives`, `Start` (`---`) and `End` (`...`) markers and its `Root` node, a `*Mapping`, `*Sequence`, `*Scalar` or `*Alias`, each with its `Span` |
+| `ParseAST(input, opts...) (*Stream, error)` | The stream: `Documents`, each with its `Directives`, `Start` (`---`) and `End` (`...`) markers and its `Root` node, a `*Mapping`, `*Sequence`, `*Scalar` or `*Alias`, each with its `Span` |
 | `Load(input) (any, error)`, `LoadAll(input) ([]any, error)` | Go values of the documents, with the core schema (below); `(*Document).Load` for one parsed document |
 | `Events(input) (string, error)`, `(*Stream).Events()` | The event stream in the format of the yaml-test-suite (`test.event`) |
 | `Valid(input) bool`, `(*Stream).Check() error` | The checks that are not syntax (below); `Valid` also parses and requires UTF-8 |
-| `Recognize(input, unit...) error` | Only checks the syntax |
-| `Parse(input, unit...) (*Node, error)` | The tree of `*Node`, as the engine returns it |
+| `Recognize(input, opts...) error` | Only checks the syntax |
+| `Parse(input, opts...) (*Node, error)` | The tree of `*Node`, as the engine returns it |
 | `(*Scalar).Value() string` | The content of a scalar, decoded by its `Style`: line folding, escapes, block indentation and chomping (`Text` is the source, from the quotes or the block indicator on) |
 | `(*Document).ResolveTag(*Tag) (string, error)` | The full name of a tag: `!!str` is `tag:yaml.org,2002:str`, shorthands use the `%TAG` directives |
 | `PropertiesOf(Value) *Properties` | The tag and anchor of a node, or nil |
@@ -49,7 +49,7 @@ A node's `Props` holds its tag and anchor; `Mapping.Flow` and `Sequence.Flow` te
 the block style; `Scalar.Style` is `Plain`, `SingleQuoted`, `DoubleQuoted`, `Literal` or `Folded`, and
 `Scalar.Indent` is the indentation of the content of a block scalar. An empty node (`key:`) is an empty plain
 `*Scalar`, and a pair of a flow sequence (`[a: b]`) a flow `*Mapping` of one pair. Positions are in code points by
-default; `yaml.ParseAST(src, yaml.Bytes)` counts bytes.
+default; `yaml.ParseAST(src, yaml.WithUnit(yaml.Bytes))` counts bytes.
 
 ### Checks that are not syntax
 

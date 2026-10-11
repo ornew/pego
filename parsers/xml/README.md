@@ -55,8 +55,8 @@ if errors.As(err, &we) {
 | `Tree` | `Version`, `Encoding`, `Standalone`, `DTD`, `Prolog`, `Root`, `Epilog` and the syntax tree `Doc` |
 | `Elem`, `Attr`, `Text` | Decoded elements (name, attributes, children), attributes (normalized value, `Defaulted`) and text (adjacent text merged) |
 | `DTD`, `Entity`, `AttributeDecl` | The declarations of the internal subset that were processed |
-| `ParseAST(input, unit...) (*Document, error)` | The syntax tree: `Document`, `Element`, `Attribute`, `CharData`, `EntityRef`, `CharRef`, `CDSect`, `PI`, `Comment`, `Doctype` and the declarations, each with its `Span` |
-| `Parse(input, unit...) (*Node, error)`, `Recognize(input, unit...) error` | The tree of `*Node`, as the engine returns it; only checking |
+| `ParseAST(input, opts...) (*Document, error)` | The syntax tree: `Document`, `Element`, `Attribute`, `CharData`, `EntityRef`, `CharRef`, `CDSect`, `PI`, `Comment`, `Doctype` and the declarations, each with its `Span` |
+| `Parse(input, opts...) (*Node, error)`, `Recognize(input, opts...) error` | The tree of `*Node`, as the engine returns it; only checking |
 | `(*CharData).Value()`, `(*AttValue).Value()`, `(*CharRef).Rune()`, ... | Values of the syntax tree: line ends normalized, references decoded |
 
 In the decoded tree, children are `*Elem`, `*Text`, `*PI`, `*Comment`, or `*EntityRef` for a reference to an entity
@@ -64,7 +64,7 @@ that was not expanded (an external entity, which a non-validating processor does
 document whose DTD was not read entirely). Elements that come from the replacement text of an entity name it in
 `Elem.Entity`, and their `Src` spans are relative to that text.
 
-Positions are in code points by default; `xml.ParseAST(src, xml.Bytes)` counts bytes. `Decode` reports code points.
+Positions are in code points by default; `xml.ParseAST(src, xml.WithUnit(xml.Bytes))` counts bytes. `Decode` reports code points.
 
 ## Conformance
 

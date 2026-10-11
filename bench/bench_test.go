@@ -46,7 +46,7 @@ var workloads = []workload{
 		name: "JSON", grammar: "../parsers/json/json.pego", input: func(k int) string { return JSONInput(256 << 10 / k) },
 		gen: func(s string, b bool) error {
 			if b {
-				return genErr(gjson.Parse(s, gjson.Bytes))
+				return genErr(gjson.Parse(s, gjson.WithUnit(gjson.Bytes)))
 			}
 			return genErr(gjson.Parse(s))
 		},
@@ -61,7 +61,7 @@ var workloads = []workload{
 		name: "CSV", grammar: "../parsers/csv/csv.pego", input: func(k int) string { return CSVInput(5000 / k) },
 		gen: func(s string, b bool) error {
 			if b {
-				return genErr(gcsv.Parse(s, gcsv.Bytes))
+				return genErr(gcsv.Parse(s, gcsv.WithUnit(gcsv.Bytes)))
 			}
 			return genErr(gcsv.Parse(s))
 		},
@@ -78,7 +78,7 @@ var workloads = []workload{
 		name: "XML", grammar: "../parsers/xml/xml.pego", input: func(k int) string { return XMLInput(256 << 10 / k) },
 		gen: func(s string, b bool) error {
 			if b {
-				return genErr(gxml.Parse(s, gxml.Bytes))
+				return genErr(gxml.Parse(s, gxml.WithUnit(gxml.Bytes)))
 			}
 			return genErr(gxml.Parse(s))
 		},
@@ -99,7 +99,7 @@ var workloads = []workload{
 		name: "Arith_Pratt", grammar: "../examples/calculator/calc.pego", input: func(k int) string { return ArithInput(20000 / k) },
 		gen: func(s string, b bool) error {
 			if b {
-				return genErr(gcalc.Parse(s, gcalc.Bytes))
+				return genErr(gcalc.Parse(s, gcalc.WithUnit(gcalc.Bytes)))
 			}
 			return genErr(gcalc.Parse(s))
 		},
@@ -111,7 +111,7 @@ var workloads = []workload{
 		name: "Arith_LeftRec", grammar: "../examples/calculator/calc_lr.pego", input: func(k int) string { return ArithInput(20000 / k) },
 		gen: func(s string, b bool) error {
 			if b {
-				return genErr(gcalclr.Parse(s, gcalclr.Bytes))
+				return genErr(gcalclr.Parse(s, gcalclr.WithUnit(gcalclr.Bytes)))
 			}
 			return genErr(gcalclr.Parse(s))
 		},
@@ -123,7 +123,7 @@ var workloads = []workload{
 		name: "Minilang", grammar: "../examples/minilang/minilang.pego", input: func(k int) string { return MinilangInput(300/k, 0) },
 		gen: func(s string, b bool) error {
 			if b {
-				return genErr(gminilang.Parse(s, gminilang.Bytes))
+				return genErr(gminilang.Parse(s, gminilang.WithUnit(gminilang.Bytes)))
 			}
 			return genErr(gminilang.Parse(s))
 		},
@@ -138,7 +138,7 @@ var workloads = []workload{
 			if b {
 				u = gminilang.Bytes
 			}
-			if n, _ := gminilang.Parse(s, u); n == nil {
+			if n, _ := gminilang.Parse(s, gminilang.WithUnit(u)); n == nil {
 				return io.ErrUnexpectedEOF
 			}
 			return nil
@@ -155,7 +155,7 @@ var workloads = []workload{
 		name: "Outline", grammar: "../examples/outline/outline.pego", input: func(k int) string { return OutlineInput(5000 / k) },
 		gen: func(s string, b bool) error {
 			if b {
-				return genErr(goutline.Parse(s, goutline.Bytes))
+				return genErr(goutline.Parse(s, goutline.WithUnit(goutline.Bytes)))
 			}
 			return genErr(goutline.Parse(s))
 		},

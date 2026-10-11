@@ -88,7 +88,7 @@ func TestRetainedTrees(t *testing.T) {
  cases:=[]struct{rule,input string;unit Unit;want string}{` + rows.String() + `}
  var saved []*Node;var snapshots []string
  for repeat:=0;repeat<3;repeat++ {for _,c:=range cases {
-  n,err:=ParseRule(c.rule,c.input,c.unit)
+  n,err:=ParseRule(c.rule,c.input,WithUnit(c.unit))
   if got:=encoded(n,err);got!=c.want {t.Fatalf("%s %q: got %s want %s",c.rule,c.input,got,c.want)}
   if err==nil {saved=append(saved,n);snapshots=append(snapshots,encoded(n,nil))}
   for i,n:=range saved {if encoded(n,nil)!=snapshots[i] {t.Fatalf("retained tree %d changed",i)}}

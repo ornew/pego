@@ -21,7 +21,7 @@ func main() {
 `
 
 func ExampleParseAST() {
-	file, err := golang.ParseAST(hello, golang.Bytes)
+	file, err := golang.ParseAST(hello, golang.WithUnit(golang.Bytes))
 	if err != nil {
 		panic(err)
 	}
@@ -41,7 +41,7 @@ func ExampleParseAST() {
 }
 
 func ExampleParseAST_literals() {
-	file, err := golang.ParseAST(`package p; var _ = []any{"a\tb", 'x', 0x1F, 1.5}`, golang.Bytes)
+	file, err := golang.ParseAST(`package p; var _ = []any{"a\tb", 'x', 0x1F, 1.5}`, golang.WithUnit(golang.Bytes))
 	if err != nil {
 		panic(err)
 	}

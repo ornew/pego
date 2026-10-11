@@ -368,22 +368,64 @@ const (
 	Bytes
 )
 
-// maxDepth is the maximum nesting of rule calls, the same default as the engine.
-const maxDepth = 100_000
+// defaultMaxDepth is the generated default maximum nesting of rule calls.
+const defaultMaxDepth = 100000
+
+// ParseOption configures an individual parsing invocation. Options apply in order.
+type ParseOption func(*parseOptions)
+
+type parseOptions struct {
+	unit     Unit
+	maxDepth int
+}
+
+// WithUnit selects the unit of input positions (CodePoints by default).
+func WithUnit(unit Unit) ParseOption { return func(o *parseOptions) { o.unit = unit } }
+
+// WithMaxDepth limits nested rule calls. Zero selects the generated default;
+// a negative effective limit returns an error before parsing.
+// A larger limit does not guarantee that the host stack can accommodate it.
+func WithMaxDepth(n int) ParseOption { return func(o *parseOptions) { o.maxDepth = n } }
+
+func resolveOptions(opts []ParseOption) (parseOptions, error) {
+	if len(opts) == 0 {
+		return parseOptions{maxDepth: defaultMaxDepth}, nil
+	}
+	o := parseOptions{maxDepth: defaultMaxDepth}
+	for _, opt := range opts {
+		opt(&o)
+	}
+	if o.maxDepth < 0 {
+		return o, fmt.Errorf("max depth must be non-negative: %d", o.maxDepth)
+	}
+	if o.maxDepth == 0 {
+		o.maxDepth = defaultMaxDepth
+	}
+	return o, nil
+}
 
 // parse parses the whole input with rule r of a rule table with seen rules that have rule.seen
 // set.
-func parse(r *rule, seen int, input string, units []Unit) (n *Node, err error) {
+func parse(r *rule, seen int, input string, opts []ParseOption) (n *Node, err error) {
+	o, err := resolveOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+	return parseResolved(r, seen, input, o)
+}
+
+func parseResolved(r *rule, seen int, input string, o parseOptions) (n *Node, err error) {
 	p, _ := ppool.Get().(*parser)
 	if p == nil {
 		p = &parser{}
 	}
 	defer p.release()
+	p.maxDepth = o.maxDepth
 	p.memo.stride = seen
 	if len(p.memo.calls) != seen {
 		p.memo.calls = nil // kept from a parse with another rule table (Recognize)
 	}
-	if len(units) > 0 && units[0] == Bytes {
+	if o.unit == Bytes {
 		p.unit, p.bs, p.n = Bytes, input, len(input)
 	} else {
 		p.setSource(input)
@@ -469,14 +511,15 @@ type parser struct {
 	offs []int32
 	pos  int
 
-	depth   int     // nesting of rule calls
-	created []*Node // struct nodes made by the action being evaluated (from actx.cbase)
-	env     *env
-	bound   map[string]bool // names assigned anywhere in this parse (a lookup hint)
-	frame   *frame
-	trail   []undo
-	cut     bool
-	memo    memoTable
+	maxDepth int     // invocation-local maximum nesting
+	depth    int     // nesting of rule calls
+	created  []*Node // struct nodes made by the action being evaluated (from actx.cbase)
+	env      *env
+	bound    map[string]bool // names assigned anywhere in this parse (a lookup hint)
+	frame    *frame
+	trail    []undo
+	cut      bool
+	memo     memoTable
 
 	// silent is positive inside lookaheads, where expectations are not recorded.
 	silent   int
@@ -1104,8 +1147,8 @@ func (p *parser) invoke(r *rule, min int) (*Node, bool) {
 	prevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)
 	p.frame, p.cut = f, false
 	p.depth++
-	if p.depth > maxDepth {
-		panic(fatal{fmt.Errorf("nesting too deep: more than %d rule calls", maxDepth)})
+	if p.depth > p.maxDepth {
+		panic(fatal{fmt.Errorf("nesting too deep: more than %d rule calls", p.maxDepth)})
 	}
 	start := p.pos
 	v, ok := r.body(p, min)
@@ -1127,7 +1170,7 @@ func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := r.body(p, min)
@@ -1146,7 +1189,7 @@ func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
 
 // tooDeep fails the parse for exceeding the nesting limit.
 func (p *parser) tooDeep() {
-	panic(fatal{fmt.Errorf("nesting too deep: more than %d rule calls", maxDepth)})
+	panic(fatal{fmt.Errorf("nesting too deep: more than %d rule calls", p.maxDepth)})
 }
 
 // finish makes the rule's value from the value of its body.
@@ -1914,7 +1957,7 @@ func (p *parser) apply(a *prattAttempt) {
 // against the nesting limit, like a rule call.
 func (p *parser) prattParse(r *rule, min int) (*Node, bool) {
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.prattExpr(r, min)
@@ -2082,15 +2125,17 @@ func (p *parser) prattBuild(r *rule, a *prattAttempt, lhs, rhs *Node) *Node {
 
 // --- Generated code ---
 
-// Parse parses the whole input with the rule main. unit selects the position unit (CodePoints by default).
+// Parse parses the whole input with the rule main. Options select position units and the rule-call limit.
 // If the parse recovered from errors with #recover, it returns the node together with SyntaxErrors.
-func Parse(input string, unit ...Unit) (*Node, error) { return parse(rules[0], nseen, input, unit) }
+func Parse(input string, opts ...ParseOption) (*Node, error) {
+	return parse(rules[0], nseen, input, opts)
+}
 
 // Recognize checks that the whole input matches the rule main without building a tree, and returns the
 // syntax errors Parse would return (SyntaxErrors for errors recovered with #recover). Actions are not
 // evaluated, so it does not report runtime errors in actions.
-func Recognize(input string, unit ...Unit) error {
-	_, err := parse(recRules[0], recNseen, input, unit)
+func Recognize(input string, opts ...ParseOption) error {
+	_, err := parse(recRules[0], recNseen, input, opts)
 	return err
 }
 
@@ -2099,12 +2144,16 @@ var recRules []*rule
 var recNseen int
 
 // ParseRule parses the whole input with the rule name.
-func ParseRule(name, input string, unit ...Unit) (*Node, error) {
+func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
+	o, err := resolveOptions(opts)
+	if err != nil {
+		return nil, err
+	}
 	r := ruleByName(name)
 	if r == nil {
 		return nil, fmt.Errorf("rule %s is not defined", name)
 	}
-	return parse(r, nseen, input, unit)
+	return parseResolved(r, nseen, input, o)
 }
 
 // --- Typed runtime ---
@@ -2320,12 +2369,17 @@ func tlistOf(kids []any) any {
 // tparse parses the whole input with the typed rule r, and returns the result converted by conv
 // (before the parser's scratch memory, which the result may be in, is cleared). ext holds the
 // generated code's chunks.
-func tparse[T any](r *trule, input string, units []Unit, ext any, conv func(any) T) (T, error) {
+func tparse[T any](r *trule, input string, opts []ParseOption, ext any, conv func(any) T) (T, error) {
+	o, err := resolveOptions(opts)
+	if err != nil {
+		var zero T
+		return zero, err
+	}
 	p, _ := tpool.Get().(*tparser)
 	if p == nil {
 		p = &tparser{parser: &parser{}}
 	}
-	v, err := p.run(r, input, units, ext)
+	v, err := p.run(r, input, o, ext)
 	res := conv(v)
 	p.recycle()
 	tpool.Put(p)
@@ -2333,10 +2387,11 @@ func tparse[T any](r *trule, input string, units []Unit, ext any, conv func(any)
 }
 
 // run parses the whole input with the typed rule r.
-func (p *tparser) run(r *trule, input string, units []Unit, ext any) (v any, err error) {
+func (p *tparser) run(r *trule, input string, o parseOptions, ext any) (v any, err error) {
+	p.maxDepth = o.maxDepth
 	p.ext = ext
 	p.memo.stride = nseen
-	if len(units) > 0 && units[0] == Bytes {
+	if o.unit == Bytes {
 		// p.in stays empty: direct rules read code points from it while p.pos < len(p.in).
 		p.unit, p.bs, p.n, p.in = Bytes, input, len(input), p.in[:0]
 	} else {
@@ -2745,7 +2800,7 @@ func (p *tparser) invoke(r *trule, min int) (any, bool) {
 	prevFrame, prevEnv, prevCut, trail := p.frame, p.env, p.cut, len(p.trail)
 	p.frame, p.cut = f, false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	start := p.pos
@@ -2766,7 +2821,7 @@ func (p *tparser) invokePlain(r *trule, min int) (any, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := r.body(p, min)
@@ -3447,7 +3502,7 @@ func (p *tparser) apply(a *tprattAttempt) {
 // prattParse is parser.prattParse for typed values.
 func (p *tparser) prattParse(r *trule, min int) (any, bool) {
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.prattExpr(r, min)
@@ -5308,9 +5363,9 @@ type tslabs struct {
 // from errors, the result is returned together with SyntaxErrors; an Error node where a struct or
 // terminal type is expected becomes nil.
 // It builds the values directly, without the nodes Parse returns.
-func ParseAST(input string, unit ...Unit) (*File, error) {
+func ParseAST(input string, opts ...ParseOption) (*File, error) {
 	a := &tslabs{}
-	return tparse(trules[0], input, unit, a, func(v any) *File { return tAs[*File](v) })
+	return tparse(trules[0], input, opts, a, func(v any) *File { return tAs[*File](v) })
 }
 
 var lit3 = []rune("\ufeff")
@@ -7767,7 +7822,7 @@ func (p *parser) e12() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 105)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 7)
 		goto L6
 	}
@@ -7779,7 +7834,7 @@ func (p *parser) e12() (*Node, bool) {
 L7:
 	p.reset(x1)
 L6:
-	if !(x5 && (x4 == 105)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 7)
 		goto L9
 	}
@@ -8041,7 +8096,7 @@ L4:
 	} else {
 		x15, _, x16 = p.peek()
 	}
-	if !(x16 && (x15 == 41)) && p.depth+0 <= maxDepth {
+	if !(x16 && (x15 == 41)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 9)
 		goto L17
 	}
@@ -8054,7 +8109,7 @@ L4:
 L18:
 	p.reset(x13)
 L17:
-	if !(x16 && (x15 == 125)) && p.depth+0 <= maxDepth {
+	if !(x16 && (x15 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L19
 	}
@@ -8296,7 +8351,7 @@ func (p *parser) e27() (*Node, bool) {
 		} else {
 			x18, _, x19 = p.peek()
 		}
-		if !(x19 && (x18 == 47)) && p.depth+1 <= maxDepth {
+		if !(x19 && (x18 == 47)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 15)
 			goto L20
 		}
@@ -8439,7 +8494,7 @@ func (p *parser) e32() (*Node, bool) {
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 44)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L9
 	}
@@ -8463,7 +8518,7 @@ func (p *parser) e32() (*Node, bool) {
 L10:
 	p.reset(x4)
 L9:
-	if !(x8 && (x7 == 10)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L17
 	}
@@ -8507,7 +8562,7 @@ L17:
 	} else {
 		x34, _, x35 = p.peek()
 	}
-	if !(x35 && (x34 == 10)) && p.depth+0 <= maxDepth {
+	if !(x35 && (x34 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L36
 	}
@@ -8600,7 +8655,7 @@ func (p *parser) e33() (*Node, bool) {
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 10)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L9
 	}
@@ -9290,7 +9345,7 @@ func (p *parser) e51() (*Node, bool) {
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 44)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L9
 	}
@@ -9306,7 +9361,7 @@ func (p *parser) e51() (*Node, bool) {
 L10:
 	p.reset(x4)
 L9:
-	if !(x8 && (x7 == 125)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L13
 	}
@@ -9322,7 +9377,7 @@ L9:
 L14:
 	p.reset(x4)
 L13:
-	if !(x8 && (x7 == 10)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L17
 	}
@@ -9338,7 +9393,7 @@ L13:
 L18:
 	p.reset(x4)
 L17:
-	if !(x8 && (x7 == 47)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L21
 	}
@@ -9400,7 +9455,7 @@ func (p *parser) e52() (*Node, bool) {
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 44)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L9
 	}
@@ -9416,7 +9471,7 @@ func (p *parser) e52() (*Node, bool) {
 L10:
 	p.reset(x4)
 L9:
-	if !(x8 && (x7 == 125)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L13
 	}
@@ -9809,7 +9864,7 @@ func (p *parser) e64() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 102)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L6
 	}
@@ -9821,7 +9876,7 @@ func (p *parser) e64() (*Node, bool) {
 L7:
 	p.reset(x1)
 L6:
-	if !(x5 && (x4 == 105)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L9
 	}
@@ -9833,7 +9888,7 @@ L6:
 L10:
 	p.reset(x1)
 L9:
-	if !(x5 && (x4 == 108)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 108)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L12
 	}
@@ -9882,7 +9937,7 @@ func (p *parser) e68() (*Node, bool) {
 	} else {
 		x6, _, x7 = p.peek()
 	}
-	if !(x7 && (x6 == 102)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L8
 	}
@@ -9898,7 +9953,7 @@ func (p *parser) e68() (*Node, bool) {
 L9:
 	p.reset(x3)
 L8:
-	if !(x7 && (x6 == 105)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L12
 	}
@@ -9914,7 +9969,7 @@ L8:
 L13:
 	p.reset(x3)
 L12:
-	if !(x7 && (x6 == 108)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 108)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L16
 	}
@@ -9930,7 +9985,7 @@ L12:
 L17:
 	p.reset(x3)
 L16:
-	if !(x7 && (x6 == 116)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L20
 	}
@@ -10021,7 +10076,7 @@ L6:
 	} else {
 		x11, _, x12 = p.peek()
 	}
-	if !(x12 && (x11 == 44)) && p.depth+0 <= maxDepth {
+	if !(x12 && (x11 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L13
 	}
@@ -10037,7 +10092,7 @@ L6:
 L14:
 	p.reset(x8)
 L13:
-	if !(x12 && (x11 == 10)) && p.depth+0 <= maxDepth {
+	if !(x12 && (x11 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L17
 	}
@@ -10053,7 +10108,7 @@ L13:
 L18:
 	p.reset(x8)
 L17:
-	if !(x12 && (x11 == 47)) && p.depth+0 <= maxDepth {
+	if !(x12 && (x11 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L21
 	}
@@ -10077,7 +10132,7 @@ L21:
 	goto L10
 L25:
 	p.reset(x8)
-	if !(x12 && (x11 == 125)) && p.depth+0 <= maxDepth {
+	if !(x12 && (x11 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L26
 	}
@@ -10139,7 +10194,7 @@ L2:
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 44)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L10
 	}
@@ -10152,7 +10207,7 @@ L2:
 L11:
 	p.reset(x6)
 L10:
-	if !(x9 && (x8 == 10)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L12
 	}
@@ -10165,7 +10220,7 @@ L10:
 L13:
 	p.reset(x6)
 L12:
-	if !(x9 && (x8 == 47)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L14
 	}
@@ -10237,7 +10292,7 @@ L2:
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 44)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L10
 	}
@@ -10250,7 +10305,7 @@ L2:
 L11:
 	p.reset(x6)
 L10:
-	if !(x9 && (x8 == 10)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L12
 	}
@@ -10263,7 +10318,7 @@ L10:
 L13:
 	p.reset(x6)
 L12:
-	if !(x9 && (x8 == 47)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L14
 	}
@@ -10350,7 +10405,7 @@ L4:
 	} else {
 		x10, _, x11 = p.peek()
 	}
-	if !(x11 && (x10 == 44)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L12
 	}
@@ -10363,7 +10418,7 @@ L4:
 L13:
 	p.reset(x8)
 L12:
-	if !(x11 && (x10 == 10)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L14
 	}
@@ -10376,7 +10431,7 @@ L12:
 L15:
 	p.reset(x8)
 L14:
-	if !(x11 && (x10 == 47)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L16
 	}
@@ -10396,7 +10451,7 @@ L16:
 	goto L9
 L18:
 	p.reset(x8)
-	if !(x11 && (x10 == 125)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L19
 	}
@@ -10511,7 +10566,7 @@ L7:
 	} else {
 		x11, _, x12 = p.peek()
 	}
-	if !(x12 && (x11 == 63)) && p.depth+0 <= maxDepth {
+	if !(x12 && (x11 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L13
 	}
@@ -10530,7 +10585,7 @@ L7:
 L14:
 	p.reset(x9)
 L13:
-	if !(x12 && (x11 == 33)) && p.depth+0 <= maxDepth {
+	if !(x12 && (x11 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L17
 	}
@@ -10612,7 +10667,7 @@ L5:
 	} else {
 		x9, _, x10 = p.peek()
 	}
-	if !(x10 && (x9 == 63)) && p.depth+0 <= maxDepth {
+	if !(x10 && (x9 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L11
 	}
@@ -10631,7 +10686,7 @@ L5:
 L12:
 	p.reset(x7)
 L11:
-	if !(x10 && (x9 == 33)) && p.depth+0 <= maxDepth {
+	if !(x10 && (x9 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L15
 	}
@@ -10744,7 +10799,7 @@ L5:
 	} else {
 		x9, _, x10 = p.peek()
 	}
-	if !(x10 && (x9 == 63)) && p.depth+0 <= maxDepth {
+	if !(x10 && (x9 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L11
 	}
@@ -10763,7 +10818,7 @@ L5:
 L12:
 	p.reset(x7)
 L11:
-	if !(x10 && (x9 == 33)) && p.depth+0 <= maxDepth {
+	if !(x10 && (x9 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L15
 	}
@@ -10845,7 +10900,7 @@ L5:
 	} else {
 		x9, _, x10 = p.peek()
 	}
-	if !(x10 && (x9 == 63)) && p.depth+0 <= maxDepth {
+	if !(x10 && (x9 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L11
 	}
@@ -10864,7 +10919,7 @@ L5:
 L12:
 	p.reset(x7)
 L11:
-	if !(x10 && (x9 == 33)) && p.depth+0 <= maxDepth {
+	if !(x10 && (x9 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L15
 	}
@@ -11314,7 +11369,7 @@ func (p *parser) e92() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 126)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 126)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 33)
 		goto L6
 	}
@@ -11326,7 +11381,7 @@ func (p *parser) e92() (*Node, bool) {
 L7:
 	p.reset(x1)
 L6:
-	if !(x5 && (x4 == 126)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 126)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 33)
 		goto L9
 	}
@@ -11338,7 +11393,7 @@ L6:
 L10:
 	p.reset(x1)
 L9:
-	if !(x5 && (x4 == 126)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 126)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 33)
 		goto L12
 	}
@@ -11508,7 +11563,7 @@ L8:
 	} else {
 		x10, _, x11 = p.peek()
 	}
-	if !(x11 && (x10 == 110)) && p.depth+1 <= maxDepth {
+	if !(x11 && (x10 == 110)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L12
 	}
@@ -11520,7 +11575,7 @@ L8:
 L13:
 	p.reset(x1)
 L12:
-	if !(x11 && (x10 == 40)) && p.depth+1 <= maxDepth {
+	if !(x11 && (x10 == 40)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L15
 	}
@@ -11532,7 +11587,7 @@ L12:
 L16:
 	p.reset(x1)
 L15:
-	if !(x11 && (x10 == 91)) && p.depth+1 <= maxDepth {
+	if !(x11 && (x10 == 91)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L18
 	}
@@ -11596,7 +11651,7 @@ func (p *parser) e102() (*Node, bool) {
 	} else {
 		x6, _, x7 = p.peek()
 	}
-	if !(x7 && (x6 == 105)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 36)
 		goto L8
 	}
@@ -11609,7 +11664,7 @@ func (p *parser) e102() (*Node, bool) {
 L9:
 	p.reset(x4)
 L8:
-	if !(x7 && (x6 == 101)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 101)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 37)
 		goto L10
 	}
@@ -11622,7 +11677,7 @@ L8:
 L11:
 	p.reset(x4)
 L10:
-	if !(x7 && (x6 == 102)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 38)
 		goto L12
 	}
@@ -11633,7 +11688,7 @@ L10:
 L13:
 	p.reset(x4)
 L12:
-	if !(x7 && (x6 == 111)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 39)
 		goto L14
 	}
@@ -11644,7 +11699,7 @@ L12:
 L15:
 	p.reset(x4)
 L14:
-	if !(x7 && (x6 == 102)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 20)
 		goto L16
 	}
@@ -11678,7 +11733,7 @@ L3:
 	} else {
 		x20, _, x21 = p.peek()
 	}
-	if !(x21 && (x20 == 102)) && p.depth+1 <= maxDepth {
+	if !(x21 && (x20 == 102)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L22
 	}
@@ -11689,7 +11744,7 @@ L3:
 L23:
 	p.reset(x1)
 L22:
-	if !(x21 && (x20 == 105)) && p.depth+1 <= maxDepth {
+	if !(x21 && (x20 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L24
 	}
@@ -11700,7 +11755,7 @@ L22:
 L25:
 	p.reset(x1)
 L24:
-	if !(x21 && (x20 == 108)) && p.depth+1 <= maxDepth {
+	if !(x21 && (x20 == 108)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L26
 	}
@@ -11759,7 +11814,7 @@ L2:
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 58)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L10
 	}
@@ -11772,7 +11827,7 @@ L2:
 L11:
 	p.reset(x6)
 L10:
-	if !(x9 && (x8 == 61)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L12
 	}
@@ -11803,7 +11858,7 @@ L15:
 L13:
 	p.reset(x6)
 L12:
-	if !(x9 && (x8 == 63)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L16
 	}
@@ -11816,7 +11871,7 @@ L12:
 L17:
 	p.reset(x6)
 L16:
-	if !(x9 && (x8 == 33)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L18
 	}
@@ -11847,7 +11902,7 @@ L21:
 L19:
 	p.reset(x6)
 L18:
-	if !(x9 && (x8 == 44)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L22
 	}
@@ -11860,7 +11915,7 @@ L18:
 L23:
 	p.reset(x6)
 L22:
-	if !(x9 && (x8 == 10)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L24
 	}
@@ -11873,7 +11928,7 @@ L22:
 L25:
 	p.reset(x6)
 L24:
-	if !(x9 && (x8 == 47)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L26
 	}
@@ -11948,7 +12003,7 @@ L2:
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 58)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L10
 	}
@@ -11961,7 +12016,7 @@ L2:
 L11:
 	p.reset(x6)
 L10:
-	if !(x9 && (x8 == 61)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L12
 	}
@@ -11992,7 +12047,7 @@ L15:
 L13:
 	p.reset(x6)
 L12:
-	if !(x9 && (x8 == 63)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L16
 	}
@@ -12005,7 +12060,7 @@ L12:
 L17:
 	p.reset(x6)
 L16:
-	if !(x9 && (x8 == 44)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L18
 	}
@@ -12018,7 +12073,7 @@ L16:
 L19:
 	p.reset(x6)
 L18:
-	if !(x9 && (x8 == 10)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L20
 	}
@@ -12031,7 +12086,7 @@ L18:
 L21:
 	p.reset(x6)
 L20:
-	if !(x9 && (x8 == 47)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L22
 	}
@@ -12051,7 +12106,7 @@ L22:
 	goto L7
 L24:
 	p.reset(x6)
-	if !(x9 && (x8 == 33)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L25
 	}
@@ -12205,7 +12260,7 @@ L8:
 	} else {
 		x10, _, x11 = p.peek()
 	}
-	if !(x11 && (x10 == 110)) && p.depth+1 <= maxDepth {
+	if !(x11 && (x10 == 110)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L12
 	}
@@ -12217,7 +12272,7 @@ L8:
 L13:
 	p.reset(x1)
 L12:
-	if !(x11 && (x10 == 40)) && p.depth+1 <= maxDepth {
+	if !(x11 && (x10 == 40)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L15
 	}
@@ -12229,7 +12284,7 @@ L12:
 L16:
 	p.reset(x1)
 L15:
-	if !(x11 && (x10 == 91)) && p.depth+1 <= maxDepth {
+	if !(x11 && (x10 == 91)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L18
 	}
@@ -12293,7 +12348,7 @@ func (p *parser) e109() (*Node, bool) {
 	} else {
 		x6, _, x7 = p.peek()
 	}
-	if !(x7 && (x6 == 105)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 36)
 		goto L8
 	}
@@ -12306,7 +12361,7 @@ func (p *parser) e109() (*Node, bool) {
 L9:
 	p.reset(x4)
 L8:
-	if !(x7 && (x6 == 101)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 101)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 37)
 		goto L10
 	}
@@ -12319,7 +12374,7 @@ L8:
 L11:
 	p.reset(x4)
 L10:
-	if !(x7 && (x6 == 102)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 38)
 		goto L12
 	}
@@ -12330,7 +12385,7 @@ L10:
 L13:
 	p.reset(x4)
 L12:
-	if !(x7 && (x6 == 111)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 39)
 		goto L14
 	}
@@ -12341,7 +12396,7 @@ L12:
 L15:
 	p.reset(x4)
 L14:
-	if !(x7 && (x6 == 102)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 20)
 		goto L16
 	}
@@ -12354,7 +12409,7 @@ L14:
 L17:
 	p.reset(x4)
 L16:
-	if !(x7 && (x6 == 102)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L18
 	}
@@ -12367,7 +12422,7 @@ L16:
 L19:
 	p.reset(x4)
 L18:
-	if !(x7 && (x6 == 105)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L20
 	}
@@ -12380,7 +12435,7 @@ L18:
 L21:
 	p.reset(x4)
 L20:
-	if !(x7 && (x6 == 116)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L22
 	}
@@ -12414,7 +12469,7 @@ L3:
 	} else {
 		x26, _, x27 = p.peek()
 	}
-	if !(x27 && (x26 == 108)) && p.depth+1 <= maxDepth {
+	if !(x27 && (x26 == 108)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L28
 	}
@@ -12516,7 +12571,7 @@ L10:
 	} else {
 		x12, _, x13 = p.peek()
 	}
-	if !(x13 && (x12 == 110)) && p.depth+1 <= maxDepth {
+	if !(x13 && (x12 == 110)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L14
 	}
@@ -12528,7 +12583,7 @@ L10:
 L15:
 	p.reset(x1)
 L14:
-	if !(x13 && (x12 == 40)) && p.depth+1 <= maxDepth {
+	if !(x13 && (x12 == 40)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L17
 	}
@@ -12540,7 +12595,7 @@ L14:
 L18:
 	p.reset(x1)
 L17:
-	if !(x13 && (x12 == 91)) && p.depth+1 <= maxDepth {
+	if !(x13 && (x12 == 91)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L20
 	}
@@ -12649,7 +12704,7 @@ L2:
 	} else {
 		x6, _, x7 = p.peek()
 	}
-	if !(x7 && (x6 == 105)) && p.depth+1 <= maxDepth {
+	if !(x7 && (x6 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L8
 	}
@@ -12856,7 +12911,7 @@ func (p *parser) e120() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (x3 == 111)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 39)
 		goto L5
 	}
@@ -12867,7 +12922,7 @@ func (p *parser) e120() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 102)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 38)
 		goto L7
 	}
@@ -12974,7 +13029,7 @@ func (p *parser) e122() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L6
 	}
@@ -13010,7 +13065,7 @@ L13:
 	} else {
 		x19, _, x20 = p.peek()
 	}
-	if !(x20 && (x19 == 58)) && p.depth+0 <= maxDepth {
+	if !(x20 && (x19 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L21
 	}
@@ -13023,7 +13078,7 @@ L13:
 L22:
 	p.reset(x17)
 L21:
-	if !(x20 && (x19 == 61)) && p.depth+0 <= maxDepth {
+	if !(x20 && (x19 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L23
 	}
@@ -13054,7 +13109,7 @@ L26:
 L24:
 	p.reset(x17)
 L23:
-	if !(x20 && (x19 == 63)) && p.depth+0 <= maxDepth {
+	if !(x20 && (x19 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L27
 	}
@@ -13067,7 +13122,7 @@ L23:
 L28:
 	p.reset(x17)
 L27:
-	if !(x20 && (x19 == 33)) && p.depth+0 <= maxDepth {
+	if !(x20 && (x19 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L29
 	}
@@ -13098,7 +13153,7 @@ L32:
 L30:
 	p.reset(x17)
 L29:
-	if !(x20 && (x19 == 44)) && p.depth+0 <= maxDepth {
+	if !(x20 && (x19 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L33
 	}
@@ -13111,7 +13166,7 @@ L29:
 L34:
 	p.reset(x17)
 L33:
-	if !(x20 && (x19 == 10)) && p.depth+0 <= maxDepth {
+	if !(x20 && (x19 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L35
 	}
@@ -13124,7 +13179,7 @@ L33:
 L36:
 	p.reset(x17)
 L35:
-	if !(x20 && (x19 == 47)) && p.depth+0 <= maxDepth {
+	if !(x20 && (x19 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L37
 	}
@@ -13160,7 +13215,7 @@ L16:
 L7:
 	p.reset(x1)
 L6:
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L41
 	}
@@ -13196,7 +13251,7 @@ L48:
 	} else {
 		x54, _, x55 = p.peek()
 	}
-	if !(x55 && (x54 == 58)) && p.depth+0 <= maxDepth {
+	if !(x55 && (x54 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L56
 	}
@@ -13209,7 +13264,7 @@ L48:
 L57:
 	p.reset(x52)
 L56:
-	if !(x55 && (x54 == 61)) && p.depth+0 <= maxDepth {
+	if !(x55 && (x54 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L58
 	}
@@ -13240,7 +13295,7 @@ L61:
 L59:
 	p.reset(x52)
 L58:
-	if !(x55 && (x54 == 63)) && p.depth+0 <= maxDepth {
+	if !(x55 && (x54 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L62
 	}
@@ -13253,7 +13308,7 @@ L58:
 L63:
 	p.reset(x52)
 L62:
-	if !(x55 && (x54 == 44)) && p.depth+0 <= maxDepth {
+	if !(x55 && (x54 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L64
 	}
@@ -13266,7 +13321,7 @@ L62:
 L65:
 	p.reset(x52)
 L64:
-	if !(x55 && (x54 == 10)) && p.depth+0 <= maxDepth {
+	if !(x55 && (x54 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L66
 	}
@@ -13279,7 +13334,7 @@ L64:
 L67:
 	p.reset(x52)
 L66:
-	if !(x55 && (x54 == 47)) && p.depth+0 <= maxDepth {
+	if !(x55 && (x54 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L68
 	}
@@ -13299,7 +13354,7 @@ L68:
 	goto L53
 L70:
 	p.reset(x52)
-	if !(x55 && (x54 == 33)) && p.depth+0 <= maxDepth {
+	if !(x55 && (x54 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L71
 	}
@@ -13380,7 +13435,7 @@ L6:
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 105)) && p.depth+1 <= maxDepth {
+	if !(x9 && (x8 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L10
 	}
@@ -13433,7 +13488,7 @@ L4:
 	} else {
 		x6, _, x7 = p.peek()
 	}
-	if !(x7 && (x6 == 105)) && p.depth+1 <= maxDepth {
+	if !(x7 && (x6 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L8
 	}
@@ -13483,7 +13538,7 @@ func (p *parser) e125() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 102)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L6
 	}
@@ -13495,7 +13550,7 @@ func (p *parser) e125() (*Node, bool) {
 L7:
 	p.reset(x1)
 L6:
-	if !(x5 && (x4 == 102)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L9
 	}
@@ -13715,7 +13770,7 @@ func (p *parser) e129() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 116)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L6
 	}
@@ -13727,7 +13782,7 @@ func (p *parser) e129() (*Node, bool) {
 L7:
 	p.reset(x1)
 L6:
-	if !(x5 && (x4 == 116)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L9
 	}
@@ -14104,7 +14159,7 @@ func (p *parser) e142() (*Node, bool) {
 	} else {
 		x6, _, x7 = p.peek()
 	}
-	if !(x7 && (x6 == 102)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L8
 	}
@@ -14120,7 +14175,7 @@ func (p *parser) e142() (*Node, bool) {
 L9:
 	p.reset(x3)
 L8:
-	if !(x7 && (x6 == 105)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L12
 	}
@@ -14136,7 +14191,7 @@ L8:
 L13:
 	p.reset(x3)
 L12:
-	if !(x7 && (x6 == 116)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L16
 	}
@@ -14201,7 +14256,7 @@ func (p *parser) e143() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (x3 == 102)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L5
 	}
@@ -14232,7 +14287,7 @@ L8:
 	} else {
 		x14, _, x15 = p.peek()
 	}
-	if !(x15 && (x14 == 58)) && p.depth+0 <= maxDepth {
+	if !(x15 && (x14 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L16
 	}
@@ -14245,7 +14300,7 @@ L8:
 L17:
 	p.reset(x12)
 L16:
-	if !(x15 && (x14 == 61)) && p.depth+0 <= maxDepth {
+	if !(x15 && (x14 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L18
 	}
@@ -14276,7 +14331,7 @@ L21:
 L19:
 	p.reset(x12)
 L18:
-	if !(x15 && (x14 == 63)) && p.depth+0 <= maxDepth {
+	if !(x15 && (x14 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L22
 	}
@@ -14289,7 +14344,7 @@ L18:
 L23:
 	p.reset(x12)
 L22:
-	if !(x15 && (x14 == 33)) && p.depth+0 <= maxDepth {
+	if !(x15 && (x14 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L24
 	}
@@ -14320,7 +14375,7 @@ L27:
 L25:
 	p.reset(x12)
 L24:
-	if !(x15 && (x14 == 44)) && p.depth+0 <= maxDepth {
+	if !(x15 && (x14 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L28
 	}
@@ -14333,7 +14388,7 @@ L24:
 L29:
 	p.reset(x12)
 L28:
-	if !(x15 && (x14 == 10)) && p.depth+0 <= maxDepth {
+	if !(x15 && (x14 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L30
 	}
@@ -14346,7 +14401,7 @@ L28:
 L31:
 	p.reset(x12)
 L30:
-	if !(x15 && (x14 == 47)) && p.depth+0 <= maxDepth {
+	if !(x15 && (x14 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L32
 	}
@@ -14380,7 +14435,7 @@ L11:
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 105)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L35
 	}
@@ -14411,7 +14466,7 @@ L38:
 	} else {
 		x44, _, x45 = p.peek()
 	}
-	if !(x45 && (x44 == 58)) && p.depth+0 <= maxDepth {
+	if !(x45 && (x44 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L46
 	}
@@ -14424,7 +14479,7 @@ L38:
 L47:
 	p.reset(x42)
 L46:
-	if !(x45 && (x44 == 61)) && p.depth+0 <= maxDepth {
+	if !(x45 && (x44 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L48
 	}
@@ -14455,7 +14510,7 @@ L51:
 L49:
 	p.reset(x42)
 L48:
-	if !(x45 && (x44 == 63)) && p.depth+0 <= maxDepth {
+	if !(x45 && (x44 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L52
 	}
@@ -14468,7 +14523,7 @@ L48:
 L53:
 	p.reset(x42)
 L52:
-	if !(x45 && (x44 == 44)) && p.depth+0 <= maxDepth {
+	if !(x45 && (x44 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L54
 	}
@@ -14481,7 +14536,7 @@ L52:
 L55:
 	p.reset(x42)
 L54:
-	if !(x45 && (x44 == 10)) && p.depth+0 <= maxDepth {
+	if !(x45 && (x44 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L56
 	}
@@ -14494,7 +14549,7 @@ L54:
 L57:
 	p.reset(x42)
 L56:
-	if !(x45 && (x44 == 47)) && p.depth+0 <= maxDepth {
+	if !(x45 && (x44 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L58
 	}
@@ -14514,7 +14569,7 @@ L58:
 	goto L43
 L60:
 	p.reset(x42)
-	if !(x45 && (x44 == 33)) && p.depth+0 <= maxDepth {
+	if !(x45 && (x44 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L61
 	}
@@ -14890,7 +14945,7 @@ L10:
 	} else {
 		x12, _, x13 = p.peek()
 	}
-	if !(x13 && (x12 == 110)) && p.depth+1 <= maxDepth {
+	if !(x13 && (x12 == 110)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L14
 	}
@@ -14980,7 +15035,7 @@ func (p *parser) e154() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 123)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 123)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 40)
 		goto L6
 	}
@@ -14992,7 +15047,7 @@ func (p *parser) e154() (*Node, bool) {
 L7:
 	p.reset(x1)
 L6:
-	if !(x5 && (x4 == 91)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 91)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L9
 	}
@@ -15011,7 +15066,7 @@ L9:
 	goto L3
 L12:
 	p.reset(x1)
-	if !(x5 && (x4 == 40)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 40)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L14
 	}
@@ -15186,7 +15241,7 @@ func (p *parser) e161() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (x3 == 116)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 45)
 		goto L5
 	}
@@ -15199,7 +15254,7 @@ func (p *parser) e161() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 102)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 46)
 		goto L7
 	}
@@ -15210,7 +15265,7 @@ L5:
 L8:
 	p.reset(x1)
 L7:
-	if !(x4 && (x3 == 110)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 110)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L9
 	}
@@ -15500,7 +15555,7 @@ func (p *parser) e169() (*Node, bool) {
 		} else {
 			x18, _, x19 = p.peek()
 		}
-		if !(x19 && (x18 == 47)) && p.depth+1 <= maxDepth {
+		if !(x19 && (x18 == 47)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 15)
 			goto L20
 		}
@@ -15581,7 +15636,7 @@ func (p *parser) e170() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 40)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 40)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L6
 	}
@@ -15613,7 +15668,7 @@ func (p *parser) e170() (*Node, bool) {
 L7:
 	p.reset(x1)
 L6:
-	if !(x5 && (x4 == 91)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 91)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L16
 	}
@@ -15645,7 +15700,7 @@ L6:
 L17:
 	p.reset(x1)
 L16:
-	if !(x5 && (x4 == 123)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 123)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 40)
 		goto L26
 	}
@@ -15742,7 +15797,7 @@ L6:
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 95)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 95)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 50)
 		goto L10
 	}
@@ -15772,7 +15827,7 @@ L14:
 	goto L3
 L16:
 	p.reset(x1)
-	if !(x9 && (x8 == 46)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 25)
 		goto L18
 	}
@@ -15788,7 +15843,7 @@ L16:
 L19:
 	p.reset(x1)
 L18:
-	if !(x9 && (x8 == 46)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L22
 	}
@@ -15821,7 +15876,7 @@ L29:
 L23:
 	p.reset(x1)
 L22:
-	if !(x9 && (!!(x8 == 58 || x8 == 59 || x8 == 63 || x8 == 126 || x8 == 43 || x8 == 45 || x8 == 42 || x8 == 47 || x8 == 60 || x8 == 62 || x8 == 61 || x8 == 33 || x8 == 38 || x8 == 124 || x8 == 44))) && p.depth+0 <= maxDepth {
+	if !(x9 && (!!(x8 == 58 || x8 == 59 || x8 == 63 || x8 == 126 || x8 == 43 || x8 == 45 || x8 == 42 || x8 == 47 || x8 == 60 || x8 == 62 || x8 == 61 || x8 == 33 || x8 == 38 || x8 == 124 || x8 == 44))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 51)
 		goto L31
 	}
@@ -15957,7 +16012,7 @@ L4:
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 48)) && p.depth+1 <= maxDepth {
+	if !(x9 && (x8 == 48)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L10
 	}
@@ -16027,7 +16082,7 @@ L18:
 	goto L7
 L25:
 	p.reset(x5)
-	if !(x9 && (x8 == 48)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L27
 	}
@@ -16148,7 +16203,7 @@ func (p *parser) e176() (*Node, bool) {
 	} else {
 		x10, _, x11 = p.peek()
 	}
-	if !(x11 && (!!(x10 >= 49 && x10 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x11 && (!!(x10 >= 49 && x10 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L12
 	}
@@ -16160,7 +16215,7 @@ func (p *parser) e176() (*Node, bool) {
 L13:
 	p.reset(x7)
 L12:
-	if !(x11 && (x10 == 48)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L15
 	}
@@ -16219,7 +16274,7 @@ L4:
 	} else {
 		x34, _, x35 = p.peek()
 	}
-	if !(x35 && (x34 == 46)) && p.depth+0 <= maxDepth {
+	if !(x35 && (x34 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L36
 	}
@@ -16308,7 +16363,7 @@ func (p *parser) e177() (*Node, bool) {
 	} else {
 		x10, _, x11 = p.peek()
 	}
-	if !(x11 && (!!(x10 >= 49 && x10 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x11 && (!!(x10 >= 49 && x10 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L12
 	}
@@ -16320,7 +16375,7 @@ func (p *parser) e177() (*Node, bool) {
 L13:
 	p.reset(x7)
 L12:
-	if !(x11 && (x10 == 48)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L15
 	}
@@ -16375,7 +16430,7 @@ L4:
 	} else {
 		x36, _, x37 = p.peek()
 	}
-	if !(x37 && (!!(x36 >= 49 && x36 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x37 && (!!(x36 >= 49 && x36 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L38
 	}
@@ -16387,7 +16442,7 @@ L4:
 L39:
 	p.reset(x33)
 L38:
-	if !(x37 && (x36 == 48)) && p.depth+0 <= maxDepth {
+	if !(x37 && (x36 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L41
 	}
@@ -16420,7 +16475,7 @@ L30:
 	} else {
 		x47, _, x48 = p.peek()
 	}
-	if !(x48 && (x47 == 46)) && p.depth+0 <= maxDepth {
+	if !(x48 && (x47 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L49
 	}
@@ -16614,7 +16669,7 @@ func (p *parser) e179() (*Node, bool) {
 	} else {
 		x9, _, x10 = p.peek()
 	}
-	if !(x10 && (x9 == 46)) && p.depth+1 <= maxDepth {
+	if !(x10 && (x9 == 46)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L11
 	}
@@ -16631,7 +16686,7 @@ func (p *parser) e179() (*Node, bool) {
 	} else {
 		x23, _, x24 = p.peek()
 	}
-	if !(x24 && (!!(x23 == 101 || x23 == 69))) && p.depth+1 <= maxDepth {
+	if !(x24 && (!!(x23 == 101 || x23 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L25
 	}
@@ -16643,7 +16698,7 @@ func (p *parser) e179() (*Node, bool) {
 L26:
 	p.reset(x20)
 L25:
-	if !(x24 && (!!(x23 == 75 || x23 == 77 || x23 == 71 || x23 == 84 || x23 == 80))) && p.depth+1 <= maxDepth {
+	if !(x24 && (!!(x23 == 75 || x23 == 77 || x23 == 71 || x23 == 84 || x23 == 80))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 62)
 		goto L28
 	}
@@ -16670,7 +16725,7 @@ L19:
 L12:
 	p.reset(x6)
 L11:
-	if !(x10 && (!!(x9 == 101 || x9 == 69))) && p.depth+1 <= maxDepth {
+	if !(x10 && (!!(x9 == 101 || x9 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L32
 	}
@@ -16750,7 +16805,7 @@ func (p *parser) e181() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 >= 48 && x4 <= 57 || x4 == 95 || x4 == 36))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 >= 48 && x4 <= 57 || x4 == 95 || x4 == 36))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 63)
 		goto L6
 	}
@@ -16828,7 +16883,7 @@ L4:
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (!!(x8 == 170 || x8 == 181 || x8 == 186 || x8 >= 192 && x8 <= 214 || x8 >= 216 && x8 <= 246 || x8 >= 248 && x8 <= 705 || x8 >= 710 && x8 <= 721 || x8 >= 736 && x8 <= 740 || x8 == 748 || x8 == 750 || x8 >= 880 && x8 <= 884 || x8 >= 886 && x8 <= 887 || x8 >= 890 && x8 <= 893 || x8 == 895 || x8 == 902 || x8 >= 904 && x8 <= 906 || x8 == 908 || x8 >= 910 && x8 <= 929 || x8 >= 931 && x8 <= 1013 || x8 >= 1015 && x8 <= 1153 || x8 >= 1162 && x8 <= 1327 || x8 >= 1329 && x8 <= 1366 || x8 == 1369 || x8 >= 1376 && x8 <= 1416 || x8 >= 1488 && x8 <= 1514 || x8 >= 1519 && x8 <= 1522 || x8 >= 1568 && x8 <= 1610 || x8 >= 1646 && x8 <= 1647 || x8 >= 1649 && x8 <= 1747 || x8 == 1749 || x8 >= 1765 && x8 <= 1766 || x8 >= 1774 && x8 <= 1775 || x8 >= 1786 && x8 <= 1788 || x8 == 1791 || x8 == 1808 || x8 >= 1810 && x8 <= 1839 || x8 >= 1869 && x8 <= 1957 || x8 == 1969 || x8 >= 1994 && x8 <= 2026 || x8 >= 2036 && x8 <= 2037 || x8 == 2042 || x8 >= 2048 && x8 <= 2069 || x8 == 2074 || x8 == 2084 || x8 == 2088 || x8 >= 2112 && x8 <= 2136 || x8 >= 2144 && x8 <= 2154 || x8 >= 2160 && x8 <= 2183 || x8 >= 2185 && x8 <= 2191 || x8 >= 2208 && x8 <= 2249 || x8 >= 2308 && x8 <= 2361 || x8 == 2365 || x8 == 2384 || x8 >= 2392 && x8 <= 2401 || x8 >= 2417 && x8 <= 2432 || x8 >= 2437 && x8 <= 2444 || x8 >= 2447 && x8 <= 2448 || x8 >= 2451 && x8 <= 2472 || x8 >= 2474 && x8 <= 2480 || x8 == 2482 || x8 >= 2486 && x8 <= 2489 || x8 == 2493 || x8 == 2510 || x8 >= 2524 && x8 <= 2525 || x8 >= 2527 && x8 <= 2529 || x8 >= 2544 && x8 <= 2545 || x8 == 2556 || x8 >= 2565 && x8 <= 2570 || x8 >= 2575 && x8 <= 2576 || x8 >= 2579 && x8 <= 2600 || x8 >= 2602 && x8 <= 2608 || x8 >= 2610 && x8 <= 2611 || x8 >= 2613 && x8 <= 2614 || x8 >= 2616 && x8 <= 2617 || x8 >= 2649 && x8 <= 2652 || x8 == 2654 || x8 >= 2674 && x8 <= 2676 || x8 >= 2693 && x8 <= 2701 || x8 >= 2703 && x8 <= 2705 || x8 >= 2707 && x8 <= 2728 || x8 >= 2730 && x8 <= 2736 || x8 >= 2738 && x8 <= 2739 || x8 >= 2741 && x8 <= 2745 || x8 == 2749 || x8 == 2768 || x8 >= 2784 && x8 <= 2785 || x8 == 2809 || x8 >= 2821 && x8 <= 2828 || x8 >= 2831 && x8 <= 2832 || x8 >= 2835 && x8 <= 2856 || x8 >= 2858 && x8 <= 2864 || x8 >= 2866 && x8 <= 2867 || x8 >= 2869 && x8 <= 2873 || x8 == 2877 || x8 >= 2908 && x8 <= 2909 || x8 >= 2911 && x8 <= 2913 || x8 == 2929 || x8 == 2947 || x8 >= 2949 && x8 <= 2954 || x8 >= 2958 && x8 <= 2960 || x8 >= 2962 && x8 <= 2965 || x8 >= 2969 && x8 <= 2970 || x8 == 2972 || x8 >= 2974 && x8 <= 2975 || x8 >= 2979 && x8 <= 2980 || x8 >= 2984 && x8 <= 2986 || x8 >= 2990 && x8 <= 3001 || x8 == 3024 || x8 >= 3077 && x8 <= 3084 || x8 >= 3086 && x8 <= 3088 || x8 >= 3090 && x8 <= 3112 || x8 >= 3114 && x8 <= 3129 || x8 == 3133 || x8 >= 3160 && x8 <= 3162 || x8 >= 3164 && x8 <= 3165 || x8 >= 3168 && x8 <= 3169 || x8 == 3200 || x8 >= 3205 && x8 <= 3212 || x8 >= 3214 && x8 <= 3216 || x8 >= 3218 && x8 <= 3240 || x8 >= 3242 && x8 <= 3251 || x8 >= 3253 && x8 <= 3257 || x8 == 3261 || x8 >= 3292 && x8 <= 3294 || x8 >= 3296 && x8 <= 3297 || x8 >= 3313 && x8 <= 3314 || x8 >= 3332 && x8 <= 3340 || x8 >= 3342 && x8 <= 3344 || x8 >= 3346 && x8 <= 3386 || x8 == 3389 || x8 == 3406 || x8 >= 3412 && x8 <= 3414 || x8 >= 3423 && x8 <= 3425 || x8 >= 3450 && x8 <= 3455 || x8 >= 3461 && x8 <= 3478 || x8 >= 3482 && x8 <= 3505 || x8 >= 3507 && x8 <= 3515 || x8 == 3517 || x8 >= 3520 && x8 <= 3526 || x8 >= 3585 && x8 <= 3632 || x8 >= 3634 && x8 <= 3635 || x8 >= 3648 && x8 <= 3654 || x8 >= 3713 && x8 <= 3714 || x8 == 3716 || x8 >= 3718 && x8 <= 3722 || x8 >= 3724 && x8 <= 3747 || x8 == 3749 || x8 >= 3751 && x8 <= 3760 || x8 >= 3762 && x8 <= 3763 || x8 == 3773 || x8 >= 3776 && x8 <= 3780 || x8 == 3782 || x8 >= 3804 && x8 <= 3807 || x8 == 3840 || x8 >= 3904 && x8 <= 3911 || x8 >= 3913 && x8 <= 3948 || x8 >= 3976 && x8 <= 3980 || x8 >= 4096 && x8 <= 4138 || x8 == 4159 || x8 >= 4176 && x8 <= 4181 || x8 >= 4186 && x8 <= 4189 || x8 == 4193 || x8 >= 4197 && x8 <= 4198 || x8 >= 4206 && x8 <= 4208 || x8 >= 4213 && x8 <= 4225 || x8 == 4238 || x8 >= 4256 && x8 <= 4293 || x8 == 4295 || x8 == 4301 || x8 >= 4304 && x8 <= 4346 || x8 >= 4348 && x8 <= 4680 || x8 >= 4682 && x8 <= 4685 || x8 >= 4688 && x8 <= 4694 || x8 == 4696 || x8 >= 4698 && x8 <= 4701 || x8 >= 4704 && x8 <= 4744 || x8 >= 4746 && x8 <= 4749 || x8 >= 4752 && x8 <= 4784 || x8 >= 4786 && x8 <= 4789 || x8 >= 4792 && x8 <= 4798 || x8 == 4800 || x8 >= 4802 && x8 <= 4805 || x8 >= 4808 && x8 <= 4822 || x8 >= 4824 && x8 <= 4880 || x8 >= 4882 && x8 <= 4885 || x8 >= 4888 && x8 <= 4954 || x8 >= 4992 && x8 <= 5007 || x8 >= 5024 && x8 <= 5109 || x8 >= 5112 && x8 <= 5117 || x8 >= 5121 && x8 <= 5740 || x8 >= 5743 && x8 <= 5759 || x8 >= 5761 && x8 <= 5786 || x8 >= 5792 && x8 <= 5866 || x8 >= 5873 && x8 <= 5880 || x8 >= 5888 && x8 <= 5905 || x8 >= 5919 && x8 <= 5937 || x8 >= 5952 && x8 <= 5969 || x8 >= 5984 && x8 <= 5996 || x8 >= 5998 && x8 <= 6000 || x8 >= 6016 && x8 <= 6067 || x8 == 6103 || x8 == 6108 || x8 >= 6176 && x8 <= 6264 || x8 >= 6272 && x8 <= 6276 || x8 >= 6279 && x8 <= 6312 || x8 == 6314 || x8 >= 6320 && x8 <= 6389 || x8 >= 6400 && x8 <= 6430 || x8 >= 6480 && x8 <= 6509 || x8 >= 6512 && x8 <= 6516 || x8 >= 6528 && x8 <= 6571 || x8 >= 6576 && x8 <= 6601 || x8 >= 6656 && x8 <= 6678 || x8 >= 6688 && x8 <= 6740 || x8 == 6823 || x8 >= 6917 && x8 <= 6963 || x8 >= 6981 && x8 <= 6988 || x8 >= 7043 && x8 <= 7072 || x8 >= 7086 && x8 <= 7087 || x8 >= 7098 && x8 <= 7141 || x8 >= 7168 && x8 <= 7203 || x8 >= 7245 && x8 <= 7247 || x8 >= 7258 && x8 <= 7293 || x8 >= 7296 && x8 <= 7306 || x8 >= 7312 && x8 <= 7354 || x8 >= 7357 && x8 <= 7359 || x8 >= 7401 && x8 <= 7404 || x8 >= 7406 && x8 <= 7411 || x8 >= 7413 && x8 <= 7414 || x8 == 7418 || x8 >= 7424 && x8 <= 7615 || x8 >= 7680 && x8 <= 7957 || x8 >= 7960 && x8 <= 7965 || x8 >= 7968 && x8 <= 8005 || x8 >= 8008 && x8 <= 8013 || x8 >= 8016 && x8 <= 8023 || x8 == 8025 || x8 == 8027 || x8 == 8029 || x8 >= 8031 && x8 <= 8061 || x8 >= 8064 && x8 <= 8116 || x8 >= 8118 && x8 <= 8124 || x8 == 8126 || x8 >= 8130 && x8 <= 8132 || x8 >= 8134 && x8 <= 8140 || x8 >= 8144 && x8 <= 8147 || x8 >= 8150 && x8 <= 8155 || x8 >= 8160 && x8 <= 8172 || x8 >= 8178 && x8 <= 8180 || x8 >= 8182 && x8 <= 8188 || x8 == 8305 || x8 == 8319 || x8 >= 8336 && x8 <= 8348 || x8 == 8450 || x8 == 8455 || x8 >= 8458 && x8 <= 8467 || x8 == 8469 || x8 >= 8473 && x8 <= 8477 || x8 == 8484 || x8 == 8486 || x8 == 8488 || x8 >= 8490 && x8 <= 8493 || x8 >= 8495 && x8 <= 8505 || x8 >= 8508 && x8 <= 8511 || x8 >= 8517 && x8 <= 8521 || x8 == 8526 || x8 >= 8579 && x8 <= 8580 || x8 >= 11264 && x8 <= 11492 || x8 >= 11499 && x8 <= 11502 || x8 >= 11506 && x8 <= 11507 || x8 >= 11520 && x8 <= 11557 || x8 == 11559 || x8 == 11565 || x8 >= 11568 && x8 <= 11623 || x8 == 11631 || x8 >= 11648 && x8 <= 11670 || x8 >= 11680 && x8 <= 11686 || x8 >= 11688 && x8 <= 11694 || x8 >= 11696 && x8 <= 11702 || x8 >= 11704 && x8 <= 11710 || x8 >= 11712 && x8 <= 11718 || x8 >= 11720 && x8 <= 11726 || x8 >= 11728 && x8 <= 11734 || x8 >= 11736 && x8 <= 11742 || x8 == 11823 || x8 >= 12293 && x8 <= 12294 || x8 >= 12337 && x8 <= 12341 || x8 >= 12347 && x8 <= 12348 || x8 >= 12353 && x8 <= 12438 || x8 >= 12445 && x8 <= 12447 || x8 >= 12449 && x8 <= 12538 || x8 >= 12540 && x8 <= 12543 || x8 >= 12549 && x8 <= 12591 || x8 >= 12593 && x8 <= 12686 || x8 >= 12704 && x8 <= 12735 || x8 >= 12784 && x8 <= 12799 || x8 >= 13312 && x8 <= 19903 || x8 >= 19968 && x8 <= 42124 || x8 >= 42192 && x8 <= 42237 || x8 >= 42240 && x8 <= 42508 || x8 >= 42512 && x8 <= 42527 || x8 >= 42538 && x8 <= 42539 || x8 >= 42560 && x8 <= 42606 || x8 >= 42623 && x8 <= 42653 || x8 >= 42656 && x8 <= 42725 || x8 >= 42775 && x8 <= 42783 || x8 >= 42786 && x8 <= 42888 || x8 >= 42891 && x8 <= 42972 || x8 >= 42993 && x8 <= 43009 || x8 >= 43011 && x8 <= 43013 || x8 >= 43015 && x8 <= 43018 || x8 >= 43020 && x8 <= 43042 || x8 >= 43072 && x8 <= 43123 || x8 >= 43138 && x8 <= 43187 || x8 >= 43250 && x8 <= 43255 || x8 == 43259 || x8 >= 43261 && x8 <= 43262 || x8 >= 43274 && x8 <= 43301 || x8 >= 43312 && x8 <= 43334 || x8 >= 43360 && x8 <= 43388 || x8 >= 43396 && x8 <= 43442 || x8 == 43471 || x8 >= 43488 && x8 <= 43492 || x8 >= 43494 && x8 <= 43503 || x8 >= 43514 && x8 <= 43518 || x8 >= 43520 && x8 <= 43560 || x8 >= 43584 && x8 <= 43586 || x8 >= 43588 && x8 <= 43595 || x8 >= 43616 && x8 <= 43638 || x8 == 43642 || x8 >= 43646 && x8 <= 43695 || x8 == 43697 || x8 >= 43701 && x8 <= 43702 || x8 >= 43705 && x8 <= 43709 || x8 == 43712 || x8 == 43714 || x8 >= 43739 && x8 <= 43741 || x8 >= 43744 && x8 <= 43754 || x8 >= 43762 && x8 <= 43764 || x8 >= 43777 && x8 <= 43782 || x8 >= 43785 && x8 <= 43790 || x8 >= 43793 && x8 <= 43798 || x8 >= 43808 && x8 <= 43814 || x8 >= 43816 && x8 <= 43822 || x8 >= 43824 && x8 <= 43866 || x8 >= 43868 && x8 <= 43881 || x8 >= 43888 && x8 <= 44002 || x8 >= 44032 && x8 <= 55203 || x8 >= 55216 && x8 <= 55238 || x8 >= 55243 && x8 <= 55291 || x8 >= 63744 && x8 <= 64109 || x8 >= 64112 && x8 <= 64217 || x8 >= 64256 && x8 <= 64262 || x8 >= 64275 && x8 <= 64279 || x8 == 64285 || x8 >= 64287 && x8 <= 64296 || x8 >= 64298 && x8 <= 64310 || x8 >= 64312 && x8 <= 64316 || x8 == 64318 || x8 >= 64320 && x8 <= 64321 || x8 >= 64323 && x8 <= 64324 || x8 >= 64326 && x8 <= 64433 || x8 >= 64467 && x8 <= 64829 || x8 >= 64848 && x8 <= 64911 || x8 >= 64914 && x8 <= 64967 || x8 >= 65008 && x8 <= 65019 || x8 >= 65136 && x8 <= 65140 || x8 >= 65142 && x8 <= 65276 || x8 >= 65313 && x8 <= 65338 || x8 >= 65345 && x8 <= 65370 || x8 >= 65382 && x8 <= 65470 || x8 >= 65474 && x8 <= 65479 || x8 >= 65482 && x8 <= 65487 || x8 >= 65490 && x8 <= 65495 || x8 >= 65498 && x8 <= 65500 || x8 >= 65536 && x8 <= 65547 || x8 >= 65549 && x8 <= 65574 || x8 >= 65576 && x8 <= 65594 || x8 >= 65596 && x8 <= 65597 || x8 >= 65599 && x8 <= 65613 || x8 >= 65616 && x8 <= 65629 || x8 >= 65664 && x8 <= 65786 || x8 >= 66176 && x8 <= 66204 || x8 >= 66208 && x8 <= 66256 || x8 >= 66304 && x8 <= 66335 || x8 >= 66349 && x8 <= 66368 || x8 >= 66370 && x8 <= 66377 || x8 >= 66384 && x8 <= 66421 || x8 >= 66432 && x8 <= 66461 || x8 >= 66464 && x8 <= 66499 || x8 >= 66504 && x8 <= 66511 || x8 >= 66560 && x8 <= 66717 || x8 >= 66736 && x8 <= 66771 || x8 >= 66776 && x8 <= 66811 || x8 >= 66816 && x8 <= 66855 || x8 >= 66864 && x8 <= 66915 || x8 >= 66928 && x8 <= 66938 || x8 >= 66940 && x8 <= 66954 || x8 >= 66956 && x8 <= 66962 || x8 >= 66964 && x8 <= 66965 || x8 >= 66967 && x8 <= 66977 || x8 >= 66979 && x8 <= 66993 || x8 >= 66995 && x8 <= 67001 || x8 >= 67003 && x8 <= 67004 || x8 >= 67008 && x8 <= 67059 || x8 >= 67072 && x8 <= 67382 || x8 >= 67392 && x8 <= 67413 || x8 >= 67424 && x8 <= 67431 || x8 >= 67456 && x8 <= 67461 || x8 >= 67463 && x8 <= 67504 || x8 >= 67506 && x8 <= 67514 || x8 >= 67584 && x8 <= 67589 || x8 == 67592 || x8 >= 67594 && x8 <= 67637 || x8 >= 67639 && x8 <= 67640 || x8 == 67644 || x8 >= 67647 && x8 <= 67669 || x8 >= 67680 && x8 <= 67702 || x8 >= 67712 && x8 <= 67742 || x8 >= 67808 && x8 <= 67826 || x8 >= 67828 && x8 <= 67829 || x8 >= 67840 && x8 <= 67861 || x8 >= 67872 && x8 <= 67897 || x8 >= 67904 && x8 <= 67929 || x8 >= 67968 && x8 <= 68023 || x8 >= 68030 && x8 <= 68031 || x8 == 68096 || x8 >= 68112 && x8 <= 68115 || x8 >= 68117 && x8 <= 68119 || x8 >= 68121 && x8 <= 68149 || x8 >= 68192 && x8 <= 68220 || x8 >= 68224 && x8 <= 68252 || x8 >= 68288 && x8 <= 68295 || x8 >= 68297 && x8 <= 68324 || x8 >= 68352 && x8 <= 68405 || x8 >= 68416 && x8 <= 68437 || x8 >= 68448 && x8 <= 68466 || x8 >= 68480 && x8 <= 68497 || x8 >= 68608 && x8 <= 68680 || x8 >= 68736 && x8 <= 68786 || x8 >= 68800 && x8 <= 68850 || x8 >= 68864 && x8 <= 68899 || x8 >= 68938 && x8 <= 68965 || x8 >= 68975 && x8 <= 68997 || x8 >= 69248 && x8 <= 69289 || x8 >= 69296 && x8 <= 69297 || x8 >= 69314 && x8 <= 69319 || x8 >= 69376 && x8 <= 69404 || x8 == 69415 || x8 >= 69424 && x8 <= 69445 || x8 >= 69488 && x8 <= 69505 || x8 >= 69552 && x8 <= 69572 || x8 >= 69600 && x8 <= 69622 || x8 >= 69635 && x8 <= 69687 || x8 >= 69745 && x8 <= 69746 || x8 == 69749 || x8 >= 69763 && x8 <= 69807 || x8 >= 69840 && x8 <= 69864 || x8 >= 69891 && x8 <= 69926 || x8 == 69956 || x8 == 69959 || x8 >= 69968 && x8 <= 70002 || x8 == 70006 || x8 >= 70019 && x8 <= 70066 || x8 >= 70081 && x8 <= 70084 || x8 == 70106 || x8 == 70108 || x8 >= 70144 && x8 <= 70161 || x8 >= 70163 && x8 <= 70187 || x8 >= 70207 && x8 <= 70208 || x8 >= 70272 && x8 <= 70278 || x8 == 70280 || x8 >= 70282 && x8 <= 70285 || x8 >= 70287 && x8 <= 70301 || x8 >= 70303 && x8 <= 70312 || x8 >= 70320 && x8 <= 70366 || x8 >= 70405 && x8 <= 70412 || x8 >= 70415 && x8 <= 70416 || x8 >= 70419 && x8 <= 70440 || x8 >= 70442 && x8 <= 70448 || x8 >= 70450 && x8 <= 70451 || x8 >= 70453 && x8 <= 70457 || x8 == 70461 || x8 == 70480 || x8 >= 70493 && x8 <= 70497 || x8 >= 70528 && x8 <= 70537 || x8 == 70539 || x8 == 70542 || x8 >= 70544 && x8 <= 70581 || x8 == 70583 || x8 == 70609 || x8 == 70611 || x8 >= 70656 && x8 <= 70708 || x8 >= 70727 && x8 <= 70730 || x8 >= 70751 && x8 <= 70753 || x8 >= 70784 && x8 <= 70831 || x8 >= 70852 && x8 <= 70853 || x8 == 70855 || x8 >= 71040 && x8 <= 71086 || x8 >= 71128 && x8 <= 71131 || x8 >= 71168 && x8 <= 71215 || x8 == 71236 || x8 >= 71296 && x8 <= 71338 || x8 == 71352 || x8 >= 71424 && x8 <= 71450 || x8 >= 71488 && x8 <= 71494 || x8 >= 71680 && x8 <= 71723 || x8 >= 71840 && x8 <= 71903 || x8 >= 71935 && x8 <= 71942 || x8 == 71945 || x8 >= 71948 && x8 <= 71955 || x8 >= 71957 && x8 <= 71958 || x8 >= 71960 && x8 <= 71983 || x8 == 71999 || x8 == 72001 || x8 >= 72096 && x8 <= 72103 || x8 >= 72106 && x8 <= 72144 || x8 == 72161 || x8 == 72163 || x8 == 72192 || x8 >= 72203 && x8 <= 72242 || x8 == 72250 || x8 == 72272 || x8 >= 72284 && x8 <= 72329 || x8 == 72349 || x8 >= 72368 && x8 <= 72440 || x8 >= 72640 && x8 <= 72672 || x8 >= 72704 && x8 <= 72712 || x8 >= 72714 && x8 <= 72750 || x8 == 72768 || x8 >= 72818 && x8 <= 72847 || x8 >= 72960 && x8 <= 72966 || x8 >= 72968 && x8 <= 72969 || x8 >= 72971 && x8 <= 73008 || x8 == 73030 || x8 >= 73056 && x8 <= 73061 || x8 >= 73063 && x8 <= 73064 || x8 >= 73066 && x8 <= 73097 || x8 == 73112 || x8 >= 73136 && x8 <= 73179 || x8 >= 73440 && x8 <= 73458 || x8 == 73474 || x8 >= 73476 && x8 <= 73488 || x8 >= 73490 && x8 <= 73523 || x8 == 73648 || x8 >= 73728 && x8 <= 74649 || x8 >= 74880 && x8 <= 75075 || x8 >= 77712 && x8 <= 77808 || x8 >= 77824 && x8 <= 78895 || x8 >= 78913 && x8 <= 78918 || x8 >= 78944 && x8 <= 82938 || x8 >= 82944 && x8 <= 83526 || x8 >= 90368 && x8 <= 90397 || x8 >= 92160 && x8 <= 92728 || x8 >= 92736 && x8 <= 92766 || x8 >= 92784 && x8 <= 92862 || x8 >= 92880 && x8 <= 92909 || x8 >= 92928 && x8 <= 92975 || x8 >= 92992 && x8 <= 92995 || x8 >= 93027 && x8 <= 93047 || x8 >= 93053 && x8 <= 93071 || x8 >= 93504 && x8 <= 93548 || x8 >= 93760 && x8 <= 93823 || x8 >= 93856 && x8 <= 93880 || x8 >= 93883 && x8 <= 93907 || x8 >= 93952 && x8 <= 94026 || x8 == 94032 || x8 >= 94099 && x8 <= 94111 || x8 >= 94176 && x8 <= 94177 || x8 == 94179 || x8 >= 94194 && x8 <= 94195 || x8 >= 94208 && x8 <= 101589 || x8 >= 101631 && x8 <= 101662 || x8 >= 101760 && x8 <= 101874 || x8 >= 110576 && x8 <= 110579 || x8 >= 110581 && x8 <= 110587 || x8 >= 110589 && x8 <= 110590 || x8 >= 110592 && x8 <= 110882 || x8 == 110898 || x8 >= 110928 && x8 <= 110930 || x8 == 110933 || x8 >= 110948 && x8 <= 110951 || x8 >= 110960 && x8 <= 111355 || x8 >= 113664 && x8 <= 113770 || x8 >= 113776 && x8 <= 113788 || x8 >= 113792 && x8 <= 113800 || x8 >= 113808 && x8 <= 113817 || x8 >= 119808 && x8 <= 119892 || x8 >= 119894 && x8 <= 119964 || x8 >= 119966 && x8 <= 119967 || x8 == 119970 || x8 >= 119973 && x8 <= 119974 || x8 >= 119977 && x8 <= 119980 || x8 >= 119982 && x8 <= 119993 || x8 == 119995 || x8 >= 119997 && x8 <= 120003 || x8 >= 120005 && x8 <= 120069 || x8 >= 120071 && x8 <= 120074 || x8 >= 120077 && x8 <= 120084 || x8 >= 120086 && x8 <= 120092 || x8 >= 120094 && x8 <= 120121 || x8 >= 120123 && x8 <= 120126 || x8 >= 120128 && x8 <= 120132 || x8 == 120134 || x8 >= 120138 && x8 <= 120144 || x8 >= 120146 && x8 <= 120485 || x8 >= 120488 && x8 <= 120512 || x8 >= 120514 && x8 <= 120538 || x8 >= 120540 && x8 <= 120570 || x8 >= 120572 && x8 <= 120596 || x8 >= 120598 && x8 <= 120628 || x8 >= 120630 && x8 <= 120654 || x8 >= 120656 && x8 <= 120686 || x8 >= 120688 && x8 <= 120712 || x8 >= 120714 && x8 <= 120744 || x8 >= 120746 && x8 <= 120770 || x8 >= 120772 && x8 <= 120779 || x8 >= 122624 && x8 <= 122654 || x8 >= 122661 && x8 <= 122666 || x8 >= 122928 && x8 <= 122989 || x8 >= 123136 && x8 <= 123180 || x8 >= 123191 && x8 <= 123197 || x8 == 123214 || x8 >= 123536 && x8 <= 123565 || x8 >= 123584 && x8 <= 123627 || x8 >= 124112 && x8 <= 124139 || x8 >= 124368 && x8 <= 124397 || x8 == 124400 || x8 >= 124608 && x8 <= 124638 || x8 >= 124640 && x8 <= 124642 || x8 >= 124644 && x8 <= 124645 || x8 >= 124647 && x8 <= 124653 || x8 >= 124656 && x8 <= 124660 || x8 >= 124670 && x8 <= 124671 || x8 >= 124896 && x8 <= 124902 || x8 >= 124904 && x8 <= 124907 || x8 >= 124909 && x8 <= 124910 || x8 >= 124912 && x8 <= 124926 || x8 >= 124928 && x8 <= 125124 || x8 >= 125184 && x8 <= 125251 || x8 == 125259 || x8 >= 126464 && x8 <= 126467 || x8 >= 126469 && x8 <= 126495 || x8 >= 126497 && x8 <= 126498 || x8 == 126500 || x8 == 126503 || x8 >= 126505 && x8 <= 126514 || x8 >= 126516 && x8 <= 126519 || x8 == 126521 || x8 == 126523 || x8 == 126530 || x8 == 126535 || x8 == 126537 || x8 == 126539 || x8 >= 126541 && x8 <= 126543 || x8 >= 126545 && x8 <= 126546 || x8 == 126548 || x8 == 126551 || x8 == 126553 || x8 == 126555 || x8 == 126557 || x8 == 126559 || x8 >= 126561 && x8 <= 126562 || x8 == 126564 || x8 >= 126567 && x8 <= 126570 || x8 >= 126572 && x8 <= 126578 || x8 >= 126580 && x8 <= 126583 || x8 >= 126585 && x8 <= 126588 || x8 == 126590 || x8 >= 126592 && x8 <= 126601 || x8 >= 126603 && x8 <= 126619 || x8 >= 126625 && x8 <= 126627 || x8 >= 126629 && x8 <= 126633 || x8 >= 126635 && x8 <= 126651 || x8 >= 131072 && x8 <= 173791 || x8 >= 173824 && x8 <= 178205 || x8 >= 178208 && x8 <= 183981 || x8 >= 183984 && x8 <= 191456 || x8 >= 191472 && x8 <= 192093 || x8 >= 194560 && x8 <= 195101 || x8 >= 196608 && x8 <= 201546 || x8 >= 201552 && x8 <= 210041))) && p.depth+1 <= maxDepth {
+	if !(x9 && (!!(x8 == 170 || x8 == 181 || x8 == 186 || x8 >= 192 && x8 <= 214 || x8 >= 216 && x8 <= 246 || x8 >= 248 && x8 <= 705 || x8 >= 710 && x8 <= 721 || x8 >= 736 && x8 <= 740 || x8 == 748 || x8 == 750 || x8 >= 880 && x8 <= 884 || x8 >= 886 && x8 <= 887 || x8 >= 890 && x8 <= 893 || x8 == 895 || x8 == 902 || x8 >= 904 && x8 <= 906 || x8 == 908 || x8 >= 910 && x8 <= 929 || x8 >= 931 && x8 <= 1013 || x8 >= 1015 && x8 <= 1153 || x8 >= 1162 && x8 <= 1327 || x8 >= 1329 && x8 <= 1366 || x8 == 1369 || x8 >= 1376 && x8 <= 1416 || x8 >= 1488 && x8 <= 1514 || x8 >= 1519 && x8 <= 1522 || x8 >= 1568 && x8 <= 1610 || x8 >= 1646 && x8 <= 1647 || x8 >= 1649 && x8 <= 1747 || x8 == 1749 || x8 >= 1765 && x8 <= 1766 || x8 >= 1774 && x8 <= 1775 || x8 >= 1786 && x8 <= 1788 || x8 == 1791 || x8 == 1808 || x8 >= 1810 && x8 <= 1839 || x8 >= 1869 && x8 <= 1957 || x8 == 1969 || x8 >= 1994 && x8 <= 2026 || x8 >= 2036 && x8 <= 2037 || x8 == 2042 || x8 >= 2048 && x8 <= 2069 || x8 == 2074 || x8 == 2084 || x8 == 2088 || x8 >= 2112 && x8 <= 2136 || x8 >= 2144 && x8 <= 2154 || x8 >= 2160 && x8 <= 2183 || x8 >= 2185 && x8 <= 2191 || x8 >= 2208 && x8 <= 2249 || x8 >= 2308 && x8 <= 2361 || x8 == 2365 || x8 == 2384 || x8 >= 2392 && x8 <= 2401 || x8 >= 2417 && x8 <= 2432 || x8 >= 2437 && x8 <= 2444 || x8 >= 2447 && x8 <= 2448 || x8 >= 2451 && x8 <= 2472 || x8 >= 2474 && x8 <= 2480 || x8 == 2482 || x8 >= 2486 && x8 <= 2489 || x8 == 2493 || x8 == 2510 || x8 >= 2524 && x8 <= 2525 || x8 >= 2527 && x8 <= 2529 || x8 >= 2544 && x8 <= 2545 || x8 == 2556 || x8 >= 2565 && x8 <= 2570 || x8 >= 2575 && x8 <= 2576 || x8 >= 2579 && x8 <= 2600 || x8 >= 2602 && x8 <= 2608 || x8 >= 2610 && x8 <= 2611 || x8 >= 2613 && x8 <= 2614 || x8 >= 2616 && x8 <= 2617 || x8 >= 2649 && x8 <= 2652 || x8 == 2654 || x8 >= 2674 && x8 <= 2676 || x8 >= 2693 && x8 <= 2701 || x8 >= 2703 && x8 <= 2705 || x8 >= 2707 && x8 <= 2728 || x8 >= 2730 && x8 <= 2736 || x8 >= 2738 && x8 <= 2739 || x8 >= 2741 && x8 <= 2745 || x8 == 2749 || x8 == 2768 || x8 >= 2784 && x8 <= 2785 || x8 == 2809 || x8 >= 2821 && x8 <= 2828 || x8 >= 2831 && x8 <= 2832 || x8 >= 2835 && x8 <= 2856 || x8 >= 2858 && x8 <= 2864 || x8 >= 2866 && x8 <= 2867 || x8 >= 2869 && x8 <= 2873 || x8 == 2877 || x8 >= 2908 && x8 <= 2909 || x8 >= 2911 && x8 <= 2913 || x8 == 2929 || x8 == 2947 || x8 >= 2949 && x8 <= 2954 || x8 >= 2958 && x8 <= 2960 || x8 >= 2962 && x8 <= 2965 || x8 >= 2969 && x8 <= 2970 || x8 == 2972 || x8 >= 2974 && x8 <= 2975 || x8 >= 2979 && x8 <= 2980 || x8 >= 2984 && x8 <= 2986 || x8 >= 2990 && x8 <= 3001 || x8 == 3024 || x8 >= 3077 && x8 <= 3084 || x8 >= 3086 && x8 <= 3088 || x8 >= 3090 && x8 <= 3112 || x8 >= 3114 && x8 <= 3129 || x8 == 3133 || x8 >= 3160 && x8 <= 3162 || x8 >= 3164 && x8 <= 3165 || x8 >= 3168 && x8 <= 3169 || x8 == 3200 || x8 >= 3205 && x8 <= 3212 || x8 >= 3214 && x8 <= 3216 || x8 >= 3218 && x8 <= 3240 || x8 >= 3242 && x8 <= 3251 || x8 >= 3253 && x8 <= 3257 || x8 == 3261 || x8 >= 3292 && x8 <= 3294 || x8 >= 3296 && x8 <= 3297 || x8 >= 3313 && x8 <= 3314 || x8 >= 3332 && x8 <= 3340 || x8 >= 3342 && x8 <= 3344 || x8 >= 3346 && x8 <= 3386 || x8 == 3389 || x8 == 3406 || x8 >= 3412 && x8 <= 3414 || x8 >= 3423 && x8 <= 3425 || x8 >= 3450 && x8 <= 3455 || x8 >= 3461 && x8 <= 3478 || x8 >= 3482 && x8 <= 3505 || x8 >= 3507 && x8 <= 3515 || x8 == 3517 || x8 >= 3520 && x8 <= 3526 || x8 >= 3585 && x8 <= 3632 || x8 >= 3634 && x8 <= 3635 || x8 >= 3648 && x8 <= 3654 || x8 >= 3713 && x8 <= 3714 || x8 == 3716 || x8 >= 3718 && x8 <= 3722 || x8 >= 3724 && x8 <= 3747 || x8 == 3749 || x8 >= 3751 && x8 <= 3760 || x8 >= 3762 && x8 <= 3763 || x8 == 3773 || x8 >= 3776 && x8 <= 3780 || x8 == 3782 || x8 >= 3804 && x8 <= 3807 || x8 == 3840 || x8 >= 3904 && x8 <= 3911 || x8 >= 3913 && x8 <= 3948 || x8 >= 3976 && x8 <= 3980 || x8 >= 4096 && x8 <= 4138 || x8 == 4159 || x8 >= 4176 && x8 <= 4181 || x8 >= 4186 && x8 <= 4189 || x8 == 4193 || x8 >= 4197 && x8 <= 4198 || x8 >= 4206 && x8 <= 4208 || x8 >= 4213 && x8 <= 4225 || x8 == 4238 || x8 >= 4256 && x8 <= 4293 || x8 == 4295 || x8 == 4301 || x8 >= 4304 && x8 <= 4346 || x8 >= 4348 && x8 <= 4680 || x8 >= 4682 && x8 <= 4685 || x8 >= 4688 && x8 <= 4694 || x8 == 4696 || x8 >= 4698 && x8 <= 4701 || x8 >= 4704 && x8 <= 4744 || x8 >= 4746 && x8 <= 4749 || x8 >= 4752 && x8 <= 4784 || x8 >= 4786 && x8 <= 4789 || x8 >= 4792 && x8 <= 4798 || x8 == 4800 || x8 >= 4802 && x8 <= 4805 || x8 >= 4808 && x8 <= 4822 || x8 >= 4824 && x8 <= 4880 || x8 >= 4882 && x8 <= 4885 || x8 >= 4888 && x8 <= 4954 || x8 >= 4992 && x8 <= 5007 || x8 >= 5024 && x8 <= 5109 || x8 >= 5112 && x8 <= 5117 || x8 >= 5121 && x8 <= 5740 || x8 >= 5743 && x8 <= 5759 || x8 >= 5761 && x8 <= 5786 || x8 >= 5792 && x8 <= 5866 || x8 >= 5873 && x8 <= 5880 || x8 >= 5888 && x8 <= 5905 || x8 >= 5919 && x8 <= 5937 || x8 >= 5952 && x8 <= 5969 || x8 >= 5984 && x8 <= 5996 || x8 >= 5998 && x8 <= 6000 || x8 >= 6016 && x8 <= 6067 || x8 == 6103 || x8 == 6108 || x8 >= 6176 && x8 <= 6264 || x8 >= 6272 && x8 <= 6276 || x8 >= 6279 && x8 <= 6312 || x8 == 6314 || x8 >= 6320 && x8 <= 6389 || x8 >= 6400 && x8 <= 6430 || x8 >= 6480 && x8 <= 6509 || x8 >= 6512 && x8 <= 6516 || x8 >= 6528 && x8 <= 6571 || x8 >= 6576 && x8 <= 6601 || x8 >= 6656 && x8 <= 6678 || x8 >= 6688 && x8 <= 6740 || x8 == 6823 || x8 >= 6917 && x8 <= 6963 || x8 >= 6981 && x8 <= 6988 || x8 >= 7043 && x8 <= 7072 || x8 >= 7086 && x8 <= 7087 || x8 >= 7098 && x8 <= 7141 || x8 >= 7168 && x8 <= 7203 || x8 >= 7245 && x8 <= 7247 || x8 >= 7258 && x8 <= 7293 || x8 >= 7296 && x8 <= 7306 || x8 >= 7312 && x8 <= 7354 || x8 >= 7357 && x8 <= 7359 || x8 >= 7401 && x8 <= 7404 || x8 >= 7406 && x8 <= 7411 || x8 >= 7413 && x8 <= 7414 || x8 == 7418 || x8 >= 7424 && x8 <= 7615 || x8 >= 7680 && x8 <= 7957 || x8 >= 7960 && x8 <= 7965 || x8 >= 7968 && x8 <= 8005 || x8 >= 8008 && x8 <= 8013 || x8 >= 8016 && x8 <= 8023 || x8 == 8025 || x8 == 8027 || x8 == 8029 || x8 >= 8031 && x8 <= 8061 || x8 >= 8064 && x8 <= 8116 || x8 >= 8118 && x8 <= 8124 || x8 == 8126 || x8 >= 8130 && x8 <= 8132 || x8 >= 8134 && x8 <= 8140 || x8 >= 8144 && x8 <= 8147 || x8 >= 8150 && x8 <= 8155 || x8 >= 8160 && x8 <= 8172 || x8 >= 8178 && x8 <= 8180 || x8 >= 8182 && x8 <= 8188 || x8 == 8305 || x8 == 8319 || x8 >= 8336 && x8 <= 8348 || x8 == 8450 || x8 == 8455 || x8 >= 8458 && x8 <= 8467 || x8 == 8469 || x8 >= 8473 && x8 <= 8477 || x8 == 8484 || x8 == 8486 || x8 == 8488 || x8 >= 8490 && x8 <= 8493 || x8 >= 8495 && x8 <= 8505 || x8 >= 8508 && x8 <= 8511 || x8 >= 8517 && x8 <= 8521 || x8 == 8526 || x8 >= 8579 && x8 <= 8580 || x8 >= 11264 && x8 <= 11492 || x8 >= 11499 && x8 <= 11502 || x8 >= 11506 && x8 <= 11507 || x8 >= 11520 && x8 <= 11557 || x8 == 11559 || x8 == 11565 || x8 >= 11568 && x8 <= 11623 || x8 == 11631 || x8 >= 11648 && x8 <= 11670 || x8 >= 11680 && x8 <= 11686 || x8 >= 11688 && x8 <= 11694 || x8 >= 11696 && x8 <= 11702 || x8 >= 11704 && x8 <= 11710 || x8 >= 11712 && x8 <= 11718 || x8 >= 11720 && x8 <= 11726 || x8 >= 11728 && x8 <= 11734 || x8 >= 11736 && x8 <= 11742 || x8 == 11823 || x8 >= 12293 && x8 <= 12294 || x8 >= 12337 && x8 <= 12341 || x8 >= 12347 && x8 <= 12348 || x8 >= 12353 && x8 <= 12438 || x8 >= 12445 && x8 <= 12447 || x8 >= 12449 && x8 <= 12538 || x8 >= 12540 && x8 <= 12543 || x8 >= 12549 && x8 <= 12591 || x8 >= 12593 && x8 <= 12686 || x8 >= 12704 && x8 <= 12735 || x8 >= 12784 && x8 <= 12799 || x8 >= 13312 && x8 <= 19903 || x8 >= 19968 && x8 <= 42124 || x8 >= 42192 && x8 <= 42237 || x8 >= 42240 && x8 <= 42508 || x8 >= 42512 && x8 <= 42527 || x8 >= 42538 && x8 <= 42539 || x8 >= 42560 && x8 <= 42606 || x8 >= 42623 && x8 <= 42653 || x8 >= 42656 && x8 <= 42725 || x8 >= 42775 && x8 <= 42783 || x8 >= 42786 && x8 <= 42888 || x8 >= 42891 && x8 <= 42972 || x8 >= 42993 && x8 <= 43009 || x8 >= 43011 && x8 <= 43013 || x8 >= 43015 && x8 <= 43018 || x8 >= 43020 && x8 <= 43042 || x8 >= 43072 && x8 <= 43123 || x8 >= 43138 && x8 <= 43187 || x8 >= 43250 && x8 <= 43255 || x8 == 43259 || x8 >= 43261 && x8 <= 43262 || x8 >= 43274 && x8 <= 43301 || x8 >= 43312 && x8 <= 43334 || x8 >= 43360 && x8 <= 43388 || x8 >= 43396 && x8 <= 43442 || x8 == 43471 || x8 >= 43488 && x8 <= 43492 || x8 >= 43494 && x8 <= 43503 || x8 >= 43514 && x8 <= 43518 || x8 >= 43520 && x8 <= 43560 || x8 >= 43584 && x8 <= 43586 || x8 >= 43588 && x8 <= 43595 || x8 >= 43616 && x8 <= 43638 || x8 == 43642 || x8 >= 43646 && x8 <= 43695 || x8 == 43697 || x8 >= 43701 && x8 <= 43702 || x8 >= 43705 && x8 <= 43709 || x8 == 43712 || x8 == 43714 || x8 >= 43739 && x8 <= 43741 || x8 >= 43744 && x8 <= 43754 || x8 >= 43762 && x8 <= 43764 || x8 >= 43777 && x8 <= 43782 || x8 >= 43785 && x8 <= 43790 || x8 >= 43793 && x8 <= 43798 || x8 >= 43808 && x8 <= 43814 || x8 >= 43816 && x8 <= 43822 || x8 >= 43824 && x8 <= 43866 || x8 >= 43868 && x8 <= 43881 || x8 >= 43888 && x8 <= 44002 || x8 >= 44032 && x8 <= 55203 || x8 >= 55216 && x8 <= 55238 || x8 >= 55243 && x8 <= 55291 || x8 >= 63744 && x8 <= 64109 || x8 >= 64112 && x8 <= 64217 || x8 >= 64256 && x8 <= 64262 || x8 >= 64275 && x8 <= 64279 || x8 == 64285 || x8 >= 64287 && x8 <= 64296 || x8 >= 64298 && x8 <= 64310 || x8 >= 64312 && x8 <= 64316 || x8 == 64318 || x8 >= 64320 && x8 <= 64321 || x8 >= 64323 && x8 <= 64324 || x8 >= 64326 && x8 <= 64433 || x8 >= 64467 && x8 <= 64829 || x8 >= 64848 && x8 <= 64911 || x8 >= 64914 && x8 <= 64967 || x8 >= 65008 && x8 <= 65019 || x8 >= 65136 && x8 <= 65140 || x8 >= 65142 && x8 <= 65276 || x8 >= 65313 && x8 <= 65338 || x8 >= 65345 && x8 <= 65370 || x8 >= 65382 && x8 <= 65470 || x8 >= 65474 && x8 <= 65479 || x8 >= 65482 && x8 <= 65487 || x8 >= 65490 && x8 <= 65495 || x8 >= 65498 && x8 <= 65500 || x8 >= 65536 && x8 <= 65547 || x8 >= 65549 && x8 <= 65574 || x8 >= 65576 && x8 <= 65594 || x8 >= 65596 && x8 <= 65597 || x8 >= 65599 && x8 <= 65613 || x8 >= 65616 && x8 <= 65629 || x8 >= 65664 && x8 <= 65786 || x8 >= 66176 && x8 <= 66204 || x8 >= 66208 && x8 <= 66256 || x8 >= 66304 && x8 <= 66335 || x8 >= 66349 && x8 <= 66368 || x8 >= 66370 && x8 <= 66377 || x8 >= 66384 && x8 <= 66421 || x8 >= 66432 && x8 <= 66461 || x8 >= 66464 && x8 <= 66499 || x8 >= 66504 && x8 <= 66511 || x8 >= 66560 && x8 <= 66717 || x8 >= 66736 && x8 <= 66771 || x8 >= 66776 && x8 <= 66811 || x8 >= 66816 && x8 <= 66855 || x8 >= 66864 && x8 <= 66915 || x8 >= 66928 && x8 <= 66938 || x8 >= 66940 && x8 <= 66954 || x8 >= 66956 && x8 <= 66962 || x8 >= 66964 && x8 <= 66965 || x8 >= 66967 && x8 <= 66977 || x8 >= 66979 && x8 <= 66993 || x8 >= 66995 && x8 <= 67001 || x8 >= 67003 && x8 <= 67004 || x8 >= 67008 && x8 <= 67059 || x8 >= 67072 && x8 <= 67382 || x8 >= 67392 && x8 <= 67413 || x8 >= 67424 && x8 <= 67431 || x8 >= 67456 && x8 <= 67461 || x8 >= 67463 && x8 <= 67504 || x8 >= 67506 && x8 <= 67514 || x8 >= 67584 && x8 <= 67589 || x8 == 67592 || x8 >= 67594 && x8 <= 67637 || x8 >= 67639 && x8 <= 67640 || x8 == 67644 || x8 >= 67647 && x8 <= 67669 || x8 >= 67680 && x8 <= 67702 || x8 >= 67712 && x8 <= 67742 || x8 >= 67808 && x8 <= 67826 || x8 >= 67828 && x8 <= 67829 || x8 >= 67840 && x8 <= 67861 || x8 >= 67872 && x8 <= 67897 || x8 >= 67904 && x8 <= 67929 || x8 >= 67968 && x8 <= 68023 || x8 >= 68030 && x8 <= 68031 || x8 == 68096 || x8 >= 68112 && x8 <= 68115 || x8 >= 68117 && x8 <= 68119 || x8 >= 68121 && x8 <= 68149 || x8 >= 68192 && x8 <= 68220 || x8 >= 68224 && x8 <= 68252 || x8 >= 68288 && x8 <= 68295 || x8 >= 68297 && x8 <= 68324 || x8 >= 68352 && x8 <= 68405 || x8 >= 68416 && x8 <= 68437 || x8 >= 68448 && x8 <= 68466 || x8 >= 68480 && x8 <= 68497 || x8 >= 68608 && x8 <= 68680 || x8 >= 68736 && x8 <= 68786 || x8 >= 68800 && x8 <= 68850 || x8 >= 68864 && x8 <= 68899 || x8 >= 68938 && x8 <= 68965 || x8 >= 68975 && x8 <= 68997 || x8 >= 69248 && x8 <= 69289 || x8 >= 69296 && x8 <= 69297 || x8 >= 69314 && x8 <= 69319 || x8 >= 69376 && x8 <= 69404 || x8 == 69415 || x8 >= 69424 && x8 <= 69445 || x8 >= 69488 && x8 <= 69505 || x8 >= 69552 && x8 <= 69572 || x8 >= 69600 && x8 <= 69622 || x8 >= 69635 && x8 <= 69687 || x8 >= 69745 && x8 <= 69746 || x8 == 69749 || x8 >= 69763 && x8 <= 69807 || x8 >= 69840 && x8 <= 69864 || x8 >= 69891 && x8 <= 69926 || x8 == 69956 || x8 == 69959 || x8 >= 69968 && x8 <= 70002 || x8 == 70006 || x8 >= 70019 && x8 <= 70066 || x8 >= 70081 && x8 <= 70084 || x8 == 70106 || x8 == 70108 || x8 >= 70144 && x8 <= 70161 || x8 >= 70163 && x8 <= 70187 || x8 >= 70207 && x8 <= 70208 || x8 >= 70272 && x8 <= 70278 || x8 == 70280 || x8 >= 70282 && x8 <= 70285 || x8 >= 70287 && x8 <= 70301 || x8 >= 70303 && x8 <= 70312 || x8 >= 70320 && x8 <= 70366 || x8 >= 70405 && x8 <= 70412 || x8 >= 70415 && x8 <= 70416 || x8 >= 70419 && x8 <= 70440 || x8 >= 70442 && x8 <= 70448 || x8 >= 70450 && x8 <= 70451 || x8 >= 70453 && x8 <= 70457 || x8 == 70461 || x8 == 70480 || x8 >= 70493 && x8 <= 70497 || x8 >= 70528 && x8 <= 70537 || x8 == 70539 || x8 == 70542 || x8 >= 70544 && x8 <= 70581 || x8 == 70583 || x8 == 70609 || x8 == 70611 || x8 >= 70656 && x8 <= 70708 || x8 >= 70727 && x8 <= 70730 || x8 >= 70751 && x8 <= 70753 || x8 >= 70784 && x8 <= 70831 || x8 >= 70852 && x8 <= 70853 || x8 == 70855 || x8 >= 71040 && x8 <= 71086 || x8 >= 71128 && x8 <= 71131 || x8 >= 71168 && x8 <= 71215 || x8 == 71236 || x8 >= 71296 && x8 <= 71338 || x8 == 71352 || x8 >= 71424 && x8 <= 71450 || x8 >= 71488 && x8 <= 71494 || x8 >= 71680 && x8 <= 71723 || x8 >= 71840 && x8 <= 71903 || x8 >= 71935 && x8 <= 71942 || x8 == 71945 || x8 >= 71948 && x8 <= 71955 || x8 >= 71957 && x8 <= 71958 || x8 >= 71960 && x8 <= 71983 || x8 == 71999 || x8 == 72001 || x8 >= 72096 && x8 <= 72103 || x8 >= 72106 && x8 <= 72144 || x8 == 72161 || x8 == 72163 || x8 == 72192 || x8 >= 72203 && x8 <= 72242 || x8 == 72250 || x8 == 72272 || x8 >= 72284 && x8 <= 72329 || x8 == 72349 || x8 >= 72368 && x8 <= 72440 || x8 >= 72640 && x8 <= 72672 || x8 >= 72704 && x8 <= 72712 || x8 >= 72714 && x8 <= 72750 || x8 == 72768 || x8 >= 72818 && x8 <= 72847 || x8 >= 72960 && x8 <= 72966 || x8 >= 72968 && x8 <= 72969 || x8 >= 72971 && x8 <= 73008 || x8 == 73030 || x8 >= 73056 && x8 <= 73061 || x8 >= 73063 && x8 <= 73064 || x8 >= 73066 && x8 <= 73097 || x8 == 73112 || x8 >= 73136 && x8 <= 73179 || x8 >= 73440 && x8 <= 73458 || x8 == 73474 || x8 >= 73476 && x8 <= 73488 || x8 >= 73490 && x8 <= 73523 || x8 == 73648 || x8 >= 73728 && x8 <= 74649 || x8 >= 74880 && x8 <= 75075 || x8 >= 77712 && x8 <= 77808 || x8 >= 77824 && x8 <= 78895 || x8 >= 78913 && x8 <= 78918 || x8 >= 78944 && x8 <= 82938 || x8 >= 82944 && x8 <= 83526 || x8 >= 90368 && x8 <= 90397 || x8 >= 92160 && x8 <= 92728 || x8 >= 92736 && x8 <= 92766 || x8 >= 92784 && x8 <= 92862 || x8 >= 92880 && x8 <= 92909 || x8 >= 92928 && x8 <= 92975 || x8 >= 92992 && x8 <= 92995 || x8 >= 93027 && x8 <= 93047 || x8 >= 93053 && x8 <= 93071 || x8 >= 93504 && x8 <= 93548 || x8 >= 93760 && x8 <= 93823 || x8 >= 93856 && x8 <= 93880 || x8 >= 93883 && x8 <= 93907 || x8 >= 93952 && x8 <= 94026 || x8 == 94032 || x8 >= 94099 && x8 <= 94111 || x8 >= 94176 && x8 <= 94177 || x8 == 94179 || x8 >= 94194 && x8 <= 94195 || x8 >= 94208 && x8 <= 101589 || x8 >= 101631 && x8 <= 101662 || x8 >= 101760 && x8 <= 101874 || x8 >= 110576 && x8 <= 110579 || x8 >= 110581 && x8 <= 110587 || x8 >= 110589 && x8 <= 110590 || x8 >= 110592 && x8 <= 110882 || x8 == 110898 || x8 >= 110928 && x8 <= 110930 || x8 == 110933 || x8 >= 110948 && x8 <= 110951 || x8 >= 110960 && x8 <= 111355 || x8 >= 113664 && x8 <= 113770 || x8 >= 113776 && x8 <= 113788 || x8 >= 113792 && x8 <= 113800 || x8 >= 113808 && x8 <= 113817 || x8 >= 119808 && x8 <= 119892 || x8 >= 119894 && x8 <= 119964 || x8 >= 119966 && x8 <= 119967 || x8 == 119970 || x8 >= 119973 && x8 <= 119974 || x8 >= 119977 && x8 <= 119980 || x8 >= 119982 && x8 <= 119993 || x8 == 119995 || x8 >= 119997 && x8 <= 120003 || x8 >= 120005 && x8 <= 120069 || x8 >= 120071 && x8 <= 120074 || x8 >= 120077 && x8 <= 120084 || x8 >= 120086 && x8 <= 120092 || x8 >= 120094 && x8 <= 120121 || x8 >= 120123 && x8 <= 120126 || x8 >= 120128 && x8 <= 120132 || x8 == 120134 || x8 >= 120138 && x8 <= 120144 || x8 >= 120146 && x8 <= 120485 || x8 >= 120488 && x8 <= 120512 || x8 >= 120514 && x8 <= 120538 || x8 >= 120540 && x8 <= 120570 || x8 >= 120572 && x8 <= 120596 || x8 >= 120598 && x8 <= 120628 || x8 >= 120630 && x8 <= 120654 || x8 >= 120656 && x8 <= 120686 || x8 >= 120688 && x8 <= 120712 || x8 >= 120714 && x8 <= 120744 || x8 >= 120746 && x8 <= 120770 || x8 >= 120772 && x8 <= 120779 || x8 >= 122624 && x8 <= 122654 || x8 >= 122661 && x8 <= 122666 || x8 >= 122928 && x8 <= 122989 || x8 >= 123136 && x8 <= 123180 || x8 >= 123191 && x8 <= 123197 || x8 == 123214 || x8 >= 123536 && x8 <= 123565 || x8 >= 123584 && x8 <= 123627 || x8 >= 124112 && x8 <= 124139 || x8 >= 124368 && x8 <= 124397 || x8 == 124400 || x8 >= 124608 && x8 <= 124638 || x8 >= 124640 && x8 <= 124642 || x8 >= 124644 && x8 <= 124645 || x8 >= 124647 && x8 <= 124653 || x8 >= 124656 && x8 <= 124660 || x8 >= 124670 && x8 <= 124671 || x8 >= 124896 && x8 <= 124902 || x8 >= 124904 && x8 <= 124907 || x8 >= 124909 && x8 <= 124910 || x8 >= 124912 && x8 <= 124926 || x8 >= 124928 && x8 <= 125124 || x8 >= 125184 && x8 <= 125251 || x8 == 125259 || x8 >= 126464 && x8 <= 126467 || x8 >= 126469 && x8 <= 126495 || x8 >= 126497 && x8 <= 126498 || x8 == 126500 || x8 == 126503 || x8 >= 126505 && x8 <= 126514 || x8 >= 126516 && x8 <= 126519 || x8 == 126521 || x8 == 126523 || x8 == 126530 || x8 == 126535 || x8 == 126537 || x8 == 126539 || x8 >= 126541 && x8 <= 126543 || x8 >= 126545 && x8 <= 126546 || x8 == 126548 || x8 == 126551 || x8 == 126553 || x8 == 126555 || x8 == 126557 || x8 == 126559 || x8 >= 126561 && x8 <= 126562 || x8 == 126564 || x8 >= 126567 && x8 <= 126570 || x8 >= 126572 && x8 <= 126578 || x8 >= 126580 && x8 <= 126583 || x8 >= 126585 && x8 <= 126588 || x8 == 126590 || x8 >= 126592 && x8 <= 126601 || x8 >= 126603 && x8 <= 126619 || x8 >= 126625 && x8 <= 126627 || x8 >= 126629 && x8 <= 126633 || x8 >= 126635 && x8 <= 126651 || x8 >= 131072 && x8 <= 173791 || x8 >= 173824 && x8 <= 178205 || x8 >= 178208 && x8 <= 183981 || x8 >= 183984 && x8 <= 191456 || x8 >= 191472 && x8 <= 192093 || x8 >= 194560 && x8 <= 195101 || x8 >= 196608 && x8 <= 201546 || x8 >= 201552 && x8 <= 210041))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 65)
 		goto L10
 	}
@@ -16840,7 +16895,7 @@ L4:
 L11:
 	p.reset(x5)
 L10:
-	if !(x9 && (!!(x8 >= 1632 && x8 <= 1641 || x8 >= 1776 && x8 <= 1785 || x8 >= 1984 && x8 <= 1993 || x8 >= 2406 && x8 <= 2415 || x8 >= 2534 && x8 <= 2543 || x8 >= 2662 && x8 <= 2671 || x8 >= 2790 && x8 <= 2799 || x8 >= 2918 && x8 <= 2927 || x8 >= 3046 && x8 <= 3055 || x8 >= 3174 && x8 <= 3183 || x8 >= 3302 && x8 <= 3311 || x8 >= 3430 && x8 <= 3439 || x8 >= 3558 && x8 <= 3567 || x8 >= 3664 && x8 <= 3673 || x8 >= 3792 && x8 <= 3801 || x8 >= 3872 && x8 <= 3881 || x8 >= 4160 && x8 <= 4169 || x8 >= 4240 && x8 <= 4249 || x8 >= 6112 && x8 <= 6121 || x8 >= 6160 && x8 <= 6169 || x8 >= 6470 && x8 <= 6479 || x8 >= 6608 && x8 <= 6617 || x8 >= 6784 && x8 <= 6793 || x8 >= 6800 && x8 <= 6809 || x8 >= 6992 && x8 <= 7001 || x8 >= 7088 && x8 <= 7097 || x8 >= 7232 && x8 <= 7241 || x8 >= 7248 && x8 <= 7257 || x8 >= 42528 && x8 <= 42537 || x8 >= 43216 && x8 <= 43225 || x8 >= 43264 && x8 <= 43273 || x8 >= 43472 && x8 <= 43481 || x8 >= 43504 && x8 <= 43513 || x8 >= 43600 && x8 <= 43609 || x8 >= 44016 && x8 <= 44025 || x8 >= 65296 && x8 <= 65305 || x8 >= 66720 && x8 <= 66729 || x8 >= 68912 && x8 <= 68921 || x8 >= 68928 && x8 <= 68937 || x8 >= 69734 && x8 <= 69743 || x8 >= 69872 && x8 <= 69881 || x8 >= 69942 && x8 <= 69951 || x8 >= 70096 && x8 <= 70105 || x8 >= 70384 && x8 <= 70393 || x8 >= 70736 && x8 <= 70745 || x8 >= 70864 && x8 <= 70873 || x8 >= 71248 && x8 <= 71257 || x8 >= 71360 && x8 <= 71369 || x8 >= 71376 && x8 <= 71395 || x8 >= 71472 && x8 <= 71481 || x8 >= 71904 && x8 <= 71913 || x8 >= 72016 && x8 <= 72025 || x8 >= 72688 && x8 <= 72697 || x8 >= 72784 && x8 <= 72793 || x8 >= 73040 && x8 <= 73049 || x8 >= 73120 && x8 <= 73129 || x8 >= 73184 && x8 <= 73193 || x8 >= 73552 && x8 <= 73561 || x8 >= 90416 && x8 <= 90425 || x8 >= 92768 && x8 <= 92777 || x8 >= 92864 && x8 <= 92873 || x8 >= 93008 && x8 <= 93017 || x8 >= 93552 && x8 <= 93561 || x8 >= 118000 && x8 <= 118009 || x8 >= 120782 && x8 <= 120831 || x8 >= 123200 && x8 <= 123209 || x8 >= 123632 && x8 <= 123641 || x8 >= 124144 && x8 <= 124153 || x8 >= 124401 && x8 <= 124410 || x8 >= 125264 && x8 <= 125273 || x8 >= 130032 && x8 <= 130041))) && p.depth+1 <= maxDepth {
+	if !(x9 && (!!(x8 >= 1632 && x8 <= 1641 || x8 >= 1776 && x8 <= 1785 || x8 >= 1984 && x8 <= 1993 || x8 >= 2406 && x8 <= 2415 || x8 >= 2534 && x8 <= 2543 || x8 >= 2662 && x8 <= 2671 || x8 >= 2790 && x8 <= 2799 || x8 >= 2918 && x8 <= 2927 || x8 >= 3046 && x8 <= 3055 || x8 >= 3174 && x8 <= 3183 || x8 >= 3302 && x8 <= 3311 || x8 >= 3430 && x8 <= 3439 || x8 >= 3558 && x8 <= 3567 || x8 >= 3664 && x8 <= 3673 || x8 >= 3792 && x8 <= 3801 || x8 >= 3872 && x8 <= 3881 || x8 >= 4160 && x8 <= 4169 || x8 >= 4240 && x8 <= 4249 || x8 >= 6112 && x8 <= 6121 || x8 >= 6160 && x8 <= 6169 || x8 >= 6470 && x8 <= 6479 || x8 >= 6608 && x8 <= 6617 || x8 >= 6784 && x8 <= 6793 || x8 >= 6800 && x8 <= 6809 || x8 >= 6992 && x8 <= 7001 || x8 >= 7088 && x8 <= 7097 || x8 >= 7232 && x8 <= 7241 || x8 >= 7248 && x8 <= 7257 || x8 >= 42528 && x8 <= 42537 || x8 >= 43216 && x8 <= 43225 || x8 >= 43264 && x8 <= 43273 || x8 >= 43472 && x8 <= 43481 || x8 >= 43504 && x8 <= 43513 || x8 >= 43600 && x8 <= 43609 || x8 >= 44016 && x8 <= 44025 || x8 >= 65296 && x8 <= 65305 || x8 >= 66720 && x8 <= 66729 || x8 >= 68912 && x8 <= 68921 || x8 >= 68928 && x8 <= 68937 || x8 >= 69734 && x8 <= 69743 || x8 >= 69872 && x8 <= 69881 || x8 >= 69942 && x8 <= 69951 || x8 >= 70096 && x8 <= 70105 || x8 >= 70384 && x8 <= 70393 || x8 >= 70736 && x8 <= 70745 || x8 >= 70864 && x8 <= 70873 || x8 >= 71248 && x8 <= 71257 || x8 >= 71360 && x8 <= 71369 || x8 >= 71376 && x8 <= 71395 || x8 >= 71472 && x8 <= 71481 || x8 >= 71904 && x8 <= 71913 || x8 >= 72016 && x8 <= 72025 || x8 >= 72688 && x8 <= 72697 || x8 >= 72784 && x8 <= 72793 || x8 >= 73040 && x8 <= 73049 || x8 >= 73120 && x8 <= 73129 || x8 >= 73184 && x8 <= 73193 || x8 >= 73552 && x8 <= 73561 || x8 >= 90416 && x8 <= 90425 || x8 >= 92768 && x8 <= 92777 || x8 >= 92864 && x8 <= 92873 || x8 >= 93008 && x8 <= 93017 || x8 >= 93552 && x8 <= 93561 || x8 >= 118000 && x8 <= 118009 || x8 >= 120782 && x8 <= 120831 || x8 >= 123200 && x8 <= 123209 || x8 >= 123632 && x8 <= 123641 || x8 >= 124144 && x8 <= 124153 || x8 >= 124401 && x8 <= 124410 || x8 >= 125264 && x8 <= 125273 || x8 >= 130032 && x8 <= 130041))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 66)
 		goto L13
 	}
@@ -17004,7 +17059,7 @@ func (p *parser) e184() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 == 36))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 == 36))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 67)
 		goto L6
 	}
@@ -17085,7 +17140,7 @@ func (p *parser) e185() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 >= 48 && x4 <= 57))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 >= 48 && x4 <= 57))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 60)
 		goto L6
 	}
@@ -17189,7 +17244,7 @@ func (p *parser) e189() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 35)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 35)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 52)
 		goto L6
 	}
@@ -17213,7 +17268,7 @@ func (p *parser) e189() (*Node, bool) {
 L7:
 	p.reset(x1)
 L6:
-	if !(x5 && (x4 == 95)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 95)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 68)
 		goto L14
 	}
@@ -17246,7 +17301,7 @@ L21:
 	} else {
 		x25, _, x26 = p.peek()
 	}
-	if !(x26 && (x25 == 35)) && p.depth+0 <= maxDepth {
+	if !(x26 && (x25 == 35)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 52)
 		goto L27
 	}
@@ -17508,7 +17563,7 @@ func (p *parser) e192() (*Node, bool) {
 	} else {
 		x6, _, x7 = p.peek()
 	}
-	if !(x7 && (x6 == 105)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L8
 	}
@@ -17524,7 +17579,7 @@ func (p *parser) e192() (*Node, bool) {
 L9:
 	p.reset(x3)
 L8:
-	if !(x7 && (x6 == 101)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 101)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 37)
 		goto L12
 	}
@@ -17540,7 +17595,7 @@ L8:
 L13:
 	p.reset(x3)
 L12:
-	if !(x7 && (x6 == 102)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L16
 	}
@@ -17556,7 +17611,7 @@ L12:
 L17:
 	p.reset(x3)
 L16:
-	if !(x7 && (x6 == 105)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 36)
 		goto L20
 	}
@@ -17572,7 +17627,7 @@ L16:
 L21:
 	p.reset(x3)
 L20:
-	if !(x7 && (x6 == 108)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 108)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L24
 	}
@@ -17588,7 +17643,7 @@ L20:
 L25:
 	p.reset(x3)
 L24:
-	if !(x7 && (x6 == 116)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L28
 	}
@@ -17604,7 +17659,7 @@ L24:
 L29:
 	p.reset(x3)
 L28:
-	if !(x7 && (x6 == 102)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 38)
 		goto L32
 	}
@@ -17618,7 +17673,7 @@ L28:
 L33:
 	p.reset(x3)
 L32:
-	if !(x7 && (x6 == 111)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 39)
 		goto L36
 	}
@@ -17632,7 +17687,7 @@ L32:
 L37:
 	p.reset(x3)
 L36:
-	if !(x7 && (x6 == 102)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 20)
 		goto L40
 	}
@@ -17648,7 +17703,7 @@ L36:
 L41:
 	p.reset(x3)
 L40:
-	if !(x7 && (x6 == 116)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 45)
 		goto L44
 	}
@@ -17664,7 +17719,7 @@ L40:
 L45:
 	p.reset(x3)
 L44:
-	if !(x7 && (x6 == 102)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 46)
 		goto L48
 	}
@@ -17678,7 +17733,7 @@ L44:
 L49:
 	p.reset(x3)
 L48:
-	if !(x7 && (x6 == 110)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 110)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L52
 	}
@@ -17729,7 +17784,7 @@ func (p *parser) e193() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (x3 == 105)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L5
 	}
@@ -17742,7 +17797,7 @@ func (p *parser) e193() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 101)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 101)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 37)
 		goto L7
 	}
@@ -17755,7 +17810,7 @@ L5:
 L8:
 	p.reset(x1)
 L7:
-	if !(x4 && (x3 == 102)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L9
 	}
@@ -17768,7 +17823,7 @@ L7:
 L10:
 	p.reset(x1)
 L9:
-	if !(x4 && (x3 == 105)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 36)
 		goto L11
 	}
@@ -17781,7 +17836,7 @@ L9:
 L12:
 	p.reset(x1)
 L11:
-	if !(x4 && (x3 == 108)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 108)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L13
 	}
@@ -17794,7 +17849,7 @@ L11:
 L14:
 	p.reset(x1)
 L13:
-	if !(x4 && (x3 == 116)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L15
 	}
@@ -17807,7 +17862,7 @@ L13:
 L16:
 	p.reset(x1)
 L15:
-	if !(x4 && (x3 == 102)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 38)
 		goto L17
 	}
@@ -17818,7 +17873,7 @@ L15:
 L18:
 	p.reset(x1)
 L17:
-	if !(x4 && (x3 == 111)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 39)
 		goto L19
 	}
@@ -17829,7 +17884,7 @@ L17:
 L20:
 	p.reset(x1)
 L19:
-	if !(x4 && (x3 == 102)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 20)
 		goto L21
 	}
@@ -17875,7 +17930,7 @@ func (p *parser) e194() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (x3 == 116)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 45)
 		goto L5
 	}
@@ -17888,7 +17943,7 @@ func (p *parser) e194() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 102)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 46)
 		goto L7
 	}
@@ -18031,7 +18086,7 @@ func (p *parser) e198() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 48)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 48)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L6
 	}
@@ -18124,7 +18179,7 @@ func (p *parser) e202() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (!!(x3 == 120 || x3 == 88))) && p.depth+0 <= maxDepth {
+	if !(x4 && (!!(x3 == 120 || x3 == 88))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 74)
 		goto L5
 	}
@@ -18180,7 +18235,7 @@ L9:
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 98)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 98)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 75)
 		goto L16
 	}
@@ -18245,7 +18300,7 @@ L20:
 L17:
 	p.reset(x1)
 L16:
-	if !(x4 && (x3 == 111)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 77)
 		goto L27
 	}
@@ -18896,7 +18951,7 @@ func (p *parser) e209() (*Node, bool) {
 	} else {
 		x6, _, x7 = p.peek()
 	}
-	if !(x7 && (!!(x6 >= 49 && x6 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x7 && (!!(x6 >= 49 && x6 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L8
 	}
@@ -18907,7 +18962,7 @@ func (p *parser) e209() (*Node, bool) {
 L9:
 	p.reset(x4)
 L8:
-	if !(x7 && (x6 == 48)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L10
 	}
@@ -18936,7 +18991,7 @@ L5:
 	} else {
 		x17, _, x18 = p.peek()
 	}
-	if !(x18 && (x17 == 46)) && p.depth+1 <= maxDepth {
+	if !(x18 && (x17 == 46)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L19
 	}
@@ -18949,7 +19004,7 @@ L5:
 	} else {
 		x23, _, x24 = p.peek()
 	}
-	if !(x24 && (!!(x23 == 101 || x23 == 69))) && p.depth+1 <= maxDepth {
+	if !(x24 && (!!(x23 == 101 || x23 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L25
 	}
@@ -18980,7 +19035,7 @@ L22:
 L20:
 	p.reset(x15)
 L19:
-	if !(x18 && (!!(x17 == 101 || x17 == 69))) && p.depth+1 <= maxDepth {
+	if !(x18 && (!!(x17 == 101 || x17 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L30
 	}
@@ -19001,7 +19056,7 @@ L3:
 	} else {
 		x32, _, x33 = p.peek()
 	}
-	if !(x33 && (x32 == 46)) && p.depth+0 <= maxDepth {
+	if !(x33 && (x32 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L34
 	}
@@ -19019,7 +19074,7 @@ L3:
 	} else {
 		x38, _, x39 = p.peek()
 	}
-	if !(x39 && (!!(x38 == 101 || x38 == 69))) && p.depth+1 <= maxDepth {
+	if !(x39 && (!!(x38 == 101 || x38 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L40
 	}
@@ -19080,7 +19135,7 @@ func (p *parser) e210() (*Node, bool) {
 	} else {
 		x6, _, x7 = p.peek()
 	}
-	if !(x7 && (!!(x6 >= 49 && x6 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x7 && (!!(x6 >= 49 && x6 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L8
 	}
@@ -19091,7 +19146,7 @@ func (p *parser) e210() (*Node, bool) {
 L9:
 	p.reset(x4)
 L8:
-	if !(x7 && (x6 == 48)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L10
 	}
@@ -19129,7 +19184,7 @@ L3:
 	} else {
 		x18, _, x19 = p.peek()
 	}
-	if !(x19 && (!!(x18 >= 49 && x18 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x19 && (!!(x18 >= 49 && x18 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L20
 	}
@@ -19140,7 +19195,7 @@ L3:
 L21:
 	p.reset(x16)
 L20:
-	if !(x19 && (x18 == 48)) && p.depth+0 <= maxDepth {
+	if !(x19 && (x18 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L22
 	}
@@ -19171,7 +19226,7 @@ L15:
 	} else {
 		x27, _, x28 = p.peek()
 	}
-	if !(x28 && (x27 == 46)) && p.depth+0 <= maxDepth {
+	if !(x28 && (x27 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L29
 	}
@@ -19360,7 +19415,7 @@ func (p *parser) e216() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 48)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 81)
 		goto L6
 	}
@@ -19400,7 +19455,7 @@ func (p *parser) e216() (*Node, bool) {
 L7:
 	p.reset(x1)
 L6:
-	if !(x5 && (x4 == 48)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 82)
 		goto L18
 	}
@@ -19474,7 +19529,7 @@ func (p *parser) e219() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 92 || x4 == 47 || x4 == 34))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 92 || x4 == 47 || x4 == 34))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 83)
 		goto L6
 	}
@@ -19495,7 +19550,7 @@ func (p *parser) e219() (*Node, bool) {
 L7:
 	p.reset(x1)
 L6:
-	if !(x5 && (x4 == 117)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 117)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 84)
 		goto L10
 	}
@@ -19519,7 +19574,7 @@ L6:
 L11:
 	p.reset(x1)
 L10:
-	if !(x5 && (x4 == 85)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 85)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 85)
 		goto L18
 	}
@@ -19597,7 +19652,7 @@ func (p *parser) e221() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 92 || x4 == 47 || x4 == 39))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 92 || x4 == 47 || x4 == 39))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 86)
 		goto L6
 	}
@@ -19618,7 +19673,7 @@ func (p *parser) e221() (*Node, bool) {
 L7:
 	p.reset(x1)
 L6:
-	if !(x5 && (x4 == 117)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 117)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 84)
 		goto L10
 	}
@@ -19642,7 +19697,7 @@ L6:
 L11:
 	p.reset(x1)
 L10:
-	if !(x5 && (x4 == 85)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 85)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 85)
 		goto L18
 	}
@@ -19666,7 +19721,7 @@ L10:
 L19:
 	p.reset(x1)
 L18:
-	if !(x5 && (x4 == 120)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 120)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 87)
 		goto L26
 	}
@@ -19694,7 +19749,7 @@ L18:
 L27:
 	p.reset(x1)
 L26:
-	if !(x5 && (!!(x4 >= 48 && x4 <= 51))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 >= 48 && x4 <= 51))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 88)
 		goto L35
 	}
@@ -19827,7 +19882,7 @@ func (p *parser) e223() (*Node, bool) {
 		} else {
 			x18, _, x19 = p.peek()
 		}
-		if !(x19 && (x18 == 92)) && p.depth+0 <= maxDepth {
+		if !(x19 && (x18 == 92)) && p.depth+0 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L20
 		}
@@ -20158,7 +20213,7 @@ func (p *parser) e234() (*Node, bool) {
 		} else {
 			x18, _, x19 = p.peek()
 		}
-		if !(x19 && (x18 == 92)) && p.depth+0 <= maxDepth {
+		if !(x19 && (x18 == 92)) && p.depth+0 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L20
 		}
@@ -20817,7 +20872,7 @@ func (p *parser) e252() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 10)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L6
 	}
@@ -20833,7 +20888,7 @@ func (p *parser) e252() (*Node, bool) {
 L7:
 	p.reset(x1)
 L6:
-	if !(x5 && (x4 == 13)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 13)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 96)
 		goto L10
 	}
@@ -20995,7 +21050,7 @@ func (p *parser) e255() (*Node, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 34)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 34)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 48)
 		goto L10
 	}
@@ -21011,7 +21066,7 @@ func (p *parser) e255() (*Node, bool) {
 L11:
 	p.reset(x6)
 L10:
-	if !(x9 && (x8 == 39)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 39)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 95)
 		goto L12
 	}
@@ -21121,7 +21176,7 @@ func (p *parser) e256() (*Node, bool) {
 		} else {
 			x20, _, x21 = p.peek()
 		}
-		if !(x21 && (x20 == 92)) && p.depth+1 <= maxDepth {
+		if !(x21 && (x20 == 92)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L22
 		}
@@ -21213,7 +21268,7 @@ func (p *parser) e257() (*Node, bool) {
 	} else {
 		x10, _, x11 = p.peek()
 	}
-	if !(x11 && (x10 == 34)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 34)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 48)
 		goto L12
 	}
@@ -21270,7 +21325,7 @@ L20:
 L13:
 	p.reset(x7)
 L12:
-	if !(x11 && (x10 == 39)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 39)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 95)
 		goto L30
 	}
@@ -21305,7 +21360,7 @@ L4:
 	} else {
 		x41, _, x42 = p.peek()
 	}
-	if !(x42 && (x41 == 39)) && p.depth+0 <= maxDepth {
+	if !(x42 && (x41 == 39)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 95)
 		goto L43
 	}
@@ -21362,7 +21417,7 @@ L51:
 L44:
 	p.reset(x38)
 L43:
-	if !(x42 && (x41 == 34)) && p.depth+0 <= maxDepth {
+	if !(x42 && (x41 == 34)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 48)
 		goto L61
 	}
@@ -21433,7 +21488,7 @@ func (p *parser) e258() (*Node, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 34)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 34)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 48)
 		goto L10
 	}
@@ -21449,7 +21504,7 @@ func (p *parser) e258() (*Node, bool) {
 L11:
 	p.reset(x6)
 L10:
-	if !(x9 && (x8 == 39)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 39)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 95)
 		goto L12
 	}
@@ -21877,7 +21932,7 @@ func (p *parser) e267() (*Node, bool) {
 		} else {
 			x18, _, x19 = p.peek()
 		}
-		if !(x19 && (x18 == 92)) && p.depth+1 <= maxDepth {
+		if !(x19 && (x18 == 92)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L20
 		}
@@ -22059,7 +22114,7 @@ func (p *parser) e272() (*Node, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 34)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 34)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 48)
 		goto L10
 	}
@@ -22075,7 +22130,7 @@ func (p *parser) e272() (*Node, bool) {
 L11:
 	p.reset(x6)
 L10:
-	if !(x9 && (x8 == 39)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 39)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 95)
 		goto L12
 	}
@@ -22220,7 +22275,7 @@ func (p *parser) e273() (*Node, bool) {
 		} else {
 			x18, _, x19 = p.peek()
 		}
-		if !(x19 && (x18 == 92)) && p.depth+1 <= maxDepth {
+		if !(x19 && (x18 == 92)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L20
 		}
@@ -22232,7 +22287,7 @@ func (p *parser) e273() (*Node, bool) {
 	L21:
 		p.reset(x6)
 	L20:
-		if !(x19 && (x18 == 10)) && p.depth+0 <= maxDepth {
+		if !(x19 && (x18 == 10)) && p.depth+0 <= p.maxDepth {
 			p.expect(p.pos, 18)
 			goto L23
 		}
@@ -22774,7 +22829,7 @@ func (p *parser) e285() (*Node, bool) {
 		} else {
 			x8, _, x9 = p.peek()
 		}
-		if !(x9 && (x8 == 47)) && p.depth+1 <= maxDepth {
+		if !(x9 && (x8 == 47)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 15)
 			goto L10
 		}
@@ -22815,7 +22870,7 @@ func (p *parser) e286() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (!!(x3 >= 97 && x3 <= 122 || x3 >= 65 && x3 <= 90 || x3 >= 48 && x3 <= 57 || x3 == 95 || x3 == 36))) && p.depth+0 <= maxDepth {
+	if !(x4 && (!!(x3 >= 97 && x3 <= 122 || x3 >= 65 && x3 <= 90 || x3 >= 48 && x3 <= 57 || x3 == 95 || x3 == 36))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 63)
 		goto L5
 	}
@@ -22944,7 +22999,7 @@ L4:
 	} else {
 		x12, _, x13 = p.peek()
 	}
-	if !(x13 && (x12 == 41)) && p.depth+0 <= maxDepth {
+	if !(x13 && (x12 == 41)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 9)
 		goto L14
 	}
@@ -22958,7 +23013,7 @@ L15:
 	p.pos = x9
 	p.recovered = p.recovered[:x10]
 L14:
-	if !(x13 && (x12 == 125)) && p.depth+0 <= maxDepth {
+	if !(x13 && (x12 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L16
 	}
@@ -23198,7 +23253,7 @@ func (p *parser) e294() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L6
 	}
@@ -23212,7 +23267,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L8
 	}
@@ -23226,7 +23281,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 108)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 108)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L10
 	}
@@ -23240,7 +23295,7 @@ L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L10:
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L12
 	}
@@ -23314,7 +23369,7 @@ L3:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 44)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L9
 	}
@@ -23328,7 +23383,7 @@ L10:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
 L9:
-	if !(x8 && (x7 == 10)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L11
 	}
@@ -23342,7 +23397,7 @@ L12:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
 L11:
-	if !(x8 && (x7 == 47)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L13
 	}
@@ -23364,7 +23419,7 @@ L13:
 L15:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
-	if !(x8 && (x7 == 125)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L16
 	}
@@ -23476,7 +23531,7 @@ func (p *parser) e299() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (x3 == 44)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L5
 	}
@@ -23492,7 +23547,7 @@ func (p *parser) e299() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 10)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L7
 	}
@@ -23522,7 +23577,7 @@ L7:
 	} else {
 		x12, _, x13 = p.peek()
 	}
-	if !(x13 && (x12 == 10)) && p.depth+0 <= maxDepth {
+	if !(x13 && (x12 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L14
 	}
@@ -23661,7 +23716,7 @@ func (p *parser) e302() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L6
 	}
@@ -23675,7 +23730,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L8
 	}
@@ -23689,7 +23744,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L10
 	}
@@ -23803,7 +23858,7 @@ func (p *parser) e304() (*Node, bool) {
 		} else {
 			x8, _, x9 = p.peek()
 		}
-		if !(x9 && (x8 == 92)) && p.depth+0 <= maxDepth {
+		if !(x9 && (x8 == 92)) && p.depth+0 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L10
 		}
@@ -23853,7 +23908,7 @@ func (p *parser) e305() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 10)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L6
 	}
@@ -24000,7 +24055,7 @@ func (p *parser) e307() (*Node, bool) {
 		} else {
 			x8, _, x9 = p.peek()
 		}
-		if !(x9 && (x8 == 47)) && p.depth+1 <= maxDepth {
+		if !(x9 && (x8 == 47)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 15)
 			goto L10
 		}
@@ -24154,7 +24209,7 @@ func (p *parser) e309() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 46)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 46)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L6
 	}
@@ -24168,7 +24223,7 @@ func (p *parser) e309() (*Node, bool) {
 	} else {
 		x15, _, x16 = p.peek()
 	}
-	if !(x16 && (!!(x15 == 101 || x15 == 69))) && p.depth+1 <= maxDepth {
+	if !(x16 && (!!(x15 == 101 || x15 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L17
 	}
@@ -24180,7 +24235,7 @@ L18:
 	p.pos = x12
 	p.recovered = p.recovered[:x13]
 L17:
-	if !(x16 && (!!(x15 == 75 || x15 == 77 || x15 == 71 || x15 == 84 || x15 == 80))) && p.depth+1 <= maxDepth {
+	if !(x16 && (!!(x15 == 75 || x15 == 77 || x15 == 71 || x15 == 84 || x15 == 80))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 62)
 		goto L19
 	}
@@ -24204,7 +24259,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (!!(x4 == 101 || x4 == 69))) && p.depth+1 <= maxDepth {
+	if !(x5 && (!!(x4 == 101 || x4 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L21
 	}
@@ -24244,7 +24299,7 @@ func (p *parser) e310() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 >= 48 && x4 <= 57))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 >= 48 && x4 <= 57))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 60)
 		goto L6
 	}
@@ -24316,7 +24371,7 @@ func (p *parser) e311() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L6
 	}
@@ -24330,7 +24385,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 101)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 101)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 37)
 		goto L8
 	}
@@ -24344,7 +24399,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L10
 	}
@@ -24358,7 +24413,7 @@ L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L10:
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 36)
 		goto L12
 	}
@@ -24372,7 +24427,7 @@ L13:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L12:
-	if !(x5 && (x4 == 108)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 108)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L14
 	}
@@ -24386,7 +24441,7 @@ L15:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L14:
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L16
 	}
@@ -24400,7 +24455,7 @@ L17:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L16:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 38)
 		goto L18
 	}
@@ -24412,7 +24467,7 @@ L19:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L18:
-	if !(x5 && (x4 == 111)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 39)
 		goto L20
 	}
@@ -24424,7 +24479,7 @@ L21:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L20:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 20)
 		goto L22
 	}
@@ -24438,7 +24493,7 @@ L23:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L22:
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 45)
 		goto L24
 	}
@@ -24452,7 +24507,7 @@ L25:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L24:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 46)
 		goto L26
 	}
@@ -24464,7 +24519,7 @@ L27:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L26:
-	if !(x5 && (x4 == 110)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 110)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L28
 	}
@@ -24518,7 +24573,7 @@ func (p *parser) e312() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (x3 == 35)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 35)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 52)
 		goto L5
 	}
@@ -24534,7 +24589,7 @@ func (p *parser) e312() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 95)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 95)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 68)
 		goto L7
 	}
@@ -24562,7 +24617,7 @@ L10:
 	} else {
 		x13, _, x14 = p.peek()
 	}
-	if !(x14 && (x13 == 35)) && p.depth+0 <= maxDepth {
+	if !(x14 && (x13 == 35)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 52)
 		goto L15
 	}
@@ -25063,7 +25118,7 @@ func (p *parser) e319() (*Node, bool) {
 		} else {
 			x8, _, x9 = p.peek()
 		}
-		if !(x9 && (x8 == 92)) && p.depth+0 <= maxDepth {
+		if !(x9 && (x8 == 92)) && p.depth+0 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L10
 		}
@@ -25215,7 +25270,7 @@ func (p *parser) e322() (*Node, bool) {
 		} else {
 			x9, _, x10 = p.peek()
 		}
-		if !(x10 && (x9 == 92)) && p.depth+1 <= maxDepth {
+		if !(x10 && (x9 == 92)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L11
 		}
@@ -25357,7 +25412,7 @@ func (p *parser) e325() (*Node, bool) {
 		} else {
 			x10, _, x11 = p.peek()
 		}
-		if !(x11 && (x10 == 92)) && p.depth+1 <= maxDepth {
+		if !(x11 && (x10 == 92)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L12
 		}
@@ -25478,7 +25533,7 @@ func (p *parser) e327() (*Node, bool) {
 		} else {
 			x8, _, x9 = p.peek()
 		}
-		if !(x9 && (x8 == 92)) && p.depth+1 <= maxDepth {
+		if !(x9 && (x8 == 92)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L10
 		}
@@ -25489,7 +25544,7 @@ func (p *parser) e327() (*Node, bool) {
 	L11:
 		p.reset(x4)
 	L10:
-		if !(x9 && (x8 == 10)) && p.depth+0 <= maxDepth {
+		if !(x9 && (x8 == 10)) && p.depth+0 <= p.maxDepth {
 			p.expect(p.pos, 18)
 			goto L12
 		}
@@ -25605,7 +25660,7 @@ L2:
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (!!(x5 == 170 || x5 == 181 || x5 == 186 || x5 >= 192 && x5 <= 214 || x5 >= 216 && x5 <= 246 || x5 >= 248 && x5 <= 705 || x5 >= 710 && x5 <= 721 || x5 >= 736 && x5 <= 740 || x5 == 748 || x5 == 750 || x5 >= 880 && x5 <= 884 || x5 >= 886 && x5 <= 887 || x5 >= 890 && x5 <= 893 || x5 == 895 || x5 == 902 || x5 >= 904 && x5 <= 906 || x5 == 908 || x5 >= 910 && x5 <= 929 || x5 >= 931 && x5 <= 1013 || x5 >= 1015 && x5 <= 1153 || x5 >= 1162 && x5 <= 1327 || x5 >= 1329 && x5 <= 1366 || x5 == 1369 || x5 >= 1376 && x5 <= 1416 || x5 >= 1488 && x5 <= 1514 || x5 >= 1519 && x5 <= 1522 || x5 >= 1568 && x5 <= 1610 || x5 >= 1646 && x5 <= 1647 || x5 >= 1649 && x5 <= 1747 || x5 == 1749 || x5 >= 1765 && x5 <= 1766 || x5 >= 1774 && x5 <= 1775 || x5 >= 1786 && x5 <= 1788 || x5 == 1791 || x5 == 1808 || x5 >= 1810 && x5 <= 1839 || x5 >= 1869 && x5 <= 1957 || x5 == 1969 || x5 >= 1994 && x5 <= 2026 || x5 >= 2036 && x5 <= 2037 || x5 == 2042 || x5 >= 2048 && x5 <= 2069 || x5 == 2074 || x5 == 2084 || x5 == 2088 || x5 >= 2112 && x5 <= 2136 || x5 >= 2144 && x5 <= 2154 || x5 >= 2160 && x5 <= 2183 || x5 >= 2185 && x5 <= 2191 || x5 >= 2208 && x5 <= 2249 || x5 >= 2308 && x5 <= 2361 || x5 == 2365 || x5 == 2384 || x5 >= 2392 && x5 <= 2401 || x5 >= 2417 && x5 <= 2432 || x5 >= 2437 && x5 <= 2444 || x5 >= 2447 && x5 <= 2448 || x5 >= 2451 && x5 <= 2472 || x5 >= 2474 && x5 <= 2480 || x5 == 2482 || x5 >= 2486 && x5 <= 2489 || x5 == 2493 || x5 == 2510 || x5 >= 2524 && x5 <= 2525 || x5 >= 2527 && x5 <= 2529 || x5 >= 2544 && x5 <= 2545 || x5 == 2556 || x5 >= 2565 && x5 <= 2570 || x5 >= 2575 && x5 <= 2576 || x5 >= 2579 && x5 <= 2600 || x5 >= 2602 && x5 <= 2608 || x5 >= 2610 && x5 <= 2611 || x5 >= 2613 && x5 <= 2614 || x5 >= 2616 && x5 <= 2617 || x5 >= 2649 && x5 <= 2652 || x5 == 2654 || x5 >= 2674 && x5 <= 2676 || x5 >= 2693 && x5 <= 2701 || x5 >= 2703 && x5 <= 2705 || x5 >= 2707 && x5 <= 2728 || x5 >= 2730 && x5 <= 2736 || x5 >= 2738 && x5 <= 2739 || x5 >= 2741 && x5 <= 2745 || x5 == 2749 || x5 == 2768 || x5 >= 2784 && x5 <= 2785 || x5 == 2809 || x5 >= 2821 && x5 <= 2828 || x5 >= 2831 && x5 <= 2832 || x5 >= 2835 && x5 <= 2856 || x5 >= 2858 && x5 <= 2864 || x5 >= 2866 && x5 <= 2867 || x5 >= 2869 && x5 <= 2873 || x5 == 2877 || x5 >= 2908 && x5 <= 2909 || x5 >= 2911 && x5 <= 2913 || x5 == 2929 || x5 == 2947 || x5 >= 2949 && x5 <= 2954 || x5 >= 2958 && x5 <= 2960 || x5 >= 2962 && x5 <= 2965 || x5 >= 2969 && x5 <= 2970 || x5 == 2972 || x5 >= 2974 && x5 <= 2975 || x5 >= 2979 && x5 <= 2980 || x5 >= 2984 && x5 <= 2986 || x5 >= 2990 && x5 <= 3001 || x5 == 3024 || x5 >= 3077 && x5 <= 3084 || x5 >= 3086 && x5 <= 3088 || x5 >= 3090 && x5 <= 3112 || x5 >= 3114 && x5 <= 3129 || x5 == 3133 || x5 >= 3160 && x5 <= 3162 || x5 >= 3164 && x5 <= 3165 || x5 >= 3168 && x5 <= 3169 || x5 == 3200 || x5 >= 3205 && x5 <= 3212 || x5 >= 3214 && x5 <= 3216 || x5 >= 3218 && x5 <= 3240 || x5 >= 3242 && x5 <= 3251 || x5 >= 3253 && x5 <= 3257 || x5 == 3261 || x5 >= 3292 && x5 <= 3294 || x5 >= 3296 && x5 <= 3297 || x5 >= 3313 && x5 <= 3314 || x5 >= 3332 && x5 <= 3340 || x5 >= 3342 && x5 <= 3344 || x5 >= 3346 && x5 <= 3386 || x5 == 3389 || x5 == 3406 || x5 >= 3412 && x5 <= 3414 || x5 >= 3423 && x5 <= 3425 || x5 >= 3450 && x5 <= 3455 || x5 >= 3461 && x5 <= 3478 || x5 >= 3482 && x5 <= 3505 || x5 >= 3507 && x5 <= 3515 || x5 == 3517 || x5 >= 3520 && x5 <= 3526 || x5 >= 3585 && x5 <= 3632 || x5 >= 3634 && x5 <= 3635 || x5 >= 3648 && x5 <= 3654 || x5 >= 3713 && x5 <= 3714 || x5 == 3716 || x5 >= 3718 && x5 <= 3722 || x5 >= 3724 && x5 <= 3747 || x5 == 3749 || x5 >= 3751 && x5 <= 3760 || x5 >= 3762 && x5 <= 3763 || x5 == 3773 || x5 >= 3776 && x5 <= 3780 || x5 == 3782 || x5 >= 3804 && x5 <= 3807 || x5 == 3840 || x5 >= 3904 && x5 <= 3911 || x5 >= 3913 && x5 <= 3948 || x5 >= 3976 && x5 <= 3980 || x5 >= 4096 && x5 <= 4138 || x5 == 4159 || x5 >= 4176 && x5 <= 4181 || x5 >= 4186 && x5 <= 4189 || x5 == 4193 || x5 >= 4197 && x5 <= 4198 || x5 >= 4206 && x5 <= 4208 || x5 >= 4213 && x5 <= 4225 || x5 == 4238 || x5 >= 4256 && x5 <= 4293 || x5 == 4295 || x5 == 4301 || x5 >= 4304 && x5 <= 4346 || x5 >= 4348 && x5 <= 4680 || x5 >= 4682 && x5 <= 4685 || x5 >= 4688 && x5 <= 4694 || x5 == 4696 || x5 >= 4698 && x5 <= 4701 || x5 >= 4704 && x5 <= 4744 || x5 >= 4746 && x5 <= 4749 || x5 >= 4752 && x5 <= 4784 || x5 >= 4786 && x5 <= 4789 || x5 >= 4792 && x5 <= 4798 || x5 == 4800 || x5 >= 4802 && x5 <= 4805 || x5 >= 4808 && x5 <= 4822 || x5 >= 4824 && x5 <= 4880 || x5 >= 4882 && x5 <= 4885 || x5 >= 4888 && x5 <= 4954 || x5 >= 4992 && x5 <= 5007 || x5 >= 5024 && x5 <= 5109 || x5 >= 5112 && x5 <= 5117 || x5 >= 5121 && x5 <= 5740 || x5 >= 5743 && x5 <= 5759 || x5 >= 5761 && x5 <= 5786 || x5 >= 5792 && x5 <= 5866 || x5 >= 5873 && x5 <= 5880 || x5 >= 5888 && x5 <= 5905 || x5 >= 5919 && x5 <= 5937 || x5 >= 5952 && x5 <= 5969 || x5 >= 5984 && x5 <= 5996 || x5 >= 5998 && x5 <= 6000 || x5 >= 6016 && x5 <= 6067 || x5 == 6103 || x5 == 6108 || x5 >= 6176 && x5 <= 6264 || x5 >= 6272 && x5 <= 6276 || x5 >= 6279 && x5 <= 6312 || x5 == 6314 || x5 >= 6320 && x5 <= 6389 || x5 >= 6400 && x5 <= 6430 || x5 >= 6480 && x5 <= 6509 || x5 >= 6512 && x5 <= 6516 || x5 >= 6528 && x5 <= 6571 || x5 >= 6576 && x5 <= 6601 || x5 >= 6656 && x5 <= 6678 || x5 >= 6688 && x5 <= 6740 || x5 == 6823 || x5 >= 6917 && x5 <= 6963 || x5 >= 6981 && x5 <= 6988 || x5 >= 7043 && x5 <= 7072 || x5 >= 7086 && x5 <= 7087 || x5 >= 7098 && x5 <= 7141 || x5 >= 7168 && x5 <= 7203 || x5 >= 7245 && x5 <= 7247 || x5 >= 7258 && x5 <= 7293 || x5 >= 7296 && x5 <= 7306 || x5 >= 7312 && x5 <= 7354 || x5 >= 7357 && x5 <= 7359 || x5 >= 7401 && x5 <= 7404 || x5 >= 7406 && x5 <= 7411 || x5 >= 7413 && x5 <= 7414 || x5 == 7418 || x5 >= 7424 && x5 <= 7615 || x5 >= 7680 && x5 <= 7957 || x5 >= 7960 && x5 <= 7965 || x5 >= 7968 && x5 <= 8005 || x5 >= 8008 && x5 <= 8013 || x5 >= 8016 && x5 <= 8023 || x5 == 8025 || x5 == 8027 || x5 == 8029 || x5 >= 8031 && x5 <= 8061 || x5 >= 8064 && x5 <= 8116 || x5 >= 8118 && x5 <= 8124 || x5 == 8126 || x5 >= 8130 && x5 <= 8132 || x5 >= 8134 && x5 <= 8140 || x5 >= 8144 && x5 <= 8147 || x5 >= 8150 && x5 <= 8155 || x5 >= 8160 && x5 <= 8172 || x5 >= 8178 && x5 <= 8180 || x5 >= 8182 && x5 <= 8188 || x5 == 8305 || x5 == 8319 || x5 >= 8336 && x5 <= 8348 || x5 == 8450 || x5 == 8455 || x5 >= 8458 && x5 <= 8467 || x5 == 8469 || x5 >= 8473 && x5 <= 8477 || x5 == 8484 || x5 == 8486 || x5 == 8488 || x5 >= 8490 && x5 <= 8493 || x5 >= 8495 && x5 <= 8505 || x5 >= 8508 && x5 <= 8511 || x5 >= 8517 && x5 <= 8521 || x5 == 8526 || x5 >= 8579 && x5 <= 8580 || x5 >= 11264 && x5 <= 11492 || x5 >= 11499 && x5 <= 11502 || x5 >= 11506 && x5 <= 11507 || x5 >= 11520 && x5 <= 11557 || x5 == 11559 || x5 == 11565 || x5 >= 11568 && x5 <= 11623 || x5 == 11631 || x5 >= 11648 && x5 <= 11670 || x5 >= 11680 && x5 <= 11686 || x5 >= 11688 && x5 <= 11694 || x5 >= 11696 && x5 <= 11702 || x5 >= 11704 && x5 <= 11710 || x5 >= 11712 && x5 <= 11718 || x5 >= 11720 && x5 <= 11726 || x5 >= 11728 && x5 <= 11734 || x5 >= 11736 && x5 <= 11742 || x5 == 11823 || x5 >= 12293 && x5 <= 12294 || x5 >= 12337 && x5 <= 12341 || x5 >= 12347 && x5 <= 12348 || x5 >= 12353 && x5 <= 12438 || x5 >= 12445 && x5 <= 12447 || x5 >= 12449 && x5 <= 12538 || x5 >= 12540 && x5 <= 12543 || x5 >= 12549 && x5 <= 12591 || x5 >= 12593 && x5 <= 12686 || x5 >= 12704 && x5 <= 12735 || x5 >= 12784 && x5 <= 12799 || x5 >= 13312 && x5 <= 19903 || x5 >= 19968 && x5 <= 42124 || x5 >= 42192 && x5 <= 42237 || x5 >= 42240 && x5 <= 42508 || x5 >= 42512 && x5 <= 42527 || x5 >= 42538 && x5 <= 42539 || x5 >= 42560 && x5 <= 42606 || x5 >= 42623 && x5 <= 42653 || x5 >= 42656 && x5 <= 42725 || x5 >= 42775 && x5 <= 42783 || x5 >= 42786 && x5 <= 42888 || x5 >= 42891 && x5 <= 42972 || x5 >= 42993 && x5 <= 43009 || x5 >= 43011 && x5 <= 43013 || x5 >= 43015 && x5 <= 43018 || x5 >= 43020 && x5 <= 43042 || x5 >= 43072 && x5 <= 43123 || x5 >= 43138 && x5 <= 43187 || x5 >= 43250 && x5 <= 43255 || x5 == 43259 || x5 >= 43261 && x5 <= 43262 || x5 >= 43274 && x5 <= 43301 || x5 >= 43312 && x5 <= 43334 || x5 >= 43360 && x5 <= 43388 || x5 >= 43396 && x5 <= 43442 || x5 == 43471 || x5 >= 43488 && x5 <= 43492 || x5 >= 43494 && x5 <= 43503 || x5 >= 43514 && x5 <= 43518 || x5 >= 43520 && x5 <= 43560 || x5 >= 43584 && x5 <= 43586 || x5 >= 43588 && x5 <= 43595 || x5 >= 43616 && x5 <= 43638 || x5 == 43642 || x5 >= 43646 && x5 <= 43695 || x5 == 43697 || x5 >= 43701 && x5 <= 43702 || x5 >= 43705 && x5 <= 43709 || x5 == 43712 || x5 == 43714 || x5 >= 43739 && x5 <= 43741 || x5 >= 43744 && x5 <= 43754 || x5 >= 43762 && x5 <= 43764 || x5 >= 43777 && x5 <= 43782 || x5 >= 43785 && x5 <= 43790 || x5 >= 43793 && x5 <= 43798 || x5 >= 43808 && x5 <= 43814 || x5 >= 43816 && x5 <= 43822 || x5 >= 43824 && x5 <= 43866 || x5 >= 43868 && x5 <= 43881 || x5 >= 43888 && x5 <= 44002 || x5 >= 44032 && x5 <= 55203 || x5 >= 55216 && x5 <= 55238 || x5 >= 55243 && x5 <= 55291 || x5 >= 63744 && x5 <= 64109 || x5 >= 64112 && x5 <= 64217 || x5 >= 64256 && x5 <= 64262 || x5 >= 64275 && x5 <= 64279 || x5 == 64285 || x5 >= 64287 && x5 <= 64296 || x5 >= 64298 && x5 <= 64310 || x5 >= 64312 && x5 <= 64316 || x5 == 64318 || x5 >= 64320 && x5 <= 64321 || x5 >= 64323 && x5 <= 64324 || x5 >= 64326 && x5 <= 64433 || x5 >= 64467 && x5 <= 64829 || x5 >= 64848 && x5 <= 64911 || x5 >= 64914 && x5 <= 64967 || x5 >= 65008 && x5 <= 65019 || x5 >= 65136 && x5 <= 65140 || x5 >= 65142 && x5 <= 65276 || x5 >= 65313 && x5 <= 65338 || x5 >= 65345 && x5 <= 65370 || x5 >= 65382 && x5 <= 65470 || x5 >= 65474 && x5 <= 65479 || x5 >= 65482 && x5 <= 65487 || x5 >= 65490 && x5 <= 65495 || x5 >= 65498 && x5 <= 65500 || x5 >= 65536 && x5 <= 65547 || x5 >= 65549 && x5 <= 65574 || x5 >= 65576 && x5 <= 65594 || x5 >= 65596 && x5 <= 65597 || x5 >= 65599 && x5 <= 65613 || x5 >= 65616 && x5 <= 65629 || x5 >= 65664 && x5 <= 65786 || x5 >= 66176 && x5 <= 66204 || x5 >= 66208 && x5 <= 66256 || x5 >= 66304 && x5 <= 66335 || x5 >= 66349 && x5 <= 66368 || x5 >= 66370 && x5 <= 66377 || x5 >= 66384 && x5 <= 66421 || x5 >= 66432 && x5 <= 66461 || x5 >= 66464 && x5 <= 66499 || x5 >= 66504 && x5 <= 66511 || x5 >= 66560 && x5 <= 66717 || x5 >= 66736 && x5 <= 66771 || x5 >= 66776 && x5 <= 66811 || x5 >= 66816 && x5 <= 66855 || x5 >= 66864 && x5 <= 66915 || x5 >= 66928 && x5 <= 66938 || x5 >= 66940 && x5 <= 66954 || x5 >= 66956 && x5 <= 66962 || x5 >= 66964 && x5 <= 66965 || x5 >= 66967 && x5 <= 66977 || x5 >= 66979 && x5 <= 66993 || x5 >= 66995 && x5 <= 67001 || x5 >= 67003 && x5 <= 67004 || x5 >= 67008 && x5 <= 67059 || x5 >= 67072 && x5 <= 67382 || x5 >= 67392 && x5 <= 67413 || x5 >= 67424 && x5 <= 67431 || x5 >= 67456 && x5 <= 67461 || x5 >= 67463 && x5 <= 67504 || x5 >= 67506 && x5 <= 67514 || x5 >= 67584 && x5 <= 67589 || x5 == 67592 || x5 >= 67594 && x5 <= 67637 || x5 >= 67639 && x5 <= 67640 || x5 == 67644 || x5 >= 67647 && x5 <= 67669 || x5 >= 67680 && x5 <= 67702 || x5 >= 67712 && x5 <= 67742 || x5 >= 67808 && x5 <= 67826 || x5 >= 67828 && x5 <= 67829 || x5 >= 67840 && x5 <= 67861 || x5 >= 67872 && x5 <= 67897 || x5 >= 67904 && x5 <= 67929 || x5 >= 67968 && x5 <= 68023 || x5 >= 68030 && x5 <= 68031 || x5 == 68096 || x5 >= 68112 && x5 <= 68115 || x5 >= 68117 && x5 <= 68119 || x5 >= 68121 && x5 <= 68149 || x5 >= 68192 && x5 <= 68220 || x5 >= 68224 && x5 <= 68252 || x5 >= 68288 && x5 <= 68295 || x5 >= 68297 && x5 <= 68324 || x5 >= 68352 && x5 <= 68405 || x5 >= 68416 && x5 <= 68437 || x5 >= 68448 && x5 <= 68466 || x5 >= 68480 && x5 <= 68497 || x5 >= 68608 && x5 <= 68680 || x5 >= 68736 && x5 <= 68786 || x5 >= 68800 && x5 <= 68850 || x5 >= 68864 && x5 <= 68899 || x5 >= 68938 && x5 <= 68965 || x5 >= 68975 && x5 <= 68997 || x5 >= 69248 && x5 <= 69289 || x5 >= 69296 && x5 <= 69297 || x5 >= 69314 && x5 <= 69319 || x5 >= 69376 && x5 <= 69404 || x5 == 69415 || x5 >= 69424 && x5 <= 69445 || x5 >= 69488 && x5 <= 69505 || x5 >= 69552 && x5 <= 69572 || x5 >= 69600 && x5 <= 69622 || x5 >= 69635 && x5 <= 69687 || x5 >= 69745 && x5 <= 69746 || x5 == 69749 || x5 >= 69763 && x5 <= 69807 || x5 >= 69840 && x5 <= 69864 || x5 >= 69891 && x5 <= 69926 || x5 == 69956 || x5 == 69959 || x5 >= 69968 && x5 <= 70002 || x5 == 70006 || x5 >= 70019 && x5 <= 70066 || x5 >= 70081 && x5 <= 70084 || x5 == 70106 || x5 == 70108 || x5 >= 70144 && x5 <= 70161 || x5 >= 70163 && x5 <= 70187 || x5 >= 70207 && x5 <= 70208 || x5 >= 70272 && x5 <= 70278 || x5 == 70280 || x5 >= 70282 && x5 <= 70285 || x5 >= 70287 && x5 <= 70301 || x5 >= 70303 && x5 <= 70312 || x5 >= 70320 && x5 <= 70366 || x5 >= 70405 && x5 <= 70412 || x5 >= 70415 && x5 <= 70416 || x5 >= 70419 && x5 <= 70440 || x5 >= 70442 && x5 <= 70448 || x5 >= 70450 && x5 <= 70451 || x5 >= 70453 && x5 <= 70457 || x5 == 70461 || x5 == 70480 || x5 >= 70493 && x5 <= 70497 || x5 >= 70528 && x5 <= 70537 || x5 == 70539 || x5 == 70542 || x5 >= 70544 && x5 <= 70581 || x5 == 70583 || x5 == 70609 || x5 == 70611 || x5 >= 70656 && x5 <= 70708 || x5 >= 70727 && x5 <= 70730 || x5 >= 70751 && x5 <= 70753 || x5 >= 70784 && x5 <= 70831 || x5 >= 70852 && x5 <= 70853 || x5 == 70855 || x5 >= 71040 && x5 <= 71086 || x5 >= 71128 && x5 <= 71131 || x5 >= 71168 && x5 <= 71215 || x5 == 71236 || x5 >= 71296 && x5 <= 71338 || x5 == 71352 || x5 >= 71424 && x5 <= 71450 || x5 >= 71488 && x5 <= 71494 || x5 >= 71680 && x5 <= 71723 || x5 >= 71840 && x5 <= 71903 || x5 >= 71935 && x5 <= 71942 || x5 == 71945 || x5 >= 71948 && x5 <= 71955 || x5 >= 71957 && x5 <= 71958 || x5 >= 71960 && x5 <= 71983 || x5 == 71999 || x5 == 72001 || x5 >= 72096 && x5 <= 72103 || x5 >= 72106 && x5 <= 72144 || x5 == 72161 || x5 == 72163 || x5 == 72192 || x5 >= 72203 && x5 <= 72242 || x5 == 72250 || x5 == 72272 || x5 >= 72284 && x5 <= 72329 || x5 == 72349 || x5 >= 72368 && x5 <= 72440 || x5 >= 72640 && x5 <= 72672 || x5 >= 72704 && x5 <= 72712 || x5 >= 72714 && x5 <= 72750 || x5 == 72768 || x5 >= 72818 && x5 <= 72847 || x5 >= 72960 && x5 <= 72966 || x5 >= 72968 && x5 <= 72969 || x5 >= 72971 && x5 <= 73008 || x5 == 73030 || x5 >= 73056 && x5 <= 73061 || x5 >= 73063 && x5 <= 73064 || x5 >= 73066 && x5 <= 73097 || x5 == 73112 || x5 >= 73136 && x5 <= 73179 || x5 >= 73440 && x5 <= 73458 || x5 == 73474 || x5 >= 73476 && x5 <= 73488 || x5 >= 73490 && x5 <= 73523 || x5 == 73648 || x5 >= 73728 && x5 <= 74649 || x5 >= 74880 && x5 <= 75075 || x5 >= 77712 && x5 <= 77808 || x5 >= 77824 && x5 <= 78895 || x5 >= 78913 && x5 <= 78918 || x5 >= 78944 && x5 <= 82938 || x5 >= 82944 && x5 <= 83526 || x5 >= 90368 && x5 <= 90397 || x5 >= 92160 && x5 <= 92728 || x5 >= 92736 && x5 <= 92766 || x5 >= 92784 && x5 <= 92862 || x5 >= 92880 && x5 <= 92909 || x5 >= 92928 && x5 <= 92975 || x5 >= 92992 && x5 <= 92995 || x5 >= 93027 && x5 <= 93047 || x5 >= 93053 && x5 <= 93071 || x5 >= 93504 && x5 <= 93548 || x5 >= 93760 && x5 <= 93823 || x5 >= 93856 && x5 <= 93880 || x5 >= 93883 && x5 <= 93907 || x5 >= 93952 && x5 <= 94026 || x5 == 94032 || x5 >= 94099 && x5 <= 94111 || x5 >= 94176 && x5 <= 94177 || x5 == 94179 || x5 >= 94194 && x5 <= 94195 || x5 >= 94208 && x5 <= 101589 || x5 >= 101631 && x5 <= 101662 || x5 >= 101760 && x5 <= 101874 || x5 >= 110576 && x5 <= 110579 || x5 >= 110581 && x5 <= 110587 || x5 >= 110589 && x5 <= 110590 || x5 >= 110592 && x5 <= 110882 || x5 == 110898 || x5 >= 110928 && x5 <= 110930 || x5 == 110933 || x5 >= 110948 && x5 <= 110951 || x5 >= 110960 && x5 <= 111355 || x5 >= 113664 && x5 <= 113770 || x5 >= 113776 && x5 <= 113788 || x5 >= 113792 && x5 <= 113800 || x5 >= 113808 && x5 <= 113817 || x5 >= 119808 && x5 <= 119892 || x5 >= 119894 && x5 <= 119964 || x5 >= 119966 && x5 <= 119967 || x5 == 119970 || x5 >= 119973 && x5 <= 119974 || x5 >= 119977 && x5 <= 119980 || x5 >= 119982 && x5 <= 119993 || x5 == 119995 || x5 >= 119997 && x5 <= 120003 || x5 >= 120005 && x5 <= 120069 || x5 >= 120071 && x5 <= 120074 || x5 >= 120077 && x5 <= 120084 || x5 >= 120086 && x5 <= 120092 || x5 >= 120094 && x5 <= 120121 || x5 >= 120123 && x5 <= 120126 || x5 >= 120128 && x5 <= 120132 || x5 == 120134 || x5 >= 120138 && x5 <= 120144 || x5 >= 120146 && x5 <= 120485 || x5 >= 120488 && x5 <= 120512 || x5 >= 120514 && x5 <= 120538 || x5 >= 120540 && x5 <= 120570 || x5 >= 120572 && x5 <= 120596 || x5 >= 120598 && x5 <= 120628 || x5 >= 120630 && x5 <= 120654 || x5 >= 120656 && x5 <= 120686 || x5 >= 120688 && x5 <= 120712 || x5 >= 120714 && x5 <= 120744 || x5 >= 120746 && x5 <= 120770 || x5 >= 120772 && x5 <= 120779 || x5 >= 122624 && x5 <= 122654 || x5 >= 122661 && x5 <= 122666 || x5 >= 122928 && x5 <= 122989 || x5 >= 123136 && x5 <= 123180 || x5 >= 123191 && x5 <= 123197 || x5 == 123214 || x5 >= 123536 && x5 <= 123565 || x5 >= 123584 && x5 <= 123627 || x5 >= 124112 && x5 <= 124139 || x5 >= 124368 && x5 <= 124397 || x5 == 124400 || x5 >= 124608 && x5 <= 124638 || x5 >= 124640 && x5 <= 124642 || x5 >= 124644 && x5 <= 124645 || x5 >= 124647 && x5 <= 124653 || x5 >= 124656 && x5 <= 124660 || x5 >= 124670 && x5 <= 124671 || x5 >= 124896 && x5 <= 124902 || x5 >= 124904 && x5 <= 124907 || x5 >= 124909 && x5 <= 124910 || x5 >= 124912 && x5 <= 124926 || x5 >= 124928 && x5 <= 125124 || x5 >= 125184 && x5 <= 125251 || x5 == 125259 || x5 >= 126464 && x5 <= 126467 || x5 >= 126469 && x5 <= 126495 || x5 >= 126497 && x5 <= 126498 || x5 == 126500 || x5 == 126503 || x5 >= 126505 && x5 <= 126514 || x5 >= 126516 && x5 <= 126519 || x5 == 126521 || x5 == 126523 || x5 == 126530 || x5 == 126535 || x5 == 126537 || x5 == 126539 || x5 >= 126541 && x5 <= 126543 || x5 >= 126545 && x5 <= 126546 || x5 == 126548 || x5 == 126551 || x5 == 126553 || x5 == 126555 || x5 == 126557 || x5 == 126559 || x5 >= 126561 && x5 <= 126562 || x5 == 126564 || x5 >= 126567 && x5 <= 126570 || x5 >= 126572 && x5 <= 126578 || x5 >= 126580 && x5 <= 126583 || x5 >= 126585 && x5 <= 126588 || x5 == 126590 || x5 >= 126592 && x5 <= 126601 || x5 >= 126603 && x5 <= 126619 || x5 >= 126625 && x5 <= 126627 || x5 >= 126629 && x5 <= 126633 || x5 >= 126635 && x5 <= 126651 || x5 >= 131072 && x5 <= 173791 || x5 >= 173824 && x5 <= 178205 || x5 >= 178208 && x5 <= 183981 || x5 >= 183984 && x5 <= 191456 || x5 >= 191472 && x5 <= 192093 || x5 >= 194560 && x5 <= 195101 || x5 >= 196608 && x5 <= 201546 || x5 >= 201552 && x5 <= 210041))) && p.depth+1 <= maxDepth {
+	if !(x6 && (!!(x5 == 170 || x5 == 181 || x5 == 186 || x5 >= 192 && x5 <= 214 || x5 >= 216 && x5 <= 246 || x5 >= 248 && x5 <= 705 || x5 >= 710 && x5 <= 721 || x5 >= 736 && x5 <= 740 || x5 == 748 || x5 == 750 || x5 >= 880 && x5 <= 884 || x5 >= 886 && x5 <= 887 || x5 >= 890 && x5 <= 893 || x5 == 895 || x5 == 902 || x5 >= 904 && x5 <= 906 || x5 == 908 || x5 >= 910 && x5 <= 929 || x5 >= 931 && x5 <= 1013 || x5 >= 1015 && x5 <= 1153 || x5 >= 1162 && x5 <= 1327 || x5 >= 1329 && x5 <= 1366 || x5 == 1369 || x5 >= 1376 && x5 <= 1416 || x5 >= 1488 && x5 <= 1514 || x5 >= 1519 && x5 <= 1522 || x5 >= 1568 && x5 <= 1610 || x5 >= 1646 && x5 <= 1647 || x5 >= 1649 && x5 <= 1747 || x5 == 1749 || x5 >= 1765 && x5 <= 1766 || x5 >= 1774 && x5 <= 1775 || x5 >= 1786 && x5 <= 1788 || x5 == 1791 || x5 == 1808 || x5 >= 1810 && x5 <= 1839 || x5 >= 1869 && x5 <= 1957 || x5 == 1969 || x5 >= 1994 && x5 <= 2026 || x5 >= 2036 && x5 <= 2037 || x5 == 2042 || x5 >= 2048 && x5 <= 2069 || x5 == 2074 || x5 == 2084 || x5 == 2088 || x5 >= 2112 && x5 <= 2136 || x5 >= 2144 && x5 <= 2154 || x5 >= 2160 && x5 <= 2183 || x5 >= 2185 && x5 <= 2191 || x5 >= 2208 && x5 <= 2249 || x5 >= 2308 && x5 <= 2361 || x5 == 2365 || x5 == 2384 || x5 >= 2392 && x5 <= 2401 || x5 >= 2417 && x5 <= 2432 || x5 >= 2437 && x5 <= 2444 || x5 >= 2447 && x5 <= 2448 || x5 >= 2451 && x5 <= 2472 || x5 >= 2474 && x5 <= 2480 || x5 == 2482 || x5 >= 2486 && x5 <= 2489 || x5 == 2493 || x5 == 2510 || x5 >= 2524 && x5 <= 2525 || x5 >= 2527 && x5 <= 2529 || x5 >= 2544 && x5 <= 2545 || x5 == 2556 || x5 >= 2565 && x5 <= 2570 || x5 >= 2575 && x5 <= 2576 || x5 >= 2579 && x5 <= 2600 || x5 >= 2602 && x5 <= 2608 || x5 >= 2610 && x5 <= 2611 || x5 >= 2613 && x5 <= 2614 || x5 >= 2616 && x5 <= 2617 || x5 >= 2649 && x5 <= 2652 || x5 == 2654 || x5 >= 2674 && x5 <= 2676 || x5 >= 2693 && x5 <= 2701 || x5 >= 2703 && x5 <= 2705 || x5 >= 2707 && x5 <= 2728 || x5 >= 2730 && x5 <= 2736 || x5 >= 2738 && x5 <= 2739 || x5 >= 2741 && x5 <= 2745 || x5 == 2749 || x5 == 2768 || x5 >= 2784 && x5 <= 2785 || x5 == 2809 || x5 >= 2821 && x5 <= 2828 || x5 >= 2831 && x5 <= 2832 || x5 >= 2835 && x5 <= 2856 || x5 >= 2858 && x5 <= 2864 || x5 >= 2866 && x5 <= 2867 || x5 >= 2869 && x5 <= 2873 || x5 == 2877 || x5 >= 2908 && x5 <= 2909 || x5 >= 2911 && x5 <= 2913 || x5 == 2929 || x5 == 2947 || x5 >= 2949 && x5 <= 2954 || x5 >= 2958 && x5 <= 2960 || x5 >= 2962 && x5 <= 2965 || x5 >= 2969 && x5 <= 2970 || x5 == 2972 || x5 >= 2974 && x5 <= 2975 || x5 >= 2979 && x5 <= 2980 || x5 >= 2984 && x5 <= 2986 || x5 >= 2990 && x5 <= 3001 || x5 == 3024 || x5 >= 3077 && x5 <= 3084 || x5 >= 3086 && x5 <= 3088 || x5 >= 3090 && x5 <= 3112 || x5 >= 3114 && x5 <= 3129 || x5 == 3133 || x5 >= 3160 && x5 <= 3162 || x5 >= 3164 && x5 <= 3165 || x5 >= 3168 && x5 <= 3169 || x5 == 3200 || x5 >= 3205 && x5 <= 3212 || x5 >= 3214 && x5 <= 3216 || x5 >= 3218 && x5 <= 3240 || x5 >= 3242 && x5 <= 3251 || x5 >= 3253 && x5 <= 3257 || x5 == 3261 || x5 >= 3292 && x5 <= 3294 || x5 >= 3296 && x5 <= 3297 || x5 >= 3313 && x5 <= 3314 || x5 >= 3332 && x5 <= 3340 || x5 >= 3342 && x5 <= 3344 || x5 >= 3346 && x5 <= 3386 || x5 == 3389 || x5 == 3406 || x5 >= 3412 && x5 <= 3414 || x5 >= 3423 && x5 <= 3425 || x5 >= 3450 && x5 <= 3455 || x5 >= 3461 && x5 <= 3478 || x5 >= 3482 && x5 <= 3505 || x5 >= 3507 && x5 <= 3515 || x5 == 3517 || x5 >= 3520 && x5 <= 3526 || x5 >= 3585 && x5 <= 3632 || x5 >= 3634 && x5 <= 3635 || x5 >= 3648 && x5 <= 3654 || x5 >= 3713 && x5 <= 3714 || x5 == 3716 || x5 >= 3718 && x5 <= 3722 || x5 >= 3724 && x5 <= 3747 || x5 == 3749 || x5 >= 3751 && x5 <= 3760 || x5 >= 3762 && x5 <= 3763 || x5 == 3773 || x5 >= 3776 && x5 <= 3780 || x5 == 3782 || x5 >= 3804 && x5 <= 3807 || x5 == 3840 || x5 >= 3904 && x5 <= 3911 || x5 >= 3913 && x5 <= 3948 || x5 >= 3976 && x5 <= 3980 || x5 >= 4096 && x5 <= 4138 || x5 == 4159 || x5 >= 4176 && x5 <= 4181 || x5 >= 4186 && x5 <= 4189 || x5 == 4193 || x5 >= 4197 && x5 <= 4198 || x5 >= 4206 && x5 <= 4208 || x5 >= 4213 && x5 <= 4225 || x5 == 4238 || x5 >= 4256 && x5 <= 4293 || x5 == 4295 || x5 == 4301 || x5 >= 4304 && x5 <= 4346 || x5 >= 4348 && x5 <= 4680 || x5 >= 4682 && x5 <= 4685 || x5 >= 4688 && x5 <= 4694 || x5 == 4696 || x5 >= 4698 && x5 <= 4701 || x5 >= 4704 && x5 <= 4744 || x5 >= 4746 && x5 <= 4749 || x5 >= 4752 && x5 <= 4784 || x5 >= 4786 && x5 <= 4789 || x5 >= 4792 && x5 <= 4798 || x5 == 4800 || x5 >= 4802 && x5 <= 4805 || x5 >= 4808 && x5 <= 4822 || x5 >= 4824 && x5 <= 4880 || x5 >= 4882 && x5 <= 4885 || x5 >= 4888 && x5 <= 4954 || x5 >= 4992 && x5 <= 5007 || x5 >= 5024 && x5 <= 5109 || x5 >= 5112 && x5 <= 5117 || x5 >= 5121 && x5 <= 5740 || x5 >= 5743 && x5 <= 5759 || x5 >= 5761 && x5 <= 5786 || x5 >= 5792 && x5 <= 5866 || x5 >= 5873 && x5 <= 5880 || x5 >= 5888 && x5 <= 5905 || x5 >= 5919 && x5 <= 5937 || x5 >= 5952 && x5 <= 5969 || x5 >= 5984 && x5 <= 5996 || x5 >= 5998 && x5 <= 6000 || x5 >= 6016 && x5 <= 6067 || x5 == 6103 || x5 == 6108 || x5 >= 6176 && x5 <= 6264 || x5 >= 6272 && x5 <= 6276 || x5 >= 6279 && x5 <= 6312 || x5 == 6314 || x5 >= 6320 && x5 <= 6389 || x5 >= 6400 && x5 <= 6430 || x5 >= 6480 && x5 <= 6509 || x5 >= 6512 && x5 <= 6516 || x5 >= 6528 && x5 <= 6571 || x5 >= 6576 && x5 <= 6601 || x5 >= 6656 && x5 <= 6678 || x5 >= 6688 && x5 <= 6740 || x5 == 6823 || x5 >= 6917 && x5 <= 6963 || x5 >= 6981 && x5 <= 6988 || x5 >= 7043 && x5 <= 7072 || x5 >= 7086 && x5 <= 7087 || x5 >= 7098 && x5 <= 7141 || x5 >= 7168 && x5 <= 7203 || x5 >= 7245 && x5 <= 7247 || x5 >= 7258 && x5 <= 7293 || x5 >= 7296 && x5 <= 7306 || x5 >= 7312 && x5 <= 7354 || x5 >= 7357 && x5 <= 7359 || x5 >= 7401 && x5 <= 7404 || x5 >= 7406 && x5 <= 7411 || x5 >= 7413 && x5 <= 7414 || x5 == 7418 || x5 >= 7424 && x5 <= 7615 || x5 >= 7680 && x5 <= 7957 || x5 >= 7960 && x5 <= 7965 || x5 >= 7968 && x5 <= 8005 || x5 >= 8008 && x5 <= 8013 || x5 >= 8016 && x5 <= 8023 || x5 == 8025 || x5 == 8027 || x5 == 8029 || x5 >= 8031 && x5 <= 8061 || x5 >= 8064 && x5 <= 8116 || x5 >= 8118 && x5 <= 8124 || x5 == 8126 || x5 >= 8130 && x5 <= 8132 || x5 >= 8134 && x5 <= 8140 || x5 >= 8144 && x5 <= 8147 || x5 >= 8150 && x5 <= 8155 || x5 >= 8160 && x5 <= 8172 || x5 >= 8178 && x5 <= 8180 || x5 >= 8182 && x5 <= 8188 || x5 == 8305 || x5 == 8319 || x5 >= 8336 && x5 <= 8348 || x5 == 8450 || x5 == 8455 || x5 >= 8458 && x5 <= 8467 || x5 == 8469 || x5 >= 8473 && x5 <= 8477 || x5 == 8484 || x5 == 8486 || x5 == 8488 || x5 >= 8490 && x5 <= 8493 || x5 >= 8495 && x5 <= 8505 || x5 >= 8508 && x5 <= 8511 || x5 >= 8517 && x5 <= 8521 || x5 == 8526 || x5 >= 8579 && x5 <= 8580 || x5 >= 11264 && x5 <= 11492 || x5 >= 11499 && x5 <= 11502 || x5 >= 11506 && x5 <= 11507 || x5 >= 11520 && x5 <= 11557 || x5 == 11559 || x5 == 11565 || x5 >= 11568 && x5 <= 11623 || x5 == 11631 || x5 >= 11648 && x5 <= 11670 || x5 >= 11680 && x5 <= 11686 || x5 >= 11688 && x5 <= 11694 || x5 >= 11696 && x5 <= 11702 || x5 >= 11704 && x5 <= 11710 || x5 >= 11712 && x5 <= 11718 || x5 >= 11720 && x5 <= 11726 || x5 >= 11728 && x5 <= 11734 || x5 >= 11736 && x5 <= 11742 || x5 == 11823 || x5 >= 12293 && x5 <= 12294 || x5 >= 12337 && x5 <= 12341 || x5 >= 12347 && x5 <= 12348 || x5 >= 12353 && x5 <= 12438 || x5 >= 12445 && x5 <= 12447 || x5 >= 12449 && x5 <= 12538 || x5 >= 12540 && x5 <= 12543 || x5 >= 12549 && x5 <= 12591 || x5 >= 12593 && x5 <= 12686 || x5 >= 12704 && x5 <= 12735 || x5 >= 12784 && x5 <= 12799 || x5 >= 13312 && x5 <= 19903 || x5 >= 19968 && x5 <= 42124 || x5 >= 42192 && x5 <= 42237 || x5 >= 42240 && x5 <= 42508 || x5 >= 42512 && x5 <= 42527 || x5 >= 42538 && x5 <= 42539 || x5 >= 42560 && x5 <= 42606 || x5 >= 42623 && x5 <= 42653 || x5 >= 42656 && x5 <= 42725 || x5 >= 42775 && x5 <= 42783 || x5 >= 42786 && x5 <= 42888 || x5 >= 42891 && x5 <= 42972 || x5 >= 42993 && x5 <= 43009 || x5 >= 43011 && x5 <= 43013 || x5 >= 43015 && x5 <= 43018 || x5 >= 43020 && x5 <= 43042 || x5 >= 43072 && x5 <= 43123 || x5 >= 43138 && x5 <= 43187 || x5 >= 43250 && x5 <= 43255 || x5 == 43259 || x5 >= 43261 && x5 <= 43262 || x5 >= 43274 && x5 <= 43301 || x5 >= 43312 && x5 <= 43334 || x5 >= 43360 && x5 <= 43388 || x5 >= 43396 && x5 <= 43442 || x5 == 43471 || x5 >= 43488 && x5 <= 43492 || x5 >= 43494 && x5 <= 43503 || x5 >= 43514 && x5 <= 43518 || x5 >= 43520 && x5 <= 43560 || x5 >= 43584 && x5 <= 43586 || x5 >= 43588 && x5 <= 43595 || x5 >= 43616 && x5 <= 43638 || x5 == 43642 || x5 >= 43646 && x5 <= 43695 || x5 == 43697 || x5 >= 43701 && x5 <= 43702 || x5 >= 43705 && x5 <= 43709 || x5 == 43712 || x5 == 43714 || x5 >= 43739 && x5 <= 43741 || x5 >= 43744 && x5 <= 43754 || x5 >= 43762 && x5 <= 43764 || x5 >= 43777 && x5 <= 43782 || x5 >= 43785 && x5 <= 43790 || x5 >= 43793 && x5 <= 43798 || x5 >= 43808 && x5 <= 43814 || x5 >= 43816 && x5 <= 43822 || x5 >= 43824 && x5 <= 43866 || x5 >= 43868 && x5 <= 43881 || x5 >= 43888 && x5 <= 44002 || x5 >= 44032 && x5 <= 55203 || x5 >= 55216 && x5 <= 55238 || x5 >= 55243 && x5 <= 55291 || x5 >= 63744 && x5 <= 64109 || x5 >= 64112 && x5 <= 64217 || x5 >= 64256 && x5 <= 64262 || x5 >= 64275 && x5 <= 64279 || x5 == 64285 || x5 >= 64287 && x5 <= 64296 || x5 >= 64298 && x5 <= 64310 || x5 >= 64312 && x5 <= 64316 || x5 == 64318 || x5 >= 64320 && x5 <= 64321 || x5 >= 64323 && x5 <= 64324 || x5 >= 64326 && x5 <= 64433 || x5 >= 64467 && x5 <= 64829 || x5 >= 64848 && x5 <= 64911 || x5 >= 64914 && x5 <= 64967 || x5 >= 65008 && x5 <= 65019 || x5 >= 65136 && x5 <= 65140 || x5 >= 65142 && x5 <= 65276 || x5 >= 65313 && x5 <= 65338 || x5 >= 65345 && x5 <= 65370 || x5 >= 65382 && x5 <= 65470 || x5 >= 65474 && x5 <= 65479 || x5 >= 65482 && x5 <= 65487 || x5 >= 65490 && x5 <= 65495 || x5 >= 65498 && x5 <= 65500 || x5 >= 65536 && x5 <= 65547 || x5 >= 65549 && x5 <= 65574 || x5 >= 65576 && x5 <= 65594 || x5 >= 65596 && x5 <= 65597 || x5 >= 65599 && x5 <= 65613 || x5 >= 65616 && x5 <= 65629 || x5 >= 65664 && x5 <= 65786 || x5 >= 66176 && x5 <= 66204 || x5 >= 66208 && x5 <= 66256 || x5 >= 66304 && x5 <= 66335 || x5 >= 66349 && x5 <= 66368 || x5 >= 66370 && x5 <= 66377 || x5 >= 66384 && x5 <= 66421 || x5 >= 66432 && x5 <= 66461 || x5 >= 66464 && x5 <= 66499 || x5 >= 66504 && x5 <= 66511 || x5 >= 66560 && x5 <= 66717 || x5 >= 66736 && x5 <= 66771 || x5 >= 66776 && x5 <= 66811 || x5 >= 66816 && x5 <= 66855 || x5 >= 66864 && x5 <= 66915 || x5 >= 66928 && x5 <= 66938 || x5 >= 66940 && x5 <= 66954 || x5 >= 66956 && x5 <= 66962 || x5 >= 66964 && x5 <= 66965 || x5 >= 66967 && x5 <= 66977 || x5 >= 66979 && x5 <= 66993 || x5 >= 66995 && x5 <= 67001 || x5 >= 67003 && x5 <= 67004 || x5 >= 67008 && x5 <= 67059 || x5 >= 67072 && x5 <= 67382 || x5 >= 67392 && x5 <= 67413 || x5 >= 67424 && x5 <= 67431 || x5 >= 67456 && x5 <= 67461 || x5 >= 67463 && x5 <= 67504 || x5 >= 67506 && x5 <= 67514 || x5 >= 67584 && x5 <= 67589 || x5 == 67592 || x5 >= 67594 && x5 <= 67637 || x5 >= 67639 && x5 <= 67640 || x5 == 67644 || x5 >= 67647 && x5 <= 67669 || x5 >= 67680 && x5 <= 67702 || x5 >= 67712 && x5 <= 67742 || x5 >= 67808 && x5 <= 67826 || x5 >= 67828 && x5 <= 67829 || x5 >= 67840 && x5 <= 67861 || x5 >= 67872 && x5 <= 67897 || x5 >= 67904 && x5 <= 67929 || x5 >= 67968 && x5 <= 68023 || x5 >= 68030 && x5 <= 68031 || x5 == 68096 || x5 >= 68112 && x5 <= 68115 || x5 >= 68117 && x5 <= 68119 || x5 >= 68121 && x5 <= 68149 || x5 >= 68192 && x5 <= 68220 || x5 >= 68224 && x5 <= 68252 || x5 >= 68288 && x5 <= 68295 || x5 >= 68297 && x5 <= 68324 || x5 >= 68352 && x5 <= 68405 || x5 >= 68416 && x5 <= 68437 || x5 >= 68448 && x5 <= 68466 || x5 >= 68480 && x5 <= 68497 || x5 >= 68608 && x5 <= 68680 || x5 >= 68736 && x5 <= 68786 || x5 >= 68800 && x5 <= 68850 || x5 >= 68864 && x5 <= 68899 || x5 >= 68938 && x5 <= 68965 || x5 >= 68975 && x5 <= 68997 || x5 >= 69248 && x5 <= 69289 || x5 >= 69296 && x5 <= 69297 || x5 >= 69314 && x5 <= 69319 || x5 >= 69376 && x5 <= 69404 || x5 == 69415 || x5 >= 69424 && x5 <= 69445 || x5 >= 69488 && x5 <= 69505 || x5 >= 69552 && x5 <= 69572 || x5 >= 69600 && x5 <= 69622 || x5 >= 69635 && x5 <= 69687 || x5 >= 69745 && x5 <= 69746 || x5 == 69749 || x5 >= 69763 && x5 <= 69807 || x5 >= 69840 && x5 <= 69864 || x5 >= 69891 && x5 <= 69926 || x5 == 69956 || x5 == 69959 || x5 >= 69968 && x5 <= 70002 || x5 == 70006 || x5 >= 70019 && x5 <= 70066 || x5 >= 70081 && x5 <= 70084 || x5 == 70106 || x5 == 70108 || x5 >= 70144 && x5 <= 70161 || x5 >= 70163 && x5 <= 70187 || x5 >= 70207 && x5 <= 70208 || x5 >= 70272 && x5 <= 70278 || x5 == 70280 || x5 >= 70282 && x5 <= 70285 || x5 >= 70287 && x5 <= 70301 || x5 >= 70303 && x5 <= 70312 || x5 >= 70320 && x5 <= 70366 || x5 >= 70405 && x5 <= 70412 || x5 >= 70415 && x5 <= 70416 || x5 >= 70419 && x5 <= 70440 || x5 >= 70442 && x5 <= 70448 || x5 >= 70450 && x5 <= 70451 || x5 >= 70453 && x5 <= 70457 || x5 == 70461 || x5 == 70480 || x5 >= 70493 && x5 <= 70497 || x5 >= 70528 && x5 <= 70537 || x5 == 70539 || x5 == 70542 || x5 >= 70544 && x5 <= 70581 || x5 == 70583 || x5 == 70609 || x5 == 70611 || x5 >= 70656 && x5 <= 70708 || x5 >= 70727 && x5 <= 70730 || x5 >= 70751 && x5 <= 70753 || x5 >= 70784 && x5 <= 70831 || x5 >= 70852 && x5 <= 70853 || x5 == 70855 || x5 >= 71040 && x5 <= 71086 || x5 >= 71128 && x5 <= 71131 || x5 >= 71168 && x5 <= 71215 || x5 == 71236 || x5 >= 71296 && x5 <= 71338 || x5 == 71352 || x5 >= 71424 && x5 <= 71450 || x5 >= 71488 && x5 <= 71494 || x5 >= 71680 && x5 <= 71723 || x5 >= 71840 && x5 <= 71903 || x5 >= 71935 && x5 <= 71942 || x5 == 71945 || x5 >= 71948 && x5 <= 71955 || x5 >= 71957 && x5 <= 71958 || x5 >= 71960 && x5 <= 71983 || x5 == 71999 || x5 == 72001 || x5 >= 72096 && x5 <= 72103 || x5 >= 72106 && x5 <= 72144 || x5 == 72161 || x5 == 72163 || x5 == 72192 || x5 >= 72203 && x5 <= 72242 || x5 == 72250 || x5 == 72272 || x5 >= 72284 && x5 <= 72329 || x5 == 72349 || x5 >= 72368 && x5 <= 72440 || x5 >= 72640 && x5 <= 72672 || x5 >= 72704 && x5 <= 72712 || x5 >= 72714 && x5 <= 72750 || x5 == 72768 || x5 >= 72818 && x5 <= 72847 || x5 >= 72960 && x5 <= 72966 || x5 >= 72968 && x5 <= 72969 || x5 >= 72971 && x5 <= 73008 || x5 == 73030 || x5 >= 73056 && x5 <= 73061 || x5 >= 73063 && x5 <= 73064 || x5 >= 73066 && x5 <= 73097 || x5 == 73112 || x5 >= 73136 && x5 <= 73179 || x5 >= 73440 && x5 <= 73458 || x5 == 73474 || x5 >= 73476 && x5 <= 73488 || x5 >= 73490 && x5 <= 73523 || x5 == 73648 || x5 >= 73728 && x5 <= 74649 || x5 >= 74880 && x5 <= 75075 || x5 >= 77712 && x5 <= 77808 || x5 >= 77824 && x5 <= 78895 || x5 >= 78913 && x5 <= 78918 || x5 >= 78944 && x5 <= 82938 || x5 >= 82944 && x5 <= 83526 || x5 >= 90368 && x5 <= 90397 || x5 >= 92160 && x5 <= 92728 || x5 >= 92736 && x5 <= 92766 || x5 >= 92784 && x5 <= 92862 || x5 >= 92880 && x5 <= 92909 || x5 >= 92928 && x5 <= 92975 || x5 >= 92992 && x5 <= 92995 || x5 >= 93027 && x5 <= 93047 || x5 >= 93053 && x5 <= 93071 || x5 >= 93504 && x5 <= 93548 || x5 >= 93760 && x5 <= 93823 || x5 >= 93856 && x5 <= 93880 || x5 >= 93883 && x5 <= 93907 || x5 >= 93952 && x5 <= 94026 || x5 == 94032 || x5 >= 94099 && x5 <= 94111 || x5 >= 94176 && x5 <= 94177 || x5 == 94179 || x5 >= 94194 && x5 <= 94195 || x5 >= 94208 && x5 <= 101589 || x5 >= 101631 && x5 <= 101662 || x5 >= 101760 && x5 <= 101874 || x5 >= 110576 && x5 <= 110579 || x5 >= 110581 && x5 <= 110587 || x5 >= 110589 && x5 <= 110590 || x5 >= 110592 && x5 <= 110882 || x5 == 110898 || x5 >= 110928 && x5 <= 110930 || x5 == 110933 || x5 >= 110948 && x5 <= 110951 || x5 >= 110960 && x5 <= 111355 || x5 >= 113664 && x5 <= 113770 || x5 >= 113776 && x5 <= 113788 || x5 >= 113792 && x5 <= 113800 || x5 >= 113808 && x5 <= 113817 || x5 >= 119808 && x5 <= 119892 || x5 >= 119894 && x5 <= 119964 || x5 >= 119966 && x5 <= 119967 || x5 == 119970 || x5 >= 119973 && x5 <= 119974 || x5 >= 119977 && x5 <= 119980 || x5 >= 119982 && x5 <= 119993 || x5 == 119995 || x5 >= 119997 && x5 <= 120003 || x5 >= 120005 && x5 <= 120069 || x5 >= 120071 && x5 <= 120074 || x5 >= 120077 && x5 <= 120084 || x5 >= 120086 && x5 <= 120092 || x5 >= 120094 && x5 <= 120121 || x5 >= 120123 && x5 <= 120126 || x5 >= 120128 && x5 <= 120132 || x5 == 120134 || x5 >= 120138 && x5 <= 120144 || x5 >= 120146 && x5 <= 120485 || x5 >= 120488 && x5 <= 120512 || x5 >= 120514 && x5 <= 120538 || x5 >= 120540 && x5 <= 120570 || x5 >= 120572 && x5 <= 120596 || x5 >= 120598 && x5 <= 120628 || x5 >= 120630 && x5 <= 120654 || x5 >= 120656 && x5 <= 120686 || x5 >= 120688 && x5 <= 120712 || x5 >= 120714 && x5 <= 120744 || x5 >= 120746 && x5 <= 120770 || x5 >= 120772 && x5 <= 120779 || x5 >= 122624 && x5 <= 122654 || x5 >= 122661 && x5 <= 122666 || x5 >= 122928 && x5 <= 122989 || x5 >= 123136 && x5 <= 123180 || x5 >= 123191 && x5 <= 123197 || x5 == 123214 || x5 >= 123536 && x5 <= 123565 || x5 >= 123584 && x5 <= 123627 || x5 >= 124112 && x5 <= 124139 || x5 >= 124368 && x5 <= 124397 || x5 == 124400 || x5 >= 124608 && x5 <= 124638 || x5 >= 124640 && x5 <= 124642 || x5 >= 124644 && x5 <= 124645 || x5 >= 124647 && x5 <= 124653 || x5 >= 124656 && x5 <= 124660 || x5 >= 124670 && x5 <= 124671 || x5 >= 124896 && x5 <= 124902 || x5 >= 124904 && x5 <= 124907 || x5 >= 124909 && x5 <= 124910 || x5 >= 124912 && x5 <= 124926 || x5 >= 124928 && x5 <= 125124 || x5 >= 125184 && x5 <= 125251 || x5 == 125259 || x5 >= 126464 && x5 <= 126467 || x5 >= 126469 && x5 <= 126495 || x5 >= 126497 && x5 <= 126498 || x5 == 126500 || x5 == 126503 || x5 >= 126505 && x5 <= 126514 || x5 >= 126516 && x5 <= 126519 || x5 == 126521 || x5 == 126523 || x5 == 126530 || x5 == 126535 || x5 == 126537 || x5 == 126539 || x5 >= 126541 && x5 <= 126543 || x5 >= 126545 && x5 <= 126546 || x5 == 126548 || x5 == 126551 || x5 == 126553 || x5 == 126555 || x5 == 126557 || x5 == 126559 || x5 >= 126561 && x5 <= 126562 || x5 == 126564 || x5 >= 126567 && x5 <= 126570 || x5 >= 126572 && x5 <= 126578 || x5 >= 126580 && x5 <= 126583 || x5 >= 126585 && x5 <= 126588 || x5 == 126590 || x5 >= 126592 && x5 <= 126601 || x5 >= 126603 && x5 <= 126619 || x5 >= 126625 && x5 <= 126627 || x5 >= 126629 && x5 <= 126633 || x5 >= 126635 && x5 <= 126651 || x5 >= 131072 && x5 <= 173791 || x5 >= 173824 && x5 <= 178205 || x5 >= 178208 && x5 <= 183981 || x5 >= 183984 && x5 <= 191456 || x5 >= 191472 && x5 <= 192093 || x5 >= 194560 && x5 <= 195101 || x5 >= 196608 && x5 <= 201546 || x5 >= 201552 && x5 <= 210041))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 65)
 		goto L7
 	}
@@ -25616,7 +25671,7 @@ L2:
 L8:
 	p.reset(x3)
 L7:
-	if !(x6 && (!!(x5 >= 1632 && x5 <= 1641 || x5 >= 1776 && x5 <= 1785 || x5 >= 1984 && x5 <= 1993 || x5 >= 2406 && x5 <= 2415 || x5 >= 2534 && x5 <= 2543 || x5 >= 2662 && x5 <= 2671 || x5 >= 2790 && x5 <= 2799 || x5 >= 2918 && x5 <= 2927 || x5 >= 3046 && x5 <= 3055 || x5 >= 3174 && x5 <= 3183 || x5 >= 3302 && x5 <= 3311 || x5 >= 3430 && x5 <= 3439 || x5 >= 3558 && x5 <= 3567 || x5 >= 3664 && x5 <= 3673 || x5 >= 3792 && x5 <= 3801 || x5 >= 3872 && x5 <= 3881 || x5 >= 4160 && x5 <= 4169 || x5 >= 4240 && x5 <= 4249 || x5 >= 6112 && x5 <= 6121 || x5 >= 6160 && x5 <= 6169 || x5 >= 6470 && x5 <= 6479 || x5 >= 6608 && x5 <= 6617 || x5 >= 6784 && x5 <= 6793 || x5 >= 6800 && x5 <= 6809 || x5 >= 6992 && x5 <= 7001 || x5 >= 7088 && x5 <= 7097 || x5 >= 7232 && x5 <= 7241 || x5 >= 7248 && x5 <= 7257 || x5 >= 42528 && x5 <= 42537 || x5 >= 43216 && x5 <= 43225 || x5 >= 43264 && x5 <= 43273 || x5 >= 43472 && x5 <= 43481 || x5 >= 43504 && x5 <= 43513 || x5 >= 43600 && x5 <= 43609 || x5 >= 44016 && x5 <= 44025 || x5 >= 65296 && x5 <= 65305 || x5 >= 66720 && x5 <= 66729 || x5 >= 68912 && x5 <= 68921 || x5 >= 68928 && x5 <= 68937 || x5 >= 69734 && x5 <= 69743 || x5 >= 69872 && x5 <= 69881 || x5 >= 69942 && x5 <= 69951 || x5 >= 70096 && x5 <= 70105 || x5 >= 70384 && x5 <= 70393 || x5 >= 70736 && x5 <= 70745 || x5 >= 70864 && x5 <= 70873 || x5 >= 71248 && x5 <= 71257 || x5 >= 71360 && x5 <= 71369 || x5 >= 71376 && x5 <= 71395 || x5 >= 71472 && x5 <= 71481 || x5 >= 71904 && x5 <= 71913 || x5 >= 72016 && x5 <= 72025 || x5 >= 72688 && x5 <= 72697 || x5 >= 72784 && x5 <= 72793 || x5 >= 73040 && x5 <= 73049 || x5 >= 73120 && x5 <= 73129 || x5 >= 73184 && x5 <= 73193 || x5 >= 73552 && x5 <= 73561 || x5 >= 90416 && x5 <= 90425 || x5 >= 92768 && x5 <= 92777 || x5 >= 92864 && x5 <= 92873 || x5 >= 93008 && x5 <= 93017 || x5 >= 93552 && x5 <= 93561 || x5 >= 118000 && x5 <= 118009 || x5 >= 120782 && x5 <= 120831 || x5 >= 123200 && x5 <= 123209 || x5 >= 123632 && x5 <= 123641 || x5 >= 124144 && x5 <= 124153 || x5 >= 124401 && x5 <= 124410 || x5 >= 125264 && x5 <= 125273 || x5 >= 130032 && x5 <= 130041))) && p.depth+1 <= maxDepth {
+	if !(x6 && (!!(x5 >= 1632 && x5 <= 1641 || x5 >= 1776 && x5 <= 1785 || x5 >= 1984 && x5 <= 1993 || x5 >= 2406 && x5 <= 2415 || x5 >= 2534 && x5 <= 2543 || x5 >= 2662 && x5 <= 2671 || x5 >= 2790 && x5 <= 2799 || x5 >= 2918 && x5 <= 2927 || x5 >= 3046 && x5 <= 3055 || x5 >= 3174 && x5 <= 3183 || x5 >= 3302 && x5 <= 3311 || x5 >= 3430 && x5 <= 3439 || x5 >= 3558 && x5 <= 3567 || x5 >= 3664 && x5 <= 3673 || x5 >= 3792 && x5 <= 3801 || x5 >= 3872 && x5 <= 3881 || x5 >= 4160 && x5 <= 4169 || x5 >= 4240 && x5 <= 4249 || x5 >= 6112 && x5 <= 6121 || x5 >= 6160 && x5 <= 6169 || x5 >= 6470 && x5 <= 6479 || x5 >= 6608 && x5 <= 6617 || x5 >= 6784 && x5 <= 6793 || x5 >= 6800 && x5 <= 6809 || x5 >= 6992 && x5 <= 7001 || x5 >= 7088 && x5 <= 7097 || x5 >= 7232 && x5 <= 7241 || x5 >= 7248 && x5 <= 7257 || x5 >= 42528 && x5 <= 42537 || x5 >= 43216 && x5 <= 43225 || x5 >= 43264 && x5 <= 43273 || x5 >= 43472 && x5 <= 43481 || x5 >= 43504 && x5 <= 43513 || x5 >= 43600 && x5 <= 43609 || x5 >= 44016 && x5 <= 44025 || x5 >= 65296 && x5 <= 65305 || x5 >= 66720 && x5 <= 66729 || x5 >= 68912 && x5 <= 68921 || x5 >= 68928 && x5 <= 68937 || x5 >= 69734 && x5 <= 69743 || x5 >= 69872 && x5 <= 69881 || x5 >= 69942 && x5 <= 69951 || x5 >= 70096 && x5 <= 70105 || x5 >= 70384 && x5 <= 70393 || x5 >= 70736 && x5 <= 70745 || x5 >= 70864 && x5 <= 70873 || x5 >= 71248 && x5 <= 71257 || x5 >= 71360 && x5 <= 71369 || x5 >= 71376 && x5 <= 71395 || x5 >= 71472 && x5 <= 71481 || x5 >= 71904 && x5 <= 71913 || x5 >= 72016 && x5 <= 72025 || x5 >= 72688 && x5 <= 72697 || x5 >= 72784 && x5 <= 72793 || x5 >= 73040 && x5 <= 73049 || x5 >= 73120 && x5 <= 73129 || x5 >= 73184 && x5 <= 73193 || x5 >= 73552 && x5 <= 73561 || x5 >= 90416 && x5 <= 90425 || x5 >= 92768 && x5 <= 92777 || x5 >= 92864 && x5 <= 92873 || x5 >= 93008 && x5 <= 93017 || x5 >= 93552 && x5 <= 93561 || x5 >= 118000 && x5 <= 118009 || x5 >= 120782 && x5 <= 120831 || x5 >= 123200 && x5 <= 123209 || x5 >= 123632 && x5 <= 123641 || x5 >= 124144 && x5 <= 124153 || x5 >= 124401 && x5 <= 124410 || x5 >= 125264 && x5 <= 125273 || x5 >= 130032 && x5 <= 130041))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 66)
 		goto L9
 	}
@@ -25651,7 +25706,7 @@ func (p *parser) e330() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (x3 == 44)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L5
 	}
@@ -25664,7 +25719,7 @@ func (p *parser) e330() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 125)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L7
 	}
@@ -25677,7 +25732,7 @@ L5:
 L8:
 	p.reset(x1)
 L7:
-	if !(x4 && (x3 == 10)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L9
 	}
@@ -25690,7 +25745,7 @@ L7:
 L10:
 	p.reset(x1)
 L9:
-	if !(x4 && (x3 == 47)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L11
 	}
@@ -25734,7 +25789,7 @@ func (p *parser) e331() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (x3 == 44)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L5
 	}
@@ -25747,7 +25802,7 @@ func (p *parser) e331() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 125)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L7
 	}
@@ -25814,7 +25869,7 @@ func (p *parser) e333() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (!!(x3 == 97 || x3 == 98 || x3 == 102 || x3 == 110 || x3 == 114 || x3 == 116 || x3 == 118 || x3 == 92 || x3 == 47 || x3 == 34))) && p.depth+0 <= maxDepth {
+	if !(x4 && (!!(x3 == 97 || x3 == 98 || x3 == 102 || x3 == 110 || x3 == 114 || x3 == 116 || x3 == 118 || x3 == 92 || x3 == 47 || x3 == 34))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 83)
 		goto L5
 	}
@@ -25832,7 +25887,7 @@ func (p *parser) e333() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 117)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 117)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 84)
 		goto L7
 	}
@@ -25848,7 +25903,7 @@ L5:
 L8:
 	p.reset(x1)
 L7:
-	if !(x4 && (x3 == 85)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 85)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 85)
 		goto L9
 	}
@@ -25887,7 +25942,7 @@ func (p *parser) e334() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 40)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 40)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L6
 	}
@@ -25909,7 +25964,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 91)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 91)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L8
 	}
@@ -25931,7 +25986,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 123)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 123)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 40)
 		goto L10
 	}
@@ -26001,7 +26056,7 @@ L5:
 	} else {
 		x6, _, x7 = p.peek()
 	}
-	if !(x7 && (x6 == 95)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 95)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 50)
 		goto L8
 	}
@@ -26029,7 +26084,7 @@ L10:
 L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
-	if !(x7 && (x6 == 46)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 25)
 		goto L12
 	}
@@ -26043,7 +26098,7 @@ L13:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L12:
-	if !(x7 && (x6 == 46)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L14
 	}
@@ -26072,7 +26127,7 @@ L15:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L14:
-	if !(x7 && (!!(x6 == 58 || x6 == 59 || x6 == 63 || x6 == 126 || x6 == 43 || x6 == 45 || x6 == 42 || x6 == 47 || x6 == 60 || x6 == 62 || x6 == 61 || x6 == 33 || x6 == 38 || x6 == 124 || x6 == 44))) && p.depth+0 <= maxDepth {
+	if !(x7 && (!!(x6 == 58 || x6 == 59 || x6 == 63 || x6 == 126 || x6 == 43 || x6 == 45 || x6 == 42 || x6 == 47 || x6 == 60 || x6 == 62 || x6 == 61 || x6 == 33 || x6 == 38 || x6 == 124 || x6 == 44))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 51)
 		goto L19
 	}
@@ -26266,7 +26321,7 @@ func (p *parser) e338() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 == 36))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 == 36))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 67)
 		goto L6
 	}
@@ -26336,7 +26391,7 @@ func (p *parser) e339() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (!!(x3 == 97 || x3 == 98 || x3 == 102 || x3 == 110 || x3 == 114 || x3 == 116 || x3 == 118 || x3 == 92 || x3 == 47 || x3 == 39))) && p.depth+0 <= maxDepth {
+	if !(x4 && (!!(x3 == 97 || x3 == 98 || x3 == 102 || x3 == 110 || x3 == 114 || x3 == 116 || x3 == 118 || x3 == 92 || x3 == 47 || x3 == 39))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 86)
 		goto L5
 	}
@@ -26354,7 +26409,7 @@ func (p *parser) e339() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 117)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 117)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 84)
 		goto L7
 	}
@@ -26370,7 +26425,7 @@ L5:
 L8:
 	p.reset(x1)
 L7:
-	if !(x4 && (x3 == 85)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 85)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 85)
 		goto L9
 	}
@@ -26386,7 +26441,7 @@ L7:
 L10:
 	p.reset(x1)
 L9:
-	if !(x4 && (x3 == 120)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 120)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 87)
 		goto L11
 	}
@@ -26405,7 +26460,7 @@ L9:
 L12:
 	p.reset(x1)
 L11:
-	if !(x4 && (!!(x3 >= 48 && x3 <= 51))) && p.depth+0 <= maxDepth {
+	if !(x4 && (!!(x3 >= 48 && x3 <= 51))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 88)
 		goto L13
 	}
@@ -26483,7 +26538,7 @@ func (p *parser) e340() (*Node, bool) {
 	} else {
 		x6, _, x7 = p.peek()
 	}
-	if !(x7 && (x6 == 34)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 34)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 48)
 		goto L8
 	}
@@ -26529,7 +26584,7 @@ L12:
 L9:
 	p.reset(x4)
 L8:
-	if !(x7 && (x6 == 39)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 39)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 95)
 		goto L18
 	}
@@ -26556,7 +26611,7 @@ L3:
 	} else {
 		x23, _, x24 = p.peek()
 	}
-	if !(x24 && (x23 == 39)) && p.depth+0 <= maxDepth {
+	if !(x24 && (x23 == 39)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 95)
 		goto L25
 	}
@@ -26602,7 +26657,7 @@ L29:
 L26:
 	p.reset(x21)
 L25:
-	if !(x24 && (x23 == 34)) && p.depth+0 <= maxDepth {
+	if !(x24 && (x23 == 34)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 48)
 		goto L35
 	}
@@ -26702,7 +26757,7 @@ func (p *parser) e342() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 10)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L6
 	}
@@ -26716,7 +26771,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 13)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 13)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 96)
 		goto L8
 	}
@@ -26798,7 +26853,7 @@ func (p *parser) e345() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (x3 == 48)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 81)
 		goto L5
 	}
@@ -26826,7 +26881,7 @@ func (p *parser) e345() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 48)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 82)
 		goto L7
 	}
@@ -26937,7 +26992,7 @@ L3:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 48)) && p.depth+1 <= maxDepth {
+	if !(x8 && (x7 == 48)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L9
 	}
@@ -27003,7 +27058,7 @@ L14:
 L18:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
-	if !(x8 && (x7 == 48)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L19
 	}
@@ -27129,7 +27184,7 @@ func (p *parser) e349() (*Node, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L10
 	}
@@ -27141,7 +27196,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 48)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L12
 	}
@@ -27187,7 +27242,7 @@ L4:
 	} else {
 		x22, _, x23 = p.peek()
 	}
-	if !(x23 && (x22 == 46)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L24
 	}
@@ -27242,7 +27297,7 @@ func (p *parser) e350() (*Node, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L10
 	}
@@ -27254,7 +27309,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 48)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L12
 	}
@@ -27295,7 +27350,7 @@ L4:
 	} else {
 		x22, _, x23 = p.peek()
 	}
-	if !(x23 && (!!(x22 >= 49 && x22 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x23 && (!!(x22 >= 49 && x22 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L24
 	}
@@ -27307,7 +27362,7 @@ L25:
 	p.pos = x19
 	p.recovered = p.recovered[:x20]
 L24:
-	if !(x23 && (x22 == 48)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L26
 	}
@@ -27335,7 +27390,7 @@ L18:
 	} else {
 		x28, _, x29 = p.peek()
 	}
-	if !(x29 && (x28 == 46)) && p.depth+0 <= maxDepth {
+	if !(x29 && (x28 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L30
 	}
@@ -27369,7 +27424,7 @@ func (p *parser) r0() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e1()
@@ -27392,7 +27447,7 @@ func (p *parser) r4() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e12()
@@ -27415,7 +27470,7 @@ func (p *parser) r9() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e20()
@@ -27438,7 +27493,7 @@ func (p *parser) r10() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e22()
@@ -27461,7 +27516,7 @@ func (p *parser) r11() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e24()
@@ -27484,7 +27539,7 @@ func (p *parser) r12() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e25()
@@ -27507,7 +27562,7 @@ func (p *parser) r13() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e26()
@@ -27530,7 +27585,7 @@ func (p *parser) r15() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e29()
@@ -27553,7 +27608,7 @@ func (p *parser) r17() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e33()
@@ -27576,7 +27631,7 @@ func (p *parser) r22() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e39()
@@ -27599,7 +27654,7 @@ func (p *parser) r24() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e42()
@@ -27622,7 +27677,7 @@ func (p *parser) r28() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e49()
@@ -27645,7 +27700,7 @@ func (p *parser) r29() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e50()
@@ -27668,7 +27723,7 @@ func (p *parser) r32() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e53()
@@ -27691,7 +27746,7 @@ func (p *parser) r33() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e54()
@@ -27714,7 +27769,7 @@ func (p *parser) r35() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e58()
@@ -27737,7 +27792,7 @@ func (p *parser) r37() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e62()
@@ -27760,7 +27815,7 @@ func (p *parser) r40() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e68()
@@ -27783,7 +27838,7 @@ func (p *parser) r41() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e69()
@@ -27806,7 +27861,7 @@ func (p *parser) r42() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e70()
@@ -27829,7 +27884,7 @@ func (p *parser) r43() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e71()
@@ -27852,7 +27907,7 @@ func (p *parser) r44() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e72()
@@ -27875,7 +27930,7 @@ func (p *parser) r45() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e73()
@@ -27898,7 +27953,7 @@ func (p *parser) r48() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e77()
@@ -27921,7 +27976,7 @@ func (p *parser) r53() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e82()
@@ -27944,7 +27999,7 @@ func (p *parser) r55() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e84()
@@ -27967,7 +28022,7 @@ func (p *parser) r61() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e92()
@@ -27990,7 +28045,7 @@ func (p *parser) r67() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e102()
@@ -28013,7 +28068,7 @@ func (p *parser) r68() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e103()
@@ -28036,7 +28091,7 @@ func (p *parser) r69() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e104()
@@ -28059,7 +28114,7 @@ func (p *parser) r72() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e107()
@@ -28082,7 +28137,7 @@ func (p *parser) r74() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e109()
@@ -28105,7 +28160,7 @@ func (p *parser) r78() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e113()
@@ -28128,7 +28183,7 @@ func (p *parser) r88() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e124()
@@ -28151,7 +28206,7 @@ func (p *parser) r95() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e131()
@@ -28174,7 +28229,7 @@ func (p *parser) r99() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e140()
@@ -28197,7 +28252,7 @@ func (p *parser) r101() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e142()
@@ -28220,7 +28275,7 @@ func (p *parser) r111() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e152()
@@ -28243,7 +28298,7 @@ func (p *parser) r113() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e154()
@@ -28447,7 +28502,7 @@ func (p *parser) e392() (*Node, bool) {
 func (p *parser) e393() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (ch == 61)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 104)
 	} else {
 		prevCut := p.cut
@@ -28463,7 +28518,7 @@ func (p *parser) e393() (*Node, bool) {
 			return nil, false
 		}
 	}
-	if !(more && (ch == 33)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 105)
 	} else {
 		prevCut := p.cut
@@ -28479,7 +28534,7 @@ func (p *parser) e393() (*Node, bool) {
 			return nil, false
 		}
 	}
-	if !(more && (ch == 61)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 106)
 	} else {
 		prevCut := p.cut
@@ -28495,7 +28550,7 @@ func (p *parser) e393() (*Node, bool) {
 			return nil, false
 		}
 	}
-	if !(more && (ch == 33)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 107)
 	} else {
 		prevCut := p.cut
@@ -28511,7 +28566,7 @@ func (p *parser) e393() (*Node, bool) {
 			return nil, false
 		}
 	}
-	if !(more && (ch == 60)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 60)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 108)
 	} else {
 		prevCut := p.cut
@@ -28527,7 +28582,7 @@ func (p *parser) e393() (*Node, bool) {
 			return nil, false
 		}
 	}
-	if !(more && (ch == 62)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 62)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 109)
 	} else {
 		prevCut := p.cut
@@ -28543,7 +28598,7 @@ func (p *parser) e393() (*Node, bool) {
 			return nil, false
 		}
 	}
-	if !(more && (ch == 60)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 60)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 110)
 	} else {
 		prevCut := p.cut
@@ -28559,7 +28614,7 @@ func (p *parser) e393() (*Node, bool) {
 			return nil, false
 		}
 	}
-	if !(more && (ch == 62)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 62)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 112)
 	} else {
 		prevCut := p.cut
@@ -28621,7 +28676,7 @@ func (p *parser) e399() (*Node, bool) {
 func (p *parser) e400() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (ch == 43)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 43)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 113)
 	} else {
 		prevCut := p.cut
@@ -28637,7 +28692,7 @@ func (p *parser) e400() (*Node, bool) {
 			return nil, false
 		}
 	}
-	if !(more && (ch == 45)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 45)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 111)
 	} else {
 		prevCut := p.cut
@@ -28713,7 +28768,7 @@ func (p *parser) e408() (*Node, bool) {
 func (p *parser) e409() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (ch == 42)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 42)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 114)
 	} else {
 		prevCut := p.cut
@@ -28729,7 +28784,7 @@ func (p *parser) e409() (*Node, bool) {
 			return nil, false
 		}
 	}
-	if !(more && (ch == 47)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 115)
 	} else {
 		prevCut := p.cut
@@ -28812,7 +28867,7 @@ func (p *parser) e416() (*Node, bool) {
 func (p *parser) e417() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (ch == 43)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 43)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 113)
 	} else {
 		prevCut := p.cut
@@ -28828,7 +28883,7 @@ func (p *parser) e417() (*Node, bool) {
 			return nil, false
 		}
 	}
-	if !(more && (ch == 45)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 45)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 111)
 	} else {
 		prevCut := p.cut
@@ -28844,7 +28899,7 @@ func (p *parser) e417() (*Node, bool) {
 			return nil, false
 		}
 	}
-	if !(more && (ch == 33)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 105)
 	} else {
 		prevCut := p.cut
@@ -28860,7 +28915,7 @@ func (p *parser) e417() (*Node, bool) {
 			return nil, false
 		}
 	}
-	if !(more && (ch == 33)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 107)
 	} else {
 		prevCut := p.cut
@@ -28876,7 +28931,7 @@ func (p *parser) e417() (*Node, bool) {
 			return nil, false
 		}
 	}
-	if !(more && (ch == 33)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 	} else {
 		prevCut := p.cut
@@ -28892,7 +28947,7 @@ func (p *parser) e417() (*Node, bool) {
 			return nil, false
 		}
 	}
-	if !(more && (ch == 42)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 42)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 114)
 	} else {
 		prevCut := p.cut
@@ -28908,7 +28963,7 @@ func (p *parser) e417() (*Node, bool) {
 			return nil, false
 		}
 	}
-	if !(more && (ch == 60)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 60)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 108)
 	} else {
 		prevCut := p.cut
@@ -28924,7 +28979,7 @@ func (p *parser) e417() (*Node, bool) {
 			return nil, false
 		}
 	}
-	if !(more && (ch == 62)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 62)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 109)
 	} else {
 		prevCut := p.cut
@@ -28940,7 +28995,7 @@ func (p *parser) e417() (*Node, bool) {
 			return nil, false
 		}
 	}
-	if !(more && (ch == 60)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 60)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 110)
 	} else {
 		prevCut := p.cut
@@ -28956,7 +29011,7 @@ func (p *parser) e417() (*Node, bool) {
 			return nil, false
 		}
 	}
-	if !(more && (ch == 62)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 62)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 112)
 	} else {
 		prevCut := p.cut
@@ -28972,7 +29027,7 @@ func (p *parser) e417() (*Node, bool) {
 			return nil, false
 		}
 	}
-	if !(more && (ch == 61)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 106)
 	} else {
 		prevCut := p.cut
@@ -28988,7 +29043,7 @@ func (p *parser) e417() (*Node, bool) {
 			return nil, false
 		}
 	}
-	if !(more && (ch == 61)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 104)
 	} else {
 		prevCut := p.cut
@@ -29427,7 +29482,7 @@ func (p *parser) r116() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e156()
@@ -29450,7 +29505,7 @@ func (p *parser) r118() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e161()
@@ -29473,7 +29528,7 @@ func (p *parser) r119() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e164()
@@ -29496,7 +29551,7 @@ func (p *parser) r124() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e170()
@@ -29519,7 +29574,7 @@ func (p *parser) r125() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e173()
@@ -29542,7 +29597,7 @@ func (p *parser) r126() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e175()
@@ -29565,7 +29620,7 @@ func (p *parser) r127() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e176()
@@ -29588,7 +29643,7 @@ func (p *parser) r128() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e177()
@@ -29611,7 +29666,7 @@ func (p *parser) r129() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e178()
@@ -29634,7 +29689,7 @@ func (p *parser) r130() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e179()
@@ -29657,7 +29712,7 @@ func (p *parser) r131() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e180()
@@ -29680,7 +29735,7 @@ func (p *parser) r135() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e184()
@@ -29703,7 +29758,7 @@ func (p *parser) r136() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e185()
@@ -29726,7 +29781,7 @@ func (p *parser) r140() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e192()
@@ -29749,7 +29804,7 @@ func (p *parser) r144() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e196()
@@ -29772,7 +29827,7 @@ func (p *parser) r146() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e198()
@@ -29795,7 +29850,7 @@ func (p *parser) r147() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e199()
@@ -29818,7 +29873,7 @@ func (p *parser) r149() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e203()
@@ -29841,7 +29896,7 @@ func (p *parser) r150() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e204()
@@ -29864,7 +29919,7 @@ func (p *parser) r151() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e205()
@@ -29887,7 +29942,7 @@ func (p *parser) r152() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e206()
@@ -29910,7 +29965,7 @@ func (p *parser) r153() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e208()
@@ -29933,7 +29988,7 @@ func (p *parser) r154() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e209()
@@ -29956,7 +30011,7 @@ func (p *parser) r155() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e210()
@@ -29979,7 +30034,7 @@ func (p *parser) r157() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e212()
@@ -30002,7 +30057,7 @@ func (p *parser) r164() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e227()
@@ -30025,7 +30080,7 @@ func (p *parser) r165() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e228()
@@ -30048,7 +30103,7 @@ func (p *parser) r166() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e229()
@@ -30071,7 +30126,7 @@ func (p *parser) r173() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e238()
@@ -30094,7 +30149,7 @@ func (p *parser) r174() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e239()
@@ -30117,7 +30172,7 @@ func (p *parser) r175() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e240()
@@ -30140,7 +30195,7 @@ func (p *parser) r180() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e245()
@@ -30163,7 +30218,7 @@ func (p *parser) r181() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e246()
@@ -30186,7 +30241,7 @@ func (p *parser) r183() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e248()
@@ -30209,7 +30264,7 @@ func (p *parser) r186() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e252()
@@ -30232,7 +30287,7 @@ func (p *parser) r194() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e260()
@@ -30255,7 +30310,7 @@ func (p *parser) r195() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e261()
@@ -30278,7 +30333,7 @@ func (p *parser) r201() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e267()
@@ -30301,7 +30356,7 @@ func (p *parser) r207() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e275()
@@ -30324,7 +30379,7 @@ func (p *parser) r208() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e276()
@@ -30347,7 +30402,7 @@ func (p *parser) r215() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e283()
@@ -30370,7 +30425,7 @@ func (p *parser) r216() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e284()
@@ -30396,7 +30451,7 @@ func (p *parser) r220() (*Node, bool) {
 		ok   bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	for {
@@ -30433,7 +30488,7 @@ func (p *parser) r221() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -30455,7 +30510,7 @@ L4:
 	} else {
 		x12, _, x13 = p.peek()
 	}
-	if !(x13 && (x12 == 41)) && p.depth+0 <= maxDepth {
+	if !(x13 && (x12 == 41)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 9)
 		goto L14
 	}
@@ -30469,7 +30524,7 @@ L15:
 	p.pos = x9
 	p.recovered = p.recovered[:x10]
 L14:
-	if !(x13 && (x12 == 125)) && p.depth+0 <= maxDepth {
+	if !(x13 && (x12 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L16
 	}
@@ -30521,7 +30576,7 @@ func (p *parser) r222() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -30576,7 +30631,7 @@ func (p *parser) r223() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -30641,7 +30696,7 @@ func (p *parser) r224() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -30701,7 +30756,7 @@ func (p *parser) r225() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 61 {
@@ -30755,7 +30810,7 @@ func (p *parser) r226() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -30764,7 +30819,7 @@ func (p *parser) r226() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L6
 	}
@@ -30778,7 +30833,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L8
 	}
@@ -30792,7 +30847,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 108)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 108)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L10
 	}
@@ -30806,7 +30861,7 @@ L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L10:
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L12
 	}
@@ -30861,7 +30916,7 @@ func (p *parser) r227() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+4 <= len(p.in) && p.in[p.pos] == 102 && p.in[p.pos+1] == 117 && p.in[p.pos+2] == 110 && p.in[p.pos+3] == 99 {
@@ -30891,7 +30946,7 @@ L3:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 44)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L9
 	}
@@ -30905,7 +30960,7 @@ L10:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
 L9:
-	if !(x8 && (x7 == 10)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L11
 	}
@@ -30919,7 +30974,7 @@ L12:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
 L11:
-	if !(x8 && (x7 == 47)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L13
 	}
@@ -30941,7 +30996,7 @@ L13:
 L15:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
-	if !(x8 && (x7 == 125)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L16
 	}
@@ -30983,7 +31038,7 @@ func (p *parser) r235() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -30992,7 +31047,7 @@ func (p *parser) r235() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L6
 	}
@@ -31006,7 +31061,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L8
 	}
@@ -31020,7 +31075,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L10
 	}
@@ -31071,7 +31126,7 @@ func (p *parser) r236() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.r220(); !ok {
@@ -31121,7 +31176,7 @@ func (p *parser) r238() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.r220(); !ok {
@@ -31133,7 +31188,7 @@ func (p *parser) r238() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 10)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L6
 	}
@@ -31207,7 +31262,7 @@ func (p *parser) r241() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -31307,7 +31362,7 @@ func (p *parser) r242() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 48 {
@@ -31324,7 +31379,7 @@ func (p *parser) r242() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 46)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 46)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L6
 	}
@@ -31338,7 +31393,7 @@ func (p *parser) r242() (*Node, bool) {
 	} else {
 		x15, _, x16 = p.peek()
 	}
-	if !(x16 && (!!(x15 == 101 || x15 == 69))) && p.depth+1 <= maxDepth {
+	if !(x16 && (!!(x15 == 101 || x15 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L17
 	}
@@ -31350,7 +31405,7 @@ L18:
 	p.pos = x12
 	p.recovered = p.recovered[:x13]
 L17:
-	if !(x16 && (!!(x15 == 75 || x15 == 77 || x15 == 71 || x15 == 84 || x15 == 80))) && p.depth+1 <= maxDepth {
+	if !(x16 && (!!(x15 == 75 || x15 == 77 || x15 == 71 || x15 == 84 || x15 == 80))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 62)
 		goto L19
 	}
@@ -31374,7 +31429,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (!!(x4 == 101 || x4 == 69))) && p.depth+1 <= maxDepth {
+	if !(x5 && (!!(x4 == 101 || x4 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L21
 	}
@@ -31416,7 +31471,7 @@ func (p *parser) r243() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -31425,7 +31480,7 @@ func (p *parser) r243() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 >= 48 && x4 <= 57))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 >= 48 && x4 <= 57))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 60)
 		goto L6
 	}
@@ -31499,7 +31554,7 @@ func (p *parser) r244() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -31508,7 +31563,7 @@ func (p *parser) r244() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L6
 	}
@@ -31522,7 +31577,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 101)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 101)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 37)
 		goto L8
 	}
@@ -31536,7 +31591,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L10
 	}
@@ -31550,7 +31605,7 @@ L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L10:
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 36)
 		goto L12
 	}
@@ -31564,7 +31619,7 @@ L13:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L12:
-	if !(x5 && (x4 == 108)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 108)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L14
 	}
@@ -31578,7 +31633,7 @@ L15:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L14:
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L16
 	}
@@ -31592,7 +31647,7 @@ L17:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L16:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 38)
 		goto L18
 	}
@@ -31604,7 +31659,7 @@ L19:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L18:
-	if !(x5 && (x4 == 111)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 39)
 		goto L20
 	}
@@ -31616,7 +31671,7 @@ L21:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L20:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 20)
 		goto L22
 	}
@@ -31630,7 +31685,7 @@ L23:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L22:
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 45)
 		goto L24
 	}
@@ -31644,7 +31699,7 @@ L25:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L24:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 46)
 		goto L26
 	}
@@ -31656,7 +31711,7 @@ L27:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L26:
-	if !(x5 && (x4 == 110)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 110)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L28
 	}
@@ -31707,7 +31762,7 @@ func (p *parser) r246() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) {
@@ -31747,7 +31802,7 @@ func (p *parser) r247() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -31822,7 +31877,7 @@ func (p *parser) r248() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -31903,7 +31958,7 @@ func (p *parser) r249() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x12
@@ -32019,7 +32074,7 @@ func (p *parser) r250() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x9
@@ -32128,7 +32183,7 @@ func (p *parser) r251() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) {
@@ -32168,7 +32223,7 @@ func (p *parser) r253() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e320()
@@ -32202,7 +32257,7 @@ func (p *parser) r258() (*Node, bool) {
 		x11  bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -32236,7 +32291,7 @@ func (p *parser) r258() (*Node, bool) {
 		} else {
 			x10, _, x11 = p.peek()
 		}
-		if !(x11 && (x10 == 92)) && p.depth+1 <= maxDepth {
+		if !(x11 && (x10 == 92)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L12
 		}
@@ -32277,7 +32332,7 @@ func (p *parser) r261() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+2 <= len(p.in) && p.in[p.pos] == 47 && p.in[p.pos+1] == 47 {
@@ -32316,7 +32371,7 @@ func (p *parser) r265() (*Node, bool) {
 		ok   bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	for {
@@ -32350,7 +32405,7 @@ func (p *parser) r267() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -32359,7 +32414,7 @@ func (p *parser) r267() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 40)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 40)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L6
 	}
@@ -32381,7 +32436,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 91)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 91)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L8
 	}
@@ -32403,7 +32458,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 123)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 123)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 40)
 		goto L10
 	}
@@ -32460,7 +32515,7 @@ func (p *parser) r268() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x22
@@ -32484,7 +32539,7 @@ L5:
 	} else {
 		x6, _, x7 = p.peek()
 	}
-	if !(x7 && (x6 == 95)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 95)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 50)
 		goto L8
 	}
@@ -32512,7 +32567,7 @@ L10:
 L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
-	if !(x7 && (x6 == 46)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 25)
 		goto L12
 	}
@@ -32526,7 +32581,7 @@ L13:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L12:
-	if !(x7 && (x6 == 46)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L14
 	}
@@ -32555,7 +32610,7 @@ L15:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L14:
-	if !(x7 && (!!(x6 == 58 || x6 == 59 || x6 == 63 || x6 == 126 || x6 == 43 || x6 == 45 || x6 == 42 || x6 == 47 || x6 == 60 || x6 == 62 || x6 == 61 || x6 == 33 || x6 == 38 || x6 == 124 || x6 == 44))) && p.depth+0 <= maxDepth {
+	if !(x7 && (!!(x6 == 58 || x6 == 59 || x6 == 63 || x6 == 126 || x6 == 43 || x6 == 45 || x6 == 42 || x6 == 47 || x6 == 60 || x6 == 62 || x6 == 61 || x6 == 33 || x6 == 38 || x6 == 124 || x6 == 44))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 51)
 		goto L19
 	}
@@ -32643,7 +32698,7 @@ func (p *parser) r269() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) {
@@ -32684,7 +32739,7 @@ func (p *parser) r271() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -32693,7 +32748,7 @@ func (p *parser) r271() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 == 36))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 == 36))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 67)
 		goto L6
 	}
@@ -32765,7 +32820,7 @@ func (p *parser) r275() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -32774,7 +32829,7 @@ func (p *parser) r275() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 10)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L6
 	}
@@ -32788,7 +32843,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 13)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 13)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 96)
 		goto L8
 	}
@@ -32826,7 +32881,7 @@ func (p *parser) r276() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) {
@@ -32861,7 +32916,7 @@ func (p *parser) r279() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -32924,7 +32979,7 @@ func (p *parser) r280() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -32946,7 +33001,7 @@ L3:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 48)) && p.depth+1 <= maxDepth {
+	if !(x8 && (x7 == 48)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L9
 	}
@@ -33012,7 +33067,7 @@ L14:
 L18:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
-	if !(x8 && (x7 == 48)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L19
 	}
@@ -33091,7 +33146,7 @@ func (p *parser) r281() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e348()
@@ -33130,7 +33185,7 @@ func (p *parser) r282() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -33140,7 +33195,7 @@ func (p *parser) r282() (*Node, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L10
 	}
@@ -33152,7 +33207,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 48)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L12
 	}
@@ -33198,7 +33253,7 @@ L4:
 	} else {
 		x22, _, x23 = p.peek()
 	}
-	if !(x23 && (x22 == 46)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L24
 	}
@@ -33254,7 +33309,7 @@ func (p *parser) r283() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -33264,7 +33319,7 @@ func (p *parser) r283() (*Node, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L10
 	}
@@ -33276,7 +33331,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 48)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L12
 	}
@@ -33317,7 +33372,7 @@ L4:
 	} else {
 		x22, _, x23 = p.peek()
 	}
-	if !(x23 && (!!(x22 >= 49 && x22 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x23 && (!!(x22 >= 49 && x22 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L24
 	}
@@ -33329,7 +33384,7 @@ L25:
 	p.pos = x19
 	p.recovered = p.recovered[:x20]
 L24:
-	if !(x23 && (x22 == 48)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L26
 	}
@@ -33357,7 +33412,7 @@ L18:
 	} else {
 		x28, _, x29 = p.peek()
 	}
-	if !(x29 && (x28 == 46)) && p.depth+0 <= maxDepth {
+	if !(x29 && (x28 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L30
 	}
@@ -33737,7 +33792,7 @@ func (p *parser) e464() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 105)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 7)
 		goto L6
 	}
@@ -33749,7 +33804,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 105)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 7)
 		goto L8
 	}
@@ -33993,7 +34048,7 @@ L4:
 	} else {
 		x12, _, x13 = p.peek()
 	}
-	if !(x13 && (x12 == 41)) && p.depth+0 <= maxDepth {
+	if !(x13 && (x12 == 41)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 9)
 		goto L14
 	}
@@ -34007,7 +34062,7 @@ L15:
 	p.pos = x9
 	p.recovered = p.recovered[:x10]
 L14:
-	if !(x13 && (x12 == 125)) && p.depth+0 <= maxDepth {
+	if !(x13 && (x12 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L16
 	}
@@ -34113,7 +34168,7 @@ func (p *parser) e471() (*Node, bool) {
 		} else {
 			x18, _, x19 = p.peek()
 		}
-		if !(x19 && (x18 == 47)) && p.depth+1 <= maxDepth {
+		if !(x19 && (x18 == 47)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 15)
 			goto L20
 		}
@@ -34192,7 +34247,7 @@ func (p *parser) e472() (*Node, bool) {
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 44)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L9
 	}
@@ -34216,7 +34271,7 @@ func (p *parser) e472() (*Node, bool) {
 L10:
 	p.reset(x4)
 L9:
-	if !(x8 && (x7 == 10)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L17
 	}
@@ -34260,7 +34315,7 @@ L17:
 	} else {
 		x34, _, x35 = p.peek()
 	}
-	if !(x35 && (x34 == 10)) && p.depth+0 <= maxDepth {
+	if !(x35 && (x34 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L36
 	}
@@ -34344,7 +34399,7 @@ func (p *parser) e473() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 10)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L6
 	}
@@ -34875,7 +34930,7 @@ func (p *parser) e487() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (x3 == 44)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L5
 	}
@@ -34888,7 +34943,7 @@ func (p *parser) e487() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 125)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L7
 	}
@@ -34901,7 +34956,7 @@ L5:
 L8:
 	p.reset(x1)
 L7:
-	if !(x4 && (x3 == 10)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L9
 	}
@@ -34914,7 +34969,7 @@ L7:
 L10:
 	p.reset(x1)
 L9:
-	if !(x4 && (x3 == 47)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L11
 	}
@@ -34958,7 +35013,7 @@ func (p *parser) e488() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (x3 == 44)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L5
 	}
@@ -34971,7 +35026,7 @@ func (p *parser) e488() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 125)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L7
 	}
@@ -35330,7 +35385,7 @@ func (p *parser) e496() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 102)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L6
 	}
@@ -35342,7 +35397,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 105)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L8
 	}
@@ -35354,7 +35409,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 108)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 108)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L10
 	}
@@ -35392,7 +35447,7 @@ func (p *parser) e497() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L6
 	}
@@ -35406,7 +35461,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L8
 	}
@@ -35420,7 +35475,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 108)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 108)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L10
 	}
@@ -35434,7 +35489,7 @@ L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L10:
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L12
 	}
@@ -35508,7 +35563,7 @@ L3:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 44)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L9
 	}
@@ -35522,7 +35577,7 @@ L10:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
 L9:
-	if !(x8 && (x7 == 10)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L11
 	}
@@ -35536,7 +35591,7 @@ L12:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
 L11:
-	if !(x8 && (x7 == 47)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L13
 	}
@@ -35558,7 +35613,7 @@ L13:
 L15:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
-	if !(x8 && (x7 == 125)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L16
 	}
@@ -35622,7 +35677,7 @@ L3:
 	} else {
 		x10, _, x11 = p.peek()
 	}
-	if !(x11 && (x10 == 44)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L12
 	}
@@ -35636,7 +35691,7 @@ L13:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L12:
-	if !(x11 && (x10 == 10)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L14
 	}
@@ -35650,7 +35705,7 @@ L15:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L14:
-	if !(x11 && (x10 == 47)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L16
 	}
@@ -35730,7 +35785,7 @@ L3:
 	} else {
 		x10, _, x11 = p.peek()
 	}
-	if !(x11 && (x10 == 44)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L12
 	}
@@ -35744,7 +35799,7 @@ L13:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L12:
-	if !(x11 && (x10 == 10)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L14
 	}
@@ -35758,7 +35813,7 @@ L15:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L14:
-	if !(x11 && (x10 == 47)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L16
 	}
@@ -35856,7 +35911,7 @@ L6:
 	} else {
 		x13, _, x14 = p.peek()
 	}
-	if !(x14 && (x13 == 44)) && p.depth+0 <= maxDepth {
+	if !(x14 && (x13 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L15
 	}
@@ -35870,7 +35925,7 @@ L16:
 	p.pos = x10
 	p.recovered = p.recovered[:x11]
 L15:
-	if !(x14 && (x13 == 10)) && p.depth+0 <= maxDepth {
+	if !(x14 && (x13 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L17
 	}
@@ -35884,7 +35939,7 @@ L18:
 	p.pos = x10
 	p.recovered = p.recovered[:x11]
 L17:
-	if !(x14 && (x13 == 47)) && p.depth+0 <= maxDepth {
+	if !(x14 && (x13 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L19
 	}
@@ -35906,7 +35961,7 @@ L19:
 L21:
 	p.pos = x10
 	p.recovered = p.recovered[:x11]
-	if !(x14 && (x13 == 125)) && p.depth+0 <= maxDepth {
+	if !(x14 && (x13 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L22
 	}
@@ -36017,7 +36072,7 @@ L7:
 	} else {
 		x11, _, x12 = p.peek()
 	}
-	if !(x12 && (x11 == 63)) && p.depth+0 <= maxDepth {
+	if !(x12 && (x11 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L13
 	}
@@ -36034,7 +36089,7 @@ L14:
 	p.pos = x8
 	p.recovered = p.recovered[:x9]
 L13:
-	if !(x12 && (x11 == 33)) && p.depth+0 <= maxDepth {
+	if !(x12 && (x11 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L15
 	}
@@ -36105,7 +36160,7 @@ L4:
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 63)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L10
 	}
@@ -36122,7 +36177,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 33)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L12
 	}
@@ -36224,7 +36279,7 @@ L4:
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 63)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L10
 	}
@@ -36241,7 +36296,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 33)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L12
 	}
@@ -36312,7 +36367,7 @@ L4:
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 63)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L10
 	}
@@ -36329,7 +36384,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 33)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L12
 	}
@@ -36767,7 +36822,7 @@ func (p *parser) e519() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 126)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 126)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 33)
 		goto L6
 	}
@@ -36779,7 +36834,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 126)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 126)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 33)
 		goto L8
 	}
@@ -36791,7 +36846,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 126)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 126)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 33)
 		goto L10
 	}
@@ -36950,7 +37005,7 @@ L5:
 	} else {
 		x6, _, x7 = p.peek()
 	}
-	if !(x7 && (x6 == 110)) && p.depth+1 <= maxDepth {
+	if !(x7 && (x6 == 110)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L8
 	}
@@ -36961,7 +37016,7 @@ L5:
 L9:
 	p.reset(x1)
 L8:
-	if !(x7 && (x6 == 40)) && p.depth+1 <= maxDepth {
+	if !(x7 && (x6 == 40)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L10
 	}
@@ -36972,7 +37027,7 @@ L8:
 L11:
 	p.reset(x1)
 L10:
-	if !(x7 && (x6 == 91)) && p.depth+1 <= maxDepth {
+	if !(x7 && (x6 == 91)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L12
 	}
@@ -37035,7 +37090,7 @@ func (p *parser) e525() (*Node, bool) {
 	} else {
 		x6, _, x7 = p.peek()
 	}
-	if !(x7 && (x6 == 105)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 36)
 		goto L8
 	}
@@ -37048,7 +37103,7 @@ func (p *parser) e525() (*Node, bool) {
 L9:
 	p.reset(x4)
 L8:
-	if !(x7 && (x6 == 101)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 101)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 37)
 		goto L10
 	}
@@ -37061,7 +37116,7 @@ L8:
 L11:
 	p.reset(x4)
 L10:
-	if !(x7 && (x6 == 102)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 38)
 		goto L12
 	}
@@ -37072,7 +37127,7 @@ L10:
 L13:
 	p.reset(x4)
 L12:
-	if !(x7 && (x6 == 111)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 39)
 		goto L14
 	}
@@ -37083,7 +37138,7 @@ L12:
 L15:
 	p.reset(x4)
 L14:
-	if !(x7 && (x6 == 102)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 20)
 		goto L16
 	}
@@ -37117,7 +37172,7 @@ L3:
 	} else {
 		x20, _, x21 = p.peek()
 	}
-	if !(x21 && (x20 == 102)) && p.depth+1 <= maxDepth {
+	if !(x21 && (x20 == 102)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L22
 	}
@@ -37128,7 +37183,7 @@ L3:
 L23:
 	p.reset(x1)
 L22:
-	if !(x21 && (x20 == 105)) && p.depth+1 <= maxDepth {
+	if !(x21 && (x20 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L24
 	}
@@ -37139,7 +37194,7 @@ L22:
 L25:
 	p.reset(x1)
 L24:
-	if !(x21 && (x20 == 108)) && p.depth+1 <= maxDepth {
+	if !(x21 && (x20 == 108)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L26
 	}
@@ -37198,7 +37253,7 @@ L2:
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 58)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L10
 	}
@@ -37211,7 +37266,7 @@ L2:
 L11:
 	p.reset(x6)
 L10:
-	if !(x9 && (x8 == 61)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L12
 	}
@@ -37242,7 +37297,7 @@ L15:
 L13:
 	p.reset(x6)
 L12:
-	if !(x9 && (x8 == 63)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L16
 	}
@@ -37255,7 +37310,7 @@ L12:
 L17:
 	p.reset(x6)
 L16:
-	if !(x9 && (x8 == 33)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L18
 	}
@@ -37286,7 +37341,7 @@ L21:
 L19:
 	p.reset(x6)
 L18:
-	if !(x9 && (x8 == 44)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L22
 	}
@@ -37299,7 +37354,7 @@ L18:
 L23:
 	p.reset(x6)
 L22:
-	if !(x9 && (x8 == 10)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L24
 	}
@@ -37312,7 +37367,7 @@ L22:
 L25:
 	p.reset(x6)
 L24:
-	if !(x9 && (x8 == 47)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L26
 	}
@@ -37387,7 +37442,7 @@ L2:
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 58)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L10
 	}
@@ -37400,7 +37455,7 @@ L2:
 L11:
 	p.reset(x6)
 L10:
-	if !(x9 && (x8 == 61)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L12
 	}
@@ -37431,7 +37486,7 @@ L15:
 L13:
 	p.reset(x6)
 L12:
-	if !(x9 && (x8 == 63)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L16
 	}
@@ -37444,7 +37499,7 @@ L12:
 L17:
 	p.reset(x6)
 L16:
-	if !(x9 && (x8 == 44)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L18
 	}
@@ -37457,7 +37512,7 @@ L16:
 L19:
 	p.reset(x6)
 L18:
-	if !(x9 && (x8 == 10)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L20
 	}
@@ -37470,7 +37525,7 @@ L18:
 L21:
 	p.reset(x6)
 L20:
-	if !(x9 && (x8 == 47)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L22
 	}
@@ -37490,7 +37545,7 @@ L22:
 	goto L7
 L24:
 	p.reset(x6)
-	if !(x9 && (x8 == 33)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L25
 	}
@@ -37637,7 +37692,7 @@ L6:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 110)) && p.depth+1 <= maxDepth {
+	if !(x8 && (x7 == 110)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L9
 	}
@@ -37649,7 +37704,7 @@ L10:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L9:
-	if !(x8 && (x7 == 40)) && p.depth+1 <= maxDepth {
+	if !(x8 && (x7 == 40)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L11
 	}
@@ -37661,7 +37716,7 @@ L12:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L11:
-	if !(x8 && (x7 == 91)) && p.depth+1 <= maxDepth {
+	if !(x8 && (x7 == 91)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L13
 	}
@@ -37726,7 +37781,7 @@ func (p *parser) e532() (*Node, bool) {
 	} else {
 		x6, _, x7 = p.peek()
 	}
-	if !(x7 && (x6 == 105)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 36)
 		goto L8
 	}
@@ -37739,7 +37794,7 @@ func (p *parser) e532() (*Node, bool) {
 L9:
 	p.reset(x4)
 L8:
-	if !(x7 && (x6 == 101)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 101)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 37)
 		goto L10
 	}
@@ -37752,7 +37807,7 @@ L8:
 L11:
 	p.reset(x4)
 L10:
-	if !(x7 && (x6 == 102)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 38)
 		goto L12
 	}
@@ -37763,7 +37818,7 @@ L10:
 L13:
 	p.reset(x4)
 L12:
-	if !(x7 && (x6 == 111)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 39)
 		goto L14
 	}
@@ -37774,7 +37829,7 @@ L12:
 L15:
 	p.reset(x4)
 L14:
-	if !(x7 && (x6 == 102)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 20)
 		goto L16
 	}
@@ -37787,7 +37842,7 @@ L14:
 L17:
 	p.reset(x4)
 L16:
-	if !(x7 && (x6 == 102)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L18
 	}
@@ -37800,7 +37855,7 @@ L16:
 L19:
 	p.reset(x4)
 L18:
-	if !(x7 && (x6 == 105)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L20
 	}
@@ -37813,7 +37868,7 @@ L18:
 L21:
 	p.reset(x4)
 L20:
-	if !(x7 && (x6 == 116)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L22
 	}
@@ -37847,7 +37902,7 @@ L3:
 	} else {
 		x26, _, x27 = p.peek()
 	}
-	if !(x27 && (x26 == 108)) && p.depth+1 <= maxDepth {
+	if !(x27 && (x26 == 108)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L28
 	}
@@ -37935,7 +37990,7 @@ L6:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 110)) && p.depth+1 <= maxDepth {
+	if !(x8 && (x7 == 110)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L9
 	}
@@ -37946,7 +38001,7 @@ L6:
 L10:
 	p.reset(x1)
 L9:
-	if !(x8 && (x7 == 40)) && p.depth+1 <= maxDepth {
+	if !(x8 && (x7 == 40)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L11
 	}
@@ -37957,7 +38012,7 @@ L9:
 L12:
 	p.reset(x1)
 L11:
-	if !(x8 && (x7 == 91)) && p.depth+1 <= maxDepth {
+	if !(x8 && (x7 == 91)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L13
 	}
@@ -38065,7 +38120,7 @@ L3:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 105)) && p.depth+1 <= maxDepth {
+	if !(x8 && (x7 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L9
 	}
@@ -38254,7 +38309,7 @@ func (p *parser) e542() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 111)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 39)
 		goto L6
 	}
@@ -38266,7 +38321,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 38)
 		goto L8
 	}
@@ -38360,7 +38415,7 @@ func (p *parser) e544() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (x3 == 102)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L5
 	}
@@ -38391,7 +38446,7 @@ L8:
 	} else {
 		x14, _, x15 = p.peek()
 	}
-	if !(x15 && (x14 == 58)) && p.depth+0 <= maxDepth {
+	if !(x15 && (x14 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L16
 	}
@@ -38404,7 +38459,7 @@ L8:
 L17:
 	p.reset(x12)
 L16:
-	if !(x15 && (x14 == 61)) && p.depth+0 <= maxDepth {
+	if !(x15 && (x14 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L18
 	}
@@ -38435,7 +38490,7 @@ L21:
 L19:
 	p.reset(x12)
 L18:
-	if !(x15 && (x14 == 63)) && p.depth+0 <= maxDepth {
+	if !(x15 && (x14 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L22
 	}
@@ -38448,7 +38503,7 @@ L18:
 L23:
 	p.reset(x12)
 L22:
-	if !(x15 && (x14 == 33)) && p.depth+0 <= maxDepth {
+	if !(x15 && (x14 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L24
 	}
@@ -38479,7 +38534,7 @@ L27:
 L25:
 	p.reset(x12)
 L24:
-	if !(x15 && (x14 == 44)) && p.depth+0 <= maxDepth {
+	if !(x15 && (x14 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L28
 	}
@@ -38492,7 +38547,7 @@ L24:
 L29:
 	p.reset(x12)
 L28:
-	if !(x15 && (x14 == 10)) && p.depth+0 <= maxDepth {
+	if !(x15 && (x14 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L30
 	}
@@ -38505,7 +38560,7 @@ L28:
 L31:
 	p.reset(x12)
 L30:
-	if !(x15 && (x14 == 47)) && p.depth+0 <= maxDepth {
+	if !(x15 && (x14 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L32
 	}
@@ -38539,7 +38594,7 @@ L11:
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 105)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L35
 	}
@@ -38570,7 +38625,7 @@ L38:
 	} else {
 		x44, _, x45 = p.peek()
 	}
-	if !(x45 && (x44 == 58)) && p.depth+0 <= maxDepth {
+	if !(x45 && (x44 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L46
 	}
@@ -38583,7 +38638,7 @@ L38:
 L47:
 	p.reset(x42)
 L46:
-	if !(x45 && (x44 == 61)) && p.depth+0 <= maxDepth {
+	if !(x45 && (x44 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L48
 	}
@@ -38614,7 +38669,7 @@ L51:
 L49:
 	p.reset(x42)
 L48:
-	if !(x45 && (x44 == 63)) && p.depth+0 <= maxDepth {
+	if !(x45 && (x44 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L52
 	}
@@ -38627,7 +38682,7 @@ L48:
 L53:
 	p.reset(x42)
 L52:
-	if !(x45 && (x44 == 44)) && p.depth+0 <= maxDepth {
+	if !(x45 && (x44 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L54
 	}
@@ -38640,7 +38695,7 @@ L52:
 L55:
 	p.reset(x42)
 L54:
-	if !(x45 && (x44 == 10)) && p.depth+0 <= maxDepth {
+	if !(x45 && (x44 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L56
 	}
@@ -38653,7 +38708,7 @@ L54:
 L57:
 	p.reset(x42)
 L56:
-	if !(x45 && (x44 == 47)) && p.depth+0 <= maxDepth {
+	if !(x45 && (x44 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L58
 	}
@@ -38673,7 +38728,7 @@ L58:
 	goto L43
 L60:
 	p.reset(x42)
-	if !(x45 && (x44 == 33)) && p.depth+0 <= maxDepth {
+	if !(x45 && (x44 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L61
 	}
@@ -38753,7 +38808,7 @@ L7:
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 105)) && p.depth+1 <= maxDepth {
+	if !(x9 && (x8 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L10
 	}
@@ -38803,7 +38858,7 @@ L4:
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (x5 == 105)) && p.depth+1 <= maxDepth {
+	if !(x6 && (x5 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L7
 	}
@@ -38851,7 +38906,7 @@ func (p *parser) e547() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (x3 == 102)) && p.depth+1 <= maxDepth {
+	if !(x4 && (x3 == 102)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L5
 	}
@@ -38862,7 +38917,7 @@ func (p *parser) e547() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 102)) && p.depth+1 <= maxDepth {
+	if !(x4 && (x3 == 102)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L7
 	}
@@ -39072,7 +39127,7 @@ func (p *parser) e551() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (x3 == 116)) && p.depth+1 <= maxDepth {
+	if !(x4 && (x3 == 116)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L5
 	}
@@ -39083,7 +39138,7 @@ func (p *parser) e551() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 116)) && p.depth+1 <= maxDepth {
+	if !(x4 && (x3 == 116)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L7
 	}
@@ -39423,7 +39478,7 @@ func (p *parser) e561() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L6
 	}
@@ -39437,7 +39492,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L8
 	}
@@ -39451,7 +39506,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L10
 	}
@@ -39800,7 +39855,7 @@ L7:
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 110)) && p.depth+1 <= maxDepth {
+	if !(x9 && (x8 == 110)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L10
 	}
@@ -39888,7 +39943,7 @@ func (p *parser) e572() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 123)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 123)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 40)
 		goto L6
 	}
@@ -39900,7 +39955,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 91)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 91)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L8
 	}
@@ -39919,7 +39974,7 @@ L8:
 L10:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
-	if !(x5 && (x4 == 40)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 40)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L11
 	}
@@ -40080,7 +40135,7 @@ func (p *parser) e576() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 45)
 		goto L6
 	}
@@ -40094,7 +40149,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 46)
 		goto L8
 	}
@@ -40106,7 +40161,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 110)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 110)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L10
 	}
@@ -40374,7 +40429,7 @@ func (p *parser) e581() (*Node, bool) {
 		} else {
 			x8, _, x9 = p.peek()
 		}
-		if !(x9 && (x8 == 47)) && p.depth+1 <= maxDepth {
+		if !(x9 && (x8 == 47)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 15)
 			goto L10
 		}
@@ -40427,7 +40482,7 @@ func (p *parser) e582() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 40)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 40)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L6
 	}
@@ -40449,7 +40504,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 91)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 91)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L8
 	}
@@ -40471,7 +40526,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 123)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 123)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 40)
 		goto L10
 	}
@@ -40541,7 +40596,7 @@ L5:
 	} else {
 		x6, _, x7 = p.peek()
 	}
-	if !(x7 && (x6 == 95)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 95)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 50)
 		goto L8
 	}
@@ -40569,7 +40624,7 @@ L10:
 L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
-	if !(x7 && (x6 == 46)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 25)
 		goto L12
 	}
@@ -40583,7 +40638,7 @@ L13:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L12:
-	if !(x7 && (x6 == 46)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L14
 	}
@@ -40612,7 +40667,7 @@ L15:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L14:
-	if !(x7 && (!!(x6 == 58 || x6 == 59 || x6 == 63 || x6 == 126 || x6 == 43 || x6 == 45 || x6 == 42 || x6 == 47 || x6 == 60 || x6 == 62 || x6 == 61 || x6 == 33 || x6 == 38 || x6 == 124 || x6 == 44))) && p.depth+0 <= maxDepth {
+	if !(x7 && (!!(x6 == 58 || x6 == 59 || x6 == 63 || x6 == 126 || x6 == 43 || x6 == 45 || x6 == 42 || x6 == 47 || x6 == 60 || x6 == 62 || x6 == 61 || x6 == 33 || x6 == 38 || x6 == 124 || x6 == 44))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 51)
 		goto L19
 	}
@@ -40725,7 +40780,7 @@ L3:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 48)) && p.depth+1 <= maxDepth {
+	if !(x8 && (x7 == 48)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L9
 	}
@@ -40791,7 +40846,7 @@ L14:
 L18:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
-	if !(x8 && (x7 == 48)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L19
 	}
@@ -40885,7 +40940,7 @@ func (p *parser) e585() (*Node, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L10
 	}
@@ -40897,7 +40952,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 48)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L12
 	}
@@ -40943,7 +40998,7 @@ L4:
 	} else {
 		x22, _, x23 = p.peek()
 	}
-	if !(x23 && (x22 == 46)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L24
 	}
@@ -40998,7 +41053,7 @@ func (p *parser) e586() (*Node, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L10
 	}
@@ -41010,7 +41065,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 48)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L12
 	}
@@ -41051,7 +41106,7 @@ L4:
 	} else {
 		x22, _, x23 = p.peek()
 	}
-	if !(x23 && (!!(x22 >= 49 && x22 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x23 && (!!(x22 >= 49 && x22 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L24
 	}
@@ -41063,7 +41118,7 @@ L25:
 	p.pos = x19
 	p.recovered = p.recovered[:x20]
 L24:
-	if !(x23 && (x22 == 48)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L26
 	}
@@ -41091,7 +41146,7 @@ L18:
 	} else {
 		x28, _, x29 = p.peek()
 	}
-	if !(x29 && (x28 == 46)) && p.depth+0 <= maxDepth {
+	if !(x29 && (x28 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L30
 	}
@@ -41236,7 +41291,7 @@ func (p *parser) e588() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 46)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 46)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L6
 	}
@@ -41250,7 +41305,7 @@ func (p *parser) e588() (*Node, bool) {
 	} else {
 		x15, _, x16 = p.peek()
 	}
-	if !(x16 && (!!(x15 == 101 || x15 == 69))) && p.depth+1 <= maxDepth {
+	if !(x16 && (!!(x15 == 101 || x15 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L17
 	}
@@ -41262,7 +41317,7 @@ L18:
 	p.pos = x12
 	p.recovered = p.recovered[:x13]
 L17:
-	if !(x16 && (!!(x15 == 75 || x15 == 77 || x15 == 71 || x15 == 84 || x15 == 80))) && p.depth+1 <= maxDepth {
+	if !(x16 && (!!(x15 == 75 || x15 == 77 || x15 == 71 || x15 == 84 || x15 == 80))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 62)
 		goto L19
 	}
@@ -41286,7 +41341,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (!!(x4 == 101 || x4 == 69))) && p.depth+1 <= maxDepth {
+	if !(x5 && (!!(x4 == 101 || x4 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L21
 	}
@@ -41326,7 +41381,7 @@ func (p *parser) e589() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 >= 48 && x4 <= 57 || x4 == 95 || x4 == 36))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 >= 48 && x4 <= 57 || x4 == 95 || x4 == 36))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 63)
 		goto L6
 	}
@@ -41404,7 +41459,7 @@ L4:
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (!!(x8 == 170 || x8 == 181 || x8 == 186 || x8 >= 192 && x8 <= 214 || x8 >= 216 && x8 <= 246 || x8 >= 248 && x8 <= 705 || x8 >= 710 && x8 <= 721 || x8 >= 736 && x8 <= 740 || x8 == 748 || x8 == 750 || x8 >= 880 && x8 <= 884 || x8 >= 886 && x8 <= 887 || x8 >= 890 && x8 <= 893 || x8 == 895 || x8 == 902 || x8 >= 904 && x8 <= 906 || x8 == 908 || x8 >= 910 && x8 <= 929 || x8 >= 931 && x8 <= 1013 || x8 >= 1015 && x8 <= 1153 || x8 >= 1162 && x8 <= 1327 || x8 >= 1329 && x8 <= 1366 || x8 == 1369 || x8 >= 1376 && x8 <= 1416 || x8 >= 1488 && x8 <= 1514 || x8 >= 1519 && x8 <= 1522 || x8 >= 1568 && x8 <= 1610 || x8 >= 1646 && x8 <= 1647 || x8 >= 1649 && x8 <= 1747 || x8 == 1749 || x8 >= 1765 && x8 <= 1766 || x8 >= 1774 && x8 <= 1775 || x8 >= 1786 && x8 <= 1788 || x8 == 1791 || x8 == 1808 || x8 >= 1810 && x8 <= 1839 || x8 >= 1869 && x8 <= 1957 || x8 == 1969 || x8 >= 1994 && x8 <= 2026 || x8 >= 2036 && x8 <= 2037 || x8 == 2042 || x8 >= 2048 && x8 <= 2069 || x8 == 2074 || x8 == 2084 || x8 == 2088 || x8 >= 2112 && x8 <= 2136 || x8 >= 2144 && x8 <= 2154 || x8 >= 2160 && x8 <= 2183 || x8 >= 2185 && x8 <= 2191 || x8 >= 2208 && x8 <= 2249 || x8 >= 2308 && x8 <= 2361 || x8 == 2365 || x8 == 2384 || x8 >= 2392 && x8 <= 2401 || x8 >= 2417 && x8 <= 2432 || x8 >= 2437 && x8 <= 2444 || x8 >= 2447 && x8 <= 2448 || x8 >= 2451 && x8 <= 2472 || x8 >= 2474 && x8 <= 2480 || x8 == 2482 || x8 >= 2486 && x8 <= 2489 || x8 == 2493 || x8 == 2510 || x8 >= 2524 && x8 <= 2525 || x8 >= 2527 && x8 <= 2529 || x8 >= 2544 && x8 <= 2545 || x8 == 2556 || x8 >= 2565 && x8 <= 2570 || x8 >= 2575 && x8 <= 2576 || x8 >= 2579 && x8 <= 2600 || x8 >= 2602 && x8 <= 2608 || x8 >= 2610 && x8 <= 2611 || x8 >= 2613 && x8 <= 2614 || x8 >= 2616 && x8 <= 2617 || x8 >= 2649 && x8 <= 2652 || x8 == 2654 || x8 >= 2674 && x8 <= 2676 || x8 >= 2693 && x8 <= 2701 || x8 >= 2703 && x8 <= 2705 || x8 >= 2707 && x8 <= 2728 || x8 >= 2730 && x8 <= 2736 || x8 >= 2738 && x8 <= 2739 || x8 >= 2741 && x8 <= 2745 || x8 == 2749 || x8 == 2768 || x8 >= 2784 && x8 <= 2785 || x8 == 2809 || x8 >= 2821 && x8 <= 2828 || x8 >= 2831 && x8 <= 2832 || x8 >= 2835 && x8 <= 2856 || x8 >= 2858 && x8 <= 2864 || x8 >= 2866 && x8 <= 2867 || x8 >= 2869 && x8 <= 2873 || x8 == 2877 || x8 >= 2908 && x8 <= 2909 || x8 >= 2911 && x8 <= 2913 || x8 == 2929 || x8 == 2947 || x8 >= 2949 && x8 <= 2954 || x8 >= 2958 && x8 <= 2960 || x8 >= 2962 && x8 <= 2965 || x8 >= 2969 && x8 <= 2970 || x8 == 2972 || x8 >= 2974 && x8 <= 2975 || x8 >= 2979 && x8 <= 2980 || x8 >= 2984 && x8 <= 2986 || x8 >= 2990 && x8 <= 3001 || x8 == 3024 || x8 >= 3077 && x8 <= 3084 || x8 >= 3086 && x8 <= 3088 || x8 >= 3090 && x8 <= 3112 || x8 >= 3114 && x8 <= 3129 || x8 == 3133 || x8 >= 3160 && x8 <= 3162 || x8 >= 3164 && x8 <= 3165 || x8 >= 3168 && x8 <= 3169 || x8 == 3200 || x8 >= 3205 && x8 <= 3212 || x8 >= 3214 && x8 <= 3216 || x8 >= 3218 && x8 <= 3240 || x8 >= 3242 && x8 <= 3251 || x8 >= 3253 && x8 <= 3257 || x8 == 3261 || x8 >= 3292 && x8 <= 3294 || x8 >= 3296 && x8 <= 3297 || x8 >= 3313 && x8 <= 3314 || x8 >= 3332 && x8 <= 3340 || x8 >= 3342 && x8 <= 3344 || x8 >= 3346 && x8 <= 3386 || x8 == 3389 || x8 == 3406 || x8 >= 3412 && x8 <= 3414 || x8 >= 3423 && x8 <= 3425 || x8 >= 3450 && x8 <= 3455 || x8 >= 3461 && x8 <= 3478 || x8 >= 3482 && x8 <= 3505 || x8 >= 3507 && x8 <= 3515 || x8 == 3517 || x8 >= 3520 && x8 <= 3526 || x8 >= 3585 && x8 <= 3632 || x8 >= 3634 && x8 <= 3635 || x8 >= 3648 && x8 <= 3654 || x8 >= 3713 && x8 <= 3714 || x8 == 3716 || x8 >= 3718 && x8 <= 3722 || x8 >= 3724 && x8 <= 3747 || x8 == 3749 || x8 >= 3751 && x8 <= 3760 || x8 >= 3762 && x8 <= 3763 || x8 == 3773 || x8 >= 3776 && x8 <= 3780 || x8 == 3782 || x8 >= 3804 && x8 <= 3807 || x8 == 3840 || x8 >= 3904 && x8 <= 3911 || x8 >= 3913 && x8 <= 3948 || x8 >= 3976 && x8 <= 3980 || x8 >= 4096 && x8 <= 4138 || x8 == 4159 || x8 >= 4176 && x8 <= 4181 || x8 >= 4186 && x8 <= 4189 || x8 == 4193 || x8 >= 4197 && x8 <= 4198 || x8 >= 4206 && x8 <= 4208 || x8 >= 4213 && x8 <= 4225 || x8 == 4238 || x8 >= 4256 && x8 <= 4293 || x8 == 4295 || x8 == 4301 || x8 >= 4304 && x8 <= 4346 || x8 >= 4348 && x8 <= 4680 || x8 >= 4682 && x8 <= 4685 || x8 >= 4688 && x8 <= 4694 || x8 == 4696 || x8 >= 4698 && x8 <= 4701 || x8 >= 4704 && x8 <= 4744 || x8 >= 4746 && x8 <= 4749 || x8 >= 4752 && x8 <= 4784 || x8 >= 4786 && x8 <= 4789 || x8 >= 4792 && x8 <= 4798 || x8 == 4800 || x8 >= 4802 && x8 <= 4805 || x8 >= 4808 && x8 <= 4822 || x8 >= 4824 && x8 <= 4880 || x8 >= 4882 && x8 <= 4885 || x8 >= 4888 && x8 <= 4954 || x8 >= 4992 && x8 <= 5007 || x8 >= 5024 && x8 <= 5109 || x8 >= 5112 && x8 <= 5117 || x8 >= 5121 && x8 <= 5740 || x8 >= 5743 && x8 <= 5759 || x8 >= 5761 && x8 <= 5786 || x8 >= 5792 && x8 <= 5866 || x8 >= 5873 && x8 <= 5880 || x8 >= 5888 && x8 <= 5905 || x8 >= 5919 && x8 <= 5937 || x8 >= 5952 && x8 <= 5969 || x8 >= 5984 && x8 <= 5996 || x8 >= 5998 && x8 <= 6000 || x8 >= 6016 && x8 <= 6067 || x8 == 6103 || x8 == 6108 || x8 >= 6176 && x8 <= 6264 || x8 >= 6272 && x8 <= 6276 || x8 >= 6279 && x8 <= 6312 || x8 == 6314 || x8 >= 6320 && x8 <= 6389 || x8 >= 6400 && x8 <= 6430 || x8 >= 6480 && x8 <= 6509 || x8 >= 6512 && x8 <= 6516 || x8 >= 6528 && x8 <= 6571 || x8 >= 6576 && x8 <= 6601 || x8 >= 6656 && x8 <= 6678 || x8 >= 6688 && x8 <= 6740 || x8 == 6823 || x8 >= 6917 && x8 <= 6963 || x8 >= 6981 && x8 <= 6988 || x8 >= 7043 && x8 <= 7072 || x8 >= 7086 && x8 <= 7087 || x8 >= 7098 && x8 <= 7141 || x8 >= 7168 && x8 <= 7203 || x8 >= 7245 && x8 <= 7247 || x8 >= 7258 && x8 <= 7293 || x8 >= 7296 && x8 <= 7306 || x8 >= 7312 && x8 <= 7354 || x8 >= 7357 && x8 <= 7359 || x8 >= 7401 && x8 <= 7404 || x8 >= 7406 && x8 <= 7411 || x8 >= 7413 && x8 <= 7414 || x8 == 7418 || x8 >= 7424 && x8 <= 7615 || x8 >= 7680 && x8 <= 7957 || x8 >= 7960 && x8 <= 7965 || x8 >= 7968 && x8 <= 8005 || x8 >= 8008 && x8 <= 8013 || x8 >= 8016 && x8 <= 8023 || x8 == 8025 || x8 == 8027 || x8 == 8029 || x8 >= 8031 && x8 <= 8061 || x8 >= 8064 && x8 <= 8116 || x8 >= 8118 && x8 <= 8124 || x8 == 8126 || x8 >= 8130 && x8 <= 8132 || x8 >= 8134 && x8 <= 8140 || x8 >= 8144 && x8 <= 8147 || x8 >= 8150 && x8 <= 8155 || x8 >= 8160 && x8 <= 8172 || x8 >= 8178 && x8 <= 8180 || x8 >= 8182 && x8 <= 8188 || x8 == 8305 || x8 == 8319 || x8 >= 8336 && x8 <= 8348 || x8 == 8450 || x8 == 8455 || x8 >= 8458 && x8 <= 8467 || x8 == 8469 || x8 >= 8473 && x8 <= 8477 || x8 == 8484 || x8 == 8486 || x8 == 8488 || x8 >= 8490 && x8 <= 8493 || x8 >= 8495 && x8 <= 8505 || x8 >= 8508 && x8 <= 8511 || x8 >= 8517 && x8 <= 8521 || x8 == 8526 || x8 >= 8579 && x8 <= 8580 || x8 >= 11264 && x8 <= 11492 || x8 >= 11499 && x8 <= 11502 || x8 >= 11506 && x8 <= 11507 || x8 >= 11520 && x8 <= 11557 || x8 == 11559 || x8 == 11565 || x8 >= 11568 && x8 <= 11623 || x8 == 11631 || x8 >= 11648 && x8 <= 11670 || x8 >= 11680 && x8 <= 11686 || x8 >= 11688 && x8 <= 11694 || x8 >= 11696 && x8 <= 11702 || x8 >= 11704 && x8 <= 11710 || x8 >= 11712 && x8 <= 11718 || x8 >= 11720 && x8 <= 11726 || x8 >= 11728 && x8 <= 11734 || x8 >= 11736 && x8 <= 11742 || x8 == 11823 || x8 >= 12293 && x8 <= 12294 || x8 >= 12337 && x8 <= 12341 || x8 >= 12347 && x8 <= 12348 || x8 >= 12353 && x8 <= 12438 || x8 >= 12445 && x8 <= 12447 || x8 >= 12449 && x8 <= 12538 || x8 >= 12540 && x8 <= 12543 || x8 >= 12549 && x8 <= 12591 || x8 >= 12593 && x8 <= 12686 || x8 >= 12704 && x8 <= 12735 || x8 >= 12784 && x8 <= 12799 || x8 >= 13312 && x8 <= 19903 || x8 >= 19968 && x8 <= 42124 || x8 >= 42192 && x8 <= 42237 || x8 >= 42240 && x8 <= 42508 || x8 >= 42512 && x8 <= 42527 || x8 >= 42538 && x8 <= 42539 || x8 >= 42560 && x8 <= 42606 || x8 >= 42623 && x8 <= 42653 || x8 >= 42656 && x8 <= 42725 || x8 >= 42775 && x8 <= 42783 || x8 >= 42786 && x8 <= 42888 || x8 >= 42891 && x8 <= 42972 || x8 >= 42993 && x8 <= 43009 || x8 >= 43011 && x8 <= 43013 || x8 >= 43015 && x8 <= 43018 || x8 >= 43020 && x8 <= 43042 || x8 >= 43072 && x8 <= 43123 || x8 >= 43138 && x8 <= 43187 || x8 >= 43250 && x8 <= 43255 || x8 == 43259 || x8 >= 43261 && x8 <= 43262 || x8 >= 43274 && x8 <= 43301 || x8 >= 43312 && x8 <= 43334 || x8 >= 43360 && x8 <= 43388 || x8 >= 43396 && x8 <= 43442 || x8 == 43471 || x8 >= 43488 && x8 <= 43492 || x8 >= 43494 && x8 <= 43503 || x8 >= 43514 && x8 <= 43518 || x8 >= 43520 && x8 <= 43560 || x8 >= 43584 && x8 <= 43586 || x8 >= 43588 && x8 <= 43595 || x8 >= 43616 && x8 <= 43638 || x8 == 43642 || x8 >= 43646 && x8 <= 43695 || x8 == 43697 || x8 >= 43701 && x8 <= 43702 || x8 >= 43705 && x8 <= 43709 || x8 == 43712 || x8 == 43714 || x8 >= 43739 && x8 <= 43741 || x8 >= 43744 && x8 <= 43754 || x8 >= 43762 && x8 <= 43764 || x8 >= 43777 && x8 <= 43782 || x8 >= 43785 && x8 <= 43790 || x8 >= 43793 && x8 <= 43798 || x8 >= 43808 && x8 <= 43814 || x8 >= 43816 && x8 <= 43822 || x8 >= 43824 && x8 <= 43866 || x8 >= 43868 && x8 <= 43881 || x8 >= 43888 && x8 <= 44002 || x8 >= 44032 && x8 <= 55203 || x8 >= 55216 && x8 <= 55238 || x8 >= 55243 && x8 <= 55291 || x8 >= 63744 && x8 <= 64109 || x8 >= 64112 && x8 <= 64217 || x8 >= 64256 && x8 <= 64262 || x8 >= 64275 && x8 <= 64279 || x8 == 64285 || x8 >= 64287 && x8 <= 64296 || x8 >= 64298 && x8 <= 64310 || x8 >= 64312 && x8 <= 64316 || x8 == 64318 || x8 >= 64320 && x8 <= 64321 || x8 >= 64323 && x8 <= 64324 || x8 >= 64326 && x8 <= 64433 || x8 >= 64467 && x8 <= 64829 || x8 >= 64848 && x8 <= 64911 || x8 >= 64914 && x8 <= 64967 || x8 >= 65008 && x8 <= 65019 || x8 >= 65136 && x8 <= 65140 || x8 >= 65142 && x8 <= 65276 || x8 >= 65313 && x8 <= 65338 || x8 >= 65345 && x8 <= 65370 || x8 >= 65382 && x8 <= 65470 || x8 >= 65474 && x8 <= 65479 || x8 >= 65482 && x8 <= 65487 || x8 >= 65490 && x8 <= 65495 || x8 >= 65498 && x8 <= 65500 || x8 >= 65536 && x8 <= 65547 || x8 >= 65549 && x8 <= 65574 || x8 >= 65576 && x8 <= 65594 || x8 >= 65596 && x8 <= 65597 || x8 >= 65599 && x8 <= 65613 || x8 >= 65616 && x8 <= 65629 || x8 >= 65664 && x8 <= 65786 || x8 >= 66176 && x8 <= 66204 || x8 >= 66208 && x8 <= 66256 || x8 >= 66304 && x8 <= 66335 || x8 >= 66349 && x8 <= 66368 || x8 >= 66370 && x8 <= 66377 || x8 >= 66384 && x8 <= 66421 || x8 >= 66432 && x8 <= 66461 || x8 >= 66464 && x8 <= 66499 || x8 >= 66504 && x8 <= 66511 || x8 >= 66560 && x8 <= 66717 || x8 >= 66736 && x8 <= 66771 || x8 >= 66776 && x8 <= 66811 || x8 >= 66816 && x8 <= 66855 || x8 >= 66864 && x8 <= 66915 || x8 >= 66928 && x8 <= 66938 || x8 >= 66940 && x8 <= 66954 || x8 >= 66956 && x8 <= 66962 || x8 >= 66964 && x8 <= 66965 || x8 >= 66967 && x8 <= 66977 || x8 >= 66979 && x8 <= 66993 || x8 >= 66995 && x8 <= 67001 || x8 >= 67003 && x8 <= 67004 || x8 >= 67008 && x8 <= 67059 || x8 >= 67072 && x8 <= 67382 || x8 >= 67392 && x8 <= 67413 || x8 >= 67424 && x8 <= 67431 || x8 >= 67456 && x8 <= 67461 || x8 >= 67463 && x8 <= 67504 || x8 >= 67506 && x8 <= 67514 || x8 >= 67584 && x8 <= 67589 || x8 == 67592 || x8 >= 67594 && x8 <= 67637 || x8 >= 67639 && x8 <= 67640 || x8 == 67644 || x8 >= 67647 && x8 <= 67669 || x8 >= 67680 && x8 <= 67702 || x8 >= 67712 && x8 <= 67742 || x8 >= 67808 && x8 <= 67826 || x8 >= 67828 && x8 <= 67829 || x8 >= 67840 && x8 <= 67861 || x8 >= 67872 && x8 <= 67897 || x8 >= 67904 && x8 <= 67929 || x8 >= 67968 && x8 <= 68023 || x8 >= 68030 && x8 <= 68031 || x8 == 68096 || x8 >= 68112 && x8 <= 68115 || x8 >= 68117 && x8 <= 68119 || x8 >= 68121 && x8 <= 68149 || x8 >= 68192 && x8 <= 68220 || x8 >= 68224 && x8 <= 68252 || x8 >= 68288 && x8 <= 68295 || x8 >= 68297 && x8 <= 68324 || x8 >= 68352 && x8 <= 68405 || x8 >= 68416 && x8 <= 68437 || x8 >= 68448 && x8 <= 68466 || x8 >= 68480 && x8 <= 68497 || x8 >= 68608 && x8 <= 68680 || x8 >= 68736 && x8 <= 68786 || x8 >= 68800 && x8 <= 68850 || x8 >= 68864 && x8 <= 68899 || x8 >= 68938 && x8 <= 68965 || x8 >= 68975 && x8 <= 68997 || x8 >= 69248 && x8 <= 69289 || x8 >= 69296 && x8 <= 69297 || x8 >= 69314 && x8 <= 69319 || x8 >= 69376 && x8 <= 69404 || x8 == 69415 || x8 >= 69424 && x8 <= 69445 || x8 >= 69488 && x8 <= 69505 || x8 >= 69552 && x8 <= 69572 || x8 >= 69600 && x8 <= 69622 || x8 >= 69635 && x8 <= 69687 || x8 >= 69745 && x8 <= 69746 || x8 == 69749 || x8 >= 69763 && x8 <= 69807 || x8 >= 69840 && x8 <= 69864 || x8 >= 69891 && x8 <= 69926 || x8 == 69956 || x8 == 69959 || x8 >= 69968 && x8 <= 70002 || x8 == 70006 || x8 >= 70019 && x8 <= 70066 || x8 >= 70081 && x8 <= 70084 || x8 == 70106 || x8 == 70108 || x8 >= 70144 && x8 <= 70161 || x8 >= 70163 && x8 <= 70187 || x8 >= 70207 && x8 <= 70208 || x8 >= 70272 && x8 <= 70278 || x8 == 70280 || x8 >= 70282 && x8 <= 70285 || x8 >= 70287 && x8 <= 70301 || x8 >= 70303 && x8 <= 70312 || x8 >= 70320 && x8 <= 70366 || x8 >= 70405 && x8 <= 70412 || x8 >= 70415 && x8 <= 70416 || x8 >= 70419 && x8 <= 70440 || x8 >= 70442 && x8 <= 70448 || x8 >= 70450 && x8 <= 70451 || x8 >= 70453 && x8 <= 70457 || x8 == 70461 || x8 == 70480 || x8 >= 70493 && x8 <= 70497 || x8 >= 70528 && x8 <= 70537 || x8 == 70539 || x8 == 70542 || x8 >= 70544 && x8 <= 70581 || x8 == 70583 || x8 == 70609 || x8 == 70611 || x8 >= 70656 && x8 <= 70708 || x8 >= 70727 && x8 <= 70730 || x8 >= 70751 && x8 <= 70753 || x8 >= 70784 && x8 <= 70831 || x8 >= 70852 && x8 <= 70853 || x8 == 70855 || x8 >= 71040 && x8 <= 71086 || x8 >= 71128 && x8 <= 71131 || x8 >= 71168 && x8 <= 71215 || x8 == 71236 || x8 >= 71296 && x8 <= 71338 || x8 == 71352 || x8 >= 71424 && x8 <= 71450 || x8 >= 71488 && x8 <= 71494 || x8 >= 71680 && x8 <= 71723 || x8 >= 71840 && x8 <= 71903 || x8 >= 71935 && x8 <= 71942 || x8 == 71945 || x8 >= 71948 && x8 <= 71955 || x8 >= 71957 && x8 <= 71958 || x8 >= 71960 && x8 <= 71983 || x8 == 71999 || x8 == 72001 || x8 >= 72096 && x8 <= 72103 || x8 >= 72106 && x8 <= 72144 || x8 == 72161 || x8 == 72163 || x8 == 72192 || x8 >= 72203 && x8 <= 72242 || x8 == 72250 || x8 == 72272 || x8 >= 72284 && x8 <= 72329 || x8 == 72349 || x8 >= 72368 && x8 <= 72440 || x8 >= 72640 && x8 <= 72672 || x8 >= 72704 && x8 <= 72712 || x8 >= 72714 && x8 <= 72750 || x8 == 72768 || x8 >= 72818 && x8 <= 72847 || x8 >= 72960 && x8 <= 72966 || x8 >= 72968 && x8 <= 72969 || x8 >= 72971 && x8 <= 73008 || x8 == 73030 || x8 >= 73056 && x8 <= 73061 || x8 >= 73063 && x8 <= 73064 || x8 >= 73066 && x8 <= 73097 || x8 == 73112 || x8 >= 73136 && x8 <= 73179 || x8 >= 73440 && x8 <= 73458 || x8 == 73474 || x8 >= 73476 && x8 <= 73488 || x8 >= 73490 && x8 <= 73523 || x8 == 73648 || x8 >= 73728 && x8 <= 74649 || x8 >= 74880 && x8 <= 75075 || x8 >= 77712 && x8 <= 77808 || x8 >= 77824 && x8 <= 78895 || x8 >= 78913 && x8 <= 78918 || x8 >= 78944 && x8 <= 82938 || x8 >= 82944 && x8 <= 83526 || x8 >= 90368 && x8 <= 90397 || x8 >= 92160 && x8 <= 92728 || x8 >= 92736 && x8 <= 92766 || x8 >= 92784 && x8 <= 92862 || x8 >= 92880 && x8 <= 92909 || x8 >= 92928 && x8 <= 92975 || x8 >= 92992 && x8 <= 92995 || x8 >= 93027 && x8 <= 93047 || x8 >= 93053 && x8 <= 93071 || x8 >= 93504 && x8 <= 93548 || x8 >= 93760 && x8 <= 93823 || x8 >= 93856 && x8 <= 93880 || x8 >= 93883 && x8 <= 93907 || x8 >= 93952 && x8 <= 94026 || x8 == 94032 || x8 >= 94099 && x8 <= 94111 || x8 >= 94176 && x8 <= 94177 || x8 == 94179 || x8 >= 94194 && x8 <= 94195 || x8 >= 94208 && x8 <= 101589 || x8 >= 101631 && x8 <= 101662 || x8 >= 101760 && x8 <= 101874 || x8 >= 110576 && x8 <= 110579 || x8 >= 110581 && x8 <= 110587 || x8 >= 110589 && x8 <= 110590 || x8 >= 110592 && x8 <= 110882 || x8 == 110898 || x8 >= 110928 && x8 <= 110930 || x8 == 110933 || x8 >= 110948 && x8 <= 110951 || x8 >= 110960 && x8 <= 111355 || x8 >= 113664 && x8 <= 113770 || x8 >= 113776 && x8 <= 113788 || x8 >= 113792 && x8 <= 113800 || x8 >= 113808 && x8 <= 113817 || x8 >= 119808 && x8 <= 119892 || x8 >= 119894 && x8 <= 119964 || x8 >= 119966 && x8 <= 119967 || x8 == 119970 || x8 >= 119973 && x8 <= 119974 || x8 >= 119977 && x8 <= 119980 || x8 >= 119982 && x8 <= 119993 || x8 == 119995 || x8 >= 119997 && x8 <= 120003 || x8 >= 120005 && x8 <= 120069 || x8 >= 120071 && x8 <= 120074 || x8 >= 120077 && x8 <= 120084 || x8 >= 120086 && x8 <= 120092 || x8 >= 120094 && x8 <= 120121 || x8 >= 120123 && x8 <= 120126 || x8 >= 120128 && x8 <= 120132 || x8 == 120134 || x8 >= 120138 && x8 <= 120144 || x8 >= 120146 && x8 <= 120485 || x8 >= 120488 && x8 <= 120512 || x8 >= 120514 && x8 <= 120538 || x8 >= 120540 && x8 <= 120570 || x8 >= 120572 && x8 <= 120596 || x8 >= 120598 && x8 <= 120628 || x8 >= 120630 && x8 <= 120654 || x8 >= 120656 && x8 <= 120686 || x8 >= 120688 && x8 <= 120712 || x8 >= 120714 && x8 <= 120744 || x8 >= 120746 && x8 <= 120770 || x8 >= 120772 && x8 <= 120779 || x8 >= 122624 && x8 <= 122654 || x8 >= 122661 && x8 <= 122666 || x8 >= 122928 && x8 <= 122989 || x8 >= 123136 && x8 <= 123180 || x8 >= 123191 && x8 <= 123197 || x8 == 123214 || x8 >= 123536 && x8 <= 123565 || x8 >= 123584 && x8 <= 123627 || x8 >= 124112 && x8 <= 124139 || x8 >= 124368 && x8 <= 124397 || x8 == 124400 || x8 >= 124608 && x8 <= 124638 || x8 >= 124640 && x8 <= 124642 || x8 >= 124644 && x8 <= 124645 || x8 >= 124647 && x8 <= 124653 || x8 >= 124656 && x8 <= 124660 || x8 >= 124670 && x8 <= 124671 || x8 >= 124896 && x8 <= 124902 || x8 >= 124904 && x8 <= 124907 || x8 >= 124909 && x8 <= 124910 || x8 >= 124912 && x8 <= 124926 || x8 >= 124928 && x8 <= 125124 || x8 >= 125184 && x8 <= 125251 || x8 == 125259 || x8 >= 126464 && x8 <= 126467 || x8 >= 126469 && x8 <= 126495 || x8 >= 126497 && x8 <= 126498 || x8 == 126500 || x8 == 126503 || x8 >= 126505 && x8 <= 126514 || x8 >= 126516 && x8 <= 126519 || x8 == 126521 || x8 == 126523 || x8 == 126530 || x8 == 126535 || x8 == 126537 || x8 == 126539 || x8 >= 126541 && x8 <= 126543 || x8 >= 126545 && x8 <= 126546 || x8 == 126548 || x8 == 126551 || x8 == 126553 || x8 == 126555 || x8 == 126557 || x8 == 126559 || x8 >= 126561 && x8 <= 126562 || x8 == 126564 || x8 >= 126567 && x8 <= 126570 || x8 >= 126572 && x8 <= 126578 || x8 >= 126580 && x8 <= 126583 || x8 >= 126585 && x8 <= 126588 || x8 == 126590 || x8 >= 126592 && x8 <= 126601 || x8 >= 126603 && x8 <= 126619 || x8 >= 126625 && x8 <= 126627 || x8 >= 126629 && x8 <= 126633 || x8 >= 126635 && x8 <= 126651 || x8 >= 131072 && x8 <= 173791 || x8 >= 173824 && x8 <= 178205 || x8 >= 178208 && x8 <= 183981 || x8 >= 183984 && x8 <= 191456 || x8 >= 191472 && x8 <= 192093 || x8 >= 194560 && x8 <= 195101 || x8 >= 196608 && x8 <= 201546 || x8 >= 201552 && x8 <= 210041))) && p.depth+1 <= maxDepth {
+	if !(x9 && (!!(x8 == 170 || x8 == 181 || x8 == 186 || x8 >= 192 && x8 <= 214 || x8 >= 216 && x8 <= 246 || x8 >= 248 && x8 <= 705 || x8 >= 710 && x8 <= 721 || x8 >= 736 && x8 <= 740 || x8 == 748 || x8 == 750 || x8 >= 880 && x8 <= 884 || x8 >= 886 && x8 <= 887 || x8 >= 890 && x8 <= 893 || x8 == 895 || x8 == 902 || x8 >= 904 && x8 <= 906 || x8 == 908 || x8 >= 910 && x8 <= 929 || x8 >= 931 && x8 <= 1013 || x8 >= 1015 && x8 <= 1153 || x8 >= 1162 && x8 <= 1327 || x8 >= 1329 && x8 <= 1366 || x8 == 1369 || x8 >= 1376 && x8 <= 1416 || x8 >= 1488 && x8 <= 1514 || x8 >= 1519 && x8 <= 1522 || x8 >= 1568 && x8 <= 1610 || x8 >= 1646 && x8 <= 1647 || x8 >= 1649 && x8 <= 1747 || x8 == 1749 || x8 >= 1765 && x8 <= 1766 || x8 >= 1774 && x8 <= 1775 || x8 >= 1786 && x8 <= 1788 || x8 == 1791 || x8 == 1808 || x8 >= 1810 && x8 <= 1839 || x8 >= 1869 && x8 <= 1957 || x8 == 1969 || x8 >= 1994 && x8 <= 2026 || x8 >= 2036 && x8 <= 2037 || x8 == 2042 || x8 >= 2048 && x8 <= 2069 || x8 == 2074 || x8 == 2084 || x8 == 2088 || x8 >= 2112 && x8 <= 2136 || x8 >= 2144 && x8 <= 2154 || x8 >= 2160 && x8 <= 2183 || x8 >= 2185 && x8 <= 2191 || x8 >= 2208 && x8 <= 2249 || x8 >= 2308 && x8 <= 2361 || x8 == 2365 || x8 == 2384 || x8 >= 2392 && x8 <= 2401 || x8 >= 2417 && x8 <= 2432 || x8 >= 2437 && x8 <= 2444 || x8 >= 2447 && x8 <= 2448 || x8 >= 2451 && x8 <= 2472 || x8 >= 2474 && x8 <= 2480 || x8 == 2482 || x8 >= 2486 && x8 <= 2489 || x8 == 2493 || x8 == 2510 || x8 >= 2524 && x8 <= 2525 || x8 >= 2527 && x8 <= 2529 || x8 >= 2544 && x8 <= 2545 || x8 == 2556 || x8 >= 2565 && x8 <= 2570 || x8 >= 2575 && x8 <= 2576 || x8 >= 2579 && x8 <= 2600 || x8 >= 2602 && x8 <= 2608 || x8 >= 2610 && x8 <= 2611 || x8 >= 2613 && x8 <= 2614 || x8 >= 2616 && x8 <= 2617 || x8 >= 2649 && x8 <= 2652 || x8 == 2654 || x8 >= 2674 && x8 <= 2676 || x8 >= 2693 && x8 <= 2701 || x8 >= 2703 && x8 <= 2705 || x8 >= 2707 && x8 <= 2728 || x8 >= 2730 && x8 <= 2736 || x8 >= 2738 && x8 <= 2739 || x8 >= 2741 && x8 <= 2745 || x8 == 2749 || x8 == 2768 || x8 >= 2784 && x8 <= 2785 || x8 == 2809 || x8 >= 2821 && x8 <= 2828 || x8 >= 2831 && x8 <= 2832 || x8 >= 2835 && x8 <= 2856 || x8 >= 2858 && x8 <= 2864 || x8 >= 2866 && x8 <= 2867 || x8 >= 2869 && x8 <= 2873 || x8 == 2877 || x8 >= 2908 && x8 <= 2909 || x8 >= 2911 && x8 <= 2913 || x8 == 2929 || x8 == 2947 || x8 >= 2949 && x8 <= 2954 || x8 >= 2958 && x8 <= 2960 || x8 >= 2962 && x8 <= 2965 || x8 >= 2969 && x8 <= 2970 || x8 == 2972 || x8 >= 2974 && x8 <= 2975 || x8 >= 2979 && x8 <= 2980 || x8 >= 2984 && x8 <= 2986 || x8 >= 2990 && x8 <= 3001 || x8 == 3024 || x8 >= 3077 && x8 <= 3084 || x8 >= 3086 && x8 <= 3088 || x8 >= 3090 && x8 <= 3112 || x8 >= 3114 && x8 <= 3129 || x8 == 3133 || x8 >= 3160 && x8 <= 3162 || x8 >= 3164 && x8 <= 3165 || x8 >= 3168 && x8 <= 3169 || x8 == 3200 || x8 >= 3205 && x8 <= 3212 || x8 >= 3214 && x8 <= 3216 || x8 >= 3218 && x8 <= 3240 || x8 >= 3242 && x8 <= 3251 || x8 >= 3253 && x8 <= 3257 || x8 == 3261 || x8 >= 3292 && x8 <= 3294 || x8 >= 3296 && x8 <= 3297 || x8 >= 3313 && x8 <= 3314 || x8 >= 3332 && x8 <= 3340 || x8 >= 3342 && x8 <= 3344 || x8 >= 3346 && x8 <= 3386 || x8 == 3389 || x8 == 3406 || x8 >= 3412 && x8 <= 3414 || x8 >= 3423 && x8 <= 3425 || x8 >= 3450 && x8 <= 3455 || x8 >= 3461 && x8 <= 3478 || x8 >= 3482 && x8 <= 3505 || x8 >= 3507 && x8 <= 3515 || x8 == 3517 || x8 >= 3520 && x8 <= 3526 || x8 >= 3585 && x8 <= 3632 || x8 >= 3634 && x8 <= 3635 || x8 >= 3648 && x8 <= 3654 || x8 >= 3713 && x8 <= 3714 || x8 == 3716 || x8 >= 3718 && x8 <= 3722 || x8 >= 3724 && x8 <= 3747 || x8 == 3749 || x8 >= 3751 && x8 <= 3760 || x8 >= 3762 && x8 <= 3763 || x8 == 3773 || x8 >= 3776 && x8 <= 3780 || x8 == 3782 || x8 >= 3804 && x8 <= 3807 || x8 == 3840 || x8 >= 3904 && x8 <= 3911 || x8 >= 3913 && x8 <= 3948 || x8 >= 3976 && x8 <= 3980 || x8 >= 4096 && x8 <= 4138 || x8 == 4159 || x8 >= 4176 && x8 <= 4181 || x8 >= 4186 && x8 <= 4189 || x8 == 4193 || x8 >= 4197 && x8 <= 4198 || x8 >= 4206 && x8 <= 4208 || x8 >= 4213 && x8 <= 4225 || x8 == 4238 || x8 >= 4256 && x8 <= 4293 || x8 == 4295 || x8 == 4301 || x8 >= 4304 && x8 <= 4346 || x8 >= 4348 && x8 <= 4680 || x8 >= 4682 && x8 <= 4685 || x8 >= 4688 && x8 <= 4694 || x8 == 4696 || x8 >= 4698 && x8 <= 4701 || x8 >= 4704 && x8 <= 4744 || x8 >= 4746 && x8 <= 4749 || x8 >= 4752 && x8 <= 4784 || x8 >= 4786 && x8 <= 4789 || x8 >= 4792 && x8 <= 4798 || x8 == 4800 || x8 >= 4802 && x8 <= 4805 || x8 >= 4808 && x8 <= 4822 || x8 >= 4824 && x8 <= 4880 || x8 >= 4882 && x8 <= 4885 || x8 >= 4888 && x8 <= 4954 || x8 >= 4992 && x8 <= 5007 || x8 >= 5024 && x8 <= 5109 || x8 >= 5112 && x8 <= 5117 || x8 >= 5121 && x8 <= 5740 || x8 >= 5743 && x8 <= 5759 || x8 >= 5761 && x8 <= 5786 || x8 >= 5792 && x8 <= 5866 || x8 >= 5873 && x8 <= 5880 || x8 >= 5888 && x8 <= 5905 || x8 >= 5919 && x8 <= 5937 || x8 >= 5952 && x8 <= 5969 || x8 >= 5984 && x8 <= 5996 || x8 >= 5998 && x8 <= 6000 || x8 >= 6016 && x8 <= 6067 || x8 == 6103 || x8 == 6108 || x8 >= 6176 && x8 <= 6264 || x8 >= 6272 && x8 <= 6276 || x8 >= 6279 && x8 <= 6312 || x8 == 6314 || x8 >= 6320 && x8 <= 6389 || x8 >= 6400 && x8 <= 6430 || x8 >= 6480 && x8 <= 6509 || x8 >= 6512 && x8 <= 6516 || x8 >= 6528 && x8 <= 6571 || x8 >= 6576 && x8 <= 6601 || x8 >= 6656 && x8 <= 6678 || x8 >= 6688 && x8 <= 6740 || x8 == 6823 || x8 >= 6917 && x8 <= 6963 || x8 >= 6981 && x8 <= 6988 || x8 >= 7043 && x8 <= 7072 || x8 >= 7086 && x8 <= 7087 || x8 >= 7098 && x8 <= 7141 || x8 >= 7168 && x8 <= 7203 || x8 >= 7245 && x8 <= 7247 || x8 >= 7258 && x8 <= 7293 || x8 >= 7296 && x8 <= 7306 || x8 >= 7312 && x8 <= 7354 || x8 >= 7357 && x8 <= 7359 || x8 >= 7401 && x8 <= 7404 || x8 >= 7406 && x8 <= 7411 || x8 >= 7413 && x8 <= 7414 || x8 == 7418 || x8 >= 7424 && x8 <= 7615 || x8 >= 7680 && x8 <= 7957 || x8 >= 7960 && x8 <= 7965 || x8 >= 7968 && x8 <= 8005 || x8 >= 8008 && x8 <= 8013 || x8 >= 8016 && x8 <= 8023 || x8 == 8025 || x8 == 8027 || x8 == 8029 || x8 >= 8031 && x8 <= 8061 || x8 >= 8064 && x8 <= 8116 || x8 >= 8118 && x8 <= 8124 || x8 == 8126 || x8 >= 8130 && x8 <= 8132 || x8 >= 8134 && x8 <= 8140 || x8 >= 8144 && x8 <= 8147 || x8 >= 8150 && x8 <= 8155 || x8 >= 8160 && x8 <= 8172 || x8 >= 8178 && x8 <= 8180 || x8 >= 8182 && x8 <= 8188 || x8 == 8305 || x8 == 8319 || x8 >= 8336 && x8 <= 8348 || x8 == 8450 || x8 == 8455 || x8 >= 8458 && x8 <= 8467 || x8 == 8469 || x8 >= 8473 && x8 <= 8477 || x8 == 8484 || x8 == 8486 || x8 == 8488 || x8 >= 8490 && x8 <= 8493 || x8 >= 8495 && x8 <= 8505 || x8 >= 8508 && x8 <= 8511 || x8 >= 8517 && x8 <= 8521 || x8 == 8526 || x8 >= 8579 && x8 <= 8580 || x8 >= 11264 && x8 <= 11492 || x8 >= 11499 && x8 <= 11502 || x8 >= 11506 && x8 <= 11507 || x8 >= 11520 && x8 <= 11557 || x8 == 11559 || x8 == 11565 || x8 >= 11568 && x8 <= 11623 || x8 == 11631 || x8 >= 11648 && x8 <= 11670 || x8 >= 11680 && x8 <= 11686 || x8 >= 11688 && x8 <= 11694 || x8 >= 11696 && x8 <= 11702 || x8 >= 11704 && x8 <= 11710 || x8 >= 11712 && x8 <= 11718 || x8 >= 11720 && x8 <= 11726 || x8 >= 11728 && x8 <= 11734 || x8 >= 11736 && x8 <= 11742 || x8 == 11823 || x8 >= 12293 && x8 <= 12294 || x8 >= 12337 && x8 <= 12341 || x8 >= 12347 && x8 <= 12348 || x8 >= 12353 && x8 <= 12438 || x8 >= 12445 && x8 <= 12447 || x8 >= 12449 && x8 <= 12538 || x8 >= 12540 && x8 <= 12543 || x8 >= 12549 && x8 <= 12591 || x8 >= 12593 && x8 <= 12686 || x8 >= 12704 && x8 <= 12735 || x8 >= 12784 && x8 <= 12799 || x8 >= 13312 && x8 <= 19903 || x8 >= 19968 && x8 <= 42124 || x8 >= 42192 && x8 <= 42237 || x8 >= 42240 && x8 <= 42508 || x8 >= 42512 && x8 <= 42527 || x8 >= 42538 && x8 <= 42539 || x8 >= 42560 && x8 <= 42606 || x8 >= 42623 && x8 <= 42653 || x8 >= 42656 && x8 <= 42725 || x8 >= 42775 && x8 <= 42783 || x8 >= 42786 && x8 <= 42888 || x8 >= 42891 && x8 <= 42972 || x8 >= 42993 && x8 <= 43009 || x8 >= 43011 && x8 <= 43013 || x8 >= 43015 && x8 <= 43018 || x8 >= 43020 && x8 <= 43042 || x8 >= 43072 && x8 <= 43123 || x8 >= 43138 && x8 <= 43187 || x8 >= 43250 && x8 <= 43255 || x8 == 43259 || x8 >= 43261 && x8 <= 43262 || x8 >= 43274 && x8 <= 43301 || x8 >= 43312 && x8 <= 43334 || x8 >= 43360 && x8 <= 43388 || x8 >= 43396 && x8 <= 43442 || x8 == 43471 || x8 >= 43488 && x8 <= 43492 || x8 >= 43494 && x8 <= 43503 || x8 >= 43514 && x8 <= 43518 || x8 >= 43520 && x8 <= 43560 || x8 >= 43584 && x8 <= 43586 || x8 >= 43588 && x8 <= 43595 || x8 >= 43616 && x8 <= 43638 || x8 == 43642 || x8 >= 43646 && x8 <= 43695 || x8 == 43697 || x8 >= 43701 && x8 <= 43702 || x8 >= 43705 && x8 <= 43709 || x8 == 43712 || x8 == 43714 || x8 >= 43739 && x8 <= 43741 || x8 >= 43744 && x8 <= 43754 || x8 >= 43762 && x8 <= 43764 || x8 >= 43777 && x8 <= 43782 || x8 >= 43785 && x8 <= 43790 || x8 >= 43793 && x8 <= 43798 || x8 >= 43808 && x8 <= 43814 || x8 >= 43816 && x8 <= 43822 || x8 >= 43824 && x8 <= 43866 || x8 >= 43868 && x8 <= 43881 || x8 >= 43888 && x8 <= 44002 || x8 >= 44032 && x8 <= 55203 || x8 >= 55216 && x8 <= 55238 || x8 >= 55243 && x8 <= 55291 || x8 >= 63744 && x8 <= 64109 || x8 >= 64112 && x8 <= 64217 || x8 >= 64256 && x8 <= 64262 || x8 >= 64275 && x8 <= 64279 || x8 == 64285 || x8 >= 64287 && x8 <= 64296 || x8 >= 64298 && x8 <= 64310 || x8 >= 64312 && x8 <= 64316 || x8 == 64318 || x8 >= 64320 && x8 <= 64321 || x8 >= 64323 && x8 <= 64324 || x8 >= 64326 && x8 <= 64433 || x8 >= 64467 && x8 <= 64829 || x8 >= 64848 && x8 <= 64911 || x8 >= 64914 && x8 <= 64967 || x8 >= 65008 && x8 <= 65019 || x8 >= 65136 && x8 <= 65140 || x8 >= 65142 && x8 <= 65276 || x8 >= 65313 && x8 <= 65338 || x8 >= 65345 && x8 <= 65370 || x8 >= 65382 && x8 <= 65470 || x8 >= 65474 && x8 <= 65479 || x8 >= 65482 && x8 <= 65487 || x8 >= 65490 && x8 <= 65495 || x8 >= 65498 && x8 <= 65500 || x8 >= 65536 && x8 <= 65547 || x8 >= 65549 && x8 <= 65574 || x8 >= 65576 && x8 <= 65594 || x8 >= 65596 && x8 <= 65597 || x8 >= 65599 && x8 <= 65613 || x8 >= 65616 && x8 <= 65629 || x8 >= 65664 && x8 <= 65786 || x8 >= 66176 && x8 <= 66204 || x8 >= 66208 && x8 <= 66256 || x8 >= 66304 && x8 <= 66335 || x8 >= 66349 && x8 <= 66368 || x8 >= 66370 && x8 <= 66377 || x8 >= 66384 && x8 <= 66421 || x8 >= 66432 && x8 <= 66461 || x8 >= 66464 && x8 <= 66499 || x8 >= 66504 && x8 <= 66511 || x8 >= 66560 && x8 <= 66717 || x8 >= 66736 && x8 <= 66771 || x8 >= 66776 && x8 <= 66811 || x8 >= 66816 && x8 <= 66855 || x8 >= 66864 && x8 <= 66915 || x8 >= 66928 && x8 <= 66938 || x8 >= 66940 && x8 <= 66954 || x8 >= 66956 && x8 <= 66962 || x8 >= 66964 && x8 <= 66965 || x8 >= 66967 && x8 <= 66977 || x8 >= 66979 && x8 <= 66993 || x8 >= 66995 && x8 <= 67001 || x8 >= 67003 && x8 <= 67004 || x8 >= 67008 && x8 <= 67059 || x8 >= 67072 && x8 <= 67382 || x8 >= 67392 && x8 <= 67413 || x8 >= 67424 && x8 <= 67431 || x8 >= 67456 && x8 <= 67461 || x8 >= 67463 && x8 <= 67504 || x8 >= 67506 && x8 <= 67514 || x8 >= 67584 && x8 <= 67589 || x8 == 67592 || x8 >= 67594 && x8 <= 67637 || x8 >= 67639 && x8 <= 67640 || x8 == 67644 || x8 >= 67647 && x8 <= 67669 || x8 >= 67680 && x8 <= 67702 || x8 >= 67712 && x8 <= 67742 || x8 >= 67808 && x8 <= 67826 || x8 >= 67828 && x8 <= 67829 || x8 >= 67840 && x8 <= 67861 || x8 >= 67872 && x8 <= 67897 || x8 >= 67904 && x8 <= 67929 || x8 >= 67968 && x8 <= 68023 || x8 >= 68030 && x8 <= 68031 || x8 == 68096 || x8 >= 68112 && x8 <= 68115 || x8 >= 68117 && x8 <= 68119 || x8 >= 68121 && x8 <= 68149 || x8 >= 68192 && x8 <= 68220 || x8 >= 68224 && x8 <= 68252 || x8 >= 68288 && x8 <= 68295 || x8 >= 68297 && x8 <= 68324 || x8 >= 68352 && x8 <= 68405 || x8 >= 68416 && x8 <= 68437 || x8 >= 68448 && x8 <= 68466 || x8 >= 68480 && x8 <= 68497 || x8 >= 68608 && x8 <= 68680 || x8 >= 68736 && x8 <= 68786 || x8 >= 68800 && x8 <= 68850 || x8 >= 68864 && x8 <= 68899 || x8 >= 68938 && x8 <= 68965 || x8 >= 68975 && x8 <= 68997 || x8 >= 69248 && x8 <= 69289 || x8 >= 69296 && x8 <= 69297 || x8 >= 69314 && x8 <= 69319 || x8 >= 69376 && x8 <= 69404 || x8 == 69415 || x8 >= 69424 && x8 <= 69445 || x8 >= 69488 && x8 <= 69505 || x8 >= 69552 && x8 <= 69572 || x8 >= 69600 && x8 <= 69622 || x8 >= 69635 && x8 <= 69687 || x8 >= 69745 && x8 <= 69746 || x8 == 69749 || x8 >= 69763 && x8 <= 69807 || x8 >= 69840 && x8 <= 69864 || x8 >= 69891 && x8 <= 69926 || x8 == 69956 || x8 == 69959 || x8 >= 69968 && x8 <= 70002 || x8 == 70006 || x8 >= 70019 && x8 <= 70066 || x8 >= 70081 && x8 <= 70084 || x8 == 70106 || x8 == 70108 || x8 >= 70144 && x8 <= 70161 || x8 >= 70163 && x8 <= 70187 || x8 >= 70207 && x8 <= 70208 || x8 >= 70272 && x8 <= 70278 || x8 == 70280 || x8 >= 70282 && x8 <= 70285 || x8 >= 70287 && x8 <= 70301 || x8 >= 70303 && x8 <= 70312 || x8 >= 70320 && x8 <= 70366 || x8 >= 70405 && x8 <= 70412 || x8 >= 70415 && x8 <= 70416 || x8 >= 70419 && x8 <= 70440 || x8 >= 70442 && x8 <= 70448 || x8 >= 70450 && x8 <= 70451 || x8 >= 70453 && x8 <= 70457 || x8 == 70461 || x8 == 70480 || x8 >= 70493 && x8 <= 70497 || x8 >= 70528 && x8 <= 70537 || x8 == 70539 || x8 == 70542 || x8 >= 70544 && x8 <= 70581 || x8 == 70583 || x8 == 70609 || x8 == 70611 || x8 >= 70656 && x8 <= 70708 || x8 >= 70727 && x8 <= 70730 || x8 >= 70751 && x8 <= 70753 || x8 >= 70784 && x8 <= 70831 || x8 >= 70852 && x8 <= 70853 || x8 == 70855 || x8 >= 71040 && x8 <= 71086 || x8 >= 71128 && x8 <= 71131 || x8 >= 71168 && x8 <= 71215 || x8 == 71236 || x8 >= 71296 && x8 <= 71338 || x8 == 71352 || x8 >= 71424 && x8 <= 71450 || x8 >= 71488 && x8 <= 71494 || x8 >= 71680 && x8 <= 71723 || x8 >= 71840 && x8 <= 71903 || x8 >= 71935 && x8 <= 71942 || x8 == 71945 || x8 >= 71948 && x8 <= 71955 || x8 >= 71957 && x8 <= 71958 || x8 >= 71960 && x8 <= 71983 || x8 == 71999 || x8 == 72001 || x8 >= 72096 && x8 <= 72103 || x8 >= 72106 && x8 <= 72144 || x8 == 72161 || x8 == 72163 || x8 == 72192 || x8 >= 72203 && x8 <= 72242 || x8 == 72250 || x8 == 72272 || x8 >= 72284 && x8 <= 72329 || x8 == 72349 || x8 >= 72368 && x8 <= 72440 || x8 >= 72640 && x8 <= 72672 || x8 >= 72704 && x8 <= 72712 || x8 >= 72714 && x8 <= 72750 || x8 == 72768 || x8 >= 72818 && x8 <= 72847 || x8 >= 72960 && x8 <= 72966 || x8 >= 72968 && x8 <= 72969 || x8 >= 72971 && x8 <= 73008 || x8 == 73030 || x8 >= 73056 && x8 <= 73061 || x8 >= 73063 && x8 <= 73064 || x8 >= 73066 && x8 <= 73097 || x8 == 73112 || x8 >= 73136 && x8 <= 73179 || x8 >= 73440 && x8 <= 73458 || x8 == 73474 || x8 >= 73476 && x8 <= 73488 || x8 >= 73490 && x8 <= 73523 || x8 == 73648 || x8 >= 73728 && x8 <= 74649 || x8 >= 74880 && x8 <= 75075 || x8 >= 77712 && x8 <= 77808 || x8 >= 77824 && x8 <= 78895 || x8 >= 78913 && x8 <= 78918 || x8 >= 78944 && x8 <= 82938 || x8 >= 82944 && x8 <= 83526 || x8 >= 90368 && x8 <= 90397 || x8 >= 92160 && x8 <= 92728 || x8 >= 92736 && x8 <= 92766 || x8 >= 92784 && x8 <= 92862 || x8 >= 92880 && x8 <= 92909 || x8 >= 92928 && x8 <= 92975 || x8 >= 92992 && x8 <= 92995 || x8 >= 93027 && x8 <= 93047 || x8 >= 93053 && x8 <= 93071 || x8 >= 93504 && x8 <= 93548 || x8 >= 93760 && x8 <= 93823 || x8 >= 93856 && x8 <= 93880 || x8 >= 93883 && x8 <= 93907 || x8 >= 93952 && x8 <= 94026 || x8 == 94032 || x8 >= 94099 && x8 <= 94111 || x8 >= 94176 && x8 <= 94177 || x8 == 94179 || x8 >= 94194 && x8 <= 94195 || x8 >= 94208 && x8 <= 101589 || x8 >= 101631 && x8 <= 101662 || x8 >= 101760 && x8 <= 101874 || x8 >= 110576 && x8 <= 110579 || x8 >= 110581 && x8 <= 110587 || x8 >= 110589 && x8 <= 110590 || x8 >= 110592 && x8 <= 110882 || x8 == 110898 || x8 >= 110928 && x8 <= 110930 || x8 == 110933 || x8 >= 110948 && x8 <= 110951 || x8 >= 110960 && x8 <= 111355 || x8 >= 113664 && x8 <= 113770 || x8 >= 113776 && x8 <= 113788 || x8 >= 113792 && x8 <= 113800 || x8 >= 113808 && x8 <= 113817 || x8 >= 119808 && x8 <= 119892 || x8 >= 119894 && x8 <= 119964 || x8 >= 119966 && x8 <= 119967 || x8 == 119970 || x8 >= 119973 && x8 <= 119974 || x8 >= 119977 && x8 <= 119980 || x8 >= 119982 && x8 <= 119993 || x8 == 119995 || x8 >= 119997 && x8 <= 120003 || x8 >= 120005 && x8 <= 120069 || x8 >= 120071 && x8 <= 120074 || x8 >= 120077 && x8 <= 120084 || x8 >= 120086 && x8 <= 120092 || x8 >= 120094 && x8 <= 120121 || x8 >= 120123 && x8 <= 120126 || x8 >= 120128 && x8 <= 120132 || x8 == 120134 || x8 >= 120138 && x8 <= 120144 || x8 >= 120146 && x8 <= 120485 || x8 >= 120488 && x8 <= 120512 || x8 >= 120514 && x8 <= 120538 || x8 >= 120540 && x8 <= 120570 || x8 >= 120572 && x8 <= 120596 || x8 >= 120598 && x8 <= 120628 || x8 >= 120630 && x8 <= 120654 || x8 >= 120656 && x8 <= 120686 || x8 >= 120688 && x8 <= 120712 || x8 >= 120714 && x8 <= 120744 || x8 >= 120746 && x8 <= 120770 || x8 >= 120772 && x8 <= 120779 || x8 >= 122624 && x8 <= 122654 || x8 >= 122661 && x8 <= 122666 || x8 >= 122928 && x8 <= 122989 || x8 >= 123136 && x8 <= 123180 || x8 >= 123191 && x8 <= 123197 || x8 == 123214 || x8 >= 123536 && x8 <= 123565 || x8 >= 123584 && x8 <= 123627 || x8 >= 124112 && x8 <= 124139 || x8 >= 124368 && x8 <= 124397 || x8 == 124400 || x8 >= 124608 && x8 <= 124638 || x8 >= 124640 && x8 <= 124642 || x8 >= 124644 && x8 <= 124645 || x8 >= 124647 && x8 <= 124653 || x8 >= 124656 && x8 <= 124660 || x8 >= 124670 && x8 <= 124671 || x8 >= 124896 && x8 <= 124902 || x8 >= 124904 && x8 <= 124907 || x8 >= 124909 && x8 <= 124910 || x8 >= 124912 && x8 <= 124926 || x8 >= 124928 && x8 <= 125124 || x8 >= 125184 && x8 <= 125251 || x8 == 125259 || x8 >= 126464 && x8 <= 126467 || x8 >= 126469 && x8 <= 126495 || x8 >= 126497 && x8 <= 126498 || x8 == 126500 || x8 == 126503 || x8 >= 126505 && x8 <= 126514 || x8 >= 126516 && x8 <= 126519 || x8 == 126521 || x8 == 126523 || x8 == 126530 || x8 == 126535 || x8 == 126537 || x8 == 126539 || x8 >= 126541 && x8 <= 126543 || x8 >= 126545 && x8 <= 126546 || x8 == 126548 || x8 == 126551 || x8 == 126553 || x8 == 126555 || x8 == 126557 || x8 == 126559 || x8 >= 126561 && x8 <= 126562 || x8 == 126564 || x8 >= 126567 && x8 <= 126570 || x8 >= 126572 && x8 <= 126578 || x8 >= 126580 && x8 <= 126583 || x8 >= 126585 && x8 <= 126588 || x8 == 126590 || x8 >= 126592 && x8 <= 126601 || x8 >= 126603 && x8 <= 126619 || x8 >= 126625 && x8 <= 126627 || x8 >= 126629 && x8 <= 126633 || x8 >= 126635 && x8 <= 126651 || x8 >= 131072 && x8 <= 173791 || x8 >= 173824 && x8 <= 178205 || x8 >= 178208 && x8 <= 183981 || x8 >= 183984 && x8 <= 191456 || x8 >= 191472 && x8 <= 192093 || x8 >= 194560 && x8 <= 195101 || x8 >= 196608 && x8 <= 201546 || x8 >= 201552 && x8 <= 210041))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 65)
 		goto L10
 	}
@@ -41416,7 +41471,7 @@ L4:
 L11:
 	p.reset(x5)
 L10:
-	if !(x9 && (!!(x8 >= 1632 && x8 <= 1641 || x8 >= 1776 && x8 <= 1785 || x8 >= 1984 && x8 <= 1993 || x8 >= 2406 && x8 <= 2415 || x8 >= 2534 && x8 <= 2543 || x8 >= 2662 && x8 <= 2671 || x8 >= 2790 && x8 <= 2799 || x8 >= 2918 && x8 <= 2927 || x8 >= 3046 && x8 <= 3055 || x8 >= 3174 && x8 <= 3183 || x8 >= 3302 && x8 <= 3311 || x8 >= 3430 && x8 <= 3439 || x8 >= 3558 && x8 <= 3567 || x8 >= 3664 && x8 <= 3673 || x8 >= 3792 && x8 <= 3801 || x8 >= 3872 && x8 <= 3881 || x8 >= 4160 && x8 <= 4169 || x8 >= 4240 && x8 <= 4249 || x8 >= 6112 && x8 <= 6121 || x8 >= 6160 && x8 <= 6169 || x8 >= 6470 && x8 <= 6479 || x8 >= 6608 && x8 <= 6617 || x8 >= 6784 && x8 <= 6793 || x8 >= 6800 && x8 <= 6809 || x8 >= 6992 && x8 <= 7001 || x8 >= 7088 && x8 <= 7097 || x8 >= 7232 && x8 <= 7241 || x8 >= 7248 && x8 <= 7257 || x8 >= 42528 && x8 <= 42537 || x8 >= 43216 && x8 <= 43225 || x8 >= 43264 && x8 <= 43273 || x8 >= 43472 && x8 <= 43481 || x8 >= 43504 && x8 <= 43513 || x8 >= 43600 && x8 <= 43609 || x8 >= 44016 && x8 <= 44025 || x8 >= 65296 && x8 <= 65305 || x8 >= 66720 && x8 <= 66729 || x8 >= 68912 && x8 <= 68921 || x8 >= 68928 && x8 <= 68937 || x8 >= 69734 && x8 <= 69743 || x8 >= 69872 && x8 <= 69881 || x8 >= 69942 && x8 <= 69951 || x8 >= 70096 && x8 <= 70105 || x8 >= 70384 && x8 <= 70393 || x8 >= 70736 && x8 <= 70745 || x8 >= 70864 && x8 <= 70873 || x8 >= 71248 && x8 <= 71257 || x8 >= 71360 && x8 <= 71369 || x8 >= 71376 && x8 <= 71395 || x8 >= 71472 && x8 <= 71481 || x8 >= 71904 && x8 <= 71913 || x8 >= 72016 && x8 <= 72025 || x8 >= 72688 && x8 <= 72697 || x8 >= 72784 && x8 <= 72793 || x8 >= 73040 && x8 <= 73049 || x8 >= 73120 && x8 <= 73129 || x8 >= 73184 && x8 <= 73193 || x8 >= 73552 && x8 <= 73561 || x8 >= 90416 && x8 <= 90425 || x8 >= 92768 && x8 <= 92777 || x8 >= 92864 && x8 <= 92873 || x8 >= 93008 && x8 <= 93017 || x8 >= 93552 && x8 <= 93561 || x8 >= 118000 && x8 <= 118009 || x8 >= 120782 && x8 <= 120831 || x8 >= 123200 && x8 <= 123209 || x8 >= 123632 && x8 <= 123641 || x8 >= 124144 && x8 <= 124153 || x8 >= 124401 && x8 <= 124410 || x8 >= 125264 && x8 <= 125273 || x8 >= 130032 && x8 <= 130041))) && p.depth+1 <= maxDepth {
+	if !(x9 && (!!(x8 >= 1632 && x8 <= 1641 || x8 >= 1776 && x8 <= 1785 || x8 >= 1984 && x8 <= 1993 || x8 >= 2406 && x8 <= 2415 || x8 >= 2534 && x8 <= 2543 || x8 >= 2662 && x8 <= 2671 || x8 >= 2790 && x8 <= 2799 || x8 >= 2918 && x8 <= 2927 || x8 >= 3046 && x8 <= 3055 || x8 >= 3174 && x8 <= 3183 || x8 >= 3302 && x8 <= 3311 || x8 >= 3430 && x8 <= 3439 || x8 >= 3558 && x8 <= 3567 || x8 >= 3664 && x8 <= 3673 || x8 >= 3792 && x8 <= 3801 || x8 >= 3872 && x8 <= 3881 || x8 >= 4160 && x8 <= 4169 || x8 >= 4240 && x8 <= 4249 || x8 >= 6112 && x8 <= 6121 || x8 >= 6160 && x8 <= 6169 || x8 >= 6470 && x8 <= 6479 || x8 >= 6608 && x8 <= 6617 || x8 >= 6784 && x8 <= 6793 || x8 >= 6800 && x8 <= 6809 || x8 >= 6992 && x8 <= 7001 || x8 >= 7088 && x8 <= 7097 || x8 >= 7232 && x8 <= 7241 || x8 >= 7248 && x8 <= 7257 || x8 >= 42528 && x8 <= 42537 || x8 >= 43216 && x8 <= 43225 || x8 >= 43264 && x8 <= 43273 || x8 >= 43472 && x8 <= 43481 || x8 >= 43504 && x8 <= 43513 || x8 >= 43600 && x8 <= 43609 || x8 >= 44016 && x8 <= 44025 || x8 >= 65296 && x8 <= 65305 || x8 >= 66720 && x8 <= 66729 || x8 >= 68912 && x8 <= 68921 || x8 >= 68928 && x8 <= 68937 || x8 >= 69734 && x8 <= 69743 || x8 >= 69872 && x8 <= 69881 || x8 >= 69942 && x8 <= 69951 || x8 >= 70096 && x8 <= 70105 || x8 >= 70384 && x8 <= 70393 || x8 >= 70736 && x8 <= 70745 || x8 >= 70864 && x8 <= 70873 || x8 >= 71248 && x8 <= 71257 || x8 >= 71360 && x8 <= 71369 || x8 >= 71376 && x8 <= 71395 || x8 >= 71472 && x8 <= 71481 || x8 >= 71904 && x8 <= 71913 || x8 >= 72016 && x8 <= 72025 || x8 >= 72688 && x8 <= 72697 || x8 >= 72784 && x8 <= 72793 || x8 >= 73040 && x8 <= 73049 || x8 >= 73120 && x8 <= 73129 || x8 >= 73184 && x8 <= 73193 || x8 >= 73552 && x8 <= 73561 || x8 >= 90416 && x8 <= 90425 || x8 >= 92768 && x8 <= 92777 || x8 >= 92864 && x8 <= 92873 || x8 >= 93008 && x8 <= 93017 || x8 >= 93552 && x8 <= 93561 || x8 >= 118000 && x8 <= 118009 || x8 >= 120782 && x8 <= 120831 || x8 >= 123200 && x8 <= 123209 || x8 >= 123632 && x8 <= 123641 || x8 >= 124144 && x8 <= 124153 || x8 >= 124401 && x8 <= 124410 || x8 >= 125264 && x8 <= 125273 || x8 >= 130032 && x8 <= 130041))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 66)
 		goto L13
 	}
@@ -41580,7 +41635,7 @@ func (p *parser) e592() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 == 36))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 == 36))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 67)
 		goto L6
 	}
@@ -41661,7 +41716,7 @@ func (p *parser) e593() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 >= 48 && x4 <= 57))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 >= 48 && x4 <= 57))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 60)
 		goto L6
 	}
@@ -41765,7 +41820,7 @@ func (p *parser) e594() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 35)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 35)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 52)
 		goto L6
 	}
@@ -41789,7 +41844,7 @@ func (p *parser) e594() (*Node, bool) {
 L7:
 	p.reset(x1)
 L6:
-	if !(x5 && (x4 == 95)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 95)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 68)
 		goto L14
 	}
@@ -41822,7 +41877,7 @@ L21:
 	} else {
 		x25, _, x26 = p.peek()
 	}
-	if !(x26 && (x25 == 35)) && p.depth+0 <= maxDepth {
+	if !(x26 && (x25 == 35)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 52)
 		goto L27
 	}
@@ -42084,7 +42139,7 @@ func (p *parser) e597() (*Node, bool) {
 	} else {
 		x6, _, x7 = p.peek()
 	}
-	if !(x7 && (x6 == 105)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L8
 	}
@@ -42100,7 +42155,7 @@ func (p *parser) e597() (*Node, bool) {
 L9:
 	p.reset(x3)
 L8:
-	if !(x7 && (x6 == 101)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 101)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 37)
 		goto L12
 	}
@@ -42116,7 +42171,7 @@ L8:
 L13:
 	p.reset(x3)
 L12:
-	if !(x7 && (x6 == 102)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L16
 	}
@@ -42132,7 +42187,7 @@ L12:
 L17:
 	p.reset(x3)
 L16:
-	if !(x7 && (x6 == 105)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 36)
 		goto L20
 	}
@@ -42148,7 +42203,7 @@ L16:
 L21:
 	p.reset(x3)
 L20:
-	if !(x7 && (x6 == 108)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 108)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L24
 	}
@@ -42164,7 +42219,7 @@ L20:
 L25:
 	p.reset(x3)
 L24:
-	if !(x7 && (x6 == 116)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L28
 	}
@@ -42180,7 +42235,7 @@ L24:
 L29:
 	p.reset(x3)
 L28:
-	if !(x7 && (x6 == 102)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 38)
 		goto L32
 	}
@@ -42194,7 +42249,7 @@ L28:
 L33:
 	p.reset(x3)
 L32:
-	if !(x7 && (x6 == 111)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 39)
 		goto L36
 	}
@@ -42208,7 +42263,7 @@ L32:
 L37:
 	p.reset(x3)
 L36:
-	if !(x7 && (x6 == 102)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 20)
 		goto L40
 	}
@@ -42224,7 +42279,7 @@ L36:
 L41:
 	p.reset(x3)
 L40:
-	if !(x7 && (x6 == 116)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 45)
 		goto L44
 	}
@@ -42240,7 +42295,7 @@ L40:
 L45:
 	p.reset(x3)
 L44:
-	if !(x7 && (x6 == 102)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 46)
 		goto L48
 	}
@@ -42254,7 +42309,7 @@ L44:
 L49:
 	p.reset(x3)
 L48:
-	if !(x7 && (x6 == 110)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 110)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L52
 	}
@@ -42305,7 +42360,7 @@ func (p *parser) e598() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (x3 == 105)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L5
 	}
@@ -42318,7 +42373,7 @@ func (p *parser) e598() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 101)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 101)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 37)
 		goto L7
 	}
@@ -42331,7 +42386,7 @@ L5:
 L8:
 	p.reset(x1)
 L7:
-	if !(x4 && (x3 == 102)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L9
 	}
@@ -42344,7 +42399,7 @@ L7:
 L10:
 	p.reset(x1)
 L9:
-	if !(x4 && (x3 == 105)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 36)
 		goto L11
 	}
@@ -42357,7 +42412,7 @@ L9:
 L12:
 	p.reset(x1)
 L11:
-	if !(x4 && (x3 == 108)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 108)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L13
 	}
@@ -42370,7 +42425,7 @@ L11:
 L14:
 	p.reset(x1)
 L13:
-	if !(x4 && (x3 == 116)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L15
 	}
@@ -42383,7 +42438,7 @@ L13:
 L16:
 	p.reset(x1)
 L15:
-	if !(x4 && (x3 == 102)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 38)
 		goto L17
 	}
@@ -42394,7 +42449,7 @@ L15:
 L18:
 	p.reset(x1)
 L17:
-	if !(x4 && (x3 == 111)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 39)
 		goto L19
 	}
@@ -42405,7 +42460,7 @@ L17:
 L20:
 	p.reset(x1)
 L19:
-	if !(x4 && (x3 == 102)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 20)
 		goto L21
 	}
@@ -42451,7 +42506,7 @@ func (p *parser) e599() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (x3 == 116)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 45)
 		goto L5
 	}
@@ -42464,7 +42519,7 @@ func (p *parser) e599() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 102)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 46)
 		goto L7
 	}
@@ -42605,7 +42660,7 @@ func (p *parser) e603() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 48)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 48)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L6
 	}
@@ -42673,7 +42728,7 @@ func (p *parser) e604() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (!!(x3 == 120 || x3 == 88))) && p.depth+0 <= maxDepth {
+	if !(x4 && (!!(x3 == 120 || x3 == 88))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 74)
 		goto L5
 	}
@@ -42729,7 +42784,7 @@ L9:
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 98)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 98)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 75)
 		goto L16
 	}
@@ -42794,7 +42849,7 @@ L20:
 L17:
 	p.reset(x1)
 L16:
-	if !(x4 && (x3 == 111)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 77)
 		goto L27
 	}
@@ -42905,7 +42960,7 @@ func (p *parser) e605() (*Node, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L10
 	}
@@ -42917,7 +42972,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 48)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L12
 	}
@@ -42948,7 +43003,7 @@ L7:
 	} else {
 		x21, _, x22 = p.peek()
 	}
-	if !(x22 && (x21 == 46)) && p.depth+1 <= maxDepth {
+	if !(x22 && (x21 == 46)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L23
 	}
@@ -42961,7 +43016,7 @@ L7:
 	} else {
 		x28, _, x29 = p.peek()
 	}
-	if !(x29 && (!!(x28 == 101 || x28 == 69))) && p.depth+1 <= maxDepth {
+	if !(x29 && (!!(x28 == 101 || x28 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L30
 	}
@@ -42997,7 +43052,7 @@ L24:
 	p.pos = x18
 	p.recovered = p.recovered[:x19]
 L23:
-	if !(x22 && (!!(x21 == 101 || x21 == 69))) && p.depth+1 <= maxDepth {
+	if !(x22 && (!!(x21 == 101 || x21 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L36
 	}
@@ -43020,7 +43075,7 @@ L4:
 	} else {
 		x38, _, x39 = p.peek()
 	}
-	if !(x39 && (x38 == 46)) && p.depth+0 <= maxDepth {
+	if !(x39 && (x38 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L40
 	}
@@ -43038,7 +43093,7 @@ L4:
 	} else {
 		x45, _, x46 = p.peek()
 	}
-	if !(x46 && (!!(x45 == 101 || x45 == 69))) && p.depth+1 <= maxDepth {
+	if !(x46 && (!!(x45 == 101 || x45 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L47
 	}
@@ -43111,7 +43166,7 @@ func (p *parser) e606() (*Node, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L10
 	}
@@ -43123,7 +43178,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 48)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L12
 	}
@@ -43164,7 +43219,7 @@ L4:
 	} else {
 		x22, _, x23 = p.peek()
 	}
-	if !(x23 && (!!(x22 >= 49 && x22 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x23 && (!!(x22 >= 49 && x22 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L24
 	}
@@ -43176,7 +43231,7 @@ L25:
 	p.pos = x19
 	p.recovered = p.recovered[:x20]
 L24:
-	if !(x23 && (x22 == 48)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L26
 	}
@@ -43210,7 +43265,7 @@ L18:
 	} else {
 		x32, _, x33 = p.peek()
 	}
-	if !(x33 && (x32 == 46)) && p.depth+0 <= maxDepth {
+	if !(x33 && (x32 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L34
 	}
@@ -43396,7 +43451,7 @@ func (p *parser) e610() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 48)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 81)
 		goto L6
 	}
@@ -43436,7 +43491,7 @@ func (p *parser) e610() (*Node, bool) {
 L7:
 	p.reset(x1)
 L6:
-	if !(x5 && (x4 == 48)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 82)
 		goto L18
 	}
@@ -43510,7 +43565,7 @@ func (p *parser) e611() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 92 || x4 == 47 || x4 == 34))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 92 || x4 == 47 || x4 == 34))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 83)
 		goto L6
 	}
@@ -43531,7 +43586,7 @@ func (p *parser) e611() (*Node, bool) {
 L7:
 	p.reset(x1)
 L6:
-	if !(x5 && (x4 == 117)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 117)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 84)
 		goto L10
 	}
@@ -43555,7 +43610,7 @@ L6:
 L11:
 	p.reset(x1)
 L10:
-	if !(x5 && (x4 == 85)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 85)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 85)
 		goto L18
 	}
@@ -43633,7 +43688,7 @@ func (p *parser) e612() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 92 || x4 == 47 || x4 == 39))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 92 || x4 == 47 || x4 == 39))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 86)
 		goto L6
 	}
@@ -43654,7 +43709,7 @@ func (p *parser) e612() (*Node, bool) {
 L7:
 	p.reset(x1)
 L6:
-	if !(x5 && (x4 == 117)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 117)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 84)
 		goto L10
 	}
@@ -43678,7 +43733,7 @@ L6:
 L11:
 	p.reset(x1)
 L10:
-	if !(x5 && (x4 == 85)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 85)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 85)
 		goto L18
 	}
@@ -43702,7 +43757,7 @@ L10:
 L19:
 	p.reset(x1)
 L18:
-	if !(x5 && (x4 == 120)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 120)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 87)
 		goto L26
 	}
@@ -43730,7 +43785,7 @@ L18:
 L27:
 	p.reset(x1)
 L26:
-	if !(x5 && (!!(x4 >= 48 && x4 <= 51))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 >= 48 && x4 <= 51))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 88)
 		goto L35
 	}
@@ -43831,7 +43886,7 @@ func (p *parser) e613() (*Node, bool) {
 		} else {
 			x8, _, x9 = p.peek()
 		}
-		if !(x9 && (x8 == 92)) && p.depth+0 <= maxDepth {
+		if !(x9 && (x8 == 92)) && p.depth+0 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L10
 		}
@@ -44116,7 +44171,7 @@ func (p *parser) e622() (*Node, bool) {
 		} else {
 			x8, _, x9 = p.peek()
 		}
-		if !(x9 && (x8 == 92)) && p.depth+0 <= maxDepth {
+		if !(x9 && (x8 == 92)) && p.depth+0 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L10
 		}
@@ -44737,7 +44792,7 @@ func (p *parser) e637() (*Node, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 34)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 34)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 48)
 		goto L10
 	}
@@ -44753,7 +44808,7 @@ func (p *parser) e637() (*Node, bool) {
 L11:
 	p.reset(x6)
 L10:
-	if !(x9 && (x8 == 39)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 39)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 95)
 		goto L12
 	}
@@ -44834,7 +44889,7 @@ func (p *parser) e638() (*Node, bool) {
 		} else {
 			x9, _, x10 = p.peek()
 		}
-		if !(x10 && (x9 == 92)) && p.depth+1 <= maxDepth {
+		if !(x10 && (x9 == 92)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L11
 		}
@@ -44899,7 +44954,7 @@ func (p *parser) e639() (*Node, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 34)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 34)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 48)
 		goto L10
 	}
@@ -44915,7 +44970,7 @@ func (p *parser) e639() (*Node, bool) {
 L11:
 	p.reset(x6)
 L10:
-	if !(x9 && (x8 == 39)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 39)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 95)
 		goto L12
 	}
@@ -45328,7 +45383,7 @@ func (p *parser) e648() (*Node, bool) {
 		} else {
 			x18, _, x19 = p.peek()
 		}
-		if !(x19 && (x18 == 92)) && p.depth+1 <= maxDepth {
+		if !(x19 && (x18 == 92)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L20
 		}
@@ -45510,7 +45565,7 @@ func (p *parser) e653() (*Node, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 34)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 34)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 48)
 		goto L10
 	}
@@ -45526,7 +45581,7 @@ func (p *parser) e653() (*Node, bool) {
 L11:
 	p.reset(x6)
 L10:
-	if !(x9 && (x8 == 39)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 39)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 95)
 		goto L12
 	}
@@ -45632,7 +45687,7 @@ func (p *parser) e654() (*Node, bool) {
 		} else {
 			x8, _, x9 = p.peek()
 		}
-		if !(x9 && (x8 == 92)) && p.depth+1 <= maxDepth {
+		if !(x9 && (x8 == 92)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L10
 		}
@@ -45643,7 +45698,7 @@ func (p *parser) e654() (*Node, bool) {
 	L11:
 		p.reset(x4)
 	L10:
-		if !(x9 && (x8 == 10)) && p.depth+0 <= maxDepth {
+		if !(x9 && (x8 == 10)) && p.depth+0 <= p.maxDepth {
 			p.expect(p.pos, 18)
 			goto L12
 		}
@@ -46093,7 +46148,7 @@ func (p *parser) e664() (*Node, bool) {
 		} else {
 			x8, _, x9 = p.peek()
 		}
-		if !(x9 && (x8 == 47)) && p.depth+1 <= maxDepth {
+		if !(x9 && (x8 == 47)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 15)
 			goto L10
 		}
@@ -46176,7 +46231,7 @@ func (p *parser) e666() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (!!(x3 >= 97 && x3 <= 122 || x3 >= 65 && x3 <= 90 || x3 >= 48 && x3 <= 57 || x3 == 95 || x3 == 36))) && p.depth+0 <= maxDepth {
+	if !(x4 && (!!(x3 >= 97 && x3 <= 122 || x3 >= 65 && x3 <= 90 || x3 >= 48 && x3 <= 57 || x3 == 95 || x3 == 36))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 63)
 		goto L5
 	}
@@ -46228,7 +46283,7 @@ func (p *parser) e667() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (x3 == 44)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L5
 	}
@@ -46244,7 +46299,7 @@ func (p *parser) e667() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 10)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L7
 	}
@@ -46274,7 +46329,7 @@ L7:
 	} else {
 		x12, _, x13 = p.peek()
 	}
-	if !(x13 && (x12 == 10)) && p.depth+0 <= maxDepth {
+	if !(x13 && (x12 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L14
 	}
@@ -46398,7 +46453,7 @@ func (p *parser) e669() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (x3 == 35)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 35)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 52)
 		goto L5
 	}
@@ -46414,7 +46469,7 @@ func (p *parser) e669() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 95)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 95)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 68)
 		goto L7
 	}
@@ -46442,7 +46497,7 @@ L10:
 	} else {
 		x13, _, x14 = p.peek()
 	}
-	if !(x14 && (x13 == 35)) && p.depth+0 <= maxDepth {
+	if !(x14 && (x13 == 35)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 52)
 		goto L15
 	}
@@ -46519,7 +46574,7 @@ func (p *parser) e670() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 >= 48 && x4 <= 57))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 >= 48 && x4 <= 57))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 60)
 		goto L6
 	}
@@ -46591,7 +46646,7 @@ func (p *parser) e671() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L6
 	}
@@ -46605,7 +46660,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 101)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 101)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 37)
 		goto L8
 	}
@@ -46619,7 +46674,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L10
 	}
@@ -46633,7 +46688,7 @@ L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L10:
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 36)
 		goto L12
 	}
@@ -46647,7 +46702,7 @@ L13:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L12:
-	if !(x5 && (x4 == 108)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 108)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L14
 	}
@@ -46661,7 +46716,7 @@ L15:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L14:
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L16
 	}
@@ -46675,7 +46730,7 @@ L17:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L16:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 38)
 		goto L18
 	}
@@ -46687,7 +46742,7 @@ L19:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L18:
-	if !(x5 && (x4 == 111)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 39)
 		goto L20
 	}
@@ -46699,7 +46754,7 @@ L21:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L20:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 20)
 		goto L22
 	}
@@ -46713,7 +46768,7 @@ L23:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L22:
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 45)
 		goto L24
 	}
@@ -46727,7 +46782,7 @@ L25:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L24:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 46)
 		goto L26
 	}
@@ -46739,7 +46794,7 @@ L27:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L26:
-	if !(x5 && (x4 == 110)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 110)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L28
 	}
@@ -46790,7 +46845,7 @@ func (p *parser) e672() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (!!(x3 == 97 || x3 == 98 || x3 == 102 || x3 == 110 || x3 == 114 || x3 == 116 || x3 == 118 || x3 == 92 || x3 == 47 || x3 == 34))) && p.depth+0 <= maxDepth {
+	if !(x4 && (!!(x3 == 97 || x3 == 98 || x3 == 102 || x3 == 110 || x3 == 114 || x3 == 116 || x3 == 118 || x3 == 92 || x3 == 47 || x3 == 34))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 83)
 		goto L5
 	}
@@ -46808,7 +46863,7 @@ func (p *parser) e672() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 117)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 117)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 84)
 		goto L7
 	}
@@ -46824,7 +46879,7 @@ L5:
 L8:
 	p.reset(x1)
 L7:
-	if !(x4 && (x3 == 85)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 85)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 85)
 		goto L9
 	}
@@ -46863,7 +46918,7 @@ func (p *parser) e673() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (!!(x3 == 97 || x3 == 98 || x3 == 102 || x3 == 110 || x3 == 114 || x3 == 116 || x3 == 118 || x3 == 92 || x3 == 47 || x3 == 39))) && p.depth+0 <= maxDepth {
+	if !(x4 && (!!(x3 == 97 || x3 == 98 || x3 == 102 || x3 == 110 || x3 == 114 || x3 == 116 || x3 == 118 || x3 == 92 || x3 == 47 || x3 == 39))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 86)
 		goto L5
 	}
@@ -46881,7 +46936,7 @@ func (p *parser) e673() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 117)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 117)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 84)
 		goto L7
 	}
@@ -46897,7 +46952,7 @@ L5:
 L8:
 	p.reset(x1)
 L7:
-	if !(x4 && (x3 == 85)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 85)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 85)
 		goto L9
 	}
@@ -46913,7 +46968,7 @@ L7:
 L10:
 	p.reset(x1)
 L9:
-	if !(x4 && (x3 == 120)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 120)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 87)
 		goto L11
 	}
@@ -46932,7 +46987,7 @@ L9:
 L12:
 	p.reset(x1)
 L11:
-	if !(x4 && (!!(x3 >= 48 && x3 <= 51))) && p.depth+0 <= maxDepth {
+	if !(x4 && (!!(x3 >= 48 && x3 <= 51))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 88)
 		goto L13
 	}
@@ -47142,7 +47197,7 @@ func (p *parser) e677() (*Node, bool) {
 		} else {
 			x10, _, x11 = p.peek()
 		}
-		if !(x11 && (x10 == 92)) && p.depth+1 <= maxDepth {
+		if !(x11 && (x10 == 92)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L12
 		}
@@ -47205,7 +47260,7 @@ L2:
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (!!(x5 == 170 || x5 == 181 || x5 == 186 || x5 >= 192 && x5 <= 214 || x5 >= 216 && x5 <= 246 || x5 >= 248 && x5 <= 705 || x5 >= 710 && x5 <= 721 || x5 >= 736 && x5 <= 740 || x5 == 748 || x5 == 750 || x5 >= 880 && x5 <= 884 || x5 >= 886 && x5 <= 887 || x5 >= 890 && x5 <= 893 || x5 == 895 || x5 == 902 || x5 >= 904 && x5 <= 906 || x5 == 908 || x5 >= 910 && x5 <= 929 || x5 >= 931 && x5 <= 1013 || x5 >= 1015 && x5 <= 1153 || x5 >= 1162 && x5 <= 1327 || x5 >= 1329 && x5 <= 1366 || x5 == 1369 || x5 >= 1376 && x5 <= 1416 || x5 >= 1488 && x5 <= 1514 || x5 >= 1519 && x5 <= 1522 || x5 >= 1568 && x5 <= 1610 || x5 >= 1646 && x5 <= 1647 || x5 >= 1649 && x5 <= 1747 || x5 == 1749 || x5 >= 1765 && x5 <= 1766 || x5 >= 1774 && x5 <= 1775 || x5 >= 1786 && x5 <= 1788 || x5 == 1791 || x5 == 1808 || x5 >= 1810 && x5 <= 1839 || x5 >= 1869 && x5 <= 1957 || x5 == 1969 || x5 >= 1994 && x5 <= 2026 || x5 >= 2036 && x5 <= 2037 || x5 == 2042 || x5 >= 2048 && x5 <= 2069 || x5 == 2074 || x5 == 2084 || x5 == 2088 || x5 >= 2112 && x5 <= 2136 || x5 >= 2144 && x5 <= 2154 || x5 >= 2160 && x5 <= 2183 || x5 >= 2185 && x5 <= 2191 || x5 >= 2208 && x5 <= 2249 || x5 >= 2308 && x5 <= 2361 || x5 == 2365 || x5 == 2384 || x5 >= 2392 && x5 <= 2401 || x5 >= 2417 && x5 <= 2432 || x5 >= 2437 && x5 <= 2444 || x5 >= 2447 && x5 <= 2448 || x5 >= 2451 && x5 <= 2472 || x5 >= 2474 && x5 <= 2480 || x5 == 2482 || x5 >= 2486 && x5 <= 2489 || x5 == 2493 || x5 == 2510 || x5 >= 2524 && x5 <= 2525 || x5 >= 2527 && x5 <= 2529 || x5 >= 2544 && x5 <= 2545 || x5 == 2556 || x5 >= 2565 && x5 <= 2570 || x5 >= 2575 && x5 <= 2576 || x5 >= 2579 && x5 <= 2600 || x5 >= 2602 && x5 <= 2608 || x5 >= 2610 && x5 <= 2611 || x5 >= 2613 && x5 <= 2614 || x5 >= 2616 && x5 <= 2617 || x5 >= 2649 && x5 <= 2652 || x5 == 2654 || x5 >= 2674 && x5 <= 2676 || x5 >= 2693 && x5 <= 2701 || x5 >= 2703 && x5 <= 2705 || x5 >= 2707 && x5 <= 2728 || x5 >= 2730 && x5 <= 2736 || x5 >= 2738 && x5 <= 2739 || x5 >= 2741 && x5 <= 2745 || x5 == 2749 || x5 == 2768 || x5 >= 2784 && x5 <= 2785 || x5 == 2809 || x5 >= 2821 && x5 <= 2828 || x5 >= 2831 && x5 <= 2832 || x5 >= 2835 && x5 <= 2856 || x5 >= 2858 && x5 <= 2864 || x5 >= 2866 && x5 <= 2867 || x5 >= 2869 && x5 <= 2873 || x5 == 2877 || x5 >= 2908 && x5 <= 2909 || x5 >= 2911 && x5 <= 2913 || x5 == 2929 || x5 == 2947 || x5 >= 2949 && x5 <= 2954 || x5 >= 2958 && x5 <= 2960 || x5 >= 2962 && x5 <= 2965 || x5 >= 2969 && x5 <= 2970 || x5 == 2972 || x5 >= 2974 && x5 <= 2975 || x5 >= 2979 && x5 <= 2980 || x5 >= 2984 && x5 <= 2986 || x5 >= 2990 && x5 <= 3001 || x5 == 3024 || x5 >= 3077 && x5 <= 3084 || x5 >= 3086 && x5 <= 3088 || x5 >= 3090 && x5 <= 3112 || x5 >= 3114 && x5 <= 3129 || x5 == 3133 || x5 >= 3160 && x5 <= 3162 || x5 >= 3164 && x5 <= 3165 || x5 >= 3168 && x5 <= 3169 || x5 == 3200 || x5 >= 3205 && x5 <= 3212 || x5 >= 3214 && x5 <= 3216 || x5 >= 3218 && x5 <= 3240 || x5 >= 3242 && x5 <= 3251 || x5 >= 3253 && x5 <= 3257 || x5 == 3261 || x5 >= 3292 && x5 <= 3294 || x5 >= 3296 && x5 <= 3297 || x5 >= 3313 && x5 <= 3314 || x5 >= 3332 && x5 <= 3340 || x5 >= 3342 && x5 <= 3344 || x5 >= 3346 && x5 <= 3386 || x5 == 3389 || x5 == 3406 || x5 >= 3412 && x5 <= 3414 || x5 >= 3423 && x5 <= 3425 || x5 >= 3450 && x5 <= 3455 || x5 >= 3461 && x5 <= 3478 || x5 >= 3482 && x5 <= 3505 || x5 >= 3507 && x5 <= 3515 || x5 == 3517 || x5 >= 3520 && x5 <= 3526 || x5 >= 3585 && x5 <= 3632 || x5 >= 3634 && x5 <= 3635 || x5 >= 3648 && x5 <= 3654 || x5 >= 3713 && x5 <= 3714 || x5 == 3716 || x5 >= 3718 && x5 <= 3722 || x5 >= 3724 && x5 <= 3747 || x5 == 3749 || x5 >= 3751 && x5 <= 3760 || x5 >= 3762 && x5 <= 3763 || x5 == 3773 || x5 >= 3776 && x5 <= 3780 || x5 == 3782 || x5 >= 3804 && x5 <= 3807 || x5 == 3840 || x5 >= 3904 && x5 <= 3911 || x5 >= 3913 && x5 <= 3948 || x5 >= 3976 && x5 <= 3980 || x5 >= 4096 && x5 <= 4138 || x5 == 4159 || x5 >= 4176 && x5 <= 4181 || x5 >= 4186 && x5 <= 4189 || x5 == 4193 || x5 >= 4197 && x5 <= 4198 || x5 >= 4206 && x5 <= 4208 || x5 >= 4213 && x5 <= 4225 || x5 == 4238 || x5 >= 4256 && x5 <= 4293 || x5 == 4295 || x5 == 4301 || x5 >= 4304 && x5 <= 4346 || x5 >= 4348 && x5 <= 4680 || x5 >= 4682 && x5 <= 4685 || x5 >= 4688 && x5 <= 4694 || x5 == 4696 || x5 >= 4698 && x5 <= 4701 || x5 >= 4704 && x5 <= 4744 || x5 >= 4746 && x5 <= 4749 || x5 >= 4752 && x5 <= 4784 || x5 >= 4786 && x5 <= 4789 || x5 >= 4792 && x5 <= 4798 || x5 == 4800 || x5 >= 4802 && x5 <= 4805 || x5 >= 4808 && x5 <= 4822 || x5 >= 4824 && x5 <= 4880 || x5 >= 4882 && x5 <= 4885 || x5 >= 4888 && x5 <= 4954 || x5 >= 4992 && x5 <= 5007 || x5 >= 5024 && x5 <= 5109 || x5 >= 5112 && x5 <= 5117 || x5 >= 5121 && x5 <= 5740 || x5 >= 5743 && x5 <= 5759 || x5 >= 5761 && x5 <= 5786 || x5 >= 5792 && x5 <= 5866 || x5 >= 5873 && x5 <= 5880 || x5 >= 5888 && x5 <= 5905 || x5 >= 5919 && x5 <= 5937 || x5 >= 5952 && x5 <= 5969 || x5 >= 5984 && x5 <= 5996 || x5 >= 5998 && x5 <= 6000 || x5 >= 6016 && x5 <= 6067 || x5 == 6103 || x5 == 6108 || x5 >= 6176 && x5 <= 6264 || x5 >= 6272 && x5 <= 6276 || x5 >= 6279 && x5 <= 6312 || x5 == 6314 || x5 >= 6320 && x5 <= 6389 || x5 >= 6400 && x5 <= 6430 || x5 >= 6480 && x5 <= 6509 || x5 >= 6512 && x5 <= 6516 || x5 >= 6528 && x5 <= 6571 || x5 >= 6576 && x5 <= 6601 || x5 >= 6656 && x5 <= 6678 || x5 >= 6688 && x5 <= 6740 || x5 == 6823 || x5 >= 6917 && x5 <= 6963 || x5 >= 6981 && x5 <= 6988 || x5 >= 7043 && x5 <= 7072 || x5 >= 7086 && x5 <= 7087 || x5 >= 7098 && x5 <= 7141 || x5 >= 7168 && x5 <= 7203 || x5 >= 7245 && x5 <= 7247 || x5 >= 7258 && x5 <= 7293 || x5 >= 7296 && x5 <= 7306 || x5 >= 7312 && x5 <= 7354 || x5 >= 7357 && x5 <= 7359 || x5 >= 7401 && x5 <= 7404 || x5 >= 7406 && x5 <= 7411 || x5 >= 7413 && x5 <= 7414 || x5 == 7418 || x5 >= 7424 && x5 <= 7615 || x5 >= 7680 && x5 <= 7957 || x5 >= 7960 && x5 <= 7965 || x5 >= 7968 && x5 <= 8005 || x5 >= 8008 && x5 <= 8013 || x5 >= 8016 && x5 <= 8023 || x5 == 8025 || x5 == 8027 || x5 == 8029 || x5 >= 8031 && x5 <= 8061 || x5 >= 8064 && x5 <= 8116 || x5 >= 8118 && x5 <= 8124 || x5 == 8126 || x5 >= 8130 && x5 <= 8132 || x5 >= 8134 && x5 <= 8140 || x5 >= 8144 && x5 <= 8147 || x5 >= 8150 && x5 <= 8155 || x5 >= 8160 && x5 <= 8172 || x5 >= 8178 && x5 <= 8180 || x5 >= 8182 && x5 <= 8188 || x5 == 8305 || x5 == 8319 || x5 >= 8336 && x5 <= 8348 || x5 == 8450 || x5 == 8455 || x5 >= 8458 && x5 <= 8467 || x5 == 8469 || x5 >= 8473 && x5 <= 8477 || x5 == 8484 || x5 == 8486 || x5 == 8488 || x5 >= 8490 && x5 <= 8493 || x5 >= 8495 && x5 <= 8505 || x5 >= 8508 && x5 <= 8511 || x5 >= 8517 && x5 <= 8521 || x5 == 8526 || x5 >= 8579 && x5 <= 8580 || x5 >= 11264 && x5 <= 11492 || x5 >= 11499 && x5 <= 11502 || x5 >= 11506 && x5 <= 11507 || x5 >= 11520 && x5 <= 11557 || x5 == 11559 || x5 == 11565 || x5 >= 11568 && x5 <= 11623 || x5 == 11631 || x5 >= 11648 && x5 <= 11670 || x5 >= 11680 && x5 <= 11686 || x5 >= 11688 && x5 <= 11694 || x5 >= 11696 && x5 <= 11702 || x5 >= 11704 && x5 <= 11710 || x5 >= 11712 && x5 <= 11718 || x5 >= 11720 && x5 <= 11726 || x5 >= 11728 && x5 <= 11734 || x5 >= 11736 && x5 <= 11742 || x5 == 11823 || x5 >= 12293 && x5 <= 12294 || x5 >= 12337 && x5 <= 12341 || x5 >= 12347 && x5 <= 12348 || x5 >= 12353 && x5 <= 12438 || x5 >= 12445 && x5 <= 12447 || x5 >= 12449 && x5 <= 12538 || x5 >= 12540 && x5 <= 12543 || x5 >= 12549 && x5 <= 12591 || x5 >= 12593 && x5 <= 12686 || x5 >= 12704 && x5 <= 12735 || x5 >= 12784 && x5 <= 12799 || x5 >= 13312 && x5 <= 19903 || x5 >= 19968 && x5 <= 42124 || x5 >= 42192 && x5 <= 42237 || x5 >= 42240 && x5 <= 42508 || x5 >= 42512 && x5 <= 42527 || x5 >= 42538 && x5 <= 42539 || x5 >= 42560 && x5 <= 42606 || x5 >= 42623 && x5 <= 42653 || x5 >= 42656 && x5 <= 42725 || x5 >= 42775 && x5 <= 42783 || x5 >= 42786 && x5 <= 42888 || x5 >= 42891 && x5 <= 42972 || x5 >= 42993 && x5 <= 43009 || x5 >= 43011 && x5 <= 43013 || x5 >= 43015 && x5 <= 43018 || x5 >= 43020 && x5 <= 43042 || x5 >= 43072 && x5 <= 43123 || x5 >= 43138 && x5 <= 43187 || x5 >= 43250 && x5 <= 43255 || x5 == 43259 || x5 >= 43261 && x5 <= 43262 || x5 >= 43274 && x5 <= 43301 || x5 >= 43312 && x5 <= 43334 || x5 >= 43360 && x5 <= 43388 || x5 >= 43396 && x5 <= 43442 || x5 == 43471 || x5 >= 43488 && x5 <= 43492 || x5 >= 43494 && x5 <= 43503 || x5 >= 43514 && x5 <= 43518 || x5 >= 43520 && x5 <= 43560 || x5 >= 43584 && x5 <= 43586 || x5 >= 43588 && x5 <= 43595 || x5 >= 43616 && x5 <= 43638 || x5 == 43642 || x5 >= 43646 && x5 <= 43695 || x5 == 43697 || x5 >= 43701 && x5 <= 43702 || x5 >= 43705 && x5 <= 43709 || x5 == 43712 || x5 == 43714 || x5 >= 43739 && x5 <= 43741 || x5 >= 43744 && x5 <= 43754 || x5 >= 43762 && x5 <= 43764 || x5 >= 43777 && x5 <= 43782 || x5 >= 43785 && x5 <= 43790 || x5 >= 43793 && x5 <= 43798 || x5 >= 43808 && x5 <= 43814 || x5 >= 43816 && x5 <= 43822 || x5 >= 43824 && x5 <= 43866 || x5 >= 43868 && x5 <= 43881 || x5 >= 43888 && x5 <= 44002 || x5 >= 44032 && x5 <= 55203 || x5 >= 55216 && x5 <= 55238 || x5 >= 55243 && x5 <= 55291 || x5 >= 63744 && x5 <= 64109 || x5 >= 64112 && x5 <= 64217 || x5 >= 64256 && x5 <= 64262 || x5 >= 64275 && x5 <= 64279 || x5 == 64285 || x5 >= 64287 && x5 <= 64296 || x5 >= 64298 && x5 <= 64310 || x5 >= 64312 && x5 <= 64316 || x5 == 64318 || x5 >= 64320 && x5 <= 64321 || x5 >= 64323 && x5 <= 64324 || x5 >= 64326 && x5 <= 64433 || x5 >= 64467 && x5 <= 64829 || x5 >= 64848 && x5 <= 64911 || x5 >= 64914 && x5 <= 64967 || x5 >= 65008 && x5 <= 65019 || x5 >= 65136 && x5 <= 65140 || x5 >= 65142 && x5 <= 65276 || x5 >= 65313 && x5 <= 65338 || x5 >= 65345 && x5 <= 65370 || x5 >= 65382 && x5 <= 65470 || x5 >= 65474 && x5 <= 65479 || x5 >= 65482 && x5 <= 65487 || x5 >= 65490 && x5 <= 65495 || x5 >= 65498 && x5 <= 65500 || x5 >= 65536 && x5 <= 65547 || x5 >= 65549 && x5 <= 65574 || x5 >= 65576 && x5 <= 65594 || x5 >= 65596 && x5 <= 65597 || x5 >= 65599 && x5 <= 65613 || x5 >= 65616 && x5 <= 65629 || x5 >= 65664 && x5 <= 65786 || x5 >= 66176 && x5 <= 66204 || x5 >= 66208 && x5 <= 66256 || x5 >= 66304 && x5 <= 66335 || x5 >= 66349 && x5 <= 66368 || x5 >= 66370 && x5 <= 66377 || x5 >= 66384 && x5 <= 66421 || x5 >= 66432 && x5 <= 66461 || x5 >= 66464 && x5 <= 66499 || x5 >= 66504 && x5 <= 66511 || x5 >= 66560 && x5 <= 66717 || x5 >= 66736 && x5 <= 66771 || x5 >= 66776 && x5 <= 66811 || x5 >= 66816 && x5 <= 66855 || x5 >= 66864 && x5 <= 66915 || x5 >= 66928 && x5 <= 66938 || x5 >= 66940 && x5 <= 66954 || x5 >= 66956 && x5 <= 66962 || x5 >= 66964 && x5 <= 66965 || x5 >= 66967 && x5 <= 66977 || x5 >= 66979 && x5 <= 66993 || x5 >= 66995 && x5 <= 67001 || x5 >= 67003 && x5 <= 67004 || x5 >= 67008 && x5 <= 67059 || x5 >= 67072 && x5 <= 67382 || x5 >= 67392 && x5 <= 67413 || x5 >= 67424 && x5 <= 67431 || x5 >= 67456 && x5 <= 67461 || x5 >= 67463 && x5 <= 67504 || x5 >= 67506 && x5 <= 67514 || x5 >= 67584 && x5 <= 67589 || x5 == 67592 || x5 >= 67594 && x5 <= 67637 || x5 >= 67639 && x5 <= 67640 || x5 == 67644 || x5 >= 67647 && x5 <= 67669 || x5 >= 67680 && x5 <= 67702 || x5 >= 67712 && x5 <= 67742 || x5 >= 67808 && x5 <= 67826 || x5 >= 67828 && x5 <= 67829 || x5 >= 67840 && x5 <= 67861 || x5 >= 67872 && x5 <= 67897 || x5 >= 67904 && x5 <= 67929 || x5 >= 67968 && x5 <= 68023 || x5 >= 68030 && x5 <= 68031 || x5 == 68096 || x5 >= 68112 && x5 <= 68115 || x5 >= 68117 && x5 <= 68119 || x5 >= 68121 && x5 <= 68149 || x5 >= 68192 && x5 <= 68220 || x5 >= 68224 && x5 <= 68252 || x5 >= 68288 && x5 <= 68295 || x5 >= 68297 && x5 <= 68324 || x5 >= 68352 && x5 <= 68405 || x5 >= 68416 && x5 <= 68437 || x5 >= 68448 && x5 <= 68466 || x5 >= 68480 && x5 <= 68497 || x5 >= 68608 && x5 <= 68680 || x5 >= 68736 && x5 <= 68786 || x5 >= 68800 && x5 <= 68850 || x5 >= 68864 && x5 <= 68899 || x5 >= 68938 && x5 <= 68965 || x5 >= 68975 && x5 <= 68997 || x5 >= 69248 && x5 <= 69289 || x5 >= 69296 && x5 <= 69297 || x5 >= 69314 && x5 <= 69319 || x5 >= 69376 && x5 <= 69404 || x5 == 69415 || x5 >= 69424 && x5 <= 69445 || x5 >= 69488 && x5 <= 69505 || x5 >= 69552 && x5 <= 69572 || x5 >= 69600 && x5 <= 69622 || x5 >= 69635 && x5 <= 69687 || x5 >= 69745 && x5 <= 69746 || x5 == 69749 || x5 >= 69763 && x5 <= 69807 || x5 >= 69840 && x5 <= 69864 || x5 >= 69891 && x5 <= 69926 || x5 == 69956 || x5 == 69959 || x5 >= 69968 && x5 <= 70002 || x5 == 70006 || x5 >= 70019 && x5 <= 70066 || x5 >= 70081 && x5 <= 70084 || x5 == 70106 || x5 == 70108 || x5 >= 70144 && x5 <= 70161 || x5 >= 70163 && x5 <= 70187 || x5 >= 70207 && x5 <= 70208 || x5 >= 70272 && x5 <= 70278 || x5 == 70280 || x5 >= 70282 && x5 <= 70285 || x5 >= 70287 && x5 <= 70301 || x5 >= 70303 && x5 <= 70312 || x5 >= 70320 && x5 <= 70366 || x5 >= 70405 && x5 <= 70412 || x5 >= 70415 && x5 <= 70416 || x5 >= 70419 && x5 <= 70440 || x5 >= 70442 && x5 <= 70448 || x5 >= 70450 && x5 <= 70451 || x5 >= 70453 && x5 <= 70457 || x5 == 70461 || x5 == 70480 || x5 >= 70493 && x5 <= 70497 || x5 >= 70528 && x5 <= 70537 || x5 == 70539 || x5 == 70542 || x5 >= 70544 && x5 <= 70581 || x5 == 70583 || x5 == 70609 || x5 == 70611 || x5 >= 70656 && x5 <= 70708 || x5 >= 70727 && x5 <= 70730 || x5 >= 70751 && x5 <= 70753 || x5 >= 70784 && x5 <= 70831 || x5 >= 70852 && x5 <= 70853 || x5 == 70855 || x5 >= 71040 && x5 <= 71086 || x5 >= 71128 && x5 <= 71131 || x5 >= 71168 && x5 <= 71215 || x5 == 71236 || x5 >= 71296 && x5 <= 71338 || x5 == 71352 || x5 >= 71424 && x5 <= 71450 || x5 >= 71488 && x5 <= 71494 || x5 >= 71680 && x5 <= 71723 || x5 >= 71840 && x5 <= 71903 || x5 >= 71935 && x5 <= 71942 || x5 == 71945 || x5 >= 71948 && x5 <= 71955 || x5 >= 71957 && x5 <= 71958 || x5 >= 71960 && x5 <= 71983 || x5 == 71999 || x5 == 72001 || x5 >= 72096 && x5 <= 72103 || x5 >= 72106 && x5 <= 72144 || x5 == 72161 || x5 == 72163 || x5 == 72192 || x5 >= 72203 && x5 <= 72242 || x5 == 72250 || x5 == 72272 || x5 >= 72284 && x5 <= 72329 || x5 == 72349 || x5 >= 72368 && x5 <= 72440 || x5 >= 72640 && x5 <= 72672 || x5 >= 72704 && x5 <= 72712 || x5 >= 72714 && x5 <= 72750 || x5 == 72768 || x5 >= 72818 && x5 <= 72847 || x5 >= 72960 && x5 <= 72966 || x5 >= 72968 && x5 <= 72969 || x5 >= 72971 && x5 <= 73008 || x5 == 73030 || x5 >= 73056 && x5 <= 73061 || x5 >= 73063 && x5 <= 73064 || x5 >= 73066 && x5 <= 73097 || x5 == 73112 || x5 >= 73136 && x5 <= 73179 || x5 >= 73440 && x5 <= 73458 || x5 == 73474 || x5 >= 73476 && x5 <= 73488 || x5 >= 73490 && x5 <= 73523 || x5 == 73648 || x5 >= 73728 && x5 <= 74649 || x5 >= 74880 && x5 <= 75075 || x5 >= 77712 && x5 <= 77808 || x5 >= 77824 && x5 <= 78895 || x5 >= 78913 && x5 <= 78918 || x5 >= 78944 && x5 <= 82938 || x5 >= 82944 && x5 <= 83526 || x5 >= 90368 && x5 <= 90397 || x5 >= 92160 && x5 <= 92728 || x5 >= 92736 && x5 <= 92766 || x5 >= 92784 && x5 <= 92862 || x5 >= 92880 && x5 <= 92909 || x5 >= 92928 && x5 <= 92975 || x5 >= 92992 && x5 <= 92995 || x5 >= 93027 && x5 <= 93047 || x5 >= 93053 && x5 <= 93071 || x5 >= 93504 && x5 <= 93548 || x5 >= 93760 && x5 <= 93823 || x5 >= 93856 && x5 <= 93880 || x5 >= 93883 && x5 <= 93907 || x5 >= 93952 && x5 <= 94026 || x5 == 94032 || x5 >= 94099 && x5 <= 94111 || x5 >= 94176 && x5 <= 94177 || x5 == 94179 || x5 >= 94194 && x5 <= 94195 || x5 >= 94208 && x5 <= 101589 || x5 >= 101631 && x5 <= 101662 || x5 >= 101760 && x5 <= 101874 || x5 >= 110576 && x5 <= 110579 || x5 >= 110581 && x5 <= 110587 || x5 >= 110589 && x5 <= 110590 || x5 >= 110592 && x5 <= 110882 || x5 == 110898 || x5 >= 110928 && x5 <= 110930 || x5 == 110933 || x5 >= 110948 && x5 <= 110951 || x5 >= 110960 && x5 <= 111355 || x5 >= 113664 && x5 <= 113770 || x5 >= 113776 && x5 <= 113788 || x5 >= 113792 && x5 <= 113800 || x5 >= 113808 && x5 <= 113817 || x5 >= 119808 && x5 <= 119892 || x5 >= 119894 && x5 <= 119964 || x5 >= 119966 && x5 <= 119967 || x5 == 119970 || x5 >= 119973 && x5 <= 119974 || x5 >= 119977 && x5 <= 119980 || x5 >= 119982 && x5 <= 119993 || x5 == 119995 || x5 >= 119997 && x5 <= 120003 || x5 >= 120005 && x5 <= 120069 || x5 >= 120071 && x5 <= 120074 || x5 >= 120077 && x5 <= 120084 || x5 >= 120086 && x5 <= 120092 || x5 >= 120094 && x5 <= 120121 || x5 >= 120123 && x5 <= 120126 || x5 >= 120128 && x5 <= 120132 || x5 == 120134 || x5 >= 120138 && x5 <= 120144 || x5 >= 120146 && x5 <= 120485 || x5 >= 120488 && x5 <= 120512 || x5 >= 120514 && x5 <= 120538 || x5 >= 120540 && x5 <= 120570 || x5 >= 120572 && x5 <= 120596 || x5 >= 120598 && x5 <= 120628 || x5 >= 120630 && x5 <= 120654 || x5 >= 120656 && x5 <= 120686 || x5 >= 120688 && x5 <= 120712 || x5 >= 120714 && x5 <= 120744 || x5 >= 120746 && x5 <= 120770 || x5 >= 120772 && x5 <= 120779 || x5 >= 122624 && x5 <= 122654 || x5 >= 122661 && x5 <= 122666 || x5 >= 122928 && x5 <= 122989 || x5 >= 123136 && x5 <= 123180 || x5 >= 123191 && x5 <= 123197 || x5 == 123214 || x5 >= 123536 && x5 <= 123565 || x5 >= 123584 && x5 <= 123627 || x5 >= 124112 && x5 <= 124139 || x5 >= 124368 && x5 <= 124397 || x5 == 124400 || x5 >= 124608 && x5 <= 124638 || x5 >= 124640 && x5 <= 124642 || x5 >= 124644 && x5 <= 124645 || x5 >= 124647 && x5 <= 124653 || x5 >= 124656 && x5 <= 124660 || x5 >= 124670 && x5 <= 124671 || x5 >= 124896 && x5 <= 124902 || x5 >= 124904 && x5 <= 124907 || x5 >= 124909 && x5 <= 124910 || x5 >= 124912 && x5 <= 124926 || x5 >= 124928 && x5 <= 125124 || x5 >= 125184 && x5 <= 125251 || x5 == 125259 || x5 >= 126464 && x5 <= 126467 || x5 >= 126469 && x5 <= 126495 || x5 >= 126497 && x5 <= 126498 || x5 == 126500 || x5 == 126503 || x5 >= 126505 && x5 <= 126514 || x5 >= 126516 && x5 <= 126519 || x5 == 126521 || x5 == 126523 || x5 == 126530 || x5 == 126535 || x5 == 126537 || x5 == 126539 || x5 >= 126541 && x5 <= 126543 || x5 >= 126545 && x5 <= 126546 || x5 == 126548 || x5 == 126551 || x5 == 126553 || x5 == 126555 || x5 == 126557 || x5 == 126559 || x5 >= 126561 && x5 <= 126562 || x5 == 126564 || x5 >= 126567 && x5 <= 126570 || x5 >= 126572 && x5 <= 126578 || x5 >= 126580 && x5 <= 126583 || x5 >= 126585 && x5 <= 126588 || x5 == 126590 || x5 >= 126592 && x5 <= 126601 || x5 >= 126603 && x5 <= 126619 || x5 >= 126625 && x5 <= 126627 || x5 >= 126629 && x5 <= 126633 || x5 >= 126635 && x5 <= 126651 || x5 >= 131072 && x5 <= 173791 || x5 >= 173824 && x5 <= 178205 || x5 >= 178208 && x5 <= 183981 || x5 >= 183984 && x5 <= 191456 || x5 >= 191472 && x5 <= 192093 || x5 >= 194560 && x5 <= 195101 || x5 >= 196608 && x5 <= 201546 || x5 >= 201552 && x5 <= 210041))) && p.depth+1 <= maxDepth {
+	if !(x6 && (!!(x5 == 170 || x5 == 181 || x5 == 186 || x5 >= 192 && x5 <= 214 || x5 >= 216 && x5 <= 246 || x5 >= 248 && x5 <= 705 || x5 >= 710 && x5 <= 721 || x5 >= 736 && x5 <= 740 || x5 == 748 || x5 == 750 || x5 >= 880 && x5 <= 884 || x5 >= 886 && x5 <= 887 || x5 >= 890 && x5 <= 893 || x5 == 895 || x5 == 902 || x5 >= 904 && x5 <= 906 || x5 == 908 || x5 >= 910 && x5 <= 929 || x5 >= 931 && x5 <= 1013 || x5 >= 1015 && x5 <= 1153 || x5 >= 1162 && x5 <= 1327 || x5 >= 1329 && x5 <= 1366 || x5 == 1369 || x5 >= 1376 && x5 <= 1416 || x5 >= 1488 && x5 <= 1514 || x5 >= 1519 && x5 <= 1522 || x5 >= 1568 && x5 <= 1610 || x5 >= 1646 && x5 <= 1647 || x5 >= 1649 && x5 <= 1747 || x5 == 1749 || x5 >= 1765 && x5 <= 1766 || x5 >= 1774 && x5 <= 1775 || x5 >= 1786 && x5 <= 1788 || x5 == 1791 || x5 == 1808 || x5 >= 1810 && x5 <= 1839 || x5 >= 1869 && x5 <= 1957 || x5 == 1969 || x5 >= 1994 && x5 <= 2026 || x5 >= 2036 && x5 <= 2037 || x5 == 2042 || x5 >= 2048 && x5 <= 2069 || x5 == 2074 || x5 == 2084 || x5 == 2088 || x5 >= 2112 && x5 <= 2136 || x5 >= 2144 && x5 <= 2154 || x5 >= 2160 && x5 <= 2183 || x5 >= 2185 && x5 <= 2191 || x5 >= 2208 && x5 <= 2249 || x5 >= 2308 && x5 <= 2361 || x5 == 2365 || x5 == 2384 || x5 >= 2392 && x5 <= 2401 || x5 >= 2417 && x5 <= 2432 || x5 >= 2437 && x5 <= 2444 || x5 >= 2447 && x5 <= 2448 || x5 >= 2451 && x5 <= 2472 || x5 >= 2474 && x5 <= 2480 || x5 == 2482 || x5 >= 2486 && x5 <= 2489 || x5 == 2493 || x5 == 2510 || x5 >= 2524 && x5 <= 2525 || x5 >= 2527 && x5 <= 2529 || x5 >= 2544 && x5 <= 2545 || x5 == 2556 || x5 >= 2565 && x5 <= 2570 || x5 >= 2575 && x5 <= 2576 || x5 >= 2579 && x5 <= 2600 || x5 >= 2602 && x5 <= 2608 || x5 >= 2610 && x5 <= 2611 || x5 >= 2613 && x5 <= 2614 || x5 >= 2616 && x5 <= 2617 || x5 >= 2649 && x5 <= 2652 || x5 == 2654 || x5 >= 2674 && x5 <= 2676 || x5 >= 2693 && x5 <= 2701 || x5 >= 2703 && x5 <= 2705 || x5 >= 2707 && x5 <= 2728 || x5 >= 2730 && x5 <= 2736 || x5 >= 2738 && x5 <= 2739 || x5 >= 2741 && x5 <= 2745 || x5 == 2749 || x5 == 2768 || x5 >= 2784 && x5 <= 2785 || x5 == 2809 || x5 >= 2821 && x5 <= 2828 || x5 >= 2831 && x5 <= 2832 || x5 >= 2835 && x5 <= 2856 || x5 >= 2858 && x5 <= 2864 || x5 >= 2866 && x5 <= 2867 || x5 >= 2869 && x5 <= 2873 || x5 == 2877 || x5 >= 2908 && x5 <= 2909 || x5 >= 2911 && x5 <= 2913 || x5 == 2929 || x5 == 2947 || x5 >= 2949 && x5 <= 2954 || x5 >= 2958 && x5 <= 2960 || x5 >= 2962 && x5 <= 2965 || x5 >= 2969 && x5 <= 2970 || x5 == 2972 || x5 >= 2974 && x5 <= 2975 || x5 >= 2979 && x5 <= 2980 || x5 >= 2984 && x5 <= 2986 || x5 >= 2990 && x5 <= 3001 || x5 == 3024 || x5 >= 3077 && x5 <= 3084 || x5 >= 3086 && x5 <= 3088 || x5 >= 3090 && x5 <= 3112 || x5 >= 3114 && x5 <= 3129 || x5 == 3133 || x5 >= 3160 && x5 <= 3162 || x5 >= 3164 && x5 <= 3165 || x5 >= 3168 && x5 <= 3169 || x5 == 3200 || x5 >= 3205 && x5 <= 3212 || x5 >= 3214 && x5 <= 3216 || x5 >= 3218 && x5 <= 3240 || x5 >= 3242 && x5 <= 3251 || x5 >= 3253 && x5 <= 3257 || x5 == 3261 || x5 >= 3292 && x5 <= 3294 || x5 >= 3296 && x5 <= 3297 || x5 >= 3313 && x5 <= 3314 || x5 >= 3332 && x5 <= 3340 || x5 >= 3342 && x5 <= 3344 || x5 >= 3346 && x5 <= 3386 || x5 == 3389 || x5 == 3406 || x5 >= 3412 && x5 <= 3414 || x5 >= 3423 && x5 <= 3425 || x5 >= 3450 && x5 <= 3455 || x5 >= 3461 && x5 <= 3478 || x5 >= 3482 && x5 <= 3505 || x5 >= 3507 && x5 <= 3515 || x5 == 3517 || x5 >= 3520 && x5 <= 3526 || x5 >= 3585 && x5 <= 3632 || x5 >= 3634 && x5 <= 3635 || x5 >= 3648 && x5 <= 3654 || x5 >= 3713 && x5 <= 3714 || x5 == 3716 || x5 >= 3718 && x5 <= 3722 || x5 >= 3724 && x5 <= 3747 || x5 == 3749 || x5 >= 3751 && x5 <= 3760 || x5 >= 3762 && x5 <= 3763 || x5 == 3773 || x5 >= 3776 && x5 <= 3780 || x5 == 3782 || x5 >= 3804 && x5 <= 3807 || x5 == 3840 || x5 >= 3904 && x5 <= 3911 || x5 >= 3913 && x5 <= 3948 || x5 >= 3976 && x5 <= 3980 || x5 >= 4096 && x5 <= 4138 || x5 == 4159 || x5 >= 4176 && x5 <= 4181 || x5 >= 4186 && x5 <= 4189 || x5 == 4193 || x5 >= 4197 && x5 <= 4198 || x5 >= 4206 && x5 <= 4208 || x5 >= 4213 && x5 <= 4225 || x5 == 4238 || x5 >= 4256 && x5 <= 4293 || x5 == 4295 || x5 == 4301 || x5 >= 4304 && x5 <= 4346 || x5 >= 4348 && x5 <= 4680 || x5 >= 4682 && x5 <= 4685 || x5 >= 4688 && x5 <= 4694 || x5 == 4696 || x5 >= 4698 && x5 <= 4701 || x5 >= 4704 && x5 <= 4744 || x5 >= 4746 && x5 <= 4749 || x5 >= 4752 && x5 <= 4784 || x5 >= 4786 && x5 <= 4789 || x5 >= 4792 && x5 <= 4798 || x5 == 4800 || x5 >= 4802 && x5 <= 4805 || x5 >= 4808 && x5 <= 4822 || x5 >= 4824 && x5 <= 4880 || x5 >= 4882 && x5 <= 4885 || x5 >= 4888 && x5 <= 4954 || x5 >= 4992 && x5 <= 5007 || x5 >= 5024 && x5 <= 5109 || x5 >= 5112 && x5 <= 5117 || x5 >= 5121 && x5 <= 5740 || x5 >= 5743 && x5 <= 5759 || x5 >= 5761 && x5 <= 5786 || x5 >= 5792 && x5 <= 5866 || x5 >= 5873 && x5 <= 5880 || x5 >= 5888 && x5 <= 5905 || x5 >= 5919 && x5 <= 5937 || x5 >= 5952 && x5 <= 5969 || x5 >= 5984 && x5 <= 5996 || x5 >= 5998 && x5 <= 6000 || x5 >= 6016 && x5 <= 6067 || x5 == 6103 || x5 == 6108 || x5 >= 6176 && x5 <= 6264 || x5 >= 6272 && x5 <= 6276 || x5 >= 6279 && x5 <= 6312 || x5 == 6314 || x5 >= 6320 && x5 <= 6389 || x5 >= 6400 && x5 <= 6430 || x5 >= 6480 && x5 <= 6509 || x5 >= 6512 && x5 <= 6516 || x5 >= 6528 && x5 <= 6571 || x5 >= 6576 && x5 <= 6601 || x5 >= 6656 && x5 <= 6678 || x5 >= 6688 && x5 <= 6740 || x5 == 6823 || x5 >= 6917 && x5 <= 6963 || x5 >= 6981 && x5 <= 6988 || x5 >= 7043 && x5 <= 7072 || x5 >= 7086 && x5 <= 7087 || x5 >= 7098 && x5 <= 7141 || x5 >= 7168 && x5 <= 7203 || x5 >= 7245 && x5 <= 7247 || x5 >= 7258 && x5 <= 7293 || x5 >= 7296 && x5 <= 7306 || x5 >= 7312 && x5 <= 7354 || x5 >= 7357 && x5 <= 7359 || x5 >= 7401 && x5 <= 7404 || x5 >= 7406 && x5 <= 7411 || x5 >= 7413 && x5 <= 7414 || x5 == 7418 || x5 >= 7424 && x5 <= 7615 || x5 >= 7680 && x5 <= 7957 || x5 >= 7960 && x5 <= 7965 || x5 >= 7968 && x5 <= 8005 || x5 >= 8008 && x5 <= 8013 || x5 >= 8016 && x5 <= 8023 || x5 == 8025 || x5 == 8027 || x5 == 8029 || x5 >= 8031 && x5 <= 8061 || x5 >= 8064 && x5 <= 8116 || x5 >= 8118 && x5 <= 8124 || x5 == 8126 || x5 >= 8130 && x5 <= 8132 || x5 >= 8134 && x5 <= 8140 || x5 >= 8144 && x5 <= 8147 || x5 >= 8150 && x5 <= 8155 || x5 >= 8160 && x5 <= 8172 || x5 >= 8178 && x5 <= 8180 || x5 >= 8182 && x5 <= 8188 || x5 == 8305 || x5 == 8319 || x5 >= 8336 && x5 <= 8348 || x5 == 8450 || x5 == 8455 || x5 >= 8458 && x5 <= 8467 || x5 == 8469 || x5 >= 8473 && x5 <= 8477 || x5 == 8484 || x5 == 8486 || x5 == 8488 || x5 >= 8490 && x5 <= 8493 || x5 >= 8495 && x5 <= 8505 || x5 >= 8508 && x5 <= 8511 || x5 >= 8517 && x5 <= 8521 || x5 == 8526 || x5 >= 8579 && x5 <= 8580 || x5 >= 11264 && x5 <= 11492 || x5 >= 11499 && x5 <= 11502 || x5 >= 11506 && x5 <= 11507 || x5 >= 11520 && x5 <= 11557 || x5 == 11559 || x5 == 11565 || x5 >= 11568 && x5 <= 11623 || x5 == 11631 || x5 >= 11648 && x5 <= 11670 || x5 >= 11680 && x5 <= 11686 || x5 >= 11688 && x5 <= 11694 || x5 >= 11696 && x5 <= 11702 || x5 >= 11704 && x5 <= 11710 || x5 >= 11712 && x5 <= 11718 || x5 >= 11720 && x5 <= 11726 || x5 >= 11728 && x5 <= 11734 || x5 >= 11736 && x5 <= 11742 || x5 == 11823 || x5 >= 12293 && x5 <= 12294 || x5 >= 12337 && x5 <= 12341 || x5 >= 12347 && x5 <= 12348 || x5 >= 12353 && x5 <= 12438 || x5 >= 12445 && x5 <= 12447 || x5 >= 12449 && x5 <= 12538 || x5 >= 12540 && x5 <= 12543 || x5 >= 12549 && x5 <= 12591 || x5 >= 12593 && x5 <= 12686 || x5 >= 12704 && x5 <= 12735 || x5 >= 12784 && x5 <= 12799 || x5 >= 13312 && x5 <= 19903 || x5 >= 19968 && x5 <= 42124 || x5 >= 42192 && x5 <= 42237 || x5 >= 42240 && x5 <= 42508 || x5 >= 42512 && x5 <= 42527 || x5 >= 42538 && x5 <= 42539 || x5 >= 42560 && x5 <= 42606 || x5 >= 42623 && x5 <= 42653 || x5 >= 42656 && x5 <= 42725 || x5 >= 42775 && x5 <= 42783 || x5 >= 42786 && x5 <= 42888 || x5 >= 42891 && x5 <= 42972 || x5 >= 42993 && x5 <= 43009 || x5 >= 43011 && x5 <= 43013 || x5 >= 43015 && x5 <= 43018 || x5 >= 43020 && x5 <= 43042 || x5 >= 43072 && x5 <= 43123 || x5 >= 43138 && x5 <= 43187 || x5 >= 43250 && x5 <= 43255 || x5 == 43259 || x5 >= 43261 && x5 <= 43262 || x5 >= 43274 && x5 <= 43301 || x5 >= 43312 && x5 <= 43334 || x5 >= 43360 && x5 <= 43388 || x5 >= 43396 && x5 <= 43442 || x5 == 43471 || x5 >= 43488 && x5 <= 43492 || x5 >= 43494 && x5 <= 43503 || x5 >= 43514 && x5 <= 43518 || x5 >= 43520 && x5 <= 43560 || x5 >= 43584 && x5 <= 43586 || x5 >= 43588 && x5 <= 43595 || x5 >= 43616 && x5 <= 43638 || x5 == 43642 || x5 >= 43646 && x5 <= 43695 || x5 == 43697 || x5 >= 43701 && x5 <= 43702 || x5 >= 43705 && x5 <= 43709 || x5 == 43712 || x5 == 43714 || x5 >= 43739 && x5 <= 43741 || x5 >= 43744 && x5 <= 43754 || x5 >= 43762 && x5 <= 43764 || x5 >= 43777 && x5 <= 43782 || x5 >= 43785 && x5 <= 43790 || x5 >= 43793 && x5 <= 43798 || x5 >= 43808 && x5 <= 43814 || x5 >= 43816 && x5 <= 43822 || x5 >= 43824 && x5 <= 43866 || x5 >= 43868 && x5 <= 43881 || x5 >= 43888 && x5 <= 44002 || x5 >= 44032 && x5 <= 55203 || x5 >= 55216 && x5 <= 55238 || x5 >= 55243 && x5 <= 55291 || x5 >= 63744 && x5 <= 64109 || x5 >= 64112 && x5 <= 64217 || x5 >= 64256 && x5 <= 64262 || x5 >= 64275 && x5 <= 64279 || x5 == 64285 || x5 >= 64287 && x5 <= 64296 || x5 >= 64298 && x5 <= 64310 || x5 >= 64312 && x5 <= 64316 || x5 == 64318 || x5 >= 64320 && x5 <= 64321 || x5 >= 64323 && x5 <= 64324 || x5 >= 64326 && x5 <= 64433 || x5 >= 64467 && x5 <= 64829 || x5 >= 64848 && x5 <= 64911 || x5 >= 64914 && x5 <= 64967 || x5 >= 65008 && x5 <= 65019 || x5 >= 65136 && x5 <= 65140 || x5 >= 65142 && x5 <= 65276 || x5 >= 65313 && x5 <= 65338 || x5 >= 65345 && x5 <= 65370 || x5 >= 65382 && x5 <= 65470 || x5 >= 65474 && x5 <= 65479 || x5 >= 65482 && x5 <= 65487 || x5 >= 65490 && x5 <= 65495 || x5 >= 65498 && x5 <= 65500 || x5 >= 65536 && x5 <= 65547 || x5 >= 65549 && x5 <= 65574 || x5 >= 65576 && x5 <= 65594 || x5 >= 65596 && x5 <= 65597 || x5 >= 65599 && x5 <= 65613 || x5 >= 65616 && x5 <= 65629 || x5 >= 65664 && x5 <= 65786 || x5 >= 66176 && x5 <= 66204 || x5 >= 66208 && x5 <= 66256 || x5 >= 66304 && x5 <= 66335 || x5 >= 66349 && x5 <= 66368 || x5 >= 66370 && x5 <= 66377 || x5 >= 66384 && x5 <= 66421 || x5 >= 66432 && x5 <= 66461 || x5 >= 66464 && x5 <= 66499 || x5 >= 66504 && x5 <= 66511 || x5 >= 66560 && x5 <= 66717 || x5 >= 66736 && x5 <= 66771 || x5 >= 66776 && x5 <= 66811 || x5 >= 66816 && x5 <= 66855 || x5 >= 66864 && x5 <= 66915 || x5 >= 66928 && x5 <= 66938 || x5 >= 66940 && x5 <= 66954 || x5 >= 66956 && x5 <= 66962 || x5 >= 66964 && x5 <= 66965 || x5 >= 66967 && x5 <= 66977 || x5 >= 66979 && x5 <= 66993 || x5 >= 66995 && x5 <= 67001 || x5 >= 67003 && x5 <= 67004 || x5 >= 67008 && x5 <= 67059 || x5 >= 67072 && x5 <= 67382 || x5 >= 67392 && x5 <= 67413 || x5 >= 67424 && x5 <= 67431 || x5 >= 67456 && x5 <= 67461 || x5 >= 67463 && x5 <= 67504 || x5 >= 67506 && x5 <= 67514 || x5 >= 67584 && x5 <= 67589 || x5 == 67592 || x5 >= 67594 && x5 <= 67637 || x5 >= 67639 && x5 <= 67640 || x5 == 67644 || x5 >= 67647 && x5 <= 67669 || x5 >= 67680 && x5 <= 67702 || x5 >= 67712 && x5 <= 67742 || x5 >= 67808 && x5 <= 67826 || x5 >= 67828 && x5 <= 67829 || x5 >= 67840 && x5 <= 67861 || x5 >= 67872 && x5 <= 67897 || x5 >= 67904 && x5 <= 67929 || x5 >= 67968 && x5 <= 68023 || x5 >= 68030 && x5 <= 68031 || x5 == 68096 || x5 >= 68112 && x5 <= 68115 || x5 >= 68117 && x5 <= 68119 || x5 >= 68121 && x5 <= 68149 || x5 >= 68192 && x5 <= 68220 || x5 >= 68224 && x5 <= 68252 || x5 >= 68288 && x5 <= 68295 || x5 >= 68297 && x5 <= 68324 || x5 >= 68352 && x5 <= 68405 || x5 >= 68416 && x5 <= 68437 || x5 >= 68448 && x5 <= 68466 || x5 >= 68480 && x5 <= 68497 || x5 >= 68608 && x5 <= 68680 || x5 >= 68736 && x5 <= 68786 || x5 >= 68800 && x5 <= 68850 || x5 >= 68864 && x5 <= 68899 || x5 >= 68938 && x5 <= 68965 || x5 >= 68975 && x5 <= 68997 || x5 >= 69248 && x5 <= 69289 || x5 >= 69296 && x5 <= 69297 || x5 >= 69314 && x5 <= 69319 || x5 >= 69376 && x5 <= 69404 || x5 == 69415 || x5 >= 69424 && x5 <= 69445 || x5 >= 69488 && x5 <= 69505 || x5 >= 69552 && x5 <= 69572 || x5 >= 69600 && x5 <= 69622 || x5 >= 69635 && x5 <= 69687 || x5 >= 69745 && x5 <= 69746 || x5 == 69749 || x5 >= 69763 && x5 <= 69807 || x5 >= 69840 && x5 <= 69864 || x5 >= 69891 && x5 <= 69926 || x5 == 69956 || x5 == 69959 || x5 >= 69968 && x5 <= 70002 || x5 == 70006 || x5 >= 70019 && x5 <= 70066 || x5 >= 70081 && x5 <= 70084 || x5 == 70106 || x5 == 70108 || x5 >= 70144 && x5 <= 70161 || x5 >= 70163 && x5 <= 70187 || x5 >= 70207 && x5 <= 70208 || x5 >= 70272 && x5 <= 70278 || x5 == 70280 || x5 >= 70282 && x5 <= 70285 || x5 >= 70287 && x5 <= 70301 || x5 >= 70303 && x5 <= 70312 || x5 >= 70320 && x5 <= 70366 || x5 >= 70405 && x5 <= 70412 || x5 >= 70415 && x5 <= 70416 || x5 >= 70419 && x5 <= 70440 || x5 >= 70442 && x5 <= 70448 || x5 >= 70450 && x5 <= 70451 || x5 >= 70453 && x5 <= 70457 || x5 == 70461 || x5 == 70480 || x5 >= 70493 && x5 <= 70497 || x5 >= 70528 && x5 <= 70537 || x5 == 70539 || x5 == 70542 || x5 >= 70544 && x5 <= 70581 || x5 == 70583 || x5 == 70609 || x5 == 70611 || x5 >= 70656 && x5 <= 70708 || x5 >= 70727 && x5 <= 70730 || x5 >= 70751 && x5 <= 70753 || x5 >= 70784 && x5 <= 70831 || x5 >= 70852 && x5 <= 70853 || x5 == 70855 || x5 >= 71040 && x5 <= 71086 || x5 >= 71128 && x5 <= 71131 || x5 >= 71168 && x5 <= 71215 || x5 == 71236 || x5 >= 71296 && x5 <= 71338 || x5 == 71352 || x5 >= 71424 && x5 <= 71450 || x5 >= 71488 && x5 <= 71494 || x5 >= 71680 && x5 <= 71723 || x5 >= 71840 && x5 <= 71903 || x5 >= 71935 && x5 <= 71942 || x5 == 71945 || x5 >= 71948 && x5 <= 71955 || x5 >= 71957 && x5 <= 71958 || x5 >= 71960 && x5 <= 71983 || x5 == 71999 || x5 == 72001 || x5 >= 72096 && x5 <= 72103 || x5 >= 72106 && x5 <= 72144 || x5 == 72161 || x5 == 72163 || x5 == 72192 || x5 >= 72203 && x5 <= 72242 || x5 == 72250 || x5 == 72272 || x5 >= 72284 && x5 <= 72329 || x5 == 72349 || x5 >= 72368 && x5 <= 72440 || x5 >= 72640 && x5 <= 72672 || x5 >= 72704 && x5 <= 72712 || x5 >= 72714 && x5 <= 72750 || x5 == 72768 || x5 >= 72818 && x5 <= 72847 || x5 >= 72960 && x5 <= 72966 || x5 >= 72968 && x5 <= 72969 || x5 >= 72971 && x5 <= 73008 || x5 == 73030 || x5 >= 73056 && x5 <= 73061 || x5 >= 73063 && x5 <= 73064 || x5 >= 73066 && x5 <= 73097 || x5 == 73112 || x5 >= 73136 && x5 <= 73179 || x5 >= 73440 && x5 <= 73458 || x5 == 73474 || x5 >= 73476 && x5 <= 73488 || x5 >= 73490 && x5 <= 73523 || x5 == 73648 || x5 >= 73728 && x5 <= 74649 || x5 >= 74880 && x5 <= 75075 || x5 >= 77712 && x5 <= 77808 || x5 >= 77824 && x5 <= 78895 || x5 >= 78913 && x5 <= 78918 || x5 >= 78944 && x5 <= 82938 || x5 >= 82944 && x5 <= 83526 || x5 >= 90368 && x5 <= 90397 || x5 >= 92160 && x5 <= 92728 || x5 >= 92736 && x5 <= 92766 || x5 >= 92784 && x5 <= 92862 || x5 >= 92880 && x5 <= 92909 || x5 >= 92928 && x5 <= 92975 || x5 >= 92992 && x5 <= 92995 || x5 >= 93027 && x5 <= 93047 || x5 >= 93053 && x5 <= 93071 || x5 >= 93504 && x5 <= 93548 || x5 >= 93760 && x5 <= 93823 || x5 >= 93856 && x5 <= 93880 || x5 >= 93883 && x5 <= 93907 || x5 >= 93952 && x5 <= 94026 || x5 == 94032 || x5 >= 94099 && x5 <= 94111 || x5 >= 94176 && x5 <= 94177 || x5 == 94179 || x5 >= 94194 && x5 <= 94195 || x5 >= 94208 && x5 <= 101589 || x5 >= 101631 && x5 <= 101662 || x5 >= 101760 && x5 <= 101874 || x5 >= 110576 && x5 <= 110579 || x5 >= 110581 && x5 <= 110587 || x5 >= 110589 && x5 <= 110590 || x5 >= 110592 && x5 <= 110882 || x5 == 110898 || x5 >= 110928 && x5 <= 110930 || x5 == 110933 || x5 >= 110948 && x5 <= 110951 || x5 >= 110960 && x5 <= 111355 || x5 >= 113664 && x5 <= 113770 || x5 >= 113776 && x5 <= 113788 || x5 >= 113792 && x5 <= 113800 || x5 >= 113808 && x5 <= 113817 || x5 >= 119808 && x5 <= 119892 || x5 >= 119894 && x5 <= 119964 || x5 >= 119966 && x5 <= 119967 || x5 == 119970 || x5 >= 119973 && x5 <= 119974 || x5 >= 119977 && x5 <= 119980 || x5 >= 119982 && x5 <= 119993 || x5 == 119995 || x5 >= 119997 && x5 <= 120003 || x5 >= 120005 && x5 <= 120069 || x5 >= 120071 && x5 <= 120074 || x5 >= 120077 && x5 <= 120084 || x5 >= 120086 && x5 <= 120092 || x5 >= 120094 && x5 <= 120121 || x5 >= 120123 && x5 <= 120126 || x5 >= 120128 && x5 <= 120132 || x5 == 120134 || x5 >= 120138 && x5 <= 120144 || x5 >= 120146 && x5 <= 120485 || x5 >= 120488 && x5 <= 120512 || x5 >= 120514 && x5 <= 120538 || x5 >= 120540 && x5 <= 120570 || x5 >= 120572 && x5 <= 120596 || x5 >= 120598 && x5 <= 120628 || x5 >= 120630 && x5 <= 120654 || x5 >= 120656 && x5 <= 120686 || x5 >= 120688 && x5 <= 120712 || x5 >= 120714 && x5 <= 120744 || x5 >= 120746 && x5 <= 120770 || x5 >= 120772 && x5 <= 120779 || x5 >= 122624 && x5 <= 122654 || x5 >= 122661 && x5 <= 122666 || x5 >= 122928 && x5 <= 122989 || x5 >= 123136 && x5 <= 123180 || x5 >= 123191 && x5 <= 123197 || x5 == 123214 || x5 >= 123536 && x5 <= 123565 || x5 >= 123584 && x5 <= 123627 || x5 >= 124112 && x5 <= 124139 || x5 >= 124368 && x5 <= 124397 || x5 == 124400 || x5 >= 124608 && x5 <= 124638 || x5 >= 124640 && x5 <= 124642 || x5 >= 124644 && x5 <= 124645 || x5 >= 124647 && x5 <= 124653 || x5 >= 124656 && x5 <= 124660 || x5 >= 124670 && x5 <= 124671 || x5 >= 124896 && x5 <= 124902 || x5 >= 124904 && x5 <= 124907 || x5 >= 124909 && x5 <= 124910 || x5 >= 124912 && x5 <= 124926 || x5 >= 124928 && x5 <= 125124 || x5 >= 125184 && x5 <= 125251 || x5 == 125259 || x5 >= 126464 && x5 <= 126467 || x5 >= 126469 && x5 <= 126495 || x5 >= 126497 && x5 <= 126498 || x5 == 126500 || x5 == 126503 || x5 >= 126505 && x5 <= 126514 || x5 >= 126516 && x5 <= 126519 || x5 == 126521 || x5 == 126523 || x5 == 126530 || x5 == 126535 || x5 == 126537 || x5 == 126539 || x5 >= 126541 && x5 <= 126543 || x5 >= 126545 && x5 <= 126546 || x5 == 126548 || x5 == 126551 || x5 == 126553 || x5 == 126555 || x5 == 126557 || x5 == 126559 || x5 >= 126561 && x5 <= 126562 || x5 == 126564 || x5 >= 126567 && x5 <= 126570 || x5 >= 126572 && x5 <= 126578 || x5 >= 126580 && x5 <= 126583 || x5 >= 126585 && x5 <= 126588 || x5 == 126590 || x5 >= 126592 && x5 <= 126601 || x5 >= 126603 && x5 <= 126619 || x5 >= 126625 && x5 <= 126627 || x5 >= 126629 && x5 <= 126633 || x5 >= 126635 && x5 <= 126651 || x5 >= 131072 && x5 <= 173791 || x5 >= 173824 && x5 <= 178205 || x5 >= 178208 && x5 <= 183981 || x5 >= 183984 && x5 <= 191456 || x5 >= 191472 && x5 <= 192093 || x5 >= 194560 && x5 <= 195101 || x5 >= 196608 && x5 <= 201546 || x5 >= 201552 && x5 <= 210041))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 65)
 		goto L7
 	}
@@ -47216,7 +47271,7 @@ L2:
 L8:
 	p.reset(x3)
 L7:
-	if !(x6 && (!!(x5 >= 1632 && x5 <= 1641 || x5 >= 1776 && x5 <= 1785 || x5 >= 1984 && x5 <= 1993 || x5 >= 2406 && x5 <= 2415 || x5 >= 2534 && x5 <= 2543 || x5 >= 2662 && x5 <= 2671 || x5 >= 2790 && x5 <= 2799 || x5 >= 2918 && x5 <= 2927 || x5 >= 3046 && x5 <= 3055 || x5 >= 3174 && x5 <= 3183 || x5 >= 3302 && x5 <= 3311 || x5 >= 3430 && x5 <= 3439 || x5 >= 3558 && x5 <= 3567 || x5 >= 3664 && x5 <= 3673 || x5 >= 3792 && x5 <= 3801 || x5 >= 3872 && x5 <= 3881 || x5 >= 4160 && x5 <= 4169 || x5 >= 4240 && x5 <= 4249 || x5 >= 6112 && x5 <= 6121 || x5 >= 6160 && x5 <= 6169 || x5 >= 6470 && x5 <= 6479 || x5 >= 6608 && x5 <= 6617 || x5 >= 6784 && x5 <= 6793 || x5 >= 6800 && x5 <= 6809 || x5 >= 6992 && x5 <= 7001 || x5 >= 7088 && x5 <= 7097 || x5 >= 7232 && x5 <= 7241 || x5 >= 7248 && x5 <= 7257 || x5 >= 42528 && x5 <= 42537 || x5 >= 43216 && x5 <= 43225 || x5 >= 43264 && x5 <= 43273 || x5 >= 43472 && x5 <= 43481 || x5 >= 43504 && x5 <= 43513 || x5 >= 43600 && x5 <= 43609 || x5 >= 44016 && x5 <= 44025 || x5 >= 65296 && x5 <= 65305 || x5 >= 66720 && x5 <= 66729 || x5 >= 68912 && x5 <= 68921 || x5 >= 68928 && x5 <= 68937 || x5 >= 69734 && x5 <= 69743 || x5 >= 69872 && x5 <= 69881 || x5 >= 69942 && x5 <= 69951 || x5 >= 70096 && x5 <= 70105 || x5 >= 70384 && x5 <= 70393 || x5 >= 70736 && x5 <= 70745 || x5 >= 70864 && x5 <= 70873 || x5 >= 71248 && x5 <= 71257 || x5 >= 71360 && x5 <= 71369 || x5 >= 71376 && x5 <= 71395 || x5 >= 71472 && x5 <= 71481 || x5 >= 71904 && x5 <= 71913 || x5 >= 72016 && x5 <= 72025 || x5 >= 72688 && x5 <= 72697 || x5 >= 72784 && x5 <= 72793 || x5 >= 73040 && x5 <= 73049 || x5 >= 73120 && x5 <= 73129 || x5 >= 73184 && x5 <= 73193 || x5 >= 73552 && x5 <= 73561 || x5 >= 90416 && x5 <= 90425 || x5 >= 92768 && x5 <= 92777 || x5 >= 92864 && x5 <= 92873 || x5 >= 93008 && x5 <= 93017 || x5 >= 93552 && x5 <= 93561 || x5 >= 118000 && x5 <= 118009 || x5 >= 120782 && x5 <= 120831 || x5 >= 123200 && x5 <= 123209 || x5 >= 123632 && x5 <= 123641 || x5 >= 124144 && x5 <= 124153 || x5 >= 124401 && x5 <= 124410 || x5 >= 125264 && x5 <= 125273 || x5 >= 130032 && x5 <= 130041))) && p.depth+1 <= maxDepth {
+	if !(x6 && (!!(x5 >= 1632 && x5 <= 1641 || x5 >= 1776 && x5 <= 1785 || x5 >= 1984 && x5 <= 1993 || x5 >= 2406 && x5 <= 2415 || x5 >= 2534 && x5 <= 2543 || x5 >= 2662 && x5 <= 2671 || x5 >= 2790 && x5 <= 2799 || x5 >= 2918 && x5 <= 2927 || x5 >= 3046 && x5 <= 3055 || x5 >= 3174 && x5 <= 3183 || x5 >= 3302 && x5 <= 3311 || x5 >= 3430 && x5 <= 3439 || x5 >= 3558 && x5 <= 3567 || x5 >= 3664 && x5 <= 3673 || x5 >= 3792 && x5 <= 3801 || x5 >= 3872 && x5 <= 3881 || x5 >= 4160 && x5 <= 4169 || x5 >= 4240 && x5 <= 4249 || x5 >= 6112 && x5 <= 6121 || x5 >= 6160 && x5 <= 6169 || x5 >= 6470 && x5 <= 6479 || x5 >= 6608 && x5 <= 6617 || x5 >= 6784 && x5 <= 6793 || x5 >= 6800 && x5 <= 6809 || x5 >= 6992 && x5 <= 7001 || x5 >= 7088 && x5 <= 7097 || x5 >= 7232 && x5 <= 7241 || x5 >= 7248 && x5 <= 7257 || x5 >= 42528 && x5 <= 42537 || x5 >= 43216 && x5 <= 43225 || x5 >= 43264 && x5 <= 43273 || x5 >= 43472 && x5 <= 43481 || x5 >= 43504 && x5 <= 43513 || x5 >= 43600 && x5 <= 43609 || x5 >= 44016 && x5 <= 44025 || x5 >= 65296 && x5 <= 65305 || x5 >= 66720 && x5 <= 66729 || x5 >= 68912 && x5 <= 68921 || x5 >= 68928 && x5 <= 68937 || x5 >= 69734 && x5 <= 69743 || x5 >= 69872 && x5 <= 69881 || x5 >= 69942 && x5 <= 69951 || x5 >= 70096 && x5 <= 70105 || x5 >= 70384 && x5 <= 70393 || x5 >= 70736 && x5 <= 70745 || x5 >= 70864 && x5 <= 70873 || x5 >= 71248 && x5 <= 71257 || x5 >= 71360 && x5 <= 71369 || x5 >= 71376 && x5 <= 71395 || x5 >= 71472 && x5 <= 71481 || x5 >= 71904 && x5 <= 71913 || x5 >= 72016 && x5 <= 72025 || x5 >= 72688 && x5 <= 72697 || x5 >= 72784 && x5 <= 72793 || x5 >= 73040 && x5 <= 73049 || x5 >= 73120 && x5 <= 73129 || x5 >= 73184 && x5 <= 73193 || x5 >= 73552 && x5 <= 73561 || x5 >= 90416 && x5 <= 90425 || x5 >= 92768 && x5 <= 92777 || x5 >= 92864 && x5 <= 92873 || x5 >= 93008 && x5 <= 93017 || x5 >= 93552 && x5 <= 93561 || x5 >= 118000 && x5 <= 118009 || x5 >= 120782 && x5 <= 120831 || x5 >= 123200 && x5 <= 123209 || x5 >= 123632 && x5 <= 123641 || x5 >= 124144 && x5 <= 124153 || x5 >= 124401 && x5 <= 124410 || x5 >= 125264 && x5 <= 125273 || x5 >= 130032 && x5 <= 130041))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 66)
 		goto L9
 	}
@@ -47332,7 +47387,7 @@ func (p *parser) e680() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 == 36))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 == 36))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 67)
 		goto L6
 	}
@@ -47422,7 +47477,7 @@ func (p *parser) e682() (*Node, bool) {
 	} else {
 		x3, _, x4 = p.peek()
 	}
-	if !(x4 && (x3 == 48)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 81)
 		goto L5
 	}
@@ -47450,7 +47505,7 @@ func (p *parser) e682() (*Node, bool) {
 L6:
 	p.reset(x1)
 L5:
-	if !(x4 && (x3 == 48)) && p.depth+0 <= maxDepth {
+	if !(x4 && (x3 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 82)
 		goto L7
 	}
@@ -47526,7 +47581,7 @@ func (p *parser) q0() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -47568,7 +47623,7 @@ func (p *parser) q1() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -47620,7 +47675,7 @@ func (p *parser) q4() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -47629,7 +47684,7 @@ func (p *parser) q4() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 105)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 7)
 		goto L6
 	}
@@ -47641,7 +47696,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 105)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 7)
 		goto L8
 	}
@@ -47680,7 +47735,7 @@ func (p *parser) q5() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x4
@@ -47757,7 +47812,7 @@ func (p *parser) q6() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.matchLiteral(lit9, "import", 7, false); !ok {
@@ -47804,7 +47859,7 @@ func (p *parser) q9() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -47858,7 +47913,7 @@ func (p *parser) q10() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -47880,7 +47935,7 @@ L4:
 	} else {
 		x12, _, x13 = p.peek()
 	}
-	if !(x13 && (x12 == 41)) && p.depth+0 <= maxDepth {
+	if !(x13 && (x12 == 41)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 9)
 		goto L14
 	}
@@ -47894,7 +47949,7 @@ L15:
 	p.pos = x9
 	p.recovered = p.recovered[:x10]
 L14:
-	if !(x13 && (x12 == 125)) && p.depth+0 <= maxDepth {
+	if !(x13 && (x12 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L16
 	}
@@ -47948,7 +48003,7 @@ func (p *parser) q11() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 61 {
@@ -47992,7 +48047,7 @@ func (p *parser) q12() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e25()
@@ -48015,7 +48070,7 @@ func (p *parser) q13() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e26()
@@ -48038,7 +48093,7 @@ func (p *parser) q15() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e29()
@@ -48070,7 +48125,7 @@ func (p *parser) q17() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.q220(); !ok {
@@ -48082,7 +48137,7 @@ func (p *parser) q17() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 10)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L6
 	}
@@ -48150,7 +48205,7 @@ func (p *parser) q22() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.q220(); !ok {
@@ -48197,7 +48252,7 @@ func (p *parser) q24() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -48237,7 +48292,7 @@ func (p *parser) q25() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.q33(); !ok {
@@ -48268,7 +48323,7 @@ func (p *parser) q26() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.q27(); !ok {
@@ -48314,7 +48369,7 @@ func (p *parser) q27() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -48410,7 +48465,7 @@ func (p *parser) q28() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -48475,7 +48530,7 @@ func (p *parser) q29() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -48533,7 +48588,7 @@ func (p *parser) q32() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -48588,7 +48643,7 @@ func (p *parser) q33() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -48657,7 +48712,7 @@ func (p *parser) q35() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -48702,7 +48757,7 @@ func (p *parser) q37() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -48746,7 +48801,7 @@ func (p *parser) q38() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -48802,7 +48857,7 @@ func (p *parser) q39() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -48811,7 +48866,7 @@ func (p *parser) q39() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 102)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L6
 	}
@@ -48823,7 +48878,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 105)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L8
 	}
@@ -48835,7 +48890,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 108)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 108)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L10
 	}
@@ -48875,7 +48930,7 @@ func (p *parser) q40() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -48884,7 +48939,7 @@ func (p *parser) q40() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L6
 	}
@@ -48898,7 +48953,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L8
 	}
@@ -48912,7 +48967,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 108)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 108)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L10
 	}
@@ -48926,7 +48981,7 @@ L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L10:
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L12
 	}
@@ -48981,7 +49036,7 @@ func (p *parser) q41() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+4 <= len(p.in) && p.in[p.pos] == 102 && p.in[p.pos+1] == 117 && p.in[p.pos+2] == 110 && p.in[p.pos+3] == 99 {
@@ -49011,7 +49066,7 @@ L3:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 44)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L9
 	}
@@ -49025,7 +49080,7 @@ L10:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
 L9:
-	if !(x8 && (x7 == 10)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L11
 	}
@@ -49039,7 +49094,7 @@ L12:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
 L11:
-	if !(x8 && (x7 == 47)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L13
 	}
@@ -49061,7 +49116,7 @@ L13:
 L15:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
-	if !(x8 && (x7 == 125)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L16
 	}
@@ -49104,7 +49159,7 @@ func (p *parser) q42() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+3 <= len(p.in) && p.in[p.pos] == 102 && p.in[p.pos+1] == 111 && p.in[p.pos+2] == 114 {
@@ -49136,7 +49191,7 @@ L3:
 	} else {
 		x10, _, x11 = p.peek()
 	}
-	if !(x11 && (x10 == 44)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L12
 	}
@@ -49150,7 +49205,7 @@ L13:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L12:
-	if !(x11 && (x10 == 10)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L14
 	}
@@ -49164,7 +49219,7 @@ L15:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L14:
-	if !(x11 && (x10 == 47)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L16
 	}
@@ -49223,7 +49278,7 @@ func (p *parser) q43() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+2 <= len(p.in) && p.in[p.pos] == 105 && p.in[p.pos+1] == 102 {
@@ -49255,7 +49310,7 @@ L3:
 	} else {
 		x10, _, x11 = p.peek()
 	}
-	if !(x11 && (x10 == 44)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L12
 	}
@@ -49269,7 +49324,7 @@ L13:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L12:
-	if !(x11 && (x10 == 10)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L14
 	}
@@ -49283,7 +49338,7 @@ L15:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L14:
-	if !(x11 && (x10 == 47)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L16
 	}
@@ -49344,7 +49399,7 @@ func (p *parser) q44() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+3 <= len(p.in) && p.in[p.pos] == 108 && p.in[p.pos+1] == 101 && p.in[p.pos+2] == 116 {
@@ -49392,7 +49447,7 @@ L6:
 	} else {
 		x13, _, x14 = p.peek()
 	}
-	if !(x14 && (x13 == 44)) && p.depth+0 <= maxDepth {
+	if !(x14 && (x13 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L15
 	}
@@ -49406,7 +49461,7 @@ L16:
 	p.pos = x10
 	p.recovered = p.recovered[:x11]
 L15:
-	if !(x14 && (x13 == 10)) && p.depth+0 <= maxDepth {
+	if !(x14 && (x13 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L17
 	}
@@ -49420,7 +49475,7 @@ L18:
 	p.pos = x10
 	p.recovered = p.recovered[:x11]
 L17:
-	if !(x14 && (x13 == 47)) && p.depth+0 <= maxDepth {
+	if !(x14 && (x13 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L19
 	}
@@ -49442,7 +49497,7 @@ L19:
 L21:
 	p.pos = x10
 	p.recovered = p.recovered[:x11]
-	if !(x14 && (x13 == 125)) && p.depth+0 <= maxDepth {
+	if !(x14 && (x13 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L22
 	}
@@ -49488,7 +49543,7 @@ func (p *parser) q45() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -49536,7 +49591,7 @@ func (p *parser) q46() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -49575,7 +49630,7 @@ L7:
 	} else {
 		x11, _, x12 = p.peek()
 	}
-	if !(x12 && (x11 == 63)) && p.depth+0 <= maxDepth {
+	if !(x12 && (x11 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L13
 	}
@@ -49592,7 +49647,7 @@ L14:
 	p.pos = x8
 	p.recovered = p.recovered[:x9]
 L13:
-	if !(x12 && (x11 == 33)) && p.depth+0 <= maxDepth {
+	if !(x12 && (x11 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L15
 	}
@@ -49650,7 +49705,7 @@ func (p *parser) q47() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.call(recRules[71], 0); !ok {
@@ -49674,7 +49729,7 @@ L4:
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 63)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L10
 	}
@@ -49691,7 +49746,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 33)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L12
 	}
@@ -49745,7 +49800,7 @@ func (p *parser) q48() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -49791,7 +49846,7 @@ func (p *parser) q49() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.q72(); !ok {
@@ -49815,7 +49870,7 @@ L4:
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 63)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L10
 	}
@@ -49832,7 +49887,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 33)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L12
 	}
@@ -49890,7 +49945,7 @@ func (p *parser) q50() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.call(recRules[75], 0); !ok {
@@ -49914,7 +49969,7 @@ L4:
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 63)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L10
 	}
@@ -49931,7 +49986,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 33)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L12
 	}
@@ -49986,7 +50041,7 @@ func (p *parser) q52() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -50034,7 +50089,7 @@ func (p *parser) q53() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -50096,7 +50151,7 @@ func (p *parser) q54() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -50148,7 +50203,7 @@ func (p *parser) q55() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -50224,7 +50279,7 @@ func (p *parser) q56() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -50278,7 +50333,7 @@ func (p *parser) q57() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.q48(); !ok {
@@ -50308,7 +50363,7 @@ func (p *parser) q61() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -50317,7 +50372,7 @@ func (p *parser) q61() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 126)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 126)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 33)
 		goto L6
 	}
@@ -50329,7 +50384,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 126)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 126)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 33)
 		goto L8
 	}
@@ -50341,7 +50396,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 126)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 126)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 33)
 		goto L10
 	}
@@ -50375,7 +50430,7 @@ func (p *parser) q62() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 126 {
@@ -50431,7 +50486,7 @@ func (p *parser) q63() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 126 {
@@ -50481,7 +50536,7 @@ func (p *parser) q64() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 126 {
@@ -50511,7 +50566,7 @@ func (p *parser) q67() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e525()
@@ -50534,7 +50589,7 @@ func (p *parser) q68() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e526()
@@ -50557,7 +50612,7 @@ func (p *parser) q69() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e527()
@@ -50588,7 +50643,7 @@ func (p *parser) q72() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -50618,7 +50673,7 @@ L6:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 110)) && p.depth+1 <= maxDepth {
+	if !(x8 && (x7 == 110)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L9
 	}
@@ -50630,7 +50685,7 @@ L10:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L9:
-	if !(x8 && (x7 == 40)) && p.depth+1 <= maxDepth {
+	if !(x8 && (x7 == 40)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L11
 	}
@@ -50642,7 +50697,7 @@ L12:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L11:
-	if !(x8 && (x7 == 91)) && p.depth+1 <= maxDepth {
+	if !(x8 && (x7 == 91)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L13
 	}
@@ -50672,7 +50727,7 @@ func (p *parser) q74() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e532()
@@ -50701,7 +50756,7 @@ func (p *parser) q78() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -50749,7 +50804,7 @@ func (p *parser) q79() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -50771,7 +50826,7 @@ L3:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 105)) && p.depth+1 <= maxDepth {
+	if !(x8 && (x7 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L9
 	}
@@ -50832,7 +50887,7 @@ func (p *parser) q80() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -50893,7 +50948,7 @@ func (p *parser) q81() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.q220(); !ok {
@@ -50922,7 +50977,7 @@ func (p *parser) q82() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.q220(); !ok {
@@ -50953,7 +51008,7 @@ func (p *parser) q83() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+4 <= len(p.in) && p.in[p.pos] == 101 && p.in[p.pos+1] == 108 && p.in[p.pos+2] == 115 && p.in[p.pos+3] == 101 {
@@ -51006,7 +51061,7 @@ func (p *parser) q84() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -51015,7 +51070,7 @@ func (p *parser) q84() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 111)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 39)
 		goto L6
 	}
@@ -51027,7 +51082,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 38)
 		goto L8
 	}
@@ -51086,7 +51141,7 @@ func (p *parser) q87() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -51115,7 +51170,7 @@ L7:
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 105)) && p.depth+1 <= maxDepth {
+	if !(x9 && (x8 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L10
 	}
@@ -51160,7 +51215,7 @@ func (p *parser) q88() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -51176,7 +51231,7 @@ L4:
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (x5 == 105)) && p.depth+1 <= maxDepth {
+	if !(x6 && (x5 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L7
 	}
@@ -51226,7 +51281,7 @@ func (p *parser) q94() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+3 <= len(p.in) && p.in[p.pos] == 116 && p.in[p.pos+1] == 114 && p.in[p.pos+2] == 121 {
@@ -51287,7 +51342,7 @@ func (p *parser) q95() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+3 <= len(p.in) && p.in[p.pos] == 116 && p.in[p.pos+1] == 114 && p.in[p.pos+2] == 121 {
@@ -51330,7 +51385,7 @@ func (p *parser) q99() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -51386,7 +51441,7 @@ func (p *parser) q100() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -51431,7 +51486,7 @@ func (p *parser) q101() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -51440,7 +51495,7 @@ func (p *parser) q101() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L6
 	}
@@ -51454,7 +51509,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L8
 	}
@@ -51468,7 +51523,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L10
 	}
@@ -51519,7 +51574,7 @@ func (p *parser) q104() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+3 <= len(p.in) && p.in[p.pos] == 46 && p.in[p.pos+1] == 46 && p.in[p.pos+2] == 46 {
@@ -51556,7 +51611,7 @@ func (p *parser) q105() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.q220(); !ok {
@@ -51589,7 +51644,7 @@ func (p *parser) q108() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.call(recRules[109], 0); !ok {
@@ -51641,7 +51696,7 @@ func (p *parser) q110() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -51691,7 +51746,7 @@ func (p *parser) q111() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -51728,7 +51783,7 @@ L7:
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 110)) && p.depth+1 <= maxDepth {
+	if !(x9 && (x8 == 110)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L10
 	}
@@ -51779,7 +51834,7 @@ func (p *parser) q112() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -51829,7 +51884,7 @@ func (p *parser) q113() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -51838,7 +51893,7 @@ func (p *parser) q113() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 123)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 123)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 40)
 		goto L6
 	}
@@ -51850,7 +51905,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 91)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 91)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L8
 	}
@@ -51869,7 +51924,7 @@ L8:
 L10:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
-	if !(x5 && (x4 == 40)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 40)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L11
 	}
@@ -51905,7 +51960,7 @@ func (p *parser) q114() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.call(recRules[139], 0); !ok {
@@ -52046,7 +52101,7 @@ func (p *parser) e696() (*Node, bool) {
 func (p *parser) e697() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
-	if !(more && (ch == 43)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 43)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 113)
 	} else {
 		prevCut := p.cut
@@ -52062,7 +52117,7 @@ func (p *parser) e697() (*Node, bool) {
 			return nil, false
 		}
 	}
-	if !(more && (ch == 45)) && p.depth+0 <= maxDepth {
+	if !(more && (ch == 45)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 111)
 	} else {
 		prevCut := p.cut
@@ -52400,7 +52455,7 @@ func (p *parser) q116() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -52461,7 +52516,7 @@ func (p *parser) q118() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -52470,7 +52525,7 @@ func (p *parser) q118() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 45)
 		goto L6
 	}
@@ -52484,7 +52539,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 46)
 		goto L8
 	}
@@ -52496,7 +52551,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 110)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 110)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L10
 	}
@@ -52547,7 +52602,7 @@ func (p *parser) q119() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -52602,7 +52657,7 @@ func (p *parser) q124() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -52611,7 +52666,7 @@ func (p *parser) q124() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 40)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 40)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L6
 	}
@@ -52633,7 +52688,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 91)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 91)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L8
 	}
@@ -52655,7 +52710,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 123)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 123)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 40)
 		goto L10
 	}
@@ -52712,7 +52767,7 @@ func (p *parser) q125() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x22
@@ -52736,7 +52791,7 @@ L5:
 	} else {
 		x6, _, x7 = p.peek()
 	}
-	if !(x7 && (x6 == 95)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 95)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 50)
 		goto L8
 	}
@@ -52764,7 +52819,7 @@ L10:
 L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
-	if !(x7 && (x6 == 46)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 25)
 		goto L12
 	}
@@ -52778,7 +52833,7 @@ L13:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L12:
-	if !(x7 && (x6 == 46)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L14
 	}
@@ -52807,7 +52862,7 @@ L15:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L14:
-	if !(x7 && (!!(x6 == 58 || x6 == 59 || x6 == 63 || x6 == 126 || x6 == 43 || x6 == 45 || x6 == 42 || x6 == 47 || x6 == 60 || x6 == 62 || x6 == 61 || x6 == 33 || x6 == 38 || x6 == 124 || x6 == 44))) && p.depth+0 <= maxDepth {
+	if !(x7 && (!!(x6 == 58 || x6 == 59 || x6 == 63 || x6 == 126 || x6 == 43 || x6 == 45 || x6 == 42 || x6 == 47 || x6 == 60 || x6 == 62 || x6 == 61 || x6 == 33 || x6 == 38 || x6 == 124 || x6 == 44))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 51)
 		goto L19
 	}
@@ -52909,7 +52964,7 @@ func (p *parser) q126() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -52931,7 +52986,7 @@ L3:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 48)) && p.depth+1 <= maxDepth {
+	if !(x8 && (x7 == 48)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L9
 	}
@@ -52997,7 +53052,7 @@ L14:
 L18:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
-	if !(x8 && (x7 == 48)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L19
 	}
@@ -53092,7 +53147,7 @@ func (p *parser) q127() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -53102,7 +53157,7 @@ func (p *parser) q127() (*Node, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L10
 	}
@@ -53114,7 +53169,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 48)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L12
 	}
@@ -53160,7 +53215,7 @@ L4:
 	} else {
 		x22, _, x23 = p.peek()
 	}
-	if !(x23 && (x22 == 46)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L24
 	}
@@ -53216,7 +53271,7 @@ func (p *parser) q128() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -53226,7 +53281,7 @@ func (p *parser) q128() (*Node, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L10
 	}
@@ -53238,7 +53293,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 48)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L12
 	}
@@ -53279,7 +53334,7 @@ L4:
 	} else {
 		x22, _, x23 = p.peek()
 	}
-	if !(x23 && (!!(x22 >= 49 && x22 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x23 && (!!(x22 >= 49 && x22 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L24
 	}
@@ -53291,7 +53346,7 @@ L25:
 	p.pos = x19
 	p.recovered = p.recovered[:x20]
 L24:
-	if !(x23 && (x22 == 48)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L26
 	}
@@ -53319,7 +53374,7 @@ L18:
 	} else {
 		x28, _, x29 = p.peek()
 	}
-	if !(x29 && (x28 == 46)) && p.depth+0 <= maxDepth {
+	if !(x29 && (x28 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L30
 	}
@@ -53369,7 +53424,7 @@ func (p *parser) q129() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -53469,7 +53524,7 @@ func (p *parser) q130() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 48 {
@@ -53486,7 +53541,7 @@ func (p *parser) q130() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 46)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 46)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L6
 	}
@@ -53500,7 +53555,7 @@ func (p *parser) q130() (*Node, bool) {
 	} else {
 		x15, _, x16 = p.peek()
 	}
-	if !(x16 && (!!(x15 == 101 || x15 == 69))) && p.depth+1 <= maxDepth {
+	if !(x16 && (!!(x15 == 101 || x15 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L17
 	}
@@ -53512,7 +53567,7 @@ L18:
 	p.pos = x12
 	p.recovered = p.recovered[:x13]
 L17:
-	if !(x16 && (!!(x15 == 75 || x15 == 77 || x15 == 71 || x15 == 84 || x15 == 80))) && p.depth+1 <= maxDepth {
+	if !(x16 && (!!(x15 == 75 || x15 == 77 || x15 == 71 || x15 == 84 || x15 == 80))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 62)
 		goto L19
 	}
@@ -53536,7 +53591,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (!!(x4 == 101 || x4 == 69))) && p.depth+1 <= maxDepth {
+	if !(x5 && (!!(x4 == 101 || x4 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L21
 	}
@@ -53572,7 +53627,7 @@ func (p *parser) q131() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -53615,7 +53670,7 @@ func (p *parser) q135() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e592()
@@ -53638,7 +53693,7 @@ func (p *parser) q136() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e593()
@@ -53661,7 +53716,7 @@ func (p *parser) q140() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e597()
@@ -53689,7 +53744,7 @@ func (p *parser) q144() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -53736,7 +53791,7 @@ func (p *parser) q146() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -53745,7 +53800,7 @@ func (p *parser) q146() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 48)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 48)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L6
 	}
@@ -53789,7 +53844,7 @@ func (p *parser) q147() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e199()
@@ -53823,7 +53878,7 @@ func (p *parser) q149() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -53898,7 +53953,7 @@ func (p *parser) q150() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -53979,7 +54034,7 @@ func (p *parser) q151() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x12
@@ -54095,7 +54150,7 @@ func (p *parser) q152() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x9
@@ -54204,7 +54259,7 @@ func (p *parser) q153() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) {
@@ -54274,7 +54329,7 @@ func (p *parser) q154() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -54284,7 +54339,7 @@ func (p *parser) q154() (*Node, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L10
 	}
@@ -54296,7 +54351,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 48)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L12
 	}
@@ -54327,7 +54382,7 @@ L7:
 	} else {
 		x21, _, x22 = p.peek()
 	}
-	if !(x22 && (x21 == 46)) && p.depth+1 <= maxDepth {
+	if !(x22 && (x21 == 46)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L23
 	}
@@ -54340,7 +54395,7 @@ L7:
 	} else {
 		x28, _, x29 = p.peek()
 	}
-	if !(x29 && (!!(x28 == 101 || x28 == 69))) && p.depth+1 <= maxDepth {
+	if !(x29 && (!!(x28 == 101 || x28 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L30
 	}
@@ -54376,7 +54431,7 @@ L24:
 	p.pos = x18
 	p.recovered = p.recovered[:x19]
 L23:
-	if !(x22 && (!!(x21 == 101 || x21 == 69))) && p.depth+1 <= maxDepth {
+	if !(x22 && (!!(x21 == 101 || x21 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L36
 	}
@@ -54399,7 +54454,7 @@ L4:
 	} else {
 		x38, _, x39 = p.peek()
 	}
-	if !(x39 && (x38 == 46)) && p.depth+0 <= maxDepth {
+	if !(x39 && (x38 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L40
 	}
@@ -54417,7 +54472,7 @@ L4:
 	} else {
 		x45, _, x46 = p.peek()
 	}
-	if !(x46 && (!!(x45 == 101 || x45 == 69))) && p.depth+1 <= maxDepth {
+	if !(x46 && (!!(x45 == 101 || x45 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L47
 	}
@@ -54491,7 +54546,7 @@ func (p *parser) q155() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -54501,7 +54556,7 @@ func (p *parser) q155() (*Node, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L10
 	}
@@ -54513,7 +54568,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 48)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L12
 	}
@@ -54554,7 +54609,7 @@ L4:
 	} else {
 		x22, _, x23 = p.peek()
 	}
-	if !(x23 && (!!(x22 >= 49 && x22 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x23 && (!!(x22 >= 49 && x22 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L24
 	}
@@ -54566,7 +54621,7 @@ L25:
 	p.pos = x19
 	p.recovered = p.recovered[:x20]
 L24:
-	if !(x23 && (x22 == 48)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L26
 	}
@@ -54600,7 +54655,7 @@ L18:
 	} else {
 		x32, _, x33 = p.peek()
 	}
-	if !(x33 && (x32 == 46)) && p.depth+0 <= maxDepth {
+	if !(x33 && (x32 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L34
 	}
@@ -54644,7 +54699,7 @@ func (p *parser) q157() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -54707,7 +54762,7 @@ func (p *parser) q164() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -54758,7 +54813,7 @@ func (p *parser) q165() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 41 {
@@ -54794,7 +54849,7 @@ func (p *parser) q166() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 41 {
@@ -54830,7 +54885,7 @@ func (p *parser) q167() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.q164(); !ok {
@@ -54859,7 +54914,7 @@ func (p *parser) q169() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.call(recRules[120], 0); !ok {
@@ -54891,7 +54946,7 @@ func (p *parser) q170() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.call(recRules[120], 0); !ok {
@@ -54922,7 +54977,7 @@ func (p *parser) q173() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -54973,7 +55028,7 @@ func (p *parser) q174() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 41 {
@@ -55009,7 +55064,7 @@ func (p *parser) q175() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 41 {
@@ -55045,7 +55100,7 @@ func (p *parser) q176() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.q173(); !ok {
@@ -55074,7 +55129,7 @@ func (p *parser) q178() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.call(recRules[120], 0); !ok {
@@ -55106,7 +55161,7 @@ func (p *parser) q179() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.call(recRules[120], 0); !ok {
@@ -55137,7 +55192,7 @@ func (p *parser) q180() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -55208,7 +55263,7 @@ func (p *parser) q181() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e246()
@@ -55231,7 +55286,7 @@ func (p *parser) q183() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e633()
@@ -55262,7 +55317,7 @@ func (p *parser) q186() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -55271,7 +55326,7 @@ func (p *parser) q186() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 10)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L6
 	}
@@ -55285,7 +55340,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 13)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 13)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 96)
 		goto L8
 	}
@@ -55321,7 +55376,7 @@ func (p *parser) q194() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 41 {
@@ -55355,7 +55410,7 @@ func (p *parser) q195() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 41 {
@@ -55392,7 +55447,7 @@ func (p *parser) q199() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.call(recRules[120], 0); !ok {
@@ -55424,7 +55479,7 @@ func (p *parser) q200() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.call(recRules[120], 0); !ok {
@@ -55449,7 +55504,7 @@ func (p *parser) q201() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e648()
@@ -55476,7 +55531,7 @@ func (p *parser) q207() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 41 {
@@ -55512,7 +55567,7 @@ func (p *parser) q208() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 41 {
@@ -55563,7 +55618,7 @@ func (p *parser) q212() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.call(recRules[120], 0); !ok {
@@ -55595,7 +55650,7 @@ func (p *parser) q213() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.call(recRules[120], 0); !ok {
@@ -55620,7 +55675,7 @@ func (p *parser) q215() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e283()
@@ -55643,7 +55698,7 @@ func (p *parser) q216() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e284()
@@ -55669,7 +55724,7 @@ func (p *parser) q220() (*Node, bool) {
 		ok   bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	for {
@@ -55698,7 +55753,7 @@ func (p *parser) q222() (*Node, bool) {
 		ok   bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	for {
@@ -55730,7 +55785,7 @@ func (p *parser) q224() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+2 <= len(p.in) && p.in[p.pos] == 47 && p.in[p.pos+1] == 47 {
@@ -55778,7 +55833,7 @@ func (p *parser) q226() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -55787,7 +55842,7 @@ func (p *parser) q226() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 >= 48 && x4 <= 57))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 >= 48 && x4 <= 57))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 60)
 		goto L6
 	}
@@ -55861,7 +55916,7 @@ func (p *parser) q227() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -55870,7 +55925,7 @@ func (p *parser) q227() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L6
 	}
@@ -55884,7 +55939,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 101)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 101)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 37)
 		goto L8
 	}
@@ -55898,7 +55953,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L10
 	}
@@ -55912,7 +55967,7 @@ L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L10:
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 36)
 		goto L12
 	}
@@ -55926,7 +55981,7 @@ L13:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L12:
-	if !(x5 && (x4 == 108)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 108)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L14
 	}
@@ -55940,7 +55995,7 @@ L15:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L14:
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L16
 	}
@@ -55954,7 +56009,7 @@ L17:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L16:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 38)
 		goto L18
 	}
@@ -55966,7 +56021,7 @@ L19:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L18:
-	if !(x5 && (x4 == 111)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 39)
 		goto L20
 	}
@@ -55978,7 +56033,7 @@ L21:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L20:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 20)
 		goto L22
 	}
@@ -55992,7 +56047,7 @@ L23:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L22:
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 45)
 		goto L24
 	}
@@ -56006,7 +56061,7 @@ L25:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L24:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 46)
 		goto L26
 	}
@@ -56018,7 +56073,7 @@ L27:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L26:
-	if !(x5 && (x4 == 110)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 110)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L28
 	}
@@ -56069,7 +56124,7 @@ func (p *parser) q228() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) {
@@ -56098,7 +56153,7 @@ func (p *parser) q231() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e320()
@@ -56132,7 +56187,7 @@ func (p *parser) q235() (*Node, bool) {
 		x11  bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -56166,7 +56221,7 @@ func (p *parser) q235() (*Node, bool) {
 		} else {
 			x10, _, x11 = p.peek()
 		}
-		if !(x11 && (x10 == 92)) && p.depth+1 <= maxDepth {
+		if !(x11 && (x10 == 92)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L12
 		}
@@ -56213,7 +56268,7 @@ func (p *parser) q238() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -56222,7 +56277,7 @@ func (p *parser) q238() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 == 36))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 == 36))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 67)
 		goto L6
 	}
@@ -56292,7 +56347,7 @@ func (p *parser) q239() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) {
@@ -56321,7 +56376,7 @@ func (p *parser) q242() (*Node, bool) {
 	prevEnv, prevCut := p.env, p.cut
 	p.cut = false
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	v, ok := p.e683()
@@ -56350,7 +56405,7 @@ func (p *parser) q243() (*Node, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) {
@@ -56388,7 +56443,7 @@ func (p *tparser) s0() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -56448,7 +56503,7 @@ func (p *tparser) i1() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -56578,7 +56633,7 @@ func (p *tparser) i2() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_, _, _, _ = x8, x23, x50, x65
@@ -56825,7 +56880,7 @@ func (p *tparser) i3() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.parser.matchLiteral(lit6, "package", 6, false); !ok {
@@ -56885,7 +56940,7 @@ func (p *tparser) s4() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -56894,7 +56949,7 @@ func (p *tparser) s4() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (x5 == 105)) && p.depth+1 <= maxDepth {
+	if !(x6 && (x5 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 7)
 		goto L7
 	}
@@ -56907,7 +56962,7 @@ L8:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L7:
-	if !(x6 && (x5 == 105)) && p.depth+1 <= maxDepth {
+	if !(x6 && (x5 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 7)
 		goto L10
 	}
@@ -56970,7 +57025,7 @@ func (p *tparser) i5() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x10
@@ -57072,7 +57127,7 @@ func (p *tparser) i6() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.parser.matchLiteral(lit9, "import", 7, false); !ok {
@@ -57139,7 +57194,7 @@ func (p *tparser) i7() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x2, x3 = p.pos, len(p.recovered)
@@ -57191,7 +57246,7 @@ func (p *tparser) i8() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if v2, ok = p.u139(); !ok {
@@ -57233,7 +57288,7 @@ func (p *tparser) s9() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -57293,7 +57348,7 @@ func (p *tparser) s10() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -57319,7 +57374,7 @@ L5:
 	} else {
 		x17, _, x18 = p.peek()
 	}
-	if !(x18 && (x17 == 41)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 41)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 9)
 		goto L19
 	}
@@ -57333,7 +57388,7 @@ L20:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L19:
-	if !(x18 && (x17 == 125)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L21
 	}
@@ -57397,7 +57452,7 @@ func (p *tparser) s11() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -57461,7 +57516,7 @@ func (p *tparser) s12() (any, bool) {
 		v9   any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x3
@@ -57518,7 +57573,7 @@ func (p *tparser) s13() (any, bool) {
 		v9   any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x3
@@ -57595,7 +57650,7 @@ func (p *tparser) v14() (any, bool) {
 		v26  any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_, _ = x3, x14
@@ -57646,7 +57701,7 @@ func (p *tparser) v14() (any, bool) {
 		} else {
 			x21, _, x22 = p.peek()
 		}
-		if !(x22 && (x21 == 47)) && p.depth+1 <= maxDepth {
+		if !(x22 && (x21 == 47)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 15)
 			goto L23
 		}
@@ -57710,7 +57765,7 @@ func (p *tparser) i14() (any, bool) {
 		v26  any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_, _ = x3, x14
@@ -57761,7 +57816,7 @@ func (p *tparser) i14() (any, bool) {
 		} else {
 			x21, _, x22 = p.peek()
 		}
-		if !(x22 && (x21 == 47)) && p.depth+1 <= maxDepth {
+		if !(x22 && (x21 == 47)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 15)
 			goto L23
 		}
@@ -57821,7 +57876,7 @@ func (p *tparser) s15() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x7
@@ -57932,7 +57987,7 @@ func (p *tparser) v16() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -57947,7 +58002,7 @@ func (p *tparser) v16() (any, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 44)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L10
 	}
@@ -57972,7 +58027,7 @@ L11:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
 L10:
-	if !(x9 && (x8 == 10)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L18
 	}
@@ -58017,7 +58072,7 @@ L18:
 	} else {
 		x36, _, x37 = p.peek()
 	}
-	if !(x37 && (x36 == 10)) && p.depth+0 <= maxDepth {
+	if !(x37 && (x36 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L38
 	}
@@ -58136,7 +58191,7 @@ func (p *tparser) i16() (any, bool) {
 		v49 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -58151,7 +58206,7 @@ func (p *tparser) i16() (any, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 44)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L10
 	}
@@ -58176,7 +58231,7 @@ L11:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
 L10:
-	if !(x9 && (x8 == 10)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L18
 	}
@@ -58221,7 +58276,7 @@ L18:
 	} else {
 		x36, _, x37 = p.peek()
 	}
-	if !(x37 && (x36 == 10)) && p.depth+0 <= maxDepth {
+	if !(x37 && (x36 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L38
 	}
@@ -58318,7 +58373,7 @@ func (p *tparser) s17() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -58333,7 +58388,7 @@ func (p *tparser) s17() (any, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 10)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L10
 	}
@@ -58427,7 +58482,7 @@ func (p *tparser) v18() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -58497,7 +58552,7 @@ func (p *tparser) i18() (any, bool) {
 		v14 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -58572,7 +58627,7 @@ func (p *tparser) v19() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -58611,7 +58666,7 @@ func (p *tparser) i19() (any, bool) {
 		v5 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -58669,7 +58724,7 @@ func (p *tparser) v20() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -58746,7 +58801,7 @@ func (p *tparser) i20() (any, bool) {
 		v17 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -58824,7 +58879,7 @@ func (p *tparser) v21() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -58873,7 +58928,7 @@ func (p *tparser) i21() (any, bool) {
 		v7 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -58931,7 +58986,7 @@ func (p *tparser) s22() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -59019,7 +59074,7 @@ func (p *tparser) i23() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x4
@@ -59067,7 +59122,7 @@ func (p *tparser) s24() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -59125,7 +59180,7 @@ func (p *tparser) i25() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if v2, ok = p.s33(); !ok {
@@ -59171,7 +59226,7 @@ func (p *tparser) i26() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if v2, ok = p.u27(); !ok {
@@ -59235,7 +59290,7 @@ func (p *tparser) i27() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -59352,7 +59407,7 @@ func (p *tparser) s28() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -59454,7 +59509,7 @@ func (p *tparser) s29() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -59556,7 +59611,7 @@ func (p *tparser) v30() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -59571,7 +59626,7 @@ func (p *tparser) v30() (any, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 44)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L10
 	}
@@ -59588,7 +59643,7 @@ L11:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
 L10:
-	if !(x9 && (x8 == 125)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L14
 	}
@@ -59605,7 +59660,7 @@ L15:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
 L14:
-	if !(x9 && (x8 == 10)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L18
 	}
@@ -59622,7 +59677,7 @@ L19:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
 L18:
-	if !(x9 && (x8 == 47)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L22
 	}
@@ -59689,7 +59744,7 @@ func (p *tparser) i30() (any, bool) {
 		v27 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -59704,7 +59759,7 @@ func (p *tparser) i30() (any, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 44)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L10
 	}
@@ -59721,7 +59776,7 @@ L11:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
 L10:
-	if !(x9 && (x8 == 125)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L14
 	}
@@ -59738,7 +59793,7 @@ L15:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
 L14:
-	if !(x9 && (x8 == 10)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L18
 	}
@@ -59755,7 +59810,7 @@ L19:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
 L18:
-	if !(x9 && (x8 == 47)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L22
 	}
@@ -59827,7 +59882,7 @@ func (p *tparser) v31() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -59842,7 +59897,7 @@ func (p *tparser) v31() (any, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 44)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L10
 	}
@@ -59859,7 +59914,7 @@ L11:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
 L10:
-	if !(x9 && (x8 == 125)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L14
 	}
@@ -59922,7 +59977,7 @@ func (p *tparser) i31() (any, bool) {
 		v19 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -59937,7 +59992,7 @@ func (p *tparser) i31() (any, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 44)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L10
 	}
@@ -59954,7 +60009,7 @@ L11:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
 L10:
-	if !(x9 && (x8 == 125)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L14
 	}
@@ -60021,7 +60076,7 @@ func (p *tparser) s32() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -60103,7 +60158,7 @@ func (p *tparser) s33() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -60199,7 +60254,7 @@ func (p *tparser) i34() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -60249,7 +60304,7 @@ func (p *tparser) s35() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -60315,7 +60370,7 @@ func (p *tparser) i36() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -60401,7 +60456,7 @@ func (p *tparser) s37() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -60463,7 +60518,7 @@ func (p *tparser) i38() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -60536,7 +60591,7 @@ func (p *tparser) i39() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x2, x3 = p.pos, len(p.recovered)
@@ -60545,7 +60600,7 @@ func (p *tparser) i39() (any, bool) {
 	} else {
 		x6, _, x7 = p.peek()
 	}
-	if !(x7 && (x6 == 102)) && p.depth+1 <= maxDepth {
+	if !(x7 && (x6 == 102)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L8
 	}
@@ -60558,7 +60613,7 @@ L9:
 	p.pos = x2
 	p.recovered = p.recovered[:x3]
 L8:
-	if !(x7 && (x6 == 105)) && p.depth+1 <= maxDepth {
+	if !(x7 && (x6 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L11
 	}
@@ -60571,7 +60626,7 @@ L12:
 	p.pos = x2
 	p.recovered = p.recovered[:x3]
 L11:
-	if !(x7 && (x6 == 108)) && p.depth+1 <= maxDepth {
+	if !(x7 && (x6 == 108)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L14
 	}
@@ -60625,7 +60680,7 @@ func (p *tparser) s40() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -60636,7 +60691,7 @@ func (p *tparser) s40() (any, bool) {
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 102)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L9
 	}
@@ -60653,7 +60708,7 @@ L10:
 	p.pos = x3
 	p.recovered = p.recovered[:x4]
 L9:
-	if !(x8 && (x7 == 105)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L13
 	}
@@ -60670,7 +60725,7 @@ L14:
 	p.pos = x3
 	p.recovered = p.recovered[:x4]
 L13:
-	if !(x8 && (x7 == 108)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 108)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L17
 	}
@@ -60687,7 +60742,7 @@ L18:
 	p.pos = x3
 	p.recovered = p.recovered[:x4]
 L17:
-	if !(x8 && (x7 == 116)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L21
 	}
@@ -60765,7 +60820,7 @@ func (p *tparser) s41() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -60801,7 +60856,7 @@ L7:
 	} else {
 		x13, _, x14 = p.peek()
 	}
-	if !(x14 && (x13 == 44)) && p.depth+0 <= maxDepth {
+	if !(x14 && (x13 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L15
 	}
@@ -60818,7 +60873,7 @@ L16:
 	p.pos = x9
 	p.recovered = p.recovered[:x10]
 L15:
-	if !(x14 && (x13 == 10)) && p.depth+0 <= maxDepth {
+	if !(x14 && (x13 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L19
 	}
@@ -60835,7 +60890,7 @@ L20:
 	p.pos = x9
 	p.recovered = p.recovered[:x10]
 L19:
-	if !(x14 && (x13 == 47)) && p.depth+0 <= maxDepth {
+	if !(x14 && (x13 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L23
 	}
@@ -60861,7 +60916,7 @@ L23:
 L27:
 	p.pos = x9
 	p.recovered = p.recovered[:x10]
-	if !(x14 && (x13 == 125)) && p.depth+0 <= maxDepth {
+	if !(x14 && (x13 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L28
 	}
@@ -60912,7 +60967,7 @@ func (p *tparser) s42() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+3 <= len(p.in) && p.in[p.pos] == 102 && p.in[p.pos+1] == 111 && p.in[p.pos+2] == 114 {
@@ -60944,7 +60999,7 @@ L3:
 	} else {
 		x10, _, x11 = p.peek()
 	}
-	if !(x11 && (x10 == 44)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L12
 	}
@@ -60958,7 +61013,7 @@ L13:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L12:
-	if !(x11 && (x10 == 10)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L14
 	}
@@ -60972,7 +61027,7 @@ L15:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L14:
-	if !(x11 && (x10 == 47)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L16
 	}
@@ -61031,7 +61086,7 @@ func (p *tparser) s43() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+2 <= len(p.in) && p.in[p.pos] == 105 && p.in[p.pos+1] == 102 {
@@ -61063,7 +61118,7 @@ L3:
 	} else {
 		x10, _, x11 = p.peek()
 	}
-	if !(x11 && (x10 == 44)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L12
 	}
@@ -61077,7 +61132,7 @@ L13:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L12:
-	if !(x11 && (x10 == 10)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L14
 	}
@@ -61091,7 +61146,7 @@ L15:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L14:
-	if !(x11 && (x10 == 47)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L16
 	}
@@ -61152,7 +61207,7 @@ func (p *tparser) s44() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+3 <= len(p.in) && p.in[p.pos] == 108 && p.in[p.pos+1] == 101 && p.in[p.pos+2] == 116 {
@@ -61200,7 +61255,7 @@ L6:
 	} else {
 		x13, _, x14 = p.peek()
 	}
-	if !(x14 && (x13 == 44)) && p.depth+0 <= maxDepth {
+	if !(x14 && (x13 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L15
 	}
@@ -61214,7 +61269,7 @@ L16:
 	p.pos = x10
 	p.recovered = p.recovered[:x11]
 L15:
-	if !(x14 && (x13 == 10)) && p.depth+0 <= maxDepth {
+	if !(x14 && (x13 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L17
 	}
@@ -61228,7 +61283,7 @@ L18:
 	p.pos = x10
 	p.recovered = p.recovered[:x11]
 L17:
-	if !(x14 && (x13 == 47)) && p.depth+0 <= maxDepth {
+	if !(x14 && (x13 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L19
 	}
@@ -61250,7 +61305,7 @@ L19:
 L21:
 	p.pos = x10
 	p.recovered = p.recovered[:x11]
-	if !(x14 && (x13 == 125)) && p.depth+0 <= maxDepth {
+	if !(x14 && (x13 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L22
 	}
@@ -61299,7 +61354,7 @@ func (p *tparser) s45() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -61378,7 +61433,7 @@ func (p *tparser) i46() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -61422,7 +61477,7 @@ L11:
 	} else {
 		x18, _, x19 = p.peek()
 	}
-	if !(x19 && (x18 == 63)) && p.depth+0 <= maxDepth {
+	if !(x19 && (x18 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L20
 	}
@@ -61443,7 +61498,7 @@ L21:
 	p.recovered = p.recovered[:x14]
 	k15 = x16
 L20:
-	if !(x19 && (x18 == 33)) && p.depth+0 <= maxDepth {
+	if !(x19 && (x18 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L24
 	}
@@ -61541,7 +61596,7 @@ func (p *tparser) i47() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if v2, ok = p.u71(); !ok {
@@ -61570,7 +61625,7 @@ L8:
 	} else {
 		x15, _, x16 = p.peek()
 	}
-	if !(x16 && (x15 == 63)) && p.depth+0 <= maxDepth {
+	if !(x16 && (x15 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L17
 	}
@@ -61591,7 +61646,7 @@ L18:
 	p.recovered = p.recovered[:x11]
 	k12 = x13
 L17:
-	if !(x16 && (x15 == 33)) && p.depth+0 <= maxDepth {
+	if !(x16 && (x15 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L21
 	}
@@ -61662,7 +61717,7 @@ func (p *tparser) s48() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -61739,7 +61794,7 @@ func (p *tparser) i49() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if v2, ok = p.s72(); !ok {
@@ -61768,7 +61823,7 @@ L8:
 	} else {
 		x15, _, x16 = p.peek()
 	}
-	if !(x16 && (x15 == 63)) && p.depth+0 <= maxDepth {
+	if !(x16 && (x15 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L17
 	}
@@ -61789,7 +61844,7 @@ L18:
 	p.recovered = p.recovered[:x11]
 	k12 = x13
 L17:
-	if !(x16 && (x15 == 33)) && p.depth+0 <= maxDepth {
+	if !(x16 && (x15 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L21
 	}
@@ -61887,7 +61942,7 @@ func (p *tparser) i50() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if v2, ok = p.u75(); !ok {
@@ -61916,7 +61971,7 @@ L8:
 	} else {
 		x15, _, x16 = p.peek()
 	}
-	if !(x16 && (x15 == 63)) && p.depth+0 <= maxDepth {
+	if !(x16 && (x15 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L17
 	}
@@ -61937,7 +61992,7 @@ L18:
 	p.recovered = p.recovered[:x11]
 	k12 = x13
 L17:
-	if !(x16 && (x15 == 33)) && p.depth+0 <= maxDepth {
+	if !(x16 && (x15 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L21
 	}
@@ -62016,7 +62071,7 @@ func (p *tparser) v51() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -62063,7 +62118,7 @@ func (p *tparser) i51() (any, bool) {
 		v8 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -62122,7 +62177,7 @@ func (p *tparser) i52() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -62178,7 +62233,7 @@ func (p *tparser) s53() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -62261,7 +62316,7 @@ func (p *tparser) i54() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -62315,7 +62370,7 @@ func (p *tparser) s55() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -62404,7 +62459,7 @@ func (p *tparser) i56() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -62473,7 +62528,7 @@ func (p *tparser) i57() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if v2, ok = p.s48(); !ok {
@@ -62515,7 +62570,7 @@ func (p *tparser) i58() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if v2, ok = p.u77(); !ok {
@@ -62583,7 +62638,7 @@ func (p *tparser) i59() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x4
@@ -62646,7 +62701,7 @@ func (p *tparser) i60() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -62703,7 +62758,7 @@ func (p *tparser) s61() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -62712,7 +62767,7 @@ func (p *tparser) s61() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (x5 == 126)) && p.depth+1 <= maxDepth {
+	if !(x6 && (x5 == 126)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 33)
 		goto L7
 	}
@@ -62725,7 +62780,7 @@ L8:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L7:
-	if !(x6 && (x5 == 126)) && p.depth+1 <= maxDepth {
+	if !(x6 && (x5 == 126)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 33)
 		goto L10
 	}
@@ -62738,7 +62793,7 @@ L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L10:
-	if !(x6 && (x5 == 126)) && p.depth+1 <= maxDepth {
+	if !(x6 && (x5 == 126)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 33)
 		goto L13
 	}
@@ -62791,7 +62846,7 @@ func (p *tparser) i62() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 126 {
@@ -62862,7 +62917,7 @@ func (p *tparser) i63() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 126 {
@@ -62926,7 +62981,7 @@ func (p *tparser) i64() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 126 {
@@ -62980,7 +63035,7 @@ func (p *tparser) v65() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -63013,7 +63068,7 @@ L9:
 	} else {
 		x11, _, x12 = p.peek()
 	}
-	if !(x12 && (x11 == 110)) && p.depth+1 <= maxDepth {
+	if !(x12 && (x11 == 110)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L13
 	}
@@ -63026,7 +63081,7 @@ L14:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L13:
-	if !(x12 && (x11 == 40)) && p.depth+1 <= maxDepth {
+	if !(x12 && (x11 == 40)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L16
 	}
@@ -63039,7 +63094,7 @@ L17:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L16:
-	if !(x12 && (x11 == 91)) && p.depth+1 <= maxDepth {
+	if !(x12 && (x11 == 91)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L19
 	}
@@ -63085,7 +63140,7 @@ func (p *tparser) i65() (any, bool) {
 		v21 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -63118,7 +63173,7 @@ L9:
 	} else {
 		x11, _, x12 = p.peek()
 	}
-	if !(x12 && (x11 == 110)) && p.depth+1 <= maxDepth {
+	if !(x12 && (x11 == 110)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L13
 	}
@@ -63131,7 +63186,7 @@ L14:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L13:
-	if !(x12 && (x11 == 40)) && p.depth+1 <= maxDepth {
+	if !(x12 && (x11 == 40)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L16
 	}
@@ -63144,7 +63199,7 @@ L17:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L16:
-	if !(x12 && (x11 == 91)) && p.depth+1 <= maxDepth {
+	if !(x12 && (x11 == 91)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L19
 	}
@@ -63190,7 +63245,7 @@ func (p *tparser) v66() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -63231,7 +63286,7 @@ func (p *tparser) i66() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -63279,7 +63334,7 @@ func (p *tparser) s67() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -63289,7 +63344,7 @@ func (p *tparser) s67() (any, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 105)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 36)
 		goto L10
 	}
@@ -63303,7 +63358,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 101)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 101)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 37)
 		goto L12
 	}
@@ -63317,7 +63372,7 @@ L13:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L12:
-	if !(x9 && (x8 == 102)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 38)
 		goto L14
 	}
@@ -63329,7 +63384,7 @@ L15:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L14:
-	if !(x9 && (x8 == 111)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 39)
 		goto L16
 	}
@@ -63341,7 +63396,7 @@ L17:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L16:
-	if !(x9 && (x8 == 102)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 20)
 		goto L18
 	}
@@ -63379,7 +63434,7 @@ L4:
 	} else {
 		x23, _, x24 = p.peek()
 	}
-	if !(x24 && (x23 == 102)) && p.depth+1 <= maxDepth {
+	if !(x24 && (x23 == 102)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L25
 	}
@@ -63391,7 +63446,7 @@ L26:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L25:
-	if !(x24 && (x23 == 105)) && p.depth+1 <= maxDepth {
+	if !(x24 && (x23 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L27
 	}
@@ -63403,7 +63458,7 @@ L28:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L27:
-	if !(x24 && (x23 == 108)) && p.depth+1 <= maxDepth {
+	if !(x24 && (x23 == 108)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L29
 	}
@@ -63450,7 +63505,7 @@ func (p *tparser) s68() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+3 <= len(p.in) && p.in[p.pos] == 102 && p.in[p.pos+1] == 111 && p.in[p.pos+2] == 114 {
@@ -63482,7 +63537,7 @@ L3:
 	} else {
 		x10, _, x11 = p.peek()
 	}
-	if !(x11 && (x10 == 58)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L12
 	}
@@ -63496,7 +63551,7 @@ L13:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L12:
-	if !(x11 && (x10 == 61)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L14
 	}
@@ -63530,7 +63585,7 @@ L15:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L14:
-	if !(x11 && (x10 == 63)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L19
 	}
@@ -63544,7 +63599,7 @@ L20:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L19:
-	if !(x11 && (x10 == 33)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L21
 	}
@@ -63578,7 +63633,7 @@ L22:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L21:
-	if !(x11 && (x10 == 44)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L26
 	}
@@ -63592,7 +63647,7 @@ L27:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L26:
-	if !(x11 && (x10 == 10)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L28
 	}
@@ -63606,7 +63661,7 @@ L29:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L28:
-	if !(x11 && (x10 == 47)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L30
 	}
@@ -63669,7 +63724,7 @@ func (p *tparser) s69() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+2 <= len(p.in) && p.in[p.pos] == 105 && p.in[p.pos+1] == 102 {
@@ -63701,7 +63756,7 @@ L3:
 	} else {
 		x10, _, x11 = p.peek()
 	}
-	if !(x11 && (x10 == 58)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L12
 	}
@@ -63715,7 +63770,7 @@ L13:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L12:
-	if !(x11 && (x10 == 61)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L14
 	}
@@ -63749,7 +63804,7 @@ L15:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L14:
-	if !(x11 && (x10 == 63)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L19
 	}
@@ -63763,7 +63818,7 @@ L20:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L19:
-	if !(x11 && (x10 == 44)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L21
 	}
@@ -63777,7 +63832,7 @@ L22:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L21:
-	if !(x11 && (x10 == 10)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L23
 	}
@@ -63791,7 +63846,7 @@ L24:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
 L23:
-	if !(x11 && (x10 == 47)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L25
 	}
@@ -63813,7 +63868,7 @@ L25:
 L27:
 	p.pos = x7
 	p.recovered = p.recovered[:x8]
-	if !(x11 && (x10 == 33)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L28
 	}
@@ -63877,7 +63932,7 @@ func (p *tparser) v70() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+3 <= len(p.in) && p.in[p.pos] == 108 && p.in[p.pos+1] == 101 && p.in[p.pos+2] == 116 {
@@ -63937,7 +63992,7 @@ func (p *tparser) i70() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+3 <= len(p.in) && p.in[p.pos] == 108 && p.in[p.pos+1] == 101 && p.in[p.pos+2] == 116 {
@@ -64007,7 +64062,7 @@ func (p *tparser) i71() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if v2, ok = p.u66(); !ok {
@@ -64063,7 +64118,7 @@ func (p *tparser) s72() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -64096,7 +64151,7 @@ L9:
 	} else {
 		x11, _, x12 = p.peek()
 	}
-	if !(x12 && (x11 == 110)) && p.depth+1 <= maxDepth {
+	if !(x12 && (x11 == 110)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L13
 	}
@@ -64109,7 +64164,7 @@ L14:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L13:
-	if !(x12 && (x11 == 40)) && p.depth+1 <= maxDepth {
+	if !(x12 && (x11 == 40)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L16
 	}
@@ -64122,7 +64177,7 @@ L17:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L16:
-	if !(x12 && (x11 == 91)) && p.depth+1 <= maxDepth {
+	if !(x12 && (x11 == 91)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L19
 	}
@@ -64170,7 +64225,7 @@ func (p *tparser) v73() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -64211,7 +64266,7 @@ func (p *tparser) i73() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -64259,7 +64314,7 @@ func (p *tparser) s74() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -64269,7 +64324,7 @@ func (p *tparser) s74() (any, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 105)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 36)
 		goto L10
 	}
@@ -64283,7 +64338,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 101)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 101)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 37)
 		goto L12
 	}
@@ -64297,7 +64352,7 @@ L13:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L12:
-	if !(x9 && (x8 == 102)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 38)
 		goto L14
 	}
@@ -64309,7 +64364,7 @@ L15:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L14:
-	if !(x9 && (x8 == 111)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 39)
 		goto L16
 	}
@@ -64321,7 +64376,7 @@ L17:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L16:
-	if !(x9 && (x8 == 102)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 20)
 		goto L18
 	}
@@ -64335,7 +64390,7 @@ L19:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L18:
-	if !(x9 && (x8 == 102)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L20
 	}
@@ -64349,7 +64404,7 @@ L21:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L20:
-	if !(x9 && (x8 == 105)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L22
 	}
@@ -64363,7 +64418,7 @@ L23:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L22:
-	if !(x9 && (x8 == 116)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L24
 	}
@@ -64401,7 +64456,7 @@ L4:
 	} else {
 		x29, _, x30 = p.peek()
 	}
-	if !(x30 && (x29 == 108)) && p.depth+1 <= maxDepth {
+	if !(x30 && (x29 == 108)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L31
 	}
@@ -64450,7 +64505,7 @@ func (p *tparser) i75() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if v2, ok = p.u73(); !ok {
@@ -64515,7 +64570,7 @@ func (p *tparser) v76() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -64556,7 +64611,7 @@ L11:
 	} else {
 		x13, _, x14 = p.peek()
 	}
-	if !(x14 && (x13 == 110)) && p.depth+1 <= maxDepth {
+	if !(x14 && (x13 == 110)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L15
 	}
@@ -64569,7 +64624,7 @@ L16:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L15:
-	if !(x14 && (x13 == 40)) && p.depth+1 <= maxDepth {
+	if !(x14 && (x13 == 40)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L18
 	}
@@ -64582,7 +64637,7 @@ L19:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L18:
-	if !(x14 && (x13 == 91)) && p.depth+1 <= maxDepth {
+	if !(x14 && (x13 == 91)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L21
 	}
@@ -64629,7 +64684,7 @@ func (p *tparser) i76() (any, bool) {
 		v23 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -64670,7 +64725,7 @@ L11:
 	} else {
 		x13, _, x14 = p.peek()
 	}
-	if !(x14 && (x13 == 110)) && p.depth+1 <= maxDepth {
+	if !(x14 && (x13 == 110)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L15
 	}
@@ -64683,7 +64738,7 @@ L16:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L15:
-	if !(x14 && (x13 == 40)) && p.depth+1 <= maxDepth {
+	if !(x14 && (x13 == 40)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L18
 	}
@@ -64696,7 +64751,7 @@ L19:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L18:
-	if !(x14 && (x13 == 91)) && p.depth+1 <= maxDepth {
+	if !(x14 && (x13 == 91)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L21
 	}
@@ -64742,7 +64797,7 @@ func (p *tparser) v77() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -64783,7 +64838,7 @@ func (p *tparser) i77() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -64826,7 +64881,7 @@ func (p *tparser) s78() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -64899,7 +64954,7 @@ func (p *tparser) i79() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -64921,7 +64976,7 @@ L3:
 	} else {
 		x9, _, x10 = p.peek()
 	}
-	if !(x10 && (x9 == 105)) && p.depth+1 <= maxDepth {
+	if !(x10 && (x9 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L11
 	}
@@ -65018,7 +65073,7 @@ func (p *tparser) i80() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x6
@@ -65107,7 +65162,7 @@ func (p *tparser) i81() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.s220(); !ok {
@@ -65151,7 +65206,7 @@ func (p *tparser) i82() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.s220(); !ok {
@@ -65197,7 +65252,7 @@ func (p *tparser) i83() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+4 <= len(p.in) && p.in[p.pos] == 101 && p.in[p.pos+1] == 108 && p.in[p.pos+2] == 115 && p.in[p.pos+3] == 101 {
@@ -65264,7 +65319,7 @@ func (p *tparser) i84() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -65273,7 +65328,7 @@ func (p *tparser) i84() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 111)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 39)
 		goto L6
 	}
@@ -65285,7 +65340,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 38)
 		goto L8
 	}
@@ -65352,7 +65407,7 @@ func (p *tparser) v85() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -65399,7 +65454,7 @@ func (p *tparser) i85() (any, bool) {
 		v8 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -65487,7 +65542,7 @@ func (p *tparser) v86() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -65496,7 +65551,7 @@ func (p *tparser) v86() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (x5 == 102)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L7
 	}
@@ -65534,7 +65589,7 @@ L15:
 	} else {
 		x22, _, x23 = p.peek()
 	}
-	if !(x23 && (x22 == 58)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L24
 	}
@@ -65548,7 +65603,7 @@ L25:
 	p.pos = x19
 	p.recovered = p.recovered[:x20]
 L24:
-	if !(x23 && (x22 == 61)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L26
 	}
@@ -65582,7 +65637,7 @@ L27:
 	p.pos = x19
 	p.recovered = p.recovered[:x20]
 L26:
-	if !(x23 && (x22 == 63)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L31
 	}
@@ -65596,7 +65651,7 @@ L32:
 	p.pos = x19
 	p.recovered = p.recovered[:x20]
 L31:
-	if !(x23 && (x22 == 33)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L33
 	}
@@ -65630,7 +65685,7 @@ L34:
 	p.pos = x19
 	p.recovered = p.recovered[:x20]
 L33:
-	if !(x23 && (x22 == 44)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L38
 	}
@@ -65644,7 +65699,7 @@ L39:
 	p.pos = x19
 	p.recovered = p.recovered[:x20]
 L38:
-	if !(x23 && (x22 == 10)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L40
 	}
@@ -65658,7 +65713,7 @@ L41:
 	p.pos = x19
 	p.recovered = p.recovered[:x20]
 L40:
-	if !(x23 && (x22 == 47)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L42
 	}
@@ -65697,7 +65752,7 @@ L8:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L7:
-	if !(x6 && (x5 == 105)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L46
 	}
@@ -65735,7 +65790,7 @@ L54:
 	} else {
 		x61, _, x62 = p.peek()
 	}
-	if !(x62 && (x61 == 58)) && p.depth+0 <= maxDepth {
+	if !(x62 && (x61 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L63
 	}
@@ -65749,7 +65804,7 @@ L64:
 	p.pos = x58
 	p.recovered = p.recovered[:x59]
 L63:
-	if !(x62 && (x61 == 61)) && p.depth+0 <= maxDepth {
+	if !(x62 && (x61 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L65
 	}
@@ -65783,7 +65838,7 @@ L66:
 	p.pos = x58
 	p.recovered = p.recovered[:x59]
 L65:
-	if !(x62 && (x61 == 63)) && p.depth+0 <= maxDepth {
+	if !(x62 && (x61 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L70
 	}
@@ -65797,7 +65852,7 @@ L71:
 	p.pos = x58
 	p.recovered = p.recovered[:x59]
 L70:
-	if !(x62 && (x61 == 44)) && p.depth+0 <= maxDepth {
+	if !(x62 && (x61 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L72
 	}
@@ -65811,7 +65866,7 @@ L73:
 	p.pos = x58
 	p.recovered = p.recovered[:x59]
 L72:
-	if !(x62 && (x61 == 10)) && p.depth+0 <= maxDepth {
+	if !(x62 && (x61 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L74
 	}
@@ -65825,7 +65880,7 @@ L75:
 	p.pos = x58
 	p.recovered = p.recovered[:x59]
 L74:
-	if !(x62 && (x61 == 47)) && p.depth+0 <= maxDepth {
+	if !(x62 && (x61 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L76
 	}
@@ -65847,7 +65902,7 @@ L76:
 L78:
 	p.pos = x58
 	p.recovered = p.recovered[:x59]
-	if !(x62 && (x61 == 33)) && p.depth+0 <= maxDepth {
+	if !(x62 && (x61 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L79
 	}
@@ -65945,7 +66000,7 @@ func (p *tparser) i86() (any, bool) {
 		v81  any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -65954,7 +66009,7 @@ func (p *tparser) i86() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (x5 == 102)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L7
 	}
@@ -65992,7 +66047,7 @@ L15:
 	} else {
 		x22, _, x23 = p.peek()
 	}
-	if !(x23 && (x22 == 58)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L24
 	}
@@ -66006,7 +66061,7 @@ L25:
 	p.pos = x19
 	p.recovered = p.recovered[:x20]
 L24:
-	if !(x23 && (x22 == 61)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L26
 	}
@@ -66040,7 +66095,7 @@ L27:
 	p.pos = x19
 	p.recovered = p.recovered[:x20]
 L26:
-	if !(x23 && (x22 == 63)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L31
 	}
@@ -66054,7 +66109,7 @@ L32:
 	p.pos = x19
 	p.recovered = p.recovered[:x20]
 L31:
-	if !(x23 && (x22 == 33)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L33
 	}
@@ -66088,7 +66143,7 @@ L34:
 	p.pos = x19
 	p.recovered = p.recovered[:x20]
 L33:
-	if !(x23 && (x22 == 44)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L38
 	}
@@ -66102,7 +66157,7 @@ L39:
 	p.pos = x19
 	p.recovered = p.recovered[:x20]
 L38:
-	if !(x23 && (x22 == 10)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L40
 	}
@@ -66116,7 +66171,7 @@ L41:
 	p.pos = x19
 	p.recovered = p.recovered[:x20]
 L40:
-	if !(x23 && (x22 == 47)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L42
 	}
@@ -66155,7 +66210,7 @@ L8:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L7:
-	if !(x6 && (x5 == 105)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L46
 	}
@@ -66193,7 +66248,7 @@ L54:
 	} else {
 		x61, _, x62 = p.peek()
 	}
-	if !(x62 && (x61 == 58)) && p.depth+0 <= maxDepth {
+	if !(x62 && (x61 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L63
 	}
@@ -66207,7 +66262,7 @@ L64:
 	p.pos = x58
 	p.recovered = p.recovered[:x59]
 L63:
-	if !(x62 && (x61 == 61)) && p.depth+0 <= maxDepth {
+	if !(x62 && (x61 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L65
 	}
@@ -66241,7 +66296,7 @@ L66:
 	p.pos = x58
 	p.recovered = p.recovered[:x59]
 L65:
-	if !(x62 && (x61 == 63)) && p.depth+0 <= maxDepth {
+	if !(x62 && (x61 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L70
 	}
@@ -66255,7 +66310,7 @@ L71:
 	p.pos = x58
 	p.recovered = p.recovered[:x59]
 L70:
-	if !(x62 && (x61 == 44)) && p.depth+0 <= maxDepth {
+	if !(x62 && (x61 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L72
 	}
@@ -66269,7 +66324,7 @@ L73:
 	p.pos = x58
 	p.recovered = p.recovered[:x59]
 L72:
-	if !(x62 && (x61 == 10)) && p.depth+0 <= maxDepth {
+	if !(x62 && (x61 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L74
 	}
@@ -66283,7 +66338,7 @@ L75:
 	p.pos = x58
 	p.recovered = p.recovered[:x59]
 L74:
-	if !(x62 && (x61 == 47)) && p.depth+0 <= maxDepth {
+	if !(x62 && (x61 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L76
 	}
@@ -66305,7 +66360,7 @@ L76:
 L78:
 	p.pos = x58
 	p.recovered = p.recovered[:x59]
-	if !(x62 && (x61 == 33)) && p.depth+0 <= maxDepth {
+	if !(x62 && (x61 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L79
 	}
@@ -66389,7 +66444,7 @@ func (p *tparser) i87() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -66419,7 +66474,7 @@ L9:
 	} else {
 		x11, _, x12 = p.peek()
 	}
-	if !(x12 && (x11 == 105)) && p.depth+1 <= maxDepth {
+	if !(x12 && (x11 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L13
 	}
@@ -66473,7 +66528,7 @@ func (p *tparser) s88() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -66490,7 +66545,7 @@ L5:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 105)) && p.depth+1 <= maxDepth {
+	if !(x8 && (x7 == 105)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L9
 	}
@@ -66559,7 +66614,7 @@ func (p *tparser) v89() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -66568,7 +66623,7 @@ func (p *tparser) v89() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (x5 == 102)) && p.depth+1 <= maxDepth {
+	if !(x6 && (x5 == 102)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L7
 	}
@@ -66581,7 +66636,7 @@ L8:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L7:
-	if !(x6 && (x5 == 102)) && p.depth+1 <= maxDepth {
+	if !(x6 && (x5 == 102)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L10
 	}
@@ -66623,7 +66678,7 @@ func (p *tparser) i89() (any, bool) {
 		v12 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -66632,7 +66687,7 @@ func (p *tparser) i89() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (x5 == 102)) && p.depth+1 <= maxDepth {
+	if !(x6 && (x5 == 102)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L7
 	}
@@ -66645,7 +66700,7 @@ L8:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L7:
-	if !(x6 && (x5 == 102)) && p.depth+1 <= maxDepth {
+	if !(x6 && (x5 == 102)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L10
 	}
@@ -66702,7 +66757,7 @@ func (p *tparser) i90() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+3 <= len(p.in) && p.in[p.pos] == 102 && p.in[p.pos+1] == 111 && p.in[p.pos+2] == 114 {
@@ -66814,7 +66869,7 @@ func (p *tparser) i91() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+3 <= len(p.in) && p.in[p.pos] == 102 && p.in[p.pos+1] == 111 && p.in[p.pos+2] == 114 {
@@ -66913,7 +66968,7 @@ func (p *tparser) i92() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+2 <= len(p.in) && p.in[p.pos] == 105 && p.in[p.pos+1] == 102 {
@@ -66976,7 +67031,7 @@ func (p *tparser) v93() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -66985,7 +67040,7 @@ func (p *tparser) v93() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (x5 == 116)) && p.depth+1 <= maxDepth {
+	if !(x6 && (x5 == 116)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L7
 	}
@@ -66998,7 +67053,7 @@ L8:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L7:
-	if !(x6 && (x5 == 116)) && p.depth+1 <= maxDepth {
+	if !(x6 && (x5 == 116)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L10
 	}
@@ -67040,7 +67095,7 @@ func (p *tparser) i93() (any, bool) {
 		v12 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -67049,7 +67104,7 @@ func (p *tparser) i93() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (x5 == 116)) && p.depth+1 <= maxDepth {
+	if !(x6 && (x5 == 116)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L7
 	}
@@ -67062,7 +67117,7 @@ L8:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L7:
-	if !(x6 && (x5 == 116)) && p.depth+1 <= maxDepth {
+	if !(x6 && (x5 == 116)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L10
 	}
@@ -67115,7 +67170,7 @@ func (p *tparser) i94() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+3 <= len(p.in) && p.in[p.pos] == 116 && p.in[p.pos+1] == 114 && p.in[p.pos+2] == 121 {
@@ -67179,7 +67234,7 @@ func (p *tparser) s95() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+3 <= len(p.in) && p.in[p.pos] == 116 && p.in[p.pos+1] == 114 && p.in[p.pos+2] == 121 {
@@ -67238,7 +67293,7 @@ func (p *tparser) i96() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 123 {
@@ -67311,7 +67366,7 @@ func (p *tparser) i97() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_, _ = x4, x14
@@ -67416,7 +67471,7 @@ func (p *tparser) v98() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -67486,7 +67541,7 @@ func (p *tparser) i98() (any, bool) {
 		v14 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -67555,7 +67610,7 @@ func (p *tparser) s99() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -67631,7 +67686,7 @@ func (p *tparser) i100() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -67688,7 +67743,7 @@ func (p *tparser) s101() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -67699,7 +67754,7 @@ func (p *tparser) s101() (any, bool) {
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 102)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L9
 	}
@@ -67716,7 +67771,7 @@ L10:
 	p.pos = x3
 	p.recovered = p.recovered[:x4]
 L9:
-	if !(x8 && (x7 == 105)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L13
 	}
@@ -67733,7 +67788,7 @@ L14:
 	p.pos = x3
 	p.recovered = p.recovered[:x4]
 L13:
-	if !(x8 && (x7 == 116)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L17
 	}
@@ -67824,7 +67879,7 @@ func (p *tparser) v102() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -67833,7 +67888,7 @@ func (p *tparser) v102() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L6
 	}
@@ -67866,7 +67921,7 @@ L10:
 	} else {
 		x17, _, x18 = p.peek()
 	}
-	if !(x18 && (x17 == 58)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L19
 	}
@@ -67880,7 +67935,7 @@ L20:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L19:
-	if !(x18 && (x17 == 61)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L21
 	}
@@ -67914,7 +67969,7 @@ L22:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L21:
-	if !(x18 && (x17 == 63)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L26
 	}
@@ -67928,7 +67983,7 @@ L27:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L26:
-	if !(x18 && (x17 == 33)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L28
 	}
@@ -67962,7 +68017,7 @@ L29:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L28:
-	if !(x18 && (x17 == 44)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L33
 	}
@@ -67976,7 +68031,7 @@ L34:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L33:
-	if !(x18 && (x17 == 10)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L35
 	}
@@ -67990,7 +68045,7 @@ L36:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L35:
-	if !(x18 && (x17 == 47)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L37
 	}
@@ -68027,7 +68082,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L40
 	}
@@ -68060,7 +68115,7 @@ L44:
 	} else {
 		x51, _, x52 = p.peek()
 	}
-	if !(x52 && (x51 == 58)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L53
 	}
@@ -68074,7 +68129,7 @@ L54:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
 L53:
-	if !(x52 && (x51 == 61)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L55
 	}
@@ -68108,7 +68163,7 @@ L56:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
 L55:
-	if !(x52 && (x51 == 63)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L60
 	}
@@ -68122,7 +68177,7 @@ L61:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
 L60:
-	if !(x52 && (x51 == 44)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L62
 	}
@@ -68136,7 +68191,7 @@ L63:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
 L62:
-	if !(x52 && (x51 == 10)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L64
 	}
@@ -68150,7 +68205,7 @@ L65:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
 L64:
-	if !(x52 && (x51 == 47)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L66
 	}
@@ -68172,7 +68227,7 @@ L66:
 L68:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
-	if !(x52 && (x51 == 33)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L69
 	}
@@ -68256,7 +68311,7 @@ func (p *tparser) i102() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -68265,7 +68320,7 @@ func (p *tparser) i102() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L6
 	}
@@ -68298,7 +68353,7 @@ L10:
 	} else {
 		x17, _, x18 = p.peek()
 	}
-	if !(x18 && (x17 == 58)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L19
 	}
@@ -68312,7 +68367,7 @@ L20:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L19:
-	if !(x18 && (x17 == 61)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L21
 	}
@@ -68346,7 +68401,7 @@ L22:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L21:
-	if !(x18 && (x17 == 63)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L26
 	}
@@ -68360,7 +68415,7 @@ L27:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L26:
-	if !(x18 && (x17 == 33)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L28
 	}
@@ -68394,7 +68449,7 @@ L29:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L28:
-	if !(x18 && (x17 == 44)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L33
 	}
@@ -68408,7 +68463,7 @@ L34:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L33:
-	if !(x18 && (x17 == 10)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L35
 	}
@@ -68422,7 +68477,7 @@ L36:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L35:
-	if !(x18 && (x17 == 47)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L37
 	}
@@ -68459,7 +68514,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L40
 	}
@@ -68492,7 +68547,7 @@ L44:
 	} else {
 		x51, _, x52 = p.peek()
 	}
-	if !(x52 && (x51 == 58)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L53
 	}
@@ -68506,7 +68561,7 @@ L54:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
 L53:
-	if !(x52 && (x51 == 61)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L55
 	}
@@ -68540,7 +68595,7 @@ L56:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
 L55:
-	if !(x52 && (x51 == 63)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L60
 	}
@@ -68554,7 +68609,7 @@ L61:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
 L60:
-	if !(x52 && (x51 == 44)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L62
 	}
@@ -68568,7 +68623,7 @@ L63:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
 L62:
-	if !(x52 && (x51 == 10)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L64
 	}
@@ -68582,7 +68637,7 @@ L65:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
 L64:
-	if !(x52 && (x51 == 47)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L66
 	}
@@ -68604,7 +68659,7 @@ L66:
 L68:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
-	if !(x52 && (x51 == 33)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L69
 	}
@@ -68681,7 +68736,7 @@ func (p *tparser) i103() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x2, x3 = p.pos, len(p.recovered)
@@ -68766,7 +68821,7 @@ func (p *tparser) i104() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+3 <= len(p.in) && p.in[p.pos] == 46 && p.in[p.pos+1] == 46 && p.in[p.pos+2] == 46 {
@@ -68819,7 +68874,7 @@ func (p *tparser) i105() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.s220(); !ok {
@@ -68866,7 +68921,7 @@ func (p *tparser) i106() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 40 {
@@ -68922,7 +68977,7 @@ func (p *tparser) v107() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -68969,7 +69024,7 @@ func (p *tparser) i107() (any, bool) {
 		v8 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -69029,7 +69084,7 @@ func (p *tparser) i108() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if v2, ok = p.u109(); !ok {
@@ -69094,7 +69149,7 @@ func (p *tparser) v109() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -69150,7 +69205,7 @@ func (p *tparser) i109() (any, bool) {
 		v10 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -69217,7 +69272,7 @@ func (p *tparser) i110() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -69277,7 +69332,7 @@ func (p *tparser) s111() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -69318,7 +69373,7 @@ L11:
 	} else {
 		x13, _, x14 = p.peek()
 	}
-	if !(x14 && (x13 == 110)) && p.depth+1 <= maxDepth {
+	if !(x14 && (x13 == 110)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L15
 	}
@@ -69388,7 +69443,7 @@ func (p *tparser) i112() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -69445,7 +69500,7 @@ func (p *tparser) s113() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -69454,7 +69509,7 @@ func (p *tparser) s113() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (x5 == 123)) && p.depth+1 <= maxDepth {
+	if !(x6 && (x5 == 123)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 40)
 		goto L7
 	}
@@ -69467,7 +69522,7 @@ L8:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L7:
-	if !(x6 && (x5 == 91)) && p.depth+1 <= maxDepth {
+	if !(x6 && (x5 == 91)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L10
 	}
@@ -69488,7 +69543,7 @@ L10:
 L13:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
-	if !(x6 && (x5 == 40)) && p.depth+1 <= maxDepth {
+	if !(x6 && (x5 == 40)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L15
 	}
@@ -69544,7 +69599,7 @@ func (p *tparser) i114() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if v2, ok = p.u139(); !ok {
@@ -69722,7 +69777,7 @@ func (p *tparser) e826() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 61)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 104)
 		goto L6
 	}
@@ -69735,7 +69790,7 @@ func (p *tparser) e826() (any, bool) {
 L7:
 	p.reset(x2)
 L6:
-	if !(x5 && (x4 == 33)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 105)
 		goto L8
 	}
@@ -69748,7 +69803,7 @@ L6:
 L9:
 	p.reset(x2)
 L8:
-	if !(x5 && (x4 == 61)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 106)
 		goto L10
 	}
@@ -69761,7 +69816,7 @@ L8:
 L11:
 	p.reset(x2)
 L10:
-	if !(x5 && (x4 == 33)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 107)
 		goto L12
 	}
@@ -69774,7 +69829,7 @@ L10:
 L13:
 	p.reset(x2)
 L12:
-	if !(x5 && (x4 == 60)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 60)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 108)
 		goto L14
 	}
@@ -69787,7 +69842,7 @@ L12:
 L15:
 	p.reset(x2)
 L14:
-	if !(x5 && (x4 == 62)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 62)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 109)
 		goto L16
 	}
@@ -69800,7 +69855,7 @@ L14:
 L17:
 	p.reset(x2)
 L16:
-	if !(x5 && (x4 == 60)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 60)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 110)
 		goto L18
 	}
@@ -69826,7 +69881,7 @@ L21:
 L19:
 	p.reset(x2)
 L18:
-	if !(x5 && (x4 == 62)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 62)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 112)
 		goto L22
 	}
@@ -69870,7 +69925,7 @@ func (p *tparser) e830() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 43)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 43)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 113)
 		goto L6
 	}
@@ -69886,7 +69941,7 @@ func (p *tparser) e830() (any, bool) {
 L7:
 	p.reset(x1)
 L6:
-	if !(x5 && (x4 == 45)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 45)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 111)
 		goto L10
 	}
@@ -69931,7 +69986,7 @@ func (p *tparser) e834() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 42)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 42)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 114)
 		goto L6
 	}
@@ -69944,7 +69999,7 @@ func (p *tparser) e834() (any, bool) {
 L7:
 	p.reset(x2)
 L6:
-	if !(x5 && (x4 == 47)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 115)
 		goto L8
 	}
@@ -70023,7 +70078,7 @@ L3:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 43)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 43)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 113)
 		goto L9
 	}
@@ -70036,7 +70091,7 @@ L3:
 L10:
 	p.reset(x5)
 L9:
-	if !(x8 && (x7 == 45)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 45)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 111)
 		goto L11
 	}
@@ -70049,7 +70104,7 @@ L9:
 L12:
 	p.reset(x5)
 L11:
-	if !(x8 && (x7 == 33)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 105)
 		goto L13
 	}
@@ -70062,7 +70117,7 @@ L11:
 L14:
 	p.reset(x5)
 L13:
-	if !(x8 && (x7 == 33)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 107)
 		goto L15
 	}
@@ -70075,7 +70130,7 @@ L13:
 L16:
 	p.reset(x5)
 L15:
-	if !(x8 && (x7 == 33)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L17
 	}
@@ -70088,7 +70143,7 @@ L15:
 L18:
 	p.reset(x5)
 L17:
-	if !(x8 && (x7 == 42)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 42)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 114)
 		goto L19
 	}
@@ -70101,7 +70156,7 @@ L17:
 L20:
 	p.reset(x5)
 L19:
-	if !(x8 && (x7 == 60)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 60)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 108)
 		goto L21
 	}
@@ -70114,7 +70169,7 @@ L19:
 L22:
 	p.reset(x5)
 L21:
-	if !(x8 && (x7 == 62)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 62)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 109)
 		goto L23
 	}
@@ -70127,7 +70182,7 @@ L21:
 L24:
 	p.reset(x5)
 L23:
-	if !(x8 && (x7 == 60)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 60)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 110)
 		goto L25
 	}
@@ -70153,7 +70208,7 @@ L28:
 L26:
 	p.reset(x5)
 L25:
-	if !(x8 && (x7 == 62)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 62)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 112)
 		goto L29
 	}
@@ -70166,7 +70221,7 @@ L25:
 L30:
 	p.reset(x5)
 L29:
-	if !(x8 && (x7 == 61)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 106)
 		goto L31
 	}
@@ -70179,7 +70234,7 @@ L29:
 L32:
 	p.reset(x5)
 L31:
-	if !(x8 && (x7 == 61)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 104)
 		goto L33
 	}
@@ -70543,7 +70598,7 @@ func (p *tparser) s116() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -70622,7 +70677,7 @@ func (p *tparser) v117() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -70687,7 +70742,7 @@ func (p *tparser) i117() (any, bool) {
 		v12 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -70752,7 +70807,7 @@ func (p *tparser) s118() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -70761,7 +70816,7 @@ func (p *tparser) s118() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 45)
 		goto L6
 	}
@@ -70775,7 +70830,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 46)
 		goto L8
 	}
@@ -70787,7 +70842,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 110)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 110)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L10
 	}
@@ -70838,7 +70893,7 @@ func (p *tparser) s119() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -70908,7 +70963,7 @@ func (p *tparser) i120() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.u217(); !ok {
@@ -70980,7 +71035,7 @@ func (p *tparser) v121() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -71042,7 +71097,7 @@ func (p *tparser) i121() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -71111,7 +71166,7 @@ func (p *tparser) v122() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -71173,7 +71228,7 @@ func (p *tparser) i122() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -71262,7 +71317,7 @@ func (p *tparser) v123() (any, bool) {
 		v30  any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_, _ = x3, x14
@@ -71313,7 +71368,7 @@ func (p *tparser) v123() (any, bool) {
 		} else {
 			x21, _, x22 = p.peek()
 		}
-		if !(x22 && (x21 == 47)) && p.depth+1 <= maxDepth {
+		if !(x22 && (x21 == 47)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 15)
 			goto L23
 		}
@@ -71395,7 +71450,7 @@ func (p *tparser) i123() (any, bool) {
 		v30  any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_, _ = x3, x14
@@ -71446,7 +71501,7 @@ func (p *tparser) i123() (any, bool) {
 		} else {
 			x21, _, x22 = p.peek()
 		}
-		if !(x22 && (x21 == 47)) && p.depth+1 <= maxDepth {
+		if !(x22 && (x21 == 47)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 15)
 			goto L23
 		}
@@ -71536,7 +71591,7 @@ func (p *tparser) s124() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -71545,7 +71600,7 @@ func (p *tparser) s124() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (x5 == 40)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 40)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L7
 	}
@@ -71578,7 +71633,7 @@ L8:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L7:
-	if !(x6 && (x5 == 91)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 91)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L17
 	}
@@ -71611,7 +71666,7 @@ L18:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L17:
-	if !(x6 && (x5 == 123)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 123)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 40)
 		goto L27
 	}
@@ -71706,7 +71761,7 @@ func (p *tparser) s125() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x42
@@ -71732,7 +71787,7 @@ L7:
 	} else {
 		x9, _, x10 = p.peek()
 	}
-	if !(x10 && (x9 == 95)) && p.depth+0 <= maxDepth {
+	if !(x10 && (x9 == 95)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 50)
 		goto L11
 	}
@@ -71765,7 +71820,7 @@ L15:
 L17:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
-	if !(x10 && (x9 == 46)) && p.depth+0 <= maxDepth {
+	if !(x10 && (x9 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 25)
 		goto L19
 	}
@@ -71782,7 +71837,7 @@ L20:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L19:
-	if !(x10 && (x9 == 46)) && p.depth+0 <= maxDepth {
+	if !(x10 && (x9 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L23
 	}
@@ -71818,7 +71873,7 @@ L24:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L23:
-	if !(x10 && (!!(x9 == 58 || x9 == 59 || x9 == 63 || x9 == 126 || x9 == 43 || x9 == 45 || x9 == 42 || x9 == 47 || x9 == 60 || x9 == 62 || x9 == 61 || x9 == 33 || x9 == 38 || x9 == 124 || x9 == 44))) && p.depth+0 <= maxDepth {
+	if !(x10 && (!!(x9 == 58 || x9 == 59 || x9 == 63 || x9 == 126 || x9 == 43 || x9 == 45 || x9 == 42 || x9 == 47 || x9 == 60 || x9 == 62 || x9 == 61 || x9 == 33 || x9 == 38 || x9 == 124 || x9 == 44))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 51)
 		goto L33
 	}
@@ -71959,7 +72014,7 @@ func (p *tparser) s126() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -71983,7 +72038,7 @@ L5:
 	} else {
 		x10, _, x11 = p.peek()
 	}
-	if !(x11 && (x10 == 48)) && p.depth+1 <= maxDepth {
+	if !(x11 && (x10 == 48)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L12
 	}
@@ -72060,7 +72115,7 @@ L21:
 L29:
 	p.pos = x6
 	p.recovered = p.recovered[:x7]
-	if !(x11 && (x10 == 48)) && p.depth+0 <= maxDepth {
+	if !(x11 && (x10 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L31
 	}
@@ -72195,7 +72250,7 @@ func (p *tparser) s127() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -72207,7 +72262,7 @@ func (p *tparser) s127() (any, bool) {
 	} else {
 		x12, _, x13 = p.peek()
 	}
-	if !(x13 && (!!(x12 >= 49 && x12 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x13 && (!!(x12 >= 49 && x12 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L14
 	}
@@ -72220,7 +72275,7 @@ L15:
 	p.pos = x8
 	p.recovered = p.recovered[:x9]
 L14:
-	if !(x13 && (x12 == 48)) && p.depth+0 <= maxDepth {
+	if !(x13 && (x12 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L17
 	}
@@ -72283,7 +72338,7 @@ L5:
 	} else {
 		x38, _, x39 = p.peek()
 	}
-	if !(x39 && (x38 == 46)) && p.depth+0 <= maxDepth {
+	if !(x39 && (x38 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L40
 	}
@@ -72381,7 +72436,7 @@ func (p *tparser) s128() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -72393,7 +72448,7 @@ func (p *tparser) s128() (any, bool) {
 	} else {
 		x12, _, x13 = p.peek()
 	}
-	if !(x13 && (!!(x12 >= 49 && x12 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x13 && (!!(x12 >= 49 && x12 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L14
 	}
@@ -72406,7 +72461,7 @@ L15:
 	p.pos = x8
 	p.recovered = p.recovered[:x9]
 L14:
-	if !(x13 && (x12 == 48)) && p.depth+0 <= maxDepth {
+	if !(x13 && (x12 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L17
 	}
@@ -72464,7 +72519,7 @@ L5:
 	} else {
 		x40, _, x41 = p.peek()
 	}
-	if !(x41 && (!!(x40 >= 49 && x40 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x41 && (!!(x40 >= 49 && x40 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L42
 	}
@@ -72477,7 +72532,7 @@ L43:
 	p.pos = x36
 	p.recovered = p.recovered[:x37]
 L42:
-	if !(x41 && (x40 == 48)) && p.depth+0 <= maxDepth {
+	if !(x41 && (x40 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L45
 	}
@@ -72512,7 +72567,7 @@ L33:
 	} else {
 		x51, _, x52 = p.peek()
 	}
-	if !(x52 && (x51 == 46)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L53
 	}
@@ -72589,7 +72644,7 @@ func (p *tparser) s129() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -72728,7 +72783,7 @@ func (p *tparser) s130() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -72751,7 +72806,7 @@ func (p *tparser) s130() (any, bool) {
 	} else {
 		x10, _, x11 = p.peek()
 	}
-	if !(x11 && (x10 == 46)) && p.depth+1 <= maxDepth {
+	if !(x11 && (x10 == 46)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L12
 	}
@@ -72768,7 +72823,7 @@ func (p *tparser) s130() (any, bool) {
 	} else {
 		x26, _, x27 = p.peek()
 	}
-	if !(x27 && (!!(x26 == 101 || x26 == 69))) && p.depth+1 <= maxDepth {
+	if !(x27 && (!!(x26 == 101 || x26 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L28
 	}
@@ -72781,7 +72836,7 @@ L29:
 	p.pos = x22
 	p.recovered = p.recovered[:x23]
 L28:
-	if !(x27 && (!!(x26 == 75 || x26 == 77 || x26 == 71 || x26 == 84 || x26 == 80))) && p.depth+1 <= maxDepth {
+	if !(x27 && (!!(x26 == 75 || x26 == 77 || x26 == 71 || x26 == 84 || x26 == 80))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 62)
 		goto L31
 	}
@@ -72811,7 +72866,7 @@ L13:
 	p.pos = x6
 	p.recovered = p.recovered[:x7]
 L12:
-	if !(x11 && (!!(x10 == 101 || x10 == 69))) && p.depth+1 <= maxDepth {
+	if !(x11 && (!!(x10 == 101 || x10 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L35
 	}
@@ -72857,7 +72912,7 @@ func (p *tparser) s131() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -72928,7 +72983,7 @@ func (p *tparser) v132() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -72937,7 +72992,7 @@ func (p *tparser) v132() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (!!(x5 >= 97 && x5 <= 122 || x5 >= 65 && x5 <= 90 || x5 >= 48 && x5 <= 57 || x5 == 95 || x5 == 36))) && p.depth+0 <= maxDepth {
+	if !(x6 && (!!(x5 >= 97 && x5 <= 122 || x5 >= 65 && x5 <= 90 || x5 >= 48 && x5 <= 57 || x5 == 95 || x5 == 36))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 63)
 		goto L7
 	}
@@ -72999,7 +73054,7 @@ func (p *tparser) i132() (any, bool) {
 		v12  any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -73008,7 +73063,7 @@ func (p *tparser) i132() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (!!(x5 >= 97 && x5 <= 122 || x5 >= 65 && x5 <= 90 || x5 >= 48 && x5 <= 57 || x5 == 95 || x5 == 36))) && p.depth+0 <= maxDepth {
+	if !(x6 && (!!(x5 >= 97 && x5 <= 122 || x5 >= 65 && x5 <= 90 || x5 >= 48 && x5 <= 57 || x5 == 95 || x5 == 36))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 63)
 		goto L7
 	}
@@ -73083,7 +73138,7 @@ func (p *tparser) v133() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -73114,7 +73169,7 @@ L5:
 	} else {
 		x10, _, x11 = p.peek()
 	}
-	if !(x11 && (!!(x10 == 170 || x10 == 181 || x10 == 186 || x10 >= 192 && x10 <= 214 || x10 >= 216 && x10 <= 246 || x10 >= 248 && x10 <= 705 || x10 >= 710 && x10 <= 721 || x10 >= 736 && x10 <= 740 || x10 == 748 || x10 == 750 || x10 >= 880 && x10 <= 884 || x10 >= 886 && x10 <= 887 || x10 >= 890 && x10 <= 893 || x10 == 895 || x10 == 902 || x10 >= 904 && x10 <= 906 || x10 == 908 || x10 >= 910 && x10 <= 929 || x10 >= 931 && x10 <= 1013 || x10 >= 1015 && x10 <= 1153 || x10 >= 1162 && x10 <= 1327 || x10 >= 1329 && x10 <= 1366 || x10 == 1369 || x10 >= 1376 && x10 <= 1416 || x10 >= 1488 && x10 <= 1514 || x10 >= 1519 && x10 <= 1522 || x10 >= 1568 && x10 <= 1610 || x10 >= 1646 && x10 <= 1647 || x10 >= 1649 && x10 <= 1747 || x10 == 1749 || x10 >= 1765 && x10 <= 1766 || x10 >= 1774 && x10 <= 1775 || x10 >= 1786 && x10 <= 1788 || x10 == 1791 || x10 == 1808 || x10 >= 1810 && x10 <= 1839 || x10 >= 1869 && x10 <= 1957 || x10 == 1969 || x10 >= 1994 && x10 <= 2026 || x10 >= 2036 && x10 <= 2037 || x10 == 2042 || x10 >= 2048 && x10 <= 2069 || x10 == 2074 || x10 == 2084 || x10 == 2088 || x10 >= 2112 && x10 <= 2136 || x10 >= 2144 && x10 <= 2154 || x10 >= 2160 && x10 <= 2183 || x10 >= 2185 && x10 <= 2191 || x10 >= 2208 && x10 <= 2249 || x10 >= 2308 && x10 <= 2361 || x10 == 2365 || x10 == 2384 || x10 >= 2392 && x10 <= 2401 || x10 >= 2417 && x10 <= 2432 || x10 >= 2437 && x10 <= 2444 || x10 >= 2447 && x10 <= 2448 || x10 >= 2451 && x10 <= 2472 || x10 >= 2474 && x10 <= 2480 || x10 == 2482 || x10 >= 2486 && x10 <= 2489 || x10 == 2493 || x10 == 2510 || x10 >= 2524 && x10 <= 2525 || x10 >= 2527 && x10 <= 2529 || x10 >= 2544 && x10 <= 2545 || x10 == 2556 || x10 >= 2565 && x10 <= 2570 || x10 >= 2575 && x10 <= 2576 || x10 >= 2579 && x10 <= 2600 || x10 >= 2602 && x10 <= 2608 || x10 >= 2610 && x10 <= 2611 || x10 >= 2613 && x10 <= 2614 || x10 >= 2616 && x10 <= 2617 || x10 >= 2649 && x10 <= 2652 || x10 == 2654 || x10 >= 2674 && x10 <= 2676 || x10 >= 2693 && x10 <= 2701 || x10 >= 2703 && x10 <= 2705 || x10 >= 2707 && x10 <= 2728 || x10 >= 2730 && x10 <= 2736 || x10 >= 2738 && x10 <= 2739 || x10 >= 2741 && x10 <= 2745 || x10 == 2749 || x10 == 2768 || x10 >= 2784 && x10 <= 2785 || x10 == 2809 || x10 >= 2821 && x10 <= 2828 || x10 >= 2831 && x10 <= 2832 || x10 >= 2835 && x10 <= 2856 || x10 >= 2858 && x10 <= 2864 || x10 >= 2866 && x10 <= 2867 || x10 >= 2869 && x10 <= 2873 || x10 == 2877 || x10 >= 2908 && x10 <= 2909 || x10 >= 2911 && x10 <= 2913 || x10 == 2929 || x10 == 2947 || x10 >= 2949 && x10 <= 2954 || x10 >= 2958 && x10 <= 2960 || x10 >= 2962 && x10 <= 2965 || x10 >= 2969 && x10 <= 2970 || x10 == 2972 || x10 >= 2974 && x10 <= 2975 || x10 >= 2979 && x10 <= 2980 || x10 >= 2984 && x10 <= 2986 || x10 >= 2990 && x10 <= 3001 || x10 == 3024 || x10 >= 3077 && x10 <= 3084 || x10 >= 3086 && x10 <= 3088 || x10 >= 3090 && x10 <= 3112 || x10 >= 3114 && x10 <= 3129 || x10 == 3133 || x10 >= 3160 && x10 <= 3162 || x10 >= 3164 && x10 <= 3165 || x10 >= 3168 && x10 <= 3169 || x10 == 3200 || x10 >= 3205 && x10 <= 3212 || x10 >= 3214 && x10 <= 3216 || x10 >= 3218 && x10 <= 3240 || x10 >= 3242 && x10 <= 3251 || x10 >= 3253 && x10 <= 3257 || x10 == 3261 || x10 >= 3292 && x10 <= 3294 || x10 >= 3296 && x10 <= 3297 || x10 >= 3313 && x10 <= 3314 || x10 >= 3332 && x10 <= 3340 || x10 >= 3342 && x10 <= 3344 || x10 >= 3346 && x10 <= 3386 || x10 == 3389 || x10 == 3406 || x10 >= 3412 && x10 <= 3414 || x10 >= 3423 && x10 <= 3425 || x10 >= 3450 && x10 <= 3455 || x10 >= 3461 && x10 <= 3478 || x10 >= 3482 && x10 <= 3505 || x10 >= 3507 && x10 <= 3515 || x10 == 3517 || x10 >= 3520 && x10 <= 3526 || x10 >= 3585 && x10 <= 3632 || x10 >= 3634 && x10 <= 3635 || x10 >= 3648 && x10 <= 3654 || x10 >= 3713 && x10 <= 3714 || x10 == 3716 || x10 >= 3718 && x10 <= 3722 || x10 >= 3724 && x10 <= 3747 || x10 == 3749 || x10 >= 3751 && x10 <= 3760 || x10 >= 3762 && x10 <= 3763 || x10 == 3773 || x10 >= 3776 && x10 <= 3780 || x10 == 3782 || x10 >= 3804 && x10 <= 3807 || x10 == 3840 || x10 >= 3904 && x10 <= 3911 || x10 >= 3913 && x10 <= 3948 || x10 >= 3976 && x10 <= 3980 || x10 >= 4096 && x10 <= 4138 || x10 == 4159 || x10 >= 4176 && x10 <= 4181 || x10 >= 4186 && x10 <= 4189 || x10 == 4193 || x10 >= 4197 && x10 <= 4198 || x10 >= 4206 && x10 <= 4208 || x10 >= 4213 && x10 <= 4225 || x10 == 4238 || x10 >= 4256 && x10 <= 4293 || x10 == 4295 || x10 == 4301 || x10 >= 4304 && x10 <= 4346 || x10 >= 4348 && x10 <= 4680 || x10 >= 4682 && x10 <= 4685 || x10 >= 4688 && x10 <= 4694 || x10 == 4696 || x10 >= 4698 && x10 <= 4701 || x10 >= 4704 && x10 <= 4744 || x10 >= 4746 && x10 <= 4749 || x10 >= 4752 && x10 <= 4784 || x10 >= 4786 && x10 <= 4789 || x10 >= 4792 && x10 <= 4798 || x10 == 4800 || x10 >= 4802 && x10 <= 4805 || x10 >= 4808 && x10 <= 4822 || x10 >= 4824 && x10 <= 4880 || x10 >= 4882 && x10 <= 4885 || x10 >= 4888 && x10 <= 4954 || x10 >= 4992 && x10 <= 5007 || x10 >= 5024 && x10 <= 5109 || x10 >= 5112 && x10 <= 5117 || x10 >= 5121 && x10 <= 5740 || x10 >= 5743 && x10 <= 5759 || x10 >= 5761 && x10 <= 5786 || x10 >= 5792 && x10 <= 5866 || x10 >= 5873 && x10 <= 5880 || x10 >= 5888 && x10 <= 5905 || x10 >= 5919 && x10 <= 5937 || x10 >= 5952 && x10 <= 5969 || x10 >= 5984 && x10 <= 5996 || x10 >= 5998 && x10 <= 6000 || x10 >= 6016 && x10 <= 6067 || x10 == 6103 || x10 == 6108 || x10 >= 6176 && x10 <= 6264 || x10 >= 6272 && x10 <= 6276 || x10 >= 6279 && x10 <= 6312 || x10 == 6314 || x10 >= 6320 && x10 <= 6389 || x10 >= 6400 && x10 <= 6430 || x10 >= 6480 && x10 <= 6509 || x10 >= 6512 && x10 <= 6516 || x10 >= 6528 && x10 <= 6571 || x10 >= 6576 && x10 <= 6601 || x10 >= 6656 && x10 <= 6678 || x10 >= 6688 && x10 <= 6740 || x10 == 6823 || x10 >= 6917 && x10 <= 6963 || x10 >= 6981 && x10 <= 6988 || x10 >= 7043 && x10 <= 7072 || x10 >= 7086 && x10 <= 7087 || x10 >= 7098 && x10 <= 7141 || x10 >= 7168 && x10 <= 7203 || x10 >= 7245 && x10 <= 7247 || x10 >= 7258 && x10 <= 7293 || x10 >= 7296 && x10 <= 7306 || x10 >= 7312 && x10 <= 7354 || x10 >= 7357 && x10 <= 7359 || x10 >= 7401 && x10 <= 7404 || x10 >= 7406 && x10 <= 7411 || x10 >= 7413 && x10 <= 7414 || x10 == 7418 || x10 >= 7424 && x10 <= 7615 || x10 >= 7680 && x10 <= 7957 || x10 >= 7960 && x10 <= 7965 || x10 >= 7968 && x10 <= 8005 || x10 >= 8008 && x10 <= 8013 || x10 >= 8016 && x10 <= 8023 || x10 == 8025 || x10 == 8027 || x10 == 8029 || x10 >= 8031 && x10 <= 8061 || x10 >= 8064 && x10 <= 8116 || x10 >= 8118 && x10 <= 8124 || x10 == 8126 || x10 >= 8130 && x10 <= 8132 || x10 >= 8134 && x10 <= 8140 || x10 >= 8144 && x10 <= 8147 || x10 >= 8150 && x10 <= 8155 || x10 >= 8160 && x10 <= 8172 || x10 >= 8178 && x10 <= 8180 || x10 >= 8182 && x10 <= 8188 || x10 == 8305 || x10 == 8319 || x10 >= 8336 && x10 <= 8348 || x10 == 8450 || x10 == 8455 || x10 >= 8458 && x10 <= 8467 || x10 == 8469 || x10 >= 8473 && x10 <= 8477 || x10 == 8484 || x10 == 8486 || x10 == 8488 || x10 >= 8490 && x10 <= 8493 || x10 >= 8495 && x10 <= 8505 || x10 >= 8508 && x10 <= 8511 || x10 >= 8517 && x10 <= 8521 || x10 == 8526 || x10 >= 8579 && x10 <= 8580 || x10 >= 11264 && x10 <= 11492 || x10 >= 11499 && x10 <= 11502 || x10 >= 11506 && x10 <= 11507 || x10 >= 11520 && x10 <= 11557 || x10 == 11559 || x10 == 11565 || x10 >= 11568 && x10 <= 11623 || x10 == 11631 || x10 >= 11648 && x10 <= 11670 || x10 >= 11680 && x10 <= 11686 || x10 >= 11688 && x10 <= 11694 || x10 >= 11696 && x10 <= 11702 || x10 >= 11704 && x10 <= 11710 || x10 >= 11712 && x10 <= 11718 || x10 >= 11720 && x10 <= 11726 || x10 >= 11728 && x10 <= 11734 || x10 >= 11736 && x10 <= 11742 || x10 == 11823 || x10 >= 12293 && x10 <= 12294 || x10 >= 12337 && x10 <= 12341 || x10 >= 12347 && x10 <= 12348 || x10 >= 12353 && x10 <= 12438 || x10 >= 12445 && x10 <= 12447 || x10 >= 12449 && x10 <= 12538 || x10 >= 12540 && x10 <= 12543 || x10 >= 12549 && x10 <= 12591 || x10 >= 12593 && x10 <= 12686 || x10 >= 12704 && x10 <= 12735 || x10 >= 12784 && x10 <= 12799 || x10 >= 13312 && x10 <= 19903 || x10 >= 19968 && x10 <= 42124 || x10 >= 42192 && x10 <= 42237 || x10 >= 42240 && x10 <= 42508 || x10 >= 42512 && x10 <= 42527 || x10 >= 42538 && x10 <= 42539 || x10 >= 42560 && x10 <= 42606 || x10 >= 42623 && x10 <= 42653 || x10 >= 42656 && x10 <= 42725 || x10 >= 42775 && x10 <= 42783 || x10 >= 42786 && x10 <= 42888 || x10 >= 42891 && x10 <= 42972 || x10 >= 42993 && x10 <= 43009 || x10 >= 43011 && x10 <= 43013 || x10 >= 43015 && x10 <= 43018 || x10 >= 43020 && x10 <= 43042 || x10 >= 43072 && x10 <= 43123 || x10 >= 43138 && x10 <= 43187 || x10 >= 43250 && x10 <= 43255 || x10 == 43259 || x10 >= 43261 && x10 <= 43262 || x10 >= 43274 && x10 <= 43301 || x10 >= 43312 && x10 <= 43334 || x10 >= 43360 && x10 <= 43388 || x10 >= 43396 && x10 <= 43442 || x10 == 43471 || x10 >= 43488 && x10 <= 43492 || x10 >= 43494 && x10 <= 43503 || x10 >= 43514 && x10 <= 43518 || x10 >= 43520 && x10 <= 43560 || x10 >= 43584 && x10 <= 43586 || x10 >= 43588 && x10 <= 43595 || x10 >= 43616 && x10 <= 43638 || x10 == 43642 || x10 >= 43646 && x10 <= 43695 || x10 == 43697 || x10 >= 43701 && x10 <= 43702 || x10 >= 43705 && x10 <= 43709 || x10 == 43712 || x10 == 43714 || x10 >= 43739 && x10 <= 43741 || x10 >= 43744 && x10 <= 43754 || x10 >= 43762 && x10 <= 43764 || x10 >= 43777 && x10 <= 43782 || x10 >= 43785 && x10 <= 43790 || x10 >= 43793 && x10 <= 43798 || x10 >= 43808 && x10 <= 43814 || x10 >= 43816 && x10 <= 43822 || x10 >= 43824 && x10 <= 43866 || x10 >= 43868 && x10 <= 43881 || x10 >= 43888 && x10 <= 44002 || x10 >= 44032 && x10 <= 55203 || x10 >= 55216 && x10 <= 55238 || x10 >= 55243 && x10 <= 55291 || x10 >= 63744 && x10 <= 64109 || x10 >= 64112 && x10 <= 64217 || x10 >= 64256 && x10 <= 64262 || x10 >= 64275 && x10 <= 64279 || x10 == 64285 || x10 >= 64287 && x10 <= 64296 || x10 >= 64298 && x10 <= 64310 || x10 >= 64312 && x10 <= 64316 || x10 == 64318 || x10 >= 64320 && x10 <= 64321 || x10 >= 64323 && x10 <= 64324 || x10 >= 64326 && x10 <= 64433 || x10 >= 64467 && x10 <= 64829 || x10 >= 64848 && x10 <= 64911 || x10 >= 64914 && x10 <= 64967 || x10 >= 65008 && x10 <= 65019 || x10 >= 65136 && x10 <= 65140 || x10 >= 65142 && x10 <= 65276 || x10 >= 65313 && x10 <= 65338 || x10 >= 65345 && x10 <= 65370 || x10 >= 65382 && x10 <= 65470 || x10 >= 65474 && x10 <= 65479 || x10 >= 65482 && x10 <= 65487 || x10 >= 65490 && x10 <= 65495 || x10 >= 65498 && x10 <= 65500 || x10 >= 65536 && x10 <= 65547 || x10 >= 65549 && x10 <= 65574 || x10 >= 65576 && x10 <= 65594 || x10 >= 65596 && x10 <= 65597 || x10 >= 65599 && x10 <= 65613 || x10 >= 65616 && x10 <= 65629 || x10 >= 65664 && x10 <= 65786 || x10 >= 66176 && x10 <= 66204 || x10 >= 66208 && x10 <= 66256 || x10 >= 66304 && x10 <= 66335 || x10 >= 66349 && x10 <= 66368 || x10 >= 66370 && x10 <= 66377 || x10 >= 66384 && x10 <= 66421 || x10 >= 66432 && x10 <= 66461 || x10 >= 66464 && x10 <= 66499 || x10 >= 66504 && x10 <= 66511 || x10 >= 66560 && x10 <= 66717 || x10 >= 66736 && x10 <= 66771 || x10 >= 66776 && x10 <= 66811 || x10 >= 66816 && x10 <= 66855 || x10 >= 66864 && x10 <= 66915 || x10 >= 66928 && x10 <= 66938 || x10 >= 66940 && x10 <= 66954 || x10 >= 66956 && x10 <= 66962 || x10 >= 66964 && x10 <= 66965 || x10 >= 66967 && x10 <= 66977 || x10 >= 66979 && x10 <= 66993 || x10 >= 66995 && x10 <= 67001 || x10 >= 67003 && x10 <= 67004 || x10 >= 67008 && x10 <= 67059 || x10 >= 67072 && x10 <= 67382 || x10 >= 67392 && x10 <= 67413 || x10 >= 67424 && x10 <= 67431 || x10 >= 67456 && x10 <= 67461 || x10 >= 67463 && x10 <= 67504 || x10 >= 67506 && x10 <= 67514 || x10 >= 67584 && x10 <= 67589 || x10 == 67592 || x10 >= 67594 && x10 <= 67637 || x10 >= 67639 && x10 <= 67640 || x10 == 67644 || x10 >= 67647 && x10 <= 67669 || x10 >= 67680 && x10 <= 67702 || x10 >= 67712 && x10 <= 67742 || x10 >= 67808 && x10 <= 67826 || x10 >= 67828 && x10 <= 67829 || x10 >= 67840 && x10 <= 67861 || x10 >= 67872 && x10 <= 67897 || x10 >= 67904 && x10 <= 67929 || x10 >= 67968 && x10 <= 68023 || x10 >= 68030 && x10 <= 68031 || x10 == 68096 || x10 >= 68112 && x10 <= 68115 || x10 >= 68117 && x10 <= 68119 || x10 >= 68121 && x10 <= 68149 || x10 >= 68192 && x10 <= 68220 || x10 >= 68224 && x10 <= 68252 || x10 >= 68288 && x10 <= 68295 || x10 >= 68297 && x10 <= 68324 || x10 >= 68352 && x10 <= 68405 || x10 >= 68416 && x10 <= 68437 || x10 >= 68448 && x10 <= 68466 || x10 >= 68480 && x10 <= 68497 || x10 >= 68608 && x10 <= 68680 || x10 >= 68736 && x10 <= 68786 || x10 >= 68800 && x10 <= 68850 || x10 >= 68864 && x10 <= 68899 || x10 >= 68938 && x10 <= 68965 || x10 >= 68975 && x10 <= 68997 || x10 >= 69248 && x10 <= 69289 || x10 >= 69296 && x10 <= 69297 || x10 >= 69314 && x10 <= 69319 || x10 >= 69376 && x10 <= 69404 || x10 == 69415 || x10 >= 69424 && x10 <= 69445 || x10 >= 69488 && x10 <= 69505 || x10 >= 69552 && x10 <= 69572 || x10 >= 69600 && x10 <= 69622 || x10 >= 69635 && x10 <= 69687 || x10 >= 69745 && x10 <= 69746 || x10 == 69749 || x10 >= 69763 && x10 <= 69807 || x10 >= 69840 && x10 <= 69864 || x10 >= 69891 && x10 <= 69926 || x10 == 69956 || x10 == 69959 || x10 >= 69968 && x10 <= 70002 || x10 == 70006 || x10 >= 70019 && x10 <= 70066 || x10 >= 70081 && x10 <= 70084 || x10 == 70106 || x10 == 70108 || x10 >= 70144 && x10 <= 70161 || x10 >= 70163 && x10 <= 70187 || x10 >= 70207 && x10 <= 70208 || x10 >= 70272 && x10 <= 70278 || x10 == 70280 || x10 >= 70282 && x10 <= 70285 || x10 >= 70287 && x10 <= 70301 || x10 >= 70303 && x10 <= 70312 || x10 >= 70320 && x10 <= 70366 || x10 >= 70405 && x10 <= 70412 || x10 >= 70415 && x10 <= 70416 || x10 >= 70419 && x10 <= 70440 || x10 >= 70442 && x10 <= 70448 || x10 >= 70450 && x10 <= 70451 || x10 >= 70453 && x10 <= 70457 || x10 == 70461 || x10 == 70480 || x10 >= 70493 && x10 <= 70497 || x10 >= 70528 && x10 <= 70537 || x10 == 70539 || x10 == 70542 || x10 >= 70544 && x10 <= 70581 || x10 == 70583 || x10 == 70609 || x10 == 70611 || x10 >= 70656 && x10 <= 70708 || x10 >= 70727 && x10 <= 70730 || x10 >= 70751 && x10 <= 70753 || x10 >= 70784 && x10 <= 70831 || x10 >= 70852 && x10 <= 70853 || x10 == 70855 || x10 >= 71040 && x10 <= 71086 || x10 >= 71128 && x10 <= 71131 || x10 >= 71168 && x10 <= 71215 || x10 == 71236 || x10 >= 71296 && x10 <= 71338 || x10 == 71352 || x10 >= 71424 && x10 <= 71450 || x10 >= 71488 && x10 <= 71494 || x10 >= 71680 && x10 <= 71723 || x10 >= 71840 && x10 <= 71903 || x10 >= 71935 && x10 <= 71942 || x10 == 71945 || x10 >= 71948 && x10 <= 71955 || x10 >= 71957 && x10 <= 71958 || x10 >= 71960 && x10 <= 71983 || x10 == 71999 || x10 == 72001 || x10 >= 72096 && x10 <= 72103 || x10 >= 72106 && x10 <= 72144 || x10 == 72161 || x10 == 72163 || x10 == 72192 || x10 >= 72203 && x10 <= 72242 || x10 == 72250 || x10 == 72272 || x10 >= 72284 && x10 <= 72329 || x10 == 72349 || x10 >= 72368 && x10 <= 72440 || x10 >= 72640 && x10 <= 72672 || x10 >= 72704 && x10 <= 72712 || x10 >= 72714 && x10 <= 72750 || x10 == 72768 || x10 >= 72818 && x10 <= 72847 || x10 >= 72960 && x10 <= 72966 || x10 >= 72968 && x10 <= 72969 || x10 >= 72971 && x10 <= 73008 || x10 == 73030 || x10 >= 73056 && x10 <= 73061 || x10 >= 73063 && x10 <= 73064 || x10 >= 73066 && x10 <= 73097 || x10 == 73112 || x10 >= 73136 && x10 <= 73179 || x10 >= 73440 && x10 <= 73458 || x10 == 73474 || x10 >= 73476 && x10 <= 73488 || x10 >= 73490 && x10 <= 73523 || x10 == 73648 || x10 >= 73728 && x10 <= 74649 || x10 >= 74880 && x10 <= 75075 || x10 >= 77712 && x10 <= 77808 || x10 >= 77824 && x10 <= 78895 || x10 >= 78913 && x10 <= 78918 || x10 >= 78944 && x10 <= 82938 || x10 >= 82944 && x10 <= 83526 || x10 >= 90368 && x10 <= 90397 || x10 >= 92160 && x10 <= 92728 || x10 >= 92736 && x10 <= 92766 || x10 >= 92784 && x10 <= 92862 || x10 >= 92880 && x10 <= 92909 || x10 >= 92928 && x10 <= 92975 || x10 >= 92992 && x10 <= 92995 || x10 >= 93027 && x10 <= 93047 || x10 >= 93053 && x10 <= 93071 || x10 >= 93504 && x10 <= 93548 || x10 >= 93760 && x10 <= 93823 || x10 >= 93856 && x10 <= 93880 || x10 >= 93883 && x10 <= 93907 || x10 >= 93952 && x10 <= 94026 || x10 == 94032 || x10 >= 94099 && x10 <= 94111 || x10 >= 94176 && x10 <= 94177 || x10 == 94179 || x10 >= 94194 && x10 <= 94195 || x10 >= 94208 && x10 <= 101589 || x10 >= 101631 && x10 <= 101662 || x10 >= 101760 && x10 <= 101874 || x10 >= 110576 && x10 <= 110579 || x10 >= 110581 && x10 <= 110587 || x10 >= 110589 && x10 <= 110590 || x10 >= 110592 && x10 <= 110882 || x10 == 110898 || x10 >= 110928 && x10 <= 110930 || x10 == 110933 || x10 >= 110948 && x10 <= 110951 || x10 >= 110960 && x10 <= 111355 || x10 >= 113664 && x10 <= 113770 || x10 >= 113776 && x10 <= 113788 || x10 >= 113792 && x10 <= 113800 || x10 >= 113808 && x10 <= 113817 || x10 >= 119808 && x10 <= 119892 || x10 >= 119894 && x10 <= 119964 || x10 >= 119966 && x10 <= 119967 || x10 == 119970 || x10 >= 119973 && x10 <= 119974 || x10 >= 119977 && x10 <= 119980 || x10 >= 119982 && x10 <= 119993 || x10 == 119995 || x10 >= 119997 && x10 <= 120003 || x10 >= 120005 && x10 <= 120069 || x10 >= 120071 && x10 <= 120074 || x10 >= 120077 && x10 <= 120084 || x10 >= 120086 && x10 <= 120092 || x10 >= 120094 && x10 <= 120121 || x10 >= 120123 && x10 <= 120126 || x10 >= 120128 && x10 <= 120132 || x10 == 120134 || x10 >= 120138 && x10 <= 120144 || x10 >= 120146 && x10 <= 120485 || x10 >= 120488 && x10 <= 120512 || x10 >= 120514 && x10 <= 120538 || x10 >= 120540 && x10 <= 120570 || x10 >= 120572 && x10 <= 120596 || x10 >= 120598 && x10 <= 120628 || x10 >= 120630 && x10 <= 120654 || x10 >= 120656 && x10 <= 120686 || x10 >= 120688 && x10 <= 120712 || x10 >= 120714 && x10 <= 120744 || x10 >= 120746 && x10 <= 120770 || x10 >= 120772 && x10 <= 120779 || x10 >= 122624 && x10 <= 122654 || x10 >= 122661 && x10 <= 122666 || x10 >= 122928 && x10 <= 122989 || x10 >= 123136 && x10 <= 123180 || x10 >= 123191 && x10 <= 123197 || x10 == 123214 || x10 >= 123536 && x10 <= 123565 || x10 >= 123584 && x10 <= 123627 || x10 >= 124112 && x10 <= 124139 || x10 >= 124368 && x10 <= 124397 || x10 == 124400 || x10 >= 124608 && x10 <= 124638 || x10 >= 124640 && x10 <= 124642 || x10 >= 124644 && x10 <= 124645 || x10 >= 124647 && x10 <= 124653 || x10 >= 124656 && x10 <= 124660 || x10 >= 124670 && x10 <= 124671 || x10 >= 124896 && x10 <= 124902 || x10 >= 124904 && x10 <= 124907 || x10 >= 124909 && x10 <= 124910 || x10 >= 124912 && x10 <= 124926 || x10 >= 124928 && x10 <= 125124 || x10 >= 125184 && x10 <= 125251 || x10 == 125259 || x10 >= 126464 && x10 <= 126467 || x10 >= 126469 && x10 <= 126495 || x10 >= 126497 && x10 <= 126498 || x10 == 126500 || x10 == 126503 || x10 >= 126505 && x10 <= 126514 || x10 >= 126516 && x10 <= 126519 || x10 == 126521 || x10 == 126523 || x10 == 126530 || x10 == 126535 || x10 == 126537 || x10 == 126539 || x10 >= 126541 && x10 <= 126543 || x10 >= 126545 && x10 <= 126546 || x10 == 126548 || x10 == 126551 || x10 == 126553 || x10 == 126555 || x10 == 126557 || x10 == 126559 || x10 >= 126561 && x10 <= 126562 || x10 == 126564 || x10 >= 126567 && x10 <= 126570 || x10 >= 126572 && x10 <= 126578 || x10 >= 126580 && x10 <= 126583 || x10 >= 126585 && x10 <= 126588 || x10 == 126590 || x10 >= 126592 && x10 <= 126601 || x10 >= 126603 && x10 <= 126619 || x10 >= 126625 && x10 <= 126627 || x10 >= 126629 && x10 <= 126633 || x10 >= 126635 && x10 <= 126651 || x10 >= 131072 && x10 <= 173791 || x10 >= 173824 && x10 <= 178205 || x10 >= 178208 && x10 <= 183981 || x10 >= 183984 && x10 <= 191456 || x10 >= 191472 && x10 <= 192093 || x10 >= 194560 && x10 <= 195101 || x10 >= 196608 && x10 <= 201546 || x10 >= 201552 && x10 <= 210041))) && p.depth+1 <= maxDepth {
+	if !(x11 && (!!(x10 == 170 || x10 == 181 || x10 == 186 || x10 >= 192 && x10 <= 214 || x10 >= 216 && x10 <= 246 || x10 >= 248 && x10 <= 705 || x10 >= 710 && x10 <= 721 || x10 >= 736 && x10 <= 740 || x10 == 748 || x10 == 750 || x10 >= 880 && x10 <= 884 || x10 >= 886 && x10 <= 887 || x10 >= 890 && x10 <= 893 || x10 == 895 || x10 == 902 || x10 >= 904 && x10 <= 906 || x10 == 908 || x10 >= 910 && x10 <= 929 || x10 >= 931 && x10 <= 1013 || x10 >= 1015 && x10 <= 1153 || x10 >= 1162 && x10 <= 1327 || x10 >= 1329 && x10 <= 1366 || x10 == 1369 || x10 >= 1376 && x10 <= 1416 || x10 >= 1488 && x10 <= 1514 || x10 >= 1519 && x10 <= 1522 || x10 >= 1568 && x10 <= 1610 || x10 >= 1646 && x10 <= 1647 || x10 >= 1649 && x10 <= 1747 || x10 == 1749 || x10 >= 1765 && x10 <= 1766 || x10 >= 1774 && x10 <= 1775 || x10 >= 1786 && x10 <= 1788 || x10 == 1791 || x10 == 1808 || x10 >= 1810 && x10 <= 1839 || x10 >= 1869 && x10 <= 1957 || x10 == 1969 || x10 >= 1994 && x10 <= 2026 || x10 >= 2036 && x10 <= 2037 || x10 == 2042 || x10 >= 2048 && x10 <= 2069 || x10 == 2074 || x10 == 2084 || x10 == 2088 || x10 >= 2112 && x10 <= 2136 || x10 >= 2144 && x10 <= 2154 || x10 >= 2160 && x10 <= 2183 || x10 >= 2185 && x10 <= 2191 || x10 >= 2208 && x10 <= 2249 || x10 >= 2308 && x10 <= 2361 || x10 == 2365 || x10 == 2384 || x10 >= 2392 && x10 <= 2401 || x10 >= 2417 && x10 <= 2432 || x10 >= 2437 && x10 <= 2444 || x10 >= 2447 && x10 <= 2448 || x10 >= 2451 && x10 <= 2472 || x10 >= 2474 && x10 <= 2480 || x10 == 2482 || x10 >= 2486 && x10 <= 2489 || x10 == 2493 || x10 == 2510 || x10 >= 2524 && x10 <= 2525 || x10 >= 2527 && x10 <= 2529 || x10 >= 2544 && x10 <= 2545 || x10 == 2556 || x10 >= 2565 && x10 <= 2570 || x10 >= 2575 && x10 <= 2576 || x10 >= 2579 && x10 <= 2600 || x10 >= 2602 && x10 <= 2608 || x10 >= 2610 && x10 <= 2611 || x10 >= 2613 && x10 <= 2614 || x10 >= 2616 && x10 <= 2617 || x10 >= 2649 && x10 <= 2652 || x10 == 2654 || x10 >= 2674 && x10 <= 2676 || x10 >= 2693 && x10 <= 2701 || x10 >= 2703 && x10 <= 2705 || x10 >= 2707 && x10 <= 2728 || x10 >= 2730 && x10 <= 2736 || x10 >= 2738 && x10 <= 2739 || x10 >= 2741 && x10 <= 2745 || x10 == 2749 || x10 == 2768 || x10 >= 2784 && x10 <= 2785 || x10 == 2809 || x10 >= 2821 && x10 <= 2828 || x10 >= 2831 && x10 <= 2832 || x10 >= 2835 && x10 <= 2856 || x10 >= 2858 && x10 <= 2864 || x10 >= 2866 && x10 <= 2867 || x10 >= 2869 && x10 <= 2873 || x10 == 2877 || x10 >= 2908 && x10 <= 2909 || x10 >= 2911 && x10 <= 2913 || x10 == 2929 || x10 == 2947 || x10 >= 2949 && x10 <= 2954 || x10 >= 2958 && x10 <= 2960 || x10 >= 2962 && x10 <= 2965 || x10 >= 2969 && x10 <= 2970 || x10 == 2972 || x10 >= 2974 && x10 <= 2975 || x10 >= 2979 && x10 <= 2980 || x10 >= 2984 && x10 <= 2986 || x10 >= 2990 && x10 <= 3001 || x10 == 3024 || x10 >= 3077 && x10 <= 3084 || x10 >= 3086 && x10 <= 3088 || x10 >= 3090 && x10 <= 3112 || x10 >= 3114 && x10 <= 3129 || x10 == 3133 || x10 >= 3160 && x10 <= 3162 || x10 >= 3164 && x10 <= 3165 || x10 >= 3168 && x10 <= 3169 || x10 == 3200 || x10 >= 3205 && x10 <= 3212 || x10 >= 3214 && x10 <= 3216 || x10 >= 3218 && x10 <= 3240 || x10 >= 3242 && x10 <= 3251 || x10 >= 3253 && x10 <= 3257 || x10 == 3261 || x10 >= 3292 && x10 <= 3294 || x10 >= 3296 && x10 <= 3297 || x10 >= 3313 && x10 <= 3314 || x10 >= 3332 && x10 <= 3340 || x10 >= 3342 && x10 <= 3344 || x10 >= 3346 && x10 <= 3386 || x10 == 3389 || x10 == 3406 || x10 >= 3412 && x10 <= 3414 || x10 >= 3423 && x10 <= 3425 || x10 >= 3450 && x10 <= 3455 || x10 >= 3461 && x10 <= 3478 || x10 >= 3482 && x10 <= 3505 || x10 >= 3507 && x10 <= 3515 || x10 == 3517 || x10 >= 3520 && x10 <= 3526 || x10 >= 3585 && x10 <= 3632 || x10 >= 3634 && x10 <= 3635 || x10 >= 3648 && x10 <= 3654 || x10 >= 3713 && x10 <= 3714 || x10 == 3716 || x10 >= 3718 && x10 <= 3722 || x10 >= 3724 && x10 <= 3747 || x10 == 3749 || x10 >= 3751 && x10 <= 3760 || x10 >= 3762 && x10 <= 3763 || x10 == 3773 || x10 >= 3776 && x10 <= 3780 || x10 == 3782 || x10 >= 3804 && x10 <= 3807 || x10 == 3840 || x10 >= 3904 && x10 <= 3911 || x10 >= 3913 && x10 <= 3948 || x10 >= 3976 && x10 <= 3980 || x10 >= 4096 && x10 <= 4138 || x10 == 4159 || x10 >= 4176 && x10 <= 4181 || x10 >= 4186 && x10 <= 4189 || x10 == 4193 || x10 >= 4197 && x10 <= 4198 || x10 >= 4206 && x10 <= 4208 || x10 >= 4213 && x10 <= 4225 || x10 == 4238 || x10 >= 4256 && x10 <= 4293 || x10 == 4295 || x10 == 4301 || x10 >= 4304 && x10 <= 4346 || x10 >= 4348 && x10 <= 4680 || x10 >= 4682 && x10 <= 4685 || x10 >= 4688 && x10 <= 4694 || x10 == 4696 || x10 >= 4698 && x10 <= 4701 || x10 >= 4704 && x10 <= 4744 || x10 >= 4746 && x10 <= 4749 || x10 >= 4752 && x10 <= 4784 || x10 >= 4786 && x10 <= 4789 || x10 >= 4792 && x10 <= 4798 || x10 == 4800 || x10 >= 4802 && x10 <= 4805 || x10 >= 4808 && x10 <= 4822 || x10 >= 4824 && x10 <= 4880 || x10 >= 4882 && x10 <= 4885 || x10 >= 4888 && x10 <= 4954 || x10 >= 4992 && x10 <= 5007 || x10 >= 5024 && x10 <= 5109 || x10 >= 5112 && x10 <= 5117 || x10 >= 5121 && x10 <= 5740 || x10 >= 5743 && x10 <= 5759 || x10 >= 5761 && x10 <= 5786 || x10 >= 5792 && x10 <= 5866 || x10 >= 5873 && x10 <= 5880 || x10 >= 5888 && x10 <= 5905 || x10 >= 5919 && x10 <= 5937 || x10 >= 5952 && x10 <= 5969 || x10 >= 5984 && x10 <= 5996 || x10 >= 5998 && x10 <= 6000 || x10 >= 6016 && x10 <= 6067 || x10 == 6103 || x10 == 6108 || x10 >= 6176 && x10 <= 6264 || x10 >= 6272 && x10 <= 6276 || x10 >= 6279 && x10 <= 6312 || x10 == 6314 || x10 >= 6320 && x10 <= 6389 || x10 >= 6400 && x10 <= 6430 || x10 >= 6480 && x10 <= 6509 || x10 >= 6512 && x10 <= 6516 || x10 >= 6528 && x10 <= 6571 || x10 >= 6576 && x10 <= 6601 || x10 >= 6656 && x10 <= 6678 || x10 >= 6688 && x10 <= 6740 || x10 == 6823 || x10 >= 6917 && x10 <= 6963 || x10 >= 6981 && x10 <= 6988 || x10 >= 7043 && x10 <= 7072 || x10 >= 7086 && x10 <= 7087 || x10 >= 7098 && x10 <= 7141 || x10 >= 7168 && x10 <= 7203 || x10 >= 7245 && x10 <= 7247 || x10 >= 7258 && x10 <= 7293 || x10 >= 7296 && x10 <= 7306 || x10 >= 7312 && x10 <= 7354 || x10 >= 7357 && x10 <= 7359 || x10 >= 7401 && x10 <= 7404 || x10 >= 7406 && x10 <= 7411 || x10 >= 7413 && x10 <= 7414 || x10 == 7418 || x10 >= 7424 && x10 <= 7615 || x10 >= 7680 && x10 <= 7957 || x10 >= 7960 && x10 <= 7965 || x10 >= 7968 && x10 <= 8005 || x10 >= 8008 && x10 <= 8013 || x10 >= 8016 && x10 <= 8023 || x10 == 8025 || x10 == 8027 || x10 == 8029 || x10 >= 8031 && x10 <= 8061 || x10 >= 8064 && x10 <= 8116 || x10 >= 8118 && x10 <= 8124 || x10 == 8126 || x10 >= 8130 && x10 <= 8132 || x10 >= 8134 && x10 <= 8140 || x10 >= 8144 && x10 <= 8147 || x10 >= 8150 && x10 <= 8155 || x10 >= 8160 && x10 <= 8172 || x10 >= 8178 && x10 <= 8180 || x10 >= 8182 && x10 <= 8188 || x10 == 8305 || x10 == 8319 || x10 >= 8336 && x10 <= 8348 || x10 == 8450 || x10 == 8455 || x10 >= 8458 && x10 <= 8467 || x10 == 8469 || x10 >= 8473 && x10 <= 8477 || x10 == 8484 || x10 == 8486 || x10 == 8488 || x10 >= 8490 && x10 <= 8493 || x10 >= 8495 && x10 <= 8505 || x10 >= 8508 && x10 <= 8511 || x10 >= 8517 && x10 <= 8521 || x10 == 8526 || x10 >= 8579 && x10 <= 8580 || x10 >= 11264 && x10 <= 11492 || x10 >= 11499 && x10 <= 11502 || x10 >= 11506 && x10 <= 11507 || x10 >= 11520 && x10 <= 11557 || x10 == 11559 || x10 == 11565 || x10 >= 11568 && x10 <= 11623 || x10 == 11631 || x10 >= 11648 && x10 <= 11670 || x10 >= 11680 && x10 <= 11686 || x10 >= 11688 && x10 <= 11694 || x10 >= 11696 && x10 <= 11702 || x10 >= 11704 && x10 <= 11710 || x10 >= 11712 && x10 <= 11718 || x10 >= 11720 && x10 <= 11726 || x10 >= 11728 && x10 <= 11734 || x10 >= 11736 && x10 <= 11742 || x10 == 11823 || x10 >= 12293 && x10 <= 12294 || x10 >= 12337 && x10 <= 12341 || x10 >= 12347 && x10 <= 12348 || x10 >= 12353 && x10 <= 12438 || x10 >= 12445 && x10 <= 12447 || x10 >= 12449 && x10 <= 12538 || x10 >= 12540 && x10 <= 12543 || x10 >= 12549 && x10 <= 12591 || x10 >= 12593 && x10 <= 12686 || x10 >= 12704 && x10 <= 12735 || x10 >= 12784 && x10 <= 12799 || x10 >= 13312 && x10 <= 19903 || x10 >= 19968 && x10 <= 42124 || x10 >= 42192 && x10 <= 42237 || x10 >= 42240 && x10 <= 42508 || x10 >= 42512 && x10 <= 42527 || x10 >= 42538 && x10 <= 42539 || x10 >= 42560 && x10 <= 42606 || x10 >= 42623 && x10 <= 42653 || x10 >= 42656 && x10 <= 42725 || x10 >= 42775 && x10 <= 42783 || x10 >= 42786 && x10 <= 42888 || x10 >= 42891 && x10 <= 42972 || x10 >= 42993 && x10 <= 43009 || x10 >= 43011 && x10 <= 43013 || x10 >= 43015 && x10 <= 43018 || x10 >= 43020 && x10 <= 43042 || x10 >= 43072 && x10 <= 43123 || x10 >= 43138 && x10 <= 43187 || x10 >= 43250 && x10 <= 43255 || x10 == 43259 || x10 >= 43261 && x10 <= 43262 || x10 >= 43274 && x10 <= 43301 || x10 >= 43312 && x10 <= 43334 || x10 >= 43360 && x10 <= 43388 || x10 >= 43396 && x10 <= 43442 || x10 == 43471 || x10 >= 43488 && x10 <= 43492 || x10 >= 43494 && x10 <= 43503 || x10 >= 43514 && x10 <= 43518 || x10 >= 43520 && x10 <= 43560 || x10 >= 43584 && x10 <= 43586 || x10 >= 43588 && x10 <= 43595 || x10 >= 43616 && x10 <= 43638 || x10 == 43642 || x10 >= 43646 && x10 <= 43695 || x10 == 43697 || x10 >= 43701 && x10 <= 43702 || x10 >= 43705 && x10 <= 43709 || x10 == 43712 || x10 == 43714 || x10 >= 43739 && x10 <= 43741 || x10 >= 43744 && x10 <= 43754 || x10 >= 43762 && x10 <= 43764 || x10 >= 43777 && x10 <= 43782 || x10 >= 43785 && x10 <= 43790 || x10 >= 43793 && x10 <= 43798 || x10 >= 43808 && x10 <= 43814 || x10 >= 43816 && x10 <= 43822 || x10 >= 43824 && x10 <= 43866 || x10 >= 43868 && x10 <= 43881 || x10 >= 43888 && x10 <= 44002 || x10 >= 44032 && x10 <= 55203 || x10 >= 55216 && x10 <= 55238 || x10 >= 55243 && x10 <= 55291 || x10 >= 63744 && x10 <= 64109 || x10 >= 64112 && x10 <= 64217 || x10 >= 64256 && x10 <= 64262 || x10 >= 64275 && x10 <= 64279 || x10 == 64285 || x10 >= 64287 && x10 <= 64296 || x10 >= 64298 && x10 <= 64310 || x10 >= 64312 && x10 <= 64316 || x10 == 64318 || x10 >= 64320 && x10 <= 64321 || x10 >= 64323 && x10 <= 64324 || x10 >= 64326 && x10 <= 64433 || x10 >= 64467 && x10 <= 64829 || x10 >= 64848 && x10 <= 64911 || x10 >= 64914 && x10 <= 64967 || x10 >= 65008 && x10 <= 65019 || x10 >= 65136 && x10 <= 65140 || x10 >= 65142 && x10 <= 65276 || x10 >= 65313 && x10 <= 65338 || x10 >= 65345 && x10 <= 65370 || x10 >= 65382 && x10 <= 65470 || x10 >= 65474 && x10 <= 65479 || x10 >= 65482 && x10 <= 65487 || x10 >= 65490 && x10 <= 65495 || x10 >= 65498 && x10 <= 65500 || x10 >= 65536 && x10 <= 65547 || x10 >= 65549 && x10 <= 65574 || x10 >= 65576 && x10 <= 65594 || x10 >= 65596 && x10 <= 65597 || x10 >= 65599 && x10 <= 65613 || x10 >= 65616 && x10 <= 65629 || x10 >= 65664 && x10 <= 65786 || x10 >= 66176 && x10 <= 66204 || x10 >= 66208 && x10 <= 66256 || x10 >= 66304 && x10 <= 66335 || x10 >= 66349 && x10 <= 66368 || x10 >= 66370 && x10 <= 66377 || x10 >= 66384 && x10 <= 66421 || x10 >= 66432 && x10 <= 66461 || x10 >= 66464 && x10 <= 66499 || x10 >= 66504 && x10 <= 66511 || x10 >= 66560 && x10 <= 66717 || x10 >= 66736 && x10 <= 66771 || x10 >= 66776 && x10 <= 66811 || x10 >= 66816 && x10 <= 66855 || x10 >= 66864 && x10 <= 66915 || x10 >= 66928 && x10 <= 66938 || x10 >= 66940 && x10 <= 66954 || x10 >= 66956 && x10 <= 66962 || x10 >= 66964 && x10 <= 66965 || x10 >= 66967 && x10 <= 66977 || x10 >= 66979 && x10 <= 66993 || x10 >= 66995 && x10 <= 67001 || x10 >= 67003 && x10 <= 67004 || x10 >= 67008 && x10 <= 67059 || x10 >= 67072 && x10 <= 67382 || x10 >= 67392 && x10 <= 67413 || x10 >= 67424 && x10 <= 67431 || x10 >= 67456 && x10 <= 67461 || x10 >= 67463 && x10 <= 67504 || x10 >= 67506 && x10 <= 67514 || x10 >= 67584 && x10 <= 67589 || x10 == 67592 || x10 >= 67594 && x10 <= 67637 || x10 >= 67639 && x10 <= 67640 || x10 == 67644 || x10 >= 67647 && x10 <= 67669 || x10 >= 67680 && x10 <= 67702 || x10 >= 67712 && x10 <= 67742 || x10 >= 67808 && x10 <= 67826 || x10 >= 67828 && x10 <= 67829 || x10 >= 67840 && x10 <= 67861 || x10 >= 67872 && x10 <= 67897 || x10 >= 67904 && x10 <= 67929 || x10 >= 67968 && x10 <= 68023 || x10 >= 68030 && x10 <= 68031 || x10 == 68096 || x10 >= 68112 && x10 <= 68115 || x10 >= 68117 && x10 <= 68119 || x10 >= 68121 && x10 <= 68149 || x10 >= 68192 && x10 <= 68220 || x10 >= 68224 && x10 <= 68252 || x10 >= 68288 && x10 <= 68295 || x10 >= 68297 && x10 <= 68324 || x10 >= 68352 && x10 <= 68405 || x10 >= 68416 && x10 <= 68437 || x10 >= 68448 && x10 <= 68466 || x10 >= 68480 && x10 <= 68497 || x10 >= 68608 && x10 <= 68680 || x10 >= 68736 && x10 <= 68786 || x10 >= 68800 && x10 <= 68850 || x10 >= 68864 && x10 <= 68899 || x10 >= 68938 && x10 <= 68965 || x10 >= 68975 && x10 <= 68997 || x10 >= 69248 && x10 <= 69289 || x10 >= 69296 && x10 <= 69297 || x10 >= 69314 && x10 <= 69319 || x10 >= 69376 && x10 <= 69404 || x10 == 69415 || x10 >= 69424 && x10 <= 69445 || x10 >= 69488 && x10 <= 69505 || x10 >= 69552 && x10 <= 69572 || x10 >= 69600 && x10 <= 69622 || x10 >= 69635 && x10 <= 69687 || x10 >= 69745 && x10 <= 69746 || x10 == 69749 || x10 >= 69763 && x10 <= 69807 || x10 >= 69840 && x10 <= 69864 || x10 >= 69891 && x10 <= 69926 || x10 == 69956 || x10 == 69959 || x10 >= 69968 && x10 <= 70002 || x10 == 70006 || x10 >= 70019 && x10 <= 70066 || x10 >= 70081 && x10 <= 70084 || x10 == 70106 || x10 == 70108 || x10 >= 70144 && x10 <= 70161 || x10 >= 70163 && x10 <= 70187 || x10 >= 70207 && x10 <= 70208 || x10 >= 70272 && x10 <= 70278 || x10 == 70280 || x10 >= 70282 && x10 <= 70285 || x10 >= 70287 && x10 <= 70301 || x10 >= 70303 && x10 <= 70312 || x10 >= 70320 && x10 <= 70366 || x10 >= 70405 && x10 <= 70412 || x10 >= 70415 && x10 <= 70416 || x10 >= 70419 && x10 <= 70440 || x10 >= 70442 && x10 <= 70448 || x10 >= 70450 && x10 <= 70451 || x10 >= 70453 && x10 <= 70457 || x10 == 70461 || x10 == 70480 || x10 >= 70493 && x10 <= 70497 || x10 >= 70528 && x10 <= 70537 || x10 == 70539 || x10 == 70542 || x10 >= 70544 && x10 <= 70581 || x10 == 70583 || x10 == 70609 || x10 == 70611 || x10 >= 70656 && x10 <= 70708 || x10 >= 70727 && x10 <= 70730 || x10 >= 70751 && x10 <= 70753 || x10 >= 70784 && x10 <= 70831 || x10 >= 70852 && x10 <= 70853 || x10 == 70855 || x10 >= 71040 && x10 <= 71086 || x10 >= 71128 && x10 <= 71131 || x10 >= 71168 && x10 <= 71215 || x10 == 71236 || x10 >= 71296 && x10 <= 71338 || x10 == 71352 || x10 >= 71424 && x10 <= 71450 || x10 >= 71488 && x10 <= 71494 || x10 >= 71680 && x10 <= 71723 || x10 >= 71840 && x10 <= 71903 || x10 >= 71935 && x10 <= 71942 || x10 == 71945 || x10 >= 71948 && x10 <= 71955 || x10 >= 71957 && x10 <= 71958 || x10 >= 71960 && x10 <= 71983 || x10 == 71999 || x10 == 72001 || x10 >= 72096 && x10 <= 72103 || x10 >= 72106 && x10 <= 72144 || x10 == 72161 || x10 == 72163 || x10 == 72192 || x10 >= 72203 && x10 <= 72242 || x10 == 72250 || x10 == 72272 || x10 >= 72284 && x10 <= 72329 || x10 == 72349 || x10 >= 72368 && x10 <= 72440 || x10 >= 72640 && x10 <= 72672 || x10 >= 72704 && x10 <= 72712 || x10 >= 72714 && x10 <= 72750 || x10 == 72768 || x10 >= 72818 && x10 <= 72847 || x10 >= 72960 && x10 <= 72966 || x10 >= 72968 && x10 <= 72969 || x10 >= 72971 && x10 <= 73008 || x10 == 73030 || x10 >= 73056 && x10 <= 73061 || x10 >= 73063 && x10 <= 73064 || x10 >= 73066 && x10 <= 73097 || x10 == 73112 || x10 >= 73136 && x10 <= 73179 || x10 >= 73440 && x10 <= 73458 || x10 == 73474 || x10 >= 73476 && x10 <= 73488 || x10 >= 73490 && x10 <= 73523 || x10 == 73648 || x10 >= 73728 && x10 <= 74649 || x10 >= 74880 && x10 <= 75075 || x10 >= 77712 && x10 <= 77808 || x10 >= 77824 && x10 <= 78895 || x10 >= 78913 && x10 <= 78918 || x10 >= 78944 && x10 <= 82938 || x10 >= 82944 && x10 <= 83526 || x10 >= 90368 && x10 <= 90397 || x10 >= 92160 && x10 <= 92728 || x10 >= 92736 && x10 <= 92766 || x10 >= 92784 && x10 <= 92862 || x10 >= 92880 && x10 <= 92909 || x10 >= 92928 && x10 <= 92975 || x10 >= 92992 && x10 <= 92995 || x10 >= 93027 && x10 <= 93047 || x10 >= 93053 && x10 <= 93071 || x10 >= 93504 && x10 <= 93548 || x10 >= 93760 && x10 <= 93823 || x10 >= 93856 && x10 <= 93880 || x10 >= 93883 && x10 <= 93907 || x10 >= 93952 && x10 <= 94026 || x10 == 94032 || x10 >= 94099 && x10 <= 94111 || x10 >= 94176 && x10 <= 94177 || x10 == 94179 || x10 >= 94194 && x10 <= 94195 || x10 >= 94208 && x10 <= 101589 || x10 >= 101631 && x10 <= 101662 || x10 >= 101760 && x10 <= 101874 || x10 >= 110576 && x10 <= 110579 || x10 >= 110581 && x10 <= 110587 || x10 >= 110589 && x10 <= 110590 || x10 >= 110592 && x10 <= 110882 || x10 == 110898 || x10 >= 110928 && x10 <= 110930 || x10 == 110933 || x10 >= 110948 && x10 <= 110951 || x10 >= 110960 && x10 <= 111355 || x10 >= 113664 && x10 <= 113770 || x10 >= 113776 && x10 <= 113788 || x10 >= 113792 && x10 <= 113800 || x10 >= 113808 && x10 <= 113817 || x10 >= 119808 && x10 <= 119892 || x10 >= 119894 && x10 <= 119964 || x10 >= 119966 && x10 <= 119967 || x10 == 119970 || x10 >= 119973 && x10 <= 119974 || x10 >= 119977 && x10 <= 119980 || x10 >= 119982 && x10 <= 119993 || x10 == 119995 || x10 >= 119997 && x10 <= 120003 || x10 >= 120005 && x10 <= 120069 || x10 >= 120071 && x10 <= 120074 || x10 >= 120077 && x10 <= 120084 || x10 >= 120086 && x10 <= 120092 || x10 >= 120094 && x10 <= 120121 || x10 >= 120123 && x10 <= 120126 || x10 >= 120128 && x10 <= 120132 || x10 == 120134 || x10 >= 120138 && x10 <= 120144 || x10 >= 120146 && x10 <= 120485 || x10 >= 120488 && x10 <= 120512 || x10 >= 120514 && x10 <= 120538 || x10 >= 120540 && x10 <= 120570 || x10 >= 120572 && x10 <= 120596 || x10 >= 120598 && x10 <= 120628 || x10 >= 120630 && x10 <= 120654 || x10 >= 120656 && x10 <= 120686 || x10 >= 120688 && x10 <= 120712 || x10 >= 120714 && x10 <= 120744 || x10 >= 120746 && x10 <= 120770 || x10 >= 120772 && x10 <= 120779 || x10 >= 122624 && x10 <= 122654 || x10 >= 122661 && x10 <= 122666 || x10 >= 122928 && x10 <= 122989 || x10 >= 123136 && x10 <= 123180 || x10 >= 123191 && x10 <= 123197 || x10 == 123214 || x10 >= 123536 && x10 <= 123565 || x10 >= 123584 && x10 <= 123627 || x10 >= 124112 && x10 <= 124139 || x10 >= 124368 && x10 <= 124397 || x10 == 124400 || x10 >= 124608 && x10 <= 124638 || x10 >= 124640 && x10 <= 124642 || x10 >= 124644 && x10 <= 124645 || x10 >= 124647 && x10 <= 124653 || x10 >= 124656 && x10 <= 124660 || x10 >= 124670 && x10 <= 124671 || x10 >= 124896 && x10 <= 124902 || x10 >= 124904 && x10 <= 124907 || x10 >= 124909 && x10 <= 124910 || x10 >= 124912 && x10 <= 124926 || x10 >= 124928 && x10 <= 125124 || x10 >= 125184 && x10 <= 125251 || x10 == 125259 || x10 >= 126464 && x10 <= 126467 || x10 >= 126469 && x10 <= 126495 || x10 >= 126497 && x10 <= 126498 || x10 == 126500 || x10 == 126503 || x10 >= 126505 && x10 <= 126514 || x10 >= 126516 && x10 <= 126519 || x10 == 126521 || x10 == 126523 || x10 == 126530 || x10 == 126535 || x10 == 126537 || x10 == 126539 || x10 >= 126541 && x10 <= 126543 || x10 >= 126545 && x10 <= 126546 || x10 == 126548 || x10 == 126551 || x10 == 126553 || x10 == 126555 || x10 == 126557 || x10 == 126559 || x10 >= 126561 && x10 <= 126562 || x10 == 126564 || x10 >= 126567 && x10 <= 126570 || x10 >= 126572 && x10 <= 126578 || x10 >= 126580 && x10 <= 126583 || x10 >= 126585 && x10 <= 126588 || x10 == 126590 || x10 >= 126592 && x10 <= 126601 || x10 >= 126603 && x10 <= 126619 || x10 >= 126625 && x10 <= 126627 || x10 >= 126629 && x10 <= 126633 || x10 >= 126635 && x10 <= 126651 || x10 >= 131072 && x10 <= 173791 || x10 >= 173824 && x10 <= 178205 || x10 >= 178208 && x10 <= 183981 || x10 >= 183984 && x10 <= 191456 || x10 >= 191472 && x10 <= 192093 || x10 >= 194560 && x10 <= 195101 || x10 >= 196608 && x10 <= 201546 || x10 >= 201552 && x10 <= 210041))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 65)
 		goto L12
 	}
@@ -73127,7 +73182,7 @@ L13:
 	p.pos = x6
 	p.recovered = p.recovered[:x7]
 L12:
-	if !(x11 && (!!(x10 >= 1632 && x10 <= 1641 || x10 >= 1776 && x10 <= 1785 || x10 >= 1984 && x10 <= 1993 || x10 >= 2406 && x10 <= 2415 || x10 >= 2534 && x10 <= 2543 || x10 >= 2662 && x10 <= 2671 || x10 >= 2790 && x10 <= 2799 || x10 >= 2918 && x10 <= 2927 || x10 >= 3046 && x10 <= 3055 || x10 >= 3174 && x10 <= 3183 || x10 >= 3302 && x10 <= 3311 || x10 >= 3430 && x10 <= 3439 || x10 >= 3558 && x10 <= 3567 || x10 >= 3664 && x10 <= 3673 || x10 >= 3792 && x10 <= 3801 || x10 >= 3872 && x10 <= 3881 || x10 >= 4160 && x10 <= 4169 || x10 >= 4240 && x10 <= 4249 || x10 >= 6112 && x10 <= 6121 || x10 >= 6160 && x10 <= 6169 || x10 >= 6470 && x10 <= 6479 || x10 >= 6608 && x10 <= 6617 || x10 >= 6784 && x10 <= 6793 || x10 >= 6800 && x10 <= 6809 || x10 >= 6992 && x10 <= 7001 || x10 >= 7088 && x10 <= 7097 || x10 >= 7232 && x10 <= 7241 || x10 >= 7248 && x10 <= 7257 || x10 >= 42528 && x10 <= 42537 || x10 >= 43216 && x10 <= 43225 || x10 >= 43264 && x10 <= 43273 || x10 >= 43472 && x10 <= 43481 || x10 >= 43504 && x10 <= 43513 || x10 >= 43600 && x10 <= 43609 || x10 >= 44016 && x10 <= 44025 || x10 >= 65296 && x10 <= 65305 || x10 >= 66720 && x10 <= 66729 || x10 >= 68912 && x10 <= 68921 || x10 >= 68928 && x10 <= 68937 || x10 >= 69734 && x10 <= 69743 || x10 >= 69872 && x10 <= 69881 || x10 >= 69942 && x10 <= 69951 || x10 >= 70096 && x10 <= 70105 || x10 >= 70384 && x10 <= 70393 || x10 >= 70736 && x10 <= 70745 || x10 >= 70864 && x10 <= 70873 || x10 >= 71248 && x10 <= 71257 || x10 >= 71360 && x10 <= 71369 || x10 >= 71376 && x10 <= 71395 || x10 >= 71472 && x10 <= 71481 || x10 >= 71904 && x10 <= 71913 || x10 >= 72016 && x10 <= 72025 || x10 >= 72688 && x10 <= 72697 || x10 >= 72784 && x10 <= 72793 || x10 >= 73040 && x10 <= 73049 || x10 >= 73120 && x10 <= 73129 || x10 >= 73184 && x10 <= 73193 || x10 >= 73552 && x10 <= 73561 || x10 >= 90416 && x10 <= 90425 || x10 >= 92768 && x10 <= 92777 || x10 >= 92864 && x10 <= 92873 || x10 >= 93008 && x10 <= 93017 || x10 >= 93552 && x10 <= 93561 || x10 >= 118000 && x10 <= 118009 || x10 >= 120782 && x10 <= 120831 || x10 >= 123200 && x10 <= 123209 || x10 >= 123632 && x10 <= 123641 || x10 >= 124144 && x10 <= 124153 || x10 >= 124401 && x10 <= 124410 || x10 >= 125264 && x10 <= 125273 || x10 >= 130032 && x10 <= 130041))) && p.depth+1 <= maxDepth {
+	if !(x11 && (!!(x10 >= 1632 && x10 <= 1641 || x10 >= 1776 && x10 <= 1785 || x10 >= 1984 && x10 <= 1993 || x10 >= 2406 && x10 <= 2415 || x10 >= 2534 && x10 <= 2543 || x10 >= 2662 && x10 <= 2671 || x10 >= 2790 && x10 <= 2799 || x10 >= 2918 && x10 <= 2927 || x10 >= 3046 && x10 <= 3055 || x10 >= 3174 && x10 <= 3183 || x10 >= 3302 && x10 <= 3311 || x10 >= 3430 && x10 <= 3439 || x10 >= 3558 && x10 <= 3567 || x10 >= 3664 && x10 <= 3673 || x10 >= 3792 && x10 <= 3801 || x10 >= 3872 && x10 <= 3881 || x10 >= 4160 && x10 <= 4169 || x10 >= 4240 && x10 <= 4249 || x10 >= 6112 && x10 <= 6121 || x10 >= 6160 && x10 <= 6169 || x10 >= 6470 && x10 <= 6479 || x10 >= 6608 && x10 <= 6617 || x10 >= 6784 && x10 <= 6793 || x10 >= 6800 && x10 <= 6809 || x10 >= 6992 && x10 <= 7001 || x10 >= 7088 && x10 <= 7097 || x10 >= 7232 && x10 <= 7241 || x10 >= 7248 && x10 <= 7257 || x10 >= 42528 && x10 <= 42537 || x10 >= 43216 && x10 <= 43225 || x10 >= 43264 && x10 <= 43273 || x10 >= 43472 && x10 <= 43481 || x10 >= 43504 && x10 <= 43513 || x10 >= 43600 && x10 <= 43609 || x10 >= 44016 && x10 <= 44025 || x10 >= 65296 && x10 <= 65305 || x10 >= 66720 && x10 <= 66729 || x10 >= 68912 && x10 <= 68921 || x10 >= 68928 && x10 <= 68937 || x10 >= 69734 && x10 <= 69743 || x10 >= 69872 && x10 <= 69881 || x10 >= 69942 && x10 <= 69951 || x10 >= 70096 && x10 <= 70105 || x10 >= 70384 && x10 <= 70393 || x10 >= 70736 && x10 <= 70745 || x10 >= 70864 && x10 <= 70873 || x10 >= 71248 && x10 <= 71257 || x10 >= 71360 && x10 <= 71369 || x10 >= 71376 && x10 <= 71395 || x10 >= 71472 && x10 <= 71481 || x10 >= 71904 && x10 <= 71913 || x10 >= 72016 && x10 <= 72025 || x10 >= 72688 && x10 <= 72697 || x10 >= 72784 && x10 <= 72793 || x10 >= 73040 && x10 <= 73049 || x10 >= 73120 && x10 <= 73129 || x10 >= 73184 && x10 <= 73193 || x10 >= 73552 && x10 <= 73561 || x10 >= 90416 && x10 <= 90425 || x10 >= 92768 && x10 <= 92777 || x10 >= 92864 && x10 <= 92873 || x10 >= 93008 && x10 <= 93017 || x10 >= 93552 && x10 <= 93561 || x10 >= 118000 && x10 <= 118009 || x10 >= 120782 && x10 <= 120831 || x10 >= 123200 && x10 <= 123209 || x10 >= 123632 && x10 <= 123641 || x10 >= 124144 && x10 <= 124153 || x10 >= 124401 && x10 <= 124410 || x10 >= 125264 && x10 <= 125273 || x10 >= 130032 && x10 <= 130041))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 66)
 		goto L15
 	}
@@ -73178,7 +73233,7 @@ func (p *tparser) i133() (any, bool) {
 		v18  any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -73209,7 +73264,7 @@ L5:
 	} else {
 		x10, _, x11 = p.peek()
 	}
-	if !(x11 && (!!(x10 == 170 || x10 == 181 || x10 == 186 || x10 >= 192 && x10 <= 214 || x10 >= 216 && x10 <= 246 || x10 >= 248 && x10 <= 705 || x10 >= 710 && x10 <= 721 || x10 >= 736 && x10 <= 740 || x10 == 748 || x10 == 750 || x10 >= 880 && x10 <= 884 || x10 >= 886 && x10 <= 887 || x10 >= 890 && x10 <= 893 || x10 == 895 || x10 == 902 || x10 >= 904 && x10 <= 906 || x10 == 908 || x10 >= 910 && x10 <= 929 || x10 >= 931 && x10 <= 1013 || x10 >= 1015 && x10 <= 1153 || x10 >= 1162 && x10 <= 1327 || x10 >= 1329 && x10 <= 1366 || x10 == 1369 || x10 >= 1376 && x10 <= 1416 || x10 >= 1488 && x10 <= 1514 || x10 >= 1519 && x10 <= 1522 || x10 >= 1568 && x10 <= 1610 || x10 >= 1646 && x10 <= 1647 || x10 >= 1649 && x10 <= 1747 || x10 == 1749 || x10 >= 1765 && x10 <= 1766 || x10 >= 1774 && x10 <= 1775 || x10 >= 1786 && x10 <= 1788 || x10 == 1791 || x10 == 1808 || x10 >= 1810 && x10 <= 1839 || x10 >= 1869 && x10 <= 1957 || x10 == 1969 || x10 >= 1994 && x10 <= 2026 || x10 >= 2036 && x10 <= 2037 || x10 == 2042 || x10 >= 2048 && x10 <= 2069 || x10 == 2074 || x10 == 2084 || x10 == 2088 || x10 >= 2112 && x10 <= 2136 || x10 >= 2144 && x10 <= 2154 || x10 >= 2160 && x10 <= 2183 || x10 >= 2185 && x10 <= 2191 || x10 >= 2208 && x10 <= 2249 || x10 >= 2308 && x10 <= 2361 || x10 == 2365 || x10 == 2384 || x10 >= 2392 && x10 <= 2401 || x10 >= 2417 && x10 <= 2432 || x10 >= 2437 && x10 <= 2444 || x10 >= 2447 && x10 <= 2448 || x10 >= 2451 && x10 <= 2472 || x10 >= 2474 && x10 <= 2480 || x10 == 2482 || x10 >= 2486 && x10 <= 2489 || x10 == 2493 || x10 == 2510 || x10 >= 2524 && x10 <= 2525 || x10 >= 2527 && x10 <= 2529 || x10 >= 2544 && x10 <= 2545 || x10 == 2556 || x10 >= 2565 && x10 <= 2570 || x10 >= 2575 && x10 <= 2576 || x10 >= 2579 && x10 <= 2600 || x10 >= 2602 && x10 <= 2608 || x10 >= 2610 && x10 <= 2611 || x10 >= 2613 && x10 <= 2614 || x10 >= 2616 && x10 <= 2617 || x10 >= 2649 && x10 <= 2652 || x10 == 2654 || x10 >= 2674 && x10 <= 2676 || x10 >= 2693 && x10 <= 2701 || x10 >= 2703 && x10 <= 2705 || x10 >= 2707 && x10 <= 2728 || x10 >= 2730 && x10 <= 2736 || x10 >= 2738 && x10 <= 2739 || x10 >= 2741 && x10 <= 2745 || x10 == 2749 || x10 == 2768 || x10 >= 2784 && x10 <= 2785 || x10 == 2809 || x10 >= 2821 && x10 <= 2828 || x10 >= 2831 && x10 <= 2832 || x10 >= 2835 && x10 <= 2856 || x10 >= 2858 && x10 <= 2864 || x10 >= 2866 && x10 <= 2867 || x10 >= 2869 && x10 <= 2873 || x10 == 2877 || x10 >= 2908 && x10 <= 2909 || x10 >= 2911 && x10 <= 2913 || x10 == 2929 || x10 == 2947 || x10 >= 2949 && x10 <= 2954 || x10 >= 2958 && x10 <= 2960 || x10 >= 2962 && x10 <= 2965 || x10 >= 2969 && x10 <= 2970 || x10 == 2972 || x10 >= 2974 && x10 <= 2975 || x10 >= 2979 && x10 <= 2980 || x10 >= 2984 && x10 <= 2986 || x10 >= 2990 && x10 <= 3001 || x10 == 3024 || x10 >= 3077 && x10 <= 3084 || x10 >= 3086 && x10 <= 3088 || x10 >= 3090 && x10 <= 3112 || x10 >= 3114 && x10 <= 3129 || x10 == 3133 || x10 >= 3160 && x10 <= 3162 || x10 >= 3164 && x10 <= 3165 || x10 >= 3168 && x10 <= 3169 || x10 == 3200 || x10 >= 3205 && x10 <= 3212 || x10 >= 3214 && x10 <= 3216 || x10 >= 3218 && x10 <= 3240 || x10 >= 3242 && x10 <= 3251 || x10 >= 3253 && x10 <= 3257 || x10 == 3261 || x10 >= 3292 && x10 <= 3294 || x10 >= 3296 && x10 <= 3297 || x10 >= 3313 && x10 <= 3314 || x10 >= 3332 && x10 <= 3340 || x10 >= 3342 && x10 <= 3344 || x10 >= 3346 && x10 <= 3386 || x10 == 3389 || x10 == 3406 || x10 >= 3412 && x10 <= 3414 || x10 >= 3423 && x10 <= 3425 || x10 >= 3450 && x10 <= 3455 || x10 >= 3461 && x10 <= 3478 || x10 >= 3482 && x10 <= 3505 || x10 >= 3507 && x10 <= 3515 || x10 == 3517 || x10 >= 3520 && x10 <= 3526 || x10 >= 3585 && x10 <= 3632 || x10 >= 3634 && x10 <= 3635 || x10 >= 3648 && x10 <= 3654 || x10 >= 3713 && x10 <= 3714 || x10 == 3716 || x10 >= 3718 && x10 <= 3722 || x10 >= 3724 && x10 <= 3747 || x10 == 3749 || x10 >= 3751 && x10 <= 3760 || x10 >= 3762 && x10 <= 3763 || x10 == 3773 || x10 >= 3776 && x10 <= 3780 || x10 == 3782 || x10 >= 3804 && x10 <= 3807 || x10 == 3840 || x10 >= 3904 && x10 <= 3911 || x10 >= 3913 && x10 <= 3948 || x10 >= 3976 && x10 <= 3980 || x10 >= 4096 && x10 <= 4138 || x10 == 4159 || x10 >= 4176 && x10 <= 4181 || x10 >= 4186 && x10 <= 4189 || x10 == 4193 || x10 >= 4197 && x10 <= 4198 || x10 >= 4206 && x10 <= 4208 || x10 >= 4213 && x10 <= 4225 || x10 == 4238 || x10 >= 4256 && x10 <= 4293 || x10 == 4295 || x10 == 4301 || x10 >= 4304 && x10 <= 4346 || x10 >= 4348 && x10 <= 4680 || x10 >= 4682 && x10 <= 4685 || x10 >= 4688 && x10 <= 4694 || x10 == 4696 || x10 >= 4698 && x10 <= 4701 || x10 >= 4704 && x10 <= 4744 || x10 >= 4746 && x10 <= 4749 || x10 >= 4752 && x10 <= 4784 || x10 >= 4786 && x10 <= 4789 || x10 >= 4792 && x10 <= 4798 || x10 == 4800 || x10 >= 4802 && x10 <= 4805 || x10 >= 4808 && x10 <= 4822 || x10 >= 4824 && x10 <= 4880 || x10 >= 4882 && x10 <= 4885 || x10 >= 4888 && x10 <= 4954 || x10 >= 4992 && x10 <= 5007 || x10 >= 5024 && x10 <= 5109 || x10 >= 5112 && x10 <= 5117 || x10 >= 5121 && x10 <= 5740 || x10 >= 5743 && x10 <= 5759 || x10 >= 5761 && x10 <= 5786 || x10 >= 5792 && x10 <= 5866 || x10 >= 5873 && x10 <= 5880 || x10 >= 5888 && x10 <= 5905 || x10 >= 5919 && x10 <= 5937 || x10 >= 5952 && x10 <= 5969 || x10 >= 5984 && x10 <= 5996 || x10 >= 5998 && x10 <= 6000 || x10 >= 6016 && x10 <= 6067 || x10 == 6103 || x10 == 6108 || x10 >= 6176 && x10 <= 6264 || x10 >= 6272 && x10 <= 6276 || x10 >= 6279 && x10 <= 6312 || x10 == 6314 || x10 >= 6320 && x10 <= 6389 || x10 >= 6400 && x10 <= 6430 || x10 >= 6480 && x10 <= 6509 || x10 >= 6512 && x10 <= 6516 || x10 >= 6528 && x10 <= 6571 || x10 >= 6576 && x10 <= 6601 || x10 >= 6656 && x10 <= 6678 || x10 >= 6688 && x10 <= 6740 || x10 == 6823 || x10 >= 6917 && x10 <= 6963 || x10 >= 6981 && x10 <= 6988 || x10 >= 7043 && x10 <= 7072 || x10 >= 7086 && x10 <= 7087 || x10 >= 7098 && x10 <= 7141 || x10 >= 7168 && x10 <= 7203 || x10 >= 7245 && x10 <= 7247 || x10 >= 7258 && x10 <= 7293 || x10 >= 7296 && x10 <= 7306 || x10 >= 7312 && x10 <= 7354 || x10 >= 7357 && x10 <= 7359 || x10 >= 7401 && x10 <= 7404 || x10 >= 7406 && x10 <= 7411 || x10 >= 7413 && x10 <= 7414 || x10 == 7418 || x10 >= 7424 && x10 <= 7615 || x10 >= 7680 && x10 <= 7957 || x10 >= 7960 && x10 <= 7965 || x10 >= 7968 && x10 <= 8005 || x10 >= 8008 && x10 <= 8013 || x10 >= 8016 && x10 <= 8023 || x10 == 8025 || x10 == 8027 || x10 == 8029 || x10 >= 8031 && x10 <= 8061 || x10 >= 8064 && x10 <= 8116 || x10 >= 8118 && x10 <= 8124 || x10 == 8126 || x10 >= 8130 && x10 <= 8132 || x10 >= 8134 && x10 <= 8140 || x10 >= 8144 && x10 <= 8147 || x10 >= 8150 && x10 <= 8155 || x10 >= 8160 && x10 <= 8172 || x10 >= 8178 && x10 <= 8180 || x10 >= 8182 && x10 <= 8188 || x10 == 8305 || x10 == 8319 || x10 >= 8336 && x10 <= 8348 || x10 == 8450 || x10 == 8455 || x10 >= 8458 && x10 <= 8467 || x10 == 8469 || x10 >= 8473 && x10 <= 8477 || x10 == 8484 || x10 == 8486 || x10 == 8488 || x10 >= 8490 && x10 <= 8493 || x10 >= 8495 && x10 <= 8505 || x10 >= 8508 && x10 <= 8511 || x10 >= 8517 && x10 <= 8521 || x10 == 8526 || x10 >= 8579 && x10 <= 8580 || x10 >= 11264 && x10 <= 11492 || x10 >= 11499 && x10 <= 11502 || x10 >= 11506 && x10 <= 11507 || x10 >= 11520 && x10 <= 11557 || x10 == 11559 || x10 == 11565 || x10 >= 11568 && x10 <= 11623 || x10 == 11631 || x10 >= 11648 && x10 <= 11670 || x10 >= 11680 && x10 <= 11686 || x10 >= 11688 && x10 <= 11694 || x10 >= 11696 && x10 <= 11702 || x10 >= 11704 && x10 <= 11710 || x10 >= 11712 && x10 <= 11718 || x10 >= 11720 && x10 <= 11726 || x10 >= 11728 && x10 <= 11734 || x10 >= 11736 && x10 <= 11742 || x10 == 11823 || x10 >= 12293 && x10 <= 12294 || x10 >= 12337 && x10 <= 12341 || x10 >= 12347 && x10 <= 12348 || x10 >= 12353 && x10 <= 12438 || x10 >= 12445 && x10 <= 12447 || x10 >= 12449 && x10 <= 12538 || x10 >= 12540 && x10 <= 12543 || x10 >= 12549 && x10 <= 12591 || x10 >= 12593 && x10 <= 12686 || x10 >= 12704 && x10 <= 12735 || x10 >= 12784 && x10 <= 12799 || x10 >= 13312 && x10 <= 19903 || x10 >= 19968 && x10 <= 42124 || x10 >= 42192 && x10 <= 42237 || x10 >= 42240 && x10 <= 42508 || x10 >= 42512 && x10 <= 42527 || x10 >= 42538 && x10 <= 42539 || x10 >= 42560 && x10 <= 42606 || x10 >= 42623 && x10 <= 42653 || x10 >= 42656 && x10 <= 42725 || x10 >= 42775 && x10 <= 42783 || x10 >= 42786 && x10 <= 42888 || x10 >= 42891 && x10 <= 42972 || x10 >= 42993 && x10 <= 43009 || x10 >= 43011 && x10 <= 43013 || x10 >= 43015 && x10 <= 43018 || x10 >= 43020 && x10 <= 43042 || x10 >= 43072 && x10 <= 43123 || x10 >= 43138 && x10 <= 43187 || x10 >= 43250 && x10 <= 43255 || x10 == 43259 || x10 >= 43261 && x10 <= 43262 || x10 >= 43274 && x10 <= 43301 || x10 >= 43312 && x10 <= 43334 || x10 >= 43360 && x10 <= 43388 || x10 >= 43396 && x10 <= 43442 || x10 == 43471 || x10 >= 43488 && x10 <= 43492 || x10 >= 43494 && x10 <= 43503 || x10 >= 43514 && x10 <= 43518 || x10 >= 43520 && x10 <= 43560 || x10 >= 43584 && x10 <= 43586 || x10 >= 43588 && x10 <= 43595 || x10 >= 43616 && x10 <= 43638 || x10 == 43642 || x10 >= 43646 && x10 <= 43695 || x10 == 43697 || x10 >= 43701 && x10 <= 43702 || x10 >= 43705 && x10 <= 43709 || x10 == 43712 || x10 == 43714 || x10 >= 43739 && x10 <= 43741 || x10 >= 43744 && x10 <= 43754 || x10 >= 43762 && x10 <= 43764 || x10 >= 43777 && x10 <= 43782 || x10 >= 43785 && x10 <= 43790 || x10 >= 43793 && x10 <= 43798 || x10 >= 43808 && x10 <= 43814 || x10 >= 43816 && x10 <= 43822 || x10 >= 43824 && x10 <= 43866 || x10 >= 43868 && x10 <= 43881 || x10 >= 43888 && x10 <= 44002 || x10 >= 44032 && x10 <= 55203 || x10 >= 55216 && x10 <= 55238 || x10 >= 55243 && x10 <= 55291 || x10 >= 63744 && x10 <= 64109 || x10 >= 64112 && x10 <= 64217 || x10 >= 64256 && x10 <= 64262 || x10 >= 64275 && x10 <= 64279 || x10 == 64285 || x10 >= 64287 && x10 <= 64296 || x10 >= 64298 && x10 <= 64310 || x10 >= 64312 && x10 <= 64316 || x10 == 64318 || x10 >= 64320 && x10 <= 64321 || x10 >= 64323 && x10 <= 64324 || x10 >= 64326 && x10 <= 64433 || x10 >= 64467 && x10 <= 64829 || x10 >= 64848 && x10 <= 64911 || x10 >= 64914 && x10 <= 64967 || x10 >= 65008 && x10 <= 65019 || x10 >= 65136 && x10 <= 65140 || x10 >= 65142 && x10 <= 65276 || x10 >= 65313 && x10 <= 65338 || x10 >= 65345 && x10 <= 65370 || x10 >= 65382 && x10 <= 65470 || x10 >= 65474 && x10 <= 65479 || x10 >= 65482 && x10 <= 65487 || x10 >= 65490 && x10 <= 65495 || x10 >= 65498 && x10 <= 65500 || x10 >= 65536 && x10 <= 65547 || x10 >= 65549 && x10 <= 65574 || x10 >= 65576 && x10 <= 65594 || x10 >= 65596 && x10 <= 65597 || x10 >= 65599 && x10 <= 65613 || x10 >= 65616 && x10 <= 65629 || x10 >= 65664 && x10 <= 65786 || x10 >= 66176 && x10 <= 66204 || x10 >= 66208 && x10 <= 66256 || x10 >= 66304 && x10 <= 66335 || x10 >= 66349 && x10 <= 66368 || x10 >= 66370 && x10 <= 66377 || x10 >= 66384 && x10 <= 66421 || x10 >= 66432 && x10 <= 66461 || x10 >= 66464 && x10 <= 66499 || x10 >= 66504 && x10 <= 66511 || x10 >= 66560 && x10 <= 66717 || x10 >= 66736 && x10 <= 66771 || x10 >= 66776 && x10 <= 66811 || x10 >= 66816 && x10 <= 66855 || x10 >= 66864 && x10 <= 66915 || x10 >= 66928 && x10 <= 66938 || x10 >= 66940 && x10 <= 66954 || x10 >= 66956 && x10 <= 66962 || x10 >= 66964 && x10 <= 66965 || x10 >= 66967 && x10 <= 66977 || x10 >= 66979 && x10 <= 66993 || x10 >= 66995 && x10 <= 67001 || x10 >= 67003 && x10 <= 67004 || x10 >= 67008 && x10 <= 67059 || x10 >= 67072 && x10 <= 67382 || x10 >= 67392 && x10 <= 67413 || x10 >= 67424 && x10 <= 67431 || x10 >= 67456 && x10 <= 67461 || x10 >= 67463 && x10 <= 67504 || x10 >= 67506 && x10 <= 67514 || x10 >= 67584 && x10 <= 67589 || x10 == 67592 || x10 >= 67594 && x10 <= 67637 || x10 >= 67639 && x10 <= 67640 || x10 == 67644 || x10 >= 67647 && x10 <= 67669 || x10 >= 67680 && x10 <= 67702 || x10 >= 67712 && x10 <= 67742 || x10 >= 67808 && x10 <= 67826 || x10 >= 67828 && x10 <= 67829 || x10 >= 67840 && x10 <= 67861 || x10 >= 67872 && x10 <= 67897 || x10 >= 67904 && x10 <= 67929 || x10 >= 67968 && x10 <= 68023 || x10 >= 68030 && x10 <= 68031 || x10 == 68096 || x10 >= 68112 && x10 <= 68115 || x10 >= 68117 && x10 <= 68119 || x10 >= 68121 && x10 <= 68149 || x10 >= 68192 && x10 <= 68220 || x10 >= 68224 && x10 <= 68252 || x10 >= 68288 && x10 <= 68295 || x10 >= 68297 && x10 <= 68324 || x10 >= 68352 && x10 <= 68405 || x10 >= 68416 && x10 <= 68437 || x10 >= 68448 && x10 <= 68466 || x10 >= 68480 && x10 <= 68497 || x10 >= 68608 && x10 <= 68680 || x10 >= 68736 && x10 <= 68786 || x10 >= 68800 && x10 <= 68850 || x10 >= 68864 && x10 <= 68899 || x10 >= 68938 && x10 <= 68965 || x10 >= 68975 && x10 <= 68997 || x10 >= 69248 && x10 <= 69289 || x10 >= 69296 && x10 <= 69297 || x10 >= 69314 && x10 <= 69319 || x10 >= 69376 && x10 <= 69404 || x10 == 69415 || x10 >= 69424 && x10 <= 69445 || x10 >= 69488 && x10 <= 69505 || x10 >= 69552 && x10 <= 69572 || x10 >= 69600 && x10 <= 69622 || x10 >= 69635 && x10 <= 69687 || x10 >= 69745 && x10 <= 69746 || x10 == 69749 || x10 >= 69763 && x10 <= 69807 || x10 >= 69840 && x10 <= 69864 || x10 >= 69891 && x10 <= 69926 || x10 == 69956 || x10 == 69959 || x10 >= 69968 && x10 <= 70002 || x10 == 70006 || x10 >= 70019 && x10 <= 70066 || x10 >= 70081 && x10 <= 70084 || x10 == 70106 || x10 == 70108 || x10 >= 70144 && x10 <= 70161 || x10 >= 70163 && x10 <= 70187 || x10 >= 70207 && x10 <= 70208 || x10 >= 70272 && x10 <= 70278 || x10 == 70280 || x10 >= 70282 && x10 <= 70285 || x10 >= 70287 && x10 <= 70301 || x10 >= 70303 && x10 <= 70312 || x10 >= 70320 && x10 <= 70366 || x10 >= 70405 && x10 <= 70412 || x10 >= 70415 && x10 <= 70416 || x10 >= 70419 && x10 <= 70440 || x10 >= 70442 && x10 <= 70448 || x10 >= 70450 && x10 <= 70451 || x10 >= 70453 && x10 <= 70457 || x10 == 70461 || x10 == 70480 || x10 >= 70493 && x10 <= 70497 || x10 >= 70528 && x10 <= 70537 || x10 == 70539 || x10 == 70542 || x10 >= 70544 && x10 <= 70581 || x10 == 70583 || x10 == 70609 || x10 == 70611 || x10 >= 70656 && x10 <= 70708 || x10 >= 70727 && x10 <= 70730 || x10 >= 70751 && x10 <= 70753 || x10 >= 70784 && x10 <= 70831 || x10 >= 70852 && x10 <= 70853 || x10 == 70855 || x10 >= 71040 && x10 <= 71086 || x10 >= 71128 && x10 <= 71131 || x10 >= 71168 && x10 <= 71215 || x10 == 71236 || x10 >= 71296 && x10 <= 71338 || x10 == 71352 || x10 >= 71424 && x10 <= 71450 || x10 >= 71488 && x10 <= 71494 || x10 >= 71680 && x10 <= 71723 || x10 >= 71840 && x10 <= 71903 || x10 >= 71935 && x10 <= 71942 || x10 == 71945 || x10 >= 71948 && x10 <= 71955 || x10 >= 71957 && x10 <= 71958 || x10 >= 71960 && x10 <= 71983 || x10 == 71999 || x10 == 72001 || x10 >= 72096 && x10 <= 72103 || x10 >= 72106 && x10 <= 72144 || x10 == 72161 || x10 == 72163 || x10 == 72192 || x10 >= 72203 && x10 <= 72242 || x10 == 72250 || x10 == 72272 || x10 >= 72284 && x10 <= 72329 || x10 == 72349 || x10 >= 72368 && x10 <= 72440 || x10 >= 72640 && x10 <= 72672 || x10 >= 72704 && x10 <= 72712 || x10 >= 72714 && x10 <= 72750 || x10 == 72768 || x10 >= 72818 && x10 <= 72847 || x10 >= 72960 && x10 <= 72966 || x10 >= 72968 && x10 <= 72969 || x10 >= 72971 && x10 <= 73008 || x10 == 73030 || x10 >= 73056 && x10 <= 73061 || x10 >= 73063 && x10 <= 73064 || x10 >= 73066 && x10 <= 73097 || x10 == 73112 || x10 >= 73136 && x10 <= 73179 || x10 >= 73440 && x10 <= 73458 || x10 == 73474 || x10 >= 73476 && x10 <= 73488 || x10 >= 73490 && x10 <= 73523 || x10 == 73648 || x10 >= 73728 && x10 <= 74649 || x10 >= 74880 && x10 <= 75075 || x10 >= 77712 && x10 <= 77808 || x10 >= 77824 && x10 <= 78895 || x10 >= 78913 && x10 <= 78918 || x10 >= 78944 && x10 <= 82938 || x10 >= 82944 && x10 <= 83526 || x10 >= 90368 && x10 <= 90397 || x10 >= 92160 && x10 <= 92728 || x10 >= 92736 && x10 <= 92766 || x10 >= 92784 && x10 <= 92862 || x10 >= 92880 && x10 <= 92909 || x10 >= 92928 && x10 <= 92975 || x10 >= 92992 && x10 <= 92995 || x10 >= 93027 && x10 <= 93047 || x10 >= 93053 && x10 <= 93071 || x10 >= 93504 && x10 <= 93548 || x10 >= 93760 && x10 <= 93823 || x10 >= 93856 && x10 <= 93880 || x10 >= 93883 && x10 <= 93907 || x10 >= 93952 && x10 <= 94026 || x10 == 94032 || x10 >= 94099 && x10 <= 94111 || x10 >= 94176 && x10 <= 94177 || x10 == 94179 || x10 >= 94194 && x10 <= 94195 || x10 >= 94208 && x10 <= 101589 || x10 >= 101631 && x10 <= 101662 || x10 >= 101760 && x10 <= 101874 || x10 >= 110576 && x10 <= 110579 || x10 >= 110581 && x10 <= 110587 || x10 >= 110589 && x10 <= 110590 || x10 >= 110592 && x10 <= 110882 || x10 == 110898 || x10 >= 110928 && x10 <= 110930 || x10 == 110933 || x10 >= 110948 && x10 <= 110951 || x10 >= 110960 && x10 <= 111355 || x10 >= 113664 && x10 <= 113770 || x10 >= 113776 && x10 <= 113788 || x10 >= 113792 && x10 <= 113800 || x10 >= 113808 && x10 <= 113817 || x10 >= 119808 && x10 <= 119892 || x10 >= 119894 && x10 <= 119964 || x10 >= 119966 && x10 <= 119967 || x10 == 119970 || x10 >= 119973 && x10 <= 119974 || x10 >= 119977 && x10 <= 119980 || x10 >= 119982 && x10 <= 119993 || x10 == 119995 || x10 >= 119997 && x10 <= 120003 || x10 >= 120005 && x10 <= 120069 || x10 >= 120071 && x10 <= 120074 || x10 >= 120077 && x10 <= 120084 || x10 >= 120086 && x10 <= 120092 || x10 >= 120094 && x10 <= 120121 || x10 >= 120123 && x10 <= 120126 || x10 >= 120128 && x10 <= 120132 || x10 == 120134 || x10 >= 120138 && x10 <= 120144 || x10 >= 120146 && x10 <= 120485 || x10 >= 120488 && x10 <= 120512 || x10 >= 120514 && x10 <= 120538 || x10 >= 120540 && x10 <= 120570 || x10 >= 120572 && x10 <= 120596 || x10 >= 120598 && x10 <= 120628 || x10 >= 120630 && x10 <= 120654 || x10 >= 120656 && x10 <= 120686 || x10 >= 120688 && x10 <= 120712 || x10 >= 120714 && x10 <= 120744 || x10 >= 120746 && x10 <= 120770 || x10 >= 120772 && x10 <= 120779 || x10 >= 122624 && x10 <= 122654 || x10 >= 122661 && x10 <= 122666 || x10 >= 122928 && x10 <= 122989 || x10 >= 123136 && x10 <= 123180 || x10 >= 123191 && x10 <= 123197 || x10 == 123214 || x10 >= 123536 && x10 <= 123565 || x10 >= 123584 && x10 <= 123627 || x10 >= 124112 && x10 <= 124139 || x10 >= 124368 && x10 <= 124397 || x10 == 124400 || x10 >= 124608 && x10 <= 124638 || x10 >= 124640 && x10 <= 124642 || x10 >= 124644 && x10 <= 124645 || x10 >= 124647 && x10 <= 124653 || x10 >= 124656 && x10 <= 124660 || x10 >= 124670 && x10 <= 124671 || x10 >= 124896 && x10 <= 124902 || x10 >= 124904 && x10 <= 124907 || x10 >= 124909 && x10 <= 124910 || x10 >= 124912 && x10 <= 124926 || x10 >= 124928 && x10 <= 125124 || x10 >= 125184 && x10 <= 125251 || x10 == 125259 || x10 >= 126464 && x10 <= 126467 || x10 >= 126469 && x10 <= 126495 || x10 >= 126497 && x10 <= 126498 || x10 == 126500 || x10 == 126503 || x10 >= 126505 && x10 <= 126514 || x10 >= 126516 && x10 <= 126519 || x10 == 126521 || x10 == 126523 || x10 == 126530 || x10 == 126535 || x10 == 126537 || x10 == 126539 || x10 >= 126541 && x10 <= 126543 || x10 >= 126545 && x10 <= 126546 || x10 == 126548 || x10 == 126551 || x10 == 126553 || x10 == 126555 || x10 == 126557 || x10 == 126559 || x10 >= 126561 && x10 <= 126562 || x10 == 126564 || x10 >= 126567 && x10 <= 126570 || x10 >= 126572 && x10 <= 126578 || x10 >= 126580 && x10 <= 126583 || x10 >= 126585 && x10 <= 126588 || x10 == 126590 || x10 >= 126592 && x10 <= 126601 || x10 >= 126603 && x10 <= 126619 || x10 >= 126625 && x10 <= 126627 || x10 >= 126629 && x10 <= 126633 || x10 >= 126635 && x10 <= 126651 || x10 >= 131072 && x10 <= 173791 || x10 >= 173824 && x10 <= 178205 || x10 >= 178208 && x10 <= 183981 || x10 >= 183984 && x10 <= 191456 || x10 >= 191472 && x10 <= 192093 || x10 >= 194560 && x10 <= 195101 || x10 >= 196608 && x10 <= 201546 || x10 >= 201552 && x10 <= 210041))) && p.depth+1 <= maxDepth {
+	if !(x11 && (!!(x10 == 170 || x10 == 181 || x10 == 186 || x10 >= 192 && x10 <= 214 || x10 >= 216 && x10 <= 246 || x10 >= 248 && x10 <= 705 || x10 >= 710 && x10 <= 721 || x10 >= 736 && x10 <= 740 || x10 == 748 || x10 == 750 || x10 >= 880 && x10 <= 884 || x10 >= 886 && x10 <= 887 || x10 >= 890 && x10 <= 893 || x10 == 895 || x10 == 902 || x10 >= 904 && x10 <= 906 || x10 == 908 || x10 >= 910 && x10 <= 929 || x10 >= 931 && x10 <= 1013 || x10 >= 1015 && x10 <= 1153 || x10 >= 1162 && x10 <= 1327 || x10 >= 1329 && x10 <= 1366 || x10 == 1369 || x10 >= 1376 && x10 <= 1416 || x10 >= 1488 && x10 <= 1514 || x10 >= 1519 && x10 <= 1522 || x10 >= 1568 && x10 <= 1610 || x10 >= 1646 && x10 <= 1647 || x10 >= 1649 && x10 <= 1747 || x10 == 1749 || x10 >= 1765 && x10 <= 1766 || x10 >= 1774 && x10 <= 1775 || x10 >= 1786 && x10 <= 1788 || x10 == 1791 || x10 == 1808 || x10 >= 1810 && x10 <= 1839 || x10 >= 1869 && x10 <= 1957 || x10 == 1969 || x10 >= 1994 && x10 <= 2026 || x10 >= 2036 && x10 <= 2037 || x10 == 2042 || x10 >= 2048 && x10 <= 2069 || x10 == 2074 || x10 == 2084 || x10 == 2088 || x10 >= 2112 && x10 <= 2136 || x10 >= 2144 && x10 <= 2154 || x10 >= 2160 && x10 <= 2183 || x10 >= 2185 && x10 <= 2191 || x10 >= 2208 && x10 <= 2249 || x10 >= 2308 && x10 <= 2361 || x10 == 2365 || x10 == 2384 || x10 >= 2392 && x10 <= 2401 || x10 >= 2417 && x10 <= 2432 || x10 >= 2437 && x10 <= 2444 || x10 >= 2447 && x10 <= 2448 || x10 >= 2451 && x10 <= 2472 || x10 >= 2474 && x10 <= 2480 || x10 == 2482 || x10 >= 2486 && x10 <= 2489 || x10 == 2493 || x10 == 2510 || x10 >= 2524 && x10 <= 2525 || x10 >= 2527 && x10 <= 2529 || x10 >= 2544 && x10 <= 2545 || x10 == 2556 || x10 >= 2565 && x10 <= 2570 || x10 >= 2575 && x10 <= 2576 || x10 >= 2579 && x10 <= 2600 || x10 >= 2602 && x10 <= 2608 || x10 >= 2610 && x10 <= 2611 || x10 >= 2613 && x10 <= 2614 || x10 >= 2616 && x10 <= 2617 || x10 >= 2649 && x10 <= 2652 || x10 == 2654 || x10 >= 2674 && x10 <= 2676 || x10 >= 2693 && x10 <= 2701 || x10 >= 2703 && x10 <= 2705 || x10 >= 2707 && x10 <= 2728 || x10 >= 2730 && x10 <= 2736 || x10 >= 2738 && x10 <= 2739 || x10 >= 2741 && x10 <= 2745 || x10 == 2749 || x10 == 2768 || x10 >= 2784 && x10 <= 2785 || x10 == 2809 || x10 >= 2821 && x10 <= 2828 || x10 >= 2831 && x10 <= 2832 || x10 >= 2835 && x10 <= 2856 || x10 >= 2858 && x10 <= 2864 || x10 >= 2866 && x10 <= 2867 || x10 >= 2869 && x10 <= 2873 || x10 == 2877 || x10 >= 2908 && x10 <= 2909 || x10 >= 2911 && x10 <= 2913 || x10 == 2929 || x10 == 2947 || x10 >= 2949 && x10 <= 2954 || x10 >= 2958 && x10 <= 2960 || x10 >= 2962 && x10 <= 2965 || x10 >= 2969 && x10 <= 2970 || x10 == 2972 || x10 >= 2974 && x10 <= 2975 || x10 >= 2979 && x10 <= 2980 || x10 >= 2984 && x10 <= 2986 || x10 >= 2990 && x10 <= 3001 || x10 == 3024 || x10 >= 3077 && x10 <= 3084 || x10 >= 3086 && x10 <= 3088 || x10 >= 3090 && x10 <= 3112 || x10 >= 3114 && x10 <= 3129 || x10 == 3133 || x10 >= 3160 && x10 <= 3162 || x10 >= 3164 && x10 <= 3165 || x10 >= 3168 && x10 <= 3169 || x10 == 3200 || x10 >= 3205 && x10 <= 3212 || x10 >= 3214 && x10 <= 3216 || x10 >= 3218 && x10 <= 3240 || x10 >= 3242 && x10 <= 3251 || x10 >= 3253 && x10 <= 3257 || x10 == 3261 || x10 >= 3292 && x10 <= 3294 || x10 >= 3296 && x10 <= 3297 || x10 >= 3313 && x10 <= 3314 || x10 >= 3332 && x10 <= 3340 || x10 >= 3342 && x10 <= 3344 || x10 >= 3346 && x10 <= 3386 || x10 == 3389 || x10 == 3406 || x10 >= 3412 && x10 <= 3414 || x10 >= 3423 && x10 <= 3425 || x10 >= 3450 && x10 <= 3455 || x10 >= 3461 && x10 <= 3478 || x10 >= 3482 && x10 <= 3505 || x10 >= 3507 && x10 <= 3515 || x10 == 3517 || x10 >= 3520 && x10 <= 3526 || x10 >= 3585 && x10 <= 3632 || x10 >= 3634 && x10 <= 3635 || x10 >= 3648 && x10 <= 3654 || x10 >= 3713 && x10 <= 3714 || x10 == 3716 || x10 >= 3718 && x10 <= 3722 || x10 >= 3724 && x10 <= 3747 || x10 == 3749 || x10 >= 3751 && x10 <= 3760 || x10 >= 3762 && x10 <= 3763 || x10 == 3773 || x10 >= 3776 && x10 <= 3780 || x10 == 3782 || x10 >= 3804 && x10 <= 3807 || x10 == 3840 || x10 >= 3904 && x10 <= 3911 || x10 >= 3913 && x10 <= 3948 || x10 >= 3976 && x10 <= 3980 || x10 >= 4096 && x10 <= 4138 || x10 == 4159 || x10 >= 4176 && x10 <= 4181 || x10 >= 4186 && x10 <= 4189 || x10 == 4193 || x10 >= 4197 && x10 <= 4198 || x10 >= 4206 && x10 <= 4208 || x10 >= 4213 && x10 <= 4225 || x10 == 4238 || x10 >= 4256 && x10 <= 4293 || x10 == 4295 || x10 == 4301 || x10 >= 4304 && x10 <= 4346 || x10 >= 4348 && x10 <= 4680 || x10 >= 4682 && x10 <= 4685 || x10 >= 4688 && x10 <= 4694 || x10 == 4696 || x10 >= 4698 && x10 <= 4701 || x10 >= 4704 && x10 <= 4744 || x10 >= 4746 && x10 <= 4749 || x10 >= 4752 && x10 <= 4784 || x10 >= 4786 && x10 <= 4789 || x10 >= 4792 && x10 <= 4798 || x10 == 4800 || x10 >= 4802 && x10 <= 4805 || x10 >= 4808 && x10 <= 4822 || x10 >= 4824 && x10 <= 4880 || x10 >= 4882 && x10 <= 4885 || x10 >= 4888 && x10 <= 4954 || x10 >= 4992 && x10 <= 5007 || x10 >= 5024 && x10 <= 5109 || x10 >= 5112 && x10 <= 5117 || x10 >= 5121 && x10 <= 5740 || x10 >= 5743 && x10 <= 5759 || x10 >= 5761 && x10 <= 5786 || x10 >= 5792 && x10 <= 5866 || x10 >= 5873 && x10 <= 5880 || x10 >= 5888 && x10 <= 5905 || x10 >= 5919 && x10 <= 5937 || x10 >= 5952 && x10 <= 5969 || x10 >= 5984 && x10 <= 5996 || x10 >= 5998 && x10 <= 6000 || x10 >= 6016 && x10 <= 6067 || x10 == 6103 || x10 == 6108 || x10 >= 6176 && x10 <= 6264 || x10 >= 6272 && x10 <= 6276 || x10 >= 6279 && x10 <= 6312 || x10 == 6314 || x10 >= 6320 && x10 <= 6389 || x10 >= 6400 && x10 <= 6430 || x10 >= 6480 && x10 <= 6509 || x10 >= 6512 && x10 <= 6516 || x10 >= 6528 && x10 <= 6571 || x10 >= 6576 && x10 <= 6601 || x10 >= 6656 && x10 <= 6678 || x10 >= 6688 && x10 <= 6740 || x10 == 6823 || x10 >= 6917 && x10 <= 6963 || x10 >= 6981 && x10 <= 6988 || x10 >= 7043 && x10 <= 7072 || x10 >= 7086 && x10 <= 7087 || x10 >= 7098 && x10 <= 7141 || x10 >= 7168 && x10 <= 7203 || x10 >= 7245 && x10 <= 7247 || x10 >= 7258 && x10 <= 7293 || x10 >= 7296 && x10 <= 7306 || x10 >= 7312 && x10 <= 7354 || x10 >= 7357 && x10 <= 7359 || x10 >= 7401 && x10 <= 7404 || x10 >= 7406 && x10 <= 7411 || x10 >= 7413 && x10 <= 7414 || x10 == 7418 || x10 >= 7424 && x10 <= 7615 || x10 >= 7680 && x10 <= 7957 || x10 >= 7960 && x10 <= 7965 || x10 >= 7968 && x10 <= 8005 || x10 >= 8008 && x10 <= 8013 || x10 >= 8016 && x10 <= 8023 || x10 == 8025 || x10 == 8027 || x10 == 8029 || x10 >= 8031 && x10 <= 8061 || x10 >= 8064 && x10 <= 8116 || x10 >= 8118 && x10 <= 8124 || x10 == 8126 || x10 >= 8130 && x10 <= 8132 || x10 >= 8134 && x10 <= 8140 || x10 >= 8144 && x10 <= 8147 || x10 >= 8150 && x10 <= 8155 || x10 >= 8160 && x10 <= 8172 || x10 >= 8178 && x10 <= 8180 || x10 >= 8182 && x10 <= 8188 || x10 == 8305 || x10 == 8319 || x10 >= 8336 && x10 <= 8348 || x10 == 8450 || x10 == 8455 || x10 >= 8458 && x10 <= 8467 || x10 == 8469 || x10 >= 8473 && x10 <= 8477 || x10 == 8484 || x10 == 8486 || x10 == 8488 || x10 >= 8490 && x10 <= 8493 || x10 >= 8495 && x10 <= 8505 || x10 >= 8508 && x10 <= 8511 || x10 >= 8517 && x10 <= 8521 || x10 == 8526 || x10 >= 8579 && x10 <= 8580 || x10 >= 11264 && x10 <= 11492 || x10 >= 11499 && x10 <= 11502 || x10 >= 11506 && x10 <= 11507 || x10 >= 11520 && x10 <= 11557 || x10 == 11559 || x10 == 11565 || x10 >= 11568 && x10 <= 11623 || x10 == 11631 || x10 >= 11648 && x10 <= 11670 || x10 >= 11680 && x10 <= 11686 || x10 >= 11688 && x10 <= 11694 || x10 >= 11696 && x10 <= 11702 || x10 >= 11704 && x10 <= 11710 || x10 >= 11712 && x10 <= 11718 || x10 >= 11720 && x10 <= 11726 || x10 >= 11728 && x10 <= 11734 || x10 >= 11736 && x10 <= 11742 || x10 == 11823 || x10 >= 12293 && x10 <= 12294 || x10 >= 12337 && x10 <= 12341 || x10 >= 12347 && x10 <= 12348 || x10 >= 12353 && x10 <= 12438 || x10 >= 12445 && x10 <= 12447 || x10 >= 12449 && x10 <= 12538 || x10 >= 12540 && x10 <= 12543 || x10 >= 12549 && x10 <= 12591 || x10 >= 12593 && x10 <= 12686 || x10 >= 12704 && x10 <= 12735 || x10 >= 12784 && x10 <= 12799 || x10 >= 13312 && x10 <= 19903 || x10 >= 19968 && x10 <= 42124 || x10 >= 42192 && x10 <= 42237 || x10 >= 42240 && x10 <= 42508 || x10 >= 42512 && x10 <= 42527 || x10 >= 42538 && x10 <= 42539 || x10 >= 42560 && x10 <= 42606 || x10 >= 42623 && x10 <= 42653 || x10 >= 42656 && x10 <= 42725 || x10 >= 42775 && x10 <= 42783 || x10 >= 42786 && x10 <= 42888 || x10 >= 42891 && x10 <= 42972 || x10 >= 42993 && x10 <= 43009 || x10 >= 43011 && x10 <= 43013 || x10 >= 43015 && x10 <= 43018 || x10 >= 43020 && x10 <= 43042 || x10 >= 43072 && x10 <= 43123 || x10 >= 43138 && x10 <= 43187 || x10 >= 43250 && x10 <= 43255 || x10 == 43259 || x10 >= 43261 && x10 <= 43262 || x10 >= 43274 && x10 <= 43301 || x10 >= 43312 && x10 <= 43334 || x10 >= 43360 && x10 <= 43388 || x10 >= 43396 && x10 <= 43442 || x10 == 43471 || x10 >= 43488 && x10 <= 43492 || x10 >= 43494 && x10 <= 43503 || x10 >= 43514 && x10 <= 43518 || x10 >= 43520 && x10 <= 43560 || x10 >= 43584 && x10 <= 43586 || x10 >= 43588 && x10 <= 43595 || x10 >= 43616 && x10 <= 43638 || x10 == 43642 || x10 >= 43646 && x10 <= 43695 || x10 == 43697 || x10 >= 43701 && x10 <= 43702 || x10 >= 43705 && x10 <= 43709 || x10 == 43712 || x10 == 43714 || x10 >= 43739 && x10 <= 43741 || x10 >= 43744 && x10 <= 43754 || x10 >= 43762 && x10 <= 43764 || x10 >= 43777 && x10 <= 43782 || x10 >= 43785 && x10 <= 43790 || x10 >= 43793 && x10 <= 43798 || x10 >= 43808 && x10 <= 43814 || x10 >= 43816 && x10 <= 43822 || x10 >= 43824 && x10 <= 43866 || x10 >= 43868 && x10 <= 43881 || x10 >= 43888 && x10 <= 44002 || x10 >= 44032 && x10 <= 55203 || x10 >= 55216 && x10 <= 55238 || x10 >= 55243 && x10 <= 55291 || x10 >= 63744 && x10 <= 64109 || x10 >= 64112 && x10 <= 64217 || x10 >= 64256 && x10 <= 64262 || x10 >= 64275 && x10 <= 64279 || x10 == 64285 || x10 >= 64287 && x10 <= 64296 || x10 >= 64298 && x10 <= 64310 || x10 >= 64312 && x10 <= 64316 || x10 == 64318 || x10 >= 64320 && x10 <= 64321 || x10 >= 64323 && x10 <= 64324 || x10 >= 64326 && x10 <= 64433 || x10 >= 64467 && x10 <= 64829 || x10 >= 64848 && x10 <= 64911 || x10 >= 64914 && x10 <= 64967 || x10 >= 65008 && x10 <= 65019 || x10 >= 65136 && x10 <= 65140 || x10 >= 65142 && x10 <= 65276 || x10 >= 65313 && x10 <= 65338 || x10 >= 65345 && x10 <= 65370 || x10 >= 65382 && x10 <= 65470 || x10 >= 65474 && x10 <= 65479 || x10 >= 65482 && x10 <= 65487 || x10 >= 65490 && x10 <= 65495 || x10 >= 65498 && x10 <= 65500 || x10 >= 65536 && x10 <= 65547 || x10 >= 65549 && x10 <= 65574 || x10 >= 65576 && x10 <= 65594 || x10 >= 65596 && x10 <= 65597 || x10 >= 65599 && x10 <= 65613 || x10 >= 65616 && x10 <= 65629 || x10 >= 65664 && x10 <= 65786 || x10 >= 66176 && x10 <= 66204 || x10 >= 66208 && x10 <= 66256 || x10 >= 66304 && x10 <= 66335 || x10 >= 66349 && x10 <= 66368 || x10 >= 66370 && x10 <= 66377 || x10 >= 66384 && x10 <= 66421 || x10 >= 66432 && x10 <= 66461 || x10 >= 66464 && x10 <= 66499 || x10 >= 66504 && x10 <= 66511 || x10 >= 66560 && x10 <= 66717 || x10 >= 66736 && x10 <= 66771 || x10 >= 66776 && x10 <= 66811 || x10 >= 66816 && x10 <= 66855 || x10 >= 66864 && x10 <= 66915 || x10 >= 66928 && x10 <= 66938 || x10 >= 66940 && x10 <= 66954 || x10 >= 66956 && x10 <= 66962 || x10 >= 66964 && x10 <= 66965 || x10 >= 66967 && x10 <= 66977 || x10 >= 66979 && x10 <= 66993 || x10 >= 66995 && x10 <= 67001 || x10 >= 67003 && x10 <= 67004 || x10 >= 67008 && x10 <= 67059 || x10 >= 67072 && x10 <= 67382 || x10 >= 67392 && x10 <= 67413 || x10 >= 67424 && x10 <= 67431 || x10 >= 67456 && x10 <= 67461 || x10 >= 67463 && x10 <= 67504 || x10 >= 67506 && x10 <= 67514 || x10 >= 67584 && x10 <= 67589 || x10 == 67592 || x10 >= 67594 && x10 <= 67637 || x10 >= 67639 && x10 <= 67640 || x10 == 67644 || x10 >= 67647 && x10 <= 67669 || x10 >= 67680 && x10 <= 67702 || x10 >= 67712 && x10 <= 67742 || x10 >= 67808 && x10 <= 67826 || x10 >= 67828 && x10 <= 67829 || x10 >= 67840 && x10 <= 67861 || x10 >= 67872 && x10 <= 67897 || x10 >= 67904 && x10 <= 67929 || x10 >= 67968 && x10 <= 68023 || x10 >= 68030 && x10 <= 68031 || x10 == 68096 || x10 >= 68112 && x10 <= 68115 || x10 >= 68117 && x10 <= 68119 || x10 >= 68121 && x10 <= 68149 || x10 >= 68192 && x10 <= 68220 || x10 >= 68224 && x10 <= 68252 || x10 >= 68288 && x10 <= 68295 || x10 >= 68297 && x10 <= 68324 || x10 >= 68352 && x10 <= 68405 || x10 >= 68416 && x10 <= 68437 || x10 >= 68448 && x10 <= 68466 || x10 >= 68480 && x10 <= 68497 || x10 >= 68608 && x10 <= 68680 || x10 >= 68736 && x10 <= 68786 || x10 >= 68800 && x10 <= 68850 || x10 >= 68864 && x10 <= 68899 || x10 >= 68938 && x10 <= 68965 || x10 >= 68975 && x10 <= 68997 || x10 >= 69248 && x10 <= 69289 || x10 >= 69296 && x10 <= 69297 || x10 >= 69314 && x10 <= 69319 || x10 >= 69376 && x10 <= 69404 || x10 == 69415 || x10 >= 69424 && x10 <= 69445 || x10 >= 69488 && x10 <= 69505 || x10 >= 69552 && x10 <= 69572 || x10 >= 69600 && x10 <= 69622 || x10 >= 69635 && x10 <= 69687 || x10 >= 69745 && x10 <= 69746 || x10 == 69749 || x10 >= 69763 && x10 <= 69807 || x10 >= 69840 && x10 <= 69864 || x10 >= 69891 && x10 <= 69926 || x10 == 69956 || x10 == 69959 || x10 >= 69968 && x10 <= 70002 || x10 == 70006 || x10 >= 70019 && x10 <= 70066 || x10 >= 70081 && x10 <= 70084 || x10 == 70106 || x10 == 70108 || x10 >= 70144 && x10 <= 70161 || x10 >= 70163 && x10 <= 70187 || x10 >= 70207 && x10 <= 70208 || x10 >= 70272 && x10 <= 70278 || x10 == 70280 || x10 >= 70282 && x10 <= 70285 || x10 >= 70287 && x10 <= 70301 || x10 >= 70303 && x10 <= 70312 || x10 >= 70320 && x10 <= 70366 || x10 >= 70405 && x10 <= 70412 || x10 >= 70415 && x10 <= 70416 || x10 >= 70419 && x10 <= 70440 || x10 >= 70442 && x10 <= 70448 || x10 >= 70450 && x10 <= 70451 || x10 >= 70453 && x10 <= 70457 || x10 == 70461 || x10 == 70480 || x10 >= 70493 && x10 <= 70497 || x10 >= 70528 && x10 <= 70537 || x10 == 70539 || x10 == 70542 || x10 >= 70544 && x10 <= 70581 || x10 == 70583 || x10 == 70609 || x10 == 70611 || x10 >= 70656 && x10 <= 70708 || x10 >= 70727 && x10 <= 70730 || x10 >= 70751 && x10 <= 70753 || x10 >= 70784 && x10 <= 70831 || x10 >= 70852 && x10 <= 70853 || x10 == 70855 || x10 >= 71040 && x10 <= 71086 || x10 >= 71128 && x10 <= 71131 || x10 >= 71168 && x10 <= 71215 || x10 == 71236 || x10 >= 71296 && x10 <= 71338 || x10 == 71352 || x10 >= 71424 && x10 <= 71450 || x10 >= 71488 && x10 <= 71494 || x10 >= 71680 && x10 <= 71723 || x10 >= 71840 && x10 <= 71903 || x10 >= 71935 && x10 <= 71942 || x10 == 71945 || x10 >= 71948 && x10 <= 71955 || x10 >= 71957 && x10 <= 71958 || x10 >= 71960 && x10 <= 71983 || x10 == 71999 || x10 == 72001 || x10 >= 72096 && x10 <= 72103 || x10 >= 72106 && x10 <= 72144 || x10 == 72161 || x10 == 72163 || x10 == 72192 || x10 >= 72203 && x10 <= 72242 || x10 == 72250 || x10 == 72272 || x10 >= 72284 && x10 <= 72329 || x10 == 72349 || x10 >= 72368 && x10 <= 72440 || x10 >= 72640 && x10 <= 72672 || x10 >= 72704 && x10 <= 72712 || x10 >= 72714 && x10 <= 72750 || x10 == 72768 || x10 >= 72818 && x10 <= 72847 || x10 >= 72960 && x10 <= 72966 || x10 >= 72968 && x10 <= 72969 || x10 >= 72971 && x10 <= 73008 || x10 == 73030 || x10 >= 73056 && x10 <= 73061 || x10 >= 73063 && x10 <= 73064 || x10 >= 73066 && x10 <= 73097 || x10 == 73112 || x10 >= 73136 && x10 <= 73179 || x10 >= 73440 && x10 <= 73458 || x10 == 73474 || x10 >= 73476 && x10 <= 73488 || x10 >= 73490 && x10 <= 73523 || x10 == 73648 || x10 >= 73728 && x10 <= 74649 || x10 >= 74880 && x10 <= 75075 || x10 >= 77712 && x10 <= 77808 || x10 >= 77824 && x10 <= 78895 || x10 >= 78913 && x10 <= 78918 || x10 >= 78944 && x10 <= 82938 || x10 >= 82944 && x10 <= 83526 || x10 >= 90368 && x10 <= 90397 || x10 >= 92160 && x10 <= 92728 || x10 >= 92736 && x10 <= 92766 || x10 >= 92784 && x10 <= 92862 || x10 >= 92880 && x10 <= 92909 || x10 >= 92928 && x10 <= 92975 || x10 >= 92992 && x10 <= 92995 || x10 >= 93027 && x10 <= 93047 || x10 >= 93053 && x10 <= 93071 || x10 >= 93504 && x10 <= 93548 || x10 >= 93760 && x10 <= 93823 || x10 >= 93856 && x10 <= 93880 || x10 >= 93883 && x10 <= 93907 || x10 >= 93952 && x10 <= 94026 || x10 == 94032 || x10 >= 94099 && x10 <= 94111 || x10 >= 94176 && x10 <= 94177 || x10 == 94179 || x10 >= 94194 && x10 <= 94195 || x10 >= 94208 && x10 <= 101589 || x10 >= 101631 && x10 <= 101662 || x10 >= 101760 && x10 <= 101874 || x10 >= 110576 && x10 <= 110579 || x10 >= 110581 && x10 <= 110587 || x10 >= 110589 && x10 <= 110590 || x10 >= 110592 && x10 <= 110882 || x10 == 110898 || x10 >= 110928 && x10 <= 110930 || x10 == 110933 || x10 >= 110948 && x10 <= 110951 || x10 >= 110960 && x10 <= 111355 || x10 >= 113664 && x10 <= 113770 || x10 >= 113776 && x10 <= 113788 || x10 >= 113792 && x10 <= 113800 || x10 >= 113808 && x10 <= 113817 || x10 >= 119808 && x10 <= 119892 || x10 >= 119894 && x10 <= 119964 || x10 >= 119966 && x10 <= 119967 || x10 == 119970 || x10 >= 119973 && x10 <= 119974 || x10 >= 119977 && x10 <= 119980 || x10 >= 119982 && x10 <= 119993 || x10 == 119995 || x10 >= 119997 && x10 <= 120003 || x10 >= 120005 && x10 <= 120069 || x10 >= 120071 && x10 <= 120074 || x10 >= 120077 && x10 <= 120084 || x10 >= 120086 && x10 <= 120092 || x10 >= 120094 && x10 <= 120121 || x10 >= 120123 && x10 <= 120126 || x10 >= 120128 && x10 <= 120132 || x10 == 120134 || x10 >= 120138 && x10 <= 120144 || x10 >= 120146 && x10 <= 120485 || x10 >= 120488 && x10 <= 120512 || x10 >= 120514 && x10 <= 120538 || x10 >= 120540 && x10 <= 120570 || x10 >= 120572 && x10 <= 120596 || x10 >= 120598 && x10 <= 120628 || x10 >= 120630 && x10 <= 120654 || x10 >= 120656 && x10 <= 120686 || x10 >= 120688 && x10 <= 120712 || x10 >= 120714 && x10 <= 120744 || x10 >= 120746 && x10 <= 120770 || x10 >= 120772 && x10 <= 120779 || x10 >= 122624 && x10 <= 122654 || x10 >= 122661 && x10 <= 122666 || x10 >= 122928 && x10 <= 122989 || x10 >= 123136 && x10 <= 123180 || x10 >= 123191 && x10 <= 123197 || x10 == 123214 || x10 >= 123536 && x10 <= 123565 || x10 >= 123584 && x10 <= 123627 || x10 >= 124112 && x10 <= 124139 || x10 >= 124368 && x10 <= 124397 || x10 == 124400 || x10 >= 124608 && x10 <= 124638 || x10 >= 124640 && x10 <= 124642 || x10 >= 124644 && x10 <= 124645 || x10 >= 124647 && x10 <= 124653 || x10 >= 124656 && x10 <= 124660 || x10 >= 124670 && x10 <= 124671 || x10 >= 124896 && x10 <= 124902 || x10 >= 124904 && x10 <= 124907 || x10 >= 124909 && x10 <= 124910 || x10 >= 124912 && x10 <= 124926 || x10 >= 124928 && x10 <= 125124 || x10 >= 125184 && x10 <= 125251 || x10 == 125259 || x10 >= 126464 && x10 <= 126467 || x10 >= 126469 && x10 <= 126495 || x10 >= 126497 && x10 <= 126498 || x10 == 126500 || x10 == 126503 || x10 >= 126505 && x10 <= 126514 || x10 >= 126516 && x10 <= 126519 || x10 == 126521 || x10 == 126523 || x10 == 126530 || x10 == 126535 || x10 == 126537 || x10 == 126539 || x10 >= 126541 && x10 <= 126543 || x10 >= 126545 && x10 <= 126546 || x10 == 126548 || x10 == 126551 || x10 == 126553 || x10 == 126555 || x10 == 126557 || x10 == 126559 || x10 >= 126561 && x10 <= 126562 || x10 == 126564 || x10 >= 126567 && x10 <= 126570 || x10 >= 126572 && x10 <= 126578 || x10 >= 126580 && x10 <= 126583 || x10 >= 126585 && x10 <= 126588 || x10 == 126590 || x10 >= 126592 && x10 <= 126601 || x10 >= 126603 && x10 <= 126619 || x10 >= 126625 && x10 <= 126627 || x10 >= 126629 && x10 <= 126633 || x10 >= 126635 && x10 <= 126651 || x10 >= 131072 && x10 <= 173791 || x10 >= 173824 && x10 <= 178205 || x10 >= 178208 && x10 <= 183981 || x10 >= 183984 && x10 <= 191456 || x10 >= 191472 && x10 <= 192093 || x10 >= 194560 && x10 <= 195101 || x10 >= 196608 && x10 <= 201546 || x10 >= 201552 && x10 <= 210041))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 65)
 		goto L12
 	}
@@ -73222,7 +73277,7 @@ L13:
 	p.pos = x6
 	p.recovered = p.recovered[:x7]
 L12:
-	if !(x11 && (!!(x10 >= 1632 && x10 <= 1641 || x10 >= 1776 && x10 <= 1785 || x10 >= 1984 && x10 <= 1993 || x10 >= 2406 && x10 <= 2415 || x10 >= 2534 && x10 <= 2543 || x10 >= 2662 && x10 <= 2671 || x10 >= 2790 && x10 <= 2799 || x10 >= 2918 && x10 <= 2927 || x10 >= 3046 && x10 <= 3055 || x10 >= 3174 && x10 <= 3183 || x10 >= 3302 && x10 <= 3311 || x10 >= 3430 && x10 <= 3439 || x10 >= 3558 && x10 <= 3567 || x10 >= 3664 && x10 <= 3673 || x10 >= 3792 && x10 <= 3801 || x10 >= 3872 && x10 <= 3881 || x10 >= 4160 && x10 <= 4169 || x10 >= 4240 && x10 <= 4249 || x10 >= 6112 && x10 <= 6121 || x10 >= 6160 && x10 <= 6169 || x10 >= 6470 && x10 <= 6479 || x10 >= 6608 && x10 <= 6617 || x10 >= 6784 && x10 <= 6793 || x10 >= 6800 && x10 <= 6809 || x10 >= 6992 && x10 <= 7001 || x10 >= 7088 && x10 <= 7097 || x10 >= 7232 && x10 <= 7241 || x10 >= 7248 && x10 <= 7257 || x10 >= 42528 && x10 <= 42537 || x10 >= 43216 && x10 <= 43225 || x10 >= 43264 && x10 <= 43273 || x10 >= 43472 && x10 <= 43481 || x10 >= 43504 && x10 <= 43513 || x10 >= 43600 && x10 <= 43609 || x10 >= 44016 && x10 <= 44025 || x10 >= 65296 && x10 <= 65305 || x10 >= 66720 && x10 <= 66729 || x10 >= 68912 && x10 <= 68921 || x10 >= 68928 && x10 <= 68937 || x10 >= 69734 && x10 <= 69743 || x10 >= 69872 && x10 <= 69881 || x10 >= 69942 && x10 <= 69951 || x10 >= 70096 && x10 <= 70105 || x10 >= 70384 && x10 <= 70393 || x10 >= 70736 && x10 <= 70745 || x10 >= 70864 && x10 <= 70873 || x10 >= 71248 && x10 <= 71257 || x10 >= 71360 && x10 <= 71369 || x10 >= 71376 && x10 <= 71395 || x10 >= 71472 && x10 <= 71481 || x10 >= 71904 && x10 <= 71913 || x10 >= 72016 && x10 <= 72025 || x10 >= 72688 && x10 <= 72697 || x10 >= 72784 && x10 <= 72793 || x10 >= 73040 && x10 <= 73049 || x10 >= 73120 && x10 <= 73129 || x10 >= 73184 && x10 <= 73193 || x10 >= 73552 && x10 <= 73561 || x10 >= 90416 && x10 <= 90425 || x10 >= 92768 && x10 <= 92777 || x10 >= 92864 && x10 <= 92873 || x10 >= 93008 && x10 <= 93017 || x10 >= 93552 && x10 <= 93561 || x10 >= 118000 && x10 <= 118009 || x10 >= 120782 && x10 <= 120831 || x10 >= 123200 && x10 <= 123209 || x10 >= 123632 && x10 <= 123641 || x10 >= 124144 && x10 <= 124153 || x10 >= 124401 && x10 <= 124410 || x10 >= 125264 && x10 <= 125273 || x10 >= 130032 && x10 <= 130041))) && p.depth+1 <= maxDepth {
+	if !(x11 && (!!(x10 >= 1632 && x10 <= 1641 || x10 >= 1776 && x10 <= 1785 || x10 >= 1984 && x10 <= 1993 || x10 >= 2406 && x10 <= 2415 || x10 >= 2534 && x10 <= 2543 || x10 >= 2662 && x10 <= 2671 || x10 >= 2790 && x10 <= 2799 || x10 >= 2918 && x10 <= 2927 || x10 >= 3046 && x10 <= 3055 || x10 >= 3174 && x10 <= 3183 || x10 >= 3302 && x10 <= 3311 || x10 >= 3430 && x10 <= 3439 || x10 >= 3558 && x10 <= 3567 || x10 >= 3664 && x10 <= 3673 || x10 >= 3792 && x10 <= 3801 || x10 >= 3872 && x10 <= 3881 || x10 >= 4160 && x10 <= 4169 || x10 >= 4240 && x10 <= 4249 || x10 >= 6112 && x10 <= 6121 || x10 >= 6160 && x10 <= 6169 || x10 >= 6470 && x10 <= 6479 || x10 >= 6608 && x10 <= 6617 || x10 >= 6784 && x10 <= 6793 || x10 >= 6800 && x10 <= 6809 || x10 >= 6992 && x10 <= 7001 || x10 >= 7088 && x10 <= 7097 || x10 >= 7232 && x10 <= 7241 || x10 >= 7248 && x10 <= 7257 || x10 >= 42528 && x10 <= 42537 || x10 >= 43216 && x10 <= 43225 || x10 >= 43264 && x10 <= 43273 || x10 >= 43472 && x10 <= 43481 || x10 >= 43504 && x10 <= 43513 || x10 >= 43600 && x10 <= 43609 || x10 >= 44016 && x10 <= 44025 || x10 >= 65296 && x10 <= 65305 || x10 >= 66720 && x10 <= 66729 || x10 >= 68912 && x10 <= 68921 || x10 >= 68928 && x10 <= 68937 || x10 >= 69734 && x10 <= 69743 || x10 >= 69872 && x10 <= 69881 || x10 >= 69942 && x10 <= 69951 || x10 >= 70096 && x10 <= 70105 || x10 >= 70384 && x10 <= 70393 || x10 >= 70736 && x10 <= 70745 || x10 >= 70864 && x10 <= 70873 || x10 >= 71248 && x10 <= 71257 || x10 >= 71360 && x10 <= 71369 || x10 >= 71376 && x10 <= 71395 || x10 >= 71472 && x10 <= 71481 || x10 >= 71904 && x10 <= 71913 || x10 >= 72016 && x10 <= 72025 || x10 >= 72688 && x10 <= 72697 || x10 >= 72784 && x10 <= 72793 || x10 >= 73040 && x10 <= 73049 || x10 >= 73120 && x10 <= 73129 || x10 >= 73184 && x10 <= 73193 || x10 >= 73552 && x10 <= 73561 || x10 >= 90416 && x10 <= 90425 || x10 >= 92768 && x10 <= 92777 || x10 >= 92864 && x10 <= 92873 || x10 >= 93008 && x10 <= 93017 || x10 >= 93552 && x10 <= 93561 || x10 >= 118000 && x10 <= 118009 || x10 >= 120782 && x10 <= 120831 || x10 >= 123200 && x10 <= 123209 || x10 >= 123632 && x10 <= 123641 || x10 >= 124144 && x10 <= 124153 || x10 >= 124401 && x10 <= 124410 || x10 >= 125264 && x10 <= 125273 || x10 >= 130032 && x10 <= 130041))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 66)
 		goto L15
 	}
@@ -73296,7 +73351,7 @@ func (p *tparser) v134() (any, bool) {
 		v32  any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_, _, _ = x5, x14, x23
@@ -73431,7 +73486,7 @@ func (p *tparser) i134() (any, bool) {
 		v32  any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_, _, _ = x5, x14, x23
@@ -73553,7 +73608,7 @@ func (p *tparser) s135() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -73562,7 +73617,7 @@ func (p *tparser) s135() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (!!(x5 >= 97 && x5 <= 122 || x5 >= 65 && x5 <= 90 || x5 == 36))) && p.depth+0 <= maxDepth {
+	if !(x6 && (!!(x5 >= 97 && x5 <= 122 || x5 >= 65 && x5 <= 90 || x5 == 36))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 67)
 		goto L7
 	}
@@ -73656,7 +73711,7 @@ func (p *tparser) s136() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -73665,7 +73720,7 @@ func (p *tparser) s136() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (!!(x5 >= 48 && x5 <= 57))) && p.depth+0 <= maxDepth {
+	if !(x6 && (!!(x5 >= 48 && x5 <= 57))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 60)
 		goto L7
 	}
@@ -73792,7 +73847,7 @@ func (p *tparser) v137() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -73801,7 +73856,7 @@ func (p *tparser) v137() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (x5 == 35)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 35)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 52)
 		goto L7
 	}
@@ -73826,7 +73881,7 @@ L8:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L7:
-	if !(x6 && (x5 == 95)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 95)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 68)
 		goto L15
 	}
@@ -73861,7 +73916,7 @@ L23:
 	} else {
 		x28, _, x29 = p.peek()
 	}
-	if !(x29 && (x28 == 35)) && p.depth+0 <= maxDepth {
+	if !(x29 && (x28 == 35)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 52)
 		goto L30
 	}
@@ -74001,7 +74056,7 @@ func (p *tparser) i137() (any, bool) {
 		v52 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -74010,7 +74065,7 @@ func (p *tparser) i137() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (x5 == 35)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 35)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 52)
 		goto L7
 	}
@@ -74035,7 +74090,7 @@ L8:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L7:
-	if !(x6 && (x5 == 95)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 95)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 68)
 		goto L15
 	}
@@ -74070,7 +74125,7 @@ L23:
 	} else {
 		x28, _, x29 = p.peek()
 	}
-	if !(x29 && (x28 == 35)) && p.depth+0 <= maxDepth {
+	if !(x29 && (x28 == 35)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 52)
 		goto L30
 	}
@@ -74194,7 +74249,7 @@ func (p *tparser) v138() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x12
@@ -74307,7 +74362,7 @@ func (p *tparser) i138() (any, bool) {
 		size int
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x12
@@ -74419,7 +74474,7 @@ func (p *tparser) v139() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -74482,7 +74537,7 @@ func (p *tparser) i139() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -74573,7 +74628,7 @@ func (p *tparser) s140() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -74584,7 +74639,7 @@ func (p *tparser) s140() (any, bool) {
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 105)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L9
 	}
@@ -74601,7 +74656,7 @@ L10:
 	p.pos = x3
 	p.recovered = p.recovered[:x4]
 L9:
-	if !(x8 && (x7 == 101)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 101)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 37)
 		goto L13
 	}
@@ -74618,7 +74673,7 @@ L14:
 	p.pos = x3
 	p.recovered = p.recovered[:x4]
 L13:
-	if !(x8 && (x7 == 102)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L17
 	}
@@ -74635,7 +74690,7 @@ L18:
 	p.pos = x3
 	p.recovered = p.recovered[:x4]
 L17:
-	if !(x8 && (x7 == 105)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 36)
 		goto L21
 	}
@@ -74652,7 +74707,7 @@ L22:
 	p.pos = x3
 	p.recovered = p.recovered[:x4]
 L21:
-	if !(x8 && (x7 == 108)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 108)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L25
 	}
@@ -74669,7 +74724,7 @@ L26:
 	p.pos = x3
 	p.recovered = p.recovered[:x4]
 L25:
-	if !(x8 && (x7 == 116)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L29
 	}
@@ -74686,7 +74741,7 @@ L30:
 	p.pos = x3
 	p.recovered = p.recovered[:x4]
 L29:
-	if !(x8 && (x7 == 102)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 38)
 		goto L33
 	}
@@ -74701,7 +74756,7 @@ L34:
 	p.pos = x3
 	p.recovered = p.recovered[:x4]
 L33:
-	if !(x8 && (x7 == 111)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 39)
 		goto L37
 	}
@@ -74716,7 +74771,7 @@ L38:
 	p.pos = x3
 	p.recovered = p.recovered[:x4]
 L37:
-	if !(x8 && (x7 == 102)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 20)
 		goto L41
 	}
@@ -74733,7 +74788,7 @@ L42:
 	p.pos = x3
 	p.recovered = p.recovered[:x4]
 L41:
-	if !(x8 && (x7 == 116)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 45)
 		goto L45
 	}
@@ -74750,7 +74805,7 @@ L46:
 	p.pos = x3
 	p.recovered = p.recovered[:x4]
 L45:
-	if !(x8 && (x7 == 102)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 46)
 		goto L49
 	}
@@ -74765,7 +74820,7 @@ L50:
 	p.pos = x3
 	p.recovered = p.recovered[:x4]
 L49:
-	if !(x8 && (x7 == 110)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 110)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L53
 	}
@@ -74836,7 +74891,7 @@ func (p *tparser) v141() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -74845,7 +74900,7 @@ func (p *tparser) v141() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L6
 	}
@@ -74859,7 +74914,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 101)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 101)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 37)
 		goto L8
 	}
@@ -74873,7 +74928,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L10
 	}
@@ -74887,7 +74942,7 @@ L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L10:
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 36)
 		goto L12
 	}
@@ -74901,7 +74956,7 @@ L13:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L12:
-	if !(x5 && (x4 == 108)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 108)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L14
 	}
@@ -74915,7 +74970,7 @@ L15:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L14:
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L16
 	}
@@ -74929,7 +74984,7 @@ L17:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L16:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 38)
 		goto L18
 	}
@@ -74941,7 +74996,7 @@ L19:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L18:
-	if !(x5 && (x4 == 111)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 39)
 		goto L20
 	}
@@ -74953,7 +75008,7 @@ L21:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L20:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 20)
 		goto L22
 	}
@@ -75007,7 +75062,7 @@ func (p *tparser) i141() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -75016,7 +75071,7 @@ func (p *tparser) i141() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L6
 	}
@@ -75030,7 +75085,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 101)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 101)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 37)
 		goto L8
 	}
@@ -75044,7 +75099,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L10
 	}
@@ -75058,7 +75113,7 @@ L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L10:
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 36)
 		goto L12
 	}
@@ -75072,7 +75127,7 @@ L13:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L12:
-	if !(x5 && (x4 == 108)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 108)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L14
 	}
@@ -75086,7 +75141,7 @@ L15:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L14:
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L16
 	}
@@ -75100,7 +75155,7 @@ L17:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L16:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 38)
 		goto L18
 	}
@@ -75112,7 +75167,7 @@ L19:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L18:
-	if !(x5 && (x4 == 111)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 39)
 		goto L20
 	}
@@ -75124,7 +75179,7 @@ L21:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L20:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 20)
 		goto L22
 	}
@@ -75185,7 +75240,7 @@ func (p *tparser) v142() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -75194,7 +75249,7 @@ func (p *tparser) v142() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 45)
 		goto L6
 	}
@@ -75208,7 +75263,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 46)
 		goto L8
 	}
@@ -75260,7 +75315,7 @@ func (p *tparser) i142() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -75269,7 +75324,7 @@ func (p *tparser) i142() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 45)
 		goto L6
 	}
@@ -75283,7 +75338,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 46)
 		goto L8
 	}
@@ -75338,7 +75393,7 @@ func (p *tparser) v143() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+4 <= len(p.in) && p.in[p.pos] == 110 && p.in[p.pos+1] == 117 && p.in[p.pos+2] == 108 && p.in[p.pos+3] == 108 {
@@ -75380,7 +75435,7 @@ func (p *tparser) i143() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+4 <= len(p.in) && p.in[p.pos] == 110 && p.in[p.pos+1] == 117 && p.in[p.pos+2] == 108 && p.in[p.pos+3] == 108 {
@@ -75420,7 +75475,7 @@ func (p *tparser) s144() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -75482,7 +75537,7 @@ func (p *tparser) i145() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -75538,7 +75593,7 @@ func (p *tparser) s146() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -75547,7 +75602,7 @@ func (p *tparser) s146() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (x5 == 48)) && p.depth+1 <= maxDepth {
+	if !(x6 && (x5 == 48)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L7
 	}
@@ -75605,7 +75660,7 @@ func (p *tparser) s147() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) {
@@ -75678,7 +75733,7 @@ func (p *tparser) v148() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_, _, _ = x12, x26, x40
@@ -75693,7 +75748,7 @@ func (p *tparser) v148() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 == 120 || x4 == 88))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 == 120 || x4 == 88))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 74)
 		goto L6
 	}
@@ -75753,7 +75808,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 98)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 98)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 75)
 		goto L20
 	}
@@ -75822,7 +75877,7 @@ L21:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L20:
-	if !(x5 && (x4 == 111)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 77)
 		goto L34
 	}
@@ -75939,7 +75994,7 @@ func (p *tparser) i148() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_, _, _ = x12, x26, x40
@@ -75954,7 +76009,7 @@ func (p *tparser) i148() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 == 120 || x4 == 88))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 == 120 || x4 == 88))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 74)
 		goto L6
 	}
@@ -76014,7 +76069,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 98)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 98)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 75)
 		goto L20
 	}
@@ -76083,7 +76138,7 @@ L21:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L20:
-	if !(x5 && (x4 == 111)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 77)
 		goto L34
 	}
@@ -76195,7 +76250,7 @@ func (p *tparser) s149() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x7
@@ -76310,7 +76365,7 @@ func (p *tparser) s150() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x7
@@ -76440,7 +76495,7 @@ func (p *tparser) s151() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x26
@@ -76618,7 +76673,7 @@ func (p *tparser) s152() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x23
@@ -76772,7 +76827,7 @@ func (p *tparser) s153() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -76856,7 +76911,7 @@ func (p *tparser) s154() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -76866,7 +76921,7 @@ func (p *tparser) s154() (any, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L10
 	}
@@ -76878,7 +76933,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 48)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L12
 	}
@@ -76909,7 +76964,7 @@ L7:
 	} else {
 		x21, _, x22 = p.peek()
 	}
-	if !(x22 && (x21 == 46)) && p.depth+1 <= maxDepth {
+	if !(x22 && (x21 == 46)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L23
 	}
@@ -76922,7 +76977,7 @@ L7:
 	} else {
 		x28, _, x29 = p.peek()
 	}
-	if !(x29 && (!!(x28 == 101 || x28 == 69))) && p.depth+1 <= maxDepth {
+	if !(x29 && (!!(x28 == 101 || x28 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L30
 	}
@@ -76958,7 +77013,7 @@ L24:
 	p.pos = x18
 	p.recovered = p.recovered[:x19]
 L23:
-	if !(x22 && (!!(x21 == 101 || x21 == 69))) && p.depth+1 <= maxDepth {
+	if !(x22 && (!!(x21 == 101 || x21 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L36
 	}
@@ -76981,7 +77036,7 @@ L4:
 	} else {
 		x38, _, x39 = p.peek()
 	}
-	if !(x39 && (x38 == 46)) && p.depth+0 <= maxDepth {
+	if !(x39 && (x38 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L40
 	}
@@ -76999,7 +77054,7 @@ L4:
 	} else {
 		x45, _, x46 = p.peek()
 	}
-	if !(x46 && (!!(x45 == 101 || x45 == 69))) && p.depth+1 <= maxDepth {
+	if !(x46 && (!!(x45 == 101 || x45 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L47
 	}
@@ -77073,7 +77128,7 @@ func (p *tparser) s155() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -77083,7 +77138,7 @@ func (p *tparser) s155() (any, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L10
 	}
@@ -77095,7 +77150,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 48)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L12
 	}
@@ -77136,7 +77191,7 @@ L4:
 	} else {
 		x22, _, x23 = p.peek()
 	}
-	if !(x23 && (!!(x22 >= 49 && x22 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x23 && (!!(x22 >= 49 && x22 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L24
 	}
@@ -77148,7 +77203,7 @@ L25:
 	p.pos = x19
 	p.recovered = p.recovered[:x20]
 L24:
-	if !(x23 && (x22 == 48)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L26
 	}
@@ -77182,7 +77237,7 @@ L18:
 	} else {
 		x32, _, x33 = p.peek()
 	}
-	if !(x33 && (x32 == 46)) && p.depth+0 <= maxDepth {
+	if !(x33 && (x32 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L34
 	}
@@ -77243,7 +77298,7 @@ func (p *tparser) i156() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -77299,7 +77354,7 @@ func (p *tparser) s157() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -77383,7 +77438,7 @@ func (p *tparser) v158() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -77432,7 +77487,7 @@ func (p *tparser) i158() (any, bool) {
 		v7 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -77507,7 +77562,7 @@ func (p *tparser) v159() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -77516,7 +77571,7 @@ func (p *tparser) v159() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (x5 == 48)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 81)
 		goto L7
 	}
@@ -77557,7 +77612,7 @@ L8:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L7:
-	if !(x6 && (x5 == 48)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 82)
 		goto L19
 	}
@@ -77640,7 +77695,7 @@ func (p *tparser) i159() (any, bool) {
 		v29 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -77649,7 +77704,7 @@ func (p *tparser) i159() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (x5 == 48)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 81)
 		goto L7
 	}
@@ -77690,7 +77745,7 @@ L8:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L7:
-	if !(x6 && (x5 == 48)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 82)
 		goto L19
 	}
@@ -77779,7 +77834,7 @@ func (p *tparser) v160() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -77788,7 +77843,7 @@ func (p *tparser) v160() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (!!(x5 == 97 || x5 == 98 || x5 == 102 || x5 == 110 || x5 == 114 || x5 == 116 || x5 == 118 || x5 == 92 || x5 == 47 || x5 == 34))) && p.depth+0 <= maxDepth {
+	if !(x6 && (!!(x5 == 97 || x5 == 98 || x5 == 102 || x5 == 110 || x5 == 114 || x5 == 116 || x5 == 118 || x5 == 92 || x5 == 47 || x5 == 34))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 83)
 		goto L7
 	}
@@ -77810,7 +77865,7 @@ L8:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L7:
-	if !(x6 && (x5 == 117)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 117)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 84)
 		goto L11
 	}
@@ -77835,7 +77890,7 @@ L12:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L11:
-	if !(x6 && (x5 == 85)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 85)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 85)
 		goto L19
 	}
@@ -77903,7 +77958,7 @@ func (p *tparser) i160() (any, bool) {
 		v26  any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -77912,7 +77967,7 @@ func (p *tparser) i160() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (!!(x5 == 97 || x5 == 98 || x5 == 102 || x5 == 110 || x5 == 114 || x5 == 116 || x5 == 118 || x5 == 92 || x5 == 47 || x5 == 34))) && p.depth+0 <= maxDepth {
+	if !(x6 && (!!(x5 == 97 || x5 == 98 || x5 == 102 || x5 == 110 || x5 == 114 || x5 == 116 || x5 == 118 || x5 == 92 || x5 == 47 || x5 == 34))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 83)
 		goto L7
 	}
@@ -77934,7 +77989,7 @@ L8:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L7:
-	if !(x6 && (x5 == 117)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 117)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 84)
 		goto L11
 	}
@@ -77959,7 +78014,7 @@ L12:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L11:
-	if !(x6 && (x5 == 85)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 85)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 85)
 		goto L19
 	}
@@ -78052,7 +78107,7 @@ func (p *tparser) v161() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -78061,7 +78116,7 @@ func (p *tparser) v161() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (!!(x5 == 97 || x5 == 98 || x5 == 102 || x5 == 110 || x5 == 114 || x5 == 116 || x5 == 118 || x5 == 92 || x5 == 47 || x5 == 39))) && p.depth+0 <= maxDepth {
+	if !(x6 && (!!(x5 == 97 || x5 == 98 || x5 == 102 || x5 == 110 || x5 == 114 || x5 == 116 || x5 == 118 || x5 == 92 || x5 == 47 || x5 == 39))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 86)
 		goto L7
 	}
@@ -78083,7 +78138,7 @@ L8:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L7:
-	if !(x6 && (x5 == 117)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 117)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 84)
 		goto L11
 	}
@@ -78108,7 +78163,7 @@ L12:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L11:
-	if !(x6 && (x5 == 85)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 85)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 85)
 		goto L19
 	}
@@ -78133,7 +78188,7 @@ L20:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L19:
-	if !(x6 && (x5 == 120)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 120)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 87)
 		goto L27
 	}
@@ -78162,7 +78217,7 @@ L28:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L27:
-	if !(x6 && (!!(x5 >= 48 && x5 <= 51))) && p.depth+0 <= maxDepth {
+	if !(x6 && (!!(x5 >= 48 && x5 <= 51))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 88)
 		goto L36
 	}
@@ -78273,7 +78328,7 @@ func (p *tparser) i161() (any, bool) {
 		v46  any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -78282,7 +78337,7 @@ func (p *tparser) i161() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (!!(x5 == 97 || x5 == 98 || x5 == 102 || x5 == 110 || x5 == 114 || x5 == 116 || x5 == 118 || x5 == 92 || x5 == 47 || x5 == 39))) && p.depth+0 <= maxDepth {
+	if !(x6 && (!!(x5 == 97 || x5 == 98 || x5 == 102 || x5 == 110 || x5 == 114 || x5 == 116 || x5 == 118 || x5 == 92 || x5 == 47 || x5 == 39))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 86)
 		goto L7
 	}
@@ -78304,7 +78359,7 @@ L8:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L7:
-	if !(x6 && (x5 == 117)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 117)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 84)
 		goto L11
 	}
@@ -78329,7 +78384,7 @@ L12:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L11:
-	if !(x6 && (x5 == 85)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 85)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 85)
 		goto L19
 	}
@@ -78354,7 +78409,7 @@ L20:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L19:
-	if !(x6 && (x5 == 120)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 120)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 87)
 		goto L27
 	}
@@ -78383,7 +78438,7 @@ L28:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L27:
-	if !(x6 && (!!(x5 >= 48 && x5 <= 51))) && p.depth+0 <= maxDepth {
+	if !(x6 && (!!(x5 >= 48 && x5 <= 51))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 88)
 		goto L36
 	}
@@ -78490,7 +78545,7 @@ func (p *tparser) v162() (any, bool) {
 		v31  any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_, _ = x3, x14
@@ -78541,7 +78596,7 @@ func (p *tparser) v162() (any, bool) {
 		} else {
 			x21, _, x22 = p.peek()
 		}
-		if !(x22 && (x21 == 92)) && p.depth+0 <= maxDepth {
+		if !(x22 && (x21 == 92)) && p.depth+0 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L23
 		}
@@ -78622,7 +78677,7 @@ func (p *tparser) i162() (any, bool) {
 		v31  any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_, _ = x3, x14
@@ -78673,7 +78728,7 @@ func (p *tparser) i162() (any, bool) {
 		} else {
 			x21, _, x22 = p.peek()
 		}
-		if !(x22 && (x21 == 92)) && p.depth+0 <= maxDepth {
+		if !(x22 && (x21 == 92)) && p.depth+0 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L23
 		}
@@ -78740,7 +78795,7 @@ func (p *tparser) v163() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -78792,7 +78847,7 @@ func (p *tparser) i163() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -78843,7 +78898,7 @@ func (p *tparser) s164() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -78894,7 +78949,7 @@ func (p *tparser) s165() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 41 {
@@ -78930,7 +78985,7 @@ func (p *tparser) s166() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 41 {
@@ -78981,7 +79036,7 @@ func (p *tparser) i167() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if v2, ok = p.s164(); !ok {
@@ -79025,7 +79080,7 @@ func (p *tparser) v168() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -79072,7 +79127,7 @@ func (p *tparser) i168() (any, bool) {
 		v8 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -79132,7 +79187,7 @@ func (p *tparser) i169() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if v2, ok = p.u120(); !ok {
@@ -79183,7 +79238,7 @@ func (p *tparser) i170() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if v2, ok = p.u120(); !ok {
@@ -79247,7 +79302,7 @@ func (p *tparser) v171() (any, bool) {
 		v31  any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_, _ = x3, x14
@@ -79298,7 +79353,7 @@ func (p *tparser) v171() (any, bool) {
 		} else {
 			x21, _, x22 = p.peek()
 		}
-		if !(x22 && (x21 == 92)) && p.depth+0 <= maxDepth {
+		if !(x22 && (x21 == 92)) && p.depth+0 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L23
 		}
@@ -79379,7 +79434,7 @@ func (p *tparser) i171() (any, bool) {
 		v31  any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_, _ = x3, x14
@@ -79430,7 +79485,7 @@ func (p *tparser) i171() (any, bool) {
 		} else {
 			x21, _, x22 = p.peek()
 		}
-		if !(x22 && (x21 == 92)) && p.depth+0 <= maxDepth {
+		if !(x22 && (x21 == 92)) && p.depth+0 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L23
 		}
@@ -79497,7 +79552,7 @@ func (p *tparser) v172() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -79549,7 +79604,7 @@ func (p *tparser) i172() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -79600,7 +79655,7 @@ func (p *tparser) s173() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -79651,7 +79706,7 @@ func (p *tparser) s174() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 41 {
@@ -79687,7 +79742,7 @@ func (p *tparser) s175() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 41 {
@@ -79738,7 +79793,7 @@ func (p *tparser) i176() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if v2, ok = p.s173(); !ok {
@@ -79782,7 +79837,7 @@ func (p *tparser) v177() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -79829,7 +79884,7 @@ func (p *tparser) i177() (any, bool) {
 		v8 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -79889,7 +79944,7 @@ func (p *tparser) i178() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if v2, ok = p.u120(); !ok {
@@ -79940,7 +79995,7 @@ func (p *tparser) i179() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if v2, ok = p.u120(); !ok {
@@ -79982,7 +80037,7 @@ func (p *tparser) s180() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -80080,7 +80135,7 @@ func (p *tparser) s181() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -80167,7 +80222,7 @@ func (p *tparser) v182() (any, bool) {
 	start, rec = p.pos, len(p.recovered)
 	prevEnv = p.env
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -80244,7 +80299,7 @@ func (p *tparser) i182() (any, bool) {
 	)
 	prevEnv = p.env
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -80321,7 +80376,7 @@ func (p *tparser) s183() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -80411,7 +80466,7 @@ func (p *tparser) i184() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x7
@@ -80519,7 +80574,7 @@ func (p *tparser) i185() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x7
@@ -80597,7 +80652,7 @@ func (p *tparser) s186() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -80606,7 +80661,7 @@ func (p *tparser) s186() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (x5 == 10)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L7
 	}
@@ -80623,7 +80678,7 @@ L8:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L7:
-	if !(x6 && (x5 == 13)) && p.depth+0 <= maxDepth {
+	if !(x6 && (x5 == 13)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 96)
 		goto L11
 	}
@@ -80690,7 +80745,7 @@ func (p *tparser) i187() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x7
@@ -80772,7 +80827,7 @@ func (p *tparser) v188() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -80821,7 +80876,7 @@ func (p *tparser) i188() (any, bool) {
 		v7 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -80890,7 +80945,7 @@ func (p *tparser) i189() (any, bool) {
 	start = p.pos
 	prevEnv = p.env
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x3
@@ -80925,7 +80980,7 @@ func (p *tparser) i189() (any, bool) {
 	} else {
 		x12, _, x13 = p.peek()
 	}
-	if !(x13 && (x12 == 34)) && p.depth+0 <= maxDepth {
+	if !(x13 && (x12 == 34)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 48)
 		goto L14
 	}
@@ -80943,7 +80998,7 @@ L15:
 	p.recovered = p.recovered[:x9]
 	p.env = x10
 L14:
-	if !(x13 && (x12 == 39)) && p.depth+0 <= maxDepth {
+	if !(x13 && (x12 == 39)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 95)
 		goto L16
 	}
@@ -81020,7 +81075,7 @@ func (p *tparser) v190() (any, bool) {
 		v28  any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_, _ = x3, x14
@@ -81079,7 +81134,7 @@ func (p *tparser) v190() (any, bool) {
 		} else {
 			x23, _, x24 = p.peek()
 		}
-		if !(x24 && (x23 == 92)) && p.depth+1 <= maxDepth {
+		if !(x24 && (x23 == 92)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L25
 		}
@@ -81144,7 +81199,7 @@ func (p *tparser) i190() (any, bool) {
 		v28  any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_, _ = x3, x14
@@ -81203,7 +81258,7 @@ func (p *tparser) i190() (any, bool) {
 		} else {
 			x23, _, x24 = p.peek()
 		}
-		if !(x24 && (x23 == 92)) && p.depth+1 <= maxDepth {
+		if !(x24 && (x23 == 92)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L25
 		}
@@ -81313,7 +81368,7 @@ func (p *tparser) i191() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_, _, _, _ = x29, v34, x63, v68
@@ -81331,7 +81386,7 @@ func (p *tparser) i191() (any, bool) {
 	} else {
 		x15, _, x16 = p.peek()
 	}
-	if !(x16 && (x15 == 34)) && p.depth+0 <= maxDepth {
+	if !(x16 && (x15 == 34)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 48)
 		goto L17
 	}
@@ -81391,7 +81446,7 @@ L18:
 	p.recovered = p.recovered[:x11]
 	k3 = x12
 L17:
-	if !(x16 && (x15 == 39)) && p.depth+0 <= maxDepth {
+	if !(x16 && (x15 == 39)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 95)
 		goto L36
 	}
@@ -81431,7 +81486,7 @@ L7:
 	} else {
 		x49, _, x50 = p.peek()
 	}
-	if !(x50 && (x49 == 39)) && p.depth+0 <= maxDepth {
+	if !(x50 && (x49 == 39)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 95)
 		goto L51
 	}
@@ -81491,7 +81546,7 @@ L52:
 	p.recovered = p.recovered[:x45]
 	k3 = x46
 L51:
-	if !(x50 && (x49 == 34)) && p.depth+0 <= maxDepth {
+	if !(x50 && (x49 == 34)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 48)
 		goto L70
 	}
@@ -81570,7 +81625,7 @@ func (p *tparser) i192() (any, bool) {
 	start = p.pos
 	prevEnv = p.env
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x3
@@ -81602,7 +81657,7 @@ func (p *tparser) i192() (any, bool) {
 	} else {
 		x12, _, x13 = p.peek()
 	}
-	if !(x13 && (x12 == 34)) && p.depth+0 <= maxDepth {
+	if !(x13 && (x12 == 34)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 48)
 		goto L14
 	}
@@ -81620,7 +81675,7 @@ L15:
 	p.recovered = p.recovered[:x9]
 	p.env = x10
 L14:
-	if !(x13 && (x12 == 39)) && p.depth+0 <= maxDepth {
+	if !(x13 && (x12 == 39)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 95)
 		goto L16
 	}
@@ -81700,7 +81755,7 @@ func (p *tparser) v193() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -81780,7 +81835,7 @@ func (p *tparser) i193() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -81852,7 +81907,7 @@ func (p *tparser) s194() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 41 {
@@ -81886,7 +81941,7 @@ func (p *tparser) s195() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 41 {
@@ -81947,7 +82002,7 @@ func (p *tparser) i196() (any, bool) {
 	start = p.pos
 	prevEnv = p.env
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x6
@@ -82044,7 +82099,7 @@ func (p *tparser) i197() (any, bool) {
 	start = p.pos
 	prevEnv = p.env
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x6
@@ -82130,7 +82185,7 @@ func (p *tparser) v198() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -82177,7 +82232,7 @@ func (p *tparser) i198() (any, bool) {
 		v8 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -82237,7 +82292,7 @@ func (p *tparser) i199() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if v2, ok = p.u120(); !ok {
@@ -82288,7 +82343,7 @@ func (p *tparser) i200() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if v2, ok = p.u120(); !ok {
@@ -82339,7 +82394,7 @@ func (p *tparser) s201() (any, bool) {
 		v26  any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_, _ = x3, x14
@@ -82390,7 +82445,7 @@ func (p *tparser) s201() (any, bool) {
 		} else {
 			x21, _, x22 = p.peek()
 		}
-		if !(x22 && (x21 == 92)) && p.depth+1 <= maxDepth {
+		if !(x22 && (x21 == 92)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L23
 		}
@@ -82460,7 +82515,7 @@ func (p *tparser) i202() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1 = p.pos
@@ -82547,7 +82602,7 @@ func (p *tparser) i203() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x2 = p.pos
@@ -82634,7 +82689,7 @@ func (p *tparser) i204() (any, bool) {
 	start = p.pos
 	prevEnv = p.env
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_, _ = x3, x21
@@ -82666,7 +82721,7 @@ func (p *tparser) i204() (any, bool) {
 	} else {
 		x12, _, x13 = p.peek()
 	}
-	if !(x13 && (x12 == 34)) && p.depth+0 <= maxDepth {
+	if !(x13 && (x12 == 34)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 48)
 		goto L14
 	}
@@ -82684,7 +82739,7 @@ L15:
 	p.recovered = p.recovered[:x9]
 	p.env = x10
 L14:
-	if !(x13 && (x12 == 39)) && p.depth+0 <= maxDepth {
+	if !(x13 && (x12 == 39)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 95)
 		goto L16
 	}
@@ -82806,7 +82861,7 @@ func (p *tparser) v205() (any, bool) {
 		v45  any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_, _, _ = x3, x14, x34
@@ -82857,7 +82912,7 @@ func (p *tparser) v205() (any, bool) {
 		} else {
 			x21, _, x22 = p.peek()
 		}
-		if !(x22 && (x21 == 92)) && p.depth+1 <= maxDepth {
+		if !(x22 && (x21 == 92)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L23
 		}
@@ -82870,7 +82925,7 @@ func (p *tparser) v205() (any, bool) {
 		p.pos = x7
 		p.recovered = p.recovered[:x8]
 	L23:
-		if !(x22 && (x21 == 10)) && p.depth+0 <= maxDepth {
+		if !(x22 && (x21 == 10)) && p.depth+0 <= p.maxDepth {
 			p.expect(p.pos, 18)
 			goto L26
 		}
@@ -82999,7 +83054,7 @@ func (p *tparser) i205() (any, bool) {
 		v45  any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_, _, _ = x3, x14, x34
@@ -83050,7 +83105,7 @@ func (p *tparser) i205() (any, bool) {
 		} else {
 			x21, _, x22 = p.peek()
 		}
-		if !(x22 && (x21 == 92)) && p.depth+1 <= maxDepth {
+		if !(x22 && (x21 == 92)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L23
 		}
@@ -83063,7 +83118,7 @@ func (p *tparser) i205() (any, bool) {
 		p.pos = x7
 		p.recovered = p.recovered[:x8]
 	L23:
-		if !(x22 && (x21 == 10)) && p.depth+0 <= maxDepth {
+		if !(x22 && (x21 == 10)) && p.depth+0 <= p.maxDepth {
 			p.expect(p.pos, 18)
 			goto L26
 		}
@@ -83173,7 +83228,7 @@ func (p *tparser) v206() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -83265,7 +83320,7 @@ func (p *tparser) i206() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -83349,7 +83404,7 @@ func (p *tparser) s207() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 41 {
@@ -83385,7 +83440,7 @@ func (p *tparser) s208() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 41 {
@@ -83460,7 +83515,7 @@ func (p *tparser) i209() (any, bool) {
 	start = p.pos
 	prevEnv = p.env
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x6
@@ -83557,7 +83612,7 @@ func (p *tparser) i210() (any, bool) {
 	start = p.pos
 	prevEnv = p.env
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x6
@@ -83643,7 +83698,7 @@ func (p *tparser) v211() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -83690,7 +83745,7 @@ func (p *tparser) i211() (any, bool) {
 		v8 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -83750,7 +83805,7 @@ func (p *tparser) i212() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if v2, ok = p.u120(); !ok {
@@ -83801,7 +83856,7 @@ func (p *tparser) i213() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if v2, ok = p.u120(); !ok {
@@ -83843,7 +83898,7 @@ func (p *tparser) v214() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -83891,7 +83946,7 @@ func (p *tparser) i214() (any, bool) {
 	)
 	start = p.pos
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -83940,7 +83995,7 @@ func (p *tparser) s215() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) {
@@ -83982,7 +84037,7 @@ func (p *tparser) s216() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) {
@@ -84035,7 +84090,7 @@ func (p *tparser) v217() (any, bool) {
 		x11  bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -84069,7 +84124,7 @@ func (p *tparser) v217() (any, bool) {
 		} else {
 			x10, _, x11 = p.peek()
 		}
-		if !(x11 && (x10 == 47)) && p.depth+1 <= maxDepth {
+		if !(x11 && (x10 == 47)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 15)
 			goto L12
 		}
@@ -84115,7 +84170,7 @@ func (p *tparser) i217() (any, bool) {
 		x11  bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -84149,7 +84204,7 @@ func (p *tparser) i217() (any, bool) {
 		} else {
 			x10, _, x11 = p.peek()
 		}
-		if !(x11 && (x10 == 47)) && p.depth+1 <= maxDepth {
+		if !(x11 && (x10 == 47)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 15)
 			goto L12
 		}
@@ -84202,7 +84257,7 @@ func (p *tparser) v218() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -84211,7 +84266,7 @@ func (p *tparser) v218() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 >= 48 && x4 <= 57 || x4 == 95 || x4 == 36))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 >= 48 && x4 <= 57 || x4 == 95 || x4 == 36))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 63)
 		goto L6
 	}
@@ -84262,7 +84317,7 @@ func (p *tparser) i218() (any, bool) {
 		ok   bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -84271,7 +84326,7 @@ func (p *tparser) i218() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 >= 48 && x4 <= 57 || x4 == 95 || x4 == 36))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 >= 48 && x4 <= 57 || x4 == 95 || x4 == 36))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 63)
 		goto L6
 	}
@@ -84328,7 +84383,7 @@ func (p *tparser) v219() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -84383,7 +84438,7 @@ func (p *tparser) i219() (any, bool) {
 		x6 int
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -84435,7 +84490,7 @@ func (p *tparser) s220() (any, bool) {
 		ok   bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	for {
@@ -84472,7 +84527,7 @@ func (p *tparser) s221() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -84494,7 +84549,7 @@ L4:
 	} else {
 		x12, _, x13 = p.peek()
 	}
-	if !(x13 && (x12 == 41)) && p.depth+0 <= maxDepth {
+	if !(x13 && (x12 == 41)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 9)
 		goto L14
 	}
@@ -84508,7 +84563,7 @@ L15:
 	p.pos = x9
 	p.recovered = p.recovered[:x10]
 L14:
-	if !(x13 && (x12 == 125)) && p.depth+0 <= maxDepth {
+	if !(x13 && (x12 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L16
 	}
@@ -84560,7 +84615,7 @@ func (p *tparser) s222() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -84615,7 +84670,7 @@ func (p *tparser) s223() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -84680,7 +84735,7 @@ func (p *tparser) s224() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -84740,7 +84795,7 @@ func (p *tparser) s225() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 61 {
@@ -84794,7 +84849,7 @@ func (p *tparser) s226() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -84803,7 +84858,7 @@ func (p *tparser) s226() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L6
 	}
@@ -84817,7 +84872,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L8
 	}
@@ -84831,7 +84886,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 108)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 108)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L10
 	}
@@ -84845,7 +84900,7 @@ L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L10:
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L12
 	}
@@ -84900,7 +84955,7 @@ func (p *tparser) s227() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+4 <= len(p.in) && p.in[p.pos] == 102 && p.in[p.pos+1] == 117 && p.in[p.pos+2] == 110 && p.in[p.pos+3] == 99 {
@@ -84930,7 +84985,7 @@ L3:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 44)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L9
 	}
@@ -84944,7 +84999,7 @@ L10:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
 L9:
-	if !(x8 && (x7 == 10)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L11
 	}
@@ -84958,7 +85013,7 @@ L12:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
 L11:
-	if !(x8 && (x7 == 47)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L13
 	}
@@ -84980,7 +85035,7 @@ L13:
 L15:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
-	if !(x8 && (x7 == 125)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L16
 	}
@@ -85024,7 +85079,7 @@ func (p *tparser) v228() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.s220(); !ok {
@@ -85050,7 +85105,7 @@ func (p *tparser) i228() (any, bool) {
 		ok bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.s220(); !ok {
@@ -85085,7 +85140,7 @@ func (p *tparser) v229() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.u217(); !ok {
@@ -85116,7 +85171,7 @@ func (p *tparser) i229() (any, bool) {
 		ok bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.u217(); !ok {
@@ -85158,7 +85213,7 @@ func (p *tparser) v230() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -85202,7 +85257,7 @@ func (p *tparser) i230() (any, bool) {
 		ok bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -85262,7 +85317,7 @@ func (p *tparser) v231() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.s220(); !ok {
@@ -85274,7 +85329,7 @@ func (p *tparser) v231() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 44)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L6
 	}
@@ -85291,7 +85346,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 10)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L8
 	}
@@ -85322,7 +85377,7 @@ L8:
 	} else {
 		x14, _, x15 = p.peek()
 	}
-	if !(x15 && (x14 == 10)) && p.depth+0 <= maxDepth {
+	if !(x15 && (x14 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L16
 	}
@@ -85400,7 +85455,7 @@ func (p *tparser) i231() (any, bool) {
 		x19 int
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.s220(); !ok {
@@ -85412,7 +85467,7 @@ func (p *tparser) i231() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 44)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L6
 	}
@@ -85429,7 +85484,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 10)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L8
 	}
@@ -85460,7 +85515,7 @@ L8:
 	} else {
 		x14, _, x15 = p.peek()
 	}
-	if !(x15 && (x14 == 10)) && p.depth+0 <= maxDepth {
+	if !(x15 && (x14 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L16
 	}
@@ -85564,7 +85619,7 @@ func (p *tparser) v232() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -85573,7 +85628,7 @@ func (p *tparser) v232() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L6
 	}
@@ -85606,7 +85661,7 @@ L10:
 	} else {
 		x17, _, x18 = p.peek()
 	}
-	if !(x18 && (x17 == 58)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L19
 	}
@@ -85620,7 +85675,7 @@ L20:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L19:
-	if !(x18 && (x17 == 61)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L21
 	}
@@ -85654,7 +85709,7 @@ L22:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L21:
-	if !(x18 && (x17 == 63)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L26
 	}
@@ -85668,7 +85723,7 @@ L27:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L26:
-	if !(x18 && (x17 == 33)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L28
 	}
@@ -85702,7 +85757,7 @@ L29:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L28:
-	if !(x18 && (x17 == 44)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L33
 	}
@@ -85716,7 +85771,7 @@ L34:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L33:
-	if !(x18 && (x17 == 10)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L35
 	}
@@ -85730,7 +85785,7 @@ L36:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L35:
-	if !(x18 && (x17 == 47)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L37
 	}
@@ -85767,7 +85822,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L40
 	}
@@ -85800,7 +85855,7 @@ L44:
 	} else {
 		x51, _, x52 = p.peek()
 	}
-	if !(x52 && (x51 == 58)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L53
 	}
@@ -85814,7 +85869,7 @@ L54:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
 L53:
-	if !(x52 && (x51 == 61)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L55
 	}
@@ -85848,7 +85903,7 @@ L56:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
 L55:
-	if !(x52 && (x51 == 63)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L60
 	}
@@ -85862,7 +85917,7 @@ L61:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
 L60:
-	if !(x52 && (x51 == 44)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L62
 	}
@@ -85876,7 +85931,7 @@ L63:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
 L62:
-	if !(x52 && (x51 == 10)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L64
 	}
@@ -85890,7 +85945,7 @@ L65:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
 L64:
-	if !(x52 && (x51 == 47)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L66
 	}
@@ -85912,7 +85967,7 @@ L66:
 L68:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
-	if !(x52 && (x51 == 33)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L69
 	}
@@ -85994,7 +86049,7 @@ func (p *tparser) i232() (any, bool) {
 		x58  int
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -86003,7 +86058,7 @@ func (p *tparser) i232() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L6
 	}
@@ -86036,7 +86091,7 @@ L10:
 	} else {
 		x17, _, x18 = p.peek()
 	}
-	if !(x18 && (x17 == 58)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L19
 	}
@@ -86050,7 +86105,7 @@ L20:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L19:
-	if !(x18 && (x17 == 61)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L21
 	}
@@ -86084,7 +86139,7 @@ L22:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L21:
-	if !(x18 && (x17 == 63)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L26
 	}
@@ -86098,7 +86153,7 @@ L27:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L26:
-	if !(x18 && (x17 == 33)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L28
 	}
@@ -86132,7 +86187,7 @@ L29:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L28:
-	if !(x18 && (x17 == 44)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L33
 	}
@@ -86146,7 +86201,7 @@ L34:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L33:
-	if !(x18 && (x17 == 10)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L35
 	}
@@ -86160,7 +86215,7 @@ L36:
 	p.pos = x14
 	p.recovered = p.recovered[:x15]
 L35:
-	if !(x18 && (x17 == 47)) && p.depth+0 <= maxDepth {
+	if !(x18 && (x17 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L37
 	}
@@ -86197,7 +86252,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L40
 	}
@@ -86230,7 +86285,7 @@ L44:
 	} else {
 		x51, _, x52 = p.peek()
 	}
-	if !(x52 && (x51 == 58)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 58)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 19)
 		goto L53
 	}
@@ -86244,7 +86299,7 @@ L54:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
 L53:
-	if !(x52 && (x51 == 61)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 61)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 11)
 		goto L55
 	}
@@ -86278,7 +86333,7 @@ L56:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
 L55:
-	if !(x52 && (x51 == 63)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 63)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 21)
 		goto L60
 	}
@@ -86292,7 +86347,7 @@ L61:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
 L60:
-	if !(x52 && (x51 == 44)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L62
 	}
@@ -86306,7 +86361,7 @@ L63:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
 L62:
-	if !(x52 && (x51 == 10)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L64
 	}
@@ -86320,7 +86375,7 @@ L65:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
 L64:
-	if !(x52 && (x51 == 47)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L66
 	}
@@ -86342,7 +86397,7 @@ L66:
 L68:
 	p.pos = x48
 	p.recovered = p.recovered[:x49]
-	if !(x52 && (x51 == 33)) && p.depth+0 <= maxDepth {
+	if !(x52 && (x51 == 33)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 22)
 		goto L69
 	}
@@ -86409,7 +86464,7 @@ func (p *tparser) v233() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -86448,7 +86503,7 @@ func (p *tparser) i233() (any, bool) {
 		ok bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -86497,7 +86552,7 @@ func (p *tparser) v234() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -86552,7 +86607,7 @@ func (p *tparser) i234() (any, bool) {
 		x6 int
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -86611,7 +86666,7 @@ func (p *tparser) s235() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -86620,7 +86675,7 @@ func (p *tparser) s235() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L6
 	}
@@ -86634,7 +86689,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L8
 	}
@@ -86648,7 +86703,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L10
 	}
@@ -86699,7 +86754,7 @@ func (p *tparser) s236() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.s220(); !ok {
@@ -86759,7 +86814,7 @@ func (p *tparser) v237() (any, bool) {
 		x11  bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -86793,7 +86848,7 @@ func (p *tparser) v237() (any, bool) {
 		} else {
 			x10, _, x11 = p.peek()
 		}
-		if !(x11 && (x10 == 92)) && p.depth+0 <= maxDepth {
+		if !(x11 && (x10 == 92)) && p.depth+0 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L12
 		}
@@ -86844,7 +86899,7 @@ func (p *tparser) i237() (any, bool) {
 		x11  bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -86878,7 +86933,7 @@ func (p *tparser) i237() (any, bool) {
 		} else {
 			x10, _, x11 = p.peek()
 		}
-		if !(x11 && (x10 == 92)) && p.depth+0 <= maxDepth {
+		if !(x11 && (x10 == 92)) && p.depth+0 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L12
 		}
@@ -86927,7 +86982,7 @@ func (p *tparser) s238() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.s220(); !ok {
@@ -86939,7 +86994,7 @@ func (p *tparser) s238() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 10)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L6
 	}
@@ -87015,7 +87070,7 @@ func (p *tparser) v239() (any, bool) {
 		x3   int
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -87076,7 +87131,7 @@ func (p *tparser) i239() (any, bool) {
 		x3   int
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -87150,7 +87205,7 @@ func (p *tparser) v240() (any, bool) {
 		x11  bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -87184,7 +87239,7 @@ func (p *tparser) v240() (any, bool) {
 		} else {
 			x10, _, x11 = p.peek()
 		}
-		if !(x11 && (x10 == 47)) && p.depth+1 <= maxDepth {
+		if !(x11 && (x10 == 47)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 15)
 			goto L12
 		}
@@ -87244,7 +87299,7 @@ func (p *tparser) i240() (any, bool) {
 		x11  bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -87278,7 +87333,7 @@ func (p *tparser) i240() (any, bool) {
 		} else {
 			x10, _, x11 = p.peek()
 		}
-		if !(x11 && (x10 == 47)) && p.depth+1 <= maxDepth {
+		if !(x11 && (x10 == 47)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 15)
 			goto L12
 		}
@@ -87339,7 +87394,7 @@ func (p *tparser) s241() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -87439,7 +87494,7 @@ func (p *tparser) s242() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) && p.in[p.pos] == 48 {
@@ -87456,7 +87511,7 @@ func (p *tparser) s242() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 46)) && p.depth+1 <= maxDepth {
+	if !(x5 && (x4 == 46)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L6
 	}
@@ -87470,7 +87525,7 @@ func (p *tparser) s242() (any, bool) {
 	} else {
 		x15, _, x16 = p.peek()
 	}
-	if !(x16 && (!!(x15 == 101 || x15 == 69))) && p.depth+1 <= maxDepth {
+	if !(x16 && (!!(x15 == 101 || x15 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L17
 	}
@@ -87482,7 +87537,7 @@ L18:
 	p.pos = x12
 	p.recovered = p.recovered[:x13]
 L17:
-	if !(x16 && (!!(x15 == 75 || x15 == 77 || x15 == 71 || x15 == 84 || x15 == 80))) && p.depth+1 <= maxDepth {
+	if !(x16 && (!!(x15 == 75 || x15 == 77 || x15 == 71 || x15 == 84 || x15 == 80))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 62)
 		goto L19
 	}
@@ -87506,7 +87561,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (!!(x4 == 101 || x4 == 69))) && p.depth+1 <= maxDepth {
+	if !(x5 && (!!(x4 == 101 || x4 == 69))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 61)
 		goto L21
 	}
@@ -87548,7 +87603,7 @@ func (p *tparser) s243() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -87557,7 +87612,7 @@ func (p *tparser) s243() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 >= 48 && x4 <= 57))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 >= 48 && x4 <= 57))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 60)
 		goto L6
 	}
@@ -87631,7 +87686,7 @@ func (p *tparser) s244() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -87640,7 +87695,7 @@ func (p *tparser) s244() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 29)
 		goto L6
 	}
@@ -87654,7 +87709,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 101)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 101)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 37)
 		goto L8
 	}
@@ -87668,7 +87723,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 28)
 		goto L10
 	}
@@ -87682,7 +87737,7 @@ L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L10:
-	if !(x5 && (x4 == 105)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 105)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 36)
 		goto L12
 	}
@@ -87696,7 +87751,7 @@ L13:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L12:
-	if !(x5 && (x4 == 108)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 108)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 27)
 		goto L14
 	}
@@ -87710,7 +87765,7 @@ L15:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L14:
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 30)
 		goto L16
 	}
@@ -87724,7 +87779,7 @@ L17:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L16:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 38)
 		goto L18
 	}
@@ -87736,7 +87791,7 @@ L19:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L18:
-	if !(x5 && (x4 == 111)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 111)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 39)
 		goto L20
 	}
@@ -87748,7 +87803,7 @@ L21:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L20:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 20)
 		goto L22
 	}
@@ -87762,7 +87817,7 @@ L23:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L22:
-	if !(x5 && (x4 == 116)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 116)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 45)
 		goto L24
 	}
@@ -87776,7 +87831,7 @@ L25:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L24:
-	if !(x5 && (x4 == 102)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 102)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 46)
 		goto L26
 	}
@@ -87788,7 +87843,7 @@ L27:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L26:
-	if !(x5 && (x4 == 110)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 110)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 34)
 		goto L28
 	}
@@ -87857,7 +87912,7 @@ func (p *tparser) v245() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -87866,7 +87921,7 @@ func (p *tparser) v245() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 35)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 35)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 52)
 		goto L6
 	}
@@ -87883,7 +87938,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 95)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 95)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 68)
 		goto L8
 	}
@@ -87913,7 +87968,7 @@ L12:
 	} else {
 		x16, _, x17 = p.peek()
 	}
-	if !(x17 && (x16 == 35)) && p.depth+0 <= maxDepth {
+	if !(x17 && (x16 == 35)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 52)
 		goto L18
 	}
@@ -88000,7 +88055,7 @@ func (p *tparser) i245() (any, bool) {
 		x22 int
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -88009,7 +88064,7 @@ func (p *tparser) i245() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 35)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 35)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 52)
 		goto L6
 	}
@@ -88026,7 +88081,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 95)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 95)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 68)
 		goto L8
 	}
@@ -88056,7 +88111,7 @@ L12:
 	} else {
 		x16, _, x17 = p.peek()
 	}
-	if !(x17 && (x16 == 35)) && p.depth+0 <= maxDepth {
+	if !(x17 && (x16 == 35)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 52)
 		goto L18
 	}
@@ -88134,7 +88189,7 @@ func (p *tparser) s246() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) {
@@ -88174,7 +88229,7 @@ func (p *tparser) s247() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -88249,7 +88304,7 @@ func (p *tparser) s248() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -88330,7 +88385,7 @@ func (p *tparser) s249() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x12
@@ -88446,7 +88501,7 @@ func (p *tparser) s250() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x9
@@ -88555,7 +88610,7 @@ func (p *tparser) s251() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) {
@@ -88614,7 +88669,7 @@ func (p *tparser) v252() (any, bool) {
 		x11  bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -88648,7 +88703,7 @@ func (p *tparser) v252() (any, bool) {
 		} else {
 			x10, _, x11 = p.peek()
 		}
-		if !(x11 && (x10 == 92)) && p.depth+0 <= maxDepth {
+		if !(x11 && (x10 == 92)) && p.depth+0 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L12
 		}
@@ -88699,7 +88754,7 @@ func (p *tparser) i252() (any, bool) {
 		x11  bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -88733,7 +88788,7 @@ func (p *tparser) i252() (any, bool) {
 		} else {
 			x10, _, x11 = p.peek()
 		}
-		if !(x11 && (x10 == 92)) && p.depth+0 <= maxDepth {
+		if !(x11 && (x10 == 92)) && p.depth+0 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L12
 		}
@@ -88779,7 +88834,7 @@ func (p *tparser) s253() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -88842,7 +88897,7 @@ func (p *tparser) v254() (any, bool) {
 	start, rec = p.pos, len(p.recovered)
 	prevEnv = p.env
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -88900,7 +88955,7 @@ func (p *tparser) i254() (any, bool) {
 	)
 	prevEnv = p.env
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -88969,7 +89024,7 @@ func (p *tparser) v255() (any, bool) {
 		x12  bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -89010,7 +89065,7 @@ func (p *tparser) v255() (any, bool) {
 		} else {
 			x11, _, x12 = p.peek()
 		}
-		if !(x12 && (x11 == 92)) && p.depth+1 <= maxDepth {
+		if !(x12 && (x11 == 92)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L13
 		}
@@ -89056,7 +89111,7 @@ func (p *tparser) i255() (any, bool) {
 		x12  bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -89097,7 +89152,7 @@ func (p *tparser) i255() (any, bool) {
 		} else {
 			x11, _, x12 = p.peek()
 		}
-		if !(x12 && (x11 == 92)) && p.depth+1 <= maxDepth {
+		if !(x12 && (x11 == 92)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L13
 		}
@@ -89150,7 +89205,7 @@ func (p *tparser) i256() (any, bool) {
 		v7 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x3
@@ -89214,7 +89269,7 @@ func (p *tparser) v257() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.s253(); !ok {
@@ -89246,7 +89301,7 @@ func (p *tparser) i257() (any, bool) {
 		ok bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.s253(); !ok {
@@ -89286,7 +89341,7 @@ func (p *tparser) s258() (any, bool) {
 		x11  bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -89320,7 +89375,7 @@ func (p *tparser) s258() (any, bool) {
 		} else {
 			x10, _, x11 = p.peek()
 		}
-		if !(x11 && (x10 == 92)) && p.depth+1 <= maxDepth {
+		if !(x11 && (x10 == 92)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L12
 		}
@@ -89376,7 +89431,7 @@ func (p *tparser) i259() (any, bool) {
 		v7 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x3
@@ -89450,7 +89505,7 @@ func (p *tparser) v260() (any, bool) {
 		x17  int
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -89484,7 +89539,7 @@ func (p *tparser) v260() (any, bool) {
 		} else {
 			x10, _, x11 = p.peek()
 		}
-		if !(x11 && (x10 == 92)) && p.depth+1 <= maxDepth {
+		if !(x11 && (x10 == 92)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L12
 		}
@@ -89496,7 +89551,7 @@ func (p *tparser) v260() (any, bool) {
 		p.pos = x5
 		p.recovered = p.recovered[:x6]
 	L12:
-		if !(x11 && (x10 == 10)) && p.depth+0 <= maxDepth {
+		if !(x11 && (x10 == 10)) && p.depth+0 <= p.maxDepth {
 			p.expect(p.pos, 18)
 			goto L14
 		}
@@ -89571,7 +89626,7 @@ func (p *tparser) i260() (any, bool) {
 		x17  int
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x1
@@ -89605,7 +89660,7 @@ func (p *tparser) i260() (any, bool) {
 		} else {
 			x10, _, x11 = p.peek()
 		}
-		if !(x11 && (x10 == 92)) && p.depth+1 <= maxDepth {
+		if !(x11 && (x10 == 92)) && p.depth+1 <= p.maxDepth {
 			p.expect(p.pos, 90)
 			goto L12
 		}
@@ -89617,7 +89672,7 @@ func (p *tparser) i260() (any, bool) {
 		p.pos = x5
 		p.recovered = p.recovered[:x6]
 	L12:
-		if !(x11 && (x10 == 10)) && p.depth+0 <= maxDepth {
+		if !(x11 && (x10 == 10)) && p.depth+0 <= p.maxDepth {
 			p.expect(p.pos, 18)
 			goto L14
 		}
@@ -89685,7 +89740,7 @@ func (p *tparser) s261() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos+2 <= len(p.in) && p.in[p.pos] == 47 && p.in[p.pos+1] == 47 {
@@ -89741,7 +89796,7 @@ func (p *tparser) v262() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -89770,7 +89825,7 @@ L3:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (!!(x7 == 170 || x7 == 181 || x7 == 186 || x7 >= 192 && x7 <= 214 || x7 >= 216 && x7 <= 246 || x7 >= 248 && x7 <= 705 || x7 >= 710 && x7 <= 721 || x7 >= 736 && x7 <= 740 || x7 == 748 || x7 == 750 || x7 >= 880 && x7 <= 884 || x7 >= 886 && x7 <= 887 || x7 >= 890 && x7 <= 893 || x7 == 895 || x7 == 902 || x7 >= 904 && x7 <= 906 || x7 == 908 || x7 >= 910 && x7 <= 929 || x7 >= 931 && x7 <= 1013 || x7 >= 1015 && x7 <= 1153 || x7 >= 1162 && x7 <= 1327 || x7 >= 1329 && x7 <= 1366 || x7 == 1369 || x7 >= 1376 && x7 <= 1416 || x7 >= 1488 && x7 <= 1514 || x7 >= 1519 && x7 <= 1522 || x7 >= 1568 && x7 <= 1610 || x7 >= 1646 && x7 <= 1647 || x7 >= 1649 && x7 <= 1747 || x7 == 1749 || x7 >= 1765 && x7 <= 1766 || x7 >= 1774 && x7 <= 1775 || x7 >= 1786 && x7 <= 1788 || x7 == 1791 || x7 == 1808 || x7 >= 1810 && x7 <= 1839 || x7 >= 1869 && x7 <= 1957 || x7 == 1969 || x7 >= 1994 && x7 <= 2026 || x7 >= 2036 && x7 <= 2037 || x7 == 2042 || x7 >= 2048 && x7 <= 2069 || x7 == 2074 || x7 == 2084 || x7 == 2088 || x7 >= 2112 && x7 <= 2136 || x7 >= 2144 && x7 <= 2154 || x7 >= 2160 && x7 <= 2183 || x7 >= 2185 && x7 <= 2191 || x7 >= 2208 && x7 <= 2249 || x7 >= 2308 && x7 <= 2361 || x7 == 2365 || x7 == 2384 || x7 >= 2392 && x7 <= 2401 || x7 >= 2417 && x7 <= 2432 || x7 >= 2437 && x7 <= 2444 || x7 >= 2447 && x7 <= 2448 || x7 >= 2451 && x7 <= 2472 || x7 >= 2474 && x7 <= 2480 || x7 == 2482 || x7 >= 2486 && x7 <= 2489 || x7 == 2493 || x7 == 2510 || x7 >= 2524 && x7 <= 2525 || x7 >= 2527 && x7 <= 2529 || x7 >= 2544 && x7 <= 2545 || x7 == 2556 || x7 >= 2565 && x7 <= 2570 || x7 >= 2575 && x7 <= 2576 || x7 >= 2579 && x7 <= 2600 || x7 >= 2602 && x7 <= 2608 || x7 >= 2610 && x7 <= 2611 || x7 >= 2613 && x7 <= 2614 || x7 >= 2616 && x7 <= 2617 || x7 >= 2649 && x7 <= 2652 || x7 == 2654 || x7 >= 2674 && x7 <= 2676 || x7 >= 2693 && x7 <= 2701 || x7 >= 2703 && x7 <= 2705 || x7 >= 2707 && x7 <= 2728 || x7 >= 2730 && x7 <= 2736 || x7 >= 2738 && x7 <= 2739 || x7 >= 2741 && x7 <= 2745 || x7 == 2749 || x7 == 2768 || x7 >= 2784 && x7 <= 2785 || x7 == 2809 || x7 >= 2821 && x7 <= 2828 || x7 >= 2831 && x7 <= 2832 || x7 >= 2835 && x7 <= 2856 || x7 >= 2858 && x7 <= 2864 || x7 >= 2866 && x7 <= 2867 || x7 >= 2869 && x7 <= 2873 || x7 == 2877 || x7 >= 2908 && x7 <= 2909 || x7 >= 2911 && x7 <= 2913 || x7 == 2929 || x7 == 2947 || x7 >= 2949 && x7 <= 2954 || x7 >= 2958 && x7 <= 2960 || x7 >= 2962 && x7 <= 2965 || x7 >= 2969 && x7 <= 2970 || x7 == 2972 || x7 >= 2974 && x7 <= 2975 || x7 >= 2979 && x7 <= 2980 || x7 >= 2984 && x7 <= 2986 || x7 >= 2990 && x7 <= 3001 || x7 == 3024 || x7 >= 3077 && x7 <= 3084 || x7 >= 3086 && x7 <= 3088 || x7 >= 3090 && x7 <= 3112 || x7 >= 3114 && x7 <= 3129 || x7 == 3133 || x7 >= 3160 && x7 <= 3162 || x7 >= 3164 && x7 <= 3165 || x7 >= 3168 && x7 <= 3169 || x7 == 3200 || x7 >= 3205 && x7 <= 3212 || x7 >= 3214 && x7 <= 3216 || x7 >= 3218 && x7 <= 3240 || x7 >= 3242 && x7 <= 3251 || x7 >= 3253 && x7 <= 3257 || x7 == 3261 || x7 >= 3292 && x7 <= 3294 || x7 >= 3296 && x7 <= 3297 || x7 >= 3313 && x7 <= 3314 || x7 >= 3332 && x7 <= 3340 || x7 >= 3342 && x7 <= 3344 || x7 >= 3346 && x7 <= 3386 || x7 == 3389 || x7 == 3406 || x7 >= 3412 && x7 <= 3414 || x7 >= 3423 && x7 <= 3425 || x7 >= 3450 && x7 <= 3455 || x7 >= 3461 && x7 <= 3478 || x7 >= 3482 && x7 <= 3505 || x7 >= 3507 && x7 <= 3515 || x7 == 3517 || x7 >= 3520 && x7 <= 3526 || x7 >= 3585 && x7 <= 3632 || x7 >= 3634 && x7 <= 3635 || x7 >= 3648 && x7 <= 3654 || x7 >= 3713 && x7 <= 3714 || x7 == 3716 || x7 >= 3718 && x7 <= 3722 || x7 >= 3724 && x7 <= 3747 || x7 == 3749 || x7 >= 3751 && x7 <= 3760 || x7 >= 3762 && x7 <= 3763 || x7 == 3773 || x7 >= 3776 && x7 <= 3780 || x7 == 3782 || x7 >= 3804 && x7 <= 3807 || x7 == 3840 || x7 >= 3904 && x7 <= 3911 || x7 >= 3913 && x7 <= 3948 || x7 >= 3976 && x7 <= 3980 || x7 >= 4096 && x7 <= 4138 || x7 == 4159 || x7 >= 4176 && x7 <= 4181 || x7 >= 4186 && x7 <= 4189 || x7 == 4193 || x7 >= 4197 && x7 <= 4198 || x7 >= 4206 && x7 <= 4208 || x7 >= 4213 && x7 <= 4225 || x7 == 4238 || x7 >= 4256 && x7 <= 4293 || x7 == 4295 || x7 == 4301 || x7 >= 4304 && x7 <= 4346 || x7 >= 4348 && x7 <= 4680 || x7 >= 4682 && x7 <= 4685 || x7 >= 4688 && x7 <= 4694 || x7 == 4696 || x7 >= 4698 && x7 <= 4701 || x7 >= 4704 && x7 <= 4744 || x7 >= 4746 && x7 <= 4749 || x7 >= 4752 && x7 <= 4784 || x7 >= 4786 && x7 <= 4789 || x7 >= 4792 && x7 <= 4798 || x7 == 4800 || x7 >= 4802 && x7 <= 4805 || x7 >= 4808 && x7 <= 4822 || x7 >= 4824 && x7 <= 4880 || x7 >= 4882 && x7 <= 4885 || x7 >= 4888 && x7 <= 4954 || x7 >= 4992 && x7 <= 5007 || x7 >= 5024 && x7 <= 5109 || x7 >= 5112 && x7 <= 5117 || x7 >= 5121 && x7 <= 5740 || x7 >= 5743 && x7 <= 5759 || x7 >= 5761 && x7 <= 5786 || x7 >= 5792 && x7 <= 5866 || x7 >= 5873 && x7 <= 5880 || x7 >= 5888 && x7 <= 5905 || x7 >= 5919 && x7 <= 5937 || x7 >= 5952 && x7 <= 5969 || x7 >= 5984 && x7 <= 5996 || x7 >= 5998 && x7 <= 6000 || x7 >= 6016 && x7 <= 6067 || x7 == 6103 || x7 == 6108 || x7 >= 6176 && x7 <= 6264 || x7 >= 6272 && x7 <= 6276 || x7 >= 6279 && x7 <= 6312 || x7 == 6314 || x7 >= 6320 && x7 <= 6389 || x7 >= 6400 && x7 <= 6430 || x7 >= 6480 && x7 <= 6509 || x7 >= 6512 && x7 <= 6516 || x7 >= 6528 && x7 <= 6571 || x7 >= 6576 && x7 <= 6601 || x7 >= 6656 && x7 <= 6678 || x7 >= 6688 && x7 <= 6740 || x7 == 6823 || x7 >= 6917 && x7 <= 6963 || x7 >= 6981 && x7 <= 6988 || x7 >= 7043 && x7 <= 7072 || x7 >= 7086 && x7 <= 7087 || x7 >= 7098 && x7 <= 7141 || x7 >= 7168 && x7 <= 7203 || x7 >= 7245 && x7 <= 7247 || x7 >= 7258 && x7 <= 7293 || x7 >= 7296 && x7 <= 7306 || x7 >= 7312 && x7 <= 7354 || x7 >= 7357 && x7 <= 7359 || x7 >= 7401 && x7 <= 7404 || x7 >= 7406 && x7 <= 7411 || x7 >= 7413 && x7 <= 7414 || x7 == 7418 || x7 >= 7424 && x7 <= 7615 || x7 >= 7680 && x7 <= 7957 || x7 >= 7960 && x7 <= 7965 || x7 >= 7968 && x7 <= 8005 || x7 >= 8008 && x7 <= 8013 || x7 >= 8016 && x7 <= 8023 || x7 == 8025 || x7 == 8027 || x7 == 8029 || x7 >= 8031 && x7 <= 8061 || x7 >= 8064 && x7 <= 8116 || x7 >= 8118 && x7 <= 8124 || x7 == 8126 || x7 >= 8130 && x7 <= 8132 || x7 >= 8134 && x7 <= 8140 || x7 >= 8144 && x7 <= 8147 || x7 >= 8150 && x7 <= 8155 || x7 >= 8160 && x7 <= 8172 || x7 >= 8178 && x7 <= 8180 || x7 >= 8182 && x7 <= 8188 || x7 == 8305 || x7 == 8319 || x7 >= 8336 && x7 <= 8348 || x7 == 8450 || x7 == 8455 || x7 >= 8458 && x7 <= 8467 || x7 == 8469 || x7 >= 8473 && x7 <= 8477 || x7 == 8484 || x7 == 8486 || x7 == 8488 || x7 >= 8490 && x7 <= 8493 || x7 >= 8495 && x7 <= 8505 || x7 >= 8508 && x7 <= 8511 || x7 >= 8517 && x7 <= 8521 || x7 == 8526 || x7 >= 8579 && x7 <= 8580 || x7 >= 11264 && x7 <= 11492 || x7 >= 11499 && x7 <= 11502 || x7 >= 11506 && x7 <= 11507 || x7 >= 11520 && x7 <= 11557 || x7 == 11559 || x7 == 11565 || x7 >= 11568 && x7 <= 11623 || x7 == 11631 || x7 >= 11648 && x7 <= 11670 || x7 >= 11680 && x7 <= 11686 || x7 >= 11688 && x7 <= 11694 || x7 >= 11696 && x7 <= 11702 || x7 >= 11704 && x7 <= 11710 || x7 >= 11712 && x7 <= 11718 || x7 >= 11720 && x7 <= 11726 || x7 >= 11728 && x7 <= 11734 || x7 >= 11736 && x7 <= 11742 || x7 == 11823 || x7 >= 12293 && x7 <= 12294 || x7 >= 12337 && x7 <= 12341 || x7 >= 12347 && x7 <= 12348 || x7 >= 12353 && x7 <= 12438 || x7 >= 12445 && x7 <= 12447 || x7 >= 12449 && x7 <= 12538 || x7 >= 12540 && x7 <= 12543 || x7 >= 12549 && x7 <= 12591 || x7 >= 12593 && x7 <= 12686 || x7 >= 12704 && x7 <= 12735 || x7 >= 12784 && x7 <= 12799 || x7 >= 13312 && x7 <= 19903 || x7 >= 19968 && x7 <= 42124 || x7 >= 42192 && x7 <= 42237 || x7 >= 42240 && x7 <= 42508 || x7 >= 42512 && x7 <= 42527 || x7 >= 42538 && x7 <= 42539 || x7 >= 42560 && x7 <= 42606 || x7 >= 42623 && x7 <= 42653 || x7 >= 42656 && x7 <= 42725 || x7 >= 42775 && x7 <= 42783 || x7 >= 42786 && x7 <= 42888 || x7 >= 42891 && x7 <= 42972 || x7 >= 42993 && x7 <= 43009 || x7 >= 43011 && x7 <= 43013 || x7 >= 43015 && x7 <= 43018 || x7 >= 43020 && x7 <= 43042 || x7 >= 43072 && x7 <= 43123 || x7 >= 43138 && x7 <= 43187 || x7 >= 43250 && x7 <= 43255 || x7 == 43259 || x7 >= 43261 && x7 <= 43262 || x7 >= 43274 && x7 <= 43301 || x7 >= 43312 && x7 <= 43334 || x7 >= 43360 && x7 <= 43388 || x7 >= 43396 && x7 <= 43442 || x7 == 43471 || x7 >= 43488 && x7 <= 43492 || x7 >= 43494 && x7 <= 43503 || x7 >= 43514 && x7 <= 43518 || x7 >= 43520 && x7 <= 43560 || x7 >= 43584 && x7 <= 43586 || x7 >= 43588 && x7 <= 43595 || x7 >= 43616 && x7 <= 43638 || x7 == 43642 || x7 >= 43646 && x7 <= 43695 || x7 == 43697 || x7 >= 43701 && x7 <= 43702 || x7 >= 43705 && x7 <= 43709 || x7 == 43712 || x7 == 43714 || x7 >= 43739 && x7 <= 43741 || x7 >= 43744 && x7 <= 43754 || x7 >= 43762 && x7 <= 43764 || x7 >= 43777 && x7 <= 43782 || x7 >= 43785 && x7 <= 43790 || x7 >= 43793 && x7 <= 43798 || x7 >= 43808 && x7 <= 43814 || x7 >= 43816 && x7 <= 43822 || x7 >= 43824 && x7 <= 43866 || x7 >= 43868 && x7 <= 43881 || x7 >= 43888 && x7 <= 44002 || x7 >= 44032 && x7 <= 55203 || x7 >= 55216 && x7 <= 55238 || x7 >= 55243 && x7 <= 55291 || x7 >= 63744 && x7 <= 64109 || x7 >= 64112 && x7 <= 64217 || x7 >= 64256 && x7 <= 64262 || x7 >= 64275 && x7 <= 64279 || x7 == 64285 || x7 >= 64287 && x7 <= 64296 || x7 >= 64298 && x7 <= 64310 || x7 >= 64312 && x7 <= 64316 || x7 == 64318 || x7 >= 64320 && x7 <= 64321 || x7 >= 64323 && x7 <= 64324 || x7 >= 64326 && x7 <= 64433 || x7 >= 64467 && x7 <= 64829 || x7 >= 64848 && x7 <= 64911 || x7 >= 64914 && x7 <= 64967 || x7 >= 65008 && x7 <= 65019 || x7 >= 65136 && x7 <= 65140 || x7 >= 65142 && x7 <= 65276 || x7 >= 65313 && x7 <= 65338 || x7 >= 65345 && x7 <= 65370 || x7 >= 65382 && x7 <= 65470 || x7 >= 65474 && x7 <= 65479 || x7 >= 65482 && x7 <= 65487 || x7 >= 65490 && x7 <= 65495 || x7 >= 65498 && x7 <= 65500 || x7 >= 65536 && x7 <= 65547 || x7 >= 65549 && x7 <= 65574 || x7 >= 65576 && x7 <= 65594 || x7 >= 65596 && x7 <= 65597 || x7 >= 65599 && x7 <= 65613 || x7 >= 65616 && x7 <= 65629 || x7 >= 65664 && x7 <= 65786 || x7 >= 66176 && x7 <= 66204 || x7 >= 66208 && x7 <= 66256 || x7 >= 66304 && x7 <= 66335 || x7 >= 66349 && x7 <= 66368 || x7 >= 66370 && x7 <= 66377 || x7 >= 66384 && x7 <= 66421 || x7 >= 66432 && x7 <= 66461 || x7 >= 66464 && x7 <= 66499 || x7 >= 66504 && x7 <= 66511 || x7 >= 66560 && x7 <= 66717 || x7 >= 66736 && x7 <= 66771 || x7 >= 66776 && x7 <= 66811 || x7 >= 66816 && x7 <= 66855 || x7 >= 66864 && x7 <= 66915 || x7 >= 66928 && x7 <= 66938 || x7 >= 66940 && x7 <= 66954 || x7 >= 66956 && x7 <= 66962 || x7 >= 66964 && x7 <= 66965 || x7 >= 66967 && x7 <= 66977 || x7 >= 66979 && x7 <= 66993 || x7 >= 66995 && x7 <= 67001 || x7 >= 67003 && x7 <= 67004 || x7 >= 67008 && x7 <= 67059 || x7 >= 67072 && x7 <= 67382 || x7 >= 67392 && x7 <= 67413 || x7 >= 67424 && x7 <= 67431 || x7 >= 67456 && x7 <= 67461 || x7 >= 67463 && x7 <= 67504 || x7 >= 67506 && x7 <= 67514 || x7 >= 67584 && x7 <= 67589 || x7 == 67592 || x7 >= 67594 && x7 <= 67637 || x7 >= 67639 && x7 <= 67640 || x7 == 67644 || x7 >= 67647 && x7 <= 67669 || x7 >= 67680 && x7 <= 67702 || x7 >= 67712 && x7 <= 67742 || x7 >= 67808 && x7 <= 67826 || x7 >= 67828 && x7 <= 67829 || x7 >= 67840 && x7 <= 67861 || x7 >= 67872 && x7 <= 67897 || x7 >= 67904 && x7 <= 67929 || x7 >= 67968 && x7 <= 68023 || x7 >= 68030 && x7 <= 68031 || x7 == 68096 || x7 >= 68112 && x7 <= 68115 || x7 >= 68117 && x7 <= 68119 || x7 >= 68121 && x7 <= 68149 || x7 >= 68192 && x7 <= 68220 || x7 >= 68224 && x7 <= 68252 || x7 >= 68288 && x7 <= 68295 || x7 >= 68297 && x7 <= 68324 || x7 >= 68352 && x7 <= 68405 || x7 >= 68416 && x7 <= 68437 || x7 >= 68448 && x7 <= 68466 || x7 >= 68480 && x7 <= 68497 || x7 >= 68608 && x7 <= 68680 || x7 >= 68736 && x7 <= 68786 || x7 >= 68800 && x7 <= 68850 || x7 >= 68864 && x7 <= 68899 || x7 >= 68938 && x7 <= 68965 || x7 >= 68975 && x7 <= 68997 || x7 >= 69248 && x7 <= 69289 || x7 >= 69296 && x7 <= 69297 || x7 >= 69314 && x7 <= 69319 || x7 >= 69376 && x7 <= 69404 || x7 == 69415 || x7 >= 69424 && x7 <= 69445 || x7 >= 69488 && x7 <= 69505 || x7 >= 69552 && x7 <= 69572 || x7 >= 69600 && x7 <= 69622 || x7 >= 69635 && x7 <= 69687 || x7 >= 69745 && x7 <= 69746 || x7 == 69749 || x7 >= 69763 && x7 <= 69807 || x7 >= 69840 && x7 <= 69864 || x7 >= 69891 && x7 <= 69926 || x7 == 69956 || x7 == 69959 || x7 >= 69968 && x7 <= 70002 || x7 == 70006 || x7 >= 70019 && x7 <= 70066 || x7 >= 70081 && x7 <= 70084 || x7 == 70106 || x7 == 70108 || x7 >= 70144 && x7 <= 70161 || x7 >= 70163 && x7 <= 70187 || x7 >= 70207 && x7 <= 70208 || x7 >= 70272 && x7 <= 70278 || x7 == 70280 || x7 >= 70282 && x7 <= 70285 || x7 >= 70287 && x7 <= 70301 || x7 >= 70303 && x7 <= 70312 || x7 >= 70320 && x7 <= 70366 || x7 >= 70405 && x7 <= 70412 || x7 >= 70415 && x7 <= 70416 || x7 >= 70419 && x7 <= 70440 || x7 >= 70442 && x7 <= 70448 || x7 >= 70450 && x7 <= 70451 || x7 >= 70453 && x7 <= 70457 || x7 == 70461 || x7 == 70480 || x7 >= 70493 && x7 <= 70497 || x7 >= 70528 && x7 <= 70537 || x7 == 70539 || x7 == 70542 || x7 >= 70544 && x7 <= 70581 || x7 == 70583 || x7 == 70609 || x7 == 70611 || x7 >= 70656 && x7 <= 70708 || x7 >= 70727 && x7 <= 70730 || x7 >= 70751 && x7 <= 70753 || x7 >= 70784 && x7 <= 70831 || x7 >= 70852 && x7 <= 70853 || x7 == 70855 || x7 >= 71040 && x7 <= 71086 || x7 >= 71128 && x7 <= 71131 || x7 >= 71168 && x7 <= 71215 || x7 == 71236 || x7 >= 71296 && x7 <= 71338 || x7 == 71352 || x7 >= 71424 && x7 <= 71450 || x7 >= 71488 && x7 <= 71494 || x7 >= 71680 && x7 <= 71723 || x7 >= 71840 && x7 <= 71903 || x7 >= 71935 && x7 <= 71942 || x7 == 71945 || x7 >= 71948 && x7 <= 71955 || x7 >= 71957 && x7 <= 71958 || x7 >= 71960 && x7 <= 71983 || x7 == 71999 || x7 == 72001 || x7 >= 72096 && x7 <= 72103 || x7 >= 72106 && x7 <= 72144 || x7 == 72161 || x7 == 72163 || x7 == 72192 || x7 >= 72203 && x7 <= 72242 || x7 == 72250 || x7 == 72272 || x7 >= 72284 && x7 <= 72329 || x7 == 72349 || x7 >= 72368 && x7 <= 72440 || x7 >= 72640 && x7 <= 72672 || x7 >= 72704 && x7 <= 72712 || x7 >= 72714 && x7 <= 72750 || x7 == 72768 || x7 >= 72818 && x7 <= 72847 || x7 >= 72960 && x7 <= 72966 || x7 >= 72968 && x7 <= 72969 || x7 >= 72971 && x7 <= 73008 || x7 == 73030 || x7 >= 73056 && x7 <= 73061 || x7 >= 73063 && x7 <= 73064 || x7 >= 73066 && x7 <= 73097 || x7 == 73112 || x7 >= 73136 && x7 <= 73179 || x7 >= 73440 && x7 <= 73458 || x7 == 73474 || x7 >= 73476 && x7 <= 73488 || x7 >= 73490 && x7 <= 73523 || x7 == 73648 || x7 >= 73728 && x7 <= 74649 || x7 >= 74880 && x7 <= 75075 || x7 >= 77712 && x7 <= 77808 || x7 >= 77824 && x7 <= 78895 || x7 >= 78913 && x7 <= 78918 || x7 >= 78944 && x7 <= 82938 || x7 >= 82944 && x7 <= 83526 || x7 >= 90368 && x7 <= 90397 || x7 >= 92160 && x7 <= 92728 || x7 >= 92736 && x7 <= 92766 || x7 >= 92784 && x7 <= 92862 || x7 >= 92880 && x7 <= 92909 || x7 >= 92928 && x7 <= 92975 || x7 >= 92992 && x7 <= 92995 || x7 >= 93027 && x7 <= 93047 || x7 >= 93053 && x7 <= 93071 || x7 >= 93504 && x7 <= 93548 || x7 >= 93760 && x7 <= 93823 || x7 >= 93856 && x7 <= 93880 || x7 >= 93883 && x7 <= 93907 || x7 >= 93952 && x7 <= 94026 || x7 == 94032 || x7 >= 94099 && x7 <= 94111 || x7 >= 94176 && x7 <= 94177 || x7 == 94179 || x7 >= 94194 && x7 <= 94195 || x7 >= 94208 && x7 <= 101589 || x7 >= 101631 && x7 <= 101662 || x7 >= 101760 && x7 <= 101874 || x7 >= 110576 && x7 <= 110579 || x7 >= 110581 && x7 <= 110587 || x7 >= 110589 && x7 <= 110590 || x7 >= 110592 && x7 <= 110882 || x7 == 110898 || x7 >= 110928 && x7 <= 110930 || x7 == 110933 || x7 >= 110948 && x7 <= 110951 || x7 >= 110960 && x7 <= 111355 || x7 >= 113664 && x7 <= 113770 || x7 >= 113776 && x7 <= 113788 || x7 >= 113792 && x7 <= 113800 || x7 >= 113808 && x7 <= 113817 || x7 >= 119808 && x7 <= 119892 || x7 >= 119894 && x7 <= 119964 || x7 >= 119966 && x7 <= 119967 || x7 == 119970 || x7 >= 119973 && x7 <= 119974 || x7 >= 119977 && x7 <= 119980 || x7 >= 119982 && x7 <= 119993 || x7 == 119995 || x7 >= 119997 && x7 <= 120003 || x7 >= 120005 && x7 <= 120069 || x7 >= 120071 && x7 <= 120074 || x7 >= 120077 && x7 <= 120084 || x7 >= 120086 && x7 <= 120092 || x7 >= 120094 && x7 <= 120121 || x7 >= 120123 && x7 <= 120126 || x7 >= 120128 && x7 <= 120132 || x7 == 120134 || x7 >= 120138 && x7 <= 120144 || x7 >= 120146 && x7 <= 120485 || x7 >= 120488 && x7 <= 120512 || x7 >= 120514 && x7 <= 120538 || x7 >= 120540 && x7 <= 120570 || x7 >= 120572 && x7 <= 120596 || x7 >= 120598 && x7 <= 120628 || x7 >= 120630 && x7 <= 120654 || x7 >= 120656 && x7 <= 120686 || x7 >= 120688 && x7 <= 120712 || x7 >= 120714 && x7 <= 120744 || x7 >= 120746 && x7 <= 120770 || x7 >= 120772 && x7 <= 120779 || x7 >= 122624 && x7 <= 122654 || x7 >= 122661 && x7 <= 122666 || x7 >= 122928 && x7 <= 122989 || x7 >= 123136 && x7 <= 123180 || x7 >= 123191 && x7 <= 123197 || x7 == 123214 || x7 >= 123536 && x7 <= 123565 || x7 >= 123584 && x7 <= 123627 || x7 >= 124112 && x7 <= 124139 || x7 >= 124368 && x7 <= 124397 || x7 == 124400 || x7 >= 124608 && x7 <= 124638 || x7 >= 124640 && x7 <= 124642 || x7 >= 124644 && x7 <= 124645 || x7 >= 124647 && x7 <= 124653 || x7 >= 124656 && x7 <= 124660 || x7 >= 124670 && x7 <= 124671 || x7 >= 124896 && x7 <= 124902 || x7 >= 124904 && x7 <= 124907 || x7 >= 124909 && x7 <= 124910 || x7 >= 124912 && x7 <= 124926 || x7 >= 124928 && x7 <= 125124 || x7 >= 125184 && x7 <= 125251 || x7 == 125259 || x7 >= 126464 && x7 <= 126467 || x7 >= 126469 && x7 <= 126495 || x7 >= 126497 && x7 <= 126498 || x7 == 126500 || x7 == 126503 || x7 >= 126505 && x7 <= 126514 || x7 >= 126516 && x7 <= 126519 || x7 == 126521 || x7 == 126523 || x7 == 126530 || x7 == 126535 || x7 == 126537 || x7 == 126539 || x7 >= 126541 && x7 <= 126543 || x7 >= 126545 && x7 <= 126546 || x7 == 126548 || x7 == 126551 || x7 == 126553 || x7 == 126555 || x7 == 126557 || x7 == 126559 || x7 >= 126561 && x7 <= 126562 || x7 == 126564 || x7 >= 126567 && x7 <= 126570 || x7 >= 126572 && x7 <= 126578 || x7 >= 126580 && x7 <= 126583 || x7 >= 126585 && x7 <= 126588 || x7 == 126590 || x7 >= 126592 && x7 <= 126601 || x7 >= 126603 && x7 <= 126619 || x7 >= 126625 && x7 <= 126627 || x7 >= 126629 && x7 <= 126633 || x7 >= 126635 && x7 <= 126651 || x7 >= 131072 && x7 <= 173791 || x7 >= 173824 && x7 <= 178205 || x7 >= 178208 && x7 <= 183981 || x7 >= 183984 && x7 <= 191456 || x7 >= 191472 && x7 <= 192093 || x7 >= 194560 && x7 <= 195101 || x7 >= 196608 && x7 <= 201546 || x7 >= 201552 && x7 <= 210041))) && p.depth+1 <= maxDepth {
+	if !(x8 && (!!(x7 == 170 || x7 == 181 || x7 == 186 || x7 >= 192 && x7 <= 214 || x7 >= 216 && x7 <= 246 || x7 >= 248 && x7 <= 705 || x7 >= 710 && x7 <= 721 || x7 >= 736 && x7 <= 740 || x7 == 748 || x7 == 750 || x7 >= 880 && x7 <= 884 || x7 >= 886 && x7 <= 887 || x7 >= 890 && x7 <= 893 || x7 == 895 || x7 == 902 || x7 >= 904 && x7 <= 906 || x7 == 908 || x7 >= 910 && x7 <= 929 || x7 >= 931 && x7 <= 1013 || x7 >= 1015 && x7 <= 1153 || x7 >= 1162 && x7 <= 1327 || x7 >= 1329 && x7 <= 1366 || x7 == 1369 || x7 >= 1376 && x7 <= 1416 || x7 >= 1488 && x7 <= 1514 || x7 >= 1519 && x7 <= 1522 || x7 >= 1568 && x7 <= 1610 || x7 >= 1646 && x7 <= 1647 || x7 >= 1649 && x7 <= 1747 || x7 == 1749 || x7 >= 1765 && x7 <= 1766 || x7 >= 1774 && x7 <= 1775 || x7 >= 1786 && x7 <= 1788 || x7 == 1791 || x7 == 1808 || x7 >= 1810 && x7 <= 1839 || x7 >= 1869 && x7 <= 1957 || x7 == 1969 || x7 >= 1994 && x7 <= 2026 || x7 >= 2036 && x7 <= 2037 || x7 == 2042 || x7 >= 2048 && x7 <= 2069 || x7 == 2074 || x7 == 2084 || x7 == 2088 || x7 >= 2112 && x7 <= 2136 || x7 >= 2144 && x7 <= 2154 || x7 >= 2160 && x7 <= 2183 || x7 >= 2185 && x7 <= 2191 || x7 >= 2208 && x7 <= 2249 || x7 >= 2308 && x7 <= 2361 || x7 == 2365 || x7 == 2384 || x7 >= 2392 && x7 <= 2401 || x7 >= 2417 && x7 <= 2432 || x7 >= 2437 && x7 <= 2444 || x7 >= 2447 && x7 <= 2448 || x7 >= 2451 && x7 <= 2472 || x7 >= 2474 && x7 <= 2480 || x7 == 2482 || x7 >= 2486 && x7 <= 2489 || x7 == 2493 || x7 == 2510 || x7 >= 2524 && x7 <= 2525 || x7 >= 2527 && x7 <= 2529 || x7 >= 2544 && x7 <= 2545 || x7 == 2556 || x7 >= 2565 && x7 <= 2570 || x7 >= 2575 && x7 <= 2576 || x7 >= 2579 && x7 <= 2600 || x7 >= 2602 && x7 <= 2608 || x7 >= 2610 && x7 <= 2611 || x7 >= 2613 && x7 <= 2614 || x7 >= 2616 && x7 <= 2617 || x7 >= 2649 && x7 <= 2652 || x7 == 2654 || x7 >= 2674 && x7 <= 2676 || x7 >= 2693 && x7 <= 2701 || x7 >= 2703 && x7 <= 2705 || x7 >= 2707 && x7 <= 2728 || x7 >= 2730 && x7 <= 2736 || x7 >= 2738 && x7 <= 2739 || x7 >= 2741 && x7 <= 2745 || x7 == 2749 || x7 == 2768 || x7 >= 2784 && x7 <= 2785 || x7 == 2809 || x7 >= 2821 && x7 <= 2828 || x7 >= 2831 && x7 <= 2832 || x7 >= 2835 && x7 <= 2856 || x7 >= 2858 && x7 <= 2864 || x7 >= 2866 && x7 <= 2867 || x7 >= 2869 && x7 <= 2873 || x7 == 2877 || x7 >= 2908 && x7 <= 2909 || x7 >= 2911 && x7 <= 2913 || x7 == 2929 || x7 == 2947 || x7 >= 2949 && x7 <= 2954 || x7 >= 2958 && x7 <= 2960 || x7 >= 2962 && x7 <= 2965 || x7 >= 2969 && x7 <= 2970 || x7 == 2972 || x7 >= 2974 && x7 <= 2975 || x7 >= 2979 && x7 <= 2980 || x7 >= 2984 && x7 <= 2986 || x7 >= 2990 && x7 <= 3001 || x7 == 3024 || x7 >= 3077 && x7 <= 3084 || x7 >= 3086 && x7 <= 3088 || x7 >= 3090 && x7 <= 3112 || x7 >= 3114 && x7 <= 3129 || x7 == 3133 || x7 >= 3160 && x7 <= 3162 || x7 >= 3164 && x7 <= 3165 || x7 >= 3168 && x7 <= 3169 || x7 == 3200 || x7 >= 3205 && x7 <= 3212 || x7 >= 3214 && x7 <= 3216 || x7 >= 3218 && x7 <= 3240 || x7 >= 3242 && x7 <= 3251 || x7 >= 3253 && x7 <= 3257 || x7 == 3261 || x7 >= 3292 && x7 <= 3294 || x7 >= 3296 && x7 <= 3297 || x7 >= 3313 && x7 <= 3314 || x7 >= 3332 && x7 <= 3340 || x7 >= 3342 && x7 <= 3344 || x7 >= 3346 && x7 <= 3386 || x7 == 3389 || x7 == 3406 || x7 >= 3412 && x7 <= 3414 || x7 >= 3423 && x7 <= 3425 || x7 >= 3450 && x7 <= 3455 || x7 >= 3461 && x7 <= 3478 || x7 >= 3482 && x7 <= 3505 || x7 >= 3507 && x7 <= 3515 || x7 == 3517 || x7 >= 3520 && x7 <= 3526 || x7 >= 3585 && x7 <= 3632 || x7 >= 3634 && x7 <= 3635 || x7 >= 3648 && x7 <= 3654 || x7 >= 3713 && x7 <= 3714 || x7 == 3716 || x7 >= 3718 && x7 <= 3722 || x7 >= 3724 && x7 <= 3747 || x7 == 3749 || x7 >= 3751 && x7 <= 3760 || x7 >= 3762 && x7 <= 3763 || x7 == 3773 || x7 >= 3776 && x7 <= 3780 || x7 == 3782 || x7 >= 3804 && x7 <= 3807 || x7 == 3840 || x7 >= 3904 && x7 <= 3911 || x7 >= 3913 && x7 <= 3948 || x7 >= 3976 && x7 <= 3980 || x7 >= 4096 && x7 <= 4138 || x7 == 4159 || x7 >= 4176 && x7 <= 4181 || x7 >= 4186 && x7 <= 4189 || x7 == 4193 || x7 >= 4197 && x7 <= 4198 || x7 >= 4206 && x7 <= 4208 || x7 >= 4213 && x7 <= 4225 || x7 == 4238 || x7 >= 4256 && x7 <= 4293 || x7 == 4295 || x7 == 4301 || x7 >= 4304 && x7 <= 4346 || x7 >= 4348 && x7 <= 4680 || x7 >= 4682 && x7 <= 4685 || x7 >= 4688 && x7 <= 4694 || x7 == 4696 || x7 >= 4698 && x7 <= 4701 || x7 >= 4704 && x7 <= 4744 || x7 >= 4746 && x7 <= 4749 || x7 >= 4752 && x7 <= 4784 || x7 >= 4786 && x7 <= 4789 || x7 >= 4792 && x7 <= 4798 || x7 == 4800 || x7 >= 4802 && x7 <= 4805 || x7 >= 4808 && x7 <= 4822 || x7 >= 4824 && x7 <= 4880 || x7 >= 4882 && x7 <= 4885 || x7 >= 4888 && x7 <= 4954 || x7 >= 4992 && x7 <= 5007 || x7 >= 5024 && x7 <= 5109 || x7 >= 5112 && x7 <= 5117 || x7 >= 5121 && x7 <= 5740 || x7 >= 5743 && x7 <= 5759 || x7 >= 5761 && x7 <= 5786 || x7 >= 5792 && x7 <= 5866 || x7 >= 5873 && x7 <= 5880 || x7 >= 5888 && x7 <= 5905 || x7 >= 5919 && x7 <= 5937 || x7 >= 5952 && x7 <= 5969 || x7 >= 5984 && x7 <= 5996 || x7 >= 5998 && x7 <= 6000 || x7 >= 6016 && x7 <= 6067 || x7 == 6103 || x7 == 6108 || x7 >= 6176 && x7 <= 6264 || x7 >= 6272 && x7 <= 6276 || x7 >= 6279 && x7 <= 6312 || x7 == 6314 || x7 >= 6320 && x7 <= 6389 || x7 >= 6400 && x7 <= 6430 || x7 >= 6480 && x7 <= 6509 || x7 >= 6512 && x7 <= 6516 || x7 >= 6528 && x7 <= 6571 || x7 >= 6576 && x7 <= 6601 || x7 >= 6656 && x7 <= 6678 || x7 >= 6688 && x7 <= 6740 || x7 == 6823 || x7 >= 6917 && x7 <= 6963 || x7 >= 6981 && x7 <= 6988 || x7 >= 7043 && x7 <= 7072 || x7 >= 7086 && x7 <= 7087 || x7 >= 7098 && x7 <= 7141 || x7 >= 7168 && x7 <= 7203 || x7 >= 7245 && x7 <= 7247 || x7 >= 7258 && x7 <= 7293 || x7 >= 7296 && x7 <= 7306 || x7 >= 7312 && x7 <= 7354 || x7 >= 7357 && x7 <= 7359 || x7 >= 7401 && x7 <= 7404 || x7 >= 7406 && x7 <= 7411 || x7 >= 7413 && x7 <= 7414 || x7 == 7418 || x7 >= 7424 && x7 <= 7615 || x7 >= 7680 && x7 <= 7957 || x7 >= 7960 && x7 <= 7965 || x7 >= 7968 && x7 <= 8005 || x7 >= 8008 && x7 <= 8013 || x7 >= 8016 && x7 <= 8023 || x7 == 8025 || x7 == 8027 || x7 == 8029 || x7 >= 8031 && x7 <= 8061 || x7 >= 8064 && x7 <= 8116 || x7 >= 8118 && x7 <= 8124 || x7 == 8126 || x7 >= 8130 && x7 <= 8132 || x7 >= 8134 && x7 <= 8140 || x7 >= 8144 && x7 <= 8147 || x7 >= 8150 && x7 <= 8155 || x7 >= 8160 && x7 <= 8172 || x7 >= 8178 && x7 <= 8180 || x7 >= 8182 && x7 <= 8188 || x7 == 8305 || x7 == 8319 || x7 >= 8336 && x7 <= 8348 || x7 == 8450 || x7 == 8455 || x7 >= 8458 && x7 <= 8467 || x7 == 8469 || x7 >= 8473 && x7 <= 8477 || x7 == 8484 || x7 == 8486 || x7 == 8488 || x7 >= 8490 && x7 <= 8493 || x7 >= 8495 && x7 <= 8505 || x7 >= 8508 && x7 <= 8511 || x7 >= 8517 && x7 <= 8521 || x7 == 8526 || x7 >= 8579 && x7 <= 8580 || x7 >= 11264 && x7 <= 11492 || x7 >= 11499 && x7 <= 11502 || x7 >= 11506 && x7 <= 11507 || x7 >= 11520 && x7 <= 11557 || x7 == 11559 || x7 == 11565 || x7 >= 11568 && x7 <= 11623 || x7 == 11631 || x7 >= 11648 && x7 <= 11670 || x7 >= 11680 && x7 <= 11686 || x7 >= 11688 && x7 <= 11694 || x7 >= 11696 && x7 <= 11702 || x7 >= 11704 && x7 <= 11710 || x7 >= 11712 && x7 <= 11718 || x7 >= 11720 && x7 <= 11726 || x7 >= 11728 && x7 <= 11734 || x7 >= 11736 && x7 <= 11742 || x7 == 11823 || x7 >= 12293 && x7 <= 12294 || x7 >= 12337 && x7 <= 12341 || x7 >= 12347 && x7 <= 12348 || x7 >= 12353 && x7 <= 12438 || x7 >= 12445 && x7 <= 12447 || x7 >= 12449 && x7 <= 12538 || x7 >= 12540 && x7 <= 12543 || x7 >= 12549 && x7 <= 12591 || x7 >= 12593 && x7 <= 12686 || x7 >= 12704 && x7 <= 12735 || x7 >= 12784 && x7 <= 12799 || x7 >= 13312 && x7 <= 19903 || x7 >= 19968 && x7 <= 42124 || x7 >= 42192 && x7 <= 42237 || x7 >= 42240 && x7 <= 42508 || x7 >= 42512 && x7 <= 42527 || x7 >= 42538 && x7 <= 42539 || x7 >= 42560 && x7 <= 42606 || x7 >= 42623 && x7 <= 42653 || x7 >= 42656 && x7 <= 42725 || x7 >= 42775 && x7 <= 42783 || x7 >= 42786 && x7 <= 42888 || x7 >= 42891 && x7 <= 42972 || x7 >= 42993 && x7 <= 43009 || x7 >= 43011 && x7 <= 43013 || x7 >= 43015 && x7 <= 43018 || x7 >= 43020 && x7 <= 43042 || x7 >= 43072 && x7 <= 43123 || x7 >= 43138 && x7 <= 43187 || x7 >= 43250 && x7 <= 43255 || x7 == 43259 || x7 >= 43261 && x7 <= 43262 || x7 >= 43274 && x7 <= 43301 || x7 >= 43312 && x7 <= 43334 || x7 >= 43360 && x7 <= 43388 || x7 >= 43396 && x7 <= 43442 || x7 == 43471 || x7 >= 43488 && x7 <= 43492 || x7 >= 43494 && x7 <= 43503 || x7 >= 43514 && x7 <= 43518 || x7 >= 43520 && x7 <= 43560 || x7 >= 43584 && x7 <= 43586 || x7 >= 43588 && x7 <= 43595 || x7 >= 43616 && x7 <= 43638 || x7 == 43642 || x7 >= 43646 && x7 <= 43695 || x7 == 43697 || x7 >= 43701 && x7 <= 43702 || x7 >= 43705 && x7 <= 43709 || x7 == 43712 || x7 == 43714 || x7 >= 43739 && x7 <= 43741 || x7 >= 43744 && x7 <= 43754 || x7 >= 43762 && x7 <= 43764 || x7 >= 43777 && x7 <= 43782 || x7 >= 43785 && x7 <= 43790 || x7 >= 43793 && x7 <= 43798 || x7 >= 43808 && x7 <= 43814 || x7 >= 43816 && x7 <= 43822 || x7 >= 43824 && x7 <= 43866 || x7 >= 43868 && x7 <= 43881 || x7 >= 43888 && x7 <= 44002 || x7 >= 44032 && x7 <= 55203 || x7 >= 55216 && x7 <= 55238 || x7 >= 55243 && x7 <= 55291 || x7 >= 63744 && x7 <= 64109 || x7 >= 64112 && x7 <= 64217 || x7 >= 64256 && x7 <= 64262 || x7 >= 64275 && x7 <= 64279 || x7 == 64285 || x7 >= 64287 && x7 <= 64296 || x7 >= 64298 && x7 <= 64310 || x7 >= 64312 && x7 <= 64316 || x7 == 64318 || x7 >= 64320 && x7 <= 64321 || x7 >= 64323 && x7 <= 64324 || x7 >= 64326 && x7 <= 64433 || x7 >= 64467 && x7 <= 64829 || x7 >= 64848 && x7 <= 64911 || x7 >= 64914 && x7 <= 64967 || x7 >= 65008 && x7 <= 65019 || x7 >= 65136 && x7 <= 65140 || x7 >= 65142 && x7 <= 65276 || x7 >= 65313 && x7 <= 65338 || x7 >= 65345 && x7 <= 65370 || x7 >= 65382 && x7 <= 65470 || x7 >= 65474 && x7 <= 65479 || x7 >= 65482 && x7 <= 65487 || x7 >= 65490 && x7 <= 65495 || x7 >= 65498 && x7 <= 65500 || x7 >= 65536 && x7 <= 65547 || x7 >= 65549 && x7 <= 65574 || x7 >= 65576 && x7 <= 65594 || x7 >= 65596 && x7 <= 65597 || x7 >= 65599 && x7 <= 65613 || x7 >= 65616 && x7 <= 65629 || x7 >= 65664 && x7 <= 65786 || x7 >= 66176 && x7 <= 66204 || x7 >= 66208 && x7 <= 66256 || x7 >= 66304 && x7 <= 66335 || x7 >= 66349 && x7 <= 66368 || x7 >= 66370 && x7 <= 66377 || x7 >= 66384 && x7 <= 66421 || x7 >= 66432 && x7 <= 66461 || x7 >= 66464 && x7 <= 66499 || x7 >= 66504 && x7 <= 66511 || x7 >= 66560 && x7 <= 66717 || x7 >= 66736 && x7 <= 66771 || x7 >= 66776 && x7 <= 66811 || x7 >= 66816 && x7 <= 66855 || x7 >= 66864 && x7 <= 66915 || x7 >= 66928 && x7 <= 66938 || x7 >= 66940 && x7 <= 66954 || x7 >= 66956 && x7 <= 66962 || x7 >= 66964 && x7 <= 66965 || x7 >= 66967 && x7 <= 66977 || x7 >= 66979 && x7 <= 66993 || x7 >= 66995 && x7 <= 67001 || x7 >= 67003 && x7 <= 67004 || x7 >= 67008 && x7 <= 67059 || x7 >= 67072 && x7 <= 67382 || x7 >= 67392 && x7 <= 67413 || x7 >= 67424 && x7 <= 67431 || x7 >= 67456 && x7 <= 67461 || x7 >= 67463 && x7 <= 67504 || x7 >= 67506 && x7 <= 67514 || x7 >= 67584 && x7 <= 67589 || x7 == 67592 || x7 >= 67594 && x7 <= 67637 || x7 >= 67639 && x7 <= 67640 || x7 == 67644 || x7 >= 67647 && x7 <= 67669 || x7 >= 67680 && x7 <= 67702 || x7 >= 67712 && x7 <= 67742 || x7 >= 67808 && x7 <= 67826 || x7 >= 67828 && x7 <= 67829 || x7 >= 67840 && x7 <= 67861 || x7 >= 67872 && x7 <= 67897 || x7 >= 67904 && x7 <= 67929 || x7 >= 67968 && x7 <= 68023 || x7 >= 68030 && x7 <= 68031 || x7 == 68096 || x7 >= 68112 && x7 <= 68115 || x7 >= 68117 && x7 <= 68119 || x7 >= 68121 && x7 <= 68149 || x7 >= 68192 && x7 <= 68220 || x7 >= 68224 && x7 <= 68252 || x7 >= 68288 && x7 <= 68295 || x7 >= 68297 && x7 <= 68324 || x7 >= 68352 && x7 <= 68405 || x7 >= 68416 && x7 <= 68437 || x7 >= 68448 && x7 <= 68466 || x7 >= 68480 && x7 <= 68497 || x7 >= 68608 && x7 <= 68680 || x7 >= 68736 && x7 <= 68786 || x7 >= 68800 && x7 <= 68850 || x7 >= 68864 && x7 <= 68899 || x7 >= 68938 && x7 <= 68965 || x7 >= 68975 && x7 <= 68997 || x7 >= 69248 && x7 <= 69289 || x7 >= 69296 && x7 <= 69297 || x7 >= 69314 && x7 <= 69319 || x7 >= 69376 && x7 <= 69404 || x7 == 69415 || x7 >= 69424 && x7 <= 69445 || x7 >= 69488 && x7 <= 69505 || x7 >= 69552 && x7 <= 69572 || x7 >= 69600 && x7 <= 69622 || x7 >= 69635 && x7 <= 69687 || x7 >= 69745 && x7 <= 69746 || x7 == 69749 || x7 >= 69763 && x7 <= 69807 || x7 >= 69840 && x7 <= 69864 || x7 >= 69891 && x7 <= 69926 || x7 == 69956 || x7 == 69959 || x7 >= 69968 && x7 <= 70002 || x7 == 70006 || x7 >= 70019 && x7 <= 70066 || x7 >= 70081 && x7 <= 70084 || x7 == 70106 || x7 == 70108 || x7 >= 70144 && x7 <= 70161 || x7 >= 70163 && x7 <= 70187 || x7 >= 70207 && x7 <= 70208 || x7 >= 70272 && x7 <= 70278 || x7 == 70280 || x7 >= 70282 && x7 <= 70285 || x7 >= 70287 && x7 <= 70301 || x7 >= 70303 && x7 <= 70312 || x7 >= 70320 && x7 <= 70366 || x7 >= 70405 && x7 <= 70412 || x7 >= 70415 && x7 <= 70416 || x7 >= 70419 && x7 <= 70440 || x7 >= 70442 && x7 <= 70448 || x7 >= 70450 && x7 <= 70451 || x7 >= 70453 && x7 <= 70457 || x7 == 70461 || x7 == 70480 || x7 >= 70493 && x7 <= 70497 || x7 >= 70528 && x7 <= 70537 || x7 == 70539 || x7 == 70542 || x7 >= 70544 && x7 <= 70581 || x7 == 70583 || x7 == 70609 || x7 == 70611 || x7 >= 70656 && x7 <= 70708 || x7 >= 70727 && x7 <= 70730 || x7 >= 70751 && x7 <= 70753 || x7 >= 70784 && x7 <= 70831 || x7 >= 70852 && x7 <= 70853 || x7 == 70855 || x7 >= 71040 && x7 <= 71086 || x7 >= 71128 && x7 <= 71131 || x7 >= 71168 && x7 <= 71215 || x7 == 71236 || x7 >= 71296 && x7 <= 71338 || x7 == 71352 || x7 >= 71424 && x7 <= 71450 || x7 >= 71488 && x7 <= 71494 || x7 >= 71680 && x7 <= 71723 || x7 >= 71840 && x7 <= 71903 || x7 >= 71935 && x7 <= 71942 || x7 == 71945 || x7 >= 71948 && x7 <= 71955 || x7 >= 71957 && x7 <= 71958 || x7 >= 71960 && x7 <= 71983 || x7 == 71999 || x7 == 72001 || x7 >= 72096 && x7 <= 72103 || x7 >= 72106 && x7 <= 72144 || x7 == 72161 || x7 == 72163 || x7 == 72192 || x7 >= 72203 && x7 <= 72242 || x7 == 72250 || x7 == 72272 || x7 >= 72284 && x7 <= 72329 || x7 == 72349 || x7 >= 72368 && x7 <= 72440 || x7 >= 72640 && x7 <= 72672 || x7 >= 72704 && x7 <= 72712 || x7 >= 72714 && x7 <= 72750 || x7 == 72768 || x7 >= 72818 && x7 <= 72847 || x7 >= 72960 && x7 <= 72966 || x7 >= 72968 && x7 <= 72969 || x7 >= 72971 && x7 <= 73008 || x7 == 73030 || x7 >= 73056 && x7 <= 73061 || x7 >= 73063 && x7 <= 73064 || x7 >= 73066 && x7 <= 73097 || x7 == 73112 || x7 >= 73136 && x7 <= 73179 || x7 >= 73440 && x7 <= 73458 || x7 == 73474 || x7 >= 73476 && x7 <= 73488 || x7 >= 73490 && x7 <= 73523 || x7 == 73648 || x7 >= 73728 && x7 <= 74649 || x7 >= 74880 && x7 <= 75075 || x7 >= 77712 && x7 <= 77808 || x7 >= 77824 && x7 <= 78895 || x7 >= 78913 && x7 <= 78918 || x7 >= 78944 && x7 <= 82938 || x7 >= 82944 && x7 <= 83526 || x7 >= 90368 && x7 <= 90397 || x7 >= 92160 && x7 <= 92728 || x7 >= 92736 && x7 <= 92766 || x7 >= 92784 && x7 <= 92862 || x7 >= 92880 && x7 <= 92909 || x7 >= 92928 && x7 <= 92975 || x7 >= 92992 && x7 <= 92995 || x7 >= 93027 && x7 <= 93047 || x7 >= 93053 && x7 <= 93071 || x7 >= 93504 && x7 <= 93548 || x7 >= 93760 && x7 <= 93823 || x7 >= 93856 && x7 <= 93880 || x7 >= 93883 && x7 <= 93907 || x7 >= 93952 && x7 <= 94026 || x7 == 94032 || x7 >= 94099 && x7 <= 94111 || x7 >= 94176 && x7 <= 94177 || x7 == 94179 || x7 >= 94194 && x7 <= 94195 || x7 >= 94208 && x7 <= 101589 || x7 >= 101631 && x7 <= 101662 || x7 >= 101760 && x7 <= 101874 || x7 >= 110576 && x7 <= 110579 || x7 >= 110581 && x7 <= 110587 || x7 >= 110589 && x7 <= 110590 || x7 >= 110592 && x7 <= 110882 || x7 == 110898 || x7 >= 110928 && x7 <= 110930 || x7 == 110933 || x7 >= 110948 && x7 <= 110951 || x7 >= 110960 && x7 <= 111355 || x7 >= 113664 && x7 <= 113770 || x7 >= 113776 && x7 <= 113788 || x7 >= 113792 && x7 <= 113800 || x7 >= 113808 && x7 <= 113817 || x7 >= 119808 && x7 <= 119892 || x7 >= 119894 && x7 <= 119964 || x7 >= 119966 && x7 <= 119967 || x7 == 119970 || x7 >= 119973 && x7 <= 119974 || x7 >= 119977 && x7 <= 119980 || x7 >= 119982 && x7 <= 119993 || x7 == 119995 || x7 >= 119997 && x7 <= 120003 || x7 >= 120005 && x7 <= 120069 || x7 >= 120071 && x7 <= 120074 || x7 >= 120077 && x7 <= 120084 || x7 >= 120086 && x7 <= 120092 || x7 >= 120094 && x7 <= 120121 || x7 >= 120123 && x7 <= 120126 || x7 >= 120128 && x7 <= 120132 || x7 == 120134 || x7 >= 120138 && x7 <= 120144 || x7 >= 120146 && x7 <= 120485 || x7 >= 120488 && x7 <= 120512 || x7 >= 120514 && x7 <= 120538 || x7 >= 120540 && x7 <= 120570 || x7 >= 120572 && x7 <= 120596 || x7 >= 120598 && x7 <= 120628 || x7 >= 120630 && x7 <= 120654 || x7 >= 120656 && x7 <= 120686 || x7 >= 120688 && x7 <= 120712 || x7 >= 120714 && x7 <= 120744 || x7 >= 120746 && x7 <= 120770 || x7 >= 120772 && x7 <= 120779 || x7 >= 122624 && x7 <= 122654 || x7 >= 122661 && x7 <= 122666 || x7 >= 122928 && x7 <= 122989 || x7 >= 123136 && x7 <= 123180 || x7 >= 123191 && x7 <= 123197 || x7 == 123214 || x7 >= 123536 && x7 <= 123565 || x7 >= 123584 && x7 <= 123627 || x7 >= 124112 && x7 <= 124139 || x7 >= 124368 && x7 <= 124397 || x7 == 124400 || x7 >= 124608 && x7 <= 124638 || x7 >= 124640 && x7 <= 124642 || x7 >= 124644 && x7 <= 124645 || x7 >= 124647 && x7 <= 124653 || x7 >= 124656 && x7 <= 124660 || x7 >= 124670 && x7 <= 124671 || x7 >= 124896 && x7 <= 124902 || x7 >= 124904 && x7 <= 124907 || x7 >= 124909 && x7 <= 124910 || x7 >= 124912 && x7 <= 124926 || x7 >= 124928 && x7 <= 125124 || x7 >= 125184 && x7 <= 125251 || x7 == 125259 || x7 >= 126464 && x7 <= 126467 || x7 >= 126469 && x7 <= 126495 || x7 >= 126497 && x7 <= 126498 || x7 == 126500 || x7 == 126503 || x7 >= 126505 && x7 <= 126514 || x7 >= 126516 && x7 <= 126519 || x7 == 126521 || x7 == 126523 || x7 == 126530 || x7 == 126535 || x7 == 126537 || x7 == 126539 || x7 >= 126541 && x7 <= 126543 || x7 >= 126545 && x7 <= 126546 || x7 == 126548 || x7 == 126551 || x7 == 126553 || x7 == 126555 || x7 == 126557 || x7 == 126559 || x7 >= 126561 && x7 <= 126562 || x7 == 126564 || x7 >= 126567 && x7 <= 126570 || x7 >= 126572 && x7 <= 126578 || x7 >= 126580 && x7 <= 126583 || x7 >= 126585 && x7 <= 126588 || x7 == 126590 || x7 >= 126592 && x7 <= 126601 || x7 >= 126603 && x7 <= 126619 || x7 >= 126625 && x7 <= 126627 || x7 >= 126629 && x7 <= 126633 || x7 >= 126635 && x7 <= 126651 || x7 >= 131072 && x7 <= 173791 || x7 >= 173824 && x7 <= 178205 || x7 >= 178208 && x7 <= 183981 || x7 >= 183984 && x7 <= 191456 || x7 >= 191472 && x7 <= 192093 || x7 >= 194560 && x7 <= 195101 || x7 >= 196608 && x7 <= 201546 || x7 >= 201552 && x7 <= 210041))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 65)
 		goto L9
 	}
@@ -89782,7 +89837,7 @@ L10:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
 L9:
-	if !(x8 && (!!(x7 >= 1632 && x7 <= 1641 || x7 >= 1776 && x7 <= 1785 || x7 >= 1984 && x7 <= 1993 || x7 >= 2406 && x7 <= 2415 || x7 >= 2534 && x7 <= 2543 || x7 >= 2662 && x7 <= 2671 || x7 >= 2790 && x7 <= 2799 || x7 >= 2918 && x7 <= 2927 || x7 >= 3046 && x7 <= 3055 || x7 >= 3174 && x7 <= 3183 || x7 >= 3302 && x7 <= 3311 || x7 >= 3430 && x7 <= 3439 || x7 >= 3558 && x7 <= 3567 || x7 >= 3664 && x7 <= 3673 || x7 >= 3792 && x7 <= 3801 || x7 >= 3872 && x7 <= 3881 || x7 >= 4160 && x7 <= 4169 || x7 >= 4240 && x7 <= 4249 || x7 >= 6112 && x7 <= 6121 || x7 >= 6160 && x7 <= 6169 || x7 >= 6470 && x7 <= 6479 || x7 >= 6608 && x7 <= 6617 || x7 >= 6784 && x7 <= 6793 || x7 >= 6800 && x7 <= 6809 || x7 >= 6992 && x7 <= 7001 || x7 >= 7088 && x7 <= 7097 || x7 >= 7232 && x7 <= 7241 || x7 >= 7248 && x7 <= 7257 || x7 >= 42528 && x7 <= 42537 || x7 >= 43216 && x7 <= 43225 || x7 >= 43264 && x7 <= 43273 || x7 >= 43472 && x7 <= 43481 || x7 >= 43504 && x7 <= 43513 || x7 >= 43600 && x7 <= 43609 || x7 >= 44016 && x7 <= 44025 || x7 >= 65296 && x7 <= 65305 || x7 >= 66720 && x7 <= 66729 || x7 >= 68912 && x7 <= 68921 || x7 >= 68928 && x7 <= 68937 || x7 >= 69734 && x7 <= 69743 || x7 >= 69872 && x7 <= 69881 || x7 >= 69942 && x7 <= 69951 || x7 >= 70096 && x7 <= 70105 || x7 >= 70384 && x7 <= 70393 || x7 >= 70736 && x7 <= 70745 || x7 >= 70864 && x7 <= 70873 || x7 >= 71248 && x7 <= 71257 || x7 >= 71360 && x7 <= 71369 || x7 >= 71376 && x7 <= 71395 || x7 >= 71472 && x7 <= 71481 || x7 >= 71904 && x7 <= 71913 || x7 >= 72016 && x7 <= 72025 || x7 >= 72688 && x7 <= 72697 || x7 >= 72784 && x7 <= 72793 || x7 >= 73040 && x7 <= 73049 || x7 >= 73120 && x7 <= 73129 || x7 >= 73184 && x7 <= 73193 || x7 >= 73552 && x7 <= 73561 || x7 >= 90416 && x7 <= 90425 || x7 >= 92768 && x7 <= 92777 || x7 >= 92864 && x7 <= 92873 || x7 >= 93008 && x7 <= 93017 || x7 >= 93552 && x7 <= 93561 || x7 >= 118000 && x7 <= 118009 || x7 >= 120782 && x7 <= 120831 || x7 >= 123200 && x7 <= 123209 || x7 >= 123632 && x7 <= 123641 || x7 >= 124144 && x7 <= 124153 || x7 >= 124401 && x7 <= 124410 || x7 >= 125264 && x7 <= 125273 || x7 >= 130032 && x7 <= 130041))) && p.depth+1 <= maxDepth {
+	if !(x8 && (!!(x7 >= 1632 && x7 <= 1641 || x7 >= 1776 && x7 <= 1785 || x7 >= 1984 && x7 <= 1993 || x7 >= 2406 && x7 <= 2415 || x7 >= 2534 && x7 <= 2543 || x7 >= 2662 && x7 <= 2671 || x7 >= 2790 && x7 <= 2799 || x7 >= 2918 && x7 <= 2927 || x7 >= 3046 && x7 <= 3055 || x7 >= 3174 && x7 <= 3183 || x7 >= 3302 && x7 <= 3311 || x7 >= 3430 && x7 <= 3439 || x7 >= 3558 && x7 <= 3567 || x7 >= 3664 && x7 <= 3673 || x7 >= 3792 && x7 <= 3801 || x7 >= 3872 && x7 <= 3881 || x7 >= 4160 && x7 <= 4169 || x7 >= 4240 && x7 <= 4249 || x7 >= 6112 && x7 <= 6121 || x7 >= 6160 && x7 <= 6169 || x7 >= 6470 && x7 <= 6479 || x7 >= 6608 && x7 <= 6617 || x7 >= 6784 && x7 <= 6793 || x7 >= 6800 && x7 <= 6809 || x7 >= 6992 && x7 <= 7001 || x7 >= 7088 && x7 <= 7097 || x7 >= 7232 && x7 <= 7241 || x7 >= 7248 && x7 <= 7257 || x7 >= 42528 && x7 <= 42537 || x7 >= 43216 && x7 <= 43225 || x7 >= 43264 && x7 <= 43273 || x7 >= 43472 && x7 <= 43481 || x7 >= 43504 && x7 <= 43513 || x7 >= 43600 && x7 <= 43609 || x7 >= 44016 && x7 <= 44025 || x7 >= 65296 && x7 <= 65305 || x7 >= 66720 && x7 <= 66729 || x7 >= 68912 && x7 <= 68921 || x7 >= 68928 && x7 <= 68937 || x7 >= 69734 && x7 <= 69743 || x7 >= 69872 && x7 <= 69881 || x7 >= 69942 && x7 <= 69951 || x7 >= 70096 && x7 <= 70105 || x7 >= 70384 && x7 <= 70393 || x7 >= 70736 && x7 <= 70745 || x7 >= 70864 && x7 <= 70873 || x7 >= 71248 && x7 <= 71257 || x7 >= 71360 && x7 <= 71369 || x7 >= 71376 && x7 <= 71395 || x7 >= 71472 && x7 <= 71481 || x7 >= 71904 && x7 <= 71913 || x7 >= 72016 && x7 <= 72025 || x7 >= 72688 && x7 <= 72697 || x7 >= 72784 && x7 <= 72793 || x7 >= 73040 && x7 <= 73049 || x7 >= 73120 && x7 <= 73129 || x7 >= 73184 && x7 <= 73193 || x7 >= 73552 && x7 <= 73561 || x7 >= 90416 && x7 <= 90425 || x7 >= 92768 && x7 <= 92777 || x7 >= 92864 && x7 <= 92873 || x7 >= 93008 && x7 <= 93017 || x7 >= 93552 && x7 <= 93561 || x7 >= 118000 && x7 <= 118009 || x7 >= 120782 && x7 <= 120831 || x7 >= 123200 && x7 <= 123209 || x7 >= 123632 && x7 <= 123641 || x7 >= 124144 && x7 <= 124153 || x7 >= 124401 && x7 <= 124410 || x7 >= 125264 && x7 <= 125273 || x7 >= 130032 && x7 <= 130041))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 66)
 		goto L11
 	}
@@ -89821,7 +89876,7 @@ func (p *tparser) i262() (any, bool) {
 		x8   bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -89850,7 +89905,7 @@ L3:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (!!(x7 == 170 || x7 == 181 || x7 == 186 || x7 >= 192 && x7 <= 214 || x7 >= 216 && x7 <= 246 || x7 >= 248 && x7 <= 705 || x7 >= 710 && x7 <= 721 || x7 >= 736 && x7 <= 740 || x7 == 748 || x7 == 750 || x7 >= 880 && x7 <= 884 || x7 >= 886 && x7 <= 887 || x7 >= 890 && x7 <= 893 || x7 == 895 || x7 == 902 || x7 >= 904 && x7 <= 906 || x7 == 908 || x7 >= 910 && x7 <= 929 || x7 >= 931 && x7 <= 1013 || x7 >= 1015 && x7 <= 1153 || x7 >= 1162 && x7 <= 1327 || x7 >= 1329 && x7 <= 1366 || x7 == 1369 || x7 >= 1376 && x7 <= 1416 || x7 >= 1488 && x7 <= 1514 || x7 >= 1519 && x7 <= 1522 || x7 >= 1568 && x7 <= 1610 || x7 >= 1646 && x7 <= 1647 || x7 >= 1649 && x7 <= 1747 || x7 == 1749 || x7 >= 1765 && x7 <= 1766 || x7 >= 1774 && x7 <= 1775 || x7 >= 1786 && x7 <= 1788 || x7 == 1791 || x7 == 1808 || x7 >= 1810 && x7 <= 1839 || x7 >= 1869 && x7 <= 1957 || x7 == 1969 || x7 >= 1994 && x7 <= 2026 || x7 >= 2036 && x7 <= 2037 || x7 == 2042 || x7 >= 2048 && x7 <= 2069 || x7 == 2074 || x7 == 2084 || x7 == 2088 || x7 >= 2112 && x7 <= 2136 || x7 >= 2144 && x7 <= 2154 || x7 >= 2160 && x7 <= 2183 || x7 >= 2185 && x7 <= 2191 || x7 >= 2208 && x7 <= 2249 || x7 >= 2308 && x7 <= 2361 || x7 == 2365 || x7 == 2384 || x7 >= 2392 && x7 <= 2401 || x7 >= 2417 && x7 <= 2432 || x7 >= 2437 && x7 <= 2444 || x7 >= 2447 && x7 <= 2448 || x7 >= 2451 && x7 <= 2472 || x7 >= 2474 && x7 <= 2480 || x7 == 2482 || x7 >= 2486 && x7 <= 2489 || x7 == 2493 || x7 == 2510 || x7 >= 2524 && x7 <= 2525 || x7 >= 2527 && x7 <= 2529 || x7 >= 2544 && x7 <= 2545 || x7 == 2556 || x7 >= 2565 && x7 <= 2570 || x7 >= 2575 && x7 <= 2576 || x7 >= 2579 && x7 <= 2600 || x7 >= 2602 && x7 <= 2608 || x7 >= 2610 && x7 <= 2611 || x7 >= 2613 && x7 <= 2614 || x7 >= 2616 && x7 <= 2617 || x7 >= 2649 && x7 <= 2652 || x7 == 2654 || x7 >= 2674 && x7 <= 2676 || x7 >= 2693 && x7 <= 2701 || x7 >= 2703 && x7 <= 2705 || x7 >= 2707 && x7 <= 2728 || x7 >= 2730 && x7 <= 2736 || x7 >= 2738 && x7 <= 2739 || x7 >= 2741 && x7 <= 2745 || x7 == 2749 || x7 == 2768 || x7 >= 2784 && x7 <= 2785 || x7 == 2809 || x7 >= 2821 && x7 <= 2828 || x7 >= 2831 && x7 <= 2832 || x7 >= 2835 && x7 <= 2856 || x7 >= 2858 && x7 <= 2864 || x7 >= 2866 && x7 <= 2867 || x7 >= 2869 && x7 <= 2873 || x7 == 2877 || x7 >= 2908 && x7 <= 2909 || x7 >= 2911 && x7 <= 2913 || x7 == 2929 || x7 == 2947 || x7 >= 2949 && x7 <= 2954 || x7 >= 2958 && x7 <= 2960 || x7 >= 2962 && x7 <= 2965 || x7 >= 2969 && x7 <= 2970 || x7 == 2972 || x7 >= 2974 && x7 <= 2975 || x7 >= 2979 && x7 <= 2980 || x7 >= 2984 && x7 <= 2986 || x7 >= 2990 && x7 <= 3001 || x7 == 3024 || x7 >= 3077 && x7 <= 3084 || x7 >= 3086 && x7 <= 3088 || x7 >= 3090 && x7 <= 3112 || x7 >= 3114 && x7 <= 3129 || x7 == 3133 || x7 >= 3160 && x7 <= 3162 || x7 >= 3164 && x7 <= 3165 || x7 >= 3168 && x7 <= 3169 || x7 == 3200 || x7 >= 3205 && x7 <= 3212 || x7 >= 3214 && x7 <= 3216 || x7 >= 3218 && x7 <= 3240 || x7 >= 3242 && x7 <= 3251 || x7 >= 3253 && x7 <= 3257 || x7 == 3261 || x7 >= 3292 && x7 <= 3294 || x7 >= 3296 && x7 <= 3297 || x7 >= 3313 && x7 <= 3314 || x7 >= 3332 && x7 <= 3340 || x7 >= 3342 && x7 <= 3344 || x7 >= 3346 && x7 <= 3386 || x7 == 3389 || x7 == 3406 || x7 >= 3412 && x7 <= 3414 || x7 >= 3423 && x7 <= 3425 || x7 >= 3450 && x7 <= 3455 || x7 >= 3461 && x7 <= 3478 || x7 >= 3482 && x7 <= 3505 || x7 >= 3507 && x7 <= 3515 || x7 == 3517 || x7 >= 3520 && x7 <= 3526 || x7 >= 3585 && x7 <= 3632 || x7 >= 3634 && x7 <= 3635 || x7 >= 3648 && x7 <= 3654 || x7 >= 3713 && x7 <= 3714 || x7 == 3716 || x7 >= 3718 && x7 <= 3722 || x7 >= 3724 && x7 <= 3747 || x7 == 3749 || x7 >= 3751 && x7 <= 3760 || x7 >= 3762 && x7 <= 3763 || x7 == 3773 || x7 >= 3776 && x7 <= 3780 || x7 == 3782 || x7 >= 3804 && x7 <= 3807 || x7 == 3840 || x7 >= 3904 && x7 <= 3911 || x7 >= 3913 && x7 <= 3948 || x7 >= 3976 && x7 <= 3980 || x7 >= 4096 && x7 <= 4138 || x7 == 4159 || x7 >= 4176 && x7 <= 4181 || x7 >= 4186 && x7 <= 4189 || x7 == 4193 || x7 >= 4197 && x7 <= 4198 || x7 >= 4206 && x7 <= 4208 || x7 >= 4213 && x7 <= 4225 || x7 == 4238 || x7 >= 4256 && x7 <= 4293 || x7 == 4295 || x7 == 4301 || x7 >= 4304 && x7 <= 4346 || x7 >= 4348 && x7 <= 4680 || x7 >= 4682 && x7 <= 4685 || x7 >= 4688 && x7 <= 4694 || x7 == 4696 || x7 >= 4698 && x7 <= 4701 || x7 >= 4704 && x7 <= 4744 || x7 >= 4746 && x7 <= 4749 || x7 >= 4752 && x7 <= 4784 || x7 >= 4786 && x7 <= 4789 || x7 >= 4792 && x7 <= 4798 || x7 == 4800 || x7 >= 4802 && x7 <= 4805 || x7 >= 4808 && x7 <= 4822 || x7 >= 4824 && x7 <= 4880 || x7 >= 4882 && x7 <= 4885 || x7 >= 4888 && x7 <= 4954 || x7 >= 4992 && x7 <= 5007 || x7 >= 5024 && x7 <= 5109 || x7 >= 5112 && x7 <= 5117 || x7 >= 5121 && x7 <= 5740 || x7 >= 5743 && x7 <= 5759 || x7 >= 5761 && x7 <= 5786 || x7 >= 5792 && x7 <= 5866 || x7 >= 5873 && x7 <= 5880 || x7 >= 5888 && x7 <= 5905 || x7 >= 5919 && x7 <= 5937 || x7 >= 5952 && x7 <= 5969 || x7 >= 5984 && x7 <= 5996 || x7 >= 5998 && x7 <= 6000 || x7 >= 6016 && x7 <= 6067 || x7 == 6103 || x7 == 6108 || x7 >= 6176 && x7 <= 6264 || x7 >= 6272 && x7 <= 6276 || x7 >= 6279 && x7 <= 6312 || x7 == 6314 || x7 >= 6320 && x7 <= 6389 || x7 >= 6400 && x7 <= 6430 || x7 >= 6480 && x7 <= 6509 || x7 >= 6512 && x7 <= 6516 || x7 >= 6528 && x7 <= 6571 || x7 >= 6576 && x7 <= 6601 || x7 >= 6656 && x7 <= 6678 || x7 >= 6688 && x7 <= 6740 || x7 == 6823 || x7 >= 6917 && x7 <= 6963 || x7 >= 6981 && x7 <= 6988 || x7 >= 7043 && x7 <= 7072 || x7 >= 7086 && x7 <= 7087 || x7 >= 7098 && x7 <= 7141 || x7 >= 7168 && x7 <= 7203 || x7 >= 7245 && x7 <= 7247 || x7 >= 7258 && x7 <= 7293 || x7 >= 7296 && x7 <= 7306 || x7 >= 7312 && x7 <= 7354 || x7 >= 7357 && x7 <= 7359 || x7 >= 7401 && x7 <= 7404 || x7 >= 7406 && x7 <= 7411 || x7 >= 7413 && x7 <= 7414 || x7 == 7418 || x7 >= 7424 && x7 <= 7615 || x7 >= 7680 && x7 <= 7957 || x7 >= 7960 && x7 <= 7965 || x7 >= 7968 && x7 <= 8005 || x7 >= 8008 && x7 <= 8013 || x7 >= 8016 && x7 <= 8023 || x7 == 8025 || x7 == 8027 || x7 == 8029 || x7 >= 8031 && x7 <= 8061 || x7 >= 8064 && x7 <= 8116 || x7 >= 8118 && x7 <= 8124 || x7 == 8126 || x7 >= 8130 && x7 <= 8132 || x7 >= 8134 && x7 <= 8140 || x7 >= 8144 && x7 <= 8147 || x7 >= 8150 && x7 <= 8155 || x7 >= 8160 && x7 <= 8172 || x7 >= 8178 && x7 <= 8180 || x7 >= 8182 && x7 <= 8188 || x7 == 8305 || x7 == 8319 || x7 >= 8336 && x7 <= 8348 || x7 == 8450 || x7 == 8455 || x7 >= 8458 && x7 <= 8467 || x7 == 8469 || x7 >= 8473 && x7 <= 8477 || x7 == 8484 || x7 == 8486 || x7 == 8488 || x7 >= 8490 && x7 <= 8493 || x7 >= 8495 && x7 <= 8505 || x7 >= 8508 && x7 <= 8511 || x7 >= 8517 && x7 <= 8521 || x7 == 8526 || x7 >= 8579 && x7 <= 8580 || x7 >= 11264 && x7 <= 11492 || x7 >= 11499 && x7 <= 11502 || x7 >= 11506 && x7 <= 11507 || x7 >= 11520 && x7 <= 11557 || x7 == 11559 || x7 == 11565 || x7 >= 11568 && x7 <= 11623 || x7 == 11631 || x7 >= 11648 && x7 <= 11670 || x7 >= 11680 && x7 <= 11686 || x7 >= 11688 && x7 <= 11694 || x7 >= 11696 && x7 <= 11702 || x7 >= 11704 && x7 <= 11710 || x7 >= 11712 && x7 <= 11718 || x7 >= 11720 && x7 <= 11726 || x7 >= 11728 && x7 <= 11734 || x7 >= 11736 && x7 <= 11742 || x7 == 11823 || x7 >= 12293 && x7 <= 12294 || x7 >= 12337 && x7 <= 12341 || x7 >= 12347 && x7 <= 12348 || x7 >= 12353 && x7 <= 12438 || x7 >= 12445 && x7 <= 12447 || x7 >= 12449 && x7 <= 12538 || x7 >= 12540 && x7 <= 12543 || x7 >= 12549 && x7 <= 12591 || x7 >= 12593 && x7 <= 12686 || x7 >= 12704 && x7 <= 12735 || x7 >= 12784 && x7 <= 12799 || x7 >= 13312 && x7 <= 19903 || x7 >= 19968 && x7 <= 42124 || x7 >= 42192 && x7 <= 42237 || x7 >= 42240 && x7 <= 42508 || x7 >= 42512 && x7 <= 42527 || x7 >= 42538 && x7 <= 42539 || x7 >= 42560 && x7 <= 42606 || x7 >= 42623 && x7 <= 42653 || x7 >= 42656 && x7 <= 42725 || x7 >= 42775 && x7 <= 42783 || x7 >= 42786 && x7 <= 42888 || x7 >= 42891 && x7 <= 42972 || x7 >= 42993 && x7 <= 43009 || x7 >= 43011 && x7 <= 43013 || x7 >= 43015 && x7 <= 43018 || x7 >= 43020 && x7 <= 43042 || x7 >= 43072 && x7 <= 43123 || x7 >= 43138 && x7 <= 43187 || x7 >= 43250 && x7 <= 43255 || x7 == 43259 || x7 >= 43261 && x7 <= 43262 || x7 >= 43274 && x7 <= 43301 || x7 >= 43312 && x7 <= 43334 || x7 >= 43360 && x7 <= 43388 || x7 >= 43396 && x7 <= 43442 || x7 == 43471 || x7 >= 43488 && x7 <= 43492 || x7 >= 43494 && x7 <= 43503 || x7 >= 43514 && x7 <= 43518 || x7 >= 43520 && x7 <= 43560 || x7 >= 43584 && x7 <= 43586 || x7 >= 43588 && x7 <= 43595 || x7 >= 43616 && x7 <= 43638 || x7 == 43642 || x7 >= 43646 && x7 <= 43695 || x7 == 43697 || x7 >= 43701 && x7 <= 43702 || x7 >= 43705 && x7 <= 43709 || x7 == 43712 || x7 == 43714 || x7 >= 43739 && x7 <= 43741 || x7 >= 43744 && x7 <= 43754 || x7 >= 43762 && x7 <= 43764 || x7 >= 43777 && x7 <= 43782 || x7 >= 43785 && x7 <= 43790 || x7 >= 43793 && x7 <= 43798 || x7 >= 43808 && x7 <= 43814 || x7 >= 43816 && x7 <= 43822 || x7 >= 43824 && x7 <= 43866 || x7 >= 43868 && x7 <= 43881 || x7 >= 43888 && x7 <= 44002 || x7 >= 44032 && x7 <= 55203 || x7 >= 55216 && x7 <= 55238 || x7 >= 55243 && x7 <= 55291 || x7 >= 63744 && x7 <= 64109 || x7 >= 64112 && x7 <= 64217 || x7 >= 64256 && x7 <= 64262 || x7 >= 64275 && x7 <= 64279 || x7 == 64285 || x7 >= 64287 && x7 <= 64296 || x7 >= 64298 && x7 <= 64310 || x7 >= 64312 && x7 <= 64316 || x7 == 64318 || x7 >= 64320 && x7 <= 64321 || x7 >= 64323 && x7 <= 64324 || x7 >= 64326 && x7 <= 64433 || x7 >= 64467 && x7 <= 64829 || x7 >= 64848 && x7 <= 64911 || x7 >= 64914 && x7 <= 64967 || x7 >= 65008 && x7 <= 65019 || x7 >= 65136 && x7 <= 65140 || x7 >= 65142 && x7 <= 65276 || x7 >= 65313 && x7 <= 65338 || x7 >= 65345 && x7 <= 65370 || x7 >= 65382 && x7 <= 65470 || x7 >= 65474 && x7 <= 65479 || x7 >= 65482 && x7 <= 65487 || x7 >= 65490 && x7 <= 65495 || x7 >= 65498 && x7 <= 65500 || x7 >= 65536 && x7 <= 65547 || x7 >= 65549 && x7 <= 65574 || x7 >= 65576 && x7 <= 65594 || x7 >= 65596 && x7 <= 65597 || x7 >= 65599 && x7 <= 65613 || x7 >= 65616 && x7 <= 65629 || x7 >= 65664 && x7 <= 65786 || x7 >= 66176 && x7 <= 66204 || x7 >= 66208 && x7 <= 66256 || x7 >= 66304 && x7 <= 66335 || x7 >= 66349 && x7 <= 66368 || x7 >= 66370 && x7 <= 66377 || x7 >= 66384 && x7 <= 66421 || x7 >= 66432 && x7 <= 66461 || x7 >= 66464 && x7 <= 66499 || x7 >= 66504 && x7 <= 66511 || x7 >= 66560 && x7 <= 66717 || x7 >= 66736 && x7 <= 66771 || x7 >= 66776 && x7 <= 66811 || x7 >= 66816 && x7 <= 66855 || x7 >= 66864 && x7 <= 66915 || x7 >= 66928 && x7 <= 66938 || x7 >= 66940 && x7 <= 66954 || x7 >= 66956 && x7 <= 66962 || x7 >= 66964 && x7 <= 66965 || x7 >= 66967 && x7 <= 66977 || x7 >= 66979 && x7 <= 66993 || x7 >= 66995 && x7 <= 67001 || x7 >= 67003 && x7 <= 67004 || x7 >= 67008 && x7 <= 67059 || x7 >= 67072 && x7 <= 67382 || x7 >= 67392 && x7 <= 67413 || x7 >= 67424 && x7 <= 67431 || x7 >= 67456 && x7 <= 67461 || x7 >= 67463 && x7 <= 67504 || x7 >= 67506 && x7 <= 67514 || x7 >= 67584 && x7 <= 67589 || x7 == 67592 || x7 >= 67594 && x7 <= 67637 || x7 >= 67639 && x7 <= 67640 || x7 == 67644 || x7 >= 67647 && x7 <= 67669 || x7 >= 67680 && x7 <= 67702 || x7 >= 67712 && x7 <= 67742 || x7 >= 67808 && x7 <= 67826 || x7 >= 67828 && x7 <= 67829 || x7 >= 67840 && x7 <= 67861 || x7 >= 67872 && x7 <= 67897 || x7 >= 67904 && x7 <= 67929 || x7 >= 67968 && x7 <= 68023 || x7 >= 68030 && x7 <= 68031 || x7 == 68096 || x7 >= 68112 && x7 <= 68115 || x7 >= 68117 && x7 <= 68119 || x7 >= 68121 && x7 <= 68149 || x7 >= 68192 && x7 <= 68220 || x7 >= 68224 && x7 <= 68252 || x7 >= 68288 && x7 <= 68295 || x7 >= 68297 && x7 <= 68324 || x7 >= 68352 && x7 <= 68405 || x7 >= 68416 && x7 <= 68437 || x7 >= 68448 && x7 <= 68466 || x7 >= 68480 && x7 <= 68497 || x7 >= 68608 && x7 <= 68680 || x7 >= 68736 && x7 <= 68786 || x7 >= 68800 && x7 <= 68850 || x7 >= 68864 && x7 <= 68899 || x7 >= 68938 && x7 <= 68965 || x7 >= 68975 && x7 <= 68997 || x7 >= 69248 && x7 <= 69289 || x7 >= 69296 && x7 <= 69297 || x7 >= 69314 && x7 <= 69319 || x7 >= 69376 && x7 <= 69404 || x7 == 69415 || x7 >= 69424 && x7 <= 69445 || x7 >= 69488 && x7 <= 69505 || x7 >= 69552 && x7 <= 69572 || x7 >= 69600 && x7 <= 69622 || x7 >= 69635 && x7 <= 69687 || x7 >= 69745 && x7 <= 69746 || x7 == 69749 || x7 >= 69763 && x7 <= 69807 || x7 >= 69840 && x7 <= 69864 || x7 >= 69891 && x7 <= 69926 || x7 == 69956 || x7 == 69959 || x7 >= 69968 && x7 <= 70002 || x7 == 70006 || x7 >= 70019 && x7 <= 70066 || x7 >= 70081 && x7 <= 70084 || x7 == 70106 || x7 == 70108 || x7 >= 70144 && x7 <= 70161 || x7 >= 70163 && x7 <= 70187 || x7 >= 70207 && x7 <= 70208 || x7 >= 70272 && x7 <= 70278 || x7 == 70280 || x7 >= 70282 && x7 <= 70285 || x7 >= 70287 && x7 <= 70301 || x7 >= 70303 && x7 <= 70312 || x7 >= 70320 && x7 <= 70366 || x7 >= 70405 && x7 <= 70412 || x7 >= 70415 && x7 <= 70416 || x7 >= 70419 && x7 <= 70440 || x7 >= 70442 && x7 <= 70448 || x7 >= 70450 && x7 <= 70451 || x7 >= 70453 && x7 <= 70457 || x7 == 70461 || x7 == 70480 || x7 >= 70493 && x7 <= 70497 || x7 >= 70528 && x7 <= 70537 || x7 == 70539 || x7 == 70542 || x7 >= 70544 && x7 <= 70581 || x7 == 70583 || x7 == 70609 || x7 == 70611 || x7 >= 70656 && x7 <= 70708 || x7 >= 70727 && x7 <= 70730 || x7 >= 70751 && x7 <= 70753 || x7 >= 70784 && x7 <= 70831 || x7 >= 70852 && x7 <= 70853 || x7 == 70855 || x7 >= 71040 && x7 <= 71086 || x7 >= 71128 && x7 <= 71131 || x7 >= 71168 && x7 <= 71215 || x7 == 71236 || x7 >= 71296 && x7 <= 71338 || x7 == 71352 || x7 >= 71424 && x7 <= 71450 || x7 >= 71488 && x7 <= 71494 || x7 >= 71680 && x7 <= 71723 || x7 >= 71840 && x7 <= 71903 || x7 >= 71935 && x7 <= 71942 || x7 == 71945 || x7 >= 71948 && x7 <= 71955 || x7 >= 71957 && x7 <= 71958 || x7 >= 71960 && x7 <= 71983 || x7 == 71999 || x7 == 72001 || x7 >= 72096 && x7 <= 72103 || x7 >= 72106 && x7 <= 72144 || x7 == 72161 || x7 == 72163 || x7 == 72192 || x7 >= 72203 && x7 <= 72242 || x7 == 72250 || x7 == 72272 || x7 >= 72284 && x7 <= 72329 || x7 == 72349 || x7 >= 72368 && x7 <= 72440 || x7 >= 72640 && x7 <= 72672 || x7 >= 72704 && x7 <= 72712 || x7 >= 72714 && x7 <= 72750 || x7 == 72768 || x7 >= 72818 && x7 <= 72847 || x7 >= 72960 && x7 <= 72966 || x7 >= 72968 && x7 <= 72969 || x7 >= 72971 && x7 <= 73008 || x7 == 73030 || x7 >= 73056 && x7 <= 73061 || x7 >= 73063 && x7 <= 73064 || x7 >= 73066 && x7 <= 73097 || x7 == 73112 || x7 >= 73136 && x7 <= 73179 || x7 >= 73440 && x7 <= 73458 || x7 == 73474 || x7 >= 73476 && x7 <= 73488 || x7 >= 73490 && x7 <= 73523 || x7 == 73648 || x7 >= 73728 && x7 <= 74649 || x7 >= 74880 && x7 <= 75075 || x7 >= 77712 && x7 <= 77808 || x7 >= 77824 && x7 <= 78895 || x7 >= 78913 && x7 <= 78918 || x7 >= 78944 && x7 <= 82938 || x7 >= 82944 && x7 <= 83526 || x7 >= 90368 && x7 <= 90397 || x7 >= 92160 && x7 <= 92728 || x7 >= 92736 && x7 <= 92766 || x7 >= 92784 && x7 <= 92862 || x7 >= 92880 && x7 <= 92909 || x7 >= 92928 && x7 <= 92975 || x7 >= 92992 && x7 <= 92995 || x7 >= 93027 && x7 <= 93047 || x7 >= 93053 && x7 <= 93071 || x7 >= 93504 && x7 <= 93548 || x7 >= 93760 && x7 <= 93823 || x7 >= 93856 && x7 <= 93880 || x7 >= 93883 && x7 <= 93907 || x7 >= 93952 && x7 <= 94026 || x7 == 94032 || x7 >= 94099 && x7 <= 94111 || x7 >= 94176 && x7 <= 94177 || x7 == 94179 || x7 >= 94194 && x7 <= 94195 || x7 >= 94208 && x7 <= 101589 || x7 >= 101631 && x7 <= 101662 || x7 >= 101760 && x7 <= 101874 || x7 >= 110576 && x7 <= 110579 || x7 >= 110581 && x7 <= 110587 || x7 >= 110589 && x7 <= 110590 || x7 >= 110592 && x7 <= 110882 || x7 == 110898 || x7 >= 110928 && x7 <= 110930 || x7 == 110933 || x7 >= 110948 && x7 <= 110951 || x7 >= 110960 && x7 <= 111355 || x7 >= 113664 && x7 <= 113770 || x7 >= 113776 && x7 <= 113788 || x7 >= 113792 && x7 <= 113800 || x7 >= 113808 && x7 <= 113817 || x7 >= 119808 && x7 <= 119892 || x7 >= 119894 && x7 <= 119964 || x7 >= 119966 && x7 <= 119967 || x7 == 119970 || x7 >= 119973 && x7 <= 119974 || x7 >= 119977 && x7 <= 119980 || x7 >= 119982 && x7 <= 119993 || x7 == 119995 || x7 >= 119997 && x7 <= 120003 || x7 >= 120005 && x7 <= 120069 || x7 >= 120071 && x7 <= 120074 || x7 >= 120077 && x7 <= 120084 || x7 >= 120086 && x7 <= 120092 || x7 >= 120094 && x7 <= 120121 || x7 >= 120123 && x7 <= 120126 || x7 >= 120128 && x7 <= 120132 || x7 == 120134 || x7 >= 120138 && x7 <= 120144 || x7 >= 120146 && x7 <= 120485 || x7 >= 120488 && x7 <= 120512 || x7 >= 120514 && x7 <= 120538 || x7 >= 120540 && x7 <= 120570 || x7 >= 120572 && x7 <= 120596 || x7 >= 120598 && x7 <= 120628 || x7 >= 120630 && x7 <= 120654 || x7 >= 120656 && x7 <= 120686 || x7 >= 120688 && x7 <= 120712 || x7 >= 120714 && x7 <= 120744 || x7 >= 120746 && x7 <= 120770 || x7 >= 120772 && x7 <= 120779 || x7 >= 122624 && x7 <= 122654 || x7 >= 122661 && x7 <= 122666 || x7 >= 122928 && x7 <= 122989 || x7 >= 123136 && x7 <= 123180 || x7 >= 123191 && x7 <= 123197 || x7 == 123214 || x7 >= 123536 && x7 <= 123565 || x7 >= 123584 && x7 <= 123627 || x7 >= 124112 && x7 <= 124139 || x7 >= 124368 && x7 <= 124397 || x7 == 124400 || x7 >= 124608 && x7 <= 124638 || x7 >= 124640 && x7 <= 124642 || x7 >= 124644 && x7 <= 124645 || x7 >= 124647 && x7 <= 124653 || x7 >= 124656 && x7 <= 124660 || x7 >= 124670 && x7 <= 124671 || x7 >= 124896 && x7 <= 124902 || x7 >= 124904 && x7 <= 124907 || x7 >= 124909 && x7 <= 124910 || x7 >= 124912 && x7 <= 124926 || x7 >= 124928 && x7 <= 125124 || x7 >= 125184 && x7 <= 125251 || x7 == 125259 || x7 >= 126464 && x7 <= 126467 || x7 >= 126469 && x7 <= 126495 || x7 >= 126497 && x7 <= 126498 || x7 == 126500 || x7 == 126503 || x7 >= 126505 && x7 <= 126514 || x7 >= 126516 && x7 <= 126519 || x7 == 126521 || x7 == 126523 || x7 == 126530 || x7 == 126535 || x7 == 126537 || x7 == 126539 || x7 >= 126541 && x7 <= 126543 || x7 >= 126545 && x7 <= 126546 || x7 == 126548 || x7 == 126551 || x7 == 126553 || x7 == 126555 || x7 == 126557 || x7 == 126559 || x7 >= 126561 && x7 <= 126562 || x7 == 126564 || x7 >= 126567 && x7 <= 126570 || x7 >= 126572 && x7 <= 126578 || x7 >= 126580 && x7 <= 126583 || x7 >= 126585 && x7 <= 126588 || x7 == 126590 || x7 >= 126592 && x7 <= 126601 || x7 >= 126603 && x7 <= 126619 || x7 >= 126625 && x7 <= 126627 || x7 >= 126629 && x7 <= 126633 || x7 >= 126635 && x7 <= 126651 || x7 >= 131072 && x7 <= 173791 || x7 >= 173824 && x7 <= 178205 || x7 >= 178208 && x7 <= 183981 || x7 >= 183984 && x7 <= 191456 || x7 >= 191472 && x7 <= 192093 || x7 >= 194560 && x7 <= 195101 || x7 >= 196608 && x7 <= 201546 || x7 >= 201552 && x7 <= 210041))) && p.depth+1 <= maxDepth {
+	if !(x8 && (!!(x7 == 170 || x7 == 181 || x7 == 186 || x7 >= 192 && x7 <= 214 || x7 >= 216 && x7 <= 246 || x7 >= 248 && x7 <= 705 || x7 >= 710 && x7 <= 721 || x7 >= 736 && x7 <= 740 || x7 == 748 || x7 == 750 || x7 >= 880 && x7 <= 884 || x7 >= 886 && x7 <= 887 || x7 >= 890 && x7 <= 893 || x7 == 895 || x7 == 902 || x7 >= 904 && x7 <= 906 || x7 == 908 || x7 >= 910 && x7 <= 929 || x7 >= 931 && x7 <= 1013 || x7 >= 1015 && x7 <= 1153 || x7 >= 1162 && x7 <= 1327 || x7 >= 1329 && x7 <= 1366 || x7 == 1369 || x7 >= 1376 && x7 <= 1416 || x7 >= 1488 && x7 <= 1514 || x7 >= 1519 && x7 <= 1522 || x7 >= 1568 && x7 <= 1610 || x7 >= 1646 && x7 <= 1647 || x7 >= 1649 && x7 <= 1747 || x7 == 1749 || x7 >= 1765 && x7 <= 1766 || x7 >= 1774 && x7 <= 1775 || x7 >= 1786 && x7 <= 1788 || x7 == 1791 || x7 == 1808 || x7 >= 1810 && x7 <= 1839 || x7 >= 1869 && x7 <= 1957 || x7 == 1969 || x7 >= 1994 && x7 <= 2026 || x7 >= 2036 && x7 <= 2037 || x7 == 2042 || x7 >= 2048 && x7 <= 2069 || x7 == 2074 || x7 == 2084 || x7 == 2088 || x7 >= 2112 && x7 <= 2136 || x7 >= 2144 && x7 <= 2154 || x7 >= 2160 && x7 <= 2183 || x7 >= 2185 && x7 <= 2191 || x7 >= 2208 && x7 <= 2249 || x7 >= 2308 && x7 <= 2361 || x7 == 2365 || x7 == 2384 || x7 >= 2392 && x7 <= 2401 || x7 >= 2417 && x7 <= 2432 || x7 >= 2437 && x7 <= 2444 || x7 >= 2447 && x7 <= 2448 || x7 >= 2451 && x7 <= 2472 || x7 >= 2474 && x7 <= 2480 || x7 == 2482 || x7 >= 2486 && x7 <= 2489 || x7 == 2493 || x7 == 2510 || x7 >= 2524 && x7 <= 2525 || x7 >= 2527 && x7 <= 2529 || x7 >= 2544 && x7 <= 2545 || x7 == 2556 || x7 >= 2565 && x7 <= 2570 || x7 >= 2575 && x7 <= 2576 || x7 >= 2579 && x7 <= 2600 || x7 >= 2602 && x7 <= 2608 || x7 >= 2610 && x7 <= 2611 || x7 >= 2613 && x7 <= 2614 || x7 >= 2616 && x7 <= 2617 || x7 >= 2649 && x7 <= 2652 || x7 == 2654 || x7 >= 2674 && x7 <= 2676 || x7 >= 2693 && x7 <= 2701 || x7 >= 2703 && x7 <= 2705 || x7 >= 2707 && x7 <= 2728 || x7 >= 2730 && x7 <= 2736 || x7 >= 2738 && x7 <= 2739 || x7 >= 2741 && x7 <= 2745 || x7 == 2749 || x7 == 2768 || x7 >= 2784 && x7 <= 2785 || x7 == 2809 || x7 >= 2821 && x7 <= 2828 || x7 >= 2831 && x7 <= 2832 || x7 >= 2835 && x7 <= 2856 || x7 >= 2858 && x7 <= 2864 || x7 >= 2866 && x7 <= 2867 || x7 >= 2869 && x7 <= 2873 || x7 == 2877 || x7 >= 2908 && x7 <= 2909 || x7 >= 2911 && x7 <= 2913 || x7 == 2929 || x7 == 2947 || x7 >= 2949 && x7 <= 2954 || x7 >= 2958 && x7 <= 2960 || x7 >= 2962 && x7 <= 2965 || x7 >= 2969 && x7 <= 2970 || x7 == 2972 || x7 >= 2974 && x7 <= 2975 || x7 >= 2979 && x7 <= 2980 || x7 >= 2984 && x7 <= 2986 || x7 >= 2990 && x7 <= 3001 || x7 == 3024 || x7 >= 3077 && x7 <= 3084 || x7 >= 3086 && x7 <= 3088 || x7 >= 3090 && x7 <= 3112 || x7 >= 3114 && x7 <= 3129 || x7 == 3133 || x7 >= 3160 && x7 <= 3162 || x7 >= 3164 && x7 <= 3165 || x7 >= 3168 && x7 <= 3169 || x7 == 3200 || x7 >= 3205 && x7 <= 3212 || x7 >= 3214 && x7 <= 3216 || x7 >= 3218 && x7 <= 3240 || x7 >= 3242 && x7 <= 3251 || x7 >= 3253 && x7 <= 3257 || x7 == 3261 || x7 >= 3292 && x7 <= 3294 || x7 >= 3296 && x7 <= 3297 || x7 >= 3313 && x7 <= 3314 || x7 >= 3332 && x7 <= 3340 || x7 >= 3342 && x7 <= 3344 || x7 >= 3346 && x7 <= 3386 || x7 == 3389 || x7 == 3406 || x7 >= 3412 && x7 <= 3414 || x7 >= 3423 && x7 <= 3425 || x7 >= 3450 && x7 <= 3455 || x7 >= 3461 && x7 <= 3478 || x7 >= 3482 && x7 <= 3505 || x7 >= 3507 && x7 <= 3515 || x7 == 3517 || x7 >= 3520 && x7 <= 3526 || x7 >= 3585 && x7 <= 3632 || x7 >= 3634 && x7 <= 3635 || x7 >= 3648 && x7 <= 3654 || x7 >= 3713 && x7 <= 3714 || x7 == 3716 || x7 >= 3718 && x7 <= 3722 || x7 >= 3724 && x7 <= 3747 || x7 == 3749 || x7 >= 3751 && x7 <= 3760 || x7 >= 3762 && x7 <= 3763 || x7 == 3773 || x7 >= 3776 && x7 <= 3780 || x7 == 3782 || x7 >= 3804 && x7 <= 3807 || x7 == 3840 || x7 >= 3904 && x7 <= 3911 || x7 >= 3913 && x7 <= 3948 || x7 >= 3976 && x7 <= 3980 || x7 >= 4096 && x7 <= 4138 || x7 == 4159 || x7 >= 4176 && x7 <= 4181 || x7 >= 4186 && x7 <= 4189 || x7 == 4193 || x7 >= 4197 && x7 <= 4198 || x7 >= 4206 && x7 <= 4208 || x7 >= 4213 && x7 <= 4225 || x7 == 4238 || x7 >= 4256 && x7 <= 4293 || x7 == 4295 || x7 == 4301 || x7 >= 4304 && x7 <= 4346 || x7 >= 4348 && x7 <= 4680 || x7 >= 4682 && x7 <= 4685 || x7 >= 4688 && x7 <= 4694 || x7 == 4696 || x7 >= 4698 && x7 <= 4701 || x7 >= 4704 && x7 <= 4744 || x7 >= 4746 && x7 <= 4749 || x7 >= 4752 && x7 <= 4784 || x7 >= 4786 && x7 <= 4789 || x7 >= 4792 && x7 <= 4798 || x7 == 4800 || x7 >= 4802 && x7 <= 4805 || x7 >= 4808 && x7 <= 4822 || x7 >= 4824 && x7 <= 4880 || x7 >= 4882 && x7 <= 4885 || x7 >= 4888 && x7 <= 4954 || x7 >= 4992 && x7 <= 5007 || x7 >= 5024 && x7 <= 5109 || x7 >= 5112 && x7 <= 5117 || x7 >= 5121 && x7 <= 5740 || x7 >= 5743 && x7 <= 5759 || x7 >= 5761 && x7 <= 5786 || x7 >= 5792 && x7 <= 5866 || x7 >= 5873 && x7 <= 5880 || x7 >= 5888 && x7 <= 5905 || x7 >= 5919 && x7 <= 5937 || x7 >= 5952 && x7 <= 5969 || x7 >= 5984 && x7 <= 5996 || x7 >= 5998 && x7 <= 6000 || x7 >= 6016 && x7 <= 6067 || x7 == 6103 || x7 == 6108 || x7 >= 6176 && x7 <= 6264 || x7 >= 6272 && x7 <= 6276 || x7 >= 6279 && x7 <= 6312 || x7 == 6314 || x7 >= 6320 && x7 <= 6389 || x7 >= 6400 && x7 <= 6430 || x7 >= 6480 && x7 <= 6509 || x7 >= 6512 && x7 <= 6516 || x7 >= 6528 && x7 <= 6571 || x7 >= 6576 && x7 <= 6601 || x7 >= 6656 && x7 <= 6678 || x7 >= 6688 && x7 <= 6740 || x7 == 6823 || x7 >= 6917 && x7 <= 6963 || x7 >= 6981 && x7 <= 6988 || x7 >= 7043 && x7 <= 7072 || x7 >= 7086 && x7 <= 7087 || x7 >= 7098 && x7 <= 7141 || x7 >= 7168 && x7 <= 7203 || x7 >= 7245 && x7 <= 7247 || x7 >= 7258 && x7 <= 7293 || x7 >= 7296 && x7 <= 7306 || x7 >= 7312 && x7 <= 7354 || x7 >= 7357 && x7 <= 7359 || x7 >= 7401 && x7 <= 7404 || x7 >= 7406 && x7 <= 7411 || x7 >= 7413 && x7 <= 7414 || x7 == 7418 || x7 >= 7424 && x7 <= 7615 || x7 >= 7680 && x7 <= 7957 || x7 >= 7960 && x7 <= 7965 || x7 >= 7968 && x7 <= 8005 || x7 >= 8008 && x7 <= 8013 || x7 >= 8016 && x7 <= 8023 || x7 == 8025 || x7 == 8027 || x7 == 8029 || x7 >= 8031 && x7 <= 8061 || x7 >= 8064 && x7 <= 8116 || x7 >= 8118 && x7 <= 8124 || x7 == 8126 || x7 >= 8130 && x7 <= 8132 || x7 >= 8134 && x7 <= 8140 || x7 >= 8144 && x7 <= 8147 || x7 >= 8150 && x7 <= 8155 || x7 >= 8160 && x7 <= 8172 || x7 >= 8178 && x7 <= 8180 || x7 >= 8182 && x7 <= 8188 || x7 == 8305 || x7 == 8319 || x7 >= 8336 && x7 <= 8348 || x7 == 8450 || x7 == 8455 || x7 >= 8458 && x7 <= 8467 || x7 == 8469 || x7 >= 8473 && x7 <= 8477 || x7 == 8484 || x7 == 8486 || x7 == 8488 || x7 >= 8490 && x7 <= 8493 || x7 >= 8495 && x7 <= 8505 || x7 >= 8508 && x7 <= 8511 || x7 >= 8517 && x7 <= 8521 || x7 == 8526 || x7 >= 8579 && x7 <= 8580 || x7 >= 11264 && x7 <= 11492 || x7 >= 11499 && x7 <= 11502 || x7 >= 11506 && x7 <= 11507 || x7 >= 11520 && x7 <= 11557 || x7 == 11559 || x7 == 11565 || x7 >= 11568 && x7 <= 11623 || x7 == 11631 || x7 >= 11648 && x7 <= 11670 || x7 >= 11680 && x7 <= 11686 || x7 >= 11688 && x7 <= 11694 || x7 >= 11696 && x7 <= 11702 || x7 >= 11704 && x7 <= 11710 || x7 >= 11712 && x7 <= 11718 || x7 >= 11720 && x7 <= 11726 || x7 >= 11728 && x7 <= 11734 || x7 >= 11736 && x7 <= 11742 || x7 == 11823 || x7 >= 12293 && x7 <= 12294 || x7 >= 12337 && x7 <= 12341 || x7 >= 12347 && x7 <= 12348 || x7 >= 12353 && x7 <= 12438 || x7 >= 12445 && x7 <= 12447 || x7 >= 12449 && x7 <= 12538 || x7 >= 12540 && x7 <= 12543 || x7 >= 12549 && x7 <= 12591 || x7 >= 12593 && x7 <= 12686 || x7 >= 12704 && x7 <= 12735 || x7 >= 12784 && x7 <= 12799 || x7 >= 13312 && x7 <= 19903 || x7 >= 19968 && x7 <= 42124 || x7 >= 42192 && x7 <= 42237 || x7 >= 42240 && x7 <= 42508 || x7 >= 42512 && x7 <= 42527 || x7 >= 42538 && x7 <= 42539 || x7 >= 42560 && x7 <= 42606 || x7 >= 42623 && x7 <= 42653 || x7 >= 42656 && x7 <= 42725 || x7 >= 42775 && x7 <= 42783 || x7 >= 42786 && x7 <= 42888 || x7 >= 42891 && x7 <= 42972 || x7 >= 42993 && x7 <= 43009 || x7 >= 43011 && x7 <= 43013 || x7 >= 43015 && x7 <= 43018 || x7 >= 43020 && x7 <= 43042 || x7 >= 43072 && x7 <= 43123 || x7 >= 43138 && x7 <= 43187 || x7 >= 43250 && x7 <= 43255 || x7 == 43259 || x7 >= 43261 && x7 <= 43262 || x7 >= 43274 && x7 <= 43301 || x7 >= 43312 && x7 <= 43334 || x7 >= 43360 && x7 <= 43388 || x7 >= 43396 && x7 <= 43442 || x7 == 43471 || x7 >= 43488 && x7 <= 43492 || x7 >= 43494 && x7 <= 43503 || x7 >= 43514 && x7 <= 43518 || x7 >= 43520 && x7 <= 43560 || x7 >= 43584 && x7 <= 43586 || x7 >= 43588 && x7 <= 43595 || x7 >= 43616 && x7 <= 43638 || x7 == 43642 || x7 >= 43646 && x7 <= 43695 || x7 == 43697 || x7 >= 43701 && x7 <= 43702 || x7 >= 43705 && x7 <= 43709 || x7 == 43712 || x7 == 43714 || x7 >= 43739 && x7 <= 43741 || x7 >= 43744 && x7 <= 43754 || x7 >= 43762 && x7 <= 43764 || x7 >= 43777 && x7 <= 43782 || x7 >= 43785 && x7 <= 43790 || x7 >= 43793 && x7 <= 43798 || x7 >= 43808 && x7 <= 43814 || x7 >= 43816 && x7 <= 43822 || x7 >= 43824 && x7 <= 43866 || x7 >= 43868 && x7 <= 43881 || x7 >= 43888 && x7 <= 44002 || x7 >= 44032 && x7 <= 55203 || x7 >= 55216 && x7 <= 55238 || x7 >= 55243 && x7 <= 55291 || x7 >= 63744 && x7 <= 64109 || x7 >= 64112 && x7 <= 64217 || x7 >= 64256 && x7 <= 64262 || x7 >= 64275 && x7 <= 64279 || x7 == 64285 || x7 >= 64287 && x7 <= 64296 || x7 >= 64298 && x7 <= 64310 || x7 >= 64312 && x7 <= 64316 || x7 == 64318 || x7 >= 64320 && x7 <= 64321 || x7 >= 64323 && x7 <= 64324 || x7 >= 64326 && x7 <= 64433 || x7 >= 64467 && x7 <= 64829 || x7 >= 64848 && x7 <= 64911 || x7 >= 64914 && x7 <= 64967 || x7 >= 65008 && x7 <= 65019 || x7 >= 65136 && x7 <= 65140 || x7 >= 65142 && x7 <= 65276 || x7 >= 65313 && x7 <= 65338 || x7 >= 65345 && x7 <= 65370 || x7 >= 65382 && x7 <= 65470 || x7 >= 65474 && x7 <= 65479 || x7 >= 65482 && x7 <= 65487 || x7 >= 65490 && x7 <= 65495 || x7 >= 65498 && x7 <= 65500 || x7 >= 65536 && x7 <= 65547 || x7 >= 65549 && x7 <= 65574 || x7 >= 65576 && x7 <= 65594 || x7 >= 65596 && x7 <= 65597 || x7 >= 65599 && x7 <= 65613 || x7 >= 65616 && x7 <= 65629 || x7 >= 65664 && x7 <= 65786 || x7 >= 66176 && x7 <= 66204 || x7 >= 66208 && x7 <= 66256 || x7 >= 66304 && x7 <= 66335 || x7 >= 66349 && x7 <= 66368 || x7 >= 66370 && x7 <= 66377 || x7 >= 66384 && x7 <= 66421 || x7 >= 66432 && x7 <= 66461 || x7 >= 66464 && x7 <= 66499 || x7 >= 66504 && x7 <= 66511 || x7 >= 66560 && x7 <= 66717 || x7 >= 66736 && x7 <= 66771 || x7 >= 66776 && x7 <= 66811 || x7 >= 66816 && x7 <= 66855 || x7 >= 66864 && x7 <= 66915 || x7 >= 66928 && x7 <= 66938 || x7 >= 66940 && x7 <= 66954 || x7 >= 66956 && x7 <= 66962 || x7 >= 66964 && x7 <= 66965 || x7 >= 66967 && x7 <= 66977 || x7 >= 66979 && x7 <= 66993 || x7 >= 66995 && x7 <= 67001 || x7 >= 67003 && x7 <= 67004 || x7 >= 67008 && x7 <= 67059 || x7 >= 67072 && x7 <= 67382 || x7 >= 67392 && x7 <= 67413 || x7 >= 67424 && x7 <= 67431 || x7 >= 67456 && x7 <= 67461 || x7 >= 67463 && x7 <= 67504 || x7 >= 67506 && x7 <= 67514 || x7 >= 67584 && x7 <= 67589 || x7 == 67592 || x7 >= 67594 && x7 <= 67637 || x7 >= 67639 && x7 <= 67640 || x7 == 67644 || x7 >= 67647 && x7 <= 67669 || x7 >= 67680 && x7 <= 67702 || x7 >= 67712 && x7 <= 67742 || x7 >= 67808 && x7 <= 67826 || x7 >= 67828 && x7 <= 67829 || x7 >= 67840 && x7 <= 67861 || x7 >= 67872 && x7 <= 67897 || x7 >= 67904 && x7 <= 67929 || x7 >= 67968 && x7 <= 68023 || x7 >= 68030 && x7 <= 68031 || x7 == 68096 || x7 >= 68112 && x7 <= 68115 || x7 >= 68117 && x7 <= 68119 || x7 >= 68121 && x7 <= 68149 || x7 >= 68192 && x7 <= 68220 || x7 >= 68224 && x7 <= 68252 || x7 >= 68288 && x7 <= 68295 || x7 >= 68297 && x7 <= 68324 || x7 >= 68352 && x7 <= 68405 || x7 >= 68416 && x7 <= 68437 || x7 >= 68448 && x7 <= 68466 || x7 >= 68480 && x7 <= 68497 || x7 >= 68608 && x7 <= 68680 || x7 >= 68736 && x7 <= 68786 || x7 >= 68800 && x7 <= 68850 || x7 >= 68864 && x7 <= 68899 || x7 >= 68938 && x7 <= 68965 || x7 >= 68975 && x7 <= 68997 || x7 >= 69248 && x7 <= 69289 || x7 >= 69296 && x7 <= 69297 || x7 >= 69314 && x7 <= 69319 || x7 >= 69376 && x7 <= 69404 || x7 == 69415 || x7 >= 69424 && x7 <= 69445 || x7 >= 69488 && x7 <= 69505 || x7 >= 69552 && x7 <= 69572 || x7 >= 69600 && x7 <= 69622 || x7 >= 69635 && x7 <= 69687 || x7 >= 69745 && x7 <= 69746 || x7 == 69749 || x7 >= 69763 && x7 <= 69807 || x7 >= 69840 && x7 <= 69864 || x7 >= 69891 && x7 <= 69926 || x7 == 69956 || x7 == 69959 || x7 >= 69968 && x7 <= 70002 || x7 == 70006 || x7 >= 70019 && x7 <= 70066 || x7 >= 70081 && x7 <= 70084 || x7 == 70106 || x7 == 70108 || x7 >= 70144 && x7 <= 70161 || x7 >= 70163 && x7 <= 70187 || x7 >= 70207 && x7 <= 70208 || x7 >= 70272 && x7 <= 70278 || x7 == 70280 || x7 >= 70282 && x7 <= 70285 || x7 >= 70287 && x7 <= 70301 || x7 >= 70303 && x7 <= 70312 || x7 >= 70320 && x7 <= 70366 || x7 >= 70405 && x7 <= 70412 || x7 >= 70415 && x7 <= 70416 || x7 >= 70419 && x7 <= 70440 || x7 >= 70442 && x7 <= 70448 || x7 >= 70450 && x7 <= 70451 || x7 >= 70453 && x7 <= 70457 || x7 == 70461 || x7 == 70480 || x7 >= 70493 && x7 <= 70497 || x7 >= 70528 && x7 <= 70537 || x7 == 70539 || x7 == 70542 || x7 >= 70544 && x7 <= 70581 || x7 == 70583 || x7 == 70609 || x7 == 70611 || x7 >= 70656 && x7 <= 70708 || x7 >= 70727 && x7 <= 70730 || x7 >= 70751 && x7 <= 70753 || x7 >= 70784 && x7 <= 70831 || x7 >= 70852 && x7 <= 70853 || x7 == 70855 || x7 >= 71040 && x7 <= 71086 || x7 >= 71128 && x7 <= 71131 || x7 >= 71168 && x7 <= 71215 || x7 == 71236 || x7 >= 71296 && x7 <= 71338 || x7 == 71352 || x7 >= 71424 && x7 <= 71450 || x7 >= 71488 && x7 <= 71494 || x7 >= 71680 && x7 <= 71723 || x7 >= 71840 && x7 <= 71903 || x7 >= 71935 && x7 <= 71942 || x7 == 71945 || x7 >= 71948 && x7 <= 71955 || x7 >= 71957 && x7 <= 71958 || x7 >= 71960 && x7 <= 71983 || x7 == 71999 || x7 == 72001 || x7 >= 72096 && x7 <= 72103 || x7 >= 72106 && x7 <= 72144 || x7 == 72161 || x7 == 72163 || x7 == 72192 || x7 >= 72203 && x7 <= 72242 || x7 == 72250 || x7 == 72272 || x7 >= 72284 && x7 <= 72329 || x7 == 72349 || x7 >= 72368 && x7 <= 72440 || x7 >= 72640 && x7 <= 72672 || x7 >= 72704 && x7 <= 72712 || x7 >= 72714 && x7 <= 72750 || x7 == 72768 || x7 >= 72818 && x7 <= 72847 || x7 >= 72960 && x7 <= 72966 || x7 >= 72968 && x7 <= 72969 || x7 >= 72971 && x7 <= 73008 || x7 == 73030 || x7 >= 73056 && x7 <= 73061 || x7 >= 73063 && x7 <= 73064 || x7 >= 73066 && x7 <= 73097 || x7 == 73112 || x7 >= 73136 && x7 <= 73179 || x7 >= 73440 && x7 <= 73458 || x7 == 73474 || x7 >= 73476 && x7 <= 73488 || x7 >= 73490 && x7 <= 73523 || x7 == 73648 || x7 >= 73728 && x7 <= 74649 || x7 >= 74880 && x7 <= 75075 || x7 >= 77712 && x7 <= 77808 || x7 >= 77824 && x7 <= 78895 || x7 >= 78913 && x7 <= 78918 || x7 >= 78944 && x7 <= 82938 || x7 >= 82944 && x7 <= 83526 || x7 >= 90368 && x7 <= 90397 || x7 >= 92160 && x7 <= 92728 || x7 >= 92736 && x7 <= 92766 || x7 >= 92784 && x7 <= 92862 || x7 >= 92880 && x7 <= 92909 || x7 >= 92928 && x7 <= 92975 || x7 >= 92992 && x7 <= 92995 || x7 >= 93027 && x7 <= 93047 || x7 >= 93053 && x7 <= 93071 || x7 >= 93504 && x7 <= 93548 || x7 >= 93760 && x7 <= 93823 || x7 >= 93856 && x7 <= 93880 || x7 >= 93883 && x7 <= 93907 || x7 >= 93952 && x7 <= 94026 || x7 == 94032 || x7 >= 94099 && x7 <= 94111 || x7 >= 94176 && x7 <= 94177 || x7 == 94179 || x7 >= 94194 && x7 <= 94195 || x7 >= 94208 && x7 <= 101589 || x7 >= 101631 && x7 <= 101662 || x7 >= 101760 && x7 <= 101874 || x7 >= 110576 && x7 <= 110579 || x7 >= 110581 && x7 <= 110587 || x7 >= 110589 && x7 <= 110590 || x7 >= 110592 && x7 <= 110882 || x7 == 110898 || x7 >= 110928 && x7 <= 110930 || x7 == 110933 || x7 >= 110948 && x7 <= 110951 || x7 >= 110960 && x7 <= 111355 || x7 >= 113664 && x7 <= 113770 || x7 >= 113776 && x7 <= 113788 || x7 >= 113792 && x7 <= 113800 || x7 >= 113808 && x7 <= 113817 || x7 >= 119808 && x7 <= 119892 || x7 >= 119894 && x7 <= 119964 || x7 >= 119966 && x7 <= 119967 || x7 == 119970 || x7 >= 119973 && x7 <= 119974 || x7 >= 119977 && x7 <= 119980 || x7 >= 119982 && x7 <= 119993 || x7 == 119995 || x7 >= 119997 && x7 <= 120003 || x7 >= 120005 && x7 <= 120069 || x7 >= 120071 && x7 <= 120074 || x7 >= 120077 && x7 <= 120084 || x7 >= 120086 && x7 <= 120092 || x7 >= 120094 && x7 <= 120121 || x7 >= 120123 && x7 <= 120126 || x7 >= 120128 && x7 <= 120132 || x7 == 120134 || x7 >= 120138 && x7 <= 120144 || x7 >= 120146 && x7 <= 120485 || x7 >= 120488 && x7 <= 120512 || x7 >= 120514 && x7 <= 120538 || x7 >= 120540 && x7 <= 120570 || x7 >= 120572 && x7 <= 120596 || x7 >= 120598 && x7 <= 120628 || x7 >= 120630 && x7 <= 120654 || x7 >= 120656 && x7 <= 120686 || x7 >= 120688 && x7 <= 120712 || x7 >= 120714 && x7 <= 120744 || x7 >= 120746 && x7 <= 120770 || x7 >= 120772 && x7 <= 120779 || x7 >= 122624 && x7 <= 122654 || x7 >= 122661 && x7 <= 122666 || x7 >= 122928 && x7 <= 122989 || x7 >= 123136 && x7 <= 123180 || x7 >= 123191 && x7 <= 123197 || x7 == 123214 || x7 >= 123536 && x7 <= 123565 || x7 >= 123584 && x7 <= 123627 || x7 >= 124112 && x7 <= 124139 || x7 >= 124368 && x7 <= 124397 || x7 == 124400 || x7 >= 124608 && x7 <= 124638 || x7 >= 124640 && x7 <= 124642 || x7 >= 124644 && x7 <= 124645 || x7 >= 124647 && x7 <= 124653 || x7 >= 124656 && x7 <= 124660 || x7 >= 124670 && x7 <= 124671 || x7 >= 124896 && x7 <= 124902 || x7 >= 124904 && x7 <= 124907 || x7 >= 124909 && x7 <= 124910 || x7 >= 124912 && x7 <= 124926 || x7 >= 124928 && x7 <= 125124 || x7 >= 125184 && x7 <= 125251 || x7 == 125259 || x7 >= 126464 && x7 <= 126467 || x7 >= 126469 && x7 <= 126495 || x7 >= 126497 && x7 <= 126498 || x7 == 126500 || x7 == 126503 || x7 >= 126505 && x7 <= 126514 || x7 >= 126516 && x7 <= 126519 || x7 == 126521 || x7 == 126523 || x7 == 126530 || x7 == 126535 || x7 == 126537 || x7 == 126539 || x7 >= 126541 && x7 <= 126543 || x7 >= 126545 && x7 <= 126546 || x7 == 126548 || x7 == 126551 || x7 == 126553 || x7 == 126555 || x7 == 126557 || x7 == 126559 || x7 >= 126561 && x7 <= 126562 || x7 == 126564 || x7 >= 126567 && x7 <= 126570 || x7 >= 126572 && x7 <= 126578 || x7 >= 126580 && x7 <= 126583 || x7 >= 126585 && x7 <= 126588 || x7 == 126590 || x7 >= 126592 && x7 <= 126601 || x7 >= 126603 && x7 <= 126619 || x7 >= 126625 && x7 <= 126627 || x7 >= 126629 && x7 <= 126633 || x7 >= 126635 && x7 <= 126651 || x7 >= 131072 && x7 <= 173791 || x7 >= 173824 && x7 <= 178205 || x7 >= 178208 && x7 <= 183981 || x7 >= 183984 && x7 <= 191456 || x7 >= 191472 && x7 <= 192093 || x7 >= 194560 && x7 <= 195101 || x7 >= 196608 && x7 <= 201546 || x7 >= 201552 && x7 <= 210041))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 65)
 		goto L9
 	}
@@ -89862,7 +89917,7 @@ L10:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
 L9:
-	if !(x8 && (!!(x7 >= 1632 && x7 <= 1641 || x7 >= 1776 && x7 <= 1785 || x7 >= 1984 && x7 <= 1993 || x7 >= 2406 && x7 <= 2415 || x7 >= 2534 && x7 <= 2543 || x7 >= 2662 && x7 <= 2671 || x7 >= 2790 && x7 <= 2799 || x7 >= 2918 && x7 <= 2927 || x7 >= 3046 && x7 <= 3055 || x7 >= 3174 && x7 <= 3183 || x7 >= 3302 && x7 <= 3311 || x7 >= 3430 && x7 <= 3439 || x7 >= 3558 && x7 <= 3567 || x7 >= 3664 && x7 <= 3673 || x7 >= 3792 && x7 <= 3801 || x7 >= 3872 && x7 <= 3881 || x7 >= 4160 && x7 <= 4169 || x7 >= 4240 && x7 <= 4249 || x7 >= 6112 && x7 <= 6121 || x7 >= 6160 && x7 <= 6169 || x7 >= 6470 && x7 <= 6479 || x7 >= 6608 && x7 <= 6617 || x7 >= 6784 && x7 <= 6793 || x7 >= 6800 && x7 <= 6809 || x7 >= 6992 && x7 <= 7001 || x7 >= 7088 && x7 <= 7097 || x7 >= 7232 && x7 <= 7241 || x7 >= 7248 && x7 <= 7257 || x7 >= 42528 && x7 <= 42537 || x7 >= 43216 && x7 <= 43225 || x7 >= 43264 && x7 <= 43273 || x7 >= 43472 && x7 <= 43481 || x7 >= 43504 && x7 <= 43513 || x7 >= 43600 && x7 <= 43609 || x7 >= 44016 && x7 <= 44025 || x7 >= 65296 && x7 <= 65305 || x7 >= 66720 && x7 <= 66729 || x7 >= 68912 && x7 <= 68921 || x7 >= 68928 && x7 <= 68937 || x7 >= 69734 && x7 <= 69743 || x7 >= 69872 && x7 <= 69881 || x7 >= 69942 && x7 <= 69951 || x7 >= 70096 && x7 <= 70105 || x7 >= 70384 && x7 <= 70393 || x7 >= 70736 && x7 <= 70745 || x7 >= 70864 && x7 <= 70873 || x7 >= 71248 && x7 <= 71257 || x7 >= 71360 && x7 <= 71369 || x7 >= 71376 && x7 <= 71395 || x7 >= 71472 && x7 <= 71481 || x7 >= 71904 && x7 <= 71913 || x7 >= 72016 && x7 <= 72025 || x7 >= 72688 && x7 <= 72697 || x7 >= 72784 && x7 <= 72793 || x7 >= 73040 && x7 <= 73049 || x7 >= 73120 && x7 <= 73129 || x7 >= 73184 && x7 <= 73193 || x7 >= 73552 && x7 <= 73561 || x7 >= 90416 && x7 <= 90425 || x7 >= 92768 && x7 <= 92777 || x7 >= 92864 && x7 <= 92873 || x7 >= 93008 && x7 <= 93017 || x7 >= 93552 && x7 <= 93561 || x7 >= 118000 && x7 <= 118009 || x7 >= 120782 && x7 <= 120831 || x7 >= 123200 && x7 <= 123209 || x7 >= 123632 && x7 <= 123641 || x7 >= 124144 && x7 <= 124153 || x7 >= 124401 && x7 <= 124410 || x7 >= 125264 && x7 <= 125273 || x7 >= 130032 && x7 <= 130041))) && p.depth+1 <= maxDepth {
+	if !(x8 && (!!(x7 >= 1632 && x7 <= 1641 || x7 >= 1776 && x7 <= 1785 || x7 >= 1984 && x7 <= 1993 || x7 >= 2406 && x7 <= 2415 || x7 >= 2534 && x7 <= 2543 || x7 >= 2662 && x7 <= 2671 || x7 >= 2790 && x7 <= 2799 || x7 >= 2918 && x7 <= 2927 || x7 >= 3046 && x7 <= 3055 || x7 >= 3174 && x7 <= 3183 || x7 >= 3302 && x7 <= 3311 || x7 >= 3430 && x7 <= 3439 || x7 >= 3558 && x7 <= 3567 || x7 >= 3664 && x7 <= 3673 || x7 >= 3792 && x7 <= 3801 || x7 >= 3872 && x7 <= 3881 || x7 >= 4160 && x7 <= 4169 || x7 >= 4240 && x7 <= 4249 || x7 >= 6112 && x7 <= 6121 || x7 >= 6160 && x7 <= 6169 || x7 >= 6470 && x7 <= 6479 || x7 >= 6608 && x7 <= 6617 || x7 >= 6784 && x7 <= 6793 || x7 >= 6800 && x7 <= 6809 || x7 >= 6992 && x7 <= 7001 || x7 >= 7088 && x7 <= 7097 || x7 >= 7232 && x7 <= 7241 || x7 >= 7248 && x7 <= 7257 || x7 >= 42528 && x7 <= 42537 || x7 >= 43216 && x7 <= 43225 || x7 >= 43264 && x7 <= 43273 || x7 >= 43472 && x7 <= 43481 || x7 >= 43504 && x7 <= 43513 || x7 >= 43600 && x7 <= 43609 || x7 >= 44016 && x7 <= 44025 || x7 >= 65296 && x7 <= 65305 || x7 >= 66720 && x7 <= 66729 || x7 >= 68912 && x7 <= 68921 || x7 >= 68928 && x7 <= 68937 || x7 >= 69734 && x7 <= 69743 || x7 >= 69872 && x7 <= 69881 || x7 >= 69942 && x7 <= 69951 || x7 >= 70096 && x7 <= 70105 || x7 >= 70384 && x7 <= 70393 || x7 >= 70736 && x7 <= 70745 || x7 >= 70864 && x7 <= 70873 || x7 >= 71248 && x7 <= 71257 || x7 >= 71360 && x7 <= 71369 || x7 >= 71376 && x7 <= 71395 || x7 >= 71472 && x7 <= 71481 || x7 >= 71904 && x7 <= 71913 || x7 >= 72016 && x7 <= 72025 || x7 >= 72688 && x7 <= 72697 || x7 >= 72784 && x7 <= 72793 || x7 >= 73040 && x7 <= 73049 || x7 >= 73120 && x7 <= 73129 || x7 >= 73184 && x7 <= 73193 || x7 >= 73552 && x7 <= 73561 || x7 >= 90416 && x7 <= 90425 || x7 >= 92768 && x7 <= 92777 || x7 >= 92864 && x7 <= 92873 || x7 >= 93008 && x7 <= 93017 || x7 >= 93552 && x7 <= 93561 || x7 >= 118000 && x7 <= 118009 || x7 >= 120782 && x7 <= 120831 || x7 >= 123200 && x7 <= 123209 || x7 >= 123632 && x7 <= 123641 || x7 >= 124144 && x7 <= 124153 || x7 >= 124401 && x7 <= 124410 || x7 >= 125264 && x7 <= 125273 || x7 >= 130032 && x7 <= 130041))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 66)
 		goto L11
 	}
@@ -89906,7 +89961,7 @@ func (p *tparser) v263() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.s220(); !ok {
@@ -89918,7 +89973,7 @@ func (p *tparser) v263() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 44)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L6
 	}
@@ -89932,7 +89987,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 125)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L8
 	}
@@ -89946,7 +90001,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 10)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L10
 	}
@@ -89960,7 +90015,7 @@ L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L10:
-	if !(x5 && (x4 == 47)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L12
 	}
@@ -90005,7 +90060,7 @@ func (p *tparser) i263() (any, bool) {
 		x5 bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.s220(); !ok {
@@ -90017,7 +90072,7 @@ func (p *tparser) i263() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 44)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L6
 	}
@@ -90031,7 +90086,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 125)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L8
 	}
@@ -90045,7 +90100,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 10)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L10
 	}
@@ -90059,7 +90114,7 @@ L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L10:
-	if !(x5 && (x4 == 47)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 47)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 15)
 		goto L12
 	}
@@ -90113,7 +90168,7 @@ func (p *tparser) v264() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.u217(); !ok {
@@ -90125,7 +90180,7 @@ func (p *tparser) v264() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 44)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L6
 	}
@@ -90139,7 +90194,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 125)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L8
 	}
@@ -90184,7 +90239,7 @@ func (p *tparser) i264() (any, bool) {
 		x5 bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.u217(); !ok {
@@ -90196,7 +90251,7 @@ func (p *tparser) i264() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 44)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 44)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 17)
 		goto L6
 	}
@@ -90210,7 +90265,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 125)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 125)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 10)
 		goto L8
 	}
@@ -90251,7 +90306,7 @@ func (p *tparser) s265() (any, bool) {
 		ok   bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	for {
@@ -90295,7 +90350,7 @@ func (p *tparser) v266() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -90304,7 +90359,7 @@ func (p *tparser) v266() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 92 || x4 == 47 || x4 == 34))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 92 || x4 == 47 || x4 == 34))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 83)
 		goto L6
 	}
@@ -90323,7 +90378,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 117)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 117)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 84)
 		goto L8
 	}
@@ -90340,7 +90395,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 85)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 85)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 85)
 		goto L10
 	}
@@ -90382,7 +90437,7 @@ func (p *tparser) i266() (any, bool) {
 		ok   bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -90391,7 +90446,7 @@ func (p *tparser) i266() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 92 || x4 == 47 || x4 == 34))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 92 || x4 == 47 || x4 == 34))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 83)
 		goto L6
 	}
@@ -90410,7 +90465,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 117)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 117)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 84)
 		goto L8
 	}
@@ -90427,7 +90482,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 85)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 85)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 85)
 		goto L10
 	}
@@ -90468,7 +90523,7 @@ func (p *tparser) s267() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -90477,7 +90532,7 @@ func (p *tparser) s267() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 40)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 40)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L6
 	}
@@ -90499,7 +90554,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 91)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 91)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 35)
 		goto L8
 	}
@@ -90521,7 +90576,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 123)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 123)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 40)
 		goto L10
 	}
@@ -90578,7 +90633,7 @@ func (p *tparser) s268() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x22
@@ -90602,7 +90657,7 @@ L5:
 	} else {
 		x6, _, x7 = p.peek()
 	}
-	if !(x7 && (x6 == 95)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 95)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 50)
 		goto L8
 	}
@@ -90630,7 +90685,7 @@ L10:
 L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
-	if !(x7 && (x6 == 46)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 25)
 		goto L12
 	}
@@ -90644,7 +90699,7 @@ L13:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L12:
-	if !(x7 && (x6 == 46)) && p.depth+0 <= maxDepth {
+	if !(x7 && (x6 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L14
 	}
@@ -90673,7 +90728,7 @@ L15:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L14:
-	if !(x7 && (!!(x6 == 58 || x6 == 59 || x6 == 63 || x6 == 126 || x6 == 43 || x6 == 45 || x6 == 42 || x6 == 47 || x6 == 60 || x6 == 62 || x6 == 61 || x6 == 33 || x6 == 38 || x6 == 124 || x6 == 44))) && p.depth+0 <= maxDepth {
+	if !(x7 && (!!(x6 == 58 || x6 == 59 || x6 == 63 || x6 == 126 || x6 == 43 || x6 == 45 || x6 == 42 || x6 == 47 || x6 == 60 || x6 == 62 || x6 == 61 || x6 == 33 || x6 == 38 || x6 == 124 || x6 == 44))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 51)
 		goto L19
 	}
@@ -90761,7 +90816,7 @@ func (p *tparser) s269() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) {
@@ -90812,7 +90867,7 @@ func (p *tparser) v270() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x9
@@ -90910,7 +90965,7 @@ func (p *tparser) i270() (any, bool) {
 		size int
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x9
@@ -91007,7 +91062,7 @@ func (p *tparser) s271() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -91016,7 +91071,7 @@ func (p *tparser) s271() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 == 36))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 >= 97 && x4 <= 122 || x4 >= 65 && x4 <= 90 || x4 == 36))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 67)
 		goto L6
 	}
@@ -91098,7 +91153,7 @@ func (p *tparser) v272() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -91107,7 +91162,7 @@ func (p *tparser) v272() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 92 || x4 == 47 || x4 == 39))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 92 || x4 == 47 || x4 == 39))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 86)
 		goto L6
 	}
@@ -91126,7 +91181,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 117)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 117)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 84)
 		goto L8
 	}
@@ -91143,7 +91198,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 85)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 85)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 85)
 		goto L10
 	}
@@ -91160,7 +91215,7 @@ L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L10:
-	if !(x5 && (x4 == 120)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 120)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 87)
 		goto L12
 	}
@@ -91180,7 +91235,7 @@ L13:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L12:
-	if !(x5 && (!!(x4 >= 48 && x4 <= 51))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 >= 48 && x4 <= 51))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 88)
 		goto L14
 	}
@@ -91244,7 +91299,7 @@ func (p *tparser) i272() (any, bool) {
 		ok   bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -91253,7 +91308,7 @@ func (p *tparser) i272() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (!!(x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 92 || x4 == 47 || x4 == 39))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 == 97 || x4 == 98 || x4 == 102 || x4 == 110 || x4 == 114 || x4 == 116 || x4 == 118 || x4 == 92 || x4 == 47 || x4 == 39))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 86)
 		goto L6
 	}
@@ -91272,7 +91327,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 117)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 117)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 84)
 		goto L8
 	}
@@ -91289,7 +91344,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 85)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 85)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 85)
 		goto L10
 	}
@@ -91306,7 +91361,7 @@ L11:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L10:
-	if !(x5 && (x4 == 120)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 120)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 87)
 		goto L12
 	}
@@ -91326,7 +91381,7 @@ L13:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L12:
-	if !(x5 && (!!(x4 >= 48 && x4 <= 51))) && p.depth+0 <= maxDepth {
+	if !(x5 && (!!(x4 >= 48 && x4 <= 51))) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 88)
 		goto L14
 	}
@@ -91419,7 +91474,7 @@ func (p *tparser) i273() (any, bool) {
 		v43 any
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_, _ = x19, x39
@@ -91435,7 +91490,7 @@ func (p *tparser) i273() (any, bool) {
 	} else {
 		x11, _, x12 = p.peek()
 	}
-	if !(x12 && (x11 == 34)) && p.depth+0 <= maxDepth {
+	if !(x12 && (x11 == 34)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 48)
 		goto L13
 	}
@@ -91484,7 +91539,7 @@ L14:
 	p.recovered = p.recovered[:x8]
 	k3 = x9
 L13:
-	if !(x12 && (x11 == 39)) && p.depth+0 <= maxDepth {
+	if !(x12 && (x11 == 39)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 95)
 		goto L24
 	}
@@ -91516,7 +91571,7 @@ L6:
 	} else {
 		x31, _, x32 = p.peek()
 	}
-	if !(x32 && (x31 == 39)) && p.depth+0 <= maxDepth {
+	if !(x32 && (x31 == 39)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 95)
 		goto L33
 	}
@@ -91565,7 +91620,7 @@ L34:
 	p.recovered = p.recovered[:x28]
 	k3 = x29
 L33:
-	if !(x32 && (x31 == 34)) && p.depth+0 <= maxDepth {
+	if !(x32 && (x31 == 34)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 48)
 		goto L44
 	}
@@ -91626,7 +91681,7 @@ func (p *tparser) i274() (any, bool) {
 		x9 int
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	_ = x3
@@ -91698,7 +91753,7 @@ func (p *tparser) s275() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -91707,7 +91762,7 @@ func (p *tparser) s275() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 10)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 18)
 		goto L6
 	}
@@ -91721,7 +91776,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 13)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 13)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 96)
 		goto L8
 	}
@@ -91759,7 +91814,7 @@ func (p *tparser) s276() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if p.pos < len(p.in) {
@@ -91800,7 +91855,7 @@ func (p *tparser) v277() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.s246(); !ok {
@@ -91832,7 +91887,7 @@ func (p *tparser) i277() (any, bool) {
 		ok bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	if _, ok = p.s246(); !ok {
@@ -91877,7 +91932,7 @@ func (p *tparser) v278() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -91886,7 +91941,7 @@ func (p *tparser) v278() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 48)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 81)
 		goto L6
 	}
@@ -91915,7 +91970,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 48)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 82)
 		goto L8
 	}
@@ -91964,7 +92019,7 @@ func (p *tparser) i278() (any, bool) {
 		ok bool
 	)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -91973,7 +92028,7 @@ func (p *tparser) i278() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 48)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 81)
 		goto L6
 	}
@@ -92002,7 +92057,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 48)) && p.depth+0 <= maxDepth {
+	if !(x5 && (x4 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 82)
 		goto L8
 	}
@@ -92050,7 +92105,7 @@ func (p *tparser) s279() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -92113,7 +92168,7 @@ func (p *tparser) s280() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -92135,7 +92190,7 @@ L3:
 	} else {
 		x7, _, x8 = p.peek()
 	}
-	if !(x8 && (x7 == 48)) && p.depth+1 <= maxDepth {
+	if !(x8 && (x7 == 48)) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L9
 	}
@@ -92201,7 +92256,7 @@ L14:
 L18:
 	p.pos = x4
 	p.recovered = p.recovered[:x5]
-	if !(x8 && (x7 == 48)) && p.depth+0 <= maxDepth {
+	if !(x8 && (x7 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L19
 	}
@@ -92286,7 +92341,7 @@ func (p *tparser) s281() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -92344,7 +92399,7 @@ func (p *tparser) s282() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -92354,7 +92409,7 @@ func (p *tparser) s282() (any, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L10
 	}
@@ -92366,7 +92421,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 48)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L12
 	}
@@ -92412,7 +92467,7 @@ L4:
 	} else {
 		x22, _, x23 = p.peek()
 	}
-	if !(x23 && (x22 == 46)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L24
 	}
@@ -92468,7 +92523,7 @@ func (p *tparser) s283() (any, bool) {
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
-	if p.depth > maxDepth {
+	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
 	x1, x2 = p.pos, len(p.recovered)
@@ -92478,7 +92533,7 @@ func (p *tparser) s283() (any, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x9 && (!!(x8 >= 49 && x8 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L10
 	}
@@ -92490,7 +92545,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 48)) && p.depth+0 <= maxDepth {
+	if !(x9 && (x8 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L12
 	}
@@ -92531,7 +92586,7 @@ L4:
 	} else {
 		x22, _, x23 = p.peek()
 	}
-	if !(x23 && (!!(x22 >= 49 && x22 <= 57))) && p.depth+1 <= maxDepth {
+	if !(x23 && (!!(x22 >= 49 && x22 <= 57))) && p.depth+1 <= p.maxDepth {
 		p.expect(p.pos, 58)
 		goto L24
 	}
@@ -92543,7 +92598,7 @@ L25:
 	p.pos = x19
 	p.recovered = p.recovered[:x20]
 L24:
-	if !(x23 && (x22 == 48)) && p.depth+0 <= maxDepth {
+	if !(x23 && (x22 == 48)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 54)
 		goto L26
 	}
@@ -92571,7 +92626,7 @@ L18:
 	} else {
 		x28, _, x29 = p.peek()
 	}
-	if !(x29 && (x28 == 46)) && p.depth+0 <= maxDepth {
+	if !(x29 && (x28 == 46)) && p.depth+0 <= p.maxDepth {
 		p.expect(p.pos, 24)
 		goto L30
 	}

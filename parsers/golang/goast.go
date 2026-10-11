@@ -17,7 +17,7 @@ import (
 // Doc and Comment fields are not set. Identifiers are not resolved (as with go/parser's
 // SkipObjectResolution).
 //
-// f must have been parsed from src with the Bytes unit (ParseAST(src, Bytes)); ToGoAST panics if f
+// f must have been parsed from src with the Bytes unit (ParseAST(src, WithUnit(Bytes))); ToGoAST panics if f
 // does not fit src.
 func ToGoAST(fset *token.FileSet, filename, src string, f *File, mode Mode) *ast.File {
 	tf := fset.AddFile(filename, -1, len(src))

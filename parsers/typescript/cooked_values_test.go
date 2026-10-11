@@ -49,7 +49,7 @@ func cookedLiteralCases() []cookedLiteralCase {
 
 func cookedValue(t *testing.T, src string, unit typescript.Unit) string {
 	t.Helper()
-	f, err := typescript.ParseAST(src, unit)
+	f, err := typescript.ParseAST(src, typescript.WithUnit(unit))
 	if err != nil {
 		t.Fatalf("ParseAST(%q): %v", src, err)
 	}

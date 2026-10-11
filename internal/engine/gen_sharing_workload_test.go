@@ -121,7 +121,7 @@ func TestSharingResults(t *testing.T) {
  for _,unit:=range []Unit{CodePoints,Bytes} {
   for i,input:=range []string{small,large,invalid,""} {
    for pass:=0;pass<3;pass++ {
-    n,err:=Parse(input,unit);ast,aerr:=ParseAST(input,unit);rec:=Recognize(input,unit)
+    n,err:=Parse(input,WithUnit(unit));ast,aerr:=ParseAST(input,WithUnit(unit));rec:=Recognize(input,WithUnit(unit))
     if i<2 && (err!=nil || aerr!=nil || rec!=nil) {t.Fatalf("valid input failed: %v %v %v",err,aerr,rec)}
     if i==2 && (err==nil || aerr==nil || rec==nil) {t.Fatal("invalid input accepted")}
     data,jerr:=json.Marshal([]any{n,fmt.Sprint(err),ast,fmt.Sprint(aerr),fmt.Sprint(rec)});if jerr!=nil {t.Fatal(jerr)}
@@ -138,7 +138,7 @@ func BenchmarkSharingParse(b *testing.B) {
   for _,unit:=range []Unit{CodePoints,Bytes} {
    for _,api:=range []string{"Node","AST","Recognize"} {
     b.Run(fmt.Sprintf("%s/%s/%d",item.name,api,unit),func(b *testing.B) {
-     run:=func()error {switch api {case "Node":_,err:=Parse(item.input,unit);return err;case "AST":_,err:=ParseAST(item.input,unit);return err;default:return Recognize(item.input,unit)}}
+     run:=func()error {switch api {case "Node":_,err:=Parse(item.input,WithUnit(unit));return err;case "AST":_,err:=ParseAST(item.input,WithUnit(unit));return err;default:return Recognize(item.input,WithUnit(unit))}}
      if err:=run();err!=nil {b.Fatal(err)}
      b.ReportAllocs();b.SetBytes(int64(len(item.input)));b.ResetTimer()
      for b.Loop() {if err:=run();err!=nil {b.Fatal(err)}}

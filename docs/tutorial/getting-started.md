@@ -790,7 +790,11 @@ func main() {
 ```
 
 The generated `Node` type mirrors `pego.Node`, and the generated parser gives the same trees and errors as the
-library. `config.ParseRule(name, input)` starts at another rule.
+library. `config.ParseRule(name, input)` starts at another rule. The generated entry points accept functional
+options: `config.Parse(input, config.WithUnit(config.Bytes), config.WithMaxDepth(600_000))`.
+`pego gen -max-depth 600000` sets the generated default; omitted or zero keeps 100,000. Existing raw unit arguments
+migrate to `WithUnit`, including function-value and slice consumers (see the
+[code-generation migration guide](../guide/code-generation.md#invocation-options-and-migration)).
 
 ### Backends and compiled grammars
 

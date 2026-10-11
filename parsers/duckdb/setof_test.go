@@ -41,13 +41,13 @@ func TestSetofTypeBoundaries(t *testing.T) {
 		for _, template := range []string{"SELECT CAST(NULL AS %s)", "SELECT NULL::%s", "CREATE TABLE t (x %s)"} {
 			sql := fmt.Sprintf(template, tc.typ)
 			for _, unit := range []duckdb.Unit{duckdb.CodePoints, duckdb.Bytes} {
-				if err := duckdb.Recognize(sql, unit); (err == nil) != tc.ok {
+				if err := duckdb.Recognize(sql, duckdb.WithUnit(unit)); (err == nil) != tc.ok {
 					t.Errorf("Recognize(%q, %v): %v", sql, unit, err)
 				}
-				if _, err := duckdb.Parse(sql, unit); (err == nil) != tc.ok {
+				if _, err := duckdb.Parse(sql, duckdb.WithUnit(unit)); (err == nil) != tc.ok {
 					t.Errorf("Parse(%q, %v): %v", sql, unit, err)
 				}
-				if _, err := duckdb.ParseAST(sql, unit); (err == nil) != tc.ok {
+				if _, err := duckdb.ParseAST(sql, duckdb.WithUnit(unit)); (err == nil) != tc.ok {
 					t.Errorf("ParseAST(%q, %v): %v", sql, unit, err)
 				}
 			}
@@ -65,7 +65,7 @@ func TestSetofTypeAST(t *testing.T) {
 	} {
 		sql := "SELECT CAST(NULL AS " + tc.typ + ")"
 		for _, unit := range []duckdb.Unit{duckdb.CodePoints, duckdb.Bytes} {
-			script, err := duckdb.ParseAST(sql, unit)
+			script, err := duckdb.ParseAST(sql, duckdb.WithUnit(unit))
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -50,8 +50,8 @@ func TestExpectationPoolReuse(t *testing.T) {
  if p.expBits != 0 || len(p.exp) != 0 { t.Fatal("plain release retained record") }
  for _,unit := range []Unit{CodePoints,Bytes} {
   for i:=0;i<3;i++ {
-   if _,err:=Parse("!",unit);err==nil { t.Fatal("invalid input accepted") }
-   if n,err:=Parse("é",unit);err!=nil || n.Text!="é" { t.Fatalf("plain reuse: %v",err) }
+   if _,err:=Parse("!",WithUnit(unit));err==nil { t.Fatal("invalid input accepted") }
+   if n,err:=Parse("é",WithUnit(unit));err!=nil || n.Text!="é" { t.Fatalf("plain reuse: %v",err) }
   }
  }
 }
@@ -65,8 +65,8 @@ func TestTypedExpectationPoolReuse(t *testing.T) {
  if p.expBits != 0 || len(p.exp) != 0 { t.Fatal("typed recycle retained record") }
  for _,unit := range []Unit{CodePoints,Bytes} {
   for i:=0;i<3;i++ {
-   if _,err:=ParseAST("!",unit);err==nil { t.Fatal("invalid input accepted") }
-   if n,err:=ParseAST("é",unit);err!=nil || n.Text!="é" { t.Fatalf("typed reuse: %v",err) }
+   if _,err:=ParseAST("!",WithUnit(unit));err==nil { t.Fatal("invalid input accepted") }
+   if n,err:=ParseAST("é",WithUnit(unit));err!=nil || n.Text!="é" { t.Fatalf("typed reuse: %v",err) }
   }
  }
 }

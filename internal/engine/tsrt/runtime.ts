@@ -557,15 +557,30 @@ function ruleIn(table: Rule[], name: string): Rule | null {
   return null;
 }
 
-// maxDepth is the maximum nesting of rule calls, the same default as the engine.
-const maxDepth = 100_000;
+// defaultMaxDepth is the generated default maximum nesting of rule calls.
+const defaultMaxDepth = 100_000;
+
+/** Options for one invocation. Zero maxDepth selects the generated default. */
+export interface ParseOptions {
+  unit?: Unit;
+  maxDepth?: number;
+}
+
+function resolveOptions(options?: ParseOptions): { unit: Unit; maxDepth: number } | Error {
+  const unit = options?.unit === Bytes ? Bytes : CodePoints;
+  const depth = options?.maxDepth ?? 0;
+  if (!Number.isSafeInteger(depth) || depth < 0) {
+    return new Error(`max depth must be a non-negative safe integer: ${depth}`);
+  }
+  return { unit, maxDepth: depth === 0 ? defaultMaxDepth : depth };
+}
 
 // run parses the whole input with rule r of a rule table with seen rules that have rule.seen set.
-function run(r: Rule, seen: number, input: string | Uint8Array, unit: Unit | undefined): ParseResult {
+function run(r: Rule, seen: number, input: string | Uint8Array, unit: Unit | undefined, maxDepth = defaultMaxDepth): ParseResult {
   let p: Parser | null = null;
   try {
     // Made inside the try, so that decoding the input fails as parsing does.
-    p = new Parser(input, unit === Bytes ? Bytes : CodePoints, seen);
+    p = new Parser(input, unit === Bytes ? Bytes : CodePoints, seen, maxDepth);
     return result(p, p.call(r, 0));
   } catch (x) {
     if (x instanceof Fatal) {
@@ -871,6 +886,7 @@ class Parser {
   pos = 0;
   psize = 0; // the size of the character peek returned
 
+  readonly maxDepth: number; // invocation-local maximum nesting
   depth = 0; // nesting of rule calls
   created: Node[] = []; // struct nodes made by the action being evaluated (from Actx.cbase)
   env: Env | null = null;
@@ -908,8 +924,9 @@ class Parser {
   ac: Actx;
   saved: (Node | null)[] = []; // captures saved across a reset in longest
 
-  constructor(input: string | Uint8Array, unit: Unit, stride: number) {
+  constructor(input: string | Uint8Array, unit: Unit, stride: number, maxDepth: number) {
     this.unit = unit;
+    this.maxDepth = maxDepth;
     this.stride = stride;
     this.calls = new Int32Array(stride);
     this.repeats = new Int32Array(stride);
@@ -1400,7 +1417,7 @@ class Parser {
     const trail = this.trail.length;
     this.frame = f;
     this.cut = false;
-    if (++this.depth > maxDepth) {
+    if (++this.depth > this.maxDepth) {
       this.tooDeep();
     }
     const start = this.pos;
@@ -1426,7 +1443,7 @@ class Parser {
     const prevEnv = this.env;
     const prevCut = this.cut;
     this.cut = false;
-    if (++this.depth > maxDepth) {
+    if (++this.depth > this.maxDepth) {
       this.tooDeep();
     }
     let v = r.body(this, min);
@@ -1445,7 +1462,7 @@ class Parser {
 
   // tooDeep fails the parse for exceeding the nesting limit.
   tooDeep(): never {
-    throw new Fatal(new Error(`nesting too deep: more than ${maxDepth} rule calls`));
+    throw new Fatal(new Error(`nesting too deep: more than ${this.maxDepth} rule calls`));
   }
 
   // finish makes the rule's value from the value of its body.
@@ -1844,7 +1861,7 @@ class Parser {
   // recursion (the operand of a prefix operator, the right operand of an infix operator) counts
   // against the nesting limit, like a rule call.
   prattParse(r: Rule, min: number): R {
-    if (++this.depth > maxDepth) {
+    if (++this.depth > this.maxDepth) {
       this.tooDeep();
     }
     const v = this.prattExpr(r, min);

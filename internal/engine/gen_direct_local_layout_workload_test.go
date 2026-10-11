@@ -115,18 +115,18 @@ func checkLocal(v *Doc, err error, n int, rejected bool, unit Unit) bool {
 
 func TestLocalLayoutWorkload(t *testing.T) {
     for _, unit := range []Unit{CodePoints,Bytes} {
-        saved, err := ParseAST(localInput(3,false),unit)
+        saved, err := ParseAST(localInput(3,false),WithUnit(unit))
         if !checkLocal(saved,err,3,false,unit) { t.Fatalf("saved value %v %v",saved,err) }
         before, _ := json.Marshal(saved)
         p := &tparser{parser:&parser{}}
         for _, n := range []int{1,128,1} {
             for _, rejected := range []bool{false,true} {
                 input := localInput(n,rejected)
-                value, err := p.run(trules[0],input,[]Unit{unit},&tslabs{})
+                value, err := p.run(trules[0],input,parseOptions{unit: unit, maxDepth: defaultMaxDepth},&tslabs{})
                 v := tAs[*Doc](value)
                 if !checkLocal(v,err,n,rejected,unit) { t.Fatalf("%d/%v: %v %v",n,rejected,v,err) }
                 data, _ := json.Marshal(struct { Value any; Error string }{v,fmt.Sprint(err)})
-                pooled, pooledErr := ParseAST(input,unit)
+                pooled, pooledErr := ParseAST(input,WithUnit(unit))
                 pooledData, _ := json.Marshal(struct { Value any; Error string }{pooled,fmt.Sprint(pooledErr)})
                 if string(data) != string(pooledData) { t.Fatal("manual and pooled parsers differ") }
                 fmt.Printf("OBS %v %d/%v %s\n",unit,n,rejected,data)
@@ -153,10 +153,10 @@ func BenchmarkTypedLocalLayout(b *testing.B) {
             input := localInput(n,rejected)
             for _, unit := range []Unit{CodePoints,Bytes} {
                 b.Run(fmt.Sprintf("%d/rejected=%v/%v",n,rejected,unit),func(b *testing.B) {
-                    v, err := ParseAST(input,unit)
+                    v, err := ParseAST(input,WithUnit(unit))
                     if !checkLocal(v,err,n,rejected,unit) { b.Fatalf("%v %v",v,err) }
                     b.ReportAllocs()
-                    for b.Loop() { localResult,localErr = ParseAST(input,unit) }
+                    for b.Loop() { localResult,localErr = ParseAST(input,WithUnit(unit)) }
                 })
             }
         }

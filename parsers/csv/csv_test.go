@@ -298,7 +298,7 @@ func TestParseAST(t *testing.T) {
 		}
 	}
 	// Byte positions.
-	f, err = csv.ParseAST("é,\"ü\"", csv.Bytes)
+	f, err = csv.ParseAST("é,\"ü\"", csv.WithUnit(csv.Bytes))
 	if err != nil {
 		t.Fatal(err)
 	}

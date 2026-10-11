@@ -136,18 +136,18 @@ func checkRecovery(v *Doc, err error, mode string, n int) bool {
 
 func TestRecoveryWorkload(t *testing.T) {
     for _, unit := range []Unit{CodePoints, Bytes} {
-        saved, savedErr := ParseAST(recoveryInput("recovered", 2), unit)
+        saved, savedErr := ParseAST(recoveryInput("recovered", 2), WithUnit(unit))
         if !checkRecovery(saved, savedErr, "recovered", 2) { t.Fatalf("saved value %v %v", saved, savedErr) }
         before, _ := json.Marshal(struct { Value any; Error any }{saved, savedErr})
         p := &tparser{parser:&parser{}}
         for _, n := range []int{1,128,1} {
             for _, mode := range []string{"accepted","recovered","rejected"} {
                 input := recoveryInput(mode,n)
-                value, err := p.run(trules[0],input,[]Unit{unit},&tslabs{})
+                value, err := p.run(trules[0],input,parseOptions{unit: unit, maxDepth: defaultMaxDepth},&tslabs{})
                 v := tAs[*Doc](value)
                 if !checkRecovery(v,err,mode,n) { t.Fatalf("%s/%d: %v %v",mode,n,v,err) }
                 data, _ := json.Marshal(struct { Value any; Error any }{v,err})
-                pooled, pooledErr := ParseAST(input,unit)
+                pooled, pooledErr := ParseAST(input,WithUnit(unit))
                 pooledData, _ := json.Marshal(struct { Value any; Error any }{pooled,pooledErr})
                 if string(data) != string(pooledData) { t.Fatal("manual and pooled parsers differ") }
                 fmt.Printf("OBS %v %s/%d %s\n",unit,mode,n,data)
@@ -174,10 +174,10 @@ func BenchmarkTypedRecovery(b *testing.B) {
             input := recoveryInput(mode,n)
             for _, unit := range []Unit{CodePoints,Bytes} {
                 b.Run(fmt.Sprintf("%d/%s/%v",n,mode,unit),func(b *testing.B) {
-                    v, err := ParseAST(input,unit)
+                    v, err := ParseAST(input,WithUnit(unit))
                     if !checkRecovery(v,err,mode,n) { b.Fatalf("%v %v",v,err) }
                     b.ReportAllocs()
-                    for b.Loop() { recoveryResult,recoveryErr = ParseAST(input,unit) }
+                    for b.Loop() { recoveryResult,recoveryErr = ParseAST(input,WithUnit(unit)) }
                 })
             }
         }

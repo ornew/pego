@@ -43,9 +43,9 @@ All ten have the API of a parser generated with `pego gen -types -recognize`
 
 | | |
 |:--|:--|
-| `ParseAST(input, unit...)` | The document as the Go types the grammar declares, each with its `Span` in the input |
-| `Parse(input, unit...)` | The document as a tree of `*Node`, as the engine returns it |
-| `Recognize(input, unit...)` | Only checks the input; returns the error, builds nothing |
+| `ParseAST(input, opts...)` | The document as the Go types the grammar declares, each with its `Span` in the input |
+| `Parse(input, opts...)` | The document as a tree of `*Node`, as the engine returns it |
+| `Recognize(input, opts...)` | Only checks the input; returns the error, builds nothing |
 | `*SyntaxError` | The position (`Line`, `Col`, `Pos`) and the expected tokens of a syntax error |
 | `Span`, `Unit`, `Bytes`, `CodePoints` | Positions: the start and end of a node, and the unit they are counted in |
 
@@ -268,7 +268,7 @@ func main() {
 	})
 
 	// The same file as the typed values of the grammar, each with its Span (here in bytes).
-	file, err := golang.ParseAST(src, golang.Bytes)
+	file, err := golang.ParseAST(src, golang.WithUnit(golang.Bytes))
 	if err != nil {
 		panic(err)
 	}
@@ -347,9 +347,8 @@ subquery. (The target of an `INSERT` is not a `BaseTable`, so the third statemen
 ## Positions
 
 Every node has a `Span` with `Start` and `End`, a half-open range of the input. Positions are in **code points** by
-default; pass `Bytes` for byte offsets, which is what you want when you slice the input as a Go string or when another
-tool counts bytes (`ToGoAST` of the Go parser needs bytes). The unit is an optional last argument of `ParseAST`, `Parse` and
-`Recognize`, and it applies to `Span`, to `SyntaxError.Pos` and to `Col` alike (`Line` is the same in both):
+default; pass `WithUnit(Bytes)` to generated entry points for byte offsets, which is what you want when you slice the input as a Go string or when another
+tool counts bytes (`ToGoAST` of the Go parser needs bytes). `ParseAST`, `Parse` and `Recognize` accept functional options, and it applies to `Span`, to `SyntaxError.Pos` and to `Col` alike (`Line` is the same in both):
 
 ```go
 package main
@@ -368,12 +367,12 @@ func main() {
 		unit json.Unit
 	}{{"code points", json.CodePoints}, {"bytes", json.Bytes}} {
 		unit := u.unit
-		_, err := json.ParseAST(src, unit)
+		_, err := json.ParseAST(src, json.WithUnit(unit))
 		var se *json.SyntaxError
 		if errors.As(err, &se) {
 			fmt.Printf("%-11s error at pos %d, line %d, col %d\n", u.name, se.Pos, se.Line, se.Col)
 		}
-		v, _ := json.ParseAST(`["あい", 1]`, unit)
+		v, _ := json.ParseAST(`["あい", 1]`, json.WithUnit(unit))
 		last := v.(*json.Array).Elements[1]
 		fmt.Printf("%-11s the number 1 is at %d-%d\n", u.name, last.(*json.Number).Start, last.(*json.Number).End)
 	}
@@ -439,9 +438,10 @@ Limits to plan for:
 
 - **Nesting.** The generated parsers limit the depth of rule calls to 100,000, so deeply nested input fails with
   `nesting too deep: more than 100000 rule calls` instead of exhausting the stack. For JSON that is about 33,000 levels
-  of arrays. The limit is fixed in generated code ([what is supported](code-generation.md#what-is-supported)); to accept
-  deeper input or to set a lower limit, use the grammar with the engine, whose `BytecodeIterative` backend and
-  `WithMaxDepth` option are made for it ([runtime guide](runtime.md#deep-nesting-and-withmaxdepth)).
+  of arrays. Generated `WithMaxDepth` sets a lower or higher ceiling for one invocation; zero keeps the generated
+  default. Ready-made defaults remain 100,000. Raising the limit cannot guarantee host-stack capacity. Use the
+  grammar with the engine's `BytecodeIterative` backend for an explicit parsing stack
+  ([runtime guide](runtime.md#deep-nesting-and-withmaxdepth)).
 - **Memory.** A tree holds every node of the document. For input of many megabytes, parse in pieces yourself (a log
   file by lines, a JSON stream by documents), or use the engine's streaming below.
 - **No recovery.** A parse stops at the first syntax error. For an editor, which needs a tree of the text as it is being
