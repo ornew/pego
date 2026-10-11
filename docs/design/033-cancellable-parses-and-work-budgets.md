@@ -328,18 +328,18 @@ streaming, code-generation and TypeScript guides with the applicable stage.
 The `feat/parse-work-controls` branch starts the core batch stage. It provides
 invocation-local context and overflow-safe work reservations, controlled input
 preparation, scanner and execution-dispatch checkpoints, action-value checkpoints,
-large character-class and batch memo/binding checkpoints, and cleanup after
-initialization interruption or caller panic. Recognition uses the same batch
+large character-class, batch memo/binding, and detached input-text checkpoints,
+and cleanup after initialization interruption or caller panic. Recognition uses
+the same batch
 lifecycle. Individual trace-option callbacks stop before a subsequent callback
 when cancellation is observed.
 
 This foundation is not an adopted implementation of the full contract above.
 Document and stream calls reject active controls until their lifecycle stages
-are implemented. Other matcher loops, input text materialization, graph, rollback
-and resumption loops still require the coverage map and regression gates before
-adoption. First-use setup ordering also needs a
-separate validation gate. The prototype remains separate from main until contract
-and performance gates pass.
+are implemented. Other matcher loops, graph, rollback and resumption loops still
+require the coverage map and regression gates before adoption. First-use setup
+ordering also needs a separate validation gate. The prototype remains separate
+from main until contract and performance gates pass.
 
 The private `pego_work_controls_reference` build tag removes execution
 instrumentation and rejects active controls. It retains the new state layout;
@@ -396,6 +396,19 @@ unpublished growth candidates. Runtime allocation/zeroing, map hashing, and GC
 remain nonpreemptible; these budgets are not memory limits. Inactive/reference
 calls retain the ordinary memo and binding paths and adaptive thresholds. Stream
 pruning and Document edits/resumption remain for their lifecycle stages.
+
+Detached batch input text is materialized with bounded work when no original
+source substring is available, including CodePoints input containing invalid
+UTF-8. Byte copying reserves at most 4096 input units and one step per chunk.
+Rune conversion sizes and encodes in separate passes of at most 128 runes per
+chunk, charging one input unit and one step per rune in each pass. Invalid scalar
+runes retain Go's replacement-character behavior. Output sizing is checked before
+allocation, and only a complete immutable string is returned; input and scratch
+buffers are never borrowed by the result. Original-source substrings remain
+constant-time when their offsets are ready. Allocations and builder growth remain
+nonpreemptible. Trace text accessors propagate engine interruption through the
+normal fatal boundary. Inactive/reference conversions retain the native paths;
+stream snapshots remain for the stream lifecycle stage.
 
 ## Alternatives considered
 
