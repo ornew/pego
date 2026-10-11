@@ -682,6 +682,11 @@ Text materialization also consumes work, including building a cached stream
 snapshot and its CodePoints position table. Reading an already cached substring
 requires no additional materialization work; snapshot creation never reads ahead.
 
+Each underlying reader call consumes one step before entering the reader,
+including empty reads, EOF and retries for incomplete characters. When no steps
+remain, that next call is prevented. Bytes consumed by read-ahead do not count
+as examined input until the engine examines them.
+
 The engine checks immediately before and after each underlying reader and emit
 call, including reader retries for empty reads or incomplete characters. An emit
 error or a reader's non-EOF error wins over cancellation first observed after

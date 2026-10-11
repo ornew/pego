@@ -15,6 +15,7 @@ type streamReaderObserver struct {
 
 func (r *streamReaderObserver) Read(dst []byte) (int, error) {
 	r.control.check()
+	r.control.charge(0, 1) // one step per underlying reader attempt, including empty refills
 	n, err := r.reader.Read(dst)
 	*r.result = err
 	r.control.checkAfterReader(err)

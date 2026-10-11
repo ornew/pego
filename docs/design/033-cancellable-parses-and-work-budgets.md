@@ -637,8 +637,12 @@ Admission, setup and execution preserve caller panic identity, including
 runtime.Error values. Traced terminal paths detach reader, emit, context and
 control references without changing event metadata or delivered Nodes.
 
-Controlled reads reserve one step per staged byte/code point and check before
-and after synchronous reader calls. An observer inside an invocation-local
+Controlled reads reserve one step per staged byte/code point. Each underlying
+Reader.Read attempt also reserves one step before entering caller code, including
+empty reads, EOF and refills that complete a UTF-8 rune. Failed reservations
+prevent that caller read. These attempt charges consume no input-work units;
+buffered read-ahead is not an examined-input cap. Checks run before and after
+synchronous reader calls. An observer inside an invocation-local
 bufio.Reader checks immediately before and after each underlying Read, including
 empty-read retries and refills that complete a UTF-8 rune. Cancellation prevents
 a further caller read even while ReadByte or ReadRune is still running. The
@@ -668,8 +672,10 @@ syntax, budget, cancellation, reader/emit-error and caller-panic exits. This
 establishes release of those fixture objects, not a retained-byte or timing bound.
 The controlled observer/storage/accounting costs and inactive branch/call costs
 are unmeasured. Raw-reader checks add a controller pointer to the observer and
-extra Context polls only on controlled caller reads. Generated-runtime lifecycles
-and default-cost gates remain pending before full contract adoption.
+extra Context polls only on controlled caller reads. Attempt accounting adds
+one counter reservation per controlled caller read; its cost is unmeasured.
+Generated-runtime lifecycles and default-cost gates remain pending before full
+contract adoption.
 
 
 Controlled stream snapshots reserve source copying through the bounded
