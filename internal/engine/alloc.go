@@ -182,12 +182,13 @@ func (p *parser) newFrame(n int) *frame {
 func (p *parser) resetStreamFrames() {
 	keep := 0
 	for i := range p.frameSlab {
+		p.stepWork()
 		if &p.frameSlab[i] == p.frame {
 			keep = i + 1
 			break
 		}
 	}
-	clear(p.frameSlab[keep:])
+	clearWork(p, p.frameSlab[keep:])
 	p.frameSlab = p.frameSlab[:keep]
 }
 

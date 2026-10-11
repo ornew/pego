@@ -222,6 +222,10 @@ func (p *Parser) Parse(input string, opts ...ParseOption) (*Node, error) {
 // retained, so the input never has to fit in memory. If emit returns an error, parsing stops and
 // ParseStream returns that error. An element without a value (for example, one that is discarded with -)
 // is passed as nil. As in any repetition, an element that matches without consuming input ends it.
+// WithContext and WithWorkLimits apply to this invocation. Cancellation cannot interrupt a blocked
+// reader or callback; the caller must arrange for it to return. A returned reader or emit error wins
+// over cancellation first observed after that call. Delivered elements remain caller-owned, and
+// retrying an interrupted stream requires caller-managed input replay.
 func (p *Parser) ParseStream(r io.Reader, emit func(*Node) error, opts ...ParseOption) error {
 	return p.prog.ParseStreamWith(p.start, r, emit, parseOptions(opts))
 }

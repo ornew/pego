@@ -630,8 +630,41 @@ and partial prefix or shifted-tail cancellation on all native backends and both
 units. The interrupted call returns no result, discards reusable state, preserves
 text/defaults and a historical Clone, and retries against fresh parsing. The
 additional controlled storage and inactive-path branch/call costs are unmeasured.
-Stream work controls, generated-runtime lifecycles and setup/default-cost gates
-remain pending before full contract adoption.
+Native stream controls now use one fresh invocation counter and validate fixed
+rule/backend/recognition constraints before consulting caller Context methods.
+Admission, setup and execution preserve caller panic identity, including
+runtime.Error values. Traced terminal paths detach reader, emit, context and
+control references without changing event metadata or delivered Nodes.
+
+Controlled reads reserve one step per staged byte/code point and check before
+and after synchronous reader calls. An observer inside an invocation-local
+bufio.Reader records the caller's returned error before buffering can defer it.
+A non-EOF error returned with data therefore wins over cancellation first
+observed after that read. Without cancellation, buffered data is still delivered
+before its saved error. Only controlled calls add this wrapper; inactive calls
+keep ordinary bufio.Reader reuse. Already-buffered caller readers can gain an
+additional buffer under active controls. Reader-byte consumption and prefetch
+are not bounded by the representation-based input-work counter.
+
+Emit has pre/post checks, preserves returned errors and exact panic values, and
+does not retract a delivered element when the postcheck interrupts. Normal commit
+counts frame scans, trail/value/frame clearing, memo slot and entry pruning, and
+leftward input/memo compaction in forward chunks of at most 128 elements.
+Partially compacted invocation state is discarded; caller replay, rather than
+continuation from the consumed reader, is the retry contract. Mandatory terminal
+teardown remains unbudgeted. Runtime allocation/growth, GC and caller code remain
+nonpreemptible intervals.
+
+Deterministic fixtures cover admission, unlimited-control parity, data-plus-error
+precedence, blocked-reader cooperation, emitted-prefix ownership, exact copy and
+clear reservations, growing memo seeds, caller panic attribution and fresh replay
+on every native backend and both units. Retained events and Programs are tested
+with weak references and strong-reference positive controls across successful,
+syntax, budget, cancellation, reader/emit-error and caller-panic exits. This
+establishes release of those fixture objects, not a retained-byte or timing bound.
+The controlled observer/storage/accounting costs and inactive branch/call costs
+are unmeasured. Generated-runtime lifecycles and setup/default-cost gates remain
+pending before full contract adoption.
 
 ## Alternatives considered
 
@@ -643,6 +676,11 @@ remain pending before full contract adoption.
 - **Wall-clock timeout goroutine or forced reader Close.** Can interrupt some I/O
   but introduces reader ownership, races, and goroutine leaks for arbitrary
   readers/callbacks. Prefer caller-owned I/O cancellation and cooperative checks.
+- **Check only bufio's returned error.** Avoids a controlled reader observer,
+  but a caller can return data and an error together while bufio reports a
+  successful ReadByte/ReadRune. A post-read cancellation would then replace the
+  reader error. Observe the caller result only for controlled streams, retaining
+  ordinary buffered-data/error ordering when no cancellation is observed.
 - **One universal backend-independent instruction count.** Attractive for portable
   settings but would require a new normalized evaluator and charge optimized
   skipped work artificially. Use documented backend-local abstract work events.

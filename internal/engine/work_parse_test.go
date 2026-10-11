@@ -88,7 +88,7 @@ func TestWorkParseLongLiteralAndScanner(t *testing.T) {
 	}
 }
 
-func TestWorkParseRecognitionAndUnsupportedRoutes(t *testing.T) {
+func TestWorkParseRecognitionAndStatefulAdmission(t *testing.T) {
 	prog := compile(t, `def main = "abc" $$`)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -101,8 +101,9 @@ func TestWorkParseRecognitionAndUnsupportedRoutes(t *testing.T) {
 	if d, err := prog.NewDocumentWith("main", "abc", ParseOptions{Context: ctx}); d != nil || !errors.Is(err, context.Canceled) {
 		t.Fatalf("document ignored construction cancellation: document=%v error=%v", d, err)
 	}
-	if err := prog.ParseStreamWith("main", strings.NewReader("abc"), nil, ParseOptions{Context: ctx}); err == nil {
-		t.Fatal("stream ignored unsupported work control")
+	stream := compile(t, `def main = "abc"* #stream $$`)
+	if err := stream.ParseStreamWith("main", strings.NewReader("abc"), nil, ParseOptions{Context: ctx}); err != context.Canceled {
+		t.Fatalf("stream ignored admission cancellation: %v", err)
 	}
 }
 
