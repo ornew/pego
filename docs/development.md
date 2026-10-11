@@ -44,7 +44,7 @@ This document describes the repository layout and architecture, how to run tests
 |:--|:--|:--|
 | Grammar intake | `internal/syntax/`, `grammar/` | Parses source or JSON into the public AST; formatting preserves comments and layout. |
 | Compiler and analysis | `internal/engine/compile.go`, `analysis.go`, `check.go` | Checks types, analyzes calls and dependencies, and compiles expressions. |
-| Runtime | `runtime.go`, `pratt.go`, `attrs.go`, `eval.go` | Implements ordered choice, backtracking, actions, recovery and Pratt selection. |
+| Runtime | `runtime.go`, `pratt.go`, `attrs.go`, `eval.go`, `alloc.go` | Implements ordered choice, backtracking, actions, recovery and Pratt selection; streaming commits reuse completed capture frames ([record 085](optimizations/085-reuse-stream-capture-frames.md)). |
 | Bytecode | `bytecode.go`, `bcompile.go`, `vm.go`, `ivm.go` | Runs the same grammar semantics with recursive and iterative VMs; see the [bytecode specification](../spec/bytecode.md). |
 | Input and documents | `input.go`, `document.go`, `resume.go` | Tracks position units, streaming input, edits and resumable repetitions. |
 | Compiled grammars | `compiled.go`, `modulefile.go` | Saves and loads bytecode modules, optionally with AST and analysis data. |
