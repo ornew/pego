@@ -4,14 +4,22 @@ This page is for contributors who build, test or publish PEGO's website. For usi
 
 ## Building and previewing the site
 
-The site is built by a Go program in [`site/`](../site/), so Go is the only requirement:
+The site uses the pinned Nanosite standard `sitegen.BuildWith` pipeline. Its
+configuration in `site/config.json` owns publication, defaults, front matter,
+record indexes, navigation, pager ordering, and search. The PEGO driver adds
+the landing page, API reference, Playground and theme adapter through extension
+hooks; it also owns deployment-specific asset-retention flags. The installed
+Nanosite skill documents the standard configuration fields.
+
+From the repository root, build or preview the site (Go 1.27.1 or later):
 
 ```bash
 site/build.sh                          # build into site/dist
 site/build.sh -serve localhost:8080    # build, then serve it at http://localhost:8080/
 ```
 
-`site/build.sh` runs `go run . -repo .. -out dist` in `site/`. The flags are:
+`site/build.sh` runs the pinned project driver in `site/`; standard publication
+and validation are handled by Nanosite. The project-specific flags are:
 
 | Flag | Default | Meaning |
 |:--|:--|:--|
@@ -105,8 +113,9 @@ decoding excludes compression/encoding, browser DOM, worker and WebAssembly cost
 ## Changing the site
 
 - **A new document** in `docs/guide/`, `docs/tutorial/`, `spec/`, `docs/design/` or `docs/` appears in its section
-  automatically. A Markdown file in a new directory under `docs/` or `spec/` makes the build fail until `docSections` in
-  [`site/build.go`](../site/build.go) includes it, so that nothing is left out silently.
+  automatically through the include rules in [`site/config.json`](../site/config.json).
+  Add a section match there for a new documentation directory; unmatched pages otherwise appear under Other.
+  Front matter can control publication, navigation, search, titles and routes without changing Markdown bodies.
 - **The order** of the guides and of the specification follows the links in `docs/guide/README.md` and
   `spec/README.md`; other sections are sorted by file name. The Project section and its ordinary links remain visible.
   The Design Records index appears as the first Overview link inside a nested Design Records disclosure, followed by

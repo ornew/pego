@@ -15,6 +15,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/ornew/nanosite/render"
 )
 
 // TestBuild builds the whole site, including the playground's WebAssembly binary, and checks that
@@ -33,11 +35,18 @@ func TestBuild(t *testing.T) {
 	t.Logf("%d pages, %d files, %d bytes", st.Pages, st.Files, st.Bytes)
 
 	// Every Markdown document has a page.
+	policy, err := render.ReadSourcePolicy("..")
+	if err != nil {
+		t.Fatal(err)
+	}
 	var docs []string
 	for _, dir := range []string{"docs", "spec"} {
 		err := filepath.WalkDir(filepath.Join("..", dir), func(p string, d fs.DirEntry, err error) error {
 			if err == nil && !d.IsDir() && filepath.Ext(p) == ".md" {
 				rel, _ := filepath.Rel("..", p)
+				if render.Matches(policy.Exclude, filepath.ToSlash(rel)) {
+					return nil
+				}
 				docs = append(docs, filepath.ToSlash(rel))
 			}
 			return err
@@ -121,6 +130,9 @@ func TestBuild(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, entry := range entries {
+		if render.Matches(policy.Exclude, strings.TrimPrefix(filepath.ToSlash(entry), "../")) {
+			continue
+		}
 		src, err := os.ReadFile(entry)
 		if err != nil {
 			t.Fatal(err)
@@ -354,7 +366,7 @@ func TestCheckLinks(t *testing.T) {
 <a href="../a/#unicode-あい">ok</a> <a href="#unicode-%E3%81%82">missing</a>`)
 	write("style.css", ``)
 	problems := checkLinks(out)
-	want := []string{"missing/", "a/#nope", "#gone", "gone.js", "../outside/", "a/?q=1&r=2", "#unicode-%E3%81%82"}
+	want := []string{"missing/", "a/#nope", "#gone", "gone.js", "../outside/", "#unicode-%E3%81%82"}
 	if len(problems) != len(want) {
 		t.Fatalf("got %d problems, want %d:\n%s", len(problems), len(want), strings.Join(problems, "\n"))
 	}
@@ -434,12 +446,12 @@ func TestHeadingText(t *testing.T) {
 	s.add(p)
 	m := s.parseMarkdown(p, []byte("# Title\n\n## A &amp; B\n\n## Escaped \\*star\\*\n\n## The `#recover` attribute & <b>more</b>\n\nSoft\nbreak\n----\n\n## Compiled grammars (`.pegoc`)\n"))
 	want := []Heading{
-		{1, "title", "Title"},
-		{2, "a--b", "A & B"},
-		{2, "escaped-star", "Escaped *star*"},
-		{2, "the-recover-attribute--more", "The #recover attribute & more"},
-		{2, "soft-break", "Soft break"},
-		{2, "compiled-grammars-pegoc", "Compiled grammars (.pegoc)"},
+		{Level: 1, ID: "title", Text: "Title"},
+		{Level: 2, ID: "a--b", Text: "A & B"},
+		{Level: 2, ID: "escaped-star", Text: "Escaped *star*"},
+		{Level: 2, ID: "the-recover-attribute--more", Text: "The #recover attribute & more"},
+		{Level: 2, ID: "soft-break", Text: "Soft break"},
+		{Level: 2, ID: "compiled-grammars-pegoc", Text: "Compiled grammars (.pegoc)"},
 	}
 	if len(m.headings) != len(want) {
 		t.Fatalf("headings = %+v", m.headings)

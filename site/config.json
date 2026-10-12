@@ -1,0 +1,197 @@
+{
+  "title": "PEGO",
+  "lang": "en",
+  "repository": "https://github.com/ornew/pego",
+  "branch": "main",
+  "include": [
+    "README.md",
+    "docs/**/*.md",
+    "spec/*.md",
+    "examples/README.md",
+    "parsers/README.md",
+    "parsers/*/README.md",
+    "reference/**/*.md",
+    "playground/README.md"
+  ],
+  "exclude": [
+    "**/TEMPLATE.md",
+    "docs/optimizations/000-template.md"
+  ],
+  "prettyURLs": true,
+  "directoryLinks": true,
+  "repositoryLinks": true,
+  "bundledAssets": false,
+  "staticDir": "site/static",
+  "template": "site/templates/layout.html",
+  "tocDepth": 3,
+  "pager": "site",
+  "markdown": {
+    "rawHTML": true,
+    "alerts": true,
+    "headingLinks": true,
+    "headingIDs": "github",
+    "alignAttributes": true
+  },
+  "searchIndex": {
+    "path": "search-index.json",
+    "text": "html",
+    "section": "group",
+    "fields": {
+      "title": "t",
+      "url": "u",
+      "section": "s",
+      "headings": "h",
+      "text": "x"
+    }
+  },
+  "redirectRules": false,
+  "sections": [
+    {
+      "title": "Tutorial",
+      "match": [
+        "docs/tutorial/*.md"
+      ]
+    },
+    {
+      "title": "Guides",
+      "match": [
+        "docs/guide/*.md"
+      ],
+      "index": "docs/guide/README.md"
+    },
+    {
+      "title": "Cookbook",
+      "match": [
+        "docs/cookbook/*.md"
+      ],
+      "index": "docs/cookbook/README.md"
+    },
+    {
+      "title": "Specification",
+      "match": [
+        "spec/*.md"
+      ],
+      "index": "spec/README.md"
+    },
+    {
+      "title": "Reference",
+      "match": [
+        "reference/**/*.md"
+      ],
+      "first": [
+        "reference/README.md",
+        "reference/pego/README.md",
+        "reference/grammar/README.md",
+        "reference/cli/README.md"
+      ]
+    },
+    {
+      "title": "Parsers",
+      "match": [
+        "parsers/README.md",
+        "parsers/*/README.md"
+      ],
+      "index": "parsers/README.md"
+    },
+    {
+      "title": "Project",
+      "match": [
+        "examples/README.md",
+        "docs/*.md",
+        "docs/optimizations/*.md"
+      ],
+      "first": [
+        "examples/README.md",
+        "docs/development.md",
+        "docs/benchmarks.md",
+        "docs/performance.md",
+        "docs/optimizations/README.md"
+      ],
+      "children": [
+        {
+          "title": "Design Records",
+          "match": [
+            "docs/design/*.md"
+          ],
+          "first": [
+            "docs/design/README.md"
+          ],
+          "collapsed": true
+        }
+      ]
+    }
+  ],
+  "defaults": [
+    {
+      "match": [
+        "README.md",
+        "playground/**"
+      ],
+      "values": {
+        "nav": false,
+        "search": false
+      }
+    },
+    {
+      "match": [
+        "docs/optimizations/*.md"
+      ],
+      "values": {
+        "nav": false
+      }
+    },
+    {
+      "match": [
+        "docs/optimizations/README.md"
+      ],
+      "values": {
+        "nav": true,
+        "navTitle": "Optimizations"
+      }
+    },
+    {
+      "match": [
+        "docs/design/README.md"
+      ],
+      "values": {
+        "navTitle": "Overview"
+      }
+    }
+  ],
+  "recordIndexes": [
+    {
+      "source": "docs/design/README.md",
+      "directory": "docs/design",
+      "title": "Design Records",
+      "introduction": "Each record explains a decision in the design of PEGO and the alternatives that were considered.",
+      "includeTemplate": true,
+      "tableClass": "design-index",
+      "columns": [
+        {
+          "title": "Record",
+          "field": "Title"
+        },
+        {
+          "title": "Status",
+          "field": "Status"
+        },
+        {
+          "title": "Date",
+          "field": "Date"
+        }
+      ]
+    }
+  ],
+  "pagerOrder": [
+    "docs/design/README.md",
+    "examples/README.md",
+    "docs/development.md",
+    "docs/benchmarks.md",
+    "docs/performance.md",
+    "docs/optimizations/README.md",
+    "docs/commit-messages.md",
+    "docs/design/*.md",
+    "docs/ref*.md",
+    "docs/site.md"
+  ]
+}

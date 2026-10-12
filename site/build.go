@@ -5,8 +5,6 @@ import (
 	"crypto/sha256"
 	"embed"
 	"encoding/hex"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"html/template"
 	"io/fs"
@@ -17,13 +15,16 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/ornew/nanosite/publish"
+	"github.com/ornew/nanosite/render"
 )
 
 // Config configures a build.
 type Config struct {
+	Exclude      []string
 	Repo         string // root of the repository
 	Out          string // output directory
 	Wasm         bool   // build the playground's WebAssembly binary
@@ -42,11 +43,7 @@ type Stats struct {
 }
 
 // Heading is a heading of a page, for the table of contents and the search index.
-type Heading struct {
-	Level int
-	ID    string
-	Text  string
-}
+type Heading = render.Heading
 
 // Page is a page of the site.
 type Page struct {
@@ -101,97 +98,8 @@ var staticFS embed.FS
 const marker = ".pego-site"
 
 // docSection lists the Markdown files of a section of the documentation.
-type docSection struct {
-	name  string
-	globs []string
-	// index, if set, is a file whose links give the order of the pages; pages it does not link to
-	// follow in alphabetical order.
-	index string
-	// first lists files that come first, in this order.
-	first []string
-	// collapsible folds the section in the navigation under its name. It is closed unless the current
-	// page belongs to the section.
-	collapsible bool
-}
-
-var docSections = []docSection{
-	{name: "Tutorial", globs: []string{"docs/tutorial/*.md"}},
-	{name: "Guides", globs: []string{"docs/guide/*.md"}, index: "docs/guide/README.md"},
-	{name: "Cookbook", globs: []string{"docs/cookbook/*.md"}, index: "docs/cookbook/README.md"},
-	{name: "Specification", globs: []string{"spec/*.md"}, index: "spec/README.md"},
-	{name: "Parsers", globs: []string{"parsers/README.md", "parsers/*/README.md"}, index: "parsers/README.md"},
-	{name: "Project", globs: []string{"examples/README.md", "docs/*.md", "docs/design/*.md", "docs/optimizations/*.md"}, first: []string{
-		"examples/README.md", "docs/development.md", "docs/benchmarks.md", "docs/performance.md",
-		"docs/optimizations/README.md",
-	}},
-}
-
-// Build builds the site.
-func Build(cfg Config) (Stats, error) {
-	s := &Site{cfg: cfg, bySrc: map[string]*Page{}, byDir: map[string]*Page{}}
-	if cfg.PreviousSite != "" && !cfg.Wasm {
-		return Stats{}, errors.New("-previous-site requires -wasm")
-	}
-	if cfg.DeployURL != "" {
-		if _, err := siteURL(cfg.DeployURL); err != nil {
-			return Stats{}, err
-		}
-	}
-	previous, err := readPreviousAssets(cfg.PreviousSite)
-	if err != nil {
-		return Stats{}, fmt.Errorf("retaining previous playground: %w", err)
-	}
-	if err := prepareOut(cfg.Out); err != nil {
-		return Stats{}, err
-	}
-	if err := s.collect(); err != nil {
-		return Stats{}, err
-	}
-	if err := s.renderAll(); err != nil {
-		return Stats{}, err
-	}
-	// Build the WebAssembly binary first: the pages refer to it by its content-hashed name.
-	s.wasm = "playground/pego.wasm" // missing without -wasm
-	if cfg.Wasm {
-		name, err := buildWasm(cfg.Repo, filepath.Join(cfg.Out, "playground"))
-		if err != nil {
-			return Stats{}, err
-		}
-		s.wasm = "playground/" + name
-		if err := publishAssets(filepath.Join(cfg.Out, "playground"), name, cfg.DeployURL, previous); err != nil {
-			return Stats{}, err
-		}
-	}
-	if err := s.writeAll(); err != nil {
-		return Stats{}, err
-	}
-	if cfg.Check {
-		s.problems = append(s.problems, checkLinks(cfg.Out)...)
-	}
-	if len(s.problems) > 0 {
-		return Stats{}, fmt.Errorf("site has %d problems:\n  %s", len(s.problems), strings.Join(s.problems, "\n  "))
-	}
-	return stats(cfg.Out, len(s.pages))
-}
-
 func prepareOut(out string) error {
-	entries, err := os.ReadDir(out)
-	switch {
-	case errors.Is(err, fs.ErrNotExist):
-	case err != nil:
-		return err
-	case len(entries) > 0:
-		if _, err := os.Stat(filepath.Join(out, marker)); err != nil {
-			return fmt.Errorf("%s is not empty and was not written by a previous build; refusing to replace it", out)
-		}
-		if err := os.RemoveAll(out); err != nil {
-			return err
-		}
-	}
-	if err := os.MkdirAll(out, 0o755); err != nil {
-		return err
-	}
-	return os.WriteFile(filepath.Join(out, marker), nil, 0o644)
+	return publish.Run(publish.Options{Repo: ".", Out: out, Marker: marker}, func(string) error { return nil })
 }
 
 func (s *Site) add(p *Page) {
@@ -215,67 +123,10 @@ func dirOf(p string) string {
 // urlOf returns the site URL of the page for a Markdown file: its path without the extension, or its
 // directory for a README.
 func urlOf(src string) string {
-	if path.Base(src) == "README.md" {
-		if d := dirOf(src); d != "" {
-			return d + "/"
-		}
-		return ""
-	}
-	return strings.TrimSuffix(src, ".md") + "/"
+	return strings.TrimSuffix(render.MarkdownOutput(src, true, []string{"README.md"}), "index.html")
 }
 
 // collect creates the pages, so that links can be resolved while they are rendered.
-func (s *Site) collect() error {
-	s.add(&Page{Src: "README.md", URL: "", Kind: "landing", Title: "PEGO", Nav: "Home"})
-	s.add(&Page{URL: "playground/", Kind: "playground", Title: "Playground", Nav: "Playground",
-		Description: "Write a PEGO grammar and parse input with it in your browser.",
-		Scripts:     []string{"playground/app.js"}, Styles: []string{"playground/playground.css"}})
-
-	for _, ds := range docSections {
-		files, err := s.sectionFiles(ds)
-		if err != nil {
-			return err
-		}
-		sec := &Section{Name: ds.name, Collapsible: ds.collapsible}
-		if ds.name == "Project" {
-			idx := &Page{URL: "docs/design/", Kind: "doc", Title: "Design Records", Nav: "Overview", Section: sec.Name}
-			s.add(idx)
-			s.byDir["docs/design"] = idx
-			sec.Pages = append(sec.Pages, idx)
-			sec.DesignRecords = append(sec.DesignRecords, idx)
-		}
-		for _, f := range files {
-			if s.bySrc[f] != nil {
-				continue // listed by an earlier section
-			}
-			p := &Page{Src: f, URL: urlOf(f), Kind: "doc", Section: sec.Name, Index: f == ds.index,
-				SourceURL: s.cfg.GitHub + "/blob/" + s.cfg.Ref + "/" + f}
-			if f == "docs/optimizations/README.md" {
-				p.Nav = "Optimizations"
-			}
-			s.add(p)
-			if ds.name == "Project" && isOptimizationDetail(f) {
-				continue
-			}
-			sec.Pages = append(sec.Pages, p)
-			if ds.name == "Project" && isDesignRecord(f) {
-				sec.DesignRecords = append(sec.DesignRecords, p)
-			} else {
-				sec.NavPages = append(sec.NavPages, p)
-			}
-		}
-		s.sections = append(s.sections, sec)
-		if ds.name == "Specification" {
-			ref := s.referencePages()
-			// Reference pages are all direct navigation items; unlike Project, they
-			// have no nested presentation group.
-			ref.NavPages = ref.Pages
-			s.sections = append(s.sections, ref)
-		}
-	}
-	return s.checkCoverage()
-}
-
 // isOptimizationDetail reports whether f is an individual optimization page. Such pages remain
 // rendered and searchable, but only their index appears in Project navigation.
 func isOptimizationDetail(f string) bool {
@@ -285,77 +136,6 @@ func isOptimizationDetail(f string) bool {
 var designRecordFileRe = regexp.MustCompile(`^docs/design/[0-9]{3}-.+\.md$`)
 
 func isDesignRecord(f string) bool { return designRecordFileRe.MatchString(f) }
-
-func (s *Site) sectionFiles(ds docSection) ([]string, error) {
-	var files []string
-	for _, g := range ds.globs {
-		m, err := filepath.Glob(filepath.Join(s.cfg.Repo, filepath.FromSlash(g)))
-		if err != nil {
-			return nil, err
-		}
-		for _, f := range m {
-			rel, err := filepath.Rel(s.cfg.Repo, f)
-			if err != nil {
-				return nil, err
-			}
-			files = append(files, filepath.ToSlash(rel))
-		}
-	}
-	if len(files) == 0 {
-		return nil, fmt.Errorf("section %s: no files match %v", ds.name, ds.globs)
-	}
-	rank := map[string]int{}
-	for i, f := range ds.first {
-		rank[f] = i + 1
-	}
-	if ds.index != "" {
-		src, err := os.ReadFile(filepath.Join(s.cfg.Repo, filepath.FromSlash(ds.index)))
-		if err != nil {
-			return nil, err
-		}
-		rank[ds.index] = 1
-		for _, m := range mdLinkRe.FindAllStringSubmatch(string(src), -1) {
-			f := path.Join(path.Dir(ds.index), m[1])
-			if _, ok := rank[f]; !ok {
-				rank[f] = len(rank) + 1
-			}
-		}
-	}
-	sort.SliceStable(files, func(i, j int) bool {
-		ri, rj := rank[files[i]], rank[files[j]]
-		switch {
-		case ri > 0 && rj > 0:
-			return ri < rj
-		case ri > 0 || rj > 0:
-			return ri > 0
-		}
-		return files[i] < files[j]
-	})
-	return files, nil
-}
-
-var mdLinkRe = regexp.MustCompile(`\]\(([^)#\s]+\.md)(?:#[^)]*)?\)`)
-
-// checkCoverage reports Markdown files of the documentation that no section includes, so that a new
-// directory of documents is not silently left out of the site.
-func (s *Site) checkCoverage() error {
-	for _, dir := range []string{"docs", "spec"} {
-		err := filepath.WalkDir(filepath.Join(s.cfg.Repo, dir), func(p string, d fs.DirEntry, err error) error {
-			if err != nil || d.IsDir() || filepath.Ext(p) != ".md" {
-				return err
-			}
-			rel, _ := filepath.Rel(s.cfg.Repo, p)
-			if s.bySrc[filepath.ToSlash(rel)] == nil {
-				s.problems = append(s.problems, fmt.Sprintf("%s is not part of any section of the site (see docSections in site/build.go)", rel))
-			}
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
 
 var schemeRe = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
 
@@ -434,41 +214,6 @@ func navTitle(p *Page) string {
 	return t
 }
 
-func (s *Site) renderAll() error {
-	for _, p := range s.pages {
-		if p.Kind != "doc" || p.Src == "" {
-			continue
-		}
-		src, err := os.ReadFile(filepath.Join(s.cfg.Repo, filepath.FromSlash(p.Src)))
-		if err != nil {
-			return err
-		}
-		m := s.parseMarkdown(p, src)
-		body := m.render(nil)
-		p.Title = m.title()
-		if p.Title == "" {
-			p.Title = strings.TrimSuffix(path.Base(p.Src), ".md")
-		}
-		if p.Nav == "" {
-			p.Nav = navTitle(p)
-		}
-		p.TOC = m.toc()
-		p.Body = template.HTML(body)
-		p.Text = plainText(body)
-	}
-	s.addLegacyOptimizationAnchors()
-	if err := s.renderDesignIndex(); err != nil {
-		return err
-	}
-	if err := s.renderReference(); err != nil {
-		return err
-	}
-	if err := s.renderLanding(); err != nil {
-		return err
-	}
-	return s.renderPlayground()
-}
-
 // addLegacyOptimizationAnchors keeps existing performance-page URLs working. The old fragment is
 // derived from each numbered optimization page's heading, so the detail page remains the source
 // of its title and the performance page does not duplicate the catalog.
@@ -511,43 +256,6 @@ func (s *Site) renderPlayground() error {
 	return nil
 }
 
-var (
-	statusRe = regexp.MustCompile(`(?m)^- \*\*Status\*\*:\s*(.+)$`)
-	dateRe   = regexp.MustCompile(`(?m)^- \*\*Date\*\*:\s*(.+)$`)
-)
-
-func (s *Site) renderDesignIndex() error {
-	idx := s.byDir["docs/design"]
-	var b strings.Builder
-	b.WriteString(`<h1 id="design-records">Design Records</h1>
-<p>Each record explains a decision in the design of PEGO and the alternatives that were considered.</p>
-<table class="design-index"><thead><tr><th>Record</th><th>Status</th><th>Date</th></tr></thead><tbody>
-`)
-	for _, p := range s.pages {
-		if !strings.HasPrefix(p.Src, "docs/design/") || p == idx {
-			continue
-		}
-		src, err := os.ReadFile(filepath.Join(s.cfg.Repo, filepath.FromSlash(p.Src)))
-		if err != nil {
-			return err
-		}
-		status, date := "", ""
-		if m := statusRe.FindSubmatch(src); m != nil {
-			status = string(m[1])
-		}
-		if m := dateRe.FindSubmatch(src); m != nil {
-			date = string(m[1])
-		}
-		fmt.Fprintf(&b, "<tr><td><a href=\"%s\">%s</a></td><td>%s</td><td>%s</td></tr>\n",
-			template.HTMLEscapeString(relURL(idx.URL, p.URL)), template.HTMLEscapeString(p.Title),
-			template.HTMLEscapeString(status), template.HTMLEscapeString(date))
-	}
-	b.WriteString("</tbody></table>\n")
-	idx.Body = template.HTML(b.String())
-	idx.Text = plainText(b.String())
-	return nil
-}
-
 // layoutData is the data of the page layout template.
 type layoutData struct {
 	Site       *Site
@@ -562,57 +270,7 @@ type layoutData struct {
 // URL returns the relative URL of a site path from the page.
 func (d layoutData) URL(p string) string { return relURL(d.Page.URL, p) }
 
-func (s *Site) writeAll() error {
-	tmpl, err := template.ParseFS(templateFS, "templates/*.html")
-	if err != nil {
-		return err
-	}
-	var flat []*Page
-	for _, sec := range s.sections {
-		flat = append(flat, sec.Pages...)
-	}
-	for _, p := range s.pages {
-		d := layoutData{Site: s, Page: p, Root: relURL(p.URL, ""), Sections: s.sections, GitHub: s.cfg.GitHub, Wasm: relURL(p.URL, s.wasm)}
-		if i := slices.Index(flat, p); i >= 0 {
-			if i > 0 {
-				d.Prev = flat[i-1]
-			}
-			if i+1 < len(flat) {
-				d.Next = flat[i+1]
-			}
-		}
-		var b bytes.Buffer
-		if err := tmpl.ExecuteTemplate(&b, "layout.html", d); err != nil {
-			return fmt.Errorf("%s: %w", p.URL, err)
-		}
-		if err := writeFile(filepath.Join(s.cfg.Out, filepath.FromSlash(p.URL), "index.html"), b.Bytes()); err != nil {
-			return err
-		}
-	}
-	if err := s.writeSearchIndex(); err != nil {
-		return err
-	}
-	if err := s.writeExamples(); err != nil {
-		return err
-	}
-	return fs.WalkDir(staticFS, "static", func(p string, d fs.DirEntry, err error) error {
-		if err != nil || d.IsDir() {
-			return err
-		}
-		data, err := staticFS.ReadFile(p)
-		if err != nil {
-			return err
-		}
-		return writeFile(filepath.Join(s.cfg.Out, filepath.FromSlash(strings.TrimPrefix(p, "static/"))), data)
-	})
-}
-
-func writeFile(name string, data []byte) error {
-	if err := os.MkdirAll(filepath.Dir(name), 0o755); err != nil {
-		return err
-	}
-	return os.WriteFile(name, data, 0o644)
-}
+func writeFile(name string, data []byte) error { return publish.WriteFile(name, data) }
 
 // searchEntry is a page in the search index. The keys are short because the index is downloaded.
 type searchEntry struct {
@@ -621,25 +279,6 @@ type searchEntry struct {
 	Section  string      `json:"s"`
 	Headings [][2]string `json:"h"` // [id, text]
 	Text     string      `json:"x"`
-}
-
-func (s *Site) writeSearchIndex() error {
-	var entries []searchEntry
-	for _, p := range s.pages {
-		if p.Kind == "landing" || p.Kind == "playground" {
-			continue
-		}
-		e := searchEntry{Title: p.Title, URL: p.URL, Section: p.Section, Text: p.Text, Headings: [][2]string{}}
-		for _, h := range p.TOC {
-			e.Headings = append(e.Headings, [2]string{h.ID, h.Text})
-		}
-		entries = append(entries, e)
-	}
-	b, err := json.Marshal(entries)
-	if err != nil {
-		return err
-	}
-	return writeFile(filepath.Join(s.cfg.Out, "search-index.json"), b)
 }
 
 // example is an example of the playground, read from playground/examples.txt.
@@ -680,18 +319,6 @@ func readExamples(repo string) ([]example, error) {
 		exs = append(exs, ex)
 	}
 	return exs, nil
-}
-
-func (s *Site) writeExamples() error {
-	exs, err := readExamples(s.cfg.Repo)
-	if err != nil {
-		return err
-	}
-	b, err := json.Marshal(exs)
-	if err != nil {
-		return err
-	}
-	return writeFile(filepath.Join(s.cfg.Out, "playground", "examples.json"), b)
 }
 
 // buildWasm builds the playground's WebAssembly binary into dir/wasm, named after a hash of its
