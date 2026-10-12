@@ -934,6 +934,23 @@ A five-pair, alternating 500 ms comparison covered 25 profiles on Go 1.27.1, `-t
 
 Focused generated control/reference/conversion/graph tests and reduced-value parity checks pass. The reduced-value test does not compare the full-input timed fingerprints. Full root, generation, parser-module, site/WASM and independent review gates remain necessary before integration. This follow-up does not close default-cost, retained-memory, TypeScript, custom-context or broader reachability questions and is not an adoption decision.
 
+### Retained Compiled-Parser Heap Checkpoint
+
+The 240-run matrix used four corpora × three owner counts × four variants × five fresh processes in rotated order on Go 1.27.1, `-trimpath`, darwin/arm64 Apple M3 Max, GOMAXPROCS=16, GOGC=100, GOMEMLIMIT off and GODEBUG unset. The four variants produced matching full-input fingerprints within each corpus. At 128 retained parser owners, median whole-parser retained bytes per parser were:
+
+| Corpus | Pre-control (`188b850`) | Metered (`e97cd7b`) | Current (`739f7d5`) | Static reference |
+|---|---:|---:|---:|---:|
+| JSON | 45,115 | 47,611 | 59,291 | 45,883 |
+| XML | 210,893 | 221,070 | 268,867 | 213,421 |
+| Arithmetic | 19,066 | 19,658 | 24,599 | 19,226 |
+| Minilang | 122,721 | 128,046 | 157,788 | 123,916 |
+
+At 128 owners, the median of paired current/pre-control ratios was 1.314×, 1.275×, 1.290× and 1.286× respectively; the median of paired current/static-reference ratios was 1.292×, 1.260×, 1.279× and 1.273×. For the current candidate, N=32 and N=128 bytes-per-parser medians differed by no more than 0.21%. N=0 controls ranged from 0–128 retained bytes and 0–2 objects across the matrix. These empty and count-scaling controls characterize measurement noise and scaling; they do not isolate the dual-graph contribution. The static reference removes core control instrumentation but leaves generated instrumentation enabled.
+
+This measurement shows a retained whole-parser memory cost for the current candidate; it does not attribute that cost to a particular graph or field. Alongside the existing default parse and source-preparation costs, the prototype remains unready for adoption. Retained memory across broader owners, backends and active invocation lifetimes remains unmeasured; report this checkpoint as a whole-parser diagnostic, not graph-only size or a universal per-parser cost.
+
+Reproduce the checkpoint with the [retained compiled-parser method](../performance.md#retained-compiled-parser-heap) and identical diagnostic sources across the four pinned runtime builds.
+
 ## Limitations and Open Questions
 
 The proposed defaults form one coherent contract: no controls unless requested,

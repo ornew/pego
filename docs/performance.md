@@ -140,6 +140,30 @@ Notes:
   just a binary built from the old code. Generated parsers embed their grammar.
 - The numbers in the optimization catalog are for the closure backend with code-point positions unless stated otherwise.
 
+### Retained Compiled-Parser Heap
+
+The `bench/retained` diagnostic measures the post-GC live-heap delta associated with keeping compiled `*pego.Parser` owners alive. It measures the whole retained parser object graph, including parser wrappers and reachable AST/type and closure data—not graph payload alone. It does not measure peak heap, cumulative allocation, parse-result retention, or production memory for every backend and invocation pattern.
+
+The diagnostic is a source overlay; the historical and candidate runtime commits did not contain `bench/retained`. Copy identical `bench/retained` source into each isolated source checkout before building, and pin both the runtime revision and the diagnostic revision from the commit adding this checkpoint. The comparison used the pre-control core at `188b850`, the metered implementation at `e97cd7b`, the candidate at `739f7d5`, and a same-source reference build of `739f7d5` with the root-only `pego_work_controls_reference` tag. Generated Go instrumentation remains enabled in that reference.
+
+Build the executable with Go 1.27.1 and `-trimpath` into `/tmp` (not the repository):
+
+```sh
+GOTOOLCHAIN=go1.27.1 go build -trimpath -o /tmp/pego-retained-current ./bench/retained
+GOTOOLCHAIN=go1.27.1 go build -trimpath -tags pego_work_controls_reference -o /tmp/pego-retained-reference ./bench/retained
+```
+
+Build the pre-control and metered binaries from their pinned core revisions with the same source overlay. Run every binary in a fresh process under the same environment. For example:
+
+```sh
+env -u GODEBUG GOMAXPROCS=16 GOGC=100 GOMEMLIMIT=off \
+  /tmp/pego-retained-current -repo . -corpus json -count 128 -warmup 4
+```
+
+`-repo` selects the checkout containing the source grammars; `-corpus` accepts `json`, `xml`, `arithmetic`, or `minilang`; `-count` is the number of compiled parsers to retain, with zero as an empty control; `-warmup` is the number of discarded compilations (default four, minimum one). Defaults are JSON, 128 owners and four warm-up compilations. JSON/XML inputs target about 256 KiB; arithmetic uses 20,000 terms; Minilang uses 300 functions with no injected errors.
+
+The first warm compilation parses the full input with closure/CodePoints and computes an iterative value-graph fingerprint, including node terminal status, nil/empty distinctions and shared-node identity. This validates the corpus result; the parsed node is not retained as an owner. The diagnostic allocates the parser-owner slice before its baseline snapshot, keeps owners plus source/input alive across snapshots, and forces three GCs before each snapshot. It reports live `HeapAlloc`, object and GC deltas, and bytes per parser; count zero reports no bytes-per-parser value. A reproducible matrix uses counts 0, 32 and 128, all four corpora, four variants and five fresh-process repetitions per cell in rotated order. Each report includes source/input/result fingerprints and build/platform metadata.
+
 ### Generated typed-output retention
 
 `internal/engine/gen_typed_output_retention_test.go` exports a generated fixture
