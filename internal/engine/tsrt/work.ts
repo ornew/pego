@@ -432,3 +432,13 @@ function equalValuesWork(a: Value, b: Value, control: WorkControl): boolean {
   if (typeof a === "string" && typeof b === "string") return equalStringsWork(a, b, control);
   return a === b;
 }
+
+function copyErrorsWork(items: readonly SyntaxError[], start: number, end: number, control: WorkControl): SyntaxError[] {
+  const out: SyntaxError[] = new Array(end - start);
+  for (let from = start; from < end; from += 128) {
+    const stop = Math.min(from + 128, end);
+    control.charge(0, stop - from);
+    for (let i = from; i < stop; i++) out[i - start] = items[i]!;
+  }
+  return out;
+}

@@ -1380,6 +1380,7 @@ class Parser {
     this.env = env;
     this.recovered.length = recovered;
     for (let i = this.trail.length - 1; i >= trail; i--) {
+      this.stepWork();
       const u = this.trail[i]!;
       u.f[u.slot] = u.old;
     }
@@ -1579,6 +1580,7 @@ class Parser {
       }
       this.pos = e.end;
       for (const x of e.errs) {
+        this.stepWork();
         this.recovered.push(x);
       }
       return e.node;
@@ -1605,7 +1607,7 @@ class Parser {
         this.pos,
         this.silent > 0,
         false,
-        this.recovered.length > rec ? this.recovered.slice(rec) : noErrs,
+        this.recovered.length > rec ? (this.control === null ? this.recovered.slice(rec) : copyErrorsWork(this.recovered, rec, this.recovered.length, this.control)) : noErrs,
       );
       this.memoPut(r.id, start, min, env, entry);
     }
@@ -1638,7 +1640,7 @@ class Parser {
       if (v === undefined || (best.ok && this.pos <= best.end)) {
         break;
       }
-      best = newEntry(v, true, this.pos, false, true, this.recovered.length > rec ? this.recovered.slice(rec) : noErrs);
+      best = newEntry(v, true, this.pos, false, true, this.recovered.length > rec ? (this.control === null ? this.recovered.slice(rec) : copyErrorsWork(this.recovered, rec, this.recovered.length, this.control)) : noErrs);
       this.memoPut(r.id, start, min, env, best);
       this.pos = start;
       this.recovered.length = rec;
@@ -1648,6 +1650,7 @@ class Parser {
     this.pos = best.end;
     this.recovered.length = rec;
     for (const x of best.errs) {
+      this.stepWork();
       this.recovered.push(x);
     }
     return best.ok ? best.node : undefined;
@@ -2091,7 +2094,7 @@ class Parser {
           end: this.pos,
           env: this.env,
           cut,
-          errs: this.recovered.length > m0rec ? this.recovered.slice(m0rec) : noErrs,
+          errs: this.recovered.length > m0rec ? (this.control === null ? this.recovered.slice(m0rec) : copyErrorsWork(this.recovered, m0rec, this.recovered.length, this.control)) : noErrs,
         };
       }
       if (!ok && cut) {
@@ -2105,10 +2108,12 @@ class Parser {
       // and restoring, so one buffer per parser suffices.
       this.saved.length = 0;
       for (const x of f) {
+        this.stepWork();
         this.saved.push(x);
       }
       this.reset(m0pos, m0env, m0trail, m0rec);
       for (let i = 0; i < f.length; i++) {
+        this.stepWork();
         f[i] = this.saved[i]!;
       }
     }
@@ -2123,6 +2128,7 @@ class Parser {
     this.pos = a.end;
     this.env = a.env;
     for (const x of a.errs) {
+      this.stepWork();
       this.recovered.push(x);
     }
   }
