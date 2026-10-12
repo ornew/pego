@@ -66,7 +66,7 @@ cost from a disabled branch.
 - Validate default-path cost against an exact parent and a same-revision static
   reference, including GC-phase costs, before adopting the implementation.
 
-## Non-goals
+## Non-Goals
 
 This proposal does not impose default finite budgets, change depth defaults,
 preempt arbitrary goroutines, close caller readers, add asynchronous parsing,
@@ -402,7 +402,7 @@ where entry points already exist; no streams/Documents are implied. Saved module
 formats and grammar/action semantics stay unchanged. Update runtime, incremental,
 streaming, code-generation and TypeScript guides with the applicable stage.
 
-## Prototype coverage
+## Prototype Coverage
 
 The `feat/parse-work-controls` branch starts the core batch stage. It provides
 invocation-local context and overflow-safe work reservations, controlled input
@@ -731,7 +731,7 @@ existing preparation order. The shared admission helper adds a default-path call
 and option branches; controlled AST-omitted calls add metadata lookup work.
 Those costs are unmeasured while timing is paused.
 
-## Generated Go layout reference
+## Generated Go Layout Reference
 
 Two private generation controls serve different checks. `referenceWorkControls`
 disables accounting while retaining invocation layouts and the public control
@@ -755,7 +755,7 @@ layout and setup boundaries still differ from the exact parent. Measure both
 references with normal GC settings before adopting the feature. No timing result
 is established by the generation, layout or consumer checks.
 
-## Generated TypeScript prototype coverage
+## Generated TypeScript Prototype Coverage
 
 The prototype adds structural `CancellationSignal`, `ParseInterruptionError`,
 and `signal`/`maxInputWork`/`maxSteps` options to the existing Node, named-rule,
@@ -818,7 +818,7 @@ Default state/layout/helper costs are unmeasured; generated TS static-reference
 and exact-parent comparisons are required before adoption. There is no
 zero-overhead or elapsed-time guarantee.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Depth limits only.** Existing compatibility baseline, but shallow scans and
   backtracking can perform broad work. Keep depth plus optional independent limits.
@@ -876,7 +876,7 @@ Generated Go and TypeScript require separate consumer checks.
   runtime and same-thread signal scheduling. No timer test may claim a synchronous
   parser yields without an explicit asynchronous API.
 
-## Performance and results
+## Performance and Results
 
 No performance promise or measured result. Pin exact parent and candidate,
 backend/unit, generated controls, compiler/runtime versions, grammar/input hashes,
@@ -901,7 +901,22 @@ Check latency at the proposed polling quanta and worst single library/allocation
 intervals. Adoption needs measured default-path costs and declared tradeoffs;
 record actual results with the implementation, without claiming zero overhead.
 
-## Limitations and open questions
+### Execution Graphs and Focused Default-Cost Control
+
+Work budgets need checks at matcher boundaries, but adding a control branch or wrapper to every matcher can impose cost when a parse uses no controls. One prototype compiles immutable metered and unmetered matcher graphs up front, then selects the graph at rule entry according to the invocation's control. It builds corresponding Operators Rule graphs while preserving capture layout and resumption numbering. VM-owned dispatch is unchanged. This is a prototype, not an adopted design; the retained-memory cost of keeping both graphs has not been measured.
+
+A focused control compared four builds in five alternating 500 ms rounds: the pre-control baseline `188b850`, the per-expression metered implementation `e97cd7b`, the dual-graph implementation, and a same-source static-reference build that retains the candidate field layout and removes control instrumentation. Go 1.27.1, darwin/arm64, Apple M3 Max, GOMAXPROCS=16, GOGC=100, GOMEMLIMIT=off, GODEBUG unset.
+
+| Workload | Dual-graph prototype / baseline | Prototype / metered | Prototype / static reference |
+|---|---:|---:|---:|
+| JSON closure Parse, CodePoints | 1.173× (1.154–1.181) | 0.836× (0.807–0.841) | 1.164× (1.160–1.187) |
+| JSON source preparation | 1.146× (1.122–1.156) | 1.150× (1.135–1.153) | 1.145× (1.099–1.155) |
+
+The JSON closure Parse medians were 11.002 ms/op for the baseline, 15.336 ms/op for the metered build, 12.820 ms/op for the dual-graph prototype and 11.001 ms/op for the static reference. Each reported 768 allocations/op; bytes/op were 10,621,171, 10,638,464, 10,629,280 and 10,621,356 respectively. Source preparation measured 147.338, 146.851, 168.378 and 147.182 µs/op, with 2,414, 2,552, 3,057 and 2,414 allocations/op. These are workload-specific observations, not an aggregate speed claim. Source preparation allocated 291,740 bytes/op, compared with 274,916 in the baseline and 277,412 in the metered build. Cumulative allocation does not measure retained graph storage. The prototype remains about 17% slower than the baseline on JSON closure parsing and about 15% slower on JSON source preparation; this experiment does not establish that the control mechanism is suitable for default use.
+
+Core work and stream-reader tests pass for the prototype. Before adoption, measure retained memory from the paired graphs, broader grammars and backends, both position units, and controlled parses that do and do not enable budgets. Preserve parser results, diagnostics, cancellation and work-limit behavior across graph selection. The existing static-reference build tag remains a diagnostic control, not a production optimization.
+
+## Limitations and Open Questions
 
 The proposed defaults form one coherent contract: no controls unless requested,
 per-invocation counters, cooperative context/signal polling, backend-local work

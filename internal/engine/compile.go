@@ -61,18 +61,20 @@ type matcher func(p *parser) (*Node, bool)
 
 type rule struct {
 	// kinds are the node kinds the rule makes (newRuleKinds).
-	kinds        ruleKinds
-	id           int
-	name         string
-	def          *grammar.RuleDef
-	scope        *scope
-	body         func(p *parser, min int) (*Node, bool)
-	action       grammar.Term
-	bodyIsSeq    bool
-	terminalType string
-	memo         bool
-	leader       bool
-	pratt        *pratt
+	kinds               ruleKinds
+	id                  int
+	name                string
+	def                 *grammar.RuleDef
+	scope               *scope
+	body                func(p *parser, min int) (*Node, bool)
+	controlledBody      func(p *parser, min int) (*Node, bool)
+	action              grammar.Term
+	bodyIsSeq           bool
+	terminalType        string
+	memo                bool
+	leader              bool
+	pratt               *pratt
+	controlledOperators *pratt
 	// stream reports that the top level of the rule body has a #stream repetition.
 	stream bool
 	// positional reports that the result may depend on position values (analysis.positional).
@@ -183,7 +185,8 @@ type compiler struct {
 	noIndex string
 	descIDs map[string]expID
 	// runSites numbers the repetitions that a Document can resume (resume.go).
-	runSites int
+	runSites      int
+	plainDispatch bool
 }
 
 // desc returns the index of an expectation string (adding it to Program.descs).
@@ -327,6 +330,26 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 	if !opts.NoTypeCheck && flags == nil {
 		checkTypes(prog, &c.errs)
 		if len(c.errs) > 0 {
+			return nil, c.errs
+		}
+	}
+	if workControlsEnabled {
+		// Keep the metered graph for controlled invocations, then build a plain
+		// graph without expression-dispatch wrappers. Rule-level selection
+		// avoids paying one extra closure call for every ordinary expression.
+		for _, rs := range [][]*rule{prog.rules, prog.twins} {
+			for _, r := range rs {
+				r.controlledBody, r.controlledOperators = r.body, r.pratt
+			}
+		}
+		c.plainDispatch, c.runSites = true, 0
+		for _, r := range prog.rules {
+			c.compileRule(r)
+		}
+		for _, r := range prog.twins {
+			c.compileRule(r)
+		}
+		if len(c.errs) != 0 {
 			return nil, c.errs
 		}
 	}
@@ -555,7 +578,7 @@ func quote(s string) string { return strconv.Quote(s) }
 // expr adds the closure expression-dispatch charge around the compiled matcher.
 func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
 	m := c.exprMatcher(e, s, build)
-	if !workControlsEnabled {
+	if !workControlsEnabled || c.plainDispatch {
 		return m
 	}
 	return func(p *parser) (*Node, bool) { p.stepWork(); return m(p) }
@@ -659,7 +682,7 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 							peeked = true
 						}
 						if !(more && g.accept(p, ch)) && p.depth+g.depth <= p.maxDepth {
-							p.stepWork() // a skipped matcher still consumes dispatch work
+							p.stepWork()            // a skipped matcher still consumes dispatch work
 							p.expect(p.pos, g.desc) // what the alternative would record
 							continue
 						}

@@ -212,6 +212,9 @@ func (p *parser) prattParse(r *rule, min int) (*Node, bool) {
 // prattExpr is the body of prattParse.
 func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 	pr := r.pratt
+	if workControlsEnabled && p.control != nil && r.controlledOperators != nil {
+		pr = r.controlledOperators
+	}
 	lhs, ok := p.prattNud(r)
 	if !ok {
 		return nil, false
@@ -271,6 +274,9 @@ func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 // prattNud parses the beginning of an expression (a prefix operator or an operand).
 func (p *parser) prattNud(r *rule) (*Node, bool) {
 	pr := r.pratt
+	if workControlsEnabled && p.control != nil && r.controlledOperators != nil {
+		pr = r.controlledOperators
+	}
 	p.skipTrivia(pr)
 	m0 := p.mark()
 	if at, cutFailed := p.longest(pr.prefix); at.op != nil {
