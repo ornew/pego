@@ -367,8 +367,10 @@ Validate finite nonnegative safe-integer limits; zero means unlimited. Go uint64
 limits outside the TS safe-integer range are not portable literal settings.
 
 Return a distinct exported interruption error with cancellation/limit kind and
-limit accounting; preserve an observed signal reason as cause without retaining
-the signal after return. Use invocation-local counters and conversion state.
+limit accounting; preserve an observed signal reason as cause. Finalization
+clears parser-owned signal references, but preserved causes, caller errors and
+native stack internals may retain caller objects; no reachability guarantee
+extends through those values. Use invocation-local counters and conversion state.
 Cancellation and limits return null Node/typed value with the interruption error;
 ordinary nil success still has no error. Generated recognition reports it too.
 
@@ -802,12 +804,19 @@ allocation, native string slicing/joining, and GC remain non-preemptible.
 Logical extents are reserved in bounded chunks before native materialization;
 this is not a hard elapsed-time bound. Mandatory unwind remains uncharged.
 
-The finalizer clears internal signal references without caller getters or charges.
-The observed reason remains the error's cause and may itself reference caller
-objects. Forced-GC reachability checks for success, error, cancellation and panic
-remain pending. Default state/layout/helper costs are unmeasured; generated TS
-static-reference and exact-parent comparisons are required before adoption.
-There is no zero-overhead or elapsed-time guarantee.
+The finalizer clears parser-owned signal and control references without caller
+getters or charges. Preserve native lazy `Error.stack` behavior: the parser does
+not eagerly format stacks, delete or replace caller errors/causes/thrown values,
+or invoke caller `Error.prepareStackTrace` during cleanup. Preserved errors,
+causes, thrown values, and host stack internals may retain caller objects; the
+release contract makes no reachability promise through them. Focused GC consumers
+materialize stacks in caller fixtures and cover Node, named-Node, typed, and
+recognition routes in both units across success, syntax, both work limits, cancellation,
+getter-panic, and pre-entry variants. They also cover retained controller/options
+finalization after a body panic. Broader reachability coverage remains pending.
+Default state/layout/helper costs are unmeasured; generated TS static-reference
+and exact-parent comparisons are required before adoption. There is no
+zero-overhead or elapsed-time guarantee.
 
 ## Alternatives considered
 
