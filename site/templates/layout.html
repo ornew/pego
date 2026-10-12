@@ -53,18 +53,18 @@
     {{range .Sections}}{{if .Collapsible}}<details class="nav-section nav-fold"{{if .Contains $.Page}} open{{end}}>
       <summary><h2>{{.Name}}</h2></summary>
       <ul>{{range .NavPages}}
-        <li><a href="{{$.URL .URL}}"{{if eq .URL $.Page.URL}} aria-current="page"{{end}}>{{.Nav}}</a></li>{{end}}
+        <li><a href="{{$.URL .URL}}"{{if eq .URL $.Page.URL}} aria-current="page"{{end}}>{{.NavLabel}}</a></li>{{end}}
       </ul>
     </details>
     {{else}}<div class="nav-section">
       <h2>{{.Name}}</h2>
-      <ul>{{if .DesignRecords}}<li><details class="nav-fold nav-subfold">
-          <summary><span>Design Records</span></summary>
-          <ul>{{range .DesignRecords}}
-            <li><a href="{{$.URL .URL}}"{{if eq .URL $.Page.URL}} aria-current="page"{{end}}>{{.Nav}}</a></li>{{end}}
+      <ul>{{range .Children}}<li><details class="nav-fold nav-subfold"{{if not .Collapsible}} open{{end}}>
+          <summary><span>{{.Name}}</span></summary>
+          <ul>{{range .NavPages}}
+            <li><a href="{{$.URL .URL}}"{{if eq .URL $.Page.URL}} aria-current="page"{{end}}>{{.NavLabel}}</a></li>{{end}}
           </ul>
         </details></li>{{end}}
-        {{range .NavPages}}<li><a href="{{$.URL .URL}}"{{if eq .URL $.Page.URL}} aria-current="page"{{end}}>{{.Nav}}</a></li>{{end}}
+        {{range .NavPages}}<li><a href="{{$.URL .URL}}"{{if eq .URL $.Page.URL}} aria-current="page"{{end}}>{{.NavLabel}}</a></li>{{end}}
       </ul>
     </div>
     {{end}}{{end}}
@@ -76,8 +76,8 @@
     <footer class="doc-footer">
       {{with .Page.SourceURL}}<p class="source-link"><a href="{{.}}">View the source of this page on GitHub</a></p>{{end}}
       <nav class="pager" aria-label="Pages">
-        {{with .Prev}}<a class="prev" href="{{$.URL .URL}}"><span>Previous</span>{{.Nav}}</a>{{end}}
-        {{with .Next}}<a class="next" href="{{$.URL .URL}}"><span>Next</span>{{.Nav}}</a>{{end}}
+        {{with .Prev}}<a class="prev" href="{{$.URL .URL}}"><span>Previous</span>{{.NavLabel}}</a>{{end}}
+        {{with .Next}}<a class="next" href="{{$.URL .URL}}"><span>Next</span>{{.NavLabel}}</a>{{end}}
       </nav>
     </footer>
   </main>

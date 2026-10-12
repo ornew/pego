@@ -22,28 +22,28 @@ const modulePath = "github.com/ornew/pego"
 
 // refPackage is a package documented in the reference.
 type refPackage struct {
-	dir, importPath, url, title string
+	dir, importPath, url, title, label string
 }
 
 var refPackages = []refPackage{
-	{dir: ".", importPath: modulePath, url: "reference/pego/", title: "Package pego"},
-	{dir: "grammar", importPath: modulePath + "/grammar", url: "reference/grammar/", title: "Package grammar"},
+	{dir: ".", importPath: modulePath, url: "reference/pego/", title: "Package pego", label: "pego"},
+	{dir: "grammar", importPath: modulePath + "/grammar", url: "reference/grammar/", title: "Package pego/grammar", label: "pego/grammar"},
 }
 
 const cliURL = "reference/cli/"
 
 func (s *Site) referencePages() *Section {
 	sec := &Section{Name: "Reference"}
-	idx := &Page{URL: "reference/", Kind: "doc", Title: "API Reference", Nav: "Overview", Section: sec.Name}
+	idx := &Page{URL: "reference/", Kind: "doc", Title: "Go API Reference", Nav: "Overview", Section: sec.Name}
 	s.add(idx)
 	sec.Pages = append(sec.Pages, idx)
 	for _, rp := range refPackages {
-		p := &Page{URL: rp.url, Kind: "doc", Title: rp.title, Nav: rp.title, Section: sec.Name,
+		p := &Page{URL: rp.url, Kind: "doc", Title: rp.title, Nav: rp.title, NavHTML: template.HTML("Package <code>" + template.HTMLEscapeString(rp.label) + "</code>"), Section: sec.Name,
 			SourceURL: s.cfg.GitHub + "/tree/" + s.cfg.Ref + "/" + strings.TrimPrefix(rp.dir, ".")}
 		s.add(p)
 		sec.Pages = append(sec.Pages, p)
 	}
-	cli := &Page{URL: cliURL, Kind: "doc", Title: "The pego Command", Nav: "Command pego", Section: sec.Name,
+	cli := &Page{URL: cliURL, Kind: "doc", Title: "CLI Reference", Nav: "CLI Reference", Section: sec.Name,
 		SourceURL: s.cfg.GitHub + "/blob/" + s.cfg.Ref + "/cmd/pego/main.go"}
 	s.add(cli)
 	sec.Pages = append(sec.Pages, cli)
@@ -95,8 +95,8 @@ func loadPackage(repo, dir, importPath string) (*token.FileSet, []*ast.File, *do
 func (s *Site) renderReference() error {
 	idx := s.page("reference/")
 	var ib strings.Builder
-	ib.WriteString(`<h1 id="api-reference">API Reference</h1>
-<p>The reference of the public Go API and of the command-line tool, generated from the source of this
+	ib.WriteString(`<h1 id="api-reference">Go API Reference</h1>
+<p>The reference of the public Go API, generated from the source of this
 version of PEGO. The reference of released versions is also on
 <a href="https://pkg.go.dev/github.com/ornew/pego">pkg.go.dev</a>.</p>
 <table><thead><tr><th>Package</th><th>Synopsis</th></tr></thead><tbody>
@@ -131,9 +131,8 @@ version of PEGO. The reference of released versions is also on
 		return fmt.Errorf("reference of the pego command: %w", err)
 	}
 	cli.Body, cli.TOC, cli.Text = template.HTML(body), toc, plainText(body)
-	fmt.Fprintf(&ib, "<tr><td><a href=\"%s\"><code>pego</code></a> (command)</td><td>%s</td></tr>\n",
-		relURL(idx.URL, cli.URL), template.HTMLEscapeString(cli.Description))
 	ib.WriteString("</tbody></table>\n")
+	fmt.Fprintf(&ib, "<p>For the command-line tool, see the <a href=\"%s\">CLI Reference</a>.</p>\n", relURL(idx.URL, cli.URL))
 	idx.Body = template.HTML(ib.String())
 	idx.Text = plainText(ib.String())
 	return nil
@@ -270,7 +269,7 @@ func funcID(f *doc.Func) string {
 
 func (r *refRenderer) render(rp refPackage) string {
 	pkg := r.pkg
-	fmt.Fprintf(&r.b, "<h1 id=\"top\">%s</h1>\n", template.HTMLEscapeString(rp.title))
+	fmt.Fprintf(&r.b, "<h1 id=\"top\">Package <code>%s</code></h1>\n", template.HTMLEscapeString(rp.label))
 	fmt.Fprintf(&r.b, "<pre class=\"import\"><code class=\"language-go\">import %q</code></pre>\n", rp.importPath)
 	fmt.Fprintf(&r.b, "<p class=\"ref-links\">Generated from the source of this version. Also on <a href=\"https://pkg.go.dev/%s\">pkg.go.dev</a>.</p>\n", rp.importPath)
 

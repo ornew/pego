@@ -50,7 +50,8 @@ type Page struct {
 	Src         string // repository path of the Markdown source, if any
 	URL         string // path of the page's directory relative to the site root: "" or "a/b/"
 	Title       string
-	Nav         string // short title for the navigation
+	Nav         string        // short title for the navigation
+	NavHTML     template.HTML // formatted labels supplied by generated pages only
 	Section     string
 	Index       bool   // the index of its section, which the navigation calls "Introduction"
 	Kind        string // landing, doc or playground
@@ -63,15 +64,24 @@ type Page struct {
 	SourceURL   string   // where the source of the page can be seen
 }
 
+// NavLabel keeps ordinary page labels escaped while allowing generated labels
+// to mark package names as code without changing plain search/page titles.
+func (p *Page) NavLabel() template.HTML {
+	if p.NavHTML != "" {
+		return p.NavHTML
+	}
+	return template.HTML(template.HTMLEscapeString(p.Nav))
+}
+
 // Section is a group of pages in the navigation.
 type Section struct {
 	Name        string
 	Collapsible bool // the navigation folds the pages under the name, open only if the current page is one of them
 	Pages       []*Page
-	// NavPages are shown directly in the section. Pages also contains nested design records so
-	// the page pager follows their numeric sequence.
-	NavPages      []*Page
-	DesignRecords []*Page
+	// NavPages are shown directly; Children preserves configured nested groups.
+	// Pages includes descendants for current-page checks.
+	NavPages []*Page
+	Children []*Section
 }
 
 // Contains reports whether the section lists p.

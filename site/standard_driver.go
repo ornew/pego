@@ -194,11 +194,14 @@ func Build(cfg Config) (Stats, error) {
 				sec.NavPages = append(sec.NavPages, p)
 			}
 			for _, child := range g.Children {
+				group := &Section{Name: child.Title, Collapsible: child.Collapsed}
 				for _, q := range child.Pages {
 					p := lookup(q)
 					sec.Pages = append(sec.Pages, p)
-					sec.DesignRecords = append(sec.DesignRecords, p)
+					group.Pages = append(group.Pages, p)
+					group.NavPages = append(group.NavPages, p)
 				}
+				sec.Children = append(sec.Children, group)
 			}
 			secs = append(secs, sec)
 		}

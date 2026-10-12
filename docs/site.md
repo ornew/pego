@@ -118,6 +118,9 @@ decoding excludes compression/encoding, browser DOM, worker and WebAssembly cost
   Front matter can control publication, navigation, search, titles and routes without changing Markdown bodies.
 - **The order** of the guides and of the specification follows the links in `docs/guide/README.md` and
   `spec/README.md`; other sections are sorted by file name. The Project section and its ordinary links remain visible.
+  The Reference section's nested groups and page order are configured with `children` and `first` in
+  [`site/config.json`](../site/config.json): Go API pages sit under the collapsed Go API Reference group, while
+  the CLI Reference remains directly in Reference.
   The Design Records index appears as the first Overview link inside a nested Design Records disclosure, followed by
   numbered records in numeric file-name order. The disclosure stays closed by default, including on a record page.
   Record footers link to adjacent records. Keep record Status metadata concise, and keep the Design Records index's

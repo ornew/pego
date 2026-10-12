@@ -79,10 +79,23 @@
         "reference/**/*.md"
       ],
       "first": [
-        "reference/README.md",
-        "reference/pego/README.md",
-        "reference/grammar/README.md",
         "reference/cli/README.md"
+      ],
+      "children": [
+        {
+          "title": "Go API Reference",
+          "match": [
+            "reference/README.md",
+            "reference/pego/README.md",
+            "reference/grammar/README.md"
+          ],
+          "first": [
+            "reference/README.md",
+            "reference/pego/README.md",
+            "reference/grammar/README.md"
+          ],
+          "collapsed": true
+        }
       ]
     },
     {

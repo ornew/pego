@@ -583,6 +583,48 @@ func TestNavigation(t *testing.T) {
 	if want := map[string]bool{"docs/guide/": true, "docs/cookbook/": true, "spec/": true, "parsers/": true}; !maps.Equal(intro, want) {
 		t.Errorf("pages titled Introduction = %v, want %v", intro, want)
 	}
+	apiPage, err := os.ReadFile(filepath.Join(out, "reference", "grammar", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	referenceBlock := regexp.MustCompile(`(?s)<div class="nav-section">\s*<h2>Reference</h2>(.*?)</div>`).FindSubmatch(apiPage)
+	if referenceBlock == nil {
+		t.Fatal("Reference section is missing")
+	}
+	referenceHTML := string(referenceBlock[1])
+	apiGroup := regexp.MustCompile(`(?s)<details class="nav-fold nav-subfold">\s*<summary><span>Go API Reference</span></summary>(.*?)</details>`).FindStringSubmatch(referenceHTML)
+	if apiGroup == nil {
+		t.Fatal("Go API Reference should be closed by default, including on package pages")
+	}
+	for _, label := range []string{"Overview", "Package <code>pego</code>", "Package <code>pego/grammar</code>"} {
+		if !strings.Contains(apiGroup[1], ">"+label+"</a>") {
+			t.Errorf("Go API group omits label %q", label)
+		}
+	}
+	if strings.Count(apiGroup[1], "<a ") != 3 || strings.Contains(apiGroup[1], "CLI Reference") {
+		t.Error("Go API group should contain only its overview and two package pages")
+	}
+	ordinaryReference := strings.Replace(referenceHTML, apiGroup[0], "", 1)
+	if !strings.Contains(ordinaryReference, ">CLI Reference</a>") || strings.Contains(ordinaryReference, "Package ") {
+		t.Error("CLI should remain directly visible and package links should appear only inside Go API Reference")
+	}
+	if !strings.Contains(apiGroup[1], `aria-current="page">Package <code>pego/grammar</code>`) {
+		t.Error("current package is not marked within its Go API group")
+	}
+	for path, heading := range map[string]string{
+		"reference/index.html":         `<h1 id="api-reference">Go API Reference</h1>`,
+		"reference/pego/index.html":    `<h1 id="top">Package <code>pego</code></h1>`,
+		"reference/grammar/index.html": `<h1 id="top">Package <code>pego/grammar</code></h1>`,
+		"reference/cli/index.html":     `<h1 id="top">CLI Reference</h1>`,
+	} {
+		content, err := os.ReadFile(filepath.Join(out, filepath.FromSlash(path)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(content), heading) {
+			t.Errorf("%s missing requested heading %s", path, heading)
+		}
+	}
 	var project sidebarSection
 	for _, sec := range secs {
 		if sec.Name == "Project" {
@@ -683,11 +725,15 @@ func TestNavigation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	indexGroup := regexp.MustCompile(`(?s)<details class="nav-fold nav-subfold">(.*?)</details>`).FindSubmatch(indexPage)
+	indexProject := regexp.MustCompile(`(?s)<div class="nav-section">\s*<h2>Project</h2>(.*?)</div>`).FindSubmatch(indexPage)
+	if indexProject == nil {
+		t.Fatal("Project section is missing from the design overview")
+	}
+	indexGroup := regexp.MustCompile(`(?s)<details class="nav-fold nav-subfold">(.*?)</details>`).FindSubmatch(indexProject[1])
 	if indexGroup == nil || !regexp.MustCompile(`<a href="[^"]*" aria-current="page">Overview</a>`).Match(indexGroup[1]) {
 		t.Error("Design Records overview is not marked active inside its disclosure")
 	}
-	indexDetails := regexp.MustCompile(`<details class="nav-fold nav-subfold"[^>]*>`).Find(indexPage)
+	indexDetails := regexp.MustCompile(`<details class="nav-fold nav-subfold"[^>]*>`).Find(indexProject[1])
 	if strings.Contains(string(indexDetails), " open") {
 		t.Error("Design Records disclosure opened automatically on the overview page")
 	}

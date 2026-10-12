@@ -175,7 +175,7 @@ func (s *Site) renderCLI(p *Page) (string, []Heading, error) {
 	p.Description = "Parse, format, convert, compile and debug grammars, and generate parsers, from the command line."
 	esc := template.HTMLEscapeString
 	r := &refRenderer{s: s, page: p, fset: fset, files: files, pkg: pkg, dir: "cmd/pego"}
-	r.b.WriteString("<h1 id=\"top\">The pego Command</h1>\n")
+	r.b.WriteString("<h1 id=\"top\">CLI Reference</h1>\n")
 	r.b.WriteString(`<pre><code class="language-bash">go install github.com/ornew/pego/cmd/pego@latest</code></pre>` + "\n")
 	r.heading(2, "overview", "Overview")
 	r.b.WriteString(r.docHTML(pkg.Doc))
