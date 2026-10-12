@@ -333,7 +333,8 @@ the engine. The parser decodes the input first, so positions, columns, `len` and
 the engine's:
 
 - A **string** is parsed as its UTF-8 encoding would be. A lone surrogate (which UTF-8 cannot encode) becomes U+FFFD,
-  as `TextEncoder` does.
+  as `TextEncoder` does. This includes lone U+DC80–U+DCFF: each replacement occupies one code point or
+  three bytes. Byte-preserving surrogate escapes apply to text from raw byte input, not to caller strings.
 - A **`Uint8Array`** is parsed as UTF-8 bytes, which is what the engine parses. An invalid sequence decodes as U+FFFD,
   one per byte, exactly as Go decodes it; in `Bytes` mode the positions count the original bytes.
   A U+FFFD literal matches each such byte in either unit, just as a replacement-character class does; valid U+FFFD

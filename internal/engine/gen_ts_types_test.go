@@ -362,3 +362,56 @@ import type {TypedValue, TypedParseResult} from "./parser.ts";
 		})
 	}
 }
+
+func TestGeneratedTSByteStringSurrogateEncoding(t *testing.T) {
+	src := `type Text terminal
+def main: Text = .*
+def wrapped: Text = "x�y"`
+	for _, start := range []string{"main", "wrapped"} {
+		t.Run(start, func(t *testing.T) {
+			consumer := strings.ReplaceAll(tsByteStringSurrogateConsumer, "START_WRAPPED", fmt.Sprint(start == "wrapped"))
+			runTypedTSFixture(t, src, consumer, GenOptions{Start: start, Types: true, Recognize: true}, "")
+		})
+	}
+}
+
+const tsByteStringSurrogateConsumer = `import * as p from "./parser.ts";
+import type { Text as ParsedText } from "./parser.ts";
+` + tsTypedAssert + `
+const startIsWrapped = START_WRAPPED;
+const samples = ["", "x�y", "\uD800", "\uDC00", "\uDC7F", "\uDD00", "\uDFFF", "\uD800\uDC80", "a\uD800\uDC80\uDC80z"];
+for (let c=0xDC80;c<=0xDCFF;c++) samples.push(String.fromCharCode(c),"x"+String.fromCharCode(c)+"y");
+interface Result { node: { readonly text: string; readonly start: number; readonly end: number } | null; error: Error | null }
+for (const unit of [p.CodePoints,p.Bytes]) {
+ const routes: { name: string; run: (s: string | Uint8Array) => Result }[] = [
+  {name:"Node",run:s=>p.parse(s,unit)},
+  {name:"Node options",run:s=>p.parseWithOptions(s,{unit})},
+  {name:"named Node",run:s=>p.parseRule(startIsWrapped?"wrapped":"main",s,unit)},
+  {name:"named Node options",run:s=>p.parseRuleWithOptions(startIsWrapped?"wrapped":"main",s,{unit})},
+  {name:"typed",run:s=>{const r=p.parseAST(s,unit);return {node:r.value,error:r.error}}},
+  {name:"typed options",run:s=>{const r=p.parseASTWithOptions(s,{unit});return {node:r.value,error:r.error}}},
+ ];
+ for (const s of samples) {
+  const normalized=Array.from(s,ch=>{const c=ch.codePointAt(0)!;return c>=0xD800&&c<=0xDFFF?"�":ch}).join("");
+  for (const r of routes) {
+   const actual=r.run(s),wanted=r.run(normalized);
+   check(stable(actual.node)===stable(wanted.node)&&actual.error?.message===wanted.error?.message,r.name+" lone surrogate parity "+unit+" "+JSON.stringify(s));
+   if (wanted.error===null) {
+    const end=unit===p.Bytes?Array.from(normalized).reduce((n,ch)=>{const c=ch.codePointAt(0)!;return n+(c<0x80?1:c<0x800?2:c<0x10000?3:4)},0):Array.from(normalized).length;
+    check(actual.node!==null&&actual.node.text===normalized&&actual.node.start===0&&actual.node.end===end,r.name+" normalized text/span");
+   }
+  }
+  check(p.recognize(s,unit)?.message===p.recognize(normalized,unit)?.message,"recognition parity");
+  check(p.recognizeWithOptions(s,{unit})?.message===p.recognizeWithOptions(normalized,{unit})?.message,"recognition options parity");
+  const named=p.parseRuleWithOptions("wrapped",s,{unit}),wanted=p.parseRuleWithOptions("wrapped",normalized,{unit});
+  check(stable(named.node)===stable(wanted.node)&&named.error?.message===wanted.error?.message,"literal match preserves normalized suffix");
+ }
+ if (!startIsWrapped) {
+  for(const r of routes){const raw=r.run(new Uint8Array([120,255,121]));check(raw.error===null&&raw.node?.text===(unit===p.Bytes?"x\uDCFFy":"x�y")&&raw.node.end===3,"raw-byte text unchanged");}
+ }
+}
+if (!startIsWrapped) {
+ const typed: ParsedText|null=p.parseAST("\uDCFF",p.Bytes).value;
+ check(typed!==null&&typed.text==="�"&&typed.end===3,"typed public string uses full replacement bytes");
+}
+`
