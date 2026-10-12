@@ -1340,7 +1340,7 @@ class Parser {
       vals[i] = null;
       for (let e = this.env; e !== null; e = e.next) {
         this.stepWork();
-        if (e.name === names[i]) {
+        if (this.control === null ? e.name === names[i] : equalStringsWork(e.name, names[i]!, this.control)) {
           vals[i] = e.val;
           break;
         }
@@ -2001,25 +2001,26 @@ class Parser {
   // Preserve environments saved for rollback; first assignments skip searching.
   bind(name: string, val: Value): void {
     const e = this.env;
+    const control = this.control;
     if (this.bound === null) this.bound = new Set();
     if (e === null) {
       this.env = { name, val, next: null };
-      this.bound.add(name);
+      this.bound.add(control === null ? name : stringKeyWork(name, control));
       return;
     }
-    if (e.name === name) {
-      if (e.val !== val) this.env = { name, val, next: e.next };
+    if (control === null ? e.name === name : equalStringsWork(e.name, name, control)) {
+      if (!(control === null ? e.val === val : equalValuesWork(e.val, val, control))) this.env = { name, val, next: e.next };
       return;
     }
-    if (!this.bound.has(name)) {
-      this.bound.add(name);
+    if (!this.bound.has(control === null ? name : stringKeyWork(name, control))) {
+      this.bound.add(control === null ? name : stringKeyWork(name, control));
       this.env = { name, val, next: e };
       return;
     }
     let old: Env | null = e;
     while (old !== null) {
       this.stepWork();
-      if (old.name === name) break;
+      if (control === null ? old.name === name : equalStringsWork(old.name, name, control)) break;
       old = old.next;
     }
     if (old === null) {
@@ -2027,7 +2028,7 @@ class Parser {
       return;
     }
     // Variables are checked scalar values; an equal assignment has no effect.
-    if (old.val === val) return;
+    if (control === null ? old.val === val : equalValuesWork(old.val, val, control)) return;
     const head: Env = { name, val, next: null };
     let tail = head;
     for (let cur: Env | null = e; cur !== old; cur = cur!.next) {
@@ -2427,7 +2428,7 @@ class Actx {
   lookup(name: string): Value {
     for (let e = this.p.env; e !== null; e = e.next) {
       this.p.stepWork();
-      if (e.name === name) {
+      if (this.p.control === null ? e.name === name : equalStringsWork(e.name, name, this.p.control)) {
         return e.val;
       }
     }

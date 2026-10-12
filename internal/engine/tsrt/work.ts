@@ -421,3 +421,14 @@ function getFieldWork(n: Node, name: string, control: WorkControl | null): Value
   }
   return null;
 }
+
+// Reserve bounded logical visits before native hashing, which cannot be polled.
+function stringKeyWork(s: string, control: WorkControl): string {
+  for (let i = 0; i < s.length; i += 128) control.charge(0, Math.min(128, s.length - i));
+  return s;
+}
+
+function equalValuesWork(a: Value, b: Value, control: WorkControl): boolean {
+  if (typeof a === "string" && typeof b === "string") return equalStringsWork(a, b, control);
+  return a === b;
+}
