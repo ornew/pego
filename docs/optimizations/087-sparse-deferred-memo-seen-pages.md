@@ -1,7 +1,7 @@
 # 87. Store Deferred-Memo Seen Positions Sparsely
 
 - **Status**: Candidate; adoption pending
-- **Date**: 2026-10-12
+- **Date**: 2026-10-13
 
 ## Problem and Mechanism
 
@@ -26,13 +26,13 @@ Core reset bounds all sparse backing by `maxScratch` words, including unused chu
 | Documents and streams | Not applicable | These paths use eager memoization and do not use sparse pages. |
 | 32-bit targets | Unmeasured | Portability work remains deferred. |
 
-## Reproduction
+## Historical Savepoint Reproduction (f01bd8b)
 
 The Go comparison used parent `1189fa7f7efef7fd3b39187b843515c816af8257`, candidate `f01bd8b7a61e866206eedad6e8c77b67c6d69a38`, and a same-source dense reference. It ran Go 1.27.1 on darwin/arm64 with GOMAXPROCS=4 and five rotating 300 ms samples, with no concurrent benchmark, test or build. The generated and core binaries were built separately and hashed. The generated timed-benchmark parent did not include the candidate's non-timed internal test fixture; comparisons are limited to the recorded timed binaries.
 
 Generated TypeScript measurements used Node 22.18.0, five rotating rounds, three warmups and three timed calls for large input, and 1,000 warmups and 10,000 timed calls for short input. Bit-buffer sizes below are invocation-owned typed-array capacities, not total JavaScript heap. `BenchmarkSparseMemoTypeScript` is a native Go benchmark parsing a TypeScript grammar; it does not measure the generated TypeScript runtime.
 
-Focused boundary/reset tests, generated Go and Node 22 strict-TypeScript controls, and public Go result/work-hash equality among parent, candidate and dense reference passed. Parser and benchmark generation passed. The full root suite and all ten parser-module vet/test runs passed. Site tests and the pinned-WASM build with link validation passed. A full benchmark checkpoint remains pending; 32-bit validation is not claimed.
+Focused boundary/reset tests, generated Go and Node 22 strict-TypeScript controls, and public Go result/work-hash equality among parent, candidate and dense reference passed. Parser and benchmark generation passed. The full root suite and all ten parser-module vet/test runs passed. Site tests and the pinned-WASM build with link validation passed. At this savepoint, the full benchmark checkpoint remained pending; 32-bit validation was not claimed.
 
 For repeatable controls, export optimized and dense-reference generated Go fixtures with `PEGO_SPARSE_MEMO_GENERATED_DIR`; export TypeScript fixtures with `PEGO_SPARSE_MEMO_TS_DIR`. The tests compare results before timing. Example commands:
 
@@ -48,7 +48,7 @@ node --expose-gc bench.mjs
 
 Build the dense reference with the private `pego_reference_sparse_memo` control; regenerate reference artifacts using the generation-time reference switches. Keep parent, candidate and same-source reference on identical grammar, operation, input and unit. Serialize runs and report time, B/op and allocs/op separately.
 
-## Results
+## Historical Savepoint Results (f01bd8b)
 
 The Go benchmark results summarize 36 cases from five rotating parent/candidate/reference samples. Ratios are medians of paired samples; ranges are observed minima and maxima, not confidence intervals or claims of statistical significance. The static dense JSON/XML controls comprise 12 cases. Storage is reported separately from total heap.
 
@@ -73,10 +73,30 @@ The generated TypeScript large-input bit-buffer capacities are 573,440 bytes in 
 
 ## Correctness and Tradeoffs
 
-The selector-elision check covers the small-table fixture only; it does not establish byte identity for every generated grammar. The full root suite and all ten parser-module vet/test runs passed. Site tests and the pinned-WASM build with link validation passed. A full benchmark checkpoint remains pending.
+The selector-elision check covers the small-table fixture only; it does not establish byte identity for every generated grammar. At this savepoint, the full root suite and all ten parser-module vet/test runs had passed. Site tests and the pinned-WASM build with link validation passed; the full benchmark checkpoint had not yet run.
 
 The measured storage reduction is substantial for the synthetic core workload. Generated Node/Recognize allocations also fell in the recorded synthetic cases. Core and TypeScript timing samples mostly overlap parity, with some medians and individual ranges above it. The generated typed-AST allocation comparison has the dense-buffer confound; generated timed comparisons have the fixture-composition limitation above. The JSON/XML controls show that a few allocations or bytes can differ even when runtime sparse selection is disabled.
 
 ## Decision and Limits
 
-Adoption remains pending. Review the completed validation gates and decide whether measured seen-storage savings justify the observed per-workload tradeoffs. Retain dense behavior below the thresholds and private reference controls for comparison. Do not extrapolate to Documents, streams, 32-bit targets, total retained heap, or unmeasured grammars and backends. Timing ratios are descriptive and do not prove statistical significance.
+At the f01 savepoint, adoption remained pending. Its synthetic storage savings and timing observations are historical evidence; do not generalize them beyond their measured cases. Retain dense behavior below the thresholds and private reference controls for comparison. Do not extrapolate to Documents, streams, 32-bit targets, total retained heap, or unmeasured grammars and backends.
+
+## Focused Series-Baseline Checkpoint (67f23e0 vs c73bda3)
+
+This checkpoint compares the restacked candidate at `c73bda3` with its pre-optimization-series baseline, `67f23e0`. It used Go 1.27.1 on Apple M3 Max (darwin/arm64, `GOMAXPROCS=16`) with five alternating 300 ms samples per case. The comparison includes both sparse-storage and small-table selector-elision commits. The 52-case matrix covers JSON, XML, Operators arithmetic and Minilang: Parse for closure, recursive VM, iterative VM and generated Go in CodePoints and Bytes (32 cases); generated typed AST Parse (4 cases); and Recognize for the same four backends (16 cases).
+
+| Measure | Result | Limit |
+|:--|:--|:--|
+| Paired median time ratios | 0.980–1.030× across the 52 cases; most observed five-pair ranges overlap 1.0. Generated Operators arithmetic `ParseAST` was 1.002×; generated Minilang `Recognize` was 0.989×. | These small deviations are descriptive and do not establish a speedup or regression. |
+| Allocations | Often unchanged, but not uniformly so. Minilang generated `ParseAST` medians were 6.58→6.84 MB/op and 599→616 allocations; per-sample byte ranges overlapped (parent 6.12–6.99 MB, candidate 6.29–7.01 MB). JSON iterative `Recognize` samples varied from 7.55–46.8 KB/op on the parent and 7.55–47.97 KB/op on the candidate, with 46 allocations in both. | Sample jitter prevents a universal unchanged-allocation claim; bytes/op and allocation counts are reported separately. |
+
+The candidate's focused core and generated Go/TypeScript sparse tests passed. Core backend result/work controls passed, and generated sparse/dense controls matched results. All 17 generated files matched after regeneration. The full root suite, all ten parser-module vet/test runs and site Go tests passed; independent static review passed the production-file scope. The pinned-WASM site build and link check also passed.
+
+The full 131-case, three-sample snapshot at `c73bda3` is reported in [benchmarks.md](../benchmarks.md). It is a same-revision full-suite snapshot, not a second parent-relative trial. Use its ratios only as within-run comparisons and do not attribute them to sparse memo or treat them as a substitute for this focused checkpoint.
+
+### Supplemental Storage-Only Probe
+
+Twelve synthetic core cases measured current-source sparse storage against a same-source dense build using `pego_reference_sparse_memo`: closure, recursive VM and iterative VM; Parse and Recognize; CodePoints and Bytes. Seen backing, both before and after reset, was 2,573,184–2,583,528 bytes versus 9,101,312 bytes in the dense build (0.2827–0.2839×, about 72% lower). The probe reports storage outside the timer; its one-iteration run does not support timing or B/op claims. These figures exclude memo entries, call counters, the rest of the memo table and total heap. The dense reference includes the shared 64-byte layout overhead. This is a fresh storage-only result, separate from the historical f01 synthetic timing and storage results above.
+
+
+Adoption remains pending. This checkpoint narrows the parent-relative timing comparison to the listed matrix; it does not cover other workloads, 32-bit targets, Documents or streams, and does not prove statistical significance or universal allocation parity.
