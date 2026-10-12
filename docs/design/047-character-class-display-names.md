@@ -1,4 +1,4 @@
-# 047. Character-Class Display Names
+# 047. Diagnostic Expectation Names
 
 - **Status**: Proposed
 - **Author**: @ornew
@@ -6,84 +6,122 @@
 
 ## Summary
 
-Allow a grammar author to give a character class a stable, human-readable name for syntax-error expectations without changing which characters it accepts. The proposed spelling attaches a metadata attribute to the existing class expression:
+Add a postfix `#diagnostic(name="...")` attribute that gives a parsing expression a concise expectation name when that expression fails. The attribute is a failure wrapper, not metadata hoisted through nested expressions. It preserves the failure position and all parse behavior; it changes only the ordinary expected-item descriptions contributed by the wrapped failure. Explicit `#error` messages remain visible and take precedence.
+
+The target may be any parsing expression, including a complete rule body:
 
 ```pego
-def digit = (?0-9)#display(name="decimal digit")
+def number = ((?0-9)+ "." (?0-9)+) #diagnostic(name="number")
 ```
 
-When this class is an expected item in a syntax error, the diagnostic shows `decimal digit` instead of the mechanically formatted class. Matching, captures, spans, and recovery behavior remain unchanged.
+The precise wrapper boundary matters. An inner failure that is recovered before it reaches an outer diagnostic wrapper is no longer a failure of that outer wrapper. The annotation therefore does not rename every nested character-class expectation.
 
 ## Motivation
 
-Character classes are represented by `grammar.CharClass` as ranges and a negation flag. Their expectation text is currently derived from the class expression and is used by the closure compiler, bytecode, and generated Go and TypeScript runtimes. This accurately describes the syntax but can produce noisy or domain-insensitive errors for classes such as an identifier-start set.
+Character classes are currently shown using their mechanically formatted syntax. That is precise but noisy for domain concepts such as a decimal number or an identifier. A rule-wide custom `#error` message can provide prose, but it replaces the expected items with a message and has different composition semantics. A diagnostic name offers a concise expected item while preserving the parser's existing failure position and expected-item accumulation.
 
-The grammar already supports postfix attributes such as `#error` and `#recover`; unknown attribute names are rejected. A metadata attribute fits that extension point and avoids assigning a new meaning to existing class syntax or introducing reusable named-set declarations.
+The grammar already represents postfix attributes with `grammar.Attributed`. Reusing that mechanism avoids new declarations or a separate expectation-label syntax. A wrapper must be honored at its expression boundary, rather than injected into every class descriptor below it.
 
 ## Goals
 
-- Let authors replace a class's displayed expectation label with an exact string.
-- Preserve the class's matching and parse-tree semantics.
-- Keep diagnostics deterministic across interpreters, generated parsers, and serialized grammars.
-- Preserve existing class descriptions when no display name is present.
+- Let authors name the ordinary expected item contributed by a failed parsing expression.
+- Support any expression target, including a parenthesized expression or a complete rule body.
+- Preserve farthest-failure positions, matching, captures, values, spans, and recovery behavior.
+- Preserve explicit custom `#error` messages and their precedence.
+- Keep diagnostics consistent across interpreters, generated parsers, and serialized grammars.
 
 ## Non-goals
 
-- Defining named or reusable character classes.
-- Changing Unicode range validation, negation, matching, or formatter rules for classes.
-- Replacing `#error` custom messages or changing its precedence.
-- Adding localized diagnostic catalogs or runtime-dependent labels.
+- Renaming every nested terminal or class expectation regardless of wrapper boundaries.
+- Changing ordered choice, recovery, backtracking, capture, or action semantics.
+- Replacing `#error` custom messages or introducing interpolation/localization.
+- Inferring names from rule identifiers or adding named character-class declarations.
 
 ## Design
 
-### Public behavior and contracts
+### Syntax and validation
 
-Introduce `#display(name="...")` as metadata on a character class. Require exactly one `name` argument containing a non-empty string literal. Reject duplicate `#display` attributes on the same class and reject CR, LF, U+0085, U+2028, and U+2029 so one expected item remains one line. Preserve all other Unicode scalar values exactly; do not normalize or reinterpret them. The recommended initial validation accepts the attribute on a class through grouping and a postfix attribute chain, but rejects it when the underlying expression is not a character class. In particular, define and test attribute ordering: `#display` may name a class whose expected item is otherwise affected by `#error`; an outer `#display` whose immediate expression is a semantic wrapper such as `#error` is rejected rather than silently searching through it.
+`#diagnostic` takes exactly one named argument, `name`, whose value is a non-empty string literal. Reject duplicate `#diagnostic` attributes on one expression chain and reject CR, LF, U+0085, U+2028, and U+2029 so a single expected item cannot span lines. Preserve other Unicode scalar values exactly; do not normalize them.
 
-The display string replaces the class's normal textual form only where that class contributes an expected item to a syntax error. It does not alter matching identity, whether the expression succeeds, its span, capture behavior, or the parser's farthest-failure position. If an enclosing `#error(message=...)` supplies a custom message, existing `#error` behavior continues to take precedence. The expected-item table is keyed by exact description strings, so distinct classes with the same display label produce one displayed expected item under the existing deduplication rule. This changes only the diagnostic description, not class or expression identity.
-
-Example:
+Attributes keep their normal postfix binding and written order. Each attribute wraps the expression immediately before it, and several attributes compose from the innermost outward. `#diagnostic` is valid on any parsing expression; it is not class metadata and must not be hoisted through semantic wrappers. For example:
 
 ```pego
-def identifier = first:(?a-zA-Z)#display(name="letter") rest:(?a-zA-Z0-9)*
+def digit = (?0-9) #diagnostic(name="digit")
+def number = ((?0-9)+ "." (?0-9)+) #diagnostic(name="number")
+def recovered = expression #diagnostic(name="expression") #recover(skip=";")
+def recover_first = expression #recover(skip=";") #diagnostic(name="expression")
 ```
 
-The attribute names the first class's expectation, not the entire `identifier` rule or the `rest` class.
+In `recovered`, a failure is labeled before recovery handles it. In `recover_first`, recovery can turn the inner failure into a successful recovered value, so the outer diagnostic wrapper may see success and leave the recorded expectations unchanged. This is ordinary inside-out attribute composition, not an order-independent metadata rule.
 
-### Implementation and invariants
+When `#diagnostic` and `#error` appear in either order in the same attribute chain, an applicable explicit `#error(message=...)` remains the reported custom message. Other semantic attributes, including recovery, retain their existing inside-out behavior. Do not flatten or reorder the chain to discover labels or messages.
 
-Represent the feature as validated metadata on the existing `grammar.Attributed` node rather than adding a display field to `CharClass`. This keeps grammar JSON additive through the existing attribute representation and preserves the class AST shape. Add validation for the underlying class and required argument, including the documented interaction with neighboring attributes. The grammar formatter already emits postfix attributes; it must preserve the label through parse-format-parse round trips.
+### Failure and expectation contract
 
-When compiling a class, derive the expectation description from the display attribute if present, otherwise use the current `charClassString` result. Keep the normal class matcher and matcher identity untouched. The new text is a diagnostic descriptor; exact-text expected-item interning and deduplication continue to apply. This single description path must feed closure compilation, recursive and iterative bytecode, and generated Go/TypeScript output so every backend reports the same label. Error sorting and `#error` composition remain governed by existing rules.
+When the wrapped expression fails, replace the ordinary, non-message expected-item descriptions contributed by that wrapped failure at its tracked farthest position with the configured name. Preserve the position and preserve explicit `#error` messages. Do not move the failure to the wrapper start, replace expectations recorded at a farther position by another failure, or collapse unrelated expectation events into one label. On success, preserve the inner expectations already recorded, as with the existing wrapper behavior.
 
-Treat `#display` as transparent metadata everywhere outside expectation construction. It must not change first-character guards, scan/repetition lowering, recognition, type or value analysis, capture scopes, left-recursion analysis, or optimizer eligibility. Optimized paths that report failures directly, including first guards and scanners, must still select the display label.
+The attribute must not change whether the expression matches, which branch wins, captures or values produced, expression spans, or the farthest-failure position. If the existing expected-item table deduplicates identical strings, the configured name follows the same rule; the proposal does not change ordering or deduplication.
 
-### Compatibility and backend support
+### Observed baseline and proposed outcome
 
-Grammars without `#display` retain their current syntax and diagnostics. New grammar source fails validation on older implementations because unknown attributes are rejected; this is a new opt-in grammar feature rather than a silent behavior change. The JSON AST uses `Attributed` and `Attribute` already, so no new top-level JSON field is required. Confirm that strict grammar JSON validation accepts the existing attribute shape and that bytecode serialization retains the resulting description string; if a format revision is needed, gate it explicitly rather than changing old bytecode interpretation.
+The following baseline was executed locally against main `7cc59d8`. It does not demonstrate an implementation of this proposal.
 
-Update `spec/attributes.md`, character-class documentation, formatter cases if needed, and LSP built-in attribute completion/hover. The LSP should explain that this is diagnostic metadata and that `#error` remains the way to provide a full custom failure message.
+```pego
+def number = (?0-9)+ "." (?0-9)+
+```
 
-### Implementation sequence
+- Input `12x`: `1:3: syntax error: expected ".", (?0-9)`
+- Input `12.`: `1:4: syntax error: expected (?0-9)`
 
-1. Add grammar validation, attribute-order rules, and source-format round-trip support.
-2. Route class expectation description selection through the shared compiler/generator helper without changing matcher IDs.
-3. Add parity tests for ordinary and optimized failure paths across closure, both bytecode VMs, generated Go, and TypeScript.
-4. Update the attribute specification and LSP built-in completion/hover.
+With the proposed whole-body wrapper:
+
+```pego
+def number = ((?0-9)+ "." (?0-9)+) #diagnostic(name="number")
+```
+
+The proposed output keeps the same positions and full diagnostic shape while replacing the ordinary expected descriptions:
+
+- Input `12x`: `1:3: syntax error: expected number`
+- Input `12.`: `1:4: syntax error: expected number`
+
+These are design targets, not verified behavior. As a separate existing control, whole-body `#error(message="expected a decimal number")` reports:
+
+- Input `12x`: `1:3: syntax error: expected a decimal number`
+- Input `12.`: `1:4: syntax error: expected a decimal number`
+
+That custom-message behavior remains intact and takes precedence when applicable.
+
+### Representation and implementation constraints
+
+Represent the proposal with the existing `grammar.Attributed` and `grammar.Attribute` form; do not add a field to `CharClass` or `RuleDef` solely for this feature. Validation records the exact name and rejects invalid argument shapes before compilation. Preserve the attribute in grammar JSON and formatter round trips.
+
+Runtime and compiler paths must honor the wrapper's failure boundary. In particular, first-character guards, scanners, repetition lowering, choice dispatch, and other optimized paths that report failures directly must not blindly inject the label into all nested class descriptors. The wrapper behavior must be equivalent across closure compilation, recursive and iterative bytecode VMs, and generated Go and TypeScript parsers. It must leave matcher identity and all successful-path analysis unchanged.
+
+### Compatibility
+
+Grammars without `#diagnostic` retain their existing behavior. Older implementations reject the new attribute as unknown, making it an opt-in grammar feature. The JSON AST already has an attributed-expression representation; verify strict JSON and bytecode compatibility before implementation, and use an explicit format revision if existing serialized forms cannot carry the required behavior safely.
+
+Update `spec/attributes.md`, grammar and diagnostic guides, formatter and LSP attribute help. The spelling is intentionally postfix; [design 049](049-rule-attribute-decorators.md) separately proposes optional prefix decorator sugar that desugars to the same attribute chain.
 
 ## Alternatives considered
 
-- **Add a name field directly to `CharClass`.** This makes compiler access simple, but duplicates metadata alongside the existing attribute mechanism and requires a distinct AST JSON field and formatter path.
-- **Use a dedicated named-class declaration.** A declaration could support reuse, but it introduces symbol lookup, forward-reference, and composition rules beyond the requested diagnostic label.
-- **Use `#error(message=...)`.** This already replaces an error message, but it applies custom failure text rather than naming one expected class; it can also obscure other expected alternatives. `#display` is narrower.
-- **Infer a label from a comment or rule name.** Such inference is unstable under refactoring and cannot reliably distinguish a class's role from its containing rule.
+- **Class-only label metadata.** Narrower and potentially cheaper, but cannot name composite failures such as a decimal number. It also requires special class handling and still needs clear behavior when semantic wrappers intervene.
+- **A rule-only annotation.** Simpler for whole-rule diagnostics, but cannot name a subexpression and creates a second scope/feature model.
+- **`#error(message=...)`.** Already supports custom prose, but replaces expected items with an explicit message and retains its own wrapper precedence. It remains appropriate when a full message is desired.
+- **A prefix-only `@display` annotation.** It would need a new annotation form and still leave expression-level labels unavailable. Decorator sugar is considered separately without changing the postfix contract.
+- **A field on `CharClass` or a named-class declaration.** These duplicate the existing attribute representation or introduce symbol lookup and composition rules.
 
 ## Testing
 
-Verify that labeled and unlabeled classes accept identical inputs and produce identical node types, captures, and spans. Cover positive and negated classes, ranges, Unicode scalars, malformed UTF-8, and class failure after a successful prefix. Compare error position and expected-item ordering across closure, recursive bytecode, iterative bytecode, generated Go, and TypeScript. Include two distinct ranges with the same label to pin exact-text expected-item deduplication, and a control with distinct labels to verify they remain separate.
+Before implementation, acceptance should include:
 
-Test empty labels, wrong argument names/types, duplicate attributes, applying the attribute to a non-class, each prohibited line separator, formatter round trips, grammar JSON round trips, compiled bytecode loading, and both supported and rejected `#error` orderings. Add optimized first-guard, scanner, repetition, recognition, and left-recursion controls so metadata transparency and direct failure reporting are verified. Confirm LSP hover/completion advertises the attribute and that diagnostics use the same display label.
+- Ordinary terminal, class, sequence, choice, grouped, and whole-rule-body targets; successful inputs preserve matching, values, captures, and spans.
+- Failures at the wrapped farthest position replace only ordinary expected descriptions. Independent farther failures, unrelated expectation events, ordering, and deduplication remain correct.
+- Both `#diagnostic`/`#error` orders preserve explicit message precedence. Both diagnostic/recovery orders demonstrate the specified boundary behavior; nested recovery and failed recovery remain covered.
+- Invalid/empty names, wrong and extra arguments, duplicates, forbidden line separators, valid Unicode, JSON round trips, and formatter round trips.
+- Parity across closure, recursive bytecode, iterative bytecode, generated Go, and TypeScript, including first-guard/scanner/repetition/choice paths that emit failures directly.
+- LSP completion and hover, source locations, and diagnostic text agree across supported frontends.
 
-## Limitations and open questions
+## Limitations
 
-The recommendation is to allow a display string only on a character class, through grouping and a documented postfix metadata chain, with no localization or interpolation. Reject empty labels and CR, LF, U+0085, U+2028, and U+2029. The remaining implementation decision is how to identify the class through adjacent attributes; the proposed rule rejects a `#display` placed outside a semantic wrapper and permits `#display` on the class before an enclosing `#error`.
+This remains a proposal. The label applies only to ordinary expected items from a failure that reaches the annotated wrapper. Recovery and other semantic attributes retain normal written-order composition; the label is not a declaration-wide alias and does not cross a wrapper that has already recovered the failure. An applicable explicit `#error` message takes precedence.
