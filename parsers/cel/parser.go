@@ -638,7 +638,7 @@ func (p *parser) firstCall(r *rule) bool {
 }
 
 // sparseSeen is selected when generating the source, with no parser-time option.
-const sparseSeen = true
+const sparseSeen = false
 
 // seenPageArena batches stable bit pages without one allocation per page.
 type seenPageArena struct {

@@ -58,7 +58,7 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	rt := tsRuntimeSource[i+len(tsRuntimeMarker):]
 	rt = strings.Replace(rt, "const defaultMaxDepth = 100_000;", fmt.Sprintf("const defaultMaxDepth = %d;", opts.generatedMaxDepth()), 1)
 	rt = strings.Replace(rt, "const sparseSeen = true;\n", "", 1)
-	if opts.disableSparseMemo {
+	if !opts.useSparseMemo(prog, rec) {
 		rt = strings.Replace(rt, "sparseSeen && stride > 64 && this.n > 1024", "false", 1)
 		rt = strings.Replace(rt, "const first = this.sparse", "const first = false", 1)
 	} else {
