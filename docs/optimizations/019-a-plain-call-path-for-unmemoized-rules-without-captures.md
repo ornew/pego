@@ -1,4 +1,4 @@
-# 19. A plain call path for unmemoized rules without captures
+# 19. A Plain Call Path for Unmemoized Rules Without Captures
 
 - A rule call went through `call` → `invoke` → `invokeBegin` / body / `invokeEnd`: a capture frame was allocated or
   shared and switched to, an `invokeState` was built and copied, and the failure handling of `call` came on top. In

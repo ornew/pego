@@ -22,7 +22,7 @@ func (m *Module) Disassemble() string {
 		}
 		return "[" + strings.Join(parts, " ") + "]"
 	}
-	// Label the start positions of rules and Pratt sections.
+	// Label the start positions of rules and Operators Rule sections.
 	labels := map[int][]string{}
 	elabels := map[int][]string{}
 	for _, r := range m.Rules {
@@ -38,15 +38,15 @@ func (m *Module) Disassemble() string {
 			elabels[l.Action] = append(elabels[l.Action], name+".action:")
 		}
 	}
-	for i, p := range m.Pratts {
+	for i, p := range m.OperatorsRules {
 		if p.Skip >= 0 {
-			labels[p.Skip] = append(labels[p.Skip], fmt.Sprintf("pratt%d.skip:", i))
+			labels[p.Skip] = append(labels[p.Skip], fmt.Sprintf("operatorsRule%d.skip:", i))
 		}
 		for k, o := range p.Operands {
-			line(o, fmt.Sprintf("pratt%d.operand%d", i, k))
+			line(o, fmt.Sprintf("operatorsRule%d.operand%d", i, k))
 		}
 		for _, o := range append(append([]OpInfo{}, p.Prefix...), p.Led...) {
-			line(o.Line, fmt.Sprintf("pratt%d.op%d", i, o.ID))
+			line(o.Line, fmt.Sprintf("operatorsRule%d.op%d", i, o.ID))
 		}
 	}
 
@@ -59,8 +59,8 @@ func (m *Module) Disassemble() string {
 		if r.TerminalType >= 0 {
 			fmt.Fprintf(&b, " terminal=%s", m.Strings[r.TerminalType])
 		}
-		if r.Pratt >= 0 {
-			fmt.Fprintf(&b, " pratt=%d", r.Pratt)
+		if r.OperatorsRule >= 0 {
+			fmt.Fprintf(&b, " operatorsRule=%d", r.OperatorsRule)
 		}
 		var flags []string
 		for _, f := range []struct {
@@ -76,8 +76,8 @@ func (m *Module) Disassemble() string {
 		}
 		b.WriteString("\n")
 	}
-	for i, p := range m.Pratts {
-		fmt.Fprintf(&b, "pratt %d: skip=%d operands=%d\n", i, p.Skip, len(p.Operands))
+	for i, p := range m.OperatorsRules {
+		fmt.Fprintf(&b, "operatorsRule %d: skip=%d operands=%d\n", i, p.Skip, len(p.Operands))
 		for _, o := range append(append([]OpInfo{}, p.Prefix...), p.Led...) {
 			kind := []string{"prefix", "postfix", "infix"}[o.Kind]
 			assoc := []string{"left", "right", "none"}[o.Assoc]
@@ -158,8 +158,8 @@ func (m *Module) operands(in Instr, str func(int) string, names func([]int) stri
 		return "and"
 	case OpCall:
 		return fmt.Sprintf("%s min=%d keep=%d", m.Strings[m.Rules[a].Name], bb, c)
-	case OpPratt:
-		return fmt.Sprintf("pratt%d", a)
+	case OpOperatorsRule:
+		return fmt.Sprintf("operatorsRule%d", a)
 	case OpPred:
 		return fmt.Sprintf("expr=%d", a)
 	case OpAssign:

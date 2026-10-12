@@ -1,4 +1,4 @@
-# 65. Position conversion in the language server
+# 65. Position Conversion in the Language Server
 
 - `pego lsp` converted between LSP positions (UTF-16 code units) and PEGO positions (code points) by walking each line
   from its start for every token, diagnostic and range: quadratic on long lines (a 64 KB line took 0.7 s to analyze and

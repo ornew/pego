@@ -9,7 +9,7 @@ documents in how they are organized:
 - The cookbook starts from a task (read a configuration file, report three errors at once, reparse on every keystroke)
   and combines the features that the task needs.
 
-## Running a recipe
+## Running a Recipe
 
 Every program is a `main` package that you can run as it is. Put the files in a directory (a block whose first line is
 `// name.go` or `// name.pego` is a file of that name, without that line), make it a module that uses PEGO, and run it:
@@ -27,7 +27,7 @@ embedded in the programs with `go:embed`, so the `.pego` files are real files th
 editor support work with. Every output was produced by running the code shown, with Go 1.27.1 on an Apple M3 Max;
 times differ from machine to machine.
 
-## Read data
+## Read Data
 
 | Recipe | What it shows |
 |:--|:--|
@@ -36,28 +36,28 @@ times differ from machine to machine.
 | [Process a file that does not fit in memory](big-files.md) | `#stream` and `ParseStream`: records one at a time, in 17 MiB for 5 million lines |
 | [Parse indentation-based input](indentation.md) | Nested entries as nested Go maps, with a variable for the indentation and an error for inconsistent indentation |
 
-## Evaluate and query
+## Evaluate and Query
 
 | Recipe | What it shows |
 |:--|:--|
-| [Evaluate arithmetic with variables and functions](calculator.md) | A Pratt expression with precedence, associativity and calls, and an evaluator that runs the same tree for many inputs |
+| [Evaluate arithmetic with variables and functions](calculator.md) | An Operators Rule with precedence, associativity and calls, and an evaluator that runs the same tree for many inputs |
 | [Compile a filter language into a Go predicate](filter-language.md) | `age > 30 and name ~ "a*"` as closures, with word operators that do not collide with field names |
 
-## Report problems
+## Report Problems
 
 | Recipe | What it shows |
 |:--|:--|
-| [Report an error with its source line and a caret](error-carets.md) | `#error` messages and the position of a `*pego.SyntaxError`, printed like a compiler |
+| [Report an error with its source line and a caret](error-carets.md) | `@error` messages and the position of a `*pego.SyntaxError`, printed like a compiler |
 | [Report several errors in one run](several-errors.md) | `#recover`: a tree of what could be read, the errors, and what to watch for in the `skip` |
 
-## Build tools
+## Build Tools
 
 | Recipe | What it shows |
 |:--|:--|
 | [Tokenize source for syntax highlighting](highlighting.md) | A tokenizer that cannot fail, and HTML spans from the flat tree |
 | [Reparse a document on every keystroke](as-you-type.md) | `Document`, `Edit` and `Stats`; a grammar shaped so that edits reuse most of the last parse |
 
-## Ship, reuse and test
+## Ship, Reuse and Test
 
 | Recipe | What it shows |
 |:--|:--|
@@ -65,7 +65,7 @@ times differ from machine to machine.
 | [Validate a YAML file and point at the problem](ready-made-parsers.md) | A ready-made parser of [parsers/](../../parsers/README.md): syntax errors with positions, and your own checks with the positions of the typed tree |
 | [Test hand-written code against a grammar](test-with-samples.md) | Inputs and near misses generated from the grammar, a differential test and a fuzz test |
 
-## Where to go next
+## Where to Go Next
 
 | To learn about | Read |
 |:--|:--|

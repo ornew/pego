@@ -21,7 +21,7 @@ const (
 )
 
 // target is something the generator tries to exercise: a rule, an alternative of an ordered choice, or
-// an operand or operator of a Pratt expression.
+// an operand or operator of an Operators Rule expression.
 type target struct {
 	kind  int
 	rule  string
@@ -34,20 +34,20 @@ type target struct {
 
 // ruleInfo is what the generator knows about a rule.
 type ruleInfo struct {
-	def      *grammar.RuleDef
-	index    int
-	pratt    *grammar.Pratt
-	levels   map[string]int // level name -> index in pratt.Levels
-	terminal bool           // the rule is declared with a terminal type
-	height   int            // minimal derivation height: nested rule calls needed to match it
-	length   int            // minimal length in bytes of a match
-	reach    bitset         // targets that generating the rule can exercise, its own included
-	calls    []string
+	def           *grammar.RuleDef
+	index         int
+	operatorsRule *grammar.OperatorsRule
+	levels        map[string]int // level name -> index in operatorsRule.Levels
+	terminal      bool           // the rule is declared with a terminal type
+	height        int            // minimal derivation height: nested rule calls needed to match it
+	length        int            // minimal length in bytes of a match
+	reach         bitset         // targets that generating the rule can exercise, its own included
+	calls         []string
 	// always caches alwaysMatches for the body: 0 not computed yet, 1 being computed, 2 yes, 3 no.
 	always int
 	// stops caches static longest-selection queries per minimum level, never per live-scope state
-	// (see gen.prattStopCheck).
-	stops map[int]*prattStop
+	// (see gen.operatorsRuleStopCheck).
+	stops map[int]*operatorsRuleStop
 }
 
 // info is the analysis of a grammar shared by the generator and the matcher.
@@ -56,10 +56,10 @@ type info struct {
 	order   []*ruleInfo
 	start   *ruleInfo
 	targets []target
-	// Target ids of the first alternative of each choice, of each Pratt operand and operator.
+	// Target ids of the first alternative of each choice, of each Operators Rule operand and operator.
 	altBase  map[*grammar.Choice]int
-	operands map[*grammar.PrattOperand]int
-	ops      map[*grammar.PrattOperator]int
+	operands map[*grammar.OperatorsRuleOperand]int
+	ops      map[*grammar.OperatorsRuleOperator]int
 	// reachable[i] is true if the rule with index i can be called from the start rule in a context
 	// that can match; called[i] if it is called at all (outside negative lookaheads and #recover).
 	reachable, called []bool
@@ -76,8 +76,8 @@ func analyze(g *grammar.Grammar, start string) *info {
 	in := &info{
 		rules:     map[string]*ruleInfo{},
 		altBase:   map[*grammar.Choice]int{},
-		operands:  map[*grammar.PrattOperand]int{},
-		ops:       map[*grammar.PrattOperator]int{},
+		operands:  map[*grammar.OperatorsRuleOperand]int{},
+		ops:       map[*grammar.OperatorsRuleOperator]int{},
 		reachMemo: map[grammar.Expr]bitset{},
 		compared:  map[*grammar.Capture]bool{},
 		captures:  map[grammar.Expr]bool{},
@@ -90,9 +90,9 @@ func analyze(g *grammar.Grammar, start string) *info {
 		}
 	}
 	for i, r := range g.Rules() {
-		ri := &ruleInfo{def: r, index: i, height: inf, length: inf, stops: map[int]*prattStop{}}
-		if pr, ok := r.Expr.(*grammar.Pratt); ok {
-			ri.pratt = pr
+		ri := &ruleInfo{def: r, index: i, height: inf, length: inf, stops: map[int]*operatorsRuleStop{}}
+		if pr, ok := r.Expr.(*grammar.OperatorsRule); ok {
+			ri.operatorsRule = pr
 			ri.levels = map[string]int{}
 			for j, l := range pr.Levels {
 				if l.Name != "" {
@@ -119,7 +119,7 @@ func analyze(g *grammar.Grammar, start string) *info {
 				for j, a := range e.Alts {
 					in.targets = append(in.targets, target{kind: targetAlt, rule: ri.def.Name, index: j, expr: a})
 				}
-			case *grammar.Pratt:
+			case *grammar.OperatorsRule:
 				for j, o := range e.Operands {
 					in.operands[o] = len(in.targets)
 					in.targets = append(in.targets, target{kind: targetOperand, rule: ri.def.Name, index: j, expr: o.Expr})
@@ -202,7 +202,7 @@ func (in *info) localTargets(e grammar.Expr, s bitset) {
 			for j := range x.Alts {
 				s.set(in.altBase[x] + j)
 			}
-		case *grammar.Pratt:
+		case *grammar.OperatorsRule:
 			for _, o := range x.Operands {
 				s.set(in.operands[o])
 			}
@@ -252,7 +252,7 @@ func (in *info) alwaysMatches(e grammar.Expr) bool {
 		return in.alwaysMatches(e.Expr)
 	case *grammar.Ref:
 		ri := in.rules[e.Name]
-		if ri == nil || ri.pratt != nil {
+		if ri == nil || ri.operatorsRule != nil {
 			return false
 		}
 		switch ri.always {
@@ -416,7 +416,7 @@ func (in *info) height(e grammar.Expr) int {
 		return in.height(e.Expr)
 	case *grammar.Attributed:
 		return in.height(e.Expr)
-	case *grammar.Pratt:
+	case *grammar.OperatorsRule:
 		h := inf
 		for _, o := range e.Operands {
 			h = min(h, in.height(o.Expr))
@@ -469,7 +469,7 @@ func (in *info) length(e grammar.Expr) int {
 		return in.length(e.Expr)
 	case *grammar.Attributed:
 		return in.length(e.Expr)
-	case *grammar.Pratt:
+	case *grammar.OperatorsRule:
 		l := inf
 		for _, o := range e.Operands {
 			l = min(l, in.length(o.Expr))
@@ -479,7 +479,7 @@ func (in *info) length(e grammar.Expr) int {
 	return 0
 }
 
-// possibleTargets propagates reachable rules and their weakest Pratt entry together. Only parts
+// possibleTargets propagates reachable rules and their weakest OperatorsRule entry together. Only parts
 // enabled in a reachable context can introduce more calls: a blocked tail must not lower its own
 // rule's entry or make its nested choices and callees appear reachable. Prefixes are unrestricted and
 // can open weaker tail levels in their RHS, independently of the named entry.
@@ -525,11 +525,11 @@ func (in *info) possibleTargets() {
 		ri := in.order[i]
 		in.reachable[i] = true
 		in.targets[i].possible = true
-		if ri.pratt == nil {
+		if ri.operatorsRule == nil {
 			in.walkPossible(ri.def.Expr, visit)
 			continue
 		}
-		pr := ri.pratt
+		pr := ri.operatorsRule
 		minLevel := states[i].minLevel
 		for l, level := range pr.Levels {
 			for _, op := range level.Operators {
@@ -607,7 +607,7 @@ func (in *info) walkPossible(e grammar.Expr, f func(grammar.Expr)) {
 		in.walkPossible(e.Expr, f)
 	case *grammar.Attributed:
 		in.walkPossible(e.Expr, f)
-	case *grammar.Pratt:
+	case *grammar.OperatorsRule:
 		in.walkPossible(e.Skip, f)
 		for _, o := range e.Operands {
 			in.walkPossible(o.Expr, f)
@@ -654,7 +654,7 @@ func walk(e grammar.Expr, f func(grammar.Expr)) {
 		// Attribute arguments (the skip of #recover) are not walked: valid inputs never
 		// exercise them.
 		walk(e.Expr, f)
-	case *grammar.Pratt:
+	case *grammar.OperatorsRule:
 		walk(e.Skip, f)
 		for _, o := range e.Operands {
 			walk(o.Expr, f)

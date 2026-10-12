@@ -85,8 +85,7 @@ function stable(x: unknown): string { return JSON.stringify(x, (_key, v: unknown
 `
 
 func TestGeneratedTSTypedConsumers(t *testing.T) {
-	src := `
-type Word terminal
+	src := `type Word terminal
 type W = Word
 type Words = []Word
 type Optional = *Word
@@ -100,8 +99,8 @@ type Mixed = Word | int
 type Open = any
 type Raw = Seq
 type R struct { W W, Items Words, Missing Words, Empty Words, Optional Optional, I Integer, Big Integer, S Text, B Flag, OpenItems []any, O MaybeInteger, M Mixed, U Choice, Any Open, Raw Raw }
-def main: R = w:word xs:word* raw:("!"? "?"?) -> new R{W:$w, Items:$xs, OpenItems:$xs, Empty:list(), I:-7/2, Big:9223372036854775807, S:text($w), B:true, M:9007199254740992, U:$w, Any:$raw, Raw:$raw}
-def word: Word = (?a-zあ-ん😀)+`
+rule main R = w:word xs:word* raw:("!"? "?"?) => R{W: $w, Items: $xs, OpenItems: $xs, Empty: list(), I: -7 / 2, Big: 9223372036854775807, S: text($w), B: true, M: 9007199254740992, U: $w, Any: $raw, Raw: $raw}
+rule word Word = [a-zあ-ん😀]+`
 	consumer := `import { parse, parseAST, parseASTWithOptions, CodePoints, Bytes, Node } from "./parser.ts";
 import type { R_, W, Words, Optional, Integer, Text, Flag, MaybeInteger, Choice, ChoiceAgain, Mixed, Open, Raw, TypedParseResult } from "./parser.ts";
 ` + tsTypedAssert + `
@@ -138,7 +137,7 @@ v.I = 1;
 }
 
 func TestGeneratedTSTypedNameCollisions(t *testing.T) {
-	names := []string{"Actx", "ASTRecipe", "Bytes", "Error", "Map", "Match", "Node", "Parser", "PrattLine", "R0", "R0_", "Rule", "Span", "ReadonlyMap", "R", "TypedValue", "Value", "Å名前"}
+	names := []string{"Actx", "ASTRecipe", "Bytes", "Error", "Map", "Match", "Node", "Parser", "OperatorsRuleLine", "R0", "R0_", "Rule", "Span", "ReadonlyMap", "R", "TypedValue", "Value", "Å名前"}
 	var src, imports, vals strings.Builder
 	for i, name := range names {
 		// Match and Error are reserved grammar types, so aliases test the other
@@ -146,7 +145,7 @@ func TestGeneratedTSTypedNameCollisions(t *testing.T) {
 		if name == "Match" || name == "Error" {
 			continue
 		}
-		fmt.Fprintf(&src, "type %s terminal\ndef n%d: %s = \"x\"\n", name, i, name)
+		fmt.Fprintf(&src, "type %s terminal\nrule n%d %s = \"x\"\n", name, i, name)
 		export := name
 		if name != "Å名前" {
 			export += "_"
@@ -157,19 +156,18 @@ func TestGeneratedTSTypedNameCollisions(t *testing.T) {
 		fmt.Fprintf(&imports, "import type { %s } from \"./parser.ts\";\n", export)
 		fmt.Fprintf(&vals, "const v%d: %s | null = null; check(v%d === null, %q);\n", i, export, i, name)
 	}
-	src.WriteString("def main = n0\n")
+	src.WriteString("rule main = n0\n")
 	consumer := "import {parseAST} from \"./parser.ts\";\n" + imports.String() + tsTypedAssert + vals.String() + `check(parseAST("x").value?.type === "Actx", "discriminator preserves grammar name"); check(stable(parseAST("x").value).includes("Actx"), "result");`
 	runTypedTSFixture(t, src.String(), consumer, GenOptions{}, "")
 }
 
 func TestGeneratedTSTypedRecovery(t *testing.T) {
-	src := `
-type Word terminal
+	src := `type Word terminal
 type U = Word | Match
 type Mixed = Word | int
 type R struct { Specific Word, U U, M Mixed, A any, Items []Word, OpenItems []any }
-def main: R = w:(word #recover(skip=(?^;)+ ";")) xs:(word #recover(skip=(?^;)+ ";"))* -> new R{Specific:$w, U:$w, M:$w, A:$w, Items:$xs, OpenItems:$xs}
-def word: Word = (?a-z)+ ";"`
+rule main R = w:word #recover(skip=[^;]+ ";") xs:word #recover(skip=[^;]+ ";")* => R{Specific: $w, U: $w, M: $w, A: $w, Items: $xs, OpenItems: $xs}
+rule word Word = [a-z]+ ";"`
 	consumer := `import {parse, parseAST, SyntaxErrors, Bytes, CodePoints} from "./parser.ts";
 ` + tsTypedAssert + `
 for (const unit of [CodePoints, Bytes]) {
@@ -190,9 +188,8 @@ for (const unit of [CodePoints, Bytes]) {
 }
 
 func TestGeneratedTSTypedUnicodeIntegers(t *testing.T) {
-	src := `
-type R struct { Text string, Token Match, A int, B int, C int, D int, E int, F int, G int, O *int }
-def main: R = x:@.* -> new R{Text:text($x), Token:$x, A:9007199254740991, B:9007199254740992, C:-9007199254740992, D:9223372036854775807+1, E:-7%2, F:-7/2, G:9223372036854775807}`
+	src := `type R struct { Text string, Token Match, A int, B int, C int, D int, E int, F int, G int, O *int }
+rule main R = x:.* #atomic => R{Text: text($x), Token: $x, A: 9007199254740991, B: 9007199254740992, C: -9007199254740992, D: 9223372036854775807 + 1, E: -7 % 2, F: -7 / 2, G: 9223372036854775807}`
 	consumer := `import {parse, parseAST, Bytes, CodePoints, Node} from "./parser.ts";
 ` + tsTypedAssert + `
 for (const unit of [Bytes, CodePoints]) for (const input of ["😀é\ud800�", new Uint8Array([0x61,0xff,0xe2,0x82]), new Uint8Array([0xef,0xbf,0xbd])]) {
@@ -208,18 +205,17 @@ check(parseAST(new Uint8Array([0xff]), CodePoints).value?.Text === "�", "decod
 	runTypedTSFixture(t, src, consumer, GenOptions{}, "")
 }
 
-const tsTypedDAGTypes = `
-type Leaf terminal
+const tsTypedDAGTypes = `type Leaf terminal
 type Tree = Branch | Leaf
 type Branch struct { Left Tree, Right Tree }
-def leaf: Leaf = "x"
+rule leaf Leaf = "x"
 `
 
 func TestGeneratedTSTypedSharedDAG(t *testing.T) {
 	for name, body := range map[string]string{
-		"fold": `def main: Tree = first:leaf rest:leaf* -> foldl($first, $rest, (acc, i) => new Branch{Left:$acc, Right:$acc})`,
-		"lr": `def main: Tree = branch / leaf
-def branch: Branch = prev:main "x" -> new Branch{Left:$prev, Right:$prev}`,
+		"fold": `rule main Tree = first:leaf rest:leaf* => foldl($first, $rest, (acc, i) => Branch{Left: $acc, Right: $acc})`,
+		"lr": `rule main Tree = branch / leaf
+rule branch Branch = prev:main "x" => Branch{Left: $prev, Right: $prev}`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			consumer := `import {parseAST, parseASTWithOptions, Bytes, CodePoints} from "./parser.ts";
@@ -250,12 +246,12 @@ check(stable(parseAST("xx").value).includes("Branch"), "small DAG value");
 
 func TestGeneratedTSTypedNilAndDepth(t *testing.T) {
 	for name, src := range map[string]string{
-		"any":  `def main: any = "" -> nil`,
-		"node": `def main: *node = "" -> nil`,
+		"any":  `rule main any = "" => nil`,
+		"node": `rule main *node = "" => nil`,
 		"union": `type T terminal
 type U = T | Match
-def main: *U = "" -> nil`,
-		"list": `def main: *[]Match = "" -> nil`,
+rule main *U = "" => nil`,
+		"list": `rule main *[]Match = "" => nil`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			runTypedTSFixture(t, src, `import {parse, parseAST} from "./parser.ts";
@@ -263,11 +259,11 @@ def main: *U = "" -> nil`,
 		})
 	}
 	runTypedTSFixture(t, `type T struct { X Match }
-def main: T = x:@n -> new T{X:$x}
-def n = "(" n ")" / "x"`, `import {parseAST, parseASTWithOptions} from "./parser.ts";
+rule main T = x:n #atomic => T{X: $x}
+rule n = "(" n ")" / "x"`, `import {parseAST, parseASTWithOptions} from "./parser.ts";
 `+tsTypedAssert+`check(parseAST("(((x)))").error?.message.includes("nesting too deep"), "generated limit"); check(parseASTWithOptions("(((x)))", {maxDepth:20}).value?.X?.text === "(((x)))", "override"); check(stable(parseASTWithOptions("x", {maxDepth:0}).value).includes("T"), "zero default");`, GenOptions{MaxDepth: 3}, "")
 	for _, scalar := range []string{"int", "string", "bool"} {
-		g, err := syntax.Parse("def main: " + scalar + ` = "" -> nil`)
+		g, err := syntax.Parse("rule main " + scalar + ` = "" => nil`)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -284,13 +280,13 @@ func TestGeneratedTSTypedWorkloads(t *testing.T) {
 		name, src, small, large string
 	}{
 		{"fields", `type Item struct { Key Match, Value Match, N int, S string, B bool }
-def main: []Item = item*
-def item: Item = k:@(?a-zé😀)+ "=" v:@(?0-9)+ ";" -> new Item{Key:$k, Value:$v, N:len($v), S:text($k), B:true}`, "a=1;", strings.Repeat("é😀=123;", 4000)},
-		{"capture-free", `def main = @(?a-zé😀)*`, "a", strings.Repeat("é😀a", 8000)},
+rule main []Item = item*
+rule item Item = k:[a-zé😀]+ #atomic "=" v:[0-9]+ #atomic ";" => Item{Key: $k, Value: $v, N: len($v), S: text($k), B: true}`, "a=1;", strings.Repeat("é😀=123;", 4000)},
+		{"capture-free", `rule main = [a-zé😀]* #atomic`, "a", strings.Repeat("é😀a", 8000)},
 		{"recovery", `type Good struct { Token Match }
 type Item = Good | Match
-def main: []Item = (item #recover(skip=(?^;)+ ";"))*
-def item: Good = x:@(?a-zé😀)+ ";" -> new Good{Token:$x}`, "a;1;", strings.Repeat("é😀;1;", 2000)},
+rule main []Item = item #recover(skip=[^;]+ ";")*
+rule item Good = x:[a-zé😀]+ #atomic ";" => Good{Token: $x}`, "a;1;", strings.Repeat("é😀;1;", 2000)},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -325,12 +321,12 @@ func TestGeneratedTSTypedInferredRecovery(t *testing.T) {
 		src, inferred string
 		recovered     bool
 	}{
-		"nil":   {`def main = (-"a") #recover(skip=.+)`, "nil", false},
-		"never": {`def main = main`, "never", false},
-		"nil-rule-recovery": {`def leaf = "a" -> nil
-def main = leaf #recover(skip=.+)`, "*Error", true},
-		"never-rule-recovery": {`def leaf = leaf
-def main = leaf #recover(skip=.+)`, "Error", true},
+		"nil":   {`rule main = (-"a") #recover(skip=.+)`, "nil", false},
+		"never": {`rule main = main`, "never", false},
+		"nil-rule-recovery": {`rule leaf = "a" => nil
+rule main = leaf #recover(skip=.+)`, "*Error", true},
+		"never-rule-recovery": {`rule leaf = leaf
+rule main = leaf #recover(skip=.+)`, "Error", true},
 	} {
 		t.Run(name, func(t *testing.T) {
 			prog := compile(t, c.src)
@@ -365,8 +361,8 @@ import type {TypedValue, TypedParseResult} from "./parser.ts";
 
 func TestGeneratedTSByteStringSurrogateEncoding(t *testing.T) {
 	src := `type Text terminal
-def main: Text = .*
-def wrapped: Text = "x�y"`
+rule main Text = .*
+rule wrapped Text = "x�y"`
 	for _, start := range []string{"main", "wrapped"} {
 		t.Run(start, func(t *testing.T) {
 			consumer := strings.ReplaceAll(tsByteStringSurrogateConsumer, "START_WRAPPED", fmt.Sprint(start == "wrapped"))

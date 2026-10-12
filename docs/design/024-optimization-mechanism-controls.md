@@ -58,7 +58,7 @@ meaningful reference path.
 - Add controls incrementally with optimization work; defer a full catalog
   reclassification until the queued work is complete.
 
-## Non-goals
+## Non-Goals
 
 - Do not change parser semantics, public parse APIs or the default generated
   output as part of this design.
@@ -71,7 +71,7 @@ meaningful reference path.
 
 ## Design
 
-### Mechanism identity and inventory
+### Mechanism Identity and Inventory
 
 After the queued optimization work, add a mechanism inventory as the primary
 current-state index alongside the existing applicability table. Each
@@ -97,7 +97,7 @@ route is implemented when the code has no such route. A mechanism whose
 optimized and reference forms cannot yet be isolated should be marked
 uncontrolled with the reason.
 
-### Selecting reference and optimized routes
+### Selecting Reference and Optimized Routes
 
 Choose the earliest selection point that can remove the alternative from the
 matching loop:
@@ -132,7 +132,7 @@ typed-rule bodies for the reference binary and direct bodies for the optimized
 binary. It is an internal control, not a stable public option or a promise
 that each direct-rule mechanism can be disabled independently.
 
-### Dependencies and interactions
+### Dependencies and Interactions
 
 Represent dependencies and known interactions explicitly. Some optimizations
 are only valid when another analysis or lowering pass has run; others affect
@@ -147,7 +147,7 @@ alters the benefit of another. Do not sum individual speedups to predict a
 combined result. Where the number of combinations is too large, select and
 justify a bounded set of representative combinations.
 
-### Equivalence and performance evidence
+### Equivalence and Performance Evidence
 
 Fast tests should compare reference and optimized routes on the same grammars,
 inputs, options and position units. Compare values or trees, errors and
@@ -180,7 +180,7 @@ Keep three comparisons separate:
 Do not claim attribution across different baselines or silently substitute a
 full-suite snapshot for a paired mechanism measurement.
 
-### CI and maintenance
+### CI and Maintenance
 
 Ordinary CI should run semantic equivalence and control-construction tests,
 not noisy timing thresholds. Pinned, repeated benchmark runs provide
@@ -195,23 +195,23 @@ control to an old mechanism without a concrete need and a useful current-head
 comparison. Once queued optimizations are complete, inventory the active
 mechanisms, identify missing controls and decide which are practical to add.
 
-## Alternatives considered
+## Alternatives Considered
 
-### Compare only parent and candidate commits
+### Compare Only Parent and Candidate Commits
 
 This is simple and valuable for historical change records. It cannot isolate
 one mechanism from correctness fixes or other changes accumulated since the
 parent. Keep it as historical evidence, not as the sole current attribution
 method.
 
-### Add a public runtime option for every mechanism
+### Add a Public Runtime Option for Every Mechanism
 
 This would make variants easy to select but expands the public API and can
 add flag checks to matching loops. Most users need stable parser behavior,
 not implementation controls. Keep experimental selection private and choose
 it before parsing.
 
-### Maintain separate long-lived reference branches
+### Maintain Separate Long-Lived Reference Branches
 
 Branches can preserve an old implementation but drift from the current
 compiler, tests and runtime. Same-revision controls make the differences
@@ -219,14 +219,14 @@ explicit and can be tested together. Historical branches may still be useful
 for reproducing old measurements, but they are not the current reference
 contract.
 
-### Add all controls before further optimization work
+### Add All Controls Before Further Optimization Work
 
 A full control framework would delay queued correctness and performance work,
 and some mechanisms have no useful alternative to select. Add each control
 alongside the change it can validate, then inventory gaps after the current
 queue is complete.
 
-## Implementation sequence
+## Implementation Sequence
 
 1. Keep current mechanism descriptions, numbered evidence records and
    measurement pages intact while queued core optimization work completes.
@@ -239,7 +239,7 @@ queue is complete.
 4. Review uncontrolled mechanisms and add controls only where a concrete
    attribution question justifies their cost.
 
-## Limitations and open questions
+## Limitations and Open Questions
 
 The exact stable-ID syntax and the long-term location of the current mechanism
 inventory should be decided during the post-queue catalog migration. Some

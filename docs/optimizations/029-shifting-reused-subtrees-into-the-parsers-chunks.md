@@ -1,4 +1,4 @@
-# 29. Shifting reused subtrees into the parser's chunks
+# 29. Shifting Reused Subtrees into the Parser's Chunks
 
 - After an edit, a memo result after the edit is reused with its positions shifted: `shiftNode` copies its node tree.
   Every copied node, child list and field list was a separate heap allocation, and every copy made a new map of the

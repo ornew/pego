@@ -4,35 +4,35 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/syntax"
 )
 
 func TestErrorAttribute(t *testing.T) {
-	check(t, `def main = "hello" / _|_ #error(message="expect 'hello'")`,
+	check(t, `rule main = "hello" / _|_ @error(message="expect 'hello'")`,
 		ok("hello", `"hello"@main`),
 		fails("bye", `1:1: expect 'hello'`),
 	)
 	// The message is reported at the farthest position reached within the expression.
-	check(t, `
-def main = "let" " " name #error(message="expected a name") ";"
-def name = @(?a-z)+ (?0-9)*`,
+	check(t, `rule main = "let" " " name @error(message="expected a name") ";"
+rule name = [a-z]+ #atomic [0-9]*`,
 		fails("let 1;", `1:5: expected a name`),
-		fails("let a", `1:6: syntax error: expected ";", (?0-9), (?a-z)`),
+		fails("let a", `1:6: syntax error: expected ";", [0-9], [a-z]`),
 	)
 	// On success, the expectations within the expression remain as usual.
-	check(t, `def main = ("a"+ #error(message="as")) "b"`,
+	check(t, `rule main = "a"+ @error(message="as") "b"`,
 		fails("aac", `1:3: syntax error: expected "a", "b"`),
 	)
 }
 
 func TestRecoverAttribute(t *testing.T) {
-	prog := compile(t, `
-def main = stmt* $$
-def stmt = (@(?a-z)+ ";") #recover(skip=(?^;)+ ";")`)
+	prog := compile(t, `rule main = stmt* $$
+rule stmt = ([a-z]+ #atomic ";") #recover(skip=[^;]+ ";")`)
 	n, err := prog.Parse("main", "ab;1x;cd;9;")
 	if n == nil {
 		t.Fatalf("no tree: %v", err)
 	}
-	want := "(Seq [(Seq \"ab\" \";\")@stmt Error\"1x;\"{message=`1:4: syntax error: expected (?a-z)`}@stmt (Seq \"cd\" \";\")@stmt Error\"9;\"{message=`1:10: syntax error: expected (?a-z)`}@stmt])@main"
+	want := "(Seq [(Seq \"ab\" \";\")@stmt Error\"1x;\"{message=`1:4: syntax error: expected [a-z]`}@stmt (Seq \"cd\" \";\")@stmt Error\"9;\"{message=`1:10: syntax error: expected [a-z]`}@stmt])@main"
 	if got := n.String(); got != want {
 		t.Errorf("got  %s\nwant %s", got, want)
 	}
@@ -47,16 +47,15 @@ def stmt = (@(?a-z)+ ";") #recover(skip=(?^;)+ ";")`)
 	// If the whole parse fails, only the final error is returned.
 	_, err = prog.Parse("main", "1x;ab")
 	var se *SyntaxError
-	if !errors.As(err, &se) || se.Error() != `1:6: syntax error: expected ";", (?^;), (?a-z)` {
+	if !errors.As(err, &se) || se.Error() != `1:6: syntax error: expected ";", [^;], [a-z]` {
 		t.Errorf("got %v", err)
 	}
 }
 
 // TestRecoverBacktracking checks that recovered errors undone by backtracking are not reported.
 func TestRecoverBacktracking(t *testing.T) {
-	src := `
-def main = item "!" / item "?"
-def item = (@"a" ";") #recover(skip=(?^;)+ ";")`
+	src := `rule main = item "!" / item "?"
+rule item = ("a" #atomic ";") #recover(skip=[^;]+ ";")`
 	for _, opts := range []Options{{}, {DisableMemo: true}} {
 		prog := compile(t, src, opts)
 		n, err := prog.Parse("main", "x;?")
@@ -75,10 +74,13 @@ def item = (@"a" ";") #recover(skip=(?^;)+ ";")`
 // reused inside one, or the other way round: errors recovered inside a lookahead carry no
 // expectations, so the reused errors would differ from a parse without memoization.
 func TestRecoverInLookahead(t *testing.T) {
-	check(t, `
-def main = r1 "ab" / r1 _
-def r1 = &p0 p0
-def p0 = pratt { operand "a"  operand "(" p0 ")"  level { postfix "!" ";" #recover(skip=(?^;)* ";") } }`,
+	check(t, `rule main = r1 "ab" / r1 _
+rule r1 = &p0 p0
+rule p0 = operators {
+    operand "a"
+    operand "(" p0 ")"
+    level { postfix "!" ";" #recover(skip=[^;]* ";") }
+}`,
 		ok("a!a;", "error: 1:3: syntax error\n1:3: syntax error: expected \";\""),
 	)
 }
@@ -88,8 +90,8 @@ def p0 = pratt { operand "a"  operand "(" p0 ")"  level { postfix "!" ";" #recov
 // rule body.
 func TestRecoverWithoutValue(t *testing.T) {
 	for _, src := range []string{
-		"def main = r0 \"b\"\ndef r0 = c0:(_) (&\"a\") #recover(skip=(?^;)* \";\")",
-		"def main = r0 \"b\"\ndef r0 = (&\"a\") #recover(skip=(?^;)* \";\")",
+		"rule main = r0 \"b\"\nrule r0 = c0:_ (&\"a\") #recover(skip=[^;]* \";\")",
+		"rule main = r0 \"b\"\nrule r0 = (&\"a\") #recover(skip=[^;]* \";\")",
 	} {
 		prog := compile(t, src)
 		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -110,22 +112,19 @@ func TestRecoverWithoutValue(t *testing.T) {
 func TestRecoverTyping(t *testing.T) {
 	// The value of a recovered expression may be an Error, but an Error can be placed where any
 	// node type is expected.
-	compile(t, `
-type Stmt struct { Name Match }
-def main = ss:stmt* $$ -> $ss
-def stmt: Stmt = s:good #recover(skip=(?^;)+ ";") -> $s
-def good: Stmt = n:@(?a-z)+ ";" -> new Stmt{Name: $n}
+	compile(t, `type Stmt struct { Name Match }
+rule main = ss:stmt* $$ => $ss
+rule stmt Stmt = s:good #recover(skip=[^;]+ ";") => $s
+rule good Stmt = n:[a-z]+ #atomic ";" => Stmt{Name: $n}
 `)
 }
 
 func TestAttributeErrors(t *testing.T) {
 	for _, tc := range []struct{ src, want string }{
-		{`def main = "a" #error`, `#error requires a message argument`},
-		{`def main = "a" #error(message=b)
-def b = "b"`, `#error: message must be a string`},
-		{`def main = "a" #recover`, `#recover requires a skip argument`},
-		{`def main = "a" #recover(skip="x", until="y")`, `#recover has no argument until`},
-		{`def main = "a" #nope`, `unknown attribute #nope`},
+		{`rule main = "a" @error`, `@error requires a message argument`},
+		{`rule main = "a" @error(message=b)
+rule b = "b"`, `@error: message must be a string`},
+		{`rule main = "a" @nope`, `unknown attribute @nope`},
 	} {
 		t.Run(tc.want, func(t *testing.T) {
 			if got := compileError(t, tc.src); !strings.Contains(got, tc.want) {
@@ -135,14 +134,28 @@ def b = "b"`, `#error: message must be a string`},
 	}
 }
 
-// TestRecoverInPrattOperator checks that errors recovered inside a Pratt operator part are also
+// Recovery is a dedicated postfix pragma, so malformed pragma forms are
+// rejected by the grammar parser before engine compilation.
+func TestRecoveryPragmaSyntaxErrors(t *testing.T) {
+	for _, src := range []string{
+		`rule main = "a" #recover`,
+		`rule main = "a" #recover(skip="x", until="y")`,
+	} {
+		t.Run(src, func(t *testing.T) {
+			if _, err := syntax.Parse(src); err == nil {
+				t.Fatal("malformed recovery pragma parsed successfully")
+			}
+		})
+	}
+}
+
+// TestRecoverInOperatorsRuleOperator checks that errors recovered inside an Operators Rule operator part are also
 // reported.
-func TestRecoverInPrattOperator(t *testing.T) {
-	prog := compile(t, `
-def main = e $$
-def e = pratt {
-    operand @(?0-9)+
-    level { postfix "(" (@(?0-9)+ #recover(skip=(?^\)\n)+)) ")" }
+func TestRecoverInOperatorsRuleOperator(t *testing.T) {
+	prog := compile(t, `rule main = e $$
+rule e = operators {
+    operand [0-9]+ #atomic
+    level { postfix "(" [0-9]+ #recover(skip=[^)\n]+) #atomic ")" }
 }`)
 	n, err := prog.Parse("main", "1(x)")
 	var errs SyntaxErrors

@@ -12,7 +12,7 @@ parsing and recognition caches separate. Recognition builds only values needed b
 it does not evaluate unrelated actions merely to discard their trees. No new public recognition entry point is
 required. The file-format change and defaults described below are proposed, not implemented contracts.
 
-## Current behavior
+## Current Behavior
 
 [parse.go](../../internal/engine/parse.go) lazily builds a recognizer from `Program.Grammar`; without it the error is
 `recognition needs the grammar, which the compiled grammar omits`. [compile.go](../../internal/engine/compile.go)
@@ -21,7 +21,7 @@ transitive callees retain value construction/actions. Other rules suppress value
 therefore report predicate-dependent evaluation behavior even though unrelated action errors disappear.
 
 Normal [bytecode](../../spec/bytecode.md#rule-table) contains value-free twins only for eligible discarded CST calls.
-Twins are not a complete recognizer: action/terminal rules, Pratt rules, LR cycles, streaming rules and selected
+Twins are not a complete recognizer: action/terminal rules, Operators Rule declarations, LR cycles, streaming rules and selected
 start rules may have no such twin. Matching a full module with CALL.keep=0 or discarding the final tree still
 executes actions and builds intermediate values. A recognizer must preserve predicate capture dependencies,
 variable reads and diagnostics, not simply jump to an arbitrary duplicate name in the rule table.
@@ -33,7 +33,7 @@ all type/stack behavior. This proposal preserves the trusted-module restriction.
 
 ## Design
 
-### API, start selection and backend behavior
+### API, Start Selection and Backend Behavior
 
 Keep `MarshalBinary`, `Marshal`, `WithoutAST`, `LoadParser`, `WithStart` and RecognizeOnly signatures unchanged.
 Propose that the new default serialization includes the recognition module, including with WithoutAST.
@@ -66,7 +66,7 @@ diagnostics as an error as it does today. Validate the incompatible -check/-stre
 ignoring -check. Document and ParseStream continue rejecting recognition; generated recognition stays independent
 of this file-format feature. Generation/formatting from an AST-less module still requires its absent grammar AST.
 
-### Proposed versioned layout
+### Proposed Versioned Layout
 
 Allocate compiled-container version 3 if still free when this lands. Keep the main v2 prefix (header, ISA, outer
 string table, start/package and main module); insert a recognition-present boolean and, when true, a length-delimited
@@ -87,17 +87,17 @@ Reject noncanonical booleans, invalid bundle lengths/trailing bytes, invalid ISA
 start names, and mismatched names before exposing a Parser. Validate every module, even one not selected by the
 current default backend. Valid checksum alone is insufficient. Do not add executable user callbacks to the format.
 
-### Runtime and ownership invariants
+### Runtime and Ownership Invariants
 
 Keep recognition and ordinary prepared VM programs, seen numbering, memo entries and pools distinct. The same
 loaded Parser supports concurrent ordinary and recognition calls and independent WithStart views; immutable
 module tables can be shared, mutable invocation stacks and caches cannot. Copy configuration once before start
 lookup/execution, preserving current validation precedence and depth semantics. Do not retain option callbacks.
 
-Preserve predicate capture/environment evaluation and memo keys, including transitive variable reads and Pratt
+Preserve predicate capture/environment evaluation and memo keys, including transitive variable reads and Operators Rule
 minimum level. LR leaders grow by strictly increasing input positions, preserve provisional dependencies and use
 the same candidate/error rollback. Recognition still records expectation ranges, silent lookahead contexts,
-labels, cuts, recovered diagnostics and Pratt longest-match ties. Value suppression must not remove a capture that
+labels, cuts, recovered diagnostics and Operators Rule longest-match ties. Value suppression must not remove a capture that
 a predicate reads or its action-produced fields. Runtime errors in skipped actions are absent by contract; errors
 in required actions retain the existing evaluation/fatal rules.
 
@@ -113,7 +113,7 @@ returns no recognition tree, but retained diagnostics own their strings/slices a
 Malformed-module runtime faults retain the current error handling; this feature does not promise execution of
 untrusted adversarial modules is safe or terminating.
 
-## Backend and implementation gates
+## Backend and Implementation Gates
 
 | Input/program | Closure | Recursive VM | Iterative VM | Generated Go/typed Go/TS |
 | --- | --- | --- | --- | --- |
@@ -131,26 +131,26 @@ and CLI behavior, publish migration docs, and refresh bytecode/specification and
 Keep proposed format numbers subject to collision checks against the then-current spec, not magic constants in
 multiple independent patches.
 
-## Alternatives considered
+## Alternatives Considered
 
 - Keep ASTs and rebuild recognition: the current baseline and a compatibility fallback for old AST-bearing files,
   but it defeats AST-less distribution and incurs compilation on first recognition.
 - Return nil after running the normal module: easy, but evaluates unrelated actions and retains tree allocation;
   it violates the recognition contract.
 - Derive a complete recognizer from normal bytecode on load: might reduce saved bytes, but requires a validated
-  dependency/control-flow transformation for captures, predicates, actions, Pratt and LR. Defer until a separate
+  dependency/control-flow transformation for captures, predicates, actions, Operators Rule and LR. Defer until a separate
   equivalence proof and cost comparison; available twins alone are insufficient.
 - Store only a recognition module: smaller for recognition-only distribution but removes ordinary Parse capability.
   A separately explicit artifact mode may be added later; do not disguise it as WithoutAST.
 - Lazily serialize only requested start rules: smaller for one caller, but breaks WithStart's existing contract.
   Choose the complete original-rule entry map.
 
-## Validation and performance plan
+## Validation and Performance Plan
 
 Proposed differential tests run every corpus start rule through source recognition and AST-bearing/AST-less
 save/load recognition, both units and both VM models. Cover EOF/trailing text, invalid UTF-8, variables, nested
 predicate captures and transitive action dependencies, skipped action failures versus required action errors,
-LR/Pratt, labels/cuts, recovery rollback, silent memo reuse, streaming annotations and wide zero/large bounds.
+LR/Operators Rule, labels/cuts, recovery rollback, silent memo reuse, streaming annotations and wide zero/large bounds.
 Assert nil Node on every outcome and exact diagnostics, not just acceptance. Compare ordinary Parse before/after,
 concurrent WithStart views, depth/cancellation abort/retry and pool cleanup. Test versions 1/2 compatibility,
 version-3 golden determinism, AST-less legacy resaving, missing/duplicate entry maps, checksum-valid malformed
@@ -160,7 +160,7 @@ start rules, -check output/status, both backend flags, units and -check/-stream 
 No performance result is claimed. Measure save/load, first recognition preparation and warm recognition separately
 from source compilation and full parsing. Compare exact parent AST-bearing recognition, candidate AST-bearing and
 AST-less bundles, and ordinary parsing as a regression control; do not time the parent's expected capability error
-as equivalent useful work. Include action-free and predicate-heavy corpora, LR/Pratt, recovery and both units.
+as equivalent useful work. Include action-free and predicate-heavy corpora, LR/Operators Rule, recovery and both units.
 Record container/AST/module bytes, executable size where affected, time/allocations, retained prepared-module
 memory and transient/live memory during loading. Pair serialized runs with pinned revisions/toolchains/inputs;
 default bundle size and startup costs require evidence before adopting the proposed new writer default.

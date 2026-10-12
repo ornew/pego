@@ -70,7 +70,7 @@ func Parse(src string) (*grammar.Grammar, error) {
 func ParseExpr(src string) (grammar.Expr, error) {
 	errs := &errorList{}
 	p := &parser{toks: lex(src, errs), errs: errs}
-	e := p.choice()
+	e := p.inlineChoice()
 	if p.tok().kind != tEOF {
 		p.errorf("unexpected %s", p.tok())
 	}
@@ -93,6 +93,12 @@ type parser struct {
 	nest int
 	// depth counts the nested calls of the functions that call deeper (see enter).
 	depth int
+	// layout restricts rule-body continuation outside open delimiters.
+	layout         bool
+	layoutDepth    int
+	header         bool
+	headerComments []*grammar.Comment
+	headerPos      grammar.Pos
 }
 
 // bail is the panic value used to abort parsing on an unrecoverable
@@ -108,6 +114,31 @@ func (p *parser) peek(k int) token {
 }
 func (p *parser) next() token {
 	t := p.toks[p.i]
+	if p.header {
+		if t.lineComment != nil {
+			t.lineComment.Header = p.headerPos
+			p.headerComments = append(p.headerComments, t.lineComment)
+		}
+		for _, comment := range t.comments {
+			comment.Header = p.headerPos
+		}
+		p.headerComments = append(p.headerComments, t.comments...)
+	}
+	if p.layout {
+		if p.layoutDepth == 0 && t.lineBefore && !t.indentedLine {
+			p.errorf("rule continuation must begin with a space or tab")
+		}
+		if t.kind == tPunct {
+			switch t.text {
+			case "(", "(?", "{", "[":
+				p.layoutDepth++
+			case ")", "}", "]":
+				if p.layoutDepth > 0 {
+					p.layoutDepth--
+				}
+			}
+		}
+	}
 	p.takeComments(p.i)
 	if p.i < len(p.toks)-1 {
 		p.i++
@@ -192,31 +223,38 @@ func (p *parser) ident() token {
 }
 
 var keywords = map[string]bool{
-	"package": true, "type": true, "def": true, "struct": true, "terminal": true,
-	"pratt": true, "skip": true, "operand": true, "level": true, "prefix": true,
-	"postfix": true, "infix": true, "new": true,
+	"package": true, "type": true, "rule": true, "struct": true, "terminal": true,
+	"operators": true, "skip": true, "operand": true, "level": true, "prefix": true,
+	"postfix": true, "infix": true,
 }
 
 // stops holds the identifiers that end a sequence of expressions
 // because they start the next definition or item.
 var stops = map[string]bool{
-	"package": true, "type": true, "def": true, "skip": true, "operand": true,
+	"package": true, "type": true, "rule": true, "operators": true, "skip": true, "operand": true,
 	"level": true, "prefix": true, "postfix": true, "infix": true,
 }
 
 func (p *parser) file() *grammar.Grammar {
 	g := &grammar.Grammar{}
+	if p.tok().kind != tEOF && p.tok().pos.Col != 1 {
+		p.errorf("declarations must begin at column 1 or after a semicolon")
+	}
 	if p.is("package") {
 		g.PackageBreak = p.lineBreak()
-		p.next()
+		g.PackagePos = p.next().pos
+		p.header = true
+		p.headerPos = g.PackagePos
 		func() {
+			defer func() { p.header = false }()
 			defer p.recover() // a missing name skips to the first definition
-			if p.is("def") || p.is("type") {
+			if p.is("rule") || p.is("operators") || p.is("type") {
 				p.errorf("expected identifier, found %s", p.tok())
 				panic(bail{})
 			}
 			g.Package = p.ident().text
 		}()
+		p.declarationEnd()
 	}
 	for p.tok().kind != tEOF {
 		start := p.i
@@ -225,19 +263,34 @@ func (p *parser) file() *grammar.Grammar {
 			switch {
 			case p.is("type"):
 				g.Statements = append(g.Statements, p.typeDef())
-			case p.is("def"):
+			case p.is("rule"):
 				g.Statements = append(g.Statements, p.ruleDef())
 			default:
-				p.errorf("expected 'def' or 'type', found %s", p.tok())
+				p.errorf("expected 'rule' or 'type', found %s", p.tok())
 				panic(bail{})
 			}
 		}()
 		if p.i == start {
 			p.next()
 		}
+		p.declarationEnd()
 	}
 	g.EndBreak = p.lineBreak()
+	g.HeaderComments = p.headerComments
 	return g
+}
+
+// declarationEnd consumes explicit separators, otherwise requiring a new
+// declaration at an unindented physical line start.
+func (p *parser) declarationEnd() {
+	if p.accept(";") {
+		for p.accept(";") {
+		}
+		return
+	}
+	if p.tok().kind != tEOF && (!p.tok().lineBefore || p.tok().pos.Col != 1) {
+		p.errorf("expected a semicolon or a declaration at column 1")
+	}
 }
 
 // recover recovers from a bail and skips to the next definition.
@@ -249,7 +302,8 @@ func (p *parser) recover() {
 	if _, ok := x.(bail); !ok {
 		panic(x)
 	}
-	for p.tok().kind != tEOF && !p.is("def") && !p.is("type") {
+	p.layout, p.layoutDepth, p.header = false, 0, false
+	for p.tok().kind != tEOF && !p.is("rule") && !p.is("type") {
 		p.next()
 	}
 }
@@ -257,12 +311,16 @@ func (p *parser) recover() {
 func (p *parser) typeDef() *grammar.TypeDef {
 	br := p.lineBreak()
 	pos := p.expect("type").pos
+	p.header = true
+	p.headerPos = pos
+	defer func() { p.header = false }()
 	name := p.ident()
 	td := &grammar.TypeDef{Pos: pos, Name: name.text, Break: br}
 	switch {
 	case p.accept("struct"):
 		open := p.i
 		p.expect("{")
+		p.header = false
 		st := &grammar.StructSpec{}
 		for {
 			fb := p.lineBreak()
@@ -276,14 +334,19 @@ func (p *parser) typeDef() *grammar.TypeDef {
 			}
 			fname := p.ident()
 			st.Fields = append(st.Fields, &grammar.Field{Pos: fname.pos, Name: fname.text, Type: p.typeExpr(), Break: fb})
-			p.accept(",")
+			if !p.accept(",") && !p.is("}") && !p.tok().lineBefore {
+				p.errorf("expected a comma or newline between struct fields")
+				panic(bail{})
+			}
 		}
 		st.OneLine = !p.multiline(open, p.i)
 		p.expect("}")
 		td.Spec = st
 	case p.accept("terminal"):
+		p.header = false
 		td.Spec = &grammar.TerminalSpec{}
 	case p.accept("="):
+		p.header = false
 		td.Spec = &grammar.AliasSpec{Type: p.typeExpr()}
 	default:
 		p.errorf("expected 'struct', 'terminal', or '=', found %s", p.tok())
@@ -335,29 +398,66 @@ func (p *parser) typeTerm() grammar.TypeExpr {
 
 func (p *parser) ruleDef() *grammar.RuleDef {
 	br := p.lineBreak()
-	pos := p.expect("def").pos
+	pos := p.expect("rule").pos
+	p.header, p.layout, p.layoutDepth = true, true, 0
+	p.headerPos = pos
+	defer func() { p.header, p.layout, p.layoutDepth = false, false, 0 }()
 	name := p.ident()
 	rd := &grammar.RuleDef{Pos: pos, Name: name.text, Break: br}
-	if p.accept(":") {
+	if !p.is("=") {
 		rd.Type = p.typeExpr()
 	}
 	p.expect("=")
+	p.header = false
+	if p.accept("operators") {
+		// Items inside an operators block have their own separators.
+		p.layout = false
+		rd.Expr = p.operatorsRule()
+		p.layout = true
+		if p.is("=>") {
+			if p.tok().lineBefore {
+				rd.ActionBreak = p.lineBreak()
+			}
+			p.next()
+			rd.Action, rd.DefaultAction = p.actionTerm()
+		}
+		return rd
+	}
 	if p.tok().lineBefore {
 		rd.BodyBreak = p.lineBreak()
 	}
-	if p.is("pratt") {
-		rd.Expr = p.pratt()
-		return rd
-	}
 	rd.Expr = p.bodyChoice()
-	if p.is("->") {
+	if p.is("=>") {
 		if p.tok().lineBefore {
 			rd.ActionBreak = p.lineBreak()
 		}
 		p.next()
-		rd.Action = p.term()
+		rd.Action, rd.DefaultAction = p.actionTerm()
 	}
 	return rd
+}
+
+func (p *parser) actionTerm() (grammar.Term, bool) {
+	var term grammar.Term
+	defaultAction := p.accept("...")
+	if !defaultAction {
+		term = p.term()
+	}
+	if p.is("=>") {
+		p.errorf("actions do not chain; parenthesize an inline action")
+		panic(bail{})
+	}
+	return term, defaultAction
+}
+
+func (p *parser) inlineChoice() grammar.Expr {
+	e := p.choice()
+	if p.is("=>") {
+		pos := p.next().pos
+		term, defaultAction := p.actionTerm()
+		return &grammar.InlineAction{Pos: pos, Expr: e, Action: term, DefaultAction: defaultAction}
+	}
+	return e
 }
 
 // bodyChoice parses the top-level choice of a rule body like choice, and
@@ -415,9 +515,8 @@ func (p *parser) bodySequence() grammar.Expr {
 	return s
 }
 
-func (p *parser) pratt() *grammar.Pratt {
-	pr := &grammar.Pratt{Pos: p.expect("pratt").pos}
-	p.expect("{")
+func (p *parser) operatorsRule() *grammar.OperatorsRule {
+	pr := &grammar.OperatorsRule{Pos: p.expect("{").pos}
 	for {
 		b := p.lineBreak()
 		if p.accept("}") {
@@ -432,18 +531,21 @@ func (p *parser) pratt() *grammar.Pratt {
 			pr.Skip = p.choice()
 			pr.SkipBreak = b
 		case p.accept("operand"):
-			o := &grammar.PrattOperand{Expr: p.choice(), Break: b}
-			if p.accept("->") {
-				o.Action = p.term()
+			o := &grammar.OperatorsRuleOperand{Expr: p.choice(), Break: b}
+			if p.accept("=>") {
+				o.Action, o.DefaultAction = p.actionTerm()
 			}
 			pr.Operands = append(pr.Operands, o)
 		case p.accept("level"):
-			l := &grammar.PrattLevel{Break: b}
+			p.header = true
+			p.headerPos = p.toks[p.i-1].pos
+			l := &grammar.OperatorsRuleLevel{Pos: p.headerPos, Break: b}
 			if p.tok().kind == tIdent {
 				l.Name = p.next().text
 			}
 			open := p.i
 			p.expect("{")
+			p.header = false
 			for {
 				ob := p.lineBreak()
 				if p.is("}") {
@@ -452,28 +554,44 @@ func (p *parser) pratt() *grammar.Pratt {
 					p.next()
 					break
 				}
-				op := p.prattOperator()
+				op := p.operatorsRuleOperator()
 				op.Break = ob
 				l.Operators = append(l.Operators, op)
+				p.itemEnd()
 			}
 			pr.Levels = append(pr.Levels, l)
 		default:
 			p.errorf("expected 'skip', 'operand', 'level', or '}', found %s", p.tok())
 			panic(bail{})
 		}
+		p.itemEnd()
 	}
 	return pr
 }
 
-func (p *parser) prattOperator() *grammar.PrattOperator {
+func (p *parser) itemEnd() {
+	if p.accept(";") {
+		for p.accept(";") {
+		}
+		return
+	}
+	if !p.is("}") && !p.tok().lineBefore {
+		p.errorf("expected a semicolon or newline between operators items")
+		panic(bail{})
+	}
+}
+
+func (p *parser) operatorsRuleOperator() *grammar.OperatorsRuleOperator {
 	t := p.tok()
-	op := &grammar.PrattOperator{Pos: t.pos}
+	op := &grammar.OperatorsRuleOperator{Pos: t.pos}
 	switch {
 	case p.accept("prefix"):
 		op.Kind = grammar.Prefix
 	case p.accept("postfix"):
 		op.Kind = grammar.Postfix
 	case p.accept("infix"):
+		p.header = true
+		p.headerPos = op.Pos
 		op.Kind = grammar.Infix
 		switch {
 		case p.accept("left"):
@@ -486,13 +604,14 @@ func (p *parser) prattOperator() *grammar.PrattOperator {
 			p.errorf("expected 'left', 'right', or 'none', found %s", p.tok())
 			panic(bail{})
 		}
+		p.header = false
 	default:
 		p.errorf("expected 'prefix', 'postfix', 'infix', or '}', found %s", t)
 		panic(bail{})
 	}
 	op.Expr = p.choice()
-	if p.accept("->") {
-		op.Action = p.term()
+	if p.accept("=>") {
+		op.Action, op.DefaultAction = p.actionTerm()
 	}
 	return op
 }
@@ -526,7 +645,7 @@ func (p *parser) startsPrimary() bool {
 		return true
 	case tPunct:
 		switch t.text {
-		case "(", "[", "&", "!", "@", "-", "--", "^^", "^", "$$", "$", "_|_", ".":
+		case "(", "(?", "&", "!", "-", "--", "^^", "^", "$$", "$", "_|_", ".":
 			return true
 		}
 	}
@@ -562,8 +681,6 @@ func (p *parser) prefixed() grammar.Expr {
 		return &grammar.And{Pos: t.pos, Expr: p.prefixed()}
 	case p.accept("!"):
 		return &grammar.Not{Pos: t.pos, Expr: p.prefixed()}
-	case p.accept("@"):
-		return &grammar.Atomic{Pos: t.pos, Expr: p.prefixed()}
 	case p.is("-"):
 		p.next()
 		return &grammar.Discard{Pos: t.pos, Expr: p.prefixed()}
@@ -575,7 +692,6 @@ func (p *parser) suffixed() grammar.Expr {
 	start := p.tok().pos
 	e := p.primary()
 	for {
-		t := p.tok()
 		switch {
 		case p.accept("*"):
 			e = &grammar.Repeat{Pos: start, Expr: e, Min: 0, Max: -1}
@@ -583,32 +699,15 @@ func (p *parser) suffixed() grammar.Expr {
 			e = &grammar.Repeat{Pos: start, Expr: e, Min: 1, Max: -1}
 		case p.accept("?"):
 			e = &grammar.Optional{Pos: start, Expr: e}
-		case p.is("{") && !t.spaceBefore:
-			p.next()
-			r := &grammar.Repeat{Pos: start, Expr: e}
-			if p.tok().kind == tInt {
-				r.Min = p.next().num
-			}
-			if p.accept(",") {
-				r.Max = -1
-				if p.tok().kind == tInt {
-					r.Max = p.next().num
-				}
-			} else {
-				r.Max = r.Min
-			}
-			if r.Max >= 0 && r.Max < r.Min {
-				p.errorf("invalid repetition {%d,%d}", r.Min, r.Max)
-			}
-			p.expect("}")
-			e = r
 		case p.is("#"):
+			e = p.pragma(e, start)
+		case p.is("@"):
 			a, ok := e.(*grammar.Attributed)
 			if !ok {
 				a = &grammar.Attributed{Expr: e, Attrs: []*grammar.Attribute{}}
 				e = a
 			}
-			for p.is("#") {
+			for p.is("@") {
 				var b *grammar.LineBreak
 				if p.nest == 0 && p.tok().lineBefore {
 					b = p.lineBreak()
@@ -625,21 +724,146 @@ func (p *parser) suffixed() grammar.Expr {
 	}
 }
 
-func (p *parser) attribute() *grammar.Attribute {
+// pragma dispatches built-in grammar syntax. Its payload is not an attribute
+// argument list: each directive defines its own grammar and target.
+func (p *parser) pragma(e grammar.Expr, start grammar.Pos) grammar.Expr {
+	var br *grammar.LineBreak
+	if p.nest == 0 && p.tok().lineBefore {
+		br = p.lineBreak()
+	}
 	pos := p.expect("#").pos
-	a := &grammar.Attribute{Pos: pos, Name: p.ident().text}
-	if p.is("(") && !p.tok().spaceBefore {
-		p.next()
-		for !p.accept(")") {
-			name := p.ident().text
-			p.expect("=")
-			a.Args = append(a.Args, &grammar.AttrArg{Name: name, Value: p.choice()})
+	name := p.ident().text
+	switch name {
+	case "atomic":
+		if p.is("(") && !p.tok().spaceBefore {
+			p.next()
+			p.expect(")")
+		}
+		return &grammar.Atomic{Pos: pos, Expr: e, Break: br}
+	case "stream":
+		if p.is("(") && !p.tok().spaceBefore {
+			p.next()
+			p.expect(")")
+		}
+		return &grammar.Stream{Pos: pos, Expr: e, Break: br}
+	case "recover":
+		p.expect("(")
+		p.expect("skip")
+		p.expect("=")
+		skip := p.choice()
+		p.expect(")")
+		return &grammar.Recovery{Pos: pos, Expr: e, Skip: skip, Break: br}
+	case "repeat":
+		p.expect("(")
+		first := p.tok().kind == tInt || p.is("-")
+		min := 0
+		if first {
+			min = p.repeatCount()
+		}
+		max := min
+		if p.accept(",") {
+			max = -1
 			if !p.is(")") {
-				p.expect(",")
+				max = p.repeatCount()
+			} else if !first {
+				p.errorf("#repeat requires at least one bound")
 			}
+		} else if !first {
+			p.errorf("#repeat requires a count")
+		}
+		p.expect(")")
+		return &grammar.Repeat{Pos: start, Expr: e, Min: min, Max: max, PragmaBreak: br}
+	default:
+		p.errorf("unknown pragma #%s", name)
+		panic(bail{})
+	}
+}
+
+func (p *parser) repeatCount() int {
+	negative := p.accept("-")
+	if p.tok().kind != tInt {
+		p.errorf("expected integer repetition bound, found %s", p.tok())
+		panic(bail{})
+	}
+	value := p.next().num
+	if negative {
+		value = -value
+	}
+	if value < 0 {
+		p.errorf("repetition bound must be nonnegative")
+		panic(bail{})
+	}
+	return value
+}
+
+func (p *parser) attribute() *grammar.Attribute {
+	pos := p.expect("@").pos
+	a := &grammar.Attribute{Pos: pos, Name: p.ident().text}
+	if !p.is("(") || p.tok().spaceBefore {
+		return a
+	}
+	p.next()
+	named := false
+	if p.accept(")") {
+		return a
+	}
+	for {
+		if p.tok().kind == tIdent && p.peek(1).kind == tPunct && p.peek(1).text == "=" {
+			named = true
+			name := p.next().text
+			p.expect("=")
+			value := p.attributeValue()
+			if a.KwArgs == nil {
+				a.KwArgs = map[string]any{}
+			}
+			if _, exists := a.KwArgs[name]; exists {
+				p.errorf("duplicate attribute argument %s", name)
+			}
+			a.KwArgs[name] = value
+			a.KeywordOrder = append(a.KeywordOrder, name)
+		} else {
+			if named {
+				p.errorf("positional attribute arguments must precede keyword arguments")
+				panic(bail{})
+			}
+			var value any
+			if !p.is(",") && !p.is(")") {
+				value = p.attributeValue()
+			}
+			a.Args = append(a.Args, value)
+		}
+		if p.accept(")") {
+			return a
+		}
+		p.expect(",")
+		if named && p.accept(")") {
+			return a
 		}
 	}
-	return a
+}
+
+func (p *parser) attributeValue() any {
+	if p.accept("nil") {
+		return nil
+	}
+	if p.accept("true") {
+		return true
+	}
+	if p.accept("false") {
+		return false
+	}
+	if p.tok().kind == tInt {
+		return p.next().num
+	}
+	if p.is("-") && p.peek(1).kind == tInt {
+		p.next()
+		return -p.next().num
+	}
+	e := p.choice()
+	if literal, ok := e.(*grammar.Literal); ok {
+		return literal.Value
+	}
+	return e
 }
 
 func (p *parser) primary() grammar.Expr {
@@ -671,20 +895,20 @@ func (p *parser) primary() grammar.Expr {
 		switch t.text {
 		case "(":
 			p.next()
-			e := p.choice()
+			e := p.inlineChoice()
 			p.expect(")")
 			return e
-		case "[":
+		case "(?":
 			p.next()
 			pred := &grammar.Predicate{Pos: t.pos}
-			if p.tok().kind == tIdent && p.peek(1).kind == tPunct && p.peek(1).text == "=" {
+			if p.tok().kind == tIdent && p.peek(1).kind == tPunct && p.peek(1).text == ":=" {
 				name := p.next()
 				p.next()
 				pred.Term = &grammar.Assign{Pos: name.pos, Name: name.text, Value: p.term()}
 			} else {
 				pred.Term = p.term()
 			}
-			p.expect("]")
+			p.expect(")")
 			return pred
 		case "--":
 			p.next()
@@ -835,7 +1059,8 @@ func (p *parser) termPrimary() grammar.Term {
 		case "nil":
 			p.next()
 			return &grammar.NilLit{}
-		case "new":
+		}
+		if p.peek(1).kind == tPunct && p.peek(1).text == "{" {
 			return p.newTerm()
 		}
 		p.next()
@@ -864,8 +1089,8 @@ func (p *parser) termPrimary() grammar.Term {
 }
 
 func (p *parser) newTerm() grammar.Term {
-	pos := p.expect("new").pos
-	n := &grammar.New{Pos: pos, Type: p.ident().text}
+	nameToken := p.ident()
+	n := &grammar.New{Pos: nameToken.pos, Type: nameToken.text}
 	p.expect("{")
 	for !p.accept("}") {
 		name := p.ident()

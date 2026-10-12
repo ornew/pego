@@ -1,4 +1,4 @@
-# 42. Generated calls of plain rules
+# 42. Generated Calls of Plain Rules
 
 - Generated parsers called every rule through `call`, which checks whether the rule is memoized before reaching
   `invokePlain` for rules that never are (change 21). The generator knows which rules those are (`rule.plain`,

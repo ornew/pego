@@ -20,24 +20,24 @@ func TestGeneratedTSDepthOptions(t *testing.T) {
 		t.Skip("node not found")
 	}
 	fixtures := []genCase{
-		{"ordinary", `def main = trigger n
-def trigger = _ -> $0
-def n = "(" n ")" / "é"`, []string{"é", "(é)", "((é))", "((((é))))", "?"}},
-		{"left", `def main = n
-def n = n "+" "é" / "(" n ")" / "é"`, []string{"é", "é+é+é", "((é))", "?"}},
-		{"pratt", `def main = n
-def n = pratt {
- operand "(" n ")" / "é"
- level { prefix "-" }
- level { infix right "^" }
+		{"ordinary", `rule main = trigger n
+rule trigger = _ => $0
+rule n = "(" n ")" / "é"`, []string{"é", "(é)", "((é))", "((((é))))", "?"}},
+		{"left", `rule main = n
+rule n = n "+" "é" / "(" n ")" / "é"`, []string{"é", "é+é+é", "((é))", "?"}},
+		{"operatorsRule", `rule main = n
+rule n = operators {
+    operand "(" n ")" / "é"
+    level { prefix "-" }
+    level { infix right "^" }
 }`, []string{"é", "--é", "é^é^é", "((é))", "?"}},
-		{"dispatch", `def main = "a" one / "b" two / "c" three
-def one = two
-def two = three
-def three = four
-def four = "é"`, []string{"aé", "bé", "cé", "a?", "b?", "c?"}},
-		{"recovery", `def main = n
-def n = ("(" n ")" / "é") #recover(skip="?")`, []string{"é", "(é)", "((é))", "?", "(?)"}},
+		{"dispatch", `rule main = "a" one / "b" two / "c" three
+rule one = two
+rule two = three
+rule three = four
+rule four = "é"`, []string{"aé", "bé", "cé", "a?", "b?", "c?"}},
+		{"recovery", `rule main = n
+rule n = ("(" n ")" / "é") #recover(skip="?")`, []string{"é", "(é)", "((é))", "?", "(?)"}},
 	}
 	dir := t.TempDir()
 	var script strings.Builder

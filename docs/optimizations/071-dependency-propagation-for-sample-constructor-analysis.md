@@ -1,4 +1,4 @@
-# 71. Dependency propagation for sample constructor analysis
+# 71. Dependency Propagation for Sample Constructor Analysis
 
 - `sample.New` previously swept every rule until minimal derivation heights,
   byte lengths and coverage reach sets stabilized. Caller-first alias chains
@@ -45,7 +45,7 @@
   length and reach set. Tests preserve impossible/missing-reference estimates,
   generation-specific call exclusions, Unicode byte lengths and exact chain
   coverage. Existing deterministic/valid/invalid generation, dead-alternative,
-  Pratt-level and engine-corpus checks pass. A fixed-seed public generator
+  Operators Rule-level and engine-corpus checks pass. A fixed-seed public generator
   probe produces byte-identical inputs, coverage report and statistics to the
   parent on the same Go release. Independent source review checks CSR count/fill,
   cursor-buffer reuse, dependency completeness and bounded ring invariants.

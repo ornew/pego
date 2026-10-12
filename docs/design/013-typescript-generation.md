@@ -12,7 +12,7 @@ Generate a TypeScript module for a parser, without dependencies, from a grammar 
 
 ## Design
 
-### The same generator, another runtime
+### The Same Generator, Another Runtime
 
 The TypeScript generator (`internal/engine/gen_ts.go`) is the Go generator with a different output: it compiles the
 grammar with the engine, walks the same analysis results (memoized rules, left-recursion leaders, value-free twins,
@@ -23,7 +23,7 @@ Go generator (`tsGen` embeds `generator`).
 The runtime, `internal/engine/tsrt/runtime.ts`, is a port of `genrt/runtime.go`, function for function: rule calls with
 deferred memoization (`firstCall`, with the per-rule eager switch), left recursion by growing the seed, memo entries
 keyed by variable values, expectation records isolated in memoized calls and kept for reuse, captures with frames and
-the trail, `attachCaptures` and `finish`, `#error` and `#recover`, the Pratt loop, and every built-in function including
+the trail, `attachCaptures` and `finish`, `@error` and `#recover`, the Operators Rule loop, and every built-in function including
 the fused `concat`. Keeping the two side by side makes a change to one easy to carry to the other; the parity test
 catches what is not.
 
@@ -35,7 +35,7 @@ catches what is not.
 | Actions and predicates | A function each, of TypeScript expressions; lambdas become arrow functions |
 | Public API | `parse`, `parseRule`, `recognize` (with `-recognize`), `Node`, `SyntaxError`, `SyntaxErrors`, `marshal` |
 
-### Where JavaScript differs from Go
+### Where JavaScript Differs from Go
 
 The runtime hides each difference, so that results are the engine's, not merely similar:
 
@@ -57,7 +57,7 @@ The runtime hides each difference, so that results are the engine's, not merely 
 - **JSON.** `JSON.stringify` cannot match `encoding/json` (which escapes `<`, `>`, `&`, U+2028 and U+2029 and writes
   big ints exactly), so `marshal` writes the engine's bytes; `Node.toJSON` gives the same structure for
   `JSON.stringify`. `marshal` and `toString` keep the values left to write on a stack of their own: left recursion,
-  left-associative Pratt operators and `foldl` build trees as deep as the input is long without nesting calls, and
+  left-associative Operators Rule operators and `foldl` build trees as deep as the input is long without nesting calls, and
   writing them recursively overflowed the stack on trees the parse had built fine. `JSON.stringify` still recurses
   (the guide says so).
 - **Unicode versions differ.** `toString` quotes text as `strconv.Quote` does, which escapes the characters that
@@ -89,7 +89,7 @@ The initial TypeScript implementation rejected `WithTypes`; typed conversion was
 The module uses only erasable TypeScript (no enums, namespaces or parameter properties), so Node.js, Deno and Bun run it
 without a build step, and only the ES2020 library (for `BigInt`), so it needs no DOM or Node.js types.
 
-### Verifying identical behavior
+### Verifying Identical Behavior
 
 `TestGeneratedTSParsersMatchEngine` (`internal/engine/gen_ts_test.go`) generates a module for every grammar of the
 corpus of the Go generator's test (the engine's test grammars, `testdata/typed` and `examples/`), plus a grammar of ints
@@ -110,7 +110,7 @@ It also type-checks all generated modules with `tsc --strict` plus `--noUnusedLo
 `--noUncheckedIndexedAccess`, `--exactOptionalPropertyTypes`, `--erasableSyntaxOnly` and others, at `--target es2020`.
 The test is skipped without `node`, and the type check without `tsc`.
 
-### Alternatives considered
+### Alternatives Considered
 
 - **A TypeScript VM for the bytecode ([010](010-bytecode-vm.md)).** One runtime for all grammars, loading `.pegoc`
   files, and an iterative VM would have no stack problem. But an interpreter in JavaScript is slower than generated

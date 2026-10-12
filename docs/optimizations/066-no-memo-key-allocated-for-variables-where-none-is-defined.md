@@ -1,4 +1,4 @@
-# 66. No memo key allocated for variables where none is defined
+# 66. No Memo Key Allocated for Variables Where None Is Defined
 
 - The memo key of a call of a rule that reads variables holds their current values, and `envValues` allocated a
   slice for it on every memoized call. The set of variables a rule reads is transitive, so one variable used deep in

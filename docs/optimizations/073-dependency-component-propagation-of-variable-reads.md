@@ -1,4 +1,4 @@
-# 73. Dependency-component propagation of variable reads
+# 73. Dependency-Component Propagation of Variable Reads
 
 - `ruleVariables` previously ran a fresh reachable-rule DFS per rule, collecting
   the same transitive reads repeatedly, even when no rule read variables.
@@ -8,7 +8,7 @@
   component unions its direct peer reads and finalized external callee keys
   once, sorts the result, and shares that immutable slice between recursive
   peers. Missing callees contribute nothing. Definitions alone are not reads;
-  recovery arguments and Pratt skip/operand/operator expressions/actions keep
+  recovery arguments and Operators Rule skip/operand/operator expressions/actions keep
   their existing conservative dependency contract. Memo-key values and matching
   behavior are unchanged in engines and standalone generated parsers.
 - Current-parent compilation of a 512-rule no-variable chain reproduces
@@ -60,7 +60,7 @@
 - Exact sorted sets match an independent per-root DFS oracle for empty,
   missing-reference, reordered 64/512/2,048-rule chains, shared/cyclic graphs,
   and shuffled distinct-variable growth graphs. Traversal checks include
-  choices, lookaheads/discard, optional/repetition, recovery sync, Pratt actions,
+  choices, lookaheads/discard, optional/repetition, recovery sync, Operators Rule actions,
   self calls and assignments with no reads. Existing variable-sensitive memo
   tests cover engine backends/position units, memo on/off and Document edits;
   generated-runtime and saved-module tests retain the same keys. Independent

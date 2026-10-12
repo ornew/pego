@@ -38,11 +38,9 @@ func TestGeneratedTypedLRActionWorkload(t *testing.T) {
 	} else {
 		dir = filepath.Join(dir, "actions")
 	}
-	testTypedLRWorkload(t, `
-type Doc struct { Items []Match, N int }
-def main: Doc = e:expr $$ -> $e
-def expr: Doc = (previous:expr ";" items:(x:@(?a-z) -","){3}
-              / items:(x:@(?a-z) -","){3}) -> new Doc{Items: map($items, (e) => $e.x), N: len($items)}
+	testTypedLRWorkload(t, `type Doc struct { Items []Match, N int }
+rule main Doc = e:expr $$ => $e
+rule expr Doc = previous:expr ";" items:(x:[a-z] #atomic -",") #repeat(3) / items:(x:[a-z] #atomic -",") #repeat(3) => Doc{Items: map($items, (e) => $e.x), N: len($items)}
 `, typedLRActionWorkloadFixture, dir)
 }
 

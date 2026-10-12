@@ -98,20 +98,20 @@ func TestTextIndexPegoPositions(t *testing.T) {
 }
 
 func TestApplyChange(t *testing.T) {
-	text := "def a = \"😀\" b\r\ndef b = \"x\""
+	text := "rule a = \"😀\" b\nrule b = \"x\""
 	for _, tc := range []struct {
 		r    *Range
 		new  string
 		want string
 	}{
 		{nil, "all", "all"},
-		{&Range{Position{0, 4}, Position{0, 5}}, "名前", "def 名前 = \"😀\" b\r\ndef b = \"x\""},
+		{&Range{Position{0, 5}, Position{0, 6}}, "名前", "rule 名前 = \"😀\" b\nrule b = \"x\""},
 		// After 😀 (two UTF-16 units).
-		{&Range{Position{0, 11}, Position{0, 11}}, "!", "def a = \"😀!\" b\r\ndef b = \"x\""},
+		{&Range{Position{0, 12}, Position{0, 12}}, "!", "rule a = \"😀!\" b\nrule b = \"x\""},
 		// Across the line break.
-		{&Range{Position{0, 13}, Position{1, 3}}, "c\ndef", "def a = \"😀\" c\ndef b = \"x\""},
+		{&Range{Position{0, 14}, Position{1, 4}}, "c\nrule", "rule a = \"😀\" c\nrule b = \"x\""},
 		// Reversed range.
-		{&Range{Position{1, 3}, Position{0, 13}}, "", "def a = \"😀\"  b = \"x\""},
+		{&Range{Position{1, 4}, Position{0, 14}}, "", "rule a = \"😀\"  b = \"x\""},
 	} {
 		if got := applyChange(text, contentChange{Range: tc.r, Text: tc.new}); got != tc.want {
 			t.Errorf("%v %q: got %q, want %q", tc.r, tc.new, got, tc.want)
@@ -236,7 +236,7 @@ func TestLongLine(t *testing.T) {
 	c := newInitialized(t)
 	uri := "file:///long.pego"
 	const n = 1 << 17
-	text := "def a = " + strings.Repeat(`"😀" b `, n) + "\ndef b = \"x\"" // 1 MB, 260,000 tokens
+	text := "rule a = " + strings.Repeat(`"😀" b `, n) + "\nrule b = \"x\"" // 1 MB, 260,000 tokens
 	start := time.Now()
 	c.open(uri, text) // waits up to 10 seconds
 	var res struct {

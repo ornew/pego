@@ -23,7 +23,7 @@ func runCLI(t *testing.T, stdin string, args ...string) (string, error) {
 	return out.String(), err
 }
 
-const kv = `def main = k:@(?a-z)+ "=" v:@(?0-9)+`
+const kv = `rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic`
 
 func TestParse(t *testing.T) {
 	g := writeFile(t, "kv.pego", kv)
@@ -49,14 +49,13 @@ func TestParse(t *testing.T) {
 const messy = `// key-value pairs
 package kv
 
-
-def main = k:@(?a-z)+   "=" v:@(?0-9)+ // pair
+rule  main=k:[a-z]+ #atomic  "=" v:[0-9]+ #atomic // pair
 `
 
 const tidy = `// key-value pairs
 package kv
 
-def main = k:@(?a-z)+ "=" v:@(?0-9)+ // pair
+rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic // pair
 `
 
 func TestFmt(t *testing.T) {
@@ -135,7 +134,7 @@ func TestConvert(t *testing.T) {
 	}
 	jg := writeFile(t, "kv.json", js)
 	// JSON converts to PEGO source by default, and to JSON with -to json.
-	if out, err := runCLI(t, "", "convert", jg); err != nil || out != "package kv\n\ndef main = k:@(?a-z)+ \"=\" v:@(?0-9)+\n" {
+	if out, err := runCLI(t, "", "convert", jg); err != nil || out != "package kv\n\nrule main = k:[a-z]+ #atomic \"=\" v:[0-9]+ #atomic\n" {
 		t.Errorf("got %q, %v", out, err)
 	}
 	if out, err := runCLI(t, "", "convert", "-to", "json", jg); err != nil || out != js {
@@ -165,11 +164,11 @@ func TestConvert(t *testing.T) {
 }
 
 func TestErrors(t *testing.T) {
-	bad := writeFile(t, "bad.pego", "def main = (")
-	if _, err := runCLI(t, "", "fmt", bad); err == nil || !strings.Contains(err.Error(), "bad.pego:1:13") {
+	bad := writeFile(t, "bad.pego", "rule main = (")
+	if _, err := runCLI(t, "", "fmt", bad); err == nil || !strings.Contains(err.Error(), "bad.pego:1:14") {
 		t.Errorf("got %v", err)
 	}
-	if _, err := runCLI(t, "", "convert", bad); err == nil || !strings.Contains(err.Error(), "bad.pego:1:13") {
+	if _, err := runCLI(t, "", "convert", bad); err == nil || !strings.Contains(err.Error(), "bad.pego:1:14") {
 		t.Errorf("got %v", err)
 	}
 	g := writeFile(t, "kv.pego", kv)
@@ -182,7 +181,7 @@ func TestErrors(t *testing.T) {
 }
 
 func TestParseRecovered(t *testing.T) {
-	g := writeFile(t, "r.pego", `def main = ((@(?a-z)+ ";") #recover(skip=(?^;)+ ";"))*`)
+	g := writeFile(t, "r.pego", `rule main = ([a-z]+ #atomic ";") #recover(skip=[^;]+ ";")*`)
 	out, err := runCLI(t, "", "parse", "-g", g, "-i", "a;1;b;", "-f", "sexpr")
 	if !strings.Contains(out, `Error"1;"`) || err == nil || !strings.Contains(err.Error(), "1:3: syntax error") {
 		t.Errorf("got %q, %v", out, err)
@@ -190,7 +189,7 @@ func TestParseRecovered(t *testing.T) {
 }
 
 func TestParseStream(t *testing.T) {
-	g := writeFile(t, "s.pego", `def main = (@(?a-z)+ -"\n")* #stream`)
+	g := writeFile(t, "s.pego", `rule main = ([a-z]+ #atomic -"\n")* #stream`)
 	out, err := runCLI(t, "ab\ncd\n", "parse", "-g", g, "-stream", "-f", "sexpr")
 	if err != nil || out != "(Seq \"ab\")\n(Seq \"cd\")\n" {
 		t.Errorf("got %q, %v", out, err)
@@ -283,7 +282,7 @@ func TestGenTypeScript(t *testing.T) {
 }
 
 func TestCompile(t *testing.T) {
-	g := writeFile(t, "kv.pego", kv+"\ndef other = \"x\"")
+	g := writeFile(t, "kv.pego", kv+"\nrule other = \"x\"")
 	out := filepath.Join(t.TempDir(), "kv.pegoc")
 	if _, err := runCLI(t, "", "compile", "-g", g, "-o", out); err != nil {
 		t.Fatal(err)
@@ -296,7 +295,7 @@ func TestCompile(t *testing.T) {
 		t.Errorf("got %q, %v", got, err)
 	}
 	// A compiled grammar with its AST converts to either format, given -to.
-	if got, err := runCLI(t, "", "convert", "-to", "pego", out); err != nil || !strings.Contains(got, `def other = "x"`) {
+	if got, err := runCLI(t, "", "convert", "-to", "pego", out); err != nil || !strings.Contains(got, `rule other = "x"`) {
 		t.Errorf("got %q, %v", got, err)
 	}
 	if got, err := runCLI(t, "", "convert", "-to", "json", out); err != nil || !strings.Contains(got, `"name": "other"`) {
@@ -352,7 +351,7 @@ func TestCompile(t *testing.T) {
 }
 
 func TestParseUnit(t *testing.T) {
-	g := writeFile(t, "u.pego", `def main = "é" "a"`)
+	g := writeFile(t, "u.pego", `rule main = "é" "a"`)
 	_, err := runCLI(t, "", "parse", "-g", g, "-i", "éb", "-unit", "bytes")
 	if err == nil || !strings.Contains(err.Error(), "1:3: syntax error") {
 		t.Errorf("got %v", err)
@@ -386,7 +385,7 @@ func TestParseCheck(t *testing.T) {
 }
 
 func TestGenMaxDepth(t *testing.T) {
-	grammar := writeFile(t, "depth.pego", `def main = "x"`)
+	grammar := writeFile(t, "depth.pego", `rule main = "x"`)
 	for _, lang := range []string{"go", "ts"} {
 		args := []string{"gen", "-g", grammar, "-lang", lang}
 		if lang == "go" {

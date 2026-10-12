@@ -19,8 +19,8 @@ func wideExpectationsGrammar() string {
 		choices = append(choices, fmt.Sprintf("%q", fmt.Sprintf("%02d", i)))
 	}
 	return `type Token terminal
-def main = ("s" &(wide "!") wide "!" / "m" (wide "!" / wide "?") / "r" (wide #recover(skip=(?^;)+ ";"))+ / "e" (wide #error(message="expected a word"))) $$
-def wide: Token = @("é" (` + strings.Join(choices, " / ") + `))`
+rule main = ("s" &(wide "!") wide "!" / "m" (wide "!" / wide "?") / "r" (wide #recover(skip=[^;]+ ";"))+ / "e" (wide @error(message="expected a word"))) $$
+rule wide Token = ("é" (` + strings.Join(choices, " / ") + `)) #atomic`
 }
 
 func TestGeneratedExpectationRecords(t *testing.T) {
@@ -28,7 +28,7 @@ func TestGeneratedExpectationRecords(t *testing.T) {
 		t.Skip("builds generated code")
 	}
 	g, err := syntax.Parse(`type N terminal
-def main: N = "é"`)
+rule main N = "é"`)
 	if err != nil {
 		t.Fatal(err)
 	}

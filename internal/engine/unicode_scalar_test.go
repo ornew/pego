@@ -33,7 +33,7 @@ func TestInvalidCharacterClassEntryPoints(t *testing.T) {
 			}
 			// Encode a malformed AST alongside an otherwise valid module to
 			// verify the actual compiled-file intake, not just its rebuild helper.
-			p := compile(t, `def main=(?a-z)`)
+			p := compile(t, `rule main = [a-z]`)
 			p.Grammar = g
 			data, err := p.MarshalBinary("main")
 			if err != nil {
@@ -47,7 +47,7 @@ func TestInvalidCharacterClassEntryPoints(t *testing.T) {
 }
 
 func TestUnicodeScalarRangeBackends(t *testing.T) {
-	for _, source := range []string{`def main=(?\u0000-\u{10FFFF}) $$`, `def main=(?\uD7FF-\uE000) $$`, `def main=(?^\uD7FF-\uE000) $$`} {
+	for _, source := range []string{`rule main = [\u{0}-\u{10ffff}] $$`, `rule main = [\u{d7ff}-\u{e000}] $$`, `rule main = [^\u{d7ff}-\u{e000}] $$`} {
 		p := compile(t, source)
 		g := mustParse(source)
 		cc := g.Rules()[0].Expr.(*grammar.Seq).Items[0].(*grammar.CharClass)

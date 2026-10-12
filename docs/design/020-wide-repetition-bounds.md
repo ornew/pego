@@ -11,8 +11,8 @@ compiler, including values above 2³¹−1 on 64-bit implementations. Large boun
 use two additional matching instructions that reference full-width integer
 constants. Ordinary instructions retain their 16-byte Go representation.
 
-For example, `def main="a"{4294967296}` fails on empty input on every engine,
-and `def main=@(?a){0,4294967296} $$` accepts `a`. Saving and loading either
+For example, `rule main = "a" #repeat(4294967296)` fails on empty input on every engine,
+and `rule main = [a] #repeat(0,4294967296) #atomic $$` accepts `a`. Saving and loading either
 grammar preserves that behavior.
 
 ## Motivation
@@ -71,7 +71,7 @@ Files compiled before this correction must be rebuilt if they contain large
 bounds. Their stored matching code already lost the original values; a load
 does not recompile that code from its optional AST.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Cap all bounds at 2³¹−1.** Simple validation would prevent truncation, but
   would reject grammars the current specification permits. This changes the
@@ -103,7 +103,7 @@ Streams and edited Documents are compared by tree and position, with actual
 repetition resumption checked; generated Go, typed Go and TypeScript retain
 the same negative-bound semantics.
 
-## Performance and limitations
+## Performance and Limitations
 
 Common instruction sizes and ordinary compiled-file instruction-set versions
 are unchanged. Each wide repetition adds two integer-constant instructions;

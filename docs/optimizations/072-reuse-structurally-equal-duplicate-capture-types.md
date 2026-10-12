@@ -1,4 +1,4 @@
-# 72. Reuse structurally equal duplicate capture types
+# 72. Reuse Structurally Equal Duplicate Capture Types
 
 - Every duplicate capture label previously called the general type union,
   which formats, sorts and deduplicates nested record fields. Repeated

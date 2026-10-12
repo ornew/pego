@@ -1,4 +1,4 @@
-# 67. Retire memo entries when their lookup slots are removed
+# 67. Retire Memo Entries When Their Lookup Slots Are Removed
 
 - Pruning a stream's lookup slots or replacing a Document key left the old
   entry's result reachable from its allocation slab. Entries now clear their

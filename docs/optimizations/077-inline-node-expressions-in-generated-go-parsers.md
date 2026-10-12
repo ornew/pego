@@ -1,4 +1,4 @@
-# 77. Inline value-building and memoized Node expressions in generated Go parsers
+# 77. Inline Value-Building and Memoized Node Expressions in Generated Go Parsers
 
 - The generated Go Node runtime now inlines supported value-building and
   memoized expression bodies, extending the value-free plain-rule path in
@@ -7,7 +7,7 @@
 - Existing `call`, `invoke`, `invokePlain` and `finish` wrappers retain
   ownership of depth accounting, frames, trail/environment rollback,
   actions, recovery, memoization and node naming. Unsupported local cut or
-  recovery, Pratt expressions, left-recursion leaders and unresolved capture
+  recovery, Operators Rule declarations, left-recursion leaders and unresolved capture
   references keep general dispatch; direct rules may call fallback rules.
 - Generated Node trees, errors and recognition match the engine across both
   units. Tests cover memoized action/repeat frames, expectation fallback,
@@ -17,7 +17,7 @@
   baseline `b3f00b5`; five alternating 300 ms pairs for 32 Node/recognition
   conditions and eight `ParseAST` controls. Ratios are candidate/baseline
   ratios within each pair, summarized by their median. JSON/CSV/XML/Outline
-  Node median ratios range 0.817–0.937×. Pratt Node median ratios are
+  Node median ratios range 0.817–0.937×. Operators Rule Node median ratios are
   1.010×/1.032×, but paired ranges include 1 and raw time ranges overlap.
   Recognition paired ranges stay below 1 for JSON CodePoints (median 0.945×),
   Minilang CodePoints/Bytes (0.981×/0.966×), Recovery (0.958×/0.967×), XML
@@ -49,10 +49,10 @@
   ```pego
   type Pair struct { Left Match, Right Match }
   type Doc struct { Items []Pair }
-  def main: Doc = items:row+ $$ -> new Doc{Items: $items}
-  def row = p:pair "!" ";" / p:pair "?" ";" -> $p
-  def pair: Pair = left:@(?a-z) "-" right:number -> new Pair{Left: $left, Right: $right}
-  def number = @(?0-9)+
+  rule main Doc =  items:row+ $$ => Doc{Items: $items}
+  rule row =  p:pair "!" ";" / p:pair "?" ";" => $p
+  rule pair Pair =  left:[a-z] #atomic "-" right:number => Pair{Left: $left, Right: $right}
+  rule number =  [0-9]+ #atomic
   ```
 
   Run this benchmark from the generated parser package, once for each unit:

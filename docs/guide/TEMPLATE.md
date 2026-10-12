@@ -1,20 +1,20 @@
-# Feature name
+# Feature Name
 
 Describe the use case and prerequisites.
 
-## Basic usage
+## Basic Usage
 
 Show complete input, invocation and expected output.
 
-## Behavior and options
+## Behavior and Options
 
 Explain defaults, supported inputs, interactions and limits. Link to the exact
 specification instead of duplicating normative rules.
 
-## Errors and edge cases
+## Errors and Edge Cases
 
 Show failures, boundary cases and unsupported profiles with actionable recovery.
 
-## Related topics
+## Related Topics
 
 Link to tutorials, recipes and contracts. Remove all authoring prompts.

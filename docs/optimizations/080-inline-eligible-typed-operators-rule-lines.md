@@ -1,11 +1,11 @@
-# 80. Inline eligible typed Pratt line matchers
+# 80. Inline Eligible Typed Operators Rule Line Matchers
 
 - The generated typed Go runtime inlines eligible unfinished operand, operator
-  and skip matchers on Pratt lines. Each line owns its `tprattLine.scope`, so
-  it does not need a shared Node scope cache. The Pratt runtime retains
+  and skip matchers on Operators Rule lines. Each line owns its `toperatorsRuleLine.scope`, so
+  it does not need a shared Node scope cache. The Operators Rule runtime retains
   precedence selection, longest-match behavior, frames and action finalization.
 - A generation-time reference control emits per-expression methods for those
-  matchers while keeping the same Pratt runtime. It adds no parser-time option
+  matchers while keeping the same Operators Rule runtime. It adds no parser-time option
   or branch. Node generation, recognition and TypeScript output are unchanged.
 - This cut-free route leaves cut-bearing matchers to the framed body emitter
   in [change 81](081-scoped-cuts-in-unfinished-typed-go-bodies.md).
@@ -48,8 +48,8 @@ To generate the same-generator routes and check that they return identical
 values and errors:
 
 ```sh
-export PEGO_TYPED_PRATT_DIR=/tmp/pego-typed-pratt
-go test ./internal/engine -run '^TestGeneratedTypedPratt(Workload|ActionWorkload)$' -count=1
+export PEGO_TYPED_OPERATORS_RULE_DIR=/tmp/pego-typed-operators-rule
+go test ./internal/engine -run '^TestGeneratedTypedOperatorsRule(Workload|ActionWorkload)$' -count=1
 ```
 
 Build each fixture from the `direct` and `general` folders into separate
@@ -57,7 +57,7 @@ benchmark binaries:
 
 ```sh
 for workload in calculator actions; do
-  fixture=$PEGO_TYPED_PRATT_DIR
+  fixture=$PEGO_TYPED_OPERATORS_RULE_DIR
   if [ "$workload" = actions ]; then fixture="$fixture/actions"; fi
   for variant in direct general; do
     (cd "$fixture/$variant" && go test -c -o "$fixture/$variant.test" .)
@@ -75,17 +75,17 @@ for pair in 1 2 3 4 5; do
     first=direct; second=general
   fi
   for workload in calculator actions; do
-    fixture=$PEGO_TYPED_PRATT_DIR
+    fixture=$PEGO_TYPED_OPERATORS_RULE_DIR
     if [ "$workload" = actions ]; then fixture="$fixture/actions"; fi
     for variant in "$first" "$second"; do
       "$fixture/$variant.test" -test.run='^$' \
-        -test.bench='^BenchmarkTypedPratt$' -test.benchtime=300ms -test.benchmem
+        -test.bench='^BenchmarkTypedOperatorsRule$' -test.benchtime=300ms -test.benchmem
     done
   done
 done
 ```
 
 The calculator uses `lrInput(n) = "1" + strings.Repeat("+2*3", n)`.
-The action/capture fixture uses `prattInput(n) = "a" +
+The action/capture fixture uses `operatorsRuleInput(n) = "a" +
 strings.Repeat(" [b,c,d,]", n)`; `n=128` produces 128 postfix groups
 after the base atom.

@@ -5,6 +5,8 @@
 // and actions and predicates are value expressions (Term).
 package grammar
 
+import "sort"
+
 // Pos is a 1-based position in the source. The zero value means that the
 // position is unknown.
 type Pos struct {
@@ -22,8 +24,12 @@ type Grammar struct {
 
 	// PackageBreak holds the comments before the package clause, and
 	// EndBreak those at the end of the file (see LineBreak).
+	PackagePos   Pos        `json:"-"`
 	PackageBreak *LineBreak `json:"-"`
 	EndBreak     *LineBreak `json:"-"`
+	// HeaderComments records source comments inside statement headers.
+	// Parsing accepts them as trivia; compilation rejects their placement.
+	HeaderComments []*Comment `json:"-"`
 }
 
 // Rules returns the rule definitions of the grammar in declaration order.
@@ -63,22 +69,26 @@ type TypeDef struct {
 	Break *LineBreak `json:"-"`
 }
 
-// RuleDef is a rule definition (def Name: Type = Expr -> Action).
+// RuleDef is a rule definition (rule Name Type = Expr => Action).
 type RuleDef struct {
 	Pos    Pos      `json:"-"`
 	Name   string   `json:"name"`
 	Type   TypeExpr `json:"type,omitempty"`
 	Expr   Expr     `json:"expr"`
 	Action Term     `json:"action,omitempty"`
+	// DefaultAction preserves an explicit => ...; it has the same value
+	// semantics as an omitted action.
+	DefaultAction bool `json:"defaultAction,omitempty"`
 
 	// Break holds the comments before the definition. When it is nil,
 	// Format separates the definition from the previous one with a blank
 	// line.
 	Break *LineBreak `json:"-"`
 	// BodyBreak, when not nil, puts the body on a new line after "=", and
-	// ActionBreak puts "->" on a new line.
+	// ActionBreak puts "=>" on a new line.
 	BodyBreak   *LineBreak `json:"-"`
 	ActionBreak *LineBreak `json:"-"`
+	CloseBreak  *LineBreak `json:"-"`
 }
 
 func (*TypeDef) statement() {}
@@ -155,7 +165,7 @@ func (*UnionType) typeExpr()    {}
 type Expr interface{ expr() }
 
 // Ref is a call of a rule. If Level is set, the call parses only with
-// that level of the Pratt expression and the levels above it.
+// that level of the Operators Rule and the levels above it.
 type Ref struct {
 	Pos   Pos    `json:"-"`
 	Name  string `json:"name"`
@@ -177,7 +187,7 @@ type CharRange struct {
 	Hi rune `json:"hi"`
 }
 
-// CharClass is a character class (?...), or (?^...) if Negated is set.
+// CharClass is a character class [...], or [^...] if Negated is set.
 type CharClass struct {
 	Pos     Pos         `json:"-"`
 	Ranges  []CharRange `json:"ranges"`
@@ -207,16 +217,27 @@ type Choice struct {
 	Breaks []*LineBreak `json:"-"`
 }
 
-// Repeat is a repetition a{Min,Max}. A negative Max means no upper
-// bound. a* is {0,} and a+ is {1,}.
+// InlineAction maps an expression's value inside a parenthesized grammar
+// expression. Parsing and formatting are supported; compilation is not yet
+// implemented. DefaultAction denotes an explicit => ... instead of Action.
+type InlineAction struct {
+	Pos           Pos  `json:"-"`
+	Expr          Expr `json:"expr"`
+	Action        Term `json:"action,omitempty"`
+	DefaultAction bool `json:"defaultAction,omitempty"`
+}
+
+// Repeat is a repetition a #repeat(Min,Max). A negative Max means no upper
+// bound. a* is #repeat(0,) and a+ is #repeat(1,).
 //
 // Pos is the position where the repeated expression begins (its opening
 // parenthesis, if it is parenthesized).
 type Repeat struct {
-	Pos  Pos  `json:"-"`
-	Expr Expr `json:"expr"`
-	Min  int  `json:"min"`
-	Max  int  `json:"max"`
+	Pos         Pos        `json:"-"`
+	Expr        Expr       `json:"expr"`
+	Min         int        `json:"min"`
+	Max         int        `json:"max"`
+	PragmaBreak *LineBreak `json:"-"`
 }
 
 // Optional is an optional expression a?. Its value is the value of a, or
@@ -238,10 +259,26 @@ type Not struct {
 	Expr Expr `json:"expr"`
 }
 
-// Atomic is an atomic expression @a.
+// Recovery runs Skip when Expr fails, preserving the existing recovery semantics.
+type Recovery struct {
+	Pos   Pos        `json:"-"`
+	Expr  Expr       `json:"expr"`
+	Skip  Expr       `json:"skip"`
+	Break *LineBreak `json:"-"`
+}
+
+// Stream hands repetition elements to the streaming parser's caller.
+type Stream struct {
+	Pos   Pos        `json:"-"`
+	Expr  Expr       `json:"expr"`
+	Break *LineBreak `json:"-"`
+}
+
+// Atomic is an atomic expression a #atomic.
 type Atomic struct {
-	Pos  Pos  `json:"-"`
-	Expr Expr `json:"expr"`
+	Pos   Pos        `json:"-"`
+	Expr  Expr       `json:"expr"`
+	Break *LineBreak `json:"-"`
 }
 
 // Discard is a discarded expression -a.
@@ -292,13 +329,13 @@ type EndLine struct {
 	Pos Pos `json:"-"`
 }
 
-// Predicate is a predicate [Term].
+// Predicate is a predicate (?Term).
 type Predicate struct {
 	Pos  Pos  `json:"-"`
 	Term Term `json:"term"`
 }
 
-// Attributed is an expression with attributes a #name(...).
+// Attributed is an expression with postfix @ attributes and # pragmas.
 type Attributed struct {
 	Expr  Expr         `json:"expr"`
 	Attrs []*Attribute `json:"attrs"`
@@ -308,37 +345,62 @@ type Attributed struct {
 	Breaks []*LineBreak `json:"-"`
 }
 
-// Attribute is an attribute #name(arg=value, ...).
+// Attribute is a postfix attribute @name(positional, keyword=value, ...).
+// Argument values are int, string, bool, nil, or parser expressions. Nil in
+// Args preserves an omitted positional slot, including a trailing slot.
 type Attribute struct {
-	Pos  Pos        `json:"-"`
-	Name string     `json:"name"`
-	Args []*AttrArg `json:"args,omitempty"`
-}
-
-// AttrArg is an argument of an attribute. Its value is a parser
-// expression; a string value is a Literal.
-type AttrArg struct {
-	Name  string `json:"name"`
-	Value Expr   `json:"value"`
+	Pos  Pos    `json:"-"`
+	Name string `json:"name"`
+	// Pragma distinguishes behavioral # directives from @ attributes.
+	Pragma bool           `json:"pragma,omitempty"`
+	Args   []any          `json:"args,omitempty"`
+	KwArgs map[string]any `json:"kwArgs,omitempty"`
+	// KeywordOrder preserves source order; JSON grammars format keys sorted.
+	KeywordOrder []string `json:"-"`
 }
 
 // Arg returns the argument named name.
 func (a *Attribute) Arg(name string) (Expr, bool) {
-	for _, arg := range a.Args {
-		if arg.Name == name {
-			return arg.Value, true
-		}
+	v, ok := a.KwArgs[name]
+	if !ok {
+		return nil, false
 	}
-	return nil, false
+	if s, ok := v.(string); ok {
+		return &Literal{Value: s}, true
+	}
+	e, ok := v.(Expr)
+	return e, ok
 }
 
-// Pratt is a Pratt expression pratt { ... }. It may appear only at the
+// ExpressionArgs returns the parser-expression arguments. Scalar and omitted
+// positional arguments are not parser expressions.
+func (a *Attribute) ExpressionArgs() []Expr {
+	var result []Expr
+	for _, value := range a.Args {
+		if e, ok := value.(Expr); ok {
+			result = append(result, e)
+		}
+	}
+	keys := make([]string, 0, len(a.KwArgs))
+	for key := range a.KwArgs {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		if e, ok := a.KwArgs[key].(Expr); ok {
+			result = append(result, e)
+		}
+	}
+	return result
+}
+
+// OperatorsRule is the body of an operators rule declaration. It may appear only at the
 // top level of a rule body.
-type Pratt struct {
-	Pos      Pos             `json:"-"`
-	Skip     Expr            `json:"skip,omitempty"`
-	Operands []*PrattOperand `json:"operands"`
-	Levels   []*PrattLevel   `json:"levels"`
+type OperatorsRule struct {
+	Pos      Pos                     `json:"-"`
+	Skip     Expr                    `json:"skip,omitempty"`
+	Operands []*OperatorsRuleOperand `json:"operands"`
+	Levels   []*OperatorsRuleLevel   `json:"levels"`
 
 	// SkipBreak holds the comments before the skip line, and CloseBreak
 	// those before the closing brace.
@@ -346,19 +408,21 @@ type Pratt struct {
 	CloseBreak *LineBreak `json:"-"`
 }
 
-// PrattOperand is an operand line.
-type PrattOperand struct {
-	Expr   Expr `json:"expr"`
-	Action Term `json:"action,omitempty"`
+// OperatorsRuleOperand is an operand line.
+type OperatorsRuleOperand struct {
+	Expr          Expr `json:"expr"`
+	Action        Term `json:"action,omitempty"`
+	DefaultAction bool `json:"defaultAction,omitempty"`
 
 	Break *LineBreak `json:"-"`
 }
 
-// PrattLevel is a precedence level. Levels declared earlier bind more
+// OperatorsRuleLevel is a precedence level. Levels declared earlier bind more
 // loosely.
-type PrattLevel struct {
-	Name      string           `json:"name,omitempty"`
-	Operators []*PrattOperator `json:"operators"`
+type OperatorsRuleLevel struct {
+	Pos       Pos                      `json:"-"`
+	Name      string                   `json:"name,omitempty"`
+	Operators []*OperatorsRuleOperator `json:"operators"`
 
 	Break *LineBreak `json:"-"`
 	// OneLine writes the level on one line ("level { infix left "+" }").
@@ -381,40 +445,44 @@ const (
 	AssocNone  = "none"
 )
 
-// PrattOperator is a declaration of an operator.
-type PrattOperator struct {
-	Pos    Pos    `json:"-"`
-	Kind   string `json:"kind"`
-	Assoc  string `json:"assoc,omitempty"`
-	Expr   Expr   `json:"expr"`
-	Action Term   `json:"action,omitempty"`
+// OperatorsRuleOperator is a declaration of an operator.
+type OperatorsRuleOperator struct {
+	Pos           Pos    `json:"-"`
+	Kind          string `json:"kind"`
+	Assoc         string `json:"assoc,omitempty"`
+	Expr          Expr   `json:"expr"`
+	Action        Term   `json:"action,omitempty"`
+	DefaultAction bool   `json:"defaultAction,omitempty"`
 
 	Break *LineBreak `json:"-"`
 }
 
-func (*Ref) expr()        {}
-func (*Literal) expr()    {}
-func (*CharClass) expr()  {}
-func (*Any) expr()        {}
-func (*Seq) expr()        {}
-func (*Choice) expr()     {}
-func (*Repeat) expr()     {}
-func (*Optional) expr()   {}
-func (*And) expr()        {}
-func (*Not) expr()        {}
-func (*Atomic) expr()     {}
-func (*Discard) expr()    {}
-func (*Capture) expr()    {}
-func (*Cut) expr()        {}
-func (*Top) expr()        {}
-func (*Bottom) expr()     {}
-func (*BeginInput) expr() {}
-func (*EndInput) expr()   {}
-func (*BeginLine) expr()  {}
-func (*EndLine) expr()    {}
-func (*Predicate) expr()  {}
-func (*Attributed) expr() {}
-func (*Pratt) expr()      {}
+func (*Ref) expr()           {}
+func (*Literal) expr()       {}
+func (*CharClass) expr()     {}
+func (*Any) expr()           {}
+func (*Seq) expr()           {}
+func (*Choice) expr()        {}
+func (*InlineAction) expr()  {}
+func (*Repeat) expr()        {}
+func (*Optional) expr()      {}
+func (*And) expr()           {}
+func (*Not) expr()           {}
+func (*Recovery) expr()      {}
+func (*Stream) expr()        {}
+func (*Atomic) expr()        {}
+func (*Discard) expr()       {}
+func (*Capture) expr()       {}
+func (*Cut) expr()           {}
+func (*Top) expr()           {}
+func (*Bottom) expr()        {}
+func (*BeginInput) expr()    {}
+func (*EndInput) expr()      {}
+func (*BeginLine) expr()     {}
+func (*EndLine) expr()       {}
+func (*Predicate) expr()     {}
+func (*Attributed) expr()    {}
+func (*OperatorsRule) expr() {}
 
 // --- Value expressions (actions and predicates) ---
 
@@ -443,6 +511,8 @@ type NilLit struct{}
 type CaptureRef struct {
 	Pos  Pos    `json:"-"`
 	Name string `json:"name"`
+	// Pragma distinguishes behavioral # directives from @ attributes.
+	Pragma bool `json:"pragma,omitempty"`
 }
 
 // IndexRef is a positional reference $n. $0 is the list of all elements.
@@ -464,7 +534,7 @@ type Member struct {
 	Name string `json:"name"`
 }
 
-// New creates a struct value: new Type{Field: value, ...}.
+// New creates a struct value: Type{Field: value, ...}.
 type New struct {
 	Pos    Pos          `json:"-"`
 	Type   string       `json:"type"`

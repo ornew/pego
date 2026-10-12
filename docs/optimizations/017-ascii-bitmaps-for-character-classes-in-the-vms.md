@@ -1,4 +1,4 @@
-# 17. ASCII bitmaps for character classes in the VMs
+# 17. ASCII Bitmaps for Character Classes in the VMs
 
 - `CLASS` and `SCAN` tested a character against a class by looping over its ranges (`Class.has`). The VM now
   precomputes, per class, a 128-bit bitmap of the characters below 128 (negation included) when the program is

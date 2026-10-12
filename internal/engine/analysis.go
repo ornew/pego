@@ -167,7 +167,7 @@ func (a *analysis) isNullable(e grammar.Expr) bool {
 		return a.isNullable(e.Expr)
 	case *grammar.Attributed:
 		return a.isNullable(e.Expr)
-	case *grammar.Pratt:
+	case *grammar.OperatorsRule:
 		for _, o := range e.Operands {
 			if a.isNullable(o.Expr) {
 				return true
@@ -226,7 +226,7 @@ func (a *analysis) leftCalls(e grammar.Expr, acc []string) []string {
 				}
 			}
 		}
-	case *grammar.Pratt:
+	case *grammar.OperatorsRule:
 		if e.Skip != nil {
 			acc = a.leftCalls(e.Skip, acc)
 		}
@@ -352,6 +352,8 @@ func walkExpr(e grammar.Expr, f func(grammar.Expr)) {
 		}
 	case *grammar.Repeat:
 		walkExpr(e.Expr, f)
+	case *grammar.InlineAction:
+		walkExpr(e.Expr, f)
 	case *grammar.Optional:
 		walkExpr(e.Expr, f)
 	case *grammar.And:
@@ -360,6 +362,11 @@ func walkExpr(e grammar.Expr, f func(grammar.Expr)) {
 		walkExpr(e.Expr, f)
 	case *grammar.Atomic:
 		walkExpr(e.Expr, f)
+	case *grammar.Stream:
+		walkExpr(e.Expr, f)
+	case *grammar.Recovery:
+		walkExpr(e.Expr, f)
+		walkExpr(e.Skip, f)
 	case *grammar.Discard:
 		walkExpr(e.Expr, f)
 	case *grammar.Capture:
@@ -367,11 +374,11 @@ func walkExpr(e grammar.Expr, f func(grammar.Expr)) {
 	case *grammar.Attributed:
 		walkExpr(e.Expr, f)
 		for _, at := range e.Attrs {
-			for _, arg := range at.Args {
-				walkExpr(arg.Value, f)
+			for _, arg := range at.ExpressionArgs() {
+				walkExpr(arg, f)
 			}
 		}
-	case *grammar.Pratt:
+	case *grammar.OperatorsRule:
 		walkExpr(e.Skip, f)
 		for _, o := range e.Operands {
 			walkExpr(o.Expr, f)
@@ -514,14 +521,14 @@ func propagate(rules []*grammar.RuleDef, calls map[string][]string, set map[stri
 }
 
 // walkRuleTerms visits every term in a rule's predicates and actions, including
-// Pratt operand and operator actions.
+// Operators Rule operand and operator actions.
 func walkRuleTerms(r *grammar.RuleDef, f func(grammar.Term)) {
 	walkTerm(r.Action, f)
 	walkExpr(r.Expr, func(e grammar.Expr) {
 		switch e := e.(type) {
 		case *grammar.Predicate:
 			walkTerm(e.Term, f)
-		case *grammar.Pratt:
+		case *grammar.OperatorsRule:
 			for _, o := range e.Operands {
 				walkTerm(o.Action, f)
 			}

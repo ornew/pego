@@ -325,9 +325,9 @@ type rule struct {
 	leader bool
 	// seen is the rule's index among the memoized rules whose memoization is deferred to the
 	// second call at a position (firstCall), or -1.
-	seen    int
-	pratt   *pratt
-	novalue bool // value-free twin, called where the value is discarded
+	seen          int
+	operatorsRule *operatorsRule
+	novalue       bool // value-free twin, called where the value is discarded
 	// vars are the variables the rule or its callees read, sorted. Memo entries are keyed by their
 	// values at the call, since definitions inside the rule are undone when it returns.
 	vars []string
@@ -489,7 +489,7 @@ func (p *parser) release() {
 
 // --- Parser state ---
 
-// expID is an expectation: an index into descs. With msgBit set, it is an #error message.
+// expID is an expectation: an index into descs. With msgBit set, it is an @error message.
 type expID int32
 
 const msgBit expID = 1 << 30
@@ -813,7 +813,7 @@ const nodeFrameScratch = true
 
 // frameScratch keeps stable capture frames and slots until the parse returns.
 // Neither array can be reached through a returned Node's children or fields.
-// Append-only allocation also preserves retained Pratt attempts and undo marks.
+// Append-only allocation also preserves retained OperatorsRule attempts and undo marks.
 type frameScratch struct {
 	frames  []*[nodeChunk]frame
 	slots   []*[ptrChunk]*Node
@@ -1945,32 +1945,32 @@ func (c *actx) endList(base int) any {
 	return c.listNode(c.p.kids(base))
 }
 
-// --- Pratt expressions ---
+// --- Operators Rule expressions ---
 
-type pratt struct {
+type operatorsRule struct {
 	skip     matcher
-	operands []*prattLine
-	prefix   []*prattOp
-	led      []*prattOp
+	operands []*operatorsRuleLine
+	prefix   []*operatorsRuleOp
+	led      []*operatorsRuleOp
 }
 
-type prattLine struct {
+type operatorsRuleLine struct {
 	scope  []string
 	m      matcher
 	action func(*actx) any
 	isSeq  bool
 }
 
-type prattOp struct {
+type operatorsRuleOp struct {
 	id    int
 	kind  string
 	assoc string
 	level int
-	line  *prattLine
+	line  *operatorsRuleLine
 }
 
-type prattAttempt struct {
-	op         *prattOp
+type operatorsRuleAttempt struct {
+	op         *operatorsRuleOp
 	frame      *frame
 	v          *Node
 	start, end int
@@ -1979,7 +1979,7 @@ type prattAttempt struct {
 	errs       []*SyntaxError
 }
 
-func (p *parser) skipTrivia(pr *pratt) {
+func (p *parser) skipTrivia(pr *operatorsRule) {
 	if pr.skip == nil {
 		return
 	}
@@ -1995,7 +1995,7 @@ func (p *parser) skipTrivia(pr *pratt) {
 // longest tries every operator and returns the longest match (the first declared among equals);
 // best.op is nil when none matched. cutFailed reports a candidate that failed after a cut. The
 // attempt is returned by value, so trying operators allocates nothing for lines without captures.
-func (p *parser) longest(ops []*prattOp) (best prattAttempt, cutFailed bool) {
+func (p *parser) longest(ops []*operatorsRuleOp) (best operatorsRuleAttempt, cutFailed bool) {
 	m0 := p.mark()
 	for _, op := range ops {
 		prevFrame, prevCut := p.frame, p.cut
@@ -2008,7 +2008,7 @@ func (p *parser) longest(ops []*prattOp) (best prattAttempt, cutFailed bool) {
 			ok = false // an empty prefix or postfix match could be applied forever
 		}
 		if ok && (best.op == nil || p.pos > best.end) {
-			best = prattAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
+			best = operatorsRuleAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
 				errs: append([]*SyntaxError(nil), p.recovered[m0.recovered:]...)}
 		}
 		if !ok && cut {
@@ -2027,27 +2027,27 @@ func (p *parser) longest(ops []*prattOp) (best prattAttempt, cutFailed bool) {
 	return best, cutFailed
 }
 
-func (p *parser) apply(a *prattAttempt) {
+func (p *parser) apply(a *operatorsRuleAttempt) {
 	p.pos, p.env = a.end, a.env
 	p.recovered = append(p.recovered, a.errs...)
 }
 
-// prattParse parses an expression with operators that bind tighter than min. Each level of its
+// operatorsRuleParse parses an expression with operators that bind tighter than min. Each level of its
 // recursion (the operand of a prefix operator, the right operand of an infix operator) counts
 // against the nesting limit, like a rule call.
-func (p *parser) prattParse(r *rule, min int) (*Node, bool) {
+func (p *parser) operatorsRuleParse(r *rule, min int) (*Node, bool) {
 	p.depth++
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.prattExpr(r, min)
+	v, ok := p.operatorsRuleExpr(r, min)
 	p.depth--
 	return v, ok
 }
 
-func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
-	pr := r.pratt
-	lhs, ok := p.prattNud(r)
+func (p *parser) operatorsRuleExpr(r *rule, min int) (*Node, bool) {
+	pr := r.operatorsRule
+	lhs, ok := p.operatorsRuleNud(r)
 	if !ok {
 		return nil, false
 	}
@@ -2069,7 +2069,7 @@ func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 		}
 		p.apply(&a)
 		if a.op.kind == "postfix" {
-			lhs = p.prattBuild(r, &a, lhs, nil)
+			lhs = p.operatorsRuleBuild(r, &a, lhs, nil)
 			lastNone = -1
 			if p.pos == m0.pos {
 				break
@@ -2080,7 +2080,7 @@ func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 		if a.op.assoc == "right" {
 			rmin--
 		}
-		rhs, ok := p.prattParse(r, rmin)
+		rhs, ok := p.operatorsRuleParse(r, rmin)
 		if !ok {
 			if a.cut {
 				return nil, false
@@ -2088,7 +2088,7 @@ func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 			p.reset(m0)
 			break
 		}
-		lhs = p.prattBuild(r, &a, lhs, rhs)
+		lhs = p.operatorsRuleBuild(r, &a, lhs, rhs)
 		lastNone = -1
 		if a.op.assoc == "none" {
 			lastNone = a.op.level
@@ -2102,15 +2102,15 @@ func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 	return lhs, true
 }
 
-func (p *parser) prattNud(r *rule) (*Node, bool) {
-	pr := r.pratt
+func (p *parser) operatorsRuleNud(r *rule) (*Node, bool) {
+	pr := r.operatorsRule
 	p.skipTrivia(pr)
 	m0 := p.mark()
 	if a, cutFailed := p.longest(pr.prefix); a.op != nil {
 		p.apply(&a)
-		rhs, ok := p.prattParse(r, a.op.level)
+		rhs, ok := p.operatorsRuleParse(r, a.op.level)
 		if ok {
-			return p.prattBuild(r, &a, nil, rhs), true
+			return p.operatorsRuleBuild(r, &a, nil, rhs), true
 		}
 		if a.cut {
 			return nil, false
@@ -2137,7 +2137,7 @@ func (p *parser) prattNud(r *rule) (*Node, bool) {
 	return nil, false
 }
 
-func (p *parser) lineResult(r *rule, l *prattLine, f *frame, v *Node, start int) *Node {
+func (p *parser) lineResult(r *rule, l *operatorsRuleLine, f *frame, v *Node, start int) *Node {
 	if r.novalue {
 		return nil
 	}
@@ -2163,7 +2163,7 @@ func (p *parser) lineResult(r *rule, l *prattLine, f *frame, v *Node, start int)
 	return v
 }
 
-func (p *parser) prattBuild(r *rule, a *prattAttempt, lhs, rhs *Node) *Node {
+func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *Node) *Node {
 	if r.novalue {
 		return nil
 	}
@@ -2254,7 +2254,7 @@ type Span struct{ Start, End int }
 func (s *Span) tspan() (int, int)       { return s.Start, s.End }
 func (s *Span) tsetSpan(start, end int) { s.Start, s.End = start, end }
 
-// Match is a terminal made by a literal, a character class, ., @a or _.
+// Match is a terminal made by a literal, a character class, ., a #atomic or _.
 type Match struct {
 	Span
 	Text string
@@ -2390,9 +2390,9 @@ func asTval(v any) tval {
 // trule is a rule of the typed runtime: the rule's analysis results and its typed body.
 type trule struct {
 	*rule
-	body   func(p *tparser, min int) (any, bool)
-	action func(c *tctx) any
-	pratt  *tpratt
+	body          func(p *tparser, min int) (any, bool)
+	action        func(c *tctx) any
+	operatorsRule *toperatorsRule
 	// term makes the value of a rule of a terminal type.
 	term func(p *tparser, start, end int, text string) tval
 	// entry is the generated method that calls the rule as call(r, 0) does (u<id> or s<id>), for
@@ -3502,32 +3502,32 @@ func (c *tctx) endList(base int) any {
 	return c.listNode(c.p.kids(base))
 }
 
-// --- Pratt expressions ---
+// --- Operators Rule expressions ---
 
-type tpratt struct {
+type toperatorsRule struct {
 	skip     tmatcher
-	operands []*tprattLine
-	prefix   []*tprattOp
-	led      []*tprattOp
+	operands []*toperatorsRuleLine
+	prefix   []*toperatorsRuleOp
+	led      []*toperatorsRuleOp
 }
 
-type tprattLine struct {
+type toperatorsRuleLine struct {
 	scope  []string
 	m      tmatcher
 	action func(*tctx) any
 	isSeq  bool
 }
 
-type tprattOp struct {
+type toperatorsRuleOp struct {
 	id    int
 	kind  string
 	assoc string
 	level int
-	line  *tprattLine
+	line  *toperatorsRuleLine
 }
 
-type tprattAttempt struct {
-	op         *tprattOp
+type toperatorsRuleAttempt struct {
+	op         *toperatorsRuleOp
 	frame      *tframe
 	v          any
 	start, end int
@@ -3536,7 +3536,7 @@ type tprattAttempt struct {
 	errs       []*SyntaxError
 }
 
-func (p *tparser) skipTrivia(pr *tpratt) {
+func (p *tparser) skipTrivia(pr *toperatorsRule) {
 	if pr.skip == nil {
 		return
 	}
@@ -3549,7 +3549,7 @@ func (p *tparser) skipTrivia(pr *tpratt) {
 	}
 }
 
-func (p *tparser) longest(ops []*tprattOp) (best tprattAttempt, cutFailed bool) {
+func (p *tparser) longest(ops []*toperatorsRuleOp) (best toperatorsRuleAttempt, cutFailed bool) {
 	m0 := p.mark()
 	for _, op := range ops {
 		prevFrame, prevCut := p.frame, p.cut
@@ -3562,7 +3562,7 @@ func (p *tparser) longest(ops []*tprattOp) (best tprattAttempt, cutFailed bool) 
 			ok = false
 		}
 		if ok && (best.op == nil || p.pos > best.end) {
-			best = tprattAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
+			best = toperatorsRuleAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
 				errs: append([]*SyntaxError(nil), p.recovered[m0.recovered:]...)}
 		}
 		if !ok && cut {
@@ -3579,25 +3579,25 @@ func (p *tparser) longest(ops []*tprattOp) (best tprattAttempt, cutFailed bool) 
 	return best, cutFailed
 }
 
-func (p *tparser) apply(a *tprattAttempt) {
+func (p *tparser) apply(a *toperatorsRuleAttempt) {
 	p.pos, p.env = a.end, a.env
 	p.recovered = append(p.recovered, a.errs...)
 }
 
-// prattParse is parser.prattParse for typed values.
-func (p *tparser) prattParse(r *trule, min int) (any, bool) {
+// operatorsRuleParse is parser.operatorsRuleParse for typed values.
+func (p *tparser) operatorsRuleParse(r *trule, min int) (any, bool) {
 	p.depth++
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.prattExpr(r, min)
+	v, ok := p.operatorsRuleExpr(r, min)
 	p.depth--
 	return v, ok
 }
 
-func (p *tparser) prattExpr(r *trule, min int) (any, bool) {
-	pr := r.pratt
-	lhs, ok := p.prattNud(r)
+func (p *tparser) operatorsRuleExpr(r *trule, min int) (any, bool) {
+	pr := r.operatorsRule
+	lhs, ok := p.operatorsRuleNud(r)
 	if !ok {
 		return nil, false
 	}
@@ -3619,7 +3619,7 @@ func (p *tparser) prattExpr(r *trule, min int) (any, bool) {
 		}
 		p.apply(&a)
 		if a.op.kind == "postfix" {
-			lhs = p.prattBuild(r, &a, lhs, nil)
+			lhs = p.operatorsRuleBuild(r, &a, lhs, nil)
 			lastNone = -1
 			if p.pos == m0.pos {
 				break
@@ -3630,7 +3630,7 @@ func (p *tparser) prattExpr(r *trule, min int) (any, bool) {
 		if a.op.assoc == "right" {
 			rmin--
 		}
-		rhs, ok := p.prattParse(r, rmin)
+		rhs, ok := p.operatorsRuleParse(r, rmin)
 		if !ok {
 			if a.cut {
 				return nil, false
@@ -3638,7 +3638,7 @@ func (p *tparser) prattExpr(r *trule, min int) (any, bool) {
 			p.reset(m0)
 			break
 		}
-		lhs = p.prattBuild(r, &a, lhs, rhs)
+		lhs = p.operatorsRuleBuild(r, &a, lhs, rhs)
 		lastNone = -1
 		if a.op.assoc == "none" {
 			lastNone = a.op.level
@@ -3650,15 +3650,15 @@ func (p *tparser) prattExpr(r *trule, min int) (any, bool) {
 	return lhs, true
 }
 
-func (p *tparser) prattNud(r *trule) (any, bool) {
-	pr := r.pratt
+func (p *tparser) operatorsRuleNud(r *trule) (any, bool) {
+	pr := r.operatorsRule
 	p.skipTrivia(pr)
 	m0 := p.mark()
 	if a, cutFailed := p.longest(pr.prefix); a.op != nil {
 		p.apply(&a)
-		rhs, ok := p.prattParse(r, a.op.level)
+		rhs, ok := p.operatorsRuleParse(r, a.op.level)
 		if ok {
-			return p.prattBuild(r, &a, nil, rhs), true
+			return p.operatorsRuleBuild(r, &a, nil, rhs), true
 		}
 		if a.cut {
 			return nil, false
@@ -3685,7 +3685,7 @@ func (p *tparser) prattNud(r *trule) (any, bool) {
 	return nil, false
 }
 
-func (p *tparser) lineResult(r *trule, l *tprattLine, f *tframe, v any, start int) any {
+func (p *tparser) lineResult(r *trule, l *toperatorsRuleLine, f *tframe, v any, start int) any {
 	if r.novalue {
 		return nil
 	}
@@ -3710,7 +3710,7 @@ func (p *tparser) lineResult(r *trule, l *tprattLine, f *tframe, v any, start in
 	return nil
 }
 
-func (p *tparser) prattBuild(r *trule, a *tprattAttempt, lhs, rhs any) any {
+func (p *tparser) operatorsRuleBuild(r *trule, a *toperatorsRuleAttempt, lhs, rhs any) any {
 	if r.novalue {
 		return nil
 	}
@@ -7524,7 +7524,7 @@ func ParseAST(input string, opts ...ParseOption) (*File, error) {
 //	unaryOpExpr: *UnaryExpr
 //	starExpr: *StarExpr
 //	primaryExpr: Expr
-//	prattExpr: Expr
+//	operatorsExpr: Expr
 //	primaryOperand: Expr
 //	operandGuard: any
 //	literalOperand: Expr
@@ -7551,7 +7551,7 @@ func ParseAST(input string, opts ...ParseOption) (*File, error) {
 //	hunaryOpExpr: *UnaryExpr
 //	hstarExpr: *StarExpr
 //	hprimaryExpr: Expr
-//	hprattExpr: Expr
+//	hoperatorsExpr: Expr
 //	hoperand: Expr
 //	compositeLitH: *CompositeLit
 //	parenCompositeType: *Node
@@ -8280,7 +8280,7 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
 	case "primaryExpr":
 		a := &tslabs{}
 		return tparseResolved(trules[195], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
-	case "prattExpr":
+	case "operatorsExpr":
 		a := &tslabs{}
 		return tparseResolved(trules[196], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
 	case "primaryOperand":
@@ -8371,7 +8371,7 @@ func ParseRuleAST(name, input string, opts ...ParseOption) (any, error) {
 	case "hprimaryExpr":
 		a := &tslabs{}
 		return tparseResolved(trules[222], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
-	case "hprattExpr":
+	case "hoperatorsExpr":
 		a := &tslabs{}
 		return tparseResolved(trules[223], input, o, a, func(v any) Expr { return tAs[Expr](tpub(v)) })
 	case "hoperand":
@@ -9403,7 +9403,7 @@ func init() {
 		{id: 193, name: "unaryOpExpr", scope: []string{"o", "x"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 194, name: "starExpr", scope: []string{"x"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 195, name: "primaryExpr", scope: []string{"o"}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 196, name: "prattExpr", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 196, name: "operatorsExpr", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 197, name: "primaryOperand", scope: []string{"o"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 68, novalue: false, vars: []string{}},
 		{id: 198, name: "operandGuard", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 199, name: "literalOperand", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -9430,7 +9430,7 @@ func init() {
 		{id: 220, name: "hunaryOpExpr", scope: []string{"o", "x"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 221, name: "hstarExpr", scope: []string{"x"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 222, name: "hprimaryExpr", scope: []string{"o"}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 223, name: "hprattExpr", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 223, name: "hoperatorsExpr", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 224, name: "hoperand", scope: []string{"o"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 84, novalue: false, vars: []string{}},
 		{id: 225, name: "compositeLitH", scope: []string{"t", "v"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 226, name: "parenCompositeType", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 85, novalue: false, vars: []string{}},
@@ -10093,28 +10093,28 @@ func init() {
 	rules[194].action = func(c *actx) any { return c.newStruct("StarExpr", "X", c.cap(0)) }
 	rules[195].body = func(p *parser, _ int) (*Node, bool) { return p.e246() }
 	rules[195].action = func(c *actx) any { return c.cap(0) }
-	rules[196].pratt = &pratt{
+	rules[196].operatorsRule = &operatorsRule{
 		skip: (*parser).e576,
-		operands: []*prattLine{
-			&prattLine{scope: []string{}, m: (*parser).e577, action: nil, isSeq: false},
+		operands: []*operatorsRuleLine{
+			&operatorsRuleLine{scope: []string{}, m: (*parser).e577, action: nil, isSeq: false},
 		},
-		prefix: []*prattOp{},
-		led: []*prattOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"s"}, m: (*parser).e583, action: func(c *actx) any { return c.newStruct("SelectorExpr", "X", c.lhs, "Sel", c.cap(0)) }, isSeq: true}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e591, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs) }, isSeq: true}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"t"}, m: (*parser).e594, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs, "Type", c.cap(0)) }, isSeq: true}},
-			{id: 3, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"i"}, m: (*parser).e602, action: func(c *actx) any { return c.newStruct("IndexExpr", "X", c.lhs, "Index", c.cap(0)) }, isSeq: true}},
-			{id: 4, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"i"}, m: (*parser).e605, action: func(c *actx) any { return c.newStruct("IndexListExpr", "X", c.lhs, "Indices", c.cap(0)) }, isSeq: true}},
-			{id: 5, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"l", "h"}, m: (*parser).e613, action: func(c *actx) any { return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1)) }, isSeq: true}},
-			{id: 6, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"l", "h", "m"}, m: (*parser).e616, action: func(c *actx) any {
+		prefix: []*operatorsRuleOp{},
+		led: []*operatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"s"}, m: (*parser).e583, action: func(c *actx) any { return c.newStruct("SelectorExpr", "X", c.lhs, "Sel", c.cap(0)) }, isSeq: true}},
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e591, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs) }, isSeq: true}},
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"t"}, m: (*parser).e594, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs, "Type", c.cap(0)) }, isSeq: true}},
+			{id: 3, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e602, action: func(c *actx) any { return c.newStruct("IndexExpr", "X", c.lhs, "Index", c.cap(0)) }, isSeq: true}},
+			{id: 4, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e605, action: func(c *actx) any { return c.newStruct("IndexListExpr", "X", c.lhs, "Indices", c.cap(0)) }, isSeq: true}},
+			{id: 5, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h"}, m: (*parser).e613, action: func(c *actx) any { return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1)) }, isSeq: true}},
+			{id: 6, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*parser).e616, action: func(c *actx) any {
 				return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1), "Max", c.cap(2))
 			}, isSeq: true}},
-			{id: 7, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e617, action: func(c *actx) any { return c.newStruct("CallExpr", "Fun", c.lhs) }, isSeq: true}},
-			{id: 8, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"as", "e"}, m: (*parser).e623, action: func(c *actx) any {
+			{id: 7, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e617, action: func(c *actx) any { return c.newStruct("CallExpr", "Fun", c.lhs) }, isSeq: true}},
+			{id: 8, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"as", "e"}, m: (*parser).e623, action: func(c *actx) any {
 				return c.newStruct("CallExpr", "Fun", c.lhs, "Args", c.cap(0), "Ellipsis", c.cap(1))
 			}, isSeq: true}},
-			{id: 9, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"v"}, m: (*parser).e626, action: func(c *actx) any { return c.newStruct("CompositeLit", "Type", c.lhs, "Elts", c.cap(0)) }, isSeq: true}}},
+			{id: 9, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"v"}, m: (*parser).e626, action: func(c *actx) any { return c.newStruct("CompositeLit", "Type", c.lhs, "Elts", c.cap(0)) }, isSeq: true}}},
 	}
-	rules[196].body = func(p *parser, min int) (*Node, bool) { return p.prattParse(rules[196], min) }
+	rules[196].body = func(p *parser, min int) (*Node, bool) { return p.operatorsRuleParse(rules[196], min) }
 	rules[197].body = func(p *parser, _ int) (*Node, bool) { return p.e247() }
 	rules[197].action = func(c *actx) any { return c.cap(0) }
 	rules[198].body = func(p *parser, _ int) (*Node, bool) { return p.e248() }
@@ -10149,28 +10149,28 @@ func init() {
 	rules[207].body = func(p *parser, _ int) (*Node, bool) { return p.e259() }
 	rules[208].body = func(p *parser, _ int) (*Node, bool) { return p.e260() }
 	rules[208].action = func(c *actx) any { return c.newStruct("CompositeLit", "Elts", c.cap(0)) }
-	rules[209].pratt = &pratt{
+	rules[209].operatorsRule = &operatorsRule{
 		skip: (*parser).e576,
-		operands: []*prattLine{
-			&prattLine{scope: []string{}, m: (*parser).e577, action: nil, isSeq: false},
+		operands: []*operatorsRuleLine{
+			&operatorsRuleLine{scope: []string{}, m: (*parser).e577, action: nil, isSeq: false},
 		},
-		prefix: []*prattOp{},
-		led: []*prattOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"s"}, m: (*parser).e583, action: func(c *actx) any { return c.newStruct("SelectorExpr", "X", c.lhs, "Sel", c.cap(0)) }, isSeq: true}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e591, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs) }, isSeq: true}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"t"}, m: (*parser).e594, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs, "Type", c.cap(0)) }, isSeq: true}},
-			{id: 3, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"i"}, m: (*parser).e602, action: func(c *actx) any { return c.newStruct("IndexExpr", "X", c.lhs, "Index", c.cap(0)) }, isSeq: true}},
-			{id: 4, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"i"}, m: (*parser).e605, action: func(c *actx) any { return c.newStruct("IndexListExpr", "X", c.lhs, "Indices", c.cap(0)) }, isSeq: true}},
-			{id: 5, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"l", "h"}, m: (*parser).e613, action: func(c *actx) any { return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1)) }, isSeq: true}},
-			{id: 6, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"l", "h", "m"}, m: (*parser).e616, action: func(c *actx) any {
+		prefix: []*operatorsRuleOp{},
+		led: []*operatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"s"}, m: (*parser).e583, action: func(c *actx) any { return c.newStruct("SelectorExpr", "X", c.lhs, "Sel", c.cap(0)) }, isSeq: true}},
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e591, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs) }, isSeq: true}},
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"t"}, m: (*parser).e594, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs, "Type", c.cap(0)) }, isSeq: true}},
+			{id: 3, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e602, action: func(c *actx) any { return c.newStruct("IndexExpr", "X", c.lhs, "Index", c.cap(0)) }, isSeq: true}},
+			{id: 4, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e605, action: func(c *actx) any { return c.newStruct("IndexListExpr", "X", c.lhs, "Indices", c.cap(0)) }, isSeq: true}},
+			{id: 5, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h"}, m: (*parser).e613, action: func(c *actx) any { return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1)) }, isSeq: true}},
+			{id: 6, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*parser).e616, action: func(c *actx) any {
 				return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1), "Max", c.cap(2))
 			}, isSeq: true}},
-			{id: 7, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e633, action: func(c *actx) any { return c.newStruct("CallExpr", "Fun", c.lhs) }, isSeq: true}},
-			{id: 8, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"as", "e"}, m: (*parser).e634, action: func(c *actx) any {
+			{id: 7, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e633, action: func(c *actx) any { return c.newStruct("CallExpr", "Fun", c.lhs) }, isSeq: true}},
+			{id: 8, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"as", "e"}, m: (*parser).e634, action: func(c *actx) any {
 				return c.newStruct("CallExpr", "Fun", c.lhs, "Args", c.cap(0), "Ellipsis", c.cap(1))
 			}, isSeq: true}},
-			{id: 9, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"v"}, m: (*parser).e626, action: func(c *actx) any { return c.newStruct("CompositeLit", "Type", c.lhs, "Elts", c.cap(0)) }, isSeq: true}}},
+			{id: 9, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"v"}, m: (*parser).e626, action: func(c *actx) any { return c.newStruct("CompositeLit", "Type", c.lhs, "Elts", c.cap(0)) }, isSeq: true}}},
 	}
-	rules[209].body = func(p *parser, min int) (*Node, bool) { return p.prattParse(rules[209], min) }
+	rules[209].body = func(p *parser, min int) (*Node, bool) { return p.operatorsRuleParse(rules[209], min) }
 	rules[210].body = func(p *parser, _ int) (*Node, bool) { return p.e261() }
 	rules[211].body = func(p *parser, _ int) (*Node, bool) { return p.e262() }
 	rules[211].action = func(c *actx) any { return c.cap(0) }
@@ -10223,53 +10223,53 @@ func init() {
 	rules[221].action = func(c *actx) any { return c.newStruct("StarExpr", "X", c.cap(0)) }
 	rules[222].body = func(p *parser, _ int) (*Node, bool) { return p.e279() }
 	rules[222].action = func(c *actx) any { return c.cap(0) }
-	rules[223].pratt = &pratt{
+	rules[223].operatorsRule = &operatorsRule{
 		skip: (*parser).e576,
-		operands: []*prattLine{
-			&prattLine{scope: []string{}, m: (*parser).e646, action: nil, isSeq: false},
+		operands: []*operatorsRuleLine{
+			&operatorsRuleLine{scope: []string{}, m: (*parser).e646, action: nil, isSeq: false},
 		},
-		prefix: []*prattOp{},
-		led: []*prattOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"s"}, m: (*parser).e583, action: func(c *actx) any { return c.newStruct("SelectorExpr", "X", c.lhs, "Sel", c.cap(0)) }, isSeq: true}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e647, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs) }, isSeq: true}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"t"}, m: (*parser).e648, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs, "Type", c.cap(0)) }, isSeq: true}},
-			{id: 3, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"i"}, m: (*parser).e602, action: func(c *actx) any { return c.newStruct("IndexExpr", "X", c.lhs, "Index", c.cap(0)) }, isSeq: true}},
-			{id: 4, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"i"}, m: (*parser).e605, action: func(c *actx) any { return c.newStruct("IndexListExpr", "X", c.lhs, "Indices", c.cap(0)) }, isSeq: true}},
-			{id: 5, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"l", "h"}, m: (*parser).e649, action: func(c *actx) any { return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1)) }, isSeq: true}},
-			{id: 6, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"l", "h", "m"}, m: (*parser).e650, action: func(c *actx) any {
+		prefix: []*operatorsRuleOp{},
+		led: []*operatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"s"}, m: (*parser).e583, action: func(c *actx) any { return c.newStruct("SelectorExpr", "X", c.lhs, "Sel", c.cap(0)) }, isSeq: true}},
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e647, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs) }, isSeq: true}},
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"t"}, m: (*parser).e648, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs, "Type", c.cap(0)) }, isSeq: true}},
+			{id: 3, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e602, action: func(c *actx) any { return c.newStruct("IndexExpr", "X", c.lhs, "Index", c.cap(0)) }, isSeq: true}},
+			{id: 4, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e605, action: func(c *actx) any { return c.newStruct("IndexListExpr", "X", c.lhs, "Indices", c.cap(0)) }, isSeq: true}},
+			{id: 5, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h"}, m: (*parser).e649, action: func(c *actx) any { return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1)) }, isSeq: true}},
+			{id: 6, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*parser).e650, action: func(c *actx) any {
 				return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1), "Max", c.cap(2))
 			}, isSeq: true}},
-			{id: 7, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e651, action: func(c *actx) any { return c.newStruct("CallExpr", "Fun", c.lhs) }, isSeq: true}},
-			{id: 8, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"as", "e"}, m: (*parser).e652, action: func(c *actx) any {
+			{id: 7, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e651, action: func(c *actx) any { return c.newStruct("CallExpr", "Fun", c.lhs) }, isSeq: true}},
+			{id: 8, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"as", "e"}, m: (*parser).e652, action: func(c *actx) any {
 				return c.newStruct("CallExpr", "Fun", c.lhs, "Args", c.cap(0), "Ellipsis", c.cap(1))
 			}, isSeq: true}}},
 	}
-	rules[223].body = func(p *parser, min int) (*Node, bool) { return p.prattParse(rules[223], min) }
+	rules[223].body = func(p *parser, min int) (*Node, bool) { return p.operatorsRuleParse(rules[223], min) }
 	rules[224].body = func(p *parser, _ int) (*Node, bool) { return p.e280() }
 	rules[224].action = func(c *actx) any { return c.cap(0) }
 	rules[225].body = func(p *parser, _ int) (*Node, bool) { return p.e281() }
 	rules[225].action = func(c *actx) any { return c.newStruct("CompositeLit", "Type", c.cap(0), "Elts", c.cap(1)) }
 	rules[226].body = func(p *parser, _ int) (*Node, bool) { return p.e282() }
-	rules[227].pratt = &pratt{
+	rules[227].operatorsRule = &operatorsRule{
 		skip: (*parser).e576,
-		operands: []*prattLine{
-			&prattLine{scope: []string{}, m: (*parser).e646, action: nil, isSeq: false},
+		operands: []*operatorsRuleLine{
+			&operatorsRuleLine{scope: []string{}, m: (*parser).e646, action: nil, isSeq: false},
 		},
-		prefix: []*prattOp{},
-		led: []*prattOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"s"}, m: (*parser).e583, action: func(c *actx) any { return c.newStruct("SelectorExpr", "X", c.lhs, "Sel", c.cap(0)) }, isSeq: true}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e591, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs) }, isSeq: true}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"t"}, m: (*parser).e648, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs, "Type", c.cap(0)) }, isSeq: true}},
-			{id: 3, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"i"}, m: (*parser).e602, action: func(c *actx) any { return c.newStruct("IndexExpr", "X", c.lhs, "Index", c.cap(0)) }, isSeq: true}},
-			{id: 4, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"i"}, m: (*parser).e605, action: func(c *actx) any { return c.newStruct("IndexListExpr", "X", c.lhs, "Indices", c.cap(0)) }, isSeq: true}},
-			{id: 5, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"l", "h"}, m: (*parser).e649, action: func(c *actx) any { return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1)) }, isSeq: true}},
-			{id: 6, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"l", "h", "m"}, m: (*parser).e650, action: func(c *actx) any {
+		prefix: []*operatorsRuleOp{},
+		led: []*operatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"s"}, m: (*parser).e583, action: func(c *actx) any { return c.newStruct("SelectorExpr", "X", c.lhs, "Sel", c.cap(0)) }, isSeq: true}},
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e591, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs) }, isSeq: true}},
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"t"}, m: (*parser).e648, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs, "Type", c.cap(0)) }, isSeq: true}},
+			{id: 3, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e602, action: func(c *actx) any { return c.newStruct("IndexExpr", "X", c.lhs, "Index", c.cap(0)) }, isSeq: true}},
+			{id: 4, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e605, action: func(c *actx) any { return c.newStruct("IndexListExpr", "X", c.lhs, "Indices", c.cap(0)) }, isSeq: true}},
+			{id: 5, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h"}, m: (*parser).e649, action: func(c *actx) any { return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1)) }, isSeq: true}},
+			{id: 6, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*parser).e650, action: func(c *actx) any {
 				return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1), "Max", c.cap(2))
 			}, isSeq: true}},
-			{id: 7, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e651, action: func(c *actx) any { return c.newStruct("CallExpr", "Fun", c.lhs) }, isSeq: true}},
-			{id: 8, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"as", "e"}, m: (*parser).e652, action: func(c *actx) any {
+			{id: 7, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e651, action: func(c *actx) any { return c.newStruct("CallExpr", "Fun", c.lhs) }, isSeq: true}},
+			{id: 8, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"as", "e"}, m: (*parser).e652, action: func(c *actx) any {
 				return c.newStruct("CallExpr", "Fun", c.lhs, "Args", c.cap(0), "Ellipsis", c.cap(1))
 			}, isSeq: true}}},
 	}
-	rules[227].body = func(p *parser, min int) (*Node, bool) { return p.prattParse(rules[227], min) }
+	rules[227].body = func(p *parser, min int) (*Node, bool) { return p.operatorsRuleParse(rules[227], min) }
 	rules[228].body = func(p *parser, _ int) (*Node, bool) { return p.e283() }
 	rules[229].body = func(p *parser, _ int) (*Node, bool) { return p.e284() }
 	rules[230].body = func(p *parser, _ int) (*Node, bool) { return p.e286() }
@@ -10722,7 +10722,7 @@ func init() {
 		{id: 193, name: "unaryOpExpr", scope: []string{"o", "x"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 194, name: "starExpr", scope: []string{"x"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 195, name: "primaryExpr", scope: []string{"o"}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 196, name: "prattExpr", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 196, name: "operatorsExpr", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 197, name: "primaryOperand", scope: []string{"o"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 68, novalue: false, vars: []string{}},
 		{id: 198, name: "operandGuard", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 199, name: "literalOperand", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
@@ -10749,7 +10749,7 @@ func init() {
 		{id: 220, name: "hunaryOpExpr", scope: []string{"o", "x"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 221, name: "hstarExpr", scope: []string{"x"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 222, name: "hprimaryExpr", scope: []string{"o"}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
-		{id: 223, name: "hprattExpr", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
+		{id: 223, name: "hoperatorsExpr", scope: []string{}, bodyIsSeq: false, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 224, name: "hoperand", scope: []string{"o"}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 84, novalue: false, vars: []string{}},
 		{id: 225, name: "compositeLitH", scope: []string{"t", "v"}, bodyIsSeq: true, terminalType: "", memo: false, leader: false, seen: -1, novalue: false, vars: []string{}},
 		{id: 226, name: "parenCompositeType", scope: []string{}, bodyIsSeq: true, terminalType: "", memo: true, leader: false, seen: 85, novalue: false, vars: []string{}},
@@ -11429,28 +11429,28 @@ func init() {
 	recRules[194].action = func(c *actx) any { return c.newStruct("StarExpr", "X", c.cap(0)) }
 	recRules[195].body = func(p *parser, _ int) (*Node, bool) { return p.e869() }
 	recRules[195].action = func(c *actx) any { return c.cap(0) }
-	recRules[196].pratt = &pratt{
+	recRules[196].operatorsRule = &operatorsRule{
 		skip: (*parser).e1095,
-		operands: []*prattLine{
-			&prattLine{scope: []string{}, m: (*parser).e1096, action: nil, isSeq: false},
+		operands: []*operatorsRuleLine{
+			&operatorsRuleLine{scope: []string{}, m: (*parser).e1096, action: nil, isSeq: false},
 		},
-		prefix: []*prattOp{},
-		led: []*prattOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"s"}, m: (*parser).e1102, action: func(c *actx) any { return c.newStruct("SelectorExpr", "X", c.lhs, "Sel", c.cap(0)) }, isSeq: true}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e1107, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs) }, isSeq: true}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"t"}, m: (*parser).e1110, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs, "Type", c.cap(0)) }, isSeq: true}},
-			{id: 3, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"i"}, m: (*parser).e1115, action: func(c *actx) any { return c.newStruct("IndexExpr", "X", c.lhs, "Index", c.cap(0)) }, isSeq: true}},
-			{id: 4, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"i"}, m: (*parser).e1118, action: func(c *actx) any { return c.newStruct("IndexListExpr", "X", c.lhs, "Indices", c.cap(0)) }, isSeq: true}},
-			{id: 5, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"l", "h"}, m: (*parser).e1123, action: func(c *actx) any { return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1)) }, isSeq: true}},
-			{id: 6, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"l", "h", "m"}, m: (*parser).e1126, action: func(c *actx) any {
+		prefix: []*operatorsRuleOp{},
+		led: []*operatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"s"}, m: (*parser).e1102, action: func(c *actx) any { return c.newStruct("SelectorExpr", "X", c.lhs, "Sel", c.cap(0)) }, isSeq: true}},
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1107, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs) }, isSeq: true}},
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"t"}, m: (*parser).e1110, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs, "Type", c.cap(0)) }, isSeq: true}},
+			{id: 3, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1115, action: func(c *actx) any { return c.newStruct("IndexExpr", "X", c.lhs, "Index", c.cap(0)) }, isSeq: true}},
+			{id: 4, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1118, action: func(c *actx) any { return c.newStruct("IndexListExpr", "X", c.lhs, "Indices", c.cap(0)) }, isSeq: true}},
+			{id: 5, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h"}, m: (*parser).e1123, action: func(c *actx) any { return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1)) }, isSeq: true}},
+			{id: 6, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*parser).e1126, action: func(c *actx) any {
 				return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1), "Max", c.cap(2))
 			}, isSeq: true}},
-			{id: 7, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e1127, action: func(c *actx) any { return c.newStruct("CallExpr", "Fun", c.lhs) }, isSeq: true}},
-			{id: 8, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"as", "e"}, m: (*parser).e1133, action: func(c *actx) any {
+			{id: 7, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1127, action: func(c *actx) any { return c.newStruct("CallExpr", "Fun", c.lhs) }, isSeq: true}},
+			{id: 8, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"as", "e"}, m: (*parser).e1133, action: func(c *actx) any {
 				return c.newStruct("CallExpr", "Fun", c.lhs, "Args", c.cap(0), "Ellipsis", c.cap(1))
 			}, isSeq: true}},
-			{id: 9, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"v"}, m: (*parser).e1136, action: func(c *actx) any { return c.newStruct("CompositeLit", "Type", c.lhs, "Elts", c.cap(0)) }, isSeq: true}}},
+			{id: 9, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"v"}, m: (*parser).e1136, action: func(c *actx) any { return c.newStruct("CompositeLit", "Type", c.lhs, "Elts", c.cap(0)) }, isSeq: true}}},
 	}
-	recRules[196].body = func(p *parser, min int) (*Node, bool) { return p.prattParse(recRules[196], min) }
+	recRules[196].body = func(p *parser, min int) (*Node, bool) { return p.operatorsRuleParse(recRules[196], min) }
 	recRules[197].body = func(p *parser, _ int) (*Node, bool) { return p.e870() }
 	recRules[197].action = func(c *actx) any { return c.cap(0) }
 	recRules[198].body = func(p *parser, _ int) (*Node, bool) { return p.e248() }
@@ -11485,28 +11485,28 @@ func init() {
 	recRules[207].body = func(p *parser, _ int) (*Node, bool) { return p.e881() }
 	recRules[208].body = func(p *parser, _ int) (*Node, bool) { return p.e882() }
 	recRules[208].action = func(c *actx) any { return c.newStruct("CompositeLit", "Elts", c.cap(0)) }
-	recRules[209].pratt = &pratt{
+	recRules[209].operatorsRule = &operatorsRule{
 		skip: (*parser).e1095,
-		operands: []*prattLine{
-			&prattLine{scope: []string{}, m: (*parser).e1096, action: nil, isSeq: false},
+		operands: []*operatorsRuleLine{
+			&operatorsRuleLine{scope: []string{}, m: (*parser).e1096, action: nil, isSeq: false},
 		},
-		prefix: []*prattOp{},
-		led: []*prattOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"s"}, m: (*parser).e1102, action: func(c *actx) any { return c.newStruct("SelectorExpr", "X", c.lhs, "Sel", c.cap(0)) }, isSeq: true}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e1107, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs) }, isSeq: true}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"t"}, m: (*parser).e1110, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs, "Type", c.cap(0)) }, isSeq: true}},
-			{id: 3, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"i"}, m: (*parser).e1115, action: func(c *actx) any { return c.newStruct("IndexExpr", "X", c.lhs, "Index", c.cap(0)) }, isSeq: true}},
-			{id: 4, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"i"}, m: (*parser).e1118, action: func(c *actx) any { return c.newStruct("IndexListExpr", "X", c.lhs, "Indices", c.cap(0)) }, isSeq: true}},
-			{id: 5, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"l", "h"}, m: (*parser).e1123, action: func(c *actx) any { return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1)) }, isSeq: true}},
-			{id: 6, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"l", "h", "m"}, m: (*parser).e1126, action: func(c *actx) any {
+		prefix: []*operatorsRuleOp{},
+		led: []*operatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"s"}, m: (*parser).e1102, action: func(c *actx) any { return c.newStruct("SelectorExpr", "X", c.lhs, "Sel", c.cap(0)) }, isSeq: true}},
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1107, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs) }, isSeq: true}},
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"t"}, m: (*parser).e1110, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs, "Type", c.cap(0)) }, isSeq: true}},
+			{id: 3, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1115, action: func(c *actx) any { return c.newStruct("IndexExpr", "X", c.lhs, "Index", c.cap(0)) }, isSeq: true}},
+			{id: 4, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1118, action: func(c *actx) any { return c.newStruct("IndexListExpr", "X", c.lhs, "Indices", c.cap(0)) }, isSeq: true}},
+			{id: 5, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h"}, m: (*parser).e1123, action: func(c *actx) any { return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1)) }, isSeq: true}},
+			{id: 6, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*parser).e1126, action: func(c *actx) any {
 				return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1), "Max", c.cap(2))
 			}, isSeq: true}},
-			{id: 7, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e1143, action: func(c *actx) any { return c.newStruct("CallExpr", "Fun", c.lhs) }, isSeq: true}},
-			{id: 8, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"as", "e"}, m: (*parser).e1144, action: func(c *actx) any {
+			{id: 7, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1143, action: func(c *actx) any { return c.newStruct("CallExpr", "Fun", c.lhs) }, isSeq: true}},
+			{id: 8, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"as", "e"}, m: (*parser).e1144, action: func(c *actx) any {
 				return c.newStruct("CallExpr", "Fun", c.lhs, "Args", c.cap(0), "Ellipsis", c.cap(1))
 			}, isSeq: true}},
-			{id: 9, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"v"}, m: (*parser).e1136, action: func(c *actx) any { return c.newStruct("CompositeLit", "Type", c.lhs, "Elts", c.cap(0)) }, isSeq: true}}},
+			{id: 9, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"v"}, m: (*parser).e1136, action: func(c *actx) any { return c.newStruct("CompositeLit", "Type", c.lhs, "Elts", c.cap(0)) }, isSeq: true}}},
 	}
-	recRules[209].body = func(p *parser, min int) (*Node, bool) { return p.prattParse(recRules[209], min) }
+	recRules[209].body = func(p *parser, min int) (*Node, bool) { return p.operatorsRuleParse(recRules[209], min) }
 	recRules[210].body = func(p *parser, _ int) (*Node, bool) { return p.e883() }
 	recRules[211].body = func(p *parser, _ int) (*Node, bool) { return p.e884() }
 	recRules[211].action = func(c *actx) any { return c.cap(0) }
@@ -11559,53 +11559,53 @@ func init() {
 	recRules[221].action = func(c *actx) any { return c.newStruct("StarExpr", "X", c.cap(0)) }
 	recRules[222].body = func(p *parser, _ int) (*Node, bool) { return p.e901() }
 	recRules[222].action = func(c *actx) any { return c.cap(0) }
-	recRules[223].pratt = &pratt{
+	recRules[223].operatorsRule = &operatorsRule{
 		skip: (*parser).e1095,
-		operands: []*prattLine{
-			&prattLine{scope: []string{}, m: (*parser).e1156, action: nil, isSeq: false},
+		operands: []*operatorsRuleLine{
+			&operatorsRuleLine{scope: []string{}, m: (*parser).e1156, action: nil, isSeq: false},
 		},
-		prefix: []*prattOp{},
-		led: []*prattOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"s"}, m: (*parser).e1102, action: func(c *actx) any { return c.newStruct("SelectorExpr", "X", c.lhs, "Sel", c.cap(0)) }, isSeq: true}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e1157, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs) }, isSeq: true}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"t"}, m: (*parser).e1158, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs, "Type", c.cap(0)) }, isSeq: true}},
-			{id: 3, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"i"}, m: (*parser).e1115, action: func(c *actx) any { return c.newStruct("IndexExpr", "X", c.lhs, "Index", c.cap(0)) }, isSeq: true}},
-			{id: 4, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"i"}, m: (*parser).e1118, action: func(c *actx) any { return c.newStruct("IndexListExpr", "X", c.lhs, "Indices", c.cap(0)) }, isSeq: true}},
-			{id: 5, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"l", "h"}, m: (*parser).e1159, action: func(c *actx) any { return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1)) }, isSeq: true}},
-			{id: 6, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"l", "h", "m"}, m: (*parser).e1160, action: func(c *actx) any {
+		prefix: []*operatorsRuleOp{},
+		led: []*operatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"s"}, m: (*parser).e1102, action: func(c *actx) any { return c.newStruct("SelectorExpr", "X", c.lhs, "Sel", c.cap(0)) }, isSeq: true}},
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1157, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs) }, isSeq: true}},
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"t"}, m: (*parser).e1158, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs, "Type", c.cap(0)) }, isSeq: true}},
+			{id: 3, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1115, action: func(c *actx) any { return c.newStruct("IndexExpr", "X", c.lhs, "Index", c.cap(0)) }, isSeq: true}},
+			{id: 4, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1118, action: func(c *actx) any { return c.newStruct("IndexListExpr", "X", c.lhs, "Indices", c.cap(0)) }, isSeq: true}},
+			{id: 5, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h"}, m: (*parser).e1159, action: func(c *actx) any { return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1)) }, isSeq: true}},
+			{id: 6, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*parser).e1160, action: func(c *actx) any {
 				return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1), "Max", c.cap(2))
 			}, isSeq: true}},
-			{id: 7, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e1161, action: func(c *actx) any { return c.newStruct("CallExpr", "Fun", c.lhs) }, isSeq: true}},
-			{id: 8, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"as", "e"}, m: (*parser).e1162, action: func(c *actx) any {
+			{id: 7, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1161, action: func(c *actx) any { return c.newStruct("CallExpr", "Fun", c.lhs) }, isSeq: true}},
+			{id: 8, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"as", "e"}, m: (*parser).e1162, action: func(c *actx) any {
 				return c.newStruct("CallExpr", "Fun", c.lhs, "Args", c.cap(0), "Ellipsis", c.cap(1))
 			}, isSeq: true}}},
 	}
-	recRules[223].body = func(p *parser, min int) (*Node, bool) { return p.prattParse(recRules[223], min) }
+	recRules[223].body = func(p *parser, min int) (*Node, bool) { return p.operatorsRuleParse(recRules[223], min) }
 	recRules[224].body = func(p *parser, _ int) (*Node, bool) { return p.e902() }
 	recRules[224].action = func(c *actx) any { return c.cap(0) }
 	recRules[225].body = func(p *parser, _ int) (*Node, bool) { return p.e903() }
 	recRules[225].action = func(c *actx) any { return c.newStruct("CompositeLit", "Type", c.cap(0), "Elts", c.cap(1)) }
 	recRules[226].body = func(p *parser, _ int) (*Node, bool) { return p.e904() }
-	recRules[227].pratt = &pratt{
+	recRules[227].operatorsRule = &operatorsRule{
 		skip: (*parser).e1095,
-		operands: []*prattLine{
-			&prattLine{scope: []string{}, m: (*parser).e1156, action: nil, isSeq: false},
+		operands: []*operatorsRuleLine{
+			&operatorsRuleLine{scope: []string{}, m: (*parser).e1156, action: nil, isSeq: false},
 		},
-		prefix: []*prattOp{},
-		led: []*prattOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"s"}, m: (*parser).e1102, action: func(c *actx) any { return c.newStruct("SelectorExpr", "X", c.lhs, "Sel", c.cap(0)) }, isSeq: true}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e1107, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs) }, isSeq: true}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"t"}, m: (*parser).e1158, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs, "Type", c.cap(0)) }, isSeq: true}},
-			{id: 3, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"i"}, m: (*parser).e1115, action: func(c *actx) any { return c.newStruct("IndexExpr", "X", c.lhs, "Index", c.cap(0)) }, isSeq: true}},
-			{id: 4, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"i"}, m: (*parser).e1118, action: func(c *actx) any { return c.newStruct("IndexListExpr", "X", c.lhs, "Indices", c.cap(0)) }, isSeq: true}},
-			{id: 5, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"l", "h"}, m: (*parser).e1159, action: func(c *actx) any { return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1)) }, isSeq: true}},
-			{id: 6, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"l", "h", "m"}, m: (*parser).e1160, action: func(c *actx) any {
+		prefix: []*operatorsRuleOp{},
+		led: []*operatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"s"}, m: (*parser).e1102, action: func(c *actx) any { return c.newStruct("SelectorExpr", "X", c.lhs, "Sel", c.cap(0)) }, isSeq: true}},
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1107, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs) }, isSeq: true}},
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"t"}, m: (*parser).e1158, action: func(c *actx) any { return c.newStruct("TypeAssertExpr", "X", c.lhs, "Type", c.cap(0)) }, isSeq: true}},
+			{id: 3, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1115, action: func(c *actx) any { return c.newStruct("IndexExpr", "X", c.lhs, "Index", c.cap(0)) }, isSeq: true}},
+			{id: 4, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"i"}, m: (*parser).e1118, action: func(c *actx) any { return c.newStruct("IndexListExpr", "X", c.lhs, "Indices", c.cap(0)) }, isSeq: true}},
+			{id: 5, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h"}, m: (*parser).e1159, action: func(c *actx) any { return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1)) }, isSeq: true}},
+			{id: 6, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*parser).e1160, action: func(c *actx) any {
 				return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1), "Max", c.cap(2))
 			}, isSeq: true}},
-			{id: 7, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e1161, action: func(c *actx) any { return c.newStruct("CallExpr", "Fun", c.lhs) }, isSeq: true}},
-			{id: 8, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"as", "e"}, m: (*parser).e1162, action: func(c *actx) any {
+			{id: 7, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e1161, action: func(c *actx) any { return c.newStruct("CallExpr", "Fun", c.lhs) }, isSeq: true}},
+			{id: 8, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"as", "e"}, m: (*parser).e1162, action: func(c *actx) any {
 				return c.newStruct("CallExpr", "Fun", c.lhs, "Args", c.cap(0), "Ellipsis", c.cap(1))
 			}, isSeq: true}}},
 	}
-	recRules[227].body = func(p *parser, min int) (*Node, bool) { return p.prattParse(recRules[227], min) }
+	recRules[227].body = func(p *parser, min int) (*Node, bool) { return p.operatorsRuleParse(recRules[227], min) }
 	recRules[228].body = func(p *parser, _ int) (*Node, bool) { return p.e283() }
 	recRules[229].body = func(p *parser, _ int) (*Node, bool) { return p.e905() }
 	recRules[230].body = func(p *parser, _ int) (*Node, bool) { return p.e286() }
@@ -11763,7 +11763,7 @@ func init() {
 	recRules[382].body = func(p *parser, _ int) (*Node, bool) { return p.e1055() }
 	recRules[383].body = func(p *parser, _ int) (*Node, bool) { return p.e1056() }
 	recRules[384].body = func(p *parser, _ int) (*Node, bool) { return p.e549() }
-	descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"\\ufeff\"", "\"func\"", "\"const\"", "\"var\"", "\"type\"", "\"(\"", "\")\"", "\".\"", "\"..\"", "\",\"", "\"=\"", "\"[\"", "\"]\"", "\"{\"", "\"|\"", "(?|=)", "\"*\"", "(?.[\\()", "\"~\"", "\"<-\"", "\"struct\"", "\"map\"", "(?.[\\({)", "\"interface\"", "\"...\"", "(?a-zA-Z_[*<\\(\\u0080-\\U0010ffff)", "expected type", "\"chan\"", "\"}\"", "\"\\\"\"", "\"`\"", "\";\"", "\":\"", "\"case\"", "\"default\"", "\"go\"", "\"defer\"", "\"return\"", "\"if\"", "\"select\"", "\"break\"", "\"continue\"", "\"goto\"", "\"fallthrough\"", "\"switch\"", "\":=\"", "\"for\"", "(?<+\\-!\\^&~*)", "(?a-zA-Z_0-9.\\'\"`\\([<\\u0080-\\U0010ffff)", "expected operand", "(?|&=!<>+\\-\\^*/%)", "\"||\"", "\"&\"", "\"&&\"", "(?=!<>)", "\"==\"", "\"!=\"", "\"<=\"", "\">=\"", "\"<\"", "(?<\\-)", "\">\"", "(?+\\-|\\^)", "\"+\"", "(?+=)", "\"-\"", "(?\\-=)", "\"^\"", "(?*/%<>&)", "\"/\"", "(?/*=)", "\"%\"", "\"<<\"", "\">>\"", "\"&^\"", "(?&=\\^)", "(?+\\-!\\^&~)", "\"!\"", "(?=:+\\-*/%&|\\^<>)", "\"+=\"", "\"-=\"", "\"*=\"", "\"/=\"", "\"%=\"", "\"&=\"", "\"|=\"", "\"^=\"", "\"<<=\"", "\">>=\"", "\"&^=\"", "(?+\\-)", "\"++\"", "\"--\"", "\"\\n\"", "\"/*\"", "(? \\t\\r/)", "(? \\t\\r)", "\"//\"", "(?^\\n\\x00\\ufeff�)", "\"�\"", "\"*/\"", "(?^\\n)", "\"line \"", "(?^:*\\x00\\ufeff�)", "(?^:*)", "(?^*\\x00\\ufeff�)", "\"0\"", "(?1-9)", "(?0-9)", "(? \\t\\r\\n/)", "(? \\t\\r\\n)", "\"//line \"", "(?^:\\n\\r\\x00\\ufeff�)", "\"\\r\"", "(?^:\\n\\r)", "(?a-zA-Z_)", "(?\\u0080-\\U0010ffff)", "(?a-zA-Z0-9_\\u0080-\\U0010ffff)", "(?a-zA-Z0-9_)", "\"else\"", "\"import\"", "\"package\"", "\"range\"", "\"'\"", "(?xX)", "\"_\"", "(?oO)", "(?bB)", "(?0-7)", "(?0-9a-zA-Z_.)", "(?0-9a-zA-Z_)", "\"i\"", "(?oObB)", "(?eE)", "(?pP)", "(?0-9a-fA-F)", "(?01)", "\"\\\\\"", "(?\\'\\\\\\n)", "(?^\"\\\\\\n\\x00\\ufeff�)", "(?^\\x00\\ufeff�)", "(?abfnrtv\\\\\\')", "(?abfnrtv\\\\\")", "(?0-3)", "\"x\"", "\"u\"", "(?dD)", "(?89a-fA-F)", "\"U\"", "\"00\"", "\"10\"", "(?ªµºÀ-ÖØ-öø-ˁˆ-ˑˠ-ˤˬˮͰ-ʹͶ-ͷͺ-ͽͿΆΈ-ΊΌΎ-ΡΣ-ϵϷ-ҁҊ-ԯԱ-Ֆՙՠ-ֈא-תׯ-ײؠ-يٮ-ٯٱ-ۓەۥ-ۦۮ-ۯۺ-ۼۿܐܒ-ܯݍ-ޥޱߊ-ߪߴ-ߵߺࠀ-ࠕࠚࠤࠨࡀ-ࡘࡠ-ࡪࡰ-ࢇࢉ-࢏ࢠ-ࣉऄ-हऽॐक़-ॡॱ-ঀঅ-ঌএ-ঐও-নপ-রলশ-হঽৎড়-ঢ়য়-ৡৰ-ৱৼਅ-ਊਏ-ਐਓ-ਨਪ-ਰਲ-ਲ਼ਵ-ਸ਼ਸ-ਹਖ਼-ੜਫ਼ੲ-ੴઅ-ઍએ-ઑઓ-નપ-રલ-ળવ-હઽૐૠ-ૡૹଅ-ଌଏ-ଐଓ-ନପ-ରଲ-ଳଵ-ହଽଡ଼-ଢ଼ୟ-ୡୱஃஅ-ஊஎ-ஐஒ-கங-சஜஞ-டண-தந-பம-ஹௐఅ-ఌఎ-ఐఒ-నప-హఽౘ-ౚ౜-ౝౠ-ౡಀಅ-ಌಎ-ಐಒ-ನಪ-ಳವ-ಹಽ೜-ೞೠ-ೡೱ-ೲഄ-ഌഎ-ഐഒ-ഺഽൎൔ-ൖൟ-ൡൺ-ൿඅ-ඖක-නඳ-රලව-ෆก-ะา-ำเ-ๆກ-ຂຄຆ-ຊຌ-ຣລວ-ະາ-ຳຽເ-ໄໆໜ-ໟༀཀ-ཇཉ-ཬྈ-ྌက-ဪဿၐ-ၕၚ-ၝၡၥ-ၦၮ-ၰၵ-ႁႎႠ-ჅჇჍა-ჺჼ-ቈቊ-ቍቐ-ቖቘቚ-ቝበ-ኈኊ-ኍነ-ኰኲ-ኵኸ-ኾዀዂ-ዅወ-ዖዘ-ጐጒ-ጕጘ-ፚᎀ-ᎏᎠ-Ᏽᏸ-ᏽᐁ-ᙬᙯ-ᙿᚁ-ᚚᚠ-ᛪᛱ-ᛸᜀ-ᜑᜟ-ᜱᝀ-ᝑᝠ-ᝬᝮ-ᝰក-ឳៗៜᠠ-ᡸᢀ-ᢄᢇ-ᢨᢪᢰ-ᣵᤀ-ᤞᥐ-ᥭᥰ-ᥴᦀ-ᦫᦰ-ᧉᨀ-ᨖᨠ-ᩔᪧᬅ-ᬳᭅ-ᭌᮃ-ᮠᮮ-ᮯᮺ-ᯥᰀ-ᰣᱍ-ᱏᱚ-ᱽᲀ-ᲊᲐ-ᲺᲽ-Ჿᳩ-ᳬᳮ-ᳳᳵ-ᳶᳺᴀ-ᶿḀ-ἕἘ-Ἕἠ-ὅὈ-Ὅὐ-ὗὙὛὝὟ-ώᾀ-ᾴᾶ-ᾼιῂ-ῄῆ-ῌῐ-ΐῖ-Ίῠ-Ῥῲ-ῴῶ-ῼⁱⁿₐ-ₜℂℇℊ-ℓℕℙ-ℝℤΩℨK-ℭℯ-ℹℼ-ℿⅅ-ⅉⅎↃ-ↄⰀ-ⳤⳫ-ⳮⳲ-ⳳⴀ-ⴥⴧⴭⴰ-ⵧⵯⶀ-ⶖⶠ-ⶦⶨ-ⶮⶰ-ⶶⶸ-ⶾⷀ-ⷆⷈ-ⷎⷐ-ⷖⷘ-ⷞⸯ々-〆〱-〵〻-〼ぁ-ゖゝ-ゟァ-ヺー-ヿㄅ-ㄯㄱ-ㆎㆠ-ㆿㇰ-ㇿ㐀-䶿一-ꒌꓐ-ꓽꔀ-ꘌꘐ-ꘟꘪ-ꘫꙀ-ꙮꙿ-ꚝꚠ-ꛥꜗ-ꜟꜢ-ꞈꞋ-Ƛ꟱-ꠁꠃ-ꠅꠇ-ꠊꠌ-ꠢꡀ-ꡳꢂ-ꢳꣲ-ꣷꣻꣽ-ꣾꤊ-ꤥꤰ-ꥆꥠ-ꥼꦄ-ꦲꧏꧠ-ꧤꧦ-ꧯꧺ-ꧾꨀ-ꨨꩀ-ꩂꩄ-ꩋꩠ-ꩶꩺꩾ-ꪯꪱꪵ-ꪶꪹ-ꪽꫀꫂꫛ-ꫝꫠ-ꫪꫲ-ꫴꬁ-ꬆꬉ-ꬎꬑ-ꬖꬠ-ꬦꬨ-ꬮꬰ-ꭚꭜ-ꭩꭰ-ꯢ가-힣ힰ-ퟆퟋ-ퟻ豈-舘並-龎ﬀ-ﬆﬓ-ﬗיִײַ-ﬨשׁ-זּטּ-לּמּנּ-סּףּ-פּצּ-ﮱﯓ-ﴽﵐ-ﶏﶒ-ﷇﷰ-ﷻﹰ-ﹴﹶ-ﻼＡ-Ｚａ-ｚｦ-ﾾￂ-ￇￊ-ￏￒ-ￗￚ-ￜ𐀀-𐀋𐀍-𐀦𐀨-𐀺𐀼-𐀽𐀿-𐁍𐁐-𐁝𐂀-𐃺𐊀-𐊜𐊠-𐋐𐌀-𐌟𐌭-𐍀𐍂-𐍉𐍐-𐍵𐎀-𐎝𐎠-𐏃𐏈-𐏏𐐀-𐒝𐒰-𐓓𐓘-𐓻𐔀-𐔧𐔰-𐕣𐕰-𐕺𐕼-𐖊𐖌-𐖒𐖔-𐖕𐖗-𐖡𐖣-𐖱𐖳-𐖹𐖻-𐖼𐗀-𐗳𐘀-𐜶𐝀-𐝕𐝠-𐝧𐞀-𐞅𐞇-𐞰𐞲-𐞺𐠀-𐠅𐠈𐠊-𐠵𐠷-𐠸𐠼𐠿-𐡕𐡠-𐡶𐢀-𐢞𐣠-𐣲𐣴-𐣵𐤀-𐤕𐤠-𐤹𐥀-𐥙𐦀-𐦷𐦾-𐦿𐨀𐨐-𐨓𐨕-𐨗𐨙-𐨵𐩠-𐩼𐪀-𐪜𐫀-𐫇𐫉-𐫤𐬀-𐬵𐭀-𐭕𐭠-𐭲𐮀-𐮑𐰀-𐱈𐲀-𐲲𐳀-𐳲𐴀-𐴣𐵊-𐵥𐵯-𐶅𐺀-𐺩𐺰-𐺱𐻂-𐻇𐼀-𐼜𐼧𐼰-𐽅𐽰-𐾁𐾰-𐿄𐿠-𐿶𑀃-𑀷𑁱-𑁲𑁵𑂃-𑂯𑃐-𑃨𑄃-𑄦𑅄𑅇𑅐-𑅲𑅶𑆃-𑆲𑇁-𑇄𑇚𑇜𑈀-𑈑𑈓-𑈫𑈿-𑉀𑊀-𑊆𑊈𑊊-𑊍𑊏-𑊝𑊟-𑊨𑊰-𑋞𑌅-𑌌𑌏-𑌐𑌓-𑌨𑌪-𑌰𑌲-𑌳𑌵-𑌹𑌽𑍐𑍝-𑍡𑎀-𑎉𑎋𑎎𑎐-𑎵𑎷𑏑𑏓𑐀-𑐴𑑇-𑑊𑑟-𑑡𑒀-𑒯𑓄-𑓅𑓇𑖀-𑖮𑗘-𑗛𑘀-𑘯𑙄𑚀-𑚪𑚸𑜀-𑜚𑝀-𑝆𑠀-𑠫𑢠-𑣟𑣿-𑤆𑤉𑤌-𑤓𑤕-𑤖𑤘-𑤯𑤿𑥁𑦠-𑦧𑦪-𑧐𑧡𑧣𑨀𑨋-𑨲𑨺𑩐𑩜-𑪉𑪝𑪰-𑫸𑯀-𑯠𑰀-𑰈𑰊-𑰮𑱀𑱲-𑲏𑴀-𑴆𑴈-𑴉𑴋-𑴰𑵆𑵠-𑵥𑵧-𑵨𑵪-𑶉𑶘𑶰-𑷛𑻠-𑻲𑼂𑼄-𑼐𑼒-𑼳𑾰𒀀-𒎙𒒀-𒕃𒾐-𒿰𓀀-𓐯𓑁-𓑆𓑠-𔏺𔐀-𔙆𖄀-𖄝𖠀-𖨸𖩀-𖩞𖩰-𖪾𖫐-𖫭𖬀-𖬯𖭀-𖭃𖭣-𖭷𖭽-𖮏𖵀-𖵬𖹀-𖹿𖺠-𖺸𖺻-𖻓𖼀-𖽊𖽐𖾓-𖾟𖿠-𖿡𖿣𖿲-𖿳𗀀-𘳕𘳿-𘴞𘶀-𘷲𚿰-𚿳𚿵-𚿻𚿽-𚿾𛀀-𛄢𛄲𛅐-𛅒𛅕𛅤-𛅧𛅰-𛋻𛰀-𛱪𛱰-𛱼𛲀-𛲈𛲐-𛲙𝐀-𝑔𝑖-𝒜𝒞-𝒟𝒢𝒥-𝒦𝒩-𝒬𝒮-𝒹𝒻𝒽-𝓃𝓅-𝔅𝔇-𝔊𝔍-𝔔𝔖-𝔜𝔞-𝔹𝔻-𝔾𝕀-𝕄𝕆𝕊-𝕐𝕒-𝚥𝚨-𝛀𝛂-𝛚𝛜-𝛺𝛼-𝜔𝜖-𝜴𝜶-𝝎𝝐-𝝮𝝰-𝞈𝞊-𝞨𝞪-𝟂𝟄-𝟋𝼀-𝼞𝼥-𝼪𞀰-𞁭𞄀-𞄬𞄷-𞄽𞅎𞊐-𞊭𞋀-𞋫𞓐-𞓫𞗐-𞗭𞗰𞛀-𞛞𞛠-𞛢𞛤-𞛥𞛧-𞛭𞛰-𞛴𞛾-𞛿𞟠-𞟦𞟨-𞟫𞟭-𞟮𞟰-𞟾𞠀-𞣄𞤀-𞥃𞥋𞸀-𞸃𞸅-𞸟𞸡-𞸢𞸤𞸧𞸩-𞸲𞸴-𞸷𞸹𞸻𞹂𞹇𞹉𞹋𞹍-𞹏𞹑-𞹒𞹔𞹗𞹙𞹛𞹝𞹟𞹡-𞹢𞹤𞹧-𞹪𞹬-𞹲𞹴-𞹷𞹹-𞹼𞹾𞺀-𞺉𞺋-𞺛𞺡-𞺣𞺥-𞺩𞺫-𞺻𠀀-𪛟𪜀-𫠝𫠠-𬺭𬺰-𮯠𮯰-𮹝丽-𪘀𰀀-𱍊𱍐-𳑹)", "(?٠-٩۰-۹߀-߉०-९০-৯੦-੯૦-૯୦-୯௦-௯౦-౯೦-೯൦-൯෦-෯๐-๙໐-໙༠-༩၀-၉႐-႙០-៩᠐-᠙᥆-᥏᧐-᧙᪀-᪉᪐-᪙᭐-᭙᮰-᮹᱀-᱉᱐-᱙꘠-꘩꣐-꣙꤀-꤉꧐-꧙꧰-꧹꩐-꩙꯰-꯹０-９𐒠-𐒩𐴰-𐴹𐵀-𐵉𑁦-𑁯𑃰-𑃹𑄶-𑄿𑇐-𑇙𑋰-𑋹𑑐-𑑙𑓐-𑓙𑙐-𑙙𑛀-𑛉𑛐-𑛣𑜰-𑜹𑣠-𑣩𑥐-𑥙𑯰-𑯹𑱐-𑱙𑵐-𑵙𑶠-𑶩𑷠-𑷩𑽐-𑽙𖄰-𖄹𖩠-𖩩𖫀-𖫉𖭐-𖭙𖵰-𖵹𜳰-𜳹𝟎-𝟿𞅀-𞅉𞋰-𞋹𞓰-𞓹𞗱-𞗺𞥐-𞥙🯰-🯹)"}
+	descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"\\ufeff\"", "\"func\"", "\"const\"", "\"var\"", "\"type\"", "\"(\"", "\")\"", "\".\"", "\"..\"", "\",\"", "\"=\"", "\"[\"", "\"]\"", "\"{\"", "\"|\"", "[|=]", "\"*\"", "[.\\[(]", "\"~\"", "\"<-\"", "\"struct\"", "\"map\"", "[.\\[({]", "\"interface\"", "\"...\"", "[a-zA-Z_\\[*<(\\u0080-\\U0010ffff]", "expected type", "\"chan\"", "\"}\"", "\"\\\"\"", "\"`\"", "\";\"", "\":\"", "\"case\"", "\"default\"", "\"go\"", "\"defer\"", "\"return\"", "\"if\"", "\"select\"", "\"break\"", "\"continue\"", "\"goto\"", "\"fallthrough\"", "\"switch\"", "\":=\"", "\"for\"", "[<+\\-!\\^&~*]", "[a-zA-Z_0-9.\\'\"`(\\[<\\u0080-\\U0010ffff]", "expected operand", "[|&=!<>+\\-\\^*/%]", "\"||\"", "\"&\"", "\"&&\"", "[=!<>]", "\"==\"", "\"!=\"", "\"<=\"", "\">=\"", "\"<\"", "[<\\-]", "\">\"", "[+\\-|\\^]", "\"+\"", "[+=]", "\"-\"", "[\\-=]", "\"^\"", "[*/%<>&]", "\"/\"", "[/*=]", "\"%\"", "\"<<\"", "\">>\"", "\"&^\"", "[&=\\^]", "[+\\-!\\^&~]", "\"!\"", "[=:+\\-*/%&|\\^<>]", "\"+=\"", "\"-=\"", "\"*=\"", "\"/=\"", "\"%=\"", "\"&=\"", "\"|=\"", "\"^=\"", "\"<<=\"", "\">>=\"", "\"&^=\"", "[+\\-]", "\"++\"", "\"--\"", "\"\\n\"", "\"/*\"", "[ \\t\\r/]", "[ \\t\\r]", "\"//\"", "[^\\n\\x00\\ufeff�]", "\"�\"", "\"*/\"", "[^\\n]", "\"line \"", "[^:*\\x00\\ufeff�]", "[^:*]", "[^*\\x00\\ufeff�]", "\"0\"", "[1-9]", "[0-9]", "[ \\t\\r\\n/]", "[ \\t\\r\\n]", "\"//line \"", "[^:\\n\\r\\x00\\ufeff�]", "\"\\r\"", "[^:\\n\\r]", "[a-zA-Z_]", "[\\u0080-\\U0010ffff]", "[a-zA-Z0-9_\\u0080-\\U0010ffff]", "[a-zA-Z0-9_]", "\"else\"", "\"import\"", "\"package\"", "\"range\"", "\"'\"", "[xX]", "\"_\"", "[oO]", "[bB]", "[0-7]", "[0-9a-zA-Z_.]", "[0-9a-zA-Z_]", "\"i\"", "[oObB]", "[eE]", "[pP]", "[0-9a-fA-F]", "[01]", "\"\\\\\"", "[\\'\\\\\\n]", "[^\"\\\\\\n\\x00\\ufeff�]", "[^\\x00\\ufeff�]", "[abfnrtv\\\\\\']", "[abfnrtv\\\\\"]", "[0-3]", "\"x\"", "\"u\"", "[dD]", "[89a-fA-F]", "\"U\"", "\"00\"", "\"10\"", "[ªµºÀ-ÖØ-öø-ˁˆ-ˑˠ-ˤˬˮͰ-ʹͶ-ͷͺ-ͽͿΆΈ-ΊΌΎ-ΡΣ-ϵϷ-ҁҊ-ԯԱ-Ֆՙՠ-ֈא-תׯ-ײؠ-يٮ-ٯٱ-ۓەۥ-ۦۮ-ۯۺ-ۼۿܐܒ-ܯݍ-ޥޱߊ-ߪߴ-ߵߺࠀ-ࠕࠚࠤࠨࡀ-ࡘࡠ-ࡪࡰ-ࢇࢉ-࢏ࢠ-ࣉऄ-हऽॐक़-ॡॱ-ঀঅ-ঌএ-ঐও-নপ-রলশ-হঽৎড়-ঢ়য়-ৡৰ-ৱৼਅ-ਊਏ-ਐਓ-ਨਪ-ਰਲ-ਲ਼ਵ-ਸ਼ਸ-ਹਖ਼-ੜਫ਼ੲ-ੴઅ-ઍએ-ઑઓ-નપ-રલ-ળવ-હઽૐૠ-ૡૹଅ-ଌଏ-ଐଓ-ନପ-ରଲ-ଳଵ-ହଽଡ଼-ଢ଼ୟ-ୡୱஃஅ-ஊஎ-ஐஒ-கங-சஜஞ-டண-தந-பம-ஹௐఅ-ఌఎ-ఐఒ-నప-హఽౘ-ౚ౜-ౝౠ-ౡಀಅ-ಌಎ-ಐಒ-ನಪ-ಳವ-ಹಽ೜-ೞೠ-ೡೱ-ೲഄ-ഌഎ-ഐഒ-ഺഽൎൔ-ൖൟ-ൡൺ-ൿඅ-ඖක-නඳ-රලව-ෆก-ะา-ำเ-ๆກ-ຂຄຆ-ຊຌ-ຣລວ-ະາ-ຳຽເ-ໄໆໜ-ໟༀཀ-ཇཉ-ཬྈ-ྌက-ဪဿၐ-ၕၚ-ၝၡၥ-ၦၮ-ၰၵ-ႁႎႠ-ჅჇჍა-ჺჼ-ቈቊ-ቍቐ-ቖቘቚ-ቝበ-ኈኊ-ኍነ-ኰኲ-ኵኸ-ኾዀዂ-ዅወ-ዖዘ-ጐጒ-ጕጘ-ፚᎀ-ᎏᎠ-Ᏽᏸ-ᏽᐁ-ᙬᙯ-ᙿᚁ-ᚚᚠ-ᛪᛱ-ᛸᜀ-ᜑᜟ-ᜱᝀ-ᝑᝠ-ᝬᝮ-ᝰក-ឳៗៜᠠ-ᡸᢀ-ᢄᢇ-ᢨᢪᢰ-ᣵᤀ-ᤞᥐ-ᥭᥰ-ᥴᦀ-ᦫᦰ-ᧉᨀ-ᨖᨠ-ᩔᪧᬅ-ᬳᭅ-ᭌᮃ-ᮠᮮ-ᮯᮺ-ᯥᰀ-ᰣᱍ-ᱏᱚ-ᱽᲀ-ᲊᲐ-ᲺᲽ-Ჿᳩ-ᳬᳮ-ᳳᳵ-ᳶᳺᴀ-ᶿḀ-ἕἘ-Ἕἠ-ὅὈ-Ὅὐ-ὗὙὛὝὟ-ώᾀ-ᾴᾶ-ᾼιῂ-ῄῆ-ῌῐ-ΐῖ-Ίῠ-Ῥῲ-ῴῶ-ῼⁱⁿₐ-ₜℂℇℊ-ℓℕℙ-ℝℤΩℨK-ℭℯ-ℹℼ-ℿⅅ-ⅉⅎↃ-ↄⰀ-ⳤⳫ-ⳮⳲ-ⳳⴀ-ⴥⴧⴭⴰ-ⵧⵯⶀ-ⶖⶠ-ⶦⶨ-ⶮⶰ-ⶶⶸ-ⶾⷀ-ⷆⷈ-ⷎⷐ-ⷖⷘ-ⷞⸯ々-〆〱-〵〻-〼ぁ-ゖゝ-ゟァ-ヺー-ヿㄅ-ㄯㄱ-ㆎㆠ-ㆿㇰ-ㇿ㐀-䶿一-ꒌꓐ-ꓽꔀ-ꘌꘐ-ꘟꘪ-ꘫꙀ-ꙮꙿ-ꚝꚠ-ꛥꜗ-ꜟꜢ-ꞈꞋ-Ƛ꟱-ꠁꠃ-ꠅꠇ-ꠊꠌ-ꠢꡀ-ꡳꢂ-ꢳꣲ-ꣷꣻꣽ-ꣾꤊ-ꤥꤰ-ꥆꥠ-ꥼꦄ-ꦲꧏꧠ-ꧤꧦ-ꧯꧺ-ꧾꨀ-ꨨꩀ-ꩂꩄ-ꩋꩠ-ꩶꩺꩾ-ꪯꪱꪵ-ꪶꪹ-ꪽꫀꫂꫛ-ꫝꫠ-ꫪꫲ-ꫴꬁ-ꬆꬉ-ꬎꬑ-ꬖꬠ-ꬦꬨ-ꬮꬰ-ꭚꭜ-ꭩꭰ-ꯢ가-힣ힰ-ퟆퟋ-ퟻ豈-舘並-龎ﬀ-ﬆﬓ-ﬗיִײַ-ﬨשׁ-זּטּ-לּמּנּ-סּףּ-פּצּ-ﮱﯓ-ﴽﵐ-ﶏﶒ-ﷇﷰ-ﷻﹰ-ﹴﹶ-ﻼＡ-Ｚａ-ｚｦ-ﾾￂ-ￇￊ-ￏￒ-ￗￚ-ￜ𐀀-𐀋𐀍-𐀦𐀨-𐀺𐀼-𐀽𐀿-𐁍𐁐-𐁝𐂀-𐃺𐊀-𐊜𐊠-𐋐𐌀-𐌟𐌭-𐍀𐍂-𐍉𐍐-𐍵𐎀-𐎝𐎠-𐏃𐏈-𐏏𐐀-𐒝𐒰-𐓓𐓘-𐓻𐔀-𐔧𐔰-𐕣𐕰-𐕺𐕼-𐖊𐖌-𐖒𐖔-𐖕𐖗-𐖡𐖣-𐖱𐖳-𐖹𐖻-𐖼𐗀-𐗳𐘀-𐜶𐝀-𐝕𐝠-𐝧𐞀-𐞅𐞇-𐞰𐞲-𐞺𐠀-𐠅𐠈𐠊-𐠵𐠷-𐠸𐠼𐠿-𐡕𐡠-𐡶𐢀-𐢞𐣠-𐣲𐣴-𐣵𐤀-𐤕𐤠-𐤹𐥀-𐥙𐦀-𐦷𐦾-𐦿𐨀𐨐-𐨓𐨕-𐨗𐨙-𐨵𐩠-𐩼𐪀-𐪜𐫀-𐫇𐫉-𐫤𐬀-𐬵𐭀-𐭕𐭠-𐭲𐮀-𐮑𐰀-𐱈𐲀-𐲲𐳀-𐳲𐴀-𐴣𐵊-𐵥𐵯-𐶅𐺀-𐺩𐺰-𐺱𐻂-𐻇𐼀-𐼜𐼧𐼰-𐽅𐽰-𐾁𐾰-𐿄𐿠-𐿶𑀃-𑀷𑁱-𑁲𑁵𑂃-𑂯𑃐-𑃨𑄃-𑄦𑅄𑅇𑅐-𑅲𑅶𑆃-𑆲𑇁-𑇄𑇚𑇜𑈀-𑈑𑈓-𑈫𑈿-𑉀𑊀-𑊆𑊈𑊊-𑊍𑊏-𑊝𑊟-𑊨𑊰-𑋞𑌅-𑌌𑌏-𑌐𑌓-𑌨𑌪-𑌰𑌲-𑌳𑌵-𑌹𑌽𑍐𑍝-𑍡𑎀-𑎉𑎋𑎎𑎐-𑎵𑎷𑏑𑏓𑐀-𑐴𑑇-𑑊𑑟-𑑡𑒀-𑒯𑓄-𑓅𑓇𑖀-𑖮𑗘-𑗛𑘀-𑘯𑙄𑚀-𑚪𑚸𑜀-𑜚𑝀-𑝆𑠀-𑠫𑢠-𑣟𑣿-𑤆𑤉𑤌-𑤓𑤕-𑤖𑤘-𑤯𑤿𑥁𑦠-𑦧𑦪-𑧐𑧡𑧣𑨀𑨋-𑨲𑨺𑩐𑩜-𑪉𑪝𑪰-𑫸𑯀-𑯠𑰀-𑰈𑰊-𑰮𑱀𑱲-𑲏𑴀-𑴆𑴈-𑴉𑴋-𑴰𑵆𑵠-𑵥𑵧-𑵨𑵪-𑶉𑶘𑶰-𑷛𑻠-𑻲𑼂𑼄-𑼐𑼒-𑼳𑾰𒀀-𒎙𒒀-𒕃𒾐-𒿰𓀀-𓐯𓑁-𓑆𓑠-𔏺𔐀-𔙆𖄀-𖄝𖠀-𖨸𖩀-𖩞𖩰-𖪾𖫐-𖫭𖬀-𖬯𖭀-𖭃𖭣-𖭷𖭽-𖮏𖵀-𖵬𖹀-𖹿𖺠-𖺸𖺻-𖻓𖼀-𖽊𖽐𖾓-𖾟𖿠-𖿡𖿣𖿲-𖿳𗀀-𘳕𘳿-𘴞𘶀-𘷲𚿰-𚿳𚿵-𚿻𚿽-𚿾𛀀-𛄢𛄲𛅐-𛅒𛅕𛅤-𛅧𛅰-𛋻𛰀-𛱪𛱰-𛱼𛲀-𛲈𛲐-𛲙𝐀-𝑔𝑖-𝒜𝒞-𝒟𝒢𝒥-𝒦𝒩-𝒬𝒮-𝒹𝒻𝒽-𝓃𝓅-𝔅𝔇-𝔊𝔍-𝔔𝔖-𝔜𝔞-𝔹𝔻-𝔾𝕀-𝕄𝕆𝕊-𝕐𝕒-𝚥𝚨-𝛀𝛂-𝛚𝛜-𝛺𝛼-𝜔𝜖-𝜴𝜶-𝝎𝝐-𝝮𝝰-𝞈𝞊-𝞨𝞪-𝟂𝟄-𝟋𝼀-𝼞𝼥-𝼪𞀰-𞁭𞄀-𞄬𞄷-𞄽𞅎𞊐-𞊭𞋀-𞋫𞓐-𞓫𞗐-𞗭𞗰𞛀-𞛞𞛠-𞛢𞛤-𞛥𞛧-𞛭𞛰-𞛴𞛾-𞛿𞟠-𞟦𞟨-𞟫𞟭-𞟮𞟰-𞟾𞠀-𞣄𞤀-𞥃𞥋𞸀-𞸃𞸅-𞸟𞸡-𞸢𞸤𞸧𞸩-𞸲𞸴-𞸷𞸹𞸻𞹂𞹇𞹉𞹋𞹍-𞹏𞹑-𞹒𞹔𞹗𞹙𞹛𞹝𞹟𞹡-𞹢𞹤𞹧-𞹪𞹬-𞹲𞹴-𞹷𞹹-𞹼𞹾𞺀-𞺉𞺋-𞺛𞺡-𞺣𞺥-𞺩𞺫-𞺻𠀀-𪛟𪜀-𫠝𫠠-𬺭𬺰-𮯠𮯰-𮹝丽-𪘀𰀀-𱍊𱍐-𳑹]", "[٠-٩۰-۹߀-߉०-९০-৯੦-੯૦-૯୦-୯௦-௯౦-౯೦-೯൦-൯෦-෯๐-๙໐-໙༠-༩၀-၉႐-႙០-៩᠐-᠙᥆-᥏᧐-᧙᪀-᪉᪐-᪙᭐-᭙᮰-᮹᱀-᱉᱐-᱙꘠-꘩꣐-꣙꤀-꤉꧐-꧙꧰-꧹꩐-꩙꯰-꯹０-９𐒠-𐒩𐴰-𐴹𐵀-𐵉𑁦-𑁯𑃰-𑃹𑄶-𑄿𑇐-𑇙𑋰-𑋹𑑐-𑑙𑓐-𑓙𑙐-𑙙𑛀-𑛉𑛐-𑛣𑜰-𑜹𑣠-𑣩𑥐-𑥙𑯰-𑯹𑱐-𑱙𑵐-𑵙𑶠-𑶩𑷠-𑷩𑽐-𑽙𖄰-𖄹𖩠-𖩩𖫀-𖫉𖭐-𖭙𖵰-𖵹𜳰-𜳹𝟎-𝟿𞅀-𞅉𞋰-𞋹𞓰-𞓹𞗱-𞗺𞥐-𞥙🯰-🯹]"}
 	trules = []*trule{
 		{rule: rules[0]},
 		{rule: rules[1]},
@@ -12350,28 +12350,28 @@ func init() {
 	trules[193].entry = (*tparser).u193
 	trules[194].entry = (*tparser).u194
 	trules[195].entry = (*tparser).u195
-	trules[196].pratt = &tpratt{
+	trules[196].operatorsRule = &toperatorsRule{
 		skip: (*tparser).e1493,
-		operands: []*tprattLine{
-			&tprattLine{scope: []string{}, m: (*tparser).e1494, action: nil, isSeq: false},
+		operands: []*toperatorsRuleLine{
+			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e1494, action: nil, isSeq: false},
 		},
-		prefix: []*tprattOp{},
-		led: []*tprattOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"s"}, m: (*tparser).e1495, action: func(c *tctx) any {
+		prefix: []*toperatorsRuleOp{},
+		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"s"}, m: (*tparser).e1495, action: func(c *tctx) any {
 			return func() any { f_1496 := c.lhs; f_1497 := c.cap(0); return tmk_SelectorExpr(c, true, f_1496, f_1497) }()
 		}, isSeq: true}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{}, m: (*tparser).e1498, action: func(c *tctx) any {
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1498, action: func(c *tctx) any {
 				return func() any { f_1499 := c.lhs; return tmk_TypeAssertExpr(c, true, f_1499, nil) }()
 			}, isSeq: true}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"t"}, m: (*tparser).e1500, action: func(c *tctx) any {
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"t"}, m: (*tparser).e1500, action: func(c *tctx) any {
 				return func() any { f_1501 := c.lhs; f_1502 := c.cap(0); return tmk_TypeAssertExpr(c, true, f_1501, f_1502) }()
 			}, isSeq: true}},
-			{id: 3, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"i"}, m: (*tparser).e1503, action: func(c *tctx) any {
+			{id: 3, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1503, action: func(c *tctx) any {
 				return func() any { f_1504 := c.lhs; f_1505 := c.cap(0); return tmk_IndexExpr(c, true, f_1504, f_1505) }()
 			}, isSeq: true}},
-			{id: 4, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"i"}, m: (*tparser).e1506, action: func(c *tctx) any {
+			{id: 4, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1506, action: func(c *tctx) any {
 				return func() any { f_1507 := c.lhs; f_1508 := c.cap(0); return tmk_IndexListExpr(c, true, f_1507, f_1508) }()
 			}, isSeq: true}},
-			{id: 5, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"l", "h"}, m: (*tparser).e1509, action: func(c *tctx) any {
+			{id: 5, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h"}, m: (*tparser).e1509, action: func(c *tctx) any {
 				return func() any {
 					f_1510 := c.lhs
 					f_1511 := c.cap(0)
@@ -12379,7 +12379,7 @@ func init() {
 					return tmk_SliceExpr(c, true, f_1510, f_1511, f_1512, nil)
 				}()
 			}, isSeq: true}},
-			{id: 6, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"l", "h", "m"}, m: (*tparser).e1513, action: func(c *tctx) any {
+			{id: 6, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*tparser).e1513, action: func(c *tctx) any {
 				return func() any {
 					f_1514 := c.lhs
 					f_1515 := c.cap(0)
@@ -12388,10 +12388,10 @@ func init() {
 					return tmk_SliceExpr(c, true, f_1514, f_1515, f_1516, f_1517)
 				}()
 			}, isSeq: true}},
-			{id: 7, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{}, m: (*tparser).e1518, action: func(c *tctx) any {
+			{id: 7, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1518, action: func(c *tctx) any {
 				return func() any { f_1519 := c.lhs; return tmk_CallExpr(c, true, f_1519, nil, nil) }()
 			}, isSeq: true}},
-			{id: 8, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"as", "e"}, m: (*tparser).e1520, action: func(c *tctx) any {
+			{id: 8, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"as", "e"}, m: (*tparser).e1520, action: func(c *tctx) any {
 				return func() any {
 					f_1521 := c.lhs
 					f_1522 := c.cap(0)
@@ -12399,11 +12399,11 @@ func init() {
 					return tmk_CallExpr(c, true, f_1521, f_1522, f_1523)
 				}()
 			}, isSeq: true}},
-			{id: 9, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"v"}, m: (*tparser).e1524, action: func(c *tctx) any {
+			{id: 9, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"v"}, m: (*tparser).e1524, action: func(c *tctx) any {
 				return func() any { f_1525 := c.lhs; f_1526 := c.cap(0); return tmk_CompositeLit(c, true, f_1525, f_1526) }()
 			}, isSeq: true}}},
 	}
-	trules[196].body = func(p *tparser, min int) (any, bool) { return p.prattParse(trules[196], min) }
+	trules[196].body = func(p *tparser, min int) (any, bool) { return p.operatorsRuleParse(trules[196], min) }
 	trules[197].entry = (*tparser).u197
 	trules[198].entry = (*tparser).s198
 	trules[199].entry = (*tparser).s199
@@ -12416,28 +12416,28 @@ func init() {
 	trules[206].entry = (*tparser).u206
 	trules[207].entry = (*tparser).u207
 	trules[208].entry = (*tparser).u208
-	trules[209].pratt = &tpratt{
+	trules[209].operatorsRule = &toperatorsRule{
 		skip: (*tparser).e1493,
-		operands: []*tprattLine{
-			&tprattLine{scope: []string{}, m: (*tparser).e1494, action: nil, isSeq: false},
+		operands: []*toperatorsRuleLine{
+			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e1494, action: nil, isSeq: false},
 		},
-		prefix: []*tprattOp{},
-		led: []*tprattOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"s"}, m: (*tparser).e1495, action: func(c *tctx) any {
+		prefix: []*toperatorsRuleOp{},
+		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"s"}, m: (*tparser).e1495, action: func(c *tctx) any {
 			return func() any { f_1527 := c.lhs; f_1528 := c.cap(0); return tmk_SelectorExpr(c, true, f_1527, f_1528) }()
 		}, isSeq: true}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{}, m: (*tparser).e1498, action: func(c *tctx) any {
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1498, action: func(c *tctx) any {
 				return func() any { f_1529 := c.lhs; return tmk_TypeAssertExpr(c, true, f_1529, nil) }()
 			}, isSeq: true}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"t"}, m: (*tparser).e1500, action: func(c *tctx) any {
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"t"}, m: (*tparser).e1500, action: func(c *tctx) any {
 				return func() any { f_1530 := c.lhs; f_1531 := c.cap(0); return tmk_TypeAssertExpr(c, true, f_1530, f_1531) }()
 			}, isSeq: true}},
-			{id: 3, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"i"}, m: (*tparser).e1503, action: func(c *tctx) any {
+			{id: 3, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1503, action: func(c *tctx) any {
 				return func() any { f_1532 := c.lhs; f_1533 := c.cap(0); return tmk_IndexExpr(c, true, f_1532, f_1533) }()
 			}, isSeq: true}},
-			{id: 4, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"i"}, m: (*tparser).e1506, action: func(c *tctx) any {
+			{id: 4, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1506, action: func(c *tctx) any {
 				return func() any { f_1534 := c.lhs; f_1535 := c.cap(0); return tmk_IndexListExpr(c, true, f_1534, f_1535) }()
 			}, isSeq: true}},
-			{id: 5, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"l", "h"}, m: (*tparser).e1509, action: func(c *tctx) any {
+			{id: 5, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h"}, m: (*tparser).e1509, action: func(c *tctx) any {
 				return func() any {
 					f_1536 := c.lhs
 					f_1537 := c.cap(0)
@@ -12445,7 +12445,7 @@ func init() {
 					return tmk_SliceExpr(c, true, f_1536, f_1537, f_1538, nil)
 				}()
 			}, isSeq: true}},
-			{id: 6, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"l", "h", "m"}, m: (*tparser).e1513, action: func(c *tctx) any {
+			{id: 6, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*tparser).e1513, action: func(c *tctx) any {
 				return func() any {
 					f_1539 := c.lhs
 					f_1540 := c.cap(0)
@@ -12454,10 +12454,10 @@ func init() {
 					return tmk_SliceExpr(c, true, f_1539, f_1540, f_1541, f_1542)
 				}()
 			}, isSeq: true}},
-			{id: 7, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{}, m: (*tparser).e1543, action: func(c *tctx) any {
+			{id: 7, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1543, action: func(c *tctx) any {
 				return func() any { f_1544 := c.lhs; return tmk_CallExpr(c, true, f_1544, nil, nil) }()
 			}, isSeq: true}},
-			{id: 8, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"as", "e"}, m: (*tparser).e1545, action: func(c *tctx) any {
+			{id: 8, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"as", "e"}, m: (*tparser).e1545, action: func(c *tctx) any {
 				return func() any {
 					f_1546 := c.lhs
 					f_1547 := c.cap(0)
@@ -12465,11 +12465,11 @@ func init() {
 					return tmk_CallExpr(c, true, f_1546, f_1547, f_1548)
 				}()
 			}, isSeq: true}},
-			{id: 9, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"v"}, m: (*tparser).e1524, action: func(c *tctx) any {
+			{id: 9, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"v"}, m: (*tparser).e1524, action: func(c *tctx) any {
 				return func() any { f_1549 := c.lhs; f_1550 := c.cap(0); return tmk_CompositeLit(c, true, f_1549, f_1550) }()
 			}, isSeq: true}}},
 	}
-	trules[209].body = func(p *tparser, min int) (any, bool) { return p.prattParse(trules[209], min) }
+	trules[209].body = func(p *tparser, min int) (any, bool) { return p.operatorsRuleParse(trules[209], min) }
 	trules[210].entry = (*tparser).u210
 	trules[211].entry = (*tparser).u211
 	trules[212].entry = (*tparser).u212
@@ -12483,28 +12483,28 @@ func init() {
 	trules[220].entry = (*tparser).u220
 	trules[221].entry = (*tparser).u221
 	trules[222].entry = (*tparser).u222
-	trules[223].pratt = &tpratt{
+	trules[223].operatorsRule = &toperatorsRule{
 		skip: (*tparser).e1493,
-		operands: []*tprattLine{
-			&tprattLine{scope: []string{}, m: (*tparser).e1551, action: nil, isSeq: false},
+		operands: []*toperatorsRuleLine{
+			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e1551, action: nil, isSeq: false},
 		},
-		prefix: []*tprattOp{},
-		led: []*tprattOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"s"}, m: (*tparser).e1495, action: func(c *tctx) any {
+		prefix: []*toperatorsRuleOp{},
+		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"s"}, m: (*tparser).e1495, action: func(c *tctx) any {
 			return func() any { f_1552 := c.lhs; f_1553 := c.cap(0); return tmk_SelectorExpr(c, true, f_1552, f_1553) }()
 		}, isSeq: true}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{}, m: (*tparser).e1554, action: func(c *tctx) any {
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1554, action: func(c *tctx) any {
 				return func() any { f_1555 := c.lhs; return tmk_TypeAssertExpr(c, true, f_1555, nil) }()
 			}, isSeq: true}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"t"}, m: (*tparser).e1556, action: func(c *tctx) any {
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"t"}, m: (*tparser).e1556, action: func(c *tctx) any {
 				return func() any { f_1557 := c.lhs; f_1558 := c.cap(0); return tmk_TypeAssertExpr(c, true, f_1557, f_1558) }()
 			}, isSeq: true}},
-			{id: 3, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"i"}, m: (*tparser).e1503, action: func(c *tctx) any {
+			{id: 3, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1503, action: func(c *tctx) any {
 				return func() any { f_1559 := c.lhs; f_1560 := c.cap(0); return tmk_IndexExpr(c, true, f_1559, f_1560) }()
 			}, isSeq: true}},
-			{id: 4, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"i"}, m: (*tparser).e1506, action: func(c *tctx) any {
+			{id: 4, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1506, action: func(c *tctx) any {
 				return func() any { f_1561 := c.lhs; f_1562 := c.cap(0); return tmk_IndexListExpr(c, true, f_1561, f_1562) }()
 			}, isSeq: true}},
-			{id: 5, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"l", "h"}, m: (*tparser).e1563, action: func(c *tctx) any {
+			{id: 5, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h"}, m: (*tparser).e1563, action: func(c *tctx) any {
 				return func() any {
 					f_1564 := c.lhs
 					f_1565 := c.cap(0)
@@ -12512,7 +12512,7 @@ func init() {
 					return tmk_SliceExpr(c, true, f_1564, f_1565, f_1566, nil)
 				}()
 			}, isSeq: true}},
-			{id: 6, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"l", "h", "m"}, m: (*tparser).e1567, action: func(c *tctx) any {
+			{id: 6, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*tparser).e1567, action: func(c *tctx) any {
 				return func() any {
 					f_1568 := c.lhs
 					f_1569 := c.cap(0)
@@ -12521,10 +12521,10 @@ func init() {
 					return tmk_SliceExpr(c, true, f_1568, f_1569, f_1570, f_1571)
 				}()
 			}, isSeq: true}},
-			{id: 7, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{}, m: (*tparser).e1572, action: func(c *tctx) any {
+			{id: 7, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1572, action: func(c *tctx) any {
 				return func() any { f_1573 := c.lhs; return tmk_CallExpr(c, true, f_1573, nil, nil) }()
 			}, isSeq: true}},
-			{id: 8, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"as", "e"}, m: (*tparser).e1574, action: func(c *tctx) any {
+			{id: 8, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"as", "e"}, m: (*tparser).e1574, action: func(c *tctx) any {
 				return func() any {
 					f_1575 := c.lhs
 					f_1576 := c.cap(0)
@@ -12533,32 +12533,32 @@ func init() {
 				}()
 			}, isSeq: true}}},
 	}
-	trules[223].body = func(p *tparser, min int) (any, bool) { return p.prattParse(trules[223], min) }
+	trules[223].body = func(p *tparser, min int) (any, bool) { return p.operatorsRuleParse(trules[223], min) }
 	trules[224].entry = (*tparser).u224
 	trules[225].entry = (*tparser).u225
 	trules[226].entry = (*tparser).u226
-	trules[227].pratt = &tpratt{
+	trules[227].operatorsRule = &toperatorsRule{
 		skip: (*tparser).e1493,
-		operands: []*tprattLine{
-			&tprattLine{scope: []string{}, m: (*tparser).e1551, action: nil, isSeq: false},
+		operands: []*toperatorsRuleLine{
+			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e1551, action: nil, isSeq: false},
 		},
-		prefix: []*tprattOp{},
-		led: []*tprattOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"s"}, m: (*tparser).e1495, action: func(c *tctx) any {
+		prefix: []*toperatorsRuleOp{},
+		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"s"}, m: (*tparser).e1495, action: func(c *tctx) any {
 			return func() any { f_1578 := c.lhs; f_1579 := c.cap(0); return tmk_SelectorExpr(c, true, f_1578, f_1579) }()
 		}, isSeq: true}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{}, m: (*tparser).e1498, action: func(c *tctx) any {
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1498, action: func(c *tctx) any {
 				return func() any { f_1580 := c.lhs; return tmk_TypeAssertExpr(c, true, f_1580, nil) }()
 			}, isSeq: true}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"t"}, m: (*tparser).e1556, action: func(c *tctx) any {
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"t"}, m: (*tparser).e1556, action: func(c *tctx) any {
 				return func() any { f_1581 := c.lhs; f_1582 := c.cap(0); return tmk_TypeAssertExpr(c, true, f_1581, f_1582) }()
 			}, isSeq: true}},
-			{id: 3, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"i"}, m: (*tparser).e1503, action: func(c *tctx) any {
+			{id: 3, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1503, action: func(c *tctx) any {
 				return func() any { f_1583 := c.lhs; f_1584 := c.cap(0); return tmk_IndexExpr(c, true, f_1583, f_1584) }()
 			}, isSeq: true}},
-			{id: 4, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"i"}, m: (*tparser).e1506, action: func(c *tctx) any {
+			{id: 4, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"i"}, m: (*tparser).e1506, action: func(c *tctx) any {
 				return func() any { f_1585 := c.lhs; f_1586 := c.cap(0); return tmk_IndexListExpr(c, true, f_1585, f_1586) }()
 			}, isSeq: true}},
-			{id: 5, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"l", "h"}, m: (*tparser).e1563, action: func(c *tctx) any {
+			{id: 5, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h"}, m: (*tparser).e1563, action: func(c *tctx) any {
 				return func() any {
 					f_1587 := c.lhs
 					f_1588 := c.cap(0)
@@ -12566,7 +12566,7 @@ func init() {
 					return tmk_SliceExpr(c, true, f_1587, f_1588, f_1589, nil)
 				}()
 			}, isSeq: true}},
-			{id: 6, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"l", "h", "m"}, m: (*tparser).e1567, action: func(c *tctx) any {
+			{id: 6, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"l", "h", "m"}, m: (*tparser).e1567, action: func(c *tctx) any {
 				return func() any {
 					f_1590 := c.lhs
 					f_1591 := c.cap(0)
@@ -12575,10 +12575,10 @@ func init() {
 					return tmk_SliceExpr(c, true, f_1590, f_1591, f_1592, f_1593)
 				}()
 			}, isSeq: true}},
-			{id: 7, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{}, m: (*tparser).e1572, action: func(c *tctx) any {
+			{id: 7, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e1572, action: func(c *tctx) any {
 				return func() any { f_1594 := c.lhs; return tmk_CallExpr(c, true, f_1594, nil, nil) }()
 			}, isSeq: true}},
-			{id: 8, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"as", "e"}, m: (*tparser).e1574, action: func(c *tctx) any {
+			{id: 8, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"as", "e"}, m: (*tparser).e1574, action: func(c *tctx) any {
 				return func() any {
 					f_1595 := c.lhs
 					f_1596 := c.cap(0)
@@ -12587,7 +12587,7 @@ func init() {
 				}()
 			}, isSeq: true}}},
 	}
-	trules[227].body = func(p *tparser, min int) (any, bool) { return p.prattParse(trules[227], min) }
+	trules[227].body = func(p *tparser, min int) (any, bool) { return p.operatorsRuleParse(trules[227], min) }
 	trules[228].entry = (*tparser).s228
 	trules[229].entry = (*tparser).u229
 	trules[230].entry = (*tparser).s230
@@ -109644,7 +109644,7 @@ fail:
 	return nil, false
 }
 
-// prattExpr (typed Pratt body inlined)
+// operatorsExpr (typed OperatorsRule body inlined)
 func (p *tparser) e1493() (any, bool) {
 	var (
 		ok bool
@@ -109657,7 +109657,7 @@ fail:
 	return nil, false
 }
 
-// prattExpr (typed Pratt body inlined)
+// operatorsExpr (typed OperatorsRule body inlined)
 func (p *tparser) e1494() (any, bool) {
 	var (
 		ok bool
@@ -109671,7 +109671,7 @@ fail:
 	return nil, false
 }
 
-// prattExpr (typed Pratt body inlined)
+// operatorsExpr (typed OperatorsRule body inlined)
 func (p *tparser) e1495() (any, bool) {
 	var (
 		ok bool
@@ -109692,7 +109692,7 @@ fail:
 	return nil, false
 }
 
-// prattExpr (typed Pratt body inlined)
+// operatorsExpr (typed OperatorsRule body inlined)
 func (p *tparser) e1498() (any, bool) {
 	var (
 		ok bool
@@ -109744,7 +109744,7 @@ fail:
 	return nil, false
 }
 
-// prattExpr (typed Pratt body inlined)
+// operatorsExpr (typed OperatorsRule body inlined)
 func (p *tparser) e1500() (any, bool) {
 	var (
 		ok bool
@@ -109798,7 +109798,7 @@ fail:
 	return nil, false
 }
 
-// prattExpr (typed Pratt body inlined)
+// operatorsExpr (typed OperatorsRule body inlined)
 func (p *tparser) e1503() (any, bool) {
 	var (
 		ok bool
@@ -109843,7 +109843,7 @@ fail:
 	return nil, false
 }
 
-// prattExpr (typed Pratt body inlined)
+// operatorsExpr (typed OperatorsRule body inlined)
 func (p *tparser) e1506() (any, bool) {
 	var (
 		ok bool
@@ -109871,7 +109871,7 @@ fail:
 	return nil, false
 }
 
-// prattExpr (typed Pratt body inlined)
+// operatorsExpr (typed OperatorsRule body inlined)
 func (p *tparser) e1509() (any, bool) {
 	var (
 		ok  bool
@@ -109961,7 +109961,7 @@ fail:
 	return nil, false
 }
 
-// prattExpr (typed Pratt body inlined)
+// operatorsExpr (typed OperatorsRule body inlined)
 func (p *tparser) e1513() (any, bool) {
 	var (
 		ok  bool
@@ -110069,7 +110069,7 @@ fail:
 	return nil, false
 }
 
-// prattExpr (typed Pratt body inlined)
+// operatorsExpr (typed OperatorsRule body inlined)
 func (p *tparser) e1518() (any, bool) {
 	var (
 		ok bool
@@ -110109,7 +110109,7 @@ fail:
 	return nil, false
 }
 
-// prattExpr (typed Pratt body inlined)
+// operatorsExpr (typed OperatorsRule body inlined)
 func (p *tparser) e1520() (any, bool) {
 	var (
 		ok  bool
@@ -110185,7 +110185,7 @@ fail:
 	return nil, false
 }
 
-// prattExpr (typed Pratt body inlined)
+// operatorsExpr (typed OperatorsRule body inlined)
 func (p *tparser) e1524() (any, bool) {
 	var (
 		ok bool
@@ -111318,7 +111318,7 @@ fail:
 	return nil, false
 }
 
-// goPrimary (typed Pratt body inlined)
+// goPrimary (typed OperatorsRule body inlined)
 func (p *tparser) e1543() (any, bool) {
 	var (
 		ok bool
@@ -111383,7 +111383,7 @@ fail:
 	return nil, false
 }
 
-// goPrimary (typed Pratt body inlined)
+// goPrimary (typed OperatorsRule body inlined)
 func (p *tparser) e1545() (any, bool) {
 	var (
 		ok  bool
@@ -112819,7 +112819,7 @@ fail:
 	return nil, false
 }
 
-// hprattExpr (typed Pratt body inlined)
+// hoperatorsExpr (typed OperatorsRule body inlined)
 func (p *tparser) e1551() (any, bool) {
 	var (
 		ok bool
@@ -112833,7 +112833,7 @@ fail:
 	return nil, false
 }
 
-// hprattExpr (typed Pratt body inlined)
+// hoperatorsExpr (typed OperatorsRule body inlined)
 func (p *tparser) e1554() (any, bool) {
 	var (
 		ok bool
@@ -112868,7 +112868,7 @@ fail:
 	return nil, false
 }
 
-// hprattExpr (typed Pratt body inlined)
+// hoperatorsExpr (typed OperatorsRule body inlined)
 func (p *tparser) e1556() (any, bool) {
 	var (
 		ok bool
@@ -112905,7 +112905,7 @@ fail:
 	return nil, false
 }
 
-// hprattExpr (typed Pratt body inlined)
+// hoperatorsExpr (typed OperatorsRule body inlined)
 func (p *tparser) e1563() (any, bool) {
 	var (
 		ok  bool
@@ -112978,7 +112978,7 @@ fail:
 	return nil, false
 }
 
-// hprattExpr (typed Pratt body inlined)
+// hoperatorsExpr (typed OperatorsRule body inlined)
 func (p *tparser) e1567() (any, bool) {
 	var (
 		ok  bool
@@ -113069,7 +113069,7 @@ fail:
 	return nil, false
 }
 
-// hprattExpr (typed Pratt body inlined)
+// hoperatorsExpr (typed OperatorsRule body inlined)
 func (p *tparser) e1572() (any, bool) {
 	var (
 		ok bool
@@ -113092,7 +113092,7 @@ fail:
 	return nil, false
 }
 
-// hprattExpr (typed Pratt body inlined)
+// hoperatorsExpr (typed OperatorsRule body inlined)
 func (p *tparser) e1574() (any, bool) {
 	var (
 		ok bool

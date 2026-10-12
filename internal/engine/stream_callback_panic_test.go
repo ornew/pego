@@ -186,7 +186,7 @@ func TestStreamNormalCallerReturnKeepsVMFaultAttribution(t *testing.T) {
 		for _, u := range []Unit{CodePoints, Bytes} {
 			for _, phase := range []string{"reader", "emit"} {
 				t.Run(fmt.Sprintf("%s/%s/%s", b, u, phase), func(t *testing.T) {
-					prog := compile(t, "def main=item* #stream $$\ndef item=\"a\"")
+					prog := compile(t, "rule main = item* #stream $$\nrule item = \"a\"")
 					if _, err := prog.rule(b, "main"); err != nil {
 						t.Fatal(err)
 					}

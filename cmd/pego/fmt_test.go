@@ -145,7 +145,7 @@ func BenchmarkFmtWrite(b *testing.B) {
 		n    int
 	}{{"Short", 1}, {"Large", 128}} {
 		b.Run(size.name, func(b *testing.B) {
-			data := []byte(strings.Repeat("def  row =  \"a\"  $$\n", size.n))
+			data := []byte(strings.Repeat("rule row = \"a\" $$\n", size.n))
 			path := filepath.Join(b.TempDir(), "source.pego")
 			b.SetBytes(int64(len(data)))
 			b.ReportAllocs()

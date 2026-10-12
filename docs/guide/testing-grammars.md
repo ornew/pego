@@ -28,7 +28,7 @@ backend, a compiled file, generated code, an incremental reparse) behave like th
 - [The grammar itself](#the-grammar-itself)
 - [In your CI](#in-your-ci)
 
-## The grammar under test
+## The Grammar Under Test
 
 The examples use `pairs.pego` of the [runtime guide](runtime.md), which reads `key=value` pairs separated by optional
 semicolons and whitespace:
@@ -36,11 +36,11 @@ semicolons and whitespace:
 ```pego
 type Pair struct { Key Match, Value Match }
 
-def main = ws ps:pair+ $$ -> $ps
-def pair: Pair = k:key "=" v:value ";"? ws -> new Pair{Key: $k, Value: $v}
-def key = @(?a-zあ-ん)+
-def value = @(?0-9)+
-def ws = (? \t\n)*
+rule main = ws ps:pair+ $$ => $ps
+rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
+rule key = [a-zあ-ん]+ #atomic
+rule value = [0-9]+ #atomic
+rule ws = [ \t\n]*
 ```
 
 The tests live in a Go module next to it. Each file below is part of the package `pairs_test`, and the grammar is
@@ -62,7 +62,7 @@ example.com/pairs
     └── error.txt        error.golden
 ```
 
-## Examples: what is accepted and rejected
+## Examples: What Is Accepted and Rejected
 
 Start with a table of inputs and what they should produce. For the inputs that must be accepted, compare the tree (its
 `String()` form is compact and has no positions); for those that must be rejected, check where the error is, and what
@@ -115,10 +115,10 @@ func TestRejects(t *testing.T) {
 		line, col int
 		expected  []string
 	}{
-		{"", 1, 1, []string{"(? \\t\\n)", "(?a-zあ-ん)"}},
-		{"a", 1, 2, []string{`"="`, "(?a-zあ-ん)"}},
-		{"a=", 1, 3, []string{"(?0-9)"}},
-		{"a=1\nb=x", 2, 3, []string{"(?0-9)"}},
+		{"", 1, 1, []string{"[ \\t\\n]", "[a-zあ-ん]"}},
+		{"a", 1, 2, []string{`"="`, "[a-zあ-ん]"}},
+		{"a=", 1, 3, []string{"[0-9]"}},
+		{"a=1\nb=x", 2, 3, []string{"[0-9]"}},
 	} {
 		_, err := parser.Parse(tc.in)
 		var se *pego.SyntaxError
@@ -154,12 +154,12 @@ When one of these fails, the output names the input:
 
 ```
 --- FAIL: TestAccepts (0.00s)
-    pairs_test.go:32: "abc=12; あい=3": unexpected error: 1:9: syntax error: expected (? \t\n), (?a-z), end of input
+    pairs_test.go:32: "abc=12; あい=3": unexpected error: 1:9: syntax error: expected [ \t\n], [a-z], end of input
 ```
 
-(That was after narrowing the grammar's `key` rule to `@(?a-z)+`.)
+(That was after narrowing the grammar's `key` rule to `[a-z]+ #atomic`.)
 
-## Golden files
+## Golden Files
 
 Examples of one line do not scale to whole documents. A golden test parses each file of `testdata/` and compares the
 result with a file next to it: the tree, or the error. When the result changes on purpose, you rewrite the files with a
@@ -219,16 +219,16 @@ func TestGolden(t *testing.T) {
 $ go test -run TestGolden -update .   # create or rewrite the golden files
 $ cat testdata/basic.golden testdata/error.golden
 [(Pair Key="abc"@key Value="12"@value) (Pair Key="あい"@key Value="3"@value)]
-error: 2:3: syntax error: expected (?0-9)
+error: 2:3: syntax error: expected [0-9]
 ```
 
-A change that matters shows up as a failure, here after narrowing the `key` rule to `@(?a-z)+`:
+A change that matters shows up as a failure, here after narrowing the `key` rule to `[a-z]+ #atomic`:
 
 ```
 --- FAIL: TestGolden (0.00s)
     --- FAIL: TestGolden/basic (0.00s)
         golden_test.go:43: testdata/basic.txt differs from testdata/basic.golden (go test -update rewrites it; review the diff)
-             got: error: 1:9: syntax error: expected (? \t\n), (?a-z), end of input
+             got: error: 1:9: syntax error: expected [ \t\n], [a-z], end of input
             want: [(Pair Key="abc"@key Value="12"@value) (Pair Key="あい"@key Value="3"@value)]
 ```
 
@@ -243,7 +243,7 @@ Notes:
 - The same layout is used by [examples/](../../examples/) and by every module of [parsers/](../../parsers/); the pego
   command makes a golden file too: `pego parse -g pairs.pego -f sexpr < testdata/basic.txt`.
 
-## Properties that hold for every input
+## Properties That Hold for Every Input
 
 Some things should be true of every input, whether or not it is in your tests. Write them once, as a function that
 takes an input and fails the test if one of them does not hold, and call it from every layer below:
@@ -334,7 +334,7 @@ same tree; a tree's children come in order of position; every identifier of the 
 recognition succeeds, and the check above fails for the right reason. For such a grammar, compare only the syntax
 errors, or skip inputs that fail with an error that is not a `*pego.SyntaxError`.
 
-## Generated inputs
+## Generated Inputs
 
 Examples written by hand miss what you did not think of. `package sample` generates inputs the grammar accepts, and
 near misses that it rejects ([sampling and fuzzing](sampling-and-fuzzing.md) covers the generator in detail). With
@@ -401,7 +401,7 @@ $ pego sample -g pairs.pego -n 2 -seed 1 -invalid
 ```
 
 The first command prints inputs the grammar accepts and the coverage on the last line; the second, with `-invalid`,
-prints near misses. (Alternatives count only choices and Pratt expressions; `pairs.pego` has none, so the report counts
+prints near misses. (Alternatives count only choices and Operators Rule declarations; `pairs.pego` has none, so the report counts
 rules.)
 
 ## Fuzzing
@@ -432,7 +432,7 @@ PASS
 When the fuzzer finds an input that fails, it saves it in `testdata/fuzz/FuzzParse/` and every later `go test` runs it:
 commit the file, as a regression test. The fuzzer works best with short inputs: bound the seeds with `WithMaxLen`.
 
-## Reference implementations
+## Reference Implementations
 
 If another parser of the language exists (the standard library's, or the language's own), the strongest test is to
 compare the two on the same inputs: accepted or not, and what the result says. Feed both the generated inputs, the
@@ -458,7 +458,7 @@ for _, inv := range invalid {
 When the reference and your grammar disagree, decide which is right before changing either: the difference is either a
 bug in the grammar or a leniency of the reference, and a documented leniency is a result of the test too.
 
-## Other forms of the grammar
+## Other Forms of the Grammar
 
 The engine is the reference for the other forms of a grammar, and each has a test that says so. Run them on the same
 corpus: the generated inputs, the golden inputs and what the fuzzer found.
@@ -556,7 +556,7 @@ the committed file is up to date, and one that it matches the engine on the inpu
 those of the repetition in the tree that `Parse` returns for the same input. Copy the nodes you keep with
 `Node.Clone`.
 
-## The grammar itself
+## The Grammar Itself
 
 Check the grammar as a file, too:
 
@@ -573,7 +573,7 @@ Check the grammar as a file, too:
   compares: [code generation](code-generation.md#keeping-generated-code-up-to-date) and
   [compiled grammars](compiled-grammars.md#embedding-with-goembed).
 
-## In your CI
+## In Your CI
 
 ```bash
 go vet ./...
@@ -585,7 +585,7 @@ test -z "$(pego fmt -l *.pego)"
 
 Fuzz for longer on a schedule rather than on every commit.
 
-## See also
+## See Also
 
 - [Sampling inputs and fuzzing](sampling-and-fuzzing.md): the generator, coverage and near-miss inputs in detail.
 - [Errors and recovery](errors-and-recovery.md): shaping the errors that these tests check.

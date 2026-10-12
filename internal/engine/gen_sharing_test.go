@@ -71,8 +71,8 @@ func TestGeneratedSharingIdentity(t *testing.T) {
 }
 
 func TestGeneratedSharingDeterministic(t *testing.T) {
-	g, err := syntax.Parse(`def main = a "!" / a "?"
-def a = @("é" / "ab")+`)
+	g, err := syntax.Parse(`rule main = a "!" / a "?"
+rule a = ("é" / "ab")+ #atomic`)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -3,6 +3,7 @@ package grammar
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -40,7 +41,7 @@ type validationFrame struct {
 // Optional children may be nil, but an interface containing a nil pointer is
 // invalid. Shared subtrees are allowed. Empty collections and any negative
 // Repeat.Max retain their existing meanings. Source layout is not checked.
-// Name resolution, types, attributes and Pratt semantics are checked by the
+// Name resolution, types, attributes and OperatorsRule semantics are checked by the
 // compiler. Validation does not impose a size or depth limit.
 func Validate(g *Grammar) error {
 	stack := []validationFrame{{node: g, index: -1}}
@@ -95,6 +96,11 @@ func Validate(g *Grammar) error {
 		if f.node == nil {
 			return fail("", "required node is nil")
 		}
+		switch f.node.(type) {
+		case int, string, bool:
+			path = path[:len(path)-1]
+			continue
+		}
 		v := reflect.ValueOf(f.node)
 		if v.Kind() != reflect.Pointer {
 			return fail("", fmt.Sprintf("unsupported node %T", f.node))
@@ -136,6 +142,22 @@ func Validate(g *Grammar) error {
 			}
 			if n.Max >= 0 && n.Max < n.Min {
 				return fail("max", "repetition maximum is less than minimum")
+			}
+		case *RuleDef:
+			if n.DefaultAction && n.Action != nil {
+				return fail("action", "default action cannot also contain an action expression")
+			}
+		case *OperatorsRuleOperand:
+			if n.DefaultAction && n.Action != nil {
+				return fail("action", "default action cannot also contain an action expression")
+			}
+		case *OperatorsRuleOperator:
+			if n.DefaultAction && n.Action != nil {
+				return fail("action", "default action cannot also contain an action expression")
+			}
+		case *InlineAction:
+			if n.DefaultAction && n.Action != nil {
+				return fail("action", "default action cannot also contain an action expression")
 			}
 		}
 		if seen[f.node] == 1 {
@@ -185,6 +207,9 @@ func Validate(g *Grammar) error {
 			}
 		case *Repeat:
 			push(n.Expr, "expr", -1, false)
+		case *InlineAction:
+			push(n.Action, "action", -1, n.DefaultAction)
+			push(n.Expr, "expr", -1, false)
 		case *Optional:
 			push(n.Expr, "expr", -1, false)
 		case *And:
@@ -192,6 +217,11 @@ func Validate(g *Grammar) error {
 		case *Not:
 			push(n.Expr, "expr", -1, false)
 		case *Atomic:
+			push(n.Expr, "expr", -1, false)
+		case *Recovery:
+			push(n.Skip, "skip", -1, false)
+			push(n.Expr, "expr", -1, false)
+		case *Stream:
 			push(n.Expr, "expr", -1, false)
 		case *Discard:
 			push(n.Expr, "expr", -1, false)
@@ -205,12 +235,36 @@ func Validate(g *Grammar) error {
 			}
 			push(n.Expr, "expr", -1, false)
 		case *Attribute:
-			for i := len(n.Args) - 1; i >= 0; i-- {
-				push(n.Args[i], "args", i, false)
+			keys := make([]string, 0, len(n.KwArgs))
+			for key := range n.KwArgs {
+				keys = append(keys, key)
 			}
-		case *AttrArg:
-			push(n.Value, "value", -1, false)
-		case *Pratt:
+			sort.Strings(keys)
+			validValue := func(value any) bool {
+				switch value.(type) {
+				case nil, int, string, bool, Expr:
+					return true
+				}
+				return false
+			}
+			for _, key := range keys {
+				if !validValue(n.KwArgs[key]) {
+					return fail("kwArgs["+strconv.Quote(key)+"]", "attribute value must be a scalar or parser expression")
+				}
+			}
+			for i, value := range n.Args {
+				if !validValue(value) {
+					return fail("args["+strconv.Itoa(i)+"]", "attribute value must be a scalar or parser expression")
+				}
+			}
+			for i := len(keys) - 1; i >= 0; i-- {
+				key := keys[i]
+				push(n.KwArgs[key], "kwArgs["+strconv.Quote(key)+"]", -1, true)
+			}
+			for i := len(n.Args) - 1; i >= 0; i-- {
+				push(n.Args[i], "args", i, true)
+			}
+		case *OperatorsRule:
 			for i := len(n.Levels) - 1; i >= 0; i-- {
 				push(n.Levels[i], "levels", i, false)
 			}
@@ -218,14 +272,14 @@ func Validate(g *Grammar) error {
 				push(n.Operands[i], "operands", i, false)
 			}
 			push(n.Skip, "skip", -1, true)
-		case *PrattOperand:
+		case *OperatorsRuleOperand:
 			push(n.Action, "action", -1, true)
 			push(n.Expr, "expr", -1, false)
-		case *PrattLevel:
+		case *OperatorsRuleLevel:
 			for i := len(n.Operators) - 1; i >= 0; i-- {
 				push(n.Operators[i], "operators", i, false)
 			}
-		case *PrattOperator:
+		case *OperatorsRuleOperator:
 			push(n.Action, "action", -1, true)
 			push(n.Expr, "expr", -1, false)
 		case *Member:

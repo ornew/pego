@@ -6,7 +6,7 @@ import "github.com/ornew/pego/grammar"
 
 // SucceedingRules finds ordinary, non-cyclic rules that cannot return a matching
 // failure. A recursive call can read a failing growth seed even when its rule's
-// body always succeeds, so cyclic rules are excluded. Pratt calls are unknown.
+// body always succeeds, so cyclic rules are excluded. OperatorsRule calls are unknown.
 func SucceedingRules(rules []*grammar.RuleDef, cyclic map[string]bool) map[string]bool {
 	sure := map[string]bool{}
 	for changed := true; changed; {
@@ -69,6 +69,10 @@ func AlwaysSucceeds(e grammar.Expr, sure map[string]bool) bool {
 		return AlwaysSucceeds(e.Expr, sure)
 	case *grammar.Discard:
 		return AlwaysSucceeds(e.Expr, sure)
+	case *grammar.Stream:
+		return AlwaysSucceeds(e.Expr, sure)
+	case *grammar.Recovery:
+		return AlwaysSucceeds(e.Expr, sure)
 	case *grammar.Attributed:
 		return AlwaysSucceeds(e.Expr, sure)
 	}
@@ -102,6 +106,10 @@ func alwaysFails(e grammar.Expr, sure map[string]bool) bool {
 		return alwaysFails(e.Expr, sure)
 	case *grammar.Discard:
 		return alwaysFails(e.Expr, sure)
+	case *grammar.Stream:
+		return alwaysFails(e.Expr, sure)
+	case *grammar.Recovery:
+		return false
 	case *grammar.Attributed:
 		for _, at := range e.Attrs {
 			if at.Name == "recover" {
@@ -132,6 +140,10 @@ func HasLooseCut(e grammar.Expr) bool {
 		return HasLooseCut(e.Expr)
 	case *grammar.Discard:
 		return HasLooseCut(e.Expr)
+	case *grammar.Stream:
+		return HasLooseCut(e.Expr)
+	case *grammar.Recovery:
+		return HasLooseCut(e.Expr) || HasLooseCut(e.Skip)
 	case *grammar.Attributed:
 		if HasLooseCut(e.Expr) {
 			return true

@@ -12,7 +12,7 @@ Expose a deterministic, versioned description of grammar-declared types and infe
 
 PEGO parses declared `TypeDef` values in `grammar/ast.go`, checks and infers rule results internally, and generates typed Go and TypeScript results ([design 012](012-typed-values.md), [design 030](030-typed-typescript-values.md)). The public `pego.Node` representation also includes reserved CST kinds (`Match`, `Seq`, `List`, `Operator`, `Error`), captures, and scalar fields. A schema consumer cannot treat every Node as a declared AST type or infer a complete schema from observed parses. `pego.Parser` is the public compiled-grammar boundary; `engine.Program` and its inference structures are internal implementation details.
 
-## Goals and non-goals
+## Goals and Non-Goals
 
 - Give tools a stable schema-format version, explicit type shapes, and deterministic serialization.
 - Preserve declared names separately from inferred rule shapes and record CST, capture, and dynamic output categories.
@@ -20,7 +20,7 @@ PEGO parses declared `TypeDef` values in `grammar/ast.go`, checks and infers rul
 - Support schema diffing and query type checking without coupling the format to a target language.
 - Do not change grammar checking, parse results, generated Go/TypeScript values, or Node JSON. No Tree-sitter compatibility is implied.
 
-## Proposed public contract
+## Proposed Public Contract
 
 A future public API could be:
 
@@ -47,32 +47,32 @@ Field expressions encode `scalar`, `node`, `list`, `optional`, `union`, and `any
 
 A rule entry identifies its declared or inferred result shape and producing rule. It must not imply that a rule's ordinary CST output is a declared struct. CST entries describe ordered child edges and possible nil children; capture entries describe names and known or dynamic value categories. The schema describes possible values, not source spans, runtime values, retained punctuation/comments, or execution order.
 
-## Implementation and determinism
+## Implementation and Determinism
 
 Build the export from the checked grammar/type information behind `pego.Parser`, not generated source, reflection over an arbitrary result, or observed samples. Keep ordering explicit and encode recursive references by identity. Resolve schema options once in order; absent the all-rules option, use the configured start rule. Reject unresolved or unchecked internal shapes rather than emitting partial output. An AST-less loaded parser lacking declared/inferred metadata returns an error matching ErrSchemaUnavailable; bytecode behavior and names alone cannot reconstruct that information. Persisting schemas with compiled artifacts requires a separate versioned-format design. Add stable repeated-export and round-trip checks, with semantic comparisons separate from exact-byte determinism. A future cross-grammar identity field requires a separately specified canonicalization and digest before it is added to the versioned format.
 
-## Compatibility and backend support
+## Compatibility and Backend Support
 
 Schema export is metadata on a compiled grammar and is independent of runtime backend: Closure, recursive bytecode, and iterative bytecode should return the same schema. Generated Go and TypeScript typed values are already supported; the schema describes their grammar-level shapes without claiming target-language layout or serializer identity. `GenerateGo`/`GenerateTypeScript` remain separate APIs. Grammar JSON and Node JSON are separate formats.
 
-## Implementation sequence
+## Implementation Sequence
 
 1. Specify envelope evolution, reachability defaults, dynamic values, and nil/cardinality semantics.
 2. Add `Parser.OutputSchema` for declared and checked inferred types, then deterministic encoding.
 3. Add CST/capture shape descriptions and schema diff support.
 4. Let the structural-query compiler ([design 040](040-structural-queries-and-highlighting.md)) type-check patterns against an explicitly supplied schema.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Export generated declarations:** backend-specific names/layout would omit CST, dynamic output, and source-level identity. Export checked grammar metadata instead.
 - **Infer schema from parsed values:** one sample can hide union alternatives or incorrectly narrow `any`. Do not use observations as type evidence.
 - **Reuse Node JSON:** it is a runtime value format and cannot express possible optional/list/union shapes or declared-versus-inferred provenance.
 - **Promise Tree-sitter compatibility:** it would impose different node and source-retention semantics. A consumer-specific adapter can be specified separately.
 
-## Testing and performance plan
+## Testing and Performance Plan
 
 Cover every grammar type constructor, recursive references, unions, optional/nil-capable and list nesting, scalar fields, inferred `any`, CST-only rules, unreachable definitions, and invalid shapes. Verify deterministic bytes, round trips, unsupported-version handling, backend parity, and typed Go/TypeScript declarations against the schema. Measure export time and allocations on small and large grammars separately from parse and code generation. No measurements or performance promises are available.
 
-## Limitations and open questions
+## Limitations and Open Questions
 
 The start-reachable default versus all-rules export and the exact public shape remain implementation choices; the recommendation is start-reachable with an explicit all-rules option. Cross-grammar schema identity remains absent from v1 until canonicalization is defined. Traversal details used by queries follow [design 031](031-iterative-tree-traversal.md); schema types are the proposed dependency for [design 040](040-structural-queries-and-highlighting.md).

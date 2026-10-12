@@ -1,4 +1,4 @@
-# 68. Release construction tracking when an action returns nil
+# 68. Release Construction Tracking When an Action Returns Nil
 
 - An action that constructed temporary structs and returned nil skipped cleanup
   of its construction tracker. Streams therefore held every temporary node.
@@ -7,7 +7,7 @@
   assignments use the same cleanup, without changing values held in the
   environment or returned trees. Generated Node/typed Go, direct typed nested
   constructors and TypeScript mirror the cleanup; TS uses a finally block.
-- For `item = "a" -> foldl(nil, list(new V{N:1}), (acc,v)=>nil)`, a discarded
+- For `item = "a" -> foldl(nil, list(V{N:1}), (acc,v)=>nil)`, a discarded
   stream retained 20,000/60,000 tracked structs before cleanup. A closure
   diagnostic sampled 8.3 → 24.0 MB of live heap (15 MiB additional retention).
   The fixed regression on every engine/unit keeps tracking capacity at one;
@@ -17,7 +17,7 @@
   `-benchtime=200ms`, 10,000 code-point stream elements: closure B/op
   4.20 → 3.89 MB (−7.4%), bytecode/iterative 4.92 → 4.61 MB (−6.3%);
   17 fewer allocations per parse. Median time changes are −20%, −12% and
-  −15%. The existing `Arith_Pratt` batch workload has unchanged allocation
+  −15%. The existing `Arith_OperatorsRule` batch workload has unchanged allocation
   volume: engine median time changes are within 2%, generated Node Go is
   1.6–4.6% slower and generated typed Go 4.2% slower in this sample. Retain
   the cleanup for bounded retention; these figures do not claim every action

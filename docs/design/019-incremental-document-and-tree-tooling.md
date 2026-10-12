@@ -32,7 +32,7 @@ Relevant upstream interfaces include [chunked input](https://tree-sitter.github.
 [queries](https://tree-sitter.github.io/tree-sitter/using-parsers/queries/1-syntax.html) and
 [edit fuzzing](https://tree-sitter.github.io/tree-sitter/cli/fuzz.html).
 
-### Existing foundation
+### Existing Foundation
 
 `Document` already tracks examined input, including lookahead, invalidates dependencies after edits, applies memo
 shifts lazily and resumes long repetitions. Ordinary parses already have transient memoization, value-free paths,
@@ -60,7 +60,7 @@ Current limitations matter to the new APIs:
 - Reduce measured input-update and snapshot costs without changing existing results or ownership implicitly.
 - Give downstream tools sufficient change information to update safely, with bounded query/recovery work.
 
-## Non-goals
+## Non-Goals
 
 This record does not specify final API signatures or replace feature-specific designs. It does not adopt GLR,
 Tree-sitter query compatibility, automatic whitespace handling, a full target-language semantic server or a new
@@ -68,7 +68,7 @@ runtime dependency. It does not claim Tree-sitter performance parity or a speedu
 
 ## Design
 
-### Components and data flow
+### Components and Data Flow
 
 The proposed architecture separates storage, parsing and tree consumers:
 
@@ -89,7 +89,7 @@ The current Node API cannot serve as an immutable snapshot simply by sharing poi
 Choose an immutable internal representation and adapter, or a separate snapshot representation, through the
 alternatives and measurement gates below.
 
-### Dependencies and acceptance gates
+### Dependencies and Acceptance Gates
 
 Correctness/resource safety and fresh-vs-incremental equivalence gate these capabilities. Keep regression fixes
 separate from new public APIs. The [development guide](../development.md#language-feature-status) summarizes
@@ -111,7 +111,7 @@ Stages 4–7 need separate design records with concrete contracts before code. S
 should state their ownership and allow later snapshot implementations. Stage 6 can begin with conservative ranges
 without waiting for exact tree differencing; safe invalidation matters more than minimality.
 
-### Contracts to carry into feature designs
+### Contracts to Carry into Feature Designs
 
 **Cancellation.** Start with the Go API and specify deterministic work units separately from wall-clock deadlines.
 Define errors, nil results, recovery diagnostics and callback ownership. Cancellation checks must cover long
@@ -148,7 +148,7 @@ representation. Merely allowing a zero-consumption skip would risk an infinite r
 ownership are defined. Host scanners/functions, if added, must snapshot/restore their state and include it in reuse
 dependencies.
 
-## Testing and performance measurement
+## Testing and Performance Measurement
 
 Measure initial Parse/Recognize/typed output separately from Edit, reparse, snapshot/Clone, traversal and query or
 highlight updates. Use small, medium and multi-megabyte documents; edit the start, middle and end; include line breaks,
@@ -161,7 +161,7 @@ recovery behavior and units, and distinguish C/Go/runtime overhead. Recognition-
 not equivalent to building a CST. Record raw results and measured effects in the optimization catalog with the change, and
 refresh generated benchmark results at optimization milestones. No numeric comparative speedup is asserted here.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Keep contiguous input and deep Clone for every editor operation.** This remains a useful baseline and has the
   simplest ownership model. It avoids new abstractions but retains whole-document edit copying and snapshot costs.
@@ -188,14 +188,14 @@ Document abstraction; compare a built-in piece table with caller-owned input bef
   reproduce the same checks for their own grammars. A reusable CLI/API should share the oracle and persisted failure
   format, with a separate fixture runner for ordinary accepted/rejected examples.
 
-### Deferred semantic changes
+### Deferred Semantic Changes
 
 GLR/dynamic precedence, automatic extras and embedding Tree-sitter's runtime are not part of this plan. They alter
 PEG ordering, whitespace/indentation semantics or the standalone distribution contract. Existing captures, terminal
 types and struct/union types cover much of the motivation for hidden rules, fields and supertypes. Revisit these only
 for a demonstrated gap with a separate design and compatibility decision.
 
-## Limitations and open questions
+## Limitations and Open Questions
 
 - API signatures, deterministic work units and cancellation polling intervals proposed in
   [cancellable parses and work budgets](033-cancellable-parses-and-work-budgets.md) still require full implementation

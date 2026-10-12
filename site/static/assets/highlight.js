@@ -2,8 +2,8 @@
 // tokenize returns non-overlapping tokens {from, to, cls}; highlight returns HTML.
 
 const PEGO_KEYWORDS = new Set([
-  "def", "type", "struct", "terminal", "package", "pratt", "level", "infix", "prefix", "postfix",
-  "left", "right", "none", "operand", "skip", "new", "nil", "true", "false",
+  "rule", "type", "struct", "terminal", "package", "operators", "level", "infix", "prefix", "postfix",
+  "left", "right", "none", "operand", "skip", "nil", "true", "false",
 ]);
 const GO_KEYWORDS = new Set([
   "break", "case", "chan", "const", "continue", "default", "defer", "else", "fallthrough", "for", "func",
@@ -32,14 +32,14 @@ const TS_TYPES = new Set([
 
 const rules = {
   pego: [
-    ["comment", /\/\/[^\n]*/y],
+    ["comment", /\/\/[^\r\n]*/y],
     ["string", /"(?:[^"\\\n]|\\.)*"?/y],
-    ["class", /\(\?(?:[^)\\\n]|\\.)*\)?/y],
-    ["attr", /#[A-Za-z_][\w]*/y],
+    ["class", /\[(?!\])(?:[^\]\\\r\n]|\\.)*\]?/y],
+    ["attr", /[@#][\p{L}_][\p{L}\p{Nd}_]*/uy],
     ["capture", /\$(?:\$|[A-Za-z_][\w]*|\d+)/y],
     ["number", /\d+/y],
     ["ident", /[\p{L}_][\p{L}\p{N}_]*/uy],
-    ["punct", /->|=>|==|!=|<=|>=|&&|\|\||_\|_|\^\^|[=\/*+?&!@:\-^|<>%.,()[\]{}]/y],
+    ["punct", /:=|\(\?|\.\.\.|=>|==|!=|<=|>=|&&|\|\||_\|_|\^\^|[=;\/*+?&!@#:\-^|<>%.,()[\]{}]/y],
   ],
   go: [
     ["comment", /\/\/[^\n]*|\/\*[\s\S]*?(?:\*\/|$)/y],
@@ -77,6 +77,18 @@ export function tokenize(code, lang) {
   let prevWord = "";
   const n = code.length;
   while (i < n) {
+    if (lang === "pego" && code.startsWith("/*", i)) {
+      const from = i;
+      let depth = 1;
+      i += 2;
+      while (i < n && depth > 0) {
+        if (code.startsWith("/*", i)) { depth++; i += 2; }
+        else if (code.startsWith("*/", i)) { depth--; i += 2; }
+        else i++;
+      }
+      tokens.push({ from, to: i, cls: "comment" });
+      continue;
+    }
     let matched = false;
     for (const [cls, re] of rs) {
       re.lastIndex = i;
@@ -103,8 +115,8 @@ export function tokenize(code, lang) {
 function classifyIdent(lang, word, code, end, prev) {
   if (lang === "pego") {
     if (PEGO_KEYWORDS.has(word)) return "keyword";
-    if (prev === "def") return "rule";
-    // A label: name directly followed by a colon (but not a rule type "def x: T").
+    if (prev === "rule") return "rule";
+    // Capture and constructor field labels use a colon; predicate bindings use :=.
     if (code[end] === ":" && code[end + 1] !== "=") return "label";
     if (/^\p{Lu}/u.test(word)) return "type";
     return null;

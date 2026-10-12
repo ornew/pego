@@ -21,7 +21,7 @@ func ruleProjections(prog *Program, r *rule) map[string]string {
 	if prog.noProjections || r.action == nil || usesItems(r.action) {
 		return nil
 	}
-	if _, pratt := r.def.Expr.(*grammar.Pratt); pratt {
+	if _, operatorsRule := r.def.Expr.(*grammar.OperatorsRule); operatorsRule {
 		return nil
 	}
 	cands := map[string]*grammar.Repeat{}
@@ -202,7 +202,7 @@ func projField(t grammar.Term) (string, bool) {
 }
 
 // directCapture returns the capture of name that e makes unconditionally: e itself, or an item of
-// the sequence e (also behind #error, which changes no value).
+// the sequence e (also behind @error, which changes no value).
 func directCapture(e grammar.Expr, name string) *grammar.Capture {
 	if a, ok := e.(*grammar.Attributed); ok {
 		for _, at := range a.Attrs {
@@ -261,7 +261,7 @@ func nonNil(prog *Program, e grammar.Expr, seen map[string]bool) bool {
 		if r.terminalType != "" {
 			return true
 		}
-		if pr, ok := r.def.Expr.(*grammar.Pratt); ok {
+		if pr, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
 			// Every line's value is never nil ($lhs and $rhs are values of the rule itself).
 			for _, o := range pr.Operands {
 				if !lineNonNil(prog, o.Expr, o.Action, false, seen) {
@@ -282,7 +282,7 @@ func nonNil(prog *Program, e grammar.Expr, seen map[string]bool) bool {
 	return false
 }
 
-// lineNonNil reports whether a rule body or Pratt line e with the action t never has a nil value.
+// lineNonNil reports whether a rule body or Operators Rule line e with the action t never has a nil value.
 func lineNonNil(prog *Program, e grammar.Expr, t grammar.Term, operator bool, seen map[string]bool) bool {
 	switch t := t.(type) {
 	case nil:

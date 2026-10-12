@@ -1,4 +1,4 @@
-# 88. Share bounded stream text snapshots
+# 88. Share Bounded Stream Text Snapshots
 
 **Status:** Active
 
@@ -65,7 +65,7 @@ about 0.5% lower for the default in both all-result cases. These measurements
 include GC time; they do not bound all possible outstanding values or measure
 throughput.
 
-## Validation and reproduction
+## Validation and Reproduction
 
 The focused tests compare retained text and parse results with whole-input
 parsing across all three engine runtimes and both units. They cover malformed

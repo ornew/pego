@@ -1,4 +1,4 @@
-# 62. Comparing short literals in place in direct rules
+# 62. Comparing Short Literals in Place in Direct Rules
 
 - `matchLiteral` was the next call in the JSON `ParseAST` profile (about 4%), mostly for one-character literals such
   as `","` and `":"`. Direct rules now compare a literal of up to four code points with `p.in` in place and call

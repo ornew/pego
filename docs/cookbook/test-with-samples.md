@@ -1,4 +1,4 @@
-# Test hand-written code against a grammar
+# Test Hand-Written Code Against a Grammar
 
 **Problem.** You have a hand-written function that decides whether a string is valid (a version, an identifier, a
 duration, an ID), and a specification of the format. You want to know that the two agree, including on the inputs
@@ -15,14 +15,14 @@ type Num terminal
 type Ident terminal
 type Version struct { Major Num, Minor Num, Patch Num, Pre *Ident }
 
-def main: Version = v:version $$ -> $v
+rule main Version = v:version $$ => $v
 
-def version: Version = major:num "." minor:num "." patch:num pre:pre?
-    -> new Version{Major: $major, Minor: $minor, Patch: $patch, Pre: $pre}
-def pre: Ident = -"-" i:ident -> $i
+rule version Version = major:num "." minor:num "." patch:num pre:pre?
+    => Version{Major: $major, Minor: $minor, Patch: $patch, Pre: $pre}
+rule pre Ident = -"-" i:ident => $i
 
-def num: Num = "0" / (?1-9) (?0-9)*
-def ident: Ident = (?a-z0-9.)+
+rule num Num = "0" / [1-9] [0-9]*
+rule ident Ident = [a-z0-9.]+
 ```
 
 ```go
@@ -150,7 +150,7 @@ go test -run '^$' -fuzz FuzzValid -fuzztime 5s .
 
 With the fixed expression, five seconds of fuzzing found no input on which the function and the grammar disagree.
 
-## How it works
+## How It Works
 
 - **The grammar is the oracle.** For any string, `p.Parse` says whether the format allows it. A generated input is
   accepted by construction (every input `Generate` returns has been parsed and accepted), and a near miss is rejected

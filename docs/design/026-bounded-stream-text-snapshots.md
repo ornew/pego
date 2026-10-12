@@ -30,7 +30,7 @@ contract, but nearby ranges can repeatedly copy already-loaded text.
 - Demonstrate useful allocation reductions without material regressions in
   streaming or batch controls.
 
-## Non-goals
+## Non-Goals
 
 - Change stream chunking, UTF-8 decoding or input-buffer ownership.
 - Return unsafe views of mutable input storage.
@@ -40,14 +40,14 @@ contract, but nearby ranges can repeatedly copy already-loaded text.
 
 ## Design
 
-### Public behavior and contracts
+### Public Behavior and Contracts
 
 There is no public API change. Returned strings remain immutable and valid
 independently of later reads, parsing, compaction or parser reuse. An empty
 range returns an empty string. The cache may only use positions already
 loaded; requesting text must never read from the underlying reader.
 
-### Implementation and invariants
+### Implementation and Invariants
 
 Each parser input owns one immutable snapshot with a start position, end
 position and normalized source string. In code-point mode, a parser-owned
@@ -72,14 +72,14 @@ at most one bounded snapshot as their backing storage. Undo-trail and old
 live- root sibling references are separate retention concerns and are not
 changed by this design.
 
-### Compatibility and backend support
+### Compatibility and Backend Support
 
 The mechanism applies to closure, recursive VM and iterative VM streaming in
 the engine. Generated Go, typed Go and TypeScript parsers do not expose this
 streaming path. The private `pego_reference_stream_text` build tag selects the
 copying reference implementation without adding a public option.
 
-### Alternatives considered
+### Alternatives Considered
 
 - **Copy every range:** simple ownership and the reference behavior; retained
   as fallback for requests with too little loaded input and oversized ranges.
@@ -103,13 +103,13 @@ stream elements and compactions, and verify results match whole-input parsing.
 Test that obsolete cache owners are released while previously returned strings
 remain valid. Measure backing retention separately from cumulative allocation.
 
-## Performance and results
+## Performance and Results
 
 Current focused measurements and tradeoffs are summarized in [optimization
 088](../optimizations/088-share-bounded-stream-text-snapshots.md). They use
 the bounded-snapshot source against parent revision `b18832d`.
 
-## Limitations and open questions
+## Limitations and Open Questions
 
 - Retained-text tests cover emitted values across stream commits; stale sibling
   references still require a separate ownership investigation.

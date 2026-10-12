@@ -22,11 +22,11 @@ func call[T any](t *testing.T, method string, req any) T {
 
 const pairs = `type Pair struct { Key Match, Value Match }
 
-def main = ws ps:pair+ $$ -> $ps
-def pair: Pair = k:key "=" v:value ";"? ws -> new Pair{Key: $k, Value: $v}
-def key = @(?a-z)+
-def value = @(?0-9)+
-def ws = (? \t\n)*
+rule main = ws ps:pair+ $$ => $ps
+rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
+rule key = [a-z]+ #atomic
+rule value = [0-9]+ #atomic
+rule ws = [ \t\n]*
 `
 
 func TestCompileInfo(t *testing.T) {
@@ -58,8 +58,8 @@ func TestCompileDiagnostics(t *testing.T) {
 		line, col  int
 		msgContain string
 	}{
-		{"def main = (", 1, 13, "expected an expression"},
-		{"def main = other", 1, 12, "undefined rule other"},
+		{"rule main = (", 1, 14, "expected an expression"},
+		{"rule main = other", 1, 13, "undefined rule other"},
 		{"", 0, 0, "no rules"},
 	} {
 		c := call[compileResult](t, "compile", grammarRequest{Grammar: tc.src})
@@ -91,7 +91,7 @@ func TestParse(t *testing.T) {
 	if r.Matched || len(r.Errors) != 1 || r.JSON != "" {
 		t.Fatalf("expected one error: %+v", r)
 	}
-	if e := r.Errors[0]; e.Pos != 4 || e.Line != 1 || e.Col != 5 || e.Message != "syntax error: expected (?0-9)" {
+	if e := r.Errors[0]; e.Pos != 4 || e.Line != 1 || e.Col != 5 || e.Message != "syntax error: expected [0-9]" {
 		t.Errorf("error = %+v", e)
 	}
 
@@ -118,7 +118,7 @@ func TestParse(t *testing.T) {
 		t.Errorf("generate with an unknown start: %+v", g)
 	}
 	// An empty start rule selects the default: main, or else the first rule.
-	r = call[parseResult](t, "parse", parseRequest{Grammar: "def a = \"x\"\ndef b = \"y\"", Input: "x"})
+	r = call[parseResult](t, "parse", parseRequest{Grammar: "rule a = \"x\"\nrule b = \"y\"", Input: "x"})
 	if r.Start != "a" || !r.Matched {
 		t.Errorf("default start: %+v", r)
 	}
@@ -129,8 +129,8 @@ func TestParse(t *testing.T) {
 }
 
 func TestParseRecovered(t *testing.T) {
-	src := `def main = stmt* $$
-def stmt = s:((?a-z)+ ";") #recover(skip=(?^;)+ ";") -> $s
+	src := `rule main = stmt* $$
+rule stmt = s:([a-z]+ ";") #recover(skip=[^;]+ ";") => $s
 `
 	r := call[parseResult](t, "parse", parseRequest{Grammar: src, Input: "ab;1;cd;"})
 	if !r.Matched || !r.Recovered || len(r.Errors) != 1 || r.SExpr == "" {
@@ -142,8 +142,8 @@ def stmt = s:((?a-z)+ ";") #recover(skip=(?^;)+ ";") -> $s
 }
 
 func TestFormatAndGenerate(t *testing.T) {
-	f := call[formatResult](t, "format", grammarRequest{Grammar: "def main   =  \"a\"   // c\n"})
-	if f.Formatted != "def main = \"a\" // c\n" {
+	f := call[formatResult](t, "format", grammarRequest{Grammar: "rule main = \"a\" // c\n"})
+	if f.Formatted != "rule main = \"a\" // c\n" {
 		t.Errorf("formatted = %q", f.Formatted)
 	}
 	f = call[formatResult](t, "format", grammarRequest{Grammar: "def ="})
@@ -175,9 +175,9 @@ func TestBadRequests(t *testing.T) {
 func TestDepthLimits(t *testing.T) {
 	defer func(d, td int) { maxDepth, maxTreeDepth = d, td }(maxDepth, maxTreeDepth)
 	maxDepth, maxTreeDepth = 50, 30
-	src := `def main = value $$
-def value = list / "x"
-def list = "[" value* "]"
+	src := `rule main = value $$
+rule value = list / "x"
+rule list = "[" value* "]"
 `
 	nested := func(n int) string { return strings.Repeat("[", n) + "x" + strings.Repeat("]", n) }
 
@@ -207,9 +207,9 @@ def list = "[" value* "]"
 
 func TestDeepTreeNatively(t *testing.T) {
 	// encoding/json refuses trees nested more than 10,000 levels; the limit reports them first.
-	src := `def main = value $$
-def value = list / "x"
-def list = "[" value* "]"
+	src := `rule main = value $$
+rule value = list / "x"
+rule list = "[" value* "]"
 `
 	n := 3000
 	r := call[parseResult](t, "parse", parseRequest{Grammar: src, Input: strings.Repeat("[", n) + "x" + strings.Repeat("]", n), Backend: "bytecode-iterative"})
@@ -221,21 +221,21 @@ def list = "[" value* "]"
 func TestParseWithoutValue(t *testing.T) {
 	// A start rule that matches without producing a value still matches.
 	for _, recognize := range []bool{false, true} {
-		r := call[parseResult](t, "parse", parseRequest{Grammar: `def main = -"a"`, Input: "a", Recognize: recognize})
+		r := call[parseResult](t, "parse", parseRequest{Grammar: `rule main = -"a"`, Input: "a", Recognize: recognize})
 		if !r.Matched || len(r.Errors) != 0 || r.Error != "" || r.JSON != "" {
 			t.Errorf("recognize=%v: %+v", recognize, r)
 		}
 	}
 	// So does a recognition that recovered from errors, which reports them.
-	src := `def main = stmt* $$
-def stmt = s:((?a-z)+ ";") #recover(skip=(?^;)+ ";") -> $s
+	src := `rule main = stmt* $$
+rule stmt = s:([a-z]+ ";") #recover(skip=[^;]+ ";") => $s
 `
 	r := call[parseResult](t, "parse", parseRequest{Grammar: src, Input: "ab;1;", Recognize: true})
 	if !r.Matched || !r.Recovered || len(r.Errors) != 1 || r.JSON != "" {
 		t.Errorf("recognize with recovery: %+v", r)
 	}
 	// A runtime error is not a match.
-	r = call[parseResult](t, "parse", parseRequest{Grammar: "type T struct { D int }\ndef main: T = \"a\" -> new T{D: depth}", Input: "a"})
+	r = call[parseResult](t, "parse", parseRequest{Grammar: "type T struct { D int }\nrule main T = \"a\" => T{D: depth}", Input: "a"})
 	if r.Matched || r.Error == "" {
 		t.Errorf("runtime error: %+v", r)
 	}

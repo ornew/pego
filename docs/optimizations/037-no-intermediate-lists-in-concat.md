@@ -1,4 +1,4 @@
-# 37. No intermediate lists in `concat`
+# 37. No Intermediate Lists In `concat`
 
 - `concat(list($first), map($rest, (r) => $r.x))`, the usual way to build a list from a first element and the rest,
   built two lists only for `concat` to copy their elements: about 19k list nodes per JSON parse. When an argument of

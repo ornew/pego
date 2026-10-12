@@ -35,7 +35,7 @@ type TraceEvent struct {
 	Kind TraceKind
 	// Rule is the name of the rule called.
 	Rule string
-	// Level is the binding level the rule was called with: for a Pratt rule called as e:level,
+	// Level is the binding level the rule was called with: for an Operators Rule rule called as e:level,
 	// the operators that bind no tighter than that level are left to the caller. It is 0 for
 	// calls without a level.
 	Level int

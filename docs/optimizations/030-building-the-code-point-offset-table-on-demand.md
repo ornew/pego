@@ -1,4 +1,4 @@
-# 30. Building the code-point offset table on demand
+# 30. Building the Code-Point Offset Table on Demand
 
 - In code-point mode, preparing the input made three passes over it: converting it to code points, checking that it
   is valid UTF-8, and building the code-point-to-byte offset table that token text uses (change 10). In profiles of

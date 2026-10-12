@@ -11,9 +11,8 @@ import (
 )
 
 func TestCompileSource(t *testing.T) {
-	p, err := pego.CompileSource(`
-type Pair struct { Key Match, Value Match }
-def main = k:@(?a-z)+ "=" v:@(?0-9)+ -> new Pair{Key: $k, Value: $v}`, "main")
+	p, err := pego.CompileSource(`type Pair struct { Key Match, Value Match }
+rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,13 +61,13 @@ func TestCompileErrors(t *testing.T) {
 	if _, err := pego.CompileSource(`def main = (`, "main"); err == nil {
 		t.Error("expected a syntax error")
 	}
-	if _, err := pego.CompileSource(`def main = x`, "main"); err == nil || !strings.Contains(err.Error(), "undefined rule x") {
+	if _, err := pego.CompileSource(`rule main = x`, "main"); err == nil || !strings.Contains(err.Error(), "undefined rule x") {
 		t.Errorf("got %v", err)
 	}
 }
 
 func TestParseStream(t *testing.T) {
-	p, err := pego.CompileSource(`def main = (@(?a-z)+ -"\n")* #stream`, "main")
+	p, err := pego.CompileSource(`rule main = ([a-z]+ #atomic -"\n")* #stream`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,8 +82,8 @@ func TestParseStream(t *testing.T) {
 }
 
 func TestDocument(t *testing.T) {
-	p, err := pego.CompileSource(`def main = line*
-def line = @(?a-z)+ -"\n"`, "main")
+	p, err := pego.CompileSource(`rule main = line*
+rule line = [a-z]+ #atomic -"\n"`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,10 +107,9 @@ def line = @(?a-z)+ -"\n"`, "main")
 }
 
 func TestMarshalAndLoadParser(t *testing.T) {
-	p, err := pego.CompileSource(`
-type Pair struct { Key Match, Value Match }
-def main = k:key "=" v:@(?0-9)+ -> new Pair{Key: $k, Value: $v}
-def key = @(?a-z)+`, "main")
+	p, err := pego.CompileSource(`type Pair struct { Key Match, Value Match }
+rule main = k:key "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}
+rule key = [a-z]+ #atomic`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,7 +117,7 @@ def key = @(?a-z)+`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !pego.IsCompiled(data) || pego.IsCompiled([]byte("def main = x")) {
+	if !pego.IsCompiled(data) || pego.IsCompiled([]byte("rule main = x")) {
 		t.Error("IsCompiled")
 	}
 	loaded, err := pego.LoadParser(data)
@@ -140,7 +138,7 @@ def key = @(?a-z)+`, "main")
 	if _, err := loaded.WithStart("nope"); err == nil {
 		t.Error("expected an error")
 	}
-	if got := grammar.Format(loaded.Grammar()); !strings.Contains(got, "def key = @(?a-z)+") {
+	if got := grammar.Format(loaded.Grammar()); !strings.Contains(got, "rule key = [a-z]+ #atomic") {
 		t.Errorf("grammar %s", got)
 	}
 	if _, err := pego.LoadParser([]byte("garbage")); err == nil {
@@ -149,7 +147,7 @@ def key = @(?a-z)+`, "main")
 }
 
 func TestUnits(t *testing.T) {
-	p, err := pego.CompileSource(`def main = "é" x:.`, "main")
+	p, err := pego.CompileSource(`rule main = "é" x:.`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -173,7 +171,7 @@ func TestUnits(t *testing.T) {
 
 func TestBackends(t *testing.T) {
 	p, err := pego.CompileSource(`type Pair struct { Key Match, Value Match }
-def main = k:@(?a-z)+ "=" v:@(?0-9)+ -> new Pair{Key: $k, Value: $v}`, "main")
+rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -219,7 +217,7 @@ def main = k:@(?a-z)+ "=" v:@(?0-9)+ -> new Pair{Key: $k, Value: $v}`, "main")
 
 func TestRecognizeOnly(t *testing.T) {
 	p, err := pego.CompileSource(`type Pair struct { Key Match, Value Match }
-def main = k:@(?a-z)+ "=" v:@(?0-9)+ -> new Pair{Key: $k, Value: $v}`, "main")
+rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

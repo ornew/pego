@@ -1,4 +1,4 @@
-# 8. Fast path for unmemoized calls, `SCAN`, nesting limit (d2db87d)
+# 8. Fast Path for Unmemoized Calls, `SCAN`, Nesting Limit (D2db87d)
 
 - **Unmemoized calls** skip the memo bookkeeping: the examined range only grows, so it needs no save/restore, and
   expectations need no isolation.

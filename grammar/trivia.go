@@ -3,15 +3,19 @@ package grammar
 // Comments and line breaks are not part of a grammar's meaning, but a source
 // formatter has to keep them. The parser records them in LineBreak values
 // attached to the nodes that Format may start a new line with: statements,
-// struct fields, the items of a pratt expression, the closing braces of
+// struct fields, the items of an Operators Rule, the closing braces of
 // blocks, and the optional line breaks inside a rule body. These fields are
 // tagged `json:"-"`, so the JSON form of a grammar does not contain them.
 
-// Comment is a line comment ("// ...") in PEGO source.
+// Comment is a line comment (// ...) or nested block comment (/* ... */).
 type Comment struct {
-	Pos Pos
-	// Text is the comment including the leading "//", without the line
-	// break and trailing white space.
+	// Header identifies a statement header that illegally contains this comment.
+	Header Pos
+	Pos    Pos
+	// End is the source position just after the comment.
+	End Pos
+	// Text includes delimiters. Line comments exclude their final line
+	// break and trailing white space; block comments preserve their contents.
 	Text string
 	// Blank reports whether a blank line precedes the comment.
 	Blank bool
@@ -65,6 +69,20 @@ func (g *Grammar) AllComments() []*Comment {
 		case *Attributed:
 			addAll(e.Breaks)
 			expr(e.Expr)
+		case *InlineAction:
+			expr(e.Expr)
+		case *Repeat:
+			add(e.PragmaBreak)
+			expr(e.Expr)
+		case *Optional:
+			expr(e.Expr)
+		case *Stream:
+			add(e.Break)
+			expr(e.Expr)
+		case *Recovery:
+			add(e.Break)
+			expr(e.Expr)
+			expr(e.Skip)
 		case *Capture:
 			expr(e.Expr)
 		case *And:
@@ -72,10 +90,11 @@ func (g *Grammar) AllComments() []*Comment {
 		case *Not:
 			expr(e.Expr)
 		case *Atomic:
+			add(e.Break)
 			expr(e.Expr)
 		case *Discard:
 			expr(e.Expr)
-		case *Pratt:
+		case *OperatorsRule:
 			add(e.SkipBreak)
 			add(e.CloseBreak)
 			for _, o := range e.Operands {
@@ -105,6 +124,7 @@ func (g *Grammar) AllComments() []*Comment {
 			add(s.Break)
 			add(s.BodyBreak)
 			add(s.ActionBreak)
+			add(s.CloseBreak)
 			expr(s.Expr)
 		}
 	}

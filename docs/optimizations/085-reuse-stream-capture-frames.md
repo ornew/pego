@@ -1,4 +1,4 @@
-# 85. Reuse stream capture frames at element commit
+# 85. Reuse Stream Capture Frames at Element Commit
 
 **Scope:** closure, recursive VM and iterative VM stream parsing. Generated
 Node, typed and TypeScript parsers do not expose a streaming API.
@@ -42,7 +42,7 @@ The reported `B/op` values are cumulative allocated bytes per parse, not peak
 or retained heap. No peak/live-memory measurement was collected. The change
 reuses frame structs only; it does not remove input or capture-value copying.
 
-## Validation and reproduction
+## Validation and Reproduction
 
 Completion-path tests cover failed final elements, callback errors,
 zero-progress and empty streams, and streams without capture scopes. Retained

@@ -25,7 +25,7 @@ Design 017 deliberately has no code actions and always returns Markdown for hove
 - Honor the client's Markdown/plain-text preferences for hover and completion documentation.
 - Preserve the existing UTF-16 LSP ranges, document-local analysis model and partial-grammar navigation after syntax errors.
 
-## Non-goals
+## Non-Goals
 
 - Linting partial grammars or changing lint checks, check severity, or `lint:ignore` semantics.
 - Automatically changing a grammar based on a heuristic performance hint.
@@ -34,7 +34,7 @@ Design 017 deliberately has no code actions and always returns Markdown for hove
 
 ## Design
 
-### Diagnostics and source mapping
+### Diagnostics and Source Mapping
 
 Keep push diagnostics. Add optional LSP diagnostic `code` and `data` fields; for a lint finding, `code` is the stable check name and `data` contains the analyzed document version plus a server-owned finding key. Map lint `Error`, `Warning` and `Hint` to LSP severities 1, 2 and 4 respectively, and use source `pego-lint`. Existing syntax/compile diagnostics retain source `pego` and error severity. Convert `grammar.Pos` through the existing `textIndex` byte-offset mapping before making a UTF-16 range. A finding without a valid source position remains available in CLI output but is not published as an editor diagnostic.
 
@@ -42,7 +42,7 @@ After syntax parsing and compilation succeed, run lint with the same start rule 
 
 Avoid compiling the same grammar twice if the LSP can call a shared lint-analysis entry point over the already compiled program. If that requires changing the public lint contract, keep it internal and verify parity against `pego.Lint`; the CLI remains authoritative for check behavior.
 
-### Code actions and explanations
+### Code Actions and Explanations
 
 Register `textDocument/codeAction` and advertise its provider. Accept the requested range and context diagnostics; return actions only for diagnostics whose URI, version, check code, range and finding key match the current analysis. Define the response using ordinary LSP `CodeAction` fields (`title`, `kind`, `diagnostics`, optional `edit`, `command`, and `data`).
 
@@ -54,7 +54,7 @@ Provide these actions:
 
 Use `WorkspaceEdit.documentChanges` with `TextDocumentEdit` and a `VersionedTextDocumentIdentifier` for every changing action. Do not return an unversioned `changes` fallback for edits: a client that cannot apply versioned document changes can still use the explanation action and edit the suppression comment itself. Return no stale action if the document version changes while the request is being handled. Revalidate the finding key and version immediately before producing the response; after the editor applies an edit, normal `didChange` analysis establishes the resulting state.
 
-### Responsive snapshots, cancellation and publication
+### Responsive Snapshots, Cancellation and Publication
 
 Keep document state under one server actor. The actor owns the open-document map and protocol output. A reader goroutine decodes incoming messages and sends them to the actor; document analysis runs in workers against immutable copies containing URI, text, version and a monotonically increasing generation. Workers return a result message to the actor; they never write protocol output or mutate a document.
 
@@ -64,11 +64,11 @@ Publish a worker result only if its URI is still open and both version and gener
 
 Bound outstanding work to one running analysis and one replaceable pending snapshot per open document. Bound the worker count, preserve protocol write order through the actor, and ensure every started request receives at most one response. Analysis completion must not block reading cancellation, change, close, shutdown or exit messages. On shutdown, cancel and join workers before the server returns.
 
-### Client documentation formats
+### Client Documentation Formats
 
 Record `textDocument.hover.contentFormat` and `textDocument.completion.completionItem.documentationFormat` during initialize. Prefer Markdown when listed; otherwise return plain text. Render the same semantic description in both forms, stripping markup rather than returning Markdown markers as plain text. This applies to hover and every completion item's `documentation`; `detail`, labels, snippets and insertion behavior stay as they are.
 
-### Compatibility and implementation sequence
+### Compatibility and Implementation Sequence
 
 Existing diagnostic fields and codes remain valid; the new `code` and `data` fields are optional. Lint diagnostics are additive and honor directives exactly as `pego lint` does. Changes to hover/completion content kind follow the capabilities sent by each client. Existing clients continue to receive error diagnostics and UTF-16 ranges.
 
@@ -77,7 +77,7 @@ Existing diagnostic fields and codes remain valid; the new `code` and `data` fie
 3. Introduce immutable snapshots, actor-owned state/output, request cancellation, per-document coalescing, and cooperative cancellation through analysis phases. Keep stale-result guards even when cancellation succeeds.
 4. Honor hover and completion documentation formats, then validate the protocol and workflows in real editors.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Run lint in the synchronous handler.** This is the smallest change, but increases the time during which the server cannot read cancellation or newer edits. It is suitable as the first diagnostic-only stage, not as the responsive design.
 - **Debounce with a timer but keep a single blocking loop.** It can reduce repeated work after typing stops, but cannot read a cancellation or change notification while analysis is running and therefore cannot guarantee freshness.
@@ -95,11 +95,11 @@ For responsiveness, use controlled barriers in analysis phases to send a newer c
 
 Negotiate Markdown-only, plaintext-only and mixed format capabilities; assert the `MarkupContent.kind` and equivalent rendered content for hover and completion.
 
-## Performance and results
+## Performance and Results
 
 No latency or resource measurements are claimed. Measure `BenchmarkAnalyze` and separate tokenization, parse, compile, lint and queue/publication costs on small examples, the 500–560-line Go/Python examples used by design 017, and large generated grammars. Compare synchronous analysis, diagnostics with lint, and coalesced analysis with one worker per document. Record cancellation-to-stop latency, queued/running work, allocations and peak retained snapshots under rapid edits. Report warmup, Go version, host, repetitions and raw results; do not add a debounce delay or claim responsiveness from a benchmark alone.
 
-## Limitations and open questions
+## Limitations and Open Questions
 
 - Cooperative cancellation needs checks in syntax and engine compilation/lint loops; until those are added, those phases can only be cancelled before or after the phase.
 - A server-command explanation depends on a client handler. The VS Code extension is the first planned client; the diagnostic itself remains understandable without the action.

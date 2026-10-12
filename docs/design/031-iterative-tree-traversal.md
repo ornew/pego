@@ -30,7 +30,7 @@ These are code-shape observations, not measurements of a particular stack limit 
 - Provide iterative Go JSON output that preserves existing acyclic JSON shape, field order, escaping, and ordinary encoding errors; allow writing to an `io.Writer` without requiring a complete output buffer.
 - Preserve current Node mutability and ownership. A traversal observes the supplied graph and does not clone, freeze, or retain it after returning.
 
-## Non-goals
+## Non-Goals
 
 - Immutable or versioned snapshots, concurrent mutation safety, structural sharing, or edit notifications.
 - Changing generated parser JSON fields, omitting rules/text/children/fields differently, or changing number representations.
@@ -40,7 +40,7 @@ These are code-shape observations, not measurements of a particular stack limit 
 
 ## Design
 
-### Public behavior and contracts
+### Public Behavior and Contracts
 
 #### Walker
 
@@ -81,7 +81,7 @@ For deterministic order, visit a node before its outgoing edges; traverse `Child
 
 The engine's declared field values are nodes, integers, strings, booleans, or nil; the generated Go runtime uses `any`. The generated TypeScript runtime models values as nodes, numeric/bigint, strings, booleans, or null. The common walker should visit those declared values consistently; Go-only list support is a convenience for hand-built graphs and must be documented as such.
 
-#### Cursor and ranges
+#### Cursor and Ranges
 
 Add a `Cursor` or range-query helper layered on the walker. Each query requires a position unit: `CodePoints` or `Bytes`, matching parser options and the unit used to populate `Start`/`End`. It does not infer a unit from the node. The range query is half-open `[start,end)`. A non-empty node span `[Start,End)` matches a point cursor at `p` when `Start <= p < End`, and matches a non-empty query range when the spans overlap. A zero-width node at `p` matches a point cursor at `p`; in a non-empty range it matches when `start <= p < end`. An empty query range matches no spans; use the point-cursor operation for a caret position.
 
@@ -89,7 +89,7 @@ Range matching filters visits but does not prune solely from a parent's span: ca
 
 Range helpers report node spans only. Scalar fields have no independent source span and are visible through their owning node's field-edge callback. Lists likewise have no span of their own; their node elements are matched by their own ranges. Empty lists and nil list entries produce no node span.
 
-#### Go JSON writer
+#### Go JSON Writer
 
 Add an iterative `WriteJSON(io.Writer) error` method and implement `MarshalJSON` using the same encoder. `(*Node)(nil).WriteJSON(w)` writes the JSON value `null` to `w`; `MarshalJSON` on a nil receiver returns `null` without error, matching the behavior of `json.Marshal((*Node)(nil))`. The writer emits the current object shape and field order: `type`, optional `rule`, `start`, `end`, optional `text`, optional `children`, optional `fields`; fields remain lexicographically sorted. Children remain array-ordered. JSON string escaping and scalar encoding continue to use `encoding/json` behavior, including errors for unsupported values and invalid numbers. The output bytes for acyclic values must remain byte-for-byte compatible with current `json.Marshal` output.
 
@@ -101,15 +101,15 @@ This writer handles node graphs, nested `[]any`, `[]byte`, and declared scalar f
 
 Today `Node.MarshalJSON` errors encountered while `encoding/json` marshals a node graph are wrapped by `encoding/json` in `*json.MarshalerError`; nested Node boundaries can add wrappers. The iterative implementation must preserve `errors.As` behavior and the underlying custom error identity. Whether exact wrapper nesting and error strings can remain identical depends on where `WriteJSON` returns errors and must be pinned by tests before making that stronger compatibility claim. Byte-for-byte compatibility applies to successful acyclic output.
 
-#### TypeScript output
+#### TypeScript Output
 
 Keep and test the existing exported `marshal(Node | null): string` API, which already iteratively emits Go-compatible JSON, including exact BigInt integer formatting, null children, field ordering, and Go string escaping. Preserve `toJSON()` and its object shape; it separately converts BigInt to `Number`, so native `JSON.stringify(node)` can be inexact for large integers and remains subject to native serializer recursion. The already-iterative `toString()` remains unchanged in output and quoting rules. Do not add another TypeScript JSON-string API in this proposal.
 
-#### Ownership and mutation
+#### Ownership and Mutation
 
 All APIs operate on the live Node graph. They take no ownership and retain no references after returning. Callers must not mutate any reachable node, child slice, or field slice concurrently with a walk or serialization. The APIs do not make a deep copy. This keeps the mutable Node and `Clone` contracts intact and leaves snapshots to the separate versioned-tree design.
 
-### Implementation and invariants
+### Implementation and Invariants
 
 Use explicit frames containing the current node/value, next child/field/list index, parent edge, and enter/exit state. Cycle tracking uses an active-path set for Node pointers and supported `[]any` containers. State is per call and discarded on return. Fields are visited through a sorted view or index order computed without mutating `Fields`.
 
@@ -117,11 +117,11 @@ The JSON writer uses the same ordered edge model, but emits object delimiters an
 
 Generated Go parsers embed `internal/engine/genrt/runtime.go`, so the core and generated runtime must implement identical behavior and be covered by generator parity tests. TypeScript is a separate compatibility surface and should not claim safe native `JSON.stringify` at arbitrary depth.
 
-### Compatibility and backend support
+### Compatibility and Backend Support
 
 The proposed Go traversal/cursor APIs will be tested against both `internal/engine` and generated Go runtime behavior. The proposed Go JSON stage must preserve successful acyclic output bytes in both `internal/engine` and the embedded `internal/engine/genrt/runtime.go`. TypeScript keeps the existing `marshal` and `toJSON` API contracts. No grammar syntax, parser execution, parse positions, mutable ownership, or generated parser API changes are required.
 
-### Implementation sequence
+### Implementation Sequence
 
 1. Pin current Go JSON bytes, field ordering, escaping, nil behavior, and error wrapping in core and generated runtime tests; cover the existing TypeScript `marshal` contract.
 2. Add iterative Go `WriteJSON` for Nodes and nested `[]any`, then route `MarshalJSON` through it and add generated-runtime parity coverage.
@@ -131,7 +131,7 @@ The proposed Go traversal/cursor APIs will be tested against both `internal/engi
 
 Each stage should be independently reviewable. A versioned output schema remains separate from this traversal contract.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Recursive visitor callbacks:** smaller implementation, but traversal depth follows input shape and cycle handling is harder to make uniform. Prefer explicit frames for the deep-tree use case; performance is unmeasured.
 - **Unique-node traversal:** avoids repeated work on shared DAGs, but loses edge context and may omit a subtree's distinct parent/field relationship. Defer it until a concrete consumer requires graph identity semantics.
@@ -154,11 +154,11 @@ The proposed test plan covers:
 
 The experimental Go JSON stage at `a1365b0` passed focused tests on Go 1.27.1: core and generated-runtime JSON cases, generated parser parity, nil values, nil versus empty `[]any`, shared and cyclic graphs, nested `[]any`, `[]byte`, scalar/custom errors, and 12,000-level direct writer calls. The same deep node passed `Node.WriteJSON` and direct `Node.MarshalJSON`, while `json.Marshal` returned the standard scanner error wrapped in `json.MarshalerError`. This does not validate the full engine suite or command output at that depth. No performance measurements were run.
 
-## Performance and results
+## Performance and Results
 
 The proposal adds per-call traversal frames and cycle bookkeeping. No timings, allocations, or memory-retention measurements are available. Before adding cursor indexes, measure representative parser trees separately from callback and serialization costs. A range query currently proposes filtering without parent-span pruning, so its initial cost is proportional to visited edges.
 
-## Limitations and open questions
+## Limitations and Open Questions
 
 - Cycle detection is mandatory for supported graph edges. Consider a trusted fast path only if measurements establish a cost that matters to a concrete consumer.
 - What non-Node Go container types, if any, should be traversed/encoded iteratively beyond nested `[]any` and `[]byte`? Keep the initial guarantee narrow and expand after a concrete need.

@@ -2,7 +2,7 @@
 
 ## Guidance
 
-### Language and general form
+### Language and General Form
 
 A commit message MUST be written in English.
 
@@ -25,7 +25,7 @@ Resolves: #123
 See also: #456, #789
 ```
 
-### Summary line
+### Summary Line
 
 - The summary SHOULD be about 50 characters and MUST NOT exceed 72.
 - The summary MUST be written in the imperative mood, such that it completes the
@@ -53,7 +53,7 @@ See also: #456, #789
 - Issue references SHOULD be placed at the end, as `Resolves:` or `See also:`
   trailers.
 
-### What a commit contains
+### What a Commit Contains
 
 A commit SHOULD be one logical change. A change that invalidates a document MUST
 update that document in the same commit; documentation is part of the logical

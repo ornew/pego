@@ -89,7 +89,7 @@ test("TypeScript highlighting escapes code and both fence aliases use the page h
   const ts = codeBlock("language-ts", source);
   const typescript = codeBlock("language-typescript", "type Box<T> = { readonly value: T };");
   const unknown = codeBlock("language-rust", "<script>alert(1)</script>");
-  const grammar = 'def main = "hello"';
+  const grammar = 'rule main = "hello"';
   const pego = codeBlock("language-pego", `${grammar}\n`);
   const h = await pageHighlight([ts, typescript, unknown, pego]);
 
@@ -132,4 +132,23 @@ test("TypeScript highlighting preserves ordinary identifiers and source text", (
   const decoded = rendered.replace(/<span class="tok-[a-z]+">|<\/span>/g, "")
     .replace(/&quot;/g, '\"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
   assert.equal(decoded, source);
+});
+
+
+test("PEGO highlighting follows expressions, pragmas and nested comments", () => {
+  const source = 'rule main Result = "/*" [#] (?n := 1) @error(message="x") #atomic => Result{}\n'
+    + '/* outer\n/* inner */ tail */\nrule expr = operators { operand main } // line\n';
+  const tokens = tokenize(source, "pego");
+  const words = cls => tokens.filter(t => t.cls === cls).map(t => source.slice(t.from, t.to));
+  assert.deepEqual(words("comment"), ['/* outer\n/* inner */ tail */', '// line']);
+  assert.deepEqual(words("attr"), ['@error', '#atomic']);
+  assert.deepEqual(words("rule"), ['main', 'expr']);
+  assert.ok(words("keyword").includes('operators'));
+  assert.ok(words("punct").includes(':='));
+  assert.ok(words("punct").includes('(?'));
+  assert.ok(words("type").includes('Result'));
+  assert.deepEqual(words("class"), ['[#]']);
+  assert.deepEqual(words("string"), ['"/*"', '"x"']);
+  const incomplete = '/* outer /* inner */';
+  assert.deepEqual(tokenize(incomplete, "pego"), [{from: 0, to: incomplete.length, cls: 'comment'}]);
 });

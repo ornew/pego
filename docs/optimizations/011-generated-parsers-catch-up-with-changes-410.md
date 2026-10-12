@@ -1,4 +1,4 @@
-# 11. Generated parsers catch up with changes 4–10
+# 11. Generated Parsers Catch up with Changes 4–10
 
 - Generated Go parsers (`internal/engine/genrt` plus the code from `gen.go`) had kept the old runtime: `[]string`
   expected sets copied per memoized call, a Go map for the memo, a heap object per node, child list and frame, and
@@ -12,14 +12,14 @@
   - slabs for nodes, child lists and frames, and `kidStack` for repetition children (change 6);
   - the unmemoized fast path in `call`, scan loops for value-free single-character repetitions, and the nesting limit
     (`nesting too deep: more than 100000 rule calls`, the engine's default) (change 8);
-  - value-free Pratt lines (`leanLine`), and captures in value-free positions returning no value (changes 1, 9);
+  - value-free Operators Rule lines (`leanLine`), and captures in value-free positions returning no value (changes 1, 9);
   - token text as substrings of the input with a rune-to-byte offset table (copying only for invalid UTF-8), and one
     reused action context per parser (change 10).
 - Beyond the engine:
   - character classes are generated as inline range comparisons instead of a loop over a range table, both in
     single matches and in scan loops;
-  - Pratt `longest` returns the best attempt by value and saves captures across `reset` in one buffer per parser,
-    so trying an operator line without captures allocates nothing (the engine allocates a `prattAttempt` per
+  - Operators Rule `longest` returns the best attempt by value and saves captures across `reset` in one buffer per parser,
+    so trying an operator line without captures allocates nothing (the engine allocates a `operatorsRuleAttempt` per
     match and a slice per try). On minilang this alone took allocations from 82 k to 19 k per parse.
 - `TestGeneratedParsersMatchEngine` now also covers scan loops and the nesting limit (at and one beyond it).
 - Effect (generated parser, code points; closure backend in the same run in parentheses):

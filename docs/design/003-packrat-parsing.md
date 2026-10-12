@@ -13,7 +13,7 @@ This document describes the design used to add efficient packrat parsing (memoiz
 
 In the VM-based implementation, the compiler analyzes the dependencies between grammar rules as a graph and detects its strongly connected components (SCCs); the VM then applies a memoization strategy chosen from that analysis. To resolve left recursion, the "grow-the-seed" algorithm was introduced. This makes it possible to support left-recursive grammars, which could not be handled before, while achieving linear-time parsing.
 
-## 2. Background and problems
+## 2. Background and Problems
 
 - **Performance**: Packrat parsing memoizes the result of each rule keyed by input position, which guarantees that a rule is never parsed twice at the same position. Parsing time therefore approaches linear time (O(n)) in the length of the input. The previous implementation had no such general memoization mechanism.
 - **Left recursion**: A grammar with left recursion, such as `E -> E '+' T | T`, sends a naive top-down recursive-descent parser into an infinite loop. The same holds for PEG, and indirect left recursion (for example `A -> B`, `B -> A`) causes the same problem. Solving it requires detecting the recursion and handling it specially.
@@ -29,19 +29,19 @@ In the VM-based implementation, the compiler analyzes the dependencies between g
 
 The implementation is split into two phases: an analysis phase at compile time and a processing phase in the VM at run time.
 
-### Phase 1: Grammar analysis at compile time (`compiler.go`, `compiler_analysis.go`)
+### Phase 1: Grammar Analysis at Compile Time (`compiler.go`, `compiler_analysis.go`)
 
 After receiving the `Grammar` object, and before generating VM bytecode, the compiler performs the following static analyses.
 
-#### 4.1. Building the rule dependency graph and detecting SCCs
+#### 4.1. Building the Rule Dependency Graph and Detecting SCCs
 
 The compiler builds a directed graph whose nodes are all the rules in the grammar, and applies Tarjan's algorithm to find all of its strongly connected components (SCCs). This identifies the groups of mutually recursive rules.
 
-#### 4.2. Nullability analysis
+#### 4.2. Nullability Analysis
 
 `analyzeNullability` determines whether each rule can match the empty string. This is essential for deciding whether a recursion is a *left* recursion. The analysis iterates until the results stabilize, so it handles circular definitions correctly.
 
-#### 4.3. Detecting left recursion and choosing the memoization type
+#### 4.3. Detecting Left Recursion and Choosing the Memoization Type
 
 Using the SCC and nullability information, the compiler decides which memoization strategy each rule uses. A map holding this information was added to the `Program` object.
 
@@ -72,11 +72,11 @@ Each SCC is classified as follows:
     - Set only the leader to `LeftRecursiveMemo`.
     - Set the other members of the SCC to `NoMemo`. This guarantees that evaluation of the recursion always starts at the leader, which makes the VM's processing more efficient.
 
-### Phase 2: Run-time processing in the VM (`vm.go`)
+### Phase 2: Run-Time Processing in the VM (`vm.go`)
 
 The VM changes the behavior of the `OpCall` instruction according to the `MemoTypes` map in the `Program` object produced by the compiler.
 
-#### 4.4. The memo table
+#### 4.4. The Memo Table
 
 The VM struct holds the memo table as a nested map.
 
@@ -97,7 +97,7 @@ type VM struct {
 
 `lrStack` records which rule is being evaluated at which position while the grow-the-seed algorithm runs.
 
-#### 4.5. Changes to `OpCall`
+#### 4.5. Changes To `OpCall`
 
 When the VM executes `OpCall` (operand: `ruleID`), its logic branches on `program.MemoTypes[ruleID]`:
 
@@ -115,7 +115,7 @@ When the VM executes `OpCall` (operand: `ruleID`), its logic branches on `progra
 - **`NoMemo`**:
   - Call the rule without memoization. This applies to the non-leader members of a left-recursive SCC and restricts the entry point of the evaluation to the leader.
 
-#### 4.6. Left-recursive memoization (`handleLeftRecursiveMemo`)
+#### 4.6. Left-Recursive Memoization (`handleLeftRecursiveMemo`)
 
 `handleLeftRecursiveMemo` implements grow-the-seed as follows:
 
@@ -139,7 +139,7 @@ When the VM executes `OpCall` (operand: `ruleID`), its logic branches on `progra
 
 `evalRule` is the key helper that evaluates a rule speculatively, saving and restoring the main VM state (IP, pos and the stack pointers).
 
-## 5. Implementation milestones
+## 5. Implementation Milestones
 
 The design was implemented in the following milestones:
 
@@ -149,7 +149,7 @@ The design was implemented in the following milestones:
 - **M4: VM logic**: branch the handling of `OpCall` on the memoization type, and implement `handleLeftRecursiveMemo` and `evalRule`.
 - **M5: Tests**: add test cases for direct and indirect left recursion to `vm_left_recursion_handling_test.go` and confirm that they all pass.
 
-## 6. Risks and considerations
+## 6. Risks and Considerations
 
 - **Captures**: The interaction between memoization and captured AST nodes is handled by including `*Node` in `memoEntry`. This guarantees that nodes produced during the growing phase of left recursion are updated correctly.
 - **Performance**: The memo table uses `map[int]map[int]*memoEntry`, which performs well with Go's map implementation. The impact on garbage collection was judged acceptable for current use cases.

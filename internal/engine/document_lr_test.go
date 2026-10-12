@@ -9,10 +9,9 @@ import (
 func TestDocumentIndirectLeftRecursionEdits(t *testing.T) {
 	defer func(n int) { maxEdits = n }(maxEdits)
 	maxEdits = 17
-	const src = `
-def main = (l:(((?^\n) / (!(?ab) r2))) "\n" / r1 / m:(?^\n)* "\n")* (?^\n)* $$
-def r1 = ((r2 / "b")){0,2}
-def r2 = (r1 / (r2 "a" "b"))`
+	const src = `rule main = (l:([^\n] / ![ab] r2) "\n" / r1 / m:[^\n]* "\n")* [^\n]* $$
+rule r1 = (r2 / "b") #repeat(0, 2)
+rule r2 = r1 / r2 "a" "b"`
 	for _, options := range []Options{{}, {DisableMemo: true}} {
 		prog := compile(t, src, options)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -173,20 +172,20 @@ func TestDocumentSeedDependencyCompletion(t *testing.T) {
 // direct or indirect left-recursive expressions.
 func BenchmarkDocumentLeftRecursion(b *testing.B) {
 	for _, kind := range []string{"direct", "indirect", "nested"} {
-		src := `def main = (expr "\n")* $$
-def expr = expr "+" num / num
-def num = @(?0-9)+`
+		src := `rule main = (expr "\n")* $$
+rule expr = expr "+" num / num
+rule num = [0-9]+ #atomic`
 		if kind == "indirect" {
-			src = `def main = (expr "\n")* $$
-def expr = sum / num
-def sum = expr "+" num
-def num = @(?0-9)+`
+			src = `rule main = (expr "\n")* $$
+rule expr = sum / num
+rule sum = expr "+" num
+rule num = [0-9]+ #atomic`
 		}
 		if kind == "nested" {
-			src = `def main = (expr "\n")* $$
-def expr = expr "+" term / term
-def term = term "*" num / num
-def num = @(?0-9)+`
+			src = `rule main = (expr "\n")* $$
+rule expr = expr "+" term / term
+rule term = term "*" num / num
+rule num = [0-9]+ #atomic`
 		}
 		prog, err := Compile(mustParse(src), Options{})
 		if err != nil {

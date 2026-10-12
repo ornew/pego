@@ -47,7 +47,7 @@ The AST lives in the `grammar` package (`grammar/ast.go`). The interface types a
 | `Statement` | `TypeDef`, `RuleDef` |
 | `TypeSpec` | `StructSpec`, `AliasSpec`, `TerminalSpec` |
 | `TypeExpr` | `TypeRef`, `ListType`, `OptionalType`, `UnionType` |
-| `Expr` (parser expressions) | `Ref`, `Literal`, `CharClass`, `Any`, `Seq`, `Choice`, `Repeat`, `Optional`, `And`, `Not`, `Atomic`, `Discard`, `Capture`, `Cut`, `Top`, `Bottom`, `BeginInput`, `EndInput`, `BeginLine`, `EndLine`, `Predicate`, `Attributed`, `Pratt` |
+| `Expr` (parser expressions) | `Ref`, `Literal`, `CharClass`, `Any`, `Seq`, `Choice`, `Repeat`, `Optional`, `And`, `Not`, `Atomic`, `Discard`, `Capture`, `Cut`, `Top`, `Bottom`, `BeginInput`, `EndInput`, `BeginLine`, `EndLine`, `Predicate`, `Attributed`, `Recovery`, `Stream`, `InlineAction`, `OperatorsRule` |
 | `Term` (action and predicate expressions) | `IntLit`, `StringLit`, `BoolLit`, `NilLit`, `CaptureRef`, `IndexRef`, `VarRef`, `Member`, `New`, `Call`, `Lambda`, `Binary`, `Unary`, `Assign` |
 
 A rule definition carries its type, body, and action directly:
@@ -58,6 +58,7 @@ type RuleDef struct {
     Type   TypeExpr `json:"type,omitempty"`
     Expr   Expr     `json:"expr"`
     Action Term     `json:"action,omitempty"`
+    DefaultAction bool `json:"defaultAction,omitempty"`
 }
 ```
 
@@ -65,7 +66,13 @@ Source positions (`Pos`) are not serialized.
 
 ### JSON Representation
 
-A value of an interface type is an object whose `@type` is the Go type name. Other fields follow the `json` tags.
+An AST interface node is an object whose `@type` is the Go type name. Other
+fields follow the `json` tags. `Attribute.Args` and `Attribute.KwArgs` also
+accept scalar integers, strings, booleans and null values; expression values in
+these collections retain their `@type` discriminator. Source behavior pragmas
+use dedicated expression nodes rather than generic source attributes. Inline
+actions can be represented but are rejected by compilation until their
+execution contract is implemented.
 
 ```json
 {

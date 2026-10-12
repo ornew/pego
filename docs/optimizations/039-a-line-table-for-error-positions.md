@@ -1,4 +1,4 @@
-# 39. A line table for error positions
+# 39. A Line Table for Error Positions
 
 - Every syntax error, recovered ones included, computed its line and column by scanning the input from the start.
   With many recovered errors this is quadratic: on the error-recovery benchmark (minilang with one line in seven

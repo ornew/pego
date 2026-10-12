@@ -15,7 +15,7 @@ const (
 	Closure
 	// Bytecode runs bytecode on the VM. Rule calls use host (Go) recursion (the recursive model).
 	Bytecode
-	// BytecodeIterative runs bytecode on the VM. Rule calls and Pratt expressions also run on the VM
+	// BytecodeIterative runs bytecode on the VM. Rule calls and Operators Rule expressions also run on the VM
 	// stack, so deeply nested input does not consume the host stack (the iterative model).
 	BytecodeIterative
 )
@@ -34,7 +34,7 @@ func (b Backend) String() string {
 
 // vmProgram is a module prepared for execution. Rule calls, memoization, left recursion, and
 // end-of-rule processing use the runtime shared with the closure engine (runtime.go), while rule
-// bodies, Pratt sections, actions, and predicates run as bytecode.
+// bodies, Operators Rule sections, actions, and predicates run as bytecode.
 type vmProgram struct {
 	m        *Module
 	rules    []*rule
@@ -152,8 +152,8 @@ func newVMProgram(m *Module, iterative bool) *vmProgram {
 	}
 	for i := range m.Rules {
 		ri, r := &m.Rules[i], vm.rules[i]
-		if ri.Pratt >= 0 {
-			r.pratt = vm.pratt(&m.Pratts[ri.Pratt])
+		if ri.OperatorsRule >= 0 {
+			r.operatorsRule = vm.operatorsRule(&m.OperatorsRules[ri.OperatorsRule])
 		}
 		entry := ri.Entry
 		r.entry = entry
@@ -202,7 +202,7 @@ func (vm *vmProgram) scope(ids []int) *scope {
 	return s
 }
 
-// block returns a matcher that runs the code of a Pratt section. It sets p.cut if a cut is passed
+// block returns a matcher that runs the code of an Operators Rule section. It sets p.cut if a cut is passed
 // within the section.
 func (vm *vmProgram) block(entry int) matcher {
 	return func(p *parser) (*Node, bool) {
@@ -214,24 +214,24 @@ func (vm *vmProgram) block(entry int) matcher {
 	}
 }
 
-func (vm *vmProgram) line(l *LineInfo, operator bool) *prattLine {
-	pl := &prattLine{scope: vm.scope(l.Scope), m: vm.block(l.Entry), isSeq: l.IsSeq, entry: l.Entry}
+func (vm *vmProgram) line(l *LineInfo, operator bool) *operatorsRuleLine {
+	pl := &operatorsRuleLine{scope: vm.scope(l.Scope), m: vm.block(l.Entry), isSeq: l.IsSeq, entry: l.Entry}
 	if l.Action >= 0 {
 		pl.act = vm.evaluator(l.Action, operator)
 	}
 	return pl
 }
 
-func (vm *vmProgram) pratt(pi *PrattInfo) *pratt {
-	pr := &pratt{skipEntry: pi.Skip}
+func (vm *vmProgram) operatorsRule(pi *OperatorsRuleInfo) *operatorsRule {
+	pr := &operatorsRule{skipEntry: pi.Skip}
 	if pi.Skip >= 0 {
 		pr.skip = vm.block(pi.Skip)
 	}
 	for i := range pi.Operands {
 		pr.operands = append(pr.operands, vm.line(&pi.Operands[i], false))
 	}
-	op := func(o *OpInfo) *prattOp {
-		po := &prattOp{id: o.ID, level: o.Level, line: vm.line(&o.Line, true)}
+	op := func(o *OpInfo) *operatorsRuleOp {
+		po := &operatorsRuleOp{id: o.ID, level: o.Level, line: vm.line(&o.Line, true)}
 		po.kind = []string{"prefix", "postfix", "infix"}[o.Kind]
 		if o.Kind == opInfix {
 			po.assoc = []string{"left", "right", "none"}[o.Assoc]
@@ -345,8 +345,8 @@ func asNodeValue(v any) *Node {
 
 // exec runs matching code from ip until RETURN or END (the recursive model). On success it
 // returns the pushed value. cut reports whether a cut belonging to no choice was passed (used
-// in Pratt sections). Rule calls and Pratt expressions call the shared runtime (call,
-// prattParse) through host recursion.
+// in Operators Rule sections). Rule calls and Operators Rule expressions call the shared runtime (call,
+// operatorsRuleParse) through host recursion.
 func (p *parser) exec(vm *vmProgram, ip int, r *rule, min int) (result *Node, ok bool, cut bool) {
 	bv := p.newBody(ip, r, min)
 	b := &bv
@@ -360,8 +360,8 @@ func (p *parser) exec(vm *vmProgram, ip int, r *rule, min int) (result *Node, ok
 			} else {
 				v, ok = p.call(r, int(in.B))
 			}
-		case evPratt:
-			v, ok = p.prattParse(b.r, b.min)
+		case evOperatorsRule:
+			v, ok = p.operatorsRuleParse(b.r, b.min)
 		default:
 			return v, ok, b.cut
 		}
@@ -369,7 +369,7 @@ func (p *parser) exec(vm *vmProgram, ip int, r *rule, min int) (result *Node, ok
 	}
 }
 
-// vmBody is the state of one run of code (a rule body or a Pratt section).
+// vmBody is the state of one run of code (a rule body or an Operators Rule section).
 type vmBody struct {
 	ip                  int
 	vbase, ebase, rbase int
@@ -384,12 +384,12 @@ func (p *parser) newBody(ip int, r *rule, min int) vmBody {
 
 // Reasons step suspends
 const (
-	evDone  = iota // finished by RETURN, END, or failure
-	evCall         // CALL (the instruction at b.ip); resumed with the result
-	evPratt        // PRATT; resumed with the result
+	evDone          = iota // finished by RETURN, END, or failure
+	evCall                 // CALL (the instruction at b.ip); resumed with the result
+	evOperatorsRule        // OPERATORS_RULE; resumed with the result
 )
 
-// step runs code until it finishes or reaches a rule call or a Pratt expression.
+// step runs code until it finishes or reaches a rule call or an Operators Rule expression.
 // If resume is set, it resumes with the result (ok, v) of the suspended instruction.
 func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev int, result *Node, ok bool) {
 	m := vm.m
@@ -397,7 +397,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 	ip, ebase := b.ip, b.ebase
 	if resume {
 		if rok {
-			if in := &code[ip]; in.Op == OpPratt || in.C == 1 {
+			if in := &code[ip]; in.Op == OpOperatorsRule || in.C == 1 {
 				p.push(rv)
 			}
 			ip++
@@ -679,9 +679,9 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 		case OpCall:
 			b.ip = ip
 			return evCall, nil, false
-		case OpPratt:
+		case OpOperatorsRule:
 			b.ip = ip
-			return evPratt, nil, false
+			return evOperatorsRule, nil, false
 		case OpPred:
 			if !vm.predicate(p, int(in.A)) {
 				goto fail

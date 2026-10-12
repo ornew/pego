@@ -63,7 +63,7 @@ ok := cel.Valid(`1 +`) // false
 Positions are in code points by default; `cel.ParseAST(src, cel.WithUnit(cel.Bytes))` counts bytes (`ParseExpr` and the errors of
 `Check` count code points).
 
-## The tree
+## The Tree
 
 | Type | Fields | |
 |:--|:--|:--|
@@ -86,7 +86,7 @@ Positions are in code points by default; `cel.ParseAST(src, cel.WithUnit(cel.Byt
 `Expr` is the union of the expression types. A value of `ParseAST` is one of them, or a node of `Parse`; every
 struct has an embedded `Span{Start, End}` (the end is exclusive).
 
-## Checks that are not syntax
+## Checks That Are Not Syntax
 
 cel-go reads literals and enforces limits after its ANTLR parser has accepted the input, and rejects what they
 find with a parse error. The grammar of this package is the syntax; `Check` (which `ParseExpr` and `Valid` call)
@@ -140,7 +140,7 @@ implementation (`cel.dev/cel-go`), whose parser is an ANTLR grammar:
   accepted expressions of the large run as source that parses to the same expression (`TestFormat`); and
   `go test -fuzz FuzzParse` checks the same on arbitrary input (1.4 million executions without a failure).
 
-### How the reference results are made
+### How the Reference Results Are Made
 
 [internal/refgen](internal/refgen) is a module of its own, since it depends on cel-go. It parses expressions with
 cel-go's parser (`parser.NewParser` with the optional syntax and escaped identifiers on, variadic logical operators so
@@ -159,7 +159,7 @@ The canonical form is described in the comment of `canon_test.go` and `internal/
 cel-go records for each node (the `.` of a selection, the `(` of a call, the operator of a binary operation, the `?` of a
 conditional, the `:` of an entry and a field, the first operator of a run of `!`; the start of anything else).
 
-### Known deviations
+### Known Deviations
 
 - **Syntax errors** are reported where the PEG parser failed (the farthest position), with the tokens expected there; the
   text is not cel-go's, and the position is often not the one ANTLR reports (the same in 56% of the 209,178 rejected
@@ -201,7 +201,7 @@ M3 Max):
 | A call before an identifier | +4% | +1% | +2% | +4% |
 | No lookahead for a message's name | +3% | +2% | +3% | +5% |
 
-A Pratt expression for the binary operators took as long as a rule for each precedence level, so the grammar has the
+An Operators Rule for the binary operators took as long as a rule for each precedence level, so the grammar has the
 shorter. The Go reference implementation is not in the table: the standard library has no CEL parser.
 
 ## Performance

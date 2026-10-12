@@ -325,9 +325,9 @@ type rule struct {
 	leader bool
 	// seen is the rule's index among the memoized rules whose memoization is deferred to the
 	// second call at a position (firstCall), or -1.
-	seen    int
-	pratt   *pratt
-	novalue bool // value-free twin, called where the value is discarded
+	seen          int
+	operatorsRule *operatorsRule
+	novalue       bool // value-free twin, called where the value is discarded
 	// vars are the variables the rule or its callees read, sorted. Memo entries are keyed by their
 	// values at the call, since definitions inside the rule are undone when it returns.
 	vars []string
@@ -489,7 +489,7 @@ func (p *parser) release() {
 
 // --- Parser state ---
 
-// expID is an expectation: an index into descs. With msgBit set, it is an #error message.
+// expID is an expectation: an index into descs. With msgBit set, it is an @error message.
 type expID int32
 
 const msgBit expID = 1 << 30
@@ -813,7 +813,7 @@ const nodeFrameScratch = true
 
 // frameScratch keeps stable capture frames and slots until the parse returns.
 // Neither array can be reached through a returned Node's children or fields.
-// Append-only allocation also preserves retained Pratt attempts and undo marks.
+// Append-only allocation also preserves retained OperatorsRule attempts and undo marks.
 type frameScratch struct {
 	frames  []*[nodeChunk]frame
 	slots   []*[ptrChunk]*Node
@@ -1945,32 +1945,32 @@ func (c *actx) endList(base int) any {
 	return c.listNode(c.p.kids(base))
 }
 
-// --- Pratt expressions ---
+// --- Operators Rule expressions ---
 
-type pratt struct {
+type operatorsRule struct {
 	skip     matcher
-	operands []*prattLine
-	prefix   []*prattOp
-	led      []*prattOp
+	operands []*operatorsRuleLine
+	prefix   []*operatorsRuleOp
+	led      []*operatorsRuleOp
 }
 
-type prattLine struct {
+type operatorsRuleLine struct {
 	scope  []string
 	m      matcher
 	action func(*actx) any
 	isSeq  bool
 }
 
-type prattOp struct {
+type operatorsRuleOp struct {
 	id    int
 	kind  string
 	assoc string
 	level int
-	line  *prattLine
+	line  *operatorsRuleLine
 }
 
-type prattAttempt struct {
-	op         *prattOp
+type operatorsRuleAttempt struct {
+	op         *operatorsRuleOp
 	frame      *frame
 	v          *Node
 	start, end int
@@ -1979,7 +1979,7 @@ type prattAttempt struct {
 	errs       []*SyntaxError
 }
 
-func (p *parser) skipTrivia(pr *pratt) {
+func (p *parser) skipTrivia(pr *operatorsRule) {
 	if pr.skip == nil {
 		return
 	}
@@ -1995,7 +1995,7 @@ func (p *parser) skipTrivia(pr *pratt) {
 // longest tries every operator and returns the longest match (the first declared among equals);
 // best.op is nil when none matched. cutFailed reports a candidate that failed after a cut. The
 // attempt is returned by value, so trying operators allocates nothing for lines without captures.
-func (p *parser) longest(ops []*prattOp) (best prattAttempt, cutFailed bool) {
+func (p *parser) longest(ops []*operatorsRuleOp) (best operatorsRuleAttempt, cutFailed bool) {
 	m0 := p.mark()
 	for _, op := range ops {
 		prevFrame, prevCut := p.frame, p.cut
@@ -2008,7 +2008,7 @@ func (p *parser) longest(ops []*prattOp) (best prattAttempt, cutFailed bool) {
 			ok = false // an empty prefix or postfix match could be applied forever
 		}
 		if ok && (best.op == nil || p.pos > best.end) {
-			best = prattAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
+			best = operatorsRuleAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
 				errs: append([]*SyntaxError(nil), p.recovered[m0.recovered:]...)}
 		}
 		if !ok && cut {
@@ -2027,27 +2027,27 @@ func (p *parser) longest(ops []*prattOp) (best prattAttempt, cutFailed bool) {
 	return best, cutFailed
 }
 
-func (p *parser) apply(a *prattAttempt) {
+func (p *parser) apply(a *operatorsRuleAttempt) {
 	p.pos, p.env = a.end, a.env
 	p.recovered = append(p.recovered, a.errs...)
 }
 
-// prattParse parses an expression with operators that bind tighter than min. Each level of its
+// operatorsRuleParse parses an expression with operators that bind tighter than min. Each level of its
 // recursion (the operand of a prefix operator, the right operand of an infix operator) counts
 // against the nesting limit, like a rule call.
-func (p *parser) prattParse(r *rule, min int) (*Node, bool) {
+func (p *parser) operatorsRuleParse(r *rule, min int) (*Node, bool) {
 	p.depth++
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.prattExpr(r, min)
+	v, ok := p.operatorsRuleExpr(r, min)
 	p.depth--
 	return v, ok
 }
 
-func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
-	pr := r.pratt
-	lhs, ok := p.prattNud(r)
+func (p *parser) operatorsRuleExpr(r *rule, min int) (*Node, bool) {
+	pr := r.operatorsRule
+	lhs, ok := p.operatorsRuleNud(r)
 	if !ok {
 		return nil, false
 	}
@@ -2069,7 +2069,7 @@ func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 		}
 		p.apply(&a)
 		if a.op.kind == "postfix" {
-			lhs = p.prattBuild(r, &a, lhs, nil)
+			lhs = p.operatorsRuleBuild(r, &a, lhs, nil)
 			lastNone = -1
 			if p.pos == m0.pos {
 				break
@@ -2080,7 +2080,7 @@ func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 		if a.op.assoc == "right" {
 			rmin--
 		}
-		rhs, ok := p.prattParse(r, rmin)
+		rhs, ok := p.operatorsRuleParse(r, rmin)
 		if !ok {
 			if a.cut {
 				return nil, false
@@ -2088,7 +2088,7 @@ func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 			p.reset(m0)
 			break
 		}
-		lhs = p.prattBuild(r, &a, lhs, rhs)
+		lhs = p.operatorsRuleBuild(r, &a, lhs, rhs)
 		lastNone = -1
 		if a.op.assoc == "none" {
 			lastNone = a.op.level
@@ -2102,15 +2102,15 @@ func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 	return lhs, true
 }
 
-func (p *parser) prattNud(r *rule) (*Node, bool) {
-	pr := r.pratt
+func (p *parser) operatorsRuleNud(r *rule) (*Node, bool) {
+	pr := r.operatorsRule
 	p.skipTrivia(pr)
 	m0 := p.mark()
 	if a, cutFailed := p.longest(pr.prefix); a.op != nil {
 		p.apply(&a)
-		rhs, ok := p.prattParse(r, a.op.level)
+		rhs, ok := p.operatorsRuleParse(r, a.op.level)
 		if ok {
-			return p.prattBuild(r, &a, nil, rhs), true
+			return p.operatorsRuleBuild(r, &a, nil, rhs), true
 		}
 		if a.cut {
 			return nil, false
@@ -2137,7 +2137,7 @@ func (p *parser) prattNud(r *rule) (*Node, bool) {
 	return nil, false
 }
 
-func (p *parser) lineResult(r *rule, l *prattLine, f *frame, v *Node, start int) *Node {
+func (p *parser) lineResult(r *rule, l *operatorsRuleLine, f *frame, v *Node, start int) *Node {
 	if r.novalue {
 		return nil
 	}
@@ -2163,7 +2163,7 @@ func (p *parser) lineResult(r *rule, l *prattLine, f *frame, v *Node, start int)
 	return v
 }
 
-func (p *parser) prattBuild(r *rule, a *prattAttempt, lhs, rhs *Node) *Node {
+func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *Node) *Node {
 	if r.novalue {
 		return nil
 	}
@@ -2254,7 +2254,7 @@ type Span struct{ Start, End int }
 func (s *Span) tspan() (int, int)       { return s.Start, s.End }
 func (s *Span) tsetSpan(start, end int) { s.Start, s.End = start, end }
 
-// Match is a terminal made by a literal, a character class, ., @a or _.
+// Match is a terminal made by a literal, a character class, ., a #atomic or _.
 type Match struct {
 	Span
 	Text string
@@ -2390,9 +2390,9 @@ func asTval(v any) tval {
 // trule is a rule of the typed runtime: the rule's analysis results and its typed body.
 type trule struct {
 	*rule
-	body   func(p *tparser, min int) (any, bool)
-	action func(c *tctx) any
-	pratt  *tpratt
+	body          func(p *tparser, min int) (any, bool)
+	action        func(c *tctx) any
+	operatorsRule *toperatorsRule
 	// term makes the value of a rule of a terminal type.
 	term func(p *tparser, start, end int, text string) tval
 	// entry is the generated method that calls the rule as call(r, 0) does (u<id> or s<id>), for
@@ -3502,32 +3502,32 @@ func (c *tctx) endList(base int) any {
 	return c.listNode(c.p.kids(base))
 }
 
-// --- Pratt expressions ---
+// --- Operators Rule expressions ---
 
-type tpratt struct {
+type toperatorsRule struct {
 	skip     tmatcher
-	operands []*tprattLine
-	prefix   []*tprattOp
-	led      []*tprattOp
+	operands []*toperatorsRuleLine
+	prefix   []*toperatorsRuleOp
+	led      []*toperatorsRuleOp
 }
 
-type tprattLine struct {
+type toperatorsRuleLine struct {
 	scope  []string
 	m      tmatcher
 	action func(*tctx) any
 	isSeq  bool
 }
 
-type tprattOp struct {
+type toperatorsRuleOp struct {
 	id    int
 	kind  string
 	assoc string
 	level int
-	line  *tprattLine
+	line  *toperatorsRuleLine
 }
 
-type tprattAttempt struct {
-	op         *tprattOp
+type toperatorsRuleAttempt struct {
+	op         *toperatorsRuleOp
 	frame      *tframe
 	v          any
 	start, end int
@@ -3536,7 +3536,7 @@ type tprattAttempt struct {
 	errs       []*SyntaxError
 }
 
-func (p *tparser) skipTrivia(pr *tpratt) {
+func (p *tparser) skipTrivia(pr *toperatorsRule) {
 	if pr.skip == nil {
 		return
 	}
@@ -3549,7 +3549,7 @@ func (p *tparser) skipTrivia(pr *tpratt) {
 	}
 }
 
-func (p *tparser) longest(ops []*tprattOp) (best tprattAttempt, cutFailed bool) {
+func (p *tparser) longest(ops []*toperatorsRuleOp) (best toperatorsRuleAttempt, cutFailed bool) {
 	m0 := p.mark()
 	for _, op := range ops {
 		prevFrame, prevCut := p.frame, p.cut
@@ -3562,7 +3562,7 @@ func (p *tparser) longest(ops []*tprattOp) (best tprattAttempt, cutFailed bool) 
 			ok = false
 		}
 		if ok && (best.op == nil || p.pos > best.end) {
-			best = tprattAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
+			best = toperatorsRuleAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
 				errs: append([]*SyntaxError(nil), p.recovered[m0.recovered:]...)}
 		}
 		if !ok && cut {
@@ -3579,25 +3579,25 @@ func (p *tparser) longest(ops []*tprattOp) (best tprattAttempt, cutFailed bool) 
 	return best, cutFailed
 }
 
-func (p *tparser) apply(a *tprattAttempt) {
+func (p *tparser) apply(a *toperatorsRuleAttempt) {
 	p.pos, p.env = a.end, a.env
 	p.recovered = append(p.recovered, a.errs...)
 }
 
-// prattParse is parser.prattParse for typed values.
-func (p *tparser) prattParse(r *trule, min int) (any, bool) {
+// operatorsRuleParse is parser.operatorsRuleParse for typed values.
+func (p *tparser) operatorsRuleParse(r *trule, min int) (any, bool) {
 	p.depth++
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.prattExpr(r, min)
+	v, ok := p.operatorsRuleExpr(r, min)
 	p.depth--
 	return v, ok
 }
 
-func (p *tparser) prattExpr(r *trule, min int) (any, bool) {
-	pr := r.pratt
-	lhs, ok := p.prattNud(r)
+func (p *tparser) operatorsRuleExpr(r *trule, min int) (any, bool) {
+	pr := r.operatorsRule
+	lhs, ok := p.operatorsRuleNud(r)
 	if !ok {
 		return nil, false
 	}
@@ -3619,7 +3619,7 @@ func (p *tparser) prattExpr(r *trule, min int) (any, bool) {
 		}
 		p.apply(&a)
 		if a.op.kind == "postfix" {
-			lhs = p.prattBuild(r, &a, lhs, nil)
+			lhs = p.operatorsRuleBuild(r, &a, lhs, nil)
 			lastNone = -1
 			if p.pos == m0.pos {
 				break
@@ -3630,7 +3630,7 @@ func (p *tparser) prattExpr(r *trule, min int) (any, bool) {
 		if a.op.assoc == "right" {
 			rmin--
 		}
-		rhs, ok := p.prattParse(r, rmin)
+		rhs, ok := p.operatorsRuleParse(r, rmin)
 		if !ok {
 			if a.cut {
 				return nil, false
@@ -3638,7 +3638,7 @@ func (p *tparser) prattExpr(r *trule, min int) (any, bool) {
 			p.reset(m0)
 			break
 		}
-		lhs = p.prattBuild(r, &a, lhs, rhs)
+		lhs = p.operatorsRuleBuild(r, &a, lhs, rhs)
 		lastNone = -1
 		if a.op.assoc == "none" {
 			lastNone = a.op.level
@@ -3650,15 +3650,15 @@ func (p *tparser) prattExpr(r *trule, min int) (any, bool) {
 	return lhs, true
 }
 
-func (p *tparser) prattNud(r *trule) (any, bool) {
-	pr := r.pratt
+func (p *tparser) operatorsRuleNud(r *trule) (any, bool) {
+	pr := r.operatorsRule
 	p.skipTrivia(pr)
 	m0 := p.mark()
 	if a, cutFailed := p.longest(pr.prefix); a.op != nil {
 		p.apply(&a)
-		rhs, ok := p.prattParse(r, a.op.level)
+		rhs, ok := p.operatorsRuleParse(r, a.op.level)
 		if ok {
-			return p.prattBuild(r, &a, nil, rhs), true
+			return p.operatorsRuleBuild(r, &a, nil, rhs), true
 		}
 		if a.cut {
 			return nil, false
@@ -3685,7 +3685,7 @@ func (p *tparser) prattNud(r *trule) (any, bool) {
 	return nil, false
 }
 
-func (p *tparser) lineResult(r *trule, l *tprattLine, f *tframe, v any, start int) any {
+func (p *tparser) lineResult(r *trule, l *toperatorsRuleLine, f *tframe, v any, start int) any {
 	if r.novalue {
 		return nil
 	}
@@ -3710,7 +3710,7 @@ func (p *tparser) lineResult(r *trule, l *tprattLine, f *tframe, v any, start in
 	return nil
 }
 
-func (p *tparser) prattBuild(r *trule, a *tprattAttempt, lhs, rhs any) any {
+func (p *tparser) operatorsRuleBuild(r *trule, a *toperatorsRuleAttempt, lhs, rhs any) any {
 	if r.novalue {
 		return nil
 	}
@@ -6841,7 +6841,7 @@ func init() {
 	recRules[72].body = func(p *parser, _ int) (*Node, bool) { return p.e144() }
 	recRules[73].body = func(p *parser, _ int) (*Node, bool) { return p.e142() }
 	recRules[74].body = func(p *parser, _ int) (*Node, bool) { return p.e143() }
-	descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"\\ufeff\"", "\"<!--\"", "\"<?\"", "\"<?xml\"", "\"?>\"", "\"version\"", "\"\\\"\"", "\"'\"", "\"1.\"", "(?0-9)", "\"encoding\"", "(?A-Za-z)", "(?A-Za-z0-9._\\-)", "\"standalone\"", "\"yes\"", "\"no\"", "\"=\"", "\"-->\"", "(?.-\\ud7ff -,\\n\\t\\r\\ue000-�𐀀-\\U0010ffff)", "\"-\"", "the processing instruction target xml is reserved (an XML declaration must come first)", "(?@-\\ud7ff ->\\n\\t\\r\\ue000-�𐀀-\\U0010ffff)", "\"?\"", "\">\"", "\"<!DOCTYPE\"", "\"[\"", "\"]\"", "\"<!ELEMENT\"", "\"<!ATTLIST\"", "\"<!NOTATION\"", "\"%\"", "\";\"", "\"SYSTEM\"", "\"PUBLIC\"", "(?#-\\ud7ff -!\\n\\t\\r\\ue000-�𐀀-\\U0010ffff)", "(?\\(-\\ud7ff -&\\n\\t\\r\\ue000-�𐀀-\\U0010ffff)", "(?a-zA-Z0-9 \\r\\n\\-\\'\\(\\)+,./:=\\?;!*#@$_%)", "(?a-zA-Z0-9 \\r\\n\\-\\(\\)+,./:=\\?;!*#@$_%)", "\"EMPTY\"", "\"ANY\"", "\"(\"", "\"#PCDATA\"", "\"|\"", "\")*\"", "\")\"", "\",\"", "(?a-zA-Z_:À-ÖØ-öø-˿Ͱ-ͽͿ-\\u1fff\\u200c-\\u200d⁰-\\u218fⰀ-\\u2fef、-\\ud7ff豈-﷏ﷰ-�𐀀-\\U000effff)", "(?*+\\?)", "\"#REQUIRED\"", "\"#IMPLIED\"", "\"#FIXED\"", "\"NOTATION\"", "\"CDATA\"", "\"IDREFS\"", "\"IDREF\"", "\"ID\"", "\"ENTITY\"", "\"ENTITIES\"", "\"NMTOKENS\"", "\"NMTOKEN\"", "\"<!ENTITY\"", "\"NDATA\"", "(?\\'-\\ud7ff -!#-$\\n\\t\\r\\ue000-�𐀀-\\U0010ffff)", "(?\\(-\\ud7ff -$\\n\\t\\r\\ue000-�𐀀-\\U0010ffff)", "\"<\"", "\"/>\"", "\"</\"", "mismatched end tag", "(?=-\\ud7ff\\'-; -!#-%\\n\\t\\r\\ue000-�𐀀-\\U0010ffff)", "(?=-\\ud7ff\\(-; -%\\n\\t\\r\\ue000-�𐀀-\\U0010ffff)", "\"<![CDATA[\"", "(?\\^-\\ud7ff=-\\\\\\'-; -%\\n\\t\\r\\ue000-�𐀀-\\U0010ffff)", "\"]>\"", "\"]]>\"", "(?\\^-\\ud7ff -\\\\\\n\\t\\r\\ue000-�𐀀-\\U0010ffff)", "\"&\"", "\"&#x\"", "(?0-9a-fA-F)", "\"&#\"", "(?a-zA-Z0-9_:.\\-·À-ÖØ-öø-ͽͿ-\\u1fff\\u200c-\\u200d‿-⁀⁰-\\u218fⰀ-\\u2fef、-\\ud7ff豈-﷏ﷰ-�𐀀-\\U000effff)", "(? \\t\\r\\n)"}
+	descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"\\ufeff\"", "\"<!--\"", "\"<?\"", "\"<?xml\"", "\"?>\"", "\"version\"", "\"\\\"\"", "\"'\"", "\"1.\"", "[0-9]", "\"encoding\"", "[A-Za-z]", "[A-Za-z0-9._\\-]", "\"standalone\"", "\"yes\"", "\"no\"", "\"=\"", "\"-->\"", "[.-\\ud7ff -,\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"-\"", "the processing instruction target xml is reserved (an XML declaration must come first)", "[@-\\ud7ff ->\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"?\"", "\">\"", "\"<!DOCTYPE\"", "\"[\"", "\"]\"", "\"<!ELEMENT\"", "\"<!ATTLIST\"", "\"<!NOTATION\"", "\"%\"", "\";\"", "\"SYSTEM\"", "\"PUBLIC\"", "[#-\\ud7ff -!\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "[(-\\ud7ff -&\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "[a-zA-Z0-9 \\r\\n\\-\\'()+,./:=?;!*#@$_%]", "[a-zA-Z0-9 \\r\\n\\-()+,./:=?;!*#@$_%]", "\"EMPTY\"", "\"ANY\"", "\"(\"", "\"#PCDATA\"", "\"|\"", "\")*\"", "\")\"", "\",\"", "[a-zA-Z_:À-ÖØ-öø-˿Ͱ-ͽͿ-\\u1fff\\u200c-\\u200d⁰-\\u218fⰀ-\\u2fef、-\\ud7ff豈-﷏ﷰ-�𐀀-\\U000effff]", "[*+?]", "\"#REQUIRED\"", "\"#IMPLIED\"", "\"#FIXED\"", "\"NOTATION\"", "\"CDATA\"", "\"IDREFS\"", "\"IDREF\"", "\"ID\"", "\"ENTITY\"", "\"ENTITIES\"", "\"NMTOKENS\"", "\"NMTOKEN\"", "\"<!ENTITY\"", "\"NDATA\"", "[\\'-\\ud7ff -!#-$\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "[(-\\ud7ff -$\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"<\"", "\"/>\"", "\"</\"", "mismatched end tag", "[=-\\ud7ff\\'-; -!#-%\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "[=-\\ud7ff(-; -%\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"<![CDATA[\"", "[\\^-\\ud7ff=-\\\\\\'-; -%\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"]>\"", "\"]]>\"", "[\\^-\\ud7ff -\\\\\\n\\t\\r\\ue000-�𐀀-\\U0010ffff]", "\"&\"", "\"&#x\"", "[0-9a-fA-F]", "\"&#\"", "[a-zA-Z0-9_:.\\-·À-ÖØ-öø-ͽͿ-\\u1fff\\u200c-\\u200d‿-⁀⁰-\\u218fⰀ-\\u2fef、-\\ud7ff豈-﷏ﷰ-�𐀀-\\U000effff]", "[ \\t\\r\\n]"}
 	trules = []*trule{
 		{rule: rules[0]},
 		{rule: rules[1]},

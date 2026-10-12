@@ -23,14 +23,14 @@ The examples use the grammar `pairs.pego` of the [runtime guide](runtime.md):
 ```pego
 type Pair struct { Key Match, Value Match }
 
-def main = ws ps:pair+ $$ -> $ps
-def pair: Pair = k:key "=" v:value ";"? ws -> new Pair{Key: $k, Value: $v}
-def key = @(?a-zあ-ん)+
-def value = @(?0-9)+
-def ws = (? \t\n)*
+rule main = ws ps:pair+ $$ => $ps
+rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
+rule key = [a-zあ-ん]+ #atomic
+rule value = [0-9]+ #atomic
+rule ws = [ \t\n]*
 ```
 
-## Save and load
+## Save and Load
 
 On the command line, `pego compile` writes the file, and every command that takes a grammar (`-g`) accepts it:
 
@@ -74,7 +74,7 @@ A few more facts:
 - A parser loaded from a file preserves the same tree, positions and errors as one compiled from source. Keep a
   round-trip comparison in your own test suite for the grammars your application depends on.
 
-## With and without the AST
+## With and Without the AST
 
 A compiled grammar always holds the bytecode. It holds the grammar AST (and the results of static analysis) too, unless
 you leave it out:
@@ -133,7 +133,7 @@ node, err := q.Parse("abc=12") // runs on the bytecode backend
 fmt.Println(node, err)         // [(Pair Key="abc"@key Value="12"@value)] <nil>
 ```
 
-## Size and load time
+## Size and Load Time
 
 What a compiled grammar costs in size, measured for four grammars of the repository (a file with the AST is larger than
 the source, and a file without it is smaller):
@@ -236,7 +236,7 @@ Whether this matters depends on how often the program starts. A long-running ser
 of times, and 60 ms is nothing. A command-line tool, a function that starts for each request or a test that compiles a
 large grammar in every process pays it every time.
 
-## Embedding with `go:embed`
+## Embedding With `go:embed`
 
 The usual pattern is to compile when the grammar changes, commit the `.pegoc` next to the source, and embed it. The
 layout of a module:
@@ -340,7 +340,7 @@ func TestCompiledIsUpToDate(t *testing.T) {
 }
 ```
 
-After changing `pairs.pego` (here: `def value = @(?0-9a-f)+`) without running `go generate`, the test fails:
+After changing `pairs.pego` (here: `rule value =  [0-9a-f]+ #atomic `) without running `go generate`, the test fails:
 
 ```
 --- FAIL: TestCompiledIsUpToDate (0.00s)
@@ -357,7 +357,7 @@ A file does not have to be embedded. A program can read a `.pegoc` from disk or 
 that a grammar changes without rebuilding the program. Then [only load files you trust](#loading-untrusted-data), and
 handle the error of `LoadParser`: it is the only place a bad file is noticed.
 
-## Versions and compatibility
+## Versions and Compatibility
 
 A file carries two version numbers after its magic number:
 
@@ -391,7 +391,7 @@ the file format and bytecode versions are unchanged by these classification fixe
 The format is specified in [bytecode.md](../../spec/bytecode.md#file-format) and its design in
 [design record 009](../design/009-compiled-grammar-format.md).
 
-## Loading untrusted data
+## Loading Untrusted Data
 
 Loading rejects recovery regions that enclose a streaming commitment, including older files made with
 `#recover` on the `#stream` repetition. Move recovery into the repeated element and recompile those files.
@@ -407,7 +407,7 @@ checksum is not a signature: it detects accidents, not tampering. If a file trav
 a hash that you obtained another way. If users bring their own grammars, accept source, compile it with
 `CompileSource`, which type-checks, and (if needed) save the result yourself.
 
-## Compiled grammar, generated code or source?
+## Compiled Grammar, Generated Code or Source?
 
 Three ways to get a grammar into a Go program:
 
@@ -460,7 +460,7 @@ truncated              invalid compiled grammar: checksum mismatch
 PEGO source            not a compiled PEGO grammar
 ```
 
-## See also
+## See Also
 
 - [Running parsers](runtime.md): the Go API, backends, position units and the `pego` command.
 - [Code generation](code-generation.md): the other way to skip compiling at run time.

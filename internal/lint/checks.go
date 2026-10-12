@@ -70,10 +70,10 @@ func (l *linter) shadowed() {
 	}
 	l.eachRule(func(r *grammar.RuleDef) {
 		walkExpr(r.Expr, func(e grammar.Expr) {
-			switch e := e.(type) {
+			switch e := analysisExpr(e).(type) {
 			case *grammar.Choice:
 				l.shadowedAlts(e.Alts, "alternative")
-			case *grammar.Pratt:
+			case *grammar.OperatorsRule:
 				var operands []grammar.Expr
 				for _, o := range e.Operands {
 					operands = append(operands, o.Expr)
@@ -187,13 +187,13 @@ func (a *analysis) covers(x, y grammar.Expr) string {
 	return ""
 }
 
-// shadowedOperators reports operators of a Pratt expression that are never selected because an
+// shadowedOperators reports operators of an Operators Rule expression that are never selected because an
 // operator declared before them matches the same text: the longest match wins, and the first
 // declared among equals. Operators of different levels are compared only if the rule is never
 // called with a level (which can leave out the earlier one).
-func (l *linter) shadowedOperators(pr *grammar.Pratt, acrossLevels bool) {
+func (l *linter) shadowedOperators(pr *grammar.OperatorsRule, acrossLevels bool) {
 	type op struct {
-		*grammar.PrattOperator
+		*grammar.OperatorsRuleOperator
 		level int
 	}
 	var ops []op
@@ -400,7 +400,7 @@ func (l *linter) lookaheads() {
 	a := l.an
 	l.eachRule(func(r *grammar.RuleDef) {
 		walkExpr(r.Expr, func(e grammar.Expr) {
-			switch e := e.(type) {
+			switch e := analysisExpr(e).(type) {
 			case *grammar.And:
 				// Captures in a positive lookahead stay in effect, so it may be there for them.
 				if !hasCaptures(e.Expr) && a.succeeds(e.Expr) {
@@ -423,7 +423,7 @@ func (l *linter) lookaheads() {
 
 // visible reports whether the expression has a value (as the engine decides it).
 func visible(e grammar.Expr) bool {
-	switch e := e.(type) {
+	switch e := analysisExpr(e).(type) {
 	case *grammar.And, *grammar.Not, *grammar.Discard, *grammar.Cut, *grammar.Bottom,
 		*grammar.BeginInput, *grammar.EndInput, *grammar.BeginLine, *grammar.EndLine,
 		*grammar.Predicate:
@@ -495,7 +495,7 @@ func (l *linter) unusedCaptures() {
 		}
 	}
 	l.eachRule(func(r *grammar.RuleDef) {
-		if pr, ok := r.Expr.(*grammar.Pratt); ok {
+		if pr, ok := r.Expr.(*grammar.OperatorsRule); ok {
 			for _, o := range pr.Operands {
 				if o.Action != nil {
 					l.scopeCaptures(o.Expr, o.Action, usesIndex(o.Action), "the operand's action does not refer to it")
@@ -519,7 +519,7 @@ func (l *linter) unusedCaptures() {
 	})
 }
 
-// scopeCaptures reports the captures of a rule body (or a Pratt line) that are never read: the
+// scopeCaptures reports the captures of a rule body (or an Operators Rule line) that are never read: the
 // body's own captures that neither action nor predicates refer to, and the captures inside
 // repetitions whose values are discarded. kept reports whether the value of the body itself can
 // be read ($n in the action).
@@ -529,7 +529,7 @@ func (l *linter) scopeCaptures(body grammar.Expr, action grammar.Term, kept bool
 	scopePredicateRefs(body, refs)
 	var visit func(e grammar.Expr, inCapture bool)
 	visit = func(e grammar.Expr, inCapture bool) {
-		switch e := e.(type) {
+		switch e := analysisExpr(e).(type) {
 		case *grammar.Capture:
 			if !refs[e.Name] {
 				l.report(CheckUnusedCapture, Warning, e.Pos, fmt.Sprintf("remove %s:, or use $%s", e.Name, e.Name),
@@ -552,7 +552,7 @@ func (l *linter) elementCaptures(elem grammar.Expr, kept bool) {
 	scopePredicateRefs(elem, refs)
 	var visit func(e grammar.Expr, inCapture bool)
 	visit = func(e grammar.Expr, inCapture bool) {
-		switch e := e.(type) {
+		switch e := analysisExpr(e).(type) {
 		case *grammar.Capture:
 			if !kept && !refs[e.Name] {
 				l.report(CheckUnusedCapture, Warning, e.Pos, fmt.Sprintf("remove %s:, or capture the repetition and use it", e.Name),
@@ -571,7 +571,7 @@ func (l *linter) elementCaptures(elem grammar.Expr, kept bool) {
 // forChildren calls f for the parsing expressions directly inside e (not attribute arguments,
 // which cannot hold captures).
 func forChildren(e grammar.Expr, f func(grammar.Expr)) {
-	switch e := e.(type) {
+	switch e := analysisExpr(e).(type) {
 	case *grammar.Seq:
 		for _, it := range e.Items {
 			f(it)
@@ -602,7 +602,7 @@ func forChildren(e grammar.Expr, f func(grammar.Expr)) {
 // scopePredicateRefs adds the captures that the predicates of a scope read (not those in the
 // elements of repetitions, which are scopes of their own) to refs.
 func scopePredicateRefs(e grammar.Expr, refs map[string]bool) {
-	switch e := e.(type) {
+	switch e := analysisExpr(e).(type) {
 	case *grammar.Predicate:
 		captureRefs(e.Term, nil, refs)
 	case *grammar.Repeat:
@@ -655,7 +655,7 @@ func usesIndex(t grammar.Term) bool {
 
 func (l *linter) duplicateCaptures() {
 	l.eachRule(func(r *grammar.RuleDef) {
-		if pr, ok := r.Expr.(*grammar.Pratt); ok {
+		if pr, ok := r.Expr.(*grammar.OperatorsRule); ok {
 			for _, o := range pr.Operands {
 				l.scopeDuplicates(o.Expr)
 			}
@@ -689,7 +689,7 @@ func (l *linter) scopeDuplicates(scope grammar.Expr) {
 		return acc
 	}
 	captured = func(e grammar.Expr) []*grammar.Capture {
-		switch e := e.(type) {
+		switch e := analysisExpr(e).(type) {
 		case *grammar.Capture:
 			return merge([]*grammar.Capture{e}, captured(e.Expr), true)
 		case *grammar.Seq:
@@ -730,7 +730,7 @@ func (l *linter) charClasses() {
 
 func (l *linter) charClass(c *grammar.CharClass) {
 	show := func(rg grammar.CharRange) string {
-		return strings.TrimSuffix(strings.TrimPrefix(grammar.FormatExpr(&grammar.CharClass{Ranges: []grammar.CharRange{rg}}), "(?"), ")")
+		return strings.TrimSuffix(strings.TrimPrefix(grammar.FormatExpr(&grammar.CharClass{Ranges: []grammar.CharRange{rg}}), "["), "]")
 	}
 	fixed := &grammar.CharClass{Negated: c.Negated, Ranges: normalize(c.Ranges)}
 	for j, rj := range c.Ranges {
@@ -808,7 +808,7 @@ func sameRanges(x, y []grammar.CharRange) bool { return slices.Equal(x, y) }
 func (l *linter) rightRecursion() {
 	a := l.an
 	l.eachRule(func(r *grammar.RuleDef) {
-		if _, ok := r.Expr.(*grammar.Pratt); ok {
+		if _, ok := r.Expr.(*grammar.OperatorsRule); ok {
 			return
 		}
 		var found *grammar.Ref
@@ -929,10 +929,10 @@ func positionRead(r *grammar.RuleDef) (grammar.Pos, bool) {
 		terms = append(terms, r.Action)
 	}
 	walkExpr(r.Expr, func(e grammar.Expr) {
-		switch e := e.(type) {
+		switch e := analysisExpr(e).(type) {
 		case *grammar.Predicate:
 			terms = append(terms, e.Term)
-		case *grammar.Pratt:
+		case *grammar.OperatorsRule:
 			for _, o := range e.Operands {
 				if o.Action != nil {
 					terms = append(terms, o.Action)
@@ -968,7 +968,7 @@ func (l *linter) longLookaheads() {
 		walkExpr(r.Expr, func(e grammar.Expr) {
 			var inner grammar.Expr
 			var pos grammar.Pos
-			switch e := e.(type) {
+			switch e := analysisExpr(e).(type) {
 			case *grammar.And:
 				inner, pos = e.Expr, e.Pos
 			case *grammar.Not:
@@ -1000,7 +1000,7 @@ func anyRepeat(e grammar.Expr) grammar.Expr {
 }
 
 func consumesAny(e grammar.Expr) bool {
-	switch e := e.(type) {
+	switch e := analysisExpr(e).(type) {
 	case *grammar.Any:
 		return true
 	case *grammar.CharClass:

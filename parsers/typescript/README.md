@@ -176,7 +176,7 @@ continuations do not separate escaped high and low surrogates; real characters a
 Templates normalize actual CR and CRLF to LF before decoding escapes, so an explicit `\r` still yields CR.
 Unpaired UTF-16 surrogates use U+FFFD in the returned Go strings.
 
-### Running the differential tests
+### Running the Differential Tests
 
 They are skipped unless two environment variables are set:
 
@@ -240,7 +240,7 @@ files and 3 to 4.5 times on code (the synthetic source, dense in generics and ty
 The first version of the grammar, which followed the compiler's order of alternatives, took about 110 ms, 10 ms, 110 ms,
 60 ms and 1.55 s for `ParseAST` on these files. The optimizations are commented in the grammar; what paid was
 testing the next character before trying a rule that fails at once and records what it expected (the operators of
-the Pratt loops, whitespace, modifiers, arrow functions), dispatching on the first character or word (primary
+the Operators Rule loops, whitespace, modifiers, arrow functions), dispatching on the first character or word (primary
 expressions, types, statements), and parsing a union, intersection or conditional type or expression once instead of
 parsing its first operand, failing, and parsing it again from the memo. The number of rule calls on 300 KB of the
 bundle fell from 1.66 million to 0.54 million.

@@ -1,4 +1,4 @@
-# 74. Smaller first chunks for generated typed values
+# 74. Smaller First Chunks for Generated Typed Values
 
 - Previously, `astNew` allocated 256 values for the first struct or terminal
   of each type, and `astSlice` allocated 1,024 elements for the first small
@@ -67,14 +67,14 @@
   131 cases with three samples each, 457.810 seconds. Compared with the
   previous `98ef6db` snapshot, typed-workload median times range
   0.965–1.056× and bytes 0.967–1.010×. Allocation counts increase by
-  34/12/38/12/12/88/81/7 for JSON, CSV, XML, Pratt, left recursion,
+  34/12/38/12/12/88/81/7 for JSON, CSV, XML, Operators Rule, left recursion,
   minilang conversion, recovery conversion and outline, respectively.
   These separate full runs do not isolate a speedup or regression from
   this method; the alternating controls above remain the causal comparison.
   The current backend, recognition, incremental and stream analysis is
   recorded under [Where PEGO stands](../performance.md#where-pego-stands).
 
-## Same-revision allocation controls
+## Same-Revision Allocation Controls
 
 Internal `GenOptions.disableTypedObjectSlabs` and
 `GenOptions.disableTypedListSlabs` independently emit `new(T)` and

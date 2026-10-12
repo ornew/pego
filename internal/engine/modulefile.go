@@ -66,13 +66,13 @@ func (w *encoder) module(m *Module) {
 		w.bool(r.Memo)
 		w.bool(r.Leader)
 		w.bool(r.Positional)
-		w.int(r.Pratt)
+		w.int(r.OperatorsRule)
 		w.bool(r.NoValue)
 		w.bool(r.Transient)
 		w.ints(r.Vars)
 	}
-	w.uint(len(m.Pratts))
-	for _, p := range m.Pratts {
+	w.uint(len(m.OperatorsRules))
+	for _, p := range m.OperatorsRules {
 		w.int(p.Skip)
 		w.uint(len(p.Operands))
 		for i := range p.Operands {
@@ -160,12 +160,12 @@ func (r *decoder) module() *Module {
 		m.Rules = append(m.Rules, RuleInfo{
 			Name: int(r.int32()), Entry: int(r.int32()), Scope: r.ints(), Action: int(r.int32()),
 			BodyIsSeq: r.bool(), TerminalType: int(r.int32()),
-			Memo: r.bool(), Leader: r.bool(), Positional: r.bool(), Pratt: int(r.int32()), NoValue: r.bool(), Transient: r.bool(), Vars: r.ints(),
+			Memo: r.bool(), Leader: r.bool(), Positional: r.bool(), OperatorsRule: int(r.int32()), NoValue: r.bool(), Transient: r.bool(), Vars: r.ints(),
 		})
 	}
 	n = r.count()
 	for i := 0; i < n && r.err == nil; i++ {
-		p := PrattInfo{Skip: int(r.int32())}
+		p := OperatorsRuleInfo{Skip: int(r.int32())}
 		k := r.count()
 		for j := 0; j < k && r.err == nil; j++ {
 			p.Operands = append(p.Operands, r.line())
@@ -178,7 +178,7 @@ func (r *decoder) module() *Module {
 				*ops = append(*ops, o)
 			}
 		}
-		m.Pratts = append(m.Pratts, p)
+		m.OperatorsRules = append(m.OperatorsRules, p)
 	}
 	m.Code = r.code()
 	m.Exprs = r.code()
@@ -244,10 +244,10 @@ func validateModule(m *Module) error {
 		strs(r.Scope)
 		opt("action", r.Action, len(m.Exprs))
 		opt("string", r.TerminalType, len(m.Strings))
-		opt("pratt", r.Pratt, len(m.Pratts))
+		opt("operatorsRule", r.OperatorsRule, len(m.OperatorsRules))
 		strs(r.Vars)
 	}
-	for _, p := range m.Pratts {
+	for _, p := range m.OperatorsRules {
 		opt("entry", p.Skip, len(m.Code))
 		for i := range p.Operands {
 			line(&p.Operands[i])
@@ -343,8 +343,8 @@ func validateModule(m *Module) error {
 			in("rule", int(x.A), len(m.Rules))
 			nonneg(x.B)
 			flag(x.C, 1)
-		case OpPratt:
-			in("pratt", int(x.A), len(m.Pratts))
+		case OpOperatorsRule:
+			in("operatorsRule", int(x.A), len(m.OperatorsRules))
 		case OpPred:
 			in("expression", int(x.A), len(m.Exprs))
 		case OpAssign:

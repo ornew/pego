@@ -8,7 +8,7 @@ import (
 )
 
 func TestLint(t *testing.T) {
-	g, err := pego.ParseGrammar("def main = \"a\" / \"ab\"\ndef unused = \"x\"")
+	g, err := pego.ParseGrammar("rule main = \"a\" / \"ab\"\nrule unused = \"x\"")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -21,7 +21,7 @@ func TestLint(t *testing.T) {
 		got = append(got, f.String())
 	}
 	want := []string{
-		"1:18: error: alternative 2 (`\"ab\"`) can never match: alternative 1 (`\"a\"` at 1:12) matches first wherever it could [shadowed-alternative]",
+		"1:19: error: alternative 2 (`\"ab\"`) can never match: alternative 1 (`\"a\"` at 1:13) matches first wherever it could [shadowed-alternative]",
 		"2:1: warning: rule unused is never used: main does not call it, directly or indirectly [unreachable-rule]",
 	}
 	if strings.Join(got, "\n") != strings.Join(want, "\n") {
@@ -47,7 +47,7 @@ func TestLint(t *testing.T) {
 	if _, err := pego.Lint(g, "start"); err == nil || !strings.Contains(err.Error(), "start rule start is not defined") {
 		t.Errorf("unknown start: %v", err)
 	}
-	bad, err := pego.ParseGrammar("def main = undefined")
+	bad, err := pego.ParseGrammar("rule main = undefined")
 	if err != nil {
 		t.Fatal(err)
 	}

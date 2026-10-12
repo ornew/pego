@@ -15,29 +15,29 @@ func TestFiniteStreamRepetitions(t *testing.T) {
 		count                                    int
 		ok                                       bool
 	}{
-		{"zero", `"a"{0}`, "", "", "", 0, true},
-		{"zero rejects element", `"a"{0}`, "a", "", "", 0, false},
-		{"zero leaves suffix", `"a"{0}`, "a", `"a"`, "", 0, true},
-		{"optional empty", `"a"{0,1}`, "", "", "", 0, true},
-		{"optional one", `"a"{0,1}`, "a", "", "", 1, true},
-		{"optional excess", `"a"{0,1}`, "aa", "", "", 1, false},
-		{"below minimum", `"a"{1,2}`, "", "", "", 0, false},
-		{"at minimum", `"a"{1,2}`, "a", "", "", 1, true},
-		{"at maximum", `"a"{1,2}`, "aa", "", "", 2, true},
-		{"beyond maximum", `"a"{1,2}`, "aaa", "", "", 2, false},
-		{"same-token suffix", `"a"{1,2}`, "aaa", `"a"`, "", 2, true},
-		{"distinct suffix", `"a"{1,2}`, "aa!", `"!"`, "", 2, true},
-		{"excess before suffix", `"a"{1,2}`, "aaa!", `"!"`, "", 2, false},
-		{"exact below minimum", `"a"{2}`, "a", "", "", 1, false},
-		{"exact", `"a"{2}`, "aa", "", "", 2, true},
-		{"exact excess", `"a"{2}`, "aaa", "", "", 2, false},
-		{"empty zero", `""{0}`, "", "", "", 0, true},
-		{"empty stalls", `""{0,2}`, "", "", "", 1, true},
-		{"captures", `(k:@"é"){1,2}`, "ééé", `"é"`, "", 2, true},
-		{"nil results", `r{1,2}`, "aaa", `"a"`, "\ndef r=\"a\" -> nil", 2, true},
+		{"zero", `"a" #repeat(0)`, "", "", "", 0, true},
+		{"zero rejects element", `"a" #repeat(0)`, "a", "", "", 0, false},
+		{"zero leaves suffix", `"a" #repeat(0)`, "a", `"a"`, "", 0, true},
+		{"optional empty", `"a" #repeat(0, 1)`, "", "", "", 0, true},
+		{"optional one", `"a" #repeat(0, 1)`, "a", "", "", 1, true},
+		{"optional excess", `"a" #repeat(0, 1)`, "aa", "", "", 1, false},
+		{"below minimum", `"a" #repeat(1, 2)`, "", "", "", 0, false},
+		{"at minimum", `"a" #repeat(1, 2)`, "a", "", "", 1, true},
+		{"at maximum", `"a" #repeat(1, 2)`, "aa", "", "", 2, true},
+		{"beyond maximum", `"a" #repeat(1, 2)`, "aaa", "", "", 2, false},
+		{"same-token suffix", `"a" #repeat(1, 2)`, "aaa", `"a"`, "", 2, true},
+		{"distinct suffix", `"a" #repeat(1, 2)`, "aa!", `"!"`, "", 2, true},
+		{"excess before suffix", `"a" #repeat(1, 2)`, "aaa!", `"!"`, "", 2, false},
+		{"exact below minimum", `"a" #repeat(2)`, "a", "", "", 1, false},
+		{"exact", `"a" #repeat(2)`, "aa", "", "", 2, true},
+		{"exact excess", `"a" #repeat(2)`, "aaa", "", "", 2, false},
+		{"empty zero", `"" #repeat(0)`, "", "", "", 0, true},
+		{"empty stalls", `"" #repeat(0, 2)`, "", "", "", 1, true},
+		{"captures", `(k:"é" #atomic) #repeat(1, 2)`, "ééé", `"é"`, "", 2, true},
+		{"nil results", `r #repeat(1, 2)`, "aaa", `"a"`, "rule r = \"a\" => nil", 2, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			src := fmt.Sprintf("def main=%s #stream %s $$%s", tc.repeat, tc.suffix, tc.definitions)
+			src := fmt.Sprintf("rule main = %s #stream %s $$\n%s", tc.repeat, tc.suffix, tc.definitions)
 			prog := compile(t, src)
 			data, err := prog.MarshalBinary("main")
 			if err != nil {
@@ -79,10 +79,10 @@ func TestFiniteStreamRepetitions(t *testing.T) {
 
 func TestZeroRepetitionDoesNotRunElement(t *testing.T) {
 	for _, src := range []string{
-		`def main=("a" "b"){0} "ab" $$`,
-		`def main=-("a" "b"){0} "ab" $$`,
-		`def main=xs:(f:"a" "b"){0} "ab" $$ -> map($xs, (x) => $x.f)`,
-		"def main=r{0} \"ab\" $$\ndef r=\"a\" -> nil",
+		`rule main = ("a" "b") #repeat(0) "ab" $$`,
+		`rule main = -("a" "b") #repeat(0) "ab" $$`,
+		`rule main = xs:(f:"a" "b") #repeat(0) "ab" $$ => map($xs, (x) => $x.f)`,
+		"rule main = r #repeat(0) \"ab\" $$\nrule r = \"a\" => nil",
 	} {
 		// The zero bound must leave the entire input for the suffix,
 		// including when the compiler projects or discards element values.
@@ -112,7 +112,7 @@ func TestZeroRepetitionDoesNotRunElement(t *testing.T) {
 }
 
 func TestFiniteStreamConsumerError(t *testing.T) {
-	prog := compile(t, `def main="a"{1,2} #stream $$`)
+	prog := compile(t, `rule main = "a" #repeat(1, 2) #stream $$`)
 	stop := errors.New("consumer stopped")
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []Unit{CodePoints, Bytes} {
@@ -129,8 +129,8 @@ func TestFiniteStreamConsumerError(t *testing.T) {
 }
 
 func BenchmarkStreamRepetitionLimit(b *testing.B) {
-	for _, tc := range []struct{ name, bound string }{{"Finite", "{10000}"}, {"Unbounded", "*"}} {
-		g, err := syntax.Parse("def main=\"a\"" + tc.bound + " #stream $$")
+	for _, tc := range []struct{ name, bound string }{{"Finite", "#repeat(10000)"}, {"Unbounded", "*"}} {
+		g, err := syntax.Parse("rule main = \"a\"" + tc.bound + " #stream $$")
 		if err != nil {
 			b.Fatal(err)
 		}

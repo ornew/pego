@@ -49,7 +49,7 @@ The library's `Unit` covers byte and Unicode-code-point counts for node spans, a
 - Convert flat byte/unit offsets as well as line/character positions, so any node span inside a fragment can be translated.
 - Preserve existing parsing, action, and diagnostic position behavior.
 
-## Non-goals
+## Non-Goals
 
 - Incremental edit application, changed-range computation, or source ownership by `Document`.
 - Parsing an arbitrary subrange while retaining absolute action positions or sharing memo entries with the containing document.
@@ -57,7 +57,7 @@ The library's `Unit` covers byte and Unicode-code-point counts for node spans, a
 
 ## Design
 
-### Public behavior and contracts
+### Public Behavior and Contracts
 
 `NewPositionMap` snapshots the supplied string value. The returned map is immutable and safe for concurrent reads; it may retain the source bytes for its lifetime. `ByteOffset` maps a zero-based line and character to a UTF-8 byte boundary. `Position` maps a byte boundary back to a line and character. `UnitOffset` and `ByteOffsetFromUnit` convert between flat byte offsets and byte, code-point, or UTF-16 offsets. Negative values, offsets outside the source, invalid encodings, and non-boundary code-point/UTF-16 positions return errors rather than rounding. This is a proposed strict public contract; the LSP adapter must preserve its existing protocol behavior, including clamping a position past a line end and mapping the middle of a surrogate pair to that character's start.
 
@@ -71,26 +71,26 @@ The input is still the complete supplied string for the selected rule: a grammar
 
 To parse a source slice, map its start and end to byte offsets and slice the original text. Use a `PositionMap` for the fragment to convert any code-point `Node.Start`/`Node.End` through `ByteOffsetFromUnit`; add the slice's byte start; then use the original map's `Position` or `UnitOffset` as needed. `ConsumedBytes` directly identifies the consumed fragment endpoint. Do not add a byte base to code-point offsets. This preserves local action/error positions and avoids inferring a node's consumption.
 
-### Implementation and invariants
+### Implementation and Invariants
 
 Extract the LSP checkpoint/index logic behind a small reusable package-level implementation, then have LSP and the public map share the same indexing machinery. Keep the map's source snapshot and checkpoints private. Build checkpoints at character boundaries and convert from the nearest checkpoint, validating both the input coordinate and resulting byte boundary. Keep the public method strict; an LSP adapter preserves the current clamping and surrogate-interior behavior instead of changing protocol results.
 
 Implement `Parser.ParsePrefix` through a runtime entry path that selects `name` and returns the final byte cursor before the whole-input check used by `Parse`. Reuse `parseOptions(opts)` exactly once; do not alter `Parser.start`. Preserve concurrent safety by keeping all parse state in the existing per-call runtime. Keep `Parse`'s whole-input contract unchanged. If a named whole-input convenience is added, implement it through the same named-start machinery and keep its contract separate from prefix parsing.
 
-### Compatibility and backend support
+### Compatibility and Backend Support
 
 The additions are additive Go APIs. Existing `Parser.WithStart`, `Parser.Parse`, generated `ParseRule`, `Unit`, syntax errors, and LSP coordinate behavior remain unchanged. `ParsePrefix` delegates to the selected compiled backend, so closure, recursive bytecode, and iterative bytecode behavior should remain aligned. Recognition and all current parse options retain their meanings. No grammar or bytecode serialization changes are needed.
 
 Document the coordinate model in the public Go API and update LSP internals to use the common index without changing protocol results. If a JavaScript/TypeScript PositionMap is considered later, define its string-index behavior independently; this proposal does not imply a TypeScript API.
 
-### Implementation sequence
+### Implementation Sequence
 
 1. Extract the private LSP index into shared indexing machinery; add strict public boundary conversion while preserving the LSP adapter's clamping behavior.
 2. Add public `PositionMap` line/character and flat byte/unit conversions with malformed-UTF-8 and CRLF-interior tests.
 3. Add `Parser.ParsePrefix` with runtime byte-cursor reporting and differential tests across backends and options.
 4. Add a fragment example translating inner node spans and consumed endpoints through byte offsets; keep memo reuse and absolute action offsets out of scope.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Keep the LSP mapper private and ask every client to implement conversions.** This avoids public API commitments but duplicates Unicode and newline edge cases. The existing checkpoint implementation is a concrete basis for a reusable API.
 - **Expose only byte/code-point offset conversion.** This is smaller, but clients that need editor ranges would still duplicate line indexing. The proposed line/character methods make the source coordinate model explicit.
@@ -104,10 +104,10 @@ Test conversions at the start/end of input and lines, empty text, LF/CRLF/lone-C
 
 For `ParsePrefix`, test named starts, incomplete suffixes, EOF assertions, options in both units, recognition, nil-returning and zero-width actions, recovered errors, ordinary failure and fatal action errors. Verify exact `ConsumedBytes` and unit consumption even when `Node` is nil or has a shorter span. Compare each backend with a wrapper-rule reference. Verify arbitrary node spans and consumed endpoints can be translated from a fragment through flat unit conversion and the original map.
 
-## Performance and results
+## Performance and Results
 
 The LSP index already uses checkpoints to avoid rescanning a long line from its beginning. Reuse that design rather than adding a second index. Before accepting a public implementation, compare conversion time and retained bytes on short editor buffers and long lines against the current LSP implementation; no performance result is established by this proposal.
 
-## Limitations and open questions
+## Limitations and Open Questions
 
 The exact exported names and whether recovered syntax errors should accompany a successful prefix in the existing `error` result need maintainer review. The recommendation is to preserve `Parse`'s existing `SyntaxErrors` behavior while returning consumption for that recovered success. Prefix parsing deliberately returns local coordinates; callers that need absolute positions must translate them.

@@ -1,11 +1,11 @@
-# 92. Reuse generated Node capture scratch
+# 92. Reuse Generated Node Capture Scratch
 
 **Status:** Applied to generated Go Node capture scratch. Full root, parser-module,
 regeneration, vet and site checks pass.
 
 Generated plain Go Node parsing creates capture frames and slot storage while
 walking rule calls. These values are parse scratch, but must remain available
-through parse completion for invocation, rollback, left recursion, Pratt,
+through parse completion for invocation, rollback, left recursion, Operators Rule,
 cuts, recovery and actions. The candidate uses stable, append-only frame and
 slot arenas separate from public result `ptrSlab` storage. Individual frames
 are not returned or recycled before the parse ends.
@@ -27,7 +27,7 @@ frame path for capture-dependent predicates. The parser gains nine native
 words of state; same-source reference binaries include this 72-byte field on
 64-bit hosts, while exact-parent comparisons include its footprint cost.
 
-## Scope and validation
+## Scope and Validation
 
 The behavioral contract is to preserve every result node and capture value,
 including values visible to actions and memoized calls, while releasing
@@ -46,7 +46,7 @@ three-sample full snapshot at
 is recorded in [the full results](../benchmarks.md), without attributing it to
 this optimization.
 
-## Measurements and limits
+## Measurements and Limits
 
 Measurements used Go 1.27.1 on darwin/arm64 (Apple M3 Max,
 `GOMAXPROCS=4`). Five alternating parent, same-source reference and scratch

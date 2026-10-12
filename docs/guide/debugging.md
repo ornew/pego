@@ -18,21 +18,21 @@ The examples use the `pego` command; build it with `go build -o pego ./cmd/pego`
 and its output is copied from the terminal (standard output and standard error together). Times in profiles will
 differ on your machine.
 
-## 1. The example grammar
+## 1. The Example Grammar
 
 A small configuration language with assignments, updates and calls:
 
 ```pego
 // config.pego
-def main = ws (stmt ws)* $$
-def stmt = assign / update / call
-def assign = ident ws "=" ws value ";"
-def update = ident ws "+=" ws value ";"
-def call = ident ws "(" ws args? ws ")" ";"
-def args = value (ws "," ws value)*
-def value = @(?0-9)+ / ident
-def ident = @((?a-z_)+ ("." (?a-z_)+)*)
-def ws = (? \t\n)*
+rule main = ws (stmt ws)* $$
+rule stmt = assign / update / call
+rule assign = ident ws "=" ws value ";"
+rule update = ident ws "+=" ws value ";"
+rule call = ident ws "(" ws args? ws ")" ";"
+rule args = value (ws "," ws value)*
+rule value = [0-9]+ #atomic / ident
+rule ident = ([a-z_]+ ("." [a-z_]+)*) #atomic
+rule ws = [ \t\n]*
 ```
 
 Two inputs, the second with a missing comma:
@@ -46,7 +46,7 @@ server.port = 8080;
 log.rotate(7 size);
 ```
 
-## 2. Why does an input fail?
+## 2. Why Does an Input Fail?
 
 A PEG parser backtracks, so a syntax error does not come from one place: it lists everything that was expected at the
 farthest position any alternative reached (see [errors-and-recovery.md](errors-and-recovery.md#1-what-a-syntax-error-is)).
@@ -55,11 +55,11 @@ they were called:
 
 ```
 $ pego explain -g config.pego < bad.txt
-2:14: syntax error: expected ")", ",", (? \t\n)
+2:14: syntax error: expected ")", ",", [ \t\n]
 
 Calls that recorded what was expected at 2:14 (innermost first):
 
-  ws 2:13: matched " ", then expected (? \t\n)
+  ws 2:13: matched " ", then expected [ \t\n]
     in args 2:12
     in call 2:1
     in stmt 2:1
@@ -70,7 +70,7 @@ Calls that recorded what was expected at 2:14 (innermost first):
     in stmt 2:1
     in main 1:1
 
-  ws 2:13: matched " ", then expected (? \t\n)
+  ws 2:13: matched " ", then expected [ \t\n]
     in call 2:1
     in stmt 2:1
     in main 1:1
@@ -88,8 +88,8 @@ shown under them. So the input is a call whose argument list stopped after `7`, 
 Some things to know:
 
 - An entry says `matched ..., then expected` when the call succeeded but tried to go further; repetitions and optional
-  parts always do. Such items are why error messages mention white space: here `(? \t\n)` comes from `ws`. Writing
-  `ws` as `(&(? \t\n) .)*` keeps it out of the lists (see
+  parts always do. Such items are why error messages mention white space: here `[ \t\n]` comes from `ws`. Writing
+  `ws` as `(&[ \t\n] .)*` keeps it out of the lists (see
   [writing readable messages](errors-and-recovery.md#3-writing-readable-messages)).
 - `[memo]` marks a call answered from the memo: its expectations were recorded when the rule was first evaluated at
   that position, perhaps for another caller.
@@ -100,7 +100,7 @@ Some things to know:
   expression a `#recover` recovered from are listed under the call that contains it, marked `(recovered by #recover)`.
 - `-n` limits the number of entries per error (default 10).
 
-## 3. What does the parser do?
+## 3. What Does the Parser Do?
 
 `pego trace` prints every rule call of a parse as an indented tree. A call whose nested calls are shown takes two
 lines, its start (`rule line:col`) and its end (`rule -> result`); a call without shown nested calls takes one:
@@ -147,7 +147,7 @@ Other marks on a result:
   inside it show as memo hits that return the match so far:
 
   ```
-  $ pego trace -g lr.pego -i '1+2'      # def sum = sum "+" n / n
+  $ pego trace -g lr.pego -i '1+2'      # rule sum =  sum "+" n / n
   main 1:1
     sum 1:1
       sum 1:1 -> failed [memo]
@@ -160,7 +160,7 @@ Other marks on a result:
   main -> matched 1:1-1:4 "1+2"
   ```
 
-- `(level n)` after a rule name: a Pratt rule called with a binding level (`e(name)`); `[lookahead]`: a call inside
+- `(level n)` after a rule name: an Operators Rule call with a binding level (`e(name)`); `[lookahead]`: a call inside
   `&` or `!`.
 
 Traces grow quickly, so narrow them down:
@@ -204,7 +204,7 @@ Traces grow quickly, so narrow them down:
     value 2:12 -> matched 2:12-2:13 "7"
     ws 2:13 -> matched 2:13-2:14 " "
   args -> matched 2:12-2:13 "7"
-  pego: 2:14: syntax error: expected ")", ",", (? \t\n)
+  pego: 2:14: syntax error: expected ")", ",", [ \t\n]
   ```
 
   (`args` matched, so there is no failure to show; the error comes after the trace.)
@@ -217,8 +217,8 @@ looked at) and, with `-failures`, `failure`:
 ```
 $ pego trace -g config.pego -f json -rule call -max-depth 1 -failures < bad.txt
 {"event":"enter","rule":"call","depth":3,"pos":20,"line":2,"col":1}
-{"event":"exit","rule":"call","depth":3,"pos":20,"line":2,"col":1,"matched":false,"end":20,"endLine":2,"endCol":1,"evals":1,"examined":34,"failure":{"pos":33,"line":2,"col":14,"expected":["\")\"","\",\"","(? \\t\\n)"]}}
-pego: 2:14: syntax error: expected ")", ",", (? \t\n)
+{"event":"exit","rule":"call","depth":3,"pos":20,"line":2,"col":1,"matched":false,"end":20,"endLine":2,"endCol":1,"evals":1,"examined":34,"failure":{"pos":33,"line":2,"col":14,"expected":["\")\"","\",\"","[ \\t\\n]"]}}
+pego: 2:14: syntax error: expected ")", ",", [ \t\n]
 ```
 
 `trace` takes the flags of `parse` that select what is parsed (`-s`, `-i`, `-unit`, `-backend`) and exits with status
@@ -226,7 +226,7 @@ pego: 2:14: syntax error: expected ")", ",", (? \t\n)
 match the next character (first-character dispatch), not always the same ones, so their traces can differ in calls
 that fail on the first character; results never differ.
 
-## 4. Why is a parse slow?
+## 4. Why Is a Parse Slow?
 
 `pego profile` parses the input once with tracing and prints the cost of each rule. On 900 statements (35 KB):
 
@@ -258,10 +258,10 @@ choose:
 
 ```pego
 // config_fast.pego (changed rules)
-def stmt = ident ws (assign / update / call)
-def assign = "=" ws value ";"
-def update = "+=" ws value ";"
-def call = "(" ws args? ws ")" ";"
+rule stmt = ident ws (assign / update / call)
+rule assign = "=" ws value ";"
+rule update = "+=" ws value ";"
+rule call = "(" ws args? ws ")" ";"
 ```
 
 ```
@@ -292,7 +292,7 @@ Flags: `-sort` chooses the column to sort by (`self`, the default, `time`, `call
 same data as JSON (times in nanoseconds), and `-s`, `-i`, `-unit` and `-backend` work as for `parse`. The profile is
 printed even when the input has a syntax error (the `result` line shows it), and the exit status is 0.
 
-## 5. Reading the profile
+## 5. Reading the Profile
 
 | Column | Meaning |
 |:--|:--|
@@ -366,10 +366,10 @@ main at 1:1
     key at 1:5
     key matched "b"
     value at 1:7
-    value failed: 1:7: syntax error: expected (?0-9)
-  pair failed: 1:7: syntax error: expected (?0-9)
-main failed: 1:7: syntax error: expected (?0-9)
-1:7: syntax error: expected (?0-9)
+    value failed: 1:7: syntax error: expected [0-9]
+  pair failed: 1:7: syntax error: expected [0-9]
+main failed: 1:7: syntax error: expected [0-9]
+1:7: syntax error: expected [0-9]
 ```
 
 A `TraceEvent` has `Kind` (`TraceEnter` or `TraceExit`), `Rule`, `Level`, `Depth`, `Pos` and `Lookahead`; exit events
@@ -398,7 +398,7 @@ backend, with `RecognizeOnly`, `ParseStream` and `Document` (the option given to
 `Document.Parse`), and several `WithTrace` and `WithProfile` options can be combined. A `Profile` is not safe for
 concurrent parses. Generated Go parsers (`pego gen`) have no tracing.
 
-## 7. Costs and limits
+## 7. Costs and Limits
 
 - **Off, tracing costs nothing measurable.** A parse without `WithTrace` pays one pointer check per rule call that goes
   through the engine's general call path; plain calls of small rules skip that path and pay nothing. See

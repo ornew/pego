@@ -13,8 +13,8 @@ import (
 // or all rows retained. Input and compiled-program storage precede the
 // baseline GC and are held through the final GC in both variants.
 func BenchmarkStreamTextRetainedHeap(b *testing.B) {
-	g, err := syntax.Parse(`def main = row* #stream $$
-def row = key:@(?a-z)+ "=" value:@(?0-9)+ "\n"`)
+	g, err := syntax.Parse(`rule main = row* #stream $$
+rule row = key:[a-z]+ #atomic "=" value:[0-9]+ #atomic "\n"`)
 	if err != nil {
 		b.Fatal(err)
 	}

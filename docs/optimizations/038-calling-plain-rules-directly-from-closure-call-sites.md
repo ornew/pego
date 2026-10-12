@@ -1,4 +1,4 @@
-# 38. Calling plain rules directly from closure call sites
+# 38. Calling Plain Rules Directly from Closure Call Sites
 
 - Rules that are never memoized in an ordinary parse and have no captures always end up in `invokePlain` (change 19),
   but every call went through `call`'s checks first. Such rules are now marked when the program is built

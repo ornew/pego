@@ -1,4 +1,4 @@
-# 44. Changes 36 and 37 in the VMs (instruction set 2)
+# 44. Changes 36 and 37 in the VMs (Instruction Set 2)
 
 - The VMs now compare `text(a) == text(b)` without boxing the strings and build no intermediate lists for a `concat`
   of `list`, `map` and `concat` calls, through six new expression instructions (`ETEXTCHK`, `ETEXTEQ`,

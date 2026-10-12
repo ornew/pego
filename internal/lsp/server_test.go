@@ -55,10 +55,10 @@ func TestRequestBeforeInitialize(t *testing.T) {
 	}
 	// Notifications before initialize are dropped: no diagnostics are published for this document.
 	c.notify("textDocument/didOpen", map[string]any{
-		"textDocument": map[string]any{"uri": "file:///early.pego", "languageId": "pego", "version": 1, "text": "def"},
+		"textDocument": map[string]any{"uri": "file:///early.pego", "languageId": "pego", "version": 1, "text": "rule"},
 	})
 	c.request("initialize", map[string]any{"capabilities": map[string]any{}})
-	if diags := c.open("file:///late.pego", `def main = "a"`); len(diags) != 0 {
+	if diags := c.open("file:///late.pego", `rule main = "a"`); len(diags) != 0 {
 		t.Errorf("diagnostics %v", diags)
 	}
 	if e := c.requestError("textDocument/hover", at("file:///early.pego", 0, 0)); e.Code != codeRequestFailed {
@@ -164,7 +164,7 @@ func TestInputEndsBeforeExit(t *testing.T) {
 }
 
 func TestClientCapabilities(t *testing.T) {
-	src := "type P struct { A Match }\ndef a = x:\"a\" -> len($x)"
+	src := "type P struct { A Match }\nrule a = x:\"a\" => len($x)"
 	completion := func(c *testClient) CompletionItem {
 		t.Helper()
 		var list completionList
@@ -216,7 +216,7 @@ func TestClientCapabilities(t *testing.T) {
 	want := []symbolInformation{
 		{Name: "P", Kind: symbolKindStruct, Location: Location{URI: uri, Range: rng(0, 0, 0, 25)}},
 		{Name: "A", Kind: symbolKindField, Location: Location{URI: uri, Range: rng(0, 16, 0, 23)}, ContainerName: "P"},
-		{Name: "a", Kind: symbolKindFunction, Location: Location{URI: uri, Range: rng(1, 0, 1, 24)}},
+		{Name: "a", Kind: symbolKindFunction, Location: Location{URI: uri, Range: rng(1, 0, 1, 25)}},
 	}
 	if !reflect.DeepEqual(flat, want) {
 		t.Errorf("flat symbols\ngot  %+v\nwant %+v", flat, want)

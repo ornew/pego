@@ -1,1 +1,1 @@
-def main: []Match = (?x)+ #recover(skip=(?a-z)+)
+rule main []Match = [x]+ #recover(skip=[a-z]+)

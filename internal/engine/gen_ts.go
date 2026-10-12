@@ -329,7 +329,7 @@ func (g *tsGen) rules() {
 	for _, r := range all {
 		s := newScope()
 		scopes[r] = s
-		if _, ok := r.def.Expr.(*grammar.Pratt); !ok {
+		if _, ok := r.def.Expr.(*grammar.OperatorsRule); !ok {
 			g.cur, g.proj = r, g.projections(r)
 			bodies[r] = g.expr(r.def.Expr, s, !r.lean)
 			g.proj = nil
@@ -348,9 +348,9 @@ func (g *tsGen) rules() {
 	}
 	fmt.Fprintf(init, "const %s = %d;\n", g.seenVar(), g.prog.nseen)
 	for _, r := range all {
-		if pr, ok := r.def.Expr.(*grammar.Pratt); ok {
+		if pr, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
 			g.cur = r
-			g.pratt(r, pr)
+			g.operatorsRule(r, pr)
 			continue
 		}
 		fmt.Fprintf(init, "%s.body = %s;\n", g.ruleVar(r), g.fn(bodies[r]))
@@ -467,7 +467,7 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 		r := g.prog.byName[e.Name]
 		min := 0
 		if e.Level != "" {
-			for i, l := range r.def.Expr.(*grammar.Pratt).Levels {
+			for i, l := range r.def.Expr.(*grammar.OperatorsRule).Levels {
 				if l.Name == e.Level {
 					min = i
 				}
@@ -476,9 +476,9 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 		if !build && r.twin != nil {
 			r = r.twin
 		}
-		_, pratt := r.def.Expr.(*grammar.Pratt)
+		_, operatorsRule := r.def.Expr.(*grammar.OperatorsRule)
 		switch {
-		case r.plain && !pratt:
+		case r.plain && !operatorsRule:
 			// Never memoized and without captures: call does nothing but invokePlain, which a
 			// function of its own does with a direct call of the body (see plainCall).
 			g.plainUsed[r] = true
@@ -688,8 +688,8 @@ func (g *tsGen) attributed(e *grammar.Attributed, s *scope, build bool) string {
 	for _, a := range e.Attrs {
 		switch a.Name {
 		case "error":
-			msg := a.Args[0].Value.(*grammar.Literal).Value
-			m = g.method("#error", fmt.Sprintf("  return p.errorAttr(%s, msgBit | %d);\n", g.fn(m), g.desc(msg))) + "(p)"
+			msg := attributeMessage(a)
+			m = g.method("@error", fmt.Sprintf("  return p.errorAttr(%s, msgBit | %d);\n", g.fn(m), g.desc(msg))) + "(p)"
 		case "recover":
 			skipExpr, _ := a.Arg("skip")
 			skip := g.expr(skipExpr, s, false)
@@ -699,9 +699,9 @@ func (g *tsGen) attributed(e *grammar.Attributed, s *scope, build bool) string {
 	return m
 }
 
-func (g *tsGen) pratt(r *rule, e *grammar.Pratt) {
+func (g *tsGen) operatorsRule(r *rule, e *grammar.OperatorsRule) {
 	var b strings.Builder
-	fmt.Fprintf(&b, "%s.pratt = {\n", g.ruleVar(r))
+	fmt.Fprintf(&b, "%s.operatorsRule = {\n", g.ruleVar(r))
 	if e.Skip != nil {
 		fmt.Fprintf(&b, "  skip: %s,\n", g.fn(g.expr(e.Skip, newScope(), false)))
 	} else {
@@ -709,14 +709,14 @@ func (g *tsGen) pratt(r *rule, e *grammar.Pratt) {
 	}
 	b.WriteString("  operands: [\n")
 	for _, o := range e.Operands {
-		fmt.Fprintf(&b, "    %s,\n", g.prattLine(o.Expr, o.Action, false))
+		fmt.Fprintf(&b, "    %s,\n", g.operatorsRuleLine(o.Expr, o.Action, false))
 	}
 	b.WriteString("  ],\n")
 	var prefix, led []string
 	id := 0
 	for i, l := range e.Levels {
 		for _, op := range l.Operators {
-			s := fmt.Sprintf("    { id: %d, kind: %s, assoc: %s, level: %d, line: %s },\n", id, tsString(op.Kind), tsString(op.Assoc), i+1, g.prattLine(op.Expr, op.Action, true))
+			s := fmt.Sprintf("    { id: %d, kind: %s, assoc: %s, level: %d, line: %s },\n", id, tsString(op.Kind), tsString(op.Assoc), i+1, g.operatorsRuleLine(op.Expr, op.Action, true))
 			id++
 			if op.Kind == grammar.Prefix {
 				prefix = append(prefix, s)
@@ -728,11 +728,11 @@ func (g *tsGen) pratt(r *rule, e *grammar.Pratt) {
 	fmt.Fprintf(&b, "  prefix: [\n%s  ],\n", strings.Join(prefix, ""))
 	fmt.Fprintf(&b, "  led: [\n%s  ],\n", strings.Join(led, ""))
 	b.WriteString("};\n")
-	fmt.Fprintf(&b, "%s.body = (p: Parser, min: number): R => p.prattParse(%s, min);\n", g.ruleVar(r), g.ruleVar(r))
+	fmt.Fprintf(&b, "%s.body = (p: Parser, min: number): R => p.operatorsRuleParse(%s, min);\n", g.ruleVar(r), g.ruleVar(r))
 	g.init.WriteString(b.String())
 }
 
-func (g *tsGen) prattLine(e grammar.Expr, action grammar.Term, operator bool) string {
+func (g *tsGen) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator bool) string {
 	s := newScope()
 	var locals []string
 	if operator {

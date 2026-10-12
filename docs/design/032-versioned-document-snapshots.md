@@ -65,7 +65,7 @@ revision.
 - Separate correctness from representation tuning, with independently measured
   snapshot capture, edit, reparse, materialization, and retained-version costs.
 
-## Non-goals
+## Non-Goals
 
 This record does not change PEG choices, actions, recovery, `Node` serialization,
 `Node.Clone`, or the mutable Document contract. It does not add generated Go/TS
@@ -77,7 +77,7 @@ part of this feature.
 
 ## Design
 
-### Proposed public API
+### Proposed Public API
 
 All signatures below are proposals. Document construction keeps its existing
 functional `ParseOption` arguments; no additional options entry point is needed.
@@ -157,7 +157,7 @@ mutable Nodes, preserving shared descendants, cycles, nil slots, field values/or
 and nil versus allocated-empty collections. Each call makes a separate graph.
 It is the explicit adapter for existing Node/JSON consumers and must be measured.
 
-### Versions and pending edits
+### Versions and Pending Edits
 
 Version is a text revision, not a parse counter or the internal edit-log
 generation. Construction starts at sequence 1. Each successful single Edit and
@@ -186,7 +186,7 @@ snapshot of the same version may reparse and change statistics, but not text or
 version; snapshots themselves are immutable. No promise is made to reuse an
 outcome solely because a version is unchanged, especially with tracing.
 
-### Atomic batch semantics
+### Atomic Batch Semantics
 
 All edits are simultaneous replacements in the text identified by base. They
 are not a sequence of coordinates adjusted after each replacement. Require
@@ -223,7 +223,7 @@ mapped edit log and invalidation state privately, then publish them together.
 Edits already pending before the batch belong to the base text; batch validation
 uses that text, not the text of the last parse.
 
-### Parse outcomes, diagnostics, and ownership
+### Parse Outcomes, Diagnostics, and Ownership
 
 After safe graph capture, Snapshot and its returned error describe the same
 version and are available for all normally returned parse outcomes:
@@ -287,7 +287,7 @@ or of a materialized graph, cannot alter an existing snapshot. Freezing observes
 the actual legacy parse result at capture time; it cannot retroactively erase
 caller changes made before capture or promise fresh equivalence for such changes.
 
-### Representation and reuse invariants
+### Representation and Reuse Invariants
 
 The reference path freezes the result graph iteratively with an identity map,
 including child and node-field edges. Register each destination identity before
@@ -343,7 +343,7 @@ retaining discarded memo/provisional nodes merely because a sequence once
 referenced them. Snapshots retain only their immutable graph/text/diagnostics,
 not a live Document, memo table, full edit log, or parser scratch.
 
-### Compatibility and implementation sequence
+### Compatibility and Implementation Sequence
 
 Core Closure, Bytecode, and BytecodeIterative Documents are the initial scope,
 including AST-omitted compiled grammars on available bytecode backends. Generated
@@ -369,7 +369,7 @@ No stage is implemented by this record. Stages 1–2 can provide useful contract
 without claiming cheap snapshots. Chunked input-storage work may proceed independently
 and later be combined under a separately measured control.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Continue Parse plus Node.Clone.** Stable, compatible baseline; copies unique
   graph nodes and collections and keeps immutable scalar/string values. Consumers
@@ -410,7 +410,7 @@ These are proposed gates, not completed checks:
   byte-prefix completion across neighboring replacements and at EOF, normalized
   code-point editing, newline anchors, and line/column diagnostics.
 - Position-dependent action scalars, field/text predicates, action errors, cuts,
-  indirect LR/provisional seeds, Pratt, recovered errors, nil results and scalars
+  indirect LR/provisional seeds, Operators Rule, recovered errors, nil results and scalars
   inside fields, deep lists, DAGs, and repetition resumption after multiple edits.
 - Freeze/materialize versus actual Parse plus Clone: exact spans, text, field order,
   nil/empty collections, error classifications and DAG identities. Deep controls
@@ -433,7 +433,7 @@ These are proposed gates, not completed checks:
   multiple snapshots while a sole owner reparses the Document. Check release of
   old versions, scratch/memo detachment, and large-to-small edits with forced GC.
 
-## Performance and results
+## Performance and Results
 
 No current measurements or speed claims. Pin baseline/candidate revisions,
 toolchains, backend/unit, grammar/input hashes, retained-version count, and control
@@ -463,7 +463,7 @@ materialization both alone and in the realistic edit-to-consumer pipeline.
 Record adopted optimization methods/results in the optimization catalog with
 code; update this record with actual outcomes and remaining gates.
 
-## Limitations and open questions
+## Limitations and Open Questions
 
 The recommended initial contract is pre-version batches plus owned read-only
 snapshots, including failed parse outcomes. It preserves legacy APIs but incurs

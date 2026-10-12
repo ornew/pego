@@ -15,7 +15,7 @@ const (
 	TypeMatch    = "Match"    // terminal (literal, character class, atomic, and so on)
 	TypeSeq      = "Seq"      // sequence
 	TypeList     = "List"     // repetition
-	TypeOperator = "Operator" // application of a Pratt operator without an action
+	TypeOperator = "Operator" // application of a OperatorsRule operator without an action
 	TypeError    = "Error"    // range skipped by error recovery
 )
 

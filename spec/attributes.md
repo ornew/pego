@@ -1,112 +1,107 @@
-# Attributes
+# Attributes and Pragmas
 
-An attribute, written `#name` or `#name(key=value, ...)`, is attached to a
-parsing expression and changes how that expression is parsed.
+Attributes and behavioral pragmas annotate parsing expressions. An attribute
+uses `@name`; a behavioral pragma uses `#name`. Attributes accept positional
+arguments followed by named arguments. A positional argument may be `nil`, so
+an omitted slot remains distinct from an absent argument. Duplicate named
+arguments are errors. Pragmas have pragma-specific argument syntax rather than
+the generic attribute argument rules.
+Declaration-prefix annotations are not supported.
 
-An attribute binds as tightly as a postfix operator and applies to the
-expression immediately before it. When several attributes follow an expression,
-they are applied in the order written, from the innermost outward.
-
-```pego
-def hello = "hello" / _|_ #error(message="expect 'hello'")   // #error applies to _|_
-def stmt = (let / expr) #error(message="expected a statement") #recover(skip=(?^;)+ ";")
-```
-
-Argument values are parsing expressions; a string argument is written as a
-literal. The `(` MUST immediately follow the attribute name. Unknown attributes
-and unknown arguments are errors.
-
-| Attribute | Description |
-|:--|:--|
-| `#error(message="...")` | Replaces the expected items of a [syntax error](parsing.md#syntax-errors) inside the expression with a message |
-| `#recover(skip=e)` | When the expression fails, skips input matching `e` and continues parsing |
-| `#stream` | In a stream parse, hands each element of a repetition to the caller as soon as it matches |
-
-## `#error`
-
-When the expression fails, `#error(message="...")` replaces all the items that
-were expected inside the expression with `message`. The message is reported at
-the farthest position reached inside the expression.
+Annotations apply from left to right in written order. A postfix annotation
+applies to the immediately preceding expression; parenthesize a sequence when
+the annotation should wrap the complete sequence rather than its final item.
 
 ```pego
-def let = "let" " " name #error(message="expected a name") ";"
-// "let 1;" → 1:5: expected a name
+rule stmt = (let / expr) @error("expected a statement") #recover(skip=[^;]+ ";")
 ```
 
-If several messages apply to the same position, they are joined with `; `. When
-a position has a message, the expected items at that position are not shown.
-If the expression succeeds, the expected items and messages recorded inside it
-are kept as usual.
+| Annotation | Kind | Description |
+|:--|:--|:--|
+| `@error("...")` | Attribute | Replaces expected items inside an expression with a custom message |
+| `#recover(skip=e)` | Behavioral pragma | On failure, skips input matching `e` and continues parsing |
+| `#repeat(n)` | Behavioral pragma | Repeats exactly `n` times |
+| `#repeat(n,)` | Behavioral pragma | Repeats at least `n` times |
+| `#repeat(,m)` | Behavioral pragma | Repeats from zero through `m` times |
+| `#repeat(n,m)` | Behavioral pragma | Repeats from `n` through `m` times |
+| `#stream` | Behavioral pragma | Hands each element of a repetition to the caller as soon as it matches in a stream parse |
+| `#atomic` | Behavioral pragma | Returns one text-only `Match` and suppresses construction of child nodes |
+
+Unknown annotations, invalid arguments, and invalid targets are grammar errors.
+
+## `@error`
+
+When an expression fails, `@error("...")` replaces its expected items with
+the configured message at the farthest position reached inside it. A named
+form such as `@error(message="...")` is equivalent. When several messages
+apply at one position, they are joined with `; `. If the expression succeeds,
+expectations recorded inside it are kept as usual.
+
+```pego
+rule let = "let" " " name @error("expected a name") ";"
+```
 
 ## `#recover`
 
-When the expression fails, `#recover(skip=e)` records the syntax error and then,
-starting from the position where the expression began, skips the input that `e`
-matches. The value of the expression becomes an `Error` node that covers the
-skipped input, and parsing continues after it.
+On failure, `#recover(skip=e)` records the syntax error and starts matching
+`e` from the annotated expression's initial position. If `e` matches and
+consumes input, the expression produces an `Error` node covering the skipped
+input and parsing continues.
 
 ```pego
-// If a statement cannot be parsed, skip up to and including the next ";".
-def stmt = s:(let / assign / call) #recover(skip=(?^;)+ ";") -> $s
+// If a statement fails, skip through its next semicolon.
+rule stmt = s:(let / assign / call) #recover(skip=[^;]+ ";") => $s
 ```
 
-| `Error` node | Value |
-|:--|:--|
-| Range and text | From the start of the expression to the end of the skipped input |
-| `message` field | The recorded syntax error, including its position, as a `string` |
-
-- If `e` fails, or matches without consuming input, there is no recovery and the
-  expression fails. Therefore `#recover` inside a repetition cannot loop
-  forever.
-- `e` MUST NOT contain captures.
-- Recovered errors are returned together with the resulting node. In the Go API,
-  `Parser.Parse` returns the node and a `SyntaxErrors` error that lists them.
-- If parsing still fails after recovery, only the final syntax error is
-  returned.
-- An error recovered inside a match that was later undone by backtracking is
-  not reported.
-- An expression that has no value (a lookahead or a predicate, for example) has
-  none after a recovery either; the error is still recorded.
-- The type of an expression with `#recover` is the union of its original type
-  and `Error`. `Error` is assignable to every node type (see
-  [Assignability](types.md#assignability)).
-
-See [examples/minilang](../examples/minilang/) for a complete example of error
-recovery.
+The skip expression cannot contain captures and must consume input. Recovered
+errors are returned with the resulting node. Backtracking that undoes a
+recovery also removes its error. A recovered expression's type is the union of
+its original type and `Error`, and `Error` is assignable to every node type.
+`Parser.Parse` returns a recovered node together with a `SyntaxErrors` error
+listing the diagnostics. If parsing later fails, only the final syntax error
+is returned. A no-value expression, including lookahead or a predicate,
+remains no-value after recovery, though its error is recorded.
 
 ## `#stream`
 
-`#stream` is attached to a repetition (`*`, `+` or `{n,m}`) at the top level of
-a rule body. When that rule is the start rule of a stream parse (Go API
-`Parser.ParseStream`, command line `pego parse -stream`), each element of the
-repetition is handed to the caller as soon as it matches.
+`#stream` annotates a repetition at the top level of the start rule used by a
+stream parse. Each matched element is handed to the caller as soon as it
+matches.
 
 ```pego
-// Receive a log with one record per line, record by record.
-def main = ^^ header records:record* #stream $$
+// Receive a log one record at a time.
+rule main = ^^ header records:record* #stream $$
 ```
 
-- A stream parse reads only as much input as it needs, and discards each handed
-  element together with the input and memoization data before it, so the input
-  need not fit in memory.
-  In either position unit, decoding a complete character does not require
-  future bytes. An incomplete UTF-8 prefix requires more bytes or actual EOF;
-  a non-EOF reader error terminates the parse.
-- Handed elements are not included in the value (`List`) of the repetition.
-- The first successful iteration that consumes no input is handed to the
-  caller and ends the repetition, even if its minimum has not been met. It
-  counts once; a minimum failure then returns an error without retracting it.
-  The same stopping/counting rule applies to ordinary repetition.
-- Once an element is handed over it is final: the parser never backtracks to
-  a position before it. For this reason, `#stream` MUST appear only at the top
-  level of a rule body: on the body itself, on an element of the body's
-  sequence, or on the expression captured by such an element. A rule body MUST
-  contain at most one `#stream`.
-- `#recover` MUST NOT wrap the same repetition as `#stream`, in either attribute
-  order. Recovery rewinds to the wrapped expression's start, where streamed
-  input may already have been discarded. Put recovery inside the repeated
-  element instead; `#error` may still label the streaming repetition.
-- Starting a stream parse with a rule that has no `#stream` is an error.
-- `#stream` takes no arguments.
-- In an ordinary parse (`Parser.Parse`), `#stream` has no effect: the
-  repetition behaves as usual.
+Handed elements are not included in the repetition's returned list. Once
+handed over, an element is final and the parser does not backtrack before it.
+Therefore a rule body contains at most one `#stream`, on the complete body, a
+top-level sequence element, or the expression captured by such an element.
+`#recover` cannot wrap the same repetition in either order. In an ordinary
+parse, `#stream` has no effect. A stream parse with no `#stream` on its start
+rule is an error.
+
+A stream parse reads only as much input as needed and may discard each handed
+element with preceding input and memoization data. Decoding a complete
+character needs no future bytes; an incomplete UTF-8 prefix needs more bytes
+or actual EOF, while a non-EOF reader error terminates parsing. The first
+zero-width successful repetition iteration is handed over once and stops the
+repetition even below its minimum; a minimum failure then returns an error
+without retracting the handed value. Ordinary repetitions use the same stop
+and count rule.
+
+## `#atomic`
+
+Postfix `expr #atomic` matches `expr` but returns a single text-only `Match`
+node and suppresses construction of the expression's child nodes. It does not
+commit to the match: ordinary PEG backtracking and choice behavior remain in
+effect. `#atomic` is a behavioral pragma, not an attribute.
+
+## `#repeat`
+
+`#repeat` takes positional nonnegative integer bounds only. Its comma distinguishes an
+exact count from an unbounded maximum: `#repeat(n)` is exactly `n`,
+`#repeat(n,)` is at least `n`, `#repeat(,m)` is at most `m`, and
+`#repeat(n,m)` is bounded. The pragma applies to the immediately preceding
+expression; parenthesize a sequence to repeat it as a unit. Named bounds are
+not accepted.

@@ -8,11 +8,10 @@ import (
 )
 
 func ExampleWithTrace() {
-	p, err := pego.CompileSource(`
-def main = pair (";" pair)* $$
-def pair = key "=" value
-def key = @(?a-z)+
-def value = @(?0-9)+`, "main")
+	p, err := pego.CompileSource(`rule main = pair (";" pair)* $$
+rule pair = key "=" value
+rule key = [a-z]+ #atomic
+rule value = [0-9]+ #atomic`, "main")
 	if err != nil {
 		panic(err)
 	}
@@ -41,18 +40,17 @@ def value = @(?0-9)+`, "main")
 	//     key at 1:5
 	//     key matched "b"
 	//     value at 1:7
-	//     value failed: 1:7: syntax error: expected (?0-9)
-	//   pair failed: 1:7: syntax error: expected (?0-9)
-	// main failed: 1:7: syntax error: expected (?0-9)
-	// 1:7: syntax error: expected (?0-9)
+	//     value failed: 1:7: syntax error: expected [0-9]
+	//   pair failed: 1:7: syntax error: expected [0-9]
+	// main failed: 1:7: syntax error: expected [0-9]
+	// 1:7: syntax error: expected [0-9]
 }
 
 func ExampleWithProfile() {
-	p, err := pego.CompileSource(`
-def main = (stmt ";")* $$
-def stmt = name "=" num / name "+=" num
-def name = @(?a-z)+
-def num = @(?0-9)+`, "main")
+	p, err := pego.CompileSource(`rule main = (stmt ";")* $$
+rule stmt = name "=" num / name "+=" num
+rule name = [a-z]+ #atomic
+rule num = [0-9]+ #atomic`, "main")
 	if err != nil {
 		panic(err)
 	}

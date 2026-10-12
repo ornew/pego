@@ -1,4 +1,4 @@
-# 43. Direct calls of plain rules in the VMs
+# 43. Direct Calls of Plain Rules in the VMs
 
 - As in the closure backend (change 38) and generated parsers (change 42), the recursive VM calls rules that are
   never memoized in an ordinary parse and have no captures through `invokePlain` directly, and the iterative VM

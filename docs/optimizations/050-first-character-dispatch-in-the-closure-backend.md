@@ -1,4 +1,4 @@
-# 50. First-character dispatch in the closure backend
+# 50. First-Character Dispatch in the Closure Backend
 
 - Change 49 in the closure backend. The choice peeks at the next character once (which records it as examined, so a
   `Document` still invalidates the result when that character changes) and skips the alternatives that cannot

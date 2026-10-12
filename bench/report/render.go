@@ -58,6 +58,9 @@ func parseResults(data []byte) (*results, error) {
 				continue
 			}
 			name := procsSuffix.ReplaceAllString(strings.TrimPrefix(f[0], "Benchmark"), "")
+			// Saved measurements retain their recorded names; render their
+			// unchanged arithmetic workload under its current construct name.
+			name = strings.ReplaceAll(name, "/Arith_Pratt/", "/Arith_OperatorsRule/")
 			vals := map[string]float64{}
 			for i := 2; i+1 < len(f); i += 2 {
 				v, err := strconv.ParseFloat(f[i], 64)

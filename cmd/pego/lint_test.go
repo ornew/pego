@@ -7,16 +7,16 @@ import (
 	"testing"
 )
 
-const lintGrammar = `def main = "a" / "ab" / x
-def x = k:"x" v:"y" -> $k
+const lintGrammar = `rule main = "a" / "ab" / x
+rule x = k:"x" v:"y" => $k
 `
 
 func TestLint(t *testing.T) {
 	g := writeFile(t, "g.pego", lintGrammar)
 	out, err := runCLI(t, "", "lint", "-g", g)
-	want := g + `:1:18: error: alternative 2 (` + "`\"ab\"`" + `) can never match: alternative 1 (` + "`\"a\"`" + ` at 1:12) matches first wherever it could [shadowed-alternative]
+	want := g + `:1:19: error: alternative 2 (` + "`\"ab\"`" + `) can never match: alternative 1 (` + "`\"a\"`" + ` at 1:13) matches first wherever it could [shadowed-alternative]
 	fix: move it before alternative 1
-` + g + `:2:15: warning: capture v is never used: the action does not refer to it [unused-capture]
+` + g + `:2:16: warning: capture v is never used: the action does not refer to it [unused-capture]
 	fix: remove v:, or use $v
 `
 	if out != want {
@@ -66,12 +66,12 @@ func TestLintJSON(t *testing.T) {
 		t.Fatalf("got %+v", doc)
 	}
 	if !strings.Contains(out, `"severity": "error"`) || !strings.Contains(out, `"check": "shadowed-alternative"`) ||
-		!strings.Contains(out, `"line": 1`) || !strings.Contains(out, `"col": 18`) || !strings.Contains(out, `"rule": "main"`) ||
+		!strings.Contains(out, `"line": 1`) || !strings.Contains(out, `"col": 19`) || !strings.Contains(out, `"rule": "main"`) ||
 		!strings.Contains(out, `"fix": "move it before alternative 1"`) {
 		t.Errorf("got\n%s", out)
 	}
 
-	clean := writeFile(t, "clean.pego", `def main = "a"`)
+	clean := writeFile(t, "clean.pego", `rule main = "a"`)
 	out, err = runCLI(t, "", "lint", "-g", clean, "-f", "json")
 	if err != nil || !strings.Contains(out, `"findings": []`) {
 		t.Errorf("no findings: %v\n%s", err, out)
@@ -80,7 +80,7 @@ func TestLintJSON(t *testing.T) {
 
 func TestLintOtherGrammars(t *testing.T) {
 	// A grammar in JSON has no positions: findings are reported with the file name only.
-	g := writeFile(t, "g.pego", "def main = \"a\"\ndef x = \"b\"")
+	g := writeFile(t, "g.pego", "rule main = \"a\"\nrule x = \"b\"")
 	j := filepath.Join(t.TempDir(), "g.json")
 	if _, err := runCLI(t, "", "convert", "-o", j, g); err != nil {
 		t.Fatal(err)
@@ -104,8 +104,8 @@ func TestLintOtherGrammars(t *testing.T) {
 	}
 
 	// A grammar that does not compile is an error, with the compile errors.
-	bad := writeFile(t, "bad.pego", "def main = y")
-	if _, err := runCLI(t, "", "lint", "-g", bad); err == nil || !strings.Contains(err.Error(), bad+":1:12: undefined rule y") {
+	bad := writeFile(t, "bad.pego", "rule main = y")
+	if _, err := runCLI(t, "", "lint", "-g", bad); err == nil || !strings.Contains(err.Error(), bad+":1:13: undefined rule y") {
 		t.Errorf("bad grammar: %v", err)
 	}
 	if _, err := runCLI(t, "", "lint"); err == nil || !strings.Contains(err.Error(), "-g is required") {

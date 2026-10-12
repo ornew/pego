@@ -1,4 +1,4 @@
-# Left-Recursion Detection and Handling in pegen
+# Left-Recursion Detection and Handling in Pegen
 
 This reference note explains how CPython's pegen parser generator detects and handles left recursion. PEGO's handling of left recursion follows the same approach (see [development.md](development.md#runtime)).
 
@@ -10,7 +10,7 @@ CPython's pegen parser generator solves this problem with the **packrat parsing*
 
 This note explains in detail, based on the source code (`pegen/parser_generator.py` and `pegen/parser.py`), how pegen **detects left recursion statically** and **resolves it dynamically** at run time.
 
-## 2. Overview: a two-phase approach
+## 2. Overview: A Two-Phase Approach
 
 pegen's support for left recursion is divided into two phases:
 
@@ -19,11 +19,11 @@ pegen's support for left recursion is divided into two phases:
 2. **Dynamic resolution (at parse time):**
    When a rule marked as left-recursive by the static analysis is called, a special memoization strategy avoids infinite recursion while finding the longest match. This is implemented by decorators in `pegen/parser.py`.
 
-## 3. Phase 1: Detecting left recursion by static analysis
+## 3. Phase 1: Detecting Left Recursion by Static Analysis
 
 The purpose of this phase is to identify every left-recursive rule in the grammar before the parser is generated. The central function is `compute_left_recursives`.
 
-### Step 1: Building the dependency graph
+### Step 1: Building the Dependency Graph
 
 First, the left-call relationships between rules are represented as a **directed graph**. An edge from rule A to rule B means that "parsing rule A may begin by parsing rule B".
 
@@ -86,7 +86,7 @@ class InitialNamesVisitor(GrammarVisitor):
     # ...
 ```
 
-### Step 2: Detecting strongly connected components (SCCs)
+### Step 2: Detecting Strongly Connected Components (SCCs)
 
 Once the dependency graph has been built, its **strongly connected components (SCCs)** are detected. An SCC is a subgraph in which every pair of nodes (rules) is mutually reachable.
 
@@ -95,7 +95,7 @@ Once the dependency graph has been built, its **strongly connected components (S
 - A cycle A → B → A means that A and B are indirectly left-recursive.
 - A self-loop A → A means that A is directly left-recursive.
 
-### Step 3: Identifying left-recursive rules and leaders
+### Step 3: Identifying Left-Recursive Rules and Leaders
 
 `compute_left_recursives` uses `sccutils` to detect the SCCs, and for each SCC decides whether it is left-recursive and selects a leader.
 
@@ -129,11 +129,11 @@ def compute_left_recursives(
 
 When this phase completes, it is known which rules are left-recursive and which rule is the starting point for handling each cycle. This information is used when generating the parser's C or Python code.
 
-## 4. Phase 2: Resolving left recursion with memoization
+## 4. Phase 2: Resolving Left Recursion with Memoization
 
 At parse time, the left-recursive rules identified in phase 1 need special handling. This is implemented by decorators in `pegen/parser.py`.
 
-### Ordinary memoization: the `@memoize` decorator
+### Ordinary Memoization: The `@memoize` Decorator
 
 First, consider the memoization used for ordinary, non-left-recursive rules.
 
@@ -166,7 +166,7 @@ def memoize(method: F) -> F:
   1. If the key is in the cache, return the stored result (the parse tree and the end position).
   2. Otherwise, run the method for the rule, store its result and end position in the cache, and return it.
 
-### Memoization for left recursion: the `@memoize_left_rec` decorator
+### Memoization for Left Recursion: The `@memoize_left_rec` Decorator
 
 Rules marked as left-recursion leaders (`leader=True`) get a special decorator, `@memoize_left_rec`. This is the core of the left-recursion solution and implements the algorithm known as **growing the seed**.
 
@@ -224,7 +224,7 @@ def memoize_left_rec(
 
 The algorithm works step by step as follows.
 
-#### Step A: Planting the seed (preventing infinite recursion)
+#### Step A: Planting the Seed (Preventing Infinite Recursion)
 
 When a left-recursive rule (for example `expr`) is first called at a position `mark`, a provisional "failure" result is written to the cache:
 
@@ -234,7 +234,7 @@ self._cache[key] = None, mark
 
 Here `key` is `(mark, 'expr', ())`. If `expr` is called again at the same position `mark` while `expr` is being parsed, this "failure" is a cache hit and `None` is returned immediately. This is the most important step: it breaks the chain of infinite recursion.
 
-#### Step B: Growing by iteration
+#### Step B: Growing by Iteration
 
 Next, the `while True:` loop grows the result iteratively.
 On each iteration, the parser position is reset to the original start position `mark` and the rule body `method(self)` is run again.
@@ -242,14 +242,14 @@ On each iteration, the parser position is reset to the original start position `
 - **First iteration**: the recursive call uses the "failure" cached in step A, so only the non-recursive alternatives of `expr` (for example `term`) match.
 - **Later iterations**: if the cache was updated in step C, the grown result is used to try an even longer match.
 
-#### Step C: Checking progress and updating the cache
+#### Step C: Checking Progress and Updating the Cache
 
 After each attempt, progress is checked with `if not result or endmark <= lastmark:`.
 
 - If the parse failed, or did not advance the input beyond the previous end (`lastmark`), no longer match is possible and the loop exits.
 - **On progress (`endmark > lastmark`)**: a longer match was found (for example, from `term` to `term + term`). The new `result` and `endmark` are saved in `lastresult` and `lastmark`, and **the cache entry `self._cache[key]` is also overwritten with this new successful result**. This is the process of "growing the seed".
 
-#### Step D: Finalizing the result
+#### Step D: Finalizing the Result
 
 When the loop ends, `lastresult` holds the longest left-recursive match starting at that position. The parser position is reset to its end position `lastmark`, and `lastresult` is returned as the final result.
 

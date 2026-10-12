@@ -9,17 +9,15 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-const memoizedStream = `
-def main = item* #stream $$
-def item = word "," word "\n"
-def word = @letter+
-def letter = (?a-z)`
+const memoizedStream = `rule main = item* #stream $$
+rule item = word "," word "\n"
+rule word = letter+ #atomic
+rule letter = [a-z]`
 
-const leftRecursiveStream = `
-def main = item* #stream $$
-def item = word "," word "\n"
-def word = word letter / letter
-def letter = (?a-z)`
+const leftRecursiveStream = `rule main = item* #stream $$
+rule item = word "," word "\n"
+rule word = word letter / letter
+rule letter = [a-z]`
 
 func TestMemoizedStreamMemoryIsBounded(t *testing.T) {
 	for _, src := range []string{memoizedStream, leftRecursiveStream} {
@@ -51,7 +49,7 @@ func TestMemoizedStreamMemoryIsBounded(t *testing.T) {
 }
 
 func TestDocumentReplacedMemoMemoryIsBounded(t *testing.T) {
-	prog := compile(t, `def main = @.* $$`)
+	prog := compile(t, `rule main = .* #atomic $$`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []Unit{CodePoints, Bytes} {
 			doc, err := prog.NewDocumentWith("main", strings.Repeat("a", 10000), ParseOptions{Backend: backend, Unit: unit})

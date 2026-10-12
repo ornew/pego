@@ -18,7 +18,7 @@ const (
 	tIdent
 	tString    // "..."
 	tInt       // 123
-	tCharClass // (?...)
+	tCharClass // [...]
 	tCapture   // $name
 	tIndex     // $1
 	tPunct     // punctuation
@@ -36,6 +36,9 @@ type token struct {
 	spaceBefore bool
 	// lineBefore reports whether a line break directly precedes the token.
 	lineBefore bool
+	// indentedLine reports a physical line beginning with ASCII space or tab.
+	// A comment or another Unicode whitespace character does not indent a line.
+	indentedLine bool
 	// blankBefore reports whether a blank line directly precedes the token.
 	blankBefore bool
 	// lineComment is a comment on the line of the previous token, and
@@ -64,17 +67,18 @@ func (t token) String() string {
 
 // puncts lists the multi-character punctuation, longest first.
 var puncts = []string{
-	"_|_", "^^", "$$", "--", "->", "=>", "==", "!=", "<=", ">=", "&&", "||", "[]",
+	"_|_", "...", "^^", "$$", "--", "=>", "(?", ":=", "==", "!=", "<=", ">=", "&&", "||", "[]",
 	":", "=", "/", "(", ")", "{", "}", "[", "]", ",", ".", "*", "+", "?", "&", "!",
-	"@", "-", "^", "$", "#", "|", "<", ">", "%",
+	"@", "-", "^", "$", "#", "|", "<", ">", "%", ";",
 }
 
 type lexer struct {
-	src  []rune
-	i    int
-	line int
-	col  int
-	errs *errorList
+	src       []rune
+	i         int
+	line      int
+	col       int
+	lineStart int
+	errs      *errorList
 
 	// State of the white space and comments before the next token.
 	ntoks       int // tokens read so far
@@ -105,6 +109,7 @@ func (l *lexer) advance() rune {
 	if l.lineBreak(l.i - 1) {
 		l.line++
 		l.col = 1
+		l.lineStart = l.i
 	} else {
 		l.col++
 	}
@@ -141,6 +146,9 @@ func (l *lexer) next() token {
 		pos: l.pos(), spaceBefore: space, lineBefore: newline, blankBefore: l.newlines >= 2,
 		lineComment: l.lineComment, comments: l.comments,
 	}
+	if l.lineStart < len(l.src) {
+		t.indentedLine = l.src[l.lineStart] == ' ' || l.src[l.lineStart] == '\t'
+	}
 	l.ntoks++
 	l.newlines, l.lineComment, l.comments = 0, nil, nil
 	if l.i >= len(l.src) {
@@ -154,20 +162,27 @@ func (l *lexer) next() token {
 		l.advance()
 		l.advance()
 		t.kind, t.text = tPunct, "_|_"
+	case r == '[' && l.peekAt(1) != ']':
+		t.kind, t.cc = tCharClass, l.charClass()
+		t.cc.Pos = t.pos
 	case isIdentStart(r):
 		start := l.i
 		for l.i < len(l.src) && isIdentPart(l.src[l.i]) {
 			l.advance()
 		}
 		t.kind, t.text = tIdent, string(l.src[start:l.i])
+	case r == '-' && l.minimumInteger():
+		// The minimum int is representable, but its positive magnitude is not.
+		// Preserve it as one signed token so generic attribute values round trip.
+		t.kind, t.text, t.num = tInt, minimumIntegerText, minimumIntegerValue
+		for range minimumIntegerText {
+			l.advance()
+		}
 	case unicode.IsDigit(r):
 		t.kind = tInt
 		t.text, t.num = l.decimal(t.pos, "number", "")
 	case r == '"':
 		t.kind, t.text = tString, l.string()
-	case r == '(' && l.peekAt(1) == '?':
-		t.kind, t.cc = tCharClass, l.charClass()
-		t.cc.Pos = t.pos
 	case r == '$' && l.peekAt(1) != '$' && isIdentStart(l.peekAt(1)):
 		l.advance()
 		start := l.i
@@ -262,15 +277,48 @@ func (l *lexer) skipSpace() (space, newline bool) {
 			l.advance()
 			continue
 		}
-		if r == '/' && l.peekAt(1) == '/' {
+		if r == '/' && (l.peekAt(1) == '/' || l.peekAt(1) == '*') {
 			space = true
 			c := &grammar.Comment{Pos: l.pos(), Blank: l.newlines >= 2}
 			start := l.i
-			// A comment ends before the line break ("\r\n" at its "\r").
-			for l.i < len(l.src) && l.src[l.i] != '\n' && l.src[l.i] != '\r' {
+			block := l.peekAt(1) == '*'
+			if block {
 				l.advance()
+				l.advance()
+				depth := 1
+				for l.i < len(l.src) && depth > 0 {
+					switch {
+					case l.hasPrefix("/*"):
+						depth++
+						l.advance()
+						l.advance()
+					case l.hasPrefix("*/"):
+						depth--
+						l.advance()
+						l.advance()
+					default:
+						if l.lineBreak(l.i) {
+							newline = true
+							l.newlines++
+						}
+						l.advance()
+					}
+				}
+				if depth != 0 {
+					l.errs.addRange(c.Pos, l.pos(), "unterminated block comment")
+				}
+			} else {
+				// A line comment ends before CR, LF, or CRLF.
+				for l.i < len(l.src) && l.src[l.i] != '\n' && l.src[l.i] != '\r' {
+					l.advance()
+				}
 			}
-			c.Text = strings.TrimRightFunc(string(l.src[start:l.i]), unicode.IsSpace)
+			c.End = l.pos()
+			c.Text = string(l.src[start:l.i])
+			if !block {
+				c.Text = strings.TrimRightFunc(c.Text, unicode.IsSpace)
+				c.End.Col -= utf8.RuneCountInString(string(l.src[start:l.i])) - utf8.RuneCountInString(c.Text)
+			}
 			if l.newlines == 0 && l.ntoks > 0 && l.lineComment == nil && len(l.comments) == 0 {
 				l.lineComment = c
 			} else {
@@ -378,8 +426,7 @@ func (l *lexer) string() string {
 
 func (l *lexer) charClass() *grammar.CharClass {
 	start := l.pos()
-	l.advance() // (
-	l.advance() // ?
+	l.advance() // [
 	cc := &grammar.CharClass{Pos: start}
 	if l.peekAt(0) == '^' {
 		l.advance()
@@ -400,7 +447,7 @@ func (l *lexer) charClass() *grammar.CharClass {
 			l.errorf(start, "unterminated character class")
 			return cc
 		}
-		if l.src[l.i] == ')' {
+		if l.src[l.i] == ']' {
 			l.advance()
 			if len(cc.Ranges) == 0 {
 				l.errorf(start, "empty character class")
@@ -409,7 +456,7 @@ func (l *lexer) charClass() *grammar.CharClass {
 		}
 		lo, _ := read()
 		hi := lo
-		if l.peekAt(0) == '-' && l.peekAt(1) != ')' {
+		if l.peekAt(0) == '-' && l.peekAt(1) != ']' {
 			l.advance()
 			var ok bool
 			if hi, ok = read(); !ok {
@@ -421,4 +468,19 @@ func (l *lexer) charClass() *grammar.CharClass {
 		}
 		cc.Ranges = append(cc.Ranges, grammar.CharRange{Lo: lo, Hi: hi})
 	}
+}
+
+var minimumIntegerValue = -int(^uint(0)>>1) - 1
+var minimumIntegerText = strconv.Itoa(minimumIntegerValue)
+
+func (l *lexer) minimumInteger() bool {
+	if len(l.src)-l.i < len(minimumIntegerText) {
+		return false
+	}
+	for i, r := range minimumIntegerText {
+		if l.src[l.i+i] != r {
+			return false
+		}
+	}
+	return !isIdentPart(l.peekAt(len(minimumIntegerText)))
 }

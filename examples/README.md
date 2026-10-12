@@ -5,9 +5,9 @@ Small grammars that show PEGO's features, with golden tests. Complete parsers fo
 
 | Directory | Contents | Features shown |
 |:--|:--|:--|
-| [calculator](calculator/) | A calculator for the four arithmetic operations and exponentiation. `main.go` evaluates the AST. | Pratt expressions (`calc.pego`) compared with left recursion (`calc_lr.pego`); typed AST |
+| [calculator](calculator/) | A calculator for the four arithmetic operations and exponentiation. `main.go` evaluates the AST. | Operators Rule (`calc.pego`) compared with left recursion (`calc_lr.pego`); typed AST |
 | [outline](outline/) | An outline whose hierarchy is expressed by indentation | Predicates and variables; captures in positive lookahead |
-| [minilang](minilang/) | A small programming language with functions, control flow and expressions | PEG statements nested with Pratt expressions; keyword exclusion; calls without a level |
+| [minilang](minilang/) | A small programming language with functions, control flow and expressions | PEG statements nested with Operators Rule expressions; keyword exclusion; calls without a level |
 
 ## Running
 

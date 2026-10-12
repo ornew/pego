@@ -9,19 +9,17 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-const nilActionStream = `
-type V struct { N int }
-def main = item* #stream $$
-def item = "a" -> foldl(nil, list(new V{N: 1}), (acc, v) => nil)`
+const nilActionStream = `type V struct { N int }
+rule main = item* #stream $$
+rule item = "a" => foldl(nil, list(V{N: 1}), (acc, v) => nil)`
 
 var actionLifecycleCases = []genCase{
 	{"nil allocating action", nilActionStream, []string{"", "a", "aaa", "ab"}},
-	{"nil Pratt action", `
-type V struct { N int }
-def main = e $$
-def e = pratt {
-    operand "a" -> foldl(nil, list(new V{N: 1}), (acc, v) => nil)
-    level { postfix "!" -> foldl(nil, list(new V{N: 2}), (acc, v) => nil) }
+	{"nil OperatorsRule action", `type V struct { N int }
+rule main = e $$
+rule e = operators {
+    operand "a" => foldl(nil, list(V{N: 1}), (acc, v) => nil)
+    level { postfix "!" => foldl(nil, list(V{N: 2}), (acc, v) => nil) }
 }`, []string{"a", "a!", "a!!", "a?"}},
 }
 

@@ -46,10 +46,10 @@ type GenOptions struct {
 	// disableTypedLRBodies keeps per-expression bodies under the unchanged
 	// left-recursion runtime, for same-revision tests and measurements.
 	disableTypedLRBodies bool
-	// disableTypedPrattBodies retains per-expression Pratt line dispatch for
+	// disableTypedOperatorsRuleBodies retains per-expression Operators Rule line dispatch for
 	// same-generator tests and measurements without a parser-time option.
-	disableTypedPrattBodies bool
-	// disableTypedFramedCuts retains general cut-bearing LR and Pratt bodies
+	disableTypedOperatorsRuleBodies bool
+	// disableTypedFramedCuts retains general cut-bearing LR and OperatorsRule bodies
 	// for same-generator controls without a matching-time selector.
 	disableTypedFramedCuts bool
 	// disableTypedFrameLayouts retains structural capture discovery for
@@ -106,7 +106,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if !token.IsIdentifier(opts.Package) || opts.Package == "_" {
 		return nil, fmt.Errorf("invalid package name %q", opts.Package)
 	}
-	gen := &generator{prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedPrattBodies: opts.disableTypedPrattBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs}
+	gen := &generator{prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
 	var rec *Program
@@ -205,15 +205,15 @@ func (o GenOptions) validateMaxDepth(ts bool) error {
 }
 
 type generator struct {
-	disableTypedCuts           bool
-	disableTypedLRBodies       bool
-	disableTypedPrattBodies    bool
-	disableTypedFramedCuts     bool
-	disableTypedFrameLayouts   bool
-	disableTypedLocalLayouts   bool
-	disableTypedRecoveryBodies bool
-	disableMethodSharing       bool
-	disableLiteralSharing      bool
+	disableTypedCuts                bool
+	disableTypedLRBodies            bool
+	disableTypedOperatorsRuleBodies bool
+	disableTypedFramedCuts          bool
+	disableTypedFrameLayouts        bool
+	disableTypedLocalLayouts        bool
+	disableTypedRecoveryBodies      bool
+	disableMethodSharing            bool
+	disableLiteralSharing           bool
 	// Only exact emitted bodies with the same signature share a helper. Rule
 	// wrappers, memo IDs, frame layouts and expectation IDs remain in the code.
 	methodNames                map[generatedMethod]string
@@ -348,7 +348,7 @@ func (g *generator) rules() {
 				continue
 			}
 		}
-		if _, ok := r.def.Expr.(*grammar.Pratt); !ok {
+		if _, ok := r.def.Expr.(*grammar.OperatorsRule); !ok {
 			if g.table != "trules" {
 				if body := g.directNodeBody(r, s); body != "" {
 					bodies[r] = body
@@ -387,9 +387,9 @@ func (g *generator) rules() {
 		fmt.Fprintf(init, "\t%s = %d\n", g.seenVar(), g.prog.nseen)
 	}
 	for _, r := range all {
-		if pr, ok := r.def.Expr.(*grammar.Pratt); ok {
+		if pr, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
 			g.cur = r
-			g.pratt(r, pr)
+			g.operatorsRule(r, pr)
 			continue
 		}
 		if d := directs[r]; d != nil && g.table == "trules" {
@@ -448,7 +448,7 @@ func (g *generator) rules() {
 // For a direct rule (d, see gen_direct.go), the method that runs the body (s<id>, v<id> or i<id>)
 // has it inlined, with the action.
 func (g *generator) typedCall(r *rule, body string, s *scope, d *direct) {
-	if _, pratt := r.def.Expr.(*grammar.Pratt); pratt || r.leader {
+	if _, operatorsRule := r.def.Expr.(*grammar.OperatorsRule); operatorsRule || r.leader {
 		return // the general call
 	}
 	m := &g.methods
@@ -789,7 +789,7 @@ func (g *generator) refCall(e *grammar.Ref, build bool) string {
 	r := g.prog.byName[e.Name]
 	min := 0
 	if e.Level != "" {
-		for i, l := range r.def.Expr.(*grammar.Pratt).Levels {
+		for i, l := range r.def.Expr.(*grammar.OperatorsRule).Levels {
 			if l.Name == e.Level {
 				min = i
 			}
@@ -798,13 +798,13 @@ func (g *generator) refCall(e *grammar.Ref, build bool) string {
 	if !build && r.twin != nil {
 		r = r.twin
 	}
-	_, pratt := r.def.Expr.(*grammar.Pratt)
+	_, operatorsRule := r.def.Expr.(*grammar.OperatorsRule)
 	switch {
-	case r.plain && !pratt:
+	case r.plain && !operatorsRule:
 		// Never memoized and without captures: call does nothing but invokePlain, which a
 		// method of its own does with a direct call of the body (see plainCalls).
 		return fmt.Sprintf("p.%s%d()", g.plainPrefix(), r.id)
-	case g.table == "trules" && !pratt && !r.leader:
+	case g.table == "trules" && !operatorsRule && !r.leader:
 		// The typed runtime calls a method of the rule's own (typedCall).
 		return fmt.Sprintf("p.u%d()", r.id)
 	case r.plain:
@@ -910,7 +910,7 @@ func (g *generator) scanRepeat(b *strings.Builder, e *grammar.Repeat) bool {
 
 // first returns the condition on the next character ch under which the expression e can match,
 // when e must begin with a given terminal (a literal or a character class, possibly behind
-// sequences, captures, @, - and calls of rules that are not left-recursive or Pratt), with the
+// sequences, captures, @, - and calls of rules that are not left-recursive or OperatorsRule), with the
 // expectation e records when the condition does not hold and the number of rule calls on the way.
 // Then e fails at once without the terminal, recording only that expectation (a call memoizes the
 // same failure, and memoization only affects speed), so a choice can skip it; unless the calls on
@@ -940,7 +940,7 @@ func (g *generator) first(e grammar.Expr, depth int, seen map[string]bool) (stri
 		if r == nil || r.leader || seen[e.Name] {
 			break
 		}
-		if _, pratt := r.def.Expr.(*grammar.Pratt); pratt {
+		if _, operatorsRule := r.def.Expr.(*grammar.OperatorsRule); operatorsRule {
 			break
 		}
 		seen[e.Name] = true
@@ -974,8 +974,8 @@ func (g *generator) attributed(e *grammar.Attributed, s *scope, build bool) stri
 	for _, a := range e.Attrs {
 		switch a.Name {
 		case "error":
-			msg := a.Args[0].Value.(*grammar.Literal).Value
-			m = g.method("#error", fmt.Sprintf("\treturn p.errorAttr((*%s).%s, msgBit|%d)\n", g.recv(), m, g.desc(msg)))
+			msg := attributeMessage(a)
+			m = g.method("@error", fmt.Sprintf("\treturn p.errorAttr((*%s).%s, msgBit|%d)\n", g.recv(), m, g.desc(msg)))
 		case "recover":
 			skipExpr, _ := a.Arg("skip")
 			skip := g.expr(skipExpr, s, false)
@@ -985,27 +985,27 @@ func (g *generator) attributed(e *grammar.Attributed, s *scope, build bool) stri
 	return m
 }
 
-func (g *generator) pratt(r *rule, e *grammar.Pratt) {
+func (g *generator) operatorsRule(r *rule, e *grammar.OperatorsRule) {
 	var b strings.Builder
-	fmt.Fprintf(&b, "\t%s[%d].pratt = &%s{\n", g.table, r.id, g.pick("pratt", "tpratt"))
+	fmt.Fprintf(&b, "\t%s[%d].operatorsRule = &%s{\n", g.table, r.id, g.pick("operatorsRule", "toperatorsRule"))
 	if e.Skip != nil {
 		s := newScope()
-		m := g.directTypedPrattBody(e.Skip, s, false, nil, false)
+		m := g.directTypedOperatorsRuleBody(e.Skip, s, false, nil, false)
 		if m == "" {
 			m = g.expr(e.Skip, s, false)
 		}
 		fmt.Fprintf(&b, "\t\tskip: (*%s).%s,\n", g.recv(), m)
 	}
-	fmt.Fprintf(&b, "\t\toperands: []*%s{\n", g.pick("prattLine", "tprattLine"))
+	fmt.Fprintf(&b, "\t\toperands: []*%s{\n", g.pick("operatorsRuleLine", "toperatorsRuleLine"))
 	for _, o := range e.Operands {
-		fmt.Fprintf(&b, "\t\t\t%s,\n", g.prattLine(o.Expr, o.Action, false))
+		fmt.Fprintf(&b, "\t\t\t%s,\n", g.operatorsRuleLine(o.Expr, o.Action, false))
 	}
 	b.WriteString("\t\t},\n")
 	var prefix, led []string
 	id := 0
 	for i, l := range e.Levels {
 		for _, op := range l.Operators {
-			s := fmt.Sprintf("{id: %d, kind: %q, assoc: %q, level: %d, line: %s}", id, op.Kind, op.Assoc, i+1, g.prattLine(op.Expr, op.Action, true))
+			s := fmt.Sprintf("{id: %d, kind: %q, assoc: %q, level: %d, line: %s}", id, op.Kind, op.Assoc, i+1, g.operatorsRuleLine(op.Expr, op.Action, true))
 			id++
 			if op.Kind == grammar.Prefix {
 				prefix = append(prefix, s)
@@ -1014,15 +1014,15 @@ func (g *generator) pratt(r *rule, e *grammar.Pratt) {
 			}
 		}
 	}
-	op := g.pick("prattOp", "tprattOp")
+	op := g.pick("operatorsRuleOp", "toperatorsRuleOp")
 	fmt.Fprintf(&b, "\t\tprefix: []*%s{%s},\n", op, strings.Join(prefix, ",\n"))
 	fmt.Fprintf(&b, "\t\tled: []*%s{%s},\n", op, strings.Join(led, ",\n"))
 	b.WriteString("\t}\n")
-	fmt.Fprintf(&b, "\t%s[%d].body = func(p *%s, min int) (%s, bool) { return p.prattParse(%s[%d], min) }\n", g.table, r.id, g.recv(), g.valType(), g.table, r.id)
+	fmt.Fprintf(&b, "\t%s[%d].body = func(p *%s, min int) (%s, bool) { return p.operatorsRuleParse(%s[%d], min) }\n", g.table, r.id, g.recv(), g.valType(), g.table, r.id)
 	g.init.WriteString(b.String())
 }
 
-func (g *generator) prattLine(e grammar.Expr, action grammar.Term, operator bool) string {
+func (g *generator) operatorsRuleLine(e grammar.Expr, action grammar.Term, operator bool) string {
 	s := newScope()
 	var locals []string
 	if operator {
@@ -1031,7 +1031,7 @@ func (g *generator) prattLine(e grammar.Expr, action grammar.Term, operator bool
 	// Lines whose value is unused are matched without values, as in the engine; so are all lines
 	// of a rule without a value (in the recognizer).
 	build := !g.cur.novalue && !leanLine(action, locals)
-	m := g.directTypedPrattBody(e, s, build, action, operator)
+	m := g.directTypedOperatorsRuleBody(e, s, build, action, operator)
 	if m == "" {
 		m = g.expr(e, s, build)
 	}
@@ -1048,7 +1048,7 @@ func (g *generator) prattLine(e grammar.Expr, action grammar.Term, operator bool
 		act = fmt.Sprintf("func(c *%s) any { return %s }", g.ctxType(), g.term(action, s, locals))
 		g.final = nil
 	}
-	return fmt.Sprintf("&%s{scope: %s, m: (*%s).%s, action: %s, isSeq: %v}", g.pick("prattLine", "tprattLine"), goStrings(s.names), g.recv(), m, act, isSeq)
+	return fmt.Sprintf("&%s{scope: %s, m: (*%s).%s, action: %s, isSeq: %v}", g.pick("operatorsRuleLine", "toperatorsRuleLine"), goStrings(s.names), g.recv(), m, act, isSeq)
 }
 
 // term converts a value expression into a Go expression of type any. locals maps names, such as lambda

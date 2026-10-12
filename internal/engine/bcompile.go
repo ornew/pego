@@ -115,7 +115,7 @@ func (c *bcompiler) compile() {
 	// Rule table (body positions are filled in later)
 	all := append(append([]*rule(nil), c.prog.rules...), c.prog.twins...)
 	for _, r := range all {
-		ri := RuleInfo{Name: int(c.str(r.name)), Entry: -1, Action: -1, TerminalType: -1, Pratt: -1,
+		ri := RuleInfo{Name: int(c.str(r.name)), Entry: -1, Action: -1, TerminalType: -1, OperatorsRule: -1,
 			BodyIsSeq: r.bodyIsSeq, Memo: r.memo, Leader: r.leader, Positional: r.positional, NoValue: r.novalue, Transient: r.transient, Vars: c.strs2(r.vars)}
 		if r.terminalType != "" {
 			ri.TerminalType = int(c.str(r.terminalType))
@@ -126,10 +126,10 @@ func (c *bcompiler) compile() {
 		c.cur = r
 		ri := &c.m.Rules[i]
 		s := newScope()
-		if pr, ok := r.def.Expr.(*grammar.Pratt); ok {
-			ri.Pratt = c.pratt(pr)
+		if pr, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
+			ri.OperatorsRule = c.operatorsRule(pr)
 			ri.Entry = int(c.here())
-			c.emit(OpPratt, int32(ri.Pratt), 0, 0)
+			c.emit(OpOperatorsRule, int32(ri.OperatorsRule), 0, 0)
 			c.emit(OpReturn, 0, 0, 0)
 		} else {
 			ri.Entry = int(c.here())
@@ -195,7 +195,7 @@ func (c *bcompiler) match(e grammar.Expr, s *scope, build bool) {
 		r := c.prog.byName[e.Name]
 		min := 0
 		if e.Level != "" {
-			for i, l := range r.def.Expr.(*grammar.Pratt).Levels {
+			for i, l := range r.def.Expr.(*grammar.OperatorsRule).Levels {
 				if l.Name == e.Level {
 					min = i
 				}
@@ -360,7 +360,7 @@ func (c *bcompiler) attributed(e *grammar.Attributed, i int, s *scope, build boo
 	a := e.Attrs[i]
 	switch a.Name {
 	case "error":
-		msg := a.Args[0].Value.(*grammar.Literal).Value
+		msg := attributeMessage(a)
 		c.emit(OpLabel, c.str(msg), 0, 0)
 		c.attributed(e, i-1, s, build)
 		c.emit(OpEndLabel, 0, 0, 0)
@@ -378,8 +378,8 @@ func (c *bcompiler) attributed(e *grammar.Attributed, i int, s *scope, build boo
 	}
 }
 
-func (c *bcompiler) pratt(e *grammar.Pratt) int {
-	pi := PrattInfo{Skip: -1}
+func (c *bcompiler) operatorsRule(e *grammar.OperatorsRule) int {
+	pi := OperatorsRuleInfo{Skip: -1}
 	if e.Skip != nil {
 		pi.Skip = int(c.here())
 		c.match(e.Skip, newScope(), false)
@@ -418,8 +418,8 @@ func (c *bcompiler) pratt(e *grammar.Pratt) int {
 			}
 		}
 	}
-	c.m.Pratts = append(c.m.Pratts, pi)
-	return len(c.m.Pratts) - 1
+	c.m.OperatorsRules = append(c.m.OperatorsRules, pi)
+	return len(c.m.OperatorsRules) - 1
 }
 
 func (c *bcompiler) line(e grammar.Expr, action grammar.Term, locals []string) LineInfo {

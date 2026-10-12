@@ -1,4 +1,4 @@
-# 59. Resuming long repetitions in the VMs
+# 59. Resuming Long Repetitions in the VMs
 
 - Change 54 in both bytecode VMs, which share `exec`: the VM finds the repetitions it can resume when it loads a
   module, from the bytecode alone (a `REPEAT`, its `ITER`, the element code, `NEXT` and `ENDREPEAT`; the element must

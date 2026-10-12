@@ -8,134 +8,133 @@ import (
 )
 
 // One shared grammar keeps the same scope/selection cases in the engine and generated Go/TS corpus.
-const prefixPartCuts = `
-type Atom terminal
+const prefixPartCuts = `type Atom terminal
 type Prefix struct { Op Match, X Expr, Tag int }
 type Expr = Atom | Prefix | Error
-def main: Expr = value:entry $$ -> $value
-def entry: Expr = case0 / case1 / case2 / case3 / case4 / case5 / case6 / case7 / case8 / case9 / case10 / case11 / case12 / case13 / case14 / case15 / case16 / case17 / case18 / case19 / case20
-def case0: Expr = "c" x:committed -> $x
-def case1: Expr = "n" x:ordinary -> $x
-def case2: Expr = "b" x:before -> $x
-def case3: Expr = "w" x:winnerFirst -> $x
-def case4: Expr = "f" x:failedFirst -> $x
-def case5: Expr = "h" x:longerWinner -> $x
-def case6: Expr = "s" x:shorterWinner -> $x
-def case7: Expr = "t" x:ties -> $x
-def case8: Expr = "k" x:winnerCut -> $x
-def case9: Expr = "q" x:choiceLocal -> $x
-def case10: Expr = "j" x:ruleLocal -> $x
-def case11: Expr = "u" x:unicode -> $x
-def case12: Expr = "v" x:trivia -> $x
-def case13: Expr = "z" x:emptyCut -> $x
-def case14: Expr = "o" x:emptyOrdinary -> $x
-def case15: Expr = "p" x:nestedCut -> $x
-def case16: Expr = "d" x:nestedOrdinary -> $x
-def case17: Expr = "m" !committed x:committed -> $x
-def case18: Expr = "l" !committed x:atom -> $x
-def case19: Expr = "r" x:recovered -> $x
-def case20: Expr = "i" x:prattPartLocal -> $x
+rule main Expr = value:entry $$ => $value
+rule entry Expr = case0 / case1 / case2 / case3 / case4 / case5 / case6 / case7 / case8 / case9 / case10 / case11 / case12 / case13 / case14 / case15 / case16 / case17 / case18 / case19 / case20
+rule case0 Expr = "c" x:committed => $x
+rule case1 Expr = "n" x:ordinary => $x
+rule case2 Expr = "b" x:before => $x
+rule case3 Expr = "w" x:winnerFirst => $x
+rule case4 Expr = "f" x:failedFirst => $x
+rule case5 Expr = "h" x:longerWinner => $x
+rule case6 Expr = "s" x:shorterWinner => $x
+rule case7 Expr = "t" x:ties => $x
+rule case8 Expr = "k" x:winnerCut => $x
+rule case9 Expr = "q" x:choiceLocal => $x
+rule case10 Expr = "j" x:ruleLocal => $x
+rule case11 Expr = "u" x:unicode => $x
+rule case12 Expr = "v" x:trivia => $x
+rule case13 Expr = "z" x:emptyCut => $x
+rule case14 Expr = "o" x:emptyOrdinary => $x
+rule case15 Expr = "p" x:nestedCut => $x
+rule case16 Expr = "d" x:nestedOrdinary => $x
+rule case17 Expr = "m" !committed x:committed => $x
+rule case18 Expr = "l" !committed x:atom => $x
+rule case19 Expr = "r" x:recovered => $x
+rule case20 Expr = "i" x:operatorsRulePartLocal => $x
 
-def atom: Atom = "~-x" / "-xy" / "¬é" / "-x" / "-z" / "-" / "a" / "é"
-def committed: Expr = pratt {
+rule atom Atom = "~-x" / "-xy" / "¬é" / "-x" / "-z" / "-" / "a" / "é"
+rule committed Expr = operators {
     operand atom
-    level { prefix "-" -- "z" -> new Prefix{Op: $op, X: $rhs, Tag: 1} }
+    level { prefix "-" -- "z" => Prefix{Op: $op, X: $rhs, Tag: 1} }
 }
-def ordinary: Expr = pratt {
+rule ordinary Expr = operators {
     operand atom
-    level { prefix "-" "z" -> new Prefix{Op: $op, X: $rhs, Tag: 1} }
+    level { prefix "-" "z" => Prefix{Op: $op, X: $rhs, Tag: 1} }
 }
-def before: Expr = pratt {
+rule before Expr = operators {
     operand atom
-    level { prefix "-" "z" -- "t" -> new Prefix{Op: $op, X: $rhs, Tag: 1} }
+    level { prefix "-" "z" -- "t" => Prefix{Op: $op, X: $rhs, Tag: 1} }
 }
-def winnerFirst: Expr = pratt {
-    operand atom
-    level {
-        prefix "-" -> new Prefix{Op: $op, X: $rhs, Tag: 1}
-        prefix "-" -- "z" -> new Prefix{Op: $op, X: $rhs, Tag: 2}
-    }
-}
-def failedFirst: Expr = pratt {
+rule winnerFirst Expr = operators {
     operand atom
     level {
-        prefix "-" -- "z" -> new Prefix{Op: $op, X: $rhs, Tag: 2}
-        prefix "-" -> new Prefix{Op: $op, X: $rhs, Tag: 1}
+        prefix "-" => Prefix{Op: $op, X: $rhs, Tag: 1}
+        prefix "-" -- "z" => Prefix{Op: $op, X: $rhs, Tag: 2}
     }
 }
-def longerWinner: Expr = pratt {
+rule failedFirst Expr = operators {
     operand atom
     level {
-        prefix "-" -- "z" -> new Prefix{Op: $op, X: $rhs, Tag: 2}
-        prefix "-x" -> new Prefix{Op: $op, X: $rhs, Tag: 1}
+        prefix "-" -- "z" => Prefix{Op: $op, X: $rhs, Tag: 2}
+        prefix "-" => Prefix{Op: $op, X: $rhs, Tag: 1}
     }
 }
-def shorterWinner: Expr = pratt {
+rule longerWinner Expr = operators {
     operand atom
     level {
-        prefix "--" -- "z" -> new Prefix{Op: $op, X: $rhs, Tag: 2}
-        prefix "-" -> new Prefix{Op: $op, X: $rhs, Tag: 1}
+        prefix "-" -- "z" => Prefix{Op: $op, X: $rhs, Tag: 2}
+        prefix "-x" => Prefix{Op: $op, X: $rhs, Tag: 1}
     }
 }
-def ties: Expr = pratt {
+rule shorterWinner Expr = operators {
     operand atom
     level {
-        prefix "-" -> new Prefix{Op: $op, X: $rhs, Tag: 1}
-        prefix "-" -> new Prefix{Op: $op, X: $rhs, Tag: 2}
-        prefix "-" -- "z" -> new Prefix{Op: $op, X: $rhs, Tag: 3}
+        prefix "--" -- "z" => Prefix{Op: $op, X: $rhs, Tag: 2}
+        prefix "-" => Prefix{Op: $op, X: $rhs, Tag: 1}
     }
 }
-def winnerCut: Expr = pratt {
+rule ties Expr = operators {
     operand atom
     level {
-        prefix "-" -- -> new Prefix{Op: $op, X: $rhs, Tag: 1}
-        prefix "-" -- "z" -> new Prefix{Op: $op, X: $rhs, Tag: 2}
+        prefix "-" => Prefix{Op: $op, X: $rhs, Tag: 1}
+        prefix "-" => Prefix{Op: $op, X: $rhs, Tag: 2}
+        prefix "-" -- "z" => Prefix{Op: $op, X: $rhs, Tag: 3}
     }
 }
-def choiceLocal: Expr = pratt {
+rule winnerCut Expr = operators {
     operand atom
-    level { prefix ("-" -- "z" / "-") "q" -> new Prefix{Op: $op, X: $rhs, Tag: 1} }
+    level {
+        prefix "-" -- => Prefix{Op: $op, X: $rhs, Tag: 1}
+        prefix "-" -- "z" => Prefix{Op: $op, X: $rhs, Tag: 2}
+    }
 }
-def ruleLocal: Expr = pratt {
+rule choiceLocal Expr = operators {
     operand atom
-    level { prefix part -> new Prefix{Op: $op, X: $rhs, Tag: 1} }
+    level { prefix ("-" -- "z" / "-") "q" => Prefix{Op: $op, X: $rhs, Tag: 1} }
 }
-def part = "-" -- "z"
-def unicode: Expr = pratt {
+rule ruleLocal Expr = operators {
     operand atom
-    level { prefix "¬" -- "z" -> new Prefix{Op: $op, X: $rhs, Tag: 1} }
+    level { prefix part => Prefix{Op: $op, X: $rhs, Tag: 1} }
 }
-def trivia: Expr = pratt {
+rule part = "-" -- "z"
+rule unicode Expr = operators {
+    operand atom
+    level { prefix "¬" -- "z" => Prefix{Op: $op, X: $rhs, Tag: 1} }
+}
+rule trivia Expr = operators {
     skip " "*
     operand atom
-    level { prefix "-" -- "z" -> new Prefix{Op: $op, X: $rhs, Tag: 1} }
+    level { prefix "-" -- "z" => Prefix{Op: $op, X: $rhs, Tag: 1} }
 }
-def emptyCut: Expr = pratt {
+rule emptyCut Expr = operators {
     operand atom
-    level { prefix _ -- -> new Prefix{Op: $op, X: $rhs, Tag: 1} }
+    level { prefix _ -- => Prefix{Op: $op, X: $rhs, Tag: 1} }
 }
-def emptyOrdinary: Expr = pratt {
+rule emptyOrdinary Expr = operators {
     operand atom
-    level { prefix _ -> new Prefix{Op: $op, X: $rhs, Tag: 1} }
+    level { prefix _ => Prefix{Op: $op, X: $rhs, Tag: 1} }
 }
-def nestedCut: Expr = pratt {
-    operand atom
-    level {
-        prefix "~" -- -> new Prefix{Op: $op, X: $rhs, Tag: 1}
-        prefix "-" -- "z" -> new Prefix{Op: $op, X: $rhs, Tag: 2}
-    }
-}
-def nestedOrdinary: Expr = pratt {
+rule nestedCut Expr = operators {
     operand atom
     level {
-        prefix "~" -> new Prefix{Op: $op, X: $rhs, Tag: 1}
-        prefix "-" -- "z" -> new Prefix{Op: $op, X: $rhs, Tag: 2}
+        prefix "~" -- => Prefix{Op: $op, X: $rhs, Tag: 1}
+        prefix "-" -- "z" => Prefix{Op: $op, X: $rhs, Tag: 2}
     }
 }
-def recovered: Expr = committed #recover(skip=.*)
-def prattPartLocal: Expr = pratt {
+rule nestedOrdinary Expr = operators {
     operand atom
-    level { prefix committed -> new Prefix{Op: $op, X: $rhs, Tag: 1} }
+    level {
+        prefix "~" => Prefix{Op: $op, X: $rhs, Tag: 1}
+        prefix "-" -- "z" => Prefix{Op: $op, X: $rhs, Tag: 2}
+    }
+}
+rule recovered Expr = committed #recover(skip=.*)
+rule operatorsRulePartLocal Expr = operators {
+    operand atom
+    level { prefix committed => Prefix{Op: $op, X: $rhs, Tag: 1} }
 }
 `
 
@@ -159,14 +158,14 @@ var prefixPartCutInputs = []struct {
 }
 
 func prefixPartCutCorpus() genCase {
-	c := genCase{name: "Pratt prefix-part cuts", src: prefixPartCuts}
+	c := genCase{name: "OperatorsRule prefix-part cuts", src: prefixPartCuts}
 	for _, in := range prefixPartCutInputs {
 		c.inputs = append(c.inputs, in.input)
 	}
 	return c
 }
 
-func TestPrattPrefixPartCuts(t *testing.T) {
+func TestOperatorsRulePrefixPartCuts(t *testing.T) {
 	for _, disableMemo := range []bool{false, true} {
 		prog := compile(t, prefixPartCuts, Options{DisableMemo: disableMemo})
 		for _, c := range prefixPartCutInputs {
@@ -224,7 +223,7 @@ func TestPrattPrefixPartCuts(t *testing.T) {
 
 // Compilation is outside the timer. These accepted inputs perform equivalent work on the old and
 // new cut contracts; committed failures have deliberately different outcomes and are tested above.
-func BenchmarkPrattPrefixPartCut(b *testing.B) {
+func BenchmarkOperatorsRulePrefixPartCut(b *testing.B) {
 	prog, err := Compile(mustParse(prefixPartCuts), Options{})
 	if err != nil {
 		b.Fatal(err)

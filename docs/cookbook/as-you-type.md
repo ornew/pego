@@ -1,4 +1,4 @@
-# Reparse a document on every keystroke
+# Reparse a Document on Every Keystroke
 
 **Problem.** An editor, a preview or a linter holds a text that the user edits, and wants a fresh tree and the current
 errors after every keystroke, without parsing the whole text again each time.
@@ -13,20 +13,20 @@ is half typed is not valid, so the grammar recovers from errors, and every keyst
 // settings.pego
 type Setting struct { Key Match, Value Match }
 
-def main = -ws (setting -ws)* $$
+rule main = -ws (setting -ws)* $$
 
 // If a setting does not parse, skip to the next ";" (but not past a line end) and carry on.
-def setting: Setting = s:entry #recover(skip=(?^;\n)+ ";"?) -> $s
+rule setting Setting = s:entry #recover(skip=[^;\n]+ ";"?) => $s
 
-def entry: Setting = k:@key -ws "=" #error(message="expected '='") -ws v:value -ws ";" #error(message="expected ';'")
-    -> new Setting{Key: $k, Value: $v}
-def value = @number / @string / _|_ #error(message="expected a number or a string")
+rule entry Setting = k:key #atomic -ws "=" @error(message="expected '='") -ws v:value -ws ";" @error(message="expected ';'")
+    => Setting{Key: $k, Value: $v}
+rule value = number #atomic / string #atomic / _|_ @error(message="expected a number or a string")
 
-def key = (?a-z_)+
-def number = (?0-9)+
-def string = "\"" (?^"\n)* "\"" #error(message="unterminated string")
+rule key = [a-z_]+
+rule number = [0-9]+
+rule string = "\"" [^"\n]* "\"" @error(message="unterminated string")
 
-def ws = (&(? \t\r\n) .)*
+rule ws = (&[ \t\r\n] .)*
 ```
 
 The program builds a text of 10,000 settings, then types `timeout = 30;` on a new line in the middle of it, one
@@ -116,7 +116,7 @@ typed ";"           1.523ms  evaluated     6  reused 20006  errors 0
 parse from scratch  5.243ms
 ```
 
-## How it works
+## How It Works
 
 - **`Stats` shows what was reused.** `Evaluated` is the number of rule bodies that ran, `Reused` the number of results
   taken from the last parse. The first parse ran 90,005 rule bodies. After a keystroke, 4 to 6 ran: the root, the
@@ -138,7 +138,7 @@ parse from scratch  5.243ms
   `pego.WithUnit(pego.Bytes)` when `NewDocument` is created). It only records the change; the next `Parse` does the work, and
   several edits can come before one.
 
-## Writing a grammar that reuses well
+## Writing a Grammar That Reuses Well
 
 The unit of reuse is the rule call, so:
 

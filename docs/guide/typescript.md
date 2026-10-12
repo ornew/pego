@@ -1,4 +1,4 @@
-# Generating TypeScript Parsers with `pego gen -lang ts`
+# Generating TypeScript Parsers With `pego gen -lang ts`
 
 `pego gen -lang ts` turns a grammar into a TypeScript module: a parser you commit next to your code and import like
 any other module. The module has no dependencies, not even on Node.js: it runs in Node.js, Deno, Bun and browsers,
@@ -21,7 +21,7 @@ generator's guide, [code generation](code-generation.md), only for the compariso
 - [Keeping generated code up to date](#keeping-generated-code-up-to-date)
 - [Trade-offs](#trade-offs)
 
-## Why generate TypeScript
+## Why Generate TypeScript
 
 Use it when a grammar has to run where Go does not: in a browser (a syntax checker, an editor, a playground), in a
 Node.js tool, or in a TypeScript service that shares a format with a Go one. Since both parsers come from the same
@@ -37,18 +37,18 @@ the other side would have built.
 | Typed values (`-types`) | — | Yes | Yes: Node conversion |
 | Streaming, incremental, backends | Yes | No | No |
 
-## Quick start
+## Quick Start
 
 The grammar, `pairs.pego`, is the one of the Go guide:
 
 ```pego
 type Pair struct { Key Match, Value Match }
 
-def main = ws ps:pair+ $$ -> $ps
-def pair: Pair = k:key "=" v:value ";"? ws -> new Pair{Key: $k, Value: $v}
-def key = @(?a-zあ-ん)+
-def value = @(?0-9)+
-def ws = (? \t\n)*
+rule main = ws ps:pair+ $$ => $ps
+rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
+rule key = [a-zあ-ん]+ #atomic
+rule value = [0-9]+ #atomic
+rule ws = [ \t\n]*
 ```
 
 Generate the module (`pego` is installed with `go install github.com/ornew/pego/cmd/pego@latest`, or run as
@@ -102,7 +102,7 @@ Pair "あい" at 8-10
 8
 "abc"@key null
 rule nope is not defined
-1 5 [ '(?0-9)' ] 1:5: syntax error: expected (?0-9)
+1 5 [ '[0-9]' ] 1:5: syntax error: expected [0-9]
 {"type":"Match","rule":"key","start":0,"end":3,"text":"abc"}
 {"type":"Match","rule":"key","start":0,"end":3,"text":"abc"}
 ```
@@ -110,7 +110,7 @@ rule nope is not defined
 Apart from the formatting of `console.log`, this is what the Go program of the [Go guide](code-generation.md#quick-start)
 prints for the same grammar and inputs.
 
-## The command
+## The Command
 
 ```bash
 pego gen -lang ts -g <grammar> [-s <rule>] [-o <file>] [-types] [-recognize]
@@ -138,7 +138,7 @@ code, err = pego.GenerateTypeScript(g, "main", pego.WithRecognize(), pego.WithGe
 
 `pego.WithTypes()` enables typed TypeScript declarations and result conversion: `pego.GenerateTypeScript(g, "main", pego.WithTypes())`.
 
-## The generated API
+## The Generated API
 
 ```ts
 // Parses the whole input with the start rule (or the rule name).
@@ -183,7 +183,7 @@ Compared with the Go API:
   both a node and `SyntaxErrors`. It throws only for bugs (an exception that is not a parse error).
 - **`SyntaxError` shadows the global of the same name** in modules that import it, as in parser generators such as
   Peggy. Import it under another name if you need both: `import { SyntaxError as PegoSyntaxError } from "./pairs.ts"`.
-  Its `message` is Go's `Error()` (`"1:5: syntax error: expected (?0-9)"`), and `reason()` is Go's `Message()`.
+  Its `message` is Go's `Error()` (`"1:5: syntax error: expected [0-9]"`), and `reason()` is Go's `Message()`.
 - **Field values** are `Node`, numbers (or bigints, see [values](#values-of-actions)), strings, booleans or `null`;
   narrow them with `instanceof Node` or `typeof`.
 - **JSON.** `marshal(node)` gives exactly the bytes Go's `json.Marshal` gives, including its escapes of `<`, `>` and
@@ -191,15 +191,15 @@ Compared with the Go API:
   with JavaScript's escaping, and the same values except in two cases: ints beyond the safe integers become rounded
   numbers, and in `Bytes` mode an invalid input byte in text is written as the surrogate that stands for it (see
   [units](#input-positions-and-units)), such as `"a\udcff"` where `marshal` and the engine write `"a�"`.
-- **Deep trees.** Left recursion, left-associative Pratt operators and `foldl` build trees as deep as the input is
+- **Deep trees.** Left recursion, left-associative Operators Rule operators and `foldl` build trees as deep as the input is
   long, without deep calls. `marshal` and `toString` write trees of any depth (`encoding/json` gives up beyond 10,000
   levels; `marshal` does not). `JSON.stringify` recurses and throws a `RangeError` on Node.js's default stack beyond
-  a few thousand levels (between 3,000 and 5,000 for `def e = e "+" n / n`): use `marshal` for such trees.
+  a few thousand levels (between 3,000 and 5,000 for `rule e = e "+" n / n`): use `marshal` for such trees.
 - **One module per grammar.** Every generated module exports the same names, so import two parsers under namespaces:
   `import * as pairs from "./pairs.ts"`.
 - A parser keeps no state between calls; it is safe to call from several workers.
 
-### Running it
+### Running It
 
 The module uses only erasable TypeScript syntax (no enums or namespaces), so runtimes that strip types run it as it is:
 Node.js 22.18 and later (or 22.6 with `--experimental-strip-types`), Deno and Bun. For browsers and older Node.js,
@@ -209,7 +209,7 @@ The tests type-check every generated parser with `tsc --strict` and also `--noUn
 `--noUncheckedIndexedAccess`, `--exactOptionalPropertyTypes` and `--erasableSyntaxOnly`, so it compiles under strict
 project settings. Exclude it from linters and formatters: it starts with `/* eslint-disable */`.
 
-## Typed values
+## Typed Values
 
 Add `-types` to generation to export a declaration for every grammar struct,
 terminal and alias, plus `parseAST` and `parseASTWithOptions`. They parse the
@@ -278,7 +278,7 @@ rejected by the existing type checker; scalar fields and aliases are supported.
 
 Grammar names are allocated in sorted order. Every top-level runtime and
 generated declaration is reserved, including private `Parser`, `Actx`, `Rule`,
-`PrattLine`, generated symbols such as `R0`, globals used by the runtime, and
+`OperatorsRuleLine`, generated symbols such as `R0`, globals used by the runtime, and
 new helpers `Span`, `Match`, `RecoveredError`, `TypedValue`, `TypedParseResult`.
 Collisions append underscores until the name is free: grammar `Parser` exports
 `Parser_`; `R0` and `R0_` can export `R0_` and `R0__`. Discriminators retain the
@@ -326,7 +326,7 @@ There is no typed serializer or direct typed matcher in this implementation.
 See [design 030](../design/030-typed-typescript-values.md) for ownership and
 validation gates.
 
-## Input, positions and units
+## Input, Positions and Units
 
 JavaScript strings are UTF-16, but positions count Unicode code points (the default) or UTF-8 bytes (`Bytes`), as in
 the engine. The parser decodes the input first, so positions, columns, `len` and `startPos`/`endPos` in actions are
@@ -354,7 +354,7 @@ Strings in actions behave as Go strings do: `+` concatenates, `<` and the other 
 byte order of UTF-8, not JavaScript's UTF-16 order), and `len` counts code points or UTF-8 bytes. Expected tokens in
 error messages are sorted in the same order.
 
-## Values of actions
+## Values of Actions
 
 Ints in TypeScript actions are signed 64-bit: `9223372036854775807 + 1` wraps around to `-9223372036854775808`, `/` truncates
 toward zero and `%` takes the sign of the dividend. An int is a JavaScript `number` while it is a safe integer (within
@@ -397,13 +397,13 @@ console.log(recognize("let a;"));
 ```
 
 ```
-(Seq [(Seq "let" " " "a"@name ";") Error"let 1;"{message=`1:11: syntax error: expected (?a-z)`} (Seq "let" " " "b"@name ";")])@main
-1 11 syntax error: expected (?a-z)
-1:11: syntax error: expected (?a-z)
+(Seq [(Seq "let" " " "a"@name ";") Error"let 1;"{message=`1:11: syntax error: expected [a-z]`} (Seq "let" " " "b"@name ";")])@main
+1 11 syntax error: expected [a-z]
+1:11: syntax error: expected [a-z]
 null
 ```
 
-## Deep nesting and the JavaScript stack
+## Deep Nesting and the JavaScript Stack
 
 The generated parser calls rules recursively, like the generated Go parser, and defaults to the same limit of 100,000 nested
 rule calls. `-max-depth` / `pego.WithGeneratedMaxDepth` set a generated default; `parseWithOptions`,
@@ -419,7 +419,7 @@ const result = parseWithOptions(input, { unit: Bytes, maxDepth: 600_000 });
 
 A larger limit does not guarantee host-stack capacity. A a JavaScript stack is far smaller than a goroutine's: Node.js's default stack (about 1 MB) holds some
 hundreds to a few thousand nested rule calls, depending on the grammar and on how warm the code is. Measured on
-Node.js 24: `def n = "(" n ")" / "x"` parses about 1,100 levels of parentheses, and the JSON grammar about 390 levels of
+Node.js 24: `rule n = "(" n ")" / "x"` parses about 1,100 levels of parentheses, and the JSON grammar about 390 levels of
 nested arrays (each level is several rule calls). Beyond that, the parse returns an error instead of crashing:
 
 ```
@@ -454,17 +454,17 @@ input that is not valid UTF-8 can show). To accept deeper input, give the parser
 
 The parity tests parse in a worker with a 1 GB stack, so that they also check the engine's error exactly at the limit.
 
-## What is supported
+## What Is Supported
 
 Everything `pego gen` supports for Go, except typed values:
 
 | Feature | Generated TypeScript |
 |:--|:--|
 | All parsing expressions, captures, atomic and discarded expressions | Yes |
-| Pratt expressions, left recursion (direct and indirect) | Yes |
+| Operators Rule declarations, left recursion (direct and indirect) | Yes |
 | Predicates and variables, lookahead, cut | Yes |
 | Actions, types, built-in functions (`foldl`, `map`, `concat`, ...) | Yes |
-| `#error` and `#recover`, `SyntaxErrors` | Yes |
+| `@error` and `#recover`, `SyntaxErrors` | Yes |
 | Position units (code points, bytes) | `unit` argument |
 | Another start rule | `parseRule` |
 | Recognition without a tree | `recognize`, with `-recognize` |
@@ -472,7 +472,7 @@ Everything `pego gen` supports for Go, except typed values:
 | `#stream` and `ParseStream`, `Document` | **No** (`#stream` is an ordinary repetition, as in Go) |
 | Per-call depth | `maxDepth` in the options-aware entry points; generated default is configurable, and the host stack still bounds nesting |
 
-## Keeping generated code up to date
+## Keeping Generated Code up to Date
 
 As with Go, generated code is source: commit it, and regenerate it when the grammar changes or you upgrade PEGO (the
 embedded runtime comes from the version of `pego` that generated it). In a Go module, a `go:generate` line next to
@@ -513,7 +513,7 @@ inputs as strings and as bytes ([design record 013](../design/013-typescript-gen
 Large character classes, including negated classes and ranges, are supported
 in strict TypeScript builds.
 
-## Trade-offs
+## Trade-Offs
 
 - **Size.** The runtime is about 2,400 lines in every file, with a 3 KB table of printable characters; the rest
   grows with the grammar. `pairs.pego` generates 80,480 bytes, the JSON grammar ([parsers/json](../../parsers/json/json.pego)) 114,192 bytes and the minilang

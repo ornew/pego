@@ -8,7 +8,7 @@ measurement method and latest full-suite analysis. A current mechanism
 inventory is proposed in [design 024](../design/024-optimization-mechanism-controls.md);
 its migration is deferred.
 
-## Where each optimization applies
+## Where Each Optimization Applies
 
 The runtimes are separate code: the closure backend (`compile.go`, `runtime.go`), the recursive and iterative bytecode
 VMs (`vm.go`, `ivm.go`), the generated parsers' runtime (`genrt/runtime.go`, behind `Parse` and `Recognize`) and the
@@ -28,10 +28,10 @@ inventory of current mechanisms or reference controls.
 | [6](006-slab-allocation-for-nodes-child-lists-and-frames-5d03bf2.md#6-slab-allocation-for-nodes-child-lists-and-frames-5d03bf2)| Slab allocation (nodes, lists, frames) | ✓ | ✓ | ✓ | ✓ | ✓ | typed: pooled arenas (48) |
 | [7](007-recognition-mode-3f7e9bf.md#7-recognition-mode-3f7e9bf)| Recognition mode | ✓ | ✓ | ✓ | ✓ | – | generated: `-recognize` (47) |
 | [8](008-fast-path-for-unmemoized-calls-scan-nesting-limit-d2db87d.md#8-fast-path-for-unmemoized-calls-scan-nesting-limit-d2db87d)| Unmemoized fast path, scan loops, nesting limit | ✓ | ✓ | ✓ | ✓ | ✓ | VMs: `SCAN` |
-| [9](009-value-free-pratt-lines-discarding-trivia-in-example-grammars-936857c.md#9-value-free-pratt-lines-discarding-trivia-in-example-grammars-936857c)| Value-free Pratt lines | ✓ | ✓ | ✓ | ✓ | ✓ | |
+| [9](009-value-free-operators-rule-lines-discarding-trivia-in-example-grammars-936857c.md#9-value-free-operators-rule-lines-discarding-trivia-in-example-grammars-936857c)| Value-free Operators Rule lines | ✓ | ✓ | ✓ | ✓ | ✓ | |
 | [10](010-zero-copy-token-text-reusable-evaluation-context.md#10-zero-copy-token-text-reusable-evaluation-context)| Zero-copy token text, reused evaluation context | ✓ | ✓ | ✓ | ✓ | ✓ | VMs: text only (their evaluator has its own stack, 14) |
 | [12](012-memoizing-rules-that-read-variables.md#12-memoizing-rules-that-read-variables)| Memoizing rules that read variables | ✓ | ✓ | ✓ | ✓ | ✓ | |
-| [13](013-allocation-free-pratt-attempts-and-pooled-pratt-frames-in-the-engine-and-vms.md#13-allocation-free-pratt-attempts-and-pooled-pratt-frames-in-the-engine-and-vms)| Pratt attempts by value | ✓ | ✓ | ✓ | ✓ | ✓ | iterative VM: pooled Pratt frames |
+| [13](013-allocation-free-operators-rule-attempts-and-pooled-operators-rule-frames-in-the-engine-and-vms.md#13-allocation-free-operators-rule-attempts-and-pooled-operators-rule-frames-in-the-engine-and-vms)| Operators Rule attempts by value | ✓ | ✓ | ✓ | ✓ | ✓ | iterative VM: pooled Operators Rule frames |
 | [14](014-one-operand-stack-for-vm-expression-code.md#14-one-operand-stack-for-vm-expression-code), [27](027-struct-and-call-operands-on-the-expression-stack-in-the-closure-backend.md#27-struct-and-call-operands-on-the-expression-stack-in-the-closure-backend)| Operands on one expression stack | ✓ | ✓ | ✓ | – | – | generated code evaluates actions as Go expressions |
 | [15](015-allocation-free-action-plumbing-in-all-backends.md#15-allocation-free-action-plumbing-in-all-backends), [28](028-field-lists-and-list-built-ins-without-allocation-in-the-generated-parsers.md#28-field-lists-and-list-built-ins-without-allocation-in-the-generated-parsers)| Allocation-free action plumbing (field chunks, list built-ins on a stack) | ✓ | ✓ | ✓ | ✓ | ✓ | |
 | [16](016-start-positions-and-lambdas-from-chunks-in-the-vms.md#16-start-positions-and-lambdas-from-chunks-in-the-vms)| Start positions and lambdas from chunks | – | ✓ | ✓ | – | – | |
@@ -55,7 +55,7 @@ inventory of current mechanisms or reference controls.
 | [55](055-tracing-hook-on-the-call-path.md#55-tracing-hook-on-the-call-path)| Tracing hook (cost only) | ✓ | ✓ | ✓ | – | – | generated parsers have no tracing |
 | [57](057-pooling-the-scratch-memory-of-whole-input-parses.md#57-pooling-the-scratch-memory-of-whole-input-parses), [58](058-pooling-the-scratch-memory-of-generated-parse-and-recognize.md#58-pooling-the-scratch-memory-of-generated-parse-and-recognize)| Scratch memory pooled across whole-input parses (input, offsets, memo, value stack) | ✓ | ✓ | ✓ | ✓ | ✓ | typed: since 48; generated `Parse` and `Recognize`: 58 |
 | [63](063-a-smaller-node.md#63-a-smaller-node), [64](064-a-smaller-node-in-generated-parsers.md#64-a-smaller-node-in-generated-parsers)| Smaller `Node` (88 bytes: `int32` positions, interned type and rule names) | ✓ | ✓ | ✓ | ✓ | – | generated `Parse` since 64; the typed runtime builds no nodes |
-| [60](060-direct-rules-in-the-typed-runtime.md#60-direct-rules-in-the-typed-runtime)| Direct rules: a rule's body inlined into its call method, captures in Go variables, the action in place | – | – | – | Partial | ✓ | generated supports eligible value-free and Node bodies, with cuts/recovery still general; typed supports ordinary cuts, eligible LR/Pratt bodies, framed cut-bearing LR/Pratt bodies and eligible recovery bodies; see 78–84; record 84 adds complete typed Go-local capture layouts, including dead captures |
+| [60](060-direct-rules-in-the-typed-runtime.md#60-direct-rules-in-the-typed-runtime)| Direct rules: a rule's body inlined into its call method, captures in Go variables, the action in place | – | – | – | Partial | ✓ | generated supports eligible value-free and Node bodies, with cuts/recovery still general; typed supports ordinary cuts, eligible LR/Operators Rule bodies, framed cut-bearing LR/Operators Rule bodies and eligible recovery bodies; see 78–84; record 84 adds complete typed Go-local capture layouts, including dead captures |
 | [61](061-reading-code-points-directly-in-direct-rules.md#61-reading-code-points-directly-in-direct-rules)| Character tests read code points without calling `peek` | – | – | – | Partial | ✓ | direct rules only; generated supported Node and value-free rules since 76/77; Bytes retains decoding fallback |
 | [66](066-no-memo-key-allocated-for-variables-where-none-is-defined.md#66-no-memo-key-allocated-for-variables-where-none-is-defined)| No memo key allocated for variables where none is defined | ✓ | ✓ | ✓ | ✓ | ✓ | |
 | [67](067-retire-memo-entries-when-their-lookup-slots-are-removed.md#67-retire-memo-entries-when-their-lookup-slots-are-removed)| Retire/reuse memo entries on replacement, pruning and edit invalidation | ✓ | ✓ | ✓ | ✗ | ✗ | streams and Documents are engine-only; generated batch memo recycling has not been measured |
@@ -68,13 +68,13 @@ inventory of current mechanisms or reference controls.
 | [74](074-smaller-first-chunks-for-generated-typed-values.md#74-smaller-first-chunks-for-generated-typed-values)| Smaller first chunks with bounded growth for typed values | – | – | – | – | ✓ | generated `ParseAST`, direct construction and Node conversion; independent generation-only object/list references; fresh owners, no returned-chunk reuse |
 | [75](075-exclude-absent-expectations-before-scanning.md#75-exclude-absent-expectations-before-scanning)| Fixed-size absence filter for ordered expectations | ✓ | ✓ | ✓ | ✓ | ✓ | Go only; Node, recognition, typed direct/conversion; collisions retain exact scans, TypeScript unchanged |
 | [76](076-inline-value-free-plain-generated-go-rules.md#76-inline-value-free-plain-generated-go-rules)| Inline value-free plain rule bodies | – | – | – | ✓ | – | Go recognition and Node skip twins; typed direct rules already use this emitter; see 77 for supported Node/value-building paths; TypeScript unchanged |
-| [77](077-inline-node-expressions-in-generated-go-parsers.md#77-inline-value-building-and-memoized-node-expressions-in-generated-go-parsers)| Inline value-building and memoized Node expressions | – | – | – | Partial | – | Generated Go Node only; unsupported cut/recovery/Pratt/LR leaders and unresolved captures fall back; typed and TypeScript unchanged |
-| [78](078-local-cuts-in-typed-direct-rules.md#78-local-cuts-in-typed-direct-rules)| Local cuts in typed direct rules | – | – | – | – | ✓ | ordinary cut-bearing typed Go rules; eligible cut-bearing LR/Pratt bodies are in 81; frame-layout collection in 82 enables additional LR/Pratt/repetition bodies; eligible recovery bodies are in 83; record 84 preserves dead Go-local capture slots; unsupported layouts remain general; eligible cut-free LR/Pratt bodies are in 79/80 |
-| [79](079-inline-eligible-typed-left-recursion-bodies.md#79-inline-eligible-typed-left-recursion-bodies)| Inline eligible typed left-recursion leader bodies | – | – | – | – | ✓ | typed Go only; runtime retains growth and invocation ownership; eligible cut-bearing LR bodies use the framed route in 81; eligible recovery bodies are in 83; unsupported/unmatched layouts fall back; frame-layout collection in 82 enables additional bodies; Pratt lines use 80 |
-| [80](080-inline-eligible-typed-pratt-lines.md#80-inline-eligible-typed-pratt-line-matchers)| Inline eligible typed Pratt line matchers | – | – | – | – | ✓ | typed Go only; eligible cut-free operand, operator and skip matchers; each line owns its scope while runtime retains precedence, longest-match, frames and actions; eligible cut-bearing bodies use 81; recovery bodies use 83; unsupported/unmatched layouts fall back; see 82 for additional eligible layouts |
-| [81](081-scoped-cuts-in-unfinished-typed-go-bodies.md#81-scoped-cuts-in-unfinished-typed-go-bodies)| Scoped cuts in unfinished typed Go bodies | – | – | – | – | ✓ | typed Go only; eligible cut-bearing LR and Pratt bodies use the structural emitter while runtime retains frames, growth, Pratt selection and actions; eligible recovery bodies use 83; unsupported/unmatched layouts fall back; see 82 for layouts recovered from the general emitter |
-| [82](082-match-typed-direct-frame-layouts.md#82-match-typed-direct-bodies-to-general-frame-layouts)| Match typed direct bodies to general frame layouts | – | – | – | – | ✓ | typed Go only; derives LR, Pratt and owned repetition slot layouts from general-emitter metadata; runtime ownership is unchanged; eligible recovery bodies use 83; unsupported layouts remain general; generation-only reference control |
-| [83](083-inline-typed-recovery-bodies.md#83-inline-eligible-typed-recovery-bodies)| Inline eligible typed recovery bodies | – | – | – | – | Partial | typed Go ordinary/LR/Pratt bodies with `#recover`; runtime recovery and frame ownership are unchanged; Node/TS and unsupported layouts remain general |
+| [77](077-inline-node-expressions-in-generated-go-parsers.md#77-inline-value-building-and-memoized-node-expressions-in-generated-go-parsers)| Inline value-building and memoized Node expressions | – | – | – | Partial | – | Generated Go Node only; unsupported cut/recovery/Operators Rule/LR leaders and unresolved captures fall back; typed and TypeScript unchanged |
+| [78](078-local-cuts-in-typed-direct-rules.md#78-local-cuts-in-typed-direct-rules)| Local cuts in typed direct rules | – | – | – | – | ✓ | ordinary cut-bearing typed Go rules; eligible cut-bearing LR/Operators Rule bodies are in 81; frame-layout collection in 82 enables additional LR/Operators Rule/repetition bodies; eligible recovery bodies are in 83; record 84 preserves dead Go-local capture slots; unsupported layouts remain general; eligible cut-free LR/Operators Rule bodies are in 79/80 |
+| [79](079-inline-eligible-typed-left-recursion-bodies.md#79-inline-eligible-typed-left-recursion-bodies)| Inline eligible typed left-recursion leader bodies | – | – | – | – | ✓ | typed Go only; runtime retains growth and invocation ownership; eligible cut-bearing LR bodies use the framed route in 81; eligible recovery bodies are in 83; unsupported/unmatched layouts fall back; frame-layout collection in 82 enables additional bodies; Operators Rule lines use 80 |
+| [80](080-inline-eligible-typed-operators-rule-lines.md#80-inline-eligible-typed-operators-rule-line-matchers)| Inline eligible typed Operators Rule line matchers | – | – | – | – | ✓ | typed Go only; eligible cut-free operand, operator and skip matchers; each line owns its scope while runtime retains precedence, longest-match, frames and actions; eligible cut-bearing bodies use 81; recovery bodies use 83; unsupported/unmatched layouts fall back; see 82 for additional eligible layouts |
+| [81](081-scoped-cuts-in-unfinished-typed-go-bodies.md#81-scoped-cuts-in-unfinished-typed-go-bodies)| Scoped cuts in unfinished typed Go bodies | – | – | – | – | ✓ | typed Go only; eligible cut-bearing LR and Operators Rule bodies use the structural emitter while runtime retains frames, growth, Operators Rule selection and actions; eligible recovery bodies use 83; unsupported/unmatched layouts fall back; see 82 for layouts recovered from the general emitter |
+| [82](082-match-typed-direct-frame-layouts.md#82-match-typed-direct-bodies-to-general-frame-layouts)| Match typed direct bodies to general frame layouts | – | – | – | – | ✓ | typed Go only; derives LR, Operators Rule and owned repetition slot layouts from general-emitter metadata; runtime ownership is unchanged; eligible recovery bodies use 83; unsupported layouts remain general; generation-only reference control |
+| [83](083-inline-typed-recovery-bodies.md#83-inline-eligible-typed-recovery-bodies)| Inline eligible typed recovery bodies | – | – | – | – | Partial | typed Go ordinary/LR/Operators Rule bodies with `#recover`; runtime recovery and frame ownership are unchanged; Node/TS and unsupported layouts remain general |
 | [84](084-complete-typed-local-capture-layouts.md#84-complete-typed-go-local-capture-layouts)| Complete typed Go-local capture layouts | – | – | – | – | Partial | typed Go ordinary direct rules and owned/projected repetition scopes preserve complete capture-name layouts, including dead syntax; Go locals are emitted as needed, with no runtime frame or selector |
 | [85](085-reuse-stream-capture-frames.md#85-reuse-stream-capture-frames-at-element-commit)| Reuse stream capture frames at element commit | ✓ | ✓ | ✓ | – | – | engine streaming only; reuses completed element's frame structs while preserving the live root and immutable result storage |
 | [86](086-reuse-document-vm-values.md#86-reuse-the-document-vm-value-stack)| Reuse the Document VM value stack | – | ✓ | ✓ | – | – | engine `Document` reparses only; retains cleared VM stack capacity within an input-relative bound; ordinary parsing and closure documents unchanged |
@@ -97,7 +97,7 @@ Not applied, and why:
 
 <a id="optimization-history"></a>
 
-## Optimization records
+## Optimization Records
 
 ## Records 1–25
 - [001. Value-free rule bodies, value-free twins, transient rules (0b2c903)](001-value-free-rule-bodies-value-free-twins-transient-rules-0b2c903.md)
@@ -108,11 +108,11 @@ Not applied, and why:
 - [006. Slab allocation for nodes, child lists and frames (5d03bf2)](006-slab-allocation-for-nodes-child-lists-and-frames-5d03bf2.md)
 - [007. Recognition mode (3f7e9bf)](007-recognition-mode-3f7e9bf.md)
 - [008. Fast path for unmemoized calls, `SCAN`, nesting limit (d2db87d)](008-fast-path-for-unmemoized-calls-scan-nesting-limit-d2db87d.md)
-- [009. Value-free Pratt lines; discarding trivia in example grammars (936857c)](009-value-free-pratt-lines-discarding-trivia-in-example-grammars-936857c.md)
+- [009. Value-free Operators Rule lines; discarding trivia in example grammars (936857c)](009-value-free-operators-rule-lines-discarding-trivia-in-example-grammars-936857c.md)
 - [010. Zero-copy token text; reusable evaluation context](010-zero-copy-token-text-reusable-evaluation-context.md)
 - [011. Generated parsers catch up with changes 4–10](011-generated-parsers-catch-up-with-changes-410.md)
 - [012. Memoizing rules that read variables](012-memoizing-rules-that-read-variables.md)
-- [013. Allocation-free Pratt attempts and pooled Pratt frames in the engine and VMs](013-allocation-free-pratt-attempts-and-pooled-pratt-frames-in-the-engine-and-vms.md)
+- [013. Allocation-free Operators Rule attempts and pooled Operators Rule frames in the engine and VMs](013-allocation-free-operators-rule-attempts-and-pooled-operators-rule-frames-in-the-engine-and-vms.md)
 - [014. One operand stack for VM expression code](014-one-operand-stack-for-vm-expression-code.md)
 - [015. Allocation-free action plumbing in all backends](015-allocation-free-action-plumbing-in-all-backends.md)
 - [016. Start positions and lambdas from chunks in the VMs](016-start-positions-and-lambdas-from-chunks-in-the-vms.md)
@@ -181,7 +181,7 @@ Not applied, and why:
 - [077. Inline value-building and memoized Node expressions in generated Go parsers](077-inline-node-expressions-in-generated-go-parsers.md)
 - [078. Local cuts in typed direct rules](078-local-cuts-in-typed-direct-rules.md)
 - [079. Inline eligible typed left-recursion bodies](079-inline-eligible-typed-left-recursion-bodies.md)
-- [080. Inline eligible typed Pratt line matchers](080-inline-eligible-typed-pratt-lines.md)
+- [080. Inline eligible typed Operators Rule line matchers](080-inline-eligible-typed-operators-rule-lines.md)
 - [081. Scoped cuts in unfinished typed Go bodies](081-scoped-cuts-in-unfinished-typed-go-bodies.md)
 - [082. Match typed direct bodies to general frame layouts](082-match-typed-direct-frame-layouts.md)
 - [083. Inline eligible typed recovery bodies](083-inline-typed-recovery-bodies.md)
@@ -194,7 +194,7 @@ Not applied, and why:
 - [091. Specialize pure literal-text disjunctions](091-specialize-pure-literal-text-disjunctions.md)
 - [092. Reuse generated Node capture scratch](092-reuse-generated-node-capture-scratch.md)
 
-## Experiments that did not pay off
+## Experiments That Did Not Pay Off
 
 | Experiment | Result | Decision |
 |:--|:--|:--|
@@ -206,12 +206,12 @@ Not applied, and why:
 | Storing all-ASCII input in code points as bytes (positions are the same in both units), with `len` of strings still counting code points | −9% bytes per parse on ASCII versions of the JSON, CSV and XML inputs (no rune array or offset table), but 0–4% slower: matching bytes checks for multi-byte characters at every step, which indexing code points does not | Not adopted |
 | Iterative VM: holding body frames by value in the VM stack (a tagged entry instead of a pooled frame behind an interface) | 5–19% slower: each entry is about 150 bytes, and copying and clearing it on every push and pop costs more than the interface call and the pool it saves | Not adopted |
 | Iterative VM: calling body frames directly (a type assertion before the interface call) and returning them to the pool without the type switch | Within ±4% (noise) | Not adopted |
-| Estimating a smaller `Node` (120 → about 88 bytes with `int32` positions and interned type and rule names) by the opposite change: 32 bytes of padding | Closure: JSON +1%, XML +4%, Arith_Pratt +1%, Minilang and the long `Document` within noise, about +12% bytes; so shrinking would gain a few percent at most | Adopted later as change 63, accepting the API change for the memory it saves |
+| Estimating a smaller `Node` (120 → about 88 bytes with `int32` positions and interned type and rule names) by the opposite change: 32 bytes of padding | Closure: JSON +1%, XML +4%, Arith_OperatorsRule +1%, Minilang and the long `Document` within noise, about +12% bytes; so shrinking would gain a few percent at most | Adopted later as change 63, accepting the API change for the memory it saves |
 | Inlining small plain rules into direct typed rules (after change 62; a body without calls of up to 16 expressions, also tried transitively) | `ParseAST` JSON −1% to −7% depending on the run, the other benchmarks within ±3% | Not adopted: no consistent gain for more generated code |
 | Setting the fields of the reused action context in place in direct typed rules, instead of copying a whole `tctx` | `ParseAST` JSON −5%, Outline +5%, the others within ±2% | Not adopted (noise) |
 | Memoizing every rule (classic packrat) | 2–3× slower than the transient policy on all workloads; memo entries were never reused for leaf and single-reference rules | Replaced by the transient policy (change 1) |
 
-## Grammar authoring guidelines for performance
+## Grammar Authoring Guidelines for Performance
 
 - Inside a captured expression, discard parts the action does not need with `-x` (typically whitespace and
   punctuation): `rest:(-ws -"," -ws v:value)*`. The engine cannot drop them automatically, because a captured value
@@ -219,7 +219,7 @@ Not applied, and why:
 - A predicate that reads a capture makes the capture's rules build values even in recognition mode, and with them
   every rule they call: in `parsers/cue`, one predicate reading a capture that contained an expression made nearly
   the whole grammar build values in `Recognize`. Keep captures that predicates read small (a name, a token).
-- Prefer terminal types (`type Name terminal`) or `@(...)` for tokens: their bodies are matched without building
+- Prefer terminal types (`type Name terminal`) or `(...) #atomic` for tokens: their bodies are matched without building
   values.
 - Write actions that use captures rather than `$n` where possible; a body whose action does not use `$n` is matched
   without building its CST.

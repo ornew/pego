@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"hash/crc32"
+	"sort"
 
 	"github.com/ornew/pego/grammar"
 )
@@ -66,7 +67,7 @@ const (
 	xEndLine
 	xPredicate
 	xAttributed
-	xPratt
+	xOperatorsRule
 )
 
 // Value expression kinds
@@ -346,14 +347,20 @@ func (w *encoder) expr(e grammar.Expr) {
 		w.uint(len(e.Attrs))
 		for _, a := range e.Attrs {
 			w.str(a.Name)
-			w.uint(len(a.Args))
-			for _, arg := range a.Args {
-				w.str(arg.Name)
-				w.expr(arg.Value)
+			w.uint(len(a.KwArgs))
+			keys := make([]string, 0, len(a.KwArgs))
+			for key := range a.KwArgs {
+				keys = append(keys, key)
+			}
+			sort.Strings(keys)
+			for _, name := range keys {
+				w.str(name)
+				value, _ := a.Arg(name)
+				w.expr(value)
 			}
 		}
-	case *grammar.Pratt:
-		w.byte(xPratt)
+	case *grammar.OperatorsRule:
+		w.byte(xOperatorsRule)
 		w.optExpr(e.Skip)
 		w.uint(len(e.Operands))
 		for _, o := range e.Operands {
@@ -791,29 +798,31 @@ func (r *decoder) expr() grammar.Expr {
 		a := &grammar.Attributed{Expr: r.expr()}
 		n := r.count()
 		for i := 0; i < n && r.err == nil; i++ {
-			at := &grammar.Attribute{Name: r.str()}
+			at := &grammar.Attribute{Name: r.str(), KwArgs: map[string]any{}}
+			at.Pragma = at.Name == "recover" || at.Name == "stream"
 			m := r.count()
 			for j := 0; j < m && r.err == nil; j++ {
-				at.Args = append(at.Args, &grammar.AttrArg{Name: r.str(), Value: r.expr()})
+				name := r.str()
+				at.KwArgs[name] = r.expr()
 			}
 			a.Attrs = append(a.Attrs, at)
 		}
 		return a
-	case xPratt:
-		p := &grammar.Pratt{}
+	case xOperatorsRule:
+		p := &grammar.OperatorsRule{}
 		if r.bool() {
 			p.Skip = r.expr()
 		}
 		n := r.count()
 		for i := 0; i < n && r.err == nil; i++ {
-			p.Operands = append(p.Operands, &grammar.PrattOperand{Expr: r.expr(), Action: r.optTerm()})
+			p.Operands = append(p.Operands, &grammar.OperatorsRuleOperand{Expr: r.expr(), Action: r.optTerm()})
 		}
 		n = r.count()
 		for i := 0; i < n && r.err == nil; i++ {
-			l := &grammar.PrattLevel{Name: r.str()}
+			l := &grammar.OperatorsRuleLevel{Name: r.str()}
 			m := r.count()
 			for j := 0; j < m && r.err == nil; j++ {
-				op := &grammar.PrattOperator{Kind: r.str(), Assoc: r.str()}
+				op := &grammar.OperatorsRuleOperator{Kind: r.str(), Assoc: r.str()}
 				op.Expr = r.expr()
 				op.Action = r.optTerm()
 				l.Operators = append(l.Operators, op)

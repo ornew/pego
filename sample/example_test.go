@@ -9,11 +9,10 @@ import (
 	"github.com/ornew/pego/sample"
 )
 
-const settings = `
-def main = pair ("," " "? pair)*
-def pair = key "=" value
-def key = @(?a-z)+
-def value = @(?0-9)+ / "\"" @(?^"\n)* "\"" / "true" / "false"
+const settings = `rule main = pair ("," " "? pair)*
+rule pair = key "=" value
+rule key = [a-z]+ #atomic
+rule value = [0-9]+ #atomic / "\"" [^"\n]* #atomic "\"" / "true" / "false"
 `
 
 func ExampleGenerate() {
@@ -60,7 +59,7 @@ func ExampleGenerator_Coverage() {
 	// Output:
 	// "h=\"\"" ["in=true, i=true"]
 	// rules 4/4 (100%), alternatives 2/4 (50%)
-	// missed value: choice 0: @(?0-9)+
+	// missed value: choice 0: [0-9]+ #atomic
 	// missed value: choice 3: "false"
 }
 
@@ -82,7 +81,7 @@ func ExampleGenerator_GenerateInvalid() {
 	}
 	// Output:
 	// "h=\"\" " (insert " " at 4): 1:5: syntax error: expected ",", end of input
-	// "n" (truncate at 1): 1:2: syntax error: expected "=", (?a-z)
+	// "n" (truncate at 1): 1:2: syntax error: expected "=", [a-z]
 	// "u=truee" (duplicate "e" at 5): 1:7: syntax error: expected ",", end of input
 }
 

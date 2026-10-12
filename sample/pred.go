@@ -13,7 +13,7 @@ const (
 	vText           // a terminal
 	vList           // a repetition
 	vNode           // another node (Seq, ...)
-	vUnknown        // the result of an action, or of a Pratt expression
+	vUnknown        // the result of an action, or of a OperatorsRule expression
 )
 
 // val describes the value that the parser will build for a generated expression, as far as the

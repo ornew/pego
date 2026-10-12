@@ -8,7 +8,7 @@ import (
 )
 
 func TestBytePositions(t *testing.T) {
-	prog := compile(t, `def main = w:@(?^ )+ " " x:.`)
+	prog := compile(t, `rule main = w:[^ ]+ #atomic " " x:.`)
 	n, err := prog.ParseWith("main", "日本 語", ParseOptions{Unit: Bytes})
 	if err != nil {
 		t.Fatal(err)
@@ -31,7 +31,7 @@ func TestBytePositions(t *testing.T) {
 
 // TestInvalidUTF8 checks that invalid UTF-8 is read as a 1-byte U+FFFD.
 func TestInvalidUTF8(t *testing.T) {
-	prog := compile(t, `def main = "a" x:. "b"`)
+	prog := compile(t, `rule main = "a" x:. "b"`)
 	n, err := prog.ParseWith("main", "a\xffb", ParseOptions{Unit: Bytes})
 	if err != nil {
 		t.Fatal(err)
@@ -45,9 +45,8 @@ func TestInvalidUTF8(t *testing.T) {
 }
 
 func TestLenInUnits(t *testing.T) {
-	prog := compile(t, `
-type N struct { N int }
-def main = s:@.* -> new N{N: len($s) + len(text($s))}`)
+	prog := compile(t, `type N struct { N int }
+rule main = s:.* #atomic => N{N: len($s) + len(text($s))}`)
 	for unit, want := range map[Unit]int{CodePoints: 4, Bytes: 12} {
 		n, err := prog.ParseWith("main", "日本", ParseOptions{Unit: unit})
 		if err != nil || n.Field("N") != want {
@@ -106,7 +105,7 @@ func TestStreamInBytes(t *testing.T) {
 		return nil
 	}, ParseOptions{Unit: Bytes})
 	var se *SyntaxError
-	// ä does not match (?a-z). The error column is in bytes.
+	// ä does not match [a-z]. The error column is in bytes.
 	if !errors.As(err, &se) || se.Line != 2 || se.Col != 1 {
 		t.Fatalf("got %v %v", got, err)
 	}

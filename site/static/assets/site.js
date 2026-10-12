@@ -58,7 +58,7 @@ for (const code of document.querySelectorAll("pre > code")) {
   if (pre.closest(".pg, .live")) continue;
   const actions = document.createElement("div");
   actions.className = "code-actions";
-  if (lang === "pego" && /^\s*def\s/m.test(text)) {
+  if (lang === "pego" && /^\s*(?:operators\s+)?rule\s/m.test(text)) {
     const open = document.createElement("a");
     open.textContent = "Playground";
     open.title = "Open this grammar in the playground";

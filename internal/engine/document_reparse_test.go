@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-const reparseGrammar = `def main = line* $$
-def line = @(?a-z)+ "\n"`
+const reparseGrammar = `rule main = line* $$
+rule line = [a-z]+ #atomic "\n"`
 
 func TestDocumentNoEditPreservesRuns(t *testing.T) {
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -55,10 +55,10 @@ func TestDocumentNoEditRunInvalidation(t *testing.T) {
 		for _, unit := range []Unit{CodePoints, Bytes} {
 			for _, src := range []string{
 				reparseGrammar,
-				`def main = line* "!" $$
-def line = @(?a-z)+ "\n"`, // Ordinary failure can still record the repetition.
-				`def main = line* $$
-def line = @(?a-z)+ "\n" #recover(skip="\n")`,
+				`rule main = line* "!" $$
+rule line = [a-z]+ #atomic "\n"`, // Ordinary failure can still record the repetition.
+				`rule main = line* $$
+rule line = [a-z]+ #atomic "\n" #recover(skip="\n")`,
 			} {
 				t.Run(fmt.Sprintf("%s/%s/%s", backend, unit, src), func(t *testing.T) {
 					prog := compile(t, src)
@@ -168,9 +168,9 @@ func BenchmarkDocumentReparse(b *testing.B) {
 }
 
 func TestDocumentNoEditNestedRuns(t *testing.T) {
-	prog := compile(t, `def main = block* $$
-def block = "{\n" line* "}\n"
-def line = @(?a-z)+ "\n"`)
+	prog := compile(t, `rule main = block* $$
+rule block = "{\n" line* "}\n"
+rule line = [a-z]+ #atomic "\n"`)
 	text := strings.Repeat("{\n"+strings.Repeat("ab\n", 100)+"}\n", 100)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []Unit{CodePoints, Bytes} {

@@ -1,4 +1,4 @@
-# 56. Applying a `Document` edit to memo entries when they are looked up
+# 56. Applying a `Document` Edit to Memo Entries When They Are Looked Up
 
 - After change 54, an edit in the middle of a long document spent most of its time in `Edit`: `memoTable.splice`
   visited every memo entry to keep, shift or drop it (about 300,000 at 100,000 lines), and moved every chain after the

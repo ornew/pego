@@ -1,4 +1,4 @@
-# 55. Tracing hook on the call path
+# 55. Tracing Hook on the Call Path
 
 - Tracing (design 014) adds one `p.tr != nil` test at the entry of `parser.call` and one on the iterative VM's
   non-plain call path. The plain call sites test `p.noPlain` instead of `p.memoAll` (same cost); `noPlain` is set by

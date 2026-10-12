@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { playground } from "./playground_harness.mjs";
 
-const base = { g: 'def main = "é" $$\ndef alt = "x" $$', i: "é" };
+const base = { g: 'rule main = "é" $$\nrule alt = "x" $$', i: "é" };
 const app = process.env.PEGO_PLAYGROUND_APP;
 const parseCalls = (h) => h.calls.filter((c) => c.method === "parse");
 
@@ -57,8 +57,8 @@ test("unchanged and normalized default links do not parse again", async () => {
 
 test("grammar/input changes and named examples still parse", async () => {
   const h = await playground({ state: base, app });
-  await h.hash({ ...base, g: 'def main = "a"' });
-  assert.equal(parseCalls(h).at(-1).req.grammar, 'def main = "a"');
+  await h.hash({ ...base, g: 'rule main = "a"' });
+  assert.equal(parseCalls(h).at(-1).req.grammar, 'rule main = "a"');
   await h.hash({ ...base, i: "x" });
   assert.equal(parseCalls(h).at(-1).req.input, "x");
   await h.hash({ example: "sample" });

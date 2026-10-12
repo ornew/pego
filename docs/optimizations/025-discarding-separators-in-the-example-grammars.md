@@ -1,4 +1,4 @@
-# 25. Discarding separators in the example grammars
+# 25. Discarding Separators in the Example Grammars
 
 - Counting the nodes allocated against those in the final tree showed that about half of the JSON parser's nodes were
   thrown away. Among them, every element after the first in `rest:(-ws "," -ws m:member)*` kept the `","` as a `Match`

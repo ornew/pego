@@ -1,1 +1,1 @@
-error: 1:5: syntax error: expected "(", "+", "-", (? \t\r\n), (?0-9)
+error: 1:5: syntax error: expected "(", "+", "-", [ \t\r\n], [0-9]

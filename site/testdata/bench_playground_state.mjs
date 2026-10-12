@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { performance } from "node:perf_hooks";
 import { playground } from "./playground_harness.mjs";
 
-const state = { g: 'def main = "é" $$', i: "é" };
+const state = { g: 'rule main = "é" $$', i: "é" };
 const h = await playground({ state, app: process.argv[2], decode: async () => state });
 const warmup = 10000, iterations = 100000;
 for (let i = 0; i < warmup; i++) await h.dispatchHash();

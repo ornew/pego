@@ -1,4 +1,4 @@
-# 86. Reuse the Document VM value stack
+# 86. Reuse the Document VM Value Stack
 
 Measured 2026-10-11 on Go 1.27.1, darwin/arm64, Apple M3 Max (16 CPUs).
 

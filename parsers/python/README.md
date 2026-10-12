@@ -138,10 +138,10 @@ Choices that measurably help, each commented in the grammar:
   version with separate variables for the quote of an f-string, for the parameters of a lambda and for
   `barry_as_FLUFL` was 10 to 16% slower and allocated 25 to 30% more on the benchmarks below. The lambda has its own
   parameter rules, and `<>` is checked after the parse.
-- The nine levels of binary operators, the unary operators and `**` are one Pratt expression instead of a chain of
+- The nine levels of binary operators, the unary operators and `**` are one Operators Rule instead of a chain of
   rules (3 to 8% faster).
 - Rules that must be tried in order are written so that the common case, an expression statement, is parsed once and
-  an assignment is recognized by what follows; `primary` returns an atom without running the Pratt expression of
+  an assignment is recognized by what follows; `primary` returns an atom without running the Operators Rule of
   attributes, calls and subscripts when none follows it.
 - Constants and string parts are kept as source text and decoded on demand (`Constant.Value`), and the large integers
   of the grammar are computed with multiplications (the bytecode backends truncate integer literals of 2^31 and more).

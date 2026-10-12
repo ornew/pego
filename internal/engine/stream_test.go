@@ -7,12 +7,13 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/internal/syntax"
 )
 
-const records = `
-def main = ^^ header items:record* #stream $$
-def header = "#records\n"
-def record = ^ k:@(?a-z)+ "=" v:@(?0-9)+ "\n"`
+const records = `rule main = ^^ header items:record* #stream $$
+rule header = "#records\n"
+rule record = ^ k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n"`
 
 func TestParseStream(t *testing.T) {
 	prog := compile(t, records)
@@ -138,13 +139,11 @@ func TestParseStreamDiscardsInput(t *testing.T) {
 func TestParseStreamMemoryIsBounded(t *testing.T) {
 	grammars := map[string]string{
 		"records": records,
-		"action": `
-type Pair struct { Key Match, Value Match }
-def main = item* #stream $$
-def item: Pair = k:@(?a-z)+ "=" v:@(?0-9)+ "\n" -> new Pair{Key: $k, Value: $v}`,
-		"lines": `
-def main = line* #stream $$
-def line = @(?a-z0-9=)+ "\n"`,
+		"action": `type Pair struct { Key Match, Value Match }
+rule main = item* #stream $$
+rule item Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" => Pair{Key: $k, Value: $v}`,
+		"lines": `rule main = line* #stream $$
+rule line = [a-z0-9=]+ #atomic "\n"`,
 	}
 	for name, src := range grammars {
 		prog := compile(t, src)
@@ -180,10 +179,9 @@ def line = @(?a-z0-9=)+ "\n"`,
 // TestParseStreamTextOfDiscardedInput checks that text(...) of a node whose input has been
 // discarded by the stream returns what is still held instead of failing.
 func TestParseStreamTextOfDiscardedInput(t *testing.T) {
-	prog := compile(t, `
-type T struct { H string, N int }
-def main = h:("a" "b") rs:r* #stream "!" -> new T{H: text($h), N: len($rs)}
-def r = "x" "y"`)
+	prog := compile(t, `type T struct { H string, N int }
+rule main = h:("a" "b") rs:r* #stream "!" => T{H: text($h), N: len($rs)}
+rule r = "x" "y"`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		input := "ab" + strings.Repeat("xy", 5000) + "!"
 		err := prog.ParseStreamWith("main", strings.NewReader(input), func(*Node) error { return nil }, ParseOptions{Backend: b})
@@ -218,10 +216,9 @@ func (r *lineReader) Read(b []byte) (int, error) {
 
 func TestStreamCompileErrors(t *testing.T) {
 	for _, tc := range []struct{ src, want string }{
-		{`def main = "a" #stream`, `#stream must be attached to a repetition`},
-		{`def main = ("a"* #stream / "b") "c"`, `#stream is only allowed at the top level of a rule body`},
-		{`def main = "a"* #stream "b"* #stream`, `a rule body can have only one #stream`},
-		{`def main = "a"* #stream(x="y")`, `#stream takes no arguments`},
+		{`rule main = "a" #stream`, `#stream must be attached to a repetition`},
+		{`rule main = ("a"* #stream / "b") "c"`, `#stream is only allowed at the top level of a rule body`},
+		{`rule main = "a"* #stream "b"* #stream`, `a rule body can have only one #stream`},
 	} {
 		t.Run(tc.want, func(t *testing.T) {
 			if got := compileError(t, tc.src); !strings.Contains(got, tc.want) {
@@ -229,8 +226,14 @@ func TestStreamCompileErrors(t *testing.T) {
 			}
 		})
 	}
-	prog := compile(t, `def main = "a"*`)
+	prog := compile(t, `rule main = "a"*`)
 	if err := prog.ParseStream("main", strings.NewReader("a"), func(*Node) error { return nil }); err == nil || err.Error() != "rule main has no #stream repetition" {
 		t.Errorf("got %v", err)
+	}
+}
+
+func TestStreamPragmaRejectsArguments(t *testing.T) {
+	if _, err := syntax.Parse(`rule main = "a"* #stream(x="y")`); err == nil {
+		t.Fatal("accepted arguments to #stream")
 	}
 }

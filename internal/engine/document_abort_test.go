@@ -11,16 +11,17 @@ func TestDocumentAbortedParse(t *testing.T) {
 		name, src, text, fixed, errorText string
 		depth                             int
 	}{
-		{"action", `
-type N struct { X int }
-def main = x "a" $$
-def x: N = t:@(x "a" / "a") -> new N{X:1/(2-len($t))}`, "aa", "aaa", "division by zero", DefaultMaxDepth},
-		{"depth", `
-def main = x $$
-def x = x "a" / nested
-def nested = "(" nested ")" / "a"`, "((a))", "a", "nesting too deep", 3},
-		{"Pratt depth", `def main=e $$
-def e = pratt { operand "x" level { prefix "-" } }`, "---x", "x", "nesting too deep", 4},
+		{"action", `type N struct { X int }
+rule main = x "a" $$
+rule x N = t:(x "a" / "a") #atomic => N{X: 1 / (2 - len($t))}`, "aa", "aaa", "division by zero", DefaultMaxDepth},
+		{"depth", `rule main = x $$
+rule x = x "a" / nested
+rule nested = "(" nested ")" / "a"`, "((a))", "a", "nesting too deep", 3},
+		{"OperatorsRule depth", `rule main = e $$
+rule e = operators {
+    operand "x"
+    level { prefix "-" }
+}`, "---x", "x", "nesting too deep", 4},
 	} {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []Unit{CodePoints, Bytes} {
@@ -56,8 +57,8 @@ def e = pratt { operand "x" level { prefix "-" } }`, "---x", "x", "nesting too d
 }
 
 func TestDocumentTracePanicRetry(t *testing.T) {
-	prog := compile(t, `def main = x $$
-def x = x "a" / "a"`)
+	prog := compile(t, `rule main = x $$
+rule x = x "a" / "a"`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []Unit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
@@ -97,10 +98,10 @@ def x = x "a" / "a"`)
 
 func TestDocumentNormalErrorsKeepMemo(t *testing.T) {
 	for _, src := range []string{
-		`def main = x "b" $$
-def x = "a"`,
-		`def main = x* $$
-def x = "b" #recover(skip="a")`,
+		`rule main = x "b" $$
+rule x = "a"`,
+		`rule main = x* $$
+rule x = "b" #recover(skip="a")`,
 	} {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			doc, err := compile(t, src).NewDocumentWith("main", "a", ParseOptions{Backend: backend})

@@ -1,4 +1,4 @@
-# 40. One pass to prepare code-point input in generated parsers
+# 40. One Pass to Prepare Code-Point Input in Generated Parsers
 
 - Generated parsers prepared code-point input in three passes, as the engine did before change 30: converting to code
   points, checking UTF-8 validity, and building the offset table for token text. Full parses always need the table,

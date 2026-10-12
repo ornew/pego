@@ -1,4 +1,4 @@
-# 54. Resuming long repetitions in a `Document`
+# 54. Resuming Long Repetitions in A `Document`
 
 - A reparse runs again the rule that contains the edit, and any repetition in it ran again element by element: for a
   file's `line*`, a memo lookup per line. A profile of a 100,000-line settings file put half of the reparse in that

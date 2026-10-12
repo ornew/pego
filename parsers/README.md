@@ -1,4 +1,4 @@
-# Ready-made parsers
+# Ready-Made Parsers
 
 Parsers for common languages, written in PEGO and generated into Go with `pego gen`. Each is a Go module of its own
 that depends only on the standard library: import it and parse, with nothing to generate or compile at run time.
@@ -23,7 +23,7 @@ go get github.com/ornew/pego/parsers/json
 ```go
 import "github.com/ornew/pego/parsers/json"
 
-v, err := json.Decode(`{"name": "pego", "tags": ["peg", "pratt"]}`) // map[string]any{...}
+v, err := json.Decode(`{"name": "pego", "tags": ["peg", "operators-rule"]}`) // map[string]any{...}
 ast, err := json.ParseAST(src)                                      // typed values with positions
 ```
 

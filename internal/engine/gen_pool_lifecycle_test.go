@@ -16,12 +16,11 @@ func TestGeneratedTypedPoolRetention(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	g, err := syntax.Parse(`
-type A terminal
-def main: A = x:large x:small -- -> $x
-def large: A = (?a)*
-def small: A = "b"
-def repeated: A = (x:"b"){2} --`)
+	g, err := syntax.Parse(`type A terminal
+rule main A = x:large x:small -- => $x
+rule large A = [a]*
+rule small A = "b"
+rule repeated A = (x:"b") #repeat(2) --`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,11 +72,10 @@ func TestGeneratedUntypedPoolRetention(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	g, err := syntax.Parse(`
-type A terminal
-def main: A = lead value:small -> $value
-def lead = (?^b)*
-def small: A = "b"`)
+	g, err := syntax.Parse(`type A terminal
+rule main A = lead value:small => $value
+rule lead = [^b]*
+rule small A = "b"`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -277,7 +275,7 @@ func TestTypedPoolUndoAndSaved(t *testing.T) {
 	}
 	p.reset(m)
 	checkTrail(t, p)
-	// Pratt's saved-capture scratch can shrink after a wider candidate.
+	// OperatorsRule's saved-capture scratch can shrink after a wider candidate.
 	p.saved = []any{&A{Text: strings.Repeat("a", 1024)}, &A{Text: "tail"}}
 	p.saved = append(p.saved[:0], nil)
 	p.recycle()

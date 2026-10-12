@@ -1,4 +1,4 @@
-# 84. Complete typed Go-local capture layouts
+# 84. Complete Typed Go-Local Capture Layouts
 
 This extends the generator at `268634e`. Measurements compare the candidate
 with its own generation-only reference control, rather than an older revision.
@@ -15,7 +15,7 @@ Names are known eagerly, but Go locals are emitted only when matching,
 mark/reset, or term/attached-value access needs them. A predicate that refers
 to a known capture omitted from dead syntax can still read a nil local. The
 locals do not allocate runtime capture frames. This change applies to ordinary
-typed direct rules and owned repetition scopes; framed LR, Pratt and recovery
+typed direct rules and owned repetition scopes; framed LR, Operators Rule and recovery
 routes are unchanged. The Node and TypeScript generators are unchanged.
 
 The generation-only `disableTypedLocalLayouts` control restores the prior

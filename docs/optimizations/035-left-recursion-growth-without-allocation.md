@@ -1,4 +1,4 @@
-# 35. Left-recursion growth without allocation
+# 35. Left-Recursion Growth Without Allocation
 
 - Growing the seed of a left-recursive rule allocated a `growState` per call of the leader and a memo entry on the
   heap for the seed and for every longer result, instead of taking entries from the memo table's chunks: 84k of the

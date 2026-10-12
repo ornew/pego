@@ -1,4 +1,4 @@
-# 009. Saving and Loading Compiled Grammars (.pegoc)
+# 009. Saving and Loading Compiled Grammars (.Pegoc)
 
 - **Status**: Implemented
 - **Author**: @ornew
@@ -11,7 +11,7 @@
 Save a compiled grammar to a file, and later load it and run the parser without compiling again (`pego compile`, `Parser.MarshalBinary`, `LoadParser`).
 This is useful for distributing grammars, or when the grammar should not be compiled on every start-up.
 
-## What to save
+## What to Save
 
 The engine assembles parser expressions into Go functions (closures) and executes those, so the executable form itself cannot be saved as bytecode.
 Instead, the cost of each stage from source to a ready-to-run parser was measured, and the results of the expensive stages are saved (measured with `examples/minilang`).
@@ -39,12 +39,12 @@ crc32    CRC-32 (IEEE, little-endian) of everything from magic through payload
 - Source positions are not saved.
 - The same grammar always produces the same bytes (loading and saving again does not change them).
 
-### Alternatives considered
+### Alternatives Considered
 
 - **The grammar JSON format with the analysis results added**: readable, but large and slow. The grammar JSON remains the format for two-way conversion, and this format is binary.
 - **gob**: tightly bound to Go types, which makes it hard to manage format compatibility ourselves.
 
-## Safety and compatibility
+## Safety and Compatibility
 
 - Data in a different format version is not loaded. The version is increased whenever the format changes.
 - Corruption is detected by the checksum. Even with a valid checksum, malformed structure (out-of-range indices, excessive nesting, trailing bytes) is reported as an error rather than causing a panic (confirmed with randomly corrupted data and fuzz tests).

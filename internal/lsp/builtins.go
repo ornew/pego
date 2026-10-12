@@ -18,10 +18,10 @@ var builtinTypes = []builtin{
 	{name: "bool", doc: "A boolean."},
 	{name: "node", doc: "Any node."},
 	{name: "terminal", doc: "Any terminal: a `Match` node or a node of a terminal type."},
-	{name: "Match", doc: "Reserved node type: terminals produced by literals, character classes, `.`, `@a` and `_`."},
+	{name: "Match", doc: "Reserved node type: terminals produced by literals, character classes, `.`, `a #atomic` and `_`."},
 	{name: "Seq", doc: "Reserved node type: values of sequences."},
 	{name: "List", doc: "Reserved node type: values of repetitions."},
-	{name: "Operator", doc: "Reserved node type: values of Pratt operators without an action."},
+	{name: "Operator", doc: "Reserved node type: values of Operators Rule operators without an action."},
 	{name: "Error", doc: "Reserved node type: ranges skipped by error recovery (`#recover`)."},
 }
 
@@ -49,24 +49,31 @@ var builtinMembers = []builtin{
 }
 
 var attributes = []builtin{
-	{name: "error", signature: "#error(message=\"...\")", snippet: "error(message=\"$1\")",
+	{name: "error", signature: "@error(message=\"...\")", snippet: "error(message=\"$1\")",
 		doc: "Replaces the expected items of a syntax error inside the expression with a message."},
+}
+
+var pragmas = []builtin{
+	{name: "atomic", signature: "#atomic", snippet: "atomic",
+		doc: "Matches the wrapped input as one Match node without building child values."},
+	{name: "repeat", signature: "#repeat(min,max)", snippet: "repeat(${1:min},${2:max})",
+		doc: "Repeats the preceding expression. One count is exact; an omitted bound is zero or unbounded."},
 	{name: "recover", signature: "#recover(skip=e)", snippet: "recover(skip=$1)",
-		doc: "When the expression fails, skips input matching `e` and continues parsing. The skipped range becomes an `Error` node."},
+		doc: "When the expression fails, skips input matching e and continues. The skipped range becomes an Error node."},
 	{name: "stream", signature: "#stream", snippet: "stream",
 		doc: "In a stream parse, hands each element of a repetition to the caller as soon as it matches."},
 }
 
 // Keywords offered by completion where a parsing expression or a definition may start.
-var statementKeywords = []string{"def", "type"}
+var statementKeywords = []string{"rule", "type"}
 
-var bodyKeywords = []string{"pratt"}
+var bodyKeywords = []string{"operators"}
 
-var prattKeywords = []string{"skip", "operand", "level", "prefix", "postfix", "infix"}
+var operatorsRuleKeywords = []string{"skip", "operand", "level", "prefix", "postfix", "infix"}
 
 var typeKeywords = []string{"struct", "terminal"}
 
-var termKeywords = []string{"new", "true", "false", "nil"}
+var termKeywords = []string{"true", "false", "nil"}
 
 func findBuiltin(list []builtin, name string) *builtin {
 	for i := range list {

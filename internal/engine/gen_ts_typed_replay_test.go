@@ -35,24 +35,23 @@ func TestGeneratedTSTypedReplay(t *testing.T) {
 	cases = append(cases, genCase{"typed", typedGrammar, []string{"f(1,x)!?;[3];zz", "f(1,(;g();", "f(a);", ""}})
 	for _, c := range genCorpus(t) {
 		switch c.name {
-		case "fold and lists", "runtime error", "cut and lookahead", "typed/Pratt_recovery", "typed/Pratt_framed_cuts", "typed/LR_indirect", "typed/LR_recovery", "typed/Pratt_positional_actions":
+		case "Operators Rule explicit default action", "fold and lists", "runtime error", "cut and lookahead", "typed/OperatorsRule_recovery", "typed/OperatorsRule_framed_cuts", "typed/LR_indirect", "typed/LR_recovery", "typed/OperatorsRule_positional_actions":
 			cases = append(cases, c)
 		}
 	}
-	cases = append(cases, genCase{"mixed union recovery", `
-type Word terminal
+	cases = append(cases, genCase{"mixed union recovery", `type Word terminal
 type Mixed = Word | int
 type U = Word | Match
 type R struct { A Mixed, B U, C Word, D any, E []Word, O *int, I int }
-def main: R = x:(word #recover(skip=(?^;)+ ";")) xs:(word #recover(skip=(?^;)+ ";"))* -> new R{A:$x, B:$x, C:$x, D:$x, E:$xs, I:7}
-def word: Word = (?a-z😀)+ ";"`, []string{"😀;abc;", "1;abc;2;", "", "x;"}})
-	cases = append(cases, genCase{"shared fold", tsTypedDAGTypes + `def main: Tree = first:leaf rest:leaf* -> foldl($first, $rest, (acc, i) => new Branch{Left:$acc, Right:$acc})`, []string{"x", "xxxxxxxx"}}, genCase{"shared LR", tsTypedDAGTypes + `def main: Tree = branch / leaf
-def branch: Branch = prev:main "x" -> new Branch{Left:$prev, Right:$prev}`, []string{"x", "xxxxxxxx"}}, genCase{"raw Unicode text", `type R struct { Text string, Token Match }
-def main: R = x:@.* -> new R{Text:text($x), Token:$x}`, []string{"😀é", string([]byte{0x61, 0xff, 0xe2, 0x82})}})
-	cases = append(cases, genCase{"inferred nil recovery", `def leaf = "a" -> nil
-def main = leaf #recover(skip=.+)`, []string{"a", "!", ""}}, genCase{"inferred never recovery", `def leaf = leaf
-def main = leaf #recover(skip=.+)`, []string{"!", ""}})
-	cases = append(cases, genCase{"nil-valued expression recovery", `def main = (-"a") #recover(skip=.+)`, []string{"a", "!", ""}}, genCase{"inferred never start", `def main = main`, []string{"!", ""}})
+rule main R = x:word #recover(skip=[^;]+ ";") xs:word #recover(skip=[^;]+ ";")* => R{A: $x, B: $x, C: $x, D: $x, E: $xs, I: 7}
+rule word Word = [a-z😀]+ ";"`, []string{"😀;abc;", "1;abc;2;", "", "x;"}})
+	cases = append(cases, genCase{"shared fold", tsTypedDAGTypes + `rule main Tree = first:leaf rest:leaf* => foldl($first, $rest, (acc, i) => Branch{Left: $acc, Right: $acc})`, []string{"x", "xxxxxxxx"}}, genCase{"shared LR", tsTypedDAGTypes + `rule main Tree = branch / leaf
+rule branch Branch = prev:main "x" => Branch{Left: $prev, Right: $prev}`, []string{"x", "xxxxxxxx"}}, genCase{"raw Unicode text", `type R struct { Text string, Token Match }
+rule main R = x:.* #atomic => R{Text: text($x), Token: $x}`, []string{"😀é", string([]byte{0x61, 0xff, 0xe2, 0x82})}})
+	cases = append(cases, genCase{"inferred nil recovery", `rule leaf = "a" => nil
+rule main = leaf #recover(skip=.+)`, []string{"a", "!", ""}}, genCase{"inferred never recovery", `rule leaf = leaf
+rule main = leaf #recover(skip=.+)`, []string{"!", ""}})
+	cases = append(cases, genCase{"nil-valued expression recovery", `rule main = (-"a") #recover(skip=.+)`, []string{"a", "!", ""}}, genCase{"inferred never start", `rule main = main`, []string{"!", ""}})
 	dir := t.TempDir()
 	write := func(path, text string) {
 		t.Helper()

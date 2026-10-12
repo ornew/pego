@@ -1,4 +1,4 @@
-# Report an error with its source line and a caret
+# Report an Error with Its Source Line and a Caret
 
 **Problem.** When a user's file does not parse, you want a message like those of a compiler: the file, the line and
 the column, a message that says what is wrong, the line of the source, and a caret under the place.
@@ -9,25 +9,25 @@ app.conf:2:8: expected a number or a string
   |        ^
 ```
 
-Two things make this: a grammar whose errors have readable messages (`#error`), and a few lines of Go that print the
+Two things make this: a grammar whose errors have readable messages (`@error`), and a few lines of Go that print the
 position of the `*pego.SyntaxError`.
 
 ```pego
 // settings.pego
-def main = -ws setting* $$
+rule main = -ws setting* $$
 
-def setting = key -ws "=" #error(message="expected '='") -ws value -ws ";" #error(message="expected ';'") -ws
+rule setting = key -ws "=" @error(message="expected '='") -ws value -ws ";" @error(message="expected ';'") -ws
 
 // _|_ always fails, so its label is for input that is neither. A string that is not closed fails further on,
 // and its own message wins.
-def value = number / string / _|_ #error(message="expected a number or a string")
+rule value = number / string / _|_ @error(message="expected a number or a string")
 
-def key = (?a-z_)+
-def number = (?0-9)+
-def string = "\"" (?^"\n)* "\"" #error(message="unterminated string")
+rule key = [a-z_]+
+rule number = [0-9]+
+rule string = "\"" [^"\n]* "\"" @error(message="unterminated string")
 
 // A failure inside a lookahead is not reported, so whitespace never shows up in "expected ...".
-def ws = (&(? \t\r\n) .)*
+rule ws = (&[ \t\r\n] .)*
 ```
 
 ```go
@@ -118,20 +118,20 @@ app.conf:1:11: expected ';'
 
 (The second source line starts with a tab, which the caret line repeats.)
 
-## How it works
+## How It Works
 
 - **`*pego.SyntaxError` has the position.** `Line` and `Col` are 1-based. `Message()` is the text without the
   position, and `Error()` is `line:col: message`. Other errors, such as a failed action, are not syntax errors and have
   no position, which is why `report` falls back to `err.Error()`.
-- **`#error` makes the message.** Without it the message would be `syntax error: expected "=", ...`: the list of every
+- **`@error` makes the message.** Without it the message would be `syntax error: expected "=", ...`: the list of every
   token that could have come at the farthest position, which is exact, and written for people who know the
   grammar. A label replaces the list with a sentence, at the farthest position inside the expression it labels. Put the
   label on the smallest expression that tells the user what is missing: here the `=` and the `;`, and the value.
 - **Why `value` ends with `_|_`.** An outer label replaces the labels of the expressions inside it, and a label on a
-  whole choice would hide the message of the unterminated string. With `_|_ #error(...)` as the last alternative, the
+  whole choice would hide the message of the unterminated string. With `_|_ @error(...)` as the last alternative, the
   message is recorded at the start of the value, and a string that starts but does not end has failed further on, so
   its own message wins.
-- **Whitespace is quiet.** `ws` consumes spaces inside a lookahead, which records no failures. With `(? \t\r\n)*` every
+- **Whitespace is quiet.** `ws` consumes spaces inside a lookahead, which records no failures. With `[ \t\r\n]*` every
   list of expected tokens would contain a space, a tab and a line break.
 - **Columns count code points** by default, so a caret under non-ASCII text lines up with the characters, not the
   bytes, but not with their display width (a wide character or a combining mark). With `pego.WithUnit(pego.Bytes)`,

@@ -1,4 +1,4 @@
-# 41. Building the offset table while decoding, for full parses
+# 41. Building the Offset Table While Decoding, for Full Parses
 
 - Since change 30 the code-point offset table is built on demand, which spares recognition a pass but costs full parses
   (which nearly always need token text) a separate pass at their first token. Full parses and `Document` now build it

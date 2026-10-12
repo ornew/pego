@@ -34,7 +34,7 @@ The requirements were:
 
 ## Design
 
-### Where calls are observed
+### Where Calls Are Observed
 
 Every rule call of the engine goes through one of two paths:
 
@@ -59,7 +59,7 @@ plain-call test and pushes a `traceFrame`, which reports the start, pushes the f
 Calls are reported before the memo is consulted, so a memo hit is a call like any other, with `Memo` set in its exit
 event.
 
-### What an exit event knows
+### What an Exit Event Knows
 
 - **Body evaluations** (`Evals`) come from the parse's evaluation counter (`Stats.Evaluated`, incremented once per body
   evaluation by `invokeBegin`, `invokePlain` and `plainCallFrame`): the difference across the call, minus the
@@ -123,7 +123,7 @@ whose body holds the `#recover`, and its own expectations are again those no nes
 unattributed is the end of the input that the parser expects after the start rule returns, which the output states
 separately.
 
-### Command-line output
+### Command-Line Output
 
 `pego trace` prints a call whose nested calls are not shown on one line (`rule line:col -> result`) and other calls as
 an enter line and an exit line around their nested calls. It buffers only the last enter event, so the output streams.
@@ -161,7 +161,7 @@ positions and clock reads) dominates.
   parses a `Document`, traced and untraced, before and after three edits, and compares the results and
   `Document.Stats`.
 - `TestTraceEvents` checks the exact event sequences of small grammars on every backend: memo hits, left recursion,
-  Pratt levels, lookaheads and `#recover`. Stream and `Document` parses are checked against their untraced results,
+  Operators Rule levels, lookaheads and `#recover`. Stream and `Document` parses are checked against their untraced results,
   and the evaluations and memo hits the events report against `Document.Stats`.
 - Profile tests check the counts, repeats, wasted input and hints on grammars where they are known; the CLI tests check
   the commands' output.
@@ -171,7 +171,7 @@ Removing the merge of a traced call's expectations into its caller (one line of 
 Likewise, a tracer that memoized every rule (setting `memoAll`) fails the comparison of the work on 1,338 parses, and
 one that gave a `Document` parse a fresh memo fails the document comparison 573 times.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Hooks in `invoke` and `invokePlain`.** They see every body evaluation, but they are on the plain path, which would
   then pay a branch per call, and they do not see memo hits.
@@ -193,7 +193,7 @@ one that gave a `Document` parse a fresh memo fails the document comparison 573 
 - `wasted` counts failed calls only; work thrown away by a backtracking choice in a successful call shows as repeats.
 - Profile times include the cost of tracing, which is large relative to small rules: they are meaningful relative to
   each other.
-- The steps of a Pratt expression (operands, operators, the binding-power loop) are part of its rule's body; only calls
+- The steps of an Operators Rule (operands, operators, the binding-power loop) are part of its rule's body; only calls
   of rules from them are reported.
 - An aborted parse (a runtime error in an action, an error from a stream's emit function or reader, the nesting limit,
   a panic in the trace function) ends the trace without the exit events of the calls in progress. A panic in the trace

@@ -40,7 +40,7 @@ An `io.Reader` may block inside `Read`. Parser state cannot cancel a read in cal
 - Preserve existing parse options, stream commitment and terminal errors for callers that do not opt into diagnostic controls.
 - Specify reader and iterator ownership, early stop and blocking-read limits.
 
-## Non-goals
+## Non-Goals
 
 - No asynchronous channel, background reader, forced read cancellation or automatic closing of an arbitrary `io.Reader`.
 - No rollback of elements already returned or emitted.
@@ -49,7 +49,7 @@ An `io.Reader` may block inside `Read`. Parser state cannot cancel a read in cal
 
 ## Design
 
-### Public behavior and contracts
+### Public Behavior and Contracts
 
 `Iterate` validates the same start rule, backend and `#stream` requirements as `ParseStream`. Existing `ParseOption`s still select unit, backend, trace and depth. `WithDiagnosticLimit(0)` means retain all errors; a negative value is invalid. The default, with neither diagnostic option set, preserves today's full-list behavior. Supplying either diagnostic option to non-stream `Parse` or `Document` is an invalid configuration and returns an error before parsing begins.
 
@@ -63,24 +63,24 @@ The iterator and reader remain caller-owned. The iterator is single-goroutine an
 
 `Next` controls parser advancement, not how many bytes are read. PEG lookahead and the reader's buffer may read ahead. Stream positions remain absolute from the beginning after earlier input is discarded. Empty successful iterations are emitted once and then terminate the repetition before its minimum check. Per-element recovery remains supported; recovery around the streaming repetition remains invalid. Delivered values are irrevocable, as documented in [007](007-streaming-and-incremental-parsing.md).
 
-### Implementation and invariants
+### Implementation and Invariants
 
 Factor the current synchronous stream parser into state that can pause at an element boundary and resume on request. `ParseStream` can drive the same state repeatedly and invoke `emit`; its no-option behavior must retain the full recovered-error list. Keep diagnostic options in the existing functional parse-option path but mark them stream-only, validating that boundary before parsing a non-stream input.
 
 Drain diagnostics only at a recovery commit point, after the parser knows the recovery was not rolled back. Copy error slices before invoking user callbacks. Use one bounded collector for callback and iterator modes; preserve an explicit dropped count so the final wrapper accurately describes incomplete retention. Terminal state records EOF, parse failure, callback failure, input failure or explicit close and returns the same terminal result on repeated calls.
 
-### Compatibility and backend support
+### Compatibility and Backend Support
 
 This is an additive Go API for the stream-capable closure and bytecode backends; recognition remains unsupported. Both byte and rune position units are supported. Generated Go, typed Go and TypeScript parsers remain unsupported for streams. `ParseStream` retains its signature, element order, nil callback values and complete recovered-error result unless the caller explicitly adds a diagnostic option. Stream-only diagnostic options are rejected for batch `Parse` and `Document` rather than silently ignored.
 
-### Implementation sequence
+### Implementation Sequence
 
 1. Extract resumable stream state and preserve `ParseStream` output and terminal errors.
 2. Add `Iterate` with explicit EOF/nil semantics, idempotent terminal results and early close.
 3. Add stream-only functional parse options for committed diagnostic callbacks and bounded-tail retention; use them through `ParseStream` and `Iterate`.
 4. Document reader ownership, read-ahead, finite-input compatibility and endless-stream use.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Callback only with a diagnostic callback.** This is a smaller extension and supports immediate delivery, but consumers cannot request the next item after processing or naturally control demand. Keep the existing callback API and add pull iteration.
 - **Channel backed by a goroutine.** A channel requires scheduling, queue/backpressure policy, shutdown and handling a goroutine blocked in `Read`. A synchronous iterator avoids those ownership problems.
@@ -91,10 +91,10 @@ This is an additive Go API for the stream-capable closure and bytecode backends;
 
 For both units and every stream-capable backend, compare `ParseStream` and iterator output for value order, nil elements, spans, recovered errors and terminal errors. Cover clean EOF, malformed final input, callback and emit failures, callback order across backtracking, positive limits, zero-limit compatibility, invalid limits, rejected stream options in batch and `Document`, repeated `Next`, early `Close`, stable terminal errors and stable prior elements. Verify defensive callback copies, unchanged callback errors, original panic propagation and `errors.As` through truncated diagnostics. Test a long faulty stream with many recoveries: retained diagnostics stay bounded, the callback sees all of them and the final wrapper reports the dropped count. Use a blocking reader to document that `Close` alone does not cancel `Read`; test cancellation only through a caller-owned closable reader. Include lookahead read-ahead, empty-element termination, Unicode and byte/rune positions.
 
-## Performance and results
+## Performance and Results
 
 Measure time and allocations per delivered element, peak retained diagnostics and time to first element on finite and long streams. Compare the existing callback path, iterator and callback-plus-tail paths with identical grammars, units and backends. Include normal streams with no errors to measure collector overhead. Record reader bytes requested separately from bytes consumed; do not infer demand from output count. No performance result is asserted here.
 
-## Limitations and open questions
+## Limitations and Open Questions
 
 A synchronous API cannot interrupt an arbitrary blocked `Read`; it can only stop at parser-controlled boundaries and release parser-owned state. A positive diagnostic limit returns an explicitly truncated error result; applications requiring all errors must process the callback or leave the limit at zero. The state-machine extraction and committed-error drain points need prototype validation against nested recovery and backtracking before signatures are finalized.

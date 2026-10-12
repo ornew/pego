@@ -44,13 +44,13 @@ func TestValidateRequiredChildren(t *testing.T) {
 		{"predicate", expressionGrammar(&Predicate{}), "$.statements[0].expr.term"},
 		{"attributed expression", expressionGrammar(&Attributed{}), "$.statements[0].expr.expr"},
 		{"attribute", expressionGrammar(&Attributed{Expr: &Top{}, Attrs: []*Attribute{nil}}), "$.statements[0].expr.attrs[0]"},
-		{"attribute argument", expressionGrammar(&Attributed{Expr: &Top{}, Attrs: []*Attribute{{Name: "error", Args: []*AttrArg{nil}}}}), "$.statements[0].expr.attrs[0].args[0]"},
-		{"attribute value", expressionGrammar(&Attributed{Expr: &Top{}, Attrs: []*Attribute{{Name: "error", Args: []*AttrArg{{Name: "message"}}}}}), "$.statements[0].expr.attrs[0].args[0].value"},
-		{"operand", expressionGrammar(&Pratt{Operands: []*PrattOperand{nil}}), "$.statements[0].expr.operands[0]"},
-		{"operand expression", expressionGrammar(&Pratt{Operands: []*PrattOperand{{}}}), "$.statements[0].expr.operands[0].expr"},
-		{"level", expressionGrammar(&Pratt{Levels: []*PrattLevel{nil}}), "$.statements[0].expr.levels[0]"},
-		{"operator", expressionGrammar(&Pratt{Levels: []*PrattLevel{{Operators: []*PrattOperator{nil}}}}), "$.statements[0].expr.levels[0].operators[0]"},
-		{"operator expression", expressionGrammar(&Pratt{Levels: []*PrattLevel{{Operators: []*PrattOperator{{Kind: Infix, Assoc: AssocLeft}}}}}), "$.statements[0].expr.levels[0].operators[0].expr"},
+		{"attribute argument", expressionGrammar(&Attributed{Expr: &Top{}, Attrs: []*Attribute{{Name: "error", Args: []any{&Repeat{}}}}}), "$.statements[0].expr.attrs[0].args[0].expr"},
+		{"attribute value", expressionGrammar(&Attributed{Expr: &Top{}, Attrs: []*Attribute{{Name: "error", Args: []any{&IntLit{Value: 1}}}}}), "$.statements[0].expr.attrs[0].args[0]"},
+		{"operand", expressionGrammar(&OperatorsRule{Operands: []*OperatorsRuleOperand{nil}}), "$.statements[0].expr.operands[0]"},
+		{"operand expression", expressionGrammar(&OperatorsRule{Operands: []*OperatorsRuleOperand{{}}}), "$.statements[0].expr.operands[0].expr"},
+		{"level", expressionGrammar(&OperatorsRule{Levels: []*OperatorsRuleLevel{nil}}), "$.statements[0].expr.levels[0]"},
+		{"operator", expressionGrammar(&OperatorsRule{Levels: []*OperatorsRuleLevel{{Operators: []*OperatorsRuleOperator{nil}}}}), "$.statements[0].expr.levels[0].operators[0]"},
+		{"operator expression", expressionGrammar(&OperatorsRule{Levels: []*OperatorsRuleLevel{{Operators: []*OperatorsRuleOperator{{Kind: Infix, Assoc: AssocLeft}}}}}), "$.statements[0].expr.levels[0].operators[0].expr"},
 		{"member", termGrammar(&Member{}), "$.statements[0].action.x"},
 		{"field initializer", termGrammar(&New{Type: "T", Fields: []*FieldInit{nil}}), "$.statements[0].action.fields[0]"},
 		{"field value", termGrammar(&New{Type: "T", Fields: []*FieldInit{{Name: "F"}}}), "$.statements[0].action.fields[0].value"},
@@ -60,6 +60,12 @@ func TestValidateRequiredChildren(t *testing.T) {
 		{"binary right", termGrammar(&Binary{Op: "+", L: &IntLit{Value: 1}}), "$.statements[0].action.r"},
 		{"unary", termGrammar(&Unary{Op: "-"}), "$.statements[0].action.x"},
 		{"assign", expressionGrammar(&Predicate{Term: &Assign{Name: "x"}}), "$.statements[0].expr.term.value"},
+		{"conflicting rule default", &Grammar{Statements: []Statement{&RuleDef{Name: "main", Expr: &Top{}, DefaultAction: true, Action: &NilLit{}}}}, "$.statements[0].action"},
+		{"conflicting operand default", expressionGrammar(&OperatorsRule{Operands: []*OperatorsRuleOperand{{Expr: &Top{}, DefaultAction: true, Action: &NilLit{}}}}), "$.statements[0].expr.operands[0].action"},
+		{"conflicting operator default", expressionGrammar(&OperatorsRule{Levels: []*OperatorsRuleLevel{{Operators: []*OperatorsRuleOperator{{Expr: &Top{}, DefaultAction: true, Action: &NilLit{}}}}}}), "$.statements[0].expr.levels[0].operators[0].action"},
+		{"recovery body", expressionGrammar(&Recovery{Skip: &Top{}}), "$.statements[0].expr.expr"},
+		{"recovery skip", expressionGrammar(&Recovery{Expr: &Top{}}), "$.statements[0].expr.skip"},
+		{"stream body", expressionGrammar(&Stream{}), "$.statements[0].expr.expr"},
 		{"negative index", termGrammar(&IndexRef{Index: -1}), "$.statements[0].action.index"},
 		{"negative minimum", expressionGrammar(&Repeat{Expr: &Top{}, Min: -1, Max: -1}), "$.statements[0].expr.min"},
 		{"reversed bounds", expressionGrammar(&Repeat{Expr: &Top{}, Min: 2, Max: 1}), "$.statements[0].expr.max"},
@@ -119,10 +125,11 @@ func TestValidateTypedNil(t *testing.T) {
 		g    *Grammar
 		path string
 	}{
+		{"attribute expression", expressionGrammar(&Attributed{Expr: &Top{}, Attrs: []*Attribute{{Name: "recover", KwArgs: map[string]any{"skip": (*Ref)(nil)}}}}), `$.statements[0].expr.attrs[0].kwArgs["skip"]`},
 		{"rule type", &Grammar{Statements: []Statement{&RuleDef{Name: "p", Type: (*TypeRef)(nil), Expr: &Top{}}}}, "$.statements[0].type"},
-		{"skip", expressionGrammar(&Pratt{Skip: (*Top)(nil)}), "$.statements[0].expr.skip"},
-		{"operand action", expressionGrammar(&Pratt{Operands: []*PrattOperand{{Expr: &Top{}, Action: (*NilLit)(nil)}}}), "$.statements[0].expr.operands[0].action"},
-		{"operator action", expressionGrammar(&Pratt{Levels: []*PrattLevel{{Operators: []*PrattOperator{{Expr: &Top{}, Action: (*NilLit)(nil)}}}}}), "$.statements[0].expr.levels[0].operators[0].action"},
+		{"skip", expressionGrammar(&OperatorsRule{Skip: (*Top)(nil)}), "$.statements[0].expr.skip"},
+		{"operand action", expressionGrammar(&OperatorsRule{Operands: []*OperatorsRuleOperand{{Expr: &Top{}, Action: (*NilLit)(nil)}}}), "$.statements[0].expr.operands[0].action"},
+		{"operator action", expressionGrammar(&OperatorsRule{Levels: []*OperatorsRuleLevel{{Operators: []*OperatorsRuleOperator{{Expr: &Top{}, Action: (*NilLit)(nil)}}}}}), "$.statements[0].expr.levels[0].operators[0].action"},
 	} {
 		t.Run(tc.name, func(t *testing.T) { assertValidationError(t, Validate(tc.g), tc.path) })
 	}
@@ -172,7 +179,7 @@ func TestValidateCompatibility(t *testing.T) {
 		expressionGrammar(&Repeat{Expr: &Top{}, Min: 0, Max: 0}),
 		expressionGrammar(&Repeat{Expr: &Top{}, Min: 2, Max: 2}),
 		termGrammar(&IndexRef{Index: 0}), termGrammar(&IndexRef{Index: 2}),
-		expressionGrammar(&Pratt{Operands: []*PrattOperand{{Expr: &Top{}}}, Levels: []*PrattLevel{{}}}),
+		expressionGrammar(&OperatorsRule{Operands: []*OperatorsRuleOperand{{Expr: &Top{}}}, Levels: []*OperatorsRuleLevel{{}}}),
 		sampleGrammar(),
 	} {
 		if err := Validate(g); err != nil {

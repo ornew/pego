@@ -34,7 +34,7 @@ type parser struct {
 	silent   int
 	farthest int
 	// exp is the stack of expectation records. The current record is exp[expBase:], the
-	// expectations at farthest. An expectation is an index into descs; an #error message is an index
+	// expectations at farthest. An expectation is an index into descs; an @error message is an index
 	// with msgBit set (expID).
 	exp     []expID
 	expBase int
@@ -126,13 +126,13 @@ type parser struct {
 	closures arena[closure]
 	lctxs    arena[evalCtx]
 	locals   arena[local]
-	item     [1]*Node     // the element list of an action whose body is not a sequence (one)
-	oplocals [3]local     // $lhs, $rhs and $op of a Pratt operator action
-	saved    []*Node      // captures saved across a reset in longest
-	attempt  prattAttempt // result of the longestFrame that just finished (iterative VM)
+	item     [1]*Node             // the element list of an action whose body is not a sequence (one)
+	oplocals [3]local             // $lhs, $rhs and $op of a OperatorsRule operator action
+	saved    []*Node              // captures saved across a reset in longest
+	attempt  operatorsRuleAttempt // result of the longestFrame that just finished (iterative VM)
 }
 
-// expID is an expectation (an index into descs). If msgBit is set, it is an #error message.
+// expID is an expectation (an index into descs). If msgBit is set, it is an @error message.
 type expID int32
 
 const msgBit expID = 1 << 30
@@ -781,7 +781,7 @@ type SyntaxError struct {
 	Line     int      // 1-based line
 	Col      int      // 1-based column, in the position unit of the parse
 	Expected []string // what was expected at that position
-	Messages []string // messages given by #error
+	Messages []string // messages given by @error
 }
 
 func (e *SyntaxError) Error() string {
