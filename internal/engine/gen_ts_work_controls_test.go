@@ -226,7 +226,7 @@ for(const unit of [p.CodePoints,p.Bytes])for(const input of ["a","b","aa","bb",n
 		src := `type Word terminal
  def main: Word = [v="` + key + `"] &word &word &word word
  def fast: Word = [v="` + key + `"] word
- def word: Word = [v=="` + key + `"] letter
+ def word: Word = [v!=""] letter
  def letter = "z"`
 		consumer := `import * as p from "./parser.ts";
 ` + tsTypedAssert + `

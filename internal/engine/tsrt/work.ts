@@ -272,3 +272,23 @@ function decodeRuneWork(b: Uint8Array, i: number, n: number, control: WorkContro
   return { rune: ((c0 & 0x07) << 18) | ((c1 & 0x3f) << 12) | ((c2 & 0x3f) << 6) | (c3 & 0x3f), size };
 }
 
+
+function equalStringsWork(a: string, b: string, control: WorkControl): boolean {
+  if (a.length !== b.length) return false;
+  for (let from = 0; from < a.length; from += 128) {
+    const end = Math.min(from + 128, a.length);
+    control.charge(0, end - from);
+    if (a.slice(from, end) !== b.slice(from, end)) return false;
+  }
+  return true;
+}
+
+function copyNodesWork(items: readonly (Node | null)[], start: number, end: number, control: WorkControl): (Node | null)[] {
+  const out: (Node | null)[] = new Array(end - start);
+  for (let from = start; from < end; from += 128) {
+    const stop = Math.min(from + 128, end);
+    control.charge(0, stop - from);
+    for (let i = from; i < stop; i++) out[i - start] = items[i]!;
+  }
+  return out;
+}

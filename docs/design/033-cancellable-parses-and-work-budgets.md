@@ -770,6 +770,9 @@ Current charges include:
 - Memo/binding/key visits, 128-unit string-key and table-copy chunks, and frame
   initialization. Interrupted caches are invocation-private and discarded;
   transactional rollback of every private field is not promised.
+- Action-term dispatch, short-circuit predicates, bounded string equality,
+  list/map/concat/fold visits, struct fields and 128-element node copies. These
+  operations share the parse's budget; mandatory stack cleanup is uncharged.
 - Typed recipe/node/list dispatch and edges, using the parse's same budget.
 - Cooperative entry/checkpoint/publication signal checks. Strict ES2020,
   ES2022 and DOM consumers check error-cause and signal compatibility;
@@ -777,10 +780,14 @@ Current charges include:
 
 Dedicated consumers cover variable rollback, non-transient memo reuse,
 cancellation, retry and interruption bypassing recovery. Intentionally omitting
-key-chunk accounting makes its consumer fail. This proves the tested boundaries,
+key-chunk accounting makes its consumer fail. Separate consumers verify action
+string equality, skipped short-circuit branches, collection/fold values and
+cancellation/retry. The memo fixture uses a different-length comparison so its
+budget failure isolates key traversal rather than action-string equality.
+This proves the tested boundaries,
 not comprehensive metering of every engine loop.
 
-Remaining coverage includes action/scalar-string operations, capture/graph
+Remaining coverage includes scalar-string concatenation/order/length, capture/graph
 rollback and materialization, expectations/recovery/diagnostics, field lookup,
 source text/length scans, and other binding string comparisons. Runtime allocation
 is non-preemptible, and mandatory unwind must remain uncharged.

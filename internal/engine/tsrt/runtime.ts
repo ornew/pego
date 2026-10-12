@@ -1362,7 +1362,7 @@ class Parser {
 
   // kids returns kidStack[base:] as a child list and pops it.
   kids(base: number): (Node | null)[] {
-    const ks = this.kidStack.slice(base);
+    const ks = this.control === null ? this.kidStack.slice(base) : copyNodesWork(this.kidStack, base, this.kidStack.length, this.control);
     this.kidStack.length = base;
     return ks;
   }
@@ -2345,6 +2345,17 @@ class Actx {
     this.p = p;
   }
 
+  work(): void { this.p.stepWork(); }
+
+  binary(op: string, l: Value, r: Value): Value {
+    const control = this.p.control;
+    if (control !== null && typeof l === "string" && typeof r === "string" && (op === "==" || op === "!=")) {
+      const equal = equalStringsWork(l, r, control);
+      return op === "==" ? equal : !equal;
+    }
+    return rtBinary(op, l, r);
+  }
+
   result(action: Action, where: string): Node | null {
     try {
       const v = action(this);
@@ -2357,6 +2368,7 @@ class Actx {
       const n = v;
       const created = this.p.created;
       for (let i = this.cbase; i < created.length; i++) {
+        this.work();
         if (created[i] === n) {
           n.start = this.start;
           n.end = this.end;
@@ -2403,6 +2415,7 @@ class Actx {
     const n = new Node(typ, "", 0, 0, "", noNodes, noFields, false, false);
     let first = true;
     for (let i = 0; i < kv.length; i += 2) {
+      this.work();
       const v = kv[i + 1];
       setField(n, kv[i] as string, v!);
       if (v instanceof Node) {
@@ -2424,7 +2437,7 @@ class Actx {
   }
 
   newList(items: readonly (Node | null)[]): Node {
-    return this.listNode(items.slice());
+    return this.listNode(this.p.control === null ? items.slice() : copyNodesWork(items, 0, items.length, this.p.control));
   }
 
   // listNode returns a List node with the child list kids (which it takes over).
@@ -2432,6 +2445,7 @@ class Actx {
     const n = new Node("List", "", this.start, this.start, "", kids, noFields, false, false);
     let first = true;
     for (const it of kids) {
+      this.work();
       if (it === null) {
         continue;
       }
@@ -2521,6 +2535,7 @@ class Actx {
   concat(...args: Value[]): Value {
     const base = this.p.kidStack.length;
     for (const a of args) {
+      this.work();
       this.pushItems(a);
     }
     return this.endList(base);
@@ -2531,21 +2546,27 @@ class Actx {
   // as pushes for its arguments followed by endList, so that they build no intermediate list.
 
   pushMap(list: Value, f: (item: Value) => Value): void {
+    this.work();
     for (const it of listItems("map", list)) {
+      this.work();
       const v = asNode("map", f(it));
       this.p.kidStack.push(v);
     }
   }
 
   pushList(...args: Value[]): void {
+    this.work();
     for (const a of args) {
+      this.work();
       const v = asNode("list", a);
       this.p.kidStack.push(v);
     }
   }
 
   pushItems(v: Value): void {
+    this.work();
     for (const it of listItems("concat", v)) {
+      this.work();
       this.p.kidStack.push(it);
     }
   }
@@ -2594,9 +2615,10 @@ function asNode(fn: string, v: Value): Node | null {
   return evalError(`${fn}: list elements must be nodes, got ${typeName(v)}`);
 }
 
-function rtFold(fn: string, right: boolean, acc: Value, list: Value, f: (acc: Value, item: Value) => Value): Value {
+function rtFold(fn: string, right: boolean, acc: Value, list: Value, f: (acc: Value, item: Value) => Value, control: WorkControl | null = null): Value {
   const items = listItems(fn, list);
   for (let i = 0; i < items.length; i++) {
+    control?.charge(0, 1);
     acc = f(acc, items[right ? items.length - 1 - i : i]!);
   }
   return acc;
