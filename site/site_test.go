@@ -19,6 +19,17 @@ import (
 	"github.com/ornew/nanosite/render"
 )
 
+// siteTestOutput uses the actual temporary directory, since macOS can expose
+// its temporary root through a symlink while publication requires a real path.
+func siteTestOutput(t *testing.T) string {
+	t.Helper()
+	root, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return filepath.Join(root, "dist")
+}
+
 // TestBuild builds the whole site, including the playground's WebAssembly binary, and checks that
 // every document of the repository became a page, that the generated pages are complete, and that
 // no internal link is broken (Build fails on broken links).
@@ -26,7 +37,7 @@ func TestBuild(t *testing.T) {
 	if _, err := exec.LookPath("go"); err != nil {
 		t.Skip("the go command is not available")
 	}
-	out := filepath.Join(t.TempDir(), "dist")
+	out := siteTestOutput(t)
 	cfg := Config{Repo: "..", Out: out, Wasm: !testing.Short(), Check: true, GitHub: "https://github.com/ornew/pego", Ref: "main"}
 	st, err := Build(cfg)
 	if err != nil {
@@ -546,7 +557,7 @@ func readSidebar(t *testing.T, page string) []sidebarSection {
 
 // TestNavigation checks the navigation of the documentation, including the nested numbered design records.
 func TestNavigation(t *testing.T) {
-	out := filepath.Join(t.TempDir(), "dist")
+	out := siteTestOutput(t)
 	if _, err := Build(Config{Repo: "..", Out: out, Check: true, GitHub: "https://github.com/ornew/pego", Ref: "main"}); err != nil {
 		t.Fatal(err)
 	}
