@@ -1,14 +1,42 @@
 package engine
 
 import (
+	"bytes"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/syntax"
 )
+
+// Small tables cannot select sparse storage, so their default output must
+// match the static dense control rather than retain a matching-time branch.
+func TestGeneratedSparseMemoSmallTable(t *testing.T) {
+	g, err := syntax.Parse(`rule main = "a"*`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, recognize := range []bool{false, true} {
+		for _, generate := range []func(*grammar.Grammar, GenOptions) ([]byte, error){Generate, GenerateTS} {
+			opts := GenOptions{Package: "smallmemo", Start: "main", Recognize: recognize}
+			code, err := generate(g, opts)
+			if err != nil {
+				t.Fatal(err)
+			}
+			opts.disableSparseMemo = true
+			control, err := generate(g, opts)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(code, control) {
+				t.Fatal("small default output differs from static dense control")
+			}
+		}
+	}
+}
 
 // PEGO_SPARSE_MEMO_GENERATED_DIR preserves same-generator fixtures for
 // separately built timing and allocation controls.

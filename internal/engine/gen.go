@@ -137,7 +137,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 		rt = strings.Replace(rt, "const nodeFrameScratch = true", "const nodeFrameScratch = false", 1)
 	}
 
-	if opts.disableSparseMemo {
+	if !opts.useSparseMemo(prog, rec) {
 		rt = strings.Replace(rt, "const sparseSeen = true", "const sparseSeen = false", 1)
 	}
 	out.WriteString(rt)
@@ -191,6 +191,12 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 		return []byte(out.String()), fmt.Errorf("generated code does not compile: %w", err)
 	}
 	return src, nil
+}
+
+// useSparseMemo removes the representation selector entirely when neither
+// emitted rule table can cross the sparse-storage threshold.
+func (opts GenOptions) useSparseMemo(prog, rec *Program) bool {
+	return !opts.disableSparseMemo && (prog.nseen > 64 || rec != nil && rec.nseen > 64)
 }
 
 func (o GenOptions) generatedMaxDepth() int {
