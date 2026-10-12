@@ -667,7 +667,7 @@ function decodeRune(b: Uint8Array, i: number, n: number): number {
 
 // encodeUTF8 encodes s in UTF-8, with lone surrogates as U+FFFD.
 function encodeUTF8(s: string): Uint8Array {
-  const out = new Uint8Array(utf8Len(s));
+  const out = new Uint8Array(utf8EncodingLen(s));
   let j = 0;
   for (let i = 0; i < s.length; i++) {
     let c = s.charCodeAt(i);
@@ -698,6 +698,26 @@ function encodeUTF8(s: string): Uint8Array {
     }
   }
   return out;
+}
+
+// utf8EncodingLen sizes caller strings, replacing every lone surrogate with U+FFFD.
+function utf8EncodingLen(s: string): number {
+  let n = s.length;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c < 0x80) {
+      continue;
+    }
+    if (c < 0x800) {
+      n++;
+    } else if (c >= 0xd800 && c < 0xdc00 && i + 1 < s.length && (s.charCodeAt(i + 1) & 0xfc00) === 0xdc00) {
+      n += 2; // a pair: 2 units, 4 bytes
+      i++;
+    } else {
+      n += 2; // a lone surrogate is encoded as U+FFFD
+    }
+  }
+  return n;
 }
 
 // utf8Len returns the length of s in UTF-8: the number of bytes utf8Bytes returns.
