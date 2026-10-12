@@ -729,6 +729,30 @@ existing preparation order. The shared admission helper adds a default-path call
 and option branches; controlled AST-omitted calls add metadata lookup work.
 Those costs are unmeasured while timing is paused.
 
+## Generated Go layout reference
+
+Two private generation controls serve different checks. `referenceWorkControls`
+disables accounting while retaining invocation layouts and the public control
+options; effective controls are rejected. `referenceWorkControlLayout` also
+removes controller fields from parser, option and conversion state. The latter
+supports ordinary unit/depth options only and omits `WithContext` and
+`WithWorkLimits`; it is not an API-equivalent reference for controlled calls.
+Neither control is an exported generator option.
+
+The layout reference checks the expected declarations, disabled constant,
+option fields, setup and rejection anchors before transforming generated Go.
+Unknown option state or changed anchors cause generation to fail rather than
+silently produce an invalid comparison. Grouped declarations retain unrelated
+fields. Consumer checks cover Node, recognition, direct typed, converted and
+named outputs, both units, depth/option ordering, nil mappings, reserved names,
+retained results and parser reuse. Layout checks compare ordinary options with
+the explicit unit/depth representation.
+
+Removing state does not prove zero default-path cost: helper signatures, code
+layout and setup boundaries still differ from the exact parent. Measure both
+references with normal GC settings before adopting the feature. No timing result
+is established by the generation, layout or consumer checks.
+
 ## Alternatives considered
 
 - **Depth limits only.** Existing compatibility baseline, but shallow scans and
