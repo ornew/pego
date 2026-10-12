@@ -951,6 +951,16 @@ This measurement shows a retained whole-parser memory cost for the current candi
 
 Reproduce the checkpoint with the [retained compiled-parser method](../performance.md#retained-compiled-parser-heap) and identical diagnostic sources across the four pinned runtime builds.
 
+### Primitive Matcher Sharing Experiment
+
+Two compiler-only sharing variants were evaluated against the work-control checkpoint and a sharing-disabled control. Variant A reused immutable base matchers for `Literal`, `CharClass`, and `Any` AST nodes, keyed by AST pointer and build flag; wrappers and composite matchers remained separate. Variant B restricted reuse to non-recognition compiles. Both variants passed focused result, value, counter, and full-corpus parity checks across the three backends and both position units. The checks remain as regression tests, and the source-compilation benchmark remains available. Runtime source is restored to checkpoint `4345ea2`; neither variant is active.
+
+Measurements used Go 1.27.1 with `-trimpath` on an Apple M3 Max (darwin/arm64), GOMAXPROCS=16, GOGC=100, GOMEMLIMIT off, and GODEBUG unset. Variant A used five rotated 500 ms samples for four compile workloads and 16 runtime profiles: eight ordinary Parse profiles (four corpora in CodePoints and Bytes), four default Recognize CodePoints profiles, and four active JSON/XML Parse profiles (CodePoints and Bytes). Its retained-heap matrix covered four corpora, N=0/32/128 owners, four variants, and five fresh processes per cell in rotated order. Full-input fingerprints matched. At N=128, whole-parser retained bytes were 5.26–5.99% below the checkpoint and 19.37–21.48% above the broader static-control reference; this does not isolate matcher payload. JSON compilation was faster in all five samples (median 0.979×); Arithmetic, Minilang, and XML ranges included parity. Compilation allocations fell 4.8–6.4%; JSON and XML bytes/op rose 0.069% and 0.117%, respectively, while the other corpora decreased.
+
+Variant A runtime results were mixed: Arithmetic Recognize was slower in all five pairs than both the checkpoint (1.02085×) and sharing-disabled control (1.01031×). Minilang Recognize was 1.02661× the checkpoint, while the sharing-disabled comparison overlapped parity. Minilang Bytes Parse was 1.00412× the checkpoint, with the sharing-disabled comparison overlapping parity. Variant B used six rotated 1 s samples over eight profiles: default Recognize in CodePoints for four corpora and Parse in CodePoints/Bytes for Arithmetic and Minilang. Arithmetic and Minilang Recognize were slower than the sharing-disabled control in all six pairs; the other profiles mostly overlapped parity. Arithmetic Bytes Parse was 1.01010× the checkpoint in every pair, while the sharing-disabled comparison overlapped parity. No retained-heap or compile matrix was run for B. These scoped measurements do not identify a cause or establish a runtime benefit.
+
+Both variants were rejected as default candidates. The sharing mechanism and temporary ablation builds were removed; only the focused tests and compile benchmark remain. A future payload-sharing proposal requires independent evidence.
+
 ## Limitations and Open Questions
 
 The proposed defaults form one coherent contract: no controls unless requested,

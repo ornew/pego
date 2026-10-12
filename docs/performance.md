@@ -140,6 +140,22 @@ Notes:
   just a binary built from the old code. Generated parsers embed their grammar.
 - The numbers in the optimization catalog are for the closure backend with code-point positions unless stated otherwise.
 
+### Compile Source Benchmark
+
+`BenchmarkCompileCorpus` in `bench/retained` measures whole-source compilation for the JSON, XML, arithmetic, and Minilang grammars. It loads each source before timing, performs four warm-up compilations, calls `runtime.GC()` outside `b.Loop`, then measures repeated `pego.CompileSource` calls. Each compiled parser remains alive through its own iteration; results are not accumulated or retained together. The benchmark reports compile time and cumulative per-operation allocations, not parse throughput or post-GC retained heap.
+
+Build and run it from a clean, pinned source checkout:
+
+```bash
+GOTOOLCHAIN=go1.27.1 go test -c -trimpath \
+    -o /tmp/pego-compile-corpus.test ./bench/retained
+(cd bench/retained && /tmp/pego-compile-corpus.test \
+    -test.run '^$' -test.bench '^BenchmarkCompileCorpus$' -test.benchmem \
+    -test.benchtime=500ms -test.count=1)
+```
+
+For parent/candidate comparisons, build separate binaries from clean worktrees pinned to their source revisions, with identical benchmark code, grammar inputs, Go version, and environment. Record the commit and environment for each run.
+
 ### Retained Compiled-Parser Heap
 
 The `bench/retained` diagnostic measures the post-GC live-heap delta associated with keeping compiled `*pego.Parser` owners alive. It measures the whole retained parser object graph, including parser wrappers and reachable AST/type and closure data—not graph payload alone. It does not measure peak heap, cumulative allocation, parse-result retention, or production memory for every backend and invocation pattern.
