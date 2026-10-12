@@ -295,10 +295,7 @@ func (g *tsGen) fn(x string) string {
 // action emits a function that evaluates the term t (an action or a predicate) and returns its name.
 func (g *tsGen) action(t grammar.Term, s *scope, locals map[string]string) string {
 	name := g.name("a")
-	param := "c"
-	if !tsUsesCtx(t, locals) {
-		param = "_c" // not reported as unused
-	}
+	param := "c" // every emitted term uses the invocation work context
 	fmt.Fprintf(&g.methods, "function %s(%s: Actx): Value {\n  return %s;\n}\n\n", name, param, g.term(t, s, locals))
 	return name
 }
@@ -785,6 +782,10 @@ func tsInt(v int) string {
 // term converts a value expression into a TypeScript expression of type Value. locals maps names,
 // such as lambda parameters, to TypeScript expressions.
 func (g *tsGen) term(t grammar.Term, s *scope, locals map[string]string) string {
+	return "(c.work(), " + g.termBody(t, s, locals) + ")"
+}
+
+func (g *tsGen) termBody(t grammar.Term, s *scope, locals map[string]string) string {
 	switch t := t.(type) {
 	case *grammar.IntLit:
 		return tsInt(t.Value)
@@ -834,7 +835,7 @@ func (g *tsGen) term(t grammar.Term, s *scope, locals map[string]string) string 
 		case "text":
 			return "c.text(" + args[0] + ")"
 		case "foldl", "foldr":
-			return fmt.Sprintf("rtFold(%s, %v, %s, %s, %s)", tsString(t.Func), t.Func == "foldr", args[0], args[1], g.lambda(t.Args[2], s, locals))
+			return fmt.Sprintf("rtFold(%s, %v, %s, %s, %s, c.p.control)", tsString(t.Func), t.Func == "foldr", args[0], args[1], g.lambda(t.Args[2], s, locals))
 		case "map":
 			if x, ok := g.projected(t, locals); ok {
 				return "c.newList(listItems(\"map\", " + g.term(x, s, locals) + "))"
@@ -849,7 +850,7 @@ func (g *tsGen) term(t grammar.Term, s *scope, locals map[string]string) string 
 		if lx, ok := textArg(t.L); ok && (t.Op == "==" || t.Op == "!=") {
 			if rx, ok := textArg(t.R); ok {
 				// Compare the strings directly (see evalCtx.binary).
-				return fmt.Sprintf("(c.textStr(%s) %s= c.textStr(%s))", g.term(lx, s, locals), t.Op, g.term(rx, s, locals))
+				return fmt.Sprintf("c.binary(%s, c.textStr(%s), c.textStr(%s))", tsString(t.Op), g.term(lx, s, locals), g.term(rx, s, locals))
 			}
 		}
 		l, r := g.term(t.L, s, locals), g.term(t.R, s, locals)
@@ -859,7 +860,7 @@ func (g *tsGen) term(t grammar.Term, s *scope, locals map[string]string) string 
 		case "||":
 			return fmt.Sprintf("rtOr(%s, (): Value => %s)", l, r)
 		}
-		return fmt.Sprintf("rtBinary(%s, %s, %s)", tsString(t.Op), l, r)
+		return fmt.Sprintf("c.binary(%s, %s, %s)", tsString(t.Op), l, r)
 	case *grammar.Unary:
 		return fmt.Sprintf("rtUnary(%s, %s)", tsString(t.Op), g.term(t.X, s, locals))
 	}
@@ -877,7 +878,8 @@ func (g *tsGen) predicateTerm(t grammar.Term, s *scope) string {
 					cases = append(cases, "case "+tsString(literal)+":")
 				}
 			}
-			return fmt.Sprintf("((): Value => { switch (c.textStr(%s)) { %s return true; default: return false; } })()", g.term(&grammar.CaptureRef{Name: name}, s, nil), strings.Join(cases, " "))
+			fast := fmt.Sprintf("((): Value => { switch (c.textStr(%s)) { %s return true; default: return false; } })()", g.term(&grammar.CaptureRef{Name: name}, s, nil), strings.Join(cases, " "))
+			return "(c.p.control === null ? " + fast + " : " + g.term(t, s, nil) + ")"
 		}
 	}
 	return g.term(t, s, nil)
