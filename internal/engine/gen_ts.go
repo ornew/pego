@@ -172,7 +172,48 @@ func tsInts[T ~int32 | ~byte](xs []T) string {
 
 // tsCond converts a condition on ch written by first or classReject to TypeScript.
 func tsCond(cond string) string {
-	return strings.ReplaceAll(cond, " == ", " === ")
+	return tsBalancedCondition(strings.ReplaceAll(cond, " == ", " === "))
+}
+
+// Long flat class conditions become deep binary trees in TypeScript. Group
+// like operators without reordering operands or changing short-circuit order.
+func tsBalancedCondition(cond string) string {
+	for _, op := range []string{" || ", " && "} {
+		var parts []string
+		depth, from := 0, 0
+		for i := 0; i < len(cond); i++ {
+			switch cond[i] {
+			case '(':
+				depth++
+			case ')':
+				depth--
+			}
+			if depth == 0 && strings.HasPrefix(cond[i:], op) {
+				parts = append(parts, tsBalancedCondition(cond[from:i]))
+				from = i + len(op)
+				i = from - 1
+			}
+		}
+		if len(parts) > 0 {
+			parts = append(parts, tsBalancedCondition(cond[from:]))
+			return tsJoinCondition(parts, op)
+		}
+	}
+	if strings.HasPrefix(cond, "!") {
+		return "!" + tsBalancedCondition(cond[1:])
+	}
+	if strings.HasPrefix(cond, "(") && strings.HasSuffix(cond, ")") {
+		return "(" + tsBalancedCondition(cond[1:len(cond)-1]) + ")"
+	}
+	return cond
+}
+
+func tsJoinCondition(parts []string, op string) string {
+	if len(parts) == 1 {
+		return parts[0]
+	}
+	mid := len(parts) / 2
+	return "(" + tsJoinCondition(parts[:mid], op) + op + tsJoinCondition(parts[mid:], op) + ")"
 }
 
 // tsMark declares the variables of a mark (parser.mark in genrt) with the given indentation, and
