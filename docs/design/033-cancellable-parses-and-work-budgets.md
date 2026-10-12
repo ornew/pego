@@ -773,6 +773,10 @@ Current charges include:
 - Action-term dispatch, short-circuit predicates, bounded string equality,
   list/map/concat/fold visits, struct fields and 128-element node copies. These
   operations share the parse's budget; mandatory stack cleanup is uncharged.
+- Scalar string concatenation/order/length and source-text materialization;
+  value work consumes steps rather than source input-work. UTF-8 ordering and
+  surrogateescape byte lengths retain ordinary semantics. Invalid-byte ordering
+  streams the suffix bytes actually examined instead of encoding both suffixes.
 - Typed recipe/node/list dispatch and edges, using the parse's same budget.
 - Cooperative entry/checkpoint/publication signal checks. Strict ES2020,
   ES2022 and DOM consumers check error-cause and signal compatibility;
@@ -784,13 +788,17 @@ key-chunk accounting makes its consumer fail. Separate consumers verify action
 string equality, skipped short-circuit branches, collection/fold values and
 cancellation/retry. The memo fixture uses a different-length comparison so its
 budget failure isolates key traversal rather than action-string equality.
-This proves the tested boundaries,
-not comprehensive metering of every engine loop.
+Scalar consumers additionally cover long concatenation/order/length, source
+materialization beyond matching work, and malformed-byte/Unicode results.
+Omitting each operation's charge makes its own consumer fail. Value-string work
+uses steps even when it is independent of source input. These checks prove the
+tested boundaries, not comprehensive metering of every engine loop.
 
-Remaining coverage includes scalar-string concatenation/order/length, capture/graph
-rollback and materialization, expectations/recovery/diagnostics, field lookup,
-source text/length scans, and other binding string comparisons. Runtime allocation
-is non-preemptible, and mandatory unwind must remain uncharged.
+Remaining coverage includes capture/graph
+rollback and materialization, expectations/recovery/diagnostics, field lookup/update
+and other binding string comparisons. Runtime allocation, native string slicing/joining and GC are non-preemptible.
+Logical extents are reserved in bounded chunks before native materialization;
+this is no hard elapsed-time bound. Mandatory unwind remains uncharged.
 
 The finalizer clears internal signal references without caller getters or charges.
 The observed reason remains the error's cause and may itself reference caller
