@@ -61,6 +61,29 @@ func BenchmarkControlledParse(b *testing.B) {
 						}
 					}
 				})
+				b.Run("generated_ast/"+unit.name, func(b *testing.B) {
+					b.SetBytes(int64(len(input)))
+					b.ReportAllocs()
+					for b.Loop() {
+						var err error
+						if w.name == "JSON" {
+							selected := gjson.CodePoints
+							if unit.u == pego.Bytes {
+								selected = gjson.Bytes
+							}
+							_, err = gjson.ParseAST(input, gjson.WithUnit(selected), gjson.WithWorkLimits(gjson.WorkLimits(limits)))
+						} else {
+							selected := gxml.CodePoints
+							if unit.u == pego.Bytes {
+								selected = gxml.Bytes
+							}
+							_, err = gxml.ParseAST(input, gxml.WithUnit(selected), gxml.WithWorkLimits(gxml.WorkLimits(limits)))
+						}
+						if err != nil {
+							b.Fatal(err)
+						}
+					}
+				})
 			}
 		})
 	}
@@ -121,6 +144,15 @@ func TestControlledWorkloads(t *testing.T) {
 						t.Fatal(err)
 					}
 					equal(plain, controlled)
+					plainAST, err := gjson.ParseAST(input, gjson.WithUnit(selected))
+					if err != nil {
+						t.Fatal(err)
+					}
+					controlledAST, err := gjson.ParseAST(input, gjson.WithUnit(selected), gjson.WithWorkLimits(gjson.WorkLimits(limits)))
+					if err != nil {
+						t.Fatal(err)
+					}
+					equal(plainAST, controlledAST)
 				} else {
 					selected := gxml.CodePoints
 					if unit.u == pego.Bytes {
@@ -135,6 +167,15 @@ func TestControlledWorkloads(t *testing.T) {
 						t.Fatal(err)
 					}
 					equal(plain, controlled)
+					plainAST, err := gxml.ParseAST(input, gxml.WithUnit(selected))
+					if err != nil {
+						t.Fatal(err)
+					}
+					controlledAST, err := gxml.ParseAST(input, gxml.WithUnit(selected), gxml.WithWorkLimits(gxml.WorkLimits(limits)))
+					if err != nil {
+						t.Fatal(err)
+					}
+					equal(plainAST, controlledAST)
 				}
 			}
 		})

@@ -926,6 +926,14 @@ A separate diagnostic comparison on JSON closure Parse in CodePoints measured 1.
 
 Core and generated Go active-charge semantics remain the contract: guards may skip inactive reservation calls only; they must not change charge counts or cancellation and limit boundaries. Full root, generation, parser-module, site/WASM and independent evidence gates must pass before the change is considered for integration.
 
+### Generated Rule and Typed-Output Guards
+
+The generated-Go follow-up routes a rule entry through the existing guarded `stepWork` helper instead of calling the charge routine directly. Typed-slab and AST-conversion step helpers likewise skip the charge call for a nil controller. Active work still reaches the existing charge path; the VM dispatch and charge semantics are unchanged. In the tested compiler, the step helpers inline (cost 67) while the charge routine does not (cost 310). The focused AST timing measures direct generated AST construction; converter fallback correctness was tested, but its timing is outside this comparison.
+
+A five-pair, alternating 500 ms comparison covered 25 profiles on Go 1.27.1, `-trimpath`, darwin/arm64 on an Apple M3 Max, GOMAXPROCS=16, GOGC=100, GOMEMLIMIT off and GODEBUG unset. Compared with revision `a69d330` using the identical added AST benchmark harness, 16 inactive generated profiles covered Node parsing, typed parsing and recognition: four were faster in all five pairs and twelve overlapped parity. Eight active JSON/XML Node and direct-AST profiles were also measured: seven overlapped parity; XML generated AST Parse in CodePoints was slower in all five pairs, at 1.006× (1.00002–1.01749×). An untouched core JSON closure control overlapped parity. Allocation and byte medians varied; Active XML AST Parse/CodePoints rose from 3,426,422 to 3,459,866 B/op and from 297 to 298 allocations/op. This is a narrow generated-Go result, not proof of zero overhead or an overall feature speedup.
+
+Focused generated control/reference/conversion/graph tests and reduced-value parity checks pass. The reduced-value test does not compare the full-input timed fingerprints. Full root, generation, parser-module, site/WASM and independent review gates remain necessary before integration. This follow-up does not close default-cost, retained-memory, TypeScript, custom-context or broader reachability questions and is not an adoption decision.
+
 ## Limitations and Open Questions
 
 The proposed defaults form one coherent contract: no controls unless requested,

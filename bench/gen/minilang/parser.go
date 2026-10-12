@@ -1231,7 +1231,7 @@ func (p *parser) makeError(pos int, expected []expID) *SyntaxError {
 
 // call calls rule r at level min.
 func (p *parser) call(r *rule, min int) (*Node, bool) {
-	p.control.charge(0, 1)
+	p.stepWork()
 	start := p.pos
 	if !r.memo && !r.leader || p.firstCall(r) {
 		// Unmemoized call: no memo bookkeeping, and expectations need no isolation.
@@ -6471,7 +6471,7 @@ type astConv struct {
 }
 
 func (a *astConv) stepWork() {
-	if workControlsEnabled {
+	if workControlsEnabled && a.control != nil {
 		a.control.charge(0, 1)
 	}
 }

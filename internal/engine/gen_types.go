@@ -471,7 +471,7 @@ func (a *astConv) toError(n *Node) *Error {
 	}
 	b.WriteString("}\n\n")
 	b.WriteString(`func (a *astConv) stepWork() {
- if workControlsEnabled { a.control.charge(0, 1) }
+ if workControlsEnabled && a.control != nil { a.control.charge(0, 1) }
 }
 func (a *astConv) field(n *Node, name string) any {
  if !workControlsEnabled || a.control == nil { return n.Field(name) }
@@ -739,7 +739,7 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 	for _, l := range t.tlistOrder {
 		fmt.Fprintf(b, "\t%sChunk astChunk[%s]\n", l.name, t.goType(l.elem))
 	}
-	b.WriteString("}\n\nfunc (a *tslabs) setWorkControl(c *workControl) { a.control = c }\nfunc (a *tslabs) stepWork() { if workControlsEnabled { a.control.charge(0, 1) } }\n\n")
+	b.WriteString("}\n\nfunc (a *tslabs) setWorkControl(c *workControl) { a.control = c }\nfunc (a *tslabs) stepWork() { if workControlsEnabled && a.control != nil { a.control.charge(0, 1) } }\n\n")
 }
 
 // astHelpers are the conversion helpers of typed values.
