@@ -1431,6 +1431,8 @@ class Parser {
   }
 
   unitLen(s: string): number {
+    const control = this.control;
+    if (control !== null) return this.unit === Bytes ? utf8LenWork(s, control) : runeCountValueWork(s, control);
     return this.unit === Bytes ? utf8Len(s) : runeCount(s);
   }
 
@@ -1488,6 +1490,15 @@ class Parser {
   }
 
   text(start: number, end: number): string {
+    const control = this.control;
+    if (control !== null) {
+      if (this.offs !== null) {
+        control.charge(0, 2);
+        start = this.offs[start]!;
+        end = this.offs[end]!;
+      }
+      return sliceStringWork(this.src, start, end, control);
+    }
     if (this.offs === null) {
       return this.src.slice(start, end);
     }
@@ -2349,9 +2360,18 @@ class Actx {
 
   binary(op: string, l: Value, r: Value): Value {
     const control = this.p.control;
-    if (control !== null && typeof l === "string" && typeof r === "string" && (op === "==" || op === "!=")) {
-      const equal = equalStringsWork(l, r, control);
-      return op === "==" ? equal : !equal;
+    if (control !== null && typeof l === "string" && typeof r === "string") {
+      switch (op) {
+        case "==": case "!=": {
+          const equal = equalStringsWork(l, r, control);
+          return op === "==" ? equal : !equal;
+        }
+        case "+": return joinValueStringsWork([l, r], control);
+        case "<": return compareStringsWork(l, r, control) < 0;
+        case "<=": return compareStringsWork(l, r, control) <= 0;
+        case ">": return compareStringsWork(l, r, control) > 0;
+        case ">=": return compareStringsWork(l, r, control) >= 0;
+      }
     }
     return rtBinary(op, l, r);
   }

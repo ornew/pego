@@ -292,3 +292,121 @@ function copyNodesWork(items: readonly (Node | null)[], start: number, end: numb
   }
   return out;
 }
+
+// These scalar helpers preserve surrogateescape bytes, unlike input encoding.
+function utf8LenWork(s: string, control: WorkControl): number {
+  let n = s.length;
+  for (let i = 0; i < s.length; i++) {
+    const c = valueUnitWork(s, i, control);
+    if (c < 0x80) continue;
+    if (c < 0x800) {
+      n++;
+    } else if (c >= 0xd800 && c < 0xdc00 && i + 1 < s.length && (valueUnitWork(s, i + 1, control) & 0xfc00) === 0xdc00) {
+      n += 2;
+      i++;
+    } else if (c < 0xdc80 || c > 0xdcff) {
+      n += 2;
+    }
+  }
+  return n;
+}
+
+function sliceStringWork(s: string, start: number, end: number, control: WorkControl): string {
+  // Native slicing/joining and allocation cannot be preempted. Reserve the
+  // visited extent in bounded chunks before publishing the native result.
+  const from = Math.max(0, Math.min(s.length, start < 0 ? s.length + start : start));
+  const to = Math.max(0, Math.min(s.length, end < 0 ? s.length + end : end));
+  for (let i = from; i < to; i += 128) control.charge(0, Math.min(128, to - i));
+  const result = s.slice(start, end);
+  control.check();
+  return result;
+}
+
+function isByteWork(s: string, i: number, control: WorkControl): boolean {
+  const c = valueUnitWork(s, i, control);
+  return c >= 0xdc80 && c <= 0xdcff && !(i > 0 && (valueUnitWork(s, i - 1, control) & 0xfc00) === 0xd800);
+}
+
+// Stream only the suffix bytes actually compared; keep byte escapes raw.
+function* utf8ValueBytesWork(s: string, start: number, control: WorkControl) {
+  for (let i = start; i < s.length; i++) {
+    let c = valueUnitWork(s, i, control);
+    if (c >= 0xd800 && c < 0xdc00 && i + 1 < s.length) {
+      const low = valueUnitWork(s, i + 1, control);
+      if ((low & 0xfc00) === 0xdc00) {
+        c = 0x10000 + ((c - 0xd800) << 10) + (low - 0xdc00);
+        i++;
+      }
+    }
+    if (c >= 0xdc80 && c <= 0xdcff) {
+      control.charge(0, 1);
+      yield c & 0xff;
+      continue;
+    }
+    if (c >= 0xd800 && c <= 0xdfff) c = 0xfffd;
+    control.charge(0, c < 0x80 ? 1 : c < 0x800 ? 2 : c < 0x10000 ? 3 : 4);
+    if (c < 0x80) {
+      yield c;
+    } else if (c < 0x800) {
+      yield 0xc0 | (c >> 6); yield 0x80 | (c & 0x3f);
+    } else if (c < 0x10000) {
+      yield 0xe0 | (c >> 12); yield 0x80 | ((c >> 6) & 0x3f); yield 0x80 | (c & 0x3f);
+    } else {
+      yield 0xf0 | (c >> 18); yield 0x80 | ((c >> 12) & 0x3f); yield 0x80 | ((c >> 6) & 0x3f); yield 0x80 | (c & 0x3f);
+    }
+  }
+}
+
+function compareStringsWork(a: string, b: string, control: WorkControl): number {
+  const n = Math.min(a.length, b.length);
+  for (let i = 0; i < n; i++) {
+    let x = valueUnitWork(a, i, control);
+    let y = valueUnitWork(b, i, control);
+    if (x !== y) {
+      if (isByteWork(a, i, control) || isByteWork(b, i, control)) {
+        const p = utf8ValueBytesWork(a, i, control);
+        const q = utf8ValueBytesWork(b, i, control);
+        for (;;) {
+          control.charge(0, 2);
+          const x = p.next();
+          const y = q.next();
+          if (x.done || y.done) return x.done === y.done ? 0 : x.done ? -1 : 1;
+          if (x.value !== y.value) return x.value < y.value ? -1 : 1;
+        }
+      }
+      if (x >= 0xd800 && y >= 0xd800) {
+        x = x >= 0xe000 ? x - 0x800 : x + 0x2000;
+        y = y >= 0xe000 ? y - 0x800 : y + 0x2000;
+      }
+      return x < y ? -1 : 1;
+    }
+  }
+  return a.length < b.length ? -1 : a.length > b.length ? 1 : 0;
+}
+
+function valueUnitWork(s: string, i: number, control: WorkControl): number {
+  control.charge(0, 1);
+  return s.charCodeAt(i);
+}
+
+function runeCountValueWork(s: string, control: WorkControl): number {
+  let n = s.length;
+  for (let i = 0; i + 1 < s.length; i++) {
+    const c = valueUnitWork(s, i, control);
+    if (c >= 0xd800 && c < 0xdc00 && (valueUnitWork(s, i + 1, control) & 0xfc00) === 0xdc00) {
+      n--;
+      i++;
+    }
+  }
+  return n;
+}
+
+function joinValueStringsWork(parts: readonly string[], control: WorkControl): string {
+  for (const part of parts) {
+    control.charge(0, 1);
+    for (let i = 0; i < part.length; i += 128) control.charge(0, Math.min(128, part.length - i));
+  }
+  const result = parts.join("");
+  control.check();
+  return result;
+}
