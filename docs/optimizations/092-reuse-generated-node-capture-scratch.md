@@ -87,6 +87,37 @@ not a recommended execution setting. Moving the added state to the parser's
 tail did not mitigate the slowdown, and compiler inspection ruled out lost
 inlining. The normal-GC regression remains unresolved.
 
+## Parser Field Layout Control
+
+A field-layout control against `5609246` moved `captureScratch` after the
+existing evaluation fields without changing frame allocation or reset. Five
+alternating 300 ms samples on Go 1.27.1, Apple M3 Max, darwin/arm64 and
+`GOMAXPROCS=16` covered generated JSON/XML Node parsing in both position units,
+typed `ParseAST` and `Recognize` (eight cases). All observed time ranges
+included parity, and allocation counts and bytes stayed near their controls.
+
+XML Node CodePoints measured 1.000× (0.964–1.033×), Bytes 0.961×
+(0.941–1.009×), and recognition 0.995× (0.992–1.014×). These ranges do not
+establish mitigation of the earlier exact-parent regression. Generated frame
+boundary, ownership and corpus checks passed; regeneration covered all 17
+standalone parsers. The layout change was not adopted. The existing field
+order and the unresolved normal-GC cost remain.
+
+## Memo Slot Cleanup Control
+
+A separate control replaced bulk memo-slot clearing at parser release with
+nil checks and individual clearing of occupied slots. Runtime tests and the
+JSON/XML cross-backend workload checks passed. Five alternating 300 ms pairs
+against `5609246`, using the same Go 1.27.1, Apple M3 Max, darwin/arm64 and
+`GOMAXPROCS=16` configuration, covered generated JSON/XML Node parsing in both
+units and recognition (six cases).
+
+XML Node time ratios were 1.006× CodePoints (0.974–1.065×) and 1.020× Bytes
+(0.971–1.153×); both ranges overlapped parity. XML recognition measured 1.012×
+(1.004–1.029×), slower in all five pairs. The three JSON ranges also overlapped
+parity. This control did not mitigate the GC-sensitive XML cost and was not
+adopted. Bulk clearing and all generated runtime sources remain unchanged.
+
 ## Reproduction
 
 The generated fixture test preserves optimized/reference parsers under
