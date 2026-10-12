@@ -442,3 +442,65 @@ function copyErrorsWork(items: readonly SyntaxError[], start: number, end: numbe
   }
   return out;
 }
+
+function copyIDsWork(items: readonly number[], start: number, end: number, control: WorkControl): number[] {
+  const out: number[] = new Array(end - start);
+  for (let from = start; from < end; from += 128) {
+    const stop = Math.min(from + 128, end);
+    control.charge(0, stop - from);
+    for (let i = from; i < stop; i++) out[i - start] = items[i]!;
+  }
+  return out;
+}
+
+// Only newly collected, parser-owned expected strings may be sorted here.
+function sortExpectedWork(values: string[], control: WorkControl): void {
+  const n = values.length;
+  if (n < 2) return;
+  control.charge(0, n);
+  let src = values, dst = new Array<string>(n);
+  for (let width = 1; width < n;) {
+    for (let lo = 0; lo < n;) {
+      const mid = Math.min(lo + width, n), hi = Math.min(mid + width, n);
+      let i = lo, j = mid, k = lo;
+      while (i < mid && j < hi) {
+        const order = compareStringsWork(src[i]!, src[j]!, control);
+        control.charge(0, 1);
+        dst[k++] = order <= 0 ? src[i++]! : src[j++]!;
+      }
+      while (i < mid) { control.charge(0, 1); dst[k++] = src[i++]!; }
+      while (j < hi) { control.charge(0, 1); dst[k++] = src[j++]!; }
+      lo = hi;
+    }
+    const old = src; src = dst; dst = old;
+    if (width >= n - width) break;
+    width *= 2;
+  }
+  if (src !== values) for (let i = 0; i < n; i++) { control.charge(0, 1); values[i] = src[i]!; }
+}
+
+function reserveDiagnosticTextWork(text: string, control: WorkControl): void {
+  for (let i = 0; i < text.length; i += 128) control.charge(0, Math.min(128, text.length - i));
+}
+
+// Reserve engine-owned text before the native Error constructor joins it.
+// Native joining/allocation remain non-preemptible; public constructors and
+// post-return reason() calls keep their existing caller-owned behavior.
+function reserveSyntaxMessageWork(line: number, col: number, expected: readonly string[], messages: readonly string[], control: WorkControl): void {
+  reserveDiagnosticTextWork(`${line}:${col}: `, control);
+  const parts = messages.length !== 0 ? messages : expected;
+  if (messages.length === 0) reserveDiagnosticTextWork(expected.length !== 0 ? "syntax error: expected " : "syntax error", control);
+  for (let i = 0; i < parts.length; i++) {
+    control.charge(0, 1);
+    if (i !== 0) control.charge(0, 2);
+    reserveDiagnosticTextWork(parts[i]!, control);
+  }
+}
+
+function reserveRecoveredMessageWork(errors: readonly SyntaxError[], control: WorkControl): void {
+  for (let i = 0; i < errors.length; i++) {
+    control.charge(0, 1);
+    if (i !== 0) control.charge(0, 1);
+    reserveDiagnosticTextWork(errors[i]!.message, control);
+  }
+}

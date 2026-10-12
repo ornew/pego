@@ -411,14 +411,14 @@ caller panic. Recognition uses the same batch lifecycle. Individual trace-option
 when cancellation is observed.
 
 This foundation is not an adopted implementation of the full contract above.
-Native Document and stream calls now use invocation-local controls through
-reuse, text materialization and normal commit work. Known engine-owned action
-errors and the final rule prefix use eager, bounded text construction.
+Native Document and stream calls use invocation-local controls through reuse,
+text materialization, reader refills, and normal commit work. Known engine-owned
+action errors and the final rule prefix use eager, bounded text construction.
 Guard-rejected closure alternatives also consume steps independently of
-diagnostic collection. Remaining matcher coverage, generated-runtime lifecycles,
-copied-event ownership and default-cost evaluation need separate validation
-gates. The prototype remains separate
-from main until contract and performance gates pass.
+diagnostic collection. Remaining acceptance gates include generated-runtime
+reachability and release coverage, generated-runtime static references, and
+default-path costs. These controls do not establish a hard
+elapsed-time or memory bound.
 
 The private `pego_work_controls_reference` build tag removes execution
 instrumentation and rejects active controls. It retains the new state layout;
@@ -473,8 +473,8 @@ its bookkeeping, and retirement never clears its public Node pointee. Mandatory
 scratch release disables controls before resetting used memo cells, including
 unpublished growth candidates. Runtime allocation/zeroing, map hashing, and GC
 remain nonpreemptible; these budgets are not memory limits. Inactive/reference
-calls retain the ordinary memo and binding paths and adaptive thresholds. Stream
-pruning and Document edits/resumption remain for their lifecycle stages.
+calls retain the ordinary memo and binding paths and adaptive thresholds.
+Document edit and resumption checkpoints have focused coverage in the prototype.
 
 Detached batch input text is materialized with bounded work when no original
 source substring is available, including CodePoints input containing invalid
@@ -768,11 +768,15 @@ Current charges include:
 - Literal/peek/EOF probes, expression/direct-rule boundaries, class comparisons,
   repetition and LR/Pratt visits; lookahead rereads consume cumulative budgets.
 - Memo/binding/key visits, 128-unit string-key and table-copy chunks, and frame
-  initialization. Interrupted caches are invocation-private and discarded;
-  transactional rollback of every private field is not promised.
+  initialization. Focused consumers cover memo reuse, binding rollback, and
+  interruption cleanup; they do not claim rollback of every private field.
 - Action-term dispatch, short-circuit predicates, bounded string equality,
   list/map/concat/fold visits, struct fields and 128-element node copies. These
   operations share the parse's budget; mandatory stack cleanup is uncharged.
+- Scalar string concatenation/order/length and source-text materialization;
+  value work consumes steps rather than source input-work. UTF-8 ordering and
+  surrogateescape byte lengths retain ordinary semantics. Invalid-byte ordering
+  streams the suffix bytes actually examined instead of encoding both suffixes.
 - Typed recipe/node/list dispatch and edges, using the parse's same budget.
 - Cooperative entry/checkpoint/publication signal checks. Strict ES2020,
   ES2022 and DOM consumers check error-cause and signal compatibility;
@@ -784,13 +788,19 @@ key-chunk accounting makes its consumer fail. Separate consumers verify action
 string equality, skipped short-circuit branches, collection/fold values and
 cancellation/retry. The memo fixture uses a different-length comparison so its
 budget failure isolates key traversal rather than action-string equality.
-This proves the tested boundaries,
-not comprehensive metering of every engine loop.
+Scalar consumers additionally cover long concatenation/order/length, source
+materialization beyond matching work, and malformed-byte/Unicode results.
+Omitting each operation's charge makes its own consumer fail. Value-string work
+uses steps even when it is independent of source input. These checks prove the
+tested boundaries, not comprehensive metering of every engine loop.
 
-Remaining coverage includes scalar-string concatenation/order/length, capture/graph
-rollback and materialization, expectations/recovery/diagnostics, field lookup,
-source text/length scans, and other binding string comparisons. Runtime allocation
-is non-preemptible, and mandatory unwind must remain uncharged.
+Focused consumers cover capture-slot and frame save/restore, bounded Node
+copies, typed-recipe visits, expectation and recovery diagnostics, field
+operations, and memo/binding string comparisons. They establish only the
+listed checkpoints, not complete metering of every engine loop. Runtime
+allocation, native string slicing/joining, and GC remain non-preemptible.
+Logical extents are reserved in bounded chunks before native materialization;
+this is not a hard elapsed-time bound. Mandatory unwind remains uncharged.
 
 The finalizer clears internal signal references without caller getters or charges.
 The observed reason remains the error's cause and may itself reference caller

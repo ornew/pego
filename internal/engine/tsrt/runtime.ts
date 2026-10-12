@@ -624,14 +624,17 @@ function isStackOverflow(x: unknown): boolean {
 function result(p: Parser, v: R): ParseResult {
   if (v !== undefined && p.pos === p.n) {
     if (p.recovered.length > 0) {
-      return { node: v, error: new SyntaxErrors(p.recovered) };
+      if (p.control !== null) reserveRecoveredMessageWork(p.recovered, p.control);
+      const error = new SyntaxErrors(p.recovered);
+      p.control?.check();
+      return { node: v, error };
     }
     return { node: v, error: null };
   }
   if (v !== undefined) {
     p.expect(p.pos, idEndInput);
   }
-  return { node: null, error: p.makeError(p.farthest, p.exp.slice(p.expBase, p.expTop)) };
+  return { node: null, error: p.makeError(p.farthest, p.control === null ? p.exp.slice(p.expBase, p.expTop) : copyIDsWork(p.exp, p.expBase, p.expTop, p.control)) };
 }
 
 // --- Input ---
@@ -1448,6 +1451,7 @@ class Parser {
       this.expTop = this.expBase;
     }
     for (let i = this.expBase; i < this.expTop; i++) {
+      this.stepWork();
       if (this.exp[i] === id) {
         return;
       }
@@ -1464,6 +1468,7 @@ class Parser {
     if (last.length === to - from) {
       let same = true;
       for (let i = 0; i < last.length; i++) {
+        this.stepWork();
         if (last[i] !== this.exp[from + i]) {
           same = false;
           break;
@@ -1473,7 +1478,7 @@ class Parser {
         return last; // the same set often repeats
       }
     }
-    this.lastKept = this.exp.slice(from, to);
+    this.lastKept = this.control === null ? this.exp.slice(from, to) : copyIDsWork(this.exp, from, to, this.control);
     return this.lastKept;
   }
 
@@ -1481,12 +1486,14 @@ class Parser {
   // record (writes only happen below the read position).
   mergeExpected(far: number, from: number, to: number): void {
     for (let i = from; i < to; i++) {
+      this.stepWork();
       this.expect(far, this.exp[i]!);
     }
   }
 
   mergeKept(far: number, ids: number[]): void {
     for (const x of ids) {
+      this.stepWork();
       this.expect(far, x);
     }
   }
@@ -1511,19 +1518,22 @@ class Parser {
     const exp: string[] = [];
     const msgs: string[] = [];
     for (const x of expected) {
+      this.stepWork();
       if ((x & msgBit) !== 0) {
         msgs.push(descs[x & ~msgBit]!);
       } else {
         exp.push(descs[x]!);
       }
     }
-    exp.sort(compareStrings);
+    if (this.control === null) exp.sort(compareStrings);
+    else sortExpectedWork(exp, this.control);
     // Look the line up in a table of line starts, built on the first error, instead of scanning
     // from the start of the input for each error.
     if (this.lines === null) {
       const lines = [0];
       const units = this.unit === Bytes ? this.bs : this.cps;
       for (let i = 0; i < this.n; i++) {
+        this.control?.charge(1, 1);
         if (units[i] === 0x0a) {
           lines.push(i + 1);
         }
@@ -1535,6 +1545,7 @@ class Parser {
     let lo = 0;
     let hi = this.lines.length;
     while (lo < hi) {
+      this.stepWork();
       const mid = (lo + hi) >>> 1;
       if (this.lines[mid]! < pos + 1) {
         lo = mid + 1;
@@ -1542,7 +1553,11 @@ class Parser {
         hi = mid;
       }
     }
-    return new SyntaxError(pos, lo, pos - this.lines[lo - 1]! + 1, exp, msgs);
+    const col = pos - this.lines[lo - 1]! + 1;
+    if (this.control !== null) reserveSyntaxMessageWork(lo, col, exp, msgs, this.control);
+    const error = new SyntaxError(pos, lo, col, exp, msgs);
+    this.control?.check();
+    return error;
   }
 
   // --- Rule calls ---
