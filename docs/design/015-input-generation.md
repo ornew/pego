@@ -21,7 +21,7 @@ invalid, err := g.GenerateInvalid(10)                               // near-miss
 sample.Seed(f, p, 50)                                               // seed corpus of a fuzz test
 ```
 
-## Why a package, not methods on `Parser`
+## Why a Package, Not Methods On `Parser`
 
 Generation is a testing tool with its own options (seed, bounds, coverage) and results (coverage reports, mutations),
 and it needs nothing internal: only `Parser.Grammar`, `Parser.Start` and `Parser.Parse`. A separate package keeps the
@@ -31,15 +31,15 @@ helper takes an interface satisfied by `*testing.F`, so importing `sample` does 
 A parser loaded from a `.pegoc` saved without the AST cannot be sampled: the bytecode alone does not describe the
 grammar well enough (actions, levels, captures).
 
-## Why validation by parsing is mandatory
+## Why Validation by Parsing Is Mandatory
 
 Walking a PEG grammar like a context-free grammar produces many strings that the parser rejects or reads differently:
 
 - An ordered choice commits to the first alternative that matches: in `("a" / "ab") "c"`, the text `abc` derived
   through the second alternative never parses.
-- Repetition is greedy and never gives back: no input derived from `"a"* "a"` parses, and `(?a-z)+ " "? (?a-z)+`
+- Repetition is greedy and never gives back: no input derived from `"a"* "a"` parses, and `[a-z]+ " "? [a-z]+`
   needs the space.
-- Lookaheads, predicates and variables depend on the text around them (`!keyword ident`, `[len($s) == indent]`,
+- Lookaheads, predicates and variables depend on the text around them (`!keyword ident`, `{len($s) == indent}`,
   matching XML tags), and actions can fail at run time.
 
 So every input is parsed with the parser, and only inputs that parse without errors (also without errors recovered by
@@ -47,7 +47,7 @@ So every input is parsed with the parser, and only inputs that parse without err
 
 ## Design
 
-### The search
+### The Search
 
 The generator is written in continuation-passing style: generating an expression calls a continuation that generates
 the rest of the input and reports whether a complete candidate was found. Each decision (an alternative of a choice, an
@@ -67,7 +67,7 @@ which bounds an attempt to a fraction of a second. A grammar that needs more, su
 whole input before each of 800 characters, finds no input instead of taking seconds per attempt.
 
 Depth-first search alone is exponential when a doomed decision is followed by many equivalent ones: a line comment
-`"//" (?^\n)*` before a token on the same line is detected only when the token is written, and every character and
+`"//" [^\n]*` before a token on the same line is detected only when the token is written, and every character and
 length of the comment would be tried first. Three rules keep doomed subtrees small:
 
 - A decision stops trying options once its failed options have taken more than 4,096 steps; the decision before it,
@@ -100,14 +100,14 @@ Constructor analysis seeds its bounded worklist in callee-first DFS order, then 
 estimates. Recursive calls still iterate to the same fixed point. Reverse edges are stored contiguously, and graph
 construction deduplicates repeated calls without changing the grammar's target numbering or decision order.
 (Ordering by height alone, a long literal beat a short alternative that needs one more rule call.) Both bounds are soft:
-the search goes deeper or longer when the input requires it (`[d >= 12]` after twelve nested parentheses), up to the
+the search goes deeper or longer when the input requires it (`{d >= 12}` after twelve nested parentheses), up to the
 hard limits on nesting and iterations described above.
 
 The hard bounds therefore are the budget (`WithBudget`, exposed because an input of 25,000 repeated literals needs more
 than the default), the nesting limit (`WithMaxDepth + 8`) and the iteration limit (`8 × WithMaxRepeat + 4`); each can be
 raised through its option, and each is documented with it.
 
-### Steering by PEG semantics
+### Steering by PEG Semantics
 
 The generator prunes candidates that the parser would read differently from how they were derived:
 
@@ -117,7 +117,7 @@ The generator prunes candidates that the parser would read differently from how 
   decided when it is made (the text after it does not exist yet), so it stays pending and is re-evaluated each time the
   text grows, and finally at the end of the input. A violated check fails the decision that wrote the text.
 - **The partial matcher.** Checks are evaluated by a small backtracking matcher over the AST with three outcomes:
-  matched, failed, and *more* (the answer depends on text not generated yet). It answers *unknown* for predicates, Pratt
+  matched, failed, and *more* (the answer depends on text not generated yet). It answers *unknown* for predicates, Operators Rule
   expressions, left recursion (a rule called again at the same position), cuts, `#recover` and work over a bound; such
   a check is dropped and the parser decides. The matcher's answers are heuristics: a wrong answer costs a retry, never
   a wrong result. An expression that matches anywhere, if only the empty string (`"a"?`, `x*`, sequences and choices of
@@ -125,7 +125,7 @@ The generator prunes candidates that the parser would read differently from how 
   after it exists, and in `x = "a"? / "b"?` the second alternative, which the parser never reaches, would be chosen
   and undone again and again (twenty such `x` in a row found no input).
 - **Positive lookahead.** `&e` generates a text for `e`, then removes it and forces the input that follows to start
-  with it. Captures and variables made in `e` stay in effect, as in the parser, so `&(s:spaces) [len($s) > indent]`
+  with it. Captures and variables made in `e` stay in effect, as in the parser, so `&(s:spaces) {len($s) > indent}`
   works as in [examples/outline](../../examples/outline/outline.pego). Forcing guesses the text before the rest of the
   input exists, so `&(. .) "ab"` almost never worked; when forcing fails and `e` makes no captures and defines no
   variables, the generator falls back to a check that `e` match whatever the rest of the input turns out to be.
@@ -136,16 +136,16 @@ The generator prunes candidates that the parser would read differently from how 
   (scoped per rule invocation and undone on backtracking), `len`, `text`, comparisons, arithmetic and boolean operators.
   A predicate fails a decision only when it certainly fails; values the generator cannot compute (results of actions,
   fields, other functions) make it unknown, and the parser decides.
-- **Repeated texts.** A predicate such as `[text($e) == text($n)]` (matching XML tags) almost never holds for two
+- **Repeated texts.** A predicate such as `{text($e) == text($n)}` (matching XML tags) almost never holds for two
   independently generated names. For a rule call captured by a capture that a predicate of the same rule reads, the
   generator may repeat the text of an earlier call of the same rule in the same rule invocation.
 - **Anchors.** `^^` and `^` are checked against the text before them; `$$` fixes the end of the input, after which
   nothing can be written.
-- **Pratt expressions** are generated as a flat chain: prefix operators, an operand, then postfix operators and infix
+- **Operators Rule expressions** are generated as a flat chain: prefix operators, an operand, then postfix operators and infix
   operators each followed by another operand, with the skip expression before each operand and operator part. The
   parser builds the tree from the binding levels, so any chain is accepted except where an operator part is read
   differently or an `infix none` operator would chain. Immutable frames track the minimum binding level and last
-  nonassociative level of each recursive Pratt invocation. A level-restricted call (`e(add)`) restricts the outer infix/postfix
+  nonassociative level of each recursive Operators Rule invocation. A level-restricted call (`level(e, add)`) restricts the outer infix/postfix
   tail to that level and tighter ones; prefixes at every operand position remain unrestricted. A prefix at level
   `l` opens a fresh RHS frame strictly tighter than `l`, even below the caller's entry. Left and nonassociative
   infix operators likewise open a strictly tighter RHS; a right-associative operator permits its own level there.
@@ -164,7 +164,7 @@ The generator prunes candidates that the parser would read differently from how 
   Empty prefix/postfix matches are excluded by actual consumed length, including consuming nullable prefixes;
   empty infix parts can represent juxtaposition, with a whole-application progress guard.
   Skip, operator comparisons, scope traversal and every recursive RHS invocation share one matcher allowance.
-  Incomplete input retains a pending check; cuts, predicates, Pratt references, left recursion, recovery and
+  Incomplete input retains a pending check; cuts, predicates, Operators Rule references, left recursion, recovery and
   exhausted work are inconclusive and leave acceptance to the real parser. A completed primary can still fail
   when a later tighter operator commits, so primary success alone is insufficient. When every led part is
   structurally proven uncommitted, an unresolved future tail cannot invalidate an established primary; the
@@ -178,12 +178,12 @@ The generator prunes candidates that the parser would read differently from how 
 
 ### Coverage
 
-The targets are the rules, the alternatives of ordered choices, and the operands and operators of Pratt expressions.
+The targets are the rules, the alternatives of ordered choices, and the operands and operators of Operators Rule declarations.
 Rules that the start rule reaches only inside negative lookaheads (`!keyword`) or the skip of `#recover` are reported
 as unreachable, and rules that are called but can never match (bodies that end in `_|_` to report an error) as
 impossible; neither counts in the totals. Alternatives that can never match, and everything inside an expression that
 can never match (`"(" ("a" / "b") _|_`), are not counted either; a rule that can match but is called only there is
-unreachable. For a Pratt rule, reachable calls and their minimum levels are propagated together: skip, operands
+unreachable. For an Operators Rule, reachable calls and their minimum levels are propagated together: skip, operands
 and viable prefixes are visited at every entry, while infix/postfix parts are visited only if a reachable entry
 or prefix RHS permits their level. Calls and nested choices inside blocked operator parts do not contribute
 reachable targets, and an unrestricted self-call there cannot widen the rule's entry. A prefix whose shortest
@@ -201,7 +201,7 @@ instrumenting the runtimes for coverage was not worth the cost in every backend.
 With `WithCoverage`, decisions prefer, in order, options whose own target is not exercised yet, options whose reach
 contains such a target, and the rest (at random within each group). Optional expressions and repetitions that reach an
 unexercised target are taken with probability 3/4 rather than always: when several of them together violate a predicate
-(`[len($a) + len($g) + len($n) <= 1]` in the Python grammar), always taking them all would fail every attempt.
+(`{len($a) + len($g) + len($n) <= 1}` in the Python grammar), always taking them all would fail every attempt.
 
 A target that ten failed attempts tried while it was not exercised yet is *settled*: it is no longer preferred, and
 neither are options because they reach it. The parser may never take it, because of a cut, or because an earlier
@@ -212,14 +212,14 @@ mode found 2 inputs for that grammar where plain generation found 10, because ev
 to the dead one. The threshold is a trade-off: at four failures, targets of the Python grammar that are reachable but
 rarely found were settled too early, and coverage fell from 90% to 88% of its alternatives.
 
-### Invalid inputs
+### Invalid Inputs
 
 `Invalid` takes a valid input and applies one mutation at rune boundaries: deleting one rune or a span of up to eight,
 inserting or substituting a token (a literal or character of the grammar, or a common delimiter), duplicating a span,
 swapping two runes, or truncating. It keeps the result only if the parser rejects it, and labels it with the mutation
 and the error. Single mutations of valid inputs exercise error reporting and recovery much more than random bytes do.
 
-### Command line
+### Command Line
 
 `pego sample -g grammar [-s rule] [-n 10] [-seed N] [-max-depth D] [-max-repeat R] [-max-len L] [-coverage] [-invalid]
 [-f lines|json]` prints distinct inputs. The lines format writes each input as a Go-quoted string, because inputs
@@ -277,7 +277,7 @@ of its rules and raised Python's from 92% to 95%, with fewer failed attempts; ra
 50,000 steps changed nothing but the time. Generating 50 inputs takes about 0.3 s for the Go and Python grammars and a
 few milliseconds for the others.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Generate and check only**, without checks or predicate evaluation: simple, but most candidates for the Go,
   Python and minilang grammars are rejected, and coverage collapses (see [Results](#results)).
@@ -294,9 +294,9 @@ few milliseconds for the others.
 
 - Lookaheads, predicates and variables are handled by evaluation where the generator can compute them and otherwise
   only by generating and checking: predicates over the results of actions or struct fields, and checks the matcher
-  cannot decide (inside Pratt expressions, left-recursive rules, cuts, `#recover`), cost retries.
+  cannot decide (inside Operators Rule bodies, left-recursive rules, cuts, `#recover`), cost retries.
 - Checks are sound with respect to the derivation, not the language: they may reject a text that the parser accepts
-  through another derivation (whitespace written by a Pratt skip after an empty `ws`, for example). Such texts are only
+  through another derivation (whitespace written by an Operators Rule skip after an empty `ws`, for example). Such texts are only
   found through another derivation.
 - Inputs are not uniformly distributed over the language, are not minimized, and repeat less than they would at
   random only because `Generate` returns distinct inputs.

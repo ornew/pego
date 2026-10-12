@@ -153,7 +153,7 @@ for (const ex of manifest) {
 }
 
 // Grammar errors come back as diagnostics with positions.
-const bad = call("compile", { grammar: "def main = (\n" });
+const bad = call("compile", { grammar: "rule main = (\n" });
 check("diagnostic position", bad.ok === false && bad.diagnostics[0]?.line === 2 && bad.diagnostics[0]?.col === 1,
   JSON.stringify(bad));
 // The program keeps running after an error response.

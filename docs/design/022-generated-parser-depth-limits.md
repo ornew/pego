@@ -36,11 +36,11 @@ override permits that distinction without regenerating or changing concurrent ca
   migration from optional unit arguments and old function-value signatures.
 - Allow explicit generation-time defaults and lower or higher per-invocation ceilings.
 - Use one effective ceiling across generated Go `Parse`, `ParseRule`, `Recognize` and `ParseAST`, including typed
-  direct and conversion modes, ordinary calls, Pratt operands, dispatch and left-recursive paths.
+  direct and conversion modes, ordinary calls, Operators Rule operands, dispatch and left-recursive paths.
 - Support the corresponding TypeScript entry points with the same zero/default and positive-override contracts.
 - Validate configuration before parsing or writing generated output; reset pooled state without limit leakage.
 
-## Non-goals
+## Non-Goals
 
 - Matching a reference parser's maximum syntactic nesting or changing distributed ready-made parser defaults.
 - Adding a mutable global setter, cancellation, work budgets, or changing the grammar/serialized program format.
@@ -48,7 +48,7 @@ override permits that distinction without regenerating or changing concurrent ca
 
 ## Design
 
-### Generation-time default
+### Generation-Time Default
 
 ```go
 code, err := pego.GenerateGo(g, "parser", "main", pego.WithGeneratedMaxDepth(600_000))
@@ -63,7 +63,7 @@ selects the generated parser's default. Negative values are errors. For TypeScri
 exact JavaScript integer. The CLI uses the same validation as the Go API. Omitted, zero and explicit 100,000 options
 produce identical output within the new generator version. Unsupported typed TypeScript generation remains an error.
 
-### Per-invocation Go API
+### Per-Invocation Go API
 
 The generated package follows the engine's functional-option style. `Result` below denotes the grammar's
 existing typed result; it is not a new wrapper type.
@@ -104,7 +104,7 @@ or build `[]ParseOption` explicitly. Function-value types change from `func(stri
 `func(string, ...ParseOption)` (with the corresponding signatures for other entry points). This is an explicit
 Go source migration; do not hide it with `...any` or a union-style compatibility overload.
 
-### Per-invocation TypeScript API
+### Per-Invocation TypeScript API
 
 ```ts
 export interface ParseOptions {
@@ -123,11 +123,11 @@ the generated default; a positive safe integer overrides it. Reject negative num
 and integers outside JavaScript's exact range through the existing result/error mechanism before matching. Unit
 selection retains existing defaults. Do not overload the existing unit parameter with an options union.
 
-### Accounting, ownership and implementation
+### Accounting, Ownership and Implementation
 
 Resolve the effective depth once per invocation and initialize parser-local state before entering any rule.
 All existing depth comparisons and fatal diagnostics use that value. Memo answers do not add nested calls;
-calls that execute a body and nested Pratt operands do. First-character dispatch must preserve counter/error
+calls that execute a body and nested Operators Rule operands do. First-character dispatch must preserve counter/error
 behavior near the ceiling. Do not reinterpret the counter as brackets, AST nodes or syntactic nesting.
 
 Go resolves options before entering the parser and does not retain the option slice or functions. TypeScript resolves scalar fields immediately,
@@ -141,7 +141,7 @@ Generated Go uses the goroutine stack; TypeScript uses the JavaScript host stack
 before a high configured limit is reached. Preserve existing fatal/host-stack handling and document the limitation.
 The engine's iterative bytecode backend remains the option for an explicit parsing stack.
 
-### Compatibility and implementation sequence
+### Compatibility and Implementation Sequence
 
 TypeScript adds options-aware entry points. Go changes the existing entry points to functional options. Generated
 source changes to include the option constructors and parser-local field; byte identity with the old generator is not a goal. Default parsing results, limits, errors and existing
@@ -163,7 +163,7 @@ APIs while retaining their current defaults and documented reference deviations.
 3. Regenerate all existing parsers; update public API comments, CLI help, generation/TypeScript/runtime guides and
    development status with the code. Keep parser feature work separate from these generator regression gates.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Generation-time configuration only.** Keeps invocation code constant and permits custom builds, but cannot select
   limits for ordinary and deep requests handled by the same distributed parser. Use it as the default plus an override.
@@ -179,7 +179,7 @@ APIs while retaining their current defaults and documented reference deviations.
 - **Raise every generated parser's default.** Changes existing resource policy and cannot equate rule calls with
   language-specific nesting. Keep the existing default and distributed-parser deviations.
 - **Iterative generated calls.** Can remove host call-stack dependence, but needs a broader design spanning values,
-  captures, recovery, memoization, Pratt and left recursion, with independent performance gates.
+  captures, recovery, memoization, Operators Rule and left recursion, with independent performance gates.
 - **Retain only the iterative-engine workaround.** Already supports deep parsing but requires an engine dependency
   instead of the standalone generated package and does not expose a standalone per-request policy.
 
@@ -191,7 +191,7 @@ The reference/depth probes above are complete. The implementation adds the follo
   custom defaults, invalid/range errors and last-setting precedence. `TestGenMaxDepth` checks the same CLI defaults
   and confirms invalid options preserve an existing output file.
 - `TestGeneratedDepthOptions` compares small limits with equally configured engines across ordinary recursion,
-  left recursion, Pratt prefixes/RHS operands, first-character dispatch and recovery, both position units and typed
+  left recursion, Operators Rule prefixes/RHS operands, first-character dispatch and recovery, both position units and typed
   direct/conversion output. It also covers sequential pool reuse, concurrent invocations, reentrant option evaluation,
   zero/custom defaults, largest native int, negatives, function-value signatures and nil options.
 - `TestGeneratedDepthNameCollisions` compiles external direct/conversion consumers and checks deterministic
@@ -213,7 +213,7 @@ The complete acceptance checklist is:
   both Go position units,
   typed direct/conversion paths and TypeScript string/byte inputs. Preserve recovery results and Recognize behavior.
 - Use predictable small recursion limits at, below and one call above the boundary. Cover ordinary recursion,
-  Pratt prefix/RHS nesting, left recursion, dispatch and rule-specific parsing against equally configured engines.
+  Operators Rule prefix/RHS nesting, left recursion, dispatch and rule-specific parsing against equally configured engines.
 - Test omitted/zero/explicit defaults, custom generated defaults, lower/higher overrides, negatives, largest Go int, repeated options/last-setting precedence and nil-option behavior,
   and TypeScript exact-integer boundaries/fractions/nonfinite values. Check API and CLI validation before output.
 - Alternate low/high/default pooled calls and successes/failures; test parallel invocation and reentrant action
@@ -224,7 +224,7 @@ The complete acceptance checklist is:
   including alias/direct/conversion result types and function-value consumers. Regenerate all existing parsers,
   run root tests, every parser module/vet and site checks before commit.
 
-## Performance and results
+## Performance and Results
 
 Measurements compare `e45ff82` with the depth-option implementation on the same
 source base, using Go 1.27.1, Node.js 24.19.0, Apple M3 Max and `GOMAXPROCS=4`.
@@ -300,7 +300,7 @@ fixture binaries before measuring `BenchmarkDepthDirect` and
 `BenchmarkDepthOptions`; run `node ts/bench.mjs` separately. Routine raw
 results stay outside Git.
 
-## Limitations and open questions
+## Limitations and Open Questions
 
 The generation-time plus per-invocation scope and preserved 100,000-call default are selected. The Go functional-option form and TypeScript options-aware form are selected;
 compatibility/collision handling, runtime ownership, regression tests and serialized measurements

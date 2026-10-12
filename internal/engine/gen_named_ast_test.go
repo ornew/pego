@@ -11,8 +11,7 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-const namedASTGrammar = `
-type T terminal
+const namedASTGrammar = `type T terminal
 type S struct { T T }
 type U = S | T
 type Alias = T
@@ -23,27 +22,27 @@ type Recovery struct { T T }
 type Items = []S
 type ParseRuleAST struct { T T }
 type ParseRuleAST_ = ParseRuleAST
-def main = t:term -> new ParseRuleAST{T: $t}
-def term: T = "é"
-def aliased: Alias = "é"
-def mixed: Mixed = cst
-def structure = t:term -> new S{T: $t}
-def values = "v" -> new Values{N: 42, Text: "yes", Flag: true}
-def optional = t:term? -> $t
-def items: Items = xs:(s:structure)* -> map($xs, (x) => $x.s)
-def union: U = structure / term
-def cst = "x" "y"
-def open: node = "z"
-def arbitrary: any = "a" -> new S{}
-def abstract: terminal = "t"
-def recursive: S = ("(" s:recursive ")" / s:structure) -> $s
-def abort = x:@"a"* -> new Values{N: 10 / len($x)}
-def recoverStruct: S = structure #recover(skip="?")
-def recoverTerminal = t:(term #recover(skip="?")) -> new Recovery{T: $t}
-def recoverUnion: U = union #recover(skip="?")
-def nonemptyItems: Items = xs:(s:structure)+ -> map($xs, (x) => $x.s)
-def recoverList: Items = nonemptyItems #recover(skip="?")
-def recoveryElements: Items = xs:(s:(structure #recover(skip="?")))+ -> map($xs, (x) => $x.s)
+rule main = t:term => ParseRuleAST{T: $t}
+rule term T = "é"
+rule aliased Alias = "é"
+rule mixed Mixed = cst
+rule structure = t:term => S{T: $t}
+rule values = "v" => Values{N: 42, Text: "yes", Flag: true}
+rule optional = t:term? => $t
+rule items Items = xs:(s:structure)* => map($xs, (x) => $x.s)
+rule union U = structure / term
+rule cst = "x" "y"
+rule open node = "z"
+rule arbitrary any = "a" => S{}
+rule abstract terminal = "t"
+rule recursive S = "(" s:recursive ")" / s:structure => $s
+rule abort = x:"a"* #atomic => Values{N: 10 / len($x)}
+rule recoverStruct S = structure #recover(skip="?")
+rule recoverTerminal = t:term #recover(skip="?") => Recovery{T: $t}
+rule recoverUnion U = union #recover(skip="?")
+rule nonemptyItems Items = xs:(s:structure)+ => map($xs, (x) => $x.s)
+rule recoverList Items = nonemptyItems #recover(skip="?")
+rule recoveryElements Items = xs:(s:structure #recover(skip="?"))+ => map($xs, (x) => $x.s)
 `
 
 func TestGeneratedNamedAST(t *testing.T) {
@@ -55,8 +54,8 @@ func TestGeneratedNamedAST(t *testing.T) {
 		force              bool
 	}{
 		{"direct", "", "main", false}, {"conversion", "", "main", true},
-		{"global-field", "\ntype Unrelated struct { Value node }\n", "main", false},
-		{"field-read", "\ndef fieldRead = s:structure -> $s.T\n", "main", false},
+		{"global-field", "type Unrelated struct { Value node }\n", "main", false},
+		{"field-read", "rule fieldRead = s:structure => $s.T\n", "main", false},
 		{"mixed-start", "", "cst", false},
 	} {
 		t.Run(variant.name, func(t *testing.T) {
@@ -120,7 +119,7 @@ func TestGeneratedNamedASTUntypedAndTS(t *testing.T) {
 }
 
 func TestGeneratedNamedASTPreservesScalarRejection(t *testing.T) {
-	for _, source := range []string{`def main: int = "a"`, `def main = "a" -> 1`, `def main = "a" -> "s"`, `def main = "a" -> true`} {
+	for _, source := range []string{`rule main int = "a"`, `rule main = "a" => 1`, `rule main = "a" => "s"`, `rule main = "a" => true`} {
 		g, err := syntax.Parse(source)
 		if err != nil {
 			t.Fatal(err)
@@ -275,15 +274,14 @@ func TestGeneratedNamedASTSuccessfulNil(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated nil-result consumers")
 	}
-	g, err := syntax.Parse(`
-type T terminal
+	g, err := syntax.Parse(`type T terminal
 type S struct { T T }
 type U = S | T
 type MaybeU = *U
-def term: T = "é"
-def nilAny: any = t:term? -> $t
-def nilNode: *node = t:term? -> $t
-def nilUnion: MaybeU = t:term? -> $t
+rule term T = "é"
+rule nilAny any = t:term? => $t
+rule nilNode *node = t:term? => $t
+rule nilUnion MaybeU = t:term? => $t
 `)
 	if err != nil {
 		t.Fatal(err)

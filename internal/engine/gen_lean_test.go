@@ -18,22 +18,21 @@ func TestGeneratedLeanDepth(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	const src = `
-def main = one
-def one = two
-def two = three
-def three = four
-def four = five
-def five = "é" / "\uFFFD" / "\u{1F600}"
-def cap = x:"é" [text($x) == "é"]
-def assign = [n = 1] "é"
-def cut = "é" -- "!"
-def recovering = "é" #recover(skip="?")
-def expression = pratt {
- operand "é"
- level { prefix "-" }
+	const src = `rule main = one
+rule one = two
+rule two = three
+rule three = four
+rule four = five
+rule five = "é" / "�" / "😀"
+rule cap = x:"é" {text($x) == "é"}
+rule assign = {n := 1} "é"
+rule cut = "é" -- "!"
+rule recovering = "é" #recover(skip="?")
+rule expression = operators {
+    operand "é"
+    level { prefix "-" }
 }
-def left = left "+" "é" / "é"
+rule left = left "+" "é" / "é"
 `
 	g, err := syntax.Parse(src)
 	if err != nil {

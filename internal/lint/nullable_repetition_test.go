@@ -9,8 +9,8 @@ import (
 
 func TestNullableRepetitionProofs(t *testing.T) {
 	for _, minimum := range []int{0, 1, 2, 3} {
-		for _, body := range []string{`_`, `_{0,1}`, `("a" / _)`} {
-			g, err := syntax.Parse(fmt.Sprintf("def main=(%s){%d,}", body, minimum))
+		for _, body := range []string{`_`, `_ #repeat(0,1)`, `("a" / _)`} {
+			g, err := syntax.Parse(fmt.Sprintf("rule main = %s #repeat(%d, )", body, minimum))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -25,7 +25,7 @@ func TestNullableRepetitionProofs(t *testing.T) {
 	// The old proof called this lookahead useless because an unknown-length
 	// successful inner match was repeated until the minimum. Empty text now
 	// stops after the first zero-consumption iteration, so the lookahead works.
-	g, err := syntax.Parse(`def main=!((?^a){0,1}){2}`)
+	g, err := syntax.Parse(`rule main = ![^a] #repeat(0, 1) #repeat(2)`)
 	if err != nil {
 		t.Fatal(err)
 	}

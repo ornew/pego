@@ -1,4 +1,4 @@
-# 16. Start positions and lambdas from chunks in the VMs
+# 16. Start Positions and Lambdas from Chunks in the VMs
 
 - `PUSHPOS` pushed the start position of a sequence, repetition or atomic expression onto the value stack (`[]any`),
   and converting an `int` to an interface allocates for values above 255. It now pushes a `*int` taken from a chunk

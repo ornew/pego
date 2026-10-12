@@ -1,4 +1,4 @@
-# 6. Slab allocation for nodes, child lists and frames (5d03bf2)
+# 6. Slab Allocation for Nodes, Child Lists and Frames (5D03bf2)
 
 - Nodes, child slices and capture frames come from per-parser chunks, in the spirit of an arena: a chunk stays alive
   while any of its nodes is referenced (the lifetime of the parse result). Repetition children are gathered on a

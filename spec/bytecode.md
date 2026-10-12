@@ -9,12 +9,12 @@ The reference implementation is the Go package `internal/engine` (`bytecode.go`,
 
 | Term | Meaning |
 |:--|:--|
-| match code | The instruction sequence that matches input (rule bodies, Pratt parts) |
-| expression code | The instruction sequence that evaluates actions and predicates |
+| match code | The instruction sequence that matches input (rule bodies, Operators Rule parts) |
+| expression code | The instruction sequence that evaluates Value Actions and Predicate Actions |
 | entry stack | The stack of backtrack entries pushed by match instructions ([Failure](#failure)) |
 | expectation | A string describing what was expected at a position, used in syntax errors |
 | farthest failure | The farthest position at which a failure was recorded, together with the set of expectations recorded at that position |
-| level | The Pratt binding level passed to a rule call (`min`); 0 for an ordinary call |
+| level | The Operators Rule binding level passed to a rule call (`min`); 0 for an ordinary call |
 | value-free twin | A copy of a rule compiled so that it builds no value ([Rule table](#rule-table)) |
 | transient rule | A rule that is not memoized in normal parses ([Rule calls](#rule-calls)) |
 
@@ -23,14 +23,14 @@ The reference implementation is the Go package `internal/engine` (`bytecode.go`,
 | Value | Description |
 |:--|:--|
 | Node | Type name, rule name (optional), range `[start, end)`, terminal text, list of children, and fields (name → value). A node also carries a flag that marks it as a terminal. |
-| Integer, string, boolean | Used by actions and predicates |
+| Integer, string, boolean | Used by Value Actions and Predicate Actions |
 | nil | The absence of a value |
 | Function | A lambda: the start of its expression code, its number of parameters, and the locals captured when it was created |
 
 The reserved node types are `Match` (terminal), `Seq`, `List`, `Operator` and `Error`.
 A node is *fresh* only while the body of the rule that created it is executing ([Rule completion](#rule-completion)).
 
-## Input and positions
+## Input and Positions
 
 The input is a sequence of characters. The position unit is chosen for each parse: Unicode code points or UTF-8 bytes.
 Reading a character returns the character (a code point) at the current position and its size in position units. Each invalid UTF-8 byte is read as one U+FFFD character whose size is one unit (one byte, or one code point).
@@ -47,7 +47,7 @@ A module consists of the following tables and code sequences.
 | Field-list table | Lists of field names used by `ENEW` |
 | Scope table | The capture names of a repetition element, in slot order |
 | Rule table | See [Rule table](#rule-table) |
-| Pratt table | See [Pratt table](#pratt-table) |
+| Operators Rule table | See [Operators Rule table](#operators-rule-table) |
 | Match code | A sequence of instructions |
 | Expression code | A sequence of instructions |
 
@@ -64,7 +64,7 @@ Compilation canonicalizes it to -1 before narrowing operands or creating wide
 bound constants. The AST's original field is preserved; serialized bytecode
 uses the existing -1 sentinel for both `REPEAT` and `SCAN` variants.
 
-### Rule table
+### Rule Table
 
 | Item | Description |
 |:--|:--|
@@ -75,16 +75,16 @@ uses the existing -1 sentinel for both `REPEAT` and `SCAN` variants.
 | Body is a sequence | Used to interpret `$n` |
 | Terminal type | Name of the terminal type, or -1 if there is none |
 | Memoize, left-recursion leader, position-dependent | Results of static analysis |
-| Pratt | Index into the Pratt table, or -1 if there is none |
+| Operators Rule | Index into the Operators Rule table, or -1 if there is none |
 | Value-free twin | Whether this entry is a value-free twin (see below). The value of a value-free twin is always nil. |
 | Transient | The rule is not memoized in normal parses ([Rule calls](#rule-calls)) |
 | Variables | Names (string table indices, sorted) of the variables read by predicates in the rule or the rules it calls; memo entries are keyed by their values |
 
-**Value-free twins.** When a rule that returns a CST is called from a place where its value is discarded (`@`, `-`, `!`, or a value-free body), the compiler compiles a second version of its body that builds no value. The twin is placed in the rule table after all original rules, and the `CALL` refers to it. The twin has the same name as the original rule; lookups of a start rule by name ignore twins. Because the twin matches the same input in the same way, results do not change. Rules that belong to a left-recursive cycle have no twin.
+**Value-free twins.** When a rule that returns a CST is called from a place where its value is discarded (`#atomic`, `-`, `!`, or a value-free body), the compiler compiles a second version of its body that builds no value. The twin is placed in the rule table after all original rules, and the `CALL` refers to it. The twin has the same name as the original rule; lookups of a start rule by name ignore twins. Because the twin matches the same input in the same way, results do not change. Rules that belong to a left-recursive cycle have no twin.
 
 **Value-free bodies.** The body of a terminal-type rule, and the body of a rule whose action does not refer to `$n`, are compiled without building values. Capture targets still build their values.
 
-### Pratt table
+### Operators Rule Table
 
 | Item | Description |
 |:--|:--|
@@ -96,7 +96,7 @@ A *line* has the start of its code in the match code (the code pushes one value 
 
 Operator kinds are encoded as 0 = prefix, 1 = postfix, 2 = infix. Associativity is encoded as 0 = left, 1 = right, 2 = none.
 
-## VM state
+## VM State
 
 | State | Description |
 |:--|:--|
@@ -134,7 +134,7 @@ When an instruction fails, the VM pops entries from the entry stack of the curre
 | Recovery | `RECOVER` | See [Recovery](#recovery). |
 | Skip | Recovery handling | Restore, add the expectations recorded inside to the farthest failure, and continue failing. |
 
-## Match instructions
+## Match Instructions
 
 `b` denotes an operand that selects whether the instruction pushes a value (1) or not (0). Matching behaves the same either way.
 
@@ -166,7 +166,7 @@ When an instruction fails, the VM pops entries from the entry stack of the curre
 | 20 | `LOOK` | A target, B neg | Save the state, push a lookahead entry and increment `silent`. A is used only by a negative lookahead (B = 1). |
 | 21 | `ENDLOOK` | A neg | The inner expression succeeded. Positive: remove the entry, restore `silent`, restore only `pos` and the value-stack height, and continue. Negative: restore `silent`, restore the state, and fail. |
 | 22 | `CALL` | A rule, B level, C keep | Call rule A at level B ([Rule calls](#rule-calls)). On success, push the value if keep is 1. |
-| 23 | `PRATT` | A table | Parse the [Pratt expression](#pratt-expressions) A at level `min` and push its value. `min` is the level of the `CALL` that invoked this body. |
+| 23 | `OPERATORS_RULE` | A table | Parse Operators Rule table A at level `min` and push its value. `min` is the level of the `CALL` that invoked this body. |
 | 24 | `PRED` | A expression | Evaluate expression code A. Fail if evaluation produces an error or `false`. |
 | 25 | `ASSIGN` | A name, B expression | Evaluate expression code B. Fail on error; otherwise add variable A (a string index) to the environment. |
 | 26 | `LABEL` | A message | Save the farthest failure, reset it to (current position, empty), and push a label entry. |
@@ -175,7 +175,7 @@ When an instruction fails, the VM pops entries from the entry stack of the curre
 | 29 | `ENDRECOVER` | A target | The inner expression succeeded. Remove the entry, merge the recorded expectations back as for `ENDLABEL`, and jump to A. |
 | 30 | `ENDSKIP` | A b | The skip succeeded. Fail if it consumed no input. Otherwise add the error to the recovered errors and, if b, push an `Error` node. |
 | 31 | `RETURN` | | The rule body succeeded. |
-| 32 | `END` | | A Pratt part succeeded. |
+| 32 | `END` | | An Operators Rule part succeeded. |
 
 **Streaming.** `NEXT` with mode 2 is emitted only for the repetition marked `#stream` in the start rule. When the VM is parsing a stream and this repetition runs in the start rule's body (call depth 1), the element value is not kept: it is passed to the consumer (no longer fresh), the input up to the current position is committed (earlier input and memo entries are discarded; see [design record 007](../docs/design/007-streaming-and-incremental-parsing.md)), and the loop exits if the iteration consumed no input and otherwise jumps to A. On reentry, `ITER` enforces the finite maximum before executing another element; a zero maximum executes no elements. In any other parse, mode 2 behaves like mode 1.
 
@@ -189,7 +189,7 @@ When a recovery entry is popped on failure, the VM:
 
 `ENDSKIP` builds a syntax error from the failure held by the skip entry. The `Error` node spans from the start of the recovery to the current position; its text is the text of that range and its `message` field is the string form of the syntax error.
 
-## Rule calls
+## Rule Calls
 
 `CALL r, min` calls rule r as follows. The call is memoized if the rule is a leader, or if it is marked for memoization and is not transient. In an incremental parse, a transient rule is memoized when it is marked for memoization, so that results from the previous parse can be reused.
 
@@ -201,13 +201,13 @@ A rule is marked transient when it calls no other rule, or when it is referenced
 4. If the call is memoized, store in the memo the result, the end position, the recovered errors, whether the call ran inside a lookahead, and the expectations recorded inside; then merge those expectations into the saved farthest failure and restore it.
 5. On failure, reset the position to the start position.
 
-### Body evaluation
+### Body Evaluation
 
 To evaluate a body, the VM creates a new frame (sized for the rule's scope), saves the frame, the environment and the length of the capture trail, and runs the body's code.
 While the body runs, it uses its own base of the entry stack and of the value stack.
 When the body finishes, the VM restores the frame and the capture trail; on success, it performs [rule completion](#rule-completion); finally it restores the environment, so variables defined in the body are not visible to the caller.
 
-### Left recursion
+### Left Recursion
 
 A leader rule is evaluated as follows:
 
@@ -216,7 +216,7 @@ A leader rule is evaluated as follows:
 3. If the body fails, or does not advance beyond the previous success, stop. Otherwise store the result in the memo, marked as growing, and go back to step 2.
 4. Finalize the last result (clear the growing mark) and return it.
 
-### Rule completion
+### Rule Completion
 
 The value of the rule is built from the body value v and the start position:
 
@@ -226,9 +226,9 @@ The value of the rule is built from the body value v and the start position:
 
 **Attaching captures:** if no capture is non-nil, do nothing. If v is nil, is not fresh, or is itself one of the captures, wrap v in a `Seq` whose only child is v, whose range runs from the start position to the current position, and which is fresh. Then add each non-nil capture as a field under its name.
 
-## Pratt expressions
+## Operators Rule
 
-The algorithm is the same as `prattParse` in the closure backend; see the parsing rules in [Pratt Expressions](pratt.md#parsing-rules). Each part's code runs with its own entry-stack base and frame.
+The algorithm is the same as `operatorsRuleParse` in the closure backend; see the parsing rules in [Operators Rule](operators-rule.md#parsing-rules). Each part's code runs with its own entry-stack base and frame.
 
 - **Skip:** increment `silent`, run the skip code, and on failure reset the position.
 - **Longest match:** for each candidate operator, save the state, run the line's code in a new frame, and on success record the end position, the value, the frame, the environment, whether a cut was passed, and the recovered errors; then restore the state (writing the recorded captures back into the frame). A prefix or postfix candidate that succeeds without consuming input is treated as not matching. Select the candidate that advanced farthest; on a tie, select the one declared first. Also record whether some candidate failed after passing a cut, including an empty prefix/postfix match rejected as a candidate. A successful selected candidate takes precedence over this aggregate failure; each candidate's cut scope is isolated.
@@ -236,18 +236,18 @@ The algorithm is the same as `prattParse` in the closure backend; see the parsin
 - **Tail:** after skip, try the longest match among the infix and postfix operators. If there is no candidate, stop (or fail, if a candidate failed after a cut). If the operator's level is less than or equal to `min`, or the operator is non-associative and a non-associative operator of the same level was just applied, backtrack and stop. A postfix operator is applied immediately. For an infix operator, parse the right operand at the operator's level (level - 1 for a right-associative operator); if that fails, fail if a cut was passed, and otherwise backtrack and stop.
 - **Values:** if the operator has an action, evaluate it with local 0 = `$lhs`, 1 = `$rhs` and 2 = `$op` (a `Match` of the operator part's text). Otherwise build an `Operator` node whose children are `[op, rhs]`, `[lhs, op]` or `[lhs, op, rhs]` according to the operator kind, whose `operator` field is the operator's index, and which carries the rule name. The value of an operand is its action's result if it has an action; otherwise its captures are attached and, if it is fresh, it is given the rule name.
 
-## Execution models
+## Execution Models
 
-A runtime implements one or both of two execution models, which differ in how rule calls and Pratt expressions are executed. Both must produce the same results.
+A runtime implements one or both of two execution models, which differ in how rule calls and the Operators Rule are executed. Both must produce the same results.
 
-- **Recursive model:** `CALL` and `PRATT` invoke the procedures in [Rule calls](#rule-calls) and [Pratt expressions](#pratt-expressions) as host-language functions. The maximum nesting depth is bounded by the host stack.
-- **Iterative model:** execution suspends at `CALL` and `PRATT` and resumes when the result is available (after a `CALL`, on success it pushes the value if keep is 1 and continues with the next instruction; on failure it proceeds as in [Failure](#failure)). Rule calls, left-recursion growth, the Pratt loop, longest match and skip are implemented as state machines whose state is kept in stack entries, and they perform the steps above in the same order. Host stack usage is constant, independent of how deeply the input nests.
+- **Recursive model:** `CALL` and `OPERATORS_RULE` invoke the procedures in [Rule calls](#rule-calls) and [Operators Rule](#operators-rule) as host-language functions. The maximum nesting depth is bounded by the host stack.
+- **Iterative model:** execution suspends at `CALL` and `OPERATORS_RULE` and resumes when the result is available (after a `CALL`, on success it pushes the value if keep is 1 and continues with the next instruction; on failure it proceeds as in [Failure](#failure)). Rule calls, left-recursion growth, the Operators Rule loop, longest match and skip are implemented as state machines whose state is kept in stack entries, and they perform the steps above in the same order. Host stack usage is constant, independent of how deeply the input nests.
 
 In the reference implementation, both models share the instruction interpreter (`step`) and the stages of a rule call (`callBegin`, `growBegin`, `growStep`, `growEnd`, `invokeBegin`, `invokeEnd`, `callEnd`); they differ only in the order in which these are invoked (`vm.go`, `ivm.go`).
 The reference implementation also limits the nesting depth of rule calls (100,000 by default, 10,000,000 for the iterative model; configurable with `pego.WithMaxDepth`) and reports a parse error when the limit is exceeded.
 Actions and predicates may be evaluated with host function calls in either model, because their nesting depth is fixed by the grammar and does not depend on the input.
 
-## Expression code
+## Expression Code
 
 Actions and predicates are evaluated by stack-based expression code. An evaluation error in an action is an error of the whole parse (`action in <rule name>: <message>`); in a predicate it is a failure.
 
@@ -283,14 +283,14 @@ Calling a function evaluates its code from its start, with the locals captured a
 
 Instructions 118–123 are shortcuts with the same results as the general instructions. The reference compiler emits `ETEXTCHK` after each operand and `ETEXTEQ` for `text(a) == text(b)` and `text(a) != text(b)`, which compares the texts without making them values, and `ELISTBEGIN`, `ELISTPUSH`/`EMAPPUSH` per argument and `ELISTEND` for a `concat` call whose arguments are all `list`, `map` or such `concat` calls, which builds no intermediate list. In both cases the errors arise in the same order as with `ECALL`.
 
-Built-in function indices: 0 `len`, 1 `text`, 2 `foldl`, 3 `foldr`, 4 `map`, 5 `list`, 6 `concat`. Their semantics are defined in [Actions](actions.md#built-in-functions).
+Built-in function indices: 0 `len`, 1 `text`, 2 `foldl`, 3 `foldr`, 4 `map`, 5 `list`, 6 `concat`. Their semantics are defined in [Actions](actions.md#operators-and-functions).
 
-## Error messages
+## Error Messages
 
-A syntax error (see [Syntax errors](parsing.md#syntax-errors)) is formatted as `line:column: syntax error: expected A, B` (expectations sorted lexicographically). If `#error` messages apply, it is formatted as `line:column: message` (multiple messages joined with `; `).
-Expectation strings are those the compiler placed in the string table: literals in quotes, character classes in `(?...)` form, `any character`, and so on.
+A syntax error (see [Syntax errors](parsing.md#syntax-errors)) is formatted as `line:column: syntax error: expected A, B` (expectations sorted lexicographically). If `@error` messages apply, it is formatted as `line:column: message` (multiple messages joined with `; `).
+Expectation strings are those the compiler placed in the string table: literals in quotes, character classes in `[...]` form, `any character`, and so on.
 
-## File format
+## File Format
 
 A module is stored in the `.pegoc` version 2 format. Integers are variable-length: unsigned integers use LEB128 and signed integers use zigzag-encoded LEB128. A boolean is one byte (0 or 1).
 
@@ -312,16 +312,16 @@ The module is laid out in the following order. A *list* is a count (unsigned) fo
 2. Character class table: a list of (negated, expectation string, number of ranges (unsigned), followed by the lower and upper bound of each range).
 3. Type table: a list of (name, terminal, list of field names).
 4. Field-list table, then scope table: each a list of lists of string indices.
-5. Rule table: a list of (name, body, scope, action, body is a sequence, terminal type, memoize, leader, position-dependent, Pratt, value-free twin, transient, variables).
-6. Pratt table: a list of (skip, list of operand lines, list of prefix operators, list of infix and postfix operators). A line is (start, scope, action, body is a sequence); an operator is (index, kind, associativity, level, line).
+5. Rule table: a list of (name, body, scope, action, body is a sequence, terminal type, memoize, leader, position-dependent, Operators Rule, value-free twin, transient, variables).
+6. Operators Rule table: a list of (skip, list of operand lines, list of prefix operators, list of infix and postfix operators). A line is (start, scope, action, body is a sequence); an operator is (index, kind, associativity, level, line).
 7. Match code, then expression code: each a list of instructions (opcode as 1 byte, then `A`, `B`, `C`).
 
-### Load-time validation
+### Load-Time Validation
 
 On load, a runtime checks the following and rejects the file if any check fails:
 
 - The checksum, the version and the instruction-set version are valid, and no data remains after the end.
-- Every reference in the tables and instructions (strings, character classes, scopes, field lists, rules, Pratt tables, expression code, built-in functions) is in range.
+- Every reference in the tables and instructions (strings, character classes, scopes, field lists, rules, Operators Rule tables, expression code, built-in functions) is in range.
 - Every opcode is known, and every flag operand is within its range.
 - Wide bounds reference `EINT` constants, fit the runtime's implementation `int`, and satisfy minimum ≥ 0 and maximum = -1 or maximum ≥ minimum. Wide instructions require instruction-set version 4.
 - Every jump target is forward. Only `NEXT` jumps backward. The target of `EFUNC` is also forward.

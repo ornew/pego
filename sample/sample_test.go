@@ -204,12 +204,12 @@ func TestRareClasses(t *testing.T) {
 		class string
 		want  []string
 	}{
-		{`(?^\u{0}-\u{10fffe})`, []string{"\U0010FFFF"}},
-		{`(?^\u{0}-\u{2fff}\u{3001}-\u{10ffff})`, []string{"\u3000"}},
-		{`(?\u{d7ff}-\u{e000})`, []string{"\uD7FF", "\uE000"}},
-		{`(?^\u{20}-\u{10ffff}\u{0}-\u{1d})`, []string{"\x1e", "\x1f"}},
+		{`[^\u{0}-\u{10fffe}]`, []string{"\U0010FFFF"}},
+		{`[^\u{0}-⿿、-\u{10ffff}]`, []string{"\u3000"}},
+		{`[\u{d7ff}-\u{e000}]`, []string{"\uD7FF", "\uE000"}},
+		{`[^ -\u{10ffff}\u{0}-\u{1d}]`, []string{"\x1e", "\x1f"}},
 	} {
-		p := compile(t, "def main = "+c.class+" $$")
+		p := compile(t, "rule main = "+c.class+" $$")
 		inputs, err := sample.Generate(p, 5, sample.WithSeed(1))
 		if err != nil {
 			t.Errorf("%s: %v", c.class, err)
@@ -229,7 +229,7 @@ func TestRareClasses(t *testing.T) {
 
 func TestNoInvalid(t *testing.T) {
 	// Every input is valid: no mutation is rejected, and the error says so.
-	g, err := sample.New(compile(t, `def main = .*`), sample.WithAttempts(5))
+	g, err := sample.New(compile(t, `rule main = .*`), sample.WithAttempts(5))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -237,7 +237,7 @@ func TestNoInvalid(t *testing.T) {
 		t.Errorf("got %v", err)
 	}
 	// No valid input to mutate.
-	g, err = sample.New(compile(t, `def main = "a"* "a"`), sample.WithAttempts(5))
+	g, err = sample.New(compile(t, `rule main = "a"* "a"`), sample.WithAttempts(5))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -254,62 +254,62 @@ func TestPEGSemantics(t *testing.T) {
 		// check, if set, is called with each input.
 		check func(t *testing.T, in string)
 	}{
-		{"greedy repetition before an overlapping element", `def main = (?a-c)* (?b-z) (?0-9)`, func(t *testing.T, in string) {
+		{"greedy repetition before an overlapping element", `rule main = [a-c]* [b-z] [0-9]`, func(t *testing.T, in string) {
 			if c := in[len(in)-2]; c < 'd' {
 				t.Errorf("got %q", in)
 			}
 		}},
-		{"ordered choice shadows a longer alternative", `def main = ("a" / "ab") "c"`, func(t *testing.T, in string) {
+		{"ordered choice shadows a longer alternative", `rule main = ("a" / "ab") "c"`, func(t *testing.T, in string) {
 			if in != "ac" {
 				t.Errorf("got %q", in)
 			}
 		}},
-		{"negative lookahead", `def main = ident (" " ident)*
-def ident = !kw @(?a-z)+
-def kw = ("if" / "in") !(?a-z)`, nil},
-		{"positive lookahead with a capture and a predicate", `def main = &(n:@(?0-9)) [len($n) == 1] (?0-9)+ ";"`, nil},
-		{"negated classes and multi-byte ranges", `def main = (?^a-z|\n)+ "|" (?\u{3040}-\u{309f}\u{1F600}-\u{1F64F})+ .`, nil},
-		{"anchors", `def main = ^^ (^ (?a-z)+ $ "\n")* $$`, nil},
-		{"captures, atomic and discard", `def main = k:@(?a-z)+ -"=" v:(?0-9)+ -(?;,)?`, nil},
-		{"variables", `def main = [n = 2] item item?
-def item = s:@" "* [len($s) == n] "x"`, func(t *testing.T, in string) {
+		{"negative lookahead", `rule main = ident (" " ident)*
+rule ident = !kw [a-z]+ #atomic
+rule kw = ("if" / "in") ![a-z]`, nil},
+		{"positive lookahead with a capture and a predicate", `rule main = &n:[0-9] #atomic {len($n) == 1} [0-9]+ ";"`, nil},
+		{"negated classes and multi-byte ranges", `rule main = [^a-z|\n]+ "|" [\u{3040}-ゟ😀-🙏]+ .`, nil},
+		{"anchors", `rule main = ^^ (^ [a-z]+ $ "\n")* $$`, nil},
+		{"captures, atomic and discard", `rule main = k:[a-z]+ #atomic -"=" v:[0-9]+ -[;,]?`, nil},
+		{"variables", `rule main = {n := 2} item item?
+rule item = s:" "* #atomic {len($s) == n} "x"`, func(t *testing.T, in string) {
 			if !strings.HasPrefix(in, "  x") {
 				t.Errorf("got %q", in)
 			}
 		}},
-		{"matching texts", `def main = "<" a:name ">" "</" b:name ">" [text($a) == text($b)]
-def name = @(?a-z)+`, nil},
-		{"left recursion", `def main = e $$
-def e = e "+" t / e "-" t / t
-def t = t "*" f / f
-def f = "(" e ")" / (?0-9)`, nil},
-		{"Pratt levels, non-associative and level-restricted calls", `def main = e $$
-def e = pratt {
+		{"matching texts", `rule main = "<" a:name ">" "</" b:name ">" {text($a) == text($b)}
+rule name = [a-z]+ #atomic`, nil},
+		{"left recursion", `rule main = e $$
+rule e = e "+" t / e "-" t / t
+rule t = t "*" f / f
+rule f = "(" e ")" / [0-9]`, nil},
+		{"OperatorsRule levels, non-associative and level-restricted calls", `rule main = e $$
+rule e = operators {
     skip " "*
-    operand (?0-9)+
+    operand [0-9]+
     operand "(" e ")"
-    operand "f(" e(add) ("," e(add))* ")"
+    operand "f(" level(e, add) ("," level(e, add))* ")"
     level { infix right "?" e ":" }
     level { infix none "==" / "<" }
     level add { infix left "+" / "-" }
     level { prefix "-" / "!" }
     level { postfix "!" / "[" e "]" }
 }`, nil},
-		{"unknown left side of ||, undefined variable on the right", `def main = e:num [text($e) != "" || z == 1]
-def num = d:(?0-9) -> $d`, nil},
-		{"an earlier alternative that always matches", `def main = x x x x x x x x x x x x x x x x x x x x "z" $$
-def x = "a"? / "b"?`, func(t *testing.T, in string) {
+		{"unknown left side of ||, undefined variable on the right", `rule main = e:num {text($e) != "" || z == 1}
+rule num = d:[0-9] => $d`, nil},
+		{"an earlier alternative that always matches", `rule main = x x x x x x x x x x x x x x x x x x x x "z" $$
+rule x = "a"? / "b"?`, func(t *testing.T, in string) {
 			if strings.Contains(in, "b") {
 				t.Errorf("got %q", in)
 			}
 		}},
-		{"a lookahead with wildcards before a literal", `def main = &(. .) "ab" $$`, nil},
-		{"empty iteration meets the minimum after consumption", `def main = ("a" / _){2} "q"`, nil},
-		{"negative lookahead of an unmet empty minimum", `def main = !_{2} "b" $$`, nil},
+		{"a lookahead with wildcards before a literal", `rule main = &(. .) "ab" $$`, nil},
+		{"empty iteration meets the minimum after consumption", `rule main = ("a" / _) #repeat(2) "q"`, nil},
+		{"negative lookahead of an unmet empty minimum", `rule main = !_ #repeat(2) "b" $$`, nil},
 		// A repetition element sees only its own captures: outer ones are read through a variable.
-		{"repetition elements read enclosing captures through variables", `def main = n:"a" [k = len($n)] ([k == 1] "x")* "y"`, nil},
-		{"top, cut, attributes", `def main = (stmt -- ";")* _ $$
-def stmt = (@"x" / "y" "z") #error(message="expected a statement") #recover(skip=(?^;)+)`, nil},
+		{"repetition elements read enclosing captures through variables", `rule main = n:"a" {k := len($n)} ({k == 1} "x")* "y"`, nil},
+		{"top, cut, attributes", `rule main = (stmt -- ";")* _ $$
+rule stmt = ("x" #atomic / "y" "z") @error(message="expected a statement") #recover(skip=[^;]+)`, nil},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -331,13 +331,19 @@ def stmt = (@"x" / "y" "z") #error(message="expected a statement") #recover(skip
 // TestReviewRegressions checks inputs that the generator used to prune although the parser accepts them.
 func TestReviewRegressions(t *testing.T) {
 	for _, c := range []struct{ src, want string }{
-		{`def main = ("a"?){2} "b"`, "ab"},
-		{`def main = n:"a" [k = len($n)] ([k == 1] "x")* "y"`, "axy"},
-		// The parser ends a Pratt expression before an infix operator that no operand follows.
-		{`def main = e "+" $$
-def e = pratt { operand "a" level { infix left "+" } }`, "a+"},
-		{`def main = "[" e ","? "]" $$
-def e = pratt { operand "a" level { infix left "," } }`, "[a,]"},
+		{`rule main = "a"? #repeat(2) "b"`, "ab"},
+		{`rule main = n:"a" {k := len($n)} ({k == 1} "x")* "y"`, "axy"},
+		// The parser ends an Operators Rule expression before an infix operator that no operand follows.
+		{`rule main = e "+" $$
+rule e = operators {
+    operand "a"
+    level { infix left "+" }
+}`, "a+"},
+		{`rule main = "[" e ","? "]" $$
+rule e = operators {
+    operand "a"
+    level { infix left "," }
+}`, "[a,]"},
 	} {
 		inputs, err := sample.Generate(compile(t, c.src), 20, sample.WithSeed(1))
 		if err != nil {
@@ -350,7 +356,7 @@ def e = pratt { operand "a" level { infix left "," } }`, "[a,]"},
 }
 
 func TestNullableMinimumHasNoSample(t *testing.T) {
-	p := compile(t, `def main = _{3} "q"`)
+	p := compile(t, `rule main = _ #repeat(3) "q"`)
 	if _, err := sample.Generate(p, 1, sample.WithSeed(1), sample.WithAttempts(5)); !errors.Is(err, sample.ErrNoInput) {
 		t.Errorf("got %v, want ErrNoInput", err)
 	}
@@ -358,8 +364,8 @@ func TestNullableMinimumHasNoSample(t *testing.T) {
 
 func BenchmarkSampleRepetitionControl(b *testing.B) {
 	for _, tc := range []struct{ name, source string }{
-		{"Ordinary", `def main = ("a" "b"?){2,8} $$`},
-		{"NullableMinimumOne", `def main = ("a" / _){1,8} $$`},
+		{"Ordinary", `rule main = ("a" "b"?) #repeat(2, 8) $$`},
+		{"NullableMinimumOne", `rule main = ("a" / _) #repeat(1, 8) $$`},
 	} {
 		p, err := pego.CompileSource(tc.source, "main")
 		if err != nil {
@@ -382,8 +388,8 @@ func BenchmarkSampleRepetitionControl(b *testing.B) {
 func TestBudgetBoundsTime(t *testing.T) {
 	// Many pending checks over a growing text (one attempt took 16 s when only generation steps
 	// counted).
-	p := compile(t, `def main = ("c" r ";")* ";"
-def r = "a" (";" r / ";" "b")*`)
+	p := compile(t, `rule main = ("c" r ";")* ";"
+rule r = "a" (";" r / ";" "b")*`)
 	g, err := sample.New(p, sample.WithSeed(2), sample.WithAttempts(1))
 	if err != nil {
 		t.Fatal(err)
@@ -394,8 +400,8 @@ def r = "a" (";" r / ";" "b")*`)
 		t.Errorf("one attempt took %v", d)
 	}
 	// A lookahead per character over the whole text: cubic work in the length.
-	p = compile(t, `def main = (!(x* "b") "a"){200} "c" $$
-def x = "a" / "c"`)
+	p = compile(t, `rule main = (!(x* "b") "a") #repeat(200) "c" $$
+rule x = "a" / "c"`)
 	if _, err := sample.Generate(p, 1); err != nil {
 		t.Error(err)
 	}
@@ -405,8 +411,8 @@ def x = "a" / "c"`)
 // never takes when the search fails on it late, without a candidate to reject: the last alternative
 // below is dead, since the first one matches whatever it starts with.
 func TestCoverageDeadAlternative(t *testing.T) {
-	p := compile(t, `def main = s $$
-def s = "(" s ")" / "x" / "y" / "(" s ")" "!"`)
+	p := compile(t, `rule main = s $$
+rule s = "(" s ")" / "x" / "y" / "(" s ")" "!"`)
 	plain, err := sample.Generate(p, 20, sample.WithSeed(1))
 	if err != nil {
 		t.Fatal(err)
@@ -422,7 +428,7 @@ def s = "(" s ")" / "x" / "y" / "(" s ")" "!"`)
 
 func TestNoInput(t *testing.T) {
 	// No input parses: the repetition takes every "a", and the second "a" never matches.
-	p := compile(t, `def main = "a"* "a"`)
+	p := compile(t, `rule main = "a"* "a"`)
 	g, err := sample.New(p, sample.WithAttempts(5))
 	if err != nil {
 		t.Fatal(err)
@@ -434,11 +440,11 @@ func TestNoInput(t *testing.T) {
 		t.Errorf("stats %+v", s)
 	}
 	// A start rule that can never match.
-	if _, err := sample.New(compile(t, `def main = "a" _|_`)); err == nil {
+	if _, err := sample.New(compile(t, `rule main = "a" _|_`)); err == nil {
 		t.Error("expected an error for a start rule that can never match")
 	}
 	// A parser without the grammar AST.
-	data, err := compile(t, `def main = "a"`).Marshal(pego.WithoutAST())
+	data, err := compile(t, `rule main = "a"`).Marshal(pego.WithoutAST())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -453,7 +459,7 @@ func TestNoInput(t *testing.T) {
 
 func TestFewInputs(t *testing.T) {
 	// A grammar that accepts three inputs.
-	p := compile(t, `def main = "a" / "b" / "c"`)
+	p := compile(t, `rule main = "a" / "b" / "c"`)
 	inputs, err := sample.Generate(p, 10, sample.WithAttempts(20))
 	if err != nil {
 		t.Fatal(err)
@@ -465,8 +471,8 @@ func TestFewInputs(t *testing.T) {
 }
 
 func TestLimits(t *testing.T) {
-	p := compile(t, `def main = n $$
-def n = "(" n ")" / "[" n* "]" / "x"`)
+	p := compile(t, `rule main = n $$
+rule n = "(" n ")" / "[" n* "]" / "x"`)
 	depth := func(s string) int {
 		d, m := 0, 0
 		for _, r := range s {
@@ -519,13 +525,13 @@ def n = "(" n ")" / "[" n* "]" / "x"`)
 // TestHardLimits checks the hard limits (nesting, iterations, budget) and that their options raise them.
 func TestHardLimits(t *testing.T) {
 	// Deeper nesting than WithMaxDepth when a predicate requires it, up to WithMaxDepth + 8.
-	p := compile(t, `def main = [d = 0] e $$
-def e = [d >= 12] "x" / "(" [d = d + 1] e ")"`)
+	p := compile(t, `rule main = {d := 0} e $$
+rule e = {d >= 12} "x" / "(" {d := d + 1} e ")"`)
 	if inputs, err := sample.Generate(p, 1); err != nil || len(inputs[0]) != 25 {
 		t.Errorf("depth 12: got %q, %v", inputs, err)
 	}
-	p = compile(t, `def main = [d = 0] e $$
-def e = [d >= 15] "x" / "(" [d = d + 1] e ")"`)
+	p = compile(t, `rule main = {d := 0} e $$
+rule e = {d >= 15} "x" / "(" {d := d + 1} e ")"`)
 	if _, err := sample.Generate(p, 1); !errors.Is(err, sample.ErrNoInput) {
 		t.Errorf("depth 15, default: got %v", err)
 	}
@@ -533,12 +539,12 @@ def e = [d >= 15] "x" / "(" [d = d + 1] e ")"`)
 		t.Errorf("depth 15, max depth 7: got %q, %v", inputs, err)
 	}
 	// More iterations than the default limit (28) with a larger WithMaxRepeat.
-	p = compile(t, `def main = x:"a"* [len($x) == 29] $$`)
+	p = compile(t, `rule main = x:"a"* {len($x) == 29} $$`)
 	if inputs, err := sample.Generate(p, 1, sample.WithMaxRepeat(4)); err != nil || len(inputs[0]) != 29 {
 		t.Errorf("29 iterations: got %q, %v", inputs, err)
 	}
 	// More steps than the default budget with WithBudget.
-	p = compile(t, `def main = "a"{25000} $$`)
+	p = compile(t, `rule main = "a" #repeat(25000) $$`)
 	if _, err := sample.Generate(p, 1, sample.WithAttempts(1)); !errors.Is(err, sample.ErrNoInput) {
 		t.Errorf("default budget: got %v", err)
 	}
@@ -550,9 +556,9 @@ def e = [d >= 15] "x" / "(" [d = d + 1] e ")"`)
 // TestShortestWay checks that past the length limit the generator prefers the shortest text, not the
 // fewest rule calls.
 func TestShortestWay(t *testing.T) {
-	p := compile(t, `def main = "(" e ")" $$
-def e = "`+strings.Repeat("x", 96)+`" / y
-def y = "y"`)
+	p := compile(t, `rule main = "(" e ")" $$
+rule e = "`+strings.Repeat("x", 96)+`" / y
+rule y = "y"`)
 	inputs, err := sample.Generate(p, 3, sample.WithMaxLen(0), sample.WithMaxDepth(0))
 	if err != nil || !slices.Equal(inputs, []string{"(y)"}) {
 		t.Errorf("got %q, %v", inputs, err)
@@ -560,13 +566,13 @@ def y = "y"`)
 }
 
 func TestCoverageReport(t *testing.T) {
-	p := compile(t, `def main = a / b / "c" _|_
-def a = "a" !kw
-def b = "b" #recover(skip=skipped)
-def kw = "k"
-def skipped = (?^;)+
-def unused = "u"
-def never = "n" _|_`)
+	p := compile(t, `rule main = a / b / "c" _|_
+rule a = "a" !kw
+rule b = "b" #recover(skip=skipped)
+rule kw = "k"
+rule skipped = [^;]+
+rule unused = "u"
+rule never = "n" _|_`)
 	g, err := sample.New(p, sample.WithCoverage(), sample.WithSeed(1))
 	if err != nil {
 		t.Fatal(err)
@@ -591,8 +597,8 @@ def never = "n" _|_`)
 
 	// Targets inside expressions that can never match are not counted, and rules called only there are
 	// unreachable.
-	p = compile(t, `def main = ("(" ("a" / "b") _|_) / r _|_ / "c"
-def r = "x" / "y"`)
+	p = compile(t, `rule main = "(" ("a" / "b") _|_ / r _|_ / "c"
+rule r = "x" / "y"`)
 	g, err = sample.New(p, sample.WithSeed(1))
 	if err != nil {
 		t.Fatal(err)
@@ -605,9 +611,13 @@ def r = "x" / "y"`)
 		t.Errorf("got %+v", c)
 	}
 
-	// Operators of Pratt levels that only level-restricted calls skip are not counted.
-	p = compile(t, `def main = e(mul) $$
-def e = pratt { operand "a" level { infix left "+" } level mul { infix left "*" } }`)
+	// Operators of OperatorsRule levels that only level-restricted calls skip are not counted.
+	p = compile(t, `rule main = level(e, mul) $$
+rule e = operators {
+    operand "a"
+    level { infix left "+" }
+    level mul { infix left "*" }
+}`)
 	g, err = sample.New(p, sample.WithSeed(1), sample.WithCoverage())
 	if err != nil {
 		t.Fatal(err)
@@ -620,8 +630,8 @@ def e = pratt { operand "a" level { infix left "+" } level mul { infix left "*" 
 	}
 
 	// A rule that is called but can never match is reported as such, not as unreachable.
-	p = compile(t, `def main = "a" / err
-def err = "b" _|_`)
+	p = compile(t, `rule main = "a" / err
+rule err = "b" _|_`)
 	g, err = sample.New(p)
 	if err != nil {
 		t.Fatal(err)
@@ -632,10 +642,10 @@ def err = "b" _|_`)
 	}
 
 	// Without generating anything, everything reachable is missed.
-	p = compile(t, `def main = x / y
-def x = "x" z?
-def y = "y"
-def z = "z" _|_ / "zz"`)
+	p = compile(t, `rule main = x / y
+rule x = "x" z?
+rule y = "y"
+rule z = "z" _|_ / "zz"`)
 	g, err = sample.New(p)
 	if err != nil {
 		t.Fatal(err)
@@ -662,7 +672,7 @@ func (f *fakeF) Add(args ...any) {
 func (f *fakeF) Fatalf(format string, args ...any) { f.failed = format }
 
 func TestSeed(t *testing.T) {
-	p := compile(t, `def main = (?a-z)+ ("," (?a-z)+)*`)
+	p := compile(t, `rule main = [a-z]+ ("," [a-z]+)*`)
 	f := &fakeF{}
 	got := sample.Seed(f, p, 8, sample.WithSeed(2))
 	if f.failed != "" || len(got) != 8 || !slices.Equal(got, f.added) {
@@ -670,7 +680,7 @@ func TestSeed(t *testing.T) {
 	}
 	checkParse(t, p, got)
 	f = &fakeF{}
-	sample.Seed(f, compile(t, `def main = "a"* "a"`), 3, sample.WithAttempts(2))
+	sample.Seed(f, compile(t, `rule main = "a"* "a"`), 3, sample.WithAttempts(2))
 	if f.failed == "" || len(f.added) != 0 {
 		t.Errorf("expected a failure, got %+v", f)
 	}

@@ -289,7 +289,7 @@ func (a *analysis) hoverAt(off int) (text string, start, end int, ok bool) {
 			}
 			return code("type "+o.name) + "\nUndefined type.", o.start, o.end, true
 		default:
-			return code("def "+o.name) + "\nUndefined rule.", o.start, o.end, true
+			return code("rule "+o.name) + "\nUndefined rule.", o.start, o.end, true
 		}
 	}
 	i := a.tokenAt(off)
@@ -300,8 +300,10 @@ func (a *analysis) hoverAt(off int) (text string, start, end int, ok bool) {
 	class, marked := a.sem[t.start]
 	var b *builtin
 	switch {
-	case i > 0 && a.toks[i-1].Text == "#" && a.toks[i-1].end == t.start:
+	case i > 0 && a.toks[i-1].Text == "@" && a.toks[i-1].end == t.start:
 		b = findBuiltin(attributes, t.Text)
+	case i > 0 && a.toks[i-1].Text == "#" && a.toks[i-1].end == t.start:
+		b = findBuiltin(pragmas, t.Text)
 	case marked && class.typ == semFunction:
 		b = findBuiltin(builtinFuncs, t.Text)
 	case marked && class.typ == semProperty && class.mods&modDefaultLibrary != 0:
@@ -316,16 +318,19 @@ func (a *analysis) hoverAt(off int) (text string, start, end int, ok bool) {
 func code(s string) string { return "```pego\n" + s + "\n```" }
 
 func (a *analysis) ruleHover(d *definition) string {
-	head := "def " + d.name
+	head := "rule " + d.name
 	var note string
 	switch t, inferred, known := a.ruleType(d); {
 	case !known:
 		note = "The type is inferred when the grammar has no errors."
 	case inferred:
-		head += ": " + t
+		head += " " + t
 		note = "Inferred type."
 	default:
-		head += ": " + t
+		head += " " + t
+	}
+	if _, ok := d.rule.Expr.(*grammar.OperatorsRule); ok {
+		head += " = operators { ... }"
 	}
 	parts := []string{code(head)}
 	if note != "" {
@@ -421,9 +426,6 @@ func (a *analysis) checkNewName(kind symKind, old, name string) *rpcError {
 		return fail("%q is not a valid %s name", name, kind)
 	}
 	if kind == kindRule {
-		if syntax.IsKeyword(name) {
-			return fail("%s is a keyword", name)
-		}
 		if a.rules[name] != nil {
 			return fail("rule %s is already defined", name)
 		}

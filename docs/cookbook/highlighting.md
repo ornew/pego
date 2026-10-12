@@ -1,4 +1,4 @@
-# Tokenize source for syntax highlighting
+# Tokenize Source for Syntax Highlighting
 
 **Problem.** You show code in a web page, a documentation tool or an editor widget, and want it highlighted. The text may be
 broken (the user is typing), so the tokenizer must never fail, and every character must end up in some token.
@@ -20,20 +20,20 @@ type Token = Comment | Keyword | Ident | Number | String | Punct | Space | Unkno
 type Tokens struct { Items []Token }
 
 // Every character belongs to a token, so tokenizing never fails, however broken the input is.
-def main: Tokens = ts:token* $$ -> new Tokens{Items: $ts}
+rule main Tokens = ts:token* $$ => Tokens{Items: $ts}
 
-def token: Token = comment / string / number / keyword / ident / punct / space / unknown
+rule token Token = comment / string / number / keyword / ident / punct / space / unknown
 
-def comment: Comment = "--" (?^\n)*
+rule comment Comment = "--" [^\n]*
 // A string that is not closed runs to the end of the line, as an editor would show it.
-def string: String = "'" (?^'\n)* "'"?
-def number: Number = (?0-9)+ ("." (?0-9)+)?
-def keyword: Keyword = ("select" / "from" / "where" / "and" / "or" / "not" / "limit" / "order" / "by") !wordchar
-def ident: Ident = (?a-z_) wordchar*
-def punct: Punct = "<=" / ">=" / "<>" / (?=<>+\-*/,;\(\))
-def space: Space = (? \t\r\n)+
-def unknown: Unknown = .
-def wordchar = (?a-z0-9_)
+rule string String = "'" [^'\n]* "'"?
+rule number Number = [0-9]+ ("." [0-9]+)?
+rule keyword Keyword = ("select" / "from" / "where" / "and" / "or" / "not" / "limit" / "order" / "by") !wordchar
+rule ident Ident = [a-z_] wordchar*
+rule punct Punct = "<=" / ">=" / "<>" / [=<>+\-*/,;\(\)]
+rule space Space = [ \t\r\n]+
+rule unknown Unknown = .
+rule wordchar = [a-z0-9_]
 ```
 
 ```go
@@ -95,7 +95,7 @@ func main() {
 <span class="k">select</span> <span class="err">~</span> <span class="s">&#39;oops &lt;b&gt;</span>
 ```
 
-## How it works
+## How It Works
 
 - **Never fails.** `unknown` is `.`, which matches any character, so a character no other rule takes (`~` here) becomes
   an `Unknown` token and is shown as an error. Without it, one bad character would fail the whole parse.
@@ -117,5 +117,5 @@ func main() {
 - **More precision.** Tokens that depend on what follows (a function name before `(`) are a lookahead away: an `ident`
   rule that ends with `&"("`, under its own type. Tokens that depend on the structure of the language need the real
   grammar, and the highlighter can then take the spans from its tree.
-- **Case-insensitive keywords.** Write the characters as classes (`(?sS)(?eE)...`) or normalize the text first.
+- **Case-insensitive keywords.** Write the characters as classes (`[sS][eE]...`) or normalize the text first.
 - **Text that is edited.** Use a [`Document`](as-you-type.md), so that the tokens before and after an edit are reused.

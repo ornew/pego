@@ -25,31 +25,29 @@ func typedFramedCutCases(t *testing.T) []genCase {
 			}
 			// Move the existing expression and action into a runtime-owned
 			// operand frame, exercising the same cut/rollback contracts.
-			r.Expr = &grammar.Pratt{Operands: []*grammar.PrattOperand{{Expr: r.Expr, Action: r.Action}}}
+			r.Expr = &grammar.OperatorsRule{Operands: []*grammar.OperatorsRuleOperand{{Expr: r.Expr, Action: r.Action}}}
 			r.Action = nil
 			cases = append(cases, genCase{strings.Replace(c.name, "direct_cut", "framed_cut", 1), grammar.Format(g), c.inputs})
 		}
 	}
-	cases = append(cases, genCase{"typed/framed_cut_LR_elements", `
-type Doc struct { Items []Match, N int }
-def main: Doc = e:expr $$ -> $e
-def expr: Doc = (previous:expr ";" -- items:(x:@(?a-z) -- -","){1,3}
-              / items:(x:@(?a-z) -- -","){1,3})
-                -> new Doc{Items: map($items, (e) => $e.x), N: len($items)}
+	cases = append(cases, genCase{"typed/framed_cut_LR_elements", `type Doc struct { Items []Match, N int }
+rule main Doc = e:expr $$ => $e
+rule expr Doc = (
+    previous:expr ";" -- items:(x:[a-z] #atomic -- -",") #repeat(1, 3) / items:(x:[a-z] #atomic -- -",") #repeat(1, 3)
+) => Doc{Items: map($items, (e) => $e.x), N: len($items)}
 `, []string{"a,", "a,b,;c,d,", "a,;", "a", "a,b", "a,;c", "a,;c,d,?", ""}},
-		genCase{"typed/framed_cut_Pratt_longest", `
-type Atom struct { Text string }
+		genCase{"typed/framed_cut_OperatorsRule_longest", `type Atom struct { Text string }
 type Prefix struct { X Expr, Tag int, Text Match }
 type Expr = Atom | Prefix
-def main: Expr = [n = 0] e:expr $$ -> $e
-def expr: Expr = pratt {
+rule main Expr = {n := 0} e:expr $$ => $e
+rule expr Expr = operators {
     skip (" " -- "!")*
-    operand x:@"a" -- -> new Prefix{X: new Atom{Text: "a"}, Tag: n, Text: $x}
-    operand x:@"-x" -- -> new Prefix{X: new Atom{Text: "-x"}, Tag: n, Text: $x}
+    operand x:"a" #atomic -- => Prefix{X: Atom{Text: "a"}, Tag: n, Text: $x}
+    operand x:"-x" #atomic -- => Prefix{X: Atom{Text: "-x"}, Tag: n, Text: $x}
     level {
-        prefix o:@"-" -- [n = 1] "z" -> new Prefix{X: $rhs, Tag: n, Text: $o}
-        prefix o:@"--" -- [n = 2] -> new Prefix{X: $rhs, Tag: n, Text: $o}
-        prefix o:@"--" -- [n = 3] -> new Prefix{X: $rhs, Tag: n, Text: $o}
+        prefix o:"-" #atomic -- {n := 1} "z" => Prefix{X: $rhs, Tag: n, Text: $o}
+        prefix o:"--" #atomic -- {n := 2} => Prefix{X: $rhs, Tag: n, Text: $o}
+        prefix o:"--" #atomic -- {n := 3} => Prefix{X: $rhs, Tag: n, Text: $o}
     }
 }
 `, []string{"a", "-x", "-za", "--a", "---a", "-z", "--", " !a", " a", "-x?", ""}})
@@ -71,7 +69,7 @@ func TestGeneratedTypedFramedCuts(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		marker := "(typed Pratt body inlined)"
+		marker := "(typed OperatorsRule body inlined)"
 		if c.name == "typed/framed_cut_LR_elements" {
 			marker = "(typed LR body inlined)"
 		}

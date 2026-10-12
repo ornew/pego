@@ -1,4 +1,4 @@
-# cel-spec conformance tests
+# Cel-Spec Conformance Tests
 
 The `*.textproto` files and `LICENSE` are copied from the directory `tests/simple/testdata` and the root of
 [google/cel-spec](https://github.com/google/cel-spec), commit 40a3c9007a9305d1f2638d5f538a4e011732cace (the `master`

@@ -1,4 +1,4 @@
-# Test data
+# Test Data
 
 The golden files (`*.txt` with `*.golden`) are written by the engine (`go test ./parsers -update` from the root of
 the repository) and show the shape of the trees; the module's `TestGolden` checks the generated parser against them.

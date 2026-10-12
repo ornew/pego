@@ -1,4 +1,4 @@
-# 52. Projected repetitions in generated `Parse`
+# 52. Projected Repetitions in Generated `Parse`
 
 - The projection of change 48 (a repetition captured only to be mapped to one field of its elements gathers that
   field directly) now applies to the generated parsers' Node runtime too. A review of the typed runtime found the

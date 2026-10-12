@@ -36,7 +36,7 @@ cached, but the first build of a big parser takes a while: the DuckDB program be
 cold build cache (with other builds running), the Go one about 11. They are the output of the
 [code generator](code-generation.md), so what is said there about generated code (its size, its diffs) applies.
 
-## What every parser offers
+## What Every Parser Offers
 
 All ten have the API of a parser generated with `pego gen -types -recognize`
 ([code generation](code-generation.md#the-generated-api)):
@@ -82,7 +82,7 @@ func main() {
 	header, rows, err := csv.Table("id,name\n1,alice\n2,\"bob, jr\"\n")
 	fmt.Println(header, rows, err)
 
-	v, err := yaml.Load("name: pego\ntags: [peg, pratt]\nstars: 42\n")
+	v, err := yaml.Load("name: pego\ntags: [peg, operators-rule]\nstars: 42\n")
 	fmt.Println(v, err)
 
 	_, _, err = csv.Table("id,name\n1\n")
@@ -93,14 +93,14 @@ func main() {
 
 ```
 [id name] [[1 alice] [2 bob, jr]] <nil>
-map[name:pego stars:42 tags:[peg pratt]] <nil>
+map[name:pego stars:42 tags:[peg operators-rule]] <nil>
 true csv: line 2: record has 1 fields, the header has 2
 ```
 
 (The last error is not a syntax error: the input is valid CSV, and `Table` adds the rule that every record has as many
 fields as the header. See [Errors](#errors).)
 
-## Choosing an entry point
+## Choosing an Entry Point
 
 There are four kinds of entry point, and the same input costs different amounts in each:
 
@@ -134,7 +134,7 @@ Use it to avoid allocating, not to save time. These are the numbers of one gramm
 How these compare with the engine's backends is in [benchmarks.md](../benchmarks.md) and
 [performance.md](../performance.md#where-pego-stands).
 
-## Reading the tree
+## Reading the Tree
 
 `ParseAST` returns Go types: a struct for each type of the grammar, and an interface for each union. Walk them with
 type switches, and ask the node for its `Span`. A small program that reports every `port` member of a JSON document that
@@ -214,7 +214,7 @@ func main() {
 ```
 3:14: "port" must be a number
 4:33: "port" must be a number
-error: 4:1: syntax error: expected "\"", (? \t\r\n)
+error: 4:1: syntax error: expected "\"", [ \t\r\n]
 ```
 
 The second document has a trailing comma, so `ParseAST` fails and `check` returns the `SyntaxError`'s position and
@@ -404,7 +404,7 @@ _, err := json.ParseAST(`{"a": [1, 2,]}`)
 var se *json.SyntaxError
 if errors.As(err, &se) {
 	fmt.Println(se.Line, se.Col, se.Message())
-	// 1 13 syntax error: expected "-", "0", "[", "\"", "false", "null", "true", "{", (? \t\r\n), (?1-9)
+	// 1 13 syntax error: expected "-", "0", "[", "\"", "false", "null", "true", "{", [ \t\r\n], [1-9]
 }
 ```
 
@@ -416,11 +416,11 @@ Some parsers return other errors as well, for what the grammar cannot decide: `y
 `Load`), `csv.FieldCountError` (a record of `Table` with another number of fields than the header), and the errors of the
 checks of CEL, Python and CUE. Tell them from syntax errors with `errors.As`, as above.
 
-The messages are made from the grammar, so they read like `expected "\"", (? \t\r\n)` rather than like a compiler's: good
+The messages are made from the grammar, so they read like `expected "\"", [ \t\r\n]` rather than like a compiler's: good
 enough to point at the place, and not always good enough to show a user as they are. Show `Line`, `Col` and the line of
 the input, and treat `Expected` as a hint.
 
-## Conformance and limits
+## Conformance and Limits
 
 A ready-made parser aims to accept what a named reference implementation accepts and to build what it builds, and each
 README says how that was checked and where the two differ (leniencies and deviations are listed, not hidden):
@@ -447,7 +447,7 @@ Limits to plan for:
 - **No recovery.** A parse stops at the first syntax error. For an editor, which needs a tree of the text as it is being
   typed, use the grammar with the engine and `#recover` ([errors and recovery](errors-and-recovery.md)).
 
-## Using the grammar with the engine
+## Using the Grammar with the Engine
 
 The generated Go code gives up what the engine offers: streaming, incremental reparsing, the choice of backend and
 the tools (`pego trace`, `pego profile`, `pego sample`). The grammar each parser is generated from, `<language>.pego`, is
@@ -475,7 +475,7 @@ is generated from the same grammar and tested against it on every backend
 ([parsers/README.md](../../parsers/README.md#development)). The price is the engine's speed against generated code
 ([code generation](code-generation.md#why-generate)) and a dependency on `github.com/ornew/pego`.
 
-## When to write your own
+## When to Write Your Own
 
 If a ready-made parser matches what you need, use it: it has been checked against the language's reference on far more
 input than you will write tests for. Write your own grammar when the language is not here, or when you need a variant:
@@ -485,7 +485,7 @@ examples of large PEGO grammars: [parsers/json/json.pego](../../parsers/json/jso
 licence file). The [getting-started tutorial](../tutorial/getting-started.md) writes a first grammar, and
 [code generation](code-generation.md) turns it into a package like these.
 
-## See also
+## See Also
 
 - [parsers/README.md](../../parsers/README.md): the list of parsers with the specification and the checks of each.
 - [Code generation](code-generation.md): how these parsers are made and what their API is.

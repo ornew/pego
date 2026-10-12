@@ -17,18 +17,19 @@ const (
 	TokenIdent     TokenKind = iota + 1 // identifier or keyword
 	TokenString                         // "..."
 	TokenInt                            // 123
-	TokenCharClass                      // (?...)
+	TokenCharClass                      // [...]
 	TokenCapture                        // $name
 	TokenIndex                          // $1
 	TokenPunct                          // punctuation
-	TokenComment                        // // ...
+	TokenComment                        // // ... or /* ... */
 )
 
 // Token is a lexical token of PEGO source.
 type Token struct {
 	Kind TokenKind
 	// Text is the name of an identifier or a capture reference, the punctuation, the digits of an
-	// integer or an index reference (preserving spelling even when invalid), the
+	// integer (including the signed minimum int) or an index reference
+	// (preserving spelling even when invalid), the
 	// decoded value of a string, or the text of a comment
 	// (including "//", without trailing white space). It is empty for a character class.
 	Text string
@@ -42,8 +43,11 @@ type Token struct {
 func Tokenize(src string) []Token {
 	var out []Token
 	comment := func(c *grammar.Comment) {
-		end := c.Pos
-		end.Col += utf8.RuneCountInString(c.Text)
+		end := c.End
+		if end == (grammar.Pos{}) {
+			end = c.Pos
+			end.Col += utf8.RuneCountInString(c.Text)
+		}
 		out = append(out, Token{Kind: TokenComment, Text: c.Text, Pos: c.Pos, End: end})
 	}
 	for _, t := range lex(src, &errorList{}) {
@@ -78,7 +82,7 @@ func Tokenize(src string) []Token {
 }
 
 // ParsePartial parses src like Parse, but returns the grammar even when there are errors. After an
-// error the parser skips to the next def or type, so the grammar holds the definitions that parsed
+// error the parser skips to the next rule or type, so the grammar holds the definitions that parsed
 // to the end; a definition with an error in the middle is missing. Errors that do not stop the
 // parser of a definition, such as an invalid escape sequence, leave the definition in the grammar.
 func ParsePartial(src string) (*grammar.Grammar, ErrorList) {
@@ -88,13 +92,14 @@ func ParsePartial(src string) (*grammar.Grammar, ErrorList) {
 	return g, errs.list
 }
 
-// IsKeyword reports whether name is a keyword, which cannot name a rule.
+// IsKeyword reports whether name can act as a contextual keyword. These words
+// remain valid identifiers outside their keyword positions.
 func IsKeyword(name string) bool { return keywords[name] }
 
-// IsIdentifier reports whether s is an identifier: a letter or "_" followed by letters, digits
-// and "_".
+// IsIdentifier reports whether s is an available identifier: a letter followed
+// by letters, digits and "_". Names beginning with "_" are reserved.
 func IsIdentifier(s string) bool {
-	if s == "" {
+	if s == "" || s[0] == '_' {
 		return false
 	}
 	for i, r := range s {

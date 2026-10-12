@@ -1,7 +1,7 @@
-# 18. Memoizing from the second call at a position
+# 18. Memoizing from the Second Call at a Position
 
 - Counting memo entries and reuses showed that most entries are never used: JSON stored 68k entries per parse and
-  reused none, CSV 30k and none, the Pratt calculator 6.6k and none, minilang reused 1.8k of 46k. Only grammars
+  reused none, CSV 30k and none, the Operators Rule calculator 6.6k and none, minilang reused 1.8k of 46k. Only grammars
   that really backtrack over rules (left recursion: 110k reuses; XML: 12k) use them. Each entry costs 128 bytes,
   its slot, and the isolation of its expectations.
 - In whole-input parses (`ParseWith`, including recognition), a memoized rule is now not memoized on its first call
@@ -27,10 +27,10 @@
   | JSON | 22.5 → 18.1 ms (41.2 → 25.8 MB) | 26.0 → 22.0 ms | 37.7 → 34.2 ms |
   | CSV | 11.0 → 9.2 ms (31.5 → 22.5 MB) | 12.0 → 10.1 ms | 14.7 → 13.2 ms |
   | XML | 19.3 → 18.2 ms (32.0 → 26.8 MB) | 23.6 → 21.6 ms | 33.4 → 32.4 ms |
-  | Arith_Pratt | 13.2 → 12.0 ms (19.4 → 14.2 MB) | 16.8 → 15.7 ms | 25.9 → 24.7 ms |
+  | Arith_OperatorsRule | 13.2 → 12.0 ms (19.4 → 14.2 MB) | 16.8 → 15.7 ms | 25.9 → 24.7 ms |
   | Arith_LeftRec | 33.3 → 35.2 ms (unchanged) | 34.5 → 35.6 ms | 45.8 → 45.7 ms |
   | Minilang | 18.6 → 18.0 ms (20.8 → 18.9 MB) | 24.0 → 24.3 ms | 31.7 → 32.3 ms |
 
   Recognition gains more, because memo entries were most of its allocations: JSON 15.9 → 12.0 ms and 17.7 → 2.4 MB
-  (closure), CSV 6.8 → 4.8 ms and 10.6 → 1.6 MB. (CSV and Arith_Pratt were measured before the per-rule switch was
+  (closure), CSV 6.8 → 4.8 ms and 10.6 → 1.6 MB. (CSV and Arith_OperatorsRule were measured before the per-rule switch was
   added; with no repeated calls the switch never fires on them.)

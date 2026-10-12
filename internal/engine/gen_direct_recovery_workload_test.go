@@ -31,30 +31,25 @@ func TestGeneratedTypedRecoveryWorkloads(t *testing.T) {
 }
 
 var typedRecoveryWorkloads = []struct{ name, src, accepted, recovered, errors string }{
-	{"ordinary", `
-def expr: Expr = atom #recover(skip=(?^;)+)
-def atom: Atom = "é" "b" "c"
+	{"ordinary", `rule expr Expr = atom #recover(skip=[^;]+)
+rule atom Atom = "é" "b" "c"
 `, "ébc;", "?;", "1"},
-	{"pratt", `
-def expr: Expr = pratt {
+	{"operatorsRule", `rule expr Expr = operators {
     operand atom #recover(skip="?")
-    level { postfix ("[" atom "]") #recover(skip="[?]") -> new Post{X:$lhs} }
+    level { postfix ("[" atom "]") #recover(skip="[?]") => Post{X: $lhs} }
 }
-def atom: Atom = "é"
+rule atom Atom = "é"
 `, "é[é];", "?[?];", "2"},
-	{"lr", `
-def expr: Post = (previous:expr "+" x:(atom #recover(skip="?"))
-               / x:(atom #recover(skip="?"))) -> new Post{X:$x}
-def atom: Atom = "é"
+	{"lr", `rule expr Post = previous:expr "+" x:atom #recover(skip="?") / x:atom #recover(skip="?") => Post{X: $x}
+rule atom Atom = "é"
 `, "é+é;", "?+?;", "2"},
 }
 
-const typedRecoveryWorkloadTypes = `
-type Atom terminal
+const typedRecoveryWorkloadTypes = `type Atom terminal
 type Post struct { X Expr }
 type Expr = Atom | Post
 type Doc struct { Items []Expr, N int }
-def main: Doc = items:(e:expr -";")* $$ -> new Doc{Items:map($items,(x)=>$x.e), N:len($items)}
+rule main Doc = items:(e:expr -";")* $$ => Doc{Items: map($items, (x) => $x.e), N: len($items)}
 `
 
 // Generation includes compilation, runtime embedding and formatting, but not

@@ -11,11 +11,11 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-const streamRecoveryError = "#recover cannot wrap a #stream repetition"
+const streamRecoveryError = "#recover cannot wrap a #stream repetition; recover inside each element instead"
 
 func TestStreamRecoveryRejected(t *testing.T) {
-	for _, attrs := range []string{`#stream #recover(skip=.*)`, `#recover(skip=.*) #stream`} {
-		src := `def main="ab"{2} ` + attrs + ` $$`
+	for _, pragmas := range []string{`#stream #recover(skip=.*)`, `#recover(skip=.*) #stream`} {
+		src := `rule main = "ab" #repeat(2) ` + pragmas + ` $$`
 		g, err := syntax.Parse(src)
 		if err != nil {
 			t.Fatal(err)
@@ -39,9 +39,12 @@ func TestStreamRecoveryRejected(t *testing.T) {
 		}
 	}
 	pos := grammar.Pos{Line: 3, Col: 10}
-	g := &grammar.Grammar{Statements: []grammar.Statement{&grammar.RuleDef{Name: "main", Expr: &grammar.Attributed{
-		Expr:  &grammar.Repeat{Expr: &grammar.Literal{Value: "ab"}, Min: 2, Max: 2},
-		Attrs: []*grammar.Attribute{{Name: "stream"}, {Name: "recover", Pos: pos, Args: []*grammar.AttrArg{{Name: "skip", Value: &grammar.Repeat{Expr: &grammar.Any{}, Min: 0, Max: -1}}}}},
+	g := &grammar.Grammar{Statements: []grammar.Statement{&grammar.RuleDef{Name: "main", Expr: &grammar.Recovery{
+		Pos: pos,
+		Expr: &grammar.Stream{Expr: &grammar.Repeat{
+			Expr: &grammar.Literal{Value: "ab"}, Min: 2, Max: 2,
+		}},
+		Skip: &grammar.Repeat{Expr: &grammar.Any{}, Min: 0, Max: -1},
 	}}}}
 	_, err := Compile(g, Options{})
 	if errs, ok := err.(ErrorList); !ok || len(errs) != 1 || errs[0].Pos != pos || !strings.Contains(err.Error(), streamRecoveryError) {
@@ -54,7 +57,7 @@ func TestStreamRecoveryRejected(t *testing.T) {
 // AST and its NEXT flag in the module. Both file formats retain the old shape.
 func legacyStreamRecovery(t *testing.T, streamFirst bool) *Program {
 	t.Helper()
-	p := compile(t, `def main="ab"{2} #recover(skip=.*) $$`)
+	p := compile(t, `rule main = "ab" #repeat(2) #recover(skip=.*) $$`)
 	m := p.Module()
 	next := 0
 	for i := range m.Code {
@@ -67,7 +70,8 @@ func legacyStreamRecovery(t *testing.T, streamFirst bool) *Program {
 		t.Fatalf("legacy fixture has %d NEXT instructions", next)
 	}
 	a := p.Grammar.Rules()[0].Expr.(*grammar.Seq).Items[0].(*grammar.Attributed)
-	stream := &grammar.Attribute{Name: "stream"}
+	// Mutate the normalized executable AST, which is the .pegoc payload.
+	stream := &grammar.Attribute{Name: "stream", Pragma: true}
 	if streamFirst {
 		a.Attrs = append([]*grammar.Attribute{stream}, a.Attrs...)
 	} else {
@@ -95,9 +99,9 @@ func TestCompiledStreamRecoveryRejected(t *testing.T) {
 }
 
 func TestStreamElementRecovery(t *testing.T) {
-	for _, body := range []string{`("ab" #recover(skip=(?^a)+))`, `(("ab" #recover(skip=(?^a)+)) #recover(skip="!"))`, `item`} {
-		p := compile(t, `def main=`+body+`+ #stream $$
-def item="ab" #error(message="record") #recover(skip=(?^a)+)`)
+	for _, body := range []string{`("ab" #recover(skip=[^a]+))`, `(("ab" #recover(skip=[^a]+)) #recover(skip="!"))`, `item`} {
+		p := compile(t, `rule main = `+body+`+ #stream $$
+rule item = "ab" @error(message="record") #recover(skip=[^a]+)`)
 		for _, omit := range []bool{false, true} {
 			data, err := p.MarshalBinaryWith("main", MarshalOptions{OmitAST: omit})
 			if err != nil {
@@ -169,13 +173,13 @@ func TestStreamRecoveryRegions(t *testing.T) {
 func BenchmarkStreamRecoveryPreparation(b *testing.B) {
 	for _, n := range []int{1, 100} {
 		var src strings.Builder
-		src.WriteString("def main=item+ #stream $$\n")
+		src.WriteString("rule main = item+ #stream $$\n")
 		for i := range n {
 			name := fmt.Sprintf("r%d", i)
 			if i == 0 {
 				name = "item"
 			}
-			fmt.Fprintf(&src, "def %s=\"ab\" #recover(skip=(?^a)+)\n", name)
+			fmt.Fprintf(&src, "rule %s = \"ab\" #recover(skip=[^a]+)\n", name)
 		}
 		g, err := syntax.Parse(src.String())
 		if err != nil {

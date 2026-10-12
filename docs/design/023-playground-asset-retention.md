@@ -4,7 +4,7 @@
 - **Author**: @ornew
 - **Date**: 2026-10-10
 
-## Context and problem
+## Context and Problem
 
 Pages identify the parser by a content-hashed WASM URL. Replacing a static deployment removes that URL even when
 an older page has not loaded its parser yet. Retaining the WASM alone also leaves a Go-version compatibility gap:
@@ -14,7 +14,7 @@ The site builder clears its output and Netlify builds can start without a previo
 Retention must obtain the published assets independently of that local state, keep storage bounded, and preserve
 the new parser selection.
 
-## Goals and non-goals
+## Goals and Non-Goals
 
 Keep the current and immediately preceding parser/runtime pairs available for sequential production deployments.
 Preserve the bytes identified by each hash, bootstrap existing pre-manifest deployments, and fail a build when an
@@ -26,7 +26,7 @@ must serialize their publication or use an explicit `-previous-site` pointing to
 
 ## Proposal
 
-### Deployment contract
+### Deployment Contract
 
 `-previous-site` names a published site root, including a path prefix if present. The builder reads its
 `playground/assets.json` before clearing output. Only that manifest's **current** pair is imported; its previous pair
@@ -43,7 +43,7 @@ only when `NETLIFY=true`, `CONTEXT=production` and this is not a Preview Server:
 `DEPLOY_URL` for the new immutable source. Local builds and deploy/branch previews default to neither flag. Explicit
 flags override the defaults, including an empty `-previous-site` for a deliberate reset.
 
-### Asset format and worker behavior
+### Asset Format and Worker Behavior
 
 `playground/assets.json` has `version: 1`, optional `source`, `current`, and optional `previous`. Each pair records:
 
@@ -59,7 +59,7 @@ Pre-manifest workers import the stable `wasm_exec.js` path. When importing a pre
 pair's runtime there; the new worker uses hashed runtimes instead. Without a previous pair, the stable path contains
 the current runtime. Applications must use the manifest to select a runtime for generated site binaries.
 
-### Validation and failure behavior
+### Validation and Failure Behavior
 
 Manifest fields and paths are checked before use; names must match the full SHA-256 digests. Imported files are read
 with limits of 64 MiB for WASM and 1 MiB for the runtime, and each HTTP request has a 30-second timeout. The manifest
@@ -72,7 +72,7 @@ JSON, missing-file, hash and size errors fail before clearing local output. Lega
 deploy or authenticate its runtime pairing; keep publication stable during this bootstrap. Subsequent manifests carry
 the immutable source and both digests. A build failure does not promote any cache state or change the published site.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Keep the previous local output.** It is absent on fresh build machines and cannot identify which build was published.
 - **Commit historical binaries.** Reliable input, but repeatedly grows Git history by megabytes; source commits already
@@ -95,7 +95,7 @@ Local deployment simulation starts from a pre-manifest built site, replaces its 
 both parser generations and the real browser worker. This proves the builder/worker interaction; it does not substitute
 for observing Netlify's deployment status.
 
-## Performance and results
+## Performance and Results
 
 Retention adds one manifest request per hashed worker start, one prior pair download per production build, and at most
 one additional WASM/runtime pair in published storage. No parsing work changes. `BenchmarkPublishAssets` measures local
@@ -103,7 +103,7 @@ one additional WASM/runtime pair in published storage. No parsing work changes. 
 browser compilation and CDN compression. Correctness-related measurements are recorded in the implementation commit;
 they are not tuning methods in the optimization table.
 
-## Limitations and open questions
+## Limitations and Open Questions
 
 A page older than one retained generation must reload. A page already holding a compiled module still needs a matching
 runtime from a retained generation when restarting its worker. Stable application scripts and parser API schemas are not

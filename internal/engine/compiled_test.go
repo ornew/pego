@@ -144,7 +144,7 @@ func TestCompiledErrors(t *testing.T) {
 		data []byte
 		want string
 	}{
-		{"not compiled", []byte("def main = x"), "not a compiled PEGO grammar"},
+		{"not compiled", []byte("rule main = x"), "not a compiled PEGO grammar"},
 		{"too short", []byte(compiledMagic), "too short"},
 		{"version", version, "unsupported compiled grammar version 99"},
 		{"isa version", isa, "unsupported instruction set version 7"},
@@ -166,7 +166,7 @@ func TestCompiledErrors(t *testing.T) {
 // TestCompiledEarlierInstructionSet checks that a file of instruction set 1 (which version 2
 // only extends) still loads and runs, and that a file of a later version does not load.
 func TestCompiledEarlierInstructionSet(t *testing.T) {
-	src := `def main = n:@(?0-9)+ -> $n`
+	src := `rule main = n:[0-9]+ #atomic => $n`
 	data, err := compile(t, src).MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)

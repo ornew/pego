@@ -1,8 +1,8 @@
-# 1. Value-free rule bodies, value-free twins, transient rules (0b2c903)
+# 1. Value-Free Rule Bodies, Value-Free Twins, Transient Rules (0B2c903)
 
 - **Value-free bodies.** The body of a terminal-type rule, or of a rule whose action does not use `$n`, is compiled
   without building values. Captures still build theirs.
-- **Twins.** A CST rule (no action, no terminal type) called where its value is discarded (`@`, `-`, `!`, value-free
+- **Twins.** A CST rule (no action, no terminal type) called where its value is discarded (`#atomic`, `-`, `!`, value-free
   bodies) gets a value-free twin with its own memo entries. Rules in left-recursive cycles never get twins, because
   mixing a valued and a value-free version inside one cycle would change seed-growing semantics.
 - **Transient rules.** Rules that call no other rule, or that are referenced only once in the grammar, are not memoized

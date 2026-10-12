@@ -1,15 +1,15 @@
 # Error Reporting and Recovery
 
 This guide explains how PEGO reports syntax errors, how to make the messages useful, and how to keep parsing after an
-error so that one run reports every problem in a file. It is a companion to the normative text in
-[spec/attributes.md](../../spec/attributes.md) (`#error`, `#recover` and
-[syntax errors](../../spec/parsing.md#syntax-errors)).
+error so that one run reports every problem in a file. It is a companion to the normative text on [attributes](../../spec/attributes.md)
+(`@error`), [pragmas](../../spec/pragmas.md) (`#recover`) and
+[syntax errors](../../spec/parsing.md#syntax-errors).
 
 Contents:
 
 1. [What a syntax error is](#1-what-a-syntax-error-is): the farthest failure, the expected items, positions
 2. [Getting the errors out](#2-getting-the-errors-out): the command line and the Go API
-3. [Writing readable messages](#3-writing-readable-messages): quiet whitespace, `#error`, cuts and their pitfalls
+3. [Writing readable messages](#3-writing-readable-messages): quiet whitespace, `@error`, cuts and their pitfalls
 4. [Recovering from errors](#4-recovering-from-errors): `#recover`, `Error` nodes, several errors in one run
 5. [Recipes](#5-recipes): a missing closing bracket, skipping to the next statement or line, recovering inside a list
 6. [Troubleshooting](#6-troubleshooting)
@@ -24,7 +24,7 @@ A grammar block whose first line is `// name.pego` is a complete file: save it u
 line is `// name.pego (changed rules)` replaces the rules of the same names in that file, and the examples after it use
 the edited file. Every command and its output below were run as shown, in this order.
 
-## 1. What a syntax error is
+## 1. What a Syntax Error Is
 
 A PEG parser backtracks: when `a / b` fails in `a`, it simply tries `b`, so "where the parse failed" is not a single
 event. PEGO reports the **farthest failure**: the largest input position at which any expression failed to match,
@@ -32,11 +32,11 @@ together with everything that was expected there. If the whole parse fails, that
 
 ```pego
 // calc.pego
-def main = expr
-def expr = term (("+" / "-") term)*
-def term = factor (("*" / "/") factor)*
-def factor = number / "(" expr ")"
-def number = @((?0-9)+)
+rule main = expr
+rule expr = term (("+" / "-") term)*
+rule term = factor (("*" / "/") factor)*
+rule factor = number / "(" expr ")"
+rule number = [0-9]+ #atomic
 ```
 
 ```bash
@@ -44,7 +44,7 @@ pego parse -g calc.pego -i '1+2*(3-' -f sexpr
 ```
 
 ```text
-pego: 1:8: syntax error: expected "(", (?0-9)
+pego: 1:8: syntax error: expected "(", [0-9]
 ```
 
 The input ends after `-`, so position 8 (line 1, column 8, one past the last character) is the farthest point, and a
@@ -54,7 +54,7 @@ duplicates. The items are descriptions of the primitive expressions that failed:
 | Expression | Shown as |
 |:--|:--|
 | `"abc"` | `"abc"` (quoted, with escapes) |
-| `(?0-9)`, `(?^;)` | the class as written |
+| `[0-9]`, `[^;]` | the class as written |
 | `.` | `any character` |
 | `^^`, `$$`, `^`, `$` | `beginning of input`, `end of input`, `beginning of line`, `end of line` |
 
@@ -66,10 +66,10 @@ pego parse -g calc.pego -i '1+*'
 ```
 
 ```text
-pego: 1:3: syntax error: expected "(", (?0-9)
+pego: 1:3: syntax error: expected "(", [0-9]
 ```
 
-### The end of the input
+### The End of the Input
 
 The start rule must match the whole input. When it matches only a prefix, `end of input` is expected at the first
 unconsumed position, next to whatever could have continued the match there:
@@ -79,7 +79,7 @@ pego parse -g calc.pego -i '1+2)'
 ```
 
 ```text
-pego: 1:4: syntax error: expected "*", "+", "-", "/", (?0-9), end of input
+pego: 1:4: syntax error: expected "*", "+", "-", "/", [0-9], end of input
 ```
 
 An empty input fails at 1:1 like any other expression that needs something there:
@@ -89,10 +89,10 @@ pego parse -g calc.pego -i ''
 ```
 
 ```text
-pego: 1:1: syntax error: expected "(", (?0-9)
+pego: 1:1: syntax error: expected "(", [0-9]
 ```
 
-### Lines, columns and units
+### Lines, Columns and Units
 
 Lines and columns are 1-based. A tab counts as one column, and only a line feed starts a new line (in CRLF text, the
 carriage return is the last column of its line). Columns are counted in the
@@ -101,7 +101,7 @@ carriage return is the last column of its line). Columns are counted in the
 
 ```pego
 // unit.pego
-def main = "é" "x"
+rule main = "é" "x"
 ```
 
 ```bash
@@ -120,19 +120,19 @@ pego parse -g unit.pego -unit bytes -i 'éy'
 pego: 1:3: syntax error: expected "x"
 ```
 
-### What is not in the list
+### What Is Not in the List
 
-Failures inside a lookahead (`&a`, `!a`), predicates (`[...]`) and bottom (`_|_`) add nothing to the list, and
-failures inside the `skip` of a [Pratt expression](../../spec/pratt.md#skip) are ignored. A lookahead that fails
+Failures inside a lookahead (`&a`, `!a`), Predicate Actions (`{ ... }`) and bottom (`_|_`) add nothing to the list, and
+failures inside the `skip` of a [Operators Rule](../../spec/operators-rule.md#skip) are ignored. A lookahead that fails
 usually means "this alternative is not allowed here", not "something else was expected". The consequence is that an
 error caused only by such an expression is reported without any expected item, at the farthest position that did
 record something, often the start of the input:
 
 ```pego
 // keyword.pego
-def main = !keyword ident $$
-def keyword = ("if" / "else") !(?a-z)
-def ident = @((?a-z)+)
+rule main = !keyword ident $$
+rule keyword = ("if" / "else") ![a-z]
+rule ident = [a-z]+ #atomic
 ```
 
 ```bash
@@ -143,12 +143,12 @@ pego parse -g keyword.pego -i 'if'
 pego: 1:1: syntax error
 ```
 
-A message like this is a sign that an `#error` label is missing (see [section 3](#3-writing-readable-messages)).
+A message like this is a sign that an `@error` label is missing (see [section 3](#3-writing-readable-messages)).
 Whitespace rules suffer in a different way, which is the first thing to fix in a real grammar; it is shown there too.
 
-## 2. Getting the errors out
+## 2. Getting the Errors Out
 
-### On the command line
+### On the Command Line
 
 `pego parse` prints the tree on standard output and errors on standard error, as above. `-check` (recognition only)
 reports the same errors without building a tree. Grammar errors (a rule that does not type-check, an unknown
@@ -173,7 +173,7 @@ The last row is not subject to backtracking or recovery: it aborts the parse. A 
 | `Pos` | Offset of the error in the position unit, counted from 0 |
 | `Line`, `Col` | 1-based line and column |
 | `Expected` | The expected items, sorted, as shown in the messages (`"\"x\""` for the literal `"x"`) |
-| `Messages` | The messages of [`#error`](#error-labels), if any |
+| `Messages` | The messages of [`@error`](#error-labels), if any |
 
 `Error()` returns `line:col: message`, and `Message()` returns the message without the position.
 
@@ -189,7 +189,7 @@ Things to keep in mind:
 - `Parser.ParseStream` and `Document.Parse` report errors in the same way. With the `RecognizeOnly` option there is no
   tree, so a recovering parse returns a nil node together with the `SyntaxErrors`.
 
-## 3. Writing readable messages
+## 3. Writing Readable Messages
 
 This section builds a small statement language, `toy.pego`, with `let x = 1 + 2;`, `print x;` and `{ ... }` blocks,
 and improves its errors step by step. The first version has the usual whitespace rule:
@@ -208,22 +208,21 @@ type Expr = Name | Num | Sum
 type Stmt = Let | Print | Block
 type Program struct { Body []Stmt }
 
-def main: Program = body:stmts ws $$ -> new Program{Body: $body}
-def stmts = ss:(-ws s:stmt)* -> map($ss, (x) => $x.s)
+rule main Program = body:stmts ws $$ => Program{Body: $body}
+rule stmts = ss:(-ws s:stmt)* => map($ss, (x) => $x.s)
 
-def stmt: Stmt = let / print / block
-def let: Let = "let" ws n:name ws "=" ws v:expr ws ";" -> new Let{Name: $n, Value: $v}
-def print: Print = "print" ws v:expr ws ";" -> new Print{Value: $v}
-def block: Block = "{" body:stmts ws "}" -> new Block{Body: $body}
+rule stmt Stmt = let / print / block
+rule let Let = "let" ws n:name ws "=" ws v:expr ws ";" => Let{Name: $n, Value: $v}
+rule print Print = "print" ws v:expr ws ";" => Print{Value: $v}
+rule block Block = "{" body:stmts ws "}" => Block{Body: $body}
 
-def expr: Expr = first:term rest:(-ws "+" -ws t:term)*
-    -> foldl($first, $rest, (acc, i) => new Sum{Left: $acc, Right: $i.t})
-def term: Expr = number / name / group
-def group: Expr = "(" ws e:expr ws ")" -> $e
+rule expr Expr = first:term rest:(-ws "+" -ws t:term)* => foldl($first, $rest, (acc, i) => Sum{Left: $acc, Right: $i.t})
+rule term Expr = number / name / group
+rule group Expr = "(" ws e:expr ws ")" => $e
 
-def name: Name = (?a-z)+
-def number: Num = (?0-9)+
-def ws = (? \t\r\n)*
+rule name Name = [a-z]+
+rule number Num = [0-9]+
+rule ws = [ \t\r\n]*
 ```
 
 ```bash
@@ -239,10 +238,10 @@ pego parse -g toy.pego -i 'let x = 1 +;'
 ```
 
 ```text
-pego: 1:12: syntax error: expected "(", (? \t\r\n), (?0-9), (?a-z)
+pego: 1:12: syntax error: expected "(", [ \t\r\n], [0-9], [a-z]
 ```
 
-The list contains `(? \t\r\n)`: after `+`, the whitespace rule tried one more whitespace character at the failing
+The list contains `[ \t\r\n]`: after `+`, the whitespace rule tried one more whitespace character at the failing
 position, and that attempt is part of the farthest failure. Whitespace is never what the user got wrong. Because a
 failure inside a lookahead is not reported, the whitespace rule can be written so that it consumes the same input
 without ever recording a failure:
@@ -250,7 +249,7 @@ without ever recording a failure:
 ```pego
 // toy.pego (changed rules)
 // Whitespace stays out of the "expected" lists: a failure inside a lookahead is not reported.
-def ws = (&(? \t\r\n) .)*
+rule ws = (&[ \t\r\n] .)*
 ```
 
 ```bash
@@ -258,15 +257,15 @@ pego parse -g toy.pego -i 'let x = 1 +;'
 ```
 
 ```text
-pego: 1:12: syntax error: expected "(", (?0-9), (?a-z)
+pego: 1:12: syntax error: expected "(", [0-9], [a-z]
 ```
 
-`(?0-9)` and `(?a-z)` are the first characters of a `number` and a `name`. The list is accurate, but for a human,
-"expected an expression" says more. That is what `#error` is for.
+`[0-9]` and `[a-z]` are the first characters of a `number` and a `name`. The list is accurate, but for a human,
+"expected an expression" says more. That is what `@error` is for.
 
-### `#error` labels
+### `@error` Labels
 
-`#error(message="...")` is attached to an expression like a postfix operator. If the expression fails, every expected
+`@error(message="...")` is attached to an expression like a postfix operator. If the expression fails, every expected
 item recorded **inside** it is replaced by the message, which is reported at the farthest position reached inside the
 expression. If the expression succeeds, nothing changes.
 
@@ -275,13 +274,15 @@ label, and `term` is split so that its label covers only the "no expression here
 
 ```pego
 // toy.pego (changed rules)
-def let: Let = "let" ws n:name #error(message="expected a name") ws "=" #error(message="expected '='")
-    ws v:expr ws ";" #error(message="expected ';'") -> new Let{Name: $n, Value: $v}
-def print: Print = "print" ws v:expr ws ";" #error(message="expected ';'") -> new Print{Value: $v}
-def block: Block = "{" body:stmts ws "}" #error(message="expected '}'") -> new Block{Body: $body}
+rule let Let = (
+    "let" ws n:name @error(message="expected a name") ws "=" @error(message="expected '='")
+    ws v:expr ws ";" @error(message="expected ';'")
+) => Let{Name: $n, Value: $v}
+rule print Print = "print" ws v:expr ws ";" @error(message="expected ';'") => Print{Value: $v}
+rule block Block = "{" body:stmts ws "}" @error(message="expected '}'") => Block{Body: $body}
 
-def term: Expr = (number / name) #error(message="expected an expression") / group
-def group: Expr = "(" ws e:expr ws ")" #error(message="expected ')'") -> $e
+rule term Expr = (number / name) @error(message="expected an expression") / group
+rule group Expr = "(" ws e:expr ws ")" @error(message="expected ')'") => $e
 ```
 
 ```bash
@@ -327,11 +328,11 @@ pego: 1:22: expected '}'
 How to place a label:
 
 - **Attach it to the smallest expression that fails.** An attribute applies to the expression immediately before it:
-  `"=" #error(...)` labels the literal, while `("let" ws name ws "=") #error(...)` labels the whole group.
+  `"=" @error(...)` labels the literal, while `("let" ws name ws "=") @error(...)` labels the whole group.
 - **The message replaces everything at its position, including the expectations of sibling alternatives.** In
   `term`, a label on `name` alone would say "expected a name" where a number or a `(` is just as valid. That is why the
   label covers `(number / name)` and the parenthesized `group` stays outside it: if the label sat on the whole choice,
-  it would replace the more specific `expected ')'`, because an outer `#error` also swallows the messages of inner
+  it would replace the more specific `expected ')'`, because an outer `@error` also swallows the messages of inner
   ones.
 - **The position is the farthest point inside the expression**, not its start: for `let x = 1 +;` the message points at
   the `;`.
@@ -343,8 +344,8 @@ The last two points are easiest to see in a tiny grammar:
 
 ```pego
 // labels.pego
-def joined = "a" #error(message="m1") / "b" #error(message="m2")
-def dropped = "a" "b" #error(message="after a") / "a" "c" "d"
+rule joined = "a" @error(message="m1") / "b" @error(message="m2")
+rule dropped = "a" "b" @error(message="after a") / "a" "c" "d"
 ```
 
 ```bash
@@ -374,17 +375,17 @@ pego: 1:3: syntax error: expected "d"
 For `ax` the first alternative fails at the `b` (column 2) and its message is the only thing recorded there. For `acx`
 the second alternative gets to column 3, and the label of the first one is gone.
 
-### Labels on predicates and on `_|_`
+### Labels on Predicate Actions and On `_|_`
 
 A [predicate](../../spec/predicates.md) that fails records nothing, so a failed check shows up as a bare
-`syntax error`. Attach `#error` to it. The same goes for a rule that exists only to report a message: `_|_` always
+`syntax error`. Attach `@error` to it. The same goes for a rule that exists only to report a message: `_|_` always
 fails and can carry the label:
 
 ```pego
 // xmlish.pego
-def pair = "<" a:name ">" "</" b:name [text($a) == text($b)] #error(message="mismatched end tag") ">"
-def name = @((?a-z)+)
-def unknown = "x" / _|_ #error(message="expected 'x'")
+rule pair = "<" a:name ">" "</" b:name {text($a) == text($b)} @error(message="mismatched end tag") ">"
+rule name = [a-z]+ #atomic
+rule unknown = "x" / _|_ @error(message="expected 'x'")
 ```
 
 ```bash
@@ -395,10 +396,10 @@ pego parse -g xmlish.pego -s pair -i '<a></b>'
 pego: 1:7: mismatched end tag
 ```
 
-(Without the label, this input fails with `expected (?a-z)`: the farthest recorded failure is the name rule looking
+(Without the label, this input fails with `expected [a-z]`: the farthest recorded failure is the name rule looking
 for one more letter.)
 
-### Where the error is reported relative to whitespace
+### Where the Error Is Reported Relative to Whitespace
 
 Whitespace rules read past line ends. A missing `;` at the end of a line is reported on the next line, at the first
 token that did not fit, because the whitespace before the `;` (and before the optional `+` of `expr`) consumed the
@@ -415,7 +416,7 @@ pego: 2:1: expected ';'
 This is the position of the unexpected token, which is what most parsers report. Pointing at the end of the previous
 line would require every place that can continue the statement to skip only spaces and tabs, which is rarely worth it.
 
-### Cuts and error messages
+### Cuts and Error Messages
 
 A cut (`--`) does not change how the farthest failure is chosen. What it does is stop the enclosing choice from trying
 its other alternatives, so their failures are never recorded. When a keyword makes the rest of the alternative
@@ -424,23 +425,23 @@ same position:
 
 ```pego
 // cut.pego
-def plain = stmt $$
-def stmt = let / call
-def let = "let" ws name ws "=" ws num ";"
-def call = name ws "(" ")" ";"
+rule plain = stmt $$
+rule stmt = let / call
+rule let = "let" ws name ws "=" ws num ";"
+rule call = name ws "(" ")" ";"
 
 // The cut and the choice it commits are in the same rule.
-def committed = stmt_cut $$
-def stmt_cut = "let" -- ws name ws "=" ws num ";" / call
+rule committed = stmt_cut $$
+rule stmt_cut = "let" -- ws name ws "=" ws num ";" / call
 
 // The cut is in another rule than the choice, so it commits nothing.
-def elsewhere = stmt_far $$
-def stmt_far = let_cut / call
-def let_cut = "let" -- ws name ws "=" ws num ";"
+rule elsewhere = stmt_far $$
+rule stmt_far = let_cut / call
+rule let_cut = "let" -- ws name ws "=" ws num ";"
 
-def name = (?a-z)+
-def num = (?0-9)+
-def ws = (&(? \t\n) .)*
+rule name = [a-z]+
+rule num = [0-9]+
+rule ws = (&[ \t\n] .)*
 ```
 
 ```bash
@@ -448,7 +449,7 @@ pego parse -g cut.pego -s plain -i 'let 5;'
 ```
 
 ```text
-pego: 1:5: syntax error: expected "(", (?a-z)
+pego: 1:5: syntax error: expected "(", [a-z]
 ```
 
 ```bash
@@ -456,7 +457,7 @@ pego parse -g cut.pego -s committed -i 'let 5;'
 ```
 
 ```text
-pego: 1:5: syntax error: expected (?a-z)
+pego: 1:5: syntax error: expected [a-z]
 ```
 
 ```bash
@@ -464,7 +465,7 @@ pego parse -g cut.pego -s elsewhere -i 'let 5;'
 ```
 
 ```text
-pego: 1:5: syntax error: expected "(", (?a-z)
+pego: 1:5: syntax error: expected "(", [a-z]
 ```
 
 Without the cut, `call` also read `let` as a name and expected a `(` after it. With the cut in the same rule as the
@@ -476,7 +477,7 @@ common mistake: a cut commits only the choice of the rule it is written in. Two 
 - A cut can hide a better error as well as a worse one: after it, an alternative that would have got further is never
   tried. If a diagnosis looks worse after adding a cut, that is why.
 
-## 4. Recovering from errors
+## 4. Recovering from Errors
 
 Without recovery, the first error ends the parse. A language server, a linter or a compiler that wants to report all
 problems in a file needs the parser to continue. `#recover(skip=e)` turns a failure into a success:
@@ -496,7 +497,7 @@ Let us recover at the statement level: when a statement does not parse, skip to 
 ```pego
 // toy.pego (changed rules)
 // If a statement does not parse, skip to the next ";" (but never past a brace) and carry on.
-def stmt: Stmt = s:(let / print / block) #recover(skip=(?^;{}\n)+ ";"?) -> $s
+rule stmt Stmt = s:(let / print / block) #recover(skip=[^;{}\n]+ ";"?) => $s
 ```
 
 ```bash
@@ -572,14 +573,14 @@ Details worth knowing:
   failure far inside a nested expression. The nearest enclosing `#recover` wins: in the example, a broken statement
   inside a block is recovered by the `stmt` rule of the block's own body, not by the outer statement.
 - **Order of attributes matters.** Attributes apply from the innermost outward in the order written. Write
-  `#error(...) #recover(...)`: the label is applied first, so the recovered error carries the label. With the order
-  reversed, `#error` wraps a `#recover` that almost never fails, so the label is never used:
+  `@error(...) #recover(...)`: the label is applied first, so the recovered error carries the label. With the order
+  reversed, `@error` wraps a `#recover` that almost never fails, so the label is never used:
 
 ```pego
 // order.pego
-def good = (stmt #error(message="bad statement") #recover(skip=(?^;)* ";"))* $$
-def bad = (stmt #recover(skip=(?^;)* ";") #error(message="bad statement"))* $$
-def stmt = "a" ";"
+rule good = stmt @error(message="bad statement") #recover(skip=[^;]* ";")* $$
+rule bad = stmt #recover(skip=[^;]* ";") @error(message="bad statement")* $$
+rule stmt = "a" ";"
 ```
 
 ```bash
@@ -600,7 +601,7 @@ pego parse -g order.pego -s bad -f sexpr -i 'a;b;a;'
 pego: 1:3: syntax error: expected "a"
 ```
 
-### What happens to the errors
+### What Happens to the Errors
 
 **Where they go.** `Parser.Parse` returns the tree and `SyntaxErrors` (see [section 2](#2-getting-the-errors-out)); the
 command line prints the tree, then each error on its own line, and exits with status 1.
@@ -632,14 +633,14 @@ pego parse -g toy.pego -i $'print 1;\n}\n'
 ```
 
 ```text
-pego: 2:1: syntax error: expected "let", "print", "{", (?^;{}\n), end of input
+pego: 2:1: syntax error: expected "let", "print", "{", [^;{}\n], end of input
 ```
 
 The stray `}` stops every recovery in this grammar, because `skip` refuses to eat braces. That is the right trade-off
 for a block-structured language, but if you want to report stray closing braces too, the top-level rule has to handle
 them.
 
-### Using the errors from Go
+### Using the Errors from Go
 
 The following program parses three inputs with the finished `toy.pego` and handles each outcome. Run it in the directory
 that contains `toy.pego` (the module that contains it must depend on `github.com/ornew/pego`).
@@ -733,11 +734,11 @@ recovered from 2 error(s); tree: (Program Body=[Error"let = 2;"{message=`1:5: ex
   Error node [0,8) "let = 2;": 1:5: expected a name
   Error node [9,21) "print (a +);": 2:11: expected an expression
 --- "print 1;\n}\n"
-failed: 2:1: syntax error: expected "let", "print", "{", (?^;{}\n), end of input (node is nil: true)
-  expected=["\"let\"" "\"print\"" "\"{\"" "(?^;{}\\n)" "end of input"] messages=[]
+failed: 2:1: syntax error: expected "let", "print", "{", [^;{}\n], end of input (node is nil: true)
+  expected=["\"let\"" "\"print\"" "\"{\"" "[^;{}\\n]" "end of input"] messages=[]
 ```
 
-### Do not let the skip eat the closer
+### Do Not Let the Skip Eat the Closer
 
 A recovery inside a repetition is attempted every time an element fails to parse, including the normal end of the
 repetition. When the closing bracket of the enclosing construct can be matched by `skip`, recovery swallows it. This is
@@ -756,18 +757,18 @@ type Expr = Name | Num
 type Stmt = Let | Print | Block
 type Program struct { Body []Stmt }
 
-def main: Program = body:stmts ws $$ -> new Program{Body: $body}
-def stmts = ss:(-ws s:stmt)* -> map($ss, (x) => $x.s)
+rule main Program = body:stmts ws $$ => Program{Body: $body}
+rule stmts = ss:(-ws s:stmt)* => map($ss, (x) => $x.s)
 
-def stmt: Stmt = s:(let / print / block) #recover(skip=(?^;\n)+ ";"?) -> $s
-def let: Let = "let" ws n:name ws "=" ws v:expr ws ";" -> new Let{Name: $n, Value: $v}
-def print: Print = "print" ws v:expr ws ";" -> new Print{Value: $v}
-def block: Block = "{" body:stmts ws "}" #error(message="expected '}'") -> new Block{Body: $body}
+rule stmt Stmt = s:(let / print / block) #recover(skip=[^;\n]+ ";"?) => $s
+rule let Let = "let" ws n:name ws "=" ws v:expr ws ";" => Let{Name: $n, Value: $v}
+rule print Print = "print" ws v:expr ws ";" => Print{Value: $v}
+rule block Block = "{" body:stmts ws "}" @error(message="expected '}'") => Block{Body: $body}
 
-def expr: Expr = number / name
-def name: Name = (?a-z)+
-def number: Num = (?0-9)+
-def ws = (&(? \t\r\n) .)*
+rule expr Expr = number / name
+rule name Name = [a-z]+
+rule number Num = [0-9]+
+rule ws = (&[ \t\r\n] .)*
 ```
 
 ```bash
@@ -789,17 +790,17 @@ to match at the delimiter that closes the list the element is in.
 
 ## 5. Recipes
 
-### Report a missing closing bracket
+### Report a Missing Closing Bracket
 
 A missing `)`, `]` or `}` fails at the position where the closer was expected, which is where the parser could not
 continue. Label the closer, not the group, so that errors inside the group keep their own messages. This is how
 `toy.pego` does it:
 
 ```pego
-def group: Expr = "(" ws e:expr ws ")" #error(message="expected ')'") -> $e
+rule group Expr = "(" ws e:expr ws ")" @error(message="expected ')'") => $e
 ```
 
-(Writing `("(" ws e:expr ws ")") #error(...)` instead would replace the messages of everything inside the group with the
+(Writing `("(" ws e:expr ws ")") @error(...)` instead would replace the messages of everything inside the group with the
 one message.) With the statement-level recovery of section 4, a missing `)` costs one statement and nothing else:
 
 ```bash
@@ -840,15 +841,15 @@ pego: 3:1: expected '}'
   in the end" in section 4). `skip` of the statement rule refuses to start at `{`, and an unclosed block leaves nothing
   to skip anyway, so nothing can recover it.
 
-### Skip to the next statement or line and continue
+### Skip to the Next Statement or Line and Continue
 
 This is the `stmt` rule of section 4. The pattern is always the same:
 
 ```pego
-def stmt = s:(let / print / block) #recover(skip=(?^;{}\n)+ ";"?) -> $s
+rule stmt = s:(let / print / block) #recover(skip=[^;{}\n]+ ";"?) => $s
 ```
 
-- `(?^;{}\n)+` skips the characters of the broken statement. Excluding `;`, the brace characters and the line end makes
+- `[^;{}\n]+` skips the characters of the broken statement. Excluding `;`, the brace characters and the line end makes
   it stop at the first place where a new statement could start.
 - `";"?` consumes the terminator if that is what the skip stopped at, so the next statement starts cleanly.
 - It must consume at least one character, which it does as long as the statement starts with a character that is not
@@ -870,26 +871,26 @@ type Assign struct { Name Name, Value Num }
 type If struct { Test Name, Body []Stmt }
 type Stmt = Assign | If
 
-def main: []Stmt = [indent = 0] ss:stmts blank* $$ -> $ss
-def stmts = (blank* s:stmt)+ -> map($1, (x) => $x.s)
+rule main []Stmt = {indent := 0} ss:stmts blank* $$ => $ss
+rule stmts = (blank* s:stmt)+ => map($1, (x) => $x.s)
 
 // The indentation is outside the recovery: a line that is not at this block's indentation ends the block.
-def stmt = indentation s:(if_stmt / assign) #recover(skip=skip_line) -> $s
-def indentation = s:spaces [len($s) == indent]
+rule stmt = indentation s:(if_stmt / assign) #recover(skip=skip_line) => $s
+rule indentation = s:spaces {len($s) == indent}
 
-def if_stmt: If = "if " t:name ":" eol b:body -> new If{Test: $t, Body: $b}
-def body = &(blank* s:spaces) [len($s) > indent] [indent = len($s)] ss:stmts -> $ss
-def assign: Assign = n:name " = " v:num eol -> new Assign{Name: $n, Value: $v}
+rule if_stmt If = "if " t:name ":" eol b:body => If{Test: $t, Body: $b}
+rule body = &(blank* s:spaces) {len($s) > indent} {indent := len($s)} ss:stmts => $ss
+rule assign Assign = n:name " = " v:num eol => Assign{Name: $n, Value: $v}
 
 // The rest of the broken line and the lines indented deeper than the block.
-def skip_line = (?^\n)+ deeper_line*
-def deeper_line = "\n" blank* s:spaces [len($s) > indent] (?^\n)+
+rule skip_line = [^\n]+ deeper_line*
+rule deeper_line = "\n" blank* s:spaces {len($s) > indent} [^\n]+
 
-def spaces = @" "*
-def name: Name = @(?a-z)+
-def num: Num = @(?0-9)+
-def eol = "\n" / $$
-def blank = (? \t)* "\n"
+rule spaces = " "* #atomic
+rule name Name = [a-z]+ #atomic
+rule num Num = [0-9]+ #atomic
+rule eol = "\n" / $$
+rule blank = [ \t]* "\n"
 ```
 
 ```bash
@@ -897,8 +898,8 @@ pego parse -g blocks.pego -f sexpr -i $'if x:\n    y = 1\n    z = = 2\n        w
 ```
 
 ```text
-[(If Body=[(Assign Name=Name"y"@name Value=Num"1"@num) Error"z = = 2\n        w = 3"{message=`3:9: syntax error: expected (?0-9)`} (Assign Name=Name"v"@name Value=Num"4"@num)] Test=Name"x"@name) (Assign Name=Name"u"@name Value=Num"5"@num)]
-pego: 3:9: syntax error: expected (?0-9)
+[(If Body=[(Assign Name=Name"y"@name Value=Num"1"@num) Error"z = = 2\n        w = 3"{message=`3:9: syntax error: expected [0-9]`} (Assign Name=Name"v"@name Value=Num"4"@num)] Test=Name"x"@name) (Assign Name=Name"u"@name Value=Num"5"@num)]
+pego: 3:9: syntax error: expected [0-9]
 ```
 
 The broken line and its more indented continuation became one `Error` node; `v = 4` and `u = 5` were parsed normally,
@@ -909,14 +910,14 @@ pego parse -g blocks.pego -f sexpr -i $'if x\n    y = 1\nu = 5\n'
 ```
 
 ```text
-[Error"if x\n    y = 1"{message=`1:5: syntax error: expected ":", (?a-z)`} (Assign Name=Name"u"@name Value=Num"5"@num)]
-pego: 1:5: syntax error: expected ":", (?a-z)
+[Error"if x\n    y = 1"{message=`1:5: syntax error: expected ":", [a-z]`} (Assign Name=Name"u"@name Value=Num"5"@num)]
+pego: 1:5: syntax error: expected ":", [a-z]
 ```
 
 The indentation check is outside the `#recover`: a line that is not at the indentation of the block fails `stmt` before
 the recovery starts, which ends the block instead of being skipped.
 
-### Recover inside a list
+### Recover Inside a List
 
 Recovery does not have to be at the statement level. In a bracketed, comma-separated list, recover element by element
 and let `skip` stop in front of the separator and the closing bracket, so that neither is consumed:
@@ -928,17 +929,16 @@ package nums
 type Num terminal
 type Numbers struct { Items []Num }
 
-def main: Numbers = ws l:list ws $$ -> $l
+rule main Numbers = ws l:list ws $$ => $l
 
-def list: Numbers = "[" ws xs:items? ws "]" #error(message="expected ',' or ']'")
-    -> new Numbers{Items: concat($xs)}
-def items = first:item rest:(-ws "," -ws i:item)* -> concat(list($first), map($rest, (r) => $r.i))
+rule list Numbers = "[" ws xs:items? ws "]" @error(message="expected ',' or ']'") => Numbers{Items: concat($xs)}
+rule items = first:item rest:(-ws "," -ws i:item)* => concat(list($first), map($rest, (r) => $r.i))
 
 // A bad element is skipped up to (not including) the next "," or "]".
-def item: Num = n:number #error(message="expected a number") #recover(skip=(?^,\]\n)+) -> $n
+rule item Num = n:number @error(message="expected a number") #recover(skip=[^,]\n]+) => $n
 
-def number: Num = (?0-9)+
-def ws = (&(? \t\n) .)*
+rule number Num = [0-9]+
+rule ws = (&[ \t\n] .)*
 ```
 
 ```bash
@@ -979,9 +979,9 @@ pego: 1:6: expected ',' or ']'
 
 | Symptom | Likely cause | What to do |
 |:--|:--|:--|
-| The expected list contains `(? \t\r\n)` | The whitespace rule recorded a failure at the farthest position | Write `ws` as `(&(? \t\r\n) .)*`, or label the place |
-| `1:1: syntax error` with no expected items | The failure came only from a lookahead, a predicate or `_|_`, which record nothing | Add `#error` to the predicate or to a rule built on `_|_` |
-| A label does not appear | The expression it is on failed at an earlier position than another alternative, or an outer `#error` replaced it | Attach labels to the smallest expression; check which alternative reached furthest |
+| The expected list contains `[ \t\r\n]` | The whitespace rule recorded a failure at the farthest position | Write `ws` as `(&[ \t\r\n] .)*`, or label the place |
+| `1:1: syntax error` with no expected items | The failure came only from a lookahead, a predicate or `_|_`, which record nothing | Add `@error` to the predicate or to a rule built on `_|_` |
+| A label does not appear | The expression it is on failed at an earlier position than another alternative, or an outer `@error` replaced it | Attach labels to the smallest expression; check which alternative reached furthest |
 | A label hides valid alternatives | The message replaces every item recorded at its position, including siblings | Label the whole choice, not one alternative |
 | `#recover` has no effect | `skip` fails at the start of the expression or matches nothing; the expression is not where the failure occurs; or the parse failed in the end so all recovered errors were dropped | Test `skip` on the broken text alone; check that the error is not outside the `#recover`; check for an unclosed construct |
 | Valid input fails after adding `#recover` | `skip` can match the closing token of the enclosing construct | Exclude the closers from `skip` |

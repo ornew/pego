@@ -50,7 +50,7 @@ deployment are covered by [website maintenance](../site.md).
 - The last compiled grammar is cached by its source, so typing in the input does not compile the grammar again.
 - A panic in a request is recovered and returned as an error, so a bug does not stop the WebAssembly program.
 
-### Nesting and the browser's stack
+### Nesting and the Browser's Stack
 
 Go compiled to WebAssembly makes every Go function call a WebAssembly call, so recursion consumes the JavaScript
 engine's native stack, which is about 1 MB and cannot be raised by a page. When it runs out, the engine throws
@@ -75,7 +75,7 @@ accepts (10,000 levels of JSON, two per node level). As a last resort, the page 
 with a stack overflow and says that the parse needed more stack than the browser provides. The smoke test checks in Node
 that nesting of 400 and 5,000 levels ends with these errors and leaves the program running.
 
-### The page
+### The Page
 
 The playground runs `pego.wasm` in a **Web Worker**. A long parse cannot freeze the page, and a parse that runs longer
 than 10 seconds is stopped by terminating the worker. The page compiles the module once
@@ -130,7 +130,7 @@ Writes check both the action revision and the adopted fragment: navigation chang
 link; a superseded request does not copy. The landing page's live-example link also keeps only the newest input's
 encoding. Encoding and decoding failures leave the existing state/link intact and report a console warning.
 
-### The site generator (`site/`)
+### The Site Generator (`site/`)
 
 The generator is a Go program in its own module, `github.com/ornew/pego/site`, with one dependency: the Markdown
 renderer [goldmark](https://github.com/yuin/goldmark).
@@ -211,7 +211,7 @@ example is about to become visible.
   and tree controls. `bench_tree.mjs` measures the actual parent/candidate sources in the same VM; small trees compare
   equal displayed work, while wide trees intentionally display fewer rows.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **A server that parses.** Simpler for the page, but it would need hosting, would see every grammar and input, and
   would not work offline. WebAssembly keeps everything in the browser.
@@ -226,7 +226,7 @@ example is about to become visible.
 - **Linking the reference to pkg.go.dev only.** It cannot show unreleased changes, and it does not show the fields and
   methods of the types that the public API exposes through aliases.
 
-## Limitations and future work
+## Limitations and Future Work
 
 - The playground does not offer streaming (`ParseStream`) or incremental parsing (`Document`), which have no natural
   form in a single editor; it could show `#stream` elements as they are emitted.

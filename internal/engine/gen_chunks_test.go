@@ -16,15 +16,14 @@ func TestGeneratedTypedChunkOwnership(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	g, err := syntax.Parse(`
-type Token terminal
+	g, err := syntax.Parse(`type Token terminal
 type Item struct { Token Token }
 type Group struct { Items []Item }
 type Root struct { Groups []Group, Missing *Group }
-def main = gs:group* $$ -> new Root{Groups: $gs}
-def group = "[" xs:item* "]" -> new Group{Items: $xs}
-def item = x:token -> new Item{Token: $x}
-def token: Token = "é"`)
+rule main = gs:group* $$ => Root{Groups: $gs}
+rule group = "[" xs:item* "]" => Group{Items: $xs}
+rule item = x:token => Item{Token: $x}
+rule token Token = "é"`)
 	if err != nil {
 		t.Fatal(err)
 	}

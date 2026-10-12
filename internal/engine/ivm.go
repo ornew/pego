@@ -2,10 +2,10 @@ package engine
 
 import "github.com/ornew/pego/grammar"
 
-// The iterative-model VM. It runs rule calls, left-recursion growth, Pratt expression loops, and
+// The iterative-model VM. It runs rule calls, left-recursion growth, Operators Rule expression loops, and
 // longest matching as state machines pushed on the VM stack (a slice of iframe) instead of using
 // host recursion. Each state machine calls the shared runtime used by the recursive model (the
-// callBegin family, prattBuild, and so on) in the same order, so the results match the recursive
+// callBegin family, operatorsRuleBuild, and so on) in the same order, so the results match the recursive
 // model. Action and predicate expressions are evaluated with host calls, because their depth is
 // determined by the grammar (not by the input).
 
@@ -42,12 +42,12 @@ func (p *parser) iterate(vm *vmProgram, root iframe) iresult {
 	}
 }
 
-// bodyFrame runs code (a rule body or a Pratt section). For an unmemoized call of a rule without
+// bodyFrame runs code (a rule body or an Operators Rule section). For an unmemoized call of a rule without
 // captures, the body frame also does the steps of the call (invokePlain), so that such calls,
 // the most common, push one frame instead of two.
 type bodyFrame struct {
 	b       vmBody
-	block   bool // Pratt section (reports a cut to the caller through p.cut)
+	block   bool // OperatorsRule section (reports a cut to the caller through p.cut)
 	started bool
 	call    bool        // a plain call of b.r: run the end of invokePlain when the body finishes
 	inv     invokeState // call: the state saved by the call
@@ -82,8 +82,8 @@ func (f *bodyFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult
 			return p.callFrame(r, min, false), iresult{}, false
 		}
 		return p.callFrame(r, min, true), iresult{}, false
-	case evPratt:
-		return p.prattFrame(f.b.r, f.b.min), iresult{}, false
+	case evOperatorsRule:
+		return p.operatorsRuleFrame(f.b.r, f.b.min), iresult{}, false
 	}
 	if f.block && f.b.cut {
 		p.cut = true
@@ -137,12 +137,12 @@ func blockFrame(p *parser, entry int) *bodyFrame {
 
 // Frames are reused after being popped, so pushing a frame does not allocate in steady state.
 type framePool struct {
-	bodies   []*bodyFrame
-	calls    []*callFrame
-	skips    []*skipFrame
-	longests []*longestFrame
-	nuds     []*nudFrame
-	pratts   []*prattFrame
+	bodies         []*bodyFrame
+	calls          []*callFrame
+	skips          []*skipFrame
+	longests       []*longestFrame
+	nuds           []*nudFrame
+	operatorsRules []*operatorsRuleFrame
 }
 
 // reuse pops a frame from a free list, or allocates one.
@@ -155,13 +155,13 @@ func reuse[T any](list *[]*T) *T {
 	return new(T)
 }
 
-func (p *parser) skipFrame(pr *pratt) *skipFrame {
+func (p *parser) skipFrame(pr *operatorsRule) *skipFrame {
 	f := reuse(&p.pool.skips)
 	*f = skipFrame{pr: pr}
 	return f
 }
 
-func (p *parser) longestFrame(ops []*prattOp) *longestFrame {
+func (p *parser) longestFrame(ops []*operatorsRuleOp) *longestFrame {
 	f := reuse(&p.pool.longests)
 	*f = longestFrame{ops: ops}
 	return f
@@ -173,13 +173,13 @@ func (p *parser) nudFrame(r *rule) *nudFrame {
 	return f
 }
 
-func (p *parser) prattFrame(r *rule, min int) *prattFrame {
+func (p *parser) operatorsRuleFrame(r *rule, min int) *operatorsRuleFrame {
 	p.depth++
 	if p.depth > p.maxDepth {
 		p.fail("nesting too deep: more than %d rule calls", p.maxDepth)
 	}
-	f := reuse(&p.pool.pratts)
-	*f = prattFrame{r: r, min: min}
+	f := reuse(&p.pool.operatorsRules)
+	*f = operatorsRuleFrame{r: r, min: min}
 	return f
 }
 
@@ -223,9 +223,9 @@ func (p *parser) release(f iframe) {
 		p.pool.longests = append(p.pool.longests, f)
 	case *nudFrame:
 		p.pool.nuds = append(p.pool.nuds, f)
-	case *prattFrame:
+	case *operatorsRuleFrame:
 		p.depth--
-		p.pool.pratts = append(p.pool.pratts, f)
+		p.pool.operatorsRules = append(p.pool.operatorsRules, f)
 	}
 }
 
@@ -292,9 +292,9 @@ func (f *callFrame) invoke(p *parser) iframe {
 	return p.bodyFrame(f.r.entry, f.r, f.min, false)
 }
 
-// skipFrame is the skip of a Pratt expression (same steps as parser.skipTrivia).
+// skipFrame is the skip of an Operators Rule expression (same steps as parser.skipTrivia).
 type skipFrame struct {
-	pr      *pratt
+	pr      *operatorsRule
 	m       mark
 	started bool
 }
@@ -318,11 +318,11 @@ func (f *skipFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult
 
 // longestFrame is the longest match over operator parts (same steps as parser.longest).
 type longestFrame struct {
-	ops       []*prattOp
+	ops       []*operatorsRuleOp
 	i         int
 	started   bool
 	m0        mark
-	best      prattAttempt
+	best      operatorsRuleAttempt
 	cutFailed bool
 	prevFrame *frame
 	prevCut   bool
@@ -341,7 +341,7 @@ func (f *longestFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, ires
 			res.ok = false // see parser.longest: empty prefix and postfix matches are not candidates
 		}
 		if res.ok && (f.best.op == nil || p.pos > f.best.end) {
-			f.best = prattAttempt{op: op, frame: f.f, v: res.v, start: f.m0.pos, end: p.pos, env: p.env, cut: cut,
+			f.best = operatorsRuleAttempt{op: op, frame: f.f, v: res.v, start: f.m0.pos, end: p.pos, env: p.env, cut: cut,
 				errs: append([]*SyntaxError(nil), p.recovered[f.m0.recovered:]...)}
 		}
 		if !res.ok && cut {
@@ -366,12 +366,12 @@ func (f *longestFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, ires
 	return blockFrame(p, f.ops[f.i].line.entry), iresult{}, false
 }
 
-// nudFrame is the beginning of an expression (same steps as parser.prattNud).
+// nudFrame is the beginning of an expression (same steps as parser.operatorsRuleNud).
 type nudFrame struct {
 	r         *rule
 	state     int
 	m0        mark
-	a         prattAttempt
+	a         operatorsRuleAttempt
 	i         int
 	prevFrame *frame
 	prevCut   bool
@@ -388,7 +388,7 @@ const (
 )
 
 func (f *nudFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult, bool) {
-	pr := f.r.pratt
+	pr := f.r.operatorsRule
 	for {
 		switch f.state {
 		case nBegin:
@@ -411,10 +411,10 @@ func (f *nudFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult,
 			}
 			p.apply(&f.a)
 			f.state = nRHS
-			return p.prattFrame(f.r, f.a.op.level), iresult{}, false
+			return p.operatorsRuleFrame(f.r, f.a.op.level), iresult{}, false
 		case nRHS:
 			if res.ok {
-				return nil, iresult{v: p.prattBuild(f.r, &f.a, nil, res.v), ok: true}, true
+				return nil, iresult{v: p.operatorsRuleBuild(f.r, &f.a, nil, res.v), ok: true}, true
 			}
 			if f.a.cut {
 				return nil, iresult{}, true
@@ -448,16 +448,16 @@ func (f *nudFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult,
 	}
 }
 
-// prattFrame parses an expression, absorbing only operators that bind tighter than binding level
-// min (same steps as parser.prattParse).
-type prattFrame struct {
+// operatorsRuleFrame parses an expression, absorbing only operators that bind tighter than binding level
+// min (same steps as parser.operatorsRuleParse).
+type operatorsRuleFrame struct {
 	r        *rule
 	min      int
 	state    int
 	lhs      *Node
 	lastNone int
 	m0       mark
-	a        prattAttempt
+	a        operatorsRuleAttempt
 }
 
 const (
@@ -469,8 +469,8 @@ const (
 	pRHS
 )
 
-func (f *prattFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult, bool) {
-	pr := f.r.pratt
+func (f *operatorsRuleFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresult, bool) {
+	pr := f.r.operatorsRule
 	for {
 		switch f.state {
 		case pBegin:
@@ -507,9 +507,9 @@ func (f *prattFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresul
 			}
 			p.apply(a)
 			if a.op.kind == grammar.Postfix {
-				f.lhs = p.prattBuild(f.r, a, f.lhs, nil)
+				f.lhs = p.operatorsRuleBuild(f.r, a, f.lhs, nil)
 				f.lastNone = -1
-				if p.pos == f.m0.pos { // as in parser.prattParse
+				if p.pos == f.m0.pos { // as in parser.operatorsRuleParse
 					return nil, iresult{v: f.lhs, ok: true}, true
 				}
 				f.state = pLoop
@@ -520,7 +520,7 @@ func (f *prattFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresul
 				rmin--
 			}
 			f.state = pRHS
-			return p.prattFrame(f.r, rmin), iresult{}, false
+			return p.operatorsRuleFrame(f.r, rmin), iresult{}, false
 		case pRHS:
 			a := &f.a
 			if !res.ok {
@@ -530,12 +530,12 @@ func (f *prattFrame) next(p *parser, vm *vmProgram, res iresult) (iframe, iresul
 				p.reset(f.m0)
 				return nil, iresult{v: f.lhs, ok: true}, true
 			}
-			f.lhs = p.prattBuild(f.r, a, f.lhs, res.v)
+			f.lhs = p.operatorsRuleBuild(f.r, a, f.lhs, res.v)
 			f.lastNone = -1
 			if a.op.assoc == grammar.AssocNone {
 				f.lastNone = a.op.level
 			}
-			if p.pos == f.m0.pos { // as in parser.prattParse
+			if p.pos == f.m0.pos { // as in parser.operatorsRuleParse
 				return nil, iresult{v: f.lhs, ok: true}, true
 			}
 			f.state = pLoop

@@ -385,7 +385,7 @@ func TestDepth(t *testing.T) {
 			t.Errorf("%s: only %d levels are valid", c.name, lo)
 		}
 	}
-	// Each prefix operator of a chain counts against the limit (the Pratt parser reads its operand by
+	// Each prefix operator of a chain counts against the limit (the Operators Rule parser reads its operand by
 	// recursion): about 100,000 are valid, and a million are an error, not a stack overflow.
 	if !Valid("x: " + strings.Repeat("-", 90000) + "1\n") {
 		t.Errorf("90,000 prefix operators are not valid")

@@ -17,9 +17,9 @@ func (c *compiler) attributed(e *grammar.Attributed, s *scope, build bool) match
 		switch a.Name {
 		case "stream":
 			if _, ok := e.Expr.(*grammar.Repeat); !ok {
-				c.errorf(a.Pos, "#stream must be attached to a repetition (*, +, or {n,m})")
+				c.errorf(a.Pos, "#stream must be attached to a repetition (*, +, or #repeat(...))")
 			}
-			if len(a.Args) > 0 {
+			if len(a.Args)+len(a.KwArgs) > 0 {
 				c.errorf(a.Pos, "#stream takes no arguments")
 			}
 		case "error":
@@ -38,11 +38,11 @@ func (c *compiler) attributed(e *grammar.Attributed, s *scope, build bool) match
 			// recovery either, so that the shape of the enclosing value does not depend on it.
 			m = recoverAttr(m, c.expr(skipExpr, s, false), build && visible(e.Expr))
 		default:
-			c.errorf(a.Pos, "unknown attribute #%s", a.Name)
+			c.errorf(a.Pos, "unknown attribute @%s", a.Name)
 		}
-		for _, arg := range a.Args {
-			if !validArg(a.Name, arg.Name) {
-				c.errorf(a.Pos, "#%s has no argument %s", a.Name, arg.Name)
+		for name := range a.KwArgs {
+			if !validArg(a.Name, name) {
+				c.errorf(a.Pos, "%s%s has no argument %s", annotationMarker(a), a.Name, name)
 			}
 		}
 	}
@@ -62,12 +62,12 @@ func validArg(attr, arg string) bool {
 func (c *compiler) stringArg(a *grammar.Attribute, name string) (string, bool) {
 	v, ok := a.Arg(name)
 	if !ok {
-		c.errorf(a.Pos, "#%s requires a %s argument", a.Name, name)
+		c.errorf(a.Pos, "@%s requires a %s argument", a.Name, name)
 		return "", false
 	}
 	lit, ok := v.(*grammar.Literal)
 	if !ok {
-		c.errorf(a.Pos, "#%s: %s must be a string", a.Name, name)
+		c.errorf(a.Pos, "@%s: %s must be a string", a.Name, name)
 		return "", false
 	}
 	return lit.Value, true

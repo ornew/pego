@@ -18,8 +18,8 @@ position units. It does not work with `RecognizeOnly` (`ParseStream` returns an 
 `GenerateGo`. If the problem is the opposite one, a text that stays in memory and is edited again and again, see
 [Incremental parsing](incremental.md): a `Document` is always parsed as a whole, so the two do not combine.
 
-The design is in [design record 007](../design/007-streaming-and-incremental-parsing.md); the attribute is specified in
-[spec/attributes.md](../../spec/attributes.md#stream).
+The design is in [design record 007](../design/007-streaming-and-incremental-parsing.md); the pragma is specified in
+[spec/pragmas.md](../../spec/pragmas.md#stream).
 
 Recognition treats `#stream` as an ordinary repetition and invokes no callbacks. Captures needed by element
 predicates still work, but element values are not collected or decorated with captures. This applies to both VM
@@ -36,7 +36,7 @@ backends as well as Closure; recognition from a saved grammar requires its AST.
 - [Recipe: cancelling a stream](#recipe-cancelling-a-stream)
 - [See also](#see-also)
 
-## A first example
+## A First Example
 
 `#stream` marks a repetition at the top level of the start rule. Everything the repetition matches is handed to your
 function one element at a time, and forgotten.
@@ -48,11 +48,11 @@ type Pair struct { Key Key, Value Value }
 type Key terminal
 type Value terminal
 
-def main = pair* #stream $$
+rule main = pair* #stream $$
 
-def pair: Pair = k:key "=" v:value "\n" -> new Pair{Key: $k, Value: $v}
-def key: Key = @(?a-z_)+
-def value: Value = @(?0-9)+
+rule pair Pair = k:key "=" v:value "\n" => Pair{Key: $k, Value: $v}
+rule key Key = [a-z_]+ #atomic
+rule value Value = [0-9]+ #atomic
 ```
 
 From the command line, `pego parse -stream` prints one line per element (JSON by default, `-f sexpr` for
@@ -62,7 +62,7 @@ S-expressions). Elements that matched before an error are printed, then the erro
 $ printf 'a=1\nbb=22\nccc=x\n' | pego parse -g kv.pego -stream
 {"type":"Pair","start":0,"end":4,"fields":{"Key":{"type":"Key","rule":"key","start":0,"end":1,"text":"a"},"Value":{"type":"Value","rule":"value","start":2,"end":3,"text":"1"}}}
 {"type":"Pair","start":4,"end":10,"fields":{"Key":{"type":"Key","rule":"key","start":4,"end":6,"text":"bb"},"Value":{"type":"Value","rule":"value","start":7,"end":9,"text":"22"}}}
-pego: 3:5: syntax error: expected (?0-9)
+pego: 3:5: syntax error: expected [0-9]
 ```
 
 From Go (in a module that requires `github.com/ornew/pego`):
@@ -77,19 +77,17 @@ import (
 	"github.com/ornew/pego"
 )
 
-const grammar = `
-package kv
+const grammar = `package kv
 
 type Pair struct { Key Key, Value Value }
 type Key terminal
 type Value terminal
 
-def main = pair* #stream $$
+rule main =  pair* #stream $$
 
-def pair: Pair = k:key "=" v:value "\n" -> new Pair{Key: $k, Value: $v}
-def key: Key = @(?a-z_)+
-def value: Value = @(?0-9)+
-`
+rule pair Pair =  k:key "=" v:value "\n" => Pair{Key: $k, Value: $v}
+rule key Key =  [a-z_]+ #atomic
+rule value Value =  [0-9]+ #atomic `
 
 func main() {
 	p, err := pego.CompileSource(grammar, "main")
@@ -114,13 +112,13 @@ func main() {
 $ printf 'a=1\nbb=22\nccc=x\n' | go run .
 [0,4) a = 1
 [4,10) bb = 22
-error: 3:5: syntax error: expected (?0-9)
+error: 3:5: syntax error: expected [0-9]
 ```
 
 Notice that the third line is reported as an error at `3:5`, even though the parser had thrown away the first two lines
 by then: line and column numbers, like node positions, refer to the whole input.
 
-## What is emitted, and when
+## What Is Emitted, and When
 
 - **One element per iteration.** The element is the value one iteration of the repetition contributes to the `List` of
   an ordinary parse: a struct node if the element is a rule with an action, a CST node (`Seq`, `Match`, ...) otherwise.
@@ -186,14 +184,12 @@ func run(grammar string, chunks ...string) {
 
 func main() {
 	fmt.Println("elements that end with a literal:")
-	run(`
-def main = line* #stream $$
-def line = @(?a-z)+ "\n"`, "ab\nc", "d\n", "ef\n")
+	run(`rule main =  line* #stream $$
+rule line =  [a-z]+ #atomic "\n" `, "ab\nc", "d\n", "ef\n")
 
 	fmt.Println("elements that end with a repetition:")
-	run(`
-def main = word* #stream $$
-def word = @(?a-z)+ " "?`, "ab ", "cd", " ef")
+	run(`rule main =  word* #stream $$
+rule word =  [a-z]+ #atomic " "? `, "ab ", "cd", " ef")
 }
 ```
 
@@ -219,31 +215,31 @@ elements that end with a repetition:
 In the first run `ab\n` is delivered before `c` has even been completed. In the second, `cd` is held back until the
 next chunk shows it is not followed by another letter, and `ef` until the end of the input.
 
-## Rules and limits
+## Rules and Limits
 
 | | |
 |:--|:--|
-| Where `#stream` can appear | On a repetition (`*`, `+` or `{n,m}`) that is the body of a rule, an item of the body's top-level sequence, or the expression captured by such an item (`items:record* #stream`). Anywhere else (inside a choice or a group, or on something that is not a repetition) is a compile error, as is a second `#stream` in the same rule or any argument to it. |
+| Where `#stream` can appear | On a repetition (`*`, `+` or `#repeat(n,m)`) that is the body of a rule, an item of the body's top-level sequence, or the expression captured by such an item (`items:record* #stream`). Anywhere else (inside a choice or a group, or on something that is not a repetition) is a compile error, as is a second `#stream` in the same rule or any argument to it. |
 | Which rule streams | Only the **start rule** of the parse, at call depth 1. `ParseStream` fails with `rule main has no #stream repetition` if the start rule has none, even when a rule it calls does. Use `Parser.WithStart` to stream from another rule. In every other call of a rule that contains `#stream`, the repetition is an ordinary one. |
 | What may follow | Anything. After the repetition ends, the rest of the start rule must match as usual, normally `$$`. |
-| Finite bounds | `{n,m}` delivers at most `m` elements and fails if fewer than `n` match. `{0}` executes no elements. Input beyond the maximum is left for the suffix: `"a"{1,2} #stream "a" $$` accepts `aaa` and delivers two elements. A later suffix or minimum failure does not retract elements already delivered. |
-| Recovery boundary | `#recover` cannot wrap the `#stream` repetition in either attribute order: rewinding could reach input already discarded. Put recovery inside each repeated element or its rule. `#error` may still label the streaming repetition. Older saved modules with the unsafe wrapper are rejected, including files without an AST. |
-| Elements that can match nothing | If the maximum permits an element, the first element that matches the empty string is delivered once and then ends the repetition. It counts toward the minimum; if the total is still below the minimum, parsing fails without retracting delivered elements. For example, `_{2} #stream` on empty input emits once and fails, just as batch parsing fails after one empty iteration. Without a guard like the `!$$` in [parsers/csv](../../parsers/csv/csv.pego), a record rule whose fields and line end can all match nothing delivers one extra empty record at the end of input. |
+| Finite bounds | `#repeat(n,m)` delivers at most `m` elements and fails if fewer than `n` match. `#repeat(0)` executes no elements. Input beyond the maximum is left for the suffix: `"a" #repeat(1,2) #stream "a" $$` accepts `aaa` and delivers two elements. A later suffix or minimum failure does not retract elements already delivered. |
+| Recovery boundary | `#recover` cannot wrap the `#stream` repetition in either pragma order: rewinding could reach input already discarded. Put recovery inside each repeated element or its rule. `@error` may still label the streaming repetition. Older saved modules with the unsafe wrapper are rejected, including files without an AST. |
+| Elements that can match nothing | If the maximum permits an element, the first element that matches the empty string is delivered once and then ends the repetition. It counts toward the minimum; if the total is still below the minimum, parsing fails without retracting delivered elements. For example, `_ #repeat(2) #stream` on empty input emits once and fails, just as batch parsing fails after one empty iteration. Without a guard like the `!$$` in [parsers/csv](../../parsers/csv/csv.pego), a record rule whose fields and line end can all match nothing delivers one extra empty record at the end of input. |
 | Options | `WithUnit` and `WithBackend` work; `WithMaxDepth` applies; `RecognizeOnly` is an error. |
 | Lookbehind | After an element, the input before it is dropped except for the one character before it, so `^` (beginning of line) still works at the start of the next element. Nothing in the language looks further back. |
 | Concurrency | A `Parser` can run many `ParseStream` calls at once. Each call has its own state. |
 
-The compile errors are, in order: `#stream must be attached to a repetition (*, +, or {n,m})`, `#stream is only allowed
+The compile errors are, in order: `#stream must be attached to a repetition (*, +, or #repeat(...))`, `#stream is only allowed
 at the top level of a rule body`, `a rule body can have only one #stream` and `#stream takes no arguments`.
 
-## Positions and text
+## Positions and Text
 
 `Node.Start` and `Node.End`, `startPos` and `endPos` in actions, `SyntaxError.Pos`, `Line` and `Col` all count from the
 start of the whole input, whichever part has been dropped (the parser keeps a running line and column for the dropped
 part). `WithUnit(pego.Bytes)` switches all of them to bytes: the `!` in `éé!` is at column 3 counted in code points and at
 column 5 counted in bytes.
 
-The parser does not keep text for you. Terminal nodes (`Match`, terminal types, `@(...)`) carry their text in `Node.Text`;
+The parser does not keep text for you. Terminal nodes (`Match`, terminal types, `(...) #atomic`) carry their text in `Node.Text`;
 structural nodes (`Seq`, `List`) do not, and by the time your callback runs the input of an element is already being
 discarded. If you need the raw text of an element, capture it as a terminal in the grammar. For the same reason,
 `text(...)` in an action of the start rule, which runs after the elements have gone, returns only the part of the
@@ -286,9 +282,8 @@ func (r *failingReader) Read(b []byte) (int, error) {
 }
 
 func main() {
-	lines := compile(`
-def main = line* #stream $$
-def line = @(?a-z0-9)+ "\n"`)
+	lines := compile(`rule main =  line* #stream $$
+rule line =  [a-z0-9]+ #atomic "\n" `)
 	print := func(n *pego.Node) error {
 		fmt.Printf("  element [%d,%d)\n", n.Start, n.End)
 		return nil
@@ -322,11 +317,10 @@ def line = @(?a-z0-9)+ "\n"`)
 
 	// 4. Errors recovered with #recover are reported after the last element.
 	fmt.Println("recovered errors:")
-	entries := compile(`
-def main = entry* #stream $$
-def entry = (name "=" num "\n") #recover(skip=(?^\n)* "\n")
-def name = @(?a-z)+
-def num = @(?0-9)+`)
+	entries := compile(`rule main =  entry* #stream $$
+rule entry =  (name "=" num "\n") #recover(skip=[^\n]* "\n")
+rule name =  [a-z]+ #atomic
+rule num =  [0-9]+ #atomic `)
 	err = entries.ParseStream(strings.NewReader("a=1\nb=x\nc=3\nd\n"), func(n *pego.Node) error {
 		fmt.Printf("  element %v\n", n)
 		return nil
@@ -344,7 +338,7 @@ def num = @(?0-9)+`)
 syntax error:
   element [0,3)
   element [3,6)
-  3:1: syntax error: expected (?a-z0-9), end of input (line 3, column 1, position 6)
+  3:1: syntax error: expected [a-z0-9], end of input (line 3, column 1, position 6)
 callback error:
   err == errEnough: true, callbacks: 2
 reader error:
@@ -353,11 +347,11 @@ reader error:
   errors.Is(err, errReset): true
 recovered errors:
   element (Seq "a"@name "=" "1"@num "\n")@entry
-  element Error"b=x\n"{message=`2:3: syntax error: expected (?0-9)`}@entry
+  element Error"b=x\n"{message=`2:3: syntax error: expected [0-9]`}@entry
   element (Seq "c"@name "=" "3"@num "\n")@entry
-  element Error"d\n"{message=`4:2: syntax error: expected "=", (?a-z)`}@entry
-  recovered: 2:3: syntax error: expected (?0-9)
-  recovered: 4:2: syntax error: expected "=", (?a-z)
+  element Error"d\n"{message=`4:2: syntax error: expected "=", [a-z]`}@entry
+  recovered: 2:3: syntax error: expected [0-9]
+  recovered: 4:2: syntax error: expected "=", [a-z]
 ```
 
 1. **The input does not match.** Elements that matched before the failure have already been delivered. The error is a
@@ -369,7 +363,7 @@ recovered errors:
    purpose: return a sentinel error and compare against it.
 3. **The reader fails.** Any error from `Read` other than `io.EOF` is returned as it is. Elements completed before it are
    delivered; an element cut in two by the failure is not.
-4. **Recovered errors.** With [`#recover`](../../spec/attributes.md#recover) inside the element, a bad element becomes
+4. **Recovered errors.** With [`#recover`](../../spec/pragmas.md#recover) inside the element, a bad element becomes
    an `Error` node (delivered like any other element) and parsing continues. At the end, `ParseStream` returns the
    recorded errors as `pego.SyntaxErrors`, even though every element was delivered. Treat that as "success with
    diagnostics" and use `errors.As(err, &recovered)` to tell it from a fatal `*SyntaxError`. All recovered errors are kept until the end, so a
@@ -435,17 +429,15 @@ import (
 
 // Two grammars for the same input: the elements are either CST nodes or struct nodes built by an action.
 var grammars = map[string]string{
-	"cst": `
-def main = item* #stream $$
-def item = ^ k:@(?a-z)+ "=" v:@(?0-9)+ "\n"`,
-	"action": `
-type Pair struct { Key Key, Value Value }
+	"cst": `rule main =  item* #stream $$
+rule item =  ^ k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" `,
+	"action": `type Pair struct { Key Key, Value Value }
 type Key terminal
 type Value terminal
-def main = item* #stream $$
-def item: Pair = k:key "=" v:value "\n" -> new Pair{Key: $k, Value: $v}
-def key: Key = @(?a-z)+
-def value: Value = @(?0-9)+`,
+rule main =  item* #stream $$
+rule item Pair =  k:key "=" v:value "\n" => Pair{Key: $k, Value: $v}
+rule key Key =  [a-z]+ #atomic
+rule value Value =  [0-9]+ #atomic `,
 }
 
 // repeat is an io.Reader that yields n copies of line without holding them in memory.
@@ -506,7 +498,7 @@ Both stay flat: what is reachable is the parser's working set, not the elements 
 gigabytes, measuring your own grammar with a helper like the one above is still worthwhile; what it should show is a
 number that does not grow with the input.
 
-## Recipe: summing a CSV column
+## Recipe: Summing a CSV Column
 
 The CSV grammar of [parsers/csv](../../parsers/csv/csv.pego) streams record by record. This program, with a copy of
 `csv.pego` next to it, sums the third column and reports the first bad record with its offset; with `-whole` it uses
@@ -602,7 +594,7 @@ Errors carry enough to locate the bad input, both from the callback and from the
 $ printf 'id,name,amount\n1,a,2.5\n2,b,oops\n3,c,1\n' | ./csvsum
 record 3 (offset 23): strconv.ParseFloat: parsing "oops": invalid syntax
 $ printf 'id,name,amount\n1,a,2.5\n2,"b\n' | ./csvsum
-4:1: syntax error: expected "\"", "\"\"", (?^")
+4:1: syntax error: expected "\"", "\"\"", [^"]
 ```
 
 (The record number counts the header. The callback's error is wrapped with the record's `Start` offset; the parser's
@@ -610,7 +602,7 @@ error says the quoted field never ended.) Line-oriented formats work the same wa
 rule that cannot match the empty string at the end of input (`!$$`), an `eol` that also accepts `$$`, and `$$` after the
 repetition.
 
-## Recipe: a header followed by records
+## Recipe: A Header Followed by Records
 
 `ParseStream` does not return the header. Make it an element and tell the kinds apart by node type:
 
@@ -624,8 +616,7 @@ import (
 	"github.com/ornew/pego"
 )
 
-const grammar = `
-package kv
+const grammar = `package kv
 
 type Header struct { Version Version }
 type Version terminal
@@ -633,14 +624,13 @@ type Pair struct { Key Key, Value Value }
 type Key terminal
 type Value terminal
 
-def main = ^^ item* #stream $$
-def item = header / pair
-def header: Header = "#version " v:version "\n" -> new Header{Version: $v}
-def version: Version = @(?0-9)+
-def pair: Pair = k:key "=" v:value "\n" -> new Pair{Key: $k, Value: $v}
-def key: Key = @(?a-z_)+
-def value: Value = @(?0-9)+
-`
+rule main =  ^^ item* #stream $$
+rule item =  header / pair
+rule header Header =  "#version " v:version "\n" => Header{Version: $v}
+rule version Version =  [0-9]+ #atomic
+rule pair Pair =  k:key "=" v:value "\n" => Pair{Key: $k, Value: $v}
+rule key Key =  [a-z_]+ #atomic
+rule value Value =  [0-9]+ #atomic `
 
 func main() {
 	p, err := pego.CompileSource(grammar, "main")
@@ -671,7 +661,7 @@ Here `item = header / pair` is the repeated element, so a stream whose header ap
 grammar; if that matters, check it in the callback (or give the first element its own rule outside the repetition and
 accept that its value is not delivered).
 
-## Recipe: cancelling a stream
+## Recipe: Cancelling a Stream
 
 The parser blocks inside `Read` while it waits for input, and returning an error from the callback only helps when an
 element completes. To give up on a quiet connection, make `Read` fail from outside: close the connection, set a read
@@ -692,10 +682,8 @@ import (
 	"github.com/ornew/pego"
 )
 
-const grammar = `
-def main = line* #stream $$
-def line = @(?a-z0-9)+ "\n"
-`
+const grammar = `rule main =  line* #stream $$
+rule line =  [a-z0-9]+ #atomic "\n" `
 
 // parseContext streams r into emit and gives up when ctx is cancelled. The parser blocks inside r.Read, so
 // cancelling needs the reader to fail: cancelRead must make a blocked Read return the error (closing the
@@ -737,10 +725,10 @@ line two
 err: context deadline exceeded true
 ```
 
-## See also
+## See Also
 
 - [Incremental parsing](incremental.md): reparsing a text after edits.
-- [spec/attributes.md](../../spec/attributes.md#stream): the `#stream` attribute.
-- [Errors and recovery](errors-and-recovery.md): `#error`, `#recover` and the shape of `SyntaxError`.
+- [spec/pragmas.md](../../spec/pragmas.md#stream): the `#stream` behavioral pragma.
+- [Errors and recovery](errors-and-recovery.md): `@error`, `#recover` and the shape of `SyntaxError`.
 - [Runtime](runtime.md): backends, position units and the other parse options.
 - [Design record 007](../design/007-streaming-and-incremental-parsing.md).

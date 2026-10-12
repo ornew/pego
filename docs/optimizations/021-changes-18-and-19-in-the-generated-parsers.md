@@ -1,4 +1,4 @@
-# 21. Changes 18 and 19 in the generated parsers
+# 21. Changes 18 and 19 in the Generated Parsers
 
 - The generated runtime (`internal/engine/genrt`) now defers memoization to the second call at a position with the
   same per-rule switch to eager memoization (the generator emits each rule's `seen` number and their count), and calls
@@ -11,6 +11,6 @@
   | JSON | 14.8 ms, 37.0 MB | 11.2 ms, 23.8 MB |
   | CSV | 7.2 ms, 27.4 MB | 5.7 ms, 19.4 MB |
   | XML | 11.8 ms, 29.4 MB | 10.7 ms, 25.3 MB |
-  | Arith_Pratt | 8.9 ms, 16.9 MB | 7.6 ms, 11.9 MB |
+  | Arith_OperatorsRule | 8.9 ms, 16.9 MB | 7.6 ms, 11.9 MB |
   | Arith_LeftRec | 18.2 ms | 18.8 ms (unchanged bytes) |
   | Minilang | 13.2 ms, 18.6 MB | 12.8 ms, 17.2 MB |

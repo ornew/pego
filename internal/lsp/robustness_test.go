@@ -14,8 +14,8 @@ import (
 func TestIncompletePackageClause(t *testing.T) {
 	c := newInitialized(t)
 	uri := "file:///package.pego"
-	c.open(uri, "def a = b\n")
-	for i, text := range []string{"package ", "package", "package {", "package\ndef a = \"x\""} {
+	c.open(uri, "rule a = b\n")
+	for i, text := range []string{"package ", "package", "package {", "package\nrule a = \"x\""} {
 		d := change(c, uri, i+2, map[string]any{"text": text})
 		if len(d) != 1 || d[0].Message[:len("expected identifier")] != "expected identifier" {
 			t.Errorf("%q: diagnostics %+v", text, d)
@@ -33,11 +33,11 @@ func TestIncompletePackageClause(t *testing.T) {
 // diagnostics is limited.
 func TestHostileInput(t *testing.T) {
 	c := newInitialized(t)
-	junk := "def a = \"x\"\n" + strings.Repeat("`;~😀", 1<<19)
+	junk := "rule a = \"x\"\n" + strings.Repeat("`~😀", 1<<19)
 	if d := c.open("file:///junk.pego", junk); len(d) != 1 || !strings.HasPrefix(d[0].Message, "unexpected characters") {
 		t.Errorf("junk: %d diagnostics, the first %+v", len(d), d[:min(len(d), 1)])
 	}
-	if d := c.open("file:///deep.pego", "def a = "+strings.Repeat("(\n", 1<<20)); messages(d) != "nesting too deep" {
+	if d := c.open("file:///deep.pego", "rule a = "+strings.Repeat("(\n", 1<<20)); messages(d) != "nesting too deep" {
 		t.Errorf("deep nesting: %.200s", messages(d))
 	}
 	// Separate invalid characters: the parser records at most 100 errors.
@@ -46,7 +46,7 @@ func TestHostileInput(t *testing.T) {
 	}
 	// Compile errors: the server publishes at most 100.
 	refs := strings.Repeat(" x", 300)
-	if d := c.open("file:///undefined.pego", "def a ="+refs); len(d) != 101 || d[100].Message != "200 more errors" || d[100].Range != rng(0, 208, 0, 209) {
+	if d := c.open("file:///undefined.pego", "rule a ="+refs); len(d) != 101 || d[100].Message != "200 more errors" || d[100].Range != rng(0, 209, 0, 210) {
 		t.Errorf("many compile errors: %d diagnostics, the last %+v", len(d), d[len(d)-1])
 	}
 	c.exit()
@@ -59,18 +59,18 @@ func TestCompletionAfterTriggerCharacters(t *testing.T) {
 	c := newInitialized(t)
 	uri := "file:///trigger.pego"
 	lines := []string{
-		`def a = x:"a" $`,
-		`def b = x:"a" $x`,
-		`def c = "x" .`,
-		`def d = "x" .b`,
-		`def e = "x" . `,
-		`def f = x:"a" -> $`,
-		`def g = x:"a" -> $x.`,
-		`def h = x:"a" [$`,
-		`def i = x:"a" [len($x) > 0] $`,
+		`rule a = x:"a" $`,
+		`rule b = x:"a" $x`,
+		`rule c = "x" .`,
+		`rule d = "x" .b`,
+		`rule e = "x" . `,
+		`rule f = x:"a" => $`,
+		`rule g = x:"a" => $x.`,
+		`rule h = x:"a" {$`,
+		`rule i = x:"a" {len($x) > 0} $`,
 	}
 	c.open(uri, strings.Join(lines, "\n"))
-	rules := []string{"a", "b", "c", "d", "def", "e", "f", "g", "h", "i", "type"}
+	rules := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "rule", "type"}
 	for i, want := range [][]string{
 		nil, nil, nil, nil, rules,
 		{"x"}, {"children", "endPos", "startPos"}, {"x"}, nil,
@@ -88,12 +88,12 @@ func TestCompletionAfterTriggerCharacters(t *testing.T) {
 func TestRenameToUndefinedName(t *testing.T) {
 	c := newInitialized(t)
 	uri := "file:///undefined.pego"
-	c.open(uri, "def a = b c\ndef b = \"x\"\ntype T struct { F U }\ndef d: T = \"d\"")
+	c.open(uri, "rule a = b c\nrule b = \"x\"\ntype T struct { F U }\nrule d T = \"d\"")
 	for _, tc := range []struct {
 		line, char int
 		name, want string
 	}{
-		{1, 4, "c", "rule c is used (but not defined) in the file"},
+		{1, 5, "c", "rule c is used (but not defined) in the file"},
 		{2, 5, "U", "type U is used (but not defined) in the file"},
 	} {
 		p := at(uri, tc.line, tc.char)
@@ -103,7 +103,7 @@ func TestRenameToUndefinedName(t *testing.T) {
 		}
 	}
 	// A name used only in the other namespace is free.
-	p := at(uri, 1, 4)
+	p := at(uri, 1, 5)
 	p["newName"] = "U"
 	c.request("textDocument/rename", p)
 	c.exit()
@@ -113,20 +113,20 @@ func TestRenameToUndefinedName(t *testing.T) {
 // sequence, from its backslash.
 func TestEscapeErrorRange(t *testing.T) {
 	c := newInitialized(t)
-	d := c.open("file:///escape.pego", "def a = \"😀\\q\" ` b")
-	if len(d) != 2 || d[0].Range != rng(0, 11, 0, 13) || d[1].Range != rng(0, 15, 0, 16) {
+	d := c.open("file:///escape.pego", "rule a = \"😀\\q\" ` b")
+	if len(d) != 2 || d[0].Range != rng(0, 12, 0, 14) || d[1].Range != rng(0, 16, 0, 17) {
 		t.Errorf("diagnostics %+v", d)
 	}
 	c.exit()
 }
 
 func TestDecimalReferenceErrorRange(t *testing.T) {
-	const prefix = `def main="😀" -> `
+	const prefix = `rule main = "😀" => `
 	for _, digits := range []string{"١", "𝟙", "1١", "18446744073709551616"} {
 		c := newInitialized(t)
 		end := len(utf16.Encode([]rune(prefix + "$" + digits)))
 		start := len(utf16.Encode([]rune(prefix)))
-		d := c.open("file:///decimal.pego", prefix+"$"+digits+"\ndef after=\"ok\"")
+		d := c.open("file:///decimal.pego", prefix+"$"+digits+"\nrule after = \"ok\"")
 		if len(d) != 1 || !strings.Contains(d[0].Message, "invalid positional reference") || d[0].Range != rng(0, start, 0, end) {
 			t.Errorf("%q: diagnostics %+v", digits, d)
 		}
@@ -139,14 +139,14 @@ func TestDecimalReferenceErrorRange(t *testing.T) {
 func TestLoneCarriageReturns(t *testing.T) {
 	c := newInitialized(t)
 	uri := "file:///cr.pego"
-	text := "// The rules.\rdef  a = b x // c\rdef b = \"😀\"\r"
+	text := "// The rules.\rrule a = b x // c\rrule b = \"😀\"\r"
 	d := c.open(uri, text)
 	if messages(d) != "undefined rule x" || d[0].Range != rng(1, 11, 1, 12) {
 		t.Errorf("diagnostics %+v", d)
 	}
 	var syms []DocumentSymbol
 	c.requestInto("textDocument/documentSymbol", docParams(uri), &syms)
-	if len(syms) != 2 || syms[0].SelectionRange != rng(1, 5, 1, 6) || syms[1].Range != rng(2, 0, 2, 12) {
+	if len(syms) != 2 || syms[0].SelectionRange != rng(1, 5, 1, 6) || syms[1].Range != rng(2, 0, 2, 13) {
 		t.Errorf("symbols %+v", syms)
 	}
 	if h, _ := hoverText(c, uri, 1, 5); !strings.Contains(h, "The rules.") {
@@ -154,8 +154,8 @@ func TestLoneCarriageReturns(t *testing.T) {
 	}
 	// Formatting keeps the line ends.
 	change(c, uri, 2, edit(1, 11, 1, 13, ""))
-	text = "// The rules.\rdef  a = b // c\rdef b = \"😀\"\r"
-	if got := formatDoc(c, uri, text); got != "// The rules.\rdef a = b // c\rdef b = \"😀\"\r" {
+	text = "// The rules.\rrule a = b // c\rrule b = \"😀\"\r"
+	if got := formatDoc(c, uri, text); got != "// The rules.\rrule a = b // c\rrule b = \"😀\"\r" {
 		t.Errorf("formatted %q", got)
 	}
 	c.exit()
@@ -174,7 +174,7 @@ func TestFailedAnalysis(t *testing.T) {
 	const want = "internal error while analyzing the document: boom"
 
 	// The first version fails: an empty analysis.
-	if d := c.open("file:///new.pego", "def BOOM = x"); messages(d) != want {
+	if d := c.open("file:///new.pego", "rule BOOM = x"); messages(d) != want {
 		t.Errorf("diagnostics %+v", d)
 	}
 	var syms []DocumentSymbol
@@ -185,8 +185,8 @@ func TestFailedAnalysis(t *testing.T) {
 
 	// A later version fails: the analysis of the earlier one is kept.
 	uri := "file:///boom.pego"
-	c.open(uri, "def  a = \"x\"\ndef main = a")
-	if d := change(c, uri, 2, edit(1, 0, 1, 0, "// BOOM\n")); messages(d) != want {
+	c.open(uri, "rule a = \"x\"\nrule main = a")
+	if d := change(c, uri, 2, edit(1, 0, 1, 0, "# BOOM\n")); messages(d) != want {
 		t.Errorf("diagnostics %+v", d)
 	}
 	c.requestInto("textDocument/documentSymbol", docParams(uri), &syms)
@@ -194,7 +194,7 @@ func TestFailedAnalysis(t *testing.T) {
 		t.Errorf("symbols %+v", syms)
 	}
 	var locs []Location
-	c.requestInto("textDocument/definition", at(uri, 1, 11), &locs)
+	c.requestInto("textDocument/definition", at(uri, 1, 12), &locs)
 	if len(locs) != 1 || locs[0].Range != rng(0, 5, 0, 6) {
 		t.Errorf("definition %+v", locs)
 	}
@@ -202,7 +202,7 @@ func TestFailedAnalysis(t *testing.T) {
 	if r := c.request("textDocument/formatting", docParams(uri)); string(r) != "[]" {
 		t.Errorf("formatting %s", r)
 	}
-	if e := c.requestError("textDocument/prepareRename", at(uri, 1, 11)); e.Code != codeRequestFailed {
+	if e := c.requestError("textDocument/prepareRename", at(uri, 1, 12)); e.Code != codeRequestFailed {
 		t.Errorf("prepareRename %+v", e)
 	}
 	// Once the text analyzes again, everything is back.

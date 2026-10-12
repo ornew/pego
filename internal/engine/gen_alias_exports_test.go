@@ -12,8 +12,7 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-const aliasExportsGrammar = `
-type Word terminal
+const aliasExportsGrammar = `type Word terminal
 type Other terminal
 type Alias = Word
 type Chain = Alias
@@ -33,7 +32,7 @@ type BoxAlias = Box
 type Node = Word
 type Node_ = Other
 type Span = int
-def main: Alias = "a"`
+rule main Alias = "a"`
 
 // Compile a separate consumer: compiling the generated package alone does not
 // detect missing exports, and aliases must preserve assignment compatibility.
@@ -125,7 +124,7 @@ func BenchmarkGenerateAliasExports(b *testing.B) {
 			for i := range n {
 				fmt.Fprintf(&src, "type Alias%d = Word\n", i)
 			}
-			src.WriteString("def main: Word = \"a\"\n")
+			src.WriteString("rule main Word = \"a\"\n")
 			g, err := syntax.Parse(src.String())
 			if err != nil {
 				b.Fatal(err)

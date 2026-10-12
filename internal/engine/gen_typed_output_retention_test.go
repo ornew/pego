@@ -26,27 +26,26 @@ func TestGeneratedTypedOutputRetentionFixture(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	g, err := syntax.Parse(`
-type Token terminal
+	g, err := syntax.Parse(`type Token terminal
 type Pair struct { Text string, Left Token, Right Token }
 type Values struct { Items []Token }
 type LargeValues struct { Items []Pair }
 type SmallValues struct { Items []Pair }
-def main = leaf
-def leaf: Token = x:discarded x:small -> $x
-def match: Match = discardedMatch y:@("b") -> $y
-def discardedMatch: Match = x:@("é"+) -> $x
-def structure: Pair = discardedPair y:small -> new Pair{Text: "b", Left: $y, Right: $y}
-def list: Values = discarded ys:small+ -> new Values{Items: $ys}
-def slice: SmallValues = discardedHolder filler filler filler filler filler filler filler xs:smallPair+ -> new SmallValues{Items: $xs}
-def discardedHolder: LargeValues = xs:largePair{1} -> new LargeValues{Items: $xs}
-def largePair: Pair = x:@("é"+) -> new Pair{Text: text($x)}
-def filler: Pair = "f" -> new Pair{Text: "f"}
-def smallPair: Pair = "b" -> new Pair{Text: "b"}
-def discardedPair: Pair = x:@("é"+) -> new Pair{Text: text($x)}
-def discarded: Token = large "!" / large
-def large: Token = "é"+
-def small: Token = "b"
+rule main = leaf
+rule leaf Token = x:discarded x:small => $x
+rule match Match = discardedMatch y:"b" #atomic => $y
+rule discardedMatch Match = x:"é"+ #atomic => $x
+rule structure Pair = discardedPair y:small => Pair{Text: "b", Left: $y, Right: $y}
+rule list Values = discarded ys:small+ => Values{Items: $ys}
+rule slice SmallValues = discardedHolder filler filler filler filler filler filler filler xs:smallPair+ => SmallValues{Items: $xs}
+rule discardedHolder LargeValues = xs:largePair #repeat(1) => LargeValues{Items: $xs}
+rule largePair Pair = x:"é"+ #atomic => Pair{Text: text($x)}
+rule filler Pair = "f" => Pair{Text: "f"}
+rule smallPair Pair = "b" => Pair{Text: "b"}
+rule discardedPair Pair = x:"é"+ #atomic => Pair{Text: text($x)}
+rule discarded Token = large "!" / large
+rule large Token = "é"+
+rule small Token = "b"
 `)
 	if err != nil {
 		t.Fatal(err)

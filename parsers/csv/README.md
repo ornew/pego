@@ -53,10 +53,10 @@ Positions are in code points by default; `csv.ParseAST(src, csv.WithUnit(csv.Byt
 break; its fields end at the `End` of the last one. With code points, the `Text` of a field holds U+FFFD for each byte
 that is not part of valid UTF-8; with `Bytes` it keeps the bytes, and so do `Records` and `Table`.
 
-The grammar works with the engine too: its `#stream` attribute hands records over one at a time in a stream parse
+The grammar works with the engine too: its `#stream` pragma hands records over one at a time in a stream parse
 (`pego parse -g csv.pego -stream`, or `ParseStream` in Go), for files larger than memory.
 
-## Where RFC 4180 and practice differ
+## Where RFC 4180 and Practice Differ
 
 The RFC defines the syntax with an ABNF grammar that real files often stray from. The package accepts every file of the
 RFC's grammar, and in the points where the RFC and practice differ it follows `encoding/csv` with its default settings

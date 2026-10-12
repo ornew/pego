@@ -37,7 +37,7 @@ returns a string rather than an error.
 
 ## Design
 
-### Public contract
+### Public Contract
 
 `Validate(*Grammar) error` returns the first structural error. The concrete
 `ValidationError` exports `Path`, `Pos` and `Msg`. Paths start at `$`, use
@@ -60,12 +60,12 @@ Unicode escapes obey the same scalar-value bound, checked by the lexer.
 Previously accepted surrogate exclusions are unreachable after UTF-8 decoding;
 remove them and recompile AST-bearing saved grammars that contain them.
 
-Name resolution, type checking, attributes and Pratt semantics remain compiler
+Name resolution, type checking, attributes and Operators Rule semantics remain compiler
 checks. Source layout is excluded. Successful structural validation is not a
 guarantee that a grammar compiles, formats to valid source or fits a resource
 budget. Existing source-language syntax is unchanged.
 
-### Implementation and entry points
+### Implementation and Entry Points
 
 An explicit traversal stack and active/completed node states distinguish
 pointer cycles from shared subtrees. Leaf nodes need no cycle bookkeeping.
@@ -84,7 +84,7 @@ Format and MarshalJSON retain their signatures and trust their AST input.
 Their callers may use Validate first. There is no serialized-format version
 change or change to generated runtime behavior.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Only guard the reported compiler dereferences.** Small fixes would leave
   other required children and pre-compilation tools exposed to the same class
@@ -125,7 +125,7 @@ Preparation measurements compare source compilation and saved grammar loading;
 correctness-related performance effects are recorded in the implementation
 commit, without an optimization-log entry.
 
-## Limitations and open questions
+## Limitations and Open Questions
 
 The validator reports one structural defect per call. It checks character
 range scalar endpoints and ordering, but does not offer semantic validation

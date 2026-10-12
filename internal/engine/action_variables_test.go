@@ -5,37 +5,42 @@ import "testing"
 // Four alternatives force reuse both with deferred batch memoization and with
 // Document's first-call memoization. No predicate reads x on behalf of r.
 var actionVariableCases = []genCase{
-	{"rule action variables", `
-type V struct { N int }
-def main = [x=1] r "b" / [x=2] r "c" / [x=3] r "d" / [x=4] r
-def r = leaf -> new V{N:x}
-def leaf = "a"`, []string{"a", "ab", "ac", "ad"}},
-	{"transitive action variables", `
-type V struct { N int }
-def main = [x=1] r "b" / [x=2] r "c" / [x=3] r "d" / [x=4] r
-def r = inner
-def inner = leaf -> new V{N:x}
-def leaf = "a"`, []string{"a", "ab", "ac", "ad"}},
-	{"pratt operand action variables", `
-type V struct { N int }
-def main = [x=1] r "b" / [x=2] r "c" / [x=3] r "d" / [x=4] r
-def r = pratt { operand leaf -> new V{N:x} }
-def leaf = "a"`, []string{"a", "ab", "ac", "ad"}},
-	{"pratt prefix action variables", `
-type V struct { N int }
-def main = [x=1] r "b" / [x=2] r "c" / [x=3] r "d" / [x=4] r
-def r = pratt { operand leaf level { prefix "-" -> new V{N:x} } }
-def leaf = "a"`, []string{"-a", "-ab", "-ac", "-ad"}},
-	{"pratt infix action variables", `
-type V struct { N int }
-def main = [x=1] r "b" / [x=2] r "c" / [x=3] r "d" / [x=4] r
-def r = pratt { operand leaf level { infix left "+" -> new V{N:x} } }
-def leaf = "a"`, []string{"a+a", "a+ab", "a+ac", "a+ad"}},
-	{"pratt postfix action variables", `
-type V struct { N int }
-def main = [x=1] r "b" / [x=2] r "c" / [x=3] r "d" / [x=4] r
-def r = pratt { operand leaf level { postfix "!" -> new V{N:x} } }
-def leaf = "a"`, []string{"a!", "a!b", "a!c", "a!d"}},
+	{"rule action variables", `type V struct { N int }
+rule main = {x := 1} r "b" / {x := 2} r "c" / {x := 3} r "d" / {x := 4} r
+rule r = leaf => V{N: x}
+rule leaf = "a"`, []string{"a", "ab", "ac", "ad"}},
+	{"transitive action variables", `type V struct { N int }
+rule main = {x := 1} r "b" / {x := 2} r "c" / {x := 3} r "d" / {x := 4} r
+rule r = inner
+rule inner = leaf => V{N: x}
+rule leaf = "a"`, []string{"a", "ab", "ac", "ad"}},
+	{"operatorsRule operand action variables", `type V struct { N int }
+rule main = {x := 1} r "b" / {x := 2} r "c" / {x := 3} r "d" / {x := 4} r
+rule r = operators {
+    operand leaf => V{N: x}
+}
+rule leaf = "a"`, []string{"a", "ab", "ac", "ad"}},
+	{"operatorsRule prefix action variables", `type V struct { N int }
+rule main = {x := 1} r "b" / {x := 2} r "c" / {x := 3} r "d" / {x := 4} r
+rule r = operators {
+    operand leaf
+    level { prefix "-" => V{N: x} }
+}
+rule leaf = "a"`, []string{"-a", "-ab", "-ac", "-ad"}},
+	{"operatorsRule infix action variables", `type V struct { N int }
+rule main = {x := 1} r "b" / {x := 2} r "c" / {x := 3} r "d" / {x := 4} r
+rule r = operators {
+    operand leaf
+    level { infix left "+" => V{N: x} }
+}
+rule leaf = "a"`, []string{"a+a", "a+ab", "a+ac", "a+ad"}},
+	{"operatorsRule postfix action variables", `type V struct { N int }
+rule main = {x := 1} r "b" / {x := 2} r "c" / {x := 3} r "d" / {x := 4} r
+rule r = operators {
+    operand leaf
+    level { postfix "!" => V{N: x} }
+}
+rule leaf = "a"`, []string{"a!", "a!b", "a!c", "a!d"}},
 }
 
 func TestMemoActionVariables(t *testing.T) {
@@ -72,10 +77,9 @@ func TestMemoActionVariables(t *testing.T) {
 }
 
 func TestDocumentActionVariableEdit(t *testing.T) {
-	prog := compile(t, `
-type V struct { N int }
-def main = text:@(?a-z)+ [n=len($text)] r
-def r = "!" -> new V{N:n}`)
+	prog := compile(t, `type V struct { N int }
+rule main = text:[a-z]+ #atomic {n := len($text)} r
+rule r = "!" => V{N: n}`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []Unit{CodePoints, Bytes} {
 			doc, err := prog.NewDocumentWith("main", "a!", ParseOptions{Backend: backend, Unit: unit})

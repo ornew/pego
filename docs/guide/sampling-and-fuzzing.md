@@ -1,4 +1,4 @@
-# Sampling inputs and fuzzing
+# Sampling Inputs and Fuzzing
 
 A grammar describes the inputs it accepts, so it can also produce them. Generated inputs are useful wherever you need
 many realistic documents: to test code that consumes parse results (an evaluator, a converter, a type checker), to
@@ -29,7 +29,7 @@ How generated inputs fit into a test suite for a grammar is in [testing grammars
 - [Fuzzing](#fuzzing)
 - [How it works, and what it cannot do](#how-it-works-and-what-it-cannot-do)
 
-## On the command line
+## On the Command Line
 
 `pego sample` prints distinct inputs that the grammar accepts, ten by default (`-n`), each as a Go-quoted string on its
 own line, so that inputs containing line breaks stay on one line. With the JSON grammar of
@@ -74,10 +74,10 @@ $ pego sample -g parsers/json/json.pego -n 2 -seed 5 -f json
 
 If the grammar accepts fewer distinct inputs than requested, or the generator cannot find more, `pego sample` prints
 what it found and says so on standard error (`pego sample: found only 3 distinct inputs`). If it finds none at all, it
-fails: the grammar may accept nothing (`def main = "a"* "a"`: the repetition takes every `a`), or every input may fail
+fails: the grammar may accept nothing (`rule main = "a"* "a"`: the repetition takes every `a`), or every input may fail
 an action at run time.
 
-## Controlling size and shape
+## Controlling Size and Shape
 
 Three options shape the inputs. They are soft: past a bound, the generator prefers the shortest way to finish the
 input, but it goes further when the input requires it (a predicate that counts the nesting, or a longer match).
@@ -85,7 +85,7 @@ input, but it goes further when the input requires it (a predicate that counts t
 | Flag | Option | Default | Bounds |
 |:--|:--|:--|:--|
 | `-max-depth` | `WithMaxDepth` | 5 | Recursion: calls of rules that are already active (an array directly in an array of the JSON example counts 3, since `value`, `array` and `elements` are each entered again) |
-| `-max-repeat` | `WithMaxRepeat` | 3 | Iterations a repetition aims for beyond its minimum, and operators in a chain of a Pratt expression |
+| `-max-repeat` | `WithMaxRepeat` | 3 | Iterations a repetition aims for beyond its minimum, and operators in a chain of an Operators Rule |
 | `-max-len` | `WithMaxLen` | 512 | Length of the input in bytes |
 
 A repetition takes each further iteration with probability 1/2, so short lists are the most common. For readable
@@ -114,10 +114,10 @@ recursive dependencies and large repetition bounds cannot wrap into negative est
 Three limits are hard, and each has a knob:
 
 - An attempt gives up after a budget of steps (`-budget`, `WithBudget`, default 20,000; a step is roughly one
-  expression generated or Pratt scope inspected). An input that needs more, such as `"a"{25000}`, is found only
+  expression generated or Operators Rule scope inspected). An input that needs more, such as `"a" #repeat(25000)`, is found only
   with a larger budget.
 - A repetition never takes more than `8 × max-repeat + 4` iterations beyond its minimum (28 by default), even when a
-  predicate wants more: `x:"a"* [len($x) == 29]` needs `-max-repeat 4`.
+  predicate wants more: `x:"a"* {len($x) == 29}` needs `-max-repeat 4`.
 - Recursive rule calls never nest more than `max-depth + 8` deep (13 by default): an input that must nest 15 levels
   deep needs `-max-depth 7`.
 
@@ -128,10 +128,10 @@ reports on standard error what the inputs exercised and what they missed. Take a
 numbers or booleans:
 
 ```pego
-def main = item ("," item)*
-def item = word / number / "true" / "false"
-def word = @(?a-z)+
-def number = @(?0-9)+
+rule main = item ("," item)*
+rule item = word / number / "true" / "false"
+rule word = [a-z]+ #atomic
+rule number = [0-9]+ #atomic
 ```
 
 ```bash
@@ -148,10 +148,10 @@ missed item: choice 3: "false"
 
 No input exercises `"true"` or `"false"`, however many you ask for: `word` comes first in the ordered choice and
 matches `true` itself, so the parser never reaches the later alternatives. A missed alternative is often a bug of this
-kind; here the fix is to try the keywords first: `def item = ("true" / "false") !(?a-z) / word / number`.
+kind; here the fix is to try the keywords first: `rule item =  ("true" / "false") ![a-z] / word / number `.
 
 The report counts the rules that the start rule reaches, the alternatives of ordered choices, and the operands and
-operators of Pratt expressions. It lists separately, and does not count:
+operators of Operators Rule declarations. It lists separately, and does not count:
 
 - `unreachable`: rules that generation cannot exercise, because the start rule does not call them or calls them only
   inside a negative lookahead (`!keyword`), the skip of `#recover`, or an expression that can never match;
@@ -187,7 +187,7 @@ With `-f json`, the report is the `coverage` member of the document. Coverage is
 derived each input, which is the parser's way unless the generator could not tell (see the
 [limits](#how-it-works-and-what-it-cannot-do)).
 
-## Near-miss invalid inputs
+## Near-Miss Invalid Inputs
 
 `-invalid` generates inputs that the grammar rejects: each is an accepted input with one mutation (a deletion,
 insertion, substitution, duplication, swap or truncation), kept only if the parser rejects the result. In the JSON
@@ -204,19 +204,19 @@ $ pego sample -g parsers/json/json.pego -n 3 -invalid -f json
       "input": " [ { \n]",
       "base": " [  \n]",
       "mutation": "insert \"{\" at 3",
-      "error": "2:1: syntax error: expected \"\\\"\", \"}\", (? \\t\\r\\n)"
+      "error": "2:1: syntax error: expected \"\\\"\", \"}\", [ \\t\\r\\n]"
     },
     {
       "input": "t\"✵5\\u58CD⭧g\"",
       "base": "\n\"✵5\\u58CD⭧g\"",
       "mutation": "replace \"\\n\" at 0 with \"t\"",
-      "error": "1:1: syntax error: expected \"-\", \"0\", \"[\", \"\\\"\", \"false\", \"null\", \"true\", \"{\", (? \\t\\r\\n), (?1-9)"
+      "error": "1:1: syntax error: expected \"-\", \"0\", \"[\", \"\\\"\", \"false\", \"null\", \"true\", \"{\", [ \\t\\r\\n], [1-9]"
     },
     {
       "input": "\r\n {} r\n",
       "base": "\r\n {} \n",
       "mutation": "insert \"r\" at 6",
-      "error": "2:5: syntax error: expected (? \\t\\r\\n), end of input"
+      "error": "2:5: syntax error: expected [ \\t\\r\\n], end of input"
     }
   ]
 }
@@ -224,7 +224,7 @@ $ pego sample -g parsers/json/json.pego -n 3 -invalid -f json
 
 Use them to check error messages and positions, and recovery with `#recover`: a recovered error counts as rejected, so
 the inputs of a grammar with `#recover` include ones that produce both a tree and errors. A grammar that accepts every
-input, such as `def main = .*`, has no near misses: `pego sample -invalid` then fails with "no mutation found that the
+input, such as `rule main = .*`, has no near misses: `pego sample -invalid` then fails with "no mutation found that the
 parser rejects" (`sample.ErrNoInvalid` in Go), not with the error for grammars that accept nothing.
 
 ## From Go
@@ -233,12 +233,10 @@ parser rejects" (`sample.ErrNoInvalid` in Go), not with the error for grammars t
 parser's start rule (use `Parser.WithStart` for another).
 
 ```go
-p, err := pego.CompileSource(`
-def main = pair ("," " "? pair)*
-def pair = key "=" value
-def key = @(?a-z)+
-def value = @(?0-9)+ / "\"" @(?^"\n)* "\"" / "true" / "false"
-`, "main")
+p, err := pego.CompileSource(`rule main =  pair ("," " "? pair)*
+rule pair =  key "=" value
+rule key =  [a-z]+ #atomic
+rule value =  [0-9]+ #atomic / "\"" [^"\n]* #atomic "\"" / "true" / "false" `, "main")
 if err != nil {
 	log.Fatal(err)
 }
@@ -271,7 +269,7 @@ fmt.Print(g.Coverage().Report())              // what the two inputs exercised
 
 ```
 rules 4/4 (100%), alternatives 2/4 (50%)
-missed value: choice 0: @(?0-9)+
+missed value: choice 0: [0-9]+ #atomic
 missed value: choice 3: "false"
 ```
 
@@ -291,11 +289,11 @@ for _, inv := range invalid {
 
 ```
 "h=\"\" " (insert " " at 4): 1:5: syntax error: expected ",", end of input
-"n" (truncate at 1): 1:2: syntax error: expected "=", (?a-z)
+"n" (truncate at 1): 1:2: syntax error: expected "=", [a-z]
 "u=truee" (duplicate "e" at 5): 1:7: syntax error: expected ",", end of input
 ```
 
-## Testing code that consumes parse results
+## Testing Code That Consumes Parse Results
 
 Generated inputs are good test data for whatever you do with a tree: they reach constructs that hand-written tests
 forget, and a seed reproduces any failure. Two kinds of checks work without knowing the expected output:
@@ -402,10 +400,10 @@ Replace the body of the fuzz function with what you want to hold for every input
 must not panic, must not loop, and must handle `SyntaxError` and `SyntaxErrors` (from `#recover`). Keep seeds short
 with `WithMaxLen`: the fuzzer works best on short inputs.
 
-## How it works, and what it cannot do
+## How It Works, and What It Cannot Do
 
 The generator walks the grammar from the start rule, making a random decision at each ordered choice, repetition,
-optional expression and Pratt expression, and searches for a way to finish the input that the parser will accept; it
+optional expression and Operators Rule, and searches for a way to finish the input that the parser will accept; it
 then parses the candidate and retries if the parser rejects it. While it writes, it steers away from inputs that the
 parser would read differently:
 
@@ -416,7 +414,7 @@ parser would read differently:
 - predicates are evaluated on the generated text, with captures, variables, `len`, `text`, comparisons and arithmetic,
   so indentation (as in [examples/outline](../../examples/outline/outline.pego)) and matching tags (as in
   [parsers/xml](../../parsers/xml/xml.pego)) work;
-- Pratt expressions are generated as chains of operands and operators, avoiding chains of `infix none` operators,
+- Operators Rule expressions are generated as chains of operands and operators, avoiding chains of `infix none` operators,
   with the outer infix/postfix tail filtered by level-restricted calls. Prefixes remain available at every operand
   position, including prefixes below the entry level. Their right operands can use operators tighter than the
   prefix's own level; coverage includes these RHS paths and the rules they call. Operators and nested targets
@@ -427,7 +425,7 @@ After an already-used nonassociative operator closes its level, the stop check a
 that token: `e "<" e` with `infix none "<"` can generate `a<a<a`. Other applicable infix and postfix operators still
 prevent an early stop.
 
-Nonassociative restrictions belong to each Pratt invocation, including prefix and infix right operands. Returning
+Nonassociative restrictions belong to each Operators Rule invocation, including prefix and infix right operands. Returning
 from a tighter RHS restores the parent's restriction: with low `infix none "<"` and higher `infix none "="`, the
 generator can produce `a<a=a=a`, using `=` once inside `<`'s RHS and once in the enclosing frame. It still rejects
 `a=a=a`, which repeats `=` in the same frame. Explicit rule calls start their own state. Scope traversal consumes
@@ -445,11 +443,11 @@ Conversely, `a!~a` has a complete RHS and cannot be assigned to that caller suff
 nested prefix and infix/postfix paths for supported syntax, preserving declaration ties, binding, operand
 fallback and nonassociative scopes. It does not equate a prefix token or successful primary with RHS success;
 a later cut can still make that RHS fail. When led parts cannot commit, the check can prove success despite an
-unfinished future tail; its endpoint is only a witness. Unsupported cuts, predicates, Pratt references, left
+unfinished future tail; its endpoint is only a witness. Unsupported cuts, predicates, Operators Rule references, left
 recursion, recovery and exhausted matching remain inconclusive. Every returned input is still parsed and accepted.
 
 What the generator cannot evaluate, it leaves to the parser: predicates over values built by actions or over struct
-fields, and lookaheads into Pratt expressions or left-recursive rules. Those constructs are handled only by generating
+fields, and lookaheads into Operators Rule declarations or left-recursive rules. Those constructs are handled only by generating
 and checking, which costs attempts; a grammar where most choices depend on them yields fewer inputs per second and
 lower coverage. In practice:
 

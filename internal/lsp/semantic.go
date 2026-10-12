@@ -69,7 +69,28 @@ func (a *analysis) semanticTokens() []int {
 		}
 		start, end := a.idx.position(t.start), a.idx.position(t.end)
 		if end.Line != start.Line {
-			continue // tokens do not span lines, but a client could not show one that did
+			for line := start.Line; line <= end.Line; line++ {
+				lo, hi := a.idx.lines[line], t.end
+				if line == start.Line {
+					lo = t.start
+				}
+				if line < end.Line {
+					hi = a.idx.lines[line+1]
+				}
+				for hi > lo && (a.text[hi-1] == '\r' || a.text[hi-1] == '\n') {
+					hi--
+				}
+				if hi == lo {
+					continue
+				}
+				begin, finish := a.idx.position(lo), a.idx.position(hi)
+				if line != prevLine {
+					prevChar = 0
+				}
+				data = append(data, line-prevLine, begin.Character-prevChar, finish.Character-begin.Character, int(c.typ), c.mods)
+				prevLine, prevChar = line, begin.Character
+			}
+			continue
 		}
 		if start.Line != prevLine {
 			prevChar = 0
@@ -96,6 +117,9 @@ func (a *analysis) classify(i int, occ *int) (semClass, bool) {
 	case syntax.TokenCapture, syntax.TokenIndex:
 		return semClass{semParameter, 0}, true
 	case syntax.TokenIdent:
+		if i > 0 && (a.isPunct(i-1, "@") || a.isPunct(i-1, "#")) {
+			return semClass{semDecorator, 0}, true
+		}
 	default:
 		return semClass{}, false
 	}
@@ -128,7 +152,7 @@ func (a *analysis) classify(i int, occ *int) (semClass, bool) {
 		}
 		return semClass{}, false
 	}
-	if syntax.IsKeyword(t.Text) {
+	if a.isDefKeyword(i) || a.declarationStart(i) && a.isIdent(i, "package") {
 		return semClass{semKeyword, 0}, true
 	}
 	return semClass{}, false

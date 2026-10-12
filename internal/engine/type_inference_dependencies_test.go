@@ -11,16 +11,20 @@ import (
 func inferredChain(depth int, reverse bool, mainType string) string {
 	var src strings.Builder
 	src.WriteString("type P struct {}\n")
-	fmt.Fprintf(&src, "def main%s = r0\n", mainType)
+	annotation := ""
+	if mainType != "" {
+		annotation = " " + strings.TrimPrefix(mainType, ":")
+	}
+	fmt.Fprintf(&src, "rule main%s = r0\n", annotation)
 	for j := range depth {
 		i := j
 		if reverse {
 			i = depth - 1 - j
 		}
 		if i == depth-1 {
-			fmt.Fprintf(&src, "def r%d = \"a\" -> new P{}\n", i)
+			fmt.Fprintf(&src, "rule r%d = \"a\" => P{}\n", i)
 		} else {
-			fmt.Fprintf(&src, "def r%d = r%d\n", i, i+1)
+			fmt.Fprintf(&src, "rule r%d = r%d\n", i, i+1)
 		}
 	}
 	return src.String()
@@ -53,9 +57,8 @@ func TestInferenceDependencyChains(t *testing.T) {
 }
 
 func TestInferenceKeepsIndependentTypes(t *testing.T) {
-	src := inferredChain(128, false, "") + `
-def growing = xs:growing? -> list($xs)
-def constant = "(" growing ")" -> new P{}`
+	src := inferredChain(128, false, "") + `rule growing = xs:growing? => list($xs)
+rule constant = "(" growing ")" => P{}`
 	p := compile(t, src)
 	for _, name := range []string{"main", "r0", "r127", "constant"} {
 		if got, _ := p.RuleType(name); got != "P" {
@@ -69,10 +72,11 @@ def constant = "(" growing ")" -> new P{}`
 
 func TestInferenceKeepsLargeFiniteRecursiveTypes(t *testing.T) {
 	var src strings.Builder
-	src.WriteString("def main = recursive\ndef recursive = recursive / huge\ndef huge = ")
+	src.WriteString("rule main = recursive\nrule recursive = recursive / huge\nrule huge = ")
 	for i := range 180 {
 		fmt.Fprintf(&src, "field%d:\"a\" ", i)
 	}
+	src.WriteString("")
 	p := compile(t, src.String())
 	want, _ := p.RuleType("huge")
 	if len(want) <= maxInferredType {
@@ -85,13 +89,16 @@ func TestInferenceKeepsLargeFiniteRecursiveTypes(t *testing.T) {
 	}
 }
 
-func TestInferencePrattImplicitDependencies(t *testing.T) {
+func TestInferenceOperatorsRuleImplicitDependencies(t *testing.T) {
 	p := compile(t, `type P struct {}
-def main = expression
-def expression = pratt { operand "a" level { postfix "!" -> list($lhs) } }
-def constant = "a" -> new P{}`)
+rule main = expression
+rule expression = operators {
+    operand "a"
+    level { postfix "!" => list($lhs) }
+}
+rule constant = "a" => P{}`)
 	if got, _ := p.RuleType("expression"); got != "any" {
-		t.Errorf("recursive Pratt operator type = %s; want bounded inference to use any", got)
+		t.Errorf("recursive OperatorsRule operator type = %s; want bounded inference to use any", got)
 	}
 	if got, _ := p.RuleType("constant"); got != "P" {
 		t.Errorf("constant type = %s; want P", got)
@@ -100,11 +107,11 @@ def constant = "a" -> new P{}`)
 
 func TestInferenceKeepsConstantRecursivePeer(t *testing.T) {
 	for _, reverse := range []bool{false, true} {
-		rules := []string{`def growing = xs:(growing? / constant) -> list($xs)`, `def constant = "(" growing ")" -> new P{}`}
+		rules := []string{`rule growing = xs:(growing? / constant) => list($xs)`, `rule constant = "(" growing ")" => P{}`}
 		if reverse {
 			rules[0], rules[1] = rules[1], rules[0]
 		}
-		p := compile(t, "type P struct {}\ndef main = constant\n"+strings.Join(rules, "\n"))
+		p := compile(t, "type P struct {}\nrule main = constant\n"+strings.Join(rules, "\n"))
 		for _, name := range []string{"main", "constant"} {
 			if got, _ := p.RuleType(name); got != "P" {
 				t.Errorf("%s type = %s; want P", name, got)
@@ -115,12 +122,12 @@ func TestInferenceKeepsConstantRecursivePeer(t *testing.T) {
 
 func TestInferenceFiniteRecursiveChains(t *testing.T) {
 	var src strings.Builder
-	src.WriteString("def main = r0\n")
+	src.WriteString("rule main = r0\n")
 	for i := range 128 {
 		if i == 127 {
-			fmt.Fprintf(&src, "def r%d = \"a\" / r0\n", i)
+			fmt.Fprintf(&src, "rule r%d = \"a\" / r0\n", i)
 		} else {
-			fmt.Fprintf(&src, "def r%d = r%d\n", i, i+1)
+			fmt.Fprintf(&src, "rule r%d = r%d\n", i, i+1)
 		}
 	}
 	p := compile(t, src.String())
@@ -136,7 +143,7 @@ func BenchmarkInferenceDependencies(b *testing.B) {
 		{"caller-first-64", inferredChain(64, false, "")},
 		{"callee-first-64", inferredChain(64, true, "")},
 		{"caller-first-512", inferredChain(512, false, "")},
-		{"growing-list", `def main = xs:main? -> list($xs)`},
+		{"growing-list", `rule main = xs:main? => list($xs)`},
 	} {
 		b.Run(c.name, func(b *testing.B) {
 			g, err := syntax.Parse(c.source)
@@ -156,9 +163,9 @@ func BenchmarkInferenceDependencies(b *testing.B) {
 func TestInferenceFiniteUnionCycle(t *testing.T) {
 	const count = 64
 	var src strings.Builder
-	src.WriteString("def main = r0\n")
+	src.WriteString("rule main = r0\n")
 	for i := range count {
-		fmt.Fprintf(&src, "type T%d terminal\ndef n%d: T%d = \"a\"\ndef r%d = r%d / r%d / n%d\n", i, i, i, i, (i+1)%count, (i+count-1)%count, i)
+		fmt.Fprintf(&src, "type T%d terminal\nrule n%d T%d = \"a\"\nrule r%d = r%d / r%d / n%d\n", i, i, i, i, (i+1)%count, (i+count-1)%count, i)
 	}
 	p := compile(t, src.String())
 	for i := range count {
@@ -233,7 +240,7 @@ func TestInferenceCanonicalTypes(t *testing.T) {
 }
 
 func TestInferenceChainFieldMismatch(t *testing.T) {
-	src := "type Holder struct { Value Match }\n" + strings.Replace(inferredChain(128, false, ""), "def main = r0", "def main = r0 -> new Holder{Value: $1}", 1)
+	src := "type Holder struct { Value Match }\n" + strings.Replace(inferredChain(128, false, ""), "rule main = r0", "rule main = r0 => Holder{Value: $1}", 1)
 	g, err := syntax.Parse(src)
 	if err != nil {
 		t.Fatal(err)

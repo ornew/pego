@@ -1,4 +1,4 @@
-# 10. Zero-copy token text; reusable evaluation context
+# 10. Zero-Copy Token Text; Reusable Evaluation Context
 
 - **Token text.** `Match.Text` and terminal texts were built by converting `[]rune` (code points) or `[]byte` back to a
   string. The input now keeps the source string, plus a rune-to-byte offset table in code-point mode, and token text

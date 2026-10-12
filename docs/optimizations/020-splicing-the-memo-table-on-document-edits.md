@@ -1,4 +1,4 @@
-# 20. Splicing the memo table on Document edits
+# 20. Splicing the Memo Table on Document Edits
 
 - `Document.Edit` rebuilt the memo table on every edit: it walked all entries and `put` each kept one into a new
   table, which allocated a new slot array and searched each chain for an existing key. In the incremental benchmark

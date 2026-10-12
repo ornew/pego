@@ -275,7 +275,7 @@ func (s *Server) initialize(params json.RawMessage) (any, *rpcError) {
 			"documentSymbolProvider":     true,
 			"hoverProvider":              true,
 			"renameProvider":             rename,
-			"completionProvider":         map[string]any{"triggerCharacters": []string{"#", "$", "."}},
+			"completionProvider":         map[string]any{"triggerCharacters": []string{"@", "#", "$", "."}},
 			"semanticTokensProvider": map[string]any{
 				"legend": map[string]any{"tokenTypes": semanticTokenTypes, "tokenModifiers": semanticTokenModifiers},
 				"full":   true,

@@ -11,85 +11,73 @@ import (
 )
 
 var typedRecoveryCases = []genCase{
-	{"typed/recovery_capture_environment", `
-type Doc struct { Text *Match, N int }
-def main: Doc = [n=0] e:item $$ -> $e
-def item: Doc = v:((x:@"é" [n=1] "!") #recover(skip="é" [n=n+2] "?"))
-    -> new Doc{Text:$x, N:n}
+	{"typed/recovery_capture_environment", `type Doc struct { Text *Match, N int }
+rule main Doc = {n := 0} e:item $$ => $e
+rule item Doc = (
+    v:(x:"é" #atomic {n := 1} "!") #recover(skip="é" {n := n + 2} "?")
+) => Doc{Text: $x, N: n}
 `, []string{"é!", "é?", "é", "éx", "?", "", "é??"}},
-	{"typed/recovery_zero_progress", `
-type Atom terminal
-def main: Atom = ("ab" #recover(skip="x"?)) $$
+	{"typed/recovery_zero_progress", `type Atom terminal
+rule main Atom = "ab" #recover(skip="x"?) $$
 `, []string{"ab", "x", "", "a", "y", "xx"}},
-	{"typed/recovery_failed_skip_rollback", `
-type Doc struct { Text Match, N int }
-def main: Doc = [n=0] x:@(("ab" #recover(skip=[n=8] "x" "!") / [n==0] "x" "?")) $$
-    -> new Doc{Text:$x, N:n}
+	{"typed/recovery_failed_skip_rollback", `type Doc struct { Text Match, N int }
+rule main Doc = (
+    {n := 0} x:("ab" #recover(skip={n := 8} "x" "!") / {n == 0} "x" "?") #atomic $$
+) => Doc{Text: $x, N: n}
 `, []string{"ab", "x!", "x?", "x", "", "xx!"}},
-	{"typed/recovery_error_inside", `
-type Doc struct { Text Match }
-def main: Doc = x:@(("é" "!") #error(message="inner") #recover(skip="é?")) $$ -> new Doc{Text:$x}
+	{"typed/recovery_error_inside", `type Doc struct { Text Match }
+rule main Doc = x:("é" "!") @error(message="inner") #recover(skip="é?") #atomic $$ => Doc{Text: $x}
 `, []string{"é!", "é?", "é", "?", "", "é??"}},
-	{"typed/recovery_error_outside", `
-type Doc struct { Text Match }
-def main: Doc = x:@(("é" "!") #recover(skip="é?") #error(message="outer")) $$ -> new Doc{Text:$x}
+	{"typed/recovery_error_outside", `type Doc struct { Text Match }
+rule main Doc = x:("é" "!") #recover(skip="é?") @error(message="outer") #atomic $$ => Doc{Text: $x}
 `, []string{"é!", "é?", "é", "?", "", "é??"}},
-	{"typed/recovery_nested", `
-type Doc struct { Text Match }
-def main: Doc = x:@((("é" "!") #recover(skip="é?" "z")) #recover(skip="é??")) $$ -> new Doc{Text:$x}
+	{"typed/recovery_nested", `type Doc struct { Text Match }
+rule main Doc = x:("é" "!") #recover(skip="é?" "z") #recover(skip="é??") #atomic $$ => Doc{Text: $x}
 `, []string{"é!", "é?z", "é??", "é?", "é", "", "é???"}},
-	{"typed/recovery_cut_scope", `
-type Doc struct { Text Match }
-def main: Doc = x:@(("é" -- "!") #recover(skip="é" -- "?") "z" / "é?x") $$ -> new Doc{Text:$x}
+	{"typed/recovery_cut_scope", `type Doc struct { Text Match }
+rule main Doc = x:(("é" -- "!") #recover(skip="é" -- "?") "z" / "é?x") #atomic $$ => Doc{Text: $x}
 `, []string{"é!z", "é?z", "é?x", "é!", "é?", "é", "", "é?zz"}},
-	{"typed/recovery_lookahead", `
-type Doc struct { Text Match }
-def main: Doc = &(("é" -- "!") #recover(skip="é" -- "?")) x:@(("é" "!") #recover(skip="é?")) $$ -> new Doc{Text:$x}
+	{"typed/recovery_lookahead", `type Doc struct { Text Match }
+rule main Doc = &("é" -- "!") #recover(skip="é" -- "?") x:("é" "!") #recover(skip="é?") #atomic $$ => Doc{Text: $x}
 `, []string{"é!", "é?", "é", "", "é?x"}},
-	{"typed/recovery_negative_lookahead", `
-type Doc struct { Text Match }
-def main: Doc = !(("é" -- "!") #recover(skip="é" -- "?")) x:@"x" $$ -> new Doc{Text:$x}
+	{"typed/recovery_negative_lookahead", `type Doc struct { Text Match }
+rule main Doc = !("é" -- "!") #recover(skip="é" -- "?") x:"x" #atomic $$ => Doc{Text: $x}
 `, []string{"x", "é!", "é?", "é", "", "x?"}},
-	{"typed/recovery_optional_repetition", `
-type Doc struct { Text *Match }
-def main: Doc = x:@(("a" -- "!") #recover(skip="a?"))? (("b" -- "!") #recover(skip="b?"))* $$ -> new Doc{Text:$x}
+	{"typed/recovery_optional_repetition", `type Doc struct { Text *Match }
+rule main Doc = x:("a" -- "!") #recover(skip="a?")? #atomic ("b" -- "!") #recover(skip="b?")* $$ => Doc{Text: $x}
 `, []string{"", "a!", "a?", "b!", "b?b!", "a?b?b!", "a", "b", "a?b", "a!x"}},
-	{"typed/recovery_dead_skip", `
-type Doc struct { N int }
-def main: Doc = [n=0] (_ #recover(skip="x" [n=7])) $$ -> new Doc{N:n}
+	{"typed/recovery_dead_skip", `type Doc struct { N int }
+rule main Doc = {n := 0} _ #recover(skip="x" {n := 7}) $$ => Doc{N: n}
 `, []string{"", "x", "é"}},
-	{"typed/recovery_list_errors", `
-type Atom terminal
+	{"typed/recovery_list_errors", `type Atom terminal
 type Group struct { Item Atom }
 type Expr = Atom | Group
-def main: []Expr = items:item* $$ -> map($items,(x)=>x)
-def item: Expr = (atom / group) #recover(skip=(?^;)+ ";")
-def group: Group = "(" a:atom ")" -> new Group{Item:$a}
-def atom: Atom = (?a-z)+ ";"
+rule main []Expr = items:item* $$ => map($items, (x) => x)
+rule item Expr = (atom / group) #recover(skip=[^;]+ ";")
+rule group Group = "(" a:atom ")" => Group{Item: $a}
+rule atom Atom = [a-z]+ ";"
 `, []string{"abc;", "1;", "abc;1;def;2;", "(abc;)", "(1;", ";", "", "1"}},
 	{"typed/recovery_typed_corpus", strings.NewReplacer(
 		"type Node = Call | Name | Num | Seq", "type Group struct { Item Num }\ntype Node = Call | Name | Num | Group",
-		`def grp = "[" n:num "]" ";"`, `def grp: Group = "[" n:num "]" ";" -> new Group{Item:$n}`,
+		`rule grp = "[" n:num "]" ";"`, `rule grp Group = "[" n:num "]" ";" => Group{Item: $n}`,
 	).Replace(typedGrammar), []string{"abc;", "1x;", "abc;1x;def;", "foo(1,bar)!;", "[1];", "", "("}},
-	{"typed/recovery_pratt", `
-type Atom terminal
+	{"typed/recovery_operatorsRule", `type Atom terminal
 type Post struct { X Expr, Text Match }
 type Expr = Atom | Post
-def main: Expr = e:expr $$ -> $e
-def expr: Expr = pratt {
+rule main Expr = e:expr $$ => $e
+rule expr Expr = operators {
     skip (" " "!") #recover(skip=" " "?")
     operand atom
     level {
-        prefix ("-" -- "z") #recover(skip="-?") -> new Post{X:$rhs, Text:$op}
-        postfix ("[" x:@"é" "]") #recover(skip="[?]") -> new Post{X:$lhs, Text:$op}
+        prefix ("-" -- "z") #recover(skip="-?") => Post{X: $rhs, Text: $op}
+        postfix ("[" x:"é" #atomic "]") #recover(skip="[?]") => Post{X: $lhs, Text: $op}
     }
 }
-def atom: Atom = "a"
+rule atom Atom = "a"
 `, []string{"a", "-za", "-?a", "a[é]", "a[?]", " !a", " ?a", "-a", "a[", "a[?", "-?", "", "a ?[?]"}},
-	{"typed/recovery_lr", `
-type Doc struct { Text Match }
-def main: Doc = x:@expr $$ -> new Doc{Text:$x}
-def expr = ((expr "+" -- "a") #recover(skip="a?")) / "a"
+	{"typed/recovery_lr", `type Doc struct { Text Match }
+rule main Doc = x:expr #atomic $$ => Doc{Text: $x}
+rule expr = (expr "+" -- "a") #recover(skip="a?") / "a"
 `, []string{"a", "a+a", "a?", "a?+a", "a+", "a??", "", "b"}},
 }
 

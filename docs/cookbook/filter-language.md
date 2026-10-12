@@ -1,4 +1,4 @@
-# Compile a filter language into a Go predicate
+# Compile a Filter Language into a Go Predicate
 
 **Problem.** Users of your tool write filters such as `age > 30 and name ~ "a*"` in a query box or a configuration
 file. You want a `func(Record) bool` that is cheap to call on every record.
@@ -16,29 +16,30 @@ type Binary struct { Left Expr, Op Match, Right Expr }
 type Not struct { X Expr }
 type Expr = Num | Str | Bool | Field | Binary | Not
 
-def main: Expr = ws e:expr ws $$ -> $e
+rule main Expr = ws e:expr ws $$ => $e
 
-def expr: Expr = pratt {
-    skip    ws
+rule expr Expr = operators {
+    skip ws
     operand num
     operand str
     operand bool
     operand field
-    operand "(" e:expr ws ")" -> $e
-    level { infix left "or" !wordchar                 -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
-    level { infix left "and" !wordchar                -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
-    level { prefix "not" !wordchar                    -> new Not{X: $rhs} }
-    level { infix none "=" / "!=" / "<=" / ">=" / "<" / ">" / "~"
-                                                      -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    operand "(" e:expr ws ")" => $e
+    level { infix left "or" !wordchar => Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix left "and" !wordchar => Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { prefix "not" !wordchar => Not{X: $rhs} }
+    level {
+        infix none "=" / "!=" / "<=" / ">=" / "<" / ">" / "~" => Binary{Left: $lhs, Op: $op, Right: $rhs}
+    }
 }
 
-def num: Num = "-"? (?0-9)+ ("." (?0-9)+)?
-def str: Str = "\"" ("\\" . / (?^"\\))* "\""
-def bool: Bool = ("true" / "false") !wordchar
-def field: Field = !keyword (?a-z_) wordchar*
-def keyword = ("and" / "or" / "not") !wordchar
-def wordchar = (?a-z0-9_)
-def ws = (? \t\r\n)*
+rule num Num = "-"? [0-9]+ ("." [0-9]+)?
+rule str Str = "\"" ("\\" . / [^"\\])* "\""
+rule bool Bool = ("true" / "false") !wordchar
+rule field Field = !keyword [a-z_] wordchar*
+rule keyword = ("and" / "or" / "not") !wordchar
+rule wordchar = [a-z0-9_]
+rule ws = [ \t\r\n]*
 ```
 
 ```go
@@ -189,10 +190,10 @@ func main() {
 age > 30 and name ~ "[Aa]*"                      [Ann alice]
 not admin = true or age < 30                     [Bob alice Carl]
 (name = "Bob" or name = "Carl") and age >= 25    [Bob Carl]
-age > 30 and                                     error: 1:13: syntax error: expected "(", "-", "\"", "false", "not", "true", (?0-9), (?a-z_)
+age > 30 and                                     error: 1:13: syntax error: expected "(", "-", "\"", "false", "not", "true", [0-9], [a-z_]
 ```
 
-## How it works
+## How It Works
 
 - **Word operators.** `"and" !wordchar` is the operator `and` only when no letter or digit follows, so a field named
   `android` is not read as `and` followed by `roid`. The `!wordchar` is a lookahead: it consumes nothing, so `$op` is
@@ -214,9 +215,9 @@ age > 30 and                                     error: 1:13: syntax error: expe
 - **Another target**: the same tree can be compiled to SQL, to a query for another system, or to a call of your own
   evaluator. Walk it once and write the output; [Evaluate arithmetic with variables and
   functions](calculator.md) walks it each time instead.
-- **Messages for users.** Replace the expected list with a short message using `#error`, and show a caret under the
+- **Messages for users.** Replace the expected list with a short message using `@error`, and show a caret under the
   position: [Report an error with its source line and a caret](error-carets.md).
 - **Ready-made.** For the Common Expression Language (CEL), which is a complete expression language for policies and
   filters, use [parsers/cel](../../parsers/cel/).
 
-See [Expressions](../guide/expressions.md) and [Pratt expressions](../../spec/pratt.md).
+See [Expressions](../guide/expressions.md) and [Operators Rule](../../spec/operators-rule.md).

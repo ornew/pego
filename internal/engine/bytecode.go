@@ -5,15 +5,15 @@ import "fmt"
 // Module is a grammar compiled to bytecode. It is the only thing the VM runs.
 // The instruction set and its semantics are specified in spec/bytecode.md.
 type Module struct {
-	Strings    []string   // string table
-	Classes    []Class    // character class table
-	Types      []TypeInfo // type table (for checking struct fields, and terminal types)
-	FieldLists [][]int    // field name lists for new (string table indices)
-	Scopes     [][]int    // scopes of repetition elements (lists of capture names)
-	Rules      []RuleInfo // rule table
-	Pratts     []PrattInfo
-	Code       []Instr // matching code
-	Exprs      []Instr // expression code (actions and predicates)
+	Strings        []string   // string table
+	Classes        []Class    // character class table
+	Types          []TypeInfo // type table (for checking struct fields, and terminal types)
+	FieldLists     [][]int    // field name lists for new (string table indices)
+	Scopes         [][]int    // scopes of repetition elements (lists of capture names)
+	Rules          []RuleInfo // rule table
+	OperatorsRules []OperatorsRuleInfo
+	Code           []Instr // matching code
+	Exprs          []Instr // expression code (actions and predicates)
 }
 
 // instructionSetVersion keeps ordinary modules readable by instruction-set-3 runtimes.
@@ -42,16 +42,16 @@ type TypeInfo struct {
 
 // RuleInfo describes a rule.
 type RuleInfo struct {
-	Name         int // string table index
-	Entry        int // start of the body code (for a Pratt expression rule, a PRATT instruction followed by RETURN)
-	Scope        []int
-	Action       int // start of the action's expression code (-1 if none)
-	BodyIsSeq    bool
-	TerminalType int // name of the terminal type (string table index, -1 if none)
-	Memo         bool
-	Leader       bool
-	Positional   bool
-	Pratt        int // Pratt table index (-1 if none)
+	Name          int // string table index
+	Entry         int // start of the body code (for a OperatorsRule expression rule, a OPERATORS_RULE instruction followed by RETURN)
+	Scope         []int
+	Action        int // start of the action's expression code (-1 if none)
+	BodyIsSeq     bool
+	TerminalType  int // name of the terminal type (string table index, -1 if none)
+	Memo          bool
+	Leader        bool
+	Positional    bool
+	OperatorsRule int // OperatorsRule table index (-1 if none)
 	// NoValue reports that this is a value-free twin, called from places where the value is
 	// discarded (its value is always nil). It has the same name as the original rule and is placed
 	// after all the original rules in the rule table.
@@ -64,15 +64,15 @@ type RuleInfo struct {
 	Vars []int
 }
 
-// PrattInfo is a Pratt expression table.
-type PrattInfo struct {
+// OperatorsRuleInfo is an Operators Rule expression table.
+type OperatorsRuleInfo struct {
 	Skip     int // start of the skip code (-1 if none)
 	Operands []LineInfo
 	Prefix   []OpInfo
 	Led      []OpInfo // infix and postfix
 }
 
-// LineInfo is a Pratt operand line or operator line. Its code ends with END.
+// LineInfo is an Operators Rule operand line or operator line. Its code ends with END.
 type LineInfo struct {
 	Entry  int
 	Scope  []int
@@ -80,7 +80,7 @@ type LineInfo struct {
 	IsSeq  bool
 }
 
-// OpInfo is a Pratt operator.
+// OpInfo is an Operators Rule operator.
 type OpInfo struct {
 	ID    int
 	Kind  int // opPrefix, opPostfix, opInfix
@@ -89,7 +89,7 @@ type OpInfo struct {
 	Line  LineInfo
 }
 
-// Pratt operator kinds and associativity
+// Operators Rule operator kinds and associativity
 const (
 	opPrefix = iota
 	opPostfix
@@ -176,15 +176,15 @@ const (
 	OpEndLook
 	// CALL r, min, k: call rule r at binding level min. If k is 1, push the value.
 	OpCall
-	// PRATT p: parse the expression of Pratt table p and push the value (used in rule bodies).
-	OpPratt
+	// OPERATORS_RULE p: parse the expression of OperatorsRule table p and push the value (used in rule bodies).
+	OpOperatorsRule
 	// PRED e: evaluate expression code e and fail if it is false or an error.
 	OpPred
 	// ASSIGN name, e: define the variable name with the value of expression code e.
 	OpAssign
-	// LABEL m: start #error.
+	// LABEL m: start @error.
 	OpLabel
-	// ENDLABEL: end #error.
+	// ENDLABEL: end @error.
 	OpEndLabel
 	// RECOVER l: start #recover. On failure, prepare for recovery and go to l (the skip code).
 	OpRecover
@@ -194,7 +194,7 @@ const (
 	OpEndSkip
 	// RETURN: end of a rule body.
 	OpReturn
-	// END: end of the code of a Pratt section.
+	// END: end of the code of an Operators Rule section.
 	OpEnd
 	// SCAN c, min, max: consume single characters of character class c (-1 for any character) until
 	// one does not match or max times (-1 for unbounded), and fail if the count is less than min. It
@@ -286,7 +286,7 @@ var opNames = map[Op]string{
 	OpJump: "JUMP", OpChoice: "CHOICE", OpCommit: "COMMIT", OpCut: "CUT", OpPushPos: "PUSHPOS",
 	OpPushNil: "PUSHNIL", OpSeq: "SEQ", OpAtomic: "ATOMIC", OpCapture: "CAPTURE", OpRepeat: "REPEAT",
 	OpIter: "ITER", OpNext: "NEXT", OpEndRepeat: "ENDREPEAT", OpLook: "LOOK", OpEndLook: "ENDLOOK",
-	OpCall: "CALL", OpPratt: "PRATT", OpPred: "PRED", OpAssign: "ASSIGN", OpLabel: "LABEL",
+	OpCall: "CALL", OpOperatorsRule: "OPERATORS_RULE", OpPred: "PRED", OpAssign: "ASSIGN", OpLabel: "LABEL",
 	OpEndLabel: "ENDLABEL", OpRecover: "RECOVER", OpEndRecover: "ENDRECOVER", OpEndSkip: "ENDSKIP",
 	OpReturn: "RETURN", OpEnd: "END", OpScan: "SCAN", OpGuard: "GUARD",
 	OpRepeatWide: "REPEATW", OpScanWide: "SCANW",

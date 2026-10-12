@@ -1,4 +1,4 @@
-# NNN. Optimization mechanism
+# NNN. Optimization Mechanism
 
 - **Status**: Proposed
 - **Date**: YYYY-MM-DD
@@ -6,7 +6,7 @@
 Copy to an unused `NNN-topic.md`. Use Measured, Implemented or Rejected as
 appropriate. Remove prompts and record the implementation revision when known.
 
-## Problem and mechanism
+## Problem and Mechanism
 
 Explain the observed cost, mechanism and correctness invariants.
 
@@ -30,12 +30,12 @@ units, commands, sample counts and raw-result locations. Serialize runs.
 Report time, allocations and retained memory as relevant. Separate focused
 comparisons from combined snapshots and state unmeasured paths.
 
-## Correctness and tradeoffs
+## Correctness and Tradeoffs
 
 Record regressions, representative normal paths, compatibility, complexity and
 resource retention. Preserve rejected alternatives with measured reasons.
 
-## Decision and limits
+## Decision and Limits
 
 State what was adopted, what is unknown and when to revisit. Update the catalog
 without extrapolating results to other execution profiles.

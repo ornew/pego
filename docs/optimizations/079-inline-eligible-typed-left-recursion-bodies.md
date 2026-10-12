@@ -1,4 +1,4 @@
-# 79. Inline eligible typed left-recursion bodies
+# 79. Inline Eligible Typed Left-Recursion Bodies
 
 - The generated typed Go runtime can compile eligible left-recursion leader
   expression bodies with the structural direct emitter. The runtime keeps
@@ -15,9 +15,9 @@
   action captures and layouts that still cannot match remain general. This
   record's body is recovery-free; eligible recovery bodies have a separate
   route in [record 83](083-inline-typed-recovery-bodies.md). Eligible
-  cut-bearing LR/Pratt bodies use the framed emitter in
-  [change 81](081-scoped-cuts-in-unfinished-typed-go-bodies.md); cut-free Pratt
-  lines have their own matcher route in [change 80](080-inline-eligible-typed-pratt-lines.md).
+  cut-bearing LR/Operators Rule bodies use the framed emitter in
+  [change 81](081-scoped-cuts-in-unfinished-typed-go-bodies.md); cut-free Operators Rule
+  lines have their own matcher route in [change 80](080-inline-eligible-typed-operators-rule-lines.md).
   Eligible callees may still be direct.
 - The parity corpus compares the enabled and same-generator reference routes
   for direct and indirect recursion, hidden and nullable seeds, failed or

@@ -10,8 +10,8 @@ import (
 	"github.com/ornew/pego"
 )
 
-const kvList = `def main = pair ("," pair)*
-def pair = k:@(?a-z)+ "=" v:@(?0-9)+`
+const kvList = `rule main = pair ("," pair)*
+rule pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic`
 
 // captureStderr replaces sampleStderr for the duration of the test.
 func captureStderr(t *testing.T) *strings.Builder {
@@ -66,7 +66,7 @@ func TestSample(t *testing.T) {
 }
 
 func TestSampleOptions(t *testing.T) {
-	g := writeFile(t, "nest.pego", `def main = "(" main ")" / "x"`)
+	g := writeFile(t, "nest.pego", `rule main = "(" main ")" / "x"`)
 	// -max-depth 0: the shortest way from the start.
 	out, err := runCLI(t, "", "sample", "-g", g, "-n", "3", "-max-depth", "0")
 	if err != nil {
@@ -99,7 +99,7 @@ func TestSampleOptions(t *testing.T) {
 		{"sample", "-g", g, "-f", "xml"},
 		{"sample", "-g", g, "-n", "-3"},
 		{"sample", "-g", g, "-s", "nope"},
-		{"sample", "-g", writeFile(t, "never.pego", `def main = "a"* "a"`), "-n", "1"},
+		{"sample", "-g", writeFile(t, "never.pego", `rule main = "a"* "a"`), "-n", "1"},
 	} {
 		if _, err := runCLI(t, "", args...); err == nil {
 			t.Errorf("%q: expected an error", args)
@@ -108,10 +108,10 @@ func TestSampleOptions(t *testing.T) {
 }
 
 func TestSampleCoverage(t *testing.T) {
-	g := writeFile(t, "kv.pego", `def main = item ("," item)*
-def item = word / number / "true" / "false"
-def word = @(?a-z)+
-def number = @(?0-9)+`)
+	g := writeFile(t, "kv.pego", `rule main = item ("," item)*
+rule item = word / number / "true" / "false"
+rule word = [a-z]+ #atomic
+rule number = [0-9]+ #atomic`)
 	stderr := captureStderr(t)
 	if _, err := runCLI(t, "", "sample", "-g", g, "-n", "1", "-coverage"); err != nil {
 		t.Fatal(err)
@@ -138,8 +138,8 @@ def number = @(?0-9)+`)
 
 func TestSampleCoverageWithoutInputs(t *testing.T) {
 	// No input parses: the report still shows what the search exercised, then the command fails.
-	g := writeFile(t, "never.pego", `def main = item+ "a"
-def item = "a" / "b"`)
+	g := writeFile(t, "never.pego", `rule main = item+ "a"
+rule item = "a" / "b"`)
 	stderr := captureStderr(t)
 	out, err := runCLI(t, "", "sample", "-g", g, "-n", "3", "-coverage")
 	if err == nil || out != "" || !strings.HasPrefix(stderr.String(), "rules 0/2") {

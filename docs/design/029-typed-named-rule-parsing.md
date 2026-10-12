@@ -41,7 +41,7 @@ available.
   parse semantics; identify and test the generated-name collision migration
   for grammars that define a type named `ParseRuleAST`.
 
-## Non-goals
+## Non-Goals
 
 - Changing the return type or behavior of `ParseRule` or `ParseAST`.
 - Generating a separate public function for every grammar rule.
@@ -51,7 +51,7 @@ available.
 
 ## Design
 
-### Public API and result mapping
+### Public API and Result Mapping
 
 For a typed generated parser, emit:
 
@@ -100,7 +100,7 @@ existing conversion behavior, which can box a nil `*Node` in an `any` result.
 Action errors, syntax errors and trailing-input errors retain their existing
 classification.
 
-### Implementation and invariants
+### Implementation and Invariants
 
 Emit a name switch from the grammar's rule table. Each case must use the
 selected rule's own entry and inferred result type; it must not route through
@@ -125,7 +125,7 @@ generated entry points. Reuse a resolved-options helper for dispatch rather
 than replaying the option functions in `tparse`. The selected rule is parsed
 with those resolved options, including the requested `Unit` and depth limit.
 
-### Compatibility and support
+### Compatibility and Support
 
 The new entry point is additive at the API level for typed generated Go
 parsers, and it does not change `ParseRule`'s `*Node` return or `ParseAST`'s
@@ -140,7 +140,7 @@ regeneration/migration effect and test grammars with `ParseRuleAST` and
 `ParseRule`. No grammar, serialized format, TypeScript API or runtime option
 changes are required.
 
-### Implementation sequence
+### Implementation Sequence
 
 1. Derive and emit per-rule result mappings from the same type metadata used by
    `ParseAST`, including any converters needed for Node fallback.
@@ -150,7 +150,7 @@ changes are required.
 3. Document the generated name-to-type mapping and add the API to the typed
    code-generation guide.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Change `ParseRule` to return `any` for typed parsers.** This breaks callers
   that expect `*Node` and makes the typed and untyped APIs inconsistent. Keep
@@ -195,7 +195,7 @@ results with the existing wrapper-based behavior on nested markup, Unicode and
 malformed input; verify spans remain relative to the fragment without
 caller-side shifting.
 
-## Performance and results
+## Performance and Results
 
 Implemented by generated per-rule dispatch and the resolved-options typed
 runtime helper. Focused validation covers external direct and conversion
@@ -236,7 +236,7 @@ span adjustment are outside the timed region, so the measurements do not
 include their potential savings. Conversion-heavy named-rule performance and
 additional recovery workloads remain unmeasured.
 
-## Limitations and open questions
+## Limitations and Open Questions
 
 Because rule names are selected at runtime, the API cannot give callers a
 statically inferred return type. Callers must use the documented per-rule

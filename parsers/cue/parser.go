@@ -325,9 +325,9 @@ type rule struct {
 	leader bool
 	// seen is the rule's index among the memoized rules whose memoization is deferred to the
 	// second call at a position (firstCall), or -1.
-	seen    int
-	pratt   *pratt
-	novalue bool // value-free twin, called where the value is discarded
+	seen          int
+	operatorsRule *operatorsRule
+	novalue       bool // value-free twin, called where the value is discarded
 	// vars are the variables the rule or its callees read, sorted. Memo entries are keyed by their
 	// values at the call, since definitions inside the rule are undone when it returns.
 	vars []string
@@ -489,7 +489,7 @@ func (p *parser) release() {
 
 // --- Parser state ---
 
-// expID is an expectation: an index into descs. With msgBit set, it is an #error message.
+// expID is an expectation: an index into descs. With msgBit set, it is an @error message.
 type expID int32
 
 const msgBit expID = 1 << 30
@@ -813,7 +813,7 @@ const nodeFrameScratch = true
 
 // frameScratch keeps stable capture frames and slots until the parse returns.
 // Neither array can be reached through a returned Node's children or fields.
-// Append-only allocation also preserves retained Pratt attempts and undo marks.
+// Append-only allocation also preserves retained OperatorsRule attempts and undo marks.
 type frameScratch struct {
 	frames  []*[nodeChunk]frame
 	slots   []*[ptrChunk]*Node
@@ -1945,32 +1945,32 @@ func (c *actx) endList(base int) any {
 	return c.listNode(c.p.kids(base))
 }
 
-// --- Pratt expressions ---
+// --- Operators Rule expressions ---
 
-type pratt struct {
+type operatorsRule struct {
 	skip     matcher
-	operands []*prattLine
-	prefix   []*prattOp
-	led      []*prattOp
+	operands []*operatorsRuleLine
+	prefix   []*operatorsRuleOp
+	led      []*operatorsRuleOp
 }
 
-type prattLine struct {
+type operatorsRuleLine struct {
 	scope  []string
 	m      matcher
 	action func(*actx) any
 	isSeq  bool
 }
 
-type prattOp struct {
+type operatorsRuleOp struct {
 	id    int
 	kind  string
 	assoc string
 	level int
-	line  *prattLine
+	line  *operatorsRuleLine
 }
 
-type prattAttempt struct {
-	op         *prattOp
+type operatorsRuleAttempt struct {
+	op         *operatorsRuleOp
 	frame      *frame
 	v          *Node
 	start, end int
@@ -1979,7 +1979,7 @@ type prattAttempt struct {
 	errs       []*SyntaxError
 }
 
-func (p *parser) skipTrivia(pr *pratt) {
+func (p *parser) skipTrivia(pr *operatorsRule) {
 	if pr.skip == nil {
 		return
 	}
@@ -1995,7 +1995,7 @@ func (p *parser) skipTrivia(pr *pratt) {
 // longest tries every operator and returns the longest match (the first declared among equals);
 // best.op is nil when none matched. cutFailed reports a candidate that failed after a cut. The
 // attempt is returned by value, so trying operators allocates nothing for lines without captures.
-func (p *parser) longest(ops []*prattOp) (best prattAttempt, cutFailed bool) {
+func (p *parser) longest(ops []*operatorsRuleOp) (best operatorsRuleAttempt, cutFailed bool) {
 	m0 := p.mark()
 	for _, op := range ops {
 		prevFrame, prevCut := p.frame, p.cut
@@ -2008,7 +2008,7 @@ func (p *parser) longest(ops []*prattOp) (best prattAttempt, cutFailed bool) {
 			ok = false // an empty prefix or postfix match could be applied forever
 		}
 		if ok && (best.op == nil || p.pos > best.end) {
-			best = prattAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
+			best = operatorsRuleAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
 				errs: append([]*SyntaxError(nil), p.recovered[m0.recovered:]...)}
 		}
 		if !ok && cut {
@@ -2027,27 +2027,27 @@ func (p *parser) longest(ops []*prattOp) (best prattAttempt, cutFailed bool) {
 	return best, cutFailed
 }
 
-func (p *parser) apply(a *prattAttempt) {
+func (p *parser) apply(a *operatorsRuleAttempt) {
 	p.pos, p.env = a.end, a.env
 	p.recovered = append(p.recovered, a.errs...)
 }
 
-// prattParse parses an expression with operators that bind tighter than min. Each level of its
+// operatorsRuleParse parses an expression with operators that bind tighter than min. Each level of its
 // recursion (the operand of a prefix operator, the right operand of an infix operator) counts
 // against the nesting limit, like a rule call.
-func (p *parser) prattParse(r *rule, min int) (*Node, bool) {
+func (p *parser) operatorsRuleParse(r *rule, min int) (*Node, bool) {
 	p.depth++
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.prattExpr(r, min)
+	v, ok := p.operatorsRuleExpr(r, min)
 	p.depth--
 	return v, ok
 }
 
-func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
-	pr := r.pratt
-	lhs, ok := p.prattNud(r)
+func (p *parser) operatorsRuleExpr(r *rule, min int) (*Node, bool) {
+	pr := r.operatorsRule
+	lhs, ok := p.operatorsRuleNud(r)
 	if !ok {
 		return nil, false
 	}
@@ -2069,7 +2069,7 @@ func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 		}
 		p.apply(&a)
 		if a.op.kind == "postfix" {
-			lhs = p.prattBuild(r, &a, lhs, nil)
+			lhs = p.operatorsRuleBuild(r, &a, lhs, nil)
 			lastNone = -1
 			if p.pos == m0.pos {
 				break
@@ -2080,7 +2080,7 @@ func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 		if a.op.assoc == "right" {
 			rmin--
 		}
-		rhs, ok := p.prattParse(r, rmin)
+		rhs, ok := p.operatorsRuleParse(r, rmin)
 		if !ok {
 			if a.cut {
 				return nil, false
@@ -2088,7 +2088,7 @@ func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 			p.reset(m0)
 			break
 		}
-		lhs = p.prattBuild(r, &a, lhs, rhs)
+		lhs = p.operatorsRuleBuild(r, &a, lhs, rhs)
 		lastNone = -1
 		if a.op.assoc == "none" {
 			lastNone = a.op.level
@@ -2102,15 +2102,15 @@ func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 	return lhs, true
 }
 
-func (p *parser) prattNud(r *rule) (*Node, bool) {
-	pr := r.pratt
+func (p *parser) operatorsRuleNud(r *rule) (*Node, bool) {
+	pr := r.operatorsRule
 	p.skipTrivia(pr)
 	m0 := p.mark()
 	if a, cutFailed := p.longest(pr.prefix); a.op != nil {
 		p.apply(&a)
-		rhs, ok := p.prattParse(r, a.op.level)
+		rhs, ok := p.operatorsRuleParse(r, a.op.level)
 		if ok {
-			return p.prattBuild(r, &a, nil, rhs), true
+			return p.operatorsRuleBuild(r, &a, nil, rhs), true
 		}
 		if a.cut {
 			return nil, false
@@ -2137,7 +2137,7 @@ func (p *parser) prattNud(r *rule) (*Node, bool) {
 	return nil, false
 }
 
-func (p *parser) lineResult(r *rule, l *prattLine, f *frame, v *Node, start int) *Node {
+func (p *parser) lineResult(r *rule, l *operatorsRuleLine, f *frame, v *Node, start int) *Node {
 	if r.novalue {
 		return nil
 	}
@@ -2163,7 +2163,7 @@ func (p *parser) lineResult(r *rule, l *prattLine, f *frame, v *Node, start int)
 	return v
 }
 
-func (p *parser) prattBuild(r *rule, a *prattAttempt, lhs, rhs *Node) *Node {
+func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *Node) *Node {
 	if r.novalue {
 		return nil
 	}
@@ -2254,7 +2254,7 @@ type Span struct{ Start, End int }
 func (s *Span) tspan() (int, int)       { return s.Start, s.End }
 func (s *Span) tsetSpan(start, end int) { s.Start, s.End = start, end }
 
-// Match is a terminal made by a literal, a character class, ., @a or _.
+// Match is a terminal made by a literal, a character class, ., a #atomic or _.
 type Match struct {
 	Span
 	Text string
@@ -2390,9 +2390,9 @@ func asTval(v any) tval {
 // trule is a rule of the typed runtime: the rule's analysis results and its typed body.
 type trule struct {
 	*rule
-	body   func(p *tparser, min int) (any, bool)
-	action func(c *tctx) any
-	pratt  *tpratt
+	body          func(p *tparser, min int) (any, bool)
+	action        func(c *tctx) any
+	operatorsRule *toperatorsRule
 	// term makes the value of a rule of a terminal type.
 	term func(p *tparser, start, end int, text string) tval
 	// entry is the generated method that calls the rule as call(r, 0) does (u<id> or s<id>), for
@@ -3502,32 +3502,32 @@ func (c *tctx) endList(base int) any {
 	return c.listNode(c.p.kids(base))
 }
 
-// --- Pratt expressions ---
+// --- Operators Rule expressions ---
 
-type tpratt struct {
+type toperatorsRule struct {
 	skip     tmatcher
-	operands []*tprattLine
-	prefix   []*tprattOp
-	led      []*tprattOp
+	operands []*toperatorsRuleLine
+	prefix   []*toperatorsRuleOp
+	led      []*toperatorsRuleOp
 }
 
-type tprattLine struct {
+type toperatorsRuleLine struct {
 	scope  []string
 	m      tmatcher
 	action func(*tctx) any
 	isSeq  bool
 }
 
-type tprattOp struct {
+type toperatorsRuleOp struct {
 	id    int
 	kind  string
 	assoc string
 	level int
-	line  *tprattLine
+	line  *toperatorsRuleLine
 }
 
-type tprattAttempt struct {
-	op         *tprattOp
+type toperatorsRuleAttempt struct {
+	op         *toperatorsRuleOp
 	frame      *tframe
 	v          any
 	start, end int
@@ -3536,7 +3536,7 @@ type tprattAttempt struct {
 	errs       []*SyntaxError
 }
 
-func (p *tparser) skipTrivia(pr *tpratt) {
+func (p *tparser) skipTrivia(pr *toperatorsRule) {
 	if pr.skip == nil {
 		return
 	}
@@ -3549,7 +3549,7 @@ func (p *tparser) skipTrivia(pr *tpratt) {
 	}
 }
 
-func (p *tparser) longest(ops []*tprattOp) (best tprattAttempt, cutFailed bool) {
+func (p *tparser) longest(ops []*toperatorsRuleOp) (best toperatorsRuleAttempt, cutFailed bool) {
 	m0 := p.mark()
 	for _, op := range ops {
 		prevFrame, prevCut := p.frame, p.cut
@@ -3562,7 +3562,7 @@ func (p *tparser) longest(ops []*tprattOp) (best tprattAttempt, cutFailed bool) 
 			ok = false
 		}
 		if ok && (best.op == nil || p.pos > best.end) {
-			best = tprattAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
+			best = toperatorsRuleAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
 				errs: append([]*SyntaxError(nil), p.recovered[m0.recovered:]...)}
 		}
 		if !ok && cut {
@@ -3579,25 +3579,25 @@ func (p *tparser) longest(ops []*tprattOp) (best tprattAttempt, cutFailed bool) 
 	return best, cutFailed
 }
 
-func (p *tparser) apply(a *tprattAttempt) {
+func (p *tparser) apply(a *toperatorsRuleAttempt) {
 	p.pos, p.env = a.end, a.env
 	p.recovered = append(p.recovered, a.errs...)
 }
 
-// prattParse is parser.prattParse for typed values.
-func (p *tparser) prattParse(r *trule, min int) (any, bool) {
+// operatorsRuleParse is parser.operatorsRuleParse for typed values.
+func (p *tparser) operatorsRuleParse(r *trule, min int) (any, bool) {
 	p.depth++
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.prattExpr(r, min)
+	v, ok := p.operatorsRuleExpr(r, min)
 	p.depth--
 	return v, ok
 }
 
-func (p *tparser) prattExpr(r *trule, min int) (any, bool) {
-	pr := r.pratt
-	lhs, ok := p.prattNud(r)
+func (p *tparser) operatorsRuleExpr(r *trule, min int) (any, bool) {
+	pr := r.operatorsRule
+	lhs, ok := p.operatorsRuleNud(r)
 	if !ok {
 		return nil, false
 	}
@@ -3619,7 +3619,7 @@ func (p *tparser) prattExpr(r *trule, min int) (any, bool) {
 		}
 		p.apply(&a)
 		if a.op.kind == "postfix" {
-			lhs = p.prattBuild(r, &a, lhs, nil)
+			lhs = p.operatorsRuleBuild(r, &a, lhs, nil)
 			lastNone = -1
 			if p.pos == m0.pos {
 				break
@@ -3630,7 +3630,7 @@ func (p *tparser) prattExpr(r *trule, min int) (any, bool) {
 		if a.op.assoc == "right" {
 			rmin--
 		}
-		rhs, ok := p.prattParse(r, rmin)
+		rhs, ok := p.operatorsRuleParse(r, rmin)
 		if !ok {
 			if a.cut {
 				return nil, false
@@ -3638,7 +3638,7 @@ func (p *tparser) prattExpr(r *trule, min int) (any, bool) {
 			p.reset(m0)
 			break
 		}
-		lhs = p.prattBuild(r, &a, lhs, rhs)
+		lhs = p.operatorsRuleBuild(r, &a, lhs, rhs)
 		lastNone = -1
 		if a.op.assoc == "none" {
 			lastNone = a.op.level
@@ -3650,15 +3650,15 @@ func (p *tparser) prattExpr(r *trule, min int) (any, bool) {
 	return lhs, true
 }
 
-func (p *tparser) prattNud(r *trule) (any, bool) {
-	pr := r.pratt
+func (p *tparser) operatorsRuleNud(r *trule) (any, bool) {
+	pr := r.operatorsRule
 	p.skipTrivia(pr)
 	m0 := p.mark()
 	if a, cutFailed := p.longest(pr.prefix); a.op != nil {
 		p.apply(&a)
-		rhs, ok := p.prattParse(r, a.op.level)
+		rhs, ok := p.operatorsRuleParse(r, a.op.level)
 		if ok {
-			return p.prattBuild(r, &a, nil, rhs), true
+			return p.operatorsRuleBuild(r, &a, nil, rhs), true
 		}
 		if a.cut {
 			return nil, false
@@ -3685,7 +3685,7 @@ func (p *tparser) prattNud(r *trule) (any, bool) {
 	return nil, false
 }
 
-func (p *tparser) lineResult(r *trule, l *tprattLine, f *tframe, v any, start int) any {
+func (p *tparser) lineResult(r *trule, l *toperatorsRuleLine, f *tframe, v any, start int) any {
 	if r.novalue {
 		return nil
 	}
@@ -3710,7 +3710,7 @@ func (p *tparser) lineResult(r *trule, l *tprattLine, f *tframe, v any, start in
 	return nil
 }
 
-func (p *tparser) prattBuild(r *trule, a *tprattAttempt, lhs, rhs any) any {
+func (p *tparser) operatorsRuleBuild(r *trule, a *toperatorsRuleAttempt, lhs, rhs any) any {
 	if r.novalue {
 		return nil
 	}
@@ -7941,34 +7941,34 @@ func init() {
 	rules[113].body = func(p *parser, _ int) (*Node, bool) { return p.e154() }
 	rules[114].body = func(p *parser, _ int) (*Node, bool) { return p.e155() }
 	rules[114].action = func(c *actx) any { return c.newStruct("PostfixExpr", "X", c.cap(0), "Op", c.cap(1)) }
-	rules[115].pratt = &pratt{
+	rules[115].operatorsRule = &operatorsRule{
 		skip: (*parser).e354,
-		operands: []*prattLine{
-			&prattLine{scope: []string{}, m: (*parser).e355, action: nil, isSeq: false},
+		operands: []*operatorsRuleLine{
+			&operatorsRuleLine{scope: []string{}, m: (*parser).e355, action: nil, isSeq: false},
 		},
-		prefix: []*prattOp{{id: 7, kind: "prefix", assoc: "", level: 8, line: &prattLine{scope: []string{"o"}, m: (*parser).e420, action: func(c *actx) any { return c.newStruct("UnaryExpr", "Op", c.cap(0), "X", c.rhs) }, isSeq: true}}},
-		led: []*prattOp{{id: 0, kind: "infix", assoc: "left", level: 1, line: &prattLine{scope: []string{"o"}, m: (*parser).e360, action: func(c *actx) any { return c.newStruct("BinaryExpr", "X", c.lhs, "Op", c.cap(0), "Y", c.rhs) }, isSeq: true}},
-			{id: 1, kind: "infix", assoc: "left", level: 2, line: &prattLine{scope: []string{"o"}, m: (*parser).e364, action: func(c *actx) any { return c.newStruct("BinaryExpr", "X", c.lhs, "Op", c.cap(0), "Y", c.rhs) }, isSeq: true}},
-			{id: 2, kind: "infix", assoc: "left", level: 3, line: &prattLine{scope: []string{"o"}, m: (*parser).e368, action: func(c *actx) any { return c.newStruct("BinaryExpr", "X", c.lhs, "Op", c.cap(0), "Y", c.rhs) }, isSeq: true}},
-			{id: 3, kind: "infix", assoc: "left", level: 4, line: &prattLine{scope: []string{"o"}, m: (*parser).e372, action: func(c *actx) any { return c.newStruct("BinaryExpr", "X", c.lhs, "Op", c.cap(0), "Y", c.rhs) }, isSeq: true}},
-			{id: 4, kind: "infix", assoc: "left", level: 5, line: &prattLine{scope: []string{"o"}, m: (*parser).e396, action: func(c *actx) any { return c.newStruct("BinaryExpr", "X", c.lhs, "Op", c.cap(0), "Y", c.rhs) }, isSeq: true}},
-			{id: 5, kind: "infix", assoc: "left", level: 6, line: &prattLine{scope: []string{"o"}, m: (*parser).e402, action: func(c *actx) any { return c.newStruct("BinaryExpr", "X", c.lhs, "Op", c.cap(0), "Y", c.rhs) }, isSeq: true}},
-			{id: 6, kind: "infix", assoc: "left", level: 7, line: &prattLine{scope: []string{"o"}, m: (*parser).e412, action: func(c *actx) any { return c.newStruct("BinaryExpr", "X", c.lhs, "Op", c.cap(0), "Y", c.rhs) }, isSeq: true}},
-			{id: 8, kind: "postfix", assoc: "", level: 9, line: &prattLine{scope: []string{"s", "q"}, m: (*parser).e426, action: func(c *actx) any {
+		prefix: []*operatorsRuleOp{{id: 7, kind: "prefix", assoc: "", level: 8, line: &operatorsRuleLine{scope: []string{"o"}, m: (*parser).e420, action: func(c *actx) any { return c.newStruct("UnaryExpr", "Op", c.cap(0), "X", c.rhs) }, isSeq: true}}},
+		led: []*operatorsRuleOp{{id: 0, kind: "infix", assoc: "left", level: 1, line: &operatorsRuleLine{scope: []string{"o"}, m: (*parser).e360, action: func(c *actx) any { return c.newStruct("BinaryExpr", "X", c.lhs, "Op", c.cap(0), "Y", c.rhs) }, isSeq: true}},
+			{id: 1, kind: "infix", assoc: "left", level: 2, line: &operatorsRuleLine{scope: []string{"o"}, m: (*parser).e364, action: func(c *actx) any { return c.newStruct("BinaryExpr", "X", c.lhs, "Op", c.cap(0), "Y", c.rhs) }, isSeq: true}},
+			{id: 2, kind: "infix", assoc: "left", level: 3, line: &operatorsRuleLine{scope: []string{"o"}, m: (*parser).e368, action: func(c *actx) any { return c.newStruct("BinaryExpr", "X", c.lhs, "Op", c.cap(0), "Y", c.rhs) }, isSeq: true}},
+			{id: 3, kind: "infix", assoc: "left", level: 4, line: &operatorsRuleLine{scope: []string{"o"}, m: (*parser).e372, action: func(c *actx) any { return c.newStruct("BinaryExpr", "X", c.lhs, "Op", c.cap(0), "Y", c.rhs) }, isSeq: true}},
+			{id: 4, kind: "infix", assoc: "left", level: 5, line: &operatorsRuleLine{scope: []string{"o"}, m: (*parser).e396, action: func(c *actx) any { return c.newStruct("BinaryExpr", "X", c.lhs, "Op", c.cap(0), "Y", c.rhs) }, isSeq: true}},
+			{id: 5, kind: "infix", assoc: "left", level: 6, line: &operatorsRuleLine{scope: []string{"o"}, m: (*parser).e402, action: func(c *actx) any { return c.newStruct("BinaryExpr", "X", c.lhs, "Op", c.cap(0), "Y", c.rhs) }, isSeq: true}},
+			{id: 6, kind: "infix", assoc: "left", level: 7, line: &operatorsRuleLine{scope: []string{"o"}, m: (*parser).e412, action: func(c *actx) any { return c.newStruct("BinaryExpr", "X", c.lhs, "Op", c.cap(0), "Y", c.rhs) }, isSeq: true}},
+			{id: 8, kind: "postfix", assoc: "", level: 9, line: &operatorsRuleLine{scope: []string{"s", "q"}, m: (*parser).e426, action: func(c *actx) any {
 				return c.newStruct("PostfixExpr", "X", c.newStruct("SelectorExpr", "X", c.lhs, "Sel", c.cap(0)), "Op", c.cap(1))
 			}, isSeq: true}},
-			{id: 9, kind: "postfix", assoc: "", level: 9, line: &prattLine{scope: []string{"s"}, m: (*parser).e427, action: func(c *actx) any { return c.newStruct("SelectorExpr", "X", c.lhs, "Sel", c.cap(0)) }, isSeq: true}},
-			{id: 10, kind: "postfix", assoc: "", level: 9, line: &prattLine{scope: []string{"i", "r", "q"}, m: (*parser).e436, action: func(c *actx) any {
+			{id: 9, kind: "postfix", assoc: "", level: 9, line: &operatorsRuleLine{scope: []string{"s"}, m: (*parser).e427, action: func(c *actx) any { return c.newStruct("SelectorExpr", "X", c.lhs, "Sel", c.cap(0)) }, isSeq: true}},
+			{id: 10, kind: "postfix", assoc: "", level: 9, line: &operatorsRuleLine{scope: []string{"i", "r", "q"}, m: (*parser).e436, action: func(c *actx) any {
 				return c.newStruct("PostfixExpr", "X", c.newStruct("IndexExpr", "X", c.lhs, "Index", c.cap(0), "Rbrack", c.cap(1)), "Op", c.cap(2))
 			}, isSeq: true}},
-			{id: 11, kind: "postfix", assoc: "", level: 9, line: &prattLine{scope: []string{"i", "r"}, m: (*parser).e437, action: func(c *actx) any { return c.newStruct("IndexExpr", "X", c.lhs, "Index", c.cap(0), "Rbrack", c.cap(1)) }, isSeq: true}},
-			{id: 12, kind: "postfix", assoc: "", level: 9, line: &prattLine{scope: []string{"lo", "hi"}, m: (*parser).e443, action: func(c *actx) any { return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1)) }, isSeq: true}},
-			{id: 13, kind: "postfix", assoc: "", level: 9, line: &prattLine{scope: []string{"as"}, m: (*parser).e452, action: func(c *actx) any {
+			{id: 11, kind: "postfix", assoc: "", level: 9, line: &operatorsRuleLine{scope: []string{"i", "r"}, m: (*parser).e437, action: func(c *actx) any { return c.newStruct("IndexExpr", "X", c.lhs, "Index", c.cap(0), "Rbrack", c.cap(1)) }, isSeq: true}},
+			{id: 12, kind: "postfix", assoc: "", level: 9, line: &operatorsRuleLine{scope: []string{"lo", "hi"}, m: (*parser).e443, action: func(c *actx) any { return c.newStruct("SliceExpr", "X", c.lhs, "Low", c.cap(0), "High", c.cap(1)) }, isSeq: true}},
+			{id: 13, kind: "postfix", assoc: "", level: 9, line: &operatorsRuleLine{scope: []string{"as"}, m: (*parser).e452, action: func(c *actx) any {
 				return c.newStruct("CallExpr", "Fun", c.lhs, "Args", c.mapList(c.cap(0), func(l_453 any) any { return c.member(l_453, "a") }))
 			}, isSeq: true}},
-			{id: 14, kind: "postfix", assoc: "", level: 9, line: &prattLine{scope: []string{"o"}, m: (*parser).e455, action: func(c *actx) any { return c.newStruct("PostfixExpr", "X", c.lhs, "Op", c.cap(0)) }, isSeq: false}}},
+			{id: 14, kind: "postfix", assoc: "", level: 9, line: &operatorsRuleLine{scope: []string{"o"}, m: (*parser).e455, action: func(c *actx) any { return c.newStruct("PostfixExpr", "X", c.lhs, "Op", c.cap(0)) }, isSeq: false}}},
 	}
-	rules[115].body = func(p *parser, min int) (*Node, bool) { return p.prattParse(rules[115], min) }
+	rules[115].body = func(p *parser, min int) (*Node, bool) { return p.operatorsRuleParse(rules[115], min) }
 	rules[116].body = func(p *parser, _ int) (*Node, bool) { return p.e156() }
 	rules[117].body = func(p *parser, _ int) (*Node, bool) { return p.e157() }
 	rules[118].body = func(p *parser, _ int) (*Node, bool) { return p.e161() }
@@ -8573,28 +8573,28 @@ func init() {
 	recRules[112].body = func(p *parser, _ int) (*Node, bool) { return p.e571() }
 	recRules[113].body = func(p *parser, _ int) (*Node, bool) { return p.e572() }
 	recRules[114].body = func(p *parser, _ int) (*Node, bool) { return p.e573() }
-	recRules[115].pratt = &pratt{
+	recRules[115].operatorsRule = &operatorsRule{
 		skip: (*parser).e684,
-		operands: []*prattLine{
-			&prattLine{scope: []string{}, m: (*parser).e685, action: nil, isSeq: false},
+		operands: []*operatorsRuleLine{
+			&operatorsRuleLine{scope: []string{}, m: (*parser).e685, action: nil, isSeq: false},
 		},
-		prefix: []*prattOp{{id: 7, kind: "prefix", assoc: "", level: 8, line: &prattLine{scope: []string{}, m: (*parser).e702, action: nil, isSeq: true}}},
-		led: []*prattOp{{id: 0, kind: "infix", assoc: "left", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e688, action: nil, isSeq: true}},
-			{id: 1, kind: "infix", assoc: "left", level: 2, line: &prattLine{scope: []string{}, m: (*parser).e690, action: nil, isSeq: true}},
-			{id: 2, kind: "infix", assoc: "left", level: 3, line: &prattLine{scope: []string{}, m: (*parser).e692, action: nil, isSeq: true}},
-			{id: 3, kind: "infix", assoc: "left", level: 4, line: &prattLine{scope: []string{}, m: (*parser).e694, action: nil, isSeq: true}},
-			{id: 4, kind: "infix", assoc: "left", level: 5, line: &prattLine{scope: []string{}, m: (*parser).e696, action: nil, isSeq: true}},
-			{id: 5, kind: "infix", assoc: "left", level: 6, line: &prattLine{scope: []string{}, m: (*parser).e698, action: nil, isSeq: true}},
-			{id: 6, kind: "infix", assoc: "left", level: 7, line: &prattLine{scope: []string{}, m: (*parser).e700, action: nil, isSeq: true}},
-			{id: 8, kind: "postfix", assoc: "", level: 9, line: &prattLine{scope: []string{}, m: (*parser).e705, action: nil, isSeq: true}},
-			{id: 9, kind: "postfix", assoc: "", level: 9, line: &prattLine{scope: []string{}, m: (*parser).e706, action: nil, isSeq: true}},
-			{id: 10, kind: "postfix", assoc: "", level: 9, line: &prattLine{scope: []string{}, m: (*parser).e710, action: nil, isSeq: true}},
-			{id: 11, kind: "postfix", assoc: "", level: 9, line: &prattLine{scope: []string{}, m: (*parser).e711, action: nil, isSeq: true}},
-			{id: 12, kind: "postfix", assoc: "", level: 9, line: &prattLine{scope: []string{}, m: (*parser).e714, action: nil, isSeq: true}},
-			{id: 13, kind: "postfix", assoc: "", level: 9, line: &prattLine{scope: []string{}, m: (*parser).e719, action: nil, isSeq: true}},
-			{id: 14, kind: "postfix", assoc: "", level: 9, line: &prattLine{scope: []string{}, m: (*parser).e720, action: nil, isSeq: false}}},
+		prefix: []*operatorsRuleOp{{id: 7, kind: "prefix", assoc: "", level: 8, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e702, action: nil, isSeq: true}}},
+		led: []*operatorsRuleOp{{id: 0, kind: "infix", assoc: "left", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e688, action: nil, isSeq: true}},
+			{id: 1, kind: "infix", assoc: "left", level: 2, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e690, action: nil, isSeq: true}},
+			{id: 2, kind: "infix", assoc: "left", level: 3, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e692, action: nil, isSeq: true}},
+			{id: 3, kind: "infix", assoc: "left", level: 4, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e694, action: nil, isSeq: true}},
+			{id: 4, kind: "infix", assoc: "left", level: 5, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e696, action: nil, isSeq: true}},
+			{id: 5, kind: "infix", assoc: "left", level: 6, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e698, action: nil, isSeq: true}},
+			{id: 6, kind: "infix", assoc: "left", level: 7, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e700, action: nil, isSeq: true}},
+			{id: 8, kind: "postfix", assoc: "", level: 9, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e705, action: nil, isSeq: true}},
+			{id: 9, kind: "postfix", assoc: "", level: 9, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e706, action: nil, isSeq: true}},
+			{id: 10, kind: "postfix", assoc: "", level: 9, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e710, action: nil, isSeq: true}},
+			{id: 11, kind: "postfix", assoc: "", level: 9, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e711, action: nil, isSeq: true}},
+			{id: 12, kind: "postfix", assoc: "", level: 9, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e714, action: nil, isSeq: true}},
+			{id: 13, kind: "postfix", assoc: "", level: 9, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e719, action: nil, isSeq: true}},
+			{id: 14, kind: "postfix", assoc: "", level: 9, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e720, action: nil, isSeq: false}}},
 	}
-	recRules[115].body = func(p *parser, min int) (*Node, bool) { return p.prattParse(recRules[115], min) }
+	recRules[115].body = func(p *parser, min int) (*Node, bool) { return p.operatorsRuleParse(recRules[115], min) }
 	recRules[116].body = func(p *parser, _ int) (*Node, bool) { return p.e574() }
 	recRules[117].body = func(p *parser, _ int) (*Node, bool) { return p.e575() }
 	recRules[118].body = func(p *parser, _ int) (*Node, bool) { return p.e576() }
@@ -8724,7 +8724,7 @@ func init() {
 	recRules[241].body = func(p *parser, _ int) (*Node, bool) { return p.e682() }
 	recRules[242].body = func(p *parser, _ int) (*Node, bool) { return p.e683() }
 	recRules[243].body = func(p *parser, _ int) (*Node, bool) { return p.e343() }
-	descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"\\ufeff\"", "\"package\"", "\"import\"", "\"(\"", "\")\"", "\"}\"", "\"=\"", "(?=~)", "(? \\t\\r)", "(? \\t\\r\\n)", "\"//\"", "(?^\\n\\x00\\ufeff)", "\",\"", "\"\\n\"", "\":\"", "\"func\"", "\"?\"", "\"!\"", "(?fit)", "\".\"", "\"...\"", "\"l\"", "\"let\"", "\"for\"", "\"if\"", "\"try\"", "\"__\"", "(?a-zA-Z_$#\"\\'\\([\\u0080-\\U0010ffff)", "\"~\"", "\"null\"", "\"[\"", "\"in\"", "\"else\"", "\"fallback\"", "\"otherwise\"", "\"{\"", "\"]\"", "(?.[\\(|&=!<>+\\-*/)", "(?a-zA-Z_$#\\u0080-\\U0010ffff)", "(?0-9.)", "\"true\"", "\"false\"", "\"\\\"\\\"\"", "\"\\\"\"", "\"@\"", "\"_|_\"", "(?:;\\?~+\\-*/<>=!&|,)", "\"#\"", "(?\"\\')", "\"0\"", "(?_)", "(?0-9eE.xXbo)", "(?_eE)", "(?1-9)", "(?xXbo)", "(?0-9)", "(?eE)", "(?KMGTP)", "(?a-zA-Z0-9_$)", "(?\\x00-\\x7f)", "(?ªµºÀ-ÖØ-öø-ˁˆ-ˑˠ-ˤˬˮͰ-ʹͶ-ͷͺ-ͽͿΆΈ-ΊΌΎ-ΡΣ-ϵϷ-ҁҊ-ԯԱ-Ֆՙՠ-ֈא-תׯ-ײؠ-يٮ-ٯٱ-ۓەۥ-ۦۮ-ۯۺ-ۼۿܐܒ-ܯݍ-ޥޱߊ-ߪߴ-ߵߺࠀ-ࠕࠚࠤࠨࡀ-ࡘࡠ-ࡪࡰ-ࢇࢉ-࢏ࢠ-ࣉऄ-हऽॐक़-ॡॱ-ঀঅ-ঌএ-ঐও-নপ-রলশ-হঽৎড়-ঢ়য়-ৡৰ-ৱৼਅ-ਊਏ-ਐਓ-ਨਪ-ਰਲ-ਲ਼ਵ-ਸ਼ਸ-ਹਖ਼-ੜਫ਼ੲ-ੴઅ-ઍએ-ઑઓ-નપ-રલ-ળવ-હઽૐૠ-ૡૹଅ-ଌଏ-ଐଓ-ନପ-ରଲ-ଳଵ-ହଽଡ଼-ଢ଼ୟ-ୡୱஃஅ-ஊஎ-ஐஒ-கங-சஜஞ-டண-தந-பம-ஹௐఅ-ఌఎ-ఐఒ-నప-హఽౘ-ౚ౜-ౝౠ-ౡಀಅ-ಌಎ-ಐಒ-ನಪ-ಳವ-ಹಽ೜-ೞೠ-ೡೱ-ೲഄ-ഌഎ-ഐഒ-ഺഽൎൔ-ൖൟ-ൡൺ-ൿඅ-ඖක-නඳ-රලව-ෆก-ะา-ำเ-ๆກ-ຂຄຆ-ຊຌ-ຣລວ-ະາ-ຳຽເ-ໄໆໜ-ໟༀཀ-ཇཉ-ཬྈ-ྌက-ဪဿၐ-ၕၚ-ၝၡၥ-ၦၮ-ၰၵ-ႁႎႠ-ჅჇჍა-ჺჼ-ቈቊ-ቍቐ-ቖቘቚ-ቝበ-ኈኊ-ኍነ-ኰኲ-ኵኸ-ኾዀዂ-ዅወ-ዖዘ-ጐጒ-ጕጘ-ፚᎀ-ᎏᎠ-Ᏽᏸ-ᏽᐁ-ᙬᙯ-ᙿᚁ-ᚚᚠ-ᛪᛱ-ᛸᜀ-ᜑᜟ-ᜱᝀ-ᝑᝠ-ᝬᝮ-ᝰក-ឳៗៜᠠ-ᡸᢀ-ᢄᢇ-ᢨᢪᢰ-ᣵᤀ-ᤞᥐ-ᥭᥰ-ᥴᦀ-ᦫᦰ-ᧉᨀ-ᨖᨠ-ᩔᪧᬅ-ᬳᭅ-ᭌᮃ-ᮠᮮ-ᮯᮺ-ᯥᰀ-ᰣᱍ-ᱏᱚ-ᱽᲀ-ᲊᲐ-ᲺᲽ-Ჿᳩ-ᳬᳮ-ᳳᳵ-ᳶᳺᴀ-ᶿḀ-ἕἘ-Ἕἠ-ὅὈ-Ὅὐ-ὗὙὛὝὟ-ώᾀ-ᾴᾶ-ᾼιῂ-ῄῆ-ῌῐ-ΐῖ-Ίῠ-Ῥῲ-ῴῶ-ῼⁱⁿₐ-ₜℂℇℊ-ℓℕℙ-ℝℤΩℨK-ℭℯ-ℹℼ-ℿⅅ-ⅉⅎↃ-ↄⰀ-ⳤⳫ-ⳮⳲ-ⳳⴀ-ⴥⴧⴭⴰ-ⵧⵯⶀ-ⶖⶠ-ⶦⶨ-ⶮⶰ-ⶶⶸ-ⶾⷀ-ⷆⷈ-ⷎⷐ-ⷖⷘ-ⷞⸯ々-〆〱-〵〻-〼ぁ-ゖゝ-ゟァ-ヺー-ヿㄅ-ㄯㄱ-ㆎㆠ-ㆿㇰ-ㇿ㐀-䶿一-ꒌꓐ-ꓽꔀ-ꘌꘐ-ꘟꘪ-ꘫꙀ-ꙮꙿ-ꚝꚠ-ꛥꜗ-ꜟꜢ-ꞈꞋ-Ƛ꟱-ꠁꠃ-ꠅꠇ-ꠊꠌ-ꠢꡀ-ꡳꢂ-ꢳꣲ-ꣷꣻꣽ-ꣾꤊ-ꤥꤰ-ꥆꥠ-ꥼꦄ-ꦲꧏꧠ-ꧤꧦ-ꧯꧺ-ꧾꨀ-ꨨꩀ-ꩂꩄ-ꩋꩠ-ꩶꩺꩾ-ꪯꪱꪵ-ꪶꪹ-ꪽꫀꫂꫛ-ꫝꫠ-ꫪꫲ-ꫴꬁ-ꬆꬉ-ꬎꬑ-ꬖꬠ-ꬦꬨ-ꬮꬰ-ꭚꭜ-ꭩꭰ-ꯢ가-힣ힰ-ퟆퟋ-ퟻ豈-舘並-龎ﬀ-ﬆﬓ-ﬗיִײַ-ﬨשׁ-זּטּ-לּמּנּ-סּףּ-פּצּ-ﮱﯓ-ﴽﵐ-ﶏﶒ-ﷇﷰ-ﷻﹰ-ﹴﹶ-ﻼＡ-Ｚａ-ｚｦ-ﾾￂ-ￇￊ-ￏￒ-ￗￚ-ￜ𐀀-𐀋𐀍-𐀦𐀨-𐀺𐀼-𐀽𐀿-𐁍𐁐-𐁝𐂀-𐃺𐊀-𐊜𐊠-𐋐𐌀-𐌟𐌭-𐍀𐍂-𐍉𐍐-𐍵𐎀-𐎝𐎠-𐏃𐏈-𐏏𐐀-𐒝𐒰-𐓓𐓘-𐓻𐔀-𐔧𐔰-𐕣𐕰-𐕺𐕼-𐖊𐖌-𐖒𐖔-𐖕𐖗-𐖡𐖣-𐖱𐖳-𐖹𐖻-𐖼𐗀-𐗳𐘀-𐜶𐝀-𐝕𐝠-𐝧𐞀-𐞅𐞇-𐞰𐞲-𐞺𐠀-𐠅𐠈𐠊-𐠵𐠷-𐠸𐠼𐠿-𐡕𐡠-𐡶𐢀-𐢞𐣠-𐣲𐣴-𐣵𐤀-𐤕𐤠-𐤹𐥀-𐥙𐦀-𐦷𐦾-𐦿𐨀𐨐-𐨓𐨕-𐨗𐨙-𐨵𐩠-𐩼𐪀-𐪜𐫀-𐫇𐫉-𐫤𐬀-𐬵𐭀-𐭕𐭠-𐭲𐮀-𐮑𐰀-𐱈𐲀-𐲲𐳀-𐳲𐴀-𐴣𐵊-𐵥𐵯-𐶅𐺀-𐺩𐺰-𐺱𐻂-𐻇𐼀-𐼜𐼧𐼰-𐽅𐽰-𐾁𐾰-𐿄𐿠-𐿶𑀃-𑀷𑁱-𑁲𑁵𑂃-𑂯𑃐-𑃨𑄃-𑄦𑅄𑅇𑅐-𑅲𑅶𑆃-𑆲𑇁-𑇄𑇚𑇜𑈀-𑈑𑈓-𑈫𑈿-𑉀𑊀-𑊆𑊈𑊊-𑊍𑊏-𑊝𑊟-𑊨𑊰-𑋞𑌅-𑌌𑌏-𑌐𑌓-𑌨𑌪-𑌰𑌲-𑌳𑌵-𑌹𑌽𑍐𑍝-𑍡𑎀-𑎉𑎋𑎎𑎐-𑎵𑎷𑏑𑏓𑐀-𑐴𑑇-𑑊𑑟-𑑡𑒀-𑒯𑓄-𑓅𑓇𑖀-𑖮𑗘-𑗛𑘀-𑘯𑙄𑚀-𑚪𑚸𑜀-𑜚𑝀-𑝆𑠀-𑠫𑢠-𑣟𑣿-𑤆𑤉𑤌-𑤓𑤕-𑤖𑤘-𑤯𑤿𑥁𑦠-𑦧𑦪-𑧐𑧡𑧣𑨀𑨋-𑨲𑨺𑩐𑩜-𑪉𑪝𑪰-𑫸𑯀-𑯠𑰀-𑰈𑰊-𑰮𑱀𑱲-𑲏𑴀-𑴆𑴈-𑴉𑴋-𑴰𑵆𑵠-𑵥𑵧-𑵨𑵪-𑶉𑶘𑶰-𑷛𑻠-𑻲𑼂𑼄-𑼐𑼒-𑼳𑾰𒀀-𒎙𒒀-𒕃𒾐-𒿰𓀀-𓐯𓑁-𓑆𓑠-𔏺𔐀-𔙆𖄀-𖄝𖠀-𖨸𖩀-𖩞𖩰-𖪾𖫐-𖫭𖬀-𖬯𖭀-𖭃𖭣-𖭷𖭽-𖮏𖵀-𖵬𖹀-𖹿𖺠-𖺸𖺻-𖻓𖼀-𖽊𖽐𖾓-𖾟𖿠-𖿡𖿣𖿲-𖿳𗀀-𘳕𘳿-𘴞𘶀-𘷲𚿰-𚿳𚿵-𚿻𚿽-𚿾𛀀-𛄢𛄲𛅐-𛅒𛅕𛅤-𛅧𛅰-𛋻𛰀-𛱪𛱰-𛱼𛲀-𛲈𛲐-𛲙𝐀-𝑔𝑖-𝒜𝒞-𝒟𝒢𝒥-𝒦𝒩-𝒬𝒮-𝒹𝒻𝒽-𝓃𝓅-𝔅𝔇-𝔊𝔍-𝔔𝔖-𝔜𝔞-𝔹𝔻-𝔾𝕀-𝕄𝕆𝕊-𝕐𝕒-𝚥𝚨-𝛀𝛂-𝛚𝛜-𝛺𝛼-𝜔𝜖-𝜴𝜶-𝝎𝝐-𝝮𝝰-𝞈𝞊-𝞨𝞪-𝟂𝟄-𝟋𝼀-𝼞𝼥-𝼪𞀰-𞁭𞄀-𞄬𞄷-𞄽𞅎𞊐-𞊭𞋀-𞋫𞓐-𞓫𞗐-𞗭𞗰𞛀-𞛞𞛠-𞛢𞛤-𞛥𞛧-𞛭𞛰-𞛴𞛾-𞛿𞟠-𞟦𞟨-𞟫𞟭-𞟮𞟰-𞟾𞠀-𞣄𞤀-𞥃𞥋𞸀-𞸃𞸅-𞸟𞸡-𞸢𞸤𞸧𞸩-𞸲𞸴-𞸷𞸹𞸻𞹂𞹇𞹉𞹋𞹍-𞹏𞹑-𞹒𞹔𞹗𞹙𞹛𞹝𞹟𞹡-𞹢𞹤𞹧-𞹪𞹬-𞹲𞹴-𞹷𞹹-𞹼𞹾𞺀-𞺉𞺋-𞺛𞺡-𞺣𞺥-𞺩𞺫-𞺻𠀀-𪛟𪜀-𫠝𫠠-𬺭𬺰-𮯠𮯰-𮹝丽-𪘀𰀀-𱍊𱍐-𳑹)", "(?٠-٩۰-۹߀-߉०-९০-৯੦-੯૦-૯୦-୯௦-௯౦-౯೦-೯൦-൯෦-෯๐-๙໐-໙༠-༩၀-၉႐-႙០-៩᠐-᠙᥆-᥏᧐-᧙᪀-᪉᪐-᪙᭐-᭙᮰-᮹᱀-᱉᱐-᱙꘠-꘩꣐-꣙꤀-꤉꧐-꧙꧰-꧹꩐-꩙꯰-꯹０-９𐒠-𐒩𐴰-𐴹𐵀-𐵉𑁦-𑁯𑃰-𑃹𑄶-𑄿𑇐-𑇙𑋰-𑋹𑑐-𑑙𑓐-𑓙𑙐-𑙙𑛀-𑛉𑛐-𑛣𑜰-𑜹𑣠-𑣩𑥐-𑥙𑯰-𑯹𑱐-𑱙𑵐-𑵙𑶠-𑶩𑷠-𑷩𑽐-𑽙𖄰-𖄹𖩠-𖩩𖫀-𖫉𖭐-𖭙𖵰-𖵹𜳰-𜳹𝟎-𝟿𞅀-𞅉𞋰-𞋹𞓰-𞓹𞗱-𞗺𞥐-𞥙🯰-🯹)", "(?a-zA-Z$)", "\"_\"", "\"|_\"", "\"_#\"", "(?\"\\'#)", "(?iefltno)", "(?0-9a-fA-F)", "(?xX)", "\"b\"", "(?01)", "\"o\"", "(?0-7)", "(?+\\-)", "\"i\"", "\"000\"", "\"0010\"", "(?abfnrtv\\\\/\")", "\"u\"", "\"U\"", "(?abfnrtv\\\\/\\')", "\"x\"", "(?0-3)", "(?^\"\\\\\\n\\x00\\ufeff)", "\"\\\\\"", "\"\\\"\\\"\\\"\"", "\"\\\\(\"", "(?^\\'\\\\\\n\\x00\\ufeff)", "\"'''\"", "\"'\"", "\"\\r\\n\"", "(?^\\n\\\\\\x00\\ufeff\"\\')", "(?^\\n\\\\\\x00\\ufeff)", "(? \\t)", "\"|\"", "\"&\"", "\"||\"", "\"&&\"", "\"==\"", "\"!=\"", "\"=~\"", "\"!~\"", "\"<=\"", "\">=\"", "\"<\"", "\"-\"", "\">\"", "\"+\"", "\"*\"", "\"/\"", "(?+\\-!*<>=)"}
+	descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"\\ufeff\"", "\"package\"", "\"import\"", "\"(\"", "\")\"", "\"}\"", "\"=\"", "[=~]", "[ \\t\\r]", "[ \\t\\r\\n]", "\"//\"", "[^\\n\\x00\\ufeff]", "\",\"", "\"\\n\"", "\":\"", "\"func\"", "\"?\"", "\"!\"", "[fit]", "\".\"", "\"...\"", "\"l\"", "\"let\"", "\"for\"", "\"if\"", "\"try\"", "\"__\"", "[a-zA-Z_$#\"\\'(\\[\\u0080-\\U0010ffff]", "\"~\"", "\"null\"", "\"[\"", "\"in\"", "\"else\"", "\"fallback\"", "\"otherwise\"", "\"{\"", "\"]\"", "[.\\[(|&=!<>+\\-*/]", "[a-zA-Z_$#\\u0080-\\U0010ffff]", "[0-9.]", "\"true\"", "\"false\"", "\"\\\"\\\"\"", "\"\\\"\"", "\"@\"", "\"_|_\"", "[:;?~+\\-*/<>=!&|,]", "\"#\"", "[\"\\']", "\"0\"", "[_]", "[0-9eE.xXbo]", "[_eE]", "[1-9]", "[xXbo]", "[0-9]", "[eE]", "[KMGTP]", "[a-zA-Z0-9_$]", "[\\x00-\\x7f]", "[ªµºÀ-ÖØ-öø-ˁˆ-ˑˠ-ˤˬˮͰ-ʹͶ-ͷͺ-ͽͿΆΈ-ΊΌΎ-ΡΣ-ϵϷ-ҁҊ-ԯԱ-Ֆՙՠ-ֈא-תׯ-ײؠ-يٮ-ٯٱ-ۓەۥ-ۦۮ-ۯۺ-ۼۿܐܒ-ܯݍ-ޥޱߊ-ߪߴ-ߵߺࠀ-ࠕࠚࠤࠨࡀ-ࡘࡠ-ࡪࡰ-ࢇࢉ-࢏ࢠ-ࣉऄ-हऽॐक़-ॡॱ-ঀঅ-ঌএ-ঐও-নপ-রলশ-হঽৎড়-ঢ়য়-ৡৰ-ৱৼਅ-ਊਏ-ਐਓ-ਨਪ-ਰਲ-ਲ਼ਵ-ਸ਼ਸ-ਹਖ਼-ੜਫ਼ੲ-ੴઅ-ઍએ-ઑઓ-નપ-રલ-ળવ-હઽૐૠ-ૡૹଅ-ଌଏ-ଐଓ-ନପ-ରଲ-ଳଵ-ହଽଡ଼-ଢ଼ୟ-ୡୱஃஅ-ஊஎ-ஐஒ-கங-சஜஞ-டண-தந-பம-ஹௐఅ-ఌఎ-ఐఒ-నప-హఽౘ-ౚ౜-ౝౠ-ౡಀಅ-ಌಎ-ಐಒ-ನಪ-ಳವ-ಹಽ೜-ೞೠ-ೡೱ-ೲഄ-ഌഎ-ഐഒ-ഺഽൎൔ-ൖൟ-ൡൺ-ൿඅ-ඖක-නඳ-රලව-ෆก-ะา-ำเ-ๆກ-ຂຄຆ-ຊຌ-ຣລວ-ະາ-ຳຽເ-ໄໆໜ-ໟༀཀ-ཇཉ-ཬྈ-ྌက-ဪဿၐ-ၕၚ-ၝၡၥ-ၦၮ-ၰၵ-ႁႎႠ-ჅჇჍა-ჺჼ-ቈቊ-ቍቐ-ቖቘቚ-ቝበ-ኈኊ-ኍነ-ኰኲ-ኵኸ-ኾዀዂ-ዅወ-ዖዘ-ጐጒ-ጕጘ-ፚᎀ-ᎏᎠ-Ᏽᏸ-ᏽᐁ-ᙬᙯ-ᙿᚁ-ᚚᚠ-ᛪᛱ-ᛸᜀ-ᜑᜟ-ᜱᝀ-ᝑᝠ-ᝬᝮ-ᝰក-ឳៗៜᠠ-ᡸᢀ-ᢄᢇ-ᢨᢪᢰ-ᣵᤀ-ᤞᥐ-ᥭᥰ-ᥴᦀ-ᦫᦰ-ᧉᨀ-ᨖᨠ-ᩔᪧᬅ-ᬳᭅ-ᭌᮃ-ᮠᮮ-ᮯᮺ-ᯥᰀ-ᰣᱍ-ᱏᱚ-ᱽᲀ-ᲊᲐ-ᲺᲽ-Ჿᳩ-ᳬᳮ-ᳳᳵ-ᳶᳺᴀ-ᶿḀ-ἕἘ-Ἕἠ-ὅὈ-Ὅὐ-ὗὙὛὝὟ-ώᾀ-ᾴᾶ-ᾼιῂ-ῄῆ-ῌῐ-ΐῖ-Ίῠ-Ῥῲ-ῴῶ-ῼⁱⁿₐ-ₜℂℇℊ-ℓℕℙ-ℝℤΩℨK-ℭℯ-ℹℼ-ℿⅅ-ⅉⅎↃ-ↄⰀ-ⳤⳫ-ⳮⳲ-ⳳⴀ-ⴥⴧⴭⴰ-ⵧⵯⶀ-ⶖⶠ-ⶦⶨ-ⶮⶰ-ⶶⶸ-ⶾⷀ-ⷆⷈ-ⷎⷐ-ⷖⷘ-ⷞⸯ々-〆〱-〵〻-〼ぁ-ゖゝ-ゟァ-ヺー-ヿㄅ-ㄯㄱ-ㆎㆠ-ㆿㇰ-ㇿ㐀-䶿一-ꒌꓐ-ꓽꔀ-ꘌꘐ-ꘟꘪ-ꘫꙀ-ꙮꙿ-ꚝꚠ-ꛥꜗ-ꜟꜢ-ꞈꞋ-Ƛ꟱-ꠁꠃ-ꠅꠇ-ꠊꠌ-ꠢꡀ-ꡳꢂ-ꢳꣲ-ꣷꣻꣽ-ꣾꤊ-ꤥꤰ-ꥆꥠ-ꥼꦄ-ꦲꧏꧠ-ꧤꧦ-ꧯꧺ-ꧾꨀ-ꨨꩀ-ꩂꩄ-ꩋꩠ-ꩶꩺꩾ-ꪯꪱꪵ-ꪶꪹ-ꪽꫀꫂꫛ-ꫝꫠ-ꫪꫲ-ꫴꬁ-ꬆꬉ-ꬎꬑ-ꬖꬠ-ꬦꬨ-ꬮꬰ-ꭚꭜ-ꭩꭰ-ꯢ가-힣ힰ-ퟆퟋ-ퟻ豈-舘並-龎ﬀ-ﬆﬓ-ﬗיִײַ-ﬨשׁ-זּטּ-לּמּנּ-סּףּ-פּצּ-ﮱﯓ-ﴽﵐ-ﶏﶒ-ﷇﷰ-ﷻﹰ-ﹴﹶ-ﻼＡ-Ｚａ-ｚｦ-ﾾￂ-ￇￊ-ￏￒ-ￗￚ-ￜ𐀀-𐀋𐀍-𐀦𐀨-𐀺𐀼-𐀽𐀿-𐁍𐁐-𐁝𐂀-𐃺𐊀-𐊜𐊠-𐋐𐌀-𐌟𐌭-𐍀𐍂-𐍉𐍐-𐍵𐎀-𐎝𐎠-𐏃𐏈-𐏏𐐀-𐒝𐒰-𐓓𐓘-𐓻𐔀-𐔧𐔰-𐕣𐕰-𐕺𐕼-𐖊𐖌-𐖒𐖔-𐖕𐖗-𐖡𐖣-𐖱𐖳-𐖹𐖻-𐖼𐗀-𐗳𐘀-𐜶𐝀-𐝕𐝠-𐝧𐞀-𐞅𐞇-𐞰𐞲-𐞺𐠀-𐠅𐠈𐠊-𐠵𐠷-𐠸𐠼𐠿-𐡕𐡠-𐡶𐢀-𐢞𐣠-𐣲𐣴-𐣵𐤀-𐤕𐤠-𐤹𐥀-𐥙𐦀-𐦷𐦾-𐦿𐨀𐨐-𐨓𐨕-𐨗𐨙-𐨵𐩠-𐩼𐪀-𐪜𐫀-𐫇𐫉-𐫤𐬀-𐬵𐭀-𐭕𐭠-𐭲𐮀-𐮑𐰀-𐱈𐲀-𐲲𐳀-𐳲𐴀-𐴣𐵊-𐵥𐵯-𐶅𐺀-𐺩𐺰-𐺱𐻂-𐻇𐼀-𐼜𐼧𐼰-𐽅𐽰-𐾁𐾰-𐿄𐿠-𐿶𑀃-𑀷𑁱-𑁲𑁵𑂃-𑂯𑃐-𑃨𑄃-𑄦𑅄𑅇𑅐-𑅲𑅶𑆃-𑆲𑇁-𑇄𑇚𑇜𑈀-𑈑𑈓-𑈫𑈿-𑉀𑊀-𑊆𑊈𑊊-𑊍𑊏-𑊝𑊟-𑊨𑊰-𑋞𑌅-𑌌𑌏-𑌐𑌓-𑌨𑌪-𑌰𑌲-𑌳𑌵-𑌹𑌽𑍐𑍝-𑍡𑎀-𑎉𑎋𑎎𑎐-𑎵𑎷𑏑𑏓𑐀-𑐴𑑇-𑑊𑑟-𑑡𑒀-𑒯𑓄-𑓅𑓇𑖀-𑖮𑗘-𑗛𑘀-𑘯𑙄𑚀-𑚪𑚸𑜀-𑜚𑝀-𑝆𑠀-𑠫𑢠-𑣟𑣿-𑤆𑤉𑤌-𑤓𑤕-𑤖𑤘-𑤯𑤿𑥁𑦠-𑦧𑦪-𑧐𑧡𑧣𑨀𑨋-𑨲𑨺𑩐𑩜-𑪉𑪝𑪰-𑫸𑯀-𑯠𑰀-𑰈𑰊-𑰮𑱀𑱲-𑲏𑴀-𑴆𑴈-𑴉𑴋-𑴰𑵆𑵠-𑵥𑵧-𑵨𑵪-𑶉𑶘𑶰-𑷛𑻠-𑻲𑼂𑼄-𑼐𑼒-𑼳𑾰𒀀-𒎙𒒀-𒕃𒾐-𒿰𓀀-𓐯𓑁-𓑆𓑠-𔏺𔐀-𔙆𖄀-𖄝𖠀-𖨸𖩀-𖩞𖩰-𖪾𖫐-𖫭𖬀-𖬯𖭀-𖭃𖭣-𖭷𖭽-𖮏𖵀-𖵬𖹀-𖹿𖺠-𖺸𖺻-𖻓𖼀-𖽊𖽐𖾓-𖾟𖿠-𖿡𖿣𖿲-𖿳𗀀-𘳕𘳿-𘴞𘶀-𘷲𚿰-𚿳𚿵-𚿻𚿽-𚿾𛀀-𛄢𛄲𛅐-𛅒𛅕𛅤-𛅧𛅰-𛋻𛰀-𛱪𛱰-𛱼𛲀-𛲈𛲐-𛲙𝐀-𝑔𝑖-𝒜𝒞-𝒟𝒢𝒥-𝒦𝒩-𝒬𝒮-𝒹𝒻𝒽-𝓃𝓅-𝔅𝔇-𝔊𝔍-𝔔𝔖-𝔜𝔞-𝔹𝔻-𝔾𝕀-𝕄𝕆𝕊-𝕐𝕒-𝚥𝚨-𝛀𝛂-𝛚𝛜-𝛺𝛼-𝜔𝜖-𝜴𝜶-𝝎𝝐-𝝮𝝰-𝞈𝞊-𝞨𝞪-𝟂𝟄-𝟋𝼀-𝼞𝼥-𝼪𞀰-𞁭𞄀-𞄬𞄷-𞄽𞅎𞊐-𞊭𞋀-𞋫𞓐-𞓫𞗐-𞗭𞗰𞛀-𞛞𞛠-𞛢𞛤-𞛥𞛧-𞛭𞛰-𞛴𞛾-𞛿𞟠-𞟦𞟨-𞟫𞟭-𞟮𞟰-𞟾𞠀-𞣄𞤀-𞥃𞥋𞸀-𞸃𞸅-𞸟𞸡-𞸢𞸤𞸧𞸩-𞸲𞸴-𞸷𞸹𞸻𞹂𞹇𞹉𞹋𞹍-𞹏𞹑-𞹒𞹔𞹗𞹙𞹛𞹝𞹟𞹡-𞹢𞹤𞹧-𞹪𞹬-𞹲𞹴-𞹷𞹹-𞹼𞹾𞺀-𞺉𞺋-𞺛𞺡-𞺣𞺥-𞺩𞺫-𞺻𠀀-𪛟𪜀-𫠝𫠠-𬺭𬺰-𮯠𮯰-𮹝丽-𪘀𰀀-𱍊𱍐-𳑹]", "[٠-٩۰-۹߀-߉०-९০-৯੦-੯૦-૯୦-୯௦-௯౦-౯೦-೯൦-൯෦-෯๐-๙໐-໙༠-༩၀-၉႐-႙០-៩᠐-᠙᥆-᥏᧐-᧙᪀-᪉᪐-᪙᭐-᭙᮰-᮹᱀-᱉᱐-᱙꘠-꘩꣐-꣙꤀-꤉꧐-꧙꧰-꧹꩐-꩙꯰-꯹０-９𐒠-𐒩𐴰-𐴹𐵀-𐵉𑁦-𑁯𑃰-𑃹𑄶-𑄿𑇐-𑇙𑋰-𑋹𑑐-𑑙𑓐-𑓙𑙐-𑙙𑛀-𑛉𑛐-𑛣𑜰-𑜹𑣠-𑣩𑥐-𑥙𑯰-𑯹𑱐-𑱙𑵐-𑵙𑶠-𑶩𑷠-𑷩𑽐-𑽙𖄰-𖄹𖩠-𖩩𖫀-𖫉𖭐-𖭙𖵰-𖵹𜳰-𜳹𝟎-𝟿𞅀-𞅉𞋰-𞋹𞓰-𞓹𞗱-𞗺𞥐-𞥙🯰-🯹]", "[a-zA-Z$]", "\"_\"", "\"|_\"", "\"_#\"", "[\"\\'#]", "[iefltno]", "[0-9a-fA-F]", "[xX]", "\"b\"", "[01]", "\"o\"", "[0-7]", "[+\\-]", "\"i\"", "\"000\"", "\"0010\"", "[abfnrtv\\\\/\"]", "\"u\"", "\"U\"", "[abfnrtv\\\\/\\']", "\"x\"", "[0-3]", "[^\"\\\\\\n\\x00\\ufeff]", "\"\\\\\"", "\"\\\"\\\"\\\"\"", "\"\\\\(\"", "[^\\'\\\\\\n\\x00\\ufeff]", "\"'''\"", "\"'\"", "\"\\r\\n\"", "[^\\n\\\\\\x00\\ufeff\"\\']", "[^\\n\\\\\\x00\\ufeff]", "[ \\t]", "\"|\"", "\"&\"", "\"||\"", "\"&&\"", "\"==\"", "\"!=\"", "\"=~\"", "\"!~\"", "\"<=\"", "\">=\"", "\"<\"", "\"-\"", "\">\"", "\"+\"", "\"*\"", "\"/\"", "[+\\-!*<>=]"}
 	trules = []*trule{
 		{rule: rules[0]},
 		{rule: rules[1]},
@@ -9127,15 +9127,15 @@ func init() {
 	trules[112].entry = (*tparser).u112
 	trules[113].entry = (*tparser).s113
 	trules[114].entry = (*tparser).u114
-	trules[115].pratt = &tpratt{
+	trules[115].operatorsRule = &toperatorsRule{
 		skip: (*tparser).e808,
-		operands: []*tprattLine{
-			&tprattLine{scope: []string{}, m: (*tparser).e809, action: nil, isSeq: false},
+		operands: []*toperatorsRuleLine{
+			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e809, action: nil, isSeq: false},
 		},
-		prefix: []*tprattOp{{id: 7, kind: "prefix", assoc: "", level: 8, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e838, action: func(c *tctx) any {
+		prefix: []*toperatorsRuleOp{{id: 7, kind: "prefix", assoc: "", level: 8, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e838, action: func(c *tctx) any {
 			return func() any { f_839 := c.cap(0); f_840 := c.rhs; return tmk_UnaryExpr(c, true, f_839, f_840) }()
 		}, isSeq: true}}},
-		led: []*tprattOp{{id: 0, kind: "infix", assoc: "left", level: 1, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e810, action: func(c *tctx) any {
+		led: []*toperatorsRuleOp{{id: 0, kind: "infix", assoc: "left", level: 1, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e810, action: func(c *tctx) any {
 			return func() any {
 				f_811 := c.lhs
 				f_812 := c.cap(0)
@@ -9143,7 +9143,7 @@ func init() {
 				return tmk_BinaryExpr(c, true, f_811, f_812, f_813)
 			}()
 		}, isSeq: true}},
-			{id: 1, kind: "infix", assoc: "left", level: 2, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e814, action: func(c *tctx) any {
+			{id: 1, kind: "infix", assoc: "left", level: 2, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e814, action: func(c *tctx) any {
 				return func() any {
 					f_815 := c.lhs
 					f_816 := c.cap(0)
@@ -9151,7 +9151,7 @@ func init() {
 					return tmk_BinaryExpr(c, true, f_815, f_816, f_817)
 				}()
 			}, isSeq: true}},
-			{id: 2, kind: "infix", assoc: "left", level: 3, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e818, action: func(c *tctx) any {
+			{id: 2, kind: "infix", assoc: "left", level: 3, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e818, action: func(c *tctx) any {
 				return func() any {
 					f_819 := c.lhs
 					f_820 := c.cap(0)
@@ -9159,7 +9159,7 @@ func init() {
 					return tmk_BinaryExpr(c, true, f_819, f_820, f_821)
 				}()
 			}, isSeq: true}},
-			{id: 3, kind: "infix", assoc: "left", level: 4, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e822, action: func(c *tctx) any {
+			{id: 3, kind: "infix", assoc: "left", level: 4, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e822, action: func(c *tctx) any {
 				return func() any {
 					f_823 := c.lhs
 					f_824 := c.cap(0)
@@ -9167,7 +9167,7 @@ func init() {
 					return tmk_BinaryExpr(c, true, f_823, f_824, f_825)
 				}()
 			}, isSeq: true}},
-			{id: 4, kind: "infix", assoc: "left", level: 5, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e826, action: func(c *tctx) any {
+			{id: 4, kind: "infix", assoc: "left", level: 5, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e826, action: func(c *tctx) any {
 				return func() any {
 					f_827 := c.lhs
 					f_828 := c.cap(0)
@@ -9175,7 +9175,7 @@ func init() {
 					return tmk_BinaryExpr(c, true, f_827, f_828, f_829)
 				}()
 			}, isSeq: true}},
-			{id: 5, kind: "infix", assoc: "left", level: 6, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e830, action: func(c *tctx) any {
+			{id: 5, kind: "infix", assoc: "left", level: 6, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e830, action: func(c *tctx) any {
 				return func() any {
 					f_831 := c.lhs
 					f_832 := c.cap(0)
@@ -9183,7 +9183,7 @@ func init() {
 					return tmk_BinaryExpr(c, true, f_831, f_832, f_833)
 				}()
 			}, isSeq: true}},
-			{id: 6, kind: "infix", assoc: "left", level: 7, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e834, action: func(c *tctx) any {
+			{id: 6, kind: "infix", assoc: "left", level: 7, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e834, action: func(c *tctx) any {
 				return func() any {
 					f_835 := c.lhs
 					f_836 := c.cap(0)
@@ -9191,17 +9191,17 @@ func init() {
 					return tmk_BinaryExpr(c, true, f_835, f_836, f_837)
 				}()
 			}, isSeq: true}},
-			{id: 8, kind: "postfix", assoc: "", level: 9, line: &tprattLine{scope: []string{"s", "q"}, m: (*tparser).e841, action: func(c *tctx) any {
+			{id: 8, kind: "postfix", assoc: "", level: 9, line: &toperatorsRuleLine{scope: []string{"s", "q"}, m: (*tparser).e841, action: func(c *tctx) any {
 				return func() any {
 					f_842 := func() any { f_843 := c.lhs; f_844 := c.cap(0); return tmk_SelectorExpr(c, false, f_843, f_844) }()
 					f_845 := c.cap(1)
 					return tmk_PostfixExpr(c, true, f_842, f_845)
 				}()
 			}, isSeq: true}},
-			{id: 9, kind: "postfix", assoc: "", level: 9, line: &tprattLine{scope: []string{"s"}, m: (*tparser).e846, action: func(c *tctx) any {
+			{id: 9, kind: "postfix", assoc: "", level: 9, line: &toperatorsRuleLine{scope: []string{"s"}, m: (*tparser).e846, action: func(c *tctx) any {
 				return func() any { f_847 := c.lhs; f_848 := c.cap(0); return tmk_SelectorExpr(c, true, f_847, f_848) }()
 			}, isSeq: true}},
-			{id: 10, kind: "postfix", assoc: "", level: 9, line: &tprattLine{scope: []string{"i", "r", "q"}, m: (*tparser).e849, action: func(c *tctx) any {
+			{id: 10, kind: "postfix", assoc: "", level: 9, line: &toperatorsRuleLine{scope: []string{"i", "r", "q"}, m: (*tparser).e849, action: func(c *tctx) any {
 				return func() any {
 					f_850 := func() any {
 						f_851 := c.lhs
@@ -9213,7 +9213,7 @@ func init() {
 					return tmk_PostfixExpr(c, true, f_850, f_854)
 				}()
 			}, isSeq: true}},
-			{id: 11, kind: "postfix", assoc: "", level: 9, line: &tprattLine{scope: []string{"i", "r"}, m: (*tparser).e855, action: func(c *tctx) any {
+			{id: 11, kind: "postfix", assoc: "", level: 9, line: &toperatorsRuleLine{scope: []string{"i", "r"}, m: (*tparser).e855, action: func(c *tctx) any {
 				return func() any {
 					f_856 := c.lhs
 					f_857 := c.cap(0)
@@ -9221,7 +9221,7 @@ func init() {
 					return tmk_IndexExpr(c, true, f_856, f_857, f_858)
 				}()
 			}, isSeq: true}},
-			{id: 12, kind: "postfix", assoc: "", level: 9, line: &tprattLine{scope: []string{"lo", "hi"}, m: (*tparser).e859, action: func(c *tctx) any {
+			{id: 12, kind: "postfix", assoc: "", level: 9, line: &toperatorsRuleLine{scope: []string{"lo", "hi"}, m: (*tparser).e859, action: func(c *tctx) any {
 				return func() any {
 					f_860 := c.lhs
 					f_861 := c.cap(0)
@@ -9229,18 +9229,18 @@ func init() {
 					return tmk_SliceExpr(c, true, f_860, f_861, f_862)
 				}()
 			}, isSeq: true}},
-			{id: 13, kind: "postfix", assoc: "", level: 9, line: &tprattLine{scope: []string{"as"}, m: (*tparser).e864, action: func(c *tctx) any {
+			{id: 13, kind: "postfix", assoc: "", level: 9, line: &toperatorsRuleLine{scope: []string{"as"}, m: (*tparser).e864, action: func(c *tctx) any {
 				return func() any {
 					f_865 := c.lhs
 					f_866 := c.mapList(c.cap(0), func(l_867 any) any { return c.member(l_867, "a") })
 					return tmk_CallExpr(c, true, f_865, f_866)
 				}()
 			}, isSeq: true}},
-			{id: 14, kind: "postfix", assoc: "", level: 9, line: &tprattLine{scope: []string{"o"}, m: (*tparser).e868, action: func(c *tctx) any {
+			{id: 14, kind: "postfix", assoc: "", level: 9, line: &toperatorsRuleLine{scope: []string{"o"}, m: (*tparser).e868, action: func(c *tctx) any {
 				return func() any { f_869 := c.lhs; f_870 := c.cap(0); return tmk_PostfixExpr(c, true, f_869, f_870) }()
 			}, isSeq: false}}},
 	}
-	trules[115].body = func(p *tparser, min int) (any, bool) { return p.prattParse(trules[115], min) }
+	trules[115].body = func(p *tparser, min int) (any, bool) { return p.operatorsRuleParse(trules[115], min) }
 	trules[116].entry = (*tparser).s116
 	trules[117].entry = (*tparser).u117
 	trules[118].entry = (*tparser).s118
@@ -30623,7 +30623,7 @@ func (p *parser) e393() (*Node, bool) {
 	return nil, false
 }
 
-// @("==" / "!=" / "=~" / "!~" / "<=" / ">=" / "<" !"-" / ">")
+// ("==" / "!=" / "=~" / "!~" / "<=" / ">=" / "<" !"-" / ">") #atomic
 func (p *parser) e394() (*Node, bool) {
 	start := p.pos
 	if _, ok := p.e393(); !ok {
@@ -30632,7 +30632,7 @@ func (p *parser) e394() (*Node, bool) {
 	return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true, fresh: true}), true
 }
 
-// o:@("==" / "!=" / "=~" / "!~" / "<=" / ">=" / "<" !"-" / ">")
+// o:("==" / "!=" / "=~" / "!~" / "<=" / ">=" / "<" !"-" / ">") #atomic
 func (p *parser) e395() (*Node, bool) {
 	v, ok := p.e394()
 	if ok {
@@ -30641,7 +30641,7 @@ func (p *parser) e395() (*Node, bool) {
 	return nil, ok
 }
 
-// o:@("==" / "!=" / "=~" / "!~" / "<=" / ">=" / "<" !"-" / ">") ws
+// o:("==" / "!=" / "=~" / "!~" / "<=" / ">=" / "<" !"-" / ">") #atomic ws
 func (p *parser) e396() (*Node, bool) {
 	if _, ok := p.e395(); !ok {
 		return nil, false
@@ -30793,7 +30793,7 @@ func (p *parser) e409() (*Node, bool) {
 	return nil, false
 }
 
-// @("*" / "/" !"/")
+// ("*" / "/" !"/") #atomic
 func (p *parser) e410() (*Node, bool) {
 	start := p.pos
 	if _, ok := p.e409(); !ok {
@@ -30802,7 +30802,7 @@ func (p *parser) e410() (*Node, bool) {
 	return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true, fresh: true}), true
 }
 
-// o:@("*" / "/" !"/")
+// o:("*" / "/" !"/") #atomic
 func (p *parser) e411() (*Node, bool) {
 	v, ok := p.e410()
 	if ok {
@@ -30811,7 +30811,7 @@ func (p *parser) e411() (*Node, bool) {
 	return nil, ok
 }
 
-// o:@("*" / "/" !"/") ws
+// o:("*" / "/" !"/") #atomic ws
 func (p *parser) e412() (*Node, bool) {
 	if _, ok := p.e411(); !ok {
 		return nil, false
@@ -30822,7 +30822,7 @@ func (p *parser) e412() (*Node, bool) {
 	return nil, true
 }
 
-// (?+\-!*<>=)
+// [+\-!*<>=]
 func (p *parser) e413() (*Node, bool) {
 	ch, size, ok := p.peek()
 	if !ok || !(ch == 43 || ch == 45 || ch == 33 || ch == 42 || ch == 60 || ch == 62 || ch == 61) {
@@ -30832,7 +30832,7 @@ func (p *parser) e413() (*Node, bool) {
 	return p.single(size, false)
 }
 
-// &(?+\-!*<>=)
+// &[+\-!*<>=]
 func (p *parser) e414() (*Node, bool) {
 	start, prevCut := p.pos, p.cut
 	p.silent++
@@ -31052,7 +31052,7 @@ func (p *parser) e417() (*Node, bool) {
 	return nil, false
 }
 
-// @("+" / "-" / "!=" / "!~" / "!" / "*" / "<=" / ">=" / "<" !"-" / ">" / "=~" / "==")
+// ("+" / "-" / "!=" / "!~" / "!" / "*" / "<=" / ">=" / "<" !"-" / ">" / "=~" / "==") #atomic
 func (p *parser) e418() (*Node, bool) {
 	start := p.pos
 	if _, ok := p.e417(); !ok {
@@ -31061,7 +31061,7 @@ func (p *parser) e418() (*Node, bool) {
 	return p.newNode(Node{kind: kindMatch, Start: int32(start), End: int32(p.pos), Text: p.text(start, p.pos), terminal: true, fresh: true}), true
 }
 
-// o:@("+" / "-" / "!=" / "!~" / "!" / "*" / "<=" / ">=" / "<" !"-" / ">" / "=~" / "==")
+// o:("+" / "-" / "!=" / "!~" / "!" / "*" / "<=" / ">=" / "<" !"-" / ">" / "=~" / "==") #atomic
 func (p *parser) e419() (*Node, bool) {
 	v, ok := p.e418()
 	if ok {
@@ -54066,7 +54066,7 @@ func (p *parser) e694() (*Node, bool) {
 	return nil, true
 }
 
-// @("==" / "!=" / "=~" / "!~" / "<=" / ">=" / "<" !"-" / ">")
+// ("==" / "!=" / "=~" / "!~" / "<=" / ">=" / "<" !"-" / ">") #atomic
 func (p *parser) e695() (*Node, bool) {
 	start := p.pos
 	if _, ok := p.e393(); !ok {
@@ -54076,7 +54076,7 @@ func (p *parser) e695() (*Node, bool) {
 	return nil, true
 }
 
-// o:@("==" / "!=" / "=~" / "!~" / "<=" / ">=" / "<" !"-" / ">") ws
+// o:("==" / "!=" / "=~" / "!~" / "<=" / ">=" / "<" !"-" / ">") #atomic ws
 func (p *parser) e696() (*Node, bool) {
 	if _, ok := p.e695(); !ok {
 		return nil, false
@@ -54137,7 +54137,7 @@ func (p *parser) e698() (*Node, bool) {
 	return nil, true
 }
 
-// @("*" / "/" !"/")
+// ("*" / "/" !"/") #atomic
 func (p *parser) e699() (*Node, bool) {
 	start := p.pos
 	if _, ok := p.e409(); !ok {
@@ -54147,7 +54147,7 @@ func (p *parser) e699() (*Node, bool) {
 	return nil, true
 }
 
-// o:@("*" / "/" !"/") ws
+// o:("*" / "/" !"/") #atomic ws
 func (p *parser) e700() (*Node, bool) {
 	if _, ok := p.e699(); !ok {
 		return nil, false
@@ -54158,7 +54158,7 @@ func (p *parser) e700() (*Node, bool) {
 	return nil, true
 }
 
-// @("+" / "-" / "!=" / "!~" / "!" / "*" / "<=" / ">=" / "<" !"-" / ">" / "=~" / "==")
+// ("+" / "-" / "!=" / "!~" / "!" / "*" / "<=" / ">=" / "<" !"-" / ">" / "=~" / "==") #atomic
 func (p *parser) e701() (*Node, bool) {
 	start := p.pos
 	if _, ok := p.e417(); !ok {
@@ -71630,7 +71630,7 @@ fail:
 	return nil, false
 }
 
-// full_expr (typed Pratt body inlined)
+// full_expr (typed OperatorsRule body inlined)
 func (p *tparser) e808() (any, bool) {
 	var (
 		ok bool
@@ -71643,7 +71643,7 @@ fail:
 	return nil, false
 }
 
-// full_expr (typed Pratt body inlined)
+// full_expr (typed OperatorsRule body inlined)
 func (p *tparser) e809() (any, bool) {
 	var (
 		ok bool
@@ -71657,7 +71657,7 @@ fail:
 	return nil, false
 }
 
-// full_expr (typed Pratt body inlined)
+// full_expr (typed OperatorsRule body inlined)
 func (p *tparser) e810() (any, bool) {
 	var (
 		x1 int
@@ -71680,7 +71680,7 @@ fail:
 	return nil, false
 }
 
-// full_expr (typed Pratt body inlined)
+// full_expr (typed OperatorsRule body inlined)
 func (p *tparser) e814() (any, bool) {
 	var (
 		x1 int
@@ -71703,7 +71703,7 @@ fail:
 	return nil, false
 }
 
-// full_expr (typed Pratt body inlined)
+// full_expr (typed OperatorsRule body inlined)
 func (p *tparser) e818() (any, bool) {
 	var (
 		x1 int
@@ -71726,7 +71726,7 @@ fail:
 	return nil, false
 }
 
-// full_expr (typed Pratt body inlined)
+// full_expr (typed OperatorsRule body inlined)
 func (p *tparser) e822() (any, bool) {
 	var (
 		x1 int
@@ -71749,7 +71749,7 @@ fail:
 	return nil, false
 }
 
-// full_expr (typed Pratt body inlined)
+// full_expr (typed OperatorsRule body inlined)
 func (p *tparser) e826() (any, bool) {
 	var (
 		x1  int
@@ -71896,7 +71896,7 @@ fail:
 	return nil, false
 }
 
-// full_expr (typed Pratt body inlined)
+// full_expr (typed OperatorsRule body inlined)
 func (p *tparser) e830() (any, bool) {
 	var (
 		x1  mark
@@ -71958,7 +71958,7 @@ fail:
 	return nil, false
 }
 
-// full_expr (typed Pratt body inlined)
+// full_expr (typed OperatorsRule body inlined)
 func (p *tparser) e834() (any, bool) {
 	var (
 		x1  int
@@ -72027,7 +72027,7 @@ fail:
 	return nil, false
 }
 
-// full_expr (typed Pratt body inlined)
+// full_expr (typed OperatorsRule body inlined)
 func (p *tparser) e838() (any, bool) {
 	var (
 		x1   int
@@ -72249,7 +72249,7 @@ fail:
 	return nil, false
 }
 
-// full_expr (typed Pratt body inlined)
+// full_expr (typed OperatorsRule body inlined)
 func (p *tparser) e841() (any, bool) {
 	var (
 		ok bool
@@ -72285,7 +72285,7 @@ fail:
 	return nil, false
 }
 
-// full_expr (typed Pratt body inlined)
+// full_expr (typed OperatorsRule body inlined)
 func (p *tparser) e846() (any, bool) {
 	var (
 		ok bool
@@ -72308,7 +72308,7 @@ fail:
 	return nil, false
 }
 
-// full_expr (typed Pratt body inlined)
+// full_expr (typed OperatorsRule body inlined)
 func (p *tparser) e849() (any, bool) {
 	var (
 		ok bool
@@ -72370,7 +72370,7 @@ fail:
 	return nil, false
 }
 
-// full_expr (typed Pratt body inlined)
+// full_expr (typed OperatorsRule body inlined)
 func (p *tparser) e855() (any, bool) {
 	var (
 		ok bool
@@ -72419,7 +72419,7 @@ fail:
 	return nil, false
 }
 
-// full_expr (typed Pratt body inlined)
+// full_expr (typed OperatorsRule body inlined)
 func (p *tparser) e859() (any, bool) {
 	var (
 		ok  bool
@@ -72476,7 +72476,7 @@ fail:
 	return nil, false
 }
 
-// full_expr (typed Pratt body inlined)
+// full_expr (typed OperatorsRule body inlined)
 func (p *tparser) e864() (any, bool) {
 	var (
 		ok  bool
@@ -72549,7 +72549,7 @@ fail:
 	return nil, false
 }
 
-// full_expr (typed Pratt body inlined)
+// full_expr (typed OperatorsRule body inlined)
 func (p *tparser) e868() (any, bool) {
 	var (
 		x1 int

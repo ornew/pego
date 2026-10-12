@@ -96,7 +96,7 @@ var workloads = []workload{
 		},
 	},
 	{
-		name: "Arith_Pratt", grammar: "../examples/calculator/calc.pego", input: func(k int) string { return ArithInput(20000 / k) },
+		name: "Arith_OperatorsRule", grammar: "../examples/calculator/calc.pego", input: func(k int) string { return ArithInput(20000 / k) },
 		gen: func(s string, b bool) error {
 			if b {
 				return genErr(gcalc.Parse(s, gcalc.WithUnit(gcalc.Bytes)))

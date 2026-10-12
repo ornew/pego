@@ -1,4 +1,4 @@
-# Getting started with PEGO
+# Getting Started with PEGO
 
 This tutorial takes you from an empty directory to a parser that reads a small configuration language and a calculator
 that respects operator precedence. Every grammar, command and Go program below is complete and was run to produce the
@@ -40,13 +40,13 @@ Create a directory for the tutorial files:
 mkdir pego-tutorial && cd pego-tutorial
 ```
 
-## 2. Your first grammar
+## 2. Your First Grammar
 
 A PEGO grammar is a set of **rules**. A rule has a name and a body that says what input it matches. Parsing starts at
 the **start rule**, which is called `main` by default. Save this as `hello.pego`:
 
 ```pego
-def main = "hello" " " "world"
+rule main = "hello" " " "world"
 ```
 
 `main` matches the string literal `hello`, then a space, then `world`. Run it with `pego parse`, giving the grammar with
@@ -144,7 +144,7 @@ import (
 	"github.com/ornew/pego"
 )
 
-const src = `def main = "hello" " " "world"`
+const src = `rule main = "hello" " " "world"`
 
 func main() {
 	p, err := pego.CompileSource(src, "main")
@@ -192,22 +192,22 @@ Match "world" [6,11)
   and `Fields`, and encode to JSON as shown.
 - When the input does not match, `Parse` returns a `*pego.SyntaxError` (see [section 7](#7-syntax-errors)).
 
-## 3. Building blocks
+## 3. Building Blocks
 
 The grammar language has a few more pieces than literals. This section introduces them on a tiny language: a lowercase
 word, an equals sign, and a number, as in `port=8080`.
 
-### Rules, character classes and repetition
+### Rules, Character Classes and Repetition
 
-A **character class** `(?...)` matches one character out of a set, written as characters and ranges: `(?a-z)` is a
-lowercase ASCII letter and `(?0-9)` is a digit. `+` after an expression repeats it one or more times (`*` is zero or
+A **character class** `[...]` matches one character from a set written as characters and ranges: `[a-z]` is a
+lowercase ASCII letter and `[0-9]` is a digit. `+` after an expression repeats it one or more times (`*` is zero or
 more, `?` is zero or one). A rule can call another rule by name. Save as `kv.pego`; each step below replaces its
 contents with the next version:
 
 ```pego
-def main = key "=" value
-def key = (?a-z)+
-def value = (?0-9)+
+rule main = key "=" value
+rule key = [a-z]+
+rule value = [0-9]+
 ```
 
 ```bash
@@ -221,15 +221,15 @@ pego parse -g kv.pego -f sexpr -i 'port=8080'
 It works, but the tree is noisy: a repetition produces a `List` with one child per iteration, so `key` is a list of
 single-letter terminals.
 
-### Atomic: `@`
+### Atomic: `#atomic`
 
-`@expr` matches `expr` and produces one terminal holding all of the matched text, without building a node for each
-part. `@(?a-z)+` means `@((?a-z)+)`, because repetition binds tighter than `@`:
+`expr #atomic` matches `expr` and produces one terminal holding all of the matched text, without building a node for each
+part. `[a-z]+ #atomic` applies atomic construction suppression to the repeated character class:
 
 ```pego
-def main = key "=" value
-def key = @(?a-z)+
-def value = @(?0-9)+
+rule main = key "=" value
+rule key = [a-z]+ #atomic
+rule value = [0-9]+ #atomic
 ```
 
 ```text
@@ -242,9 +242,9 @@ The `=` is needed to parse the input but is of no interest in the tree. `-expr` 
 away:
 
 ```pego
-def main = key -"=" value
-def key = @(?a-z)+
-def value = @(?0-9)+
+rule main = key -"=" value
+rule key = [a-z]+ #atomic
+rule value = [0-9]+ #atomic
 ```
 
 ```text
@@ -257,9 +257,9 @@ A **capture** `name:expr` gives the value of `expr` a name. Named values are att
 next step shows, actions refer to them as `$name`:
 
 ```pego
-def main = k:key "=" v:value
-def key = @(?a-z)+
-def value = @(?0-9)+
+rule main = k:key "=" v:value
+rule key = [a-z]+ #atomic
+rule value = [0-9]+ #atomic
 ```
 
 ```text
@@ -268,15 +268,15 @@ def value = @(?0-9)+
 
 The label and the colon must be written together (`k:key`, not `k :key`).
 
-### Actions and struct types: `->`
+### Value Actions and Struct Types: `=>`
 
-An **action** builds the value of a rule yourself. It is written after `->`, and can create a node of a struct type
+An **action** builds the value of a rule yourself. It is written after `=>` inside the rule body, and can create a node of a struct type
 declared with `type`. This is the grammar from the README (`kv.pego`, final version):
 
 ```pego
 type Pair struct { Key Match, Value Match }
 
-def main = k:@(?a-z)+ "=" v:@(?0-9)+ -> new Pair{Key: $k, Value: $v}
+rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}
 ```
 
 ```bash
@@ -287,18 +287,18 @@ pego parse -g kv.pego -f sexpr -i 'abc=12'
 (Pair Key="abc" Value="12")
 ```
 
-`new Pair{...}` creates a `Pair` node, and `$k` and `$v` refer to the captures. The literal `=` has no name, so it is
+`Pair{...}` creates a `Pair` node, and `$k` and `$v` refer to the captures. The literal `=` has no name, so it is
 simply left out of the result. The tree now contains exactly what the language is about, and nothing else.
 
 Two things worth knowing at this point:
 
-- An action applies to the **whole** right-hand side of a rule. A rule such as `def r = a / b -> ...` runs the action
+- An action applies to the **whole** rule body. A rule such as `rule r = a / b => ...` runs the action
   whatever alternative matched; to build different values for different alternatives, give each alternative its own
   rule.
 - Types are checked when the grammar is compiled, so a typo in a field name is reported before any input is parsed.
   You will see examples in [section 5](#5-typed-trees).
 
-## 4. A configuration language
+## 4. A Configuration Language
 
 Now a more realistic language: a file of `key = value` lines with comments.
 
@@ -323,19 +323,19 @@ EOF
 Save the following grammar as `config-cst.pego`. It produces plain syntax-tree nodes; the next section adds types.
 
 ```pego
-def main = -ws entry* $$
+rule main = -ws entry* $$
 
-def entry = k:key -ws -"=" -ws v:value -ws
+rule entry = k:key -ws -"=" -ws v:value -ws
 
-def value = number / string / bool
-def key = @(?a-z_)+
-def number = @(?0-9)+
-def string = @("\"" (?^")* "\"")
-def bool = @("true" / "false")
+rule value = number / string / bool
+rule key = [a-z_]+ #atomic
+rule number = [0-9]+ #atomic
+rule string = ("\"" [^"]* "\"") #atomic
+rule bool = ("true" / "false") #atomic
 
-def ws = (blank / comment)*
-def blank = (? \t\r\n)+
-def comment = "#" (?^\n)*
+rule ws = (blank / comment)*
+rule blank = [ \t\r\n]+
+rule comment = "#" [^\n]*
 ```
 
 ```bash
@@ -352,14 +352,14 @@ Without `-i`, `pego parse` reads the input from standard input. The new pieces:
   and comments, and the grammar says where it is allowed. Each `entry` consumes the whitespace after itself, and
   `main` starts with one `-ws` for the whitespace before the first entry. Whitespace is discarded with `-`, so it never
   appears in the tree.
-- **`(?^...)` is a negated class.** `(?^")` matches any character except `"`, and `(?^\n)` any character except a line
-  feed, so `comment` reads to the end of the line. Escapes such as `\n` and `\"` work in literals and classes.
+- **`[^...]` is a negated class.** `[^"]` matches any character except a quote, and `[^\n]` matches any
+  character except a line feed, so `comment` reads to the end of the line. Escapes such as `\n` and `\"` work in literals and classes.
 - **`/` is ordered choice.** `value` tries `number`, then `string`, then `bool`, and commits to the first that
   matches. Order matters: with `("a" / "ab") $$`, the input `ab` fails because `"a"` matches first and is never
   reconsidered.
 
   ```pego
-  def main = ("a" / "ab") $$
+  rule main = ("a" / "ab") $$
   ```
 
   ```bash
@@ -377,7 +377,7 @@ Without `-i`, `pego parse` reads the input from standard input. The new pieces:
 - **`entry*` is a repetition.** The whole file is a `Seq` holding one `List` of entries. An empty file is valid and
   gives `(Seq [])@main`.
 
-## 5. Typed trees
+## 5. Typed Trees
 
 The tree above is a faithful picture of the text, but a program that uses the configuration wants a tree shaped like
 the data: a `Config` with a list of `Entry` values, each with a key and a typed value. In PEGO you declare these types
@@ -401,19 +401,19 @@ type Config struct {
     Entries []Entry
 }
 
-def main: Config = -ws es:entry* $$ -> new Config{Entries: $es}
+rule main Config = -ws es:entry* $$ => Config{Entries: $es}
 
-def entry: Entry = k:key -ws -"=" -ws v:value -ws -> new Entry{Key: $k, Value: $v}
+rule entry Entry = k:key -ws -"=" -ws v:value -ws => Entry{Key: $k, Value: $v}
 
-def value: Value = number / string / bool
-def key: Key = (?a-z_)+
-def number: Number = (?0-9)+
-def string: String = "\"" (?^")* "\""
-def bool: Bool = "true" / "false"
+rule value Value = number / string / bool
+rule key Key = [a-z_]+
+rule number Number = [0-9]+
+rule string String = "\"" [^"]* "\""
+rule bool Bool = "true" / "false"
 
-def ws = (blank / comment)*
-def blank = (? \t\r\n)+
-def comment = "#" (?^\n)*
+rule ws = (blank / comment)*
+rule blank = [ \t\r\n]+
+rule comment = "#" [^\n]*
 ```
 
 ```bash
@@ -429,21 +429,21 @@ What is new:
 - `package config` is optional; it names the grammar's package and is used by the code generator
   ([section 8](#8-next-steps)). It must be the first item in the file.
 - `type Key terminal` declares a **terminal type**: a node type for leaves of the tree. A rule declared with a terminal
-  type (`def key: Key = (?a-z_)+`) produces a single terminal of that type holding the matched text, so there is no
-  need for `@`. The text of a `String` includes its quotes, since it is the text the rule matched.
+  type (`rule key Key = [a-z_]+`) produces a single terminal of that type holding the matched text, so there is no
+  need for `#atomic`. The text of a `String` includes its quotes, since it is the text the rule matched.
 - `type Value = Number | String | Bool` is a **union type**: a value of any one of the members, much like a Go
   interface. Because `value` is declared as `Value`, the compiler checks that each alternative is one of the members.
 - `type Entry struct { ... }` declares a **struct type**; fields are separated by newlines or commas. Field types can be
   lists (`[]Entry`), optional values (`*T`), or unions.
-- `def name: Type = ...` states the type of a rule. You can omit it and PEGO infers the type from the body, but
+- `rule name [Type] = expression` states the optional type of a rule. You can omit it and PEGO infers the type from the body, but
   declaring the types of the rules that build your tree documents them and keeps mistakes close to where they happen.
-- `es:entry*` captures the whole list of entries, and `new Config{Entries: $es}` stores it in the `Config` node.
+- `es:entry*` captures the whole list of entries, and `Config{Entries: $es}` stores it in the `Config` node.
 
 The compiler rejects ill-typed grammars with a position in the grammar file. In a copy of `config.pego`, swapping the
 arguments in the `entry` action:
 
 ```bash
-pego parse -g bad-type.pego -f sexpr -i 'a=1'   # ... new Entry{Key: $v, Value: $k}
+pego parse -g bad-type.pego -f sexpr -i 'a=1'   # ... Entry{Key: $v, Value: $k}
 ```
 
 ```text
@@ -454,14 +454,14 @@ bad-type.pego:20:73: cannot use Key as Number | String | Bool in field Value of 
 and misspelling a field name:
 
 ```bash
-pego parse -g bad-field.pego -f sexpr -i 'a=1'   # ... new Entry{Key: $k, Valu: $v}
+pego parse -g bad-field.pego -f sexpr -i 'a=1'   # ... Entry{Key: $k, Valu: $v}
 ```
 
 ```text
 pego: bad-field.pego:20:73: Entry has no field Valu
 ```
 
-### Using the tree from Go
+### Using the Tree from Go
 
 The typed tree is what your program consumes. Put `config.pego` and an `example.conf` next to this `main.go`, which
 embeds the grammar and prints the entries:
@@ -526,10 +526,10 @@ debug  Bool    true
 `int`, `string` or `bool`. A list is a node of type `List` whose `Children` are the elements. `value.Type()` tells you
 which member of the `Value` union you got, so a `switch` on it is how you walk a union.
 
-## 6. Expressions and precedence
+## 6. Expressions and Precedence
 
 Arithmetic is where PEG grammars usually get awkward: operator precedence and associativity normally require one rule
-per level. PEGO offers two tools, **Pratt expressions** and **left recursion**. Start with a Pratt expression. Save as
+per level. PEGO offers two tools, **Operators Rule** and **left recursion**. Start with an Operators Rule. Save as
 `calc.pego`:
 
 ```pego
@@ -537,20 +537,20 @@ type Number terminal
 type Binary struct { Left Expr, Op Match, Right Expr }
 type Expr = Number | Binary
 
-def main: Expr = e:expr $$ -> $e
+rule main Expr = e:expr $$ => $e
 
-def expr: Expr = pratt {
+rule expr Expr = operators {
     operand number
-    level { infix left "+" / "-" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level additive { infix left "+" / "-" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
 }
 
-def number: Number = (?0-9)+
+rule number Number = [0-9]+
 ```
 
-A `pratt { ... }` body declares an expression by listing its parts:
+An Operators Rule declaration defines an expression by listing its parts:
 
 - `operand` is something that can stand on its own, here a number.
-- `level { ... }` declares operators that share a precedence. `infix left "+" / "-"` is a binary operator whose
+- `level name { ... }` declares operators that share a precedence. `infix left "+" / "-"` is a binary operator whose
   alternatives are `+` and `-`, grouping to the left. The action receives `$lhs` and `$rhs`, the operands, and `$op`,
   the operator text.
 
@@ -569,7 +569,7 @@ pego parse -g calc.pego -f sexpr -i '1 + 2'
 ```
 
 ```text
-pego: 1:2: syntax error: expected "+", "-", (?0-9), end of input
+pego: 1:2: syntax error: expected "+", "-", [0-9], end of input
 ```
 
 Add a `skip` item, which PEGO inserts before every operand and operator, and fill out the language: more levels,
@@ -582,20 +582,20 @@ type Binary struct { Left Expr, Op Match, Right Expr }
 type Unary struct { Op Match, X Expr }
 type Expr = Number | Binary | Unary
 
-def main: Expr = e:expr ws $$ -> $e
+rule main Expr = e:expr ws $$ => $e
 
-def expr: Expr = pratt {
-    skip    ws
+rule expr Expr = operators {
+    skip ws
     operand number
-    operand "(" e:expr ws ")" -> $e
-    level { infix left  "+" / "-"  -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
-    level { infix left  "*" / "/"  -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
-    level { prefix      "-"        -> new Unary{Op: $op, X: $rhs} }
-    level { infix right "^"        -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    operand "(" e:expr ws ")" => $e
+    level additive { infix left "+" / "-" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level multiplicative { infix left "*" / "/" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level prefix { prefix "-" => Unary{Op: $op, X: $rhs} }
+    level power { infix right "^" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
 }
 
-def number: Number = (?0-9)+ ("." (?0-9)+)?
-def ws = (? \t\r\n)*
+rule number Number = [0-9]+ ("." [0-9]+)?
+rule ws = [ \t\r\n]*
 ```
 
 ```bash
@@ -620,10 +620,10 @@ Multiplication binds tighter than addition. Some more inputs:
 is declared after (so binds tighter than) the prefix `-`. A parenthesized operand returns `$e`, the inner expression,
 so no node is created for the parentheses.
 
-The `skip` item is a convenience of Pratt expressions only. It is not inserted *inside* an operator or operand, which is
+The `skip` item is a convenience of Operators Rule syntax only. It is not inserted *inside* an operator or operand, which is
 why the parenthesized operand writes `ws` before `")"` itself, and why `main` has a trailing `ws`.
 
-### The same language with left recursion
+### The Same Language with Left Recursion
 
 A rule that starts by calling itself is **left recursive**, and PEGO accepts it. Precedence then comes from having one
 rule per level, each defined in terms of the next tighter one:
@@ -633,18 +633,18 @@ type Number terminal
 type Binary struct { Left Expr, Op Match, Right Expr }
 type Expr = Number | Binary
 
-def main: Expr = ws e:expr ws $$ -> $e
+rule main Expr = ws e:expr ws $$ => $e
 
-def expr: Expr = sum / product
-def sum: Expr = l:expr ws op:@("+" / "-") ws r:product -> new Binary{Left: $l, Op: $op, Right: $r}
+rule expr Expr = sum / product
+rule sum Expr = l:expr ws op:("+" / "-") #atomic ws r:product => Binary{Left: $l, Op: $op, Right: $r}
 
-def product: Expr = mul / atom
-def mul: Expr = l:product ws op:@("*" / "/") ws r:atom -> new Binary{Left: $l, Op: $op, Right: $r}
+rule product Expr = mul / atom
+rule mul Expr = l:product ws op:("*" / "/") #atomic ws r:atom => Binary{Left: $l, Op: $op, Right: $r}
 
-def atom: Expr = number / group
-def group: Expr = "(" ws e:expr ws ")" -> $e
-def number: Number = (?0-9)+
-def ws = (? \t\r\n)*
+rule atom Expr = number / group
+rule group Expr = "(" ws e:expr ws ")" => $e
+rule number Number = [0-9]+
+rule ws = [ \t\r\n]*
 ```
 
 ```bash
@@ -655,14 +655,14 @@ pego parse -g calc-lr.pego -f sexpr -i '1 + 2 * 3 - 4'
 (Binary Left=(Binary Left=Number"1"@number Op="+" Right=(Binary Left=Number"2"@number Op="*" Right=Number"3"@number)) Op="-" Right=Number"4"@number)
 ```
 
-This produces the same trees as the Pratt version, with one rule per level instead of one line per level. Pratt
+This produces the same trees as the Operators Rule version, with one rule per level instead of one line per level. Operators Rule
 expressions scale better as the language grows (the [Go](../../parsers/golang/) and
 [Python](../../parsers/python/) parsers use them for their full operator tables), and they support features such as
 level-restricted calls and mixed prefix, infix and postfix operators. The guide to
 [expressions](../guide/expressions.md) compares the two approaches and covers every option;
 [examples/calculator](../../examples/calculator/) contains both versions of a complete calculator with an evaluator.
 
-## 7. Syntax errors
+## 7. Syntax Errors
 
 When the input does not match, PEGO reports the **farthest position** it reached and **what it expected there**. You have
 already seen the format: `line:column: syntax error: expected a, b, c`, with the expected items sorted. Errors in
@@ -673,7 +673,7 @@ printf 'host = "localhost"\nport == 8080\n' | pego parse -g config.pego -f sexpr
 ```
 
 ```text
-pego: 2:7: syntax error: expected "#", "\"", "false", "true", (? \t\r\n), (?0-9)
+pego: 2:7: syntax error: expected "#", "\"", "false", "true", [ \t\r\n], [0-9]
 ```
 
 Line 2, column 7 is the second `=`: after `port =` the grammar wants a value (or whitespace, or a comment). An
@@ -684,7 +684,7 @@ pego parse -g config.pego -f sexpr -i 'name = "oops'
 ```
 
 ```text
-pego: 1:13: syntax error: expected "\"", (?^")
+pego: 1:13: syntax error: expected "\"", [^"]
 ```
 
 Two things to remember about these messages:
@@ -693,10 +693,10 @@ Two things to remember about these messages:
   always: a failed literal is reported at the place where the literal began. For the second line `debug = tru`, the
   error is at 2:9, the `t` of `tru`, not at the end of the line.
 - The list is mechanical (it is built from the literals and classes that failed there). To give users something
-  friendlier, attach `#error(message="...")` to an expression. Replacing `value` in `config.pego` with
+  friendlier, attach `@error(message="...")` to an expression. Replacing `value` in `config.pego` with
 
   ```pego
-  def value: Value = (number / string / bool) #error(message="expected a number, a string or true/false")
+  rule value Value = (number / string / bool) @error(message="expected a number, a string or true/false")
   ```
 
   turns the same errors into
@@ -711,14 +711,8 @@ A grammar can also **recover** from errors, skipping malformed input and continu
 report every error in one pass and still get a tree (`#recover`). Recovery, error messages and the Go types for
 reporting them are covered in the [errors and recovery guide](../guide/errors-and-recovery.md).
 
-Mistakes in the *grammar* are reported before any input is parsed, also with a position. For a `bad.pego` containing
-`def main "a"`:
-
-```text
-pego: bad.pego:1:10: expected '=', found "a"
-```
-
-and for a `bad.pego` containing `def main = item`:
+Mistakes in the *grammar* are reported before any input is parsed, also with a position. For example, a `bad.pego`
+containing `rule main = item` has an undefined rule:
 
 ```text
 pego: bad.pego:1:12: undefined rule item
@@ -730,17 +724,17 @@ Asking for a start rule that does not exist with `pego parse -g config.pego -s n
 pego: config.pego: start rule nosuch is not defined
 ```
 
-## 8. Next steps
+## 8. Next Steps
 
-### Format your grammars: `pego fmt`
+### Format Your Grammars: `pego fmt`
 
 `pego fmt` rewrites a grammar into the canonical layout and keeps comments. `-l` lists the files that would change, `-w`
 rewrites them in place. For a grammar written in a hurry:
 
 ```pego
-type Pair struct{Key Match,Value Match}
+type Pair struct { Key Match, Value Match }
 // a key=value pair
-def main=k:@(?a-z)+  "="   v:@(?0-9)+   ->new Pair{Key:$k,Value:$v}
+rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}
 ```
 
 ```bash
@@ -751,10 +745,10 @@ pego fmt messy.pego        # prints the formatted source
 ```pego
 type Pair struct { Key Match, Value Match }
 // a key=value pair
-def main = k:@(?a-z)+ "=" v:@(?0-9)+ -> new Pair{Key: $k, Value: $v}
+rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}
 ```
 
-### Generate a standalone Go parser: `pego gen`
+### Generate a Standalone Go Parser: `pego gen`
 
 `pego gen` turns a grammar into Go source, so your program does not need the PEGO library or the grammar at run time.
 The generated file uses only the standard library. Generate it into a `config` package:
@@ -796,7 +790,7 @@ options: `config.Parse(input, config.WithUnit(config.Bytes), config.WithMaxDepth
 migrate to `WithUnit`, including function-value and slice consumers (see the
 [code-generation migration guide](../guide/code-generation.md#invocation-options-and-migration)).
 
-### Backends and compiled grammars
+### Backends and Compiled Grammars
 
 A grammar can run on several backends with identical results: the default closure-compiled engine, a bytecode VM, and
 a bytecode VM that uses an explicit stack instead of the Go stack for deeply nested input. Choose one on the command line
@@ -817,7 +811,7 @@ n, err := p.Parse("abc=12", pego.WithBackend(pego.Bytecode)) // also pego.WithUn
 The [runtime guide](../guide/runtime.md) describes the backends and options in detail, and the
 [compiled grammars guide](../guide/compiled-grammars.md) the `.pegoc` format.
 
-### Where to go from here
+### Where to Go from Here
 
 | To learn about | Read |
 |:--|:--|
@@ -827,7 +821,7 @@ The [runtime guide](../guide/runtime.md) describes the backends and options in d
 | Reparsing an edited document | [Incremental parsing](../guide/incremental.md) |
 | Shaping trees, struct and union types, `foldl`, `map`, `concat` and the other action functions | [Trees and actions](../guide/trees-and-actions.md) |
 | Operator tables, precedence, associativity, level-restricted calls, left recursion | [Expressions](../guide/expressions.md) |
-| Error messages, `#error`, `#recover` and the Go error types | [Errors and recovery](../guide/errors-and-recovery.md) |
+| Error messages, `@error`, `#recover` and the Go error types | [Errors and recovery](../guide/errors-and-recovery.md) |
 | Indentation-based languages, matching tags, predicates and variables | [Context-sensitive parsing](../guide/context-sensitive.md) |
 | Solving a concrete task: reading a configuration file, evaluating formulas, reporting errors, parsing as the user types, shipping a parser | [Cookbook](../cookbook/README.md) |
 | Testing a grammar: examples, golden files, generated inputs, fuzzing | [Testing grammars](../guide/testing-grammars.md) |
@@ -837,5 +831,5 @@ The [runtime guide](../guide/runtime.md) describes the backends and options in d
 | Using a ready-made parser in a program: entry points, trees, positions, errors | [Using the ready-made parsers](../guide/ready-made-parsers.md) |
 
 A good way to continue is to extend the configuration language of section 5: add `[section]` headers, lists of values,
-and `#error` messages, then read [parsers/json](../../parsers/json/json.pego) and [parsers/csv](../../parsers/csv/) to see how
+and `@error` messages, then read [parsers/json](../../parsers/json/json.pego) and [parsers/csv](../../parsers/csv/) to see how
 larger grammars are organized.

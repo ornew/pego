@@ -7,30 +7,30 @@ without a declaration is inferred, and the errors that the checker reports. The
 types themselves and the relation "assignable" are defined in the
 [Type System](types.md).
 
-## Types of expressions
+## Types of Expressions
 
 | Expression | Type |
 |:--|:--|
-| Literal, character class, `.`, `@a`, `_` | `Match` |
+| Literal, character class, `.`, `a #atomic`, `_` | `Match` |
 | `a b` | `Seq`; if the sequence has captures, a `Seq` with the corresponding fields |
 | `a / b` | The union of the types of `a` and `b` |
-| `a*`, `a+`, `a{n,m}` | `[]T`, where `T` is the type of the element; if the element has captures, `T` is a `Seq` with the corresponding fields |
+| `a*`, `a+`, `a #repeat(...)` | `[]T`, where `T` is the type of the element; if the element has captures, `T` is a `Seq` with the corresponding fields |
 | `a?` | `*T`, where `T` is the type of `a` |
 | Rule call | The type of the called rule |
 
-### Types of captures
+### Types of Captures
 
 The type of a capture `name:a` is the type of `a`. If the capture is made only
 in some alternatives of a choice, or inside an optional expression, it may not
 match, and its type is `*T` instead.
 
 ```pego
-def r = x:"a"? y:("b" / z:"c")   // $x: *Match, $y: Match, $z: *Match
+rule r = x:"a"? y:("b" / z:"c") // $x: *Match, $y: Match, $z: *Match
 ```
 
-## Types of action and predicate expressions
+## Types of Predicate and Value Actions
 
-The expressions of [actions](actions.md) and [predicates](predicates.md) have
+The expressions of [Value Actions](actions.md) and [Predicate Actions](predicates.md#predicate-actions) have
 the following types.
 
 | Expression | Type |
@@ -41,7 +41,7 @@ the following types.
 | `nil` | `nil`, assignable to any optional type |
 | `$label` | The type of the capture (see above) |
 | `$n` | The type of the `n`-th item of the rule body |
-| `new T{...}` | `T` |
+| `T{...}` | `T` |
 | `x.Name` | The type of the field `Name`; optional (`*T`) if `x` has a union type and only some members declare the field |
 | `foldl(init, l, f)`, `foldr(init, l, f)` | The type of `init`, widened to the union of it and the type of `f`'s result |
 | `map(l, f)` | `[]T`, where `T` is the type of `f`'s result, which MUST be a node or `nil` |
@@ -50,17 +50,17 @@ the following types.
 
 The argument of `len` and `text` MUST be a string or a node (possibly `nil`);
 the list arguments of `foldl`, `foldr`, `map` and `concat` MUST be lists, and
-`Error` (from [error recovery](attributes.md#recover)) counts as an empty list.
+`Error` (from [error recovery](pragmas.md#recover)) counts as an empty list.
 A function (`(acc, item) => ...`) can appear only as an argument of `foldl`,
 `foldr` or `map`, and it has the number of parameters those functions require.
 
-## Type inference
+## Type Inference
 
 The type of a rule without a declared type is inferred from its body, or from
 its action if it has one. Dependencies are inferred before their callers, so
 finite acyclic chains do not depend on definition order or an iteration cap.
 Recursive dependency groups are iterated until their types no longer change;
-union-member ordering does not count as a type change. Pratt operator actions
+union-member ordering does not count as a type change. Operators Rule operator actions
 also depend on their rule's type through the `lhs` and `rhs` values.
 
 The implementation bounds changing recursive types conservatively. After an
@@ -73,19 +73,19 @@ growth: a finite recursive type can also reach them. Declare recursive result
 types when precise checking is required.
 
 ```pego
-def num = @(?0-9)+         // Match
-def pair = k:num "=" v:num // Seq{k: Match, v: Match}
+rule num = [0-9]+ #atomic // Match
+rule pair = k:num "=" v:num // Seq{k: Match, v: Match}
 ```
 
 The type of the accumulator of `foldl` and `foldr` is widened to the union of
 the type of the initial value and the type of the result of the function.
 
-## Checked errors
+## Checked Errors
 
 The type checker reports the following errors:
 
 - an undefined type, a type alias that refers to itself, and a duplicate field;
-- a field that the struct type does not declare, in `new` or in a field access,
+- a field that the struct type does not declare, in a struct constructor or a field access,
   and a field value that is not assignable to the type of the field;
 - a rule whose value is not assignable to its declared type (except that a rule
   declared with a terminal type and without an action always produces a

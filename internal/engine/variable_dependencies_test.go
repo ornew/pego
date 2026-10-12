@@ -58,7 +58,7 @@ func ruleVariablesDFS(rules []*grammar.RuleDef) map[string][]string {
 
 func variableChain(n int, reverse, reads bool) string {
 	var src strings.Builder
-	src.WriteString("type V struct { N int }\ndef main = [x=7] r0\n")
+	src.WriteString("type V struct { N int }\nrule main = {x := 7} r0\n")
 	for j := range n {
 		i := j
 		if reverse {
@@ -69,9 +69,9 @@ func variableChain(n int, reverse, reads bool) string {
 			if reads {
 				action = "x"
 			}
-			fmt.Fprintf(&src, "def r%d = \"a\" -> new V{N:%s}\n", i, action)
+			fmt.Fprintf(&src, "rule r%d = \"a\" => V{N: %s}\n", i, action)
 		} else {
-			fmt.Fprintf(&src, "def r%d = r%d\n", i, i+1)
+			fmt.Fprintf(&src, "rule r%d = r%d\n", i, i+1)
 		}
 	}
 	return src.String()
@@ -79,14 +79,14 @@ func variableChain(n int, reverse, reads bool) string {
 
 func variableGraph(n int, cyclic bool) string {
 	var src strings.Builder
-	src.WriteString("type V struct { N int }\ndef main = [z=1] [a=2] [m=3] r0\ndef leaf = \"b\" -> new V{N:z+a+m}\n")
+	src.WriteString("type V struct { N int }\nrule main = {z := 1} {a := 2} {m := 3} r0\nrule leaf = \"b\" => V{N: z + a + m}\n")
 	for i := range n {
 		if cyclic {
-			fmt.Fprintf(&src, "def r%d:node = \"a\" r%d / leaf\n", i, (i+1)%n)
+			fmt.Fprintf(&src, "rule r%d node = \"a\" r%d / leaf\n", i, (i+1)%n)
 		} else if i+2 < n {
-			fmt.Fprintf(&src, "def r%d = r%d / r%d / r%d\n", i, i+1, i+2, i+1)
+			fmt.Fprintf(&src, "rule r%d = r%d / r%d / r%d\n", i, i+1, i+2, i+1)
 		} else {
-			fmt.Fprintf(&src, "def r%d = leaf / leaf\n", i)
+			fmt.Fprintf(&src, "rule r%d = leaf / leaf\n", i)
 		}
 	}
 	return src.String()
@@ -94,14 +94,14 @@ func variableGraph(n int, cyclic bool) string {
 
 func variableManyReads(n int, cyclic bool) string {
 	var src strings.Builder
-	src.WriteString("type V struct { N int }\ndef main = r0\n")
+	src.WriteString("type V struct { N int }\nrule main = r0\n")
 	for i := range n {
 		if cyclic {
-			fmt.Fprintf(&src, "def r%d:node = \"a\" r%d / \"b\" -> new V{N:v%d}\n", i, (i+1)%n, i)
+			fmt.Fprintf(&src, "rule r%d node = \"a\" r%d / \"b\" => V{N: v%d}\n", i, (i+1)%n, i)
 		} else if i+1 < n {
-			fmt.Fprintf(&src, "def r%d:node = r%d / \"b\" -> new V{N:v%d}\n", i, i+1, i)
+			fmt.Fprintf(&src, "rule r%d node = r%d / \"b\" => V{N: v%d}\n", i, i+1, i)
 		} else {
-			fmt.Fprintf(&src, "def r%d:node = \"b\" -> new V{N:v%d}\n", i, i)
+			fmt.Fprintf(&src, "rule r%d node = \"b\" => V{N: v%d}\n", i, i)
 		}
 	}
 	return src.String()
@@ -181,24 +181,28 @@ func TestVariableDependencyGraphs(t *testing.T) {
 
 func TestVariableDependencyTraversal(t *testing.T) {
 	// Include calls in all syntactic contexts, even those which may not run;
-	// recovery arguments and Pratt actions have the same dependency contract.
-	src := `def main = (&look !negative -discarded optional? repeated*) / attributed
- def look = [z==1] "a"
- def negative = [a==1] "b"
- def discarded = [m==1] "c"
- def optional = [opt==1] "d"
- def repeated = [rep==1] "e"
- def attributed = "f" #recover(sync=recovery)
- def recovery = [recoverVar==1] "g"
- def pr = pratt { skip skipRule operand operandRule -> new V{N:operandVar} level { prefix prefixRule -> new V{N:prefixVar} infix left infixRule -> new V{N:infixVar} postfix postfixRule -> new V{N:postfixVar} } }
- def skipRule = [skipVar==1] " "
- def operandRule = [atomVar==1] "a"
- def prefixRule = [preVar==1] "-"
- def infixRule = [inVar==1] "+"
- def postfixRule = [postVar==1] "!"
- def missingCaller = missing
- def self = [selfVar==1] self / "h"
- def assignment = [local=9] "i"`
+	// recovery arguments and OperatorsRule actions have the same dependency contract.
+	src := `rule main = &look !negative -discarded optional? repeated* / attributed
+rule look = {z == 1} "a"
+rule negative = {a == 1} "b"
+rule discarded = {m == 1} "c"
+rule optional = {opt == 1} "d"
+rule repeated = {rep == 1} "e"
+rule attributed = "f" #recover(skip=recovery)
+rule recovery = {recoverVar == 1} "g"
+rule pr = operators {
+    skip skipRule
+    operand operandRule => V{N: operandVar}
+    level { prefix prefixRule => V{N: prefixVar}; infix left infixRule => V{N: infixVar}; postfix postfixRule => V{N: postfixVar} }
+}
+rule skipRule = {skipVar == 1} " "
+rule operandRule = {atomVar == 1} "a"
+rule prefixRule = {preVar == 1} "-"
+rule infixRule = {inVar == 1} "+"
+rule postfixRule = {postVar == 1} "!"
+rule missingCaller = missing
+rule self = {selfVar == 1} self / "h"
+rule assignment = {local := 9} "i"`
 	g, err := syntax.Parse(src)
 	if err != nil {
 		t.Fatal(err)

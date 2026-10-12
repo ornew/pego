@@ -10,56 +10,44 @@ import (
 )
 
 var typedDirectCutCases = []genCase{
-	{"typed/direct_cut_choice", `
-type Doc struct { Text Match }
-def main: Doc = v:@("a" -- "b" / "a" "c") $$ -> new Doc{Text: $v}
+	{"typed/direct_cut_choice", `type Doc struct { Text Match }
+rule main Doc = v:("a" -- "b" / "a" "c") #atomic $$ => Doc{Text: $v}
 `, []string{"ab", "ac", "a", "abc", ""}},
-	{"typed/direct_cut_nested_choice", `
-type Doc struct { Text Match }
-def main: Doc = v:@("a" ("b" -- "c" / "b" "d") "x" / "abcy") $$ -> new Doc{Text: $v}
+	{"typed/direct_cut_nested_choice", `type Doc struct { Text Match }
+rule main Doc = v:("a" ("b" -- "c" / "b" "d") "x" / "abcy") #atomic $$ => Doc{Text: $v}
 `, []string{"abcx", "abcy", "abdx", "abc", ""}},
-	{"typed/direct_cut_optional", `
-type Doc struct { Text Match }
-def main: Doc = v:@(("b" -- "c")? "b") $$ -> new Doc{Text: $v}
+	{"typed/direct_cut_optional", `type Doc struct { Text Match }
+rule main Doc = v:(("b" -- "c")? "b") #atomic $$ => Doc{Text: $v}
 `, []string{"bcb", "b", "bb", "", "bc"}},
-	{"typed/direct_cut_repeat", `
-type Doc struct { Text Match }
-def main: Doc = v:@(("b" -- "c"){0,2} "b") $$ -> new Doc{Text: $v}
+	{"typed/direct_cut_repeat", `type Doc struct { Text Match }
+rule main Doc = v:(("b" -- "c") #repeat(0, 2) "b") #atomic $$ => Doc{Text: $v}
 `, []string{"bcbcb", "b", "bcb", "bcbc", "", "bcbcbcb"}},
-	{"typed/direct_cut_projection", `
-type Doc struct { Items []Match }
-def main: Doc = items:(-"," -- x:@(?a-z)){0,3} ";" $$ -> new Doc{Items: map($items, (e) => $e.x)}
+	{"typed/direct_cut_projection", `type Doc struct { Items []Match }
+rule main Doc = items:(-"," -- x:[a-z] #atomic) #repeat(0, 3) ";" $$ => Doc{Items: map($items, (e) => $e.x)}
 `, []string{";", ",a;", ",a,b;", ",;", ",a,b,c;", ",a,b,c,d;", ""}},
-	{"typed/direct_cut_lookahead", `
-type Doc struct { Text Match }
-def main: Doc = v:@(&("a" -- "b") "ab" / !("a" -- "b") "ac") $$ -> new Doc{Text: $v}
+	{"typed/direct_cut_lookahead", `type Doc struct { Text Match }
+rule main Doc = v:(&("a" -- "b") "ab" / !("a" -- "b") "ac") #atomic $$ => Doc{Text: $v}
 `, []string{"ab", "ac", "ad", "", "abc"}},
-	{"typed/direct_cut_callee", `
-type Doc struct { Text Match }
-def main: Doc = v:@(part "x" / "ac") $$ -> new Doc{Text: $v}
-def part = "a" -- "b"
+	{"typed/direct_cut_callee", `type Doc struct { Text Match }
+rule main Doc = v:(part "x" / "ac") #atomic $$ => Doc{Text: $v}
+rule part = "a" -- "b"
 `, []string{"abx", "ac", "ab", "ad", ""}},
-	{"typed/direct_cut_error", `
-type Doc struct { Text Match }
-def main: Doc = v:@(("é" -- "x") #error(message="expected committed word") / "éy") $$ -> new Doc{Text: $v}
+	{"typed/direct_cut_error", `type Doc struct { Text Match }
+rule main Doc = v:(("é" -- "x") @error(message="expected committed word") / "éy") #atomic $$ => Doc{Text: $v}
 `, []string{"éx", "éy", "é", "x", ""}},
-	{"typed/direct_cut_memo_capture", `
-type Pair struct { Word Match, N int }
+	{"typed/direct_cut_memo_capture", `type Pair struct { Word Match, N int }
 type Doc struct { Pair Pair }
-def main: Doc = (p:pair "!" $$ / p:pair "?" $$) -> new Doc{Pair: $p}
-def pair: Pair = word:@(?a-z)+ -- [n = len($word)] ":" (?0-9)+ -> new Pair{Word: $word, N: n}
+rule main Doc = p:pair "!" $$ / p:pair "?" $$ => Doc{Pair: $p}
+rule pair Pair = word:[a-z]+ #atomic -- {n := len($word)} ":" [0-9]+ => Pair{Word: $word, N: n}
 `, []string{"abc:12!", "abc:12?", "abc:x?", "abc:12", ""}},
-	{"typed/direct_cut_outer_rollback", `
-type Doc struct { Text Match, N int }
-def main: Doc = [n = 0] (v:@"a" [n = 1] ("b" -- "c")? "x" / v:@"ab" [n = 2]) $$ -> new Doc{Text: $v, N: n}
+	{"typed/direct_cut_outer_rollback", `type Doc struct { Text Match, N int }
+rule main Doc = {n := 0} (v:"a" #atomic {n := 1} ("b" -- "c")? "x" / v:"ab" #atomic {n := 2}) $$ => Doc{Text: $v, N: n}
 `, []string{"ab", "abcx", "ax", "abd", ""}},
-	{"typed/direct_cut_repeat_rollback", `
-type Doc struct { Text Match, N int }
-def main: Doc = [n = 0] (v:@"a" [n = 1] ("b" -- [n = n + 1] "c"){0,2} "x" / v:@"ab" [n = 2]) $$ -> new Doc{Text: $v, N: n}
+	{"typed/direct_cut_repeat_rollback", `type Doc struct { Text Match, N int }
+rule main Doc = {n := 0} (v:"a" #atomic {n := 1} ("b" -- {n := n + 1} "c") #repeat(0, 2) "x" / v:"ab" #atomic {n := 2}) $$ => Doc{Text: $v, N: n}
 `, []string{"ab", "abcx", "abcbcx", "ax", "abd", ""}},
-	{"typed/direct_cut_captured_lookahead", `
-type Doc struct { Text Match }
-def main: Doc = (&(probe:@("a" -- "b")) v:@"abx" / v:@"aby") $$ -> new Doc{Text: $v}
+	{"typed/direct_cut_captured_lookahead", `type Doc struct { Text Match }
+rule main Doc = (&probe:("a" -- "b") #atomic v:"abx" #atomic / v:"aby" #atomic) $$ => Doc{Text: $v}
 `, []string{"abx", "aby", "ab", "ac", ""}},
 }
 

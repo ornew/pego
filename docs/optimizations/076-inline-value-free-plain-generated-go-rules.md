@@ -1,10 +1,10 @@
-# 76. Inline value-free plain generated Go rules
+# 76. Inline Value-Free Plain Generated Go Rules
 
 - The generated Node runtime reuses the typed runtime's direct structural
   emitter for value-free plain rules. Recognition and ordinary Parse's
   skip twins inline expressions, codepoint tests and short literals.
   Local predicates, value-building and memoized rules, cut, recovery,
-  Pratt and LR leaders keep general dispatch. References can still call
+  Operators Rule and LR leaders keep general dispatch. References can still call
   such fallback rules. TypeScript and typed-value emission are unchanged.
 - Direct call methods own depth accounting and failed position/recovery
   rollback. Separate inlined rule-table bodies leave those responsibilities
@@ -23,7 +23,7 @@
   | JSON | 3.169 → 1.899 | 3.030 → 2.170 |
   | CSV | 1.411 → 0.819 | 1.309 → 1.016 |
   | XML | 3.634 → 2.480 | 3.642 → 2.911 |
-  | Arith_Pratt | 4.167 → 3.667 | 4.308 → 4.034 |
+  | Arith_OperatorsRule | 4.167 → 3.667 | 4.308 → 4.034 |
   | Arith_LeftRec | 8.936 → 7.257 | 9.175 → 8.069 |
   | Minilang | 5.471 → 4.582 | 5.696 → 5.077 |
   | Recovery | 5.308 → 4.455 | 5.587 → 5.024 |
@@ -59,7 +59,7 @@
   not imply a larger archive or a slower compiler; no end-to-end cold
   build or runtime retained-heap improvement is claimed.
 - Regression fixtures cover mixed direct/general calls, local predicates
-  and assignments, memo/lookahead, cuts/recovery/Pratt/LR, nested labels,
+  and assignments, memo/lookahead, cuts/recovery/Operators Rule/LR, nested labels,
   nullable captured repeats, Unicode/invalid UTF-8, both units and pooled
   reuse. A five-call generated limit compares external entries and nested
   calls with the engine, including exact-limit/exhaustion behavior. The

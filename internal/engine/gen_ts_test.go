@@ -96,32 +96,16 @@ func TestGeneratedTSParsersMatchEngine(t *testing.T) {
 	cases := genCorpus(t)
 	// Exactly at and just beyond the nesting limit, as in TestGeneratedParsersMatchEngine; the
 	// harness gives the parser a stack large enough to reach it.
-	cases = append(cases, genCase{"nesting limit", `
-def main = n
-def n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x" + strings.Repeat(")", DefaultMaxDepth-2),
+	cases = append(cases, genCase{"nesting limit", `rule main = n
+rule n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x" + strings.Repeat(")", DefaultMaxDepth-2),
 		strings.Repeat("(", DefaultMaxDepth-1) + "x" + strings.Repeat(")", DefaultMaxDepth-1)}})
 	// Values that JavaScript represents differently from Go: 64-bit ints that wrap around (the
 	// runtime switches to bigint beyond the safe integers), negative division, -0, strings
 	// compared and measured by code points or UTF-8 bytes (JavaScript strings are UTF-16), and
 	// variables holding big ints as memo keys.
-	cases = append(cases, genCase{"ints and strings", `
-type R struct { A int, B int, C int, D int, E int, F int, G bool, H bool, I int, J string, K int, L bool, M int }
-def main = x:@(?a-z)* ","? y:@(?^!)* [big = 9007199254740992 + len($x)] z:big? -> new R{
-    A: 9223372036854775807 + len($x),
-    B: -9223372036854775807 - 1 - len($x),
-    C: 4611686018427387904 * (len($x) + 1),
-    D: -7 / 2 * len($x),
-    E: -7 % 2 + 0 * -1,
-    F: (9007199254740993 + len($y)) / 3,
-    G: text($y) < "\u{1F600}",
-    H: "\u{FF01}" < "\u{1F600}",
-    I: len($y),
-    J: text($y) + "!",
-    K: -(9223372036854775807 - len($x) + 1),
-    L: big == 9007199254740992 + len($x),
-    M: len($z),
-}
-def big = [big > 9007199254740992] @"!"+`, []string{"", "a", "ab,c😀", ",！", "z,日本", "abc,😀x", "a,!!"}})
+	cases = append(cases, genCase{"ints and strings", `type R struct { A int, B int, C int, D int, E int, F int, G bool, H bool, I int, J string, K int, L bool, M int }
+rule main = x:[a-z]* #atomic ","? y:[^!]* #atomic {big := 9007199254740992 + len($x)} z:big? => R{A: 9223372036854775807 + len($x), B: -9223372036854775807 - 1 - len($x), C: 4611686018427387904 * (len($x) + 1), D: -7 / 2 * len($x), E: -7 % 2 + 0 * -1, F: (9007199254740993 + len($y)) / 3, G: text($y) < "😀", H: "！" < "😀", I: len($y), J: text($y) + "!", K: -(9223372036854775807 - len($x) + 1), L: big == 9007199254740992 + len($x), M: len($z)}
+rule big = {big > 9007199254740992} "!"+ #atomic`, []string{"", "a", "ab,c😀", ",！", "z,日本", "abc,😀x", "a,!!"}})
 	// Variants of the short inputs: every prefix, and the input without each byte. They fail in many
 	// places (expectations, recovery, cuts, memoized failures), and some are not valid UTF-8.
 	for i := range cases {
@@ -284,14 +268,14 @@ func testGeneratedTSParsersCorpus(t *testing.T, node string, cases []genCase, op
 }
 
 func TestGenerateTSErrors(t *testing.T) {
-	g, _ := syntax.Parse(`def main = "a"`)
+	g, _ := syntax.Parse(`rule main = "a"`)
 	if _, err := GenerateTS(g, GenOptions{Start: "nope"}); err == nil || err.Error() != "start rule nope is not defined" {
 		t.Errorf("got %v", err)
 	}
 	if code, err := GenerateTS(g, GenOptions{Start: "main", Types: true}); err != nil || !strings.Contains(string(code), "export function parseAST(") {
 		t.Errorf("Types: %v", err)
 	}
-	bad, _ := syntax.Parse(`def main = x`)
+	bad, _ := syntax.Parse(`rule main = x`)
 	if _, err := GenerateTS(bad, GenOptions{Start: "main"}); err == nil || !strings.Contains(err.Error(), "undefined rule x") {
 		t.Errorf("got %v", err)
 	}
@@ -439,7 +423,7 @@ func runTSGrammarScript(t *testing.T, g *grammar.Grammar, script string) string 
 // TestGeneratedTSLoneSurrogates checks that strings with many lone surrogates, which the parser
 // replaces with U+FFFD before parsing, parse like any other input.
 func TestGeneratedTSLoneSurrogates(t *testing.T) {
-	out := runTSScript(t, `def main = .*`, `import { parse } from "./parser.ts";
+	out := runTSScript(t, `rule main = .*`, `import { parse } from "./parser.ts";
 for (const s of ["\uDC00".repeat(7000), "x\uDC00".repeat(15000), "\uD800", "a😀\uDE00"]) {
   const r = parse(s);
   if (r.error !== null) {
@@ -458,10 +442,9 @@ for (const s of ["\uDC00".repeat(7000), "x\uDC00".repeat(15000), "\uD800", "a�
 // TestGeneratedTSDeepTrees checks that the printers handle trees nested more deeply than the
 // JavaScript stack allows recursion: left recursion builds such trees without nesting calls.
 func TestGeneratedTSDeepTrees(t *testing.T) {
-	src := `
-def main = e $$
-def e = e "+" n / n
-def n = @(?0-9)+`
+	src := `rule main = e $$
+rule e = e "+" n / n
+rule n = [0-9]+ #atomic`
 	input := strings.Repeat("1+", 19999) + "1"
 	out := runTSScript(t, src, `import { parse, marshal } from "./parser.ts";
 const r = parse("`+input+`");
@@ -484,7 +467,7 @@ console.log(marshal(r.node));
 // Node.String does (with strconv.Quote, whose idea of printable characters follows Go's Unicode
 // version, not the JavaScript runtime's).
 func TestGeneratedTSQuotesEveryCodePoint(t *testing.T) {
-	out := runTSScript(t, `def main = .*`, `import { parse } from "./parser.ts";
+	out := runTSScript(t, `rule main = .*`, `import { parse } from "./parser.ts";
 const parts = [];
 for (let r = 0; r <= 0x10ffff; r++) {
   if (r < 0xd800 || r > 0xdfff) {
@@ -500,7 +483,7 @@ process.stdout.write(r.error === null ? String(r.node) : r.error.message);
 			b.WriteRune(r)
 		}
 	}
-	n, err := compile(t, `def main = .*`).Parse("main", b.String())
+	n, err := compile(t, `rule main = .*`).Parse("main", b.String())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -513,7 +496,7 @@ process.stdout.write(r.error === null ? String(r.node) : r.error.message);
 // TestGeneratedTSFieldNames checks that JSON.stringify writes fields whose names are special in
 // JavaScript objects.
 func TestGeneratedTSFieldNames(t *testing.T) {
-	src := `def main = __proto__:"a" constructor:"b" toString:"c" hasOwnProperty:"d"`
+	src := `rule main = prototype:"a" constructor:"b" toString:"c" hasOwnProperty:"d"`
 	out := runTSScript(t, src, `import { parse } from "./parser.ts";
 console.log(JSON.stringify(parse("abcd").node));
 `)
@@ -531,7 +514,7 @@ console.log(JSON.stringify(parse("abcd").node));
 // engines as errors (V8 and JavaScriptCore throw a RangeError, SpiderMonkey an InternalError "too
 // much recursion"), and throws other exceptions. It simulates them with an input whose bytes throw.
 func TestGeneratedTSStackOverflowErrors(t *testing.T) {
-	out := runTSScript(t, `def main = .*`, `import { parse } from "./parser.ts";
+	out := runTSScript(t, `rule main = .*`, `import { parse } from "./parser.ts";
 const internal = new Error("too much recursion");
 internal.name = "InternalError";
 for (const e of [internal, new RangeError("Maximum call stack size exceeded"), new TypeError("bad"), new RangeError("Invalid array length")]) {

@@ -1,4 +1,4 @@
-# Read a configuration file into Go structs
+# Read a Configuration File into Go Structs
 
 **Problem.** Your program reads a small configuration file of `key = value` lines, with comments, strings, integers,
 booleans and arrays, and wants a Go struct. A wrong type or an unknown key should be reported with its line.
@@ -18,20 +18,20 @@ type Value = Int | Str | Bool | Array
 type Entry struct { Key Key, Value Value }
 type Config struct { Entries []Entry }
 
-def main: Config = -ws es:entry* $$ -> new Config{Entries: $es}
+rule main Config = -ws es:entry* $$ => Config{Entries: $es}
 
-def entry: Entry = k:key -ws -"=" -ws v:value -ws -> new Entry{Key: $k, Value: $v}
+rule entry Entry = k:key -ws -"=" -ws v:value -ws => Entry{Key: $k, Value: $v}
 
-def value: Value = int / str / bool / array
-def key: Key = (?a-z_)+
-def int: Int = "-"? (?0-9)+
-def str: Str = "\"" ("\\" . / (?^"\\\n))* "\""
-def bool: Bool = "true" / "false"
-def array: Array = "[" -ws vs:(v:value -ws -","? -ws)* "]" -> new Array{Items: map($vs, (x) => $x.v)}
+rule value Value = int / str / bool / array
+rule key Key = [a-z_]+
+rule int Int = "-"? [0-9]+
+rule str Str = "\"" ("\\" . / [^"\\\n])* "\""
+rule bool Bool = "true" / "false"
+rule array Array = "[" -ws vs:(v:value -ws -","? -ws)* "]" => Array{Items: map($vs, (x) => $x.v)}
 
-def ws = (blank / comment)*
-def blank = (? \t\r\n)+
-def comment = "#" (?^\n)*
+rule ws = (blank / comment)*
+rule blank = [ \t\r\n]+
+rule comment = "#" [^\n]*
 ```
 
 ```go
@@ -152,12 +152,12 @@ func main() {
 {Name:api Port:8080 Debug:true Tags:[a b	c]}
 error: line 2: port: want an integer, got str
 error: line 2: host: unknown key
-error: 2:9: syntax error: expected "#", "-", "[", "\"", "false", "true", (? \t\r\n), (?0-9)
+error: 2:9: syntax error: expected "#", "-", "[", "\"", "false", "true", [ \t\r\n], [0-9]
 ```
 
 (`b\tc` in the first input is a tab, which `strconv.Unquote` decoded; the output shows it as a tab.)
 
-## How it works
+## How It Works
 
 - **Syntax in the grammar, meaning in Go.** The grammar says what a file looks like and tells the kinds of value apart
   by type: `Int`, `Str`, `Bool` and `Array` are different node types, so Go can switch on `v.Type()`. Actions have no

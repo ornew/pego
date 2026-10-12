@@ -19,7 +19,7 @@ const (
 	failed
 	// more: the answer depends on input that has not been generated yet.
 	more
-	// unknown: the matcher cannot tell (predicates, Pratt expressions, left recursion, cuts,
+	// unknown: the matcher cannot tell (predicates, Operators Rule expressions, left recursion, cuts,
 	// #recover, or too much work); only parsing the whole input can.
 	unknown
 )
@@ -27,9 +27,9 @@ const (
 // matchSteps bounds the work of one match.
 const matchSteps = 4000
 
-// prattStableSuccess is private to RHS proofs: success is certain but its final extent needs more
+// operatorsRuleStableSuccess is private to RHS proofs: success is certain but its final extent needs more
 // input. It is propagated through recursive calls without using the witness endpoint as a tail start.
-const prattStableSuccess status = unknown + 1
+const operatorsRuleStableSuccess status = unknown + 1
 
 // matcher is a small backtracking PEG matcher over the grammar AST. It is used only to steer the
 // generator away from inputs that the parser would read differently (an earlier alternative of an
@@ -55,16 +55,16 @@ func (m *matcher) run(e grammar.Expr, text []byte, pos int, final bool) (status,
 	return m.match(e, pos)
 }
 
-// runPrattStop shares one allowance across skip, selection, scope walks and complete RHS matching.
+// runOperatorsRuleStop shares one allowance across skip, selection, scope walks and complete RHS matching.
 // Unsupported or unresolved matching cannot justify rejecting a caller continuation.
-func (m *matcher) runPrattStop(c *prattCheck, text []byte, pos int, final bool) (status, int) {
+func (m *matcher) runOperatorsRuleStop(c *operatorsRuleCheck, text []byte, pos int, final bool) (status, int) {
 	m.text, m.final, m.steps, m.active = text, final, 0, m.active[:0]
 	s := c.stop
-	st, start := m.prattSkip(s, pos)
+	st, start := m.operatorsRuleSkip(s, pos)
 	if st != matched {
 		return st, pos
 	}
-	st, best, end := m.prattLongest(s.ops, start)
+	st, best, end := m.operatorsRuleLongest(s.ops, start)
 	if st != matched {
 		return st, pos
 	}
@@ -79,8 +79,8 @@ func (m *matcher) runPrattStop(c *prattCheck, text []byte, pos int, final bool) 
 	if best.op.Kind == grammar.Postfix {
 		return matched, end
 	}
-	st, end = m.prattExpr(s, prattRHSMin(best), end)
-	if st == prattStableSuccess {
+	st, end = m.operatorsRuleExpr(s, operatorsRuleRHSMin(best), end)
+	if st == operatorsRuleStableSuccess {
 		st = matched
 	}
 	if st != matched {
@@ -89,11 +89,11 @@ func (m *matcher) runPrattStop(c *prattCheck, text []byte, pos int, final bool) 
 	return st, end
 }
 
-// prattLongest selects by consumed length, breaking ties in declaration order. A nullable prefix
+// operatorsRuleLongest selects by consumed length, breaking ties in declaration order. A nullable prefix
 // or postfix is eligible only when its actual match consumes input. Incomplete competitors defer
 // the selection, and cuts or other unsupported parts leave it inconclusive.
-func (m *matcher) prattLongest(ops []prattOp, pos int) (status, *prattOp, int) {
-	var best *prattOp
+func (m *matcher) operatorsRuleLongest(ops []operatorsRuleOp, pos int) (status, *operatorsRuleOp, int) {
+	var best *operatorsRuleOp
 	end := pos
 	incomplete := false
 	for i := range ops {
@@ -122,9 +122,9 @@ func (m *matcher) prattLongest(ops []prattOp, pos int) (status, *prattOp, int) {
 	return matched, best, end
 }
 
-// prattSkip ignores a definite skip failure, as the runtime does. The recursive RHS performs its
+// operatorsRuleSkip ignores a definite skip failure, as the runtime does. The recursive RHS performs its
 // own initial skip; stopping a tail restores the position before that tail's skip.
-func (m *matcher) prattSkip(s *prattStop, pos int) (status, int) {
+func (m *matcher) operatorsRuleSkip(s *operatorsRuleStop, pos int) (status, int) {
 	if s.pr.Skip != nil {
 		st, end := m.match(s.pr.Skip, pos)
 		if st != failed {
@@ -134,32 +134,32 @@ func (m *matcher) prattSkip(s *prattStop, pos int) (status, int) {
 	return matched, pos
 }
 
-func prattRHSMin(o *prattOp) int {
+func operatorsRuleRHSMin(o *operatorsRuleOp) int {
 	if o.op.Assoc == grammar.AssocRight {
 		return o.level
 	}
 	return o.level + 1
 }
 
-// prattExpr follows a complete RHS for matcher-supported syntax. Each invocation has fresh none
+// operatorsRuleExpr follows a complete RHS for matcher-supported syntax. Each invocation has fresh none
 // state and spends shared work even if its parts are nullable. More/unknown never imply a plain
 // RHS failure: a later cut-bearing operator can invalidate an otherwise successful primary.
-func (m *matcher) prattExpr(s *prattStop, minLevel, pos int) (status, int) {
+func (m *matcher) operatorsRuleExpr(s *operatorsRuleStop, minLevel, pos int) (status, int) {
 	m.steps++
 	if m.steps > matchSteps {
 		return unknown, pos
 	}
-	st, start := m.prattSkip(s, pos)
+	st, start := m.operatorsRuleSkip(s, pos)
 	if st != matched {
 		return st, pos
 	}
-	st, prefix, end := m.prattLongest(s.prefixes, start)
+	st, prefix, end := m.operatorsRuleLongest(s.prefixes, start)
 	switch st {
 	case more, unknown:
 		return st, pos
 	case matched:
-		st, end = m.prattExpr(s, prefix.level+1, end)
-		if st == prattStableSuccess {
+		st, end = m.operatorsRuleExpr(s, prefix.level+1, end)
+		if st == operatorsRuleStableSuccess {
 			return st, end
 		}
 		if st == more || st == unknown {
@@ -168,7 +168,7 @@ func (m *matcher) prattExpr(s *prattStop, minLevel, pos int) (status, int) {
 	}
 	if st != matched {
 		// A selected ordinary prefix whose whole RHS fails falls back to operands, never to
-		// a shorter prefix. Cut-bearing parts are already unknown in prattLongest.
+		// a shorter prefix. Cut-bearing parts are already unknown in operatorsRuleLongest.
 		for _, o := range s.pr.Operands {
 			st, end = m.match(o.Expr, start)
 			if st != failed {
@@ -182,17 +182,17 @@ func (m *matcher) prattExpr(s *prattStop, minLevel, pos int) (status, int) {
 	lastNone := -1
 	for {
 		lhsEnd := end
-		st, start := m.prattSkip(s, lhsEnd)
+		st, start := m.operatorsRuleSkip(s, lhsEnd)
 		if st != matched {
 			return st, pos
 		}
-		st, op, partEnd := m.prattLongest(s.ops, start)
+		st, op, partEnd := m.operatorsRuleLongest(s.ops, start)
 		switch st {
 		case more:
 			// Plain led parts cannot make an established primary fail: a failed future
 			// uncommitted infix RHS only stops this frame. Do not guess its final extent.
 			if s.uncommitted {
-				return prattStableSuccess, lhsEnd
+				return operatorsRuleStableSuccess, lhsEnd
 			}
 			return more, pos
 		case unknown:
@@ -205,8 +205,8 @@ func (m *matcher) prattExpr(s *prattStop, minLevel, pos int) (status, int) {
 		}
 		end = partEnd
 		if op.op.Kind == grammar.Infix {
-			st, end = m.prattExpr(s, prattRHSMin(op), partEnd)
-			if st == prattStableSuccess {
+			st, end = m.operatorsRuleExpr(s, operatorsRuleRHSMin(op), partEnd)
+			if st == operatorsRuleStableSuccess {
 				return st, end
 			}
 			if st == failed {
@@ -341,7 +341,7 @@ func (m *matcher) match(e grammar.Expr, pos int) (status, int) {
 		return m.match(e.Expr, pos)
 	case *grammar.Ref:
 		ri := m.in.rules[e.Name]
-		if ri == nil || ri.pratt != nil || e.Level != "" {
+		if ri == nil || ri.operatorsRule != nil || e.Level != "" {
 			return unknown, pos
 		}
 		key := activeCall{ri, pos}
@@ -386,7 +386,7 @@ func (m *matcher) match(e grammar.Expr, pos int) (status, int) {
 		}
 		return failed, pos
 	}
-	// Cut, predicates, Pratt expressions.
+	// Cut, predicates, Operators Rule expressions.
 	return unknown, pos
 }
 

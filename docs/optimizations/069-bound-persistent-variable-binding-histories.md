@@ -1,4 +1,4 @@
-# 69. Bound persistent variable binding histories
+# 69. Bound Persistent Variable Binding Histories
 
 - Every assignment previously prepended a binding even when the name already
   existed. A long repetition retained all shadowed values, and reading an outer

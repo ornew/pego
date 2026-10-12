@@ -12,7 +12,7 @@ types instead of `*Node`.
 
 ## Design
 
-### Where the types come from
+### Where the Types Come From
 
 The type checker already infers a type for every rule and checks every action against the declared types (see
 [spec/types.md](../../spec/types.md)). It now keeps what it inferred (`Program.typed`: the type of each rule, the
@@ -44,7 +44,7 @@ applies to alias names as well as struct and terminal declarations.
 list. Where a struct or terminal type is expected, an `Error` node becomes `nil`; it is reported in the
 `SyntaxErrors` that `ParseAST` returns anyway.
 
-### The typed runtime
+### The Typed Runtime
 
 When every value `ParseAST` can return has a Go type of its own (`runtimeOK`: no `Seq`, `List`, `Operator`, record,
 `node`, `terminal` or `any` in the result type or in any struct field) and no action or predicate reads a field of a
@@ -57,7 +57,7 @@ result). `tparser` embeds the parser and redefines only the methods that handle 
 errors and memoization decisions are literally shared. The generator writes the rules a second time for it
 (`trules`), with the expression code of the Node runtime and these differences:
 
-- **Constructors.** `new T{...}` evaluates the fields in the order written and calls a generated `tmk_T` with them in
+- **Constructors.** `T{...}` evaluates the fields in the order written and calls a generated `tmk_T` with them in
   declaration order, which converts each value to the field's Go type; a constructor that makes an action's result
   takes the rule's range directly. `Match` and `Error` values carry their freshness in internal wrappers (`tmatch`,
   `terror`), so the public types have no unexported fields.
@@ -70,7 +70,7 @@ errors and memoization decisions are literally shared. The generator writes the 
   decoded input are pooled with the parser across parses, since the result never refers to them; a parse allocates
   little more than the values it returns.
   Discarded undo-trail entries are cleared after rollback, rule return and captured repetition elements, including
-  generated call methods. Live caller undo entries remain available. Recycling clears the full trail and Pratt
+  generated call methods. Live caller undo entries remain available. Recycling clears the full trail and Operators Rule
   saved-capture backing slices, since their lengths may have shrunk after retaining overwritten values. This releases
   discarded captures from pooled scratch while preserving returned terminals/structs; it does not rely on a later pool GC.
 - **Direct rules** (`gen_direct.go`). Eligible rule bodies are inlined into the
@@ -95,15 +95,15 @@ errors and memoization decisions are literally shared. The generator writes the 
   Eligible left-recursion leaders can inline their unfinished typed body
   while the runtime retains seed growth and invocation ownership
   ([record 79](../optimizations/079-inline-eligible-typed-left-recursion-bodies.md)).
-  Eligible unfinished operand, operator and skip matchers on typed Pratt lines
-  can also be inlined ([record 80](../optimizations/080-inline-eligible-typed-pratt-lines.md)).
-  Eligible cut-bearing left-recursion and Pratt bodies use a separate framed
+  Eligible unfinished operand, operator and skip matchers on typed Operators Rule lines
+  can also be inlined ([record 80](../optimizations/080-inline-eligible-typed-operators-rule-lines.md)).
+  Eligible cut-bearing left-recursion and Operators Rule bodies use a separate framed
   route ([record 81](../optimizations/081-scoped-cuts-in-unfinished-typed-go-bodies.md)).
   Frame-layout collection now follows the general emitter's build,
   predicate-capture, projection and slot-order rules, including dead syntax.
-  It enables additional left-recursion, Pratt and owned-repetition bodies
+  It enables additional left-recursion, Operators Rule and owned-repetition bodies
   without changing runtime frame ownership ([record 82](../optimizations/082-match-typed-direct-frame-layouts.md)).
-  Eligible unfinished ordinary, left-recursion and Pratt bodies containing
+  Eligible unfinished ordinary, left-recursion and Operators Rule bodies containing
   `#recover` also use a structural typed path
   ([record 83](../optimizations/083-inline-typed-recovery-bodies.md)). Generated
   recovery control flow preserves expectation handling, full-mark
@@ -114,7 +114,7 @@ errors and memoization decisions are literally shared. The generator writes the 
   scopes use the general emitter's collector at the same build mode, including
   captures in dead syntax, so omitted slots retain their zero/nil value without
   allocating a runtime frame ([record 84](../optimizations/084-complete-typed-local-capture-layouts.md)).
-  Each Pratt line owns its `tprattLine.scope`; the runtime retains precedence,
+  Each Operators Rule line owns its `toperatorsRuleLine.scope`; the runtime retains precedence,
   longest-match selection, frames and action finalization. Left-recursion
   runtime frames and growth remain in place; eligible callees can use either
   path.
@@ -126,14 +126,14 @@ in which fields are evaluated, projections of names captured twice, of lists tha
 values, and an `Error` where a list is expected; and grammars for the code paths of direct rules (`direct_*.pego`).
 It runs in both position units.
 
-### Conversion after the parse
+### Conversion After the Parse
 
 Otherwise `ParseAST` calls `Parse` and converts the tree. The converter (`astConv`) has one method per type and per
 list type, looks fields up by name, and allocates the values of each type, and the elements of lists, in chunks, as
 the runtime does nodes. The parse itself is unchanged, so the typed result is exactly the engine's tree in another
 form.
 
-### Allocation and ownership
+### Allocation and Ownership
 
 Both paths allocate typed values in separate chunks for each struct, terminal and list element type. Value chunks
 start at 8 elements and double up to 256; list chunks start at 64 and double up to 1,024, accommodating the requested
@@ -151,8 +151,8 @@ discarded siblings in the same array. Allocation granularity does not solve that
 
 In the earlier benchmark snapshot (Apple M3 Max, min of 6–8 runs), the typed runtime made `ParseAST` 35–55% faster than `Parse`
 with a fifth to a third of the memory: JSON (262 KB) 7.2 → 3.3 ms and 12.8 → 2.9 MB, XML 7.5 → 4.0 ms, the
-left-recursive calculator 15.1 → 9.8 ms, the outline 4.0 → 2.1 ms; at that time, the Pratt calculator used the
-general Pratt loop and took 6.4 → 5.8 ms. JSON `ParseAST` is faster than `Recognize` (3.8 ms), which builds nothing but runs the
+left-recursive calculator 15.1 → 9.8 ms, the outline 4.0 → 2.1 ms; at that time, the Operators Rule calculator used the
+general Operators Rule loop and took 6.4 → 5.8 ms. JSON `ParseAST` is faster than `Recognize` (3.8 ms), which builds nothing but runs the
 general code. Conversion costs about 6% more than `Parse`.
 
 Direct rules made most of that difference (performance.md, changes 60–62): before them, with every rule run by the
@@ -160,16 +160,16 @@ general machinery of rule calls (capture frames and their trail, the evaluation 
 about 15% faster than `Parse` (JSON 6.2 ms). A hand-written prototype for JSON that kept captures in Go variables and
 built lists directly had taken 4.5 ms.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Statically typed code for every expression** (captures as Go variables of
   their Go types, lists as typed slices, as in the prototype). Direct rules
   take the part of it that paid: captures in Go variables and actions in place.
   Values stay `any`, so actions, memo and general code share one representation.
   Ordinary local cuts, eligible left-recursion leader bodies and eligible
-  Pratt line matchers have direct paths. Eligible cut-bearing left-recursion
-  and Pratt bodies use framed direct paths while runtime wrappers retain
-  growth, invocation and Pratt-selection ownership. Eligible `#recover` bodies
+  Operators Rule line matchers have direct paths. Eligible cut-bearing left-recursion
+  and Operators Rule bodies use framed direct paths while runtime wrappers retain
+  growth, invocation and Operators Rule-selection ownership. Eligible `#recover` bodies
   also use a framed direct path (record 83); unmatched recovery layouts remain
   general. Record 82 adds eligible layouts by reusing the general emitter's
   slot metadata.

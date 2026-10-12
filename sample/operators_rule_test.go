@@ -13,64 +13,64 @@ import (
 	"github.com/ornew/pego/sample"
 )
 
-const samplePrefixLevels = `def e = pratt {
+const samplePrefixLevels = `rule e = operators {
     operand "x" / "é"
-    level loose { prefix "~" infix left "|" postfix "?" }
-    level middle { prefix "-" infix left "+" postfix "!" }
-    level tight { prefix "@" infix left "*" }
-    level power { prefix "%" infix right "^" }
+    level loose { prefix "~"; infix left "|"; postfix "?" }
+    level middle { prefix "-"; infix left "+"; postfix "!" }
+    level tight { prefix "@"; infix left "*" }
+    level power { prefix "%"; infix right "^" }
 }`
 
 // Requiring each text with a lookahead distinguishes a reachable derivation from a lucky random
 // sample. Fresh parses on every backend and unit validate both the oracle and generated input.
-func TestSamplePrattPrefixBindings(t *testing.T) {
+func TestSampleOperatorsRulePrefixBindings(t *testing.T) {
 	cases := []struct{ name, body, tail, input string }{
-		{"lower", "e(tight)", samplePrefixLevels, "~x"},
-		{"equal", "e(tight)", samplePrefixLevels, "@x*x"},
-		{"higher", "e(tight)", samplePrefixLevels, "%x*x"},
-		{"intermediate infix", "e(tight)", samplePrefixLevels, "~é+x"},
-		{"intermediate postfix", "e(tight)", samplePrefixLevels, "~é!"},
-		{"equal prefix postfix", "e(middle)", samplePrefixLevels, "-é!"},
-		{"loose then tight", "e(tight)", samplePrefixLevels, "~@x+x"},
-		{"tight then loose", "e(tight)", samplePrefixLevels, "@~x+x"},
-		{"repeated", "e(tight)", samplePrefixLevels, "~~x+x"},
-		{"left RHS", "e(tight)", samplePrefixLevels, "x*~x+x"},
-		{"right RHS", "e(tight)", samplePrefixLevels, "x^~x+x"},
+		{"lower", "level(e, tight)", samplePrefixLevels, "~x"},
+		{"equal", "level(e, tight)", samplePrefixLevels, "@x*x"},
+		{"higher", "level(e, tight)", samplePrefixLevels, "%x*x"},
+		{"intermediate infix", "level(e, tight)", samplePrefixLevels, "~é+x"},
+		{"intermediate postfix", "level(e, tight)", samplePrefixLevels, "~é!"},
+		{"equal prefix postfix", "level(e, middle)", samplePrefixLevels, "-é!"},
+		{"loose then tight", "level(e, tight)", samplePrefixLevels, "~@x+x"},
+		{"tight then loose", "level(e, tight)", samplePrefixLevels, "@~x+x"},
+		{"repeated", "level(e, tight)", samplePrefixLevels, "~~x+x"},
+		{"left RHS", "level(e, tight)", samplePrefixLevels, "x*~x+x"},
+		{"right RHS", "level(e, tight)", samplePrefixLevels, "x^~x+x"},
 		{"unrestricted", "e", samplePrefixLevels, "~x+x|x"},
-		{"caller lower tail", `e(tight) "|" e(tight)`, samplePrefixLevels, "~x+x|x"},
-		{"caller after inner tail", `e(tight) ";"`, samplePrefixLevels, "~x+x;"},
-		{"explicit inner entry", "e(tight)", `def e = pratt {
-    operand "(" e(tight) ")" / "x"
-    level { prefix "~" infix left "|" }
+		{"caller lower tail", `level(e, tight) "|" level(e, tight)`, samplePrefixLevels, "~x+x|x"},
+		{"caller after inner tail", `level(e, tight) ";"`, samplePrefixLevels, "~x+x;"},
+		{"explicit inner entry", "level(e, tight)", `rule e = operators {
+    operand "(" level(e, tight) ")" / "x"
+    level { prefix "~"; infix left "|" }
     level { infix left "*" }
-    level tight { }
+    level tight {}
 }`, "~(~x*x)*x"},
-		{"longest prefix", "e(tight)", `def e = pratt {
+		{"longest prefix", "level(e, tight)", `rule e = operators {
     operand "x"
-    level { prefix "-" prefix "--" }
+    level { prefix "-"; prefix "--" }
     level { infix left "*" }
-    level tight { }
+    level tight {}
 }`, "--x*x"},
-		{"nullable consuming prefix", "e(tight)", `def e = pratt {
+		{"nullable consuming prefix", "level(e, tight)", `rule e = operators {
     operand "x"
     level { prefix "~"? }
     level { infix left "*" }
-    level tight { }
+    level tight {}
 }`, "~x*x"},
-		{"Unicode prefix with skip", "e(tight)", `def e = pratt {
+		{"Unicode prefix with skip", "level(e, tight)", `rule e = operators {
     skip " "*
     operand "é"
     level { prefix "¬" }
     level { infix left "*" }
-    level tight { }
+    level tight {}
 }`, " ¬ é * é"},
-		{"new none scope", "e", `def e = pratt {
+		{"new none scope", "e", `rule e = operators {
     operand "x"
     level { prefix "~" }
     level { infix none "=" }
     level tight { prefix "@" }
 }`, "x=~x=x"},
-		{"nested none scopes", "e(tight)", `def e = pratt {
+		{"nested none scopes", "level(e, tight)", `rule e = operators {
     operand "x"
     level { prefix "~" }
     level { infix none "=" }
@@ -79,7 +79,7 @@ func TestSamplePrattPrefixBindings(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			p := compile(t, "def main = &("+strconv.Quote(c.input)+" $$) "+c.body+" $$\n"+c.tail)
+			p := compile(t, "rule main = &("+strconv.Quote(c.input)+" $$) "+c.body+" $$\n"+c.tail)
 			for _, coverage := range []bool{false, true} {
 				opts := []sample.Option{sample.WithSeed(11), sample.WithMaxRepeat(4), sample.WithMaxDepth(2), sample.WithMaxLen(64), sample.WithBudget(4000), sample.WithAttempts(20)}
 				if coverage {
@@ -104,13 +104,18 @@ func TestSamplePrattPrefixBindings(t *testing.T) {
 		})
 	}
 	for _, input := range []string{"x+x", "~x|x", "~x?", "-x+x", "x|x"} {
-		p := compile(t, "def main = e(tight) $$\n"+samplePrefixLevels)
+		p := compile(t, "rule main = level(e, tight) $$\n"+samplePrefixLevels)
 		if _, err := p.Parse(input); err == nil {
 			t.Errorf("restricted entry unexpectedly accepts %q", input)
 		}
 	}
-	p := compile(t, `def main = &("x=@x=x" $$) e $$
-def e = pratt { operand "x" level { prefix "~" } level { infix none "=" } level { prefix "@" } }`)
+	p := compile(t, `rule main = &("x=@x=x" $$) e $$
+rule e = operators {
+    operand "x"
+    level { prefix "~" }
+    level { infix none "=" }
+    level { prefix "@" }
+}`)
 	if _, err := p.Parse("x=@x=x"); err == nil {
 		t.Fatal("a tighter prefix erased an outer nonassociative restriction")
 	}
@@ -123,21 +128,21 @@ def e = pratt { operand "x" level { prefix "~" } level { infix none "=" } level 
 	}
 }
 
-func TestSamplePrattPrefixCoverage(t *testing.T) {
+func TestSampleOperatorsRulePrefixCoverage(t *testing.T) {
 	// The lowest level's tails remain blocked, but the prefix and its RHS-only middle tails,
 	// nested alternatives and callees are reachable. A blocked unrestricted self-call must not
 	// resurrect its own operator or helper targets.
-	p := compile(t, `def main = e(tight) $$
-def e = pratt {
+	p := compile(t, `rule main = level(e, tight) $$
+rule e = operators {
     operand atom
-    level { prefix prefixPart infix left (blocked / "|" e) postfix "?" }
-    level { infix left middle postfix "!" }
-    level tight { }
+    level { prefix prefixPart; infix left blocked / "|" e; postfix "?" }
+    level { infix left middle; postfix "!" }
+    level tight {}
 }
-def atom = "x"
-def prefixPart = "~"
-def middle = "+" / "*"
-def blocked = "|" / "/"`)
+rule atom = "x"
+rule prefixPart = "~"
+rule middle = "+" / "*"
+rule blocked = "|" / "/"`)
 	g, err := sample.New(p, sample.WithSeed(0), sample.WithCoverage())
 	if err != nil {
 		t.Fatal(err)
@@ -160,9 +165,13 @@ def blocked = "|" / "/"`)
 		t.Fatalf("after generation: %s", c.Report())
 	}
 	// Reachable explicit calls with a looser entry widen the target set, even through a cycle.
-	p = compile(t, `def main = e(tight) $$
-def e = pratt { operand "x" / "(" helper ")" level { infix left "+" } level tight { infix left "*" } }
-def helper = e / "y"`)
+	p = compile(t, `rule main = level(e, tight) $$
+rule e = operators {
+    operand "x" / "(" helper ")"
+    level { infix left "+" }
+    level tight { infix left "*" }
+}
+rule helper = e / "y"`)
 	g, err = sample.New(p)
 	if err != nil {
 		t.Fatal(err)
@@ -172,8 +181,8 @@ def helper = e / "y"`)
 	}
 }
 
-func TestSamplePrattPrefixBoundsAndDeterminism(t *testing.T) {
-	p := compile(t, "def main = e(tight) $$\n"+samplePrefixLevels)
+func TestSampleOperatorsRulePrefixBoundsAndDeterminism(t *testing.T) {
+	p := compile(t, "rule main = level(e, tight) $$\n"+samplePrefixLevels)
 	makeGen := func() *sample.Generator {
 		t.Helper()
 		g, err := sample.New(p, sample.WithSeed(17), sample.WithCoverage(), sample.WithMaxRepeat(2), sample.WithMaxDepth(0), sample.WithMaxLen(12), sample.WithBudget(500))
@@ -214,7 +223,7 @@ func TestSamplePrattPrefixBoundsAndDeterminism(t *testing.T) {
 		{"budget", []sample.Option{sample.WithBudget(1)}},
 	} {
 		t.Run(c.name, func(t *testing.T) {
-			p := compile(t, `def main = &"~x" e(tight) $$`+"\n"+samplePrefixLevels)
+			p := compile(t, `rule main = &"~x" level(e, tight) $$`+"\n"+samplePrefixLevels)
 			g, err := sample.New(p, append(c.opts, sample.WithAttempts(2))...)
 			if err != nil {
 				t.Fatal(err)
@@ -224,13 +233,13 @@ func TestSamplePrattPrefixBoundsAndDeterminism(t *testing.T) {
 			}
 		})
 	}
-	// Explicit nested Pratt calls retain the recursion limit independently of flat prefix tails.
+	// Explicit nested OperatorsRule calls retain the recursion limit independently of flat prefix tails.
 	input := strings.Repeat("(", 20) + "~x*x" + strings.Repeat(")", 20)
-	p = compile(t, "def main = &("+strconv.Quote(input)+" $$) e(tight) $$\n"+`def e = pratt {
-    operand "(" e(tight) ")" / "x"
+	p = compile(t, "rule main = &("+strconv.Quote(input)+" $$) level(e, tight) $$\n"+`rule e = operators {
+    operand "(" level(e, tight) ")" / "x"
     level { prefix "~" }
     level { infix left "*" }
-    level tight { }
+    level tight {}
 }`)
 	for _, depth := range []int{0, 32} {
 		g, err := sample.New(p, sample.WithMaxDepth(depth), sample.WithMaxLen(0), sample.WithMaxRepeat(1), sample.WithAttempts(2))
@@ -250,37 +259,46 @@ func TestSamplePrattPrefixBoundsAndDeterminism(t *testing.T) {
 	}
 }
 
-const sampleNoneLevels = `def e = pratt {
+const sampleNoneLevels = `rule e = operators {
     operand "a"
-    level { prefix "~" infix left "|" }
-    level compare { infix none "<" postfix "!" }
-    level { prefix "@" infix left "+" }
+    level { prefix "~"; infix left "|" }
+    level compare { infix none "<"; postfix "!" }
+    level { prefix "@"; infix left "+" }
 }`
 
-func TestSamplePrattNoneCallerStops(t *testing.T) {
-	const simple = `def e = pratt { operand "a" level { infix none "<" } }`
+func TestSampleOperatorsRuleNoneCallerStops(t *testing.T) {
+	const simple = `rule e = operators {
+    operand "a"
+    level { infix none "<" }
+}`
 	cases := []struct{ name, body, rules, input string }{
 		{"caller none", `e "<" e`, simple, "a<a<a"},
 		{"punctuation", `e ";"`, simple, "a<a;"},
-		{"restricted caller", `e(compare) "<" e(compare)`, sampleNoneLevels, "a<a<a"},
+		{"restricted caller", `level(e, compare) "<" level(e, compare)`, sampleNoneLevels, "a<a<a"},
 		{"tighter tail preserves none", `e "<" e`, sampleNoneLevels, "a<a+a<a"},
 		{"looser tail resets none", "e", sampleNoneLevels, "a<a|a<a"},
 		{"same-level postfix resets none", "e", sampleNoneLevels, "a<a!<a"},
 		{"tighter prefix preserves none", `e "<" e`, sampleNoneLevels, "a<@a<a"},
 		{"loose prefix inner none", `e "<" e`, sampleNoneLevels, "a<~a<a<a"},
 		{"fresh caller scope", `e "<" e`, sampleNoneLevels, "a<a<a<a"},
-		{"same-level left retained", "e", `def e = pratt { operand "a" level { infix none "<" infix left "+" } }`, "a<a+a<a"},
-		{"same-level right retained", "e", `def e = pratt { operand "a" level { infix none "<" infix right "+" } }`, "a<a+a<a"},
-		{"Unicode skip", `e " < " e`, `def e = pratt {
+		{"same-level left retained", "e", `rule e = operators {
+    operand "a"
+    level { infix none "<"; infix left "+" }
+}`, "a<a+a<a"},
+		{"same-level right retained", "e", `rule e = operators {
+    operand "a"
+    level { infix none "<"; infix right "+" }
+}`, "a<a+a<a"},
+		{"Unicode skip", `e " < " e`, `rule e = operators {
     skip " "*
     operand "α"
-    level { infix none "<" prefix "¬" }
+    level { infix none "<"; prefix "¬" }
 }`, " α < ¬ α < α"},
-		{"beyond 64 levels", `e "<" e`, "def e = pratt { operand \"a\" " + strings.Repeat("level {} ", 69) + `level { infix none "<" } }`, "a<a<a"},
+		{"beyond 64 levels", `e "<" e`, "rule e = operators { operand \"a\"; " + strings.Repeat("level {}; ", 69) + `level { infix none "<" } }`, "a<a<a"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			p := compile(t, "def main = &("+strconv.Quote(c.input)+" $$) "+c.body+" $$\n"+c.rules)
+			p := compile(t, "rule main = &("+strconv.Quote(c.input)+" $$) "+c.body+" $$\n"+c.rules)
 			for _, unit := range []pego.Unit{pego.CodePoints, pego.Bytes} {
 				for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
 					if _, err := p.Parse(c.input, pego.WithUnit(unit), pego.WithBackend(backend)); err != nil {
@@ -316,10 +334,13 @@ func TestSamplePrattNoneCallerStops(t *testing.T) {
 		{"remaining postfix", `e "!"`, sampleNoneLevels, "a<a!"},
 		{"remaining looser infix", `e "|" e`, sampleNoneLevels, "a<a|a"},
 		{"remaining tighter infix", `e "+" e`, sampleNoneLevels, "a<a+a"},
-		{"remaining same-level infix", `e "+" e`, `def e = pratt { operand "a" level { infix none "<" infix left "+" } }`, "a<a+a"},
+		{"remaining same-level infix", `e "+" e`, `rule e = operators {
+    operand "a"
+    level { infix none "<"; infix left "+" }
+}`, "a<a+a"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
-			p := compile(t, "def main = &("+strconv.Quote(c.input)+" $$) "+c.body+" $$\n"+c.rules)
+			p := compile(t, "rule main = &("+strconv.Quote(c.input)+" $$) "+c.body+" $$\n"+c.rules)
 			for _, unit := range []pego.Unit{pego.CodePoints, pego.Bytes} {
 				for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
 					if _, err := p.Parse(c.input, pego.WithUnit(unit), pego.WithBackend(backend)); err == nil {
@@ -338,8 +359,8 @@ func TestSamplePrattNoneCallerStops(t *testing.T) {
 	}
 }
 
-func TestSamplePrattNoneStopsDeterminism(t *testing.T) {
-	p := compile(t, `def main = e "<" e $$`+"\n"+sampleNoneLevels)
+func TestSampleOperatorsRuleNoneStopsDeterminism(t *testing.T) {
+	p := compile(t, `rule main = e "<" e $$`+"\n"+sampleNoneLevels)
 	makeGen := func() *sample.Generator {
 		t.Helper()
 		g, err := sample.New(p, sample.WithSeed(29), sample.WithCoverage(), sample.WithMaxRepeat(2), sample.WithMaxDepth(0), sample.WithMaxLen(8), sample.WithBudget(1000))
@@ -374,27 +395,48 @@ func TestSamplePrattNoneStopsDeterminism(t *testing.T) {
 // Compile is outside the timer. New measures constructor analysis separately from steady-state
 // Next (which includes candidate search and mandatory Parse validation). A required-input workload
 // cannot be compared as equivalent successful work on versions that return ErrNoInput.
-func BenchmarkSamplePratt(b *testing.B) {
+func BenchmarkSampleOperatorsRule(b *testing.B) {
 	for _, c := range []struct{ name, src string }{
-		{"restricted-no-prefix", `def main = e(tight) $$
-def e = pratt { operand "x" level { infix left "+" } level tight { infix left "*" } }`},
-		{"unrestricted-prefix", "def main = e $$\n" + samplePrefixLevels},
-		{"restricted-prefix", "def main = e(tight) $$\n" + samplePrefixLevels},
-		{"required-prefix", `def main = &"~" e(tight) $$` + "\n" + samplePrefixLevels},
-		{"none-simple", `def main = e $$
-def e = pratt { operand "a" level { infix none "<" } }`},
-		{"none-mixed", "def main = e $$\n" + sampleNoneLevels},
-		{"none-wide", "def main = e $$\ndef e = pratt { operand \"a\" " + strings.Repeat("level {} ", 69) + `level { infix none "<" } }`},
-		{"overlapping-led", `def main=e $$
-def e=pratt { operand "a" level { postfix "!" postfix "!?" infix left "?" } }`},
-		{"nonoverlap-entry", `def main=e(tight) $$
-def e=pratt { operand "a" level { postfix "?" } level tight { postfix "!" } }`},
-		{"required-none-caller", `def main = &("a<a<a" $$) e "<" e $$
-def e = pratt { operand "a" level { infix none "<" } }`},
-		{"complete-rhs", "def main = &(\"a!~a\" $$) e $$\n" + sampleRHSLevels},
-		{"nested-rhs", "def main = &(\"a!~~a\" $$) e $$\n" + sampleRHSLevels},
-		{"unicode-rhs", `def main = &("α ! ¬ α" $$) e $$
-def e = pratt { skip " "* operand "α" level { prefix "¬" infix left "!" } }`},
+		{"restricted-no-prefix", `rule main = level(e, tight) $$
+rule e = operators {
+    operand "x"
+    level { infix left "+" }
+    level tight { infix left "*" }
+}`},
+		{"unrestricted-prefix", "rule main = e $$\n" + samplePrefixLevels},
+		{"restricted-prefix", "rule main = level(e, tight) $$\n" + samplePrefixLevels},
+		{"required-prefix", `rule main = &"~" level(e, tight) $$` + "\n" + samplePrefixLevels},
+		{"none-simple", `rule main = e $$
+rule e = operators {
+    operand "a"
+    level { infix none "<" }
+}`},
+		{"none-mixed", "rule main = e $$\n" + sampleNoneLevels},
+		{"none-wide", "rule main = e $$\nrule e = operators { operand \"a\"; " + strings.Repeat("level {}; ", 69) + `level { infix none "<" } }`},
+		{"overlapping-led", `rule main = e $$
+rule e = operators {
+    operand "a"
+    level { postfix "!"; postfix "!?"; infix left "?" }
+}`},
+		{"nonoverlap-entry", `rule main = level(e, tight) $$
+rule e = operators {
+    operand "a"
+    level { postfix "?" }
+    level tight { postfix "!" }
+}`},
+		{"required-none-caller", `rule main = &("a<a<a" $$) e "<" e $$
+rule e = operators {
+    operand "a"
+    level { infix none "<" }
+}`},
+		{"complete-rhs", "rule main = &(\"a!~a\" $$) e $$\n" + sampleRHSLevels},
+		{"nested-rhs", "rule main = &(\"a!~~a\" $$) e $$\n" + sampleRHSLevels},
+		{"unicode-rhs", `rule main = &("α ! ¬ α" $$) e $$
+rule e = operators {
+    skip " "*
+    operand "α"
+    level { prefix "¬"; infix left "!" }
+}`},
 	} {
 		p, err := pego.CompileSource(c.src, "main")
 		if err != nil {
@@ -438,11 +480,11 @@ def e = pratt { skip " "* operand "α" level { prefix "¬" infix left "!" } }`},
 
 // Both the previous flat representation and scoped representation accept these
 // exact chains. Alternating loose operators return from the tighter RHS frames.
-func BenchmarkSamplePrattScopes(b *testing.B) {
+func BenchmarkSampleOperatorsRuleScopes(b *testing.B) {
 	for _, n := range []int{8, 32, 128} {
 		input := strings.Repeat("a<a|", n) + "a<a"
-		src := fmt.Sprintf(`def main = &(%q $$) e $$
-def e = pratt { operand "a" level { infix left "|" } level { infix none "<" } }`, input)
+		src := fmt.Sprintf(`rule main = &(%q $$) e $$
+rule e = operators { operand "a"; level { infix left "|" }; level { infix none "<" } }`, input)
 		p, err := pego.CompileSource(src, "main")
 		if err != nil {
 			b.Fatal(err)

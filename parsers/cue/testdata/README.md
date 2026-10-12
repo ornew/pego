@@ -1,4 +1,4 @@
-# Vendored data
+# Vendored Data
 
 `corpus.tar.gz`, `mutants.txt.gz`, `generated.txt.gz` and `literals.txt.gz` hold the CUE sources of [cue-lang/cue](https://github.com/cue-lang/cue) at
 v0.17.1 (commit fc6c0b2ecd3666da92f7053d13fcfbf009b7d7a3, 2026-07-16; Apache License 2.0, Copyright The CUE

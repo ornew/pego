@@ -44,10 +44,10 @@ func TestNegativeRepetitionMaxima(t *testing.T) {
 		name, src string
 		op        Op
 	}{
-		{"ordinary", `def main = "é"* $$`, OpRepeat},
-		{"class scan", `def main = @(?é)* $$`, OpScan},
-		{"any scan", `def main = @.* $$`, OpScan},
-		{"projection", `def main = xs:(v:"é")* $$ -> map($xs, (x) => $x.v)`, OpRepeat},
+		{"ordinary", `rule main = "é"* $$`, OpRepeat},
+		{"class scan", `rule main = [é]* #atomic $$`, OpScan},
+		{"any scan", `rule main = .* #atomic $$`, OpScan},
+		{"projection", `rule main = xs:(v:"é")* $$ => map($xs, (x) => $x.v)`, OpRepeat},
 	} {
 		for _, maximum := range negativeMaxima() {
 			t.Run(fmt.Sprintf("%s/%d", c.name, maximum), func(t *testing.T) {
@@ -58,6 +58,12 @@ func TestNegativeRepetitionMaxima(t *testing.T) {
 				}
 				for _, opts := range []Options{{}, {DisableMemo: true}, {noProjections: true}} {
 					p, err := Compile(g, opts)
+					if err != nil {
+						t.Fatal(err)
+					}
+					// Saved ASTs use the compiled grammar, where source-only groups
+					// are removed. The caller's AST is checked separately below.
+					savedAST, err := grammar.MarshalJSON(p.Grammar)
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -94,7 +100,7 @@ func TestNegativeRepetitionMaxima(t *testing.T) {
 						}
 						if !marshal.OmitAST {
 							ast, err := grammar.MarshalJSON(loaded.Grammar)
-							if err != nil || string(ast) != string(before) {
+							if err != nil || string(ast) != string(savedAST) {
 								t.Fatalf("saved AST maximum changed: %v", err)
 							}
 						}
@@ -136,9 +142,9 @@ func TestNegativeMaximumWithWideMinimum(t *testing.T) {
 	if strconv.IntSize < 64 {
 		t.Skip("wide minimum needs 64-bit implementation")
 	}
-	for _, body := range []string{`"é"{2147483648,} $$`, `@(?é){2147483648,} $$`} {
+	for _, body := range []string{`"é" #repeat(2147483648, ) $$`, `[é] #repeat(2147483648, ) #atomic $$`} {
 		for _, maximum := range negativeMaxima() {
-			g := grammarWithNegativeMaximum(t, "def main="+body, maximum)
+			g := grammarWithNegativeMaximum(t, "rule main = "+body, maximum)
 			p, err := Compile(g, Options{})
 			if err != nil {
 				t.Fatal(err)
@@ -189,7 +195,7 @@ func TestNegativeMaximumDocumentsAndStreams(t *testing.T) {
 	defer func(n int) { minRecorded = n }(minRecorded)
 	minRecorded = 1
 	for _, maximum := range negativeMaxima() {
-		g := grammarWithNegativeMaximum(t, `def main = "é"* #stream $$`, maximum)
+		g := grammarWithNegativeMaximum(t, `rule main = "é"* #stream $$`, maximum)
 		p, err := Compile(g, Options{})
 		if err != nil {
 			t.Fatal(err)
@@ -262,7 +268,7 @@ func TestGeneratedNegativeMaximum(t *testing.T) {
 	if strconv.IntSize < 64 {
 		maximum = -2
 	}
-	g := grammarWithNegativeMaximum(t, `def main: []Match = "é"* $$ -> $1`, maximum)
+	g := grammarWithNegativeMaximum(t, `rule main []Match = "é"* $$ => $1`, maximum)
 	p, err := Compile(g, Options{})
 	if err != nil {
 		t.Fatal(err)

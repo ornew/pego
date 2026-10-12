@@ -13,7 +13,7 @@ import (
 )
 
 func TestGeneratedMaxDepthValidation(t *testing.T) {
-	g, err := syntax.Parse(`def main = "x"`)
+	g, err := syntax.Parse(`rule main = "x"`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,31 +67,31 @@ func TestGeneratedDepthOptions(t *testing.T) {
 	}
 	fixtures := []genCase{
 		{"ordinary", `type Word terminal
-def main: Word = n
-def n: Word = "(" n ")" / "é"`, []string{"é", "(é)", "((é))", "((((é))))", "?", "(é"}},
+rule main Word = n
+rule n Word = "(" n ")" / "é"`, []string{"é", "(é)", "((é))", "((((é))))", "?", "(é"}},
 		{"left recursion", `type Word terminal
-def main: Word = n
-def n: Word = n "+" "é" / "(" n ")" / "é"`, []string{"é", "é+é+é", "(é)", "((é+é))", "é+", "?"}},
-		{"Pratt", `type Word terminal
-def main: Word = n
-def n: Word = pratt {
- operand w:base -> $w
- operand "(" w:n ")" -> $w
- level { prefix "-" -> $rhs }
- level { infix right "^" -> $rhs }
+rule main Word = n
+rule n Word = n "+" "é" / "(" n ")" / "é"`, []string{"é", "é+é+é", "(é)", "((é+é))", "é+", "?"}},
+		{"OperatorsRule", `type Word terminal
+rule main Word = n
+rule n Word = operators {
+    operand w:base => $w
+    operand "(" w:n ")" => $w
+    level { prefix "-" => $rhs }
+    level { infix right "^" => $rhs }
 }
-def base: Word = "é"`, []string{"é", "--é", "é^é^é", "(-é^é)", "((é))", "?"}},
+rule base Word = "é"`, []string{"é", "--é", "é^é^é", "(-é^é)", "((é))", "?"}},
 		{"dispatch", `type Word terminal
-def main: Word = "a" one / "b" two / "c" three
-def one: Word = two
-def two: Word = three
-def three: Word = four
-def four: Word = "é"`, []string{"aé", "bé", "cé", "a?", "b?", "c?"}},
+rule main Word = "a" one / "b" two / "c" three
+rule one Word = two
+rule two Word = three
+rule three Word = four
+rule four Word = "é"`, []string{"aé", "bé", "cé", "a?", "b?", "c?"}},
 		{"action", `type Word struct { N int }
-def main = x:@"a"* -> new Word{N: 1 / len($x)}`, []string{"", "a", "aa", "?"}},
+rule main = x:"a"* #atomic => Word{N: 1 / len($x)}`, []string{"", "a", "aa", "?"}},
 		{"recovery", `type Word terminal
-def main: Word = n
-def n: Word = ("(" n ")" / "é") #recover(skip="?")`, []string{"é", "(é)", "((é))", "?", "(?)"}},
+rule main Word = n
+rule n Word = ("(" n ")" / "é") #recover(skip="?")`, []string{"é", "(é)", "((é))", "?", "(?)"}},
 	}
 	dir := t.TempDir()
 	write := func(name string, b []byte) {
@@ -209,7 +209,7 @@ func TestGeneratedDepthNameCollisions(t *testing.T) {
 type ParseOption_ terminal
 type WithUnit = ParseOption
 type WithMaxDepth struct { Item WithUnit }
-def main: WithUnit = "é"`
+rule main WithUnit = "é"`
 	g, err := syntax.Parse(src)
 	if err != nil {
 		t.Fatal(err)

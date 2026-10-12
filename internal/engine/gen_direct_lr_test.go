@@ -11,85 +11,67 @@ import (
 )
 
 var typedLRBodyCases = []genCase{
-	{"typed/LR_direct", `
-type Number terminal
+	{"typed/LR_direct", `type Number terminal
 type Add struct { Left Expr, Right Number }
 type Expr = Number | Add
-def main: Expr = e:expr $$ -> $e
-def expr: Expr = add / number
-def add: Expr = l:expr "+" r:number -> new Add{Left: $l, Right: $r}
-def number: Number = (?0-9)+
+rule main Expr = e:expr $$ => $e
+rule expr Expr = add / number
+rule add Expr = l:expr "+" r:number => Add{Left: $l, Right: $r}
+rule number Number = [0-9]+
 `, []string{"1", "1+2+3", "1+", "1++2", "", "1x"}},
-	{"typed/LR_indirect", `
-type Doc struct { Text Match }
-def main: Doc = x:@a $$ -> new Doc{Text: $x}
-def a = b "x" / "y"
-def b = a "z" / c
-def c = a "w" / "v"
+	{"typed/LR_indirect", `type Doc struct { Text Match }
+rule main Doc = x:a #atomic $$ => Doc{Text: $x}
+rule a = b "x" / "y"
+rule b = a "z" / c
+rule c = a "w" / "v"
 `, []string{"y", "vx", "yzxwx", "yz", "", "v"}},
-	{"typed/LR_hidden", `
-type Doc struct { Text Match }
-def main: Doc = x:@expr $$ -> new Doc{Text: $x}
-def expr = "" expr "x" / "é"
+	{"typed/LR_hidden", `type Doc struct { Text Match }
+rule main Doc = x:expr #atomic $$ => Doc{Text: $x}
+rule expr = "" expr "x" / "é"
 `, []string{"é", "éxx", "éx?", "", "x"}},
-	{"typed/LR_nullable_seed", `
-type Doc struct { N int }
-def main: Doc = e:expr $$ -> $e
-def expr: Doc = step / seed
-def step: Doc = p:expr "a" -> new Doc{N: len(text($p)) + 1}
-def seed: Doc = "" -> new Doc{N: 0}
+	{"typed/LR_nullable_seed", `type Doc struct { N int }
+rule main Doc = e:expr $$ => $e
+rule expr Doc = step / seed
+rule step Doc = p:expr "a" => Doc{N: len(text($p)) + 1}
+rule seed Doc = "" => Doc{N: 0}
 `, []string{"", "a", "aaa", "a?", "b"}},
-	{"typed/LR_no_improvement", `
-type Doc struct { N int }
-def main: Doc = e:expr $$ -> $e
-def expr: Doc = step / seed
-def step: Doc = p:expr -> new Doc{N: len(text($p)) + 1}
-def seed: Doc = "a" -> new Doc{N: 0}
+	{"typed/LR_no_improvement", `type Doc struct { N int }
+rule main Doc = e:expr $$ => $e
+rule expr Doc = step / seed
+rule step Doc = p:expr => Doc{N: len(text($p)) + 1}
+rule seed Doc = "a" => Doc{N: 0}
 `, []string{"a", "", "aa", "b"}},
-	{"typed/LR_projected_repeat", `
-type Doc struct { Items []Match }
-def main: Doc = e:expr $$ -> $e
-def expr: Doc = (p:expr ";" items:(x:@(?a-z) -","){1,3}
-             / items:(x:@(?a-z) -","){1,3}) -> new Doc{Items: map($items, (e) => $e.x)}
+	{"typed/LR_projected_repeat", `type Doc struct { Items []Match }
+rule main Doc = e:expr $$ => $e
+rule expr Doc = p:expr ";" items:(x:[a-z] #atomic -",") #repeat(1, 3) / items:(x:[a-z] #atomic -",") #repeat(1, 3) => Doc{Items: map($items, (e) => $e.x)}
 `, []string{"a,", "a,b,;c,d,", "a,;", "a,b,c,d,", "a,;c,?", ""}},
-	{"typed/LR_element_frames", `
-type Doc struct { N int }
-def main: Doc = e:expr $$ -> $e
-def expr: Doc = (p:expr ";" items:(x:@(?a-z) [len($x) == 1] -","){1,3}
-             / items:(x:@(?a-z) [len($x) == 1] -","){1,3}) -> new Doc{N: len($items)}
+	{"typed/LR_element_frames", `type Doc struct { N int }
+rule main Doc = e:expr $$ => $e
+rule expr Doc = p:expr ";" items:(x:[a-z] #atomic {len($x) == 1} -",") #repeat(1, 3) / items:(x:[a-z] #atomic {len($x) == 1} -",") #repeat(1, 3) => Doc{N: len($items)}
 `, []string{"a,", "a,b,;c,d,", "a,;", "a,b,c,d,", "a,;c,?", ""}},
-	{"typed/LR_rollback_environment", `
-type Doc struct { Text Match, N int }
-def main: Doc = e:expr $$ -> $e
-def expr: Doc = [n = 0] (p:expr "+" [n = 1] x:@(?a-z) "!" / x:@"é" [n = 2]) -> new Doc{Text: $x, N: n}
+	{"typed/LR_rollback_environment", `type Doc struct { Text Match, N int }
+rule main Doc = e:expr $$ => $e
+rule expr Doc = {n := 0} (p:expr "+" {n := 1} x:[a-z] #atomic "!" / x:"é" #atomic {n := 2}) => Doc{Text: $x, N: n}
 `, []string{"é", "é+a!", "é+a!+b!", "é+a", "é+a!+", "", "a"}},
-	{"typed/LR_lookahead_memo", `
-type Doc struct { Text Match }
-def main: Doc = &(expr "!") e:expr "!" $$ -> $e
-def expr: Doc = (p:expr "+" &(x:@(?a-z)) x:@(?a-z)
-             / x:@(?a-z)) -> new Doc{Text: $x}
+	{"typed/LR_lookahead_memo", `type Doc struct { Text Match }
+rule main Doc = &(expr "!") e:expr "!" $$ => $e
+rule expr Doc = p:expr "+" &x:[a-z] #atomic x:[a-z] #atomic / x:[a-z] #atomic => Doc{Text: $x}
 `, []string{"a!", "a+b+c!", "a+!", "a+b?", "", "é!"}},
-	{"typed/LR_unreachable_capture", `
-type Doc struct { Text *Match }
-def main: Doc = e:expr $$ -> $e
-def expr: Doc = (p:expr "x" x:@""
-             / x:@"a"
-             / (_|_ ignored:@"b")) -> new Doc{Text: $x}
+	{"typed/LR_unreachable_capture", `type Doc struct { Text *Match }
+rule main Doc = e:expr $$ => $e
+rule expr Doc = p:expr "x" x:"" #atomic / x:"a" #atomic / _|_ ignored:"b" #atomic => Doc{Text: $x}
 `, []string{"a", "axx", "b", "", "a?"}},
-	{"typed/LR_positional_action", `
-type Doc struct { Text string }
-def main: Doc = e:expr $$ -> $e
-def expr: Doc = (expr "+" @"é" / @"é") -> new Doc{Text: text($0)}
+	{"typed/LR_positional_action", `type Doc struct { Text string }
+rule main Doc = e:expr $$ => $e
+rule expr Doc = expr "+" "é" #atomic / "é" #atomic => Doc{Text: text($0)}
 `, []string{"é", "é+é+é", "é+", "é+é?", "", "a"}},
-	{"typed/LR_framed_cuts", `
-type Doc struct { Text Match }
-def main: Doc = x:@expr $$ -> new Doc{Text: $x}
-def expr = expr "+" -- "a" / "a"
+	{"typed/LR_framed_cuts", `type Doc struct { Text Match }
+rule main Doc = x:expr #atomic $$ => Doc{Text: $x}
+rule expr = expr "+" -- "a" / "a"
 `, []string{"a", "a+a+a", "a+", "a+a?", "", "b"}},
-	{"typed/LR_recovery", `
-type Doc struct { Text Match }
-def main: Doc = x:@expr $$ -> new Doc{Text: $x}
-def expr = (expr "+" "a" / "a") #recover(skip=";")
+	{"typed/LR_recovery", `type Doc struct { Text Match }
+rule main Doc = x:expr #atomic $$ => Doc{Text: $x}
+rule expr = (expr "+" "a" / "a") #recover(skip=";")
 `, []string{"a", "a+a+a", "a+", ";", "a+a?", "", "b"}},
 }
 

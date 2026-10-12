@@ -9,11 +9,10 @@ import (
 )
 
 func TestWithTrace(t *testing.T) {
-	p, err := pego.CompileSource(`
-def main = pair (";" pair)* $$
-def pair = key "=" value
-def key = @(?a-z)+
-def value = @(?0-9)+`, "main")
+	p, err := pego.CompileSource(`rule main = pair (";" pair)* $$
+rule pair = key "=" value
+rule key = [a-z]+ #atomic
+rule value = [0-9]+ #atomic`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,14 +32,14 @@ def value = @(?0-9)+`, "main")
 			exits++
 		}
 	}))
-	if err == nil || err.Error() != "1:7: syntax error: expected (?0-9)" {
+	if err == nil || err.Error() != "1:7: syntax error: expected [0-9]" {
 		t.Errorf("error %v", err)
 	}
 	want := []string{
 		"main@1:1",
 		" pair@1:1", "  key@1:1", "  value@1:3",
 		" pair@1:5", "  key@1:5", "  value@1:7",
-		"value failed: 1:7: syntax error: expected (?0-9)",
+		"value failed: 1:7: syntax error: expected [0-9]",
 	}
 	if strings.Join(calls, "\n") != strings.Join(want, "\n") {
 		t.Errorf("calls\n%s\nwant\n%s", strings.Join(calls, "\n"), strings.Join(want, "\n"))
@@ -51,11 +50,10 @@ def value = @(?0-9)+`, "main")
 }
 
 func TestWithProfile(t *testing.T) {
-	p, err := pego.CompileSource(`
-def main = item+ $$
-def item = word / num
-def word = @(?a-z)+ " "?
-def num = @(?0-9)+ " "?`, "main")
+	p, err := pego.CompileSource(`rule main = item+ $$
+rule item = word / num
+rule word = [a-z]+ #atomic " "?
+rule num = [0-9]+ #atomic " "?`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +82,7 @@ def num = @(?0-9)+ " "?`, "main")
 // TestNilTraceOptions checks that WithTrace(nil) and WithProfile(nil) are ignored, alone and
 // combined with other trace functions.
 func TestNilTraceOptions(t *testing.T) {
-	p, err := pego.CompileSource(`def main = @(?a-z)+ $$`, "main")
+	p, err := pego.CompileSource(`rule main = [a-z]+ #atomic $$`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

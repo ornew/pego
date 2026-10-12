@@ -19,10 +19,10 @@ func TestGeneratedNodeFrameScratchCorpus(t *testing.T) {
 	wanted := map[string]bool{
 		"cut and lookahead": true, "left recursion": true, "recover": true,
 		"fold and lists": true, "projected and indexed repetition": true,
-		"runtime error": true, "indent": true, "restricted Pratt prefixes": true,
+		"runtime error": true, "indent": true, "restricted OperatorsRule prefixes": true,
 		"empty prefix and postfix": true,
 		"typed/LR_element_frames":  true, "typed/LR_lookahead_memo": true,
-		"typed/Pratt_environment_rollback": true, "typed/Pratt_lookahead_memo": true,
+		"typed/OperatorsRule_environment_rollback": true, "typed/OperatorsRule_lookahead_memo": true,
 		"typed/recovery_capture_environment": true, "typed/recovery_cut_scope": true,
 	}
 	cases := append([]genCase(nil), nodeDirectCases...)

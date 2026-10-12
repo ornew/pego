@@ -22,11 +22,11 @@ The closure backend also serves as the reference (oracle) for checking the corre
 ## Goals
 
 - Document the instruction set and the file format as a specification independent of Go. A runtime in another language can execute the same bytecode by implementing the VM and the built-in functions according to the specification.
-- Support every current language feature: memoization, left recursion, Pratt expressions, predicates and variables, actions, `#error`, `#recover`, `#stream`, and incremental parsing.
+- Support every current language feature: memoization, left recursion, Operators Rule declarations, predicates and variables, actions, `@error`, `#recover`, `#stream`, and incremental parsing.
 - Keep the runtime small. The compiler (parsing, static analysis, type checking, code generation) is not part of the runtime.
 - Measure performance: for JSON parsing, compare `encoding/json`, the closure backend, the bytecode backend (and the generated Go parser).
 
-## Non-goals
+## Non-Goals
 
 - Implementing runtimes in other languages (this design covers the specification and the Go implementation).
 - JIT compilation of bytecode, or generating optimized code from bytecode (future work).
@@ -44,39 +44,39 @@ grammar.Grammar ──Compile──▶ engine.Program ─┬─ backend: closure
 - The unit of bytecode is called a **module**. A module is a collection of instruction sequences and tables, and it is the only thing the runtime reads.
 - In the public API, the backend and execution model are chosen with an option (for example `p.Parse(input, pego.WithBackend(pego.BytecodeIterative))`). Based on the performance comparison ([decision 4](#4-default-backend)), the default is the closure backend when the AST is available and bytecode otherwise.
 
-## Execution models
+## Execution Models
 
-### Two execution models
+### Two Execution Models
 
 The same instruction set can be executed by either of two execution models, and the user chooses between them ([decision 1](#1-execution-model)).
 
 | Execution model | Rule calls | Strengths | Weaknesses |
 |:--|:--|:--|:--|
 | **Recursive** | Host-language function calls | Small, portable runtime. Structurally close to the closure backend, so the two are easy to keep consistent. | Nesting depth is limited by the host stack. |
-| **Iterative** | The VM's own call stack | Deeply nested input does not consume the host stack. Parsing can be suspended and resumed. | Left recursion, Pratt, recovery and so on are handled as stack entries, so the runtime is larger. |
+| **Iterative** | The VM's own call stack | Deeply nested input does not consume the host stack. Parsing can be suspended and resumed. | Left recursion, Operators Rule, recovery and so on are handled as stack entries, so the runtime is larger. |
 
 The instruction set and the module do not depend on the execution model. The recursive model is implemented first and the iterative model is added later.
 
-### Recursive model
+### Recursive Model
 
 The VM runs **one execution loop per rule body**. A rule call (`CALL`) calls the VM's execution function recursively (a host-language function call).
 Backtracking within a rule body uses a **backtrack stack** per body.
 
 Reasons for this shape:
 
-- Memoization, left-recursion seed growing, Pratt longest match (trying candidates and backing up), `#recover`, and lambda calls from built-in functions in actions all have the form "run a part and receive its result". Using host recursion lets them be written with almost the same structure as in the closure backend, which keeps the two consistent.
+- Memoization, left-recursion seed growing, Operators Rule longest match (trying candidates and backing up), `#recover`, and lambda calls from built-in functions in actions all have the form "run a part and receive its result". Using host recursion lets them be written with almost the same structure as in the closure backend, which keeps the two consistent.
 - It can be ported to any language with recursion, and the runtime stays small.
 
 As with the closure backend, the maximum nesting depth is determined by the host stack.
 
-### Iterative model
+### Iterative Model
 
 Everything, including calls, runs in a single execution loop with the VM's own stack (as in LPeg).
 `CALL` pushes a call entry and jumps to the body, and `RETURN` pops the entry and returns. When a call entry is popped while unwinding on failure, the VM stores the failure in the memo or finishes the growth of a left recursion.
-The processing that the recursive model implements as runtime functions (the left-recursion growth loop, the Pratt loop, `#recover`, and lambda calls from built-in functions) is implemented as state machines whose state is held in stack entries.
+The processing that the recursive model implements as runtime functions (the left-recursion growth loop, the Operators Rule loop, `#recover`, and lambda calls from built-in functions) is implemented as state machines whose state is held in stack entries.
 Because the stack does not depend on the host, parsing can stop while waiting for input to arrive and resume later (which also allows stream parsing in which the caller pushes input).
 
-### Alternatives considered
+### Alternatives Considered
 
 | Approach | Decision |
 |:--|:--|
@@ -96,7 +96,7 @@ Because the stack does not depend on the host, parsing can stop while waiting fo
 | Memo | (rule, position, level) → result, end position, examined range, recovered errors, expectations |
 | Error records | Farthest failure position, expectations, `silent`, recovered errors |
 
-### Backtrack stack entries
+### Backtrack Stack Entries
 
 On failure, the VM pops an entry from the backtrack stack and handles it according to its kind.
 
@@ -105,13 +105,13 @@ On failure, the VM pops an entry from the backtrack stack and handles it accordi
 | Choice | `CHOICE` | Restore the state and go to the next alternative. If cut, restore the state and continue failing. |
 | Repetition | `REPEAT` | Restore the state and finish the repetition (if cut, continue failing). |
 | Lookahead | `AND`, `NOT` | Handle as a lookahead failure. |
-| `#error` | `LABEL` | Replace the expectations with the message and continue failing. |
+| `@error` | `LABEL` | Replace the expectations with the message and continue failing. |
 | `#recover` | `RECOVER` | Record the error and go to the skip instructions. |
 
 When no entry is left to pop, the rule body fails.
 A cut (`CUT`) marks the topmost choice or repetition entry of the current rule body as cut.
 
-## Position units
+## Position Units
 
 Allow the unit of positions (node `Start` and `End`, `startPos` and `endPos`, the position and column of syntax errors, the character count of `len`, and the ranges of `Document.Edit`) to be chosen for each parse ([decision 2](#2-position-unit)).
 
@@ -125,7 +125,7 @@ Allow the unit of positions (node `Start` and `End`, `startPos` and `endPos`, th
 - The position unit can be chosen in **every backend, including the closure backend**, so that backends can be compared with each other in the same unit.
 - Revise the description of positions in the specification so that the unit is selectable.
 
-## Instruction set
+## Instruction Set
 
 An instruction consists of a one-byte opcode and variable-length integer operands. Jump targets are offsets within the instruction sequence.
 Strings, character classes, rules and so on are referenced by their index in the module's tables.
@@ -166,25 +166,25 @@ Many match instructions have a flag that indicates whether to build a value (no 
 | `DROP` | Discard a value |
 | `CAPTURE` | Slot: write the top value to a capture |
 
-### Rules and attributes
+### Rules and Attributes
 
 | Instruction | Operands | Behavior |
 |:--|:--|:--|
 | `CALL` | rule, level | Call a rule (the runtime performs memoization and left recursion according to the rule table) |
 | `RETURN` | | End of a rule body (the runtime applies the action, the CST rules and the conversion to a terminal type) |
-| `PRATT` | Pratt table | Run the Pratt loop (below) |
+| `OPERATORS_RULE` | Operators Rule table | Run the Operators Rule loop (below) |
 | `PRED` / `ASSIGN` | expression code (, variable name) | Predicates |
-| `LABEL` / `END_LABEL` | message | `#error` |
+| `LABEL` / `END_LABEL` | message | `@error` |
 | `RECOVER` / `END_RECOVER` | skip code | `#recover` |
 | `STREAM` | | Commit an element of `#stream` and pass it on |
 
-### Pratt expressions
+### Operators Rule
 
-A Pratt expression is represented by a **table**, not by an instruction sequence. For `skip`, `operand` and each operator, the table holds the start of that part's code, its capture scope, its action code, and its kind, associativity and level.
-Longest-match selection and level checks are performed by the runtime's Pratt loop (the same algorithm as `prattParse` in the closure backend), which runs each part's code on the VM.
+An Operators Rule is represented by a **table**, not by an instruction sequence. For `skip`, `operand` and each operator, the table holds the start of that part's code, its capture scope, its action code, and its kind, associativity and level.
+Longest-match selection and level checks are performed by the runtime's Operators Rule loop (the same algorithm as `operatorsRuleParse` in the closure backend), which runs each part's code on the VM.
 The algorithm is not broken down into instructions because performing the "try and back up" of longest match in the runtime keeps implementations in other languages simpler and less error-prone.
 
-## Actions and predicates
+## Actions and Predicates
 
 Action and predicate expressions are compiled into separate **expression code** (stack-based, without backtracking). The runtime does not interpret expression trees.
 
@@ -202,7 +202,7 @@ Action and predicate expressions are compiled into separate **expression code** 
 `foldl` and the other built-ins are implemented as runtime functions and call the code of the lambda they receive on the expression VM.
 An evaluation error in an action is an error of the whole parse, and in a predicate it is a failure (as now).
 
-## Module and file format
+## Module and File Format
 
 Raise the `.pegoc` version to 2 and make its content a module. The AST is included by default and can be omitted ([decision 3](#3-ast-in-pegoc)).
 
@@ -213,7 +213,7 @@ Raise the `.pegoc` version to 2 and make its content a module. The AST is includ
 | Character class table | Lists of ranges, negation |
 | Type table | Struct field names (for run-time checks), terminal types |
 | Rule table | Name, start of body code, capture scope, action code, terminal type, memoization, left-recursion leader, position dependency, and the shape of the body for `$n` |
-| Pratt table | As above |
+| Operators Rule table | As above |
 | Instruction sequences | Match code and expression code |
 | AST (optional) | For loading into the closure backend and for `pego convert` (formerly `pego fmt`). Can be omitted. |
 | Checksum | CRC-32 |
@@ -222,12 +222,12 @@ The runtime reads only the parts other than the AST. If the AST is omitted, the 
 
 Version 1 files (AST and analysis results) remain loadable by the closure backend.
 
-## Streams and incremental parsing
+## Streams and Incremental Parsing
 
 - Reading input (`fill`), discarding committed input (`commit`), and recording the examined range (`hw`, `lw`) are shared as input operations used by the match instructions. The specification defines, as "input operations", the properties a runtime must satisfy.
 - As in the closure backend, each memo entry records the range it examined. `Document` becomes independent of the backend.
 
-## Impact on code generation
+## Impact on Code Generation
 
 In the future, `pego gen` will also be able to embed "bytecode plus a minimal VM". Because the generated code then follows the runtime specification, generators for other languages can be built just by porting the VM.
 Within the scope of this design, the current `pego gen` (which generates Go code) is unchanged.
@@ -239,12 +239,12 @@ Within the scope of this design, the current `pego gen` (which generates Go code
 3. **File format**: round trips of saving and loading, no panics on corrupted data, fuzz tests.
 4. **Instruction validation**: on load, check that jump targets, table indices and stack usage are within range (no panics on invalid modules).
 
-## Performance comparison
+## Performance Comparison
 
 Compare the backends on several benchmarks and record the results in `docs/benchmarks.md`.
-Different grammar features may favor different backends, so the benchmarks are chosen to cover a balanced range of matching types (lexical repetition, Pratt, left recursion, predicates, error recovery) and usage modes (batch, incremental, streaming, loading).
+Different grammar features may favor different backends, so the benchmarks are chosen to cover a balanced range of matching types (lexical repetition, Operators Rule, left recursion, predicates, error recovery) and usage modes (batch, incremental, streaming, loading).
 
-### Backends compared
+### Backends Compared
 
 | Backend | Description |
 |:--|:--|
@@ -262,8 +262,8 @@ Both code-point and byte position units are measured.
 | JSON | `examples/json` | Typical JSON from a few KB to a few MB | Lexical repetition, AST of union types | `encoding/json` (decoding into `any`) |
 | CSV | New example (RFC 4180) | Thousands of rows, with quotes | Simple repetition, many terminals | `encoding/csv` |
 | XML | New example (elements, attributes, text, comments) | Hundreds of KB | Nesting, predicates (matching start-tag and end-tag names) | `encoding/xml` (reading tokens) |
-| Arithmetic | `examples/calculator` (both Pratt and left recursion) | Long expressions, deep parentheses | Pratt loop, left-recursion growth | `go/parser.ParseExpr` |
-| Program | `examples/minilang` | Programs of thousands of lines | Mixed PEG and Pratt, keyword exclusion | None |
+| Arithmetic | `examples/calculator` (both Operators Rule and left recursion) | Long expressions, deep parentheses | Operators Rule loop, left-recursion growth | `go/parser.ParseExpr` |
+| Program | `examples/minilang` | Programs of thousands of lines | Mixed PEG and Operators Rule, keyword exclusion | None |
 | Outline | `examples/outline` | Deep hierarchy | Predicates and variables (non-memoized rules) | None |
 | Error recovery | `examples/minilang` | Programs with many errors | `#recover`, expectation recording | None |
 | Incremental | `examples/minilang` | Repeated one-character edits to a large program | Memo reuse | None (compared with a fresh parse) |
@@ -273,13 +273,13 @@ Both code-point and byte position units are measured.
 Comparisons with the standard library state the differences in output in the table (every PEGO backend builds a tree with positions).
 Inputs are generated in the tests from a fixed random seed so that results are reproducible.
 
-## Implementation order
+## Implementation Order
 
 1. Selectable position units (closure backend and specification)
 2. Instruction set and module definitions, the compiler (`engine.Program` → module), and a disassembler (for debugging)
 3. The recursive VM: matching, control, values, and rule calls (memoization, left recursion)
 4. The VM for action and predicate expressions
-5. Pratt expressions, attributes, streams and incremental parsing
+5. Operators Rule declarations, attributes, streams and incremental parsing
 6. Backend selection in the public API and the CLI, `.pegoc` version 2
 7. The iterative VM
 8. Extend the equivalence tests to all tests
@@ -289,22 +289,22 @@ At each step, the equivalence tests for the features implemented so far must pas
 
 ## Decisions
 
-### 1. Execution model
+### 1. Execution Model
 
 - Options: rule calls through host recursion / iteration with an own stack, including calls / recursion first, iteration later.
 - **Decision**: implement both and let the user choose, because the appropriate model depends on the use case (ease of porting, deeply nested input, suspend and resume).
 
-### 2. Position unit
+### 2. Position Unit
 
 - Options: code points / UTF-8 bytes / selectable.
 - **Decision**: selectable (code points by default). The unit is selectable in every backend, and results are compared between backends in the same unit.
 
-### 3. AST in .pegoc
+### 3. AST in .Pegoc
 
 - Options: included by default and omittable / always included / never included.
 - **Decision**: included by default and omittable.
 
-### 4. Default backend
+### 4. Default Backend
 
 - Options: decide after the comparison / keep the closure backend / switch to bytecode.
 - The comparison uses several benchmarks, including JSON ([performance comparison](#performance-comparison)).

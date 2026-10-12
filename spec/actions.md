@@ -1,213 +1,164 @@
 # Actions
 
-An action is an expression written after `->` in a rule definition. It computes
-the value of the rule, typically an AST node, from what the parsing expression
-matched.
+PEGO has two action forms. A **Predicate Action** appears in braces where a
+PEG primary expression is expected and evaluates without consuming input or
+producing a value. A **Value Action** follows `=>` and computes a rule's value
+from the values produced by its grammar body. An ordinary rule may have a
+whole-rule Value Action after its complete expression:
+`rule name [Type] = expression => term`. An Operators Rule has specialized
+Value Actions on its operand and operator entries; a declaration-level action
+is accepted only when it selects the existing default CST behavior. Omitting
+it or using the explicit `=> ...` default-CST form preserves that behavior.
+Any other declaration-level action on an Operators Rule is a compile-time
+error.
+
+A single-term Predicate Action keeps its existing execution semantics.
+Multi-statement Predicate Action blocks and Value Action blocks parse, format
+and appear in source ASTs, but semantic analysis rejects them as unsupported.
+They do not execute their statements. Inline action forms are also recognized
+in source and rejected by compilation; runtime inline-action execution remains
+unimplemented.
 
 ```pego
-def <rule name>: <type> = <parsing expression> -> <action>
+// Source syntax only; compilation rejects this inline Value Action.
+(b => { x := 1; x < 10; B{} })
 ```
 
-When the parsing expression succeeds, the action is evaluated and its result
-becomes the value of the rule. The result MUST be a node or `nil`.
+```pego
+type KV struct { Key Match, Op Match, Value Match }
+rule key_value KV = (k:[a-z]+ op:"=" v:[0-9]+) => KV{Key: $1, Op: $2, Value: $3}
+```
 
-The action applies to the whole right-hand side of the rule. To compute
-different values for different alternatives, give each alternative its own rule.
+The action runs after the body succeeds. Its result is a node or `nil` and is
+checked against the declared or inferred rule type. The action applies to the
+whole body, including all alternatives.
 
-## Capture references
+## Whole-Rule Value Actions
+
+A single-term Value Action follows `=>` after the complete rule expression.
+When a grammar expression spans multiple lines, parenthesize the expression;
+the line break in an action block is local to that block.
+
+## Capture References
 
 | Syntax | Refers to |
 |:--|:--|
-| `$label` | The value captured with `label:` |
-| `$0` | A list of the values of all elements of the rule body that have a value |
-| `$n` | The `n`-th (1-based) element with a value of the sequence that forms the rule body |
+| `$label` | A named capture visible to the whole-rule action |
+| `$0` | A list of values of the rule body's valued elements |
+| `$n` | The 1-based valued element in the rule body's sequence |
 
-```pego
-def key_value = k:(?a-z)+ op:"=" v:(?0-9)+
-    -> new KV{Key: $1, Op: $2, Value: $3}  // same as $k, $op and $v
-```
+For a whole-rule action, positional references describe the rule body. If the
+body is not a sequence, `$1` is its value and `$0` is a singleton list. `$n`
+counts only elements with values. An index beyond the available values is a
+type error. Capture references use ASCII decimal digits and must fit the
+implementation's `int`.
 
-`$n` counts only elements that have a value (see
-[Values and the concrete syntax tree](parser-expressions.md#values-and-the-concrete-syntax-tree)).
-If the rule body is not a sequence, `$1` is the value of the body. It is an
-error if `n` exceeds the number of elements with a value.
-The index uses ASCII decimal digits and must fit the implementation's `int`;
-leading zeros do not change its value. Invalid digits or overflow are syntax
-errors (see [capture references](lexical.md#capture-references)).
+Captures are visible only in their enclosing grammar-expression scope. A
+capture that did not match has value `nil`.
 
-Captures are visible only within the rule that makes them; an action cannot
-refer to the captures of the rules that called it. A capture that did not match
-is `nil`.
+## Variable References
 
-## Variable references
-
-An action can read [variables](predicates.md#variables) by name, like a
-predicate. It sees the definitions in effect when the rule body has matched:
-those made by the rule itself and by the rules that called it, but not those of
-the rules it called, which ended with their invocations. Reading a variable that
-is not defined is a runtime error of the action.
+An action can read parser variables visible where it is evaluated. Reading an
+undefined variable is a runtime action error.
 
 ```pego
 type Item struct { Depth int, Name Match }
-def item: Item = [depth = 1] n:name -> new Item{Depth: depth, Name: $n}
+rule item Item = {depth := 1} n:name => Item{Depth: depth, Name: $n}
 ```
 
-## Values
+## Values and Constructors
 
-Action expressions operate on the following values.
+Action expressions operate on nodes, integers, strings, booleans, `nil`, and
+functions. String and integer literals use the same escapes and decimal
+syntax as grammar literals. Lists are `List` nodes, produced by repetitions
+and by `list`, `map`, and `concat`.
 
-| Value | Examples |
-|:--|:--|
-| Node | `$label`, `new T{...}` |
-| Integer (`int`) | `1`, `len($x)` |
-| String (`string`) | `"abc"`, `text($x)` |
-| Boolean (`bool`) | `true`, `false`, `1 < 2` |
-| Nil | `nil` |
-| Function | `(acc, i) => ...` (only as an argument of `foldl`, `foldr` and `map`) |
-
-String literals in actions use the same escape sequences as string literals in
-parsing expressions (see [Escape sequences](lexical.md#escape-sequences)). Integer literals are
-decimal; a negative number is written with the unary `-` operator.
-
-A list is a `List` node. Lists are produced by repetitions and by the built-in
-functions `list`, `map` and `concat`.
-
-## Creating struct nodes
-
-`new T{Field: value, ...}` creates a node of the struct type `T`. Fields are
-separated by commas. A field that is not given is absent and reads as `nil`.
+`T{Field: value, ...}` constructs a node of struct type `T`. Unset fields read
+as `nil`.
 
 ```pego
-def rule = name:ident -> new IdentNode{Name: $name}
+rule name Name = [a-z]+
+rule ident IdentNode = n:name => IdentNode{Name: $n}
 ```
 
-The range of a node created by `new`:
+A node returned as the action result has the range of the rule body; a node
+created inside a helper function uses the smallest range covering its node
+fields, or the body range when it has no node fields. A list uses the smallest
+range covering its elements.
 
-- If the node is the result of the action, its range is the range that the rule
-  matched.
-- Otherwise (for example, a node created inside the function passed to
-  `foldl`), its range is the smallest range that covers the ranges of its fields
-  whose values are nodes, or the range that the rule matched if there are no
-  such fields.
+## Field Access
 
-A list created by `list`, `map` or `concat` has the smallest range that covers
-its elements; an empty list has an empty range at the start of the rule's
-match.
+`x.Name` reads field `Name` from node `x`. A field absent from a value reads as
+`nil`; an undeclared field is a type error. The built-in fields `startPos`,
+`endPos`, and `children` are available on every node.
 
-## Field access
+## Operators and Functions
 
-`x.Name` reads the field `Name` of the node `x`.
+Action operators include integer/string `+`, integer `-`, `*`, `/`, `%`,
+comparisons, equality, boolean `&&`, `||`, and `!`, plus unary `-`. Arithmetic
+and comparison precedence is unchanged. `.` field access and function calls
+bind more tightly than operators.
 
-```pego
-type Name terminal
-type A struct {
-    FieldName Name
-}
+Built-in functions include `len`, `text`, `foldl`, `foldr`, `map`, `list`, and
+`concat`. Lambdas use `(...) => term`; this same `=>` token introduces a
+Value Action in its grammar position. Braced Value Action blocks, including
+`=> { build($1); finish() }`, are parsed, formatted and represented in source
+ASTs, but compilation rejects them as unsupported. Inline `(expression =>
+{ ... })` forms are likewise source-only; no inline or multi-statement action
+execution is implemented. `concat` treats `nil` and recovered `Error` values
+as empty lists.
 
-def name: Name = (?a-z)+
-def a: A = n:name -> new A{FieldName: $n}
-def foo = a -> $1.FieldName  // the Name node stored in the A node
-```
+## Types and Errors
 
-A field that was not set, and a capture that did not match, read as `nil`.
-Accessing a field that the struct type does not declare is an error.
+Action expressions are type-checked. A value that does not fit a struct field,
+an invalid field access, or an out-of-range `$n` is a grammar error. A runtime
+action error, such as division by zero, aborts parsing; it is not a syntax error
+and is not subject to backtracking or recovery.
 
-When `x` has a union type, `x.Name` is allowed if at least one member type
-declares `Name`. If only some members declare it, the static type of the access
-is optional (`*T`). Reading a field from a value whose struct type does not
-declare it is a [run-time error](#run-time-errors).
+## Value and Range Details
 
-The following fields are available on every node:
+An action result MUST be a node or `nil`. A list is a `List` node; repetitions
+and the `list`, `map`, and `concat` functions produce lists. `list` arguments
+MUST be nodes or `nil`, and the function passed to `map` MUST return a node or
+`nil`. A missing struct field reads as `nil`. For a union-typed node, field
+access is allowed when at least one member declares that field; if only some
+members declare it, the static result type is optional, and reading a value
+whose concrete struct lacks the field is a run-time error.
 
-| Field | Type | Value |
-|:--|:--|:--|
-| `startPos` | `int` | The start position of the node in the [position unit](parsing.md#positions) |
-| `endPos` | `int` | The end position of the node (exclusive) |
-| `children` | `[]*node` | The children of a `Seq`, `List` or `Operator` node; empty for other nodes |
+A node returned directly by the whole-rule action has the range matched by the
+rule body. A node created elsewhere has the smallest range covering its node
+fields, or the rule body's range when it has no node fields. A list has the
+smallest range covering its elements; an empty list has an empty range at the
+start of the rule match. The built-in `children` field contains the children
+of `Seq`, `List`, and `Operator` nodes and is empty for other node kinds.
 
-## Operators
+Action operators are `+` (integer addition or string concatenation), integer
+`-`, `*`, `/`, `%`, comparisons over integers or strings, equality over any
+values, boolean `&&`, `||`, and `!`, and unary integer `-`. Boolean operators
+short-circuit. Integer division truncates toward zero and remainder has the
+dividend's sign. Nodes compare by identity; strings compare lexicographically.
+Separate calls at the same position are not guaranteed to return identical
+node identities because memoization determines whether a result is reused.
+Precedence from loose to tight is `||`, `&&`, non-chainable comparisons,
+`+ -`, `* / %`, then unary `- !`; field access and calls bind tighter than
+all of them.
 
-| Operator | Operands |
-|:--|:--|
-| `+` | integers (addition), strings (concatenation) |
-| `-`, `*`, `/`, `%` | integers |
-| `<`, `<=`, `>`, `>=` | integers, strings |
-| `==`, `!=` | any values; nodes are compared by identity |
-| `&&`, `\|\|`, `!` | booleans; `&&` and `\|\|` short-circuit |
-| unary `-` | integers |
+`len` returns a string or terminal length in the input position unit, a
+nonterminal's child count, or zero for `nil`. `text` returns covered input
+text, or the empty string for `nil`. `foldl` and `foldr` fold lists in the
+named direction; lambda parameters are referenced with `$`. `concat` joins
+lists, treating `nil` and recovered `Error` nodes as empty lists; a union of
+list types contributes elements of either member type. Runtime evaluation
+errors, including division by zero and invalid concrete field access, abort
+the parse and are not backtracked or handled by recovery.
 
-Integer division truncates toward zero; `%` takes the sign of the dividend.
-
-Comparing nodes by identity tells whether two values are the same node, such as a capture and an element of a
-list. Whether two separate calls of a rule at the same position return the same node is not specified: it
-depends on memoization. To compare what two nodes matched, compare `text(...)` or their fields.
-Strings are compared lexicographically.
-
-Operators bind in the following order, from loosest to tightest:
-
-| Precedence | Operators | Associativity |
-|:--|:--|:--|
-| 1 (loosest) | `\|\|` | left |
-| 2 | `&&` | left |
-| 3 | `==`, `!=`, `<`, `<=`, `>`, `>=` | not chainable: `a < b < c` is a syntax error |
-| 4 | `+`, `-` | left |
-| 5 | `*`, `/`, `%` | left |
-| 6 (tightest) | unary `-`, `!` | — |
-
-Field access (`.`) and function calls bind tighter than all operators.
-Parentheses group subexpressions.
-
-## Built-in functions
-
-| Function | Description |
-|:--|:--|
-| `len(x)` | The length of a string or a terminal in the [position unit](parsing.md#positions); for any other node, the number of children; `0` for `nil` |
-| `text(x)` | The input text that the node `x` covers (for a terminal, its text); `""` for `nil` |
-| `foldl(init, list, (acc, item) => ...)` | Folds `list` from the left |
-| `foldr(init, list, (acc, item) => ...)` | Folds `list` from the right |
-| `map(list, (item) => ...)` | A list of the results of applying the function to each element |
-| `list(a, b, ...)` | A list of the arguments, which MUST be nodes or `nil` |
-| `concat(l1, l2, ...)` | The concatenation of the lists; a `nil` argument, and an `Error` node produced by `#recover`, count as empty lists. An argument whose type is a union of list types (such as `[]A | []B`) contributes elements of either type |
-
-### `foldl` and `foldr`
-
-`foldl` and `foldr` fold a list into a single value. They are typically used to
-turn a flat list into a recursive tree.
-
-- `init`: the initial value.
-- `list`: the list to fold, usually the capture of a `*` or `+` repetition.
-- `(acc, item) => expression`: the function applied to each element. `acc` is
-  the result so far and `item` is the current element. `foldl` applies it from
-  the first element to the last, `foldr` from the last element to the first.
-
-Inside the function, parameters are referred to with `$`, as in `$acc`.
-
-```pego
-// "1+2+3" → Op{Left: Op{Left: 1, Op: "+", Right: 2}, Op: "+", Right: 3}
-def expr: Node =
-    l:term rest:(op:term_binary_op r:term)*
-    -> foldl($l, $rest, (acc, i) => new Op{Left: $acc, Op: $i.op, Right: $i.r})
-```
-
-### `map`, `list` and `concat`
-
-These functions are typically used to collect a separated list into a single
-list. The function passed to `map` MUST return a node or `nil`.
-
-```pego
-def args = first:expr rest:(-"," e:expr)*
-    -> concat(list($first), map($rest, (r) => $r.e))
-```
-
-## Types
-
-Action expressions are [type-checked](types.md). For example, a value that is
-not assignable to the type of a struct field, or an access to a field that does
-not exist, is a compile-time error.
-
-## Run-time errors
-
-An error during the evaluation of an action, such as reading a field that the
-node's type does not declare or dividing by zero, aborts the whole parse with
-that error. It is not a syntax error and is not subject to backtracking or
-[error recovery](attributes.md#recover).
+An action can read variables defined by its rule body and by callers of that
+rule; definitions in called rules end with those calls and are not visible in
+the caller's action. Reading a variable that is undefined at the action's
+position is a run-time error. Captures are visible only in the expression scope
+that made them: an action cannot refer to captures in a calling rule, and a
+capture that did not match has value `nil`. `$n` counts only valued elements;
+when the rule body is not a sequence, `$1` is the body's value and `$0` is a
+singleton list containing it (or an empty list when it has no value). An index
+larger than the number of valued elements is a grammar error. Indices use
+ASCII decimal digits, may have leading zeroes, and must fit `int`.

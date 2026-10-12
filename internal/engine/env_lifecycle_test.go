@@ -9,26 +9,20 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-const assignedStream = `
-def main = [limit=1] ([i=1] [j=2] [i=3] -"a")* #stream [limit==1] $$`
+const assignedStream = `rule main = {limit := 1} ({i := 1} {j := 2} {i := 3} -"a")* #stream {limit == 1} $$`
 
 var envBindingCases = []genCase{
-	{"binding choice rollback", `
-type V struct { X int, Y int }
-def main = [x=1] [y=2] ("a" [x=3] [y=4] "x" / "a" [x==1] [y==2] "b") $$ -> new V{X:x, Y:y}`, []string{"ab", "ax", "a", ""}},
-	{"binding rule scope", `
-type V struct { X int, Y int }
-def main = [x=1] [y=2] inner [x==1] [y==2] "b" $$ -> new V{X:x, Y:y}
-def inner = [x=3] [y=4] [x==3] [y==4] "a"`, []string{"ab", "ax", ""}},
-	{"binding positive lookahead effects", `
-type V struct { X int, Y int }
-def main = [x=1] [y=2] &([x=3] [y=4] "a") [x==3] [y==4] "a" $$ -> new V{X:x, Y:y}`, []string{"a", "aa", ""}},
-	{"binding absent after rollback", `
-type V struct { X int }
-def main = [x=1] ([y=2] "b" / [y=3] [y==3] "a") $$ -> new V{X:x}`, []string{"a", "b", ""}},
-	{"binding negative lookahead rollback", `
-type V struct { X int, Y int }
-def main = [x=1] [y=2] !([x=3] [y=4] "b") [x==1] [y==2] "a" $$ -> new V{X:x, Y:y}`, []string{"a", "b", ""}},
+	{"binding choice rollback", `type V struct { X int, Y int }
+rule main = {x := 1} {y := 2} ("a" {x := 3} {y := 4} "x" / "a" {x == 1} {y == 2} "b") $$ => V{X: x, Y: y}`, []string{"ab", "ax", "a", ""}},
+	{"binding rule scope", `type V struct { X int, Y int }
+rule main = {x := 1} {y := 2} inner {x == 1} {y == 2} "b" $$ => V{X: x, Y: y}
+rule inner = {x := 3} {y := 4} {x == 3} {y == 4} "a"`, []string{"ab", "ax", ""}},
+	{"binding positive lookahead effects", `type V struct { X int, Y int }
+rule main = {x := 1} {y := 2} &({x := 3} {y := 4} "a") {x == 3} {y == 4} "a" $$ => V{X: x, Y: y}`, []string{"a", "aa", ""}},
+	{"binding absent after rollback", `type V struct { X int }
+rule main = {x := 1} ({y := 2} "b" / {y := 3} {y == 3} "a") $$ => V{X: x}`, []string{"a", "b", ""}},
+	{"binding negative lookahead rollback", `type V struct { X int, Y int }
+rule main = {x := 1} {y := 2} !({x := 3} {y := 4} "b") {x == 1} {y == 2} "a" $$ => V{X: x, Y: y}`, []string{"a", "b", ""}},
 }
 
 func TestEnvironmentRollback(t *testing.T) {
@@ -86,16 +80,16 @@ func TestAssignedStreamMemoryIsBounded(t *testing.T) {
 
 func BenchmarkEnvironmentBindings(b *testing.B) {
 	for _, c := range []struct{ name, body string }{
-		{"Nearest", `[i=1] [i==1] -"a"`},
-		{"Outer", `[i=1] [limit==1] -"a"`},
-		{"Alternating", `[i=1] [j=2] [limit==1] -"a"`},
-		{"Changing", `[i=i+1] [j=j+1] [limit==1] -"a"`},
-		{"Rollback", `-"a" ([i=i+1] [j=j+1] "x" / [i=i+1] [j=j+1]) [limit==1]`},
+		{"Nearest", `{i := 1} {i==1} -"a"`},
+		{"Outer", `{i := 1} {limit==1} -"a"`},
+		{"Alternating", `{i := 1} {j := 2} {limit==1} -"a"`},
+		{"Changing", `{i := i+1} {j := j+1} {limit==1} -"a"`},
+		{"Rollback", `-"a" ({i := i+1} {j := j+1} "x" / {i := i+1} {j := j+1}) {limit==1}`},
 	} {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, n := range []int{2000, 4000, 8000, 16000} {
 				b.Run(fmt.Sprintf("%s/%s/%d", c.name, backend, n), func(b *testing.B) {
-					g, err := syntax.Parse(`def main = [limit=1] [i=0] [j=0] (` + c.body + `)* $$`)
+					g, err := syntax.Parse(`rule main = {limit := 1} {i := 0} {j := 0} (` + c.body + `)* $$`)
 					if err != nil {
 						b.Fatal(err)
 					}
@@ -125,9 +119,9 @@ func BenchmarkDistinctBindings(b *testing.B) {
 	for _, n := range []int{16, 128, 1024} {
 		b.Run(fmt.Sprint(n), func(b *testing.B) {
 			var src strings.Builder
-			src.WriteString("def main = ")
+			src.WriteString("rule main = ")
 			for i := 0; i < n; i++ {
-				fmt.Fprintf(&src, "[v%d=1] ", i)
+				fmt.Fprintf(&src, "{v%d := 1} ", i)
 			}
 			src.WriteString("$$")
 			g, err := syntax.Parse(src.String())

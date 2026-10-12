@@ -16,21 +16,21 @@ func invalidDecimalSpellings() []string {
 
 func TestDecimalTokenErrors(t *testing.T) {
 	for _, digits := range invalidDecimalSpellings() {
-		for _, prefix := range []string{`def main="a" -> $`, `def main="a" -> `, `def main="a"{`, `def main="a" [`, `def main="a" #custom(n=`} {
+		for _, prefix := range []string{`rule main = "a" => $`, `rule main = "a" => `, `rule main = "a" #repeat(`, `rule main = "a" {`, `rule main = "a" @custom(n=`} {
 			suffix := ""
 			switch prefix {
-			case `def main="a"{`:
-				suffix = "}"
-			case `def main="a" [`:
-				suffix = " == 0]"
-			case `def main="a" #custom(n=`:
+			case `rule main = "a" #repeat(`:
+				suffix = ")"
+			case `rule main = "a" {`:
+				suffix = " == 0}"
+			case `rule main = "a" @custom(n=`:
 				suffix = ")"
 			}
 			source := prefix + digits + suffix
 			if g, err := Parse(source); g != nil || err == nil {
 				t.Fatalf("accepted invalid decimal %q: %v, %v", source, g, err)
 			}
-			g, errs := ParsePartial(source + "\ndef after=\"ok\"")
+			g, errs := ParsePartial(source + "\nrule after = \"ok\"")
 			col := utf8.RuneCountInString(prefix) + 1
 			if strings.HasSuffix(prefix, "$") {
 				col--
@@ -64,16 +64,16 @@ func TestDecimalTokenBoundaries(t *testing.T) {
 			t.Fatalf("tokenizer rewrote invalid index %q as %+v", digits, tok)
 		}
 	}
-	if _, err := Parse(`def 名前١=x١:"a" -> $x١`); err != nil {
+	if _, err := Parse(`rule 名前١ = x١:"a" => $x١`); err != nil {
 		t.Fatalf("Unicode digits in identifiers were rejected: %v", err)
 	}
 }
 
 func BenchmarkDecimalSource(b *testing.B) {
 	for _, tc := range []struct{ name, source string }{
-		{"Plain", `def main="a"`},
-		{"Integers", "def main=\"a\" -> " + strings.Repeat("123 + ", 100) + "0"},
-		{"Indices", "def main=\"a\" -> " + strings.Repeat("$1 + ", 100) + "$0"},
+		{"Plain", `rule main = "a"`},
+		{"Integers", "rule main = \"a\" => " + strings.Repeat("123 + ", 100) + "0"},
+		{"Indices", "rule main = \"a\" => " + strings.Repeat("$1 + ", 100) + "$0"},
 	} {
 		b.Run(tc.name, func(b *testing.B) {
 			b.ReportAllocs()

@@ -1,4 +1,4 @@
-# Parse indentation-based input
+# Parse Indentation-Based Input
 
 **Problem.** A file nests its entries by indentation, as YAML or Python do, and you want the nesting as Go maps. A line
 that is indented inconsistently should be reported as that.
@@ -14,26 +14,27 @@ type Entry struct {
     Children []Entry
 }
 
-def main = [indent = 0] es:block blank* $$ -> $es
+rule main = {indent := 0} es:block blank* $$ => $es
 
 // The entries at the current indentation.
-def block = (blank* e:entry)+ -> map($1, (x) => $x.e)
+rule block = (blank* e:entry)+ => map($1, (x) => $x.e)
 
 // A line indented exactly at the current depth, with the lines below it that are indented deeper.
-def entry: Entry = s:spaces [len($s) == indent] #error(message="inconsistent indentation")
+rule entry Entry = (
+    s:spaces {len($s) == indent} @error(message="inconsistent indentation")
     k:key ":" " "* v:value? eol cs:children?
-    -> new Entry{Key: $k, Value: $v, Children: concat($cs)}
+) => Entry{Key: $k, Value: $v, Children: concat($cs)}
 
 // If the next line is indented deeper, read it and its siblings with that depth as the new indentation.
 // A variable is visible only in the rule that defines it and the rules it calls, so when this rule returns, the
 // parent's indentation is back.
-def children = &(blank* s:spaces) [len($s) > indent] [indent = len($s)] b:block -> $b
+rule children = &(blank* s:spaces) {len($s) > indent} {indent := len($s)} b:block => $b
 
-def spaces = @" "*
-def key = @(?a-z_)+
-def value = @(?^\n)+
-def eol = "\n" / $$
-def blank = (? \t)* "\n"
+rule spaces = " "* #atomic
+rule key = [a-z_]+ #atomic
+rule value = [^\n]+ #atomic
+rule eol = "\n" / $$
+rule blank = [ \t]* "\n"
 ```
 
 ```go
@@ -137,20 +138,20 @@ go run . bad.yml
 3:3: inconsistent indentation
 ```
 
-## How it works
+## How It Works
 
-- **`[indent = 0]`** defines the variable at the start. A predicate `[name = value]` defines a variable; it never
+- **`{ indent := 0 }`** defines the variable at the start. A predicate `{ name := value }` defines a variable; it never
   changes one. The definition is visible to the rules called after it, and ends when the rule that made it returns.
-- **`entry`** matches the leading spaces, captures them as `s`, and the predicate `[len($s) == indent]` succeeds only
+- **`entry`** matches the leading spaces, captures them as `s`, and the predicate `{ len($s) == indent }` succeeds only
   at the current depth. This is also how a block ends: at a line with another indentation, `entry` fails and `block`'s
   repetition stops.
 - **`children`** looks ahead at the next line with `&(blank* s:spaces)`. A capture made in a positive lookahead stays
   visible after it, so the predicates can read `$s` without consuming the spaces. If the line is indented deeper, the new
-  depth is defined with `[indent = len($s)]`, and the rule `block` called after it sees the new depth. When `children`
+  depth is defined with `{ indent := len($s) }`, and the rule `block` called after it sees the new depth. When `children`
   returns, the parent's `indent` is back: the variable is scoped by the rule invocation, and a counter is a chain of
   new bindings, never a mutation.
-- **`#error` on the predicate.** A predicate that fails records no expected token, so without the label the message for
-  the third line above is `syntax error: expected " ", "\n", (? \t)`, which is true and unhelpful.
+- **`@error` on the predicate.** A predicate that fails records no expected token, so without the label the message for
+  the third line above is `syntax error: expected " ", "\n", [ \t]`, which is true and unhelpful.
 - **`*Match` for the optional value.** `v:value?` is a `Match` or nothing, which the struct field must say with `*Match`;
   in Go, `Field("Value")` is then a `*pego.Node` or `nil`, which `v, ok := ....(*pego.Node)` tells apart.
 

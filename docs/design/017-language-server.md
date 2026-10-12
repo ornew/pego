@@ -1,4 +1,4 @@
-# 017. A language server for PEGO grammars
+# 017. A Language Server for PEGO Grammars
 
 - **Status**: Implemented
 - **Author**: @ornew
@@ -20,7 +20,7 @@ How to use it is in the [editor support guide](../guide/editor-support.md).
 
 ## Design
 
-### Base protocol and lifecycle
+### Base Protocol and Lifecycle
 
 The base protocol is small: each message is a `Content-Length` header, a blank line and a JSON-RPC 2.0 object.
 `internal/lsp/jsonrpc.go` reads and writes it; a third-party LSP library would have added a dependency for little
@@ -86,7 +86,7 @@ Each version of a document is analyzed once, when a request or a diagnostics not
 
 1. `syntax.Tokenize` splits the text into tokens, comments included, with their start and end positions.
 2. `syntax.ParsePartial` parses the text and returns the grammar even when there are errors.
-   The parser skips from an error to the next `def` or `type`, so the grammar holds every definition that parsed;
+   The parser skips from an error to the next `rule`, `operators`, or `type` declaration, so the grammar holds every definition that parsed;
    navigation, hover and symbols keep working in the rest of a file that has an error.
 3. If there is no syntax error, `engine.Compile` compiles and type checks the grammar, and `Program.RuleType` gives
    the declared or inferred type of each rule.
@@ -111,7 +111,7 @@ Compile and type errors are published when there is no syntax error, at most 100
 many more there are.
 An invalid escape sequence or a run of invalid characters is reported over its text (`syntax.Error.End`); other
 errors have only a start position, and their range is the token that starts there, or one character.
-The compiler reports errors about a whole definition (such as a rule defined twice) at its `def` or `type` keyword;
+The compiler reports errors about a whole definition (such as a rule defined twice) at its `rule` or `type` keyword;
 those are reported at the definition's name.
 Diagnostics are published after `didOpen`, every `didChange` and `didSave`, with the document version, and cleared on
 `didClose`.
@@ -124,7 +124,7 @@ Diagnostics are published after `didOpen`, every `didChange` and `didSave`, with
 | `definition` | The name in the definition of the rule or type under the cursor. With duplicate definitions, the first |
 | `references`, `documentHighlight` | Every occurrence of the name, in the definition (a write highlight) and in references (read highlights) |
 | `documentSymbol` | Rules (with their type) and types (struct, terminal or alias), with the fields of structs as children |
-| `hover` | For a rule, `def name: Type` with the type declared or inferred, and its documentation comment: the comment lines directly above the definition, or the comment at the end of a one-line definition. For a type, its definition as `pego fmt` prints it. Built-in types, functions, fields and attributes are described |
+| `hover` | For a rule, `rule name [Type] = expression` with the type declared or inferred, and its documentation comment: the comment lines directly above the definition, or the comment at the end of a one-line definition. For a type, its definition as `pego fmt` prints it. Built-in types, functions, fields and attributes are described |
 | `prepareRename`, `rename` | Renames a rule or type defined in the file, everywhere it occurs. Refused, with a message, while the file has syntax errors (occurrences in the definitions the parser dropped would be missed), for built-in and undefined names, and for a new name that is not an identifier, is a keyword, is already defined or used (renaming to the name of an undefined rule would make its references refer to the renamed one), or (for a type) is reserved or does not start with an uppercase letter |
 | `completion` | See below |
 | `semanticTokens/full` | Tells rule names, type names (built-in ones as `defaultLibrary`), capture labels, predicate variables, fields, built-in functions, attributes, keywords, strings, numbers, character classes and comments apart. Punctuation is left to the TextMate grammar |
@@ -137,17 +137,17 @@ requires.
 
 Completion cannot rely on the grammar, because the definition being typed rarely parses.
 It looks at the tokens before the cursor instead: inside a comment, string or character class it offers nothing;
-after `#`, the attributes; after `->` or inside `[...]` (a value expression), the built-in functions, `new`, `true`,
-`false`, `nil` and predicate variables, the capture labels and lambda parameters of the definition after `$`, the
-struct types after `new` and the fields after `.`; in the type of a rule or a type definition, the types; after
+after `@`, the attributes; after `=>` in a rule body, the built-in functions, `true`, `false`, `nil` and predicate
+variables, the capture labels and lambda parameters of the definition after `$`, the struct types in constructors and
+the fields after `.`; in the type of a rule or a type definition, the types; after
 `infix`, the associativities; elsewhere in a rule body, the rules and the keywords that may come there.
 `$` and `.` are trigger characters, so the client asks for completions as soon as they are typed; in a parsing
 expression they are the end-of-line anchor and any character, and the server offers nothing directly after them, so
 that pressing Enter does not turn `$` into a capture reference or `.` into `.rule`.
-Rule and type names come from every `def name` and `type Name` in the file, including definitions that do not parse
+Rule and type names come from every `rule name` and `type Name` in the file, including definitions that do not parse
 yet.
 
-### Editor integration
+### Editor Integration
 
 The server is generic: an editor needs only to start `pego lsp` for `.pego` files.
 `editors/vscode/` adds what VS Code needs: a language definition for `.pego` files (line comments, brackets,
@@ -200,7 +200,7 @@ The node modules and the packaged `.vsix` are not committed.
 
 - A document is a whole grammar; there are no imports, so there is no workspace-wide analysis.
 - Inferred rule types are shown only when the whole grammar compiles.
-- Captures (`$name`), Pratt level names and lambda parameters are not navigable; completion of captures after `$`
+- Captures (`$name`), Operators Rule level names and lambda parameters are not navigable; completion of captures after `$`
   lists the labels of the whole definition, not only those in scope.
 - Completion is lexical: it can offer a name that is not valid at the cursor in unusual layouts.
 - There is no code action, signature help or folding range; editors fold on indentation and brackets.

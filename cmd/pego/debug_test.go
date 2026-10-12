@@ -6,17 +6,16 @@ import (
 	"testing"
 )
 
-const pairs = `
-def main = ws pair+ $$
-def pair = key "=" value ";"? ws
-def key = @(?a-z)+
-def value = @(?0-9)+
-def ws = (? \n)*`
+const pairs = `rule main = ws pair+ $$
+rule pair = key "=" value ";"? ws
+rule key = [a-z]+ #atomic
+rule value = [0-9]+ #atomic
+rule ws = [ \n]*`
 
 func TestTrace(t *testing.T) {
 	g := writeFile(t, "pairs.pego", pairs)
 	out, err := runCLI(t, "", "trace", "-g", g, "-i", "a=1;\nb=x", "-failures")
-	if err == nil || err.Error() != "2:3: syntax error: expected (?0-9)" {
+	if err == nil || err.Error() != "2:3: syntax error: expected [0-9]" {
 		t.Errorf("error %v", err)
 	}
 	want := `main 1:1
@@ -28,9 +27,9 @@ func TestTrace(t *testing.T) {
   pair -> matched 1:1-2:1 "a=1;\n"
   pair 2:1
     key 2:1 -> matched 2:1-2:2 "b"
-    value 2:3 -> failed (at 2:3: expected (?0-9))
-  pair -> failed (at 2:3: expected (?0-9))
-main -> failed (at 2:3: expected (?0-9))
+    value 2:3 -> failed (at 2:3: expected [0-9])
+  pair -> failed (at 2:3: expected [0-9])
+main -> failed (at 2:3: expected [0-9])
 `
 	if out != want {
 		t.Errorf("got\n%s\nwant\n%s", out, want)
@@ -81,7 +80,7 @@ main -> matched 1:1-1:9 "a=1;b=22"
 	}
 	failure, _ := exit["failure"].(map[string]any)
 	if exit["event"] != "exit" || exit["matched"] != false || exit["evals"] != 1.0 || failure == nil || failure["col"] != 3.0 ||
-		strings.Join(toStrings(failure["expected"]), ",") != "(?0-9)" {
+		strings.Join(toStrings(failure["expected"]), ",") != "[0-9]" {
 		t.Errorf("exit %v", exit)
 	}
 
@@ -105,10 +104,9 @@ func toStrings(v any) []string {
 
 // TestTraceLeftRecursion shows the growth of a left-recursive rule and memo hits.
 func TestTraceLeftRecursion(t *testing.T) {
-	g := writeFile(t, "lr.pego", `
-def main = sum $$
-def sum = sum "+" n / n
-def n = @(?0-9)+`)
+	g := writeFile(t, "lr.pego", `rule main = sum $$
+rule sum = sum "+" n / n
+rule n = [0-9]+ #atomic`)
 	out, err := runCLI(t, "", "trace", "-g", g, "-i", "1+2")
 	want := `main 1:1
   sum 1:1
@@ -177,7 +175,7 @@ func TestProfileCmd(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &res); err != nil {
 		t.Fatal(err)
 	}
-	if res.Result != "1:7: syntax error: expected (?0-9)" || res.Parses != 1 || len(res.Rules) != 2 || res.Rules[0].Calls < res.Rules[1].Calls || len(res.Hints) == 0 {
+	if res.Result != "1:7: syntax error: expected [0-9]" || res.Parses != 1 || len(res.Rules) != 2 || res.Rules[0].Calls < res.Rules[1].Calls || len(res.Hints) == 0 {
 		t.Errorf("got %+v", res)
 	}
 	if _, err := runCLI(t, "", "profile", "-g", g, "-sort", "size"); err == nil {
@@ -188,11 +186,11 @@ func TestProfileCmd(t *testing.T) {
 func TestExplain(t *testing.T) {
 	g := writeFile(t, "pairs.pego", pairs)
 	out, err := runCLI(t, "", "explain", "-g", g, "-i", "a=1;\nb=x")
-	want := `2:3: syntax error: expected (?0-9)
+	want := `2:3: syntax error: expected [0-9]
 
 Calls that recorded what was expected at 2:3 (innermost first):
 
-  value 2:3: expected (?0-9)
+  value 2:3: expected [0-9]
     in pair 2:1
     in main 1:1
 `
@@ -202,15 +200,15 @@ Calls that recorded what was expected at 2:3 (innermost first):
 	// Calls that matched can record expectations after their match; each call shows only the
 	// expectations it recorded itself. The start rule's $$ expects the end of input.
 	out, err = runCLI(t, "", "explain", "-g", g, "-i", "a=1 !", "-backend", "bytecode-iterative")
-	want = `1:5: syntax error: expected (? \n), (?a-z), end of input
+	want = `1:5: syntax error: expected [ \n], [a-z], end of input
 
 Calls that recorded what was expected at 1:5 (innermost first):
 
-  ws 1:4: matched " ", then expected (? \n)
+  ws 1:4: matched " ", then expected [ \n]
     in pair 1:1
     in main 1:1
 
-  key 1:5: expected (?a-z)
+  key 1:5: expected [a-z]
     in pair 1:5
     in main 1:1
 
@@ -220,14 +218,14 @@ Calls that recorded what was expected at 1:5 (innermost first):
 		t.Errorf("got %v\n%s\nwant\n%s", err, out, want)
 	}
 	// Without $$, the parser expects the end of input after the start rule returns.
-	unanchored := writeFile(t, "unanchored.pego", `def main = pair+
-def pair = @(?a-z) "=" @(?0-9)`)
+	unanchored := writeFile(t, "unanchored.pego", `rule main = pair+
+rule pair = [a-z] #atomic "=" [0-9] #atomic`)
 	out, err = runCLI(t, "", "explain", "-g", unanchored, "-i", "a=1!")
-	want = `1:4: syntax error: expected (?a-z), end of input
+	want = `1:4: syntax error: expected [a-z], end of input
 
 Calls that recorded what was expected at 1:4 (innermost first):
 
-  pair 1:4: expected (?a-z)
+  pair 1:4: expected [a-z]
     in main 1:1
 
   The start rule matched up to 1:4, but the input does not end there.
@@ -239,15 +237,14 @@ Calls that recorded what was expected at 1:4 (innermost first):
 		t.Errorf("got %v %q", err, out)
 	}
 	// Errors recovered by #recover are explained one by one.
-	r := writeFile(t, "recover.pego", `
-def main = stmt* $$
-def stmt = (word ";") #recover(skip=(?^;)+ ";")
-def word = @(?a-z)+`)
+	r := writeFile(t, "recover.pego", `rule main = stmt* $$
+rule stmt = (word ";") #recover(skip=[^;]+ ";")
+rule word = [a-z]+ #atomic`)
 	out, err = runCLI(t, "", "explain", "-g", r, "-i", "a;1;b;2;")
 	for _, want := range []string{
-		"1:3: syntax error: expected (?a-z) (recovered)\n",
-		"  word 1:3: expected (?a-z)\n    in stmt 1:3\n    in main 1:1\n",
-		"1:7: syntax error: expected (?a-z) (recovered)\n",
+		"1:3: syntax error: expected [a-z] (recovered)\n",
+		"  word 1:3: expected [a-z]\n    in stmt 1:3\n    in main 1:1\n",
+		"1:7: syntax error: expected [a-z] (recovered)\n",
 	} {
 		if err != nil || !strings.Contains(out, want) {
 			t.Errorf("got %v, output lacks %q:\n%s", err, want, out)
@@ -258,9 +255,8 @@ def word = @(?a-z)+`)
 // TestExplainErrorLabel checks that expectations that #error replaced with its message, which
 // the calls in its expression still recorded, are not listed.
 func TestExplainErrorLabel(t *testing.T) {
-	g := writeFile(t, "let.pego", `
-def main = "let" " " name #error(message="expected a name") ";"
-def name = @(?a-z)+ (?0-9)*`)
+	g := writeFile(t, "let.pego", `rule main = "let" " " name @error(message="expected a name") ";"
+rule name = [a-z]+ #atomic [0-9]*`)
 	out, err := runCLI(t, "", "explain", "-g", g, "-i", "let 1;")
 	want := `1:5: expected a name
 
@@ -276,17 +272,16 @@ Calls that recorded what was expected at 1:5 (innermost first):
 // TestExplainRecoveredBody checks that the expectations of the expression a #recover recovered
 // from, which the record of the enclosing call no longer holds, are attributed to that call.
 func TestExplainRecoveredBody(t *testing.T) {
-	r := writeFile(t, "recover.pego", `
-def main = stmt* $$
-def stmt = (word ";") #recover(skip=(?^;)+ ";")
-def word = @(?a-z)+`)
+	r := writeFile(t, "recover.pego", `rule main = stmt* $$
+rule stmt = (word ";") #recover(skip=[^;]+ ";")
+rule word = [a-z]+ #atomic`)
 	out, err := runCLI(t, "", "explain", "-g", r, "-i", "ab1;cd;", "-backend", "bytecode")
 	// A single recovered error is marked too.
-	want := `1:3: syntax error: expected ";", (?a-z) (recovered)
+	want := `1:3: syntax error: expected ";", [a-z] (recovered)
 
 Calls that recorded what was expected at 1:3 (innermost first):
 
-  word 1:1: matched "ab", then expected (?a-z)
+  word 1:1: matched "ab", then expected [a-z]
     in stmt 1:1
     in main 1:1
 

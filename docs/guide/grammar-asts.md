@@ -1,10 +1,10 @@
-# Building grammars as ASTs and JSON
+# Building Grammars as ASTs and JSON
 
 Use package `grammar` when a tool builds a grammar in Go or loads its JSON
 representation. `pego.Compile` checks it and returns a parser; Go and
 TypeScript generation use the same compiler.
 
-## Validate a hand-built grammar
+## Validate a Hand-Built Grammar
 
 `grammar.Validate(g)` checks the structure before compilation or formatting.
 It returns the first `*grammar.ValidationError` without changing the AST:
@@ -61,7 +61,7 @@ created from noncanonical negative maxima to replace incorrectly narrowed
 or rejected bytecode.
 
 This is structural validation. It does not resolve names, check action types,
-validate attributes or enforce Pratt semantics; compile the grammar for those
+validate attributes or enforce Operators Rule semantics; compile the grammar for those
 checks. It also does not validate source comments/layout or impose resource
 limits. `grammar.Format` and `grammar.MarshalJSON` expect structurally valid
 input; call `Validate` first for ASTs your tool constructs. The validator walks
@@ -91,6 +91,23 @@ input should reject unknown fields and duplicate keys at every object. Its
 those strictness errors; malformed JSON wraps the standard syntax error. Both
 entry points check one complete value and run structural validation, while
 the legacy `UnmarshalJSON` signature and permissive behavior remain unchanged.
+
+Source `@` attributes use `Attributed` and `Attribute`: `args` is an ordered list
+of integers, strings, booleans, null slots or expression nodes, and `kwArgs`
+maps argument names to the same value forms. For example, `@custom(2,)`
+preserves `[2, null]`, whereas `@custom(2)` preserves `[2]`. Integer argument
+values, including the native minimum, survive source formatting and parsing. Keyword arguments
+follow positional arguments in source. Strict JSON decoding also rejects
+repeated keyword keys.
+
+Source-only syntax has dedicated AST nodes. An explicit PEG grouping is `Group{Expr}`; formatting and JSON preserve the group, while compilation normalizes it away before matching. Source-aware data also retains the group body, closing-delimiter comments and layout; JSON omits source layout and positions. A braced action sequence is `Block{Statements}`. Predicate Actions with one statement continue to use the existing `Predicate.Term` node and retain their existing executable semantics. Empty or multi-statement Predicate Action blocks and all braced Value Actions can be parsed, formatted and serialized, but semantic checking rejects them as unsupported; their statements do not execute.
+
+Source `#` pragmas use dedicated expression nodes: `#repeat` is `Repeat`,
+`#atomic` is `Atomic`, `#recover` is `Recovery`, and `#stream` is `Stream`.
+Their payloads follow each pragma's own syntax. Compilation lowers recovery
+and streaming into its executable representation without changing the source
+AST. An `InlineAction` node can be formatted and serialized, but compilation
+rejects it until inline action execution is implemented.
 
 After loading, use `pego.Compile(g, "main")` to perform semantic checking.
 Compile and the generators also run structural validation themselves, including

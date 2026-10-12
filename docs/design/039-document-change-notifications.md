@@ -12,7 +12,7 @@ Add versioned notifications that distinguish source edits, grammar work re-evalu
 
 The public `pego.Document` applies edits in its configured position unit and incrementally reuses memo results. Reused Nodes can move in place, so retaining a previous `*Node` does not preserve the old output. `Stats` counts evaluation and reuse; it is not a change range. Versioned snapshots are proposed in design 032, and notifications need that ownership boundary before claiming an old/new output comparison.
 
-## Goals and non-goals
+## Goals and Non-Goals
 
 - Associate each text state and parse outcome with the version defined by design 032.
 - Separate exact source edits, conservative invalidation/reevaluation evidence, and parse-output comparison.
@@ -20,7 +20,7 @@ The public `pego.Document` applies edits in its configured position unit and inc
 - Preserve batch coordinate semantics, no-op behavior, and version identity from design 032.
 - Do not promise minimal tree-diff ranges, infer ranges from stats, or make legacy mutable Nodes safe to retain.
 
-## Proposed contract
+## Proposed Contract
 
 An illustrative notification could be returned by a future `Document.DrainChanges`:
 
@@ -44,15 +44,15 @@ Single `Edit` calls use coordinates in the current text, as today, and retain se
 
 Until design-032 snapshots exist, the API can report exact edit records and conservative `may-have-changed` status only. It must not compare a prior legacy Node because a later Document parse can mutate it. Snapshot-retention and notification-queue limits follow the snapshot ownership policy; on overflow, coalesce to an explicit full-refresh marker that retains the latest shared version and unit.
 
-## Implementation and invalidation
+## Implementation and Invalidation
 
 Reuse the Document's existing memo invalidation as the evidence source; do not create a second invalidation algorithm in the notification layer. Initially report the accepted text edit and whole-document `may-have-changed` status. Later expose conservative invalidation ranges only after their meaning is defined. Snapshot equality is a separate stage. Position shifts, recovery, position-valued actions, same-length edits, and left-recursion dependencies must not be treated as unchanged merely because tree shape is stable.
 
-## Compatibility and backend support
+## Compatibility and Backend Support
 
 This proposal extends the public core `pego.Document`; recognition remains outside its current contract. Closure, recursive bytecode, and iterative bytecode must agree on observable snapshot equality. Evidence ranges may be implementation-specific only when labeled as such. Generated Go and TypeScript parsers do not expose `Document`; no such support is implied. Existing `Edit`, `Parse`, `Text`, and `Stats` remain source-compatible. Position values use the existing Document unit.
 
-## Implementation sequence
+## Implementation Sequence
 
 1. Reuse the shared version type and no-op/batch semantics from design 032; record exact edit operations.
 2. Add conservative change draining and an explicit full-refresh overflow marker.
@@ -60,17 +60,17 @@ This proposal extends the public core `pego.Document`; recognition remains outsi
 4. Compare design-032 snapshots to report confirmed whole-output equality or change, including scalars and diagnostics.
 5. Consider minimal output ranges only after the tree/edge contract in [design 031](031-iterative-tree-traversal.md) and measured need justify them.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Treat stats as ranges:** counters have no source interval semantics and can hide lost reuse. Keep stats separate.
 - **Diff legacy Nodes:** Document reuse can mutate the earlier result. Compare version-owned snapshots.
 - **Always publish exact changed subtrees:** this needs stable identity, parent/edge and scalar semantics. Begin with whole-output comparison or a conservative status.
 - **Notify only on text edits:** that leaves clients to infer output equality from shape. Keep source edits and output changes distinct.
 
-## Testing and performance plan
+## Testing and Performance Plan
 
 Test rejected edits, advancing identity edits and nonempty identity batches, empty non-advancing batches, single sequential edits, atomic same-base batches, both position units, Unicode and malformed UTF-8 boundaries, same-shape replacements, parse without edits, syntax errors/recovery, scalar actions, positional values, memo invalidation, shifts, abort/retry, coalescing, overflow/full refresh, and version gaps. Compare incremental results with full recomputation; confirmed output status must match complete snapshot comparison on every core backend. Measure edit recording, invalidation, snapshot comparison/retention, and notification delivery separately across input and tree sizes. No measurements or timing promises are available.
 
-## Limitations and open questions
+## Limitations and Open Questions
 
 The queue/drain method shape remains a proposal; recommendation: pull-based draining with explicit full-refresh overflow and consumer-owned snapshots. Version type, identity, no-op behavior, and atomic batch coordinates are inherited from design 032, not re-decided here. Work-limit and cancellation errors follow [design 033](033-cancellable-parses-and-work-budgets.md).

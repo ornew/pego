@@ -11,7 +11,7 @@ func TestRecoverySkipCutCanReachFallback(t *testing.T) {
 		`(_|_ #recover(skip=(-- "x")))*`,
 		`((_|_ #recover(skip=(-- "x"))) / _)`,
 	} {
-		_, findings := lintSource(t, "def main = "+expr+` / ""`, Options{})
+		_, findings := lintSource(t, "rule main = "+expr+` / ""`, Options{})
 		for _, f := range findings {
 			if f.Check == CheckShadowedAlt && strings.Contains(f.Message, "never tried") {
 				t.Errorf("reachable fallback reported dead for %s: %s", expr, f)
@@ -22,7 +22,7 @@ func TestRecoverySkipCutCanReachFallback(t *testing.T) {
 
 func TestGuaranteedDeadSuffixDoesNotChangeLeftRecursion(t *testing.T) {
 	for _, prior := range []string{`""`, `empty`, `empty #recover(skip=empty)`} {
-		_, findings := lintSource(t, "def main = r2\ndef r1 = r2?\ndef r2 = ((\"a\" / r1 / \"\\n\") / ("+prior+") / r2){0,1}\ndef empty = \"\"", Options{})
+		_, findings := lintSource(t, "rule main = r2\nrule r1 = r2?\nrule r2 = ((\"a\" / r1 / \"\\n\") / ("+prior+") / r2) #repeat(0,1)\nrule empty = \"\"", Options{})
 		found := false
 		for _, f := range findings {
 			if f.Check == CheckShadowedAlt && strings.Contains(f.Message, "never tried") {

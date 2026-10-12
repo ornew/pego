@@ -1,4 +1,4 @@
-# 22. Bounded memory and less copying in stream parsing
+# 22. Bounded Memory and Less Copying in Stream Parsing
 
 - **Retention.** A stream parse is meant to hold only its working set, but the reachable heap grew with the number of
   elements on several grammars (found while writing the streaming guide): about 78 MB per 100,000 records for a grammar

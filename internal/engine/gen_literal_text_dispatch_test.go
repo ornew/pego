@@ -15,7 +15,7 @@ import (
 )
 
 func TestLiteralTextPredicateDispatchGeneration(t *testing.T) {
-	const source = `def main = w:@(?a-z)+ [text($w)=="a" || "b"==text($w)] $$`
+	const source = `rule main = w:[a-z]+ #atomic {text($w) == "a" || "b" == text($w)} $$`
 	g, err := syntax.Parse(source)
 	if err != nil {
 		t.Fatal(err)
@@ -52,11 +52,11 @@ func TestLiteralTextPredicateDispatchGeneration(t *testing.T) {
 
 func TestLiteralTextPredicateDispatchRejectsUnsafeShapes(t *testing.T) {
 	cases := []string{
-		`def main = w:@(?a-z)+ [text($w)=="a" || len($w)==1] $$`,
-		`def main = x:@(?a-z) y:@(?a-z) [text($x)=="a" || text($y)=="b"] $$`,
-		`def main = w:@(?a-z)+ [text($w)=="a" || !(text($w)=="b")] $$`,
-		`def main = w:@(?a-z)+ [alias=text($w)] [alias=="a" || alias=="b"] $$`,
-		`def main = w:@(?a-z)+ [result = text($w)=="a" || text($w)=="b"] $$`,
+		`rule main = w:[a-z]+ #atomic {text($w) == "a" || len($w) == 1} $$`,
+		`rule main = x:[a-z] #atomic y:[a-z] #atomic {text($x) == "a" || text($y) == "b"} $$`,
+		`rule main = w:[a-z]+ #atomic {text($w) == "a" || !(text($w) == "b")} $$`,
+		`rule main = w:[a-z]+ #atomic {alias := text($w)} {alias == "a" || alias == "b"} $$`,
+		`rule main = w:[a-z]+ #atomic {result := text($w) == "a" || text($w) == "b"} $$`,
 	}
 	for i, source := range cases {
 		g, err := syntax.Parse(source)
@@ -91,7 +91,7 @@ func TestLiteralTextPredicateDispatchTSDisabledParity(t *testing.T) {
 	if err != nil {
 		t.Skip("node not found")
 	}
-	const source = `def main = w:@(?^!)* [text($w)=="" || text($w)=="a" || text($w)=="b" || text($w)=="é" || text($w)=="😀" || text($w)=="a"] $$`
+	const source = `rule main = w:[^!]* #atomic {text($w) == "" || text($w) == "a" || text($w) == "b" || text($w) == "é" || text($w) == "😀" || text($w) == "a"} $$`
 	g, err := syntax.Parse(source)
 	if err != nil {
 		t.Fatal(err)
@@ -213,9 +213,9 @@ func TestGeneratedLiteralDispatchWorkload(t *testing.T) {
 		t.Skip("set PEGO_LITERAL_DISPATCH_DIR to write standalone workload fixtures")
 	}
 	workloads := []literalDispatchWorkload{
-		{name: "small", source: `def main = w:@(?^!)+ [text($w)=="alpha" || "β"==text($w)] $$`, inputs: []literalDispatchInput{{Key: "hit-first", Value: "alpha"}, {Key: "hit-last-unicode", Value: "β"}, {Key: "miss", Value: "miss"}, {Key: "unicode-miss", Value: "éclair"}}},
-		{name: "large", source: `def main = w:@(?^!)+ [text($w)=="alpha" || text($w)=="bravo" || text($w)=="charlie" || text($w)=="delta" || text($w)=="éclair" || text($w)=="😀" || text($w)=="日本語" || text($w)=="λambda"] $$`, inputs: []literalDispatchInput{{Key: "hit-first", Value: "alpha"}, {Key: "hit-middle", Value: "delta"}, {Key: "hit-last", Value: "λambda"}, {Key: "hit-unicode", Value: "日本語"}, {Key: "miss", Value: "miss"}}},
-		{name: "control", source: `def main = w:@(?^!)+ [text($w)=="alpha" || len($w)==1] $$`, inputs: []literalDispatchInput{{Key: "hit-first", Value: "alpha"}, {Key: "hit-length", Value: "x"}, {Key: "miss", Value: "miss"}, {Key: "unicode-miss", Value: "日本語"}}},
+		{name: "small", source: `rule main = w:[^!]+ #atomic {text($w) == "alpha" || "β" == text($w)} $$`, inputs: []literalDispatchInput{{Key: "hit-first", Value: "alpha"}, {Key: "hit-last-unicode", Value: "β"}, {Key: "miss", Value: "miss"}, {Key: "unicode-miss", Value: "éclair"}}},
+		{name: "large", source: `rule main = w:[^!]+ #atomic {text($w) == "alpha" || text($w) == "bravo" || text($w) == "charlie" || text($w) == "delta" || text($w) == "éclair" || text($w) == "😀" || text($w) == "日本語" || text($w) == "λambda"} $$`, inputs: []literalDispatchInput{{Key: "hit-first", Value: "alpha"}, {Key: "hit-middle", Value: "delta"}, {Key: "hit-last", Value: "λambda"}, {Key: "hit-unicode", Value: "日本語"}, {Key: "miss", Value: "miss"}}},
+		{name: "control", source: `rule main = w:[^!]+ #atomic {text($w) == "alpha" || len($w) == 1} $$`, inputs: []literalDispatchInput{{Key: "hit-first", Value: "alpha"}, {Key: "hit-length", Value: "x"}, {Key: "miss", Value: "miss"}, {Key: "unicode-miss", Value: "日本語"}}},
 	}
 	manifest := literalDispatchManifest{Schema: 1, GoVersion: "1.27.1"}
 	for _, workload := range workloads {

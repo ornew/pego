@@ -20,7 +20,7 @@ publish no partial batch result and release their mutable execution state.
 ## Motivation
 
 A shallow grammar can repeatedly scan long input, backtrack across alternatives,
-or perform many LR/Pratt growth rounds without reaching its depth limit. Editors
+or perform many LR/Operators Rule growth rounds without reaching its depth limit. Editors
 also need to abandon outdated work while preserving a Document for retry.
 
 Source inspection at `6fac14632cbf933d91fee7f8e5df9e82fb134c56` establishes the
@@ -56,7 +56,7 @@ cost from a disabled branch.
 ## Goals
 
 - Cancel or exhaust a budget across ordinary calls, scans, actions/predicates,
-  repetition, LR/Pratt, memo hits, resumption, and result conversion.
+  repetition, LR/Operators Rule, memo hits, resumption, and result conversion.
 - Return identifiable interruption errors and safe zero results; consuming
   grammar recovery must not absorb an interruption.
 - Reset all provisional/reusable execution state after active interruption while
@@ -66,7 +66,7 @@ cost from a disabled branch.
 - Validate default-path cost against an exact parent and a same-revision static
   reference, including GC-phase costs, before adopting the implementation.
 
-## Non-goals
+## Non-Goals
 
 This proposal does not impose default finite budgets, change depth defaults,
 preempt arbitrary goroutines, close caller readers, add asynchronous parsing,
@@ -145,7 +145,7 @@ and named ParseRuleAST where available. Named typed dispatch resolves options
 once before lookup, then shares the resolved state through direct execution or
 Node conversion; it must not reevaluate callbacks to establish a budget.
 
-### What the limits count
+### What the Limits Count
 
 Counters are cumulative per invocation and never rolled back on backtracking,
 failed lookahead, recovery, LR growth, or repeated work. Zero disables that
@@ -157,7 +157,7 @@ failed reservation. Use subtraction/checks rather than overflowing counters.
 **Steps** are backend execution work events, not source characters or CPU
 instructions. Charge VM expression/action instruction dispatches; closure and
 generated expression/action operations at their emitted execution boundaries;
-rule/memo dispatch and LR/Pratt selection/growth iterations; repetition/resume
+rule/memo dispatch and LR/Operators Rule selection/growth iterations; repetition/resume
 iterations; and per-element work in unbounded engine loops. Include graph edges
 visited during position movement, collection construction, and typed conversion,
 so a memo hit or converter cannot bypass the limit by returning a large graph.
@@ -189,7 +189,7 @@ no fictional scan of its whole examined range. Position/diagnostic updates and
 actual traversal of a reused graph are still charged. Limits bound current work,
 not the amount of data originally needed to construct a memo result.
 
-### Cancellation checkpoints and long operations
+### Cancellation Checkpoints and Long Operations
 
 Check context before execution, before/after reader and user callback calls, and
 before result publication. Within controlled engine execution, target at most
@@ -199,7 +199,7 @@ of the cancellation polling interval. These initial internal constants are
 measurement targets, not a configurable API or a wall-clock latency guarantee.
 
 Chunk long literal/class scans, input decoding/copying, text operations, line/
-offset tables, rollback clearing, run/memo traversal, LR/Pratt loops, and typed
+offset tables, rollback clearing, run/memo traversal, LR/Operators Rule loops, and typed
 conversion. Polling only at rule entry or VM dispatch is insufficient when one
 operation contains a large loop. A one-time bounds check before an unbounded
 host-library copy does not establish bounded cancellation latency. Split such
@@ -215,7 +215,7 @@ an alternative or be swallowed by predicate/action error recovery or #recover.
 Do not construct ordinary syntax diagnostics after the terminal interruption
 merely to fill in a location; that would perform additional unbudgeted scans.
 
-### Results and cleanup
+### Results and Cleanup
 
 Batch Node parsing returns nil on interruption; recognition returns the same
 interruption error. Typed Go returns the selected entry point's established zero
@@ -252,7 +252,7 @@ Document remains single-owner, and old mutable trees can still move during a
 subsequent parse. Interruption is not a transactional rollback of legacy Nodes
 already moved. Use Clone under its current contract to retain earlier results.
 
-### Reader and callback ownership
+### Reader and Callback Ownership
 
 Reader, trace, and emit callbacks run synchronously in the caller's goroutine.
 The parser never closes the reader or starts an unmanaged goroutine to interrupt
@@ -279,7 +279,7 @@ existing synchronous order/reentrancy ownership; no synthetic balanced exit
 events are promised after an interrupted call. Option callbacks themselves are
 caller code and are evaluated exactly once before execution controls apply.
 
-### Portable generated equivalent
+### Portable Generated Equivalent
 
 After core Go and generated Go meet their gates, extend existing TS options-aware
 entry points with optional `signal`, `maxInputWork`, and `maxSteps`. Preserve the
@@ -304,7 +304,7 @@ Direct typed/Node conversion and recognition controls require their own actual
 consumer/runtime tests. New helper names participate in the existing deterministic
 export-name collision allocator.
 
-### Implementation sequence and compatibility
+### Implementation Sequence and Compatibility
 
 1. Core Go batch controls, charging table, input/VM/closure loops, ownership and
    exact-parent/static-reference tests. Then Document invocation overrides and
@@ -323,7 +323,7 @@ where entry points already exist; no streams/Documents are implied. Saved module
 formats and grammar/action semantics stay unchanged. Update runtime, incremental,
 streaming, code-generation and TypeScript guides with the applicable stage.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Depth limits only.** Existing compatibility baseline, but shallow scans and
   backtracking can perform broad work. Keep depth plus optional independent limits.
@@ -355,7 +355,7 @@ These are proposed gates, not completed validation:
   backtracking, lookahead, predicates/actions and long text operations, LF/CRLF
   table scans, malformed/truncated UTF-8 and raw text, both position units.
 - Every backend; recursive/indirect LR and provisional completed dependencies,
-  Pratt, cuts, recovery, memo hits, resumed long repeats, position-valued actions,
+  Operators Rule, cuts, recovery, memo hits, resumed long repeats, position-valued actions,
   deep/shared graph movement/conversion. Interruption bypasses recovery and
   ordinary error translation; errors.Is/As and typed zeros are preserved.
 - Document interrupt/retry and edit/retry against fresh parsing; no-edit memo-hit
@@ -371,7 +371,7 @@ These are proposed gates, not completed validation:
   runtime and same-thread signal scheduling. No timer test may claim a synchronous
   parser yields without an explicit asynchronous API.
 
-## Performance and results
+## Performance and Results
 
 No performance promise or measured result. Pin exact parent and candidate,
 backend/unit, generated controls, compiler/runtime versions, grammar/input hashes,
@@ -382,7 +382,7 @@ and cancellation latency in engine work versus caller-blocked intervals.
 
 Use ordinary small/large batch Node, recognition, direct typed and conversion
 workloads; shallow scanning/backtracking; Document no-edit/edit/reparse/resume;
-streams; LR/Pratt and capture-heavy results. Separate initialization, evaluation,
+streams; LR/Operators Rule and capture-heavy results. Separate initialization, evaluation,
 conversion, cleanup, and first-use setup. Report paired time, B/op, allocations,
 peak/post-GC heap, retained context/input release, and work charged. Include runs
 that cross normal GC phases; an inactive parser field can change object size,
@@ -396,7 +396,7 @@ Check latency at the proposed polling quanta and worst single library/allocation
 intervals. Adoption needs measured default-path costs and declared tradeoffs;
 record actual results with the implementation, without claiming zero overhead.
 
-## Limitations and open questions
+## Limitations and Open Questions
 
 The proposed defaults form one coherent contract: no controls unless requested,
 per-invocation counters, cooperative context/signal polling, backend-local work

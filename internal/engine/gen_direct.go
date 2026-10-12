@@ -30,7 +30,7 @@ import (
 // (callees set their own) or p.trail (callees truncate it to its length at the call), so it
 // leaves them alone. Typed cuts use scope-local flags. Ordinary Go-local
 // direct methods exclude recovery; eligible recovery bodies use runtime-owned
-// frames and preserve full-mark rollback. Pratt rules retain runtime dispatch, with eligible
+// frames and preserve full-mark rollback. Operators Rule rules retain runtime dispatch, with eligible
 // typed line bodies inlined. Left-recursion leaders retain runtime
 // growth and finalization, with eligible typed expression bodies inlined.
 // Unfinished typed bodies keep runtime-owned capture frames and publish their
@@ -71,7 +71,7 @@ func directFrameExprOK(expr grammar.Expr, cuts, recovery bool) bool {
 			if !cuts {
 				ok = false
 			}
-		case *grammar.Pratt:
+		case *grammar.OperatorsRule:
 			ok = false
 		case *grammar.Attributed:
 			for _, a := range e.Attrs {
@@ -1033,7 +1033,7 @@ func (d *dgen) attr(e *grammar.Attributed, i int, s *dscope, build bool, fail st
 		d.line("%s = p.isolate(p.pos)", mark)
 		f, done := d.label(), d.label()
 		v := d.attr(e, i-1, s, build, f)
-		msg := d.g.desc(a.Args[0].Value.(*grammar.Literal).Value)
+		msg := d.g.desc(attributeMessage(a))
 		d.line("%s, %s = p.unisolate(%s)", far, exp, d.rd(mark))
 		d.line("p.mergeExpected(%s, %s)", d.rd(far), d.rd(exp))
 		if d.used[f] {

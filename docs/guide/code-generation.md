@@ -1,4 +1,4 @@
-# Generating Standalone Go Parsers with `pego gen`
+# Generating Standalone Go Parsers With `pego gen`
 
 `pego gen` turns a grammar into a Go source file: a parser you commit to your repository, build with your program, and
 call like any other package. The generated code depends only on the standard library. It does not import PEGO, and it
@@ -18,7 +18,7 @@ This guide shows how to generate a parser, how to call it, what it supports comp
 - [Trade-offs](#trade-offs)
 - [Recipes](#recipes)
 
-## Why generate
+## Why Generate
 
 | | Engine (`pego.CompileSource`) | Generated parser |
 |:--|:--|:--|
@@ -38,18 +38,18 @@ The generated parser returns the **same tree and the same errors** as the engine
 change what your code sees. The test suite checks this for every grammar in `examples/`
 ([design record 008](../design/008-code-generation.md)).
 
-## Quick start
+## Quick Start
 
 A complete, runnable setup. The grammar, `pairs.pego`, is the one used in the [runtime guide](runtime.md):
 
 ```pego
 type Pair struct { Key Match, Value Match }
 
-def main = ws ps:pair+ $$ -> $ps
-def pair: Pair = k:key "=" v:value ";"? ws -> new Pair{Key: $k, Value: $v}
-def key = @(?a-zあ-ん)+
-def value = @(?0-9)+
-def ws = (? \t\n)*
+rule main = ws ps:pair+ $$ => $ps
+rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
+rule key = [a-zあ-ん]+ #atomic
+rule value = [0-9]+ #atomic
+rule ws = [ \t\n]*
 ```
 
 The layout is a module with the grammar next to the code that generates from it, and the generated parser in its own
@@ -149,13 +149,13 @@ Pair "あい" at 8-10
 8
 "abc"@key <nil>
 rule nope is not defined
-true 1 5 [(?0-9)] 1:5: syntax error: expected (?0-9)
+true 1 5 [[0-9]] 1:5: syntax error: expected [0-9]
 {"type":"Match","rule":"key","start":0,"end":3,"text":"abc"}
 ```
 
 The output is exactly what the engine prints for the same grammar and input.
 
-## The `pego gen` command
+## The `pego gen` Command
 
 ```bash
 pego gen -g <grammar> -pkg <package> [-s <rule>] [-o <file>] [-types] [-recognize] [-nodoc] [-max-depth <n>]
@@ -219,7 +219,7 @@ identical source. Invalid defaults return an error before generated output is wr
 `pego gen` is a thin wrapper around `pego.GenerateGo` (and `pego.GenerateTypeScript` with `-lang ts`). Because a grammar built with the `grammar` package (see the
 [runtime guide](runtime.md#from-go-values-programmatic-grammars)) is just an AST, it can be generated from, too.
 
-## The generated API
+## The Generated API
 
 Every generated package has the same small API, defined in the file itself:
 
@@ -270,9 +270,9 @@ Compared with the engine's API:
   With this grammar, `rec.pego`:
 
   ```pego
-  def main = stmt* $$
-  def stmt = s:(("let" " " name ";")) #recover(skip=(?^;)* ";") -> $s
-  def name = @(?a-z)+
+  rule main =  stmt* $$
+  rule stmt =  s:("let" " " name ";") #recover(skip=[^;]* ";") => $s
+  rule name =  [a-z]+ #atomic
   ```
 
   generated into a package `recparser`, the node is returned together with the recovered errors:
@@ -289,8 +289,8 @@ Compared with the engine's API:
   ```
 
   ```
-  (Seq [(Seq "let" " " "a"@name ";") Error"let 1;"{message=`1:11: syntax error: expected (?a-z)`} (Seq "let" " " "b"@name ";")])@main
-  1 11 syntax error: expected (?a-z)
+  (Seq [(Seq "let" " " "a"@name ";") Error"let 1;"{message=`1:11: syntax error: expected [a-z]`} (Seq "let" " " "b"@name ";")])@main
+  1 11 syntax error: expected [a-z]
   ```
 
 - A generated parser is **safe for concurrent use**: each call has its own state, and the tables are read-only after
@@ -298,20 +298,20 @@ Compared with the engine's API:
 - Runtime errors in actions (such as division by zero) and exceeding the nesting limit return plain errors, as in the
   engine.
 
-### What is inside the file
+### What Is Inside the File
 
 | Part | Contents |
 |:--|:--|
-| Runtime | The parser state, memoization, left recursion, Pratt loop, attribute handling and the built-in functions of actions. About 1,800 lines, **the same in every generated file**, embedded in each generated file. |
+| Runtime | The parser state, memoization, left recursion, Operators Rule loop, attribute handling and the built-in functions of actions. About 1,800 lines, **the same in every generated file**, embedded in each generated file. |
 | Rule table | For each rule, the results of the engine's static analysis (memoized? left-recursion leader? capture names?). |
 | Parser expressions | One method per expression, with literals, character classes and rule indices embedded as constants, and one per rule that is never memoized and has no captures, which calls the rule's body directly. |
-| Actions and predicates | Go expressions; lambdas become Go function literals. |
+| Value Actions and Predicate Actions | Go expressions; lambdas become Go function literals. |
 
 That is why even a tiny grammar produces a file of a few dozen kilobytes. Measured sizes: `pairs.pego` (7 lines)
 generates 56,970 bytes; the JSON grammar ([parsers/json](../../parsers/json/json.pego), 1,514 bytes of source) generates
 92,537 bytes; the minilang grammar (4,416 bytes) generates 134,245 bytes. The growth is in the per-grammar part.
 
-## Typed values (`-types`)
+## Typed Values (`-types`)
 
 With `-types` (`pego.WithTypes()`), the generated package also defines a Go type for each type of the grammar and a
 function that returns the result as values of those types:
@@ -410,7 +410,7 @@ Details:
   parser builds the values directly, without the
   nodes `Parse` makes: on the benchmarks `ParseAST` then takes a half to two thirds of the time of `Parse` and a quarter
   to a third of the memory (JSON 6.7 → 3.1 ms and 10.4 → 2.4 MB on a 262 KB input, less than `Recognize`; XML, the
-  left-recursive calculator and the outline grammar alike; the Pratt calculator about 11% faster). Otherwise
+  left-recursive calculator and the outline grammar alike; the Operators Rule calculator about 11% faster). Otherwise
   `ParseAST` runs `Parse` and converts the tree, about 10% slower than `Parse` (minilang). The
   [design record](../design/012-typed-values.md) explains both. The typed runtime adds about as much code to the
   generated file as the parser itself.
@@ -453,7 +453,7 @@ Actions are not evaluated, so `Recognize` does not report runtime errors in acti
 takes about half the time of `Parse` (JSON 8.8 → 4.9 ms on a 262 KB input, CSV 4.0 → 1.8 ms), and it is the fastest
 way PEGO has to validate input. The price is a larger file: the second table adds about as much code as the first.
 
-### Invocation options and migration
+### Invocation Options and Migration
 
 ```go
 node, err := pairsparser.Parse(input,
@@ -482,7 +482,7 @@ existing `ParseOption_` becomes `ParseOption__`. Aliases and typed result signat
 consumers of renamed types and typed function values. Handwritten declarations in the generated package that use
 these new names must be renamed by the consumer; the generator cannot inspect those files.
 
-## What is supported
+## What Is Supported
 
 Everything in the language that works with `Parse` is generated; the entry points that need engine-level machinery are
 not.
@@ -490,10 +490,10 @@ not.
 | Feature | Engine | Generated |
 |:--|:--|:--|
 | All parsing expressions, captures, atomic and discarded expressions | Yes | Yes |
-| Pratt expressions, left recursion (direct and indirect) | Yes | Yes |
+| Operators Rule declarations, left recursion (direct and indirect) | Yes | Yes |
 | Predicates and variables, lookahead, cut | Yes | Yes |
 | Actions, types, built-in functions (`foldl`, `map`, `concat`, ...) | Yes | Yes |
-| `#error` and `#recover`, `SyntaxErrors` | Yes | Yes |
+| `@error` and `#recover`, `SyntaxErrors` | Yes | Yes |
 | Position units (code points, bytes) | `WithUnit` | `WithUnit` |
 | Another start rule | `WithStart` | `ParseRule` |
 | `#stream` and `ParseStream` | Yes | **No**: `#stream` is generated as an ordinary repetition, and there is no `ParseStream` |
@@ -508,15 +508,15 @@ Notes:
 - **Depth.** Generated code uses the Go stack for rule calls and fails with
   `nesting too deep: more than 100000 rule calls` at the default limit. `WithMaxDepth` changes the limit for one
   invocation, and `-max-depth` changes the generated default. With the nested-parentheses grammar
-  `def nested = "(" nested ")" / "x"`, 50,000 levels parse and 200,000 levels fail with that error. If you must accept
+  `rule nested = "(" nested ")" / "x"`, 50,000 levels parse and 200,000 levels fail with that error. If you must accept
   deeper nesting beyond the host stack, the engine's `BytecodeIterative` backend with `WithMaxDepth` is the tool
   ([runtime guide](runtime.md#deep-nesting-and-withmaxdepth)).
 - **Memory.** Generated parsers memoize in the same way as the engine, so memory still grows with the input. For input
   larger than memory you need the engine's `ParseStream`.
-- Using a stream grammar with the generator is fine: the `#stream` attribute is simply ignored, so the same grammar file
+- Using a stream grammar with the generator is fine: the `#stream` pragma is simply ignored, so the same grammar file
   serves both the engine (streaming) and the generated parser (whole-input).
 
-## Keeping generated code up to date
+## Keeping Generated Code up to Date
 
 Generated code is source: commit it, review its diffs, and regenerate it whenever the grammar changes **or you upgrade
 PEGO** (the embedded runtime comes from the version of `pego` that generated it). Three habits keep it honest.
@@ -552,7 +552,7 @@ func TestGeneratedIsUpToDate(t *testing.T) {
 }
 ```
 
-If you change `pairs.pego` (here: `def value = @(?0-9a-f)+`) and skip regeneration, the test fails. Among the output:
+If you change `pairs.pego` (here: `rule value =  [0-9a-f]+ #atomic `) and skip regeneration, the test fails. Among the output:
 
 ```
 --- FAIL: TestGeneratedIsUpToDate (0.00s)
@@ -586,7 +586,7 @@ func TestGeneratedMatchesEngine(t *testing.T) {
 Comparing JSON and error text covers the whole tree (with positions) and all error details. Include inputs that fail,
 and inputs that exercise each feature of your grammar.
 
-## Trade-offs
+## Trade-Offs
 
 - **Speed.** In the current [benchmark results](../benchmarks.md), generated Go takes 0.41–0.60× closure time in
   CodePoints and 0.47–0.62× in Bytes across eight workloads. Direct `ParseAST` values take 0.63–1.02× generated
@@ -612,7 +612,7 @@ and inputs that exercise each feature of your grammar.
 
 ## Recipes
 
-### One grammar, one package
+### One Grammar, One Package
 
 Each generated file defines `Node`, `SyntaxError`, `Parse` and the rest at package level, so two generated files in the
 same package collide:
@@ -625,19 +625,19 @@ both/b.go:17:6: Node redeclared in this block
 Give every grammar its own package (and directory), as `parsers/*` and `bench/gen/*` do. If you also
 want several entry points of one grammar, use `ParseRule` rather than generating it twice.
 
-### Engine in development, generated in production
+### Engine in Development, Generated in Production
 
 Keep one `.pego` file. Use `pego parse` and the engine (`CompileSource`) in tools, experiments and tests, where start-up
 and features matter more than speed; generate the production parser from the same file; and let the
 [parity test](#keeping-generated-code-up-to-date) prove they agree.
 
-### Choosing the start rule
+### Choosing the Start Rule
 
 Pass the usual entry rule as `-s` (for example `pego gen -g lang.pego -pkg lang -s program`) so that `Parse` is the common
 case, and use `ParseRule("expr", input)` for the others, for example for an expression evaluator embedded in a larger
 tool.
 
-### Wrapping the result in your own types
+### Wrapping the Result in Your Own Types
 
 If the grammar declares the types you want, [`-types`](#typed-values--types) generates them. Otherwise: the generated
 `Node` is the same loose shape for every grammar. A thin layer keeps that out of the rest of your program:

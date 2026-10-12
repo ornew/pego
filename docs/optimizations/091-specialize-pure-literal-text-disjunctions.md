@@ -1,4 +1,4 @@
-# 91. Specialize pure literal-text disjunctions
+# 91. Specialize Pure Literal-Text Disjunctions
 
 **Status:** Implemented.
 
@@ -25,7 +25,7 @@ side-effect-free capture-to-literal shape and leaves all other expressions on
 the general path. Literal-table sharing is a separate mechanism; this change
 specializes predicate dispatch.
 
-## Validation and reproduction
+## Validation and Reproduction
 
 `TestLiteralTextPredicateDispatchGeneration` checks the emitted Go and
 TypeScript switches and generation-only reference outputs.

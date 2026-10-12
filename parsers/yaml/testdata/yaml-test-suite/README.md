@@ -1,4 +1,4 @@
-# yaml-test-suite
+# Yaml-Test-Suite
 
 The test directories and `License` are copied from [yaml/yaml-test-suite](https://github.com/yaml/yaml-test-suite),
 data release `data-2022-01-17` (commit 6ad3d2c62885d82fc349026c136ef560838fdf3d of the `data` branch, MIT License).

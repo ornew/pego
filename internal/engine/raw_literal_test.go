@@ -14,6 +14,8 @@ import (
 // expressions are visited: string constants in actions have separate semantics.
 func firstLiteral(e grammar.Expr) *grammar.Literal {
 	switch e := e.(type) {
+	case *grammar.Group:
+		return firstLiteral(e.Expr)
 	case *grammar.Literal:
 		return e
 	case *grammar.Seq:
@@ -48,9 +50,9 @@ func replaceFirstLiteral(e grammar.Expr, value string) *grammar.Literal {
 
 func TestRawInvalidASTLiterals(t *testing.T) {
 	for _, raw := range rawLiteralValues() {
-		for _, shape := range []string{`t:"�"`, `t:"�" .`, `t:("�" / "other")`, `t:@("�"{2})`} {
+		for _, shape := range []string{`t:"�"`, `t:"�" .`, `t:("�" / "other")`, `t:("�" #repeat(2)) #atomic`} {
 			t.Run(fmt.Sprintf("%x/%s", raw, shape), func(t *testing.T) {
-				src := "type N struct { T Match, S string }\ndef main:N = " + shape + ` $$ -> new N{T:$t, S:"constant"}`
+				src := "type N struct { T Match, S string }\nrule main N = " + shape + ` $$ => N{T:$t, S:"constant"}`
 				g := mustParse(src)
 				lit := replaceFirstLiteral(g.Rules()[0].Expr, raw)
 				if lit == nil {
@@ -161,14 +163,14 @@ func rawLiteralGenCorpus() []genCase {
 			predicate := ""
 			switch shape {
 			case "suffix":
-				expr = "@(" + expr + " .)"
+				expr = "(" + expr + " .) #atomic"
 			case "predicate":
-				predicate = " [text($t)==" + strconv.Quote(canonical) + "]"
+				predicate = " {text($t)==" + strconv.Quote(canonical) + "}"
 			case "choice":
 				expr = "(" + expr + ` / "other")`
 			}
 			cases = append(cases, genCase{fmt.Sprintf("raw AST/%x/%s", raw, shape),
-				"type N struct { T Match }\ndef main:N = t:" + expr + predicate + " $$ -> new N{T:$t}",
+				"type N struct { T Match }\nrule main N = t:" + expr + predicate + " $$ => N{T:$t}",
 				[]string{raw, canonical, raw + "x", canonical + "x", "é", "éx", "other", "", "\xffx", "\x80x"}})
 		}
 	}

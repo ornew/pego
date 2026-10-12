@@ -1,4 +1,4 @@
-# 70. Keep repetition records across unchanged Document parses
+# 70. Keep Repetition Records Across Unchanged Document Parses
 
 - A root memo hit on an unchanged `Document.Parse` previously published an empty
   run map, losing the long repetition's next-edit resumption. Unchanged parses

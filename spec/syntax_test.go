@@ -13,7 +13,20 @@ import (
 	"github.com/ornew/pego"
 )
 
-var pegoBlock = regexp.MustCompile("(?s)```pego\n(.*?)```")
+var pegoBlock = regexp.MustCompile("(?ms)^([ \t]*)```pego[ \t]*\r?\n(.*?)^[ \t]*```[ \t]*$")
+
+// Markdown removes the fence indentation from list-nested code blocks.
+func pegoCodeBlocks(src string) []string {
+	var blocks []string
+	for _, m := range pegoBlock.FindAllStringSubmatch(src, -1) {
+		lines := strings.Split(m[2], "\n")
+		for i := range lines {
+			lines[i] = strings.TrimPrefix(lines[i], m[1])
+		}
+		blocks = append(blocks, strings.Join(lines, "\n"))
+	}
+	return blocks
+}
 
 // notExpressed lists the errors of the grammar reader that syntax.md says its grammar does not express.
 var notExpressed = []string{"invalid range", "invalid repetition", "invalid number"}
@@ -25,11 +38,11 @@ func TestSyntaxSummary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	blocks := pegoBlock.FindAllStringSubmatch(string(doc), -1)
+	blocks := pegoCodeBlocks(string(doc))
 	if len(blocks) != 1 {
 		t.Fatalf("syntax.md has %d pego code blocks, want 1", len(blocks))
 	}
-	p, err := pego.CompileSource(blocks[0][1], "file")
+	p, err := pego.CompileSource(blocks[0], "file")
 	if err != nil {
 		t.Fatalf("the grammar of syntax.md does not compile: %v", err)
 	}
@@ -74,9 +87,9 @@ func TestSyntaxSummary(t *testing.T) {
 			if err != nil {
 				return err
 			}
-			for i, m := range pegoBlock.FindAllStringSubmatch(string(src), -1) {
+			for i, m := range pegoCodeBlocks(string(src)) {
 				blocksChecked++
-				check(fmt.Sprintf("%s block %d", path, i+1), m[1])
+				check(fmt.Sprintf("%s block %d", path, i+1), m)
 			}
 		}
 		return nil
@@ -96,37 +109,37 @@ func TestSyntaxSummaryRejects(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := pego.CompileSource(pegoBlock.FindStringSubmatch(string(doc))[1], "file")
+	p, err := pego.CompileSource(pegoCodeBlocks(string(doc))[0], "file")
 	if err != nil {
 		t.Fatal(err)
 	}
 	for name, src := range map[string]string{
-		"capture with a space":      `def a = x :b`,
-		"repetition with a space":   `def a = "a" {2,3}`,
-		"call of a level and group": `def a = b(c d)`,
-		"attribute and group":       `def a = "a" #error(m "x")`,
-		"unterminated string":       `def a = "a`,
-		"unknown escape":            `def a = "\x"`,
-		"newline in string":         "def a = \"a\n\"",
-		"empty class":               `def a = (?)`,
-		"block comment":             `def a = /* x */ "a"`,
-		"package last":              "def a = \"a\"\npackage x",
-		"keyword as reference":      `def a = type`,
-		"chained comparison":        `def a = "a" -> 1 < 2 < 3`,
-		"missing action":            `def a = "a" ->`,
+		"capture with a space":        `rule a = x :b`,
+		"removed repetition spelling": `rule a = "a" {2,3}`,
+		"call of a level and group":   `rule a = b(c d)`,
+		"attribute and group":         `rule a = "a" @error(message=)`,
+		"unterminated string":         `rule a = "a`,
+		"unknown escape":              `rule a = "\x"`,
+		"newline in string":           "rule a = \"a\n\"",
+		"empty class":                 `rule a = []`,
+		"unterminated block comment":  `rule a = /* x "a"`,
+		"package last":                "rule a = \"a\"\npackage x",
+		"chained comparison":          `rule a = "a" => 1 < 2 < 3`,
+		"missing action":              `rule a = "a" =>`,
 	} {
 		if _, err := p.Parse(src, pego.RecognizeOnly()); err == nil {
 			t.Errorf("%s: %q is accepted", name, src)
 		}
 	}
 	for name, src := range map[string]string{
-		"level call":                `def a = b(c)`,
-		"class after a name":        `def a = b(?x)`,
-		"comment at the end":        `def a = "a" // c`,
-		"definitions on one line":   `def a = "a" def b = a`,
-		"attribute without args":    `def a = "a" #stream`,
-		"stacked postfix operators": `def a = "a"*?`,
-		"carriage return":           "def a = \"a\" // c\r\ndef b = a",
+		"level call":                `rule a = level(b, c)`,
+		"contextual word reference": `rule a = type`,
+		"class after a name":        `rule a = b [x]`,
+		"comment at the end":        `rule a = "a" // c`,
+		"definitions on one line":   `rule a = "a"; rule b = a`,
+		"attribute without args":    `rule a = "a" #stream`,
+		"stacked postfix operators": `rule a = "a"*?`,
+		"carriage return":           "rule a = \"a\" // c\rrule b = a",
 	} {
 		if _, err := p.Parse(src, pego.RecognizeOnly()); err != nil {
 			t.Errorf("%s: %q is rejected: %v", name, src, err)

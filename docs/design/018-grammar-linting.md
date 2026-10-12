@@ -67,22 +67,22 @@ applies to grammars from source, JSON or a `.pegoc` with the AST (without source
   `!$$ field ("\n" / $$)` looks nullable (its last item can match nothing at the end), while it can match nothing
   nowhere: `!$$` excludes the end. `examples/csv` is written exactly so, and the split is what keeps it quiet.
 - **canMatch** (may succeed at all) is a least fixed point: a rule that can only match by matching itself first, as in
-  `def a = "(" a ")"`, never matches. A second fixed point, in which `_|_` and `!` of an expression that always
+  `rule a = "(" a ")"`, never matches. A second fixed point, in which `_|_` and `!` of an expression that always
   succeeds are taken to match, leaves only the rules whose sole problem is recursion without a base case.
 - **matchPrefix(e, t)** tells whether `e` certainly succeeds on every input that begins with the string `t`, and if
   so whether it consumes exactly a known part of `t`. With `t = ""` it is "always succeeds". It follows rule calls,
   respects cuts (a cut can make an optional expression, a repetition or a choice fail, unless a nested choice,
-  repetition, optional expression or lookahead absorbs it), and treats predicates, anchors, Pratt expressions and calls
+  repetition, optional expression or lookahead absorbs it), and treats predicates, anchors, Operators Rule declarations and calls
   of left-recursive rules as never certain.
-- **fails(e, t)** is its counterpart for certain failure, used for negative lookaheads (`"if" !(?a-z)` is not certain
+- **fails(e, t)** is its counterpart for certain failure, used for negative lookaheads (`"if" ![a-z]` is not certain
   to succeed on `if`).
 - **prefix(e)** is a string that every match of `e` begins with (an under-approximation: often `""`), and whether
   every match is exactly that string.
-- **same(x, y)** compares expressions structurally, ignoring `@`, `-`, `#error` and `#stream`, which do not change what
+- **same(x, y)** compares expressions structurally, ignoring `@`, `-`, `@error` and `#stream`, which do not change what
   matches, and capture names when neither side has a predicate.
 
 Calls of left-recursive rules are never certain to succeed because, while a rule grows its left recursion, a call of
-it inside the cycle returns the match found so far, which is a failure at first. `def r = r / "a"` matches `a`
+it inside the cycle returns the match found so far, which is a failure at first. `rule r = r / "a"` matches `a`
 through its second alternative, although "`r` matches wherever `"a"` does" holds for the finished rule. The randomized
 test below found this case.
 
@@ -114,13 +114,13 @@ in three ways:
    in the same state at the same position, so if `y` matches, its first items matched, and so does `x`. Duplicates are
    the case where `y` has no more items either.
 3. After the common items, the rest of `x` certainly succeeds on every input that begins with `prefix` of the rest of
-   `y`: `"a" / "ab"`, `"-" / "->"`, `ident / "if"` (`(?a-z)+` succeeds on any input that begins with `if`),
-   `(?0-9)+ / "0x" hex+`.
+   `y`: `"a" / "ab"`, `"-" / "->"`, `ident / "if"` (`[a-z]+` succeeds on any input that begins with `if`),
+   `[0-9]+ / "0x" hex+`.
 
-The same reasoning covers the operands of a Pratt expression (an ordered choice), and Pratt operators: the longest
+The same reasoning covers the operands of an Operators Rule (an ordered choice), and Operators Rule operators: the longest
 operator part wins and the first declared among equals, so a second operator of the same kind group (prefix, or
 infix and postfix) with the same expression is never selected. Operators of different levels are compared only when
-the rule is never called with a level, since `expr(level)` can leave out the first one.
+the rule is never called with a level, since `level(expr, first)` can leave out the first one.
 
 The suggested fix is to move the alternative before the one that shadows it (or remove a duplicate). Two caveats are
 not visible in the finding itself:
@@ -140,12 +140,12 @@ Overlapping first characters alone (`"ab" / "ac"`) are not reported: both can ma
   must consume input; `$` followed by items that must begin with a character other than a line break; `^` after items
   that always consume the same text, which does not end with a line feed.
 - Recursion without a base case: rules every match of which would contain a match of themselves (or of another such
-  rule), as in `def list = item "," list`. The rules that cannot match even if `_|_` matched are grouped by mutual
+  rule), as in `rule list = item "," list`. The rules that cannot match even if `_|_` matched are grouped by mutual
   recursion, and a group is reported only if it still cannot match when every rule outside it is assumed to. A rule
   that cannot match only because it calls such a rule, like `args = expr ("," args)?` with a broken `expr`, is not
   reported, although it calls itself.
 
-An explicit `_|_` is never reported: writing it is deliberate (`_|_ #error(...)`, or a probe like
+An explicit `_|_` is never reported: writing it is deliberate (`_|_ @error(...)`, or a probe like
 `compound_stmt _|_` in `examples/python`, which parses for its errors and then fails).
 
 ### `useless-lookahead`
@@ -154,19 +154,19 @@ An explicit `_|_` is never reported: writing it is deliberate (`_|_ #error(...)`
 an error. `&x` where `x` always succeeds, and `!x` where `x` can never match, have no effect: warnings. A positive
 lookahead with captures is left alone, since captures made in it stay in effect.
 
-### `nullable-repetition` and `redundant-optional`
+### `nullable-repetition` And `redundant-optional`
 
 The engine stops a repetition at the first iteration that consumes nothing, so `(x?)*` does not loop, but that
 iteration still adds an element (`nil`) to the list, and the grammar usually meant `x*`. `x?` where `x` always succeeds
 is the same as `x`, value included, when `x` has a value; when it has none (a lookahead), `x?` adds a `nil` child that
 `x` does not, so it is not reported.
 
-### `unused-capture` and `duplicate-capture`
+### `unused-capture` And `duplicate-capture`
 
 A capture's value can be read by the action or by a predicate of its scope, or, without an action, as a field of the
 rule's value. It cannot be read, and is reported, when:
 
-- the rule (or Pratt line) has an action and neither the action nor a predicate of the scope refers to it (names of
+- the rule (or Operators Rule line) has an action and neither the action nor a predicate of the scope refers to it (names of
   `map`/`foldl` parameters do not count);
 - the rule has a terminal type and no action: the terminal keeps no captures;
 - it is in the element of a repetition whose value is discarded: the repetition is not inside a capture, and the
@@ -179,16 +179,16 @@ silenced.
 `duplicate-capture` reports a name captured twice in one match of a scope, in sequence or nested; alternatives of a
 choice exclude each other and repetitions are scopes of their own. The later capture overwrites the earlier.
 
-### `char-class` and `unreachable-rule`
+### `char-class` And `unreachable-rule`
 
-`(?a-za-f)` and `(?__)` list characters twice (the fix shows the merged class). `(?A-z)` also matches
-`` [\]^_` ``, and `(?0-Z)` the punctuation between digits and capitals: a range whose ends are letters or digits of
+`[a-za-f]` and `[__]` list characters twice (the fix shows the merged class). `[A-z]` also matches
+`` [\]^_` ``, and `[0-Z]` the punctuation between digits and capitals: a range whose ends are letters or digits of
 different kinds; the fix shows the class without the punctuation.
 
 `unreachable-rule` is a warning, not an error: a grammar can have several entry points (`Parser.WithStart`). Rules only
 called by unreachable rules are reported too, with a message that says so.
 
-### Performance hints
+### Performance Hints
 
 They complement `pego profile`, which needs an input, with what the grammar's shape implies for `Document` reuse (see
 [Writing grammars that reuse well](../guide/incremental.md#writing-grammars-that-reuse-well)):
@@ -199,7 +199,7 @@ They complement `pego profile`, which needs an input, with what the grammar's sh
 - `positions`: a rule that reads `startPos` or `endPos` and is called repeatedly (from the element of a repetition, or
   on a recursion cycle). The message counts the rules that call it, whose results cannot be shifted either.
 - `long-lookahead`: a lookahead that itself repeats `.` or a negated class that admits a line feed, as
-  `&((?^!)* ($$ / "!"))`. Repetitions in rules that the lookahead calls are not followed: whitespace and comment rules
+  `&([^!]* ($$ / "!"))`. Repetitions in rules that the lookahead calls are not followed: whitespace and comment rules
   (`&(ws ":")`) end soon in practice, and following them reported every such lookahead in `examples/golang` and
   `examples/python`.
 
@@ -210,9 +210,9 @@ suppression belongs next to the code it excuses:
 
 ```pego
 // lint:ignore unused-capture the value is kept for debugging
-def stmt = s:simple k:keyword -> $s
+rule stmt = s:simple k:keyword => $s
 
-def main = a:"x" b:"y" -> $a // lint:ignore unused-capture
+rule main = a:"x" b:"y" => $a // lint:ignore unused-capture
 
 // lint:file-ignore unreachable-rule several entry points
 ```
@@ -233,7 +233,7 @@ projects that do not want a kind of finding at all.
 - `TestExamples` lints every grammar under `examples/` and compares the findings with a list checked by hand (the
   fourteen captures in `python.pego`); any other finding is a false positive.
 - `TestSoundness` generates random grammars of three rules over `a`, `b` and the line feed, with choices, sequences,
-  repetitions, lookaheads, anchors, cuts, `@`, `#error` and `#recover`. For each certain finding it changes the
+  repetitions, lookaheads, anchors, cuts, `@`, `@error` and `#recover`. For each certain finding it changes the
   grammar in a way that is equivalent exactly when the finding is true (it keeps cuts and left calls: `x` becomes
   `x _|_`, `!x` becomes `!(x / _)`, `&x` becomes `&(x / _)`, `x?` becomes `x`), and, for shadowed alternatives, also
   applies the suggested removal where it is safe. The two grammars must parse every input of up to four characters the
@@ -243,7 +243,7 @@ projects that do not want a kind of finding at all.
 - Deliberate failures: making optional expressions ignore cuts, nullability ignore `!`, or calls of left-recursive
   rules certain each makes the tests fail.
 
-## Not checked
+## Not Checked
 
 - **Actions that always produce nil, and captures that are never set**: the type checker infers the types of actions
   and rejects undefined captures at compile time; `-> nil` is deliberate.
@@ -251,10 +251,10 @@ projects that do not want a kind of finding at all.
   is not something a grammar author chooses; `pego profile` shows the cost on real input.
 - **Escape mistakes**: the lexer already rejects unknown escapes such as `\d`.
 - **Alternatives whose first characters overlap**: overlap alone is not a mistake.
-- **Cross-rule anchors** (`def a = "x" $$` called as `a "y"`): only anchors and their neighbors in one sequence are
+- **Cross-rule anchors** (`rule a = "x" $$` called as `a "y"`): only anchors and their neighbors in one sequence are
   checked.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Reporting from `Compile`**: compile errors stop compilation; most findings should not, and hints need not be seen
   every time. A separate entry point keeps compilation fast and quiet.
@@ -268,7 +268,7 @@ projects that do not want a kind of finding at all.
 
 ## Limitations
 
-- `matchPrefix` and `prefix` give up on predicates, Pratt expressions, level-restricted calls and left recursion, so
+- `matchPrefix` and `prefix` give up on predicates, Operators Rule declarations, level-restricted calls and left recursion, so
   shadowing through them is not reported.
 - Comment directives need source; for JSON and compiled grammars use `DisableChecks`.
 - The hints are heuristics: a right-recursive rule for a right-associative operator is correct, and a lookahead that

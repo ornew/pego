@@ -224,34 +224,32 @@ func TestTraceEvents(t *testing.T) {
 	}{
 		{
 			name: "calls and failures",
-			src: `
-def main = item ("," item)* $$
-def item = num / word
-def num = @(?0-9)+
-def word = @(?a-z)+`,
+			src: `rule main = item ("," item)* $$
+rule item = num / word
+rule num = [0-9]+ #atomic
+rule word = [a-z]+ #atomic`,
 			input: "1,ab",
 			want: []string{
 				`> main@0`,
 				` > item@0`,
 				`  > num@0`,
-				`  < num@0 ok 1 "1" examined=2 ! 1 syntax error: expected (?0-9)`,
-				` < item@0 ok 1 "1" examined=2 ! 1 syntax error: expected (?0-9)`,
+				`  < num@0 ok 1 "1" examined=2 ! 1 syntax error: expected [0-9]`,
+				` < item@0 ok 1 "1" examined=2 ! 1 syntax error: expected [0-9]`,
 				` > item@2`,
 				`  > num@2`,
-				`  < num@2 fail examined=3 ! 2 syntax error: expected (?0-9)`,
+				`  < num@2 fail examined=3 ! 2 syntax error: expected [0-9]`,
 				`  > word@2`,
-				`  < word@2 ok 4 "ab" examined=5 ! 4 syntax error: expected (?a-z)`,
-				` < item@2 ok 4 "ab" examined=5 ! 4 syntax error: expected (?a-z)`,
-				`< main@0 ok 4 "1,ab" examined=5 ! 4 syntax error: expected ",", (?a-z)`,
+				`  < word@2 ok 4 "ab" examined=5 ! 4 syntax error: expected [a-z]`,
+				` < item@2 ok 4 "ab" examined=5 ! 4 syntax error: expected [a-z]`,
+				`< main@0 ok 4 "1,ab" examined=5 ! 4 syntax error: expected ",", [a-z]`,
 			},
 		},
 		{
 			// The second call of a at 0 memoizes it, and the third reuses the result.
 			name: "memo hits",
-			src: `
-def main = a "x" / a "y" / a "z"
-def a = b "!"
-def b = "b"`,
+			src: `rule main = a "x" / a "y" / a "z"
+rule a = b "!"
+rule b = "b"`,
 			input: "b!z",
 			want: []string{
 				`> main@0`,
@@ -272,9 +270,8 @@ def b = "b"`,
 			// The leader grows its match by evaluating its body again; the recursive calls return
 			// the result so far from the memo.
 			name: "left recursion",
-			src: `
-def main = a $$
-def a = a "x" / "y"`,
+			src: `rule main = a $$
+rule a = a "x" / "y"`,
 			input: "yx",
 			want: []string{
 				`> main@0`,
@@ -291,17 +288,16 @@ def a = a "x" / "y"`,
 			},
 		},
 		{
-			// Operands are parsed by the Pratt loop; a rule called with a level reports it.
-			name: "pratt levels",
-			src: `
-def main = e(sum) $$
-def e = pratt {
+			// Operands are parsed by the OperatorsRule loop; a rule called with a level reports it.
+			name: "operatorsRule levels",
+			src: `rule main = level(e, sum) $$
+rule e = operators {
     operand n
     level { infix left "-" }
     level sum { infix left "+" }
     level { infix left "*" }
 }
-def n = @(?0-9)`,
+rule n = [0-9] #atomic`,
 			input: "1*2",
 			want: []string{
 				`> main@0`,
@@ -316,10 +312,9 @@ def n = @(?0-9)`,
 		},
 		{
 			name: "lookahead and syntax error",
-			src: `
-def main = !kw word $$
-def kw = "if"
-def word = @(?a-z)+`,
+			src: `rule main = !kw word $$
+rule kw = "if"
+rule word = [a-z]+ #atomic`,
 			input: "if",
 			want: []string{
 				`> main@0`,
@@ -332,28 +327,27 @@ def word = @(?a-z)+`,
 		{
 			// A recovered error is reported by the call that recovered, which matches.
 			name: "recover",
-			src: `
-def main = stmt* $$
-def stmt = (word ";") #recover(skip=(?^;)+ ";")
-def word = @(?a-z)+`,
+			src: `rule main = stmt* $$
+rule stmt = (word ";") #recover(skip=[^;]+ ";")
+rule word = [a-z]+ #atomic`,
 			input: "a;1;",
 			want: []string{
 				`> main@0`,
 				` > stmt@0`,
 				`  > word@0`,
-				`  < word@0 ok 1 "a" examined=2 ! 1 syntax error: expected (?a-z)`,
-				` < stmt@0 ok 2 "a;" examined=2 ! 1 syntax error: expected (?a-z)`,
+				`  < word@0 ok 1 "a" examined=2 ! 1 syntax error: expected [a-z]`,
+				` < stmt@0 ok 2 "a;" examined=2 ! 1 syntax error: expected [a-z]`,
 				` > stmt@2`,
 				`  > word@2`,
-				`  < word@2 fail examined=3 ! 2 syntax error: expected (?a-z)`,
-				` < stmt@2 ok 4 "1;" examined=4 ! 3 syntax error: expected (?^;)`,
+				`  < word@2 fail examined=3 ! 2 syntax error: expected [a-z]`,
+				` < stmt@2 ok 4 "1;" examined=4 ! 3 syntax error: expected [^;]`,
 				` > stmt@4`,
 				`  > word@4`,
-				`  < word@4 fail examined=5 ! 4 syntax error: expected (?a-z)`,
-				` < stmt@4 fail examined=5 ! 4 syntax error: expected (?^;), (?a-z)`,
-				`< main@0 ok 4 "a;1;" examined=5 ! 4 syntax error: expected (?^;), (?a-z)`,
+				`  < word@4 fail examined=5 ! 4 syntax error: expected [a-z]`,
+				` < stmt@4 fail examined=5 ! 4 syntax error: expected [^;], [a-z]`,
+				`< main@0 ok 4 "a;1;" examined=5 ! 4 syntax error: expected [^;], [a-z]`,
 			},
-			err: "1:3: syntax error: expected (?a-z)",
+			err: "1:3: syntax error: expected [a-z]",
 		},
 	}
 	for _, tt := range tests {
@@ -375,9 +369,8 @@ def word = @(?a-z)+`,
 
 // TestTraceStreamAndDocument checks tracing in stream parses and incremental documents.
 func TestTraceStreamAndDocument(t *testing.T) {
-	prog := compile(t, `
-def main = line* #stream $$
-def line = @(?a-z)* "\n"`)
+	prog := compile(t, `rule main = line* #stream $$
+rule line = [a-z]* #atomic "\n"`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		var lines, traced []string
 		emit := func(dst *[]string) func(*Node) error {
@@ -429,7 +422,7 @@ def line = @(?a-z)* "\n"`)
 // own value on every backend, rather than being reported as a fault of the parse (a runtime error
 // on the bytecode backends would be "invalid bytecode").
 func TestTracePanic(t *testing.T) {
-	prog := compile(t, `def main = @(?a-z)+ $$`)
+	prog := compile(t, `rule main = [a-z]+ #atomic $$`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		var got any
 		var err error
@@ -449,10 +442,9 @@ func TestTracePanic(t *testing.T) {
 // TestTraceRecovered checks that exit events give the errors recovered during the call, which
 // are not part of Failure.
 func TestTraceRecovered(t *testing.T) {
-	prog := compile(t, `
-def main = stmt* $$
-def stmt = (word ";") #recover(skip=(?^;)+ ";")
-def word = @(?a-z)+`)
+	prog := compile(t, `rule main = stmt* $$
+rule stmt = (word ";") #recover(skip=[^;]+ ";")
+rule word = [a-z]+ #atomic`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		var got []string
 		_, err := prog.ParseWith("main", "ab1;cd;", ParseOptions{Backend: b, Trace: func(e TraceEvent) {
@@ -461,8 +453,8 @@ def word = @(?a-z)+`)
 			}
 		}})
 		want := []string{
-			`stmt@0 [1:3: syntax error: expected ";", (?a-z)]; failure 1:4: syntax error: expected (?^;)`,
-			`main@0 [1:3: syntax error: expected ";", (?a-z)]; failure 1:8: syntax error: expected (?^;), (?a-z)`,
+			`stmt@0 [1:3: syntax error: expected ";", [a-z]]; failure 1:4: syntax error: expected [^;]`,
+			`main@0 [1:3: syntax error: expected ";", [a-z]]; failure 1:8: syntax error: expected [^;], [a-z]`,
 		}
 		if strings.Join(got, "\n") != strings.Join(want, "\n") || err == nil {
 			t.Errorf("%v: %v\n%s\nwant\n%s", b, err, strings.Join(got, "\n"), strings.Join(want, "\n"))

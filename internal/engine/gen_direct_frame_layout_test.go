@@ -13,51 +13,44 @@ import (
 )
 
 var typedFrameLayoutCases = []genCase{
-	{"typed/LR_dead_capture_order", `
-type Doc struct { Text *Match, Missing *Match }
-def main: Doc = e:expr $$ -> $e
-def expr: Doc = ((_|_ unused:@"z") / p:expr ";" x:@"é" / x:@"a" / (_|_ ignored:@"b")) -> new Doc{Text: $x, Missing: $ignored}
+	{"typed/LR_dead_capture_order", `type Doc struct { Text *Match, Missing *Match }
+rule main Doc = e:expr $$ => $e
+rule expr Doc = _|_ unused:"z" #atomic / p:expr ";" x:"é" #atomic / x:"a" #atomic / _|_ ignored:"b" #atomic => Doc{Text: $x, Missing: $ignored}
 `, []string{"a", "a;é;é", "a;", "b", "z", "", "a?"}},
-	{"typed/Pratt_dead_capture_order", `
-type Doc struct { Text *Match, Missing *Match }
-def main: Doc = e:expr $$ -> $e
-def expr: Doc = pratt {
-    operand (_|_ before:@"b") / x:@"é" / (_|_ after:@"z") -> new Doc{Text: $x, Missing: $after}
+	{"typed/OperatorsRule_dead_capture_order", `type Doc struct { Text *Match, Missing *Match }
+rule main Doc = e:expr $$ => $e
+rule expr Doc = operators {
+    operand _|_ before:"b" #atomic / x:"é" #atomic / _|_ after:"z" #atomic => Doc{Text: $x, Missing: $after}
 }
 `, []string{"é", "b", "z", "", "é?"}},
-	{"typed/Pratt_infallible_alternative", `
-type Doc struct { Missing *Match }
-def main: Doc = e:expr $$ -> $e
-def expr: Doc = pratt {
-    operand (_ / ignored:@"b") -> new Doc{Missing: $ignored}
+	{"typed/OperatorsRule_infallible_alternative", `type Doc struct { Missing *Match }
+rule main Doc = e:expr $$ => $e
+rule expr Doc = operators {
+    operand _ / ignored:"b" #atomic => Doc{Missing: $ignored}
 }
 `, []string{"", "b", "é"}},
-	{"typed/Pratt_dead_element_predicate", `
-type Atom terminal
+	{"typed/OperatorsRule_dead_element_predicate", `type Atom terminal
 type Doc struct { Items []*Match, N int }
 type Expr = Atom | Doc
-def main: Expr = e:expr $$ -> $e
-def expr: Expr = pratt {
+rule main Expr = e:expr $$ => $e
+rule expr Expr = operators {
     operand atom
-    level { postfix "[" items:(((_|_ ignored:@"z") / x:@(?a-z)) [len($x)==1 && $ignored==nil] -","){3} "]"
-        -> new Doc{Items: map($items, (e)=>$e.x), N: len($items)} }
+    level {
+        postfix "[" items:((_|_ ignored:"z" #atomic / x:[a-z] #atomic) {len($x) == 1 && $ignored == nil} -",") #repeat(3) "]" => Doc{Items: map($items, (e) => $e.x), N: len($items)}
+    }
 }
-def atom: Atom = "a"
+rule atom Atom = "a"
 `, []string{"a", "a[b,c,d,]", "a[b,c,]", "a[b,é,d,]", "a[b,c,d,", "a[b,c,d,]?", ""}},
-	{"typed/Pratt_dead_projection", `
-type Doc struct { Items []*Match }
-def main: Doc = e:expr $$ -> $e
-def expr: Doc = pratt {
-    operand (_|_ ignored:@"z") / items:(((_|_ unused:@"z") / x:@(?a-z)) [$unused==nil] -","){3}
-        -> new Doc{Items: map($items, (e)=>$e.x)}
+	{"typed/OperatorsRule_dead_projection", `type Doc struct { Items []*Match }
+rule main Doc = e:expr $$ => $e
+rule expr Doc = operators {
+    operand _|_ ignored:"z" #atomic / items:((_|_ unused:"z" #atomic / x:[a-z] #atomic) {$unused == nil} -",") #repeat(3) => Doc{Items: map($items, (e) => $e.x)}
 }
 `, []string{"a,b,c,", "a,b,", "a,b,é,", "z", "", "a,b,c,?"}},
-	{"typed/Pratt_dead_lookahead_capture", `
-type Doc struct { Text *Match, Missing *Match }
-def main: Doc = e:expr $$ -> $e
-def expr: Doc = pratt {
-    operand &((_|_ before:@"z") / x:@"é") x:@"é" / (_|_ after:@"z")
-        -> new Doc{Text: $x, Missing: $after}
+	{"typed/OperatorsRule_dead_lookahead_capture", `type Doc struct { Text *Match, Missing *Match }
+rule main Doc = e:expr $$ => $e
+rule expr Doc = operators {
+    operand &(_|_ before:"z" #atomic / x:"é" #atomic) x:"é" #atomic / _|_ after:"z" #atomic => Doc{Text: $x, Missing: $after}
 }
 `, []string{"é", "z", "", "é?"}},
 }
@@ -72,8 +65,8 @@ func TestGeneratedTypedFrameLayouts(t *testing.T) {
 			cases = append(cases, c)
 		}
 	}
-	for _, c := range typedPrattBodyCases {
-		if c.name == "typed/Pratt_unreachable_capture" {
+	for _, c := range typedOperatorsRuleBodyCases {
+		if c.name == "typed/OperatorsRule_unreachable_capture" {
 			cases = append(cases, c)
 		}
 	}
@@ -87,7 +80,7 @@ func TestGeneratedTypedFrameLayouts(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
-		marker := "(typed Pratt body inlined)"
+		marker := "(typed OperatorsRule body inlined)"
 		if strings.Contains(c.name, "/LR_") {
 			marker = "(typed LR body inlined)"
 		}
@@ -100,9 +93,9 @@ func TestGeneratedTypedFrameLayouts(t *testing.T) {
 			t.Fatal(err)
 		}
 		// The element case has an independent eligible operand; its postfix
-		// must fall back. Other cases have one affected LR/Pratt matcher.
+		// must fall back. Other cases have one affected LR/OperatorsRule matcher.
 		wantCount := 0
-		if c.name == "typed/Pratt_dead_element_predicate" {
+		if c.name == "typed/OperatorsRule_dead_element_predicate" {
 			wantCount = 1
 		}
 		if strings.Count(string(reference), marker) != wantCount || strings.Contains(string(candidate), "disableTypedFrameLayouts") {
@@ -129,7 +122,7 @@ func TestGeneratedTypedFrameLayouts(t *testing.T) {
 func TestTypedFrameLayoutMetadata(t *testing.T) {
 	cases := append([]genCase(nil), typedFrameLayoutCases...)
 	cases = append(cases, typedLRBodyCases...)
-	cases = append(cases, typedPrattBodyCases...)
+	cases = append(cases, typedOperatorsRuleBodyCases...)
 	cases = append(cases, typedDirectCutCases...)
 	cases = append(cases, typedRecoveryCases...)
 	cases = append(cases, typedLocalLayoutCases...)

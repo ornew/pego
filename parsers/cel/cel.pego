@@ -38,47 +38,46 @@ type MessageLit struct { Type Ident, Fields []Field }
 type Field struct { Name Name, Value Expr, Optional bool }
 type Optional struct { X Expr }
 
-type Expr = Ident | IntLit | UintLit | DoubleLit | StringLit | BytesLit | BoolLit | NullLit | Paren | Select | Index | Call
-          | Unary | Binary | Conditional | ListLit | MapLit | MessageLit | Optional
+type Expr = Ident | IntLit | UintLit | DoubleLit | StringLit | BytesLit | BoolLit | NullLit | Paren | Select | Index | Call | Unary | Binary | Conditional | ListLit | MapLit | MessageLit | Optional
 
-def main: Expr = ws e:expr ws $$ -> $e
+rule main Expr = ws e:expr ws $$ => $e
 
 // ---- Operators ----
 
 // Expr = ConditionalOr ["?" ConditionalOr ":" Expr] and a level for each of the other precedences, all left
 // associative. The then branch is parsed at the level of ||, as the production says. A rule for each level, with
-// the operands folded to the left, took as long as a Pratt expression.
-def expr: Expr = pratt {
+// the operands folded to the left, took as long as a Operators Rule.
+rule expr Expr = operators {
     skip ws
     operand unary
-    level { infix right "?" ws then:expr(or) ws ":" -> new Conditional{Cond: $lhs, Then: $then, Else: $rhs} }
-    level or { infix left "||" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
-    level { infix left "&&" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
-    level { infix left "<=" / "<" / ">=" / ">" / "==" / "!=" / "in" !(?A-Za-z0-9_) -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
-    level { infix left "+" / "-" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
-    level { infix left "*" / "/" / "%" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix right "?" ws then:level(expr, or) ws ":" => Conditional{Cond: $lhs, Then: $then, Else: $rhs} }
+    level or { infix left "||" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix left "&&" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix left "<=" / "<" / ">=" / ">" / "==" / "!=" / "in" ![A-Za-z0-9_] => Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix left "+" / "-" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix left "*" / "/" / "%" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
 }
 
 // Unary = Member | "!" {"!"} Member | "-" {"-"} Member. A run of operators is one rule, nested from the first to
 // the last, as ANTLR reads (ops+='!')+ member: that is why "--9223372036854775808" is an error (the literal is
 // 9223372036854775808 after two negations), where a literal with a sign, "-9223372036854775808", is not (see
 // primary), and why "-1.f()" is a call on the literal -1.
-def unary: Expr = member / not_unary / neg_unary
-def not_unary: Expr = ops:(o:"!" -ws)+ m:member -> foldr($m, $ops, (acc, i) => new Unary{Op: $i.o, X: $acc})
-def neg_unary: Expr = ops:(o:"-" -ws)+ m:member -> foldr($m, $ops, (acc, i) => new Unary{Op: $i.o, X: $acc})
+rule unary Expr = member / not_unary / neg_unary
+rule not_unary Expr = ops:(o:"!" -ws)+ m:member => foldr($m, $ops, (acc, i) => Unary{Op: $i.o, X: $acc})
+rule neg_unary Expr = ops:(o:"-" -ws)+ m:member => foldr($m, $ops, (acc, i) => Unary{Op: $i.o, X: $acc})
 
 // Member = Primary | Member "." SELECTOR ["(" [ExprList] ")"] | Member "[" Expr "]", with the optional forms ".?" and
 // "[?". A call is longer than the selection of its name, so it wins where both match. The optional marker is a
-// capture, and Optional says whether it matched, so that three lines do the work of five: the Pratt loop tries every
+// capture, and Optional says whether it matched, so that three lines do the work of five: the Operators Rule loop tries every
 // line at the end of every operand, and five took 13% more time to build the AST of a long expression. A left
 // recursive rule for each suffix took 51% more time to recognize typical expressions and 70% more a long one.
-def member: Expr = pratt {
+rule member Expr = operators {
     skip ws
     operand primary
     level {
-        postfix "." ws q:"?"? ws f:name -> new Select{X: $lhs, Field: $f, Optional: len($q) > 0}
-        postfix "." ws f:name_plain ws "(" ws as:args? ws ")" -> new Call{Target: $lhs, Func: $f, Args: concat($as)}
-        postfix "[" ws q:"?"? ws i:expr ws "]" -> new Index{X: $lhs, Index: $i, Optional: len($q) > 0}
+        postfix "." ws q:"?"? ws f:name => Select{X: $lhs, Field: $f, Optional: len($q) > 0}
+        postfix "." ws f:name_plain ws "(" ws as:args? ws ")" => Call{Target: $lhs, Func: $f, Args: concat($as)}
+        postfix "[" ws q:"?"? ws i:expr ws "]" => Index{X: $lhs, Index: $i, Optional: len($q) > 0}
     }
 }
 
@@ -88,48 +87,46 @@ def member: Expr = pratt {
 // "{" ... "}" | LITERAL. The alternative is chosen by the first character, with lookaheads, which cost one test and
 // record nothing in the message of a syntax error (expected_start makes up for it): a name, for example, has to fail
 // ten literals before it is read as an identifier otherwise. Without them, Recognize took 26% more time.
-def primary: Expr =
-    ( &(?A-Za-z_) v:(word_lit / message / ident_only / call)
-    / &(?0-9) v:(int_plain / double / uint / int)
-    / &(?"') v:string
-    / &"." v:(double / message / call / ident)
-    / &"-" v:(double / int)
-    / v:(paren / list / map / expected_start) ) -> $v
+rule primary Expr = (
+    &[A-Za-z_] v:(word_lit / message / ident_only / call) / &[0-9] v:(int_plain / double / uint / int) / &["'] v:string / &"." v:(double / message / call / ident) / &"-" v:(double / int) / v:(paren / list / map / expected_start)
+) => $v
 // It never matches: it only makes the error message of an operand list the characters that an operand starts with,
 // which the lookaheads of the alternatives above do not record (lookaheads leave out of the message what they test).
-def expected_start: IntLit = !(?A-Za-z_) (?A-Za-z_) / !(?0-9) (?0-9) / !(?"') (?"') / !"." "." / !"-" "-"
+rule expected_start IntLit = ![A-Za-z_] [A-Za-z_] / ![0-9] [0-9] / !["'] ["'] / !"." "." / !"-" "-"
 // A word that is a literal: true, false, null, a raw string r"..." or a bytes literal b"...".
-def word_lit: Expr = ( &(?tf) v:bool / &"n" v:null / &(?rR) v:string / &(?bB) v:bytes ) -> $v
+rule word_lit Expr = &[tf] v:bool / &"n" v:null / &[rR] v:string / &[bB] v:bytes => $v
 
-def paren: Paren = "(" ws e:expr ws ")" -> new Paren{X: $e}
+rule paren Paren = "(" ws e:expr ws ")" => Paren{X: $e}
 
 // An identifier that is not called, then a call: a call first took 4% more time.
-def ident_only: Ident = i:ident !(ws "(") -> $i
-def ident: Ident = ("." ws)? name_global
-def call: Call = f:ident ws "(" ws as:args? ws ")" -> new Call{Target: nil, Func: $f, Args: concat($as)}
-def args = first:expr rest:(-ws -"," -ws x:expr)* -> concat(list($first), map($rest, (r) => $r.x))
+rule ident_only Ident = i:ident !(ws "(") => $i
+rule ident Ident = ("." ws)? name_global
+rule call Call = f:ident ws "(" ws as:args? ws ")" => Call{Target: nil, Func: $f, Args: concat($as)}
+rule args = first:expr rest:(-ws -"," -ws x:expr)* => concat(list($first), map($rest, (r) => $r.x))
 
-def list: ListLit = "[" ws es:elems? ws ","? ws "]" -> new ListLit{Elems: concat($es)}
-def elems = first:elem rest:(-ws -"," -ws x:elem)* -> concat(list($first), map($rest, (r) => $r.x))
-def elem: Expr = optional / expr
-def optional: Optional = "?" ws x:expr -> new Optional{X: $x}
+rule list ListLit = "[" ws es:elems? ws ","? ws "]" => ListLit{Elems: concat($es)}
+rule elems = first:elem rest:(-ws -"," -ws x:elem)* => concat(list($first), map($rest, (r) => $r.x))
+rule elem Expr = optional / expr
+rule optional Optional = "?" ws x:expr => Optional{X: $x}
 
-def map: MapLit = "{" ws es:entries? ws ","? ws "}" -> new MapLit{Entries: concat($es)}
-def entries = first:entry rest:(-ws -"," -ws x:entry)* -> concat(list($first), map($rest, (r) => $r.x))
-def entry: Entry = opt_entry / plain_entry
-def opt_entry: Entry = "?" ws k:expr ws ":" ws v:expr -> new Entry{Key: $k, Value: $v, Optional: true}
-def plain_entry: Entry = k:expr ws ":" ws v:expr -> new Entry{Key: $k, Value: $v, Optional: false}
+rule map MapLit = "{" ws es:entries? ws ","? ws "}" => MapLit{Entries: concat($es)}
+rule entries = first:entry rest:(-ws -"," -ws x:entry)* => concat(list($first), map($rest, (r) => $r.x))
+rule entry Entry = opt_entry / plain_entry
+rule opt_entry Entry = "?" ws k:expr ws ":" ws v:expr => Entry{Key: $k, Value: $v, Optional: true}
+rule plain_entry Entry = k:expr ws ":" ws v:expr => Entry{Key: $k, Value: $v, Optional: false}
 
 // A message is a possibly dotted name followed by "{". Its parts may be reserved words (a name that is not a
 // keyword), unlike a variable or a function. Most operands that start with a name are not a message, so a lookahead
 // reads the name by character classes before the rule reads it as names, which saves 3% of the time.
-def message: MessageLit = &(("." ws)? (?A-Za-z_) (?A-Za-z0-9_)* (ws "." ws (?A-Za-z_) (?A-Za-z0-9_)*)* ws "{")
-    t:type_name ws "{" ws fs:fields? ws ","? ws "}" -> new MessageLit{Type: $t, Fields: concat($fs)}
-def type_name: Ident = ("." ws)? name_plain (ws "." ws name_plain)*
-def fields = first:field rest:(-ws -"," -ws x:field)* -> concat(list($first), map($rest, (r) => $r.x))
-def field: Field = opt_field / plain_field
-def opt_field: Field = "?" ws n:name ws ":" ws v:expr -> new Field{Name: $n, Value: $v, Optional: true}
-def plain_field: Field = n:name ws ":" ws v:expr -> new Field{Name: $n, Value: $v, Optional: false}
+rule message MessageLit = (
+    &(("." ws)? [A-Za-z_] [A-Za-z0-9_]* (ws "." ws [A-Za-z_] [A-Za-z0-9_]*)* ws "{")
+    t:type_name ws "{" ws fs:fields? ws ","? ws "}"
+) => MessageLit{Type: $t, Fields: concat($fs)}
+rule type_name Ident = ("." ws)? name_plain (ws "." ws name_plain)*
+rule fields = first:field rest:(-ws -"," -ws x:field)* => concat(list($first), map($rest, (r) => $r.x))
+rule field Field = opt_field / plain_field
+rule opt_field Field = "?" ws n:name ws ":" ws v:expr => Field{Name: $n, Value: $v, Optional: true}
+rule plain_field Field = n:name ws ":" ws v:expr => Field{Name: $n, Value: $v, Optional: false}
 
 // ---- Literals ----
 //
@@ -137,36 +134,42 @@ def plain_field: Field = n:name ws ":" ws v:expr -> new Field{Name: $n, Value: $
 // a signed integer. The sign of a number is part of the literal (and may be followed by whitespace and comments);
 // a sign before an unsigned integer is a negation.
 
-def bool: BoolLit = ("true" / "false") !(?A-Za-z0-9_)
-def null: NullLit = "null" !(?A-Za-z0-9_)
+rule bool BoolLit = ("true" / "false") ![A-Za-z0-9_]
+rule null NullLit = "null" ![A-Za-z0-9_]
 
 // Most integers are decimal, and not followed by anything that could continue a number.
-def int_plain: IntLit = (?0-9)+ !(?0-9a-zA-Z_.)
-def sign = "-" ws
-def double: DoubleLit = sign? ((?0-9)+ "." (?0-9)+ exponent? / (?0-9)+ exponent / "." (?0-9)+ exponent?)
-def exponent = (?eE) (?+\-)? (?0-9)+
-def uint: UintLit = ("0x" (?0-9a-fA-F)+ / (?0-9)+) (?uU)
-def int: IntLit = sign? ("0x" (?0-9a-fA-F)+ / (?0-9)+) !(?uU)
+rule int_plain IntLit = [0-9]+ ![0-9a-zA-Z_.]
+rule sign = "-" ws
+rule double DoubleLit = sign? ([0-9]+ "." [0-9]+ exponent? / [0-9]+ exponent / "." [0-9]+ exponent?)
+rule exponent = [eE] [+\-]? [0-9]+
+rule uint UintLit = ("0x" [0-9a-fA-F]+ / [0-9]+) [uU]
+rule int IntLit = sign? ("0x" [0-9a-fA-F]+ / [0-9]+) ![uU]
 
 // Strings: single or triple quotes, raw or with escape sequences, and a b prefix for bytes. A triple-quoted string
 // ends at the first closing triple quote. Escapes are checked here as cel-go's unescape does, which rejects them
 // after the lexer has read them: a surrogate in \u and \U, a code point over 10FFFF, and \u and \U in bytes.
-def string: StringLit = (?rR) &(?"') raw_body / str_body
-def bytes: BytesLit = (?bB) ((?rR) &(?"') raw_body / bytes_body)
+rule string StringLit = [rR] &["'] raw_body / str_body
+rule bytes BytesLit = [bB] ([rR] &["'] raw_body / bytes_body)
 
-def raw_body = "\"\"\"" (!"\"\"\"" .)* "\"\"\"" / "'''" (!"'''" .)* "'''" / "\"" (?^"\n\r)* "\"" / "'" (?^'\n\r)* "'"
+rule raw_body = "\"\"\"" (!"\"\"\"" .)* "\"\"\"" / "'''" (!"'''" .)* "'''" / "\"" [^"\n\r]* "\"" / "'" [^'\n\r]* "'"
 
 // The quote is read once, then whether it opens three.
-def str_body = "\"" ("\"\"" (str_esc / (?^"\\)+ / "\"" !"\"\"")* "\"\"\"" / (str_esc / (?^"\\\n\r)+)* "\"")
-             / "'" ("''" (str_esc / (?^'\\)+ / "'" !"''")* "'''" / (str_esc / (?^'\\\n\r)+)* "'")
-def bytes_body = "\"" ("\"\"" (bytes_esc / (?^"\\)+ / "\"" !"\"\"")* "\"\"\"" / (bytes_esc / (?^"\\\n\r)+)* "\"")
-               / "'" ("''" (bytes_esc / (?^'\\)+ / "'" !"''")* "'''" / (bytes_esc / (?^'\\\n\r)+)* "'")
+rule str_body = (
+    "\"" ("\"\"" (str_esc / [^"\\]+ / "\"" !"\"\"")* "\"\"\"" / (str_esc / [^"\\\n\r]+)* "\"")
+    / "'" ("''" (str_esc / [^'\\]+ / "'" !"''")* "'''" / (str_esc / [^'\\\n\r]+)* "'")
+)
+rule bytes_body = (
+    "\"" ("\"\"" (bytes_esc / [^"\\]+ / "\"" !"\"\"")* "\"\"\"" / (bytes_esc / [^"\\\n\r]+)* "\"")
+    / "'" ("''" (bytes_esc / [^'\\]+ / "'" !"''")* "'''" / (bytes_esc / [^'\\\n\r]+)* "'")
+)
 
-def bytes_esc = "\\" ((?abfnrtv"'\\?`) / (?0-3) (?0-7) (?0-7) / (?xX) hex hex)
-def str_esc = bytes_esc
-            / "\\u" !((?dD) (?89a-fA-F)) hex hex hex hex
-            / "\\U" !("0000" (?dD) (?89a-fA-F)) "00" ("0" hex{5} / "10" hex{4})
-def hex = (?0-9a-fA-F)
+rule bytes_esc = "\\" ([abfnrtv"'\\?`] / [0-3] [0-7] [0-7] / [xX] hex hex)
+rule str_esc = (
+    bytes_esc
+    / "\\u" !([dD] [89a-fA-F]) hex hex hex hex
+    / "\\U" !("0000" [dD] [89a-fA-F]) "00" ("0" hex #repeat(5) / "10" hex #repeat(4))
+)
+rule hex = [0-9a-fA-F]
 
 // ---- Names ----
 //
@@ -174,14 +177,15 @@ def hex = (?0-9a-fA-F)
 // characters of a name took 10% more time to recognize typical expressions.
 
 // A name that is not one of the keywords true, false, null and in: a selector, a field, a method and a part of a message.
-def name_plain: Ident = !(("true" / "false" / "null" / "in") !(?A-Za-z0-9_)) (?A-Za-z_) (?A-Za-z0-9_)*
+rule name_plain Ident = !(("true" / "false" / "null" / "in") ![A-Za-z0-9_]) [A-Za-z_] [A-Za-z0-9_]*
 // A variable or a function must not be a reserved word either.
-def name_global = !(("true" / "false" / "null" / "in" / "as" / "break" / "const" / "continue" / "else" / "for" / "function" / "if"
-                    / "import" / "let" / "loop" / "package" / "namespace" / "return" / "var" / "void" / "while") !(?A-Za-z0-9_))
-                  (?A-Za-z_) (?A-Za-z0-9_)*
+rule name_global = (
+    !(("true" / "false" / "null" / "in" / "as" / "break" / "const" / "continue" / "else" / "for" / "function" / "if" / "import" / "let" / "loop" / "package" / "namespace" / "return" / "var" / "void" / "while") ![A-Za-z0-9_])
+    [A-Za-z_] [A-Za-z0-9_]*
+)
 // A field may be escaped with backquotes.
-def name: Name = name_plain / "`" (?A-Za-z0-9_.\-/ )+ "`"
+rule name Name = name_plain / "`" [A-Za-z0-9_.\-/ ]+ "`"
 
 // Whitespace and comments. It calls no other rule: a rule that does is memoized, and a ws that called another rule
 // for its body took 14% more time to recognize typical expressions.
-def ws = (? \t\r\n\u{c})* ("//" (?^\n)* (? \t\r\n\u{c})*)*
+rule ws = [ \t\r\n\u{c}]* ("//" [^\n]* [ \t\r\n\u{c}]*)*

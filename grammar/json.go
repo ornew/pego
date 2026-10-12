@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -28,14 +30,14 @@ func init() {
 		(*StructSpec)(nil), (*AliasSpec)(nil), (*TerminalSpec)(nil),
 		(*TypeRef)(nil), (*ListType)(nil), (*OptionalType)(nil), (*UnionType)(nil),
 		(*Ref)(nil), (*Literal)(nil), (*CharClass)(nil), (*Any)(nil), (*Seq)(nil),
-		(*Choice)(nil), (*Repeat)(nil), (*Optional)(nil), (*And)(nil), (*Not)(nil),
-		(*Atomic)(nil), (*Discard)(nil), (*Capture)(nil), (*Cut)(nil), (*Top)(nil),
+		(*Choice)(nil), (*Group)(nil), (*InlineAction)(nil), (*Repeat)(nil), (*Optional)(nil), (*And)(nil), (*Not)(nil),
+		(*Atomic)(nil), (*Recovery)(nil), (*Stream)(nil), (*Discard)(nil), (*Capture)(nil), (*Cut)(nil), (*Top)(nil),
 		(*Bottom)(nil), (*BeginInput)(nil), (*EndInput)(nil), (*BeginLine)(nil),
-		(*EndLine)(nil), (*Predicate)(nil), (*Attributed)(nil), (*Pratt)(nil),
+		(*EndLine)(nil), (*Predicate)(nil), (*Attributed)(nil), (*OperatorsRule)(nil),
 		(*IntLit)(nil), (*StringLit)(nil), (*BoolLit)(nil), (*NilLit)(nil),
 		(*CaptureRef)(nil), (*IndexRef)(nil), (*VarRef)(nil), (*Member)(nil),
 		(*New)(nil), (*Call)(nil), (*Lambda)(nil), (*Binary)(nil), (*Unary)(nil),
-		(*Assign)(nil),
+		(*Assign)(nil), (*Block)(nil),
 	)
 }
 
@@ -109,6 +111,9 @@ func encode(v reflect.Value) (any, error) {
 			return nil, nil
 		}
 		e := v.Elem()
+		if v.Type().NumMethod() == 0 && (e.Kind() == reflect.String || e.Kind() == reflect.Bool || e.Kind() == reflect.Int) {
+			return e.Interface(), nil
+		}
 		m, err := encode(e)
 		if err != nil {
 			return nil, err
@@ -153,6 +158,16 @@ func encode(v reflect.Value) (any, error) {
 			arr[i] = x
 		}
 		return arr, nil
+	case reflect.Map:
+		obj := map[string]any{}
+		for _, key := range v.MapKeys() {
+			x, err := encode(v.MapIndex(key))
+			if err != nil {
+				return nil, err
+			}
+			obj[key.String()] = x
+		}
+		return obj, nil
 	case reflect.String, reflect.Bool, reflect.Int, reflect.Int32:
 		return v.Interface(), nil
 	}
@@ -164,6 +179,14 @@ func decode(raw any, t reflect.Type, path string) (reflect.Value, error) {
 	case reflect.Interface:
 		if raw == nil {
 			return reflect.Zero(t), nil
+		}
+		if t.NumMethod() == 0 {
+			switch value := raw.(type) {
+			case string, bool:
+				return reflect.ValueOf(value), nil
+			case json.Number:
+				return decode(value, reflect.TypeFor[int](), path)
+			}
 		}
 		obj, ok := raw.(map[string]any)
 		if !ok {
@@ -235,6 +258,25 @@ func decode(raw any, t reflect.Type, path string) (reflect.Value, error) {
 			v.Index(i).Set(e)
 		}
 		return v, nil
+	case reflect.Map:
+		obj, ok := raw.(map[string]any)
+		if !ok {
+			return reflect.Value{}, fmt.Errorf("%s: expected an object", path)
+		}
+		result := reflect.MakeMapWithSize(t, len(obj))
+		keys := make([]string, 0, len(obj))
+		for key := range obj {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			value, err := decode(obj[key], t.Elem(), path+"["+strconv.Quote(key)+"]")
+			if err != nil {
+				return reflect.Value{}, err
+			}
+			result.SetMapIndex(reflect.ValueOf(key), value)
+		}
+		return result, nil
 	case reflect.String:
 		s, ok := raw.(string)
 		if !ok {

@@ -3,6 +3,7 @@ package grammar
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -40,7 +41,7 @@ type validationFrame struct {
 // Optional children may be nil, but an interface containing a nil pointer is
 // invalid. Shared subtrees are allowed. Empty collections and any negative
 // Repeat.Max retain their existing meanings. Source layout is not checked.
-// Name resolution, types, attributes and Pratt semantics are checked by the
+// Name resolution, types, attributes and OperatorsRule semantics are checked by the
 // compiler. Validation does not impose a size or depth limit.
 func Validate(g *Grammar) error {
 	stack := []validationFrame{{node: g, index: -1}}
@@ -95,12 +96,20 @@ func Validate(g *Grammar) error {
 		if f.node == nil {
 			return fail("", "required node is nil")
 		}
+		switch f.node.(type) {
+		case int, string, bool:
+			path = path[:len(path)-1]
+			continue
+		}
 		v := reflect.ValueOf(f.node)
 		if v.Kind() != reflect.Pointer {
 			return fail("", fmt.Sprintf("unsupported node %T", f.node))
 		}
 		if v.IsNil() {
 			return fail("", "required node is nil")
+		}
+		if field, name := reservedIdentifier(f.node); field != "" {
+			return fail(field, "identifier "+name+" is reserved")
 		}
 		// Leaf nodes need no cycle tracking. Non-leaf nodes stay active until
 		// their exit frame, distinguishing a pointer cycle from a shared child.
@@ -136,6 +145,22 @@ func Validate(g *Grammar) error {
 			}
 			if n.Max >= 0 && n.Max < n.Min {
 				return fail("max", "repetition maximum is less than minimum")
+			}
+		case *RuleDef:
+			if n.DefaultAction && n.Action != nil {
+				return fail("action", "default action cannot also contain an action expression")
+			}
+		case *OperatorsRuleOperand:
+			if n.DefaultAction && n.Action != nil {
+				return fail("action", "default action cannot also contain an action expression")
+			}
+		case *OperatorsRuleOperator:
+			if n.DefaultAction && n.Action != nil {
+				return fail("action", "default action cannot also contain an action expression")
+			}
+		case *InlineAction:
+			if n.DefaultAction && n.Action != nil {
+				return fail("action", "default action cannot also contain an action expression")
 			}
 		}
 		if seen[f.node] == 1 {
@@ -185,6 +210,11 @@ func Validate(g *Grammar) error {
 			}
 		case *Repeat:
 			push(n.Expr, "expr", -1, false)
+		case *Group:
+			push(n.Expr, "expr", -1, false)
+		case *InlineAction:
+			push(n.Action, "action", -1, n.DefaultAction)
+			push(n.Expr, "expr", -1, false)
 		case *Optional:
 			push(n.Expr, "expr", -1, false)
 		case *And:
@@ -192,6 +222,11 @@ func Validate(g *Grammar) error {
 		case *Not:
 			push(n.Expr, "expr", -1, false)
 		case *Atomic:
+			push(n.Expr, "expr", -1, false)
+		case *Recovery:
+			push(n.Skip, "skip", -1, false)
+			push(n.Expr, "expr", -1, false)
+		case *Stream:
 			push(n.Expr, "expr", -1, false)
 		case *Discard:
 			push(n.Expr, "expr", -1, false)
@@ -205,12 +240,36 @@ func Validate(g *Grammar) error {
 			}
 			push(n.Expr, "expr", -1, false)
 		case *Attribute:
-			for i := len(n.Args) - 1; i >= 0; i-- {
-				push(n.Args[i], "args", i, false)
+			keys := make([]string, 0, len(n.KwArgs))
+			for key := range n.KwArgs {
+				keys = append(keys, key)
 			}
-		case *AttrArg:
-			push(n.Value, "value", -1, false)
-		case *Pratt:
+			sort.Strings(keys)
+			validValue := func(value any) bool {
+				switch value.(type) {
+				case nil, int, string, bool, Expr:
+					return true
+				}
+				return false
+			}
+			for _, key := range keys {
+				if !validValue(n.KwArgs[key]) {
+					return fail("kwArgs["+strconv.Quote(key)+"]", "attribute value must be a scalar or parser expression")
+				}
+			}
+			for i, value := range n.Args {
+				if !validValue(value) {
+					return fail("args["+strconv.Itoa(i)+"]", "attribute value must be a scalar or parser expression")
+				}
+			}
+			for i := len(keys) - 1; i >= 0; i-- {
+				key := keys[i]
+				push(n.KwArgs[key], "kwArgs["+strconv.Quote(key)+"]", -1, true)
+			}
+			for i := len(n.Args) - 1; i >= 0; i-- {
+				push(n.Args[i], "args", i, true)
+			}
+		case *OperatorsRule:
 			for i := len(n.Levels) - 1; i >= 0; i-- {
 				push(n.Levels[i], "levels", i, false)
 			}
@@ -218,16 +277,20 @@ func Validate(g *Grammar) error {
 				push(n.Operands[i], "operands", i, false)
 			}
 			push(n.Skip, "skip", -1, true)
-		case *PrattOperand:
+		case *OperatorsRuleOperand:
 			push(n.Action, "action", -1, true)
 			push(n.Expr, "expr", -1, false)
-		case *PrattLevel:
+		case *OperatorsRuleLevel:
 			for i := len(n.Operators) - 1; i >= 0; i-- {
 				push(n.Operators[i], "operators", i, false)
 			}
-		case *PrattOperator:
+		case *OperatorsRuleOperator:
 			push(n.Action, "action", -1, true)
 			push(n.Expr, "expr", -1, false)
+		case *Block:
+			for i := len(n.Statements) - 1; i >= 0; i-- {
+				push(n.Statements[i], "statements", i, false)
+			}
 		case *Member:
 			push(n.X, "x", -1, false)
 		case *New:
@@ -254,4 +317,68 @@ func Validate(g *Grammar) error {
 		}
 	}
 	return nil
+}
+
+// reservedIdentifier checks source names without changing literal data or
+// treating the Top node's underscore spelling as an identifier.
+func reservedIdentifier(node any) (field, name string) {
+	reserved := func(s string) bool { return len(s) > 0 && s[0] == '_' }
+	switch n := node.(type) {
+	case *Grammar:
+		field, name = "package", n.Package
+	case *RuleDef:
+		field, name = "name", n.Name
+	case *TypeDef:
+		field, name = "name", n.Name
+	case *TypeRef:
+		field, name = "name", n.Name
+	case *Field:
+		field, name = "name", n.Name
+	case *Ref:
+		if reserved(n.Name) {
+			return "name", n.Name
+		}
+		field, name = "level", n.Level
+	case *Capture:
+		field, name = "name", n.Name
+	case *CaptureRef:
+		field, name = "name", n.Name
+	case *VarRef:
+		field, name = "name", n.Name
+	case *Assign:
+		field, name = "name", n.Name
+	case *Member:
+		field, name = "name", n.Name
+	case *New:
+		field, name = "type", n.Type
+	case *FieldInit:
+		field, name = "name", n.Name
+	case *Call:
+		field, name = "func", n.Func
+	case *OperatorsRuleLevel:
+		field, name = "name", n.Name
+	case *Attribute:
+		if reserved(n.Name) {
+			return "name", n.Name
+		}
+		bad := ""
+		for key := range n.KwArgs {
+			if reserved(key) && (bad == "" || key < bad) {
+				bad = key
+			}
+		}
+		if bad != "" {
+			return "kwArgs[" + strconv.Quote(bad) + "]", bad
+		}
+	case *Lambda:
+		for i, param := range n.Params {
+			if reserved(param) {
+				return "params[" + strconv.Itoa(i) + "]", param
+			}
+		}
+	}
+	if reserved(name) {
+		return field, name
+	}
+	return "", ""
 }

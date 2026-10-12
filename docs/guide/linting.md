@@ -1,4 +1,4 @@
-# Linting grammars
+# Linting Grammars
 
 A PEG grammar can compile, parse most inputs, and still contain an alternative that can never match: an ordered choice
 commits to the first alternative that matches, so in `"=" / "=="` the second alternative is dead, and in
@@ -24,15 +24,15 @@ design, and how the checks are kept free of false positives, is in
 - [Suppressing findings](#suppressing-findings)
 - [What the linter does not find](#what-the-linter-does-not-find)
 
-## On the command line
+## On the Command Line
 
 Take a list whose items may be words, numbers or booleans:
 
 ```pego
-def main = item ("," item)*
-def item = word / number / "true" / "false"
-def word = @(?a-z)+
-def number = @(?0-9)+
+rule main = item ("," item)*
+rule item = word / number / "true" / "false"
+rule word = [a-z]+ #atomic
+rule number = [0-9]+ #atomic
 ```
 
 ```bash
@@ -46,7 +46,7 @@ pego: lint: 2 errors, 0 warnings, 0 hints
 
 `word` matches `true` itself, so the parser never reaches the keywords. Each finding is one line,
 `file:line:col: severity: message [check]`, followed by a suggested fix when there is one. Here the fix is to try the
-keywords first, and to make sure that they are whole words: `def item = ("true" / "false") !(?a-z) / word / number`.
+keywords first, and to make sure that they are whole words: `rule item =  ("true" / "false") ![a-z] / word / number `.
 (`pego sample -coverage` finds the same mistake by generating inputs: see
 [Sampling inputs and fuzzing](sampling-and-fuzzing.md#coverage).)
 
@@ -138,7 +138,7 @@ some mistakes (see [What the linter does not find](#what-the-linter-does-not-fin
 fixing. It assumes that rule calls do not nest deeper than the [nesting limit](runtime.md), which can make any call
 fail.
 
-## The checks
+## The Checks
 
 | Check | Severity | Finds |
 |:--|:--|:--|
@@ -149,7 +149,7 @@ fail.
 | [`redundant-optional`](#redundant-optional) | warning | `x?` where `x` always succeeds |
 | [`unused-capture`](#unused-capture) | warning | Captures whose values are discarded |
 | [`duplicate-capture`](#duplicate-capture) | warning | A name captured twice in one match |
-| [`char-class`](#char-class) | warning | Overlapping ranges; `(?A-z)` and similar ranges |
+| [`char-class`](#char-class) | warning | Overlapping ranges; `[A-z]` and similar ranges |
 | [`unreachable-rule`](#unreachable-rule) | warning | Rules the start rule never calls |
 | [`right-recursion`](#right-recursion) | hint | Lists written as right recursion |
 | [`positions`](#positions) | hint | `startPos` and `endPos` in rules used repeatedly |
@@ -164,7 +164,7 @@ commits to the earlier one. The linter proves it in three ways.
 An earlier alternative always succeeds, so the later ones are never even tried:
 
 ```pego
-def sign = "+"? / "-"        // "+"? matches nothing when there is no "+": "-" is never tried
+rule sign = "+"? / "-" // "+"? matches nothing when there is no "+": "-" is never tried
 ```
 
 Fix it by making the alternative fail where it matches nothing (`"+" / "-"`, then `sign?` where the sign is
@@ -173,18 +173,18 @@ optional).
 An earlier alternative is a prefix of a later one:
 
 ```pego
-def op = "=" / "=="                    // "=" matches the start of "=="
-def arrow = "-" / "->"
-def call = ident / ident "(" args ")"  // the same first item, and nothing more
-def num = (?0-9)+ / "0x" hex+          // (?0-9)+ matches the "0" of "0x"
-def item = word / "true"               // word = @(?a-z)+ matches "true"
+rule op = "=" / "==" // "=" matches the start of "=="
+rule arrow = "-" / "->"
+rule call = ident / ident "(" args ")" // the same first item, and nothing more
+rule num = [0-9]+ / "0x" hex+ // [0-9]+ matches the "0" of "0x"
+rule item = word / "true" // word matches "true"
 ```
 
 Put the longer alternative first: `"==" / "="`, `ident "(" args ")" / ident` (or `ident ("(" args ")")?`), and
-keywords before identifiers, with a check that the keyword is a whole word (`"true" !(?a-z0-9_) / word`).
+keywords before identifiers, with a check that the keyword is a whole word (`"true" ![a-z0-9_] / word`).
 
 An alternative is the same as an earlier one (a duplicate). The same reasoning applies to the `operand` items of a
-Pratt expression, which form an ordered choice, and to Pratt operators: the longest operator part wins, and among
+Operators Rule, which form an ordered choice, and to Operators Rule operators: the longest operator part wins, and among
 operators that match the same text the one declared first, so a second `infix left "+"` in the same level is never
 selected.
 
@@ -203,10 +203,10 @@ Two things to know when you remove or move a dead alternative:
 An anchor that contradicts its neighbors in a sequence makes the sequence impossible:
 
 ```pego
-def file = items $$ "\n"     // nothing can follow the end of the input
-def doc = header ^^ body     // header consumed input, so this is not the beginning
-def line = text $ "x"        // $ is followed by a line break or the end, not "x"
-def l2 = "a" ^ "b"           // after "a", this is not the beginning of a line
+rule file = items $$ "\n" // nothing can follow the end of the input
+rule doc = header ^^ body // header consumed input, so this is not the beginning
+rule line = text $ "x" // $ is followed by a line break or the end, not "x"
+rule l2 = "a" ^ "b" // after "a", this is not the beginning of a line
 ```
 
 Move `$$` to the end (`items "\n"? $$`), and `^^` to the beginning.
@@ -214,21 +214,21 @@ Move `$$` to the end (`items "\n"? $$`), and `^^` to the beginning.
 A rule that can only match by matching itself first has no base case and never matches:
 
 ```pego
-def list = item "," list     // every list needs a longer list
-def expr = expr "+" term     // left recursion that never starts
+rule list = item "," list // every list needs a longer list
+rule expr = expr "+" term // left recursion that never starts
 ```
 
-Add an alternative that does not recurse: `def list = item ("," list)?`, `def expr = expr "+" term / term`. Rules
+Add an alternative that does not recurse: `rule list = item ("," list)?`, `rule expr = expr "+" term / term`. Rules
 that fail only because they call such a rule are not reported.
 
-An explicit `_|_` is never reported: it is written on purpose, as in `_|_ #error(message="...")`.
+An explicit `_|_` is never reported: it is written on purpose, as in `_|_ @error(message="...")`.
 
 ### `useless-lookahead`
 
 ```pego
-def a = !"x"? y      // error: "x"? always succeeds, so !"x"? never does
-def b = &ws* y       // warning: ws* always succeeds, so &ws* has no effect
-def c = !_|_ y       // warning: _|_ never matches, so !_|_ always succeeds
+rule a = !"x"? y // error: "x"? always succeeds, so !"x"? never does
+rule b = &ws* y // warning: ws* always succeeds, so &ws* has no effect
+rule c = !_|_ y // warning: _|_ never matches, so !_|_ always succeeds
 ```
 
 The usual cause is an operand that can match nothing (`?`, `*`): negate the expression itself (`!"x"`).
@@ -236,21 +236,21 @@ The usual cause is an operand that can match nothing (`?`, `*`): negate the expr
 ### `nullable-repetition`
 
 ```pego
-def list = (item?)*          // item? can match nothing
-def text = (word*)+
-def lines = line*            // def line = (?^\n)* "\n"? can match nothing too
+rule list = item?* // item? can match nothing
+rule text = word*+
+rule lines = line* // line = [^\n]* "\n"? can match nothing too
 ```
 
 The engine stops a repetition at the first iteration that consumes no input, so these do not loop forever, but that
 iteration still adds an element to the list (a `nil`, or an empty match), and the grammar usually meant `item*`,
 `word*`, or a line that consumes at least its line break. The linter knows that a line such as
-`!$$ (?^\n)* ("\n" / $$)` cannot match nothing (it is not at the end, so it needs the `"\n"`), so it does not report
+`!$$ [^\n]* ("\n" / $$)` cannot match nothing (it is not at the end, so it needs the `"\n"`), so it does not report
 `line*` for it.
 
 ### `redundant-optional`
 
 ```pego
-def a = ("x"*)? y            // "x"* always succeeds: the ? does nothing
+rule a = "x"*? y // "x"* always succeeds: the ? does nothing
 ```
 
 Remove the `?`. An optional lookahead (`(&x)?`) is not reported: it adds a `nil` child that `&x` does not have.
@@ -260,10 +260,10 @@ Remove the `?`. An optional lookahead (`(&x)?`) is not reported: it adds a `nil`
 A capture is reported when nothing can read its value:
 
 ```pego
-def ret = "return" v:(ws x:expr)? -> new Return{Value: $x}   // v: is never read
-def kv = k:key "=" v:value -> $k                             // v: is never read
-def num: Number = d:@(?0-9)+                                 // a terminal type keeps no captures
-def all = (x:item)* -> nil                                   // the list of the repetition is discarded
+rule ret = "return" v:(ws x:expr)? => Return{Value: $x} // v: is never read
+rule kv = k:key "=" v:value => $k // v: is never read
+rule num Number = d:[0-9]+ #atomic // a terminal type keeps no captures
+rule all = (x:item)* => nil // the list of the repetition is discarded
 ```
 
 The first is the most common: the captures inside the optional group belong to the rule itself, so the outer `v:` is
@@ -273,7 +273,7 @@ parameter of the same name does not count), or, in a rule without an action, as 
 ### `duplicate-capture`
 
 ```pego
-def pair = a:key "=" a:value       // the second a: overwrites the first
+rule pair = a:key "=" a:value // the second a: overwrites the first
 ```
 
 Alternatives of a choice exclude each other (`a:x / a:y` is fine), and each iteration of a repetition is a scope of its
@@ -282,11 +282,11 @@ own.
 ### `char-class`
 
 ```pego
-def id = (?a-zA-Za-f_)       // a-f overlaps a-z
-def word = (?A-z)+           // A-z also matches [\]^_` between Z and a
+rule id = [a-zA-Za-f_] // a-f overlaps a-z
+rule word = [A-z]+ // A-z also matches [\]^_` between Z and a
 ```
 
-The fix shows the class without the overlap, or without the punctuation: `(?A-Za-z)`.
+The fix shows the class without the overlap, or without the punctuation: `[A-Za-z]`.
 
 ### `unreachable-rule`
 
@@ -296,8 +296,8 @@ Rules that the start rule never calls, directly or indirectly. A grammar with se
 ### `right-recursion`
 
 ```pego
-def lines = line lines?
-def args = expr ("," args)?
+rule lines = line lines?
+rule args = expr ("," args)?
 ```
 
 Each call spans the rest of the list, so a list of n items nests n calls deep, and after an edit a `Document`
@@ -316,26 +316,26 @@ you).
 ### `long-lookahead`
 
 ```pego
-def line = text "\n" &((?^!)* ($$ / "!"))   // looks ahead to the next "!", across lines
+rule line = text "\n" &([^!]* ($$ / "!")) // looks ahead to the next "!", across lines
 ```
 
 A lookahead that repeats `.` or a negated class that admits line breaks can examine any amount of input, and an edit
 anywhere in what it examined invalidates the rule's results in a `Document`. Lookaheads through other rules
 (`&(ws ":")`) are not reported: those are usually whitespace and tokens, which end soon.
 
-## Suppressing findings
+## Suppressing Findings
 
 A comment that starts with `lint:ignore` and the names of checks suppresses their findings, with an optional reason:
 
 ```pego
 // lint:ignore unreachable-rule called with WithStart("expr") by the REPL
-def expr_entry = expr $$
+rule expr_entry = expr $$
 
-def stmt = s:simple k:keyword -> $s // lint:ignore unused-capture k is kept for the tree view
+rule stmt = s:simple k:keyword => $s // lint:ignore unused-capture k is kept for the tree view
 
-def main =
+rule main = (
     // lint:ignore nullable-repetition,unused-capture an empty item marks the end
-    items:(item?)* $$ -> nil
+    items:item?* $$) => nil
 ```
 
 - In the comments before a definition, the directive applies to the whole rule.
@@ -346,11 +346,11 @@ A directive that names an unknown check, or that suppresses nothing, is reported
 suppressions do not outlive what they excused. Grammars without comments (JSON, compiled grammars) use `-disable` or
 `pego.DisableChecks` instead.
 
-## What the linter does not find
+## What the Linter Does Not Find
 
 - Mistakes it cannot prove: a choice between alternatives whose first characters overlap (`"ab" / "ac"`) is fine;
-  shadowing through predicates, Pratt expressions, level-restricted calls and left-recursive rules is not analyzed.
+  shadowing through predicates, Operators Rule declarations, level-restricted calls and left-recursive rules is not analyzed.
 - Mistakes the compiler already rejects: undefined rules and captures, captures inside `!`, `@` or `-`, type errors
   in actions, unknown escapes.
-- Anchors across rules: `def a = "x" $$` called as `a "y"` is not reported.
+- Anchors across rules: `rule a = "x" $$` called as `a "y"` is not reported.
 - Performance on real input: use [`pego profile`](debugging.md) for that.

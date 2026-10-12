@@ -10,14 +10,14 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-const streamStorageGrammar = `def main = h:@"#head\n" row* #stream $$ [text($h) == "#head\n"]
-def row = k:@"x" vs:value+ "\n"
-def value = v:@(?a-z)+ ","`
+const streamStorageGrammar = `rule main = h:"#head\n" #atomic row* #stream $$ {text($h) == "#head\n"}
+rule row = k:"x" #atomic vs:value+ "\n"
+rule value = v:[a-z]+ #atomic ","`
 
 // Completed calls can leave references beyond slice length. Stream commits
 // must release them at the next prune without disturbing active root values.
 func TestStreamStorageCommitReferences(t *testing.T) {
-	p := newParser(compile(t, `def main = "a"`), strings.Repeat("a", 4096), CodePoints, false)
+	p := newParser(compile(t, `rule main = "a"`), strings.Repeat("a", 4096), CodePoints, false)
 	live := &Node{Text: "live"}
 	dead := &Node{Text: "dead"}
 	root := p.newFrame(1)
@@ -57,7 +57,7 @@ func TestStreamPrefixStorageIsolation(t *testing.T) {
 	if !streamPrefixIsolation {
 		t.Skip("reference build shares prefix storage")
 	}
-	p := newStreamParser(compile(t, `def main = "a"`), strings.NewReader("a"), CodePoints)
+	p := newStreamParser(compile(t, `rule main = "a"`), strings.NewReader("a"), CodePoints)
 	root := p.newFrame(1)
 	p.frame = root
 	prefix := p.newNode(Node{Text: "prefix"})
@@ -81,7 +81,7 @@ func TestStreamPrefixAllocationBudget(t *testing.T) {
 	if !streamPrefixIsolation {
 		t.Skip("reference build uses slabs")
 	}
-	p := newStreamParser(compile(t, `def main = "a"`), strings.NewReader("a"), CodePoints)
+	p := newStreamParser(compile(t, `rule main = "a"`), strings.NewReader("a"), CodePoints)
 	for range nodeChunk/8 + 4 {
 		p.newNode(Node{Text: "prefix"})
 	}
@@ -101,16 +101,16 @@ func TestStreamPrefixAllocationBudget(t *testing.T) {
 // Prefix captures and emitted values must survive isolation for both compact
 // and wide repetition instructions, including bytecode loaded without an AST.
 func TestStreamPrefixLoadedRepetitions(t *testing.T) {
-	bounds := []string{"{0}", "{2}", "*"}
+	bounds := []string{"#repeat(0)", "#repeat(2)", "*"}
 	if strconv.IntSize == 64 {
-		bounds = append(bounds, "{0,4294967296}")
+		bounds = append(bounds, "#repeat(0, 4294967296)")
 	}
 	for _, bound := range bounds {
 		text, count := "#head\nxx", 2
-		if bound == "{0}" {
+		if bound == "#repeat(0)" {
 			text, count = "#head\n", 0
 		}
-		source := `def main = h:@"#head\n" (x:@"x")` + bound + ` #stream $$ [text($h) == "#head\n"]`
+		source := `rule main = h:"#head\n" #atomic (x:"x" #atomic)` + bound + ` #stream $$ {text($h) == "#head\n"}`
 		prog := compile(t, source)
 		for _, omitAST := range []bool{false, true} {
 			data, err := prog.MarshalBinaryWith("main", MarshalOptions{OmitAST: omitAST})
@@ -145,8 +145,8 @@ func TestStreamPrefixLoadedRepetitions(t *testing.T) {
 }
 
 func TestStreamPrefixMemoReuse(t *testing.T) {
-	prog := compile(t, `def main = &header h:header (x:@"x")* #stream $$ [text($h) == "#head\n"]
-def header = @"#head\n"`)
+	prog := compile(t, `rule main = &header h:header (x:"x" #atomic)* #stream $$ {text($h) == "#head\n"}
+rule header = "#head\n" #atomic`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []Unit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
@@ -172,7 +172,7 @@ def header = @"#head\n"`)
 }
 
 func TestStreamPrefixLeftRecursiveRoot(t *testing.T) {
-	prog := compile(t, `def main = h:(main "a" / @"a") "x"* #stream [text($h) != ""]`)
+	prog := compile(t, `rule main = h:(main "a" / "a" #atomic) "x"* #stream {text($h) != ""}`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []Unit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
@@ -187,8 +187,8 @@ func TestStreamPrefixLeftRecursiveRoot(t *testing.T) {
 }
 
 func TestStreamPrefixLeftRecursiveCaptureSurvivesCommit(t *testing.T) {
-	prog := compile(t, `def main = h:@head "x"* #stream [text($h) == "aa"] $$
-def head = head "a" / @"a"`)
+	prog := compile(t, `rule main = h:head #atomic "x"* #stream {text($h) == "aa"} $$
+rule head = head "a" / "a" #atomic`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []Unit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
@@ -203,7 +203,7 @@ def head = head "a" / @"a"`)
 }
 
 func TestVMStreamRepeatShape(t *testing.T) {
-	prog := compile(t, `def main = (x:@"x")* #stream $$`)
+	prog := compile(t, `rule main = (x:"x" #atomic)* #stream $$`)
 	code := prog.Module().Code
 	ip := -1
 	for i, in := range code {
@@ -256,8 +256,8 @@ func BenchmarkStreamStorageRetainedHeap(b *testing.B) {
 	for _, liveRoot := range []bool{false, true} {
 		src := streamStorageGrammar
 		if !liveRoot {
-			src = strings.ReplaceAll(src, `h:@"#head\n"`, `"#head\n"`)
-			src = strings.ReplaceAll(src, ` [text($h) == "#head\n"]`, "")
+			src = strings.ReplaceAll(src, `h:"#head\n" #atomic`, `"#head\n"`)
+			src = strings.ReplaceAll(src, ` {text($h) == "#head\n"}`, "")
 		}
 		g, err := syntax.Parse(src)
 		if err != nil {
@@ -353,7 +353,7 @@ func BenchmarkStreamRetentionWorkload(b *testing.B) {
 // A large retained prefix must not turn normal element allocation into
 // per-node allocation, and nil callbacks keep whole-repetition behavior.
 func BenchmarkStreamPrefixSize(b *testing.B) {
-	g, err := syntax.Parse(strings.ReplaceAll(strings.ReplaceAll(streamStorageGrammar, `h:@"#head\n"`, `h:row`), ` [text($h) == "#head\n"]`, ``))
+	g, err := syntax.Parse(strings.ReplaceAll(strings.ReplaceAll(streamStorageGrammar, `h:"#head\n" #atomic`, `h:row`), ` {text($h) == "#head\n"}`, ``))
 	if err != nil {
 		b.Fatal(err)
 	}

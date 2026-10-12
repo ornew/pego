@@ -1,4 +1,4 @@
-# Process a file that does not fit in memory
+# Process a File That Does Not Fit in Memory
 
 **Problem.** You read a log or an export with millions of records and want to total, filter or load them, in a
 constant amount of memory, whatever the size of the file.
@@ -13,13 +13,12 @@ type Millis terminal
 type Entry struct { Level Level, Millis Millis }
 
 // Each entry is one line: time level service method path status millis.
-def main = entry* #stream $$
+rule main = entry* #stream $$
 
-def entry: Entry = -token " " l:severity " " -token " " -token " " -token " " -token " " ms:millis "ms\n"
-    -> new Entry{Level: $l, Millis: $ms}
-def token = (?^ \n)+
-def severity: Level = "DEBUG" / "INFO" / "WARN" / "ERROR"
-def millis: Millis = (?0-9)+
+rule entry Entry = -token " " l:severity " " -token " " -token " " -token " " -token " " ms:millis "ms\n" => Entry{Level: $l, Millis: $ms}
+rule token = [^ \n]+
+rule severity Level = "DEBUG" / "INFO" / "WARN" / "ERROR"
+rule millis Millis = [0-9]+
 ```
 
 The lines are those of [Parse log lines fast](log-lines.md). This grammar keeps only the level and the time, and skips the
@@ -140,7 +139,7 @@ With five million lines (290 MB) the streaming program still needs 17 MiB. For o
 the whole-input program 0.8 seconds: streaming trades some time for memory that does not grow with the input. (The
 memory figures vary by a few MiB from run to run.)
 
-## How it works
+## How It Works
 
 - **`#stream` is a promise.** It says that each iteration of this repetition is final once it has matched: the parser
   never backtracks into it. That is what lets it deliver a record, forget it, and drop the input before it.
@@ -165,4 +164,4 @@ memory figures vary by a few MiB from run to run.)
   memory grows again.
 - **CSV.** [parsers/csv](../../parsers/csv/) has a grammar with a `#stream` repetition of records.
 
-See [spec/attributes.md](../../spec/attributes.md) for the rules of `#stream`.
+See [spec/pragmas.md](../../spec/pragmas.md) for the rules of `#stream`.

@@ -24,141 +24,119 @@ type genCase struct {
 // genCorpus returns the grammars and inputs used to compare backends and generated parsers with the engine.
 func genCorpus(t *testing.T) []genCase {
 	cases := []genCase{
-		{"direct value-free rollback", `
-def main = "a" ("é" "!" / "é" "?") $$ / "o" ("é" "!")? "é"? $$ / "r" ("é" "!"){1,3} "é"? $$ / "z" (x:_){2,} $$ / "p" &("é" "!") "é" !"?" "!" $$ / "l" (@"é" #error(message="letter")) "!" $$ / "e" ("ab" #error(message="pair")) $$
+		{"Operators Rule explicit default action", `rule main = e $$
+rule e = operators {
+    operand "α"
+    level { infix left "+" }
+} => ...`, []string{"α", "α+α", "α+α+α", "α+", "+α", ""}},
+		{"direct value-free rollback", `rule main = "a" ("é" "!" / "é" "?") $$ / "o" ("é" "!")? "é"? $$ / "r" ("é" "!") #repeat(1, 3) "é"? $$ / "z" (x:_) #repeat(2, ) $$ / "p" &("é" "!") "é" !"?" "!" $$ / "l" "é" @error(message="letter") #atomic "!" $$ / "e" "ab" @error(message="pair") $$
 `, []string{"aé!", "aé?", "aé@", "aé", "o", "oé!", "oé", "oé?", "ré!é!é", "ré!é", "ré", "z", "zé", "zéé", "zééé", "pé!", "pé?", "pé", "lé!", "lé?", "l?", "eab", "ea?", "e", ""}},
-		{"direct value-free fallback calls", `
-def main = "m" &(cached "!") cached "!" $$ / "c" -- plain "!" $$ / "v" [n = 1] plain "?" $$ / "g" [n = 2] plain $$ / "h" recovering $$ / "j" prefixed $$ / "k" left $$
-def cached = "é" / "ab"
-def plain = "é" / guarded
-def guarded = [n == 2] "a"
-def recovering = ("é" ";") #recover(skip="?")
-def prefixed = pratt {
- operand "é"
- level { prefix "-" }
+		{"direct value-free fallback calls", `rule main = "m" &(cached "!") cached "!" $$ / "c" -- plain "!" $$ / "v" {n := 1} plain "?" $$ / "g" {n := 2} plain $$ / "h" recovering $$ / "j" prefixed $$ / "k" left $$
+rule cached = "é" / "ab"
+rule plain = "é" / guarded
+rule guarded = {n == 2} "a"
+rule recovering = ("é" ";") #recover(skip="?")
+rule prefixed = operators {
+    operand "é"
+    level { prefix "-" }
 }
-def left = left "+" "é" / "é"
+rule left = left "+" "é" / "é"
 `, []string{"mé!", "mab!", "mé?", "mab", "cé!", "cé?", "ca!", "vé?", "va?", "ga", "gé", "g?", "hé;", "h?", "h", "j-é", "j--é", "j-", "ké+é", "ké+", ""}},
-		{"direct value-free decoding and anchors", `
-def main = "u" a:@("é" / "\uFFFD" / "\uFFFDé" / "\u{1F600}") $$ / ^^ "na" $ "\n" ^ "é" $$ / "s" (?a-z){1,3} $$ / "t" ("x" / _){2,} $$
+		{"direct value-free decoding and anchors", `rule main = "u" a:("é" / "�" / "�é" / "😀") #atomic $$ / ^^ "na" $ "\n" ^ "é" $$ / "s" [a-z] #repeat(1, 3) $$ / "t" ("x" / _) #repeat(2, ) $$
 `, []string{"ué", "u�", "u�é", "u😀", "u?", "na\né", "na\n?", "sabc", "sab", "sabcd", "s", "t", "tx", "txx", "txxx"}},
 		{"wide expectation scopes", wideExpectationsGrammar(), []string{"sé00!", "sé@", "mé@", "mé00!", "mé00?", "mé00@", "ré@;é!;", "ré79", "eé@", "eé79", ""}},
-		{"stream element recovery", `
-def main=(("ab" #recover(skip=(?^a)+)) #recover(skip="!"))* #stream $$`,
+		{"stream element recovery", `rule main = "ab" #recover(skip=[^a]+) #recover(skip="!")* #stream $$`,
 			[]string{"", "ab", "abab", "abX!ab", "X!", "a"}},
-		{"nullable minimum repetitions", `
-def main=("z" zero / "o" one / "t" two / "u" unbounded / "a" atomic / "d" discarded / "p" projected / "f" fallback) $$
-def zero=("é" / _){0} #stream
-def one=("é" / _){0,1} #stream
-def two=("é" / _){2} #stream
-def unbounded=("é" / _){2,} #stream
-def atomic=@("é" / _){2,}
-def discarded=-("é" / _){2,}
-def projected=xs:(f:("é" / _)){2,} -> map($xs, (x) => $x.f)
-def fallback=("é" / _){3} / "é"`,
+		{"nullable minimum repetitions", `rule main = ("z" zero / "o" one / "t" two / "u" unbounded / "a" atomic / "d" discarded / "p" projected / "f" fallback) $$
+rule zero = ("é" / _) #repeat(0) #stream
+rule one = ("é" / _) #repeat(0, 1) #stream
+rule two = ("é" / _) #repeat(2) #stream
+rule unbounded = ("é" / _) #repeat(2, ) #stream
+rule atomic = ("é" / _) #repeat(2, ) #atomic
+rule discarded = -("é" / _) #repeat(2, )
+rule projected = xs:(f:("é" / _)) #repeat(2, ) => map($xs, (x) => $x.f)
+rule fallback = ("é" / _) #repeat(3) / "é"`,
 			[]string{"z", "zé", "o", "oé", "oéé", "t", "té", "téé", "tééé", "u", "ué", "uéé", "uééé", "a", "aé", "aéé", "d", "dé", "déé", "p", "pé", "péé", "f", "fé", "féé", "fééé", ""}},
-		{"stream capture recognition", `
-type N struct { T []Match }
-def main=items:(x:@"é" [text($x)=="é"]){0,2} #stream $$ -> new N{T: map($items, (i) => $i.x)}`,
+		{"stream capture recognition", `type N struct { T []Match }
+rule main = items:(x:"é" #atomic {text($x) == "é"}) #repeat(0, 2) #stream $$ => N{T: map($items, (i) => $i.x)}`,
 			[]string{"", "é", "éé", "ééé", "a", "éa"}},
-		{"literal text predicate dispatch", `
-type R struct { X *Match }
-def main = w:@(?^!)+ [text($w)=="a" || "b"==text($w) || text($w)=="c" || text($w)=="é" || text($w)=="😀" || text($w)=="λ" || text($w)=="日本語" || text($w)=="long-literal"] $$ -> new R{X:$w}`,
+		{"literal text predicate dispatch", `type R struct { X *Match }
+rule main = w:[^!]+ #atomic {text($w) == "a" || "b" == text($w) || text($w) == "c" || text($w) == "é" || text($w) == "😀" || text($w) == "λ" || text($w) == "日本語" || text($w) == "long-literal"} $$ => R{X: $w}`,
 			[]string{"a", "b", "c", "é", "😀", "λ", "日本語", "long-literal", "absent", "A", ""}},
-		{"literal text predicate controls", `
-type R struct { X *Match }
-def main = n:@(?0-9)+ [len($n)==1 || len($n)==2] [text($n)!="0" && text($n)!="00"] $$ -> new R{X:$n}`,
+		{"literal text predicate controls", `type R struct { X *Match }
+rule main = n:[0-9]+ #atomic {len($n) == 1 || len($n) == 2} {text($n) != "0" && text($n) != "00"} $$ => R{X: $n}`,
 			[]string{"1", "2", "0", "00", "123", "x", ""}},
-		{"literal text mixed control", `
-type R struct { X *Match }
-def main = w:@(?a-z)+ [text($w)=="a" || len($w)==1] $$ -> new R{X:$w}`,
+		{"literal text mixed control", `type R struct { X *Match }
+rule main = w:[a-z]+ #atomic {text($w) == "a" || len($w) == 1} $$ => R{X: $w}`,
 			[]string{"a", "b", "ab", ""}},
-		{"literal text different captures control", `
-type R struct { X *Match }
-def main = x:@(?a-z) y:@(?a-z) [text($x)=="a" || text($y)=="b"] $$ -> new R{X:$x}`,
+		{"literal text different captures control", `type R struct { X *Match }
+rule main = x:[a-z] #atomic y:[a-z] #atomic {text($x) == "a" || text($y) == "b"} $$ => R{X: $x}`,
 			[]string{"ab", "ac", "cb", "ca", "a", ""}},
-		{"literal text negation control", `
-type R struct { X *Match }
-def main = w:@(?a-z)+ [text($w)=="a" || !(text($w)=="b")] $$ -> new R{X:$w}`,
+		{"literal text negation control", `type R struct { X *Match }
+rule main = w:[a-z]+ #atomic {text($w) == "a" || !(text($w) == "b")} $$ => R{X: $w}`,
 			[]string{"a", "b", "c", ""}},
-		{"literal text missing capture", `
-type R struct { X *Match }
-def main = (w:@(?a-z))? [text($w)=="" || text($w)=="a" || text($w)=="b" || text($w)=="a"] $$ -> new R{X:$w}`,
+		{"literal text missing capture", `type R struct { X *Match }
+rule main = (w:[a-z] #atomic)? {text($w) == "" || text($w) == "a" || text($w) == "b" || text($w) == "a"} $$ => R{X: $w}`,
 			[]string{"", "a", "b", "c"}},
-		{"literal text variable alias control", `
-type R struct { X Match }
-def main = w:@(?a-z)+ [alias=text($w)] [alias=="a" || alias=="b"] $$ -> new R{X:$w}`,
+		{"literal text variable alias control", `type R struct { X Match }
+rule main = w:[a-z]+ #atomic {alias := text($w)} {alias == "a" || alias == "b"} $$ => R{X: $w}`,
 			[]string{"a", "b", "c", ""}},
-		{"stream empty capture recognition", `def main=(x:_){1} #stream $$`, []string{"", "a", "é"}},
-		{"unicode scalar boundaries", `
-type N struct { T Match }
-def main = t:@("f" (?\u0000-\u{10FFFF}) / "e" (?\uD7FF-\uE000) / "n" (?^\uD7FF-\uE000) / "l" ("\u{10FFFF}" / "\uFFFD" / "\uFFFF")) $$ -> new N{T: $t}`,
+		{"stream empty capture recognition", `rule main = (x:_) #repeat(1) #stream $$`, []string{"", "a", "é"}},
+		{"unicode scalar boundaries", `type N struct { T Match }
+rule main = t:("f" [\u{0}-\u{10ffff}] / "e" [\u{d7ff}-\u{e000}] / "n" [^\u{d7ff}-\u{e000}] / "l" ("\u{10ffff}" / "�" / "\u{ffff}")) #atomic $$ => N{T: $t}`,
 			[]string{"f\x00", "fa", "f\ud7ff", "f\ue000", "f\ufffd", "f\uffff", "f\U0010ffff", "e\ud7ff", "e\ue000", "e\ue001", "na", "n\ue000", "l\U0010ffff", "l\ufffd", "l\uffff", "la", "f", "f😀x"}},
 		{"long inferred chain", inferredChain(64, false, ""), []string{"a", "", "aa", "b"}},
 		{"arith", arith, []string{"1+2*3", "-2^2", "3!!", "(1+2)*3", "1==2==3", "1+", ""}},
 		{"ast", ast, []string{"a ? b : c ? d : e", "f(a = 1, b), c", "-a(1)[2]", "a->b-c", "f()", "f(,)"}},
-		{"restricted Pratt prefixes", restrictedPrefix, []string{"~é", "~~x", "x*y", "é!", "x^y^z", "~é+y", "x*~y+z", "x^~y+z", "x+y", "x|y", "é?", "~é|y", "~é?", "~", ""}},
-		{"restricted Pratt prefix memo", strings.Replace(restrictedPrefix,
-			`def main = x:e(mul) $$ -> $x`, `def main = &(e(mul) "|") x:e $$ -> $x`, 1), []string{"~é+y|z", "~é+y", "x|y", "é|z"}},
+		{"restricted OperatorsRule prefixes", restrictedPrefix, []string{"~é", "~~x", "x*y", "é!", "x^y^z", "~é+y", "x*~y+z", "x^~y+z", "x+y", "x|y", "é?", "~é|y", "~é?", "~", ""}},
+		{"restricted OperatorsRule prefix memo", strings.Replace(restrictedPrefix,
+			`rule main = x:level(e, mul) $$ => $x`, `rule main = &(level(e, mul) "|") x:e $$ => $x`, 1), []string{"~é+y|z", "~é+y", "x|y", "é|z"}},
 		{"incremental", incrementalGrammar, []string{"x = 1+2\nab,cd\n@pos\n\ny = (3)*-4\n", "x = (1\n", "@\n"}},
 		{"records", records, []string{"#records\na=1\nbc=22\n", "#records\nx\n"}},
-		{"indent", `
-def main = [indent = 0] block $$
-def block = item+
-def item = s:spaces [len($s) == indent] name:@(?a-z)+ "\n" children?
-def children = &(s:spaces) [len($s) > indent] [indent = len($s)] block
-def spaces = @" "*`, []string{"a\n  b\n  c\n    d\ne\n", "a\n   b\n c\n"}},
-		{"recover", `
-def main = stmt* $$
-def stmt = (@(?a-z)+ ";") #recover(skip=(?^;)+ ";")`, []string{"ab;1x;cd;9;", "1x;ab"}},
-		{"error attr", `
-def main = "let" " " name #error(message="expected a name") ";"
-def name = @(?a-z)+ (?0-9)*`, []string{"let 1;", "let a", "let ab1;"}},
-		{"left recursion", `
-def main = a
-def a = b "x" / "y"
-def b = a "z" / c
-def c = a "w" / "v"`, []string{"y", "vx", "yzxwx", "yz"}},
-		{"fold and lists", `
-type Op struct { Left Node, Op Match, Right Node }
+		{"indent", `rule main = {indent := 0} block $$
+rule block = item+
+rule item = s:spaces {len($s) == indent} name:[a-z]+ #atomic "\n" children?
+rule children = &s:spaces {len($s) > indent} {indent := len($s)} block
+rule spaces = " "* #atomic`, []string{"a\n  b\n  c\n    d\ne\n", "a\n   b\n c\n"}},
+		{"recover", `rule main = stmt* $$
+rule stmt = ([a-z]+ #atomic ";") #recover(skip=[^;]+ ";")`, []string{"ab;1x;cd;9;", "1x;ab"}},
+		{"error attr", `rule main = "let" " " name @error(message="expected a name") ";"
+rule name = [a-z]+ #atomic [0-9]*`, []string{"let 1;", "let a", "let ab1;"}},
+		{"left recursion", `rule main = a
+rule a = b "x" / "y"
+rule b = a "z" / c
+rule c = a "w" / "v"`, []string{"y", "vx", "yzxwx", "yz"}},
+		{"fold and lists", `type Op struct { Left Node, Op Match, Right Node }
 type Node = Op | Match
 type Args struct { Items []Match, N int, S string, B bool }
-def main = e:expr ";" a:args -> new Args{Items: concat($a.Items, $a.Items), N: len($a.Items) * 2 - 1, S: text($e) + "!", B: !($a.N == 0) || false}
-def expr: Node = l:num rest:(op:@("+" / "-") r:num)* -> foldl($l, $rest, (acc, i) => new Op{Left: $acc, Op: $i.op, Right: $i.r})
-def args: Args = first:num rest:(-"," x:num)* -> new Args{Items: concat(list($first), map($rest, (r) => $r.x)), N: len($rest)}
-def num = @(?0-9)+`, []string{"1+2-3;4,5,6", "1;2", "1-;2"}},
-		{"projected and indexed repetition", `
-type L struct { Items []Match, Rest node, N int }
-def main = first:x rest:(-"," r:x)* -> new L{Items: concat(list($first), map($rest, (e) => $e.r)), Rest: $2, N: len($rest)}
-def x = @(?a-z)+`, []string{"a,b,c", "a", "a,"}},
-		{"runtime error", `
-type A struct { N int }
-def main = x:@"a"* -> new A{N: 10 / len($x)}`, []string{"aa", ""}},
-		{"cut and lookahead", `
-def main = ("a" -- "b" / "a" -- "c") rest
-def rest = &(x:"!") "!"? !"?" .*`, []string{"ab!x", "ac", "ab?"}},
-		{"memo keyed by variables", `
-def main = [n = 1] r "x" / [n = 2] r .*
-def r = [n == 1] "a" / [n == 2] "b"`, []string{"ax", "b", "ay", "bx"}},
-		{"empty prefix and postfix", `
-def main = e $$
-def e = pratt {
+rule main = e:expr ";" a:args => Args{Items: concat($a.Items, $a.Items), N: len($a.Items) * 2 - 1, S: text($e) + "!", B: !($a.N == 0) || false}
+rule expr Node = l:num rest:(op:("+" / "-") #atomic r:num)* => foldl($l, $rest, (acc, i) => Op{Left: $acc, Op: $i.op, Right: $i.r})
+rule args Args = first:num rest:(-"," x:num)* => Args{Items: concat(list($first), map($rest, (r) => $r.x)), N: len($rest)}
+rule num = [0-9]+ #atomic`, []string{"1+2-3;4,5,6", "1;2", "1-;2"}},
+		{"projected and indexed repetition", `type L struct { Items []Match, Rest node, N int }
+rule main = first:x rest:(-"," r:x)* => L{Items: concat(list($first), map($rest, (e) => $e.r)), Rest: $2, N: len($rest)}
+rule x = [a-z]+ #atomic`, []string{"a,b,c", "a", "a,"}},
+		{"runtime error", `type A struct { N int }
+rule main = x:"a"* #atomic => A{N: 10 / len($x)}`, []string{"aa", ""}},
+		{"cut and lookahead", `rule main = ("a" -- "b" / "a" -- "c") rest
+rule rest = &x:"!" "!"? !"?" .*`, []string{"ab!x", "ac", "ab?"}},
+		{"memo keyed by variables", `rule main = {n := 1} r "x" / {n := 2} r .*
+rule r = {n == 1} "a" / {n == 2} "b"`, []string{"ax", "b", "ay", "bx"}},
+		{"empty prefix and postfix", `rule main = e $$
+rule e = operators {
     operand "x"
     level { prefix "-"? }
     level { postfix "!"? }
 }`, []string{"x", "-x!", "--x", ""}},
 		// An empty operand and an empty infix operator: an application that consumes nothing ends
 		// the expression.
-		{"empty operand and infix", `
-def main = e $$
-def e = pratt {
+		{"empty operand and infix", `rule main = e $$
+rule e = operators {
     operand "a"?
     level { infix left _ }
 }`, []string{"a", "", "aa"}},
-		{"anchors and classes", `
-def main = (^ @(?a-z)+ $ "\n"?)* $$ (?^\n)? _`, []string{"ab\ncd\n", "ab\n1", "日本", "é\n\xff"}},
-		{"scans", `
-def main = a:(?a-z)* -(?0-9){2,3} -.{1,2} -(?^,)+ "," rest:@.*`, []string{"ab12xy,z", "123,", "1", "abc12éq,é"}},
+		{"anchors and classes", `rule main = (^ [a-z]+ #atomic $ "\n"?)* $$ [^\n]? _`, []string{"ab\ncd\n", "ab\n1", "日本", "é\n\xff"}},
+		{"scans", `rule main = a:[a-z]* -[0-9] #repeat(2, 3) -. #repeat(1, 2) -[^,]+ "," rest:.* #atomic`, []string{"ab12xy,z", "123,", "1", "abc12éq,é"}},
 	}
 	cases = append(cases, prefixPartCutCorpus())
 	cases = append(cases, typedDirectCutCases...)
@@ -170,7 +148,7 @@ def main = a:(?a-z)* -(?0-9){2,3} -.{1,2} -(?^,)+ "," rest:@.*`, []string{"ab12x
 	cases = append(cases, reachabilityGeneratedCases...)
 	cases = append(cases, nodeDirectCases...)
 	cases = append(cases, typedLRBodyCases...)
-	cases = append(cases, typedPrattBodyCases...)
+	cases = append(cases, typedOperatorsRuleBodyCases...)
 	cases = append(cases, typedFramedCutCases(t)...)
 	cases = append(cases, typedFrameLayoutCases...)
 	cases = append(cases, typedRecoveryCases...)
@@ -234,22 +212,19 @@ func TestGeneratedParsersMatchEngine(t *testing.T) {
 	cases := genCorpus(t)
 	// Exactly at and just beyond the default nesting limit (DefaultMaxDepth rule calls). Only
 	// here: the iterative VM, which other tests run on the corpus, has a higher default.
-	cases = append(cases, genCase{"nesting limit", `
-def main = n
-def n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x" + strings.Repeat(")", DefaultMaxDepth-2),
+	cases = append(cases, genCase{"nesting limit", `rule main = n
+rule n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x" + strings.Repeat(")", DefaultMaxDepth-2),
 		strings.Repeat("(", DefaultMaxDepth-1) + "x" + strings.Repeat(")", DefaultMaxDepth-1)}})
 	// A direct leaf still counts as a rule call, including when a generic
 	// recursive rule invokes it or a rule-table entry reaches its body.
-	cases = append(cases, genCase{"direct leaf nesting limit", `
-def main = n
-def n = "(" n ")" / leaf
-def leaf = "x"`, []string{strings.Repeat("(", DefaultMaxDepth-3) + "x" + strings.Repeat(")", DefaultMaxDepth-3),
+	cases = append(cases, genCase{"direct leaf nesting limit", `rule main = n
+rule n = "(" n ")" / leaf
+rule leaf = "x"`, []string{strings.Repeat("(", DefaultMaxDepth-3) + "x" + strings.Repeat(")", DefaultMaxDepth-3),
 		strings.Repeat("(", DefaultMaxDepth-2) + "x" + strings.Repeat(")", DefaultMaxDepth-2)}})
-	// Chains of prefix and right-associative operators count against the limit too (a Pratt
+	// Chains of prefix and right-associative operators count against the limit too (a OperatorsRule
 	// expression parses them by recursion).
-	cases = append(cases, genCase{"pratt nesting limit", `
-def main = x
-def x = pratt {
+	cases = append(cases, genCase{"operatorsRule nesting limit", `rule main = x
+rule x = operators {
     operand "x"
     level { infix right "^" }
     level { prefix "-" }
@@ -357,7 +332,7 @@ func main() {
 }
 
 func TestGenerateErrors(t *testing.T) {
-	g, _ := syntax.Parse(`def main = "a"`)
+	g, _ := syntax.Parse(`rule main = "a"`)
 	if _, err := Generate(g, GenOptions{Package: "p", Start: "nope"}); err == nil || err.Error() != "start rule nope is not defined" {
 		t.Errorf("got %v", err)
 	}
@@ -369,7 +344,7 @@ func TestGenerateErrors(t *testing.T) {
 			t.Errorf("package %q: got %v", pkg, err)
 		}
 	}
-	bad, _ := syntax.Parse(`def main = x`)
+	bad, _ := syntax.Parse(`rule main = x`)
 	if _, err := Generate(bad, GenOptions{Package: "p", Start: "main"}); err == nil || !strings.Contains(err.Error(), "undefined rule x") {
 		t.Errorf("got %v", err)
 	}
@@ -418,18 +393,17 @@ func mutants(inputs []string, n int, seed uint64) []string {
 // typedGrammar exercises typed values: unions with CST members, lists of lists, optional
 // matches (s always matches, maybe empty; o may be nil), int and bool fields, a user type named like a runtime type (Node) and Error nodes
 // left by #recover.
-const typedGrammar = `
-type Name terminal
+const typedGrammar = `type Name terminal
 type Num terminal
 type Node = Call | Name | Num | Seq
 type Call struct { Fn Name, Args []Node, Span Match, N int, Opt *Match, Rows [][]Num, Ok bool }
-def main: []Node = xs:item* $$ -> concat(map($xs, (x) => $x))
-def item: Node = (call / name / num / grp) #recover(skip=(?^;)+ ";")
-def call: Call = f:name "(" a:args? ")" s:@"!"? o:"?"? ";" -> new Call{Fn: $f, Args: concat($a), Span: $s, N: len($a), Opt: $o, Rows: list(list()), Ok: true}
-def args = first:item rest:(-"," x:item)* -> concat(list($first), map($rest, (r) => $r.x))
-def grp = "[" n:num "]" ";"
-def name: Name = (?a-z)+
-def num: Num = (?0-9)+`
+rule main []Node = xs:item* $$ => concat(map($xs, (x) => $x))
+rule item Node = (call / name / num / grp) #recover(skip=[^;]+ ";")
+rule call Call = f:name "(" a:args? ")" s:"!"? #atomic o:"?"? ";" => Call{Fn: $f, Args: concat($a), Span: $s, N: len($a), Opt: $o, Rows: list(list()), Ok: true}
+rule args = first:item rest:(-"," x:item)* => concat(list($first), map($rest, (r) => $r.x))
+rule grp = "[" n:num "]" ";"
+rule name Name = [a-z]+
+rule num Num = [0-9]+`
 
 // TestGeneratedTypes checks ParseAST of parsers generated with Types: it compiles for every
 // grammar of the corpus and returns the errors of Parse, and it converts the trees of
@@ -444,10 +418,9 @@ func TestGeneratedTypes(t *testing.T) {
 	}
 	// Exactly at and just beyond the nesting limit, through direct rules (as in
 	// TestGeneratedParsersMatchEngine).
-	cases := append(genCorpus(t), genCase{"nesting limit", `
-type R struct { T Match }
-def main: R = t:@n -> new R{T: $t}
-def n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x" + strings.Repeat(")", DefaultMaxDepth-2),
+	cases := append(genCorpus(t), genCase{"nesting limit", `type R struct { T Match }
+rule main R = t:n #atomic => R{T: $t}
+rule n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x" + strings.Repeat(")", DefaultMaxDepth-2),
 		strings.Repeat("(", DefaultMaxDepth-1) + "x" + strings.Repeat(")", DefaultMaxDepth-1)}})
 	cases = append(cases, genCase{"typed", typedGrammar, []string{"f(1,x)!?;[3];zz", "f(1,(;g();", "f(a);"}})
 	// The grammars written for direct rules also get mutated inputs, which reach other partial
@@ -487,8 +460,8 @@ func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, refer
 		if strings.Contains(string(code), "tparse(trules") {
 			typedRuntime++
 		}
-		if c.name == "Pratt prefix-part cuts" && !strings.Contains(string(code), "tparse(trules") {
-			t.Error("Pratt prefix-part cuts: typed runtime is not exercised")
+		if c.name == "OperatorsRule prefix-part cuts" && !strings.Contains(string(code), "tparse(trules") {
+			t.Error("OperatorsRule prefix-part cuts: typed runtime is not exercised")
 		}
 		// The grammars written for direct rules (gen_direct.go) must compile rules that way.
 		if strings.Contains(c.name, "typed/direct_") && !strings.Contains(string(code), "(body inlined)") {
@@ -643,9 +616,9 @@ func main() {
 			`{"Start":13,"End":15,"Text":"zz"}],"Type":"[]g37.Node_","Err":"<nil>"}`,
 		`{"Value":[` +
 			`{"Start":0,"End":1,"Text":"f"},` +
-			`{"Start":1,"End":6,"Text":"(1,(;","Message":"1:2: syntax error: expected \"[\", (?0-9), (?a-z)"},` +
+			`{"Start":1,"End":6,"Text":"(1,(;","Message":"1:2: syntax error: expected \"[\", [0-9], [a-z]"},` +
 			`{"Start":6,"End":7,"Text":"g"},` +
-			`{"Start":7,"End":10,"Text":"();","Message":"1:8: syntax error: expected \"[\", (?0-9), (?a-z)"}],"Type":"[]g37.Node_","Err":"1:2: syntax error: expected \"[\", (?0-9), (?a-z)\n1:8: syntax error: expected \"[\", (?0-9), (?a-z)"}`,
+			`{"Start":7,"End":10,"Text":"();","Message":"1:8: syntax error: expected \"[\", [0-9], [a-z]"}],"Type":"[]g37.Node_","Err":"1:2: syntax error: expected \"[\", [0-9], [a-z]\n1:8: syntax error: expected \"[\", [0-9], [a-z]"}`,
 		`{"Value":[{"Start":0,"End":5,"Fn":{"Start":0,"End":1,"Text":"f"},"Args":[{"Start":2,"End":3,"Text":"a"}],"Span":{"Start":4,"End":4,"Text":""},"N":1,"Opt":null,"Rows":[[]],"Ok":true}],"Type":"[]g37.Node_","Err":"<nil>"}`,
 	} {
 		var b strings.Builder

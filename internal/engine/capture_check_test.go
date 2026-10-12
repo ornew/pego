@@ -16,12 +16,12 @@ func TestDuplicateCaptureTypes(t *testing.T) {
 		{"nested records", captureCheckSource(1024, "record"), "Seq{x: Seq{k: Match, v: []Seq{y: Match}}}", ""},
 		{"mixed optional", captureCheckSource(32, "mixed"), "Seq{x: *(A | B)}", ""},
 		{"recursive", captureCheckSource(64, "recursive"), "any", ""},
-		{"choice", `def main = (x:(k:"a") x:(k:"b") / x:(k:"c")) $$`, "Seq{k: Match, x: Match}", ""},
-		{"optional scope", `def main = (x:"a" x:"b")? $$`, "Seq{x: *Match}", ""},
-		{"repetition scope", `def main = (x:"a" x:"b")* $$ -> $1`, "[]Seq{x: Match}", ""},
-		{"nil action", "def empty = \"\" -> nil\ndef main = x:empty x:empty", "Seq{x: nil}", ""},
-		{"action and predicate", `def main = x:"a" x:"b" [text($x)=="b"] -> $x`, "Match", ""},
-		{"incompatible action", "type R struct { X Match }\ndef item = k:\"a\" v:(y:\"b\")*\ndef main = x:item x:item -> new R{X: $x}", "R", "3:35: cannot use Seq{k: Match, v: []Seq{y: Match}} as Match in field X of R"},
+		{"choice", `rule main = (x:k:"a" x:k:"b" / x:k:"c") $$`, "Seq{k: Match, x: Match}", ""},
+		{"optional scope", `rule main = (x:"a" x:"b")? $$`, "Seq{x: *Match}", ""},
+		{"repetition scope", `rule main = (x:"a" x:"b")* $$ => $1`, "[]Seq{x: Match}", ""},
+		{"nil action", "rule empty = \"\" => nil\nrule main = x:empty x:empty", "Seq{x: nil}", ""},
+		{"action and predicate", `rule main = x:"a" x:"b" {text($x) == "b"} => $x`, "Match", ""},
+		{"incompatible action", "type R struct { X Match }\nrule item = k:\"a\" v:(y:\"b\")*\nrule main = x:item x:item => R{X: $x}", "R", "3:32: cannot use Seq{k: Match, v: []Seq{y: Match}} as Match in field X of R"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p, err := captureCheckProgram(tc.src)
@@ -39,7 +39,7 @@ func TestDuplicateCaptureTypes(t *testing.T) {
 			}
 		})
 	}
-	check(t, `def main = x:"a" x:"b" [text($x)=="b"] -> $x`, ok("ab", `"b"`))
+	check(t, `rule main = x:"a" x:"b" {text($x) == "b"} => $x`, ok("ab", `"b"`))
 }
 
 // Compare the capture merger with the general union, including values whose
@@ -72,8 +72,8 @@ func TestCaptureUnionEquivalence(t *testing.T) {
 func TestDuplicateCaptureDiagnosticPositions(t *testing.T) {
 	for _, n := range []int{1, 64, 1024} {
 		t.Run(fmt.Sprint(n), func(t *testing.T) {
-			line := `def main = ` + strings.Repeat(`"😀" x:item `, n) + `-> new R{X: $x}`
-			src := "type R struct { X Match }\ndef item = k:\"a\" v:(y:\"b\")*\n" + line
+			line := `rule main = ` + strings.Repeat(`"😀" x:item `, n) + `=> R{X: $x}`
+			src := "type R struct { X Match }\nrule item = k:\"a\" v:(y:\"b\")*\n" + line
 			col := utf8.RuneCountInString(line[:strings.Index(line, "X:")]) + 1
 			want := fmt.Sprintf("3:%d: cannot use Seq{k: Match, v: []Seq{y: Match}} as Match in field X of R", col)
 			if got := compileError(t, src); got != want {
@@ -98,23 +98,23 @@ func captureCheckProgram(src string) (*Program, error) {
 func captureCheckSource(n int, shape string) string {
 	switch shape {
 	case "recursive":
-		return `def main = ` + strings.Repeat(`"😀" x:main `, n)
+		return `rule main = ` + strings.Repeat(`"😀" x:main `, n)
 	case "record":
-		return `def main = ` + strings.Repeat(`x:item `, n) + `$$
-def item = k:"a" v:(y:"b")*`
+		return `rule main = ` + strings.Repeat(`x:item `, n) + `$$
+rule item = k:"a" v:(y:"b")*`
 	case "mixed":
 		return `type A struct {}
 type B struct {}
-def a = "a" -> new A{}
-def b = "b" -> new B{}
-def main = ` + strings.Repeat(`x:a x:b? `, n) + `$$`
+rule a = "a" => A{}
+rule b = "b" => B{}
+rule main = ` + strings.Repeat(`x:a x:b? `, n) + `$$`
 	case "unique":
 		var s strings.Builder
-		s.WriteString("def main = ")
+		s.WriteString("rule main = ")
 		for i := range n {
 			fmt.Fprintf(&s, "x%d:item ", i)
 		}
-		s.WriteString("$$\ndef item = k:\"a\"\n")
+		s.WriteString("$$\nrule item = k:\"a\"\n")
 		return s.String()
 	}
 	panic(shape)

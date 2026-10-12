@@ -1,4 +1,4 @@
-# Report several errors in one run
+# Report Several Errors in One Run
 
 **Problem.** A file has three mistakes, and you want the user to see all three, not to fix one, run again and find the
 next. You also want the lines that were fine, so that the rest of the program can still use them.
@@ -11,20 +11,20 @@ to a place where parsing can go on, and puts an `Error` node where the setting w
 type Setting struct { Key Match, Value Match }
 type File struct { Settings []Setting }
 
-def main: File = -ws ss:(s:setting -ws)* $$ -> new File{Settings: map($ss, (x) => $x.s)}
+rule main File = -ws ss:(s:setting -ws)* $$ => File{Settings: map($ss, (x) => $x.s)}
 
 // If a setting does not parse, skip to the next ";" (but not past a line end) and carry on.
-def setting: Setting = s:entry #recover(skip=(?^;\n)+ ";"?) -> $s
+rule setting Setting = s:entry #recover(skip=[^;\n]+ ";"?) => $s
 
-def entry: Setting = k:@key -ws "=" #error(message="expected '='") -ws v:value -ws ";" #error(message="expected ';'")
-    -> new Setting{Key: $k, Value: $v}
-def value = @number / @string / _|_ #error(message="expected a number or a string")
+rule entry Setting = k:key #atomic -ws "=" @error(message="expected '='") -ws v:value -ws ";" @error(message="expected ';'")
+    => Setting{Key: $k, Value: $v}
+rule value = number #atomic / string #atomic / _|_ @error(message="expected a number or a string")
 
-def key = (?a-z_)+
-def number = (?0-9)+
-def string = "\"" (?^"\n)* "\"" #error(message="unterminated string")
+rule key = [a-z_]+
+rule number = [0-9]+
+rule string = "\"" [^"\n]* "\"" @error(message="unterminated string")
 
-def ws = (&(? \t\r\n) .)*
+rule ws = (&[ \t\r\n] .)*
 ```
 
 The program reads this `app.conf`, in which three settings are wrong (`name` has no value, `width` has no `=`, and
@@ -106,9 +106,9 @@ timeout = 30
 
 The program exits with status 1, because there were errors.
 
-## How it works
+## How It Works
 
-- **`#recover(skip=e)`** is attached to an expression like `#error`. If the expression fails, the error is recorded, the
+- **`#recover(skip=e)`** is attached to an expression like `@error`. If the expression fails, the error is recorded, the
   parser goes back to where the expression *started*, and matches `e` there. The input `e` matches is skipped, and the
   expression's value is an `Error` node over it. If `e` fails or matches nothing, there is no recovery, so a recovery in
   a repetition cannot loop forever.
@@ -123,15 +123,15 @@ The program exits with status 1, because there were errors.
   `pego.SyntaxErrors` (a slice of `*pego.SyntaxError`, each with `Line`, `Col` and `Message()`). Do not write
   `if err != nil { return err }` first: that throws the tree away. `errors.As` needs a variable of the slice type, not a
   pointer.
-- **The order of the attributes matters**: `#error(...) #recover(...)`, in that order, so that the recorded error carries
+- **The order of the attributes matters**: `@error(...) #recover(...)`, in that order, so that the recorded error carries
   the label. Here the labels are inside `entry`, which `setting` wraps with `#recover`.
 
 ## Limits
 
 - **Recovery needs a skip that can match.** `skip` must match at least one character where the unit started. Take
-  the file `port = 1;`, `;`, `name = 2;`: the second line is a setting that fails, and `skip=(?^;\n)+` cannot match
+  the file `port = 1;`, `;`, `name = 2;`: the second line is a setting that fails, and `skip=[^;\n]+` cannot match
   at a `;`. There is no recovery, and `Parse` fails as usual with one error and no tree
-  (`2:1: syntax error: expected (?^;\n), (?a-z_), end of input`). Think of what each `skip` does at every place where the
+  (`2:1: syntax error: expected [^;\n], [a-z_], end of input`). Think of what each `skip` does at every place where the
   unit can fail, and test it with inputs that are wrong in different ways (see [Test hand-written code against a
   grammar](test-with-samples.md) for generating them).
 - **Unclosed constructs.** Errors recovered inside a block that is never closed are lost when the block fails at the
@@ -151,4 +151,4 @@ The program exits with status 1, because there were errors.
   memory](big-files.md).
 - **Editors.** A language server needs exactly this: errors with positions and a tree of what could be read.
 
-See [spec/attributes.md](../../spec/attributes.md) for the exact rules of `#error` and `#recover`.
+See [Attributes](../../spec/attributes.md#error) for `@error` and [Pragmas](../../spec/pragmas.md#recover) for `#recover`.

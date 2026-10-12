@@ -1,4 +1,4 @@
-# 011. Source formatting that keeps comments
+# 011. Source Formatting That Keeps Comments
 
 - **Status**: Implemented
 - **Author**: @ornew
@@ -13,7 +13,7 @@ Before this change the lexer discarded comments and `grammar.Format` printed onl
 
 ## Design
 
-### What the AST records
+### What the AST Records
 
 The parser records layout in `grammar.LineBreak` values. A `LineBreak` belongs to a place where a line may start, and holds:
 
@@ -25,18 +25,18 @@ The parser records layout in `grammar.LineBreak` values. A `LineBreak` belongs t
 
 Line breaks are recorded at:
 
-- the package clause, every `type` and `def`, and the end of the file (`Grammar.PackageBreak`, `TypeDef.Break`, `RuleDef.Break`, `Grammar.EndBreak`);
+- the package clause, every `type` and `rule`, and the end of the file (`Grammar.PackageBreak`, `TypeDef.Break`, `RuleDef.Break`, `Grammar.EndBreak`);
 - struct fields and the closing brace of a struct (`Field.Break`, `StructSpec.CloseBreak`);
-- the `skip`, `operand` and `level` items of a pratt expression, the operators of a level, and their closing braces;
-- optional line breaks in a rule body: after `=` (`RuleDef.BodyBreak`), before `->` (`RuleDef.ActionBreak`), before the alternatives of the top-level choice (`Choice.Breaks`), before the items of the top-level sequences (`Seq.Breaks`), and before the attributes of those items (`Attributed.Breaks`).
+- the `skip`, `operand` and `level` items of an Operators Rule, the operators of a level, and their closing braces;
+- optional line breaks in a rule body: after the opening brace (`RuleDef.BodyBreak`), before `=>` (`RuleDef.ActionBreak`), before the alternatives of the top-level choice (`Choice.Breaks`), before the items of the top-level sequences (`Seq.Breaks`), and before the attributes of those items (`Attributed.Breaks`).
   These are recorded only when the source has a line break there, and `Format` keeps them.
 
-`StructSpec.OneLine` and `PrattLevel.OneLine` record that a struct or level was written on one line; `Format` keeps such blocks on one line.
+`StructSpec.OneLine` and `OperatorsRuleLevel.OneLine` record that a struct or level was written on one line; `Format` keeps such blocks on one line.
 
 All of these fields are tagged `json:"-"`, so `grammar.MarshalJSON` produces the same bytes as before, whether or not the grammar came from source with comments.
 The compiled grammar format (`.pegoc`) does not store them either.
 
-### Attaching comments
+### Attaching Comments
 
 The lexer attaches to each token the comments between it and the previous token, and separates a comment on the line of the previous token (an end-of-line comment) from comments on their own lines.
 It also records whether a blank line precedes each comment and token.
@@ -66,12 +66,12 @@ A grammar without layout information (for example, one decoded from JSON) is pri
 Formatting is idempotent: formatting the output again gives the same text, because each recorded line break reproduces itself.
 Tests check this, and that every grammar in `examples/` reparses to the same AST (compared through JSON) with the same comments.
 
-### Considered alternatives
+### Considered Alternatives
 
 - **A comment list ordered by position, merged while printing** (as in `go/printer`): it needs the source position of every place the printer writes, including the end of nodes, which the AST does not have. Attaching comments in the parser needs no positions.
 - **Keeping comments in the JSON form**: JSON is the interchange format for tools that build grammars; layout belongs to the source. Leaving it out keeps the JSON stable.
 
 ## Limitations
 
-- A rule body keeps its line breaks only in its top-level choice and sequences. Line breaks inside parentheses, predicates, actions, and pratt operands and operators are joined, and comments there move to the nearest preceding line.
-- Alignment that `Format` does not produce itself (for example, aligned columns in pratt levels) is not kept.
+- A rule body keeps its line breaks only in its top-level choice and sequences. Line breaks inside parentheses, predicates, actions, and Operators Rule operands and operators are joined, and comments there move to the nearest preceding line.
+- Alignment that `Format` does not produce itself (for example, aligned columns in Operators Rule levels) is not kept.

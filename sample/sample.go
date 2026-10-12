@@ -2,7 +2,7 @@
 // and for seeding fuzz tests.
 //
 // A Generator walks the grammar AST of a parser from its start rule and writes candidate inputs, making
-// random decisions at ordered choices, repetitions, optional expressions and Pratt expressions. The
+// random decisions at ordered choices, repetitions, optional expressions and Operators Rule expressions. The
 // decisions are reproducible: the same parser, options and seed give the same inputs, with the same
 // version of this package built with the same Go release (the generator's algorithm may change between
 // versions, and math/rand/v2, which draws the random numbers, does not promise to keep its algorithms
@@ -72,7 +72,7 @@ func WithSeed(seed uint64) Option { return func(c *config) { c.seed = seed } }
 func WithMaxDepth(d int) Option { return func(c *config) { c.maxDepth = max(d, 0) } }
 
 // WithMaxRepeat sets how many iterations an unbounded repetition aims for beyond its minimum, at most
-// (default DefaultMaxRepeat). It also bounds the operators of a Pratt expression chain. The search may
+// (default DefaultMaxRepeat). It also bounds the operators of an Operators Rule expression chain. The search may
 // take more iterations when the input requires them (a predicate after the repetition wants a longer
 // match), but never more than 8 × n + 4 beyond the minimum (28 by default): raise n for inputs with
 // longer repetitions.
@@ -83,7 +83,7 @@ func WithMaxRepeat(n int) Option { return func(c *config) { c.maxRepeat = max(n,
 func WithMaxLen(n int) Option { return func(c *config) { c.maxLen = max(n, 0) } }
 
 // WithBudget sets the number of steps one attempt may take before it gives up (default DefaultBudget).
-// A step is a parsing expression generated or a Pratt scope inspected; checks have a budget of their
+// A step is a parsing expression generated or a OperatorsRule scope inspected; checks have a budget of their
 // own in proportion. Past WithMaxDepth and WithMaxLen, the generator only prefers the shortest way to
 // finish. The budget and the nesting/iteration limits (see WithMaxDepth and WithMaxRepeat) bound an
 // attempt. Inputs that need many steps, such as an expression repeated 25,000 times, need a larger
@@ -94,7 +94,7 @@ func WithBudget(steps int) Option { return func(c *config) { c.budget = max(step
 // DefaultAttempts).
 func WithAttempts(n int) Option { return func(c *config) { c.attempts = max(n, 1) } }
 
-// WithCoverage biases the generator toward rules, alternatives of ordered choices, and Pratt operands
+// WithCoverage biases the generator toward rules, alternatives of ordered choices, and Operators Rule operands
 // and operators that no accepted input has exercised yet.
 func WithCoverage() Option { return func(c *config) { c.coverage = true } }
 
@@ -221,9 +221,9 @@ type Coverage struct {
 	// an accepted input exercised.
 	Rules        int `json:"rules"`
 	RulesCovered int `json:"rulesCovered"`
-	// Alternatives counts the alternatives of ordered choices and the operands and operators of Pratt
+	// Alternatives counts the alternatives of ordered choices and the operands and operators of OperatorsRule
 	// expressions in those rules, leaving out those that can never match or that occur only inside an
-	// expression that can never match, or in Pratt tails that no reachable entry or prefix RHS permits.
+	// expression that can never match, or in OperatorsRule tails that no reachable entry or prefix RHS permits.
 	Alternatives        int `json:"alternatives"`
 	AlternativesCovered int `json:"alternativesCovered"`
 	// MissedRules and MissedAlternatives list what was not exercised.
@@ -231,21 +231,21 @@ type Coverage struct {
 	MissedAlternatives []Alternative `json:"missedAlternatives,omitempty"`
 	// Unreachable lists the rules that generation cannot exercise from the start rule: rules that are
 	// not called, or called only inside negative lookaheads (!keyword), the skip of #recover, or
-	// expressions that can never match or blocked Pratt operator parts. Impossible lists the rules
+	// expressions that can never match or blocked Operators Rule operator parts. Impossible lists the rules
 	// that the start rule calls (outside negative lookaheads and #recover) but that can never match,
 	// such as rules that end in _|_ to report an error. Neither is counted in Rules.
 	Unreachable []string `json:"unreachable,omitempty"`
 	Impossible  []string `json:"impossible,omitempty"`
 }
 
-// Alternative identifies an alternative of an ordered choice, or an operand or operator of a Pratt
+// Alternative identifies an alternative of an ordered choice, or an operand or operator of a OperatorsRule
 // expression.
 type Alternative struct {
 	Rule string `json:"rule"`
 	// Kind is "choice", "operand" or "operator".
 	Kind string `json:"kind"`
 	// Index is the position of the alternative in its choice, or of the operand or operator in the
-	// Pratt expression (operators are counted across all levels).
+	// Operators Rule expression (operators are counted across all levels).
 	Index int `json:"index"`
 	// Expr is the alternative in PEGO syntax.
 	Expr string `json:"expr"`

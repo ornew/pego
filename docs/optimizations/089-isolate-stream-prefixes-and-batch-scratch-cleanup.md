@@ -1,4 +1,4 @@
-# 89. Isolate stream prefixes and batch scratch cleanup
+# 89. Isolate Stream Prefixes and Batch Scratch Cleanup
 
 **Status:** Active
 
@@ -40,7 +40,7 @@ versus 93 after, with a budget of 80); `newFrame` is not inline in either build
 (97 versus 138). These diagnostics describe compiler eligibility only and do
 not establish a timing effect.
 
-## Validation and measurements
+## Validation and Measurements
 
 Focused default, combined-reference and single-mechanism tests pass for all
 three engine backends. Coverage includes the prefix budget and slab fallback,

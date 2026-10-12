@@ -12,7 +12,7 @@ Add a declarative query API over PEGO Node results for matching node kinds, rule
 
 The public Go `pego.Node` and generated TypeScript `Node` represent CST and action-built values; children are ordered, while fields may contain nodes, scalars, or nil. Neither surface has a general query API. Actions can discard punctuation and comments, so AST queries cannot promise lossless tokenization. The edge, order, range, and cycle contract follows [design 031](031-iterative-tree-traversal.md); schema validation depends on [design 038](038-structured-output-schema.md). Grammar LSP analysis and semantic name resolution remain separate.
 
-## Goals and non-goals
+## Goals and Non-Goals
 
 - Match node type/rule, named fields, ordered children, and node or scalar captures.
 - Type-check known patterns against an explicit schema; retain dynamic `any` as runtime-checked.
@@ -20,7 +20,7 @@ The public Go `pego.Node` and generated TypeScript `Node` represent CST and acti
 - Bound traversal, predicates, and result construction with cancellation and work limits.
 - Do not promise Tree-sitter query compatibility, semantic resolution, or punctuation/comment visibility absent from results.
 
-## Proposed API and pattern model
+## Proposed API and Pattern Model
 
 The Go surface could be:
 
@@ -54,11 +54,11 @@ Enumeration follows the traversal contract: visit a node before its outgoing edg
 
 A highlight configuration maps captures to target-language token classes and priority. It describes syntactic coloring only; it does not resolve symbols or define an editor protocol. Missing punctuation and trivia require a separate lossless-token retention contract.
 
-## Compatibility and backend support
+## Compatibility and Backend Support
 
 The query operates on common Node values. Core Go, generated Go Node parsers, and generated TypeScript Node parsers are intended implementations and must agree on equivalent inputs. The TypeScript runtime already exports `Node`; ordinary generated TypeScript parsing can feed a TypeScript query implementation. Generated typed Go and typed TypeScript values are not direct query inputs in this design; their adapters require a separate value/identity contract. Traversal scope is represented by design 031; schema checking follows design 038. Document change/version integration is optional and follows design 039.
 
-## Implementation sequence
+## Implementation Sequence
 
 1. Settle the Node edge/order/range contract in design 031 and schema contract in design 038.
 2. Specify the declarative pattern grammar, capture categories, and stable diagnostics.
@@ -66,7 +66,7 @@ The query operates on common Node values. Core Go, generated Go Node parsers, an
 4. Implement the equivalent evaluator for TypeScript `Node`; compare results with the Go reference.
 5. Add text predicates and highlight configuration, validating their retained-source limitations on real grammars.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Copy Tree-sitter query syntax:** it implies different field, node, and lossless-source semantics. Consider an adapter only after PEGO contracts are stable.
 - **Query serialized JSON:** it couples matching to Node serialization and allocates an intermediate tree. Evaluate graph values directly.
@@ -74,10 +74,10 @@ The query operates on common Node values. Core Go, generated Go Node parsers, an
 - **Use a lexer for every highlight:** it can recover punctuation but duplicates grammar behavior. Keep it as a consumer choice when actions discard needed tokens.
 - **Deduplicate by Node identity:** it erases different parents and capture paths in shared graphs. Preserve edge-oriented evaluation.
 
-## Testing and performance plan
+## Testing and Performance Plan
 
 Test pattern diagnostics, known/unknown schema fields, scalar/list/union/dynamic captures, nil children, empty lists, shared DAG paths, cycles, ordering, schema mismatch, cancellation, exact budget thresholds, both position units, bounded text predicates, and discarded trivia. Differentially compare Go and TypeScript query results with a simple reference evaluator. Measure compilation and evaluation separately across graph depth, sharing, fields, predicate text, and match count; track time, allocations, and retained results. No performance results are available.
 
-## Limitations and open questions
+## Limitations and Open Questions
 
 The syntax and initial text-predicate set need implementation review; recommendation: a small declarative grammar, materialized all-or-error results under design-033 limits, and text predicates after structural matching is stable. Borrowed result values remain tied to the supplied graph's ownership. Punctuation/comments discarded by actions cannot be highlighted from AST Nodes alone.

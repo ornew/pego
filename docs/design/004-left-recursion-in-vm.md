@@ -6,27 +6,27 @@
 
 > **Note (2026-10)**: This document records an investigation of the former bytecode VM. Since the engine rewrite, left recursion is handled as in pegen: only the leader rule is evaluated with grow-the-seed (see [docs/development.md](../development.md#architecture)).
 
-## 1. The original problem and its analysis
+## 1. The Original Problem and Its Analysis
 
 The initial VM implementation failed to parse grammars with simple direct left recursion such as `Expr -> Expr '+' Term | Term`. The test cases `simple_addition` and `chained_addition` reported failures where the parser should have succeeded.
 
 Analysis of the debug logs showed that the left-recursion growth algorithm ("growing the seed") itself found the longest match (for example `x+x`) correctly. However, the VM's state transitions on returning from the left-recursive evaluation, after the growth loop had finished, were flawed, and as a result the parse as a whole failed.
 
-## 2. Investigation and abandoned approaches
+## 2. Investigation and Abandoned Approaches
 
 Several hypotheses were tested to solve the problem, but none of the fixes addressed the root cause.
 
-### 2.1. Hypothesis 1: `choiceStack` was not reset
+### 2.1. Hypothesis 1: `choiceStack` Was Not Reset
 
 - **Idea**: The `choiceStack` (the backtrack stack for alternatives) was not reset on each iteration of the left-recursion growth loop, which might be corrupting the state. A fix reset `choiceStack` in `OpReturn` when returning to the top of the loop.
 - **Problem**: The tests still failed. Resetting `choiceStack` pointed in the right direction but was not sufficient, which suggested that the underlying problem lay deeper in state management.
 
-### 2.2. Hypothesis 2: A `SuperChoice` opcode
+### 2.2. Hypothesis 2: A `SuperChoice` Opcode
 
 - **Idea**: The semantics of PEG's ordered choice (`|`) might conflict with the "longest match" that left recursion requires. Based on this hypothesis, a new family of opcodes for a longest-match choice specific to left-recursive rules (`OpOpenSuperChoice`, `OpRegisterChoice`, `OpCloseSuperChoice`) was proposed.
 - **Problem**: Analysis of the `pegen` reference implementation showed that this approach was fundamentally wrong. `pegen` does not change the semantics of choice; it obtains the longest match indirectly by **re-evaluating the whole rule repeatedly until the result stops growing**. `SuperChoice` overcomplicated the problem and missed the point.
 
-### 2.3. Hypothesis 3: Corruption of a global `failed` flag
+### 2.3. Hypothesis 3: Corruption of a Global `failed` Flag
 
 - **Idea**: The VM's single `vm.failed` flag served two different purposes, which might be the source of the corruption:
   1. **Failure for choice**: a failure that triggers backtracking.
@@ -35,7 +35,7 @@ Several hypotheses were tested to solve the problem, but none of the fixes addre
   The hypothesis was that the two interfered with each other and corrupted the state. A fix was considered in which `OpCall` would handle the failure on left-recursion detection with local backtracking instead of the global `failed` flag.
 - **Problem**: The fix considered only one case (when a choice is present) and was not general. Given the other failure patterns, it was likely to introduce new bugs.
 
-## 3. The common root cause: no separate execution context
+## 3. The Common Root Cause: No Separate Execution Context
 
 All of the failed approaches pointed to the same root cause: **there was no independent execution context for managing the left-recursion growth loop**.
 
@@ -43,11 +43,11 @@ In `pegen`, the `while` loop in the `memoize_left_rec` decorator provides that i
 
 In our VM, the logic corresponding to this loop was implemented inside `OpReturn`, which shared state (the `failed` flag, `choiceStack` and so on) with the VM's main loop. State conflicts and corruption were therefore unavoidable by construction.
 
-## 4. Final proposal: encapsulating the context in an `OpEvalLeftRecursive` opcode
+## 4. Final Proposal: Encapsulating the Context in an `OpEvalLeftRecursive` Opcode
 
 To solve the problem structurally, introduce a dedicated opcode, `OpEvalLeftRecursive`, that manages the entire left-recursion growth loop.
 
-### 4.1. Design overview
+### 4.1. Design Overview
 
 The new opcode fully encapsulates the role of `pegen`'s `memoize_left_rec` decorator as a VM instruction.
 
@@ -86,7 +86,7 @@ The new opcode fully encapsulates the role of `pegen`'s `memoize_left_rec` decor
      5. **Stop growing:** If the subroutine failed or `pos` did not grow, exit the loop.
   3. **Finalization:** Push the best result found by the loop onto `valueStack`, update the VM state (`pos`, `failed`) to match the final result, and continue with the instruction after `OpEvalLeftRecursive`.
 
-### 4.2. Expected benefits
+### 4.2. Expected Benefits
 
 - **Complete separation of concerns:** The complex logic of the left-recursion growth loop is fully encapsulated in a single instruction, `OpEvalLeftRecursive`.
 - **State safety:** Because `evalRuleBody` is called as a subroutine, the VM's global state is no longer corrupted on each iteration of the loop, which greatly simplifies and stabilizes state management.

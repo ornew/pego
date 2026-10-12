@@ -1,4 +1,4 @@
-# 57. Pooling the scratch memory of whole-input parses
+# 57. Pooling the Scratch Memory of Whole-Input Parses
 
 - Each `Parse` allocated the decoded input and its offset table, the memo table (slots, entry chunks, the bit set of
   first calls) and the stack that collects repetition values, and dropped them when it returned: nothing in a result

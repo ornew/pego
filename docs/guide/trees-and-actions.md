@@ -2,12 +2,12 @@
 
 A PEGO grammar does two jobs: it decides which input is valid, and it decides what **tree** you get back. This guide is
 about the second job. It starts with the tree that every grammar produces without any extra work, shows how to shape it
-with captures, atomic (`@`) and discard (`-`), and then shows how to replace it with a typed AST built by
+with captures, atomic (`#atomic`) and discard (`-`), and then shows how to replace it with a typed AST built by
 [actions](../../spec/actions.md). It ends with recipes and the authoring guidelines that keep parsing fast.
 
 The guide complements the normative chapters [Parsing Expressions](../../spec/parser-expressions.md),
 [Type System](../../spec/types.md) and [Actions](../../spec/actions.md); read them for the exact rules. Here the focus
-is on how and why to use each feature. For operator expressions (`foldl` chains versus Pratt expressions) see the
+is on how and why to use each feature. For operator expressions (`foldl` chains versus Operators Rule declarations) see the
 companion guide [Parsing expressions with operators](expressions.md).
 
 Every grammar and output below was produced by running it. To follow along, put each grammar in the file named on its
@@ -20,18 +20,18 @@ go install github.com/ornew/pego/cmd/pego@latest
 `pego parse -g <grammar> -s <rule> -i '<input>' -f sexpr` parses the input with the start rule `<rule>` (default
 `main`), which must match the whole input, and prints the tree.
 
-## 1. Reading a tree
+## 1. Reading a Tree
 
 Start with the smallest grammar that has some structure:
 
 ```pego
 // assign.pego
-def main = ^^ assign $$
-def assign = name ws "=" ws value ";"
-def name = (?a-z)+
-def value = number / name
-def number = (?0-9)+
-def ws = " "*
+rule main = ^^ assign $$
+rule assign = name ws "=" ws value ";"
+rule name = [a-z]+
+rule value = number / name
+rule number = [0-9]+
+rule ws = " "*
 ```
 
 ```bash
@@ -55,7 +55,7 @@ The `sexpr` format is a compact notation for nodes:
 | `nil` | An absent value, such as an optional element that did not match |
 | `` `text` ``, `5`, `true` | A string, integer or boolean struct field (see [Actions](#5-actions)) |
 
-Reading the output above from the inside out: `name` is the repetition `(?a-z)+`, so it is a `List` of one `Match` per
+Reading the output above from the inside out: `name` is the repetition `[a-z]+`, so it is a `List` of one `Match` per
 letter (shown as `["a" "b"]`), labeled `@name` because the rule `name` created it. `ws` is also a list (of spaces), and
 `value` is `number`, so the node is the list of digits labeled `@number`. `assign` is a sequence, so a `Seq` labeled
 `@assign`; and `main` wraps that in another `Seq`, because `^^` and `$$` have no value and the sequence therefore has a
@@ -65,8 +65,8 @@ The default JSON format carries the same information and adds positions. Here is
 
 ```pego
 // optional.pego
-def main = name ("," name)?
-def name = @(?a-z)+
+rule main = name ("," name)?
+rule name = [a-z]+ #atomic
 ```
 
 ```bash
@@ -101,18 +101,18 @@ pego parse -g optional.pego -i 'a'
 | `children` | The children of `Seq`, `List` and `Operator` nodes; an optional element that did not match is `null` |
 | `fields` | Struct fields and captures, with keys sorted; a value is a node, a number, a string, a boolean or `null` |
 
-## 2. The default tree
+## 2. The Default Tree
 
 If a rule has no action, the tree is determined by the shape of the parsing expression alone. This is the **concrete
 syntax tree** (CST). The rules are short enough to memorize:
 
 | Expression | Value |
 |:--|:--|
-| `"x"`, `(?a-z)`, `.`, `@a`, `_` | A `Match` terminal |
+| `"x"`, `[a-z]`, `.`, `a #atomic`, `_` | A `Match` terminal |
 | `a b` | A `Seq`; its children are the values of the elements that **have** a value |
 | `a / b` | The value of the alternative that matched; the choice adds no node |
-| `a*`, `a+`, `a{n,m}` | A `List`, one child per iteration |
-| `a?` | The value of `a`, or `nil`; it is not a list (`a{0,1}` is) |
+| `a*`, `a+`, `a #repeat(n,m)` | A `List`, one child per iteration |
+| `a?` | The value of `a`, or `nil`; it is not a list (`a #repeat(0,1)` is) |
 | `label:a` | The value of `a` (and a field, see below) |
 | Rule call | The value of the called rule |
 | `-a`, `&a`, `!a`, `--`, anchors, predicates | No value: never a child of a `Seq` |
@@ -124,13 +124,13 @@ is labeled with the rule's name; a node that comes from another rule keeps that 
 
 ```pego
 // cst.pego
-def seq = "y" "z"
-def alt = "x" / "y" "z"
-def one = "x"
-def same = one
-def rep = "x"*
-def opt = "x"?
-def cap = k:"x" "y"
+rule seq = "y" "z"
+rule alt = "x" / "y" "z"
+rule one = "x"
+rule same = one
+rule rep = "x"*
+rule opt = "x"?
+rule cap = k:"x" "y"
 ```
 
 ```bash
@@ -164,22 +164,22 @@ expression. To keep them out, discard them with `-`; do the same for whitespace 
 **The start rule must consume the whole input.** Remaining input is a syntax error ("expected end of input"), so the
 start rule needs no `$$` for that. What it does need is to consume trailing whitespace and comments explicitly.
 
-## 3. Shaping the tree
+## 3. Shaping the Tree
 
-### 3.1 Atomic and discard
+### 3.1 Atomic and Discard
 
-`@a` matches `a` and produces *one* terminal holding the matched text, instead of the tree of `a`. Use it for tokens:
+`a #atomic` matches `a` and produces *one* terminal holding the matched text, instead of the tree of `a`. Use it for tokens:
 a number is one node, not a list of digits. `-a` matches `a` and produces nothing. Use it for input the syntax needs but
 the tree does not:
 
 ```pego
 // shape.pego
-def main = ^^ assign $$
-def assign = name -ws -"=" -ws value -";"
-def name = @(?a-z)+
-def value = number / name
-def number = @(?0-9)+
-def ws = " "*
+rule main = ^^ assign $$
+rule assign = name -ws -"=" -ws value -";"
+rule name = [a-z]+ #atomic
+rule value = number / name
+rule number = [0-9]+ #atomic
+rule ws = " "*
 ```
 
 ```bash
@@ -192,7 +192,7 @@ pego parse -g shape.pego -f sexpr -i 'ab = 12;'
 
 Compare this with the tree in section 1: the same input now yields a `Seq` of just two terminals (inside the `Seq` of
 `main`). Both operators suppress construction, so they are also cheaper (see
-[Performance](#10-performance-guidelines)). Because captures are meaningless inside them, `@(k:"x" "y")` and
+[Performance](#10-performance-guidelines)). Because captures are meaningless inside them, `(k:"x" "y") #atomic` and
 `-(k:"x" "y")` are compile errors.
 
 ### 3.2 Captures
@@ -202,13 +202,13 @@ captures also show up in the tree: they become **fields** of the node. They do n
 
 ```pego
 // capture.pego
-def pair = k:name -ws -"=" -ws v:value -";"
-def name = @(?a-z)+
-def value = number / name
-def number = @(?0-9)+
-def ws = " "*
-def list = name ("," n:name)*
-def list2 = name (-"," n:name)*
+rule pair = k:name -ws -"=" -ws v:value -";"
+rule name = [a-z]+ #atomic
+rule value = number / name
+rule number = [0-9]+ #atomic
+rule ws = " "*
+rule list = name ("," n:name)*
+rule list2 = name (-"," n:name)*
 ```
 
 ```bash
@@ -236,22 +236,22 @@ Two details matter in practice:
   whitespace node inside it stays in the tree, because you may inspect it with `.children` or `text` later. Discard the
   parts you do not need *inside* the capture, punctuation included: `rest:(-ws -"," -ws x:ident)*`.
 
-### 3.3 Unwrapping the root
+### 3.3 Unwrapping the Root
 
 A start rule such as `main = ^^ expr $$` wraps the real result in a `Seq`. When you build an AST, return the value you
 want instead:
 
 ```pego
-def main: Expr = e:expr $$ -> $e
+rule main Expr = e:expr $$ => $e
 ```
 
 This is the idiom of the calculator example.
 
-## 4. Declaring types
+## 4. Declaring Types
 
-### 4.1 Structs, unions and terminal types
+### 4.1 Structs, Unions and Terminal Types
 
-A **struct type** is a node type with named fields; an action builds its nodes with `new`. A **union**
+A **struct type** is a node type with named fields; an action builds its nodes with struct constructors such as `T{Field: value}`. A **union**
 (`type T = A | B`) is the type of a value that is one of several types, much like a Go interface. A **terminal type** (`type T terminal`)
 is a node type for tokens: a rule declared with it produces a terminal of that type holding the matched text,
 whatever its body looks like.
@@ -266,12 +266,12 @@ type Assign struct {
     Value Value
 }
 
-def main = ^^ assign $$
-def assign: Assign = k:name -ws -"=" -ws v:value -";" -> new Assign{Name: $k, Value: $v}
-def value: Value = number / name
-def name: Name = (?a-z)+
-def number: Number = (?0-9)+
-def ws = " "*
+rule main = ^^ assign $$
+rule assign Assign = k:name -ws -"=" -ws v:value -";" => Assign{Name: $k, Value: $v}
+rule value Value = number / name
+rule name Name = [a-z]+
+rule number Number = [0-9]+
+rule ws = " "*
 ```
 
 ```bash
@@ -284,19 +284,19 @@ pego parse -g assign-ast.pego -f sexpr -i 'ab = cd;'
 (Seq (Assign Name=Name"ab"@name Value=Name"cd"@name))@main
 ```
 
-Terminal-typed rules need no `@`: `def name: Name = (?a-z)+` is a `Name"ab"` terminal, not a list. The `Assign` node has
+Terminal-typed rules need no `@`: `rule name Name =  [a-z]+ ` is a `Name"ab"` terminal, not a list. The `Assign` node has
 no `@rule` label because it was built by an action, not by the default tree. Type names and field names start with an
-uppercase letter; rule names are in a separate namespace, so `def name: Name` is fine. `Match`, `Seq`, `List`,
+uppercase letter; rule names are in a separate namespace, so `rule name Name = . . .` is fine. `Match`, `Seq`, `List`,
 `Operator` and `Error` are predefined node types, and `int`, `string`, `bool`, `node` and `terminal` are built in (a
 rule's value must be a node, but struct fields and action expressions may also hold `int`, `string` and `bool`).
 
 Aliases preserve the underlying type: with `type Token = Name`, a rule declared
 as `Token` produces a `Name` terminal. With `type Binding = Assign`,
-`new Binding{...}` produces an `Assign` node. Chained aliases and unions reduced
+`Binding{...}` produces an `Assign` node. Chained aliases and unions reduced
 to one member follow the same rule; an alias does not create a distinct node
 type.
 
-### 4.2 Optional and list fields
+### 4.2 Optional and List Fields
 
 A field type can be `*T` (a `T` or `nil`) or `[]T` (a `List` whose elements are `T`). Both are checked at compile time:
 a value that may be `nil` cannot go into a plain `T` field.
@@ -314,14 +314,14 @@ type Decl struct {
 
 type Program struct { Decls []Decl }
 
-def main: Program = ds:decls $$ -> new Program{Decls: $ds}
-def decls = ds:(-ws d:decl)* -ws -> map($ds, (x) => $x.d)
-def decl: Decl = -"let" -ws n:ident v:init? -ws -";" -> new Decl{Name: $n, Value: $v}
-def init: Lit = -ws -"=" -ws l:lit -> $l
-def lit: Lit = num / ident
-def ident: Ident = (?a-z)+
-def num: Num = (?0-9)+
-def ws = (? \n)*
+rule main Program = ds:decls $$ => Program{Decls: $ds}
+rule decls = ds:(-ws d:decl)* -ws => map($ds, (x) => $x.d)
+rule decl Decl = -"let" -ws n:ident v:init? -ws -";" => Decl{Name: $n, Value: $v}
+rule init Lit = -ws -"=" -ws l:lit => $l
+rule lit Lit = num / ident
+rule ident Ident = [a-z]+
+rule num Num = [0-9]+
+rule ws = [ \n]*
 ```
 
 ```bash
@@ -335,19 +335,19 @@ pego parse -g decls.pego -f sexpr -i 'let x = 1; let y;'
 A field that an action does not set is absent rather than `nil`; in JSON output it is omitted, while an explicit `nil`
 prints as `null`.
 
-### 4.3 Rule result types and inference
+### 4.3 Rule Result Types and Inference
 
-A rule can declare its type: `def name: T = ...`. The checker verifies that the value of the body (or of the action) is
+A rule can declare its type: `rule name T = . . .`. The checker verifies that the value of the body (or of the action) is
 assignable to `T`, and every use of the rule then sees `T`. If you leave the type out it is **inferred** from the body
 or the action, iterating until recursive rules stop changing:
 
 | Rule | Inferred type |
 |:--|:--|
-| `def num = @(?0-9)+` | `Match` |
-| `def key = (?a-z)+` | `[]Match` |
-| `def pair = k:num "=" v:num` | `Seq` with the fields `k: Match` and `v: Match` |
-| `def v = a / b` | The union of the types of `a` and `b` |
-| `def o = a?` | `*T`, where `T` is the type of `a` |
+| `rule num =  [0-9]+ #atomic ` | `Match` |
+| `rule key =  [a-z]+ ` | `[]Match` |
+| `rule pair = k:num "=" v:num` | `Seq` with the fields `k: Match` and `v: Match` |
+| `rule v = a / b` | The union of the types of `a` and `b` |
+| `rule o = a?` | `*T`, where `T` is the type of `a` |
 
 Inference follows rule dependencies, so a long helper chain keeps its result type regardless of definition order.
 Recursive types that keep expanding have conservative growth budgets and may become `any`; stable helpers retain
@@ -359,9 +359,9 @@ type shows up in the error messages, for example when a field expects a `Match` 
 ```pego
 // field-type.pego
 type Pair struct { Key Match, Value Match }
-def pair: Pair = k:key "=" v:value -> new Pair{Key: $k, Value: $v}
-def key = (?a-z)+
-def value = @(?0-9)+
+rule pair Pair = k:key "=" v:value => Pair{Key: $k, Value: $v}
+rule key = [a-z]+
+rule value = [0-9]+ #atomic
 ```
 
 ```bash
@@ -372,7 +372,7 @@ pego parse -g field-type.pego -s pair -i 'a=1'
 pego: field-type.pego:3:48: cannot use []Match as Match in field Key of Pair
 ```
 
-The fix is to make `key` a single token: `def key = @(?a-z)+`, or give it a terminal type.
+The fix is to make `key` a single token: `rule key =  [a-z]+ #atomic `, or give it a terminal type.
 
 A terminal type is a property of a rule *without* an action: the rule's value is the matched text. If the rule has an
 action, the action's value is the rule's value, and it must already be of that type:
@@ -380,7 +380,7 @@ action, the action's value is the rule's value, and it must already be of that t
 ```pego
 // term-action.pego
 type Num terminal
-def num: Num = " "* d:(?0-9)+ -> $d
+rule num Num = " "* d:[0-9]+ => $d
 ```
 
 ```bash
@@ -391,23 +391,24 @@ pego parse -g term-action.pego -s num -i ' 12'
 pego: term-action.pego:3:1: rule num produces []Match, which is not assignable to Num
 ```
 
-Keep whitespace and other trivia out of token rules: write `def num: Num = (?0-9)+` and put `-ws` in the rules that
+Keep whitespace and other trivia out of token rules: write `rule num Num =  [0-9]+ ` and put `-ws` in the rules that
 use it.
 
 ## 5. Actions
 
-An action is an expression after `->` that computes the value of the rule from what the body matched:
+An action is an expression after `=>` inside a rule body that computes the value of the rule from what the body matched:
 
 ```pego
-def <rule>: <type> = <parsing expression> -> <action>
+rule <name> [<type>] = <parsing expression> => <action>
 ```
 
-The action covers the whole right-hand side, and its result must be a node (or `nil`). There is no way to attach an
-action to one alternative of a choice or to a group; give each alternative its own rule:
+The action covers the whole right-hand side, and its result must be a node (or `nil`). Inline actions such as
+`(expression => action)` are recognized by the source parser but are rejected by compilation, so they cannot yet attach
+an action to one alternative or group; give each alternative its own rule:
 
 ```pego
 // inline-action.pego
-def bad = "a" ("b" -> $1)
+rule bad =  "a" ("b" => $1)
 ```
 
 ```bash
@@ -415,10 +416,10 @@ pego parse -g inline-action.pego -s bad -i 'ab'
 ```
 
 ```text
-pego: inline-action.pego:2:20: expected ')', found '->'
+pego: inline-action.pego:2:20: expected ')', found '=>'
 ```
 
-### 5.1 Referring to captures
+### 5.1 Referring to Captures
 
 | Syntax | Refers to |
 |:--|:--|
@@ -438,12 +439,12 @@ type Number terminal
 type Value = Name | Number
 type Assign struct { Name Name, Value Value }
 
-def assign: Assign = name -ws -"=" -ws value -";" -> new Assign{Name: $1, Value: $2}
-def value: Value = number / name
-def name: Name = (?a-z)+
-def number: Number = (?0-9)+
-def ws = " "*
-def both = name "," name -> $0
+rule assign Assign = name -ws -"=" -ws value -";" => Assign{Name: $1, Value: $2}
+rule value Value = number / name
+rule name Name = [a-z]+
+rule number Number = [0-9]+
+rule ws = " "*
+rule both = name "," name => $0
 ```
 
 ```bash
@@ -459,9 +460,9 @@ pego parse -g positional.pego -s both -f sexpr -i 'ab,cd'
 Captures are visible only in the rule that made them, not in the rules it calls or that call it. A reference to an
 undefined capture is a compile-time error (`undefined capture $z`).
 
-### 5.2 Building nodes and reading fields
+### 5.2 Building Nodes and Reading Fields
 
-`new T{Field: value, ...}` builds a struct node. Field values are checked against the declared field types, so typos and
+`T{Field: value, ...}` builds a struct node. Field values are checked against the declared field types, so typos and
 mismatches are compile-time errors:
 
 ```pego
@@ -470,10 +471,10 @@ type Name terminal
 type Number terminal
 type Assign struct { Name Name, Value Number }
 
-def a: Assign = k:name "=" v:name -> new Assign{Name: $k, Value: $v}
-def b: Assign = k:name "=" v:number -> new Assign{Name: $k, Valu: $v}
-def name: Name = (?a-z)+
-def number: Number = (?0-9)+
+rule a Assign = k:name "=" v:name => Assign{Name: $k, Value: $v}
+rule b Assign = k:name "=" v:number => Assign{Name: $k, Valu: $v}
+rule name Name = [a-z]+
+rule number Number = [0-9]+
 ```
 
 ```bash
@@ -501,10 +502,9 @@ type Word struct {
     To     int
 }
 
-def main: Word = ws w:word ws $$ -> $w
-def word: Word = n:@(?a-z)+
-    -> new Word{Text: text($n), Length: len($n), Long: len($n) > 4, From: $n.startPos, To: $n.endPos}
-def ws = " "*
+rule main Word = ws w:word ws $$ => $w
+rule word Word = n:[a-z]+ #atomic => Word{Text: text($n), Length: len($n), Long: len($n) > 4, From: $n.startPos, To: $n.endPos}
+rule ws = " "*
 ```
 
 ```bash
@@ -515,7 +515,7 @@ pego parse -g derived.pego -f sexpr -i '  hello '
 (Word From=2 Length=5 Long=true Text=`hello` To=7)
 ```
 
-## 6. Built-in functions and lambdas
+## 6. Built-In Functions and Lambdas
 
 | Function | Result |
 |:--|:--|
@@ -539,8 +539,7 @@ type Call struct {
     Raw   string
 }
 
-def call: Call = n:@(?a-z)+ "(" args:(a:@(?a-z)+ -","?)* ")"
-    -> new Call{Name: text($n), Arity: len($args), Raw: text($args)}
+rule call Call = n:[a-z]+ #atomic "(" args:(a:[a-z]+ #atomic -","?)* ")" => Call{Name: text($n), Arity: len($args), Raw: text($args)}
 ```
 
 ```bash
@@ -561,9 +560,8 @@ type Ident terminal
 type Pair struct { A Ident, B Ident }
 type Pairs struct { Items []Pair }
 
-def pairs: Pairs = k:ident ":" xs:(x:ident -","?)*
-    -> new Pairs{Items: map($xs, (r) => new Pair{A: $k, B: $r.x})}
-def ident: Ident = (?a-z)+
+rule pairs Pairs = k:ident ":" xs:(x:ident -","?)* => Pairs{Items: map($xs, (r) => Pair{A: $k, B: $r.x})}
+rule ident Ident = [a-z]+
 ```
 
 ```bash
@@ -575,13 +573,12 @@ pego parse -g outer-capture.pego -s pairs -f sexpr -i 'k:a,b'
 ```
 
 Action expressions also support the arithmetic, comparison and boolean operators listed in the
-[Actions chapter](../../spec/actions.md#operators). There is no conditional expression, so branch on the grammar side
+[Actions chapter](../../spec/actions.md#operators-and-functions). There is no conditional expression, so branch on the grammar side
 (separate rules or alternatives) rather than inside actions.
 
 ## 7. Positions
 
-Every node has a range `[start, end)`. Nodes of the default tree cover what their expression matched. A node built by
-`new` has one of two ranges:
+Every node has a range `[start, end)`. Nodes of the default tree cover what their expression matched. A constructed node has one of two ranges:
 
 - If it is the **result of the action**, it covers what the rule matched.
 - If it is created elsewhere, for example inside a `foldl` lambda, it covers the smallest range that includes the nodes
@@ -597,8 +594,8 @@ are measured. The value `v` below starts at position 3 in code points and at 7 i
 ```pego
 // unit.pego
 type Name terminal
-def name: Name = (?^=)+
-def kv = k:name "=" v:name
+rule name Name = [^=]+
+rule kv = k:name "=" v:name
 ```
 
 ```bash
@@ -623,7 +620,7 @@ pego parse -g unit.pego -s kv -i 'あい=うえお' -unit bytes | grep -A6 '"v"'
     }
 ```
 
-## 8. Using the tree from Go
+## 8. Using the Tree from Go
 
 `Parser.Parse` returns a `*pego.Node`. It mirrors the JSON keys: the methods `Type()` and `Rule()`, and the fields
 `Start` and `End` (`int32`), `Text`, `Children` and `Fields`. `Field(name)` returns the value of a struct field or capture (a `*pego.Node`, `int`,
@@ -645,8 +642,7 @@ import (
 	"github.com/ornew/pego"
 )
 
-const src = `
-type Num terminal
+const src = `type Num terminal
 type Op terminal
 type Bin struct {
     Left  Expr
@@ -655,12 +651,12 @@ type Bin struct {
 }
 type Expr = Num | Bin
 
-def sum: Expr = first:num rest:(-ws op:op -ws n:num)*
-    -> foldl($first, $rest, (acc, i) => new Bin{Left: $acc, Op: $i.op, Right: $i.n})
-def num: Num = (?0-9)+
-def op: Op = "+" / "-"
-def ws = " "*
-`
+rule sum Expr =  first:num rest:(-ws op:op -ws n:num)*
+    => foldl($first, $rest, (acc, i) => Bin{Left: $acc, Op: $i.op, Right: $i.n})
+
+rule num Num =  [0-9]+
+rule op Op =  "+" / "-"
+rule ws =  " "* `
 
 func main() {
 	p, err := pego.CompileSource(src, "sum")
@@ -720,7 +716,7 @@ lambda.
 
 ## 9. Recipes
 
-### 9.1 Left-associative trees with `foldl`
+### 9.1 Left-Associative Trees With `foldl`
 
 A repetition gives a flat list; a fold turns it into the nested tree. Capture the first operand, capture the repeated
 `(operator, operand)` pairs, and fold from the left, so that `1 - 2 + 3` becomes `(1 - 2) + 3`:
@@ -736,12 +732,11 @@ type Bin struct {
 }
 type Expr = Num | Bin
 
-def main: Expr = e:sum $$ -> $e
-def sum: Expr = first:num rest:(-ws op:op -ws n:num)*
-    -> foldl($first, $rest, (acc, i) => new Bin{Left: $acc, Op: $i.op, Right: $i.n})
-def num: Num = (?0-9)+
-def op: Op = "+" / "-"
-def ws = " "*
+rule main Expr = e:sum $$ => $e
+rule sum Expr = first:num rest:(-ws op:op -ws n:num)* => foldl($first, $rest, (acc, i) => Bin{Left: $acc, Op: $i.op, Right: $i.n})
+rule num Num = [0-9]+
+rule op Op = "+" / "-"
+rule ws = " "*
 ```
 
 ```bash
@@ -757,9 +752,9 @@ Num"7"@num
 Notes: the accumulator starts as a `Num` and becomes a `Bin`, so its type is widened to the union of both, and the
 declared `Expr = Num | Bin` must contain both. With a single operand the repetition is empty and the fold returns the
 initial value unchanged, which is why `7` stays a bare `Num`. For several precedence levels you would write one such
-rule per level; for that case also look at [Pratt expressions](expressions.md).
+rule per level; for that case also look at [Operators Rule](expressions.md).
 
-### 9.2 Right-associative trees with `foldr`
+### 9.2 Right-Associative Trees With `foldr`
 
 `a ^ b ^ c` must be `a ^ (b ^ c)`. Capture the pairs *(operand, operator)* and the last operand separately, and fold
 from the right, starting with the last operand:
@@ -775,11 +770,10 @@ type Bin struct {
 }
 type Expr = Num | Bin
 
-def pow: Expr = pairs:(l:num -ws op:op -ws)* last:num
-    -> foldr($last, $pairs, (acc, i) => new Bin{Left: $i.l, Op: $i.op, Right: $acc})
-def num: Num = (?0-9)+
-def op: Op = "^"
-def ws = " "*
+rule pow Expr = pairs:(l:num -ws op:op -ws)* last:num => foldr($last, $pairs, (acc, i) => Bin{Left: $i.l, Op: $i.op, Right: $acc})
+rule num Num = [0-9]+
+rule op Op = "^"
+rule ws = " "*
 ```
 
 ```bash
@@ -795,7 +789,7 @@ Num"2"@num
 The repetition is greedy and does not backtrack, but it is still correct here: it consumes `2 ^` and `3 ^`, then
 `4` fails to be followed by `^`, so the repetition stops and `last` matches `4`.
 
-### 9.3 Member chains with a union accumulator
+### 9.3 Member Chains with a Union Accumulator
 
 The same fold builds `a.b.c`. The accumulator is first an `Ident` and then a `Member`, so declare the union and use it
 for the rule type and the field:
@@ -809,9 +803,8 @@ type Member struct {
 }
 type Path = Ident | Member
 
-def path: Path = first:ident rest:(-"." n:ident)*
-    -> foldl($first, $rest, (acc, i) => new Member{X: $acc, Name: $i.n})
-def ident: Ident = (?a-z)+
+rule path Path = first:ident rest:(-"." n:ident)* => foldl($first, $rest, (acc, i) => Member{X: $acc, Name: $i.n})
+rule ident Ident = [a-z]+
 ```
 
 ```bash
@@ -822,7 +815,7 @@ pego parse -g path.pego -s path -f sexpr -i 'a.b.c'
 (Member Name=Ident"c"@ident X=(Member Name=Ident"b"@ident X=Ident"a"@ident))
 ```
 
-### 9.4 Flattening separated lists
+### 9.4 Flattening Separated Lists
 
 `first (sep item)*` yields a nested `Seq`/`List` structure. To get one flat list of items, capture the repeated part and
 rebuild a list: `list($first)` makes a one-element list, `map` extracts the item from every iteration, and `concat`
@@ -836,13 +829,11 @@ type Call struct {
     Args []Ident
 }
 
-def call: Call = fn:ident -ws "(" -ws args:args? -ws ")"
-    -> new Call{Fn: $fn, Args: concat($args)}
-def args = first:ident rest:(-ws "," -ws x:ident)*
-    -> concat(list($first), map($rest, (r) => $r.x))
-def args_cst = ident (-ws "," -ws ident)*
-def ident: Ident = (?a-z)+
-def ws = " "*
+rule call Call = fn:ident -ws "(" -ws args:args? -ws ")" => Call{Fn: $fn, Args: concat($args)}
+rule args = first:ident rest:(-ws "," -ws x:ident)* => concat(list($first), map($rest, (r) => $r.x))
+rule args_cst = ident (-ws "," -ws ident)*
+rule ident Ident = [a-z]+
+rule ws = " "*
 ```
 
 ```bash
@@ -864,9 +855,9 @@ pego parse -g args.pego -s args_cst -f sexpr -i 'a, b, c'
 // args-optional.pego
 type Ident terminal
 type Call struct { Fn Ident, Args []Ident }
-def call: Call = fn:ident "(" args:args? ")" -> new Call{Fn: $fn, Args: $args}
-def args = first:ident rest:(-"," x:ident)* -> concat(list($first), map($rest, (r) => $r.x))
-def ident: Ident = (?a-z)+
+rule call Call = fn:ident "(" args:args? ")" => Call{Fn: $fn, Args: $args}
+rule args = first:ident rest:(-"," x:ident)* => concat(list($first), map($rest, (r) => $r.x))
+rule ident Ident = [a-z]+
 ```
 
 ```bash
@@ -877,7 +868,7 @@ pego parse -g args-optional.pego -s call -i 'f(a)'
 pego: args-optional.pego:4:67: cannot use *[]Ident as []Ident in field Args of Call
 ```
 
-### 9.5 Keeping only the AST you need
+### 9.5 Keeping Only the AST You Need
 
 The parse tree of a realistic language is full of trivia: whitespace, comments, separators and keywords. The AST should
 contain the data. Four habits get you there:
@@ -886,7 +877,7 @@ contain the data. Four habits get you there:
    else, including whitespace rules that also skip comments.
 2. **Discard inside captured repetitions**, not only around them (see [Captures](#32-captures)).
 3. **Pick fields with `map`** when each iteration carries more than the value you want.
-4. **Unwrap the start rule** with `e:rule $$ -> $e`.
+4. **Unwrap the start rule** with `e:rule $$ => $e`.
 
 ```pego
 // config.pego
@@ -898,12 +889,12 @@ type Entry struct {
 }
 type Config struct { Entries []Entry }
 
-def main: Config = es:entries ws $$ -> new Config{Entries: $es}
-def entries = es:(-ws e:entry)* -> map($es, (x) => $x.e)
-def entry: Entry = k:key -ws -"=" -ws v:value -ws -";" -> new Entry{Key: $k, Value: $v}
-def key: Ident = (?a-z_)+
-def value: Value = (?a-z0-9.)+
-def ws = ((? \t\r\n) / "#" (?^\n)*)*
+rule main Config = es:entries ws $$ => Config{Entries: $es}
+rule entries = es:(-ws e:entry)* => map($es, (x) => $x.e)
+rule entry Entry = k:key -ws -"=" -ws v:value -ws -";" => Entry{Key: $k, Value: $v}
+rule key Ident = [a-z_]+
+rule value Value = [a-z0-9.]+
+rule ws = ([ \t\r\n] / "#" [^\n]*)*
 ```
 
 ```bash
@@ -917,13 +908,13 @@ pego parse -g config.pego -f sexpr -i $'# web server\nhost = example.com;  # com
 Comments, whitespace, `=` and `;` are all gone; only the entries remain. If you also need the comments (for a
 formatter, say), capture them instead of discarding them.
 
-## 10. Performance guidelines
+## 10. Performance Guidelines
 
 PEGO builds values only where something can observe them. To reduce allocations, help the engine identify what your grammar does not need:
 
 1. **Discard trivia inside captured expressions** with `-x`: `rest:(-ws -"," -ws v:value)*`. The engine cannot drop it
    automatically, because a captured value exposes its full CST.
-2. **Use terminal types or `@(...)` for tokens.** Their bodies are matched without building values: an identifier is
+2. **Use terminal types or `(...) #atomic` for tokens.** Their bodies are matched without building values: an identifier is
    one node instead of one node per character.
 3. **Write actions with captures rather than `$n`.** A rule whose action does not use `$n` is matched without building
    the `Seq` of its body.
@@ -936,8 +927,8 @@ allocated, measured around a single `Parse` call with `runtime.MemStats`:
 | Whitespace kept in the captured repetition (`rest:(ws "," ws x:ident)*`), `ident` a terminal type | 22.5 MB |
 | Whitespace discarded (`rest:(-ws "," -ws x:ident)*`) | 11.9 MB |
 | Whitespace and the separator discarded (`rest:(-ws -"," -ws x:ident)*`) | 8.0 MB |
-| Whitespace discarded, but `ident` without a type: `def ident = (?a-z)+` (a list of `Match` nodes) | 16.4 MB |
-| Same, with `def ident = @(?a-z)+` | 11.9 MB |
+| Whitespace discarded, but `ident` without a type: `rule ident =  [a-z]+ ` (a list of `Match` nodes) | 16.4 MB |
+| Same, with `rule ident =  [a-z]+ #atomic ` | 11.9 MB |
 
 These choices matter most when a grammar captures many repeated values. Measure your own input and inspect the resulting tree to ensure that discarding text does not remove information your application needs.
 
@@ -954,8 +945,9 @@ values and runs no actions.
 | `T has no field F` | A typo, or the struct does not declare the field |
 | `cannot access .F of *T` | The value may be `nil` (for example `n:name?`). Read the field in a rule where the value is always present |
 | `rule r produces X, which is not assignable to T` | The declared type does not accept the body's value; the CST of a sequence is a `Seq`, so a struct type needs an action |
-| `expected ')', found '->'` | An action was written inside a group; actions apply to a whole rule, so split the alternative into its own rule |
-| `capture k inside @, -, or ! has no effect` | Captures cannot be made inside atomic, discard or negative lookahead; capture the whole expression or restructure |
+| `inline actions are not implemented` | The compiler recognized an inline action such as `(part => build($1))`, but inline action execution is not implemented |
+| Nondefault declaration-level action on an Operators Rule | Omit the action, use the explicit `=> ...` default-CST form, or put the action on an operand or operator entry |
+| `capture k inside #atomic, -, or ! has no effect` | Captures cannot be made inside atomic, discard or negative lookahead; capture the whole expression or restructure |
 | `undefined capture $z` | The capture is not made in this rule; captures are not visible across rules |
 | `$n is out of range: the rule has N elements with a value` | `$n` counts only elements with a value |
 | `syntax error: expected ..., end of input` after a complete-looking input | The start rule must consume all the input. Consume trailing whitespace and comments explicitly |

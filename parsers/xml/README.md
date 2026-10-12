@@ -90,7 +90,7 @@ and attribute-list declarations unless the document is standalone. It normalizes
 entity references, normalizes attribute values (and collapses spaces in attributes declared with a type other than
 CDATA), and adds the default values of declared attributes.
 
-### The W3C conformance suite
+### The W3C Conformance Suite
 
 [TestConformanceSuite](conformance_test.go) runs the
 [W3C XML Conformance Test Suite](https://www.w3.org/XML/Test/) (xmlts20130923, 2,585 tests) when `XMLCONF` names
@@ -126,7 +126,7 @@ attribute defaults, normalization of tokenized types, undeclared namespace prefi
 does test them; it does not test that declarations after an unread parameter entity are skipped, which the core
 tests do.
 
-### encoding/xml
+### Encoding/Xml
 
 [diff_test.go](diff_test.go) compares `Decode` (with `ResolveNamespaces`) with `encoding/xml`'s `Decoder.Token` on
 3,000 random documents without a DTD (elements, namespaces, attributes, references, CDATA sections, comments,
@@ -143,7 +143,7 @@ tests allow for each):
 - it accepts what is not well-formed: duplicate attributes, several root elements, text after the root element, an
   XML declaration after the start, undeclared namespace prefixes, `xmlns:p=""`, and `&#xD800;` (as U+FFFD).
 
-### Deviations and limits
+### Deviations and Limits
 
 - **Not read:** the external subset and external entities. A reference to an external parsed entity stays as an
   `*EntityRef` in the tree; conditional sections and text declarations, which occur only there, are not parsed. The

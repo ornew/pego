@@ -1,81 +1,90 @@
 # Predicates and Variables
 
-A predicate reads and updates the internal state of the parser, its
-**variables**, and decides dynamically whether parsing succeeds at that point.
-Predicates make context-sensitive grammars possible, such as indentation-based
-languages. A predicate never consumes input and has no value.
+A Predicate Action evaluates an expression without consuming input or producing a
+value. Predicate Actions and parser variables make context-sensitive grammars
+possible, including indentation-sensitive languages.
 
-## Predicates
+## Predicate Actions
 
-A predicate `[e]` evaluates the expression `e`. It fails if the result is
-`false` or if the evaluation is an error, and succeeds otherwise.
+The form `{ e }` evaluates a Predicate Action without consuming input or
+producing a value. A single Predicate Action keeps existing semantics: it
+fails if the result is `false` or evaluation is an error, and otherwise
+succeeds. It may refer to variables and named captures visible at its
+position. Positional action references `$n` and `$0` are not available inside
+predicates. Square brackets remain character classes; braces are predicates
+only where a PEG primary expression is expected.
 
 ```pego
-// Matches an indentation deeper than the current one, and makes it current.
-def deeper_indent = s:spaces [len($s) > indent] [indent = len($s)]
+// Match indentation deeper than the current level, then update it.
+rule deeper_indent = s:spaces { len($s) > indent } { indent := len($s) }
 ```
 
-The expression has the same syntax as an [action](actions.md#operators). It can
-refer to variables and to the captures `$label` made earlier in the same
-[scope](parser-expressions.md#capture): inside the element of a repetition,
-only the captures of that iteration are visible, not those of the enclosing rule
-body. To compare with a value from outside the repetition, define a variable
-from it first.
-Positional references `$n` and `$0` MUST NOT be used in predicates.
+Multi-statement Predicate Action blocks parse, format and appear in source
+ASTs, but semantic analysis rejects them as unsupported. No predicate block
+executes multiple statements.
+
+The expression has the same operators and built-in functions as a
+[Value Action](actions.md#operators-and-functions). Capture visibility follows the enclosing
+grammar-expression scope. Inside a repetition element, only captures from that
+iteration are visible; define a variable before the repetition to compare
+against a value from outside it.
 
 ## Variables
 
 | Syntax | Meaning |
 |:--|:--|
-| `[name]`, `[name == 1]`, ... | Read the variable `name` |
-| `[name = value]` | Define the variable `name` |
+| `{ name }`, `{ name == 1 }`, ... | Read the variable `name` |
+| `{ name := value }` | Define the variable `name` |
 
-A definition `name = value` MUST make up the whole predicate. It always
-succeeds unless evaluating `value` is an error.
+A binding expression `name := value` makes up the whole single-term
+predicate. It succeeds unless evaluating `value` is an error. A multi-statement
+block such as `{ name := value; test }` is preserved as source syntax but is
+not executable.
 
-- **Values.** The value of a variable MUST be an `int`, a `string` or a `bool`.
-- **Definition before use.** A variable can be read once its definition has
-  been executed. Reading a variable that is not defined is an error, so the
-  predicate fails.
-- **Scope.** Each rule invocation has its own scope. A rule can read the
-  variables of the rules that (directly or indirectly) called it; a name
-  resolves to the definition in the nearest scope.
-- **Immutability.** Defining a variable that already exists does not modify it:
-  the new definition shadows the old one. Shadowing in a called rule does not
-  affect the caller, and definitions made in a called rule are not visible to the
-  caller.
-- **Backtracking.** When the parser backtracks, definitions made after the point
-  it returns to are undone.
+- **Values.** A variable value is an `int`, `string`, or `bool`.
+- **Definition before use.** Reading an undefined variable is an evaluation
+  error and the predicate fails.
+- **Scope.** Each rule invocation has its own variable scope. A rule can read
+  variables from its callers; lookup resolves the nearest definition.
+- **Immutability.** A new definition shadows an existing one. Definitions made
+  in a called rule are not visible to its caller.
+- **Backtracking.** Definitions made after a backtracked-to point are undone.
 
 ```pego
-def a = [x = 1] b
-def b = [x == 1]          // succeeds when called from a, where x = 1
+rule a = {x := 1} b
+rule b = {x == 1}
 ```
 
-```pego
-def a = [x = 1] b [x == 1]           // the definition in b is not visible in a: x is still 1
-def b = [x == 1] [x = 2] [x == 2]    // before the definition, x is a's x (1); after it, x is 2
-```
+## Operators and Built-In Functions
 
-## Operators and built-in functions
+Predicate Actions use the same operators and built-in functions as
+[Value Actions](actions.md). Common functions include `len(x)` and `text(x)`.
+Nodes created while evaluating a predicate are discarded after evaluation.
 
-Predicates use the same operators and built-in functions as
-[actions](actions.md). The most commonly used functions are:
+## Interaction with Memoization
 
-| Function | Description |
-|:--|:--|
-| `len(x)` | The number of elements of a list, or the length of a string or a terminal in the [position unit](parsing.md#positions) |
-| `text(x)` | The input text that the node `x` covers |
+A rule that reads variables in Predicate Actions or Value Actions, directly or through a
+called rule, depends on their values when it is called. Memoized results are
+reused only for the same relevant variable values. Memoization does not change
+the result of parsing, only its cost.
 
-Nodes that a predicate creates (for example with `new`) are discarded after the
-predicate is evaluated.
+Variable values are restricted to `int`, `string`, and `bool`. A variable may
+be read only after its definition has executed; reading an undefined variable
+is an evaluation error and makes the predicate fail. Each rule invocation has
+its own scope. A rule can read definitions from its callers, with the nearest
+definition taking precedence. Defining an already visible name creates an
+immutable shadow; definitions in a called rule do not change or become visible
+in its caller. Backtracking undoes definitions made after the restored point.
+These rules apply across directly and indirectly called rules. A rule that
+reads variables in Predicate Actions or Value Actions, including Operators Rule operand
+and operator actions, is memoized per combination of relevant variable values;
+definitions made inside it are undone when it returns.
 
-## Interaction with memoization
-
-The result of a rule that reads variables in predicates or actions (including
-Pratt operand and operator actions), directly or through the rules it
-calls, depends on the values of those variables when the rule is called
-(definitions made inside the rule are undone when it returns). Such a rule is
-memoized per combination of those values: a memoized result is reused only when
-the variables have the same values as when it was computed. Memoization never
-changes the result of parsing, only its cost.
+Predicate Actions support the same operators and built-in functions
+as [Value Actions](actions.md), including `len` and `text`. Values created by node
+constructors during predicate evaluation are discarded. Positional references
+`$n` and `$0` are forbidden in predicates; named captures made earlier in the
+same expression scope remain available. Within a repetition element, only
+captures from that iteration are visible, not captures from the enclosing
+rule body. Bind an outside value to a variable before the repetition when it
+must be compared with each element.

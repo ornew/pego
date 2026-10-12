@@ -9,14 +9,14 @@ This guide covers the playground's controls, shared links, limits and WebAssembl
 - [Shared links](#shared-links)
 - [The WebAssembly API](#the-webassembly-api)
 
-## Using the playground
+## Using the Playground
 
 The page has a grammar editor and an input editor side by side (stacked on a phone), a status line, an error list and
 a result panel. Every edit re-parses after a short pause; the grammar is compiled again only when it changes.
 
 | Part | What it does |
 |:--|:--|
-| **Example** | Loads one of the grammars of [`examples/`](../../examples/README.md) or [`parsers/`](../../parsers/README.md) with a sample input: the calculator (Pratt and left-recursive), JSON, CSV, XML (and an XML error), the indentation outline, and minilang (and a minilang input that `#recover` recovers from) |
+| **Example** | Loads one of the grammars of [`examples/`](../../examples/README.md) or [`parsers/`](../../parsers/README.md) with a sample input: the calculator (Operators Rule and left-recursive), JSON, CSV, XML (and an XML error), the indentation outline, and minilang (and a minilang input that `#recover` recovers from) |
 | **Start** | The start rule (`pego parse -s`). The default is `main`, or the first rule if the grammar has no `main` (where `pego parse` without `-s` would report that `main` is not defined). A start rule that the grammar does not define, after an edit or in a shared link, stays selected and is reported as an error |
 | **Options** | The position unit (code points or bytes, `-unit`), the backend (`-backend`) and recognition mode (`pego.RecognizeOnly`, which builds no tree). Like `pego parse -check`, recognition reports the same syntax errors as a full parse; where the command prints `ok` only for an input without errors, the playground also shows an input that `#recover` recovered from as a match, with its errors |
 | **Format** | Formats the grammar like `pego fmt`, keeping comments. The change can be undone |
@@ -47,7 +47,7 @@ In the editors, Tab inserts indentation; press Escape first to move the focus wi
 Parsing runs in a Web Worker, so a slow parse never freezes the page. A parse that takes more than 10 seconds is
 stopped and the worker is restarted; edits made in the meantime are parsed on the new worker.
 
-### Nesting limits
+### Nesting Limits
 
 In the browser, the Go code runs on the JavaScript engine's stack, which is far smaller than the stack of a native Go
 program. The playground therefore limits nesting more than the engine does:
@@ -63,7 +63,7 @@ The limits leave a margin of more than two over what overflowed in measurements 
 [design record 016](../design/016-web-site-and-playground.md#nesting-and-the-browsers-stack)). If a parse still
 overflows the stack, the worker is restarted and the status says so.
 
-### Shared links
+### Shared Links
 
 The state of the playground is kept in the URL fragment, so reloading the page keeps your work and a link reproduces it.
 The fragment is `#z=` followed by the state as JSON, compressed with deflate (`CompressionStream`) and encoded as
@@ -110,7 +110,7 @@ require("./wasm_exec.js"); // from $(go env GOROOT)/lib/wasm
 const go = new Go();
 const { instance } = await WebAssembly.instantiate(fs.readFileSync("pego.wasm"), go.importObject);
 go.run(instance);
-const res = JSON.parse(pego.parse(JSON.stringify({ grammar: 'def main = "a"+', input: "aaa" })));
+const res = JSON.parse(pego.parse(JSON.stringify({ grammar: 'rule main =  "a"+ ', input: "aaa" })));
 ```
 
 The binary is about 8.3 MB before compression (2.2 MB with gzip or 1.6 MB with Brotli). The landing page loads it only when its live example scrolls into view.

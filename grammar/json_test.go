@@ -31,7 +31,7 @@ func sampleGrammar() *Grammar {
 					&Optional{Expr: &Choice{Alts: []Expr{&Literal{Value: "+"}, &Any{}, &Cut{}}}},
 					&Not{Expr: &And{Expr: &Atomic{Expr: &Discard{Expr: &Top{}}}}},
 					&Predicate{Term: &Binary{Op: ">", L: &Call{Func: "len", Args: []Term{&CaptureRef{Name: "l"}}}, R: &VarRef{Name: "indent"}}},
-					&Attributed{Expr: &Bottom{}, Attrs: []*Attribute{{Name: "error", Args: []*AttrArg{{Name: "message", Value: &Literal{Value: "x"}}}}}},
+					&Attributed{Expr: &Bottom{}, Attrs: []*Attribute{{Name: "error", KwArgs: map[string]any{"message": "x"}}}},
 				}},
 				Action: &Call{Func: "foldl", Args: []Term{
 					&CaptureRef{Name: "l"},
@@ -41,10 +41,10 @@ func sampleGrammar() *Grammar {
 					}}},
 				}},
 			},
-			&RuleDef{Name: "p", Expr: &Pratt{
+			&RuleDef{Name: "p", Expr: &OperatorsRule{
 				Skip:     &Ref{Name: "ws"},
-				Operands: []*PrattOperand{{Expr: &Ref{Name: "num"}}},
-				Levels: []*PrattLevel{{Name: "add", Operators: []*PrattOperator{
+				Operands: []*OperatorsRuleOperand{{Expr: &Ref{Name: "num"}}},
+				Levels: []*OperatorsRuleLevel{{Name: "add", Operators: []*OperatorsRuleOperator{
 					{Kind: Infix, Assoc: AssocLeft, Expr: &Literal{Value: "+"}, Action: &Unary{Op: "-", X: &IntLit{Value: 1}}},
 				}}},
 			}},

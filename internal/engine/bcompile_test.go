@@ -6,10 +6,9 @@ import (
 )
 
 func TestModuleDisassembly(t *testing.T) {
-	prog := compile(t, `
-type P struct { K Match, N int }
-def main = k:key "=" v:@(?0-9)+ (";" / _) -> new P{K: $k, N: len($v) + 1}
-def key = @(?a-z)+ #error(message="expected a key")`)
+	prog := compile(t, `type P struct { K Match, N int }
+rule main = k:key "=" v:[0-9]+ #atomic (";" / _) => P{K: $k, N: len($v) + 1}
+rule key = [a-z]+ @error(message="expected a key") #atomic`)
 	got := prog.Module().Disassemble()
 	want := `rules:
   0 main entry=0 scope=[k v] action=0 memo,seq,transient
@@ -20,7 +19,7 @@ main:
      1  CAPTURE    slot=0 pop
      2  STR        "=" build=0
      3  PUSHPOS    
-     4  SCAN       "(?0-9)" min=1 max=-1
+     4  SCAN       "[0-9]" min=1 max=-1
      5  ATOMIC     build=1
      6  CAPTURE    slot=1 pop
      7  GUARD      ";" depth=0 -> 11
@@ -32,7 +31,7 @@ main:
 key:
     13  PUSHPOS    
     14  LABEL      "expected a key"
-    15  SCAN       "(?a-z)" min=1 max=-1
+    15  SCAN       "[a-z]" min=1 max=-1
     16  ENDLABEL   
     17  ATOMIC     build=1
     18  RETURN     

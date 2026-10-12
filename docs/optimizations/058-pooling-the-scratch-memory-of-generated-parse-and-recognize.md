@@ -1,4 +1,4 @@
-# 58. Pooling the scratch memory of generated `Parse` and `Recognize`
+# 58. Pooling the Scratch Memory of Generated `Parse` And `Recognize`
 
 - Change 57 in the generated parsers' Node runtime: `parse` takes its parser from a `sync.Pool` and returns it
   (`release`), keeping the decoded input and offsets, the memo slots and entry chunks, the bit set of first calls and

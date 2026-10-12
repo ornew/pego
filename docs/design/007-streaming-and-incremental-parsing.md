@@ -8,16 +8,16 @@
 
 This record describes the design of stream parsing, which starts parsing before the whole input is available, and of incremental parsing, which reuses the results for unchanged parts of the input after an edit.
 
-## Stream parsing
+## Stream Parsing
 
-### Committing elements
+### Committing Elements
 
 Because PEG backtracks, whether the result for a range of input will be part of the final result is, in general, not known until the end of the input.
-The design therefore lets the grammar author mark where the input may be split, with the `#stream` attribute (see [spec/attributes.md](../../spec/attributes.md)).
+The design therefore lets the grammar author mark where the input may be split, with the `#stream` pragma (see [spec/pragmas.md](../../spec/pragmas.md)).
 
 - `#stream` can be attached only to a repetition at the top level of the start rule's body. No choice encloses the top level of the start rule's body, so once an element of the repetition has matched, parsing never returns to a point before it.
 - Every repetition stops after its first successful iteration that consumes no input, then checks its minimum. The empty iteration counts once; a stream emits it before checking the minimum. Ordinary, projected, resumed and generated loops use the same rule. A reused empty tail must end resumption even if deletion has reduced the count below the minimum, rather than matching an extra empty element to make up the difference.
-- A `#recover` wrapper around the streaming repetition is rejected in either attribute order, because recovery rewinds to the wrapper's start after elements may have committed and discarded that input. Recovery inside each element remains supported. Saved modules reject a recovery region enclosing stream-mode `NEXT`, including files without an AST; old unsafe files must be recompiled after moving recovery into the element. The wire format and instruction set are unchanged.
+- A `#recover` wrapper around the streaming repetition is rejected in either pragma order, because recovery rewinds to the wrapper's start after elements may have committed and discarded that input. Recovery inside each element remains supported. Saved modules reject a recovery region enclosing stream-mode `NEXT`, including files without an AST; old unsafe files must be recompiled after moving recovery into the element. The wire format and instruction set are unchanged.
 - After an element has been passed to the caller, the input and memo entries before it are discarded. Positions remain absolute offsets from the start of the input; line and column numbers are computed by counting the lines in the discarded part.
 - The preceding character is kept so that line-start checks (`^`) still work.
 
@@ -29,11 +29,11 @@ Deferring callbacks or retaining input until an enclosing recovery wrapper finis
 but would remove early delivery and bounded input retention. Rejecting the wrapper preserves the existing stream contract
 and the per-element recovery idiom without introducing a second commitment policy.
 
-### Reading input
+### Reading Input
 
 Input is read up to the position that is needed, and after that only what is already in the read buffer is taken in. Because the parser never waits for more input than it needs, elements can be delivered as soon as their input arrives, even when input trickles in, as over a network.
 
-## Incremental parsing
+## Incremental Parsing
 
 As in Dubroy and Warth's "Incremental Packrat Parsing", each memo entry records **the range of input it examined**, and entries that do not overlap the edit are reused.
 
@@ -51,7 +51,7 @@ As in Dubroy and Warth's "Incremental Packrat Parsing", each memo entry records 
 - The rules are applied lazily (performance.md change 56). An edit decides now only the entries at the edited positions, `[start, end]`, which it must place: one at `start` that stays, one at `end` that moves. The memo table is a gap buffer of per-position chains with the gap at the last edit, so the positions after the edit move by moving the gap, which costs the distance from the previous edit rather than the size of the document. Every other entry records how many edits its positions account for (`vgen`), and when it is next looked up, the edits since are applied to it one by one with the rules above (`advanceEntry`); an entry that one of them invalidates is a miss, and is left as it was (a parse may be aborted before the entry is replaced, and the entry looked up again), and its slot is reused by the next result for the same key. Applying the rules edit by edit gives exactly what applying each at the time of its edit would have: an entry's position in its chain changes only by the shifts the rules make.
 - So that expectations for syntax errors can be recorded again when a memo entry is used, each entry also stores the farthest failure position and the expectations recorded during the call. A parse that reuses entries therefore reports the same syntax errors as a fresh parse.
 
-### Resuming repetitions
+### Resuming Repetitions
 
 The rule that contains an edit runs again, and with it any repetition in its body, element by element: for the `line*` of a file, a memo lookup per line, which is work in proportion to the document (performance.md change 54). A repetition run in a `Document` parse therefore records its run when it has 16 elements or more (`resume.go`): per element, its start and end, the range it examined, its farthest-failure expectations, and its value. When the repetition runs again after exactly one edit, at the same position or the one the edit moved it to, it takes over the old run:
 

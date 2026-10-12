@@ -1,9 +1,9 @@
-# Evaluate arithmetic with variables and functions
+# Evaluate Arithmetic with Variables and Functions
 
 **Problem.** A program lets users type formulas such as `max(x, 2) * 3 ^ 2 - -y / 4`, with the usual precedence, and
 evaluates them for many values of `x` and `y`.
 
-Parse the formula once into a typed tree, then evaluate the tree as often as you like. A Pratt expression gives the
+Parse the formula once into a typed tree, then evaluate the tree as often as you like. An Operators Rule gives the
 precedence and associativity in a table; the evaluator is a `switch` on the node type.
 
 ```pego
@@ -15,26 +15,26 @@ type Neg struct { X Expr }
 type Call struct { Fn Name, Args []Expr }
 type Expr = Num | Name | Bin | Neg | Call
 
-def main: Expr = e:expr ws $$ -> $e
+rule main Expr = e:expr ws $$ => $e
 
-def expr: Expr = pratt {
-    skip    ws
+rule expr Expr = operators {
+    skip ws
     operand num
     operand call
     operand name
-    operand "(" e:expr ws ")" -> $e
-    level { infix left  "+" / "-"       -> new Bin{Left: $lhs, Op: $op, Right: $rhs} }
-    level { infix left  "*" / "/" / "%" -> new Bin{Left: $lhs, Op: $op, Right: $rhs} }
-    level { prefix      "-"             -> new Neg{X: $rhs} }
-    level { infix right "^"             -> new Bin{Left: $lhs, Op: $op, Right: $rhs} }
+    operand "(" e:expr ws ")" => $e
+    level { infix left "+" / "-" => Bin{Left: $lhs, Op: $op, Right: $rhs} }
+    level { infix left "*" / "/" / "%" => Bin{Left: $lhs, Op: $op, Right: $rhs} }
+    level { prefix "-" => Neg{X: $rhs} }
+    level { infix right "^" => Bin{Left: $lhs, Op: $op, Right: $rhs} }
 }
 
-def call: Call = f:name ws "(" ws as:args? ws ")" -> new Call{Fn: $f, Args: concat($as)}
-def args = first:expr rest:(ws "," ws e:expr)* -> concat(list($first), map($rest, (r) => $r.e))
+rule call Call = f:name ws "(" ws as:args? ws ")" => Call{Fn: $f, Args: concat($as)}
+rule args = first:expr rest:(ws "," ws e:expr)* => concat(list($first), map($rest, (r) => $r.e))
 
-def num: Num = (?0-9)+ ("." (?0-9)+)?
-def name: Name = (?a-z_)+
-def ws = (? \t\r\n)*
+rule num Num = [0-9]+ ("." [0-9]+)?
+rule name Name = [a-z_]+
+rule ws = [ \t\r\n]*
 ```
 
 ```go
@@ -158,7 +158,7 @@ func main() {
 x = 1 -> 162.5 <nil>
 x = 5 -> 405.5 <nil>
 x = 10 -> 810.5 <nil>
-1 +              syntax error: 1:4: syntax error: expected "(", "-", (?0-9), (?a-z_)
+1 +              syntax error: 1:4: syntax error: expected "(", "-", [0-9], [a-z_]
 sqrt(1, 2)       0 sqrt takes 1 arguments, got 2
 z * 2            0 undefined variable "z"
 1 / (2 - 2)      0 division by zero
@@ -166,7 +166,7 @@ z * 2            0 undefined variable "z"
 (1 + 2) * 3 % 4  1 <nil>
 ```
 
-## How it works
+## How It Works
 
 - **The table is the precedence.** `level` blocks run from the loosest to the tightest, so `+ -` bind loosest, then `* / %`,
   then the prefix minus, then `^`. `infix right` makes `^` associative to the right (`2 ^ 3 ^ 2` is `2 ^ 9`, 512), and
@@ -174,7 +174,7 @@ z * 2            0 undefined variable "z"
   than `/` and looser than `^`.
 - **`skip ws`** lets white space appear between the tokens of the expression, so the operators and operands need no
   `ws` of their own. A rule called from an operand, such as `call`, handles its own white space.
-- **Order of operands.** `call` comes before `name`: both start with a name, and a Pratt expression tries the operands
+- **Order of operands.** `call` comes before `name`: both start with a name, and an Operators Rule tries the operands
   in order, like a choice.
 - **Typed nodes.** `Bin` has an operator and two `Expr`s, and the checker rejects a rule that builds one wrongly, when the
   grammar compiles. `Expr` is a union, so `eval` can switch on `n.Type()` and reach each field with `Field`.
@@ -189,10 +189,10 @@ z * 2            0 undefined variable "z"
 
 - **Integer arithmetic** (or `big.Int`): change the `Num` conversion and the operators in `eval`.
 - **Comparison and logic**: add levels, loosest first. The [filter language](filter-language.md) does.
-- **Assignments and statements**: put the Pratt expression inside a rule of a statement grammar; the minilang example
+- **Assignments and statements**: put the Operators Rule inside a rule of a statement grammar; the minilang example
   of [examples/](../../examples/README.md) has expressions in a programming language.
-- **A grammar without `pratt`**: a rule per precedence level, or a left-recursive rule per level, gives the same trees;
+- **A grammar without an Operators Rule**: a rule per precedence level, or a left-recursive rule per level, gives the same trees;
   [examples/calculator](../../examples/calculator/) has both.
 
 See [Expressions](../guide/expressions.md) for operator tables, associativity and level-restricted calls, and
-[Pratt expressions](../../spec/pratt.md) for the rules.
+[Operators Rule](../../spec/operators-rule.md) for the rules.

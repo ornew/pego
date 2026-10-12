@@ -123,7 +123,7 @@ func randomGrammar(rng *rand.Rand) string {
 	rules := []string{"main", "r1", "r2"}
 	var expr func(depth int) string
 	atom := func() string {
-		atoms := []string{`"a"`, `"b"`, `"ab"`, `"ba"`, `"aa"`, `""`, `"\n"`, `(?a-b)`, `(?^a)`, `(?a)`, `.`, `_`,
+		atoms := []string{`"a"`, `"b"`, `"ab"`, `"ba"`, `"aa"`, `""`, `"\n"`, `[a-b]`, `[^a]`, `[a]`, `.`, `_`,
 			`$$`, `^^`, `$`, `^`, `_|_`, "r1", "r2", "r1", "r2"}
 		return atoms[rng.IntN(len(atoms))]
 	}
@@ -150,7 +150,7 @@ func randomGrammar(rng *rand.Rand) string {
 			}
 			return "(" + strings.Join(parts, " / ") + ")"
 		case 5:
-			return "(" + expr(depth-1) + ")" + []string{"*", "+", "?", "{0,1}", "{2}"}[rng.IntN(5)]
+			return "(" + expr(depth-1) + ")" + []string{"*", "+", "?", " #repeat(0,1)", " #repeat(2)"}[rng.IntN(5)]
 		case 6:
 			return "!" + "(" + expr(depth-1) + ")"
 		case 7:
@@ -159,15 +159,15 @@ func randomGrammar(rng *rand.Rand) string {
 			return "(" + expr(depth-1) + ")?"
 		case 9:
 			if rng.IntN(2) == 0 {
-				return "(" + expr(depth-1) + ") #error(message=\"m\")"
+				return "(" + expr(depth-1) + ") @error(message=\"m\")"
 			}
-			return "(" + expr(depth-1) + ") #recover(skip=" + []string{"(?a-b)", "\"\\n\"", "\"\""}[rng.IntN(3)] + ")"
+			return "(" + expr(depth-1) + ") #recover(skip=" + []string{"[a-b]", "\"\\n\"", "\"\""}[rng.IntN(3)] + ")"
 		}
-		return "@(" + expr(depth-1) + ")"
+		return "(" + expr(depth-1) + ") #atomic"
 	}
 	var b strings.Builder
 	for _, r := range rules {
-		fmt.Fprintf(&b, "def %s = %s\n", r, expr(3))
+		fmt.Fprintf(&b, "rule %s = %s\n", r, expr(3))
 	}
 	return b.String()
 }
@@ -259,6 +259,8 @@ func applyFinding(g *grammar.Grammar, f Finding, fix bool) bool {
 // rewrite replaces the subexpressions of e bottom-up with f.
 func rewrite(e grammar.Expr, f func(grammar.Expr) grammar.Expr) grammar.Expr {
 	switch x := e.(type) {
+	case *grammar.Group:
+		x.Expr = rewrite(x.Expr, f)
 	case *grammar.Seq:
 		for i := range x.Items {
 			x.Items[i] = rewrite(x.Items[i], f)

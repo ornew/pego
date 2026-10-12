@@ -13,12 +13,11 @@ import (
 // backends, recognition, and with invalid UTF-8, also from concurrent goroutines. The grammar
 // calls key twice at a position, so that the memo is used.
 func TestScratchReuse(t *testing.T) {
-	const src = `
-def main = (line / blank)* $$
-def line = ^ (k:key " = " v:val / k:key " : " v:val) "\n"
-def key = @(?a-z_)+
-def val = @(?^\n)+
-def blank = "\n"`
+	const src = `rule main = (line / blank)* $$
+rule line = ^ (k:key " = " v:val / k:key " : " v:val) "\n"
+rule key = [a-z_]+ #atomic
+rule val = [^\n]+ #atomic
+rule blank = "\n"`
 	pooled := compile(t, src)
 	rng := rand.New(rand.NewSource(9))
 	inputs := []string{""}

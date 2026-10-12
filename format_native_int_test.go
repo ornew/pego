@@ -24,7 +24,7 @@ func TestFormatNativeMinimumRoundTrip(t *testing.T) {
 		{"right multiplication", &grammar.Binary{Op: "*", L: &grammar.IntLit{Value: 2}, R: minimum}, 0},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			g, err := pego.ParseGrammar("type N struct { V int }\ndef main = \"é\" $$ -> new N{V: 0}")
+			g, err := pego.ParseGrammar("type N struct { V int }\nrule main = \"é\" $$ => N{V: 0}")
 			if err != nil {
 				t.Fatal(err)
 			}

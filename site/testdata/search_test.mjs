@@ -6,22 +6,22 @@ import { test } from "node:test";
 import { markTerms, search, snippet } from "../static/assets/search.js";
 
 test("terms are never marked inside escaped characters", () => {
-  assert.equal(markTerms('def x = "a" -> $a', ["quot", "gt"]), "def x = &quot;a&quot; -&gt; $a");
+  assert.equal(markTerms('rule x = "a" => $a', ["quot", "gt"]), "rule x = &quot;a&quot; =&gt; $a");
   assert.equal(markTerms('say "quote"', ["quot"]), "say &quot;<mark>quot</mark>e&quot;");
   assert.equal(markTerms("a < b & c", ["b"]), "a &lt; <mark>b</mark> &amp; c");
 });
 
 test("terms are marked whatever their case, longest first", () => {
-  assert.equal(markTerms("Pratt and pratt-level", ["pratt", "pratt-level"]), "<mark>Pratt</mark> and <mark>pratt-level</mark>");
+  assert.equal(markTerms("Operators and operators-level", ["operators", "operators-level"]), "<mark>Operators</mark> and <mark>operators-level</mark>");
   assert.equal(markTerms("a.b", ["."]), "a<mark>.</mark>b");
 });
 
 test("snippets show the text around the first match", () => {
-  const text = "x".repeat(100) + ' the "#recover" attribute ' + "y".repeat(200);
+  const text = "x".repeat(100) + ' the "#recover" pragma ' + "y".repeat(200);
   const s = snippet(text, ["recover"]);
   assert.ok(s.startsWith("…"));
   assert.ok(s.endsWith("…"));
-  assert.match(s, /the &quot;#<mark>recover<\/mark>&quot; attribute/);
+  assert.match(s, /the &quot;#<mark>recover<\/mark>&quot; pragma/);
   assert.equal(snippet("short", ["nothing"]), "");
   assert.equal(snippet("a & b", ["b"]), "a &amp; <mark>b</mark>");
 });

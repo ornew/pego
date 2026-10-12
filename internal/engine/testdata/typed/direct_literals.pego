@@ -2,5 +2,6 @@
 // matchLiteral (longer ones, and in Bytes), non-ASCII ones, and literals cut off by the end of the
 // input.
 type W struct { A *Match, B *Match, C *Match, D *Match }
-def main: W = a:("é" / "ab") b:("→→" / "→") c:("abcd" / "abc") d:("abcde" / "ab")? $$
-    -> new W{A: $a, B: $b, C: $c, D: $d}
+rule main W = (
+    a:("é" / "ab") b:("→→" / "→") c:("abcd" / "abc") d:("abcde" / "ab")? $$
+) => W{A: $a, B: $b, C: $c, D: $d}

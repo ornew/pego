@@ -23,31 +23,29 @@ func TestGeneratedTypedFrameLayoutWorkloads(t *testing.T) {
 		fixture := strings.ReplaceAll(typedLRActionWorkloadFixture, "saved.N != 3", "saved.Missing != nil || saved.N != 3")
 		testGeneratedTypedBodyWorkload(t, typedFrameLayoutLRWorkload, fixture, filepath.Join(dir, "lr"), "(typed LR body inlined)", GenOptions{disableTypedFrameLayouts: true})
 	})
-	t.Run("pratt", func(t *testing.T) {
-		fixture := strings.ReplaceAll(typedPrattActionWorkloadFixture, "post.N != 3", "post.Missing != nil || post.N != 3")
-		testGeneratedTypedBodyWorkload(t, typedFrameLayoutPrattWorkload, fixture, filepath.Join(dir, "pratt"), "(typed Pratt body inlined)", GenOptions{disableTypedFrameLayouts: true}, 2)
+	t.Run("operatorsRule", func(t *testing.T) {
+		fixture := strings.ReplaceAll(typedOperatorsRuleActionWorkloadFixture, "post.N != 3", "post.Missing != nil || post.N != 3")
+		testGeneratedTypedBodyWorkload(t, typedFrameLayoutOperatorsRuleWorkload, fixture, filepath.Join(dir, "operatorsRule"), "(typed OperatorsRule body inlined)", GenOptions{disableTypedFrameLayouts: true}, 2)
 	})
 }
 
-const typedFrameLayoutLRWorkload = `
-type Doc struct { Items []Match, N int, Missing *Match }
-def main: Doc = e:expr $$ -> $e
-def expr: Doc = ((_|_ ignored:@"z") / previous:expr ";" items:(x:@(?a-z) -","){3}
-              / items:(x:@(?a-z) -","){3}) -> new Doc{Items: map($items, (e)=>$e.x), N:len($items), Missing:$ignored}
+const typedFrameLayoutLRWorkload = `type Doc struct { Items []Match, N int, Missing *Match }
+rule main Doc = e:expr $$ => $e
+rule expr Doc = _|_ ignored:"z" #atomic / previous:expr ";" items:(x:[a-z] #atomic -",") #repeat(3) / items:(x:[a-z] #atomic -",") #repeat(3) => Doc{Items: map($items, (e) => $e.x), N: len($items), Missing: $ignored}
 `
 
-const typedFrameLayoutPrattWorkload = `
-type Atom terminal
+const typedFrameLayoutOperatorsRuleWorkload = `type Atom terminal
 type Post struct { X Expr, Items []Match, N int, Missing *Match }
 type Expr = Atom | Post
-def main: Expr = e:expr $$ -> $e
-def expr: Expr = pratt {
+rule main Expr = e:expr $$ => $e
+rule expr Expr = operators {
     skip " "*
     operand atom
-    level { postfix (_|_ ignored:@"z") / "[" items:(x:@(?a-z) [len($x)==1] -","){3} "]"
-        -> new Post{X:$lhs, Items:map($items,(e)=>$e.x), N:len($items), Missing:$ignored} }
+    level {
+        postfix _|_ ignored:"z" #atomic / "[" items:(x:[a-z] #atomic {len($x) == 1} -",") #repeat(3) "]" => Post{X: $lhs, Items: map($items, (e) => $e.x), N: len($items), Missing: $ignored}
+    }
 }
-def atom: Atom = "a"
+rule atom Atom = "a"
 `
 
 // This measures generation separately from matching, using the same source
@@ -64,7 +62,7 @@ func BenchmarkTypedFrameLayoutGeneration(b *testing.B) {
 	opts := GenOptions{Package: "layoutfixture", Start: "main", Types: true, Recognize: true,
 		disableTypedFrameLayouts: os.Getenv("PEGO_REFERENCE_FRAME_LAYOUTS") == "1"}
 	for _, c := range []struct{ name, src string }{
-		{"lr", typedFrameLayoutLRWorkload}, {"pratt", typedFrameLayoutPrattWorkload},
+		{"lr", typedFrameLayoutLRWorkload}, {"operatorsRule", typedFrameLayoutOperatorsRuleWorkload},
 		{"calculator", string(calculator)}, {"typescript", string(typescript)},
 	} {
 		b.Run(c.name, func(b *testing.B) {

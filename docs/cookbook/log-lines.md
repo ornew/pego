@@ -1,4 +1,4 @@
-# Parse log lines fast
+# Parse Log Lines Fast
 
 **Problem.** A service writes one line per request, and you want to read a few fields of millions of lines, or only
 check that every line is well formed. You want it fast, and you want typed values, not a tree to search.
@@ -31,18 +31,18 @@ type Line struct {
 }
 type Log struct { Lines []Line }
 
-def main: Log = ls:line* $$ -> new Log{Lines: $ls}
+rule main Log = ls:line* $$ => Log{Lines: $ls}
 
-def line: Line = t:time " " l:severity " " s:service " " m:method " " p:path " " st:status " " ms:millis "ms\n"
-    -> new Line{Time: $t, Level: $l, Service: $s, Method: $m, Path: $p, Status: $st, Millis: $ms}
+rule line Line = t:time " " l:severity " " s:service " " m:method " " p:path " " st:status " " ms:millis "ms\n"
+    => Line{Time: $t, Level: $l, Service: $s, Method: $m, Path: $p, Status: $st, Millis: $ms}
 
-def time: Time = (?0-9){4} "-" (?0-9){2} "-" (?0-9){2} "T" (?0-9){2} ":" (?0-9){2} ":" (?0-9){2} "Z"
-def severity: Level = "DEBUG" / "INFO" / "WARN" / "ERROR"
-def service: Service = (?a-z\-)+
-def method: Method = "GET" / "POST" / "PUT" / "DELETE"
-def path: Path = (?^ \n)+
-def status: Status = (?0-9){3}
-def millis: Millis = (?0-9)+
+rule time Time = [0-9] #repeat(4) "-" [0-9] #repeat(2) "-" [0-9] #repeat(2) "T" [0-9] #repeat(2) ":" [0-9] #repeat(2) ":" [0-9] #repeat(2) "Z"
+rule severity Level = "DEBUG" / "INFO" / "WARN" / "ERROR"
+rule service Service = [a-z\-]+
+rule method Method = "GET" / "POST" / "PUT" / "DELETE"
+rule path Path = [^ \n]+
+rule status Status = [0-9] #repeat(3)
+rule millis Millis = [0-9]+
 ```
 
 Generate the parser with `-types` (Go types for the grammar's types and `ParseAST`) and `-recognize` (`Recognize`).
@@ -129,10 +129,10 @@ printf '2026-10-09T11:12:41Z INFO api GET /x 200 12ms\n2026-10-09T11:12:41Z INFO
 ```
 
 ```text
-2:40: syntax error: expected (?0-9)
+2:40: syntax error: expected [0-9]
 ```
 
-## How it works
+## How It Works
 
 - **A generated parser is the fast one.** `pego gen` writes a Go file with no dependency on PEGO. With `-types`, every
   rule here has a Go type of its own, so `ParseAST` builds `*Line` values directly, without the generic nodes `Parse`
@@ -142,7 +142,7 @@ printf '2026-10-09T11:12:41Z INFO api GET /x 200 12ms\n2026-10-09T11:12:41Z INFO
 - **`Recognize` only checks.** If all you need is "is this file well formed", `logparser.Recognize(text)` returns the
   same error as `ParseAST` without building anything.
 
-## How fast
+## How Fast
 
 A benchmark in the same directory parses 100,000 lines (5.7 MB) of the same shape, once per iteration, with each entry
 point in turn (`b.Loop()`, `b.SetBytes(len(input))`): `p.Parse` and `p.Parse(input, pego.RecognizeOnly())` of the engine

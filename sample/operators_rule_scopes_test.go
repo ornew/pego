@@ -12,9 +12,13 @@ import (
 	"github.com/ornew/pego/sample"
 )
 
-const scopeNoneLevels = `def e=pratt { operand "a" level { infix none "<" } level { infix none "=" } }`
+const scopeNoneLevels = `rule e = operators {
+    operand "a"
+    level { infix none "<" }
+    level { infix none "=" }
+}`
 
-func TestSamplePrattRHSScope(t *testing.T) {
+func TestSampleOperatorsRuleRHSScope(t *testing.T) {
 	for _, c := range []struct {
 		name, body, rules, input string
 		valid                    bool
@@ -22,28 +26,82 @@ func TestSamplePrattRHSScope(t *testing.T) {
 		{"nested then enclosing", "e", scopeNoneLevels, "a<a=a=a", true},
 		{"short control", "e", scopeNoneLevels, "a<a=a", true},
 		{"three levels", "e", scopeNoneLevels[:len(scopeNoneLevels)-1] + ` level { infix none ":" } }`, "a<a=a:a:a", true},
-		{"prefix RHS", "e", `def e=pratt { operand "a" level { prefix "~" infix none "<" } level { infix none "=" } }`, "~a=a=a", true},
-		{"nested prefixes", "e", `def e=pratt { operand "a" level { prefix "~" } level { prefix "@" } level { infix none ":" } }`, "~@a:a:a:a", true},
-		{"restricted prefix", "e(tight)", `def e=pratt { operand "a" level { prefix "~" infix none "<" } level tight { infix none "=" } }`, "~a=a=a", true},
-		{"explicit inner call", "e", `def e=pratt { operand "(" inner ")" / "a" level { infix none "<" } level { infix none "=" } } def inner=e`, "a<a=(a=a)", true},
-		{"right RHS same level", "e", `def e=pratt { operand "a" level { infix right "^" infix none "=" } }`, "a^a=a=a", true},
-		{"left resets same frame", "e", `def e=pratt { operand "a" level { infix none "=" infix left "+" } }`, "a=a+a=a", true},
-		{"right resets same frame", "e", `def e=pratt { operand "a" level { infix none "=" infix right "+" } }`, "a=a+a=a", true},
-		{"loose reset", "e", `def e=pratt { operand "a" level { infix left "|" } level { infix none "<" } level { infix none "=" } }`, "a<a=a|a<a=a", true},
-		{"inner postfix preserves parent", "e", `def e=pratt { operand "a" level { infix none "<" } level { infix none "=" postfix "!" } }`, "a<a=a!<a", false},
-		{"postfix reset", "e", `def e=pratt { operand "a" level { infix none "<" } level { infix none "=" postfix "!" } }`, "a<a=a=a!=a", true},
+		{"prefix RHS", "e", `rule e = operators {
+    operand "a"
+    level { prefix "~"; infix none "<" }
+    level { infix none "=" }
+}`, "~a=a=a", true},
+		{"nested prefixes", "e", `rule e = operators {
+    operand "a"
+    level { prefix "~" }
+    level { prefix "@" }
+    level { infix none ":" }
+}`, "~@a:a:a:a", true},
+		{"restricted prefix", "level(e, tight)", `rule e = operators {
+    operand "a"
+    level { prefix "~"; infix none "<" }
+    level tight { infix none "=" }
+}`, "~a=a=a", true},
+		{"explicit inner call", "e", `rule e = operators {
+    operand "(" inner ")" / "a"
+    level { infix none "<" }
+    level { infix none "=" }
+}
+rule inner = e`, "a<a=(a=a)", true},
+		{"right RHS same level", "e", `rule e = operators {
+    operand "a"
+    level { infix right "^"; infix none "=" }
+}`, "a^a=a=a", true},
+		{"left resets same frame", "e", `rule e = operators {
+    operand "a"
+    level { infix none "="; infix left "+" }
+}`, "a=a+a=a", true},
+		{"right resets same frame", "e", `rule e = operators {
+    operand "a"
+    level { infix none "="; infix right "+" }
+}`, "a=a+a=a", true},
+		{"loose reset", "e", `rule e = operators {
+    operand "a"
+    level { infix left "|" }
+    level { infix none "<" }
+    level { infix none "=" }
+}`, "a<a=a|a<a=a", true},
+		{"inner postfix preserves parent", "e", `rule e = operators {
+    operand "a"
+    level { infix none "<" }
+    level { infix none "="; postfix "!" }
+}`, "a<a=a!<a", false},
+		{"postfix reset", "e", `rule e = operators {
+    operand "a"
+    level { infix none "<" }
+    level { infix none "="; postfix "!" }
+}`, "a<a=a=a!=a", true},
 		{"caller boundary", `e "=" e`, scopeNoneLevels, "a=a=a", true},
-		{"Unicode trivia", "e", `def e=pratt { skip " "* operand "α" level { infix none "<" } level { infix none "=" } }`, " α < α = α = α", true},
-		{"past64 levels", "e", `def e=pratt { operand "a" ` + strings.Repeat("level {} ", 69) + `level { infix none "<" } level { infix none "=" } }`, "a<a=a=a", true},
+		{"Unicode trivia", "e", `rule e = operators {
+    skip " "*
+    operand "α"
+    level { infix none "<" }
+    level { infix none "=" }
+}`, " α < α = α = α", true},
+		{"past64 levels", "e", `rule e = operators { operand "a"; ` + strings.Repeat("level {}; ", 69) + `level { infix none "<" }; level { infix none "=" } }`, "a<a=a=a", true},
 		{"nested repeated root none", "e", scopeNoneLevels, "a<a=a=a=a", false},
 		{"standalone none", "e", scopeNoneLevels, "a=a=a", false},
 		{"three level repeated", "e", scopeNoneLevels[:len(scopeNoneLevels)-1] + ` level { infix none ":" } }`, "a:a:a", false},
-		{"prefix repeated outer", "e", `def e=pratt { operand "a" level { prefix "~" } level { infix none "=" } }`, "~a=a=a=a", false},
-		{"invalid explicit inner", "e", `def e=pratt { operand "(" inner ")" / "a" level { infix none "<" } level { infix none "=" } } def inner=e`, "a<a=(a=a=a)", false},
+		{"prefix repeated outer", "e", `rule e = operators {
+    operand "a"
+    level { prefix "~" }
+    level { infix none "=" }
+}`, "~a=a=a=a", false},
+		{"invalid explicit inner", "e", `rule e = operators {
+    operand "(" inner ")" / "a"
+    level { infix none "<" }
+    level { infix none "=" }
+}
+rule inner = e`, "a<a=(a=a=a)", false},
 		{"caller repeated", "e \"=\" e", scopeNoneLevels, "a=a=a=a=a", false},
 	} {
 		t.Run(c.name, func(t *testing.T) {
-			p := compile(t, "def main=&("+strconv.Quote(c.input)+" $$) "+c.body+" $$\n"+c.rules)
+			p := compile(t, "rule main = &("+strconv.Quote(c.input)+" $$) "+c.body+" $$\n"+c.rules)
 			for _, unit := range []pego.Unit{pego.CodePoints, pego.Bytes} {
 				for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
 					_, err := p.Parse(c.input, pego.WithUnit(unit), pego.WithBackend(backend))
@@ -82,8 +140,8 @@ func TestSamplePrattRHSScope(t *testing.T) {
 	}
 }
 
-func TestSamplePrattScopesLimits(t *testing.T) {
-	p := compile(t, `def main=&("a<a=a=a" $$) e $$ `+scopeNoneLevels)
+func TestSampleOperatorsRuleScopesLimits(t *testing.T) {
+	p := compile(t, `rule main = &("a<a=a=a" $$) e $$`+"\n"+scopeNoneLevels)
 	for _, opts := range [][]sample.Option{
 		{sample.WithBudget(1)}, {sample.WithMaxRepeat(2)},
 	} {

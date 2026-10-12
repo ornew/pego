@@ -509,7 +509,7 @@ func (t *typedGen) readsFields() bool {
 			switch x := x.(type) {
 			case *grammar.Predicate:
 				term(x.Term)
-			case *grammar.Pratt:
+			case *grammar.OperatorsRule:
 				for _, o := range x.Operands {
 					expr(o.Expr)
 					if o.Action != nil {

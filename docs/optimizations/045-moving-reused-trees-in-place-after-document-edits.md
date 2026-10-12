@@ -1,4 +1,4 @@
-# 45. Moving reused trees in place after document edits
+# 45. Moving Reused Trees in Place After Document Edits
 
 - A `Document` reparse copied the node tree of every reused result after an edit with shifted positions
   (`shiftNode`), so it allocated in proportion to everything after the edit. Nodes are now moved in place

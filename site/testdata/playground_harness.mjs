@@ -74,7 +74,7 @@ export async function playground({ state, app, decode = decodeState, encode = en
     navigator: { clipboard: { writeText: async (text) => copies.push(text) } },
     window: { addEventListener: (name, fn) => { listeners[name] = fn; } },
     history: { replaceState: (_, __, hash) => { location.hash = hash; writes.push(hash); } },
-    fetch: fetchExamples || (async () => ({ json: async () => [{ name: "sample", grammar: 'def main = "a"', input: "a" }] })),
+    fetch: fetchExamples || (async () => ({ json: async () => [{ name: "sample", grammar: 'rule main = "a"', input: "a" }] })),
     setTimeout: (fn, delay) => { timers.set(++timerID, { fn, delay }); return timerID; },
     clearTimeout: (id) => timers.delete(id),
   });

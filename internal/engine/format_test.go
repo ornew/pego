@@ -8,11 +8,11 @@ import (
 
 func TestFormatPreservesMinusSemantics(t *testing.T) {
 	for _, src := range []string{
-		`def main=- -"a" $$`,
-		`def main=(- -"a" / "b") $$`,
-		`def main=(- -- "a" "b" / "a" "c") $$`,
-		`def main="a" [(- -1) == 1] $$`,
-		"type P struct { N int }\ndef main:P=\"a\" $$ -> new P{N:- -1}",
+		`rule main = - -"a" $$`,
+		`rule main = (- -"a" / "b") $$`,
+		`rule main = (- -- "a" "b" / "a" "c") $$`,
+		`rule main = "a" {- -1 == 1} $$`,
+		"type P struct { N int }\nrule main P = \"a\" $$ => P{N: - -1}",
 	} {
 		t.Run(src, func(t *testing.T) {
 			for _, options := range []Options{{}, {DisableMemo: true}} {

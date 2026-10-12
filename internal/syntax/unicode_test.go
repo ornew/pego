@@ -11,14 +11,14 @@ import (
 
 func TestUnicodeScalarEscapes(t *testing.T) {
 	for _, escape := range []string{`\uD800`, `\uDBFF`, `\uDC00`, `\uDFFF`, `\u{D800}`, `\u{DFFF}`, `\u{110000}`, `\u{7FFFFFFF}`, `\u{80000000}`, `\u{FFFFFFFF}`, `\u{100000000}`, `\u{FFFFFFFFFFFFFFFF}`} {
-		for _, expr := range []string{`"` + escape + `"`, `(?` + escape + `)`, `(?^` + escape + `)`} {
+		for _, expr := range []string{`"` + escape + `"`, `[` + escape + `]`, `[^` + escape + `]`} {
 			t.Run(expr, func(t *testing.T) {
 				if e, err := ParseExpr(expr); err == nil || e != nil {
 					t.Fatalf("accepted invalid escape: %v, %v", e, err)
 				}
 			})
 		}
-		for _, source := range []string{`def main="x" -> "` + escape + `"`, `def main=_|_ #error(message="` + escape + `")`} {
+		for _, source := range []string{`rule main = "x" => "` + escape + `"`, `rule main = _|_ @error(message="` + escape + `")`} {
 			if g, err := Parse(source); err == nil || g != nil {
 				t.Fatalf("accepted invalid escape in term: %v, %v", g, err)
 			}
@@ -34,7 +34,7 @@ func TestUnicodeScalarEscapes(t *testing.T) {
 			spellings = append(spellings, fmt.Sprintf(`\u%04X`, r))
 		}
 		for _, escape := range spellings {
-			for _, source := range []string{`"` + escape + `"`, `(?` + escape + `)`} {
+			for _, source := range []string{`"` + escape + `"`, `[` + escape + `]`} {
 				e, err := ParseExpr(source)
 				if err != nil {
 					t.Fatalf("valid scalar %U: %v", r, err)
@@ -59,16 +59,16 @@ func TestUnicodeScalarEscapes(t *testing.T) {
 
 func TestUnicodeScalarEscapeDiagnostic(t *testing.T) {
 	for _, escape := range []string{`\uD800`, `\u{110000}`, `\u{FFFFFFFF}`} {
-		_, errs := ParsePartial(`def main="😀` + escape + `"` + "\ndef after=\"ok\"")
-		if len(errs) != 1 || errs[0].Pos != (grammar.Pos{Line: 1, Col: 12}) || errs[0].End != (grammar.Pos{Line: 1, Col: 12 + len(escape)}) || !strings.Contains(errs[0].Msg, "invalid unicode escape") {
+		_, errs := ParsePartial(`rule main = "😀` + escape + `"` + "\nrule after = \"ok\"")
+		if len(errs) != 1 || errs[0].Pos != (grammar.Pos{Line: 1, Col: 15}) || errs[0].End != (grammar.Pos{Line: 1, Col: 15 + len(escape)}) || !strings.Contains(errs[0].Msg, "invalid unicode escape") {
 			t.Fatalf("%s: diagnostics %v", escape, errs)
 		}
 	}
-	g, err := Parse("def main =\n    (?a-z)")
+	g, err := Parse("rule main = (\n    [a-z]\n)")
 	if err != nil {
 		t.Fatal(err)
 	}
-	cc := g.Rules()[0].Expr.(*grammar.CharClass)
+	cc := g.Rules()[0].Expr.(*grammar.Group).Expr.(*grammar.CharClass)
 	cc.Ranges[0].Hi = 0xd800
 	if err, ok := grammar.Validate(g).(*grammar.ValidationError); !ok || err.Pos != (grammar.Pos{Line: 2, Col: 5}) {
 		t.Fatalf("class range position was lost: %v", err)
@@ -77,9 +77,9 @@ func TestUnicodeScalarEscapeDiagnostic(t *testing.T) {
 
 func BenchmarkUnicodeEscapeSyntax(b *testing.B) {
 	for _, tc := range []struct{ name, source string }{
-		{"Plain", `def main="` + strings.Repeat("a", 100) + `"`},
-		{"String", `def main="` + strings.Repeat(`\u{1F600}`, 100) + `"`},
-		{"Classes", `def main=` + strings.Repeat(`(?\uD7FF-\uE000) `, 100)},
+		{"Plain", `rule main = "` + strings.Repeat("a", 100) + `"`},
+		{"String", `rule main = "` + strings.Repeat(`\u{1F600}`, 100) + `"`},
+		{"Classes", `rule main = ` + strings.Repeat(`[\uD7FF-\uE000] `, 100)},
 	} {
 		b.Run(tc.name, func(b *testing.B) {
 			b.ReportAllocs()

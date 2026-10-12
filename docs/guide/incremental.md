@@ -1,4 +1,4 @@
-# Incremental parsing
+# Incremental Parsing
 
 `Parser.Parse` parses a whole text from scratch. An editor, a language server or a live preview parses a text that
 changes a little at a time, and most of each new parse repeats the last. A `Document` holds the text and the memo table
@@ -29,7 +29,7 @@ The design is in [design record 007](../design/007-streaming-and-incremental-par
 - [Recipe: an editor loop](#recipe-an-editor-loop)
 - [See also](#see-also)
 
-## The model
+## The Model
 
 A `Document` is a text plus the memo table of its last parse. The memo table has an entry for every rule call: the rule,
 the position, and the result, together with **the range of input the call looked at** (the matched text, plus every
@@ -73,7 +73,7 @@ seeds. The text and options stay available for retry or editing; trace panics
 still propagate to the caller. Ordinary syntax errors and recovered errors are
 completed parse outcomes and keep their reusable caches.
 
-## A walkthrough with `Stats`
+## A Walkthrough With `Stats`
 
 ```go
 package main
@@ -85,10 +85,8 @@ import (
 	"github.com/ornew/pego"
 )
 
-const grammar = `
-def main = line* $$
-def line = (?a-z)+ "\n"
-`
+const grammar = `rule main =  line* $$
+rule line =  [a-z]+ "\n" `
 
 func main() {
 	p, err := pego.CompileSource(grammar, "main")
@@ -128,7 +126,7 @@ parse again                  {Evaluated:0 Reused:1}  (Seq [(Seq ["a" "b"] "\n")@
 edit inside line 2           {Evaluated:2 Reused:3}  (Seq [(Seq ["a" "b"] "\n")@line (Seq ["x" "d"] "\n")@line (Seq ["e" "f"] "\n")@line])@main
 insert a line at the start   {Evaluated:2 Reused:4}  (Seq [(Seq ["z" "z"] "\n")@line (Seq ["a" "b"] "\n")@line (Seq ["x" "d"] "\n")@line (Seq ["e" "f"] "\n")@line])@main
 delete it again              {Evaluated:0 Reused:1}  (Seq [(Seq ["a" "b"] "\n")@line (Seq ["x" "d"] "\n")@line (Seq ["e" "f"] "\n")@line])@main
-break line 1                 {Evaluated:2 Reused:0}  error: 1:2: syntax error: expected "\n", (?a-z)
+break line 1                 {Evaluated:2 Reused:0}  error: 1:2: syntax error: expected "\n", [a-z]
 ```
 
 - **First parse: 5 evaluations.** `main`, three `line`s and the fourth attempt at `line`, which fails at the end of the
@@ -169,9 +167,8 @@ func js(n *pego.Node) string {
 }
 
 func main() {
-	p, _ := pego.CompileSource(`
-def main = line* $$
-def line = (?a-z)+ "\n"`, "main")
+	p, _ := pego.CompileSource(`rule main =  line* $$
+rule line =  [a-z]+ "\n" `, "main")
 	d, _ := p.NewDocument(strings.Repeat("ab\n", 100))
 	t1, _ := d.Parse()
 	snapshot := t1.Clone()
@@ -198,7 +195,7 @@ Use it only for such comparisons, or keep a `Clone`, which copies the whole tree
 shared) and costs about as much memory as the tree. `Parse` writes the nodes it moves, so do not read an earlier
 tree while `Parse` runs.
 
-## What is reused, and why
+## What Is Reused, and Why
 
 For an edit of `[start, end)`, and a memo entry that examined `[from, examined)`:
 
@@ -235,7 +232,7 @@ and its expectations. When the repetition runs again after one edit, the element
 are, the parse continues from there, and as soon as an element ends where an old element after the edit began (moved by
 the edit), the rest of the old run is taken too, its nodes moved in place. Each reused element counts in `Reused`. The
 conditions are those of memo entries, applied per element; in addition, a repetition is not resumed when an element has
-a predicate (`[...]`) or calls a rule that reads variables, when its run recovered an error or used a left recursion
+a Predicate Action (`{...}`) or calls a rule that reads variables, when its run recovered an error or used a left recursion
 that was still growing, and its elements are not moved past an edit that changed the length when their values may
 contain positions. Every backend resumes repetitions.
 
@@ -244,7 +241,7 @@ rule returns entirely from the memo. It does not consume the next edit's opportu
 still eligible only across one edit; two edits without an intervening parse do not promote an older run.
 An aborted parse and an edit-log reset discard the records together with the memo.
 
-## Writing grammars that reuse well
+## Writing Grammars That Reuse Well
 
 The table shows what one edit costs after a first parse, for eight grammars of a 1,000-line `item_a = 0` file. The
 program inserts a digit on line 500 and prints `Stats`:
@@ -279,58 +276,50 @@ func lines(corrupt int) string {
 var variants = []struct {
 	name, grammar, text string
 }{
-	{"one rule per line", `
-def main = (line / blank)* $$
-def line = name " = " num "\n"
-def name = @(?a-z_)+
-def num = @(?0-9)+
-def blank = "\n"`, lines(-1)},
+	{"one rule per line", `rule main =  (line / blank)* $$
+rule line =  name " = " num "\n"
+rule name =  [a-z_]+ #atomic
+rule num =  [0-9]+ #atomic
+rule blank =  "\n" `, lines(-1)},
 
-	{"line start anchor ^", `
-def main = (line / blank)* $$
-def line = ^ name " = " num "\n"
-def name = @(?a-z_)+
-def num = @(?0-9)+
-def blank = "\n"`, lines(-1)},
+	{"line start anchor ^", `rule main =  (line / blank)* $$
+rule line =  ^ name " = " num "\n"
+rule name =  [a-z_]+ #atomic
+rule num =  [0-9]+ #atomic
+rule blank =  "\n" `, lines(-1)},
 
-	{"variable read in each line", `
-def main = [x = 1] (line / blank)* $$
-def line = name " = " num [x == 1] "\n"
-def name = @(?a-z_)+
-def num = @(?0-9)+
-def blank = "\n"`, lines(-1)},
+	{"variable read in each line", `rule main = {x := 1} (line / blank)* $$
+rule line =  name " = " num {x == 1} "\n"
+rule name =  [a-z_]+ #atomic
+rule num =  [0-9]+ #atomic
+rule blank =  "\n" `, lines(-1)},
 
-	{"startPos in an action", `
-type At struct { Pos int, Text Match }
-def main = (line / blank)* $$
-def line = name " = " n:num "\n"
-def name = @(?a-z_)+
-def num: At = t:@(?0-9)+ -> new At{Pos: $t.startPos, Text: $t}
-def blank = "\n"`, lines(-1)},
+	{"startPos in an action", `type At struct { Pos int, Text Match }
+rule main =  (line / blank)* $$
+rule line =  name " = " n:num "\n"
+rule name =  [a-z_]+ #atomic
+rule num At =  t:[0-9]+ #atomic => At{Pos: $t.startPos, Text: $t}
+rule blank =  "\n" `, lines(-1)},
 
-	{"right-recursive list", `
-def main = lines $$
-def lines = line lines?
-def line = name " = " num "\n"
-def name = @(?a-z_)+
-def num = @(?0-9)+`, lines(-1)},
+	{"right-recursive list", `rule main =  lines $$
+rule lines =  line lines?
+rule line =  name " = " num "\n"
+rule name =  [a-z_]+ #atomic
+rule num =  [0-9]+ #atomic `, lines(-1)},
 
-	{"lookahead to the end of text", `
-def main = (line / blank)* $$
-def line = name " = " num "\n" &((?^!)* ($$ / "!"))
-def name = @(?a-z_)+
-def num = @(?0-9)+
-def blank = "\n"`, lines(-1)},
+	{"lookahead to the end of text", `rule main =  (line / blank)* $$
+rule line =  name " = " num "\n" &([^!]* ($$ / "!"))
+rule name =  [a-z_]+ #atomic
+rule num =  [0-9]+ #atomic
+rule blank =  "\n" `, lines(-1)},
 
-	{"#recover, bad line 900", `
-def main = (line / blank)* $$
-def line = (name " = " num "\n") #recover(skip=(?^\n)* "\n")
-def name = @(?a-z_)+
-def num = @(?0-9)+
-def blank = "\n"`, lines(900)},
+	{"#recover, bad line 900", `rule main =  (line / blank)* $$
+rule line =  (name " = " num "\n") #recover(skip=[^\n]* "\n")
+rule name =  [a-z_]+ #atomic
+rule num =  [0-9]+ #atomic
+rule blank =  "\n" `, lines(900)},
 
-	{"everything in one rule", `
-def main = (@(?a-z_)+ " = " @(?0-9)+ "\n")* $$`, lines(-1)},
+	{"everything in one rule", `rule main =  ([a-z_]+ #atomic " = " [0-9]+ #atomic "\n")* $$ `, lines(-1)},
 }
 
 func main() {
@@ -394,7 +383,7 @@ everything in one rule       evaluated 1        evaluated 1     reused 999
   a line (a rule-less expression, a list) is parsed again with its line. Rules remain the unit of reuse everywhere else,
   and `Stats` counts rule bodies, not work: judge a grammar by time as well.
 
-## Performance and limits
+## Performance and Limits
 
 Measured with this program (Apple silicon, Go 1.27.1, averages over repeated runs; it edits one digit in the middle of
 the text and checks that the incremental tree equals a fresh parse):
@@ -421,29 +410,27 @@ var grammars = []struct {
 	name, grammar string
 	line          func(i int) string
 }{
-	{"settings, one rule per line", `
-def main = (setting / blank)* $$
-def setting = key " = " value "\n"
-def key = @(?a-z_)+
-def value = @(?^\n)+
-def blank = "\n"`,
+	{"settings, one rule per line", `rule main =  (setting / blank)* $$
+rule setting =  key " = " value "\n"
+rule key =  [a-z_]+ #atomic
+rule value =  [^\n]+ #atomic
+rule blank =  "\n" `,
 		func(i int) string { return fmt.Sprintf("key_%c = value %d\n", 'a'+i%26, i) }},
 
-	{"calc (Pratt expressions)", `
-def main = (assign / blank)* $$
-def assign = n:name " = " e:expr "\n"
-def name = @(?a-z_)+
-def blank = "\n"
-def expr = pratt {
-    operand @(?0-9)+
-    operand "(" x:expr ")" -> $x
+	{"calc (Operators Rule expressions)", `
+rule main =  (assign / blank)* $$
+rule assign =  n:name " = " e:expr "\n"
+rule name =  [a-z_]+ #atomic
+rule blank =  "\n"
+rule expr = operators {
+    operand [0-9]+ #atomic
+    operand "(" x:expr ")" => $x
     level { infix left "+" / "-" }
     level { infix left "*" / "/" }
 }`,
 		func(i int) string { return fmt.Sprintf("x_%c = 1+2*(3-%d)*4/5+6\n", 'a'+i%26, i%10) }},
 
-	{"settings, everything in one rule", `
-def main = (@(?a-z_)+ " = " @(?^\n)+ "\n" / "\n")* $$`,
+	{"settings, everything in one rule", `rule main =  ([a-z_]+ #atomic " = " [^\n]+ #atomic "\n" / "\n")* $$ `,
 		func(i int) string { return fmt.Sprintf("key_%c = value %d\n", 'a'+i%26, i) }},
 }
 
@@ -542,7 +529,7 @@ settings, one rule per line
    10000 lines: Parse 2.47ms   NewDocument+Parse 5.21ms   Edit 30µs     reparse 70µs     (evaluated 3, reused 10001) equal=true
   100000 lines: Parse 25.06ms  NewDocument+Parse 41.75ms  Edit 330µs    reparse 610µs    (evaluated 3, reused 100001) equal=true
   memory at 100000 lines (1.9 MiB of text): tree from Parse 27 MiB, Document with its tree 151 MiB
-calc (Pratt expressions)
+calc (Operators Rule expressions)
     1000 lines: Parse 1.8ms    NewDocument+Parse 2.24ms   Edit 10µs     reparse 30µs     (evaluated 3, reused 1002) equal=true
    10000 lines: Parse 15.55ms  NewDocument+Parse 18.74ms  Edit 40µs     reparse 190µs    (evaluated 3, reused 10002) equal=true
   100000 lines: Parse 158.72ms NewDocument+Parse 169.44ms Edit 360µs    reparse 1.85ms   (evaluated 3, reused 100002) equal=true
@@ -560,7 +547,7 @@ Reading the table:
   linear in the size of the document. `Edit` splices the text and its offset table, and in the memo table touches only
   the entries at the edited positions (the others are brought up to date when they are next looked up): about 0.3 ms
   at 100,000 lines, most of it copying the text.
-- **The gain depends on how much a reused unit costs.** With the Pratt-expression lines, `Edit` and the reparse together
+- **The gain depends on how much a reused unit costs.** With the Operators Rule-expression lines, `Edit` and the reparse together
   take about 2 ms against 159 ms for a fresh parse at 100,000 lines. With the cheap `key = value` lines, about 1 ms
   against 25 ms. Everything in one rule gains as much: its repetition resumes.
 - **The first parse is slower than `Parse`** (up to about 1.5 times with cheap rules, close to equal otherwise), because
@@ -669,7 +656,7 @@ Limits to keep in mind:
 - Not available with `RecognizeOnly`, with [streams](streaming.md), or in generated Go parsers.
 - A `Document` is single-threaded. Parse in the goroutine that owns it.
 
-## Recipe: an editor loop
+## Recipe: An Editor Loop
 
 An `Editor` wraps a `Document`, applies each change, reparses, keeps the last tree that parsed, and reports what the
 parse cost. It simulates a user opening a blank line in the middle of a 1,000-line settings file and typing a new setting
@@ -688,19 +675,17 @@ import (
 	"github.com/ornew/pego"
 )
 
-const grammar = `
-package settings
+const grammar = `package settings
 
 type Setting struct { Key Key, Value Value }
 type Key terminal
 type Value terminal
 
-def main = (setting / blank)* $$
-def setting: Setting = k:key " = " v:value "\n" -> new Setting{Key: $k, Value: $v}
-def key: Key = @(?a-z_)+
-def value: Value = @(?0-9)+
-def blank = "\n"
-`
+rule main =  (setting / blank)* $$
+rule setting Setting =  k:key " = " v:value "\n" => Setting{Key: $k, Value: $v}
+rule key Key =  [a-z_]+ #atomic
+rule value Value =  [0-9]+ #atomic
+rule blank =  "\n" `
 
 // lineStart returns the position, in code points, of the first character of the 1-based line.
 func lineStart(text string, line int) int {
@@ -845,10 +830,10 @@ Adapting it to a real editor:
   was parsed from), keep `node.Clone()` instead.
 - If something looks wrong, compare with `Parser.Parse` on `doc.Text()`. The two must agree.
 
-## See also
+## See Also
 
 - [Streaming](streaming.md): input too big to hold.
 - [Linting grammars](linting.md): the `hint` findings that point at grammars that reuse poorly.
-- [Errors and recovery](errors-and-recovery.md): `#error`, `#recover` and the shape of `SyntaxError`.
+- [Errors and recovery](errors-and-recovery.md): `@error`, `#recover` and the shape of `SyntaxError`.
 - [Runtime](runtime.md): backends, position units and the other parse options.
 - [Performance](../performance.md): current benchmark results and how to measure your grammar.

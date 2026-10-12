@@ -1,4 +1,4 @@
-# 75. Exclude absent expectations before scanning
+# 75. Exclude Absent Expectations Before Scanning
 
 - Each active expectation record in the Go engine and generated Go runtime
   keeps a 64-bit membership filter. An unsigned multiplicative hash selects
@@ -39,7 +39,7 @@
   observed cumulative medians: the filter itself allocates nothing, while
   GC timing and scratch-pool reuse change allocation traffic. Do not
   attribute all measured byte differences to a smaller object layout.
-- JSON and Pratt Node controls range 0.956–1.018× across the engine and
+- JSON and Operators Rule Node controls range 0.956–1.018× across the engine and
   generated paths, with overlapping ranges. Generated typed JSON in the
   root workload takes 0.927× with disjoint ranges; the parser module's
   different JSON workload takes 0.925× with overlapping ranges. The tiny
@@ -73,7 +73,7 @@
   JSON controls with
   `cd parsers/json && go test -run '^$' -bench '^(BenchmarkSmallParseAST|BenchmarkParseAST)$' -benchtime=300ms -count=1`;
   and engine/recovery controls with
-  `cd bench && go test -run '^$' -bench '^BenchmarkParse$/(JSON|Arith_Pratt|Recovery)$' -benchtime=300ms -count=1`.
+  `cd bench && go test -run '^$' -bench '^BenchmarkParse$/(JSON|Arith_OperatorsRule|Recovery)$' -benchtime=300ms -count=1`.
   Use the final benchmark sources on both versions, regenerate standalone
   parsers, and alternate five pairs of the prebuilt binaries. Focused raw
   records stay local; the clean-commit full-suite checkpoint below provides

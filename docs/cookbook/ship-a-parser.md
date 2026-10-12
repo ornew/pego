@@ -1,4 +1,4 @@
-# Ship a parser and keep it up to date
+# Ship a Parser and Keep It Up to Date
 
 **Problem.** You wrote a grammar and want your program, or your library, to use it without making users depend on PEGO,
 and without a stale parser after somebody changes the grammar.
@@ -14,14 +14,14 @@ type Num terminal
 type Ident terminal
 type Version struct { Major Num, Minor Num, Patch Num, Pre *Ident }
 
-def main: Version = v:version $$ -> $v
+rule main Version = v:version $$ => $v
 
-def version: Version = major:num "." minor:num "." patch:num pre:pre?
-    -> new Version{Major: $major, Minor: $minor, Patch: $patch, Pre: $pre}
-def pre: Ident = -"-" i:ident -> $i
+rule version Version = major:num "." minor:num "." patch:num pre:pre?
+    => Version{Major: $major, Minor: $minor, Patch: $patch, Pre: $pre}
+rule pre Ident = -"-" i:ident => $i
 
-def num: Num = "0" / (?1-9) (?0-9)*
-def ident: Ident = (?a-z0-9.)+
+rule num Num = "0" / [1-9] [0-9]*
+rule ident Ident = [a-z0-9.]+
 ```
 
 The layout is a module with the grammar, the code that uses the parser, and the generated parser in a package of its
@@ -135,7 +135,7 @@ FAIL	example.com/ship	0.652s
 FAIL
 ```
 
-## How it works
+## How It Works
 
 - **No dependency at run time.** `go list -deps .` for the program lists no package of PEGO: none is linked into it.
   `go.mod` still requires PEGO, for the tool and for the test.
@@ -148,7 +148,7 @@ FAIL
 - **The same tree.** The generated `Parse` returns the same tree and errors as the engine for the same grammar, so you
   can develop with the engine and the `pego` tools (`pego parse`, `pego trace`) and ship the generated code.
 
-## When the grammar must stay data
+## When the Grammar Must Stay Data
 
 If you want the grammar to be a file you load, not code (users supply it, or it changes without a rebuild), compile it
 once to a `.pegoc` file and embed or ship that, which skips parsing and checking the grammar at start-up:

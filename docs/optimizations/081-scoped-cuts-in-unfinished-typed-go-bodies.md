@@ -1,8 +1,8 @@
-# 81. Scoped cuts in unfinished typed Go bodies
+# 81. Scoped Cuts in Unfinished Typed Go Bodies
 
-- Eligible cut-bearing left-recursion leader bodies and Pratt operand,
+- Eligible cut-bearing left-recursion leader bodies and Operators Rule operand,
   operator and trivia matchers now use the unfinished structural emitter. The
-  runtime retains capture frames, left-recursion growth, Pratt selection and
+  runtime retains capture frames, left-recursion growth, Operators Rule selection and
   action finalization. Node eligibility, ordinary typed cuts and TypeScript
   output are unchanged.
 - The emitter initializes each body's lexical cut state from the incoming
@@ -15,12 +15,12 @@
   or matching-time selector. Recovery bodies have a separate route in
   [record 83](083-inline-typed-recovery-bodies.md); recovery and other bodies
   whose frame layouts still cannot be matched remain on general dispatch.
-  [Record 82](082-match-typed-direct-frame-layouts.md) enables additional LR, Pratt and repetition layouts from the
+  [Record 82](082-match-typed-direct-frame-layouts.md) enables additional LR, Operators Rule and repetition layouts from the
   general emitter metadata.
 - The 14-case parity corpus checks ordinary cut expressions and actions in
-  Pratt operands, left-recursion captures and repetitions, Pratt longest-match
+  Operators Rule operands, left-recursion captures and repetitions, Operators Rule longest-match
   and trivia behavior, prefix-part cuts, rollback, nested scopes and
-  expectation isolation. Existing cut-free LR/Pratt parity suites also pass.
+  expectation isolation. Existing cut-free LR/Operators Rule parity suites also pass.
   Workload tests compare trees, values and errors across direct/reference
   routes, parser reuse, manual parser reuse, returned AST ownership, both
   position units and Node conversion.
@@ -34,15 +34,15 @@
   | Left recursion | 1 | Bytes | 0.991× | 0.950–1.013× |
   | Left recursion | 128 | CodePoints | 0.911× | 0.898–0.951× |
   | Left recursion | 128 | Bytes | 0.943× | 0.935–0.981× |
-  | Pratt | 1 | CodePoints | 0.993× | 0.987–1.051× |
-  | Pratt | 1 | Bytes | 1.004× | 1.003–1.040× |
-  | Pratt | 128 | CodePoints | 0.889× | 0.878–0.914× |
-  | Pratt | 128 | Bytes | 0.932× | 0.919–0.977× |
+  | Operators Rule | 1 | CodePoints | 0.993× | 0.987–1.051× |
+  | Operators Rule | 1 | Bytes | 1.004× | 1.003–1.040× |
+  | Operators Rule | 128 | CodePoints | 0.889× | 0.878–0.914× |
+  | Operators Rule | 128 | Bytes | 0.932× | 0.919–0.977× |
 
-  Large captures improve in both grammars and units. The small Pratt Bytes
+  Large captures improve in both grammars and units. The small Operators Rule Bytes
   case is 0.4% slower at the median (paired range 0.3–4.0%). The small
   LR CodePoints case improves by about 4%; the other small cases overlap
-  parity. Allocations remain 11/12 for the large LR/Pratt
+  parity. Allocations remain 11/12 for the large LR/Operators Rule
   inputs, with about 38.6/44.5 KB per operation; small inputs remain at 4/5
   allocations and about 11.9/12.3 KB. These synthetic comparisons do not
   establish a broad parser speedup; generation and compilation are excluded.
@@ -57,7 +57,7 @@ go test ./internal/engine -run '^TestGeneratedTypedFramedCutWorkloads$' -count=1
 Build each fixture as a separate benchmark binary:
 
 ```sh
-for workload in lr pratt; do
+for workload in lr operatorsRule; do
   for variant in direct general; do
     fixture="$PEGO_TYPED_FRAMED_CUT_DIR/$workload/$variant"
     (cd "$fixture" && go test -c -o "$PEGO_TYPED_FRAMED_CUT_DIR/$workload-$variant.test" .)
@@ -75,10 +75,10 @@ for pair in 1 2 3 4 5; do
   else
     first=direct; second=general
   fi
-  for workload in lr pratt; do
+  for workload in lr operatorsRule; do
     for variant in "$first" "$second"; do
       "$PEGO_TYPED_FRAMED_CUT_DIR/$workload-$variant.test" -test.run='^$' \
-        -test.bench='^BenchmarkTyped(LR|Pratt)$' -test.benchtime=300ms -test.benchmem
+        -test.bench='^BenchmarkTyped(LR|OperatorsRule)$' -test.benchtime=300ms -test.benchmem
     done
   done
 done
@@ -86,7 +86,7 @@ done
 
 The LR workload uses `lrInput(n) = "a,b,c," +
 strings.Repeat(";d,e,f,", n)`; `n=1` has two groups and `n=128` has 129.
-The Pratt workload uses `prattInput(n) = "a" +
+The Operators Rule workload uses `operatorsRuleInput(n) = "a" +
 strings.Repeat(" [b,c,d,]", n)`; `n` counts postfix groups after the base
 atom. The measurements compare the current structural route with its
 same-generator per-expression reference, not with a historical parent.

@@ -61,18 +61,18 @@ type matcher func(p *parser) (*Node, bool)
 
 type rule struct {
 	// kinds are the node kinds the rule makes (newRuleKinds).
-	kinds        ruleKinds
-	id           int
-	name         string
-	def          *grammar.RuleDef
-	scope        *scope
-	body         func(p *parser, min int) (*Node, bool)
-	action       grammar.Term
-	bodyIsSeq    bool
-	terminalType string
-	memo         bool
-	leader       bool
-	pratt        *pratt
+	kinds         ruleKinds
+	id            int
+	name          string
+	def           *grammar.RuleDef
+	scope         *scope
+	body          func(p *parser, min int) (*Node, bool)
+	action        grammar.Term
+	bodyIsSeq     bool
+	terminalType  string
+	memo          bool
+	leader        bool
+	operatorsRule *operatorsRule
 	// stream reports that the top level of the rule body has a #stream repetition.
 	stream bool
 	// positional reports that the result may depend on position values (analysis.positional).
@@ -81,7 +81,7 @@ type rule struct {
 	act evaluator
 	// entry is the start of the body in bytecode (only for rules of the bytecode backend).
 	entry int
-	// twin is the value-free twin used for calls from places where the value is discarded (@, -, !,
+	// twin is the value-free twin used for calls from places where the value is discarded (#atomic, -, !,
 	// value-free bodies). It is created for rules that return a CST (no action and no terminal type)
 	// and are not part of a left-recursion cycle (twinOK), when such a call exists. It matches the
 	// same input in the same way, but keeps a separate memo (ids from len(rules) on).
@@ -110,7 +110,7 @@ type rule struct {
 	lean bool
 }
 
-// scope maps capture names to slots. Each rule body, repetition element, and Pratt line has its
+// scope maps capture names to slots. Each rule body, repetition element, and Operators Rule line has its
 // own scope.
 type scope struct {
 	names []string
@@ -178,7 +178,7 @@ type compiler struct {
 	opts Options
 	errs ErrorList
 	rule *rule
-	// noIndex reports that a place where $n is not allowed (a predicate or a Pratt operator action)
+	// noIndex reports that a place where $n is not allowed (a predicate or an Operators Rule operator action)
 	// is being checked.
 	noIndex string
 	descIDs map[string]expID
@@ -229,6 +229,63 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 	if err := grammar.Validate(g); err != nil {
 		e := err.(*grammar.ValidationError)
 		return nil, ErrorList{&Error{Pos: e.Pos, Msg: e.Path + ": " + e.Msg}}
+	}
+	var unsupported ErrorList
+	for _, comment := range g.HeaderComments {
+		unsupported = append(unsupported, &Error{Pos: comment.Pos, Msg: "comments are not allowed inside statement headers"})
+	}
+	checkBlocks := func(term grammar.Term) {
+		walkTerm(term, func(t grammar.Term) {
+			if block, ok := t.(*grammar.Block); ok {
+				unsupported = append(unsupported, &Error{Pos: block.Pos, Msg: "action statement blocks are not implemented"})
+			}
+		})
+	}
+	for _, rd := range g.Rules() {
+		checkBlocks(rd.Action)
+		root := rd.Expr
+		for {
+			group, ok := root.(*grammar.Group)
+			if !ok {
+				break
+			}
+			root = group.Expr
+		}
+		if _, ok := root.(*grammar.OperatorsRule); ok && rd.Action != nil {
+			unsupported = append(unsupported, &Error{Pos: termPos(rd.Action, rd.Pos), Msg: "whole-rule actions are not supported for Operators Rules; use => ... or omit the action"})
+		}
+		walkExpr(rd.Expr, func(e grammar.Expr) {
+			switch e := e.(type) {
+			case *grammar.Predicate:
+				if block, ok := e.Term.(*grammar.Block); ok && len(block.Statements) == 1 {
+					checkBlocks(block.Statements[0])
+				} else {
+					checkBlocks(e.Term)
+				}
+			case *grammar.InlineAction:
+				checkBlocks(e.Action)
+			case *grammar.OperatorsRule:
+				for _, operand := range e.Operands {
+					checkBlocks(operand.Action)
+				}
+				for _, level := range e.Levels {
+					for _, operator := range level.Operators {
+						checkBlocks(operator.Action)
+					}
+				}
+			}
+			if inline, ok := e.(*grammar.InlineAction); ok {
+				unsupported = append(unsupported, &Error{Pos: inline.Pos, Msg: "inline actions are not implemented"})
+			}
+		})
+	}
+	if len(unsupported) != 0 {
+		return nil, unsupported
+	}
+	var normalizationError error
+	g, normalizationError = normalizeAttributes(g)
+	if normalizationError != nil {
+		return nil, normalizationError
 	}
 	prog := &Program{Grammar: g, byName: map[string]*rule{}, types: map[string]grammar.TypeSpec{},
 		descTable: append([]string(nil), fixedDescs...)}
@@ -282,8 +339,8 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 			}
 		}
 		if flags == nil {
-			_, isPratt := r.def.Expr.(*grammar.Pratt)
-			twin = r.action == nil && r.terminalType == "" && !isPratt && !c.an.cyclic[r.name] && !hasStream(r.def.Expr)
+			_, isOperatorsRule := r.def.Expr.(*grammar.OperatorsRule)
+			twin = r.action == nil && r.terminalType == "" && !isOperatorsRule && !c.an.cyclic[r.name] && !hasStream(r.def.Expr)
 		}
 		r.twinOK = twin
 	}
@@ -336,8 +393,8 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 func (c *compiler) compileRule(r *rule) {
 	c.rule = r
 	r.kinds = newRuleKinds(r.name, r.terminalType)
-	if p, ok := r.def.Expr.(*grammar.Pratt); ok {
-		c.compilePratt(r, p)
+	if p, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
+		c.compileOperatorsRule(r, p)
 		return
 	}
 	_, r.bodyIsSeq = r.def.Expr.(*grammar.Seq)
@@ -477,11 +534,11 @@ func hasStream(e grammar.Expr) bool {
 	return found
 }
 
-// noCaptures reports captures inside value-free expressions (@, -, !, skip) as errors.
+// noCaptures reports captures inside value-free expressions (#atomic, -, !, skip) as errors.
 func (c *compiler) noCaptures(e grammar.Expr) {
 	walkExpr(e, func(x grammar.Expr) {
 		if cp, ok := x.(*grammar.Capture); ok {
-			c.errorf(cp.Pos, "capture %s inside @, -, or ! has no effect", cp.Name)
+			c.errorf(cp.Pos, "capture %s inside #atomic, -, or ! has no effect", cp.Name)
 		}
 	})
 }
@@ -823,8 +880,8 @@ func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
 	case *grammar.Attributed:
 		return c.attributed(e, s, build)
 
-	case *grammar.Pratt:
-		c.errorf(e.Pos, "pratt is only allowed as the whole body of a rule")
+	case *grammar.OperatorsRule:
+		c.errorf(e.Pos, "operatorsRule is only allowed as the whole body of a rule")
 		return nil
 	}
 	c.errorf(grammar.Pos{}, "unsupported expression %T", e)
@@ -844,7 +901,7 @@ func anchor(cond func(p *parser) bool, desc expID) matcher {
 // single compiles an expression that matches one character.
 // firstTerminal returns the terminal (a *grammar.Literal or *grammar.CharClass) that the expression
 // e must begin with, if any, and the number of rule calls on the way: e is the terminal, possibly
-// behind sequences, captures, @, - and calls of rules that are neither left-recursive nor Pratt.
+// behind sequences, captures, @, - and calls of rules that are neither left-recursive nor OperatorsRule.
 // When the next character cannot start the terminal, e fails at once, recording only the
 // terminal's expectation and examining only that character (a call memoizes the same failure, and
 // memoization only affects speed), so a choice can skip e: first-character dispatch, done by the
@@ -873,7 +930,7 @@ func firstTerminal(prog *Program, e grammar.Expr, depth int, seen map[string]boo
 		if r == nil || r.leader || seen[e.Name] || r.def == nil {
 			break
 		}
-		if _, pratt := r.def.Expr.(*grammar.Pratt); pratt {
+		if _, operatorsRule := r.def.Expr.(*grammar.OperatorsRule); operatorsRule {
 			break
 		}
 		seen[e.Name] = true
@@ -918,13 +975,13 @@ func (c *compiler) single(build bool, desc expID, accept func(rune) bool) matche
 
 func charClassString(e *grammar.CharClass) string {
 	var b strings.Builder
-	b.WriteString("(?")
+	b.WriteString("[")
 	if e.Negated {
 		b.WriteString("^")
 	}
 	esc := func(r rune) string {
 		switch r {
-		case '-', '(', ')', '?', '^', '\\':
+		case '-', '[', ']', '^', '\\':
 			return `\` + string(r)
 		}
 		s := strconv.QuoteRune(r)
@@ -936,7 +993,7 @@ func charClassString(e *grammar.CharClass) string {
 			b.WriteString("-" + esc(rg.Hi))
 		}
 	}
-	b.WriteString(")")
+	b.WriteString("]")
 	return b.String()
 }
 
@@ -1143,9 +1200,9 @@ func (c *compiler) projectRepeat(e *grammar.Repeat, field string) matcher {
 
 // levelMin returns the minimum binding level of a call with a binding level.
 func (c *compiler) levelMin(e *grammar.Ref, r *rule) int {
-	pr, ok := r.def.Expr.(*grammar.Pratt)
+	pr, ok := r.def.Expr.(*grammar.OperatorsRule)
 	if !ok {
-		c.errorf(e.Pos, "rule %s has no pratt levels", e.Name)
+		c.errorf(e.Pos, "rule %s has no Operators Rule levels", e.Name)
 		return 0
 	}
 	for i, l := range pr.Levels {
@@ -1157,7 +1214,7 @@ func (c *compiler) levelMin(e *grammar.Ref, r *rule) int {
 	return 0
 }
 
-// isStream reports whether the expression is an expression with the #stream attribute.
+// isStream reports whether the expression is an expression with the #stream pragma.
 func isStream(e grammar.Expr) bool {
 	a, ok := e.(*grammar.Attributed)
 	if !ok {

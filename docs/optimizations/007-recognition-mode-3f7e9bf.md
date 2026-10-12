@@ -1,4 +1,4 @@
-# 7. Recognition mode (3f7e9bf)
+# 7. Recognition Mode (3F7e9bf)
 
 - `RecognizeOnly` (`pego parse -check`) runs a separate program derived from the same grammar that builds no values
   and runs no actions, and returns the same syntax errors. Rules whose values predicates read still run normally.

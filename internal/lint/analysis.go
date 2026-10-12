@@ -127,7 +127,7 @@ func newAnalysis(g *grammar.Grammar) *analysis {
 // isEngineNullable reports whether e may succeed without consuming input, as the engine
 // computes it.
 func (a *analysis) isEngineNullable(e grammar.Expr) bool {
-	switch e := e.(type) {
+	switch e := analysisExpr(e).(type) {
 	case *grammar.Ref:
 		return a.engineNullable[e.Name]
 	case *grammar.Literal:
@@ -158,7 +158,7 @@ func (a *analysis) isEngineNullable(e grammar.Expr) bool {
 		return a.isEngineNullable(e.Expr)
 	case *grammar.Attributed:
 		return a.isEngineNullable(e.Expr)
-	case *grammar.Pratt:
+	case *grammar.OperatorsRule:
 		for _, o := range e.Operands {
 			if a.isEngineNullable(o.Expr) {
 				return true
@@ -171,7 +171,7 @@ func (a *analysis) isEngineNullable(e grammar.Expr) bool {
 
 // leftCalls returns the rules that e may call before consuming input, as the engine finds them.
 func (a *analysis) leftCalls(e grammar.Expr, acc []string) []string {
-	switch e := e.(type) {
+	switch e := analysisExpr(e).(type) {
 	case *grammar.Ref:
 		return append(acc, e.Name)
 	case *grammar.Seq:
@@ -215,7 +215,7 @@ func (a *analysis) leftCalls(e grammar.Expr, acc []string) []string {
 				}
 			}
 		}
-	case *grammar.Pratt:
+	case *grammar.OperatorsRule:
 		if e.Skip != nil {
 			acc = a.leftCalls(e.Skip, acc)
 		}
@@ -255,7 +255,7 @@ func (a *analysis) isNullable(e grammar.Expr) bool {
 // set) or at another position. Telling the two apart makes "!$$ x" not nullable when x can only
 // match nothing at the end of the input, as in a line that ends with ("\n" / $$).
 func (a *analysis) nullableAt(e grammar.Expr, end bool) bool {
-	switch e := e.(type) {
+	switch e := analysisExpr(e).(type) {
 	case *grammar.Ref:
 		return a.nullable[b2i(end)][e.Name]
 	case *grammar.Literal:
@@ -294,7 +294,7 @@ func (a *analysis) nullableAt(e grammar.Expr, end bool) bool {
 	case *grammar.Attributed:
 		// A recovery must consume input.
 		return a.nullableAt(e.Expr, end)
-	case *grammar.Pratt:
+	case *grammar.OperatorsRule:
 		for _, o := range e.Operands {
 			if a.nullableAt(o.Expr, end) {
 				return true
@@ -345,7 +345,7 @@ func (a *analysis) failsAt(e grammar.Expr, end bool) bool {
 // Anchors that contradict their neighbors (anchorConflict) are not taken into account, so that
 // canMatch is known before prefix, which uses it, runs.
 func (a *analysis) mayMatchIn(e grammar.Expr, set map[string]bool, lenient bool) bool {
-	switch e := e.(type) {
+	switch e := analysisExpr(e).(type) {
 	case *grammar.Ref:
 		return set[e.Name]
 	case *grammar.Bottom:
@@ -377,7 +377,7 @@ func (a *analysis) mayMatchIn(e grammar.Expr, set map[string]bool, lenient bool)
 		return a.mayMatchIn(e.Expr, set, lenient)
 	case *grammar.Attributed:
 		return hasAttr(e, "recover") || a.mayMatchIn(e.Expr, set, lenient)
-	case *grammar.Pratt:
+	case *grammar.OperatorsRule:
 		for _, o := range e.Operands {
 			if a.mayMatchIn(o.Expr, set, lenient) {
 				return true
@@ -448,7 +448,7 @@ type matchKey struct {
 func (a *analysis) matchPrefix(e grammar.Expr, t string) matchResult {
 	ok := func(rest string) matchResult { return matchResult{ok: true, exact: true, rest: rest} }
 	inexact := matchResult{ok: true}
-	switch e := e.(type) {
+	switch e := analysisExpr(e).(type) {
 	case *grammar.Literal:
 		if strings.HasPrefix(t, e.Value) {
 			return ok(t[len(e.Value):])
@@ -534,7 +534,7 @@ func (a *analysis) matchPrefix(e grammar.Expr, t string) matchResult {
 	case *grammar.Discard:
 		return a.matchPrefix(e.Expr, t)
 	case *grammar.Attributed:
-		// #recover only adds ways to succeed; #error and #stream do not change matching.
+		// #recover only adds ways to succeed; @error and #stream do not change matching.
 		return a.matchPrefix(e.Expr, t)
 	case *grammar.And:
 		if a.matchPrefix(e.Expr, t).ok {
@@ -549,7 +549,7 @@ func (a *analysis) matchPrefix(e grammar.Expr, t string) matchResult {
 		if r == nil || e.Level != "" || a.leftRecursive[e.Name] {
 			break
 		}
-		if _, pratt := r.Expr.(*grammar.Pratt); pratt {
+		if _, operatorsRule := r.Expr.(*grammar.OperatorsRule); operatorsRule {
 			break
 		}
 		key := matchKey{e.Name, t}
@@ -569,13 +569,13 @@ func (a *analysis) matchPrefix(e grammar.Expr, t string) matchResult {
 		}
 		return m
 	}
-	// Predicates, anchors, bottom and Pratt expressions are not certain to succeed.
+	// Predicates, anchors, bottom and Operators Rule expressions are not certain to succeed.
 	return matchResult{}
 }
 
 // fails reports whether e certainly fails on every input that begins with t.
 func (a *analysis) fails(e grammar.Expr, t string) bool {
-	switch e := e.(type) {
+	switch e := analysisExpr(e).(type) {
 	case *grammar.Literal:
 		return !strings.HasPrefix(t, e.Value) && !strings.HasPrefix(e.Value, t)
 	case *grammar.CharClass:
@@ -617,7 +617,7 @@ func (a *analysis) fails(e grammar.Expr, t string) bool {
 		if r == nil || e.Level != "" || a.busy[e.Name] {
 			return false
 		}
-		if _, pratt := r.Expr.(*grammar.Pratt); pratt {
+		if _, operatorsRule := r.Expr.(*grammar.OperatorsRule); operatorsRule {
 			return false
 		}
 		a.busy[e.Name] = true
@@ -643,7 +643,7 @@ type prefixResult struct {
 
 // prefix returns a string that every match of e begins with.
 func (a *analysis) prefix(e grammar.Expr) prefixResult {
-	switch e := e.(type) {
+	switch e := analysisExpr(e).(type) {
 	case *grammar.Literal:
 		return prefixResult{e.Value, true}
 	case *grammar.CharClass:
@@ -741,9 +741,10 @@ func classAccepts(c *grammar.CharClass, r rune) bool {
 // --- Structure ---
 
 // neutral strips the wrappers that do not change whether an expression matches or how much
-// input it consumes: @, -, #error and #stream, and captures if caps is set.
+// input it consumes: @, -, @error and #stream, and captures if caps is set.
 func neutral(e grammar.Expr, caps bool) grammar.Expr {
 	for {
+		e = analysisExpr(e)
 		switch x := e.(type) {
 		case *grammar.Atomic:
 			e = x.Expr
@@ -877,13 +878,15 @@ func hasPredicate(e grammar.Expr) bool {
 // --- Walking ---
 
 // walkExpr visits the expression and its subexpressions in preorder, including attribute
-// arguments and the parts of Pratt expressions.
+// arguments and the parts of Operators Rule expressions.
 func walkExpr(e grammar.Expr, f func(grammar.Expr)) {
 	if e == nil {
 		return
 	}
 	f(e)
 	switch e := e.(type) {
+	case *grammar.Group:
+		walkExpr(e.Expr, f)
 	case *grammar.Seq:
 		for _, it := range e.Items {
 			walkExpr(it, f)
@@ -902,6 +905,11 @@ func walkExpr(e grammar.Expr, f func(grammar.Expr)) {
 		walkExpr(e.Expr, f)
 	case *grammar.Atomic:
 		walkExpr(e.Expr, f)
+	case *grammar.Stream:
+		walkExpr(e.Expr, f)
+	case *grammar.Recovery:
+		walkExpr(e.Expr, f)
+		walkExpr(e.Skip, f)
 	case *grammar.Discard:
 		walkExpr(e.Expr, f)
 	case *grammar.Capture:
@@ -909,11 +917,11 @@ func walkExpr(e grammar.Expr, f func(grammar.Expr)) {
 	case *grammar.Attributed:
 		walkExpr(e.Expr, f)
 		for _, at := range e.Attrs {
-			for _, arg := range at.Args {
-				walkExpr(arg.Value, f)
+			for _, arg := range at.ExpressionArgs() {
+				walkExpr(arg, f)
 			}
 		}
-	case *grammar.Pratt:
+	case *grammar.OperatorsRule:
 		walkExpr(e.Skip, f)
 		for _, o := range e.Operands {
 			walkExpr(o.Expr, f)
@@ -933,6 +941,10 @@ func walkTerm(t grammar.Term, f func(grammar.Term)) {
 	}
 	f(t)
 	switch t := t.(type) {
+	case *grammar.Block:
+		for _, stmt := range t.Statements {
+			walkTerm(stmt, f)
+		}
 	case *grammar.Member:
 		walkTerm(t.X, f)
 	case *grammar.New:
@@ -968,7 +980,7 @@ func calls(e grammar.Expr) []string {
 
 // posOf returns the position where e begins, or the zero Pos if it is unknown.
 func posOf(e grammar.Expr) grammar.Pos {
-	switch e := e.(type) {
+	switch e := analysisExpr(e).(type) {
 	case *grammar.Ref:
 		return e.Pos
 	case *grammar.Literal:
@@ -1017,7 +1029,7 @@ func posOf(e grammar.Expr) grammar.Pos {
 		return e.Pos
 	case *grammar.Attributed:
 		return posOf(e.Expr)
-	case *grammar.Pratt:
+	case *grammar.OperatorsRule:
 		return e.Pos
 	}
 	return grammar.Pos{}
@@ -1030,4 +1042,18 @@ func show(e grammar.Expr) string {
 		s = string(r[:37]) + "..."
 	}
 	return "`" + s + "`"
+}
+
+// analysisExpr presents behavior pragmas to the existing matching proofs without
+// mutating the source tree or losing the wrapped expression's positions.
+func analysisExpr(e grammar.Expr) grammar.Expr {
+	switch x := e.(type) {
+	case *grammar.Group:
+		return analysisExpr(x.Expr)
+	case *grammar.Stream:
+		return &grammar.Attributed{Expr: x.Expr, Attrs: []*grammar.Attribute{{Pos: x.Pos, Name: "stream", Pragma: true}}}
+	case *grammar.Recovery:
+		return &grammar.Attributed{Expr: x.Expr, Attrs: []*grammar.Attribute{{Pos: x.Pos, Name: "recover", Pragma: true, KwArgs: map[string]any{"skip": x.Skip}}}}
+	}
+	return e
 }

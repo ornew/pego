@@ -5,7 +5,7 @@ defines a parse as a whole: how it starts, what the input and its positions are,
 what a parse produces, how a syntax error is determined and reported, what
 memoization can and cannot change, and the limits and modes of a parse.
 
-## Start rule
+## Start Rule
 
 A parse starts at a rule, the **start rule**. The start rule is not part of the
 grammar file: it is selected when the grammar is compiled or when parsing is
@@ -18,10 +18,10 @@ started.
 
 Any rule can be the start rule. It MUST be defined; parsing with an undefined
 start rule is an error. The start rule is called at the beginning of the input
-with no binding level, so a Pratt expression in it parses the operators of all
-levels (see [Level-restricted calls](pratt.md#level-restricted-calls)).
+with no binding level, so an Operators Rule in it parses the operators of all
+levels (see [Level-restricted calls](operators-rule.md#level-restricted-calls)).
 
-## Input and positions
+## Input and Positions
 
 The input of a parse is a sequence of Unicode characters. The input is given as
 text encoded in UTF-8; a byte that is not part of a valid UTF-8 sequence is read
@@ -51,7 +51,7 @@ unit.
 
 This decoding also applies to literals. A U+FFFD in a literal matches either
 its valid UTF-8 encoding or one invalid input byte, in either position unit.
-For example, `def main = "\uFFFD"` accepts the single byte `0xff`; the
+For example, `rule main = "�"` accepts the single byte `0xff`; the
 matched range ends at position 1. Two invalid bytes require two replacement
 characters. Position units do not change which Unicode characters match.
 The terminal's text is the matched input: byte mode keeps the invalid byte,
@@ -61,7 +61,7 @@ the same byte length as the matched input.
 The unit is selected with `pego.WithUnit(pego.Bytes)` in the Go API and with
 `pego parse -unit bytes` on the command line.
 
-### Lines and columns
+### Lines and Columns
 
 Lines and columns in syntax errors are 1-based. A new line starts after each
 line feed (U+000A); a carriage return does not start a line. The column is
@@ -69,7 +69,7 @@ counted in the position unit. (This differs from grammar source files, where a
 carriage return can end a line; see
 [Line terminators](lexical.md#line-terminators).)
 
-## Whole input
+## Whole Input
 
 A parse succeeds only if the start rule succeeds **and** consumes the entire
 input. Parsing evaluates the start rule at position 0. If the rule fails, the
@@ -79,7 +79,7 @@ position where it stopped, and the parse fails with a syntax error: the error is
 can be beyond where the start rule stopped.
 
 ```pego
-def main = "a" ("b" "c")?
+rule main = "a" ("b" "c")?
 ```
 
 For the input `abd` the parse fails at `1:3` expecting `"c"`; for the input `ad`
@@ -95,12 +95,12 @@ A parse has one of the following outcomes.
 | Outcome | What the parse returns |
 |:--|:--|
 | Success | The value of the start rule, which is a [node](#nodes) or `nil` |
-| Success with recovered errors | The value, together with the list of [syntax errors](#syntax-errors) that [`#recover`](attributes.md#recover) recovered from |
+| Success with recovered errors | The value, together with the list of [syntax errors](#syntax-errors) that [`#recover`](pragmas.md#recover) recovered from |
 | Syntax error | No value; the [syntax error](#syntax-errors). If errors were recovered before, only the final syntax error is returned |
-| Run-time error | No value; the error of an [action](actions.md#run-time-errors) or a [limit](#limits) that was exceeded. It aborts the whole parse |
+| Run-time error | No value; the error of an [action](actions.md#types-and-errors) or a [limit](#limits) that was exceeded. It aborts the whole parse |
 
 The value of the start rule is nil if the rule has no value. For example, a
-rule `def main = -"a"` or `def main = "a"?` on empty input succeeds with `nil`.
+rule `rule main = -"a"` or `rule main = "a"?` on empty input succeeds with `nil`.
 
 ### Nodes
 
@@ -118,7 +118,7 @@ A **node** has the following properties.
 The Go type `pego.Node` and its JSON form are described in
 [The Node type](../docs/guide/runtime.md#the-node-type).
 
-## Syntax errors
+## Syntax Errors
 
 When the input does not match the grammar, the parser reports the **farthest
 position** that parsing reached, together with the items that were expected at
@@ -127,20 +127,20 @@ anchors (`beginning of input`, `end of input`, `beginning of line`,
 `end of line`).
 
 ```
-1:5: syntax error: expected "(", "-", (?0-9)
+1:5: syntax error: expected "(", "-", [0-9]
 ```
 
 - The position is given as a 1-based line and column. The column is counted in
   the [position unit](#positions) (code points by default).
 - The expected items are listed in sorted order, without duplicates.
 - Failures inside [lookahead](parser-expressions.md#lookahead) and inside the
-  [`skip` of a Pratt expression](pratt.md#skip) are not included. Predicates
+  [`skip` of an Operators Rule](operators-rule.md#skip) are not included. Predicates
   and bottom (`_|_`) contribute no expected items.
 - If the start rule matches but input remains, `end of input` is expected at the
   position where the start rule stopped (see [Whole input](#whole-input)).
 - If nothing was expected at the farthest position, the message is just
   `syntax error`.
-- A [`#error`](attributes.md#error) attribute replaces the expected items inside
+- A [`@error`](attributes.md#error) attribute replaces the expected items inside
   an expression with a message. If a message applies at the farthest position,
   the message is reported instead of the expected items.
 
@@ -156,7 +156,7 @@ observable consequences, and no others.
 - **Node identity is unspecified.** Whether two calls of a rule at the same
   position return the same node, or equal nodes, depends on memoization. To
   compare what two nodes matched, compare their text or their fields (see
-  [Operators](actions.md#operators)).
+  [Operators](actions.md#operators-and-functions)).
 - **Rules that read variables are memoized per combination of values.** The
   result of a rule that reads [variables](predicates.md#variables) directly or
   through the rules it calls depends on their values when it is called, so a
@@ -164,9 +164,9 @@ observable consequences, and no others.
   [Predicates and Variables](predicates.md#interaction-with-memoization).
 - **Actions run when a rule is evaluated.** An action is evaluated every time
   the body of its rule is evaluated and matches, even if the enclosing
-  alternative later fails, and also inside a lookahead, under `@` and under `-`.
+  alternative later fails, and also inside a lookahead, under `#atomic` and under `-`.
   An action has no effect other than its value and its [run-time
-  errors](actions.md#run-time-errors), so how many times it runs is not
+  errors](actions.md#types-and-errors), so how many times it runs is not
   observable, but whether it runs is: an error in an action aborts the parse
   even in a branch that is abandoned.
 - **Left recursion** is evaluated by growing a seed, which relies on the memo
@@ -183,7 +183,7 @@ exceeded, the parse fails with a run-time error and no value. In the reference
 implementation the error is `nesting too deep: more than N rule calls`; the
 default limit is 100,000 nested calls (10,000,000 for the iterative bytecode
 VM), and the Go API changes it with `pego.WithMaxDepth`. The operand of a prefix
-operator and the right operand of an infix operator of a Pratt expression nest
+operator and the right operand of an infix operator of an Operators Rule nest
 like rule calls; chains of left-associative operators do not nest.
 
 ## Modes
@@ -195,7 +195,7 @@ gives the results that an ordinary parse gives.
 |:--|:--|
 | Backends | The reference implementation has three backends (closure, recursive bytecode and iterative bytecode). They give identical values, errors and positions, and differ in speed and in the limit of nesting depth. Generated Go and TypeScript parsers implement the same semantics; their differences, such as the nesting limit, are described in the guides |
 | Recognition | The parse only tells whether the input matches. It gives the same success or failure and the same syntax errors, builds no tree, and does not evaluate actions, so run-time errors of actions are not reported. The captures that [predicates](predicates.md) read are still built |
-| Stream | A parse that reads its input incrementally and hands each element of the [`#stream`](attributes.md#stream) repetition of the start rule to the caller as it matches. The elements are not part of the value |
+| Stream | A parse that reads its input incrementally and hands each element of the [`#stream`](pragmas.md#stream) repetition of the start rule to the caller as it matches. The elements are not part of the value |
 | Incremental | A document that is edited and reparsed reuses results of the previous parse. The result of a parse is the same as that of a parse of the whole new text |
 
 The guides describe these modes from the user's side: see

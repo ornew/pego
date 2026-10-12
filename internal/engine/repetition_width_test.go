@@ -16,15 +16,15 @@ func wideRepetitionCases() []genCase {
 	var cases []genCase
 	for _, bound := range []string{"2147483648", "4294967296", "9223372036854775807"} {
 		for _, c := range []struct{ name, body string }{
-			{"minimum", `"é"{%s} $$`},
-			{"unbounded minimum", `"é"{%s,} $$`},
-			{"scan minimum", `@(?é){%s} $$`},
-			{"maximum", `"é"{0,%s} $$`},
-			{"class scan", `@(?é){0,%s} $$`},
-			{"any scan", `@.{0,%s} $$`},
-			{"projection", `xs:(v:"é"){0,%s} $$ -> map($xs, (x) => $x.v)`},
+			{"minimum", `"é" #repeat(%s) $$`},
+			{"unbounded minimum", `"é" #repeat(%s,) $$`},
+			{"scan minimum", `[é] #repeat(%s) #atomic $$`},
+			{"maximum", `"é" #repeat(0,%s) $$`},
+			{"class scan", `[é] #repeat(0,%s) #atomic $$`},
+			{"any scan", `. #repeat(0,%s) #atomic $$`},
+			{"projection", `xs:(v:"é") #repeat(0,%s) $$ => map($xs, (x) => $x.v)`},
 		} {
-			cases = append(cases, genCase{"wide " + c.name + " " + bound, "def main=" + fmt.Sprintf(c.body, bound), []string{"", "é", "éé", "x"}})
+			cases = append(cases, genCase{"wide " + c.name + " " + bound, "rule main = " + fmt.Sprintf(c.body, bound), []string{"", "é", "éé", "x"}})
 		}
 	}
 	return cases
@@ -37,11 +37,11 @@ func TestWideRepetitionModuleValidation(t *testing.T) {
 	for _, scan := range []bool{false, true} {
 		for _, defect := range []string{"missing minimum", "missing maximum", "noninteger", "negative minimum", "negative maximum", "reversed bounds"} {
 			t.Run(fmt.Sprintf("scan=%v/%s", scan, defect), func(t *testing.T) {
-				body := `"a"{0,4294967296}`
+				body := `"a" #repeat(0,4294967296)`
 				if scan {
-					body = `@(?a){0,4294967296}`
+					body = `[a] #repeat(0,4294967296) #atomic`
 				}
-				prog := compile(t, "def main="+body+" $$")
+				prog := compile(t, "rule main = "+body+" $$")
 				m := prog.Module()
 				found := false
 				for i := range m.Code {
@@ -86,7 +86,7 @@ func TestWideRepetitionModuleValidation(t *testing.T) {
 }
 
 func TestWideRepetitionInstructionSet(t *testing.T) {
-	ordinary := compile(t, `def main="a"* $$`)
+	ordinary := compile(t, `rule main = "a"* $$`)
 	data, err := ordinary.MarshalBinary("main")
 	if err != nil {
 		t.Fatal(err)
@@ -97,7 +97,7 @@ func TestWideRepetitionInstructionSet(t *testing.T) {
 	if strconv.IntSize < 64 {
 		return
 	}
-	wide := compile(t, `def main="a"{0,4294967296} $$`)
+	wide := compile(t, `rule main = "a" #repeat(0, 4294967296) $$`)
 	data, err = wide.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
 	if err != nil {
 		t.Fatal(err)
@@ -162,7 +162,7 @@ func TestWideRepetitionDocumentsAndStreams(t *testing.T) {
 		t.Skip("bounds exceed a 32-bit implementation's source integer range")
 	}
 	for _, bound := range []string{"2147483648", "4294967296", "9223372036854775807"} {
-		prog := compile(t, fmt.Sprintf(`def main="é"{0,%s} #stream $$`, bound))
+		prog := compile(t, fmt.Sprintf(`rule main = "é" #repeat(0,%s) #stream $$`, bound))
 		data, err := prog.MarshalBinary("main")
 		if err != nil {
 			t.Fatal(err)

@@ -174,7 +174,7 @@ class Pending {
 // print writes v with write, which writes a value as text and Pending values (its parts, such as
 // the children of a node), and writes those in turn. It keeps the values to write on a stack of
 // its own, so that it can write trees of any depth: parses build trees deeper than the JavaScript
-// stack allows recursion (left recursion, foldl and Pratt operators nest without nesting calls).
+// stack allows recursion (left recursion, foldl and OperatorsRule operators nest without nesting calls).
 function print(v: Value, write: (v: Value, out: (string | Pending)[]) => void): string {
   const b: string[] = [];
   const stack: (string | Pending)[] = [new Pending(v)];
@@ -423,7 +423,7 @@ export class SyntaxError extends Error {
   col: number;
   /** The descriptions of what was expected, sorted. */
   expected: string[];
-  /** The messages of #error attributes. */
+  /** The messages of @error attributes. */
   messages: string[];
 
   constructor(pos: number, line: number, col: number, expected: string[], messages: string[]) {
@@ -502,7 +502,7 @@ interface Rule {
   // seen is the rule's index among the memoized rules whose memoization is deferred to the second
   // call at a position (firstCall), or -1.
   seen: number;
-  pratt: Pratt | null;
+  operatorsRule: OperatorsRule | null;
   novalue: boolean; // value-free twin, called where the value is discarded
   // vars are the variables the rule or its callees read, sorted. Memo entries are keyed by their
   // values at the call, since definitions inside the rule are undone when it returns.
@@ -536,7 +536,7 @@ function mkRule(
     memo,
     leader,
     seen,
-    pratt: null,
+    operatorsRule: null,
     novalue,
     vars,
   };
@@ -830,7 +830,7 @@ function compareStrings(a: string, b: string): number {
 
 // --- Parser state ---
 
-// An expectation is an index into descs; with msgBit set, it is an #error message.
+// An expectation is an index into descs; with msgBit set, it is an @error message.
 const msgBit = 1 << 30;
 
 // Expectations at the start of every descs table.
@@ -1798,9 +1798,9 @@ class Parser {
     this.env = head;
   }
 
-  // --- Pratt expressions ---
+  // --- OperatorsRule expressions ---
 
-  skipTrivia(pr: Pratt): void {
+  skipTrivia(pr: OperatorsRule): void {
     if (pr.skip === null) {
       return;
     }
@@ -1818,12 +1818,12 @@ class Parser {
 
   // longest tries every operator and returns the longest match (the first declared among equals),
   // or null when none matched. cutFailed is set when a candidate failed after a cut.
-  longest(ops: PrattOp[]): PrattAttempt | null {
+  longest(ops: OperatorsRuleOp[]): OperatorsRuleAttempt | null {
     const m0pos = this.pos;
     const m0env = this.env;
     const m0trail = this.trail.length;
     const m0rec = this.recovered.length;
-    let best: PrattAttempt | null = null;
+    let best: OperatorsRuleAttempt | null = null;
     let cutFailed = false;
     for (const op of ops) {
       const prevFrame = this.frame;
@@ -1876,7 +1876,7 @@ class Parser {
   // cutFailed reports that a candidate of the last longest failed after a cut.
   cutFailed = false;
 
-  apply(a: PrattAttempt): void {
+  apply(a: OperatorsRuleAttempt): void {
     this.pos = a.end;
     this.env = a.env;
     for (const x of a.errs) {
@@ -1884,21 +1884,21 @@ class Parser {
     }
   }
 
-  // prattParse parses an expression with operators that bind tighter than min. Each level of its
+  // operatorsRuleParse parses an expression with operators that bind tighter than min. Each level of its
   // recursion (the operand of a prefix operator, the right operand of an infix operator) counts
   // against the nesting limit, like a rule call.
-  prattParse(r: Rule, min: number): R {
+  operatorsRuleParse(r: Rule, min: number): R {
     if (++this.depth > this.maxDepth) {
       this.tooDeep();
     }
-    const v = this.prattExpr(r, min);
+    const v = this.operatorsRuleExpr(r, min);
     this.depth--;
     return v;
   }
 
-  prattExpr(r: Rule, min: number): R {
-    const pr = r.pratt as Pratt;
-    let lhs = this.prattNud(r);
+  operatorsRuleExpr(r: Rule, min: number): R {
+    const pr = r.operatorsRule as OperatorsRule;
+    let lhs = this.operatorsRuleNud(r);
     if (lhs === undefined) {
       return undefined;
     }
@@ -1924,7 +1924,7 @@ class Parser {
       }
       this.apply(a);
       if (a.op.kind === "postfix") {
-        lhs = this.prattBuild(r, a, lhs, null);
+        lhs = this.operatorsRuleBuild(r, a, lhs, null);
         lastNone = -1;
         if (this.pos === m0pos) {
           break;
@@ -1935,7 +1935,7 @@ class Parser {
       if (a.op.assoc === "right") {
         rmin--;
       }
-      const rhs = this.prattParse(r, rmin);
+      const rhs = this.operatorsRuleParse(r, rmin);
       if (rhs === undefined) {
         if (a.cut) {
           return undefined;
@@ -1943,7 +1943,7 @@ class Parser {
         this.reset(m0pos, m0env, m0trail, m0rec);
         break;
       }
-      lhs = this.prattBuild(r, a, lhs, rhs);
+      lhs = this.operatorsRuleBuild(r, a, lhs, rhs);
       lastNone = -1;
       if (a.op.assoc === "none") {
         lastNone = a.op.level;
@@ -1958,8 +1958,8 @@ class Parser {
     return lhs;
   }
 
-  prattNud(r: Rule): R {
-    const pr = r.pratt as Pratt;
+  operatorsRuleNud(r: Rule): R {
+    const pr = r.operatorsRule as OperatorsRule;
     this.skipTrivia(pr);
     const m0pos = this.pos;
     const m0env = this.env;
@@ -1968,9 +1968,9 @@ class Parser {
     const a = this.longest(pr.prefix);
     if (a !== null) {
       this.apply(a);
-      const rhs = this.prattParse(r, a.op.level);
+      const rhs = this.operatorsRuleParse(r, a.op.level);
       if (rhs !== undefined) {
-        return this.prattBuild(r, a, null, rhs);
+        return this.operatorsRuleBuild(r, a, null, rhs);
       }
       if (a.cut) {
         return undefined;
@@ -2000,7 +2000,7 @@ class Parser {
     return undefined;
   }
 
-  lineResult(r: Rule, l: PrattLine, f: Frame, v: Node | null, start: number): Node | null {
+  lineResult(r: Rule, l: OperatorsRuleLine, f: Frame, v: Node | null, start: number): Node | null {
     if (r.novalue) {
       return null;
     }
@@ -2026,7 +2026,7 @@ class Parser {
     return v;
   }
 
-  prattBuild(r: Rule, a: PrattAttempt, lhs: Node | null, rhs: Node | null): Node | null {
+  operatorsRuleBuild(r: Rule, a: OperatorsRuleAttempt, lhs: Node | null, rhs: Node | null): Node | null {
     if (r.novalue) {
       return null;
     }
@@ -2499,32 +2499,32 @@ function rtBinary(op: string, l: Value, r: Value): Value {
   return evalError(`invalid operands ${typeName(l)} and ${typeName(r)} for ${op}`);
 }
 
-// --- Pratt expressions ---
+// --- OperatorsRule expressions ---
 
-interface Pratt {
+interface OperatorsRule {
   skip: Matcher | null;
-  operands: PrattLine[];
-  prefix: PrattOp[];
-  led: PrattOp[];
+  operands: OperatorsRuleLine[];
+  prefix: OperatorsRuleOp[];
+  led: OperatorsRuleOp[];
 }
 
-interface PrattLine {
+interface OperatorsRuleLine {
   scope: string[];
   m: Matcher;
   action: Action | null;
   isSeq: boolean;
 }
 
-interface PrattOp {
+interface OperatorsRuleOp {
   id: number;
   kind: string;
   assoc: string;
   level: number;
-  line: PrattLine;
+  line: OperatorsRuleLine;
 }
 
-interface PrattAttempt {
-  op: PrattOp;
+interface OperatorsRuleAttempt {
+  op: OperatorsRuleOp;
   frame: Frame;
   v: Node | null;
   start: number;

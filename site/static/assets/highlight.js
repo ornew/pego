@@ -1,10 +1,6 @@
 // A small syntax highlighter for the languages of the documentation: pego, Go, TypeScript, JSON and shell.
 // tokenize returns non-overlapping tokens {from, to, cls}; highlight returns HTML.
 
-const PEGO_KEYWORDS = new Set([
-  "def", "type", "struct", "terminal", "package", "pratt", "level", "infix", "prefix", "postfix",
-  "left", "right", "none", "operand", "skip", "new", "nil", "true", "false",
-]);
 const GO_KEYWORDS = new Set([
   "break", "case", "chan", "const", "continue", "default", "defer", "else", "fallthrough", "for", "func",
   "go", "goto", "if", "import", "interface", "map", "package", "range", "return", "select", "struct",
@@ -32,14 +28,14 @@ const TS_TYPES = new Set([
 
 const rules = {
   pego: [
-    ["comment", /\/\/[^\n]*/y],
+    ["comment", /\/\/[^\r\n]*/y],
     ["string", /"(?:[^"\\\n]|\\.)*"?/y],
-    ["class", /\(\?(?:[^)\\\n]|\\.)*\)?/y],
-    ["attr", /#[A-Za-z_][\w]*/y],
+    ["class", /\[(?!\])(?:[^\]\\\r\n]|\\.)*\]?/y],
+    ["attr", /[@#][\p{L}_][\p{L}\p{Nd}_]*/uy],
     ["capture", /\$(?:\$|[A-Za-z_][\w]*|\d+)/y],
     ["number", /\d+/y],
     ["ident", /[\p{L}_][\p{L}\p{N}_]*/uy],
-    ["punct", /->|=>|==|!=|<=|>=|&&|\|\||_\|_|\^\^|[=\/*+?&!@:\-^|<>%.,()[\]{}]/y],
+    ["punct", /:=|\.\.\.|=>|==|!=|<=|>=|&&|\|\||_\|_|\^\^|[=;\/*+?&!@#:\-^|<>%.,()[\]{}]/y],
   ],
   go: [
     ["comment", /\/\/[^\n]*|\/\*[\s\S]*?(?:\*\/|$)/y],
@@ -77,6 +73,18 @@ export function tokenize(code, lang) {
   let prevWord = "";
   const n = code.length;
   while (i < n) {
+    if (lang === "pego" && code.startsWith("/*", i)) {
+      const from = i;
+      let depth = 1;
+      i += 2;
+      while (i < n && depth > 0) {
+        if (code.startsWith("/*", i)) { depth++; i += 2; }
+        else if (code.startsWith("*/", i)) { depth--; i += 2; }
+        else i++;
+      }
+      tokens.push({ from, to: i, cls: "comment" });
+      continue;
+    }
     let matched = false;
     for (const [cls, re] of rs) {
       re.lastIndex = i;
@@ -85,7 +93,7 @@ export function tokenize(code, lang) {
       const text = m[0];
       let c = cls;
       if (cls === "ident") {
-        c = classifyIdent(lang, text, code, i + text.length, prevWord);
+        c = lang === "pego" ? "ident" : classifyIdent(lang, text, code, i + text.length, prevWord);
         prevWord = text;
       } else if (cls !== "comment") {
         prevWord = "";
@@ -97,18 +105,71 @@ export function tokenize(code, lang) {
     }
     if (!matched) i++; // white space and anything the language does not color
   }
-  return tokens;
+  return lang === "pego" ? classifyPegoTokens(code, tokens) : tokens;
+}
+
+// Contextual words are keywords at statement headers, not in rule names,
+// references or captures. Track delimiters once without parsing the grammar.
+function classifyPegoTokens(code, tokens) {
+  const significant = tokens.filter((t) => t.cls !== "comment");
+  const frames = [{kind: "file", value: false, start: true, header: "", name: "", listNext: false}];
+  let previous = null;
+  for (let i = 0; i < significant.length; i++) {
+    const t = significant[i];
+    const text = code.slice(t.from, t.to);
+    const next = significant[i + 1];
+    const nextText = next ? code.slice(next.from, next.to) : "";
+    const prevText = previous ? code.slice(previous.from, previous.to) : "";
+    let frame = frames[frames.length - 1];
+    if (previous && /[\r\n]/.test(code.slice(previous.to, t.from)) && (frame.kind === "file" || frame.kind === "operators")) {
+      frame.start = true;
+      frame.value = false;
+      frame.header = frame.name = "";
+    }
+    if (t.cls === "ident") {
+      t.cls = /^\p{Lu}/u.test(text) ? "type" : null;
+      if (nextText === ":") t.cls = "label";
+      else if (frame.name) {
+        t.cls = frame.name;
+        frame.name = "";
+      } else if (frame.kind === "file" && frame.start && ["package", "type", "rule"].includes(text)) {
+        t.cls = "keyword";
+        frame.header = text;
+        frame.name = text === "rule" ? "rule" : text === "type" ? "type" : null;
+      } else if (frame.header === "type" && ["struct", "terminal"].includes(text)) {
+        t.cls = "keyword";
+      } else if (frame.kind === "operators" && frame.start && ["skip", "operand", "level", "prefix", "postfix", "infix"].includes(text)) {
+        t.cls = "keyword";
+        frame.listNext = text === "level";
+      } else if (!frame.value && text === "operators" && prevText === "=" && frames.length === 1) {
+        t.cls = "keyword";
+        frame.listNext = true;
+      } else if (!frame.value && text === "level" && nextText === "(" && next.from === t.to) {
+        t.cls = "keyword";
+      } else if (["left", "right", "none"].includes(text) && previous?.cls === "keyword" && prevText === "infix") {
+        t.cls = "keyword";
+      } else if (frame.value && ["true", "false", "nil"].includes(text)) {
+        t.cls = "keyword";
+      }
+      frame.start = false;
+    } else if (t.cls === "punct") {
+      if (text === "=>") frame.value = true;
+      else if (text === "=") { frame.header = ""; frame.start = false; }
+      else if (text === ";") { frame.start = true; if (frame.kind === "file" || frame.kind === "operators") frame.value = false; }
+      else if (text === "(") frames.push({kind: "expression", value: frame.value || previous?.cls === "attr" && !prevText.startsWith("#recover"), start: false, header: "", name: "", listNext: false});
+      else if (text === "{") {
+        const list = frame.listNext;
+        frame.listNext = false;
+        frames.push({kind: list ? "operators" : "value", value: !list, start: true, header: "", name: "", listNext: false});
+      } else if (text === ")" || text === "}") { if (frames.length > 1) frames.pop(); }
+      else frame.start = false;
+    } else frame.start = false;
+    previous = t;
+  }
+  return tokens.filter((t) => t.cls);
 }
 
 function classifyIdent(lang, word, code, end, prev) {
-  if (lang === "pego") {
-    if (PEGO_KEYWORDS.has(word)) return "keyword";
-    if (prev === "def") return "rule";
-    // A label: name directly followed by a colon (but not a rule type "def x: T").
-    if (code[end] === ":" && code[end + 1] !== "=") return "label";
-    if (/^\p{Lu}/u.test(word)) return "type";
-    return null;
-  }
   if (lang === "go") {
     if (GO_KEYWORDS.has(word)) return "keyword";
     if (GO_TYPES.has(word)) return "type";

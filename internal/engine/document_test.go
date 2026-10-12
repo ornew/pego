@@ -10,21 +10,20 @@ import (
 	"time"
 )
 
-// incrementalGrammar is a grammar with left recursion, a Pratt expression, line starts (which
+// incrementalGrammar is a grammar with left recursion, an Operators Rule expression, line starts (which
 // examine the preceding character), captures, and position-dependent actions.
-const incrementalGrammar = `
-type Pos struct { At int, Name Match }
-def main = (line / blank)* $$
-def blank = "\n"
-def line = ^ (assign / list / pos) "\n"
-def assign = n:name " = " e:expr
-def list = list "," item / item
-def item = @(?a-z)+
-def pos: Pos = "@" n:name -> new Pos{At: $n.startPos, Name: $n}
-def name = @(?a-z)+
-def expr = pratt {
-    operand @(?0-9)+
-    operand "(" x:expr ")" -> $x
+const incrementalGrammar = `type Pos struct { At int, Name Match }
+rule main = (line / blank)* $$
+rule blank = "\n"
+rule line = ^ (assign / list / pos) "\n"
+rule assign = n:name " = " e:expr
+rule list = list "," item / item
+rule item = [a-z]+ #atomic
+rule pos Pos = "@" n:name => Pos{At: $n.startPos, Name: $n}
+rule name = [a-z]+ #atomic
+rule expr = operators {
+    operand [0-9]+ #atomic
+    operand "(" x:expr ")" => $x
     level { infix left "+" / "-" }
     level { infix left "*" }
     level { prefix "-" }
@@ -133,7 +132,7 @@ func TestDocumentPositionalActions(t *testing.T) {
 }
 
 func TestDocumentEditErrors(t *testing.T) {
-	prog := compile(t, `def main = "a"*`)
+	prog := compile(t, `rule main = "a"*`)
 	doc, _ := prog.NewDocument("main", "aaa")
 	for _, r := range [][2]int{{-1, 0}, {2, 1}, {0, 4}} {
 		if err := doc.Edit(r[0], r[1], ""); err == nil {
@@ -151,7 +150,7 @@ func TestDocumentEditErrors(t *testing.T) {
 func TestDocumentEditKeepsMemo(t *testing.T) {
 	cases := []struct{ grammar, text string }{
 		{incrementalGrammar, "x = 1+2\nab,cd\n@pos\n\ny = (3)*-4\n"},
-		{"def main = (sep word sep)* $$\ndef sep = none none\ndef none = \"\"\ndef word = @(?a-z)+ \" \"?", "ab cd ef gh "},
+		{"rule main = (sep word sep)* $$\nrule sep = none none\nrule none = \"\"\nrule word = [a-z]+ #atomic \" \"?", "ab cd ef gh "},
 	}
 	pieces := []string{"a", "b", "x = ", "1", "+", "(", ")", ",", "\n", "@", " ", "zz "}
 	for _, c := range cases {
@@ -223,7 +222,7 @@ func TestDocumentEditKeepsMemo(t *testing.T) {
 // invalid UTF-8, the Document's text and its offset tables are those of the edited text read from
 // scratch, in both position units.
 func TestDocumentEditText(t *testing.T) {
-	prog := compile(t, `def main = .*`)
+	prog := compile(t, `rule main = .*`)
 	pieces := []string{"a", "é", "日本", "\n", "\xff", "z\xe3\x81", ""}
 	for _, unit := range []Unit{CodePoints, Bytes} {
 		doc, err := prog.NewDocumentWith("main", "héllo, 世界\n", ParseOptions{Unit: unit})
@@ -285,7 +284,7 @@ func TestDocumentEditText(t *testing.T) {
 // offsets of token text, the line starts of error positions) stay with the Document, so that
 // edits and later parses update them instead of rebuilding them from the whole text.
 func TestDocumentKeepsInputTables(t *testing.T) {
-	doc, err := compile(t, `def main = (@(?a-z)+ "\n")* $$`).NewDocument("main", "ab\ncd\n!")
+	doc, err := compile(t, `rule main = ([a-z]+ #atomic "\n")* $$`).NewDocument("main", "ab\ncd\n!")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -310,7 +309,7 @@ func TestDocumentKeepsInputTables(t *testing.T) {
 // input (^^) or of a line (^) are not reused after text is inserted before them.
 func TestDocumentInputStartAnchors(t *testing.T) {
 	for _, anchor := range []string{"^^", "^"} {
-		src := "def main = (z / a)*\ndef a = " + anchor + ` "b" / "b" "!"` + "\ndef z = \"q\""
+		src := "rule main = (z / a)*\nrule a = " + anchor + ` "b" / "b" "!"` + "\nrule z = \"q\""
 		prog := compile(t, src)
 		doc, err := prog.NewDocument("main", "b")
 		if err != nil {
@@ -336,32 +335,29 @@ func TestDocumentMovesReusedTrees(t *testing.T) {
 		grammar, text string
 		pieces        []string
 	}{
-		{strings.Replace(incrementalGrammar, "(line / blank)*", "(line / blank / junk)*", 1) + "\ndef junk = @(?^\\n)* \"\\n\"",
+		{strings.Replace(incrementalGrammar, "(line / blank)*", "(line / blank / junk)*", 1) + "\nrule junk = [^\\n]* #atomic \"\\n\"",
 			"x = 1+2\nab,cd\n@pos\n\ny = (3)*-4\n",
 			[]string{"a", "b", "x = ", "1", "+", "2*3", "(", ")", "-", ",", "\n", "@", "q", " ", ""}},
-		{`
-type W struct { Pre Match, Word Match, Post Match, Gap Match }
-def main = (sep w:word sep)* $$
-def sep = none none
-def none = @""
-def word: W = p:none x:@(?a-z)+ q:none g:gap -> new W{Pre: $p, Word: $x, Post: $q, Gap: $g}
-def gap = @" "*`, "ab cd  e ", []string{"a", "b", " ", "ab ", "", "zz"}},
-		{`
-def main = items:(item / junk)* tail:@""  $$
-def junk = @(?^;)* ";"
-def item = k:key ":" v:val? ";" kids:(-"," c:@(?0-9)*)*
-def key = @(?a-z)* -> $0
-def val = e:@(?0-9)* -> $e`, "a:1;,2,b:;:3;,;", []string{"a", "b", ":", ";", "1", ",", "x:2;", ",3", ":;", ""}},
+		{`type W struct { Pre Match, Word Match, Post Match, Gap Match }
+rule main = (sep w:word sep)* $$
+rule sep = none none
+rule none = "" #atomic
+rule word W = p:none x:[a-z]+ #atomic q:none g:gap => W{Pre: $p, Word: $x, Post: $q, Gap: $g}
+rule gap = " "* #atomic`, "ab cd  e ", []string{"a", "b", " ", "ab ", "", "zz"}},
+		{`rule main = items:(item / junk)* tail:"" #atomic $$
+rule junk = [^;]* #atomic ";"
+rule item = k:key ":" v:val? ";" kids:(-"," c:[0-9]* #atomic)*
+rule key = [a-z]* #atomic => $0
+rule val = e:[0-9]* #atomic => $e`, "a:1;,2,b:;:3;,;", []string{"a", "b", ":", ";", "1", ",", "x:2;", ",3", ":;", ""}},
 		// Empty results with captures made in a lookahead: non-empty nodes, and empty nodes at
 		// other positions, inside empty ones.
-		{`
-type S struct { K Match }
-def main = (item / junk)* $$
-def item = p:peek q:peek2 r:peek3 w:@(?a-z)+ ";"
-def peek = &(k:@(?a-z)+)
-def peek2 = &(k:@(?a-z)+) -> new S{K: $k}
-def peek3 = &(@(?a-z)* m:@"")
-def junk = @(?^;)* ";"`, "ab;cd;", []string{"a", "b", ";", "x;", "", "1"}},
+		{`type S struct { K Match }
+rule main = (item / junk)* $$
+rule item = p:peek q:peek2 r:peek3 w:[a-z]+ #atomic ";"
+rule peek = &k:[a-z]+ #atomic
+rule peek2 = &k:[a-z]+ #atomic => S{K: $k}
+rule peek3 = &([a-z]* #atomic m:"" #atomic)
+rule junk = [^;]* #atomic ";"`, "ab;cd;", []string{"a", "b", ";", "x;", "", "1"}},
 	}
 	defer func(n int) { minRecorded = n }(minRecorded)
 	minRecorded = 1 // resume short repetitions too
@@ -425,27 +421,23 @@ func testDocumentResumesRepetitions(t *testing.T, backend Backend) {
 		name, grammar string
 		shifts        bool // elements after an edit are reused
 	}{
-		{"captures", `
-def main = stmt* $$
-def stmt = k:key " = " v:val ";\n" / "{\n" body:stmt* "}\n" / "\n"
-def key = @(?a-z)+
-def val = @(?0-9)+ / "[" items:(@(?0-9)+ ",")* "]"`, true},
-		// #stream has no effect on a Document.
-		{"stream", `
-def main = stmt* #stream $$
-def stmt = k:key " = " v:val ";\n" / "{\n" body:stmt* "}\n" / "\n"
-def key = @(?a-z)+
-def val = @(?0-9)+ / "[" items:(@(?0-9)+ ",")* "]"`, true},
-		{"inline", `
-def main = (@(?a-z)+ " = " (@(?0-9)+ / "[" (@(?0-9)+ ",")* "]") ";\n" / "\n")* $$`, true},
+		{"captures", `rule main = stmt* $$
+rule stmt = k:key " = " v:val ";\n" / "{\n" body:stmt* "}\n" / "\n"
+rule key = [a-z]+ #atomic
+rule val = [0-9]+ #atomic / "[" items:([0-9]+ #atomic ",")* "]"`, true},
+		// @stream has no effect on a Document.
+		{"stream", `rule main = stmt* #stream $$
+rule stmt = k:key " = " v:val ";\n" / "{\n" body:stmt* "}\n" / "\n"
+rule key = [a-z]+ #atomic
+rule val = [0-9]+ #atomic / "[" items:([0-9]+ #atomic ",")* "]"`, true},
+		{"inline", `rule main = ([a-z]+ #atomic " = " ([0-9]+ #atomic / "[" ([0-9]+ #atomic ",")* "]") ";\n" / "\n")* $$`, true},
 		// Positions in the values of the elements: they are not moved past an edit.
-		{"positional", `
-type P struct { At int }
-def main = stmt* $$
-def stmt = assign / "\n"
-def assign = k:key " = " v:val ";\n" -> new P{At: $k.startPos}
-def key = @(?a-z)+
-def val = @(?0-9)+ / "[" items:(@(?0-9)+ ",")* "]"`, false},
+		{"positional", `type P struct { At int }
+rule main = stmt* $$
+rule stmt = assign / "\n"
+rule assign = k:key " = " v:val ";\n" => P{At: $k.startPos}
+rule key = [a-z]+ #atomic
+rule val = [0-9]+ #atomic / "[" items:([0-9]+ #atomic ",")* "]"`, false},
 	}
 	// Mostly edits that keep the text valid.
 	pieces := []string{"a", "b", "1", "22", "q = 5;\n", "\n", "\n\n", "{\nk = 1;\n}\n", "[", "2,", "]", " = ", ""}
@@ -527,36 +519,29 @@ func testDocumentResumeEdges(t *testing.T, backend Backend) {
 		pieces              []string
 	}{
 		// An element after the edit that examined input before it (^) is not reused.
-		{"lookbehind", `
-def main = item* $$
-def item = b:bol / mid
-def bol = ^ @(?a-z)
-def mid = @(?a-z) / "\n"`, strings.Repeat("ab\ncd\n", 8), []string{"\n", "x", ""}},
+		{"lookbehind", `rule main = item* $$
+rule item = b:bol / mid
+rule bol = ^ [a-z] #atomic
+rule mid = [a-z] #atomic / "\n"`, strings.Repeat("ab\ncd\n", 8), []string{"\n", "x", ""}},
 		// The expectations of reused elements: the error at the end includes the " " that the last
 		// element expected there.
 		// Runs with recovered errors or provisional results of a left recursion are not recorded.
-		{"recovered", `
-def main = stmt* $$
-def stmt = (@(?a-z)+ ";") #recover(skip=(?^;)+ ";")`, strings.Repeat("ab;c1;", 8) + ";", []string{"a", "1", ";", ""}},
-		{"left recursion", `
-def main = a $$
-def a = b* "y"
-def b = a "x" / "z"`, strings.Repeat("zzyx", 6) + "y", []string{"z", "y", "x", ""}},
+		{"recovered", `rule main = stmt* $$
+rule stmt = ([a-z]+ #atomic ";") #recover(skip=[^;]+ ";")`, strings.Repeat("ab;c1;", 8) + ";", []string{"a", "1", ";", ""}},
+		{"left recursion", `rule main = a $$
+rule a = b* "y"
+rule b = a "x" / "z"`, strings.Repeat("zzyx", 6) + "y", []string{"z", "y", "x", ""}},
 		// Bounds: a run that ends at its maximum, and a minimum met by reused elements alone.
-		{"bounds", `
-def main = (@(?a-z)+ ";" / @(?a-z){1,20} "." / "\n")* $$`, strings.Repeat("abcdefghijklmnopqrstuvwxy;\n", 3) + strings.Repeat("abcdefghijklmnopqrst.\n", 3) + "\n", []string{"a", ";", ".", "\n", ""}},
+		{"bounds", `rule main = ([a-z]+ #atomic ";" / [a-z] #repeat(1, 20) #atomic "." / "\n")* $$`, strings.Repeat("abcdefghijklmnopqrstuvwxy;\n", 3) + strings.Repeat("abcdefghijklmnopqrst.\n", 3) + "\n", []string{"a", ";", ".", "\n", ""}},
 		// A cut in an element: an iteration that fails after it fails the repetition.
-		{"cut", `
-def main = ("<" -- @(?a-z)+ ">")* @(?a-z<>)* $$`, strings.Repeat("<ab><cd>", 6) + "xyz", []string{"<", ">", "a", "", "<a>"}},
+		{"cut", `rule main = ("<" -- [a-z]+ #atomic ">")* [a-z<>]* #atomic $$`, strings.Repeat("<ab><cd>", 6) + "xyz", []string{"<", ">", "a", "", "<a>"}},
 		// An element that calls a rule reading a variable defined before the repetition is not
 		// resumed: the edit changes the variable, not the input the elements examined.
-		{"variables", `
-def main = h:hdr [k = len($h)] item* $$
-def hdr = @"x"*
-def item = [k == 1] @(?a-z) / @(?a-z) "!"`, "x" + strings.Repeat("a!", 20) + "a", []string{"x", "", "a!"}},
-		{"expectations", `
-def main = item* $$
-def item = @(?a-z)+ " "*`, strings.Repeat("ab cd ", 8) + "!", []string{"a", " ", "", "  "}},
+		{"variables", `rule main = h:hdr {k := len($h)} item* $$
+rule hdr = "x"* #atomic
+rule item = {k == 1} [a-z] #atomic / [a-z] #atomic "!"`, "x" + strings.Repeat("a!", 20) + "a", []string{"x", "", "a!"}},
+		{"expectations", `rule main = item* $$
+rule item = [a-z]+ #atomic " "*`, strings.Repeat("ab cd ", 8) + "!", []string{"a", " ", "", "  "}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -586,11 +571,10 @@ def item = @(?a-z)+ " "*`, strings.Repeat("ab cd ", 8) + "!", []string{"a", " ",
 	// The input range reused elements examined: the last element looks four characters ahead,
 	// past where the repetition ends, so the run's result depends on the "!!!!".
 	t.Run("examined", func(t *testing.T) {
-		prog := compile(t, `
-def main = run rest $$
-def run = item*
-def item = @(?a-z) &((?a-z!) (?a-z!) (?a-z!) (?a-z!))
-def rest = @(?^\n)*`)
+		prog := compile(t, `rule main = run rest $$
+rule run = item*
+rule item = [a-z] #atomic &([a-z!] [a-z!] [a-z!] [a-z!])
+rule rest = [^\n]* #atomic`)
 		doc, err := prog.NewDocumentWith("main", "abcdefgh!!!!", ParseOptions{Backend: backend})
 		if err != nil {
 			t.Fatal(err)
@@ -609,10 +593,9 @@ def rest = @(?^\n)*`)
 	// at the old position and the other where the edit moved it (the elements look behind, so the
 	// old result of list is not moved there). Only one of them takes the old run over.
 	t.Run("two runs", func(t *testing.T) {
-		prog := compile(t, `
-def main = list "!" / "bb" list "?"
-def list = item*
-def item = ^ @(?ab) / @(?ab)`)
+		prog := compile(t, `rule main = list "!" / "bb" list "?"
+rule list = item*
+rule item = ^ [ab] #atomic / [ab] #atomic`)
 		doc, err := prog.NewDocumentWith("main", "aaaa?", ParseOptions{Backend: backend})
 		if err != nil {
 			t.Fatal(err)
@@ -628,13 +611,12 @@ def item = ^ @(?ab) / @(?ab)`)
 	// The same before the repetition: the first element looks at the character before it, so the
 	// run's result depends on the "\n".
 	t.Run("examined before", func(t *testing.T) {
-		prog := compile(t, `
-def main = pre run $$
-def pre = @(?xy\n)*
-def run = item*
-def item = b:bol / mid
-def bol = ^ @(?a-z)
-def mid = @(?a-z) / "\n"`)
+		prog := compile(t, `rule main = pre run $$
+rule pre = [xy\n]* #atomic
+rule run = item*
+rule item = b:bol / mid
+rule bol = ^ [a-z] #atomic
+rule mid = [a-z] #atomic / "\n"`)
 		doc, err := prog.NewDocumentWith("main", "x\nab\ncd\nef\n", ParseOptions{Backend: backend})
 		if err != nil {
 			t.Fatal(err)
@@ -665,14 +647,12 @@ func TestDocumentResumeSequences(t *testing.T) {
 		ins                 []string
 	}{
 		// A minimum met only by reused elements: the edit is after all of them.
-		{"minimum", `
-def main = ("a" @(?a-z))+ @(?0-9)* $$`, strings.Repeat("ab", 20) + "123", []docEdit{{41, 42, 0}, {40, 41, 0}}, []string{"9", ""}},
+		{"minimum", `rule main = ("a" [a-z] #atomic)+ [0-9]* #atomic $$`, strings.Repeat("ab", 20) + "123", []docEdit{{41, 42, 0}, {40, 41, 0}}, []string{"9", ""}},
 		// Elements that call a rule reading a variable defined before the repetition: an edit to
 		// the header changes how they parse, though not the input they examined.
-		{"variables", `
-def main = h:hdr [k = len($h)] item* $$
-def hdr = @"x"*
-def item = [k == 1] @(?a-z!) / @(?a-z) "!"`, "x" + strings.Repeat("a!", 20), []docEdit{{0, 1, 0}, {0, 0, 0}, {0, 0, 0}}, []string{"", "x", "x"}},
+		{"variables", `rule main = h:hdr {k := len($h)} item* $$
+rule hdr = "x"* #atomic
+rule item = {k == 1} [a-z!] #atomic / [a-z] #atomic "!"`, "x" + strings.Repeat("a!", 20), []docEdit{{0, 1, 0}, {0, 0, 0}, {0, 0, 0}}, []string{"", "x", "x"}},
 	}
 	for _, c := range cases {
 		for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -700,9 +680,8 @@ def item = [k == 1] @(?a-z!) / @(?a-z) "!"`, "x" + strings.Repeat("a!", 20), []d
 // reused after an edit are moved in place (so the earlier tree shares them), and a clone keeps
 // the tree as it was, sharing included.
 func TestDocumentEarlierTrees(t *testing.T) {
-	prog := compile(t, `
-def main = line* $$
-def line = x:@(?a-z)+ "\n"`)
+	prog := compile(t, `rule main = line* $$
+rule line = x:[a-z]+ #atomic "\n"`)
 	doc, err := prog.NewDocument("main", strings.Repeat("ab\n", 10))
 	if err != nil {
 		t.Fatal(err)
@@ -731,9 +710,8 @@ def line = x:@(?a-z)+ "\n"`)
 func TestDocumentEditLogLimit(t *testing.T) {
 	defer func(n int) { maxEdits = n }(maxEdits)
 	maxEdits = 5
-	prog := compile(t, `
-def main = line* $$
-def line = x:@(?a-z)+ "\n"`)
+	prog := compile(t, `rule main = line* $$
+rule line = x:[a-z]+ #atomic "\n"`)
 	doc, err := prog.NewDocument("main", "ab\ncd\nef\n")
 	if err != nil {
 		t.Fatal(err)
@@ -774,37 +752,32 @@ func TestDocumentEditRegressions(t *testing.T) {
 		steps               []step
 	}{
 		// A run that starts inside inserted text, or after it: pasting a copy of a line (this hung).
-		{"paste", `
-def main = line* $$
-def line = as "\n"
-def as = a*
-def a = "a"`, strings.Repeat("a", 20) + "\n", 0, ParseOptions{}, []step{{21, 21, "\n" + strings.Repeat("a", 20) + "\n", "", false}}},
+		{"paste", `rule main = line* $$
+rule line = as "\n"
+rule as = a*
+rule a = "a"`, strings.Repeat("a", 20) + "\n", 0, ParseOptions{}, []step{{21, 21, "\n" + strings.Repeat("a", 20) + "\n", "", false}}},
 		// A run moved by an insertion, whose first element is empty and looked only behind: it must
 		// not be reused as an element before the edit.
-		{"run after insertion", `
-def main = ("xc" / r0 / .)* $$
-def r0 = (r1){0,2} "ab"
-def r1 = (^ "a")*`, "xxab", 1, ParseOptions{}, []step{{2, 2, "cd", "", false}}},
+		{"run after insertion", `rule main = ("xc" / r0 / .)* $$
+rule r0 = r1 #repeat(0, 2) "ab"
+rule r1 = (^ "a")*`, "xxab", 1, ParseOptions{}, []step{{2, 2, "cd", "", false}}},
 		// A capture in a lookahead in an element without captures of its own goes to the rule's
 		// scope; such an element is not resumed.
-		{"capture in lookahead", `def main = (&(c:"a") . / .)* $$`, strings.Repeat("a", 20), 0, ParseOptions{}, []step{{0, 1, "b", "", false}}},
+		{"capture in lookahead", `rule main = (&c:"a" . / .)* $$`, strings.Repeat("a", 20), 0, ParseOptions{}, []step{{0, 1, "b", "", false}}},
 		// Deleting up to the end of what the memo holds, with an entry kept at the start (Edit
 		// panicked).
-		{"delete tail", `
-def main = item* rest $$
-def item = e "a"
-def e = ""
-def rest = (?xy)*`, "axy", 0, ParseOptions{}, []step{{1, 2, "", "", false}}},
-		{"delete error", `
-def main = item* $$
-def item = b:bol / mid
-def bol = ^ @(?a-z)
-def mid = @(?a-z) / "\n"`, "ab!cd", 0, ParseOptions{}, []step{{1, 3, "", "", false}}},
+		{"delete tail", `rule main = item* rest $$
+rule item = e "a"
+rule e = ""
+rule rest = [xy]*`, "axy", 0, ParseOptions{}, []step{{1, 2, "", "", false}}},
+		{"delete error", `rule main = item* $$
+rule item = b:bol / mid
+rule bol = ^ [a-z] #atomic
+rule mid = [a-z] #atomic / "\n"`, "ab!cd", 0, ParseOptions{}, []step{{1, 3, "", "", false}}},
 		// An entry found invalid by an edit, then an aborted parse: the next lookup must not apply
 		// the edits again.
-		{"aborted parse", `
-def main = (item / .)* $$
-def item = "(" item* ")" / "x"`, "xxxx(x)", 0, ParseOptions{MaxDepth: 30},
+		{"aborted parse", `rule main = (item / .)* $$
+rule item = "(" item* ")" / "x"`, "xxxx(x)", 0, ParseOptions{MaxDepth: 30},
 			[]step{{0, 0, "zz", "", true}, {7, 8, strings.Repeat("(", 50), "nesting too deep", false}, {7, 57, "x", "", false}}},
 	}
 	for _, c := range cases {

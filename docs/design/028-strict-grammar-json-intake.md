@@ -22,7 +22,7 @@ The guide documents that behavior and there is no strict intake API.
 `grammar.Validate` already provides public structural validation for callers
 that build ASTs directly. It does not check JSON syntax, unknown fields or
 duplicate keys, and it deliberately does not replace compiler checks for
-names, types, attributes or Pratt semantics. A strict JSON decoder should
+names, types, attributes or Operators Rule semantics. A strict JSON decoder should
 reuse the same structural check after decoding rather than broaden
 `Validate` into a format-specific validator.
 
@@ -39,7 +39,7 @@ reuse the same structural check after decoding rather than broaden
   type must implement the interface expected at that AST position.
 - Keep strict intake separate from semantic compilation and resource limits.
 
-## Non-goals
+## Non-Goals
 
 - Changing the default behavior of `UnmarshalJSON` or the serialized grammar
   format.
@@ -51,7 +51,7 @@ reuse the same structural check after decoding rather than broaden
 
 ## Design
 
-### Public API and compatibility
+### Public API and Compatibility
 
 Add a strict-only entry point:
 
@@ -74,7 +74,7 @@ entry point keeps old behavior and types stable. Do not add a `WithOptions`
 wrapper or independent unknown/duplicate toggles until a concrete use case
 requires partial strictness.
 
-### Strictness and error paths
+### Strictness and Error Paths
 
 Unknown names are rejected using exact JSON-tag spelling; matching is
 case-sensitive. `@type` is recognized only where an interface-valued AST
@@ -101,7 +101,7 @@ Syntax errors keep their standard JSON cause and byte offset. Structural
 errors after successful decoding continue to return `*grammar.ValidationError`
 with its existing path and position fields.
 
-### Implementation and invariants
+### Implementation and Invariants
 
 The strict path must inspect object members before reducing them to a Go map,
 because map construction loses duplicate occurrences. It can use a token or
@@ -117,9 +117,9 @@ refactoring preserves its observed compatibility behavior: unknown fields
 remain ignored and duplicate keys retain last-value-wins behavior. Both
 functions continue rejecting trailing JSON values/data and integer values
 outside destination types. Neither function resolves names or performs type,
-attribute or Pratt checks; callers still use `pego.Compile` for those checks.
+attribute or Operators Rule checks; callers still use `pego.Compile` for those checks.
 
-### CLI and tooling integration
+### CLI and Tooling Integration
 
 Tooling that wants typo detection can opt in by calling `grammar.DecodeJSON`.
 A future `pego compile` or `pego gen` strict-input flag should select this
@@ -127,7 +127,7 @@ entry point only for JSON grammar files; source grammar parsing is unaffected.
 The default CLI path should remain compatible unless a separate migration
 decision changes it.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Make `UnmarshalJSON` strict by default.** This catches mistakes without
   caller changes, but rejects files that currently rely on ignored extension

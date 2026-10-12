@@ -14,13 +14,13 @@ import (
 
 func analysisChain(n int, leafFirst bool) string {
 	lines := make([]string, n+1)
-	lines[0] = "def main = r0 $$"
+	lines[0] = "rule main = r0 $$"
 	for i := range n {
 		body := `"é"`
 		if i+1 < n {
 			body = fmt.Sprintf("r%d", i+1)
 		}
-		lines[i+1] = fmt.Sprintf("def r%d = %s", i, body)
+		lines[i+1] = fmt.Sprintf("rule r%d = %s", i, body)
 	}
 	if leafFirst {
 		slices.Reverse(lines)
@@ -121,21 +121,25 @@ func TestAnalysisDependencyChains(t *testing.T) {
 	}
 }
 
-const analysisMixed = `def main = (left / right / cycle / expr(mul))* $$
-def left = shared shared
-def right = shared? "r"
-def shared = leaf / "xyz"
-def leaf = "é"
-def cycle = other "c" / "z"
-def other = cycle "o"
-def impossible = pure
- def pure = impossible
-def hidden = "hidden"
-def guarded = !hidden leaf
-def recovered = leaf #recover(skip=hidden)
-def missing = absent
-def independent = "independent"
-def expr = pratt { operand leaf level { infix left "+" } level mul { infix left "*" } }`
+const analysisMixed = `rule main = (left / right / cycle / level(expr, mul))* $$
+rule left = shared shared
+rule right = shared? "r"
+rule shared = leaf / "xyz"
+rule leaf = "é"
+rule cycle = other "c" / "z"
+rule other = cycle "o"
+rule impossible = pure
+rule pure = impossible
+rule hidden = "hidden"
+rule guarded = !hidden leaf
+rule recovered = leaf #recover(skip=hidden)
+rule missing = absent
+rule independent = "independent"
+rule expr = operators {
+    operand leaf
+    level { infix left "+" }
+    level mul { infix left "*" }
+}`
 
 func TestAnalysisDependencyCyclesAndCoverage(t *testing.T) {
 	g, err := pego.ParseGrammar(analysisMixed)
@@ -181,7 +185,7 @@ func BenchmarkSampleAnalysis(b *testing.B) {
 			})
 		}
 	}
-	for name, src := range map[string]string{"mixed": analysisMixed, "small": `def main = ("a" / "b")* $$`} {
+	for name, src := range map[string]string{"mixed": analysisMixed, "small": `rule main = ("a" / "b")* $$`} {
 		b.Run(name, func(b *testing.B) {
 			g, err := pego.ParseGrammar(src)
 			if err != nil {

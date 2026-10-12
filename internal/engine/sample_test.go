@@ -11,7 +11,7 @@ import (
 
 // TestSampleCorpus generates inputs for every grammar of the test corpus with package sample and checks
 // that each one parses, without errors, on every backend. The corpus covers predicates, variables,
-// lookahead, #recover, Pratt expressions, left recursion, anchors and character classes.
+// lookahead, #recover, Operators Rule expressions, left recursion, anchors and character classes.
 func TestSampleCorpus(t *testing.T) {
 	for _, c := range engine.Corpus(t) {
 		t.Run(c.Name, func(t *testing.T) {

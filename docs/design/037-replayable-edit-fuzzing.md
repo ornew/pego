@@ -46,7 +46,7 @@ A seed alone is not a durable reproducer: changes in generator logic, corpus ord
 - Minimize the operation sequence and replacement bytes while preserving the same failure class.
 - Exercise closure, recursive bytecode and iterative bytecode in both byte and rune position units.
 
-## Non-goals
+## Non-Goals
 
 - No change to parse or edit semantics, no new incremental storage and no claim that fuzzing proves equivalence for all inputs.
 - No serialized parser-module format, external property-testing dependency or generated-parser support.
@@ -55,7 +55,7 @@ A seed alone is not a durable reproducer: changes in generator logic, corpus ord
 
 ## Design
 
-### Public behavior and contracts
+### Public Behavior and Contracts
 
 Provide a small `sample`-adjacent Go API and the `pego edit-fuzz` command. Package placement is open to a prototype; the proposed entry point is:
 
@@ -88,19 +88,19 @@ At each checkpoint, compare successful values and full tree spans, recovered `Sy
 
 Failure minimization removes operation ranges, then shortens replacement bytes and simplifies valid edit boundaries while preserving explicit checkpoints and a stable failure fingerprint: mismatch category, backend, unit and first differing result/error location. Invalid candidate sequences are discarded rather than counted as the target failure. Apply a configurable attempt ceiling. Save original and minimized sequences atomically and never overwrite corpus files.
 
-### Implementation and invariants
+### Implementation and Invariants
 
 Compile `Parser` from the supplied exact grammar source and build on `NewDocument`, `Document.Edit`, `Document.Parse`, `Document.Text` and `Node.Clone`. Fresh oracle parses use identical start/backend/unit options and the current `Document.Text()` bytes, preserving the same decoding semantics. A result is snapshotted before subsequent document parses because incremental reuse may move nodes in earlier results. Positions in both outputs are compared in the declared unit.
 
 Generate offsets at valid boundaries for the active unit, deliberately including start, end, EOF, zero-width insertions/deletions and multibyte boundaries. Generate replacement payloads as arbitrary bytes, including malformed UTF-8, and encode them losslessly. Persist a failure sequence before minimization so interruption leaves a reproducer.
 
-### Compatibility and backend support
+### Compatibility and Backend Support
 
 This is additive tooling around the existing Go `Document` API. Closure, recursive bytecode and iterative bytecode are tested separately; the harness compiles the source with the metadata needed by each selected backend and reports unavailable backends rather than silently skipping them. Both byte and rune units are required. The CLI recompiles the grammar and does not change saved module formats. TypeScript and generated parsers do not expose `Document` and are outside this design.
 
 An edit sequence is an ordered state-transition log with a differential oracle. An ordinary parse fixture describes one input and expected output; the two formats have distinct purposes and should not be merged.
 
-### Implementation sequence
+### Implementation Sequence
 
 1. Implement in-memory edit events, explicit checkpoints and a fresh-vs-document comparator in Go tests, reusing existing randomized document coverage.
 2. Add the versioned lossless byte schema, replay, undo/redo rules and atomic failure persistence; validate hashes, units, boundaries and malformed events.
@@ -108,7 +108,7 @@ An edit sequence is an ordered state-transition log with a differential oracle. 
 4. Add bounded minimization and stable failure fingerprints; verify minimized files replay to the same mismatch without changing originals.
 5. Run saved corpora and generated sequences through every available backend and both units; report AST-only backend limits explicitly.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Report only a random seed.** It is compact, but generator or RNG changes can produce a different history. Keep the seed for provenance and save the exact bytes and operations for replay.
 - **Keep differential fuzzing only in repository tests.** It is easy to maintain but does not give grammar authors a portable reproducer. Reuse the comparator in a public API and CLI.
@@ -123,10 +123,10 @@ Use a small synthetic grammar corpus plus saved regressions covering success, fa
 
 Run a fixed seed twice and compare generated sequence bytes. Replay a saved sequence in a fresh process and compare every checkpoint. Test minimization on deliberately injected mismatch categories, enforce the attempt ceiling, and replay original and minimized artifacts. Verify failure writes are atomic and corpus files are unchanged. A bounded CI fuzz smoke test supplements, but does not replace, saved regression sequences.
 
-## Performance and results
+## Performance and Results
 
 This is correctness tooling rather than an optimization. Measure generation/replay throughput only to choose practical CI limits; keep parser time separate from comparator and minimizer work. Use fixed corpora and operation counts, report allocations and maximum sequence size, and do not treat fuzz throughput as parser performance. Raw artifacts stay in a caller-selected local directory or CI artifact, not in the source tree unless promoted as an ordinary regression fixture under its own format.
 
-## Limitations and open questions
+## Limitations and Open Questions
 
 Caller-provided instrumentation or extensions can observe different execution counts for fresh and document parses. Keep those observers out of the value/error oracle; the tool compares returned values and errors rather than callback invocation counts. The fingerprint must be stable enough for minimization without conflating distinct failures. The package location and CLI name can be finalized after an API prototype; neither changes the lossless event-log contract.

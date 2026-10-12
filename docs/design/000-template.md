@@ -26,37 +26,37 @@ toolchains when evidence depends on them.
 List the results the design must achieve and the constraints that determine its shape. State measurable acceptance
 criteria where possible, including correctness, portability and resource use.
 
-## Non-goals
+## Non-Goals
 
 State related capabilities deliberately outside the design. Explain meaningful scope boundaries without using them
 to omit necessary correctness or compatibility work.
 
 ## Design
 
-### Public behavior and contracts
+### Public Behavior and Contracts
 
 Define the API or grammar syntax, inputs, outputs, defaults, errors and edge cases. Specify position units,
 ownership/mutation, concurrency and cancellation where relevant. Make examples concrete and keep proposed syntax
 distinct from syntax the specification already accepts.
 
-### Implementation and invariants
+### Implementation and Invariants
 
 Describe the components and state that carry the behavior, why they preserve the contract, and how failure,
 backtracking, memoization, left recursion or recovery interact when relevant. Focus on decisions and invariants;
 the code will provide routine implementation detail.
 
-### Compatibility and backend support
+### Compatibility and Backend Support
 
 State effects on existing callers/grammars, serialized formats and generated output. Identify closure, recursive VM,
 iterative VM, generated Go/typed Go and TypeScript support separately where it differs. Specify migration or version
 gates for breaking changes and the documentation/specification that must change with the code.
 
-### Implementation sequence
+### Implementation Sequence
 
 For a large change, identify dependencies and reviewable stages, with acceptance gates. Do not mark a proposed stage
 complete or promise a release date without evidence. A broad roadmap does not replace concrete feature API designs.
 
-## Alternatives considered
+## Alternatives Considered
 
 For each credible alternative, explain its benefit, cost and reason for choosing or deferring it. Include the current
 behavior as a baseline when useful. Record measured rejection reasons, preserve open choices as open, and avoid
@@ -68,7 +68,7 @@ Describe regressions, differential/reference checks and failure cases that estab
 backends/units and generated consumers. Include interruption/rollback, malformed input, Unicode, boundaries and
 resource retention when applicable. Distinguish completed checks from the proposed validation plan.
 
-## Performance and results
+## Performance and Results
 
 For resource/performance effects, define reproducible workloads, baseline/candidate revisions, tools, sampling and
 raw-result locations. Measure the affected operation separately from adjacent work and check representative normal
@@ -78,7 +78,7 @@ generated benchmark report at optimization milestones. For correctness-only chan
 impacts in the commit message; do not add them to the optimization catalog. Keep routine raw output local.
 Omit this section if the design has no meaningful performance question.
 
-## Limitations and open questions
+## Limitations and Open Questions
 
 State remaining limitations, unresolved contracts, decisions requiring maintainer judgment and evidence needed to resolve
 them. Do not describe planned behavior as implemented. Update the record, development status, guides and specification

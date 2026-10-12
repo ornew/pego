@@ -24,16 +24,16 @@ type Num terminal
 type Bin struct { Left Expr, Op Match, Right Expr }
 type Expr = Bin | Num
 
-def main: Expr = pratt {
-    skip    " "*
+rule main Expr = operators {
+    skip " "*
     operand num
-    operand "(" e:main ")" -> $e
-    level { infix left  "+" / "-" -> new Bin{Left: $lhs, Op: $op, Right: $rhs} }
-    level { infix left  "*" / "/" -> new Bin{Left: $lhs, Op: $op, Right: $rhs} }
-    level { infix right "^"       -> new Bin{Left: $lhs, Op: $op, Right: $rhs} }
+    operand "(" e:main ")" => $e
+    level additive { infix left "+" / "-" => Bin{Left: $lhs, Op: $op, Right: $rhs} }
+    level multiplicative { infix left "*" / "/" => Bin{Left: $lhs, Op: $op, Right: $rhs} }
+    level power { infix right "^" => Bin{Left: $lhs, Op: $op, Right: $rhs} }
 }
 
-def num: Num = (?0-9)+
+rule num Num = [0-9]+
 ```
 
 ```console
@@ -41,7 +41,7 @@ $ pego parse -g calc.pego -f sexpr -i '1 + 2 * 3 ^ 2'
 (Bin Left=Num"1"@num Op="+" Right=(Bin Left=Num"2"@num Op="*" Right=(Bin Left=Num"3"@num Op="^" Right=Num"2"@num)))
 
 $ pego parse -g calc.pego -i '1 + * 2'
-pego: 1:5: syntax error: expected "(", (?0-9)
+pego: 1:5: syntax error: expected "(", [0-9]
 ```
 
 ```go
@@ -75,9 +75,9 @@ tree, err := p.Parse("1 + 2 * 3 ^ 2") // a *pego.Node, or a *pego.SyntaxError wi
 - **Types all the way down.** Declare struct, union and terminal types and build them in actions. Rule types are
   inferred and checked when the grammar compiles. `pego gen -types` emits matching Go values directly; TypeScript
   `parseAST` converts its Node tree into typed values (see the [guide](docs/guide/typescript.md#typed-values)).
-- **Precedence without the pain.** Operators are `pratt` levels, not a ladder of rules. Left recursion, direct or
+- **Precedence without the pain.** Operators are declared by binding level in an Operators Rule, not a ladder of rules. Left recursion, direct or
   indirect, just works.
-- **Errors that point the way.** Failures report the farthest position and what was expected there. `#error`
+- **Errors that point the way.** Failures report the farthest position and what was expected there. `@error`
   rewrites the message; `#recover` skips the broken part and keeps going.
 - **See what your grammar does.** `pego trace` shows every rule call with positions, results and memo hits,
   `pego explain` which calls make up a syntax error, and `pego profile` where the time and the backtracking go.
@@ -96,7 +96,7 @@ go install github.com/ornew/pego/cmd/pego@latest    # command-line tool
 
 Go 1.27 or later. No dependencies outside the standard library.
 
-## Use it
+## Use It
 
 **From Go**
 
@@ -141,7 +141,7 @@ pego sample -g grammar.pego -n 20 -coverage      # generate inputs the grammar a
 
 Run `pego` without arguments for every command and flag.
 
-## Ready-made parsers
+## Ready-Made Parsers
 
 [parsers/](parsers/) has parsers for common languages, written in PEGO, generated into Go and tested against the
 languages' conformance suites and reference implementations. Each is a module of its own that depends only on the
@@ -150,7 +150,7 @@ standard library:
 ```go
 import "github.com/ornew/pego/parsers/json"
 
-v, err := json.Decode(`{"name": "pego", "tags": ["peg", "pratt"]}`)
+v, err := json.Decode(`{"name": "pego", "tags": ["peg", "operators-rule"]}`)
 ```
 
 | Language | Module | Specification |
@@ -168,7 +168,7 @@ v, err := json.Decode(`{"name": "pego", "tags": ["peg", "pratt"]}`)
 
 ## Examples
 
-Small grammars with tests that show the features live in [examples/](examples/): a calculator (Pratt and
+Small grammars with tests that show the features live in [examples/](examples/): a calculator (Operators Rule and
 left-recursive), an indentation-based outline format and a small programming language. The complete parsers of
 [parsers/](parsers/), such as the ones for **Go** and **Python 3**, are the larger examples.
 

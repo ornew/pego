@@ -35,13 +35,13 @@ tradeoffs are recorded below.
 - Give the configured start rule a static result type with accurate nullable
   fields, aliases and recovery values.
 - Preserve the Node parser's whole-input, action, predicate, cut, recovery,
-  LR/Pratt, error, Unicode, integer and position-unit contracts.
+  LR/Operators Rule, error, Unicode, integer and position-unit contracts.
 - Convert returned values after parsing, without changing the representations
   actions and field-reading predicates observe while parsing.
 - Keep the generated module dependency-free, ES2020-compatible, and usable by
   runtimes that erase TS syntax.
 
-## Non-goals
+## Non-Goals
 
 Scalar top-level rules remain rejected by the existing node-producing rule
 contract. Scalar fields and aliases remain supported. This proposal does not
@@ -81,7 +81,7 @@ Use the generated depth default, zero reset, safe-integer validation and units
 already defined by the TS runtime. The unit entry point retains the existing
 unit normalization.
 
-### Value mapping
+### Value Mapping
 
 Prefer plain data objects and discriminated interfaces, with lowercase
 metadata matching existing TS Node conventions:
@@ -153,7 +153,7 @@ node-union recipe use any-conversion, as Go does. No checker or inference rule c
 
 Use a TS-specific export allocator covering every existing top-level type and
 value declaration, including private helpers, not just exports. Reserve Parser,
-Actx, Rule, PrattLine and other runtime declarations, generated symbol families
+Actx, Rule, OperatorsRuleLine and other runtime declarations, generated symbol families
 such as R0/Q0, and all new typed helpers/APIs before allocating grammar names.
 Maintain one complete declaration registry for the runtime/generator; the
 implementation must not rely on a short manually selected public-name list.
@@ -163,7 +163,7 @@ names and quote property keys where needed; never normalize Unicode spelling.
 Document regeneration cascades and test private-name collisions as well as
 public ones, rather than silently dropping exports.
 
-### Results, failure and recovery
+### Results, Failure and Recovery
 
 A successful parse returns the mapped value and null error. A successful nil
 result returns the selected representation's zero value (normally null).
@@ -179,7 +179,7 @@ from `value !== null`: nil-valued rules can succeed.
 No existing entry point changes its return shape. `parseAST` performs one Node
 parse followed by conversion.
 
-### Ownership and conversion
+### Ownership and Conversion
 
 Converters receive only the completed internal Node result. Allocate fresh
 plain objects and arrays, copy spans and scalar values, and never mutate the
@@ -217,7 +217,7 @@ bookkeeping adds memory and lookup costs for tree-shaped inputs, and both the
 Node graph and converted graph can remain live during conversion; measure this
 cost as well as the avoided DAG expansion.
 
-### Unicode, positions and integers
+### Unicode, Positions and Integers
 
 Copy Node text and coordinates unchanged. CodePoints positions count decoded
 Unicode scalars; Bytes positions count UTF-8 bytes, never JavaScript UTF-16
@@ -241,7 +241,7 @@ show deliberate exact-integer/text normalization for transport and must not
 claim byte-for-byte typed JSON parity. An exact typed serializer can be a
 separately scoped API rather than an implicit lossy `toJSON` hook.
 
-### Compatibility and implementation sequence
+### Compatibility and Implementation Sequence
 
 1. Implement the public shape and export policy above, deriving a TS mapping
    from existing type metadata, with deterministic exports and consumer tests.
@@ -253,7 +253,7 @@ separately scoped API rather than an implicit lossy `toJSON` hook.
 4. Only later consider direct typed matching. Require a TS analogue of Go's
    full `runtimeOK` guard, including every struct field and field-reading
    action/predicate. Unsupported layouts must retain the converter path.
-   Preserve action semantics, cuts, memoization, LR growth, Pratt attempts,
+   Preserve action semantics, cuts, memoization, LR growth, Operators Rule attempts,
    recovery and public ownership. Compare direct output with the converter
    reference using a static generation control; do not promise eligibility or
    a speedup before evidence.
@@ -263,7 +263,7 @@ TS gains opt-in typed output. No format migration is needed; regeneration is
 required to receive new exports, and reserved-name cascades can require
 consumer import/type spelling changes.
 
-## Alternatives considered
+## Alternatives Considered
 
 - **Interfaces over existing Nodes only.** Cheap emission but leaves runtime
   field lookup/casts, and does not produce the Go-style converted values.
@@ -285,7 +285,7 @@ validation passed; the results below quantify the opt-in converter costs:
 
 - Strict consumer compilation and execution: exported interfaces, every alias,
   union narrowing, nullable results and public/private collision cascades.
-  Include grammar types Parser, Actx, Rule and PrattLine, plus generated-symbol
+  Include grammar types Parser, Actx, Rule and OperatorsRuleLine, plus generated-symbol
   collisions such as R0. Assert imports/declaration exports,
   not just generated-file compilation.
 - Differential conversion versus existing Node results and Go typed mappings
@@ -293,7 +293,7 @@ validation passed; the results below quantify the opt-in converter costs:
   transport explicitly; do not confuse serialization equality with value
   equality. Cover empty/nil lists, optionals, Error in all positions, CST/open
   values and mixed scalar/node unions with recovered/dynamic values.
-- Whole-input failures, action errors, recovery, cuts, LR, Pratt, field-reading
+- Whole-input failures, action errors, recovery, cuts, LR, Operators Rule, field-reading
   actions, omitted fields, option getters applied once before parsing, generated
   and overridden depth limits. Retain results/diagnostics across repeated and
   reentrant parses and verify source Nodes are unchanged.
@@ -333,7 +333,7 @@ regeneration and focused source-review checks passed. Strict TypeScript
 consumers and real Node 22 runtime checks passed. Browser, Deno and Bun were
 not tested.
 
-## Performance and results
+## Performance and Results
 
 The typed API converts the ordinary Node result after parsing. It is an
 opt-in compatibility feature, not a runtime optimization: conversion can cost
@@ -438,7 +438,7 @@ capture-free and fold. Typed-only API declaration checks are separate from
 these matched build controls. Keep raw process records local and summarize
 paired medians, ranges and uncertainty.
 
-## Limitations and follow-up scope
+## Limitations and Follow-Up Scope
 
 The implemented API is configured-start parsing through parseAST and
 parseASTWithOptions, following existing TS call conventions. Interfaces are

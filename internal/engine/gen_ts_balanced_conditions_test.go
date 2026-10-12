@@ -16,9 +16,9 @@ func TestGeneratedTSWideCharacterClasses(t *testing.T) {
 		ranges.WriteByte('-')
 		ranges.WriteRune(lo + 1)
 	}
-	src := "def main = (?" + singles.String() + `) / "z"
-def negative = (?^` + singles.String() + `)
-def ranges = (?` + ranges.String() + `)`
+	src := "rule main = [" + singles.String() + `] / "z"
+rule negative = [^` + singles.String() + `]
+rule ranges = [` + ranges.String() + `]`
 	consumer := `import * as p from "./parser.ts";
 ` + tsTypedAssert + `
 for(const unit of [p.CodePoints,p.Bytes]) {

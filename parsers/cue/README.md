@@ -177,7 +177,7 @@ How the grammar got there (each step measured on *config*, `ParseAST`):
   (a failure that is recorded in the set of expectations costs a search of the set).
 - The file is read first inside a lookahead (`main_fast`), where failures record nothing, and again outside it
   only if it is invalid, to give the error: 37 ms to 26 ms.
-- An expression that is a single operand is read without the Pratt loop (`atom_expr`), and the experiments are
+- An expression that is a single operand is read without the Operators Rule loop (`atom_expr`), and the experiments are
   checked in `Check`, not in the grammar.
 - The only variable of the grammar is the number of hashes of the string being read (`sv`): rules that read a variable
   are memoized per its value, which costs an allocation for each memoized call: about 7% (when the generated runtime

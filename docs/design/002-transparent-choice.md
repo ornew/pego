@@ -8,7 +8,7 @@
 
 ## Abstract
 
-The current PEGO VM adheres to a strict "1 rule, 1 node" principle. This means a `ChoiceRule` (e.g., `def r = a / b`) always produces a `ChoiceNode`. While this design ensures a predictable CST structure and simplifies the VM's core logic, it complicates AST construction. Grammar authors must write verbose actions to manually "unwrap" these intermediate `ChoiceNode`s to create a clean AST.
+The current PEGO VM adheres to a strict "1 rule, 1 node" principle. This means a `ChoiceRule` (e.g., `rule r = a / b`) always produces a `ChoiceNode`. While this design ensures a predictable CST structure and simplifies the VM's core logic, it complicates AST construction. Grammar authors must write verbose actions to manually "unwrap" these intermediate `ChoiceNode`s to create a clean AST.
 
 This document proposes a change to the default behavior of `ChoiceRule` to make it transparent. Instead of generating a `ChoiceNode`, a successful match in a `ChoiceRule` will leave the result of the matched alternative directly on the value stack. This change eliminates the intermediate `ChoiceNode` from the CST/AST, leading to cleaner grammar actions and more intuitive tree structures.
 
@@ -23,13 +23,13 @@ type B struct {}
 type C struct {}
 type D struct {}
 
-def b: B = "b" -> new B{}
-def c: C = "c" -> new C{}
-def d: D = "d" -> new D{}
+rule b B = "b" => B{}
+rule c C = "c" => C{}
+rule d D = "d" => D{}
 
-def r = b / c d
+rule r = b / c d
 
-def root: A = "a" r "e" -> new A{Children: $2}
+rule root A = "a" r "e" => A{Children: $2}
 ```
 
 With the current implementation, `$2` in the `root` rule's action would be a `ChoiceNode`. The desired outcome is for `$2` to be a flat list of nodes: `[B{}]` if the `b` branch is taken, or `[C{}, D{}]` if the `c d` branch is taken. This proposal will make that the default behavior.
@@ -38,7 +38,7 @@ With the current implementation, `$2` in the `root` rule's action would be a `Ch
 
 This design modifies the compilation of `ChoiceRule` to no longer produce a `ChoiceNode`. It leverages the existing VM capabilities to handle the variable number of nodes that different alternatives can produce.
 
-### 1. Compiler Changes for `ChoiceRule`
+### 1. Compiler Changes For `ChoiceRule`
 
 The `compileRule` function in `compiler.go` will be modified for `ChoiceRule`. The new compilation strategy will be as follows:
 
@@ -46,10 +46,10 @@ The `compileRule` function in `compiler.go` will be modified for `ChoiceRule`. T
 2.  **Direct Result**: Each alternative within the `ChoiceRule` will be compiled to leave its result(s) directly on the value stack.
 3.  **Consistent Handling**: The parent rule (e.g., a `SeqRule`) will collect these results. To handle the variable number of nodes, `SeqRule` compilation already uses `OpListStart` and `OpListEnd` (or will be updated to), which collects all items pushed by its sub-expressions into a single list.
 
-**Revised Bytecode Generation for `def r = b / c d`:**
+**Revised Bytecode Generation for `rule r = b / c d`:**
 
 ```
-// def r = b / c d
+// rule r =  b / c d
 OpChoice, L1
 
 // --- Alternative 1: b ---
@@ -67,11 +67,11 @@ L_END:
 // The stack now contains either [..., Node(B)] or [..., Node(C), Node(D)]
 ```
 
-### 2. Compiler Changes for `SeqRule`
+### 2. Compiler Changes For `SeqRule`
 
 To accommodate a `ChoiceRule` that can now produce a variable number of nodes, the compilation of `SeqRule` must be robust. It will use a list-based collection mechanism.
 
-**Bytecode for `def root = "a" r "e"`:**
+**Bytecode for `rule root = "a" r "e"`:**
 
 ```
 OpListStart                 // Mark stack position before sequence
@@ -93,15 +93,15 @@ OpSetField, FieldChildren   // Set the collected list as children
 
 A related problem is flattening nested sequences, for example, making `(a b) c` result in a single sequence of `[a, b, c]` instead of `[SeqNode(a,b), c]`. This can be solved by a specific sequence of existing opcodes, without needing a new `OpPromoteChildren`.
 
-If a rule `def s = (a b)` is called from `def t = s c`, we can make `s` transparent. The action for `s` could be `-> $0`. In the compiler, this would translate to:
+If a rule `rule s = a b` is called from `rule t = s c`, we can make `s` transparent. The action for `s` could be `=> $0`. In the compiler, this would translate to:
 
 1.  A `SeqNode` for `(a b)` is created as usual.
-2.  The action `-> $0` is compiled. `$0` refers to the children of the `SeqNode`.
+2.  The action `=> $0` is compiled. `$0` refers to the children of the `SeqNode`.
 3.  This can be compiled to:
     - `OpGetField, FieldChildren` // Get the `[]any` children from the `SeqNode`
     - This leaves the list of children on the stack, effectively replacing the `SeqNode` with its children.
 
-This pattern can be applied by the compiler whenever a rule's action is simply to return its own children (`-> $0`), achieving grandchild promotion.
+This pattern can be applied by the compiler whenever a rule's action is simply to return its own children (`=> $0`), achieving grandchild promotion.
 
 ## Conclusion
 

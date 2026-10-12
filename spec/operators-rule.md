@@ -1,13 +1,12 @@
-# Pratt Expressions
+# Operators Rule
 
-A Pratt expression is a rule body that parses expressions with operators by
-declaring the operators in a table of binding levels, each with a precedence and
-an associativity. The shapes of operands and operators are written as
-[parsing expressions](parser-expressions.md); how they combine is determined by
-the Pratt parsing algorithm.
+An Operators Rule declaration defines a rule body that parses expressions by
+declaring operator parts at binding levels, each with a precedence and an
+associativity. Operand and operator shapes are ordinary parsing expressions.
+Their combination follows a parsing algorithm inspired by Pratt parsing.
 
 The background of the design and the alternatives that were considered are
-recorded in [docs/design/005](../docs/design/005-pratt-expressions.md).
+recorded in [design 005](../docs/design/005-operators-rule.md).
 
 ```pego
 type Num terminal
@@ -22,57 +21,61 @@ type Index struct { X Expr, Index Expr }
 type Member struct { X Expr, Name Ident }
 type Expr = Num | Ident | Comma | Assign | Cond | Bin | Unary | Call | Index | Member
 
-def expr: Expr = pratt {
-    skip    ws
+rule expr Expr = operators {
+    skip ws
     operand number
     operand ident
-    operand "(" e:expr ws ")" -> $e
+    operand "(" e:expr ws ")" => $e
 
-    level            { infix left  ","                  -> new Comma{L: $lhs, R: $rhs} }
-    level assignment { infix right "="                  -> new Assign{L: $lhs, R: $rhs} }
-    level            { infix right "?" then:expr ws ":" -> new Cond{Cond: $lhs, Then: $then, Else: $rhs} }
-    level            { infix none  "==" / "!="          -> new Bin{L: $lhs, Op: $op, R: $rhs} }
-    level            { infix left  "+" / "-"            -> new Bin{L: $lhs, Op: $op, R: $rhs} }
-    level            { infix left  "*" / "/"            -> new Bin{L: $lhs, Op: $op, R: $rhs} }
-    level            { prefix      "-" / "!"            -> new Unary{Op: $op, X: $rhs} }
-    level            { infix right "**"                 -> new Bin{L: $lhs, Op: $op, R: $rhs} }
-    level {
-        postfix "(" xs:args? ws ")"  -> new Call{Fn: $lhs, Args: concat($xs)}
-        postfix "[" i:expr ws "]"    -> new Index{X: $lhs, Index: $i}
-        postfix "." name:ident       -> new Member{X: $lhs, Name: $name}
+    level comma { infix left "," => Comma{L: $lhs, R: $rhs} }
+    level assignment { infix right "=" => Assign{L: $lhs, R: $rhs} }
+    level conditional { infix right "?" then:expr ws ":" => Cond{Cond: $lhs, Then: $then, Else: $rhs} }
+    level equality { infix none "==" / "!=" => Bin{L: $lhs, Op: $op, R: $rhs} }
+    level additive { infix left "+" / "-" => Bin{L: $lhs, Op: $op, R: $rhs} }
+    level multiplicative { infix left "*" / "/" => Bin{L: $lhs, Op: $op, R: $rhs} }
+    level prefix { prefix "-" / "!" => Unary{Op: $op, X: $rhs} }
+    level power { infix right "**" => Bin{L: $lhs, Op: $op, R: $rhs} }
+    level postfix {
+        postfix "(" xs:args? ws ")" => Call{Fn: $lhs, Args: concat($xs)}
+        postfix "[" i:expr ws "]" => Index{X: $lhs, Index: $i}
+        postfix "." name:ident => Member{X: $lhs, Name: $name}
     }
 }
 
-def args = first:expr(assignment) rest:(-ws "," x:expr(assignment))*
-    -> concat(list($first), map($rest, (r) => $r.x))
+rule args = first:level(expr, assignment) rest:(-ws "," x:level(expr, assignment))* => concat(list($first), map($rest, (r) => $r.x))
 
-def number: Num = (?0-9)+
-def ident: Ident = (?a-z)+
-def ws = (? \t\r\n)*
+rule number Num = [0-9]+
+rule ident Ident = [a-z]+
+rule ws = [ \t\r\n]*
 ```
 
 ## Syntax
 
 ```
-def <rule name>[: <type>] = pratt {
-    skip    <parsing expression>
-    operand <parsing expression> [-> <action>]
-    level [<level name>] {
-        prefix  <operator part> [-> <action>]
-        postfix <operator part> [-> <action>]
-        infix (left | right | none) <operator part> [-> <action>]
+rule <name> [<type>] = operators {
+    skip <parsing expression>
+    operand <parsing expression> [=> <action>]
+    level <level name> {
+        prefix <operator part> [=> <action>]
+        postfix <operator part> [=> <action>]
+        infix (left | right | none) <operator part> [=> <action>]
     }
 }
 ```
 
-- `pratt { ... }` MUST be the entire right-hand side of a rule definition. It
-  cannot appear inside another parsing expression, and the rule cannot have a
-  rule-level action.
-- Items need no separator; by convention, each item is written on its own line.
-- A Pratt expression has at most one `skip`, at least one `operand`, and any
+- An Operators Rule uses a dedicated `rule name [Type] = operators` declaration. It cannot
+  appear inside another parsing expression. Its optional type follows the rule
+  name; when omitted, the type is inferred from operands and operators.
+- An action after an `operand` or operator declaration uses `=>` and applies to
+  that complete operand or operator entry.
+- A declaration-level action after the closing `}` may be omitted or use the
+  explicit `=> ...` default-CST form. Any other declaration-level action is a
+  compile-time error.
+- Semicolons separate declaration items when needed; line boundaries may also make the separation unambiguous. Struct fields are comma-separated.
+- An Operators Rule has at most one `skip`, at least one `operand`, and any
   number of `level`s. A `level` contains any number of operators.
 - An **operator part** is an arbitrary parsing expression. It MAY call other
-  rules, including the rule that contains the Pratt expression.
+  rules, including the rule that contains the Operators Rule.
 
 ## Items
 
@@ -96,7 +99,7 @@ An `operand` describes the leading element of an expression that does not start
 with a prefix operator. Multiple `operand` items form an ordered choice in
 declaration order.
 
-An action (`->`) applies to the whole `operand` item. To give different
+An action (`=>`) applies to the whole `operand` item. To give different
 alternatives different actions, write them as separate `operand` items.
 An `operand` action can use captures and positional references (`$n`).
 
@@ -106,13 +109,15 @@ recursion. Write constructs that take an expression on their left as `infix` or
 
 ### `level`
 
-A `level` declares a binding level. **Levels declared earlier bind more
-loosely**; levels declared later bind more tightly. All operators in the same
-level have the same precedence, and a level MAY mix prefix, infix and postfix
-operators.
+A declaration `level additive { ... }` declares level `additive` on the
+Operators Rule target `expr`. The enclosing Operators Rule identifies the target. **Levels declared earlier
+bind more loosely**; levels declared later bind more tightly. All operators in
+the same level have the same precedence, and a level MAY mix prefix, infix and
+postfix operators. Every Operators Rule item, including each level declaration,
+uses the same hard-newline or semicolon statement boundary.
 
-A level MAY have a name, which MUST be unique within the rule. Named levels are
-used by [level-restricted calls](#level-restricted-calls).
+A level name MUST be unique within the target rule. Named levels are used by
+[level-restricted calls](#level-restricted-calls).
 
 ### Operators
 
@@ -125,16 +130,16 @@ used by [level-restricted calls](#level-restricted-calls).
 | `infix none P` | `lhs P rhs` | `a==b==c` does not chain: the expression ends after `a==b` |
 
 An operator part can consist of several elements. The following declarations
-appear inside `level { ... }` blocks:
+appear inside `level name { ... }` blocks:
 
 ```pego
-infix right "?" then:expr ":"           // conditional    lhs ? then : rhs
-postfix "[" i:expr "]"                  // index          lhs[i]
+infix right "?" then:expr ":" // conditional    lhs ? then : rhs
+postfix "[" i:expr "]" // index          lhs[i]
 prefix "if" c:expr "then" t:expr "else" // if expression  if c then t else rhs
-infix left _                            // application    f x (empty operator part)
+infix left _ // application    f x (empty operator part)
 ```
 
-## Parsing rules
+## Parsing Rules
 
 - **Precedence.** The right operand of an operator includes only operators of
   binding levels that bind more tightly than the operator's own level; for a
@@ -158,7 +163,7 @@ infix left _                            // application    f x (empty operator pa
   parsed, the operator is not applied and the expression ends before the
   operator. For a prefix operator, the parser then tries the `operand` items at
   the same position instead. If the operator part passed a
-  [cut](parser-expressions.md#cut) (`--`), the whole Pratt expression fails
+  [cut](parser-expressions.md#cut) (`--`), the whole Operators Rule fails
   instead. If no prefix operator part matches and any candidate failed after
   passing a cut, the whole expression also fails instead of trying operands.
   Failed candidates do not veto another successfully matching operator part;
@@ -172,13 +177,12 @@ candidate matches, and the attempted prefix passed a cut. Removing `--` allows
 operand fallback. This rule applies to every engine backend and standalone
 Go/TypeScript parsers.
 
-## Level-restricted calls
+## Level-Restricted Calls
 
-When a rule that has a Pratt expression is called with a level name, as in
-`expr(assignment)`, its tail applies **only infix and postfix operators of the
+When a rule that has an Operators Rule is called with a level name, as in
+`level(expr, assignment)`, its tail applies **only infix and postfix operators of the
 named level and of the levels that bind more tightly**. Calling the rule
-without a level name (`expr`) allows tail operators of all levels. The rule
-name and `(` MUST be adjacent, and the named level MUST exist in the called rule.
+without a level name (`expr`) allows tail operators of all levels. The `level` keyword and `(` MUST be adjacent, and the named level MUST exist in the called rule.
 
 The [prefix-operator exception](#parsing-rules) still applies: an operand
 position, including the start of a level-restricted call, MAY begin with a
@@ -191,19 +195,19 @@ also use their own level restrictions.
 
 ```pego
 // Function arguments do not parse the comma operator (only assignment and tighter).
-def args = first:expr(assignment) rest:(-ws "," x:expr(assignment))*
+rule args = first:level(expr, assignment) rest:(-ws "," x:level(expr, assignment))*
 ```
 
 For example, if `~` is a prefix in a level looser than addition and
-`multiplication` is a named tighter level, `expr(multiplication)` accepts
+`multiplication` is a named tighter level, `level(expr, multiplication)` accepts
 `~x+y` as `~(x+y)`. Without the prefix, it stops before the `+` in `x+y`.
 To exclude a lower-level prefix at entry, the caller must guard that input
 explicitly, accounting for any whitespace skip. For a rule without `skip`,
-`!"~" expr(multiplication)` excludes `~` at entry.
+`!"~" level(expr, multiplication)` excludes `~` at entry.
 
-## Actions
+## Value Actions
 
-An operator action can refer to the following names.
+An operator Value Action can refer to the following names.
 
 | Name | Value | Available in |
 |:--|:--|:--|
@@ -229,13 +233,13 @@ accept `Operator`, every operator needs an action.
 If the rule has no declared type, its type is the union of the types of all
 `operand` items and operators.
 
-## Concrete syntax tree
+## Concrete Syntax Tree
 
 An operator without an action produces a node of the reserved type `Operator`.
 
 | Property | Value |
 |:--|:--|
-| Rule name | The rule that contains the Pratt expression |
+| Rule name | The rule that contains the Operators Rule |
 | `operator` field | The index of the operator in declaration order, counted across all levels (0-based) |
 | Children | prefix: `[op, rhs]`; postfix: `[lhs, op]`; infix: `[lhs, op, rhs]` |
 
@@ -248,10 +252,10 @@ it creates is labeled with the name of the rule. The number of levels does not
 make the CST deeper.
 
 ```pego
-def e = pratt {
-    operand @(?0-9)+
-    level { infix left "+" }
-    level { infix left "*" }
+rule e = operators {
+    operand [0-9]+ #atomic
+    level additive { infix left "+" }
+    level multiplicative { infix left "*" }
 }
 ```
 

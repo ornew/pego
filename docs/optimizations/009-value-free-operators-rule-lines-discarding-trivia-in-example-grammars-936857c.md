@@ -1,6 +1,6 @@
-# 9. Value-free Pratt lines; discarding trivia in example grammars (936857c)
+# 9. Value-Free Operators Rule Lines; Discarding Trivia in Example Grammars (936857C)
 
-- A Pratt operator line with an action never uses the line's value (`$op` is built from the matched range and `$n` is
+- An Operators Rule operator line with an action never uses the line's value (`$op` is built from the matched range and `$n` is
   not allowed there), and neither does an operand line whose action does not use `$n`. Such lines are now compiled
   without values (closure `leanLine`; bytecode uses the same predicate).
 - The example grammars captured repetitions such as `rest:(ws "," ws m:member)*`. A captured value keeps its whole CST

@@ -1,4 +1,4 @@
-# 63. A smaller `Node`
+# 63. A Smaller `Node`
 
 - `Node` was 120 bytes: two name strings (`Type`, `Rule`), `int` positions, the text, children, fields and flags. The
   pair of names now sits behind one pointer to an interned kind (`nodeKind`; rules precompute the kinds they give

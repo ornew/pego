@@ -43,7 +43,7 @@ func TestInvalidUTF8EditBoundaries(t *testing.T) {
 }
 
 func TestDocumentCompletesUTF8Prefix(t *testing.T) {
-	p := compile(t, "def main=x $$\ndef x=.")
+	p := compile(t, "rule main = x $$\nrule x = .")
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, s := range []string{"\xc3", "\xe6\xbc", "\xf0\x9f\x98"} {
 			t.Run(backend.String()+fmt.Sprintf("/%x", s), func(t *testing.T) {
@@ -68,7 +68,7 @@ func TestDocumentCompletesUTF8Prefix(t *testing.T) {
 
 func TestDocumentInvalidUTF8EditEquivalence(t *testing.T) {
 	pieces := []string{"", "a", "\n", "é", "日", "😀", "\x80", "\xa9", "\xc3", "\xe6\xbc", "\xf0\x9f\x98", "\xff", "\xed\xa0\x80"}
-	grammars := []string{"def main=item* $$\ndef item=.", "def main=item* $$\ndef item=\"é\" / \"日\" / \"😀\" / \"\\uFFFD\"", "def main=item* $$\ndef item=(?é日😀\\uFFFD)", "def main=x $$\ndef x=."}
+	grammars := []string{"rule main = item* $$\nrule item = .", "rule main = item* $$\nrule item = \"é\" / \"日\" / \"😀\" / \"�\"", "rule main = item* $$\nrule item = [é日😀�]", "rule main = x $$\nrule x = ."}
 	for gi, grammar := range grammars {
 		p := compile(t, grammar)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -104,7 +104,7 @@ func TestDocumentInvalidUTF8EditEquivalence(t *testing.T) {
 }
 
 func TestDocumentResumesCompletedUTF8Prefix(t *testing.T) {
-	p := compile(t, "def main=item* $$\ndef item=.")
+	p := compile(t, "rule main = item* $$\nrule item = .")
 	prefix := strings.Repeat("a", 1000)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		t.Run(backend.String(), func(t *testing.T) {

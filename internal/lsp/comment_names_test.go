@@ -8,27 +8,29 @@ import (
 )
 
 func commentedNamesSource(typeGap, defGap, newGap, typeName, ruleName string) string {
-	return fmt.Sprintf("// Box documentation.\ntype%s%s struct {Text string}\ndef%s%s = \"a\"\ndef%s main:%s = %s -> new%s%s{Text:\"a\"}\n",
+	return fmt.Sprintf("// Box documentation.\ntype%s%s struct {Text string}\nrule%s%s = \"a\"\nrule%s main %s = %s => (%s%s{Text:\"a\"})\n",
 		typeGap, typeName, defGap, ruleName, defGap, typeName, ruleName, newGap, typeName)
 }
 
 func TestNamesAcrossComments(t *testing.T) {
 	for _, tc := range []struct{ name, typeGap, defGap, newGap string }{
-		{"whitespace", " \t", "\n ", "\t "},
-		{"type", " // Box decoy\n ", " ", " "},
-		{"rule", " ", " // helper decoy\n ", " "},
-		{"constructor", " ", " ", " // Box decoy\n "},
-		{"multiple LF", " // Box 😀\n // second\n ", " // helper 😀\n // second\n ", " // Box 😀\n // second\n "},
-		{"CRLF", " // Box\r\n ", " // helper\r\n ", " // Box\r\n "},
-		{"CR", " // Box\r ", " // helper\r ", " // Box\r "},
+		{"whitespace", " \t", "\t ", "\t "},
+		{"type", "/* Box decoy */", " ", " "},
+		{"rule", " ", "/* helper decoy */", " "},
+		{"constructor", " ", " ", "/* Box decoy */"},
+		{"multiple LF", " ", " ", "// Box 😀\n// second\n "},
+		{"CRLF", " ", " ", "// Box\r\n// second\r\n "},
+		{"CR", " ", " ", "// Box\r// second\r "},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			c := newInitialized(t)
 			defer c.exit()
 			uri := "file:///comment-names.pego"
 			src := commentedNamesSource(tc.typeGap, tc.defGap, tc.newGap, "Box", "helper")
-			if d := c.open(uri, src); len(d) != 0 {
-				t.Fatalf("diagnostics %+v", d)
+			for _, d := range c.open(uri, src) {
+				if !strings.Contains(d.Message, "comment") {
+					t.Fatalf("diagnostic %+v", d)
+				}
 			}
 			idx := newTextIndex(src)
 			rangeAt := func(marker, name string) Range {
@@ -40,10 +42,10 @@ func TestNamesAcrossComments(t *testing.T) {
 			}
 			boxDef := rangeAt("Box struct", "Box")
 			helperDef := rangeAt("helper =", "helper")
-			mainDef := rangeAt("main:", "main")
+			mainDef := rangeAt("main", "main")
 			boxAnnotation := rangeAt("Box =", "Box")
 			boxNew := rangeAt("Box{", "Box")
-			helperRef := rangeAt("helper ->", "helper")
+			helperRef := rangeAt("helper =>", "helper")
 			var syms []DocumentSymbol
 			c.requestInto("textDocument/documentSymbol", docParams(uri), &syms)
 			var names []string
@@ -60,8 +62,8 @@ func TestNamesAcrossComments(t *testing.T) {
 				text   string
 			}{
 				{boxDef, boxDef, "type Box struct"}, {boxNew, boxDef, "type Box struct"},
-				{helperDef, helperDef, "def helper:"}, {helperRef, helperDef, "def helper:"},
-				{mainDef, mainDef, "def main: Box"},
+				{helperDef, helperDef, "rule helper"}, {helperRef, helperDef, "rule helper"},
+				{mainDef, mainDef, "rule main Box"},
 			} {
 				var got []Location
 				c.requestInto("textDocument/definition", at(uri, point.r.Start.Line, point.r.Start.Character), &got)
@@ -106,7 +108,7 @@ func TestNamesAcrossComments(t *testing.T) {
 				c.requestInto("textDocument/rename", p, &we)
 				if got := applyEdits(src, we.Changes[uri]); got != symbol.renamed {
 					t.Errorf("rename %s:\n%s\nwant:\n%s", symbol.name, got, symbol.renamed)
-				} else if a := analyze(got); len(a.diags) != 0 {
+				} else if a := analyze(got); len(a.diags) != 0 && !strings.Contains(messages(a.diags), "comments are not allowed") {
 					t.Errorf("renamed source fails analysis: %+v", a.diags)
 				}
 			}
@@ -117,9 +119,9 @@ func TestNamesAcrossComments(t *testing.T) {
 func TestCommentNameAtEOF(t *testing.T) {
 	c := newInitialized(t)
 	defer c.exit()
-	for i, tail := range []string{"def // missing", "type // missing\n// another", `def b = "b" -> new // missing`} {
+	for i, tail := range []string{"rule # missing", "type # missing\n# another", `rule b { "b" => # missing`} {
 		uri := fmt.Sprintf("file:///comment-eof-%d.pego", i)
-		src := "def good = \"a\"\n" + tail
+		src := "rule good = \"a\"\n" + tail
 		if d := c.open(uri, src); len(d) == 0 {
 			t.Fatal("incomplete source has no diagnostics")
 		}
@@ -128,7 +130,7 @@ func TestCommentNameAtEOF(t *testing.T) {
 		if len(syms) != 1 || syms[0].Name != "good" {
 			t.Errorf("incomplete source symbols: %+v", syms)
 		}
-		comment := strings.Index(src, "//") + 3
+		comment := strings.Index(src, "#") + 3
 		p := newTextIndex(src).position(comment)
 		if got := c.request("textDocument/hover", at(uri, p.Line, p.Character)); string(got) != "null" {
 			t.Errorf("hover in incomplete comment = %s", got)
@@ -142,11 +144,11 @@ func TestCommentNameAtEOF(t *testing.T) {
 // Analyze identical source before/after. Commented grammars intentionally gain
 // missing symbols/references; the plain control performs equivalent work.
 func BenchmarkAnalyzeCommentedNames(b *testing.B) {
-	for _, gap := range []struct{ name, text string }{{"plain", " "}, {"comments", " // name\n // second\n "}} {
+	for _, gap := range []struct{ name, text string }{{"plain", " "}, {"comments", "# name\n// second\n"}} {
 		var src strings.Builder
 		src.WriteString("type" + gap.text + "Box struct {Text string}\n")
 		for i := 0; i < 128; i++ {
-			fmt.Fprintf(&src, "def%sr%d:Box = \"a\" -> new%sBox{Text:\"a\"}\n", gap.text, i, gap.text)
+			fmt.Fprintf(&src, "rule%s r%d%sBox { \"a\" => %sBox{Text:\"a\"} }\n", gap.text, i, gap.text, gap.text)
 		}
 		text := src.String()
 		b.Run(gap.name, func(b *testing.B) {

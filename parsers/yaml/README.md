@@ -12,7 +12,7 @@ go get github.com/ornew/pego/parsers/yaml
 
 ```go
 // Go values, with the YAML 1.2 core schema: map[string]any, []any, string, int64, float64, bool, nil.
-v, err := yaml.Load("name: pego\ntags: [peg, pratt]\nstars: 42\n")
+v, err := yaml.Load("name: pego\ntags: [peg, operators-rule]\nstars: 42\n")
 docs, err := yaml.LoadAll("--- a\n--- [b, c]\n") // one value per document
 
 // Typed values with positions, tags, anchors and styles.
@@ -51,7 +51,7 @@ the block style; `Scalar.Style` is `Plain`, `SingleQuoted`, `DoubleQuoted`, `Lit
 `*Scalar`, and a pair of a flow sequence (`[a: b]`) a flow `*Mapping` of one pair. Positions are in code points by
 default; `yaml.ParseAST(src, yaml.WithUnit(yaml.Bytes))` counts bytes.
 
-### Checks that are not syntax
+### Checks That Are Not Syntax
 
 The parser checks the syntax. `Check` (and `Valid`, `Events`, `Load` and `LoadAll`) report what the syntax cannot
 show: a tag shorthand whose handle the document does not declare, more than one `%YAML` directive in a document or
@@ -79,7 +79,7 @@ For manually constructed ASTs, `Check`, stream `Events`, document `Load` and `Re
 malformed versions/handles/tags, invalid prefix characters/escapes or empty tag prefixes. This checks tag and
 directive shape; it is not validation of an arbitrary AST graph.
 
-### Go values
+### Go Values
 
 `Load` composes a document with the YAML 1.2 core schema (10.3):
 

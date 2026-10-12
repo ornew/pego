@@ -35,7 +35,7 @@ type definition struct {
 	// definition (from the keyword to its last token).
 	nameStart, nameEnd int
 	start, end         int
-	// kwStart is the byte offset of the keyword (def or type).
+	// kwStart is the byte offset of the keyword (rule or type).
 	kwStart int
 	rule    *grammar.RuleDef
 	typ     *grammar.TypeDef
@@ -65,7 +65,8 @@ type analysis struct {
 	idx  *textIndex
 	toks []token
 	// tokAt maps the byte offset at which a token starts to its index in toks.
-	tokAt map[int]int
+	tokAt             map[int]int
+	declarationStarts []bool
 	// g is the grammar, partial if there are syntax errors (see syntax.ParsePartial).
 	g          *grammar.Grammar
 	syntaxErrs syntax.ErrorList
@@ -133,6 +134,7 @@ func analyze(text string) *analysis {
 		a.toks = append(a.toks, token{t, start, end})
 	}
 	a.g, a.syntaxErrs = syntax.ParsePartial(text)
+	a.indexDeclarationStarts()
 	a.collect()
 	for _, e := range a.syntaxErrs {
 		r := a.errorRange(e.Pos, false)
@@ -229,11 +231,21 @@ func (a *analysis) significantToken(i int) int {
 	return i
 }
 
+// previousSignificantToken skips comments backwards; -1 means the start of input.
+func (a *analysis) previousSignificantToken(i int) int {
+	for i >= 0 && a.toks[i].Kind == syntax.TokenComment {
+		i--
+	}
+	return i
+}
+
 // collect records the definitions and the occurrences of names in the grammar.
 func (a *analysis) collect() {
+	a.mark(a.g.PackagePos, semKeyword, 0)
 	for _, s := range a.g.Statements {
 		switch s := s.(type) {
 		case *grammar.RuleDef:
+			a.mark(s.Pos, semKeyword, 0)
 			d := a.define(kindRule, s.Name, s.Pos)
 			if d == nil {
 				continue
@@ -250,6 +262,7 @@ func (a *analysis) collect() {
 				a.walkTerm(s.Action)
 			}
 		case *grammar.TypeDef:
+			a.mark(s.Pos, semKeyword, 0)
 			d := a.define(kindType, s.Name, s.Pos)
 			if d == nil {
 				continue
@@ -257,6 +270,13 @@ func (a *analysis) collect() {
 			d.typ = s
 			if a.types[s.Name] == nil {
 				a.types[s.Name] = d
+			}
+			if i, ok := a.tokenIndex(s.Pos); ok {
+				name := a.significantToken(i + 1)
+				spec := a.significantToken(name + 1)
+				if a.isIdent(spec, "struct") || a.isIdent(spec, "terminal") {
+					a.markToken(spec, semKeyword, 0)
+				}
 			}
 			switch spec := s.Spec.(type) {
 			case *grammar.StructSpec:
@@ -280,7 +300,7 @@ func (a *analysis) mark(pos grammar.Pos, typ semTokenType, mods int) {
 }
 
 func (a *analysis) markToken(i int, typ semTokenType, mods int) {
-	if i < len(a.toks) && a.toks[i].Kind == syntax.TokenIdent {
+	if i >= 0 && i < len(a.toks) && a.toks[i].Kind == syntax.TokenIdent {
 		a.sem[a.toks[i].start] = semClass{typ, mods}
 	}
 }
@@ -297,17 +317,27 @@ func (a *analysis) define(kind symKind, name string, pos grammar.Pos) *definitio
 	}
 	kw, n := a.toks[i], a.toks[next]
 	d := &definition{kind: kind, name: name, kwStart: kw.start, nameStart: n.start, nameEnd: n.end, start: kw.start}
-	// The definition ends with the last token before the next definition.
-	last := next
+	// Declarations end at a top-level separator or the next declaration. A
+	// constructor or operators block closing brace can still precede an action.
+	last, depth := next, 0
 	for j := next + 1; j < len(a.toks); j++ {
 		t := a.toks[j]
-		if t.Kind == syntax.TokenIdent && (t.Text == "def" || t.Text == "type") {
+		if depth == 0 && (a.isDefKeyword(j) || a.declarationStart(j) && a.isIdent(j, "package") || a.isPunct(j, ";")) {
 			break
 		}
 		if t.Kind != syntax.TokenComment {
 			last = j
 		}
+		if t.Kind == syntax.TokenPunct {
+			switch t.Text {
+			case "(", "(?", "{", "[":
+				depth++
+			case ")", "}", "]":
+				depth = max(0, depth-1)
+			}
+		}
 	}
+
 	d.end = a.toks[last].end
 	d.doc = a.docComment(i, last)
 	a.defs = append(a.defs, d)
@@ -323,11 +353,11 @@ func (a *analysis) docComment(first, last int) string {
 	line := a.toks[first].Pos.Line
 	for k := first - 1; k >= 0; k-- {
 		t := a.toks[k]
-		if t.Kind != syntax.TokenComment || t.Pos.Line != line-1 || k > 0 && a.toks[k-1].End.Line == t.Pos.Line {
+		if t.Kind != syntax.TokenComment || t.End.Line != line-1 || k > 0 && a.toks[k-1].End.Line == t.Pos.Line {
 			break
 		}
 		lines = append(lines, commentText(t.Text))
-		line--
+		line = t.Pos.Line
 	}
 	if len(lines) == 0 && a.toks[last].Pos.Line == a.toks[first].Pos.Line && last+1 < len(a.toks) {
 		if t := a.toks[last+1]; t.Kind == syntax.TokenComment && t.Pos.Line == a.toks[last].End.Line {
@@ -341,6 +371,9 @@ func (a *analysis) docComment(first, last int) string {
 }
 
 func commentText(c string) string {
+	if strings.HasPrefix(c, "/*") {
+		return strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(c, "/*"), "*/"))
+	}
 	c = strings.TrimPrefix(c, "//")
 	return strings.TrimPrefix(c, " ")
 }
@@ -380,7 +413,21 @@ func (a *analysis) walkType(t grammar.TypeExpr) {
 
 func (a *analysis) walkExpr(e grammar.Expr) {
 	switch e := e.(type) {
+	case *grammar.Group:
+		a.walkExpr(e.Expr)
+	case *grammar.InlineAction:
+		a.walkExpr(e.Expr)
+		a.walkTerm(e.Action)
 	case *grammar.Ref:
+		if e.Level != "" {
+			if i, ok := a.tokenIndex(e.Pos); ok {
+				open := a.previousSignificantToken(i - 1)
+				keyword := a.previousSignificantToken(open - 1)
+				if a.isPunct(open, "(") && a.isIdent(keyword, "level") {
+					a.markToken(keyword, semKeyword, 0)
+				}
+			}
+		}
 		a.ref(kindRule, e.Name, e.Pos)
 	case *grammar.Seq:
 		for _, x := range e.Items {
@@ -400,6 +447,11 @@ func (a *analysis) walkExpr(e grammar.Expr) {
 		a.walkExpr(e.Expr)
 	case *grammar.Atomic:
 		a.walkExpr(e.Expr)
+	case *grammar.Stream:
+		a.walkExpr(e.Expr)
+	case *grammar.Recovery:
+		a.walkExpr(e.Expr)
+		a.walkExpr(e.Skip)
 	case *grammar.Discard:
 		a.walkExpr(e.Expr)
 	case *grammar.Capture:
@@ -413,22 +465,34 @@ func (a *analysis) walkExpr(e grammar.Expr) {
 			if i, ok := a.tokenIndex(at.Pos); ok {
 				a.markToken(i+1, semDecorator, 0)
 			}
-			for _, arg := range at.Args {
-				a.walkExpr(arg.Value)
+			for _, arg := range at.ExpressionArgs() {
+				a.walkExpr(arg)
 			}
 		}
-	case *grammar.Pratt:
+	case *grammar.OperatorsRule:
+		if i, ok := a.tokenIndex(e.Pos); ok {
+			a.markToken(a.previousSignificantToken(i-1), semKeyword, 0)
+		}
+		a.mark(e.SkipPos, semKeyword, 0)
 		if e.Skip != nil {
 			a.walkExpr(e.Skip)
 		}
 		for _, o := range e.Operands {
+			a.mark(o.Pos, semKeyword, 0)
 			a.walkExpr(o.Expr)
 			if o.Action != nil {
 				a.walkTerm(o.Action)
 			}
 		}
 		for _, l := range e.Levels {
+			a.mark(l.Pos, semKeyword, 0)
 			for _, op := range l.Operators {
+				a.mark(op.Pos, semKeyword, 0)
+				if op.Kind == grammar.Infix {
+					if i, ok := a.tokenIndex(op.Pos); ok {
+						a.markToken(a.significantToken(i+1), semKeyword, 0)
+					}
+				}
 				a.walkExpr(op.Expr)
 				if op.Action != nil {
 					a.walkTerm(op.Action)
@@ -440,6 +504,10 @@ func (a *analysis) walkExpr(e grammar.Expr) {
 
 func (a *analysis) walkTerm(t grammar.Term) {
 	switch t := t.(type) {
+	case *grammar.Block:
+		for _, stmt := range t.Statements {
+			a.walkTerm(stmt)
+		}
 	case *grammar.Member:
 		a.walkTerm(t.X)
 		mods := 0
@@ -448,9 +516,9 @@ func (a *analysis) walkTerm(t grammar.Term) {
 		}
 		a.mark(t.Pos, semProperty, mods)
 	case *grammar.New:
-		// The type name follows the keyword new.
+		// The constructor starts at its type name.
 		if i, ok := a.tokenIndex(t.Pos); ok {
-			a.refToken(kindType, t.Type, a.significantToken(i+1))
+			a.refToken(kindType, t.Type, i)
 		}
 		for _, f := range t.Fields {
 			a.mark(f.Pos, semProperty, 0)

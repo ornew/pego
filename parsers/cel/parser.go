@@ -325,9 +325,9 @@ type rule struct {
 	leader bool
 	// seen is the rule's index among the memoized rules whose memoization is deferred to the
 	// second call at a position (firstCall), or -1.
-	seen    int
-	pratt   *pratt
-	novalue bool // value-free twin, called where the value is discarded
+	seen          int
+	operatorsRule *operatorsRule
+	novalue       bool // value-free twin, called where the value is discarded
 	// vars are the variables the rule or its callees read, sorted. Memo entries are keyed by their
 	// values at the call, since definitions inside the rule are undone when it returns.
 	vars []string
@@ -489,7 +489,7 @@ func (p *parser) release() {
 
 // --- Parser state ---
 
-// expID is an expectation: an index into descs. With msgBit set, it is an #error message.
+// expID is an expectation: an index into descs. With msgBit set, it is an @error message.
 type expID int32
 
 const msgBit expID = 1 << 30
@@ -813,7 +813,7 @@ const nodeFrameScratch = true
 
 // frameScratch keeps stable capture frames and slots until the parse returns.
 // Neither array can be reached through a returned Node's children or fields.
-// Append-only allocation also preserves retained Pratt attempts and undo marks.
+// Append-only allocation also preserves retained OperatorsRule attempts and undo marks.
 type frameScratch struct {
 	frames  []*[nodeChunk]frame
 	slots   []*[ptrChunk]*Node
@@ -1945,32 +1945,32 @@ func (c *actx) endList(base int) any {
 	return c.listNode(c.p.kids(base))
 }
 
-// --- Pratt expressions ---
+// --- Operators Rule expressions ---
 
-type pratt struct {
+type operatorsRule struct {
 	skip     matcher
-	operands []*prattLine
-	prefix   []*prattOp
-	led      []*prattOp
+	operands []*operatorsRuleLine
+	prefix   []*operatorsRuleOp
+	led      []*operatorsRuleOp
 }
 
-type prattLine struct {
+type operatorsRuleLine struct {
 	scope  []string
 	m      matcher
 	action func(*actx) any
 	isSeq  bool
 }
 
-type prattOp struct {
+type operatorsRuleOp struct {
 	id    int
 	kind  string
 	assoc string
 	level int
-	line  *prattLine
+	line  *operatorsRuleLine
 }
 
-type prattAttempt struct {
-	op         *prattOp
+type operatorsRuleAttempt struct {
+	op         *operatorsRuleOp
 	frame      *frame
 	v          *Node
 	start, end int
@@ -1979,7 +1979,7 @@ type prattAttempt struct {
 	errs       []*SyntaxError
 }
 
-func (p *parser) skipTrivia(pr *pratt) {
+func (p *parser) skipTrivia(pr *operatorsRule) {
 	if pr.skip == nil {
 		return
 	}
@@ -1995,7 +1995,7 @@ func (p *parser) skipTrivia(pr *pratt) {
 // longest tries every operator and returns the longest match (the first declared among equals);
 // best.op is nil when none matched. cutFailed reports a candidate that failed after a cut. The
 // attempt is returned by value, so trying operators allocates nothing for lines without captures.
-func (p *parser) longest(ops []*prattOp) (best prattAttempt, cutFailed bool) {
+func (p *parser) longest(ops []*operatorsRuleOp) (best operatorsRuleAttempt, cutFailed bool) {
 	m0 := p.mark()
 	for _, op := range ops {
 		prevFrame, prevCut := p.frame, p.cut
@@ -2008,7 +2008,7 @@ func (p *parser) longest(ops []*prattOp) (best prattAttempt, cutFailed bool) {
 			ok = false // an empty prefix or postfix match could be applied forever
 		}
 		if ok && (best.op == nil || p.pos > best.end) {
-			best = prattAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
+			best = operatorsRuleAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
 				errs: append([]*SyntaxError(nil), p.recovered[m0.recovered:]...)}
 		}
 		if !ok && cut {
@@ -2027,27 +2027,27 @@ func (p *parser) longest(ops []*prattOp) (best prattAttempt, cutFailed bool) {
 	return best, cutFailed
 }
 
-func (p *parser) apply(a *prattAttempt) {
+func (p *parser) apply(a *operatorsRuleAttempt) {
 	p.pos, p.env = a.end, a.env
 	p.recovered = append(p.recovered, a.errs...)
 }
 
-// prattParse parses an expression with operators that bind tighter than min. Each level of its
+// operatorsRuleParse parses an expression with operators that bind tighter than min. Each level of its
 // recursion (the operand of a prefix operator, the right operand of an infix operator) counts
 // against the nesting limit, like a rule call.
-func (p *parser) prattParse(r *rule, min int) (*Node, bool) {
+func (p *parser) operatorsRuleParse(r *rule, min int) (*Node, bool) {
 	p.depth++
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.prattExpr(r, min)
+	v, ok := p.operatorsRuleExpr(r, min)
 	p.depth--
 	return v, ok
 }
 
-func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
-	pr := r.pratt
-	lhs, ok := p.prattNud(r)
+func (p *parser) operatorsRuleExpr(r *rule, min int) (*Node, bool) {
+	pr := r.operatorsRule
+	lhs, ok := p.operatorsRuleNud(r)
 	if !ok {
 		return nil, false
 	}
@@ -2069,7 +2069,7 @@ func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 		}
 		p.apply(&a)
 		if a.op.kind == "postfix" {
-			lhs = p.prattBuild(r, &a, lhs, nil)
+			lhs = p.operatorsRuleBuild(r, &a, lhs, nil)
 			lastNone = -1
 			if p.pos == m0.pos {
 				break
@@ -2080,7 +2080,7 @@ func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 		if a.op.assoc == "right" {
 			rmin--
 		}
-		rhs, ok := p.prattParse(r, rmin)
+		rhs, ok := p.operatorsRuleParse(r, rmin)
 		if !ok {
 			if a.cut {
 				return nil, false
@@ -2088,7 +2088,7 @@ func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 			p.reset(m0)
 			break
 		}
-		lhs = p.prattBuild(r, &a, lhs, rhs)
+		lhs = p.operatorsRuleBuild(r, &a, lhs, rhs)
 		lastNone = -1
 		if a.op.assoc == "none" {
 			lastNone = a.op.level
@@ -2102,15 +2102,15 @@ func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 	return lhs, true
 }
 
-func (p *parser) prattNud(r *rule) (*Node, bool) {
-	pr := r.pratt
+func (p *parser) operatorsRuleNud(r *rule) (*Node, bool) {
+	pr := r.operatorsRule
 	p.skipTrivia(pr)
 	m0 := p.mark()
 	if a, cutFailed := p.longest(pr.prefix); a.op != nil {
 		p.apply(&a)
-		rhs, ok := p.prattParse(r, a.op.level)
+		rhs, ok := p.operatorsRuleParse(r, a.op.level)
 		if ok {
-			return p.prattBuild(r, &a, nil, rhs), true
+			return p.operatorsRuleBuild(r, &a, nil, rhs), true
 		}
 		if a.cut {
 			return nil, false
@@ -2137,7 +2137,7 @@ func (p *parser) prattNud(r *rule) (*Node, bool) {
 	return nil, false
 }
 
-func (p *parser) lineResult(r *rule, l *prattLine, f *frame, v *Node, start int) *Node {
+func (p *parser) lineResult(r *rule, l *operatorsRuleLine, f *frame, v *Node, start int) *Node {
 	if r.novalue {
 		return nil
 	}
@@ -2163,7 +2163,7 @@ func (p *parser) lineResult(r *rule, l *prattLine, f *frame, v *Node, start int)
 	return v
 }
 
-func (p *parser) prattBuild(r *rule, a *prattAttempt, lhs, rhs *Node) *Node {
+func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *Node) *Node {
 	if r.novalue {
 		return nil
 	}
@@ -2254,7 +2254,7 @@ type Span struct{ Start, End int }
 func (s *Span) tspan() (int, int)       { return s.Start, s.End }
 func (s *Span) tsetSpan(start, end int) { s.Start, s.End = start, end }
 
-// Match is a terminal made by a literal, a character class, ., @a or _.
+// Match is a terminal made by a literal, a character class, ., a #atomic or _.
 type Match struct {
 	Span
 	Text string
@@ -2390,9 +2390,9 @@ func asTval(v any) tval {
 // trule is a rule of the typed runtime: the rule's analysis results and its typed body.
 type trule struct {
 	*rule
-	body   func(p *tparser, min int) (any, bool)
-	action func(c *tctx) any
-	pratt  *tpratt
+	body          func(p *tparser, min int) (any, bool)
+	action        func(c *tctx) any
+	operatorsRule *toperatorsRule
 	// term makes the value of a rule of a terminal type.
 	term func(p *tparser, start, end int, text string) tval
 	// entry is the generated method that calls the rule as call(r, 0) does (u<id> or s<id>), for
@@ -3502,32 +3502,32 @@ func (c *tctx) endList(base int) any {
 	return c.listNode(c.p.kids(base))
 }
 
-// --- Pratt expressions ---
+// --- Operators Rule expressions ---
 
-type tpratt struct {
+type toperatorsRule struct {
 	skip     tmatcher
-	operands []*tprattLine
-	prefix   []*tprattOp
-	led      []*tprattOp
+	operands []*toperatorsRuleLine
+	prefix   []*toperatorsRuleOp
+	led      []*toperatorsRuleOp
 }
 
-type tprattLine struct {
+type toperatorsRuleLine struct {
 	scope  []string
 	m      tmatcher
 	action func(*tctx) any
 	isSeq  bool
 }
 
-type tprattOp struct {
+type toperatorsRuleOp struct {
 	id    int
 	kind  string
 	assoc string
 	level int
-	line  *tprattLine
+	line  *toperatorsRuleLine
 }
 
-type tprattAttempt struct {
-	op         *tprattOp
+type toperatorsRuleAttempt struct {
+	op         *toperatorsRuleOp
 	frame      *tframe
 	v          any
 	start, end int
@@ -3536,7 +3536,7 @@ type tprattAttempt struct {
 	errs       []*SyntaxError
 }
 
-func (p *tparser) skipTrivia(pr *tpratt) {
+func (p *tparser) skipTrivia(pr *toperatorsRule) {
 	if pr.skip == nil {
 		return
 	}
@@ -3549,7 +3549,7 @@ func (p *tparser) skipTrivia(pr *tpratt) {
 	}
 }
 
-func (p *tparser) longest(ops []*tprattOp) (best tprattAttempt, cutFailed bool) {
+func (p *tparser) longest(ops []*toperatorsRuleOp) (best toperatorsRuleAttempt, cutFailed bool) {
 	m0 := p.mark()
 	for _, op := range ops {
 		prevFrame, prevCut := p.frame, p.cut
@@ -3562,7 +3562,7 @@ func (p *tparser) longest(ops []*tprattOp) (best tprattAttempt, cutFailed bool) 
 			ok = false
 		}
 		if ok && (best.op == nil || p.pos > best.end) {
-			best = tprattAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
+			best = toperatorsRuleAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
 				errs: append([]*SyntaxError(nil), p.recovered[m0.recovered:]...)}
 		}
 		if !ok && cut {
@@ -3579,25 +3579,25 @@ func (p *tparser) longest(ops []*tprattOp) (best tprattAttempt, cutFailed bool) 
 	return best, cutFailed
 }
 
-func (p *tparser) apply(a *tprattAttempt) {
+func (p *tparser) apply(a *toperatorsRuleAttempt) {
 	p.pos, p.env = a.end, a.env
 	p.recovered = append(p.recovered, a.errs...)
 }
 
-// prattParse is parser.prattParse for typed values.
-func (p *tparser) prattParse(r *trule, min int) (any, bool) {
+// operatorsRuleParse is parser.operatorsRuleParse for typed values.
+func (p *tparser) operatorsRuleParse(r *trule, min int) (any, bool) {
 	p.depth++
 	if p.depth > p.maxDepth {
 		p.tooDeep()
 	}
-	v, ok := p.prattExpr(r, min)
+	v, ok := p.operatorsRuleExpr(r, min)
 	p.depth--
 	return v, ok
 }
 
-func (p *tparser) prattExpr(r *trule, min int) (any, bool) {
-	pr := r.pratt
-	lhs, ok := p.prattNud(r)
+func (p *tparser) operatorsRuleExpr(r *trule, min int) (any, bool) {
+	pr := r.operatorsRule
+	lhs, ok := p.operatorsRuleNud(r)
 	if !ok {
 		return nil, false
 	}
@@ -3619,7 +3619,7 @@ func (p *tparser) prattExpr(r *trule, min int) (any, bool) {
 		}
 		p.apply(&a)
 		if a.op.kind == "postfix" {
-			lhs = p.prattBuild(r, &a, lhs, nil)
+			lhs = p.operatorsRuleBuild(r, &a, lhs, nil)
 			lastNone = -1
 			if p.pos == m0.pos {
 				break
@@ -3630,7 +3630,7 @@ func (p *tparser) prattExpr(r *trule, min int) (any, bool) {
 		if a.op.assoc == "right" {
 			rmin--
 		}
-		rhs, ok := p.prattParse(r, rmin)
+		rhs, ok := p.operatorsRuleParse(r, rmin)
 		if !ok {
 			if a.cut {
 				return nil, false
@@ -3638,7 +3638,7 @@ func (p *tparser) prattExpr(r *trule, min int) (any, bool) {
 			p.reset(m0)
 			break
 		}
-		lhs = p.prattBuild(r, &a, lhs, rhs)
+		lhs = p.operatorsRuleBuild(r, &a, lhs, rhs)
 		lastNone = -1
 		if a.op.assoc == "none" {
 			lastNone = a.op.level
@@ -3650,15 +3650,15 @@ func (p *tparser) prattExpr(r *trule, min int) (any, bool) {
 	return lhs, true
 }
 
-func (p *tparser) prattNud(r *trule) (any, bool) {
-	pr := r.pratt
+func (p *tparser) operatorsRuleNud(r *trule) (any, bool) {
+	pr := r.operatorsRule
 	p.skipTrivia(pr)
 	m0 := p.mark()
 	if a, cutFailed := p.longest(pr.prefix); a.op != nil {
 		p.apply(&a)
-		rhs, ok := p.prattParse(r, a.op.level)
+		rhs, ok := p.operatorsRuleParse(r, a.op.level)
 		if ok {
-			return p.prattBuild(r, &a, nil, rhs), true
+			return p.operatorsRuleBuild(r, &a, nil, rhs), true
 		}
 		if a.cut {
 			return nil, false
@@ -3685,7 +3685,7 @@ func (p *tparser) prattNud(r *trule) (any, bool) {
 	return nil, false
 }
 
-func (p *tparser) lineResult(r *trule, l *tprattLine, f *tframe, v any, start int) any {
+func (p *tparser) lineResult(r *trule, l *toperatorsRuleLine, f *tframe, v any, start int) any {
 	if r.novalue {
 		return nil
 	}
@@ -3710,7 +3710,7 @@ func (p *tparser) lineResult(r *trule, l *tprattLine, f *tframe, v any, start in
 	return nil
 }
 
-func (p *tparser) prattBuild(r *trule, a *tprattAttempt, lhs, rhs any) any {
+func (p *tparser) operatorsRuleBuild(r *trule, a *toperatorsRuleAttempt, lhs, rhs any) any {
 	if r.novalue {
 		return nil
 	}
@@ -5501,20 +5501,20 @@ func init() {
 	nseen = 19
 	rules[0].body = func(p *parser, _ int) (*Node, bool) { return p.e1() }
 	rules[0].action = func(c *actx) any { return c.cap(0) }
-	rules[1].pratt = &pratt{
+	rules[1].operatorsRule = &operatorsRule{
 		skip: (*parser).e114,
-		operands: []*prattLine{
-			&prattLine{scope: []string{}, m: (*parser).e115, action: nil, isSeq: false},
+		operands: []*operatorsRuleLine{
+			&operatorsRuleLine{scope: []string{}, m: (*parser).e115, action: nil, isSeq: false},
 		},
-		prefix: []*prattOp{},
-		led: []*prattOp{{id: 0, kind: "infix", assoc: "right", level: 1, line: &prattLine{scope: []string{"then"}, m: (*parser).e120, action: func(c *actx) any { return c.newStruct("Conditional", "Cond", c.lhs, "Then", c.cap(0), "Else", c.rhs) }, isSeq: true}},
-			{id: 1, kind: "infix", assoc: "left", level: 2, line: &prattLine{scope: []string{}, m: (*parser).e122, action: func(c *actx) any { return c.newStruct("Binary", "Left", c.lhs, "Op", c.op, "Right", c.rhs) }, isSeq: false}},
-			{id: 2, kind: "infix", assoc: "left", level: 3, line: &prattLine{scope: []string{}, m: (*parser).e124, action: func(c *actx) any { return c.newStruct("Binary", "Left", c.lhs, "Op", c.op, "Right", c.rhs) }, isSeq: false}},
-			{id: 3, kind: "infix", assoc: "left", level: 4, line: &prattLine{scope: []string{}, m: (*parser).e141, action: func(c *actx) any { return c.newStruct("Binary", "Left", c.lhs, "Op", c.op, "Right", c.rhs) }, isSeq: false}},
-			{id: 4, kind: "infix", assoc: "left", level: 5, line: &prattLine{scope: []string{}, m: (*parser).e145, action: func(c *actx) any { return c.newStruct("Binary", "Left", c.lhs, "Op", c.op, "Right", c.rhs) }, isSeq: false}},
-			{id: 5, kind: "infix", assoc: "left", level: 6, line: &prattLine{scope: []string{}, m: (*parser).e152, action: func(c *actx) any { return c.newStruct("Binary", "Left", c.lhs, "Op", c.op, "Right", c.rhs) }, isSeq: false}}},
+		prefix: []*operatorsRuleOp{},
+		led: []*operatorsRuleOp{{id: 0, kind: "infix", assoc: "right", level: 1, line: &operatorsRuleLine{scope: []string{"then"}, m: (*parser).e120, action: func(c *actx) any { return c.newStruct("Conditional", "Cond", c.lhs, "Then", c.cap(0), "Else", c.rhs) }, isSeq: true}},
+			{id: 1, kind: "infix", assoc: "left", level: 2, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e122, action: func(c *actx) any { return c.newStruct("Binary", "Left", c.lhs, "Op", c.op, "Right", c.rhs) }, isSeq: false}},
+			{id: 2, kind: "infix", assoc: "left", level: 3, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e124, action: func(c *actx) any { return c.newStruct("Binary", "Left", c.lhs, "Op", c.op, "Right", c.rhs) }, isSeq: false}},
+			{id: 3, kind: "infix", assoc: "left", level: 4, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e141, action: func(c *actx) any { return c.newStruct("Binary", "Left", c.lhs, "Op", c.op, "Right", c.rhs) }, isSeq: false}},
+			{id: 4, kind: "infix", assoc: "left", level: 5, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e145, action: func(c *actx) any { return c.newStruct("Binary", "Left", c.lhs, "Op", c.op, "Right", c.rhs) }, isSeq: false}},
+			{id: 5, kind: "infix", assoc: "left", level: 6, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e152, action: func(c *actx) any { return c.newStruct("Binary", "Left", c.lhs, "Op", c.op, "Right", c.rhs) }, isSeq: false}}},
 	}
-	rules[1].body = func(p *parser, min int) (*Node, bool) { return p.prattParse(rules[1], min) }
+	rules[1].body = func(p *parser, min int) (*Node, bool) { return p.operatorsRuleParse(rules[1], min) }
 	rules[2].body = func(p *parser, _ int) (*Node, bool) { return p.e2() }
 	rules[3].body = func(p *parser, _ int) (*Node, bool) { return p.e5() }
 	rules[3].action = func(c *actx) any {
@@ -5524,23 +5524,23 @@ func init() {
 	rules[4].action = func(c *actx) any {
 		return rtFold("foldr", true, c.cap(1), c.cap(0), func(l_155, l_156 any) any { return c.newStruct("Unary", "Op", c.member(l_156, "o"), "X", l_155) })
 	}
-	rules[5].pratt = &pratt{
+	rules[5].operatorsRule = &operatorsRule{
 		skip: (*parser).e114,
-		operands: []*prattLine{
-			&prattLine{scope: []string{}, m: (*parser).e157, action: nil, isSeq: false},
+		operands: []*operatorsRuleLine{
+			&operatorsRuleLine{scope: []string{}, m: (*parser).e157, action: nil, isSeq: false},
 		},
-		prefix: []*prattOp{},
-		led: []*prattOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"q", "f"}, m: (*parser).e164, action: func(c *actx) any {
+		prefix: []*operatorsRuleOp{},
+		led: []*operatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"q", "f"}, m: (*parser).e164, action: func(c *actx) any {
 			return c.newStruct("Select", "X", c.lhs, "Field", c.cap(1), "Optional", rtBinary(">", c.length(c.cap(0)), any(0)))
 		}, isSeq: true}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"f", "as"}, m: (*parser).e172, action: func(c *actx) any {
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"f", "as"}, m: (*parser).e172, action: func(c *actx) any {
 				return c.newStruct("Call", "Target", c.lhs, "Func", c.cap(0), "Args", c.concat(c.cap(1)))
 			}, isSeq: true}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{"q", "i"}, m: (*parser).e177, action: func(c *actx) any {
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{"q", "i"}, m: (*parser).e177, action: func(c *actx) any {
 				return c.newStruct("Index", "X", c.lhs, "Index", c.cap(1), "Optional", rtBinary(">", c.length(c.cap(0)), any(0)))
 			}, isSeq: true}}},
 	}
-	rules[5].body = func(p *parser, min int) (*Node, bool) { return p.prattParse(rules[5], min) }
+	rules[5].body = func(p *parser, min int) (*Node, bool) { return p.operatorsRuleParse(rules[5], min) }
 	rules[6].body = func(p *parser, _ int) (*Node, bool) { return p.e10() }
 	rules[6].action = func(c *actx) any { return c.cap(0) }
 	rules[7].body = func(p *parser, _ int) (*Node, bool) { return p.e11() }
@@ -5721,34 +5721,34 @@ func init() {
 	}
 	recNseen = 16
 	recRules[0].body = func(p *parser, _ int) (*Node, bool) { return p.e180() }
-	recRules[1].pratt = &pratt{
+	recRules[1].operatorsRule = &operatorsRule{
 		skip: (*parser).e223,
-		operands: []*prattLine{
-			&prattLine{scope: []string{}, m: (*parser).e224, action: nil, isSeq: false},
+		operands: []*operatorsRuleLine{
+			&operatorsRuleLine{scope: []string{}, m: (*parser).e224, action: nil, isSeq: false},
 		},
-		prefix: []*prattOp{},
-		led: []*prattOp{{id: 0, kind: "infix", assoc: "right", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e226, action: nil, isSeq: true}},
-			{id: 1, kind: "infix", assoc: "left", level: 2, line: &prattLine{scope: []string{}, m: (*parser).e122, action: nil, isSeq: false}},
-			{id: 2, kind: "infix", assoc: "left", level: 3, line: &prattLine{scope: []string{}, m: (*parser).e124, action: nil, isSeq: false}},
-			{id: 3, kind: "infix", assoc: "left", level: 4, line: &prattLine{scope: []string{}, m: (*parser).e141, action: nil, isSeq: false}},
-			{id: 4, kind: "infix", assoc: "left", level: 5, line: &prattLine{scope: []string{}, m: (*parser).e145, action: nil, isSeq: false}},
-			{id: 5, kind: "infix", assoc: "left", level: 6, line: &prattLine{scope: []string{}, m: (*parser).e152, action: nil, isSeq: false}}},
+		prefix: []*operatorsRuleOp{},
+		led: []*operatorsRuleOp{{id: 0, kind: "infix", assoc: "right", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e226, action: nil, isSeq: true}},
+			{id: 1, kind: "infix", assoc: "left", level: 2, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e122, action: nil, isSeq: false}},
+			{id: 2, kind: "infix", assoc: "left", level: 3, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e124, action: nil, isSeq: false}},
+			{id: 3, kind: "infix", assoc: "left", level: 4, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e141, action: nil, isSeq: false}},
+			{id: 4, kind: "infix", assoc: "left", level: 5, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e145, action: nil, isSeq: false}},
+			{id: 5, kind: "infix", assoc: "left", level: 6, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e152, action: nil, isSeq: false}}},
 	}
-	recRules[1].body = func(p *parser, min int) (*Node, bool) { return p.prattParse(recRules[1], min) }
+	recRules[1].body = func(p *parser, min int) (*Node, bool) { return p.operatorsRuleParse(recRules[1], min) }
 	recRules[2].body = func(p *parser, _ int) (*Node, bool) { return p.e181() }
 	recRules[3].body = func(p *parser, _ int) (*Node, bool) { return p.e182() }
 	recRules[4].body = func(p *parser, _ int) (*Node, bool) { return p.e183() }
-	recRules[5].pratt = &pratt{
+	recRules[5].operatorsRule = &operatorsRule{
 		skip: (*parser).e223,
-		operands: []*prattLine{
-			&prattLine{scope: []string{}, m: (*parser).e227, action: nil, isSeq: false},
+		operands: []*operatorsRuleLine{
+			&operatorsRuleLine{scope: []string{}, m: (*parser).e227, action: nil, isSeq: false},
 		},
-		prefix: []*prattOp{},
-		led: []*prattOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e230, action: nil, isSeq: true}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e234, action: nil, isSeq: true}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &prattLine{scope: []string{}, m: (*parser).e236, action: nil, isSeq: true}}},
+		prefix: []*operatorsRuleOp{},
+		led: []*operatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e230, action: nil, isSeq: true}},
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e234, action: nil, isSeq: true}},
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &operatorsRuleLine{scope: []string{}, m: (*parser).e236, action: nil, isSeq: true}}},
 	}
-	recRules[5].body = func(p *parser, min int) (*Node, bool) { return p.prattParse(recRules[5], min) }
+	recRules[5].body = func(p *parser, min int) (*Node, bool) { return p.operatorsRuleParse(recRules[5], min) }
 	recRules[6].body = func(p *parser, _ int) (*Node, bool) { return p.e184() }
 	recRules[7].body = func(p *parser, _ int) (*Node, bool) { return p.e185() }
 	recRules[8].body = func(p *parser, _ int) (*Node, bool) { return p.e186() }
@@ -5792,7 +5792,7 @@ func init() {
 	recRules[46].body = func(p *parser, _ int) (*Node, bool) { return p.e105() }
 	recRules[47].body = func(p *parser, _ int) (*Node, bool) { return p.e222() }
 	recRules[48].body = func(p *parser, _ int) (*Node, bool) { return p.e104() }
-	descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"!\"", "\"-\"", "(?A-Za-z_)", "(?0-9)", "(?\"\\')", "\".\"", "\"(\"", "\"[\"", "\"{\"", "(?tf)", "\"n\"", "(?rR)", "(?bB)", "\")\"", "\",\"", "\"]\"", "\"?\"", "\"}\"", "\":\"", "(?A-Za-z0-9_)", "\"true\"", "\"false\"", "\"null\"", "(?0-9a-zA-Z_.)", "(?eE)", "(?+\\-)", "\"0x\"", "(?0-9a-fA-F)", "(?uU)", "\"\\\"\\\"\\\"\"", "\"'''\"", "\"\\\"\"", "(?^\"\\n\\r)", "\"'\"", "(?^\\'\\n\\r)", "\"\\\"\\\"\"", "(?^\"\\\\)", "(?^\"\\\\\\n\\r)", "\"''\"", "(?^\\'\\\\)", "(?^\\'\\\\\\n\\r)", "\"\\\\\"", "(?abfnrtv\"\\'\\\\\\?`)", "(?0-3)", "(?0-7)", "(?xX)", "\"\\\\u\"", "(?dD)", "(?89a-fA-F)", "\"\\\\U\"", "\"0000\"", "\"00\"", "\"0\"", "\"10\"", "\"in\"", "\"as\"", "\"break\"", "\"const\"", "\"continue\"", "\"else\"", "\"for\"", "\"function\"", "\"if\"", "\"import\"", "\"let\"", "\"loop\"", "\"package\"", "\"namespace\"", "\"return\"", "\"var\"", "\"void\"", "\"while\"", "\"`\"", "(?A-Za-z0-9_.\\-/ )", "(? \\t\\r\\n\\f)", "\"//\"", "(?^\\n)", "\"||\"", "\"&&\"", "\"<=\"", "\"<\"", "\">=\"", "\">\"", "\"==\"", "\"!=\"", "\"+\"", "\"*\"", "\"/\"", "\"%\""}
+	descs = []string{"any character", "beginning of input", "end of input", "beginning of line", "end of line", "\"!\"", "\"-\"", "[A-Za-z_]", "[0-9]", "[\"\\']", "\".\"", "\"(\"", "\"[\"", "\"{\"", "[tf]", "\"n\"", "[rR]", "[bB]", "\")\"", "\",\"", "\"]\"", "\"?\"", "\"}\"", "\":\"", "[A-Za-z0-9_]", "\"true\"", "\"false\"", "\"null\"", "[0-9a-zA-Z_.]", "[eE]", "[+\\-]", "\"0x\"", "[0-9a-fA-F]", "[uU]", "\"\\\"\\\"\\\"\"", "\"'''\"", "\"\\\"\"", "[^\"\\n\\r]", "\"'\"", "[^\\'\\n\\r]", "\"\\\"\\\"\"", "[^\"\\\\]", "[^\"\\\\\\n\\r]", "\"''\"", "[^\\'\\\\]", "[^\\'\\\\\\n\\r]", "\"\\\\\"", "[abfnrtv\"\\'\\\\?`]", "[0-3]", "[0-7]", "[xX]", "\"\\\\u\"", "[dD]", "[89a-fA-F]", "\"\\\\U\"", "\"0000\"", "\"00\"", "\"0\"", "\"10\"", "\"in\"", "\"as\"", "\"break\"", "\"const\"", "\"continue\"", "\"else\"", "\"for\"", "\"function\"", "\"if\"", "\"import\"", "\"let\"", "\"loop\"", "\"package\"", "\"namespace\"", "\"return\"", "\"var\"", "\"void\"", "\"while\"", "\"`\"", "[A-Za-z0-9_.\\-/ ]", "[ \\t\\r\\n\\f]", "\"//\"", "[^\\n]", "\"||\"", "\"&&\"", "\"<=\"", "\"<\"", "\">=\"", "\">\"", "\"==\"", "\"!=\"", "\"+\"", "\"*\"", "\"/\"", "\"%\""}
 	trules = []*trule{
 		{rule: rules[0]},
 		{rule: rules[1]},
@@ -5856,13 +5856,13 @@ func init() {
 	}
 	defer tinit()
 	trules[0].entry = (*tparser).u0
-	trules[1].pratt = &tpratt{
+	trules[1].operatorsRule = &toperatorsRule{
 		skip: (*tparser).e272,
-		operands: []*tprattLine{
-			&tprattLine{scope: []string{}, m: (*tparser).e273, action: nil, isSeq: false},
+		operands: []*toperatorsRuleLine{
+			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e273, action: nil, isSeq: false},
 		},
-		prefix: []*tprattOp{},
-		led: []*tprattOp{{id: 0, kind: "infix", assoc: "right", level: 1, line: &tprattLine{scope: []string{"then"}, m: (*tparser).e274, action: func(c *tctx) any {
+		prefix: []*toperatorsRuleOp{},
+		led: []*toperatorsRuleOp{{id: 0, kind: "infix", assoc: "right", level: 1, line: &toperatorsRuleLine{scope: []string{"then"}, m: (*tparser).e274, action: func(c *tctx) any {
 			return func() any {
 				f_275 := c.lhs
 				f_276 := c.cap(0)
@@ -5870,7 +5870,7 @@ func init() {
 				return tmk_Conditional(c, true, f_275, f_276, f_277)
 			}()
 		}, isSeq: true}},
-			{id: 1, kind: "infix", assoc: "left", level: 2, line: &tprattLine{scope: []string{}, m: (*tparser).e278, action: func(c *tctx) any {
+			{id: 1, kind: "infix", assoc: "left", level: 2, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e278, action: func(c *tctx) any {
 				return func() any {
 					f_279 := c.lhs
 					f_280 := c.op
@@ -5878,7 +5878,7 @@ func init() {
 					return tmk_Binary(c, true, f_279, f_280, f_281)
 				}()
 			}, isSeq: false}},
-			{id: 2, kind: "infix", assoc: "left", level: 3, line: &tprattLine{scope: []string{}, m: (*tparser).e282, action: func(c *tctx) any {
+			{id: 2, kind: "infix", assoc: "left", level: 3, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e282, action: func(c *tctx) any {
 				return func() any {
 					f_283 := c.lhs
 					f_284 := c.op
@@ -5886,7 +5886,7 @@ func init() {
 					return tmk_Binary(c, true, f_283, f_284, f_285)
 				}()
 			}, isSeq: false}},
-			{id: 3, kind: "infix", assoc: "left", level: 4, line: &tprattLine{scope: []string{}, m: (*tparser).e286, action: func(c *tctx) any {
+			{id: 3, kind: "infix", assoc: "left", level: 4, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e286, action: func(c *tctx) any {
 				return func() any {
 					f_287 := c.lhs
 					f_288 := c.op
@@ -5894,7 +5894,7 @@ func init() {
 					return tmk_Binary(c, true, f_287, f_288, f_289)
 				}()
 			}, isSeq: false}},
-			{id: 4, kind: "infix", assoc: "left", level: 5, line: &tprattLine{scope: []string{}, m: (*tparser).e290, action: func(c *tctx) any {
+			{id: 4, kind: "infix", assoc: "left", level: 5, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e290, action: func(c *tctx) any {
 				return func() any {
 					f_291 := c.lhs
 					f_292 := c.op
@@ -5902,7 +5902,7 @@ func init() {
 					return tmk_Binary(c, true, f_291, f_292, f_293)
 				}()
 			}, isSeq: false}},
-			{id: 5, kind: "infix", assoc: "left", level: 6, line: &tprattLine{scope: []string{}, m: (*tparser).e294, action: func(c *tctx) any {
+			{id: 5, kind: "infix", assoc: "left", level: 6, line: &toperatorsRuleLine{scope: []string{}, m: (*tparser).e294, action: func(c *tctx) any {
 				return func() any {
 					f_295 := c.lhs
 					f_296 := c.op
@@ -5911,17 +5911,17 @@ func init() {
 				}()
 			}, isSeq: false}}},
 	}
-	trules[1].body = func(p *tparser, min int) (any, bool) { return p.prattParse(trules[1], min) }
+	trules[1].body = func(p *tparser, min int) (any, bool) { return p.operatorsRuleParse(trules[1], min) }
 	trules[2].entry = (*tparser).s2
 	trules[3].entry = (*tparser).u3
 	trules[4].entry = (*tparser).u4
-	trules[5].pratt = &tpratt{
+	trules[5].operatorsRule = &toperatorsRule{
 		skip: (*tparser).e272,
-		operands: []*tprattLine{
-			&tprattLine{scope: []string{}, m: (*tparser).e298, action: nil, isSeq: false},
+		operands: []*toperatorsRuleLine{
+			&toperatorsRuleLine{scope: []string{}, m: (*tparser).e298, action: nil, isSeq: false},
 		},
-		prefix: []*tprattOp{},
-		led: []*tprattOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"q", "f"}, m: (*tparser).e299, action: func(c *tctx) any {
+		prefix: []*toperatorsRuleOp{},
+		led: []*toperatorsRuleOp{{id: 0, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"q", "f"}, m: (*tparser).e299, action: func(c *tctx) any {
 			return func() any {
 				f_300 := c.lhs
 				f_301 := c.cap(1)
@@ -5929,7 +5929,7 @@ func init() {
 				return tmk_Select(c, true, f_300, f_301, f_302)
 			}()
 		}, isSeq: true}},
-			{id: 1, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"f", "as"}, m: (*tparser).e303, action: func(c *tctx) any {
+			{id: 1, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"f", "as"}, m: (*tparser).e303, action: func(c *tctx) any {
 				return func() any {
 					f_304 := c.lhs
 					f_305 := c.cap(0)
@@ -5937,7 +5937,7 @@ func init() {
 					return tmk_Call(c, true, f_304, f_305, f_306)
 				}()
 			}, isSeq: true}},
-			{id: 2, kind: "postfix", assoc: "", level: 1, line: &tprattLine{scope: []string{"q", "i"}, m: (*tparser).e307, action: func(c *tctx) any {
+			{id: 2, kind: "postfix", assoc: "", level: 1, line: &toperatorsRuleLine{scope: []string{"q", "i"}, m: (*tparser).e307, action: func(c *tctx) any {
 				return func() any {
 					f_308 := c.lhs
 					f_309 := c.cap(1)
@@ -5946,7 +5946,7 @@ func init() {
 				}()
 			}, isSeq: true}}},
 	}
-	trules[5].body = func(p *tparser, min int) (any, bool) { return p.prattParse(trules[5], min) }
+	trules[5].body = func(p *tparser, min int) (any, bool) { return p.operatorsRuleParse(trules[5], min) }
 	trules[6].entry = (*tparser).u6
 	trules[7].entry = (*tparser).s7
 	trules[8].entry = (*tparser).u8
@@ -13340,12 +13340,12 @@ func (p *parser) e116() (*Node, bool) {
 	return p.matchLiteral(lit29, "?", 21, false)
 }
 
-// expr(or)
+// level(expr, or)
 func (p *parser) e117() (*Node, bool) {
 	return p.call(rules[1], 1)
 }
 
-// then:expr(or)
+// then:level(expr, or)
 func (p *parser) e118() (*Node, bool) {
 	v, ok := p.e117()
 	if ok {
@@ -13359,7 +13359,7 @@ func (p *parser) e119() (*Node, bool) {
 	return p.matchLiteral(lit37, ":", 23, false)
 }
 
-// "?" ws then:expr(or) ws ":"
+// "?" ws then:level(expr, or) ws ":"
 func (p *parser) e120() (*Node, bool) {
 	if _, ok := p.e116(); !ok {
 		return nil, false
@@ -13424,7 +13424,7 @@ func (p *parser) e137() (*Node, bool) {
 	return p.matchLiteral(lit80, "in", 59, false)
 }
 
-// (?A-Za-z0-9_)
+// [A-Za-z0-9_]
 func (p *parser) e138() (*Node, bool) {
 	ch, size, ok := p.peek()
 	if !ok || !(ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch >= 48 && ch <= 57 || ch == 95) {
@@ -13434,7 +13434,7 @@ func (p *parser) e138() (*Node, bool) {
 	return p.single(size, false)
 }
 
-// !(?A-Za-z0-9_)
+// ![A-Za-z0-9_]
 func (p *parser) e139() (*Node, bool) {
 	m0 := p.mark()
 	prevCut := p.cut
@@ -13446,7 +13446,7 @@ func (p *parser) e139() (*Node, bool) {
 	return nil, !ok
 }
 
-// "in" !(?A-Za-z0-9_)
+// "in" ![A-Za-z0-9_]
 func (p *parser) e140() (*Node, bool) {
 	if _, ok := p.e137(); !ok {
 		return nil, false
@@ -13457,7 +13457,7 @@ func (p *parser) e140() (*Node, bool) {
 	return nil, true
 }
 
-// "<=" / "<" / ">=" / ">" / "==" / "!=" / "in" !(?A-Za-z0-9_)
+// "<=" / "<" / ">=" / ">" / "==" / "!=" / "in" ![A-Za-z0-9_]
 func (p *parser) e141() (*Node, bool) {
 	m0 := p.mark()
 	ch, _, more := p.peek()
@@ -19733,12 +19733,12 @@ func (p *parser) e224() (*Node, bool) {
 	return p.q2()
 }
 
-// expr(or)
+// level(expr, or)
 func (p *parser) e225() (*Node, bool) {
 	return p.call(recRules[1], 1)
 }
 
-// "?" ws then:expr(or) ws ":"
+// "?" ws then:level(expr, or) ws ":"
 func (p *parser) e226() (*Node, bool) {
 	if _, ok := p.e116(); !ok {
 		return nil, false
@@ -23628,7 +23628,7 @@ fail:
 	return nil, false
 }
 
-// expr (typed Pratt body inlined)
+// expr (typed OperatorsRule body inlined)
 func (p *tparser) e272() (any, bool) {
 	var (
 		ok bool
@@ -23641,7 +23641,7 @@ fail:
 	return nil, false
 }
 
-// expr (typed Pratt body inlined)
+// expr (typed OperatorsRule body inlined)
 func (p *tparser) e273() (any, bool) {
 	var (
 		ok bool
@@ -23655,7 +23655,7 @@ fail:
 	return nil, false
 }
 
-// expr (typed Pratt body inlined)
+// expr (typed OperatorsRule body inlined)
 func (p *tparser) e274() (any, bool) {
 	var (
 		ok bool
@@ -23686,7 +23686,7 @@ fail:
 	return nil, false
 }
 
-// expr (typed Pratt body inlined)
+// expr (typed OperatorsRule body inlined)
 func (p *tparser) e278() (any, bool) {
 	var (
 		ok bool
@@ -23701,7 +23701,7 @@ fail:
 	return nil, false
 }
 
-// expr (typed Pratt body inlined)
+// expr (typed OperatorsRule body inlined)
 func (p *tparser) e282() (any, bool) {
 	var (
 		ok bool
@@ -23716,7 +23716,7 @@ fail:
 	return nil, false
 }
 
-// expr (typed Pratt body inlined)
+// expr (typed OperatorsRule body inlined)
 func (p *tparser) e286() (any, bool) {
 	var (
 		x1   mark
@@ -23849,7 +23849,7 @@ fail:
 	return nil, false
 }
 
-// expr (typed Pratt body inlined)
+// expr (typed OperatorsRule body inlined)
 func (p *tparser) e290() (any, bool) {
 	var (
 		x1 mark
@@ -23896,7 +23896,7 @@ fail:
 	return nil, false
 }
 
-// expr (typed Pratt body inlined)
+// expr (typed OperatorsRule body inlined)
 func (p *tparser) e294() (any, bool) {
 	var (
 		x1 mark
@@ -24207,7 +24207,7 @@ fail:
 	return nil, false
 }
 
-// member (typed Pratt body inlined)
+// member (typed OperatorsRule body inlined)
 func (p *tparser) e298() (any, bool) {
 	var (
 		ok bool
@@ -24221,7 +24221,7 @@ fail:
 	return nil, false
 }
 
-// member (typed Pratt body inlined)
+// member (typed OperatorsRule body inlined)
 func (p *tparser) e299() (any, bool) {
 	var (
 		ok bool
@@ -24266,7 +24266,7 @@ fail:
 	return nil, false
 }
 
-// member (typed Pratt body inlined)
+// member (typed OperatorsRule body inlined)
 func (p *tparser) e303() (any, bool) {
 	var (
 		ok bool
@@ -24322,7 +24322,7 @@ fail:
 	return nil, false
 }
 
-// member (typed Pratt body inlined)
+// member (typed OperatorsRule body inlined)
 func (p *tparser) e307() (any, bool) {
 	var (
 		ok bool

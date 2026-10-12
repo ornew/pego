@@ -8,8 +8,8 @@ import (
 )
 
 func TestDocumentVMValueStorage(t *testing.T) {
-	prog := compile(t, `def main = line* $$
-def line = @(?a-z / "é" / "😀")+ "\n"`)
+	prog := compile(t, `rule main = line* $$
+rule line = [a-z / "é" / "😀"]+ #atomic "\n"`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []Unit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {
@@ -147,7 +147,7 @@ func TestDocumentVMValueStorageForEmptyInput(t *testing.T) {
 	// Many value-building nullable calls need a large stack despite an empty
 	// input. This exercises dropping new storage at return, rather than only
 	// dropping an old large document's storage before a smaller parse.
-	prog := compile(t, "def main = "+strings.Repeat("item ", 2048)+"$$\ndef item = @\"\"")
+	prog := compile(t, "rule main = "+strings.Repeat("item ", 2048)+"$$\nrule item = \"\" #atomic")
 	for _, backend := range []Backend{Bytecode, BytecodeIterative} {
 		for _, unit := range []Unit{CodePoints, Bytes} {
 			t.Run(fmt.Sprintf("%s/%s", backend, unit), func(t *testing.T) {

@@ -59,10 +59,9 @@ func TestBackendsMatchOnStream(t *testing.T) {
 // TestIterativeDeepNesting checks that the iterative model uses hardly any host stack even on
 // deeply nested input.
 func TestIterativeDeepNesting(t *testing.T) {
-	prog := compile(t, `
-def main = e $$
-def e = "(" e ")" / x
-def x = pratt {
+	prog := compile(t, `rule main = e $$
+rule e = "(" e ")" / x
+rule x = operators {
     operand "x"
     level { infix right "^" }
     level { prefix "-" }
@@ -86,13 +85,12 @@ def x = pratt {
 	}
 }
 
-// TestPrattNestingLimit checks that chains of prefix and right-associative operators, which a
-// Pratt expression parses by recursion, count against an explicit nesting limit on every
+// TestOperatorsRuleNestingLimit checks that chains of prefix and right-associative operators, which a
+// Operators Rule expression parses by recursion, count against an explicit nesting limit on every
 // backend: they fail with an error instead of consuming unbounded stack or frame storage.
-func TestPrattNestingLimit(t *testing.T) {
-	prog := compile(t, `
-def main = x $$
-def x = pratt {
+func TestOperatorsRuleNestingLimit(t *testing.T) {
+	prog := compile(t, `rule main = x $$
+rule x = operators {
     operand "x"
     level { infix right "^" }
     level { prefix "-" }
@@ -114,10 +112,9 @@ def x = pratt {
 	}
 }
 
-func TestPrattDepthBoundaries(t *testing.T) {
-	const src = `
-def main = (e ";" / "-;" / "x^;")* $$
-def e = pratt {
+func TestOperatorsRuleDepthBoundaries(t *testing.T) {
+	const src = `rule main = (e ";" / "-;" / "x^;")* $$
+rule e = operators {
     operand "x"
     level { infix right "^" }
     level { infix left "+" }
@@ -157,9 +154,13 @@ def e = pratt {
 	}
 }
 
-func TestPrattStreamDepthLimit(t *testing.T) {
-	prog := compile(t, `def main=(e ";")* #stream $$
-def e=pratt { operand "x" level { infix right "^" } level { prefix "-" } }`)
+func TestOperatorsRuleStreamDepthLimit(t *testing.T) {
+	prog := compile(t, `rule main = (e ";")* #stream $$
+rule e = operators {
+    operand "x"
+    level { infix right "^" }
+    level { prefix "-" }
+}`)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []Unit{CodePoints, Bytes} {
 			for _, tc := range []struct {
@@ -191,13 +192,12 @@ def e=pratt { operand "x" level { infix right "^" } level { prefix "-" } }`)
 // one Program (whose backends are prepared lazily), and checks that each gets the result of a
 // parse on its own. Run with -race to check that per-parse state is not shared.
 func TestConcurrentParses(t *testing.T) {
-	prog := compile(t, `
-type Pair struct { Key Match, Value Node }
+	prog := compile(t, `type Pair struct { Key Match, Value Node }
 type Op struct { L Node, R Node }
 type Node = Op | Match
-def main = ps:pair* -> concat(map($ps, (p) => $p), list())
-def pair: Pair = k:@(?a-z)+ "=" v:expr ";" [text($k) != "bad"] -> new Pair{Key: $k, Value: $v}
-def expr: Node = l:@(?0-9)+ rest:("+" r:@(?0-9)+)* -> foldl($l, $rest, (acc, x) => new Op{L: $acc, R: $x.r})`)
+rule main = ps:pair* => concat(map($ps, (p) => $p), list())
+rule pair Pair = k:[a-z]+ #atomic "=" v:expr ";" {text($k) != "bad"} => Pair{Key: $k, Value: $v}
+rule expr Node = l:[0-9]+ #atomic rest:("+" r:[0-9]+ #atomic)* => foldl($l, $rest, (acc, x) => Op{L: $acc, R: $x.r})`)
 	inputs := []string{"a=1;b=2+3;", "x=1+2+3;y=4;z=5;", "a=1;bad=2;", "q=12+"}
 	want := map[string]string{}
 	for _, in := range inputs {

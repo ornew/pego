@@ -30,7 +30,7 @@ func (k *checker) inferTypes(rules []*grammar.RuleDef) {
 				depends[rd.Name] = append(depends[rd.Name], name)
 			}
 		}
-		if pr, ok := rd.Expr.(*grammar.Pratt); ok {
+		if pr, ok := rd.Expr.(*grammar.OperatorsRule); ok {
 			for _, level := range pr.Levels {
 				for _, op := range level.Operators {
 					if op.Action != nil {

@@ -9,7 +9,7 @@ import (
 )
 
 func TestWithGeneratedMaxDepth(t *testing.T) {
-	parser, err := pego.CompileSource(`def main = "x"`, "main")
+	parser, err := pego.CompileSource(`rule main = "x"`, "main")
 	if err != nil {
 		t.Fatal(err)
 	}

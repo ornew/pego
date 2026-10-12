@@ -1,8 +1,8 @@
-# Website maintenance
+# Website Maintenance
 
 This page is for contributors who build, test or publish PEGO's website. For using the browser playground and its WebAssembly API, see the [playground guide](guide/playground.md).
 
-## Building and previewing the site
+## Building and Previewing the Site
 
 The site uses the pinned Nanosite standard `sitegen.BuildWith` pipeline. Its
 configuration in `site/config.json` owns publication, defaults, front matter,
@@ -41,7 +41,7 @@ python3 -m http.server -d site/dist 8080
 
 The build output (`site/dist`) is not committed.
 
-## What the site is made of
+## What the Site Is Made Of
 
 | URL | Source |
 |:--|:--|
@@ -110,7 +110,7 @@ versus bounded display (three warmups, 20 sets). These timings exclude browser l
 10,000 warmups and 100,000 measured events. The optional application path compares another revision. Immediate
 decoding excludes compression/encoding, browser DOM, worker and WebAssembly costs.
 
-## Changing the site
+## Changing the Site
 
 - **A new document** in `docs/guide/`, `docs/tutorial/`, `spec/`, `docs/design/` or `docs/` appears in its section
   automatically through the include rules in [`site/config.json`](../site/config.json).

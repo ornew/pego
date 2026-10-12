@@ -11,10 +11,10 @@ TypeScript parsers. Preserve the engine's examined-input dependency rules, PEG d
 ownership. The two features have different execution needs and can land independently; generated batch parsing
 remains available and unchanged by default. APIs below are proposed, not accepted exports.
 
-## Existing contracts and goals
+## Existing Contracts and Goals
 
 [Design 007](007-streaming-and-incremental-parsing.md), [Document](../../internal/engine/document.go),
-[resume.go](../../internal/engine/resume.go), and [stream attributes](../../spec/attributes.md#stream) define the
+[resume.go](../../internal/engine/resume.go), and [stream pragma](../../spec/pragmas.md#stream) define the
 engine reference. Generated Go explicitly excludes these features in [gen.go](../../internal/engine/gen.go);
 generated TS uses synchronous recursive expression functions ([design 013](013-typescript-generation.md)).
 Retaining that runtime's input and memo across calls alone does not implement edit invalidation or suspension.
@@ -67,7 +67,7 @@ aliases that the existing converter preserves; never return storage later cleare
 direct incremental parsing is deferred until ownership/invalidation can support moving public typed spans and
 position-valued fields safely. Do not promise that WithTypes makes every value an immutable snapshot.
 
-### Go reader streams and typed elements
+### Go Reader Streams and Typed Elements
 
 ```go
 func ParseStream(r io.Reader, emit func(*Node) error, opts ...ParseOption) error
@@ -91,7 +91,7 @@ and return callback errors unchanged immediately, with no later emit/read/action
 remain final even if a later parse, reader or action error occurs. A nil emitter follows the engine's collection
 behavior internally without public element callbacks, rather than panicking. This is not an asynchronous API.
 
-### TypeScript Document and push streams
+### TypeScript Document and Push Streams
 
 Propose `createDocument(input: string | Uint8Array, options?: ParseOptions)` returning a discriminated
 `{document,error}` result, with `document` null on configuration failure. Copy byte input; resolve option getters
@@ -127,11 +127,11 @@ feeding a huge chunk can itself request a huge result; input discard does not bo
 Iterable, browser/Node readers, network blocking and async backpressure adapters are separate explicit utilities;
 this proposal makes no implicit promise about closing or interrupting their underlying sources.
 
-## Runtime invariants
+## Runtime Invariants
 
 For Documents, generated analysis tables must carry examined-range dependencies, transitive position/variable
 reads, recovery dependence, LR provisional dependence and resumption eligibility. Matching includes lookahead and
-previous-character anchors. Memo keys preserve variable environment and Pratt level. Edits shift only safe ranges;
+previous-character anchors. Memo keys preserve variable environment and Operators Rule level. Edits shift only safe ranges;
 position-dependent values and recovered diagnostics cannot simply have their root span shifted. Empty nodes at
 insertion boundaries follow the engine's copy rule. Shared nodes move once per edit generation, across fields and
 children. Completed results dependent on a growing LR seed are invalid after edits; abort/cancel drops all partial
@@ -140,7 +140,7 @@ memo/resumption state before retry, while a completed syntax failure may keep va
 Begin with rule memo reuse; repetition resumption is a later equivalent optimization. When added, retain the exact
 restrictions for predicates/variable reads, enclosing capture writes, recovered errors, provisional LR seeds and
 positional values on length-changing edits. Every empty successful iteration counts once and stops. Preserve
-repetition finite maxima/minima, cut scope, Pratt candidate-local diagnostics, and lookahead expectations.
+repetition finite maxima/minima, cut scope, Operators Rule candidate-local diagnostics, and lookahead expectations.
 
 For streams, discard only after the legal top-level #stream repetition commits an element. Preserve suffix/prefix
 action semantics around the repetition: preceding values needed by later actions must own their text and backing
@@ -148,7 +148,7 @@ storage; a start action can still run at final completion. Forbid recovery wrapp
 either attribute order. Keep the previous character and absolute offsets/line state. A zero-width iteration is
 emitted once and stops before checking the minimum, as the engine does; delivery cannot be undone by that failure.
 
-The TS lowering requires explicit frames for rule calls, LR growth, Pratt candidates, choices, repeats, captures,
+The TS lowering requires explicit frames for rule calls, LR growth, Operators Rule candidates, choices, repeats, captures,
 recovery and actions. Suspension at an input read saves the exact continuation and performs no speculative EOF
 failure, action rerun or error replay. Distinguish awaiting bytes from completed parse failure at every caller.
 Feed suspends at demand reads and returns only when waiting or terminal; a work-limit interruption is a terminal
@@ -156,7 +156,7 @@ error, not an implicit scheduling yield. A future cooperative scheduling API nee
 Interrupted callbacks/read adapters and cancellation release pointer-bearing state without clearing published
 values; no pooled parser or conversion arena is shared between concurrent invocations.
 
-## Backend, format and implementation gates
+## Backend, Format and Implementation Gates
 
 | Scope | Initial reference and proposed rollout |
 | --- | --- |
@@ -179,7 +179,7 @@ if immutable views are exposed; do not block the mutable Document compatibility 
 is a separate measured experiment: start with the current contiguous edit contract. Cancellation/work budgets
 need matching cleanup points when introduced, not an ad hoc hidden API in this feature.
 
-## Alternatives, validation and performance
+## Alternatives, Validation and Performance
 
 The baseline is batch reparsing on every edit, and engine-backed Document/ParseStream when a dependency is acceptable.
 A generated wrapper importing the engine offers fast implementation but gives up standalone deployment; retain it
@@ -190,14 +190,14 @@ could reduce generator complexity but adds a separate portable runtime/distribut
 
 Proposed correctness gates compare fresh parses after random edits and all reader chunk partitions against all
 three engine backends. Cover both units, invalid UTF-8 repairs, surrogate strings, zero-width repeats, recovery,
-EOF versus temporary starvation, finite maxima, cut/Pratt ties, LR abort/retry, variables and start/end positional
+EOF versus temporary starvation, finite maxima, cut/Operators Rule ties, LR abort/retry, variables and start/end positional
 actions. Exercise nil/action-discarded elements, typed concrete/union/list/any/CST conversions, retained text and
 aliases, callback stops/panics, unknown reader errors, concurrent independent instances and terminal stream calls.
 Run strict TS consumer/declaration tests and standalone Go consumers, including collisions and source determinism.
 
 No throughput or bounded-total-memory claim is made. Measure exact parent and generation-disabled controls,
 batch versus Document fresh/edit/reparse, Reader/push first-delivery latency and steady state, and typed conversion
-separately. Include local/distant edits, large repetitions, LR/Pratt, growing streams and retained emissions.
+separately. Include local/distant edits, large repetitions, LR/Operators Rule, growing streams and retained emissions.
 Report allocations, live/peak memory, input/memo capacity, generated source/build sizes and public Node/typed
 materialization cost; retained caller results and per-feed arrays are separate from runtime working memory.
 Pin revisions, inputs and toolchains, serialize paired measurements, and gate ordinary batch regressions even

@@ -4,18 +4,18 @@ import (
 	"github.com/ornew/pego/grammar"
 )
 
-// pratt is a compiled Pratt expression. Binding levels are numbered from 1 in declaration
+// operatorsRule is a compiled Operators Rule expression. Binding levels are numbered from 1 in declaration
 // order (higher binds tighter).
-type pratt struct {
+type operatorsRule struct {
 	skip      matcher
 	skipEntry int // start of the skip bytecode (bytecode backend only; -1 if none)
-	operands  []*prattLine
-	prefix    []*prattOp
-	led       []*prattOp // infix and postfix
+	operands  []*operatorsRuleLine
+	prefix    []*operatorsRuleOp
+	led       []*operatorsRuleOp // infix and postfix
 }
 
-// prattLine is an operand line or an operator line. Each has its own capture scope.
-type prattLine struct {
+// operatorsRuleLine is an operand line or an operator line. Each has its own capture scope.
+type operatorsRuleLine struct {
 	scope *scope
 	m     matcher
 	act   evaluator // action (nil if none)
@@ -23,30 +23,30 @@ type prattLine struct {
 	entry int // start of the bytecode (bytecode backend only)
 }
 
-type prattOp struct {
+type operatorsRuleOp struct {
 	id    int
 	kind  string
 	assoc string
 	level int
-	line  *prattLine
+	line  *operatorsRuleLine
 }
 
-func (c *compiler) compilePratt(r *rule, e *grammar.Pratt) {
-	pr := &pratt{}
-	r.pratt = pr
+func (c *compiler) compileOperatorsRule(r *rule, e *grammar.OperatorsRule) {
+	pr := &operatorsRule{}
+	r.operatorsRule = pr
 	if e.Skip != nil {
 		c.noCaptures(e.Skip)
 		pr.skip = c.expr(e.Skip, r.scope, false)
 	}
 	if len(e.Operands) == 0 {
-		c.errorf(e.Pos, "pratt needs at least one operand")
+		c.errorf(e.Pos, "operatorsRule needs at least one operand")
 	}
 	for _, o := range e.Operands {
 		// A loaded compiled grammar (c.an is nil) has already been checked.
 		if c.an != nil && contains(c.an.leftCalls(o.Expr, nil), r.name) {
 			c.errorf(e.Pos, "operand of %s calls %s at its start (left recursion); use infix or postfix instead", r.name, r.name)
 		}
-		pr.operands = append(pr.operands, c.prattLine(o.Expr, o.Action, nil))
+		pr.operands = append(pr.operands, c.operatorsRuleLine(o.Expr, o.Action, nil))
 	}
 	id := 0
 	for i, l := range e.Levels {
@@ -66,13 +66,13 @@ func (c *compiler) compilePratt(r *rule, e *grammar.Pratt) {
 				c.errorf(op.Pos, "invalid operator kind %q", op.Kind)
 				continue
 			}
-			line := c.prattLine(op.Expr, op.Action, locals)
+			line := c.operatorsRuleLine(op.Expr, op.Action, locals)
 			for _, name := range line.scope.names {
 				if name == "lhs" || name == "rhs" || name == "op" {
-					c.errorf(op.Pos, "capture name %s is reserved in pratt operators", name)
+					c.errorf(op.Pos, "capture name %s is reserved in operatorsRule operators", name)
 				}
 			}
-			o := &prattOp{id: id, kind: op.Kind, assoc: op.Assoc, level: i + 1, line: line}
+			o := &operatorsRuleOp{id: id, kind: op.Kind, assoc: op.Assoc, level: i + 1, line: line}
 			id++
 			if op.Kind == grammar.Prefix {
 				pr.prefix = append(pr.prefix, o)
@@ -90,10 +90,10 @@ func (c *compiler) compilePratt(r *rule, e *grammar.Pratt) {
 			seen[l.Name] = true
 		}
 	}
-	r.body = func(p *parser, min int) (*Node, bool) { return p.prattParse(r, min) }
+	r.body = func(p *parser, min int) (*Node, bool) { return p.operatorsRuleParse(r, min) }
 }
 
-// leanLine reports whether the value of a Pratt line is unused. The line's value is not used by
+// leanLine reports whether the value of an Operators Rule line is unused. The line's value is not used by
 // operator lines with an action ($op is built from the range and $n is unavailable) or by operand
 // lines whose action does not use $n. The bytecode compiler uses the same test.
 func leanLine(action grammar.Term, locals []string) bool {
@@ -112,15 +112,15 @@ func leanLine(action grammar.Term, locals []string) bool {
 	return !uses
 }
 
-func (c *compiler) prattLine(e grammar.Expr, action grammar.Term, locals []string) *prattLine {
+func (c *compiler) operatorsRuleLine(e grammar.Expr, action grammar.Term, locals []string) *operatorsRuleLine {
 	s := newScope()
 	novalue := c.rule.novalue || leanLine(action, locals)
-	l := &prattLine{scope: s, m: c.expr(e, s, !novalue)}
+	l := &operatorsRuleLine{scope: s, m: c.expr(e, s, !novalue)}
 	_, l.isSeq = e.(*grammar.Seq)
 	if action != nil && !c.rule.novalue {
 		l.act = termEvaluator(action)
 		if locals != nil {
-			c.noIndex = "pratt operator actions; use captures, $lhs, $rhs, or $op"
+			c.noIndex = "operatorsRule operator actions; use captures, $lhs, $rhs, or $op"
 		}
 		c.checkTerm(action, s, locals)
 		c.noIndex = ""
@@ -128,9 +128,9 @@ func (c *compiler) prattLine(e grammar.Expr, action grammar.Term, locals []strin
 	return l
 }
 
-// prattAttempt is the result of trying an operator part.
-type prattAttempt struct {
-	op         *prattOp
+// operatorsRuleAttempt is the result of trying an operator part.
+type operatorsRuleAttempt struct {
+	op         *operatorsRuleOp
 	frame      *frame
 	v          *Node
 	start, end int
@@ -139,7 +139,7 @@ type prattAttempt struct {
 	errs       []*SyntaxError // syntax errors recovered in this candidate
 }
 
-func (p *parser) skipTrivia(pr *pratt) {
+func (p *parser) skipTrivia(pr *operatorsRule) {
 	if pr.skip == nil {
 		return
 	}
@@ -156,7 +156,7 @@ func (p *parser) skipTrivia(pr *pratt) {
 // tie); best.op is nil when none matched. cutFailed reports that some candidate failed after passing
 // a cut. The attempt is returned by value and captures are saved in one buffer per parser, so trying
 // operators allocates nothing for lines without captures.
-func (p *parser) longest(ops []*prattOp) (best prattAttempt, cutFailed bool) {
+func (p *parser) longest(ops []*operatorsRuleOp) (best operatorsRuleAttempt, cutFailed bool) {
 	m0 := p.mark()
 	for _, op := range ops {
 		prevFrame, prevCut := p.frame, p.cut
@@ -171,7 +171,7 @@ func (p *parser) longest(ops []*prattOp) (best prattAttempt, cutFailed bool) {
 			ok = false
 		}
 		if ok && (best.op == nil || p.pos > best.end) {
-			best = prattAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
+			best = operatorsRuleAttempt{op: op, frame: f, v: v, start: m0.pos, end: p.pos, env: p.env, cut: cut,
 				errs: append([]*SyntaxError(nil), p.recovered[m0.recovered:]...)}
 		}
 		if !ok && cut {
@@ -190,29 +190,29 @@ func (p *parser) longest(ops []*prattOp) (best prattAttempt, cutFailed bool) {
 	return best, cutFailed
 }
 
-func (p *parser) apply(a *prattAttempt) {
+func (p *parser) apply(a *operatorsRuleAttempt) {
 	p.pos, p.env = a.end, a.env
 	p.recovered = append(p.recovered, a.errs...)
 }
 
-// prattParse parses an expression, absorbing only operators that bind tighter than binding level
+// operatorsRuleParse parses an expression, absorbing only operators that bind tighter than binding level
 // min. The operand of a prefix operator and the right operand of an infix operator are parsed by
 // recursion, so each level counts as a rule call against the nesting limit: a chain of prefix or
 // right-associative operators would otherwise nest without bound on the goroutine stack.
-func (p *parser) prattParse(r *rule, min int) (*Node, bool) {
+func (p *parser) operatorsRuleParse(r *rule, min int) (*Node, bool) {
 	p.depth++
 	if p.depth > p.maxDepth {
 		p.fail("nesting too deep: more than %d rule calls", p.maxDepth)
 	}
-	v, ok := p.prattExpr(r, min)
+	v, ok := p.operatorsRuleExpr(r, min)
 	p.depth--
 	return v, ok
 }
 
-// prattExpr is the body of prattParse.
-func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
-	pr := r.pratt
-	lhs, ok := p.prattNud(r)
+// operatorsRuleExpr is the body of operatorsRuleParse.
+func (p *parser) operatorsRuleExpr(r *rule, min int) (*Node, bool) {
+	pr := r.operatorsRule
+	lhs, ok := p.operatorsRuleNud(r)
 	if !ok {
 		return nil, false
 	}
@@ -235,7 +235,7 @@ func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 		}
 		p.apply(a)
 		if a.op.kind == grammar.Postfix {
-			lhs = p.prattBuild(r, a, lhs, nil)
+			lhs = p.operatorsRuleBuild(r, a, lhs, nil)
 			lastNone = -1
 			if p.pos == m0.pos {
 				break
@@ -246,7 +246,7 @@ func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 		if a.op.assoc == grammar.AssocRight {
 			rmin--
 		}
-		rhs, ok := p.prattParse(r, rmin)
+		rhs, ok := p.operatorsRuleParse(r, rmin)
 		if !ok {
 			if a.cut {
 				return nil, false
@@ -254,7 +254,7 @@ func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 			p.reset(m0)
 			break
 		}
-		lhs = p.prattBuild(r, a, lhs, rhs)
+		lhs = p.operatorsRuleBuild(r, a, lhs, rhs)
 		lastNone = -1
 		if a.op.assoc == grammar.AssocNone {
 			lastNone = a.op.level
@@ -268,17 +268,17 @@ func (p *parser) prattExpr(r *rule, min int) (*Node, bool) {
 	return lhs, true
 }
 
-// prattNud parses the beginning of an expression (a prefix operator or an operand).
-func (p *parser) prattNud(r *rule) (*Node, bool) {
-	pr := r.pratt
+// operatorsRuleNud parses the beginning of an expression (a prefix operator or an operand).
+func (p *parser) operatorsRuleNud(r *rule) (*Node, bool) {
+	pr := r.operatorsRule
 	p.skipTrivia(pr)
 	m0 := p.mark()
 	if at, cutFailed := p.longest(pr.prefix); at.op != nil {
 		a := &at
 		p.apply(a)
-		rhs, ok := p.prattParse(r, a.op.level)
+		rhs, ok := p.operatorsRuleParse(r, a.op.level)
 		if ok {
-			return p.prattBuild(r, a, nil, rhs), true
+			return p.operatorsRuleBuild(r, a, nil, rhs), true
 		}
 		if a.cut {
 			return nil, false
@@ -306,7 +306,7 @@ func (p *parser) prattNud(r *rule) (*Node, bool) {
 }
 
 // lineResult builds the value of an operand line.
-func (p *parser) lineResult(r *rule, l *prattLine, f *frame, v *Node, start int, locals *local) *Node {
+func (p *parser) lineResult(r *rule, l *operatorsRuleLine, f *frame, v *Node, start int, locals *local) *Node {
 	if r.novalue {
 		return nil
 	}
@@ -330,8 +330,8 @@ func (p *parser) lineResult(r *rule, l *prattLine, f *frame, v *Node, start int,
 	return v
 }
 
-// prattBuild builds the value of an operator application.
-func (p *parser) prattBuild(r *rule, a *prattAttempt, lhs, rhs *Node) *Node {
+// operatorsRuleBuild builds the value of an operator application.
+func (p *parser) operatorsRuleBuild(r *rule, a *operatorsRuleAttempt, lhs, rhs *Node) *Node {
 	if r.novalue {
 		return nil
 	}

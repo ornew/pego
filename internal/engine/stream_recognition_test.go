@@ -15,21 +15,21 @@ func TestStreamCaptureRecognition(t *testing.T) {
 		count                    int
 		ok                       bool
 	}{
-		{"empty zero", `x:_`, "{0}", "", 0, true},
-		{"empty one", `x:_`, "{1}", "", 1, true},
+		{"empty zero", `x:_`, "#repeat(0)", "", 0, true},
+		{"empty one", `x:_`, "#repeat(1)", "", 1, true},
 		{"empty unbounded", `x:_`, "*", "", 1, true},
-		{"optional absent", `x:"é"`, "{0,1}", "", 0, true},
-		{"optional present", `x:"é"`, "{0,1}", "é", 1, true},
-		{"exact", `x:"é"`, "{2}", "éé", 2, true},
-		{"exact short", `x:"é"`, "{2}", "é", 1, false},
-		{"exact excess", `x:"é"`, "{2}", "ééé", 2, false},
+		{"optional absent", `x:"é"`, "#repeat(0, 1)", "", 0, true},
+		{"optional present", `x:"é"`, "#repeat(0, 1)", "é", 1, true},
+		{"exact", `x:"é"`, "#repeat(2)", "éé", 2, true},
+		{"exact short", `x:"é"`, "#repeat(2)", "é", 1, false},
+		{"exact excess", `x:"é"`, "#repeat(2)", "ééé", 2, false},
 		{"unbounded", `x:"é"`, "+", "ééé", 3, true},
-		{"predicate captures", `x:@"é" [text($x)=="é"]`, "+", "éé", 2, true},
-		{"predicate rejection", `x:@. [text($x)=="é"]`, "+", "a", 0, false},
+		{"predicate captures", `x:"é" #atomic {text($x) == "é"}`, "+", "éé", 2, true},
+		{"predicate rejection", `x:. #atomic {text($x) == "é"}`, "+", "a", 0, false},
 		{"nil elements", `x:r`, "*", "éé", 2, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			source := "def main=(" + tc.body + ")" + tc.bound + " #stream $$\ndef r=\"é\" -> nil"
+			source := "rule main = (" + tc.body + ")" + tc.bound + " #stream $$\nrule r = \"é\" => nil"
 			plain := compile(t, strings.ReplaceAll(source, " #stream", ""))
 			for _, disableMemo := range []bool{false, true} {
 				p := compile(t, source, Options{DisableMemo: disableMemo})
@@ -71,9 +71,9 @@ func BenchmarkStreamCaptureRecognition(b *testing.B) {
 	for _, captures := range []bool{false, true} {
 		body := `"é"`
 		if captures {
-			body = `x:@"é" [text($x)=="é"]`
+			body = `x:"é" #atomic {text($x) == "é"}`
 		}
-		source := "def main=(" + body + ")* #stream $$"
+		source := "rule main = (" + body + ")* #stream $$"
 		// The old capture-bearing #stream recognizer is invalid. Its ordinary
 		// repetition is the equivalent successful baseline, since #stream has
 		// no effect on recognition. Keep grammar setup outside the timed loop.

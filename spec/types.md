@@ -8,7 +8,7 @@ the checker reports, are defined in [Type Checking](type-checking.md). Type
 errors are reported when the grammar is compiled, with the position of the
 offending construct.
 
-## Built-in types
+## Built-In Types
 
 | Type | Description |
 |:--|:--|
@@ -30,26 +30,26 @@ the type that follows, `|` forms a union (see below) and parentheses group.
 
 ```pego
 type Example struct {
-    Items   []Item          // a list
-    Maybe   *Item           // an Item or nil
-    Either  Item | Other    // a union
-    Many    [](Item | Other)
-    Count   int
+    Items  []Item       // a list
+    Maybe  *Item        // an Item or nil
+    Either Item | Other // a union
+    Many   [](Item | Other)
+    Count  int
 }
 ```
 
-### Reserved node types
+### Reserved Node Types
 
 The node types that parsing expressions produce are predefined and can be used
 as types.
 
 | Type | Values |
 |:--|:--|
-| `Match` | Terminals produced by literals, character classes, `.`, `@a` and `_` |
+| `Match` | Terminals produced by literals, character classes, `.`, `a #atomic` and `_` |
 | `Seq` | Values of sequences |
 | `List` | Values of repetitions |
-| `Operator` | Values of [Pratt operators](pratt.md#concrete-syntax-tree) without an action |
-| `Error` | Ranges skipped by [error recovery](attributes.md#recover) |
+| `Operator` | Values of [Operators Rule operators](operators-rule.md#concrete-syntax-tree) without an action |
+| `Error` | Ranges skipped by [error recovery](pragmas.md#recover) |
 
 ## Names
 
@@ -60,11 +60,11 @@ node types (`Match`, `Seq`, `List`, `Operator`, `Error`) MUST NOT be defined.
 Each type name MUST be defined at most once, and types and rules have separate
 namespaces (see [Names](grammar-files.md#names)).
 
-## Type definitions
+## Type Definitions
 
 The `type` keyword defines a type.
 
-### Struct types
+### Struct Types
 
 A struct type is a node type with named fields. Fields are separated by newlines
 or commas. Field names MUST be unique within a struct.
@@ -77,9 +77,9 @@ type MyNode struct {
 type Pair struct { Key Match, Value Match }
 ```
 
-A node of a struct type is created by `new` in an [action](actions.md#creating-struct-nodes).
+A node of a struct type is created with a constructor such as `T{Field: value}` in an [action](actions.md#values-and-constructors).
 
-### Type aliases and union types
+### Type Aliases and Union Types
 
 `type T = U` defines `T` as another name for the type `U`. With `|`, the
 right-hand side is a union type, whose values are the values of any of its
@@ -95,12 +95,12 @@ normalized: nested unions are flattened and duplicate members are removed (so
 (`A | *B` is `*(A | B)`).
 
 An alias that resolves to a single struct or terminal type preserves that
-type's identity. `new` accepts aliases of struct types and produces a node of
+type's identity. A constructor accepts aliases of struct types and produces a node of
 the underlying struct type. A rule declared with an alias of a terminal type
 has the same terminal conversion as a rule declared with that terminal type.
 This also applies to unions normalized to a single type, such as `T | T`.
 
-### Terminal types
+### Terminal Types
 
 `type T terminal` defines a terminal type: a node type for terminals, which have
 no internal structure. A rule declared with a terminal type and without an
@@ -110,7 +110,7 @@ must be assignable to the terminal type like any other declared type.
 
 ```pego
 type Identifier terminal
-def ident: Identifier = (?a-z)+   // produces Identifier"abc", not a List
+rule ident Identifier = [a-z]+ // produces Identifier"abc", not a List
 ```
 
 ## Assignability

@@ -234,6 +234,17 @@ func validateStrictJSON(v *strictJSONValue, t reflect.Type, path string, data []
 		}
 		return nil
 	}
+	if t.Kind() == reflect.Map {
+		if v == nil || !v.isObject {
+			return nil
+		}
+		for _, member := range v.object {
+			if err := validateStrictJSON(member.value, t.Elem(), strictPathKey(path, member.key), data); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 	if t.Kind() == reflect.Slice {
 		if v == nil || !v.isArray {
 			return nil

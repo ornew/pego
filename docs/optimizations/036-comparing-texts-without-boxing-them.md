@@ -1,7 +1,7 @@
-# 36. Comparing texts without boxing them
+# 36. Comparing Texts Without Boxing Them
 
 - `text(...)` returns a string as an interface value, which allocates for the string header. The XML example compares
-  the name of every end tag with its start tag (`[text($e) == text($n)]`), which was 18k of its 19k allocations per
+  the name of every end tag with its start tag (`{text($e) == text($n)}`), which was 18k of its 19k allocations per
   parse. A comparison `text(a) == text(b)` (or `!=`) is now evaluated as a string comparison by the closure backend
   and emitted as one by the code generator. The VMs still box the strings (avoiding it there would take a new
   instruction).

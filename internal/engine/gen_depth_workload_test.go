@@ -37,8 +37,8 @@ func TestGeneratedDepthBenchmarkWorkloads(t *testing.T) {
 	}
 	write("go.mod", []byte("module depthbench\n\ngo 1.27.1\n"))
 	g, err := syntax.Parse(`type Word terminal
-def main: Word = n+
-def n: Word = "(" n ")" / "é"`)
+rule main Word = n+
+rule n Word = "(" n ")" / "é"`)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,4 +1,4 @@
-# 90. Share identical generated helpers and literal tables
+# 90. Share Identical Generated Helpers and Literal Tables
 
 **Status:** Implemented
 
@@ -32,7 +32,7 @@ sharing avoids that broader equivalence. Literal-only sharing leaves duplicate
 helpers; helper-only sharing leaves duplicate Go literal data. The TypeScript
 literal experiment remains opt-in, separate from production helper sharing.
 
-## Validation and measurements
+## Validation and Measurements
 
 At measured revision `c87f89a`, the native full test suite, focused
 Linux/386 checks, generated freshness and final five-mode parity checks passed.

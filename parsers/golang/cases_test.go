@@ -28,7 +28,7 @@ var cases = []string{
 	"package p; func f() { goto\n L }",
 	"package p; var c chan\n int",
 	"package p; var f func\n ()",
-	"package p; type T struct\n {}",
+	"package p\ntype T struct {}",
 	"package p; func f() { ;; }",
 	"package p; func f() { x;; y }",
 	"package p; func f() { x; ; }",

@@ -397,23 +397,23 @@ func TestResolveLink(t *testing.T) {
 	from := &Page{Src: "docs/guide/runtime.md", URL: "docs/guide/runtime/"}
 	s.add(from)
 	s.add(&Page{Src: "spec/README.md", URL: "spec/"})
-	s.add(&Page{Src: "spec/pratt.md", URL: "spec/pratt/"})
+	s.add(&Page{Src: "spec/operators-rule.md", URL: "spec/operators-rule/"})
 	s.add(&Page{Src: "README.md", URL: ""})
 	for _, tc := range []struct{ dest, want string }{
 		{"https://example.com/a.md", "https://example.com/a.md"},
 		{"#backends", "#backends"},
-		{"../../spec/pratt.md#levels", "../../../spec/pratt/#levels"},
+		{"../../spec/operators-rule.md#levels", "../../../spec/operators-rule/#levels"},
 		{"../../spec/", "../../../spec/"},
 		{"../../spec/README.md", "../../../spec/"},
 		{"../../README.md", "../../../"},
 		{"../../examples/calculator/calc.pego", "https://github.com/ornew/pego/blob/main/examples/calculator/calc.pego"},
 		{"../../examples/calculator/", "https://github.com/ornew/pego/tree/main/examples/calculator"},
 		// Links relative to the repository root and percent-encoded paths work on GitHub too.
-		{"/spec/pratt.md#levels", "../../../spec/pratt/#levels"},
+		{"/spec/operators-rule.md#levels", "../../../spec/operators-rule/#levels"},
 		{"/examples/calculator/calc.pego", "https://github.com/ornew/pego/blob/main/examples/calculator/calc.pego"},
 		{"/", "../../../"},
-		{"%2E%2E/%2E%2E/spec/pratt.md", "../../../spec/pratt/"},
-		{"../../spec/pratt.md#caf%C3%A9", "../../../spec/pratt/#caf%C3%A9"},
+		{"%2E%2E/%2E%2E/spec/operators-rule.md", "../../../spec/operators-rule/"},
+		{"../../spec/operators-rule.md#caf%C3%A9", "../../../spec/operators-rule/#caf%C3%A9"},
 	} {
 		if got := s.resolveLink(from, tc.dest); got != tc.want {
 			t.Errorf("resolveLink(%q) = %q, want %q", tc.dest, got, tc.want)
@@ -455,12 +455,12 @@ func TestHeadingText(t *testing.T) {
 	s := &Site{cfg: Config{Repo: "..", GitHub: "https://github.com/ornew/pego", Ref: "main"}, bySrc: map[string]*Page{}, byDir: map[string]*Page{}}
 	p := &Page{Src: "docs/x.md", URL: "docs/x/"}
 	s.add(p)
-	m := s.parseMarkdown(p, []byte("# Title\n\n## A &amp; B\n\n## Escaped \\*star\\*\n\n## The `#recover` attribute & <b>more</b>\n\nSoft\nbreak\n----\n\n## Compiled grammars (`.pegoc`)\n"))
+	m := s.parseMarkdown(p, []byte("# Title\n\n## A &amp; B\n\n## Escaped \\*star\\*\n\n## The `#recover` pragma & <b>more</b>\n\nSoft\nbreak\n----\n\n## Compiled grammars (`.pegoc`)\n"))
 	want := []Heading{
 		{Level: 1, ID: "title", Text: "Title"},
 		{Level: 2, ID: "a--b", Text: "A & B"},
 		{Level: 2, ID: "escaped-star", Text: "Escaped *star*"},
-		{Level: 2, ID: "the-recover-attribute--more", Text: "The #recover attribute & more"},
+		{Level: 2, ID: "the-recover-pragma--more", Text: "The #recover pragma & more"},
 		{Level: 2, ID: "soft-break", Text: "Soft break"},
 		{Level: 2, ID: "compiled-grammars-pegoc", Text: "Compiled grammars (.pegoc)"},
 	}
@@ -478,11 +478,11 @@ func TestSlug(t *testing.T) {
 	for in, want := range map[string]string{
 		"Compiled grammars (.pegoc)":         "compiled-grammars-pegoc",
 		"Deep nesting and WithMaxDepth":      "deep-nesting-and-withmaxdepth",
-		"005. Pratt Expressions (pratt)":     "005-pratt-expressions-pratt",
+		"005. Operators Rule (operators rule)":     "005-operators-rule-operators-rule",
 		"Choosing: a cheat sheet":            "choosing-a-cheat-sheet",
 		"Snake_case and--dashes":             "snake_case-and--dashes",
 		"Unicode: あいう":                       "unicode-あいう",
-		"Errors, recovery & the `#error` op": "errors-recovery--the-error-op",
+		"Errors, recovery & the `@error` op": "errors-recovery--the-error-op",
 	} {
 		if got := slug(in); got != want {
 			t.Errorf("slug(%q) = %q, want %q", in, got, want)

@@ -6,11 +6,12 @@
 type Name terminal
 type A struct { X *Name, Y *Name, Z *Name, Q *Name, W *Name, P *Name, Last *Name, Mode int, Sign *Match }
 type L struct { Items []A }
-def main: L = [m = 0] xs:(a:alt -";"?)* $$ -> new L{Items: map($xs, (e) => $e.a)}
-def alt: A = (x:name "+" y:name "!" / x:name "+" z:name)
+rule main L = {m := 0} xs:(a:alt -";"?)* $$ => L{Items: map($xs, (e) => $e.a)}
+rule alt A = (
+    (x:name "+" y:name "!" / x:name "+" z:name)
     ("(" q:name ")")? ("(" w:name ".")?
-    ("[" (&(p:name) name ",")* last:name "]")?
-    ([m = 1] "<" / ">")? bump? s:@("-" (?0-9) "!" / "-" (?0-9) "?" / "+")?
-    -> new A{X: $x, Y: $y, Z: $z, Q: $q, W: $w, P: $p, Last: $last, Mode: m, Sign: $s}
-def name: Name = (?a-z)+
-def bump = [m = 7] "~"
+    ("[" (&p:name name ",")* last:name "]")?
+    ({m := 1} "<" / ">")? bump? s:("-" [0-9] "!" / "-" [0-9] "?" / "+")? #atomic
+) => A{X: $x, Y: $y, Z: $z, Q: $q, W: $w, P: $p, Last: $last, Mode: m, Sign: $s}
+rule name Name = [a-z]+
+rule bump = {m := 7} "~"

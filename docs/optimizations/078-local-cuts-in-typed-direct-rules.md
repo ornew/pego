@@ -1,4 +1,4 @@
-# 78. Local cuts in typed direct rules
+# 78. Local Cuts in Typed Direct Rules
 
 - The typed Go generator now inlines eligible ordinary rules whose bodies
   contain local cuts. The direct emitter represents cut scopes locally while
@@ -6,9 +6,9 @@
   aligned with the general typed path. At this stage, `#recover` and
   cut-bearing left-recursion leaders remained on general dispatch.
   [Record 79](079-inline-eligible-typed-left-recursion-bodies.md) adds eligible
-  cut-free leader bodies, [record 80](080-inline-eligible-typed-pratt-lines.md)
-  adds eligible cut-free Pratt-line matchers, and [record 81](081-scoped-cuts-in-unfinished-typed-go-bodies.md)
-  adds eligible cut-bearing LR/Pratt bodies. Node generation, recognition and
+  cut-free leader bodies, [record 80](080-inline-eligible-typed-operators-rule-lines.md)
+  adds eligible cut-free Operators Rule-line matchers, and [record 81](081-scoped-cuts-in-unfinished-typed-go-bodies.md)
+  adds eligible cut-bearing LR/Operators Rule bodies. Node generation, recognition and
   TypeScript output are unchanged. Eligible recovery bodies now use a separate
   route ([record 83](083-inline-typed-recovery-bodies.md)); unsupported
   recovery layouts remain general.
@@ -83,9 +83,8 @@ The benchmark grammar has two cut-bearing alternatives for each typed row:
 ```pego
 type Row struct { Key Match, Value Match }
 type Doc struct { Rows []Row }
-def main: Doc = rows:row+ $$ -> new Doc{Rows: $rows}
-def row: Row = ("let" " " -- key:@((?a-z)+) ":" value:@((?0-9)+) ";"
-              / "var" " " -- key:@((?a-z)+) ":" value:@((?0-9)+) ";") -> new Row{Key: $key, Value: $value}
+rule main Doc = rows:row+ $$ => Doc{Rows: $rows}
+rule row Row = "let" " " -- key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" / "var" " " -- key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" => Row{Key: $key, Value: $value}
 ```
 
 `cutInput(1)` contains two rows; `cutInput(256)` contains 512. The generated

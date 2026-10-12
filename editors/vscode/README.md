@@ -35,7 +35,7 @@ the next cleanup attempt; a failed explicit restart rejects, while a setting-cha
 Shutdown prevents queued or later restarts from starting another server. Failed startup reports an error and
 waits for client disposal before another transition can run.
 
-## Building and installing from source
+## Building and Installing from Source
 
 The extension is plain JavaScript; it has no compile step. With Node.js 20 or later, in this directory:
 

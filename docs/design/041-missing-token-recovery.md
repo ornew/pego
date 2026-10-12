@@ -1,4 +1,4 @@
-# 041. Opt-in Missing Literal Recovery
+# 041. Opt-In Missing Literal Recovery
 
 - **Status**: Proposed
 - **Author**: @ornew
@@ -13,8 +13,8 @@ the caller enables insertion. Existing consuming `#recover(skip=...)` retains it
 The syntax and APIs below are proposals, not accepted language or exported API contracts:
 
 ```pego
-def main = name ";" #missing $$
-def name = (?a-z)+
+rule main = name ";" @missing $$
+rule name = [a-z]+
 ```
 
 ```go
@@ -24,9 +24,9 @@ node, err := parser.Parse("name", pego.WithMissingTokens(16))
 Here the missing semicolon is represented at the actual EOF position and accompanies a recovered diagnostic.
 Without the option, this input fails as it does today.
 
-## Motivation and scope
+## Motivation and Scope
 
-[Current recovery](../../spec/attributes.md#recover) rewinds a failed expression and consumes a nonempty skip.
+[Current recovery](../../spec/pragmas.md#recover) rewinds a failed expression and consumes a nonempty skip.
 Both [design 006](006-error-reporting-and-recovery.md) and `recoverAttr` in
 [genrt/runtime.go](../../internal/engine/genrt/runtime.go) deliberately reject an empty skip. Removing that check
 would neither identify an expected token nor give repetitions, memoization or backtracking an insertion contract.
@@ -39,7 +39,7 @@ a later strict alternative over an earlier recovering alternative.
 
 ## Design
 
-### Invocation, values and errors
+### Invocation, Values and Errors
 
 Propose `WithMissingTokens(n)` as a Go parse option on the engine and generated Go. Zero, including omission,
 disables insertion; a positive value bounds synthesis attempts during one invocation; a negative effective value
@@ -52,7 +52,7 @@ recovery state to the literal's start, then may insert. No input is consumed. Pr
 with `Start == End`, empty `Text`, and string fields `expected` (the literal) and `message` (the diagnostic).
 The error uses the insertion position, line and column in the invocation's position unit. Literal contents remain
 the original string; an empty Text is never replaced with those contents. Anchors and positional actions observe
-the real position. A surrounding `#error` supplies its label to the insertion diagnostic by the same explicit
+the real position. A surrounding `@error` supplies its label to the insertion diagnostic by the same explicit
 label-scope rules used for failures; composition with outer `#recover` must not duplicate a diagnostic on success.
 
 Successful whole-input parsing returns a tree and the existing `SyntaxErrors` collection, in committed encounter
@@ -72,10 +72,10 @@ representation. Document this distinction so consumers needing missing-token ide
 the Node tree. Top-level scalar/action restrictions remain unchanged. Reserving the new name requires a reported
 grammar migration for a preexisting user type named Missing and deterministic generated-helper collision tests.
 
-### Progress, rollback and caches
+### Progress, Rollback and Caches
 
 Maintain a rollback-aware ledger keyed by insertion site identity and absolute position on the current candidate
-path. A second insertion at the same site and position fails ordinarily. Marks, choice resets and Pratt candidate
+path. A second insertion at the same site and position fails ordinarily. Marks, choice resets and Operators Rule candidate
 restoration undo ledger additions and diagnostics together with captures; cut retains its existing choice scope.
 Lookahead always disables insertion, including callees, so recovery cannot make a negative lookahead unexpectedly
 fail or leak a Missing value into a capture made by a positive lookahead.
@@ -89,7 +89,7 @@ ledger entries from abandoned paths remain invisible. Budget exhaustion aborts e
 Retain the language's repetition rule: the first successful iteration without input progress counts once and
 then stops, including generated, projected, resumed and streamed repetitions. An insertion never supplies input
 progress. LR may establish an initial successful empty seed; further growth must advance beyond the already
-successful seed. Pratt prefix/postfix parts must consume input, but an infix part may be empty under the existing
+successful seed. Operators Rule prefix/postfix parts must consume input, but an infix part may be empty under the existing
 longest-candidate rules. A successful infix application with a nullable RHS stops after its first zero-progress
 application. Insertion supplies no consumed input and must preserve these distinctions; do not tighten existing
 nullable grammar acceptance or let a Missing value alone justify another growth round.
@@ -106,7 +106,7 @@ enabled mode; other entries still obey examined-range, positional-value and reco
 Abort or cancellation discards provisional LR/memo/resumption state before retry. Returned Missing nodes obey
 ordinary Node alias ownership: mutable Document reuse may move earlier trees; Clone preserves retained versions.
 
-### EOF, streams and backend gates
+### EOF, Streams and Backend Gates
 
 Actual EOF permits insertion; a stream temporarily lacking bytes does not. Wait for enough input to establish
 literal failure or for actual EOF. After insertion inside a stream element, ordinary commit rules apply; no later
@@ -127,7 +127,7 @@ insertion instruction/site operand and structural validation; do not reinterpret
 Old files retain their behavior; old loaders reject new versions. Compiled recognition modules must carry the same
 sites and option semantics. The numeric versions are allocated against the then-current specification.
 
-## Implementation sequence and validation
+## Implementation Sequence and Validation
 
 1. Add syntax, typed Missing mapping and closure implementation behind the opt-in option; establish strict-mode
    output equivalence and grammar migration diagnostics.
@@ -137,13 +137,13 @@ sites and option semantics. The numeric versions are allocated against the then-
 
 Proposed tests cover absent/zero/positive/negative limits, callback options once, EOF and partial literals,
 multibyte/invalid UTF-8, partial reader prefixes, chained insertions, nested repetitions and minima, choices/cuts,
-lookahead, labels, consuming recovery, LR cycles and Pratt longest-match ties. Check budget exhaustion after
+lookahead, labels, consuming recovery, LR cycles and Operators Rule longest-match ties. Check budget exhaustion after
 backtracking and during seed replay; compare diagnostics and values across backends and fresh versus edited
 Document parses. Exercise union/any/CST/list/alias/concrete nil mappings, retained results, concurrent/reentrant
 calls, callback stop, cancellation and subsequent pooled retry. Property tests must establish termination and
 that strict mode has exactly the old acceptance set.
 
-## Alternatives and performance gates
+## Alternatives and Performance Gates
 
 Keep consuming recovery only as the baseline. Treating an empty skip as recovery lacks a site identity, expected
 token and budget; reject that shortcut. A search for minimum-cost edits can offer better repairs but changes PEG
@@ -153,7 +153,7 @@ strict baseline; prefer the invocation option.
 
 No measurements are claimed. Compare exact parent, strict candidate and a static generation/build control with
 insertion accounting omitted, then enabled valid/editor-invalid cases. Measure time, allocations, live heap,
-attempt/committed counts, source size and Document edit/reparse separately. Include broad backtracking, LR/Pratt,
+attempt/committed counts, source size and Document edit/reparse separately. Include broad backtracking, LR/Operators Rule,
 ordinary JSON-like input, EOF streams and both units. Extra dormant parser state can change GC costs; a zero option
 alone is not an adequate cost control. Run paired serialized samples with pinned inputs/toolchains and retain raw
 results outside the repository. Acceptance requires bounded attempts and no unapproved strict-path regression.

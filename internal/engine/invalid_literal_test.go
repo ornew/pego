@@ -34,7 +34,7 @@ func TestInvalidUTF8LiteralMatching(t *testing.T) {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []Unit{CodePoints, Bytes} {
 				t.Run(fmt.Sprintf("%q/%x/%s/%s", tc.literal, tc.input, backend, unit), func(t *testing.T) {
-					p := compile(t, "def main="+fmt.Sprintf("%q", tc.literal)+" $$")
+					p := compile(t, "rule main = "+fmt.Sprintf("%q", tc.literal)+" $$")
 					opts := ParseOptions{Backend: backend, Unit: unit}
 					n, err := p.ParseWith("main", tc.input, opts)
 					if (err == nil) != tc.ok {
@@ -68,7 +68,7 @@ func TestInvalidUTF8LiteralMatching(t *testing.T) {
 }
 
 func TestReplacementLiteralTextPredicate(t *testing.T) {
-	prog := compile(t, `def main=c:"�" [text($c)=="�"] $$`)
+	prog := compile(t, `rule main = c:"�" {text($c) == "�"} $$`)
 	for _, input := range []string{"\xff", "\x80", "\xc3", "�"} {
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []Unit{Bytes, CodePoints} {
@@ -87,9 +87,9 @@ func TestReplacementLiteralTextPredicate(t *testing.T) {
 func TestInvalidUTF8LiteralStream(t *testing.T) {
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []Unit{CodePoints, Bytes} {
-			for _, expr := range []string{`"�"`, `(?�)`, `"x" / "�"`, `"a�"`} {
+			for _, expr := range []string{`"�"`, `[�]`, `"x" / "�"`, `"a�"`} {
 				t.Run(fmt.Sprintf("%s/%s/%s", backend, unit, expr), func(t *testing.T) {
-					p := compile(t, "def main=item* #stream $$\ndef item="+expr+` "\n"`)
+					p := compile(t, "rule main = item* #stream $$\nrule item = "+expr+` "\n"`)
 					item := "\xff\n"
 					if expr == `"a�"` {
 						item = "a" + item
@@ -119,19 +119,19 @@ func TestInvalidUTF8LiteralStream(t *testing.T) {
 func invalidLiteralCorpus() []genCase {
 	cases := []genCase{
 		{"text predicate", `type N struct { T Match }
-def main:N = t:"�" [len(text($t))==len($t)] $$ -> new N{T:$t}`, []string{"\xff", "\x80", "\xc3", "�", "é"}},
+rule main N = t:"�" {len(text($t)) == len($t)} $$ => N{T: $t}`, []string{"\xff", "\x80", "\xc3", "�", "é"}},
 		{"replacement", `type N struct { T Match }
-def main:N = t:"�" $$ -> new N{T:$t}`, []string{"\xff", "\x80", "\xc3", "�", "é", "", "\xffx"}},
+rule main N = t:"�" $$ => N{T: $t}`, []string{"\xff", "\x80", "\xc3", "�", "é", "", "\xffx"}},
 		{"multiple", `type N struct { T Match }
-def main:N = t:"���" $$ -> new N{T:$t}`, []string{"\xed\xa0\x80", "\xe0\x80\x80", "���", "\xff", "\xff\x80\x80x"}},
+rule main N = t:"���" $$ => N{T: $t}`, []string{"\xed\xa0\x80", "\xe0\x80\x80", "���", "\xff", "\xff\x80\x80x"}},
 		{"mixed", `type N struct { T Match }
-def main:N = t:"é�x" $$ -> new N{T:$t}`, []string{"é\xffx", "é\xc3x", "é�x", "é\xffy", "é\xff", "éx"}},
+rule main N = t:"é�x" $$ => N{T: $t}`, []string{"é\xffx", "é\xc3x", "é�x", "é\xffy", "é\xff", "éx"}},
 		{"long", `type N struct { T Match }
-def main:N = t:"abcdefghijk�xyz" $$ -> new N{T:$t}`, []string{"abcdefghijk\xffxyz", "abcdefghijk�xyz", "abcdefghijk\xc3xyz", "abcdefghijk\xffxyq"}},
+rule main N = t:"abcdefghijk�xyz" $$ => N{T: $t}`, []string{"abcdefghijk\xffxyz", "abcdefghijk�xyz", "abcdefghijk\xc3xyz", "abcdefghijk\xffxyq"}},
 		{"choice", `type N struct { T Match }
-def main:N = t:("x" / "�") $$ -> new N{T:$t}`, []string{"\xff", "\x80", "\xc3", "�", "x", "y"}},
+rule main N = t:("x" / "�") $$ => N{T: $t}`, []string{"\xff", "\x80", "\xc3", "�", "x", "y"}},
 		{"class", `type N struct { T Match }
-def main:N = t:(?�) $$ -> new N{T:$t}`, []string{"\xff", "\x80", "\xc3", "�", "é"}},
+rule main N = t:[�] $$ => N{T: $t}`, []string{"\xff", "\x80", "\xc3", "�", "é"}},
 	}
 	return append(cases, rawLiteralGenCorpus()...)
 }
@@ -271,8 +271,8 @@ func TestOpenPipeInvalidUTF8Literal(t *testing.T) {
 		for _, unit := range []Unit{CodePoints, Bytes} {
 			for _, input := range []string{"\xff\n", "\x80\n", "\xc3\n", "�\n"} {
 				t.Run(fmt.Sprintf("%s/%s/%x", backend, unit, input), func(t *testing.T) {
-					prog := compile(t, `def main=item* #stream $$
-def item="�" "\n"`)
+					prog := compile(t, `rule main = item* #stream $$
+rule item = "�" "\n"`)
 					pr, pw := io.Pipe()
 					done := make(chan error, 1)
 					emitted := make(chan *Node, 1)
@@ -328,7 +328,7 @@ func BenchmarkByteLiteralMatching(b *testing.B) {
 			}
 			for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 				prog := func() *Program {
-					g, err := syntax.Parse("def main=" + strconv.Quote(literal) + " $$")
+					g, err := syntax.Parse("rule main = " + strconv.Quote(literal) + " $$")
 					if err != nil {
 						b.Fatal(err)
 					}

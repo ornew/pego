@@ -2,7 +2,7 @@
 
 This document describes the repository layout and architecture, how to run tests, and the implementation status of language features. The living backlog is maintained in [Issue #1](https://github.com/ornew/pego/issues/1).
 
-## Directory layout
+## Directory Layout
 
 | Path | Contents |
 |:--|:--|
@@ -44,7 +44,7 @@ This document describes the repository layout and architecture, how to run tests
 |:--|:--|:--|
 | Grammar intake | `internal/syntax/`, `grammar/` | Parses source or JSON into the public AST; opt-in strict JSON intake checks unknown and duplicate keys ([design 028](design/028-strict-grammar-json-intake.md)); formatting preserves comments and layout. |
 | Compiler and analysis | `internal/engine/compile.go`, `analysis.go`, `check.go` | Checks types, analyzes calls and dependencies, and compiles expressions. |
-| Runtime | `runtime.go`, `pratt.go`, `attrs.go`, `eval.go`, `alloc.go`, `stream_prefix.go`, `stream_undo.go`, `stream_stack.go` | Implements ordered choice, backtracking, actions, recovery and Pratt selection; streaming commits reuse capture frames ([record 085](optimizations/085-reuse-stream-capture-frames.md)) and isolate prefix storage while batching inactive-scratch cleanup ([record 089](optimizations/089-isolate-stream-prefixes-and-batch-scratch-cleanup.md)). |
+| Runtime | `runtime.go`, `operators_rule.go`, `attrs.go`, `eval.go`, `alloc.go`, `stream_prefix.go`, `stream_undo.go`, `stream_stack.go` | Implements ordered choice, backtracking, actions, recovery and Operators Rule selection; streaming commits reuse capture frames ([record 085](optimizations/085-reuse-stream-capture-frames.md)) and isolate prefix storage while batching inactive-scratch cleanup ([record 089](optimizations/089-isolate-stream-prefixes-and-batch-scratch-cleanup.md)). |
 | Bytecode | `bytecode.go`, `bcompile.go`, `vm.go`, `ivm.go` | Runs the same grammar semantics with recursive and iterative VMs; see the [bytecode specification](../spec/bytecode.md). |
 | Input and documents | `input.go`, `stream_text.go`, `document.go`, `resume.go` | Tracks position units, streaming input, edits and resumable repetitions; VM-backed Documents reuse cleared stacks ([record 086](optimizations/086-reuse-document-vm-values.md)), and streaming shares bounded immutable text snapshots ([record 088](optimizations/088-share-bounded-stream-text-snapshots.md)). |
 | Compiled grammars | `compiled.go`, `modulefile.go` | Saves and loads bytecode modules, optionally with AST and analysis data. |
@@ -57,7 +57,7 @@ Files without a directory are in `internal/engine/`. Optimization evidence is in
 ### Runtime
 
 The closure compiler is the reference execution path. The recursive and iterative VMs share rule-call, memoization,
-left-recursion and Pratt logic with it. Backtracking restores input position, the variable environment, recovered
+left-recursion and Operators Rule logic with it. Backtracking restores input position, the variable environment, recovered
 errors and capture history; farthest-failure expectations use separate isolation and merge scopes. Recognition
 returns no tree and skips value and action work that predicates do not need; predicate-dependent rules and callees
 can still evaluate actions.
@@ -66,7 +66,7 @@ counters halve before overflow, and the eager decision remains sticky for that p
 Nesting limits and tracing apply to rule calls. `Document` can reuse memo entries across edits and resume long
 repetitions; stream parsing emits elements and discards input already committed by the grammar.
 
-### Code generation
+### Code Generation
 
 Generated Go and TypeScript parsers embed their runtime and depend only on their standard libraries. Generated Go
 has direct paths for supported rules and general per-expression fallback; typed Go also emits inferred Go types
@@ -132,7 +132,7 @@ reference data; the additional CPython `Lib/test` corpus (`PEGO_CPYTHON_SRC`) an
 not supplied. DuckDB checks use vendored reference results, not a live DuckDB oracle. These jobs do not claim
 browser-engine or deployed-site validation.
 
-## Repository grammar test coverage
+## Repository Grammar Test Coverage
 
 The guides show how to test a grammar in an application. The repository uses the same layers across its examples and parser corpus:
 
@@ -146,7 +146,7 @@ The guides show how to test a grammar in an application. The repository uses the
 
 Root `go test ./...` covers the main module. Run [`parsers/test.sh`](../parsers/test.sh) to vet and test all standalone parser modules; `cd site && go test ./...` covers the site module.
 
-## Language feature status
+## Language Feature Status
 
 | Status | Category | Feature |
 |:--|:--|:--|
@@ -157,30 +157,32 @@ Root `go test ./...` covers the main module. Run [`parsers/test.sh`](../parsers/
 | Done | | Type checking |
 | Done | | Type inference |
 | Done | Parser expressions | Literals (`"..."`) |
-| Done | | Character classes (`(?...)`) |
+| Done | | Character matching (`[...]`) |
 | Done | | Sequences (`a b`) |
 | Done | | Choices (`a / b`) |
-| Done | | Repetition (`{,}`, `*`, `+`, `?`) |
+| Done | | Repetition (`#repeat(...)`, `*`, `+`, `?`) |
 | Done | | Lookahead (`&`, `!`) |
-| Done | | Atomic (`@`) |
+| Done | | Atomic (`#atomic`) |
 | Done | | Discard (`-`) |
 | Done | | Cut (`--`) |
 | Done | | Anchors (`^^`, `$$`, `^`, `$`) |
 | Done | | Top and bottom (`_`, `_\|_`) |
 | Done | | Captures (`label:a`) |
 | Done | | Groups (`(...)`) |
-| Done | | Any character (`.`) and negated character classes (`(?^...)`) |
-| Done | | Predicates (`[...]`) |
-| Done | | Attributes (`#...`) |
-| Done | | Consuming skip recovery (`#recover`) and error messages (`#error`); missing-token insertion is proposed |
-| Done | Actions | Actions (`->`) |
-| Done | | Variables (`x`, `x = 1`) |
+| Done | | Any character (`.`) and negated character matching (`[^...]`) |
+| Done | | Predicate Actions (`{ ... }`) |
+| Done | | Attributes (`@...`) and behavioral pragmas (`#...`) |
+| Done | | Consuming skip recovery (`#recover`) and error messages (`@error`); missing-token insertion is proposed |
+| Done | Actions | Single-statement Predicate Actions (`{term}` or `{name := term}`) and Value Actions (`=> term`) on ordinary rules; Operators Rule declaration actions use default CST behavior |
+| Not implemented | | Multiple-statement Predicate Actions and braced Value Actions (`=> { ... }`) parse/format/AST only; compilation rejects them |
+| Not implemented | | Inline actions (`(expression => term)` parse/format/AST only; compilation rejects them) |
+| Done | | Predicate variables (`{x}`, `{x := 1}`) |
 | Done | | Capture references (`$label`, `$1`) |
 | Done | | Built-in functions (`foldl`, `len`, `text`, and others) |
-| Done | | Constructors (`new`) |
+| Done | | Constructors (`Type{...}`) |
 | Done | Advanced | Left recursion |
 | Done | | Parsing PEGO source (`.pego`) |
-| Done | | Pratt expressions (`pratt`) |
+| Done | | Operators Rule declarations |
 | Done | | Stream parsing (`#stream`) |
 | Done | | Mutable incremental parsing (`Document`); snapshots/change notifications are proposed |
 | Done | | Code generation (Go, `pego gen`) |

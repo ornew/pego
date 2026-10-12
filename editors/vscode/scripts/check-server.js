@@ -10,7 +10,7 @@ const rpc = require('vscode-jsonrpc/node');
 
 const command = process.argv[2] || 'pego';
 const uri = 'file:///check/calc.pego';
-const text = 'def main = "😀" num\ndef num = (?0-9)+\n';
+const text = 'rule main = "😀" num\nrule num = [0-9]+\n';
 
 function fail(message) {
   console.error('FAIL: ' + message);
@@ -50,25 +50,25 @@ async function main() {
   // Rename the reference to an undefined rule, after the astral character (two UTF-16 units).
   conn.sendNotification('textDocument/didChange', {
     textDocument: { uri, version: 2 },
-    contentChanges: [{ range: { start: { line: 0, character: 16 }, end: { line: 0, character: 19 } }, text: 'nums' }],
+    contentChanges: [{ range: { start: { line: 0, character: 17 }, end: { line: 0, character: 20 } }, text: 'nums' }],
   });
   d = await nextDiagnostics();
-  const want = { start: { line: 0, character: 16 }, end: { line: 0, character: 20 } };
+  const want = { start: { line: 0, character: 17 }, end: { line: 0, character: 21 } };
   if (d.version !== 2 || d.diagnostics.length !== 1 || JSON.stringify(d.diagnostics[0].range) !== JSON.stringify(want)) {
     fail('diagnostics after the change: ' + JSON.stringify(d));
   }
   conn.sendNotification('textDocument/didChange', {
     textDocument: { uri, version: 3 },
-    contentChanges: [{ range: { start: { line: 0, character: 19 }, end: { line: 0, character: 20 } }, text: '' }],
+    contentChanges: [{ range: { start: { line: 0, character: 20 }, end: { line: 0, character: 21 } }, text: '' }],
   });
   await nextDiagnostics();
 
   const hover = await conn.sendRequest('textDocument/hover', { textDocument: { uri }, position: { line: 1, character: 5 } });
-  if (!hover || !hover.contents.value.includes('def num: []Match')) fail('hover: ' + JSON.stringify(hover));
+  if (!hover || !hover.contents.value.includes('rule num []Match')) fail('hover: ' + JSON.stringify(hover));
 
   const completion = await conn.sendRequest('textDocument/completion', {
     textDocument: { uri },
-    position: { line: 0, character: 17 },
+    position: { line: 0, character: 18 },
   });
   if (!completion.items.some((i) => i.label === 'num')) fail('completion: ' + JSON.stringify(completion));
 

@@ -243,7 +243,7 @@ func (c caps) record() recordTy {
 	return r
 }
 
-// scopeCheck is the checking state of one scope (a rule body, a repetition element, or a Pratt
+// scopeCheck is the checking state of one scope (a rule body, a repetition element, or a OperatorsRule
 // line).
 type scopeCheck struct {
 	caps  caps
@@ -254,6 +254,8 @@ type scopeCheck struct {
 // an expression without a value.
 func (k *checker) expr(e grammar.Expr, sc *scopeCheck) ty {
 	switch e := e.(type) {
+	case *grammar.Group:
+		return k.expr(e.Expr, sc)
 	case *grammar.Literal, *grammar.CharClass, *grammar.Any, *grammar.Top, *grammar.Atomic:
 		return tyMatch
 	case *grammar.Ref:
@@ -372,8 +374,8 @@ func (k *checker) ruleType(rd *grammar.RuleDef) ty {
 	if !k.declared[rd.Name] {
 		declared = nil
 	}
-	if pr, ok := rd.Expr.(*grammar.Pratt); ok {
-		return k.prattType(rd, pr, declared)
+	if pr, ok := rd.Expr.(*grammar.OperatorsRule); ok {
+		return k.operatorsRuleType(rd, pr, declared)
 	}
 	sc := &scopeCheck{caps: caps{}}
 	bodyT := k.expr(rd.Expr, sc)
@@ -418,7 +420,7 @@ func (k *checker) ruleType(rd *grammar.RuleDef) ty {
 	return t
 }
 
-func (k *checker) prattType(rd *grammar.RuleDef, pr *grammar.Pratt, declared ty) ty {
+func (k *checker) operatorsRuleType(rd *grammar.RuleDef, pr *grammar.OperatorsRule, declared ty) ty {
 	self := k.ruleTypes[rd.Name]
 	var ts []ty
 	if pr.Skip != nil {
@@ -450,7 +452,7 @@ func (k *checker) prattType(rd *grammar.RuleDef, pr *grammar.Pratt, declared ty)
 				if t == tyOperator {
 					k.errorf(rd.Pos, "operators of %s without an action produce Operator, which is not assignable to %s", rd.Name, declared)
 				} else {
-					k.errorf(rd.Pos, "pratt %s produces %s, which is not assignable to %s", rd.Name, t, declared)
+					k.errorf(rd.Pos, "operatorsRule %s produces %s, which is not assignable to %s", rd.Name, t, declared)
 				}
 			}
 		}
@@ -459,7 +461,7 @@ func (k *checker) prattType(rd *grammar.RuleDef, pr *grammar.Pratt, declared ty)
 	return union(ts...)
 }
 
-// lineType returns the value type of a Pratt operand line or operator line.
+// lineType returns the value type of an Operators Rule operand line or operator line.
 func (k *checker) lineType(e grammar.Expr, action grammar.Term, locals map[string]ty, pos grammar.Pos) ty {
 	sc := &scopeCheck{caps: caps{}}
 	t := k.expr(e, sc)
@@ -498,8 +500,8 @@ func (k *checker) lineType(e grammar.Expr, action grammar.Term, locals map[strin
 func (k *checker) attributed(e *grammar.Attributed, sc *scopeCheck) ty {
 	t := k.expr(e.Expr, sc)
 	for _, a := range e.Attrs {
-		for _, arg := range a.Args {
-			k.expr(arg.Value, &scopeCheck{caps: caps{}})
+		for _, arg := range a.ExpressionArgs() {
+			k.expr(arg, &scopeCheck{caps: caps{}})
 		}
 		if a.Name == "recover" && t != nil {
 			t = union(t, tyError)
@@ -547,6 +549,8 @@ func termPos(t grammar.Term, def grammar.Pos) grammar.Pos {
 	case *grammar.Unary:
 		return t.Pos
 	case *grammar.Assign:
+		return t.Pos
+	case *grammar.Block:
 		return t.Pos
 	}
 	return def

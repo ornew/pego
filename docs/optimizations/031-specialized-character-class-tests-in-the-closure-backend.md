@@ -1,4 +1,4 @@
-# 31. Specialized character-class tests in the closure backend
+# 31. Specialized Character-Class Tests in the Closure Backend
 
 - The closure backend tested a character against a class by looping over the class's ranges in the grammar AST.
   Classes with one or two ranges (most of them) now compare against constants captured by the test function; larger

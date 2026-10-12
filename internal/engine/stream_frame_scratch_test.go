@@ -10,10 +10,9 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-const frameScratchGrammar = `
-def main = h:@"#head\n" items:record* #stream $$ [text($h) == "#head\n"]
-def record = k:@(?a-z / "é" / "😀")+ "=" vs:value+ "\n"
-def value = v:@(?0-9)+ ","`
+const frameScratchGrammar = `rule main = h:"#head\n" #atomic items:record* #stream $$ {text($h) == "#head\n"}
+rule record = k:[a-z / "é" / "😀"]+ #atomic "=" vs:value+ "\n"
+rule value = v:[0-9]+ #atomic ","`
 
 // This complements bench.BenchmarkStream's 50,001-row CSV workload with
 // Unicode input, a live root capture, both units, and small and larger streams.
@@ -61,10 +60,10 @@ func TestStreamFrameScratchCompletionPaths(t *testing.T) {
 	}{
 		{"failed final element", records, "#records\n" + strings.Repeat("key=42\n", 300) + "key=x\n", 300, true, false},
 		{"callback error", records, "#records\n" + strings.Repeat("key=42\n", 320), 300, true, true},
-		{"zero progress", `def main = item* #stream $$
-def item = x:@"x" / e:@""`, strings.Repeat("x", 300), 301, false, false},
-		{"no capture scopes", `def main = "x"* #stream $$`, strings.Repeat("x", 300), 300, false, false},
-		{"empty input", `def main = "x"* #stream $$`, "", 0, false, false},
+		{"zero progress", `rule main = item* #stream $$
+rule item = x:"x" #atomic / e:"" #atomic`, strings.Repeat("x", 300), 301, false, false},
+		{"no capture scopes", `rule main = "x"* #stream $$`, strings.Repeat("x", 300), 300, false, false},
+		{"empty input", `rule main = "x"* #stream $$`, "", 0, false, false},
 	} {
 		prog := compile(t, tc.src)
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -106,12 +105,11 @@ func TestStreamFrameScratchRetainedResults(t *testing.T) {
 		checkStreamFrameScratchRetainedResults(t, frameScratchGrammar)
 	})
 	t.Run("actions", func(t *testing.T) {
-		checkStreamFrameScratchRetainedResults(t, `
-type Value struct { N Match }
+		checkStreamFrameScratchRetainedResults(t, `type Value struct { N Match }
 type Row struct { Key Match, Values []Value }
-def main = h:@"#head\n" items:record* #stream $$ [text($h) == "#head\n"]
-def record: Row = k:@(?a-z / "é" / "😀")+ "=" vs:value+ "\n" -> new Row{Key: $k, Values: $vs}
-def value: Value = v:@(?0-9)+ "," -> new Value{N: $v}`)
+rule main = h:"#head\n" #atomic items:record* #stream $$ {text($h) == "#head\n"}
+rule record Row = k:[a-z / "é" / "😀"]+ #atomic "=" vs:value+ "\n" => Row{Key: $k, Values: $vs}
+rule value Value = v:[0-9]+ #atomic "," => Value{N: $v}`)
 	})
 }
 
@@ -177,7 +175,7 @@ func TestStreamFrameScratchClearsDeadFrames(t *testing.T) {
 	if !streamFrameScratch {
 		t.Skip("reference build does not reuse capture frames")
 	}
-	p := newParser(compile(t, `def main = "a"`), "a", CodePoints, false)
+	p := newParser(compile(t, `rule main = "a"`), "a", CodePoints, false)
 	root := p.newFrame(1)
 	root.vals[0] = &Node{Text: "live root"}
 	p.frame = root

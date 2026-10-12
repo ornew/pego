@@ -1,4 +1,4 @@
-# 12. Memoizing rules that read variables
+# 12. Memoizing Rules That Read Variables
 
 - Rules that read variables, directly or through callees, were never memoized, because their results depend on the
   environment. Context-sensitive grammars (indentation-based ones in particular) could then take exponential time,

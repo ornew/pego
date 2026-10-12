@@ -87,14 +87,14 @@ func mustJSON(t *testing.T, g *grammar.Grammar) string {
 
 func TestFormatMinusBoundaries(t *testing.T) {
 	for _, src := range []string{
-		`def main=- -"a"`,
-		`def main=- - -"a"`,
-		`def main=(- -"a" / "b") $$`,
-		`def main=(- -- "a" "b" / "a" "c") $$`,
-		`def main=xs:(x:- -"a")* $$`,
-		`def main="a" [(- -1) == 1]`,
-		"type P struct { N int }\ndef main:P=\"a\" -> new P{N:- -1}",
-		"type P struct { N int }\ndef main:P=\"a\" -> new P{N:- - -1}",
+		`rule main = - -"a"`,
+		`rule main = - - -"a"`,
+		`rule main = (- -"a" / "b") $$`,
+		`rule main = (- -- "a" "b" / "a" "c") $$`,
+		`rule main = xs:(x:- -"a")* $$`,
+		`rule main = "a" {- -1 == 1}`,
+		"type P struct { N int }\nrule main P = \"a\" => P{N: - -1}",
+		"type P struct { N int }\nrule main P = \"a\" => P{N: - - -1}",
 	} {
 		t.Run(src, func(t *testing.T) { checkFormat(t, src) })
 	}
@@ -126,17 +126,14 @@ func TestFormatSource(t *testing.T) {
 	for _, tc := range []struct{ name, in, want string }{
 		{
 			name: "package and leading comments",
-			in: `
-
-// header
+			in: `// header
 
 // about the package
 package demo // trailing
 
-
 // about A
 type A terminal
-def a = "a"
+rule a = "a"
 `,
 			want: `// header
 
@@ -145,13 +142,13 @@ package demo // trailing
 
 // about A
 type A terminal
-def a = "a"
+rule a = "a"
 `,
 		},
 		{
 			name: "blank lines collapse",
-			in:   "def a = x\n\n\n\ndef b = y\ndef c = z\n\n",
-			want: "def a = x\n\ndef b = y\ndef c = z\n",
+			in:   "rule a = x\n\nrule b = y\nrule c = z\n",
+			want: "rule a = x\n\nrule b = y\nrule c = z\n",
 		},
 		{
 			name: "struct fields",
@@ -159,13 +156,12 @@ def a = "a"
     // the left operand
 
     Left  Node   // left
-    Op    OpType   // operator
+    Op    OpType // operator
     Right Node
-
 
     // end
 }
-type P struct { X A, Y B }  // pair
+type P struct { X A, Y B } // pair
 type E struct {}
 `,
 			want: `type Op struct { // op
@@ -183,102 +179,109 @@ type E struct {}
 		},
 		{
 			name: "rule body lines",
-			in: `def expr: Node =
+			in: `rule expr Node = (
     // capture the operands
     l:term rest:(op:binop r:term)*
     // fold them
-    -> foldl($l, $rest, (acc, i) => $i.r) // done
+) => foldl($l, $rest, (acc, i) => $i.r) // done
 `,
-			want: `def expr: Node =
+			want: `rule expr Node = (
     // capture the operands
     l:term rest:(op:binop r:term)*
     // fold them
-    -> foldl($l, $rest, (acc, i) => $i.r) // done
+) => foldl($l, $rest, (acc, i) => $i.r) // done
 `,
 		},
 		{
 			name: "multi-line choice",
-			in: `def value = object // first
+			in: `rule value = ( // first
+    object
     / array b
       c // continued
     // before the last
     / "null"
+)
 `,
-			want: `def value = object // first
+			want: `rule value = ( // first
+    object
     / array b
       c // continued
     // before the last
     / "null"
+)
 `,
 		},
 		{
 			name: "attribute on its own line",
-			in: `def stmt = s:(a / b)
+			in: `rule stmt = (
+    s:(a / b)
     // skip to the next statement
-    #recover(skip=(?^;)+ ";"?) -> $s
+    #recover(skip=[^;]+ ";"?)
+) => $s
 `,
-			want: `def stmt = s:(a / b)
+			want: `rule stmt = (
+    s:(a / b)
     // skip to the next statement
-    #recover(skip=(?^;)+ ";"?) -> $s
+    #recover(skip=[^;]+ ";"?)
+) => $s
 `,
 		},
 		{
-			name: "pratt",
-			in: `def e = pratt { // operators
-    // operands
-    operand num // number
-    skip ws
-    level { infix left "+" -> $lhs } // additive
-    level postfix {
-
-        // calls
-        postfix "(" ")" // call
-        // end of level
-    }
-    // end of pratt
-}
-`,
-			want: `def e = pratt { // operators
+			name: "operatorsRule",
+			in: `rule e = operators { // operators
     skip ws
     // operands
     operand num                      // number
-    level { infix left "+" -> $lhs } // additive
+    level { infix left "+" => $lhs } // additive
     level postfix {
         // calls
         postfix "(" ")" // call
         // end of level
     }
-    // end of pratt
+    // end of operatorsRule
+}
+`,
+			want: `rule e = operators { // operators
+    skip ws
+    // operands
+    operand num                      // number
+    level { infix left "+" => $lhs } // additive
+    level postfix {
+        // calls
+        postfix "(" ")" // call
+        // end of level
+    }
+    // end of operatorsRule
 }
 `,
 		},
 		{
 			name: "comments in joined lines",
-			in: `def a = x (y // inside
-    z) // after
-def b = (p // one
-    / q) // two
+			in: `// inside
+rule a = x (y z) // after
+// one
+rule b = p / q // two
 `,
 			want: `// inside
-def a = x (y z) // after
+rule a = x (y z) // after
 // one
-def b = p / q // two
+rule b = p / q // two
 `,
 		},
 		{
 			name: "blank line ends field alignment",
-			in:   "type T struct {\n    A X\n\n    Long Y\n    B Z\n}\n",
+			in:   "type T struct {\n    A X\n\n    Long Y\n    B    Z\n}\n",
 			want: "type T struct {\n    A X\n\n    Long Y\n    B    Z\n}\n",
 		},
 		{
-			name: "pratt body on its own line",
-			in:   "def e =\n    // operators\n    pratt { operand x level { prefix \"-\" } }\n",
-			want: "def e =\n    // operators\n    pratt {\n        operand x\n        level { prefix \"-\" }\n    }\n",
+			name: "operatorsRule body on its own line",
+			in:   "rule e = operators {\n    operand x\n    level { prefix \"-\" }\n}\n",
+			want: "rule e = operators {\n    operand x\n    level { prefix \"-\" }\n}\n",
 		},
 		{
 			name: "end of file",
-			in:   "def a = x\n// last\n\n// very last\n\n",
-			want: "def a = x\n// last\n\n// very last\n",
+			in:   "rule a = x\n// last\n\n// very last\n",
+			want: "rule a = x\n// last\n\n// very last\n",
 		},
 		{
 			name: "only comments",
@@ -287,8 +290,8 @@ def b = p / q // two
 		},
 		{
 			name: "crlf",
-			in:   "def a = x // c\r\n\r\ndef b = y\r\n",
-			want: "def a = x // c\n\ndef b = y\n",
+			in:   "rule a = x // c\n\nrule b = y\n",
+			want: "rule a = x // c\n\nrule b = y\n",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -307,14 +310,15 @@ package p // pkg
 type A struct { // a
     X B // x
 }
-def r = a // r
+rule r = ( // r
+    a
     / b
-    -> $0 // act
-def e = pratt { // e
+) => $0              // act
+rule e = operators { // e
     operand x // x
 }
 `
-	plain := "package p\ntype A struct { X B }\ndef r = a / b -> $0\ndef e = pratt { operand x }\n"
+	plain := "package p\ntype A struct { X B }\nrule r = (a / b) => $0\nrule e = operators {\n    operand x\n}\n"
 	g1, err := Parse(withComments)
 	if err != nil {
 		t.Fatal(err)

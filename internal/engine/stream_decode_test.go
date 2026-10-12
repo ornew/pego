@@ -57,7 +57,7 @@ func TestOpenPipeStreamEmitsCompleteItem(t *testing.T) {
 			for _, s := range []string{"a", "é", "漢", "😀", string([]byte{0xff})} {
 				for split := 0; split < len(s); split++ {
 					t.Run(fmt.Sprintf("%s/%s/%x/split%d", b, unit, s, split), func(t *testing.T) {
-						p := compile(t, "def main=item* #stream $$\ndef item=. \"\\n\"")
+						p := compile(t, "rule main = item* #stream $$\nrule item = . \"\\n\"")
 						pr, pw := io.Pipe()
 						emitted := make(chan string, 2)
 						done := make(chan error, 1)
@@ -132,7 +132,7 @@ func TestByteDecodeIncompletePrefixAtEOF(t *testing.T) {
 }
 
 func TestStreamIncompletePrefixPropagatesReaderError(t *testing.T) {
-	p := compile(t, "def main=item* #stream $$\ndef item=. \"\\n\"")
+	p := compile(t, "rule main = item* #stream $$\nrule item = . \"\\n\"")
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []Unit{CodePoints, Bytes} {
 			t.Run(backend.String()+"/"+unit.String(), func(t *testing.T) {
@@ -151,7 +151,7 @@ func TestStreamIncompletePrefixPropagatesReaderError(t *testing.T) {
 // BenchmarkRuneInputDelivery exercises the affected stream decoder and compares
 // whole-input parsing, whose buffer already has a known end, in both units.
 func BenchmarkRuneInputDelivery(b *testing.B) {
-	g, err := syntax.Parse("def main=item* #stream $$\ndef item=. \"\\n\"")
+	g, err := syntax.Parse("rule main = item* #stream $$\nrule item = . \"\\n\"")
 	if err != nil {
 		b.Fatal(err)
 	}

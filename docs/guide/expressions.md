@@ -5,23 +5,23 @@ precedence and associativity. PEGO gives you three ways to write them:
 
 | Technique | You write | Typical size |
 |:--|:--|:--|
-| **Pratt expression** (`pratt { ... }`) | A table: operands, then one `level` per precedence level, each with its operators | One rule |
+| **Operators Rule** (`rule expr = operators { ... }`) | A table: operands, then one `level` per precedence level, each with its operators | One rule |
 | **Left-recursive rules** | One rule per level, each of the form `level = level OP next / next` | One rule per level |
 | **Precedence chain** | One rule per level, each a repetition `next (OP next)*` folded with `foldl` | One rule per level |
 
 This guide builds the same calculator in all three styles, compares the trees and error messages they produce, and
 helps you choose. It relies on [Trees and actions](trees-and-actions.md) for captures, types and `foldl`; the normative
-text is in [Pratt Expressions](../../spec/pratt.md) and
+text is in [Operators Rule](../../spec/operators-rule.md) and
 [Left recursion](../../spec/parser-expressions.md#left-recursion), and the reasoning behind the design in
-[design record 005](../design/005-pratt-expressions.md) and [design record 003](../design/003-packrat-parsing.md).
+[design record 005](../design/005-operators-rule.md) and [design record 003](../design/003-packrat-parsing.md).
 
 To follow along, put each grammar in the file named on its first line and run the commands shown (`pego` is the tool
-from `go install github.com/ornew/pego/cmd/pego@latest`, or `go run ./cmd/pego` in a checkout). The Pratt and the
+from `go install github.com/ornew/pego/cmd/pego@latest`, or `go run ./cmd/pego` in a checkout). The Operators Rule and the
 left-recursive calculator are the files `calc.pego` and `calc_lr.pego` in
 [`examples/calculator`](../../examples/calculator) (without their header comments); the chain variant is written out
 below.
 
-## 1. A Pratt calculator
+## 1. An Operators Rule Calculator
 
 ```pego
 // calc.pego
@@ -42,20 +42,20 @@ type Unary struct {
 
 type Expr = Number | Binary | Unary
 
-def main: Expr = e:expr ws $$ -> $e
+rule main Expr = e:expr ws $$ => $e
 
-def expr: Expr = pratt {
-    skip    ws
+rule expr Expr = operators {
+    skip ws
     operand number
-    operand "(" e:expr ws ")" -> $e
-    level { infix left  "+" / "-"       -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
-    level { infix left  "*" / "/" / "%" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
-    level { prefix      "-" / "+"       -> new Unary{Op: $op, X: $rhs} }
-    level { infix right "^"             -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    operand "(" e:expr ws ")" => $e
+    level additive { infix left "+" / "-" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level multiplicative { infix left "*" / "/" / "%" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level prefix { prefix "-" / "+" => Unary{Op: $op, X: $rhs} }
+    level power { infix right "^" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
 }
 
-def number: Number = (?0-9)+ ("." (?0-9)+)?
-def ws = (? \t\r\n)*
+rule number Number = [0-9]+ ("." [0-9]+)?
+rule ws = [ \t\r\n]*
 ```
 
 ```bash
@@ -76,16 +76,16 @@ pego parse -g calc.pego -f sexpr -i '(1 + 2) * 3'
 (Binary Left=(Binary Left=Number"1"@number Op="+" Right=Number"2"@number) Op="*" Right=Number"3"@number)
 ```
 
-Here is how to read the `pratt` block.
+Here is how to read an Operators Rule declaration.
 
 - **`skip ws`** is inserted, with its result discarded, before every operand and every operator. It is how a grammar
   without a scanner says "tokens may be separated by whitespace". Without a `skip`, nothing is inserted.
 - **`operand`** items describe what an expression can start with when no prefix operator applies: numbers and
   parenthesized expressions here. Several `operand` items are tried in order, like an ordered choice. An action belongs
-  to its own item, so alternatives that need different actions are separate items (`operand "(" e:expr ws ")" -> $e`
+  to its own item, so alternatives that need different actions are separate items (`operand "(" e:expr ws ")" => $e`
   unwraps the parentheses). An operand cannot start by calling its own rule: that would be left recursion, and it is a
   compile error. Constructs that take an expression on their left (calls, indexing) are operators.
-- **`level { ... }`** declares one binding level. **Levels are listed from the loosest to the tightest**, so inserting a
+- **`level name { ... }`** declares one binding level. **Levels are listed from the loosest to the tightest**, so inserting a
   level is a one-line change and nothing else has to be renumbered. All operators of a level share a precedence, and a
   level may mix prefix, infix and postfix operators.
 - **`infix left | right | none`** gives the associativity: `1 - 2 - 3` is `(1 - 2) - 3`, `2 ^ 3 ^ 2` is `2 ^ (3 ^ 2)`,
@@ -106,10 +106,10 @@ pego parse -g calc.pego -f sexpr -i '1 +'
 ```
 
 ```text
-pego: 1:4: syntax error: expected "(", "+", "-", (?0-9)
+pego: 1:4: syntax error: expected "(", "+", "-", [0-9]
 ```
 
-## 2. The same language with left recursion
+## 2. The Same Language with Left Recursion
 
 A PEG rule may call itself in leftmost position, directly or through other rules. PEGO detects such cycles and parses
 them by growing a seed: it first matches the non-recursive alternatives, then repeatedly tries again with the result so
@@ -135,26 +135,26 @@ type Unary struct {
 
 type Expr = Number | Binary | Unary
 
-def main: Expr = e:expr ws $$ -> $e
+rule main Expr = e:expr ws $$ => $e
 
-def expr: Expr = add / term
-def add: Expr = l:expr ws op:@("+" / "-") r:term -> new Binary{Left: $l, Op: $op, Right: $r}
+rule expr Expr = add / term
+rule add Expr = l:expr ws op:("+" / "-") #atomic r:term => Binary{Left: $l, Op: $op, Right: $r}
 
-def term: Expr = mul / unary
-def mul: Expr = l:term ws op:@("*" / "/" / "%") r:unary -> new Binary{Left: $l, Op: $op, Right: $r}
+rule term Expr = mul / unary
+rule mul Expr = l:term ws op:("*" / "/" / "%") #atomic r:unary => Binary{Left: $l, Op: $op, Right: $r}
 
-def unary: Expr = neg / power
-def neg: Expr = ws op:@("-" / "+") x:unary -> new Unary{Op: $op, X: $x}
+rule unary Expr = neg / power
+rule neg Expr = ws op:("-" / "+") #atomic x:unary => Unary{Op: $op, X: $x}
 
 // Exponentiation is right-associative, and its right operand may carry a unary operator (2^-1).
-def power: Expr = pow / primary
-def pow: Expr = l:primary ws op:"^" r:unary -> new Binary{Left: $l, Op: $op, Right: $r}
+rule power Expr = pow / primary
+rule pow Expr = l:primary ws op:"^" r:unary => Binary{Left: $l, Op: $op, Right: $r}
 
-def primary: Expr = ws p:(number / group) -> $p
-def group: Expr = "(" e:expr ws ")" -> $e
+rule primary Expr = ws p:(number / group) => $p
+rule group Expr = "(" e:expr ws ")" => $e
 
-def number: Number = (?0-9)+ ("." (?0-9)+)?
-def ws = (? \t\r\n)*
+rule number Number = [0-9]+ ("." [0-9]+)?
+rule ws = [ \t\r\n]*
 ```
 
 ```bash
@@ -187,7 +187,7 @@ grammar is organized.
 - **Whitespace is part of the rules**: every rule that starts a token or follows an operand has to say `ws`, and the
   main rule has to consume the trailing `ws`.
 - **Every level is a rule you can call.** `term` parses a product without sums, which is useful if other parts of your
-  grammar need exactly that (a Pratt expression offers the same with
+  grammar need exactly that (an Operators Rule offers the same with
   [level-restricted calls](#4-level-restricted-calls)).
 
 ```bash
@@ -195,13 +195,13 @@ pego parse -g calc_lr.pego -f sexpr -i '1 +'
 ```
 
 ```text
-pego: 1:4: syntax error: expected "(", "+", "-", (? \t\r\n), (?0-9)
+pego: 1:4: syntax error: expected "(", "+", "-", [ \t\r\n], [0-9]
 ```
 
-Note the extra `(? \t\r\n)` in the expected list: a rule-based grammar reports its whitespace, while `skip` is hidden
+Note the extra `[ \t\r\n]` in the expected list: a rule-based grammar reports its whitespace, while `skip` is hidden
 from error messages.
 
-### Left recursion pitfalls
+### Left Recursion Pitfalls
 
 **The recursive alternative must come first.** Growing starts from the non-recursive match and then tries the
 alternatives *in order* with the recursive call bound to the result so far. If the base case comes first, it matches
@@ -209,12 +209,12 @@ again with the same length, nothing grows, and the rest of the input is left ove
 
 ```pego
 // lr-order.pego
-def good = expr $$
-def expr = expr "+" term / term
-def term = @(?0-9)+
+rule good = expr $$
+rule expr = expr "+" term / term
+rule term = [0-9]+ #atomic
 
-def bad = expr2 $$
-def expr2 = term / expr2 "+" term
+rule bad = expr2 $$
+rule expr2 = term / expr2 "+" term
 ```
 
 ```bash
@@ -224,7 +224,7 @@ pego parse -g lr-order.pego -s bad -f sexpr -i '1+2+3'
 
 ```text
 (Seq (Seq (Seq "1"@term "+" "2"@term)@expr "+" "3"@term)@expr)@good
-pego: 1:2: syntax error: expected (?0-9), end of input
+pego: 1:2: syntax error: expected [0-9], end of input
 ```
 
 The error ("expected a digit or the end of input at column 2") is accurate but gives no hint about the order of
@@ -232,13 +232,13 @@ alternatives; when a left-recursive rule stops short, look at the order first.
 
 **Ordered choice picks the first operator that matches, not the longest.** In `op:("<" / "<=")` the `<` wins on `1<=2`
 and `=2` is left over; write `"<=" / "<"` (or put `!"="` after `"<"`). This is the usual PEG rule, and you have to
-follow it in every operator list. A Pratt expression does not have the problem (section 8).
+follow it in every operator list. An Operators Rule does not have the problem (section 8).
 
 ```pego
 // lr-ops.pego
-def rel = l:num op:("<" / "<=") r:num
-def rel2 = l:num op:("<=" / "<") r:num
-def num = @(?0-9)+
+rule rel = l:num op:("<" / "<=") r:num
+rule rel2 = l:num op:("<=" / "<") r:num
+rule num = [0-9]+ #atomic
 ```
 
 ```bash
@@ -247,13 +247,13 @@ pego parse -g lr-ops.pego -s rel2 -f sexpr -i '1<=2'
 ```
 
 ```text
-pego: 1:3: syntax error: expected (?0-9)
+pego: 1:3: syntax error: expected [0-9]
 (Seq "1"@num "<=" "2"@num l="1"@num op="<=" r="2"@num)@rel2
 ```
 
-## 3. The precedence chain
+## 3. The Precedence Chain
 
-The oldest way to write an expression grammar needs neither left recursion nor Pratt. Each level matches an operand of
+The oldest way to write an expression grammar needs neither left recursion nor Operators Rule. Each level matches an operand of
 the next level, followed by any number of operator-operand pairs, and `foldl` builds the left-leaning tree
 ([Recipe 1 of the trees guide](trees-and-actions.md#91-left-associative-trees-with-foldl)):
 
@@ -264,25 +264,23 @@ type Binary struct { Left Expr, Op Match, Right Expr }
 type Unary struct { Op Match, X Expr }
 type Expr = Number | Binary | Unary
 
-def main: Expr = e:expr ws $$ -> $e
+rule main Expr = e:expr ws $$ => $e
 
-def expr: Expr = l:term rest:(ws op:@("+" / "-") r:term)*
-    -> foldl($l, $rest, (acc, i) => new Binary{Left: $acc, Op: $i.op, Right: $i.r})
+rule expr Expr = l:term rest:(ws op:("+" / "-") #atomic r:term)* => foldl($l, $rest, (acc, i) => Binary{Left: $acc, Op: $i.op, Right: $i.r})
 
-def term: Expr = l:unary rest:(ws op:@("*" / "/" / "%") r:unary)*
-    -> foldl($l, $rest, (acc, i) => new Binary{Left: $acc, Op: $i.op, Right: $i.r})
+rule term Expr = l:unary rest:(ws op:("*" / "/" / "%") #atomic r:unary)* => foldl($l, $rest, (acc, i) => Binary{Left: $acc, Op: $i.op, Right: $i.r})
 
-def unary: Expr = neg / power
-def neg: Expr = ws op:@("-" / "+") x:unary -> new Unary{Op: $op, X: $x}
+rule unary Expr = neg / power
+rule neg Expr = ws op:("-" / "+") #atomic x:unary => Unary{Op: $op, X: $x}
 
 // right-associative: the right operand is parsed by the rule that includes the operator itself
-def power: Expr = pow / primary
-def pow: Expr = l:primary ws op:"^" r:unary -> new Binary{Left: $l, Op: $op, Right: $r}
+rule power Expr = pow / primary
+rule pow Expr = l:primary ws op:"^" r:unary => Binary{Left: $l, Op: $op, Right: $r}
 
-def primary: Expr = ws p:(number / group) -> $p
-def group: Expr = "(" e:expr ws ")" -> $e
-def number: Number = (?0-9)+ ("." (?0-9)+)?
-def ws = (? \t\r\n)*
+rule primary Expr = ws p:(number / group) => $p
+rule group Expr = "(" e:expr ws ")" => $e
+rule number Number = [0-9]+ ("." [0-9]+)?
+rule ws = [ \t\r\n]*
 ```
 
 ```bash
@@ -301,7 +299,7 @@ Left-associative levels use the repetition and `foldl`; right-associative ones r
 PEG tool, and the only machinery it uses is ordered choice and repetition. Its costs are the same as for rules: one rule
 per level, whitespace handled by hand, and one rule call per level for every operand, even a bare number.
 
-**Non-associative operators.** Replace the repetition with `{0,1}`: it yields a list with at most one element, so
+**Non-associative operators.** Replace the repetition with `#repeat(0,1)`: it yields a list with at most one element, so
 `foldl` handles it unchanged, and a second operator is simply not consumed:
 
 ```pego
@@ -310,18 +308,16 @@ type Num terminal
 type Bin struct { L E, Op Match, R E }
 type E = Num | Bin
 
-def main: E = e:cmp ws $$ -> $e
+rule main E = e:cmp ws $$ => $e
 
 // at most one comparison: "1 < 2 < 3" is a syntax error
-def cmp: E = l:add rest:(ws op:@("<=" / ">=" / "<" / ">" / "==" / "!=") r:add){0,1}
-    -> foldl($l, $rest, (acc, i) => new Bin{L: $acc, Op: $i.op, R: $i.r})
+rule cmp E = l:add rest:(ws op:("<=" / ">=" / "<" / ">" / "==" / "!=") #atomic r:add) #repeat(0, 1) => foldl($l, $rest, (acc, i) => Bin{L: $acc, Op: $i.op, R: $i.r})
 
-def add: E = l:atom rest:(ws op:@("+" / "-") r:atom)*
-    -> foldl($l, $rest, (acc, i) => new Bin{L: $acc, Op: $i.op, R: $i.r})
+rule add E = l:atom rest:(ws op:("+" / "-") #atomic r:atom)* => foldl($l, $rest, (acc, i) => Bin{L: $acc, Op: $i.op, R: $i.r})
 
-def atom: E = ws n:num -> $n
-def num: Num = (?0-9)+
-def ws = " "*
+rule atom E = ws n:num => $n
+rule num Num = [0-9]+
+rule ws = " "*
 ```
 
 ```bash
@@ -334,17 +330,17 @@ pego parse -g chain-cmp.pego -f sexpr -i '1 < 2 < 3'
 pego: 1:7: syntax error: expected " ", "+", "-", end of input
 ```
 
-## 4. Level-restricted calls
+## 4. Level-Restricted Calls
 
 Some constructs contain an expression that must not use the loosest operators. The classic example is the argument list
 of a call: in `f(a, b)` the comma separates arguments, so the arguments must be parsed *without* the comma operator,
-while `(a, b)` in parentheses is a comma expression. A Pratt expression handles this with a **named level** and a call
-with that level, `expr(assignment)`: its tail applies only infix and postfix operators of the named level and tighter
+while `(a, b)` in parentheses is a comma expression. An Operators Rule handles this with a **named level** and a call
+with that level, `level(expr, assignment)`: its tail applies only infix and postfix operators of the named level and tighter
 ones. A call without a level (`expr`) allows tail operators of all levels. The rule name and `(` must be adjacent.
 
 Prefix operators can still start an operand at any level, including the head of a restricted call. A selected prefix
 parses its right operand using its own precedence, so a looser prefix can absorb operators below the caller's entry
-level inside that operand. For example, with prefix `~` looser than addition, `expr(multiplication)` accepts `~x+y`
+level inside that operand. For example, with prefix `~` looser than addition, `level(expr, multiplication)` accepts `~x+y`
 as `~(x+y)`, but stops before `+` in bare `x+y`. A named level does not exclude those operators from every subtree.
 If a construct forbids a prefix at entry, guard its input explicitly, accounting for the rule's whitespace skip.
 
@@ -364,33 +360,32 @@ type Index struct { X Expr, Index Expr }
 type Member struct { X Expr, Name Ident }
 type Expr = Num | Ident | Comma | Assign | Cond | Bin | Unary | Call | Index | Member
 
-def expr: Expr = pratt {
-    skip    ws
+rule expr Expr = operators {
+    skip ws
     operand number
     operand ident
-    operand "(" e:expr ws ")" -> $e
+    operand "(" e:expr ws ")" => $e
 
-    level            { infix left  ","                  -> new Comma{L: $lhs, R: $rhs} }
-    level assignment { infix right "="                  -> new Assign{L: $lhs, R: $rhs} }
-    level            { infix right "?" then:expr ws ":" -> new Cond{Cond: $lhs, Then: $then, Else: $rhs} }
-    level            { infix none  "==" / "!="          -> new Bin{L: $lhs, Op: $op, R: $rhs} }
-    level            { infix left  "+" / "-"            -> new Bin{L: $lhs, Op: $op, R: $rhs} }
-    level            { infix left  "*" / "/"            -> new Bin{L: $lhs, Op: $op, R: $rhs} }
-    level            { prefix      "-" / "!"            -> new Unary{Op: $op, X: $rhs} }
-    level            { infix right "**"                 -> new Bin{L: $lhs, Op: $op, R: $rhs} }
-    level {
-        postfix "(" xs:args? ws ")"  -> new Call{Fn: $lhs, Args: concat($xs)}
-        postfix "[" i:expr ws "]"    -> new Index{X: $lhs, Index: $i}
-        postfix "." name:ident       -> new Member{X: $lhs, Name: $name}
+    level comma { infix left "," => Comma{L: $lhs, R: $rhs} }
+    level assignment { infix right "=" => Assign{L: $lhs, R: $rhs} }
+    level conditional { infix right "?" then:expr ws ":" => Cond{Cond: $lhs, Then: $then, Else: $rhs} }
+    level equality { infix none "==" / "!=" => Bin{L: $lhs, Op: $op, R: $rhs} }
+    level additive { infix left "+" / "-" => Bin{L: $lhs, Op: $op, R: $rhs} }
+    level multiplicative { infix left "*" / "/" => Bin{L: $lhs, Op: $op, R: $rhs} }
+    level prefix { prefix "-" / "!" => Unary{Op: $op, X: $rhs} }
+    level power { infix right "**" => Bin{L: $lhs, Op: $op, R: $rhs} }
+    level postfix {
+        postfix "(" xs:args? ws ")" => Call{Fn: $lhs, Args: concat($xs)}
+        postfix "[" i:expr ws "]" => Index{X: $lhs, Index: $i}
+        postfix "." name:ident => Member{X: $lhs, Name: $name}
     }
 }
 
-def args = first:expr(assignment) rest:(-ws "," x:expr(assignment))*
-    -> concat(list($first), map($rest, (r) => $r.x))
+rule args = first:level(expr, assignment) rest:(-ws "," x:level(expr, assignment))* => concat(list($first), map($rest, (r) => $r.x))
 
-def number: Num = (?0-9)+
-def ident: Ident = (?a-z)+
-def ws = (? \t\r\n)*
+rule number Num = [0-9]+
+rule ident Ident = [a-z]+
+rule ws = [ \t\r\n]*
 ```
 
 ```bash
@@ -413,18 +408,18 @@ pego parse -g js.pego -s expr -f sexpr -i '2 ** -1'
 
 Things to notice:
 
-- `f(a = 1, b)` has two arguments: `args` calls `expr(assignment)`, which includes the `=` level and everything tighter
+- `f(a = 1, b)` has two arguments: `args` calls `level(expr, assignment)`, which includes the `=` level and everything tighter
   but not `,`. Outside a call, `x, y` is a `Comma` node.
 - The postfix operators `(...)`, `[...]` and `.name` share one level, so `f(a)(2)[3].x` chains left to right. Their
   operator parts are arbitrary parsing expressions: `"(" xs:args? ws ")"` parses an argument list with the rest of the
   grammar, and the whole matched part is `$op` (here the actions use the captures instead).
 - `"?" then:expr ws ":"` is a mixfix operator: the middle operand is parsed by a full `expr` call, and the right operand
-  by the Pratt loop, which makes `a ? b : c ? d : e` nest to the right.
+  by the Operators Rule loop, which makes `a ? b : c ? d : e` nest to the right.
 - `-a ** b` is `-(a ** b)` because `**` is in a tighter level than the prefix `-`, and `2 ** -1` parses anyway.
 - `skip` is **not** inserted inside an operator part, so `"?" then:expr ws ":"` spells out the whitespace before `":"`.
   See [pitfalls](#8-pitfalls).
 
-## 5. Operator forms and associativity
+## 5. Operator Forms and Associativity
 
 | Declaration | Form | Notes |
 |:--|:--|:--|
@@ -461,18 +456,18 @@ type App struct { Fn E, Arg E }
 type Neg struct { X E }
 type E = Id | Num | Bin | App | Neg
 
-def e: E = pratt {
+rule e E = operators {
     skip ws
     operand num
     operand id
-    operand "(" x:e ws ")" -> $x
-    level { infix left "+" / "-" -> new Bin{L: $lhs, Op: $op, R: $rhs} }
-    level { infix left _ -> new App{Fn: $lhs, Arg: $rhs} }
-    level { prefix "-" -> new Neg{X: $rhs} }
+    operand "(" x:e ws ")" => $x
+    level additive { infix left "+" / "-" => Bin{L: $lhs, Op: $op, R: $rhs} }
+    level application { infix left _ => App{Fn: $lhs, Arg: $rhs} }
+    level prefix { prefix "-" => Neg{X: $rhs} }
 }
-def num: Num = (?0-9)+
-def id: Id = (?a-z)+
-def ws = " "*
+rule num Num = [0-9]+
+rule id Id = [a-z]+
+rule ws = " "*
 ```
 
 ```bash
@@ -503,20 +498,20 @@ type Neg struct { X E }
 type Fact struct { X E }
 type E = Num | Neg | Fact
 
-def same: E = pratt {
+rule same E = operators {
     operand num
-    level {
-        prefix "-"  -> new Neg{X: $rhs}
-        postfix "!" -> new Fact{X: $lhs}
+    level mixed {
+        prefix "-" => Neg{X: $rhs}
+        postfix "!" => Fact{X: $lhs}
     }
 }
 
-def tighter: E = pratt {
+rule tighter E = operators {
     operand num
-    level { prefix "-"  -> new Neg{X: $rhs} }
-    level { postfix "!" -> new Fact{X: $lhs} }
+    level prefix { prefix "-" => Neg{X: $rhs} }
+    level postfix { postfix "!" => Fact{X: $lhs} }
 }
-def num: Num = (?0-9)+
+rule num Num = [0-9]+
 ```
 
 ```bash
@@ -529,9 +524,9 @@ pego parse -g same-level.pego -s tighter -f sexpr -i '-3!'
 (Neg X=(Fact X=Num"3"@num))
 ```
 
-## 6. The tree of a Pratt expression
+## 6. The Tree of an Operators Rule
 
-### Typed rules and the `Operator` node
+### Typed Rules and the `Operator` Node
 
 When an operator has no action, it produces a node of the reserved type `Operator`. Its children are `[lhs, op, rhs]`
 for infix, `[op, rhs]` for prefix and `[lhs, op]` for postfix operators, its label is the rule, and its `operator` field
@@ -539,12 +534,12 @@ is the index of the operator in declaration order across all levels. Operands wi
 
 ```pego
 // raw.pego
-def e = pratt {
-    operand @(?0-9)+
-    level { infix left "+" }
-    level { infix left "*" }
-    level { prefix "-" }
-    level { postfix "!" }
+rule e = operators {
+    operand [0-9]+ #atomic
+    level additive { infix left "+" }
+    level multiplicative { infix left "*" }
+    level prefix { prefix "-" }
+    level postfix { postfix "!" }
 }
 ```
 
@@ -564,9 +559,9 @@ number passes through every level:
 
 ```pego
 // chain-cst.pego
-def expr = term (("+" / "-") term)*
-def term = factor (("*" / "/") factor)*
-def factor = @(?0-9)+
+rule expr = term (("+" / "-") term)*
+rule term = factor (("*" / "/") factor)*
+rule factor = [0-9]+ #atomic
 ```
 
 ```bash
@@ -579,17 +574,17 @@ pego parse -g raw.pego -s e -f sexpr -i '7'
 "7"@e
 ```
 
-The default Pratt tree is a good starting point (nothing to write), but note the consequence for typed rules: if the
+The default Operators Rule tree is a good starting point (nothing to write), but note the consequence for typed rules: if the
 rule has a declared type that does not include `Operator`, **every operator needs an action**:
 
 ```pego
 // raw-typed.pego
 type Num terminal
-def t: Num = pratt {
+rule t Num = operators {
     operand num
-    level { infix left "+" }
+    level additive { infix left "+" }
 }
-def num: Num = (?0-9)+
+rule num Num = [0-9]+
 ```
 
 ```bash
@@ -600,7 +595,7 @@ pego parse -g raw-typed.pego -s t -i '1+2'
 pego: raw-typed.pego:3:1: operators of t without an action produce Operator, which is not assignable to Num
 ```
 
-### `$n` and operators
+### `$n` And Operators
 
 Operator actions cannot use `$1`, `$2`, ...; use the captures in the operator part or `$lhs`, `$rhs`, `$op`. Operand
 actions can use `$n`:
@@ -611,11 +606,11 @@ type Num terminal
 type Paren struct { X E }
 type E = Num | Paren
 
-def e: E = pratt {
+rule e E = operators {
     operand num
-    operand "(" e ")" -> new Paren{X: $2}
+    operand "(" e ")" => Paren{X: $2}
 }
-def num: Num = (?0-9)+
+rule num Num = [0-9]+
 ```
 
 ```bash
@@ -626,9 +621,9 @@ pego parse -g operand-n.pego -s e -f sexpr -i '((1))'
 (Paren X=(Paren X=Num"1"@num))
 ```
 
-## 7. Choosing between the three
+## 7. Choosing Between the Three
 
-| | Pratt expression | Left-recursive rules | Precedence chain |
+| | Operators Rule | Left-recursive rules | Precedence chain |
 |:--|:--|:--|:--|
 | Adding a level | One `level` line | Two rules and an edit to a neighbour | A rule and an edit to a neighbour |
 | Associativity | Declared (`left`, `right`, `none`) | Shape of the recursion | Repetition + `foldl`, or recursion |
@@ -636,31 +631,31 @@ pego parse -g operand-n.pego -s e -f sexpr -i '((1))'
 | Operator selection | **Longest match**, then declaration order | First match in the ordered choice | First match in the ordered choice |
 | Whitespace | `skip`, hidden from error messages | By hand in every rule | By hand in every rule |
 | Tree depth without actions | Proportional to the expression | One node per level for every operand | One node per level for every operand |
-| Rules callable for a sub-level | `expr(level)` | Each level is a rule | Each level is a rule |
+| Rules callable for a sub-level | `level(expr, level)` | Each level is a rule | Each level is a rule |
 | Speed (20,000-term expression) | 9.76 ms | 25.6 ms | not in the benchmarks |
 | Needs left recursion support | No | Yes | No |
 
-The speed row is from [benchmarks.md](../benchmarks.md) (closure backend, 133 KB input): the Pratt calculator is about
+The speed row is from [benchmarks.md](../benchmarks.md) (closure backend, 133 KB input): the Operators Rule calculator is about
 2.6 times as fast as the left-recursive one, as you would expect from a loop that does not make one rule call per level
 for every operand and does not grow seeds.
 
 A rule of thumb:
 
-- **Use a Pratt expression** for any language with more than two or three precedence levels, for prefix, postfix,
+- **Use an Operators Rule** for any language with more than two or three precedence levels, for prefix, postfix,
   ternary or call/index operators, or when you expect to add operators later. It is the default for expression
   languages, and what the larger grammars (`examples/minilang`, `parsers/golang`, `parsers/python`) use.
 - **Use left-recursive rules** when the recursion is not an operator table: member chains (`a.b.c`), a handful of
   levels in an otherwise ordinary grammar, constructs such as `list = list "," item / item`, or a grammar ported from a
-  notation that already uses left recursion. They also work with Pratt expressions in the same grammar.
+  notation that already uses left recursion. They also work with Operators Rule declarations in the same grammar.
 - **Use the chain** when you need plain PEG that other tools can read, or for a one- or two-level expression where a
   fold is the shortest thing to write.
 
-The three can be mixed freely. A Pratt expression's operands and operator parts are normal parsing expressions, so they
-can call any rule; and the rules of a statement grammar call the rule that holds the Pratt expression like any other.
+The three can be mixed freely. An Operators Rule's operands and operator parts are normal parsing expressions, so they
+can call any rule; and the rules of a statement grammar call the rule that holds the Operators Rule like any other.
 
 ## 8. Pitfalls
 
-**The word `operand` (and `level`, `skip`, `prefix`, `postfix`, `infix`, `pratt`) is a keyword.** A rule called
+**The words `operators`, `rule`, `operand`, `level`, `skip`, `prefix`, `postfix` and `infix` are keywords.** A rule called
 `operand` can be defined, but every reference to it is a syntax error (`expected an expression, found 'operand'`);
 pick another name such as `atom`. The complete list is in
 [Lexical Structure](../../spec/lexical.md#keywords).
@@ -669,10 +664,10 @@ pick another name such as `atom`. The complete list is in
 
 ```pego
 // operand-lr.pego
-def e = pratt {
+rule e = operators {
     operand e "!"
-    operand (?0-9)+
-    level { infix left "+" }
+    operand [0-9]+
+    level additive { infix left "+" }
 }
 ```
 
@@ -687,15 +682,15 @@ pego: operand-lr.pego:2:9: operand of e calls e at its start (left recursion); u
 Write `!` as a postfix operator instead.
 
 **A cut can prevent prefix-to-operand fallback.** If no prefix part matches and a candidate failed after `--`,
-the Pratt expression fails. For example, `prefix "-" -- "z"` does not fall back to `operand "-x"` on `-x`.
+the Operators Rule fails. For example, `prefix "-" -- "z"` does not fall back to `operand "-x"` on `-x`.
 An ordinary mismatch before a cut still allows fallback. A different successfully matching prefix candidate is
 selected by the usual longest-match rule; that candidate's own cut controls a later RHS failure. See the
-[backtracking rules](../../spec/pratt.md#parsing-rules) for candidate and cut scopes.
+[backtracking rules](../../spec/operators-rule.md#parsing-rules) for candidate and cut scopes.
 
 **`skip` is not inserted inside an operator part or an operand, and trailing whitespace is not consumed.** In
 `infix right "?" t:expr ":"` the `":"` must directly follow the end of `t`; write `ws` before it. Otherwise the operator
 part fails, the operator is not applied, and the error is reported at the farthest failure (below, the colon at column 7,
-which no operator can continue). After the last token the Pratt expression stops, so the rule that uses it must
+which no operator can continue). After the last token the Operators Rule stops, so the rule that uses it must
 consume trailing whitespace (the `main` rules of the calculators say `ws $$`).
 
 ```pego
@@ -705,21 +700,21 @@ type Id terminal
 type Cond struct { C E, T E, F E }
 type E = Num | Id | Cond
 
-def loose: E = pratt {
+rule loose E = operators {
     skip ws
     operand num
     operand id
-    level { infix right "?" t:loose ":" -> new Cond{C: $lhs, T: $t, F: $rhs} }
+    level conditional { infix right "?" t:loose ":" => Cond{C: $lhs, T: $t, F: $rhs} }
 }
-def tight: E = pratt {
+rule tight E = operators {
     skip ws
     operand num
     operand id
-    level { infix right "?" t:tight ws ":" -> new Cond{C: $lhs, T: $t, F: $rhs} }
+    level conditional { infix right "?" t:tight ws ":" => Cond{C: $lhs, T: $t, F: $rhs} }
 }
-def num: Num = (?0-9)+
-def id: Id = (?a-z)+
-def ws = " "*
+rule num Num = [0-9]+
+rule id Id = [a-z]+
+rule ws = " "*
 ```
 
 ```bash
@@ -753,17 +748,17 @@ type Un struct { Op Match, X E }
 type Post struct { X E, Op Match }
 type E = Num | Bin | Un | Post
 
-def main: E = e:e $$ -> $e
+rule main E = e:e $$ => $e
 
-def e: E = pratt {
+rule e E = operators {
     skip ws
     operand num
-    level { infix left "+" -> new Bin{L: $lhs, Op: $op, R: $rhs} }
-    level { prefix "+" -> new Un{Op: $op, X: $rhs} }
-    level { postfix "++" -> new Post{X: $lhs, Op: $op} }
+    level additive { infix left "+" => Bin{L: $lhs, Op: $op, R: $rhs} }
+    level prefix { prefix "+" => Un{Op: $op, X: $rhs} }
+    level postfix { postfix "++" => Post{X: $lhs, Op: $op} }
 }
-def num: Num = (?0-9)+
-def ws = " "*
+rule num Num = [0-9]+
+rule ws = " "*
 ```
 
 ```bash
@@ -790,17 +785,17 @@ type Bin struct { L E, Op Match, R E }
 type Not struct { X E }
 type E = Id | Bin | Not
 
-def e: E = pratt {
+rule e E = operators {
     skip ws
     operand id
-    level { infix left "or" !idchar -> new Bin{L: $lhs, Op: $op, R: $rhs} }
-    level { infix left "and" !idchar -> new Bin{L: $lhs, Op: $op, R: $rhs} }
-    level { prefix "not" !idchar -> new Not{X: $rhs} }
+    level logical_or { infix left "or" !idchar => Bin{L: $lhs, Op: $op, R: $rhs} }
+    level logical_and { infix left "and" !idchar => Bin{L: $lhs, Op: $op, R: $rhs} }
+    level prefix { prefix "not" !idchar => Not{X: $rhs} }
 }
-def id: Id = !kw (?a-z)+
-def kw = ("or" / "and" / "not") !idchar
-def idchar = (?a-z)
-def ws = " "*
+rule id Id = !kw [a-z]+
+rule kw = ("or" / "and" / "not") !idchar
+rule idchar = [a-z]
+rule ws = " "*
 ```
 
 ```bash
@@ -824,21 +819,21 @@ type Num terminal
 type Bin struct { L E, Op Match, R E }
 type E = Num | Bin
 
-def plain: E = pratt {
+rule plain E = operators {
     skip ws
     operand num
-    level { infix left "+" -> new Bin{L: $lhs, Op: $op, R: $rhs} }
+    level additive { infix left "+" => Bin{L: $lhs, Op: $op, R: $rhs} }
 }
-def committed: E = pratt {
+rule committed E = operators {
     skip ws
     operand num
-    level { infix left "+" -- -> new Bin{L: $lhs, Op: $op, R: $rhs} }
+    level additive { infix left "+" -- => Bin{L: $lhs, Op: $op, R: $rhs} }
 }
 
-def m1 = plain ws "+" ws "x" $$
-def m2 = committed ws "+" ws "x" $$
-def num: Num = (?0-9)+
-def ws = " "*
+rule m1 = plain ws "+" ws "x" $$
+rule m2 = committed ws "+" ws "x" $$
+rule num Num = [0-9]+
+rule ws = " "*
 ```
 
 ```bash
@@ -848,7 +843,7 @@ pego parse -g cut.pego -s m2 -f sexpr -i '1 + x'
 
 ```text
 (Seq Num"1"@num [" "]@ws "+" [" "]@ws "x")@m1
-pego: 1:5: syntax error: expected (?0-9)
+pego: 1:5: syntax error: expected [0-9]
 ```
 
 Without the cut, `1 + x` is the number `1` followed by the literal text `+ x`; with it, the `+` is an operator and the
@@ -857,45 +852,45 @@ missing operand is an error.
 **Left recursion needs the base case last.** See section 2. If a left-recursive rule matches less than you expect,
 check the order of its alternatives first.
 
-## 9. A larger example: minilang
+## 9. A Larger Example: Minilang
 
 [`examples/minilang`](../../examples/minilang/minilang.pego) is a small language where statements are ordinary PEG rules
-and expressions are one Pratt expression, nested in each other. The pieces that matter for this guide:
+and expressions are one Operators Rule, nested in each other. The pieces that matter for this guide:
 
 ```pego
-def expr: Expr = e:operation #error(message="expected an expression") -> $e
+rule expr Expr = e:operation @error(message="expected an expression") => $e
 
-def operation: Expr = pratt {
+rule operation Expr = operators {
     skip ws
     operand number
     operand string
     operand bool
     operand ident
-    operand "(" e:operation ws ")" -> $e
-    operand "[" xs:args? ws "]" -> new ArrayLit{Elems: concat($xs)}
-    level { infix right "?" t:operation ws ":" -> new Cond{Cond: $lhs, Then: $t, Else: $rhs} }
-    level { infix left "||" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
-    level { infix left "&&" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
-    level { infix none "==" / "!=" / "<=" / ">=" / "<" / ">" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
-    level { infix left "+" / "-" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
-    level { infix left "*" / "/" / "%" -> new Binary{Left: $lhs, Op: $op, Right: $rhs} }
-    level { prefix "-" / "!" -> new Unary{Op: $op, X: $rhs} }
-    level {
-        postfix "(" xs:args? ws ")" -> new Call{Fn: $lhs, Args: concat($xs)}
-        postfix "[" i:operation ws "]" -> new Index{X: $lhs, Index: $i}
-        postfix "." ws n:name -> new Member{X: $lhs, Name: $n}
+    operand "(" e:operation ws ")" => $e
+    operand "[" xs:args? ws "]" => ArrayLit{Elems: concat($xs)}
+    level conditional { infix right "?" t:operation ws ":" => Cond{Cond: $lhs, Then: $t, Else: $rhs} }
+    level logical_or { infix left "||" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level logical_and { infix left "&&" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level equality { infix none "==" / "!=" / "<=" / ">=" / "<" / ">" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level additive { infix left "+" / "-" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level multiplicative { infix left "*" / "/" / "%" => Binary{Left: $lhs, Op: $op, Right: $rhs} }
+    level prefix { prefix "-" / "!" => Unary{Op: $op, X: $rhs} }
+    level postfix {
+        postfix "(" xs:args? ws ")" => Call{Fn: $lhs, Args: concat($xs)}
+        postfix "[" i:operation ws "]" => Index{X: $lhs, Index: $i}
+        postfix "." ws n:name => Member{X: $lhs, Name: $n}
     }
 }
-def args = first:expr rest:(-ws -"," x:expr)* -> concat(list($first), map($rest, (r) => $r.x))
+rule args = first:expr rest:(-ws -"," x:expr)* => concat(list($first), map($rest, (r) => $r.x))
 ```
 
 (The grammar is abridged here; the types and the lexical rules are in the file.)
 
-- The Pratt rule is `operation`; the rule that statements call is `expr`, a thin wrapper that attaches an `#error`
-  message to the whole expression. Inside the Pratt expression, nested expressions call `operation` directly, so the
+- a rule containing an Operators Rule is `operation`; the rule that statements call is `expr`, a thin wrapper that attaches an `@error`
+  message to the whole expression. Inside the Operators Rule, nested expressions call `operation` directly, so the
   wrapper's message applies only where a whole expression is expected.
 - The language has no comma operator, so call arguments are plain `expr` calls and no level name is needed.
-- Statements such as `let` and `while` are PEG rules that call `expr`. Together with the `#recover` attribute on `stmt`,
+- Statements such as `let` and `while` are PEG rules that call `expr`. Together with the `#recover` pragma on `stmt`,
   a bad expression only loses its own statement. See [Errors and recovery](errors-and-recovery.md).
 
 Parsing a few statements with the real grammar:

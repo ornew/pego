@@ -1,4 +1,4 @@
-# Reference results of cel-go
+# Reference Results of Cel-Go
 
 What the parser of [cel-go](https://github.com/google/cel-go) v0.32.0 (`cel.dev/cel-go`, Apache License 2.0) makes of
 each expression, written by [internal/refgen](../../internal/refgen) (`go run . -spec /path/to/cel-spec -out

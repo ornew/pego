@@ -11,16 +11,15 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-const nodeFrameScratchGrammar = `
-type Tok terminal
+const nodeFrameScratchGrammar = `type Tok terminal
 type Item struct { T Tok }
 type Root struct { Items []Item }
 type Bad struct { N int }
-def main = xs:(i:item)* $$ -> new Root{Items: map($xs, (x) => $x.i)}
-def item = t:tok [text($t) == "é" || text($t) == "\uFFFD"] -> new Item{T: $t}
-def tok: Tok = "é" / "\uFFFD"
-def abort = x:@"é"* -> new Bad{N: 10 / len($x)}
-def recovering = x:(("é" "!") #recover(skip="?")) $$ -> $x
+rule main = xs:(i:item)* $$ => Root{Items: map($xs, (x) => $x.i)}
+rule item = t:tok {text($t) == "é" || text($t) == "�"} => Item{T: $t}
+rule tok Tok = "é" / "�"
+rule abort = x:"é"* #atomic => Bad{N: 10 / len($x)}
+rule recovering = x:("é" "!") #recover(skip="?") $$ => $x
 `
 
 // PEGO_NODE_FRAME_DIR preserves paired fixtures. Optional
@@ -37,7 +36,7 @@ func TestGeneratedNodeFrameScratchWorkloads(t *testing.T) {
 	cases := []struct{ name, source, inputs string }{
 		{"capture", nodeFrameScratchGrammar, `func frameInputs() (string,string,string) {return "é",strings.Repeat("é",5000),"é!"}`},
 		{"nocapture", `type Tok terminal
-def main: Tok = ("é" / "\uFFFD")* $$`, `func frameInputs() (string,string,string) {return "é",strings.Repeat("é",5000),"é!"}`},
+rule main Tok = ("é" / "�")* $$`, `func frameInputs() (string,string,string) {return "é",strings.Repeat("é",5000),"é!"}`},
 	}
 	if os.Getenv("PEGO_NODE_FRAME_TYPESCRIPT") != "" {
 		source, err := os.ReadFile("../../parsers/typescript/typescript.pego")

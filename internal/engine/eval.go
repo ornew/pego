@@ -43,7 +43,7 @@ type evalCtx struct {
 	frame      *frame
 	items      []*Node // elements referenced by $n
 	start, end int     // range matched by the rule
-	locals     *local  // lambda arguments and Pratt's $lhs, $rhs, $op
+	locals     *local  // lambda arguments and OperatorsRule's $lhs, $rhs, $op
 	cbase      int     // start, in p.created, of the nodes created by this evaluation
 }
 
@@ -80,7 +80,7 @@ func (p *parser) actionResult(ctx *evalCtx, act evaluator, where string) *Node {
 		p.fail("action in %s: result must be a node, got %s", where, typeName(v))
 	}
 	if n != nil {
-		// The value of an action is final: a node it returns from the rule body (-> $1) is not
+		// The value of an action is final: a node it returns from the rule body (=> $1) is not
 		// labeled by the rules that receive it, which might share it through the memo.
 		n.fresh = false
 	}

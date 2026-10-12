@@ -2,6 +2,7 @@ package grammar
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -18,10 +19,16 @@ const indentUnit = "    "
 // layout information (for example, one decoded from JSON) is printed with a
 // blank line between definitions and one item per line in blocks.
 func Format(g *Grammar) string {
-	p := &printer{start: true}
+	p := &printer{start: true, headers: map[Pos][]*Comment{}}
+	for _, comment := range g.HeaderComments {
+		if comment != nil {
+			p.headers[comment.Header] = append(p.headers[comment.Header], comment)
+		}
+	}
 	if g.Package != "" {
 		p.lineBreak(g.PackageBreak, "", false)
-		p.write("package " + g.Package)
+		p.header("package", g.PackagePos)
+		p.write(" " + g.Package)
 	}
 	for _, s := range g.Statements {
 		switch s := s.(type) {
@@ -62,6 +69,7 @@ type printer struct {
 	start bool
 	// trailing are the trailing comments of the current line.
 	trailing []*Comment
+	headers  map[Pos][]*Comment
 }
 
 func (p *printer) write(s string) {
@@ -100,7 +108,7 @@ func (p *printer) flush() {
 // inline records the trailing comment of b, for a node that b precedes but
 // that is written on the current line.
 func (p *printer) inline(b *LineBreak) {
-	if b != nil && b.Trailing != nil {
+	if b != nil && b.Trailing != nil && !b.Trailing.Header.IsValid() {
 		p.trailing = append(p.trailing, b.Trailing)
 	}
 }
@@ -137,6 +145,9 @@ func (p *printer) comments(b *LineBreak, indent string, closing bool) bool {
 		return false
 	}
 	for _, c := range b.Comments {
+		if c.Header.IsValid() {
+			continue
+		}
 		p.commentLine(indent, c)
 	}
 	return b.Blank && !closing
@@ -177,7 +188,8 @@ func (p *printer) closeBlock(b *LineBreak, indent string) {
 }
 
 func (p *printer) typeDef(t *TypeDef) {
-	p.write("type " + t.Name + " ")
+	p.header("type", t.Pos)
+	p.write(" " + t.Name + " ")
 	switch spec := t.Spec.(type) {
 	case *StructSpec:
 		p.structSpec(spec, "")
@@ -219,32 +231,116 @@ func (p *printer) structSpec(s *StructSpec, indent string) {
 }
 
 func (p *printer) ruleDef(r *RuleDef) {
-	p.write("def " + r.Name)
+	p.header("rule", r.Pos)
+	p.write(" " + r.Name)
 	if r.Type != nil {
-		p.write(": " + FormatType(r.Type))
+		p.write(" " + FormatType(r.Type))
 	}
-	p.write(" =")
-	body := indentUnit
-	pratt := ""
-	if r.BodyBreak != nil {
-		p.lineBreak(r.BodyBreak, body, false)
-		pratt = body
+	p.write(" = ")
+	if pr, ok := r.Expr.(*OperatorsRule); ok {
+		p.write("operators ")
+		p.operatorsRule(pr, "")
 	} else {
-		p.write(" ")
-	}
-	if pr, ok := r.Expr.(*Pratt); ok {
-		p.pratt(pr, pratt)
-	} else {
-		p.body(r.Expr, body)
-	}
-	if r.Action != nil {
-		if r.ActionBreak != nil {
-			p.lineBreak(r.ActionBreak, body, false)
+		if r.BodyBreak != nil || r.ActionBreak != nil || expressionLayout(r.Expr) {
+			p.write("(")
+			p.lineBreak(r.BodyBreak, indentUnit, false)
+			p.body(r.Expr, indentUnit)
+			p.comments(r.ActionBreak, indentUnit, false)
+			p.newLine("")
+			p.write(")")
+			p.inline(r.ActionBreak)
 		} else {
-			p.write(" ")
+			p.body(r.Expr, "")
 		}
-		p.write("-> " + FormatTerm(r.Action))
 	}
+	if r.Action != nil || r.DefaultAction {
+		p.write(" => ")
+		if r.DefaultAction {
+			p.write("...")
+		} else {
+			p.write(FormatTerm(r.Action))
+		}
+	}
+	p.comments(r.CloseBreak, indentUnit, true)
+	p.inline(r.CloseBreak)
+}
+
+func expressionLayout(e Expr) bool {
+	switch e := e.(type) {
+	case *Seq:
+		for _, b := range e.Breaks {
+			if b != nil {
+				return true
+			}
+		}
+		for _, it := range e.Items {
+			if expressionLayout(it) {
+				return true
+			}
+		}
+	case *Choice:
+		for _, b := range e.Breaks {
+			if b != nil {
+				return true
+			}
+		}
+		for _, alt := range e.Alts {
+			if expressionLayout(alt) {
+				return true
+			}
+		}
+	case *Attributed:
+		for _, b := range e.Breaks {
+			if b != nil {
+				return true
+			}
+		}
+	case *Atomic:
+		return e.Break != nil
+	case *Repeat:
+		return e.PragmaBreak != nil
+	case *Recovery:
+		return e.Break != nil
+	case *Stream:
+		return e.Break != nil
+	case *Capture:
+		return expressionLayout(e.Expr)
+	case *And:
+		return expressionLayout(e.Expr)
+	case *Not:
+		return expressionLayout(e.Expr)
+	case *Discard:
+		return expressionLayout(e.Expr)
+	}
+	return false
+}
+
+func undecorate(e Expr, attrs []*Attribute) (Expr, bool) {
+	for _, a := range attrs {
+		if a.Name == "atomic" {
+			x, ok := e.(*Atomic)
+			if !ok {
+				return nil, false
+			}
+			e = x.Expr
+			continue
+		}
+		x, ok := e.(*Attributed)
+		if !ok || len(x.Attrs) == 0 || x.Attrs[len(x.Attrs)-1] != a {
+			return nil, false
+		}
+		if len(x.Attrs) == 1 {
+			e = x.Expr
+		} else {
+			copy := *x
+			copy.Attrs = x.Attrs[:len(x.Attrs)-1]
+			if len(copy.Breaks) > len(copy.Attrs) {
+				copy.Breaks = copy.Breaks[:len(copy.Attrs)]
+			}
+			e = &copy
+		}
+	}
+	return e, true
 }
 
 // body writes the expression of a rule body, keeping the line breaks
@@ -295,6 +391,8 @@ func (p *printer) sequence(e Expr, indent string, outer int) {
 // line breaks before its attributes.
 func (p *printer) item(e Expr, indent string) {
 	switch e := e.(type) {
+	case *Group:
+		p.group(e, indent)
 	case *Capture:
 		p.write(e.Name + ":")
 		p.item(e.Expr, indent)
@@ -305,8 +403,43 @@ func (p *printer) item(e Expr, indent string) {
 		p.write("!")
 		p.item(e.Expr, indent)
 	case *Atomic:
-		p.write("@")
-		p.item(e.Expr, indent)
+		p.write(formatExpr(e.Expr, precSuffix))
+		if e.Break != nil {
+			p.lineBreak(e.Break, indent, false)
+		} else {
+			p.write(" ")
+		}
+		p.write("#atomic")
+	case *Stream:
+		p.write(formatExpr(e.Expr, precSuffix))
+		if e.Break != nil {
+			p.lineBreak(e.Break, indent, false)
+		} else {
+			p.write(" ")
+		}
+		p.write("#stream")
+	case *Recovery:
+		p.write(formatExpr(e.Expr, precSuffix))
+		if e.Break != nil {
+			p.lineBreak(e.Break, indent, false)
+		} else {
+			p.write(" ")
+		}
+		p.write("#recover(skip=" + FormatExpr(e.Skip) + ")")
+	case *Repeat:
+		if e.PragmaBreak == nil {
+			p.write(formatExpr(e, precPrefix))
+			break
+		}
+		p.write(formatExpr(e.Expr, precSuffix))
+		p.lineBreak(e.PragmaBreak, indent, false)
+		if e.Min == e.Max {
+			p.write(fmt.Sprintf("#repeat(%d)", e.Min))
+		} else if e.Max < 0 {
+			p.write(fmt.Sprintf("#repeat(%d, )", e.Min))
+		} else {
+			p.write(fmt.Sprintf("#repeat(%d, %d)", e.Min, e.Max))
+		}
 	case *Discard:
 		p.write("-")
 		p.item(e.Expr, indent)
@@ -325,6 +458,37 @@ func (p *printer) item(e Expr, indent string) {
 	}
 }
 
+func (p *printer) group(g *Group, indent string) {
+	if g.OneLine && noComments(g.BodyBreak) && noComments(g.CloseBreak) {
+		p.write("(")
+		p.groupBody(g.Expr, indent)
+		p.write(")")
+		p.inline(g.CloseBreak)
+		return
+	}
+	p.write("(")
+	p.lineBreak(g.BodyBreak, indent+indentUnit, false)
+	p.groupBody(g.Expr, indent+indentUnit)
+	p.comments(g.CloseBreak, indent+indentUnit, false)
+	p.newLine(indent)
+	p.write(")")
+	p.inline(g.CloseBreak)
+}
+
+func (p *printer) groupBody(e Expr, indent string) {
+	if action, ok := e.(*InlineAction); ok {
+		p.body(action.Expr, indent)
+		p.write(" => ")
+		if action.DefaultAction {
+			p.write("...")
+		} else {
+			p.write(FormatTerm(action.Action))
+		}
+		return
+	}
+	p.body(e, indent)
+}
+
 func breakAt(bs []*LineBreak, i int) *LineBreak {
 	if i < len(bs) {
 		return bs[i]
@@ -332,9 +496,8 @@ func breakAt(bs []*LineBreak, i int) *LineBreak {
 	return nil
 }
 
-func (p *printer) pratt(pr *Pratt, indent string) {
+func (p *printer) operatorsRule(pr *OperatorsRule, indent string) {
 	inner := indent + indentUnit
-	p.write("pratt ")
 	p.openBlock()
 	if pr.Skip != nil {
 		p.lineBreak(pr.SkipBreak, inner, false)
@@ -344,12 +507,15 @@ func (p *printer) pratt(pr *Pratt, indent string) {
 		p.lineBreak(o.Break, inner, false)
 		p.write("operand " + FormatExpr(o.Expr))
 		if o.Action != nil {
-			p.write(" -> " + FormatTerm(o.Action))
+			p.write(" => " + FormatTerm(o.Action))
+		} else if o.DefaultAction {
+			p.write(" => ...")
 		}
 	}
 	for _, l := range pr.Levels {
 		p.lineBreak(l.Break, inner, false)
-		p.write("level ")
+		p.header("level", l.Pos)
+		p.write(" ")
 		if l.Name != "" {
 			p.write(l.Name + " ")
 		}
@@ -360,8 +526,12 @@ func (p *printer) pratt(pr *Pratt, indent string) {
 		switch {
 		case empty && (len(l.Operators) == 0 || l.OneLine):
 			p.write("{")
-			for _, op := range l.Operators {
-				p.write(" " + formatOperator(op))
+			for i, op := range l.Operators {
+				if i > 0 {
+					p.write(";")
+				}
+				p.write(" ")
+				p.operator(op)
 				p.inline(op.Break)
 			}
 			if len(l.Operators) > 0 {
@@ -373,7 +543,7 @@ func (p *printer) pratt(pr *Pratt, indent string) {
 			p.openBlock()
 			for _, op := range l.Operators {
 				p.lineBreak(op.Break, inner+indentUnit, false)
-				p.write(formatOperator(op))
+				p.operator(op)
 			}
 			p.closeBlock(l.CloseBreak, inner)
 		}
@@ -381,14 +551,16 @@ func (p *printer) pratt(pr *Pratt, indent string) {
 	p.closeBlock(pr.CloseBreak, indent)
 }
 
-func formatOperator(op *PrattOperator) string {
+func formatOperator(op *OperatorsRuleOperator) string {
 	s := op.Kind + " "
 	if op.Assoc != "" {
 		s += op.Assoc + " "
 	}
 	s += FormatExpr(op.Expr)
 	if op.Action != nil {
-		s += " -> " + FormatTerm(op.Action)
+		s += " => " + FormatTerm(op.Action)
+	} else if op.DefaultAction {
+		s += " => ..."
 	}
 	return s
 }
@@ -480,6 +652,12 @@ func paren(s string, inner, outer int) string {
 
 func formatExpr(e Expr, outer int) string {
 	switch e := e.(type) {
+	case *InlineAction:
+		action := "..."
+		if !e.DefaultAction {
+			action = FormatTerm(e.Action)
+		}
+		return "(" + FormatExpr(e.Expr) + " => " + action + ")"
 	case *Choice:
 		parts := make([]string, len(e.Alts))
 		for i, a := range e.Alts {
@@ -499,7 +677,7 @@ func formatExpr(e Expr, outer int) string {
 	case *Not:
 		return paren("!"+formatExpr(e.Expr, precPrefix), precPrefix, outer)
 	case *Atomic:
-		return paren("@"+formatExpr(e.Expr, precPrefix), precPrefix, outer)
+		return paren(formatExpr(e.Expr, precSuffix)+" #atomic", precSuffix, outer)
 	case *Discard:
 		return paren(joinMinusTokens("-", formatExpr(e.Expr, precPrefix)), precPrefix, outer)
 	case *Repeat:
@@ -510,24 +688,33 @@ func formatExpr(e Expr, outer int) string {
 		case e.Min == 1 && e.Max < 0:
 			s += "+"
 		case e.Max < 0:
-			s += fmt.Sprintf("{%d,}", e.Min)
+			s += fmt.Sprintf(" #repeat(%d, )", e.Min)
 		case e.Min == e.Max:
-			s += fmt.Sprintf("{%d}", e.Min)
+			s += fmt.Sprintf(" #repeat(%d)", e.Min)
 		default:
-			s += fmt.Sprintf("{%d,%d}", e.Min, e.Max)
+			s += fmt.Sprintf(" #repeat(%d, %d)", e.Min, e.Max)
 		}
 		return s
 	case *Optional:
 		return formatExpr(e.Expr, precSuffix) + "?"
+	case *Stream:
+		return formatExpr(e.Expr, precSuffix) + " #stream"
+	case *Recovery:
+		return formatExpr(e.Expr, precSuffix) + " #recover(skip=" + FormatExpr(e.Skip) + ")"
 	case *Attributed:
 		s := formatExpr(e.Expr, precSuffix)
 		for _, a := range e.Attrs {
 			s += " " + formatAttribute(a)
 		}
 		return s
+	case *Group:
+		p := &printer{}
+		p.group(e, "")
+		p.flush()
+		return strings.TrimSuffix(p.String(), "\n")
 	case *Ref:
 		if e.Level != "" {
-			return e.Name + "(" + e.Level + ")"
+			return "level(" + e.Name + ", " + e.Level + ")"
 		}
 		return e.Name
 	case *Literal:
@@ -551,10 +738,13 @@ func formatExpr(e Expr, outer int) string {
 	case *EndLine:
 		return "$"
 	case *Predicate:
-		return "[" + FormatTerm(e.Term) + "]"
-	case *Pratt:
+		if block, ok := e.Term.(*Block); ok {
+			return FormatTerm(block)
+		}
+		return FormatTerm(&Block{Statements: []Term{e.Term}, Breaks: e.Breaks, CloseBreak: e.CloseBreak, OneLine: e.OneLine || len(e.Breaks) == 0 && e.CloseBreak == nil})
+	case *OperatorsRule:
 		p := &printer{}
-		p.pratt(e, "")
+		p.operatorsRule(e, "")
 		p.flush()
 		return strings.TrimSuffix(p.String(), "\n")
 	}
@@ -562,15 +752,58 @@ func formatExpr(e Expr, outer int) string {
 }
 
 func formatAttribute(a *Attribute) string {
-	s := "#" + a.Name
-	if len(a.Args) > 0 {
-		args := make([]string, len(a.Args))
-		for i, arg := range a.Args {
-			args[i] = arg.Name + "=" + FormatExpr(arg.Value)
-		}
-		s += "(" + strings.Join(args, ", ") + ")"
+	marker := "@"
+	if a.Pragma {
+		marker = "#"
 	}
-	return s
+	s := marker + a.Name
+	if len(a.Args) == 0 && len(a.KwArgs) == 0 {
+		return s
+	}
+	var args []string
+	for _, value := range a.Args {
+		if value == nil && len(a.Args) > 1 {
+			args = append(args, "")
+			continue
+		}
+		args = append(args, formatAttributeValue(value))
+	}
+	var keys []string
+	seen := map[string]bool{}
+	for _, key := range a.KeywordOrder {
+		if _, exists := a.KwArgs[key]; exists && !seen[key] {
+			keys = append(keys, key)
+			seen[key] = true
+		}
+	}
+	var remaining []string
+	for key := range a.KwArgs {
+		if !seen[key] {
+			remaining = append(remaining, key)
+		}
+	}
+	sort.Strings(remaining)
+	keys = append(keys, remaining...)
+	for _, key := range keys {
+		args = append(args, key+"="+formatAttributeValue(a.KwArgs[key]))
+	}
+	return s + "(" + strings.Join(args, ", ") + ")"
+}
+
+func formatAttributeValue(value any) string {
+	switch value := value.(type) {
+	case nil:
+		return "nil"
+	case int:
+		return strconv.Itoa(value)
+	case string:
+		return quote(value)
+	case bool:
+		return strconv.FormatBool(value)
+	case Expr:
+		return FormatExpr(value)
+	}
+	return fmt.Sprintf("<%T>", value)
 }
 
 // quote returns s as a PEGO string literal.
@@ -603,13 +836,13 @@ func quote(s string) string {
 
 func formatCharClass(e *CharClass) string {
 	var b strings.Builder
-	b.WriteString("(?")
+	b.WriteString("[")
 	if e.Negated {
 		b.WriteString("^")
 	}
 	esc := func(r rune) string {
 		switch r {
-		case '-', '(', ')', '?', '^', '\\':
+		case '-', '[', ']', '^', '\\':
 			return `\` + string(r)
 		case '\n':
 			return `\n`
@@ -629,7 +862,7 @@ func formatCharClass(e *CharClass) string {
 			b.WriteString("-" + esc(rg.Hi))
 		}
 	}
-	b.WriteString(")")
+	b.WriteString("]")
 	return b.String()
 }
 
@@ -645,6 +878,29 @@ func FormatTerm(t Term) string { return formatTerm(t, 0) }
 
 func formatTerm(t Term, outer int) string {
 	switch t := t.(type) {
+	case *Block:
+		p := &printer{}
+		if t.OneLine && noComments(t.CloseBreak) {
+			plain := true
+			for _, b := range t.Breaks {
+				plain = plain && noComments(b)
+			}
+			if plain {
+				parts := make([]string, len(t.Statements))
+				for i, stmt := range t.Statements {
+					parts[i] = FormatTerm(stmt)
+				}
+				return "{" + strings.Join(parts, "; ") + "}"
+			}
+		}
+		p.openBlock()
+		for i, stmt := range t.Statements {
+			p.lineBreak(breakAt(t.Breaks, i), indentUnit, false)
+			p.write(FormatTerm(stmt))
+		}
+		p.closeBlock(t.CloseBreak, "")
+		p.flush()
+		return strings.TrimSuffix(p.String(), "\n")
 	case *IntLit:
 		if t.Value == -int(^uint(0)>>1)-1 {
 			// The absolute minimum cannot be a positive source token. Use
@@ -671,7 +927,7 @@ func formatTerm(t Term, outer int) string {
 		for i, f := range t.Fields {
 			fields[i] = f.Name + ": " + FormatTerm(f.Value)
 		}
-		return "new " + t.Type + "{" + strings.Join(fields, ", ") + "}"
+		return t.Type + "{" + strings.Join(fields, ", ") + "}"
 	case *Call:
 		args := make([]string, len(t.Args))
 		for i, a := range t.Args {
@@ -700,7 +956,32 @@ func formatTerm(t Term, outer int) string {
 	case *Unary:
 		return joinMinusTokens(t.Op, formatTerm(t.X, 6))
 	case *Assign:
-		return t.Name + " = " + FormatTerm(t.Value)
+		return t.Name + " := " + FormatTerm(t.Value)
 	}
 	return fmt.Sprintf("<%T>", t)
+}
+
+// header keeps forbidden comments inside the header, so formatting never
+// changes a semantic placement error into valid source.
+func (p *printer) header(word string, pos Pos) {
+	p.write(word)
+	for _, comment := range p.headers[pos] {
+		p.write(" " + comment.Text)
+		if strings.HasPrefix(comment.Text, "//") {
+			p.newLine(indentUnit)
+		}
+	}
+}
+func (p *printer) operator(op *OperatorsRuleOperator) {
+	p.header(op.Kind, op.Pos)
+	p.write(" ")
+	if op.Assoc != "" {
+		p.write(op.Assoc + " ")
+	}
+	p.write(FormatExpr(op.Expr))
+	if op.Action != nil {
+		p.write(" => " + FormatTerm(op.Action))
+	} else if op.DefaultAction {
+		p.write(" => ...")
+	}
 }

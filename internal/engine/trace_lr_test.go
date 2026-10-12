@@ -6,14 +6,14 @@ import "testing"
 // Its dependency range must still include the input consumed by that seed.
 func TestTraceLeftRecursionSeedRange(t *testing.T) {
 	for _, src := range []string{
-		`def main = expr $$
-def expr = step / seed
-def step = expr
-def seed = "é"`,
-		`def main = expr $$
-def expr = step / seed
-def step = expr "é"
-def seed = ""`,
+		`rule main = expr $$
+rule expr = step / seed
+rule step = expr
+rule seed = "é"`,
+		`rule main = expr $$
+rule expr = step / seed
+rule step = expr "é"
+rule seed = ""`,
 	} {
 		prog := compile(t, src)
 		for _, input := range []string{"", "é", "éé", "é?"} {
@@ -41,14 +41,14 @@ func TestGrowingSeedDependencyBounds(t *testing.T) {
 		src, input string
 		behind     bool
 	}{
-		{`def main = "!" expr "xy" $$
-def expr = step / seed
-def step = expr
-def seed = "é" &"xy"`, "!éxy", false},
-		{`def main = "\n" expr $$
-def expr = step / seed
-def step = expr
-def seed = ^ "é"`, "\né", true},
+		{`rule main = "!" expr "xy" $$
+rule expr = step / seed
+rule step = expr
+rule seed = "é" &"xy"`, "!éxy", false},
+		{`rule main = "\n" expr $$
+rule expr = step / seed
+rule step = expr
+rule seed = ^ "é"`, "\né", true},
 	} {
 		prog := compile(t, c.src)
 		for _, unit := range []Unit{CodePoints, Bytes} {

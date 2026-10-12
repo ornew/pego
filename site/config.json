@@ -206,5 +206,13 @@
     "docs/design/*.md",
     "docs/ref*.md",
     "docs/site.md"
-  ]
+  ],
+  "redirects": {
+    "/spec/pratt/": "/spec/operators-rule/",
+    "/docs/design/005-pratt-expressions/": "/docs/design/005-operators-rule/",
+    "/docs/design/050-pratt-skip-control/": "/docs/design/050-operators-rule-skip-control/",
+    "/docs/optimizations/009-value-free-pratt-lines-discarding-trivia-in-example-grammars-936857c/": "/docs/optimizations/009-value-free-operators-rule-lines-discarding-trivia-in-example-grammars-936857c/",
+    "/docs/optimizations/013-allocation-free-pratt-attempts-and-pooled-pratt-frames-in-the-engine-and-vms/": "/docs/optimizations/013-allocation-free-operators-rule-attempts-and-pooled-operators-rule-frames-in-the-engine-and-vms/",
+    "/docs/optimizations/080-inline-eligible-typed-pratt-lines/": "/docs/optimizations/080-inline-eligible-typed-operators-rule-lines/"
+  }
 }

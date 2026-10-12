@@ -5,7 +5,7 @@ import { test } from "node:test";
 import { decodeState } from "../static/assets/state.js";
 import { Element, playground } from "./playground_harness.mjs";
 
-const base = { g: 'def main = "a"\ndef alt = "b"', i: "a" };
+const base = { g: 'rule main = "a"\nrule alt = "b"', i: "a" };
 const app = process.env.PEGO_PLAYGROUND_APP;
 function deferred() {
   let resolve, reject;
@@ -36,7 +36,7 @@ test("reverse autosave completion preserves the newer input", async () => {
 });
 
 for (const [id, event, value] of [
-  ["pg-grammar", "input", 'def main = "b"'], ["pg-input", "input", "newer"],
+  ["pg-grammar", "input", 'rule main = "b"'], ["pg-input", "input", "newer"],
   ["pg-unit", "change", "bytes"], ["pg-backend", "change", "bytecode"],
   ["pg-start", "change", "alt"], ["pg-recognize", "change", true],
   ["tab-json", "click", null], ["pg-example", "change", "sample"],
@@ -204,7 +204,7 @@ test("editing during initial example fetch prevents default overwrite", async ()
   const fetched = deferred();
   const h = await playground({ app, waitForInit: false, fetchExamples: () => fetched.promise });
   await edit(h, "local");
-  fetched.resolve({ json: async () => [{ name: "sample", grammar: 'def main = "a"', input: "a" }] });
+  fetched.resolve({ json: async () => [{ name: "sample", grammar: 'rule main = "a"', input: "a" }] });
   await h.ready;
   assert.equal(h.el("pg-input").value, "local");
 });

@@ -9,14 +9,14 @@ import (
 )
 
 func TestNullableRepetitionMinimum(t *testing.T) {
-	for _, body := range []string{`_`, `""`, `[true]`, `@_`, `x:_`, `r`} {
+	for _, body := range []string{`_`, `""`, `{true}`, `_ #atomic`, `x:_`, `r`} {
 		for _, bound := range []struct {
 			text  string
 			count int
 			ok    bool
-		}{{"{0}", 0, true}, {"{0,1}", 1, true}, {"{0,2}", 1, true}, {"{1}", 1, true}, {"{2}", 1, false}, {"{2,}", 1, false}} {
+		}{{"#repeat(0)", 0, true}, {"#repeat(0, 1)", 1, true}, {"#repeat(0, 2)", 1, true}, {"#repeat(1)", 1, true}, {"#repeat(2)", 1, false}, {"#repeat(2, )", 1, false}} {
 			t.Run(body+bound.text, func(t *testing.T) {
-				src := "def main=(" + body + ")" + bound.text + " #stream $$\ndef r=_ -> nil"
+				src := "rule main = (" + body + ")" + bound.text + " #stream $$\nrule r = _ => nil"
 				for _, disabled := range []bool{false, true} {
 					prog := compile(t, src, Options{DisableMemo: disabled})
 					data, err := prog.MarshalBinary("main")
@@ -67,9 +67,9 @@ func TestNullableRepetitionAfterConsumption(t *testing.T) {
 		min   int
 		ok    bool
 	}{{"", 2, false}, {"é", 2, true}, {"é", 3, false}, {"éé", 3, true}} {
-		for _, body := range []string{`("é" / _)`, `@("é" / _)`, `-("é" / _)`, `r`} {
-			for _, bound := range []string{fmt.Sprintf("{%d}", tc.min), fmt.Sprintf("{%d,}", tc.min)} {
-				p := compile(t, "def main=("+body+")"+bound+" #stream $$\ndef r=\"é\" / _")
+		for _, body := range []string{`("é" / _)`, `("é" / _) #atomic`, `-("é" / _)`, `r`} {
+			for _, bound := range []string{fmt.Sprintf("#repeat(%d)", tc.min), fmt.Sprintf("#repeat(%d, )", tc.min)} {
+				p := compile(t, "rule main = ("+body+")"+bound+" #stream $$\nrule r = \"é\" / _")
 				for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 					for _, unit := range []Unit{CodePoints, Bytes} {
 						opts := ParseOptions{Backend: backend, Unit: unit}
@@ -91,7 +91,7 @@ func TestNullableRepetitionAfterConsumption(t *testing.T) {
 
 func TestNullableRepetitionResumedMinimum(t *testing.T) {
 	const prefix = 1000
-	p := compile(t, fmt.Sprintf("def main=item{%d,} $$\ndef item=\"é\" / _", prefix+1))
+	p := compile(t, fmt.Sprintf("rule main = item #repeat(%d, ) $$\nrule item = \"é\" / _", prefix+1))
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, unit := range []Unit{CodePoints, Bytes} {
 			d, err := p.NewDocumentWith("main", strings.Repeat("é", prefix), ParseOptions{Backend: backend, Unit: unit})
@@ -128,7 +128,7 @@ func TestNullableRepetitionResumedMinimum(t *testing.T) {
 
 func TestNullableRepetitionProjection(t *testing.T) {
 	for _, minimum := range []int{1, 2} {
-		p := compile(t, fmt.Sprintf(`def main=xs:(f:_){%d,} $$ -> map($xs, (x) => $x.f)`, minimum))
+		p := compile(t, fmt.Sprintf(`rule main = xs:(f:_) #repeat(%d, ) $$ => map($xs, (x) => $x.f)`, minimum))
 		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
 			for _, unit := range []Unit{CodePoints, Bytes} {
 				if n, err := p.ParseWith("main", "", ParseOptions{Backend: backend, Unit: unit}); (err == nil) != (minimum == 1) || err == nil && len(n.Children) != 1 {
@@ -141,14 +141,14 @@ func TestNullableRepetitionProjection(t *testing.T) {
 
 func TestNullableRepetitionAnalysis(t *testing.T) {
 	for _, minimum := range []int{0, 1, 2, 3} {
-		g, err := syntax.Parse(fmt.Sprintf("def main=_{%d,}", minimum))
+		g, err := syntax.Parse(fmt.Sprintf("rule main = _ #repeat(%d, )", minimum))
 		if err != nil {
 			t.Fatal(err)
 		}
 		if got := analyze(g.Rules()).nullable["main"]; got != (minimum <= 1) {
 			t.Errorf("minimum %d: nullable=%v", minimum, got)
 		}
-		g, err = syntax.Parse(fmt.Sprintf("def main=_{%d,} r / \"a\"\ndef r=main", minimum))
+		g, err = syntax.Parse(fmt.Sprintf("rule main = _ #repeat(%d, ) r / \"a\"\nrule r = main", minimum))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -160,9 +160,11 @@ func TestNullableRepetitionAnalysis(t *testing.T) {
 
 func BenchmarkNullableRepetitionControl(b *testing.B) {
 	for _, tc := range []struct{ name, source string }{
-		{"Ordinary", `def main=item{2,} $$; def item="a"`},
-		{"NullableTail", `def main=item{2,} $$; def item="a" / _`},
-		{"Projected", `def main=xs:(f:"a" / f:_){2,} $$ -> map($xs, (x) => $x.f)`},
+		{"Ordinary", `rule main = item #repeat(2, ) $$
+rule item = "a"`},
+		{"NullableTail", `rule main = item #repeat(2, ) $$
+rule item = "a" / _`},
+		{"Projected", `rule main = xs:(f:"a" / f:_) #repeat(2, ) $$ => map($xs, (x) => $x.f)`},
 	} {
 		g, err := syntax.Parse(strings.ReplaceAll(tc.source, "; ", "\n"))
 		if err != nil {
