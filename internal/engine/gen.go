@@ -27,6 +27,9 @@ var typedSource string
 type GenOptions struct {
 	// referenceWorkControls emits a generation-time disabled control for tests.
 	referenceWorkControls bool
+	// referenceWorkControlLayout removes added invocation state and the new
+	// control options from a private ordinary-call cost reference.
+	referenceWorkControlLayout bool
 	// Package is the package name of the generated code.
 	Package string
 	// MaxDepth is the generated default rule-call limit. Zero selects 100,000.
@@ -111,7 +114,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if !token.IsIdentifier(opts.Package) || opts.Package == "_" {
 		return nil, fmt.Errorf("invalid package name %q", opts.Package)
 	}
-	gen := &generator{goWorkControls: !opts.referenceWorkControls, prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedPrattBodies: opts.disableTypedPrattBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs}
+	gen := &generator{goWorkControls: !(opts.referenceWorkControls || opts.referenceWorkControlLayout), prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedPrattBodies: opts.disableTypedPrattBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
 	var rec *Program
@@ -143,7 +146,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	rt = strings.Replace(rt, "\"context\"", "\"context\"\n\t\"errors\"\n\t\"math\"\n\t\"slices\"", 1)
 	out.WriteString(rt)
 	work := workSource[strings.Index(workSource, "\n)\n")+len("\n)\n"):]
-	if opts.referenceWorkControls {
+	if opts.referenceWorkControls || opts.referenceWorkControlLayout {
 		work = strings.Replace(work, "const workControlsEnabled = true", "const workControlsEnabled = false", 1)
 	}
 	out.WriteString("\n// --- Invocation work controls ---\n")
@@ -200,6 +203,9 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 	src, err := format.Source([]byte(out.String()))
 	if err != nil {
 		return []byte(out.String()), fmt.Errorf("generated code does not compile: %w", err)
+	}
+	if opts.referenceWorkControlLayout {
+		return removeGeneratedWorkState(src)
 	}
 	return src, nil
 }
