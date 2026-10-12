@@ -12,6 +12,10 @@ import (
 )
 
 func runTypedTSFixture(t *testing.T, src, consumer string, opts GenOptions, keep string) {
+	runTypedTSFixtureWithLib(t, src, consumer, opts, keep, "es2020")
+}
+
+func runTypedTSFixtureWithLib(t *testing.T, src, consumer string, opts GenOptions, keep, lib string) {
 	t.Helper()
 	if testing.Short() {
 		t.Skip("runs generated TypeScript consumers")
@@ -63,7 +67,7 @@ func runTypedTSFixture(t *testing.T, src, consumer string, opts GenOptions, keep
 			t.Fatal(err)
 		}
 	}
-	args := []string{"--target", "es2020", "--lib", "es2020", "--strict", "--noUnusedLocals", "--noUnusedParameters", "--noImplicitReturns", "--noFallthroughCasesInSwitch", "--noImplicitOverride", "--exactOptionalPropertyTypes", "--noUncheckedIndexedAccess", "--noPropertyAccessFromIndexSignature", "--erasableSyntaxOnly", "--verbatimModuleSyntax", "--allowImportingTsExtensions", "--declaration", "--emitDeclarationOnly", "--outDir", "declarations", "parser.ts", "consumer.ts"}
+	args := []string{"--target", "es2020", "--lib", lib, "--strict", "--noUnusedLocals", "--noUnusedParameters", "--noImplicitReturns", "--noFallthroughCasesInSwitch", "--noImplicitOverride", "--exactOptionalPropertyTypes", "--noUncheckedIndexedAccess", "--noPropertyAccessFromIndexSignature", "--erasableSyntaxOnly", "--verbatimModuleSyntax", "--allowImportingTsExtensions", "--declaration", "--emitDeclarationOnly", "--outDir", "declarations", "parser.ts", "consumer.ts"}
 	cmd := exec.Command(tsc, args...)
 	cmd.Dir = dir
 	if out, err := cmd.CombinedOutput(); err != nil {

@@ -510,6 +510,9 @@ console.log(isDeepStrictEqual(want, got) ? "same" : "different");
 PEGO's own tests do this for every grammar in `examples/` and the engine's test grammars, in both units, with the
 inputs as strings and as bytes ([design record 013](../design/013-typescript-generation.md)).
 
+Large character classes, including negated classes and ranges, are supported
+in strict TypeScript builds.
+
 ## Trade-offs
 
 - **Size.** The runtime is about 2,400 lines in every file, with a 3 KB table of printable characters; the rest

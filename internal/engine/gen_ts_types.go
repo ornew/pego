@@ -300,7 +300,9 @@ export function parseAST(input: string | Uint8Array, unit?: Unit): TypedParseRes
 export function parseASTWithOptions(input: string | Uint8Array, options?: ParseOptions): TypedParseResult<%[1]s> {
   const o = resolveOptions(options);
   if (o instanceof Error) return { value: null, error: o };
-  return astResult<%[1]s>(run(R%[2]d, nseen, input, o.unit, o.maxDepth), %[3]d);
+  return withWorkControl<TypedParseResult<%[1]s>>(o,
+    control => astResult<%[1]s>(run(R%[2]d, nseen, input, o.unit, o.maxDepth, control), %[3]d, control),
+    error => ({ value: null, error }));
 }
 
 `
@@ -321,18 +323,19 @@ const tsTypedRuntime = `interface ASTRecipe {
 type ASTObject = { [name: string]: unknown };
 interface ASTPending { readonly node: Node; readonly repr: number; readonly out: ASTObject | unknown[] }
 
-function astResult<T>(r: ParseResult, repr: number): TypedParseResult<T> {
-  return { value: astConvert(r.node, repr) as T | null, error: r.error };
+function astResult<T>(r: ParseResult, repr: number, control: WorkControl | null = null): TypedParseResult<T> {
+  return { value: astConvert(r.node, repr, control) as T | null, error: r.error };
 }
 
 // Cache canonical Node/representation pairs, including null, in this call only.
 // Register shells before filling edges: shared fold/LR DAGs stay shared and deep
 // output graphs do not consume the JavaScript call stack. Source Nodes stay intact.
-function astConvert(value: Value, repr: number): unknown {
+function astConvert(value: Value, repr: number, control: WorkControl | null = null): unknown {
   const cache = new Map<Node, Map<number, unknown>>();
   const pending: ASTPending[] = [];
   const get = (v: Value, id: number): unknown => {
     for (;;) {
+      control?.charge(0, 1);
       const recipe = astRecipes[id]!;
       switch (recipe.kind) {
         case "int": return isInt(v) ? v : 0;
@@ -366,6 +369,7 @@ function astConvert(value: Value, repr: number): unknown {
       if (reps.has(id)) return reps.get(id);
       let out: ASTObject | unknown[] | null = null;
       if (recipe.kind === "list") {
+        control?.charge(0, v.children.length);
         out = new Array<unknown>(v.children.length);
       } else if (v.type === recipe.name) {
         const obj: ASTObject = { type: v.type, start: v.start, end: v.end };
@@ -385,11 +389,13 @@ function astConvert(value: Value, repr: number): unknown {
   };
   const out = get(value, repr);
   while (pending.length !== 0) {
+    control?.charge(0, 1);
     const work = pending.pop()!;
     const recipe = astRecipes[work.repr]!;
     if (recipe.kind === "list") {
       const array = work.out as unknown[];
       for (let i = 0; i < work.node.children.length; i++) {
+        control?.charge(0, 1);
         array[i] = get(work.node.children[i]!, recipe.elem!);
       }
     } else {
