@@ -753,6 +753,45 @@ layout and setup boundaries still differ from the exact parent. Measure both
 references with normal GC settings before adopting the feature. No timing result
 is established by the generation, layout or consumer checks.
 
+## Generated TypeScript prototype coverage
+
+The prototype adds structural `CancellationSignal`, `ParseInterruptionError`,
+and `signal`/`maxInputWork`/`maxSteps` options to the existing Node, named-rule,
+recognition and typed options APIs. It remains incomplete and is not an adopted
+work bound. One invocation controller spans preparation through conversion;
+zero limits remain unlimited, and metadata is validated before admission.
+
+Current charges include:
+
+- UTF-16/byte probes, sizing/decoding passes, offsets and bounded output chunks;
+  actual consumers cover both units, malformed input and reentrant getters.
+- Literal/peek/EOF probes, expression/direct-rule boundaries, class comparisons,
+  repetition and LR/Pratt visits; lookahead rereads consume cumulative budgets.
+- Memo/binding/key visits, 128-unit string-key and table-copy chunks, and frame
+  initialization. Interrupted caches are invocation-private and discarded;
+  transactional rollback of every private field is not promised.
+- Typed recipe/node/list dispatch and edges, using the parse's same budget.
+- Cooperative entry/checkpoint/publication signal checks. Strict ES2020,
+  ES2022 and DOM consumers check error-cause and signal compatibility;
+  synchronous parsing does not yield to timers.
+
+Dedicated consumers cover variable rollback, non-transient memo reuse,
+cancellation, retry and interruption bypassing recovery. Intentionally omitting
+key-chunk accounting makes its consumer fail. This proves the tested boundaries,
+not comprehensive metering of every engine loop.
+
+Remaining coverage includes action/scalar-string operations, capture/graph
+rollback and materialization, expectations/recovery/diagnostics, field lookup,
+source text/length scans, and other binding string comparisons. Runtime allocation
+is non-preemptible, and mandatory unwind must remain uncharged.
+
+The finalizer clears internal signal references without caller getters or charges.
+The observed reason remains the error's cause and may itself reference caller
+objects. Forced-GC reachability checks for success, error, cancellation and panic
+remain pending. Default state/layout/helper costs are unmeasured; generated TS
+static-reference and exact-parent comparisons are required before adoption.
+There is no zero-overhead or elapsed-time guarantee.
+
 ## Alternatives considered
 
 - **Depth limits only.** Existing compatibility baseline, but shallow scans and

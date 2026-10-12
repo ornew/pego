@@ -564,26 +564,39 @@ const defaultMaxDepth = 100_000;
 export interface ParseOptions {
   unit?: Unit;
   maxDepth?: number;
+  signal?: CancellationSignal | null;
+  maxInputWork?: number;
+  maxSteps?: number;
 }
 
-function resolveOptions(options?: ParseOptions): { unit: Unit; maxDepth: number } | Error {
+function resolveOptions(options?: ParseOptions): ResolvedParseOptions | Error {
   const unit = options?.unit === Bytes ? Bytes : CodePoints;
   const depth = options?.maxDepth ?? 0;
+  const signal = options?.signal ?? null;
+  const maxInputWork = options?.maxInputWork ?? 0;
+  const maxSteps = options?.maxSteps ?? 0;
   if (!Number.isSafeInteger(depth) || depth < 0) {
     return new Error(`max depth must be a non-negative safe integer: ${depth}`);
   }
-  return { unit, maxDepth: depth === 0 ? defaultMaxDepth : depth };
+  if (!Number.isSafeInteger(maxInputWork) || maxInputWork < 0) {
+    return new Error(`max input work must be a non-negative safe integer: ${maxInputWork}`);
+  }
+  if (!Number.isSafeInteger(maxSteps) || maxSteps < 0) {
+    return new Error(`max steps must be a non-negative safe integer: ${maxSteps}`);
+  }
+  return { unit, maxDepth: depth === 0 ? defaultMaxDepth : depth, signal, maxInputWork, maxSteps };
 }
 
 // run parses the whole input with rule r of a rule table with seen rules that have rule.seen set.
-function run(r: Rule, seen: number, input: string | Uint8Array, unit: Unit | undefined, maxDepth = defaultMaxDepth): ParseResult {
+function run(r: Rule, seen: number, input: string | Uint8Array, unit: Unit | undefined, maxDepth = defaultMaxDepth, control: WorkControl | null = null): ParseResult {
   let p: Parser | null = null;
   try {
     // Made inside the try, so that decoding the input fails as parsing does.
-    p = new Parser(input, unit === Bytes ? Bytes : CodePoints, seen, maxDepth);
+    p = new Parser(input, unit === Bytes ? Bytes : CodePoints, seen, maxDepth, control);
     return result(p, p.call(r, 0));
   } catch (x) {
     if (x instanceof Fatal) {
+      if (control !== null) throw x;
       return { node: null, error: x.err };
     }
     if (isStackOverflow(x)) {
@@ -872,7 +885,7 @@ const noExp: number[] = [];
 const noErrs: SyntaxError[] = [];
 
 // sameValues reports whether two lists of variable values are equal.
-function sameValues(a: Value[] | null, b: Value[] | null): boolean {
+function sameValues(a: Value[] | null, b: Value[] | null, control: WorkControl | null = null): boolean {
   if (a === null || b === null) {
     return (a === null ? 0 : a.length) === (b === null ? 0 : b.length);
   }
@@ -880,6 +893,19 @@ function sameValues(a: Value[] | null, b: Value[] | null): boolean {
     return false;
   }
   for (let i = 0; i < a.length; i++) {
+    if (control !== null) {
+      control.charge(0, 1);
+      const x = a[i], y = b[i];
+      if (typeof x === "string" && typeof y === "string") {
+        if (x.length !== y.length) return false;
+        for (let from = 0; from < x.length; from += 128) {
+          const end = Math.min(from + 128, x.length);
+          control.charge(0, end - from);
+          if (x.slice(from, end) !== y.slice(from, end)) return false;
+        }
+        continue;
+      }
+    }
     if (a[i] !== b[i]) {
       return false;
     }
@@ -944,7 +970,26 @@ class Parser {
   ac: Actx;
   saved: (Node | null)[] = []; // captures saved across a reset in longest
 
-  constructor(input: string | Uint8Array, unit: Unit, stride: number, maxDepth: number) {
+  readonly control: WorkControl | null;
+
+  stepWork(n = 1): void { this.control?.charge(0, n); }
+
+  // Generated comparisons call here before reading the cached character value.
+  // Keeping the charge outside the boolean expression also avoids adding
+  // another nested control-flow node to each class range in TypeScript.
+  testCharacter(ch: number, want: number, op: "===" | "<" | "<=" | ">" | ">="): boolean {
+    this.stepWork();
+    switch (op) {
+      case "===": return ch === want;
+      case "<": return ch < want;
+      case "<=": return ch <= want;
+      case ">": return ch > want;
+      case ">=": return ch >= want;
+    }
+  }
+
+  constructor(input: string | Uint8Array, unit: Unit, stride: number, maxDepth: number, control: WorkControl | null = null) {
+    this.control = control;
     this.unit = unit;
     this.maxDepth = maxDepth;
     this.stride = stride;
@@ -955,7 +1000,19 @@ class Parser {
     this.cps = new Int32Array(0);
     this.bs = new Uint8Array(0);
     this.offs = null;
-    if (unit === Bytes) {
+    if (control !== null) {
+      if (unit === Bytes) {
+        this.bs = typeof input === "string" ? encodeUTF8Work(input, control) : input;
+        this.n = this.bs.length;
+        this.src = this.decodeBytesWork();
+      } else if (typeof input === "string") {
+        this.src = this.decodeStringWork(input);
+        this.n = this.cps.length;
+      } else {
+        this.src = this.decodeCodePointsWork(input);
+        this.n = this.cps.length;
+      }
+    } else if (unit === Bytes) {
       this.bs = typeof input === "string" ? encodeUTF8(input) : input;
       this.n = this.bs.length;
       this.src = this.decodeBytes();
@@ -1070,6 +1127,110 @@ class Parser {
     return codePointsString(cps.subarray(0, j));
   }
 
+  decodeStringWork(s: string): string {
+    const control = this.control!;
+    const n = runeCountWork(s, control);
+    const cps = new Int32Array(n);
+    let offs: Int32Array | null = null;
+    let lone = false;
+    let j = 0;
+    for (let i = 0; i < s.length; i++) {
+      let c = stringUnitWork(s, i, control);
+      if (c >= 0xd800 && c <= 0xdfff) {
+        if (c < 0xdc00 && i + 1 < s.length && (stringUnitWork(s, i + 1, control) & 0xfc00) === 0xdc00) {
+          if (offs === null) {
+            offs = new Int32Array(n + 1);
+            for (let k = 0; k < j; k++) {
+              control.charge(0, 1);
+              offs[k] = k;
+            }
+          }
+          offs[j] = i;
+          cps[j++] = 0x10000 + ((c - 0xd800) << 10) + (stringUnitWork(s, i + 1, control) - 0xdc00);
+          i++;
+          continue;
+        }
+        c = 0xfffd;
+        lone = true;
+      }
+      if (offs !== null) {
+        offs[j] = i;
+      }
+      control.charge(0, 1);
+      cps[j++] = c;
+    }
+    if (offs !== null) {
+      offs[n] = s.length;
+    }
+    this.cps = cps;
+    this.offs = offs;
+    return lone ? wellFormedWork(s, control) : s;
+  }
+
+  decodeCodePointsWork(b: Uint8Array): string {
+    const control = this.control!;
+    const cps = new Int32Array(b.length);
+    let j = 0;
+    let astral = false;
+    for (let i = 0; i < b.length;) {
+      const decoded = decodeRuneWork(b, i, b.length, control);
+      const c = decoded.rune;
+      i += decoded.size;
+      astral = astral || c > 0xffff;
+      cps[j++] = c;
+    }
+    this.cps = cps.subarray(0, j);
+    if (astral) {
+      const offs = new Int32Array(j + 1);
+      let o = 0;
+      for (let k = 0; k < j; k++) {
+        control.charge(1, 1);
+        offs[k] = o;
+        o += cps[k]! > 0xffff ? 2 : 1;
+      }
+      offs[j] = o;
+      this.offs = offs;
+    }
+    return codePointsStringWork(this.cps, control);
+  }
+
+  decodeBytesWork(): string {
+    const control = this.control!;
+    const b = this.bs;
+    const n = b.length;
+    let ascii = true;
+    for (let i = 0; i < n; i++) {
+      if (byteUnitWork(b, i, n, control) >= 0x80) {
+        ascii = false;
+        break;
+      }
+    }
+    const cps = new Int32Array(n);
+    const offs = ascii ? null : new Int32Array(n + 1);
+    let j = 0;
+    let o = 0;
+    for (let i = 0; i < n;) {
+      const decoded = decodeRuneWork(b, i, n, control);
+      let c = decoded.rune;
+      if (decoded.size === 1 && c === 0xfffd) {
+        c = 0xdc00 + byteUnitWork(b, i, n, control); // an invalid byte
+      }
+      if (offs !== null) {
+        offs[i] = o;
+      }
+      o += c > 0xffff ? 2 : 1;
+      control.charge(0, 1);
+      cps[j++] = c;
+      i += decoded.size;
+    }
+    if (offs !== null) {
+      offs[n] = o;
+    }
+    this.offs = offs;
+    return codePointsStringWork(cps.subarray(0, j), control);
+  }
+
+
   // firstCall records a call of rule r at the current position and reports whether its
   // memoization is deferred: it is the first call there, and repeated calls of the rule have been
   // rare so far. Results are reused only when a rule is called again at a position, which is rare,
@@ -1096,7 +1257,15 @@ class Parser {
     const bit = 1 << i % 32;
     if (w >= this.seen.length) {
       const grown = new Int32Array(Math.max(w + 1, 2 * this.seen.length, 64));
-      grown.set(this.seen);
+      if (this.control === null) {
+        grown.set(this.seen);
+      } else {
+        for (let from = 0; from < this.seen.length; from += 128) {
+          const end = Math.min(from + 128, this.seen.length);
+          this.stepWork(end - from);
+          grown.set(this.seen.subarray(from, end), from);
+        }
+      }
       this.seen = grown;
     }
     if ((this.seen[w]! & bit) === 0) {
@@ -1114,7 +1283,8 @@ class Parser {
 
   memoGet(rule: number, pos: number, min: number, env: Value[] | null): MemoEntry | null {
     for (let e = this.slots[pos]; e; e = e.next) {
-      if (e.rule === rule && e.min === min && sameValues(e.env, env)) {
+      this.stepWork();
+      if (e.rule === rule && e.min === min && sameValues(e.env, env, this.control)) {
         return e;
       }
     }
@@ -1128,7 +1298,8 @@ class Parser {
     e.env = env;
     let prev: MemoEntry | null = null;
     for (let x = this.slots[pos]; x; prev = x, x = x.next) {
-      if (x.rule === rule && x.min === min && sameValues(x.env, env)) {
+      this.stepWork();
+      if (x.rule === rule && x.min === min && sameValues(x.env, env, this.control)) {
         e.next = x.next;
         if (prev === null) {
           this.slots[pos] = e;
@@ -1141,7 +1312,17 @@ class Parser {
     if (this.slots.length === 0) {
       // One slot per position, allocated at once: writes far beyond the end of an array would
       // make it a slow dictionary.
-      this.slots = new Array(this.n + 1).fill(null);
+      if (this.control === null) {
+        this.slots = new Array(this.n + 1).fill(null);
+      } else {
+        const slots: (MemoEntry | null)[] = new Array(this.n + 1);
+        for (let from = 0; from < slots.length; from += 128) {
+          const end = Math.min(from + 128, slots.length);
+          this.stepWork(end - from);
+          slots.fill(null, from, end);
+        }
+        this.slots = slots;
+      }
     }
     e.next = this.slots[pos] || null;
     this.slots[pos] = e;
@@ -1154,8 +1335,10 @@ class Parser {
     }
     const vals: Value[] = new Array(names.length);
     for (let i = 0; i < names.length; i++) {
+      this.stepWork();
       vals[i] = null;
       for (let e = this.env; e !== null; e = e.next) {
+        this.stepWork();
         if (e.name === names[i]) {
           vals[i] = e.val;
           break;
@@ -1171,6 +1354,7 @@ class Parser {
     }
     const f: Frame = new Array(n);
     for (let i = 0; i < n; i++) {
+      this.stepWork();
       f[i] = null;
     }
     return f;
@@ -1209,6 +1393,26 @@ class Parser {
   // peek returns the character at the current position (-1 at the end) and sets psize to its size
   // in units.
   peek(): number {
+    const control = this.control;
+    if (control !== null) {
+      if (this.pos >= this.n) {
+        control.charge(1, 1); // EOF probes count, including repeated probes.
+        return -1;
+      }
+      if (this.unit === Bytes) {
+        const c = byteUnitWork(this.bs, this.pos, this.n, control);
+        if (c < 0x80) {
+          this.psize = 1;
+          return c;
+        }
+        const decoded = decodeRuneWork(this.bs, this.pos, this.n, control);
+        this.psize = decoded.size;
+        return decoded.rune;
+      }
+      control.charge(1, 1);
+      this.psize = 1;
+      return this.cps[this.pos]!;
+    }
     if (this.pos >= this.n) {
       return -1;
     }
@@ -1332,6 +1536,7 @@ class Parser {
 
   // call calls rule r at level min.
   call(r: Rule, min: number): R {
+    this.stepWork();
     const start = this.pos;
     if ((!r.memo && !r.leader) || this.firstCall(r)) {
       // Unmemoized call: no memo bookkeeping, and expectations need no isolation.
@@ -1416,6 +1621,7 @@ class Parser {
     let best = newEntry(undefined, false, start, false, true, noErrs);
     this.memoPut(r.id, start, min, env, best);
     for (;;) {
+      this.stepWork();
       const v = this.invoke(r, min);
       if (v === undefined || (best.ok && this.pos <= best.end)) {
         break;
@@ -1464,6 +1670,7 @@ class Parser {
   // frame (the body never writes one, so the caller's stays current), with the failure handling of
   // call.
   invokePlain(r: Rule, min: number): R {
+    this.stepWork();
     const start = this.pos;
     const rec = this.recovered.length;
     const trail = this.trail.length;
@@ -1557,6 +1764,7 @@ class Parser {
   // --- Terminals ---
 
   matchLiteral(lit: Lit, desc: number, build: boolean): R {
+    this.stepWork();
     const start = this.pos;
     if (this.unit === Bytes) {
       const b = lit.bytes;
@@ -1564,6 +1772,7 @@ class Parser {
         return this.matchReplacementLiteral(lit, desc, build);
       }
       for (let i = 0; i < b.length; i++) {
+        this.control?.charge(1, 1);
         if (this.bs[this.pos + i] !== b[i]) {
           return this.matchReplacementLiteral(lit, desc, build);
         }
@@ -1571,6 +1780,7 @@ class Parser {
       this.pos += b.length;
     } else {
       for (const r of lit.cps) {
+        this.control?.charge(1, 1);
         if (this.pos >= this.n || this.cps[this.pos] !== r) {
           this.expect(start, desc);
           return undefined;
@@ -1587,7 +1797,16 @@ class Parser {
   // Keep replacement decoding off the successful byte-comparison path.
   matchReplacementLiteral(lit: Lit, desc: number, build: boolean): R {
     const start = this.pos;
-    if (!lit.cps.includes(0xfffd)) {
+    let replacement = false;
+    if (this.control === null) {
+      replacement = lit.cps.includes(0xfffd);
+    } else {
+      for (const cp of lit.cps) {
+        this.stepWork();
+        if (cp === 0xfffd) { replacement = true; break; }
+      }
+    }
+    if (!replacement) {
       this.expect(start, desc);
       return undefined;
     }
@@ -1623,6 +1842,7 @@ class Parser {
   }
 
   anchor(ok: boolean, desc: number): R {
+    this.stepWork();
     if (ok) {
       return null;
     }
@@ -1634,6 +1854,7 @@ class Parser {
     if (this.pos === 0) {
       return true;
     }
+    this.control?.charge(1, 1);
     return (this.unit === Bytes ? this.bs[this.pos - 1] : this.cps[this.pos - 1]) === 0x0a;
   }
 
@@ -1643,6 +1864,7 @@ class Parser {
   }
 
   atEnd(): boolean {
+    this.control?.charge(1, 1);
     return this.pos === this.n;
   }
 
@@ -1781,7 +2003,11 @@ class Parser {
       return;
     }
     let old: Env | null = e;
-    while (old !== null && old.name !== name) old = old.next;
+    while (old !== null) {
+      this.stepWork();
+      if (old.name === name) break;
+      old = old.next;
+    }
     if (old === null) {
       this.env = { name, val, next: e };
       return;
@@ -1791,6 +2017,7 @@ class Parser {
     const head: Env = { name, val, next: null };
     let tail = head;
     for (let cur: Env | null = e; cur !== old; cur = cur!.next) {
+      this.stepWork();
       tail.next = { name: cur!.name, val: cur!.val, next: null };
       tail = tail.next;
     }
@@ -1826,6 +2053,7 @@ class Parser {
     let best: PrattAttempt | null = null;
     let cutFailed = false;
     for (const op of ops) {
+      this.stepWork();
       const prevFrame = this.frame;
       const prevCut = this.cut;
       const f = this.newFrame(op.line.scope.length);
@@ -1888,6 +2116,7 @@ class Parser {
   // recursion (the operand of a prefix operator, the right operand of an infix operator) counts
   // against the nesting limit, like a rule call.
   prattParse(r: Rule, min: number): R {
+    this.stepWork();
     if (++this.depth > this.maxDepth) {
       this.tooDeep();
     }
@@ -1904,6 +2133,7 @@ class Parser {
     }
     let lastNone = -1;
     for (;;) {
+      this.stepWork();
       const m0pos = this.pos;
       const m0env = this.env;
       const m0trail = this.trail.length;
@@ -1980,6 +2210,7 @@ class Parser {
       return undefined;
     }
     for (const o of pr.operands) {
+      this.stepWork();
       const prevFrame = this.frame;
       const prevCut = this.cut;
       const f = this.newFrame(o.scope.length);
@@ -2160,6 +2391,7 @@ class Actx {
 
   lookup(name: string): Value {
     for (let e = this.p.env; e !== null; e = e.next) {
+      this.p.stepWork();
       if (e.name === name) {
         return e.val;
       }

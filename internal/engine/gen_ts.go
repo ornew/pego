@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -15,6 +16,9 @@ import (
 
 //go:embed tsrt/runtime.ts
 var tsRuntimeSource string
+
+//go:embed tsrt/work.ts
+var tsWorkSource string
 
 // tsRuntimeMarker starts the part of tsrt/runtime.ts that is copied into generated code.
 const tsRuntimeMarker = "// --- Runtime ---\n"
@@ -56,6 +60,8 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	out.WriteString("/* eslint-disable */\n\n")
 	i := strings.Index(tsRuntimeSource, tsRuntimeMarker)
 	out.WriteString(strings.Replace(tsRuntimeSource[i+len(tsRuntimeMarker):], "const defaultMaxDepth = 100_000;", fmt.Sprintf("const defaultMaxDepth = %d;", opts.generatedMaxDepth()), 1))
+	out.WriteString("\n// --- Invocation work controls ---\n")
+	out.WriteString(tsWorkSource)
 	out.WriteString("\n// --- Generated code ---\n\n")
 	fmt.Fprintf(&out, "/**\n * Parses the whole input with the rule %s. unit selects the position unit (CodePoints by default).\n", start.name)
 	out.WriteString(" * A string is parsed as its UTF-8 encoding would be (lone surrogates as U+FFFD), and bytes are\n")
@@ -74,15 +80,15 @@ export function parseRule(name: string, input: string | Uint8Array, unit?: Unit)
 `)
 	if rec != nil {
 		fmt.Fprintf(&out, "/**\n * Checks that the whole input matches the rule %s without building a tree, and returns the syntax\n", start.name)
-		out.WriteString(" * error parse would return (SyntaxErrors for errors recovered with #recover), or null. Actions are not\n")
-		out.WriteString(" * evaluated, so it does not report runtime errors in actions.\n */\n")
+		out.WriteString(" * error parse would return (SyntaxErrors for errors recovered with #recover), or null. Actions needed by\n")
+		out.WriteString(" * predicates are evaluated and can report runtime errors; other actions are skipped.\n */\n")
 		fmt.Fprintf(&out, "export function recognize(input: string | Uint8Array, unit?: Unit): Error | null {\n  return run(Q%d, recNseen, input, unit).error;\n}\n\n", rec.byName[start.name].id)
 	}
 	fmt.Fprintf(&out, `/** Parses with invocation-local position and depth options. */
 export function parseWithOptions(input: string | Uint8Array, options?: ParseOptions): ParseResult {
   const o = resolveOptions(options);
   if (o instanceof Error) return { node: null, error: o };
-  return run(R%d, nseen, input, o.unit, o.maxDepth);
+  return withWorkControl(o, control => run(R%d, nseen, input, o.unit, o.maxDepth, control), error => ({ node: null, error }));
 }
 
 /** Parses a named rule with invocation-local options, validated before rule lookup. */
@@ -91,16 +97,16 @@ export function parseRuleWithOptions(name: string, input: string | Uint8Array, o
   if (o instanceof Error) return { node: null, error: o };
   const r = ruleIn(rules, name);
   if (r === null) return { node: null, error: new Error("rule " + name + " is not defined") };
-  return run(r, nseen, input, o.unit, o.maxDepth);
+  return withWorkControl(o, control => run(r, nseen, input, o.unit, o.maxDepth, control), error => ({ node: null, error }));
 }
 
 `, start.id)
 	if rec != nil {
-		fmt.Fprintf(&out, `/** Recognizes without evaluating actions, with invocation-local options. */
+		fmt.Fprintf(&out, `/** Recognizes with invocation-local options; predicate-dependent actions may run. */
 export function recognizeWithOptions(input: string | Uint8Array, options?: ParseOptions): Error | null {
   const o = resolveOptions(options);
   if (o instanceof Error) return o;
-  return run(Q%d, recNseen, input, o.unit, o.maxDepth).error;
+  return withWorkControl<Error | null>(o, control => run(Q%d, recNseen, input, o.unit, o.maxDepth, control).error, error => error);
 }
 
 `, rec.byName[start.name].id)
@@ -173,6 +179,17 @@ func tsInts[T ~int32 | ~byte](xs []T) string {
 // tsCond converts a condition on ch written by first or classReject to TypeScript.
 func tsCond(cond string) string {
 	return tsBalancedCondition(strings.ReplaceAll(cond, " == ", " === "))
+}
+
+// tsWorkCond preserves short-circuit order while charging each emitted class
+// or first-character comparison. The input probe itself is charged by peek.
+var tsWorkComparison = regexp.MustCompile(`ch (?:===|==|>=|<=|>|<) -?[0-9]+`)
+
+func tsWorkCond(cond string) string {
+	return tsWorkComparison.ReplaceAllStringFunc(tsCond(cond), func(comparison string) string {
+		parts := strings.Fields(comparison)
+		return "p.testCharacter(ch, " + parts[2] + ", " + strconv.Quote(parts[1]) + ")"
+	})
 }
 
 // Long flat class conditions become deep binary trees in TypeScript. Group
@@ -251,6 +268,7 @@ func (g *tsGen) plainPrefix() string {
 // The functions of expressions are called through call expressions (see expr), and fn turns a
 // call expression into a function.
 func (g *tsGen) method(comment, body string) string {
+	body = "  p.stepWork();\n" + body
 	name, shared := g.methodName("Parser/R", body)
 	if shared {
 		return name
@@ -391,7 +409,8 @@ func (g *tsGen) rules() {
 func (g *tsGen) plainCall(r *rule, body string) {
 	m := &g.methods
 	fmt.Fprintf(m, "// %s, called as by invokePlain\nfunction %s%d(p: Parser): R {\n", r.name, g.plainPrefix(), r.id)
-	m.WriteString(`  const start = p.pos;
+	m.WriteString(`  p.stepWork();
+  const start = p.pos;
   const rec = p.recovered.length;
   const trail = p.trail.length;
   const prevEnv = p.env;
@@ -435,7 +454,7 @@ func (g *tsGen) projectRepeat(b *strings.Builder, e *grammar.Repeat, field strin
 	} else {
 		fmt.Fprintf(b, "  for (let n = 0; n < %d; n++) {\n", e.Max)
 	}
-	b.WriteString("    f.fill(null);\n" + tsMark("    ") + "    const prevCut = p.cut;\n    const prevFrame = p.frame;\n    p.cut = false;\n    p.frame = f;\n")
+	b.WriteString("    p.stepWork();\n    f.fill(null);\n" + tsMark("    ") + "    const prevCut = p.cut;\n    const prevFrame = p.frame;\n    p.cut = false;\n    p.frame = f;\n")
 	fmt.Fprintf(b, "    const v = %s;\n", m)
 	b.WriteString("    const cut = p.cut;\n    p.cut = prevCut;\n    p.frame = prevFrame;\n    if (v === undefined) {\n      " + tsReset + "\n      if (cut) {\n        p.dropKids(base);\n        return undefined;\n      }\n      break;\n    }\n")
 	fmt.Fprintf(b, "    count++;\n    p.kidStack.push(f[%d]!);\n", slot)
@@ -459,7 +478,7 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 		return fmt.Sprintf("p.matchLiteral(%s, %d, %v)", v, g.desc(strconv.Quote(e.Value)), build)
 	case *grammar.CharClass:
 		fmt.Fprintf(&b, "  const ch = p.peek();\n  if (ch < 0 || %s) {\n    p.expect(p.pos, %d);\n    return undefined;\n  }\n",
-			tsCond(classReject(e)), g.desc(charClassString(e)))
+			tsWorkCond(classReject(e)), g.desc(charClassString(e)))
 		fmt.Fprintf(&b, "  return p.single(p.psize, %v);\n", build)
 	case *grammar.Any:
 		return fmt.Sprintf("p.matchAny(%v)", build)
@@ -520,7 +539,7 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 					b.WriteString("  const ch = p.peek();\n")
 					peeked = true
 				}
-				fmt.Fprintf(&b, "  if (!(ch >= 0 && (%s)) && p.depth + %d <= p.maxDepth) {\n    p.expect(p.pos, %d);\n  } else ", tsCond(cond), depth, desc)
+				fmt.Fprintf(&b, "  if (!(ch >= 0 && (%s)) && p.depth + %d <= p.maxDepth) {\n    p.expect(p.pos, %d);\n  } else ", tsWorkCond(cond), depth, desc)
 			} else {
 				b.WriteString("  ")
 			}
@@ -625,7 +644,7 @@ func (g *tsGen) repeat(b *strings.Builder, e *grammar.Repeat, s *scope, build bo
 	} else {
 		fmt.Fprintf(b, "  for (let n = 0; n < %d; n++) {\n", e.Max)
 	}
-	b.WriteString(tsMark("    ") + "    const prevCut = p.cut;\n    const prevFrame = p.frame;\n    p.cut = false;\n")
+	b.WriteString("    p.stepWork();\n" + tsMark("    ") + "    const prevCut = p.cut;\n    const prevFrame = p.frame;\n    p.cut = false;\n")
 	scopeVar := ""
 	if own {
 		if build {
@@ -666,7 +685,7 @@ func (g *tsGen) scanRepeat(b *strings.Builder, e *grammar.Repeat) bool {
 	var cond string
 	switch x := e.Expr.(type) {
 	case *grammar.CharClass:
-		cond = fmt.Sprintf("ch < 0 || %s) {\n      p.expect(p.pos, %d);", tsCond(classReject(x)), g.desc(charClassString(x)))
+		cond = fmt.Sprintf("ch < 0 || %s) {\n      p.expect(p.pos, %d);", tsWorkCond(classReject(x)), g.desc(charClassString(x)))
 	case *grammar.Any:
 		cond = "ch < 0) {\n      p.expect(p.pos, idAny);"
 	default:
@@ -678,7 +697,7 @@ func (g *tsGen) scanRepeat(b *strings.Builder, e *grammar.Repeat) bool {
 	} else {
 		fmt.Fprintf(b, "  while (count < %d) {\n", e.Max)
 	}
-	fmt.Fprintf(b, "    const ch = p.peek();\n    if (%s\n      break;\n    }\n    p.pos += p.psize;\n    count++;\n  }\n", cond)
+	fmt.Fprintf(b, "    p.stepWork();\n    const ch = p.peek();\n    if (%s\n      break;\n    }\n    p.pos += p.psize;\n    count++;\n  }\n", cond)
 	fmt.Fprintf(b, "  return count >= %d ? null : undefined;\n", e.Min)
 	return true
 }
