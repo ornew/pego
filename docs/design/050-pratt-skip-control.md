@@ -35,7 +35,7 @@ These are candidate combinations, not a ranking or selected design.
 
 Keep the existing all-default Pratt path unchanged. Specify grammar validation, source locations, formatter/LSP behavior, JSON and bytecode compatibility, and parity across closure, both bytecode VMs, generated Go, and TypeScript before implementation. Add cases for raw whitespace operators, mixed skipped/raw candidates such as `a   + b`, `$op` and captures, nested rules, repeated calls under different modes, memoization and left recursion, cuts, recovery, failures, backtracking, precedence, ties, and zero-width progress.
 
-The explicit-trivia grammar is the reference control. Verify every default-skip grammar retains identical trees, errors, and spans. Measure candidate-local overhead only after timing work is resumed; performance acceptance is paused. This proposal does not authorize implementation or change the current specification.
+The explicit-trivia grammar is the reference control. Verify every default-skip grammar retains identical trees, errors, and spans. After scope and semantics are selected, measure candidate-local overhead against the all-default and explicit-trivia controls with pinned revisions and inputs, serialized paired runs, and separate compilation/runtime costs. Report no performance result without measured evidence. This proposal does not authorize implementation or change the current specification.
 
 ## Limitations and open questions
 

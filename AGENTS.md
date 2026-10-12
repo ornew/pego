@@ -31,8 +31,7 @@ with implementation changes; regenerate generated files.
 - Keep generated benchmark reports/results unedited by hand and align
   `spec/bytecode.md` with VM changes.
 - GitHub Actions are temporarily paused: do not trigger, rerun, cancel, poll or
-  enable workflows. Optimization work and timing measurements are paused until
-  the owner resumes them. Keep 32-bit and ready-made parser work deferred.
+  enable workflows. Keep 32-bit and ready-made parser work deferred.
   Required local validation still applies.
 - Ask the owner about unspecified language semantics, with alternatives,
   tradeoffs and a recommendation; wait for answers before dependent work.

@@ -16,5 +16,7 @@ description: Maintain PEGO's optimization method and reproducible performance ev
   Preserve provenance and update the optimization index with applicability,
   evidence and measured tradeoffs. Separate plans, local results and production
   observations; avoid incomparable claims.
-- The owner has paused optimization tasks and timing measurements. Do not run
-  benchmarks or present new timing claims until the owner resumes that work.
+- Run optimization and timing work only under current owner authorization.
+  Serialize benchmark runs and follow `docs/performance.md`; keep claims limited
+  to measured paths and retain raw evidence outside Git unless deliberately
+  versioned.
