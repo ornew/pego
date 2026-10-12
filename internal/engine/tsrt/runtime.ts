@@ -139,14 +139,15 @@ function sortedFields(fs: readonly NodeField[]): NodeField[] {
   return fs.slice().sort((a, b) => compareStrings(a.name, b.name));
 }
 
-function setField(n: Node, name: string, v: Value): void {
+function setField(n: Node, name: string, v: Value, control: WorkControl | null = null): void {
   if (n.fields === noFields) {
     n.fields = [{ name, value: v }];
     return;
   }
   const fs = n.fields as NodeField[];
   for (const f of fs) {
-    if (f.name === name) {
+    control?.charge(0, 1);
+    if (control === null ? f.name === name : equalStringsWork(f.name, name, control)) {
       f.value = v;
       return;
     }
@@ -1749,6 +1750,7 @@ class Parser {
     let found = false;
     let wrap = v === null || !v.fresh;
     for (const c of f) {
+      this.stepWork();
       if (c !== null) {
         found = true;
         if (c === v) {
@@ -1764,9 +1766,10 @@ class Parser {
       n = new Node("Seq", "", start, end, "", [v], noFields, true, false);
     }
     for (let i = 0; i < names.length; i++) {
+      this.stepWork();
       const c = f[i]!;
       if (c !== null) {
-        setField(n, names[i]!, c);
+        setField(n, names[i]!, c, this.control);
       }
     }
     return n;
@@ -2437,7 +2440,7 @@ class Actx {
     for (let i = 0; i < kv.length; i += 2) {
       this.work();
       const v = kv[i + 1];
-      setField(n, kv[i] as string, v!);
+      setField(n, kv[i] as string, v!, this.p.control);
       if (v instanceof Node) {
         if (first || v.start < n.start) {
           n.start = v.start;
@@ -2496,7 +2499,7 @@ class Actx {
     if (fields !== undefined && !fields.has(name)) {
       evalError(`${x.type} has no field ${name}`);
     }
-    return x.field(name);
+    return getFieldWork(x, name, this.p.control);
   }
 
   length(x: Value): Value {

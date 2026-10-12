@@ -410,3 +410,14 @@ function joinValueStringsWork(parts: readonly string[], control: WorkControl): s
   control.check();
   return result;
 }
+
+// Public Node.field stays a caller operation; parsing/conversion share this
+// internal visit counter and bounded string-name comparison.
+function getFieldWork(n: Node, name: string, control: WorkControl | null): Value {
+  if (control === null) return n.field(name);
+  for (const field of n.fields) {
+    control.charge(0, 1);
+    if (equalStringsWork(field.name, name, control)) return field.value;
+  }
+  return null;
+}

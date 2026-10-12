@@ -375,7 +375,7 @@ function astConvert(value: Value, repr: number, control: WorkControl | null = nu
         const obj: ASTObject = { type: v.type, start: v.start, end: v.end };
         if (recipe.kind !== "struct") obj["text"] = v.text;
         if (recipe.kind === "error") {
-          const msg = v.field("message");
+          const msg = getFieldWork(v, "message", control);
           obj["message"] = typeof msg === "string" ? msg : "";
         }
         out = obj;
@@ -400,7 +400,10 @@ function astConvert(value: Value, repr: number, control: WorkControl | null = nu
       }
     } else {
       const obj = work.out as ASTObject;
-      for (const f of recipe.fields!) obj[f.name] = get(work.node.field(f.name), f.repr);
+      for (const f of recipe.fields!) {
+        control?.charge(0, 1);
+        obj[f.name] = get(getFieldWork(work.node, f.name, control), f.repr);
+      }
     }
   }
   return out;
