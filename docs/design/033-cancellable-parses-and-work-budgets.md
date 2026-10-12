@@ -916,6 +916,16 @@ The JSON closure Parse medians were 11.002 ms/op for the baseline, 15.336 ms/op 
 
 Core work and stream-reader tests pass for the prototype. Before adoption, measure retained memory from the paired graphs, broader grammars and backends, both position units, and controlled parses that do and do not enable budgets. Preserve parser results, diagnostics, cancellation and work-limit behavior across graph selection. The existing static-reference build tag remains a diagnostic control, not a production optimization.
 
+### Nil-Control Guards and Paired Checkpoint
+
+The selected follow-up keeps the existing monolithic work-charge routine and adds a nil-control guard at the inlineable `inputWork`, `stepWork` and `valueWork` helper boundaries in core and generated Go. An invocation without a controller can bypass the out-of-line reservation call; active invocations continue through the original charge path with the same reservation and accounting semantics. Wrapper and split-charge variants were rejected after worsening active profiles. This change is not yet adopted on main.
+
+Against dual-graph revision `8f54336`, a serialized comparison used five alternating 300 ms pairs, Go 1.27.1, `-trimpath`, darwin/arm64 on an Apple M3 Max, GOMAXPROCS=16, GOGC=100, GOMEMLIMIT off and GODEBUG unset. The 61 inactive profiles covered Parse, Recognize, typed output, streams, incremental parsing and long inputs. Every current/baseline median was lower, with ratios from 0.702× to 0.932×. Sixteen active JSON/XML public-option and counter profiles were also measured: 14 paired ranges included parity; JSON closure Parse in Bytes was consistently faster; JSON bytecode Parse in Bytes was consistently slower, at 1.025× (1.008–1.032). Allocation counts were not uniformly unchanged; for example, iterative Arithmetic Parse/Bytes rose from 724 to 725 allocations/op. These results support this nil-guard variant for further evaluation, not a general speed claim or adoption decision.
+
+A separate diagnostic comparison on JSON closure Parse in CodePoints measured 1.077× (1.065–1.094) against pre-control baseline `188b850`, and 1.075× (1.026–1.084) against the same-source static reference. The latter disables the core control instrumentation only; generated Go remains enabled. This residual cost is not attributed solely to the nil guards or core field layout. The focused follow-up did not measure TypeScript, custom contexts, retained dual-graph memory, source preparation, or broader workload reachability. `TestControlledWorkloads` compares active and inactive results on reduced inputs (`input(10)`); the timed full inputs (`input(1)`) check successful parsing, not complete result fingerprints.
+
+Core and generated Go active-charge semantics remain the contract: guards may skip inactive reservation calls only; they must not change charge counts or cancellation and limit boundaries. Full root, generation, parser-module, site/WASM and independent evidence gates must pass before the change is considered for integration.
+
 ## Limitations and Open Questions
 
 The proposed defaults form one coherent contract: no controls unless requested,

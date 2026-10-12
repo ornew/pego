@@ -13,7 +13,7 @@ import (
 const valueWorkChunk = 128
 
 func (p *parser) valueWork(n int) {
-	if workControlsEnabled {
+	if workControlsEnabled && p.control != nil {
 		p.control.charge(0, uint64(n))
 	}
 }

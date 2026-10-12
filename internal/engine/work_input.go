@@ -4,13 +4,13 @@ import "unicode/utf8"
 
 // inputWork and stepWork have a statically removable instrumentation boundary.
 func (in *input) inputWork(n uint64) {
-	if workControlsEnabled {
+	if workControlsEnabled && in.control != nil {
 		in.control.charge(n, 1)
 	}
 }
 
 func (p *parser) stepWork() {
-	if workControlsEnabled {
+	if workControlsEnabled && p.control != nil {
 		p.control.charge(0, 1)
 	}
 }

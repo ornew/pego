@@ -2595,12 +2595,12 @@ func saturatingAdd(a, b uint64) uint64 {
 
 // Work helpers keep long engine-owned scans between bounded reservations.
 func (p *parser) inputWork(n uint64) {
-	if workControlsEnabled {
+	if workControlsEnabled && p.control != nil {
 		p.control.charge(n, 1)
 	}
 }
 func (p *parser) stepWork() {
-	if workControlsEnabled {
+	if workControlsEnabled && p.control != nil {
 		p.control.charge(0, 1)
 	}
 }
@@ -2706,7 +2706,7 @@ func (p *parser) rejectWorkClass(ch rune, ranges []workRange, negated bool) bool
 const valueWorkChunk = 128
 
 func (p *parser) valueWork(n int) {
-	if workControlsEnabled {
+	if workControlsEnabled && p.control != nil {
 		p.control.charge(0, uint64(n))
 	}
 }
