@@ -31,8 +31,11 @@ established.
 - Keep both generated and manual source parsers selectable at source-parsing
   entry points, without mutable global configuration.
 - Compare parser outputs, source metadata and errors before changing defaults.
-- Select the faster implementation as the default only when measurements are
-  repeatable and no supported workload suffers a material regression.
+- Establish and tune the hand-written lexer/parser as a fair reference before
+  selecting a default.
+- Select the generated implementation only if it is measurably faster than the
+  tuned manual frontend under equivalent public AST and diagnostic contracts,
+  without a material supported-workload regression.
 
 ## Non-Goals
 
@@ -52,8 +55,10 @@ typed Go parser that constructs a concrete source AST, including nodes such as
 `File`, `Def`, `RuleExpr`, `Type`, `ActionExpr` and `Comment`. A separate adapter
 converts that source AST to the existing public `grammar.Grammar` API. Keep
 source positions, comments and layout on the source-AST path for formatter,
-LSP and diagnostic consumers; do not add those concerns to the public grammar
-API solely to accommodate the generated parser. The grammar must preserve
+LSP and diagnostic consumers. The public source metadata contract is defined
+in [Source Metadata and Declaration Comments](057-source-info-and-comment-ownership.md)
+for documentation and source tools, independently of frontend selection. The
+grammar must preserve
 contextual words, hard-newline rules, action and predicate blocks, Operators
 Rules and malformed-input recovery.
 
@@ -78,10 +83,10 @@ generated source is stale.
 Expose a per-call source-parser selection for `ParseGrammar` and
 `CompileSource`, and corresponding explicit selection for CLI or tooling
 commands that parse source (`parse`, `compile`, `gen`, `fmt`, `lint` and LSP).
-The existing entry points keep their current signatures and delegate to a
-documented default. A named parser option or sibling `...WithParser` functions
-may provide the explicit selector; do not use a process-wide mutable switch or
-an environment variable as the only selection mechanism. `Compile` of an
+Existing calls keep their defaults. Add optional per-call source-parser
+options to the existing entry points rather than separate `WithOptions` or
+`WithParser` entry points. Do not use a process-wide mutable switch or an
+environment variable as the only selection mechanism. `Compile` of an
 already constructed `grammar.Grammar` is unaffected.
 
 The generated parser's concrete source-AST shape is checked against the typed
@@ -98,14 +103,25 @@ semantic validation pipeline, diagnostics policy or error ordering.
 
 ### Default Selection
 
-Keep the manual parser as the initial default. Compare both parsers on the
-same grammar corpus and hardware, separating source lex/parse/AST construction
-from semantic compilation and code generation. If one implementation is
-consistently faster across representative files without a material regression
-in small, large, malformed, or comment-heavy grammars, make that parser the
-default and keep the other explicitly selectable. If results are within
-measurement noise or workloads trade places materially, retain the manual
-default until a clear selection policy is justified.
+Keep the manual parser as the initial default. When parser-performance work is
+resumed, first profile and tune its lexer/parser on representative grammar
+sources; do not treat its current implementation as a permanently fixed
+baseline. Then compare it with the generated parser through the same source
+API, including the generated source-AST-to-`grammar.Grammar` adapter. The
+measured operations must produce equivalent public grammar ASTs, source
+metadata and diagnostics. A direct comparison between manual `grammar.Grammar`
+construction and generated concrete-source-AST construction is useful as an
+initial cost observation, but it is not an equivalent-output comparison and
+cannot select a winner.
+
+Separate frontend parsing from semantic compilation and code generation.
+Use repeated alternating samples on the same corpus and hardware, including
+small, large, malformed and comment-heavy grammars. Select the generated
+parser as default only if it is consistently faster than the tuned manual
+frontend under the equivalent-output gate and has no material supported-
+workload regression. Otherwise retain the manual default and the explicit
+parser selector; do not claim a speed advantage from unlike AST or diagnostic
+work.
 
 ## Alternatives Considered
 
@@ -163,10 +179,45 @@ without network access or a prior generated artifact outside the repository.
   all parser modules, CLI commands, site examples and generated parser checks.
 - Benchmark parse-only time, bytes/op and allocations on small common
   grammars, large grammars, comment-heavy files, deeply nested forms and
-  malformed/incomplete editor input. Use identical inputs, pinned Go version,
-  repeated alternating samples, and report paired ranges. Measure full
+  malformed/incomplete editor input. First profile and optimize the manual
+  frontend without changing its acceptance, public AST, source metadata or
+  diagnostic behavior; record its baseline and changes. Then use identical
+  inputs, a pinned Go version and repeated alternating samples for the tuned
+  manual and generated parser plus adapter. Report paired ranges and compare
+  only equivalent public AST and diagnostic work for selection. Measure full
   source-to-compiled-parser cost separately. Choose the default based on these
   results rather than generation novelty.
+
+### Preliminary Frontend Baseline
+
+An initial baseline used five alternating 200 ms samples on Go 1.27.1,
+darwin/arm64 on an Apple M3 Max with `GOMAXPROCS=16`. The hand-written parser
+returns the public grammar AST; the generated parser returns its concrete
+source AST without the public adapter.
+Diagnostic equivalence was not checked, so these timings and byte counts are
+not a fair frontend comparison and do not establish a winner or default. The
+medians below were measured at source revision `90b4cf7`. Each operation parses
+the complete source string: `pego.ParseGrammar` for the manual frontend and
+generated Go `ParseAST` in CodePoints for the typed frontend. Compilation and
+code generation are outside the timed region. Small uses
+`rule main = [a-z]+ #atomic`; the other inputs are `pego.pego`,
+`parsers/golang/golang.pego` and `parsers/python/python.pego`.
+
+| Grammar | Input bytes | Manual ns/op | Manual B/op | Manual allocs/op | Generated ns/op | Generated B/op | Generated allocs/op |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Small | 26 | 1,451 | 2,488 | 19 | 11,086 | 50,000 | 30 |
+| Self grammar | 22,964 | 1,228,660 | 2,920,062 | 8,338 | 3,776,813 | 3,530,988 | 9,322 |
+| Go | 56,593 | 2,592,098 | 6,838,759 | 18,407 | 8,424,863 | 8,015,079 | 21,815 |
+| Python | 71,708 | 3,573,514 | 8,854,649 | 22,515 | 10,774,236 | 11,293,620 | 28,409 |
+
+These values are an initial reference only. Reproduce them with
+[`bench/sourceparser.sh`](../../bench/sourceparser.sh); do not use them to
+select a parser until the adapter and diagnostic-equivalence gates are met.
+The driver generates a typed parser in a temporary module, compares declaration
+counts, and alternates measurement order; it does not assert full AST or error
+equality. Raw samples remain outside Git. Source-frontend tuning and default
+selection are deferred behind feature development, bug fixes and general
+parser optimizations; adapter and diagnostic parity can proceed independently.
 
 ## Limitations and Open Questions
 
