@@ -1,0 +1,82 @@
+// A syntactic comment boundary, independent of declaration meaning.
+// start and after consume the following source only to make standalone tests.
+type CommentText struct { Text string }
+type CommentBoundary struct { Trailing string, Leading string, Detached []CommentText, HasNext bool }
+type OwnedComments struct { Trailing string, Leading string, Detached []CommentText }
+type SourceElement struct { Name string, Comments OwnedComments }
+type SourceExample struct { Package SourceElement, Rule SourceElement }
+
+// Boundary captures construct owners while parsing, not in a later pass.
+rule owner_example SourceExample = (
+  first:remaining "package" -horizontal package_name:[a-zA-Z_]+ between:after_boundary
+  "rule" -horizontal rule_name:[a-zA-Z_]+ -horizontal "=" -horizontal "\"b\"" last:after_boundary $$
+) => SourceExample{
+  Package: SourceElement{Name: text($package_name), Comments: OwnedComments{
+    Leading: $first.Leading, Detached: $first.Detached, Trailing: $between.Trailing,
+  }},
+  Rule: SourceElement{Name: text($rule_name), Comments: OwnedComments{
+    Leading: $between.Leading, Detached: $between.Detached, Trailing: $last.Trailing,
+  }},
+}
+
+rule start = b:remaining -.* $$ => $b
+rule after = b:after_boundary -.* $$ => $b
+
+rule after_boundary CommentBoundary = (
+  inline_line_boundary / inline_block_boundary / ambiguous_block_boundary
+  / newline_boundary / remaining
+)
+rule inline_line_boundary CommentBoundary = (
+  -horizontal c:line_comment b:remaining
+) => CommentBoundary{Trailing: $c.Text, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+rule inline_block_boundary CommentBoundary = (
+  -horizontal c:block_comment &(horizontal (nl / comment_start / $$))
+  b:remaining
+) => CommentBoundary{Trailing: $c.Text, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+// One inline block ending on the next token's line is ambiguous, not trailing.
+rule ambiguous_block_boundary CommentBoundary = (
+  -horizontal c:block_comment -horizontal &next_token
+) => CommentBoundary{Trailing: "", Leading: "", Detached: list($c), HasNext: true}
+rule newline_boundary CommentBoundary = (
+  -horizontal -nl -horizontal c:(first_trailing / empty_comment) b:remaining
+) => CommentBoundary{Trailing: $c.Text, Leading: $b.Leading, Detached: $b.Detached, HasNext: $b.HasNext}
+
+// A first standalone group can trail the previous declaration when a blank
+// line, another group, or the end of a scope flushes it before the next token.
+rule first_trailing CommentText = (
+  c:line_group &line_flush / c:block_comment &block_flush
+) => $c
+rule remaining CommentBoundary = scope_tail / next_boundary
+rule scope_tail CommentBoundary = (
+  -space* xs:(c:comment -space*)* &scope_end
+) => CommentBoundary{Trailing: "", Leading: "", Detached: map($xs, (x) => $x.c), HasNext: false}
+rule next_boundary CommentBoundary = (
+  -space* detached:(c:detached_group -space*)* lead:(leading_group / empty_comment) -space* &next_token
+) => CommentBoundary{Trailing: "", Leading: $lead.Text, Detached: map($detached, (x) => $x.c), HasNext: true}
+rule empty_comment CommentText = _ => CommentText{Text: ""}
+rule detached_group CommentText = (
+  c:line_group &line_flush / c:block_comment &block_flush
+) => $c
+rule leading_group CommentText = c:comment -space* &next_token => $c
+rule line_flush = horizontal (nl / "/*" / scope_end)
+rule block_flush = horizontal (nl horizontal (nl / comment_start / scope_end) / comment_start / scope_end)
+rule next_token = !(space / comment_start / scope_end) .
+rule scope_end = ")" / "]" / "}" / $$
+rule comment_start = "//" / "/*"
+rule comment CommentText = line_group / block_comment
+rule line_group CommentText = (
+  first:line_comment rest:(-horizontal c:line_comment)*
+) => CommentText{Text: foldl($first.Text, $rest, (s, x) => $s + $x.c.Text)}
+rule line_comment CommentText = "//" body:[^\r\n]* end:nl? => CommentText{Text: text($body) + text($end)}
+rule block_comment CommentText = (
+  "/*" first:block_line rest:(line:nl -horizontal -block_star? body:block_line)* "*/"
+) => CommentText{Text: foldl($first.Text, $rest, (s, x) => $s + text($x.line) + $x.body.Text)}
+rule block_star = "*" !"/"
+rule block_line CommentText = xs:(c:block_piece)* => CommentText{Text: foldl("", $xs, (s, x) => $s + $x.c.Text)}
+rule block_piece CommentText = nested_piece / character_piece
+rule nested_piece CommentText = c:block_comment => CommentText{Text: "/*" + $c.Text + "*/"}
+rule character_piece CommentText = c:(!(nl / "*/" / "/*") .) #atomic => CommentText{Text: text($c)}
+rule nl = "\r\n" / [\r\n]
+rule horizontal = horizontal_char*
+rule horizontal_char = [ \t\u{b}\u{c}\u{85}\u{a0}\u{1680}\u{2000}-\u{200a}\u{2028}\u{2029}\u{202f}\u{205f}\u{3000}]
+rule space = horizontal_char / nl
