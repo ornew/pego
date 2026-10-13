@@ -38,7 +38,14 @@ This analysis describes the full-suite snapshot in [benchmarks.md](benchmarks.md
 
 **Incremental parsing.** An edit and reparse of the 300-function Minilang document takes 143–162 µs across the three backends, compared with 13.1–22.4 ms for a full parse. For the 50,000-record CSV document, edit and reparse take 2.67–2.75 ms and allocate 2.71–2.74 MB/op.
 
-**Generated XML capture scratch.** A separate focused paired comparison against the exact parent found higher time despite lower allocated bytes: generated Node `Parse` was 1.254× slower in CodePoints and 1.394× in Bytes, and `Recognize` was 1.380× slower. Against a same-source disabled reference, scratch took 0.966×/0.976×/0.922× time; both builds remained slower than the exact parent. With `GOGC=off`, five fixed-iteration pairs overlapped parity, so the cost is GC-sensitive. See [record 092](optimizations/092-reuse-generated-node-capture-scratch.md) for the scoped evidence.
+**Generated XML capture scratch.** An earlier focused comparison found slower
+generated XML parsing and recognition despite lower allocated bytes. At main
+commit `244be64`, five alternating 500 ms rounds against the original parent
+measured 0.941–0.948× median time across Parse and Recognize, with lower
+allocations and matching input and Node output. A same-source disabled control
+also favored scratch in the medians. Intervening changes prevent attribution
+of the parent comparison to scratch. [Record 092](optimizations/092-reuse-generated-node-capture-scratch.md)
+preserves the earlier result, the paired ranges, and the measurement limits.
 
 **Streaming.** Reading and discarding 50,000 CSV records plus the header takes 76.0–91.6 ms and 23.6–28.6 MB/s. Cumulative allocation is 89.4–98.0 MB/op, or about 41.2–45.2 bytes per input byte. The PEGO streaming backends allocate about 0.16–0.20 objects per data record. Batch closure parsing of 5,000 records (211 KB) uses about 26 bytes per input byte and 0.06 allocations per record. These are cumulative allocation figures, not retained-heap measurements. The focused stream-storage measurements are described in [record 089](optimizations/089-isolate-stream-prefixes-and-batch-scratch-cleanup.md). The full snapshot does not isolate the effect of any individual change.
 

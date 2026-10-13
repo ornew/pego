@@ -85,7 +85,30 @@ both builds remained slower than the exact parent. Five fixed-iteration
 (50x) pairs with `GOGC=off` overlapped parity; that is a diagnostic control,
 not a recommended execution setting. Moving the added state to the parser's
 tail did not mitigate the slowdown, and compiler inspection ruled out lost
-inlining. The normal-GC regression remains unresolved.
+inlining. At this earlier checkpoint, the normal-GC XML cost remained
+unresolved; a later current-main comparison is recorded below.
+
+## Current XML Checkpoint (244be64 vs d16f33e)
+
+A later comparison on Go 1.27.1, Apple M3 Max, darwin/arm64,
+`GOMAXPROCS=4`, `GOGC=100` and `GOMEMLIMIT=off` measured the full 256 KiB XML
+input in five alternating 500 ms rounds. Against exact parent `d16f33e`,
+current generated `Parse` took 0.9478× the time in Bytes (range
+0.8973–0.9567) and 0.9414× in CodePoints (0.9368–0.9582); `Recognize` took
+0.948× (0.9313–0.9688).
+Allocated bytes and allocation counts were also lower in all three cases.
+Against a same-source reference with only `nodeFrameScratch` disabled, the
+current scratch version measured 0.9556× Bytes (0.8931–0.9651), 0.9453×
+CodePoints (0.8863–1.0109) and 0.9422× recognition
+(0.9215–0.9535). The full input and parsed Node JSON SHA-256 matched between
+parent and current. Five additional alternating 1 s parent/current rounds with
+`GOMAXPROCS=16` measured 0.9703× Bytes Parse (0.9426–1.0185), 0.9607×
+CodePoints Parse (0.9386–0.9947), and 0.9646× recognition
+(0.9575–0.9862); allocated bytes and counts stayed lower.
+
+This checkpoint no longer reproduces the earlier XML slowdown. Because the
+current main includes intervening changes, these results do not isolate the
+effect of frame scratch and do not establish a general speedup.
 
 ## Parser Field Layout Control
 
@@ -97,11 +120,12 @@ typed `ParseAST` and `Recognize` (eight cases). All observed time ranges
 included parity, and allocation counts and bytes stayed near their controls.
 
 XML Node CodePoints measured 1.000× (0.964–1.033×), Bytes 0.961×
-(0.941–1.009×), and recognition 0.995× (0.992–1.014×). These ranges do not
-establish mitigation of the earlier exact-parent regression. Generated frame
-boundary, ownership and corpus checks passed; regeneration covered all 17
-standalone parsers. The layout change was not adopted. The existing field
-order and the unresolved normal-GC cost remain.
+(0.941–1.009×), and recognition 0.995× (0.992–1.014×). These ranges did not
+establish mitigation of the XML cost observed at that earlier checkpoint.
+Generated frame boundary, ownership and corpus checks passed; regeneration
+covered all 17 standalone parsers. The layout change was not adopted. The
+existing field order was retained; this control did not explain the later
+current-main result.
 
 ## Memo Slot Cleanup Control
 
@@ -115,8 +139,9 @@ units and recognition (six cases).
 XML Node time ratios were 1.006× CodePoints (0.974–1.065×) and 1.020× Bytes
 (0.971–1.153×); both ranges overlapped parity. XML recognition measured 1.012×
 (1.004–1.029×), slower in all five pairs. The three JSON ranges also overlapped
-parity. This control did not mitigate the GC-sensitive XML cost and was not
-adopted. Bulk clearing and all generated runtime sources remain unchanged.
+parity. This control did not mitigate the GC-sensitive XML cost measured at
+that checkpoint and was not adopted. Bulk clearing and all generated runtime
+sources remain unchanged.
 
 ## Reproduction
 
