@@ -1,9 +1,11 @@
 package engine
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
+	"unicode/utf8"
 )
 
 func TestDocumentAbortedParse(t *testing.T) {
@@ -92,6 +94,88 @@ rule x = x "a" / "a"`)
 					}
 				}
 			})
+		}
+	}
+}
+
+func TestDocumentLeftRecursionPanicEdits(t *testing.T) {
+	for _, tc := range []struct{ name, source string }{
+		{"direct", `rule main = x $$
+rule x = x "α" / "α"`},
+		{"indirect", `rule main = x $$
+rule x = y "α" / "α"
+rule y = x`},
+	} {
+		prog := compile(t, tc.source)
+		for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+			for _, unit := range []Unit{CodePoints, Bytes} {
+				t.Run(fmt.Sprintf("%s/%s/%s", tc.name, backend, unit), func(t *testing.T) {
+					opts := ParseOptions{Backend: backend, Unit: unit}
+					marker := new(int)
+					opts.Trace = func(e TraceEvent) {
+						// Interrupt after a recursive call has reused a successful
+						// provisional seed, rather than before growth starts.
+						if e.Kind == TraceExit && e.Rule == "x" && e.Memo && e.Matched {
+							panic(marker)
+						}
+					}
+					doc, err := prog.NewDocumentWith("main", "αα", opts)
+					if err != nil {
+						t.Fatal(err)
+					}
+					for attempt := range 2 {
+						func() {
+							defer func() {
+								if got := recover(); got != marker {
+									t.Fatalf("attempt %d: panic = %v", attempt, got)
+								}
+							}()
+							doc.Parse()
+						}()
+						if doc.memo.len() != 0 || len(doc.runs) != 0 || len(doc.kids) != 0 || doc.vals != nil {
+							t.Fatal("growth panic retained reusable state")
+						}
+					}
+					doc.trace, opts.Trace = nil, nil
+					for _, edit := range []struct {
+						text string
+						ok   bool
+					}{{"ααα", true}, {"αb", false}, {"", false}, {"α", true}, {"αα", true}} {
+						end := utf8.RuneCountInString(doc.Text())
+						if unit == Bytes {
+							end = len(doc.Text())
+						}
+						if err := doc.Edit(0, end, edit.text); err != nil {
+							t.Fatal(err)
+						}
+						for retry := range 2 {
+							n, err := doc.Parse()
+							if (err == nil) != edit.ok || edit.ok && n == nil {
+								t.Fatalf("text %q retry %d: node=%v error=%v", edit.text, retry, n, err)
+							}
+							if !edit.ok {
+								var syntaxError *SyntaxError
+								if !errors.As(err, &syntaxError) {
+									t.Fatalf("text %q retry %d: expected syntax error, got %v", edit.text, retry, err)
+								}
+								wantCol := 1
+								if edit.text != "" {
+									wantCol = 2
+									if unit == Bytes {
+										wantCol = 3
+									}
+								}
+								if syntaxError.Line != 1 || syntaxError.Col != wantCol {
+									t.Fatalf("text %q retry %d: error location %d:%d; want 1:%d", edit.text, retry, syntaxError.Line, syntaxError.Col, wantCol)
+								}
+							}
+							if got, want := resultJSON(n, err), resultJSON(prog.ParseWith("main", edit.text, opts)); got != want {
+								t.Fatalf("text %q retry %d: Document %s; fresh %s", edit.text, retry, got, want)
+							}
+						}
+					}
+				})
+			}
 		}
 	}
 }
