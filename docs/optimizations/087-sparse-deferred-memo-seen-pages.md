@@ -1,13 +1,13 @@
 # 87. Store Deferred-Memo Seen Positions Sparsely
 
-- **Status**: Candidate; adoption pending
+- **Status**: Adopted
 - **Date**: 2026-10-13
 
 ## Problem and Mechanism
 
 Deferred-memo bookkeeping tracks which rule/position pairs have been seen. A dense bitset scales with memoized rules × input positions, even when a parse visits only a small fraction of those pairs.
 
-The candidate selects sparse storage when a grammar has more than 64 deferred-memo rules and the input has more than 1,024 decoded units (bytes in Bytes mode; decoded code points in CodePoints mode). It stores seen positions in 1,024-position pages grouped into stable 64-page chunks. Go caches the latest page and reuses bounded page and directory storage. TypeScript uses integer page offsets rather than allocating a typed array for every page. Smaller runs keep dense storage.
+The runtime selects sparse storage when a grammar has more than 64 deferred-memo rules and the input has more than 1,024 decoded units (bytes in Bytes mode; decoded code points in CodePoints mode). It stores seen positions in 1,024-position pages grouped into stable 64-page chunks. Go caches the latest page and reuses bounded page and directory storage. TypeScript uses integer page offsets rather than allocating a typed array for every page. Smaller runs keep dense storage.
 
 For generated parsers, generation-time options omit the matching-time sparse-versus-dense representation branch when both emitted rule tables contain at most 64 deferred-memo rules. A small-table fixture showed byte-identical default Go and TypeScript output with and without Recognize; `go generate ./parsers ./bench` passed. This does not remove all per-parse checks or metadata from every generated profile. This follow-up selector adjustment was checked separately after the timed candidate run and is not included in candidate `f01bd8b` measurements.
 
@@ -19,10 +19,10 @@ Core reset bounds all sparse backing by `maxScratch` words, including unused chu
 
 | Execution profile | Applied / Partial / Not Applicable | Scope |
 |:--|:--|:--|
-| Core closure and VM, whole-input parse/recognize | Candidate | Sparse seen tracking applies above both thresholds; dense path remains below either threshold. |
-| Generated Go Node and Recognize | Candidate | Large synthetic inputs and JSON/XML controls, Bytes and CodePoints. |
-| Generated typed Go | Candidate | Large synthetic typed-AST controls; dense-buffer trimming is separate. |
-| Generated TypeScript, whole-input parse/recognize | Candidate | Node 22.18 timing covers large and short inputs in both units. |
+| Core closure and VM, whole-input parse/recognize | Applied | Sparse seen tracking applies above both thresholds; dense path remains below either threshold. |
+| Generated Go Node and Recognize | Applied | Large synthetic inputs and JSON/XML controls, Bytes and CodePoints. |
+| Generated typed Go | Applied | Large synthetic typed-AST controls; dense-buffer trimming is separate. |
+| Generated TypeScript, whole-input parse/recognize | Applied | Node 22.18 timing covers large and short inputs in both units. |
 | Documents and streams | Not applicable | These paths use eager memoization and do not use sparse pages. |
 | 32-bit targets | Unmeasured | Portability work remains deferred. |
 
@@ -81,9 +81,9 @@ The measured storage reduction is substantial for the synthetic core workload. G
 
 At the f01 savepoint, adoption remained pending. Its synthetic storage savings and timing observations are historical evidence; do not generalize them beyond their measured cases. Retain dense behavior below the thresholds and private reference controls for comparison. Do not extrapolate to Documents, streams, 32-bit targets, total retained heap, or unmeasured grammars and backends.
 
-## Focused Series-Baseline Checkpoint (67f23e0 vs c73bda3)
+## Historical Focused Series-Baseline Checkpoint (67f23e0 vs c73bda3)
 
-This checkpoint compares the restacked candidate at `c73bda3` with its pre-optimization-series baseline, `67f23e0`. It used Go 1.27.1 on Apple M3 Max (darwin/arm64, `GOMAXPROCS=16`) with five alternating 300 ms samples per case. The comparison includes both sparse-storage and small-table selector-elision commits. The 52-case matrix covers JSON, XML, Operators arithmetic and Minilang: Parse for closure, recursive VM, iterative VM and generated Go in CodePoints and Bytes (32 cases); generated typed AST Parse (4 cases); and Recognize for the same four backends (16 cases).
+This checkpoint compares the candidate at `c73bda3` with its pre-optimization-series baseline, `67f23e0`. It used Go 1.27.1 on Apple M3 Max (darwin/arm64, `GOMAXPROCS=16`) with five alternating 300 ms samples per case. The comparison includes both sparse-storage and small-table selector-elision commits. The 52-case matrix covers JSON, XML, Operators arithmetic and Minilang: Parse for closure, recursive VM, iterative VM and generated Go in CodePoints and Bytes (32 cases); generated typed AST Parse (4 cases); and Recognize for the same four backends (16 cases).
 
 | Measure | Result | Limit |
 |:--|:--|:--|
@@ -92,11 +92,23 @@ This checkpoint compares the restacked candidate at `c73bda3` with its pre-optim
 
 The candidate's focused core and generated Go/TypeScript sparse tests passed. Core backend result/work controls passed, and generated sparse/dense controls matched results. All 17 generated files matched after regeneration. The full root suite, all ten parser-module vet/test runs and site Go tests passed; independent static review passed the production-file scope. The pinned-WASM site build and link check also passed.
 
-The full 131-case, three-sample snapshot at `c73bda3` is reported in [benchmarks.md](../benchmarks.md). It is a same-revision full-suite snapshot, not a second parent-relative trial. Use its ratios only as within-run comparisons and do not attribute them to sparse memo or treat them as a substitute for this focused checkpoint.
+The full 131-case, three-sample snapshot at `c73bda3` was an earlier same-revision full-suite run, not a parent-relative trial. Its generated report has since been replaced by the adoption snapshot described below. Treat the c73 ratios above as historical within-run comparisons; they do not isolate sparse memo.
 
 ### Supplemental Storage-Only Probe
 
-Twelve synthetic core cases measured current-source sparse storage against a same-source dense build using `pego_reference_sparse_memo`: closure, recursive VM and iterative VM; Parse and Recognize; CodePoints and Bytes. Seen backing, both before and after reset, was 2,573,184–2,583,528 bytes versus 9,101,312 bytes in the dense build (0.2827–0.2839×, about 72% lower). The probe reports storage outside the timer; its one-iteration run does not support timing or B/op claims. These figures exclude memo entries, call counters, the rest of the memo table and total heap. The dense reference includes the shared 64-byte layout overhead. This is a fresh storage-only result, separate from the historical f01 synthetic timing and storage results above.
+At that checkpoint, twelve synthetic core cases measured sparse storage against a same-source dense build using `pego_reference_sparse_memo`: closure, recursive VM and iterative VM; Parse and Recognize; CodePoints and Bytes. Seen backing, both before and after reset, was 2,573,184–2,583,528 bytes versus 9,101,312 bytes in the dense build (0.2827–0.2839×, about 72% lower). The probe reports storage outside the timer; its one-iteration run does not support timing or B/op claims. These figures exclude memo entries, call counters, the rest of the memo table and total heap. The dense reference includes the shared 64-byte layout overhead. This is a separate storage-only result, distinct from the f01 synthetic timing and storage results above.
 
 
-Adoption remains pending. This checkpoint narrows the parent-relative timing comparison to the listed matrix; it does not cover other workloads, 32-bit targets, Documents or streams, and does not prove statistical significance or universal allocation parity.
+This historical checkpoint narrows its parent-relative comparison to the listed matrix; it does not cover other workloads, 32-bit targets, Documents or streams, and does not prove statistical significance or universal allocation parity.
+
+## Adoption Checkpoint (296a2c1 vs cc8a7c1)
+
+The measured change starts from main `296a2c1396b39f373c5315c5c748e259fe8efd83` and is represented at `cc8a7c190101521943a0e4ac5c0aaf6bab98e9a4`. It was measured with Go 1.27.1 on Apple M3 Max (darwin/arm64, `GOMAXPROCS=16`, `GOGC=100`, `GOMEMLIMIT=off`). The full-suite snapshot at that revision contains 131 cases with three samples each and took 459.566 seconds. It is a single-revision snapshot; its within-run ratios describe this build and do not attribute a change to sparse memo. The current `docs/benchmarks.md` is generated from this run.
+
+A separate 65-case series alternated main and candidate five times with 300 ms per sample. It covers JSON, XML, Operators arithmetic and Minilang: `Parse` on closure, recursive VM, iterative VM and generated Go in both position units (32 cases); generated typed-AST parsing (4); recognition across the same four backends (16); incremental parsing (6); long incremental parsing (3); and streaming (4, including the CSV standard-library control). Time-ratio medians across these cases range from 0.952× to 1.035×, with observed pair ranges from 0.829× to 1.096×. The parse cases' median time ratios range from 0.972× to 1.035×. These deviations are descriptive; the ranges are noisy and do not establish a general speedup or regression. Parse allocation medians were 0.974×–1.001× and B/op medians 0.966×–1.004×. Incremental and stream allocation medians were effectively unchanged in these cases.
+
+Four additional controls used five alternating 1-second pairs: JSON closure and generated `Parse` in Bytes, and Minilang closure and generated `Recognize`. Every observed time-ratio range included parity (paired median ratios 1.005×, 1.007×, 0.989× and 1.006× respectively). These longer controls do not establish a persistent time change in those profiles.
+
+Twelve storage-only core probes measured sparse seen backing against a same-source dense reference across closure, recursive VM and iterative VM; Parse and Recognize; and both position units. Before and after reset, sparse storage was 2,573,184–2,583,528 bytes versus 9,101,312 bytes dense (0.2827×–0.2839×, about 71.6% lower). This excludes memo entries, call counters, other memo-table storage and total heap. The probe measures storage outside the timer and supports no timing or B/op claim.
+
+The full snapshot, focused timing series, longer controls and storage-only probes answer different questions. The full snapshot does not isolate the candidate; the paired timing series measures only the listed profiles; and the storage probe is not a whole-heap measurement. Adoption is limited to reducing indexed seen backing; no general speedup is claimed.
