@@ -6,17 +6,20 @@ grammar specifies, at the language level, how a typed abstract syntax tree is
 built, how context-sensitive constructs are recognized, and how the parser
 reports and recovers from syntax errors.
 
-This document is the reference for the grammar language. It describes the
-syntax and meaning of `.pego` grammar files and the results of parsing input
-with them. For how to use the language, see the
+This document is the reference for supported grammar-language behavior. It
+describes the syntax and meaning of `.pego` grammar files and the results of
+parsing input with them. Some source forms are accepted into the source AST for
+formatting but are rejected by compilation; the syntax chapter identifies these
+forms and does not imply that they execute. For how to use the language, see the
 [guides](../docs/guide/README.md); for a first tour, see the
 [tutorial](../docs/tutorial/getting-started.md).
 
-> Every feature described in this specification is implemented. The
+> Behavior described as supported in this specification is implemented. Some
+> source forms may be parsed and formatted while compilation or execution remains
+> unsupported; those boundaries are stated in the relevant chapter. The
 > implementation status is tracked in
-> [docs/development.md](../docs/development.md#language-feature-status). If a feature
-> that is not yet implemented is added to this specification, its heading will
-> be marked "(not implemented)".
+> [docs/development.md](../docs/development.md#language-feature-status). Features
+> proposed but not yet implemented are marked "(not implemented)".
 
 ## Contents
 
@@ -33,11 +36,16 @@ The chapters are in reading order: each builds on the ones before it.
 | 7 | [Predicates and Variables](predicates.md) | Predicates, variables and their scope, and context-sensitive parsing |
 | 8 | [Actions](actions.md) | Building the value of a rule: captures, constructors, operators and built-in functions |
 | 9 | [Type Checking](type-checking.md) | The type of each expression, type inference and the errors that the checker reports |
-| 10 | [Attributes](attributes.md) | Diagnostic and metadata annotations, including `@error` |
+| 10 | [Attributes](attributes.md) | Diagnostic annotations and argument syntax, including `@error` |
 | 11 | [Pragmas](pragmas.md) | Behavioral and structural annotations: `#recover`, `#repeat`, `#stream`, and `#atomic` |
 | 12 | [Parsing](parsing.md) | A parse as a whole: the start rule, input and positions, results and nodes, syntax errors, memoization, limits and modes |
-| 13 | [Grammer](syntax.md) | The syntax of grammar files as a PEGO grammar that is tested against the reference parser |
+| 13 | [Grammar Syntax](syntax.md) | A self-hosted syntax projection tested against the reference parser |
 | 14 | [Glossary](glossary.md) | The terms of this specification, with the place where each is defined |
+
+The self-hosted grammar syntax chapter is a projection of the source parser, not
+the public grammar AST contract. Its typed source tree is an implementation
+representation; the public `grammar.Grammar` AST and its JSON representation
+are defined in [Grammar Files](grammar-files.md#grammar-ast-source-metadata).
 
 The portable bytecode that a grammar compiles to and the virtual machine that
 runs it are specified separately, for those who port the runtime:

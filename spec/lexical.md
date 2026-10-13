@@ -4,7 +4,7 @@ This chapter defines how grammar-file text is divided into characters, line
 terminators, white space, comments, identifiers, keywords, literals, escape
 sequences, and punctuation. The structure built from these tokens is described
 in [Grammar Files](grammar-files.md); the complete syntax is summarized in
-[Grammer](syntax.md).
+[Grammar Syntax](syntax.md).
 
 ## Source Text
 
@@ -92,7 +92,7 @@ The following identifiers are also contextual:
 ### String Literals
 
 A string literal is enclosed in double quotes and matches exactly its decoded
-characters. It may not contain a line terminator. The quote and backslash are
+characters. It may contain a literal CR, but MUST NOT contain a literal LF. The quote and backslash are
 written as `\"` and `\\` respectively. String literals may also be values in
 actions.
 
@@ -188,12 +188,20 @@ list MUST immediately follow its name: `@name` or `@name(...)`. White space
 or comments between `@` and the name are syntax errors. A separate group after
 `@name (expr)` is a following PEG expression, not an argument list.
 
+A pragma name MUST immediately follow `#`, and its argument list MUST
+immediately follow its name. White space or comments within `#repeat(...)` or
+`#recover(...)` are allowed inside the parentheses, but not between `#` and
+the name or between the name and `(`. For the argument-free `#atomic` and
+`#stream` forms, a separate group after the name is a following PEG expression,
+just as it is after an argument-free attribute.
+
 These forms require adjacency; intervening white space or comments change the
 parse:
 
 | Construct | Adjacent form | Separated form |
 |:--|:--|:--|
 | Capture `label:expr` | `x:expr` | `x :expr` is invalid |
+| Pragma | `#atomic`, `#repeat(2)` | `# atomic`, `#repeat (2)` are invalid |
 | Action function call | `len($s)` | `len ($s)` is a variable followed by a grouped expression |
 | Operators Rule level call | `level(expr, assignment)` | `level (expr, assignment)` is not a level call |
 

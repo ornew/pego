@@ -400,6 +400,8 @@ func walkTerm(t grammar.Term, f func(grammar.Term)) {
 	}
 	f(t)
 	switch t := t.(type) {
+	case *grammar.TermGroup:
+		walkTerm(t.Term, f)
 	case *grammar.Block:
 		for _, stmt := range t.Statements {
 			walkTerm(stmt, f)

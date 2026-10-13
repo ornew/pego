@@ -398,6 +398,8 @@ func (a *analysis) refToken(kind symKind, name string, i int) {
 
 func (a *analysis) walkType(t grammar.TypeExpr) {
 	switch t := t.(type) {
+	case *grammar.TypeGroup:
+		a.walkType(t.Type)
 	case *grammar.TypeRef:
 		a.ref(kindType, t.Name, t.Diagnostic())
 	case *grammar.ListType:
@@ -504,6 +506,8 @@ func (a *analysis) walkExpr(e grammar.Expr) {
 
 func (a *analysis) walkTerm(t grammar.Term) {
 	switch t := t.(type) {
+	case *grammar.TermGroup:
+		a.walkTerm(t.Term)
 	case *grammar.Block:
 		for _, stmt := range t.Statements {
 			a.walkTerm(stmt)

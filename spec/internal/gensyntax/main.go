@@ -1,4 +1,4 @@
-// Command gensyntax generates the full and simplified grammar reference.
+// Command gensyntax generates the simplified grammar reference.
 package main
 
 import (
@@ -31,7 +31,7 @@ func generate() error {
 	if err != nil {
 		return err
 	}
-	data := struct{ Full, Simple string }{string(full), grammar.FormatSyntax(g)}
+	data := struct{ Simple string }{grammar.FormatSyntax(g)}
 	var out bytes.Buffer
 	if err := t.Execute(&out, data); err != nil {
 		return err

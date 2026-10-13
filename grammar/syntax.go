@@ -2,11 +2,12 @@ package grammar
 
 // FormatSyntax renders the parsing syntax of g without modifying it. It omits
 // type declarations, result annotations, Value Actions (including inline and
-// Operators Rule actions), metadata attributes and recovery wrappers. Predicate
-// Actions, captures, matching operators and other pragmas are retained.
+// Operators Rule actions), captures, metadata attributes and recovery wrappers.
+// Redundant groups are removed; precedence and source layout retain necessary
+// parentheses. Predicate Actions, matching operators and other pragmas remain.
 //
 // This is a documentation view, not an equivalent replacement parser: a
-// predicate may depend on values constructed by an omitted action or type.
+// predicate may depend on an omitted capture, action or type.
 // Recovery diagnostics and returned values are intentionally not preserved.
 // Comments on retained source forms follow Format's layout rules; comments
 // attached only to removed forms may be omitted.
@@ -53,7 +54,11 @@ func (p *syntaxProjection) expr(expr Expr) Expr {
 	case *Group:
 		v := *e
 		v.Expr = p.expr(e.Expr)
-		result = &v
+		if syntaxGroupBoundaryEmpty(e.BodyBreak) && syntaxGroupBoundaryEmpty(e.CloseBreak) && !expressionLayout(v.Expr) {
+			result = v.Expr
+		} else {
+			result = &v
+		}
 	case *InlineAction:
 		result = p.expr(e.Expr)
 	case *Attributed:
@@ -76,9 +81,7 @@ func (p *syntaxProjection) expr(expr Expr) Expr {
 	case *Recovery:
 		result = p.expr(e.Expr)
 	case *Capture:
-		v := *e
-		v.Expr = p.expr(e.Expr)
-		result = &v
+		result = p.expr(e.Expr)
 	case *And:
 		v := *e
 		v.Expr = p.expr(e.Expr)
@@ -133,4 +136,8 @@ func (p *syntaxProjection) expr(expr Expr) Expr {
 	}
 	p.seen[expr] = result
 	return result
+}
+
+func syntaxGroupBoundaryEmpty(b *LineBreak) bool {
+	return noComments(b) && (b == nil || b.Trailing == nil)
 }

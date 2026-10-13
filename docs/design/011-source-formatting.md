@@ -49,7 +49,8 @@ When it records a new line break at a token:
 
 When the parser consumes a token that does not start a recorded line break, the comments before it cannot stay in place: `Format` writes the token on the same line as the tokens before it, and a line comment cannot appear in the middle of a line.
 The parser adds them to the `Comments` of the line break recorded last, so `Format` writes them on their own lines at the nearest preceding line break.
-No comment is lost; a test checks that every comment the lexer finds is in the AST and in the formatted output.
+Parenthesized type and action expressions retain source-only group nodes so comments within those delimiters can keep their owner path when formatting.
+No comment is lost; tests check that every comment the lexer finds is in the AST and in the formatted output.
 
 Attaching trailing comments to the line they end, rather than to the line break after them, keeps them right when `Format` reorders items: it writes `skip` before `operand` and `operand` before `level`, whatever the source order.
 
@@ -73,5 +74,5 @@ Tests check this, and that every grammar in `examples/` reparses to the same AST
 
 ## Limitations
 
-- A rule body keeps its line breaks only in its top-level choice and sequences. Line breaks inside parentheses, predicates, actions, and Operators Rule operands and operators are joined, and comments there move to the nearest preceding line.
+- A rule body keeps line breaks at its top-level choice and sequences. Source-only PEG, type and action group nodes preserve layout and comment ownership inside their explicit delimiters. `TypeGroup` and `TermGroup` keep raw line placement in `OpenBreak`, `BodyBreak`, `CloseBreak` and `OneLine`, separate from normalized `SourceInfo` ownership. Other internal line breaks, including those inside Predicate Actions and Operators Rule operands and operators, are joined, and comments there move to the nearest preceding line.
 - Alignment that `Format` does not produce itself (for example, aligned columns in Operators Rule levels) is not kept.

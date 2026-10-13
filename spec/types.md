@@ -44,8 +44,12 @@ type LongUnion = (
 ```
 
 Parentheses group a type expression and allow it to continue across physical
-newlines. Outside such a group, a type expression follows the normal hard
-newline statement boundary.
+newlines. The source AST retains an explicit parenthesized type as a source-only
+`TypeGroup` node implementing `TypeExpr`; compilation and generation lower the
+wrapper transparently, so grouping does not change type meaning. See
+[Parenthesized Groups in the Public AST](grammar-files.md#parenthesized-groups-in-the-public-ast)
+for source metadata, JSON and formatter behavior. Outside such a
+group, a type expression follows the normal hard newline statement boundary.
 
 ### Reserved Node Types
 

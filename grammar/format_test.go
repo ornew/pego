@@ -2,8 +2,25 @@ package grammar
 
 import (
 	"strconv"
+	"strings"
 	"testing"
 )
+
+func TestFormatSourceGroupOpeningComments(t *testing.T) {
+	for _, oneLine := range []bool{false, true} {
+		for _, comment := range []string{"/* documentation */", "// documentation"} {
+			open := &LineBreak{Comments: []*Comment{{Text: comment}}}
+			for _, out := range []string{
+				FormatType(&TypeGroup{Type: &TypeRef{Name: "T"}, OpenBreak: open, OneLine: oneLine}),
+				FormatTerm(&TermGroup{Term: &IntLit{Value: 1}, OpenBreak: open, OneLine: oneLine}),
+			} {
+				if strings.Count(out, comment) != 1 || !strings.HasPrefix(out, "(") || !strings.HasSuffix(out, ")") {
+					t.Fatalf("opening comment lost or duplicated: %q", out)
+				}
+			}
+		}
+	}
+}
 
 func TestFormatMinimumInteger(t *testing.T) {
 	max := int(^uint(0) >> 1)

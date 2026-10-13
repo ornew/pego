@@ -10,6 +10,8 @@ Diagnostic and metadata `@` attributes are defined separately in
 Pragmas have pragma-specific argument syntax. For example, recovery retains
 the named `skip` argument in `#recover(skip=expression)`; it does not use the
 generic positional and named argument binding of attributes.
+The name is adjacent to `#`, and an argument list is adjacent to its name:
+`#repeat(2)` is valid; `# repeat(2)` and `#repeat (2)` are syntax errors.
 
 | Pragma | Description |
 |:--|:--|

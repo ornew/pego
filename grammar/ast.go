@@ -162,10 +162,22 @@ type UnionType struct {
 	Types      []TypeExpr `json:"types"`
 }
 
+// TypeGroup preserves parentheses and source layout in a type expression.
+// It is transparent to type resolution.
+type TypeGroup struct {
+	SourceInfo `json:"source,omitempty"`
+	Type       TypeExpr   `json:"type"`
+	OpenBreak  *LineBreak `json:"-"`
+	BodyBreak  *LineBreak `json:"-"`
+	CloseBreak *LineBreak `json:"-"`
+	OneLine    bool       `json:"-"`
+}
+
 func (*TypeRef) typeExpr()      {}
 func (*ListType) typeExpr()     {}
 func (*OptionalType) typeExpr() {}
 func (*UnionType) typeExpr()    {}
+func (*TypeGroup) typeExpr()    {}
 
 // --- Parser expressions ---
 
@@ -516,6 +528,19 @@ func (*OperatorsRule) expr() {}
 
 // Term is a value expression used in actions and predicates.
 type Term interface{ term() }
+
+// TermGroup preserves parentheses and source layout in an action expression.
+// It is transparent to value construction and predicate evaluation.
+type TermGroup struct {
+	SourceInfo `json:"source,omitempty"`
+	Term       Term       `json:"term"`
+	OpenBreak  *LineBreak `json:"-"`
+	BodyBreak  *LineBreak `json:"-"`
+	CloseBreak *LineBreak `json:"-"`
+	OneLine    bool       `json:"-"`
+}
+
+func (*TermGroup) term() {}
 
 // IntLit is an integer literal.
 type IntLit struct {

@@ -532,6 +532,8 @@ func (e *termEnv) with(names []string, ts []ty) *termEnv {
 
 func termPos(t grammar.Term, def grammar.Pos) grammar.Pos {
 	switch t := t.(type) {
+	case *grammar.TermGroup:
+		return termPos(t.Term, def)
 	case *grammar.CaptureRef:
 		return t.Diagnostic()
 	case *grammar.IndexRef:

@@ -811,7 +811,7 @@ func same(x, y grammar.Expr, caps bool) bool {
 		return ok && x.Name == y.Name && same(x.Expr, y.Expr, caps)
 	case *grammar.Predicate:
 		y, ok := y.(*grammar.Predicate)
-		return ok && grammar.FormatTerm(x.Term) == grammar.FormatTerm(y.Term)
+		return ok && grammar.FormatTerm(grammaranalysis.UngroupTerm(x.Term)) == grammar.FormatTerm(grammaranalysis.UngroupTerm(y.Term))
 	case *grammar.Attributed:
 		y, ok := y.(*grammar.Attributed)
 		return ok && grammar.FormatExpr(x) == grammar.FormatExpr(y) && same(x.Expr, y.Expr, caps)
@@ -941,6 +941,8 @@ func walkTerm(t grammar.Term, f func(grammar.Term)) {
 	}
 	f(t)
 	switch t := t.(type) {
+	case *grammar.TermGroup:
+		walkTerm(t.Term, f)
 	case *grammar.Block:
 		for _, stmt := range t.Statements {
 			walkTerm(stmt, f)

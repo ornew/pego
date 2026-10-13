@@ -163,10 +163,11 @@ promise enough layout information for lossless formatting after decode; a
 future lossless archive needs a separate layout representation. On an in-memory
 parsed AST, `grammar.Format` uses raw comments and layout metadata, does not
 reconstruct ownership from positions, and must not move comments between
-owners. Existing relocations—including comments around type and action groups—must
-remain within ownership-equivalent boundaries. Parse/format/parse must preserve owner paths for
-supported nodes; this guarantee does not apply to JSON-decoded ASTs without
-serialized layout.
+owners. Explicit `TypeGroup` and `TermGroup` source nodes keep comments and
+boundary trivia inside parenthesized type and action expressions, distinguishing
+the grouped node from its enclosed child. The formatter must preserve those owner paths while printing
+parentheses. Parse/format/parse must preserve owner paths for supported nodes;
+this guarantee does not apply to JSON-decoded ASTs without serialized layout.
 
 Direct grammar JSON preserves normalized source metadata. The current `.pegoc`
 AST-bearing codec does not encode source positions or comments; loading or
@@ -181,14 +182,21 @@ adapter, strict JSON schemas and fixtures, cloning, formatter tests, API docs an
 documentation consumers together. Exact raw trivia remains an in-memory
 formatting concern. Keep bytecode and runtime parsing behavior unchanged.
 
-The migration can proceed in bounded increments without closing the parent
-scope early: first add source spans and normalized ownership to the public AST,
+The first increment adds source spans and normalized ownership to the public AST,
 nested JSON and manual parser while preserving diagnostics through
-`DiagnosticPos`; then make the canonical `pego.pego` parser construct the same
-metadata, including transparent Type/Action grouping source forms; finally
-complete formatter owner-path preservation across those groups. The boundary
-fixture is a focused oracle, not a substitute for these parity and formatter
-gates.
+`DiagnosticPos`. The next increment must preserve parenthesized source structure
+with source-only `TypeGroup` and `TermGroup` nodes. `TypeGroup` implements
+`TypeExpr`; the `TermGroup.Term` field has type `Term`, and `TermGroup`
+implements `Term`. Their source spans include the opening and closing
+delimiters, while enclosed comments and layout stay owned within the group. Raw
+layout is stored separately in `OpenBreak`, `BodyBreak`, `CloseBreak` and
+`OneLine`; these fields preserve line placement around delimiters without
+changing normalized source ownership. The compiler and generators lower these
+wrappers transparently before semantic execution, so grouping adds no matching,
+value-frame, type, or bytecode semantics. The canonical `pego.pego` parser must construct these nodes directly.
+Then complete formatter owner-path preservation through both group types. The
+boundary fixture is a focused oracle, not a substitute for grammar-parser parity
+and formatter gates.
 
 ## Alternatives Considered
 
@@ -208,7 +216,9 @@ gates.
 
 ## Testing
 
-- Cover collector transitions, package/rule/field/list/expression/group owners,
+- Cover collector transitions, package/rule/field/list/expression owners, and
+  nested `TypeGroup`/`TermGroup` owners; verify transparent lowering and retained
+  source parentheses/comments in the parsed AST,
   CR/LF/CRLF, blank-line boundaries, adjacent blocks, empty comments, EOF and
   closing delimiters with and without a next owner.
 - Assert exact normalized text/newlines, block indentation and marker handling,
@@ -254,8 +264,36 @@ The common public metadata shape, manual-parser ownership and spans, normalized
 JSON fields, and `Grammar.Clone()` are implemented and validated. The full root
 suite, dedicated metadata tests, parser generation/tests, site tests/build and
 independent review pass. The boundary fixture validates grammar-level boundary
-and selected owner construction only. Construction in the canonical
-`pego.pego` grammar, transparent Type/Action grouping source forms, and
-complete formatter owner-path migration remain follow-up scope. Keep the
+and selected owner construction only. The transparent Type/Action grouping increment is also implemented and
+validated, including owned boundary comments, strict and permissive JSON,
+structural validation and equivalent generated code and parse results.
+Construction of common metadata in the canonical `pego.pego` grammar and
+complete interior formatter owner-path migration remain follow-up scope. Keep the
 overall record Proposed until those remaining parts of the contract are
 implemented and validated.
+
+### Parenthesized Source Groups: Incremental Cost
+
+A focused comparison against the first source-metadata increment isolates the
+additional source-group retention, using Go 1.27.1 on an Apple M3 Max
+(darwin/arm64), `GOMAXPROCS=16`, and five alternating 500 ms samples per
+workload. Both binaries read identical inputs. The self-grammar fixture is
+22,868 bytes with SHA-256
+`01aa2f4cab8192701792ddc6eadb8d38a2cff8fe9149bdfc7209f0b4ce5238d9`;
+it predates the pragma-adjacency change. These are source parsing and pretty
+AST JSON measurements, not input parsing with a compiled grammar.
+
+| Workload | Median Before → After (ns/op) | B/op Before → After | Allocations Before → After |
+|:--|--:|--:|--:|
+| Small | 1,573 → 1,517 | 3,080 → 3,080 | 19 → 19 |
+| Self grammar | 1,270,874 → 1,336,694 | 3,304,893 → 3,305,511 | 8,409 → 8,417 |
+| Comment-heavy | 119,783 → 105,870 | 175,768 → 175,768 | 2,068 → 2,068 |
+
+The self-grammar gains 618 B/op, eight allocations, and 1,604 bytes in pretty
+JSON (1,050,885 → 1,052,489 bytes). Small and comment-heavy allocation and JSON
+sizes are unchanged. The unaffected time controls drift by -3.6% and -11.6%,
+so the self-grammar's +5.2% median timing difference does not establish an
+attributable speed change. Runtime matching and bytecode semantics are
+unchanged; grouped and ungrouped grammars have equal generated Go/TypeScript
+code and parsing results in the focused parity checks. Raw measurements remain
+outside Git.

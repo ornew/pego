@@ -132,21 +132,21 @@ rule def_stmt Def = (
   d:((type_def_stmt / rule_def_stmt / _|_ @error(message="expected type or rule declaration")) #recover(skip=stmt_sync))
 ) => $d
 rule stmt_end []Comment = (
-  cs:horizontal tail:(stmt_separator @error(message="expected semicolon, newline, or end of file"))
+  cs:horizontal tail:(stmt_sep @error(message="expected semicolon, newline, or end of file"))
 ) => concat($cs, $tail)
 rule item_end []Comment = (
-  cs:horizontal tail:(item_separator @error(message="expected semicolon, newline, or closing brace"))
+  cs:horizontal tail:(item_sep @error(message="expected semicolon, newline, or closing brace"))
 ) => concat($cs, $tail)
 rule field_end []Comment = (
-  cs:horizontal tail:(field_separator @error(message="expected comma, newline, or closing brace"))
+  cs:horizontal tail:(field_sep @error(message="expected comma, newline, or closing brace"))
 ) => concat($cs, $tail)
-rule stmt_separator []Comment = block_separator / empty_stmt_separator
-rule item_separator []Comment = block_separator / empty_item_separator
-rule field_separator []Comment = block_separator / empty_field_separator
-rule block_separator []Comment = c:block_with_line => list($c)
-rule empty_stmt_separator []Comment = (";" / nl / &$$) => list()
-rule empty_item_separator []Comment = (";" / nl / &"}") => list()
-rule empty_field_separator []Comment = ("," / nl / &"}") => list()
+rule stmt_sep []Comment = block_sep / empty_stmt_sep
+rule item_sep []Comment = block_sep / empty_item_sep
+rule field_sep []Comment = block_sep / empty_field_sep
+rule block_sep []Comment = c:block_with_line => list($c)
+rule empty_stmt_sep []Comment = (";" / nl / &$$) => list()
+rule empty_item_sep []Comment = (";" / nl / &"}") => list()
+rule empty_field_sep []Comment = ("," / nl / &"}") => list()
 // Recovery consumes its own separator and stops before the next item.
 rule stmt_sync = -comments (sync_token / !(";" / nl) .)* (";" / nl / &$$)
 rule item_sync = -comments (sync_token / !(";" / nl / "}") .)* (";" / nl / &"}" / &$$)
@@ -207,10 +207,10 @@ rule rule_expr RuleExpr = operators {
     postfix "?" => Optional{X: $lhs}
     postfix "*" => ZeroOrMore{X: $lhs}
     postfix "+" => OneOrMore{X: $lhs}
-    postfix "#" -ws "atomic" !ident_char (empty_args / !("(")) => Atomic{X: $lhs}
-    postfix "#" -ws "stream" !ident_char (empty_args / !("(")) => Stream{X: $lhs}
-    postfix "#" -ws "repeat" !ident_char -ws bounds:repeat_args => Repeat{X: $lhs, Min: $bounds.Min, Max: $bounds.Max, Range: $bounds.Range}
-    postfix "#" -ws "recover" !ident_char -ws sync:recover_args => Recover{X: $lhs, Skip: $sync}
+    postfix "#atomic" !ident_char (empty_args / !("(")) => Atomic{X: $lhs}
+    postfix "#stream" !ident_char (empty_args / !("(")) => Stream{X: $lhs}
+    postfix "#repeat" !ident_char bounds:repeat_args => Repeat{X: $lhs, Min: $bounds.Min, Max: $bounds.Max, Range: $bounds.Range}
+    postfix "#recover" !ident_char sync:recover_args => Recover{X: $lhs, Skip: $sync}
     postfix a:attr => Attributed{X: $lhs, Attr: $a}
   }
 }

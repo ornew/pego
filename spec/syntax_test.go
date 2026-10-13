@@ -39,9 +39,14 @@ func TestSyntaxSummary(t *testing.T) {
 		t.Fatal(err)
 	}
 	blocks := pegoCodeBlocks(string(doc))
-	if len(blocks) != 2 {
-		t.Fatalf("syntax.md has %d pego code blocks, want 2", len(blocks))
+	if len(blocks) != 1 {
+		t.Fatalf("syntax.md has %d pego code blocks, want 1", len(blocks))
 	}
+	full, err := os.ReadFile("../pego.pego")
+	if err != nil {
+		t.Fatal(err)
+	}
+	blocks = append(blocks, string(full))
 	var parsers []*pego.Parser
 	for i, block := range blocks {
 		p, err := pego.CompileSource(block, "file")

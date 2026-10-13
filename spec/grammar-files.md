@@ -68,6 +68,27 @@ line endings; each detached entry is one paragraph. Older JSON may omit these
 metadata objects. Comment grouping and node ownership follow the
 [source-metadata contract](../docs/design/057-source-info-and-comment-ownership.md).
 
+#### Parenthesized Groups in the Public AST
+
+The public AST preserves explicit parentheses in type expressions as
+`TypeGroup{Type: ...}` and in action and predicate expressions as
+`TermGroup{Term: ...}`. Both nodes embed `SourceInfo`. A group is transparent
+to type resolution, value construction and predicate evaluation; it preserves
+the source form for inspection and formatting.
+
+`grammar.MarshalJSON` serializes these nodes as interface objects tagged with
+`"@type": "TypeGroup"` or `"@type": "TermGroup"`, including their `type` or
+`term` child and `source` metadata. The formatter's `OpenBreak`, `BodyBreak`,
+`CloseBreak` and `OneLine` fields retain comment and layout details in memory
+but are excluded from JSON. Consequently, JSON preserves the explicit grouping
+and normalized source metadata, while formatting after JSON decoding may
+normalize layout and is not guaranteed to reproduce exact source text.
+
+`pego.ParseGrammar` returns this source-preserving AST. Compilation removes
+source-only type and term groups from the executable grammar; consequently,
+`Parser.Grammar()` and the AST embedded in a compiled grammar expose the
+normalized executable form rather than those grouping nodes.
+
 ### Type Definitions
 
 A type definition (`type`) defines a node type: a struct type, a union or alias
@@ -135,7 +156,7 @@ the line and column of the construct it concerns in the grammar source (see
 
 | Class | Examples | Defined In |
 |:--|:--|:--|
-| Lexical and syntax errors | An unterminated string, an unknown escape, a character that starts no token, a missing `)`, a malformed declaration, a repetition whose maximum is less than its minimum | [Lexical Structure](lexical.md), [Grammer](syntax.md) |
+| Lexical and syntax errors | An unterminated string, an unknown escape, a character that starts no token, a missing `)`, a malformed declaration, a repetition whose maximum is less than its minimum | [Lexical Structure](lexical.md), [Grammar Syntax](syntax.md) |
 | Definition and reference errors | A name defined twice, a reserved or non-uppercase-ASCII type name, an undefined rule, a call with an unknown level, a capture of an expression without a value, an unknown attribute or pragma, a header comment, a `#stream` outside its permitted position | The chapter of the construct |
 | Type errors | A field that the struct does not declare, a value that is not assignable to the declared type, `$n` out of range | [Type Checking](type-checking.md#checked-errors) |
 

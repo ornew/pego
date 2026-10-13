@@ -59,6 +59,11 @@ func (g *Grammar) AllComments() []*Comment {
 	var term func(Term)
 	term = func(t Term) {
 		switch t := t.(type) {
+		case *TermGroup:
+			add(t.OpenBreak)
+			add(t.BodyBreak)
+			add(t.CloseBreak)
+			term(t.Term)
 		case *Block:
 			addAll(t.Breaks)
 			add(t.CloseBreak)
@@ -84,6 +89,24 @@ func (g *Grammar) AllComments() []*Comment {
 			term(t.Value)
 		case *Member:
 			term(t.X)
+		}
+	}
+	var typ func(TypeExpr)
+	typ = func(t TypeExpr) {
+		switch t := t.(type) {
+		case *TypeGroup:
+			add(t.OpenBreak)
+			add(t.BodyBreak)
+			add(t.CloseBreak)
+			typ(t.Type)
+		case *ListType:
+			typ(t.Elem)
+		case *OptionalType:
+			typ(t.Elem)
+		case *UnionType:
+			for _, t := range t.Types {
+				typ(t)
+			}
 		}
 	}
 	var expr func(e Expr)
@@ -172,9 +195,14 @@ func (g *Grammar) AllComments() []*Comment {
 				add(st.CloseBreak)
 				for _, f := range st.Fields {
 					add(f.Break)
+					typ(f.Type)
 				}
 			}
+			if alias, ok := s.Spec.(*AliasSpec); ok {
+				typ(alias.Type)
+			}
 		case *RuleDef:
+			typ(s.Type)
 			add(s.Break)
 			add(s.BodyBreak)
 			add(s.ActionBreak)

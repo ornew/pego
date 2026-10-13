@@ -112,7 +112,7 @@ decoding excludes compression/encoding, browser DOM, worker and WebAssembly cost
 
 ## Changing the Site
 
-- **The grammar reference** in `spec/syntax.md` is generated with `go generate ./spec` from `pego.pego` and `spec/syntax.md.tmpl`; it publishes full and simplified syntax views through the same Markdown pipeline.
+- **The grammar reference** in `spec/syntax.md` is generated with `go generate ./spec` from `pego.pego` and `spec/syntax.md.tmpl`; it publishes the simplified syntax view and links to the canonical full grammar in `pego.pego` on GitHub.
 - **A new document** in `docs/guide/`, `docs/tutorial/`, `spec/`, `docs/design/` or `docs/` appears in its section
   automatically through the include rules in [`site/config.json`](../site/config.json).
   Add a section match there for a new documentation directory; unmatched pages otherwise appear under Other.

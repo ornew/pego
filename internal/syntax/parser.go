@@ -461,9 +461,17 @@ func (p *parser) typeTerm() (sourceResult grammar.TypeExpr) {
 	case p.accept("*"):
 		return &grammar.OptionalType{Elem: p.typeTerm()}
 	case p.accept("("):
-		t := p.typeExpr()
+		open := p.i - 1
+		outer := p.cur
+		defer func() { p.cur = outer }()
+		g := &grammar.TypeGroup{OpenBreak: &grammar.LineBreak{}}
+		p.cur = g.OpenBreak
+		g.BodyBreak = p.lineBreak()
+		g.Type = p.typeExpr()
+		g.CloseBreak = p.lineBreak()
+		g.OneLine = !p.multiline(open, p.i)
 		p.expect(")")
-		return t
+		return g
 	}
 	name := p.ident()
 	return &grammar.TypeRef{SourceInfo: grammar.SourceInfo{Pos: name.pos}, Name: name.text}
@@ -910,7 +918,15 @@ func (p *parser) pragma(e grammar.Expr, start grammar.Pos) (sourceResult grammar
 		br = p.lineBreak()
 	}
 	pos := p.expect("#").pos
+	if p.tok().spaceBefore {
+		p.errorf("pragma name must immediately follow '#'")
+		panic(bail{})
+	}
 	name := p.ident().text
+	if (name == "recover" || name == "repeat") && p.is("(") && p.tok().spaceBefore {
+		p.errorf("pragma arguments must immediately follow '#%s'", name)
+		panic(bail{})
+	}
 	switch name {
 	case "atomic":
 		if !p.boundary() && p.is("(") && !p.tok().spaceBefore {
@@ -1367,10 +1383,18 @@ func (p *parser) termPrimary() (sourceResult grammar.Term) {
 		return &grammar.VarRef{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Name: t.text}
 	case tPunct:
 		if t.text == "(" {
+			open := p.i
 			p.next()
-			x := p.term()
+			outer := p.cur
+			defer func() { p.cur = outer }()
+			g := &grammar.TermGroup{OpenBreak: &grammar.LineBreak{}}
+			p.cur = g.OpenBreak
+			g.BodyBreak = p.lineBreak()
+			g.Term = p.term()
+			g.CloseBreak = p.lineBreak()
+			g.OneLine = !p.multiline(open, p.i)
 			p.expect(")")
-			return x
+			return g
 		}
 	}
 	p.errorf("expected a value, found %s", t)

@@ -510,7 +510,7 @@ func (l *linter) unusedCaptures() {
 			}
 			return
 		}
-		switch t, _ := r.Type.(*grammar.TypeRef); {
+		switch t, _ := ungroupType(r.Type).(*grammar.TypeRef); {
 		case r.Action != nil:
 			l.scopeCaptures(r.Expr, r.Action, usesIndex(r.Action), "the action does not refer to it")
 		case t != nil && terminal[t.Name]:
@@ -615,6 +615,8 @@ func scopePredicateRefs(e grammar.Expr, refs map[string]bool) {
 // parameters) to refs.
 func captureRefs(t grammar.Term, params []string, refs map[string]bool) {
 	switch t := t.(type) {
+	case *grammar.TermGroup:
+		captureRefs(t.Term, params, refs)
 	case *grammar.CaptureRef:
 		if !slices.Contains(params, t.Name) {
 			refs[t.Name] = true
@@ -1011,4 +1013,14 @@ func consumesAny(e grammar.Expr) bool {
 	found := false
 	forChildren(e, func(c grammar.Expr) { found = found || consumesAny(c) })
 	return found
+}
+
+func ungroupType(t grammar.TypeExpr) grammar.TypeExpr {
+	for {
+		g, ok := t.(*grammar.TypeGroup)
+		if !ok {
+			return t
+		}
+		t = g.Type
+	}
 }

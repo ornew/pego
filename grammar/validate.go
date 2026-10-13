@@ -197,6 +197,8 @@ func Validate(g *Grammar) error {
 			push(n.Elem, "elem", -1, false)
 		case *OptionalType:
 			push(n.Elem, "elem", -1, false)
+		case *TypeGroup:
+			push(n.Type, "type", -1, false)
 		case *UnionType:
 			for i := len(n.Types) - 1; i >= 0; i-- {
 				push(n.Types[i], "types", i, false)
@@ -294,6 +296,8 @@ func Validate(g *Grammar) error {
 			}
 		case *Member:
 			push(n.X, "x", -1, false)
+		case *TermGroup:
+			push(n.Term, "term", -1, false)
 		case *New:
 			for i := len(n.Fields) - 1; i >= 0; i-- {
 				push(n.Fields[i], "fields", i, false)

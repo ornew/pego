@@ -29,6 +29,8 @@ func TestValidateRequiredChildren(t *testing.T) {
 		{"struct field", &Grammar{Statements: []Statement{&TypeDef{Name: "T", Spec: &StructSpec{Fields: []*Field{nil}}}}}, "$.statements[0].spec.fields[0]"},
 		{"field type", &Grammar{Statements: []Statement{&TypeDef{Name: "T", Spec: &StructSpec{Fields: []*Field{{Name: "F"}}}}}}, "$.statements[0].spec.fields[0].type"},
 		{"alias", typeGrammar(nil), "$.statements[0].spec.type"},
+		{"type group", typeGrammar(&TypeGroup{}), "$.statements[0].spec.type.type"},
+		{"term group", termGrammar(&TermGroup{}), "$.statements[0].action.term"},
 		{"list", typeGrammar(&ListType{}), "$.statements[0].spec.type.elem"},
 		{"optional type", typeGrammar(&OptionalType{}), "$.statements[0].spec.type.elem"},
 		{"union", typeGrammar(&UnionType{Types: []TypeExpr{nil}}), "$.statements[0].spec.type.types[0]"},
@@ -145,6 +147,12 @@ func TestValidateCyclesAndSharing(t *testing.T) {
 	term := &Unary{Op: "-"}
 	term.X = &Member{X: term, Name: "F"}
 	assertValidationError(t, Validate(termGrammar(term)), "$.statements[0].action.x.x")
+	groupType := &TypeGroup{}
+	groupType.Type = groupType
+	assertValidationError(t, Validate(typeGrammar(groupType)), "$.statements[0].spec.type.type")
+	groupTerm := &TermGroup{}
+	groupTerm.Term = groupTerm
+	assertValidationError(t, Validate(termGrammar(groupTerm)), "$.statements[0].action.term")
 	shared := &Optional{Expr: &Literal{Value: "a"}}
 	g := expressionGrammar(&Seq{Items: []Expr{shared, shared}})
 	before := Format(g)

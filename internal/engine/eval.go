@@ -708,7 +708,7 @@ func (c *evalCtx) keep() *evalCtx {
 	return &k
 }
 
-// predicate compiles a predicate [...].
+// predicate compiles a Predicate Action { ... }.
 func (c *compiler) predicate(e *grammar.Predicate, s *scope) matcher {
 	c.noIndex = "predicates"
 	defer func() { c.noIndex = "" }()

@@ -69,7 +69,7 @@ func (g *tsGen) typedTS(start *rule, emitted string) (string, error) {
 			fmt.Fprintf(&b, "/** Grammar terminal %s. */\nexport interface %s extends Span { readonly type: %s; readonly text: string }\n\n", name, t.names[name], tsString(name))
 			t.recipe(namedTy{name, 't'})
 		case *grammar.AliasSpec:
-			fmt.Fprintf(&b, "/** Grammar alias %s = %s. */\nexport type %s = %s;\n\n", name, spec.Type, t.names[name], t.tsType(t.info.aliases[name]))
+			fmt.Fprintf(&b, "/** Grammar alias %s = %s. */\nexport type %s = %s;\n\n", name, grammar.FormatType(spec.Type), t.names[name], t.tsType(t.info.aliases[name]))
 			t.recipe(t.info.aliases[name])
 		}
 	}

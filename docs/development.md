@@ -99,7 +99,7 @@ The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for i
 
 `sample` tests generate inputs for every example grammar and every grammar of the engine's test corpus (`internal/engine/sample_test.go`, through `export_test.go`) and parse them on every backend.
 
-`go generate ./spec` renders the full and simple grammar views from `pego.pego` and `spec/syntax.md.tmpl`; edit the template rather than the generated page. `spec/source_grammar_test.go` verifies the canonical source grammar against its displayed copy, checks concrete trees and recovery across backends, and builds a generated typed Go consumer. `spec/syntax_test.go` runs the grammar of [Grammer](../spec/syntax.md) on every `.pego` file and every `pego` code block of the repository and requires it to agree with the parser of `internal/syntax`.
+`go generate ./spec` renders the simple grammar view from `pego.pego` and `spec/syntax.md.tmpl`; edit the template rather than the generated page. `spec/source_grammar_test.go` verifies the simplified display against the canonical source grammar, checks concrete trees and recovery across backends, and builds a generated typed Go consumer. `spec/syntax_test.go` runs the grammar of [Grammar Syntax](../spec/syntax.md) on every `.pego` file and every `pego` code block of the repository and requires it to agree with the parser of `internal/syntax`.
 
 `cd site && go test ./...` builds the site and checks its pages and links; `go test ./playground` runs the WebAssembly smoke test when Node is installed.
 Production site builds retain the published current WASM/runtime pair alongside the new pair, using a bounded

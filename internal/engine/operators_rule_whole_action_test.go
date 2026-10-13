@@ -10,7 +10,7 @@ import (
 
 func TestOperatorsRuleWholeActionRejection(t *testing.T) {
 	const message = "whole-rule actions are not supported for Operators Rules"
-	for _, action := range []string{"nil", "$1", "Unknown{}"} {
+	for _, action := range []string{"nil", "$1", "Unknown{}", "(nil)", "($1)", "(Unknown{})"} {
 		t.Run(action, func(t *testing.T) {
 			g, err := syntax.Parse("rule main = operators {\n    operand \"a\"\n} => " + action)
 			if err != nil {
@@ -50,7 +50,10 @@ func TestOperatorsRuleWholeActionRejection(t *testing.T) {
 							}
 							if input.g == g {
 								wantPos := grammar.Pos{Line: 3, Col: 6}
-								if action == "nil" {
+								if strings.HasPrefix(action, "(") {
+									wantPos.Col++
+								}
+								if action == "nil" || action == "(nil)" {
 									// NilLit has no source position; use the declaration.
 									wantPos = g.Rules()[0].Pos
 								}

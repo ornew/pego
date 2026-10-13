@@ -609,6 +609,8 @@ func pad(s string, w int) string {
 // FormatType returns t in PEGO syntax.
 func FormatType(t TypeExpr) string {
 	switch t := t.(type) {
+	case *TypeGroup:
+		return formatSourceGroup(FormatType(t.Type), t.OpenBreak, t.BodyBreak, t.CloseBreak, t.OneLine)
 	case *TypeRef:
 		return t.Name
 	case *ListType:
@@ -630,6 +632,59 @@ func formatTypeTerm(t TypeExpr) string {
 		return "(" + FormatType(t) + ")"
 	}
 	return FormatType(t)
+}
+
+// formatSourceGroup keeps explicit delimiters and their boundary trivia.
+func formatSourceGroup(body string, open, first, close *LineBreak, oneLine bool) string {
+	if oneLine {
+		leading, ok1 := groupInlineComments(open, true)
+		opening, ok0 := groupInlineComments(open, false)
+		before, ok2 := groupInlineComments(first, false)
+		after, ok3 := groupInlineComments(first, true)
+		closing, ok4 := groupInlineComments(close, false)
+		if ok0 && ok1 && ok2 && ok3 && ok4 && (close == nil || close.Trailing == nil) {
+			return "(" + leading + opening + before + body + after + closing + ")"
+		}
+	}
+	p := &printer{}
+	p.write("(")
+	p.inline(open)
+	p.start = true
+	p.comments(open, indentUnit, false)
+	p.lineBreak(first, indentUnit, false)
+	p.write(strings.ReplaceAll(body, "\n", "\n"+indentUnit))
+	p.comments(close, indentUnit, true)
+	p.newLine("")
+	p.write(")")
+	p.inline(close)
+	p.flush()
+	return strings.TrimSuffix(p.String(), "\n")
+}
+
+func groupInlineComments(b *LineBreak, trailing bool) (string, bool) {
+	if b == nil {
+		return "", true
+	}
+	comments := b.Comments
+	if trailing {
+		comments = nil
+		if b.Trailing != nil {
+			comments = []*Comment{b.Trailing}
+		}
+	}
+	var s strings.Builder
+	for _, c := range comments {
+		if c.Header.IsValid() {
+			continue
+		}
+		if !strings.HasPrefix(c.Text, "/*") || strings.ContainsAny(c.Text, "\r\n") {
+			return "", false
+		}
+		s.WriteByte(' ')
+		s.WriteString(c.Text)
+		s.WriteByte(' ')
+	}
+	return s.String(), !b.Blank
 }
 
 // Binding strengths of expressions.
@@ -878,6 +933,8 @@ func FormatTerm(t Term) string { return formatTerm(t, 0) }
 
 func formatTerm(t Term, outer int) string {
 	switch t := t.(type) {
+	case *TermGroup:
+		return formatSourceGroup(FormatTerm(t.Term), t.OpenBreak, t.BodyBreak, t.CloseBreak, t.OneLine)
 	case *Block:
 		p := &printer{}
 		if t.OneLine && noComments(t.CloseBreak) {

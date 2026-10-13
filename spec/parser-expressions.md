@@ -159,13 +159,14 @@ Inside `[...]`:
   be less than the lower bound. Both endpoints MUST be Unicode scalar values;
   a range may span the surrogate interval when its endpoints are scalar values.
 - A `-` that is not between two characters (the first item, or the last item
-  before `]` is a literal `-`. Elsewhere, write `\-`.
+  before `]`) is a literal `-`. Elsewhere, write `\-`.
 - `]` MUST be escaped as `\]`, and `\` as `\\`. Parentheses and `?` need no escape.
 - `^` immediately after `[` negates the matcher; elsewhere it is literal.
 - Whitespace is literal: `[ \t]` matches a space or a tab.
 - The escape sequences of [string literals](lexical.md#escape-sequences) are
   available.
-- A matcher MUST contain at least one item and MUST NOT span lines.
+- A matcher MUST contain at least one item and MUST NOT contain a literal LF.
+  A literal CR is allowed, as in string literals.
 
 ### Any Character
 

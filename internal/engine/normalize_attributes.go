@@ -1,6 +1,9 @@
 package engine
 
-import "github.com/ornew/pego/grammar"
+import (
+	"github.com/ornew/pego/grammar"
+	"github.com/ornew/pego/internal/grammaranalysis"
+)
 
 // normalizeAttributes builds the executable grammar without changing the
 // source AST. Attribute syntax remains generic; built-ins define their own
@@ -13,7 +16,11 @@ func normalizeAttributes(g *grammar.Grammar) (*grammar.Grammar, error) {
 		if rd, ok := statement.(*grammar.RuleDef); ok {
 			rule := *rd
 			rule.Expr = n.expr(rd.Expr)
+			rule.Type = grammaranalysis.UngroupType(rd.Type)
+			rule.Action = grammaranalysis.UngroupTerm(rd.Action)
 			copy.Statements[i] = &rule
+		} else if td, ok := statement.(*grammar.TypeDef); ok {
+			copy.Statements[i] = n.typeDef(td)
 		} else {
 			copy.Statements[i] = statement
 		}
@@ -118,12 +125,13 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 	case *grammar.Group:
 		return n.expr(e.Expr)
 	case *grammar.Predicate:
-		if block, ok := e.Term.(*grammar.Block); ok && len(block.Statements) == 1 {
-			copy := *e
-			copy.Term = block.Statements[0]
-			return &copy
+		term := e.Term
+		if block, ok := term.(*grammar.Block); ok && len(block.Statements) == 1 {
+			term = block.Statements[0]
 		}
-		return e
+		copy := *e
+		copy.Term = grammaranalysis.UngroupTerm(term)
+		return &copy
 	case *grammar.Seq:
 		copy := *e
 		copy.Items = make([]grammar.Expr, len(e.Items))
@@ -214,6 +222,7 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 		for i, o := range e.Operands {
 			operand := *o
 			operand.Expr = n.expr(o.Expr)
+			operand.Action = grammaranalysis.UngroupTerm(o.Action)
 			copy.Operands[i] = &operand
 		}
 		copy.Levels = make([]*grammar.OperatorsRuleLevel, len(e.Levels))
@@ -223,6 +232,7 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 			for j, o := range l.Operators {
 				operator := *o
 				operator.Expr = n.expr(o.Expr)
+				operator.Action = grammaranalysis.UngroupTerm(o.Action)
 				level.Operators[j] = &operator
 			}
 			copy.Levels[i] = &level
@@ -251,4 +261,44 @@ func (n *attributeNormalizer) wrap(e grammar.Expr, a *grammar.Attribute) grammar
 		return &copy
 	}
 	return &grammar.Attributed{Expr: e, Attrs: []*grammar.Attribute{a}}
+}
+
+// Source grouping lowers before checking/generation; unchanged children stay
+// shared so ordinary action and type trees need no extra copies.
+func (n *attributeNormalizer) typeDef(td *grammar.TypeDef) *grammar.TypeDef {
+	spec := td.Spec
+	switch s := spec.(type) {
+	case *grammar.AliasSpec:
+		child := grammaranalysis.UngroupType(s.Type)
+		if child != s.Type {
+			v := *s
+			v.Type = child
+			spec = &v
+		}
+	case *grammar.StructSpec:
+		var fields []*grammar.Field
+		for i, f := range s.Fields {
+			child := grammaranalysis.UngroupType(f.Type)
+			if child == f.Type {
+				continue
+			}
+			if fields == nil {
+				fields = append([]*grammar.Field(nil), s.Fields...)
+			}
+			v := *f
+			v.Type = child
+			fields[i] = &v
+		}
+		if fields != nil {
+			v := *s
+			v.Fields = fields
+			spec = &v
+		}
+	}
+	if spec == td.Spec {
+		return td
+	}
+	v := *td
+	v.Spec = spec
+	return &v
 }

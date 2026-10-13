@@ -31,7 +31,7 @@ rule expr Node = operators {
 	}
 	beforeText := grammar.Format(g)
 	out := grammar.FormatSyntax(g)
-	for _, gone := range []string{"type Node", "rule main Node", "=>", "@error", "#recover"} {
+	for _, gone := range []string{"type Node", "rule main Node", "=>", "@error", "#recover", "x:"} {
 		if strings.Contains(out, gone) {
 			t.Errorf("kept %q:\n%s", gone, out)
 		}
@@ -85,7 +85,80 @@ rule value T = "x" => T{N: 1}`)
 	if !strings.Contains(out, "{$x.N == 1}") {
 		t.Fatalf("predicate lost: %s", out)
 	}
+	if strings.Contains(out, "x:value") {
+		t.Fatalf("capture retained: %s", out)
+	}
 	if _, err := pego.CompileSource(out, "main"); err == nil {
 		t.Fatal("expected value-dependent projection to require the full grammar")
+	}
+}
+
+func TestFormatSyntaxGrouping(t *testing.T) {
+	for _, tc := range []struct{ source, want string }{
+		{`rule main = cap:((("a" => A{})))`, `rule main = "a"`},
+		{`rule main = (("a" / "b")) "c"`, `rule main = ("a" / "b") "c"`},
+		{`rule main = (("a" "b"))*`, `rule main = ("a" "b")*`},
+		{`rule main = (("a" / "b")) #atomic`, `rule main = ("a" / "b") #atomic`},
+		{`rule main = !(("a" / "b")) "c"`, `rule main = !("a" / "b") "c"`},
+		{"rule main = (\n \"a\"\n \"b\"\n)", "rule main = (\n    \"a\"\n    \"b\"\n)"},
+	} {
+		t.Run(tc.source, func(t *testing.T) {
+			g, err := pego.ParseGrammar(tc.source)
+			if err != nil {
+				t.Fatal(err)
+			}
+			out := grammar.FormatSyntax(g)
+			if strings.TrimSpace(out) != tc.want {
+				t.Fatalf("got:\n%s\nwant:\n%s", out, tc.want)
+			}
+			projected, err := pego.ParseGrammar(out)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if grammar.FormatSyntax(projected) != out {
+				t.Fatal("projection not idempotent")
+			}
+			p, err := pego.Compile(projected, "main")
+			if err != nil {
+				t.Fatal(err)
+			}
+			// The corresponding full grammar has identical matching behavior
+			// whenever it does not require an unimplemented inline action.
+			full, err := pego.Compile(g, "main")
+			if err != nil {
+				return
+			}
+			for _, input := range []string{"", "a", "b", "c", "ab", "ac", "bc", "abab"} {
+				_, originalErr := full.Parse(input, pego.RecognizeOnly())
+				_, projectedErr := p.Parse(input, pego.RecognizeOnly())
+				if (originalErr == nil) != (projectedErr == nil) {
+					t.Fatalf("matching changed for %q: %v / %v", input, originalErr, projectedErr)
+				}
+			}
+		})
+	}
+}
+
+func TestFormatSyntaxGroupComments(t *testing.T) {
+	for _, source := range []string{
+		"rule main = (\n \"a\" // keep\n)",
+		"rule main = (\n // keep\n \"a\"\n)",
+		"rule main = (\n \"a\"\n /* keep */\n)",
+	} {
+		g, err := pego.ParseGrammar(source)
+		if err != nil {
+			t.Fatal(err)
+		}
+		out := grammar.FormatSyntax(g)
+		if strings.Count(out, "keep") != 1 {
+			t.Fatalf("group comment lost or duplicated: %s", out)
+		}
+		projected, err := pego.ParseGrammar(out)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if again := grammar.FormatSyntax(projected); again != out {
+			t.Fatalf("comment layout unstable:\n%s\n%s", out, again)
+		}
 	}
 }
