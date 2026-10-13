@@ -36,7 +36,7 @@ The chapters are in reading order: each builds on the ones before it.
 | 10 | [Attributes](attributes.md) | Diagnostic and metadata annotations, including `@error` |
 | 11 | [Pragmas](pragmas.md) | Behavioral and structural annotations: `#recover`, `#repeat`, `#stream`, and `#atomic` |
 | 12 | [Parsing](parsing.md) | A parse as a whole: the start rule, input and positions, results and nodes, syntax errors, memoization, limits and modes |
-| 13 | [Syntax Summary](syntax.md) | The syntax of grammar files as a PEGO grammar that is tested against the reference parser |
+| 13 | [Grammer](syntax.md) | The syntax of grammar files as a PEGO grammar that is tested against the reference parser |
 | 14 | [Glossary](glossary.md) | The terms of this specification, with the place where each is defined |
 
 The portable bytecode that a grammar compiles to and the virtual machine that

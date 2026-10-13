@@ -36,7 +36,16 @@ type Example struct {
     Many   [](Item | Other)
     Count  int
 }
+
+type LongUnion = (
+    Item
+    | Other
+)
 ```
+
+Parentheses group a type expression and allow it to continue across physical
+newlines. Outside such a group, a type expression follows the normal hard
+newline statement boundary.
 
 ### Reserved Node Types
 
@@ -53,10 +62,11 @@ as types.
 
 ## Names
 
-User-defined type names and field names MUST begin with an uppercase letter.
-Identifiers that begin with a lowercase letter are reserved for the built-in
-types (`int`, `string`, `bool`, `node`, `terminal`). The names of the reserved
-node types (`Match`, `Seq`, `List`, `Operator`, `Error`) MUST NOT be defined.
+User-defined type names and field names MUST begin with an uppercase ASCII
+letter. Identifiers that begin with a lowercase ASCII letter are reserved for
+the built-in types (`int`, `string`, `bool`, `node`, `terminal`). The names of
+the reserved node types (`Match`, `Seq`, `List`, `Operator`, `Error`) MUST NOT
+be defined.
 Each type name MUST be defined at most once, and types and rules have separate
 namespaces (see [Names](grammar-files.md#names)).
 

@@ -64,8 +64,11 @@ func TestDecimalTokenBoundaries(t *testing.T) {
 			t.Fatalf("tokenizer rewrote invalid index %q as %+v", digits, tok)
 		}
 	}
-	if _, err := Parse(`rule 名前١ = x١:"a" => $x١`); err != nil {
-		t.Fatalf("Unicode digits in identifiers were rejected: %v", err)
+	if _, err := Parse(`rule name١ = x١:"a" => $x١`); err == nil {
+		t.Fatal("Unicode digits in identifiers were accepted")
+	}
+	if _, err := Parse(`rule name1 = x1:"a" => $x1`); err != nil {
+		t.Fatalf("ASCII digits in identifiers were rejected: %v", err)
 	}
 }
 

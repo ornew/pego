@@ -36,8 +36,8 @@ func TestDiagnostics(t *testing.T) {
 			[]Diagnostic{{Range: rng(0, 9, 0, 13), Message: "unterminated string"}},
 		},
 		{
-			"undefined rule", "rule main = \"😀\" 名前 x",
-			[]Diagnostic{{Range: rng(0, 17, 0, 19), Message: "undefined rule 名前"}, {Range: rng(0, 20, 0, 21), Message: "undefined rule x"}},
+			"undefined rule", "rule main = \"😀\" ab x",
+			[]Diagnostic{{Range: rng(0, 17, 0, 19), Message: "undefined rule ab"}, {Range: rng(0, 20, 0, 21), Message: "undefined rule x"}},
 		},
 		{
 			// The error of a definition is reported at its name.
@@ -390,9 +390,9 @@ func TestRename(t *testing.T) {
 		return p
 	}
 	var we workspaceEdit
-	c.requestInto("textDocument/rename", rename(12, 26, "数字"), &we)
+	c.requestInto("textDocument/rename", rename(12, 26, "sum"), &we)
 	got := applyEdits(navSrc, we.Changes[uri])
-	want := strings.NewReplacer("rule num Num", "rule 数字 Num", "l:num", "l:数字", "r:num", "r:数字", "/ num)", "/ 数字)").Replace(navSrc)
+	want := strings.NewReplacer("rule num Num", "rule sum Num", "l:num", "l:sum", "r:num", "r:sum", "/ num)", "/ sum)").Replace(navSrc)
 	if got != want {
 		t.Errorf("rename num: got\n%s", got)
 	}
@@ -409,6 +409,7 @@ func TestRename(t *testing.T) {
 		{12, 26, "a-b", `"a-b" is not a valid rule name`},
 		{12, 26, "_", `"_" is not a valid rule name`},
 		{12, 26, "_internal", `"_internal" is not a valid rule name`},
+		{12, 26, "数字", `"数字" is not a valid rule name`},
 		{2, 6, "Num", "type Num is already defined"},
 		{2, 6, "pair", "type pair must start with an uppercase letter"},
 		{2, 6, "Match", "type Match is reserved"},
@@ -547,7 +548,7 @@ func TestCompletion(t *testing.T) {
 func TestSemanticTokens(t *testing.T) {
 	c := newInitialized(t)
 	uri := "file:///sem.pego"
-	src := "type N terminal // c\nrule 名前 = x:n \"s😀\" [a] #stream => P{F: len($x).startPos}\nrule n N = operators {\n    operand a\n    level { infix left \"+\" }\n}\nrule bind = {v := 1}"
+	src := "type N terminal // c\nrule ab = x:n \"s😀\" [a] #stream => P{F: len($x).startPos}\nrule n N = operators {\n    operand a\n    level { infix left \"+\" }\n}\nrule bind = {v := 1}"
 	c.open(uri, src)
 	var res struct {
 		Data []int `json:"data"`
@@ -577,7 +578,7 @@ func TestSemanticTokens(t *testing.T) {
 	}
 	want := []string{
 		"type keyword", "N type.declaration", "terminal keyword", "// c comment",
-		"rule keyword", "名前 function.declaration", "x variable.declaration", "n function", `"s😀" string`, "[a] regexp",
+		"rule keyword", "ab function.declaration", "x variable.declaration", "n function", `"s😀" string`, "[a] regexp",
 		"stream decorator", "P type", "F property", "len function.defaultLibrary", "$x parameter",
 		"startPos property.defaultLibrary",
 		"rule keyword", "n function.declaration", "N type", "operators keyword", "operand keyword", "a function", "level keyword",

@@ -40,7 +40,7 @@ func TestValidateRequiredChildren(t *testing.T) {
 		{"not", expressionGrammar(&Not{}), "$.statements[0].expr.expr"},
 		{"atomic", expressionGrammar(&Atomic{}), "$.statements[0].expr.expr"},
 		{"discard", expressionGrammar(&Discard{}), "$.statements[0].expr.expr"},
-		{"capture", expressionGrammar(&Capture{}), "$.statements[0].expr.expr"},
+		{"capture", expressionGrammar(&Capture{Name: "value"}), "$.statements[0].expr.expr"},
 		{"predicate", expressionGrammar(&Predicate{}), "$.statements[0].expr.term"},
 		{"attributed expression", expressionGrammar(&Attributed{}), "$.statements[0].expr.expr"},
 		{"attribute", expressionGrammar(&Attributed{Expr: &Top{}, Attrs: []*Attribute{nil}}), "$.statements[0].expr.attrs[0]"},
@@ -51,7 +51,7 @@ func TestValidateRequiredChildren(t *testing.T) {
 		{"level", expressionGrammar(&OperatorsRule{Levels: []*OperatorsRuleLevel{nil}}), "$.statements[0].expr.levels[0]"},
 		{"operator", expressionGrammar(&OperatorsRule{Levels: []*OperatorsRuleLevel{{Operators: []*OperatorsRuleOperator{nil}}}}), "$.statements[0].expr.levels[0].operators[0]"},
 		{"operator expression", expressionGrammar(&OperatorsRule{Levels: []*OperatorsRuleLevel{{Operators: []*OperatorsRuleOperator{{Kind: Infix, Assoc: AssocLeft}}}}}), "$.statements[0].expr.levels[0].operators[0].expr"},
-		{"member", termGrammar(&Member{}), "$.statements[0].action.x"},
+		{"member", termGrammar(&Member{Name: "Value"}), "$.statements[0].action.x"},
 		{"field initializer", termGrammar(&New{Type: "T", Fields: []*FieldInit{nil}}), "$.statements[0].action.fields[0]"},
 		{"field value", termGrammar(&New{Type: "T", Fields: []*FieldInit{{Name: "F"}}}), "$.statements[0].action.fields[0].value"},
 		{"call", termGrammar(&Call{Func: "len", Args: []Term{nil}}), "$.statements[0].action.args[0]"},
@@ -193,6 +193,36 @@ func TestValidateCompatibility(t *testing.T) {
 	}
 	if err := Validate(expressionGrammar(expr)); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestValidateASCIIIdentifiers(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		g    *Grammar
+		path string
+	}{
+		{"empty rule", &Grammar{Statements: []Statement{&RuleDef{Expr: &Top{}}}}, "$.statements[0].name"},
+		{"empty reference", expressionGrammar(&Ref{}), "$.statements[0].expr.name"},
+		{"empty capture", expressionGrammar(&Capture{Expr: &Top{}}), "$.statements[0].expr.name"},
+		{"empty attribute", expressionGrammar(&Attributed{Expr: &Top{}, Attrs: []*Attribute{{}}}), "$.statements[0].expr.attrs[0].name"},
+		{"empty attribute argument", expressionGrammar(&Attributed{Expr: &Top{}, Attrs: []*Attribute{{Name: "error", KwArgs: map[string]any{"": "x"}}}}), "$.statements[0].expr.attrs[0].kwArgs[\"\"]"},
+		{"empty lambda parameter", termGrammar(&Lambda{Params: []string{""}, Body: &IntLit{Value: 1}}), "$.statements[0].action.params[0]"},
+		{"package", &Grammar{Package: "名前"}, "$.package"},
+		{"rule", &Grammar{Statements: []Statement{&RuleDef{Name: "café", Expr: &Top{}}}}, "$.statements[0].name"},
+		{"reference", expressionGrammar(&Ref{Name: "é"}), "$.statements[0].expr.name"},
+		{"level", expressionGrammar(&Ref{Name: "expr", Level: "名"}), "$.statements[0].expr.level"},
+		{"attribute argument", expressionGrammar(&Attributed{Expr: &Top{}, Attrs: []*Attribute{{Name: "error", KwArgs: map[string]any{"méssage": "x"}}}}), "$.statements[0].expr.attrs[0].kwArgs[\"méssage\"]"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assertValidationError(t, Validate(tc.g), tc.path)
+		})
+	}
+	if err := Validate(expressionGrammar(&Literal{Value: "名前😀"})); err != nil {
+		t.Fatalf("Unicode literal rejected: %v", err)
+	}
+	if err := Validate(expressionGrammar(&OperatorsRule{Operands: []*OperatorsRuleOperand{{Expr: &Top{}}}, Levels: []*OperatorsRuleLevel{{}}})); err != nil {
+		t.Fatalf("unnamed level rejected: %v", err)
 	}
 }
 

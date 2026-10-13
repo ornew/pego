@@ -3,6 +3,8 @@ package syntax
 import (
 	"strings"
 	"testing"
+
+	"github.com/ornew/pego/grammar"
 )
 
 func TestReservedIdentifierPrefix(t *testing.T) {
@@ -12,7 +14,7 @@ func TestReservedIdentifierPrefix(t *testing.T) {
 		`rule main = _helper`, `rule main = _capture:"x"`,
 		`rule main = _:"x"`,
 		`rule main = __proto__:"x"`,
-		`rule main = "x" @ _attr`, `rule main = "x" @error(_message="x")`,
+		`rule main = "x" @_attr`, `rule main = "x" @error(_message="x")`,
 		`rule main = {_indent := 0}`, `rule main = {_indent > 0}`, `rule main = {_ := 0}`,
 		`rule main = "x" => $_capture`, `rule main = "x" => _helper($1)`,
 		`rule main = "x" => Node{_field: $1}`, `rule main = "x" => $1._field`,
@@ -23,8 +25,15 @@ func TestReservedIdentifierPrefix(t *testing.T) {
 		`rule expr = operators { operand "x"; level _ { postfix "!" } }`,
 	} {
 		t.Run(src, func(t *testing.T) {
-			if _, err := Parse(src); err == nil || !strings.Contains(err.Error(), "reserved") {
-				t.Fatalf("%s: %v", src, err)
+			g, err := Parse(src)
+			if err != nil {
+				t.Fatalf("reserved name must remain parseable: %s: %v", src, err)
+			}
+			if err := grammar.Validate(g); err == nil || !strings.Contains(err.Error(), "reserved") {
+				t.Fatalf("reserved name must fail validation: %s: %v", src, err)
+			}
+			if _, errs := ParsePartial(src); len(errs) != 0 {
+				t.Fatalf("reservation must not produce syntax diagnostics: %v", errs)
 			}
 		})
 	}

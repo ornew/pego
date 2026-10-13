@@ -90,8 +90,8 @@ The names that a definition can use are constrained as follows:
 
 | Kind of Name | Constraint |
 |:--|:--|
-| Rule | An [identifier](lexical.md#identifiers). Contextual words are allowed when the grammar expects a name. Rule names commonly begin with a lowercase letter. |
-| Type, field | An identifier that begins with an uppercase letter. Built-in and reserved type names MUST NOT be defined. See [Names](types.md#names). |
+| Rule | An [identifier](lexical.md#identifiers). Contextual words are allowed when the grammar expects a name. Rule names commonly begin with a lowercase ASCII letter. |
+| Type, field | An identifier that begins with an uppercase ASCII letter. Built-in and reserved type names MUST NOT be defined. See [Names](types.md#names). |
 | Capture label, variable, level, lambda parameter | An identifier. Captures and variables have their own scopes; see [Capture](parser-expressions.md#capture) and [Variables](predicates.md#variables). A level name MUST be unique within its Operators Rule declaration. |
 
 ## Start Rule
@@ -108,8 +108,8 @@ the line and column of the construct it concerns in the grammar source (see
 
 | Class | Examples | Defined In |
 |:--|:--|:--|
-| Lexical and syntax errors | An unterminated string, an unknown escape, a character that starts no token, a missing `)`, a malformed declaration, a repetition whose maximum is less than its minimum | [Lexical Structure](lexical.md), [Syntax Summary](syntax.md) |
-| Definition and reference errors | A name defined twice, a reserved or lowercase type name, an undefined rule, a call with an unknown level, a capture of an expression without a value, an unknown attribute or pragma, a header comment, a `#stream` outside its permitted position | The chapter of the construct |
+| Lexical and syntax errors | An unterminated string, an unknown escape, a character that starts no token, a missing `)`, a malformed declaration, a repetition whose maximum is less than its minimum | [Lexical Structure](lexical.md), [Grammer](syntax.md) |
+| Definition and reference errors | A name defined twice, a reserved or non-uppercase-ASCII type name, an undefined rule, a call with an unknown level, a capture of an expression without a value, an unknown attribute or pragma, a header comment, a `#stream` outside its permitted position | The chapter of the construct |
 | Type errors | A field that the struct does not declare, a value that is not assignable to the declared type, `$n` out of range | [Type Checking](type-checking.md#checked-errors) |
 
 The reference implementation reports all lexical and syntax errors of a file

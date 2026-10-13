@@ -153,6 +153,17 @@ test("PEGO highlighting follows expressions, pragmas and nested comments", () =>
   assert.deepEqual(tokenize(incomplete, "pego"), [{from: 0, to: incomplete.length, cls: 'comment'}]);
 });
 
+test("PEGO highlighting restricts identifiers to ASCII", () => {
+  const source = 'rule ab = "名前" @error(message="é") café';
+  const tokens = tokenize(source, "pego");
+  const names = tokens.filter((t) => ["rule", "ident", "attr"].includes(t.cls))
+    .map((t) => source.slice(t.from, t.to));
+  assert.ok(names.includes("ab"));
+  assert.ok(names.includes("@error"));
+  assert.ok(!names.includes("café"));
+  assert.ok(tokens.every((t) => !source.slice(t.from, t.to).includes("é") || t.cls === "string"));
+});
+
 
 test("PEGO words are contextual and action braces restore PEG context", () => {
   const source = 'rule type = "x"\nrule main = type type:operand {type := 1} => {type; Result{}}\nrule expr = operators { operand type; level prefix { infix left "+" => Result{} }; level { prefix type } }';

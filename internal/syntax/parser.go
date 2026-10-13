@@ -124,9 +124,6 @@ func (p *parser) peek(k int) token {
 }
 func (p *parser) next() token {
 	t := p.toks[p.i]
-	if (t.kind == tIdent && t.text != "_" || t.kind == tCapture) && strings.HasPrefix(t.text, "_") {
-		p.errs.addRange(t.pos, t.end, fmt.Sprintf("identifier %s is reserved", t.text))
-	}
 	if p.header {
 		if t.lineComment != nil {
 			t.lineComment.Header = p.headerPos
@@ -240,10 +237,6 @@ func (p *parser) expect(text string) token {
 }
 
 func (p *parser) ident() token {
-	if p.tok().text == "_" {
-		p.errorf("identifier _ is reserved")
-		panic(bail{})
-	}
 	if p.boundary() {
 		p.errorf("expected identifier on the same statement, found %s", p.tok())
 		panic(bail{})
@@ -850,6 +843,10 @@ func (p *parser) repeatCount() int {
 
 func (p *parser) attribute() *grammar.Attribute {
 	pos := p.expect("@").pos
+	if p.tok().spaceBefore {
+		p.errorf("attribute name must immediately follow '@'")
+		panic(bail{})
+	}
 	a := &grammar.Attribute{Pos: pos, Name: p.ident().text}
 	if !p.is("(") || p.tok().spaceBefore {
 		return a
@@ -1060,10 +1057,6 @@ func (p *parser) tryLambda() grammar.Term {
 		if t.kind != tIdent {
 			return nil
 		}
-		if t.text == "_" {
-			p.errs.add(t.pos, "identifier _ is reserved")
-			panic(bail{})
-		}
 		params = append(params, t.text)
 		k++
 		if s := p.peek(k); s.kind == tPunct && s.text == "," {
@@ -1153,10 +1146,6 @@ func (p *parser) termPrimary() grammar.Term {
 		p.next()
 		return &grammar.IndexRef{Pos: t.pos, Index: t.num}
 	case tIdent:
-		if t.text == "_" {
-			p.errorf("identifier _ is reserved")
-			panic(bail{})
-		}
 		switch t.text {
 		case "true", "false":
 			p.next()

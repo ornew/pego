@@ -4,7 +4,7 @@ This chapter defines how grammar-file text is divided into characters, line
 terminators, white space, comments, identifiers, keywords, literals, escape
 sequences, and punctuation. The structure built from these tokens is described
 in [Grammar Files](grammar-files.md); the complete syntax is summarized in
-[Syntax Summary](syntax.md).
+[Grammer](syntax.md).
 
 ## Source Text
 
@@ -53,15 +53,19 @@ the longest token available at each position.
 
 ### Identifiers
 
-An identifier begins with a Unicode letter or `_` and continues with Unicode
-letters, Unicode digits, or `_`. Identifiers are case-sensitive and have no
-length limit. Names beginning with `_` are reserved and MUST NOT be used as
-identifiers, including declaration names, references, captures, variables,
-level names, attribute names, or named arguments. The standalone PEG atom `_`
-is the [Top expression](parser-expressions.md#top), not an available name.
+An identifier matches `[a-zA-Z_][a-zA-Z0-9_]*`. Identifiers are
+case-sensitive and have no length limit. Identifier syntax is ASCII-only:
+non-ASCII letters and digits do not continue an identifier. Unicode remains
+available in string literals, character classes, comments, and parsed input.
+Names beginning with `_` are reserved and MUST NOT be used as identifiers,
+including declaration names, references, captures, variables, level names,
+attribute names, or named arguments. Parsing preserves these names in the
+source AST; semantic validation rejects their use before compilation. The
+standalone PEG atom `_` is the
+[Top expression](parser-expressions.md#top), not an available name.
 Identifiers name rules, types, fields, captures, variables, levels,
-attributes, and lambda parameters. The initial letter's case matters for type
-and field names; see [Names](types.md#names).
+attributes, and lambda parameters. The initial ASCII letter's case matters
+for type and field names; see [Names](types.md#names).
 
 <a id="keywords"></a>
 
@@ -178,6 +182,11 @@ write the scalar directly, such as `\u{1F600}`. Unicode noncharacters such as
 U+FFFF are valid scalar values.
 
 ## Adjacency
+
+An attribute name MUST immediately follow `@`, and an attribute argument
+list MUST immediately follow its name: `@name` or `@name(...)`. White space
+or comments between `@` and the name are syntax errors. A separate group after
+`@name (expr)` is a following PEG expression, not an argument list.
 
 These forms require adjacency; intervening white space or comments change the
 parse:

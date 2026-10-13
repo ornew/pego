@@ -108,8 +108,11 @@ func Validate(g *Grammar) error {
 		if v.IsNil() {
 			return fail("", "required node is nil")
 		}
-		if field, name := reservedIdentifier(f.node); field != "" {
-			return fail(field, "identifier "+name+" is reserved")
+		if field, name := invalidIdentifier(f.node); field != "" {
+			if name != "" && name[0] == '_' {
+				return fail(field, "identifier "+name+" is reserved")
+			}
+			return fail(field, fmt.Sprintf("invalid identifier %q: use ASCII letters, digits and underscores", name))
 		}
 		// Leaf nodes need no cycle tracking. Non-leaf nodes stay active until
 		// their exit frame, distinguishing a pointer cycle from a shared child.
@@ -319,12 +322,31 @@ func Validate(g *Grammar) error {
 	return nil
 }
 
-// reservedIdentifier checks source names without changing literal data or
-// treating the Top node's underscore spelling as an identifier.
-func reservedIdentifier(node any) (field, name string) {
-	reserved := func(s string) bool { return len(s) > 0 && s[0] == '_' }
+// invalidIdentifier checks source names without changing literal data or
+// treating the Top node's underscore spelling as an identifier. Empty optional
+// names (package and Operators Rule level) are valid.
+func invalidIdentifier(node any) (field, name string) {
+	invalid := func(s string) bool {
+		if s == "" {
+			return true
+		}
+		if s[0] == '_' {
+			return true
+		}
+		for i := 0; i < len(s); i++ {
+			c := s[i]
+			if i == 0 && c >= '0' && c <= '9' ||
+				!(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '_') {
+				return true
+			}
+		}
+		return false
+	}
 	switch n := node.(type) {
 	case *Grammar:
+		if n.Package == "" {
+			return "", ""
+		}
 		field, name = "package", n.Package
 	case *RuleDef:
 		field, name = "name", n.Name
@@ -335,8 +357,11 @@ func reservedIdentifier(node any) (field, name string) {
 	case *Field:
 		field, name = "name", n.Name
 	case *Ref:
-		if reserved(n.Name) {
+		if invalid(n.Name) {
 			return "name", n.Name
+		}
+		if n.Level == "" {
+			return "", ""
 		}
 		field, name = "level", n.Level
 	case *Capture:
@@ -356,28 +381,33 @@ func reservedIdentifier(node any) (field, name string) {
 	case *Call:
 		field, name = "func", n.Func
 	case *OperatorsRuleLevel:
+		if n.Name == "" {
+			return "", ""
+		}
 		field, name = "name", n.Name
 	case *Attribute:
-		if reserved(n.Name) {
+		if invalid(n.Name) {
 			return "name", n.Name
 		}
 		bad := ""
+		found := false
 		for key := range n.KwArgs {
-			if reserved(key) && (bad == "" || key < bad) {
+			if invalid(key) && (!found || key < bad) {
 				bad = key
+				found = true
 			}
 		}
-		if bad != "" {
+		if found {
 			return "kwArgs[" + strconv.Quote(bad) + "]", bad
 		}
 	case *Lambda:
 		for i, param := range n.Params {
-			if reserved(param) {
+			if invalid(param) {
 				return "params[" + strconv.Itoa(i) + "]", param
 			}
 		}
 	}
-	if reserved(name) {
+	if invalid(name) {
 		return field, name
 	}
 	return "", ""

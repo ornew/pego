@@ -13,6 +13,7 @@ This document describes the repository layout and architecture, how to run tests
 | `internal/lsp/` | Language Server Protocol server for `.pego` files (`pego lsp`): JSON-RPC over standard input and output, document sync, diagnostics, formatting, navigation, hover, rename, completion, semantic tokens |
 | `editors/vscode/` | VS Code extension (Node.js, not part of the Go module): language configuration, TextMate grammar (`syntaxes/pego.tmLanguage.json`) and a client that starts `pego lsp` |
 | `sample/` | Generation of inputs that a grammar accepts, coverage reports, near-miss invalid inputs and a fuzzing helper (`Generate`, `New`, `Seed`). Public package. |
+| `pego.pego` | Typed source grammar and recoverable syntax tree; the generated source-parser integration is [proposed](design/054-generated-grammar-source-parser.md). |
 | `internal/syntax/` | Lexer and parser for PEGO source code (source → `grammar.Grammar`) |
 | `internal/engine/` | Compiler, static analysis, parser runtime, action evaluation, bytecode VMs and Go and TypeScript code generation |
 | `internal/engine/genrt/` | Runtime code embedded in generated Go parsers |
@@ -98,7 +99,7 @@ The TypeScript generator's test needs Node.js 22.18 or later (`node`) and, for i
 
 `sample` tests generate inputs for every example grammar and every grammar of the engine's test corpus (`internal/engine/sample_test.go`, through `export_test.go`) and parse them on every backend.
 
-`spec/syntax_test.go` runs the grammar of the [syntax summary](../spec/syntax.md) on every `.pego` file and every `pego` code block of the repository and requires it to agree with the parser of `internal/syntax`.
+`spec/source_grammar_test.go` verifies the canonical source grammar against its displayed copy, checks concrete trees and recovery across backends, and builds a generated typed Go consumer. `spec/syntax_test.go` runs the grammar of [Grammer](../spec/syntax.md) on every `.pego` file and every `pego` code block of the repository and requires it to agree with the parser of `internal/syntax`.
 
 `cd site && go test ./...` builds the site and checks its pages and links; `go test ./playground` runs the WebAssembly smoke test when Node is installed.
 Production site builds retain the published current WASM/runtime pair alongside the new pair, using a bounded

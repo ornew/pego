@@ -137,7 +137,7 @@ v.I = 1;
 }
 
 func TestGeneratedTSTypedNameCollisions(t *testing.T) {
-	names := []string{"Actx", "ASTRecipe", "Bytes", "Error", "Map", "Match", "Node", "Parser", "OperatorsRuleLine", "R0", "R0_", "Rule", "Span", "ReadonlyMap", "R", "TypedValue", "Value", "Å名前"}
+	names := []string{"Actx", "ASTRecipe", "Bytes", "Error", "Map", "Match", "Node", "Parser", "OperatorsRuleLine", "R0", "R0_", "Rule", "Span", "ReadonlyMap", "R", "TypedValue", "Value"}
 	var src, imports, vals strings.Builder
 	for i, name := range names {
 		// Match and Error are reserved grammar types, so aliases test the other
@@ -146,10 +146,7 @@ func TestGeneratedTSTypedNameCollisions(t *testing.T) {
 			continue
 		}
 		fmt.Fprintf(&src, "type %s terminal\nrule n%d %s = \"x\"\n", name, i, name)
-		export := name
-		if name != "Å名前" {
-			export += "_"
-		}
+		export := name + "_"
 		if name == "R0_" {
 			export = "R0__"
 		}

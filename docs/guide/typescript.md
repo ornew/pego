@@ -283,7 +283,7 @@ new helpers `Span`, `Match`, `RecoveredError`, `TypedValue`, `TypedParseResult`.
 Collisions append underscores until the name is free: grammar `Parser` exports
 `Parser_`; `R0` and `R0_` can export `R0_` and `R0__`. Discriminators retain the
 original grammar name. Regeneration can therefore change a collision cascade
-and require consumer import/type spelling updates. Unicode spelling is retained.
+and require consumer import/type spelling updates. The original grammar spelling is retained.
 
 Conversion uses an explicit work stack and a per-call cache keyed by Node and
 canonical conversion representation. Deep fold/LR output does not add recursive

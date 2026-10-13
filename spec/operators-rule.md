@@ -55,7 +55,7 @@ rule ws = [ \t\r\n]*
 rule <name> [<type>] = operators {
     skip <parsing expression>
     operand <parsing expression> [=> <action>]
-    level <level name> {
+    level [<level name>] {
         prefix <operator part> [=> <action>]
         postfix <operator part> [=> <action>]
         infix (left | right | none) <operator part> [=> <action>]
@@ -116,8 +116,10 @@ the same level have the same precedence, and a level MAY mix prefix, infix and
 postfix operators. Every Operators Rule item, including each level declaration,
 uses the same hard-newline or semicolon statement boundary.
 
-A level name MUST be unique within the target rule. Named levels are used by
-[level-restricted calls](#level-restricted-calls).
+The level name is optional. When present, it MUST be unique within the target
+rule and may be used by [level-restricted calls](#level-restricted-calls).
+Unnamed levels are valid but cannot be selected by `level(rule, name)`; a
+level-restricted call must name an existing named level.
 
 ### Operators
 

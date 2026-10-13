@@ -1,0 +1,351 @@
+package spec_test
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/ornew/pego"
+)
+
+func sourceGrammar(t *testing.T) (*pego.Parser, string) {
+	t.Helper()
+	src, err := os.ReadFile("../pego.pego")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := pego.CompileSource(string(src), "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return p, string(src)
+}
+
+func sourceField(t *testing.T, n *pego.Node, name string) *pego.Node {
+	t.Helper()
+	if n == nil {
+		t.Fatalf("nil node for field %s", name)
+	}
+	child, ok := n.Field(name).(*pego.Node)
+	if !ok || child == nil {
+		t.Fatalf("%s.%s is %T, want node", n.Type(), name, n.Field(name))
+	}
+	return child
+}
+
+func sourceDefs(t *testing.T, n *pego.Node) []*pego.Node {
+	t.Helper()
+	if n == nil || n.Type() != "File" {
+		t.Fatalf("source root: %v", n)
+	}
+	return sourceField(t, n, "Defs").Children
+}
+
+func TestSourceGrammarMatchesDocumentation(t *testing.T) {
+	_, src := sourceGrammar(t)
+	doc, err := os.ReadFile("syntax.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	blocks := pegoCodeBlocks(string(doc))
+	if len(blocks) != 1 || blocks[0] != src {
+		t.Fatal("displayed grammar differs from pego.pego")
+	}
+}
+
+const sourceTreeFixture = `// leading one
+// leading two
+package sample
+/* type documentation /* nested */ continues */
+type Alias = (
+ []A | *B
+)
+rule main = x:"a" #atomic @custom(, true, message="expected a") => map(list($x), (item) => Item{Value: $item})
+rule grouped = ("a" => A{}) => ...
+rule expression = operators {
+ skip " "*
+ operand [0-9]+
+ level { infix left "+" => Bin{L: $lhs, R: $rhs} }
+ level named { postfix "!" }
+} => Result{}
+rule reserved = _helper
+// trailing
+`
+
+func TestSourceGrammarTree(t *testing.T) {
+	p, _ := sourceGrammar(t)
+	src := sourceTreeFixture
+	var want string
+	for _, unit := range []pego.Unit{pego.CodePoints, pego.Bytes} {
+		for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
+			n, err := p.Parse(src, pego.WithUnit(unit), pego.WithBackend(backend))
+			if err != nil {
+				t.Fatalf("%v/%v: %v", unit, backend, err)
+			}
+			b, err := json.Marshal(n)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if want == "" {
+				want = string(b)
+			} else if string(b) != want {
+				t.Fatalf("backend tree differs for %v/%v", unit, backend)
+			}
+			if n.Field("Text") != src {
+				t.Fatal("original source lost")
+			}
+			pkg := sourceField(t, n, "Package")
+			cs := sourceField(t, pkg, "Comments").Children
+			if len(cs) != 1 || len(sourceField(t, cs[0], "Lines").Children) != 2 {
+				t.Fatalf("line comment grouping lost: %v", cs)
+			}
+			defs := sourceDefs(t, n)
+			if len(defs) != 5 {
+				t.Fatalf("definitions: %d", len(defs))
+			}
+			typ := sourceField(t, sourceField(t, defs[0], "Spec"), "Type")
+			if typ.Type() != "TypeGroup" || sourceField(t, typ, "Type").Type() != "UnionType" {
+				t.Fatal("type grouping lost")
+			}
+			capture := sourceField(t, defs[1], "Expr")
+			if capture.Type() != "Capture" {
+				t.Fatalf("capture binding: %s", capture.Type())
+			}
+			attr := sourceField(t, capture, "Expr")
+			if attr.Type() != "Attributed" || sourceField(t, attr, "X").Type() != "Atomic" {
+				t.Fatal("postfix/capture precedence changed")
+			}
+			args := sourceField(t, sourceField(t, attr, "Attr"), "Args").Children
+			if len(args) != 2 || args[0] != nil || args[1].Type() != "True" {
+				t.Fatalf("positional slots: %v", args)
+			}
+			action := sourceField(t, defs[1], "Action")
+			if action.Type() != "Call" || sourceField(t, action, "Args").Children[1].Type() != "Lambda" {
+				t.Fatal("call/lambda structure lost")
+			}
+			group := sourceField(t, defs[2], "Expr")
+			if group.Type() != "RuleGroup" || sourceField(t, group, "Expr").Type() != "InlineAction" || sourceField(t, defs[2], "Action").Type() != "DefaultAction" {
+				t.Fatal("inline/default action structure lost")
+			}
+			ops := sourceField(t, defs[3], "Expr")
+			items := sourceField(t, ops, "Items").Children
+			if len(items) != 4 || items[2].Field("Name") != nil || sourceField(t, items[3], "Name").Text != "named" {
+				t.Fatal("optional level names lost")
+			}
+			if sourceField(t, defs[3], "Action").Type() != "Constructor" {
+				t.Fatal("whole Operators Rule action lost")
+			}
+			if sourceField(t, sourceField(t, defs[4], "Expr"), "Name").Text != "_helper" {
+				t.Fatal("reserved source name lost")
+			}
+			trailing := sourceField(t, n, "TrailingComments").Children
+			if len(trailing) != 1 || trailing[0] == nil {
+				t.Fatal("trailing comment lost")
+			}
+		}
+	}
+}
+
+func TestSourceGrammarRecovery(t *testing.T) {
+	p, _ := sourceGrammar(t)
+	for _, tc := range []struct {
+		name, src, message string
+		defs               int
+	}{
+		{"declaration", "rule broken =\nrule after = \"ok\"", "expected rule expression", 2},
+		{"header", "rule = \"bad\"; rule after = \"ok\"", "expected rule name", 2},
+		{"field", "type T struct {\n Broken\n Good Match\n}\nrule after = \"ok\"", "expected field type", 2},
+		{"operand", "rule expression = operators {\n operand\n operand \"ok\"\n level { infix left \"+\" }\n}\nrule after = \"ok\"", "expected operand expression", 2},
+		{"operator", "rule expression = operators {\n operand \"ok\"\n level {\n infix left\n postfix \"!\"\n }\n}\nrule after = \"ok\"", "expected infix expression", 2},
+		{"action", "rule predicate = {\n x :=\n true\n}\nrule after = \"ok\"", "expected assignment value", 2},
+		{"literal delimiter", "type T struct { Bad = \"}\", Good Match }\nrule after = \"ok\"", "expected field type", 2},
+		{"comment delimiter", "type T struct { Bad = /* } */ 1, Good Match }\nrule after = \"ok\"", "expected field type", 2},
+		{"action delimiter", "rule predicate = { bad = \"}\"; true }\nrule after = \"ok\"", "expected semicolon", 2},
+		{"broken multiline group", "rule broken = (\nrule after = \"ok\"\n)", "expected rule expression", 3},
+		{"end of file", "rule broken =", "expected rule expression", 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var want string
+			for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
+				n, err := p.Parse(tc.src, pego.WithBackend(backend))
+				var syntaxErrors pego.SyntaxErrors
+				wantErrors := 1
+				if tc.name == "broken multiline group" {
+					wantErrors = 2
+				}
+				if !errors.As(err, &syntaxErrors) || len(syntaxErrors) != wantErrors || !strings.Contains(err.Error(), tc.message) {
+					t.Fatalf("%v: diagnostics: %v", backend, err)
+				}
+				ds := sourceDefs(t, n)
+				if len(ds) != tc.defs {
+					t.Fatalf("%v: recovered definitions %d, want %d", backend, len(ds), tc.defs)
+				}
+				if tc.name == "broken multiline group" {
+					if ds[1].Type() != "RuleDef" || sourceField(t, ds[1], "Name").Text != "after" {
+						t.Fatal("recovery lost following rule inside broken group")
+					}
+				} else if tc.defs > 1 && sourceField(t, ds[len(ds)-1], "Name").Text != "after" {
+					t.Fatal("recovery lost subsequent declaration")
+				}
+				b, _ := json.Marshal(n)
+				if want == "" {
+					want = string(b)
+				} else if want != string(b) {
+					t.Fatalf("backend recovery differs for %v", backend)
+				}
+				if tc.name == "field" {
+					fs := sourceField(t, sourceField(t, ds[0], "Spec"), "Fields").Children
+					if len(fs) != 2 || fs[0].Type() != "Error" || sourceField(t, fs[1], "Name").Text != "Good" {
+						t.Fatalf("field recovery: %v", fs)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestSourceGrammarGeneratedGo(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds the generated source-parser consumer")
+	}
+	p, src := sourceGrammar(t)
+	g, err := pego.ParseGrammar(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	code, err := pego.GenerateGo(g, "sourceparser", "main", pego.WithTypes())
+	if err != nil {
+		t.Fatal(err)
+	}
+	type fixture struct {
+		Source string
+		Tree   json.RawMessage
+		Error  string
+		Defs   int
+	}
+	var fixtures []fixture
+	for _, input := range []string{
+		src, sourceTreeFixture,
+		`/* inside and 😀 */ rule main = (/* inside */ "//not a comment") => Node{Value: "/*not a comment*/"}`,
+		"type T struct { Bad = \"}\", Good Match }\nrule after = \"ok\"",
+		"rule broken =\nrule after = \"ok\"",
+		"package\nrule after = \"ok\"",
+	} {
+		n, parseErr := p.Parse(input)
+		if n == nil {
+			t.Fatalf("missing source tree: %v", parseErr)
+		}
+		b, err := json.Marshal(n)
+		if err != nil {
+			t.Fatal(err)
+		}
+		errorText := ""
+		if parseErr != nil {
+			errorText = parseErr.Error()
+		}
+		fixtures = append(fixtures, fixture{input, b, errorText, len(sourceDefs(t, n))})
+	}
+	dir := t.TempDir()
+	write := func(name string, b []byte) {
+		t.Helper()
+		if err := os.WriteFile(filepath.Join(dir, name), b, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("parser.go", code)
+	write("go.mod", []byte("module sourceparser\n\ngo 1.27.1\n"))
+	data, err := json.Marshal(fixtures)
+	if err != nil {
+		t.Fatal(err)
+	}
+	write("fixtures.json", data)
+	write("parser_test.go", []byte(`package sourceparser
+import("encoding/json";"os";"testing")
+func TestSource(t *testing.T){
+ var fixtures []struct{Source string;Tree json.RawMessage;Error string;Defs int}
+ data,err:=os.ReadFile("fixtures.json");if err!=nil{t.Fatal(err)}
+ if err=json.Unmarshal(data,&fixtures);err!=nil{t.Fatal(err)}
+ for i,f:=range fixtures{
+  n,e:=Parse(f.Source);gotErr:="";if e!=nil{gotErr=e.Error()}
+  if gotErr!=f.Error{t.Fatalf("fixture %d: error %q, want %q",i,gotErr,f.Error)}
+  b,err:=json.Marshal(n);if err!=nil{t.Fatal(err)}
+  if string(b)!=string(f.Tree){t.Fatalf("fixture %d: generated tree differs",i)}
+  ast,e:=ParseAST(f.Source);gotErr="";if e!=nil{gotErr=e.Error()}
+  if ast==nil||gotErr!=f.Error{t.Fatalf("fixture %d: typed parse: %v",i,e)}
+  if ast.Text!=f.Source||len(ast.Defs)!=f.Defs{t.Fatalf("fixture %d: typed fields lost",i)}
+  for _,c:=range ast.Comments{if c==nil{t.Fatalf("fixture %d: nil comment",i)}}
+ }
+}
+`))
+	goBin, err := exec.LookPath("go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command(goBin, "test", "-count=1", "-timeout=3m", "./...")
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "GOWORK=off")
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatal(fmt.Errorf("generated consumer: %w\n%s", err, output))
+	}
+}
+
+func TestSourceGrammarTrivia(t *testing.T) {
+	p, _ := sourceGrammar(t)
+	for _, src := range []string{
+		`rule main = (/* inside */ "//not comment") => Node{Text: "/*not comment*/"}`,
+		`rule main = { /* inside */ x:=1 }`,
+		"rule main = \"a\rb\"; rule class = [a\rb]",
+		`rule main = "x" # atomic # repeat(-0) @meta(- 1)`,
+		`rule main = "x" @name ("y")`,
+	} {
+		if _, err := pego.ParseGrammar(src); err != nil {
+			t.Fatalf("reference rejects %q: %v", src, err)
+		}
+		n, err := p.Parse(src)
+		if err != nil {
+			t.Fatalf("source rejects %q: %v", src, err)
+		}
+		comments := sourceField(t, n, "Comments").Children
+		if strings.Contains(src, "/* inside */") && (len(comments) != 1 || comments[0].Type() != "InlineComment") {
+			t.Fatalf("expression comment lost: %v", comments)
+		}
+		for _, c := range comments {
+			if c == nil {
+				t.Fatal("nil in []Comment")
+			}
+		}
+	}
+	for _, src := range []string{`rule main = "x" @ name`, `rule main = "x" @/* c */name`, `rule main = "x" #repeat(-1)`} {
+		if _, err := pego.ParseGrammar(src); err == nil {
+			t.Fatalf("reference accepted %q", src)
+		}
+		if _, err := p.Parse(src); err == nil {
+			t.Fatalf("source accepted %q", src)
+		}
+	}
+}
+
+func TestSourceGrammarPackageRecovery(t *testing.T) {
+	p, _ := sourceGrammar(t)
+	for _, src := range []string{"package\nrule after = \"ok\"", "// leading\npackage ; rule after = \"ok\""} {
+		for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
+			n, err := p.Parse(src, pego.WithBackend(backend))
+			var syntaxErrors pego.SyntaxErrors
+			if !errors.As(err, &syntaxErrors) || len(syntaxErrors) != 1 || !strings.Contains(err.Error(), "expected package name") {
+				t.Fatalf("%v: %v", backend, err)
+			}
+			if sourceField(t, n, "Package").Type() != "Error" {
+				t.Fatal("package error lost")
+			}
+			ds := sourceDefs(t, n)
+			if len(ds) != 1 || sourceField(t, ds[0], "Name").Text != "after" {
+				t.Fatal("package recovery lost next declaration")
+			}
+		}
+	}
+}

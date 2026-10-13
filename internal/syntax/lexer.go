@@ -130,8 +130,8 @@ func lex(src string, errs *errorList) []token {
 	}
 }
 
-func isIdentStart(r rune) bool { return r == '_' || unicode.IsLetter(r) }
-func isIdentPart(r rune) bool  { return r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r) }
+func isIdentStart(r rune) bool { return r == '_' || r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' }
+func isIdentPart(r rune) bool  { return isIdentStart(r) || r >= '0' && r <= '9' }
 
 func (l *lexer) next() token {
 	space, newline := l.skipSpace()

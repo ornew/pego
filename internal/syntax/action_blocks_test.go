@@ -74,6 +74,59 @@ func TestStatementNewlines(t *testing.T) {
 	}
 }
 
+func TestGroupedMultilineTypeExpressions(t *testing.T) {
+	for _, src := range []string{
+		"type Alias = A | B",
+		"type Alias = (\n A\n | B\n)",
+		"type Holder struct {\n Value (\n  A\n  | B\n )\n}",
+		"rule main (\n A\n | B\n) = \"x\"",
+	} {
+		g, err := Parse(src)
+		if err != nil {
+			t.Errorf("rejected type expression %q: %v", src, err)
+			continue
+		}
+		formatted := grammar.Format(g)
+		if _, err := Parse(formatted); err != nil {
+			t.Errorf("formatted type expression %q is invalid: %v", formatted, err)
+		}
+	}
+	for _, src := range []string{
+		"type Alias = A\n | B",
+		"type Holder struct {\n Value A\n | B\n}",
+		"rule main A\n | B = \"x\"",
+	} {
+		if _, err := Parse(src); err == nil {
+			t.Errorf("accepted ungrouped multiline type expression %q", src)
+		}
+	}
+}
+
+func TestUnnamedOperatorsLevels(t *testing.T) {
+	src := `rule main = level(expr, named)
+rule expr = operators {
+ operand "x"
+ level { infix left "+" }
+ level named { infix left "*" }
+ level { prefix "-" }
+}`
+	g, err := Parse(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := grammar.Validate(g); err != nil {
+		t.Fatal(err)
+	}
+	levels := g.Rules()[1].Expr.(*grammar.OperatorsRule).Levels
+	if len(levels) != 3 || levels[0].Name != "" || levels[1].Name != "named" || levels[2].Name != "" {
+		t.Fatalf("unexpected level names: %+v", levels)
+	}
+	formatted := grammar.Format(g)
+	if _, err := Parse(formatted); err != nil {
+		t.Fatalf("formatted levels are invalid: %v\n%s", err, formatted)
+	}
+}
+
 func TestContextualRuleIdentifiers(t *testing.T) {
 	for word := range keywords {
 		src := "rule " + word + " = \"x\"\nrule main = " + word

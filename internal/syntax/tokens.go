@@ -96,8 +96,9 @@ func ParsePartial(src string) (*grammar.Grammar, ErrorList) {
 // remain valid identifiers outside their keyword positions.
 func IsKeyword(name string) bool { return keywords[name] }
 
-// IsIdentifier reports whether s is an available identifier: a letter followed
-// by letters, digits and "_". Names beginning with "_" are reserved.
+// IsIdentifier reports whether s is an available ASCII identifier: an A-Z or
+// a-z letter followed by ASCII letters, digits and "_". Names beginning with
+// "_" are reserved.
 func IsIdentifier(s string) bool {
 	if s == "" || s[0] == '_' {
 		return false

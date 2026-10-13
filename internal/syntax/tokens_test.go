@@ -9,7 +9,7 @@ import (
 )
 
 func TestTokenize(t *testing.T) {
-	src := "// doc\nrule 名前 = \"a😀\" x:[a-z]* // end\n    => $x $1\n// last"
+	src := "// doc\nrule ab = \"a😀\" x:[a-z]* // end\n    => $x $1\n// last"
 	var got []string
 	for _, tok := range Tokenize(src) {
 		got = append(got, fmt.Sprintf("%d %q %d:%d-%d:%d", tok.Kind, tok.Text, tok.Pos.Line, tok.Pos.Col, tok.End.Line, tok.End.Col))
@@ -17,7 +17,7 @@ func TestTokenize(t *testing.T) {
 	want := []string{
 		`8 "// doc" 1:1-1:7`,
 		`1 "rule" 2:1-2:5`,
-		`1 "名前" 2:6-2:8`,
+		`1 "ab" 2:6-2:8`,
 		`7 "=" 2:9-2:10`,
 		`2 "a😀" 2:11-2:15`,
 		`1 "x" 2:16-2:17`,
@@ -70,7 +70,7 @@ func TestParsePartial(t *testing.T) {
 
 func TestIsIdentifier(t *testing.T) {
 	for s, want := range map[string]bool{
-		"a": true, "_x1": false, "名前": true, "Abc": true,
+		"a": true, "_x1": false, "名前": false, "Abc": true, "a_b2": true,
 		"": false, "1a": false, "a-b": false, "a b": false, "\xff": false, "$a": false,
 	} {
 		if got := IsIdentifier(s); got != want {
@@ -83,6 +83,35 @@ func TestIsIdentifier(t *testing.T) {
 		}
 		if _, err := Parse("rule " + word + ` = "x"`); err != nil {
 			t.Errorf("contextual keyword %q cannot be a rule name: %v", word, err)
+		}
+	}
+}
+
+func TestUnicodeIdentifiersAreRejected(t *testing.T) {
+	for _, src := range []string{
+		`package 名前; rule main = "x"`,
+		`rule 名前 = "x"`,
+		`type Café terminal`,
+		`type T struct { 名前 Match }`,
+		`rule main = 名前`,
+		`rule main = 名:"x"`,
+		`rule main = {名前 := 1}`,
+		`rule main = "x" @é`,
+		`rule main = "x" @error(méssage="x")`,
+		`rule main = level(expr, 名)`,
+		`rule main = "x" => foo(名前)`,
+	} {
+		if _, err := Parse(src); err == nil {
+			t.Errorf("accepted Unicode identifier in %q", src)
+		}
+	}
+	for _, src := range []string{
+		`rule main = "名前😀"`,
+		`rule main = [é-ê]`,
+		`rule main = "x" // 名前`,
+	} {
+		if _, err := Parse(src); err != nil {
+			t.Errorf("rejected Unicode source text %q: %v", src, err)
 		}
 	}
 }

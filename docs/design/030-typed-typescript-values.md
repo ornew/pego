@@ -41,6 +41,10 @@ tradeoffs are recorded below.
 - Keep the generated module dependency-free, ES2020-compatible, and usable by
   runtimes that erase TS syntax.
 
+The Unicode-name goal records the lexical contract at the time of this design.
+Grammar identifiers are now ASCII-only; Unicode input and string values remain
+supported.
+
 ## Non-Goals
 
 Scalar top-level rules remain rejected by the existing node-producing rule

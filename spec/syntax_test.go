@@ -117,6 +117,7 @@ func TestSyntaxSummaryRejects(t *testing.T) {
 		"capture with a space":        `rule a = x :b`,
 		"removed repetition spelling": `rule a = "a" {2,3}`,
 		"call of a level and group":   `rule a = b(c d)`,
+		"spaced attribute name":       `rule a = "a" @ name`,
 		"attribute and group":         `rule a = "a" @error(message=)`,
 		"unterminated string":         `rule a = "a`,
 		"unknown escape":              `rule a = "\x"`,
@@ -125,22 +126,32 @@ func TestSyntaxSummaryRejects(t *testing.T) {
 		"unterminated block comment":  `rule a = /* x "a"`,
 		"package last":                "rule a = \"a\"\npackage x",
 		"chained comparison":          `rule a = "a" => 1 < 2 < 3`,
+		"lambda as binary operand":    `rule a = "a" => 1 + (x) => x`,
+		"lambda as unary operand":     `rule a = "a" => -(x) => x`,
 		"missing action":              `rule a = "a" =>`,
+		"Unicode identifier":          `rule café = "a"`,
 	} {
 		if _, err := p.Parse(src, pego.RecognizeOnly()); err == nil {
 			t.Errorf("%s: %q is accepted", name, src)
 		}
 	}
 	for name, src := range map[string]string{
-		"level call":                `rule a = level(b, c)`,
-		"contextual word reference": `rule a = type`,
-		"class after a name":        `rule a = b [x]`,
-		"comment at the end":        `rule a = "a" // c`,
-		"definitions on one line":   `rule a = "a"; rule b = a`,
-		"attribute without args":    `rule a = "a" #stream`,
-		"stacked postfix operators": `rule a = "a"*?`,
-		"carriage return":           "rule a = \"a\" // c\rrule b = a",
+		"reserved name preserved":    `rule _a = "a"`,
+		"level call":                 `rule a = level(b, c)`,
+		"unnamed and named levels":   `rule a = operators { operand "x"; level { infix left "+" }; level named { infix left "*" } }`,
+		"multiline type union":       "type Alias = (\n A\n | B\n)",
+		"action operator precedence": `rule a = "x" => -1 + 2 * 3`,
+		"contextual word reference":  `rule a = type`,
+		"class after a name":         `rule a = b [x]`,
+		"comment at the end":         `rule a = "a" // c`,
+		"definitions on one line":    `rule a = "a"; rule b = a`,
+		"attribute without args":     `rule a = "a" #stream`,
+		"stacked postfix operators":  `rule a = "a"*?`,
+		"carriage return":            "rule a = \"a\" // c\rrule b = a",
 	} {
+		if _, err := pego.ParseGrammar(src); err != nil {
+			t.Errorf("%s: reference parser rejects %q: %v", name, src, err)
+		}
 		if _, err := p.Parse(src, pego.RecognizeOnly()); err != nil {
 			t.Errorf("%s: %q is rejected: %v", name, src, err)
 		}
