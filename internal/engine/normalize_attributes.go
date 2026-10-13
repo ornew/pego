@@ -9,74 +9,161 @@ import (
 // source AST. Attribute syntax remains generic; built-ins define their own
 // binding and lowerings before type checking and backend generation.
 func normalizeAttributes(g *grammar.Grammar) (*grammar.Grammar, error) {
-	n := &attributeNormalizer{}
-	copy := *g
-	copy.Statements = make([]grammar.Statement, len(g.Statements))
-	for i, statement := range g.Statements {
-		if rd, ok := statement.(*grammar.RuleDef); ok {
-			rule := *rd
-			rule.Expr = n.expr(rd.Expr)
-			rule.Type = grammaranalysis.UngroupType(rd.Type)
-			rule.Action = grammaranalysis.UngroupTerm(rd.Action)
-			copy.Statements[i] = &rule
-		} else if td, ok := statement.(*grammar.TypeDef); ok {
-			copy.Statements[i] = n.typeDef(td)
-		} else {
-			copy.Statements[i] = statement
-		}
-	}
+	return normalizeAttributesWithCopies(g, false)
+}
+
+// eager preserves the allocation-heavy normalization path for counterfactual
+// measurements. It affects compilation only, never generated parser execution.
+func normalizeAttributesWithCopies(g *grammar.Grammar, eager bool) (*grammar.Grammar, error) {
+	n := &attributeNormalizer{eager: eager}
+	statements, changed := normalizeItems(g.Statements, eager, n.statement)
 	if len(n.errors) != 0 {
 		return nil, n.errors
 	}
+	if !changed {
+		return g, nil
+	}
+	copy := *g
+	copy.Statements = statements
 	return &copy, nil
 }
 
-type attributeNormalizer struct{ errors ErrorList }
+type attributeNormalizer struct {
+	errors ErrorList
+	eager  bool
+}
+
+func (n *attributeNormalizer) statement(statement grammar.Statement) grammar.Statement {
+	switch rd := statement.(type) {
+	case *grammar.RuleDef:
+		expr := n.expr(rd.Expr)
+		typ := grammaranalysis.UngroupType(rd.Type)
+		action := grammaranalysis.UngroupTerm(rd.Action)
+		if !n.eager && expr == rd.Expr && typ == rd.Type && action == rd.Action {
+			return rd
+		}
+		rule := *rd
+		rule.Expr, rule.Type, rule.Action = expr, typ, action
+		return &rule
+	case *grammar.TypeDef:
+		return n.typeDef(rd)
+	default:
+		return statement
+	}
+}
+
+// Changed containers are copied before their first write. Nil input containers
+// still become nonnil empty slices, matching the executable AST representation.
+func normalizeItems[T comparable](items []T, eager bool, normalize func(T) T) ([]T, bool) {
+	var normalized []T
+	changed := eager || items == nil
+	if changed {
+		normalized = make([]T, len(items))
+		copy(normalized, items)
+	}
+	for i, item := range items {
+		child := normalize(item)
+		if child != item && !changed {
+			normalized = make([]T, len(items))
+			copy(normalized, items)
+			changed = true
+		}
+		if changed {
+			normalized[i] = child
+		}
+	}
+	if changed {
+		return normalized, true
+	}
+	return items, false
+}
 
 func (n *attributeNormalizer) error(a *grammar.Attribute, message string) {
 	n.errors = append(n.errors, &Error{Pos: a.Diagnostic(), Msg: annotationMarker(a) + a.Name + ": " + message})
 }
 
-func (n *attributeNormalizer) value(value any) any {
+func (n *attributeNormalizer) value(value any) (any, bool) {
 	if e, ok := value.(grammar.Expr); ok {
-		return n.expr(e)
+		child := n.expr(e)
+		return child, child != e
 	}
-	return value
+	// Extension values can be maps or slices; comparing arbitrary interface
+	// values would panic. Only expression arguments undergo normalization.
+	return value, false
 }
 
 func (n *attributeNormalizer) attribute(a *grammar.Attribute) *grammar.Attribute {
 	copy := *a
-	copy.Args = make([]any, len(a.Args))
-	for i, value := range a.Args {
-		copy.Args[i] = n.value(value)
+	changed := n.eager || a.Args == nil || (len(a.KeywordOrder) == 0 && a.KeywordOrder != nil)
+	argsCopied := n.eager || a.Args == nil
+	if argsCopied {
+		copy.Args = make([]any, len(a.Args))
 	}
-	if a.KwArgs != nil {
-		copy.KwArgs = make(map[string]any, len(a.KwArgs))
-		for name, value := range a.KwArgs {
-			copy.KwArgs[name] = n.value(value)
+	for i, value := range a.Args {
+		child, lowered := n.value(value)
+		if lowered && !argsCopied {
+			copy.Args = append([]any(nil), a.Args...)
+			argsCopied, changed = true, true
+		}
+		if argsCopied {
+			copy.Args[i] = child
 		}
 	}
-	copy.KeywordOrder = append([]string(nil), a.KeywordOrder...)
+	keywordsCopied := n.eager && a.KwArgs != nil
+	if keywordsCopied {
+		copy.KwArgs = make(map[string]any, len(a.KwArgs))
+	}
+	for name, value := range a.KwArgs {
+		child, lowered := n.value(value)
+		if lowered && !keywordsCopied {
+			copy.KwArgs = cloneAttributeKeywords(a.KwArgs)
+			keywordsCopied, changed = true, true
+		}
+		if keywordsCopied {
+			copy.KwArgs[name] = child
+		}
+	}
+	if len(a.KeywordOrder) == 0 {
+		copy.KeywordOrder = nil
+	} else if n.eager {
+		copy.KeywordOrder = append([]string(nil), a.KeywordOrder...)
+	}
+	if !changed {
+		return a
+	}
 	return &copy
 }
 
-func (n *attributeNormalizer) bind(a *grammar.Attribute, name string) {
+func cloneAttributeKeywords(values map[string]any) map[string]any {
+	copy := make(map[string]any, len(values))
+	for name, value := range values {
+		copy[name] = value
+	}
+	return copy
+}
+
+func (n *attributeNormalizer) bind(a *grammar.Attribute, name string) *grammar.Attribute {
 	if len(a.Args) == 0 {
-		return
+		return a
 	}
 	if len(a.Args) != 1 || a.Args[0] == nil {
 		n.error(a, "requires one nonempty positional argument")
-		return
+		return a
 	}
 	if _, exists := a.KwArgs[name]; exists {
 		n.error(a, "argument "+name+" is specified twice")
-		return
+		return a
 	}
-	if a.KwArgs == nil {
+	if !n.eager {
+		copy := *a
+		copy.KwArgs = cloneAttributeKeywords(a.KwArgs)
+		a = &copy
+	} else if a.KwArgs == nil {
 		a.KwArgs = map[string]any{}
 	}
 	a.KwArgs[name] = a.Args[0]
 	a.Args = nil
+	return a
 }
 
 func (n *attributeNormalizer) repeat(e grammar.Expr, a *grammar.Attribute) grammar.Expr {
@@ -129,54 +216,88 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 		if block, ok := term.(*grammar.Block); ok && len(block.Statements) == 1 {
 			term = block.Statements[0]
 		}
+		term = grammaranalysis.UngroupTerm(term)
+		if !n.eager && term == e.Term {
+			return e
+		}
 		copy := *e
-		copy.Term = grammaranalysis.UngroupTerm(term)
+		copy.Term = term
 		return &copy
 	case *grammar.Seq:
-		copy := *e
-		copy.Items = make([]grammar.Expr, len(e.Items))
-		for i, item := range e.Items {
-			copy.Items[i] = n.expr(item)
+		items, changed := normalizeItems(e.Items, n.eager, n.expr)
+		if !changed {
+			return e
 		}
+		copy := *e
+		copy.Items = items
 		return &copy
 	case *grammar.Choice:
-		copy := *e
-		copy.Alts = make([]grammar.Expr, len(e.Alts))
-		for i, item := range e.Alts {
-			copy.Alts[i] = n.expr(item)
+		items, changed := normalizeItems(e.Alts, n.eager, n.expr)
+		if !changed {
+			return e
 		}
+		copy := *e
+		copy.Alts = items
 		return &copy
 	case *grammar.Repeat:
+		child := n.expr(e.Expr)
+		if !n.eager && child == e.Expr {
+			return e
+		}
 		copy := *e
-		copy.Expr = n.expr(e.Expr)
+		copy.Expr = child
 		return &copy
 	case *grammar.Optional:
+		child := n.expr(e.Expr)
+		if !n.eager && child == e.Expr {
+			return e
+		}
 		copy := *e
-		copy.Expr = n.expr(e.Expr)
+		copy.Expr = child
 		return &copy
 	case *grammar.And:
+		child := n.expr(e.Expr)
+		if !n.eager && child == e.Expr {
+			return e
+		}
 		copy := *e
-		copy.Expr = n.expr(e.Expr)
+		copy.Expr = child
 		return &copy
 	case *grammar.Not:
+		child := n.expr(e.Expr)
+		if !n.eager && child == e.Expr {
+			return e
+		}
 		copy := *e
-		copy.Expr = n.expr(e.Expr)
+		copy.Expr = child
 		return &copy
 	case *grammar.Stream:
 		return n.wrap(n.expr(e.Expr), &grammar.Attribute{SourceInfo: grammar.SourceInfo{Pos: e.Diagnostic()}, Name: "stream", Pragma: true})
 	case *grammar.Recovery:
 		return n.wrap(n.expr(e.Expr), &grammar.Attribute{SourceInfo: grammar.SourceInfo{Pos: e.Diagnostic()}, Name: "recover", Pragma: true, KwArgs: map[string]any{"skip": n.expr(e.Skip)}})
 	case *grammar.Atomic:
+		child := n.expr(e.Expr)
+		if !n.eager && child == e.Expr {
+			return e
+		}
 		copy := *e
-		copy.Expr = n.expr(e.Expr)
+		copy.Expr = child
 		return &copy
 	case *grammar.Discard:
+		child := n.expr(e.Expr)
+		if !n.eager && child == e.Expr {
+			return e
+		}
 		copy := *e
-		copy.Expr = n.expr(e.Expr)
+		copy.Expr = child
 		return &copy
 	case *grammar.Capture:
+		child := n.expr(e.Expr)
+		if !n.eager && child == e.Expr {
+			return e
+		}
 		copy := *e
-		copy.Expr = n.expr(e.Expr)
+		copy.Expr = child
 		return &copy
 	case *grammar.Attributed:
 		inner := n.expr(e.Expr)
@@ -202,9 +323,9 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 				inner = &grammar.Atomic{SourceInfo: grammar.SourceInfo{Pos: a.Diagnostic()}, Expr: inner}
 				continue
 			case "error":
-				n.bind(a, "message")
+				a = n.bind(a, "message")
 			case "recover":
-				n.bind(a, "skip")
+				a = n.bind(a, "skip")
 			}
 			if old, ok := inner.(*grammar.Attributed); ok {
 				copy := *old
@@ -216,30 +337,47 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 		}
 		return inner
 	case *grammar.OperatorsRule:
+		skip := n.expr(e.Skip)
+		operands, operandsChanged := normalizeItems(e.Operands, n.eager, n.operand)
+		levels, levelsChanged := normalizeItems(e.Levels, n.eager, n.level)
+		if !n.eager && skip == e.Skip && !operandsChanged && !levelsChanged {
+			return e
+		}
 		copy := *e
-		copy.Skip = n.expr(e.Skip)
-		copy.Operands = make([]*grammar.OperatorsRuleOperand, len(e.Operands))
-		for i, o := range e.Operands {
-			operand := *o
-			operand.Expr = n.expr(o.Expr)
-			operand.Action = grammaranalysis.UngroupTerm(o.Action)
-			copy.Operands[i] = &operand
-		}
-		copy.Levels = make([]*grammar.OperatorsRuleLevel, len(e.Levels))
-		for i, l := range e.Levels {
-			level := *l
-			level.Operators = make([]*grammar.OperatorsRuleOperator, len(l.Operators))
-			for j, o := range l.Operators {
-				operator := *o
-				operator.Expr = n.expr(o.Expr)
-				operator.Action = grammaranalysis.UngroupTerm(o.Action)
-				level.Operators[j] = &operator
-			}
-			copy.Levels[i] = &level
-		}
+		copy.Skip, copy.Operands, copy.Levels = skip, operands, levels
 		return &copy
 	}
 	return expr
+}
+
+func (n *attributeNormalizer) operand(o *grammar.OperatorsRuleOperand) *grammar.OperatorsRuleOperand {
+	expr, action := n.expr(o.Expr), grammaranalysis.UngroupTerm(o.Action)
+	if !n.eager && expr == o.Expr && action == o.Action {
+		return o
+	}
+	copy := *o
+	copy.Expr, copy.Action = expr, action
+	return &copy
+}
+
+func (n *attributeNormalizer) level(l *grammar.OperatorsRuleLevel) *grammar.OperatorsRuleLevel {
+	operators, changed := normalizeItems(l.Operators, n.eager, n.operator)
+	if !changed {
+		return l
+	}
+	copy := *l
+	copy.Operators = operators
+	return &copy
+}
+
+func (n *attributeNormalizer) operator(o *grammar.OperatorsRuleOperator) *grammar.OperatorsRuleOperator {
+	expr, action := n.expr(o.Expr), grammaranalysis.UngroupTerm(o.Action)
+	if !n.eager && expr == o.Expr && action == o.Action {
+		return o
+	}
+	copy := *o
+	copy.Expr, copy.Action = expr, action
+	return &copy
 }
 
 func attributeMessage(a *grammar.Attribute) string {

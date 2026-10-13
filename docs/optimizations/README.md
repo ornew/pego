@@ -86,6 +86,7 @@ inventory of current mechanisms or reference controls.
 | [92](092-reuse-generated-node-capture-scratch.md#92-reuse-generated-node-capture-scratch) | Reuse generated Node capture scratch | – | – | – | ✓ | – | Generated plain-Go Node parsing and capture-dependent recognition; frames/slots use separate bounded scratch; XML GC-sensitive cost remains unresolved, and the field-layout control was inconclusive |
 | [62](062-comparing-short-literals-in-place-in-direct-rules.md#62-comparing-short-literals-in-place-in-direct-rules)| Short literals compared in place | – | – | – | Partial | ✓ | direct rules, up to 4 code points; generated value-free and supported Node rules since 76/77; CodePoints only, Bytes retains the literal matcher |
 | [094](094-generated-typed-output-liveness.md#094-generation-only-typed-output-liveness-cleanup) | Generation-only typed-output liveness cleanup | – | – | – | – | Partial | Private and default-off for generated Go typed results; measured small-input costs and no conversion-path retained-memory benefit leave adoption open; see [design 034](../design/034-typed-output-liveness.md) |
+| [095](095-attribute-copy-on-change.md#095-copy-on-change-attribute-normalization) | Copy-on-change attribute normalization | – | – | – | – | – | Applied in shared compilation/generation preprocessing only; no matching-path change; workload-specific allocation savings are measured |
 
 Not applied, and why:
 

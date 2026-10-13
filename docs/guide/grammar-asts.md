@@ -162,7 +162,11 @@ cyclic attribute maps and slices are outside the clone contract.
 `pego.ParseGrammar` returns the source AST with its source metadata. By
 contrast, `Parser.Grammar()` exposes the normalized grammar retained by the
 compiled parser. Normalization can lower groups and pragmas, so that grammar is
-not a complete record of source documentation ownership.
+not a complete record of source documentation ownership. It may be the same AST
+as the source or share unchanged nodes; it is not a detached deep copy.
+Normalization does not mutate the caller AST. Treat the source and normalized
+ASTs as immutable while a parser uses them; use `g.Clone()` for an independent
+editable copy.
 
 JSON stores normalized source ownership, not raw formatter trivia or layout.
 An AST decoded from JSON therefore cannot promise lossless source formatting.
@@ -174,7 +178,7 @@ AST codec does not serialize source positions or comments, so an AST-bearing
 compiled grammar preserves the executable tree but not source-documentation
 ownership. This behavior does not change the `.pegoc` format.
 
-Source-only syntax has dedicated AST nodes. An explicit PEG grouping is `Group{Expr}`; formatting and JSON preserve the group, while compilation normalizes it away before matching. The source-aware AST retains the group body, closing-delimiter comments and layout. Parenthesized type and action expressions likewise use source-only `TypeGroup{Type}` and `TermGroup{Term}` nodes; `TypeGroup` implements `TypeExpr`, while the `TermGroup.Term` field has type `Term` and `TermGroup` implements `Term`. These groups preserve their delimiters and enclosed comments in source formatting. Their `OpenBreak`, `BodyBreak`, `CloseBreak` and `OneLine` fields retain raw line placement; compilation and generators lower the wrappers transparently before execution. JSON retains normalized source positions and ownership but omits formatter layout and exact raw comment tokens. A braced action sequence is `Block{Statements}`. Predicate Actions with one statement continue to use the existing `Predicate.Term` node and retain their existing executable semantics. Empty or multi-statement Predicate Action blocks and all braced Value Actions can be parsed, formatted and serialized, but semantic checking rejects them as unsupported; their statements do not execute.
+Source-only syntax has dedicated AST nodes. An explicit Rule Expression grouping is `Group{Expr}`; formatting and JSON preserve the group, while compilation normalizes it away before matching. The source-aware AST retains the group body, closing-delimiter comments and layout. Parenthesized type and action expressions likewise use source-only `TypeGroup{Type}` and `TermGroup{Term}` nodes; `TypeGroup` implements `TypeExpr`, while the `TermGroup.Term` field has type `Term` and `TermGroup` implements `Term`. These groups preserve their delimiters and enclosed comments in source formatting. Their `OpenBreak`, `BodyBreak`, `CloseBreak` and `OneLine` fields retain raw line placement; compilation and generators lower the wrappers transparently before execution. JSON retains normalized source positions and ownership but omits formatter layout and exact raw comment tokens. A braced action sequence is `Block{Statements}`. Predicate Actions with one statement continue to use the existing `Predicate.Term` node and retain their existing executable semantics. Empty or multi-statement Predicate Action blocks and all braced Value Actions can be parsed, formatted and serialized, but semantic checking rejects them as unsupported; their statements do not execute.
 
 Source `#` pragmas use dedicated expression nodes: `#repeat` is `Repeat`,
 `#atomic` is `Atomic`, `#recover` is `Recovery`, and `#stream` is `Stream`.

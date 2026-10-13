@@ -53,6 +53,9 @@ type Options struct {
 	// noProjections compiles repetitions as written (project.go), for tests: with projections in
 	// every backend, only a program without them can check what they produce.
 	noProjections bool
+	// eagerAttributeCopies disables copy-on-change normalization for measurements.
+	// It affects compilation only; parser execution has no corresponding branch.
+	eagerAttributeCopies bool
 }
 
 // matcher tries to match at the current position and returns the value and whether it
@@ -283,7 +286,7 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 		return nil, unsupported
 	}
 	var normalizationError error
-	g, normalizationError = normalizeAttributes(g)
+	g, normalizationError = normalizeAttributesWithCopies(g, opts.eagerAttributeCopies)
 	if normalizationError != nil {
 		return nil, normalizationError
 	}
