@@ -38,6 +38,21 @@ Generated typed-output liveness cleanup is a private, default-off Go generation 
 
 **Grammar style.** The calculator workload takes 2.48× as long with left recursion as with Operators Rule parsing on the closure backend (2.04× generated, 1.62× typed). The generated Recovery workload takes about the same time as Minilang, but skips broken statements and therefore performs different matching work.
 
+**VM Parse Timing Recheck (2026-10-14).** Five alternating 1-second samples on Go 1.27.1 (Apple M3 Max, darwin/arm64, `GOMAXPROCS=16`, `GOGC=100`, `GOMEMLIMIT=off`) compared the historical grammar revisions `8177b32` and `296a2c1`. They are sibling commits with the same parent, so this ratio is not a chronological before/after. All eight VM medians were below parity, but paired ranges span 0.959–1.027; the earlier short-run slowdown was not reproduced. Allocation counts changed by at most one, with no broad memory change.
+
+| Input | VM | Unit | `8177b32 / 296a2c1` median (paired range) |
+|:--|:--|:--|--:|
+| JSON | Bytecode | Bytes | 0.980 (0.975–1.014) |
+| JSON | Bytecode | CodePoints | 0.976 (0.964–1.011) |
+| JSON | Iterative | Bytes | 0.982 (0.959–1.027) |
+| JSON | Iterative | CodePoints | 0.989 (0.981–0.991) |
+| Operators Rule arithmetic | Bytecode | Bytes | 0.979 (0.973–0.989) |
+| Operators Rule arithmetic | Bytecode | CodePoints | 0.982 (0.972–0.986) |
+| Operators Rule arithmetic | Iterative | Bytes | 0.990 (0.987–1.005) |
+| Operators Rule arithmetic | Iterative | CodePoints | 0.988 (0.961–0.992) |
+
+The run covered four parser backends—closure, recursive VM, iterative VM and generated Go—two grammars and both position units (240 serialized rows). JSON inputs were 262,220 bytes / 255,295 runes (SHA-256 `1f66b46fe4b8009e7932f4f309d073835969cb34002c95a5ab29225254f00ddb`); Operators Rule arithmetic was 133,457 bytes/runes (SHA-256 `cb5fe1452f3f605804e5b32e9f20e9a266aafd9472c6c25053b52bcd8a62f0be`). Closure and generated-Go controls were included; historical runtime sources and the generated-Go controls matched across the sibling revisions. The JSON source differed by two redundant groups; source parsing and compilation were outside the timed loop, but the compiled grammar may still affect parsing, so the comparison does not isolate a runtime cause. On the eight VM profiles, current main `a1acd16` medians versus `296a2c1` ranged 0.998–1.027; this cumulative comparison does not isolate a later change. No runtime change or default-policy conclusion follows from this verification.
+
 **Incremental parsing.** An edit and reparse of the 300-function Minilang document takes 143–162 µs across the three backends, compared with 13.1–22.4 ms for a full parse. For the 50,000-record CSV document, edit and reparse take 2.67–2.75 ms and allocate 2.71–2.74 MB/op.
 
 **Generated XML capture scratch.** An earlier focused comparison found slower
