@@ -147,6 +147,8 @@ zero values. Growing a chunk allocates a distinct zeroed array; it never copies,
 including values a failed or overwritten capture may still reference. Returned pointers can therefore still retain
 discarded siblings in the same array. Allocation granularity does not solve that separate retention problem.
 
+[Design 034](034-typed-output-liveness.md) evaluates generation-only cleanup of unreachable typed-output cells. Its full-sweep and bounded controls remain disabled by default; the current scope and tradeoffs are summarized in [optimization record 094](../optimizations/094-generated-typed-output-liveness.md).
+
 ### Cost
 
 In the earlier benchmark snapshot (Apple M3 Max, min of 6–8 runs), the typed runtime made `ParseAST` 35–55% faster than `Parse`

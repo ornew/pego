@@ -83,6 +83,12 @@ type GenOptions struct {
 	// disableSparseMemo keeps the dense first-call bitset for same-generator
 	// comparisons without a parser-time selector.
 	disableSparseMemo bool
+	// enableTypedOutputSweep selects a generation-only liveness prototype.
+	// Default output retains the original allocation and publication paths.
+	enableTypedOutputSweep bool
+	// enableBoundedTypedOutputSweep selects a separate generation-only control.
+	// It takes precedence when both private sweep controls are selected.
+	enableBoundedTypedOutputSweep bool
 }
 
 // Generate generates the source code of a Go parser for a grammar.
@@ -109,7 +115,7 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	if !token.IsIdentifier(opts.Package) || opts.Package == "_" {
 		return nil, fmt.Errorf("invalid package name %q", opts.Package)
 	}
-	gen := &generator{prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs}
+	gen := &generator{prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, enableTypedOutputSweep: opts.enableTypedOutputSweep, enableBoundedTypedOutputSweep: opts.enableBoundedTypedOutputSweep}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
 	var rec *Program
@@ -172,6 +178,12 @@ func ParseRule(name, input string, opts ...ParseOption) (*Node, error) {
 		}
 		// The typed runtime's imports (fmt and sync) join those of the runtime.
 		rt := typedSource[strings.Index(typedSource, "\n)\n")+len("\n)\n"):]
+		if opts.enableTypedOutputSweep || opts.enableBoundedTypedOutputSweep {
+			rt, err = typedOutputSweepRuntime(rt)
+			if err != nil {
+				return nil, err
+			}
+		}
 		if span != "Span" {
 			rt = regexp.MustCompile(`\bSpan\b`).ReplaceAllString(rt, span)
 		}
@@ -228,13 +240,15 @@ type generator struct {
 	disableLiteralSharing           bool
 	// Only exact emitted bodies with the same signature share a helper. Rule
 	// wrappers, memo IDs, frame layouts and expectation IDs remain in the code.
-	methodNames                map[generatedMethod]string
-	literalNames               map[string]string
-	methodKeys                 []generatedMethod
-	literalKeys                []string
-	disableLiteralTextDispatch bool
-	disableTypedObjectSlabs    bool
-	disableTypedListSlabs      bool
+	methodNames                   map[generatedMethod]string
+	literalNames                  map[string]string
+	methodKeys                    []generatedMethod
+	literalKeys                   []string
+	disableLiteralTextDispatch    bool
+	disableTypedObjectSlabs       bool
+	disableTypedListSlabs         bool
+	enableTypedOutputSweep        bool
+	enableBoundedTypedOutputSweep bool
 	// nodeScopes records the frame layouts shared by typed rule metadata.
 	nodeScopes           map[*rule][]string
 	typedSpan            string          // generated helper name, avoiding grammar type and field names

@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -11,13 +12,15 @@ import (
 )
 
 var typedAllocatorControls = []struct {
-	name           string
-	objects, lists bool
+	name                           string
+	objects, lists, sweep, bounded bool
 }{
-	{"slabs", false, false},
-	{"objects", true, false},
-	{"slices", false, true},
-	{"individual", true, true},
+	{"slabs", false, false, false, false},
+	{"objects", true, false, false, false},
+	{"slices", false, true, false, false},
+	{"individual", true, true, false, false},
+	{"sweep", false, false, true, false},
+	{"bounded", false, false, false, true},
 }
 
 // PEGO_TYPED_OUTPUT_RETENTION_DIR preserves the generated fixture for the
@@ -50,40 +53,46 @@ rule small Token = "b"
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, variant := range typedAllocatorControls {
-		t.Run(variant.name, func(t *testing.T) {
-			code, err := Generate(g, GenOptions{Package: "typedoutput", Start: "main", Types: true,
-				disableTypedObjectSlabs: variant.objects, disableTypedListSlabs: variant.lists})
-			if err != nil {
-				t.Fatal(err)
+	for _, conversion := range []bool{false, true} {
+		for _, variant := range typedAllocatorControls {
+			name := variant.name
+			if conversion {
+				name += "-conversion"
 			}
-			if strings.Contains(string(code), "disableTypedObjectSlabs") || strings.Contains(string(code), "disableTypedListSlabs") {
-				t.Fatal("generation-only allocator controls leaked into the parser")
-			}
-			dir := os.Getenv("PEGO_TYPED_OUTPUT_RETENTION_DIR")
-			if dir == "" {
-				dir = t.TempDir()
-			} else {
-				dir = filepath.Join(dir, variant.name)
-			}
-			if err := os.MkdirAll(dir, 0o755); err != nil {
-				t.Fatal(err)
-			}
-			for name, contents := range map[string][]byte{
-				"parser.go":                code,
-				"output_retention_test.go": []byte(typedOutputRetentionFixture),
-				"go.mod":                   []byte("module typedoutput\n\ngo 1.27.1\n"),
-			} {
-				if err := os.WriteFile(filepath.Join(dir, name), contents, 0o644); err != nil {
+			t.Run(name, func(t *testing.T) {
+				code, err := Generate(g, GenOptions{Package: "typedoutput", Start: "main", Types: true,
+					convertTypes: conversion, disableTypedObjectSlabs: variant.objects, disableTypedListSlabs: variant.lists, enableTypedOutputSweep: variant.sweep, enableBoundedTypedOutputSweep: variant.bounded})
+				if err != nil {
 					t.Fatal(err)
 				}
-			}
-			cmd := exec.Command("go", "test", "-count=1", "-run", "^TestTypedOutputOwnership$")
-			cmd.Dir = dir
-			if out, err := cmd.CombinedOutput(); err != nil {
-				t.Fatalf("generated typed output fixture: %v\n%s", err, out)
-			}
-		})
+				if strings.Contains(string(code), "disableTypedObjectSlabs") || strings.Contains(string(code), "disableTypedListSlabs") || strings.Contains(string(code), "enableTypedOutputSweep") || strings.Contains(string(code), "enableBoundedTypedOutputSweep") {
+					t.Fatal("generation-only allocator controls leaked into the parser")
+				}
+				dir := os.Getenv("PEGO_TYPED_OUTPUT_RETENTION_DIR")
+				if dir == "" {
+					dir = t.TempDir()
+				} else {
+					dir = filepath.Join(dir, name)
+				}
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				for name, contents := range map[string][]byte{
+					"parser.go":                code,
+					"output_retention_test.go": []byte(typedOutputRetentionFixture + "\nconst forceOutputConversion = " + strconv.FormatBool(conversion) + "\n"),
+					"go.mod":                   []byte("module typedoutput\n\ngo 1.27.1\n"),
+				} {
+					if err := os.WriteFile(filepath.Join(dir, name), contents, 0o644); err != nil {
+						t.Fatal(err)
+					}
+				}
+				cmd := exec.Command("go", "test", "-count=1", "-run", "^TestTypedOutputOwnership$")
+				cmd.Dir = dir
+				if out, err := cmd.CombinedOutput(); err != nil {
+					t.Fatalf("generated typed output fixture: %v\n%s", err, out)
+				}
+			})
+		}
 	}
 }
 
@@ -216,7 +225,9 @@ func TestTypedOutputOwnership(t *testing.T) {
 						t.Fatalf("match: %+v", v)
 					}
 				case *Pair:
-					if v.Left == nil || v.Left != v.Right {
+					// Conversion preserves field values but may materialize a
+					// shared CST node independently for each typed field.
+					if v.Left == nil || v.Right == nil || (!forceOutputConversion && v.Left != v.Right) {
 						t.Fatal("struct lost shared terminal identity")
 					}
 					if v.Start != 0 || v.End != unitStart(unit)+1 || v.Left.Start != unitStart(unit) || v.Left.End != unitStart(unit)+1 || v.Text != "b" {

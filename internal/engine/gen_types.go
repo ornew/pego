@@ -60,10 +60,10 @@ func (g *generator) typedGo(start *rule, conv bool) (string, string, error) {
 		fmt.Fprintf(&entries, `%s// It builds the values directly, without the nodes Parse returns.
 func ParseAST(input string, opts ...ParseOption) (%s, error) {
 	a := &tslabs{}
-	return tparse(trules[%d], input, opts, a, func(v any) %s { return %s })
+		return tparse(trules[%d], input, opts, a, func(v any) %s { return %s }%s)
 }
 
-`, doc, t.goType(st), start.id, t.goType(st), result)
+`, doc, t.goType(st), start.id, t.goType(st), result, t.outputPublication(st))
 	} else {
 		needNodes = true
 		result := t.conv(st, "n")
@@ -71,12 +71,16 @@ func ParseAST(input string, opts ...ParseOption) (%s, error) {
 		if strings.Contains(result, "a.") {
 			newConv = "\ta := &astConv{}\n"
 		}
+		returnResult := "\treturn " + result + ", err\n"
+		if (g.enableTypedOutputSweep || g.enableBoundedTypedOutputSweep) && newConv != "" {
+			returnResult = "\tres := " + result + "\n\ta.publish(res, err)\n\treturn res, err\n"
+		}
 		fmt.Fprintf(&entries, `%sfunc ParseAST(input string, opts ...ParseOption) (%s, error) {
 	n, err := Parse(input, opts...)
-%s	return %s, err
+%s%s
 }
 
-`, doc, t.goType(st), newConv, result)
+`, doc, t.goType(st), newConv, strings.TrimSuffix(returnResult, "\n"))
 	}
 	named.WriteString("// ParseRuleAST parses the whole input with the named rule and returns its typed value.\n")
 	named.WriteString("// Recovered values accompany SyntaxErrors. Nil results and failed parses return the selected type's zero value.\n// Invalid options and undefined names return nil with an error. Rule result types:\n")
@@ -96,7 +100,7 @@ func ParseAST(input string, opts ...ParseOption) (%s, error) {
 		if !conv && t.runtimeOK(x) {
 			needTyped = true
 			result := t.dconv(x, "v", "a")
-			fmt.Fprintf(&named, "\t\ta := &tslabs{}\n\t\treturn tparseResolved(trules[%d], input, o, a, func(v any) %s { return %s })\n", r.id, t.goType(x), result)
+			fmt.Fprintf(&named, "\t\ta := &tslabs{}\n\t\treturn tparseResolved(trules[%d], input, o, a, func(v any) %s { return %s }%s)\n", r.id, t.goType(x), result, t.outputPublication(x))
 		} else {
 			needNodes = true
 			result := t.conv(x, "n")
@@ -104,12 +108,24 @@ func ParseAST(input string, opts ...ParseOption) (%s, error) {
 			fmt.Fprintf(&named, "\t\tif n == nil {\n\t\t\tvar zero %s\n\t\t\treturn zero, err\n\t\t}\n", t.goType(x))
 			if strings.Contains(result, "a.") {
 				named.WriteString("\t\ta := &astConv{}\n")
+				if g.enableTypedOutputSweep || g.enableBoundedTypedOutputSweep {
+					fmt.Fprintf(&named, "\t\tres := %s\n\t\ta.publish(res, err)\n\t\treturn res, err\n", result)
+					continue
+				}
 			}
 			fmt.Fprintf(&named, "\t\treturn %s, err\n", result)
 		}
 	}
 	named.WriteString("\tdefault:\n\t\treturn nil, fmt.Errorf(\"rule %s is not defined\", name)\n\t}\n}\n")
-	b.WriteString(astHelpers)
+	helpers := astHelpers
+	if g.enableTypedOutputSweep || g.enableBoundedTypedOutputSweep {
+		var err error
+		helpers, err = typedOutputSweepHelpers(helpers)
+		if err != nil {
+			return "", "", err
+		}
+	}
+	b.WriteString(helpers)
 	if g.disableTypedObjectSlabs {
 		b.WriteString(astIndividualObjectHelper)
 	} else {
@@ -129,6 +145,11 @@ func ParseAST(input string, opts ...ParseOption) (%s, error) {
 	}
 	if needNodes {
 		t.converters(&b)
+	}
+	if g.enableBoundedTypedOutputSweep {
+		t.outputBoundedSweep(&b, needTyped, needNodes)
+	} else if g.enableTypedOutputSweep {
+		t.outputSweep(&b, needTyped, needNodes)
 	}
 	b.WriteString(entries.String())
 	b.WriteString(named.String())

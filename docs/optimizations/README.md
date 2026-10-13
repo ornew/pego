@@ -85,6 +85,7 @@ inventory of current mechanisms or reference controls.
 | [91](091-specialize-pure-literal-text-disjunctions.md#91-specialize-pure-literal-text-disjunctions)| Specialize pure literal-text disjunctions | – | – | – | ✓ | ✓ | generated Go Node/typed outputs and TypeScript; complete OR of at least two text comparisons against one direct capture and string literals; other predicate shapes retain general evaluation |
 | [92](092-reuse-generated-node-capture-scratch.md#92-reuse-generated-node-capture-scratch) | Reuse generated Node capture scratch | – | – | – | ✓ | – | Generated plain-Go Node parsing and capture-dependent recognition; frames/slots use separate bounded scratch; XML GC-sensitive cost remains unresolved, and the field-layout control was inconclusive |
 | [62](062-comparing-short-literals-in-place-in-direct-rules.md#62-comparing-short-literals-in-place-in-direct-rules)| Short literals compared in place | – | – | – | Partial | ✓ | direct rules, up to 4 code points; generated value-free and supported Node rules since 76/77; CodePoints only, Bytes retains the literal matcher |
+| [094](094-generated-typed-output-liveness.md#094-generation-only-typed-output-liveness-cleanup) | Generation-only typed-output liveness cleanup | – | – | – | – | Partial | Private and default-off for generated Go typed results; measured small-input costs and no conversion-path retained-memory benefit leave adoption open; see [design 034](../design/034-typed-output-liveness.md) |
 
 Not applied, and why:
 
@@ -152,7 +153,7 @@ Not applied, and why:
 - [048. A typed runtime for ParseAST](048-a-typed-runtime-for-parseast.md)
 - [049. First-character dispatch in generated choices](049-first-character-dispatch-in-generated-choices.md)
 - [050. First-character dispatch in the closure backend](050-first-character-dispatch-in-the-closure-backend.md)
-## Records 51–93
+## Records 51–94
 - [051. First-character dispatch in the VMs (instruction set 3)](051-first-character-dispatch-in-the-vms-instruction-set-3.md)
 - [052. Projected repetitions in generated `Parse`](052-projected-repetitions-in-generated-parse.md)
 - [053. Projected repetitions in the engine and the VMs](053-projected-repetitions-in-the-engine-and-the-vms.md)
@@ -196,6 +197,7 @@ Not applied, and why:
 - [091. Specialize pure literal-text disjunctions](091-specialize-pure-literal-text-disjunctions.md)
 - [092. Reuse generated Node capture scratch](092-reuse-generated-node-capture-scratch.md)
 - [093. Chunked input storage for Document edits](093-chunked-document-input.md)
+- [094. Generation-only typed-output liveness cleanup](094-generated-typed-output-liveness.md)
 
 ## Experiments That Did Not Pay Off
 
