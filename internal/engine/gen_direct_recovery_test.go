@@ -11,7 +11,7 @@ import (
 )
 
 var typedRecoveryCases = []genCase{
-	{"typed/recovery_capture_environment", `type Doc struct { Text *Match, N int }
+	{"typed/recovery_capture_environment", `type Doc struct { Text *Match; N int }
 rule main Doc = {n := 0} e:item $$ => $e
 rule item Doc = (
     v:(x:"é" #atomic {n := 1} "!") #recover(skip="é" {n := n + 2} "?")
@@ -20,7 +20,7 @@ rule item Doc = (
 	{"typed/recovery_zero_progress", `type Atom terminal
 rule main Atom = "ab" #recover(skip="x"?) $$
 `, []string{"ab", "x", "", "a", "y", "xx"}},
-	{"typed/recovery_failed_skip_rollback", `type Doc struct { Text Match, N int }
+	{"typed/recovery_failed_skip_rollback", `type Doc struct { Text Match; N int }
 rule main Doc = (
     {n := 0} x:("ab" #recover(skip={n := 8} "x" "!") / {n == 0} "x" "?") #atomic $$
 ) => Doc{Text: $x, N: n}
@@ -62,7 +62,7 @@ rule atom Atom = [a-z]+ ";"
 		`rule grp = "[" n:num "]" ";"`, `rule grp Group = "[" n:num "]" ";" => Group{Item: $n}`,
 	).Replace(typedGrammar), []string{"abc;", "1x;", "abc;1x;def;", "foo(1,bar)!;", "[1];", "", "("}},
 	{"typed/recovery_operatorsRule", `type Atom terminal
-type Post struct { X Expr, Text Match }
+type Post struct { X Expr; Text Match }
 type Expr = Atom | Post
 rule main Expr = e:expr $$ => $e
 rule expr Expr = operators {

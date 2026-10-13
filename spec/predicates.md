@@ -12,7 +12,7 @@ fails if the result is `false` or evaluation is an error, and otherwise
 succeeds. It may refer to variables and named captures visible at its
 position. Positional action references `$n` and `$0` are not available inside
 predicates. Square brackets remain character classes; braces are predicates
-only where a PEG primary expression is expected.
+only where a primary form of a Rule Expression is expected.
 
 ```pego
 // Match indentation deeper than the current level, then update it.

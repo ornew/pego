@@ -250,7 +250,7 @@ func TestRightRecursion(t *testing.T) {
 }
 
 func TestPositions(t *testing.T) {
-	const at = "type At struct { Pos int, Text Match }\n"
+	const at = "type At struct { Pos int; Text Match }\n"
 	runCases(t, []lintCase{
 		{name: "repeated", src: at + "rule main = num*\nrule num At = t:[0-9]+ #atomic => At{Pos: $t.startPos, Text: $t}",
 			want: []string{"3:46 hint positions"}, msg: "nor those of the 1 rule that calls it"},

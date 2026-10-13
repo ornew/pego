@@ -109,6 +109,14 @@ func ruleProjections(prog *Program, r *rule) map[string]string {
 			for _, f := range t.Fields {
 				use(f.Value, shadow)
 			}
+		case *grammar.ListConstructor:
+			for _, item := range t.Items {
+				use(item, shadow)
+			}
+		case *grammar.TerminalConstructor:
+			for _, arg := range t.Args {
+				use(arg, shadow)
+			}
 		case *grammar.Binary:
 			use(t.L, shadow)
 			use(t.R, shadow)
@@ -173,6 +181,14 @@ func markProjectedMaps(t grammar.Term, proj map[string]string, set map[*grammar.
 		case *grammar.New:
 			for _, f := range t.Fields {
 				walk(f.Value, shadow)
+			}
+		case *grammar.ListConstructor:
+			for _, item := range t.Items {
+				walk(item, shadow)
+			}
+		case *grammar.TerminalConstructor:
+			for _, arg := range t.Args {
+				walk(arg, shadow)
 			}
 		case *grammar.Binary:
 			walk(t.L, shadow)
@@ -287,7 +303,7 @@ func lineNonNil(prog *Program, e grammar.Expr, t grammar.Term, operator bool, se
 	switch t := t.(type) {
 	case nil:
 		return nonNil(prog, e, seen)
-	case *grammar.New:
+	case *grammar.New, *grammar.ListConstructor, *grammar.TerminalConstructor:
 		return true
 	case *grammar.CaptureRef:
 		if operator && (t.Name == "lhs" || t.Name == "rhs" || t.Name == "op") {

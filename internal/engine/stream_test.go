@@ -139,7 +139,7 @@ func TestParseStreamDiscardsInput(t *testing.T) {
 func TestParseStreamMemoryIsBounded(t *testing.T) {
 	grammars := map[string]string{
 		"records": records,
-		"action": `type Pair struct { Key Match, Value Match }
+		"action": `type Pair struct { Key Match; Value Match }
 rule main = item* #stream $$
 rule item Pair = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic "\n" => Pair{Key: $k, Value: $v}`,
 		"lines": `rule main = line* #stream $$
@@ -179,7 +179,7 @@ rule line = [a-z0-9=]+ #atomic "\n"`,
 // TestParseStreamTextOfDiscardedInput checks that text(...) of a node whose input has been
 // discarded by the stream returns what is still held instead of failing.
 func TestParseStreamTextOfDiscardedInput(t *testing.T) {
-	prog := compile(t, `type T struct { H string, N int }
+	prog := compile(t, `type T struct { H string; N int }
 rule main = h:("a" "b") rs:r* #stream "!" => T{H: text($h), N: len($rs)}
 rule r = "x" "y"`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {

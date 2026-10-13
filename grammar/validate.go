@@ -302,6 +302,15 @@ func Validate(g *Grammar) error {
 			for i := len(n.Fields) - 1; i >= 0; i-- {
 				push(n.Fields[i], "fields", i, false)
 			}
+		case *ListConstructor:
+			for i := len(n.Items) - 1; i >= 0; i-- {
+				push(n.Items[i], "items", i, false)
+			}
+			push(n.Elem, "elem", -1, false)
+		case *TerminalConstructor:
+			for i := len(n.Args) - 1; i >= 0; i-- {
+				push(n.Args[i], "args", i, false)
+			}
 		case *FieldInit:
 			push(n.Value, "value", -1, false)
 		case *Call:
@@ -377,6 +386,8 @@ func invalidIdentifier(node any) (field, name string) {
 	case *Member:
 		field, name = "name", n.Name
 	case *New:
+		field, name = "type", n.Type
+	case *TerminalConstructor:
 		field, name = "type", n.Type
 	case *FieldInit:
 		field, name = "name", n.Name

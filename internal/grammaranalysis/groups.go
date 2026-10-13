@@ -53,6 +53,23 @@ func UngroupTerm(t grammar.Term) grammar.Term {
 			v.X = child
 			return &v
 		}
+	case *grammar.ListConstructor:
+		elem, items := UngroupType(t.Elem), ungroupTerms(t.Items)
+		if elem != t.Elem || items != nil {
+			v := *t
+			v.Elem = elem
+			if items != nil {
+				v.Items = items
+			}
+			return &v
+		}
+	case *grammar.TerminalConstructor:
+		args := ungroupTerms(t.Args)
+		if args != nil {
+			v := *t
+			v.Args = args
+			return &v
+		}
 	case *grammar.New:
 		var fields []*grammar.FieldInit
 		for i, f := range t.Fields {

@@ -77,10 +77,10 @@ though that constant becomes a subtraction expression in the source AST.
 ## Print a Simplified Syntax View
 
 Use `grammar.FormatSyntax(g)` for documentation that shows the grammar's
-recognition syntax. It leaves the input AST unchanged and omits type
-declarations, result types, Value Actions, metadata attributes, captures and
-`#recover` wrappers. It removes PEG groups whose parentheses are not needed for
-precedence or layout, while retaining parentheses required to express grouping
+recognition syntax. It leaves the input AST unchanged and omits Type Definition
+Statements, result types, Value Actions, metadata attributes, captures and
+`#recover` wrappers. It removes Rule Expression groups whose parentheses are not
+needed for precedence or layout, while retaining parentheses required to express grouping
 or multiline layout. Predicate Actions and recognition-relevant pragmas,
 including `#repeat`, `#atomic` and `#stream`, remain. Predicates that refer to
 captures or values/types produced by omitted syntax may not work in the

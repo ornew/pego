@@ -4,12 +4,12 @@ package mini
 type Program struct { Body []Stmt }
 
 // --- Statements ---
-type Let struct { Name Ident, Value Expr }
-type Assign struct { Target Expr, Value Expr }
-type If struct { Cond Expr, Then Block, Else *(If | Block) }
-type While struct { Cond Expr, Body Block }
+type Let struct { Name Ident; Value Expr }
+type Assign struct { Target Expr; Value Expr }
+type If struct { Cond Expr; Then Block; Else *(If | Block) }
+type While struct { Cond Expr; Body Block }
 type Return struct { Value *Expr }
-type Func struct { Name Ident, Params []Ident, Body Block }
+type Func struct { Name Ident; Params []Ident; Body Block }
 type ExprStmt struct { X Expr }
 type Block struct { Body []Stmt }
 type Stmt = Let | Assign | If | While | Return | Func | ExprStmt | Block
@@ -19,12 +19,12 @@ type Ident terminal
 type Number terminal
 type String terminal
 type Bool terminal
-type Binary struct { Left Expr, Op Match, Right Expr }
-type Unary struct { Op Match, X Expr }
-type Call struct { Fn Expr, Args []Expr }
-type Index struct { X Expr, Index Expr }
-type Member struct { X Expr, Name Ident }
-type Cond struct { Cond Expr, Then Expr, Else Expr }
+type Binary struct { Left Expr; Op Match; Right Expr }
+type Unary struct { Op Match; X Expr }
+type Call struct { Fn Expr; Args []Expr }
+type Index struct { X Expr; Index Expr }
+type Member struct { X Expr; Name Ident }
+type Cond struct { Cond Expr; Then Expr; Else Expr }
 type ArrayLit struct { Elems []Expr }
 type Expr = Ident | Number | String | Bool | Binary | Unary | Call | Index | Member | Cond | ArrayLit
 

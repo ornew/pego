@@ -27,7 +27,7 @@ func TestGeneratedTypedOutputRetentionFixture(t *testing.T) {
 		t.Skip("builds generated code")
 	}
 	g, err := syntax.Parse(`type Token terminal
-type Pair struct { Text string, Left Token, Right Token }
+type Pair struct { Text string; Left Token; Right Token }
 type Values struct { Items []Token }
 type LargeValues struct { Items []Pair }
 type SmallValues struct { Items []Pair }

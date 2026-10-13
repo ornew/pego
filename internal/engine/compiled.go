@@ -32,8 +32,9 @@ const (
 	compiledVersion = 2
 	// isaVersion is the latest supported instruction set. Files of earlier versions load:
 	// version 2 only adds instructions (ETEXTCHK, ETEXTEQ, ELISTBEGIN, ELISTPUSH, EMAPPUSH,
-	// ELISTEND), version 3 GUARD and NEXT with f 3, and version 4 wide repetition bounds.
-	isaVersion = 4
+	// ELISTEND), version 3 GUARD and NEXT with f 3, version 4 wide repetition bounds,
+	// and version 5 ETERMINAL for terminals with supplied text.
+	isaVersion = 5
 	maxDepth   = 10000
 )
 
@@ -86,6 +87,8 @@ const (
 	tBinary
 	tUnary
 	tAssign
+	tListConstructor
+	tTerminalConstructor
 )
 
 // Type and statement kinds
@@ -433,6 +436,14 @@ func (w *encoder) term(t grammar.Term) {
 		w.byte(tCall)
 		w.str(t.Func)
 		w.terms(t.Args)
+	case *grammar.ListConstructor:
+		w.byte(tListConstructor)
+		w.typeExpr(t.Elem)
+		w.terms(t.Items)
+	case *grammar.TerminalConstructor:
+		w.byte(tTerminalConstructor)
+		w.str(t.Type)
+		w.terms(t.Args)
 	case *grammar.Lambda:
 		w.byte(tLambda)
 		w.uint(len(t.Params))
@@ -608,6 +619,9 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	}
 	if isa < 4 && m.instructionSetVersion() == 4 {
 		return nil, "", errors.New("invalid compiled grammar: wide repetition bounds require instruction set version 4")
+	}
+	if isa < 5 && m.instructionSetVersion() == 5 {
+		return nil, "", errors.New("invalid compiled grammar: terminal construction requires instruction set version 5")
 	}
 	if prog == nil {
 		prog = moduleProgram(m)
@@ -884,6 +898,10 @@ func (r *decoder) term() grammar.Term {
 		return n
 	case tCall:
 		return &grammar.Call{Func: r.str(), Args: r.terms()}
+	case tListConstructor:
+		return &grammar.ListConstructor{Elem: r.typeExpr(), Items: r.terms()}
+	case tTerminalConstructor:
+		return &grammar.TerminalConstructor{Type: r.str(), Args: r.terms()}
 	case tLambda:
 		l := &grammar.Lambda{}
 		m := r.count()

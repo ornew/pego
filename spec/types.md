@@ -25,7 +25,7 @@ The value of a rule, and the result of an action, MUST be a node (or `nil`);
 `int`, `string` and `bool` values occur in action expressions, in struct fields
 and in [variables](predicates.md#variables).
 
-A type expression is written with the following syntax. `[]` and `*` apply to
+A Type Expression is written with the following syntax. `[]` and `*` apply to
 the type that follows, `|` forms a union (see below) and parentheses group.
 
 ```pego
@@ -43,17 +43,17 @@ type LongUnion = (
 )
 ```
 
-Parentheses group a type expression and allow it to continue across physical
+Parentheses group a Type Expression and allow it to continue across physical
 newlines. The source AST retains an explicit parenthesized type as a source-only
 `TypeGroup` node implementing `TypeExpr`; compilation and generation lower the
 wrapper transparently, so grouping does not change type meaning. See
 [Parenthesized Groups in the Public AST](grammar-files.md#parenthesized-groups-in-the-public-ast)
 for source metadata, JSON and formatter behavior. Outside such a
-group, a type expression follows the normal hard newline statement boundary.
+group, a Type Expression follows the normal hard newline Definition Statement boundary.
 
 ### Reserved Node Types
 
-The node types that parsing expressions produce are predefined and can be used
+The node types that Rule Expressions produce are predefined and can be used
 as types.
 
 | Type | Values |
@@ -81,17 +81,26 @@ The `type` keyword defines a type.
 ### Struct Types
 
 A struct type is a node type with named fields. Fields are separated by newlines
-or commas. Field names MUST be unique within a struct.
+or semicolons. Field names MUST be unique within a struct. Constructor fields
+and function arguments remain comma-separated.
 
 ```pego
 type MyNode struct {
     Field1 SomeType
     Field2 AnotherType
 }
-type Pair struct { Key Match, Value Match }
+type Pair struct { Key Match; Value Match }
 ```
 
 A node of a struct type is created with a constructor such as `T{Field: value}` in an [action](actions.md#values-and-constructors).
+
+`[]T{value, ...}` constructs a node list with explicit element Type `T`,
+including an empty list. Every element must have a known static type assignable
+to `T`; `nil` requires an optional element type, and nested lists are checked
+recursively. Primitive-valued list construction is unsupported. A declared
+terminal or its alias can be constructed as `T{stringValue}`. The single string
+becomes its text without being parsed again. Constructor fields and arguments
+use commas.
 
 ### Type Aliases and Union Types
 

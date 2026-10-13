@@ -459,8 +459,8 @@ func TestCompletion(t *testing.T) {
 	// Each line is a context; the cursor is at the end of the line unless noted.
 	lines := []string{
 		"type Num terminal",                                // 0
-		"type P struct { A Num, B Num }",                   // 1
-		"type Q struct { A Num, ",                          // 2: a field name
+		"type P struct { A Num; B Num }",                   // 1
+		"type Q struct { A Num; ",                          // 2: a field name
 		"type R struct { A Nu",                             // 3: a field type
 		"rule num ",                                        // 4: the type of a rule
 		"rule a = n ",                                      // 5: a rule name

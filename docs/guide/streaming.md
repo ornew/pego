@@ -44,7 +44,7 @@ function one element at a time, and forgotten.
 ```pego
 package kv
 
-type Pair struct { Key Key, Value Value }
+type Pair struct { Key Key; Value Value }
 type Key terminal
 type Value terminal
 

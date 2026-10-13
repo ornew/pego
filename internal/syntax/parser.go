@@ -391,8 +391,8 @@ func (p *parser) typeDef() (sourceResult *grammar.TypeDef) {
 			p.source(field, fieldStart)
 			st.Fields = append(st.Fields, field)
 			restore()
-			if !p.accept(",") && !p.is("}") && !p.tok().lineBefore {
-				p.errorf("expected a comma or newline between struct fields")
+			if !p.accept(";") && !p.is("}") && !p.tok().lineBefore {
+				p.errorf("expected a semicolon or newline between struct fields")
 				panic(bail{})
 			}
 			p.sourceTrailing(field.Source())
@@ -1382,6 +1382,13 @@ func (p *parser) termPrimary() (sourceResult grammar.Term) {
 		}
 		return &grammar.VarRef{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Name: t.text}
 	case tPunct:
+		if t.text == "[]" {
+			p.next()
+			n := &grammar.ListConstructor{Elem: p.typeTerm()}
+			p.expect("{")
+			n.Items = p.constructorArgs()
+			return n
+		}
 		if t.text == "(" {
 			open := p.i
 			p.next()
@@ -1410,8 +1417,11 @@ func (p *parser) newTerm() (sourceResult grammar.Term) {
 	}()
 
 	nameToken := p.ident()
-	n := &grammar.New{SourceInfo: grammar.SourceInfo{Pos: nameToken.pos}, Type: nameToken.text}
 	p.expect("{")
+	if !p.is("}") && !(p.tok().kind == tIdent && p.peek(1).text == ":") {
+		return &grammar.TerminalConstructor{SourceInfo: grammar.SourceInfo{Pos: nameToken.pos}, Type: nameToken.text, Args: p.constructorArgs()}
+	}
+	n := &grammar.New{SourceInfo: grammar.SourceInfo{Pos: nameToken.pos}, Type: nameToken.text}
 	for !p.accept("}") {
 		fieldStart := p.i
 		name := p.ident()
@@ -1425,4 +1435,16 @@ func (p *parser) newTerm() (sourceResult grammar.Term) {
 		p.sourceTrailing(field.Source())
 	}
 	return n
+}
+
+// constructorArgs reads positional expressions through the closing brace.
+func (p *parser) constructorArgs() []grammar.Term {
+	args := []grammar.Term{}
+	for !p.accept("}") {
+		args = append(args, p.term())
+		if !p.is("}") {
+			p.expect(",")
+		}
+	}
+	return args
 }

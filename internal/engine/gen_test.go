@@ -106,14 +106,14 @@ rule name = [a-z]+ #atomic [0-9]*`, []string{"let 1;", "let a", "let ab1;"}},
 rule a = b "x" / "y"
 rule b = a "z" / c
 rule c = a "w" / "v"`, []string{"y", "vx", "yzxwx", "yz"}},
-		{"fold and lists", `type Op struct { Left Node, Op Match, Right Node }
+		{"fold and lists", `type Op struct { Left Node; Op Match; Right Node }
 type Node = Op | Match
-type Args struct { Items []Match, N int, S string, B bool }
+type Args struct { Items []Match; N int; S string; B bool }
 rule main = e:expr ";" a:args => Args{Items: concat($a.Items, $a.Items), N: len($a.Items) * 2 - 1, S: text($e) + "!", B: !($a.N == 0) || false}
 rule expr Node = l:num rest:(op:("+" / "-") #atomic r:num)* => foldl($l, $rest, (acc, i) => Op{Left: $acc, Op: $i.op, Right: $i.r})
 rule args Args = first:num rest:(-"," x:num)* => Args{Items: concat(list($first), map($rest, (r) => $r.x)), N: len($rest)}
 rule num = [0-9]+ #atomic`, []string{"1+2-3;4,5,6", "1;2", "1-;2"}},
-		{"projected and indexed repetition", `type L struct { Items []Match, Rest node, N int }
+		{"projected and indexed repetition", `type L struct { Items []Match; Rest node; N int }
 rule main = first:x rest:(-"," r:x)* => L{Items: concat(list($first), map($rest, (e) => $e.r)), Rest: $2, N: len($rest)}
 rule x = [a-z]+ #atomic`, []string{"a,b,c", "a", "a,"}},
 		{"runtime error", `type A struct { N int }
@@ -186,7 +186,7 @@ rule e = operators {
 		}
 		cases = append(cases, c)
 	}
-	return cases
+	return append(constructorCases(), cases...)
 }
 
 func resultJSON(n *Node, err error) string {
@@ -396,7 +396,7 @@ func mutants(inputs []string, n int, seed uint64) []string {
 const typedGrammar = `type Name terminal
 type Num terminal
 type Node = Call | Name | Num | Seq
-type Call struct { Fn Name, Args []Node, Span Match, N int, Opt *Match, Rows [][]Num, Ok bool }
+type Call struct { Fn Name; Args []Node; Span Match; N int; Opt *Match; Rows [][]Num; Ok bool }
 rule main []Node = xs:item* $$ => concat(map($xs, (x) => $x))
 rule item Node = (call / name / num / grp) #recover(skip=[^;]+ ";")
 rule call Call = f:name "(" a:args? ")" s:"!"? #atomic o:"?"? ";" => Call{Fn: $f, Args: concat($a), Span: $s, N: len($a), Opt: $o, Rows: list(list()), Ok: true}
@@ -433,7 +433,7 @@ rule n = "(" n ")" / "x"`, []string{strings.Repeat("(", DefaultMaxDepth-2) + "x"
 	testGeneratedTypesCorpus(t, goBin, cases, GenOptions{convertTypes: true})
 }
 
-func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, reference GenOptions) {
+func testGeneratedTypesCorpus(t *testing.T, goBin string, cases []genCase, reference GenOptions, requiredTyped ...int) {
 	t.Helper()
 	dir := t.TempDir()
 	write := func(name, content string) {
@@ -569,7 +569,11 @@ func main() {
 	if stderr.Len() > 0 {
 		t.Errorf("the typed runtime differs from the reference route:\n%s", stderr.String())
 	}
-	if typedRuntime < 5 {
+	minimum := 5
+	if len(requiredTyped) != 0 {
+		minimum = requiredTyped[0]
+	}
+	if typedRuntime < minimum {
 		t.Errorf("only %d of %d grammars use the typed runtime", typedRuntime, len(cases))
 	}
 	t.Logf("%d of %d grammars use the typed runtime", typedRuntime, len(cases))

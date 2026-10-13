@@ -105,7 +105,7 @@ type StructSpec struct {
 	SourceInfo `json:"source,omitempty"`
 	Fields     []*Field `json:"fields"`
 
-	// OneLine writes the struct on one line ("struct { A T, B U }").
+	// OneLine writes the struct on one line ("struct { A T; B U }").
 	OneLine bool `json:"-"`
 	// CloseBreak holds the comments before the closing brace.
 	CloseBreak *LineBreak `json:"-"`
@@ -599,6 +599,21 @@ type New struct {
 	Fields     []*FieldInit `json:"fields,omitempty"`
 }
 
+// ListConstructor builds a node list with an explicit element type: []T{...}.
+type ListConstructor struct {
+	SourceInfo `json:"source,omitempty"`
+	Elem       TypeExpr `json:"elem"`
+	Items      []Term   `json:"items"`
+}
+
+// TerminalConstructor builds a declared terminal from a positional string:
+// T{"text"}. Compilation requires exactly one string-valued argument.
+type TerminalConstructor struct {
+	SourceInfo `json:"source,omitempty"`
+	Type       string `json:"type"`
+	Args       []Term `json:"args"`
+}
+
 // FieldInit initializes a field of a struct value.
 type FieldInit struct {
 	SourceInfo `json:"source,omitempty"`
@@ -655,17 +670,19 @@ type Block struct {
 
 func (*Block) term() {}
 
-func (*IntLit) term()     {}
-func (*StringLit) term()  {}
-func (*BoolLit) term()    {}
-func (*NilLit) term()     {}
-func (*CaptureRef) term() {}
-func (*IndexRef) term()   {}
-func (*VarRef) term()     {}
-func (*Member) term()     {}
-func (*New) term()        {}
-func (*Call) term()       {}
-func (*Lambda) term()     {}
-func (*Binary) term()     {}
-func (*Unary) term()      {}
-func (*Assign) term()     {}
+func (*IntLit) term()              {}
+func (*StringLit) term()           {}
+func (*BoolLit) term()             {}
+func (*NilLit) term()              {}
+func (*CaptureRef) term()          {}
+func (*IndexRef) term()            {}
+func (*VarRef) term()              {}
+func (*Member) term()              {}
+func (*New) term()                 {}
+func (*ListConstructor) term()     {}
+func (*TerminalConstructor) term() {}
+func (*Call) term()                {}
+func (*Lambda) term()              {}
+func (*Binary) term()              {}
+func (*Unary) term()               {}
+func (*Assign) term()              {}

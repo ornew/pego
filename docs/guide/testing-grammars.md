@@ -34,7 +34,7 @@ The examples use `pairs.pego` of the [runtime guide](runtime.md), which reads `k
 semicolons and whitespace:
 
 ```pego
-type Pair struct { Key Match, Value Match }
+type Pair struct { Key Match; Value Match }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
@@ -401,8 +401,8 @@ $ pego sample -g pairs.pego -n 2 -seed 1 -invalid
 ```
 
 The first command prints inputs the grammar accepts and the coverage on the last line; the second, with `-invalid`,
-prints near misses. (Alternatives count only choices and Operators Rule declarations; `pairs.pego` has none, so the report counts
-rules.)
+prints near misses. The example grammar has no ordered choices or operator parts
+declared in Operators Rules, so the report counts rules only.
 
 ## Fuzzing
 

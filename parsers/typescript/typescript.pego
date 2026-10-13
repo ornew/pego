@@ -85,7 +85,7 @@ type JSDocAllType terminal
 type JSDocUnknownType terminal
 
 // --- Names ---
-type QualifiedName struct { Left EntityName, Right Identifier }
+type QualifiedName struct { Left EntityName; Right Identifier }
 type ComputedPropertyName struct { Expression Expression }
 
 // --- Signature elements ---
@@ -122,9 +122,9 @@ type MethodSignature struct {
     Parameters     []Parameter
     Type           *TypeNode
 }
-type CallSignature struct { TypeParameters []TypeParameter, Parameters []Parameter, Type *TypeNode }
-type ConstructSignature struct { TypeParameters []TypeParameter, Parameters []Parameter, Type *TypeNode }
-type IndexSignature struct { Modifiers []ModifierLike, Parameters []Parameter, Type *TypeNode }
+type CallSignature struct { TypeParameters []TypeParameter; Parameters []Parameter; Type *TypeNode }
+type ConstructSignature struct { TypeParameters []TypeParameter; Parameters []Parameter; Type *TypeNode }
+type IndexSignature struct { Modifiers []ModifierLike; Parameters []Parameter; Type *TypeNode }
 
 // --- Class members ---
 type PropertyDeclaration struct {
@@ -146,7 +146,7 @@ type MethodDeclaration struct {
     Type             *TypeNode
     Body             *Block
 }
-type ClassStaticBlockDeclaration struct { Modifiers []ModifierLike, Body Block }
+type ClassStaticBlockDeclaration struct { Modifiers []ModifierLike; Body Block }
 type Constructor struct {
     Modifiers      []ModifierLike
     TypeParameters []TypeParameter
@@ -172,16 +172,16 @@ type SetAccessor struct {
 }
 
 // --- Types ---
-type TypePredicate struct { AssertsModifier *Token, ParameterName TypePredicateParameterName, Type *TypeNode }
-type TypeReference struct { TypeName EntityName, TypeArguments []TypeNode }
-type FunctionType struct { TypeParameters []TypeParameter, Parameters []Parameter, Type TypeNode }
+type TypePredicate struct { AssertsModifier *Token; ParameterName TypePredicateParameterName; Type *TypeNode }
+type TypeReference struct { TypeName EntityName; TypeArguments []TypeNode }
+type FunctionType struct { TypeParameters []TypeParameter; Parameters []Parameter; Type TypeNode }
 type ConstructorType struct {
     Modifiers      []ModifierLike
     TypeParameters []TypeParameter
     Parameters     []Parameter
     Type           TypeNode
 }
-type TypeQuery struct { ExprName EntityName, TypeArguments []TypeNode }
+type TypeQuery struct { ExprName EntityName; TypeArguments []TypeNode }
 type TypeLiteral struct { Members []TypeElement }
 type ArrayType struct { ElementType TypeNode }
 type TupleType struct { Elements []TypeNode }
@@ -189,11 +189,11 @@ type OptionalType struct { Type TypeNode }
 type RestType struct { Type TypeNode }
 type UnionType struct { Types []TypeNode }
 type IntersectionType struct { Types []TypeNode }
-type ConditionalType struct { CheckType TypeNode, ExtendsType TypeNode, TrueType TypeNode, FalseType TypeNode }
+type ConditionalType struct { CheckType TypeNode; ExtendsType TypeNode; TrueType TypeNode; FalseType TypeNode }
 type InferType struct { TypeParameter TypeParameter }
 type ParenthesizedType struct { Type TypeNode }
-type TypeOperator struct { Operator string, Type TypeNode } // Operator is keyof, unique or readonly
-type IndexedAccessType struct { ObjectType TypeNode, IndexType TypeNode }
+type TypeOperator struct { Operator string; Type TypeNode } // Operator is keyof, unique or readonly
+type IndexedAccessType struct { ObjectType TypeNode; IndexType TypeNode }
 type MappedType struct {
     ReadonlyToken *Token
     TypeParameter TypeParameter
@@ -203,9 +203,9 @@ type MappedType struct {
     Members       []TypeElement
 }
 type LiteralType struct { Literal LiteralTypeLiteral }
-type NamedTupleMember struct { DotDotDotToken *Token, Name Identifier, QuestionToken *Token, Type TypeNode }
-type TemplateLiteralType struct { Head TemplateHead, TemplateSpans []TemplateLiteralTypeSpan }
-type TemplateLiteralTypeSpan struct { Type TypeNode, Literal TemplateMiddleOrTail }
+type NamedTupleMember struct { DotDotDotToken *Token; Name Identifier; QuestionToken *Token; Type TypeNode }
+type TemplateLiteralType struct { Head TemplateHead; TemplateSpans []TemplateLiteralTypeSpan }
+type TemplateLiteralTypeSpan struct { Type TypeNode; Literal TemplateMiddleOrTail }
 type ImportType struct {
     Argument      TypeNode
     Attributes    *ImportAttributes
@@ -213,9 +213,9 @@ type ImportType struct {
     TypeArguments []TypeNode
     IsTypeOf      bool
 }
-type JSDocNullableType struct { Type TypeNode, Postfix bool }
-type JSDocNonNullableType struct { Type TypeNode, Postfix bool }
-type JSDocFunctionType struct { Parameters []Parameter, Type *TypeNode }
+type JSDocNullableType struct { Type TypeNode; Postfix bool }
+type JSDocNonNullableType struct { Type TypeNode; Postfix bool }
+type JSDocFunctionType struct { Parameters []Parameter; Type *TypeNode }
 
 // --- Binding patterns ---
 type ObjectBindingPattern struct { Elements []BindingElement }
@@ -246,22 +246,22 @@ type ShorthandPropertyAssignment struct {
     ObjectAssignmentInitializer *Expression
 }
 type SpreadAssignment struct { Expression Expression }
-type PropertyAccessExpression struct { Expression Expression, QuestionDotToken *Token, Name MemberName }
-type ElementAccessExpression struct { Expression Expression, QuestionDotToken *Token, ArgumentExpression Expression }
+type PropertyAccessExpression struct { Expression Expression; QuestionDotToken *Token; Name MemberName }
+type ElementAccessExpression struct { Expression Expression; QuestionDotToken *Token; ArgumentExpression Expression }
 type CallExpression struct {
     Expression       Expression
     QuestionDotToken *Token
     TypeArguments    []TypeNode
     Arguments        []Expression
 }
-type NewExpression struct { Expression Expression, TypeArguments []TypeNode, Arguments *[]Expression } // Arguments is nil without parentheses
+type NewExpression struct { Expression Expression; TypeArguments []TypeNode; Arguments *[]Expression } // Arguments is nil without parentheses
 type TaggedTemplateExpression struct {
     Tag              Expression
     QuestionDotToken *Token
     TypeArguments    []TypeNode
     Template         TemplateLiteral
 }
-type TypeAssertionExpression struct { Type TypeNode, Expression Expression }
+type TypeAssertionExpression struct { Type TypeNode; Expression Expression }
 type ParenthesizedExpression struct { Expression Expression }
 type FunctionExpression struct {
     Modifiers      []ModifierLike
@@ -284,9 +284,9 @@ type DeleteExpression struct { Expression Expression }
 type TypeOfExpression struct { Expression Expression }
 type VoidExpression struct { Expression Expression }
 type AwaitExpression struct { Expression Expression }
-type PrefixUnaryExpression struct { Operator string, Operand Expression }
-type PostfixUnaryExpression struct { Operand Expression, Operator string }
-type BinaryExpression struct { Left Expression, OperatorToken Token, Right Expression }
+type PrefixUnaryExpression struct { Operator string; Operand Expression }
+type PostfixUnaryExpression struct { Operand Expression; Operator string }
+type BinaryExpression struct { Left Expression; OperatorToken Token; Right Expression }
 type ConditionalExpression struct {
     Condition     Expression
     QuestionToken Token
@@ -294,9 +294,9 @@ type ConditionalExpression struct {
     ColonToken    Token
     WhenFalse     Expression
 }
-type TemplateExpression struct { Head TemplateHead, TemplateSpans []TemplateSpan }
-type TemplateSpan struct { Expression Expression, Literal TemplateMiddleOrTail }
-type YieldExpression struct { AsteriskToken *Token, Expression *Expression }
+type TemplateExpression struct { Head TemplateHead; TemplateSpans []TemplateSpan }
+type TemplateSpan struct { Expression Expression; Literal TemplateMiddleOrTail }
+type YieldExpression struct { AsteriskToken *Token; Expression *Expression }
 type SpreadElement struct { Expression Expression }
 type ClassExpression struct {
     Modifiers       []ModifierLike
@@ -305,16 +305,16 @@ type ClassExpression struct {
     HeritageClauses []HeritageClause
     Members         []ClassElement
 }
-type ExpressionWithTypeArguments struct { Expression Expression, TypeArguments []TypeNode }
-type AsExpression struct { Expression Expression, Type TypeNode }
-type SatisfiesExpression struct { Expression Expression, Type TypeNode }
+type ExpressionWithTypeArguments struct { Expression Expression; TypeArguments []TypeNode }
+type AsExpression struct { Expression Expression; Type TypeNode }
+type SatisfiesExpression struct { Expression Expression; Type TypeNode }
 type NonNullExpression struct { Expression Expression }
-type MetaProperty struct { KeywordToken string, Name Identifier } // KeywordToken is new or import
+type MetaProperty struct { KeywordToken string; Name Identifier } // KeywordToken is new or import
 
 // --- JSX ---
-type JsxElement struct { OpeningElement JsxOpeningElement, Children []JsxChild, ClosingElement JsxClosingElement }
-type JsxSelfClosingElement struct { TagName JsxTagName, TypeArguments []TypeNode, Attributes JsxAttributes }
-type JsxOpeningElement struct { TagName JsxTagName, TypeArguments []TypeNode, Attributes JsxAttributes }
+type JsxElement struct { OpeningElement JsxOpeningElement; Children []JsxChild; ClosingElement JsxClosingElement }
+type JsxSelfClosingElement struct { TagName JsxTagName; TypeArguments []TypeNode; Attributes JsxAttributes }
+type JsxOpeningElement struct { TagName JsxTagName; TypeArguments []TypeNode; Attributes JsxAttributes }
 type JsxClosingElement struct { TagName JsxTagName }
 type JsxFragment struct {
     OpeningFragment JsxOpeningFragment
@@ -322,16 +322,16 @@ type JsxFragment struct {
     ClosingFragment JsxClosingFragment
 }
 type JsxAttributes struct { Properties []JsxAttributeLike }
-type JsxAttribute struct { Name JsxAttributeName, Initializer *JsxAttributeValue }
+type JsxAttribute struct { Name JsxAttributeName; Initializer *JsxAttributeValue }
 type JsxSpreadAttribute struct { Expression Expression }
-type JsxExpression struct { DotDotDotToken *Token, Expression *Expression }
-type JsxNamespacedName struct { Namespace Identifier, Name Identifier }
+type JsxExpression struct { DotDotDotToken *Token; Expression *Expression }
+type JsxNamespacedName struct { Namespace Identifier; Name Identifier }
 
 // --- Statements ---
-type SourceFile struct { Statements []Statement, EndOfFileToken EndOfFileToken }
+type SourceFile struct { Statements []Statement; EndOfFileToken EndOfFileToken }
 type Block struct { Statements []Statement }
-type VariableStatement struct { Modifiers []ModifierLike, DeclarationList VariableDeclarationList }
-type VariableDeclarationList struct { Keyword string, Declarations []VariableDeclaration } // var, let, const, using or await using
+type VariableStatement struct { Modifiers []ModifierLike; DeclarationList VariableDeclarationList }
+type VariableDeclarationList struct { Keyword string; Declarations []VariableDeclaration } // var, let, const, using or await using
 type VariableDeclaration struct {
     Name             BindingName
     ExclamationToken *Token
@@ -339,16 +339,16 @@ type VariableDeclaration struct {
     Initializer      *Expression
 }
 type ExpressionStatement struct { Expression Expression }
-type IfStatement struct { Expression Expression, ThenStatement Statement, ElseStatement *Statement }
-type DoStatement struct { Statement Statement, Expression Expression }
-type WhileStatement struct { Expression Expression, Statement Statement }
+type IfStatement struct { Expression Expression; ThenStatement Statement; ElseStatement *Statement }
+type DoStatement struct { Statement Statement; Expression Expression }
+type WhileStatement struct { Expression Expression; Statement Statement }
 type ForStatement struct {
     Initializer *ForInitializer
     Condition   *Expression
     Incrementor *Expression
     Statement   Statement
 }
-type ForInStatement struct { Initializer ForInitializer, Expression Expression, Statement Statement }
+type ForInStatement struct { Initializer ForInitializer; Expression Expression; Statement Statement }
 type ForOfStatement struct {
     AwaitModifier *Token
     Initializer   ForInitializer
@@ -358,15 +358,15 @@ type ForOfStatement struct {
 type ContinueStatement struct { Label *Identifier }
 type BreakStatement struct { Label *Identifier }
 type ReturnStatement struct { Expression *Expression }
-type WithStatement struct { Expression Expression, Statement Statement }
-type SwitchStatement struct { Expression Expression, CaseBlock CaseBlock }
+type WithStatement struct { Expression Expression; Statement Statement }
+type SwitchStatement struct { Expression Expression; CaseBlock CaseBlock }
 type CaseBlock struct { Clauses []CaseOrDefaultClause }
-type CaseClause struct { Expression Expression, Statements []Statement }
+type CaseClause struct { Expression Expression; Statements []Statement }
 type DefaultClause struct { Statements []Statement }
-type LabeledStatement struct { Label Identifier, Statement Statement }
+type LabeledStatement struct { Label Identifier; Statement Statement }
 type ThrowStatement struct { Expression Expression }
-type TryStatement struct { TryBlock Block, CatchClause *CatchClause, FinallyBlock *Block }
-type CatchClause struct { VariableDeclaration *VariableDeclaration, Block Block }
+type TryStatement struct { TryBlock Block; CatchClause *CatchClause; FinallyBlock *Block }
+type CatchClause struct { VariableDeclaration *VariableDeclaration; Block Block }
 
 // --- Declarations ---
 type FunctionDeclaration struct {
@@ -385,7 +385,7 @@ type ClassDeclaration struct {
     HeritageClauses []HeritageClause
     Members         []ClassElement
 }
-type HeritageClause struct { Token string, Types []ExpressionWithTypeArguments } // Token is extends or implements
+type HeritageClause struct { Token string; Types []ExpressionWithTypeArguments } // Token is extends or implements
 type InterfaceDeclaration struct {
     Modifiers       []ModifierLike
     Name            Identifier
@@ -399,11 +399,11 @@ type TypeAliasDeclaration struct {
     TypeParameters []TypeParameter
     Type           TypeNode
 }
-type EnumDeclaration struct { Modifiers []ModifierLike, Name Identifier, Members []EnumMember }
-type EnumMember struct { Name PropertyName, Initializer *Expression }
-type ModuleDeclaration struct { Modifiers []ModifierLike, Name ModuleName, Body *ModuleBody }
+type EnumDeclaration struct { Modifiers []ModifierLike; Name Identifier; Members []EnumMember }
+type EnumMember struct { Name PropertyName; Initializer *Expression }
+type ModuleDeclaration struct { Modifiers []ModifierLike; Name ModuleName; Body *ModuleBody }
 type ModuleBlock struct { Statements []Statement }
-type NamespaceExportDeclaration struct { Modifiers []ModifierLike, Name Identifier }
+type NamespaceExportDeclaration struct { Modifiers []ModifierLike; Name Identifier }
 type ImportEqualsDeclaration struct {
     Modifiers       []ModifierLike
     Name            Identifier
@@ -417,13 +417,13 @@ type ImportDeclaration struct {
     ModuleSpecifier Expression
     Attributes      *ImportAttributes
 }
-type ImportClause struct { Name *Identifier, NamedBindings *NamedImportBindings, PhaseModifier string } // PhaseModifier is type, defer or empty
+type ImportClause struct { Name *Identifier; NamedBindings *NamedImportBindings; PhaseModifier string } // PhaseModifier is type, defer or empty
 type NamespaceImport struct { Name Identifier }
 type NamedImports struct { Elements []ImportSpecifier }
-type ImportSpecifier struct { PropertyName *ModuleExportName, Name Identifier, IsTypeOnly bool }
-type ImportAttributes struct { Elements []ImportAttribute, Token string } // Token is with or assert
-type ImportAttribute struct { Name ImportAttributeName, Value Expression }
-type ExportAssignment struct { Modifiers []ModifierLike, Expression Expression, IsExportEquals bool }
+type ImportSpecifier struct { PropertyName *ModuleExportName; Name Identifier; IsTypeOnly bool }
+type ImportAttributes struct { Elements []ImportAttribute; Token string } // Token is with or assert
+type ImportAttribute struct { Name ImportAttributeName; Value Expression }
+type ExportAssignment struct { Modifiers []ModifierLike; Expression Expression; IsExportEquals bool }
 type ExportDeclaration struct {
     Modifiers       []ModifierLike
     ExportClause    *NamedExportBindings
@@ -433,7 +433,7 @@ type ExportDeclaration struct {
 }
 type NamedExports struct { Elements []ExportSpecifier }
 type NamespaceExport struct { Name ModuleExportName }
-type ExportSpecifier struct { PropertyName *ModuleExportName, Name ModuleExportName, IsTypeOnly bool }
+type ExportSpecifier struct { PropertyName *ModuleExportName; Name ModuleExportName; IsTypeOnly bool }
 
 // --- Unions ---
 type EntityName = Identifier | QualifiedName

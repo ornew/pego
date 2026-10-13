@@ -20,7 +20,7 @@ func call[T any](t *testing.T, method string, req any) T {
 	return v
 }
 
-const pairs = `type Pair struct { Key Match, Value Match }
+const pairs = `type Pair struct { Key Match; Value Match }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}

@@ -11,7 +11,7 @@ import (
 
 // incrementalGrammar is a grammar with left recursion, an Operators Rule expression, line starts (which
 // examine the preceding character), captures, and position-dependent actions.
-const incrementalGrammar = `type Pos struct { At int, Name Match }
+const incrementalGrammar = `type Pos struct { At int; Name Match }
 rule main = (line / blank)* $$
 rule blank = "\n"
 rule line = ^ (assign / list / pos) "\n"
@@ -346,7 +346,7 @@ func TestDocumentMovesReusedTrees(t *testing.T) {
 		{strings.Replace(incrementalGrammar, "(line / blank)*", "(line / blank / junk)*", 1) + "\nrule junk = [^\\n]* #atomic \"\\n\"",
 			"x = 1+2\nab,cd\n@pos\n\ny = (3)*-4\n",
 			[]string{"a", "b", "x = ", "1", "+", "2*3", "(", ")", "-", ",", "\n", "@", "q", " ", ""}},
-		{`type W struct { Pre Match, Word Match, Post Match, Gap Match }
+		{`type W struct { Pre Match; Word Match; Post Match; Gap Match }
 rule main = (sep w:word sep)* $$
 rule sep = none none
 rule none = "" #atomic

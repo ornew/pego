@@ -35,15 +35,15 @@ rule part = "a" -- "b"
 	{"typed/direct_cut_error", `type Doc struct { Text Match }
 rule main Doc = v:(("é" -- "x") @error(message="expected committed word") / "éy") #atomic $$ => Doc{Text: $v}
 `, []string{"éx", "éy", "é", "x", ""}},
-	{"typed/direct_cut_memo_capture", `type Pair struct { Word Match, N int }
+	{"typed/direct_cut_memo_capture", `type Pair struct { Word Match; N int }
 type Doc struct { Pair Pair }
 rule main Doc = p:pair "!" $$ / p:pair "?" $$ => Doc{Pair: $p}
 rule pair Pair = word:[a-z]+ #atomic -- {n := len($word)} ":" [0-9]+ => Pair{Word: $word, N: n}
 `, []string{"abc:12!", "abc:12?", "abc:x?", "abc:12", ""}},
-	{"typed/direct_cut_outer_rollback", `type Doc struct { Text Match, N int }
+	{"typed/direct_cut_outer_rollback", `type Doc struct { Text Match; N int }
 rule main Doc = {n := 0} (v:"a" #atomic {n := 1} ("b" -- "c")? "x" / v:"ab" #atomic {n := 2}) $$ => Doc{Text: $v, N: n}
 `, []string{"ab", "abcx", "ax", "abd", ""}},
-	{"typed/direct_cut_repeat_rollback", `type Doc struct { Text Match, N int }
+	{"typed/direct_cut_repeat_rollback", `type Doc struct { Text Match; N int }
 rule main Doc = {n := 0} (v:"a" #atomic {n := 1} ("b" -- {n := n + 1} "c") #repeat(0, 2) "x" / v:"ab" #atomic {n := 2}) $$ => Doc{Text: $v, N: n}
 `, []string{"ab", "abcx", "abcbcx", "ax", "abd", ""}},
 	{"typed/direct_cut_captured_lookahead", `type Doc struct { Text Match }

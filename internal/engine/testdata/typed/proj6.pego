@@ -1,2 +1,2 @@
-type Out struct { A []Match, B []Match }
+type Out struct { A []Match; B []Match }
 rule main Out = ys:(xs:"y" #atomic ";")* "|" xs:(n:"x" #atomic)* => Out{A: map($xs, (e) => $e.n), B: map($ys, (y) => $y.xs)}

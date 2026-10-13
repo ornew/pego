@@ -216,7 +216,7 @@ func (p *printer) structSpec(s *StructSpec, indent string) {
 		if len(parts) == 0 {
 			p.write("{}")
 		} else {
-			p.write("{ " + strings.Join(parts, ", ") + " }")
+			p.write("{ " + strings.Join(parts, "; ") + " }")
 		}
 		return
 	}
@@ -985,6 +985,18 @@ func formatTerm(t Term, outer int) string {
 			fields[i] = f.Name + ": " + FormatTerm(f.Value)
 		}
 		return t.Type + "{" + strings.Join(fields, ", ") + "}"
+	case *ListConstructor:
+		items := make([]string, len(t.Items))
+		for i, item := range t.Items {
+			items[i] = FormatTerm(item)
+		}
+		return "[]" + formatTypeTerm(t.Elem) + "{" + strings.Join(items, ", ") + "}"
+	case *TerminalConstructor:
+		args := make([]string, len(t.Args))
+		for i, arg := range t.Args {
+			args[i] = FormatTerm(arg)
+		}
+		return t.Type + "{" + strings.Join(args, ", ") + "}"
 	case *Call:
 		args := make([]string, len(t.Args))
 		for i, a := range t.Args {

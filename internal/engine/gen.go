@@ -236,11 +236,12 @@ type generator struct {
 	disableTypedObjectSlabs    bool
 	disableTypedListSlabs      bool
 	// nodeScopes records the frame layouts shared by typed rule metadata.
-	nodeScopes map[*rule][]string
-	typedSpan  string // generated helper name, avoiding grammar type and field names
-	prog       *Program
-	table      string // the rule table being generated: rules, or recRules for Recognize
-	cur        *rule  // the rule being generated
+	nodeScopes           map[*rule][]string
+	typedSpan            string          // generated helper name, avoiding grammar type and field names
+	terminalConstructors map[string]bool // terminal helpers actually used by typed actions
+	prog                 *Program
+	table                string // the rule table being generated: rules, or recRules for Recognize
+	cur                  *rule  // the rule being generated
 	// proj holds the projected repetition captures of the rule being generated (projections).
 	proj map[string]string
 	// final is the struct constructor that makes an action's result in the typed runtime: its
@@ -1120,6 +1121,18 @@ func (g *generator) term(t grammar.Term, s *scope, locals map[string]string) str
 			args = append(args, strconv.Quote(f.Name), g.term(f.Value, s, locals))
 		}
 		return "c.newStruct(" + strings.Join(args, ", ") + ")"
+	case *grammar.ListConstructor:
+		return g.term(&grammar.Call{Func: "list", Args: t.Items}, s, locals)
+	case *grammar.TerminalConstructor:
+		name := g.prog.terminalConstructorType(t.Type)
+		if g.table == "trules" {
+			if g.terminalConstructors == nil {
+				g.terminalConstructors = map[string]bool{}
+			}
+			g.terminalConstructors[name] = true
+			return "tmk_" + name + "(c, " + strconv.FormatBool(grammar.Term(t) == g.final) + ", " + g.term(t.Args[0], s, locals) + ")"
+		}
+		return "c.newTerminal(" + strconv.Quote(name) + ", " + g.term(t.Args[0], s, locals) + ")"
 	case *grammar.Call:
 		if t.Func == "concat" && fusable(t) {
 			// Push the elements of list, map and concat arguments directly (see fusable and

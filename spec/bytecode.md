@@ -276,8 +276,14 @@ Actions and predicates are evaluated by stack-based expression code. An evaluati
 | 121 | `ELISTPUSH` | A n | Pop n values and add them, in order, to the list being gathered, with the checks of `list`. *(Instruction set 2.)* |
 | 122 | `EMAPPUSH` | | Pop a function and a list (the list below) and add the results of calling the function on each element, with the checks of `map`. *(Instruction set 2.)* |
 | 123 | `ELISTEND` | | Finish the innermost gathering and push its elements as a `List`, as `concat` builds it. *(Instruction set 2.)* |
+| 124 | `ETERMINAL` | A type | Pop a string and construct a terminal of the declared type with that text and the enclosing action range. A non-string raises an evaluation error. The type is a string-table index naming a terminal in the type table. *(Instruction set 5.)* |
 
-Names (`EVAR`, `EMEMBER`), operators (`EBIN`, `EUNARY`, `EBOOLCHK`, written as their source symbol such as `+` or `&&`) and type names (`ENEW`) are string-table indices.
+Names (`EVAR`, `EMEMBER`), operators (`EBIN`, `EUNARY`, `EBOOLCHK`, written as their source symbol such as `+` or `&&`) and type names (`ENEW`, `ETERMINAL`) are string-table indices.
+
+Typed list constructors use `ECALL` with the `list` built-in; their element
+types are checked at compilation and require no additional VM instruction or
+per-element concrete-type guard. Terminal aliases use their canonical type
+name in `ETERMINAL`.
 
 Calling a function evaluates its code from its start, with the locals captured at creation followed by the arguments as its locals.
 
@@ -298,7 +304,7 @@ A module is stored in the `.pegoc` version 2 format. Integers are variable-lengt
 |:--|:--|
 | Magic | `PEGOC\x00` (6 bytes) |
 | Version | 1 byte (2) |
-| Instruction-set version | Unsigned integer (3 for ordinary modules, 4 when wide bounds are used). A runtime loads files of every instruction-set version up to its own: version 2 adds instructions 118–123, version 3 `GUARD` (34) and `NEXT` mode 3, and version 4 `REPEATW` (35) and `SCANW` (36). |
+| Instruction-set version | Unsigned integer (3 for ordinary modules, 4 when wide bounds are used, 5 when terminal construction is used). A runtime loads files of every instruction-set version up to its own: version 2 adds instructions 118–123, version 3 `GUARD` (34) and `NEXT` mode 3, version 4 `REPEATW` (35) and `SCANW` (36), and version 5 `ETERMINAL` (124). |
 | String table | Count, then each string (byte length and UTF-8 bytes), all unsigned. The module's string table is a prefix of this table. |
 | Start rule | String index, unsigned (the empty string means no default start rule) |
 | Package name | String index, unsigned |
@@ -324,6 +330,7 @@ On load, a runtime checks the following and rejects the file if any check fails:
 - Every reference in the tables and instructions (strings, character classes, scopes, field lists, rules, Operators Rule tables, expression code, built-in functions) is in range.
 - Every opcode is known, and every flag operand is within its range.
 - Wide bounds reference `EINT` constants, fit the runtime's implementation `int`, and satisfy minimum ≥ 0 and maximum = -1 or maximum ≥ minimum. Wide instructions require instruction-set version 4.
+- `ETERMINAL` references a declared terminal type and requires instruction-set version 5. Existing instruction numbers remain unchanged. The optional AST codec adds list and terminal constructor terms; older AST decoders cannot load those new terms even when list-only matching code uses instruction-set version 3. An AST-free list-only module retains instruction-set version 3 compatibility.
 - Every jump target is forward. Only `NEXT` jumps backward. The target of `EFUNC` is also forward.
 - Every `RECOVER` body ends at an `ENDRECOVER` immediately before its skip target; that instruction jumps past an `ENDSKIP`. These recovery regions are nested and contain no stream-mode `NEXT` (mode 2) in either the protected body or skip. Element-local recovery ends before the enclosing streaming repetition's `NEXT`.
 

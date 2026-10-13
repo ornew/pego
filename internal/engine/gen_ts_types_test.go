@@ -98,7 +98,7 @@ type ChoiceAgain = Match | Word
 type Mixed = Word | int
 type Open = any
 type Raw = Seq
-type R struct { W W, Items Words, Missing Words, Empty Words, Optional Optional, I Integer, Big Integer, S Text, B Flag, OpenItems []any, O MaybeInteger, M Mixed, U Choice, Any Open, Raw Raw }
+type R struct { W W; Items Words; Missing Words; Empty Words; Optional Optional; I Integer; Big Integer; S Text; B Flag; OpenItems []any; O MaybeInteger; M Mixed; U Choice; Any Open; Raw Raw }
 rule main R = w:word xs:word* raw:("!"? "?"?) => R{W: $w, Items: $xs, OpenItems: $xs, Empty: list(), I: -7 / 2, Big: 9223372036854775807, S: text($w), B: true, M: 9007199254740992, U: $w, Any: $raw, Raw: $raw}
 rule word Word = [a-zあ-ん😀]+`
 	consumer := `import { parse, parseAST, parseASTWithOptions, CodePoints, Bytes, Node } from "./parser.ts";
@@ -162,7 +162,7 @@ func TestGeneratedTSTypedRecovery(t *testing.T) {
 	src := `type Word terminal
 type U = Word | Match
 type Mixed = Word | int
-type R struct { Specific Word, U U, M Mixed, A any, Items []Word, OpenItems []any }
+type R struct { Specific Word; U U; M Mixed; A any; Items []Word; OpenItems []any }
 rule main R = w:word #recover(skip=[^;]+ ";") xs:word #recover(skip=[^;]+ ";")* => R{Specific: $w, U: $w, M: $w, A: $w, Items: $xs, OpenItems: $xs}
 rule word Word = [a-z]+ ";"`
 	consumer := `import {parse, parseAST, SyntaxErrors, Bytes, CodePoints} from "./parser.ts";
@@ -185,7 +185,7 @@ for (const unit of [CodePoints, Bytes]) {
 }
 
 func TestGeneratedTSTypedUnicodeIntegers(t *testing.T) {
-	src := `type R struct { Text string, Token Match, A int, B int, C int, D int, E int, F int, G int, O *int }
+	src := `type R struct { Text string; Token Match; A int; B int; C int; D int; E int; F int; G int; O *int }
 rule main R = x:.* #atomic => R{Text: text($x), Token: $x, A: 9007199254740991, B: 9007199254740992, C: -9007199254740992, D: 9223372036854775807 + 1, E: -7 % 2, F: -7 / 2, G: 9223372036854775807}`
 	consumer := `import {parse, parseAST, Bytes, CodePoints, Node} from "./parser.ts";
 ` + tsTypedAssert + `
@@ -204,7 +204,7 @@ check(parseAST(new Uint8Array([0xff]), CodePoints).value?.Text === "�", "decod
 
 const tsTypedDAGTypes = `type Leaf terminal
 type Tree = Branch | Leaf
-type Branch struct { Left Tree, Right Tree }
+type Branch struct { Left Tree; Right Tree }
 rule leaf Leaf = "x"
 `
 
@@ -276,7 +276,7 @@ func TestGeneratedTSTypedWorkloads(t *testing.T) {
 	cases := []struct {
 		name, src, small, large string
 	}{
-		{"fields", `type Item struct { Key Match, Value Match, N int, S string, B bool }
+		{"fields", `type Item struct { Key Match; Value Match; N int; S string; B bool }
 rule main []Item = item*
 rule item Item = k:[a-zé😀]+ #atomic "=" v:[0-9]+ #atomic ";" => Item{Key: $k, Value: $v, N: len($v), S: text($k), B: true}`, "a=1;", strings.Repeat("é😀=123;", 4000)},
 		{"capture-free", `rule main = [a-zé😀]* #atomic`, "a", strings.Repeat("é😀a", 8000)},

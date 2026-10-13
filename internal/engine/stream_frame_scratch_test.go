@@ -106,7 +106,7 @@ func TestStreamFrameScratchRetainedResults(t *testing.T) {
 	})
 	t.Run("actions", func(t *testing.T) {
 		checkStreamFrameScratchRetainedResults(t, `type Value struct { N Match }
-type Row struct { Key Match, Values []Value }
+type Row struct { Key Match; Values []Value }
 rule main = h:"#head\n" #atomic items:record* #stream $$ {text($h) == "#head\n"}
 rule record Row = k:[a-z / "é" / "😀"]+ #atomic "=" vs:value+ "\n" => Row{Key: $k, Values: $vs}
 rule value Value = v:[0-9]+ #atomic "," => Value{N: $v}`)

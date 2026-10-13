@@ -1,4 +1,4 @@
-# 055. Typed List Collection
+# 055. Typed Node Lists and Filtering
 
 - **Status**: Proposed
 - **Author**: @ornew
@@ -6,213 +6,159 @@
 
 ## Summary
 
-Add a `filter(list, predicate)` action function and a way to construct a list
-with a declared element type directly from grammar results. This addresses
-lists that contain useful nodes alongside `nil` or `Match` values, such as
-the values produced by `(-space / comment)*`, when a struct field requires
-`[]Comment`. The filter and typed-collection syntax and their exact contracts
-remain proposed.
+This record covers two separate capabilities. The implemented typed-list subset
+constructs lists of nodes with an explicit element Type, including empty and
+nested lists. The broader `filter(list, predicate)` operation remains Proposed
+and unresolved. Primitive-valued lists are outside both scopes.
 
 ## Motivation
 
-A repetition creates a `List` from the values of its successful iterations.
-Those values can include `nil` and terminals such as `Match`; the list's
-inferred type can therefore be broader than a typed field accepts. Existing
-`list` and `map` can retain `nil` elements, while `concat` concatenates lists
-and treats a `nil` list argument or recovered `Error` as empty. `concat` does
-not filter elements within a list. These functions do not select elements by
-a boolean condition or directly declare the element type of a new list.
-
-For example, a grammar may want comment nodes from a repeated expression
-while ignoring whitespace iterations that produce no value and punctuation
-iterations that produce `Match`:
+Repetitions and the `list`, `map` and `concat` functions construct node lists,
+but a result may have an element Type broader than a field requires. A Boolean
+filter does not prove a narrower static Type: checking `x != nil` does not make
+a `[]*T` result assignable to `[]T`. A typed list constructor declares the
+element Type and applies ordinary assignability checks to every element.
 
 ```pego
-type Comment struct { Text string }
-type File struct { Comments []Comment }
-
-rule space = [ \t]+
-rule comment Comment = "//" [^\n]* => Comment{Text: text($0)}
-rule punctuation = [;,]
-rule file File = comments:(-space / comment / punctuation)* #collect(Comment) => File{Comments: $comments}
+[]Comment{$lineComment, $blockComment}
+[]Comment{}
+[][]Comment{}
+[]*Comment{$lineComment, nil}
 ```
 
-The `#collect(Comment)` suffix is proposed syntax, not currently accepted.
-A boolean filter alone does not solve the type mismatch: removing
-`nil` values from a list of optional `*Comment` values does not prove to the
-type checker that the remaining values are `Comment`. A general predicate
-returns `bool`; it does not carry a type-narrowing result.
+A non-optional `[]Comment` rejects `nil`; `[]*Comment` permits it. No
+constructor silently filters or drops values.
 
-## Goals
+## Selected Typed Node-List Contract
 
-- Provide an order-preserving list filter whose predicate returns `bool`.
-- Provide a direct way to construct `[]T` from qualifying values produced by
-  a grammar expression, without an intermediate untyped `List` action.
-- Make nil handling and static element typing explicit; do not infer a narrowed
-  type from an arbitrary boolean predicate.
-- Preserve element values, identity, source ranges and evaluation behavior
-  unless this record explicitly defines otherwise.
-- Keep closure, recursive and iterative VMs, typed Go, generated Go,
-  TypeScript, formatting, source AST/JSON and diagnostics consistent.
+The source form is `[]T{expr, ...}`. `T` is an explicit Type Expression and
+may be a node type, an alias resolving to one, or a union whose members are
+node types. Nested lists are explicit: `[][]Comment{}` is valid, and a
+non-empty inner list supplies its own element Type, as in
+`[][]Comment{[]Comment{$item}}`. No expected-Type inference is performed.
 
-## Non-Goals
+The braces contain zero or more Action Expressions separated by commas, as
+with constructor fields and function arguments. An empty list is non-nil.
+Elements evaluate once from left to right and retain their order and identity.
+Each element must have a statically known Type assignable to `T`; a statically
+unknown `any` element is rejected, including when nested. `nil` is accepted
+only if the target element Type permits it. These are compile-time checks under
+normal type checking. `NoTypeCheck` deliberately bypasses assignability
+checking; it does not add primitive-list support or a filtering/narrowing
+operation.
 
-This proposal does not change `map` or `concat` semantics, infer type guards
-from arbitrary lambdas, change repetition values, add mutable lists, or make
-`ParseStream` a list-producing API. It does not add stream item filtering or
-change the handling of recovered errors.
+The source AST node is `ListConstructor{Elem TypeExpr, Items []Term}`. It
+preserves the explicit element Type and items, including empty and nested
+constructors. After checking, it lowers to the existing `list()` runtime
+operation. The emitted bytecode remains ISA 3 for this list-only path, but the
+new source-AST tag is unsupported by older AST-bearing compiled-grammar
+readers. AST-free list-only artifacts remain ISA 3 compatible.
 
-## Design
+The resulting list range spans the ranges of all non-nil child nodes. For an
+empty list, or one whose elements are all nil, its range is zero-width at the
+start of the matched input range of the current action context, not the
+Action Expression's position in the grammar source. This rule applies in CodePoints and
+Bytes modes.
 
-### Filter Function
+The constructor does not add a parser boundary or change Rule Expression
+evaluation, capture visibility, memoization, recovery, cuts, or input
+consumption.
 
-Add a built-in action function with this schematic candidate signature (the
-names are placeholders, not a complete PEGO expression):
+## Filtering Remains Proposed
 
-```pego
-filter(list, (item) => predicate)
-```
+A filter operation would preserve input order and node identity, but a
+Boolean predicate alone cannot narrow the input list's static element Type.
+For example, `filter($xs, (x) => $x != nil)` cannot establish `[]T` from
+`[]*T`. Predicate Action errors follow the existing failure/backtracking
+contract; Value Action errors abort as they do today. This proposal does not
+select a signature, nil-input behavior, or filtering syntax.
 
-The first argument is a `List`; the lambda returns `bool`. Evaluate the
-predicate once for each input element, from first to last. Retain an element
-when its predicate is true, and preserve the retained elements' order, values
-and node identity. A non-boolean predicate is a compile-time type error. A
-runtime error while evaluating the predicate follows the surrounding action
-context's existing contract: in a Predicate Action it becomes predicate
-failure and may backtrack; in a Value Action it aborts parsing. `filter` does
-not override either behavior or add a recovery rule.
+## Alternatives Considered
 
-The result keeps the input list's static element type. In particular,
-`filter($xs, (x) => $x != nil)` removes nil elements at runtime but does not
-narrow `[]*Comment` to `[]Comment`. A lambda is an ordinary boolean predicate,
-not a type test or flow-sensitive type guard. Whether a nil list argument is
-treated as an empty list or rejected remains open; the existing `concat`
-behavior is a compatibility point, not an automatic contract for `filter`.
+- **A repetition pragma such as `#collect(T)`.** This couples typed-list
+  construction to repetition and still needs rules for nil and non-assignable
+  elements.
+- **A typed `list<T>(...)` function.** This reuses function calls but adds
+  generic-call syntax. A typed constructor keeps the element Type next to the
+  values it constrains.
+- **Filter only.** A Boolean predicate cannot generally narrow static element
+  Types, so it cannot by itself initialize `[]T` from `[]*T`.
+- **Keep `list` and `concat` only.** They preserve nil and do not establish a
+  narrower static element Type.
+- **Primitive-valued lists.** The current runtime list representation stores
+  nodes. Primitive list storage needs a separate use-case and representation
+  investigation.
 
-The result range should cover the retained elements using the existing list
-range rules. If no element remains, the result should have an empty range at
-the input list's start. This must be validated in both position units.
+## Compatibility and Validation Scope
 
-### Direct Typed Collection
-
-A separate operation must let grammar results directly produce a list with a
-requested element type. One candidate is a collection pragma on a repeated
-expression:
-
-```pego
-comments:(-space / comment)* #collect(Comment)
-```
-
-Under this candidate, the operation constructs a `List` whose element type is
-`Comment`, allowing it to initialize `File.Comments []Comment` directly. The
-name and placement are illustrative and are not selected syntax.
-
-The inclusion rule needs an explicit type contract. The motivating use case
-requires omitting `nil` and non-target terminals such as `Match`, while
-retaining values assignable to the requested element type. Static validation
-should reject a target type that cannot receive any possible value from the
-expression. Whether another non-nil, non-assignable node is skipped or
-reported as a runtime/type error remains open; silently dropping arbitrary
-values could conceal a grammar mistake. Type unions, aliases, terminal types,
-optional types and nested list types must follow the same assignment rules as
-struct fields.
-
-Collection evaluates the repeated expression using its existing PEG order and
-short-circuit behavior. It must not rerun a match, reorder values, or alter
-input consumption, captures, error expectations, recovery, memoization or
-backtracking. Collection itself adds no parsing boundary. A list built by the
-operation must preserve the source range of its collected elements; an empty
-result needs a defined zero-width range at the expression's start.
-
-### Relationship Between Filter and Collection
-
-The two operations solve different problems. `filter` selects by a runtime
-boolean condition but retains the input's static element type. Typed
-collection selects values assignable to a declared type and constructs the
-corresponding typed list. They may be composed when both predicates and type
-selection are needed, but filtering must not be presented as a substitute for
-type narrowing.
-
-### Alternatives Considered
-
-- **Only add `filter`.** This is familiar and supports arbitrary value-based
-  selection, but a boolean lambda cannot generally prove a narrower static
-  element type. It cannot by itself build the required `[]Comment`.
-- **Only add typed collection.** This directly solves the node-type mismatch
-  and may be expressible as a repetition pragma, but cannot select values by
-  arbitrary runtime conditions unrelated to type assignability.
-- **Add an explicit typed-list action constructor.** A constructor or literal
-  could name `T` and build `[]T` from values. This is explicit and independent
-  of repetition, but needs a type-argument/value syntax and rules for optional,
-  nil and non-assignable elements. It may also require a new value form in the
-  action language.
-- **Add a type-test or type-guard predicate.** A predicate that refines its
-  input type could let `filter` return a narrower list. This gives useful
-  narrowing but changes lambda typing and control-flow inference throughout
-  the action type checker; it is larger than an ordinary boolean filter.
-- **Keep current `map` and `concat` only.** These functions already construct
-  and combine lists, but `map` preserves nil results and `concat` does not
-  select individual values by type. Callers must hand-build another filtering
-  mechanism or accept a wider list type.
-
-The recommended direction is to add ordinary `filter` and a separate typed
-collection construct. Keep the concrete collection syntax and behavior for
-unexpected non-assignable values open until the type-checking and formatter
-implications are prototyped.
-
-## Compatibility and Backend Support
-
-Adding a built-in function and a typed collection form is additive for existing
-grammars, but function-name conflicts, reserved names, source AST and JSON
-representation, formatter stability and compiled grammar compatibility must
-be reviewed. Existing `map` nil preservation and `concat` nil/Error handling
-must remain unchanged.
-
-The same list values and errors must be produced by the closure, recursive and
-iterative VMs and generated Go and TypeScript parsers. Typed Go output must
-construct the requested slice element type without unsafe assertions or
-discarding values outside the specified collection rule. `ParseStream` keeps
-its current per-item API: neither operation implicitly buffers a stream into a
-list. If collection is usable inside a streamed rule, test each item and
-recovery boundary without changing stream demand or commit behavior.
+The node-list syntax is additive. Preserve existing `list`, `map` and
+`concat` behavior. Validate aliases and unions with the same canonical Type
+resolution and assignability rules as other values. Keep source-AST and JSON
+round trips, formatter stability, caller-AST immutability, and compiled-grammar
+compatibility explicit. The closure, recursive VM, iterative VM, generated Go,
+typed Go and TypeScript outputs must agree on values, identity, ordering,
+ranges and diagnostics. Streams remain one result at a time; list construction
+does not implicitly buffer a `ParseStream`.
 
 ## Testing
 
-- Compare `filter` with a simple reference over empty lists, mixed nil/node
-  values, true/false predicates and repeated equal values; check order,
-  identity, range and position units.
-- Reject non-boolean predicates and invalid input types at compile time; verify
-  runtime errors from the predicate follow the existing action context across
-  backends: Predicate Action failure/backtracking versus Value Action abort.
-- Demonstrate that `filter` does not narrow `[]*T` to `[]T`; cover optional
-  elements, union elements and aliases in both action expressions and typed
-  fields.
-- For typed collection, cover nil and `Match` values, assignable and
-  non-assignable nodes, aliases, unions, optional targets, empty results and
-  ordering. Verify type diagnostics and the chosen behavior for unexpected
-  values.
-- Cover repetitions with backtracking, captures, predicates, memoization,
-  left recursion, recovery and cuts; assert no extra matching or changed input
-  consumption.
-- Round-trip formatting, source AST and JSON, compile saved grammars, and
-  compare values, node identity where promised, ranges, errors and generated
-  typed output across all supported backends.
-- If used from streamed rules, test backpressure, error recovery and one-item
-  demand to confirm that the feature does not buffer or advance the stream.
+- Parse, format, JSON-round-trip and compile non-empty, empty, nested and
+  optional-element lists.
+- Accept assignable node elements and permitted nil; reject incompatible,
+  statically unknown `any`, and invalid nested elements at compile time.
+- Verify alias and union resolution, order, identity, non-nil empty results,
+  and list ranges in both position units.
+- Verify `NoTypeCheck` bypasses assignability checks without changing runtime
+  representation.
+- Compare all interpreters and generated backends for values, ranges,
+  diagnostics and errors; check source-AST immutability and saved-grammar
+  compatibility.
+- Keep existing `map`, `list`, `concat`, repetitions, recovery and streamed
+  rules unchanged.
+- If `filter` is designed separately, test its independent error and nil
+  behavior and verify it does not narrow static list Types.
 
 ## Limitations and Open Questions
 
-- Should the direct typed-list syntax be a repetition pragma such as
-  `#collect(T)`, a typed action constructor, or both?
-- Does typed collection ignore only nil and `Match`, or skip every value not
-  assignable to `T`? A stricter error policy may catch more mistakes.
-- How should an empty collected list obtain its zero-width range?
-- Should `filter(nil, predicate)` return an empty list, matching `concat`'s
-  treatment of a nil list argument, or be a type error?
-- Should the output type of `filter` always remain the input list's element
-  type, or should PEGO eventually support explicit type-test lambdas?
-- Which collection forms are valid in streamed rules while preserving the
-  current one-result-at-a-time stream contract?
+- What concrete use cases justify primitive-valued lists such as `[]int` or
+  `[]string`, given that the current runtime `List` stores nodes? Investigate
+  before designing their storage or syntax.
+- What signature and nil-input behavior should a separately proposed filter
+  operation have? Its Boolean predicate cannot narrow static Types by itself.
 
-This record is Proposed. The new function and typed collection syntax are not
-implemented or accepted language features.
+Typed node-list constructors are implemented. This record remains Proposed
+because filtering is unresolved. Primitive-valued lists remain outside the
+implemented subset.
+
+Local validation covers source and strict JSON round trips, all three runtime
+backends and both position units, AST-bearing and AST-free compiled grammars,
+generated Go and TypeScript, and typed result conversion. The root-module
+suite, generated parser suite and site build/link check pass. The implementation
+also received independent critical review. Remote CI remains paused.
+
+## Focused Performance Evidence
+
+On Go 1.27.1, darwin/arm64, Apple M3 Max, `GOMAXPROCS=16`, five
+alternating 500 ms samples compare typed constructors with equivalent `list()`
+calls for empty, three-element and nested lists. Across closure, recursive
+bytecode and iterative bytecode in CodePoints, median time ratios are
+0.979–1.018; allocated bytes and allocation counts are identical in every
+paired case. The result supports reusing the existing list representation and
+runtime checks; it does not establish a speed improvement. Compilation and
+generated typed result conversion are outside this focused comparison.
+
+Reproduce the workloads with:
+
+```bash
+GOMAXPROCS=16 go test ./internal/engine -run '^$' \
+  -bench '^BenchmarkNodeListConstruction$' -benchmem -benchtime=500ms -count=5
+```
+
+Regression controls compare the complete change with `2afb673` using the
+existing JSON and XML Parse workloads, all three runtime backends plus
+generated Go, and both position units. Five alternating 500 ms samples give
+median time ratios of 0.893–1.004, allocated-byte ratios of 0.9983–1.0011,
+and allocation-count differences of −3 to +1 per parse. Ordinary background
+activity and timing variation limit attribution; these controls do not
+establish a speed improvement or describe every workload. Raw samples remain
+outside the repository. Terminal-constructor-specific costs were not isolated.

@@ -1,10 +1,10 @@
 // A syntactic comment boundary, independent of declaration meaning.
 // start and after consume the following source only to make standalone tests.
 type CommentText struct { Text string }
-type CommentBoundary struct { Trailing string, Leading string, Detached []CommentText, HasNext bool }
-type OwnedComments struct { Trailing string, Leading string, Detached []CommentText }
-type SourceElement struct { Name string, Comments OwnedComments }
-type SourceExample struct { Package SourceElement, Rule SourceElement }
+type CommentBoundary struct { Trailing string; Leading string; Detached []CommentText; HasNext bool }
+type OwnedComments struct { Trailing string; Leading string; Detached []CommentText }
+type SourceElement struct { Name string; Comments OwnedComments }
+type SourceExample struct { Package SourceElement; Rule SourceElement }
 
 // Boundary captures construct owners while parsing, not in a later pass.
 rule owner_example SourceExample = (

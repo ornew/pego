@@ -3,7 +3,7 @@
 A `#` pragma changes the behavior or structure of the immediately preceding
 expression. Pragmas apply from left to right in written order. Parenthesize a
 sequence when a pragma should apply to the complete sequence rather than its
-final item. Character classes in square brackets are PEG atoms, not pragmas.
+final item. Character classes in square brackets are primary Rule Expression forms, not pragmas.
 Diagnostic and metadata `@` attributes are defined separately in
 [Attributes](attributes.md).
 

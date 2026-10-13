@@ -37,24 +37,23 @@ parsed and preserved, then rejected by semantic validation. The following
 additional constraints are checked outside this source grammar.
 
 - **Reserved identifiers.** Names beginning with `_` are reserved. The
-  standalone PEG atom `_` is Top, which is distinct from a name.
+  standalone Rule Expression `_` is Top, which is distinct from a name.
 - **Integer literals.** An [integer literal](lexical.md#integer-literals)
   MUST be representable as an `int`.
 - **Character class ranges.** In `lo-hi`, `hi` MUST NOT be less than `lo`, and a
   class MUST contain at least one item.
 - **Repetition bounds.** In `a #repeat(n,m)`, `m` MUST NOT be less than `n`.
-- **Statement boundaries.** Newlines and semicolons separate declarations and
-  Operators Rule items. Struct fields use commas or newlines. An expression may
+- **Statement boundaries.** Newlines and semicolons separate Definition Statements and
+  Operators Rule items. Struct fields use semicolons or newlines. An expression may
   cross a newline only within its own open delimiter; statement-list braces do
   not enable continuation of every nested expression. Indentation is not syntax.
 - **Attribute arguments.** Positional arguments follow the generic value
   forms and precede named arguments; repeated named keys are rejected. The
   grammar models argument shape and ordering, not key uniqueness.
-- **Contextual words.** Declaration and item introducers have their syntactic
-  meaning only at those statement positions. They remain identifiers elsewhere.
-- **Where constructs may appear.** An Operators Rule MUST be a complete rule
-  declaration; a lambda MUST be an argument of `foldl`, `foldr` or `map`; and
-  `#stream` MUST be at the top level of a rule body. A comment in a declaration
+- **Contextual words.** Definition Statement and Operators Rule item introducers
+  have their syntactic meaning only at those statement positions. They remain identifiers elsewhere.
+- **Where constructs may appear.** An Operators Rule MUST be a complete Rule Definition Statement; a lambda MUST be an argument of `foldl`, `foldr` or `map`; and
+  `#stream` MUST be at the top level of a rule body. A comment in a Definition Statement
   or Operators Rule statement header is rejected by semantic analysis with a
   positioned diagnostic. These checks follow parsing.
 - **Action blocks.** Multiple-statement Predicate Actions and every braced
@@ -62,19 +61,20 @@ additional constraints are checked outside this source grammar.
 - **Inline actions.** `(expression => action)` is recognized in the source
   grammar and represented in the AST, but compilation rejects it. Runtime
   execution is not implemented.
-- **Declaration annotations.** Attributes are postfix expression annotations;
-  declaration-prefix attributes are not supported.
+- **Attribute placement.** Attributes are postfix Rule Expression annotations;
+  Definition Statement prefixes are not supported.
 
 ## Operators
 
-Parsing expressions bind in the order of the [precedence
-table](parser-expressions.md#precedence). The expressions of actions and
-predicates bind in the order of the [operator table](actions.md#operators-and-functions):
+Rule Expressions bind in the order of the [precedence
+table](parser-expressions.md#precedence). Action Expressions in Value Actions
+and Predicate Actions bind in the order of the [operator
+table](actions.md#operators-and-functions):
 `||`, `&&`, comparison (`==`, `!=`, `<`, `<=`, `>`, `>=`, which do not chain),
 `+` and `-`, `*`, `/` and `%`, and the unary `-` and `!`. Field access (`.`) and
 function calls bind tighter than the operators. Each Operators Rule defines
 precedence by the order of its `level` declarations; associativity and operator
-order come from entries within each level. The parsing-expression Operators
-Rule represents adjacency with an empty
-infix operator and gives postfix modifiers tighter binding than capture,
+order come from entries within each level. The Operators Rule represents
+adjacency with an empty infix operator and gives postfix modifiers tighter
+binding than capture,
 lookahead and discard. Ordered choice remains the weakest operation.

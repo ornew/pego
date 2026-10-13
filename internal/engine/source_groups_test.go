@@ -10,13 +10,13 @@ import (
 func TestSourceGroupsExecutableParity(t *testing.T) {
 	const grouped = `type Number struct { Text string }
 type Alias = (Number)
-type Value struct { Number (Alias), Items ([]Alias), Flag (bool) }
+type Value struct { Number (Alias); Items ([]Alias); Flag (bool) }
 rule main (Value) = {count := (1 + (2 * 3))} {((count == 7) && true)} n:number => (Value{Number: ($n), Items: (map(list($n), (item) => ($item))), Flag: (count == 7)})
 rule number (Alias) = [0-9]+ => (Number{Text: (text($1))})
 `
 	const plain = `type Number struct { Text string }
 type Alias = Number
-type Value struct { Number Alias, Items []Alias, Flag bool }
+type Value struct { Number Alias; Items []Alias; Flag bool }
 rule main Value = {count := 1 + 2 * 3} {count == 7 && true} n:number => Value{Number: $n, Items: map(list($n), (item) => $item), Flag: count == 7}
 rule number Alias = [0-9]+ => Number{Text: text($1)}
 `

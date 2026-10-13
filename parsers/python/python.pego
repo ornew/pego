@@ -73,23 +73,23 @@ type ClassDef struct {
 }
 type Return struct { Value *Expr }
 type Delete struct { Targets []Expr }
-type Assign struct { Targets []Expr, Value Expr }
-type TypeAlias struct { Name Name, TypeParams []TypeParam, Value Expr }
-type AugAssign struct { Target Expr, Op Op, Value Expr }
-type AnnAssign struct { Target Expr, Annotation Expr, Value *Expr, Simple bool }
-type For struct { Target Expr, Iter Expr, Body []Stmt, OrElse []Stmt }
-type AsyncFor struct { Target Expr, Iter Expr, Body []Stmt, OrElse []Stmt }
-type While struct { Test Expr, Body []Stmt, OrElse []Stmt }
-type If struct { Test Expr, Body []Stmt, OrElse []Stmt }
-type With struct { Items []WithItem, Body []Stmt }
-type AsyncWith struct { Items []WithItem, Body []Stmt }
-type MatchStmt struct { Subject Expr, Cases []MatchCase }
-type Raise struct { Exc *Expr, Cause *Expr }
-type Try struct { Body []Stmt, Handlers []ExceptHandler, OrElse []Stmt, FinalBody []Stmt }
-type TryStar struct { Body []Stmt, Handlers []ExceptHandler, OrElse []Stmt, FinalBody []Stmt }
-type Assert struct { Test Expr, Msg *Expr }
+type Assign struct { Targets []Expr; Value Expr }
+type TypeAlias struct { Name Name; TypeParams []TypeParam; Value Expr }
+type AugAssign struct { Target Expr; Op Op; Value Expr }
+type AnnAssign struct { Target Expr; Annotation Expr; Value *Expr; Simple bool }
+type For struct { Target Expr; Iter Expr; Body []Stmt; OrElse []Stmt }
+type AsyncFor struct { Target Expr; Iter Expr; Body []Stmt; OrElse []Stmt }
+type While struct { Test Expr; Body []Stmt; OrElse []Stmt }
+type If struct { Test Expr; Body []Stmt; OrElse []Stmt }
+type With struct { Items []WithItem; Body []Stmt }
+type AsyncWith struct { Items []WithItem; Body []Stmt }
+type MatchStmt struct { Subject Expr; Cases []MatchCase }
+type Raise struct { Exc *Expr; Cause *Expr }
+type Try struct { Body []Stmt; Handlers []ExceptHandler; OrElse []Stmt; FinalBody []Stmt }
+type TryStar struct { Body []Stmt; Handlers []ExceptHandler; OrElse []Stmt; FinalBody []Stmt }
+type Assert struct { Test Expr; Msg *Expr }
 type Import struct { Names []Alias }
-type ImportFrom struct { Module string, Names []Alias, Level int }
+type ImportFrom struct { Module string; Names []Alias; Level int }
 type Global struct { Names []Identifier }
 type Nonlocal struct { Names []Identifier }
 type ExprStmt struct { Value Expr }
@@ -99,30 +99,30 @@ type Continue struct {}
 type Stmt = FunctionDef | AsyncFunctionDef | ClassDef | Return | Delete | Assign | TypeAlias | AugAssign | AnnAssign | For | AsyncFor | While | If | With | AsyncWith | MatchStmt | Raise | Try | TryStar | Assert | Import | ImportFrom | Global | Nonlocal | ExprStmt | Pass | Break | Continue
 
 // --- Expressions ---
-type BoolOp struct { Op Op, Values []Expr }
-type NamedExpr struct { Target Name, Value Expr }
-type BinOp struct { Left Expr, Op Op, Right Expr }
-type UnaryOp struct { Op Op, Operand Expr }
-type Lambda struct { Args Arguments, Body Expr }
-type IfExp struct { Test Expr, Body Expr, OrElse Expr }
+type BoolOp struct { Op Op; Values []Expr }
+type NamedExpr struct { Target Name; Value Expr }
+type BinOp struct { Left Expr; Op Op; Right Expr }
+type UnaryOp struct { Op Op; Operand Expr }
+type Lambda struct { Args Arguments; Body Expr }
+type IfExp struct { Test Expr; Body Expr; OrElse Expr }
 // Keys has a nil key for each `**` item.
-type Dict struct { Keys []*Expr, Values []Expr }
+type Dict struct { Keys []*Expr; Values []Expr }
 type Set struct { Elts []Expr }
-type ListComp struct { Elt Expr, Generators []Comprehension }
-type SetComp struct { Elt Expr, Generators []Comprehension }
-type DictComp struct { Key Expr, Value Expr, Generators []Comprehension }
-type GeneratorExp struct { Elt Expr, Generators []Comprehension }
+type ListComp struct { Elt Expr; Generators []Comprehension }
+type SetComp struct { Elt Expr; Generators []Comprehension }
+type DictComp struct { Key Expr; Value Expr; Generators []Comprehension }
+type GeneratorExp struct { Elt Expr; Generators []Comprehension }
 type Await struct { Value Expr }
 type Yield struct { Value *Expr }
 type YieldFrom struct { Value Expr }
-type Compare struct { Left Expr, Ops []Op, Comparators []Expr }
-type Call struct { Func Expr, Args []Expr, Keywords []Keyword }
+type Compare struct { Left Expr; Ops []Op; Comparators []Expr }
+type Call struct { Func Expr; Args []Expr; Keywords []Keyword }
 // A replacement field of an f-string, or of a format spec. Str is the source of the expression
 // (from after the '{'), Debug the '=' with the whitespace around it ("" without), Conversion the
 // conversion character ("" without).
-type FormattedValue struct { Value Expr, Str string, Debug string, Conversion string, FormatSpec *JoinedStr }
+type FormattedValue struct { Value Expr; Str string; Debug string; Conversion string; FormatSpec *JoinedStr }
 // A replacement field of a t-string, like FormattedValue.
-type Interpolation struct { Value Expr, Str string, Debug string, Conversion string, FormatSpec *JoinedStr }
+type Interpolation struct { Value Expr; Str string; Debug string; Conversion string; FormatSpec *JoinedStr }
 // Adjacent f-strings and string literals, or a format spec. The values are the parts in source
 // order: whole string literals (Constant), the literal text of f-strings (FStringMiddle, or
 // FStringRawMiddle in raw f-strings) and replacement fields.
@@ -131,13 +131,13 @@ type JoinedStr struct { Values []StrPart }
 type TemplateStr struct { Values []StrPart }
 // A number, True, False, None, `...`, or adjacent string or bytes literals: the source text.
 type Constant terminal
-type Attribute struct { Value Expr, Attr string, Ctx string }
-type Subscript struct { Value Expr, Slice Expr, Ctx string }
-type Starred struct { Value Expr, Ctx string }
-type Name struct { Id string, Ctx string }
-type ListExpr struct { Elts []Expr, Ctx string }
-type Tuple struct { Elts []Expr, Ctx string }
-type Slice struct { Lower *Expr, Upper *Expr, Step *Expr }
+type Attribute struct { Value Expr; Attr string; Ctx string }
+type Subscript struct { Value Expr; Slice Expr; Ctx string }
+type Starred struct { Value Expr; Ctx string }
+type Name struct { Id string; Ctx string }
+type ListExpr struct { Elts []Expr; Ctx string }
+type Tuple struct { Elts []Expr; Ctx string }
+type Slice struct { Lower *Expr; Upper *Expr; Step *Expr }
 type Expr = BoolOp | NamedExpr | BinOp | UnaryOp | Lambda | IfExp | Dict | Set | ListComp | SetComp | DictComp | GeneratorExp | Await | Yield | YieldFrom | Compare | Call | FormattedValue | Interpolation | JoinedStr | TemplateStr | Constant | Attribute | Subscript | Starred | Name | ListExpr | Tuple | Slice
 
 // The literal text of an f-string or t-string between replacement fields, with its escape
@@ -148,14 +148,14 @@ type FStringRawMiddle terminal
 type StrPart = Constant | FStringMiddle | FStringRawMiddle | FormattedValue | Interpolation
 
 // --- Patterns ---
-type MatchCase struct { Pattern Pattern, Guard *Expr, Body []Stmt }
+type MatchCase struct { Pattern Pattern; Guard *Expr; Body []Stmt }
 type MatchValue struct { Value Expr }
 type MatchSingleton struct { Value Constant }
 type MatchSequence struct { Patterns []Pattern }
-type MatchMapping struct { Keys []Expr, Patterns []Pattern, Rest string }
-type MatchClass struct { Cls Expr, Patterns []Pattern, KwdAttrs []Identifier, KwdPatterns []Pattern }
+type MatchMapping struct { Keys []Expr; Patterns []Pattern; Rest string }
+type MatchClass struct { Cls Expr; Patterns []Pattern; KwdAttrs []Identifier; KwdPatterns []Pattern }
 type MatchStar struct { Name string }
-type MatchAs struct { Pattern *Pattern, Name string }
+type MatchAs struct { Pattern *Pattern; Name string }
 type MatchOr struct { Patterns []Pattern }
 type Pattern = MatchValue | MatchSingleton | MatchSequence | MatchMapping | MatchClass | MatchStar | MatchAs | MatchOr
 
@@ -171,16 +171,16 @@ type Arguments struct {
     KwArg       *Arg
     Defaults    []Expr
 }
-type Arg struct { Arg string, Annotation *Expr }
+type Arg struct { Arg string; Annotation *Expr }
 // Arg is "" for `**value`.
-type Keyword struct { Arg string, Value Expr }
-type Alias struct { Name string, AsName string }
-type WithItem struct { ContextExpr Expr, OptionalVars *Expr }
-type Comprehension struct { Target Expr, Iter Expr, Ifs []Expr, IsAsync bool }
-type ExceptHandler struct { Type *Expr, Name string, Body []Stmt }
-type TypeVar struct { Name string, Bound *Expr, DefaultValue *Expr }
-type ParamSpec struct { Name string, DefaultValue *Expr }
-type TypeVarTuple struct { Name string, DefaultValue *Expr }
+type Keyword struct { Arg string; Value Expr }
+type Alias struct { Name string; AsName string }
+type WithItem struct { ContextExpr Expr; OptionalVars *Expr }
+type Comprehension struct { Target Expr; Iter Expr; Ifs []Expr; IsAsync bool }
+type ExceptHandler struct { Type *Expr; Name string; Body []Stmt }
+type TypeVar struct { Name string; Bound *Expr; DefaultValue *Expr }
+type ParamSpec struct { Name string; DefaultValue *Expr }
+type TypeVarTuple struct { Name string; DefaultValue *Expr }
 type TypeParam = TypeVar | ParamSpec | TypeVarTuple
 // A name in a list of names (Global, Nonlocal, MatchClass.KwdAttrs).
 type Identifier terminal

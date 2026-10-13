@@ -6,7 +6,7 @@ import (
 )
 
 func TestModuleDisassembly(t *testing.T) {
-	prog := compile(t, `type P struct { K Match, N int }
+	prog := compile(t, `type P struct { K Match; N int }
 rule main = k:key "=" v:[0-9]+ #atomic (";" / _) => P{K: $k, N: len($v) + 1}
 rule key = [a-z]+ @error(message="expected a key") #atomic`)
 	got := prog.Module().Disassemble()

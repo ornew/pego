@@ -2,14 +2,14 @@
 
 Every rule has a type, and the checker verifies, when a grammar is compiled,
 that the values flowing through the grammar are of the types they are used as.
-This chapter defines the type of each parsing expression, how the type of a rule
-without a declaration is inferred, and the errors that the checker reports. The
-types themselves and the relation "assignable" are defined in the
+This chapter defines the type of each Rule Expression, how the type of a rule
+without an explicit Type Expression is inferred, and the errors that the checker
+reports. The types themselves and the relation "assignable" are defined in the
 [Type System](types.md).
 
-## Types of Expressions
+## Rule Expression Types
 
-| Expression | Type |
+| Rule Expression | Type |
 |:--|:--|
 | Literal, character class, `.`, `a #atomic`, `_` | `Match` |
 | `a b` | `Seq`; if the sequence has captures, a `Seq` with the corresponding fields |
@@ -28,12 +28,12 @@ match, and its type is `*T` instead.
 rule r = x:"a"? y:("b" / z:"c") // $x: *Match, $y: Match, $z: *Match
 ```
 
-## Types of Predicate and Value Actions
+## Action Expression Types
 
-The expressions of [Value Actions](actions.md) and [Predicate Actions](predicates.md#predicate-actions) have
-the following types.
+Action Expressions in [Value Actions](actions.md) and [Predicate Actions](predicates.md#predicate-actions)
+have the following types.
 
-| Expression | Type |
+| Action Expression | Type |
 |:--|:--|
 | Integer literal, `len(x)`, `x.startPos`, `x.endPos` | `int` |
 | String literal, `text(x)` | `string` |
@@ -41,12 +41,25 @@ the following types.
 | `nil` | `nil`, assignable to any optional type |
 | `$label` | The type of the capture (see above) |
 | `$n` | The type of the `n`-th item of the rule body |
-| `T{...}` | `T` |
+| `T{Field: value, ...}` | Struct Type `T` |
+| `T{stringValue}` | Terminal Type `T`; exactly one string-valued argument is required |
+| `[]T{a, b, ...}` | `[]T`; every element must have a known Type assignable to `T` |
 | `x.Name` | The type of the field `Name`; optional (`*T`) if `x` has a union type and only some members declare the field |
 | `foldl(init, l, f)`, `foldr(init, l, f)` | The type of `init`, widened to the union of it and the type of `f`'s result |
 | `map(l, f)` | `[]T`, where `T` is the type of `f`'s result, which MUST be a node or `nil` |
 | `list(a, b, ...)` | `[]T`, where `T` is the union of the types of the arguments, which MUST be nodes or `nil` |
 | `concat(l1, l2, ...)` | `[]T`, where `T` is the union of the element types of the arguments |
+
+For `[]T{...}`, the checker validates every element against the explicit element
+Type `T`. It reports non-assignable elements and elements whose Type is unknown,
+including unknown values nested in a typed list. An empty literal still has
+the declared `[]T` Type. Nil is allowed only if `T` permits nil. A terminal
+constructor is checked after alias resolution: its target must be a terminal
+Type, it must have exactly one argument, and that argument must be a string.
+
+The internal compiler option `NoTypeCheck` deliberately bypasses assignability
+checks. It does not add primitive-valued list storage or change the rules for
+checked compilation.
 
 The argument of `len` and `text` MUST be a string or a node (possibly `nil`);
 the list arguments of `foldl`, `foldr`, `map` and `concat` MUST be lists, and
@@ -87,6 +100,8 @@ The type checker reports the following errors:
 - an undefined type, a type alias that refers to itself, and a duplicate field;
 - a field that the struct type does not declare, in a struct constructor or a field access,
   and a field value that is not assignable to the type of the field;
+- a typed-list element that is unknown or not assignable to its explicit element Type;
+- a terminal constructor with a non-terminal target, wrong arity or non-string argument;
 - a rule whose value is not assignable to its declared type (except that a rule
   declared with a terminal type and without an action always produces a
   terminal of that type);

@@ -2,7 +2,7 @@
 package json
 
 type Object struct { Members []Member }
-type Member struct { Key String, Value Value }
+type Member struct { Key String; Value Value }
 type Array struct { Elements []Value }
 type String terminal // the raw string without quotes, escapes included
 type Number terminal

@@ -12,16 +12,16 @@ import (
 const assignedStream = `rule main = {limit := 1} ({i := 1} {j := 2} {i := 3} -"a")* #stream {limit == 1} $$`
 
 var envBindingCases = []genCase{
-	{"binding choice rollback", `type V struct { X int, Y int }
+	{"binding choice rollback", `type V struct { X int; Y int }
 rule main = {x := 1} {y := 2} ("a" {x := 3} {y := 4} "x" / "a" {x == 1} {y == 2} "b") $$ => V{X: x, Y: y}`, []string{"ab", "ax", "a", ""}},
-	{"binding rule scope", `type V struct { X int, Y int }
+	{"binding rule scope", `type V struct { X int; Y int }
 rule main = {x := 1} {y := 2} inner {x == 1} {y == 2} "b" $$ => V{X: x, Y: y}
 rule inner = {x := 3} {y := 4} {x == 3} {y == 4} "a"`, []string{"ab", "ax", ""}},
-	{"binding positive lookahead effects", `type V struct { X int, Y int }
+	{"binding positive lookahead effects", `type V struct { X int; Y int }
 rule main = {x := 1} {y := 2} &({x := 3} {y := 4} "a") {x == 3} {y == 4} "a" $$ => V{X: x, Y: y}`, []string{"a", "aa", ""}},
 	{"binding absent after rollback", `type V struct { X int }
 rule main = {x := 1} ({y := 2} "b" / {y := 3} {y == 3} "a") $$ => V{X: x}`, []string{"a", "b", ""}},
-	{"binding negative lookahead rollback", `type V struct { X int, Y int }
+	{"binding negative lookahead rollback", `type V struct { X int; Y int }
 rule main = {x := 1} {y := 2} !({x := 3} {y := 4} "b") {x == 1} {y == 2} "a" $$ => V{X: x, Y: y}`, []string{"a", "b", ""}},
 }
 

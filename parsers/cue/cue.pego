@@ -23,17 +23,17 @@ package cue
 // --- Declarations ---
 type File struct { Decls []Decl }
 type Package struct { Name Ident }
-type ImportDecl struct { Lparen *Match, Specs []ImportSpec }
-type ImportSpec struct { Name *Ident, Path String }
-type Field struct { Label Label, Alias *PostfixAlias, Constraint *Match, Value Expr, Attrs []Attribute }
-type PostfixAlias struct { Label *Ident, Field Ident }
-type EmbedDecl struct { Expr Expr, Alias *PostfixAlias } // Alias is read and dropped by cue/parser
-type LetClause struct { Ident Ident, Expr Expr }
+type ImportDecl struct { Lparen *Match; Specs []ImportSpec }
+type ImportSpec struct { Name *Ident; Path String }
+type Field struct { Label Label; Alias *PostfixAlias; Constraint *Match; Value Expr; Attrs []Attribute }
+type PostfixAlias struct { Label *Ident; Field Ident }
+type EmbedDecl struct { Expr Expr; Alias *PostfixAlias } // Alias is read and dropped by cue/parser
+type LetClause struct { Ident Ident; Expr Expr }
 type Ellipsis struct { Type *Expr }
-type Comprehension struct { Clauses []Clause, Value StructLit, Fallback *FallbackClause }
-type ForClause struct { Key *Ident, Value Ident, Source Expr }
+type Comprehension struct { Clauses []Clause; Value StructLit; Fallback *FallbackClause }
+type ForClause struct { Key *Ident; Value Ident; Source Expr }
 type IfClause struct { Condition Expr }
-type TryClause struct { Ident *Ident, Expr *Expr }
+type TryClause struct { Ident *Ident; Expr *Expr }
 type FallbackClause struct { Body StructLit }
 
 // --- Expressions ---
@@ -49,14 +49,14 @@ type Interpolation struct { Elts []Expr } // String fragments and the expression
 type StructLit struct { Elts []Decl }
 type ListLit struct { Elts []Expr }
 type ParenExpr struct { X Expr }
-type SelectorExpr struct { X Expr, Sel Selector }
-type IndexExpr struct { X Expr, Index Expr, Rbrack Match }
-type SliceExpr struct { X Expr, Low *Expr, High *Expr }
-type CallExpr struct { Fun Expr, Args []Expr }
-type UnaryExpr struct { Op Match, X Expr }
-type BinaryExpr struct { X Expr, Op Match, Y Expr }
-type PostfixExpr struct { X Expr, Op Match }
-type Alias struct { Ident Ident, Expr Expr }
+type SelectorExpr struct { X Expr; Sel Selector }
+type IndexExpr struct { X Expr; Index Expr; Rbrack Match }
+type SliceExpr struct { X Expr; Low *Expr; High *Expr }
+type CallExpr struct { Fun Expr; Args []Expr }
+type UnaryExpr struct { Op Match; X Expr }
+type BinaryExpr struct { X Expr; Op Match; Y Expr }
+type PostfixExpr struct { X Expr; Op Match }
+type Alias struct { Ident Ident; Expr Expr }
 
 type StrLit = String | Interpolation
 type Number = Int | Float

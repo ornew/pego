@@ -2,9 +2,9 @@
 // records (nested), actions with built-ins, $n of sequence and non-sequence bodies, rules without
 // actions whose captures become fields, value-free calls (twins) and errors in actions.
 type Name terminal
-type Row struct { Cells []Name, Mark *Match, N int, Txt string, Pos int, End int, Ok bool }
-type KV struct { K *Name, V *Name, All string, Div int }
-type Tab struct { Rows []Row, Sum int, Neg int, Label string, Pairs []KV, One KV }
+type Row struct { Cells []Name; Mark *Match; N int; Txt string; Pos int; End int; Ok bool }
+type KV struct { K *Name; V *Name; All string; Div int }
+type Tab struct { Rows []Row; Sum int; Neg int; Label string; Pairs []KV; One KV }
 rule main Tab = (
     rows:(cells:(c:name -","?)* (m:"!")? ";")* ps:(p:kv -" "?)* -pair o:one t:("#" [a-z]*)? #atomic $$
 ) => Tab{Rows: map($rows, (r) => Row{Cells: map($r.cells, (x) => $x.c), Mark: $r.m, N: len($r.cells), Txt: text($r), Pos: $r.startPos, End: $r.endPos, Ok: len($r.cells) > 1 && !(len($r.cells) > 3) || false}), Sum: foldl(0, $rows, (acc, r) => $acc + len($r.cells)), Neg: -len($rows), Label: text($t) + "!", Pairs: map($ps, (e) => $e.p), One: $o}

@@ -2,8 +2,8 @@
 // callee undone when the caller backtracks (and replayed from the memo), anchors, bounded
 // repetitions, ., _ and _|_, and choices whose later alternatives can never be tried.
 type Name terminal
-type T struct { Open Name, Close Name, Note *Name, Tail *Match, Pick *Match, Ws []Match }
-type D struct { Ts []T, End *Match }
+type T struct { Open Name; Close Name; Note *Name; Tail *Match; Pick *Match; Ws []Match }
+type D struct { Ts []T; End *Match }
 rule main D = ^^ ts:(t:tag ";" / t:tag ".")* e:end $$ => D{Ts: map($ts, (x) => $x.t), End: $e}
 rule tag T = (
     "<" a:name ">" ("w" _|_ / "w")? b:name {text($a) == text($b)} @error(message="mismatched") n:note?

@@ -1,12 +1,12 @@
-# Parsing Expressions
+# Rule Expressions
 
-A parsing expression is the right-hand side of a rule definition. It
+A Rule Expression is the right-hand side of a Rule Definition Statement. It
 matches a prefix of the input at the current position and either succeeds,
 possibly consuming input and producing a value, or fails.
 
 ## Evaluation
 
-A parsing expression is evaluated at a position of the input. If it succeeds,
+A Rule Expression is evaluated at a position of the input. If it succeeds,
 the evaluation produces an end position, which is the position where the
 next expression of a sequence continues, and a value (or no value). If it
 fails, it has no effect: the position, the captures and the
@@ -29,7 +29,7 @@ holds for every expression:
 ## Values and the Concrete Syntax Tree
 
 PEGO produces a predictable and consistent concrete syntax tree (CST). When a
-parsing expression succeeds it produces a value, normally a node. A rule without
+Rule Expression succeeds it produces a value, normally a node. A rule without
 an action produces the value of its body.
 
 | Expression | Value |
@@ -388,7 +388,7 @@ The following restrictions apply:
 
 ## Rule Calls
 
-A rule name in a parsing expression calls the rule at the current position:
+A rule name in a Rule Expression calls the rule at the current position:
 the body of the rule is evaluated there. If the body succeeds, so does the
 call, with the end position of the body and the value of the rule (the value of
 its action, if it has one). The rule MUST be defined; see

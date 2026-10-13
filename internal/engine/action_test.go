@@ -33,7 +33,7 @@ type R struct { X *Match }`,
 }
 
 func TestActions(t *testing.T) {
-	check(t, `type KV struct { Key Match, Op Match, Value Match }
+	check(t, `type KV struct { Key Match; Op Match; Value Match }
 rule main = k:[a-z]+ #atomic op:"=" v:[0-9]+ #atomic => KV{Key: $1, Op: $op, Value: $3}`,
 		ok("abc=12", `(KV Key="abc" Op="=" Value="12")`),
 	)
@@ -41,7 +41,7 @@ rule main = k:[a-z]+ #atomic op:"=" v:[0-9]+ #atomic => KV{Key: $1, Op: $op, Val
 rule inner = [a-z]+ #atomic`,
 		ok("(ab)", `"ab"@inner`),
 	)
-	check(t, `type Pair struct { All node, N int, S string, B bool }
+	check(t, `type Pair struct { All node; N int; S string; B bool }
 rule main = "a" "b" => Pair{All: $0, N: 1 + 2 * 3, S: "x" + text($2), B: !false && 1 < 2}`,
 		ok("ab", "(Pair All=[\"a\" \"b\"] B=true N=7 S=`xb`)"),
 	)
@@ -84,7 +84,7 @@ func TestOptionalResults(t *testing.T) {
 		ok("a", `"a"`),
 		ok("", `nil`),
 	)
-	check(t, `type C struct { X Match, Next *C }
+	check(t, `type C struct { X Match; Next *C }
 rule main *C = xs:"a"* => foldr(nil, $xs, (acc, x) => C{X: $x, Next: $acc})`,
 		ok("", `nil`),
 		ok("aa", `(C Next=(C Next=nil X="a") X="a")`),
@@ -92,7 +92,7 @@ rule main *C = xs:"a"* => foldr(nil, $xs, (acc, x) => C{X: $x, Next: $acc})`,
 }
 
 func TestFold(t *testing.T) {
-	src := `type Op struct { Left Node, Op Match, Right Node }
+	src := `type Op struct { Left Node; Op Match; Right Node }
 type Node = Op | Match
 rule main Node = (
     l:num rest:(op:("+" / "-") #atomic r:num)*
@@ -108,7 +108,7 @@ rule num = [0-9]+ #atomic`
 }
 
 func TestListBuiltins(t *testing.T) {
-	check(t, `type Args struct { Items []Match, N int }
+	check(t, `type Args struct { Items []Match; N int }
 rule main = (
     first:item rest:(-"," x:item)*
 ) => Args{Items: concat(list($first), map($rest, (r) => $r.x)), N: len($rest) + 1}
@@ -116,7 +116,7 @@ rule item = [a-z]+ #atomic`,
 		ok("a,bc,d", `(Args Items=["a"@item "bc"@item "d"@item] N=3)`),
 	)
 	// An inner lambda reads a parameter of the enclosing lambda.
-	check(t, `type Pair struct { G Match, X Match }
+	check(t, `type Pair struct { G Match; X Match }
 rule main = gs:group* => map($gs, (g) => map($g.xs, (x) => Pair{G: $g.k, X: $x.v}))
 rule group = k:[a-z] #atomic "=" xs:(v:[0-9] #atomic)* ";"`,
 		ok("a=12;b=3;", `[[(Pair G="a" X="1") (Pair G="a" X="2")] [(Pair G="b" X="3")]]`),
@@ -124,7 +124,7 @@ rule group = k:[a-z] #atomic "=" xs:(v:[0-9] #atomic)* ";"`,
 }
 
 func TestMemberAccess(t *testing.T) {
-	check(t, `type Span struct { Start int, End int, Kids int }
+	check(t, `type Span struct { Start int; End int; Kids int }
 rule main = "  " w:word => Span{Start: $w.startPos, End: $w.endPos, Kids: len($w.children)}
 rule word = [a-z] [a-z]`,
 		ok("  ab", `(Span End=4 Kids=2 Start=2)`),
@@ -132,7 +132,7 @@ rule word = [a-z] [a-z]`,
 }
 
 func TestNodePositions(t *testing.T) {
-	prog := compile(t, `type Op struct { Left Node, Right Node }
+	prog := compile(t, `type Op struct { Left Node; Right Node }
 type Node = Op | Match
 rule main Node = l:num rest:(-" "* -"+" r:num)* => foldl($l, $rest, (acc, i) => Op{Left: $acc, Right: $i.r})
 rule num = -" "* n:[0-9]+ #atomic => $n`)
@@ -253,7 +253,7 @@ rule main = x:"a"? "b" => T{S: text($x) + "!"}`, ok("b", "(T S=`!`)"))
 
 // TestLargeIntegers checks that integer literals beyond 32 bits keep their value on every backend.
 func TestLargeIntegers(t *testing.T) {
-	prog := compile(t, `type T struct { A int, B int, C int, D int, E int }
+	prog := compile(t, `type T struct { A int; B int; C int; D int; E int }
 rule main = "a" => T{A: 3000000000, B: 0 - 3000000000, C: 9223372036854775807, D: 0 - 9223372036854775807 - 1, E: 4294967296}`)
 	want := `(T A=3000000000 B=-3000000000 C=9223372036854775807 D=-9223372036854775808 E=4294967296)`
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
@@ -266,7 +266,7 @@ rule main = "a" => T{A: 3000000000, B: 0 - 3000000000, C: 9223372036854775807, D
 // TestLenOfStrings checks that len counts the characters of strings in the position unit on
 // every backend, for strings that do not come from the input too.
 func TestLenOfStrings(t *testing.T) {
-	prog := compile(t, `type T struct { N int, M int }
+	prog := compile(t, `type T struct { N int; M int }
 rule main = x:"a" => T{N: len("日本"), M: len(text($x) + "é")}`)
 	for _, b := range []Backend{Closure, Bytecode, BytecodeIterative} {
 		for _, tc := range []struct {

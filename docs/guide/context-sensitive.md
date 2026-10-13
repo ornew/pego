@@ -356,7 +356,7 @@ package tags
 
 type Name terminal
 type Chars terminal
-type Element struct { Name Name, Children []Content }
+type Element struct { Name Name; Children []Content }
 type Content = Element | Chars
 
 rule main Element = e:element $$ => $e
@@ -580,8 +580,8 @@ package doc
 
 type Word terminal
 type Line terminal
-type Heredoc struct { Tag Word, Lines []Line }
-type Command struct { Words []Word, Doc *Heredoc }
+type Heredoc struct { Tag Word; Lines []Line }
+type Command struct { Words []Word; Doc *Heredoc }
 
 rule main = cs:(-ws c:command)* ws $$ => map($cs, (x) => $x.c)
 

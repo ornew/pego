@@ -13,12 +13,12 @@ import (
 )
 
 var nodeDirectCases = []genCase{
-	{"node/direct_memo_action", `type Pair struct { Left Match, Right Match }
+	{"node/direct_memo_action", `type Pair struct { Left Match; Right Match }
 rule main = pair "!" $$ / pair "?" $$
 rule pair Pair = left:[a-z] #atomic "-" right:number => Pair{Left: $left, Right: $right}
 rule number = [0-9]+ #atomic
 `, []string{"a-12!", "a-12?", "a-x?", "a-12", "é-12?", ""}},
-	{"node/direct_nested_frames", `type Item struct { Name Match, Value Match }
+	{"node/direct_nested_frames", `type Item struct { Name Match; Value Match }
 type Doc struct { Items []Item }
 rule main Doc = items:item #repeat(1, 3) $$ => Doc{Items: $items}
 rule item Item = name:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" => Item{Name: $name, Value: $value}

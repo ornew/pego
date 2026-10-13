@@ -5,10 +5,10 @@ about the second job. It starts with the tree that every grammar produces withou
 with captures, atomic (`#atomic`) and discard (`-`), and then shows how to replace it with a typed AST built by
 [actions](../../spec/actions.md). It ends with recipes and the authoring guidelines that keep parsing fast.
 
-The guide complements the normative chapters [Parsing Expressions](../../spec/parser-expressions.md),
+The guide complements the normative chapters [Rule Expressions](../../spec/parser-expressions.md),
 [Type System](../../spec/types.md) and [Actions](../../spec/actions.md); read them for the exact rules. Here the focus
-is on how and why to use each feature. For operator expressions (`foldl` chains versus Operators Rule declarations) see the
-companion guide [Parsing expressions with operators](expressions.md).
+is on how and why to use each feature. For operator expressions (`foldl` chains
+versus Operators Rule Definition Statements), see the companion guide [Rule Expressions with Operators](expressions.md).
 
 Every grammar and output below was produced by running it. To follow along, put each grammar in the file named on its
 first line and run the command shown, using either the installed tool or `go run ./cmd/pego` from a checkout:
@@ -103,7 +103,7 @@ pego parse -g optional.pego -i 'a'
 
 ## 2. The Default Tree
 
-If a rule has no action, the tree is determined by the shape of the parsing expression alone. This is the **concrete
+If a rule has no action, the tree is determined by the shape of the Rule Expression alone. This is the **concrete
 syntax tree** (CST). The rules are short enough to memorize:
 
 | Expression | Value |
@@ -358,7 +358,7 @@ type shows up in the error messages, for example when a field expects a `Match` 
 
 ```pego
 // field-type.pego
-type Pair struct { Key Match, Value Match }
+type Pair struct { Key Match; Value Match }
 rule pair Pair = k:key "=" v:value => Pair{Key: $k, Value: $v}
 rule key = [a-z]+
 rule value = [0-9]+ #atomic
@@ -399,7 +399,7 @@ use it.
 An action is an expression after `=>` inside a rule body that computes the value of the rule from what the body matched:
 
 ```pego
-rule <name> [<type>] = <parsing expression> => <action>
+rule <name> [<type>] = <rule expression> => <action expression>
 ```
 
 The action covers the whole right-hand side, and its result must be a node (or `nil`). Inline actions such as
@@ -437,7 +437,7 @@ positions:
 type Name terminal
 type Number terminal
 type Value = Name | Number
-type Assign struct { Name Name, Value Value }
+type Assign struct { Name Name; Value Value }
 
 rule assign Assign = name -ws -"=" -ws value -";" => Assign{Name: $1, Value: $2}
 rule value Value = number / name
@@ -469,7 +469,7 @@ mismatches are compile-time errors:
 // field-errors.pego
 type Name terminal
 type Number terminal
-type Assign struct { Name Name, Value Number }
+type Assign struct { Name Name; Value Number }
 
 rule a Assign = k:name "=" v:name => Assign{Name: $k, Value: $v}
 rule b Assign = k:name "=" v:number => Assign{Name: $k, Valu: $v}
@@ -484,6 +484,34 @@ pego parse -g field-errors.pego -s a -i 'a=b'
 ```text
 pego: field-errors.pego:7:61: Assign has no field Valu
 ```
+
+### Typed Node Lists and Terminal Nodes
+
+A typed node-list literal states the element Type directly rather than inferring
+it from the evaluated values. Every item must have a known Type assignable to the target,
+including items in nested lists. Nil is accepted only for an optional element
+Type; an empty typed list is still a non-nil `List`.
+
+```pego
+type NameNode struct { Name string }
+rule name NameNode = [a-z]+ => NameNode{Name: text($1)}
+rule names []NameNode = a:name "," b:name => []NameNode{$a, $b}
+rule emptyNames []NameNode = "" => []NameNode{}
+```
+
+A terminal node can be built from a string already available in an Action
+Expression. The text is stored as supplied; PEGO does not reparse it against the
+terminal's matching Rule Expression. The constructor needs one string argument.
+
+```pego
+type Identifier terminal
+rule identifier Identifier = [a-z]+
+rule normalized Identifier = n:identifier => Identifier{text($n)}
+```
+
+Struct constructors still use named fields and commas. Struct Type Definition
+Statement fields use semicolons or hard newlines. Lists of primitive values such
+as `[]int` are not supported.
 
 `x.Field` reads a field of a node; `x` may be a capture or the result of another access. Every node also has the fields
 `startPos`, `endPos` (integers) and `children` (a list). Reading a field of a value that may be `nil` is an error, so
@@ -557,7 +585,7 @@ pair the key with every item:
 ```pego
 // outer-capture.pego
 type Ident terminal
-type Pair struct { A Ident, B Ident }
+type Pair struct { A Ident; B Ident }
 type Pairs struct { Items []Pair }
 
 rule pairs Pairs = k:ident ":" xs:(x:ident -","?)* => Pairs{Items: map($xs, (r) => Pair{A: $k, B: $r.x})}
@@ -854,7 +882,7 @@ pego parse -g args.pego -s args_cst -f sexpr -i 'a, b, c'
 ```pego
 // args-optional.pego
 type Ident terminal
-type Call struct { Fn Ident, Args []Ident }
+type Call struct { Fn Ident; Args []Ident }
 rule call Call = fn:ident "(" args:args? ")" => Call{Fn: $fn, Args: $args}
 rule args = first:ident rest:(-"," x:ident)* => concat(list($first), map($rest, (r) => $r.x))
 rule ident Ident = [a-z]+
@@ -946,7 +974,7 @@ values and runs no actions.
 | `cannot access .F of *T` | The value may be `nil` (for example `n:name?`). Read the field in a rule where the value is always present |
 | `rule r produces X, which is not assignable to T` | The declared type does not accept the body's value; the CST of a sequence is a `Seq`, so a struct type needs an action |
 | `inline actions are not implemented` | The compiler recognized an inline action such as `(part => build($1))`, but inline action execution is not implemented |
-| Nondefault declaration-level action on an Operators Rule | Omit the action, use the explicit `=> ...` default-CST form, or put the action on an operand or operator entry |
+| Nondefault rule-level Value Action on an Operators Rule | Omit the action, use the explicit `=> ...` default-CST form, or put the action on an operand or operator entry |
 | `capture k inside #atomic, -, or ! has no effect` | Captures cannot be made inside atomic, discard or negative lookahead; capture the whole expression or restructure |
 | `undefined capture $z` | The capture is not made in this rule; captures are not visible across rules |
 | `$n is out of range: the rule has N elements with a value` | `$n` counts only elements with a value |

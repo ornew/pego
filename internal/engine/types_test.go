@@ -30,7 +30,7 @@ rule main = "a" => Alias{}`, `Alias is not a struct type`},
 		{`type A = B
 type B = A
 rule main = "a" => A{}`, `A is not a struct type`},
-		{`type A struct { X Match, X Match }`, `duplicate field X in A`},
+		{`type A struct { X Match; X Match }`, `duplicate field X in A`},
 		{`rule main int = "a"`, `rule main must produce a node, but its type is int`},
 		{`type P struct { X Match }
 rule main = "a" => P{X: 1}`, `cannot use int as Match in field X of P`},
@@ -74,23 +74,23 @@ func TestWellTyped(t *testing.T) {
 	for _, src := range []string{
 		// Union types and the type of the foldl accumulator
 		`type Number terminal
-type Op struct { Left Node, Op Match, Right Node }
+type Op struct { Left Node; Op Match; Right Node }
 type Node = Op | Number
 rule expr Node = l:num rest:(op:("+" / "-") #atomic r:num)* => foldl($l, $rest, (acc, i) => Op{Left: $acc, Op: $i.op, Right: $i.r})
 rule num Number = [0-9]+`,
 		// The accumulator type is widened by inference
-		`type Op struct { L node, R Match }
+		`type Op struct { L node; R Match }
 rule expr = l:"x" #atomic rest:(r:"y" #atomic)* => foldl($l, $rest, (acc, i) => Op{L: $acc, R: $i.r})
 rule main = e:expr => $e`,
 		// Inferred rule types and optional types
-		`type P struct { X *Match, Y []Match, Z Seq }
+		`type P struct { X *Match; Y []Match; Z Seq }
 rule main = x:"a"? y:item* z:pair => P{X: $x, Y: $y, Z: $z}
 rule item = [a-z] #atomic
 rule pair = "(" ")"`,
 		// Optional values as results of rules, actions and map functions
 		`rule main = x:"a"? => $x`,
 		`rule main *Match = "a"?`,
-		`type C struct { X Match, Next *C }
+		`type C struct { X Match; Next *C }
 rule main *C = xs:"a"* => foldr(nil, $xs, (acc, x) => C{X: $x, Next: $acc})`,
 		`rule main = xs:p* => map($xs, (p) => $p.x)
 rule p = x:"a"? #atomic ";"`,
@@ -107,7 +107,7 @@ rule main = xs:stmts => concat($xs)
 rule stmts = stmt* #recover(skip=[^;]+ ";")
 rule stmt S = x:"x" #atomic ";" => S{X: $x}`,
 		// Field access and built-in fields
-		`type P struct { S int, K []*node }
+		`type P struct { S int; K []*node }
 rule main = w:word => P{S: $w.startPos + $w.endPos, K: $w.children}
 rule word = k:"a" v:"b"`,
 	} {

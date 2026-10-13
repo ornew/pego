@@ -25,7 +25,7 @@ All examples on this page use one small grammar, `pairs.pego`, that reads `key=v
 semicolons:
 
 ```pego
-type Pair struct { Key Match, Value Match }
+type Pair struct { Key Match; Value Match }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
@@ -376,7 +376,7 @@ closure backend serves as the reference. They differ in speed, memory, how they 
 
 | Backend | Option | How it runs | Needs the grammar AST |
 |:--|:--|:--|:--|
-| Closure | `pego.Closure` | Compiles parsing expressions into Go closures | Yes |
+| Closure | `pego.Closure` | Compiles Rule Expressions into Go closures | Yes |
 | Bytecode (recursive) | `pego.Bytecode` | A VM running [portable bytecode](../../spec/bytecode.md); rule calls use Go recursion | No |
 | Bytecode (iterative) | `pego.BytecodeIterative` | The same bytecode on a VM with its own call stack | No |
 | Generated Go | (not an option) | A Go parser generated ahead of time by `pego gen` | At generation time |

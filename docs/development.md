@@ -157,7 +157,7 @@ Root `go test ./...` covers the main module. Run [`parsers/test.sh`](../parsers/
 | Done | | Union types (`T \| U`) |
 | Done | | Type checking |
 | Done | | Type inference |
-| Done | Parser expressions | Literals (`"..."`) |
+| Done | Rule Expressions | Literals (`"..."`) |
 | Done | | Character matching (`[...]`) |
 | Done | | Sequences (`a b`) |
 | Done | | Choices (`a / b`) |
@@ -180,7 +180,7 @@ Root `go test ./...` covers the main module. Run [`parsers/test.sh`](../parsers/
 | Done | | Predicate variables (`{x}`, `{x := 1}`) |
 | Done | | Capture references (`$label`, `$1`) |
 | Done | | Built-in functions (`foldl`, `len`, `text`, and others) |
-| Done | | Constructors (`Type{...}`) |
+| Done | | Struct constructors (`Type{Field: value}`), typed node-list constructors (`[]Type{...}`), and positional terminal constructors (`Type{"text"}`) |
 | Done | Advanced | Left recursion |
 | Done | | Parsing PEGO source (`.pego`) |
 | Done | | Operators Rule declarations |

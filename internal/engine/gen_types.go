@@ -661,6 +661,13 @@ func (t *typedGen) typedRuntime(b *strings.Builder) {
 		fmt.Fprintf(&reg, "\ttrules[%d].term = func(p *tparser, start, end int, text string) tval {\n\t\tv := astNew(&p.ext.(*tslabs).t%s)\n\t\t*v = %s{%s: %s{start, end}, Text: text}\n\t\treturn v\n\t}\n", r.id, g, g, span, span)
 	}
 	var cons strings.Builder
+	for _, name := range t.terms {
+		if !t.g.terminalConstructors[name] {
+			continue
+		}
+		g := t.names[name]
+		fmt.Fprintf(&cons, "// tmk_%s constructs a terminal with supplied text.\nfunc tmk_%s(c *tctx, final bool, raw any) any {\n\ttext, ok := raw.(string)\n\tif !ok { evalErrorf(\"terminal constructor requires a string, got %%s\", ttypeName(raw)) }\n\ta := c.p.ext.(*tslabs)\n\tv := astNew(&a.t%s)\n\t*v = %s{%s: %s{c.start, c.end}, Text: text}\n\tif final { return v }\n\treturn c.made(v, true, 0, 0)\n}\n\n", name, name, g, g, span, span)
+	}
 	for _, name := range t.structs {
 		g := t.names[name]
 		fields := t.info.fields[name]

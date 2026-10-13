@@ -57,6 +57,7 @@ func (g *Grammar) AllComments() []*Comment {
 		}
 	}
 	var term func(Term)
+	var typ func(TypeExpr)
 	term = func(t Term) {
 		switch t := t.(type) {
 		case *TermGroup:
@@ -73,6 +74,15 @@ func (g *Grammar) AllComments() []*Comment {
 		case *New:
 			for _, field := range t.Fields {
 				term(field.Value)
+			}
+		case *ListConstructor:
+			typ(t.Elem)
+			for _, item := range t.Items {
+				term(item)
+			}
+		case *TerminalConstructor:
+			for _, arg := range t.Args {
+				term(arg)
 			}
 		case *Call:
 			for _, arg := range t.Args {
@@ -91,7 +101,6 @@ func (g *Grammar) AllComments() []*Comment {
 			term(t.X)
 		}
 	}
-	var typ func(TypeExpr)
 	typ = func(t TypeExpr) {
 		switch t := t.(type) {
 		case *TypeGroup:

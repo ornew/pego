@@ -79,6 +79,42 @@ func TestSourceGrammarMatchesDocumentation(t *testing.T) {
 	}
 }
 
+func TestSourceGrammarNodeConstructors(t *testing.T) {
+	p, _ := sourceGrammar(t)
+	const src = `type Foo struct { A Match; B []Foo }
+type Word terminal
+rule word = "x" => Word{"0"}
+rule empty = "x" => []Foo{}
+rule nested = "x" => [][]Foo{[]Foo{Foo{A: $1}},}
+rule args = "x" => Word{"a", "b",}
+`
+	if _, err := pego.ParseGrammar(src); err != nil {
+		t.Fatal(err)
+	}
+	for _, backend := range []pego.Backend{pego.Closure, pego.Bytecode, pego.BytecodeIterative} {
+		n, err := p.Parse(src, pego.WithBackend(backend))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defs := sourceDefs(t, n)
+		terminal := sourceField(t, defs[2], "Action")
+		if terminal.Type() != "TerminalConstructor" || len(sourceField(t, terminal, "Args").Children) != 1 {
+			t.Fatal("terminal source arguments lost")
+		}
+		empty := sourceField(t, defs[3], "Action")
+		if empty.Type() != "ListConstructor" || len(sourceField(t, empty, "Items").Children) != 0 {
+			t.Fatal("empty typed source list lost")
+		}
+		nested := sourceField(t, defs[4], "Action")
+		if sourceField(t, nested, "Elem").Type() != "ListType" || sourceField(t, nested, "Items").Children[0].Type() != "ListConstructor" {
+			t.Fatal("nested typed source list lost")
+		}
+		if args := sourceField(t, sourceField(t, defs[5], "Action"), "Args"); len(args.Children) != 2 {
+			t.Fatal("invalid terminal arity must remain parseable")
+		}
+	}
+}
+
 const sourceTreeFixture = `// leading one
 // leading two
 package sample
@@ -185,7 +221,7 @@ func TestSourceGrammarRecovery(t *testing.T) {
 		{"operator", "rule expression = operators {\n operand \"ok\"\n level {\n infix left\n postfix \"!\"\n }\n}\nrule after = \"ok\"", "expected infix expression", 2},
 		{"action", "rule predicate = {\n x :=\n true\n}\nrule after = \"ok\"", "expected assignment value", 2},
 		{"literal delimiter", "type T struct { Bad = \"}\", Good Match }\nrule after = \"ok\"", "expected field type", 2},
-		{"comment delimiter", "type T struct { Bad = /* } */ 1, Good Match }\nrule after = \"ok\"", "expected field type", 2},
+		{"comment delimiter", "type T struct { Bad = /* } */ 1; Good Match }\nrule after = \"ok\"", "expected field type", 2},
 		{"action delimiter", "rule predicate = { bad = \"}\"; true }\nrule after = \"ok\"", "expected semicolon", 2},
 		{"broken multiline group", "rule broken = (\nrule after = \"ok\"\n)", "expected rule expression", 3},
 		{"end of file", "rule broken =", "expected rule expression", 1},

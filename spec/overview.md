@@ -6,18 +6,20 @@ here links to its chapter.
 
 ## What a Grammar Describes
 
-A **grammar** is a set of **rules**. Each rule has a name and a **parsing
-expression** that matches input: literals, character classes, sequences,
-ordered choices, repetitions, lookahead and calls of other rules, as in any
-Parsing Expression Grammar. A parse starts at a **start rule** and has to match
+A grammar file contains an optional package clause followed by Type and Rule
+Definition Statements. Type definitions use Type Expressions; ordinary Rule
+Definition Statements combine a Rule Expression with an optional Value Action
+containing an Action Expression. An Operators Rule is a specialized Rule
+Definition Statement. Rule Expressions use PEG choice and repetition, along with
+PEGO-specific constructs. A parse starts at a **start rule** and has to match
 the whole input (see [Parsing](parsing.md)).
 
-PEGO extends PEG so that a grammar also says what the parse produces and how it
-fails:
+PEGO extends PEG (Parsing Expression Grammar), but it is not plain PEG: the
+language adds typed values, actions, contextual recognition, and error recovery:
 
 | A grammar says | By means of | Chapter |
 |:--|:--|:--|
-| How the text is structured | Rules, sequences, ordered choice, repetition, lookahead, [left recursion](parser-expressions.md#left-recursion) | [Parsing Expressions](parser-expressions.md) |
+| How the text is structured | Rules, sequences, ordered choice, repetition, lookahead, [left recursion](parser-expressions.md#left-recursion) | [Rule Expressions](parser-expressions.md) |
 | How expressions with operators are parsed | Operators Rule declarations: operators grouped by precedence and associativity | [Operators Rule](operators-rule.md) |
 | What the tree looks like | A predictable concrete syntax tree by default; `#atomic` and `-` to shape it; captures `label:a` | [Values and the concrete syntax tree](parser-expressions.md#values-and-the-concrete-syntax-tree) |
 | What the types of the tree are | `type` definitions: struct, union and terminal types, checked when the grammar is compiled | [Type System](types.md), [Type Checking](type-checking.md) |

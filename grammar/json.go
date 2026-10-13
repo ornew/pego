@@ -37,7 +37,7 @@ func init() {
 		(*IntLit)(nil), (*StringLit)(nil), (*BoolLit)(nil), (*NilLit)(nil),
 		(*CaptureRef)(nil), (*IndexRef)(nil), (*VarRef)(nil), (*Member)(nil),
 		(*New)(nil), (*Call)(nil), (*Lambda)(nil), (*Binary)(nil), (*Unary)(nil),
-		(*Assign)(nil), (*Block)(nil), (*TermGroup)(nil),
+		(*Assign)(nil), (*Block)(nil), (*TermGroup)(nil), (*ListConstructor)(nil), (*TerminalConstructor)(nil),
 	)
 }
 

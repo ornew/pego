@@ -25,17 +25,17 @@ type BoolLit terminal
 type NullLit terminal
 
 type Paren struct { X Expr }
-type Select struct { X Expr, Field Name, Optional bool }
-type Index struct { X Expr, Index Expr, Optional bool }
-type Call struct { Target *Expr, Func Ident, Args []Expr }
-type Unary struct { Op Match, X Expr }
-type Binary struct { Left Expr, Op Match, Right Expr }
-type Conditional struct { Cond Expr, Then Expr, Else Expr }
+type Select struct { X Expr; Field Name; Optional bool }
+type Index struct { X Expr; Index Expr; Optional bool }
+type Call struct { Target *Expr; Func Ident; Args []Expr }
+type Unary struct { Op Match; X Expr }
+type Binary struct { Left Expr; Op Match; Right Expr }
+type Conditional struct { Cond Expr; Then Expr; Else Expr }
 type ListLit struct { Elems []Expr }
 type MapLit struct { Entries []Entry }
-type Entry struct { Key Expr, Value Expr, Optional bool }
-type MessageLit struct { Type Ident, Fields []Field }
-type Field struct { Name Name, Value Expr, Optional bool }
+type Entry struct { Key Expr; Value Expr; Optional bool }
+type MessageLit struct { Type Ident; Fields []Field }
+type Field struct { Name Name; Value Expr; Optional bool }
 type Optional struct { X Expr }
 
 type Expr = Ident | IntLit | UintLit | DoubleLit | StringLit | BytesLit | BoolLit | NullLit | Paren | Select | Index | Call | Unary | Binary | Conditional | ListLit | MapLit | MessageLit | Optional

@@ -11,28 +11,28 @@ type Nil terminal
 type CaptureRef terminal
 type VarRef terminal
 
-type File struct { Package *PackageStmt, Defs []Def, Comments []Comment, TrailingComments []Comment, Text string }
+type File struct { Package *PackageStmt; Defs []Def; Comments []Comment; TrailingComments []Comment; Text string }
 type PackageStmt = Package | Error
-type Package struct { Name Ident, Comments []Comment }
+type Package struct { Name Ident; Comments []Comment }
 type Def = TypeDef | RuleDef | Error
-type TypeDef struct { Name Ident, Spec TypeSpec, Comments []Comment }
+type TypeDef struct { Name Ident; Spec TypeSpec; Comments []Comment }
 type TypeSpec = TypeAliasSpec | TerminalSpec | StructSpec
 type TypeAliasSpec struct { Type Type }
 type TerminalSpec struct {}
-type StructSpec struct { Fields []FieldSpec, Comments []Comment }
+type StructSpec struct { Fields []FieldSpec; Comments []Comment }
 type FieldSpec = Field | Error
-type Field struct { Name Ident, Type Type, Comments []Comment }
+type Field struct { Name Ident; Type Type; Comments []Comment }
 type Type = TypeRef | TypeGroup | OptionalType | ListType | UnionType
 type TypeRef struct { Name Ident }
 type TypeGroup struct { Type Type }
 type OptionalType struct { Type Type }
 type ListType struct { Type Type }
-type UnionType struct { L Type, R Type }
+type UnionType struct { L Type; R Type }
 
 type Comment = CommentGroup | InlineComment
 type CommentGroup struct { Lines []Match }
-type InlineComment struct { Start Match, Body Match, End Match }
-type RuleDef struct { Name Ident, Type *Type, Expr RuleExpr, Action *Action, Comments []Comment }
+type InlineComment struct { Start Match; Body Match; End Match }
+type RuleDef struct { Name Ident; Type *Type; Expr RuleExpr; Action *Action; Comments []Comment }
 type RuleExpr = (
   RuleRef | LevelCall | RuleGroup | InlineAction | Sequence | Choice
   | Discard | Lookahead | Top | Bottom | BeginLine | BeginInput | EndLine | EndInput
@@ -40,13 +40,13 @@ type RuleExpr = (
   | Repeat | Capture | Predicate | Atomic | Stream | Recover | Attributed | OperatorsRule
 )
 type RuleRef struct { Name Ident }
-type LevelCall struct { Rule Ident, Level Ident }
+type LevelCall struct { Rule Ident; Level Ident }
 type RuleGroup struct { Expr RuleExpr }
-type InlineAction struct { Expr RuleExpr, Action Action }
-type Sequence struct { L RuleExpr, R RuleExpr }
-type Choice struct { L RuleExpr, R RuleExpr }
+type InlineAction struct { Expr RuleExpr; Action Action }
+type Sequence struct { L RuleExpr; R RuleExpr }
+type Choice struct { L RuleExpr; R RuleExpr }
 type Discard struct { X RuleExpr }
-type Lookahead struct { Op string, X RuleExpr }
+type Lookahead struct { Op string; X RuleExpr }
 type Top terminal
 type Bottom terminal
 type BeginLine terminal
@@ -55,54 +55,56 @@ type EndLine terminal
 type EndInput terminal
 type Any terminal
 type Cut terminal
-type CharClass struct { Not bool, Items []CharClassItem }
+type CharClass struct { Not bool; Items []CharClassItem }
 type CharClassItem = Char | CharRng
 type Char terminal
-type CharRng struct { Start Char, End Char }
+type CharRng struct { Start Char; End Char }
 type Optional struct { X RuleExpr }
 type ZeroOrMore struct { X RuleExpr }
 type OneOrMore struct { X RuleExpr }
-type Repeat struct { X RuleExpr, Min *Int, Max *Int, Range bool }
-type Capture struct { Name Ident, Expr RuleExpr }
-type Predicate struct { Actions []ActionStmt, Comments []Comment }
+type Repeat struct { X RuleExpr; Min *Int; Max *Int; Range bool }
+type Capture struct { Name Ident; Expr RuleExpr }
+type Predicate struct { Actions []ActionStmt; Comments []Comment }
 type Atomic struct { X RuleExpr }
 type Stream struct { X RuleExpr }
-type Recover struct { X RuleExpr, Skip RuleExpr }
-type Attributed struct { X RuleExpr, Attr Attr }
-type Attr struct { Name Ident, Args []*AttrValue, KwArgs []AttrNamed }
+type Recover struct { X RuleExpr; Skip RuleExpr }
+type Attributed struct { X RuleExpr; Attr Attr }
+type Attr struct { Name Ident; Args []*AttrValue; KwArgs []AttrNamed }
 type AttrValue = Int | String | True | False | Nil | RuleExpr
 // Slots keep an omitted positional argument distinct from the end of a list.
 type AttrSlot struct { Value *AttrValue }
-type AttrNamed struct { Name Ident, Value AttrValue }
-type AttrArgs struct { Args []*AttrValue, KwArgs []AttrNamed }
+type AttrNamed struct { Name Ident; Value AttrValue }
+type AttrArgs struct { Args []*AttrValue; KwArgs []AttrNamed }
 
-type OperatorsRule struct { Items []OperatorsStmt, Comments []Comment }
+type OperatorsRule struct { Items []OperatorsStmt; Comments []Comment }
 type OperatorsStmt = OperatorsSkip | OperatorsOperand | OperatorsLevel | Error
-type OperatorsSkip struct { Expr RuleExpr, Comments []Comment }
-type OperatorsOperand struct { Expr RuleExpr, Action *Action, Comments []Comment }
-type OperatorsLevel struct { Name *Ident, Operators []OpsOperator, Comments []Comment }
+type OperatorsSkip struct { Expr RuleExpr; Comments []Comment }
+type OperatorsOperand struct { Expr RuleExpr; Action *Action; Comments []Comment }
+type OperatorsLevel struct { Name *Ident; Operators []OpsOperator; Comments []Comment }
 type OpsOperator = Prefix | Postfix | Infix | Error
-type Prefix struct { Expr RuleExpr, Action *Action, Comments []Comment }
-type Postfix struct { Expr RuleExpr, Action *Action, Comments []Comment }
-type Infix struct { Assoc string, Expr RuleExpr, Action *Action, Comments []Comment }
+type Prefix struct { Expr RuleExpr; Action *Action; Comments []Comment }
+type Postfix struct { Expr RuleExpr; Action *Action; Comments []Comment }
+type Infix struct { Assoc string; Expr RuleExpr; Action *Action; Comments []Comment }
 
 type Action = ActionExpr | ActionBlock | DefaultAction
 type ActionStmt = ActionAssign | ActionExpr | Error
-type ActionAssign struct { Name Ident, Expr ActionExpr }
-type ActionBlock struct { Actions []ActionStmt, Comments []Comment }
+type ActionAssign struct { Name Ident; Expr ActionExpr }
+type ActionBlock struct { Actions []ActionStmt; Comments []Comment }
 type DefaultAction terminal
 type ActionExpr = (
   Int | String | True | False | Nil | CaptureRef | VarRef
-  | BinaryOp | UnaryOp | FieldAccess | Call | Constructor | ActionGroup | Lambda
+  | BinaryOp | UnaryOp | FieldAccess | Call | Constructor | ListConstructor | TerminalConstructor | ActionGroup | Lambda
 )
-type BinaryOp struct { Op string, L ActionExpr, R ActionExpr }
-type UnaryOp struct { Op string, X ActionExpr }
-type FieldAccess struct { X ActionExpr, Name Ident }
-type Call struct { X ActionExpr, Args []ActionExpr }
-type Constructor struct { X ActionExpr, Inits []InitField, Comments []Comment }
-type InitField struct { Name Ident, Val ActionExpr, Comments []Comment }
+type BinaryOp struct { Op string; L ActionExpr; R ActionExpr }
+type UnaryOp struct { Op string; X ActionExpr }
+type FieldAccess struct { X ActionExpr; Name Ident }
+type Call struct { X ActionExpr; Args []ActionExpr }
+type Constructor struct { X ActionExpr; Inits []InitField; Comments []Comment }
+type ListConstructor struct { Elem Type; Items []ActionExpr; Comments []Comment }
+type TerminalConstructor struct { Type VarRef; Args []ActionExpr; Comments []Comment }
+type InitField struct { Name Ident; Val ActionExpr; Comments []Comment }
 type ActionGroup struct { Expr ActionExpr }
-type Lambda struct { Params []Ident, Body ActionExpr }
+type Lambda struct { Params []Ident; Body ActionExpr }
 
 // File and statements. Delimiter-owned expressions enable multiline trivia;
 // declaration and item lists keep physical newlines as statement boundaries.
@@ -138,7 +140,7 @@ rule item_end []Comment = (
   cs:horizontal tail:(item_sep @error(message="expected semicolon, newline, or closing brace"))
 ) => concat($cs, $tail)
 rule field_end []Comment = (
-  cs:horizontal tail:(field_sep @error(message="expected comma, newline, or closing brace"))
+  cs:horizontal tail:(field_sep @error(message="expected semicolon, newline, or closing brace"))
 ) => concat($cs, $tail)
 rule stmt_sep []Comment = block_sep / empty_stmt_sep
 rule item_sep []Comment = block_sep / empty_item_sep
@@ -146,11 +148,11 @@ rule field_sep []Comment = block_sep / empty_field_sep
 rule block_sep []Comment = c:block_with_line => list($c)
 rule empty_stmt_sep []Comment = (";" / nl / &$$) => list()
 rule empty_item_sep []Comment = (";" / nl / &"}") => list()
-rule empty_field_sep []Comment = ("," / nl / &"}") => list()
+rule empty_field_sep []Comment = (";" / nl / &"}") => list()
 // Recovery consumes its own separator and stops before the next item.
 rule stmt_sync = -comments (sync_token / !(";" / nl) .)* (";" / nl / &$$)
 rule item_sync = -comments (sync_token / !(";" / nl / "}") .)* (";" / nl / &"}" / &$$)
-rule field_sync = -comments (sync_token / !("," / nl / "}") .)* ("," / nl / &"}" / &$$)
+rule field_sync = -comments (sync_token / !(";" / nl / "}") .)* (";" / nl / &"}" / &$$)
 
 // Completed literals, nested comments and groups do not end recovery.
 rule sync_token = string / char_class / inline_comment / comment_line / sync_paren / sync_brace
@@ -185,7 +187,7 @@ rule type_expr Type = operators {
   }
 }
 
-// Parsing expressions. The empty infix operator represents adjacency, so
+// Rule expressions. The empty infix operator represents adjacency, so
 // juxtaposition does not need a separate sequence parser or require a space.
 rule rule_def_stmt RuleDef = (
   cs:comments "rule" -word_end -- name:(ident @error(message="expected rule name")) -ws t:type_expr? -ws
@@ -238,7 +240,7 @@ rule predicate Predicate = b:action_block => Predicate{Actions: $b.Actions, Comm
 
 // Postfix pragmas have dedicated payloads. Metadata attributes retain ordered
 // positional slots and named arguments, including explicit and omitted nils.
-type RepeatBounds struct { Min *Int, Max *Int, Range bool }
+type RepeatBounds struct { Min *Int; Max *Int; Range bool }
 rule repeat_args RepeatBounds = (
   "(" {ml := true} -ws b:(repeat_range / repeat_count) -ws
   -(")" @error(message="expected closing parenthesis for #repeat"))
@@ -335,7 +337,7 @@ rule action_assign_stmt ActionAssign = (
 rule action_expr ActionExpr = lambda / action_ops
 rule action_ops ActionExpr = operators {
   skip ws
-  operand constructor / call / action_group / int / string / true / false / nil / capture_ref / var_ref
+  operand list_constructor / terminal_constructor / constructor / call / action_group / int / string / true / false / nil / capture_ref / var_ref
   level disjunction { infix left "||" => BinaryOp{Op: text($op), L: $lhs, R: $rhs} }
   level conjunction { infix left "&&" => BinaryOp{Op: text($op), L: $lhs, R: $rhs} }
   level comparison { infix none "==" / "!=" / "<=" / ">=" / "<" / ">" => BinaryOp{Op: text($op), L: $lhs, R: $rhs} }
@@ -356,7 +358,18 @@ rule call Call = (
   name:var_name "(" {ml := true} -ws -- args:action_args? -ws
   -(")" @error(message="expected closing parenthesis for function call"))
 ) => Call{X: $name, Args: concat($args)}
-rule action_args []ActionExpr = first:action_expr rest:(-ws "," -ws x:action_expr)* => concat(list($first), map($rest, (x) => $x.x))
+rule action_args []ActionExpr = (
+  first:action_expr rest:(-ws "," -ws x:action_expr)* (-ws "," -ws)?
+) => concat(list($first), map($rest, (x) => $x.x))
+rule list_constructor ListConstructor = (
+  "[]" -ws -- elem:level(type_expr, prefix) -ws
+  -("{" @error(message="expected opening brace for list constructor")) {ml := true} -ws
+  items:action_args? cs:comments -("}" @error(message="expected closing brace for list constructor"))
+) => ListConstructor{Elem: $elem, Items: concat($items), Comments: $cs}
+rule terminal_constructor TerminalConstructor = (
+  name:var_name -ws "{" {ml := true} -ws !("}" / ident -ws ":") --
+  args:action_args cs:comments -("}" @error(message="expected closing brace for terminal constructor"))
+) => TerminalConstructor{Type: $name, Args: $args, Comments: $cs}
 rule constructor Constructor = (
   name:var_name -ws "{" {ml := true} -ws -- fields:constructor_fields? cs:comments
   -("}" @error(message="expected closing brace for constructor"))

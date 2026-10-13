@@ -1,4 +1,4 @@
-# Parsing Expressions with Operators
+# Rule Expressions with Operators
 
 Expressions with operators (`1 + 2 * 3`, `-x ** 2`, `f(a)[i].name`, `c ? a : b`) are where a grammar needs
 precedence and associativity. PEGO gives you three ways to write them:
@@ -76,7 +76,7 @@ pego parse -g calc.pego -f sexpr -i '(1 + 2) * 3'
 (Binary Left=(Binary Left=Number"1"@number Op="+" Right=Number"2"@number) Op="*" Right=Number"3"@number)
 ```
 
-Here is how to read an Operators Rule declaration.
+Here is how to read an Operators Rule Definition Statement.
 
 - **`skip ws`** is inserted, with its result discarded, before every operand and every operator. It is how a grammar
   without a scanner says "tokens may be separated by whitespace". Without a `skip`, nothing is inserted.
@@ -90,7 +90,7 @@ Here is how to read an Operators Rule declaration.
   level may mix prefix, infix and postfix operators.
 - **`infix left | right | none`** gives the associativity: `1 - 2 - 3` is `(1 - 2) - 3`, `2 ^ 3 ^ 2` is `2 ^ (3 ^ 2)`,
   and `none` operators do not chain (section 5).
-- **An operator part** (`"+" / "-"`) is an ordinary parsing expression. It may be several tokens, call other rules, or
+- **An operator part** (`"+" / "-"`) is an ordinary Rule Expression. It may be several tokens, call other rules, or
   contain captures (section 4).
 - **Actions** see `$lhs`, `$rhs` (the operands) and `$op` (the text the operator part matched, as a `Match` node). In
   a rule with a declared type, `$lhs` and `$rhs` have that type, which is what lets the `Binary` fields be `Expr`.
@@ -260,8 +260,8 @@ the next level, followed by any number of operator-operand pairs, and `foldl` bu
 ```pego
 // chain.pego
 type Number terminal
-type Binary struct { Left Expr, Op Match, Right Expr }
-type Unary struct { Op Match, X Expr }
+type Binary struct { Left Expr; Op Match; Right Expr }
+type Unary struct { Op Match; X Expr }
 type Expr = Number | Binary | Unary
 
 rule main Expr = e:expr ws $$ => $e
@@ -305,7 +305,7 @@ per level, whitespace handled by hand, and one rule call per level for every ope
 ```pego
 // chain-cmp.pego
 type Num terminal
-type Bin struct { L E, Op Match, R E }
+type Bin struct { L E; Op Match; R E }
 type E = Num | Bin
 
 rule main E = e:cmp ws $$ => $e
@@ -350,14 +350,14 @@ The grammar below is the one from the specification: it has every kind of operat
 // js.pego
 type Num terminal
 type Ident terminal
-type Comma struct { L Expr, R Expr }
-type Assign struct { L Expr, R Expr }
-type Cond struct { Cond Expr, Then Expr, Else Expr }
-type Bin struct { L Expr, Op Match, R Expr }
-type Unary struct { Op Match, X Expr }
-type Call struct { Fn Expr, Args []Expr }
-type Index struct { X Expr, Index Expr }
-type Member struct { X Expr, Name Ident }
+type Comma struct { L Expr; R Expr }
+type Assign struct { L Expr; R Expr }
+type Cond struct { Cond Expr; Then Expr; Else Expr }
+type Bin struct { L Expr; Op Match; R Expr }
+type Unary struct { Op Match; X Expr }
+type Call struct { Fn Expr; Args []Expr }
+type Index struct { X Expr; Index Expr }
+type Member struct { X Expr; Name Ident }
 type Expr = Num | Ident | Comma | Assign | Cond | Bin | Unary | Call | Index | Member
 
 rule expr Expr = operators {
@@ -411,7 +411,7 @@ Things to notice:
 - `f(a = 1, b)` has two arguments: `args` calls `level(expr, assignment)`, which includes the `=` level and everything tighter
   but not `,`. Outside a call, `x, y` is a `Comma` node.
 - The postfix operators `(...)`, `[...]` and `.name` share one level, so `f(a)(2)[3].x` chains left to right. Their
-  operator parts are arbitrary parsing expressions: `"(" xs:args? ws ")"` parses an argument list with the rest of the
+  operator parts are arbitrary Rule Expressions: `"(" xs:args? ws ")"` parses an argument list with the rest of the
   grammar, and the whole matched part is `$op` (here the actions use the captures instead).
 - `"?" then:expr ws ":"` is a mixfix operator: the middle operand is parsed by a full `expr` call, and the right operand
   by the Operators Rule loop, which makes `a ? b : c ? d : e` nest to the right.
@@ -451,8 +451,8 @@ level, so you choose how tightly it binds:
 // apply.pego
 type Id terminal
 type Num terminal
-type Bin struct { L E, Op Match, R E }
-type App struct { Fn E, Arg E }
+type Bin struct { L E; Op Match; R E }
+type App struct { Fn E; Arg E }
 type Neg struct { X E }
 type E = Id | Num | Bin | App | Neg
 
@@ -646,11 +646,11 @@ A rule of thumb:
   languages, and what the larger grammars (`examples/minilang`, `parsers/golang`, `parsers/python`) use.
 - **Use left-recursive rules** when the recursion is not an operator table: member chains (`a.b.c`), a handful of
   levels in an otherwise ordinary grammar, constructs such as `list = list "," item / item`, or a grammar ported from a
-  notation that already uses left recursion. They also work with Operators Rule declarations in the same grammar.
+  notation that already uses left recursion. They also work with Operators Rule Definition Statements in the same grammar.
 - **Use the chain** when you need plain PEG that other tools can read, or for a one- or two-level expression where a
   fold is the shortest thing to write.
 
-The three can be mixed freely. An Operators Rule's operands and operator parts are normal parsing expressions, so they
+The three can be mixed freely. An Operators Rule's operands and operator parts are normal Rule Expressions, so they
 can call any rule; and the rules of a statement grammar call the rule that holds the Operators Rule like any other.
 
 ## 8. Pitfalls
@@ -697,7 +697,7 @@ consume trailing whitespace (the `main` rules of the calculators say `ws $$`).
 // skip.pego
 type Num terminal
 type Id terminal
-type Cond struct { C E, T E, F E }
+type Cond struct { C E; T E; F E }
 type E = Num | Id | Cond
 
 rule loose E = operators {
@@ -743,9 +743,9 @@ syntactically possible:
 ```pego
 // munch.pego
 type Num terminal
-type Bin struct { L E, Op Match, R E }
-type Un struct { Op Match, X E }
-type Post struct { X E, Op Match }
+type Bin struct { L E; Op Match; R E }
+type Un struct { Op Match; X E }
+type Post struct { X E; Op Match }
 type E = Num | Bin | Un | Post
 
 rule main E = e:e $$ => $e
@@ -781,7 +781,7 @@ operator part with a negative lookahead, and exclude the keywords from identifie
 ```pego
 // words.pego
 type Id terminal
-type Bin struct { L E, Op Match, R E }
+type Bin struct { L E; Op Match; R E }
 type Not struct { X E }
 type E = Id | Bin | Not
 
@@ -816,7 +816,7 @@ quietly ends early. A cut (`--`) in the operator part commits to the operator:
 ```pego
 // cut.pego
 type Num terminal
-type Bin struct { L E, Op Match, R E }
+type Bin struct { L E; Op Match; R E }
 type E = Num | Bin
 
 rule plain E = operators {

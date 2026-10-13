@@ -13,7 +13,7 @@ expression:
 // version.pego
 type Num terminal
 type Ident terminal
-type Version struct { Major Num, Minor Num, Patch Num, Pre *Ident }
+type Version struct { Major Num; Minor Num; Patch Num; Pre *Ident }
 
 rule main Version = v:version $$ => $v
 

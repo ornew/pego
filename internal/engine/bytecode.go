@@ -18,6 +18,11 @@ type Module struct {
 
 // instructionSetVersion keeps ordinary modules readable by instruction-set-3 runtimes.
 func (m *Module) instructionSetVersion() int {
+	for _, in := range m.Exprs {
+		if in.Op == ETerminal {
+			return 5
+		}
+	}
 	for _, in := range m.Code {
 		if in.Op == OpRepeatWide || in.Op == OpScanWide {
 			return 4
@@ -266,6 +271,8 @@ const (
 	// ELISTEND: push a list of the elements gathered since the matching ELISTBEGIN
 	// (instruction set 2).
 	EListEnd
+	// ETERMINAL t: pop a string and build a terminal of declared type t (ISA 5).
+	ETerminal
 )
 
 // Built-in function indices
@@ -295,6 +302,7 @@ var opNames = map[Op]string{
 	EAnd: "EAND", EOr: "EOR", EBoolChk: "EBOOLCHK", EFunc: "EFUNC", ECall: "ECALL", ERet: "ERET",
 	ETextChk: "ETEXTCHK", ETextEq: "ETEXTEQ", EListBegin: "ELISTBEGIN", EListPush: "ELISTPUSH",
 	EMapPush: "EMAPPUSH", EListEnd: "ELISTEND",
+	ETerminal: "ETERMINAL",
 }
 
 func (o Op) String() string {

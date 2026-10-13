@@ -36,7 +36,7 @@ func TestGeneratedTypedOperatorsRuleActionWorkload(t *testing.T) {
 		dir = filepath.Join(dir, "actions")
 	}
 	testGeneratedTypedBodyWorkload(t, `type Atom terminal
-type Post struct { X Expr, Items []Match, N int }
+type Post struct { X Expr; Items []Match; N int }
 type Expr = Atom | Post
 rule main Expr = e:expr $$ => $e
 rule expr Expr = operators {

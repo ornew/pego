@@ -385,6 +385,15 @@ func validateModule(m *Module) error {
 		case ENew:
 			str(int(x.A))
 			in("field list", int(x.B), len(m.FieldLists))
+		case ETerminal:
+			str(int(x.A))
+			terminal := false
+			for _, t := range m.Types {
+				terminal = terminal || t.Name == int(x.A) && t.Terminal
+			}
+			if !terminal {
+				fail("terminal constructor type %d is not a declared terminal", x.A)
+			}
 		case EAnd, EOr:
 			forward(ip, x.A, len(m.Exprs))
 		case EFunc:

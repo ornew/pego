@@ -16,7 +16,7 @@ func TestGeneratedTypedCutWorkload(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds generated code")
 	}
-	g, err := syntax.Parse(`type Row struct { Key Match, Value Match }
+	g, err := syntax.Parse(`type Row struct { Key Match; Value Match }
 type Doc struct { Rows []Row }
 rule main Doc = rows:row+ $$ => Doc{Rows: $rows}
 rule row Row = "let" " " -- key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" / "var" " " -- key:[a-z]+ #atomic ":" value:[0-9]+ #atomic ";" => Row{Key: $key, Value: $value}

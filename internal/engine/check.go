@@ -179,6 +179,79 @@ func (prog *Program) structType(name string) (string, *grammar.StructSpec) {
 	return canonical, st
 }
 
+func (prog *Program) terminalConstructorType(name string) string {
+	canonical, spec := prog.concreteType(&grammar.TypeRef{Name: name})
+	if _, ok := spec.(*grammar.TerminalSpec); ok {
+		return canonical
+	}
+	return ""
+}
+
+// nodeListElement also rejects primitive elements hidden in nested list types.
+func nodeListElement(t ty) bool {
+	switch t := t.(type) {
+	case listTy:
+		return nodeListElement(t.elem)
+	case optTy:
+		return nodeListElement(t.elem)
+	case unionTy:
+		for _, alt := range t.alts {
+			if !nodeListElement(alt) {
+				return false
+			}
+		}
+		return true
+	case basicTy:
+		return t != tyAny && isNode(t)
+	default:
+		return isNode(t)
+	}
+}
+
+// unknownListElement reports any that would hide a required concrete element
+// type. An abstract node destination does not constrain a known node's children.
+func unknownListElement(src, dst ty) bool {
+	if dst == tyAny {
+		return false
+	}
+	if src == tyAny {
+		return true
+	}
+	if d, ok := dst.(optTy); ok {
+		if s, ok := src.(optTy); ok {
+			src = s.elem
+		}
+		return unknownListElement(src, d.elem)
+	}
+	if s, ok := src.(unionTy); ok {
+		for _, alt := range s.alts {
+			if unknownListElement(alt, dst) {
+				return true
+			}
+		}
+		return false
+	}
+	if d, ok := dst.(unionTy); ok {
+		for _, alt := range d.alts {
+			if assignable(src, alt) && !unknownListElement(src, alt) {
+				return false
+			}
+		}
+		for _, alt := range d.alts {
+			if unknownListElement(src, alt) {
+				return true
+			}
+		}
+		return false
+	}
+	if s, ok := src.(listTy); ok {
+		if d, ok := dst.(listTy); ok {
+			return unknownListElement(s.elem, d.elem)
+		}
+	}
+	return false
+}
+
 func (k *checker) resolveNamed(name string, pos grammar.Pos) ty {
 	switch name {
 	case "int":
@@ -544,6 +617,10 @@ func termPos(t grammar.Term, def grammar.Pos) grammar.Pos {
 		return t.Diagnostic()
 	case *grammar.New:
 		return t.Diagnostic()
+	case *grammar.ListConstructor:
+		return t.Diagnostic()
+	case *grammar.TerminalConstructor:
+		return t.Diagnostic()
 	case *grammar.Call:
 		return t.Diagnostic()
 	case *grammar.Binary:
@@ -613,6 +690,35 @@ func (k *checker) term(t grammar.Term, env *termEnv) ty {
 		return namedTy{name, 's'}
 	case *grammar.Call:
 		return k.call(t, env)
+	case *grammar.ListConstructor:
+		elem := k.resolve(t.Elem)
+		if !nodeListElement(elem) {
+			k.errorf(t.Diagnostic(), "list constructors require a node element type, got %s", elem)
+		}
+		for _, item := range t.Items {
+			value := k.term(item, env)
+			if unknownListElement(value, elem) {
+				k.errorf(termPos(item, t.Diagnostic()), "cannot use statically unknown %s as %s in list constructor", value, elem)
+			}
+			if !isNodeOrNil(value) {
+				k.errorf(termPos(item, t.Diagnostic()), "list constructor elements must be nodes, got %s", value)
+			}
+			if !assignable(value, elem) {
+				k.errorf(termPos(item, t.Diagnostic()), "cannot use %s as %s in list constructor", value, elem)
+			}
+		}
+		return listTy{elem}
+	case *grammar.TerminalConstructor:
+		for _, arg := range t.Args {
+			value := k.term(arg, env)
+			if !assignable(value, tyString) {
+				k.errorf(termPos(arg, t.Diagnostic()), "terminal constructor requires a string, got %s", value)
+			}
+		}
+		if name := k.prog.terminalConstructorType(t.Type); name != "" {
+			return namedTy{name, 't'}
+		}
+		return tyAny
 	case *grammar.Lambda:
 		k.errorf(grammar.Pos{}, "functions can only be passed to foldl, foldr, or map")
 		return tyAny

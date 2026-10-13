@@ -52,7 +52,7 @@ func TestRawInvalidASTLiterals(t *testing.T) {
 	for _, raw := range rawLiteralValues() {
 		for _, shape := range []string{`t:"�"`, `t:"�" .`, `t:("�" / "other")`, `t:("�" #repeat(2)) #atomic`} {
 			t.Run(fmt.Sprintf("%x/%s", raw, shape), func(t *testing.T) {
-				src := "type N struct { T Match, S string }\nrule main N = " + shape + ` $$ => N{T:$t, S:"constant"}`
+				src := "type N struct { T Match; S string }\nrule main N = " + shape + ` $$ => N{T:$t, S:"constant"}`
 				g := mustParse(src)
 				lit := replaceFirstLiteral(g.Rules()[0].Expr, raw)
 				if lit == nil {

@@ -988,6 +988,12 @@ func (vm *vmProgram) eval(ctx *evalCtx, ip int, locals []any) (v any, err error)
 				return nil, err
 			}
 			stack = append(stack[:top], v)
+		case ETerminal:
+			v, err := ctx.newTerminal(m.Strings[in.A], pop())
+			if err != nil {
+				return nil, err
+			}
+			stack = append(stack, v)
 		case EBin:
 			r := pop()
 			l := pop()

@@ -629,6 +629,14 @@ func captureRefs(t grammar.Term, params []string, refs map[string]bool) {
 		for _, fi := range t.Fields {
 			captureRefs(fi.Value, params, refs)
 		}
+	case *grammar.ListConstructor:
+		for _, item := range t.Items {
+			captureRefs(item, params, refs)
+		}
+	case *grammar.TerminalConstructor:
+		for _, arg := range t.Args {
+			captureRefs(arg, params, refs)
+		}
 	case *grammar.Call:
 		for _, a := range t.Args {
 			captureRefs(a, params, refs)

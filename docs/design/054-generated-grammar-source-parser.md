@@ -62,6 +62,14 @@ grammar must preserve
 contextual words, hard-newline rules, action and predicate blocks, Operators
 Rules and malformed-input recovery.
 
+#### Struct Definition Field Separators
+
+Fields in a Struct Type Definition Statement use semicolons or hard newlines.
+Constructor fields and function arguments use commas. The source parser and
+adapter must preserve field order, comments, positions and diagnostics while
+checking separator parity against the manual parser. This changes source
+syntax rather than field semantics in the public AST or compiled type table.
+
 The source grammar accepts identifiers beginning with `_` at parse time.
 Reserved-name checks belong to validation and compilation, so parsing such a
 name succeeds while validation reports the reserved-name error. Attribute

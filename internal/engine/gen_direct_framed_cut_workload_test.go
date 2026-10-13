@@ -18,14 +18,14 @@ func TestGeneratedTypedFramedCutWorkloads(t *testing.T) {
 	}
 	control := GenOptions{disableTypedFramedCuts: true}
 	t.Run("LR", func(t *testing.T) {
-		testGeneratedTypedBodyWorkload(t, `type Doc struct { Items []Match, N int }
+		testGeneratedTypedBodyWorkload(t, `type Doc struct { Items []Match; N int }
 rule main Doc = e:expr $$ => $e
 rule expr Doc = previous:expr ";" -- items:(x:[a-z] #atomic -- -",") #repeat(3) / items:(x:[a-z] #atomic -- -",") #repeat(3) => Doc{Items: map($items, (e) => $e.x), N: len($items)}
 `, typedLRActionWorkloadFixture, filepath.Join(dir, "lr"), "(typed LR body inlined)", control)
 	})
 	t.Run("OperatorsRule", func(t *testing.T) {
 		testGeneratedTypedBodyWorkload(t, `type Atom terminal
-type Post struct { X Expr, Items []Match, N int }
+type Post struct { X Expr; Items []Match; N int }
 type Expr = Atom | Post
 rule main Expr = e:expr $$ => $e
 rule expr Expr = operators {

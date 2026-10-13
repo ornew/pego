@@ -58,11 +58,11 @@ rule field_sep = block_sep / empty_field_sep
 rule block_sep = block_with_line
 rule empty_stmt_sep = ";" / nl / &$$
 rule empty_item_sep = ";" / nl / &"}"
-rule empty_field_sep = "," / nl / &"}"
+rule empty_field_sep = ";" / nl / &"}"
 // Recovery consumes its own separator and stops before the next item.
 rule stmt_sync = -comments (sync_token / !(";" / nl) .)* (";" / nl / &$$)
 rule item_sync = -comments (sync_token / !(";" / nl / "}") .)* (";" / nl / &"}" / &$$)
-rule field_sync = -comments (sync_token / !("," / nl / "}") .)* ("," / nl / &"}" / &$$)
+rule field_sync = -comments (sync_token / !(";" / nl / "}") .)* (";" / nl / &"}" / &$$)
 
 // Completed literals, nested comments and groups do not end recovery.
 rule sync_token = string / char_class / inline_comment / comment_line / sync_paren / sync_brace
@@ -97,7 +97,7 @@ rule type_expr = operators {
     }
 }
 
-// Parsing expressions. The empty infix operator represents adjacency, so
+// Rule expressions. The empty infix operator represents adjacency, so
 // juxtaposition does not need a separate sequence parser or require a space.
 rule rule_def_stmt = (
     comments "rule" -word_end -- ident -ws type_expr? -ws
@@ -230,7 +230,7 @@ rule action_assign_stmt = ident -ws ":=" -ws action_expr
 rule action_expr = lambda / action_ops
 rule action_ops = operators {
     skip ws
-    operand constructor / call / action_group / int / string / true / false / nil / capture_ref / var_ref
+    operand list_constructor / terminal_constructor / constructor / call / action_group / int / string / true / false / nil / capture_ref / var_ref
     level disjunction { infix left "||" }
     level conjunction { infix left "&&" }
     level comparison { infix none "==" / "!=" / "<=" / ">=" / "<" / ">" }
@@ -249,7 +249,16 @@ rule call = (
     var_name "(" {ml := true} -ws -- action_args? -ws
     -")"
 )
-rule action_args = action_expr (-ws "," -ws action_expr)*
+rule action_args = action_expr (-ws "," -ws action_expr)* (-ws "," -ws)?
+rule list_constructor = (
+    "[]" -ws -- level(type_expr, prefix) -ws
+    -"{" {ml := true} -ws
+    action_args? comments -"}"
+)
+rule terminal_constructor = (
+    var_name -ws "{" {ml := true} -ws !("}" / ident -ws ":") --
+    action_args comments -"}"
+)
 rule constructor = (
     var_name -ws "{" {ml := true} -ws -- constructor_fields? comments
     -"}"
@@ -315,24 +324,23 @@ parsed and preserved, then rejected by semantic validation. The following
 additional constraints are checked outside this source grammar.
 
 - **Reserved identifiers.** Names beginning with `_` are reserved. The
-  standalone PEG atom `_` is Top, which is distinct from a name.
+  standalone Rule Expression `_` is Top, which is distinct from a name.
 - **Integer literals.** An [integer literal](lexical.md#integer-literals)
   MUST be representable as an `int`.
 - **Character class ranges.** In `lo-hi`, `hi` MUST NOT be less than `lo`, and a
   class MUST contain at least one item.
 - **Repetition bounds.** In `a #repeat(n,m)`, `m` MUST NOT be less than `n`.
-- **Statement boundaries.** Newlines and semicolons separate declarations and
-  Operators Rule items. Struct fields use commas or newlines. An expression may
+- **Statement boundaries.** Newlines and semicolons separate Definition Statements and
+  Operators Rule items. Struct fields use semicolons or newlines. An expression may
   cross a newline only within its own open delimiter; statement-list braces do
   not enable continuation of every nested expression. Indentation is not syntax.
 - **Attribute arguments.** Positional arguments follow the generic value
   forms and precede named arguments; repeated named keys are rejected. The
   grammar models argument shape and ordering, not key uniqueness.
-- **Contextual words.** Declaration and item introducers have their syntactic
-  meaning only at those statement positions. They remain identifiers elsewhere.
-- **Where constructs may appear.** An Operators Rule MUST be a complete rule
-  declaration; a lambda MUST be an argument of `foldl`, `foldr` or `map`; and
-  `#stream` MUST be at the top level of a rule body. A comment in a declaration
+- **Contextual words.** Definition Statement and Operators Rule item introducers
+  have their syntactic meaning only at those statement positions. They remain identifiers elsewhere.
+- **Where constructs may appear.** An Operators Rule MUST be a complete Rule Definition Statement; a lambda MUST be an argument of `foldl`, `foldr` or `map`; and
+  `#stream` MUST be at the top level of a rule body. A comment in a Definition Statement
   or Operators Rule statement header is rejected by semantic analysis with a
   positioned diagnostic. These checks follow parsing.
 - **Action blocks.** Multiple-statement Predicate Actions and every braced
@@ -340,19 +348,20 @@ additional constraints are checked outside this source grammar.
 - **Inline actions.** `(expression => action)` is recognized in the source
   grammar and represented in the AST, but compilation rejects it. Runtime
   execution is not implemented.
-- **Declaration annotations.** Attributes are postfix expression annotations;
-  declaration-prefix attributes are not supported.
+- **Attribute placement.** Attributes are postfix Rule Expression annotations;
+  Definition Statement prefixes are not supported.
 
 ## Operators
 
-Parsing expressions bind in the order of the [precedence
-table](parser-expressions.md#precedence). The expressions of actions and
-predicates bind in the order of the [operator table](actions.md#operators-and-functions):
+Rule Expressions bind in the order of the [precedence
+table](parser-expressions.md#precedence). Action Expressions in Value Actions
+and Predicate Actions bind in the order of the [operator
+table](actions.md#operators-and-functions):
 `||`, `&&`, comparison (`==`, `!=`, `<`, `<=`, `>`, `>=`, which do not chain),
 `+` and `-`, `*`, `/` and `%`, and the unary `-` and `!`. Field access (`.`) and
 function calls bind tighter than the operators. Each Operators Rule defines
 precedence by the order of its `level` declarations; associativity and operator
-order come from entries within each level. The parsing-expression Operators
-Rule represents adjacency with an empty
-infix operator and gives postfix modifiers tighter binding than capture,
+order come from entries within each level. The Operators Rule represents
+adjacency with an empty infix operator and gives postfix modifiers tighter
+binding than capture,
 lookahead and discard. Ordered choice remains the weakest operation.

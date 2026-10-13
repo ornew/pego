@@ -10,9 +10,9 @@ precedence and associativity in a table; the evaluator is a `switch` on the node
 // calc.pego
 type Num terminal
 type Name terminal
-type Bin struct { Left Expr, Op Match, Right Expr }
+type Bin struct { Left Expr; Op Match; Right Expr }
 type Neg struct { X Expr }
-type Call struct { Fn Name, Args []Expr }
+type Call struct { Fn Name; Args []Expr }
 type Expr = Num | Name | Bin | Neg | Call
 
 rule main Expr = e:expr ws $$ => $e

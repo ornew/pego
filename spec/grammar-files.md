@@ -1,15 +1,16 @@
 # Grammar Files
 
-A grammar is a set of type definitions, ordinary rule definitions, and
-Operators Rule declarations. It is normally written in a file with the
-extension `.pego`, built from the tokens of [Lexical Structure](lexical.md).
-This chapter defines what a grammar file may contain, the rules for names and
-the order of definitions, and the errors that make a grammar invalid.
+A grammar file uses the tokens defined in [Lexical Structure](lexical.md). This
+chapter defines its structure, the rules for names and definition order, and
+the errors that make a grammar invalid.
 
 ## Structure
 
-A grammar file consists of an optional package clause followed by type
-definitions, ordinary rules, and Operators Rule declarations in any order.
+A grammar file, normally written as a `.pego` file, consists of an optional
+package clause followed by Type and Rule Definition Statements in any order.
+Type definitions use Type Expressions; ordinary Rule Definition Statements
+combine a Rule Expression with an optional Value Action containing an Action
+Expression. An Operators Rule is a specialized Rule Definition Statement.
 
 ```pego
 package example
@@ -18,16 +19,16 @@ rule main Number = [0-9]+
 rule expr Expr = operators { ... }
 ```
 
-A hard newline separates top-level statements; a semicolon may also separate
-them. Declaration position and indentation do not affect parsing. The 12
-declaration and Operators Rule words are contextual, so the same spellings can
-be identifiers where a name or expression is expected.
+A hard newline separates top-level Definition Statements; a semicolon may also
+separate them. Definition position and indentation do not affect parsing. The 12
+contextual grammar words are interpreted by position, so the same spellings can
+be identifiers where a name or Rule Expression is expected.
 
-A multiline parsing expression must be parenthesized. A delimiter opened by
-the expression, such as parentheses around a PEG expression or braces around a
-Predicate Action or Value Action block, permits its contents to span lines. An outer
+A multiline Rule Expression must be parenthesized. A delimiter opened by the
+expression, such as grouping parentheses or braces around a Predicate Action
+or Value Action block, permits its contents to span lines. An outer
 Operators Rule brace does not by itself make an operand or operator expression
-multiline. Commas separate struct fields; semicolons and statement newlines
+multiline. Semicolons and statement newlines separate struct fields and
 separate action-block statements.
 
 An empty file is a valid grammar with no rules, but it cannot be used to parse
@@ -89,41 +90,44 @@ source-only type and term groups from the executable grammar; consequently,
 `Parser.Grammar()` and the AST embedded in a compiled grammar expose the
 normalized executable form rather than those grouping nodes.
 
-### Type Definitions
+### Type Definition Statements
 
-A type definition (`type`) defines a node type: a struct type, a union or alias
-of types, or a terminal type. The forms and their meaning are defined in the
-[Type System](types.md#type-definitions).
+A Type Definition Statement (`type`) defines a node type: a struct type, a union
+or alias of types, or a terminal type. The forms and their meaning are defined
+in the [Type System](types.md#type-definitions).
 
-### Rule Definitions
+### Rule Definition Statements
 
-An ordinary rule definition starts with `rule` and defines a name for a
-parsing expression. Its form is `rule name [Type] = expression [=> action]`.
+An ordinary Rule Definition Statement starts with `rule` and defines a name for
+a Rule Expression. Its form is `rule <name> [<Type Expression>] =
+<Rule Expression> [=> <Action Expression>]`.
 When the rule matches, it produces a single value. The 12 grammar words may be
 used as names when the surrounding syntax expects a name.
 
-- The optional type after the rule name declares the type of the value the
-  rule produces. If it is omitted, the type is inferred (see
+- The optional Type Expression after the rule name declares the type of the
+  value the rule produces. If it is omitted, the type is inferred (see
   [Type Inference](type-checking.md#type-inference)).
-- The expression after `=` is a [parsing expression](parser-expressions.md).
-  An optional `=> action` builds the rule value from what the whole expression
-  matched; it cannot be attached to an individual alternative of a choice.
-- An Operators Rule is a distinct rule declaration written
-  `rule name [Type] = operators { ... }`. It is not an ordinary PEG
-  expression. Its operands and operator entries may have their own actions,
-  as defined in [Operators Rule](operators-rule.md). A declaration-level
-  action may be omitted or use the explicit `=> ...` default-CST form; any
-  other declaration-level action is rejected at compile time.
+- The Rule Expression after `=` is defined in
+  [Rule Expressions](parser-expressions.md). An optional Value Action (`=>`)
+  uses its Action Expression to build the value from the whole match; it cannot
+  be attached to an individual alternative of a choice.
+- An Operators Rule is a specialized Rule Definition Statement written
+  `rule <name> [<Type>] = operators { ... }`. It defines operands and operator
+  entries rather than an ordinary Rule Expression; entries may have Value
+  Actions as described in [Operators Rule](operators-rule.md). A Value Action
+  after the closing brace may be omitted or use the explicit `=> ...`
+  default-CST form; any other such action is rejected at compile time.
 
-Comments may occur at top-level statement boundaries and at statement or
-field boundaries inside braces. They are also permitted inside parsing and
-action expressions, including predicates and function arguments. The parser
+Comments may occur at top-level Definition Statement boundaries and at statement
+or field boundaries inside braces. They are also permitted inside Rule
+Expressions and Action Expressions, including predicates and function arguments.
+The parser
 records comment trivia and may accept it syntactically. Semantic analysis
-rejects comments in declaration and Operators Rule statement headers with a
+rejects comments in Definition Statement and Operators Rule statement headers with a
 positioned diagnostic; affected headers include package, type, rule, level,
 infix-kind and associativity headers.
 
-A rule is called by writing its name in a parsing expression at the current
+A rule is called by writing its name in a Rule Expression at the current
 position (see [Rule Calls](parser-expressions.md#rule-calls)).
 
 ## Names
@@ -132,7 +136,7 @@ Rule names and type names live in separate namespaces. Each rule name MUST be
 defined at most once and each type name MUST be defined at most once. A rule
 MAY refer to rules defined later in the file, and a type MAY refer to types
 defined later: **the order of definitions has no effect on the meaning of the
-grammar**. Every rule that a parsing expression names MUST be defined.
+grammar**. Every rule named by a Rule Expression MUST be defined.
 
 The names that a definition can use are constrained as follows:
 

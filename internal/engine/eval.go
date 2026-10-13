@@ -179,6 +179,14 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 		n, err := c.newStruct(t.Type, p.names, p.estack[base:])
 		p.estack = p.estack[:base]
 		return n, err
+	case *grammar.ListConstructor:
+		return c.evalList(t.Items)
+	case *grammar.TerminalConstructor:
+		text, err := c.eval(t.Args[0])
+		if err != nil {
+			return nil, err
+		}
+		return c.newTerminal(t.Type, text)
 
 	case *grammar.Call:
 		if c.p.prog.projected[t] {
@@ -240,6 +248,23 @@ func (c *evalCtx) eval(t grammar.Term) (any, error) {
 	return nil, fmt.Errorf("unsupported term %T", t)
 }
 
+// evalList shares the existing list builder without allocating a synthetic AST.
+func (c *evalCtx) evalList(items []grammar.Term) (any, error) {
+	p := c.p
+	base := len(p.estack)
+	for _, item := range items {
+		value, err := c.eval(item)
+		if err != nil {
+			p.estack = p.estack[:base]
+			return nil, err
+		}
+		p.estack = append(p.estack, value)
+	}
+	value, err := c.builtin("list", p.estack[base:])
+	p.estack = p.estack[:base]
+	return value, err
+}
+
 func (c *evalCtx) member(x any, name string) (any, error) {
 	n, ok := x.(*Node)
 	if !ok || n == nil {
@@ -285,6 +310,17 @@ func (c *evalCtx) newStruct(typ string, names []string, vals []any) (*Node, erro
 	if first {
 		n.Start, n.End = int32(c.start), int32(c.end)
 	}
+	c.p.created = append(c.p.created, n)
+	return n, nil
+}
+
+// newTerminal stores supplied text; its range is the action's matched input.
+func (c *evalCtx) newTerminal(typ string, value any) (*Node, error) {
+	text, ok := value.(string)
+	if !ok {
+		return nil, fmt.Errorf("terminal constructor requires a string, got %s", typeName(value))
+	}
+	n := c.p.newNode(Node{kind: c.p.prog.typeKind(typ), terminal: true, Text: text, Start: int32(c.start), End: int32(c.end)})
 	c.p.created = append(c.p.created, n)
 	return n, nil
 }
@@ -768,7 +804,11 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 	case *grammar.New:
 		_, st := c.prog.structType(t.Type)
 		if st == nil {
-			c.errorf(t.Diagnostic(), "%s is not a struct type", t.Type)
+			if c.prog.terminalConstructorType(t.Type) != "" {
+				c.errorf(t.Diagnostic(), "terminal constructor requires one positional string argument")
+			} else {
+				c.errorf(t.Diagnostic(), "%s is not a struct type", t.Type)
+			}
 		}
 		seen := map[string]bool{}
 		for _, fi := range t.Fields {
@@ -780,6 +820,25 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 				c.errorf(fi.Diagnostic(), "%s has no field %s", t.Type, fi.Name)
 			}
 			c.checkTerm(fi.Value, s, locals)
+		}
+	case *grammar.ListConstructor:
+		k := &checker{prog: c.prog, errs: &c.errs, report: true, resolving: map[string]bool{}}
+		elem := k.resolve(t.Elem)
+		if !nodeListElement(elem) {
+			c.errorf(t.Diagnostic(), "list constructors require a node element type, got %s", elem)
+		}
+		for _, item := range t.Items {
+			c.checkTerm(item, s, locals)
+		}
+	case *grammar.TerminalConstructor:
+		if c.prog.terminalConstructorType(t.Type) == "" {
+			c.errorf(t.Diagnostic(), "%s is not a declared terminal type", t.Type)
+		}
+		if len(t.Args) != 1 {
+			c.errorf(t.Diagnostic(), "terminal constructor requires one argument, got %d", len(t.Args))
+		}
+		for _, arg := range t.Args {
+			c.checkTerm(arg, s, locals)
 		}
 	case *grammar.Call:
 		n, ok := builtins[t.Func]

@@ -15,7 +15,7 @@ type Str terminal
 type Bool terminal
 type Array struct { Items []Value }
 type Value = Int | Str | Bool | Array
-type Entry struct { Key Key, Value Value }
+type Entry struct { Key Key; Value Value }
 type Config struct { Entries []Entry }
 
 rule main Config = -ws es:entry* $$ => Config{Entries: $es}

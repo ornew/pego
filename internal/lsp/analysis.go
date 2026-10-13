@@ -533,6 +533,18 @@ func (a *analysis) walkTerm(t grammar.Term) {
 		for _, x := range t.Args {
 			a.walkTerm(x)
 		}
+	case *grammar.ListConstructor:
+		a.walkType(t.Elem)
+		for _, item := range t.Items {
+			a.walkTerm(item)
+		}
+	case *grammar.TerminalConstructor:
+		if i, ok := a.tokenIndex(t.Diagnostic()); ok {
+			a.refToken(kindType, t.Type, i)
+		}
+		for _, arg := range t.Args {
+			a.walkTerm(arg)
+		}
 	case *grammar.Lambda:
 		a.walkTerm(t.Body)
 	case *grammar.Binary:

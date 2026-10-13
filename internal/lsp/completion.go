@@ -181,7 +181,7 @@ func (a *analysis) complete(off int) []CompletionItem {
 		switch {
 		case prev == st+1:
 			return keywordItems(typeKeywords)
-		case pt.Text == "{" || pt.Text == ",":
+		case pt.Text == "{" || pt.Text == ";":
 			return items // a field name
 		}
 		return append(a.typeItems(false), keywordItems(statementKeywords)...)

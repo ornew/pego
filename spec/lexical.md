@@ -35,9 +35,9 @@ including, the line terminator. `/*` starts a nested block comment, which ends
 at its matching `*/`. Comment markers inside strings or character data are
 ordinary content. The parser records comment trivia and may accept it as
 syntactic trivia; semantic analysis reports a positioned error when a comment
-occurs in a declaration or Operators Rule statement header. Comments are
+occurs in a Definition Statement or Operators Rule statement header. Comments are
 allowed at top-level statement boundaries, at statement and field boundaries
-inside braces, and freely inside PEG and action expressions, including
+inside braces, and freely inside Rule Expressions and Action Expressions, including
 predicates and function arguments.
 
 ```pego
@@ -58,10 +58,10 @@ case-sensitive and have no length limit. Identifier syntax is ASCII-only:
 non-ASCII letters and digits do not continue an identifier. Unicode remains
 available in string literals, character classes, comments, and parsed input.
 Names beginning with `_` are reserved and MUST NOT be used as identifiers,
-including declaration names, references, captures, variables, level names,
+including Definition Statement names, references, captures, variables, level names,
 attribute names, or named arguments. Parsing preserves these names in the
 source AST; semantic validation rejects their use before compilation. The
-standalone PEG atom `_` is the
+standalone primary Rule Expression form `_` is the
 [Top expression](parser-expressions.md#top), not an available name.
 Identifiers name rules, types, fields, captures, variables, levels,
 attributes, and lambda parameters. The initial ASCII letter's case matters
@@ -74,16 +74,16 @@ for type and field names; see [Names](types.md#names).
 The words `infix`, `level`, `operand`, `operators`, `package`, `postfix`,
 `prefix`, `rule`, `skip`, `struct`, `terminal`, and `type` are contextual
 words, not globally reserved identifiers. They are interpreted as syntax only
-where the grammar expects a declaration or Operators Rule item. In a name
+where the grammar expects a Definition Statement or Operators Rule item. In a name
 position, rule reference, capture, field, variable, or expression, they remain
-ordinary identifiers. No declaration name is excluded solely because it is
+ordinary identifiers. No Definition Statement name is excluded solely because it is
 one of these words.
 
 The following identifiers are also contextual:
 
 | Identifier | Meaning | Context |
 |:--|:--|:--|
-| `_` | The [top](parser-expressions.md#top) expression | Parsing expression |
+| `_` | The [Top](parser-expressions.md#top) Rule Expression | Rule Expression |
 | `left`, `right`, `none` | Associativity | After `infix` in an [Operators Rule](operators-rule.md) |
 | `true`, `false`, `nil` | Literal values | Actions and predicates |
 | `len`, `text`, `foldl`, `foldr`, `map`, `list`, `concat` | Built-in functions | Actions and predicates |
@@ -145,11 +145,11 @@ _|_  ^^  $$  --  =>  ==  !=  <=  >=  &&  ||  :=
 
 | Token | Use |
 |:--|:--|
-| `_|_`, `^^`, `$$`, `^`, `$`, `.`, `--` | Bottom, anchors, any character, and cut in parsing expressions |
-| `/`, `*`, `+`, `?`, `&`, `!`, `@`, `-`, `:`, `(`, `)`, `{`, `}`, `,`, `;` | PEG operators, repetition, captures, annotations, and declaration separators |
-| `{`, `}` | Predicate delimiters when a PEG primary is expected; they also delimit source action blocks in their respective contexts |
+| `_|_`, `^^`, `$$`, `^`, `$`, `.`, `--` | Bottom, anchors, any character, and cut in Rule Expressions |
+| `/`, `*`, `+`, `?`, `&`, `!`, `@`, `-`, `:`, `(`, `)`, `{`, `}`, `,`, `;` | Rule Expression operators, repetition, captures, annotations, and Definition Statement separators |
+| `{`, `}` | Predicate delimiters where a primary Rule Expression form is expected; they also delimit source action blocks in their respective contexts |
 | `//`, `/*`, `*/` | Line and nested block comments |
-| `=>` | Whole-rule or Operators Rule action in those declaration positions; lambda arrow inside an action |
+| `=>` | Whole-rule or Operators Rule action in those Definition Statement positions; lambda arrow inside an action |
 | `:=` | Predicate variable definition |
 | `==`, `!=`, `<`, `<=`, `>`, `>=`, `&&`, `||`, `!`, `+`, `-`, `*`, `/`, `%` | Action and predicate operators |
 | `=`, `|`, `[]`, `*` | Type definitions and type forms (`type A = B | C`, `[]T`, `*T`) |
@@ -186,13 +186,13 @@ U+FFFF are valid scalar values.
 An attribute name MUST immediately follow `@`, and an attribute argument
 list MUST immediately follow its name: `@name` or `@name(...)`. White space
 or comments between `@` and the name are syntax errors. A separate group after
-`@name (expr)` is a following PEG expression, not an argument list.
+`@name (expr)` is a following Rule Expression, not an argument list.
 
 A pragma name MUST immediately follow `#`, and its argument list MUST
 immediately follow its name. White space or comments within `#repeat(...)` or
 `#recover(...)` are allowed inside the parentheses, but not between `#` and
 the name or between the name and `(`. For the argument-free `#atomic` and
-`#stream` forms, a separate group after the name is a following PEG expression,
+`#stream` forms, a separate group after the name is a following Rule Expression,
 just as it is after an argument-free attribute.
 
 These forms require adjacency; intervening white space or comments change the
@@ -207,9 +207,8 @@ parse:
 
 The lexer takes the longest punctuation token. Thus `--` is one cut token,
 `$$` is one end-of-input anchor, and `$` followed by a letter, `_`, or digit
-begins a capture reference. A `{` begins a Predicate Action when a PEG primary
-is expected; `[]` remains a character class in PEG expressions and a type-list
-prefix in type syntax. `@` attributes, `#` pragmas and comment markers are
+begins a capture reference. A `{` begins a Predicate Action where a primary Rule Expression form is expected; `[]` remains a character class in Rule Expressions and a type-list
+prefix in Type Expressions. `@` attributes, `#` pragmas and comment markers are
 recognized outside shielded string and character data.
 
 ## Limits

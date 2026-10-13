@@ -43,7 +43,7 @@ change what your code sees. The test suite checks this for every grammar in `exa
 A complete, runnable setup. The grammar, `pairs.pego`, is the one used in the [runtime guide](runtime.md):
 
 ```pego
-type Pair struct { Key Match, Value Match }
+type Pair struct { Key Match; Value Match }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
@@ -489,8 +489,8 @@ not.
 
 | Feature | Engine | Generated |
 |:--|:--|:--|
-| All parsing expressions, captures, atomic and discarded expressions | Yes | Yes |
-| Operators Rule declarations, left recursion (direct and indirect) | Yes | Yes |
+| All Rule Expressions, captures, atomic and discarded expressions | Yes | Yes |
+| Operators Rule Definition Statements, left recursion (direct and indirect) | Yes | Yes |
 | Predicates and variables, lookahead, cut | Yes | Yes |
 | Actions, types, built-in functions (`foldl`, `map`, `concat`, ...) | Yes | Yes |
 | `@error` and `#recover`, `SyntaxErrors` | Yes | Yes |

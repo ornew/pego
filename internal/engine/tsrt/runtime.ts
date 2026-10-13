@@ -2244,6 +2244,13 @@ class Actx {
     return this.listNode(items.slice());
   }
 
+  newTerminal(typ: string, value: Value): Value {
+    if (typeof value !== "string") return evalError(`terminal constructor requires a string, got ${typeName(value)}`);
+    const n = new Node(typ, "", this.start, this.end, value, noNodes, noFields, false, true);
+    this.p.created.push(n);
+    return n;
+  }
+
   // listNode returns a List node with the child list kids (which it takes over).
   listNode(kids: (Node | null)[]): Node {
     const n = new Node("List", "", this.start, this.start, "", kids, noFields, false, false);

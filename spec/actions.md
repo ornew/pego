@@ -1,7 +1,7 @@
 # Actions
 
 PEGO has two executable action forms. A **Predicate Action** appears in braces
-where a PEG primary expression is expected. It evaluates without consuming
+where a Rule Expression atom is expected. It evaluates without consuming
 input or producing a value. A **Value Action** follows `=>` and computes a
 rule's value from the values produced by its grammar body. An ordinary rule may
 have a whole-rule Value Action after its complete expression:
@@ -24,7 +24,7 @@ not implemented. PEGO has no rule-initialization action block.
 ```
 
 ```pego
-type KV struct { Key Match, Op Match, Value Match }
+type KV struct { Key Match; Op Match; Value Match }
 rule key_value KV = (k:[a-z]+ op:"=" v:[0-9]+) => KV{Key: $k, Op: $op, Value: $v}
 ```
 
@@ -68,21 +68,55 @@ Variables are `int`, `string` or `bool`; definitions shadow rather than mutate
 an existing value. Scope and rollback are specified in [Variables](predicates.md#variables).
 
 ```pego
-type Item struct { Depth int, Name Match }
+type Item struct { Depth int; Name Match }
 rule item Item = {depth := 1} n:name => Item{Depth: depth, Name: $n}
 ```
 
 ## Values and Constructors
 
-Action expressions operate on nodes, integers, strings, booleans, `nil`, and
+Action Expressions operate on nodes, integers, strings, booleans, `nil`, and
 restricted lambda functions. String and integer literals use the same escapes
 and decimal syntax as grammar literals. `T{Field: value, ...}` constructs a
-node of struct type `T`; unset fields read as `nil`.
+node of struct type `T`; unset fields read as `nil`. A typed node-list literal
+`[]T{value, ...}` constructs a `List` whose element Type is explicitly `T`. A
+terminal Type can be constructed positionally as `T{text}`; the sole argument
+must be a string-valued Action Expression. These forms never stringify or filter
+values implicitly.
 
 ```pego
 type NameNode struct { Name string }
 rule name NameNode = [a-z]+ => NameNode{Name: text($1)}
+
+rule twoNames []NameNode = a:name "," b:name => []NameNode{$a, $b}
+rule noNames []NameNode = "" => []NameNode{}
+
+type Identifier terminal
+rule identifier Identifier = [a-z]+
+rule normalized Identifier = n:identifier => Identifier{text($n)}
 ```
+
+A typed node-list literal has the form `[]T{value, ...}`. Every element must
+have a known static Type assignable to `T`; nested literals are checked
+recursively, and an unknown element Type is an error even when the target is a
+concrete node list. An empty literal such as `[]NameNode{}` has Type
+`[]NameNode`. Nil is accepted only when the element Type is optional, as in
+`[]*NameNode{nil}`. Elements are evaluated once, left to right; no element is
+dropped implicitly. Primitive-valued lists such as `[]int` are unsupported.
+
+A terminal constructor has the form `T{stringValue}` when `T` resolves to a
+terminal Type. It requires exactly one string-valued argument. Wrong arity or a
+statically known non-string argument is a compile-time error; `T{}` remains an empty struct
+constructor syntactically and is rejected if `T` resolves to a terminal. The
+provided string becomes the terminal text without being parsed again. Its
+source range follows the ordinary newly constructed node rule.
+
+A dynamically typed `any` argument uses the ordinary runtime string check.
+A mismatch aborts a Value Action; inside a Predicate Action it makes the
+predicate fail and permits the existing backtracking behavior.
+
+`NoTypeCheck` deliberately skips assignability checks for typed-list elements
+and terminal arguments. It does not add runtime support for primitive-valued
+lists.
 
 In the public source AST, parentheses around an action expression are retained
 as `TermGroup{Term}`. The group is semantically transparent: it affects

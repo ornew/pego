@@ -1,7 +1,7 @@
 type Number terminal
-type Binary struct { Left Expr, Op Match, Right Expr }
-type Unary struct { Op Match, X *Expr }
-type Post struct { X Expr, Op Match, Args []Expr }
+type Binary struct { Left Expr; Op Match; Right Expr }
+type Unary struct { Op Match; X *Expr }
+type Post struct { X Expr; Op Match; Args []Expr }
 type Expr = Number | Binary | Unary | Post
 rule main Expr = e:expr ws $$ => $e
 rule expr Expr = operators {

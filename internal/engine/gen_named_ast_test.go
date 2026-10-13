@@ -17,7 +17,7 @@ type U = S | T
 type Alias = T
 type Mixed = S | Seq
 type Number = int
-type Values struct { N Number, Text string, Flag bool }
+type Values struct { N Number; Text string; Flag bool }
 type Recovery struct { T T }
 type Items = []S
 type ParseRuleAST struct { T T }

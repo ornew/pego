@@ -200,10 +200,10 @@ package toy
 
 type Name terminal
 type Num terminal
-type Let struct { Name Name, Value Expr }
+type Let struct { Name Name; Value Expr }
 type Print struct { Value Expr }
 type Block struct { Body []Stmt }
-type Sum struct { Left Expr, Right Expr }
+type Sum struct { Left Expr; Right Expr }
 type Expr = Name | Num | Sum
 type Stmt = Let | Print | Block
 type Program struct { Body []Stmt }
@@ -750,7 +750,7 @@ package toy
 
 type Name terminal
 type Num terminal
-type Let struct { Name Name, Value Expr }
+type Let struct { Name Name; Value Expr }
 type Print struct { Value Expr }
 type Block struct { Body []Stmt }
 type Expr = Name | Num
@@ -867,8 +867,8 @@ package blocks
 
 type Name terminal
 type Num terminal
-type Assign struct { Name Name, Value Num }
-type If struct { Test Name, Body []Stmt }
+type Assign struct { Name Name; Value Num }
+type If struct { Test Name; Body []Stmt }
 type Stmt = Assign | If
 
 rule main []Stmt = {indent := 0} ss:stmts blank* $$ => $ss

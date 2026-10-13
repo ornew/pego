@@ -12,7 +12,7 @@ type Num terminal
 type Str terminal
 type Bool terminal
 type Field terminal
-type Binary struct { Left Expr, Op Match, Right Expr }
+type Binary struct { Left Expr; Op Match; Right Expr }
 type Not struct { X Expr }
 type Expr = Num | Str | Bool | Field | Binary | Not
 

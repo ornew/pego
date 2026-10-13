@@ -11,7 +11,7 @@ is half typed is not valid, so the grammar recovers from errors, and every keyst
 
 ```pego
 // settings.pego
-type Setting struct { Key Match, Value Match }
+type Setting struct { Key Match; Value Match }
 
 rule main = -ws (setting -ws)* $$
 

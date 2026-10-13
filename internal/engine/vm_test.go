@@ -192,8 +192,8 @@ rule e = operators {
 // one Program (whose backends are prepared lazily), and checks that each gets the result of a
 // parse on its own. Run with -race to check that per-parse state is not shared.
 func TestConcurrentParses(t *testing.T) {
-	prog := compile(t, `type Pair struct { Key Match, Value Node }
-type Op struct { L Node, R Node }
+	prog := compile(t, `type Pair struct { Key Match; Value Node }
+type Op struct { L Node; R Node }
 type Node = Op | Match
 rule main = ps:pair* => concat(map($ps, (p) => $p), list())
 rule pair Pair = k:[a-z]+ #atomic "=" v:expr ";" {text($k) != "bad"} => Pair{Key: $k, Value: $v}

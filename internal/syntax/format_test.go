@@ -164,7 +164,7 @@ rule a = "a"
 
     // end
 }
-type P struct { X A, Y B } // pair
+type P struct { X A; Y B } // pair
 type E struct {}
 `,
 			want: `type Op struct { // op
@@ -176,7 +176,7 @@ type E struct {}
 
     // end
 }
-type P struct { X A, Y B } // pair
+type P struct { X A; Y B } // pair
 type E struct {}
 `,
 		},

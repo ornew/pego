@@ -1,8 +1,8 @@
 # Operators Rule
 
-An Operators Rule declaration defines a rule body that parses expressions by
-declaring operator parts at binding levels, each with a precedence and an
-associativity. Operand and operator shapes are ordinary parsing expressions.
+An Operators Rule Definition Statement defines a rule body that parses
+expressions by declaring operator parts at binding levels, each with a
+precedence and an associativity. Operand and operator shapes are ordinary Rule Expressions.
 Their combination follows a parsing algorithm inspired by Pratt parsing.
 
 The background of the design and the alternatives that were considered are
@@ -11,14 +11,14 @@ recorded in [design 005](../docs/design/005-operators-rule.md).
 ```pego
 type Num terminal
 type Ident terminal
-type Comma struct { L Expr, R Expr }
-type Assign struct { L Expr, R Expr }
-type Cond struct { Cond Expr, Then Expr, Else Expr }
-type Bin struct { L Expr, Op Match, R Expr }
-type Unary struct { Op Match, X Expr }
-type Call struct { Fn Expr, Args []Expr }
-type Index struct { X Expr, Index Expr }
-type Member struct { X Expr, Name Ident }
+type Comma struct { L Expr; R Expr }
+type Assign struct { L Expr; R Expr }
+type Cond struct { Cond Expr; Then Expr; Else Expr }
+type Bin struct { L Expr; Op Match; R Expr }
+type Unary struct { Op Match; X Expr }
+type Call struct { Fn Expr; Args []Expr }
+type Index struct { X Expr; Index Expr }
+type Member struct { X Expr; Name Ident }
 type Expr = Num | Ident | Comma | Assign | Cond | Bin | Unary | Call | Index | Member
 
 rule expr Expr = operators {
@@ -52,9 +52,9 @@ rule ws = [ \t\r\n]*
 ## Syntax
 
 ```
-rule <name> [<type>] = operators {
-    skip <parsing expression>
-    operand <parsing expression> [=> <action>]
+rule <name> [<Type Expression>] = operators {
+    skip <Rule Expression>
+    operand <Rule Expression> [=> <action>]
     level [<level name>] {
         prefix <operator part> [=> <action>]
         postfix <operator part> [=> <action>]
@@ -63,18 +63,19 @@ rule <name> [<type>] = operators {
 }
 ```
 
-- An Operators Rule uses a dedicated `rule name [Type] = operators` declaration. It cannot
-  appear inside another parsing expression. Its optional type follows the rule
+- An Operators Rule uses a dedicated
+  `rule <name> [<Type Expression>] = operators` form. It cannot
+  appear inside another Rule Expression. Its optional type follows the rule
   name; when omitted, the type is inferred from operands and operators.
 - An action after an `operand` or operator declaration uses `=>` and applies to
   that complete operand or operator entry.
-- A declaration-level action after the closing `}` may be omitted or use the
-  explicit `=> ...` default-CST form. Any other declaration-level action is a
+- A rule-level Value Action after the closing `}` may be omitted or use the
+  explicit `=> ...` default-CST form. Any other rule-level Value Action is a
   compile-time error.
-- Semicolons separate declaration items when needed; line boundaries may also make the separation unambiguous. Struct fields are comma-separated.
+- Semicolons separate Definition Statement items when needed; line boundaries may also make the separation unambiguous. Struct fields use semicolons or newlines; constructor fields and arguments use commas.
 - An Operators Rule has at most one `skip`, at least one `operand`, and any
   number of `level`s. A `level` contains any number of operators.
-- An **operator part** is an arbitrary parsing expression. It MAY call other
+- An **operator part** is an arbitrary Rule Expression. It MAY call other
   rules, including the rule that contains the Operators Rule.
 
 ## Items

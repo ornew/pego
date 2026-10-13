@@ -151,7 +151,7 @@ matches `true` itself, so the parser never reaches the later alternatives. A mis
 kind; here the fix is to try the keywords first: `rule item =  ("true" / "false") ![a-z] / word / number `.
 
 The report counts the rules that the start rule reaches, the alternatives of ordered choices, and the operands and
-operators of Operators Rule declarations. It lists separately, and does not count:
+operator parts declared in Operators Rules. It lists separately, and does not count:
 
 - `unreachable`: rules that generation cannot exercise, because the start rule does not call them or calls them only
   inside a negative lookahead (`!keyword`), the skip of `#recover`, or an expression that can never match;
@@ -447,7 +447,7 @@ unfinished future tail; its endpoint is only a witness. Unsupported cuts, predic
 recursion, recovery and exhausted matching remain inconclusive. Every returned input is still parsed and accepted.
 
 What the generator cannot evaluate, it leaves to the parser: predicates over values built by actions or over struct
-fields, and lookaheads into Operators Rule declarations or left-recursive rules. Those constructs are handled only by generating
+fields, and lookaheads into Operators Rules or left-recursive rules. Those constructs are handled only by generating
 and checking, which costs attempts; a grammar where most choices depend on them yields fewer inputs per second and
 lower coverage. In practice:
 

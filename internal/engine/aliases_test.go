@@ -19,7 +19,7 @@ rule main Box = v:num $$ => Box{Value: $v}
 rule num Deep = "é"+`, []string{"éé", "", "x"}},
 	{"alias constructors", `type Num terminal
 type NumAlias = Num
-type P struct { Value Num, N int }
+type P struct { Value Num; N int }
 type Alias = P
 type Deep = Alias
 rule main Deep = v:num $$ => Deep{Value: $v, N: 7}

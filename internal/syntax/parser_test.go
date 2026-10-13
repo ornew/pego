@@ -80,7 +80,7 @@ type Op struct {
 }
 
 type Node = Op | Number
-type Pair struct { Items []*Node, Name string }
+type Pair struct { Items []*Node; Name string }
 
 rule expr Node = (
     l:term rest:(op:term_binary_op r:term)*
@@ -164,7 +164,7 @@ func TestParseErrors(t *testing.T) {
 		{"rule a = (b\nrule c = d", `2:8: expected ')', found '='`},
 		{`type A struct { X }`, `1:19: expected identifier, found '}'`},
 		{`rule a = operators { level { infix "+" } }`, `1:36: expected 'left', 'right', or 'none', found "+"`},
-		{`rule a = x => A{X 1}`, `1:19: expected ':', found 1`},
+		{`rule a = x => A{X 1}`, `1:19: expected ',', found 1`},
 		{"rule a = %\nrule b = c", `1:10: expected an expression, found '%'`},
 		{"rule a = `", "1:10: unexpected character '`'"},
 	} {

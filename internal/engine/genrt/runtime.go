@@ -1816,6 +1816,20 @@ func (c *actx) newStruct(typ string, kv ...any) any {
 	return n
 }
 
+func (c *actx) newTerminal(typ string, value any) any {
+	text, ok := value.(string)
+	if !ok {
+		evalErrorf("terminal constructor requires a string, got %s", typeName(value))
+	}
+	k := typeKinds[typ]
+	if k == nil {
+		k = kindOf(typ, "")
+	}
+	n := c.p.newNode(Node{kind: k, terminal: true, Text: text, Start: int32(c.start), End: int32(c.end)})
+	c.p.created = append(c.p.created, n)
+	return n
+}
+
 func (c *actx) newList(items []*Node) *Node {
 	return c.listNode(append(c.p.nodes(len(items))[:0], items...))
 }

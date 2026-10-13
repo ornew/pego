@@ -13,8 +13,8 @@ import (
 
 var typedOperatorsRuleBodyCases = []genCase{
 	{"typed/OperatorsRule_associativity", `type Number terminal
-type Binary struct { Left Expr, Right Expr, Op Match }
-type Unary struct { X Expr, Op Match }
+type Binary struct { Left Expr; Right Expr; Op Match }
+type Unary struct { X Expr; Op Match }
 type Expr = Number | Binary | Unary
 rule main Expr = e:expr $$ => $e
 rule expr Expr = operators {
@@ -30,7 +30,7 @@ rule expr Expr = operators {
 rule number Number = [0-9]+
 `, []string{"1+2-3", "1^2^3", "-1^2!", "(1+2)!", "1=2", "1=2=3", "1+", "-", "1!+", "(1+2", " 1 + 2", ""}},
 	{"typed/OperatorsRule_longest_ties", `type Atom terminal
-type Prefix struct { X Expr, Tag int }
+type Prefix struct { X Expr; Tag int }
 type Expr = Atom | Prefix
 rule main Expr = e:expr $$ => $e
 rule expr Expr = operators {
@@ -45,7 +45,7 @@ rule expr Expr = operators {
 rule atom Atom = "-x" / "a" / "é"
 `, []string{"a", "-a", "--a", "---a", "--", "-x", "¬é", "¬", "--x", ""}},
 	{"typed/OperatorsRule_element_captures", `type Atom terminal
-type Post struct { X Expr, Items []Match, N int }
+type Post struct { X Expr; Items []Match; N int }
 type Expr = Atom | Post
 rule main Expr = e:expr $$ => $e
 rule expr Expr = operators {
@@ -57,7 +57,7 @@ rule expr Expr = operators {
 rule atom Atom = "a"
 `, []string{"a", "a[b,]", "a[b,c,][d,]", "a[]", "a[b,", "a[b,c,d,e,]", "a[é,]", ""}},
 	{"typed/OperatorsRule_positional_actions", `type Atom terminal
-type Doc struct { Text Match, Items []Match }
+type Doc struct { Text Match; Items []Match }
 type Expr = Atom | Doc
 rule main Expr = e:expr $$ => $e
 rule expr Expr = operators {
@@ -68,7 +68,7 @@ rule expr Expr = operators {
 rule atom Atom = "a"
 `, []string{"a", "[é]", "[é](x)", "a(x)", "[é", "a(x", "a(y)", ""}},
 	{"typed/OperatorsRule_environment_rollback", `type Atom terminal
-type Prefix struct { X Expr, Tag int, Text Match }
+type Prefix struct { X Expr; Tag int; Text Match }
 type Expr = Atom | Prefix
 rule main Expr = {n := 0} e:expr $$ => $e
 rule expr Expr = operators {
@@ -82,7 +82,7 @@ rule expr Expr = operators {
 rule atom Atom = "a"
 `, []string{"a", "-xa", "-xza", " -xa", " !a", "-x", "-xz", " -x", "", "-x?a"}},
 	{"typed/OperatorsRule_lookahead_memo", `type Atom terminal
-type Prefix struct { X Expr, Text Match }
+type Prefix struct { X Expr; Text Match }
 type Expr = Atom | Prefix
 rule main Expr = &(expr "!") e:expr "!" $$ => $e
 rule expr Expr = operators {
@@ -130,7 +130,7 @@ rule expr Doc = operators {
 }
 `, []string{"a", "b", "é", "c", "", "é?"}},
 	{"typed/OperatorsRule_error_isolation", `type Atom terminal
-type Prefix struct { X Expr, Text Match }
+type Prefix struct { X Expr; Text Match }
 type Expr = Atom | Prefix
 rule main Expr = e:expr $$ => $e
 rule expr Expr = operators {

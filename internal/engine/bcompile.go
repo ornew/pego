@@ -544,6 +544,14 @@ func (c *bcompiler) term(t grammar.Term, s *scope, locals []string) {
 		}
 		c.m.FieldLists = append(c.m.FieldLists, c.strs2(names))
 		c.eemit(ENew, c.str(name), int32(len(c.m.FieldLists)-1))
+	case *grammar.ListConstructor:
+		for _, item := range t.Items {
+			c.term(item, s, locals)
+		}
+		c.eemit(ECall, bList, int32(len(t.Items)))
+	case *grammar.TerminalConstructor:
+		c.term(t.Args[0], s, locals)
+		c.eemit(ETerminal, c.str(c.prog.terminalConstructorType(t.Type)), 0)
 	case *grammar.Call:
 		if t.Func == "concat" && fusable(t) {
 			// Gather the elements of list, map and concat arguments directly (see fusable).

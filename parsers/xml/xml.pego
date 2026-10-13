@@ -22,49 +22,49 @@ type Document struct {
     Epilog  []Misc // comments and processing instructions after the root element
 }
 
-type XMLDecl struct { Version Version, Encoding *EncName, Standalone *YesNo }
+type XMLDecl struct { Version Version; Encoding *EncName; Standalone *YesNo }
 type Version terminal
 type EncName terminal
 type YesNo terminal
 type Misc = Comment | PI
 
-type Doctype struct { Name Name, ExternalID *ExternalID, Subset []Decl }
-type ExternalID struct { Public *PubidLiteral, System *SystemLiteral }
+type Doctype struct { Name Name; ExternalID *ExternalID; Subset []Decl }
+type ExternalID struct { Public *PubidLiteral; System *SystemLiteral }
 type PubidLiteral terminal  // between the quotes
 type SystemLiteral terminal // between the quotes
 type Decl = ElementDecl | AttlistDecl | EntityDecl | NotationDecl | PI | Comment | PERef
 type PERef terminal // "%name;"
 
-type ElementDecl struct { Name Name, Content ContentSpec }
+type ElementDecl struct { Name Name; Content ContentSpec }
 type ContentSpec = Keyword | Mixed | Choice | Sequence
 type Keyword terminal // EMPTY, ANY, CDATA, ID, ..., #REQUIRED, #IMPLIED, #FIXED
 type Mixed struct { Names []Name }
-type Choice struct { Items []Particle, Occur *Occurrence }
-type Sequence struct { Items []Particle, Occur *Occurrence }
-type NameParticle struct { Name Name, Occur *Occurrence }
+type Choice struct { Items []Particle; Occur *Occurrence }
+type Sequence struct { Items []Particle; Occur *Occurrence }
+type NameParticle struct { Name Name; Occur *Occurrence }
 type Particle = NameParticle | Choice | Sequence
 type Occurrence terminal // ?, * or +
 
-type AttlistDecl struct { Name Name, Defs []AttDef }
-type AttDef struct { Name Name, Type AttType, Default *Keyword, Value *AttValue }
+type AttlistDecl struct { Name Name; Defs []AttDef }
+type AttDef struct { Name Name; Type AttType; Default *Keyword; Value *AttValue }
 type AttType = Keyword | Enumeration | NotationType
 type Enumeration struct { Values []Nmtoken }
 type NotationType struct { Names []Name }
 type Nmtoken terminal
 
-type EntityDecl struct { Parameter bool, Name Name, Value *EntityValue, ExternalID *ExternalID, NData *Name }
+type EntityDecl struct { Parameter bool; Name Name; Value *EntityValue; ExternalID *ExternalID; NData *Name }
 type EntityValue terminal // between the quotes
-type NotationDecl struct { Name Name, ExternalID ExternalID }
+type NotationDecl struct { Name Name; ExternalID ExternalID }
 
-type Element struct { Name Name, Attrs []Attribute, Content []Content }
-type Attribute struct { Name Name, Value AttValue }
+type Element struct { Name Name; Attrs []Attribute; Content []Content }
+type Attribute struct { Name Name; Value AttValue }
 type AttValue terminal // between the quotes
 type Content = Element | CharData | EntityRef | CharRef | CDSect | PI | Comment
 type CharData terminal
 type EntityRef terminal // "&name;"
 type CharRef terminal   // "&#...;"
 type CDSect terminal    // between "<![CDATA[" and "]]>"
-type PI struct { Target Name, Data *PIData }
+type PI struct { Target Name; Data *PIData }
 type PIData terminal
 type Comment terminal // between "<!--" and "-->"
 type Name terminal

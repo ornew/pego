@@ -25,7 +25,7 @@ type Type struct {
     Dims   []ArrayDim  // [] and [3]
     Zone   string      // WITH TIME ZONE, WITHOUT TIME ZONE
 }
-type TypeField struct { Name Ident, Type Type }
+type TypeField struct { Name Ident; Type Type }
 type ArrayDim struct { Size *Number }
 
 // ===================================================================================================
@@ -44,47 +44,47 @@ type Star struct {
     Replace   []ReplaceItem
     Rename    []RenameItem
 }
-type ReplaceItem struct { Expr Expr, Name Ident }
-type RenameItem struct { From Name, To Ident }
-type ColumnsExpr struct { Arg Expr, Star bool } // COLUMNS(expr) and *COLUMNS(expr)
+type ReplaceItem struct { Expr Expr; Name Ident }
+type RenameItem struct { From Name; To Ident }
+type ColumnsExpr struct { Arg Expr; Star bool } // COLUMNS(expr) and *COLUMNS(expr)
 type UnpackExpr struct { Arg Expr }
 
-type Binary struct { Left Expr, Op Match, Right Expr } // a + b, a AND b, a = b, a -> b, a ~~ b, ...
-type Unary struct { Op Match, X Expr }                 // -a, +a, ~a
-type PostfixOp struct { X Expr, Op Match }             // a !
+type Binary struct { Left Expr; Op Match; Right Expr } // a + b, a AND b, a = b, a -> b, a ~~ b, ...
+type Unary struct { Op Match; X Expr }                 // -a, +a, ~a
+type PostfixOp struct { X Expr; Op Match }             // a !
 type Not struct { X Expr }
-type IsExpr struct { X Expr, Negated bool, Test string } // IS [NOT] NULL|TRUE|FALSE|UNKNOWN, ISNULL, NOTNULL, NOT NULL
-type DistinctFrom struct { Left Expr, Right Expr, Negated bool }
-type IsOf struct { X Expr, Types []Type, Negated bool }
-type Between struct { X Expr, Lo Expr, Hi Expr, Negated bool, Symmetric bool }
+type IsExpr struct { X Expr; Negated bool; Test string } // IS [NOT] NULL|TRUE|FALSE|UNKNOWN, ISNULL, NOTNULL, NOT NULL
+type DistinctFrom struct { Left Expr; Right Expr; Negated bool }
+type IsOf struct { X Expr; Types []Type; Negated bool }
+type Between struct { X Expr; Lo Expr; Hi Expr; Negated bool; Symmetric bool }
 // x IN (a, b), x IN (SELECT ...), x IN y
-type In struct { X Expr, Negated bool, Query *ParenQuery, Items []Expr, Source *Expr }
+type In struct { X Expr; Negated bool; Query *ParenQuery; Items []Expr; Source *Expr }
 // x [NOT] LIKE|ILIKE|GLOB|SIMILAR TO pattern [ESCAPE esc]
-type Like struct { X Expr, Negated bool, Op string, Pattern Expr, Escape *Expr }
+type Like struct { X Expr; Negated bool; Op string; Pattern Expr; Escape *Expr }
 // x = ANY (subquery), x < ALL (...)
-type AnyAll struct { X Expr, Op string, Quantifier string, Source Expr }
-type AtTimeZone struct { X Expr, Zone Expr }
-type Collate struct { X Expr, Collation Name }
-type Cast struct { X Expr, Type Type, Try bool, Shorthand bool } // CAST(x AS t), TRY_CAST, x::t
-type Case struct { Arg *Expr, Whens []When, Else *Expr }
-type When struct { Cond Expr, Then Expr }
-type Row struct { Items []Expr, Keyword bool } // ROW(a, b) and (a, b)
+type AnyAll struct { X Expr; Op string; Quantifier string; Source Expr }
+type AtTimeZone struct { X Expr; Zone Expr }
+type Collate struct { X Expr; Collation Name }
+type Cast struct { X Expr; Type Type; Try bool; Shorthand bool } // CAST(x AS t), TRY_CAST, x::t
+type Case struct { Arg *Expr; Whens []When; Else *Expr }
+type When struct { Cond Expr; Then Expr }
+type Row struct { Items []Expr; Keyword bool } // ROW(a, b) and (a, b)
 type ListLit struct { Items []Expr }           // [a, b]
 type ArrayLit struct { Items []Expr }          // ARRAY[a, b]
 type StructLit struct { Fields []StructField } // {'a': 1, b: 2}
-type StructField struct { Name Ident, Value Expr }
+type StructField struct { Name Ident; Value Expr }
 type MapLit struct { Entries []MapEntry } // MAP {k: v}
-type MapEntry struct { Key Expr, Value Expr }
-type ListComp struct { Expr Expr, Vars []Ident, Source Expr, Cond Expr } // [x + 1 FOR x IN l IF x > 1]
-type Lambda struct { Params []Ident, Body Expr, Keyword bool }           // x -> body is a Binary; LAMBDA x: body
+type MapEntry struct { Key Expr; Value Expr }
+type ListComp struct { Expr Expr; Vars []Ident; Source Expr; Cond Expr } // [x + 1 FOR x IN l IF x > 1]
+type Lambda struct { Params []Ident; Body Expr; Keyword bool }           // x -> body is a Binary; LAMBDA x: body
 type Subquery struct { Query ParenQuery }                                // (SELECT ...)
 type Exists struct { Query ParenQuery }
 type ArraySubquery struct { Query ParenQuery }              // ARRAY(SELECT ...)
-type Grouping struct { Name string, Args []Expr }           // GROUPING(a, b), GROUPING_ID(a, b)
-type TypedLit struct { Type Type, Value StringLit }         // DATE '2020-01-01', DECIMAL(10, 2) '1.5'
-type IntervalLit struct { Value Expr, Unit *IntervalUnit }  // INTERVAL '1' DAY, INTERVAL (x) HOUR, INTERVAL 5 DAY
+type Grouping struct { Name string; Args []Expr }           // GROUPING(a, b), GROUPING_ID(a, b)
+type TypedLit struct { Type Type; Value StringLit }         // DATE '2020-01-01', DECIMAL(10, 2) '1.5'
+type IntervalLit struct { Value Expr; Unit *IntervalUnit }  // INTERVAL '1' DAY, INTERVAL (x) HOUR, INTERVAL 5 DAY
 type IntervalUnit terminal                                  // DAY, YEAR TO MONTH, ...
-type NamedArg struct { Name Ident, Value Expr, Arrow bool } // name := value, name => value (Arrow)
+type NamedArg struct { Name Ident; Value Expr; Arrow bool } // name := value, name => value (Arrow)
 // A function call, with the clauses that follow it.
 type FuncCall struct {
     Name        Name
@@ -112,23 +112,23 @@ type SpecialCall struct {
     Type    *Type
 }
 // An indirection of an expression: x.field, x.method(args), x[i], x[lo:hi], x[lo:hi:step]; x.a[1] is two of them.
-type Indirection struct { X Expr, Step Step }
+type Indirection struct { X Expr; Step Step }
 type Step = FieldStep | IndexStep | SliceStep
-type FieldStep struct { Name Ident, Call bool, Args []Expr }
+type FieldStep struct { Name Ident; Call bool; Args []Expr }
 type IndexStep struct { Index Expr }
-type SliceStep struct { Lo *Expr, Hi *Expr, Stride *Expr, Dash bool }
+type SliceStep struct { Lo *Expr; Hi *Expr; Stride *Expr; Dash bool }
 
-type WindowOver struct { Name *Ident, Spec *WindowSpec }
-type WindowSpec struct { Base *Ident, PartitionBy []Expr, OrderBy *OrderBy, Frame *Frame }
-type Frame struct { Unit string, Start FrameBound, End *FrameBound, Exclude string }
-type FrameBound struct { Kind string, Expr *Expr }
-type WindowDef struct { Name Ident, Spec WindowSpec }
+type WindowOver struct { Name *Ident; Spec *WindowSpec }
+type WindowSpec struct { Base *Ident; PartitionBy []Expr; OrderBy *OrderBy; Frame *Frame }
+type Frame struct { Unit string; Start FrameBound; End *FrameBound; Exclude string }
+type FrameBound struct { Kind string; Expr *Expr }
+type WindowDef struct { Name Ident; Spec WindowSpec }
 
-type OrderBy struct { Items []SortItem, All bool, Direction string, Nulls string }
-type SortItem struct { Expr Expr, Using string, Direction string, Nulls string }
+type OrderBy struct { Items []SortItem; All bool; Direction string; Nulls string }
+type SortItem struct { Expr Expr; Using string; Direction string; Nulls string }
 
 type Expr = Number | StringLit | BitLit | BoolLit | NullLit | Param | Paren | ColumnRef | DefaultExpr | PositionalRef | Star | ColumnsExpr | UnpackExpr | Binary | Unary | PostfixOp | Not | IsExpr | DistinctFrom | IsOf | Between | In | Like | AnyAll | AtTimeZone | Collate | Cast | Case | Row | ListLit | ArrayLit | StructLit | MapLit | ListComp | Lambda | Subquery | Exists | ArraySubquery | Grouping | TypedLit | IntervalLit | NamedArg | FuncCall | SpecialCall | Indirection | GroupingSet
-type GroupingSet struct { Kind string, Items []Expr } // CUBE(...), ROLLUP(...), GROUPING SETS(...), ()
+type GroupingSet struct { Kind string; Items []Expr } // CUBE(...), ROLLUP(...), GROUPING SETS(...), ()
 // ===================================================================================================
 // Queries
 // ===================================================================================================
@@ -147,11 +147,11 @@ type ParenQuery struct { Query ParenContent }
 type ParenContent = Select | ParenQuery | ShowStmt
 type QueryBody = SelectCore | ValuesClause | TableQuery | PivotQuery | UnpivotQuery | SetOp | ParenQuery
 
-type With struct { Recursive bool, CTEs []CTE }
-type CTE struct { Name Ident, Columns []Ident, UsingKey []Ident, Materialized *Match, Query Statement }
+type With struct { Recursive bool; CTEs []CTE }
+type CTE struct { Name Ident; Columns []Ident; UsingKey []Ident; Materialized *Match; Query Statement }
 
 // UNION, EXCEPT and INTERSECT
-type SetOp struct { Left QueryBody, Op string, Quantifier string, ByName bool, Right QueryBody }
+type SetOp struct { Left QueryBody; Op string; Quantifier string; ByName bool; Right QueryBody }
 
 type SelectCore struct {
     FromFirst bool // FROM t SELECT ...
@@ -167,30 +167,30 @@ type SelectCore struct {
     Sample    *SampleClause
 }
 type DistinctClause struct { On []Expr }
-type SelectItem struct { Expr Expr, Alias *Ident, As bool, Prefix bool } // expr AS alias, expr alias, alias: expr
-type IntoClause struct { Temp string, Table Name }
-type GroupBy struct { All bool, Items []Expr }
+type SelectItem struct { Expr Expr; Alias *Ident; As bool; Prefix bool } // expr AS alias, expr alias, alias: expr
+type IntoClause struct { Temp string; Table Name }
+type GroupBy struct { All bool; Items []Expr }
 type ValuesClause struct { Rows []ValuesRow }
 type ValuesRow struct { Items []Expr }
 type TableQuery struct { Table Name } // TABLE t
-type PivotQuery struct { Source TableRef, On []PivotColumn, Using []SelectItem, GroupBy []Ident }
-type PivotColumn struct { Expr Expr, In []SelectItem, Query *Select, Enum *Ident }
-type UnpivotQuery struct { Source TableRef, On []SelectItem, Name *Ident, Values []Ident }
+type PivotQuery struct { Source TableRef; On []PivotColumn; Using []SelectItem; GroupBy []Ident }
+type PivotColumn struct { Expr Expr; In []SelectItem; Query *Select; Enum *Ident }
+type UnpivotQuery struct { Source TableRef; On []SelectItem; Name *Ident; Values []Ident }
 
-type LimitClause struct { Keyword string, All bool, Value *Expr, Percent string, Offset *Expr }
-type OffsetClause struct { Value Expr, Rows string }
-type LockClause struct { Strength string, Of []Name, Wait string }
+type LimitClause struct { Keyword string; All bool; Value *Expr; Percent string; Offset *Expr }
+type OffsetClause struct { Value Expr; Rows string }
+type LockClause struct { Strength string; Of []Name; Wait string }
 
-type SampleClause struct { Method *Ident, Value Expr, Unit string, Repeatable *Number, Seed *Number }
-type AtClause struct { Unit string, Value Expr }
+type SampleClause struct { Method *Ident; Value Expr; Unit string; Repeatable *Number; Seed *Number }
+type AtClause struct { Unit string; Value Expr }
 
 // ---- Tables in FROM ----
 
 // An alias of a table: t, AS t, t(a, b); that of a function can name the columns with their types (t(a int)), and may
 // have no name (AS (a int)).
-type TableAlias struct { Name *Ident, Columns []Ident, ColDefs []ColDef, As bool }
-type ColDef struct { Name Ident, Type Type, Collate *Name }
-type BaseTable struct { Prefix *Ident, Name Name, Only bool, Star bool, Alias *TableAlias, At *AtClause, Sample *SampleClause }
+type TableAlias struct { Name *Ident; Columns []Ident; ColDefs []ColDef; As bool }
+type ColDef struct { Name Ident; Type Type; Collate *Name }
+type BaseTable struct { Prefix *Ident; Name Name; Only bool; Star bool; Alias *TableAlias; At *AtClause; Sample *SampleClause }
 type FuncTable struct {
     Prefix     *Ident // the alias in alias: f(x)
     Func       Expr
@@ -200,16 +200,16 @@ type FuncTable struct {
     Alias      *TableAlias
     Sample     *SampleClause
 }
-type RowsFromItem struct { Func Expr, ColDefs []ColDef }
-type SubqueryRef struct { Prefix *Ident, Query ParenQuery, Lateral bool, Alias *TableAlias, Sample *SampleClause }
-type ValuesRef struct { Prefix *Ident, Values ValuesClause, Alias TableAlias, Sample *SampleClause }
-type ParenTable struct { Prefix *Ident, Table TableRef, Alias *TableAlias }
+type RowsFromItem struct { Func Expr; ColDefs []ColDef }
+type SubqueryRef struct { Prefix *Ident; Query ParenQuery; Lateral bool; Alias *TableAlias; Sample *SampleClause }
+type ValuesRef struct { Prefix *Ident; Values ValuesClause; Alias TableAlias; Sample *SampleClause }
+type ParenTable struct { Prefix *Ident; Table TableRef; Alias *TableAlias }
 // Kind: the words before JOIN: LEFT OUTER, NATURAL, CROSS, ...
-type Join struct { Left TableRef, Kind string, Right TableRef, On *Expr, Using []Ident }
-type PivotRef struct { Source TableRef, Aggregates []SelectItem, Values []PivotValue, GroupBy []Ident, Alias *TableAlias }
-type PivotValue struct { Header []Expr, Items []SelectItem, Enum *Ident }
-type UnpivotRef struct { Source TableRef, IncludeNulls *Match, Header []Ident, Values []UnpivotValue, Alias *TableAlias }
-type UnpivotValue struct { Header []Ident, Items []SelectItem }
+type Join struct { Left TableRef; Kind string; Right TableRef; On *Expr; Using []Ident }
+type PivotRef struct { Source TableRef; Aggregates []SelectItem; Values []PivotValue; GroupBy []Ident; Alias *TableAlias }
+type PivotValue struct { Header []Expr; Items []SelectItem; Enum *Ident }
+type UnpivotRef struct { Source TableRef; IncludeNulls *Match; Header []Ident; Values []UnpivotValue; Alias *TableAlias }
+type UnpivotValue struct { Header []Ident; Items []SelectItem }
 type TableRef = BaseTable | FuncTable | SubqueryRef | ValuesRef | ParenTable | Join | PivotRef | UnpivotRef
 // ===================================================================================================
 // Statements
@@ -221,7 +221,7 @@ type Script struct { Statements []Statement }
 type Statement = Select | InsertStmt | UpdateStmt | DeleteStmt | MergeStmt | CreateTableStmt | CreateTableAsStmt | CreateViewStmt | CreateIndexStmt | CreateSchemaStmt | CreateSequenceStmt | CreateTypeStmt | CreateMacroStmt | CreateSecretStmt | AlterTableStmt | AlterSequenceStmt | AlterDatabaseStmt | AlterObjectSchemaStmt | RenameStmt | DropStmt | DropSecretStmt | CopyStmt | CopyDatabaseStmt | ExportStmt | ImportStmt | AttachStmt | DetachStmt | UseStmt | LoadStmt | PragmaStmt | SetStmt | ResetStmt | ShowStmt | ExplainStmt | PrepareStmt | ExecuteStmt | DeallocateStmt | TransactionStmt | VacuumStmt | AnalyzeStmt | CheckpointStmt | CallStmt | CommentStmt | UpdateExtensionsStmt
 
 // The table of INSERT, UPDATE, DELETE and MERGE, with its alias.
-type TargetTable struct { Name Name, Only bool, Star bool, Alias *Ident, As bool }
+type TargetTable struct { Name Name; Only bool; Star bool; Alias *Ident; As bool }
 
 // ---- DML ----
 
@@ -246,13 +246,13 @@ type OnConflict struct {
     Set         []SetClause
     Where       *Expr
 }
-type IndexElem struct { Expr Expr, Collate *Name, Class *Name, Direction string, Nulls string }
-type SetClause struct { Targets []Name, Value Expr, Paren bool }
+type IndexElem struct { Expr Expr; Collate *Name; Class *Name; Direction string; Nulls string }
+type SetClause struct { Targets []Name; Value Expr; Paren bool }
 
-type UpdateStmt struct { With *With, Table TargetTable, Set []SetClause, From []TableRef, Where *Expr, Returning []SelectItem }
-type DeleteStmt struct { With *With, Table TargetTable, Using []TableRef, Where *Expr, Returning []SelectItem, Truncate bool }
-type MergeStmt struct { With *With, Target TargetTable, Source TableRef, On *Expr, Using []Ident, Whens []MergeWhen, Returning []SelectItem }
-type MergeWhen struct { Not bool, By string, Cond *Expr, Action MergeAction }
+type UpdateStmt struct { With *With; Table TargetTable; Set []SetClause; From []TableRef; Where *Expr; Returning []SelectItem }
+type DeleteStmt struct { With *With; Table TargetTable; Using []TableRef; Where *Expr; Returning []SelectItem; Truncate bool }
+type MergeStmt struct { With *With; Target TargetTable; Source TableRef; On *Expr; Using []Ident; Whens []MergeWhen; Returning []SelectItem }
+type MergeWhen struct { Not bool; By string; Cond *Expr; Action MergeAction }
 // UPDATE SET ..., UPDATE SET *, UPDATE [BY NAME], DELETE, INSERT (cols) VALUES (...), INSERT [BY NAME] [*], INSERT DEFAULT VALUES,
 // DO NOTHING, ERROR [message]
 type MergeAction struct {
@@ -279,11 +279,11 @@ type CreateTableStmt struct {
     OnCommit        string
 }
 // PARTITIONED BY (...) or SORTED BY (...)
-type PartitionSorted struct { Kind Match, Exprs []Expr }
+type PartitionSorted struct { Kind Match; Exprs []Expr }
 type TableElement = ColumnDef | TableConstraint | TableLike
-type ColumnDef struct { Name Ident, Type *Type, Generated *GeneratedColumn, Constraints []ColumnConstraint }
+type ColumnDef struct { Name Ident; Type *Type; Generated *GeneratedColumn; Constraints []ColumnConstraint }
 // GENERATED ALWAYS AS IDENTITY, GENERATED ALWAYS AS (expr) [VIRTUAL|STORED], AS (expr)
-type GeneratedColumn struct { When string, Identity bool, SeqOptions []SeqOption, Expr *Expr, Storage string }
+type GeneratedColumn struct { When string; Identity bool; SeqOptions []SeqOption; Expr *Expr; Storage string }
 type ColumnConstraint struct {
     Name        *Ident
     Kind        string // NOT NULL, NULL, UNIQUE, PRIMARY KEY, CHECK, DEFAULT, REFERENCES, COLLATE, USING COMPRESSION, DEFERRABLE, ...
@@ -293,7 +293,7 @@ type ColumnConstraint struct {
     Compression *Ident
     Options     []DefElem
 }
-type Reference struct { Table Name, Columns []Ident, Match *Match, OnUpdate *Match, OnDelete *Match }
+type Reference struct { Table Name; Columns []Ident; Match *Match; OnUpdate *Match; OnDelete *Match }
 type TableConstraint struct {
     Name       *Ident
     Kind       string // CHECK, UNIQUE, PRIMARY KEY, FOREIGN KEY
@@ -304,12 +304,12 @@ type TableConstraint struct {
     Options    []DefElem
     Attributes []Match // DEFERRABLE, NOT VALID, ...
 }
-type TableLike struct { Table Name, Options []Match }
+type TableLike struct { Table Name; Options []Match }
 // name = value in WITH (...) options: the value is a type, a keyword, an operator, a number or a string.
-type DefElem struct { Name Ident, Value string }
+type DefElem struct { Name Ident; Value string }
 // A storage option: name, name = expr, a.b = value
-type Reloption struct { Name Name, Value *Expr, Arg *Match }
-type GenericOption struct { Name Ident, Value *Expr }
+type Reloption struct { Name Name; Value *Expr; Arg *Match }
+type GenericOption struct { Name Ident; Value *Expr }
 
 type CreateTableAsStmt struct {
     OrReplace       bool
@@ -345,9 +345,9 @@ type CreateIndexStmt struct {
     Options      []Reloption
     Where        *Expr
 }
-type CreateSchemaStmt struct { OrReplace bool, IfNotExists bool, Name Name, Elements []Statement }
-type CreateSequenceStmt struct { OrReplace bool, Temp string, IfNotExists bool, Name Name, Options []SeqOption }
-type SeqOption struct { Kind string, Type *Type, Value string, Owner *Name }
+type CreateSchemaStmt struct { OrReplace bool; IfNotExists bool; Name Name; Elements []Statement }
+type CreateSequenceStmt struct { OrReplace bool; Temp string; IfNotExists bool; Name Name; Options []SeqOption }
+type SeqOption struct { Kind string; Type *Type; Value string; Owner *Name }
 type CreateTypeStmt struct {
     OrReplace   bool
     Temp        string
@@ -358,15 +358,15 @@ type CreateTypeStmt struct {
     Query       *ParenQuery
     Type        *Type
 }
-type CreateMacroStmt struct { OrReplace bool, Temp string, Function bool, IfNotExists bool, Name Name, Definitions []MacroDef }
-type MacroDef struct { Params []MacroParam, Expr *Expr, Query *ParenContent }
-type MacroParam struct { Name Ident, Type *Type, Default *Expr, Arrow bool }
-type CreateSecretStmt struct { OrReplace bool, Persist string, IfNotExists bool, Name *Ident, Storage *Ident, Options []SecretOption }
-type SecretOption struct { Name Ident, Value Expr }
+type CreateMacroStmt struct { OrReplace bool; Temp string; Function bool; IfNotExists bool; Name Name; Definitions []MacroDef }
+type MacroDef struct { Params []MacroParam; Expr *Expr; Query *ParenContent }
+type MacroParam struct { Name Ident; Type *Type; Default *Expr; Arrow bool }
+type CreateSecretStmt struct { OrReplace bool; Persist string; IfNotExists bool; Name *Ident; Storage *Ident; Options []SecretOption }
+type SecretOption struct { Name Ident; Value Expr }
 
 // ---- ALTER, RENAME, DROP ----
 
-type AlterTableStmt struct { Object string, IfExists bool, Name Name, Only bool, Star bool, Commands []AlterCmd }
+type AlterTableStmt struct { Object string; IfExists bool; Name Name; Only bool; Star bool; Commands []AlterCmd }
 // One command of ALTER TABLE: Kind holds its words (ADD COLUMN, DROP CONSTRAINT, ALTER COLUMN ... SET DEFAULT, ...)
 type AlterCmd struct {
     Kind        string
@@ -390,13 +390,13 @@ type AlterCmd struct {
     Behavior    string
     Generic     []GenericAlterOption
 }
-type GenericAlterOption struct { Action string, Name Ident, Value *StringLit }
-type AlterSequenceStmt struct { IfExists bool, Name Name, Options []SeqOption }
-type AlterDatabaseStmt struct { IfExists bool, Name Ident, Setting Ident, Value Ident }
-type AlterObjectSchemaStmt struct { Object string, IfExists bool, Name Name, Schema Ident }
-type RenameStmt struct { Object string, IfExists bool, Name Name, Column *Name, Constraint *Ident, NewName Ident }
-type DropStmt struct { Type string, IfExists bool, Names []Name, On *Name, Behavior string }
-type DropSecretStmt struct { Persist string, IfExists bool, Name Ident, Storage *Ident }
+type GenericAlterOption struct { Action string; Name Ident; Value *StringLit }
+type AlterSequenceStmt struct { IfExists bool; Name Name; Options []SeqOption }
+type AlterDatabaseStmt struct { IfExists bool; Name Ident; Setting Ident; Value Ident }
+type AlterObjectSchemaStmt struct { Object string; IfExists bool; Name Name; Schema Ident }
+type RenameStmt struct { Object string; IfExists bool; Name Name; Column *Name; Constraint *Ident; NewName Ident }
+type DropStmt struct { Type string; IfExists bool; Names []Name; On *Name; Behavior string }
+type DropSecretStmt struct { Persist string; IfExists bool; Name Ident; Storage *Ident }
 
 // ---- COPY, EXPORT, ATTACH, ... ----
 
@@ -413,31 +413,31 @@ type CopyStmt struct {
     Legacy     []CopyOption
     Options    []GenericOption
 }
-type CopyOption struct { Name string, Value string, Columns []Ident }
-type CopyDatabaseStmt struct { From Ident, To Ident, Flag string }
-type ExportStmt struct { Database *Ident, Path StringLit, Legacy []CopyOption, Options []GenericOption }
+type CopyOption struct { Name string; Value string; Columns []Ident }
+type CopyDatabaseStmt struct { From Ident; To Ident; Flag string }
+type ExportStmt struct { Database *Ident; Path StringLit; Legacy []CopyOption; Options []GenericOption }
 type ImportStmt struct { Path StringLit }
-type AttachStmt struct { OrReplace bool, IfNotExists bool, Database bool, Path StringLit, Alias *Ident, Options []GenericOption }
-type DetachStmt struct { Database bool, IfExists bool, Name Ident }
+type AttachStmt struct { OrReplace bool; IfNotExists bool; Database bool; Path StringLit; Alias *Ident; Options []GenericOption }
+type DetachStmt struct { Database bool; IfExists bool; Name Ident }
 type UseStmt struct { Name Name }
-type LoadStmt struct { Install bool, Force bool, Name Ident, Source *Ident, Version *Ident }
-type PragmaStmt struct { Name Ident, Values []Expr, Args []Expr, Call bool }
-type SetStmt struct { Scope string, Name *Name, Values []Expr, TimeZone string, FromCurrent bool, Schema *StringLit }
-type ResetStmt struct { Scope string, Name *Name, All bool, Special string }
+type LoadStmt struct { Install bool; Force bool; Name Ident; Source *Ident; Version *Ident }
+type PragmaStmt struct { Name Ident; Values []Expr; Args []Expr; Call bool }
+type SetStmt struct { Scope string; Name *Name; Values []Expr; TimeZone string; FromCurrent bool; Schema *StringLit }
+type ResetStmt struct { Scope string; Name *Name; All bool; Special string }
 // SHOW, DESCRIBE and SUMMARIZE
-type ShowStmt struct { Kind string, Query *Select, Name *Name, Tables bool, From *Name, Special string, All bool }
-type ExplainStmt struct { Analyze string, Verbose bool, Options []ExplainOption, Stmt Statement }
-type ExplainOption struct { Name string, Value string }
-type PrepareStmt struct { Name Ident, Types []Type, Stmt Statement }
-type ExecuteStmt struct { Name Ident, Params []Expr }
-type DeallocateStmt struct { Name *Ident, All bool }
-type TransactionStmt struct { Kind string, Work string, Mode string }
-type VacuumStmt struct { Full bool, Freeze bool, Verbose bool, Options []Match, Analyze *AnalyzeStmt, Table *Name, Columns []Ident }
-type AnalyzeStmt struct { Verbose bool, Table *Name, Columns []Ident }
-type CheckpointStmt struct { Force bool, Database *Ident }
+type ShowStmt struct { Kind string; Query *Select; Name *Name; Tables bool; From *Name; Special string; All bool }
+type ExplainStmt struct { Analyze string; Verbose bool; Options []ExplainOption; Stmt Statement }
+type ExplainOption struct { Name string; Value string }
+type PrepareStmt struct { Name Ident; Types []Type; Stmt Statement }
+type ExecuteStmt struct { Name Ident; Params []Expr }
+type DeallocateStmt struct { Name *Ident; All bool }
+type TransactionStmt struct { Kind string; Work string; Mode string }
+type VacuumStmt struct { Full bool; Freeze bool; Verbose bool; Options []Match; Analyze *AnalyzeStmt; Table *Name; Columns []Ident }
+type AnalyzeStmt struct { Verbose bool; Table *Name; Columns []Ident }
+type CheckpointStmt struct { Force bool; Database *Ident }
 type CallStmt struct { Func FuncCall }
-type CommentStmt struct { Object string, Name *Name, Column *Expr, Comment *StringLit }
-type UpdateExtensionsStmt struct { With *With, Names []Ident }
+type CommentStmt struct { Object string; Name *Name; Column *Expr; Comment *StringLit }
+type UpdateExtensionsStmt struct { With *With; Names []Ident }
 // ===================================================================================================
 // Lexical structure (scan.l)
 //

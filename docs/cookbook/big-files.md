@@ -10,7 +10,7 @@ as it has been parsed. The input before the record is dropped after it.
 // stream.pego
 type Level terminal
 type Millis terminal
-type Entry struct { Level Level, Millis Millis }
+type Entry struct { Level Level; Millis Millis }
 
 // Each entry is one line: time level service method path status millis.
 rule main = entry* #stream $$

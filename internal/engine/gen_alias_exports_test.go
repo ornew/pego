@@ -27,7 +27,7 @@ type Maybe = *int
 type Mixed = Word | int
 type Anything = any
 type CST = Seq
-type Box struct { Item Chain, Items Words, Choice V, N Count }
+type Box struct { Item Chain; Items Words; Choice V; N Count }
 type BoxAlias = Box
 type Node = Word
 type Node_ = Other

@@ -11,7 +11,7 @@ import (
 )
 
 func TestCompileSource(t *testing.T) {
-	p, err := pego.CompileSource(`type Pair struct { Key Match, Value Match }
+	p, err := pego.CompileSource(`type Pair struct { Key Match; Value Match }
 rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}`, "main")
 	if err != nil {
 		t.Fatal(err)
@@ -107,7 +107,7 @@ rule line = [a-z]+ #atomic -"\n"`, "main")
 }
 
 func TestMarshalAndLoadParser(t *testing.T) {
-	p, err := pego.CompileSource(`type Pair struct { Key Match, Value Match }
+	p, err := pego.CompileSource(`type Pair struct { Key Match; Value Match }
 rule main = k:key "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}
 rule key = [a-z]+ #atomic`, "main")
 	if err != nil {
@@ -170,7 +170,7 @@ func TestUnits(t *testing.T) {
 }
 
 func TestBackends(t *testing.T) {
-	p, err := pego.CompileSource(`type Pair struct { Key Match, Value Match }
+	p, err := pego.CompileSource(`type Pair struct { Key Match; Value Match }
 rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}`, "main")
 	if err != nil {
 		t.Fatal(err)
@@ -216,7 +216,7 @@ rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}`, 
 }
 
 func TestRecognizeOnly(t *testing.T) {
-	p, err := pego.CompileSource(`type Pair struct { Key Match, Value Match }
+	p, err := pego.CompileSource(`type Pair struct { Key Match; Value Match }
 rule main = k:[a-z]+ #atomic "=" v:[0-9]+ #atomic => Pair{Key: $k, Value: $v}`, "main")
 	if err != nil {
 		t.Fatal(err)

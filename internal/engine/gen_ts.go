@@ -804,6 +804,10 @@ func (g *tsGen) term(t grammar.Term, s *scope, locals map[string]string) string 
 			args = append(args, tsString(f.Name), g.term(f.Value, s, locals))
 		}
 		return "c.newStruct(" + strings.Join(args, ", ") + ")"
+	case *grammar.ListConstructor:
+		return g.term(&grammar.Call{Func: "list", Args: t.Items}, s, locals)
+	case *grammar.TerminalConstructor:
+		return "c.newTerminal(" + tsString(g.prog.terminalConstructorType(t.Type)) + ", " + g.term(t.Args[0], s, locals) + ")"
 	case *grammar.Call:
 		if t.Func == "concat" && fusable(t) {
 			// Push the elements of list, map and concat arguments directly (see fusable and

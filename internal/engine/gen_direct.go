@@ -1003,6 +1003,14 @@ func walkChildren(t grammar.Term, f func(grammar.Term)) {
 		for _, fi := range t.Fields {
 			f(fi.Value)
 		}
+	case *grammar.ListConstructor:
+		for _, item := range t.Items {
+			f(item)
+		}
+	case *grammar.TerminalConstructor:
+		for _, arg := range t.Args {
+			f(arg)
+		}
 	case *grammar.Call:
 		for _, a := range t.Args {
 			f(a)

@@ -38,13 +38,13 @@ A `.pego` file is a whole grammar, so the server analyzes each open file on its 
 | Go to definition | From a rule or type name to its definition |
 | Find references, highlights | Every place a rule or type is used. Rules and types are different names, so `num` and `Num` are kept apart |
 | Document symbols | The outline of the file: rules with their types, types, and the fields of struct types |
-| Hover | For a rule, `rule name [Type] = expression` with its declared or inferred type, and its documentation comment. For a type, its definition. For built-in types, functions (`len`, `foldl`, ...), node fields (`startPos`, ...) and attributes (`@error`, ...), a description |
+| Hover | For a rule, `rule <name> [<Type Expression>] = <Rule Expression>` with its declared or inferred type, and its documentation comment. For a type, its definition. For built-in types, functions (`len`, `foldl`, ...), node fields (`startPos`, ...) and attributes (`@error`, ...), a description |
 | Rename | Renames a rule or type everywhere in the file. A new name that is invalid, a keyword or already taken is refused |
 | Completion | Rule names in rule bodies, types where a type is expected, attributes after `@` and pragmas after `#`; in actions and predicates, captures after `$`, built-in functions, and struct types in constructors; and keywords |
 | Semantic highlighting | Rule names, type names, captures, fields and built-in names in their own colors, if the editor supports semantic tokens |
 
-White space may separate declaration keywords from names; comments inside
-statement headers are semantic errors. Line comments use `//`, and nested block
+White space may separate Definition Statement keywords from names; comments
+inside statement headers are semantic errors. Line comments use `//`, and nested block
 comments use `/* ... */`. Comments are permitted in expressions and at statement
 boundaries. Symbols, navigation, references and rename identify names even in a
 partially invalid document; rename leaves comment text intact.
@@ -167,7 +167,8 @@ everything it supports in its reply to `initialize`, and uses UTF-16 positions, 
 - Inferred types, type errors and other compile errors appear only when the file has no syntax error. A file with a
   syntax error is not compiled, because the definitions the parser skipped would show up as undefined everywhere.
 - While the file has syntax errors, rename is refused, and navigation and hover work for the definitions that parse.
-  After an error, the parser skips to the next `rule`, `operators`, or `type` declaration, so one broken declaration does not hide later declarations.
+  After an error, the parser skips to the next `rule`, `operators`, or `type`
+keyword, so one broken definition does not hide later Definition Statements.
 - Captures (`$name`), Operators Rule level names and lambda parameters cannot be navigated to or renamed. Completion after `$`
   lists the labels of the whole definition, whether or not they are in scope.
 - Completion looks at the tokens before the cursor, not at a parse of the definition being written, so in unusual

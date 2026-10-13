@@ -33,21 +33,21 @@ package golang
 // Types
 // ===================================================================
 
-type File struct { Name Ident, Decls []Decl }
+type File struct { Name Ident; Decls []Decl }
 
 // --- Declarations ---
-type GenDecl struct { Tok string, Specs []Spec } // Tok is "import", "const", "type" or "var"
-type FuncDecl struct { Recv *FieldList, Name Ident, Type FuncType, Body *BlockStmt }
-type ImportSpec struct { Name *Ident, Path StringLit } // Name is a package name, "_" or "."
-type ValueSpec struct { Names []Ident, Type *Expr, Values []Expr }
-type TypeSpec struct { Name Ident, TypeParams *FieldList, Assign *Match, Type Expr } // Assign is the "=" of an alias
+type GenDecl struct { Tok string; Specs []Spec } // Tok is "import", "const", "type" or "var"
+type FuncDecl struct { Recv *FieldList; Name Ident; Type FuncType; Body *BlockStmt }
+type ImportSpec struct { Name *Ident; Path StringLit } // Name is a package name, "_" or "."
+type ValueSpec struct { Names []Ident; Type *Expr; Values []Expr }
+type TypeSpec struct { Name Ident; TypeParams *FieldList; Assign *Match; Type Expr } // Assign is the "=" of an alias
 type Decl = GenDecl | FuncDecl
 type Spec = ImportSpec | ValueSpec | TypeSpec
 
 // A list of parameters, results, type parameters, struct fields or interface elements. Its range
 // covers the parentheses, brackets or braces, if any.
 type FieldList struct { List []Field }
-type Field struct { Names []Ident, Type Expr, Tag *StringLit }
+type Field struct { Names []Ident; Type Expr; Tag *StringLit }
 
 // --- Expressions and types ---
 type Ident terminal
@@ -57,48 +57,48 @@ type ImagLit terminal
 type CharLit terminal
 type StringLit terminal                              // including the quotes
 type Ellipsis struct { Elt *Expr }                   // ...T in a parameter list, or the length of [...]T (no Elt)
-type CompositeLit struct { Type *Expr, Elts []Expr } // Type is nil in an elided literal {...}
-type FuncLit struct { Type FuncType, Body BlockStmt }
+type CompositeLit struct { Type *Expr; Elts []Expr } // Type is nil in an elided literal {...}
+type FuncLit struct { Type FuncType; Body BlockStmt }
 type ParenExpr struct { X Expr }
-type SelectorExpr struct { X Expr, Sel Ident }
-type IndexExpr struct { X Expr, Index Expr }
-type IndexListExpr struct { X Expr, Indices []Expr }
-type SliceExpr struct { X Expr, Low *Expr, High *Expr, Max *Expr }
-type TypeAssertExpr struct { X Expr, Type *Expr }               // Type is nil in x.(type)
-type CallExpr struct { Fun Expr, Args []Expr, Ellipsis *Match } // Ellipsis is the "..." of f(s...)
+type SelectorExpr struct { X Expr; Sel Ident }
+type IndexExpr struct { X Expr; Index Expr }
+type IndexListExpr struct { X Expr; Indices []Expr }
+type SliceExpr struct { X Expr; Low *Expr; High *Expr; Max *Expr }
+type TypeAssertExpr struct { X Expr; Type *Expr }               // Type is nil in x.(type)
+type CallExpr struct { Fun Expr; Args []Expr; Ellipsis *Match } // Ellipsis is the "..." of f(s...)
 type StarExpr struct { X Expr }
-type UnaryExpr struct { Op string, X Expr }
-type BinaryExpr struct { X Expr, Op string, Y Expr }
-type KeyValueExpr struct { Key Expr, Value Expr }
-type ArrayType struct { Len *Expr, Elt Expr } // Len is nil for a slice type and an Ellipsis for [...]T
+type UnaryExpr struct { Op string; X Expr }
+type BinaryExpr struct { X Expr; Op string; Y Expr }
+type KeyValueExpr struct { Key Expr; Value Expr }
+type ArrayType struct { Len *Expr; Elt Expr } // Len is nil for a slice type and an Ellipsis for [...]T
 type StructType struct { Fields FieldList }
-type FuncType struct { TypeParams *FieldList, Params FieldList, Results *FieldList }
+type FuncType struct { TypeParams *FieldList; Params FieldList; Results *FieldList }
 type InterfaceType struct { Methods FieldList }
-type MapType struct { Key Expr, Value Expr }
-type ChanType struct { Dir int, Value Expr } // Dir is 1 (chan<-), 2 (<-chan) or 3 (chan), as go/ast.ChanDir
+type MapType struct { Key Expr; Value Expr }
+type ChanType struct { Dir int; Value Expr } // Dir is 1 (chan<-), 2 (<-chan) or 3 (chan), as go/ast.ChanDir
 type Expr = Ident | IntLit | FloatLit | ImagLit | CharLit | StringLit | Ellipsis | CompositeLit | FuncLit | ParenExpr | SelectorExpr | IndexExpr | IndexListExpr | SliceExpr | TypeAssertExpr | CallExpr | StarExpr | UnaryExpr | BinaryExpr | KeyValueExpr | ArrayType | StructType | FuncType | InterfaceType | MapType | ChanType
 
 // --- Statements ---
 type DeclStmt struct { Decl GenDecl }
 type EmptyStmt struct {} // an explicit ";", or an empty statement before "}" after a label (empty range)
-type LabeledStmt struct { Label Ident, Stmt Stmt }
+type LabeledStmt struct { Label Ident; Stmt Stmt }
 type ExprStmt struct { X Expr }
-type SendStmt struct { Chan Expr, Value Expr }
-type IncDecStmt struct { X Expr, Tok string }
-type AssignStmt struct { Lhs []Expr, Tok string, Rhs []Expr }
+type SendStmt struct { Chan Expr; Value Expr }
+type IncDecStmt struct { X Expr; Tok string }
+type AssignStmt struct { Lhs []Expr; Tok string; Rhs []Expr }
 type GoStmt struct { Call CallExpr }
 type DeferStmt struct { Call CallExpr }
 type ReturnStmt struct { Results []Expr }
-type BranchStmt struct { Tok string, Label *Ident }
+type BranchStmt struct { Tok string; Label *Ident }
 type BlockStmt struct { List []Stmt }
-type IfStmt struct { Init *Stmt, Cond Expr, Body BlockStmt, Else *Stmt }
-type CaseClause struct { List []Expr, Body []Stmt }              // List is empty for default
-type SwitchStmt struct { Init *Stmt, Tag *Expr, Body BlockStmt } // the body lists CaseClauses
-type TypeSwitchStmt struct { Init *Stmt, Assign Stmt, Body BlockStmt }
-type CommClause struct { Comm *Stmt, Body []Stmt } // Comm is nil for default
+type IfStmt struct { Init *Stmt; Cond Expr; Body BlockStmt; Else *Stmt }
+type CaseClause struct { List []Expr; Body []Stmt }              // List is empty for default
+type SwitchStmt struct { Init *Stmt; Tag *Expr; Body BlockStmt } // the body lists CaseClauses
+type TypeSwitchStmt struct { Init *Stmt; Assign Stmt; Body BlockStmt }
+type CommClause struct { Comm *Stmt; Body []Stmt } // Comm is nil for default
 type SelectStmt struct { Body BlockStmt }          // the body lists CommClauses
-type ForStmt struct { Init *Stmt, Cond *Expr, Post *Stmt, Body BlockStmt }
-type RangeStmt struct { Key *Expr, Value *Expr, Tok string, X Expr, Body BlockStmt } // Tok is "" in for range x
+type ForStmt struct { Init *Stmt; Cond *Expr; Post *Stmt; Body BlockStmt }
+type RangeStmt struct { Key *Expr; Value *Expr; Tok string; X Expr; Body BlockStmt } // Tok is "" in for range x
 type Stmt = DeclStmt | EmptyStmt | LabeledStmt | ExprStmt | SendStmt | IncDecStmt | AssignStmt | GoStmt | DeferStmt | ReturnStmt | BranchStmt | BlockStmt | IfStmt | CaseClause | SwitchStmt | TypeSwitchStmt | CommClause | SelectStmt | ForStmt | RangeStmt
 
 // ===================================================================

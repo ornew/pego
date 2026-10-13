@@ -12,7 +12,7 @@ import (
 
 var typedLRBodyCases = []genCase{
 	{"typed/LR_direct", `type Number terminal
-type Add struct { Left Expr, Right Number }
+type Add struct { Left Expr; Right Number }
 type Expr = Number | Add
 rule main Expr = e:expr $$ => $e
 rule expr Expr = add / number
@@ -49,7 +49,7 @@ rule expr Doc = p:expr ";" items:(x:[a-z] #atomic -",") #repeat(1, 3) / items:(x
 rule main Doc = e:expr $$ => $e
 rule expr Doc = p:expr ";" items:(x:[a-z] #atomic {len($x) == 1} -",") #repeat(1, 3) / items:(x:[a-z] #atomic {len($x) == 1} -",") #repeat(1, 3) => Doc{N: len($items)}
 `, []string{"a,", "a,b,;c,d,", "a,;", "a,b,c,d,", "a,;c,?", ""}},
-	{"typed/LR_rollback_environment", `type Doc struct { Text Match, N int }
+	{"typed/LR_rollback_environment", `type Doc struct { Text Match; N int }
 rule main Doc = e:expr $$ => $e
 rule expr Doc = {n := 0} (p:expr "+" {n := 1} x:[a-z] #atomic "!" / x:"é" #atomic {n := 2}) => Doc{Text: $x, N: n}
 `, []string{"é", "é+a!", "é+a!+b!", "é+a", "é+a!+", "", "a"}},

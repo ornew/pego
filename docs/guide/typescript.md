@@ -42,7 +42,7 @@ the other side would have built.
 The grammar, `pairs.pego`, is the one of the Go guide:
 
 ```pego
-type Pair struct { Key Match, Value Match }
+type Pair struct { Key Match; Value Match }
 
 rule main = ws ps:pair+ $$ => $ps
 rule pair Pair = k:key "=" v:value ";"? ws => Pair{Key: $k, Value: $v}
@@ -460,8 +460,8 @@ Everything `pego gen` supports for Go, except typed values:
 
 | Feature | Generated TypeScript |
 |:--|:--|
-| All parsing expressions, captures, atomic and discarded expressions | Yes |
-| Operators Rule declarations, left recursion (direct and indirect) | Yes |
+| All Rule Expressions, captures, atomic and discarded expressions | Yes |
+| Operators Rule Definition Statements, left recursion (direct and indirect) | Yes |
 | Predicates and variables, lookahead, cut | Yes |
 | Actions, types, built-in functions (`foldl`, `map`, `concat`, ...) | Yes |
 | `@error` and `#recover`, `SyntaxErrors` | Yes |

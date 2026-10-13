@@ -368,9 +368,14 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 	}
 	prog.nseen = numberSeen(prog.rules, prog.twins)
 	prog.typeKinds = map[string]*nodeKind{}
-	for name := range prog.types {
-		canonical, st := prog.structType(name)
-		if st != nil {
+	for name, spec := range prog.types {
+		canonical := name
+		if _, alias := spec.(*grammar.AliasSpec); alias {
+			if resolved, concrete := prog.concreteType(&grammar.TypeRef{Name: name}); concrete != nil {
+				canonical = resolved
+			}
+		}
+		if canonical != name {
 			prog.typeKinds[name] = kindOf(canonical, "")
 		} else {
 			prog.typeKinds[name] = kindOf(name, "")

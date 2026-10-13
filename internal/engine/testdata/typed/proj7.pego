@@ -1,2 +1,2 @@
-type Out struct { A []Match, N int }
+type Out struct { A []Match; N int }
 rule main Out = ys:(xs:"y" #atomic ";")* "|" xs:(n:"x" #atomic)* => Out{A: map($xs, (e) => $e.n), N: len($ys)}

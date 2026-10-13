@@ -18,19 +18,19 @@
 package yaml
 
 type Stream struct { Documents []Document }
-type Document struct { Directives []Directive, Start *Marker, Root Value, End *Marker }
-type Directive struct { Name Word, Params []Word }
+type Document struct { Directives []Directive; Start *Marker; Root Value; End *Marker }
+type Directive struct { Name Word; Params []Word }
 type Word terminal
 type Marker terminal
 
-type Mapping struct { Props *Properties, Flow bool, Pairs []Pair }
-type Pair struct { Key Value, Value Value }
-type Sequence struct { Props *Properties, Flow bool, Items []Value }
-type Scalar struct { Props *Properties, Style int, Indent int, Text string }
+type Mapping struct { Props *Properties; Flow bool; Pairs []Pair }
+type Pair struct { Key Value; Value Value }
+type Sequence struct { Props *Properties; Flow bool; Items []Value }
+type Scalar struct { Props *Properties; Style int; Indent int; Text string }
 type Alias terminal
 type Value = Mapping | Sequence | Scalar | Alias
 
-type Properties struct { Tag *Tag, Anchor *Anchor }
+type Properties struct { Tag *Tag; Anchor *Anchor }
 type Tag terminal
 type Anchor terminal
 
