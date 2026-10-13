@@ -89,6 +89,8 @@ type input struct {
 	// first use; nil until then).
 	lines      []int
 	streamText streamTextSnapshot
+	// Only Documents use pieces. Batch and stream inputs retain their slices.
+	pieces *documentPieces
 }
 
 // setSource records the whole input string s for use by text.
@@ -112,6 +114,9 @@ func (in *input) buildOffs() {
 // is never modified).
 func (in *input) replace(start, end int, text string) (delta int) {
 	in.lines = nil
+	if documentPieceInput && in.pieces != nil {
+		return in.pieces.replace(start, end, text)
+	}
 	if in.unit == Bytes {
 		in.bs = slices.Replace(in.bs, start, end, []byte(text)...)
 		in.src = in.src[:start] + text + in.src[end:]
@@ -281,6 +286,9 @@ func newStreamParser(prog *Program, r io.Reader, unit Unit) *parser {
 
 // loaded returns the position of the end of the input read so far.
 func (in *input) loaded() int {
+	if documentPieceInput && in.pieces != nil {
+		return in.pieces.n
+	}
 	if in.unit == Bytes {
 		return in.base + len(in.bs)
 	}
@@ -337,6 +345,9 @@ func (in *input) decode(i int) (r rune, size, examined int, ok bool) {
 	if i < in.base {
 		return 0, 0, i + 1, false
 	}
+	if documentPieceInput && in.pieces != nil {
+		return in.decodePieces(i)
+	}
 	if in.unit == CodePoints {
 		if !in.fill(i + 1) {
 			return 0, 0, i + 1, false
@@ -375,6 +386,10 @@ func (in *input) byteAt(i int) (byte, bool) {
 	if i < in.base || !in.fill(i+1) {
 		return 0, false
 	}
+	if documentPieceInput && in.pieces != nil {
+		b, _ := in.pieces.at(i)
+		return byte(b), true
+	}
 	return in.bs[i-in.base], true
 }
 
@@ -382,6 +397,9 @@ func (in *input) text(start, end int) string {
 	// The part discarded by a stream cannot be returned: the text is cut to what is still held
 	// (possibly nothing).
 	start, end = max(start, in.base), max(end, in.base)
+	if documentPieceInput && in.pieces != nil {
+		return in.pieces.text(start, end)
+	}
 	if in.srcOK {
 		if in.unit == Bytes {
 			return in.src[start:end]
@@ -402,6 +420,10 @@ func (in *input) text(start, end int) string {
 
 // isNewline reports whether position i holds a newline character (used to detect line starts).
 func (in *input) isNewline(i int) bool {
+	if documentPieceInput && in.pieces != nil {
+		b, ok := in.pieces.at(i)
+		return ok && b == '\n'
+	}
 	if in.unit == Bytes {
 		b, ok := in.byteAt(i)
 		return ok && b == '\n'
@@ -446,6 +468,24 @@ func (in *input) lineCol(pos int) (int, int) {
 // buildLines builds the table of the positions where lines start.
 func (in *input) buildLines() {
 	in.lines = append(in.lines[:0], 0)
+	if documentPieceInput && in.pieces != nil {
+		for _, p := range in.pieces.parts {
+			if in.unit == Bytes {
+				for i := 0; i < len(p.text); i++ {
+					if p.text[i] == '\n' {
+						in.lines = append(in.lines, p.start+i+1)
+					}
+				}
+			} else {
+				for i, r := range p.runes {
+					if r == '\n' {
+						in.lines = append(in.lines, p.start+i+1)
+					}
+				}
+			}
+		}
+		return
+	}
 	if in.unit == Bytes {
 		for i, b := range in.bs {
 			if b == '\n' {
@@ -515,6 +555,9 @@ func (p *parser) peek() (rune, int, bool) {
 
 // matchLiteral advances past the string lit if it matches at the current position.
 func (p *parser) matchLiteral(rs []rune, bs []byte) bool {
+	if documentPieceInput && p.pieces != nil {
+		return p.matchLiteralPieces(rs, bs)
+	}
 	if p.eof && p.pos >= p.base {
 		// The whole input is loaded: compare in one go. As below, a mismatch leaves pos after the
 		// matching prefix and the examined range includes the first character that differs.

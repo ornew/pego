@@ -1,6 +1,24 @@
 package engine
 
-import "fmt"
+import (
+	"fmt"
+	"unicode/utf8"
+)
+
+// Small Documents retain the flat representation: at 1 KiB, piece lookup and
+// descriptor updates cost more than copying, while the measured 4 KiB edit
+// cases improve in both position units.
+const documentPieceMinSize = 4 << 10
+
+func useDocumentPieces(text string, unit Unit) bool {
+	if !documentPieceInput {
+		return false
+	}
+	if unit == Bytes {
+		return len(text) >= documentPieceMinSize
+	}
+	return utf8.RuneCountInString(text) >= documentPieceMinSize
+}
 
 // Document parses a text that is edited repeatedly. It reuses the memo of the previous parse for
 // the parts the edits do not affect.
@@ -58,7 +76,13 @@ func (prog *Program) NewDocumentWith(start, text string, o ParseOptions) (*Docum
 	if _, err := prog.rule(o.Backend, start); err != nil {
 		return nil, err
 	}
-	return &Document{prog: prog, start: start, back: o.Backend, depth: o.maxDepth(o.Backend), trace: o.Trace, in: newTextInput(text, o.Unit, true), memo: newMemoTable()}, nil
+	var in input
+	if useDocumentPieces(text, o.Unit) {
+		in = input{unit: o.Unit, eof: true, baseLine: 1, baseCol: 1, pieces: newDocumentPieces(text, o.Unit)}
+	} else {
+		in = newTextInput(text, o.Unit, true)
+	}
+	return &Document{prog: prog, start: start, back: o.Backend, depth: o.maxDepth(o.Backend), trace: o.Trace, in: in, memo: newMemoTable()}, nil
 }
 
 // Text returns the current text.
@@ -131,12 +155,24 @@ func (d *Document) Edit(start, end int, text string) error {
 	}
 	if d.in.unit == Bytes {
 		for _, pos := range []int{start, end} {
-			if err := validBoundary(d.in.src, Bytes, pos); err != nil {
+			var err error
+			if documentPieceInput && d.in.pieces != nil {
+				err = d.in.pieces.validBoundary(pos)
+			} else {
+				err = validBoundary(d.in.src, Bytes, pos)
+			}
+			if err != nil {
 				return err
 			}
 		}
 	}
 	delta := d.in.replace(start, end, text)
+	if documentPieceInput && d.in.pieces == nil && d.in.loaded() >= documentPieceMinSize {
+		// A small Document can grow into the measured range where the piece
+		// representation wins. Promote once, after the flat edit has completed.
+		d.in.pieces = newDocumentPieces(d.in.text(0, d.in.loaded()), d.in.unit)
+		d.in.in, d.in.bs, d.in.src, d.in.offs, d.in.srcOK = nil, nil, "", nil, false
+	}
 	if len(d.edits) == maxEdits {
 		d.memo, d.edits, d.runs = newMemoTable(), nil, nil
 		return nil

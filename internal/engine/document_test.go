@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
-	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -218,9 +217,8 @@ func TestDocumentEditKeepsMemo(t *testing.T) {
 	}
 }
 
-// TestDocumentEditText checks that after random edits, including multi-byte characters and
-// invalid UTF-8, the Document's text and its offset tables are those of the edited text read from
-// scratch, in both position units.
+// TestDocumentEditText compares edited text and random decoded spans with a
+// fresh flat input, including multi-byte characters and invalid UTF-8.
 func TestDocumentEditText(t *testing.T) {
 	prog := compile(t, `rule main = .*`)
 	pieces := []string{"a", "é", "日本", "\n", "\xff", "z\xe3\x81", ""}
@@ -259,19 +257,21 @@ func TestDocumentEditText(t *testing.T) {
 			if err := doc.Edit(start, end, piece); err != nil {
 				t.Fatal(err)
 			}
-			want := newInput(string(refBytes), Bytes)
+			wantText := string(refBytes)
 			if unit == CodePoints {
-				want = newInput(string(ref), CodePoints)
+				wantText = string(ref)
 			}
+			want := newInput(wantText, unit)
 			got := doc.in
-			for _, in := range []*input{&got, &want} { // the offset table is built on demand
-				if in.srcOK && in.unit == CodePoints && in.offs == nil {
-					in.buildOffs()
-				}
+			if got.loaded() != want.loaded() || doc.Text() != wantText {
+				t.Fatalf("%v, edit %d: [%d,%d) -> %q: text differs from a fresh read", unit, i, start, end, piece)
 			}
-			if string(got.in) != string(want.in) || string(got.bs) != string(want.bs) || got.src != want.src ||
-				got.srcOK != want.srcOK || !slices.Equal(got.offs, want.offs) {
-				t.Fatalf("%v, edit %d: [%d,%d) -> %q: text or offsets differ from a fresh read", unit, i, start, end, piece)
+			for _, pos := range []int{0, min(start, got.loaded()), min(end, got.loaded()), got.loaded()} {
+				gr, gs, ge, gok := got.decode(pos)
+				wr, ws, we, wok := want.decode(pos)
+				if gr != wr || gs != ws || ge != we || gok != wok {
+					t.Fatalf("%v, edit %d, position %d: decoded %U/%d/%d/%v, want %U/%d/%d/%v", unit, i, pos, gr, gs, ge, gok, wr, ws, we, wok)
+				}
 			}
 			if _, err := doc.Parse(); err != nil {
 				t.Fatal(err)
@@ -280,9 +280,8 @@ func TestDocumentEditText(t *testing.T) {
 	}
 }
 
-// TestDocumentKeepsInputTables checks that the tables a parse builds on demand (the code-point
-// offsets of token text, the line starts of error positions) stay with the Document, so that
-// edits and later parses update them instead of rebuilding them from the whole text.
+// TestDocumentKeepsInputTables checks that piece-local code-point offsets and
+// the line-start table stay with the Document across parsing and editing.
 func TestDocumentKeepsInputTables(t *testing.T) {
 	doc, err := compile(t, `rule main = ([a-z]+ #atomic "\n")* $$`).NewDocument("main", "ab\ncd\n!")
 	if err != nil {
@@ -291,14 +290,23 @@ func TestDocumentKeepsInputTables(t *testing.T) {
 	if _, err := doc.Parse(); err == nil {
 		t.Fatal("expected a syntax error")
 	}
-	if doc.in.offs == nil || doc.in.lines == nil {
-		t.Fatalf("tables not kept: offsets %v, lines %v", doc.in.offs != nil, doc.in.lines != nil)
+	if doc.in.lines == nil {
+		t.Fatal("line starts missing")
+	}
+	if doc.in.pieces != nil && (len(doc.in.pieces.parts) == 0 || doc.in.pieces.parts[0].offs == nil) || doc.in.pieces == nil && doc.in.offs == nil {
+		t.Fatal("text offsets missing")
 	}
 	if err := doc.Edit(6, 7, "ef\n"); err != nil {
 		t.Fatal(err)
 	}
-	if doc.in.offs == nil {
-		t.Fatal("the offsets were dropped by an edit")
+	if doc.in.pieces != nil {
+		for _, p := range doc.in.pieces.parts {
+			if p.offs == nil {
+				t.Fatal("piece offsets missing after edit")
+			}
+		}
+	} else if doc.in.offs == nil {
+		t.Fatal("flat offsets missing after edit")
 	}
 	if n, err := doc.Parse(); err != nil || n.String() != `(Seq [(Seq "ab" "\n") (Seq "cd" "\n") (Seq "ef" "\n")])@main` {
 		t.Fatalf("got %v, %v", n, err)

@@ -38,7 +38,7 @@ inventory of current mechanisms or reference controls.
 | [17](017-ascii-bitmaps-for-character-classes-in-the-vms.md#17-ascii-bitmaps-for-character-classes-in-the-vms), [31](031-specialized-character-class-tests-in-the-closure-backend.md#31-specialized-character-class-tests-in-the-closure-backend)| Fast character-class tests | ✓ | ✓ | ✓ | ✓ | ✓ | closure: specialized tests (31); VMs: ASCII bitmaps (17); generated: inline comparisons (11) |
 | [18](018-memoizing-from-the-second-call-at-a-position.md#18-memoizing-from-the-second-call-at-a-position)| Memoizing from the second call at a position | ✓ | ✓ | ✓ | ✓ | ✓ | not for `Document` and streams, which keep every entry; generated since 21 |
 | [19](019-a-plain-call-path-for-unmemoized-rules-without-captures.md#19-a-plain-call-path-for-unmemoized-rules-without-captures)| Plain call path (`invokePlain`) | ✓ | ✓ | ✓ | ✓ | ✓ | iterative VM since 24 (`plainCallFrame`, 34) |
-| [20](020-splicing-the-memo-table-on-document-edits.md#20-splicing-the-memo-table-on-document-edits), [23](023-splicing-the-text-of-a-document-in-place.md#23-splicing-the-text-of-a-document-in-place), [30](030-building-the-code-point-offset-table-on-demand.md#30-building-the-code-point-offset-table-on-demand), [45](045-moving-reused-trees-in-place-after-document-edits.md#45-moving-reused-trees-in-place-after-document-edits), [56](056-applying-a-document-edit-to-memo-entries-when-they-are-looked-up.md#56-applying-a-document-edit-to-memo-entries-when-they-are-looked-up)| `Document` edits: memo and text spliced, offsets on demand, trees moved in place, memo entries brought up to date lazily | ✓ | ✓ | ✓ | – | – | generated parsers have no `Document` |
+| [20](020-splicing-the-memo-table-on-document-edits.md#20-splicing-the-memo-table-on-document-edits), [23](023-splicing-the-text-of-a-document-in-place.md#23-splicing-the-text-of-a-document-in-place), [30](030-building-the-code-point-offset-table-on-demand.md#30-building-the-code-point-offset-table-on-demand), [45](045-moving-reused-trees-in-place-after-document-edits.md#45-moving-reused-trees-in-place-after-document-edits), [56](056-applying-a-document-edit-to-memo-entries-when-they-are-looked-up.md#56-applying-a-document-edit-to-memo-entries-when-they-are-looked-up), [93](093-chunked-document-input.md#093-chunked-input-storage-for-document-edits)| `Document` edits: chunked text, memo splice, on-demand offsets, moved trees and lazy memo updates | ✓ | ✓ | ✓ | – | – | record 93 reduces edit copying; ordinary batch and stream input stay contiguous |
 | [22](022-bounded-memory-and-less-copying-in-stream-parsing.md#22-bounded-memory-and-less-copying-in-stream-parsing)| Bounded memory in streams | ✓ | ✓ | ✓ | – | – | generated parsers have no streams |
 | [26](026-lambda-calls-without-allocation-in-the-closure-backend.md#26-lambda-calls-without-allocation-in-the-closure-backend)| Lambda calls without allocation | ✓ | ✓ | ✓ | – | – | VMs: lambdas from chunks (16); generated lambdas are Go function literals |
 | [32](032-matching-literals-against-loaded-input-in-one-loop.md#32-matching-literals-against-loaded-input-in-one-loop)| Literals compared in one loop | ✓ | ✓ | ✓ | ✓ | ✓ | generated: its own loop |
@@ -152,7 +152,7 @@ Not applied, and why:
 - [048. A typed runtime for ParseAST](048-a-typed-runtime-for-parseast.md)
 - [049. First-character dispatch in generated choices](049-first-character-dispatch-in-generated-choices.md)
 - [050. First-character dispatch in the closure backend](050-first-character-dispatch-in-the-closure-backend.md)
-## Records 51–92
+## Records 51–93
 - [051. First-character dispatch in the VMs (instruction set 3)](051-first-character-dispatch-in-the-vms-instruction-set-3.md)
 - [052. Projected repetitions in generated `Parse`](052-projected-repetitions-in-generated-parse.md)
 - [053. Projected repetitions in the engine and the VMs](053-projected-repetitions-in-the-engine-and-the-vms.md)
@@ -195,6 +195,7 @@ Not applied, and why:
 - [090. Share identical generated helpers and literal tables](090-share-identical-generated-helpers.md)
 - [091. Specialize pure literal-text disjunctions](091-specialize-pure-literal-text-disjunctions.md)
 - [092. Reuse generated Node capture scratch](092-reuse-generated-node-capture-scratch.md)
+- [093. Chunked input storage for Document edits](093-chunked-document-input.md)
 
 ## Experiments That Did Not Pay Off
 
