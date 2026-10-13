@@ -139,7 +139,7 @@ func TestContextualRuleIdentifiers(t *testing.T) {
 		t.Fatal(err)
 	}
 	ref := g.Rules()[0].Expr.(*grammar.Ref)
-	if ref.Name != "expr" || ref.Level != "additive" || ref.Pos.Col != 19 {
+	if ref.Name != "expr" || ref.Level != "additive" || ref.Diagnostic().Col != 19 {
 		t.Fatalf("%+v", ref)
 	}
 	if got := grammar.FormatExpr(ref); got != "level(expr, additive)" {

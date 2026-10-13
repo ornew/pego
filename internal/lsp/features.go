@@ -230,13 +230,13 @@ func typeSymbolKind(td *grammar.TypeDef) (int, string) {
 func (a *analysis) fieldSymbols(d *definition, st *grammar.StructSpec) []DocumentSymbol {
 	var out []DocumentSymbol
 	for k, f := range st.Fields {
-		i, ok := a.tokenIndex(f.Pos)
+		i, ok := a.tokenIndex(f.Diagnostic())
 		if !ok {
 			continue
 		}
 		limit := d.end // the closing brace ends the definition
 		if k+1 < len(st.Fields) {
-			limit = a.idx.pegoOffset(st.Fields[k+1].Pos)
+			limit = a.idx.pegoOffset(st.Fields[k+1].Diagnostic())
 		}
 		last := i
 		for j := i + 1; j < len(a.toks) && a.toks[j].end < limit; j++ {

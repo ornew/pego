@@ -258,29 +258,37 @@ func (p *parser) file() *grammar.Grammar {
 	g := &grammar.Grammar{}
 
 	if p.is("package") {
+		packageStart := p.i
 		g.PackageBreak = p.lineBreak()
 		restore := p.statement()
-		g.PackagePos = p.next().pos
+		g.PackageSource.Pos = p.next().pos
 		p.header = true
-		p.headerPos = g.PackagePos
+		p.headerPos = g.PackageSource.Pos
 		func() {
 			defer func() { p.header = false }()
 			defer p.recover() // a missing name skips to the first definition
 			g.Package = p.ident().text
 		}()
 		restore()
+		p.source(&g.PackageSource, packageStart)
 		p.declarationEnd()
+		p.sourceTrailing(&g.PackageSource)
 	}
 	for p.tok().kind != tEOF {
 		start := p.i
+		var statement grammar.SourceNode
 		p.recoveryStart = start
 		func() {
 			defer p.recover()
 			switch {
 			case p.is("type"):
-				g.Statements = append(g.Statements, p.typeDef())
+				t := p.typeDef()
+				statement = t
+				g.Statements = append(g.Statements, t)
 			case p.is("rule"):
-				g.Statements = append(g.Statements, p.ruleDef())
+				r := p.ruleDef()
+				statement = r
+				g.Statements = append(g.Statements, r)
 			default:
 				p.errorf("expected 'rule' or 'type', found %s", p.tok())
 				panic(bail{})
@@ -290,9 +298,17 @@ func (p *parser) file() *grammar.Grammar {
 			p.next()
 		}
 		p.declarationEnd()
+		if statement != nil {
+			p.sourceTrailing(statement.Source())
+		}
 	}
 	g.EndBreak = p.lineBreak()
 	g.HeaderComments = p.headerComments
+	g.Pos = p.toks[0].pos
+	g.End = g.Pos
+	if p.i > 0 {
+		g.End = p.toks[p.i-1].end
+	}
 	return g
 }
 
@@ -334,7 +350,14 @@ func (p *parser) recover() {
 	}
 }
 
-func (p *parser) typeDef() *grammar.TypeDef {
+func (p *parser) typeDef() (sourceResult *grammar.TypeDef) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
 	defer p.statement()()
 	br := p.lineBreak()
 	pos := p.expect("type").pos
@@ -342,7 +365,8 @@ func (p *parser) typeDef() *grammar.TypeDef {
 	p.headerPos = pos
 	defer func() { p.header = false }()
 	name := p.ident()
-	td := &grammar.TypeDef{Pos: pos, Name: name.text, Break: br}
+	td := &grammar.TypeDef{SourceInfo: grammar.SourceInfo{Pos: pos}, Name: name.text, Break: br}
+	specStart := p.i
 	switch {
 	case p.accept("struct"):
 		open := p.i
@@ -361,13 +385,17 @@ func (p *parser) typeDef() *grammar.TypeDef {
 				panic(bail{})
 			}
 			restore := p.statement()
+			fieldStart := p.i
 			fname := p.ident()
-			st.Fields = append(st.Fields, &grammar.Field{Pos: fname.pos, Name: fname.text, Type: p.typeExpr(), Break: fb})
+			field := &grammar.Field{SourceInfo: grammar.SourceInfo{Pos: fname.pos}, Name: fname.text, Type: p.typeExpr(), Break: fb}
+			p.source(field, fieldStart)
+			st.Fields = append(st.Fields, field)
 			restore()
 			if !p.accept(",") && !p.is("}") && !p.tok().lineBefore {
 				p.errorf("expected a comma or newline between struct fields")
 				panic(bail{})
 			}
+			p.sourceTrailing(field.Source())
 		}
 		st.OneLine = !p.multiline(open, p.i)
 		p.expect("}")
@@ -382,10 +410,18 @@ func (p *parser) typeDef() *grammar.TypeDef {
 		p.errorf("expected 'struct', 'terminal', or '=', found %s", p.tok())
 		panic(bail{})
 	}
+	p.sourceNode(td.Spec, specStart)
 	return td
 }
 
-func (p *parser) typeExpr() grammar.TypeExpr {
+func (p *parser) typeExpr() (sourceResult grammar.TypeExpr) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
 	t := p.typeTerm()
 	if !p.is("|") {
 		return t
@@ -409,7 +445,14 @@ func (p *parser) enter() {
 
 func (p *parser) leave() { p.depth-- }
 
-func (p *parser) typeTerm() grammar.TypeExpr {
+func (p *parser) typeTerm() (sourceResult grammar.TypeExpr) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
 	p.enter()
 	defer p.leave()
 	switch {
@@ -423,17 +466,24 @@ func (p *parser) typeTerm() grammar.TypeExpr {
 		return t
 	}
 	name := p.ident()
-	return &grammar.TypeRef{Pos: name.pos, Name: name.text}
+	return &grammar.TypeRef{SourceInfo: grammar.SourceInfo{Pos: name.pos}, Name: name.text}
 }
 
-func (p *parser) ruleDef() *grammar.RuleDef {
+func (p *parser) ruleDef() (sourceResult *grammar.RuleDef) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
 	br := p.lineBreak()
 	pos := p.expect("rule").pos
 	p.header, p.layout, p.layoutDepth, p.layoutStart = true, true, 0, p.i-1
 	p.headerPos = pos
 	defer func() { p.header, p.layout, p.layoutDepth = false, false, 0 }()
 	name := p.ident()
-	rd := &grammar.RuleDef{Pos: pos, Name: name.text, Break: br}
+	rd := &grammar.RuleDef{SourceInfo: grammar.SourceInfo{Pos: pos}, Name: name.text, Break: br}
 	if !p.is("=") {
 		rd.Type = p.typeExpr()
 	}
@@ -485,19 +535,33 @@ func (p *parser) actionTerm() (grammar.Term, bool) {
 	return term, defaultAction
 }
 
-func (p *parser) inlineChoice() grammar.Expr {
+func (p *parser) inlineChoice() (sourceResult grammar.Expr) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
 	e := p.choice()
 	if !p.boundary() && p.is("=>") {
 		pos := p.next().pos
 		term, defaultAction := p.actionTerm()
-		return &grammar.InlineAction{Pos: pos, Expr: e, Action: term, DefaultAction: defaultAction}
+		return &grammar.InlineAction{SourceInfo: grammar.SourceInfo{Pos: pos}, Expr: e, Action: term, DefaultAction: defaultAction}
 	}
 	return e
 }
 
 // bodyChoice parses the top-level choice of a rule body like choice, and
 // records the line breaks between its alternatives and sequence items.
-func (p *parser) bodyChoice() grammar.Expr {
+func (p *parser) bodyChoice() (sourceResult grammar.Expr) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
 	first := p.bodySequence()
 	if !p.is("/") {
 		return first
@@ -523,7 +587,14 @@ func (p *parser) bodyChoice() grammar.Expr {
 
 // bodySequence parses a sequence like sequence, and records the line breaks
 // between its items.
-func (p *parser) bodySequence() grammar.Expr {
+func (p *parser) bodySequence() (sourceResult grammar.Expr) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
 	var items []grammar.Expr
 	var breaks []*grammar.LineBreak
 	broken := false
@@ -550,34 +621,47 @@ func (p *parser) bodySequence() grammar.Expr {
 	return s
 }
 
-func (p *parser) operatorsRule() *grammar.OperatorsRule {
-	pr := &grammar.OperatorsRule{Pos: p.expect("{").pos}
+func (p *parser) operatorsRule() (sourceResult *grammar.OperatorsRule) {
+	sourceStart := p.i - 1 // The caller consumed the operators keyword.
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
+	pr := &grammar.OperatorsRule{SourceInfo: grammar.SourceInfo{Pos: p.expect("{").pos}}
 	for {
 		b := p.lineBreak()
 		if p.accept("}") {
 			pr.CloseBreak = b
 			break
 		}
+		itemStart := p.i
+		var itemSource *grammar.SourceInfo
 		restore := p.statement()
 		switch {
 		case p.accept("skip"):
-			pr.SkipPos = p.toks[p.i-1].pos
+			pr.SkipSource.Pos = p.toks[p.i-1].pos
 			if pr.Skip != nil {
 				p.errorf("duplicate skip")
 			}
 			pr.Skip = p.choice()
 			pr.SkipBreak = b
+			p.source(&pr.SkipSource, itemStart)
+			itemSource = &pr.SkipSource
 		case p.accept("operand"):
 			operandPos := p.toks[p.i-1].pos
-			o := &grammar.OperatorsRuleOperand{Pos: operandPos, Expr: p.choice(), Break: b}
+			o := &grammar.OperatorsRuleOperand{SourceInfo: grammar.SourceInfo{Pos: operandPos}, Expr: p.choice(), Break: b}
 			if p.accept("=>") {
 				o.Action, o.DefaultAction = p.actionTerm()
 			}
 			pr.Operands = append(pr.Operands, o)
+			p.source(o, itemStart)
+			itemSource = o.Source()
 		case p.accept("level"):
 			p.header = true
 			p.headerPos = p.toks[p.i-1].pos
-			l := &grammar.OperatorsRuleLevel{Pos: p.headerPos, Break: b}
+			l := &grammar.OperatorsRuleLevel{SourceInfo: grammar.SourceInfo{Pos: p.headerPos}, Break: b}
 			if p.tok().kind == tIdent {
 				l.Name = p.ident().text
 			}
@@ -597,14 +681,20 @@ func (p *parser) operatorsRule() *grammar.OperatorsRule {
 				op.Break = ob
 				l.Operators = append(l.Operators, op)
 				p.itemEnd()
+				p.sourceTrailing(op.Source())
 			}
 			pr.Levels = append(pr.Levels, l)
+			p.source(l, itemStart)
+			itemSource = l.Source()
 		default:
 			p.errorf("expected 'skip', 'operand', 'level', or '}', found %s", p.tok())
 			panic(bail{})
 		}
 		restore()
 		p.itemEnd()
+		if itemSource != nil {
+			p.sourceTrailing(itemSource)
+		}
 	}
 	return pr
 }
@@ -621,10 +711,17 @@ func (p *parser) itemEnd() {
 	}
 }
 
-func (p *parser) operatorsRuleOperator() *grammar.OperatorsRuleOperator {
+func (p *parser) operatorsRuleOperator() (sourceResult *grammar.OperatorsRuleOperator) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
 	defer p.statement()()
 	t := p.tok()
-	op := &grammar.OperatorsRuleOperator{Pos: t.pos}
+	op := &grammar.OperatorsRuleOperator{SourceInfo: grammar.SourceInfo{Pos: t.pos}}
 	switch {
 	case p.accept("prefix"):
 		op.Kind = grammar.Prefix
@@ -659,7 +756,14 @@ func (p *parser) operatorsRuleOperator() *grammar.OperatorsRuleOperator {
 
 // --- Parser expressions ---
 
-func (p *parser) choice() grammar.Expr {
+func (p *parser) choice() (sourceResult grammar.Expr) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
 	p.enter()
 	defer p.leave()
 	p.nest++
@@ -696,7 +800,14 @@ func (p *parser) startsPrimary() bool {
 	return false
 }
 
-func (p *parser) sequence() grammar.Expr {
+func (p *parser) sequence() (sourceResult grammar.Expr) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
 	var items []grammar.Expr
 	for p.startsPrimary() {
 		items = append(items, p.prefixed())
@@ -711,38 +822,52 @@ func (p *parser) sequence() grammar.Expr {
 	return &grammar.Seq{Items: items}
 }
 
-func (p *parser) prefixed() grammar.Expr {
+func (p *parser) prefixed() (sourceResult grammar.Expr) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
 	p.enter()
 	defer p.leave()
 	t := p.tok()
 	if t.kind == tIdent && p.peek(1).kind == tPunct && p.peek(1).text == ":" && !p.peek(1).spaceBefore {
 		p.ident()
 		p.next()
-		return &grammar.Capture{Pos: t.pos, Name: t.text, Expr: p.prefixed()}
+		return &grammar.Capture{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Name: t.text, Expr: p.prefixed()}
 	}
 	switch {
 	case p.accept("&"):
-		return &grammar.And{Pos: t.pos, Expr: p.prefixed()}
+		return &grammar.And{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Expr: p.prefixed()}
 	case p.accept("!"):
-		return &grammar.Not{Pos: t.pos, Expr: p.prefixed()}
+		return &grammar.Not{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Expr: p.prefixed()}
 	case p.is("-"):
 		p.next()
-		return &grammar.Discard{Pos: t.pos, Expr: p.prefixed()}
+		return &grammar.Discard{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Expr: p.prefixed()}
 	}
 	return p.suffixed()
 }
 
-func (p *parser) suffixed() grammar.Expr {
+func (p *parser) suffixed() (sourceResult grammar.Expr) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
 	start := p.tok().pos
 	e := p.primary()
 	for !p.boundary() {
 		switch {
 		case p.accept("*"):
-			e = &grammar.Repeat{Pos: start, Expr: e, Min: 0, Max: -1}
+			e = &grammar.Repeat{SourceInfo: grammar.SourceInfo{Pos: start}, Expr: e, Min: 0, Max: -1}
 		case p.accept("+"):
-			e = &grammar.Repeat{Pos: start, Expr: e, Min: 1, Max: -1}
+			e = &grammar.Repeat{SourceInfo: grammar.SourceInfo{Pos: start}, Expr: e, Min: 1, Max: -1}
 		case p.accept("?"):
-			e = &grammar.Optional{Pos: start, Expr: e}
+			e = &grammar.Optional{SourceInfo: grammar.SourceInfo{Pos: start}, Expr: e}
 		case p.is("#"):
 			e = p.pragma(e, start)
 		case p.is("@"):
@@ -765,13 +890,21 @@ func (p *parser) suffixed() grammar.Expr {
 		default:
 			return e
 		}
+		p.sourceNode(e, sourceStart)
 	}
 	return e
 }
 
 // pragma dispatches built-in grammar syntax. Its payload is not an attribute
 // argument list: each directive defines its own grammar and target.
-func (p *parser) pragma(e grammar.Expr, start grammar.Pos) grammar.Expr {
+func (p *parser) pragma(e grammar.Expr, start grammar.Pos) (sourceResult grammar.Expr) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
 	var br *grammar.LineBreak
 	if p.nest == 0 && p.tok().lineBefore {
 		br = p.lineBreak()
@@ -784,20 +917,20 @@ func (p *parser) pragma(e grammar.Expr, start grammar.Pos) grammar.Expr {
 			p.next()
 			p.expect(")")
 		}
-		return &grammar.Atomic{Pos: pos, Expr: e, Break: br}
+		return &grammar.Atomic{SourceInfo: grammar.SourceInfo{Pos: pos}, Expr: e, Break: br}
 	case "stream":
 		if !p.boundary() && p.is("(") && !p.tok().spaceBefore {
 			p.next()
 			p.expect(")")
 		}
-		return &grammar.Stream{Pos: pos, Expr: e, Break: br}
+		return &grammar.Stream{SourceInfo: grammar.SourceInfo{Pos: pos}, Expr: e, Break: br}
 	case "recover":
 		p.expect("(")
 		p.expect("skip")
 		p.expect("=")
 		skip := p.choice()
 		p.expect(")")
-		return &grammar.Recovery{Pos: pos, Expr: e, Skip: skip, Break: br}
+		return &grammar.Recovery{SourceInfo: grammar.SourceInfo{Pos: pos}, Expr: e, Skip: skip, Break: br}
 	case "repeat":
 		p.expect("(")
 		first := p.tok().kind == tInt || p.is("-")
@@ -817,7 +950,7 @@ func (p *parser) pragma(e grammar.Expr, start grammar.Pos) grammar.Expr {
 			p.errorf("#repeat requires a count")
 		}
 		p.expect(")")
-		return &grammar.Repeat{Pos: start, Expr: e, Min: min, Max: max, PragmaBreak: br}
+		return &grammar.Repeat{SourceInfo: grammar.SourceInfo{Pos: start}, Expr: e, Min: min, Max: max, PragmaBreak: br}
 	default:
 		p.errorf("unknown pragma #%s", name)
 		panic(bail{})
@@ -841,13 +974,20 @@ func (p *parser) repeatCount() int {
 	return value
 }
 
-func (p *parser) attribute() *grammar.Attribute {
+func (p *parser) attribute() (sourceResult *grammar.Attribute) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
 	pos := p.expect("@").pos
 	if p.tok().spaceBefore {
 		p.errorf("attribute name must immediately follow '@'")
 		panic(bail{})
 	}
-	a := &grammar.Attribute{Pos: pos, Name: p.ident().text}
+	a := &grammar.Attribute{SourceInfo: grammar.SourceInfo{Pos: pos}, Name: p.ident().text}
 	if !p.is("(") || p.tok().spaceBefore {
 		return a
 	}
@@ -915,12 +1055,19 @@ func (p *parser) attributeValue() any {
 	return e
 }
 
-func (p *parser) primary() grammar.Expr {
+func (p *parser) primary() (sourceResult grammar.Expr) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
 	t := p.tok()
 	switch t.kind {
 	case tString:
 		p.next()
-		return &grammar.Literal{Pos: t.pos, Value: t.text}
+		return &grammar.Literal{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Value: t.text}
 	case tCharClass:
 		p.next()
 		return t.cc
@@ -928,7 +1075,7 @@ func (p *parser) primary() grammar.Expr {
 
 		p.next()
 		if t.text == "_" {
-			return &grammar.Top{Pos: t.pos}
+			return &grammar.Top{SourceInfo: grammar.SourceInfo{Pos: t.pos}}
 		}
 		if t.text == "level" && !p.boundary() && p.is("(") && !p.tok().spaceBefore {
 			p.next()
@@ -936,24 +1083,25 @@ func (p *parser) primary() grammar.Expr {
 			p.expect(",")
 			level := p.ident()
 			p.expect(")")
-			return &grammar.Ref{Pos: target.pos, Name: target.text, Level: level.text}
+			return &grammar.Ref{SourceInfo: grammar.SourceInfo{Pos: target.pos}, Name: target.text, Level: level.text}
 		}
 		if !p.boundary() && p.is("(") && !p.tok().spaceBefore {
 			p.errorf("level calls use level(rule, name); separate a rule and a group with whitespace")
 			panic(bail{})
 		}
-		return &grammar.Ref{Pos: t.pos, Name: t.text}
+		return &grammar.Ref{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Name: t.text}
 	case tPunct:
 		switch t.text {
 		case "(":
 			open := p.i
 			p.next()
-			group := &grammar.Group{Pos: t.pos, BodyBreak: p.lineBreak()}
+			group := &grammar.Group{SourceInfo: grammar.SourceInfo{Pos: t.pos}, BodyBreak: p.lineBreak()}
 			group.Expr = p.bodyChoice()
 			if !p.boundary() && p.is("=>") {
 				pos := p.next().pos
 				action, defaultAction := p.actionTerm()
-				group.Expr = &grammar.InlineAction{Pos: pos, Expr: group.Expr, Action: action, DefaultAction: defaultAction}
+				group.Expr = &grammar.InlineAction{SourceInfo: grammar.SourceInfo{Pos: pos}, Expr: group.Expr, Action: action, DefaultAction: defaultAction}
+				p.sourceNode(group.Expr, open+1)
 			}
 			group.CloseBreak = p.lineBreak()
 			group.OneLine = !p.multiline(open, p.i)
@@ -965,28 +1113,28 @@ func (p *parser) primary() grammar.Expr {
 			if len(block.Statements) == 1 {
 				term = block.Statements[0]
 			}
-			return &grammar.Predicate{Pos: t.pos, Term: term, Breaks: block.Breaks, CloseBreak: block.CloseBreak, OneLine: block.OneLine}
+			return &grammar.Predicate{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Term: term, Breaks: block.Breaks, CloseBreak: block.CloseBreak, OneLine: block.OneLine}
 		case "--":
 			p.next()
-			return &grammar.Cut{Pos: t.pos}
+			return &grammar.Cut{SourceInfo: grammar.SourceInfo{Pos: t.pos}}
 		case "^^":
 			p.next()
-			return &grammar.BeginInput{Pos: t.pos}
+			return &grammar.BeginInput{SourceInfo: grammar.SourceInfo{Pos: t.pos}}
 		case "^":
 			p.next()
-			return &grammar.BeginLine{Pos: t.pos}
+			return &grammar.BeginLine{SourceInfo: grammar.SourceInfo{Pos: t.pos}}
 		case "$$":
 			p.next()
-			return &grammar.EndInput{Pos: t.pos}
+			return &grammar.EndInput{SourceInfo: grammar.SourceInfo{Pos: t.pos}}
 		case "$":
 			p.next()
-			return &grammar.EndLine{Pos: t.pos}
+			return &grammar.EndLine{SourceInfo: grammar.SourceInfo{Pos: t.pos}}
 		case "_|_":
 			p.next()
-			return &grammar.Bottom{Pos: t.pos}
+			return &grammar.Bottom{SourceInfo: grammar.SourceInfo{Pos: t.pos}}
 		case ".":
 			p.next()
-			return &grammar.Any{Pos: t.pos}
+			return &grammar.Any{SourceInfo: grammar.SourceInfo{Pos: t.pos}}
 		}
 	}
 	p.errorf("expected an expression, found %s", t)
@@ -994,7 +1142,14 @@ func (p *parser) primary() grammar.Expr {
 }
 
 // actionBlock preserves future action statements without executing them.
-func (p *parser) actionBlock() *grammar.Block {
+func (p *parser) actionBlock() (sourceResult *grammar.Block) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
 	p.enter()
 	defer p.leave()
 	open := p.i
@@ -1003,7 +1158,7 @@ func (p *parser) actionBlock() *grammar.Block {
 	outerLayout, outerDepth, outerStart := p.layout, p.layoutDepth, p.layoutStart
 	defer func() { p.layout, p.layoutDepth, p.layoutStart = outerLayout, outerDepth, outerStart }()
 	p.layout = false
-	block := &grammar.Block{Pos: p.expect("{").pos, Statements: []grammar.Term{}}
+	block := &grammar.Block{SourceInfo: grammar.SourceInfo{Pos: p.expect("{").pos}, Statements: []grammar.Term{}}
 	for {
 		br := p.lineBreak()
 		if p.is("}") {
@@ -1013,14 +1168,16 @@ func (p *parser) actionBlock() *grammar.Block {
 			return block
 		}
 		restore := p.statement()
+		statementStart := p.i
 		var term grammar.Term
 		if p.tok().kind == tIdent && p.peek(1).text == ":=" {
 			name := p.ident()
 			p.expect(":=")
-			term = &grammar.Assign{Pos: name.pos, Name: name.text, Value: p.term()}
+			term = &grammar.Assign{SourceInfo: grammar.SourceInfo{Pos: name.pos}, Name: name.text, Value: p.term()}
 		} else {
 			term = p.term()
 		}
+		p.sourceNode(term, statementStart)
 		restore()
 		block.Statements = append(block.Statements, term)
 		block.Breaks = append(block.Breaks, br)
@@ -1028,12 +1185,20 @@ func (p *parser) actionBlock() *grammar.Block {
 			p.errorf("expected a semicolon or newline between action statements")
 			panic(bail{})
 		}
+		p.sourceTrailing(term.(grammar.SourceNode).Source())
 	}
 }
 
 // --- Value expressions ---
 
-func (p *parser) term() grammar.Term {
+func (p *parser) term() (sourceResult grammar.Term) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
 	p.enter()
 	defer p.leave()
 	if l := p.tryLambda(); l != nil {
@@ -1043,7 +1208,14 @@ func (p *parser) term() grammar.Term {
 }
 
 // tryLambda parses a lambda if the input has the form (a, b) => body.
-func (p *parser) tryLambda() grammar.Term {
+func (p *parser) tryLambda() (sourceResult grammar.Term) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
 	if !p.is("(") {
 		return nil
 	}
@@ -1085,7 +1257,14 @@ var binaryLevels = [][]string{
 	{"*", "/", "%"},
 }
 
-func (p *parser) binary(level int) grammar.Term {
+func (p *parser) binary(level int) (sourceResult grammar.Term) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
 	if level == len(binaryLevels) {
 		return p.unary()
 	}
@@ -1097,7 +1276,8 @@ func (p *parser) binary(level int) grammar.Term {
 		}
 		p.next()
 		r := p.binary(level + 1)
-		l = &grammar.Binary{Pos: t.pos, Op: t.text, L: l, R: r}
+		l = &grammar.Binary{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Op: t.text, L: l, R: r}
+		p.sourceNode(l, sourceStart)
 		if level == 2 {
 			// Comparison operators do not chain.
 			return l
@@ -1114,23 +1294,38 @@ func contains(xs []string, x string) bool {
 	return false
 }
 
-func (p *parser) unary() grammar.Term {
+func (p *parser) unary() (sourceResult grammar.Term) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
 	p.enter()
 	defer p.leave()
 	t := p.tok()
 	if p.accept("-") || p.accept("!") {
-		return &grammar.Unary{Pos: t.pos, Op: t.text, X: p.unary()}
+		return &grammar.Unary{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Op: t.text, X: p.unary()}
 	}
 	x := p.termPrimary()
 	for !p.boundary() && p.is(".") {
 		p.next()
 		name := p.ident()
-		x = &grammar.Member{Pos: name.pos, X: x, Name: name.text}
+		x = &grammar.Member{SourceInfo: grammar.SourceInfo{Pos: name.pos}, X: x, Name: name.text}
+		p.sourceNode(x, sourceStart)
 	}
 	return x
 }
 
-func (p *parser) termPrimary() grammar.Term {
+func (p *parser) termPrimary() (sourceResult grammar.Term) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
 	t := p.tok()
 	switch t.kind {
 	case tInt:
@@ -1141,10 +1336,10 @@ func (p *parser) termPrimary() grammar.Term {
 		return &grammar.StringLit{Value: t.text}
 	case tCapture:
 		p.next()
-		return &grammar.CaptureRef{Pos: t.pos, Name: t.text}
+		return &grammar.CaptureRef{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Name: t.text}
 	case tIndex:
 		p.next()
-		return &grammar.IndexRef{Pos: t.pos, Index: t.num}
+		return &grammar.IndexRef{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Index: t.num}
 	case tIdent:
 		switch t.text {
 		case "true", "false":
@@ -1160,7 +1355,7 @@ func (p *parser) termPrimary() grammar.Term {
 		p.next()
 		if !p.boundary() && p.is("(") && !p.tok().spaceBefore {
 			p.next()
-			call := &grammar.Call{Pos: t.pos, Func: t.text, Args: []grammar.Term{}}
+			call := &grammar.Call{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Func: t.text, Args: []grammar.Term{}}
 			for !p.accept(")") {
 				call.Args = append(call.Args, p.term())
 				if !p.is(")") {
@@ -1169,7 +1364,7 @@ func (p *parser) termPrimary() grammar.Term {
 			}
 			return call
 		}
-		return &grammar.VarRef{Pos: t.pos, Name: t.text}
+		return &grammar.VarRef{SourceInfo: grammar.SourceInfo{Pos: t.pos}, Name: t.text}
 	case tPunct:
 		if t.text == "(" {
 			p.next()
@@ -1182,17 +1377,28 @@ func (p *parser) termPrimary() grammar.Term {
 	panic(bail{})
 }
 
-func (p *parser) newTerm() grammar.Term {
+func (p *parser) newTerm() (sourceResult grammar.Term) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+
 	nameToken := p.ident()
-	n := &grammar.New{Pos: nameToken.pos, Type: nameToken.text}
+	n := &grammar.New{SourceInfo: grammar.SourceInfo{Pos: nameToken.pos}, Type: nameToken.text}
 	p.expect("{")
 	for !p.accept("}") {
+		fieldStart := p.i
 		name := p.ident()
 		p.expect(":")
-		n.Fields = append(n.Fields, &grammar.FieldInit{Pos: name.pos, Name: name.text, Value: p.term()})
+		field := &grammar.FieldInit{SourceInfo: grammar.SourceInfo{Pos: name.pos}, Name: name.text, Value: p.term()}
+		p.source(field, fieldStart)
+		n.Fields = append(n.Fields, field)
 		if !p.is("}") {
 			p.expect(",")
 		}
+		p.sourceTrailing(field.Source())
 	}
 	return n
 }

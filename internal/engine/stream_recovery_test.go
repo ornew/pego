@@ -39,11 +39,9 @@ func TestStreamRecoveryRejected(t *testing.T) {
 		}
 	}
 	pos := grammar.Pos{Line: 3, Col: 10}
-	g := &grammar.Grammar{Statements: []grammar.Statement{&grammar.RuleDef{Name: "main", Expr: &grammar.Recovery{
-		Pos: pos,
-		Expr: &grammar.Stream{Expr: &grammar.Repeat{
-			Expr: &grammar.Literal{Value: "ab"}, Min: 2, Max: 2,
-		}},
+	g := &grammar.Grammar{Statements: []grammar.Statement{&grammar.RuleDef{Name: "main", Expr: &grammar.Recovery{SourceInfo: grammar.SourceInfo{Pos: pos}, Expr: &grammar.Stream{Expr: &grammar.Repeat{
+		Expr: &grammar.Literal{Value: "ab"}, Min: 2, Max: 2,
+	}},
 		Skip: &grammar.Repeat{Expr: &grammar.Any{}, Min: 0, Max: -1},
 	}}}}
 	_, err := Compile(g, Options{})

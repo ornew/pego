@@ -982,13 +982,13 @@ func calls(e grammar.Expr) []string {
 func posOf(e grammar.Expr) grammar.Pos {
 	switch e := analysisExpr(e).(type) {
 	case *grammar.Ref:
-		return e.Pos
+		return e.Diagnostic()
 	case *grammar.Literal:
-		return e.Pos
+		return e.Diagnostic()
 	case *grammar.CharClass:
-		return e.Pos
+		return e.Diagnostic()
 	case *grammar.Any:
-		return e.Pos
+		return e.Diagnostic()
 	case *grammar.Seq:
 		if len(e.Items) > 0 {
 			return posOf(e.Items[0])
@@ -998,39 +998,39 @@ func posOf(e grammar.Expr) grammar.Pos {
 			return posOf(e.Alts[0])
 		}
 	case *grammar.Repeat:
-		return e.Pos
+		return e.Diagnostic()
 	case *grammar.Optional:
-		return e.Pos
+		return e.Diagnostic()
 	case *grammar.And:
-		return e.Pos
+		return e.Diagnostic()
 	case *grammar.Not:
-		return e.Pos
+		return e.Diagnostic()
 	case *grammar.Atomic:
-		return e.Pos
+		return e.Diagnostic()
 	case *grammar.Discard:
-		return e.Pos
+		return e.Diagnostic()
 	case *grammar.Capture:
-		return e.Pos
+		return e.Diagnostic()
 	case *grammar.Cut:
-		return e.Pos
+		return e.Diagnostic()
 	case *grammar.Top:
-		return e.Pos
+		return e.Diagnostic()
 	case *grammar.Bottom:
-		return e.Pos
+		return e.Diagnostic()
 	case *grammar.BeginInput:
-		return e.Pos
+		return e.Diagnostic()
 	case *grammar.EndInput:
-		return e.Pos
+		return e.Diagnostic()
 	case *grammar.BeginLine:
-		return e.Pos
+		return e.Diagnostic()
 	case *grammar.EndLine:
-		return e.Pos
+		return e.Diagnostic()
 	case *grammar.Predicate:
-		return e.Pos
+		return e.Diagnostic()
 	case *grammar.Attributed:
 		return posOf(e.Expr)
 	case *grammar.OperatorsRule:
-		return e.Pos
+		return e.Diagnostic()
 	}
 	return grammar.Pos{}
 }
@@ -1051,9 +1051,9 @@ func analysisExpr(e grammar.Expr) grammar.Expr {
 	case *grammar.Group:
 		return analysisExpr(x.Expr)
 	case *grammar.Stream:
-		return &grammar.Attributed{Expr: x.Expr, Attrs: []*grammar.Attribute{{Pos: x.Pos, Name: "stream", Pragma: true}}}
+		return &grammar.Attributed{Expr: x.Expr, Attrs: []*grammar.Attribute{{Pos: x.Diagnostic(), Name: "stream", Pragma: true}}}
 	case *grammar.Recovery:
-		return &grammar.Attributed{Expr: x.Expr, Attrs: []*grammar.Attribute{{Pos: x.Pos, Name: "recover", Pragma: true, KwArgs: map[string]any{"skip": x.Skip}}}}
+		return &grammar.Attributed{Expr: x.Expr, Attrs: []*grammar.Attribute{{Pos: x.Diagnostic(), Name: "recover", Pragma: true, KwArgs: map[string]any{"skip": x.Skip}}}}
 	}
 	return e
 }

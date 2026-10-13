@@ -42,6 +42,8 @@ type token struct {
 	// comments are the following comments before this token.
 	lineComment *grammar.Comment
 	comments    []*grammar.Comment
+	// source is independent of the formatter trivia moved by the parser.
+	source *commentBoundary
 }
 
 func (t token) String() string {
@@ -120,13 +122,22 @@ func (l *lexer) errorf(pos grammar.Pos, format string, args ...any) {
 func lex(src string, errs *errorList) []token {
 	l := &lexer{src: []rune(src), line: 1, col: 1, errs: errs}
 	var toks []token
+	var previous grammar.Pos
 	for {
 		t := l.next()
 		t.end = l.pos()
+		if t.lineComment != nil || len(t.comments) != 0 {
+			cs := t.comments
+			if t.lineComment != nil {
+				cs = append([]*grammar.Comment{t.lineComment}, cs...)
+			}
+			t.source = collectComments(previous, t, cs)
+		}
 		toks = append(toks, t)
 		if t.kind == tEOF {
 			return toks
 		}
+		previous = t.end
 	}
 }
 
@@ -309,6 +320,14 @@ func (l *lexer) skipSpace() (space, newline bool) {
 			}
 			c.End = l.pos()
 			c.Text = string(l.src[start:l.i])
+			ending := ""
+			if !block && l.i < len(l.src) {
+				ending = string(l.src[l.i : l.i+1])
+				if l.src[l.i] == '\r' && l.peekAt(1) == '\n' {
+					ending = "\r\n"
+				}
+			}
+			c.Content = commentContent(c.Text, ending)
 			if !block {
 				c.Text = strings.TrimRightFunc(c.Text, unicode.IsSpace)
 				c.End.Col -= utf8.RuneCountInString(string(l.src[start:l.i])) - utf8.RuneCountInString(c.Text)
@@ -421,7 +440,7 @@ func (l *lexer) string() string {
 func (l *lexer) charClass() *grammar.CharClass {
 	start := l.pos()
 	l.advance() // [
-	cc := &grammar.CharClass{Pos: start}
+	cc := &grammar.CharClass{SourceInfo: grammar.SourceInfo{Pos: start}}
 	if l.peekAt(0) == '^' {
 		l.advance()
 		cc.Negated = true

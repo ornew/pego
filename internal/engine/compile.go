@@ -237,7 +237,7 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 	checkBlocks := func(term grammar.Term) {
 		walkTerm(term, func(t grammar.Term) {
 			if block, ok := t.(*grammar.Block); ok {
-				unsupported = append(unsupported, &Error{Pos: block.Pos, Msg: "action statement blocks are not implemented"})
+				unsupported = append(unsupported, &Error{Pos: block.Diagnostic(), Msg: "action statement blocks are not implemented"})
 			}
 		})
 	}
@@ -252,7 +252,7 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 			root = group.Expr
 		}
 		if _, ok := root.(*grammar.OperatorsRule); ok && rd.Action != nil {
-			unsupported = append(unsupported, &Error{Pos: termPos(rd.Action, rd.Pos), Msg: "whole-rule actions are not supported for Operators Rules; use => ... or omit the action"})
+			unsupported = append(unsupported, &Error{Pos: termPos(rd.Action, rd.Diagnostic()), Msg: "whole-rule actions are not supported for Operators Rules; use => ... or omit the action"})
 		}
 		walkExpr(rd.Expr, func(e grammar.Expr) {
 			switch e := e.(type) {
@@ -275,7 +275,7 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 				}
 			}
 			if inline, ok := e.(*grammar.InlineAction); ok {
-				unsupported = append(unsupported, &Error{Pos: inline.Pos, Msg: "inline actions are not implemented"})
+				unsupported = append(unsupported, &Error{Pos: inline.Diagnostic(), Msg: "inline actions are not implemented"})
 			}
 		})
 	}
@@ -295,11 +295,11 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 	for _, td := range g.Types() {
 		switch {
 		case builtinTypes[td.Name]:
-			c.errorf(td.Pos, "type %s is reserved", td.Name)
+			c.errorf(td.Diagnostic(), "type %s is reserved", td.Name)
 		case !startsUpper(td.Name):
-			c.errorf(td.Pos, "type %s must start with an uppercase letter", td.Name)
+			c.errorf(td.Diagnostic(), "type %s must start with an uppercase letter", td.Name)
 		case prog.types[td.Name] != nil:
-			c.errorf(td.Pos, "type %s is already defined", td.Name)
+			c.errorf(td.Diagnostic(), "type %s is already defined", td.Name)
 		default:
 			prog.types[td.Name] = td.Spec
 		}
@@ -307,7 +307,7 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 	rules := g.Rules()
 	for i, rd := range rules {
 		if prog.byName[rd.Name] != nil {
-			c.errorf(rd.Pos, "rule %s is already defined", rd.Name)
+			c.errorf(rd.Diagnostic(), "rule %s is already defined", rd.Name)
 			continue
 		}
 		r := &rule{id: i, name: rd.Name, def: rd, scope: newScope(), action: rd.Action}
@@ -538,7 +538,7 @@ func hasStream(e grammar.Expr) bool {
 func (c *compiler) noCaptures(e grammar.Expr) {
 	walkExpr(e, func(x grammar.Expr) {
 		if cp, ok := x.(*grammar.Capture); ok {
-			c.errorf(cp.Pos, "capture %s inside #atomic, -, or ! has no effect", cp.Name)
+			c.errorf(cp.Diagnostic(), "capture %s inside #atomic, -, or ! has no effect", cp.Name)
 		}
 	})
 }
@@ -637,7 +637,7 @@ func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
 	case *grammar.Ref:
 		r := c.prog.byName[e.Name]
 		if r == nil {
-			c.errorf(e.Pos, "undefined rule %s", e.Name)
+			c.errorf(e.Diagnostic(), "undefined rule %s", e.Name)
 			return nil
 		}
 		min := 0
@@ -824,7 +824,7 @@ func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
 		}
 		// Even inside a value-free body (leanBody), captures build and record their values.
 		if !visible(e.Expr) {
-			c.errorf(e.Pos, "capture %s of an expression without a value", e.Name)
+			c.errorf(e.Diagnostic(), "capture %s of an expression without a value", e.Name)
 			return nil
 		}
 		slot := s.slot(e.Name)
@@ -881,7 +881,7 @@ func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
 		return c.attributed(e, s, build)
 
 	case *grammar.OperatorsRule:
-		c.errorf(e.Pos, "operatorsRule is only allowed as the whole body of a rule")
+		c.errorf(e.Diagnostic(), "operatorsRule is only allowed as the whole body of a rule")
 		return nil
 	}
 	c.errorf(grammar.Pos{}, "unsupported expression %T", e)
@@ -1202,7 +1202,7 @@ func (c *compiler) projectRepeat(e *grammar.Repeat, field string) matcher {
 func (c *compiler) levelMin(e *grammar.Ref, r *rule) int {
 	pr, ok := r.def.Expr.(*grammar.OperatorsRule)
 	if !ok {
-		c.errorf(e.Pos, "rule %s has no Operators Rule levels", e.Name)
+		c.errorf(e.Diagnostic(), "rule %s has no Operators Rule levels", e.Name)
 		return 0
 	}
 	for i, l := range pr.Levels {
@@ -1210,7 +1210,7 @@ func (c *compiler) levelMin(e *grammar.Ref, r *rule) int {
 			return i // parse binding levels i+1 and above
 		}
 	}
-	c.errorf(e.Pos, "rule %s has no level %s", e.Name, e.Level)
+	c.errorf(e.Diagnostic(), "rule %s has no level %s", e.Name, e.Level)
 	return 0
 }
 
@@ -1251,13 +1251,13 @@ func (c *compiler) checkStream(body grammar.Expr) bool {
 		a := e.(*grammar.Attributed)
 		for _, attr := range a.Attrs {
 			if attr.Name == "recover" {
-				c.errorf(attr.Pos, "#recover cannot wrap a #stream repetition; recover inside each element instead")
+				c.errorf(attr.Diagnostic(), "#recover cannot wrap a #stream repetition; recover inside each element instead")
 			}
 		}
 		if !top[e] {
-			c.errorf(a.Attrs[0].Pos, "#stream is only allowed at the top level of a rule body")
+			c.errorf(a.Attrs[0].Diagnostic(), "#stream is only allowed at the top level of a rule body")
 		} else if n > 1 {
-			c.errorf(a.Attrs[0].Pos, "a rule body can have only one #stream")
+			c.errorf(a.Attrs[0].Diagnostic(), "a rule body can have only one #stream")
 		}
 	})
 	return n > 0

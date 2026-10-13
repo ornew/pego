@@ -14,7 +14,7 @@ import (
 func TestInvalidCharacterClassEntryPoints(t *testing.T) {
 	for _, cr := range []grammar.CharRange{{Lo: -1, Hi: 'z'}, {Lo: 'a', Hi: 0xd800}, {Lo: 0xdfff, Hi: utf8.MaxRune}, {Lo: 0, Hi: utf8.MaxRune + 1}, {Lo: 'z', Hi: 'a'}} {
 		t.Run(fmt.Sprintf("%x-%x", cr.Lo, cr.Hi), func(t *testing.T) {
-			cc := &grammar.CharClass{Pos: grammar.Pos{Line: 3, Col: 7}, Ranges: []grammar.CharRange{cr}}
+			cc := &grammar.CharClass{SourceInfo: grammar.SourceInfo{Pos: grammar.Pos{Line: 3, Col: 7}}, Ranges: []grammar.CharRange{cr}}
 			g := &grammar.Grammar{Statements: []grammar.Statement{&grammar.RuleDef{Name: "main", Expr: cc}}}
 			for name, run := range map[string]func() error{
 				"compile":            func() error { _, err := Compile(g, Options{}); return err },

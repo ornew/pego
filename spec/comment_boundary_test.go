@@ -54,6 +54,7 @@ func TestSourceCommentBoundaryGrammar(t *testing.T) {
 		{"block groups stay separate", "start", "/* first */\n/* second */\n// next\nnext", "", " next\n", []string{" first ", " second "}},
 		{"nested block stays whole", "start", "/* outer /* nested */ tail */\nnext", "", " outer /* nested */ tail ", nil},
 		{"nested block normalization", "start", "/* outer\n * /* nested\n * content */ tail\n * end */\nnext", "", " outer\n /* nested\n content */ tail\n end ", nil},
+		{"nested closing on own line", "start", "/* outer\n * /* nested\n * content\n */ tail\n * end */\nnext", "", " outer\n /* nested\n content\n*/ tail\n end ", nil},
 		{"EOF standalone trailing", "after", "\n// previous\n", " previous\n", "", nil},
 		{"EOF inline continuation unowned", "after", " // previous\n// unowned\n", " previous\n", "", []string{" unowned\n"}},
 		{"EOF detached unowned", "after", "\n\n// unowned\n", "", "", []string{" unowned\n"}},

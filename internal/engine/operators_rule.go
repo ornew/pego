@@ -39,12 +39,12 @@ func (c *compiler) compileOperatorsRule(r *rule, e *grammar.OperatorsRule) {
 		pr.skip = c.expr(e.Skip, r.scope, false)
 	}
 	if len(e.Operands) == 0 {
-		c.errorf(e.Pos, "operatorsRule needs at least one operand")
+		c.errorf(e.Diagnostic(), "operatorsRule needs at least one operand")
 	}
 	for _, o := range e.Operands {
 		// A loaded compiled grammar (c.an is nil) has already been checked.
 		if c.an != nil && contains(c.an.leftCalls(o.Expr, nil), r.name) {
-			c.errorf(e.Pos, "operand of %s calls %s at its start (left recursion); use infix or postfix instead", r.name, r.name)
+			c.errorf(e.Diagnostic(), "operand of %s calls %s at its start (left recursion); use infix or postfix instead", r.name, r.name)
 		}
 		pr.operands = append(pr.operands, c.operatorsRuleLine(o.Expr, o.Action, nil))
 	}
@@ -60,16 +60,16 @@ func (c *compiler) compileOperatorsRule(r *rule, e *grammar.OperatorsRule) {
 			case grammar.Infix:
 				locals = []string{"lhs", "rhs", "op"}
 				if op.Assoc != grammar.AssocLeft && op.Assoc != grammar.AssocRight && op.Assoc != grammar.AssocNone {
-					c.errorf(op.Pos, "invalid associativity %q", op.Assoc)
+					c.errorf(op.Diagnostic(), "invalid associativity %q", op.Assoc)
 				}
 			default:
-				c.errorf(op.Pos, "invalid operator kind %q", op.Kind)
+				c.errorf(op.Diagnostic(), "invalid operator kind %q", op.Kind)
 				continue
 			}
 			line := c.operatorsRuleLine(op.Expr, op.Action, locals)
 			for _, name := range line.scope.names {
 				if name == "lhs" || name == "rhs" || name == "op" {
-					c.errorf(op.Pos, "capture name %s is reserved in operatorsRule operators", name)
+					c.errorf(op.Diagnostic(), "capture name %s is reserved in operatorsRule operators", name)
 				}
 			}
 			o := &operatorsRuleOp{id: id, kind: op.Kind, assoc: op.Assoc, level: i + 1, line: line}
@@ -85,7 +85,7 @@ func (c *compiler) compileOperatorsRule(r *rule, e *grammar.OperatorsRule) {
 	for _, l := range e.Levels {
 		if l.Name != "" {
 			if seen[l.Name] {
-				c.errorf(e.Pos, "duplicate level name %s", l.Name)
+				c.errorf(e.Diagnostic(), "duplicate level name %s", l.Name)
 			}
 			seen[l.Name] = true
 		}

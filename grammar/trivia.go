@@ -17,6 +17,9 @@ type Comment struct {
 	// Text includes delimiters. Line comments exclude their final line
 	// break and trailing white space; block comments preserve their contents.
 	Text string
+	// Content is marker-free documentation text, including original line
+	// endings and whitespace. It is independent of formatter spelling.
+	Content string
 	// Blank reports whether a blank line precedes the comment.
 	Blank bool
 }

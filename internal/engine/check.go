@@ -31,7 +31,7 @@ func (k *checker) errorf(pos grammar.Pos, format string, args ...any) {
 		return
 	}
 	if !pos.IsValid() && k.rule != nil {
-		pos = k.rule.Pos
+		pos = k.rule.Diagnostic()
 	}
 	*k.errs = append(*k.errs, &Error{Pos: pos, Msg: fmt.Sprintf(format, args...)})
 }
@@ -48,16 +48,16 @@ func checkTypes(prog *Program, errs *ErrorList) {
 			seen := map[string]bool{}
 			for _, f := range spec.Fields {
 				if seen[f.Name] {
-					k.errorf(f.Pos, "duplicate field %s in %s", f.Name, td.Name)
+					k.errorf(f.Diagnostic(), "duplicate field %s in %s", f.Name, td.Name)
 				}
 				if !startsUpper(f.Name) {
-					k.errorf(f.Pos, "field %s of %s must start with an uppercase letter", f.Name, td.Name)
+					k.errorf(f.Diagnostic(), "field %s of %s must start with an uppercase letter", f.Name, td.Name)
 				}
 				seen[f.Name] = true
 				k.resolve(f.Type)
 			}
 		case *grammar.AliasSpec:
-			k.resolveNamed(td.Name, td.Pos)
+			k.resolveNamed(td.Name, td.Diagnostic())
 		}
 	}
 
@@ -66,7 +66,7 @@ func checkTypes(prog *Program, errs *ErrorList) {
 		if rd.Type != nil {
 			t := k.resolve(rd.Type)
 			if !isNodeOrNil(t) {
-				k.errorf(rd.Pos, "rule %s must produce a node, but its type is %s", rd.Name, t)
+				k.errorf(rd.Diagnostic(), "rule %s must produce a node, but its type is %s", rd.Name, t)
 				t = tyAny
 			}
 			k.ruleTypes[rd.Name] = t
@@ -96,7 +96,7 @@ func checkTypes(prog *Program, errs *ErrorList) {
 				info.fields[td.Name] = append(info.fields[td.Name], typedField{f.Name, k.resolve(f.Type)})
 			}
 		case *grammar.AliasSpec:
-			info.aliases[td.Name] = k.resolveNamed(td.Name, td.Pos)
+			info.aliases[td.Name] = k.resolveNamed(td.Name, td.Diagnostic())
 		}
 	}
 	prog.typed = info
@@ -132,7 +132,7 @@ type typedField struct {
 func (k *checker) resolve(t grammar.TypeExpr) ty {
 	switch t := t.(type) {
 	case *grammar.TypeRef:
-		return k.resolveNamed(t.Name, t.Pos)
+		return k.resolveNamed(t.Name, t.Diagnostic())
 	case *grammar.ListType:
 		return listTy{k.resolve(t.Elem)}
 	case *grammar.OptionalType:
@@ -359,7 +359,7 @@ func (k *checker) checkPreds(sc *scopeCheck) {
 		if a, ok := p.(*grammar.Assign); ok {
 			t := k.term(a.Value, env)
 			if !assignable(t, union(tyInt, tyString, tyBool)) {
-				k.errorf(a.Pos, "variable %s must be int, string, or bool, got %s", a.Name, t)
+				k.errorf(a.Diagnostic(), "variable %s must be int, string, or bool, got %s", a.Name, t)
 			}
 			continue
 		}
@@ -394,7 +394,7 @@ func (k *checker) ruleType(rd *grammar.RuleDef) ty {
 	if rd.Action != nil {
 		t = k.term(rd.Action, &termEnv{caps: sc.caps, items: items, allowIndex: true})
 		if !isNodeOrNil(t) {
-			k.errorf(termPos(rd.Action, rd.Pos), "action of %s must produce a node, got %s", rd.Name, t)
+			k.errorf(termPos(rd.Action, rd.Diagnostic()), "action of %s must produce a node, got %s", rd.Name, t)
 			t = tyAny
 		}
 	} else {
@@ -413,7 +413,7 @@ func (k *checker) ruleType(rd *grammar.RuleDef) ty {
 	}
 	if declared != nil {
 		if !assignable(t, declared) {
-			k.errorf(rd.Pos, "rule %s produces %s, which is not assignable to %s", rd.Name, t, declared)
+			k.errorf(rd.Diagnostic(), "rule %s produces %s, which is not assignable to %s", rd.Name, t, declared)
 		}
 		return declared
 	}
@@ -427,13 +427,13 @@ func (k *checker) operatorsRuleType(rd *grammar.RuleDef, pr *grammar.OperatorsRu
 		k.expr(pr.Skip, &scopeCheck{caps: caps{}})
 	}
 	for _, o := range pr.Operands {
-		ts = append(ts, k.lineType(o.Expr, o.Action, nil, rd.Pos))
+		ts = append(ts, k.lineType(o.Expr, o.Action, nil, rd.Diagnostic()))
 	}
 	for _, l := range pr.Levels {
 		for _, op := range l.Operators {
 			if op.Action == nil {
 				ts = append(ts, tyOperator)
-				k.lineType(op.Expr, nil, nil, op.Pos)
+				k.lineType(op.Expr, nil, nil, op.Diagnostic())
 				continue
 			}
 			locals := map[string]ty{"op": tyMatch}
@@ -443,16 +443,16 @@ func (k *checker) operatorsRuleType(rd *grammar.RuleDef, pr *grammar.OperatorsRu
 			if op.Kind != grammar.Postfix {
 				locals["rhs"] = self
 			}
-			ts = append(ts, k.lineType(op.Expr, op.Action, locals, op.Pos))
+			ts = append(ts, k.lineType(op.Expr, op.Action, locals, op.Diagnostic()))
 		}
 	}
 	if declared != nil {
 		for _, t := range ts {
 			if !assignable(t, declared) {
 				if t == tyOperator {
-					k.errorf(rd.Pos, "operators of %s without an action produce Operator, which is not assignable to %s", rd.Name, declared)
+					k.errorf(rd.Diagnostic(), "operators of %s without an action produce Operator, which is not assignable to %s", rd.Name, declared)
 				} else {
-					k.errorf(rd.Pos, "operatorsRule %s produces %s, which is not assignable to %s", rd.Name, t, declared)
+					k.errorf(rd.Diagnostic(), "operatorsRule %s produces %s, which is not assignable to %s", rd.Name, t, declared)
 				}
 			}
 		}
@@ -533,25 +533,25 @@ func (e *termEnv) with(names []string, ts []ty) *termEnv {
 func termPos(t grammar.Term, def grammar.Pos) grammar.Pos {
 	switch t := t.(type) {
 	case *grammar.CaptureRef:
-		return t.Pos
+		return t.Diagnostic()
 	case *grammar.IndexRef:
-		return t.Pos
+		return t.Diagnostic()
 	case *grammar.VarRef:
-		return t.Pos
+		return t.Diagnostic()
 	case *grammar.Member:
-		return t.Pos
+		return t.Diagnostic()
 	case *grammar.New:
-		return t.Pos
+		return t.Diagnostic()
 	case *grammar.Call:
-		return t.Pos
+		return t.Diagnostic()
 	case *grammar.Binary:
-		return t.Pos
+		return t.Diagnostic()
 	case *grammar.Unary:
-		return t.Pos
+		return t.Diagnostic()
 	case *grammar.Assign:
-		return t.Pos
+		return t.Diagnostic()
 	case *grammar.Block:
-		return t.Pos
+		return t.Diagnostic()
 	}
 	return def
 }
@@ -583,7 +583,7 @@ func (k *checker) term(t grammar.Term, env *termEnv) ty {
 			return listTy{union(env.items...)}
 		}
 		if t.Index > len(env.items) {
-			k.errorf(t.Pos, "$%d is out of range: the rule has %d elements with a value", t.Index, len(env.items))
+			k.errorf(t.Diagnostic(), "$%d is out of range: the rule has %d elements with a value", t.Index, len(env.items))
 			return tyAny
 		}
 		return env.items[t.Index-1]
@@ -601,7 +601,7 @@ func (k *checker) term(t grammar.Term, env *termEnv) ty {
 			if f := fieldOf(st, fi.Name); f != nil {
 				ft := k.resolve(f.Type)
 				if !assignable(vt, ft) {
-					k.errorf(fi.Pos, "cannot use %s as %s in field %s of %s", vt, ft, fi.Name, t.Type)
+					k.errorf(fi.Diagnostic(), "cannot use %s as %s in field %s of %s", vt, ft, fi.Name, t.Type)
 				}
 			}
 		}
@@ -621,13 +621,13 @@ func (k *checker) term(t grammar.Term, env *termEnv) ty {
 			want = tyBool
 		}
 		if !assignable(x, want) {
-			k.errorf(t.Pos, "invalid operand %s for unary %s", x, t.Op)
+			k.errorf(t.Diagnostic(), "invalid operand %s for unary %s", x, t.Op)
 		}
 		return want
 	case *grammar.Binary:
 		l, r := k.term(t.L, env), k.term(t.R, env)
 		bad := func() ty {
-			k.errorf(t.Pos, "invalid operands %s and %s for %s", l, r, t.Op)
+			k.errorf(t.Diagnostic(), "invalid operands %s and %s for %s", l, r, t.Op)
 			return tyAny
 		}
 		both := func(want ty) bool { return assignable(l, want) && assignable(r, want) }
@@ -671,12 +671,12 @@ func (k *checker) member(x ty, m *grammar.Member) ty {
 	switch m.Name {
 	case "startPos", "endPos":
 		if !isNode(x) {
-			k.errorf(m.Pos, "cannot access .%s of %s", m.Name, x)
+			k.errorf(m.Diagnostic(), "cannot access .%s of %s", m.Name, x)
 		}
 		return tyInt
 	case "children":
 		if !isNode(x) {
-			k.errorf(m.Pos, "cannot access .%s of %s", m.Name, x)
+			k.errorf(m.Diagnostic(), "cannot access .%s of %s", m.Name, x)
 		}
 		return listTy{optional(tyNode)}
 	}
@@ -684,7 +684,7 @@ func (k *checker) member(x ty, m *grammar.Member) ty {
 		return tyAny
 	}
 	if _, ok := x.(optTy); ok {
-		k.errorf(m.Pos, "cannot access .%s of %s: the value may be nil", m.Name, x)
+		k.errorf(m.Diagnostic(), "cannot access .%s of %s: the value may be nil", m.Name, x)
 		return tyAny
 	}
 	var alts []ty
@@ -713,7 +713,7 @@ func (k *checker) member(x ty, m *grammar.Member) ty {
 		}
 	}
 	if len(found) == 0 {
-		k.errorf(m.Pos, "%s has no field %s", x, m.Name)
+		k.errorf(m.Diagnostic(), "%s has no field %s", x, m.Name)
 		return tyAny
 	}
 	if len(found) < len(alts) {
@@ -771,19 +771,19 @@ func (k *checker) call(t *grammar.Call, env *termEnv) ty {
 	case "len":
 		a := argT(0)
 		if !assignable(a, union(tyString, optional(tyNode))) {
-			k.errorf(t.Pos, "len: invalid argument %s", a)
+			k.errorf(t.Diagnostic(), "len: invalid argument %s", a)
 		}
 		return tyInt
 	case "text":
 		a := argT(0)
 		if !assignable(a, union(tyString, optional(tyNode))) {
-			k.errorf(t.Pos, "text: invalid argument %s", a)
+			k.errorf(t.Diagnostic(), "text: invalid argument %s", a)
 		}
 		return tyString
 	case "foldl", "foldr":
 		acc := argT(0)
-		elem := k.elemType(t.Func, argT(1), t.Pos)
-		l, ok := k.lambda(t.Func, t.Args[2], 2, t.Pos)
+		elem := k.elemType(t.Func, argT(1), t.Diagnostic())
+		l, ok := k.lambda(t.Func, t.Args[2], 2, t.Diagnostic())
 		if !ok {
 			return tyAny
 		}
@@ -801,14 +801,14 @@ func (k *checker) call(t *grammar.Call, env *termEnv) ty {
 		k.term(l.Body, env.with(l.Params, []ty{acc, elem}))
 		return acc
 	case "map":
-		elem := k.elemType("map", argT(0), t.Pos)
-		l, ok := k.lambda("map", t.Args[1], 1, t.Pos)
+		elem := k.elemType("map", argT(0), t.Diagnostic())
+		l, ok := k.lambda("map", t.Args[1], 1, t.Diagnostic())
 		if !ok {
 			return tyAny
 		}
 		body := k.term(l.Body, env.with(l.Params, []ty{elem}))
 		if !isNodeOrNil(body) {
-			k.errorf(t.Pos, "map: the function must produce a node, got %s", body)
+			k.errorf(t.Diagnostic(), "map: the function must produce a node, got %s", body)
 		}
 		return listTy{body}
 	case "list":
@@ -816,7 +816,7 @@ func (k *checker) call(t *grammar.Call, env *termEnv) ty {
 		for i := range t.Args {
 			a := argT(i)
 			if !isNode(a) && !assignable(a, optional(tyNode)) {
-				k.errorf(t.Pos, "list: elements must be nodes, got %s", a)
+				k.errorf(t.Diagnostic(), "list: elements must be nodes, got %s", a)
 			}
 			elems = append(elems, a)
 		}
@@ -824,7 +824,7 @@ func (k *checker) call(t *grammar.Call, env *termEnv) ty {
 	case "concat":
 		var elems []ty
 		for i := range t.Args {
-			elems = append(elems, k.elemType("concat", argT(i), t.Pos))
+			elems = append(elems, k.elemType("concat", argT(i), t.Diagnostic()))
 		}
 		return listTy{union(elems...)}
 	}

@@ -26,7 +26,7 @@ The chapters are in reading order: each builds on the ones before it.
 |--:|:--|:--|
 | 1 | [Overview](overview.md) | The main ideas of the language and a complete example grammar |
 | 2 | [Lexical Structure](lexical.md) | Characters, white space, `//` and nested `/* ... */` comments, identifiers, keywords, literals, escape sequences, punctuation and adjacency |
-| 3 | [Grammar Files](grammar-files.md) | The package clause, type and rule definitions, names and their scope, errors in a grammar, grammar representations |
+| 3 | [Grammar Files](grammar-files.md) | The package clause, type and rule definitions, names and their scope, source metadata, errors in a grammar, grammar representations |
 | 4 | [Type System](types.md) | Built-in and reserved types, struct, union and terminal types, names of types, assignability |
 | 5 | [Parsing Expressions](parser-expressions.md) | The expressions that match input, the concrete syntax tree they build, captures, cut, rule calls and left recursion |
 | 6 | [Operators Rule](operators-rule.md) | Operator expressions declared by precedence and associativity |

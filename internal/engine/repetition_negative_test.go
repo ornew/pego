@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strconv"
 	"strings"
@@ -63,10 +64,7 @@ func TestNegativeRepetitionMaxima(t *testing.T) {
 					}
 					// Saved ASTs use the compiled grammar, where source-only groups
 					// are removed. The caller's AST is checked separately below.
-					savedAST, err := grammar.MarshalJSON(p.Grammar)
-					if err != nil {
-						t.Fatal(err)
-					}
+					savedAST := executableASTJSON(t, p.Grammar)
 					found := false
 					for _, in := range p.Module().Code {
 						if in.Op == c.op {
@@ -99,9 +97,8 @@ func TestNegativeRepetitionMaxima(t *testing.T) {
 							t.Fatalf("load: %v", err)
 						}
 						if !marshal.OmitAST {
-							ast, err := grammar.MarshalJSON(loaded.Grammar)
-							if err != nil || string(ast) != string(savedAST) {
-								t.Fatalf("saved AST maximum changed: %v", err)
+							if ast := executableASTJSON(t, loaded.Grammar); ast != savedAST {
+								t.Fatal("saved executable AST changed")
 							}
 						}
 						for _, prog := range []*Program{p, loaded} {
@@ -135,6 +132,73 @@ func TestNegativeRepetitionMaxima(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+// Compiled ASTs preserve executable structure, not grammar source metadata.
+// Ignore only SourceInfo; all other serialized fields must still round-trip.
+func executableASTJSON(t testing.TB, g *grammar.Grammar) string {
+	t.Helper()
+	copy := g.Clone()
+	var strip func(reflect.Value)
+	strip = func(v reflect.Value) {
+		if v.Type() == reflect.TypeFor[grammar.SourceInfo]() {
+			v.SetZero()
+			return
+		}
+		switch v.Kind() {
+		case reflect.Pointer, reflect.Interface:
+			if !v.IsNil() {
+				strip(v.Elem())
+			}
+		case reflect.Struct:
+			for i := 0; i < v.NumField(); i++ {
+				strip(v.Field(i))
+			}
+		case reflect.Slice:
+			for i := 0; i < v.Len(); i++ {
+				strip(v.Index(i))
+			}
+		case reflect.Map:
+			for _, key := range v.MapKeys() {
+				strip(v.MapIndex(key))
+			}
+		}
+	}
+	strip(reflect.ValueOf(copy))
+	data, err := grammar.MarshalJSON(copy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(data)
+}
+
+func TestCompiledSourceMetadataOmitted(t *testing.T) {
+	g, err := syntax.Parse("// documentation\npackage p\n// rule documentation\nrule main = \"x\" #atomic")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := Compile(g, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := p.MarshalBinary("main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	loaded, _, err := LoadProgram(data, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded, err := grammar.MarshalJSON(loaded.Grammar)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(encoded), `"source"`) || strings.Contains(string(encoded), `"packageSource"`) || strings.Contains(string(encoded), "documentation") {
+		t.Fatalf("compiled AST unexpectedly archives source metadata: %s", encoded)
+	}
+	if executableASTJSON(t, loaded.Grammar) != executableASTJSON(t, p.Grammar) {
+		t.Fatal("compiled executable structure changed")
 	}
 }
 

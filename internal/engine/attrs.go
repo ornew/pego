@@ -17,10 +17,10 @@ func (c *compiler) attributed(e *grammar.Attributed, s *scope, build bool) match
 		switch a.Name {
 		case "stream":
 			if _, ok := e.Expr.(*grammar.Repeat); !ok {
-				c.errorf(a.Pos, "#stream must be attached to a repetition (*, +, or #repeat(...))")
+				c.errorf(a.Diagnostic(), "#stream must be attached to a repetition (*, +, or #repeat(...))")
 			}
 			if len(a.Args)+len(a.KwArgs) > 0 {
-				c.errorf(a.Pos, "#stream takes no arguments")
+				c.errorf(a.Diagnostic(), "#stream takes no arguments")
 			}
 		case "error":
 			msg, ok := c.stringArg(a, "message")
@@ -30,7 +30,7 @@ func (c *compiler) attributed(e *grammar.Attributed, s *scope, build bool) match
 		case "recover":
 			skipExpr, ok := a.Arg("skip")
 			if !ok {
-				c.errorf(a.Pos, "#recover requires a skip argument")
+				c.errorf(a.Diagnostic(), "#recover requires a skip argument")
 				continue
 			}
 			c.noCaptures(skipExpr)
@@ -38,11 +38,11 @@ func (c *compiler) attributed(e *grammar.Attributed, s *scope, build bool) match
 			// recovery either, so that the shape of the enclosing value does not depend on it.
 			m = recoverAttr(m, c.expr(skipExpr, s, false), build && visible(e.Expr))
 		default:
-			c.errorf(a.Pos, "unknown attribute @%s", a.Name)
+			c.errorf(a.Diagnostic(), "unknown attribute @%s", a.Name)
 		}
 		for name := range a.KwArgs {
 			if !validArg(a.Name, name) {
-				c.errorf(a.Pos, "%s%s has no argument %s", annotationMarker(a), a.Name, name)
+				c.errorf(a.Diagnostic(), "%s%s has no argument %s", annotationMarker(a), a.Name, name)
 			}
 		}
 	}
@@ -62,12 +62,12 @@ func validArg(attr, arg string) bool {
 func (c *compiler) stringArg(a *grammar.Attribute, name string) (string, bool) {
 	v, ok := a.Arg(name)
 	if !ok {
-		c.errorf(a.Pos, "@%s requires a %s argument", a.Name, name)
+		c.errorf(a.Diagnostic(), "@%s requires a %s argument", a.Name, name)
 		return "", false
 	}
 	lit, ok := v.(*grammar.Literal)
 	if !ok {
-		c.errorf(a.Pos, "@%s: %s must be a string", a.Name, name)
+		c.errorf(a.Diagnostic(), "@%s: %s must be a string", a.Name, name)
 		return "", false
 	}
 	return lit.Value, true

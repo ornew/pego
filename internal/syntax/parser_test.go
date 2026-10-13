@@ -217,33 +217,33 @@ func TestExprPositions(t *testing.T) {
 		var pos grammar.Pos
 		switch it := it.(type) {
 		case *grammar.And:
-			pos = it.Pos
+			pos = it.Diagnostic()
 		case *grammar.Not:
-			pos = it.Pos
+			pos = it.Diagnostic()
 		case *grammar.Atomic:
-			pos = it.Pos
+			pos = it.Diagnostic()
 		case *grammar.Discard:
-			pos = it.Pos
+			pos = it.Diagnostic()
 		case *grammar.Top:
-			pos = it.Pos
+			pos = it.Diagnostic()
 		case *grammar.Bottom:
-			pos = it.Pos
+			pos = it.Diagnostic()
 		case *grammar.Cut:
-			pos = it.Pos
+			pos = it.Diagnostic()
 		case *grammar.BeginInput:
-			pos = it.Pos
+			pos = it.Diagnostic()
 		case *grammar.BeginLine:
-			pos = it.Pos
+			pos = it.Diagnostic()
 		case *grammar.EndLine:
-			pos = it.Pos
+			pos = it.Diagnostic()
 		case *grammar.EndInput:
-			pos = it.Pos
+			pos = it.Diagnostic()
 		case *grammar.Any:
-			pos = it.Pos
+			pos = it.Diagnostic()
 		case *grammar.Repeat:
-			pos = it.Pos
+			pos = it.Diagnostic()
 		case *grammar.Optional:
-			pos = it.Pos
+			pos = it.Diagnostic()
 		default:
 			t.Fatalf("unexpected %T", it)
 		}

@@ -27,7 +27,7 @@ func normalizeAttributes(g *grammar.Grammar) (*grammar.Grammar, error) {
 type attributeNormalizer struct{ errors ErrorList }
 
 func (n *attributeNormalizer) error(a *grammar.Attribute, message string) {
-	n.errors = append(n.errors, &Error{Pos: a.Pos, Msg: annotationMarker(a) + a.Name + ": " + message})
+	n.errors = append(n.errors, &Error{Pos: a.Diagnostic(), Msg: annotationMarker(a) + a.Name + ": " + message})
 }
 
 func (n *attributeNormalizer) value(value any) any {
@@ -110,7 +110,7 @@ func (n *attributeNormalizer) repeat(e grammar.Expr, a *grammar.Attribute) gramm
 		n.error(a, "maximum is less than minimum")
 		return e
 	}
-	return &grammar.Repeat{Pos: a.Pos, Expr: e, Min: min, Max: max}
+	return &grammar.Repeat{SourceInfo: grammar.SourceInfo{Pos: a.Diagnostic()}, Expr: e, Min: min, Max: max}
 }
 
 func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
@@ -155,9 +155,9 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 		copy.Expr = n.expr(e.Expr)
 		return &copy
 	case *grammar.Stream:
-		return n.wrap(n.expr(e.Expr), &grammar.Attribute{Pos: e.Pos, Name: "stream", Pragma: true})
+		return n.wrap(n.expr(e.Expr), &grammar.Attribute{SourceInfo: grammar.SourceInfo{Pos: e.Diagnostic()}, Name: "stream", Pragma: true})
 	case *grammar.Recovery:
-		return n.wrap(n.expr(e.Expr), &grammar.Attribute{Pos: e.Pos, Name: "recover", Pragma: true, KwArgs: map[string]any{"skip": n.expr(e.Skip)}})
+		return n.wrap(n.expr(e.Expr), &grammar.Attribute{SourceInfo: grammar.SourceInfo{Pos: e.Diagnostic()}, Name: "recover", Pragma: true, KwArgs: map[string]any{"skip": n.expr(e.Skip)}})
 	case *grammar.Atomic:
 		copy := *e
 		copy.Expr = n.expr(e.Expr)
@@ -191,7 +191,7 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 				if len(a.Args)+len(a.KwArgs) != 0 {
 					n.error(a, "takes no arguments")
 				}
-				inner = &grammar.Atomic{Pos: a.Pos, Expr: inner}
+				inner = &grammar.Atomic{SourceInfo: grammar.SourceInfo{Pos: a.Diagnostic()}, Expr: inner}
 				continue
 			case "error":
 				n.bind(a, "message")

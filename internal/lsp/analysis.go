@@ -241,12 +241,12 @@ func (a *analysis) previousSignificantToken(i int) int {
 
 // collect records the definitions and the occurrences of names in the grammar.
 func (a *analysis) collect() {
-	a.mark(a.g.PackagePos, semKeyword, 0)
+	a.mark(a.g.PackageSource.Diagnostic(), semKeyword, 0)
 	for _, s := range a.g.Statements {
 		switch s := s.(type) {
 		case *grammar.RuleDef:
-			a.mark(s.Pos, semKeyword, 0)
-			d := a.define(kindRule, s.Name, s.Pos)
+			a.mark(s.Diagnostic(), semKeyword, 0)
+			d := a.define(kindRule, s.Name, s.Diagnostic())
 			if d == nil {
 				continue
 			}
@@ -262,8 +262,8 @@ func (a *analysis) collect() {
 				a.walkTerm(s.Action)
 			}
 		case *grammar.TypeDef:
-			a.mark(s.Pos, semKeyword, 0)
-			d := a.define(kindType, s.Name, s.Pos)
+			a.mark(s.Diagnostic(), semKeyword, 0)
+			d := a.define(kindType, s.Name, s.Diagnostic())
 			if d == nil {
 				continue
 			}
@@ -271,7 +271,7 @@ func (a *analysis) collect() {
 			if a.types[s.Name] == nil {
 				a.types[s.Name] = d
 			}
-			if i, ok := a.tokenIndex(s.Pos); ok {
+			if i, ok := a.tokenIndex(s.Diagnostic()); ok {
 				name := a.significantToken(i + 1)
 				spec := a.significantToken(name + 1)
 				if a.isIdent(spec, "struct") || a.isIdent(spec, "terminal") {
@@ -281,7 +281,7 @@ func (a *analysis) collect() {
 			switch spec := s.Spec.(type) {
 			case *grammar.StructSpec:
 				for _, f := range spec.Fields {
-					a.mark(f.Pos, semProperty, modDeclaration)
+					a.mark(f.Diagnostic(), semProperty, modDeclaration)
 					a.walkType(f.Type)
 				}
 			case *grammar.AliasSpec:
@@ -399,7 +399,7 @@ func (a *analysis) refToken(kind symKind, name string, i int) {
 func (a *analysis) walkType(t grammar.TypeExpr) {
 	switch t := t.(type) {
 	case *grammar.TypeRef:
-		a.ref(kindType, t.Name, t.Pos)
+		a.ref(kindType, t.Name, t.Diagnostic())
 	case *grammar.ListType:
 		a.walkType(t.Elem)
 	case *grammar.OptionalType:
@@ -420,7 +420,7 @@ func (a *analysis) walkExpr(e grammar.Expr) {
 		a.walkTerm(e.Action)
 	case *grammar.Ref:
 		if e.Level != "" {
-			if i, ok := a.tokenIndex(e.Pos); ok {
+			if i, ok := a.tokenIndex(e.Diagnostic()); ok {
 				open := a.previousSignificantToken(i - 1)
 				keyword := a.previousSignificantToken(open - 1)
 				if a.isPunct(open, "(") && a.isIdent(keyword, "level") {
@@ -428,7 +428,7 @@ func (a *analysis) walkExpr(e grammar.Expr) {
 				}
 			}
 		}
-		a.ref(kindRule, e.Name, e.Pos)
+		a.ref(kindRule, e.Name, e.Diagnostic())
 	case *grammar.Seq:
 		for _, x := range e.Items {
 			a.walkExpr(x)
@@ -455,14 +455,14 @@ func (a *analysis) walkExpr(e grammar.Expr) {
 	case *grammar.Discard:
 		a.walkExpr(e.Expr)
 	case *grammar.Capture:
-		a.mark(e.Pos, semVariable, modDeclaration)
+		a.mark(e.Diagnostic(), semVariable, modDeclaration)
 		a.walkExpr(e.Expr)
 	case *grammar.Predicate:
 		a.walkTerm(e.Term)
 	case *grammar.Attributed:
 		a.walkExpr(e.Expr)
 		for _, at := range e.Attrs {
-			if i, ok := a.tokenIndex(at.Pos); ok {
+			if i, ok := a.tokenIndex(at.Diagnostic()); ok {
 				a.markToken(i+1, semDecorator, 0)
 			}
 			for _, arg := range at.ExpressionArgs() {
@@ -470,26 +470,26 @@ func (a *analysis) walkExpr(e grammar.Expr) {
 			}
 		}
 	case *grammar.OperatorsRule:
-		if i, ok := a.tokenIndex(e.Pos); ok {
+		if i, ok := a.tokenIndex(e.Diagnostic()); ok {
 			a.markToken(a.previousSignificantToken(i-1), semKeyword, 0)
 		}
-		a.mark(e.SkipPos, semKeyword, 0)
+		a.mark(e.SkipSource.Diagnostic(), semKeyword, 0)
 		if e.Skip != nil {
 			a.walkExpr(e.Skip)
 		}
 		for _, o := range e.Operands {
-			a.mark(o.Pos, semKeyword, 0)
+			a.mark(o.Diagnostic(), semKeyword, 0)
 			a.walkExpr(o.Expr)
 			if o.Action != nil {
 				a.walkTerm(o.Action)
 			}
 		}
 		for _, l := range e.Levels {
-			a.mark(l.Pos, semKeyword, 0)
+			a.mark(l.Diagnostic(), semKeyword, 0)
 			for _, op := range l.Operators {
-				a.mark(op.Pos, semKeyword, 0)
+				a.mark(op.Diagnostic(), semKeyword, 0)
 				if op.Kind == grammar.Infix {
-					if i, ok := a.tokenIndex(op.Pos); ok {
+					if i, ok := a.tokenIndex(op.Diagnostic()); ok {
 						a.markToken(a.significantToken(i+1), semKeyword, 0)
 					}
 				}
@@ -514,18 +514,18 @@ func (a *analysis) walkTerm(t grammar.Term) {
 		if findBuiltin(builtinMembers, t.Name) != nil {
 			mods = modDefaultLibrary
 		}
-		a.mark(t.Pos, semProperty, mods)
+		a.mark(t.Diagnostic(), semProperty, mods)
 	case *grammar.New:
 		// The constructor starts at its type name.
-		if i, ok := a.tokenIndex(t.Pos); ok {
+		if i, ok := a.tokenIndex(t.Diagnostic()); ok {
 			a.refToken(kindType, t.Type, i)
 		}
 		for _, f := range t.Fields {
-			a.mark(f.Pos, semProperty, 0)
+			a.mark(f.Diagnostic(), semProperty, 0)
 			a.walkTerm(f.Value)
 		}
 	case *grammar.Call:
-		a.mark(t.Pos, semFunction, modDefaultLibrary)
+		a.mark(t.Diagnostic(), semFunction, modDefaultLibrary)
 		for _, x := range t.Args {
 			a.walkTerm(x)
 		}
@@ -537,10 +537,10 @@ func (a *analysis) walkTerm(t grammar.Term) {
 	case *grammar.Unary:
 		a.walkTerm(t.X)
 	case *grammar.VarRef:
-		a.mark(t.Pos, semVariable, 0)
+		a.mark(t.Diagnostic(), semVariable, 0)
 	case *grammar.Assign:
 		a.vars[t.Name] = true
-		a.mark(t.Pos, semVariable, modDeclaration)
+		a.mark(t.Diagnostic(), semVariable, modDeclaration)
 		a.walkTerm(t.Value)
 	}
 }

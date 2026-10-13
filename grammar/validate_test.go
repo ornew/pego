@@ -157,7 +157,7 @@ func TestValidateCyclesAndSharing(t *testing.T) {
 }
 
 func TestValidatePositionAndOrder(t *testing.T) {
-	g := expressionGrammar(&Seq{Items: []Expr{&Repeat{Pos: Pos{Line: 4, Col: 7}, Min: -1}, nil}})
+	g := expressionGrammar(&Seq{Items: []Expr{&Repeat{SourceInfo: SourceInfo{Pos: Pos{Line: 4, Col: 7}}, Min: -1}, nil}})
 	assertValidationError(t, Validate(g), "$.statements[0].expr.items[0].min")
 	e := Validate(g).(*ValidationError)
 	if e.Pos != (Pos{Line: 4, Col: 7}) || !strings.HasPrefix(e.Error(), "4:7: ") {

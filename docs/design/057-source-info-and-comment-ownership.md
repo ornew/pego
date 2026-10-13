@@ -21,7 +21,8 @@ post-parse attachment pass is involved.
 The public grammar AST should let documentation and tooling clients read a
 declaration's comments without inferring ownership from positions or formatter
 layout. A shared value keeps spans and normalized documentation together while
-raw comment tokens remain available to the in-memory formatter.
+raw comment markers and layout trivia remain available to the in-memory
+formatter.
 
 - Add a common `SourceInfo` value to source-bearing grammar nodes and preserve
   source metadata through Go AST construction, JSON conversion and cloning.
@@ -41,24 +42,35 @@ type SourceInfo struct {
     LeadingComments         string
     TrailingComments        string
     LeadingDetachedComments []string
+    DiagnosticPos           Pos
 }
 ```
 
 Embed this value in source-bearing declarations, fields, expressions, actions,
 attributes, pragmas, Operators Rule entries and explicit source grouping nodes.
-`End` is exclusive; both positions use the existing line/column units and cover
-syntax tokens, not comments. Leading/trailing values are normalized strings;
+`End` is exclusive; both positions use the existing line/column units. A span
+is one continuous source interval: it excludes leading and trailing comments
+owned at its boundaries, but includes comments inside the interval. Leading/
+trailing values are normalized strings;
 each detached entry is one comment paragraph. Normalized comment text preserves
 newlines and conventional whitespace after comment markers. Empty values are
 zero values and may be omitted in JSON. Clone detached slices rather than
 sharing mutable backing storage.
 
-Preserve diagnostic token positions separately: migrating a node's existing
-`Pos` to its source-span start must not change which token an error reports. The
-implementation must choose and document a dedicated diagnostic-position field.
-Package syntax also needs real source metadata; the current package name and
-`PackagePos` alone are insufficient. Decide whether to add a package AST node or
-another public source-bearing representation during migration.
+Each source-bearing node exposes `Source() *SourceInfo` and satisfies
+`SourceNode`. `Diagnostic()` returns `DiagnosticPos` when valid and otherwise
+falls back to the span's `Pos`. This keeps operator-token diagnostics stable
+when `Pos` becomes the source-span start. `Grammar.Clone()` is the grammar-level
+deep-copy operation and copies all source metadata, including detached-comment
+slices. `SourceInfo` has no clone method. The clone contract covers the
+supported grammar AST and attribute argument value domain; it does not cover
+arbitrary application values or cyclic maps and slices embedded in attribute
+arguments. Shared AST subtrees stay shared in the clone, and AST pointer cycles
+are preserved for `Validate` to report.
+Preserve the `Grammar.Package` string and use `Grammar.PackageSource` for the
+package clause span and owned comments. Use `OperatorsRule.SkipSource` for the
+whole skip clause, from the `skip` keyword through its expression. Do not
+retain the old `PackagePos` field.
 
 ### Comment Collection and Ownership
 
@@ -93,12 +105,12 @@ manual parser must produce the same owner paths.
 The executable fixture [`spec/testdata/comment-boundaries.pego`](../../spec/testdata/comment-boundaries.pego)
 and focused test [`spec/comment_boundary_test.go`](../../spec/comment_boundary_test.go)
 exercise the boundary record and package/rule owner construction directly. The
-focused matrix covers 33 boundary cases across three backends and two position
-units, plus direct package/rule construction and a generated typed Go consumer. Detached values use typed `[]CommentText` records; an adapter copies
-`Text` into normalized strings. This validates grammar-level ownership without
-semantic attachment, but does not implement public `SourceInfo`, JSON, or the
-canonical root grammar migration. General typed-list construction is separate
-and is not required for this design.
+focused matrix covers 34 boundary cases across three backends and two position
+units, plus direct package/rule construction and a generated typed Go consumer.
+Detached values use typed `[]CommentText` records; an adapter copies `Text`
+into normalized strings. This fixture covers selected ownership construction,
+not end-to-end public metadata or formatter migration. General typed-list
+construction is separate and is not required for this design.
 
 ### Reference Cases and Normalization
 
@@ -119,15 +131,18 @@ remain governed by its own lexer.
 
 For normalized text, remove only the `//` marker from line comments, retaining
 following whitespace and the terminating newline. For block comments, remove
-the delimiters, retain first-line content, and on later lines strip indentation
-and the first `*` marker. Preserve encountered newlines. Raw trivia retains exact
-markers and original layout separately.
+the outer delimiters, retain first-line content, and on later lines strip
+indentation and the first `*` marker. Preserve encountered newlines and nested
+comment delimiters as content. Raw comment markers and formatter layout remain
+separate from normalized ownership; they are not a byte-for-byte copy of every
+source whitespace detail.
 
 ### JSON and Formatting
 
-Serialize normalized `SourceInfo` in an explicit nested `source` object; do not
-rely on Go embedding to flatten fields. Keep AST type tags and position
-units. Older JSON without `source` decodes to zero metadata. Example:
+Serialize embedded node metadata in an explicit nested `source` object; package
+and skip metadata use `packageSource` and `skipSource`. Do not rely on Go
+embedding to flatten fields. Keep AST type tags and position units. Older JSON
+without these optional metadata objects decodes to zero values. Example:
 
 ```json
 {
@@ -153,6 +168,11 @@ remain within ownership-equivalent boundaries. Parse/format/parse must preserve 
 supported nodes; this guarantee does not apply to JSON-decoded ASTs without
 serialized layout.
 
+Direct grammar JSON preserves normalized source metadata. The current `.pegoc`
+AST-bearing codec does not encode source positions or comments; loading or
+saving that AST preserves the compiled grammar tree, not its source-document
+ownership. This distinction does not change the `.pegoc` bytecode format.
+
 ## Compatibility and Migration
 
 Embedding `SourceInfo` preserves selectors but changes Go composite literals
@@ -160,6 +180,15 @@ that set `Pos` directly. Migrate AST builders, parser and generated-source
 adapter, strict JSON schemas and fixtures, cloning, formatter tests, API docs and
 documentation consumers together. Exact raw trivia remains an in-memory
 formatting concern. Keep bytecode and runtime parsing behavior unchanged.
+
+The migration can proceed in bounded increments without closing the parent
+scope early: first add source spans and normalized ownership to the public AST,
+nested JSON and manual parser while preserving diagnostics through
+`DiagnosticPos`; then make the canonical `pego.pego` parser construct the same
+metadata, including transparent Type/Action grouping source forms; finally
+complete formatter owner-path preservation across those groups. The boundary
+fixture is a focused oracle, not a substitute for these parity and formatter
+gates.
 
 ## Alternatives Considered
 
@@ -195,11 +224,38 @@ formatting concern. Keep bytecode and runtime parsing behavior unchanged.
 
 Measure parser allocations/bytes and JSON size/marshal cost on comment-free,
 comment-heavy and detached-comment inputs. Do not present this contract as an
-optimization. Source spans exclude comments; diagnostic token positions remain
-separate. Package metadata representation and the dedicated diagnostic-position
-field must be settled during implementation. Raw markers and comments with no
-normalized owner remain formatter trivia and are not preserved by JSON.
+optimization. The paired harness called `ParseGrammar`; the permanent
+`BenchmarkSourceMetadata` uses the same inputs with the underlying source
+parser. The baseline binary was built from 54551c2 before comparison, and the
+candidate binary used the current source. The repository self-grammar
+input has SHA-256
+`5d66963a879cffe2de44165b4d47cef2487361e07f265807eb1f440c958d0b56`. Five
+alternating paired samples used Go 1.27.1 on darwin/arm64, Apple M3 Max,
+`GOMAXPROCS=16`, with 500 ms per sample. The medians and pretty-formatted JSON
+sizes were:
 
-This record is Proposed. The focused fixture validates grammar-level boundary
-and selected owner construction only; public Go metadata, JSON serialization,
-formatter migration and the canonical root grammar remain unimplemented.
+| Input | Source bytes | Parse ns/op before → after | B/op before → after | Allocs/op before → after | JSON bytes before → after |
+|:--|--:|--:|--:|--:|--:|
+| Small grammar | 26 | 1,290 → 1,401 | 2,488 → 3,080 | 19 → 19 | 423 → 1,408 |
+| Root `pego.pego` | 22,964 | 964,262 → 1,204,372 | 2,919,964 → 3,304,963 | 8,338 → 8,409 | 287,710 → 1,050,989 |
+| Commented grammar (64 rules) | 5,848 | 79,332 → 103,200 | 138,608 → 175,768 | 1,172 → 2,068 | 8,527 → 44,612 |
+
+These descriptive medians quantify source-parser and serialized-size costs for
+the tested inputs; they are not a statistical-significance claim. They do not
+measure parsing user input, JSON marshal latency, or runtime speed. Source spans
+exclude leading/trailing boundary comments but include comments inside their
+continuous interval; `DiagnosticPos` preserves a diagnostic token when it
+differs from the span start. The package clause uses `PackageSource` while
+retaining `Package` as its existing string field; the Operators Rule skip
+clause uses `SkipSource`. Raw markers and comments with no normalized owner
+remain formatter trivia and are not preserved by JSON.
+
+The common public metadata shape, manual-parser ownership and spans, normalized
+JSON fields, and `Grammar.Clone()` are implemented and validated. The full root
+suite, dedicated metadata tests, parser generation/tests, site tests/build and
+independent review pass. The boundary fixture validates grammar-level boundary
+and selected owner construction only. Construction in the canonical
+`pego.pego` grammar, transparent Type/Action grouping source forms, and
+complete formatter owner-path migration remain follow-up scope. Keep the
+overall record Proposed until those remaining parts of the contract are
+implemented and validated.

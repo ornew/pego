@@ -753,40 +753,40 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 		if _, ok := s.slots[t.Name]; !ok {
 			for o := s.outer; o != nil; o = o.outer {
 				if _, ok := o.slots[t.Name]; ok {
-					c.errorf(t.Pos, "capture $%s is not visible in a repetition element, which sees only its own captures; define a variable from it before the repetition", t.Name)
+					c.errorf(t.Diagnostic(), "capture $%s is not visible in a repetition element, which sees only its own captures; define a variable from it before the repetition", t.Name)
 					return
 				}
 			}
-			c.errorf(t.Pos, "undefined capture $%s", t.Name)
+			c.errorf(t.Diagnostic(), "undefined capture $%s", t.Name)
 		}
 	case *grammar.IndexRef:
 		if c.noIndex != "" {
-			c.errorf(t.Pos, "$%d cannot be used in %s", t.Index, c.noIndex)
+			c.errorf(t.Diagnostic(), "$%d cannot be used in %s", t.Index, c.noIndex)
 		}
 	case *grammar.Member:
 		c.checkTerm(t.X, s, locals)
 	case *grammar.New:
 		_, st := c.prog.structType(t.Type)
 		if st == nil {
-			c.errorf(t.Pos, "%s is not a struct type", t.Type)
+			c.errorf(t.Diagnostic(), "%s is not a struct type", t.Type)
 		}
 		seen := map[string]bool{}
 		for _, fi := range t.Fields {
 			if seen[fi.Name] {
-				c.errorf(fi.Pos, "duplicate field %s", fi.Name)
+				c.errorf(fi.Diagnostic(), "duplicate field %s", fi.Name)
 			}
 			seen[fi.Name] = true
 			if st != nil && fieldOf(st, fi.Name) == nil {
-				c.errorf(fi.Pos, "%s has no field %s", t.Type, fi.Name)
+				c.errorf(fi.Diagnostic(), "%s has no field %s", t.Type, fi.Name)
 			}
 			c.checkTerm(fi.Value, s, locals)
 		}
 	case *grammar.Call:
 		n, ok := builtins[t.Func]
 		if !ok {
-			c.errorf(t.Pos, "unknown function %s", t.Func)
+			c.errorf(t.Diagnostic(), "unknown function %s", t.Func)
 		} else if n >= 0 && n != len(t.Args) {
-			c.errorf(t.Pos, "%s takes %d arguments, got %d", t.Func, n, len(t.Args))
+			c.errorf(t.Diagnostic(), "%s takes %d arguments, got %d", t.Func, n, len(t.Args))
 		}
 		for _, a := range t.Args {
 			c.checkTerm(a, s, locals)
@@ -799,7 +799,7 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 	case *grammar.Unary:
 		c.checkTerm(t.X, s, locals)
 	case *grammar.Assign:
-		c.errorf(t.Pos, "assignment %s = ... is only allowed as a whole predicate", t.Name)
+		c.errorf(t.Diagnostic(), "assignment %s = ... is only allowed as a whole predicate", t.Name)
 	}
 }
 

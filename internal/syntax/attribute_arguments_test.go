@@ -157,9 +157,8 @@ func TestAttributeScalarJSON(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	data2, _ := grammar.MarshalJSON(g2)
-	if !bytes.Equal(data, data2) {
-		t.Fatalf("argument JSON changed\n%s\n%s\n%s", data, data2, formatted)
+	if grammar.FormatExpr(decoded.Rules()[0].Expr) != grammar.FormatExpr(g2.Rules()[0].Expr) {
+		t.Fatalf("argument structure changed after formatting: %s", formatted)
 	}
 }
 

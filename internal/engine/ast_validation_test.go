@@ -37,7 +37,7 @@ func TestCompileMalformedAST(t *testing.T) {
 }
 
 func TestMalformedASTEntryPointsAndPosition(t *testing.T) {
-	e := &grammar.Optional{Pos: grammar.Pos{Line: 3, Col: 4}}
+	e := &grammar.Optional{SourceInfo: grammar.SourceInfo{Pos: grammar.Pos{Line: 3, Col: 4}}}
 	e.Expr = e
 	g := &grammar.Grammar{Statements: []grammar.Statement{&grammar.RuleDef{Name: "p", Expr: e}}}
 	for name, run := range map[string]func() error{

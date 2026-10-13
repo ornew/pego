@@ -179,7 +179,7 @@ func (l *linter) report(check string, sev Severity, pos grammar.Pos, fix, format
 	if l.rule != nil {
 		f.Rule = l.rule.Name
 		if !f.Pos.IsValid() {
-			f.Pos = l.rule.Pos
+			f.Pos = l.rule.Diagnostic()
 		}
 	}
 	l.findings = append(l.findings, f)

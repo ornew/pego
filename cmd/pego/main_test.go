@@ -129,8 +129,8 @@ func TestConvert(t *testing.T) {
 	if err != nil || !strings.Contains(js, `"package": "kv"`) {
 		t.Fatalf("got %q, %v", js, err)
 	}
-	if strings.Contains(js, "pair") {
-		t.Errorf("comments leaked into JSON:\n%s", js)
+	if !strings.Contains(js, `"leadingComments": " key-value pairs\n"`) || strings.Contains(js, "//") {
+		t.Errorf("normalized comments missing or raw markers serialized:\n%s", js)
 	}
 	jg := writeFile(t, "kv.json", js)
 	// JSON converts to PEGO source by default, and to JSON with -to json.

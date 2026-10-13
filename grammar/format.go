@@ -27,7 +27,7 @@ func Format(g *Grammar) string {
 	}
 	if g.Package != "" {
 		p.lineBreak(g.PackageBreak, "", false)
-		p.header("package", g.PackagePos)
+		p.header("package", g.PackageSource.Pos)
 		p.write(" " + g.Package)
 	}
 	for _, s := range g.Statements {

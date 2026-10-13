@@ -49,11 +49,11 @@ func (l *linter) unreachable(start string) {
 		}
 		fix := "remove the rule, or call it from a rule that " + start + " reaches"
 		if cs := callers[r.Name]; len(cs) > 0 {
-			l.report(CheckUnreachableRule, Warning, r.Pos, fix,
+			l.report(CheckUnreachableRule, Warning, r.Diagnostic(), fix,
 				"rule %s is never used: only %s, which %s does not reach either, call it", r.Name, strings.Join(cs, ", "), start)
 			return
 		}
-		l.report(CheckUnreachableRule, Warning, r.Pos, fix, "rule %s is never used: %s does not call it, directly or indirectly", r.Name, start)
+		l.report(CheckUnreachableRule, Warning, r.Diagnostic(), fix, "rule %s is never used: %s does not call it, directly or indirectly", r.Name, start)
 	})
 }
 
@@ -208,9 +208,9 @@ func (l *linter) shadowedOperators(pr *grammar.OperatorsRule, acrossLevels bool)
 			if prefix(oi) != prefix(oj) || (!acrossLevels && oi.level != oj.level) || !same(oi.Expr, oj.Expr, true) {
 				continue
 			}
-			l.report(CheckShadowedAlt, Error, oj.Pos, "remove it, or merge the two operators",
+			l.report(CheckShadowedAlt, Error, oj.Diagnostic(), "remove it, or merge the two operators",
 				"%s operator %s is never selected: the %s operator%s matches the same text and is declared first",
-				oj.Kind, show(oj.Expr), oi.Kind, at(oi.Pos))
+				oj.Kind, show(oj.Expr), oi.Kind, at(oi.Diagnostic()))
 			break
 		}
 	}
@@ -304,7 +304,7 @@ func (l *linter) neverMatches() {
 		if len(group) > 1 {
 			what = "one of " + strings.Join(group, ", ")
 		}
-		l.report(CheckNeverMatches, Error, r.Pos, "add an alternative that does not recurse (a base case)",
+		l.report(CheckNeverMatches, Error, r.Diagnostic(), "add an alternative that does not recurse (a base case)",
 			"rule %s can never match: every match of it would contain a match of %s, so the recursion has no base case",
 			r.Name, what)
 	})
@@ -404,16 +404,16 @@ func (l *linter) lookaheads() {
 			case *grammar.And:
 				// Captures in a positive lookahead stay in effect, so it may be there for them.
 				if !hasCaptures(e.Expr) && a.succeeds(e.Expr) {
-					l.report(CheckUselessLookahead, Warning, e.Pos, "remove the lookahead",
+					l.report(CheckUselessLookahead, Warning, e.Diagnostic(), "remove the lookahead",
 						"%s always succeeds, because %s always does: the lookahead has no effect", show(e), show(e.Expr))
 				}
 			case *grammar.Not:
 				switch {
 				case a.succeeds(e.Expr):
-					l.report(CheckUselessLookahead, Error, e.Pos, "negate an expression that must consume input",
+					l.report(CheckUselessLookahead, Error, e.Diagnostic(), "negate an expression that must consume input",
 						"%s can never succeed, because %s always does (it can match without consuming input)", show(e), show(e.Expr))
 				case !a.mayMatch(e.Expr):
-					l.report(CheckUselessLookahead, Warning, e.Pos, "remove the lookahead",
+					l.report(CheckUselessLookahead, Warning, e.Diagnostic(), "remove the lookahead",
 						"%s always succeeds, because %s can never match", show(e), show(e.Expr))
 				}
 			}
@@ -465,7 +465,7 @@ func (l *linter) nullableRepetitions() {
 					fix = fmt.Sprintf("repeat %s once, without the inner repetition", show(inner.Expr))
 				}
 			}
-			l.report(CheckNullableRepetition, Warning, rp.Pos, fix,
+			l.report(CheckNullableRepetition, Warning, rp.Diagnostic(), fix,
 				"the element of %s can match without consuming input: the repetition then stops, with an empty element in its list",
 				show(rp))
 		})
@@ -478,7 +478,7 @@ func (l *linter) redundantOptionals() {
 		walkExpr(r.Expr, func(e grammar.Expr) {
 			// x? has a value (nil) even where x has none, so only an x with a value is the same.
 			if o, ok := e.(*grammar.Optional); ok && visible(o.Expr) && a.succeeds(o.Expr) {
-				l.report(CheckRedundantOptional, Warning, o.Pos, "remove the ?",
+				l.report(CheckRedundantOptional, Warning, o.Diagnostic(), "remove the ?",
 					"%s is the same as %s, which always succeeds", show(o), show(o.Expr))
 			}
 		})
@@ -532,7 +532,7 @@ func (l *linter) scopeCaptures(body grammar.Expr, action grammar.Term, kept bool
 		switch e := analysisExpr(e).(type) {
 		case *grammar.Capture:
 			if !refs[e.Name] {
-				l.report(CheckUnusedCapture, Warning, e.Pos, fmt.Sprintf("remove %s:, or use $%s", e.Name, e.Name),
+				l.report(CheckUnusedCapture, Warning, e.Diagnostic(), fmt.Sprintf("remove %s:, or use $%s", e.Name, e.Name),
 					"capture %s is never used: %s", e.Name, why)
 			}
 			visit(e.Expr, true)
@@ -555,7 +555,7 @@ func (l *linter) elementCaptures(elem grammar.Expr, kept bool) {
 		switch e := analysisExpr(e).(type) {
 		case *grammar.Capture:
 			if !kept && !refs[e.Name] {
-				l.report(CheckUnusedCapture, Warning, e.Pos, fmt.Sprintf("remove %s:, or capture the repetition and use it", e.Name),
+				l.report(CheckUnusedCapture, Warning, e.Diagnostic(), fmt.Sprintf("remove %s:, or capture the repetition and use it", e.Name),
 					"capture %s is never used: the value of the repetition it is in is discarded", e.Name)
 			}
 			visit(e.Expr, true)
@@ -682,8 +682,8 @@ func (l *linter) scopeDuplicates(scope grammar.Expr) {
 			case i < 0:
 				acc = append(acc, c)
 			case report:
-				l.report(CheckDuplicateCapture, Warning, c.Pos, "rename one of the captures",
-					"%s is captured again in the same match, overwriting the capture%s", c.Name, at(acc[i].Pos))
+				l.report(CheckDuplicateCapture, Warning, c.Diagnostic(), "rename one of the captures",
+					"%s is captured again in the same match, overwriting the capture%s", c.Name, at(acc[i].Diagnostic()))
 			}
 		}
 		return acc
@@ -740,7 +740,7 @@ func (l *linter) charClass(c *grammar.CharClass) {
 				if ri == rj {
 					what = fmt.Sprintf("%s is listed twice", show(rj))
 				}
-				l.report(CheckCharClass, Warning, c.Pos, "write "+grammar.FormatExpr(fixed),
+				l.report(CheckCharClass, Warning, c.Diagnostic(), "write "+grammar.FormatExpr(fixed),
 					"in %s, %s", grammar.FormatExpr(c), what)
 				return
 			}
@@ -781,7 +781,7 @@ func (l *linter) charClass(c *grammar.CharClass) {
 	}
 	if len(spans) > 0 {
 		fix := &grammar.CharClass{Negated: c.Negated, Ranges: ranges}
-		l.report(CheckCharClass, Warning, c.Pos, "write "+grammar.FormatExpr(fix)+" if only letters and digits are meant",
+		l.report(CheckCharClass, Warning, c.Diagnostic(), "write "+grammar.FormatExpr(fix)+" if only letters and digits are meant",
 			"in %s, %s", grammar.FormatExpr(c), strings.Join(spans, ", "))
 	}
 }
@@ -835,7 +835,7 @@ func (l *linter) rightRecursion() {
 		}
 		tails(r.Expr, nil)
 		if found != nil {
-			l.report(CheckRightRecursion, Hint, found.Pos, "use a repetition, such as item+ or item (sep item)*",
+			l.report(CheckRightRecursion, Hint, found.Diagnostic(), "use a repetition, such as item+ or item (sep item)*",
 				"rule %s continues a list by calling itself at its end: each call spans the rest of the list, so after an edit "+
 					"a Document evaluates again every call that begins before it, and long lists nest deeply", r.Name)
 		}
@@ -955,7 +955,7 @@ func positionRead(r *grammar.RuleDef) (grammar.Pos, bool) {
 			}
 		})
 		if found != nil {
-			return found.Pos, true
+			return found.Diagnostic(), true
 		}
 	}
 	return grammar.Pos{}, false
@@ -970,9 +970,9 @@ func (l *linter) longLookaheads() {
 			var pos grammar.Pos
 			switch e := analysisExpr(e).(type) {
 			case *grammar.And:
-				inner, pos = e.Expr, e.Pos
+				inner, pos = e.Expr, e.Diagnostic()
 			case *grammar.Not:
-				inner, pos = e.Expr, e.Pos
+				inner, pos = e.Expr, e.Diagnostic()
 			default:
 				return
 			}

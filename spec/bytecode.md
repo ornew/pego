@@ -303,7 +303,7 @@ A module is stored in the `.pegoc` version 2 format. Integers are variable-lengt
 | Start rule | String index, unsigned (the empty string means no default start rule) |
 | Package name | String index, unsigned |
 | Module | See below |
-| AST present | Boolean. If true, the grammar AST and the static-analysis results follow (including, per rule, whether it may have a value-free twin). These serve the closure backend and the formatter of the reference implementation; a runtime may skip them. |
+| AST present | Boolean. If true, the grammar AST and the static-analysis results follow (including, per rule, whether it may have a value-free twin). These serve the closure backend and the formatter of the reference implementation; a runtime may skip them. The AST codec does not serialize source positions, normalized comment ownership, or formatter trivia. |
 | Checksum | CRC-32 (IEEE) of everything from the magic up to this point, 4 bytes little-endian |
 
 The module is laid out in the following order. A *list* is a count (unsigned) followed by its elements. Indices, positions and other integers inside the module are signed unless stated otherwise.

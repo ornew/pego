@@ -56,7 +56,7 @@ func TestValidateUnicodeRanges(t *testing.T) {
 }
 
 func TestUnicodeRangeErrorPosition(t *testing.T) {
-	e := &CharClass{Pos: Pos{Line: 3, Col: 7}, Ranges: []CharRange{{Lo: 0xd800, Hi: 0xdfff}}}
+	e := &CharClass{SourceInfo: SourceInfo{Pos: Pos{Line: 3, Col: 7}}, Ranges: []CharRange{{Lo: 0xd800, Hi: 0xdfff}}}
 	err := Validate(expressionGrammar(e))
 	assertValidationError(t, err, "$.statements[0].expr.ranges[0].lo")
 	if e := err.(*ValidationError); e.Pos != (Pos{Line: 3, Col: 7}) || !strings.HasPrefix(e.Error(), "3:7:") {

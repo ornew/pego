@@ -21,9 +21,10 @@ if errors.As(err, &problem) {
 ```
 
 Import `errors`, `fmt` and `github.com/ornew/pego/grammar` for this snippet.
-`Path` uses JSON field names and zero-based indexes. `Pos` is the node's
-known source position, or the closest enclosing position; JSON does not
-serialize positions. `Msg` describes the problem.
+`Path` uses JSON field names and zero-based indexes. `Pos` is the closest known
+diagnostic position. Source-parsed grammars carry source spans and comment
+ownership in `SourceInfo`; hand-built nodes may leave those fields zero-valued.
+`Msg` describes the problem.
 
 Validation rejects a nil grammar, missing required children, nil entries in
 node collections, interfaces holding typed nil pointers, unsupported embedded
@@ -103,8 +104,9 @@ For example, a null struct field reports
 `$.statements[0].spec.fields[0]` rather than panicking during compilation.
 
 The representation uses the AST fields' `json` tags. Each interface node has
-an `"@type"` member, such as `"RuleDef"` or `"Literal"`; source positions and
-layout are omitted. Unknown fields are ignored and duplicate object keys
+an `"@type"` member, such as `"RuleDef"` or `"Literal"`. Parsed source metadata
+is serialized under `source`, `packageSource` or `skipSource`; formatter layout
+and exact comment tokens are omitted. Unknown fields are ignored and duplicate object keys
 follow `encoding/json`'s behavior. Use `grammar.DecodeJSON(data)` when the
 input should reject unknown fields and duplicate keys at every object. Its
 `*grammar.JSONDecodeError` reports a JSON path and zero-based byte offset for
@@ -120,7 +122,56 @@ values, including the native minimum, survive source formatting and parsing. Key
 follow positional arguments in source. Strict JSON decoding also rejects
 repeated keyword keys.
 
-Source-only syntax has dedicated AST nodes. An explicit PEG grouping is `Group{Expr}`; formatting and JSON preserve the group, while compilation normalizes it away before matching. Source-aware data also retains the group body, closing-delimiter comments and layout; JSON omits source layout and positions. A braced action sequence is `Block{Statements}`. Predicate Actions with one statement continue to use the existing `Predicate.Term` node and retain their existing executable semantics. Empty or multi-statement Predicate Action blocks and all braced Value Actions can be parsed, formatted and serialized, but semantic checking rejects them as unsupported; their statements do not execute.
+## Read Source Metadata
+
+Source-bearing grammar nodes embed `grammar.SourceInfo` and satisfy
+`grammar.SourceNode`, so tools can inspect metadata without a type switch:
+
+```go
+func report(n any) {
+    if sourced, ok := n.(grammar.SourceNode); ok {
+        source := sourced.Source()
+        fmt.Println(source.Pos, source.End, source.LeadingComments)
+        fmt.Println("diagnostic token:", source.Diagnostic())
+    }
+}
+```
+
+`Pos` and `End` are the node's half-open source span; `End` is exclusive. The
+span excludes leading and trailing comments owned at its boundaries, but
+includes comments inside that continuous source interval.
+`LeadingComments` and `TrailingComments` hold normalized text, and each entry
+in `LeadingDetachedComments` is one paragraph. Comment markers are removed;
+line endings and content whitespace are retained according to the grammar
+comment-normalization contract. `DiagnosticPos` preserves a diagnostic token
+that differs from the span start; `Diagnostic()` returns it when valid and
+otherwise returns `Pos`.
+
+The grammar root keeps its package name in `Package` and the clause metadata in
+`PackageSource`. An Operators Rule's `SkipSource` holds metadata for the whole
+skip clause, from its `skip` keyword through the expression. `Grammar.Clone()`
+returns an independent copy of the supported grammar AST and attribute
+argument values, including detached-comment slices.
+Shared AST subtrees remain shared within the clone, and AST pointer cycles are
+preserved for `grammar.Validate` to report. Arbitrary application objects or
+cyclic attribute maps and slices are outside the clone contract.
+
+`pego.ParseGrammar` returns the source AST with its source metadata. By
+contrast, `Parser.Grammar()` exposes the normalized grammar retained by the
+compiled parser. Normalization can lower groups and pragmas, so that grammar is
+not a complete record of source documentation ownership.
+
+JSON stores normalized source ownership, not raw formatter trivia or layout.
+An AST decoded from JSON therefore cannot promise lossless source formatting.
+Keep the original parsed AST when a tool needs to preserve exact comment
+placement.
+
+Direct grammar JSON includes normalized source metadata. The current `.pegoc`
+AST codec does not serialize source positions or comments, so an AST-bearing
+compiled grammar preserves the executable tree but not source-documentation
+ownership. This behavior does not change the `.pegoc` format.
+
+Source-only syntax has dedicated AST nodes. An explicit PEG grouping is `Group{Expr}`; formatting and JSON preserve the group, while compilation normalizes it away before matching. The source-aware AST retains the group body, closing-delimiter comments and layout. JSON retains normalized source positions and ownership but omits formatter layout and exact raw comment tokens. A braced action sequence is `Block{Statements}`. Predicate Actions with one statement continue to use the existing `Predicate.Term` node and retain their existing executable semantics. Empty or multi-statement Predicate Action blocks and all braced Value Actions can be parsed, formatted and serialized, but semantic checking rejects them as unsupported; their statements do not execute.
 
 Source `#` pragmas use dedicated expression nodes: `#repeat` is `Repeat`,
 `#atomic` is `Atomic`, `#recover` is `Recovery`, and `#stream` is `Stream`.

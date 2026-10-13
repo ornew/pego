@@ -4,6 +4,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -78,7 +79,9 @@ func checkFormat(t *testing.T, src string) string {
 
 func mustJSON(t *testing.T, g *grammar.Grammar) string {
 	t.Helper()
-	data, err := grammar.MarshalJSON(g)
+	copy := g.Clone()
+	stripSource(reflect.ValueOf(copy))
+	data, err := grammar.MarshalJSON(copy)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -302,33 +305,58 @@ rule b = p / q // two
 	}
 }
 
-// Comments and layout are not part of the JSON form of a grammar.
-func TestCommentsNotInJSON(t *testing.T) {
-	withComments := `// file
-package p // pkg
+// Normalized owned comments are serialized; formatter trivia is not.
+func TestCommentsAndSourceInfoInJSON(t *testing.T) {
+	g, err := Parse("// file\npackage p // pkg\nrule main = \"x\" // result\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := grammar.MarshalJSON(g)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), `"leadingComments": " file\n"`) || !strings.Contains(string(data), `"trailingComments": " result\n"`) {
+		t.Fatalf("owned comments absent: %s", data)
+	}
+	if strings.Contains(string(data), "// file") || strings.Contains(string(data), "PackageBreak") {
+		t.Fatalf("formatter trivia serialized: %s", data)
+	}
+	decoded, err := grammar.UnmarshalJSON(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if decoded.PackageSource.LeadingComments != " file\n" || decoded.Rules()[0].TrailingComments != " result\n" {
+		t.Fatal("owned comments lost")
+	}
+}
 
-type A struct { // a
-    X B // x
-}
-rule r = ( // r
-    a
-    / b
-) => $0              // act
-rule e = operators { // e
-    operand x // x
-}
-`
-	plain := "package p\ntype A struct { X B }\nrule r = (a / b) => $0\nrule e = operators {\n    operand x\n}\n"
-	g1, err := Parse(withComments)
-	if err != nil {
-		t.Fatal(err)
+// Source coordinates and documentation do not change executable AST structure.
+func stripSource(v reflect.Value) {
+	if !v.IsValid() {
+		return
 	}
-	g2, err := Parse(plain)
-	if err != nil {
-		t.Fatal(err)
+	if v.Type() == reflect.TypeFor[grammar.SourceInfo]() {
+		v.SetZero()
+		return
 	}
-	if a, b := mustJSON(t, g1), mustJSON(t, g2); a != b {
-		t.Errorf("JSON differs:\n%s\n---\n%s", a, b)
+	switch v.Kind() {
+	case reflect.Pointer, reflect.Interface:
+		if !v.IsNil() {
+			stripSource(v.Elem())
+		}
+	case reflect.Struct:
+		for i := 0; i < v.NumField(); i++ {
+			stripSource(v.Field(i))
+		}
+	case reflect.Slice:
+		for i := 0; i < v.Len(); i++ {
+			stripSource(v.Index(i))
+		}
+	case reflect.Map:
+		iter := v.MapRange()
+		for iter.Next() {
+			stripSource(iter.Value())
+		}
 	}
 }
 

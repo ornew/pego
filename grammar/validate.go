@@ -11,7 +11,7 @@ import (
 
 // ValidationError describes a structural defect in a grammar AST. Path uses
 // JSON field names and zero-based array indexes. Pos is the closest known
-// source position; JSON grammars do not carry positions.
+// diagnostic position, when the AST carries source information.
 type ValidationError struct {
 	Path string
 	Pos  Pos
@@ -65,10 +65,8 @@ func Validate(g *Grammar) error {
 			// reflect over fields or allocate a string for every visited node.
 			v := reflect.ValueOf(f.node)
 			if v.IsValid() && v.Kind() == reflect.Pointer && !v.IsNil() && v.Type().Elem().PkgPath() == reflect.TypeFor[Grammar]().PkgPath() {
-				if p := v.Elem().FieldByName("Pos"); p.IsValid() {
-					if p, ok := p.Interface().(Pos); ok && p.IsValid() {
-						pos = p
-					}
+				if n, ok := f.node.(SourceNode); ok && n.Source().Diagnostic().IsValid() {
+					pos = n.Source().Diagnostic()
 				}
 			}
 		}

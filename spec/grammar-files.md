@@ -41,6 +41,33 @@ affect parsing. The reference implementation records it, writes it back when
 it formats the grammar, and stores it in compiled grammars; the package name
 of generated Go code is given when the code is generated.
 
+### Grammar AST Source Metadata
+
+Source-bearing public grammar nodes expose a `SourceInfo` with `Pos` and `End`
+for one continuous half-open source interval. The interval excludes leading
+and trailing comments owned at its boundaries but includes comments inside it.
+The metadata also includes normalized `LeadingComments`,
+`TrailingComments` and `LeadingDetachedComments`, and an optional
+`DiagnosticPos`. `End` is exclusive. `Diagnostic()` returns `DiagnosticPos`
+when present and otherwise `Pos`, preserving token-specific error locations
+when the span begins earlier. Each such node provides `Source() *SourceInfo`
+and implements `SourceNode` for generic inspection. Programmatically built AST
+nodes may leave source metadata zero-valued.
+
+`Grammar.Package` remains the package name; `Grammar.PackageSource` carries the
+package clause metadata. `OperatorsRule.SkipSource` carries metadata for the
+whole skip clause, from the `skip` keyword through its expression.
+`Grammar.Clone()` deep-copies source metadata, including
+detached-comment storage; `SourceInfo` itself does not expose a clone method.
+
+Normalized ownership is serialized in explicit `source`, `packageSource` and
+`skipSource` objects. Exact comment tokens and formatter layout are not part of
+those objects. JSON-decoded grammar ASTs therefore do not guarantee lossless
+source formatting. Normalized comment strings preserve content whitespace and
+line endings; each detached entry is one paragraph. Older JSON may omit these
+metadata objects. Comment grouping and node ownership follow the
+[source-metadata contract](../docs/design/057-source-info-and-comment-ownership.md).
+
 ### Type Definitions
 
 A type definition (`type`) defines a node type: a struct type, a union or alias
@@ -141,6 +168,11 @@ and, optionally, the tree (see [File Format](bytecode.md#file-format)). All
 representations describe the same language. The `pego convert` command
 converts between them, and `pego fmt` formats `.pego` source files, keeping
 comments.
+
+Direct grammar JSON can preserve normalized source positions and comment
+ownership. The optional AST in the current `.pegoc` format does not encode that
+metadata or formatter trivia; it preserves the compiled grammar tree only.
+This distinction does not change the `.pegoc` format or version.
 
 JSON decoding requires one complete document and rejects trailing
 non-whitespace data. JSON and hand-built ASTs must have nonnil required

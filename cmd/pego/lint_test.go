@@ -79,7 +79,7 @@ func TestLintJSON(t *testing.T) {
 }
 
 func TestLintOtherGrammars(t *testing.T) {
-	// A grammar in JSON has no positions: findings are reported with the file name only.
+	// Source-derived JSON retains coordinates from the original grammar source.
 	g := writeFile(t, "g.pego", "rule main = \"a\"\nrule x = \"b\"")
 	j := filepath.Join(t.TempDir(), "g.json")
 	if _, err := runCLI(t, "", "convert", "-o", j, g); err != nil {
@@ -89,7 +89,7 @@ func TestLintOtherGrammars(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := j + ": warning: rule x is never used: main does not call it, directly or indirectly [unreachable-rule]\n"; !strings.HasPrefix(out, want) {
+	if want := j + ":2:1: warning: rule x is never used: main does not call it, directly or indirectly [unreachable-rule]\n"; !strings.HasPrefix(out, want) {
 		t.Errorf("got\n%s\nwant\n%s", out, want)
 	}
 

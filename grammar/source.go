@@ -1,0 +1,36 @@
+package grammar
+
+// SourceInfo holds the syntax span and documentation owned by an AST node.
+// Pos and End are 1-based rune positions; End is exclusive. The span excludes
+// comments outside the node. Zero positions indicate unavailable source data.
+//
+// Comment strings omit their markers and preserve content and line endings.
+// LeadingDetachedComments contains separate paragraphs before the node.
+// Formatter comment tokens and layout are stored separately.
+type SourceInfo struct {
+	Pos                     Pos      `json:"pos,omitempty"`
+	End                     Pos      `json:"end,omitempty"`
+	LeadingComments         string   `json:"leadingComments,omitempty"`
+	TrailingComments        string   `json:"trailingComments,omitempty"`
+	LeadingDetachedComments []string `json:"leadingDetachedComments,omitempty"`
+	// DiagnosticPos identifies a diagnostic token when it differs from Pos,
+	// such as an operator inside a binary expression.
+	DiagnosticPos Pos `json:"diagnosticPos,omitempty"`
+}
+
+// Source returns mutable source information. Embedding SourceInfo makes this
+// method available on all source-bearing grammar nodes.
+func (s *SourceInfo) Source() *SourceInfo { return s }
+
+// Diagnostic returns the diagnostic token position, falling back to Pos.
+func (s SourceInfo) Diagnostic() Pos {
+	if s.DiagnosticPos.IsValid() {
+		return s.DiagnosticPos
+	}
+	return s.Pos
+}
+
+// SourceNode is implemented by source-bearing grammar nodes.
+type SourceNode interface {
+	Source() *SourceInfo
+}

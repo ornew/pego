@@ -10,8 +10,8 @@ import "sort"
 // Pos is a 1-based position in the source. The zero value means that the
 // position is unknown.
 type Pos struct {
-	Line int
-	Col  int
+	Line int `json:"line"`
+	Col  int `json:"col"`
 }
 
 // IsValid reports whether the position is known.
@@ -19,14 +19,15 @@ func (p Pos) IsValid() bool { return p.Line > 0 }
 
 // Grammar is a whole grammar.
 type Grammar struct {
+	SourceInfo `json:"source,omitempty"`
 	Package    string      `json:"package,omitempty"`
 	Statements []Statement `json:"statements"`
 
 	// PackageBreak holds the comments before the package clause, and
 	// EndBreak those at the end of the file (see LineBreak).
-	PackagePos   Pos        `json:"-"`
-	PackageBreak *LineBreak `json:"-"`
-	EndBreak     *LineBreak `json:"-"`
+	PackageSource SourceInfo `json:"packageSource,omitempty"`
+	PackageBreak  *LineBreak `json:"-"`
+	EndBreak      *LineBreak `json:"-"`
 	// HeaderComments records source comments inside statement headers.
 	// Parsing accepts them as trivia; compilation rejects their placement.
 	HeaderComments []*Comment `json:"-"`
@@ -59,9 +60,9 @@ type Statement interface{ statement() }
 
 // TypeDef is a type definition (type Name Spec).
 type TypeDef struct {
-	Pos  Pos      `json:"-"`
-	Name string   `json:"name"`
-	Spec TypeSpec `json:"spec"`
+	SourceInfo `json:"source,omitempty"`
+	Name       string   `json:"name"`
+	Spec       TypeSpec `json:"spec"`
 
 	// Break holds the comments before the definition. When it is nil,
 	// Format separates the definition from the previous one with a blank
@@ -71,11 +72,11 @@ type TypeDef struct {
 
 // RuleDef is a rule definition (rule Name Type = Expr => Action).
 type RuleDef struct {
-	Pos    Pos      `json:"-"`
-	Name   string   `json:"name"`
-	Type   TypeExpr `json:"type,omitempty"`
-	Expr   Expr     `json:"expr"`
-	Action Term     `json:"action,omitempty"`
+	SourceInfo `json:"source,omitempty"`
+	Name       string   `json:"name"`
+	Type       TypeExpr `json:"type,omitempty"`
+	Expr       Expr     `json:"expr"`
+	Action     Term     `json:"action,omitempty"`
 	// DefaultAction preserves an explicit => ...; it has the same value
 	// semantics as an omitted action.
 	DefaultAction bool `json:"defaultAction,omitempty"`
@@ -101,7 +102,8 @@ type TypeSpec interface{ typeSpec() }
 
 // StructSpec is a struct type.
 type StructSpec struct {
-	Fields []*Field `json:"fields"`
+	SourceInfo `json:"source,omitempty"`
+	Fields     []*Field `json:"fields"`
 
 	// OneLine writes the struct on one line ("struct { A T, B U }").
 	OneLine bool `json:"-"`
@@ -111,20 +113,23 @@ type StructSpec struct {
 
 // Field is a field of a struct type.
 type Field struct {
-	Pos  Pos      `json:"-"`
-	Name string   `json:"name"`
-	Type TypeExpr `json:"type"`
+	SourceInfo `json:"source,omitempty"`
+	Name       string   `json:"name"`
+	Type       TypeExpr `json:"type"`
 
 	Break *LineBreak `json:"-"`
 }
 
 // AliasSpec is a type alias, including an alias of a union type.
 type AliasSpec struct {
-	Type TypeExpr `json:"type"`
+	SourceInfo `json:"source,omitempty"`
+	Type       TypeExpr `json:"type"`
 }
 
 // TerminalSpec is a terminal type.
-type TerminalSpec struct{}
+type TerminalSpec struct {
+	SourceInfo `json:"source,omitempty"`
+}
 
 func (*StructSpec) typeSpec()   {}
 func (*AliasSpec) typeSpec()    {}
@@ -135,23 +140,26 @@ type TypeExpr interface{ typeExpr() }
 
 // TypeRef is a reference to a type by name.
 type TypeRef struct {
-	Pos  Pos    `json:"-"`
-	Name string `json:"name"`
+	SourceInfo `json:"source,omitempty"`
+	Name       string `json:"name"`
 }
 
 // ListType is a list type []T.
 type ListType struct {
-	Elem TypeExpr `json:"elem"`
+	SourceInfo `json:"source,omitempty"`
+	Elem       TypeExpr `json:"elem"`
 }
 
 // OptionalType is an optional type *T.
 type OptionalType struct {
-	Elem TypeExpr `json:"elem"`
+	SourceInfo `json:"source,omitempty"`
+	Elem       TypeExpr `json:"elem"`
 }
 
 // UnionType is a union type T | U.
 type UnionType struct {
-	Types []TypeExpr `json:"types"`
+	SourceInfo `json:"source,omitempty"`
+	Types      []TypeExpr `json:"types"`
 }
 
 func (*TypeRef) typeExpr()      {}
@@ -167,17 +175,17 @@ type Expr interface{ expr() }
 // Ref is a call of a rule. If Level is set, the call parses only with
 // that level of the Operators Rule and the levels above it.
 type Ref struct {
-	Pos   Pos    `json:"-"`
-	Name  string `json:"name"`
-	Level string `json:"level,omitempty"`
+	SourceInfo `json:"source,omitempty"`
+	Name       string `json:"name"`
+	Level      string `json:"level,omitempty"`
 }
 
 // Literal is a string literal "...". Matching uses its decoded rune sequence:
 // malformed UTF-8 bytes become U+FFFD in both position units. Compilation and
 // generation derive matching data without changing Value.
 type Literal struct {
-	Pos   Pos    `json:"-"`
-	Value string `json:"value"`
+	SourceInfo `json:"source,omitempty"`
+	Value      string `json:"value"`
 }
 
 // CharRange is a character range [Lo, Hi].
@@ -189,19 +197,20 @@ type CharRange struct {
 
 // CharClass is a character class [...], or [^...] if Negated is set.
 type CharClass struct {
-	Pos     Pos         `json:"-"`
-	Ranges  []CharRange `json:"ranges"`
-	Negated bool        `json:"negated,omitempty"`
+	SourceInfo `json:"source,omitempty"`
+	Ranges     []CharRange `json:"ranges"`
+	Negated    bool        `json:"negated,omitempty"`
 }
 
 // Any matches any single character (.).
 type Any struct {
-	Pos Pos `json:"-"`
+	SourceInfo `json:"source,omitempty"`
 }
 
 // Seq is a sequence a b.
 type Seq struct {
-	Items []Expr `json:"items"`
+	SourceInfo `json:"source,omitempty"`
+	Items      []Expr `json:"items"`
 
 	// Breaks[i], when not nil, puts Items[i] on a new line. Format honors
 	// it only in the top-level sequences of a rule body.
@@ -210,7 +219,8 @@ type Seq struct {
 
 // Choice is an ordered choice a / b.
 type Choice struct {
-	Alts []Expr `json:"alts"`
+	SourceInfo `json:"source,omitempty"`
+	Alts       []Expr `json:"alts"`
 
 	// Breaks[i], when not nil, puts Alts[i] (with its "/") on a new line.
 	// Format honors it only in the top-level choice of a rule body.
@@ -220,7 +230,7 @@ type Choice struct {
 // Group preserves explicit parentheses and their source layout. It is
 // transparent to matching and value construction.
 type Group struct {
-	Pos        Pos        `json:"-"`
+	SourceInfo `json:"source,omitempty"`
 	Expr       Expr       `json:"expr"`
 	BodyBreak  *LineBreak `json:"-"`
 	CloseBreak *LineBreak `json:"-"`
@@ -231,7 +241,7 @@ type Group struct {
 // expression. Parsing and formatting are supported; compilation is not yet
 // implemented. DefaultAction denotes an explicit => ... instead of Action.
 type InlineAction struct {
-	Pos           Pos  `json:"-"`
+	SourceInfo    `json:"source,omitempty"`
 	Expr          Expr `json:"expr"`
 	Action        Term `json:"action,omitempty"`
 	DefaultAction bool `json:"defaultAction,omitempty"`
@@ -243,7 +253,7 @@ type InlineAction struct {
 // Pos is the position where the repeated expression begins (its opening
 // parenthesis, if it is parenthesized).
 type Repeat struct {
-	Pos         Pos        `json:"-"`
+	SourceInfo  `json:"source,omitempty"`
 	Expr        Expr       `json:"expr"`
 	Min         int        `json:"min"`
 	Max         int        `json:"max"`
@@ -253,96 +263,96 @@ type Repeat struct {
 // Optional is an optional expression a?. Its value is the value of a, or
 // nil. Pos is the position where a begins, as in Repeat.
 type Optional struct {
-	Pos  Pos  `json:"-"`
-	Expr Expr `json:"expr"`
+	SourceInfo `json:"source,omitempty"`
+	Expr       Expr `json:"expr"`
 }
 
 // And is a positive lookahead &a.
 type And struct {
-	Pos  Pos  `json:"-"`
-	Expr Expr `json:"expr"`
+	SourceInfo `json:"source,omitempty"`
+	Expr       Expr `json:"expr"`
 }
 
 // Not is a negative lookahead !a.
 type Not struct {
-	Pos  Pos  `json:"-"`
-	Expr Expr `json:"expr"`
+	SourceInfo `json:"source,omitempty"`
+	Expr       Expr `json:"expr"`
 }
 
 // Recovery runs Skip when Expr fails, preserving the existing recovery semantics.
 type Recovery struct {
-	Pos   Pos        `json:"-"`
-	Expr  Expr       `json:"expr"`
-	Skip  Expr       `json:"skip"`
-	Break *LineBreak `json:"-"`
+	SourceInfo `json:"source,omitempty"`
+	Expr       Expr       `json:"expr"`
+	Skip       Expr       `json:"skip"`
+	Break      *LineBreak `json:"-"`
 }
 
 // Stream hands repetition elements to the streaming parser's caller.
 type Stream struct {
-	Pos   Pos        `json:"-"`
-	Expr  Expr       `json:"expr"`
-	Break *LineBreak `json:"-"`
+	SourceInfo `json:"source,omitempty"`
+	Expr       Expr       `json:"expr"`
+	Break      *LineBreak `json:"-"`
 }
 
 // Atomic is an atomic expression a #atomic.
 type Atomic struct {
-	Pos   Pos        `json:"-"`
-	Expr  Expr       `json:"expr"`
-	Break *LineBreak `json:"-"`
+	SourceInfo `json:"source,omitempty"`
+	Expr       Expr       `json:"expr"`
+	Break      *LineBreak `json:"-"`
 }
 
 // Discard is a discarded expression -a.
 type Discard struct {
-	Pos  Pos  `json:"-"`
-	Expr Expr `json:"expr"`
+	SourceInfo `json:"source,omitempty"`
+	Expr       Expr `json:"expr"`
 }
 
 // Capture is a capture name:a.
 type Capture struct {
-	Pos  Pos    `json:"-"`
-	Name string `json:"name"`
-	Expr Expr   `json:"expr"`
+	SourceInfo `json:"source,omitempty"`
+	Name       string `json:"name"`
+	Expr       Expr   `json:"expr"`
 }
 
 // Cut is a cut --.
 type Cut struct {
-	Pos Pos `json:"-"`
+	SourceInfo `json:"source,omitempty"`
 }
 
 // Top is the top expression _.
 type Top struct {
-	Pos Pos `json:"-"`
+	SourceInfo `json:"source,omitempty"`
 }
 
 // Bottom is the bottom expression _|_.
 type Bottom struct {
-	Pos Pos `json:"-"`
+	SourceInfo `json:"source,omitempty"`
 }
 
 // BeginInput matches the beginning of the input (^^).
 type BeginInput struct {
-	Pos Pos `json:"-"`
+	SourceInfo `json:"source,omitempty"`
 }
 
 // EndInput matches the end of the input ($$).
 type EndInput struct {
-	Pos Pos `json:"-"`
+	SourceInfo `json:"source,omitempty"`
 }
 
 // BeginLine matches the beginning of a line (^).
 type BeginLine struct {
-	Pos Pos `json:"-"`
+	SourceInfo `json:"source,omitempty"`
 }
 
 // EndLine matches the end of a line ($).
 type EndLine struct {
-	Pos Pos `json:"-"`
+	SourceInfo `json:"source,omitempty"`
 }
 
 // Predicate is a predicate action { Term }. A Block term preserves syntax for
 // multiple statements, whose execution is not implemented.
 type Predicate struct {
-	Pos        Pos          `json:"-"`
+	SourceInfo `json:"source,omitempty"`
 	Term       Term         `json:"term"`
 	Breaks     []*LineBreak `json:"-"`
 	CloseBreak *LineBreak   `json:"-"`
@@ -351,8 +361,9 @@ type Predicate struct {
 
 // Attributed is an expression with postfix @ attributes and # pragmas.
 type Attributed struct {
-	Expr  Expr         `json:"expr"`
-	Attrs []*Attribute `json:"attrs"`
+	SourceInfo `json:"source,omitempty"`
+	Expr       Expr         `json:"expr"`
+	Attrs      []*Attribute `json:"attrs"`
 
 	// Breaks[i], when not nil, puts Attrs[i] on a new line. Format honors
 	// it only in the items of the top-level sequences of a rule body.
@@ -363,8 +374,8 @@ type Attributed struct {
 // Argument values are int, string, bool, nil, or parser expressions. Nil in
 // Args preserves an omitted positional slot, including a trailing slot.
 type Attribute struct {
-	Pos  Pos    `json:"-"`
-	Name string `json:"name"`
+	SourceInfo `json:"source,omitempty"`
+	Name       string `json:"name"`
 	// Pragma distinguishes behavioral # directives from @ attributes.
 	Pragma bool           `json:"pragma,omitempty"`
 	Args   []any          `json:"args,omitempty"`
@@ -411,11 +422,11 @@ func (a *Attribute) ExpressionArgs() []Expr {
 // OperatorsRule is the body of an operators rule declaration. It may appear only at the
 // top level of a rule body.
 type OperatorsRule struct {
-	Pos      Pos                     `json:"-"`
-	Skip     Expr                    `json:"skip,omitempty"`
-	SkipPos  Pos                     `json:"-"`
-	Operands []*OperatorsRuleOperand `json:"operands"`
-	Levels   []*OperatorsRuleLevel   `json:"levels"`
+	SourceInfo `json:"source,omitempty"`
+	Skip       Expr                    `json:"skip,omitempty"`
+	SkipSource SourceInfo              `json:"skipSource,omitempty"`
+	Operands   []*OperatorsRuleOperand `json:"operands"`
+	Levels     []*OperatorsRuleLevel   `json:"levels"`
 
 	// SkipBreak holds the comments before the skip line, and CloseBreak
 	// those before the closing brace.
@@ -425,7 +436,7 @@ type OperatorsRule struct {
 
 // OperatorsRuleOperand is an operand line.
 type OperatorsRuleOperand struct {
-	Pos           Pos  `json:"-"`
+	SourceInfo    `json:"source,omitempty"`
 	Expr          Expr `json:"expr"`
 	Action        Term `json:"action,omitempty"`
 	DefaultAction bool `json:"defaultAction,omitempty"`
@@ -436,9 +447,9 @@ type OperatorsRuleOperand struct {
 // OperatorsRuleLevel is a precedence level. Levels declared earlier bind more
 // loosely.
 type OperatorsRuleLevel struct {
-	Pos       Pos                      `json:"-"`
-	Name      string                   `json:"name,omitempty"`
-	Operators []*OperatorsRuleOperator `json:"operators"`
+	SourceInfo `json:"source,omitempty"`
+	Name       string                   `json:"name,omitempty"`
+	Operators  []*OperatorsRuleOperator `json:"operators"`
 
 	Break *LineBreak `json:"-"`
 	// OneLine writes the level on one line ("level { infix left "+" }").
@@ -463,7 +474,7 @@ const (
 
 // OperatorsRuleOperator is a declaration of an operator.
 type OperatorsRuleOperator struct {
-	Pos           Pos    `json:"-"`
+	SourceInfo    `json:"source,omitempty"`
 	Kind          string `json:"kind"`
 	Assoc         string `json:"assoc,omitempty"`
 	Expr          Expr   `json:"expr"`
@@ -508,103 +519,109 @@ type Term interface{ term() }
 
 // IntLit is an integer literal.
 type IntLit struct {
-	Value int `json:"value"`
+	SourceInfo `json:"source,omitempty"`
+	Value      int `json:"value"`
 }
 
 // StringLit is a string literal.
 type StringLit struct {
-	Value string `json:"value"`
+	SourceInfo `json:"source,omitempty"`
+	Value      string `json:"value"`
 }
 
 // BoolLit is a boolean literal, true or false.
 type BoolLit struct {
-	Value bool `json:"value"`
+	SourceInfo `json:"source,omitempty"`
+	Value      bool `json:"value"`
 }
 
 // NilLit is the empty value nil.
-type NilLit struct{}
+type NilLit struct {
+	SourceInfo `json:"source,omitempty"`
+}
 
 // CaptureRef is a reference $name to a capture or a lambda parameter.
 type CaptureRef struct {
-	Pos  Pos    `json:"-"`
-	Name string `json:"name"`
+	SourceInfo `json:"source,omitempty"`
+	Name       string `json:"name"`
 	// Pragma distinguishes behavioral # directives from @ attributes.
 	Pragma bool `json:"pragma,omitempty"`
 }
 
 // IndexRef is a positional reference $n. $0 is the list of all elements.
 type IndexRef struct {
-	Pos   Pos `json:"-"`
-	Index int `json:"index"`
+	SourceInfo `json:"source,omitempty"`
+	Index      int `json:"index"`
 }
 
 // VarRef is a reference name to a variable in a predicate.
 type VarRef struct {
-	Pos  Pos    `json:"-"`
-	Name string `json:"name"`
+	SourceInfo `json:"source,omitempty"`
+	Name       string `json:"name"`
 }
 
 // Member is a field reference x.Name.
 type Member struct {
-	Pos  Pos    `json:"-"`
-	X    Term   `json:"x"`
-	Name string `json:"name"`
+	SourceInfo `json:"source,omitempty"`
+	X          Term   `json:"x"`
+	Name       string `json:"name"`
 }
 
 // New creates a struct value: Type{Field: value, ...}.
 type New struct {
-	Pos    Pos          `json:"-"`
-	Type   string       `json:"type"`
-	Fields []*FieldInit `json:"fields,omitempty"`
+	SourceInfo `json:"source,omitempty"`
+	Type       string       `json:"type"`
+	Fields     []*FieldInit `json:"fields,omitempty"`
 }
 
 // FieldInit initializes a field of a struct value.
 type FieldInit struct {
-	Pos   Pos    `json:"-"`
-	Name  string `json:"name"`
-	Value Term   `json:"value"`
+	SourceInfo `json:"source,omitempty"`
+	Name       string `json:"name"`
+	Value      Term   `json:"value"`
 }
 
 // Call is a call of a built-in function f(args...).
 type Call struct {
-	Pos  Pos    `json:"-"`
-	Func string `json:"func"`
-	Args []Term `json:"args"`
+	SourceInfo `json:"source,omitempty"`
+	Func       string `json:"func"`
+	Args       []Term `json:"args"`
 }
 
 // Lambda is a function (a, b) => body.
 type Lambda struct {
-	Params []string `json:"params"`
-	Body   Term     `json:"body"`
+	SourceInfo `json:"source,omitempty"`
+	Params     []string `json:"params"`
+	Body       Term     `json:"body"`
 }
 
 // Binary is a binary operation l op r.
 type Binary struct {
-	Pos Pos    `json:"-"`
-	Op  string `json:"op"`
-	L   Term   `json:"l"`
-	R   Term   `json:"r"`
+	SourceInfo `json:"source,omitempty"`
+	Op         string `json:"op"`
+	L          Term   `json:"l"`
+	R          Term   `json:"r"`
 }
 
 // Unary is a unary operation op x.
 type Unary struct {
-	Pos Pos    `json:"-"`
-	Op  string `json:"op"`
-	X   Term   `json:"x"`
+	SourceInfo `json:"source,omitempty"`
+	Op         string `json:"op"`
+	X          Term   `json:"x"`
 }
 
 // Assign defines a variable in a predicate action: name := value.
 type Assign struct {
-	Pos   Pos    `json:"-"`
-	Name  string `json:"name"`
-	Value Term   `json:"value"`
+	SourceInfo `json:"source,omitempty"`
+	Name       string `json:"name"`
+	Value      Term   `json:"value"`
 }
 
 // Block is a braced action statement list. The compiler rejects value-action
 // blocks and predicate-action blocks with other than one statement.
 // Single-statement predicate actions use Predicate.Term directly.
 type Block struct {
-	Pos        Pos          `json:"-"`
+	SourceInfo `json:"source,omitempty"`
 	Statements []Term       `json:"statements"`
 	Breaks     []*LineBreak `json:"-"`
 	CloseBreak *LineBreak   `json:"-"`
