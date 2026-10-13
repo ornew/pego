@@ -39,12 +39,16 @@ func TestSyntaxSummary(t *testing.T) {
 		t.Fatal(err)
 	}
 	blocks := pegoCodeBlocks(string(doc))
-	if len(blocks) != 1 {
-		t.Fatalf("syntax.md has %d pego code blocks, want 1", len(blocks))
+	if len(blocks) != 2 {
+		t.Fatalf("syntax.md has %d pego code blocks, want 2", len(blocks))
 	}
-	p, err := pego.CompileSource(blocks[0], "file")
-	if err != nil {
-		t.Fatalf("the grammar of syntax.md does not compile: %v", err)
+	var parsers []*pego.Parser
+	for i, block := range blocks {
+		p, err := pego.CompileSource(block, "file")
+		if err != nil {
+			t.Fatalf("grammar view %d does not compile: %v", i, err)
+		}
+		parsers = append(parsers, p)
 	}
 
 	check := func(name, src string) {
@@ -57,9 +61,11 @@ func TestSyntaxSummary(t *testing.T) {
 				}
 			}
 		}
-		_, err := p.Parse(src, pego.RecognizeOnly())
-		if (readErr == nil) != (err == nil) {
-			t.Errorf("%s: the reference parser says %v, the grammar of syntax.md says %v", name, readErr, err)
+		for i, p := range parsers {
+			_, err := p.Parse(src, pego.RecognizeOnly())
+			if (readErr == nil) != (err == nil) {
+				t.Errorf("%s view %d: reference says %v, syntax view says %v", name, i, readErr, err)
+			}
 		}
 	}
 

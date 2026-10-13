@@ -73,6 +73,26 @@ uses `-MaxInt - 1`, with parentheses where required: its absolute value cannot
 be a positive source token. Parsing the formatted grammar preserves the value,
 though that constant becomes a subtraction expression in the source AST.
 
+## Print a Simplified Syntax View
+
+Use `grammar.FormatSyntax(g)` for documentation that shows parsing syntax.
+It leaves the input AST unchanged and omits type declarations, result types,
+Value Actions, metadata attributes and recovery wrappers. Predicate Actions,
+captures and other matching pragmas remain, including `#repeat`, `#atomic`
+and `#stream`. `grammar.Format(g)` continues to print the full grammar.
+
+The command-line form writes to standard output:
+
+```bash
+pego fmt -syntax grammar.pego
+```
+
+`-syntax` cannot be combined with `-w` or `-l`. The view is not a replacement
+parser: predicates that depend on values constructed by omitted actions or
+types may require the full grammar. Returned values and recovery diagnostics
+are not preserved. Comments on retained forms follow the formatter's layout
+rules; comments attached only to omitted forms may be omitted.
+
 ## Load JSON
 
 `grammar.UnmarshalJSON(data)` accepts exactly one complete JSON value,

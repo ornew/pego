@@ -3,7 +3,7 @@
 // Usage:
 //
 //	pego parse -g grammar.pego [-s main] [-i input] [-f json|sexpr] [-stream] [-unit u] [-backend b]
-//	pego fmt [-w] [-l] [grammar.pego ...]
+//	pego fmt [-w] [-l] [-syntax] [grammar.pego ...]
 //	pego convert [-to pego|json] [-o output] grammar.pego|grammar.json|grammar.pegoc
 //	pego gen -g grammar.pego -pkg name [-s main] [-o parser.go] [-types] [-recognize] [-nodoc] [-max-depth n]
 //	pego gen -lang ts -g grammar.pego [-s main] [-o parser.ts] [-recognize]
@@ -42,10 +42,11 @@ Commands:
       Parse the input with a grammar and print the syntax tree. Without -i,
       the input is read from standard input.
 
-  fmt [-w] [-l] [<file.pego> ...]
+  fmt [-w] [-l] [-syntax] [<file.pego> ...]
       Format PEGO source files, keeping comments. Without files, standard
       input is formatted. -w rewrites the files in place; -l lists the
-      files whose formatting differs.
+      files whose formatting differs. -syntax prints a simplified syntax view
+      and cannot be combined with -w or -l.
 
   convert [-to pego|json] [-o <file>] <grammar>
       Convert a grammar between PEGO source and JSON. -to defaults to the
@@ -168,9 +169,13 @@ func fmtCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 	fs := flag.NewFlagSet("fmt", flag.ContinueOnError)
 	write := fs.Bool("w", false, "write the result to the file instead of standard output")
 	list := fs.Bool("l", false, "list the files whose formatting differs")
+	syntaxOnly := fs.Bool("syntax", false, "print a simplified grammar syntax view (cannot combine with -w or -l)")
 	files, err := parseFlags(fs, args)
 	if err != nil {
 		return err
+	}
+	if *syntaxOnly && (*write || *list) {
+		return errors.New("fmt: -syntax cannot be combined with -w or -l")
 	}
 	if len(files) == 0 {
 		if *write {
@@ -180,11 +185,11 @@ func fmtCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 		if err != nil {
 			return err
 		}
-		return formatSource("<standard input>", src, false, *list, stdout)
+		return formatSourceMode("<standard input>", src, false, *list, *syntaxOnly, stdout)
 	}
 	var errs []error
 	for _, path := range files {
-		if err := formatFile(path, *write, *list, stdout); err != nil {
+		if err := formatFileMode(path, *write, *list, *syntaxOnly, stdout); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -192,6 +197,10 @@ func fmtCmd(args []string, stdin io.Reader, stdout io.Writer) error {
 }
 
 func formatFile(path string, write, list bool, stdout io.Writer) error {
+	return formatFileMode(path, write, list, false, stdout)
+}
+
+func formatFileMode(path string, write, list, syntaxOnly bool, stdout io.Writer) error {
 	if filepath.Ext(path) != ".pego" {
 		return fmt.Errorf("%s: fmt formats only PEGO source files (.pego); use pego convert for JSON or compiled grammars", path)
 	}
@@ -199,13 +208,17 @@ func formatFile(path string, write, list bool, stdout io.Writer) error {
 	if err != nil {
 		return err
 	}
-	return formatSource(path, src, write, list, stdout)
+	return formatSourceMode(path, src, write, list, syntaxOnly, stdout)
 }
 
 // formatSource formats the PEGO source src read from name. It rewrites
 // name if write is set, lists name if list is set and the result differs
 // from src, and otherwise writes the result to stdout.
 func formatSource(name string, src []byte, write, list bool, stdout io.Writer) error {
+	return formatSourceMode(name, src, write, list, false, stdout)
+}
+
+func formatSourceMode(name string, src []byte, write, list, syntaxOnly bool, stdout io.Writer) error {
 	if pego.IsCompiled(src) {
 		return fmt.Errorf("%s: a compiled grammar is not PEGO source; use pego convert -to pego to print its source", name)
 	}
@@ -216,7 +229,12 @@ func formatSource(name string, src []byte, write, list bool, stdout io.Writer) e
 	if err != nil {
 		return fileError(name, err)
 	}
-	out := grammar.Format(g)
+	var out string
+	if syntaxOnly {
+		out = grammar.FormatSyntax(g)
+	} else {
+		out = grammar.Format(g)
+	}
 	changed := out != string(src)
 	if list && changed {
 		if _, err := fmt.Fprintln(stdout, name); err != nil {
