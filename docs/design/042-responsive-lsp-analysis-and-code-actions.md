@@ -6,7 +6,7 @@
 
 ## Summary
 
-Extend `pego lsp` to publish grammar lint findings, offer version-checked explanations and safe quick fixes, and keep analysis responsive while a document changes. The proposed protocol keeps the existing push-diagnostics model and adds cancellable, coalesced analysis snapshots. The complete responsive protocol remains proposed. An opt-in protocol prototype provides lint diagnostics and guarded explanations/suppression, while documentation format negotiation applies to ordinary requests. The opt-in actor now connects analysis and request workers to protocol input, cancellation and publication; ordinary clients retain the existing synchronous path. Intra-phase cancellation and real-editor validation remain open.
+Extend `pego lsp` to publish grammar lint findings, offer version-checked explanations and safe quick fixes, and keep analysis responsive while a document changes. The proposed protocol keeps the existing push-diagnostics model and adds cancellable, coalesced analysis snapshots. The complete responsive protocol remains proposed. An opt-in prototype provides lint diagnostics and guarded explanations; the server also returns versioned suppression edits to clients that advertise the required workspace-edit capability. The VS Code client currently filters those edits because its `WorkspaceEdit` conversion drops the document version and `workspace.applyEdit` cannot enforce it atomically. Documentation format negotiation applies to ordinary requests. The opt-in actor connects analysis and request workers to protocol input, cancellation and publication; ordinary clients retain the existing synchronous path. Intra-phase cancellation and real-editor validation remain open.
 
 ## Prototype Implementation Boundary
 
@@ -32,19 +32,20 @@ An explanation action additionally requires
 `experimental.pego.showExplanation: true`. The VS Code client handles
 `pego.showExplanation` by displaying the check name, finding message, and
 explanation; it rechecks the document version and analysis generation before
-showing the message. Suppression additionally requires
-`workspace.workspaceEdit.documentChanges: true`. The server returns a
-versioned edit only after recompiling and linting the candidate source, proving
-the targeted finding disappeared, and checking that the inserted directive is
-valid. It inserts a standalone `lint:ignore` comment immediately before the
-finding line and uses the document's newline convention. The client validates
-the action's URI, version, generation, session, and exact approved insertion
-before applying it. The title states that the finding line is suppressed: the
-inserted directive covers its own comment line and the immediately following
-finding line. Insertions before declarations, inside multiline tokens, or on
-lines with existing ignore directives are withheld; rule-wide suppression
-needs an explicitly scoped action. There are no suggested grammar
-transformations and no alternative-deletion action.
+showing the message. The server can return a versioned suppression edit to a
+client that advertises
+`workspace.workspaceEdit.documentChanges: true`. It does so only after
+recompiling and linting the candidate source, proving the targeted finding
+disappeared, and checking that the inserted directive is valid. The edit inserts
+a standalone `lint:ignore` comment immediately before the finding line and uses
+the document's newline convention. The VS Code client currently withholds
+suppression edits: its `WorkspaceEdit` conversion drops the document version,
+and `workspace.applyEdit` has no conditional version parameter. A check before
+application cannot close that race. A version-safe suppression action remains
+unavailable in VS Code until the client can apply the edit atomically against
+the analyzed version. The server-side candidate is limited to safe comment
+positions; rule-wide suppression needs an explicitly scoped action. There are
+no suggested grammar transformations and no alternative-deletion action.
 
 `analysisQueue` connects immutable version/generation snapshots to one running
 analysis worker globally and one replaceable pending snapshot per document.
@@ -77,8 +78,10 @@ candidate analysis and lint. Syntax tokenization/parsing, compilation, lint and
 some existing request traversal/formatting routines still lack intra-phase
 polling. Cancellation responds promptly through the actor and suppresses stale
 results, but worker shutdown latency remains bounded by those phases. The VS
-Code extension handles the explanation command; real-editor validation and
-resource measurements remain open.
+Code explanation-command handler is implemented. Real-editor validation and
+full-phase resource measurements remain open; safe suppression application
+also remains open because the client API cannot atomically enforce the document
+version.
 
 Hover and completion negotiate Markdown only when explicitly advertised;
 otherwise their documentation is plaintext. Labels, details and insertion text
@@ -100,12 +103,12 @@ The ordinary compatibility path handles each message synchronously. Its `didOpen
 
 The public linter already defines stable check names and severities, returns source positions, rule names, messages and human-readable `Fix` suggestions, and applies `lint:ignore` / `lint:file-ignore` directives before returning findings (`internal/lint/lint.go`, `docs/design/018-grammar-linting.md`). `Fix` is explanatory text, not an edit. A grammar with syntax errors cannot be linted by the public `pego.Lint` API because lint requires a valid, compiling grammar. The editor should therefore show lint findings only for a version whose grammar compiled successfully.
 
-Design 017 deliberately has no code actions and always returns Markdown for hover and completion documentation. The editor-support follow-up also asks the server to honor plain-text documentation formats. A document version is already attached to pushed diagnostics, but the request handlers do not capture and validate a versioned snapshot when returning edits.
+Design 017 deliberately has no code actions and always returns Markdown for hover and completion documentation. The editor-support follow-up also asks the server to honor plain-text documentation formats. A document version is attached to pushed diagnostics, and the server validates versioned action candidates. VS Code still withholds suppression edits because its application API cannot enforce the version atomically.
 
 ## Goals
 
 - Publish syntax/compile diagnostics as today and add lint diagnostics after successful compilation, preserving lint check IDs, messages, severities, positions and source suppression.
-- Explain a lint finding and offer suppression or a reviewed, semantics-preserving quick fix without treating `Finding.Fix` as replacement text.
+- Explain a lint finding and offer suppression or a reviewed, semantics-preserving quick fix without treating `Finding.Fix` as replacement text. A client must be able to apply edits atomically against the validated document version.
 - Refuse to apply an edit computed for an obsolete document version.
 - Let a newer document version supersede pending analysis and let JSON-RPC cancellation stop work at supported boundaries.
 - Honor the client's Markdown/plain-text preferences for hover and completion documentation.
@@ -135,10 +138,10 @@ Register `textDocument/codeAction` and advertise its provider. Accept the reques
 Provide these actions:
 
 - **Explain finding** invokes the `pego.showExplanation` client command with the check name, original diagnostic message, and a concise explanation derived from the check documentation. The VS Code extension displays it in an editor notification or equivalent. The extension advertises `experimental.pego.showExplanation` in client capabilities; the server returns this action only to clients that advertise the handler. Other clients retain the complete diagnostic message without receiving an unusable action.
-- **Suppress finding** adds `// lint:ignore <check>` on the finding line, using the document's line ending. If a directive already on that line covers the check, do not offer a duplicate. Use the narrowest valid comment placement under the existing line/next-line or rule directive semantics. A directive may suppress other findings with the same check in that scope; show that scope explicitly. Do not use file-wide suppression by default. Offer the action only when the edited grammar remains valid and lint confirms its documented suppression scope.
+- **Suppress finding** returns a versioned `WorkspaceEdit` adding `// lint:ignore <check>` on the finding line, using the document's line ending. The server offers this candidate only when the edited grammar remains valid and lint confirms its documented suppression scope. If a directive already covers the check, it does not offer a duplicate. A directive may suppress other findings in the same scope, which the action must make explicit; file-wide suppression is not the default. Clients that cannot enforce the document version atomically must not expose or apply the edit. The current VS Code client filters suppression edits because its `WorkspaceEdit` application path cannot enforce that version.
 - **Apply suggested fix** is offered only when the server has a check-specific, structured edit implementation and tests proving the edit preserves the accepted language and surrounding source. The string in `Finding.Fix` remains display-only. Do not offer removal of a shadowed alternative, including left-recursive alternatives, while its semantic interaction is unresolved.
 
-Use `WorkspaceEdit.documentChanges` with `TextDocumentEdit` and a `VersionedTextDocumentIdentifier` for every changing action. Do not return an unversioned `changes` fallback for edits: a client that cannot apply versioned document changes can still use the explanation action and edit the suppression comment itself. Return no stale action if the document version changes while the request is being handled. Revalidate the finding key and version immediately before producing the response; after the editor applies an edit, normal `didChange` analysis establishes the resulting state.
+Use `WorkspaceEdit.documentChanges` with `TextDocumentEdit` and a `VersionedTextDocumentIdentifier` for every changing action. Do not return an unversioned `changes` fallback. A client that cannot apply a versioned edit atomically may still use the explanation action, but must not be offered suppression. Return no stale action if the document version changes while the request is being handled. Revalidate the finding key and version immediately before producing the response; after a capable editor applies an edit, normal `didChange` analysis establishes the resulting state.
 
 ### Responsive Snapshots, Cancellation and Publication
 
@@ -159,7 +162,7 @@ Record `textDocument.hover.contentFormat` and `textDocument.completion.completio
 Existing diagnostic fields and codes remain valid; the new `code` and `data` fields are optional. Lint diagnostics are additive and honor directives exactly as `pego lint` does. Changes to hover/completion content kind follow the capabilities sent by each client. Existing clients continue to receive error diagnostics and UTF-16 ranges.
 
 1. Add shared finding-to-diagnostic mapping and lint integration for compilable documents. Verify source suppression and CLI parity.
-2. Add structured code-action protocol models, versioned suppression edits, check explanations, and a VS Code command handler. Keep suggested grammar edits behind a separately reviewed allowlist.
+2. Add structured code-action protocol models, versioned suppression edits, check explanations, and a VS Code command handler. Keep suggested grammar edits behind a separately reviewed allowlist. VS Code suppression remains withheld until its client API can enforce edit versions atomically.
 3. Introduce immutable snapshots, actor-owned state/output, request cancellation, per-document coalescing, and cooperative cancellation through analysis phases. Keep stale-result guards even when cancellation succeeds.
 4. Honor hover and completion documentation formats, then validate the protocol and workflows in real editors.
 
@@ -183,13 +186,15 @@ Negotiate Markdown-only, plaintext-only and mixed format capabilities; assert th
 
 ## Performance and Results
 
-No latency or resource measurements are claimed. Measure `BenchmarkAnalyze` and separate tokenization, parse, compile, lint and queue/publication costs on small examples, the 500–560-line Go/Python examples used by design 017, and large generated grammars. Compare synchronous analysis, diagnostics with lint, and coalesced analysis with one worker per document. Record cancellation-to-stop latency, queued/running work, allocations and peak retained snapshots under rapid edits. Report warmup, Go version, host, repetitions and raw results; do not add a debounce delay or claim responsiveness from a benchmark alone.
+Focused measurements used Go 1.27.1 on an Apple M3 Max (darwin/arm64). In `BenchmarkAnalyze`, counterbalanced blocks ran five samples per branch in main-then-integration order and three per branch in integration-then-main order. Results were mixed: Go case medians were 17.20/17.24 ms on main and 18.68/17.55 ms on the integration branch; Python medians were 23.67/22.46 ms and 22.79/22.64 ms respectively. The order effect prevents a stable regression conclusion. On the final integration branch, five `BenchmarkF08Analyze` repetitions showed that adding lint and diagnostic mapping changed generated-fixture/Go/Python medians from 7.79/18.69/24.14 ms to 8.53/25.39/29.10 ms. Allocations changed from about 15.47 MB/40,300 to 17.17 MB/43,700 for the generated fixture, 30.01 MB/104,500 to 34.27 MB/121,500 for Go, and 39.73 MB/126,600 to 43.47 MB/145,800 for Python. These are focused branch measurements, not a general responsiveness or memory-peak claim.
+
+Synthetic bursts of 32 or 256 edits per document held two generations for one document and five for four documents: one running and one latest pending generation per document. At that held barrier, signed post-GC heap deltas against idle were about 74 KB and 295 KB. On the final integration branch, a protocol-level synthetic active-work cancellation probe measured mean cancel-to-reply of about 8.7–11.4 μs and cancel-to-synthetic-stop of about 6.3–7.3 μs. These probes do not measure cancellation within parser/lint phases or tail latency. No full-phase cancellation or peak-memory result is claimed. Preserve these limits when comparing editor behavior; benchmarks alone do not establish responsiveness.
 
 ## Limitations and Open Questions
 
 - The responsive actor remains opt-in and needs real-editor validation; ordinary clients retain the synchronous path.
 - Cooperative cancellation needs checks in syntax and engine compilation/lint loops; until those are added, those phases can only be cancelled before or after the phase.
-- A server-command explanation depends on a client handler. The VS Code extension is the first planned client; the diagnostic itself remains understandable without the action.
+- Suppression application requires a client API that atomically checks the edit version. The current VS Code `WorkspaceEdit` path drops that version, so the extension withholds suppression while retaining guarded explanations.
 - The exact work bound and worker-count default should be selected from measurements on large grammars and multi-document editor workloads.
 - **Proposed lint scope:** enable enabling all existing checks for every compilable open grammar, with source directives as the suppression mechanism. An owner may instead choose a configurable lint set if editor noise is observed; no such setting is part of this proposal.
 - **Proposed explanation command:** use the small `pego.showExplanation` command handled by the VS Code extension. A portable protocol-only explanation request is another option, but would add a custom request method and editor UI contract.

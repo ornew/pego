@@ -51,18 +51,15 @@ async function main() {
     assert.equal(extra.experimental.elsewhere, true);
     assert.equal(extra.experimental.pego.future, true);
     const d = document(); h.workspace.textDocuments = [d]; publish(h, [diagnostic()]);
-    const [explain, suppress] = await actions(h, d, () => [explanation(), suppression()]);
+    const [explain] = await actions(h, d, () => [explanation(), suppression()]);
     assert.equal(await execute(h, explain), true);
     assert.equal(h.information.length, 1);
-    assert.equal(suppress.edit, undefined, 'guarded edit is not auto-applied');
-    const serialized = JSON.parse(JSON.stringify(suppress.command.arguments));
-    assert.equal(await h.commands['pego.applyLintSuppression'](...serialized), true, 'plain command arguments survive editor RPC');
-    assert.equal(h.applied.length, 1);
-    assert.equal(h.applied[0].entries()[0][1][0].newText, '// lint:ignore unused-capture\n');
+    assert.deepEqual(await actions(h, d, () => [suppression()]), [], 'unversioned WorkspaceEdit is not offered');
+    assert.equal(await h.commands['pego.applyLintSuppression']({}, {}), false, 'legacy suppression commands are refused');
+    assert.equal(h.applied.length, 0);
     d.version = 2;
-    assert.equal(await execute(h, suppress), false, 'reject stale version at invocation');
     assert.equal(await execute(h, explain), false, 'reject stale explanation');
-    assert.equal(h.applied.length, 1);
+    assert.equal(h.applied.length, 0);
   });
   await using(true, async (h) => {
     const d = document(); h.workspace.textDocuments = [d]; publish(h, [diagnostic()]);
@@ -71,7 +68,7 @@ async function main() {
     d.version = 2; gate.resolve([explanation()]);
     assert.deepEqual(await pending, [], 'discard provider response after editing');
     d.version = 1; publish(h, [diagnostic()]);
-    const [old] = await actions(h, d, () => [suppression()]);
+    const [old] = await actions(h, d, () => [explanation()]);
     publish(h, [diagnostic(1, 2)]);
     assert.equal(await execute(h, old), false, 'same-version save advances generation');
     assert.deepEqual(await actions(h, d, () => [explanation()]), []);
@@ -80,7 +77,7 @@ async function main() {
     h.closedDocument(d);
     assert.equal(await execute(h, closing), false, 'close invalidates actions');
     publish(h, [diagnostic()]);
-    const [restart] = await actions(h, d, () => [suppression()]);
+    const [restart] = await actions(h, d, () => [explanation()]);
     await h.restart(); publish(h, [diagnostic()]);
     assert.equal(await execute(h, restart), false, 'server generation reset cannot revive an old client action');
   });
@@ -90,46 +87,36 @@ async function main() {
     assert.deepEqual(await actions(h, d, () => [explanation()], cancel), []);
     assert.deepEqual(await actions(h, d, () => [explanation({ ...diagnostic(), data: undefined })]), []);
     assert.deepEqual(await actions(h, d, () => [{ ...explanation(), command: { command: 'unrelated.command' } }]), []);
-    const [otherDocument] = await actions(h, d, () => [suppression(diagnostic(), { toString: () => 'file:///other.pego' })]);
-    assert.equal(await execute(h, otherDocument), false);
-    const [unsafeEdit] = await actions(h, d, () => [suppression(diagnostic(), uri, 'delete grammar source')]);
-    assert.equal(await execute(h, unsafeEdit), false, 'only reviewed suppression insertions are applied');
+    assert.deepEqual(await actions(h, d, () => [suppression(diagnostic(), { toString: () => 'file:///other.pego' })]), []);
+    assert.deepEqual(await actions(h, d, () => [suppression(diagnostic(), uri, 'delete grammar source')]), []);
     const [explain] = await actions(h, d, () => [explanation()]);
     assert.equal(await h.commands['pego.showExplanation']('bad check', 'message', 'explanation', explain.command.arguments[3]), false);
     assert.equal(h.applied.length, 0);
   });
   await using(true, async (h) => {
     const d = document(); h.workspace.textDocuments = [d]; publish(h, [diagnostic()]);
-    const mutations = [
-      ['another valid line', (edit) => { edit.start.line = 0; edit.end.line = 0; }],
-      ['another valid check', (edit) => { edit.check = 'shadowed-alternative'; edit.newText = '// lint:ignore shadowed-alternative\n'; }],
-      ['another valid newline', (edit) => { edit.newText = '// lint:ignore unused-capture\r\n'; }],
-      ['malformed range', (edit) => { edit.start = null; }],
-      ['extra payload operation', (edit) => { edit.fileOperation = 'delete'; }],
-      ['unknown token', (edit) => { edit.token = 'not-issued'; }],
+    const pendingApply = deferred();
+    let applyCalls = 0;
+    h.workspace.applyEdit = () => { applyCalls++; return pendingApply.promise; };
+    const candidates = [
+      ['another valid line', suppression()],
+      ['another valid check', suppression(diagnostic(), uri, '// lint:ignore shadowed-alternative\n')],
+      ['another valid newline', suppression(diagnostic(), uri, '// lint:ignore unused-capture\r\n')],
+      ['malformed range', { ...suppression(), edit: { entries: () => [[uri, [{ newText: '// lint:ignore unused-capture\n' }]]] } }],
+      ['extra payload operation', { ...suppression(), edit: { entries: () => [[uri, [{ range: {}, newText: '// lint:ignore unused-capture\n' }]]] } }],
+      ['unknown token', suppression()],
     ];
-    for (const [name, mutate] of mutations) {
-      const [approved] = await actions(h, d, () => [suppression()]);
-      const original = JSON.parse(JSON.stringify(approved.command.arguments));
-      const modified = JSON.parse(JSON.stringify(original));
-      mutate(modified[0]);
-      assert.equal(await h.commands['pego.applyLintSuppression'](...modified), false, name);
-      if (name !== 'unknown token') {
-        assert.equal(await h.commands['pego.applyLintSuppression'](...original), false, 'failed attempt consumes its token');
-      }
+    for (const [name, candidate] of candidates) {
+      assert.deepEqual(await actions(h, d, () => [candidate]), [], name + ': unsafe edit is not surfaced');
     }
     assert.equal(h.applied.length, 0, 'tampered actions never reach the editor');
-    const [mutable] = await actions(h, d, () => [suppression()]);
-    mutable.command.arguments[0].start.line = 0;
-    mutable.command.arguments[0].end.line = 0;
-    assert.equal(await execute(h, mutable), false, 'approval is an independent immutable copy');
-    const [once] = await actions(h, d, () => [suppression()]);
-    const valid = JSON.parse(JSON.stringify(once.command.arguments));
-    const first = h.commands['pego.applyLintSuppression'](...valid);
-    assert.equal(await h.commands['pego.applyLintSuppression'](...valid), false, 'concurrent replay rejected');
-    assert.equal(await first, true);
-    assert.equal(await h.commands['pego.applyLintSuppression'](...valid), false, 'completed replay rejected');
-    assert.equal(h.applied.length, 1);
+    assert.equal(applyCalls, 0, 'no edit enters VS Code asynchronous application');
+    const legacyInvocation = h.commands['pego.applyLintSuppression']({}, {});
+    d.version = 2;
+    pendingApply.resolve(true);
+    assert.equal(await legacyInvocation, false, 'a document change during async command completion cannot apply a stale suppression');
+    assert.equal(h.applied.length, 0, 'document changes during a pending apply cannot receive a stale suppression');
+    assert.equal(applyCalls, 0);
   });
   await using(false, async (h) => {
     h.settings['server.experimentalLint'] = true;
