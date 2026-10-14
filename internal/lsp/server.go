@@ -10,6 +10,7 @@ package lsp
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -26,7 +27,11 @@ type Server struct {
 	// version is reported to the client as the server's version.
 	version string
 	// client holds what the client supports, from its initialize request.
-	client clientCapabilities
+	client         clientCapabilities
+	queue          *analysisQueue
+	actor          *responsiveActor
+	requestContext context.Context
+	generation     uint64
 }
 
 // clientCapabilities are the capabilities of the client that change the server's responses.
@@ -38,8 +43,9 @@ type clientCapabilities struct {
 	} `json:"workspace"`
 	Experimental struct {
 		Pego struct {
-			LintDiagnostics bool `json:"lintDiagnostics"`
-			ShowExplanation bool `json:"showExplanation"`
+			LintDiagnostics    bool `json:"lintDiagnostics"`
+			ShowExplanation    bool `json:"showExplanation"`
+			ResponsiveAnalysis bool `json:"responsiveAnalysis"`
 		} `json:"pego"`
 	} `json:"experimental"`
 	TextDocument struct {
@@ -80,7 +86,8 @@ type document struct {
 	text    string
 	an      *analysis // analysis of text, nil until needed
 	// good is the last analysis that did not fail.
-	good *analysis
+	good       *analysis
+	generation uint64
 }
 
 // analysis returns the analysis of the document. If analyzing the text fails (a bug), it returns
@@ -135,6 +142,9 @@ func (s *Server) run() error {
 		}
 		if err := s.handle(&msg); err != nil {
 			return err
+		}
+		if s.state == stateInitialized && (s.client.Experimental.Pego.ResponsiveAnalysis || s.client.Experimental.Pego.LintDiagnostics) {
+			return s.runResponsive()
 		}
 	}
 }
@@ -223,6 +233,10 @@ func (s *Server) notification(msg *incoming) {
 	case "textDocument/didClose":
 		var p didCloseParams
 		if json.Unmarshal(msg.Params, &p) == nil && s.docs[p.TextDocument.URI] != nil {
+			if s.queue != nil {
+				s.queue.closeDocument(p.TextDocument.URI)
+				s.actor.invalidate(p.TextDocument.URI)
+			}
 			delete(s.docs, p.TextDocument.URI)
 			// Clear the document's diagnostics.
 			_ = s.out.notify("textDocument/publishDiagnostics", publishDiagnosticsParams{URI: p.TextDocument.URI, Diagnostics: []Diagnostic{}})
@@ -232,6 +246,17 @@ func (s *Server) notification(msg *incoming) {
 
 // publish sends the diagnostics of d.
 func (s *Server) publish(d *document) {
+	if s.queue != nil {
+		s.generation++
+		d.generation = s.generation
+		s.actor.invalidate(d.uri)
+		s.queue.submit(d.snapshot())
+		return
+	}
+	s.publishReady(d)
+}
+
+func (s *Server) publishReady(d *document) {
 	diags := append([]Diagnostic(nil), d.analysis().diags...)
 	if s.client.Experimental.Pego.LintDiagnostics {
 		diags = append(diags, d.lintDiagnostics()...)
@@ -342,4 +367,8 @@ func (s *Server) position(params json.RawMessage) (*document, int, *rpcError) {
 		return nil, 0, err
 	}
 	return d, d.analysis().idx.offset(p.Position), nil
+}
+
+func (d *document) snapshot() analysisSnapshot {
+	return analysisSnapshot{URI: d.uri, Text: d.text, Version: d.version, Generation: d.generation}
 }

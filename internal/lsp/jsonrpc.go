@@ -28,6 +28,9 @@ const (
 	codeInternalError        = -32603
 	codeServerNotInitialized = -32002
 	codeRequestFailed        = -32803
+	codeRequestCancelled     = -32800
+	codeContentModified      = -32801
+	codeServerCancelled      = -32802
 )
 
 // rpcError is the error of a response.

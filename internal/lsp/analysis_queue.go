@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-// analysisSnapshot and analysisQueue prototype the worker boundary described in
+// analysisSnapshot and analysisQueue implement the worker boundary described in
 // design 042. The protocol actor remains the sole owner of documents and output;
 // this queue never reads documents or writes JSON-RPC messages.
 type analysisSnapshot struct {
@@ -100,6 +100,9 @@ func (q *analysisQueue) run() {
 	defer close(q.done)
 	defer close(q.results)
 	for {
+		if q.ctx.Err() != nil {
+			return
+		}
 		q.mu.Lock()
 		var next pendingAnalysis
 		found := false

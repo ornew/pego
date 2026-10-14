@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -9,9 +10,10 @@ import (
 )
 
 type findingData struct {
-	URI     string `json:"uri"`
-	Version int    `json:"version"`
-	Key     string `json:"key"`
+	URI        string `json:"uri"`
+	Version    int    `json:"version"`
+	Key        string `json:"key"`
+	Generation uint64 `json:"generation,omitempty"`
 }
 
 type textDocumentEdit struct {
@@ -41,6 +43,9 @@ func (a *analysis) lintFindings() []lint.Finding {
 	if a.prog == nil || len(a.syntaxErrs) > 0 {
 		return nil
 	}
+	if a.lintCached {
+		return a.lintCache
+	}
 	start := ""
 	if a.rules["main"] != nil {
 		start = "main"
@@ -62,7 +67,7 @@ func (d *document) lintDiagnostics() []Diagnostic {
 			severity = 2
 		}
 		out = append(out, Diagnostic{Range: a.errorRange(f.Pos, false), Severity: severity, Source: "pego-lint", Message: f.Message, Code: f.Check,
-			Data: &findingData{URI: d.uri, Version: d.version, Key: fmt.Sprintf("%d:%s", i, f.Check)}})
+			Data: &findingData{URI: d.uri, Version: d.version, Generation: d.generation, Key: fmt.Sprintf("%d:%s", i, f.Check)}})
 	}
 	return out
 }
@@ -98,9 +103,16 @@ func (s *Server) codeActions(params json.RawMessage) (any, *rpcError) {
 			return out, nil
 		}
 	}
+	ctx := s.requestContext
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	version := d.version
 	current := d.lintDiagnostics()
 	for _, diagnostic := range current {
+		if ctx.Err() != nil {
+			return nil, &rpcError{Code: codeRequestCancelled, Message: "request cancelled"}
+		}
 		if !rangesOverlap(p.Range, diagnostic.Range) {
 			continue
 		}
@@ -125,8 +137,8 @@ func (s *Server) codeActions(params json.RawMessage) (any, *rpcError) {
 			out = append(out, codeAction{Title: "Explain " + diagnostic.Code, Kind: "quickfix", Diagnostics: []Diagnostic{diagnostic}, Command: &actionCommand{Title: "Explain lint finding", Command: "pego.showExplanation", Arguments: []any{diagnostic.Code, diagnostic.Message, explanation}}})
 		}
 		if s.client.Workspace.WorkspaceEdit.DocumentChanges {
-			if edit, ok := d.suppressionEdit(diagnostic); ok {
-				out = append(out, codeAction{Title: "Suppress " + diagnostic.Code + " on this line and the following line", Kind: "quickfix", Diagnostics: []Diagnostic{diagnostic}, Edit: &actionEdit{DocumentChanges: []textDocumentEdit{{TextDocument: versionedTextDocumentIdentifier{URI: d.uri, Version: version}, Edits: []TextEdit{edit}}}}})
+			if edit, ok := d.suppressionEditContext(ctx, diagnostic); ok {
+				out = append(out, codeAction{Title: "Suppress " + diagnostic.Code + " on this finding line", Kind: "quickfix", Diagnostics: []Diagnostic{diagnostic}, Edit: &actionEdit{DocumentChanges: []textDocumentEdit{{TextDocument: versionedTextDocumentIdentifier{URI: d.uri, Version: version}, Edits: []TextEdit{edit}}}}})
 			}
 		}
 	}
@@ -143,7 +155,10 @@ func rangesOverlap(a, b Range) bool {
 
 // suppressionEdit is deliberately conservative: validate the edited grammar and
 // verify that the targeted finding disappears. Human-readable Fix is never an edit.
-func (d *document) suppressionEdit(diagnostic Diagnostic) (TextEdit, bool) {
+func (d *document) suppressionEditContext(ctx context.Context, diagnostic Diagnostic) (TextEdit, bool) {
+	if ctx.Err() != nil {
+		return TextEdit{}, false
+	}
 	if diagnostic.Code == lint.CheckDirective {
 		return TextEdit{}, false
 	}
@@ -173,8 +188,11 @@ func (d *document) suppressionEdit(diagnostic Diagnostic) (TextEdit, bool) {
 		eol = "\r"
 	}
 	edit := TextEdit{Range: Range{Start: Position{Line: line}, End: Position{Line: line}}, NewText: "// lint:ignore " + diagnostic.Code + eol}
-	candidate, failure := analyzeSafely(d.text[:start] + edit.NewText + d.text[start:])
+	candidate, failure := analyzeContextSafely(ctx, d.text[:start]+edit.NewText+d.text[start:])
 	if failure != nil || candidate.prog == nil || len(candidate.syntaxErrs) > 0 {
+		return TextEdit{}, false
+	}
+	if ctx.Err() != nil {
 		return TextEdit{}, false
 	}
 	for _, finding := range candidate.lintFindings() {

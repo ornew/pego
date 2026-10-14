@@ -10,6 +10,7 @@ import (
 
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/engine"
+	"github.com/ornew/pego/internal/lint"
 	"github.com/ornew/pego/internal/syntax"
 )
 
@@ -72,9 +73,11 @@ type analysis struct {
 	g          *grammar.Grammar
 	syntaxErrs syntax.ErrorList
 	// prog is the compiled grammar, nil if the source has errors.
-	prog  *engine.Program
-	diags []Diagnostic
-	defs  []*definition
+	prog       *engine.Program
+	diags      []Diagnostic
+	lintCache  []lint.Finding
+	lintCached bool
+	defs       []*definition
 	// rules and types map names to their first definition.
 	rules, types map[string]*definition
 	// occs holds the occurrences in source order.
@@ -91,7 +94,14 @@ type analysis struct {
 var analyzeHook func(text string)
 
 // analyzeSafely analyzes text, turning a panic into an error.
-func analyzeSafely(text string) (a *analysis, err error) {
+func analyzeSafely(text string) (*analysis, error) {
+	return analyzeContextSafely(context.Background(), text)
+}
+
+func analyzeContextSafely(ctx context.Context, text string) (a *analysis, err error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	defer func() {
 		if x := recover(); x != nil {
 			a, err = nil, fmt.Errorf("%v", x)
@@ -100,7 +110,7 @@ func analyzeSafely(text string) (a *analysis, err error) {
 	if analyzeHook != nil {
 		analyzeHook(text)
 	}
-	return analyze(text), nil
+	return analyzeContext(ctx, text)
 }
 
 // failedAnalysis returns the analysis to use for text when analyzing it failed with err: good, the
@@ -139,7 +149,12 @@ func analyzeContext(ctx context.Context, text string) (*analysis, error) {
 		return nil, err
 	}
 	a := newAnalysis(text)
-	for _, t := range syntax.Tokenize(text) {
+	for i, t := range syntax.Tokenize(text) {
+		if i%256 == 0 {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+		}
 		start, end := a.idx.pegoOffset(t.Pos), a.idx.pegoOffset(t.End)
 		a.tokAt[start] = len(a.toks)
 		a.toks = append(a.toks, token{t, start, end})

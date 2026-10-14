@@ -6,19 +6,21 @@
 
 ## Summary
 
-Extend `pego lsp` to publish grammar lint findings, offer version-checked explanations and safe quick fixes, and keep analysis responsive while a document changes. The proposed protocol keeps the existing push-diagnostics model and adds cancellable, coalesced analysis snapshots. The complete responsive protocol remains proposed. An opt-in protocol prototype provides lint diagnostics and guarded explanations/suppression, while documentation format negotiation applies to ordinary requests. The analysis worker queue remains an isolated prototype; the server message loop is still synchronous.
+Extend `pego lsp` to publish grammar lint findings, offer version-checked explanations and safe quick fixes, and keep analysis responsive while a document changes. The proposed protocol keeps the existing push-diagnostics model and adds cancellable, coalesced analysis snapshots. The complete responsive protocol remains proposed. An opt-in protocol prototype provides lint diagnostics and guarded explanations/suppression, while documentation format negotiation applies to ordinary requests. The opt-in actor now connects analysis and request workers to protocol input, cancellation and publication; ordinary clients retain the existing synchronous path. Intra-phase cancellation and real-editor validation remain open.
 
 ## Prototype Implementation Boundary
 
 The protocol prototype is enabled by the initialization capability
-`experimental.pego.lintDiagnostics: true`. It advertises code actions only for
-that client. Without this opt-in, diagnostics retain their existing syntax and
+`experimental.pego.lintDiagnostics: true`; this also enables responsive analysis.
+A client may use `experimental.pego.responsiveAnalysis: true` to enable the actor
+without lint diagnostics. Code actions are advertised only for clients enabling
+lint diagnostics. Without this opt-in, diagnostics retain their existing syntax and
 compile/type scope. This is a validation boundary, not adoption of the proposed
 default lint policy.
 
 The prototype shares the successful compiled analysis with `internal/lint.Run`
 and maps its source-positioned findings to stable check codes and
-URI/version/finding-key data. It uses `main` when defined; without `main`, it
+URI/version/generation/finding-key data. It uses `main` when defined; without `main`, it
 omits reachability analysis because an editor start-rule setting is not yet
 specified. Existing lint directives remain authoritative. No old lint findings
 are reused after an analysis failure.
@@ -30,20 +32,45 @@ in this prototype. Suppression additionally requires
 only after recompiling and linting the candidate source, proving the targeted
 finding disappeared, and checking that the inserted directive is valid. It
 inserts a standalone `lint:ignore` comment immediately before the finding line
-and uses the document's newline convention. The title states that the directive
-covers that line and the following line. Insertions before declarations, inside
+and uses the document's newline convention. The title states that the finding line is suppressed: the inserted directive
+covers its own comment line and the immediately following finding line. Insertions before declarations, inside
 multiline tokens, or on lines with existing ignore directives are withheld;
 rule-wide suppression needs an explicitly scoped action. There are no
 suggested grammar transformations and no alternative-deletion action.
 
-`analysisQueue` prototypes immutable version/generation snapshots, one running
-worker globally, one replaceable pending snapshot per document, cancellation on
-replacement/close/stop, worker panic isolation, and a publication freshness
-predicate. It does not own protocol output. `analyzeContext` checks cancellation
-between phases; syntax parsing, compilation and lint do not yet poll within
-long phases. The queue is not wired into `Serve`, and `$/cancelRequest` is still
-unsupported. Actor integration, request cancellation, bounded intra-phase
-polling, real-editor validation and resource measurements remain open.
+`analysisQueue` connects immutable version/generation snapshots to one running
+analysis worker globally and one replaceable pending snapshot per document.
+The actor owns documents and JSON-RPC output, cancels superseded work, and
+publishes only results matching the current URI, version and generation. It
+computes lint once in the analysis worker and shares those immutable findings
+with diagnostic publication and action requests.
+
+Text-document requests wait for their captured analysis snapshot and run against
+immutable copies. At most 64 requests are accepted concurrently and at most four
+request workers execute at once; excess requests receive `ServerCancelled`
+(-32802). These are conservative prototype bounds, not measured defaults. A
+`$/cancelRequest` notification returns `RequestCancelled` (-32800) for its
+matching in-flight request. Change, save, reopen and close invalidate matching
+requests with `ContentModified` (-32801). The actor removes each request before
+responding and discards late worker results, including late edits. Failed current
+analysis publishes only its current failure diagnostic; when last-good navigation
+ranges belong to older text, responsive requests receive `ContentModified`
+instead of interpreting current positions through old text.
+
+Shutdown cancels pending analysis and requests; exit joins analysis and request
+workers before returning. Worker panics become failure results. The reader stops
+without beginning another read after decoding exit. An arbitrary reader blocked
+outside a normal exit sequence cannot be interrupted without a caller-provided
+close/cancellation contract; no input ownership change is introduced.
+
+`analyzeContext` checks cancellation between phases and during token-index
+construction. Suppression validation uses the request context before and after
+candidate analysis and lint. Syntax tokenization/parsing, compilation, lint and
+some existing request traversal/formatting routines still lack intra-phase
+polling. Cancellation responds promptly through the actor and suppresses stale
+results, but worker shutdown latency remains bounded by those phases. Real-editor
+validation, an explanation-command client handler and resource measurements
+remain open.
 
 Hover and completion negotiate Markdown only when explicitly advertised;
 otherwise their documentation is plaintext. Labels, details and insertion text
@@ -61,7 +88,7 @@ restore legacy attribute syntax or accept naked multiline operator headers.
 
 ## Motivation
 
-The server handles each message synchronously. `didOpen`, `didChange` and `didSave` analyze and publish before reading the next message, and `$/cancelRequest` is ignored. The implemented design measured roughly 12 ms for the largest example grammars at the time of design 017; that measurement does not establish the cost of linting or future grammars. `internal/lsp/analysis.go` tokenizes and parses every version and compiles only when syntax is valid. `internal/lsp/server.go` publishes only those diagnostics and serializes all requests.
+The ordinary compatibility path handles each message synchronously. Its `didOpen`, `didChange` and `didSave` analyze and publish before reading the next message, and it ignores `$/cancelRequest`; the opt-in actor addresses this limitation. The implemented design measured roughly 12 ms for the largest example grammars at the time of design 017; that measurement does not establish the cost of linting or future grammars. `internal/lsp/analysis.go` tokenizes and parses every version and compiles only when syntax is valid. `internal/lsp/server.go` publishes only those diagnostics and serializes all requests.
 
 The public linter already defines stable check names and severities, returns source positions, rule names, messages and human-readable `Fix` suggestions, and applies `lint:ignore` / `lint:file-ignore` directives before returning findings (`internal/lint/lint.go`, `docs/design/018-grammar-linting.md`). `Fix` is explanatory text, not an edit. A grammar with syntax errors cannot be linted by the public `pego.Lint` API because lint requires a valid, compiling grammar. The editor should therefore show lint findings only for a version whose grammar compiled successfully.
 
@@ -152,7 +179,7 @@ No latency or resource measurements are claimed. Measure `BenchmarkAnalyze` and 
 
 ## Limitations and Open Questions
 
-- The worker queue is not connected to the protocol actor and the server still processes messages synchronously.
+- The responsive actor remains opt-in and needs real-editor validation; ordinary clients retain the synchronous path.
 - Cooperative cancellation needs checks in syntax and engine compilation/lint loops; until those are added, those phases can only be cancelled before or after the phase.
 - A server-command explanation depends on a client handler. The VS Code extension is the first planned client; the diagnostic itself remains understandable without the action.
 - The exact work bound and worker-count default should be selected from measurements on large grammars and multi-document editor workloads.
