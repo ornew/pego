@@ -1,15 +1,15 @@
 # 055. Typed Node Lists and Filtering
 
-- **Status**: Proposed
+- **Status**: Implemented
 - **Author**: @ornew
 - **Date**: 2026-10-14
 
 ## Summary
 
-This record covers two separate capabilities. The implemented typed-list subset
-constructs lists of nodes with an explicit element Type, including empty and
-nested lists. The broader `filter(list, predicate)` operation remains Proposed
-and unresolved. Primitive-valued lists are outside both scopes.
+This record covers typed node-list constructors and `filter(list, predicate)`.
+Both are implemented: constructors build empty, nested and typed node lists,
+and `filter` selects list elements with a Boolean predicate. Primitive-valued
+lists such as `[]int` and `[]string` remain outside the supported scope.
 
 ## Motivation
 
@@ -29,7 +29,7 @@ element Type and applies ordinary assignability checks to every element.
 A non-optional `[]Comment` rejects `nil`; `[]*Comment` permits it. No
 constructor silently filters or drops values.
 
-## Selected Typed Node-List Contract
+## Typed Node-List Contract
 
 The source form is `[]T{expr, ...}`. `T` is an explicit Type Expression and
 may be a node type, an alias resolving to one, or a union whose members are
@@ -64,14 +64,29 @@ The constructor does not add a parser boundary or change Rule Expression
 evaluation, capture visibility, memoization, recovery, cuts, or input
 consumption.
 
-## Filtering Remains Proposed
+## Filtering Contract
 
-A filter operation would preserve input order and node identity, but a
-Boolean predicate alone cannot narrow the input list's static element Type.
+`filter(list, (item) => condition)` evaluates a one-parameter lambda once per
+element, from left to right. Its result MUST be an actual Boolean: `true`
+retains the original node or nil element, and `false` drops it. Other result
+types are rejected statically when known and fail at runtime when dynamic.
+No truthiness conversion or element cloning occurs. A nil input produces an
+empty list, following `map`; an empty input does not invoke the predicate.
+
+The result preserves input order, node identity and the input list's static
+element Type. A Boolean predicate alone cannot narrow that Type.
 For example, `filter($xs, (x) => $x != nil)` cannot establish `[]T` from
 `[]*T`. Predicate Action errors follow the existing failure/backtracking
-contract; Value Action errors abort as they do today. This proposal does not
-select a signature, nil-input behavior, or filtering syntax.
+contract; Value Action errors abort as they do today. Partial collection is
+scratch and is dropped on the existing failure path. Filtering does not add
+a rule, memo, capture, variable or recovery boundary.
+
+The implementation appends `filter` at index 7 in the bytecode builtin table.
+Modules using its `ECALL` require instruction set 6; ordinary modules keep
+their existing version selection. Readers reject filter calls declared under
+older instruction sets and reject a serialized filter call with the wrong
+argument count. The file envelope and all existing builtin indexes are
+unchanged.
 
 ## Alternatives Considered
 
@@ -115,26 +130,26 @@ does not implicitly buffer a `ParseStream`.
   compatibility.
 - Keep existing `map`, `list`, `concat`, repetitions, recovery and streamed
   rules unchanged.
-- If `filter` is designed separately, test its independent error and nil
-  behavior and verify it does not narrow static list Types.
+- Test `filter` error and nil behavior and verify it does not narrow static
+  list Types.
 
 ## Limitations and Open Questions
 
 - What concrete use cases justify primitive-valued lists such as `[]int` or
   `[]string`, given that the current runtime `List` stores nodes? Investigate
   before designing their storage or syntax.
-- What signature and nil-input behavior should a separately proposed filter
-  operation have? Its Boolean predicate cannot narrow static Types by itself.
+- The implementation preserves the input list's static Type; filtering does
+  not provide type narrowing.
 
-Typed node-list constructors are implemented. This record remains Proposed
-because filtering is unresolved. Primitive-valued lists remain outside the
-implemented subset.
+Typed node-list constructors and filtering are implemented. Primitive-valued
+lists remain outside the supported subset.
 
-Local validation covers source and strict JSON round trips, all three runtime
+Validation covers source and strict JSON round trips, all three runtime
 backends and both position units, AST-bearing and AST-free compiled grammars,
-generated Go and TypeScript, and typed result conversion. The root-module
-suite, generated parser suite and site build/link check pass. The implementation
-also received independent critical review. Remote CI remains paused.
+generated Go and TypeScript, typed result conversion, and cross-backend filter
+behavior. The full root test suite, generated parser module suite, focused LSP
+and engine tests, and site tests/build passed. Independent review found no
+runtime blocker. Remote CI was not run.
 
 ## Focused Performance Evidence
 

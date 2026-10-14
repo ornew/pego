@@ -510,7 +510,7 @@ func equal(a, b any) bool {
 
 // builtins maps built-in functions to their number of arguments (-1 for variadic).
 var builtins = map[string]int{
-	"len": 1, "text": 1, "foldl": 3, "foldr": 3, "map": 2, "list": -1, "concat": -1,
+	"len": 1, "text": 1, "foldl": 3, "foldr": 3, "map": 2, "list": -1, "concat": -1, "filter": 2,
 }
 
 // builtin calls the built-in function fn with evaluated arguments.
@@ -558,7 +558,7 @@ func (c *evalCtx) builtin(fn string, args []any) (any, error) {
 			}
 		}
 		return acc, nil
-	case "map", "list", "concat":
+	case "map", "list", "concat", "filter":
 		// The elements are gathered on kidStack; lambdas that build lists push above them.
 		base := len(c.p.kidStack)
 		if err := c.pushElems(fn, args); err != nil {
@@ -612,6 +612,8 @@ func (c *evalCtx) textString(v any) (string, error) {
 // or concat) makes from args.
 func (c *evalCtx) pushElems(fn string, args []any) error {
 	switch fn {
+	case "filter":
+		return c.pushFiltered(args)
 	case "map":
 		f, ok := args[1].(function)
 		if !ok || f.arity() != 1 {

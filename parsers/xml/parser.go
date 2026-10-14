@@ -2186,6 +2186,22 @@ func (c *actx) mapList(list any, f func(item any) any) any {
 	return c.endList(base)
 }
 
+func (c *actx) filterList(list any, f func(item any) any) any {
+	base := len(c.p.kidStack)
+	for _, item := range c.listItems("filter", list) {
+		c.p.stepWork()
+		value := f(nodeOrNil(item))
+		keep, ok := value.(bool)
+		if !ok {
+			c.p.evalErrorf("filter: predicate must produce a bool, got %s", typeName(value))
+		}
+		if keep {
+			c.p.kidStack = append(c.p.kidStack, item)
+		}
+	}
+	return c.endList(base)
+}
+
 func (c *actx) list(args ...any) any {
 	base := len(c.p.kidStack)
 	c.pushList(args...)
@@ -5425,6 +5441,22 @@ func (c *tctx) mapList(list any, f func(item any) any) any {
 	return c.endList(base)
 }
 
+func (c *tctx) filterList(list any, f func(item any) any) any {
+	base := len(c.p.kidStack)
+	for _, item := range c.listItems("filter", list) {
+		c.p.stepWork()
+		value := f(tvalOrNil(item))
+		keep, ok := value.(bool)
+		if !ok {
+			c.p.evalErrorf("filter: predicate must produce a bool, got %s", ttypeName(value))
+		}
+		if keep {
+			c.p.kidStack = append(c.p.kidStack, item)
+		}
+	}
+	return c.endList(base)
+}
+
 func (c *tctx) list(args ...any) any {
 	base := len(c.p.kidStack)
 	c.pushList(args...)
@@ -7963,8 +7995,12 @@ func (a *astConv) toMatch(n *Node) *Match {
 	if n == nil || n.Type() != "Match" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Match)
+	}
 	v := astNew(&a.match)
 	*v = Match{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -7973,9 +8009,13 @@ func (a *astConv) toError(n *Node) *Error {
 	if n == nil || n.Type() != "Error" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Error)
+	}
 	msg, _ := a.field(n, "message").(string)
 	v := astNew(&a.error)
 	*v = Error{Span: Span{int(n.Start), int(n.End)}, Text: n.Text, Message: msg}
+	a.remember(n, v)
 	return v
 }
 
@@ -8073,8 +8113,12 @@ func (a *astConv) toAttValue(n *Node) *AttValue {
 	if n == nil || n.Type() != "AttValue" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*AttValue)
+	}
 	v := astNew(&a.tAttValue)
 	*v = AttValue{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -8083,8 +8127,12 @@ func (a *astConv) toCDSect(n *Node) *CDSect {
 	if n == nil || n.Type() != "CDSect" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*CDSect)
+	}
 	v := astNew(&a.tCDSect)
 	*v = CDSect{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -8093,8 +8141,12 @@ func (a *astConv) toCharData(n *Node) *CharData {
 	if n == nil || n.Type() != "CharData" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*CharData)
+	}
 	v := astNew(&a.tCharData)
 	*v = CharData{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -8103,8 +8155,12 @@ func (a *astConv) toCharRef(n *Node) *CharRef {
 	if n == nil || n.Type() != "CharRef" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*CharRef)
+	}
 	v := astNew(&a.tCharRef)
 	*v = CharRef{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -8113,8 +8169,12 @@ func (a *astConv) toComment(n *Node) *Comment {
 	if n == nil || n.Type() != "Comment" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Comment)
+	}
 	v := astNew(&a.tComment)
 	*v = Comment{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -8123,8 +8183,12 @@ func (a *astConv) toEncName(n *Node) *EncName {
 	if n == nil || n.Type() != "EncName" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*EncName)
+	}
 	v := astNew(&a.tEncName)
 	*v = EncName{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -8133,8 +8197,12 @@ func (a *astConv) toEntityRef(n *Node) *EntityRef {
 	if n == nil || n.Type() != "EntityRef" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*EntityRef)
+	}
 	v := astNew(&a.tEntityRef)
 	*v = EntityRef{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -8143,8 +8211,12 @@ func (a *astConv) toEntityValue(n *Node) *EntityValue {
 	if n == nil || n.Type() != "EntityValue" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*EntityValue)
+	}
 	v := astNew(&a.tEntityValue)
 	*v = EntityValue{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -8153,8 +8225,12 @@ func (a *astConv) toKeyword(n *Node) *Keyword {
 	if n == nil || n.Type() != "Keyword" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Keyword)
+	}
 	v := astNew(&a.tKeyword)
 	*v = Keyword{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -8163,8 +8239,12 @@ func (a *astConv) toName(n *Node) *Name {
 	if n == nil || n.Type() != "Name" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Name)
+	}
 	v := astNew(&a.tName)
 	*v = Name{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -8173,8 +8253,12 @@ func (a *astConv) toNmtoken(n *Node) *Nmtoken {
 	if n == nil || n.Type() != "Nmtoken" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Nmtoken)
+	}
 	v := astNew(&a.tNmtoken)
 	*v = Nmtoken{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -8183,8 +8267,12 @@ func (a *astConv) toOccurrence(n *Node) *Occurrence {
 	if n == nil || n.Type() != "Occurrence" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Occurrence)
+	}
 	v := astNew(&a.tOccurrence)
 	*v = Occurrence{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -8193,8 +8281,12 @@ func (a *astConv) toPERef(n *Node) *PERef {
 	if n == nil || n.Type() != "PERef" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*PERef)
+	}
 	v := astNew(&a.tPERef)
 	*v = PERef{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -8203,8 +8295,12 @@ func (a *astConv) toPIData(n *Node) *PIData {
 	if n == nil || n.Type() != "PIData" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*PIData)
+	}
 	v := astNew(&a.tPIData)
 	*v = PIData{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -8213,8 +8309,12 @@ func (a *astConv) toPubidLiteral(n *Node) *PubidLiteral {
 	if n == nil || n.Type() != "PubidLiteral" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*PubidLiteral)
+	}
 	v := astNew(&a.tPubidLiteral)
 	*v = PubidLiteral{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -8223,8 +8323,12 @@ func (a *astConv) toSystemLiteral(n *Node) *SystemLiteral {
 	if n == nil || n.Type() != "SystemLiteral" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*SystemLiteral)
+	}
 	v := astNew(&a.tSystemLiteral)
 	*v = SystemLiteral{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -8233,8 +8337,12 @@ func (a *astConv) toVersion(n *Node) *Version {
 	if n == nil || n.Type() != "Version" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Version)
+	}
 	v := astNew(&a.tVersion)
 	*v = Version{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -8243,8 +8351,12 @@ func (a *astConv) toYesNo(n *Node) *YesNo {
 	if n == nil || n.Type() != "YesNo" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*YesNo)
+	}
 	v := astNew(&a.tYesNo)
 	*v = YesNo{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -8253,7 +8365,11 @@ func (a *astConv) toAttDef(n *Node) *AttDef {
 	if n == nil || n.Type() != "AttDef" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*AttDef)
+	}
 	v := astNew(&a.tAttDef)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Name = a.toName(astNode(a.field(n, "Name")))
 	v.Type = a.toAttType(astNode(a.field(n, "Type")))
@@ -8267,7 +8383,11 @@ func (a *astConv) toAttlistDecl(n *Node) *AttlistDecl {
 	if n == nil || n.Type() != "AttlistDecl" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*AttlistDecl)
+	}
 	v := astNew(&a.tAttlistDecl)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Name = a.toName(astNode(a.field(n, "Name")))
 	v.Defs = a.list0(astNode(a.field(n, "Defs")))
@@ -8279,7 +8399,11 @@ func (a *astConv) toAttribute(n *Node) *Attribute {
 	if n == nil || n.Type() != "Attribute" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Attribute)
+	}
 	v := astNew(&a.tAttribute)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Name = a.toName(astNode(a.field(n, "Name")))
 	v.Value = a.toAttValue(astNode(a.field(n, "Value")))
@@ -8291,7 +8415,11 @@ func (a *astConv) toChoice(n *Node) *Choice {
 	if n == nil || n.Type() != "Choice" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Choice)
+	}
 	v := astNew(&a.tChoice)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Items = a.list1(astNode(a.field(n, "Items")))
 	v.Occur = a.toOccurrence(astNode(a.field(n, "Occur")))
@@ -8303,7 +8431,11 @@ func (a *astConv) toDoctype(n *Node) *Doctype {
 	if n == nil || n.Type() != "Doctype" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Doctype)
+	}
 	v := astNew(&a.tDoctype)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Name = a.toName(astNode(a.field(n, "Name")))
 	v.ExternalID = a.toExternalID(astNode(a.field(n, "ExternalID")))
@@ -8316,7 +8448,11 @@ func (a *astConv) toDocument(n *Node) *Document {
 	if n == nil || n.Type() != "Document" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Document)
+	}
 	v := astNew(&a.tDocument)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Decl = a.toXMLDecl(astNode(a.field(n, "Decl")))
 	v.Prolog = a.list3(astNode(a.field(n, "Prolog")))
@@ -8331,7 +8467,11 @@ func (a *astConv) toElement(n *Node) *Element {
 	if n == nil || n.Type() != "Element" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Element)
+	}
 	v := astNew(&a.tElement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Name = a.toName(astNode(a.field(n, "Name")))
 	v.Attrs = a.list4(astNode(a.field(n, "Attrs")))
@@ -8344,7 +8484,11 @@ func (a *astConv) toElementDecl(n *Node) *ElementDecl {
 	if n == nil || n.Type() != "ElementDecl" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ElementDecl)
+	}
 	v := astNew(&a.tElementDecl)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Name = a.toName(astNode(a.field(n, "Name")))
 	v.Content = a.toContentSpec(astNode(a.field(n, "Content")))
@@ -8356,7 +8500,11 @@ func (a *astConv) toEntityDecl(n *Node) *EntityDecl {
 	if n == nil || n.Type() != "EntityDecl" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*EntityDecl)
+	}
 	v := astNew(&a.tEntityDecl)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Parameter = astBool(a.field(n, "Parameter"))
 	v.Name = a.toName(astNode(a.field(n, "Name")))
@@ -8371,7 +8519,11 @@ func (a *astConv) toEnumeration(n *Node) *Enumeration {
 	if n == nil || n.Type() != "Enumeration" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Enumeration)
+	}
 	v := astNew(&a.tEnumeration)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Values = a.list6(astNode(a.field(n, "Values")))
 	return v
@@ -8382,7 +8534,11 @@ func (a *astConv) toExternalID(n *Node) *ExternalID {
 	if n == nil || n.Type() != "ExternalID" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ExternalID)
+	}
 	v := astNew(&a.tExternalID)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Public = a.toPubidLiteral(astNode(a.field(n, "Public")))
 	v.System = a.toSystemLiteral(astNode(a.field(n, "System")))
@@ -8394,7 +8550,11 @@ func (a *astConv) toMixed(n *Node) *Mixed {
 	if n == nil || n.Type() != "Mixed" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Mixed)
+	}
 	v := astNew(&a.tMixed)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Names = a.list7(astNode(a.field(n, "Names")))
 	return v
@@ -8405,7 +8565,11 @@ func (a *astConv) toNameParticle(n *Node) *NameParticle {
 	if n == nil || n.Type() != "NameParticle" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*NameParticle)
+	}
 	v := astNew(&a.tNameParticle)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Name = a.toName(astNode(a.field(n, "Name")))
 	v.Occur = a.toOccurrence(astNode(a.field(n, "Occur")))
@@ -8417,7 +8581,11 @@ func (a *astConv) toNotationDecl(n *Node) *NotationDecl {
 	if n == nil || n.Type() != "NotationDecl" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*NotationDecl)
+	}
 	v := astNew(&a.tNotationDecl)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Name = a.toName(astNode(a.field(n, "Name")))
 	v.ExternalID = a.toExternalID(astNode(a.field(n, "ExternalID")))
@@ -8429,7 +8597,11 @@ func (a *astConv) toNotationType(n *Node) *NotationType {
 	if n == nil || n.Type() != "NotationType" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*NotationType)
+	}
 	v := astNew(&a.tNotationType)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Names = a.list7(astNode(a.field(n, "Names")))
 	return v
@@ -8440,7 +8612,11 @@ func (a *astConv) toPI(n *Node) *PI {
 	if n == nil || n.Type() != "PI" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*PI)
+	}
 	v := astNew(&a.tPI)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Target = a.toName(astNode(a.field(n, "Target")))
 	v.Data = a.toPIData(astNode(a.field(n, "Data")))
@@ -8452,7 +8628,11 @@ func (a *astConv) toSequence(n *Node) *Sequence {
 	if n == nil || n.Type() != "Sequence" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Sequence)
+	}
 	v := astNew(&a.tSequence)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Items = a.list1(astNode(a.field(n, "Items")))
 	v.Occur = a.toOccurrence(astNode(a.field(n, "Occur")))
@@ -8464,7 +8644,11 @@ func (a *astConv) toXMLDecl(n *Node) *XMLDecl {
 	if n == nil || n.Type() != "XMLDecl" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*XMLDecl)
+	}
 	v := astNew(&a.tXMLDecl)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Version = a.toVersion(astNode(a.field(n, "Version")))
 	v.Encoding = a.toEncName(astNode(a.field(n, "Encoding")))
@@ -8703,6 +8887,7 @@ func (a *astConv) list7(n *Node) []*Name {
 // astConv converts nodes into typed values.
 type astConv struct {
 	control        *workControl
+	values         map[*Node]any // preserve aliases when one node appears in multiple fields or lists
 	match          astChunk[Match]
 	error          astChunk[Error]
 	tAttValue      astChunk[AttValue]
@@ -8751,6 +8936,12 @@ type astConv struct {
 	list7Chunk     astChunk[*Name]
 }
 
+func (a *astConv) remember(n *Node, v any) {
+	if a.values == nil {
+		a.values = make(map[*Node]any)
+	}
+	a.values[n] = v
+}
 func (a *astConv) stepWork() {
 	if workControlsEnabled && a.control != nil {
 		a.control.charge(0, 1)

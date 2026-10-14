@@ -2186,6 +2186,22 @@ func (c *actx) mapList(list any, f func(item any) any) any {
 	return c.endList(base)
 }
 
+func (c *actx) filterList(list any, f func(item any) any) any {
+	base := len(c.p.kidStack)
+	for _, item := range c.listItems("filter", list) {
+		c.p.stepWork()
+		value := f(nodeOrNil(item))
+		keep, ok := value.(bool)
+		if !ok {
+			c.p.evalErrorf("filter: predicate must produce a bool, got %s", typeName(value))
+		}
+		if keep {
+			c.p.kidStack = append(c.p.kidStack, item)
+		}
+	}
+	return c.endList(base)
+}
+
 func (c *actx) list(args ...any) any {
 	base := len(c.p.kidStack)
 	c.pushList(args...)
@@ -5422,6 +5438,22 @@ func trtFold(fn string, right bool, acc, list any, f func(acc, item any) any) an
 func (c *tctx) mapList(list any, f func(item any) any) any {
 	base := len(c.p.kidStack)
 	c.pushMap(list, f)
+	return c.endList(base)
+}
+
+func (c *tctx) filterList(list any, f func(item any) any) any {
+	base := len(c.p.kidStack)
+	for _, item := range c.listItems("filter", list) {
+		c.p.stepWork()
+		value := f(tvalOrNil(item))
+		keep, ok := value.(bool)
+		if !ok {
+			c.p.evalErrorf("filter: predicate must produce a bool, got %s", ttypeName(value))
+		}
+		if keep {
+			c.p.kidStack = append(c.p.kidStack, item)
+		}
+	}
 	return c.endList(base)
 }
 
@@ -17978,8 +18010,12 @@ func (a *astConv) toMatch(n *Node) *Match {
 	if n == nil || n.Type() != "Match" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Match)
+	}
 	v := astNew(&a.match)
 	*v = Match{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -17988,9 +18024,13 @@ func (a *astConv) toError(n *Node) *Error {
 	if n == nil || n.Type() != "Error" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Error)
+	}
 	msg, _ := a.field(n, "message").(string)
 	v := astNew(&a.error)
 	*v = Error{Span: Span{int(n.Start), int(n.End)}, Text: n.Text, Message: msg}
+	a.remember(n, v)
 	return v
 }
 
@@ -18344,8 +18384,12 @@ func (a *astConv) toBigIntLiteral(n *Node) *BigIntLiteral {
 	if n == nil || n.Type() != "BigIntLiteral" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*BigIntLiteral)
+	}
 	v := astNew(&a.tBigIntLiteral)
 	*v = BigIntLiteral{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18354,8 +18398,12 @@ func (a *astConv) toBooleanLiteral(n *Node) *BooleanLiteral {
 	if n == nil || n.Type() != "BooleanLiteral" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*BooleanLiteral)
+	}
 	v := astNew(&a.tBooleanLiteral)
 	*v = BooleanLiteral{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18364,8 +18412,12 @@ func (a *astConv) toDebuggerStatement(n *Node) *DebuggerStatement {
 	if n == nil || n.Type() != "DebuggerStatement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*DebuggerStatement)
+	}
 	v := astNew(&a.tDebuggerStatement)
 	*v = DebuggerStatement{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18374,8 +18426,12 @@ func (a *astConv) toEmptyStatement(n *Node) *EmptyStatement {
 	if n == nil || n.Type() != "EmptyStatement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*EmptyStatement)
+	}
 	v := astNew(&a.tEmptyStatement)
 	*v = EmptyStatement{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18384,8 +18440,12 @@ func (a *astConv) toEndOfFileToken(n *Node) *EndOfFileToken {
 	if n == nil || n.Type() != "EndOfFileToken" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*EndOfFileToken)
+	}
 	v := astNew(&a.tEndOfFileToken)
 	*v = EndOfFileToken{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18394,8 +18454,12 @@ func (a *astConv) toIdentifier(n *Node) *Identifier {
 	if n == nil || n.Type() != "Identifier" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Identifier)
+	}
 	v := astNew(&a.tIdentifier)
 	*v = Identifier{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18404,8 +18468,12 @@ func (a *astConv) toImportExpression(n *Node) *ImportExpression {
 	if n == nil || n.Type() != "ImportExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ImportExpression)
+	}
 	v := astNew(&a.tImportExpression)
 	*v = ImportExpression{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18414,8 +18482,12 @@ func (a *astConv) toJSDocAllType(n *Node) *JSDocAllType {
 	if n == nil || n.Type() != "JSDocAllType" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*JSDocAllType)
+	}
 	v := astNew(&a.tJSDocAllType)
 	*v = JSDocAllType{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18424,8 +18496,12 @@ func (a *astConv) toJSDocUnknownType(n *Node) *JSDocUnknownType {
 	if n == nil || n.Type() != "JSDocUnknownType" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*JSDocUnknownType)
+	}
 	v := astNew(&a.tJSDocUnknownType)
 	*v = JSDocUnknownType{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18434,8 +18510,12 @@ func (a *astConv) toJsxClosingFragment(n *Node) *JsxClosingFragment {
 	if n == nil || n.Type() != "JsxClosingFragment" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*JsxClosingFragment)
+	}
 	v := astNew(&a.tJsxClosingFragment)
 	*v = JsxClosingFragment{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18444,8 +18524,12 @@ func (a *astConv) toJsxOpeningFragment(n *Node) *JsxOpeningFragment {
 	if n == nil || n.Type() != "JsxOpeningFragment" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*JsxOpeningFragment)
+	}
 	v := astNew(&a.tJsxOpeningFragment)
 	*v = JsxOpeningFragment{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18454,8 +18538,12 @@ func (a *astConv) toJsxText(n *Node) *JsxText {
 	if n == nil || n.Type() != "JsxText" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*JsxText)
+	}
 	v := astNew(&a.tJsxText)
 	*v = JsxText{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18464,8 +18552,12 @@ func (a *astConv) toKeywordTypeNode(n *Node) *KeywordTypeNode {
 	if n == nil || n.Type() != "KeywordTypeNode" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*KeywordTypeNode)
+	}
 	v := astNew(&a.tKeywordTypeNode)
 	*v = KeywordTypeNode{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18474,8 +18566,12 @@ func (a *astConv) toModifier(n *Node) *Modifier {
 	if n == nil || n.Type() != "Modifier" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Modifier)
+	}
 	v := astNew(&a.tModifier)
 	*v = Modifier{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18484,8 +18580,12 @@ func (a *astConv) toNoSubstitutionTemplateLiteral(n *Node) *NoSubstitutionTempla
 	if n == nil || n.Type() != "NoSubstitutionTemplateLiteral" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*NoSubstitutionTemplateLiteral)
+	}
 	v := astNew(&a.tNoSubstitutionTemplateLiteral)
 	*v = NoSubstitutionTemplateLiteral{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18494,8 +18594,12 @@ func (a *astConv) toNullLiteral(n *Node) *NullLiteral {
 	if n == nil || n.Type() != "NullLiteral" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*NullLiteral)
+	}
 	v := astNew(&a.tNullLiteral)
 	*v = NullLiteral{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18504,8 +18608,12 @@ func (a *astConv) toNumericLiteral(n *Node) *NumericLiteral {
 	if n == nil || n.Type() != "NumericLiteral" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*NumericLiteral)
+	}
 	v := astNew(&a.tNumericLiteral)
 	*v = NumericLiteral{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18514,8 +18622,12 @@ func (a *astConv) toOmittedExpression(n *Node) *OmittedExpression {
 	if n == nil || n.Type() != "OmittedExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*OmittedExpression)
+	}
 	v := astNew(&a.tOmittedExpression)
 	*v = OmittedExpression{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18524,8 +18636,12 @@ func (a *astConv) toPrivateIdentifier(n *Node) *PrivateIdentifier {
 	if n == nil || n.Type() != "PrivateIdentifier" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*PrivateIdentifier)
+	}
 	v := astNew(&a.tPrivateIdentifier)
 	*v = PrivateIdentifier{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18534,8 +18650,12 @@ func (a *astConv) toRegularExpressionLiteral(n *Node) *RegularExpressionLiteral 
 	if n == nil || n.Type() != "RegularExpressionLiteral" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*RegularExpressionLiteral)
+	}
 	v := astNew(&a.tRegularExpressionLiteral)
 	*v = RegularExpressionLiteral{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18544,8 +18664,12 @@ func (a *astConv) toSemicolonClassElement(n *Node) *SemicolonClassElement {
 	if n == nil || n.Type() != "SemicolonClassElement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*SemicolonClassElement)
+	}
 	v := astNew(&a.tSemicolonClassElement)
 	*v = SemicolonClassElement{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18554,8 +18678,12 @@ func (a *astConv) toStringLiteral(n *Node) *StringLiteral {
 	if n == nil || n.Type() != "StringLiteral" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*StringLiteral)
+	}
 	v := astNew(&a.tStringLiteral)
 	*v = StringLiteral{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18564,8 +18692,12 @@ func (a *astConv) toSuperExpression(n *Node) *SuperExpression {
 	if n == nil || n.Type() != "SuperExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*SuperExpression)
+	}
 	v := astNew(&a.tSuperExpression)
 	*v = SuperExpression{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18574,8 +18706,12 @@ func (a *astConv) toTemplateHead(n *Node) *TemplateHead {
 	if n == nil || n.Type() != "TemplateHead" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*TemplateHead)
+	}
 	v := astNew(&a.tTemplateHead)
 	*v = TemplateHead{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18584,8 +18720,12 @@ func (a *astConv) toTemplateMiddle(n *Node) *TemplateMiddle {
 	if n == nil || n.Type() != "TemplateMiddle" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*TemplateMiddle)
+	}
 	v := astNew(&a.tTemplateMiddle)
 	*v = TemplateMiddle{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18594,8 +18734,12 @@ func (a *astConv) toTemplateTail(n *Node) *TemplateTail {
 	if n == nil || n.Type() != "TemplateTail" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*TemplateTail)
+	}
 	v := astNew(&a.tTemplateTail)
 	*v = TemplateTail{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18604,8 +18748,12 @@ func (a *astConv) toThisExpression(n *Node) *ThisExpression {
 	if n == nil || n.Type() != "ThisExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ThisExpression)
+	}
 	v := astNew(&a.tThisExpression)
 	*v = ThisExpression{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18614,8 +18762,12 @@ func (a *astConv) toThisTypeNode(n *Node) *ThisTypeNode {
 	if n == nil || n.Type() != "ThisTypeNode" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ThisTypeNode)
+	}
 	v := astNew(&a.tThisTypeNode)
 	*v = ThisTypeNode{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18624,8 +18776,12 @@ func (a *astConv) toToken(n *Node) *Token {
 	if n == nil || n.Type() != "Token" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Token)
+	}
 	v := astNew(&a.tToken)
 	*v = Token{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -18634,7 +18790,11 @@ func (a *astConv) toArrayBindingPattern(n *Node) *ArrayBindingPattern {
 	if n == nil || n.Type() != "ArrayBindingPattern" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ArrayBindingPattern)
+	}
 	v := astNew(&a.tArrayBindingPattern)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Elements = a.list2(astNode(a.field(n, "Elements")))
 	return v
@@ -18645,7 +18805,11 @@ func (a *astConv) toArrayLiteralExpression(n *Node) *ArrayLiteralExpression {
 	if n == nil || n.Type() != "ArrayLiteralExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ArrayLiteralExpression)
+	}
 	v := astNew(&a.tArrayLiteralExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Elements = a.list3(astNode(a.field(n, "Elements")))
 	return v
@@ -18656,7 +18820,11 @@ func (a *astConv) toArrayType(n *Node) *ArrayType {
 	if n == nil || n.Type() != "ArrayType" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ArrayType)
+	}
 	v := astNew(&a.tArrayType)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.ElementType = a.toTypeNode(astNode(a.field(n, "ElementType")))
 	return v
@@ -18667,7 +18835,11 @@ func (a *astConv) toArrowFunction(n *Node) *ArrowFunction {
 	if n == nil || n.Type() != "ArrowFunction" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ArrowFunction)
+	}
 	v := astNew(&a.tArrowFunction)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.TypeParameters = a.list5(astNode(a.field(n, "TypeParameters")))
@@ -18683,7 +18855,11 @@ func (a *astConv) toAsExpression(n *Node) *AsExpression {
 	if n == nil || n.Type() != "AsExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*AsExpression)
+	}
 	v := astNew(&a.tAsExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	v.Type = a.toTypeNode(astNode(a.field(n, "Type")))
@@ -18695,7 +18871,11 @@ func (a *astConv) toAwaitExpression(n *Node) *AwaitExpression {
 	if n == nil || n.Type() != "AwaitExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*AwaitExpression)
+	}
 	v := astNew(&a.tAwaitExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	return v
@@ -18706,7 +18886,11 @@ func (a *astConv) toBinaryExpression(n *Node) *BinaryExpression {
 	if n == nil || n.Type() != "BinaryExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*BinaryExpression)
+	}
 	v := astNew(&a.tBinaryExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Left = a.toExpression(astNode(a.field(n, "Left")))
 	v.OperatorToken = a.toToken(astNode(a.field(n, "OperatorToken")))
@@ -18719,7 +18903,11 @@ func (a *astConv) toBindingElement(n *Node) *BindingElement {
 	if n == nil || n.Type() != "BindingElement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*BindingElement)
+	}
 	v := astNew(&a.tBindingElement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.DotDotDotToken = a.toToken(astNode(a.field(n, "DotDotDotToken")))
 	v.PropertyName = a.toPropertyName(astNode(a.field(n, "PropertyName")))
@@ -18733,7 +18921,11 @@ func (a *astConv) toBlock(n *Node) *Block {
 	if n == nil || n.Type() != "Block" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Block)
+	}
 	v := astNew(&a.tBlock)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Statements = a.list7(astNode(a.field(n, "Statements")))
 	return v
@@ -18744,7 +18936,11 @@ func (a *astConv) toBreakStatement(n *Node) *BreakStatement {
 	if n == nil || n.Type() != "BreakStatement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*BreakStatement)
+	}
 	v := astNew(&a.tBreakStatement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Label = a.toIdentifier(astNode(a.field(n, "Label")))
 	return v
@@ -18755,7 +18951,11 @@ func (a *astConv) toCallExpression(n *Node) *CallExpression {
 	if n == nil || n.Type() != "CallExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*CallExpression)
+	}
 	v := astNew(&a.tCallExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	v.QuestionDotToken = a.toToken(astNode(a.field(n, "QuestionDotToken")))
@@ -18769,7 +18969,11 @@ func (a *astConv) toCallSignature(n *Node) *CallSignature {
 	if n == nil || n.Type() != "CallSignature" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*CallSignature)
+	}
 	v := astNew(&a.tCallSignature)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.TypeParameters = a.list5(astNode(a.field(n, "TypeParameters")))
 	v.Parameters = a.list6(astNode(a.field(n, "Parameters")))
@@ -18782,7 +18986,11 @@ func (a *astConv) toCaseBlock(n *Node) *CaseBlock {
 	if n == nil || n.Type() != "CaseBlock" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*CaseBlock)
+	}
 	v := astNew(&a.tCaseBlock)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Clauses = a.list9(astNode(a.field(n, "Clauses")))
 	return v
@@ -18793,7 +19001,11 @@ func (a *astConv) toCaseClause(n *Node) *CaseClause {
 	if n == nil || n.Type() != "CaseClause" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*CaseClause)
+	}
 	v := astNew(&a.tCaseClause)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	v.Statements = a.list7(astNode(a.field(n, "Statements")))
@@ -18805,7 +19017,11 @@ func (a *astConv) toCatchClause(n *Node) *CatchClause {
 	if n == nil || n.Type() != "CatchClause" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*CatchClause)
+	}
 	v := astNew(&a.tCatchClause)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.VariableDeclaration = a.toVariableDeclaration(astNode(a.field(n, "VariableDeclaration")))
 	v.Block = a.toBlock(astNode(a.field(n, "Block")))
@@ -18817,7 +19033,11 @@ func (a *astConv) toClassDeclaration(n *Node) *ClassDeclaration {
 	if n == nil || n.Type() != "ClassDeclaration" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ClassDeclaration)
+	}
 	v := astNew(&a.tClassDeclaration)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.Name = a.toIdentifier(astNode(a.field(n, "Name")))
@@ -18832,7 +19052,11 @@ func (a *astConv) toClassExpression(n *Node) *ClassExpression {
 	if n == nil || n.Type() != "ClassExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ClassExpression)
+	}
 	v := astNew(&a.tClassExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.Name = a.toIdentifier(astNode(a.field(n, "Name")))
@@ -18847,7 +19071,11 @@ func (a *astConv) toClassStaticBlockDeclaration(n *Node) *ClassStaticBlockDeclar
 	if n == nil || n.Type() != "ClassStaticBlockDeclaration" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ClassStaticBlockDeclaration)
+	}
 	v := astNew(&a.tClassStaticBlockDeclaration)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.Body = a.toBlock(astNode(a.field(n, "Body")))
@@ -18859,7 +19087,11 @@ func (a *astConv) toComputedPropertyName(n *Node) *ComputedPropertyName {
 	if n == nil || n.Type() != "ComputedPropertyName" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ComputedPropertyName)
+	}
 	v := astNew(&a.tComputedPropertyName)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	return v
@@ -18870,7 +19102,11 @@ func (a *astConv) toConditionalExpression(n *Node) *ConditionalExpression {
 	if n == nil || n.Type() != "ConditionalExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ConditionalExpression)
+	}
 	v := astNew(&a.tConditionalExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Condition = a.toExpression(astNode(a.field(n, "Condition")))
 	v.QuestionToken = a.toToken(astNode(a.field(n, "QuestionToken")))
@@ -18885,7 +19121,11 @@ func (a *astConv) toConditionalType(n *Node) *ConditionalType {
 	if n == nil || n.Type() != "ConditionalType" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ConditionalType)
+	}
 	v := astNew(&a.tConditionalType)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.CheckType = a.toTypeNode(astNode(a.field(n, "CheckType")))
 	v.ExtendsType = a.toTypeNode(astNode(a.field(n, "ExtendsType")))
@@ -18899,7 +19139,11 @@ func (a *astConv) toConstructSignature(n *Node) *ConstructSignature {
 	if n == nil || n.Type() != "ConstructSignature" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ConstructSignature)
+	}
 	v := astNew(&a.tConstructSignature)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.TypeParameters = a.list5(astNode(a.field(n, "TypeParameters")))
 	v.Parameters = a.list6(astNode(a.field(n, "Parameters")))
@@ -18912,7 +19156,11 @@ func (a *astConv) toConstructor(n *Node) *Constructor {
 	if n == nil || n.Type() != "Constructor" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Constructor)
+	}
 	v := astNew(&a.tConstructor)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.TypeParameters = a.list5(astNode(a.field(n, "TypeParameters")))
@@ -18927,7 +19175,11 @@ func (a *astConv) toConstructorType(n *Node) *ConstructorType {
 	if n == nil || n.Type() != "ConstructorType" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ConstructorType)
+	}
 	v := astNew(&a.tConstructorType)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.TypeParameters = a.list5(astNode(a.field(n, "TypeParameters")))
@@ -18941,7 +19193,11 @@ func (a *astConv) toContinueStatement(n *Node) *ContinueStatement {
 	if n == nil || n.Type() != "ContinueStatement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ContinueStatement)
+	}
 	v := astNew(&a.tContinueStatement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Label = a.toIdentifier(astNode(a.field(n, "Label")))
 	return v
@@ -18952,7 +19208,11 @@ func (a *astConv) toDecorator(n *Node) *Decorator {
 	if n == nil || n.Type() != "Decorator" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Decorator)
+	}
 	v := astNew(&a.tDecorator)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	return v
@@ -18963,7 +19223,11 @@ func (a *astConv) toDefaultClause(n *Node) *DefaultClause {
 	if n == nil || n.Type() != "DefaultClause" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*DefaultClause)
+	}
 	v := astNew(&a.tDefaultClause)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Statements = a.list7(astNode(a.field(n, "Statements")))
 	return v
@@ -18974,7 +19238,11 @@ func (a *astConv) toDeleteExpression(n *Node) *DeleteExpression {
 	if n == nil || n.Type() != "DeleteExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*DeleteExpression)
+	}
 	v := astNew(&a.tDeleteExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	return v
@@ -18985,7 +19253,11 @@ func (a *astConv) toDoStatement(n *Node) *DoStatement {
 	if n == nil || n.Type() != "DoStatement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*DoStatement)
+	}
 	v := astNew(&a.tDoStatement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Statement = a.toStatement(astNode(a.field(n, "Statement")))
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
@@ -18997,7 +19269,11 @@ func (a *astConv) toElementAccessExpression(n *Node) *ElementAccessExpression {
 	if n == nil || n.Type() != "ElementAccessExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ElementAccessExpression)
+	}
 	v := astNew(&a.tElementAccessExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	v.QuestionDotToken = a.toToken(astNode(a.field(n, "QuestionDotToken")))
@@ -19010,7 +19286,11 @@ func (a *astConv) toEnumDeclaration(n *Node) *EnumDeclaration {
 	if n == nil || n.Type() != "EnumDeclaration" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*EnumDeclaration)
+	}
 	v := astNew(&a.tEnumDeclaration)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.Name = a.toIdentifier(astNode(a.field(n, "Name")))
@@ -19023,7 +19303,11 @@ func (a *astConv) toEnumMember(n *Node) *EnumMember {
 	if n == nil || n.Type() != "EnumMember" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*EnumMember)
+	}
 	v := astNew(&a.tEnumMember)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Name = a.toPropertyName(astNode(a.field(n, "Name")))
 	v.Initializer = a.toExpression(astNode(a.field(n, "Initializer")))
@@ -19035,7 +19319,11 @@ func (a *astConv) toExportAssignment(n *Node) *ExportAssignment {
 	if n == nil || n.Type() != "ExportAssignment" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ExportAssignment)
+	}
 	v := astNew(&a.tExportAssignment)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
@@ -19048,7 +19336,11 @@ func (a *astConv) toExportDeclaration(n *Node) *ExportDeclaration {
 	if n == nil || n.Type() != "ExportDeclaration" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ExportDeclaration)
+	}
 	v := astNew(&a.tExportDeclaration)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.ExportClause = a.toNamedExportBindings(astNode(a.field(n, "ExportClause")))
@@ -19063,7 +19355,11 @@ func (a *astConv) toExportSpecifier(n *Node) *ExportSpecifier {
 	if n == nil || n.Type() != "ExportSpecifier" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ExportSpecifier)
+	}
 	v := astNew(&a.tExportSpecifier)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.PropertyName = a.toImportAttributeName(astNode(a.field(n, "PropertyName")))
 	v.Name = a.toImportAttributeName(astNode(a.field(n, "Name")))
@@ -19076,7 +19372,11 @@ func (a *astConv) toExpressionStatement(n *Node) *ExpressionStatement {
 	if n == nil || n.Type() != "ExpressionStatement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ExpressionStatement)
+	}
 	v := astNew(&a.tExpressionStatement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	return v
@@ -19087,7 +19387,11 @@ func (a *astConv) toExpressionWithTypeArguments(n *Node) *ExpressionWithTypeArgu
 	if n == nil || n.Type() != "ExpressionWithTypeArguments" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ExpressionWithTypeArguments)
+	}
 	v := astNew(&a.tExpressionWithTypeArguments)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	v.TypeArguments = a.list8(astNode(a.field(n, "TypeArguments")))
@@ -19099,7 +19403,11 @@ func (a *astConv) toExternalModuleReference(n *Node) *ExternalModuleReference {
 	if n == nil || n.Type() != "ExternalModuleReference" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ExternalModuleReference)
+	}
 	v := astNew(&a.tExternalModuleReference)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	return v
@@ -19110,7 +19418,11 @@ func (a *astConv) toForInStatement(n *Node) *ForInStatement {
 	if n == nil || n.Type() != "ForInStatement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ForInStatement)
+	}
 	v := astNew(&a.tForInStatement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Initializer = a.toForInitializer(astNode(a.field(n, "Initializer")))
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
@@ -19123,7 +19435,11 @@ func (a *astConv) toForOfStatement(n *Node) *ForOfStatement {
 	if n == nil || n.Type() != "ForOfStatement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ForOfStatement)
+	}
 	v := astNew(&a.tForOfStatement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.AwaitModifier = a.toToken(astNode(a.field(n, "AwaitModifier")))
 	v.Initializer = a.toForInitializer(astNode(a.field(n, "Initializer")))
@@ -19137,7 +19453,11 @@ func (a *astConv) toForStatement(n *Node) *ForStatement {
 	if n == nil || n.Type() != "ForStatement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ForStatement)
+	}
 	v := astNew(&a.tForStatement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Initializer = a.toForInitializer(astNode(a.field(n, "Initializer")))
 	v.Condition = a.toExpression(astNode(a.field(n, "Condition")))
@@ -19151,7 +19471,11 @@ func (a *astConv) toFunctionDeclaration(n *Node) *FunctionDeclaration {
 	if n == nil || n.Type() != "FunctionDeclaration" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*FunctionDeclaration)
+	}
 	v := astNew(&a.tFunctionDeclaration)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.AsteriskToken = a.toToken(astNode(a.field(n, "AsteriskToken")))
@@ -19168,7 +19492,11 @@ func (a *astConv) toFunctionExpression(n *Node) *FunctionExpression {
 	if n == nil || n.Type() != "FunctionExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*FunctionExpression)
+	}
 	v := astNew(&a.tFunctionExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.AsteriskToken = a.toToken(astNode(a.field(n, "AsteriskToken")))
@@ -19185,7 +19513,11 @@ func (a *astConv) toFunctionType(n *Node) *FunctionType {
 	if n == nil || n.Type() != "FunctionType" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*FunctionType)
+	}
 	v := astNew(&a.tFunctionType)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.TypeParameters = a.list5(astNode(a.field(n, "TypeParameters")))
 	v.Parameters = a.list6(astNode(a.field(n, "Parameters")))
@@ -19198,7 +19530,11 @@ func (a *astConv) toGetAccessor(n *Node) *GetAccessor {
 	if n == nil || n.Type() != "GetAccessor" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*GetAccessor)
+	}
 	v := astNew(&a.tGetAccessor)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.Name = a.toPropertyName(astNode(a.field(n, "Name")))
@@ -19214,7 +19550,11 @@ func (a *astConv) toHeritageClause(n *Node) *HeritageClause {
 	if n == nil || n.Type() != "HeritageClause" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*HeritageClause)
+	}
 	v := astNew(&a.tHeritageClause)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Token = astString(a.field(n, "Token"))
 	v.Types = a.list13(astNode(a.field(n, "Types")))
@@ -19226,7 +19566,11 @@ func (a *astConv) toIfStatement(n *Node) *IfStatement {
 	if n == nil || n.Type() != "IfStatement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*IfStatement)
+	}
 	v := astNew(&a.tIfStatement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	v.ThenStatement = a.toStatement(astNode(a.field(n, "ThenStatement")))
@@ -19239,7 +19583,11 @@ func (a *astConv) toImportAttribute(n *Node) *ImportAttribute {
 	if n == nil || n.Type() != "ImportAttribute" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ImportAttribute)
+	}
 	v := astNew(&a.tImportAttribute)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Name = a.toImportAttributeName(astNode(a.field(n, "Name")))
 	v.Value = a.toExpression(astNode(a.field(n, "Value")))
@@ -19251,7 +19599,11 @@ func (a *astConv) toImportAttributes(n *Node) *ImportAttributes {
 	if n == nil || n.Type() != "ImportAttributes" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ImportAttributes)
+	}
 	v := astNew(&a.tImportAttributes)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Elements = a.list14(astNode(a.field(n, "Elements")))
 	v.Token = astString(a.field(n, "Token"))
@@ -19263,7 +19615,11 @@ func (a *astConv) toImportClause(n *Node) *ImportClause {
 	if n == nil || n.Type() != "ImportClause" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ImportClause)
+	}
 	v := astNew(&a.tImportClause)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Name = a.toIdentifier(astNode(a.field(n, "Name")))
 	v.NamedBindings = a.toNamedImportBindings(astNode(a.field(n, "NamedBindings")))
@@ -19276,7 +19632,11 @@ func (a *astConv) toImportDeclaration(n *Node) *ImportDeclaration {
 	if n == nil || n.Type() != "ImportDeclaration" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ImportDeclaration)
+	}
 	v := astNew(&a.tImportDeclaration)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.ImportClause = a.toImportClause(astNode(a.field(n, "ImportClause")))
@@ -19290,7 +19650,11 @@ func (a *astConv) toImportEqualsDeclaration(n *Node) *ImportEqualsDeclaration {
 	if n == nil || n.Type() != "ImportEqualsDeclaration" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ImportEqualsDeclaration)
+	}
 	v := astNew(&a.tImportEqualsDeclaration)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.Name = a.toIdentifier(astNode(a.field(n, "Name")))
@@ -19304,7 +19668,11 @@ func (a *astConv) toImportSpecifier(n *Node) *ImportSpecifier {
 	if n == nil || n.Type() != "ImportSpecifier" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ImportSpecifier)
+	}
 	v := astNew(&a.tImportSpecifier)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.PropertyName = a.toImportAttributeName(astNode(a.field(n, "PropertyName")))
 	v.Name = a.toIdentifier(astNode(a.field(n, "Name")))
@@ -19317,7 +19685,11 @@ func (a *astConv) toImportType(n *Node) *ImportType {
 	if n == nil || n.Type() != "ImportType" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ImportType)
+	}
 	v := astNew(&a.tImportType)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Argument = a.toTypeNode(astNode(a.field(n, "Argument")))
 	v.Attributes = a.toImportAttributes(astNode(a.field(n, "Attributes")))
@@ -19332,7 +19704,11 @@ func (a *astConv) toIndexSignature(n *Node) *IndexSignature {
 	if n == nil || n.Type() != "IndexSignature" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*IndexSignature)
+	}
 	v := astNew(&a.tIndexSignature)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.Parameters = a.list6(astNode(a.field(n, "Parameters")))
@@ -19345,7 +19721,11 @@ func (a *astConv) toIndexedAccessType(n *Node) *IndexedAccessType {
 	if n == nil || n.Type() != "IndexedAccessType" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*IndexedAccessType)
+	}
 	v := astNew(&a.tIndexedAccessType)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.ObjectType = a.toTypeNode(astNode(a.field(n, "ObjectType")))
 	v.IndexType = a.toTypeNode(astNode(a.field(n, "IndexType")))
@@ -19357,7 +19737,11 @@ func (a *astConv) toInferType(n *Node) *InferType {
 	if n == nil || n.Type() != "InferType" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*InferType)
+	}
 	v := astNew(&a.tInferType)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.TypeParameter = a.toTypeParameter(astNode(a.field(n, "TypeParameter")))
 	return v
@@ -19368,7 +19752,11 @@ func (a *astConv) toInterfaceDeclaration(n *Node) *InterfaceDeclaration {
 	if n == nil || n.Type() != "InterfaceDeclaration" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*InterfaceDeclaration)
+	}
 	v := astNew(&a.tInterfaceDeclaration)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.Name = a.toIdentifier(astNode(a.field(n, "Name")))
@@ -19383,7 +19771,11 @@ func (a *astConv) toIntersectionType(n *Node) *IntersectionType {
 	if n == nil || n.Type() != "IntersectionType" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*IntersectionType)
+	}
 	v := astNew(&a.tIntersectionType)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Types = a.list8(astNode(a.field(n, "Types")))
 	return v
@@ -19394,7 +19786,11 @@ func (a *astConv) toJSDocFunctionType(n *Node) *JSDocFunctionType {
 	if n == nil || n.Type() != "JSDocFunctionType" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*JSDocFunctionType)
+	}
 	v := astNew(&a.tJSDocFunctionType)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Parameters = a.list6(astNode(a.field(n, "Parameters")))
 	v.Type = a.toTypeNode(astNode(a.field(n, "Type")))
@@ -19406,7 +19802,11 @@ func (a *astConv) toJSDocNonNullableType(n *Node) *JSDocNonNullableType {
 	if n == nil || n.Type() != "JSDocNonNullableType" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*JSDocNonNullableType)
+	}
 	v := astNew(&a.tJSDocNonNullableType)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Type = a.toTypeNode(astNode(a.field(n, "Type")))
 	v.Postfix = astBool(a.field(n, "Postfix"))
@@ -19418,7 +19818,11 @@ func (a *astConv) toJSDocNullableType(n *Node) *JSDocNullableType {
 	if n == nil || n.Type() != "JSDocNullableType" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*JSDocNullableType)
+	}
 	v := astNew(&a.tJSDocNullableType)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Type = a.toTypeNode(astNode(a.field(n, "Type")))
 	v.Postfix = astBool(a.field(n, "Postfix"))
@@ -19430,7 +19834,11 @@ func (a *astConv) toJsxAttribute(n *Node) *JsxAttribute {
 	if n == nil || n.Type() != "JsxAttribute" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*JsxAttribute)
+	}
 	v := astNew(&a.tJsxAttribute)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Name = a.toJsxAttributeName(astNode(a.field(n, "Name")))
 	v.Initializer = a.toJsxAttributeValue(astNode(a.field(n, "Initializer")))
@@ -19442,7 +19850,11 @@ func (a *astConv) toJsxAttributes(n *Node) *JsxAttributes {
 	if n == nil || n.Type() != "JsxAttributes" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*JsxAttributes)
+	}
 	v := astNew(&a.tJsxAttributes)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Properties = a.list16(astNode(a.field(n, "Properties")))
 	return v
@@ -19453,7 +19865,11 @@ func (a *astConv) toJsxClosingElement(n *Node) *JsxClosingElement {
 	if n == nil || n.Type() != "JsxClosingElement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*JsxClosingElement)
+	}
 	v := astNew(&a.tJsxClosingElement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.TagName = a.toJsxTagName(astNode(a.field(n, "TagName")))
 	return v
@@ -19464,7 +19880,11 @@ func (a *astConv) toJsxElement(n *Node) *JsxElement {
 	if n == nil || n.Type() != "JsxElement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*JsxElement)
+	}
 	v := astNew(&a.tJsxElement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.OpeningElement = a.toJsxOpeningElement(astNode(a.field(n, "OpeningElement")))
 	v.Children = a.list17(astNode(a.field(n, "Children")))
@@ -19477,7 +19897,11 @@ func (a *astConv) toJsxExpression(n *Node) *JsxExpression {
 	if n == nil || n.Type() != "JsxExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*JsxExpression)
+	}
 	v := astNew(&a.tJsxExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.DotDotDotToken = a.toToken(astNode(a.field(n, "DotDotDotToken")))
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
@@ -19489,7 +19913,11 @@ func (a *astConv) toJsxFragment(n *Node) *JsxFragment {
 	if n == nil || n.Type() != "JsxFragment" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*JsxFragment)
+	}
 	v := astNew(&a.tJsxFragment)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.OpeningFragment = a.toJsxOpeningFragment(astNode(a.field(n, "OpeningFragment")))
 	v.Children = a.list17(astNode(a.field(n, "Children")))
@@ -19502,7 +19930,11 @@ func (a *astConv) toJsxNamespacedName(n *Node) *JsxNamespacedName {
 	if n == nil || n.Type() != "JsxNamespacedName" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*JsxNamespacedName)
+	}
 	v := astNew(&a.tJsxNamespacedName)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Namespace = a.toIdentifier(astNode(a.field(n, "Namespace")))
 	v.Name = a.toIdentifier(astNode(a.field(n, "Name")))
@@ -19514,7 +19946,11 @@ func (a *astConv) toJsxOpeningElement(n *Node) *JsxOpeningElement {
 	if n == nil || n.Type() != "JsxOpeningElement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*JsxOpeningElement)
+	}
 	v := astNew(&a.tJsxOpeningElement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.TagName = a.toJsxTagName(astNode(a.field(n, "TagName")))
 	v.TypeArguments = a.list8(astNode(a.field(n, "TypeArguments")))
@@ -19527,7 +19963,11 @@ func (a *astConv) toJsxSelfClosingElement(n *Node) *JsxSelfClosingElement {
 	if n == nil || n.Type() != "JsxSelfClosingElement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*JsxSelfClosingElement)
+	}
 	v := astNew(&a.tJsxSelfClosingElement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.TagName = a.toJsxTagName(astNode(a.field(n, "TagName")))
 	v.TypeArguments = a.list8(astNode(a.field(n, "TypeArguments")))
@@ -19540,7 +19980,11 @@ func (a *astConv) toJsxSpreadAttribute(n *Node) *JsxSpreadAttribute {
 	if n == nil || n.Type() != "JsxSpreadAttribute" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*JsxSpreadAttribute)
+	}
 	v := astNew(&a.tJsxSpreadAttribute)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	return v
@@ -19551,7 +19995,11 @@ func (a *astConv) toLabeledStatement(n *Node) *LabeledStatement {
 	if n == nil || n.Type() != "LabeledStatement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*LabeledStatement)
+	}
 	v := astNew(&a.tLabeledStatement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Label = a.toIdentifier(astNode(a.field(n, "Label")))
 	v.Statement = a.toStatement(astNode(a.field(n, "Statement")))
@@ -19563,7 +20011,11 @@ func (a *astConv) toLiteralType(n *Node) *LiteralType {
 	if n == nil || n.Type() != "LiteralType" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*LiteralType)
+	}
 	v := astNew(&a.tLiteralType)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Literal = a.toLiteralTypeLiteral(astNode(a.field(n, "Literal")))
 	return v
@@ -19574,7 +20026,11 @@ func (a *astConv) toMappedType(n *Node) *MappedType {
 	if n == nil || n.Type() != "MappedType" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*MappedType)
+	}
 	v := astNew(&a.tMappedType)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.ReadonlyToken = a.toToken(astNode(a.field(n, "ReadonlyToken")))
 	v.TypeParameter = a.toTypeParameter(astNode(a.field(n, "TypeParameter")))
@@ -19590,7 +20046,11 @@ func (a *astConv) toMetaProperty(n *Node) *MetaProperty {
 	if n == nil || n.Type() != "MetaProperty" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*MetaProperty)
+	}
 	v := astNew(&a.tMetaProperty)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.KeywordToken = astString(a.field(n, "KeywordToken"))
 	v.Name = a.toIdentifier(astNode(a.field(n, "Name")))
@@ -19602,7 +20062,11 @@ func (a *astConv) toMethodDeclaration(n *Node) *MethodDeclaration {
 	if n == nil || n.Type() != "MethodDeclaration" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*MethodDeclaration)
+	}
 	v := astNew(&a.tMethodDeclaration)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.AsteriskToken = a.toToken(astNode(a.field(n, "AsteriskToken")))
@@ -19621,7 +20085,11 @@ func (a *astConv) toMethodSignature(n *Node) *MethodSignature {
 	if n == nil || n.Type() != "MethodSignature" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*MethodSignature)
+	}
 	v := astNew(&a.tMethodSignature)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.Name = a.toPropertyName(astNode(a.field(n, "Name")))
@@ -19637,7 +20105,11 @@ func (a *astConv) toModuleBlock(n *Node) *ModuleBlock {
 	if n == nil || n.Type() != "ModuleBlock" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ModuleBlock)
+	}
 	v := astNew(&a.tModuleBlock)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Statements = a.list7(astNode(a.field(n, "Statements")))
 	return v
@@ -19648,7 +20120,11 @@ func (a *astConv) toModuleDeclaration(n *Node) *ModuleDeclaration {
 	if n == nil || n.Type() != "ModuleDeclaration" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ModuleDeclaration)
+	}
 	v := astNew(&a.tModuleDeclaration)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.Name = a.toImportAttributeName(astNode(a.field(n, "Name")))
@@ -19661,7 +20137,11 @@ func (a *astConv) toNamedExports(n *Node) *NamedExports {
 	if n == nil || n.Type() != "NamedExports" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*NamedExports)
+	}
 	v := astNew(&a.tNamedExports)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Elements = a.list18(astNode(a.field(n, "Elements")))
 	return v
@@ -19672,7 +20152,11 @@ func (a *astConv) toNamedImports(n *Node) *NamedImports {
 	if n == nil || n.Type() != "NamedImports" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*NamedImports)
+	}
 	v := astNew(&a.tNamedImports)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Elements = a.list19(astNode(a.field(n, "Elements")))
 	return v
@@ -19683,7 +20167,11 @@ func (a *astConv) toNamedTupleMember(n *Node) *NamedTupleMember {
 	if n == nil || n.Type() != "NamedTupleMember" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*NamedTupleMember)
+	}
 	v := astNew(&a.tNamedTupleMember)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.DotDotDotToken = a.toToken(astNode(a.field(n, "DotDotDotToken")))
 	v.Name = a.toIdentifier(astNode(a.field(n, "Name")))
@@ -19697,7 +20185,11 @@ func (a *astConv) toNamespaceExport(n *Node) *NamespaceExport {
 	if n == nil || n.Type() != "NamespaceExport" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*NamespaceExport)
+	}
 	v := astNew(&a.tNamespaceExport)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Name = a.toImportAttributeName(astNode(a.field(n, "Name")))
 	return v
@@ -19708,7 +20200,11 @@ func (a *astConv) toNamespaceExportDeclaration(n *Node) *NamespaceExportDeclarat
 	if n == nil || n.Type() != "NamespaceExportDeclaration" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*NamespaceExportDeclaration)
+	}
 	v := astNew(&a.tNamespaceExportDeclaration)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.Name = a.toIdentifier(astNode(a.field(n, "Name")))
@@ -19720,7 +20216,11 @@ func (a *astConv) toNamespaceImport(n *Node) *NamespaceImport {
 	if n == nil || n.Type() != "NamespaceImport" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*NamespaceImport)
+	}
 	v := astNew(&a.tNamespaceImport)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Name = a.toIdentifier(astNode(a.field(n, "Name")))
 	return v
@@ -19731,7 +20231,11 @@ func (a *astConv) toNewExpression(n *Node) *NewExpression {
 	if n == nil || n.Type() != "NewExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*NewExpression)
+	}
 	v := astNew(&a.tNewExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	v.TypeArguments = a.list8(astNode(a.field(n, "TypeArguments")))
@@ -19744,7 +20248,11 @@ func (a *astConv) toNonNullExpression(n *Node) *NonNullExpression {
 	if n == nil || n.Type() != "NonNullExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*NonNullExpression)
+	}
 	v := astNew(&a.tNonNullExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	return v
@@ -19755,7 +20263,11 @@ func (a *astConv) toObjectBindingPattern(n *Node) *ObjectBindingPattern {
 	if n == nil || n.Type() != "ObjectBindingPattern" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ObjectBindingPattern)
+	}
 	v := astNew(&a.tObjectBindingPattern)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Elements = a.list20(astNode(a.field(n, "Elements")))
 	return v
@@ -19766,7 +20278,11 @@ func (a *astConv) toObjectLiteralExpression(n *Node) *ObjectLiteralExpression {
 	if n == nil || n.Type() != "ObjectLiteralExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ObjectLiteralExpression)
+	}
 	v := astNew(&a.tObjectLiteralExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Properties = a.list21(astNode(a.field(n, "Properties")))
 	return v
@@ -19777,7 +20293,11 @@ func (a *astConv) toOptionalType(n *Node) *OptionalType {
 	if n == nil || n.Type() != "OptionalType" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*OptionalType)
+	}
 	v := astNew(&a.tOptionalType)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Type = a.toTypeNode(astNode(a.field(n, "Type")))
 	return v
@@ -19788,7 +20308,11 @@ func (a *astConv) toParameter(n *Node) *Parameter {
 	if n == nil || n.Type() != "Parameter" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Parameter)
+	}
 	v := astNew(&a.tParameter)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.DotDotDotToken = a.toToken(astNode(a.field(n, "DotDotDotToken")))
@@ -19804,7 +20328,11 @@ func (a *astConv) toParenthesizedExpression(n *Node) *ParenthesizedExpression {
 	if n == nil || n.Type() != "ParenthesizedExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ParenthesizedExpression)
+	}
 	v := astNew(&a.tParenthesizedExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	return v
@@ -19815,7 +20343,11 @@ func (a *astConv) toParenthesizedType(n *Node) *ParenthesizedType {
 	if n == nil || n.Type() != "ParenthesizedType" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ParenthesizedType)
+	}
 	v := astNew(&a.tParenthesizedType)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Type = a.toTypeNode(astNode(a.field(n, "Type")))
 	return v
@@ -19826,7 +20358,11 @@ func (a *astConv) toPostfixUnaryExpression(n *Node) *PostfixUnaryExpression {
 	if n == nil || n.Type() != "PostfixUnaryExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*PostfixUnaryExpression)
+	}
 	v := astNew(&a.tPostfixUnaryExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Operand = a.toExpression(astNode(a.field(n, "Operand")))
 	v.Operator = astString(a.field(n, "Operator"))
@@ -19838,7 +20374,11 @@ func (a *astConv) toPrefixUnaryExpression(n *Node) *PrefixUnaryExpression {
 	if n == nil || n.Type() != "PrefixUnaryExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*PrefixUnaryExpression)
+	}
 	v := astNew(&a.tPrefixUnaryExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Operator = astString(a.field(n, "Operator"))
 	v.Operand = a.toExpression(astNode(a.field(n, "Operand")))
@@ -19850,7 +20390,11 @@ func (a *astConv) toPropertyAccessExpression(n *Node) *PropertyAccessExpression 
 	if n == nil || n.Type() != "PropertyAccessExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*PropertyAccessExpression)
+	}
 	v := astNew(&a.tPropertyAccessExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	v.QuestionDotToken = a.toToken(astNode(a.field(n, "QuestionDotToken")))
@@ -19863,7 +20407,11 @@ func (a *astConv) toPropertyAssignment(n *Node) *PropertyAssignment {
 	if n == nil || n.Type() != "PropertyAssignment" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*PropertyAssignment)
+	}
 	v := astNew(&a.tPropertyAssignment)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.Name = a.toPropertyName(astNode(a.field(n, "Name")))
@@ -19878,7 +20426,11 @@ func (a *astConv) toPropertyDeclaration(n *Node) *PropertyDeclaration {
 	if n == nil || n.Type() != "PropertyDeclaration" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*PropertyDeclaration)
+	}
 	v := astNew(&a.tPropertyDeclaration)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.Name = a.toPropertyName(astNode(a.field(n, "Name")))
@@ -19894,7 +20446,11 @@ func (a *astConv) toPropertySignature(n *Node) *PropertySignature {
 	if n == nil || n.Type() != "PropertySignature" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*PropertySignature)
+	}
 	v := astNew(&a.tPropertySignature)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.Name = a.toPropertyName(astNode(a.field(n, "Name")))
@@ -19909,7 +20465,11 @@ func (a *astConv) toQualifiedName(n *Node) *QualifiedName {
 	if n == nil || n.Type() != "QualifiedName" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*QualifiedName)
+	}
 	v := astNew(&a.tQualifiedName)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Left = a.toEntityName(astNode(a.field(n, "Left")))
 	v.Right = a.toIdentifier(astNode(a.field(n, "Right")))
@@ -19921,7 +20481,11 @@ func (a *astConv) toRestType(n *Node) *RestType {
 	if n == nil || n.Type() != "RestType" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*RestType)
+	}
 	v := astNew(&a.tRestType)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Type = a.toTypeNode(astNode(a.field(n, "Type")))
 	return v
@@ -19932,7 +20496,11 @@ func (a *astConv) toReturnStatement(n *Node) *ReturnStatement {
 	if n == nil || n.Type() != "ReturnStatement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ReturnStatement)
+	}
 	v := astNew(&a.tReturnStatement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	return v
@@ -19943,7 +20511,11 @@ func (a *astConv) toSatisfiesExpression(n *Node) *SatisfiesExpression {
 	if n == nil || n.Type() != "SatisfiesExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*SatisfiesExpression)
+	}
 	v := astNew(&a.tSatisfiesExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	v.Type = a.toTypeNode(astNode(a.field(n, "Type")))
@@ -19955,7 +20527,11 @@ func (a *astConv) toSetAccessor(n *Node) *SetAccessor {
 	if n == nil || n.Type() != "SetAccessor" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*SetAccessor)
+	}
 	v := astNew(&a.tSetAccessor)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.Name = a.toPropertyName(astNode(a.field(n, "Name")))
@@ -19971,7 +20547,11 @@ func (a *astConv) toShorthandPropertyAssignment(n *Node) *ShorthandPropertyAssig
 	if n == nil || n.Type() != "ShorthandPropertyAssignment" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ShorthandPropertyAssignment)
+	}
 	v := astNew(&a.tShorthandPropertyAssignment)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.Name = a.toIdentifier(astNode(a.field(n, "Name")))
@@ -19987,7 +20567,11 @@ func (a *astConv) toSourceFile(n *Node) *SourceFile {
 	if n == nil || n.Type() != "SourceFile" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*SourceFile)
+	}
 	v := astNew(&a.tSourceFile)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Statements = a.list7(astNode(a.field(n, "Statements")))
 	v.EndOfFileToken = a.toEndOfFileToken(astNode(a.field(n, "EndOfFileToken")))
@@ -19999,7 +20583,11 @@ func (a *astConv) toSpreadAssignment(n *Node) *SpreadAssignment {
 	if n == nil || n.Type() != "SpreadAssignment" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*SpreadAssignment)
+	}
 	v := astNew(&a.tSpreadAssignment)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	return v
@@ -20010,7 +20598,11 @@ func (a *astConv) toSpreadElement(n *Node) *SpreadElement {
 	if n == nil || n.Type() != "SpreadElement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*SpreadElement)
+	}
 	v := astNew(&a.tSpreadElement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	return v
@@ -20021,7 +20613,11 @@ func (a *astConv) toSwitchStatement(n *Node) *SwitchStatement {
 	if n == nil || n.Type() != "SwitchStatement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*SwitchStatement)
+	}
 	v := astNew(&a.tSwitchStatement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	v.CaseBlock = a.toCaseBlock(astNode(a.field(n, "CaseBlock")))
@@ -20033,7 +20629,11 @@ func (a *astConv) toTaggedTemplateExpression(n *Node) *TaggedTemplateExpression 
 	if n == nil || n.Type() != "TaggedTemplateExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*TaggedTemplateExpression)
+	}
 	v := astNew(&a.tTaggedTemplateExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Tag = a.toExpression(astNode(a.field(n, "Tag")))
 	v.QuestionDotToken = a.toToken(astNode(a.field(n, "QuestionDotToken")))
@@ -20047,7 +20647,11 @@ func (a *astConv) toTemplateExpression(n *Node) *TemplateExpression {
 	if n == nil || n.Type() != "TemplateExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*TemplateExpression)
+	}
 	v := astNew(&a.tTemplateExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Head = a.toTemplateHead(astNode(a.field(n, "Head")))
 	v.TemplateSpans = a.list22(astNode(a.field(n, "TemplateSpans")))
@@ -20059,7 +20663,11 @@ func (a *astConv) toTemplateLiteralType(n *Node) *TemplateLiteralType {
 	if n == nil || n.Type() != "TemplateLiteralType" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*TemplateLiteralType)
+	}
 	v := astNew(&a.tTemplateLiteralType)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Head = a.toTemplateHead(astNode(a.field(n, "Head")))
 	v.TemplateSpans = a.list23(astNode(a.field(n, "TemplateSpans")))
@@ -20071,7 +20679,11 @@ func (a *astConv) toTemplateLiteralTypeSpan(n *Node) *TemplateLiteralTypeSpan {
 	if n == nil || n.Type() != "TemplateLiteralTypeSpan" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*TemplateLiteralTypeSpan)
+	}
 	v := astNew(&a.tTemplateLiteralTypeSpan)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Type = a.toTypeNode(astNode(a.field(n, "Type")))
 	v.Literal = a.toTemplateMiddleOrTail(astNode(a.field(n, "Literal")))
@@ -20083,7 +20695,11 @@ func (a *astConv) toTemplateSpan(n *Node) *TemplateSpan {
 	if n == nil || n.Type() != "TemplateSpan" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*TemplateSpan)
+	}
 	v := astNew(&a.tTemplateSpan)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	v.Literal = a.toTemplateMiddleOrTail(astNode(a.field(n, "Literal")))
@@ -20095,7 +20711,11 @@ func (a *astConv) toThrowStatement(n *Node) *ThrowStatement {
 	if n == nil || n.Type() != "ThrowStatement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*ThrowStatement)
+	}
 	v := astNew(&a.tThrowStatement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	return v
@@ -20106,7 +20726,11 @@ func (a *astConv) toTryStatement(n *Node) *TryStatement {
 	if n == nil || n.Type() != "TryStatement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*TryStatement)
+	}
 	v := astNew(&a.tTryStatement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.TryBlock = a.toBlock(astNode(a.field(n, "TryBlock")))
 	v.CatchClause = a.toCatchClause(astNode(a.field(n, "CatchClause")))
@@ -20119,7 +20743,11 @@ func (a *astConv) toTupleType(n *Node) *TupleType {
 	if n == nil || n.Type() != "TupleType" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*TupleType)
+	}
 	v := astNew(&a.tTupleType)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Elements = a.list8(astNode(a.field(n, "Elements")))
 	return v
@@ -20130,7 +20758,11 @@ func (a *astConv) toTypeAliasDeclaration(n *Node) *TypeAliasDeclaration {
 	if n == nil || n.Type() != "TypeAliasDeclaration" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*TypeAliasDeclaration)
+	}
 	v := astNew(&a.tTypeAliasDeclaration)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.Name = a.toIdentifier(astNode(a.field(n, "Name")))
@@ -20144,7 +20776,11 @@ func (a *astConv) toTypeAssertionExpression(n *Node) *TypeAssertionExpression {
 	if n == nil || n.Type() != "TypeAssertionExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*TypeAssertionExpression)
+	}
 	v := astNew(&a.tTypeAssertionExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Type = a.toTypeNode(astNode(a.field(n, "Type")))
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
@@ -20156,7 +20792,11 @@ func (a *astConv) toTypeLiteral(n *Node) *TypeLiteral {
 	if n == nil || n.Type() != "TypeLiteral" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*TypeLiteral)
+	}
 	v := astNew(&a.tTypeLiteral)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Members = a.list15(astNode(a.field(n, "Members")))
 	return v
@@ -20167,7 +20807,11 @@ func (a *astConv) toTypeOfExpression(n *Node) *TypeOfExpression {
 	if n == nil || n.Type() != "TypeOfExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*TypeOfExpression)
+	}
 	v := astNew(&a.tTypeOfExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	return v
@@ -20178,7 +20822,11 @@ func (a *astConv) toTypeOperator(n *Node) *TypeOperator {
 	if n == nil || n.Type() != "TypeOperator" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*TypeOperator)
+	}
 	v := astNew(&a.tTypeOperator)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Operator = astString(a.field(n, "Operator"))
 	v.Type = a.toTypeNode(astNode(a.field(n, "Type")))
@@ -20190,7 +20838,11 @@ func (a *astConv) toTypeParameter(n *Node) *TypeParameter {
 	if n == nil || n.Type() != "TypeParameter" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*TypeParameter)
+	}
 	v := astNew(&a.tTypeParameter)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.Name = a.toIdentifier(astNode(a.field(n, "Name")))
@@ -20205,7 +20857,11 @@ func (a *astConv) toTypePredicate(n *Node) *TypePredicate {
 	if n == nil || n.Type() != "TypePredicate" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*TypePredicate)
+	}
 	v := astNew(&a.tTypePredicate)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.AssertsModifier = a.toToken(astNode(a.field(n, "AssertsModifier")))
 	v.ParameterName = a.toTypePredicateParameterName(astNode(a.field(n, "ParameterName")))
@@ -20218,7 +20874,11 @@ func (a *astConv) toTypeQuery(n *Node) *TypeQuery {
 	if n == nil || n.Type() != "TypeQuery" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*TypeQuery)
+	}
 	v := astNew(&a.tTypeQuery)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.ExprName = a.toEntityName(astNode(a.field(n, "ExprName")))
 	v.TypeArguments = a.list8(astNode(a.field(n, "TypeArguments")))
@@ -20230,7 +20890,11 @@ func (a *astConv) toTypeReference(n *Node) *TypeReference {
 	if n == nil || n.Type() != "TypeReference" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*TypeReference)
+	}
 	v := astNew(&a.tTypeReference)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.TypeName = a.toEntityName(astNode(a.field(n, "TypeName")))
 	v.TypeArguments = a.list8(astNode(a.field(n, "TypeArguments")))
@@ -20242,7 +20906,11 @@ func (a *astConv) toUnionType(n *Node) *UnionType {
 	if n == nil || n.Type() != "UnionType" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*UnionType)
+	}
 	v := astNew(&a.tUnionType)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Types = a.list8(astNode(a.field(n, "Types")))
 	return v
@@ -20253,7 +20921,11 @@ func (a *astConv) toVariableDeclaration(n *Node) *VariableDeclaration {
 	if n == nil || n.Type() != "VariableDeclaration" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*VariableDeclaration)
+	}
 	v := astNew(&a.tVariableDeclaration)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Name = a.toBindingName(astNode(a.field(n, "Name")))
 	v.ExclamationToken = a.toToken(astNode(a.field(n, "ExclamationToken")))
@@ -20267,7 +20939,11 @@ func (a *astConv) toVariableDeclarationList(n *Node) *VariableDeclarationList {
 	if n == nil || n.Type() != "VariableDeclarationList" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*VariableDeclarationList)
+	}
 	v := astNew(&a.tVariableDeclarationList)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Keyword = astString(a.field(n, "Keyword"))
 	v.Declarations = a.list24(astNode(a.field(n, "Declarations")))
@@ -20279,7 +20955,11 @@ func (a *astConv) toVariableStatement(n *Node) *VariableStatement {
 	if n == nil || n.Type() != "VariableStatement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*VariableStatement)
+	}
 	v := astNew(&a.tVariableStatement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Modifiers = a.list4(astNode(a.field(n, "Modifiers")))
 	v.DeclarationList = a.toVariableDeclarationList(astNode(a.field(n, "DeclarationList")))
@@ -20291,7 +20971,11 @@ func (a *astConv) toVoidExpression(n *Node) *VoidExpression {
 	if n == nil || n.Type() != "VoidExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*VoidExpression)
+	}
 	v := astNew(&a.tVoidExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	return v
@@ -20302,7 +20986,11 @@ func (a *astConv) toWhileStatement(n *Node) *WhileStatement {
 	if n == nil || n.Type() != "WhileStatement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*WhileStatement)
+	}
 	v := astNew(&a.tWhileStatement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	v.Statement = a.toStatement(astNode(a.field(n, "Statement")))
@@ -20314,7 +21002,11 @@ func (a *astConv) toWithStatement(n *Node) *WithStatement {
 	if n == nil || n.Type() != "WithStatement" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*WithStatement)
+	}
 	v := astNew(&a.tWithStatement)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
 	v.Statement = a.toStatement(astNode(a.field(n, "Statement")))
@@ -20326,7 +21018,11 @@ func (a *astConv) toYieldExpression(n *Node) *YieldExpression {
 	if n == nil || n.Type() != "YieldExpression" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*YieldExpression)
+	}
 	v := astNew(&a.tYieldExpression)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.AsteriskToken = a.toToken(astNode(a.field(n, "AsteriskToken")))
 	v.Expression = a.toExpression(astNode(a.field(n, "Expression")))
@@ -21577,6 +22273,7 @@ func (a *astConv) list24(n *Node) []*VariableDeclaration {
 // astConv converts nodes into typed values.
 type astConv struct {
 	control                        *workControl
+	values                         map[*Node]any // preserve aliases when one node appears in multiple fields or lists
 	match                          astChunk[Match]
 	error                          astChunk[Error]
 	tBigIntLiteral                 astChunk[BigIntLiteral]
@@ -21770,6 +22467,12 @@ type astConv struct {
 	list24Chunk                    astChunk[*VariableDeclaration]
 }
 
+func (a *astConv) remember(n *Node, v any) {
+	if a.values == nil {
+		a.values = make(map[*Node]any)
+	}
+	a.values[n] = v
+}
 func (a *astConv) stepWork() {
 	if workControlsEnabled && a.control != nil {
 		a.control.charge(0, 1)

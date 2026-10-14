@@ -720,7 +720,7 @@ func (k *checker) term(t grammar.Term, env *termEnv) ty {
 		}
 		return tyAny
 	case *grammar.Lambda:
-		k.errorf(grammar.Pos{}, "functions can only be passed to foldl, foldr, or map")
+		k.errorf(grammar.Pos{}, "functions can only be passed to filter, foldl, foldr, or map")
 		return tyAny
 	case *grammar.Unary:
 		x := k.term(t.X, env)
@@ -908,6 +908,17 @@ func (k *checker) call(t *grammar.Call, env *termEnv) ty {
 		}
 		k.term(l.Body, env.with(l.Params, []ty{acc, elem}))
 		return acc
+	case "filter":
+		elem := k.elemType("filter", argT(0), t.Diagnostic())
+		l, ok := k.lambda("filter", t.Args[1], 1, t.Diagnostic())
+		if !ok {
+			return tyAny
+		}
+		body := k.term(l.Body, env.with(l.Params, []ty{elem}))
+		if !assignable(body, tyBool) {
+			k.errorf(t.Diagnostic(), "filter: predicate must produce a bool, got %s", body)
+		}
+		return listTy{elem}
 	case "map":
 		elem := k.elemType("map", argT(0), t.Diagnostic())
 		l, ok := k.lambda("map", t.Args[1], 1, t.Diagnostic())

@@ -504,9 +504,9 @@ func TestCompletion(t *testing.T) {
 		{5, 8, sorted(rules, statementKeywords, bodyKeywords)},
 		{6, -1, []string{"error"}},
 		{7, -1, []string{"x", "y"}},
-		{8, -1, sorted([]string{"P", "Q", "R", "concat", "foldl", "foldr", "len", "list", "map", "text"}, termKeywords)},
+		{8, -1, sorted([]string{"P", "Q", "R", "concat", "filter", "foldl", "foldr", "len", "list", "map", "text"}, termKeywords)},
 		{9, -1, sorted([]string{"A", "B", "children", "endPos", "startPos"})},
-		{10, -1, sorted([]string{"P", "Q", "R", "concat", "foldl", "foldr", "len", "list", "map", "text"}, termKeywords)},
+		{10, -1, sorted([]string{"P", "Q", "R", "concat", "filter", "foldl", "foldr", "len", "list", "map", "text"}, termKeywords)},
 		{11, -1, []string{"left", "none", "right"}},
 		{12, -1, nil},
 		{13, -1, nil},
@@ -543,6 +543,38 @@ func TestCompletion(t *testing.T) {
 		t.Errorf("item %+v", num)
 	}
 	c.exit()
+}
+
+func TestFilterBuiltinHoverAndCompletion(t *testing.T) {
+	c := newInitialized(t)
+	defer c.exit()
+
+	hoverURI := "file:///filter-hover.pego"
+	source := "rule main = x:value => filter(list($x), (item) => true)\nrule value = \"x\""
+	if d := c.open(hoverURI, source); len(d) != 0 {
+		t.Fatalf("diagnostics %+v", d)
+	}
+	filterStart := strings.Index(source, "filter")
+	got, _ := hoverText(c, hoverURI, 0, filterStart+1)
+	want := "```pego\nfilter(list, (item) => bool) []T\n```\n" + findBuiltin(builtinFuncs, "filter").doc
+	if got != want {
+		t.Errorf("filter hover = %q, want %q", got, want)
+	}
+
+	completionURI := "file:///filter-completion.pego"
+	completionSource := `rule main = "x" => fi`
+	c.open(completionURI, completionSource)
+	var completions completionList
+	c.requestInto("textDocument/completion", at(completionURI, 0, len([]rune(completionSource))), &completions)
+	for _, item := range completions.Items {
+		if item.Label == "filter" {
+			if item.Detail != "filter(list, (item) => bool) []T" || item.InsertText != "filter(${1:list}, (${2:item}) => $0)" || item.Documentation == nil || item.Documentation.Value != findBuiltin(builtinFuncs, "filter").doc {
+				t.Errorf("filter completion = %+v", item)
+			}
+			return
+		}
+	}
+	t.Error("missing filter completion")
 }
 
 func TestSemanticTokens(t *testing.T) {

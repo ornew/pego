@@ -36,6 +36,8 @@ var builtinFuncs = []builtin{
 		doc: "Folds `list` from the right: applies the function to each element, from the last to the first, starting with `init`."},
 	{name: "map", signature: "map(list, (item) => ...) []T", snippet: "map(${1:list}, (${2:item}) => $0)",
 		doc: "A list of the results of applying the function to each element. The function must return a node or `nil`."},
+	{name: "filter", signature: "filter(list, (item) => bool) []T", snippet: "filter(${1:list}, (${2:item}) => $0)",
+		doc: "Keeps the original elements whose predicate returns `true`, preserving order and node identity. The result keeps the input list's static element type; a `nil` input returns an empty list. Predicate errors follow the surrounding action: they fail a predicate action or abort a value action."},
 	{name: "list", signature: "list(a, b, ...) []T", snippet: "list($1)",
 		doc: "A list of the arguments, which must be nodes or `nil`."},
 	{name: "concat", signature: "concat(l1, l2, ...) []T", snippet: "concat($1)",

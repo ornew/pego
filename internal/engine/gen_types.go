@@ -425,8 +425,10 @@ func (t *typedGen) converters(b *strings.Builder) {
 	if n == nil || n.Type() != "Match" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok { return v.(*Match) }
 	v := astNew(&a.match)
 	*v = Match{%[1]s: %[1]s{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -435,9 +437,11 @@ func (a *astConv) toError(n *Node) *Error {
 	if n == nil || n.Type() != "Error" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok { return v.(*Error) }
 	msg, _ := a.field(n, "message").(string)
 	v := astNew(&a.error)
 	*v = Error{%[1]s: %[1]s{int(n.Start), int(n.End)}, Text: n.Text, Message: msg}
+	a.remember(n, v)
 	return v
 }
 
@@ -449,10 +453,10 @@ func (a *astConv) toError(n *Node) *Error {
 	}
 	b.WriteString("\t}\n\treturn n\n}\n\n")
 	for _, name := range t.terms {
-		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tv := astNew(&a.t%[1]s)\n\t*v = %[1]s{%[3]s: %[3]s{int(n.Start), int(n.End)}, Text: n.Text}\n\treturn v\n}\n\n", t.names[name], name, span)
+		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tif v, ok := a.values[n]; ok { return v.(*%[1]s) }\n\tv := astNew(&a.t%[1]s)\n\t*v = %[1]s{%[3]s: %[3]s{int(n.Start), int(n.End)}, Text: n.Text}\n\ta.remember(n, v)\n\treturn v\n}\n\n", t.names[name], name, span)
 	}
 	for _, name := range t.structs {
-		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tv := astNew(&a.t%[1]s)\n\tv.%[3]s = %[3]s{int(n.Start), int(n.End)}\n", t.names[name], name, span)
+		fmt.Fprintf(b, "func (a *astConv) to%[1]s(n *Node) *%[1]s {\n\ta.stepWork()\n\tif n == nil || n.Type() != %[2]q {\n\t\treturn nil\n\t}\n\tif v, ok := a.values[n]; ok { return v.(*%[1]s) }\n\tv := astNew(&a.t%[1]s)\n\ta.remember(n, v)\n\tv.%[3]s = %[3]s{int(n.Start), int(n.End)}\n", t.names[name], name, span)
 		if len(t.info.fields[name]) > 0 {
 			// Fields are set in the order the action set them; look each one up.
 			for _, f := range t.info.fields[name] {
@@ -490,7 +494,7 @@ func (a *astConv) toError(n *Node) *Error {
 	}
 	// The converter, written last because the list converters are known only now: a chunk of
 	// values per type and of elements per list type.
-	b.WriteString("// astConv converts nodes into typed values.\ntype astConv struct {\n\tcontrol *workControl\n\tmatch astChunk[Match]\n\terror astChunk[Error]\n")
+	b.WriteString("// astConv converts nodes into typed values.\ntype astConv struct {\n\tcontrol *workControl\n\tvalues map[*Node]any // preserve aliases when one node appears in multiple fields or lists\n\tmatch astChunk[Match]\n\terror astChunk[Error]\n")
 	for _, name := range append(append([]string(nil), t.terms...), t.structs...) {
 		fmt.Fprintf(b, "\tt%s astChunk[%s]\n", t.names[name], t.names[name])
 	}
@@ -498,7 +502,11 @@ func (a *astConv) toError(n *Node) *Error {
 		fmt.Fprintf(b, "\t%sChunk astChunk[%s]\n", l.name, t.goType(l.elem))
 	}
 	b.WriteString("}\n\n")
-	b.WriteString(`func (a *astConv) stepWork() {
+	b.WriteString(`func (a *astConv) remember(n *Node, v any) {
+ if a.values == nil { a.values = make(map[*Node]any) }
+ a.values[n] = v
+}
+func (a *astConv) stepWork() {
  if workControlsEnabled && a.control != nil { a.control.charge(0, 1) }
 }
 func (a *astConv) field(n *Node, name string) any {

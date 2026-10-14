@@ -19,6 +19,11 @@ type Module struct {
 // instructionSetVersion keeps ordinary modules readable by instruction-set-3 runtimes.
 func (m *Module) instructionSetVersion() int {
 	for _, in := range m.Exprs {
+		if in.Op == ECall && in.A == bFilter {
+			return 6
+		}
+	}
+	for _, in := range m.Exprs {
 		if in.Op == ETerminal {
 			return 5
 		}
@@ -284,9 +289,10 @@ const (
 	bMap
 	bList
 	bConcat
+	bFilter
 )
 
-var builtinNames = []string{"len", "text", "foldl", "foldr", "map", "list", "concat"}
+var builtinNames = []string{"len", "text", "foldl", "foldr", "map", "list", "concat", "filter"}
 
 var opNames = map[Op]string{
 	OpStr: "STR", OpClass: "CLASS", OpAny: "ANY", OpTop: "TOP", OpFail: "FAIL", OpAssert: "ASSERT",

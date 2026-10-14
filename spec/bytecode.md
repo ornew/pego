@@ -289,7 +289,7 @@ Calling a function evaluates its code from its start, with the locals captured a
 
 Instructions 118–123 are shortcuts with the same results as the general instructions. The reference compiler emits `ETEXTCHK` after each operand and `ETEXTEQ` for `text(a) == text(b)` and `text(a) != text(b)`, which compares the texts without making them values, and `ELISTBEGIN`, `ELISTPUSH`/`EMAPPUSH` per argument and `ELISTEND` for a `concat` call whose arguments are all `list`, `map` or such `concat` calls, which builds no intermediate list. In both cases the errors arise in the same order as with `ECALL`.
 
-Built-in function indices: 0 `len`, 1 `text`, 2 `foldl`, 3 `foldr`, 4 `map`, 5 `list`, 6 `concat`. Their semantics are defined in [Actions](actions.md#operators-and-functions).
+Built-in function indices: 0 `len`, 1 `text`, 2 `foldl`, 3 `foldr`, 4 `map`, 5 `list`, 6 `concat`, 7 `filter`. Their semantics are defined in [Actions](actions.md#operators-and-functions).
 
 ## Error Messages
 
@@ -304,7 +304,7 @@ A module is stored in the `.pegoc` version 2 format. Integers are variable-lengt
 |:--|:--|
 | Magic | `PEGOC\x00` (6 bytes) |
 | Version | 1 byte (2) |
-| Instruction-set version | Unsigned integer (3 for ordinary modules, 4 when wide bounds are used, 5 when terminal construction is used). A runtime loads files of every instruction-set version up to its own: version 2 adds instructions 118–123, version 3 `GUARD` (34) and `NEXT` mode 3, version 4 `REPEATW` (35) and `SCANW` (36), and version 5 `ETERMINAL` (124). |
+| Instruction-set version | Unsigned integer for this module (3 for ordinary modules, 4 when wide bounds are used, 5 when terminal construction is used, 6 when `filter` is used). A runtime loads modules whose instruction-set version does not exceed its own: version 2 adds instructions 118–123, version 3 `GUARD` (34) and `NEXT` mode 3, version 4 `REPEATW` (35) and `SCANW` (36), version 5 `ETERMINAL` (124), and version 6 the appended `filter` built-in. |
 | String table | Count, then each string (byte length and UTF-8 bytes), all unsigned. The module's string table is a prefix of this table. |
 | Start rule | String index, unsigned (the empty string means no default start rule) |
 | Package name | String index, unsigned |
@@ -331,6 +331,7 @@ On load, a runtime checks the following and rejects the file if any check fails:
 - Every opcode is known, and every flag operand is within its range.
 - Wide bounds reference `EINT` constants, fit the runtime's implementation `int`, and satisfy minimum ≥ 0 and maximum = -1 or maximum ≥ minimum. Wide instructions require instruction-set version 4.
 - `ETERMINAL` references a declared terminal type and requires instruction-set version 5. Existing instruction numbers remain unchanged. The optional AST codec adds list and terminal constructor terms; older AST decoders cannot load those new terms even when list-only matching code uses instruction-set version 3. An AST-free list-only module retains instruction-set version 3 compatibility.
+- The `filter` built-in occupies appended slot 7 and requires instruction-set version 6. A module that uses it with a lower declared version is rejected; modules that do not use it retain their ordinary version selection.
 - Every jump target is forward. Only `NEXT` jumps backward. The target of `EFUNC` is also forward.
 - Every `RECOVER` body ends at an `ENDRECOVER` immediately before its skip target; that instruction jumps past an `ENDSKIP`. These recovery regions are nested and contain no stream-mode `NEXT` (mode 2) in either the protected body or skip. Element-local recovery ends before the enclosing streaming repetition's `NEXT`.
 

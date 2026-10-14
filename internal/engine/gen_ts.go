@@ -856,6 +856,8 @@ func (g *tsGen) termBody(t grammar.Term, s *scope, locals map[string]string) str
 				return "c.newList(listItems(\"map\", " + g.term(x, s, locals) + "))"
 			}
 			return fmt.Sprintf("c.mapList(%s, %s)", args[0], g.lambda(t.Args[1], s, locals))
+		case "filter":
+			return fmt.Sprintf("c.filterList(%s, %s)", args[0], g.lambda(t.Args[1], s, locals))
 		case "list":
 			return "c.list(" + strings.Join(args, ", ") + ")"
 		case "concat":

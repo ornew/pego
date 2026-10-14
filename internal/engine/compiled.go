@@ -33,8 +33,9 @@ const (
 	// isaVersion is the latest supported instruction set. Files of earlier versions load:
 	// version 2 only adds instructions (ETEXTCHK, ETEXTEQ, ELISTBEGIN, ELISTPUSH, EMAPPUSH,
 	// ELISTEND), version 3 GUARD and NEXT with f 3, version 4 wide repetition bounds,
-	// and version 5 ETERMINAL for terminals with supplied text.
-	isaVersion = 5
+	// version 5 ETERMINAL for terminals with supplied text, and version 6
+	// the filter builtin appended to the ECALL table.
+	isaVersion = 6
 	maxDepth   = 10000
 )
 
@@ -622,6 +623,9 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	}
 	if isa < 5 && m.instructionSetVersion() == 5 {
 		return nil, "", errors.New("invalid compiled grammar: terminal construction requires instruction set version 5")
+	}
+	if isa < 6 && m.instructionSetVersion() == 6 {
+		return nil, "", errors.New("invalid compiled grammar: filtering requires instruction set version 6")
 	}
 	if prog == nil {
 		prog = moduleProgram(m)

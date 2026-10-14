@@ -9,7 +9,6 @@ import (
 
 func TestActionBlocksUnsupported(t *testing.T) {
 	for _, src := range []string{
-		`rule a = {x:=1; x<10}`,
 		`rule a = {}`,
 		`rule a = "x" => {1}`,
 		`rule a = "x" => {x:=1; x<10; 2}`,

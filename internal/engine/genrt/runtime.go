@@ -2186,6 +2186,22 @@ func (c *actx) mapList(list any, f func(item any) any) any {
 	return c.endList(base)
 }
 
+func (c *actx) filterList(list any, f func(item any) any) any {
+	base := len(c.p.kidStack)
+	for _, item := range c.listItems("filter", list) {
+		c.p.stepWork()
+		value := f(nodeOrNil(item))
+		keep, ok := value.(bool)
+		if !ok {
+			c.p.evalErrorf("filter: predicate must produce a bool, got %s", typeName(value))
+		}
+		if keep {
+			c.p.kidStack = append(c.p.kidStack, item)
+		}
+	}
+	return c.endList(base)
+}
+
 func (c *actx) list(args ...any) any {
 	base := len(c.p.kidStack)
 	c.pushList(args...)

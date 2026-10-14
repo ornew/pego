@@ -2187,6 +2187,22 @@ func (c *actx) mapList(list any, f func(item any) any) any {
 	return c.endList(base)
 }
 
+func (c *actx) filterList(list any, f func(item any) any) any {
+	base := len(c.p.kidStack)
+	for _, item := range c.listItems("filter", list) {
+		c.p.stepWork()
+		value := f(nodeOrNil(item))
+		keep, ok := value.(bool)
+		if !ok {
+			c.p.evalErrorf("filter: predicate must produce a bool, got %s", typeName(value))
+		}
+		if keep {
+			c.p.kidStack = append(c.p.kidStack, item)
+		}
+	}
+	return c.endList(base)
+}
+
 func (c *actx) list(args ...any) any {
 	base := len(c.p.kidStack)
 	c.pushList(args...)
@@ -5426,6 +5442,22 @@ func (c *tctx) mapList(list any, f func(item any) any) any {
 	return c.endList(base)
 }
 
+func (c *tctx) filterList(list any, f func(item any) any) any {
+	base := len(c.p.kidStack)
+	for _, item := range c.listItems("filter", list) {
+		c.p.stepWork()
+		value := f(tvalOrNil(item))
+		keep, ok := value.(bool)
+		if !ok {
+			c.p.evalErrorf("filter: predicate must produce a bool, got %s", ttypeName(value))
+		}
+		if keep {
+			c.p.kidStack = append(c.p.kidStack, item)
+		}
+	}
+	return c.endList(base)
+}
+
 func (c *tctx) list(args ...any) any {
 	base := len(c.p.kidStack)
 	c.pushList(args...)
@@ -6146,8 +6178,12 @@ func (a *astConv) toMatch(n *Node) *Match {
 	if n == nil || n.Type() != "Match" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Match)
+	}
 	v := astNew(&a.match)
 	*v = Match{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -6156,9 +6192,13 @@ func (a *astConv) toError(n *Node) *Error {
 	if n == nil || n.Type() != "Error" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Error)
+	}
 	msg, _ := a.field(n, "message").(string)
 	v := astNew(&a.error)
 	*v = Error{Span: Span{int(n.Start), int(n.End)}, Text: n.Text, Message: msg}
+	a.remember(n, v)
 	return v
 }
 
@@ -6186,7 +6226,11 @@ func (a *astConv) toItem(n *Node) *Item {
 	if n == nil || n.Type() != "Item" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Item)
+	}
 	v := astNew(&a.tItem)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Text = a.toMatch(astNode(a.field(n, "Text")))
 	v.Children = a.list0(astNode(a.field(n, "Children")))
@@ -6209,12 +6253,19 @@ func (a *astConv) list0(n *Node) []*Item {
 // astConv converts nodes into typed values.
 type astConv struct {
 	control    *workControl
+	values     map[*Node]any // preserve aliases when one node appears in multiple fields or lists
 	match      astChunk[Match]
 	error      astChunk[Error]
 	tItem      astChunk[Item]
 	list0Chunk astChunk[*Item]
 }
 
+func (a *astConv) remember(n *Node, v any) {
+	if a.values == nil {
+		a.values = make(map[*Node]any)
+	}
+	a.values[n] = v
+}
 func (a *astConv) stepWork() {
 	if workControlsEnabled && a.control != nil {
 		a.control.charge(0, 1)

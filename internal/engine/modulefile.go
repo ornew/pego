@@ -402,6 +402,9 @@ func validateModule(m *Module) error {
 		case ECall:
 			in("builtin", int(x.A), len(builtinNames))
 			nonneg(x.B)
+			if x.A == bFilter && x.B != 2 {
+				fail("filter requires two arguments, got %d", x.B)
+			}
 		default:
 			fail("invalid expression instruction %d at %d", x.Op, ip)
 		}

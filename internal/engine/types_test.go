@@ -49,7 +49,7 @@ rule main = x:"a" / "b" => P{X: $x}`, `cannot use *Match as Match in field X of 
 		{`rule main = "a" => 1`, `action of main must produce a node, got int`},
 		{`rule main = {x := $1} "a"
 rule b = "b"`, `1:19: $1 cannot be used in predicates`},
-		{`rule main = "a" {x := (y) => 1}`, `functions can only be passed to foldl, foldr, or map`},
+		{`rule main = "a" {x := (y) => 1}`, `functions can only be passed to filter, foldl, foldr, or map`},
 		{`type Op struct { X Match }
 rule main Op = "a"`, `rule main produces Match, which is not assignable to Op`},
 		{`type E struct { X Match }

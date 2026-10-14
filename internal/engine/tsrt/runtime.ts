@@ -2630,6 +2630,21 @@ class Actx {
     return this.endList(base);
   }
 
+  filterList(list: Value, f: (item: Value) => Value): Value {
+    const base = this.p.kidStack.length;
+    for (const item of listItems("filter", list)) {
+      this.work();
+      const value = f(item);
+      if (typeof value !== "boolean") {
+        evalError(`filter: predicate must produce a bool, got ${typeName(value)}`);
+      }
+      if (value) {
+        this.p.kidStack.push(item);
+      }
+    }
+    return this.endList(base);
+  }
+
   list(...args: Value[]): Value {
     const base = this.p.kidStack.length;
     this.pushList(...args);

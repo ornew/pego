@@ -11,9 +11,17 @@ is accepted only when it selects the existing default CST behavior; omitting
 it or writing the explicit `=> ...` default form preserves that behavior. Any
 other declaration-level action on an Operators Rule is a compile-time error.
 
-Single-term Predicate Actions keep their existing execution semantics.
-Multi-statement Predicate Action blocks and Value Action blocks parse, format
-and appear in source ASTs, but semantic analysis rejects them as unsupported;
+A Predicate Action block may contain multiple statements separated by
+semicolons or hard newlines. Its statements execute in source order as adjacent
+Predicate Actions would: an assignment updates the current invocation's
+variable environment, and a term succeeds unless it evaluates to false or
+errors. Evaluation stops at the first failure. The block creates no variable,
+capture, rollback, memoization or recovery scope. Empty blocks are compile-time
+errors. In a sequence the statements become adjacent Predicate Actions; in a
+single-expression position they retain the grouped adjacent-sequence behavior
+of the existing CST.
+
+Value Action blocks remain unsupported and are rejected during compilation;
 their statements do not execute. Inline Value Action forms are also recognized
 in source and rejected by compilation. Runtime execution of inline actions is
 not implemented. PEGO has no rule-initialization action block.
@@ -33,6 +41,30 @@ or `nil` and must fit the declared or inferred rule type. It applies to the
 whole body, including every alternative. Predicate Actions use the same value
 operators and built-in functions described below, but their result controls
 whether the predicate succeeds; see [Predicate Actions](predicates.md#predicate-actions).
+
+## Predicate Action Blocks
+
+A nonempty block is shorthand for adjacent Predicate Actions at the same
+Rule Expression position:
+
+```pego
+rule item = { count := 1; count == 1 } "a"
+```
+
+This has the same behavior as:
+
+```pego
+rule item = { count := 1 } { count == 1 } "a"
+```
+
+Assignments and tests run left to right, stopping at the first false result or
+evaluation error. Assignment bindings are visible to later statements and
+follow the same rollback behavior as adjacent Predicate Actions. A block does
+not introduce a variable or capture scope, consume input, or add a rule,
+memoization or recovery boundary. Within a sequence it expands to adjacent
+actions; in a single-expression position it behaves like the grouped adjacent
+sequence, including the existing CST result for a sequence of valueless
+predicates. Empty blocks are compile-time errors.
 
 ## Whole-Rule Value Actions
 
@@ -144,8 +176,8 @@ This section defines operators and the complete set of built-in functions
 available in Value and Predicate Actions. Function calls use positional
 arguments. Call arguments, struct field values and ordinary binary operands are
 evaluated left to right. Lambdas are permitted only as the function argument
-of `foldl`, `foldr` or `map`; their parameters are referenced as `$name` in
-the lambda body.
+of `foldl`, `foldr`, `map` or `filter`; their parameters are referenced as
+`$name` in the lambda body.
 
 ### Operator Precedence and Types
 
@@ -192,6 +224,7 @@ Strings are ordered lexicographically. Comparisons return `bool`.
 | [`map`](#map) | 2 | `[]T`, with `T` a node or `nil` |
 | [`list`](#list) | Any, including 0 | `[]T`, with each argument a node or `nil` |
 | [`concat`](#concat) | Any, including 0 | A list of the union of its input element types |
+| [`filter`](#filter) | 2 | A list with the input's element Type |
 
 An optional list value contributes no elements when it is `nil`. An `Error`
 node produced by `#recover` also contributes no elements to list-consuming
@@ -238,6 +271,22 @@ returns its results in a `List`. The callback must return a node or `nil`;
 `nil` remains a `nil` element. `map` does not filter elements. A `nil` or
 `Error` list input is empty, and a `nil` element in a list is passed to the
 callback as `nil`.
+
+#### filter
+
+`filter(xs, (item) => condition)` visits the elements of `xs` from left to
+right. The lambda must take one argument and produce an actual Boolean:
+`true` keeps the original element and `false` drops it. A nil element is
+passed to the lambda as nil and is kept when the result is true. The result
+preserves element order and node identity; elements are not cloned. A nil
+input produces an empty List and does not call the lambda.
+
+The result keeps the input list's static element Type. A predicate such as
+`$item != nil` does not narrow an optional element Type. A statically known
+non-Boolean result is a compile-time error; a dynamically non-Boolean result
+is a runtime action error. Runtime errors follow the surrounding action:
+inside a Predicate Action they fail that predicate and permit normal
+backtracking; inside a Value Action they abort the parse.
 
 #### list
 

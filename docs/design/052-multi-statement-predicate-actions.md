@@ -1,22 +1,22 @@
 # 052. Multi-Statement Predicate Actions
 
-- **Status**: Proposed
+- **Status**: Implemented
 - **Author**: @ornew
 - **Date**: 2026-10-13
 
 ## Summary
 
-Allow a Predicate Action block to contain multiple statements. The proposed
-block `{ a; b; c }` has the same parsing behavior as the adjacent Predicate
-Actions `{ a } { b } { c }` at the same grammar-expression position. This is a
-language proposal; current multi-statement Predicate Action blocks are rejected
-by semantic analysis.
+A Predicate Action block can contain multiple statements. The block
+`{ a; b; c }` has the same parsing behavior as adjacent Predicate Actions
+`{ a } { b } { c }` at the same Rule Expression position. Nonempty blocks are
+implemented across the supported interpreters and generated parsers; empty
+blocks remain compile-time errors.
 
 ## Motivation
 
 A grammar may need to initialize or update parser variables and then test them
-without consuming input. Today each Predicate Action contains one expression,
-so a sequence of setup and tests must be written as adjacent brace groups. A
+without consuming input. Previously each Predicate Action contained one
+expression, so a sequence of setup and tests needed adjacent brace groups. A
 single block can make the ordered relationship easier to read while retaining
 the behavior of ordinary PEG sequencing.
 
@@ -31,12 +31,12 @@ the behavior of ordinary PEG sequencing.
 
 ## Non-Goals
 
-This proposal does not add Value Action blocks, change Predicate Action value
+This feature does not add Value Action blocks, change Predicate Action value
 rules, add mutable variables, or create a new scope, rule, memoization point or
 recovery boundary. It does not change the behavior of a single-statement
 Predicate Action.
 
-## Proposed Contract
+## Contract
 
 The statements in a Predicate Action block execute in source order. Each
 statement has the behavior it would have as its own single-statement Predicate
@@ -59,6 +59,14 @@ predicate rule: `false` or an evaluation error fails the parse; otherwise it
 succeeds. Evaluation stops at the first failing statement. No statement
 consumes input or produces a parser value.
 
+Desugaring preserves the existing adjacent-expression CST shape. A block that
+is an item of a sequence expands into adjacent Predicate Actions in that
+sequence. In a single-expression position, including a capture, choice arm,
+repetition or complete rule body, it becomes the grouped adjacent sequence.
+Thus a grouped sequence containing only predicates can produce the existing
+empty Seq value; the individual predicate statements remain valueless. This
+does not create a variable, capture, rule or rollback scope.
+
 Capture and variable visibility at each statement follows the same expression
 scope as the corresponding adjacent Predicate Action. If the containing
 sequence later backtracks, variable definitions made by the block are rolled
@@ -68,7 +76,7 @@ single-statement actions. The block introduces no hidden boundary.
 Statements are separated by semicolons or hard newlines. Newlines inside an
 opened expression delimiter remain governed by that delimiter. Empty
 statements, empty blocks and trailing-separator behavior must remain explicit
-in the grammar syntax and diagnostics; this proposal does not make an empty
+in the grammar syntax and diagnostics; this feature does not make an empty
 block an epsilon predicate.
 
 ## Alternatives Considered
@@ -93,7 +101,7 @@ source locations.
 
 ## Testing
 
-Acceptance should compare a multi-statement block with its adjacent-action
+Tests compare a multi-statement block with its adjacent-action
 form for successful and failing inputs across closure, recursive and iterative
 VMs, generated Go and TypeScript. Cover assignment visibility, false tests,
 runtime errors, short-circuiting, backtracking rollback, captures, memoized
@@ -104,7 +112,24 @@ single-statement predicates must remain byte-for-byte behaviorally compatible.
 
 ## Limitations and Open Questions
 
-This remains a proposal. The exact diagnostics for empty statements and
-trailing separators should match existing action-block conventions. Any
-optimization must preserve the observable equivalence to adjacent
-single-statement Predicate Actions.
+Nonempty blocks are implemented. Empty blocks remain compile-time errors and
+do not act as epsilon predicates. Source parsing determines empty statements
+and trailing separators using action-block conventions. Any optimization must
+preserve the observable equivalence to adjacent single-statement Predicate
+Actions.
+
+
+The full root test suite, generated parser module suite, focused LSP and engine
+tests, and site tests/build passed for the integrated implementation. Independent
+review found no runtime blocker.
+
+## Default-Path Performance Control
+
+On Go 1.27.1, darwin/arm64, Apple M3 Max, existing JSON and XML CodePoints
+parse benchmarks compared main with this implementation using closure and
+generated Go backends. In a five-sample main-then-feature block, the feature
+medians were about 2–7% slower. In a three-sample feature-then-main block,
+the feature medians were about 1–9% faster. The reversed order changed the
+direction of every timing difference, so these runs do not establish a stable
+change to ordinary parsing performance. They do not measure Predicate Action
+block execution itself. Raw samples remain outside the repository.

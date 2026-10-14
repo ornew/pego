@@ -361,8 +361,9 @@ type EndLine struct {
 	SourceInfo `json:"source,omitempty"`
 }
 
-// Predicate is a predicate action { Term }. A Block term preserves syntax for
-// multiple statements, whose execution is not implemented.
+// Predicate is a predicate action { Term }. A nonempty Block lowers to adjacent
+// predicate actions in a sequence, or their grouped sequence in a single
+// expression position, without a new variable or capture scope.
 type Predicate struct {
 	SourceInfo `json:"source,omitempty"`
 	Term       Term         `json:"term"`
@@ -657,8 +658,9 @@ type Assign struct {
 	Value      Term   `json:"value"`
 }
 
-// Block is a braced action statement list. The compiler rejects value-action
-// blocks and predicate-action blocks with other than one statement.
+// Block is a braced action statement list. Nonempty predicate blocks lower to
+// adjacent predicate actions. Value-action and empty predicate blocks remain
+// unsupported by compilation.
 // Single-statement predicate actions use Predicate.Term directly.
 type Block struct {
 	SourceInfo `json:"source,omitempty"`

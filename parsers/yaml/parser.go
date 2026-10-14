@@ -2186,6 +2186,22 @@ func (c *actx) mapList(list any, f func(item any) any) any {
 	return c.endList(base)
 }
 
+func (c *actx) filterList(list any, f func(item any) any) any {
+	base := len(c.p.kidStack)
+	for _, item := range c.listItems("filter", list) {
+		c.p.stepWork()
+		value := f(nodeOrNil(item))
+		keep, ok := value.(bool)
+		if !ok {
+			c.p.evalErrorf("filter: predicate must produce a bool, got %s", typeName(value))
+		}
+		if keep {
+			c.p.kidStack = append(c.p.kidStack, item)
+		}
+	}
+	return c.endList(base)
+}
+
 func (c *actx) list(args ...any) any {
 	base := len(c.p.kidStack)
 	c.pushList(args...)
@@ -5425,6 +5441,22 @@ func (c *tctx) mapList(list any, f func(item any) any) any {
 	return c.endList(base)
 }
 
+func (c *tctx) filterList(list any, f func(item any) any) any {
+	base := len(c.p.kidStack)
+	for _, item := range c.listItems("filter", list) {
+		c.p.stepWork()
+		value := f(tvalOrNil(item))
+		keep, ok := value.(bool)
+		if !ok {
+			c.p.evalErrorf("filter: predicate must produce a bool, got %s", ttypeName(value))
+		}
+		if keep {
+			c.p.kidStack = append(c.p.kidStack, item)
+		}
+	}
+	return c.endList(base)
+}
+
 func (c *tctx) list(args ...any) any {
 	base := len(c.p.kidStack)
 	c.pushList(args...)
@@ -6903,8 +6935,12 @@ func (a *astConv) toMatch(n *Node) *Match {
 	if n == nil || n.Type() != "Match" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Match)
+	}
 	v := astNew(&a.match)
 	*v = Match{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -6913,9 +6949,13 @@ func (a *astConv) toError(n *Node) *Error {
 	if n == nil || n.Type() != "Error" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Error)
+	}
 	msg, _ := a.field(n, "message").(string)
 	v := astNew(&a.error)
 	*v = Error{Span: Span{int(n.Start), int(n.End)}, Text: n.Text, Message: msg}
+	a.remember(n, v)
 	return v
 }
 
@@ -6967,8 +7007,12 @@ func (a *astConv) toAlias(n *Node) *Alias {
 	if n == nil || n.Type() != "Alias" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Alias)
+	}
 	v := astNew(&a.tAlias)
 	*v = Alias{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -6977,8 +7021,12 @@ func (a *astConv) toAnchor(n *Node) *Anchor {
 	if n == nil || n.Type() != "Anchor" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Anchor)
+	}
 	v := astNew(&a.tAnchor)
 	*v = Anchor{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -6987,8 +7035,12 @@ func (a *astConv) toMarker(n *Node) *Marker {
 	if n == nil || n.Type() != "Marker" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Marker)
+	}
 	v := astNew(&a.tMarker)
 	*v = Marker{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -6997,8 +7049,12 @@ func (a *astConv) toTag(n *Node) *Tag {
 	if n == nil || n.Type() != "Tag" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Tag)
+	}
 	v := astNew(&a.tTag)
 	*v = Tag{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -7007,8 +7063,12 @@ func (a *astConv) toWord(n *Node) *Word {
 	if n == nil || n.Type() != "Word" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Word)
+	}
 	v := astNew(&a.tWord)
 	*v = Word{Span: Span{int(n.Start), int(n.End)}, Text: n.Text}
+	a.remember(n, v)
 	return v
 }
 
@@ -7017,7 +7077,11 @@ func (a *astConv) toDirective(n *Node) *Directive {
 	if n == nil || n.Type() != "Directive" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Directive)
+	}
 	v := astNew(&a.tDirective)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Name = a.toWord(astNode(a.field(n, "Name")))
 	v.Params = a.list1(astNode(a.field(n, "Params")))
@@ -7029,7 +7093,11 @@ func (a *astConv) toDocument(n *Node) *Document {
 	if n == nil || n.Type() != "Document" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Document)
+	}
 	v := astNew(&a.tDocument)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Directives = a.list2(astNode(a.field(n, "Directives")))
 	v.Start = a.toMarker(astNode(a.field(n, "Start")))
@@ -7043,7 +7111,11 @@ func (a *astConv) toMapping(n *Node) *Mapping {
 	if n == nil || n.Type() != "Mapping" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Mapping)
+	}
 	v := astNew(&a.tMapping)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Props = a.toProperties(astNode(a.field(n, "Props")))
 	v.Flow = astBool(a.field(n, "Flow"))
@@ -7056,7 +7128,11 @@ func (a *astConv) toPair(n *Node) *Pair {
 	if n == nil || n.Type() != "Pair" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Pair)
+	}
 	v := astNew(&a.tPair)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Key = a.toValue(astNode(a.field(n, "Key")))
 	v.Value = a.toValue(astNode(a.field(n, "Value")))
@@ -7068,7 +7144,11 @@ func (a *astConv) toProperties(n *Node) *Properties {
 	if n == nil || n.Type() != "Properties" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Properties)
+	}
 	v := astNew(&a.tProperties)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Tag = a.toTag(astNode(a.field(n, "Tag")))
 	v.Anchor = a.toAnchor(astNode(a.field(n, "Anchor")))
@@ -7080,7 +7160,11 @@ func (a *astConv) toScalar(n *Node) *Scalar {
 	if n == nil || n.Type() != "Scalar" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Scalar)
+	}
 	v := astNew(&a.tScalar)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Props = a.toProperties(astNode(a.field(n, "Props")))
 	v.Style = astInt(a.field(n, "Style"))
@@ -7094,7 +7178,11 @@ func (a *astConv) toSequence(n *Node) *Sequence {
 	if n == nil || n.Type() != "Sequence" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Sequence)
+	}
 	v := astNew(&a.tSequence)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Props = a.toProperties(astNode(a.field(n, "Props")))
 	v.Flow = astBool(a.field(n, "Flow"))
@@ -7107,7 +7195,11 @@ func (a *astConv) toStream(n *Node) *Stream {
 	if n == nil || n.Type() != "Stream" {
 		return nil
 	}
+	if v, ok := a.values[n]; ok {
+		return v.(*Stream)
+	}
 	v := astNew(&a.tStream)
+	a.remember(n, v)
 	v.Span = Span{int(n.Start), int(n.End)}
 	v.Documents = a.list5(astNode(a.field(n, "Documents")))
 	return v
@@ -7214,6 +7306,7 @@ func (a *astConv) list5(n *Node) []*Document {
 // astConv converts nodes into typed values.
 type astConv struct {
 	control     *workControl
+	values      map[*Node]any // preserve aliases when one node appears in multiple fields or lists
 	match       astChunk[Match]
 	error       astChunk[Error]
 	tAlias      astChunk[Alias]
@@ -7237,6 +7330,12 @@ type astConv struct {
 	list5Chunk  astChunk[*Document]
 }
 
+func (a *astConv) remember(n *Node, v any) {
+	if a.values == nil {
+		a.values = make(map[*Node]any)
+	}
+	a.values[n] = v
+}
 func (a *astConv) stepWork() {
 	if workControlsEnabled && a.control != nil {
 		a.control.charge(0, 1)

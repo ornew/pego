@@ -8,6 +8,7 @@ The normative definition of the language is the [specification](../../spec/READM
 |:--|:--|
 | [Building grammars as ASTs and JSON](grammar-asts.md) | Structural validation, paths and source positions, required children and repetition bounds, JSON decoding and compatibility, semantic checking |
 | [Trees and actions](trees-and-actions.md) | The tree a grammar builds by default, shaping it with `#atomic`, `-` and captures, struct, union and terminal types, actions, built-in functions and lambdas, positions, using trees from Go, recipes (`foldl`, flattening lists), performance guidelines |
+| [Predicate Actions and List Filtering](predicate-actions-and-filter.md) | Ordered Predicate Action blocks and filtering node lists with a Boolean lambda |
 | [Walking Parse Trees](tree-traversal.md) | Walk node graphs in edge order, select nodes by input spans with `Cursor`, handle shared edges and cycles, and write deep trees as JSON |
 | [Output schemas and structural queries](output-schema-and-queries.md) | Exporting checked grammar shapes, compiling programmatic Node patterns, captures and edge paths, cancellation, work limits and current scope |
 | [Expressions](expressions.md) | Operator expressions: Operators Rule Definition Statements, left-recursive rules and precedence chains compared, level-restricted calls, operator forms and associativity, pitfalls, a larger example |

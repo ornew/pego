@@ -213,8 +213,8 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 		return n.expr(e.Expr)
 	case *grammar.Predicate:
 		term := e.Term
-		if block, ok := term.(*grammar.Block); ok && len(block.Statements) == 1 {
-			term = block.Statements[0]
+		if block, ok := term.(*grammar.Block); ok && len(block.Statements) > 0 {
+			return predicateBlock(e, block)
 		}
 		term = grammaranalysis.UngroupTerm(term)
 		if !n.eager && term == e.Term {
@@ -225,6 +225,8 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 		return &copy
 	case *grammar.Seq:
 		items, changed := normalizeItems(e.Items, n.eager, n.expr)
+		items, expanded := expandPredicateBlocks(e.Items, items)
+		changed = changed || expanded
 		if !changed {
 			return e
 		}

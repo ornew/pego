@@ -268,8 +268,10 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 		walkExpr(rd.Expr, func(e grammar.Expr) {
 			switch e := e.(type) {
 			case *grammar.Predicate:
-				if block, ok := e.Term.(*grammar.Block); ok && len(block.Statements) == 1 {
-					checkBlocks(block.Statements[0])
+				if block, ok := e.Term.(*grammar.Block); ok && len(block.Statements) > 0 {
+					for _, statement := range block.Statements {
+						checkBlocks(statement)
+					}
 				} else {
 					checkBlocks(e.Term)
 				}

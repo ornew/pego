@@ -552,12 +552,16 @@ pego parse -g derived.pego -f sexpr -i '  hello '
 | `list(a, b, ...)` | A list of the arguments (nodes or `nil`) |
 | `concat(l1, l2, ...)` | The concatenation of lists; a `nil` argument counts as an empty list |
 | `map(list, (x) => ...)` | The list of the results of applying the function to each element |
+| `filter(list, (x) => bool)` | Keeps the original elements whose predicate returns `true` |
 | `foldl(init, list, (acc, x) => ...)` | Folds the list from the left, starting with `init` |
 | `foldr(init, list, (acc, x) => ...)` | Folds the list from the right, starting with `init` |
 
-The function arguments are **lambdas**. They can only be written as arguments of `map`, `foldl` and `foldr`, and inside
-them the parameters are referred to with `$`, just like captures: `$acc`, `$x`. A lambda can also read the captures of
-the enclosing rule. The function passed to `map` must produce a node (or `nil`).
+The function arguments are **lambdas**. They can only be written as arguments of `map`, `filter`, `foldl` and `foldr`, and
+inside them the parameters are referred to with `$`, just like captures: `$acc`, `$x`. A lambda can also read the captures
+of the enclosing rule. The function passed to `map` must produce a node (or `nil`); `filter`'s predicate must produce a
+Boolean. `filter` visits elements from left to right, keeps the original nodes in order, and gives its result the input
+list's static element type. A `nil` input produces an empty list. If its predicate errors, a surrounding predicate action
+fails and a surrounding value action aborts the parse.
 
 ```pego
 // builtins.pego
