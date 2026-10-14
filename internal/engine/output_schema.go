@@ -89,13 +89,21 @@ func (p *Program) OutputSchemaPrototype(start string, allRules bool) (*OutputSch
 		case *grammar.StructSpec:
 			shape.Kind = "struct"
 			for _, f := range spec.Fields {
-				shape.Fields = append(shape.Fields, SchemaField{f.Name, "declared", p.schemaDeclared(f.Type)})
+				fieldShape, err := p.schemaDeclared(f.Type)
+				if err != nil {
+					return nil, fmt.Errorf("schema type %q field %q: %w", td.Name, f.Name, err)
+				}
+				shape.Fields = append(shape.Fields, SchemaField{f.Name, "declared", fieldShape})
 			}
 			sort.Slice(shape.Fields, func(i, j int) bool { return shape.Fields[i].Name < shape.Fields[j].Name })
 		case *grammar.TerminalSpec:
 			shape.Kind = "terminal"
 		case *grammar.AliasSpec:
-			shape = p.schemaDeclared(spec.Type)
+			var err error
+			shape, err = p.schemaDeclared(spec.Type)
+			if err != nil {
+				return nil, fmt.Errorf("schema type %q: %w", td.Name, err)
+			}
 		default:
 			return nil, fmt.Errorf("unsupported schema type %q", td.Name)
 		}
@@ -138,7 +146,10 @@ func (p *Program) OutputSchemaPrototype(start string, allRules bool) (*OutputSch
 		origin := "inferred"
 		if rd.Type != nil {
 			origin = "declared"
-			shape = p.schemaDeclared(rd.Type)
+			shape, err = p.schemaDeclared(rd.Type)
+			if err != nil {
+				return nil, fmt.Errorf("schema rule %q: %w", rd.Name, err)
+			}
 		}
 		id := "inferred/" + rd.Name
 		all[id] = SchemaType{id, rd.Name, "inferred", shape}
@@ -193,58 +204,74 @@ func (p *Program) OutputSchemaPrototype(start string, allRules bool) (*OutputSch
 	sort.Slice(s.Rules, func(i, j int) bool { return s.Rules[i].Name < s.Rules[j].Name })
 	return s, nil
 }
-func (p *Program) schemaDeclared(t grammar.TypeExpr) SchemaShape {
+func (p *Program) schemaDeclared(t grammar.TypeExpr) (SchemaShape, error) {
 	switch t := t.(type) {
 	case *grammar.TypeRef:
 		if _, ok := p.types[t.Name]; ok {
-			return SchemaShape{Kind: "ref", Ref: "declared/" + t.Name}
+			return SchemaShape{Kind: "ref", Ref: "declared/" + t.Name}, nil
 		}
 		for _, name := range reservedTypes {
 			if t.Name == name {
-				return SchemaShape{Kind: "ref", Ref: "cst/" + name}
+				return SchemaShape{Kind: "ref", Ref: "cst/" + name}, nil
 			}
 		}
 		switch t.Name {
 		case "int", "string", "bool":
-			return SchemaShape{Kind: "scalar", Scalar: t.Name}
+			return SchemaShape{Kind: "scalar", Scalar: t.Name}, nil
+		case "any", "node", "terminal":
+			return SchemaShape{Kind: t.Name}, nil
 		}
-		return SchemaShape{Kind: t.Name}
+		return SchemaShape{}, fmt.Errorf("unresolved schema type reference %q", t.Name)
 	case *grammar.ListType:
-		e := p.schemaDeclared(t.Elem)
-		return SchemaShape{Kind: "list", Element: &e}
+		e, err := p.schemaDeclared(t.Elem)
+		return SchemaShape{Kind: "list", Element: &e}, err
 	case *grammar.OptionalType:
-		e := p.schemaDeclared(t.Elem)
-		return SchemaShape{Kind: "optional", Element: &e}
+		e, err := p.schemaDeclared(t.Elem)
+		return SchemaShape{Kind: "optional", Element: &e}, err
 	case *grammar.UnionType:
 		s := SchemaShape{Kind: "union"}
 		for _, a := range t.Types {
-			s.Alternatives = append(s.Alternatives, p.schemaDeclared(a))
+			alternative, err := p.schemaDeclared(a)
+			if err != nil {
+				return SchemaShape{}, err
+			}
+			s.Alternatives = append(s.Alternatives, alternative)
 		}
 		sortSchemaAlternatives(s.Alternatives)
-		return s
+		return s, nil
 	case *grammar.TypeGroup:
 		return p.schemaDeclared(t.Type)
 	}
-	return SchemaShape{Kind: "any"}
+	return SchemaShape{}, fmt.Errorf("unsupported schema type expression %T", t)
 }
 func schemaInferred(t ty) (SchemaShape, error) {
 	switch t := t.(type) {
 	case basicTy:
 		switch t {
 		case tyNever:
-			return SchemaShape{Kind: "never"}, nil
+			return SchemaShape{}, fmt.Errorf("unresolved inferred schema type %q", t)
 		case tyInt, tyString, tyBool:
 			return SchemaShape{Kind: "scalar", Scalar: string(t)}, nil
-		default:
+		case tyAny, tyNil, tyNode, tyTerminal:
 			return SchemaShape{Kind: string(t)}, nil
 		}
+		return SchemaShape{}, fmt.Errorf("unsupported inferred schema type %q", t)
 	case namedTy:
-		ns := "declared/"
-		if t.kind == 'c' {
+		var ns string
+		switch t.kind {
+		case 's', 't':
+			ns = "declared/"
+		case 'c':
 			ns = "cst/"
+		default:
+			return SchemaShape{}, fmt.Errorf("unsupported inferred schema named kind %q", t.kind)
 		}
 		return SchemaShape{Kind: "ref", Ref: ns + t.name}, nil
 	case listTy:
+		if elem, ok := t.elem.(basicTy); ok && elem == tyNever {
+			// Repetition retains nil elements for value-free expressions.
+			return SchemaShape{Kind: "list", Element: &SchemaShape{Kind: "nil"}}, nil
+		}
 		e, err := schemaInferred(t.elem)
 		return SchemaShape{Kind: "list", Element: &e}, err
 	case optTy:
