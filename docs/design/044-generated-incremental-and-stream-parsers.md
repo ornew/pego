@@ -202,3 +202,40 @@ Report allocations, live/peak memory, input/memo capacity, generated source/buil
 materialization cost; retained caller results and per-feed arrays are separate from runtime working memory.
 Pin revisions, inputs and toolchains, serialize paired measurements, and gate ordinary batch regressions even
 when only dormant parser fields change. Implementation stages remain Proposed until their gates pass.
+
+## Isolated Runtime Prototype
+
+Private helpers in `internal/engine/genrt/container_prototype.go` and
+`stream_prototype.go` exercise admission, ownership and demand-read boundaries
+without changing generated exports or the default batch runtime. They are not
+embedded in generated parser source. The Document adapter deliberately uses a
+fresh batch parse for each invocation; it does not claim incremental memo reuse.
+Its edit admission uses the selected position unit and rejects boundaries inside
+valid UTF-8 characters while permitting individual invalid bytes to be repaired.
+Construction resolves options once, and each parse gets fresh work counters.
+
+A separate transactional memo-dependency classifier models the engine's
+examined-range, positional-value, recovery and provisional-left-recursion
+invalidation rules. It must not be applied to existing batch memo entries:
+successful examined ranges and transitive dependencies are currently absent.
+Integration requires generated rule analysis and demand-read instrumentation,
+variable/Operators Rule keys, failure/recovery replay, and shared result movement.
+Byte repairs can change adjacent character segmentation; edit deltas must come
+from the resulting input, rather than replacement rune count alone.
+
+The Reader cursor waits only for required bytes, preserves bytes returned with a
+reader error, and retains absolute positions and the previous character across
+explicit committed compaction. It is not a grammar stream parser: continuation
+lowering, lookahead/rollback, committed repetition boundaries, prefix/suffix
+actions and recovery diagnostics still need integration. Per-element publication
+copies Node graphs before conversion, preserves nil elements, supports internal
+collection, and terminally stops on callback errors or panics. Node aliases within
+an element survive the copy. Cross-element alias preservation needs a separate
+lifetime design before streams can be adopted; keeping a global strong clone map
+would retain every input element. Typed conversion must supply owned storage.
+
+Generator integration should append these helpers only for an explicit feature
+request, reserve export names before user type names, and generate a configured
+start adapter and a separate inferred stream-element converter. Do not embed the
+prototype adapters as an implementation of the proposed APIs: the outstanding
+metadata and continuation gates are semantic requirements, not optimizations.
