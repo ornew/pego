@@ -90,8 +90,8 @@ rule item = [a-z]`)
 	snapshotBenchmarkResult = nil
 }
 
-// Prefix insert/delete forces shifted spans and tests the fallback when exact
-// record reuse cannot pay for a per-version directory.
+// Prefix insert/delete forces shifted spans. Keep the previous snapshot live
+// through capture so both exact-record fallback and relative sharing are tested.
 func BenchmarkDocumentSnapshotPrefixEdit(b *testing.B) {
 	g, err := syntax.Parse(`rule main = item* $$
 rule item = [a-z]`)
@@ -108,7 +108,8 @@ rule item = [a-z]`)
 			if err != nil {
 				b.Fatal(err)
 			}
-			if _, err := d.Parse(); err != nil {
+			previous, err := d.SnapshotWith(ParseOptions{})
+			if err != nil {
 				b.Fatal(err)
 			}
 			b.ReportAllocs()
@@ -126,8 +127,10 @@ rule item = [a-z]`)
 				if err != nil {
 					b.Fatal(err)
 				}
-				snapshotBenchmarkResult = s
+				runtime.KeepAlive(previous)
+				previous = s
 			}
+			snapshotBenchmarkResult = previous
 		})
 	}
 	snapshotBenchmarkResult = nil
@@ -179,6 +182,14 @@ rule item = [a-z]`)
 }
 
 func BenchmarkDocumentSnapshotMiddleEditRead(b *testing.B) {
+	benchmarkDocumentSnapshotEditRead(b, false)
+}
+
+func BenchmarkDocumentSnapshotPrefixEditRead(b *testing.B) {
+	benchmarkDocumentSnapshotEditRead(b, true)
+}
+
+func benchmarkDocumentSnapshotEditRead(b *testing.B, prefix bool) {
 	g, err := syntax.Parse(`rule main = item* $$
 rule item = [a-z]`)
 	if err != nil {
@@ -197,7 +208,11 @@ rule item = [a-z]`)
 		if err != nil {
 			b.Fatal(err)
 		}
-		if err := d.Edit(size/2, size/2+1, "b"); err != nil {
+		start, end, childCount := size/2, size/2+1, size
+		if prefix {
+			start, end, childCount = 0, 0, size+1
+		}
+		if err := d.Edit(start, end, "b"); err != nil {
 			b.Fatal(err)
 		}
 		s, err := d.SnapshotWith(ParseOptions{})
@@ -208,7 +223,7 @@ rule item = [a-z]`)
 		var wide SnapshotNode
 		for i := 0; i < s.graph.count(); i++ {
 			n := snapshotHandle(&s.graph, i+1)
-			if n.ChildCount() == size {
+			if n.ChildCount() == childCount {
 				wide = n
 				break
 			}

@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unsafe"
 	"weak"
 )
 
@@ -23,10 +24,29 @@ type Snapshot struct {
 }
 
 type snapshotGraph struct {
+	snapshotPositionState
 	nodes       []snapshotRecord
 	refs        []*snapshotRecord                        // candidate mode; immutable records may come from older graphs
 	childChunks map[*snapshotRecord]*snapshotChildChunks // only records with shared child runs
 	root        int
+}
+
+type snapshotPosition struct {
+	start, end int32
+	gen        uint32
+}
+
+type snapshotPositionDelta struct {
+	start, end int32
+	gen        uint32
+}
+
+func relativeSnapshotPosition(r *snapshotRecord, pos snapshotPosition) (snapshotPositionDelta, bool) {
+	start, end := int64(pos.start)-int64(r.start), int64(pos.end)-int64(r.end)
+	if start < -(1<<31) || start > (1<<31)-1 || end < -(1<<31) || end > (1<<31)-1 {
+		return snapshotPositionDelta{}, false
+	}
+	return snapshotPositionDelta{int32(start), int32(end), pos.gen}, true
 }
 
 func (g *snapshotGraph) count() int {
@@ -95,13 +115,6 @@ func (g *snapshotGraph) childChunk(r *snapshotRecord, i, length int) []int {
 
 type snapshotRef int
 
-// SnapshotNode is a comparable read-only handle. Its zero value denotes nil.
-type SnapshotNode struct {
-	graph  *snapshotGraph
-	ref    *snapshotRecord
-	chunks *snapshotChildChunks
-}
-
 // SnapshotField holds an immutable scalar or SnapshotNode, never a mutable Node.
 type SnapshotField struct {
 	Name  string
@@ -144,7 +157,7 @@ func snapshotHandle(g *snapshotGraph, id int) SnapshotNode {
 		return SnapshotNode{}
 	}
 	ref := g.at(id - 1)
-	n := SnapshotNode{graph: g, ref: ref}
+	n := newSnapshotHandle(g, ref, id)
 	if ref.childChunked {
 		n.chunks = g.childChunks[ref]
 	}
@@ -168,12 +181,6 @@ func (n SnapshotNode) Type() string { return n.record().kind.typeName() }
 
 // Rule returns the originating rule, or an empty string for nil.
 func (n SnapshotNode) Rule() string { return n.record().kind.ruleName() }
-
-// Start returns the inclusive start position.
-func (n SnapshotNode) Start() int32 { return n.record().start }
-
-// End returns the exclusive end position.
-func (n SnapshotNode) End() int32 { return n.record().end }
 
 // Text returns terminal text.
 func (n SnapshotNode) Text() string { return n.record().text }
@@ -234,7 +241,8 @@ func (s *Snapshot) Materialize() *Node {
 	nodes := make([]*Node, s.graph.count())
 	for i := range nodes {
 		r := s.graph.at(i)
-		nodes[i] = &Node{kind: r.kind, Start: r.start, End: r.end, Text: r.text, fresh: r.fresh, terminal: r.terminal, gen: r.gen}
+		pos := s.graph.position(i, r)
+		nodes[i] = &Node{kind: r.kind, Start: pos.start, End: pos.end, Text: r.text, fresh: r.fresh, terminal: r.terminal, gen: pos.gen}
 	}
 	node := func(id int) *Node {
 		if id == 0 {
@@ -513,8 +521,9 @@ func snapshotFieldPath(p *parser, stack []snapshotFrame, edge snapshotEdge) stri
 	return out.String()
 }
 
-// shareSnapshotGraph reuses exact immutable records. The current parse
-// is always frozen first; no mutable Node or parser-owned slice is shared.
+// shareSnapshotGraph reuses immutable records after freezing the current parse.
+// The default requires exact metadata; the private position-overlay candidate
+// keeps changed metadata separately. No mutable Node or parser slice is shared.
 func shareSnapshotGraph(p *parser, previous *snapshotGraph, next snapshotGraph) snapshotGraph {
 	if previous == nil || previous.root != next.root {
 		return next
@@ -522,7 +531,35 @@ func shareSnapshotGraph(p *parser, previous *snapshotGraph, next snapshotGraph) 
 	matches := make([]uint64, (len(next.nodes)+63)/64)
 	ownedCount := 0
 	// Keep the flat-record path free of sidecar lookups and comparator wrappers.
-	if previous.childChunks == nil {
+	if snapshotPositionOverlayEnabled {
+		relative := make([]uint64, len(matches))
+		relativeCount := 0
+		for i := range next.nodes {
+			p.stepWork()
+			if i < previous.count() && sameSnapshotPayload(p, previous, previous.at(i), &next, &next.nodes[i]) {
+				old := previous.position(i, previous.at(i))
+				current := next.position(i, &next.nodes[i])
+				if old == current {
+					matches[i/64] |= 1 << uint(i%64)
+					continue
+				}
+				if _, fits := relativeSnapshotPosition(previous.at(i), current); fits {
+					relative[i/64] |= 1 << uint(i%64)
+					relativeCount++
+				}
+			}
+			ownedCount++
+		}
+		// This is an allocation heuristic, not a retained-heap guarantee: a
+		// pointer to one record can keep its entire old backing array alive.
+		if uint64(relativeCount)*uint64(unsafe.Sizeof(snapshotRecord{})) > uint64(len(next.nodes))*uint64(unsafe.Sizeof(snapshotPositionDelta{}))*4/3 {
+			for i := range matches {
+				p.stepWork()
+				matches[i] |= relative[i]
+			}
+			ownedCount -= relativeCount
+		}
+	} else if previous.childChunks == nil {
 		for i := range next.nodes {
 			p.stepWork()
 			if i < previous.count() && sameFlatSnapshotRecord(p, previous.at(i), &next.nodes[i]) {
@@ -549,11 +586,15 @@ func shareSnapshotGraph(p *parser, previous *snapshotGraph, next snapshotGraph) 
 	shared := snapshotGraph{refs: make([]*snapshotRecord, len(next.nodes)), root: next.root}
 	shared.nodes = make([]snapshotRecord, ownedCount)
 	ownedAt := 0
+	needsPositions := false
 	for i := range next.nodes {
 		p.stepWork()
 		if matches[i/64]&(1<<uint(i%64)) != 0 {
 			ref := previous.at(i)
 			shared.refs[i] = ref
+			if snapshotPositionOverlayEnabled && (ref.start != next.nodes[i].start || ref.end != next.nodes[i].end || ref.gen != next.nodes[i].gen) {
+				needsPositions = true
+			}
 			if ref.childChunked {
 				chunks := previous.childChunks[ref]
 				if shared.childChunks == nil {
@@ -576,7 +617,29 @@ func shareSnapshotGraph(p *parser, previous *snapshotGraph, next snapshotGraph) 
 			ownedAt++
 		}
 	}
+	if snapshotPositionOverlayEnabled && needsPositions {
+		shared.setPositions(p, &next)
+	}
 	return shared
+}
+
+func sameSnapshotPayload(p *parser, ag *snapshotGraph, a *snapshotRecord, bg *snapshotGraph, b *snapshotRecord) bool {
+	if a.kind != b.kind || a.fresh != b.fresh || a.terminal != b.terminal ||
+		ag.hasChildren(a) != bg.hasChildren(b) || (a.fields == nil) != (b.fields == nil) ||
+		ag.childCount(a) != bg.childCount(b) || len(a.fields) != len(b.fields) || len(a.text) != len(b.text) {
+		return false
+	}
+	if p.compareText(a.text, b.text) != 0 || !sameSnapshotChildren(p, ag, a, bg, b) {
+		return false
+	}
+	for i, f := range a.fields {
+		p.stepWork()
+		other := b.fields[i]
+		if p.compareText(f.Name, other.Name) != 0 || !sameSnapshotFieldValue(p, f.Value, other.Value) {
+			return false
+		}
+	}
+	return true
 }
 
 // shareSnapshotChildren keeps only immutable child-ID runs. A reused view may

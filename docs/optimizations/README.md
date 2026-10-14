@@ -66,6 +66,7 @@ Each linked mechanism page describes its source, eligibility, interactions, cont
 | [R130](mechanisms/R130-document-snapshot-record-sharing.md) | Share exact immutable records in Document snapshots | C/RVM/IVM Document snapshots; candidate/reference build tag | ✓ | ✓ | ✓ | — | — | — | Default | pego_snapshot_sharing_reference |
 | [R140](mechanisms/R140-share-document-snapshot-child-runs.md) | Share immutable child-run backing between exact Document snapshot records | Document snapshot child-run backing; immutable records only | ✓ | ✓ | ✓ | — | — | — | Default | pego_snapshot_child_chunks_reference |
 | [R150](mechanisms/R150-cache-snapshot-child-run-descriptors.md) | Cache immutable child-run descriptors in SnapshotNode records | Document snapshot record access; caches immutable child-run descriptors | ✓ | ✓ | ✓ | — | — | — | Default | No cache-off control; reference retains this cache |
+| [R160](mechanisms/R160-relative-snapshot-position-overlays.md) | Store per-version relative positions over shared snapshot records | Private Document snapshot comparison; no matching-path change | Private off | Private off | Private off | — | — | — | Private off | `pego_snapshot_position_overlays` |
 
 ### A — Allocation and Retention
 
@@ -229,7 +230,11 @@ Records [025](025-discarding-separators-in-the-example-grammars.md) and [055](05
 - [096. Specialize generated Go work-control methods](096-specialize-generated-go-method-helpers.md)
 - [097. Exact Document Snapshot record sharing](097-exact-document-snapshot-record-sharing.md)
 - [098. Bootstrap generated typed output allocations](098-bootstrap-generated-typed-output-allocations.md)
+
+## Records 99 Onward
+
 - [099. Share Document snapshot child runs](099-share-document-snapshot-child-runs.md)
+- [100. Relative Snapshot Position Overlays](100-relative-snapshot-position-overlays.md)
 
 ## Experiments That Did Not Pay Off
 

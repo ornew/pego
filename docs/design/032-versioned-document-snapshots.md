@@ -1,6 +1,6 @@
 # 032. Versioned Document Snapshots and Atomic Edit Batches
 
-- **Status**: Proposed
+- **Status**: Implemented
 - **Author**: @ornew
 - **Date**: 2026-10-11
 
@@ -13,8 +13,8 @@ Existing `Document.Edit`, `Document.Parse`, mutable `Node` fields, and
 
 Snapshots expose an immutable graph. Exact sharing of immutable snapshot records
 and eligible child-ID runs across versions is selected for default adoption;
-relative internal spans remain unimplemented. Mutable parser Nodes and input
-buffers are never shared with snapshots.
+relative position overlays were measured as a private candidate and were not
+adopted. Mutable parser Nodes and input buffers are never shared with snapshots.
 Chunked input storage is a separate mechanism under
 [design 019](019-incremental-document-and-tree-tooling.md).
 
@@ -333,12 +333,15 @@ The Document keeps only a weak reference to the previous snapshot graph, and
 snapshot text remains separately owned. This preserves absolute positions and
 within-version graph identity without retaining mutable Nodes or input buffers.
 
-Relative spans remain a possible future design.
 Relative spans must cover all actual graph edges: action fields can point
 outside a parent's span, and zero-width/lookahead captures can need different
 placement contexts. Absolute scalar values produced by position-dependent
 actions cannot be repaired by shifting spans. Any such design needs measured
-access bounds and exact results without walking an unbounded edit history.
+access bounds and exact results without walking an unbounded edit history. A
+private relative-position overlay was measured and remains off by default; its
+measured read and retention tradeoffs are recorded in
+[optimization 100](../optimizations/100-relative-snapshot-position-overlays.md)
+and summarized by [mechanism R160](../optimizations/mechanisms/R160-relative-snapshot-position-overlays.md).
 
 Absolute scalar values produced by position-dependent actions cannot be repaired
 by shifting spans. Preserve the compiler's positional flags, input/examined-range
@@ -400,13 +403,16 @@ module formats remain unchanged; snapshot handles introduce no serialized format
 4. Share eligible immutable child-ID runs within changed high-fanout records.
    Keep a same-source flat reference and measure retained history, capture,
    access, and materialization separately.
-5. Treat relative spans and a separate read-only Document API as distinct
-   designs; do not infer their value from exact-record or child-run results.
+5. Evaluate relative position overlays separately from exact-record and
+   child-run sharing. The measured private overlay candidate remains off by
+   default; a separate read-only Document API remains a distinct design.
 
 The versioned edit API is the first independently useful stage. Owned snapshots,
 exact immutable record sharing, and eligible child-run sharing are selected for
-adoption; relative spans remain proposed. Chunked input storage is a separate
-mechanism and must be measured independently when combined with snapshots.
+adoption. Relative position overlays were measured but not adopted; the
+reference representation continues to store absolute spans. Chunked input
+storage is a separate mechanism and must be measured independently when
+combined with snapshots.
 
 ## Alternatives Considered
 
@@ -559,6 +565,24 @@ in [optimization 097](../optimizations/097-exact-document-snapshot-record-sharin
 Additional sharing of child-ID runs inside changed records is measured in
 [optimization 099](../optimizations/099-share-document-snapshot-child-runs.md).
 
+Relative position overlays were evaluated in a private build-tag candidate
+against the no-tag absolute-position path from the same source. The candidate
+stores per-version start/end deltas and generation metadata for shared records;
+the no-tag graph keeps its existing 64-byte graph state and 24-byte
+`SnapshotNode` handle. A shared graph needing changed metadata allocates 12 bytes per
+record and grows each arm64 handle from 24 to 32 bytes. It preserves the exact
+record/child graph and changes only how a handle resolves its absolute
+positions. This representation remains private and off by default.
+
+Three serialized ABBA blocks used Go 1.27.1 on Apple M3 Max, with 500 ms
+samples. Closure/CodePoints prefix capture was 6.5–9.1% slower; indexed reads
+were 25–38% slower after middle edits and 4–9% slower after prefix edits.
+Closure/Bytes full-history heap fell about 64–72%, while a latest-only window
+used 4.4–7.6% more. Heap totals include the live Document and memo state. Keep
+the candidate default-off: the measured access and latest-only costs do not
+justify general adoption. Method, allocation counts, ranges and retention
+windows are in [optimization 100](../optimizations/100-relative-snapshot-position-overlays.md).
+
 Reproduce capture and materialization with
 `go test ./internal/engine -run '^$' -bench '^BenchmarkDocumentSnapshotCapture$' -benchmem -benchtime=300ms -count=3`.
 Use the retention harness with matching `-mode`, `-size`, `-versions`,
@@ -600,8 +624,10 @@ and batch commit currently discards reuse state. Exact snapshot-record sharing
 and eligible child-run sharing reduce retained memory in measured same-length
 edit workloads. Exact sharing raised capture time in the tested
 Closure/CodePoints cases; child-run sharing had no clear ordinary-path timing
-change in the measured Closure/Bytes cases. Other backends, units, graph shapes
-and edit patterns remain unmeasured.
+change in the measured Closure/CodePoints cases. Relative position overlays reduce
+full-history retention in the tested prefix-edit fixtures but increase indexed
+read cost and latest-only retained heap, so remain off by default. Other
+backends, units, graph shapes and edit patterns remain unmeasured.
 
 Further measurements can establish whether a separate read-only Document mode
 is worth its additional API. That tradeoff does not justify silently changing

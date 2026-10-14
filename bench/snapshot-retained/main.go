@@ -40,7 +40,8 @@ func run() error {
 	edit := flag.String("edit", "replace-first", "replace-first, replace-middle, prepend, or append between versions")
 	size := flag.Int("size", 4096, "input size in bytes")
 	versions := flag.Int("versions", 64, "number of captured versions")
-	retain := flag.Bool("retain", true, "keep all captured versions until measurement")
+	retain := flag.Bool("retain", true, "keep captured versions until measurement")
+	window := flag.Int("window", 0, "retain only the newest N versions; zero retains all")
 	backendName := flag.String("backend", "closure", "closure, bytecode, or bytecode-iterative")
 	unitName := flag.String("unit", "codepoints", "codepoints or bytes")
 	flag.Parse()
@@ -50,8 +51,8 @@ func run() error {
 	if *edit != "replace-first" && *edit != "replace-middle" && *edit != "prepend" && *edit != "append" {
 		return fmt.Errorf("invalid edit %q", *edit)
 	}
-	if *size < 1 || *versions < 1 {
-		return fmt.Errorf("size and versions must be positive")
+	if *size < 1 || *versions < 1 || *window < 0 {
+		return fmt.Errorf("size and versions must be positive; window must be nonnegative")
 	}
 	var backend pego.Backend
 	switch *backendName {
@@ -90,7 +91,22 @@ rule item = [a-z]`, "main")
 	runtime.ReadMemStats(&before)
 	var out []any
 	if *retain {
-		out = make([]any, 0, *versions)
+		capacity := *versions
+		if *window > 0 {
+			capacity = min(capacity, *window)
+		}
+		out = make([]any, 0, capacity)
+	}
+	keep := func(value any) {
+		if !*retain {
+			return
+		}
+		if *window > 0 && len(out) == *window {
+			copy(out, out[1:])
+			out[len(out)-1] = value
+		} else {
+			out = append(out, value)
+		}
 	}
 	for i := 0; i < *versions; i++ {
 		if i > 0 {
@@ -117,16 +133,14 @@ rule item = [a-z]`, "main")
 			if parseErr != nil {
 				return parseErr
 			}
-			if *retain {
-				out = append(out, s)
-			}
+			keep(s)
 		} else {
 			n, parseErr := doc.Parse()
 			if parseErr != nil {
 				return parseErr
 			}
 			if *retain {
-				out = append(out, legacyResult{doc.Version(), doc.Unit(), doc.Text(), n.Clone(), parseErr, doc.Stats()})
+				keep(legacyResult{doc.Version(), doc.Unit(), doc.Text(), n.Clone(), parseErr, doc.Stats()})
 			}
 		}
 	}
@@ -136,10 +150,10 @@ rule item = [a-z]`, "main")
 		RetainedBytes:   int64(after.HeapAlloc) - int64(before.HeapAlloc),
 		RetainedObjects: int64(after.HeapObjects) - int64(before.HeapObjects)}
 	if *retain {
-		r.RetainedVersions = *versions
+		r.RetainedVersions = len(out)
 	}
 	if *retain {
-		r.BytesPerVersion = float64(r.RetainedBytes) / float64(*versions)
+		r.BytesPerVersion = float64(r.RetainedBytes) / float64(r.RetainedVersions)
 	}
 	if err = json.NewEncoder(os.Stdout).Encode(r); err != nil {
 		return err
