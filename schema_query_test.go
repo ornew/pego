@@ -199,3 +199,44 @@ rule main = "a" => Item{Value: nil}`, "main")
 	check(stringQuery, 0)
 	check(nilQuery, 0)
 }
+
+func TestPublicQueryScalarAliasFieldValidation(t *testing.T) {
+	p, err := pego.CompileSource(`type Label = string
+type DisplayLabel = Label
+type Item struct { Value DisplayLabel }
+rule main = x:"a" => Item{Value: text($x)}`, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	schema, err := p.OutputSchema()
+	if err != nil {
+		t.Fatal(err)
+	}
+	pattern := func(category string) pego.QueryPattern {
+		return pego.QueryPattern{Type: "Item", Fields: []pego.QueryFieldPattern{{
+			Name: "Value", Pattern: pego.QueryPattern{Category: category, Capture: "value"},
+		}}}
+	}
+	for _, category := range []string{"bool", "nil", "node", "list"} {
+		if _, err := pego.CompileStructuralQuery(pattern(category), schema); err == nil {
+			t.Errorf("accepted impossible scalar-alias category %q", category)
+		}
+	}
+	query, err := pego.CompileStructuralQuery(pattern("string"), schema)
+	if err != nil {
+		t.Fatal(err)
+	}
+	root, err := p.Parse("a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	matches, err := query.Matches(root)
+	if err != nil || len(matches) != 1 || len(matches[0].Captures) != 1 || matches[0].Captures[0].Value != "a" {
+		t.Fatalf("scalar alias match: %+v, %v", matches, err)
+	}
+	root.Fields[0].Value = false
+	matches, err = query.Matches(root)
+	if err != nil || len(matches) != 0 {
+		t.Fatalf("mutated scalar alias match: %+v, %v", matches, err)
+	}
+}

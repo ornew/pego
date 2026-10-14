@@ -91,7 +91,7 @@ func copyQueryPattern(p QueryPattern, s *OutputSchema, depth int) (QueryPattern,
 						}
 						for _, known := range t.Shape.Fields {
 							if known.Name == f.Name {
-								shape := known.Shape
+								shape := schemaDeclaredQueryAlias(known.Shape, s)
 								nilAllowed := false
 								if shape.Kind == "optional" && shape.Element != nil && shape.Element.Kind == "scalar" {
 									shape = *shape.Element
@@ -171,6 +171,30 @@ func schemaMayHaveField(shape SchemaShape, name string, s *OutputSchema, active 
 		}
 	}
 	return false
+}
+
+// schemaDeclaredQueryAlias follows declared type references only. Unknown or
+// cyclic references remain unresolved, so query compilation stays conservative.
+func schemaDeclaredQueryAlias(shape SchemaShape, s *OutputSchema) SchemaShape {
+	if shape.Kind != "ref" {
+		return shape
+	}
+	seen := map[string]bool{}
+	for shape.Kind == "ref" && !seen[shape.Ref] {
+		seen[shape.Ref] = true
+		found := false
+		for _, typ := range s.Types {
+			if typ.ID == shape.Ref && typ.Origin == "declared" {
+				shape = typ.Shape
+				found = true
+				break
+			}
+		}
+		if !found {
+			break
+		}
+	}
+	return shape
 }
 
 type queryBudget struct {
