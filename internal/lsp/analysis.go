@@ -132,7 +132,11 @@ func failedAnalysis(text string, good *analysis, err error) *analysis {
 }
 
 func newAnalysis(text string) *analysis {
-	return &analysis{text: text, idx: newTextIndex(text), tokAt: map[int]int{},
+	return newAnalysisWithIndex(text, newTextIndex(text))
+}
+
+func newAnalysisWithIndex(text string, idx *textIndex) *analysis {
+	return &analysis{text: text, idx: idx, tokAt: map[int]int{},
 		rules: map[string]*definition{}, types: map[string]*definition{},
 		sem: map[int]semClass{}, vars: map[string]bool{}}
 }
@@ -142,14 +146,22 @@ func analyze(text string) *analysis {
 	return a
 }
 
-// analyzeContext cancels at phase boundaries. Syntax/compiler loops are not yet
-// context aware, so this prototype does not promise bounded cancellation latency.
+// analyzeContext cancels during tokenization and initial parsing lexing, and
+// at later phase boundaries. Parser/compiler loops are not yet context aware.
 func analyzeContext(ctx context.Context, text string) (*analysis, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	a := newAnalysis(text)
-	for i, t := range syntax.Tokenize(text) {
+	idx, err := newTextIndexContext(ctx, text)
+	if err != nil {
+		return nil, err
+	}
+	a := newAnalysisWithIndex(text, idx)
+	tokens, err := syntax.TokenizeContext(ctx, text)
+	if err != nil {
+		return nil, err
+	}
+	for i, t := range tokens {
 		if i%256 == 0 {
 			if err := ctx.Err(); err != nil {
 				return nil, err
@@ -162,7 +174,10 @@ func analyzeContext(ctx context.Context, text string) (*analysis, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	a.g, a.syntaxErrs = syntax.ParsePartial(text)
+	a.g, a.syntaxErrs, err = syntax.ParsePartialContext(ctx, text)
+	if err != nil {
+		return nil, err
+	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}

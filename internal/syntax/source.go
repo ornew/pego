@@ -3,6 +3,7 @@ package syntax
 import (
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
 )
@@ -19,6 +20,10 @@ type commentBoundary struct {
 }
 
 func collectComments(previous grammar.Pos, next token, comments []*grammar.Comment) *commentBoundary {
+	return collectCommentsWithCheck(previous, next, comments, nil)
+}
+
+func collectCommentsWithCheck(previous grammar.Pos, next token, comments []*grammar.Comment, check func()) *commentBoundary {
 	b := &commentBoundary{}
 	canPrevious := previous.IsValid()
 	inlineEnd := 0
@@ -28,16 +33,13 @@ func collectComments(previous grammar.Pos, next token, comments []*grammar.Comme
 		if pending == nil {
 			return
 		}
-		var content strings.Builder
-		for _, comment := range pending {
-			content.WriteString(comment.Content)
-		}
+		content := joinCommentContent(pending, check)
 		if canPrevious {
-			b.trailing = content.String()
+			b.trailing = content
 			b.hasTrailing = true
 			canPrevious = false
 		} else {
-			b.detached = append(b.detached, content.String())
+			b.detached = append(b.detached, content)
 		}
 		pending = nil
 		groups++
@@ -50,7 +52,10 @@ func collectComments(previous grammar.Pos, next token, comments []*grammar.Comme
 		flush() // Inline comments never absorb following comment-only lines.
 		comments = comments[1:]
 	}
-	for _, c := range comments {
+	for i, c := range comments {
+		if check != nil && i&255 == 0 {
+			check()
+		}
 		if last.IsValid() && c.Pos.Line-last.Line >= 2 {
 			flush()
 			canPrevious = false
@@ -83,25 +88,57 @@ func collectComments(previous grammar.Pos, next token, comments []*grammar.Comme
 		flush()
 	}
 	if !scopeEnd && pending != nil {
-		var content strings.Builder
-		for _, c := range pending {
-			content.WriteString(c.Content)
-		}
-		b.leading = content.String()
+		b.leading = joinCommentContent(pending, check)
 	}
 	return b
 }
 
+func joinCommentContent(comments []*grammar.Comment, check func()) string {
+	if len(comments) == 1 {
+		if check != nil {
+			check()
+		}
+		return comments[0].Content
+	}
+	length := 0
+	for i, c := range comments {
+		if check != nil && i&255 == 0 {
+			check()
+		}
+		length += len(c.Content)
+	}
+	var out strings.Builder
+	out.Grow(length)
+	for i, c := range comments {
+		if check != nil && i&255 == 0 {
+			check()
+		}
+		writeCommentContent(&out, c.Content, check)
+	}
+	return out.String()
+}
+
 func commentContent(raw, ending string) string {
+	return commentContentWithCheck(raw, ending, nil)
+}
+
+func commentContentWithCheck(raw, ending string, check func()) string {
 	if strings.HasPrefix(raw, "//") {
-		return raw[2:] + ending
+		if check == nil {
+			return raw[2:] + ending
+		}
+		var out strings.Builder
+		out.Grow(len(raw) - 2 + len(ending))
+		writeCommentContent(&out, raw[2:], check)
+		out.WriteString(ending)
+		return out.String()
 	}
 	content := strings.TrimPrefix(raw, "/*")
 	content = strings.TrimSuffix(content, "*/")
 	var out strings.Builder
 	first := true
 	for {
-		i := strings.IndexAny(content, "\r\n")
+		i := commentLineBreak(content, check)
 		line, newline := content, ""
 		if i >= 0 {
 			line, newline = content[:i], content[i:i+1]
@@ -110,12 +147,15 @@ func commentContent(raw, ending string) string {
 			}
 		}
 		if !first {
-			line = strings.TrimLeftFunc(line, unicode.IsSpace)
+			line = trimCommentLeft(line, check)
 			if !strings.HasPrefix(line, "*/") {
 				line = strings.TrimPrefix(line, "*")
 			}
 		}
-		out.WriteString(line)
+		if check != nil {
+			out.Grow(len(line) + len(newline))
+		}
+		writeCommentContent(&out, line, check)
 		out.WriteString(newline)
 		if i < 0 {
 			break
@@ -124,6 +164,53 @@ func commentContent(raw, ending string) string {
 		first = false
 	}
 	return out.String()
+}
+
+func commentLineBreak(s string, check func()) int {
+	if check == nil {
+		return strings.IndexAny(s, "\r\n")
+	}
+	for i := 0; i < len(s); i += 256 {
+		check()
+		end := min(i+256, len(s))
+		if j := strings.IndexAny(s[i:end], "\r\n"); j >= 0 {
+			return i + j
+		}
+	}
+	return -1
+}
+
+func trimCommentLeft(s string, check func()) string {
+	if check == nil {
+		return strings.TrimLeftFunc(s, unicode.IsSpace)
+	}
+	for i, n := 0, 0; i < len(s); n++ {
+		if n&255 == 0 {
+			check()
+		}
+		r, size := utf8.DecodeRuneInString(s[i:])
+		if !unicode.IsSpace(r) {
+			return s[i:]
+		}
+		i += size
+		if i == len(s) {
+			return ""
+		}
+	}
+	return s
+}
+
+func writeCommentContent(out *strings.Builder, s string, check func()) {
+	if check == nil {
+		out.WriteString(s)
+		return
+	}
+	for len(s) > 0 {
+		check()
+		n := min(len(s), 256)
+		out.WriteString(s[:n])
+		s = s[n:]
+	}
 }
 
 // source records the tokens consumed by a production and transfers ownership

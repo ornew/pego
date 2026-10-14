@@ -3,10 +3,60 @@ package lsp
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
+
+type cancelAnalysisOnCheck struct {
+	checks   int
+	cancelAt int
+}
+
+func (*cancelAnalysisOnCheck) Deadline() (time.Time, bool) { return time.Time{}, false }
+func (*cancelAnalysisOnCheck) Done() <-chan struct{}       { return nil }
+func (*cancelAnalysisOnCheck) Value(any) any               { return nil }
+func (c *cancelAnalysisOnCheck) Err() error {
+	c.checks++
+	if c.checks >= c.cancelAt {
+		return context.Canceled
+	}
+	return nil
+}
+
+func TestResponsiveAnalysisCancelsWithinToken(t *testing.T) {
+	src := "\"" + strings.Repeat("x", 8192) + "\""
+	// Pass the analysis preflight, text index, lexer preflight, rune
+	// decoding, and lexing-loop check. Cancel at the next poll inside
+	// the long string token.
+	ctx := &cancelAnalysisOnCheck{cancelAt: 8 + (len(src)-1)/256 + 2*(len([]rune(src))/256)}
+	a, err := analyzeContext(ctx, src)
+	if a != nil || !errors.Is(err, context.Canceled) {
+		t.Fatalf("analyzeContext = %v, %v after %d polls", a, err, ctx.checks)
+	}
+}
+
+func TestResponsiveAnalysisCancelsWithinTextIndex(t *testing.T) {
+	src := strings.Repeat("😀\r\n", 4096)
+	// Analyze preflight, index preflight and first index poll succeed;
+	// the next poll cancels during index construction.
+	ctx := &cancelAnalysisOnCheck{cancelAt: 4}
+	a, err := analyzeContext(ctx, src)
+	if a != nil || !errors.Is(err, context.Canceled) || ctx.checks != ctx.cancelAt {
+		t.Fatalf("analyzeContext = %v, %v after %d polls", a, err, ctx.checks)
+	}
+}
+
+func TestCancellableTextIndexMatchesOrdinary(t *testing.T) {
+	src := "😀a\r\nbé\r中\n"
+	got, err := newTextIndexContext(context.Background(), src)
+	if err != nil || !reflect.DeepEqual(got, newTextIndex(src)) {
+		t.Fatalf("text index mismatch: %v", err)
+	}
+}
 
 func newResponsiveClient(t *testing.T, lint bool) *testClient {
 	t.Helper()

@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"context"
 	"sort"
 	"unicode/utf8"
 
@@ -40,9 +41,26 @@ type checkpoint struct {
 const checkpointEvery = 64
 
 func newTextIndex(text string) *textIndex {
+	t, _ := newTextIndexContext(nil, text)
+	return t
+}
+
+func newTextIndexContext(ctx context.Context, text string) (*textIndex, error) {
+	if ctx != nil {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+	}
 	t := &textIndex{text: text, lines: []int{0}}
 	units, runes, next := 0, 0, 0
+	nextCheck := 0
 	for i := 0; i < len(text); {
+		if ctx != nil && i >= nextCheck {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			nextCheck = i + 256
+		}
 		if i >= next {
 			t.checkpoints = append(t.checkpoints, checkpoint{i, units, runes})
 			next = i + checkpointEvery
@@ -60,8 +78,13 @@ func newTextIndex(text string) *textIndex {
 		runes++
 		i += size
 	}
+	if ctx != nil {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+	}
 	t.checkpoints = append(t.checkpoints, checkpoint{len(text), units, runes})
-	return t
+	return t, nil
 }
 
 // count returns the numbers of UTF-16 code units and code points before the byte offset off, or

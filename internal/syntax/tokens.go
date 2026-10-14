@@ -1,6 +1,7 @@
 package syntax
 
 import (
+	"context"
 	"unicode/utf8"
 
 	"github.com/ornew/pego/grammar"
@@ -41,6 +42,17 @@ type Token struct {
 // Tokenize splits src into tokens, including comments, in source order. Characters that do not
 // start a token are skipped, so Tokenize never fails; Parse reports them.
 func Tokenize(src string) []Token {
+	tokens, _ := tokenizeContext(nil, src)
+	return tokens
+}
+
+// TokenizeContext is Tokenize with cancellation. It returns no tokens when
+// cancelled, including when cancellation occurs in the middle of a token.
+func TokenizeContext(ctx context.Context, src string) ([]Token, error) {
+	return tokenizeContext(ctx, src)
+}
+
+func tokenizeContext(ctx context.Context, src string) ([]Token, error) {
 	var out []Token
 	comment := func(c *grammar.Comment) {
 		end := c.End
@@ -50,17 +62,36 @@ func Tokenize(src string) []Token {
 		}
 		out = append(out, Token{Kind: TokenComment, Text: c.Text, Pos: c.Pos, End: end})
 	}
-	for _, t := range lex(src, &errorList{}) {
+	toks, err := lexContext(ctx, src, &errorList{})
+	if err != nil {
+		return nil, err
+	}
+	for i, t := range toks {
+		if ctx != nil && i&255 == 0 {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+		}
 		if t.lineComment != nil {
 			comment(t.lineComment)
 		}
-		for _, c := range t.comments {
+		for j, c := range t.comments {
+			if ctx != nil && j&255 == 0 {
+				if err := ctx.Err(); err != nil {
+					return nil, err
+				}
+			}
 			comment(c)
 		}
 		tok := Token{Pos: t.pos, End: t.end, Text: t.text}
 		switch t.kind {
 		case tEOF:
-			return out
+			if ctx != nil {
+				if err := ctx.Err(); err != nil {
+					return nil, err
+				}
+			}
+			return out, nil
 		case tIdent:
 			tok.Kind = TokenIdent
 		case tString:
@@ -78,7 +109,7 @@ func Tokenize(src string) []Token {
 		}
 		out = append(out, tok)
 	}
-	return out
+	return out, nil
 }
 
 // ParsePartial parses src like Parse, but returns the grammar even when there are errors. After an
@@ -86,10 +117,31 @@ func Tokenize(src string) []Token {
 // to the end; a definition with an error in the middle is missing. Errors that do not stop the
 // parser of a definition, such as an invalid escape sequence, leave the definition in the grammar.
 func ParsePartial(src string) (*grammar.Grammar, ErrorList) {
+	g, errs, _ := parsePartialContext(nil, src)
+	return g, errs
+}
+
+// ParsePartialContext is ParsePartial with cancellation during initial lexing.
+// Cancellation is also checked after parsing. Cancelled calls return no
+// grammar or diagnostics.
+func ParsePartialContext(ctx context.Context, src string) (*grammar.Grammar, ErrorList, error) {
+	return parsePartialContext(ctx, src)
+}
+
+func parsePartialContext(ctx context.Context, src string) (*grammar.Grammar, ErrorList, error) {
 	errs := &errorList{}
-	p := &parser{toks: lex(src, errs), errs: errs}
+	toks, err := lexContext(ctx, src, errs)
+	if err != nil {
+		return nil, nil, err
+	}
+	p := &parser{toks: toks, errs: errs}
 	g := p.file()
-	return g, errs.list
+	if ctx != nil {
+		if err := ctx.Err(); err != nil {
+			return nil, nil, err
+		}
+	}
+	return g, errs.list, nil
 }
 
 // IsKeyword reports whether name can act as a contextual keyword. These words

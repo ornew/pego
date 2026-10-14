@@ -2,6 +2,7 @@
 package syntax
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -72,7 +73,9 @@ var puncts = []string{
 }
 
 type lexer struct {
+	ctx       context.Context
 	src       []rune
+	srcASCII  bool
 	i         int
 	line      int
 	col       int
@@ -105,6 +108,9 @@ func (l *lexer) lineBreak(i int) bool {
 func (l *lexer) advance() rune {
 	r := l.src[l.i]
 	l.i++
+	if l.i&255 == 0 {
+		l.checkCancel()
+	}
 	if l.lineBreak(l.i - 1) {
 		l.line++
 		l.col = 1
@@ -115,27 +121,156 @@ func (l *lexer) advance() rune {
 	return r
 }
 
+type lexCancelled struct{ err error }
+
+func (l *lexer) checkCancel() {
+	if l.ctx != nil {
+		if err := l.ctx.Err(); err != nil {
+			panic(lexCancelled{err})
+		}
+	}
+}
+
+func (l *lexer) cancelCheck() func() {
+	if l.ctx == nil {
+		return nil
+	}
+	return l.checkCancel
+}
+
+func (l *lexer) runeString(start, end int) string {
+	if l.ctx == nil {
+		return string(l.src[start:end])
+	}
+	var out strings.Builder
+	if l.srcASCII {
+		out.Grow(end - start)
+	} else {
+		bytes := 0
+		for i := start; i < end; i++ {
+			if (i-start)&255 == 0 {
+				l.checkCancel()
+			}
+			size := utf8.RuneLen(l.src[i])
+			if size < 0 {
+				size = utf8.RuneLen(utf8.RuneError)
+			}
+			bytes += size
+		}
+		l.checkCancel()
+		out.Grow(bytes)
+	}
+	for i := start; i < end; i++ {
+		if (i-start)&255 == 0 {
+			l.checkCancel()
+		}
+		if r := l.src[i]; r >= 0 && r < utf8.RuneSelf {
+			out.WriteByte(byte(r))
+		} else {
+			out.WriteRune(r)
+		}
+	}
+	return out.String()
+}
+
+func (l *lexer) decodeRunes(src string) []rune {
+	l.srcASCII = true
+	count := 0
+	for _, r := range src {
+		count++
+		if r >= utf8.RuneSelf {
+			l.srcASCII = false
+		}
+		if count&255 == 0 {
+			l.checkCancel()
+		}
+	}
+	decoded := make([]rune, count)
+	i := 0
+	for _, r := range src {
+		decoded[i] = r
+		i++
+		if i&255 == 0 {
+			l.checkCancel()
+		}
+	}
+	return decoded
+}
+
 func (l *lexer) errorf(pos grammar.Pos, format string, args ...any) {
 	l.errs.add(pos, fmt.Sprintf(format, args...))
 }
 
+func (l *lexer) errorWithText(pos grammar.Pos, prefix, value string) {
+	if l.ctx == nil {
+		l.errs.addRange(pos, l.pos(), prefix+value)
+		return
+	}
+	l.checkCancel()
+	var b strings.Builder
+	b.Grow(len(prefix) + len(value))
+	b.WriteString(prefix)
+	for i := 0; i < len(value); i += 256 {
+		l.checkCancel()
+		b.WriteString(value[i:min(i+256, len(value))])
+	}
+	l.errs.addRange(pos, l.pos(), b.String())
+}
+
 func lex(src string, errs *errorList) []token {
-	l := &lexer{src: []rune(src), line: 1, col: 1, errs: errs}
-	var toks []token
+	toks, _ := lexContext(nil, src, errs)
+	return toks
+}
+
+// lexContext discards all tokens on cancellation. A nil context is the ordinary,
+// uncancellable path used by Parse and formatting.
+func lexContext(ctx context.Context, src string, errs *errorList) (toks []token, err error) {
+	if ctx != nil {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		defer func() {
+			if x := recover(); x != nil {
+				if cancelled, ok := x.(lexCancelled); ok {
+					toks, err = nil, cancelled.err
+				} else {
+					panic(x)
+				}
+			}
+		}()
+	}
+	l := &lexer{ctx: ctx, line: 1, col: 1, errs: errs}
+	if ctx == nil {
+		l.src = []rune(src)
+	} else {
+		// Count first so multibyte-heavy input does not retain a byte-sized
+		// rune buffer. Both passes poll, including before the first token.
+		l.src = l.decodeRunes(src)
+	}
+	l.checkCancel()
 	var previous grammar.Pos
 	for {
+		l.checkCancel()
 		t := l.next()
 		t.end = l.pos()
 		if t.lineComment != nil || len(t.comments) != 0 {
 			cs := t.comments
 			if t.lineComment != nil {
-				cs = append([]*grammar.Comment{t.lineComment}, cs...)
+				cs = make([]*grammar.Comment, len(t.comments)+1)
+				cs[0] = t.lineComment
+				for i, c := range t.comments {
+					if i&255 == 0 {
+						l.checkCancel()
+					}
+					cs[i+1] = c
+				}
 			}
-			t.source = collectComments(previous, t, cs)
+			t.source = collectCommentsWithCheck(previous, t, cs, l.cancelCheck())
 		}
 		toks = append(toks, t)
 		if t.kind == tEOF {
-			return toks
+			l.checkCancel()
+			return toks, nil
 		}
 		previous = t.end
 	}
@@ -175,7 +310,7 @@ func (l *lexer) next() token {
 		for l.i < len(l.src) && isIdentPart(l.src[l.i]) {
 			l.advance()
 		}
-		t.kind, t.text = tIdent, string(l.src[start:l.i])
+		t.kind, t.text = tIdent, l.runeString(start, l.i)
 	case r == '-' && l.minimumInteger():
 		// The minimum int is representable, but its positive magnitude is not.
 		// Preserve it as one signed token so generic attribute values round trip.
@@ -194,7 +329,7 @@ func (l *lexer) next() token {
 		for l.i < len(l.src) && isIdentPart(l.src[l.i]) {
 			l.advance()
 		}
-		t.kind, t.text = tCapture, string(l.src[start:l.i])
+		t.kind, t.text = tCapture, l.runeString(start, l.i)
 	case r == '$' && unicode.IsDigit(l.peekAt(1)):
 		l.advance()
 		t.kind = tIndex
@@ -224,13 +359,39 @@ func (l *lexer) decimal(pos grammar.Pos, kind, prefix string) (string, int) {
 	for l.i < len(l.src) && unicode.IsDigit(l.src[l.i]) {
 		l.advance()
 	}
-	text := string(l.src[start:l.i])
-	n, err := strconv.Atoi(text)
-	if err != nil {
-		l.errs.addRange(pos, l.pos(), fmt.Sprintf("invalid %s %s%s", kind, prefix, text))
+	text := l.runeString(start, l.i)
+	n, valid := l.decimalValue(text)
+	if !valid {
+		l.errorWithText(pos, "invalid "+kind+" "+prefix, text)
 		return text, 0
 	}
 	return text, n
+}
+
+func (l *lexer) decimalValue(text string) (int, bool) {
+	if l.ctx == nil {
+		n, err := strconv.Atoi(text)
+		return n, err == nil
+	}
+	if text == "" {
+		return 0, false
+	}
+	limit := int(^uint(0) >> 1)
+	n := 0
+	for i := 0; i < len(text); i++ {
+		if i&255 == 0 {
+			l.checkCancel()
+		}
+		if text[i] < '0' || text[i] > '9' {
+			return 0, false
+		}
+		digit := int(text[i] - '0')
+		if n > (limit-digit)/10 {
+			return 0, false
+		}
+		n = n*10 + digit
+	}
+	return n, true
 }
 
 // punctStart holds the first characters of the punctuation tokens.
@@ -319,7 +480,7 @@ func (l *lexer) skipSpace() (space, newline bool) {
 				}
 			}
 			c.End = l.pos()
-			c.Text = string(l.src[start:l.i])
+			c.Text = l.runeString(start, l.i)
 			ending := ""
 			if !block && l.i < len(l.src) {
 				ending = string(l.src[l.i : l.i+1])
@@ -327,10 +488,23 @@ func (l *lexer) skipSpace() (space, newline bool) {
 					ending = "\r\n"
 				}
 			}
-			c.Content = commentContent(c.Text, ending)
+			c.Content = commentContentWithCheck(c.Text, ending, l.cancelCheck())
 			if !block {
-				c.Text = strings.TrimRightFunc(c.Text, unicode.IsSpace)
-				c.End.Col -= utf8.RuneCountInString(string(l.src[start:l.i])) - utf8.RuneCountInString(c.Text)
+				end := len(c.Text)
+				trimmed := 0
+				for end > 0 {
+					if trimmed&255 == 0 {
+						l.checkCancel()
+					}
+					r, size := utf8.DecodeLastRuneInString(c.Text[:end])
+					if !unicode.IsSpace(r) {
+						break
+					}
+					end -= size
+					trimmed++
+				}
+				c.Text = c.Text[:end]
+				c.End.Col -= trimmed
 			}
 			if l.newlines == 0 && l.ntoks > 0 && l.lineComment == nil && len(l.comments) == 0 {
 				l.lineComment = c
@@ -401,9 +575,10 @@ func (l *lexer) escape() rune {
 				hex.WriteRune(l.advance())
 			}
 		}
-		n, err := strconv.ParseUint(hex.String(), 16, 32)
-		if err != nil || !utf8.ValidRune(rune(n)) {
-			l.escapeError(start, "invalid unicode escape \\u%s", hex.String())
+		value := hex.String()
+		n, valid := l.unicodeHexValue(value)
+		if !valid || !utf8.ValidRune(rune(n)) {
+			l.errorWithText(start, "invalid unicode escape \\u", value)
 			return utf8.RuneError
 		}
 		return rune(n)
@@ -414,6 +589,38 @@ func (l *lexer) escape() rune {
 		l.escapeError(start, "unknown escape sequence \\%c", r)
 	}
 	return r
+}
+
+func (l *lexer) unicodeHexValue(text string) (uint64, bool) {
+	if l.ctx == nil {
+		n, err := strconv.ParseUint(text, 16, 32)
+		return n, err == nil
+	}
+	if text == "" {
+		return 0, false
+	}
+	var n uint64
+	for i := 0; i < len(text); i++ {
+		if i&255 == 0 {
+			l.checkCancel()
+		}
+		var digit uint64
+		switch c := text[i]; {
+		case c >= '0' && c <= '9':
+			digit = uint64(c - '0')
+		case c >= 'a' && c <= 'f':
+			digit = uint64(c-'a') + 10
+		case c >= 'A' && c <= 'F':
+			digit = uint64(c-'A') + 10
+		default:
+			return 0, false
+		}
+		if n > (1<<32-1-digit)/16 {
+			return 0, false
+		}
+		n = n*16 + digit
+	}
+	return n, true
 }
 
 func (l *lexer) string() string {
