@@ -1,22 +1,20 @@
 # 096. Specialize Generated Go Work-Control Methods
 
-- **Status**: Measured
+- **Status**: Adopted
 - **Date**: 2026-10-14
 
 ## Problem and Mechanism
 
 Work-control checks add measurable cost to generated Go ordinary parsing and
 recognition. A broader ordinary-method specialization reduced part of that
-cost, but retained a sizable gap to the pre-work-control baseline. The narrower
-experimental variant specializes emitted ordinary methods and clones only the
+cost, but retained a sizable gap to the pre-work-control baseline. The selected variant specializes emitted ordinary methods and clones only the
 `newNode`, `newMatch`, `setCapture` and `expect` helpers. It hardens the
 generated-method registry and adds a generation-only ablation control. The
 internal emitter uses synchronous callbacks and preserves parser/call-local
 state rather than introducing escaping aliases or unrelated shadow state. It
 does not change the public API or matching semantics.
 
-This is an experimental implementation on a work branch, not a production
-change. A broader runtime-helper variant was rejected: it gained about 1–2%
+The specialization is adopted with the work-control implementation. A broader runtime-helper variant was rejected: it gained about 1–2%
 in recognition but made controlled XML parsing about 3% slower. A separate
 ordinary-method split experiment was also rejected after three paired 500 ms
 samples: JSON/XML recognition was about 2% slower and Outline about 4% slower
@@ -124,12 +122,13 @@ points. These size results are limited to the listed consumers.
 
 ## Decision and Limits
 
-Not adopted. The focused and same-source ablation comparisons show gains on
-ordinary generated paths, but the 131-profile comparison still shows
-generated-path regressions against main. Prescribed local validation passed; acceptance of the residual feature costs
-remains before adoption. The ordinary-method split alternative was measured and rejected.
-The broader runtime-helper expansion is also rejected. Do not infer broader
-gains or parity outside the measured profiles and three consumer sizes.
+Adopted with the measured residual costs. Against pre-feature
+main, the selected work-control implementation still has generated Go ordinary-
+path overhead; the selected specialization reduces part of it, at the measured
+code-size cost. Further ordinary-path improvement is separate follow-up work and
+does not change the cancellation or budget contract. The ordinary-method split
+and broader runtime-helper alternatives were measured and rejected. Do not infer
+broader gains or parity outside the measured profiles and three consumer sizes.
 
 ## Validation
 

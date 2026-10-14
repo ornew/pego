@@ -1,6 +1,6 @@
 # 033. Cancellable Parses and Work Budgets
 
-- **Status**: Proposed
+- **Status**: Implemented
 - **Author**: @ornew
 - **Date**: 2026-10-11
 
@@ -193,8 +193,9 @@ work control and does not materialize the second graph.
 Ordinary Closure parsers retain only the plain graph until a controlled call;
 after activation, the parser may retain both graphs. Measure default parsing,
 first controlled-call latency and allocations, and post-activation retained
-heap separately. The lazy prototype remains unadopted; the current costs and
-remaining gates are summarized under Performance and Results.
+heap separately. The lazy setup and generated-Go work-control implementations
+are implemented with the measured costs summarized under Performance and
+Results; further generated-Go optimization is a separate follow-up.
 
 ### What the Limits Count
 
@@ -435,8 +436,9 @@ suite passes across 18 packages. The validation covers the following cases:
 
 ## Performance and Results
 
-The lazy Closure setup prototype remains unadopted. Piece-backed `Document`
-input is already adopted independently. Measurements compared main `77f12f2`,
+The lazy Closure setup and generated-Go work-control implementation are
+implemented with the measured costs below. Piece-backed `Document` input is
+already adopted independently. Measurements compared main `77f12f2`,
 the eager-graph prototype `2ae994f`, and the lazy implementation described in
 this record; source fingerprints were fixed. Five alternating one-second rounds
 used Go 1.27.1 on Apple M3 Max (darwin/arm64), `GOMAXPROCS=16`, `GOGC=100`, and
@@ -529,7 +531,10 @@ Generated source grew 37.61–58.71% against the ablation. This trades code size
 for ordinary throughput; total feature cost remains above pre-feature main.
 Broader runtime-helper and separate ordinary-method alternatives were measured
 and rejected. Prescribed local checks and independent source/evidence review
-passed; acceptance of the residual costs remains before adoption. No zero-cost or general speedup claim follows.
+passed. The residual work-control costs are accepted; further
+ordinary-path generated-Go optimization is a separate follow-up. These local
+checks do not imply remote CI or deployed behavior. No zero-cost or general
+speedup claim follows.
 
 Use ordinary small/large batch Node, recognition, direct typed and conversion
 workloads; shallow scanning/backtracking; Document no-edit/edit/reparse/resume;

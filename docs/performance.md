@@ -25,6 +25,11 @@ document describes the benchmarks, analyzes the results, and records how they ca
 ## Where PEGO Stands
 
 This analysis describes the generated full-suite snapshot in [benchmarks.md](benchmarks.md), measured on 2026-10-14 at commit `08a4353` (Go 1.27.1, Apple M3 Max, darwin/arm64, 16 cores, `GOMAXPROCS=16`). It contains 131 benchmark cases, three samples per case, and took 458.346 seconds. This is one revision's snapshot, not a before-and-after comparison; ratios below compare operations within this run and do not attribute changes to a particular mechanism.
+Work-control behavior and its generated-Go cost are measured separately in
+[design 033](design/033-cancellable-parses-and-work-budgets.md) and
+[optimization record 096](optimizations/096-specialize-generated-go-method-helpers.md).
+The snapshot above predates those controls; neither it nor these local records
+imply deployed behavior.
 
 **Backends.** Across all eight parsing workloads, generated Go Node parsing takes 0.39–0.59× closure time in CodePoints and 0.45–0.61× in Bytes. Recursive VM parsing takes 1.15–1.40× closure time in CodePoints and 1.14–1.40× in Bytes. Iterative VM parsing takes 1.26–1.87× closure time in CodePoints and 1.23–1.84× in Bytes. The slowest relative case is iterative Operators Rule arithmetic at 1.87× closure in CodePoints and 1.84× in Bytes. Closure remains the default (see the [runtime guide](guide/runtime.md#backends)); the VMs serve grammars without their AST and, iteratively, deep nesting.
 

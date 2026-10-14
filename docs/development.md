@@ -66,6 +66,10 @@ Adaptive memoization enters eager mode when repeated calls exceed one sixteenth 
 counters halve before overflow, and the eager decision remains sticky for that parse.
 Nesting limits and tracing apply to rule calls. `Document` can reuse memo entries across edits and resume long
 repetitions; stream parsing emits elements and discards input already committed by the grammar.
+Core and generated Go/TypeScript parsing also support invocation-local cancellation and
+input-work/execution-step limits; streams and Documents use the same interruption
+contract. See [design 033](design/033-cancellable-parses-and-work-budgets.md)
+for backend scope, cleanup and measured costs.
 
 ### Code Generation
 
