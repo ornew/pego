@@ -6,7 +6,58 @@
 
 ## Summary
 
-Extend `pego lsp` to publish grammar lint findings, offer version-checked explanations and safe quick fixes, and keep analysis responsive while a document changes. The proposed protocol keeps the existing push-diagnostics model and adds cancellable, coalesced analysis snapshots. All new behavior is proposed; the server currently publishes only syntax and compile/type diagnostics and has no code-action request.
+Extend `pego lsp` to publish grammar lint findings, offer version-checked explanations and safe quick fixes, and keep analysis responsive while a document changes. The proposed protocol keeps the existing push-diagnostics model and adds cancellable, coalesced analysis snapshots. The complete responsive protocol remains proposed. An opt-in protocol prototype provides lint diagnostics and guarded explanations/suppression, while documentation format negotiation applies to ordinary requests. The analysis worker queue remains an isolated prototype; the server message loop is still synchronous.
+
+## Prototype Implementation Boundary
+
+The protocol prototype is enabled by the initialization capability
+`experimental.pego.lintDiagnostics: true`. It advertises code actions only for
+that client. Without this opt-in, diagnostics retain their existing syntax and
+compile/type scope. This is a validation boundary, not adoption of the proposed
+default lint policy.
+
+The prototype shares the successful compiled analysis with `internal/lint.Run`
+and maps its source-positioned findings to stable check codes and
+URI/version/finding-key data. It uses `main` when defined; without `main`, it
+omits reachability analysis because an editor start-rule setting is not yet
+specified. Existing lint directives remain authoritative. No old lint findings
+are reused after an analysis failure.
+
+An explanation action additionally requires
+`experimental.pego.showExplanation: true`; its client handler is not included
+in this prototype. Suppression additionally requires
+`workspace.workspaceEdit.documentChanges: true`. It returns a versioned edit
+only after recompiling and linting the candidate source, proving the targeted
+finding disappeared, and checking that the inserted directive is valid. It
+inserts a standalone `lint:ignore` comment immediately before the finding line
+and uses the document's newline convention. The title states that the directive
+covers that line and the following line. Insertions before declarations, inside
+multiline tokens, or on lines with existing ignore directives are withheld;
+rule-wide suppression needs an explicitly scoped action. There are no
+suggested grammar transformations and no alternative-deletion action.
+
+`analysisQueue` prototypes immutable version/generation snapshots, one running
+worker globally, one replaceable pending snapshot per document, cancellation on
+replacement/close/stop, worker panic isolation, and a publication freshness
+predicate. It does not own protocol output. `analyzeContext` checks cancellation
+between phases; syntax parsing, compilation and lint do not yet poll within
+long phases. The queue is not wired into `Serve`, and `$/cancelRequest` is still
+unsupported. Actor integration, request cancellation, bounded intra-phase
+polling, real-editor validation and resource measurements remain open.
+
+Hover and completion negotiate Markdown only when explicitly advertised;
+otherwise their documentation is plaintext. Labels, details and insertion text
+retain their established behavior. Completion uses current constructor
+`T{field: value}` and restricted-call `level(rule, name)` syntax. It offers
+remaining declared constructor fields, the `skip` key in `#recover()`, and the
+named levels of the selected operators rule. Defining a new struct field does
+not imply an inventory of suggested field names.
+
+Current lexical and header contracts remain authoritative: attribute and pragma
+names must be adjacent to their markers, and comments inside statement headers
+are rejected. Comment regression fixtures place comments inside an explicit
+operator-expression delimiter and retain rejected-header controls; they do not
+restore legacy attribute syntax or accept naked multiline operator headers.
 
 ## Motivation
 
@@ -101,6 +152,7 @@ No latency or resource measurements are claimed. Measure `BenchmarkAnalyze` and 
 
 ## Limitations and Open Questions
 
+- The worker queue is not connected to the protocol actor and the server still processes messages synchronously.
 - Cooperative cancellation needs checks in syntax and engine compilation/lint loops; until those are added, those phases can only be cancelled before or after the phase.
 - A server-command explanation depends on a client handler. The VS Code extension is the first planned client; the diagnostic itself remains understandable without the action.
 - The exact work bound and worker-count default should be selected from measurements on large grammars and multi-document editor workloads.

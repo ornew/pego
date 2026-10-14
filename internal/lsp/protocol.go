@@ -72,10 +72,12 @@ const severityError = 1
 
 // Diagnostic is a problem in a document.
 type Diagnostic struct {
-	Range    Range  `json:"range"`
-	Severity int    `json:"severity"`
-	Source   string `json:"source"`
-	Message  string `json:"message"`
+	Range    Range        `json:"range"`
+	Severity int          `json:"severity"`
+	Source   string       `json:"source"`
+	Message  string       `json:"message"`
+	Code     string       `json:"code,omitempty"`
+	Data     *findingData `json:"data,omitempty"`
 }
 
 type publishDiagnosticsParams struct {

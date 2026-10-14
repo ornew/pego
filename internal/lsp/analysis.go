@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sort"
@@ -127,13 +128,29 @@ func newAnalysis(text string) *analysis {
 }
 
 func analyze(text string) *analysis {
+	a, _ := analyzeContext(context.Background(), text)
+	return a
+}
+
+// analyzeContext cancels at phase boundaries. Syntax/compiler loops are not yet
+// context aware, so this prototype does not promise bounded cancellation latency.
+func analyzeContext(ctx context.Context, text string) (*analysis, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	a := newAnalysis(text)
 	for _, t := range syntax.Tokenize(text) {
 		start, end := a.idx.pegoOffset(t.Pos), a.idx.pegoOffset(t.End)
 		a.tokAt[start] = len(a.toks)
 		a.toks = append(a.toks, token{t, start, end})
 	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	a.g, a.syntaxErrs = syntax.ParsePartial(text)
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	a.indexDeclarationStarts()
 	a.collect()
 	for _, e := range a.syntaxErrs {
@@ -146,11 +163,14 @@ func analyze(text string) *analysis {
 	if len(a.syntaxErrs) == 0 {
 		a.compile()
 	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	sort.SliceStable(a.diags, func(i, j int) bool {
 		pi, pj := a.diags[i].Range.Start, a.diags[j].Range.Start
 		return pi.Line < pj.Line || pi.Line == pj.Line && pi.Character < pj.Character
 	})
-	return a
+	return a, nil
 }
 
 // maxCompileErrors is the number of compile errors published at most for a document; a last

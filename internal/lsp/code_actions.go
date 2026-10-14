@@ -1,0 +1,196 @@
+package lsp
+
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+
+	"github.com/ornew/pego/internal/lint"
+)
+
+type findingData struct {
+	URI     string `json:"uri"`
+	Version int    `json:"version"`
+	Key     string `json:"key"`
+}
+
+type textDocumentEdit struct {
+	TextDocument versionedTextDocumentIdentifier `json:"textDocument"`
+	Edits        []TextEdit                      `json:"edits"`
+}
+
+type actionEdit struct {
+	DocumentChanges []textDocumentEdit `json:"documentChanges"`
+}
+type actionCommand struct {
+	Title     string `json:"title"`
+	Command   string `json:"command"`
+	Arguments []any  `json:"arguments"`
+}
+type codeAction struct {
+	Title       string         `json:"title"`
+	Kind        string         `json:"kind"`
+	Diagnostics []Diagnostic   `json:"diagnostics"`
+	Edit        *actionEdit    `json:"edit,omitempty"`
+	Command     *actionCommand `json:"command,omitempty"`
+}
+
+// lintFindings shares the already successful compilation with the linter.
+// Without main, reachability is omitted because no editor start-rule setting exists.
+func (a *analysis) lintFindings() []lint.Finding {
+	if a.prog == nil || len(a.syntaxErrs) > 0 {
+		return nil
+	}
+	start := ""
+	if a.rules["main"] != nil {
+		start = "main"
+	}
+	return lint.Run(a.g, start, lint.Options{})
+}
+
+func (d *document) lintDiagnostics() []Diagnostic {
+	a := d.analysis()
+	var out []Diagnostic
+	for i, f := range a.lintFindings() {
+		if !f.Pos.IsValid() {
+			continue
+		}
+		severity := 4
+		if f.Severity == lint.Error {
+			severity = 1
+		} else if f.Severity == lint.Warning {
+			severity = 2
+		}
+		out = append(out, Diagnostic{Range: a.errorRange(f.Pos, false), Severity: severity, Source: "pego-lint", Message: f.Message, Code: f.Check,
+			Data: &findingData{URI: d.uri, Version: d.version, Key: fmt.Sprintf("%d:%s", i, f.Check)}})
+	}
+	return out
+}
+
+func (s *Server) codeActions(params json.RawMessage) (any, *rpcError) {
+	var p struct {
+		TextDocument textDocumentIdentifier `json:"textDocument"`
+		Range        Range                  `json:"range"`
+		Context      struct {
+			Diagnostics []Diagnostic `json:"diagnostics"`
+			Only        []string     `json:"only"`
+		} `json:"context"`
+	}
+	if err := decode(params, &p); err != nil {
+		return nil, err
+	}
+	d, err := s.doc(p.TextDocument.URI)
+	if err != nil {
+		return nil, err
+	}
+	out := []codeAction{}
+	if !s.client.Experimental.Pego.LintDiagnostics {
+		return out, nil
+	}
+	if len(p.Context.Only) > 0 {
+		allowed := false
+		for _, kind := range p.Context.Only {
+			if kind == "" || kind == "quickfix" {
+				allowed = true
+			}
+		}
+		if !allowed {
+			return out, nil
+		}
+	}
+	version := d.version
+	current := d.lintDiagnostics()
+	for _, diagnostic := range current {
+		if !rangesOverlap(p.Range, diagnostic.Range) {
+			continue
+		}
+		matched := false
+		for _, supplied := range p.Context.Diagnostics {
+			if supplied.Data != nil && *supplied.Data == *diagnostic.Data && supplied.Range == diagnostic.Range && supplied.Code == diagnostic.Code && supplied.Message == diagnostic.Message && supplied.Source == diagnostic.Source {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			continue
+		}
+		if s.client.Experimental.Pego.ShowExplanation {
+			explanation := ""
+			for _, check := range lint.Checks {
+				if check.Name == diagnostic.Code {
+					explanation = check.Summary
+					break
+				}
+			}
+			out = append(out, codeAction{Title: "Explain " + diagnostic.Code, Kind: "quickfix", Diagnostics: []Diagnostic{diagnostic}, Command: &actionCommand{Title: "Explain lint finding", Command: "pego.showExplanation", Arguments: []any{diagnostic.Code, diagnostic.Message, explanation}}})
+		}
+		if s.client.Workspace.WorkspaceEdit.DocumentChanges {
+			if edit, ok := d.suppressionEdit(diagnostic); ok {
+				out = append(out, codeAction{Title: "Suppress " + diagnostic.Code + " on this line and the following line", Kind: "quickfix", Diagnostics: []Diagnostic{diagnostic}, Edit: &actionEdit{DocumentChanges: []textDocumentEdit{{TextDocument: versionedTextDocumentIdentifier{URI: d.uri, Version: version}, Edits: []TextEdit{edit}}}}})
+			}
+		}
+	}
+	if d.version != version {
+		return []codeAction{}, nil
+	}
+	return out, nil
+}
+
+func rangesOverlap(a, b Range) bool {
+	before := func(a, b Position) bool { return a.Line < b.Line || a.Line == b.Line && a.Character < b.Character }
+	return !before(a.End, b.Start) && !before(b.End, a.Start)
+}
+
+// suppressionEdit is deliberately conservative: validate the edited grammar and
+// verify that the targeted finding disappears. Human-readable Fix is never an edit.
+func (d *document) suppressionEdit(diagnostic Diagnostic) (TextEdit, bool) {
+	if diagnostic.Code == lint.CheckDirective {
+		return TextEdit{}, false
+	}
+	a := d.analysis()
+	line := diagnostic.Range.Start.Line
+	if line < 0 || line >= len(a.idx.lines) {
+		return TextEdit{}, false
+	}
+	start := a.idx.lines[line]
+	end := len(d.text)
+	if line+1 < len(a.idx.lines) {
+		end = a.idx.lines[line+1]
+	}
+	// Never splice a new directive into an existing comment or multiline token.
+	for _, tok := range a.toks {
+		if tok.start < start && tok.end > start {
+			return TextEdit{}, false
+		}
+	}
+	if strings.Contains(d.text[start:end], "lint:ignore") {
+		return TextEdit{}, false
+	}
+	eol := "\n"
+	if strings.Contains(d.text, "\r\n") {
+		eol = "\r\n"
+	} else if strings.Contains(d.text, "\r") {
+		eol = "\r"
+	}
+	edit := TextEdit{Range: Range{Start: Position{Line: line}, End: Position{Line: line}}, NewText: "// lint:ignore " + diagnostic.Code + eol}
+	candidate, failure := analyzeSafely(d.text[:start] + edit.NewText + d.text[start:])
+	if failure != nil || candidate.prog == nil || len(candidate.syntaxErrs) > 0 {
+		return TextEdit{}, false
+	}
+	for _, finding := range candidate.lintFindings() {
+		if finding.Check == lint.CheckDirective && finding.Pos.Line == line+1 {
+			return TextEdit{}, false
+		}
+		if finding.Check == diagnostic.Code && finding.Message == diagnostic.Message && candidate.errorRange(finding.Pos, false).Start.Line == line+1 {
+			return TextEdit{}, false
+		}
+	}
+	// A directive before a declaration suppresses the whole rule. Do not offer
+	// the narrower line-scoped title when the insertion would have that scope.
+	for _, def := range a.defs {
+		if def.kwStart >= start && def.kwStart < end {
+			return TextEdit{}, false
+		}
+	}
+	return edit, true
+}

@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"context"
 	"reflect"
 	"strings"
 	"testing"
@@ -147,5 +148,131 @@ func TestRejectedHeaderCommentsProtocol(t *testing.T) {
 			t.Errorf("invalid header accepted: %s", source)
 		}
 		c.exit()
+	}
+}
+
+func TestAnalysisQueueCoalescesAndCancels(t *testing.T) {
+	started := make(chan analysisSnapshot, 4)
+	release := make(chan struct{})
+	q := newAnalysisQueue(func(ctx context.Context, snapshot analysisSnapshot) (*analysis, error) {
+		started <- snapshot
+		if snapshot.Version == 1 {
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-release:
+			}
+		}
+		return newAnalysis(snapshot.Text), nil
+	})
+	defer q.stop()
+	q.submit(analysisSnapshot{URI: "file:///a", Version: 1, Generation: 1})
+	first := <-started
+	if first.Version != 1 {
+		t.Fatalf("first = %+v", first)
+	}
+	// Hold the queue lock while replacing pending work to make coalescing deterministic.
+	q.mu.Lock()
+	ctx2, cancel2 := context.WithCancel(q.ctx)
+	q.pending[first.URI] = pendingAnalysis{snapshot: analysisSnapshot{URI: first.URI, Version: 2, Generation: 2}, ctx: ctx2, cancel: cancel2}
+	q.order = append(q.order, first.URI)
+	q.mu.Unlock()
+	q.submit(analysisSnapshot{URI: first.URI, Version: 3, Generation: 3})
+	latest := <-started
+	if latest.Version != 3 {
+		t.Fatalf("obsolete work started: %+v", latest)
+	}
+	result := <-q.results
+	if !matchesSnapshot(latest, result.Snapshot) || matchesSnapshot(first, result.Snapshot) {
+		t.Fatalf("snapshot guard: %+v", result)
+	}
+	if ctx2.Err() != context.Canceled {
+		t.Fatal("pending generation was not cancelled")
+	}
+}
+
+func TestAnalyzeContextCancelled(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	a, err := analyzeContext(ctx, "rule main = \"a\"")
+	if a != nil || err != context.Canceled {
+		t.Fatalf("analysis=%v error=%v", a, err)
+	}
+}
+
+func TestGuardedCodeActionsProtocol(t *testing.T) {
+	for _, newline := range []string{"\n", "\r\n", "\r"} {
+		t.Run(strings.ReplaceAll(strings.ReplaceAll(newline, "\r", "CR"), "\n", "LF"), func(t *testing.T) {
+			c := newServer(t)
+			c.request("initialize", map[string]any{"capabilities": map[string]any{
+				"workspace":    map[string]any{"workspaceEdit": map[string]any{"documentChanges": true}},
+				"experimental": map[string]any{"pego": map[string]any{"lintDiagnostics": true, "showExplanation": true}},
+			}})
+			defer c.exit()
+			uri := "file:///actions.pego"
+			source := "rule main = (" + newline + "  a:\"a\" b:\"b\"" + newline + ") => $a"
+			diagnostics := c.open(uri, source)
+			var target Diagnostic
+			for _, diagnostic := range diagnostics {
+				if diagnostic.Code == "unused-capture" {
+					target = diagnostic
+					break
+				}
+			}
+			if target.Data == nil || target.Severity != 2 || target.Source != "pego-lint" {
+				t.Fatalf("diagnostics = %+v", diagnostics)
+			}
+			params := map[string]any{"textDocument": map[string]any{"uri": uri}, "range": target.Range, "context": map[string]any{"diagnostics": []Diagnostic{target}}}
+			var actions []codeAction
+			c.requestInto("textDocument/codeAction", params, &actions)
+			if len(actions) != 2 || actions[0].Command == nil || actions[0].Command.Command != "pego.showExplanation" || actions[1].Edit == nil {
+				t.Fatalf("actions = %+v", actions)
+			}
+			change := actions[1].Edit.DocumentChanges[0]
+			if change.TextDocument.URI != uri || change.TextDocument.Version != target.Data.Version {
+				t.Fatalf("unversioned edit: %+v", change)
+			}
+			if !strings.HasSuffix(change.Edits[0].NewText, newline) {
+				t.Fatalf("wrong newline: %q", change.Edits[0].NewText)
+			}
+			edited := applyEdits(source, change.Edits)
+			candidate := analyze(edited)
+			if candidate.prog == nil || len(candidate.syntaxErrs) != 0 {
+				t.Fatalf("invalid suppression: %s %+v", edited, candidate.diags)
+			}
+			for _, f := range candidate.lintFindings() {
+				if f.Check == target.Code {
+					t.Fatalf("finding remains: %+v", f)
+				}
+			}
+			stale := target
+			data := *target.Data
+			data.Version++
+			stale.Data = &data
+			params["context"] = map[string]any{"diagnostics": []Diagnostic{stale}}
+			c.requestInto("textDocument/codeAction", params, &actions)
+			if len(actions) != 0 {
+				t.Fatalf("stale diagnostic actions: %+v", actions)
+			}
+			params["context"] = map[string]any{"diagnostics": []Diagnostic{target}, "only": []string{"refactor"}}
+			c.requestInto("textDocument/codeAction", params, &actions)
+			if len(actions) != 0 {
+				t.Fatalf("unexpected refactor actions: %+v", actions)
+			}
+		})
+	}
+}
+
+func TestLintDiagnosticsPrototypeIsOptIn(t *testing.T) {
+	c := newInitialized(t)
+	defer c.exit()
+	uri := "file:///ordinary.pego"
+	if got := c.open(uri, "rule main = \"a\" / \"ab\""); len(got) != 0 {
+		t.Fatalf("changed default diagnostics: %+v", got)
+	}
+	var actions []codeAction
+	c.requestInto("textDocument/codeAction", map[string]any{"textDocument": map[string]any{"uri": uri}, "range": Range{}, "context": map[string]any{"diagnostics": []Diagnostic{}}}, &actions)
+	if len(actions) != 0 {
+		t.Fatalf("non-opt-in actions: %+v", actions)
 	}
 }

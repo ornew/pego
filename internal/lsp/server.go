@@ -31,6 +31,17 @@ type Server struct {
 
 // clientCapabilities are the capabilities of the client that change the server's responses.
 type clientCapabilities struct {
+	Workspace struct {
+		WorkspaceEdit struct {
+			DocumentChanges bool `json:"documentChanges"`
+		} `json:"workspaceEdit"`
+	} `json:"workspace"`
+	Experimental struct {
+		Pego struct {
+			LintDiagnostics bool `json:"lintDiagnostics"`
+			ShowExplanation bool `json:"showExplanation"`
+		} `json:"pego"`
+	} `json:"experimental"`
 	TextDocument struct {
 		Hover struct {
 			ContentFormat []string `json:"contentFormat"`
@@ -221,7 +232,10 @@ func (s *Server) notification(msg *incoming) {
 
 // publish sends the diagnostics of d.
 func (s *Server) publish(d *document) {
-	diags := d.analysis().diags
+	diags := append([]Diagnostic(nil), d.analysis().diags...)
+	if s.client.Experimental.Pego.LintDiagnostics {
+		diags = append(diags, d.lintDiagnostics()...)
+	}
 	if diags == nil {
 		diags = []Diagnostic{}
 	}
@@ -246,6 +260,7 @@ func init() {
 		"textDocument/prepareRename":       (*Server).prepareRename,
 		"textDocument/rename":              (*Server).rename,
 		"textDocument/completion":          (*Server).completion,
+		"textDocument/codeAction":          (*Server).codeActions,
 		"textDocument/semanticTokens/full": (*Server).semanticTokens,
 	}
 }
@@ -278,6 +293,7 @@ func (s *Server) initialize(params json.RawMessage) (any, *rpcError) {
 			"documentHighlightProvider":  true,
 			"documentSymbolProvider":     true,
 			"hoverProvider":              true,
+			"codeActionProvider":         s.client.Experimental.Pego.LintDiagnostics,
 			"renameProvider":             rename,
 			"completionProvider":         map[string]any{"triggerCharacters": []string{"@", "#", "$", "."}},
 			"semanticTokensProvider": map[string]any{
