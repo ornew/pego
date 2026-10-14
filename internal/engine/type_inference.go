@@ -18,6 +18,7 @@ func (k *checker) inferTypes(rules []*grammar.RuleDef) {
 	var inferred []*grammar.RuleDef
 	defs := map[string]*grammar.RuleDef{}
 	for _, rd := range rules {
+		k.control.poll()
 		if !k.declared[rd.Name] {
 			inferred = append(inferred, rd)
 			defs[rd.Name] = rd
@@ -25,14 +26,18 @@ func (k *checker) inferTypes(rules []*grammar.RuleDef) {
 	}
 	depends := map[string][]string{}
 	for _, rd := range inferred {
-		for _, name := range allCalls(rd.Expr, nil) {
+		k.control.poll()
+		for _, name := range allCallsControlled(rd.Expr, nil, k.control) {
+			k.control.poll()
 			if defs[name] != nil {
 				depends[rd.Name] = append(depends[rd.Name], name)
 			}
 		}
 		if pr, ok := rd.Expr.(*grammar.OperatorsRule); ok {
 			for _, level := range pr.Levels {
+				k.control.poll()
 				for _, op := range level.Operators {
+					k.control.poll()
 					if op.Action != nil {
 						// Operator actions can read the rule's own inferred type
 						// through lhs/rhs without a syntactic rule reference.
@@ -43,7 +48,8 @@ func (k *checker) inferTypes(rules []*grammar.RuleDef) {
 		}
 	}
 	// Tarjan emits a component after all components it depends on.
-	for _, component := range tarjan(inferred, depends) {
+	for _, component := range tarjanControlled(inferred, depends, k.control) {
+		k.control.poll()
 		if len(component) == 1 && !contains(depends[component[0]], component[0]) {
 			rd := defs[component[0]]
 			k.ruleTypes[rd.Name] = k.ruleType(rd)
@@ -61,6 +67,7 @@ func (k *checker) inferRecursive(names []string, defs map[string]*grammar.RuleDe
 	never, unknown := inferredShape(tyNever), inferredShape(tyAny)
 	growth := make([]int, len(names))
 	for i, name := range names {
+		k.control.poll()
 		shape := inferredShape(k.ruleTypes[name])
 		texts[i], depths[i], sizes[i] = shape.key, shape.depth, shape.size
 	}
@@ -70,8 +77,10 @@ func (k *checker) inferRecursive(names []string, defs map[string]*grammar.RuleDe
 	states := [][]string{append([]string(nil), texts...)}
 	seen := map[string]int{key(texts): 0}
 	for {
+		k.control.poll()
 		changed, widened := false, false
 		for i, name := range names {
+			k.control.poll()
 			if frozen[name] {
 				continue
 			}
@@ -103,7 +112,9 @@ func (k *checker) inferRecursive(names []string, defs map[string]*grammar.RuleDe
 			// Widen only rules that changed in this cycle; stable peers keep
 			// their types, including rules with constant actions.
 			for i, name := range names {
+				k.control.poll()
 				for _, prior := range states[start:] {
+					k.control.poll()
 					if prior[i] != texts[i] {
 						k.ruleTypes[name], texts[i], depths[i], sizes[i] = tyAny, unknown.key, unknown.depth, unknown.size
 						frozen[name], widened = true, true

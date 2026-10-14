@@ -831,6 +831,7 @@ func (c *compiler) predicate(e *grammar.Predicate, s *scope) matcher {
 
 // checkTerm resolves the names in a value expression and reports statically detectable errors.
 func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
+	c.control.poll()
 	switch t := t.(type) {
 	case *grammar.CaptureRef:
 		if contains(locals, t.Name) {
@@ -872,7 +873,7 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 			c.checkTerm(fi.Value, s, locals)
 		}
 	case *grammar.ListConstructor:
-		k := &checker{prog: c.prog, errs: &c.errs, report: true, resolving: map[string]bool{}}
+		k := &checker{control: c.control, prog: c.prog, errs: &c.errs, report: true, resolving: map[string]bool{}}
 		elem := k.resolve(t.Elem)
 		if !nodeListElement(elem) {
 			c.errorf(t.Diagnostic(), "list constructors require a node element type, got %s", elem)

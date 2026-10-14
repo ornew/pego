@@ -182,12 +182,13 @@ var builtinTypes = map[string]bool{
 }
 
 type compiler struct {
-	prog *Program
-	proj map[string]string // projected captures of the rule being compiled (ruleProjections)
-	an   *analysis
-	opts Options
-	errs ErrorList
-	rule *rule
+	control *compileControl
+	prog    *Program
+	proj    map[string]string // projected captures of the rule being compiled (ruleProjections)
+	an      *analysis
+	opts    Options
+	errs    ErrorList
+	rule    *rule
 	// noIndex reports that a place where $n is not allowed (a predicate or an Operators Rule operator action)
 	// is being checked.
 	noIndex string
@@ -237,22 +238,32 @@ type ruleFlags struct {
 // build builds a program from the grammar. If flags is not nil, it skips static analysis and
 // type checking and uses flags instead.
 func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error) {
-	if err := grammar.Validate(g); err != nil {
-		e := err.(*grammar.ValidationError)
+	return buildControlled(g, opts, flags, nil)
+}
+
+func buildControlled(g *grammar.Grammar, opts Options, flags []ruleFlags, control *compileControl) (*Program, error) {
+	control.check()
+	validationError := grammar.Validate(g)
+	control.check()
+	if validationError != nil {
+		e := validationError.(*grammar.ValidationError)
 		return nil, ErrorList{&Error{Pos: e.Pos, Msg: e.Path + ": " + e.Msg}}
 	}
 	var unsupported ErrorList
 	for _, comment := range g.HeaderComments {
+		control.poll()
 		unsupported = append(unsupported, &Error{Pos: comment.Pos, Msg: "comments are not allowed inside statement headers"})
 	}
 	checkBlocks := func(term grammar.Term) {
 		walkTerm(term, func(t grammar.Term) {
+			control.poll()
 			if block, ok := t.(*grammar.Block); ok {
 				unsupported = append(unsupported, &Error{Pos: block.Diagnostic(), Msg: "action statement blocks are not implemented"})
 			}
 		})
 	}
 	for _, rd := range g.Rules() {
+		control.poll()
 		checkBlocks(rd.Action)
 		root := rd.Expr
 		for {
@@ -266,10 +277,12 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 			unsupported = append(unsupported, &Error{Pos: termPos(rd.Action, rd.Diagnostic()), Msg: "whole-rule actions are not supported for Operators Rules; use => ... or omit the action"})
 		}
 		walkExpr(rd.Expr, func(e grammar.Expr) {
+			control.poll()
 			switch e := e.(type) {
 			case *grammar.Predicate:
 				if block, ok := e.Term.(*grammar.Block); ok && len(block.Statements) > 0 {
 					for _, statement := range block.Statements {
+						control.poll()
 						checkBlocks(statement)
 					}
 				} else {
@@ -279,10 +292,13 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 				checkBlocks(e.Action)
 			case *grammar.OperatorsRule:
 				for _, operand := range e.Operands {
+					control.poll()
 					checkBlocks(operand.Action)
 				}
 				for _, level := range e.Levels {
+					control.poll()
 					for _, operator := range level.Operators {
+						control.poll()
 						checkBlocks(operator.Action)
 					}
 				}
@@ -292,21 +308,32 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 			}
 		})
 	}
+	control.check()
 	if len(unsupported) != 0 {
 		return nil, unsupported
 	}
 	var normalizationError error
 	g, normalizationError = normalizeAttributesWithCopies(g, opts.eagerAttributeCopies)
+	control.check()
 	if normalizationError != nil {
 		return nil, normalizationError
 	}
 	prog := &Program{Grammar: g, byName: map[string]*rule{}, types: map[string]grammar.TypeSpec{},
 		descTable: append([]string(nil), fixedDescs...)}
-	c := &compiler{prog: prog, opts: opts, plainDispatch: !opts.controlledDispatch}
+	c := &compiler{control: control, prog: prog, opts: opts, plainDispatch: !opts.controlledDispatch}
+	if control != nil {
+		defer func() {
+			c.control = nil
+			if c.an != nil {
+				c.an.control = nil
+			}
+		}()
+	}
 	prog.workRecognize = opts.recognize
 	prog.noProjections = opts.noProjections
 
 	for _, td := range g.Types() {
+		control.poll()
 		switch {
 		case builtinTypes[td.Name]:
 			c.errorf(td.Diagnostic(), "type %s is reserved", td.Name)
@@ -320,6 +347,7 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 	}
 	rules := g.Rules()
 	for i, rd := range rules {
+		control.poll()
 		if prog.byName[rd.Name] != nil {
 			c.errorf(rd.Diagnostic(), "rule %s is already defined", rd.Name)
 			continue
@@ -330,13 +358,14 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 	}
 
 	if flags == nil {
-		c.an = analyze(rules)
+		c.an = analyzeControlled(rules, control)
 	} else if len(flags) != len(prog.rules) {
 		return nil, fmt.Errorf("compiled grammar has %d rule flags for %d rules", len(flags), len(prog.rules))
 	}
-	transient := transientRules(rules)
-	vars := ruleVariables(rules)
+	transient := transientRulesControlled(rules, control)
+	vars := ruleVariablesControlled(rules, control)
 	for i, r := range prog.rules {
+		control.poll()
 		twin := false
 		if flags != nil {
 			r.memo, r.leader, r.positional, twin = flags[i].memo, flags[i].leader, flags[i].positional, flags[i].twin
@@ -363,6 +392,7 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 		// values, are evaluated as usual.
 		needed := valueNeededRules(rules)
 		for _, r := range prog.rules {
+			control.poll()
 			if !needed[r.name] {
 				r.novalue, r.action, r.terminalType, r.twinOK = true, nil, "", false
 				r.predCaps = predicateCaptures(r.def.Expr)
@@ -370,19 +400,23 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 		}
 	}
 	for _, r := range prog.rules {
+		control.poll()
 		c.compileRule(r)
 	}
 	// Value-free twins can be assembled the same way if the original rules have no errors. New twins
 	// may be added during assembly.
 	for i := 0; i < len(prog.twins) && len(c.errs) == 0; i++ {
+		control.poll()
 		c.compileRule(prog.twins[i])
 	}
+	control.check()
 	if len(c.errs) > 0 {
 		return nil, c.errs
 	}
 	prog.nseen = numberSeen(prog.rules, prog.twins)
 	prog.typeKinds = map[string]*nodeKind{}
 	for name, spec := range prog.types {
+		control.poll()
 		canonical := name
 		if _, alias := spec.(*grammar.AliasSpec); alias {
 			if resolved, concrete := prog.concreteType(&grammar.TypeRef{Name: name}); concrete != nil {
@@ -396,21 +430,26 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 		}
 	}
 	for _, rs := range [][]*rule{prog.rules, prog.twins} {
+		control.poll()
 		for _, r := range rs {
+			control.poll()
 			r.plain = !r.leader && (!r.memo || r.transient) && len(r.scope.names) == 0
 		}
 	}
 	if !opts.NoTypeCheck && flags == nil {
-		checkTypes(prog, &c.errs)
+		checkTypesControlled(prog, &c.errs, control)
+		control.check()
 		if len(c.errs) > 0 {
 			return nil, c.errs
 		}
 	}
 
+	control.check()
 	return prog, nil
 }
 
 func (c *compiler) compileRule(r *rule) {
+	c.control.poll()
 	c.rule = r
 	r.kinds = newRuleKinds(r.name, r.terminalType)
 	if p, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
@@ -477,15 +516,21 @@ func (c *compiler) twinOf(r *rule) *rule {
 // When the caller is memoized, memoizing such a rule never yields reuse, so it only adds the
 // cost of the memo.
 func transientRules(rules []*grammar.RuleDef) map[string]bool {
+	return transientRulesControlled(rules, nil)
+}
+
+func transientRulesControlled(rules []*grammar.RuleDef, control *compileControl) map[string]bool {
 	refs := map[string]int{}
 	for _, rd := range rules {
-		for _, name := range allCalls(rd.Expr, nil) {
+		control.poll()
+		for _, name := range allCallsControlled(rd.Expr, nil, control) {
 			refs[name]++
 		}
 	}
 	out := map[string]bool{}
 	for _, rd := range rules {
-		out[rd.Name] = refs[rd.Name] < 2 || len(allCalls(rd.Expr, nil)) == 0
+		control.poll()
+		out[rd.Name] = refs[rd.Name] < 2 || len(allCallsControlled(rd.Expr, nil, control)) == 0
 	}
 	return out
 }
@@ -556,6 +601,7 @@ func hasStream(e grammar.Expr) bool {
 
 // noCaptures reports captures inside value-free expressions (#atomic, -, !, skip) as errors.
 func (c *compiler) noCaptures(e grammar.Expr) {
+	c.control.poll()
 	walkExpr(e, func(x grammar.Expr) {
 		if cp, ok := x.(*grammar.Capture); ok {
 			c.errorf(cp.Diagnostic(), "capture %s inside #atomic, -, or ! has no effect", cp.Name)
@@ -631,6 +677,7 @@ func quote(s string) string { return strconv.Quote(s) }
 // expr compiles the expression. If build is false, it only matches without building values.
 // expr adds the closure expression-dispatch charge around the compiled matcher.
 func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
+	c.control.poll()
 	m := c.exprMatcher(e, s, build)
 	if !workControlsEnabled || c.plainDispatch {
 		return m

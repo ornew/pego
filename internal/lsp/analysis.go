@@ -147,7 +147,9 @@ func analyze(text string) *analysis {
 }
 
 // analyzeContext cancels during tokenization and initial parsing lexing, and
-// at later phase boundaries. Parser/compiler loops are not yet context aware.
+// in compiler rule/dependency/type-checking traversals, and at later phase
+// boundaries. Parser loops and several shared compiler operations remain
+// uncancellable within their calls.
 func analyzeContext(ctx context.Context, text string) (*analysis, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -191,7 +193,9 @@ func analyzeContext(ctx context.Context, text string) (*analysis, error) {
 		a.diag(r, e.Msg)
 	}
 	if len(a.syntaxErrs) == 0 {
-		a.compile()
+		if err := a.compileContext(ctx); err != nil {
+			return nil, err
+		}
 	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -211,17 +215,21 @@ func (a *analysis) diag(r Range, msg string) {
 	a.diags = append(a.diags, Diagnostic{Range: r, Severity: severityError, Source: "pego", Message: msg})
 }
 
-// compile compiles and type checks the grammar and records its errors.
-func (a *analysis) compile() {
-	prog, err := compileSafely(a.g)
+// compileContext records ordinary compile errors; cancellation publishes neither
+// a program nor diagnostics for the unfinished compilation.
+func (a *analysis) compileContext(ctx context.Context) error {
+	prog, err := compileContextSafely(ctx, a.g)
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return err
+	}
 	if err == nil {
 		a.prog = prog
-		return
+		return nil
 	}
 	var list engine.ErrorList
 	if !errors.As(err, &list) {
 		a.diag(a.idx.rangeOf(0, 0), err.Error())
-		return
+		return nil
 	}
 	for i, e := range list {
 		if i == maxCompileErrors {
@@ -230,17 +238,22 @@ func (a *analysis) compile() {
 		}
 		a.diag(a.errorRange(e.Pos, true), e.Msg)
 	}
+	return nil
 }
 
 // compileSafely compiles g, turning a panic of the compiler into an error so that a bug in it
 // cannot stop the server.
-func compileSafely(g *grammar.Grammar) (prog *engine.Program, err error) {
+func compileSafely(g *grammar.Grammar) (*engine.Program, error) {
+	return compileContextSafely(context.Background(), g)
+}
+
+func compileContextSafely(ctx context.Context, g *grammar.Grammar) (prog *engine.Program, err error) {
 	defer func() {
 		if x := recover(); x != nil {
 			prog, err = nil, fmt.Errorf("internal error while compiling the grammar: %v", x)
 		}
 	}()
-	return engine.Compile(g, engine.Options{})
+	return engine.CompileContext(ctx, g, engine.Options{})
 }
 
 // errorRange returns the range to report an error at pos at: the token at pos, or else the

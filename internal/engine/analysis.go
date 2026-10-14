@@ -10,6 +10,7 @@ import (
 
 // analysis is the result of static analysis across rules.
 type analysis struct {
+	control    *compileControl
 	nullable   map[string]bool
 	succeeding map[string]bool
 	// leaders are the rules that break left-recursion cycles. These rules are evaluated with
@@ -24,7 +25,12 @@ type analysis struct {
 }
 
 func analyze(rules []*grammar.RuleDef) *analysis {
+	return analyzeControlled(rules, nil)
+}
+
+func analyzeControlled(rules []*grammar.RuleDef, control *compileControl) *analysis {
 	a := &analysis{
+		control:    control,
 		nullable:   map[string]bool{},
 		leaders:    map[string]bool{},
 		cyclic:     map[string]bool{},
@@ -32,13 +38,16 @@ func analyze(rules []*grammar.RuleDef) *analysis {
 	}
 	byName := map[string]*grammar.RuleDef{}
 	for _, r := range rules {
+		control.poll()
 		byName[r.Name] = r
 	}
 
 	// Fixed-point computation of nullability.
 	for changed := true; changed; {
+		control.poll()
 		changed = false
 		for _, r := range rules {
+			control.poll()
 			if !a.nullable[r.Name] && a.isNullable(r.Expr) {
 				a.nullable[r.Name] = true
 				changed = true
@@ -49,21 +58,25 @@ func analyze(rules []*grammar.RuleDef) *analysis {
 	// Propagate variable reads.
 	calls := map[string][]string{}
 	for _, r := range rules {
-		calls[r.Name] = allCalls(r.Expr, nil)
+		control.poll()
+		calls[r.Name] = allCallsControlled(r.Expr, nil, control)
 	}
 	for _, r := range rules {
-		if ruleUsesPositions(r) {
+		control.poll()
+		if ruleUsesPositionsControlled(r, control) {
 			a.positional[r.Name] = true
 		}
 	}
-	propagate(rules, calls, a.positional)
+	propagateControlled(rules, calls, a.positional, control)
 
 	// Find left-recursion cycles from the strongly connected components of the left-call graph.
 	order := map[string]int{}
 	left := map[string][]string{}
 	for i, r := range rules {
+		control.poll()
 		order[r.Name] = i
 		for _, c := range a.leftCalls(r.Expr, nil) {
+			control.poll()
 			if _, ok := byName[c]; ok {
 				left[r.Name] = append(left[r.Name], c)
 			}
@@ -74,11 +87,14 @@ func analyze(rules []*grammar.RuleDef) *analysis {
 	// removes edges, so there are finitely many refinements.
 	var components [][]string
 	for {
-		components = tarjan(rules, left)
+		control.poll()
+		components = tarjanControlled(rules, left, control)
 		clear(a.cyclic)
 		for _, scc := range components {
+			control.poll()
 			if len(scc) > 1 || contains(left[scc[0]], scc[0]) {
 				for _, n := range scc {
+					control.poll()
 					a.cyclic[n] = true
 				}
 			}
@@ -87,7 +103,9 @@ func analyze(rules []*grammar.RuleDef) *analysis {
 		next := map[string][]string{}
 		changed := false
 		for _, r := range rules {
+			control.poll()
 			for _, n := range a.leftCalls(r.Expr, nil) {
+				control.poll()
 				if byName[n] != nil {
 					next[r.Name] = append(next[r.Name], n)
 				}
@@ -100,22 +118,26 @@ func analyze(rules []*grammar.RuleDef) *analysis {
 		left = next
 	}
 	for _, scc := range components {
+		control.poll()
 		if len(scc) == 1 && !contains(left[scc[0]], scc[0]) {
 			continue
 		}
 		in := map[string]bool{}
 		for _, n := range scc {
+			control.poll()
 			in[n] = true
 			a.cyclic[n] = true
 		}
 		// Until every cycle passes through some leader, make the first rule of a found cycle a leader.
 		for {
-			cycle := findCycle(scc, left, in, a.leaders)
+			control.poll()
+			cycle := findCycleControlled(scc, left, in, a.leaders, control)
 			if cycle == nil {
 				break
 			}
 			best := cycle[0]
 			for _, n := range cycle {
+				control.poll()
 				if order[n] < order[best] {
 					best = n
 				}
@@ -136,6 +158,7 @@ func contains(xs []string, x string) bool {
 }
 
 func (a *analysis) isNullable(e grammar.Expr) bool {
+	a.control.poll()
 	switch e := e.(type) {
 	case *grammar.Ref:
 		return a.nullable[e.Name]
@@ -182,6 +205,7 @@ func (a *analysis) isNullable(e grammar.Expr) bool {
 
 // leftCalls returns the rules that may be called before any input is consumed.
 func (a *analysis) leftCalls(e grammar.Expr, acc []string) []string {
+	a.control.poll()
 	switch e := e.(type) {
 	case *grammar.Ref:
 		return append(acc, e.Name)
@@ -249,7 +273,12 @@ func (a *analysis) leftCalls(e grammar.Expr, acc []string) []string {
 
 // allCalls returns every rule called in the expression.
 func allCalls(e grammar.Expr, acc []string) []string {
+	return allCallsControlled(e, acc, nil)
+}
+
+func allCallsControlled(e grammar.Expr, acc []string, control *compileControl) []string {
 	walkExpr(e, func(x grammar.Expr) {
+		control.poll()
 		if r, ok := x.(*grammar.Ref); ok {
 			acc = append(acc, r.Name)
 		}
@@ -263,10 +292,16 @@ func allCalls(e grammar.Expr, acc []string) []string {
 // only through the values of these variables at the call: definitions made inside a rule are
 // undone when it returns.
 func ruleVariables(rules []*grammar.RuleDef) map[string][]string {
+	return ruleVariablesControlled(rules, nil)
+}
+
+func ruleVariablesControlled(rules []*grammar.RuleDef, control *compileControl) map[string][]string {
 	direct := map[string]map[string]bool{}
 	for _, r := range rules {
+		control.poll()
 		var set map[string]bool
 		walkRuleTerms(r, func(t grammar.Term) {
+			control.poll()
 			if v, ok := t.(*grammar.VarRef); ok {
 				if set == nil {
 					set = map[string]bool{}
@@ -288,22 +323,28 @@ func ruleVariables(rules []*grammar.RuleDef) map[string][]string {
 	}
 	calls := make(map[string][]string, len(rules))
 	for _, r := range rules {
-		calls[r.Name] = allCalls(r.Expr, nil)
+		control.poll()
+		calls[r.Name] = allCallsControlled(r.Expr, nil, control)
 	}
 	// Tarjan emits callees before their callers. Every rule in a recursive
 	// component reaches all its peers, so compute their union only once.
 	// A worklist repeatedly copying evolving sets is costly when many peers
 	// introduce different variables, including in long acyclic chains.
-	for _, component := range tarjan(rules, calls) {
+	for _, component := range tarjanControlled(rules, calls, control) {
+		control.poll()
 		all := map[string]bool{}
 		for _, name := range component {
+			control.poll()
 			for v := range direct[name] {
+				control.poll()
 				all[v] = true
 			}
 			for _, callee := range calls[name] {
+				control.poll()
 				// Internal edges have no published result yet; direct peer reads
 				// above already account for them. Missing rules contribute nothing.
 				for _, v := range out[callee] {
+					control.poll()
 					all[v] = true
 				}
 			}
@@ -313,12 +354,14 @@ func ruleVariables(rules []*grammar.RuleDef) map[string][]string {
 		}
 		names := make([]string, 0, len(all))
 		for v := range all {
+			control.poll()
 			names = append(names, v)
 		}
 		sort.Strings(names)
 		// Rule metadata only reads these sorted keys. Share the immutable
 		// result within the component, rather than allocating it per peer.
 		for _, name := range component {
+			control.poll()
 			out[name] = names
 		}
 	}
@@ -437,6 +480,10 @@ func walkTerm(t grammar.Term, f func(grammar.Term)) {
 }
 
 func tarjan(rules []*grammar.RuleDef, edges map[string][]string) [][]string {
+	return tarjanControlled(rules, edges, nil)
+}
+
+func tarjanControlled(rules []*grammar.RuleDef, edges map[string][]string, control *compileControl) [][]string {
 	index := map[string]int{}
 	low := map[string]int{}
 	onStack := map[string]bool{}
@@ -445,12 +492,14 @@ func tarjan(rules []*grammar.RuleDef, edges map[string][]string) [][]string {
 	next := 0
 	var visit func(v string)
 	visit = func(v string) {
+		control.poll()
 		index[v] = next
 		low[v] = next
 		next++
 		stack = append(stack, v)
 		onStack[v] = true
 		for _, w := range edges[v] {
+			control.poll()
 			if _, seen := index[w]; !seen {
 				visit(w)
 				low[v] = min(low[v], low[w])
@@ -461,6 +510,7 @@ func tarjan(rules []*grammar.RuleDef, edges map[string][]string) [][]string {
 		if low[v] == index[v] {
 			var scc []string
 			for {
+				control.poll()
 				w := stack[len(stack)-1]
 				stack = stack[:len(stack)-1]
 				onStack[w] = false
@@ -473,6 +523,7 @@ func tarjan(rules []*grammar.RuleDef, edges map[string][]string) [][]string {
 		}
 	}
 	for _, r := range rules {
+		control.poll()
 		if _, seen := index[r.Name]; !seen {
 			visit(r.Name)
 		}
@@ -482,19 +533,26 @@ func tarjan(rules []*grammar.RuleDef, edges map[string][]string) [][]string {
 
 // findCycle finds one cycle within the SCC that does not pass through a leader.
 func findCycle(scc []string, edges map[string][]string, in, leaders map[string]bool) []string {
+	return findCycleControlled(scc, edges, in, leaders, nil)
+}
+
+func findCycleControlled(scc []string, edges map[string][]string, in, leaders map[string]bool, control *compileControl) []string {
 	state := map[string]int{} // 0: unvisited, 1: in progress, 2: done
 	var path []string
 	var found []string
 	var visit func(v string) bool
 	visit = func(v string) bool {
+		control.poll()
 		state[v] = 1
 		path = append(path, v)
 		for _, w := range edges[v] {
+			control.poll()
 			if !in[w] || leaders[w] {
 				continue
 			}
 			if state[w] == 1 {
 				for i, p := range path {
+					control.poll()
 					if p == w {
 						found = append([]string(nil), path[i:]...)
 						return true
@@ -510,6 +568,7 @@ func findCycle(scc []string, edges map[string][]string, in, leaders map[string]b
 		return false
 	}
 	for _, v := range scc {
+		control.poll()
 		if !leaders[v] && state[v] == 0 && visit(v) {
 			return found
 		}
@@ -519,13 +578,20 @@ func findCycle(scc []string, edges map[string][]string, in, leaders map[string]b
 
 // propagate adds to set the rules that call rules in set (transitively).
 func propagate(rules []*grammar.RuleDef, calls map[string][]string, set map[string]bool) {
+	propagateControlled(rules, calls, set, nil)
+}
+
+func propagateControlled(rules []*grammar.RuleDef, calls map[string][]string, set map[string]bool, control *compileControl) {
 	for changed := true; changed; {
+		control.poll()
 		changed = false
 		for _, r := range rules {
+			control.poll()
 			if set[r.Name] {
 				continue
 			}
 			for _, c := range calls[r.Name] {
+				control.poll()
 				if set[c] {
 					set[r.Name] = true
 					changed = true
@@ -560,8 +626,13 @@ func walkRuleTerms(r *grammar.RuleDef, f func(grammar.Term)) {
 // ruleUsesPositions reports whether the rule's actions or predicates refer to startPos or
 // endPos.
 func ruleUsesPositions(r *grammar.RuleDef) bool {
+	return ruleUsesPositionsControlled(r, nil)
+}
+
+func ruleUsesPositionsControlled(r *grammar.RuleDef, control *compileControl) bool {
 	found := false
 	walkRuleTerms(r, func(x grammar.Term) {
+		control.poll()
 		if m, ok := x.(*grammar.Member); ok && (m.Name == "startPos" || m.Name == "endPos") {
 			found = true
 		}

@@ -15,9 +15,10 @@ const maxInferredType = 2048
 // The types of rules without a declared type are found by repeating inference until no rule's
 // type changes (the least fixed point). The grammar is then checked once more, reporting errors.
 type checker struct {
-	prog   *Program
-	errs   *ErrorList
-	report bool
+	control *compileControl
+	prog    *Program
+	errs    *ErrorList
+	report  bool
 	// ruleTypes holds the type of each rule (declared, or being inferred).
 	ruleTypes map[string]ty
 	declared  map[string]bool
@@ -38,15 +39,21 @@ func (k *checker) errorf(pos grammar.Pos, format string, args ...any) {
 
 // checkTypes checks the types of the whole grammar.
 func checkTypes(prog *Program, errs *ErrorList) {
-	k := &checker{prog: prog, errs: errs, ruleTypes: map[string]ty{}, declared: map[string]bool{}, resolving: map[string]bool{}}
+	checkTypesControlled(prog, errs, nil)
+}
+
+func checkTypesControlled(prog *Program, errs *ErrorList, control *compileControl) {
+	k := &checker{control: control, prog: prog, errs: errs, ruleTypes: map[string]ty{}, declared: map[string]bool{}, resolving: map[string]bool{}}
 
 	// Check references in type definitions.
 	k.report = true
 	for _, td := range prog.Grammar.Types() {
+		control.poll()
 		switch spec := td.Spec.(type) {
 		case *grammar.StructSpec:
 			seen := map[string]bool{}
 			for _, f := range spec.Fields {
+				control.poll()
 				if seen[f.Name] {
 					k.errorf(f.Diagnostic(), "duplicate field %s in %s", f.Name, td.Name)
 				}
@@ -63,6 +70,7 @@ func checkTypes(prog *Program, errs *ErrorList) {
 
 	rules := prog.Grammar.Rules()
 	for _, rd := range rules {
+		control.poll()
 		if rd.Type != nil {
 			t := k.resolve(rd.Type)
 			if !isNodeOrNil(t) {
@@ -83,6 +91,7 @@ func checkTypes(prog *Program, errs *ErrorList) {
 	// Checking (errors are reported).
 	k.report = true
 	for _, rd := range rules {
+		control.poll()
 		k.ruleType(rd)
 	}
 
@@ -90,9 +99,11 @@ func checkTypes(prog *Program, errs *ErrorList) {
 	k.report = false
 	info := &typeInfo{rules: k.ruleTypes, fields: map[string][]typedField{}, aliases: map[string]ty{}}
 	for _, td := range prog.Grammar.Types() {
+		control.poll()
 		switch spec := td.Spec.(type) {
 		case *grammar.StructSpec:
 			for _, f := range spec.Fields {
+				control.poll()
 				info.fields[td.Name] = append(info.fields[td.Name], typedField{f.Name, k.resolve(f.Type)})
 			}
 		case *grammar.AliasSpec:
@@ -130,6 +141,7 @@ type typedField struct {
 
 // resolve turns a type expression into a type.
 func (k *checker) resolve(t grammar.TypeExpr) ty {
+	k.control.poll()
 	switch t := t.(type) {
 	case *grammar.TypeRef:
 		return k.resolveNamed(t.Name, t.Diagnostic())
@@ -253,6 +265,7 @@ func unknownListElement(src, dst ty) bool {
 }
 
 func (k *checker) resolveNamed(name string, pos grammar.Pos) ty {
+	k.control.poll()
 	switch name {
 	case "int":
 		return tyInt
@@ -326,6 +339,7 @@ type scopeCheck struct {
 // expr returns the type of the expression's value and records captures in sc. It returns nil for
 // an expression without a value.
 func (k *checker) expr(e grammar.Expr, sc *scopeCheck) ty {
+	k.control.poll()
 	switch e := e.(type) {
 	case *grammar.Group:
 		return k.expr(e.Expr, sc)
@@ -442,6 +456,7 @@ func (k *checker) checkPreds(sc *scopeCheck) {
 
 // ruleType computes the type of the rule's value (and reports errors if report is true).
 func (k *checker) ruleType(rd *grammar.RuleDef) ty {
+	k.control.poll()
 	k.rule = rd
 	declared := k.ruleTypes[rd.Name]
 	if !k.declared[rd.Name] {
@@ -637,6 +652,7 @@ func termPos(t grammar.Term, def grammar.Pos) grammar.Pos {
 
 // term returns the type of the value expression.
 func (k *checker) term(t grammar.Term, env *termEnv) ty {
+	k.control.poll()
 	switch t := t.(type) {
 	case *grammar.IntLit:
 		return tyInt

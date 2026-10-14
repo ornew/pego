@@ -82,11 +82,16 @@ tokens and scans ahead or backward for lambda syntax, line breaks and error
 recovery. Cancellation makes tokenization and partial parsing return no tokens,
 grammar or diagnostics, so an incomplete analysis is not published.
 
-The checks bound work in these indexing, lexical and syntax-token loops, not
-total LSP cancellation latency. Declaration indexing, compilation, lint and
-some request traversal/formatting routines still observe cancellation only at
-phase boundaries or lack checks. Suppression validation uses its request
-context before and after candidate analysis and lint. The VS Code
+`internal/engine.CompileContext` is an internal entry point used by LSP
+analysis; the ordinary `Compile` API is unchanged. The context is polled during
+rule/dependency analysis, matcher compilation and type traversal. This is a
+partial compiler slice: `grammar.Validate`, attribute normalization, shared
+grammar-analysis success helpers and some large single type-helper operations
+remain unpolled. Lint and some request traversal/formatting routines also
+observe cancellation only at phase boundaries or lack checks. The checks bound
+work at selected points, not total LSP cancellation latency. Suppression
+validation uses its request context before and after candidate analysis and
+lint. The VS Code
 explanation-command handler is implemented. Real-editor validation and
 full-phase resource measurements remain open; safe suppression application
 also remains open because the client API cannot atomically enforce the document
@@ -240,10 +245,22 @@ path was about 1–2% slower in these samples, while context-enabled results
 were near parity and noisy. This benchmark did not measure cancellation
 latency.
 
+A five-pair, 300 ms alternating comparison of ordinary compilation used Go
+1.27.1 on an Apple M3 Max (darwin/arm64), `GOMAXPROCS=4`, `GOGC=100`, and
+`GOMEMLIMIT` off, with main `bd128f4` as the base. Candidate/base median time
+ratios were 1.0293 for a 512-rule dependency case (range 1.0137–1.0767,
+approximately +57 B/op and one extra allocation/op), 1.0195 for JSON
+(1.0034–1.0298), 1.0086 for a source grammar (0.9988–1.0247), and 1.0136 for
+Operators Rule compilation (0.9893–1.0285). The latter three had approximately
+unchanged B/op and allocation counts. These samples show roughly 1–3% higher
+ordinary Compile time on the tested cases, with the observed ranges crossing
+parity for some cases. This measures ordinary compilation only; the
+context-enabled path and cancellation-to-return time were not measured.
+
 ## Limitations and Open Questions
 
 - The responsive actor remains opt-in and needs real-editor validation; ordinary clients retain the synchronous path.
-- Syntax parsing now polls context while consuming tokens and scanning ahead or backward. Declaration indexing, compiler and lint loops still need intra-phase checks; these phases currently observe cancellation only at boundaries.
+- Syntax parsing and selected compiler rule/dependency/matcher/type traversals poll context within phases. Some validation, normalization, shared analysis helpers, large type-helper operations and lint work remain unpolled.
 - Suppression application requires a client API that atomically checks the edit version. The current VS Code `WorkspaceEdit` path drops that version, so the extension withholds suppression while retaining guarded explanations.
 - The exact work bound and worker-count default should be selected from measurements on large grammars and multi-document editor workloads.
 - **Proposed lint scope:** enable enabling all existing checks for every compilable open grammar, with source directives as the suppression mechanism. An owner may instead choose a configurable lint set if editor noise is observed; no such setting is part of this proposal.
