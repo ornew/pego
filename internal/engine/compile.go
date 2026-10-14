@@ -13,12 +13,14 @@ import (
 
 // Program is a compiled grammar. It can be used by multiple parses concurrently.
 type Program struct {
-	Grammar   *grammar.Grammar
-	rules     []*rule
-	descTable []string  // expectation table (starting with fixedDescs)
-	twins     []*rule   // value-free twins (rule.twin); ids start at len(rules)
-	nseen     int       // number of rules with rule.seen set
-	typed     *typeInfo // types found by the type checker (nil if it did not run)
+	Grammar     *grammar.Grammar
+	init        []*grammar.Assign
+	initPresent bool
+	rules       []*rule
+	descTable   []string  // expectation table (starting with fixedDescs)
+	twins       []*rule   // value-free twins (rule.twin); ids start at len(rules)
+	nseen       int       // number of rules with rule.seen set
+	typed       *typeInfo // types found by the type checker (nil if it did not run)
 	// projected holds the map calls of actions that read a projected repetition (project.go).
 	projected     map[*grammar.Call]bool
 	noProjections bool
@@ -254,17 +256,6 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 	}
 	for _, rd := range g.Rules() {
 		checkBlocks(rd.Action)
-		root := rd.Expr
-		for {
-			group, ok := root.(*grammar.Group)
-			if !ok {
-				break
-			}
-			root = group.Expr
-		}
-		if _, ok := root.(*grammar.OperatorsRule); ok && rd.Action != nil {
-			unsupported = append(unsupported, &Error{Pos: termPos(rd.Action, rd.Diagnostic()), Msg: "whole-rule actions are not supported for Operators Rules; use => ... or omit the action"})
-		}
 		walkExpr(rd.Expr, func(e grammar.Expr) {
 			switch e := e.(type) {
 			case *grammar.Predicate:
@@ -303,6 +294,34 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 	c := &compiler{prog: prog, opts: opts, plainDispatch: !opts.controlledDispatch}
 	prog.workRecognize = opts.recognize
 	prog.noProjections = opts.noProjections
+	var initializer *grammar.InitDef
+	for _, statement := range g.Statements {
+		init, ok := statement.(*grammar.InitDef)
+		if !ok {
+			continue
+		}
+		if initializer != nil {
+			c.errorf(init.Diagnostic(), "only one init declaration is allowed")
+			continue
+		}
+		initializer = init
+		prog.initPresent = true
+		seen := make(map[string]bool)
+		for _, statement := range init.Block.Statements {
+			assignment, ok := statement.(*grammar.Assign)
+			if !ok {
+				c.errorf(termPos(statement, init.Diagnostic()), "init statements must be assignments")
+				continue
+			}
+			walkTerm(assignment.Value, func(t grammar.Term) {
+				if ref, ok := t.(*grammar.VarRef); ok && !seen[ref.Name] {
+					c.errorf(ref.Diagnostic(), "variable %s is not initialized before use", ref.Name)
+				}
+			})
+			seen[assignment.Name] = true
+			prog.init = append(prog.init, assignment)
+		}
+	}
 
 	for _, td := range g.Types() {
 		switch {
@@ -315,6 +334,11 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 		default:
 			prog.types[td.Name] = td.Spec
 		}
+	}
+	for _, assignment := range prog.init {
+		c.noIndex = "init assignments"
+		c.checkTerm(assignment.Value, newScope(), nil)
+		c.noIndex = ""
 	}
 	rules := g.Rules()
 	for i, rd := range rules {
@@ -413,6 +437,10 @@ func (c *compiler) compileRule(r *rule) {
 	r.kinds = newRuleKinds(r.name, r.terminalType)
 	if p, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
 		c.compileOperatorsRule(r, p)
+		if r.action != nil {
+			c.checkTerm(r.action, r.scope, nil)
+			r.act = termEvaluator(r.action)
+		}
 		return
 	}
 	_, r.bodyIsSeq = r.def.Expr.(*grammar.Seq)

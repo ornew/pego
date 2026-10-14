@@ -12,8 +12,14 @@ type Module struct {
 	Scopes         [][]int    // scopes of repetition elements (lists of capture names)
 	Rules          []RuleInfo // rule table
 	OperatorsRules []OperatorsRuleInfo
-	Code           []Instr // matching code
-	Exprs          []Instr // expression code (actions and predicates)
+	Code           []Instr    // matching code
+	Exprs          []Instr    // expression code (actions and predicates)
+	Init           []InitInfo // assignments evaluated before each selected start rule
+}
+
+type InitInfo struct {
+	Name int // string table index
+	Expr int // expression code entry
 }
 
 // instructionSetVersion keeps ordinary modules readable by instruction-set-3 runtimes.

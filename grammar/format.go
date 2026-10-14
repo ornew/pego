@@ -38,6 +38,11 @@ func Format(g *Grammar) string {
 		case *RuleDef:
 			p.lineBreak(s.Break, "", true)
 			p.ruleDef(s)
+		case *InitDef:
+			p.lineBreak(s.Break, "", true)
+			p.header("init", s.Pos)
+			p.write(" ")
+			p.actionBlock(s.Block, "")
 		}
 	}
 	p.comments(g.EndBreak, "", true)
@@ -177,6 +182,15 @@ func noComments(b *LineBreak) bool {
 func (p *printer) openBlock() {
 	p.write("{")
 	p.start = true
+}
+
+func (p *printer) actionBlock(b *Block, indent string) {
+	p.openBlock()
+	for i, stmt := range b.Statements {
+		p.lineBreak(breakAt(b.Breaks, i), indent+indentUnit, false)
+		p.write(FormatTerm(stmt))
+	}
+	p.closeBlock(b.CloseBreak, indent)
 }
 
 // closeBlock writes the comments before a closing brace and the brace.

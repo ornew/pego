@@ -6,7 +6,7 @@ import (
 	"github.com/ornew/pego/grammar"
 )
 
-// Reading and writing modules (.pegoc version 2) and validating loaded modules.
+// Reading and writing the shared module layout and validating loaded modules.
 
 func (w *encoder) ints(xs []int) {
 	w.uint(len(xs))
@@ -92,6 +92,15 @@ func (w *encoder) module(m *Module) {
 	}
 	w.code(m.Code)
 	w.code(m.Exprs)
+
+}
+
+func (w *encoder) initTable(m *Module) {
+	w.uint(len(m.Init))
+	for _, init := range m.Init {
+		w.int(init.Name)
+		w.int(init.Expr)
+	}
 }
 
 // int32 reads an instruction operand.
@@ -185,6 +194,13 @@ func (r *decoder) module() *Module {
 	return m
 }
 
+func (r *decoder) initTable(m *Module) {
+	n := r.count()
+	for i := 0; i < n && r.err == nil; i++ {
+		m.Init = append(m.Init, InitInfo{Name: int(r.int32()), Expr: int(r.int32())})
+	}
+}
+
 // validateModule checks that every table and instruction reference in the module is in range
 // and that jumps go forward (only the NEXT of a repetition jumps backward).
 // Recovery regions must not enclose a stream commitment. Other value-stack
@@ -246,6 +262,10 @@ func validateModule(m *Module) error {
 		opt("string", r.TerminalType, len(m.Strings))
 		opt("operatorsRule", r.OperatorsRule, len(m.OperatorsRules))
 		strs(r.Vars)
+	}
+	for _, init := range m.Init {
+		str(init.Name)
+		in("initializer expression", init.Expr, len(m.Exprs))
 	}
 	for _, p := range m.OperatorsRules {
 		opt("entry", p.Skip, len(m.Code))
@@ -452,7 +472,7 @@ func validateStreamRecovery(code []Instr) error {
 
 // moduleProgram builds a program without an AST (it can only be run by the bytecode backend).
 func moduleProgram(m *Module) *Program {
-	prog := &Program{byName: map[string]*rule{}, types: map[string]grammar.TypeSpec{}}
+	prog := &Program{byName: map[string]*rule{}, types: map[string]grammar.TypeSpec{}, initPresent: len(m.Init) != 0}
 	for _, t := range m.Types {
 		if t.Terminal {
 			prog.types[m.Strings[t.Name]] = &grammar.TerminalSpec{}

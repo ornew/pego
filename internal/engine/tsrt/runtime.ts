@@ -597,6 +597,7 @@ function run(r: Rule, seen: number, input: string | Uint8Array, unit: Unit | und
   try {
     // Made inside the try, so that decoding the input fails as parsing does.
     p = new Parser(input, unit === Bytes ? Bytes : CodePoints, seen, maxDepth, control);
+    p.initialize();
     return result(p, p.call(r, 0));
   } catch (x) {
     if (x instanceof Fatal) {
@@ -944,6 +945,26 @@ class Parser {
   created: Node[] = []; // struct nodes made by the action being evaluated (from Actx.cbase)
   env: Env | null = null;
   bound: Set<string> | null = null; // names assigned anywhere in this parse (a lookup hint)
+
+  initialize(): void {
+    for (let i = 0; i < initActions.length; i++) {
+      const base = this.created.length;
+      const c = this.ac;
+      c.cbase = base;
+      try {
+        const value = initActions[i](c);
+        if (typeof value !== "number" && typeof value !== "bigint" && typeof value !== "string" && typeof value !== "boolean") {
+          throw new EvalError(`variable ${initNames[i]} must be int, string, or bool`);
+        }
+        this.bind(initNames[i], value);
+      } catch (x) {
+        if (x instanceof EvalError) throw new Fatal(new Error(`action in init: ${x.message}`));
+        throw x;
+      } finally {
+        this.created.length = base;
+      }
+    }
+  }
   frame: Frame = emptyFrame;
   trail: { f: Frame; slot: number; old: Node | null }[] = [];
   cut = false;
@@ -2384,6 +2405,9 @@ class Parser {
     return new Node("Operator", r.name, start, end, "", kids, [{ name: "operator", value: a.op.id }], false, false);
   }
 }
+
+let initNames: string[] = [];
+let initActions: Action[] = [];
 
 // codePointsString returns the string of the code points cps.
 function codePointsString(cps: Int32Array): string {

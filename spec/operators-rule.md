@@ -60,7 +60,7 @@ rule <name> [<Type Expression>] = operators {
         postfix <operator part> [=> <action>]
         infix (left | right | none) <operator part> [=> <action>]
     }
-}
+} [=> <action>]
 ```
 
 - An Operators Rule uses a dedicated
@@ -69,9 +69,13 @@ rule <name> [<Type Expression>] = operators {
   name; when omitted, the type is inferred from operands and operators.
 - An action after an `operand` or operator declaration uses `=>` and applies to
   that complete operand or operator entry.
-- A rule-level Value Action after the closing `}` may be omitted or use the
-  explicit `=> ...` default-CST form. Any other rule-level Value Action is a
-  compile-time error.
+- A rule-level Value Action after the closing `}` may be omitted, use the
+  explicit `=> ...` default-CST form, or contain an action expression. An
+  action expression runs once after a selected invocation of the rule has
+  completed, not after each recursive operator reduction. `$1` is the final
+  folded value. Captures from operand and operator entries remain local to
+  those entries. A node created by the action covers the selected rule's
+  complete match.
 - Semicolons separate Definition Statement items when needed; line boundaries may also make the separation unambiguous. Struct fields use semicolons or newlines; constructor fields and arguments use commas.
 - An Operators Rule has at most one `skip`, at least one `operand`, and any
   number of `level`s. A `level` contains any number of operators.
@@ -228,13 +232,17 @@ operand (or of the postfix operator).
 
 ## Types
 
-If the rule is declared with type `T`, the values of all `operand` items and of
-all operators MUST be assignable to `T`, and `$lhs` and `$rhs` have type `T`.
-An operator without an action produces an `Operator` node, so when `T` does not
-accept `Operator`, every operator needs an action.
-
-If the rule has no declared type, its type is the union of the types of all
+Without a rule-level action, if the rule is declared with type `T`, the values
+of all `operand` items and operators MUST be assignable to `T`, and `$lhs` and
+`$rhs` have type `T`. An operator without an action produces an `Operator`
+node, so when `T` does not accept `Operator`, every operator needs an action.
+Without a declared type, the rule's type is the union of the types of all
 `operand` items and operators.
+
+With a rule-level action, the internal folded type is inferred from operand
+and operator results independently of the final result type. `$lhs`, `$rhs`,
+and the rule-level `$1` have that internal type. The action's result MUST be a
+node or nil and, when the rule declares type `T`, MUST be assignable to `T`.
 
 ## Concrete Syntax Tree
 

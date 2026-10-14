@@ -82,6 +82,12 @@ func checkTypes(prog *Program, errs *ErrorList) {
 
 	// Checking (errors are reported).
 	k.report = true
+	for _, assignment := range prog.init {
+		t := k.term(assignment.Value, &termEnv{})
+		if !assignable(t, union(tyInt, tyString, tyBool)) {
+			k.errorf(assignment.Diagnostic(), "init variable %s must be int, string, or bool, got %s", assignment.Name, t)
+		}
+	}
 	for _, rd := range rules {
 		k.ruleType(rd)
 	}
@@ -494,30 +500,70 @@ func (k *checker) ruleType(rd *grammar.RuleDef) ty {
 }
 
 func (k *checker) operatorsRuleType(rd *grammar.RuleDef, pr *grammar.OperatorsRule, declared ty) ty {
-	self := k.ruleTypes[rd.Name]
-	var ts []ty
-	if pr.Skip != nil {
-		k.expr(pr.Skip, &scopeCheck{caps: caps{}})
-	}
-	for _, o := range pr.Operands {
-		ts = append(ts, k.lineType(o.Expr, o.Action, nil, rd.Diagnostic()))
-	}
-	for _, l := range pr.Levels {
-		for _, op := range l.Operators {
-			if op.Action == nil {
-				ts = append(ts, tyOperator)
-				k.lineType(op.Expr, nil, nil, op.Diagnostic())
-				continue
-			}
-			locals := map[string]ty{"op": tyMatch}
-			if op.Kind != grammar.Prefix {
-				locals["lhs"] = self
-			}
-			if op.Kind != grammar.Postfix {
-				locals["rhs"] = self
-			}
-			ts = append(ts, k.lineType(op.Expr, op.Action, locals, op.Diagnostic()))
+	collect := func(self ty) []ty {
+		var ts []ty
+		if pr.Skip != nil {
+			k.expr(pr.Skip, &scopeCheck{caps: caps{}})
 		}
+		for _, o := range pr.Operands {
+			ts = append(ts, k.lineType(o.Expr, o.Action, nil, rd.Diagnostic()))
+		}
+		for _, l := range pr.Levels {
+			for _, op := range l.Operators {
+				if op.Action == nil {
+					ts = append(ts, tyOperator)
+					k.lineType(op.Expr, nil, nil, op.Diagnostic())
+					continue
+				}
+				locals := map[string]ty{"op": tyMatch}
+				if op.Kind != grammar.Prefix {
+					locals["lhs"] = self
+				}
+				if op.Kind != grammar.Postfix {
+					locals["rhs"] = self
+				}
+				ts = append(ts, k.lineType(op.Expr, op.Action, locals, op.Diagnostic()))
+			}
+		}
+		return ts
+	}
+	self := k.ruleTypes[rd.Name]
+	if rd.Action != nil {
+		// The folded value has its own fixed point: the declared rule type
+		// describes the final action's result, not $lhs and $rhs.
+		report := k.report
+		k.report = false
+		self = tyNever
+		stable := false
+		for i := 0; i < maxInferredGrowth; i++ {
+			body := union(collect(self)...)
+			if sameTypeStructure(body, self) {
+				stable = true
+				break
+			}
+			self = body
+		}
+		k.report = report
+		if !stable {
+			k.errorf(rd.Diagnostic(), "cannot infer the internal folded type of operatorsRule %s", rd.Name)
+			self = tyAny
+		}
+	}
+	ts := collect(self)
+	if rd.Action != nil {
+		body := union(ts...)
+		result := k.term(rd.Action, &termEnv{items: []ty{body}, allowIndex: true})
+		if !isNodeOrNil(result) {
+			k.errorf(termPos(rd.Action, rd.Diagnostic()), "action of %s must produce a node, got %s", rd.Name, result)
+			result = tyAny
+		}
+		if declared != nil {
+			if !assignable(result, declared) {
+				k.errorf(rd.Diagnostic(), "rule %s produces %s, which is not assignable to %s", rd.Name, result, declared)
+			}
+			return declared
+		}
+		return result
 	}
 	if declared != nil {
 		for _, t := range ts {

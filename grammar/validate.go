@@ -181,6 +181,8 @@ func Validate(g *Grammar) error {
 			}
 		case *TypeDef:
 			push(n.Spec, "spec", -1, false)
+		case *InitDef:
+			push(n.Block, "block", -1, false)
 		case *RuleDef:
 			push(n.Action, "action", -1, true)
 			push(n.Expr, "expr", -1, false)

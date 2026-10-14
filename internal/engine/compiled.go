@@ -16,7 +16,8 @@ import (
 //
 //	magic    "PEGOC\x00"
 //	version  1 byte (compiledVersion)
-//	payload  version 2: instruction set version, string table, start rule, package name, module, AST (optional)
+//	payload  version 4 prototype: version 2 prefix, initializer table, AST (optional)
+//	         version 2: instruction set version, string table, start rule, package name, module, AST (optional)
 //	         version 1: string table, package name, start rule, statements (type and rule definitions)
 //	crc32    CRC-32 of magic through payload (IEEE, 4 bytes little-endian)
 //
@@ -29,7 +30,7 @@ import (
 
 const (
 	compiledMagic   = "PEGOC\x00"
-	compiledVersion = 2
+	compiledVersion = 4
 	// isaVersion is the latest supported instruction set. Files of earlier versions load:
 	// version 2 only adds instructions (ETEXTCHK, ETEXTEQ, ELISTBEGIN, ELISTPUSH, EMAPPUSH,
 	// ELISTEND), version 3 GUARD and NEXT with f 3, version 4 wide repetition bounds,
@@ -102,6 +103,7 @@ const (
 	kTerminal
 	kTypeDef
 	kRuleDef
+	kInitDef
 )
 
 type encoder struct {
@@ -151,6 +153,10 @@ func (prog *Program) MarshalBinaryWith(start string, o MarshalOptions) ([]byte, 
 	if start != "" && !prog.hasRule(start) {
 		return nil, fmt.Errorf("start rule %s is not defined", start)
 	}
+	version := 2
+	if prog.initPresent {
+		version = compiledVersion
+	}
 	m := prog.Module()
 	w := &encoder{strs: map[string]int{}}
 	for i, s := range m.Strings { // put the module's string table first
@@ -164,14 +170,19 @@ func (prog *Program) MarshalBinaryWith(start string, o MarshalOptions) ([]byte, 
 	}
 	w.str(pkg)
 	w.module(m)
+	if version >= 4 {
+		// TODO: version 4 must preserve version 3's recognition section here
+		// before encoding initializers; this branch is a format prototype.
+		w.initTable(m)
+	}
 	withAST := prog.Grammar != nil && !o.OmitAST
 	w.bool(withAST)
 	if withAST {
-		w.statements(prog, compiledVersion)
+		w.statements(prog, version)
 	}
 	var out bytes.Buffer
 	out.WriteString(compiledMagic)
-	out.WriteByte(compiledVersion)
+	out.WriteByte(byte(version))
 	out.Write(binary.AppendUvarint(nil, uint64(m.instructionSetVersion())))
 	w.finish(&out)
 	return out.Bytes(), nil
@@ -213,6 +224,9 @@ func (w *encoder) statements(prog *Program, version int) {
 			}
 			w.expr(st.Expr)
 			w.optTerm(st.Action)
+		case *grammar.InitDef:
+			w.byte(kInitDef)
+			w.terms(st.Block.Statements)
 		}
 	}
 }
@@ -578,7 +592,7 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 		return nil, "", errors.New("invalid compiled grammar: too short")
 	}
 	v := data[len(compiledMagic)]
-	if v != 1 && v != compiledVersion {
+	if v != 1 && v != 2 && v != compiledVersion {
 		return nil, "", fmt.Errorf("unsupported compiled grammar version %d (want %d)", v, compiledVersion)
 	}
 	body, sum := data[:len(data)-4], binary.LittleEndian.Uint32(data[len(data)-4:])
@@ -597,9 +611,13 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	start := r.str()
 	pkg := r.str()
 	m := r.module()
+	if v >= 4 {
+		// TODO: read the version 3 recognition section before initializers.
+		r.initTable(m)
+	}
 	var prog *Program
 	if r.bool() {
-		g, flags := r.statements(pkg, 2)
+		g, flags := r.statements(pkg, int(v))
 		if r.err == nil {
 			p, err := build(g, opts, flags)
 			if err != nil {
@@ -693,6 +711,12 @@ func (r *decoder) statements(pkg string, version int) (*grammar.Grammar, []ruleF
 			rd.Expr = r.expr()
 			rd.Action = r.optTerm()
 			g.Statements = append(g.Statements, rd)
+		case kInitDef:
+			if version < 4 {
+				r.fail("invalid statement kind %d", k)
+				break
+			}
+			g.Statements = append(g.Statements, &grammar.InitDef{Block: &grammar.Block{Statements: r.terms()}})
 		default:
 			r.fail("invalid statement kind %d", k)
 		}

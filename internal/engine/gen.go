@@ -132,6 +132,15 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	gen := &generator{goWorkControls: !(opts.referenceWorkControls || opts.referenceWorkControlLayout), prog: prog, table: "rules", disableTypedCuts: opts.disableTypedCuts, disableTypedLRBodies: opts.disableTypedLRBodies, disableTypedOperatorsRuleBodies: opts.disableTypedOperatorsRuleBodies, disableTypedFramedCuts: opts.disableTypedFramedCuts, disableTypedFrameLayouts: opts.disableTypedFrameLayouts, disableTypedLocalLayouts: opts.disableTypedLocalLayouts, disableTypedRecoveryBodies: opts.disableTypedRecoveryBodies, disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch, disableTypedObjectSlabs: opts.disableTypedObjectSlabs, disableTypedListSlabs: opts.disableTypedListSlabs, disableTypedOutputBootstrap: opts.disableTypedOutputBootstrap, enableTypedOutputSweep: opts.enableTypedOutputSweep, enableBoundedTypedOutputSweep: opts.enableBoundedTypedOutputSweep}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
+	if len(prog.init) != 0 {
+		names := make([]string, 0, len(prog.init))
+		actions := make([]string, 0, len(prog.init))
+		for _, assignment := range prog.init {
+			names = append(names, assignment.Name)
+			actions = append(actions, "func(c *actx) any { return "+gen.term(assignment.Value, newScope(), nil)+" }")
+		}
+		fmt.Fprintf(&gen.init, "\tinitNames = %s\n\tinitActions = []func(*actx) any{%s}\n", goStrings(names), strings.Join(actions, ", "))
+	}
 	var rec *Program
 	if opts.Recognize {
 		// The recognizer: the program in which no rule builds a value (Program.recognizer), in a
@@ -453,6 +462,14 @@ func (g *generator) rules() {
 		if pr, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
 			g.cur = r
 			g.operatorsRule(r, pr)
+			if r.action != nil && g.table == "trules" {
+				g.final = r.action
+				fmt.Fprintf(&g.methods, "// The action of %s.\nfunc ta%d(c *tctx) any { return %s }\n\n", r.name, r.id, g.term(r.action, scopes[r], nil))
+				g.final = nil
+				fmt.Fprintf(init, "\ttrules[%d].action = ta%d\n", r.id, r.id)
+			} else if r.action != nil {
+				fmt.Fprintf(init, "\t%s[%d].action = func(c *actx) any { return %s }\n", g.table, r.id, g.term(r.action, scopes[r], nil))
+			}
 			continue
 		}
 		if d := directs[r]; d != nil && g.table == "trules" {

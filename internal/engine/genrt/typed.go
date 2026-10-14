@@ -275,6 +275,7 @@ func (p *tparser) run(r *trule, input string, o parseOptions, ext any) (v any, e
 			}
 		}
 	}()
+	p.parser.runInit()
 	var ok bool
 	if r.entry != nil {
 		v, ok = r.entry(p)

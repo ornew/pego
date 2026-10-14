@@ -249,7 +249,7 @@ func (p *parser) ident() token {
 }
 
 var keywords = map[string]bool{
-	"package": true, "type": true, "rule": true, "struct": true, "terminal": true,
+	"package": true, "type": true, "rule": true, "init": true, "struct": true, "terminal": true,
 	"operators": true, "skip": true, "operand": true, "level": true, "prefix": true,
 	"postfix": true, "infix": true,
 }
@@ -289,8 +289,12 @@ func (p *parser) file() *grammar.Grammar {
 				r := p.ruleDef()
 				statement = r
 				g.Statements = append(g.Statements, r)
+			case p.is("init"):
+				v := p.initDef()
+				statement = v
+				g.Statements = append(g.Statements, v)
 			default:
-				p.errorf("expected 'rule' or 'type', found %s", p.tok())
+				p.errorf("expected 'rule', 'type', or 'init', found %s", p.tok())
 				panic(bail{})
 			}
 		}()
@@ -345,9 +349,22 @@ func (p *parser) recover() {
 			return
 		}
 	}
-	for p.tok().kind != tEOF && !p.is("rule") && !p.is("type") {
+	for p.tok().kind != tEOF && !p.is("rule") && !p.is("type") && !p.is("init") {
 		p.next()
 	}
+}
+
+func (p *parser) initDef() (sourceResult *grammar.InitDef) {
+	sourceStart := p.i
+	defer func() {
+		if sourceResult != nil {
+			p.sourceNode(sourceResult, sourceStart)
+		}
+	}()
+	defer p.statement()()
+	br := p.lineBreak()
+	pos := p.expect("init").pos
+	return &grammar.InitDef{SourceInfo: grammar.SourceInfo{Pos: pos}, Block: p.actionBlock(), Break: br}
 }
 
 func (p *parser) typeDef() (sourceResult *grammar.TypeDef) {

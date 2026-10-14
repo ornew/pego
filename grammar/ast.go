@@ -1,7 +1,8 @@
 // Package grammar defines the abstract syntax tree (AST) of PEGO grammars.
 //
-// A grammar is a sequence of statements: type definitions (TypeDef) and
-// rule definitions (RuleDef). A rule body is a parser expression (Expr),
+// A grammar is a sequence of statements: type definitions (TypeDef), rule
+// definitions (RuleDef), and an optional initializer (InitDef). A rule body is
+// a parser expression (Expr),
 // and actions and predicates are value expressions (Term).
 package grammar
 
@@ -57,6 +58,15 @@ func (g *Grammar) Types() []*TypeDef {
 
 // Statement is a top-level definition in a grammar.
 type Statement interface{ statement() }
+
+// InitDef is a grammar initializer. Its assignments run before each parse.
+type InitDef struct {
+	SourceInfo `json:"source,omitempty"`
+	Block      *Block     `json:"block"`
+	Break      *LineBreak `json:"-"`
+}
+
+func (*InitDef) statement() {}
 
 // TypeDef is a type definition (type Name Spec).
 type TypeDef struct {

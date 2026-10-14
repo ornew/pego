@@ -143,6 +143,9 @@ func (c *bcompiler) compile() {
 			ri.Action = c.expr(r.action, s, nil, true)
 		}
 	}
+	for _, assignment := range c.prog.init {
+		c.m.Init = append(c.m.Init, InitInfo{Name: int(c.str(assignment.Name)), Expr: c.expr(assignment.Value, newScope(), nil, false)})
+	}
 }
 
 // value emits code that pushes one value (nil if the expression has no value).

@@ -44,6 +44,15 @@ func GenerateTS(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	gen := &tsGen{generator: &generator{prog: prog, table: "rules", disableMethodSharing: opts.disableMethodSharing, disableLiteralSharing: opts.disableLiteralSharing || !opts.enableTSLiteralSharing, disableLiteralTextDispatch: opts.disableLiteralTextDispatch}, plainUsed: map[*rule]bool{}}
 	gen.desc(fixedDescs[0]) // the fixed expectations come first
 	gen.rules()
+	if len(prog.init) != 0 {
+		names := make([]string, 0, len(prog.init))
+		actions := make([]string, 0, len(prog.init))
+		for _, assignment := range prog.init {
+			names = append(names, assignment.Name)
+			actions = append(actions, gen.action(assignment.Value, newScope(), nil))
+		}
+		fmt.Fprintf(&gen.init, "initNames = %s;\ninitActions = [%s];\n", tsStrings(names), strings.Join(actions, ", "))
+	}
 	var rec *Program
 	if opts.Recognize {
 		if rec, err = prog.recognizer(); err != nil {
@@ -377,6 +386,9 @@ func (g *tsGen) rules() {
 		if pr, ok := r.def.Expr.(*grammar.OperatorsRule); ok {
 			g.cur = r
 			g.operatorsRule(r, pr)
+			if r.action != nil {
+				fmt.Fprintf(init, "%s.action = %s;\n", g.ruleVar(r), g.action(r.action, scopes[r], nil))
+			}
 			continue
 		}
 		fmt.Fprintf(init, "%s.body = %s;\n", g.ruleVar(r), g.fn(bodies[r]))

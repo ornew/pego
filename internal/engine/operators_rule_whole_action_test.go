@@ -8,8 +8,7 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-func TestOperatorsRuleWholeActionRejection(t *testing.T) {
-	const message = "whole-rule actions are not supported for Operators Rules"
+func TestOperatorsRuleWholeAction(t *testing.T) {
 	for _, action := range []string{"nil", "$1", "Unknown{}", "(nil)", "($1)", "(Unknown{})"} {
 		t.Run(action, func(t *testing.T) {
 			g, err := syntax.Parse("rule main = operators {\n    operand \"a\"\n} => " + action)
@@ -29,39 +28,49 @@ func TestOperatorsRuleWholeActionRejection(t *testing.T) {
 				g    *grammar.Grammar
 			}{{"source AST", g}, {"JSON AST", decoded}} {
 				t.Run(input.name, func(t *testing.T) {
-					for name, run := range map[string]func() error{
-						"compile":            func() error { _, err := Compile(input.g, Options{}); return err },
-						"unchecked compile":  func() error { _, err := Compile(input.g, Options{NoTypeCheck: true}); return err },
-						"recognizer compile": func() error { _, err := Compile(input.g, Options{recognize: true}); return err },
-						"saved AST rebuild":  func() error { _, err := build(input.g, Options{}, []ruleFlags{{}}); return err },
-						"Go generator":       func() error { _, err := Generate(input.g, GenOptions{Start: "main", Package: "p"}); return err },
-						"typed Go generator": func() error {
+					invalid := strings.Contains(action, "Unknown")
+					checks := map[string]func() error{
+						"compile":           func() error { _, err := Compile(input.g, Options{}); return err },
+						"unchecked compile": func() error { _, err := Compile(input.g, Options{NoTypeCheck: true}); return err },
+						"saved AST rebuild": func() error { _, err := build(input.g, Options{}, []ruleFlags{{}}); return err },
+					}
+					if !invalid {
+						checks["recognizer compile"] = func() error { _, err := Compile(input.g, Options{recognize: true}); return err }
+						checks["Go generator"] = func() error { _, err := Generate(input.g, GenOptions{Start: "main", Package: "p"}); return err }
+						checks["typed Go generator"] = func() error {
 							_, err := Generate(input.g, GenOptions{Start: "main", Package: "p", Types: true})
 							return err
-						},
-						"TS generator":       func() error { _, err := GenerateTS(input.g, GenOptions{Start: "main"}); return err },
-						"typed TS generator": func() error { _, err := GenerateTS(input.g, GenOptions{Start: "main", Types: true}); return err },
-					} {
+						}
+						checks["TS generator"] = func() error { _, err := GenerateTS(input.g, GenOptions{Start: "main"}); return err }
+						checks["typed TS generator"] = func() error { _, err := GenerateTS(input.g, GenOptions{Start: "main", Types: true}); return err }
+					}
+					for name, run := range checks {
 						t.Run(name, func(t *testing.T) {
 							err := run()
-							errs, ok := err.(ErrorList)
-							if !ok || len(errs) != 1 || !strings.Contains(errs[0].Msg, message) {
-								t.Fatalf("got %v; want a whole-rule action compile error", err)
-							}
-							if input.g == g {
-								wantPos := grammar.Pos{Line: 3, Col: 6}
-								if strings.HasPrefix(action, "(") {
-									wantPos.Col++
+							if invalid {
+								if err == nil || !strings.Contains(err.Error(), "Unknown is not a struct type") {
+									t.Fatalf("got %v; want unknown type error", err)
 								}
-								if action == "nil" || action == "(nil)" {
-									// NilLit has no source position; use the declaration.
-									wantPos = g.Rules()[0].Pos
-								}
-								if errs[0].Pos != wantPos {
-									t.Fatalf("error position = %v; want %v", errs[0].Pos, wantPos)
-								}
+							} else if err != nil {
+								t.Fatal(err)
 							}
 						})
+					}
+					if !invalid {
+						p, err := Compile(input.g, Options{})
+						if err != nil {
+							t.Fatal(err)
+						}
+						for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+							n, err := p.ParseWith("main", "a", ParseOptions{Backend: backend})
+							if err != nil {
+								t.Fatal(err)
+							}
+							wantNil := strings.Contains(action, "nil")
+							if (n == nil) != wantNil {
+								t.Fatalf("backend %v: node = %v", backend, n)
+							}
+						}
 					}
 					unchanged, err := grammar.MarshalJSON(input.g)
 					if err != nil || string(unchanged) != string(data) {
@@ -70,6 +79,44 @@ func TestOperatorsRuleWholeActionRejection(t *testing.T) {
 				})
 			}
 		})
+	}
+}
+
+func TestOperatorsRuleWholeActionChecksFinalDeclaredType(t *testing.T) {
+	const src = `type Wrap struct { Value node }
+rule main Wrap = operators {
+    operand "a"
+    level { infix left "+" }
+} => Wrap{Value: $1}`
+	p := compile(t, src)
+	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
+		n, err := p.ParseWith("main", "a+a", ParseOptions{Backend: backend})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if n == nil || n.Type() != "Wrap" || n.Start != 0 || n.End != 3 {
+			t.Fatalf("backend %v: result = %v", backend, n)
+		}
+		folded, ok := n.Field("Value").(*Node)
+		if !ok || folded.Type() != TypeOperator {
+			t.Fatalf("backend %v: folded value = %v", backend, n.Field("Value"))
+		}
+	}
+	bad := strings.Replace(src, "=> Wrap{Value: $1}", "=> $1", 1)
+	if err := compileError(t, bad); !strings.Contains(err, "not assignable to Wrap") {
+		t.Fatalf("final action type error = %s", err)
+	}
+}
+
+func TestOperatorsRuleWholeActionChecksInternalFoldType(t *testing.T) {
+	const src = `type Box struct { X Match }
+type Out struct { X node }
+rule e Out = operators {
+    operand "a"
+    level { infix left "+" => Box{X: $lhs} }
+} => Out{X: $1}`
+	if err := compileError(t, src); !strings.Contains(err, "cannot use") || !strings.Contains(err, "in field X of Box") {
+		t.Fatalf("internal fold type error = %s", err)
 	}
 }
 

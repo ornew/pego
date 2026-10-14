@@ -298,17 +298,19 @@ Expectation strings are those the compiler placed in the string table: literals 
 
 ## File Format
 
-A module is stored in the `.pegoc` version 2 format. Integers are variable-length: unsigned integers use LEB128 and signed integers use zigzag-encoded LEB128. A boolean is one byte (0 or 1).
+The initializer extension reserves `.pegoc` container version 4. Version 3 belongs to the independent recognition-bundle format; version 4 must retain its recognition section before adding the initializer table. This branch implements the initializer table in a version 4 prototype, pending integration with version 3 recognition bundles. Integers are variable-length: unsigned integers use LEB128 and signed integers use zigzag-encoded LEB128. A boolean is one byte (0 or 1).
 
 | Part | Contents |
 |:--|:--|
 | Magic | `PEGOC\x00` (6 bytes) |
-| Version | 1 byte (2) |
+| Version | 1 byte (2, 3, or 4). Version 3 adds the recognition bundle; version 4 adds initializers after that section. The version 4 integration remains pending. |
 | Instruction-set version | Unsigned integer (3 for ordinary modules, 4 when wide bounds are used, 5 when terminal construction is used). A runtime loads files of every instruction-set version up to its own: version 2 adds instructions 118–123, version 3 `GUARD` (34) and `NEXT` mode 3, version 4 `REPEATW` (35) and `SCANW` (36), and version 5 `ETERMINAL` (124). |
 | String table | Count, then each string (byte length and UTF-8 bytes), all unsigned. The module's string table is a prefix of this table. |
 | Start rule | String index, unsigned (the empty string means no default start rule) |
 | Package name | String index, unsigned |
 | Module | See below |
+| Recognition bundle (version 3 onward) | Boolean and optional length-delimited independent recognition module and ordered start map. The version 4 prototype does not yet encode this section and must not be integrated until it does. |
+| Initializer table (version 4 onward) | List of (variable name string index, expression-code entry) following the recognition section. |
 | AST present | Boolean. If true, the grammar AST and the static-analysis results follow (including, per rule, whether it may have a value-free twin). These serve the closure backend and the formatter of the reference implementation; a runtime may skip them. The AST codec does not serialize source positions, normalized comment ownership, or formatter trivia. |
 | Checksum | CRC-32 (IEEE) of everything from the magic up to this point, 4 bytes little-endian |
 
@@ -321,6 +323,7 @@ The module is laid out in the following order. A *list* is a count (unsigned) fo
 5. Rule table: a list of (name, body, scope, action, body is a sequence, terminal type, memoize, leader, position-dependent, Operators Rule, value-free twin, transient, variables).
 6. Operators Rule table: a list of (skip, list of operand lines, list of prefix operators, list of infix and postfix operators). A line is (start, scope, action, body is a sequence); an operator is (index, kind, associativity, level, line).
 7. Match code, then expression code: each a list of instructions (opcode as 1 byte, then `A`, `B`, `C`).
+Initializer entries execute in declaration order before each selected start-rule invocation, including recognition and stream parsing. Each invocation begins with a fresh variable environment; initializer errors abort before the start rule runs.
 
 ### Load-Time Validation
 

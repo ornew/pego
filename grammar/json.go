@@ -26,7 +26,7 @@ func register(vs ...any) {
 
 func init() {
 	register(
-		(*TypeDef)(nil), (*RuleDef)(nil),
+		(*TypeDef)(nil), (*RuleDef)(nil), (*InitDef)(nil),
 		(*StructSpec)(nil), (*AliasSpec)(nil), (*TerminalSpec)(nil),
 		(*TypeRef)(nil), (*ListType)(nil), (*OptionalType)(nil), (*UnionType)(nil), (*TypeGroup)(nil),
 		(*Ref)(nil), (*Literal)(nil), (*CharClass)(nil), (*Any)(nil), (*Seq)(nil),

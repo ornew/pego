@@ -175,6 +175,7 @@ func (prog *Program) run(p *parser, b Backend, start string) (n *Node, err error
 			recoverParse(x, prog.backend(b), &err)
 		}
 	}()
+	prog.initialize(p, b)
 	v, ok := p.call(r, 0)
 	if ok && p.atEOF() {
 		if len(p.recovered) > 0 {
@@ -264,6 +265,7 @@ func (prog *Program) ParseStreamWith(start string, r io.Reader, emit func(*Node)
 		recoverParse(x, prog.backend(o.Backend), &err)
 	}()
 	control.check()
+	prog.initialize(p, o.Backend)
 	_, ok := p.call(rule, 0)
 	if ok && p.atEOF() {
 		control.check()
