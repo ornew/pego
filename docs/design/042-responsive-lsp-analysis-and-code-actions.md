@@ -10,13 +10,16 @@ Extend `pego lsp` to publish grammar lint findings, offer version-checked explan
 
 ## Prototype Implementation Boundary
 
-The protocol prototype is enabled by the initialization capability
-`experimental.pego.lintDiagnostics: true`; this also enables responsive analysis.
-A client may use `experimental.pego.responsiveAnalysis: true` to enable the actor
-without lint diagnostics. Code actions are advertised only for clients enabling
-lint diagnostics. Without this opt-in, diagnostics retain their existing syntax and
-compile/type scope. This is a validation boundary, not adoption of the proposed
-default lint policy.
+The VS Code extension exposes the opt-in setting
+`pego.server.experimentalLint`, which defaults to `false` and requires a language
+server restart after it changes. When enabled, the extension advertises
+`experimental.pego.lintDiagnostics`, `experimental.pego.responsiveAnalysis`, and
+`experimental.pego.showExplanation`. Other clients can advertise these
+capabilities independently: lint diagnostics also enable code actions, while
+responsive analysis alone enables the asynchronous analysis actor without lint.
+Without lint opt-in, diagnostics retain their existing syntax and compile/type
+scope. This remains an opt-in compatibility boundary, not adoption of a default
+lint policy.
 
 The prototype shares the successful compiled analysis with `internal/lint.Run`
 and maps its source-positioned findings to stable check codes and
@@ -26,17 +29,22 @@ specified. Existing lint directives remain authoritative. No old lint findings
 are reused after an analysis failure.
 
 An explanation action additionally requires
-`experimental.pego.showExplanation: true`; its client handler is not included
-in this prototype. Suppression additionally requires
-`workspace.workspaceEdit.documentChanges: true`. It returns a versioned edit
-only after recompiling and linting the candidate source, proving the targeted
-finding disappeared, and checking that the inserted directive is valid. It
-inserts a standalone `lint:ignore` comment immediately before the finding line
-and uses the document's newline convention. The title states that the finding line is suppressed: the inserted directive
-covers its own comment line and the immediately following finding line. Insertions before declarations, inside
-multiline tokens, or on lines with existing ignore directives are withheld;
-rule-wide suppression needs an explicitly scoped action. There are no
-suggested grammar transformations and no alternative-deletion action.
+`experimental.pego.showExplanation: true`. The VS Code client handles
+`pego.showExplanation` by displaying the check name, finding message, and
+explanation; it rechecks the document version and analysis generation before
+showing the message. Suppression additionally requires
+`workspace.workspaceEdit.documentChanges: true`. The server returns a
+versioned edit only after recompiling and linting the candidate source, proving
+the targeted finding disappeared, and checking that the inserted directive is
+valid. It inserts a standalone `lint:ignore` comment immediately before the
+finding line and uses the document's newline convention. The client validates
+the action's URI, version, generation, session, and exact approved insertion
+before applying it. The title states that the finding line is suppressed: the
+inserted directive covers its own comment line and the immediately following
+finding line. Insertions before declarations, inside multiline tokens, or on
+lines with existing ignore directives are withheld; rule-wide suppression
+needs an explicitly scoped action. There are no suggested grammar
+transformations and no alternative-deletion action.
 
 `analysisQueue` connects immutable version/generation snapshots to one running
 analysis worker globally and one replaceable pending snapshot per document.

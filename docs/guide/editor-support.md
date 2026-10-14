@@ -8,6 +8,7 @@ This guide explains what the server does, how to set up an editor, and its limit
 
 - [Installing the server](#installing-the-server)
 - [What the server does](#what-the-server-does)
+- [Experimental lint diagnostics and actions](#experimental-lint-diagnostics-and-actions)
 - [Setting up an editor](#setting-up-an-editor)
 - [Limits](#limits)
 - [Troubleshooting](#troubleshooting)
@@ -75,6 +76,14 @@ rule pair = a:digits "," b:digits => list($a, $b)
 
 The types come from the type checker, so they are shown only while the whole grammar compiles. While it has errors,
 hover shows the declared type, or says that the type is not known yet.
+
+### Experimental Lint Diagnostics and Actions
+
+The VS Code extension can opt into grammar lint diagnostics, guarded lint actions, and responsive analysis. Set `pego.server.experimentalLint` to `true`, then restart the language server. The setting defaults to `false`; with it off, lint diagnostics and these code actions are not enabled.
+
+When enabled, lint findings appear only after the grammar parses and compiles successfully. Select a lint diagnostic and request a quick fix to see an explanation, or, when the client supports versioned document changes, an option to suppress that finding on its line. The explanation is shown as a message; it does not edit the grammar. Suppression inserts a `// lint:ignore <check>` directive before the finding line only after the server verifies that the edited grammar remains valid and the targeted finding disappears. The server does not turn the linter's explanatory `Fix` text into an edit.
+
+Actions are tied to the document version and analysis that produced the diagnostic. The extension checks them again before execution and drops stale explanations or edits. The setting also enables responsive analysis: newer document versions can replace pending analysis and supersede stale results. Cancellation is cooperative, and some parsing, compilation, lint, and request-processing phases do not yet check for cancellation internally, so an already-running phase may need to finish before the server responds.
 
 ## Setting up an Editor
 

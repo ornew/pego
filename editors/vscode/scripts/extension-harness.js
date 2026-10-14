@@ -33,11 +33,14 @@ function loadExtension(plans = [], options = {}) {
   const h = {
     settings: { 'server.enabled': true, 'server.path': '/pego' },
     commands: {}, events: [], clients: [], running: new Set(), resources: new Set(),
-    created: 0, maxRunning: 0,
+    created: 0, maxRunning: 0, information: [], applied: [],
   };
   const record = (event) => { if (options.record !== false) h.events.push(event); };
   const vscode = {
     workspace: {
+      textDocuments: [],
+      applyEdit: (edit) => { h.applied.push(edit); return Promise.resolve(true); },
+      onDidCloseTextDocument: (f) => { h.closedDocument = f; return { dispose() {} }; },
       getConfiguration: () => ({ get: (key, fallback) => key in h.settings ? h.settings[key] : fallback }),
       onDidChangeConfiguration: (f) => { h.configuration = f; return { dispose() {} }; },
     },
@@ -45,18 +48,29 @@ function loadExtension(plans = [], options = {}) {
       registerCommand: (name, f) => { h.commands[name] = f; return { dispose() {} }; },
     },
     window: {
+      showInformationMessage: (message) => { h.information.push(message); return Promise.resolve(); },
       showErrorMessage: (message) => { record('error: ' + message); return Promise.resolve(); },
       createOutputChannel: () => ({ dispose() {} }),
     },
   };
+  vscode.WorkspaceEdit = class {
+    constructor() { this.text = new Map(); }
+    set(uri, edits) { this.text.set(uri, edits); }
+    insert(uri, position, newText) { this.set(uri, [{ range: { start: position, end: position }, newText }]); }
+    entries() { return [...this.text.entries()]; }
+  };
+  vscode.Uri = { parse: (value) => ({ toString: () => value }) };
+  vscode.Position = class { constructor(line, character) { this.line = line; this.character = character; } };
   class LanguageClient {
-    constructor(id, name, server) {
+    constructor(id, name, server, clientOptions) {
       this.id = h.created++;
       this.command = server.command;
       this.plan = plans[this.id] || {};
       this.calls = { start: 0, stop: 0, dispose: 0 };
       this.state = 1;
-      this.clientOptions = { errorHandler: {
+      this.features = [];
+      this.capabilities = {};
+      this.clientOptions = { ...clientOptions, errorHandler: {
         error: () => ({ action: 1 }), closed: () => ({ action: 2 }),
       } };
       this.outputChannel = { dispose: () => h.resources.delete(this.id) };
@@ -64,7 +78,9 @@ function loadExtension(plans = [], options = {}) {
       if (options.record !== false) h.clients.push(this);
       record(`new ${id} ${server.command} ${server.args.join(' ')}`);
     }
+    registerFeature(feature) { this.features.push(feature); }
     async start() {
+      for (const feature of this.features) feature.fillClientCapabilities?.(this.capabilities);
       this.calls.start++;
       record('start');
       // A failed/pending start can already own resources and a server.
@@ -96,6 +112,7 @@ function loadExtension(plans = [], options = {}) {
     }
     async shutdown() {
       if (this.state === 4) throw new Error("Client is not running and can't be stopped. It's current state is: startFailed");
+      for (const feature of this.features) feature.clear?.();
       h.running.delete(this.id);
       h.resources.delete(this.id);
       this.state = 1;
@@ -103,6 +120,7 @@ function loadExtension(plans = [], options = {}) {
     async handleConnectionClosed() {
       const result = await this.clientOptions.errorHandler.closed();
       if (result.action !== 1) throw new Error('failed client must not auto-restart');
+      for (const feature of this.features) feature.clear?.();
       h.running.delete(this.id);
       h.resources.delete(this.id);
       this.state = 1;
@@ -124,6 +142,7 @@ function loadExtension(plans = [], options = {}) {
   } finally {
     Module._load = load;
   }
+  h.workspace = vscode.workspace;
   h.activate = () => h.extension.activate({ subscriptions: [] });
   h.restart = () => h.commands['pego.restartServer']();
   h.change = (affected = true) => h.configuration({ affectsConfiguration: () => affected });

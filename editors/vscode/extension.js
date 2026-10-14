@@ -3,6 +3,7 @@
 'use strict';
 
 const vscode = require('vscode');
+const { createLintActions } = require('./lint-actions');
 const { LanguageClient, State, CloseAction } = require('vscode-languageclient/node');
 
 // 10.1.2 refuses shutdown in StartFailed. Use its protected connection-close
@@ -56,6 +57,7 @@ class PegoLanguageClient extends LanguageClient {
 /** @type {LanguageClient | undefined} */
 let client;
 let clientOutput;
+let clientLintActions;
 let disposeClient = false;
 let active = false;
 let lifecycle = Promise.resolve();
@@ -82,6 +84,8 @@ async function start() {
   // a failed-start channel behind after the client has already become Stopped.
   const output = vscode.window.createOutputChannel('PEGO Language Server', { log: true });
   let c;
+  const lintActions = createLintActions(vscode, config.get('server.experimentalLint', false),
+    () => active && !!c && client === c && c.state === State.Running);
   try {
     c = new PegoLanguageClient(
       'pego', // the prefix of the pego.trace.server setting
@@ -89,17 +93,20 @@ async function start() {
       { command, args: ['lsp'] },
       {
         outputChannel: output,
+        middleware: lintActions.middleware,
         documentSelector: [
           { scheme: 'file', language: 'pego' },
           { scheme: 'untitled', language: 'pego' },
         ],
       },
     );
+    c.registerFeature(lintActions.feature);
   } catch (err) {
     output.dispose();
     throw err;
   }
   client = c;
+  clientLintActions = lintActions;
   clientOutput = output;
   disposeClient = true;
   try {
@@ -131,6 +138,7 @@ async function stop() {
     // Failed cleanup retains ownership and blocks replacement until a retry.
     client = undefined;
     clientOutput = undefined;
+    clientLintActions = undefined;
     disposeClient = false;
   }
 }
@@ -147,6 +155,9 @@ async function activate(context) {
   active = true;
   context.subscriptions.push(
     vscode.commands.registerCommand('pego.restartServer', restart),
+    vscode.commands.registerCommand('pego.showExplanation', (...args) => clientLintActions?.showExplanation(...args) || false),
+    vscode.commands.registerCommand('pego.applyLintSuppression', (...args) => clientLintActions?.applySuppression(...args) || false),
+    vscode.workspace.onDidCloseTextDocument((document) => clientLintActions?.closeDocument(document)),
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (active && e.affectsConfiguration('pego.server')) {
         // VS Code does not await event callbacks; handle their failures here.

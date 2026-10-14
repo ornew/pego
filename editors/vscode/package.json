@@ -71,6 +71,11 @@
           ],
           "default": "off",
           "description": "Log the messages between VS Code and the language server in the PEGO Language Server output channel."
+        },
+        "pego.server.experimentalLint": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable experimental lint diagnostics, guarded lint actions and responsive analysis. Restart the language server when this setting changes."
         }
       }
     },
@@ -83,7 +88,7 @@
     ]
   },
   "scripts": {
-    "check": "node scripts/check-grammar.js && node scripts/check-extension.js && node --unhandled-rejections=strict scripts/check-client.js",
+    "check": "node scripts/check-grammar.js && node scripts/check-extension.js && node scripts/check-lint-actions.js && node --unhandled-rejections=strict scripts/check-client.js",
     "check-server": "node scripts/check-server.js",
     "package": "vsce package --skip-license"
   },
