@@ -40,6 +40,8 @@ func useDocumentPieces(text string, unit Unit) bool {
 // The nodes of a shifted result are moved in place when the result is reused (moveResult), so
 // trees returned by earlier parses change with them.
 type Document struct {
+	identity *documentIdentity
+	sequence uint64
 	prog     *Program
 	start    string
 	back     Backend // resolved construction backend
@@ -91,7 +93,7 @@ func (prog *Program) NewDocumentWith(start, text string, o ParseOptions) (d *Doc
 	in := newControlledDocumentInput(text, o.Unit, c)
 	c.check()
 	in.control = nil // construction counters never become parse defaults
-	return &Document{prog: prog, start: start, back: prog.backend(o.Backend), defaults: o, in: in, memo: newMemoTable()}, nil
+	return &Document{identity: new(documentIdentity), sequence: 1, prog: prog, start: start, back: prog.backend(o.Backend), defaults: o, in: in, memo: newMemoTable()}, nil
 }
 
 // ParseDefaults returns a copy of the construction options. Invocation counters
@@ -237,7 +239,11 @@ func (d *Document) Edit(start, end int, text string) error {
 			}
 		}
 	}
+	if err := d.nextVersion(); err != nil {
+		return err
+	}
 	delta := d.in.replace(start, end, text)
+	d.sequence++
 	if documentPieceInput && d.in.pieces == nil && d.in.loaded() >= documentPieceMinSize {
 		// A small Document can grow into the measured range where the piece
 		// representation wins. Promote once, after the flat edit has completed.

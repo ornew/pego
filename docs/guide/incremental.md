@@ -2,13 +2,14 @@
 
 `Parser.Parse` parses a whole text from scratch. An editor, a language server or a live preview parses a text that
 changes a little at a time, and most of each new parse repeats the last. A `Document` holds the text and the memo table
-of its last parse, applies edits, and on `Parse` runs only the parts of the grammar that the edits touched. The result
-is the same as parsing the new text from scratch.
+of its last parse and applies edits. Individual `Edit` calls reuse unaffected results; `EditBatch` atomically
+commits several replacements and starts the next parse with fresh reuse state. The result is the same as parsing
+the new text from scratch.
 
 |  |  |
 |:--|:--|
 | Input | A text in memory that is edited again and again |
-| API | `Parser.NewDocument`, `Document.Edit`, `Document.Parse`, `Document.Stats` |
+| API | `Parser.NewDocument`, `Document.Edit`, `Document.EditBatch`, `Document.Version`, `Document.Parse`, `Document.Stats` |
 | Grammar | Any grammar (some are much faster to reparse than others) |
 | You get | A full tree for every version of the text |
 | Saves | Time: unchanged parts are not parsed again |
@@ -56,6 +57,8 @@ reuse.
 | `doc.Parse(opts...)` | Parse the current text using construction defaults plus invocation overrides. Counters reset per call. Results and errors are those of `Parser.Parse`, including recovered `SyntaxErrors`. |
 | `doc.Stats()` | `ParseStats{Evaluated, Reused}` of the last `Parse`: rule bodies run, and results used again (memo results and the elements of resumed repetitions). |
 | `doc.Text()` | The current text. |
+| `doc.Version()` / `doc.Unit()` | The opaque current text revision and the fixed position unit. A new document starts at sequence 1; parsing does not advance it. |
+| `doc.EditBatch(base, edits...)` | Apply a batch of nonoverlapping replacements in coordinates from `base`. A stale/foreign version or invalid edit rejects the entire batch. A successful nonempty batch advances one revision and does not parse. |
 
 In byte mode, only the interior of a valid UTF-8 character is excluded as an edit boundary. Each invalid byte is
 a separate replacement character, so it can be replaced or have text inserted before or after it. An edit can join
@@ -64,7 +67,23 @@ on the earlier decoding, including a prefix completed by an insertion at EOF. In
 have already been replaced with U+FFFD; editing that normalized text does not reassemble the original bytes.
 
 A `Document` is not safe for concurrent use; a `Parser` is, so use one `Document` per goroutine and share the `Parser`.
-Several `Edit` calls can precede one `Parse`. `Document.Edit` is outside parse-work limits.
+Several `Edit` calls can precede one `Parse`. Each successful `Edit` advances `Version` once, including a no-op; parsing does not. Both `Edit` and `EditBatch` are outside parse-work limits.
+
+Use `EditBatch` when one editor transaction contains several replacements. All ranges are measured in the unchanged base text, not adjusted after earlier edits in the batch. Starts must be strictly increasing and ranges nonoverlapping; insertions at the same position are rejected. A failed batch changes nothing. A successful nonempty batch advances the version once, clears reusable parse state, and leaves parsing to the next `Parse` call. It preserves the existing `Node` behavior: previously returned Nodes are not moved until a later parse. Cache reset means batches do not promise the reuse cost of a sequence of `Edit` calls.
+
+```go
+base := doc.Version()
+err := doc.EditBatch(base,
+    pego.TextEdit{Start: 0, End: 2, Text: "xy"},
+    pego.TextEdit{Start: 3, End: 3, Text: "z"},
+)
+if err != nil {
+    return err
+}
+node, err := doc.Parse()
+```
+
+The example assumes `doc` and the `pego` import are already in scope. The insertion at 3 is interpreted against the original text, even though the earlier replacement is also in the batch.
 
 Piece-backed storage is internal to `Document`; batch parsing and streaming keep
 their contiguous input paths. `Document.Text()` and `Node.Text` keep their

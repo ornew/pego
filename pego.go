@@ -242,6 +242,28 @@ type Document struct {
 	doc *engine.Document
 }
 
+// DocumentVersion identifies one text revision of a Document. Its zero value
+// is invalid; tokens are comparable and do not retain document contents.
+type DocumentVersion = engine.DocumentVersion
+
+// TextEdit replaces [Start, End) in the document's position unit. EditBatch
+// interprets every range in the supplied base version's coordinates.
+type TextEdit = engine.TextEdit
+
+// Version returns the current text revision, initially sequence one.
+func (d *Document) Version() DocumentVersion { return d.doc.Version() }
+
+// Unit returns the position unit selected when the document was constructed.
+func (d *Document) Unit() Unit { return d.doc.Unit() }
+
+// EditBatch atomically applies ordered, nonoverlapping edits in base coordinates.
+// It rejects stale or foreign tokens, repeated starts, invalid ranges and byte
+// boundaries. An empty batch validates base but changes nothing. A nonempty
+// batch advances one revision and clears parse caches without parsing.
+func (d *Document) EditBatch(base DocumentVersion, edits ...TextEdit) error {
+	return d.doc.EditBatch(base, edits...)
+}
+
 // ParseStats counts rule evaluations and reused results in a Document.Parse.
 type ParseStats = engine.Stats
 

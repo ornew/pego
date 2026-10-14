@@ -118,6 +118,14 @@ A **node** has the following properties.
 The Go type `pego.Node` and its JSON form are described in
 [The Node type](../docs/guide/runtime.md#the-node-type).
 
+## Incremental Documents
+
+A `Document` owns mutable text and parser reuse state and is not safe for concurrent use. Its position unit is fixed at construction; `Document.Unit` reports that unit. `Document.Version` returns a comparable opaque token identifying the current text revision. A new document starts at sequence 1. Parsing does not advance the version, and the token does not retain the document, text, or parse caches.
+
+`Document.EditBatch(base, edits...)` applies replacements simultaneously to the text identified by `base`. Every range uses coordinates in the original base text and the document's position unit. Starts must be strictly increasing and ranges must not overlap; a repeated start, including multiple insertions at one position, is rejected. A token from another document or an older revision is rejected even for an empty batch. An empty valid batch changes neither text nor version. A successful nonempty batch advances the version once and does not parse. A successful `Document.Edit` also advances it once, including a no-op edit. Sequence overflow is rejected before mutation.
+
+The implementation validates and prepares a complete batch before publishing it. A rejected batch leaves text, version, statistics, reusable state, and previously returned Nodes unchanged. In `Bytes` mode, endpoints are checked against character boundaries in the original base text; applying replacements may create or remove UTF-8 sequences at edit seams, which are decoded by the next parse. In `CodePoints` mode, invalid UTF-8 in replacement text is normalized one replacement character per invalid byte. After a successful batch, the next parse must match a fresh parse of the resulting text. Batch commit itself does not parse and conservatively clears reusable parse caches; it does not promise incremental reuse. The existing mutable `Node` and `Document.Parse` ownership behavior is unchanged.
+
 ## Syntax Errors
 
 When the input does not match the grammar, the parser reports the **farthest

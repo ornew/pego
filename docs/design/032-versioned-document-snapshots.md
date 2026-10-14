@@ -46,9 +46,9 @@ facts, rather than current performance estimates:
   options survive. [Existing interruption tests](../../internal/engine/document_abort_test.go)
   establish retry behavior.
 
-No new clone, edit, materialization, or live-heap measurements accompany this
-proposal. Older incremental guide measurements are not a baseline for this
-revision.
+Measurements for versioned edit batches are recorded below. Snapshot capture,
+materialization, structural sharing and retained-version costs remain unmeasured.
+Older incremental-guide measurements are not a baseline for this revision.
 
 ## Goals
 
@@ -79,7 +79,8 @@ part of this feature.
 
 ### Proposed Public API
 
-All signatures below are proposals. Document construction keeps its existing
+Version tokens, `Unit` and atomic `EditBatch` are implemented as the first stage.
+The Snapshot APIs below remain proposed. Document construction keeps its existing
 functional `ParseOption` arguments; no additional options entry point is needed.
 
 ```go
@@ -175,16 +176,21 @@ concurrent use; version tokens do not implement compare-and-swap synchronization
 
 Snapshot parses the current version, including every edit pending since the last
 parse. Construction settings provide defaults; invocation options are resolved
-once with the same restrictions and order as proposed Document.Parse in
+once with the same restrictions and order as Document.Parse in
 [design 033](033-cancellable-parses-and-work-budgets.md). Context, work limits,
 depth and tracing may be overridden; start rule, unit, backend and recognition
 mode retain the constructed Document contract. A fresh per-call context permits
 capture after cancellation of a previous task without retaining its controller.
-It then freezes that exact parse outcome before returning. It does not silently
-return the previous successful result when current text fails. Taking another
-snapshot of the same version may reparse and change statistics, but not text or
-version; snapshots themselves are immutable. No promise is made to reuse an
-outcome solely because a version is unchanged, especially with tracing.
+Parsing and freezing the text, tree, and diagnostics form one controlled
+invocation: they use the same context and controller, and input-work and
+execution-step counters accumulate across both phases. Freezing costs therefore
+count against the configured limits. It then freezes that exact parse outcome
+before returning. It does not silently return the previous successful result
+when current text fails. Taking another snapshot of the same version may reparse
+and change statistics, but not text or version; snapshots themselves are
+immutable. No promise is made to reuse an outcome solely because a version is
+unchanged, especially with tracing. Materialize and snapshot getters run after
+this invocation and do not accept or inherit its context or work limits.
 
 ### Atomic Batch Semantics
 
@@ -235,14 +241,20 @@ version and are available for all normally returned parse outcomes:
 | ordinary syntax failure | zero handle, as current Parse | copied SyntaxError |
 | consuming recovery | exact current root, possibly nil | copied SyntaxErrors |
 | action/depth/module error returned by Parse | zero handle, as current Parse | corresponding error |
+| work-limit exhaustion or cancellation during Parse or freezing | no snapshot | interruption error |
 | unsupported legacy field value during capture | no snapshot | SnapshotCaptureError |
 | trace callback panic | no newly returned snapshot | original panic propagates |
 
-Parse-outcome errors do not make the snapshot pointer nil. Callers can display
-the failed version's text and diagnostics; they separately retain a previous
-successful snapshot if desired. Interrupted parses retain current text/version and clear
-reusable state as today. A subsequent retry must match fresh parsing. Do not
-publish a partially frozen graph on a propagated panic.
+Ordinary syntax and recovered errors do not make the snapshot pointer nil. Callers
+can display the failed version's text and diagnostics; they separately retain a
+previous successful snapshot if desired. Cancellation or work-limit exhaustion
+in either controlled phase returns no snapshot and publishes no partial text,
+tree, or diagnostic capture. If invocation execution has begun, clear reusable
+parser state as for an interrupted parse; preserve current text and version for
+retry. Cleanup is not charged to the exhausted work budget. Cancellation and
+deadline errors retain their normal `errors.Is` identity, and a trace callback
+panic propagates as the original panic after cleanup. A subsequent retry must
+match fresh parsing.
 
 Legacy NodeField.Value is exported as any, so a caller can put unsupported values
 into cached Nodes before capture. Accept only untyped nil and the exact dynamic
@@ -351,8 +363,18 @@ Go/typed Go and TypeScript retain their current lack of Document support. Stream
 and recognition-only rejection remains unchanged. Public Node JSON and saved
 module formats remain unchanged; snapshot handles introduce no serialized format.
 
-1. Add version tokens and atomic batches, with a conservative fresh-state reference
-   after accepted batches. Establish validation rollback and fresh-parse equivalence.
+1. Add an opaque, comparable, non-retaining `DocumentVersion` with a document
+   identity and sequence, plus `Document.Version`, `Document.Unit`, `TextEdit`,
+   and atomic `Document.EditBatch`. Start at sequence 1. Each successful legacy
+   `Edit` advances once, including a no-op; each successful nonempty batch also
+   advances once, while a valid empty batch does not. Reject overflow before
+   mutation. Interpret all batch ranges in the supplied base text; reject foreign
+   or stale versions, repeated or unordered starts, overlapping/out-of-bounds
+   ranges, invalid byte boundaries, and final-length overflow. Validate and
+   prepare privately, then publish the new text and clear reusable parse state
+   without parsing. Any rejected batch preserves observable Document state and
+   previously returned Nodes. Verify fresh-parse equivalence on supported core
+   backends and both position units.
 2. Add independently owned read-only snapshots, diagnostic copying, concurrent
    reads, unsupported-value rejection, cycle preservation, and explicit
    materialization. Compare against Parse plus Clone while
@@ -365,9 +387,11 @@ module formats remain unchanged; snapshot handles introduce no serialized format
    heap measurements establish its benefits and costs. If efficient storage needs
    a separate read-only Document API, review that contract before implementation.
 
-No stage is implemented by this record. Stages 1–2 can provide useful contracts
-without claiming cheap snapshots. Chunked input-storage work may proceed independently
-and later be combined under a separately measured control.
+The versioned edit API is the first independently useful stage; it does not
+provide snapshots or structural sharing. Those later stages remain proposed and
+require separate ownership and performance validation. Chunked input-storage work
+may proceed independently and later be combined under a separately measured
+control.
 
 ## Alternatives Considered
 
@@ -435,9 +459,41 @@ These are proposed gates, not completed checks:
 
 ## Performance and Results
 
-No current measurements or speed claims. Pin baseline/candidate revisions,
-toolchains, backend/unit, grammar/input hashes, retained-version count, and control
-flags. Alternate paired processes; keep routine raw logs outside the repository.
+Snapshot and sharing costs remain unmeasured. A stage-1 implementation of version
+tokens and atomic edit batches has preliminary measurements against the
+source-equivalent baseline
+[`69af68e`](https://github.com/ornew/pego/commit/69af68ecdec1dea942db89158c36a21ad18ae505).
+These measurements cover edit and batch
+behavior only; they do not measure snapshots, sharing, or the full feature's
+cost.
+
+Existing Edit and Document-creation measurements used three alternating
+500 ms pairs. Three 500 ms complete-transaction samples compared batch edits
+with sequential edits. The runs used Go 1.27.1 on darwin/arm64 (Apple M3 Max),
+with `GOMAXPROCS=16`, `GOGC=100`, and `GOMEMLIMIT=off`. Existing single-edit
+allocation counts were unchanged; timing was mostly noisy, with a 2.7% increase
+for a 1 MiB CodePoints edit. Document creation added 33 B and one allocation. Bytes-mode creation was 12.7–16.5%
+slower in the tested cases, while CodePoints creation was noisy. For three
+equal-length sparse edits followed by Parse, the conservative batch path took
+2.6–3.5× the time of sequential Edit-plus-Parse on 4 KiB and 64 KiB `abc`/newline
+inputs across Closure and iterative Bytecode in both units. It also used 66–333
+allocations for the batch cases versus 57–86 for sequential edits; these counts
+are specific to the measured cases. This cost reflects the stage-1 path's full
+cache reset and fresh parse after a successful batch. It is a stage-1 result,
+not a snapshot or sharing result and not a general performance claim.
+
+Reproduce the stage-1 transaction and creation cases with
+`go test ./internal/engine -run '^$' -bench '^BenchmarkDocument(EditTransaction|OwnerCreation)$' -benchmem -benchtime=500ms -count=3`.
+The existing-edit control uses `BenchmarkDocumentInputEdit` at 1 KiB, 4 KiB and
+1 MiB, middle replacements and both units. Inject the identical creation-only
+benchmark into the baseline when comparing revisions; compilation and parsing
+are excluded from that cold-owner measurement. The transaction cases include
+validation, commit and reparse after a warmed initial parse. Routine raw results
+remain outside the repository.
+
+Pin baseline/candidate revisions, toolchains, backend/unit, grammar/input hashes,
+retained-version count, and control flags. Alternate paired processes; keep
+routine raw logs outside the repository.
 
 Measure separately: initial parse; single Edit and EditBatch preparation/commit;
 reparse with evaluations/reuse; Parse plus Clone reference; snapshot capture;
