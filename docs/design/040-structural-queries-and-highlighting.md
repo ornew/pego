@@ -1,16 +1,16 @@
 # 040. Structural Queries and Target-Language Highlighting
 
-- **Status**: Proposed
+- **Status**: Partially Implemented
 - **Author**: @ornew
 - **Date**: 2026-10-11
 
 ## Summary
 
-Add a declarative query API over PEGO Node results for matching node kinds, rules, fields, child structure, and bounded text predicates, with named captures usable for syntactic highlighting. Type and field checks use an explicitly supplied schema where available. The signatures and syntax below are illustrative proposals, not accepted APIs.
+Add a declarative query API over PEGO Node results for matching node kinds, rules, fields, child structure, and bounded text predicates, with named captures usable for syntactic highlighting. Type and field checks use an explicitly supplied schema where available. The programmatic Go subset described under Implemented Go API is implemented; the illustrative text syntax, text predicates, highlighting, and TypeScript support remain deferred.
 
 ## Motivation
 
-The public Go `pego.Node` and generated TypeScript `Node` represent CST and action-built values; children are ordered, while fields may contain nodes, scalars, or nil. Neither surface has a general query API. Actions can discard punctuation and comments, so AST queries cannot promise lossless tokenization. The edge, order, range, and cycle contract follows [design 031](031-iterative-tree-traversal.md); schema validation depends on [design 038](038-structured-output-schema.md). Grammar LSP analysis and semantic name resolution remain separate.
+The public Go API provides programmatic structural queries over `pego.Node`; generated TypeScript `Node` does not yet have a query API. Both represent CST and action-built values with ordered children and fields that may contain nodes, scalars, or nil. Actions can discard punctuation and comments, so queries cannot promise lossless tokenization. The edge, order, range, and cycle contract follows [design 031](031-iterative-tree-traversal.md); schema validation depends on [design 038](038-structured-output-schema.md). Grammar LSP analysis and semantic name resolution remain separate.
 
 ## Goals and Non-Goals
 
@@ -22,7 +22,7 @@ The public Go `pego.Node` and generated TypeScript `Node` represent CST and acti
 
 ## Proposed API and Pattern Model
 
-The Go surface could be:
+The following text-query API is illustrative and is not implemented. The implemented Go API compiles a `QueryPattern` programmatically, as described under Implemented Go API below.
 
 ```go
 type QueryOption func(*queryOptions)
@@ -35,7 +35,7 @@ func WithQueryContext(ctx context.Context) QueryOption
 func WithQueryWorkLimits(limits WorkLimits) QueryOption
 ```
 
-`WorkLimits`, cancellation errors, and snapshot ownership should reuse [design 033](033-cancellable-parses-and-work-budgets.md) and [design 032](032-versioned-document-snapshots.md); these names are sketches pending those designs. Charge graph edges and result construction to `MaxSteps`, and inspected source text to `MaxInputWork`, following design 033. Cancellation returns the observed context error; exhaustion returns the shared `WorkLimitError` matching `ErrWorkLimit`. Both stop before publishing results. Zero limits follow design 033. Pure structural matching requires no source unit. Position predicates and highlight/range interpretation require an explicitly supplied valid Unit; they never infer a unit from spans.
+The implemented Go API accepts context and step-limit options. Structural matching inspects no source text, so it consumes no input-work units; its step budget covers traversal and result construction. Cancellation returns the context error, exhaustion matches `ErrWorkLimit`, and evaluation returns no partial result. Position predicates and highlight/range interpretation remain deferred; any future position-based behavior must require an explicit valid Unit rather than infer one from spans.
 
 An illustrative pattern is:
 
@@ -56,15 +56,11 @@ A highlight configuration maps captures to target-language token classes and pri
 
 ## Compatibility and Backend Support
 
-The query operates on common Node values. Core Go, generated Go Node parsers, and generated TypeScript Node parsers are intended implementations and must agree on equivalent inputs. The TypeScript runtime already exports `Node`; ordinary generated TypeScript parsing can feed a TypeScript query implementation. Generated typed Go and typed TypeScript values are not direct query inputs in this design; their adapters require a separate value/identity contract. Traversal scope is represented by design 031; schema checking follows design 038. Document change/version integration is optional and follows design 039.
+The implemented query operates on Go `Node` values returned by the core parser or generated Go Node parsers. Generated TypeScript parsers expose their own `Node` values, but a TypeScript query implementation remains deferred; equivalent results are a future parity goal. Generated typed Go and typed TypeScript values are not direct query inputs in this design; their adapters require a separate value/identity contract. Traversal scope is represented by design 031; schema checking follows design 038. Document change/version integration is optional and follows design 039.
 
-## Implementation Sequence
+## Remaining Implementation Sequence
 
-1. Settle the Node edge/order/range contract in design 031 and schema contract in design 038.
-2. Specify the declarative pattern grammar, capture categories, and stable diagnostics.
-3. Implement Go compilation/evaluation with functional options, limits, cancellation, and all-or-error results.
-4. Implement the equivalent evaluator for TypeScript `Node`; compare results with the Go reference.
-5. Add text predicates and highlight configuration, validating their retained-source limitations on real grammars.
+The programmatic Go API and Node traversal contract in design 031 are implemented. Remaining work is to specify a declarative pattern grammar and stable diagnostics, add TypeScript parity, define bounded text predicates, and design highlight configuration around the retained-source limitations.
 
 ## Alternatives Considered
 
@@ -81,3 +77,51 @@ Test pattern diagnostics, known/unknown schema fields, scalar/list/union/dynamic
 ## Limitations and Open Questions
 
 The syntax and initial text-predicate set need implementation review; recommendation: a small declarative grammar, materialized all-or-error results under design-033 limits, and text predicates after structural matching is stable. Borrowed result values remain tied to the supplied graph's ownership. Punctuation/comments discarded by actions cannot be highlighted from AST Nodes alone.
+
+## Implemented Go API
+
+`CompileStructuralQuery(QueryPattern, *OutputSchema)` accepts a programmatic
+pattern rather than adopting the illustrative text syntax. Patterns
+may constrain type, producing rule, runtime category, named fields, and an
+ordered child prefix. Required fields must exist; extra fields and children are
+allowed. A capture binds the value at that pattern. Node patterns always check
+the mutable runtime graph even when a schema was supplied. Known type/rule names,
+impossible fields on declared structs, and directly known incompatible scalar
+field categories are rejected during compilation. Dynamic CST/`any` fields remain
+runtime checked. Alias/union and nested compatibility checking is conservative;
+this is not a complete schema type checker. Pattern copies are independent of
+caller mutation. Compilation rejects nesting at 256 levels, including cyclic
+programmatic pattern containers.
+
+`StructuralQuery.Matches(root, QueryOptions)` returns all results or an error.
+Evaluation is iterative and visits each node occurrence before its outgoing
+edges: children in index order, then fields in lexicographic order, then nested
+`[]any` elements in index order. Pattern captures follow preorder with children
+before sorted fields. An optional child can be captured as nil. Scalar categories
+are `int`, `string`, and `bool`; `list` identifies an explicit `[]any` container,
+while ordinary parser repetition results remain `Node` values of type `List`.
+Unsupported runtime values return an error. Active-path node and list cycles
+return `ErrQueryCycle`, and shared DAG nodes are evaluated per incoming edge.
+Nonempty list identity uses its first element address and visible length; slice
+capacity does not affect cycle detection.
+The immediate parent is the containing Node even through nested list containers;
+a root has no parent. Each capture owns its root-relative edge-path slice but
+borrows its value and parent. Concurrent graph mutation is unsupported.
+
+Cancellation uses the supplied context error. Step exhaustion uses the existing
+`WorkLimitError`/`ErrWorkLimit`, and zero limits are unlimited. Structural queries
+consume no input-work units because they inspect no source text. Steps charge
+visited values, pattern checks, outgoing edge/field discovery, field indexing,
+path construction/copying, captures, and matches. Cancellation is checked at every
+reservation and before returning results. Field sorting is preceded by a linear
+reservation; the budget is a deterministic abstract-work bound, not a count of
+sort comparisons. Full edge paths currently incur quadratic copying on a deep
+chain, and these copies are charged before construction. No speed or allocation
+claims are made.
+
+The public Go facade exposes `CompileStructuralQuery`, `QueryPattern`, capture/path
+types, `StructuralQuery.Matches`, and context/work-limit options. It preserves
+per-edge results and all-or-error behavior. The implemented pattern language is
+programmatic; text syntax, text predicates, position/range queries, highlighting,
+TypeScript parity, and direct snapshot evaluation remain deferred. Discarded
+punctuation and comments cannot be recovered from Node values.
