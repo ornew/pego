@@ -339,7 +339,7 @@ func (d *Document) SnapshotWith(o ParseOptions) (*Snapshot, error) {
 		}
 		returnedError := copySnapshotError(p, err)
 		p.control.check()
-		result = &Snapshot{version: d.Version(), unit: d.Unit(), text: out.String(), graph: graph, parseError: err, stats: p.stats}
+		result = &Snapshot{version: d.Version(), unit: d.Unit(), text: out.String(), graph: graph, parseError: err, stats: p.reportedStats()}
 		if snapshotSharingEnabled {
 			d.previousSnapshot = weak.Make(&result.graph)
 		}

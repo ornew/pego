@@ -197,7 +197,7 @@ func (d *Document) parseWithCapture(o ParseOptions, capture func(*parser, *Node,
 // finishParse transfers reusable state before any traced parser is detached.
 // Mandatory cleanup is unbudgeted, so interruption cannot abort it.
 func (d *Document) finishParse(p *parser) {
-	d.stats = p.stats
+	d.stats = p.reportedStats()
 	d.kids = p.kidStack[:0]
 	clear(d.kids[:cap(d.kids)]) // let go of the nodes, even on a trace panic
 	if reuseDocumentVMValues {

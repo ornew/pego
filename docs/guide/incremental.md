@@ -9,7 +9,7 @@ the new text from scratch.
 |  |  |
 |:--|:--|
 | Input | A text in memory that is edited again and again |
-| API | `Parser.NewDocument`, `Document.Edit`, `Document.EditBatch`, `Document.Version`, `Document.Parse`, `Document.Stats` |
+| API | `Parser.NewDocument`, `Document.Edit`, `Document.EditBatch`, `Document.Version`, `Document.Parse`, `Document.Stats`, `Document.CacheStats`, `Document.ResetHistory` |
 | Grammar | Any grammar (some are much faster to reparse than others) |
 | You get | A full tree for every version of the text |
 | Saves | Time: unchanged parts are not parsed again |
@@ -24,6 +24,7 @@ The design is in [design record 007](../design/007-streaming-and-incremental-par
 - [The model](#the-model)
 - [The API](#the-api)
 - [A walkthrough with `Stats`](#a-walkthrough-with-stats)
+- [Managing reuse history](#managing-reuse-history)
 - [What is reused, and why](#what-is-reused-and-why)
 - [Writing grammars that reuse well](#writing-grammars-that-reuse-well)
 - [Performance and limits](#performance-and-limits)
@@ -58,7 +59,9 @@ reuse.
 | `doc.Snapshot(opts...)` | Parse and capture the current revision as an immutable read-only result. Ordinary syntax and recovered errors are stored in the Snapshot; interruption or an option that changes the fixed unit/backend/mode returns no Snapshot. |
 | `snapshot.Root()`, `snapshot.Text()`, `snapshot.Error()` | Read the captured root, exact text and diagnostic for that revision. The Snapshot does not move when the Document changes. |
 | `snapshot.Materialize()` | Make an independent mutable `*Node` graph for existing Node consumers. |
-| `doc.Stats()` | `ParseStats{Evaluated, Reused}` of the last `Parse`: rule bodies run, and results used again (memo results and the elements of resumed repetitions). |
+| `doc.Stats()` | Last-parse `ParseStats`: `Evaluated` counts rule bodies run; `MemoHits` and `ResumedElements` count the two kinds of reuse, and `Reused` remains their sum. |
+| `doc.CacheStats()` | Read-only, point-in-time reuse-cache counts and an approximate size of its retained backing storage. |
+| `doc.ResetHistory()` | Drop memo, repetition and reusable parser history while preserving current text, version, construction options and last-parse statistics. The next parse starts fresh. |
 | `doc.Text()` | The current text. |
 | `doc.Version()` / `doc.Unit()` | The opaque current text revision and the fixed position unit. A new document starts at sequence 1; parsing does not advance it. |
 | `doc.EditBatch(base, edits...)` | Apply a batch of nonoverlapping replacements in coordinates from `base`. A stale/foreign version or invalid edit rejects the entire batch. A successful nonempty batch advances one revision and does not parse. |
@@ -155,6 +158,31 @@ unsupported custom value returns `*pego.SnapshotCaptureError` and no Snapshot.
 cycles, nil slots, and nil versus allocated-empty collections. Use it when an
 existing API requires `*Node`; each call creates a separate graph.
 
+## Managing Reuse History
+
+An editor can choose when to release a document's incremental reuse history. For example, after a large replacement or when a file has been idle, call `doc.ResetHistory()` and let the next `doc.Parse()` build a fresh memo. This is an explicit policy decision; the parser applies no automatic byte threshold. Reset keeps the text, its version, the selected unit and backend, construction defaults and the last parse's `Stats`. Earlier returned trees stop moving through future reuse after reset, though movement from parses before reset is not undone. See [design record 035](../design/035-incremental-cache-controls.md) for the cache-control contract.
+
+```go
+before := doc.CacheStats()
+doc.ResetHistory()
+after := doc.CacheStats() // all four fields are zero immediately after reset
+_, err := doc.Parse()      // parse the current text with fresh reuse history
+_ = before
+_ = after
+_ = err
+```
+
+`CacheStats` describes retained history at the time of inspection:
+
+| Field | Meaning |
+|:--|:--|
+| `LiveMemoEntries` | Memo entries currently linked for reuse. |
+| `RetiredMemoEntries` | Retired memo entries retained for reuse. |
+| `RepetitionElements` | Elements retained in resumable repetition runs. |
+| `EstimatedBytes` | Approximate cache-owned backing storage. |
+
+`EstimatedBytes` excludes document text, caller-held result trees, shared strings, shared expectation/error/environment payloads, map buckets and allocator overhead. It is neither process heap use nor a memory cap. Inspection traverses the cache and should be done by the same owner that edits and parses the document. `Stats` describes the previous parse instead: `Reused` remains the sum of `MemoHits` and `ResumedElements` for that parse.
+
 ## A Walkthrough With `Stats`
 
 ```go
@@ -182,11 +210,12 @@ func main() {
 
 	step := func(what string) {
 		node, err := doc.Parse()
+		st := doc.Stats()
 		if err != nil {
-			fmt.Printf("%-28s %+v  error: %v\n", what, doc.Stats(), err)
+			fmt.Printf("%-28s {Evaluated:%d Reused:%d}  error: %v\n", what, st.Evaluated, st.Reused, err)
 			return
 		}
-		fmt.Printf("%-28s %+v  %v\n", what, doc.Stats(), node)
+		fmt.Printf("%-28s {Evaluated:%d Reused:%d}  %v\n", what, st.Evaluated, st.Reused, node)
 	}
 
 	step("first parse")

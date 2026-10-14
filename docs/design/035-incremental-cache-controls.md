@@ -1,12 +1,12 @@
 # 035. Incremental Cache Controls
 
-- **Status**: Proposed
+- **Status**: Implemented
 - **Author**: @ornew
 - **Date**: 2026-10-11
 
 ## Summary
 
-Add an explicit way for a `Document` owner to discard incremental reuse history while keeping its current text and parse configuration. Expose cache accounting separately from the last parse's evaluation statistics, and report resumed repetition elements independently from memo hits. The reset is manual and deterministic; it is not an automatic memory budget.
+The API gives a `Document` owner an explicit way to discard incremental reuse history while keeping its current text and parse configuration. Cache accounting is separate from the last parse's evaluation statistics, and resumed repetition elements are reported independently from memo hits. Reset is manual and deterministic; it is not an automatic memory budget.
 
 ```go
 type CacheStats struct {
@@ -20,13 +20,13 @@ func (d *Document) ResetHistory()
 func (d *Document) CacheStats() CacheStats
 ```
 
-The API is proposed. Preserve the existing combined meaning of `ParseStats.Reused`: it counts both memo-result reuse and elements reused by repetition resumption. Add `MemoHits` and `ResumedElements` so callers can see the two sources separately. Existing callers therefore keep their current `Reused` result.
+The API is implemented. `ParseStats.Reused` retains its combined meaning: it counts memo-result reuse and elements reused by repetition resumption. `MemoHits` and `ResumedElements` expose those sources separately, so existing callers keep the same `Reused` result.
 
 ## Motivation
 
-`Document` incrementally reuses memo results and repetition runs. Memo entries can retire into an internal free list while their slabs remain allocated, and the document retains repetition records and VM scratch between parses. There is currently no public reset or cache-size view. The existing public `Stats` reports `Evaluated` and `Reused`; repetition resumption is an internal counter, so memo hits can make the benefit or loss of repetition reuse hard to see. See [`Document`](../../internal/engine/document.go), [`memoTable`](../../internal/engine/memo.go), [`resume.go`](../../internal/engine/resume.go), and the public [`Document` API](../../pego.go).
+`Document` incrementally reuses memo results and repetition runs. Memo entries can retire into an internal free list while their slabs remain allocated, and the document retains repetition records and VM scratch between parses. Before this API, callers had no public reset or cache-size view, and `Stats.Reused` combined memo hits with repetition resumption. See [`Document`](../../internal/engine/document.go), [`memoTable`](../../internal/engine/memo.go), [`resume.go`](../../internal/engine/resume.go), and the public [`Document` API](../../pego.go).
 
-This record proposes observability and an explicit lifecycle control. It makes no claim that an automatic cap is needed or that reset improves parse speed.
+The implemented API provides observability and an explicit lifecycle control. It does not impose an automatic memory cap or claim that reset improves parse speed.
 
 ## Goals
 
@@ -45,7 +45,7 @@ This record proposes observability and an explicit lifecycle control. It makes n
 
 ### Public Behavior and Contracts
 
-`ResetHistory` clears the document's memo table, retired memo-entry pool, repetition-run records, edit log used to validate reuse, and reusable parser stacks. It also drops derived offset and line tables so they can be rebuilt lazily. It preserves the current text and the document's construction settings. It does not parse, reset `Stats`, or return an error. The next `Parse` is a fresh parse of the current text; later edits and parses resume incremental reuse from that new baseline.
+`ResetHistory` clears the document's memo table, retired memo-entry pool, repetition-run records, edit log used to validate reuse, reusable parser stacks, and the weak snapshot-sharing candidate. It also drops derived offset and line tables so they can be rebuilt lazily. It preserves the current text and the document's construction settings. It does not parse, reset `Stats`, or return an error. The next `Parse` is a fresh parse of the current text; later edits and parses resume incremental reuse from that new baseline.
 
 Calling `ResetHistory` detaches memo-owned trees from future reuse. A tree returned before reset remains readable and is no longer moved by later document parses. It may already reflect edits and node moves that happened before reset; the method does not restore an earlier version. As elsewhere, do not read or edit the document concurrently with `Parse`, `Edit`, `ResetHistory`, or cache inspection.
 
@@ -65,12 +65,9 @@ The edit log can be cleared because the memo and runs it relates to are discarde
 
 This is an additive Go API on `Document`, available with Closure, recursive Bytecode and BytecodeIterative wherever the current document can be created. `ResetHistory` preserves the selected unit/backend and trace settings. Generated parsers and TypeScript have no `Document` API and are unaffected. Existing `Stats` fields and meanings remain stable; adding a field is source-compatible for keyed literals but may affect unkeyed `ParseStats` literals, which should be called out in release notes.
 
-### Implementation Sequence
+### Implementation Summary
 
-1. Add separate memo-hit and resumed-element counters while retaining the existing combined `Reused` count; test root memo hits, no-edit parses and resumed repetitions.
-2. Add a non-mutating cache accounting walk with capacity estimates and document exclusions.
-3. Add `ResetHistory`; verify current text/options survive and the next parse agrees with a fresh parse. Verify old results stop changing after reset and new history repopulates normally.
-4. Add examples and a guide section showing an editor-controlled reset policy without prescribing a universal threshold.
+`ParseStats` derives memo-hit and resumed-element counts at parse completion while preserving the combined `Reused` count. This avoids adding counter increments to each parse operation. Cache accounting is read-only and estimates owned backing capacities.
 
 ## Alternatives Considered
 
@@ -80,14 +77,38 @@ This is an additive Go API on `Document`, available with Closure, recursive Byte
 - **Report exact memory bytes.** Go heap object headers, allocator rounding, and tree/string sharing prevent a portable exact process-memory number. Report an estimate over named cache-owned buffers, not RSS.
 - **Clear the document text and derived input arrays.** That changes the document rather than only its history and conflicts with the requirement to preserve current text. Reset may discard rebuildable indexes but keeps the active input representation.
 
-## Testing
-
-Cover all three backends and both units. Check that cache stats distinguish linked and retired memo entries, include repetition state, remain unchanged by inspection, and return zero after reset. Check that `ResetHistory` preserves `Text`, unit/backend/depth/trace configuration, and last `ParseStats`; the next parse matches a fresh parse in tree, spans, recovered errors and ordinary errors. Retain a returned tree across reset and a later parse to verify it stops moving after reset. Exercise reset before first parse, after a large edit, after normal failure, after a resumed repetition, and after an aborted parse; check no stale memo/run/stack references remain.
-
 ## Performance and Results
 
-Use identical documents with no edit, one small edit, many edits before a parse, and long repetitions. Measure reset time, cache accounting time, cache bytes before/after, next-parse evaluations, allocations and retained heap. Separate short and multi-megabyte text, all backends and both units. Compare an unreset document with an explicit reset and a fresh document. No performance result is asserted here.
+Measurements below are limited to reparse throughput and allocations in two profiles. Cache-accounting/reset latency, retained heap, other backends, units, and workloads remain unmeasured.
+
+On Go 1.27.1, Apple M3 Max (darwin/arm64), `GOMAXPROCS=16`, `GOGC=100`, with `GOMEMLIMIT` off, `BenchmarkDocumentReparse` edited one character and parsed a 100k-line document. Five alternating candidate/base pairs used 300 ms per sample. In Closure/CodePoints, the paired candidate/base median time ratio was 0.9965 (range 0.9626–1.0156), with B/op unchanged at 844,279 and 21 allocations/op. In Iterative VM/Bytes, the median ratio was 0.9929 (range 0.9736–0.9973), B/op changed from 853,524 to 853,525, and allocations stayed at 32/op. These two profiles show no material timing regression; other paths are unmeasured.
 
 ## Limitations and Open Questions
 
-The byte estimate excludes document text and caller-owned trees; it must not be presented as a memory cap. The initial design has no automatic reset threshold. If cache telemetry is too costly to compute by traversal, a separately measured maintained counter may be considered, with overflow and reset invariants documented. No maintainer choice is required before prototyping the proposed explicit reset and estimate.
+The byte estimate excludes document text and caller-owned trees; it must not be presented as a memory cap. There is no automatic reset threshold. If cache telemetry becomes too costly to compute by traversal, a maintained counter would need separate measurement and documented overflow/reset invariants.
+
+## Implemented Scope
+
+The engine and public API provide `Document.ResetHistory` and `Document.CacheStats`
+without changing text, construction settings, document version, or last-parse
+statistics. Engine parse statistics now expose memo hits and resumed elements
+separately while preserving their combined legacy `Reused` count. Reset replaces
+the memo table rather than recycling its slabs and releases the edit log,
+repetition records, snapshot-sharing candidate, reusable value/child buffers,
+and rebuildable flat-input indexes. Caller-held old trees are detached from future
+reuse; previously applied movement is preserved.
+
+The estimate uses backing capacities for memo slots, slab directories/slabs,
+dense and sparse seen buffers, seen-call counters, repetition element buffers,
+the edit log, and cached child/value stacks. It includes repetition record
+headers. It excludes map bucket storage, shared expectation/error/environment
+payloads, tree storage, source text, allocator metadata, and the empty memo
+header retained after reset. These exclusions avoid treating shared slices as
+separately owned allocations. Counts and capacity inspection allocate no copies.
+
+Focused test cases cover reset before parsing, read-only accounting, live versus
+retired entries, all engine backends and position units, construction option and
+last-stat preservation, fresh-parse equivalence after a large edit and after
+repetition resumption, recovered and ordinary syntax errors, prior-tree
+ownership, and the public reuse-counter invariant
+`Reused == MemoHits + ResumedElements`.

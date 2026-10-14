@@ -202,8 +202,19 @@ type memoEntry struct {
 
 // Stats counts rule evaluations and memo uses during a parse.
 type Stats struct {
-	Evaluated int // number of rule body evaluations
-	Reused    int // number of memo results reused
+	Evaluated       int // number of rule body evaluations
+	Reused          int // combined memo hits and resumed repetition elements
+	MemoHits        int // memo-result reuse
+	ResumedElements int // repetition elements reused
+}
+
+// reportedStats derives the public reuse breakdown from counters already
+// maintained by the parser, avoiding another increment for every reused item.
+func (p *parser) reportedStats() Stats {
+	s := p.stats
+	s.ResumedElements = p.resumed
+	s.MemoHits = s.Reused - p.resumed
+	return s
 }
 
 // frame holds the capture values for each rule body or repetition element.
