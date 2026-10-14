@@ -8,7 +8,8 @@
 
 Generated typed parsers allocate returned structs, terminals, matches and list backing cells in chunks. A small returned value can keep unused siblings in those chunks alive. This design considers preserving slab allocation while clearing only storage proven unreachable from the final returned value. Clearing must wait until parsing, recovery, conversion and publication have finished; clearing during backtracking or action evaluation is unsafe.
 
-The current prototype has separate full-sweep and bounded-sweep generation controls. Both are private, generation-only and disabled by default. They apply to generated Go typed results on direct typed and conversion-based `ParseAST`/`ParseRuleAST` paths, including returned `Match` values and owned backing cells. Plain Node `Parse`, `Recognize`, the engine/VM backends and generated TypeScript do not use these controls. No default allocation policy has changed.
+The current prototype has separate full-sweep and bounded-sweep generation controls. Both are private, generation-only and disabled by default. They apply to generated Go typed results on direct typed and conversion-based `ParseAST`/`ParseRuleAST` paths, including returned `Match` values and owned backing cells. Plain Node `Parse`, `Recognize`, the engine/VM backends and generated TypeScript do not use these controls. The full and bounded sweep controls remain default-off.
+A separate per-owner allocation bootstrap is adopted in [optimization record 098](../optimizations/098-bootstrap-generated-typed-output-allocations.md). It changes the allocation pattern before slab growth rather than clearing unreachable cells; its measurements do not change the status of these sweep controls.
 
 ## Current Candidate Scope
 

@@ -14903,8 +14903,9 @@ func astPtrBool(v any) *bool {
 // astChunk owns unused values and the next allocation size for one type.
 // Handed-out values are never reused, even when a parse discards them.
 type astChunk[T any] struct {
-	free []T
-	next int
+	free      []T
+	next      int
+	bootstrap uint8
 }
 
 // grow starts small and doubles up to limit. The request is always satisfied.
@@ -14923,9 +14924,15 @@ func (s *astChunk[T]) grow(n, initial, limit int) {
 	}
 }
 
-// astNew returns a new zero value from a chunk that grows from 8 to 256 values.
+// astNew allocates the first three values independently so a later
+// published value cannot retain discarded early siblings through a chunk.
+// Later values use the original 8-to-256 chunk growth.
 func astNew[T any](s *astChunk[T]) *T {
 	if len(s.free) == 0 {
+		if s.bootstrap < 3 {
+			s.bootstrap++
+			return new(T)
+		}
 		s.grow(1, 8, 256)
 	}
 	v := &s.free[0]
@@ -14933,8 +14940,8 @@ func astNew[T any](s *astChunk[T]) *T {
 	return v
 }
 
-// astSlice returns n zero values with capacity n, so appending cannot overwrite
-// another returned slice. Small-list chunks grow from 64 to 1,024 elements.
+// astSlice allocates the first nonempty small list independently to keep
+// its backing values separate from later published lists of the same type.
 func astSlice[T any](s *astChunk[T], n int) []T {
 	if n == 0 {
 		return []T{} // an empty list, not nil
@@ -14943,6 +14950,10 @@ func astSlice[T any](s *astChunk[T], n int) []T {
 		return make([]T, n)
 	}
 	if len(s.free) < n {
+		if s.bootstrap == 0 {
+			s.bootstrap = 1
+			return make([]T, n)
+		}
 		s.grow(n, 64, 1024)
 	}
 	v := s.free[:n:n]

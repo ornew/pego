@@ -9,8 +9,8 @@ import (
 	"github.com/ornew/pego/internal/syntax"
 )
 
-// TestExportOrdinaryTypedSweepBenchmarks writes same-generator reference and
-// sweep variants for the seven parsers used by bench.BenchmarkParse. The
+// TestExportOrdinaryTypedSweepBenchmarks writes same-generator reference,
+// legacy-allocation and sweep variants for the seven benchmark parsers. The
 // output root is disposable and separate from committed bench/gen sources.
 // PEGO_TYPED_OUTPUT_SWEEP_EXPORT_DIR preserves both variants for later tests
 // and measurements; an empty setting uses t.TempDir.
@@ -49,12 +49,13 @@ func TestExportOrdinaryTypedSweepBenchmarks(t *testing.T) {
 			}
 			var reference []byte
 			for _, variant := range []struct {
-				name           string
-				sweep, bounded bool
-			}{{"ref", false, false}, {"sweep", true, false}, {"bounded", false, true}} {
+				name                   string
+				sweep, bounded, legacy bool
+			}{{"ref", false, false, false}, {"legacy", false, false, true}, {"sweep", true, false, false}, {"bounded", false, true, false}} {
 				code, err := Generate(g, GenOptions{
 					Package: spec.name, Start: "main", Types: true, Recognize: true,
 					enableTypedOutputSweep: variant.sweep, enableBoundedTypedOutputSweep: variant.bounded,
+					disableTypedOutputBootstrap: variant.legacy,
 				})
 				if err != nil {
 					t.Fatalf("generate %s: %v", variant.name, err)
@@ -86,7 +87,7 @@ func TestExportOrdinaryTypedSweepBenchmarks(t *testing.T) {
 	for _, spec := range grammars {
 		packages = append(packages, spec.name)
 	}
-	for _, variant := range []string{"ref", "sweep", "bounded"} {
+	for _, variant := range []string{"ref", "legacy", "sweep", "bounded"} {
 		writeOrdinaryOverlay(t, root, repoRoot, variant, packages)
 	}
 }

@@ -129,13 +129,18 @@ func ParseAST(input string, opts ...ParseOption) (%s, error) {
 		}
 	}
 	b.WriteString(helpers)
+	bootstrap := !g.disableTypedOutputBootstrap && !g.enableTypedOutputSweep && !g.enableBoundedTypedOutputSweep
 	if g.disableTypedObjectSlabs {
 		b.WriteString(astIndividualObjectHelper)
+	} else if bootstrap {
+		b.WriteString(astBootstrapObjectHelper)
 	} else {
 		b.WriteString(astObjectSlabHelper)
 	}
 	if g.disableTypedListSlabs {
 		b.WriteString(astIndividualListHelper)
+	} else if bootstrap {
+		b.WriteString(astBootstrapListHelper)
 	} else {
 		b.WriteString(astListSlabHelper)
 	}
@@ -799,6 +804,7 @@ func astPtrBool(v any) *bool {
 type astChunk[T any] struct {
 	free []T
 	next int
+	bootstrap uint8
 }
 
 // grow starts small and doubles up to limit. The request is always satisfied.
@@ -831,6 +837,24 @@ func astNew[T any](s *astChunk[T]) *T {
 
 `
 
+const astBootstrapObjectHelper = `// astNew allocates the first three values independently so a later
+// published value cannot retain discarded early siblings through a chunk.
+// Later values use the original 8-to-256 chunk growth.
+func astNew[T any](s *astChunk[T]) *T {
+	if len(s.free) == 0 {
+		if s.bootstrap < 3 {
+			s.bootstrap++
+			return new(T)
+		}
+		s.grow(1, 8, 256)
+	}
+	v := &s.free[0]
+	s.free = s.free[1:]
+	return v
+}
+
+`
+
 const astListSlabHelper = `// astSlice returns n zero values with capacity n, so appending cannot overwrite
 // another returned slice. Small-list chunks grow from 64 to 1,024 elements.
 func astSlice[T any](s *astChunk[T], n int) []T {
@@ -848,6 +872,29 @@ func astSlice[T any](s *astChunk[T], n int) []T {
 	return v
 }
 
+
+`
+
+const astBootstrapListHelper = `// astSlice allocates the first nonempty small list independently to keep
+// its backing values separate from later published lists of the same type.
+func astSlice[T any](s *astChunk[T], n int) []T {
+	if n == 0 {
+		return []T{} // an empty list, not nil
+	}
+	if n > 256 {
+		return make([]T, n)
+	}
+	if len(s.free) < n {
+		if s.bootstrap == 0 {
+			s.bootstrap = 1
+			return make([]T, n)
+		}
+		s.grow(n, 64, 1024)
+	}
+	v := s.free[:n:n]
+	s.free = s.free[n:]
+	return v
+}
 
 `
 

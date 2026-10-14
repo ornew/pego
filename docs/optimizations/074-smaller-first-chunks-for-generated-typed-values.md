@@ -2,10 +2,14 @@
 
 - Previously, `astNew` allocated 256 values for the first struct or terminal
   of each type, and `astSlice` allocated 1,024 elements for the first small
-  list. These allocations dominate tiny `ParseAST` inputs. Each type now
-  starts with 8 values and doubles to 256; list chunks start at 64 and
-  double to 1,024, satisfying each requested length. Lists over 256 elements
-  remain exact-size allocations. The direct typed runtime and conversion
+  list. These allocations dominate tiny `ParseAST` inputs. In the revision
+  measured here, each type started with 8 values and doubled to 256; list
+  chunks started at 64 and doubled to 1,024, satisfying each requested
+  length. Lists over 256 elements remained exact-size allocations. A later
+  bootstrap policy allocates separately for each owner’s first
+  three objects and first nonempty small list before these slab sizes apply;
+  see [record 098](098-bootstrap-generated-typed-output-allocations.md).
+  The direct typed runtime and conversion
   after Node parsing share this allocator; ordinary `Parse`, `Recognize`
   and the engine backends do not change.
 - Compare baseline `70511fa` against this allocator change on Go 1.27.1,

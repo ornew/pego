@@ -12,15 +12,16 @@ import (
 )
 
 var typedAllocatorControls = []struct {
-	name                           string
-	objects, lists, sweep, bounded bool
+	name                                   string
+	objects, lists, sweep, bounded, legacy bool
 }{
-	{"slabs", false, false, false, false},
-	{"objects", true, false, false, false},
-	{"slices", false, true, false, false},
-	{"individual", true, true, false, false},
-	{"sweep", false, false, true, false},
-	{"bounded", false, false, false, true},
+	{"slabs", false, false, false, false, false},
+	{"legacy", false, false, false, false, true},
+	{"objects", true, false, false, false, false},
+	{"slices", false, true, false, false, false},
+	{"individual", true, true, false, false, false},
+	{"sweep", false, false, true, false, false},
+	{"bounded", false, false, false, true, false},
 }
 
 // PEGO_TYPED_OUTPUT_RETENTION_DIR preserves the generated fixture for the
@@ -61,12 +62,15 @@ rule small Token = "b"
 			}
 			t.Run(name, func(t *testing.T) {
 				code, err := Generate(g, GenOptions{Package: "typedoutput", Start: "main", Types: true,
-					convertTypes: conversion, disableTypedObjectSlabs: variant.objects, disableTypedListSlabs: variant.lists, enableTypedOutputSweep: variant.sweep, enableBoundedTypedOutputSweep: variant.bounded})
+					convertTypes: conversion, disableTypedObjectSlabs: variant.objects, disableTypedListSlabs: variant.lists, disableTypedOutputBootstrap: variant.legacy, enableTypedOutputSweep: variant.sweep, enableBoundedTypedOutputSweep: variant.bounded})
 				if err != nil {
 					t.Fatal(err)
 				}
-				if strings.Contains(string(code), "disableTypedObjectSlabs") || strings.Contains(string(code), "disableTypedListSlabs") || strings.Contains(string(code), "enableTypedOutputSweep") || strings.Contains(string(code), "enableBoundedTypedOutputSweep") {
+				if strings.Contains(string(code), "disableTypedObjectSlabs") || strings.Contains(string(code), "disableTypedListSlabs") || strings.Contains(string(code), "disableTypedOutputBootstrap") || strings.Contains(string(code), "enableTypedOutputSweep") || strings.Contains(string(code), "enableBoundedTypedOutputSweep") {
 					t.Fatal("generation-only allocator controls leaked into the parser")
+				}
+				if (variant.sweep || variant.bounded || variant.legacy) && strings.Contains(string(code), "s.bootstrap") {
+					t.Fatal("reference or sweep output used untracked bootstrap allocations")
 				}
 				dir := os.Getenv("PEGO_TYPED_OUTPUT_RETENTION_DIR")
 				if dir == "" {

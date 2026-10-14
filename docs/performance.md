@@ -36,6 +36,7 @@ imply deployed behavior.
 **Typed values.** `ParseAST` directly constructs values for JSON, CSV, XML, both calculator grammars and Outline. For those six direct workloads, it takes 0.66–0.87× generated CodePoints `Parse` time and allocates 0.28–0.43× its bytes. Minilang and Recovery use converted output: `ParseAST` takes 1.15× and 1.06× generated `Parse` time and allocates 1.47× and 1.45× its bytes, respectively. On JSON and XML, direct `ParseAST` takes 0.81× and 0.93× standard-library time, with 1.10× and 1.18× its allocated bytes. These operations return different structures and should not be treated as equivalent outputs. CSV constructs typed `File`, `Record` and `Field` values directly.
 
 Generated typed-output liveness cleanup remains a private, default-off Go generation control. Its scope and measurement gates are in [design 034](design/034-typed-output-liveness.md); [record 094](optimizations/094-generated-typed-output-liveness.md) tracks the mechanism. This full snapshot does not settle its throughput or default-policy questions.
+A separate generated-Go typed-allocation bootstrap and its focused measurements are recorded in [optimization record 098](optimizations/098-bootstrap-generated-typed-output-allocations.md); they are not part of this full-suite snapshot.
 
 **Recognition.** Across all eight workloads in CodePoints, closure recognition takes 0.60–0.76× closure Node-parse time, while generated recognition takes 0.40–0.68× generated Node-parse time. Simple grammars can recognize with zero allocations; predicates that read values (XML tag names, Outline indentation), left-recursion growth and recovery still require values or state. Typed `ParseAST` takes 1.67× generated `Recognize` time on JSON and 1.70× on XML because it returns typed values.
 
@@ -110,10 +111,14 @@ Notes:
 
 `internal/engine/gen_typed_output_retention_test.go` exports a generated fixture
 and checks escaped terminal, Match, shared-structure and returned-list values
-in both position units. It exports `slabs`, `objects`, `slices` and `individual`
-subdirectories; the latter three disable object slabs, list slabs or both at
-generation time. The default generated parser is unchanged. Clone reachable text before dropping the parser and input so
-legitimate input-string retention does not count as slab retention.
+in both position units. It exports `slabs`, `legacy`, `objects`, `slices` and
+`individual` subdirectories. `slabs` uses the first-three-object/first-nonempty-
+list bootstrap followed by slabs; `legacy` disables that bootstrap while
+retaining the 8-value and 64-element slab policy. The other controls disable
+object slabs, list slabs or both at generation time. Clone reachable text
+before dropping the parser and input so legitimate input-string retention
+does not count as slab retention. See [record 098](optimizations/098-bootstrap-generated-typed-output-allocations.md)
+for the focused results and limits.
 
 ```bash
 PEGO_TYPED_OUTPUT_RETENTION_DIR=/tmp/typed-output-retention \

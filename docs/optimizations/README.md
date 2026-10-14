@@ -89,6 +89,7 @@ inventory of current mechanisms or reference controls.
 | [095](095-attribute-copy-on-change.md#095-copy-on-change-attribute-normalization) | Copy-on-change attribute normalization | – | – | – | – | – | Applied in shared compilation/generation preprocessing only; no matching-path change; workload-specific allocation savings are measured |
 | [096](096-specialize-generated-go-method-helpers.md#096-specialize-generated-go-work-control-methods) | Generated Go ordinary-method and helper specialization | – | – | – | ✓ | ✓ | Nil-control ordinary paths; adopted with measured residual overhead; further cost reduction is separate follow-up work |
 | [097](097-exact-document-snapshot-record-sharing.md#097-exact-document-snapshot-record-sharing) | Exact immutable record sharing in Document snapshots | ✓ | ✓ | ✓ | – | – | Adopted with a low-reuse copy fallback; retained-memory results and capture-time cost are scoped in record 097 |
+| [098](098-bootstrap-generated-typed-output-allocations.md#098-bootstrap-generated-typed-output-allocations) | Bootstrap generated typed output allocations | – | – | – | – | ✓ | Generated Go typed results only; first objects and nonempty lists allocate independently before slabs; XML Bytes incurs a measured default-path cost |
 
 Not applied, and why:
 
@@ -156,7 +157,7 @@ Not applied, and why:
 - [048. A typed runtime for ParseAST](048-a-typed-runtime-for-parseast.md)
 - [049. First-character dispatch in generated choices](049-first-character-dispatch-in-generated-choices.md)
 - [050. First-character dispatch in the closure backend](050-first-character-dispatch-in-the-closure-backend.md)
-## Records 51–97
+## Records 51–98
 - [051. First-character dispatch in the VMs (instruction set 3)](051-first-character-dispatch-in-the-vms-instruction-set-3.md)
 - [052. Projected repetitions in generated `Parse`](052-projected-repetitions-in-generated-parse.md)
 - [053. Projected repetitions in the engine and the VMs](053-projected-repetitions-in-the-engine-and-the-vms.md)
@@ -204,6 +205,7 @@ Not applied, and why:
 - [095. Copy-on-change attribute normalization](095-attribute-copy-on-change.md)
 - [096. Specialize generated Go work-control methods](096-specialize-generated-go-method-helpers.md)
 - [097. Exact Document Snapshot record sharing](097-exact-document-snapshot-record-sharing.md)
+- [098. Bootstrap generated typed output allocations](098-bootstrap-generated-typed-output-allocations.md)
 
 ## Experiments That Did Not Pay Off
 
