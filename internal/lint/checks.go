@@ -19,6 +19,9 @@ func at(p grammar.Pos) string {
 // --- unreachable-rule ---
 
 func (l *linter) unreachable(start string) {
+	control := l.control
+	control.poll()
+
 	a := l.an
 	if a.rules[start] == nil {
 		return
@@ -26,9 +29,11 @@ func (l *linter) unreachable(start string) {
 	seen := map[string]bool{start: true}
 	stack := []string{start}
 	for len(stack) > 0 {
+		control.poll()
 		n := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
-		for _, c := range calls(a.rules[n].Expr) {
+		for _, c := range callsControlled(a.rules[n].Expr, control) {
+			control.poll()
 			if !seen[c] && a.rules[c] != nil {
 				seen[c] = true
 				stack = append(stack, c)
@@ -37,13 +42,16 @@ func (l *linter) unreachable(start string) {
 	}
 	callers := map[string][]string{}
 	for _, r := range a.order {
-		for _, c := range calls(r.Expr) {
+		control.poll()
+		for _, c := range callsControlled(r.Expr, control) {
+			control.poll()
 			if c != r.Name && !slices.Contains(callers[c], r.Name) {
 				callers[c] = append(callers[c], r.Name)
 			}
 		}
 	}
 	l.eachRule(func(r *grammar.RuleDef) {
+		control.poll()
 		if seen[r.Name] {
 			return
 		}
@@ -60,22 +68,30 @@ func (l *linter) unreachable(start string) {
 // --- shadowed-alternative ---
 
 func (l *linter) shadowed() {
+	control := l.control
+	control.poll()
+
 	calledWithLevel := map[string]bool{}
 	for _, r := range l.an.order {
+		control.poll()
 		walkExpr(r.Expr, func(e grammar.Expr) {
+			control.poll()
 			if ref, ok := e.(*grammar.Ref); ok && ref.Level != "" {
 				calledWithLevel[ref.Name] = true
 			}
 		})
 	}
 	l.eachRule(func(r *grammar.RuleDef) {
+		control.poll()
 		walkExpr(r.Expr, func(e grammar.Expr) {
+			control.poll()
 			switch e := analysisExpr(e).(type) {
 			case *grammar.Choice:
 				l.shadowedAlts(e.Alts, "alternative")
 			case *grammar.OperatorsRule:
 				var operands []grammar.Expr
 				for _, o := range e.Operands {
+					control.poll()
 					operands = append(operands, o.Expr)
 				}
 				l.shadowedAlts(operands, "operand")
@@ -88,11 +104,15 @@ func (l *linter) shadowed() {
 // shadowedAlts reports the alternatives of an ordered choice that can never match because an
 // earlier alternative matches wherever they could.
 func (l *linter) shadowedAlts(alts []grammar.Expr, kind string) {
+	control := l.control
+	control.poll()
+
 	a := l.an
 	if len(alts) < 2 {
 		return
 	}
 	for i, alt := range alts[:len(alts)-1] {
+		control.poll()
 		if a.succeeds(alt) {
 			later := fmt.Sprintf("%s %d (%s)", kind, i+2, show(alts[i+1]))
 			if i+2 < len(alts) {
@@ -107,7 +127,9 @@ func (l *linter) shadowedAlts(alts []grammar.Expr, kind string) {
 		}
 	}
 	for j := 1; j < len(alts); j++ {
+		control.poll()
 		for i := range j {
+			control.poll()
 			switch a.covers(alts[i], alts[j]) {
 			case "duplicate":
 				l.report(CheckShadowedAlt, Error, posOf(alts[j]), "remove it"+a.leftRecursionCaveat(alts[j]),
@@ -128,6 +150,9 @@ func (l *linter) shadowedAlts(alts []grammar.Expr, kind string) {
 // left-call graph. Stronger, input-dependent lint proofs may still change the
 // conservative graph when their suggested fix is applied.
 func (a *analysis) shadowedSuffixCaveat(prior grammar.Expr, later ...grammar.Expr) string {
+	control := a.control
+	control.poll()
+
 	if grammaranalysis.AlwaysSucceeds(prior, a.engineSucceeding) {
 		return ""
 	}
@@ -139,8 +164,13 @@ func (a *analysis) shadowedSuffixCaveat(prior grammar.Expr, later ...grammar.Exp
 // recursion from a conservative graph. Calls whose infeasibility is not established
 // by the compiler still participate, so removing them can change the result.
 func (a *analysis) leftRecursionCaveat(es ...grammar.Expr) string {
+	control := a.control
+	control.poll()
+
 	for _, e := range es {
+		control.poll()
 		for _, c := range a.leftCalls(e, nil) {
+			control.poll()
 			if a.leftRecursive[c] {
 				return " (it calls " + c + ", which is left-recursive, before consuming input: " +
 					"this changes how the left recursion is grown, so compare the results)"
@@ -165,11 +195,15 @@ func plural(s string) string {
 // are the same as those of x, match the same way in x; the rest of x then has to succeed on
 // every input that begins with the text that the rest of y must begin with.
 func (a *analysis) covers(x, y grammar.Expr) string {
+	control := a.control
+	control.poll()
+
 	// Capture names only matter to predicates.
 	caps := !hasPredicate(x) && !hasPredicate(y)
 	xs, ys := items(x, caps), items(y, caps)
 	k := 0
 	for k < len(xs) && k < len(ys) && same(xs[k], ys[k], caps) {
+		control.poll()
 		k++
 	}
 	switch {
@@ -192,19 +226,26 @@ func (a *analysis) covers(x, y grammar.Expr) string {
 // declared among equals. Operators of different levels are compared only if the rule is never
 // called with a level (which can leave out the earlier one).
 func (l *linter) shadowedOperators(pr *grammar.OperatorsRule, acrossLevels bool) {
+	control := l.control
+	control.poll()
+
 	type op struct {
 		*grammar.OperatorsRuleOperator
 		level int
 	}
 	var ops []op
 	for i, lv := range pr.Levels {
+		control.poll()
 		for _, o := range lv.Operators {
+			control.poll()
 			ops = append(ops, op{o, i})
 		}
 	}
-	prefix := func(o op) bool { return o.Kind == grammar.Prefix }
+	prefix := func(o op) bool { control.poll(); return o.Kind == grammar.Prefix }
 	for j, oj := range ops {
+		control.poll()
 		for _, oi := range ops[:j] {
+			control.poll()
 			if prefix(oi) != prefix(oj) || (!acrossLevels && oi.level != oj.level) || !same(oi.Expr, oj.Expr, true) {
 				continue
 			}
@@ -219,9 +260,14 @@ func (l *linter) shadowedOperators(pr *grammar.OperatorsRule, acrossLevels bool)
 // --- never-matches ---
 
 func (l *linter) neverMatches() {
+	control := l.control
+	control.poll()
+
 	a := l.an
 	l.eachRule(func(r *grammar.RuleDef) {
+		control.poll()
 		walkExpr(r.Expr, func(e grammar.Expr) {
+			control.poll()
 			s, ok := e.(*grammar.Seq)
 			if !ok {
 				return
@@ -257,45 +303,54 @@ func (l *linter) neverMatches() {
 	var stuck []string
 	edges := map[string][]string{}
 	for _, r := range a.order {
+		control.poll()
 		if a.baseCase[r.Name] {
 			continue
 		}
 		stuck = append(stuck, r.Name)
-		for _, c := range calls(r.Expr) {
+		for _, c := range callsControlled(r.Expr, control) {
+			control.poll()
 			if a.rules[c] != nil && !a.baseCase[c] && !slices.Contains(edges[r.Name], c) {
 				edges[r.Name] = append(edges[r.Name], c)
 			}
 		}
 	}
 	report := map[string][]string{} // rule -> its group
-	for _, group := range sccs(stuck, edges) {
+	for _, group := range sccsControlled(stuck, edges, control) {
+		control.poll()
 		if len(group) == 1 && !slices.Contains(edges[group[0]], group[0]) {
 			continue // not recursive
 		}
 		assumed := map[string]bool{}
 		for _, n := range stuck {
+			control.poll()
 			if !slices.Contains(group, n) {
 				assumed[n] = true
 			}
 		}
 		for n := range a.baseCase {
+			control.poll()
 			assumed[n] = true
 		}
 		for changed := true; changed; {
+			control.poll()
 			changed = false
 			for _, n := range group {
+				control.poll()
 				if !assumed[n] && a.mayMatchIn(a.rules[n].Expr, assumed, true) {
 					assumed[n], changed = true, true
 				}
 			}
 		}
 		for _, n := range group {
+			control.poll()
 			if !assumed[n] {
 				report[n] = group
 			}
 		}
 	}
 	l.eachRule(func(r *grammar.RuleDef) {
+		control.poll()
 		group, ok := report[r.Name]
 		if !ok {
 			return
@@ -313,16 +368,24 @@ func (l *linter) neverMatches() {
 // sccs returns the strongly connected components of the graph, each in the order of nodes, and
 // the components in the order of their first nodes.
 func sccs(nodes []string, edges map[string][]string) [][]string {
+	return sccsControlled(nodes, edges, nil)
+}
+
+func sccsControlled(nodes []string, edges map[string][]string, control *lintControl) [][]string {
+	control.poll()
+
 	index, low := map[string]int{}, map[string]int{}
 	onStack := map[string]bool{}
 	var stack []string
 	var out [][]string
 	var visit func(v string)
 	visit = func(v string) {
+		control.poll()
 		index[v], low[v] = len(index), len(index)
 		stack = append(stack, v)
 		onStack[v] = true
 		for _, w := range edges[v] {
+			control.poll()
 			if _, seen := index[w]; !seen {
 				visit(w)
 				low[v] = min(low[v], low[w])
@@ -333,6 +396,7 @@ func sccs(nodes []string, edges map[string][]string) [][]string {
 		if low[v] == index[v] {
 			var c []string
 			for {
+				control.poll()
 				w := stack[len(stack)-1]
 				stack = stack[:len(stack)-1]
 				onStack[w] = false
@@ -345,18 +409,21 @@ func sccs(nodes []string, edges map[string][]string) [][]string {
 		}
 	}
 	for _, n := range nodes {
+		control.poll()
 		if _, seen := index[n]; !seen {
 			visit(n)
 		}
 	}
 	pos := map[string]int{}
 	for i, n := range nodes {
+		control.poll()
 		pos[n] = i
 	}
 	for _, c := range out {
-		slices.SortFunc(c, func(x, y string) int { return pos[x] - pos[y] })
+		control.poll()
+		slices.SortFunc(c, func(x, y string) int { control.poll(); return pos[x] - pos[y] })
 	}
-	slices.SortFunc(out, func(x, y []string) int { return pos[x[0]] - pos[y[0]] })
+	slices.SortFunc(out, func(x, y []string) int { control.poll(); return pos[x[0]] - pos[y[0]] })
 	return out
 }
 
@@ -369,12 +436,20 @@ func firstChar(s string) string {
 
 // findCycle returns a path of edges from start back to start (without the final start), or nil.
 func findCycle(start string, edges map[string][]string) []string {
+	return findCycleControlled(start, edges, nil)
+}
+
+func findCycleControlled(start string, edges map[string][]string, control *lintControl) []string {
+	control.poll()
+
 	seen := map[string]bool{}
 	var path []string
 	var visit func(n string) bool
 	visit = func(n string) bool {
+		control.poll()
 		path = append(path, n)
 		for _, m := range edges[n] {
+			control.poll()
 			if m == start {
 				return true
 			}
@@ -397,9 +472,14 @@ func findCycle(start string, edges map[string][]string) []string {
 // --- useless-lookahead ---
 
 func (l *linter) lookaheads() {
+	control := l.control
+	control.poll()
+
 	a := l.an
 	l.eachRule(func(r *grammar.RuleDef) {
+		control.poll()
 		walkExpr(r.Expr, func(e grammar.Expr) {
+			control.poll()
 			switch e := analysisExpr(e).(type) {
 			case *grammar.And:
 				// Captures in a positive lookahead stay in effect, so it may be there for them.
@@ -449,9 +529,14 @@ func hasCaptures(e grammar.Expr) bool {
 // --- nullable-repetition, redundant-optional ---
 
 func (l *linter) nullableRepetitions() {
+	control := l.control
+	control.poll()
+
 	a := l.an
 	l.eachRule(func(r *grammar.RuleDef) {
+		control.poll()
 		walkExpr(r.Expr, func(e grammar.Expr) {
+			control.poll()
 			rp, ok := e.(*grammar.Repeat)
 			if !ok || rp.Max == 0 || !a.isNullable(rp.Expr) {
 				return
@@ -473,9 +558,14 @@ func (l *linter) nullableRepetitions() {
 }
 
 func (l *linter) redundantOptionals() {
+	control := l.control
+	control.poll()
+
 	a := l.an
 	l.eachRule(func(r *grammar.RuleDef) {
+		control.poll()
 		walkExpr(r.Expr, func(e grammar.Expr) {
+			control.poll()
 			// x? has a value (nil) even where x has none, so only an x with a value is the same.
 			if o, ok := e.(*grammar.Optional); ok && visible(o.Expr) && a.succeeds(o.Expr) {
 				l.report(CheckRedundantOptional, Warning, o.Diagnostic(), "remove the ?",
@@ -488,21 +578,29 @@ func (l *linter) redundantOptionals() {
 // --- unused-capture ---
 
 func (l *linter) unusedCaptures() {
+	control := l.control
+	control.poll()
+
 	terminal := map[string]bool{}
 	for _, t := range l.an.g.Types() {
+		control.poll()
 		if _, ok := t.Spec.(*grammar.TerminalSpec); ok {
 			terminal[t.Name] = true
 		}
 	}
 	l.eachRule(func(r *grammar.RuleDef) {
+		control.poll()
 		if pr, ok := r.Expr.(*grammar.OperatorsRule); ok {
 			for _, o := range pr.Operands {
+				control.poll()
 				if o.Action != nil {
 					l.scopeCaptures(o.Expr, o.Action, usesIndex(o.Action), "the operand's action does not refer to it")
 				}
 			}
 			for _, lv := range pr.Levels {
+				control.poll()
 				for _, op := range lv.Operators {
+					control.poll()
 					if op.Action != nil {
 						l.scopeCaptures(op.Expr, op.Action, false, "the operator's action does not refer to it")
 					}
@@ -524,11 +622,15 @@ func (l *linter) unusedCaptures() {
 // repetitions whose values are discarded. kept reports whether the value of the body itself can
 // be read ($n in the action).
 func (l *linter) scopeCaptures(body grammar.Expr, action grammar.Term, kept bool, why string) {
+	control := l.control
+	control.poll()
+
 	refs := map[string]bool{}
-	captureRefs(action, nil, refs)
-	scopePredicateRefs(body, refs)
+	captureRefsControlled(action, nil, refs, control)
+	scopePredicateRefsControlled(body, refs, control)
 	var visit func(e grammar.Expr, inCapture bool)
 	visit = func(e grammar.Expr, inCapture bool) {
+		control.poll()
 		switch e := analysisExpr(e).(type) {
 		case *grammar.Capture:
 			if !refs[e.Name] {
@@ -539,7 +641,7 @@ func (l *linter) scopeCaptures(body grammar.Expr, action grammar.Term, kept bool
 		case *grammar.Repeat:
 			l.elementCaptures(e.Expr, kept || inCapture)
 		default:
-			forChildren(e, func(c grammar.Expr) { visit(c, inCapture) })
+			forChildren(e, func(c grammar.Expr) { control.poll(); visit(c, inCapture) })
 		}
 	}
 	visit(body, false)
@@ -548,10 +650,14 @@ func (l *linter) scopeCaptures(body grammar.Expr, action grammar.Term, kept bool
 // elementCaptures reports the captures in the element of a repetition whose value is discarded
 // (kept is false), unless a predicate of the element reads them.
 func (l *linter) elementCaptures(elem grammar.Expr, kept bool) {
+	control := l.control
+	control.poll()
+
 	refs := map[string]bool{}
-	scopePredicateRefs(elem, refs)
+	scopePredicateRefsControlled(elem, refs, control)
 	var visit func(e grammar.Expr, inCapture bool)
 	visit = func(e grammar.Expr, inCapture bool) {
+		control.poll()
 		switch e := analysisExpr(e).(type) {
 		case *grammar.Capture:
 			if !kept && !refs[e.Name] {
@@ -562,7 +668,7 @@ func (l *linter) elementCaptures(elem grammar.Expr, kept bool) {
 		case *grammar.Repeat:
 			l.elementCaptures(e.Expr, kept || inCapture)
 		default:
-			forChildren(e, func(c grammar.Expr) { visit(c, inCapture) })
+			forChildren(e, func(c grammar.Expr) { control.poll(); visit(c, inCapture) })
 		}
 	}
 	visit(elem, false)
@@ -602,52 +708,68 @@ func forChildren(e grammar.Expr, f func(grammar.Expr)) {
 // scopePredicateRefs adds the captures that the predicates of a scope read (not those in the
 // elements of repetitions, which are scopes of their own) to refs.
 func scopePredicateRefs(e grammar.Expr, refs map[string]bool) {
+	scopePredicateRefsControlled(e, refs, nil)
+}
+
+func scopePredicateRefsControlled(e grammar.Expr, refs map[string]bool, control *lintControl) {
+	control.poll()
+
 	switch e := analysisExpr(e).(type) {
 	case *grammar.Predicate:
-		captureRefs(e.Term, nil, refs)
+		captureRefsControlled(e.Term, nil, refs, control)
 	case *grammar.Repeat:
 	default:
-		forChildren(e, func(c grammar.Expr) { scopePredicateRefs(c, refs) })
+		forChildren(e, func(c grammar.Expr) { control.poll(); scopePredicateRefsControlled(c, refs, control) })
 	}
 }
 
 // captureRefs adds the names of the captures that t refers to ($name, not counting function
 // parameters) to refs.
 func captureRefs(t grammar.Term, params []string, refs map[string]bool) {
+	captureRefsControlled(t, params, refs, nil)
+}
+
+func captureRefsControlled(t grammar.Term, params []string, refs map[string]bool, control *lintControl) {
+	control.poll()
+
 	switch t := t.(type) {
 	case *grammar.TermGroup:
-		captureRefs(t.Term, params, refs)
+		captureRefsControlled(t.Term, params, refs, control)
 	case *grammar.CaptureRef:
 		if !slices.Contains(params, t.Name) {
 			refs[t.Name] = true
 		}
 	case *grammar.Lambda:
-		captureRefs(t.Body, append(slices.Clip(params), t.Params...), refs)
+		captureRefsControlled(t.Body, append(slices.Clip(params), t.Params...), refs, control)
 	case *grammar.Member:
-		captureRefs(t.X, params, refs)
+		captureRefsControlled(t.X, params, refs, control)
 	case *grammar.New:
 		for _, fi := range t.Fields {
-			captureRefs(fi.Value, params, refs)
+			control.poll()
+			captureRefsControlled(fi.Value, params, refs, control)
 		}
 	case *grammar.ListConstructor:
 		for _, item := range t.Items {
-			captureRefs(item, params, refs)
+			control.poll()
+			captureRefsControlled(item, params, refs, control)
 		}
 	case *grammar.TerminalConstructor:
 		for _, arg := range t.Args {
-			captureRefs(arg, params, refs)
+			control.poll()
+			captureRefsControlled(arg, params, refs, control)
 		}
 	case *grammar.Call:
 		for _, a := range t.Args {
-			captureRefs(a, params, refs)
+			control.poll()
+			captureRefsControlled(a, params, refs, control)
 		}
 	case *grammar.Binary:
-		captureRefs(t.L, params, refs)
-		captureRefs(t.R, params, refs)
+		captureRefsControlled(t.L, params, refs, control)
+		captureRefsControlled(t.R, params, refs, control)
 	case *grammar.Unary:
-		captureRefs(t.X, params, refs)
+		captureRefsControlled(t.X, params, refs, control)
 	case *grammar.Assign:
-		captureRefs(t.Value, params, refs)
+		captureRefsControlled(t.Value, params, refs, control)
 	}
 }
 
@@ -664,13 +786,20 @@ func usesIndex(t grammar.Term) bool {
 // --- duplicate-capture ---
 
 func (l *linter) duplicateCaptures() {
+	control := l.control
+	control.poll()
+
 	l.eachRule(func(r *grammar.RuleDef) {
+		control.poll()
 		if pr, ok := r.Expr.(*grammar.OperatorsRule); ok {
 			for _, o := range pr.Operands {
+				control.poll()
 				l.scopeDuplicates(o.Expr)
 			}
 			for _, lv := range pr.Levels {
+				control.poll()
 				for _, op := range lv.Operators {
+					control.poll()
 					l.scopeDuplicates(op.Expr)
 				}
 			}
@@ -682,12 +811,16 @@ func (l *linter) duplicateCaptures() {
 
 // scopeDuplicates reports the names captured twice in one match of a scope.
 func (l *linter) scopeDuplicates(scope grammar.Expr) {
+	control := l.control
+	control.poll()
+
 	// captured returns the captures that a match of e can make, in evaluation order, with one
 	// capture per name (the first).
 	var captured func(e grammar.Expr) []*grammar.Capture
 	merge := func(acc []*grammar.Capture, cs []*grammar.Capture, report bool) []*grammar.Capture {
 		for _, c := range cs {
-			i := slices.IndexFunc(acc, func(p *grammar.Capture) bool { return p.Name == c.Name })
+			control.poll()
+			i := slices.IndexFunc(acc, func(p *grammar.Capture) bool { control.poll(); return p.Name == c.Name })
 			switch {
 			case i < 0:
 				acc = append(acc, c)
@@ -707,6 +840,7 @@ func (l *linter) scopeDuplicates(scope grammar.Expr) {
 		case *grammar.Seq:
 			var acc []*grammar.Capture
 			for _, it := range e.Items {
+				control.poll()
 				acc = merge(acc, captured(it), true)
 			}
 			return acc
@@ -714,6 +848,7 @@ func (l *linter) scopeDuplicates(scope grammar.Expr) {
 			// The alternatives exclude each other.
 			var acc []*grammar.Capture
 			for _, alt := range e.Alts {
+				control.poll()
 				acc = merge(acc, captured(alt), false)
 			}
 			return acc
@@ -722,7 +857,7 @@ func (l *linter) scopeDuplicates(scope grammar.Expr) {
 			return nil
 		}
 		var acc []*grammar.Capture
-		forChildren(e, func(c grammar.Expr) { acc = merge(acc, captured(c), true) })
+		forChildren(e, func(c grammar.Expr) { control.poll(); acc = merge(acc, captured(c), true) })
 		return acc
 	}
 	captured(scope)
@@ -731,8 +866,13 @@ func (l *linter) scopeDuplicates(scope grammar.Expr) {
 // --- char-class ---
 
 func (l *linter) charClasses() {
+	control := l.control
+	control.poll()
+
 	l.eachRule(func(r *grammar.RuleDef) {
+		control.poll()
 		walkExpr(r.Expr, func(e grammar.Expr) {
+			control.poll()
 			if c, ok := e.(*grammar.CharClass); ok {
 				l.charClass(c)
 			}
@@ -741,12 +881,17 @@ func (l *linter) charClasses() {
 }
 
 func (l *linter) charClass(c *grammar.CharClass) {
+	control := l.control
+	control.poll()
+
 	show := func(rg grammar.CharRange) string {
 		return strings.TrimSuffix(strings.TrimPrefix(grammar.FormatExpr(&grammar.CharClass{Ranges: []grammar.CharRange{rg}}), "["), "]")
 	}
 	fixed := &grammar.CharClass{Negated: c.Negated, Ranges: normalize(c.Ranges)}
 	for j, rj := range c.Ranges {
+		control.poll()
 		for _, ri := range c.Ranges[:j] {
+			control.poll()
 			if ri.Lo <= rj.Hi && rj.Lo <= ri.Hi {
 				what := fmt.Sprintf("%s overlaps %s", show(rj), show(ri))
 				if ri == rj {
@@ -759,6 +904,7 @@ func (l *linter) charClass(c *grammar.CharClass) {
 		}
 	}
 	kind := func(r rune) int {
+		control.poll()
 		switch {
 		case '0' <= r && r <= '9':
 			return 1
@@ -773,6 +919,7 @@ func (l *linter) charClass(c *grammar.CharClass) {
 	var spans []string
 	var ranges []grammar.CharRange
 	for _, rg := range c.Ranges {
+		control.poll()
 		kl, kh := kind(rg.Lo), kind(rg.Hi)
 		if kl == 0 || kh == 0 || kl == kh {
 			ranges = append(ranges, rg)
@@ -780,12 +927,14 @@ func (l *linter) charClass(c *grammar.CharClass) {
 		}
 		var extra strings.Builder
 		for r := rg.Lo; r <= rg.Hi; r++ {
+			control.poll()
 			if kind(r) == 0 {
 				extra.WriteRune(r)
 			}
 		}
 		spans = append(spans, fmt.Sprintf("%s also matches %q", show(rg), extra.String()))
 		for _, an := range alnum {
+			control.poll()
 			if lo, hi := max(rg.Lo, an.Lo), min(rg.Hi, an.Hi); lo <= hi {
 				ranges = append(ranges, grammar.CharRange{Lo: lo, Hi: hi})
 			}
@@ -818,19 +967,25 @@ func sameRanges(x, y []grammar.CharRange) bool { return slices.Equal(x, y) }
 // --- right-recursion (hint) ---
 
 func (l *linter) rightRecursion() {
+	control := l.control
+	control.poll()
+
 	a := l.an
 	l.eachRule(func(r *grammar.RuleDef) {
+		control.poll()
 		if _, ok := r.Expr.(*grammar.OperatorsRule); ok {
 			return
 		}
 		var found *grammar.Ref
 		var tails func(e grammar.Expr, before []grammar.Expr)
 		tails = func(e grammar.Expr, before []grammar.Expr) {
+			control.poll()
 			switch e := neutral(e, true).(type) {
 			case *grammar.Ref:
 				if found == nil && e.Name == r.Name && e.Level == "" && !a.isNullable(&grammar.Seq{Items: before}) &&
 					slices.ContainsFunc(before, func(x grammar.Expr) bool {
-						return slices.ContainsFunc(calls(x), func(c string) bool { return c != r.Name })
+						control.poll()
+						return slices.ContainsFunc(callsControlled(x, control), func(c string) bool { control.poll(); return c != r.Name })
 					}) {
 					found = e
 				}
@@ -839,6 +994,7 @@ func (l *linter) rightRecursion() {
 				tails(e.Items[n-1], append(slices.Clip(before), e.Items[:n-1]...))
 			case *grammar.Choice:
 				for _, alt := range e.Alts {
+					control.poll()
 					tails(alt, before)
 				}
 			case *grammar.Optional:
@@ -857,45 +1013,56 @@ func (l *linter) rightRecursion() {
 // --- positions (hint) ---
 
 func (l *linter) positions(start string) {
+	control := l.control
+	control.poll()
+
 	a := l.an
 	// Rules called repeatedly: those called in the element of a repetition, and those on a
 	// recursion cycle, with the rules they call.
 	repeated := map[string]bool{}
 	var mark func(name string)
 	mark = func(name string) {
+		control.poll()
 		if repeated[name] || a.rules[name] == nil {
 			return
 		}
 		repeated[name] = true
-		for _, c := range calls(a.rules[name].Expr) {
+		for _, c := range callsControlled(a.rules[name].Expr, control) {
+			control.poll()
 			mark(c)
 		}
 	}
 	edges := map[string][]string{}
 	for _, r := range a.order {
-		edges[r.Name] = calls(r.Expr)
+		control.poll()
+		edges[r.Name] = callsControlled(r.Expr, control)
 	}
 	for _, r := range a.order {
+		control.poll()
 		walkExpr(r.Expr, func(e grammar.Expr) {
+			control.poll()
 			if rp, ok := e.(*grammar.Repeat); ok && rp.Max != 0 && rp.Max != 1 {
-				for _, c := range calls(rp.Expr) {
+				for _, c := range callsControlled(rp.Expr, control) {
+					control.poll()
 					mark(c)
 				}
 			}
 		})
-		if findCycle(r.Name, edges) != nil {
+		if findCycleControlled(r.Name, edges, control) != nil {
 			mark(r.Name)
 		}
 	}
 	l.eachRule(func(r *grammar.RuleDef) {
+		control.poll()
 		p, ok := positionRead(r)
-		if !ok || !repeated[r.Name] || start != "" && r.Name != start && !reaches(start, r.Name, edges) {
+		if !ok || !repeated[r.Name] || start != "" && r.Name != start && !reachesControlled(start, r.Name, edges, control) {
 			return
 		}
 		// The rules that call it, directly or indirectly, may hold its positions too.
 		n := 0
 		for _, c := range a.order {
-			if c.Name != r.Name && reaches(c.Name, r.Name, edges) {
+			control.poll()
+			if c.Name != r.Name && reachesControlled(c.Name, r.Name, edges, control) {
 				n++
 			}
 		}
@@ -915,12 +1082,20 @@ func (l *linter) positions(start string) {
 
 // reaches reports whether from calls to, directly or indirectly.
 func reaches(from, to string, edges map[string][]string) bool {
+	return reachesControlled(from, to, edges, nil)
+}
+
+func reachesControlled(from, to string, edges map[string][]string, control *lintControl) bool {
+	control.poll()
+
 	seen := map[string]bool{from: true}
 	stack := []string{from}
 	for len(stack) > 0 {
+		control.poll()
 		n := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
 		for _, c := range edges[n] {
+			control.poll()
 			if c == to {
 				return true
 			}
@@ -976,8 +1151,13 @@ func positionRead(r *grammar.RuleDef) (grammar.Pos, bool) {
 // --- long-lookahead (hint) ---
 
 func (l *linter) longLookaheads() {
+	control := l.control
+	control.poll()
+
 	l.eachRule(func(r *grammar.RuleDef) {
+		control.poll()
 		walkExpr(r.Expr, func(e grammar.Expr) {
+			control.poll()
 			var inner grammar.Expr
 			var pos grammar.Pos
 			switch e := analysisExpr(e).(type) {

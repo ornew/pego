@@ -22,9 +22,10 @@ import (
 //
 // None of them account for the nesting limit (WithMaxDepth), which can make any rule call fail.
 type analysis struct {
-	g     *grammar.Grammar
-	order []*grammar.RuleDef
-	rules map[string]*grammar.RuleDef
+	control *lintControl
+	g       *grammar.Grammar
+	order   []*grammar.RuleDef
+	rules   map[string]*grammar.RuleDef
 
 	// nullable[end] holds the rules that may succeed without consuming input at the end of the
 	// input (end = true) or elsewhere (false).
@@ -54,10 +55,17 @@ type analysis struct {
 }
 
 func newAnalysis(g *grammar.Grammar) *analysis {
-	a := &analysis{g: g, rules: map[string]*grammar.RuleDef{}, nullable: [2]map[string]bool{{}, {}}, canMatch: map[string]bool{},
+	return newAnalysisControlled(g, nil)
+}
+
+func newAnalysisControlled(g *grammar.Grammar, control *lintControl) *analysis {
+	control.poll()
+
+	a := &analysis{control: control, g: g, rules: map[string]*grammar.RuleDef{}, nullable: [2]map[string]bool{{}, {}}, canMatch: map[string]bool{},
 		baseCase: map[string]bool{}, leftRecursive: map[string]bool{}, engineNullable: map[string]bool{},
 		matchMemo: map[matchKey]matchResult{}, prefixMemo: map[string]prefixResult{}, busy: map[string]bool{}}
 	for _, r := range g.Rules() {
+		control.poll()
 		if a.rules[r.Name] == nil {
 			a.rules[r.Name] = r
 			a.order = append(a.order, r)
@@ -65,8 +73,10 @@ func newAnalysis(g *grammar.Grammar) *analysis {
 	}
 	// Left recursion first: the other analyses use it (through matchPrefix).
 	for changed := true; changed; {
+		control.poll()
 		changed = false
 		for _, r := range a.order {
+			control.poll()
 			if !a.engineNullable[r.Name] && a.isEngineNullable(r.Expr) {
 				a.engineNullable[r.Name], changed = true, true
 			}
@@ -74,14 +84,17 @@ func newAnalysis(g *grammar.Grammar) *analysis {
 	}
 	left := map[string][]string{}
 	for _, r := range a.order {
+		control.poll()
 		left[r.Name] = a.leftCalls(r.Expr, nil)
 	}
 	// Match the compiler's graph/proof fixed point: breaking one cycle can
 	// prove a rule successful and expose more unreachable call edges.
 	for {
+		control.poll()
 		clear(a.leftRecursive)
 		for _, r := range a.order {
-			if findCycle(r.Name, left) != nil {
+			control.poll()
+			if findCycleControlled(r.Name, left, control) != nil {
 				a.leftRecursive[r.Name] = true
 			}
 		}
@@ -89,6 +102,7 @@ func newAnalysis(g *grammar.Grammar) *analysis {
 		next := map[string][]string{}
 		changed := false
 		for _, r := range a.order {
+			control.poll()
 			next[r.Name] = a.leftCalls(r.Expr, nil)
 			changed = changed || !slices.Equal(left[r.Name], next[r.Name])
 		}
@@ -98,10 +112,13 @@ func newAnalysis(g *grammar.Grammar) *analysis {
 		left = next
 	}
 	for _, end := range []bool{false, true} {
+		control.poll()
 		set := a.nullable[b2i(end)]
 		for changed := true; changed; {
+			control.poll()
 			changed = false
 			for _, r := range a.order {
+				control.poll()
 				if !set[r.Name] && a.nullableAt(r.Expr, end) {
 					set[r.Name], changed = true, true
 				}
@@ -113,8 +130,10 @@ func newAnalysis(g *grammar.Grammar) *analysis {
 		lenient bool
 	}{{a.canMatch, false}, {a.baseCase, true}} {
 		for changed := true; changed; {
+			control.poll()
 			changed = false
 			for _, r := range a.order {
+				control.poll()
 				if !m.set[r.Name] && a.mayMatchIn(r.Expr, m.set, m.lenient) {
 					m.set[r.Name], changed = true, true
 				}
@@ -127,6 +146,9 @@ func newAnalysis(g *grammar.Grammar) *analysis {
 // isEngineNullable reports whether e may succeed without consuming input, as the engine
 // computes it.
 func (a *analysis) isEngineNullable(e grammar.Expr) bool {
+	control := a.control
+	control.poll()
+
 	switch e := analysisExpr(e).(type) {
 	case *grammar.Ref:
 		return a.engineNullable[e.Name]
@@ -136,6 +158,7 @@ func (a *analysis) isEngineNullable(e grammar.Expr) bool {
 		return false
 	case *grammar.Seq:
 		for _, it := range e.Items {
+			control.poll()
 			if !a.isEngineNullable(it) {
 				return false
 			}
@@ -143,6 +166,7 @@ func (a *analysis) isEngineNullable(e grammar.Expr) bool {
 		return true
 	case *grammar.Choice:
 		for _, alt := range e.Alts {
+			control.poll()
 			if a.isEngineNullable(alt) {
 				return true
 			}
@@ -160,6 +184,7 @@ func (a *analysis) isEngineNullable(e grammar.Expr) bool {
 		return a.isEngineNullable(e.Expr)
 	case *grammar.OperatorsRule:
 		for _, o := range e.Operands {
+			control.poll()
 			if a.isEngineNullable(o.Expr) {
 				return true
 			}
@@ -171,11 +196,15 @@ func (a *analysis) isEngineNullable(e grammar.Expr) bool {
 
 // leftCalls returns the rules that e may call before consuming input, as the engine finds them.
 func (a *analysis) leftCalls(e grammar.Expr, acc []string) []string {
+	control := a.control
+	control.poll()
+
 	switch e := analysisExpr(e).(type) {
 	case *grammar.Ref:
 		return append(acc, e.Name)
 	case *grammar.Seq:
 		for _, it := range e.Items {
+			control.poll()
 			acc = a.leftCalls(it, acc)
 			if !a.isEngineNullable(it) {
 				break
@@ -183,6 +212,7 @@ func (a *analysis) leftCalls(e grammar.Expr, acc []string) []string {
 		}
 	case *grammar.Choice:
 		for _, alt := range e.Alts {
+			control.poll()
 			acc = a.leftCalls(alt, acc)
 			if grammaranalysis.AlwaysSucceeds(alt, a.engineSucceeding) {
 				break
@@ -208,6 +238,7 @@ func (a *analysis) leftCalls(e grammar.Expr, acc []string) []string {
 		acc = a.leftCalls(e.Expr, acc)
 		if !grammaranalysis.AlwaysSucceeds(e.Expr, a.engineSucceeding) {
 			for _, at := range e.Attrs {
+				control.poll()
 				if at.Name == "recover" {
 					if skip, ok := at.Arg("skip"); ok {
 						acc = a.leftCalls(skip, acc)
@@ -220,13 +251,16 @@ func (a *analysis) leftCalls(e grammar.Expr, acc []string) []string {
 			acc = a.leftCalls(e.Skip, acc)
 		}
 		for _, o := range e.Operands {
+			control.poll()
 			acc = a.leftCalls(o.Expr, acc)
 			if grammaranalysis.AlwaysSucceeds(o.Expr, a.engineSucceeding) {
 				break
 			}
 		}
 		for _, l := range e.Levels {
+			control.poll()
 			for _, op := range l.Operators {
+				control.poll()
 				if op.Kind == grammar.Prefix {
 					acc = a.leftCalls(op.Expr, acc)
 				}
@@ -237,7 +271,11 @@ func (a *analysis) leftCalls(e grammar.Expr, acc []string) []string {
 }
 
 // mayMatch reports whether e may succeed.
-func (a *analysis) mayMatch(e grammar.Expr) bool { return a.mayMatchIn(e, a.canMatch, false) }
+func (a *analysis) mayMatch(e grammar.Expr) bool {
+	control := a.control
+	control.poll()
+	return a.mayMatchIn(e, a.canMatch, false)
+}
 
 func b2i(b bool) int {
 	if b {
@@ -248,6 +286,9 @@ func b2i(b bool) int {
 
 // isNullable reports whether e may succeed without consuming input.
 func (a *analysis) isNullable(e grammar.Expr) bool {
+	control := a.control
+	control.poll()
+
 	return a.nullableAt(e, false) || a.nullableAt(e, true)
 }
 
@@ -255,6 +296,9 @@ func (a *analysis) isNullable(e grammar.Expr) bool {
 // set) or at another position. Telling the two apart makes "!$$ x" not nullable when x can only
 // match nothing at the end of the input, as in a line that ends with ("\n" / $$).
 func (a *analysis) nullableAt(e grammar.Expr, end bool) bool {
+	control := a.control
+	control.poll()
+
 	switch e := analysisExpr(e).(type) {
 	case *grammar.Ref:
 		return a.nullable[b2i(end)][e.Name]
@@ -266,6 +310,7 @@ func (a *analysis) nullableAt(e grammar.Expr, end bool) bool {
 		return end
 	case *grammar.Seq:
 		for _, it := range e.Items {
+			control.poll()
 			if !a.nullableAt(it, end) {
 				return false
 			}
@@ -273,6 +318,7 @@ func (a *analysis) nullableAt(e grammar.Expr, end bool) bool {
 		return true
 	case *grammar.Choice:
 		for _, alt := range e.Alts {
+			control.poll()
 			if a.nullableAt(alt, end) {
 				return true
 			}
@@ -296,6 +342,7 @@ func (a *analysis) nullableAt(e grammar.Expr, end bool) bool {
 		return a.nullableAt(e.Expr, end)
 	case *grammar.OperatorsRule:
 		for _, o := range e.Operands {
+			control.poll()
 			if a.nullableAt(o.Expr, end) {
 				return true
 			}
@@ -309,6 +356,9 @@ func (a *analysis) nullableAt(e grammar.Expr, end bool) bool {
 // succeedsAt reports whether e certainly succeeds at the end of the input (end set) or at any
 // other position.
 func (a *analysis) succeedsAt(e grammar.Expr, end bool) bool {
+	control := a.control
+	control.poll()
+
 	switch e := neutral(e, true).(type) {
 	case *grammar.EndInput:
 		return end
@@ -323,6 +373,9 @@ func (a *analysis) succeedsAt(e grammar.Expr, end bool) bool {
 // failsAt reports whether e certainly fails at the end of the input (end set) or at any other
 // position.
 func (a *analysis) failsAt(e grammar.Expr, end bool) bool {
+	control := a.control
+	control.poll()
+
 	switch e := neutral(e, true).(type) {
 	case *grammar.EndInput:
 		return !end
@@ -345,6 +398,9 @@ func (a *analysis) failsAt(e grammar.Expr, end bool) bool {
 // Anchors that contradict their neighbors (anchorConflict) are not taken into account, so that
 // canMatch is known before prefix, which uses it, runs.
 func (a *analysis) mayMatchIn(e grammar.Expr, set map[string]bool, lenient bool) bool {
+	control := a.control
+	control.poll()
+
 	switch e := analysisExpr(e).(type) {
 	case *grammar.Ref:
 		return set[e.Name]
@@ -352,12 +408,14 @@ func (a *analysis) mayMatchIn(e grammar.Expr, set map[string]bool, lenient bool)
 		return lenient
 	case *grammar.Seq:
 		for _, it := range e.Items {
+			control.poll()
 			if !a.mayMatchIn(it, set, lenient) {
 				return false
 			}
 		}
 	case *grammar.Choice:
 		for _, alt := range e.Alts {
+			control.poll()
 			if a.mayMatchIn(alt, set, lenient) {
 				return true
 			}
@@ -379,6 +437,7 @@ func (a *analysis) mayMatchIn(e grammar.Expr, set map[string]bool, lenient bool)
 		return hasAttr(e, "recover") || a.mayMatchIn(e.Expr, set, lenient)
 	case *grammar.OperatorsRule:
 		for _, o := range e.Operands {
+			control.poll()
 			if a.mayMatchIn(o.Expr, set, lenient) {
 				return true
 			}
@@ -403,7 +462,11 @@ func hasAttr(e *grammar.Attributed, name string) bool {
 //   - $ followed by items whose matches all begin with a character other than a line break;
 //   - ^ preceded by items that always consume the same text, which does not end with "\n".
 func (a *analysis) anchorConflict(s *grammar.Seq) grammar.Expr {
+	control := a.control
+	control.poll()
+
 	for i, it := range s.Items {
+		control.poll()
 		after := &grammar.Seq{Items: s.Items[i+1:]}
 		before := &grammar.Seq{Items: s.Items[:i]}
 		switch it.(type) {
@@ -429,7 +492,11 @@ func (a *analysis) anchorConflict(s *grammar.Seq) grammar.Expr {
 }
 
 // succeeds reports whether e certainly succeeds, whatever the input.
-func (a *analysis) succeeds(e grammar.Expr) bool { return a.matchPrefix(e, "").ok }
+func (a *analysis) succeeds(e grammar.Expr) bool {
+	control := a.control
+	control.poll()
+	return a.matchPrefix(e, "").ok
+}
 
 // matchResult is the result of matchPrefix.
 type matchResult struct {
@@ -446,6 +513,9 @@ type matchKey struct {
 
 // matchPrefix reports whether e certainly succeeds on every input that begins with t.
 func (a *analysis) matchPrefix(e grammar.Expr, t string) matchResult {
+	control := a.control
+	control.poll()
+
 	ok := func(rest string) matchResult { return matchResult{ok: true, exact: true, rest: rest} }
 	inexact := matchResult{ok: true}
 	switch e := analysisExpr(e).(type) {
@@ -466,6 +536,7 @@ func (a *analysis) matchPrefix(e grammar.Expr, t string) matchResult {
 	case *grammar.Seq:
 		cur := ok(t)
 		for _, it := range e.Items {
+			control.poll()
 			if cur.exact {
 				if cur = a.matchPrefix(it, cur.rest); !cur.ok {
 					return cur
@@ -477,6 +548,7 @@ func (a *analysis) matchPrefix(e grammar.Expr, t string) matchResult {
 		return cur
 	case *grammar.Choice:
 		for k, alt := range e.Alts {
+			control.poll()
 			if r := a.matchPrefix(alt, t); r.ok {
 				if k == 0 {
 					return r
@@ -492,6 +564,7 @@ func (a *analysis) matchPrefix(e grammar.Expr, t string) matchResult {
 	case *grammar.Repeat:
 		cur := ok(t)
 		for i := range e.Min {
+			control.poll()
 			if cur.exact {
 				before := cur.rest
 				if cur = a.matchPrefix(e.Expr, cur.rest); !cur.ok {
@@ -575,6 +648,9 @@ func (a *analysis) matchPrefix(e grammar.Expr, t string) matchResult {
 
 // fails reports whether e certainly fails on every input that begins with t.
 func (a *analysis) fails(e grammar.Expr, t string) bool {
+	control := a.control
+	control.poll()
+
 	switch e := analysisExpr(e).(type) {
 	case *grammar.Literal:
 		return !strings.HasPrefix(t, e.Value) && !strings.HasPrefix(e.Value, t)
@@ -586,6 +662,7 @@ func (a *analysis) fails(e grammar.Expr, t string) bool {
 	case *grammar.Seq:
 		cur := t
 		for _, it := range e.Items {
+			control.poll()
 			if a.fails(it, cur) {
 				return true
 			}
@@ -597,6 +674,7 @@ func (a *analysis) fails(e grammar.Expr, t string) bool {
 		}
 	case *grammar.Choice:
 		for _, alt := range e.Alts {
+			control.poll()
 			if !a.fails(alt, t) {
 				return false
 			}
@@ -643,6 +721,9 @@ type prefixResult struct {
 
 // prefix returns a string that every match of e begins with.
 func (a *analysis) prefix(e grammar.Expr) prefixResult {
+	control := a.control
+	control.poll()
+
 	switch e := analysisExpr(e).(type) {
 	case *grammar.Literal:
 		return prefixResult{e.Value, true}
@@ -656,6 +737,7 @@ func (a *analysis) prefix(e grammar.Expr) prefixResult {
 	case *grammar.Seq:
 		var b strings.Builder
 		for _, it := range e.Items {
+			control.poll()
 			p := a.prefix(it)
 			b.WriteString(p.s)
 			if !p.exact {
@@ -667,6 +749,7 @@ func (a *analysis) prefix(e grammar.Expr) prefixResult {
 		var out prefixResult
 		first := true
 		for _, alt := range e.Alts {
+			control.poll()
 			if !a.mayMatch(alt) {
 				continue // contributes no matches
 			}
@@ -677,9 +760,11 @@ func (a *analysis) prefix(e grammar.Expr) prefixResult {
 			}
 			n := 0
 			for n < len(out.s) && n < len(p.s) && out.s[n] == p.s[n] {
+				control.poll()
 				n++
 			}
 			for n > 0 && n < len(out.s) && !utf8.RuneStart(out.s[n]) {
+				control.poll()
 				n-- // keep whole characters
 			}
 			out = prefixResult{out.s[:n], out.exact && p.exact && out.s == p.s}
@@ -979,8 +1064,15 @@ func walkTerm(t grammar.Term, f func(grammar.Term)) {
 
 // calls returns the rules that e calls, in order of appearance.
 func calls(e grammar.Expr) []string {
+	return callsControlled(e, nil)
+}
+
+func callsControlled(e grammar.Expr, control *lintControl) []string {
+	control.poll()
+
 	var out []string
 	walkExpr(e, func(x grammar.Expr) {
+		control.poll()
 		if r, ok := x.(*grammar.Ref); ok {
 			out = append(out, r.Name)
 		}

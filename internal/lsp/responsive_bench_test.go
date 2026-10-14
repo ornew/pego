@@ -18,10 +18,12 @@ import (
 )
 
 // BenchmarkF08Analyze compares the same successful compilation with and without
-// the lint cache and diagnostic mapping performed by responsive publication.
+// the complete payload preparation performed by the responsive worker.
+// Inputs and subbenchmark names match the earlier lint-cache/mapping baseline;
+// candidate lint timings include preparing and retaining the publication payload.
 // It excludes the actor, JSON-RPC, editor, and client command application.
 func BenchmarkF08Analyze(b *testing.B) {
-	if analyzeHook != nil || requestHook != nil {
+	if analyzeHook != nil || requestHook != nil || lintDiagnosticHook != nil {
 		b.Fatal("analysis benchmarks require inactive test hooks")
 	}
 	fixtures := []struct{ name, source string }{{name: "generated", source: f08BenchmarkGrammar()}}
@@ -48,16 +50,28 @@ func BenchmarkF08Analyze(b *testing.B) {
 					b.ReportAllocs()
 					var result *analysis
 					var diagnostics []Diagnostic
+					expectedCount := 0
+					if withLint {
+						document := document{uri: "file:///benchmark.pego", version: 1, generation: 1, text: fixture.source, an: validated}
+						expectedCount = len(document.lintDiagnostics())
+					}
 					for b.Loop() {
 						result = analyze(fixture.source)
 						if withLint {
-							result.lintCache = result.lintFindings()
-							result.lintCached = true
-							document := document{uri: "file:///benchmark.pego", version: 1, generation: 1, text: fixture.source, an: result}
-							diagnostics = document.lintDiagnostics()
+							snapshot := analysisSnapshot{URI: "file:///benchmark.pego", Version: 1, Generation: 1, Text: fixture.source}
+							if err := result.preparePublicationContext(context.Background(), snapshot, true); err != nil {
+								b.Fatal(err)
+							}
+							diagnostics = result.publicationDiags
 						}
 					}
 					if withLint {
+						if result.prog == nil || len(result.diags) != 0 || !result.lintCached {
+							b.Fatalf("worker preparation failed: %+v", result.diags)
+						}
+						if len(diagnostics) != expectedCount {
+							b.Fatalf("publication diagnostic count=%d; baseline mapping count=%d", len(diagnostics), expectedCount)
+						}
 						b.ReportMetric(float64(len(diagnostics)), "findings/op")
 					}
 					runtime.KeepAlive(result)

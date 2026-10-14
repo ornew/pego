@@ -40,23 +40,87 @@ type codeAction struct {
 // lintFindings shares the already successful compilation with the linter.
 // Without main, reachability is omitted because no editor start-rule setting exists.
 func (a *analysis) lintFindings() []lint.Finding {
+	findings, _ := a.lintFindingsContext(context.Background())
+	return findings
+}
+
+func (a *analysis) lintFindingsContext(ctx context.Context) ([]lint.Finding, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if a.prog == nil || len(a.syntaxErrs) > 0 {
-		return nil
+		return nil, nil
 	}
 	if a.lintCached {
-		return a.lintCache
+		return a.lintCache, nil
 	}
 	start := ""
 	if a.rules["main"] != nil {
 		start = "main"
 	}
-	return lint.Run(a.g, start, lint.Options{})
+	return lint.RunContext(ctx, a.g, start, lint.Options{})
+}
+
+// cacheLintContext commits a complete lint result; cancelled work retains no partial cache.
+func (a *analysis) cacheLintContext(ctx context.Context) error {
+	findings, err := a.lintFindingsContext(ctx)
+	if err != nil {
+		return err
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	a.lintCache, a.lintCached = findings, true
+	return nil
+}
+
+// lintDiagnosticHook is a controlled mapping barrier for protocol regressions.
+// Production leaves it nil; tests reset it after all server workers have joined.
+var lintDiagnosticHook func(context.Context, analysisSnapshot, int)
+
+// preparePublicationContext builds the complete push payload in the snapshot
+// worker. The actor only checks snapshot identity and writes this finished data.
+func (a *analysis) preparePublicationContext(ctx context.Context, snapshot analysisSnapshot, withLint bool) error {
+	diagnostics := append([]Diagnostic(nil), a.diags...)
+	if withLint {
+		if err := a.cacheLintContext(ctx); err != nil {
+			return err
+		}
+		document := &document{uri: snapshot.URI, text: snapshot.Text, version: snapshot.Version, generation: snapshot.Generation, an: a}
+		findings, err := document.lintDiagnosticsContext(ctx)
+		if err != nil {
+			return err
+		}
+		diagnostics = append(diagnostics, findings...)
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	a.publicationDiags = diagnostics
+	return nil
 }
 
 func (d *document) lintDiagnostics() []Diagnostic {
+	diagnostics, _ := d.lintDiagnosticsContext(context.Background())
+	return diagnostics
+}
+
+func (d *document) lintDiagnosticsContext(ctx context.Context) ([]Diagnostic, error) {
 	a := d.analysis()
+	findings, err := a.lintFindingsContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 	var out []Diagnostic
-	for i, f := range a.lintFindings() {
+	for i, f := range findings {
+		if i%256 == 0 {
+			if lintDiagnosticHook != nil {
+				lintDiagnosticHook(ctx, d.snapshot(), i)
+			}
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+		}
 		if !f.Pos.IsValid() {
 			continue
 		}
@@ -69,7 +133,10 @@ func (d *document) lintDiagnostics() []Diagnostic {
 		out = append(out, Diagnostic{Range: a.errorRange(f.Pos, false), Severity: severity, Source: "pego-lint", Message: f.Message, Code: f.Check,
 			Data: &findingData{URI: d.uri, Version: d.version, Generation: d.generation, Key: fmt.Sprintf("%d:%s", i, f.Check)}})
 	}
-	return out
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (s *Server) codeActions(params json.RawMessage) (any, *rpcError) {
@@ -108,7 +175,10 @@ func (s *Server) codeActions(params json.RawMessage) (any, *rpcError) {
 		ctx = context.Background()
 	}
 	version := d.version
-	current := d.lintDiagnostics()
+	current, lintErr := d.lintDiagnosticsContext(ctx)
+	if lintErr != nil {
+		return nil, &rpcError{Code: codeRequestCancelled, Message: "request cancelled"}
+	}
 	for _, diagnostic := range current {
 		if ctx.Err() != nil {
 			return nil, &rpcError{Code: codeRequestCancelled, Message: "request cancelled"}
@@ -195,7 +265,16 @@ func (d *document) suppressionEditContext(ctx context.Context, diagnostic Diagno
 	if ctx.Err() != nil {
 		return TextEdit{}, false
 	}
-	for _, finding := range candidate.lintFindings() {
+	findings, lintErr := candidate.lintFindingsContext(ctx)
+	if lintErr != nil {
+		return TextEdit{}, false
+	}
+	for i, finding := range findings {
+		if i%256 == 0 {
+			if ctx.Err() != nil {
+				return TextEdit{}, false
+			}
+		}
 		if finding.Check == lint.CheckDirective && finding.Pos.Line == line+1 {
 			return TextEdit{}, false
 		}
@@ -205,10 +284,18 @@ func (d *document) suppressionEditContext(ctx context.Context, diagnostic Diagno
 	}
 	// A directive before a declaration suppresses the whole rule. Do not offer
 	// the narrower line-scoped title when the insertion would have that scope.
-	for _, def := range a.defs {
+	for i, def := range a.defs {
+		if i%256 == 0 {
+			if ctx.Err() != nil {
+				return TextEdit{}, false
+			}
+		}
 		if def.kwStart >= start && def.kwStart < end {
 			return TextEdit{}, false
 		}
+	}
+	if ctx.Err() != nil {
+		return TextEdit{}, false
 	}
 	return edit, true
 }

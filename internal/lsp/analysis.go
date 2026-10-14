@@ -77,7 +77,9 @@ type analysis struct {
 	diags      []Diagnostic
 	lintCache  []lint.Finding
 	lintCached bool
-	defs       []*definition
+	// publicationDiags is built by the responsive worker for its immutable snapshot.
+	publicationDiags []Diagnostic
+	defs             []*definition
 	// rules and types map names to their first definition.
 	rules, types map[string]*definition
 	// occs holds the occurrences in source order.
@@ -126,6 +128,7 @@ func failedAnalysis(text string, good *analysis, err error) *analysis {
 		a = *newAnalysis(text)
 		a.g = &grammar.Grammar{}
 	}
+	a.publicationDiags = nil
 	a.syntaxErrs = syntax.ErrorList{&syntax.Error{Msg: msg}}
 	a.diags = []Diagnostic{{Range: Range{}, Severity: severityError, Source: "pego", Message: msg}}
 	return &a

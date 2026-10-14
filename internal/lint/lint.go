@@ -137,7 +137,12 @@ type Options struct {
 // Findings can be suppressed with comments in the source (see the directive syntax in
 // docs/guide/linting.md).
 func Run(g *grammar.Grammar, start string, opts Options) []Finding {
-	l := &linter{opts: opts, an: newAnalysis(g)}
+	return runControlled(g, start, opts, nil)
+}
+
+func runControlled(g *grammar.Grammar, start string, opts Options, control *lintControl) []Finding {
+	control.check()
+	l := &linter{control: control, opts: opts, an: newAnalysisControlled(g, control)}
 	for _, c := range []struct {
 		name string
 		run  func(*linter)
@@ -155,19 +160,25 @@ func Run(g *grammar.Grammar, start string, opts Options) []Finding {
 		{CheckPositions, func(l *linter) { l.positions(start) }},
 		{CheckLongLookahead, (*linter).longLookaheads},
 	} {
+		control.check()
 		if !opts.Disable[c.name] {
 			c.run(l)
 		}
 	}
+	control.check()
 	findings := l.suppress(g)
 	slices.SortStableFunc(findings, func(a, b Finding) int {
+		control.poll()
 		return cmp.Or(cmp.Compare(a.Pos.Line, b.Pos.Line), cmp.Compare(a.Pos.Col, b.Pos.Col),
 			strings.Compare(a.Check, b.Check), strings.Compare(a.Message, b.Message))
 	})
-	return slices.CompactFunc(findings, func(a, b Finding) bool { return a == b })
+	findings = slices.CompactFunc(findings, func(a, b Finding) bool { control.poll(); return a == b })
+	control.check()
+	return findings
 }
 
 type linter struct {
+	control  *lintControl
 	opts     Options
 	an       *analysis
 	findings []Finding
@@ -175,6 +186,9 @@ type linter struct {
 }
 
 func (l *linter) report(check string, sev Severity, pos grammar.Pos, fix, format string, args ...any) {
+	control := l.control
+	control.poll()
+
 	f := Finding{Pos: pos, Severity: sev, Check: check, Message: fmt.Sprintf(format, args...), Fix: fix}
 	if l.rule != nil {
 		f.Rule = l.rule.Name
@@ -187,7 +201,11 @@ func (l *linter) report(check string, sev Severity, pos grammar.Pos, fix, format
 
 // eachRule calls f for every rule, with l.rule set to it.
 func (l *linter) eachRule(f func(r *grammar.RuleDef)) {
+	control := l.control
+	control.poll()
+
 	for _, r := range l.an.order {
+		control.poll()
 		l.rule = r
 		f(r)
 	}
@@ -238,16 +256,22 @@ func (d *directive) covers(f Finding) bool {
 // suppress removes the findings that directives suppress, and reports directives that are
 // malformed or suppress nothing.
 func (l *linter) suppress(g *grammar.Grammar) []Finding {
+	control := l.control
+	control.poll()
+
 	var ds []*directive
 	ruleOf := map[*grammar.Comment]string{}
 	for _, r := range g.Rules() {
+		control.poll()
 		if r.Break != nil {
 			for _, c := range r.Break.Comments {
+				control.poll()
 				ruleOf[c] = r.Name
 			}
 		}
 	}
 	for _, c := range g.AllComments() {
+		control.poll()
 		if d := parseDirective(c); d != nil {
 			d.rule = ruleOf[c]
 			ds = append(ds, d)
@@ -255,8 +279,10 @@ func (l *linter) suppress(g *grammar.Grammar) []Finding {
 	}
 	var kept []Finding
 	for _, f := range l.findings {
+		control.poll()
 		suppressed := false
 		for _, d := range ds {
+			control.poll()
 			if d.covers(f) {
 				d.used, suppressed = true, true
 			}
@@ -269,6 +295,7 @@ func (l *linter) suppress(g *grammar.Grammar) []Finding {
 		return kept
 	}
 	for _, d := range ds {
+		control.poll()
 		kind := "lint:ignore"
 		if d.file {
 			kind = "lint:file-ignore"
@@ -276,6 +303,7 @@ func (l *linter) suppress(g *grammar.Grammar) []Finding {
 		f := Finding{Pos: d.c.Pos, Severity: Warning, Check: CheckDirective, Rule: d.rule}
 		var unknown []string
 		for _, name := range d.checks {
+			control.poll()
 			if !IsCheck(name) {
 				unknown = append(unknown, name)
 			}
@@ -287,7 +315,7 @@ func (l *linter) suppress(g *grammar.Grammar) []Finding {
 		case len(unknown) > 0:
 			f.Message = fmt.Sprintf("%s names unknown checks: %s", kind, strings.Join(unknown, ", "))
 			f.Fix = "use the names shown in brackets after the findings"
-		case d.used || slices.ContainsFunc(d.checks, func(n string) bool { return l.opts.Disable[n] }):
+		case d.used || slices.ContainsFunc(d.checks, func(n string) bool { control.poll(); return l.opts.Disable[n] }):
 			continue
 		default:
 			f.Message = kind + " suppresses no finding"

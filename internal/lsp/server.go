@@ -261,11 +261,16 @@ func (s *Server) publishReady(d *document) {
 	if s.client.Experimental.Pego.LintDiagnostics {
 		diags = append(diags, d.lintDiagnostics()...)
 	}
+	s.publishDiagnostics(d.uri, d.version, diags)
+}
+
+// publishDiagnostics writes a completed payload; responsive publication must not
+// invoke analysis or lint mapping on the protocol actor.
+func (s *Server) publishDiagnostics(uri string, version int, diags []Diagnostic) {
 	if diags == nil {
 		diags = []Diagnostic{}
 	}
-	v := d.version
-	_ = s.out.notify("textDocument/publishDiagnostics", publishDiagnosticsParams{URI: d.uri, Version: &v, Diagnostics: diags})
+	_ = s.out.notify("textDocument/publishDiagnostics", publishDiagnosticsParams{URI: uri, Version: &version, Diagnostics: diags})
 }
 
 type requestHandler func(s *Server, params json.RawMessage) (any, *rpcError)

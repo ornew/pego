@@ -55,12 +55,8 @@ func (s *Server) runResponsive() error {
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
-		if lintEnabled {
-			a.lintCache = a.lintFindings()
-			a.lintCached = true
-		}
-		if ctx.Err() != nil {
-			return nil, ctx.Err()
+		if err := a.preparePublicationContext(ctx, snapshot, lintEnabled); err != nil {
+			return nil, err
 		}
 		return a, nil
 	})
@@ -131,7 +127,11 @@ func (s *Server) runResponsive() error {
 				d.an = result.Analysis
 				d.good = result.Analysis
 			}
-			s.publishReady(d)
+			diagnostics := d.an.diags
+			if result.Err == nil {
+				diagnostics = result.Analysis.publicationDiags
+			}
+			s.publishDiagnostics(d.uri, d.version, diagnostics)
 			for _, request := range actor.requests {
 				if request.snapshot.URI == d.uri && !request.started {
 					actor.start(request)

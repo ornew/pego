@@ -257,6 +257,30 @@ ordinary Compile time on the tested cases, with the observed ranges crossing
 parity for some cases. This measures ordinary compilation only; the
 context-enabled path and cancellation-to-return time were not measured.
 
+The lint-enabled analysis worker now carries its context through linting and
+diagnostic conversion. It publishes only a complete payload after the actor
+confirms the URI, version and generation still match; cancellation discards
+partial lint results and diagnostics. Polling occurs at lint-owned traversal
+boundaries and periodically while converting findings, but some helpers have
+coarser polling, so this does not establish a hard cancellation-latency bound.
+
+A five-pair, 300 ms alternating comparison of the lint-enabled analysis path
+used Go 1.27.1 on an Apple M3 Max (darwin/arm64), `GOMAXPROCS=4`, `GOGC=100`,
+and `GOMEMLIMIT` off, comparing main `4f84b74` with the lint-context candidate.
+Candidate/base median time ratios (with the paired range) were:
+
+| Input | Analyze | Lint diagnostics |
+| --- | ---: | ---: |
+| Generated fixture | 0.913 (0.859–1.015) | 0.973 (0.914–1.033) |
+| Go | 0.950 (0.881–1.046) | 1.002 (0.932–1.086) |
+| Python | 0.958 (0.798–1.049) | 0.984 (0.870–1.048) |
+
+Allocation counts were unchanged or lower by at most two per operation in the
+medians, and bytes/op were effectively unchanged. The paired ranges are wide
+and cross parity; these measurements show no stable ordinary-time change. They
+do not measure actor or JSON-RPC latency, real-editor behavior, cancellation
+while a lint helper is active, or retained heap.
+
 ## Limitations and Open Questions
 
 - The responsive actor remains opt-in and needs real-editor validation; ordinary clients retain the synchronous path.
