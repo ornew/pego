@@ -16,8 +16,21 @@ type Module struct {
 	Exprs          []Instr // expression code (actions and predicates)
 }
 
+// hasDiagnosticLabels distinguishes modules requiring instruction set version 8.
+func (m *Module) hasDiagnosticLabels() bool {
+	for _, in := range m.Code {
+		if in.Op == OpLabel && in.B == 1 {
+			return true
+		}
+	}
+	return false
+}
+
 // instructionSetVersion keeps ordinary modules readable by instruction-set-3 runtimes.
 func (m *Module) instructionSetVersion() int {
+	if m.hasDiagnosticLabels() {
+		return 8
+	}
 	for _, in := range m.Exprs {
 		if in.Op == ECall && in.A == bFilter {
 			return 6
@@ -192,7 +205,7 @@ const (
 	OpPred
 	// ASSIGN name, e: define the variable name with the value of expression code e.
 	OpAssign
-	// LABEL m: start @error.
+	// LABEL m, d: start @error (d=0) or @diagnostic (d=1).
 	OpLabel
 	// ENDLABEL: end @error.
 	OpEndLabel

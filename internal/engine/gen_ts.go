@@ -717,6 +717,9 @@ func (g *tsGen) attributed(e *grammar.Attributed, s *scope, build bool) string {
 		case "error":
 			msg := attributeMessage(a)
 			m = g.method("@error", fmt.Sprintf("  return p.errorAttr(%s, msgBit | %d);\n", g.fn(m), g.desc(msg))) + "(p)"
+		case "diagnostic":
+			name := attributeDiagnosticName(a)
+			m = g.method("@diagnostic", fmt.Sprintf("  return p.diagnosticAttr(%s, %d);\n", g.fn(m), g.desc(name))) + "(p)"
 		case "recover":
 			skipExpr, _ := a.Arg("skip")
 			skip := g.expr(skipExpr, s, false)

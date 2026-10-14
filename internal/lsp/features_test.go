@@ -502,7 +502,7 @@ func TestCompletion(t *testing.T) {
 		{4, -1, sorted(userTypes, builtinTypeNames)},
 		{5, -1, sorted(rules, statementKeywords)},
 		{5, 8, sorted(rules, statementKeywords, bodyKeywords)},
-		{6, -1, []string{"error"}},
+		{6, -1, []string{"diagnostic", "error"}},
 		{7, -1, []string{"x", "y"}},
 		{8, -1, sorted([]string{"P", "Q", "R", "concat", "filter", "foldl", "foldr", "len", "list", "map", "text"}, termKeywords)},
 		{9, -1, sorted([]string{"A", "B", "children", "endPos", "startPos"})},

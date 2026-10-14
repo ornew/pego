@@ -1046,20 +1046,30 @@ func (d *dgen) attr(e *grammar.Attributed, i int, s *dscope, build bool, fail st
 	}
 	a := e.Attrs[i]
 	switch a.Name {
-	case "error":
-		// errorAttr: the expectations of a failing expression become the message.
+	case "error", "diagnostic":
+		// Isolate the inner expectations so the wrapper changes only a failed expression.
 		mark, far, exp := d.decl("x", "expMark"), d.decl("x", "int"), d.decl("x", "[]expID")
 		d.line("%s = p.isolate(p.pos)", mark)
 		f, done := d.label(), d.label()
 		v := d.attr(e, i-1, s, build, f)
-		msg := d.g.desc(attributeMessage(a))
+		var value string
+		if a.Name == "diagnostic" {
+			value = attributeDiagnosticName(a)
+		} else {
+			value = attributeMessage(a)
+		}
+		msg := d.g.desc(value)
 		d.line("%s, %s = p.unisolate(%s)", far, exp, d.rd(mark))
 		d.line("p.mergeExpected(%s, %s)", d.rd(far), d.rd(exp))
 		if d.used[f] {
 			d.jump(done)
 			d.place(f)
 			d.line("%s, %s = p.unisolate(%s)", far, exp, mark)
-			d.line("p.expect(%s, msgBit|%d)", far, msg)
+			if a.Name == "error" {
+				d.line("p.expect(%s, msgBit|%d)", far, msg)
+			} else {
+				d.line("p.mergeExpected(%s, renamedExpected(p, %s, %d))", far, exp, msg)
+			}
 			d.jump(fail)
 			d.place(done)
 		}

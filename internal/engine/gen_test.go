@@ -102,6 +102,8 @@ rule spaces = " "* #atomic`, []string{"a\n  b\n  c\n    d\ne\n", "a\n   b\n c\n"
 rule stmt = ([a-z]+ #atomic ";") #recover(skip=[^;]+ ";")`, []string{"ab;1x;cd;9;", "1x;ab"}},
 		{"error attr", `rule main = "let" " " name @error(message="expected a name") ";"
 rule name = [a-z]+ #atomic [0-9]*`, []string{"let 1;", "let a", "let ab1;"}},
+		{"diagnostic attr", `rule main = "n" number $$ / "e" ("a" @error(message="explicit") @diagnostic(name="letter")) $$ / "s" ("a"+ @diagnostic(name="letter") "b") $$ / "c" ("a" @diagnostic(name="letter") / "b") $$ / "r" ("a" @diagnostic(name="letter") #recover(skip=";")) $$ / "q" ("a" #recover(skip=";") @diagnostic(name="letter")) $$
+rule number = ([0-9]+ "." [0-9]+) @diagnostic(name="number")`, []string{"n12x", "n12.", "n12.3", "ex", "ea", "saac", "saab", "cx", "ca", "cb", "r;", "q;", "r", "q", ""}},
 		{"left recursion", `rule main = a
 rule a = b "x" / "y"
 rule b = a "z" / c

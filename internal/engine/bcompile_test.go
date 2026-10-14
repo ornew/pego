@@ -50,6 +50,17 @@ main.action:
 	}
 }
 
+func TestDiagnosticLabelDisassembly(t *testing.T) {
+	module := compile(t, `rule main = "a" @error(message="explicit") / "b" @diagnostic(name="letter")`).Module()
+	text := module.Disassemble()
+	if !strings.Contains(text, `LABEL      "explicit"`+"\n") {
+		t.Errorf("explicit error label changed:\n%s", text)
+	}
+	if !strings.Contains(text, `LABEL      "letter" mode=diagnostic`+"\n") {
+		t.Errorf("diagnostic label mode missing:\n%s", text)
+	}
+}
+
 // TestModuleCompilesCorpus checks that every test grammar compiles to bytecode and that all
 // branch targets are within the instruction range.
 func TestModuleCompilesCorpus(t *testing.T) {

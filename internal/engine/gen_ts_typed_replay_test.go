@@ -35,7 +35,7 @@ func TestGeneratedTSTypedReplay(t *testing.T) {
 	cases = append(cases, genCase{"typed", typedGrammar, []string{"f(1,x)!?;[3];zz", "f(1,(;g();", "f(a);", ""}})
 	for _, c := range genCorpus(t) {
 		switch c.name {
-		case "Operators Rule explicit default action", "fold and lists", "runtime error", "cut and lookahead", "typed/OperatorsRule_recovery", "typed/OperatorsRule_framed_cuts", "typed/LR_indirect", "typed/LR_recovery", "typed/OperatorsRule_positional_actions":
+		case "Operators Rule explicit default action", "fold and lists", "runtime error", "cut and lookahead", "typed/OperatorsRule_recovery", "typed/OperatorsRule_framed_cuts", "typed/LR_indirect", "typed/LR_recovery", "typed/OperatorsRule_positional_actions", "diagnostic attr":
 			cases = append(cases, c)
 		}
 	}

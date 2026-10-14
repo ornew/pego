@@ -51,6 +51,8 @@ var builtinMembers = []builtin{
 }
 
 var attributes = []builtin{
+	{name: "diagnostic", signature: "@diagnostic(name=\"...\")", snippet: "diagnostic(name=\"$1\")",
+		doc: "Names the ordinary expected items when the wrapped expression fails; explicit @error messages remain visible."},
 	{name: "error", signature: "@error(message=\"...\")", snippet: "error(message=\"$1\")",
 		doc: "Replaces the expected items of a syntax error inside the expression with a message."},
 }

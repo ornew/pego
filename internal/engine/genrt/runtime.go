@@ -1719,6 +1719,28 @@ func (p *parser) errorAttr(m matcher, msg expID) (*Node, bool) {
 	return nil, false
 }
 
+func (p *parser) diagnosticAttr(m matcher, name expID) (*Node, bool) {
+	v, ok, far, expected := p.tracked(m)
+	if ok {
+		p.mergeExpected(far, expected)
+		return v, true
+	}
+	p.mergeExpected(far, renamedExpected(p, expected, name))
+	return nil, false
+}
+
+func renamedExpected(p *parser, expected []expID, name expID) []expID {
+	// The isolated record is no longer in the active expectation stack. Charge
+	// each conversion and reuse its storage before mergeExpected appends to it.
+	for i, id := range expected {
+		p.stepWork()
+		if id&msgBit == 0 {
+			expected[i] = name
+		}
+	}
+	return expected
+}
+
 // recoverAttr records the error of a failing m, skips what skip matches and returns an Error
 // node. It fails without recovering when skip fails or skips nothing.
 func (p *parser) recoverAttr(m, skip matcher, build bool) (*Node, bool) {

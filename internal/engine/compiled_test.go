@@ -135,7 +135,7 @@ func TestCompiledErrors(t *testing.T) {
 	version := append([]byte(nil), data...)
 	version[len(compiledMagic)] = 99
 	isa := append([]byte(nil), data...)
-	isa[len(compiledMagic)+1] = 7
+	isa[len(compiledMagic)+1] = 9
 	isa = resum(isa)
 	flipped := append([]byte(nil), data...)
 	flipped[20] ^= 0xff
@@ -147,7 +147,7 @@ func TestCompiledErrors(t *testing.T) {
 		{"not compiled", []byte("rule main = x"), "not a compiled PEGO grammar"},
 		{"too short", []byte(compiledMagic), "too short"},
 		{"version", version, "unsupported compiled grammar version 99"},
-		{"isa version", isa, "unsupported instruction set version 7"},
+		{"isa version", isa, "unsupported instruction set version 9"},
 		{"checksum", flipped, "checksum mismatch"},
 		{"truncated", resum(data[:len(data)-10]), "invalid compiled grammar"},
 		{"trailing", resum(append(append([]byte(nil), data[:len(data)-4]...), 0, 0, 0, 0, 0)), "trailing bytes"},

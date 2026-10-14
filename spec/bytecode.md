@@ -130,7 +130,7 @@ When an instruction fails, the VM pops entries from the entry stack of the curre
 | Iteration | `ITER` | Restore. If the entry is marked as cut, continue failing; otherwise jump to the recorded target. |
 | Positive lookahead | `LOOK` (neg = 0) | Restore `silent`, restore the state, and continue failing. |
 | Negative lookahead | `LOOK` (neg = 1) | Restore `silent`, restore the state, and jump to the recorded target (the negative lookahead succeeds). |
-| Label | `LABEL` | Restore the saved farthest failure, record the message as an expectation at the farthest position reached inside the label, and continue failing. |
+| Label | `LABEL` | Restore the saved farthest failure. For mode B=0, report A as an explicit error message; for B=1, use A as the diagnostic label for ordinary expectations recorded at the wrapped expression's farthest position. Preserve explicit messages and continue failing. |
 | Recovery | `RECOVER` | See [Recovery](#recovery). |
 | Skip | Recovery handling | Restore, add the expectations recorded inside to the farthest failure, and continue failing. |
 
@@ -169,7 +169,7 @@ When an instruction fails, the VM pops entries from the entry stack of the curre
 | 23 | `OPERATORS_RULE` | A table | Parse Operators Rule table A at level `min` and push its value. `min` is the level of the `CALL` that invoked this body. |
 | 24 | `PRED` | A expression | Evaluate expression code A. Fail if evaluation produces an error or `false`. |
 | 25 | `ASSIGN` | A name, B expression | Evaluate expression code B. Fail on error; otherwise add variable A (a string index) to the environment. |
-| 26 | `LABEL` | A message | Save the farthest failure, reset it to (current position, empty), and push a label entry. |
+| 26 | `LABEL` | A message, B mode | Save the farthest failure, reset it to (current position, empty), and push a label entry. B=0 applies `@error`; B=1 applies `@diagnostic` and renames ordinary expected items from the wrapped failure. |
 | 27 | `ENDLABEL` | | Remove the entry, add the expectations recorded inside to the saved farthest failure, and make that the farthest failure again. |
 | 28 | `RECOVER` | A target | Save the state, save the farthest failure and reset it to (current position, empty), and push a recovery entry with target A (the skip code). |
 | 29 | `ENDRECOVER` | A target | The inner expression succeeded. Remove the entry, merge the recorded expectations back as for `ENDLABEL`, and jump to A. |
@@ -293,7 +293,7 @@ Built-in function indices: 0 `len`, 1 `text`, 2 `foldl`, 3 `foldr`, 4 `map`, 5 `
 
 ## Error Messages
 
-A syntax error (see [Syntax errors](parsing.md#syntax-errors)) is formatted as `line:column: syntax error: expected A, B` (expectations sorted lexicographically). If `@error` messages apply, it is formatted as `line:column: message` (multiple messages joined with `; `).
+A syntax error (see [Syntax errors](parsing.md#syntax-errors)) is formatted as `line:column: syntax error: expected A, B` (expectations sorted lexicographically). If `@error` messages apply, it is formatted as `line:column: message` (multiple messages joined with `; `). `@diagnostic` changes ordinary expected-item descriptions but does not replace explicit messages.
 Expectation strings are those the compiler placed in the string table: literals in quotes, character classes in `[...]` form, `any character`, and so on.
 
 ## File Format
@@ -304,7 +304,7 @@ A module is stored in the `.pegoc` version 2 format. Integers are variable-lengt
 |:--|:--|
 | Magic | `PEGOC\x00` (6 bytes) |
 | Version | 1 byte (2) |
-| Instruction-set version | Unsigned integer for this module (3 for ordinary modules, 4 when wide bounds are used, 5 when terminal construction is used, 6 when `filter` is used). A runtime loads modules whose instruction-set version does not exceed its own: version 2 adds instructions 118–123, version 3 `GUARD` (34) and `NEXT` mode 3, version 4 `REPEATW` (35) and `SCANW` (36), version 5 `ETERMINAL` (124), and version 6 the appended `filter` built-in. |
+| Instruction-set version | Unsigned integer for this module (3 for ordinary modules, 4 when wide bounds are used, 5 when terminal construction is used, 6 when `filter` is used, and 8 when diagnostic labels are used). A runtime loads supported instruction sets up to its own: version 2 adds instructions 118–123, version 3 `GUARD` (34) and `NEXT` mode 3, version 4 `REPEATW` (35) and `SCANW` (36), version 5 `ETERMINAL` (124), version 6 the appended `filter` built-in, and version 8 diagnostic-label mode for `LABEL`. Version 7 is reserved and rejected. |
 | String table | Count, then each string (byte length and UTF-8 bytes), all unsigned. The module's string table is a prefix of this table. |
 | Start rule | String index, unsigned (the empty string means no default start rule) |
 | Package name | String index, unsigned |

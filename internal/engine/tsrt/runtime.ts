@@ -1976,6 +1976,35 @@ class Parser {
     return undefined;
   }
 
+  diagnosticAttr(m: Matcher, name: number): R {
+    const mFar = this.farthest;
+    const mBase = this.expBase;
+    this.expBase = this.expTop;
+    this.farthest = this.pos;
+    const v = m(this);
+    const far = this.farthest;
+    const from = this.expBase;
+    const to = this.expTop;
+    let expected: number[] = noExp;
+    if (v === undefined) {
+      expected = this.control === null ? this.exp.slice(from, to) : copyIDsWork(this.exp, from, to, this.control);
+      for (let i = 0; i < expected.length; i++) {
+        this.stepWork();
+        const id = expected[i]!;
+        expected[i] = (id & msgBit) !== 0 ? id : name;
+      }
+    }
+    this.expTop = this.expBase;
+    this.expBase = mBase;
+    this.farthest = mFar;
+    if (v !== undefined) {
+      this.mergeExpected(far, from, to);
+      return v;
+    }
+    this.mergeKept(far, expected);
+    return undefined;
+  }
+
   // recoverAttr records the error of a failing m, skips what skip matches and returns an Error
   // node. It fails without recovering when skip fails or skips nothing.
   recoverAttr(m: Matcher, skip: Matcher, build: boolean): R {

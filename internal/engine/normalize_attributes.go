@@ -3,6 +3,7 @@ package engine
 import (
 	"github.com/ornew/pego/grammar"
 	"github.com/ornew/pego/internal/grammaranalysis"
+	"strings"
 )
 
 // normalizeAttributes builds the executable grammar without changing the
@@ -303,6 +304,7 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 		return &copy
 	case *grammar.Attributed:
 		inner := n.expr(e.Expr)
+		seenDiagnostic := false
 		for _, source := range e.Attrs {
 			a := n.attribute(source)
 			pragma := a.Name == "repeat" || a.Name == "atomic" || a.Name == "recover" || a.Name == "stream"
@@ -310,8 +312,8 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 				n.error(a, "is a pragma; use #"+a.Name)
 				continue
 			}
-			if a.Name == "error" && a.Pragma {
-				n.error(a, "is an attribute; use @error")
+			if (a.Name == "error" || a.Name == "diagnostic") && a.Pragma {
+				n.error(a, "is an attribute; use @"+a.Name)
 				continue
 			}
 			switch a.Name {
@@ -326,6 +328,22 @@ func (n *attributeNormalizer) expr(expr grammar.Expr) grammar.Expr {
 				continue
 			case "error":
 				a = n.bind(a, "message")
+			case "diagnostic":
+				if seenDiagnostic {
+					n.error(a, "may occur only once on an expression")
+				}
+				seenDiagnostic = true
+				if len(a.Args) != 0 || len(a.KwArgs) != 1 {
+					n.error(a, "requires exactly one named argument, name")
+				} else if _, ok := a.KwArgs["name"]; !ok {
+					n.error(a, "requires a name argument")
+				} else if lit, ok := a.Arg("name"); !ok {
+					n.error(a, "name must be a string")
+				} else if stringLit, ok := lit.(*grammar.Literal); !ok {
+					n.error(a, "name must be a string")
+				} else if stringLit.Value == "" || strings.ContainsAny(stringLit.Value, "\r\n\u0085\u2028\u2029") {
+					n.error(a, "name must be nonempty and contain no line separator")
+				}
 			case "recover":
 				a = n.bind(a, "skip")
 			}
@@ -384,6 +402,11 @@ func (n *attributeNormalizer) operator(o *grammar.OperatorsRuleOperator) *gramma
 
 func attributeMessage(a *grammar.Attribute) string {
 	value, _ := a.Arg("message")
+	return value.(*grammar.Literal).Value
+}
+
+func attributeDiagnosticName(a *grammar.Attribute) string {
+	value, _ := a.Arg("name")
 	return value.(*grammar.Literal).Value
 }
 

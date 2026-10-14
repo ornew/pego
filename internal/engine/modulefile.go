@@ -352,6 +352,7 @@ func validateModule(m *Module) error {
 			in("expression", int(x.B), len(m.Exprs))
 		case OpLabel:
 			str(int(x.A))
+			flag(x.B, 1)
 		case OpGuard:
 			in("class", int(x.A), len(m.Classes))
 			nonneg(x.B)

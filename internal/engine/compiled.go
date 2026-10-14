@@ -33,9 +33,10 @@ const (
 	// isaVersion is the latest supported instruction set. Files of earlier versions load:
 	// version 2 only adds instructions (ETEXTCHK, ETEXTEQ, ELISTBEGIN, ELISTPUSH, EMAPPUSH,
 	// ELISTEND), version 3 GUARD and NEXT with f 3, version 4 wide repetition bounds,
-	// version 5 ETERMINAL for terminals with supplied text, and version 6
-	// the filter builtin appended to the ECALL table.
-	isaVersion = 6
+	// version 5 ETERMINAL for terminals with supplied text, version 6
+	// the filter builtin appended to the ECALL table, and version 8
+	// diagnostic-label mode for LABEL. Version 7 is reserved.
+	isaVersion = 8
 	maxDepth   = 10000
 )
 
@@ -591,8 +592,8 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 		return r.loadV1(opts)
 	}
 	isa := r.uint()
-	if r.err == nil && (isa < 1 || isa > isaVersion) {
-		return nil, "", fmt.Errorf("unsupported instruction set version %d (want 1 to %d)", isa, isaVersion)
+	if r.err == nil && (isa < 1 || isa == 7 || isa > isaVersion) {
+		return nil, "", fmt.Errorf("unsupported instruction set version %d", isa)
 	}
 	r.strings()
 	start := r.str()
@@ -617,6 +618,9 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	}
 	if err := validateModule(m); err != nil {
 		return nil, "", fmt.Errorf("invalid compiled grammar: %w", err)
+	}
+	if isa < 8 && m.hasDiagnosticLabels() {
+		return nil, "", errors.New("invalid compiled grammar: diagnostic labels require instruction set version 8")
 	}
 	if isa < 4 && m.instructionSetVersion() == 4 {
 		return nil, "", errors.New("invalid compiled grammar: wide repetition bounds require instruction set version 4")

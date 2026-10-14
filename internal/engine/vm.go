@@ -267,6 +267,7 @@ type vmEntry struct {
 // labState is the state of a label, recovery or skip entry.
 type labState struct {
 	msg  int32   // eLabel: message
+	mode int32   // eLabel: 0 for @error, 1 for @diagnostic
 	far  int     // eLabel, eRecover: saved farthest failure. eSkip: recovered failure
 	base int     // eLabel, eRecover: saved start of the expectation record (expMark)
 	bits uint64  // eLabel, eRecover: saved membership filter
@@ -685,7 +686,7 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			}
 		case OpLabel:
 			mk := p.isolate(p.pos)
-			p.pushLab(eLabel, 0, vmSave{}, labState{msg: in.A, far: mk.far, base: mk.base, bits: mk.bits})
+			p.pushLab(eLabel, 0, vmSave{}, labState{msg: in.A, mode: in.B, far: mk.far, base: mk.base, bits: mk.bits})
 		case OpEndLabel:
 			e := p.ents[len(p.ents)-1]
 			p.ents = p.ents[:len(p.ents)-1]
@@ -774,8 +775,12 @@ func (p *parser) unwind(m *Module, ebase int) (ip int, ok bool) {
 			return int(e.ip), true
 		case eLabel:
 			l := p.popLab(&e)
-			far, _ := p.unisolate(expMark{l.far, l.base, l.bits})
-			p.expect(far, msgBit|(numFixedDescs+expID(l.msg)))
+			far, inner := p.unisolate(expMark{l.far, l.base, l.bits})
+			if l.mode == 0 {
+				p.expect(far, msgBit|(numFixedDescs+expID(l.msg)))
+			} else {
+				p.mergeExpected(far, renamedExpected(p, inner, numFixedDescs+expID(l.msg)))
+			}
 			continue
 		case eRecover:
 			l := p.popLab(&e)

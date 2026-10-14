@@ -164,7 +164,12 @@ func (m *Module) operands(in Instr, str func(int) string, names func([]int) stri
 		return fmt.Sprintf("expr=%d", a)
 	case OpAssign:
 		return fmt.Sprintf("%s expr=%d", m.Strings[a], bb)
-	case OpLabel, EStr, EVar, EMember, EBin, EUnary, EBoolChk, ETerminal:
+	case OpLabel:
+		if bb == 1 {
+			return str(a) + " mode=diagnostic"
+		}
+		return str(a)
+	case EStr, EVar, EMember, EBin, EUnary, EBoolChk, ETerminal:
 		return str(a)
 	case EInt:
 		return strconv.FormatInt(int64(a)+int64(bb)<<32, 10)

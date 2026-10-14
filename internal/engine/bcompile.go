@@ -364,6 +364,11 @@ func (c *bcompiler) attributed(e *grammar.Attributed, i int, s *scope, build boo
 		c.emit(OpLabel, c.str(msg), 0, 0)
 		c.attributed(e, i-1, s, build)
 		c.emit(OpEndLabel, 0, 0, 0)
+	case "diagnostic":
+		name := attributeDiagnosticName(a)
+		c.emit(OpLabel, c.str(name), 1, 0)
+		c.attributed(e, i-1, s, build)
+		c.emit(OpEndLabel, 0, 0, 0)
 	case "recover":
 		skip, _ := a.Arg("skip")
 		rec := c.emit(OpRecover, 0, 0, 0)

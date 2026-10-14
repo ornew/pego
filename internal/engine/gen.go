@@ -1061,6 +1061,9 @@ func (g *generator) attributed(e *grammar.Attributed, s *scope, build bool) stri
 		case "error":
 			msg := attributeMessage(a)
 			m = g.method("@error", fmt.Sprintf("\treturn p.errorAttr((*%s).%s, msgBit|%d)\n", g.recv(), m, g.desc(msg)))
+		case "diagnostic":
+			name := attributeDiagnosticName(a)
+			m = g.method("@diagnostic", fmt.Sprintf("\treturn p.diagnosticAttr((*%s).%s, %d)\n", g.recv(), m, g.desc(name)))
 		case "recover":
 			skipExpr, _ := a.Arg("skip")
 			skip := g.expr(skipExpr, s, false)

@@ -248,7 +248,8 @@ if errors.As(err, &se) {
 
 `Pos` is the offset in the [position unit](#position-units), `Line` and `Col` are 1-based, `Expected` lists what would
 have been accepted, and `Messages` holds the messages set with `@error`. `se.Message()` is the text without the
-position.
+position. Use [`@diagnostic`](../../spec/attributes.md#diagnostic) to give an expression a concise expected-item name
+while preserving its failure position and explicit `@error` messages.
 
 ### Cancellation and Work Limits
 

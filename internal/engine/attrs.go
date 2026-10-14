@@ -27,6 +27,11 @@ func (c *compiler) attributed(e *grammar.Attributed, s *scope, build bool) match
 			if ok {
 				m = errorAttr(m, msgBit|c.desc(msg))
 			}
+		case "diagnostic":
+			name, ok := c.stringArg(a, "name")
+			if ok {
+				m = diagnosticAttr(m, c.desc(name))
+			}
 		case "recover":
 			skipExpr, ok := a.Arg("skip")
 			if !ok {
@@ -53,6 +58,8 @@ func validArg(attr, arg string) bool {
 	switch attr {
 	case "error":
 		return arg == "message"
+	case "diagnostic":
+		return arg == "name"
 	case "recover":
 		return arg == "skip"
 	}
@@ -95,6 +102,32 @@ func errorAttr(m matcher, msg expID) matcher {
 		p.expect(far, msg)
 		return nil, false
 	}
+}
+
+// diagnosticAttr names ordinary expectations of a failure at the expression boundary.
+// Explicit messages and the tracked failure position remain unchanged.
+func diagnosticAttr(m matcher, name expID) matcher {
+	return func(p *parser) (*Node, bool) {
+		v, ok, far, expected := tracked(p, m)
+		if ok {
+			p.mergeExpected(far, expected)
+			return v, true
+		}
+		p.mergeExpected(far, renamedExpected(p, expected, name))
+		return nil, false
+	}
+}
+
+func renamedExpected(p *parser, expected []expID, name expID) []expID {
+	// unisolate leaves this record beyond the active expectation stack. Rename it
+	// before mergeExpected reuses the stack; this avoids an unbounded copy.
+	for i, id := range expected {
+		p.stepWork()
+		if id&msgBit == 0 {
+			expected[i] = name
+		}
+	}
+	return expected
 }
 
 // recoverAttr records an error when the expression fails, skips the input matched by skip, and

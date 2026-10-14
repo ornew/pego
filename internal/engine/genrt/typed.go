@@ -893,6 +893,16 @@ func (p *tparser) errorAttr(m tmatcher, msg expID) (any, bool) {
 	return nil, false
 }
 
+func (p *tparser) diagnosticAttr(m tmatcher, name expID) (any, bool) {
+	v, ok, far, expected := p.tracked(m)
+	if ok {
+		p.mergeExpected(far, expected)
+		return v, true
+	}
+	p.mergeExpected(far, renamedExpected(p.parser, expected, name))
+	return nil, false
+}
+
 func (p *tparser) recoverAttr(m, skip tmatcher, build bool) (any, bool) {
 	m0 := p.mark()
 	v, ok, far, expected := p.tracked(m)
