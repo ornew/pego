@@ -535,6 +535,21 @@ func (g *tsGen) expr(e grammar.Expr, s *scope, build bool) string {
 		} else {
 			b.WriteString("  return null;\n")
 		}
+	case *grammar.InlineAction:
+		m := g.expr(e.Expr, s, build)
+		if e.Action == nil || !build {
+			return m
+		}
+		act := g.action(e.Action, s, nil)
+		fmt.Fprintf(&b, "  const start = p.pos;\n  const v = %s;\n  if (v === undefined) { return undefined; }\n", m)
+		b.WriteString("  const c = p.useCtx(p.frame, start, p.pos, null, null, null);\n")
+		if _, isSeq := e.Expr.(*grammar.Seq); isSeq {
+			b.WriteString("  if (v !== null) { c.items = v.children; } else { c.one[0] = null; c.items = c.one; }\n")
+		} else {
+			b.WriteString("  c.one[0] = v;\n  c.items = c.one;\n")
+		}
+		fmt.Fprintf(&b, "  const result = c.result(%s, %s);\n", act, tsString(g.cur.name))
+		b.WriteString("  for (let slot = 0; slot < p.frame.length; slot++) { if (p.frame[slot] !== null) { p.setCapture(slot, null); } }\n  return result;\n")
 	case *grammar.Choice:
 		b.WriteString(tsMark("  "))
 		peeked := false

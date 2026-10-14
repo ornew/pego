@@ -319,8 +319,9 @@ func (c caps) record() recordTy {
 // scopeCheck is the checking state of one scope (a rule body, a repetition element, or a OperatorsRule
 // line).
 type scopeCheck struct {
-	caps  caps
-	preds []grammar.Term // predicates checked after the scope has been examined
+	caps   caps
+	closed map[string]bool // names hidden by an inline action, rather than absent for another reason
+	preds  []grammar.Term  // predicates checked after the scope has been examined
 }
 
 // expr returns the type of the expression's value and records captures in sc. It returns nil for
@@ -337,29 +338,65 @@ func (k *checker) expr(e grammar.Expr, sc *scopeCheck) ty {
 		}
 		return tyAny
 	case *grammar.Seq:
-		for _, it := range e.Items {
-			k.expr(it, sc)
-		}
+		k.sequenceItems(e, sc)
 		return tySeq
+	case *grammar.InlineAction:
+		var body ty
+		var items []ty
+		if seq, ok := e.Expr.(*grammar.Seq); ok {
+			items = k.sequenceItems(seq, sc)
+			body = tySeq
+		} else {
+			body = k.expr(e.Expr, sc)
+			if body == nil {
+				body = tyNil
+			}
+			items = []ty{body}
+		}
+		if e.Action == nil {
+			return body
+		}
+		result := k.term(e.Action, &termEnv{caps: sc.caps, closed: sc.closed, items: items, allowIndex: true})
+		if !isNodeOrNil(result) {
+			k.errorf(termPos(e.Action, e.Diagnostic()), "inline action must produce a node, got %s", result)
+			result = tyAny
+		}
+		k.checkPreds(sc)
+		sc.preds = nil
+		if sc.closed == nil {
+			sc.closed = map[string]bool{}
+		}
+		for name := range sc.caps {
+			sc.closed[name] = true
+		}
+		clear(sc.caps)
+		return result
 	case *grammar.Choice:
 		var ts []ty
-		var all []caps
+		var all []*scopeCheck
 		for _, alt := range e.Alts {
-			sub := &scopeCheck{caps: caps{}}
+			sub := copyScopeCheck(sc)
 			ts = append(ts, k.expr(alt, sub))
-			all = append(all, sub.caps)
+			all = append(all, sub)
 			sc.preds = append(sc.preds, sub.preds...)
 		}
 		// Only names captured in every alternative always have a value.
-		for _, c := range all {
-			for n, ci := range c {
+		sc.caps = caps{}
+		for _, sub := range all {
+			for n, ci := range sub.caps {
 				inAll := true
-				for _, o := range all {
-					if oc, ok := o[n]; !ok || !oc.always {
+				for _, other := range all {
+					if oc, ok := other.caps[n]; !ok || !oc.always {
 						inAll = false
 					}
 				}
 				k.addCapture(sc, n, capInfo{t: ci.t, always: inAll})
+			}
+		}
+		sc.closed = map[string]bool{}
+		for _, sub := range all {
+			for name := range sub.closed {
+				sc.closed[name] = true
 			}
 		}
 		return union(ts...)
@@ -375,10 +412,30 @@ func (k *checker) expr(e grammar.Expr, sc *scopeCheck) ty {
 		}
 		return listTy{t}
 	case *grammar.Optional:
-		sub := &scopeCheck{caps: caps{}}
+		sub := copyScopeCheck(sc)
+		closedBefore := map[string]bool{}
+		for name := range sc.closed {
+			closedBefore[name] = true
+		}
 		t := k.expr(e.Expr, sub)
 		for n, ci := range sub.caps {
 			k.addCapture(sc, n, capInfo{t: ci.t, always: false})
+		}
+		for name := range closedBefore {
+			if sc.closed == nil {
+				sc.closed = map[string]bool{}
+			}
+			sc.closed[name] = true
+		}
+		for name := range sub.closed {
+			if sc.closed == nil {
+				sc.closed = map[string]bool{}
+			}
+			sc.closed[name] = true
+			if ci, ok := sc.caps[name]; ok {
+				ci.always = false
+				sc.caps[name] = ci
+			}
 		}
 		sc.preds = append(sc.preds, sub.preds...)
 		if t == nil {
@@ -407,6 +464,30 @@ func (k *checker) expr(e grammar.Expr, sc *scopeCheck) ty {
 	return tyAny
 }
 
+func copyScopeCheck(sc *scopeCheck) *scopeCheck {
+	sub := &scopeCheck{caps: caps{}, closed: map[string]bool{}}
+	for name, ci := range sc.caps {
+		sub.caps[name] = ci
+	}
+	for name := range sc.closed {
+		sub.closed[name] = true
+	}
+	return sub
+}
+
+// sequenceItems checks a sequence once in its enclosing capture scope and
+// records the types visible to a value action at its boundary.
+func (k *checker) sequenceItems(seq *grammar.Seq, sc *scopeCheck) []ty {
+	var items []ty
+	for _, it := range seq.Items {
+		t := k.expr(it, sc)
+		if visible(it) {
+			items = append(items, t)
+		}
+	}
+	return items
+}
+
 func (k *checker) addCapture(sc *scopeCheck, name string, ci capInfo) {
 	if old, ok := sc.caps[name]; ok {
 		t := old.t
@@ -424,10 +505,11 @@ func (k *checker) addCapture(sc *scopeCheck, name string, ci capInfo) {
 		ci = capInfo{t: t, always: old.always || ci.always}
 	}
 	sc.caps[name] = ci
+	delete(sc.closed, name)
 }
 
 func (k *checker) checkPreds(sc *scopeCheck) {
-	env := &termEnv{caps: sc.caps}
+	env := &termEnv{caps: sc.caps, closed: sc.closed}
 	for _, p := range sc.preds {
 		if a, ok := p.(*grammar.Assign); ok {
 			t := k.term(a.Value, env)
@@ -451,21 +533,21 @@ func (k *checker) ruleType(rd *grammar.RuleDef) ty {
 		return k.operatorsRuleType(rd, pr, declared)
 	}
 	sc := &scopeCheck{caps: caps{}}
-	bodyT := k.expr(rd.Expr, sc)
-	k.checkPreds(sc)
+	var bodyT ty
 	var items []ty
 	if seq, ok := rd.Expr.(*grammar.Seq); ok {
-		for _, it := range seq.Items {
-			if visible(it) {
-				items = append(items, k.expr(it, &scopeCheck{caps: caps{}}))
-			}
+		items = k.sequenceItems(seq, sc)
+		bodyT = tySeq
+	} else {
+		bodyT = k.expr(rd.Expr, sc)
+		if bodyT != nil {
+			items = []ty{bodyT}
 		}
-	} else if bodyT != nil {
-		items = []ty{bodyT}
 	}
+	k.checkPreds(sc)
 	var t ty
 	if rd.Action != nil {
-		t = k.term(rd.Action, &termEnv{caps: sc.caps, items: items, allowIndex: true})
+		t = k.term(rd.Action, &termEnv{caps: sc.caps, closed: sc.closed, items: items, allowIndex: true})
 		if !isNodeOrNil(t) {
 			k.errorf(termPos(rd.Action, rd.Diagnostic()), "action of %s must produce a node, got %s", rd.Name, t)
 			t = tyAny
@@ -586,6 +668,7 @@ func (k *checker) attributed(e *grammar.Attributed, sc *scopeCheck) ty {
 // termEnv is the environment for type checking value expressions.
 type termEnv struct {
 	caps       caps
+	closed     map[string]bool
 	items      []ty
 	allowIndex bool
 	locals     map[string]ty
@@ -650,10 +733,14 @@ func (k *checker) term(t grammar.Term, env *termEnv) ty {
 		if lt, ok := env.locals[t.Name]; ok {
 			return lt
 		}
+		if env.closed[t.Name] {
+			k.errorf(t.Diagnostic(), "capture $%s is not visible after an inline action", t.Name)
+			return tyAny
+		}
 		if ct, ok := env.caps.typeOf(t.Name); ok {
 			return ct
 		}
-		return tyAny // undefined captures were already reported during name resolution
+		return tyAny
 	case *grammar.IndexRef:
 		if !env.allowIndex {
 			return tyAny

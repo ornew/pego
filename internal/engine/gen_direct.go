@@ -73,6 +73,8 @@ func directFrameExprOK(expr grammar.Expr, cuts, recovery bool) bool {
 			}
 		case *grammar.OperatorsRule:
 			ok = false
+		case *grammar.InlineAction:
+			ok = false
 		case *grammar.Attributed:
 			for _, a := range e.Attrs {
 				if a.Name == "recover" && !recovery {

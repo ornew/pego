@@ -327,6 +327,9 @@ func validateModule(m *Module) error {
 			nonneg(x.C)
 		case OpSeq:
 			nonneg(x.A)
+		case OpInlineAction:
+			in("expression", int(x.A), len(m.Exprs))
+			flag(x.B, 1)
 		case OpCapture:
 			nonneg(x.A)
 			flag(x.B, 1)

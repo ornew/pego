@@ -834,15 +834,19 @@ func (c *compiler) checkTerm(t grammar.Term, s *scope, locals []string) {
 		if contains(locals, t.Name) {
 			return
 		}
-		if _, ok := s.slots[t.Name]; !ok {
-			for o := s.outer; o != nil; o = o.outer {
-				if _, ok := o.slots[t.Name]; ok {
-					c.errorf(t.Diagnostic(), "capture $%s is not visible in a repetition element, which sees only its own captures; define a variable from it before the repetition", t.Name)
-					return
-				}
+		if _, ok := s.slots[t.Name]; ok {
+			if !s.active[t.Name] {
+				c.errorf(t.Diagnostic(), "capture $%s is not visible after an inline action", t.Name)
 			}
-			c.errorf(t.Diagnostic(), "undefined capture $%s", t.Name)
+			return
 		}
+		for o := s.outer; o != nil; o = o.outer {
+			if _, ok := o.slots[t.Name]; ok {
+				c.errorf(t.Diagnostic(), "capture $%s is not visible in a repetition element, which sees only its own captures; define a variable from it before the repetition", t.Name)
+				return
+			}
+		}
+		c.errorf(t.Diagnostic(), "undefined capture $%s", t.Name)
 	case *grammar.IndexRef:
 		if c.noIndex != "" {
 			c.errorf(t.Diagnostic(), "$%d cannot be used in %s", t.Index, c.noIndex)

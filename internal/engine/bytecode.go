@@ -18,6 +18,11 @@ type Module struct {
 
 // instructionSetVersion keeps ordinary modules readable by instruction-set-3 runtimes.
 func (m *Module) instructionSetVersion() int {
+	for _, in := range m.Code {
+		if in.Op == OpInlineAction {
+			return 7
+		}
+	}
 	for _, in := range m.Exprs {
 		if in.Op == ETerminal {
 			return 5
@@ -215,6 +220,9 @@ const (
 	OpRepeatWide
 	// SCANW c, min, max: SCAN with bounds stored in EINT instructions of Exprs.
 	OpScanWide
+	// INLINE_ACTION e, seq: reduce the wrapped value using expression e. The value and its
+	// start position are on the stack; seq says the wrapped value is a Seq.
+	OpInlineAction
 )
 
 // Expression instructions
@@ -296,7 +304,7 @@ var opNames = map[Op]string{
 	OpCall: "CALL", OpOperatorsRule: "OPERATORS_RULE", OpPred: "PRED", OpAssign: "ASSIGN", OpLabel: "LABEL",
 	OpEndLabel: "ENDLABEL", OpRecover: "RECOVER", OpEndRecover: "ENDRECOVER", OpEndSkip: "ENDSKIP",
 	OpReturn: "RETURN", OpEnd: "END", OpScan: "SCAN", OpGuard: "GUARD",
-	OpRepeatWide: "REPEATW", OpScanWide: "SCANW",
+	OpRepeatWide: "REPEATW", OpScanWide: "SCANW", OpInlineAction: "INLINE_ACTION",
 	EInt: "EINT", EStr: "ESTR", EBool: "EBOOL", ENil: "ENIL", ECap: "ECAP", EItem: "EITEM",
 	ELocal: "ELOCAL", EVar: "EVAR", EMember: "EMEMBER", ENew: "ENEW", EBin: "EBIN", EUnary: "EUNARY",
 	EAnd: "EAND", EOr: "EOR", EBoolChk: "EBOOLCHK", EFunc: "EFUNC", ECall: "ECALL", ERet: "ERET",

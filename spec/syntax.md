@@ -345,9 +345,9 @@ additional constraints are checked outside this source grammar.
   positioned diagnostic. These checks follow parsing.
 - **Action blocks.** Multiple-statement Predicate Actions and every braced
   Value Action are retained in the source AST but compilation rejects them.
-- **Inline actions.** `(expression => action)` is recognized in the source
-  grammar and represented in the AST, but compilation rejects it. Runtime
-  execution is not implemented.
+- **Inline Value Actions.** `(expression => action)` reduces the value of a
+  parenthesized Rule Expression after it succeeds; see
+  [Inline Value Actions](actions.md#inline-value-actions).
 - **Attribute placement.** Attributes are postfix Rule Expression annotations;
   Definition Statement prefixes are not supported.
 

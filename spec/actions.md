@@ -1,9 +1,11 @@
 # Actions
 
-PEGO has two executable action forms. A **Predicate Action** appears in braces
-where a Rule Expression atom is expected. It evaluates without consuming
-input or producing a value. A **Value Action** follows `=>` and computes a
-rule's value from the values produced by its grammar body. An ordinary rule may
+PEGO has two action forms. A **Predicate Action** appears in braces where a
+Rule Expression atom is expected. It evaluates without consuming input or
+producing a value. A **Value Action** follows `=>` and computes a rule's value
+from the values produced by its grammar body. A Value Action may follow a
+complete rule body or appear inside a parenthesized Rule Expression to reduce
+that subexpression. An ordinary rule may
 have a whole-rule Value Action after its complete expression:
 `rule name [Type] = expression => term`. An Operators Rule has specialized
 Value Actions on its operand and operator entries. A declaration-level action
@@ -14,13 +16,13 @@ other declaration-level action on an Operators Rule is a compile-time error.
 Single-term Predicate Actions keep their existing execution semantics.
 Multi-statement Predicate Action blocks and Value Action blocks parse, format
 and appear in source ASTs, but semantic analysis rejects them as unsupported;
-their statements do not execute. Inline Value Action forms are also recognized
-in source and rejected by compilation. Runtime execution of inline actions is
-not implemented. PEGO has no rule-initialization action block.
+their statements do not execute. Inline Value Actions execute after their
+parenthesized expression succeeds. PEGO has no rule-initialization action
+block.
 
 ```pego
-// Source syntax only; compilation rejects this inline Value Action.
-(b => { x := 1; x < 10; B{} })
+type Pair struct { Left Match; Right Match }
+rule pair Pair = (. . => Pair{Left: $1, Right: $2})
 ```
 
 ```pego
@@ -39,6 +41,28 @@ whether the predicate succeeds; see [Predicate Actions](predicates.md#predicate-
 A single-term Value Action follows `=>` after the complete rule expression.
 When a grammar expression spans multiple lines, parenthesize that expression;
 a line break inside a braced action block is local to the block.
+
+## Inline Value Actions
+
+An inline Value Action has the form `(expression => action)`. It reduces the
+value produced by the preceding expression inside those parentheses. The
+parenthesized expression must succeed before the action runs; a failure skips
+the action. The inline boundary does not create a rule, variable scope, cut,
+memo entry, or left-recursion boundary.
+
+If the wrapped expression is a sequence, `$n` refers to its valued elements
+and `$0` is their list. Otherwise, `$1` is the wrapped value and `$0` is a
+singleton list containing it. The action's result becomes the value of the
+parenthesized expression and is available to following sequence elements.
+Captures visible at the inline action may be referenced there; the boundary
+closes them when the action returns, so later expressions cannot read them by
+name. A later inline action receives the preceding result through its
+positional references.
+
+An action error is fatal to the parse: it does not retry another branch or
+enter recovery. As with other Value Actions, analysis may omit an action whose
+result is unused. The result must satisfy the rule's declared or inferred
+type and must be a node or `nil`.
 
 ## Capture References
 

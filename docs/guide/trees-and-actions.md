@@ -973,7 +973,7 @@ values and runs no actions.
 | `T has no field F` | A typo, or the struct does not declare the field |
 | `cannot access .F of *T` | The value may be `nil` (for example `n:name?`). Read the field in a rule where the value is always present |
 | `rule r produces X, which is not assignable to T` | The declared type does not accept the body's value; the CST of a sequence is a `Seq`, so a struct type needs an action |
-| `inline actions are not implemented` | The compiler recognized an inline action such as `(part => build($1))`, but inline action execution is not implemented |
+| `action in <rule>: ...` from an inline Value Action | The wrapped expression succeeded, then its action failed. Action errors abort the parse rather than retrying another branch |
 | Nondefault rule-level Value Action on an Operators Rule | Omit the action, use the explicit `=> ...` default-CST form, or put the action on an operand or operator entry |
 | `capture k inside #atomic, -, or ! has no effect` | Captures cannot be made inside atomic, discard or negative lookahead; capture the whole expression or restructure |
 | `undefined capture $z` | The capture is not made in this rule; captures are not visible across rules |

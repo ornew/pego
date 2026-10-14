@@ -60,6 +60,10 @@ func (c *compiler) resumable(e grammar.Expr) bool {
 		switch x := x.(type) {
 		case *grammar.Predicate:
 			ok = false
+		case *grammar.InlineAction:
+			if x.Action != nil {
+				ok = false
+			}
 		case *grammar.Ref:
 			if r := c.prog.byName[x.Name]; r == nil || len(r.vars) > 0 {
 				ok = false

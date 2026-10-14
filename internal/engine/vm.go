@@ -74,7 +74,7 @@ func (vm *vmProgram) runSite(ip int) *vmRunSite {
 	site := &vmRunSite{end: end, keep: code[end-1].B != 0, shiftable: true}
 	for _, in := range code[ip+2 : end-1] {
 		switch in.Op {
-		case OpPred, OpAssign:
+		case OpPred, OpAssign, OpInlineAction:
 			return nil
 		case OpCapture:
 			if code[ip].C < 0 { // the element writes captures to the enclosing scope (in &)
@@ -518,6 +518,27 @@ func (p *parser) step(vm *vmProgram, b *vmBody, resume, rok bool, rv *Node) (ev 
 			start := *p.vals[top-n-1].(*int)
 			p.vals = p.vals[:top-n-1]
 			p.push(p.newNode(Node{kind: kindSeq, Start: int32(start), End: int32(p.pos), Children: kids, fresh: true}))
+		case OpInlineAction:
+			v := asNodeValue(p.pop())
+			start := *p.pop().(*int)
+			items := p.one(v)
+			if in.B == 1 && v != nil {
+				items = v.Children
+			}
+			where := "inline action"
+			if b.r != nil {
+				where = b.r.name
+			}
+			ctx := p.useCtx(evalCtx{p: p, frame: p.frame, items: items, start: start, end: p.pos, cbase: len(p.created)})
+			result := p.actionResult(ctx, vm.evaluator(int(in.A), false), where)
+			if p.frame != nil {
+				for slot, value := range p.frame.vals {
+					if value != nil {
+						p.setCapture(slot, nil)
+					}
+				}
+			}
+			p.push(result)
 		case OpAtomic:
 			start := *p.pop().(*int)
 			if in.A == 1 {

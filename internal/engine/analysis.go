@@ -165,6 +165,8 @@ func (a *analysis) isNullable(e grammar.Expr) bool {
 		return a.isNullable(e.Expr)
 	case *grammar.Capture:
 		return a.isNullable(e.Expr)
+	case *grammar.InlineAction:
+		return a.isNullable(e.Expr)
 	case *grammar.Attributed:
 		return a.isNullable(e.Expr)
 	case *grammar.OperatorsRule:
@@ -214,6 +216,8 @@ func (a *analysis) leftCalls(e grammar.Expr, acc []string) []string {
 	case *grammar.Discard:
 		acc = a.leftCalls(e.Expr, acc)
 	case *grammar.Capture:
+		acc = a.leftCalls(e.Expr, acc)
+	case *grammar.InlineAction:
 		acc = a.leftCalls(e.Expr, acc)
 	case *grammar.Attributed:
 		acc = a.leftCalls(e.Expr, acc)
@@ -544,6 +548,8 @@ func walkRuleTerms(r *grammar.RuleDef, f func(grammar.Term)) {
 		switch e := e.(type) {
 		case *grammar.Predicate:
 			walkTerm(e.Term, f)
+		case *grammar.InlineAction:
+			walkTerm(e.Action, f)
 		case *grammar.OperatorsRule:
 			for _, o := range e.Operands {
 				walkTerm(o.Action, f)

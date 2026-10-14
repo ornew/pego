@@ -21,6 +21,17 @@ func ruleProjections(prog *Program, r *rule) map[string]string {
 	if prog.noProjections || r.action == nil || usesItems(r.action) {
 		return nil
 	}
+	// Projection assumes a capture survives unchanged until the whole-rule action.
+	// Inline reductions close captures before that point.
+	inline := false
+	walkExpr(r.def.Expr, func(e grammar.Expr) {
+		if _, ok := e.(*grammar.InlineAction); ok {
+			inline = true
+		}
+	})
+	if inline {
+		return nil
+	}
 	if _, operatorsRule := r.def.Expr.(*grammar.OperatorsRule); operatorsRule {
 		return nil
 	}

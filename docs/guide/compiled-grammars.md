@@ -364,7 +364,7 @@ A file carries two version numbers after its magic number:
 | Number | Now | Meaning |
 |:--|--:|:--|
 | Format version | 2 | The layout of the file. A runtime loads files of version 1 and 2 and refuses any other. |
-| Instruction-set version | 3 or 4 | The instructions the bytecode may use. Version 4 adds full-width repetition bounds; modules without them still use version 3. A runtime loads files of every instruction-set version up to its own. |
+| Instruction-set version | 3, 4, 5 or 7 | The instructions the bytecode may use. Version 4 adds full-width repetition bounds, version 5 terminal construction and version 7 inline Value Actions. A runtime loads files of every instruction-set version up to its own. |
 
 The consequences:
 

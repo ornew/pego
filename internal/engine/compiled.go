@@ -33,8 +33,8 @@ const (
 	// isaVersion is the latest supported instruction set. Files of earlier versions load:
 	// version 2 only adds instructions (ETEXTCHK, ETEXTEQ, ELISTBEGIN, ELISTPUSH, EMAPPUSH,
 	// ELISTEND), version 3 GUARD and NEXT with f 3, version 4 wide repetition bounds,
-	// and version 5 ETERMINAL for terminals with supplied text.
-	isaVersion = 5
+	// version 5 ETERMINAL for terminals with supplied text, and version 7 inline actions.
+	isaVersion = 7
 	maxDepth   = 10000
 )
 
@@ -69,6 +69,7 @@ const (
 	xPredicate
 	xAttributed
 	xOperatorsRule
+	xInlineAction
 )
 
 // Value expression kinds
@@ -169,12 +170,34 @@ func (prog *Program) MarshalBinaryWith(start string, o MarshalOptions) ([]byte, 
 	if withAST {
 		w.statements(prog, compiledVersion)
 	}
+	isa := m.instructionSetVersion()
+	if withAST && grammarHasInlineAction(prog.Grammar) && isa < 7 {
+		isa = 7
+	}
 	var out bytes.Buffer
 	out.WriteString(compiledMagic)
 	out.WriteByte(compiledVersion)
-	out.Write(binary.AppendUvarint(nil, uint64(m.instructionSetVersion())))
+	out.Write(binary.AppendUvarint(nil, uint64(isa)))
 	w.finish(&out)
 	return out.Bytes(), nil
+}
+
+func grammarHasInlineAction(g *grammar.Grammar) bool {
+	if g == nil {
+		return false
+	}
+	for _, rule := range g.Rules() {
+		found := false
+		walkExpr(rule.Expr, func(e grammar.Expr) {
+			if _, ok := e.(*grammar.InlineAction); ok {
+				found = true
+			}
+		})
+		if found {
+			return true
+		}
+	}
+	return false
 }
 
 // finish writes the string table and the body to out and appends the checksum.
@@ -300,6 +323,14 @@ func (w *encoder) expr(e grammar.Expr) {
 	case *grammar.Seq:
 		w.byte(xSeq)
 		w.exprs(e.Items)
+	case *grammar.InlineAction:
+		w.byte(xInlineAction)
+		w.expr(e.Expr)
+		w.bool(e.DefaultAction)
+		w.bool(e.Action != nil)
+		if e.Action != nil {
+			w.term(e.Action)
+		}
 	case *grammar.Choice:
 		w.byte(xChoice)
 		w.exprs(e.Alts)
@@ -623,6 +654,9 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	if isa < 5 && m.instructionSetVersion() == 5 {
 		return nil, "", errors.New("invalid compiled grammar: terminal construction requires instruction set version 5")
 	}
+	if isa < 7 && (m.instructionSetVersion() == 7 || (prog != nil && grammarHasInlineAction(prog.Grammar))) {
+		return nil, "", errors.New("invalid compiled grammar: inline actions require instruction set version 7")
+	}
 	if prog == nil {
 		prog = moduleProgram(m)
 		prog.pkg = pkg
@@ -774,6 +808,12 @@ func (r *decoder) expr() grammar.Expr {
 		return &grammar.Any{}
 	case xSeq:
 		return &grammar.Seq{Items: r.exprs()}
+	case xInlineAction:
+		a := &grammar.InlineAction{Expr: r.expr(), DefaultAction: r.bool()}
+		if r.bool() {
+			a.Action = r.term()
+		}
+		return a
 	case xChoice:
 		return &grammar.Choice{Alts: r.exprs()}
 	case xRepeat:

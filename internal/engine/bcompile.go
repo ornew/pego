@@ -219,6 +219,15 @@ func (c *bcompiler) match(e grammar.Expr, s *scope, build bool) {
 		if build {
 			c.emit(OpSeq, int32(n), 0, 0)
 		}
+	case *grammar.InlineAction:
+		if e.Action == nil || !build {
+			c.match(e.Expr, s, build)
+			return
+		}
+		c.emit(OpPushPos, 0, 0, 0)
+		c.value(e.Expr, s, true)
+		_, isSeq := e.Expr.(*grammar.Seq)
+		c.emit(OpInlineAction, int32(c.expr(e.Action, s, nil, true)), b2i(isSeq), 0)
 	case *grammar.Choice:
 		var ends []int
 		for i, alt := range e.Alts {

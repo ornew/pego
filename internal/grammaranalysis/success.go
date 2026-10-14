@@ -27,6 +27,8 @@ func AlwaysSucceeds(e grammar.Expr, sure map[string]bool) bool {
 	switch e := e.(type) {
 	case *grammar.Group:
 		return AlwaysSucceeds(e.Expr, sure)
+	case *grammar.InlineAction:
+		return AlwaysSucceeds(e.Expr, sure)
 	case *grammar.Literal:
 		return e.Value == ""
 	case *grammar.Top, *grammar.Cut:
@@ -85,6 +87,8 @@ func alwaysFails(e grammar.Expr, sure map[string]bool) bool {
 	switch e := e.(type) {
 	case *grammar.Group:
 		return alwaysFails(e.Expr, sure)
+	case *grammar.InlineAction:
+		return alwaysFails(e.Expr, sure)
 	case *grammar.Bottom:
 		return true
 	case *grammar.Not:
@@ -131,6 +135,8 @@ func alwaysFails(e grammar.Expr, sure map[string]bool) bool {
 func HasLooseCut(e grammar.Expr) bool {
 	switch e := e.(type) {
 	case *grammar.Group:
+		return HasLooseCut(e.Expr)
+	case *grammar.InlineAction:
 		return HasLooseCut(e.Expr)
 	case *grammar.Cut:
 		return true

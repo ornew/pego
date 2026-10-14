@@ -750,6 +750,24 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 		} else {
 			b.WriteString("\treturn nil, true\n")
 		}
+	case *grammar.InlineAction:
+		m := g.expr(e.Expr, s, build)
+		if e.Action == nil || !build {
+			return m
+		}
+		g.final = e.Action
+		term := g.term(e.Action, s, nil)
+		g.final = nil
+		fmt.Fprintf(&b, "\tstart := p.pos\n\tv, ok := p.%s()\n\tif !ok { return nil, false }\n", m)
+		fmt.Fprintf(&b, "\tc := p.useCtx(%s{p: p, f: p.frame, start: start, end: p.pos, cbase: len(p.created)})\n", g.ctxType())
+		if _, isSeq := e.Expr.(*grammar.Seq); isSeq {
+			b.WriteString(g.pick("\tif v != nil { c.items = v.Children } else { c.one[0] = nil; c.items = c.one[:] }\n",
+				"\tif n := asTval(v); n != nil { c.items = n.tkids() } else { c.one[0] = nil; c.items = c.one[:] }\n"))
+		} else {
+			b.WriteString("\tc.one[0] = v\n\tc.items = c.one[:]\n")
+		}
+		fmt.Fprintf(&b, "\tresult := c.result(func(c *%s) any { return %s }, %q)\n", g.ctxType(), term, g.cur.name)
+		b.WriteString("\tif p.frame != nil { for slot, value := range p.frame.vals { if value != nil { p.setCapture(slot, nil) } } }\n\treturn result, true\n")
 	case *grammar.Choice:
 		b.WriteString("\tm0 := p.mark()\n")
 		peeked := false
@@ -993,6 +1011,8 @@ func (g *generator) first(e grammar.Expr, depth int, seen map[string]bool) (stri
 			return g.first(e.Items[0], depth, seen)
 		}
 	case *grammar.Capture:
+		return g.first(e.Expr, depth, seen)
+	case *grammar.InlineAction:
 		return g.first(e.Expr, depth, seen)
 	case *grammar.Atomic:
 		return g.first(e.Expr, depth, seen)

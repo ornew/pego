@@ -250,8 +250,7 @@ type Group struct {
 }
 
 // InlineAction maps an expression's value inside a parenthesized grammar
-// expression. Parsing and formatting are supported; compilation is not yet
-// implemented. DefaultAction denotes an explicit => ... instead of Action.
+// expression. DefaultAction denotes an explicit => ... instead of Action.
 type InlineAction struct {
 	SourceInfo    `json:"source,omitempty"`
 	Expr          Expr `json:"expr"`

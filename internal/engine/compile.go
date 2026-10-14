@@ -125,14 +125,18 @@ type rule struct {
 type scope struct {
 	names []string
 	slots map[string]int
+	// active tracks which capture names are visible while compiling this expression.
+	// A local action closes them without changing their physical frame slots.
+	active map[string]bool
 	// outer is the scope of the rule body that contains a repetition element's scope, for error
 	// messages: its captures are not visible in the element.
 	outer *scope
 }
 
-func newScope() *scope { return &scope{slots: map[string]int{}} }
+func newScope() *scope { return &scope{slots: map[string]int{}, active: map[string]bool{}} }
 
 func (s *scope) slot(name string) int {
+	s.active[name] = true
 	if i, ok := s.slots[name]; ok {
 		return i
 	}
@@ -284,9 +288,6 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 						checkBlocks(operator.Action)
 					}
 				}
-			}
-			if inline, ok := e.(*grammar.InlineAction); ok {
-				unsupported = append(unsupported, &Error{Pos: inline.Diagnostic(), Msg: "inline actions are not implemented"})
 			}
 		})
 	}
@@ -570,6 +571,8 @@ func visible(e grammar.Expr) bool {
 		return false
 	case *grammar.Capture:
 		return visible(e.Expr)
+	case *grammar.InlineAction:
+		return e.Action != nil || visible(e.Expr)
 	case *grammar.Attributed:
 		return visible(e.Expr)
 	}
@@ -618,6 +621,8 @@ func hasCaptures(e grammar.Expr) bool {
 		}
 	case *grammar.Optional:
 		return hasCaptures(e.Expr)
+	case *grammar.InlineAction:
+		return hasCaptures(e.Expr)
 	case *grammar.Attributed:
 		return hasCaptures(e.Expr)
 	}
@@ -638,6 +643,43 @@ func (c *compiler) expr(e grammar.Expr, s *scope, build bool) matcher {
 
 func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 	switch e := e.(type) {
+	case *grammar.InlineAction:
+		if e.Action == nil {
+			return c.expr(e.Expr, s, build)
+		}
+		// The wrapped expression has the same matching and frame as its parent.
+		// Only its value is reduced at this point in the enclosing expression.
+		m := c.expr(e.Expr, s, build)
+		if !build {
+			clear(s.active)
+			return m
+		}
+		c.checkTerm(e.Action, s, nil)
+		clear(s.active)
+		act := termEvaluator(e.Action)
+		where := c.rule.name
+		_, bodyIsSeq := e.Expr.(*grammar.Seq)
+		return func(p *parser) (*Node, bool) {
+			start := p.pos
+			v, ok := m(p)
+			if !ok {
+				return nil, false
+			}
+			items := []*Node{v}
+			if bodyIsSeq && v != nil {
+				items = v.Children
+			}
+			ctx := p.useCtx(evalCtx{p: p, scope: s, frame: p.frame, items: items, start: start, end: p.pos, cbase: len(p.created)})
+			result := p.actionResult(ctx, act, where)
+			if p.frame != nil {
+				for slot, value := range p.frame.vals {
+					if value != nil {
+						p.setCapture(slot, nil)
+					}
+				}
+			}
+			return result, true
+		}
 	case *grammar.Literal:
 		value := literalValue(e.Value)
 		rs, bs := []rune(value), []byte(value)
@@ -717,10 +759,26 @@ func (c *compiler) exprMatcher(e grammar.Expr, s *scope, build bool) matcher {
 		ms := make([]matcher, len(e.Alts))
 		guards := make([]firstGuard, len(e.Alts))
 		guarded := false
+		before := make(map[string]bool, len(s.active))
+		for name := range s.active {
+			before[name] = true
+		}
+		after := make(map[string]bool)
 		for i, alt := range e.Alts {
+			clear(s.active)
+			for name := range before {
+				s.active[name] = true
+			}
 			ms[i] = c.expr(alt, s, build)
+			for name := range s.active {
+				after[name] = true
+			}
 			guards[i] = c.first(alt)
 			guarded = guarded || guards[i].accept != nil
+		}
+		clear(s.active)
+		for name := range after {
+			s.active[name] = true
 		}
 		if guarded {
 			return func(p *parser) (*Node, bool) {
@@ -948,6 +1006,8 @@ func firstTerminal(prog *Program, e grammar.Expr, depth int, seen map[string]boo
 			return firstTerminal(prog, e.Items[0], depth, seen)
 		}
 	case *grammar.Capture:
+		return firstTerminal(prog, e.Expr, depth, seen)
+	case *grammar.InlineAction:
 		return firstTerminal(prog, e.Expr, depth, seen)
 	case *grammar.Atomic:
 		return firstTerminal(prog, e.Expr, depth, seen)
