@@ -10,6 +10,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -52,7 +54,11 @@ type nodeJSON struct {
 
 // MarshalJSON encodes the node as an object (see Node).
 func (n *Node) MarshalJSON() ([]byte, error) {
-	return json.Marshal(nodeJSON{n.Type(), n.Rule(), n.Start, n.End, n.Text, n.Children, n.Fields})
+	var b bytes.Buffer
+	if err := n.WriteJSON(&b); err != nil {
+		return nil, err
+	}
+	return b.Bytes(), nil
 }
 
 // nodeKind is a pair of type and rule names, interned (kindOf) so that a node holds one pointer
@@ -178,11 +184,9 @@ func (fs Fields) MarshalJSON() ([]byte, error) {
 		k, _ := json.Marshal(f.Name)
 		b.Write(k)
 		b.WriteByte(':')
-		v, err := json.Marshal(f.Value)
-		if err != nil {
+		if err := writeJSONValue(&b, f.Value); err != nil {
 			return nil, err
 		}
-		b.Write(v)
 	}
 	b.WriteByte('}')
 	return b.Bytes(), nil
@@ -2585,4 +2589,469 @@ func asNodeWork(p *parser, fn string, v any) *Node {
 	}
 	p.evalErrorf("%s: list elements must be nodes, got %s", fn, typeName(v))
 	return nil
+}
+
+// --- Iterative tree API: node_json (mirrors internal/engine/node_json.go) ---
+
+type nodeJSONFrame struct {
+	value  any
+	fields Fields
+	index  int
+	phase  uint8
+	slice  nodeJSONSliceID
+}
+
+const (
+	nodeJSONEnter uint8 = iota
+	nodeJSONChildren
+	nodeJSONFieldsStart
+	nodeJSONFields
+	nodeJSONExit
+	nodeJSONSliceItems
+)
+
+type nodeJSONSliceID struct {
+	ptr uintptr
+	len int
+}
+
+// jsonOutput coalesces the small fragments of a node while preserving writer errors
+// and the already-written prefix when an unsupported value is encountered.
+type jsonOutput struct {
+	w   io.Writer
+	buf []byte
+}
+
+func (out *jsonOutput) flush() error {
+	if len(out.buf) == 0 {
+		return nil
+	}
+	if err := writeJSONBytes(out.w, out.buf); err != nil {
+		return err
+	}
+	out.buf = out.buf[:0]
+	return nil
+}
+
+func (out *jsonOutput) bytes(data []byte) error {
+	if len(out.buf)+len(data) > cap(out.buf) {
+		if err := out.flush(); err != nil {
+			return err
+		}
+	}
+	if len(data) > cap(out.buf) {
+		return writeJSONBytes(out.w, data)
+	}
+	out.buf = append(out.buf, data...)
+	return nil
+}
+
+func (out *jsonOutput) raw(s string) error {
+	if len(out.buf)+len(s) > cap(out.buf) {
+		if err := out.flush(); err != nil {
+			return err
+		}
+	}
+	out.buf = append(out.buf, s...)
+	return nil
+}
+
+func (out *jsonOutput) number(n int32) error {
+	if len(out.buf)+11 > cap(out.buf) {
+		if err := out.flush(); err != nil {
+			return err
+		}
+	}
+	out.buf = strconv.AppendInt(out.buf, int64(n), 10)
+	return nil
+}
+
+func (out *jsonOutput) encoded(value any) error {
+	data, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+	return out.bytes(data)
+}
+
+// writeJSONValue encodes PEGO nodes and []any values without recursive calls through their nested
+// edges. Other values are delegated to encoding/json, preserving its scalar and custom-marshaler
+// behavior. []byte intentionally stays in that fallback so it keeps encoding as base64.
+func writeJSONValue(w io.Writer, value any) error {
+	out := jsonOutput{w: w, buf: make([]byte, 0, 512)}
+	stack := []nodeJSONFrame{{value: value}}
+	activeNodes := make(map[*Node]struct{})
+	activeSlices := make(map[nodeJSONSliceID]struct{})
+	for len(stack) != 0 {
+		frame := &stack[len(stack)-1]
+		var err error
+		switch value := frame.value.(type) {
+		case *Node:
+			if value == nil {
+				err = out.raw("null")
+				stack = stack[:len(stack)-1]
+				break
+			}
+			switch frame.phase {
+			case nodeJSONEnter:
+				if _, ok := activeNodes[value]; ok {
+					err = jsonCycleError(value)
+					break
+				}
+				activeNodes[value] = struct{}{}
+				if err = out.raw(`{"type":`); err != nil {
+					break
+				}
+				if err = out.encoded(value.Type()); err != nil {
+					break
+				}
+				if value.Rule() != "" {
+					if err = out.raw(`,"rule":`); err != nil {
+						break
+					}
+					if err = out.encoded(value.Rule()); err != nil {
+						break
+					}
+				}
+				if err = out.raw(`,"start":`); err != nil {
+					break
+				}
+				if err = out.number(value.Start); err != nil {
+					break
+				}
+				if err = out.raw(`,"end":`); err != nil {
+					break
+				}
+				if err = out.number(value.End); err != nil {
+					break
+				}
+				if value.Text != "" {
+					if err = out.raw(`,"text":`); err != nil {
+						break
+					}
+					if err = out.encoded(value.Text); err != nil {
+						break
+					}
+				}
+				frame.phase = nodeJSONChildren
+				if len(value.Children) != 0 {
+					err = out.raw(`,"children":[`)
+				}
+			case nodeJSONChildren:
+				if frame.index < len(value.Children) {
+					if frame.index != 0 {
+						if err = out.raw(","); err != nil {
+							break
+						}
+					}
+					child := value.Children[frame.index]
+					frame.index++
+					stack = append(stack, nodeJSONFrame{value: child})
+				} else {
+					if len(value.Children) != 0 {
+						if err = out.raw("]"); err != nil {
+							break
+						}
+					}
+					frame.phase = nodeJSONFieldsStart
+				}
+			case nodeJSONFieldsStart:
+				if len(value.Fields) != 0 {
+					frame.fields = value.Fields.sorted()
+					frame.index = 0
+					frame.phase = nodeJSONFields
+					err = out.raw(`,"fields":{`)
+				} else {
+					frame.phase = nodeJSONExit
+				}
+			case nodeJSONFields:
+				if frame.index < len(frame.fields) {
+					if frame.index != 0 {
+						if err = out.raw(","); err != nil {
+							break
+						}
+					}
+					field := frame.fields[frame.index]
+					if err = out.encoded(field.Name); err != nil {
+						break
+					}
+					if err = out.raw(":"); err != nil {
+						break
+					}
+					frame.index++
+					stack = append(stack, nodeJSONFrame{value: field.Value})
+				} else {
+					if err = out.raw("}"); err != nil {
+						break
+					}
+					frame.phase = nodeJSONExit
+				}
+			case nodeJSONExit:
+				delete(activeNodes, value)
+				err = out.raw("}")
+				stack = stack[:len(stack)-1]
+			}
+		case []any:
+			if value == nil {
+				err = out.raw("null")
+				stack = stack[:len(stack)-1]
+				break
+			}
+			if frame.phase == nodeJSONEnter {
+				id := sliceIdentity(value)
+				if _, ok := activeSlices[id]; ok {
+					err = jsonCycleError(value)
+					break
+				}
+				activeSlices[id] = struct{}{}
+				frame.slice = id
+				frame.phase = nodeJSONSliceItems
+				err = out.raw("[")
+			} else if frame.index < len(value) {
+				if frame.index != 0 {
+					if err = out.raw(","); err != nil {
+						break
+					}
+				}
+				item := value[frame.index]
+				frame.index++
+				stack = append(stack, nodeJSONFrame{value: item})
+			} else {
+				delete(activeSlices, frame.slice)
+				err = out.raw("]")
+				stack = stack[:len(stack)-1]
+			}
+		default:
+			err = out.encoded(value)
+			stack = stack[:len(stack)-1]
+		}
+		if err != nil {
+			if flushErr := out.flush(); flushErr != nil {
+				return flushErr
+			}
+			return err
+		}
+	}
+	return out.flush()
+}
+
+func jsonCycleError(value any) error {
+	t := reflect.TypeOf(value)
+	return &json.UnsupportedValueError{Value: reflect.ValueOf(value), Str: fmt.Sprintf("encountered a cycle via %s", t)}
+}
+
+func writeJSONBytes(w io.Writer, data []byte) error {
+	n, err := w.Write(data)
+	if err != nil {
+		return err
+	}
+	if n != len(data) {
+		return io.ErrShortWrite
+	}
+	return nil
+}
+
+// WriteJSON writes the live node graph as JSON without recursive Node or []any traversal.
+// A nil receiver writes null. Shared edges are encoded separately; active-path cycles fail.
+// It does not close or flush w, and an error may leave a prefix written. Maps and other
+// containers delegate to encoding/json and are outside the iterative depth guarantee.
+// Callers must not mutate reachable values concurrently with this method.
+func (n *Node) WriteJSON(w io.Writer) error {
+	return writeJSONValue(w, n)
+}
+
+func sliceIdentity(value []any) nodeJSONSliceID {
+	return nodeJSONSliceID{ptr: reflect.ValueOf(value).Pointer(), len: len(value)}
+}
+
+// --- Iterative tree API: node_walk (mirrors internal/engine/node_walk.go) ---
+
+// WalkAction controls descent after a visit.
+type WalkAction uint8
+
+const (
+	WalkContinue WalkAction = iota
+	WalkSkip
+	WalkStop
+)
+
+// WalkEdgeKind identifies the incoming edge of a value.
+type WalkEdgeKind uint8
+
+const (
+	WalkRoot WalkEdgeKind = iota
+	WalkChild
+	WalkField
+	WalkListElement
+)
+
+// WalkEdge identifies an incoming edge. Only its Kind's index or name is meaningful.
+type WalkEdge struct {
+	Kind       WalkEdgeKind
+	ChildIndex int
+	FieldName  string
+	ListIndex  int
+}
+
+// WalkVisit describes a live value and its nearest owning node. Depth counts edges.
+// Node is populated only for non-nil *Node values; Value retains typed nil leaves.
+type WalkVisit struct {
+	Value  any
+	Node   *Node
+	Parent *Node
+	Depth  int
+	Edge   WalkEdge
+}
+
+// CycleError describes an active-path back-edge, including the root and failing edge.
+type CycleError struct{ Path []WalkEdge }
+
+func (e *CycleError) Error() string {
+	return fmt.Sprintf("pego: tree cycle at depth %d", len(e.Path)-1)
+}
+
+type walkTask struct {
+	visit    WalkVisit
+	exit     bool
+	identity any
+}
+
+// Walk visits the root, then children in slice order, then fields in sorted name order.
+// Nested []any values are visited in index order. Other containers are leaves. Shared
+// nodes and lists are visited per edge; only cycles on the active path are rejected.
+// Callback errors return unchanged; Stop succeeds; Skip omits the value's descendants.
+// The graph must not be mutated concurrently. Walk does not mutate or retain it.
+func Walk(root *Node, visit func(WalkVisit) (WalkAction, error)) error {
+	if visit == nil {
+		return fmt.Errorf("pego: nil walk callback")
+	}
+	var value any = root
+	if root == nil {
+		value = nil
+	}
+	stack := []walkTask{{visit: WalkVisit{Value: value, Node: root, Edge: WalkEdge{Kind: WalkRoot}}}}
+	active := make(map[any]bool)
+	var path []WalkEdge
+	for len(stack) > 0 {
+		t := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		if t.exit {
+			delete(active, t.identity)
+			path = path[:len(path)-1]
+			continue
+		}
+		v := t.visit
+		var identity any
+		switch x := v.Value.(type) {
+		case *Node:
+			if x != nil {
+				identity = x
+				v.Node = x
+			}
+		case []any:
+			if len(x) > 0 {
+				identity = sliceIdentity(x)
+			}
+		}
+		if identity != nil && active[identity] {
+			p := append([]WalkEdge(nil), path...)
+			return &CycleError{Path: append(p, v.Edge)}
+		}
+		action, err := visit(v)
+		if err != nil {
+			return err
+		}
+		switch action {
+		case WalkStop:
+			return nil
+		case WalkSkip:
+			continue
+		case WalkContinue:
+		default:
+			return fmt.Errorf("pego: invalid walk action %d", action)
+		}
+		if identity == nil {
+			continue
+		}
+		active[identity] = true
+		path = append(path, v.Edge)
+		stack = append(stack, walkTask{exit: true, identity: identity})
+		push := func(value any, parent *Node, edge WalkEdge) {
+			stack = append(stack, walkTask{visit: WalkVisit{Value: value, Parent: parent, Depth: v.Depth + 1, Edge: edge}})
+		}
+		switch x := v.Value.(type) {
+		case *Node:
+			fields := x.Fields.sorted()
+			for i := len(fields) - 1; i >= 0; i-- {
+				push(fields[i].Value, x, WalkEdge{Kind: WalkField, FieldName: fields[i].Name})
+			}
+			for i := len(x.Children) - 1; i >= 0; i-- {
+				push(x.Children[i], x, WalkEdge{Kind: WalkChild, ChildIndex: i})
+			}
+		case []any:
+			for i := len(x) - 1; i >= 0; i-- {
+				push(x[i], v.Parent, WalkEdge{Kind: WalkListElement, ListIndex: i})
+			}
+		}
+	}
+	return nil
+}
+
+// --- Iterative tree API: node_cursor (mirrors internal/engine/node_cursor.go) ---
+
+// Cursor filters edge-oriented node visits using spans in Unit. Unit must match
+// the parse that populated Root's positions; it is never inferred or converted.
+// Parent spans do not prune traversal. Scalar and list values have no spans.
+type Cursor struct {
+	Root *Node
+	Unit Unit
+}
+
+func (c Cursor) validate(start, end int32) error {
+	if c.Unit != CodePoints && c.Unit != Bytes {
+		return fmt.Errorf("pego: invalid cursor unit %d", c.Unit)
+	}
+	if start < 0 || end < start {
+		return fmt.Errorf("pego: invalid cursor range [%d,%d)", start, end)
+	}
+	return nil
+}
+
+// At visits nodes containing position, including zero-width nodes at position.
+func (c Cursor) At(position int32, visit func(WalkVisit) (WalkAction, error)) error {
+	if err := c.validate(position, position); err != nil {
+		return err
+	}
+	return c.filter(visit, func(n *Node) bool {
+		return n.Start == n.End && n.Start == position || n.Start <= position && position < n.End
+	})
+}
+
+// Range visits nodes overlapping [start,end). An empty range matches no nodes.
+// Zero-width nodes match when start <= node.Start < end.
+func (c Cursor) Range(start, end int32, visit func(WalkVisit) (WalkAction, error)) error {
+	if err := c.validate(start, end); err != nil {
+		return err
+	}
+	return c.filter(visit, func(n *Node) bool {
+		if start == end {
+			return false
+		}
+		if n.Start == n.End {
+			return start <= n.Start && n.Start < end
+		}
+		return n.Start < end && start < n.End
+	})
+}
+
+func (c Cursor) filter(visit func(WalkVisit) (WalkAction, error), matches func(*Node) bool) error {
+	if visit == nil {
+		return fmt.Errorf("pego: nil cursor callback")
+	}
+	return Walk(c.Root, func(v WalkVisit) (WalkAction, error) {
+		if v.Node != nil && matches(v.Node) {
+			return visit(v)
+		}
+		return WalkContinue, nil
+	})
 }

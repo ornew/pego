@@ -192,6 +192,8 @@ type listConv struct {
 
 // runtimeNames are the exported names of the generated runtime, which typed values must avoid.
 var runtimeNames = map[string]bool{
+	"WalkTree": true, "WalkAction": true, "WalkContinue": true, "WalkSkip": true, "WalkStop": true,
+	"WalkVisit": true, "WalkEdge": true, "WalkEdgeKind": true, "WalkRoot": true, "WalkChild": true, "WalkField": true, "WalkListElement": true, "CycleError": true, "Cursor": true,
 	"Node": true, "NodeField": true, "Fields": true, "SyntaxError": true, "SyntaxErrors": true, "Unit": true,
 	"WorkLimits": true, "WorkLimitKind": true, "WorkLimitError": true, "ErrWorkLimit": true, "InputWorkLimit": true, "StepWorkLimit": true, "WithContext": true, "WithWorkLimits": true, "ParseOption": true, "WithUnit": true, "WithMaxDepth": true, "CodePoints": true, "Bytes": true, "Parse": true, "ParseRule": true, "ParseAST": true, "ParseRuleAST": true, "Recognize": true, "Match": true, "Error": true,
 }

@@ -152,6 +152,11 @@ func Generate(g *grammar.Grammar, opts GenOptions) ([]byte, error) {
 	}
 	rt := runtimeSource[strings.Index(runtimeSource, "package genrt"):]
 	rt = strings.Replace(rt, "package genrt", "package "+opts.Package, 1)
+	// Existing parser packages may define their own typed-AST Walk helper. Keep
+	// that API available by naming the generated generic Node walker WalkTree.
+	rt = strings.Replace(rt, "func Walk(", "func WalkTree(", 1)
+	rt = strings.Replace(rt, "// Walk visits", "// WalkTree visits", 1)
+	rt = strings.Replace(rt, "return Walk(c.Root,", "return WalkTree(c.Root,", 1)
 	rt = strings.Replace(rt, "const defaultMaxDepth = 100_000", fmt.Sprintf("const defaultMaxDepth = %d", opts.generatedMaxDepth()), 1)
 	if opts.disableNodeFrameScratch {
 		rt = strings.Replace(rt, "const nodeFrameScratch = true", "const nodeFrameScratch = false", 1)

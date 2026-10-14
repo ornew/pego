@@ -64,7 +64,11 @@ type nodeJSON struct {
 
 // MarshalJSON encodes the node as an object (see Node).
 func (n *Node) MarshalJSON() ([]byte, error) {
-	return json.Marshal(nodeJSON{n.Type(), n.Rule(), n.Start, n.End, n.Text, n.Children, n.Fields})
+	var b bytes.Buffer
+	if err := n.WriteJSON(&b); err != nil {
+		return nil, err
+	}
+	return b.Bytes(), nil
 }
 
 // nodeKind is the pair of type and rule names of nodes. Kinds are interned (kindOf), so that a node
@@ -203,11 +207,9 @@ func (fs Fields) MarshalJSON() ([]byte, error) {
 		k, _ := json.Marshal(f.Name)
 		b.Write(k)
 		b.WriteByte(':')
-		v, err := json.Marshal(f.Value)
-		if err != nil {
+		if err := writeJSONValue(&b, f.Value); err != nil {
 			return nil, err
 		}
-		b.Write(v)
 	}
 	b.WriteByte('}')
 	return b.Bytes(), nil
