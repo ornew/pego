@@ -81,6 +81,36 @@ func TestInitSavedGrammar(t *testing.T) {
 					t.Fatalf("omit AST %v, backend %v, parse %d: %v", omitAST, backend, i, err)
 				}
 			}
+			if n, err := loaded.ParseWith(start, "a", ParseOptions{Backend: backend, Recognize: true}); err != nil || n != nil {
+				t.Fatalf("omit AST %v, backend %v, recognize: node %v, error %v", omitAST, backend, n, err)
+			}
+		}
+	}
+}
+
+func TestCompiledRecognitionV3AndInitializerV4(t *testing.T) {
+	for _, src := range []string{
+		`rule main = "a"`,
+		"init { n := 1 }\nrule main = {n == 1} \"a\"",
+	} {
+		prog := compile(t, src)
+		data, err := prog.MarshalBinaryWith("main", MarshalOptions{OmitAST: true})
+		if err != nil {
+			t.Fatal(err)
+		}
+		wantVersion := byte(3)
+		if prog.initPresent {
+			wantVersion = 4
+		}
+		if got := data[len(compiledMagic)]; got != wantVersion {
+			t.Fatalf("version = %d, want %d", got, wantVersion)
+		}
+		loaded, _, err := LoadProgram(data, Options{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if n, err := loaded.ParseWith("main", "a", ParseOptions{Recognize: true}); err != nil || n != nil {
+			t.Fatalf("recognize: node %v, error %v", n, err)
 		}
 	}
 }

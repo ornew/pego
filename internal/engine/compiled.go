@@ -16,7 +16,8 @@ import (
 //
 //	magic    "PEGOC\x00"
 //	version  1 byte (compiledVersion)
-//	payload  version 4 prototype: version 2 prefix, initializer table, AST (optional)
+//	payload  version 4: version 3 prefix, initializer table, AST (optional)
+//	         version 3: version 2 prefix, recognition bundle, AST (optional)
 //	         version 2: instruction set version, string table, start rule, package name, module, AST (optional)
 //	         version 1: string table, package name, start rule, statements (type and rule definitions)
 //	crc32    CRC-32 of magic through payload (IEEE, 4 bytes little-endian)
@@ -153,11 +154,24 @@ func (prog *Program) MarshalBinaryWith(start string, o MarshalOptions) ([]byte, 
 	if start != "" && !prog.hasRule(start) {
 		return nil, fmt.Errorf("start rule %s is not defined", start)
 	}
+	m := prog.Module()
+	var recognition *Program
+	if prog.Grammar != nil || prog.recognitionModule != nil {
+		var err error
+		recognition, err = prog.recognizer()
+		if err != nil {
+			if validateStreamRecovery(m.Code) == nil {
+				return nil, err
+			}
+		}
+	}
 	version := 2
+	if recognition != nil {
+		version = 3
+	}
 	if prog.initPresent {
 		version = compiledVersion
 	}
-	m := prog.Module()
 	w := &encoder{strs: map[string]int{}}
 	for i, s := range m.Strings { // put the module's string table first
 		w.strs[s] = i
@@ -170,9 +184,21 @@ func (prog *Program) MarshalBinaryWith(start string, o MarshalOptions) ([]byte, 
 	}
 	w.str(pkg)
 	w.module(m)
+	if version >= 3 {
+		w.bool(recognition != nil)
+		if recognition != nil {
+			var bundle []byte
+			if prog.recognitionModule == nil {
+				prog.recognitionBytesOnce.Do(func() { prog.recognitionBytes = encodeRecognition(recognition) })
+				bundle = prog.recognitionBytes
+			} else {
+				bundle = encodeRecognition(recognition)
+			}
+			w.uint(len(bundle))
+			w.body.Write(bundle)
+		}
+	}
 	if version >= 4 {
-		// TODO: version 4 must preserve version 3's recognition section here
-		// before encoding initializers; this branch is a format prototype.
 		w.initTable(m)
 	}
 	withAST := prog.Grammar != nil && !o.OmitAST
@@ -592,7 +618,7 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 		return nil, "", errors.New("invalid compiled grammar: too short")
 	}
 	v := data[len(compiledMagic)]
-	if v != 1 && v != 2 && v != compiledVersion {
+	if v != 1 && v != 2 && v != 3 && v != compiledVersion {
 		return nil, "", fmt.Errorf("unsupported compiled grammar version %d (want %d)", v, compiledVersion)
 	}
 	body, sum := data[:len(data)-4], binary.LittleEndian.Uint32(data[len(data)-4:])
@@ -611,8 +637,22 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 	start := r.str()
 	pkg := r.str()
 	m := r.module()
+	if r.err != nil {
+		return nil, "", r.err
+	}
+	if err := validateModule(m); err != nil {
+		return nil, "", fmt.Errorf("invalid compiled grammar: %w", err)
+	}
+	var recognitionModule *Module
+	var entries []recognitionEntry
+	if v >= 3 && r.bool() {
+		n := r.count()
+		if r.err == nil {
+			recognitionModule, entries, r.err = decodeRecognition(r.data[r.pos:r.pos+n], m)
+			r.pos += n
+		}
+	}
 	if v >= 4 {
-		// TODO: read the version 3 recognition section before initializers.
 		r.initTable(m)
 	}
 	var prog *Program
@@ -650,6 +690,7 @@ func LoadProgram(data []byte, opts Options) (*Program, string, error) {
 		}
 		prog.moduleOnce.Do(func() { prog.module = m })
 	}
+	prog.recognitionModule, prog.recognitionEntries = recognitionModule, entries
 	if start != "" && !prog.hasRule(start) {
 		return nil, "", fmt.Errorf("invalid compiled grammar: start rule %s is not defined", start)
 	}

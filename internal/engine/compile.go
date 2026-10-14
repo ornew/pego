@@ -16,6 +16,7 @@ type Program struct {
 	Grammar     *grammar.Grammar
 	init        []*grammar.Assign
 	initPresent bool
+	initOwner   *Program // main module supplies initializers to a loaded recognition bundle
 	rules       []*rule
 	descTable   []string  // expectation table (starting with fixedDescs)
 	twins       []*rule   // value-free twins (rule.twin); ids start at len(rules)
@@ -32,16 +33,21 @@ type Program struct {
 	workErr       error
 	workRecognize bool
 
-	moduleOnce sync.Once
-	module     *Module
-	recOnce    sync.Once
-	rec        *Program // program that builds no tree (recognizer)
-	recErr     error
-	vmOnce     sync.Once
-	vm         *vmProgram
-	ivmOnce    sync.Once
-	ivm        *vmProgram
-	pkg        string // package name when loaded from a file without the AST
+	moduleOnce           sync.Once
+	module               *Module
+	recOnce              sync.Once
+	rec                  *Program // program that builds no tree (recognizer)
+	recErr               error
+	recognitionModule    *Module
+	recognitionEntries   []recognitionEntry
+	recognitionStarts    []recognitionEntry
+	recognitionBytesOnce sync.Once
+	recognitionBytes     []byte
+	vmOnce               sync.Once
+	vm                   *vmProgram
+	ivmOnce              sync.Once
+	ivm                  *vmProgram
+	pkg                  string // package name when loaded from a file without the AST
 	// typeKinds holds the node kinds of the grammar's types (typeKind), made with the program.
 	typeKinds map[string]*nodeKind
 	// scratch holds the buffers of finished parses for later ones (*scratch).

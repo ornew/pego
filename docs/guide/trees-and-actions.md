@@ -974,7 +974,7 @@ values and runs no actions.
 | `cannot access .F of *T` | The value may be `nil` (for example `n:name?`). Read the field in a rule where the value is always present |
 | `rule r produces X, which is not assignable to T` | The declared type does not accept the body's value; the CST of a sequence is a `Seq`, so a struct type needs an action |
 | `inline actions are not implemented` | The compiler recognized an inline action such as `(part => build($1))`, but inline action execution is not implemented |
-| Nondefault rule-level Value Action on an Operators Rule | Omit the action, use the explicit `=> ...` default-CST form, or put the action on an operand or operator entry |
+| Operators Rule whole Value Action | It runs once after the top-level parse completes; `$1` is the final operator result, not a value recomputed for each precedence level |
 | `capture k inside #atomic, -, or ! has no effect` | Captures cannot be made inside atomic, discard or negative lookahead; capture the whole expression or restructure |
 | `undefined capture $z` | The capture is not made in this rule; captures are not visible across rules |
 | `$n is out of range: the rule has N elements with a value` | `$n` counts only elements with a value |
