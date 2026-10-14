@@ -1,20 +1,91 @@
 # Optimization Catalog
 
-This catalog describes optimization mechanisms, their backend scope and
-measured evidence. Numbered records preserve the implementation details,
-tradeoffs and reproduction commands for individual changes; commits provide
-chronology. The [performance document](../performance.md) keeps the
-measurement method and latest full-suite analysis. A current mechanism
-inventory is proposed in [design 024](../design/024-optimization-mechanism-controls.md);
-its migration is deferred.
+This catalog describes implemented optimization mechanisms, their backend
+scope and measured evidence. The mechanism index below groups documented
+techniques by what they do; the applicability table then maps numbered records
+to backends. Numbered records preserve implementation details, tradeoffs and
+reproduction commands for individual changes; commits provide chronology. The
+[performance document](../performance.md) keeps the measurement method and
+latest full-suite analysis.
+
+## Implemented Mechanism Index
+
+These entries group mechanisms already described by the linked records. They
+are an implementation index, not independent effect estimates or a promise
+that each row has its own reference switch. Check each record for the exact
+backend, workload, comparison baseline and control, if any.
+
+| Mechanism | Implemented path | Records |
+|:--|:--|:--|
+| Omit unused parse values | Rule bodies and eligible Operators Rule lines avoid building values when callers do not need them; captures and predicate-visible values are still built where required. | [001](001-value-free-rule-bodies-value-free-twins-transient-rules-0b2c903.md), [009](009-value-free-operators-rule-lines-discarding-trivia-in-example-grammars-936857c.md), [007](007-recognition-mode-3f7e9bf.md), [047](047-recognition-in-generated-parsers.md) |
+| Select alternatives early | First-character choice dispatch is implemented in the closure engine, VMs and generated parsers. | [049](049-first-character-dispatch-in-generated-choices.md), [050](050-first-character-dispatch-in-the-closure-backend.md), [051](051-first-character-dispatch-in-the-vms-instruction-set-3.md) |
+| Test character classes by backend | Closure uses specialized class tests, VMs use ASCII bitmaps, and generated parsers emit inline tests for eligible classes. | [031](031-specialized-character-class-tests-in-the-closure-backend.md), [017](017-ascii-bitmaps-for-character-classes-in-the-vms.md), [011](011-generated-parsers-catch-up-with-changes-410.md) |
+| Match literal text directly | Backends compare literals without intermediate decoding or boxed text where their input path allows it. | [032](032-matching-literals-against-loaded-input-in-one-loop.md), [036](036-comparing-texts-without-boxing-them.md), [062](062-comparing-short-literals-in-place-in-direct-rules.md) |
+| Prepare code-point positions | Generated Go prepares input and offsets in one pass; engine full parses build offsets while decoding. | [040](040-one-pass-to-prepare-code-point-input-in-generated-parsers.md), [041](041-building-the-offset-table-while-decoding-for-full-parses.md) |
+| Filter absent expectations | Go parser paths use a fixed-size membership filter before the exact ordered expectation scan. | [075](075-exclude-absent-expectations-before-scanning.md) |
+| Reuse compact parser metadata | Expected-set IDs and interned node kinds avoid repeated string storage in their respective paths. | [004](004-expected-sets-as-interned-ids-on-a-shared-stack-11a6ce3.md), [063](063-a-smaller-node.md), [064](064-a-smaller-node-in-generated-parsers.md) |
+| Reduce Node storage | Engine and generated Node parsers use slice-backed fields and compact interned type/rule metadata; typed Go builds typed values instead of Nodes. | [003](003-node-fields-as-a-slice-54a5774.md), [063](063-a-smaller-node.md), [064](064-a-smaller-node-in-generated-parsers.md) |
+| Specialize plain rule calls | Unmemoized calls and eligible generated plain rules have simpler call paths; typed Go also emits selected bodies directly. | [019](019-a-plain-call-path-for-unmemoized-rules-without-captures.md), [038](038-calling-plain-rules-directly-from-closure-call-sites.md), [042](042-generated-calls-of-plain-rules.md), [043](043-direct-calls-of-plain-rules-in-the-vms.md), [046](046-direct-calls-of-plain-rules-in-generated-parsers.md), [060](060-direct-rules-in-the-typed-runtime.md) |
+| Lower eligible typed Go bodies | Typed Go emits specialized local cuts, left-recursion, Operators Rule, recovery and capture layouts for eligible rules; unsupported layouts retain general bodies. | [078](078-local-cuts-in-typed-direct-rules.md), [079](079-inline-eligible-typed-left-recursion-bodies.md), [080](080-inline-eligible-typed-operators-rule-lines.md), [081](081-scoped-cuts-in-unfinished-typed-go-bodies.md), [082](082-match-typed-direct-frame-layouts.md), [083](083-inline-typed-recovery-bodies.md), [084](084-complete-typed-local-capture-layouts.md) |
+| Project repetition results | Eligible captured repetitions project needed fields directly rather than retaining and traversing all element values. | [052](052-projected-repetitions-in-generated-parse.md), [053](053-projected-repetitions-in-the-engine-and-the-vms.md) |
+| Grow left-recursive rules | Backends reuse growth state while extending a left-recursive match. | [035](035-left-recursion-growth-without-allocation.md) |
+| Shape memo storage and lookup | Per-position chains, deferred memoization, variable-aware keys, and entry retirement govern memo allocation and lifetime. | [005](005-memo-table-with-per-position-chains-cf77e4f.md), [012](012-memoizing-rules-that-read-variables.md), [018](018-memoizing-from-the-second-call-at-a-position.md), [066](066-no-memo-key-allocated-for-variables-where-none-is-defined.md), [067](067-retire-memo-entries-when-their-lookup-slots-are-removed.md) |
+| Store editable Document input | Documents use chunked text storage for edits; ordinary batch and stream input remain on their contiguous paths. | [023](023-splicing-the-text-of-a-document-in-place.md), [093](093-chunked-document-input.md) |
+| Reuse Document memo state across edits | Edits splice memo entries, with deferred position updates applied when entries are looked up. | [020](020-splicing-the-memo-table-on-document-edits.md), [056](056-applying-a-document-edit-to-memo-entries-when-they-are-looked-up.md) |
+| Resolve Document positions lazily | Document input can build code-point offset mappings on demand. | [030](030-building-the-code-point-offset-table-on-demand.md) |
+| Move reusable Document trees | Successful reparse moves reused result trees to their new absolute positions. | [045](045-moving-reused-trees-in-place-after-document-edits.md) |
+| Resume long Document repetitions | Eligible repetitions resume from saved state in the engine and VMs. | [054](054-resuming-long-repetitions-in-a-document.md), [059](059-resuming-long-repetitions-in-the-vms.md) |
+| Keep same-generation repetition records | Unchanged Documents retain eligible repetition work across parses. | [070](070-keep-repetition-records-across-unchanged-document-parses.md) |
+| Reuse the Document VM value stack | VM-backed Document parses retain bounded cleared stack capacity. | [086](086-reuse-document-vm-values.md) |
+| Share exact Document snapshot records | Snapshot results can reuse equal immutable records while keeping public Node ownership separate. | [097](097-exact-document-snapshot-record-sharing.md) |
+| Locate source lines for diagnostics | Whole-input parsers build a line table; stream parsing scans from committed input positions. | [039](039-a-line-table-for-error-positions.md) |
+| Bound stream storage and reuse committed state | Streaming paths bound retained text, reuse committed capture frames, and batch scratch cleanup. | [022](022-bounded-memory-and-less-copying-in-stream-parsing.md), [085](085-reuse-stream-capture-frames.md), [088](088-share-bounded-stream-text-snapshots.md), [089](089-isolate-stream-prefixes-and-batch-scratch-cleanup.md) |
+| Reuse parser frames | Engine and VM paths reuse selected Operators Rule and call frames. | [002](002-frame-pooling-in-the-iterative-vm-8fab402.md), [013](013-allocation-free-operators-rule-attempts-and-pooled-operators-rule-frames-in-the-engine-and-vms.md), [033](033-smaller-vm-entries.md) |
+| Reuse action and operand storage | Backends evaluate selected action data in reusable operand or field-list storage. | [014](014-one-operand-stack-for-vm-expression-code.md), [015](015-allocation-free-action-plumbing-in-all-backends.md), [027](027-struct-and-call-operands-on-the-expression-stack-in-the-closure-backend.md), [028](028-field-lists-and-list-built-ins-without-allocation-in-the-generated-parsers.md) |
+| Pool whole-input scratch | Whole-input parses and generated recognition reuse their scoped scratch buffers. | [057](057-pooling-the-scratch-memory-of-whole-input-parses.md), [058](058-pooling-the-scratch-memory-of-generated-parse-and-recognize.md) |
+| Reduce typed Go output allocation | Typed generation uses pooled arenas and bounded slabs, with a small-result bootstrap before the slabs grow. | [048](048-a-typed-runtime-for-parseast.md), [074](074-smaller-first-chunks-for-generated-typed-values.md), [098](098-bootstrap-generated-typed-output-allocations.md) |
+| Share generated helpers | Generated Go and TypeScript outputs reuse identical helper bodies; Go also shares selected literal tables. | [090](090-share-identical-generated-helpers.md) |
+| Specialize pure literal predicates | Eligible generated text disjunctions use a specialized comparison path. | [091](091-specialize-pure-literal-text-disjunctions.md) |
+| Analyze constructor dependencies | Shared compilation analysis propagates dependencies for sample constructor selection. | [071](071-dependency-propagation-for-sample-constructor-analysis.md) |
+| Reuse equivalent capture types | Shared type checking reuses structurally equal captured type expressions. | [072](072-reuse-structurally-equal-duplicate-capture-types.md) |
+| Propagate variable reads by dependency component | Shared compiler metadata computes variable reads per dependency component. | [073](073-dependency-component-propagation-of-variable-reads.md) |
+| Normalize attributes by copy-on-change | Shared compilation/generation preprocessing reuses unchanged expression nodes and clones only changed paths. | [095](095-attribute-copy-on-change.md) |
+| Reduce generated Go work-control overhead | Generated Go specializes ordinary methods and selected helpers while preserving work checks and parse semantics. | [096](096-specialize-generated-go-method-helpers.md) |
+
+Main implementation files under `internal/engine/` include `compile.go`,
+`bcompile.go`, `vm.go`, `ivm.go`, `gen.go`, `gen_direct.go` and `gen_ts.go`
+for matching and generated lowering; `memo.go`, `input.go`, `document.go`,
+`document_edits.go`, `runtime.go` and `stream_*.go` for memo, input and
+persistent parse state; `type_inference.go` for shared constructor and type
+analysis; and `genrt/runtime.go` and `genrt/typed.go` for generated result
+storage. The linked records specify each mechanism's exact eligibility and
+backend scope.
+
+Reference routes are record-specific. Documented same-source controls include
+dense/sparse memo storage ([087](087-sparse-deferred-memo-seen-pages.md)),
+flat/piece-backed input ([093](093-chunked-document-input.md)),
+copied/shared snapshots ([097](097-exact-document-snapshot-record-sharing.md)),
+and legacy/bootstrap typed allocation ([098](098-bootstrap-generated-typed-output-allocations.md));
+record [096](096-specialize-generated-go-method-helpers.md) also describes a
+scoped generation control. Other records may contain only historical
+comparisons.
+These controls are not one public selector, and the index or a checkmark below
+does not imply that each mechanism can be switched independently. Work controls
+are a resource contract with runtime costs, not a speed mechanism; [096](096-specialize-generated-go-method-helpers.md)
+records one generated-Go cost mitigation.
+
+## Private, Default-Off Comparators
+
+- [094. Generation-only typed-output liveness cleanup](094-generated-typed-output-liveness.md) is a private, default-off generated Go comparator; it was not adopted.
 
 ## Where Each Optimization Applies
 
 The runtimes are separate code: the closure backend (`compile.go`, `runtime.go`), the recursive and iterative bytecode
 VMs (`vm.go`, `ivm.go`), the generated parsers' runtime (`genrt/runtime.go`, behind `Parse` and `Recognize`) and the
 typed runtime of generated parsers (`genrt/typed.go`, behind `ParseAST`). An optimization made in one of them is not
-automatically in the others. This table records where the numbered records below apply; it is not yet a complete
-inventory of current mechanisms or reference controls.
+automatically in the others. This table records where the numbered records
+below apply; it does not imply that a separate reference route exists for each
+record or mechanism.
 
 ✓ applied · Partial applied to the subset in the note · ✗ not applied (see the note) · – not applicable (the backend has no such code path or feature)
 
