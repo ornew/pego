@@ -401,7 +401,14 @@ streaming, code-generation and TypeScript guides with the applicable stage.
 
 ## Testing
 
-These are proposed gates, not completed validation:
+Focused validation passes for the full eight-corpus Go controls,
+generated/runtime/retention checks, race checks, and the eight-corpus
+TypeScript and conversion suite under Node 24.19.0 and TypeScript 5.9.3.
+Reachability checks cover weak-GC release of batch/stream contexts and input,
+plus TypeScript owner-signal collection and custom-context fault paths for the
+exercised backends. TypeScript native `Error.stack` and preserved cause
+references are outside the signal/input collection contract. The full root
+suite passes across 18 packages. The validation covers the following cases:
 
 - Pre-cancelled/deadline contexts, cancellation at deterministic checkpoints,
   nil/unlimited defaults, last-option wins, exact once/reentrant option callbacks,
@@ -463,13 +470,49 @@ alternating 50-call probes include first-use graph setup, not graph-only timing.
 For N=128 unparsed compiled Parser owners, pre-activation retained-heap medians
 were 1.0021–1.0055 times main. After one empty-input controlled parse per owner,
 retained heap was 1.1019–1.1609 times eager across the four measured grammars.
-These focused measurements do not establish default-cost or reachability
-acceptance. Compare three controls:
-exact parent; same-revision static build/generation with controls and added
-state/layout removed; candidate with controls absent. Then measure context-only,
-budgets-only, combined controls, and cancellation latency in engine work versus
-caller-blocked intervals. The focused lazy-graph comparison above does not replace
-these broader acceptance gates.
+
+### Broader Backend and Workload Comparison
+
+Three alternating 500 ms rounds compared main `77f12f2` with prototype
+`d6e4e7f` across 131 profiles on Go 1.27.1, Apple M3 Max (darwin/arm64),
+`GOMAXPROCS=16`, `GOGC=100`, with no memory limit. Paired median ratios against
+exact main ranged as follows:
+
+| Profile group | Candidate/main paired-median ratios |
+|---|---:|
+| Core Closure parse and recognition | 1.053–1.205× |
+| Core bytecode parse and recognition | 1.074–1.160× |
+| Core iterative parse and recognition | 1.061–1.133× |
+| Generated Go Node parse and recognition (24 profiles) | 1.175–1.503× |
+| Generated Go typed parse (8 profiles) | 1.192–1.402× |
+
+The exact-parent comparison captures total implementation cost, including state
+layout. The same-source `pego_work_controls_reference` disables core
+instrumentation checks but retains core state layout. It does not isolate
+generated-Go instrumentation: the generated sources are identical across those
+variants and retain `workControlsEnabled=true`. The generated-Go results above
+are valid exact-parent comparisons, not a generated-instrumentation ablation.
+Improve the generated-Go inactive path and repeat the affected comparison
+before adoption.
+
+On the same candidate, controlled core parsing across all three backends and
+both position units versus the same warmed inactive paths had paired median
+ratios of 1.448–1.677× for context-only, 1.533–1.799× for budget-only, and
+1.535–1.791× for combined controls. These three-round measurements characterize
+the tested JSON/XML profiles, not all controlled workloads.
+
+Cancellation probes used an 8 MiB ASCII class scan per tested backend and
+position unit. Input decoding had completed before the main-entry trace;
+cancellation was requested 1 ms later. Across 21 probes per backend/unit,
+cancel-to-return medians were 4–11 microseconds, with a maximum of 33
+microseconds. In the gated-reader probe, the caller remained blocked for about
+10.8–11.0 ms; after release, return latency was 9.4–20.1 microseconds median
+and at most 64.1 microseconds. These are observations for the stated probes,
+not universal latency bounds. Synchronous parsing cannot preempt a caller-held read.
+
+The generated-Go inactive-path fix and repeat comparison, prescribed final
+local checks, and independent review remain before adoption. No general speedup
+or zero-cost claim follows from these measurements.
 
 Use ordinary small/large batch Node, recognition, direct typed and conversion
 workloads; shallow scanning/backtracking; Document no-edit/edit/reparse/resume;
