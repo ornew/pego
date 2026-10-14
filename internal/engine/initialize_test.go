@@ -175,7 +175,7 @@ func TestInitAndWholeOperatorsActionGeneratedParity(t *testing.T) {
 rule main Wrap = operators {
     operand "a"
     level { infix left "+" }
-} => Wrap{Value: $1}`, []string{"a", "a+a", "a+"}},
+} => Wrap{Value: $1}`, []string{"a", "a+a", "a+a+a", "a+"}},
 	}
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	for _, typed := range []bool{false, true} {

@@ -90,16 +90,19 @@ rule main Wrap = operators {
 } => Wrap{Value: $1}`
 	p := compile(t, src)
 	for _, backend := range []Backend{Closure, Bytecode, BytecodeIterative} {
-		n, err := p.ParseWith("main", "a+a", ParseOptions{Backend: backend})
+		n, err := p.ParseWith("main", "a+a+a", ParseOptions{Backend: backend})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if n == nil || n.Type() != "Wrap" || n.Start != 0 || n.End != 3 {
+		if n == nil || n.Type() != "Wrap" || n.Start != 0 || n.End != 5 {
 			t.Fatalf("backend %v: result = %v", backend, n)
 		}
 		folded, ok := n.Field("Value").(*Node)
 		if !ok || folded.Type() != TypeOperator {
 			t.Fatalf("backend %v: folded value = %v", backend, n.Field("Value"))
+		}
+		if len(folded.Children) != 3 || folded.Children[0] == nil || folded.Children[0].Type() != TypeOperator {
+			t.Fatalf("backend %v: intermediate fold contains a final action: %v", backend, folded.Children)
 		}
 	}
 	bad := strings.Replace(src, "=> Wrap{Value: $1}", "=> $1", 1)
