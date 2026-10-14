@@ -1,6 +1,7 @@
 package syntax
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -92,6 +93,8 @@ type parser struct {
 	toks []token
 	i    int
 	errs *errorList
+	ctx  context.Context
+	work uint
 	// cur is the line break most recently recorded. Comments that do not
 	// precede a recorded line break are added to it, because the formatter
 	// writes the tokens they follow on the line after it.
@@ -115,14 +118,39 @@ type parser struct {
 // error.
 type bail struct{}
 
+// parseCancelled unwinds the parser without treating cancellation as a
+// recoverable syntax error. The caller discards the incomplete grammar.
+type parseCancelled struct{ err error }
+
+// poll charges token consumption and token-array scans alike. Ordinary parses
+// have no context; contextual parses check after at most 256 such steps.
+func (p *parser) poll() {
+	p.charge(1)
+}
+
+func (p *parser) charge(steps uint) {
+	if p.ctx == nil {
+		return
+	}
+	old := p.work
+	p.work += steps
+	if old/256 != p.work/256 {
+		if err := p.ctx.Err(); err != nil {
+			panic(parseCancelled{err})
+		}
+	}
+}
+
 func (p *parser) tok() token { return p.toks[p.i] }
 func (p *parser) peek(k int) token {
+	p.poll()
 	if p.i+k < len(p.toks) {
 		return p.toks[p.i+k]
 	}
 	return p.toks[len(p.toks)-1]
 }
 func (p *parser) next() token {
+	p.poll()
 	t := p.toks[p.i]
 	if p.header {
 		if t.lineComment != nil {
@@ -130,9 +158,10 @@ func (p *parser) next() token {
 			p.headerComments = append(p.headerComments, t.lineComment)
 		}
 		for _, comment := range t.comments {
+			p.poll()
 			comment.Header = p.headerPos
 		}
-		p.headerComments = append(p.headerComments, t.comments...)
+		p.headerComments = p.appendComments(p.headerComments, t.comments)
 	}
 	if p.layout {
 		if p.boundary() {
@@ -157,6 +186,19 @@ func (p *parser) next() token {
 	return t
 }
 
+func (p *parser) appendComments(dst, comments []*grammar.Comment) []*grammar.Comment {
+	if p.ctx == nil {
+		return append(dst, comments...)
+	}
+	for len(comments) > 0 {
+		n := min(len(comments), 256)
+		p.charge(uint(n))
+		dst = append(dst, comments[:n]...)
+		comments = comments[n:]
+	}
+	return dst
+}
+
 // boundary marks a new statement outside the current expression's delimiters.
 func (p *parser) boundary() bool {
 	return p.layout && p.layoutDepth == 0 && p.i > p.layoutStart && p.tok().lineBefore
@@ -176,7 +218,7 @@ func (p *parser) takeComments(i int) {
 		if t.lineComment != nil {
 			p.cur.Comments = append(p.cur.Comments, t.lineComment)
 		}
-		p.cur.Comments = append(p.cur.Comments, t.comments...)
+		p.cur.Comments = p.appendComments(p.cur.Comments, t.comments)
 	}
 	t.lineComment, t.comments = nil, nil
 }
@@ -192,7 +234,7 @@ func (p *parser) lineBreak() *grammar.LineBreak {
 		if p.cur != nil && p.cur.Trailing == nil {
 			p.cur.Trailing = c
 		} else {
-			b.Comments = append([]*grammar.Comment{c}, b.Comments...)
+			b.Comments = p.appendComments([]*grammar.Comment{c}, b.Comments)
 		}
 	}
 	t.lineComment, t.comments = nil, nil
@@ -204,6 +246,7 @@ func (p *parser) lineBreak() *grammar.LineBreak {
 // token i up to token j.
 func (p *parser) multiline(i, j int) bool {
 	for k := i + 1; k <= j && k < len(p.toks); k++ {
+		p.poll()
 		if p.toks[k].lineBefore {
 			return true
 		}
@@ -339,6 +382,7 @@ func (p *parser) recover() {
 	// reference before its '=' exposes the error. Recover its statement header
 	// rather than losing the following declaration from partial tooling.
 	for j := p.i - 1; j > p.recoveryStart; j-- {
+		p.poll()
 		t := p.toks[j]
 		if t.lineBefore && t.kind == tIdent && (t.text == "rule" || t.text == "type") && j+1 < len(p.toks) && p.toks[j+1].kind == tIdent {
 			p.i = j
@@ -890,8 +934,7 @@ func (p *parser) suffixed() (sourceResult grammar.Expr) {
 					b = p.lineBreak()
 				}
 				if b != nil || a.Breaks != nil {
-					a.Breaks = append(a.Breaks, make([]*grammar.LineBreak, len(a.Attrs)-len(a.Breaks))...)
-					a.Breaks = append(a.Breaks, b)
+					p.appendAttributeBreak(a, b)
 				}
 				a.Attrs = append(a.Attrs, p.attribute())
 			}
@@ -901,6 +944,24 @@ func (p *parser) suffixed() (sourceResult grammar.Expr) {
 		p.sourceNode(e, sourceStart)
 	}
 	return e
+}
+
+// appendAttributeBreak fills the absent breaks before a newly broken
+// attribute. A long same-line attribute run can make this gap large.
+func (p *parser) appendAttributeBreak(a *grammar.Attributed, b *grammar.LineBreak) {
+	gap := len(a.Attrs) - len(a.Breaks)
+	if p.ctx == nil {
+		a.Breaks = append(a.Breaks, make([]*grammar.LineBreak, gap)...)
+	} else {
+		var blanks [256]*grammar.LineBreak
+		for gap > 0 {
+			n := min(gap, len(blanks))
+			p.charge(uint(n))
+			a.Breaks = append(a.Breaks, blanks[:n]...)
+			gap -= n
+		}
+	}
+	a.Breaks = append(a.Breaks, b)
 }
 
 // pragma dispatches built-in grammar syntax. Its payload is not an attribute

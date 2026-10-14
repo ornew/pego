@@ -6,7 +6,7 @@
 
 ## Summary
 
-Extend `pego lsp` to publish grammar lint findings, offer version-checked explanations and safe quick fixes, and keep analysis responsive while a document changes. The proposed protocol keeps the existing push-diagnostics model and adds cancellable, coalesced analysis snapshots. The complete responsive protocol remains proposed. An opt-in prototype provides lint diagnostics and guarded explanations; the server also returns versioned suppression edits to clients that advertise the required workspace-edit capability. The VS Code client currently filters those edits because its `WorkspaceEdit` conversion drops the document version and `workspace.applyEdit` cannot enforce it atomically. Documentation format negotiation applies to ordinary requests. The opt-in actor connects analysis and request workers to protocol input, cancellation and publication; ordinary clients retain the existing synchronous path. Bounded cancellation now covers text-index construction and initial lexical tokenization; cancellation within parsing, compilation and lint, plus real-editor validation, remains open.
+Extend `pego lsp` to publish grammar lint findings, offer version-checked explanations and safe quick fixes, and keep analysis responsive while a document changes. The proposed protocol keeps the existing push-diagnostics model and adds cancellable, coalesced analysis snapshots. The complete responsive protocol remains proposed. An opt-in prototype provides lint diagnostics and guarded explanations; the server also returns versioned suppression edits to clients that advertise the required workspace-edit capability. The VS Code client currently filters those edits because its `WorkspaceEdit` conversion drops the document version and `workspace.applyEdit` cannot enforce it atomically. Documentation format negotiation applies to ordinary requests. The opt-in actor connects analysis and request workers to protocol input, cancellation and publication; ordinary clients retain the existing synchronous path. Bounded cancellation now covers text-index construction, lexical tokenization and syntax parsing; cancellation within compilation and lint, plus real-editor validation, remains open.
 
 ## Prototype Implementation Boundary
 
@@ -77,14 +77,15 @@ at bounded intervals while scanning input bytes; a cancelled build returns no
 partial index. Initial lexing also polls at bounded intervals while decoding
 source runes, scanning tokens, processing long strings and character classes,
 normalizing comments, and assembling token/comment boundaries. Token-index
-conversion checks between batches as well. Cancellation makes tokenization and
-partial parsing return no tokens, grammar or diagnostics, so an incomplete
-analysis is not published.
+conversion checks between batches as well. Partial parsing polls as it consumes
+tokens and scans ahead or backward for lambda syntax, line breaks and error
+recovery. Cancellation makes tokenization and partial parsing return no tokens,
+grammar or diagnostics, so an incomplete analysis is not published.
 
-The checks bound work in these indexing and lexical loops, not total LSP
-cancellation latency. Parsing after lexing, declaration indexing, compilation,
-lint and some request traversal/formatting routines still observe cancellation
-only at phase boundaries or lack checks. Suppression validation uses its request
+The checks bound work in these indexing, lexical and syntax-token loops, not
+total LSP cancellation latency. Declaration indexing, compilation, lint and
+some request traversal/formatting routines still observe cancellation only at
+phase boundaries or lack checks. Suppression validation uses its request
 context before and after candidate analysis and lint. The VS Code
 explanation-command handler is implemented. Real-editor validation and
 full-phase resource measurements remain open; safe suppression application
@@ -208,13 +209,13 @@ For many rules, median time was 1.4% higher and bytes were 3,143,447 versus
 10.3% higher for emoji, and 6.9% higher for whitespace. Allocated bytes were
 1,067,991 versus 936,899 for ASCII, 647,266 versus 516,175 for emoji, and
 778,422 versus 778,386 for whitespace. These measurements cover this analysis
-entry point and these workloads only; parser, compiler, and lint cancellation
-remain limited to phase boundaries, and no full-phase cancellation claim is
-made.
+entry point and these workloads only. At the time of this comparison, parser,
+compiler and lint cancellation remained limited to phase boundaries; the
+parser-phase change described above is measured separately below.
 
 A separate five-pair, 300 ms alternating comparison measured the ordinary
 `syntax.Parse` path on the same Go 1.27.1, Apple M3 Max, `GOMAXPROCS=16` and
-`GOGC=100` setup, comparing main `da5dbed` with the F08 candidate. For a
+`GOGC=100` setup, comparing main `da5dbed` with the lexer candidate. For a
 256-rule grammar, the paired median was 1.0252× (range 1.018–1.037), with
 bytes/op 874,516→874,520 and allocations/op unchanged at 3,613. For a 64 KiB
 ASCII comment, the median was 1.0459× (1.031–1.069), with bytes/op
@@ -225,10 +226,24 @@ allocation volume was unchanged for many rules and lower for the comment
 inputs. This is separate from the `analyzeContext` results above and does not
 measure cancellation latency or parser/compiler/lint interruption.
 
+A five-pair, 300 ms alternating comparison then measured `syntax.Parse` and
+`ParsePartialContext` on Go 1.27.1, Apple M3 Max (darwin/arm64),
+`GOMAXPROCS=4`, `GOGC=100`, and `GOMEMLIMIT` off, against main `67080bf`.
+For ordinary Parse on Small, Self, Comments and ActionComments inputs, the
+candidate/base median ratios were 1.0148, 1.0186, 1.0089 and 1.0176; paired
+ranges were 1.0110–1.0412, 0.9976–1.0374, 0.9976–1.0615 and 1.0098–1.0252.
+For the context-enabled ParsePartialContext path, the corresponding medians
+were 0.9987, 1.0018, 1.0068 and 1.0093, with ranges 0.9479–1.0343,
+0.9990–1.0227, 0.9908–1.0555 and 1.0082–1.0118. Allocations/op were
+unchanged; B/op was unchanged or differed by only a few bytes. The ordinary
+path was about 1–2% slower in these samples, while context-enabled results
+were near parity and noisy. This benchmark did not measure cancellation
+latency.
+
 ## Limitations and Open Questions
 
 - The responsive actor remains opt-in and needs real-editor validation; ordinary clients retain the synchronous path.
-- Beyond bounded cancellation during initial text indexing and lexical tokenization, parser, compiler and lint loops need intra-phase checks; those phases currently observe cancellation only at boundaries.
+- Syntax parsing now polls context while consuming tokens and scanning ahead or backward. Declaration indexing, compiler and lint loops still need intra-phase checks; these phases currently observe cancellation only at boundaries.
 - Suppression application requires a client API that atomically checks the edit version. The current VS Code `WorkspaceEdit` path drops that version, so the extension withholds suppression while retaining guarded explanations.
 - The exact work bound and worker-count default should be selected from measurements on large grammars and multi-document editor workloads.
 - **Proposed lint scope:** enable enabling all existing checks for every compilable open grammar, with source directives as the suppression mechanism. An owner may instead choose a configurable lint set if editor noise is observed; no such setting is part of this proposal.

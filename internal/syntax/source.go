@@ -271,7 +271,7 @@ func (p *parser) takeTermLayout() *grammar.SourceLayout {
 	}
 	cs := t.comments
 	if t.lineComment != nil {
-		cs = append([]*grammar.Comment{t.lineComment}, cs...)
+		cs = p.appendComments([]*grammar.Comment{t.lineComment}, cs)
 	}
 	previous := 0
 	if p.i > 0 {

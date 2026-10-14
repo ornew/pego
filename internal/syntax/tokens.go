@@ -121,21 +121,34 @@ func ParsePartial(src string) (*grammar.Grammar, ErrorList) {
 	return g, errs
 }
 
-// ParsePartialContext is ParsePartial with cancellation during initial lexing.
-// Cancellation is also checked after parsing. Cancelled calls return no
-// grammar or diagnostics.
+// ParsePartialContext is ParsePartial with cancellation during lexing and
+// parsing. Cancelled calls return no grammar or diagnostics.
 func ParsePartialContext(ctx context.Context, src string) (*grammar.Grammar, ErrorList, error) {
 	return parsePartialContext(ctx, src)
 }
 
-func parsePartialContext(ctx context.Context, src string) (*grammar.Grammar, ErrorList, error) {
+func parsePartialContext(ctx context.Context, src string) (g *grammar.Grammar, diagnostics ErrorList, parseErr error) {
+	defer func() {
+		if value := recover(); value != nil {
+			if cancelled, ok := value.(parseCancelled); ok {
+				g, diagnostics, parseErr = nil, nil, cancelled.err
+				return
+			}
+			panic(value)
+		}
+	}()
 	errs := &errorList{}
 	toks, err := lexContext(ctx, src, errs)
 	if err != nil {
 		return nil, nil, err
 	}
-	p := &parser{toks: toks, errs: errs}
-	g := p.file()
+	if ctx != nil {
+		if err := ctx.Err(); err != nil {
+			return nil, nil, err
+		}
+	}
+	p := &parser{toks: toks, errs: errs, ctx: ctx}
+	g = p.file()
 	if ctx != nil {
 		if err := ctx.Err(); err != nil {
 			return nil, nil, err
