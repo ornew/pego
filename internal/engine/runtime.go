@@ -202,8 +202,10 @@ type memoEntry struct {
 
 // Stats counts rule evaluations and memo uses during a parse.
 type Stats struct {
-	Evaluated int // number of rule body evaluations
-	Reused    int // number of memo results reused
+	Evaluated       int // number of rule body evaluations
+	Reused          int // combined memo hits and resumed repetition elements
+	MemoHits        int // memo-result reuse
+	ResumedElements int // repetition elements reused
 }
 
 // frame holds the capture values for each rule body or repetition element.
@@ -524,6 +526,7 @@ func (p *parser) callBegin(r *rule, min int) (st callState, v *Node, ok, hit boo
 		p.touch(e.examined)
 		p.lw = min2(p.lw, e.from)
 		p.stats.Reused++
+		p.stats.MemoHits++
 		if !e.growing {
 			p.mergeExpected(e.far, e.expected)
 		}

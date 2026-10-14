@@ -91,3 +91,27 @@ Use identical documents with no edit, one small edit, many edits before a parse,
 ## Limitations and Open Questions
 
 The byte estimate excludes document text and caller-owned trees; it must not be presented as a memory cap. The initial design has no automatic reset threshold. If cache telemetry is too costly to compute by traversal, a separately measured maintained counter may be considered, with overflow and reset invariants documented. No maintainer choice is required before prototyping the proposed explicit reset and estimate.
+
+## Prototype Scope
+
+The engine prototype provides `Document.ResetHistory` and `Document.CacheStats`
+without changing text, construction settings, document version, or last-parse
+statistics. Engine parse statistics now expose memo hits and resumed elements
+separately while preserving their combined legacy `Reused` count. Reset replaces the memo table rather than recycling its slabs and
+releases the edit log, repetition records, reusable value/child buffers and
+rebuildable flat-input indexes. Caller-held old trees are detached from future
+reuse; previously applied movement is preserved.
+
+The estimate uses backing capacities for memo slots, slab directories/slabs,
+dense and sparse seen buffers, seen-call counters, repetition element buffers,
+the edit log, and cached child/value stacks. It includes repetition record
+headers. It excludes map bucket storage, shared expectation/error/environment
+payloads, tree storage, source text, allocator metadata, and the empty memo
+header retained after reset. These exclusions avoid treating shared slices as
+separately owned allocations. Counts and capacity inspection allocate no copies.
+
+Focused test cases cover reset before parsing, read-only accounting, live versus
+retired entries, all engine backends and position units, construction option and
+last-stat preservation, fresh-parse equivalence, and prior-tree ownership.
+Validation and measurements remain pending; this section reports implementation
+scope rather than adoption or a measured memory reduction.

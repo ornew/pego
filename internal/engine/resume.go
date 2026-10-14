@@ -211,6 +211,7 @@ func (p *parser) reuseElem(r *runState, el *runElem, shift int, gen uint32) {
 	}
 	p.pos = el.end
 	p.stats.Reused++
+	p.stats.ResumedElements++
 	p.resumed++
 	r.count++
 	// The old run ended after an empty element or at its maximum.

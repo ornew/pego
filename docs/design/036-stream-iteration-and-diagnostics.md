@@ -98,3 +98,34 @@ Measure time and allocations per delivered element, peak retained diagnostics an
 ## Limitations and Open Questions
 
 A synchronous API cannot interrupt an arbitrary blocked `Read`; it can only stop at parser-controlled boundaries and release parser-owned state. A positive diagnostic limit returns an explicitly truncated error result; applications requiring all errors must process the callback or leave the limit at zero. The state-machine extraction and committed-error drain points need prototype validation against nested recovery and backtracking before signatures are finalized.
+
+## Prototype Scope
+
+The engine prototype adapts the existing synchronous stream callback through
+`iter.Pull`. The standard library coroutine preserves the parser's suspended
+closure or VM stack without an asynchronous producer or element queue. Its
+runtime implementation uses an internal coroutine goroutine; it is synchronously
+transferred between `Next` and parser execution, never independently scheduled
+to read ahead between calls. This implementation detail must be considered when
+finalizing the proposed no-background-producer contract. This adapter is
+currently a private prototype; the public API remains proposed.
+
+Construction validates the entry point without reading the reader. `Next`
+distinguishes a nil element from EOF and retains terminal errors; `Close`
+unwinds suspended parsing through the existing callback-error cleanup path.
+Closing before the first `Next` does not start parsing. Closing after termination
+preserves the terminal result. Callback and reader panics retain their original
+values while parser cleanup completes.
+
+A standalone diagnostic collector retains a fixed FIFO ring for a positive
+limit, defensive callback copies, saturating total/dropped counters and an
+explicit truncation wrapper. Integration with committed recovery boundaries is
+required before the diagnostic options are usable. Speculative errors must
+remain private until the top-level element succeeds, and reader ownership stays
+with the caller. The iterator does not close a reader or support overlapping
+`Close` and `Next`; cancellation of a blocked read requires a caller-owned reader
+with its own cancellation mechanism.
+
+Focused test cases are prepared. Validation, bounded-retention integration and
+performance measurements remain pending; no performance or adoption claim is
+made by this prototype.
