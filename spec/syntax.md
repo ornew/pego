@@ -44,7 +44,12 @@ rule file_contents = (
 )
 rule empty_stmts = (";" -comments)*
 rule package_entry = &(comments "package" !ident_char) package_stmt
-rule package_stmt = comments "package" -word_end -- ident stmt_end
+rule package_stmt = (
+    &source_remaining comments
+    package_body &source_package_tail stmt_end
+)
+rule package_body = "package" -word_end -- ident
+rule source_package_tail = -";"? source_after_boundary
 rule def_stmt = (
     !(comments $$)
     (type_def_stmt / rule_def_stmt / _|_)
@@ -70,9 +75,12 @@ rule sync_paren = "(" (sync_token / !("(" / ")" / nl) .)* ")"
 rule sync_brace = "{" (sync_token / !("{" / "}" / nl) .)* "}"
 
 // Types. Union is the weakest operation; list and optional prefixes nest.
-rule type_def_stmt = (
-    comments "type" -word_end -- ident -ws
-    type_spec stmt_end
+rule type_def_stmt = comments type_def_body stmt_end
+// The body starts at the keyword and ends before the statement separator.
+// Its typed node retains the actual parse span without repeating recovery.
+rule type_def_body = (
+    "type" -word_end -- ident -ws
+    type_spec
 )
 rule type_spec = struct_spec / terminal_spec / type_alias_spec
 rule struct_spec = (
@@ -315,6 +323,48 @@ rule char_class = (
 rule char_class_rng = char_class_chr "-" !"]" char_class_chr
 rule char_class_chr = ("\\" escape_char / [^\]\\\n]) #atomic
 rule escape_char = "u{" [0-9a-fA-F]+ "}" / "u" [0-9a-fA-F] #repeat(4) / [ntrfvab0] / [^a-zA-Z0-9]
+
+// Normalized declaration ownership, independent of raw formatter comments.
+rule source_after_boundary = (
+    source_inline_line_boundary / source_inline_block_boundary / source_ambiguous_block_boundary
+    / source_newline_boundary / source_remaining
+)
+rule source_inline_line_boundary = -source_horizontal source_line_comment source_remaining
+rule source_inline_block_boundary = (
+    -source_horizontal source_block_comment &(source_horizontal (source_nl / source_comment_start / $$))
+    source_remaining
+)
+// One inline block ending on the next token's line is ambiguous, not trailing.
+rule source_ambiguous_block_boundary = -source_horizontal source_block_comment -source_horizontal &source_next_token
+rule source_newline_boundary = -source_horizontal -source_nl -source_horizontal (source_first_trailing / source_empty_comment) source_remaining
+
+// A first standalone group can trail the previous declaration when a blank
+// line, another group, or the end of a scope flushes it before the next token.
+rule source_first_trailing = source_line_group &source_line_flush / source_block_comment &source_block_flush
+rule source_remaining = source_scope_tail / source_next_boundary
+rule source_scope_tail = -source_space* (source_comment -source_space*)* &source_scope_end
+rule source_next_boundary = -source_space* (source_detached_group -source_space*)* (source_leading_group / source_empty_comment) -source_space* &source_next_token
+rule source_empty_comment = _
+rule source_detached_group = source_line_group &source_line_flush / source_block_comment &source_block_flush
+rule source_leading_group = source_comment -source_space* &source_next_token
+rule source_line_flush = source_horizontal (source_nl / "/*" / source_scope_end)
+rule source_block_flush = source_horizontal (source_nl source_horizontal (source_nl / source_comment_start / source_scope_end) / source_comment_start / source_scope_end)
+rule source_next_token = !(source_space / source_comment_start / source_scope_end) .
+rule source_scope_end = ")" / "]" / "}" / $$
+rule source_comment_start = "//" / "/*"
+rule source_comment = source_line_group / source_block_comment
+rule source_line_group = source_line_comment (-source_horizontal source_line_comment)*
+rule source_line_comment = "//" [^\r\n]* source_nl?
+rule source_block_comment = "/*" source_block_line (source_nl -source_horizontal -source_block_star? source_block_line)* "*/"
+rule source_block_star = "*" !"/"
+rule source_block_line = source_block_piece*
+rule source_block_piece = source_nested_piece / source_character_piece
+rule source_nested_piece = source_block_comment
+rule source_character_piece = (!(source_nl / "*/" / "/*") .) #atomic
+rule source_nl = "\r\n" / [\r\n]
+rule source_horizontal = source_horizontal_char*
+rule source_horizontal_char = [ \t\u{b}\u{c}\u{85}\u{a0}\u{1680}\u{2000}-\u{200a}\u{2028}\u{2029}\u{202f}\u{205f}\u{3000}]
+rule source_space = source_horizontal_char / source_nl
 ```
 
 ## What the Grammar Does Not Express

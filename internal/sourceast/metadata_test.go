@@ -45,3 +45,28 @@ func TestPackageClause(t *testing.T) {
 		t.Fatal("failed conversion mutated package")
 	}
 }
+
+func TestSetSpanPreservesOwnership(t *testing.T) {
+	p := NewPositions("// 😀\r\ntype T terminal // trailing")
+	dst := grammar.SourceInfo{
+		LeadingComments: " leading\r\n", TrailingComments: " trailing",
+		LeadingDetachedComments: []string{"", " detached\n"},
+		DiagnosticPos:           grammar.Pos{Line: 2, Col: 6},
+	}
+	if err := p.SetSpan(&dst, 6, 21); err != nil {
+		t.Fatal(err)
+	}
+	if dst.Pos != (grammar.Pos{Line: 2, Col: 1}) || dst.End != (grammar.Pos{Line: 2, Col: 16}) {
+		t.Fatalf("span: %+v", dst)
+	}
+	if dst.LeadingComments != " leading\r\n" || dst.TrailingComments != " trailing" || !reflect.DeepEqual(dst.LeadingDetachedComments, []string{"", " detached\n"}) || dst.DiagnosticPos != (grammar.Pos{Line: 2, Col: 6}) {
+		t.Fatalf("span update replaced ownership or diagnostic position: %+v", dst)
+	}
+	before := dst
+	if err := p.SetSpan(&dst, 0, 100); err == nil || !reflect.DeepEqual(dst, before) {
+		t.Fatal("failed span conversion mutated metadata")
+	}
+	if err := p.SetSpan(nil, 0, 1); err == nil {
+		t.Fatal("accepted nil destination")
+	}
+}

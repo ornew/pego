@@ -14,12 +14,15 @@ type VarRef terminal
 type File struct { Package *PackageStmt; Defs []Def; Comments []Comment; TrailingComments []Comment; Text string }
 type PackageStmt = Package | Error
 type Package struct { Name Ident; Comments []Comment; Source SourceMetadata }
+type PackageBody struct { Name Ident }
 // Ownership is constructed at syntax boundaries; the adapter only converts spans.
-type SourceMetadata struct { Span Match; Leading string; Trailing string; Detached []SourceComment }
+type SourceSpan = PackageBody | TypeDefBody
+type SourceMetadata struct { Span SourceSpan; Leading string; Trailing string; Detached []SourceComment }
 type SourceComment struct { Text string }
 type SourceBoundary struct { Trailing string; Leading string; Detached []SourceComment; HasNext bool }
 type Def = TypeDef | RuleDef | Error
-type TypeDef struct { Name Ident; Spec TypeSpec; Comments []Comment }
+type TypeDef struct { Name Ident; Spec TypeSpec; Comments []Comment; SourceSpan TypeDefBody }
+type TypeDefBody struct { Name Ident; Spec TypeSpec }
 type TypeSpec = TypeAliasSpec | TerminalSpec | StructSpec
 type TypeAliasSpec struct { Type Type }
 type TerminalSpec struct {}
@@ -132,12 +135,13 @@ rule empty_stmts = (";" -comments)*
 rule package_entry PackageStmt = &(comments "package" !ident_char) p:(package_stmt #recover(skip=stmt_sync)) => $p
 rule package_stmt Package = (
   &lead:source_remaining cs:comments
-  &span:(("package" -word_end -- (ident @error(message="expected package name"))) #atomic)
-  "package" -word_end -- name:(ident @error(message="expected package name"))
-  &tail:source_package_tail tc:stmt_end
-) => Package{Name: $name, Comments: concat($cs, $tc), Source: SourceMetadata{
-  Span: $span, Leading: $lead.Leading, Detached: $lead.Detached, Trailing: $tail.Trailing,
+  body:package_body &tail:source_package_tail tc:stmt_end
+) => Package{Name: $body.Name, Comments: concat($cs, $tc), Source: SourceMetadata{
+  Span: $body, Leading: $lead.Leading, Detached: $lead.Detached, Trailing: $tail.Trailing,
 }}
+rule package_body PackageBody = (
+  "package" -word_end -- name:(ident @error(message="expected package name"))
+) => PackageBody{Name: $name}
 rule source_package_tail SourceBoundary = -";"? b:source_after_boundary => $b
 rule def_stmt Def = (
   !(comments $$)
@@ -171,9 +175,14 @@ rule sync_brace = "{" (sync_token / !("{" / "}" / nl) .)* "}"
 
 // Types. Union is the weakest operation; list and optional prefixes nest.
 rule type_def_stmt TypeDef = (
-  cs:comments "type" -word_end -- name:(ident @error(message="expected type name")) -ws
-  spec:(type_spec @error(message="expected struct, terminal, or type alias")) tc:stmt_end
-) => TypeDef{Name: $name, Spec: $spec, Comments: concat($cs, $tc)}
+  cs:comments d:type_def_body tc:stmt_end
+) => TypeDef{Name: $d.Name, Spec: $d.Spec, Comments: concat($cs, $tc), SourceSpan: $d}
+// The body starts at the keyword and ends before the statement separator.
+// Its typed node retains the actual parse span without repeating recovery.
+rule type_def_body TypeDefBody = (
+  "type" -word_end -- name:(ident @error(message="expected type name")) -ws
+  spec:(type_spec @error(message="expected struct, terminal, or type alias"))
+) => TypeDefBody{Name: $name, Spec: $spec}
 rule type_spec TypeSpec = struct_spec / terminal_spec / type_alias_spec
 rule struct_spec StructSpec = (
   "struct" -word_end -- "{" {ml := false} fields:(f:field_spec)* cs:comments

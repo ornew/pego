@@ -86,6 +86,35 @@ and generated parser in package boundaries that avoid an import cycle through
 `pego.CompileSource` or grammar compilation. A generation check fails when the
 generated source is stale.
 
+### Incremental Source Span Construction
+
+The canonical source tree currently constructs normalized package-clause metadata
+in `Package.Source`. Top-level type declarations additionally retain a
+syntax-only `TypeDef.SourceSpan`: a typed body node from the `type` keyword
+through the completed type specification. Leading and trailing boundary comments,
+statement separators and following whitespace stay outside that span. Comments
+inside a continuous type specification, including nested fields and grouping,
+stay inside it. A separate typed whole-rule body production provides the parsed
+name and specification. Both package clauses and type declarations use the
+actual body node's range, so error recovery runs once. Speculative recognition of
+a recovery-bearing body can duplicate diagnostics and must not be used to
+construct its span. No inline action or untyped sequence-field lookup is required.
+
+The internal offset adapter maps zero-based rune offsets to public one-based
+`grammar.Pos` values. Its span-only update retains existing normalized ownership,
+diagnostic token positions and formatter layout. Type declaration comment
+ownership remains a separate construction step: a completed declaration's
+boundary must explicitly supply the next declaration's leading and detached
+groups. Reclassifying a raw comment list in the adapter would duplicate or move
+ownership and is not part of this design.
+
+This increment is a source-span contract, not a complete public-AST adapter or a
+parser selection change. Differential span cases cover aliases, terminals,
+structs, multiline groups, comments, separators, Unicode and CR/LF/CRLF. The
+existing generated-consumer gate also compares typed type spans with the runtime
+source tree; full diagnostic and formatting parity remain required before the
+proposal can be accepted.
+
 ### Selection Surface
 
 Expose a per-call source-parser selection for `ParseGrammar` and

@@ -52,6 +52,21 @@ func (p *Positions) Source(m Metadata) (grammar.SourceInfo, error) {
 	}, nil
 }
 
+// SetSpan copies a canonical syntax span without replacing existing ownership,
+// diagnostic positions, or formatter layout. This supports source forms whose
+// boundary ownership has not yet been added to the canonical grammar.
+func (p *Positions) SetSpan(dst *grammar.SourceInfo, start, end int) error {
+	if dst == nil {
+		return fmt.Errorf("nil source information for syntax span")
+	}
+	s, err := p.Source(Metadata{Start: start, End: end})
+	if err != nil {
+		return err
+	}
+	dst.Pos, dst.End = s.Pos, s.End
+	return nil
+}
+
 // PackageClause is the first supported source-AST adapter increment.
 func (p *Positions) PackageClause(g *grammar.Grammar, name string, m Metadata) error {
 	if g == nil {

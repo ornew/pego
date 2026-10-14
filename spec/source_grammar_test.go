@@ -336,6 +336,14 @@ func TestSource(t *testing.T){
   if ast==nil||gotErr!=f.Error{t.Fatalf("fixture %d: typed parse: %v",i,e)}
   if ast.Text!=f.Source||len(ast.Defs)!=f.Defs{t.Fatalf("fixture %d: typed fields lost",i)}
   for _,c:=range ast.Comments{if c==nil{t.Fatalf("fixture %d: nil comment",i)}}
+  defs:=n.Field("Defs").(*Node).Children
+  for j,d:=range ast.Defs{
+   if x,ok:=d.(*TypeDef);ok{
+    span,ok:=defs[j].Field("SourceSpan").(*Node)
+    if !ok||span==nil||x==nil||x.SourceSpan==nil{t.Fatalf("fixture %d: missing type syntax span",i)}
+    if x.SourceSpan.Start!=int(span.Start)||x.SourceSpan.End!=int(span.End){t.Fatalf("fixture %d: typed type syntax span differs",i)}
+   }
+  }
  }
 }
 `))
