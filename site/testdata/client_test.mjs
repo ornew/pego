@@ -114,3 +114,61 @@ test("a stack overflow restarts the worker", async () => {
   assert.deepEqual(await c.call("echo", { n: 1 }), { n: 1 });
   assert.equal(workers.length, 2);
 });
+
+function deferred() {
+  let resolve, reject;
+  const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
+  return { promise, resolve, reject };
+}
+
+test("default compilation shares a pending module only for the same resolved URL", async (t) => {
+  const { FakeWorker, workers } = fakeWorkers();
+  const modules = new Map(), fetched = [];
+  t.mock.method(globalThis, "fetch", async (url) => { fetched.push(url); return { url }; });
+  t.mock.method(WebAssembly, "compileStreaming", async (response) => {
+    const { url } = await response;
+    const pending = deferred(); modules.set(url, pending);
+    return pending.promise;
+  });
+  const make = (wasm) => new PegoClient("https://cache.test/playground/", { wasm, Worker: FakeWorker });
+  const a = make("a.wasm"), same = make("./a.wasm"), b = make("b.wasm");
+  const starts = [a.start(), same.start(), b.start()];
+  await Promise.resolve(); await Promise.resolve();
+  assert.deepEqual(fetched, [a.wasm, b.wasm]);
+  const moduleA = { binary: "a" }, moduleB = { binary: "b" };
+  modules.get(b.wasm).resolve(moduleB); modules.get(a.wasm).resolve(moduleA);
+  await Promise.all(starts);
+  assert.deepEqual(workers.map((w) => w.received[0].module), [moduleB, moduleA, moduleA]);
+  const cached = make("a.wasm"); await cached.start();
+  assert.equal(fetched.length, 2);
+  assert.equal(workers.at(-1).received[0].module, moduleA);
+});
+
+test("a failed compilation can retry without evicting a different URL", async (t) => {
+  const { FakeWorker, workers } = fakeWorkers();
+  const failed = deferred(), fetched = [];
+  let fail = true;
+  const stableModule = { binary: "stable" }, retriedModule = { binary: "retry" };
+  t.mock.method(globalThis, "fetch", async (url) => {
+    fetched.push(url);
+    return { url, ok: true, arrayBuffer: async () => { throw new Error("network down"); } };
+  });
+  t.mock.method(WebAssembly, "compileStreaming", async (response) => {
+    const { url } = await response;
+    if (url.endsWith("failed.wasm")) return fail ? failed.promise : retriedModule;
+    return stableModule;
+  });
+  const make = (wasm) => new PegoClient("https://retry.test/playground/", { wasm, Worker: FakeWorker });
+  const bad = make("failed.wasm"), same = make("failed.wasm"), stable = make("stable.wasm");
+  const failures = [assert.rejects(bad.start(), /network down/), assert.rejects(same.start(), /network down/)];
+  await stable.start();
+  failed.reject(new Error("stream failed"));
+  await Promise.all(failures);
+  fail = false;
+  await bad.start();
+  await make("stable.wasm").start();
+  assert.equal(fetched.filter((url) => url === stable.wasm).length, 1);
+  assert.equal(fetched.filter((url) => url === bad.wasm).length, 3); // stream, fallback, retry
+  assert.equal(workers.at(-2).received[0].module, retriedModule);
+  assert.equal(workers.at(-1).received[0].module, stableModule);
+});

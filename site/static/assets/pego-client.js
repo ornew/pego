@@ -9,10 +9,12 @@
 // quickly does not queue a parse per keystroke. A call that takes longer than the timeout terminates
 // the worker; the calls queued behind it then run on a new worker.
 
-let modulePromise = null;
+const modulePromises = new Map();
 
 function compileModule(url) {
-  modulePromise ??= (async () => {
+  const cached = modulePromises.get(url);
+  if (cached) return cached;
+  const promise = (async () => {
     try {
       return await WebAssembly.compileStreaming(fetch(url));
     } catch {
@@ -22,10 +24,11 @@ function compileModule(url) {
       return WebAssembly.compile(await resp.arrayBuffer());
     }
   })();
-  modulePromise.catch(() => {
-    modulePromise = null;
+  modulePromises.set(url, promise);
+  promise.catch(() => {
+    if (modulePromises.get(url) === promise) modulePromises.delete(url);
   });
-  return modulePromise;
+  return promise;
 }
 
 // fatalError reports whether an error thrown by pego.wasm means that the Go program cannot continue:

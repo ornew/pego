@@ -35,7 +35,7 @@ test("child page navigation replaces rows, clears stale mappings and keeps focus
   assert.equal(h.rows(), 102);
   assert.match(h.container.textContent, /Children 101–200 of 10000/);
   assert.equal(h.view.elements.has(root.children[0]), false);
-  assert.equal(h.view.current, null);
+  assert.equal(h.view.current, top.row);
   assert.equal(h.container.contains(h.doc.activeElement), true);
   assert.equal(h.doc.activeElement.textContent, "Next children");
   top.pager.previous.click();
@@ -220,9 +220,58 @@ test("tree keys still select nodes while native pager keys are not intercepted",
 test("new parse results replace pages and empty results show their message", async () => {
   const h = await setup(), root = wide(); h.view.set(root); h.view.reveal(9999.5);
   h.view.set({ type: "Match", start: 0, end: 1, text: "new" });
-  assert.equal(h.rows(), 1); assert.equal(h.view.current, null);
+  assert.equal(h.rows(), 1); assert.equal(h.view.current, h.nodeRows()[0]);
   assert.equal(h.view.elements.has(root.children[9999]), false);
   h.view.set(null, "No tree");
   assert.equal(h.rows(), 0); assert.equal(h.container.textContent, "No tree");
   assert.doesNotThrow(() => { h.view.expandAll(); h.view.collapseAll(); h.view.reveal(0); });
+});
+
+
+function tabStops(h) {
+  return h.nodeRows().filter((row) => row.tabIndex === 0 && row.offsetParent !== null);
+}
+
+test("initial tree entry and navigation maintain one roving tab stop", async () => {
+  const h = await setup(), root = wide(3); h.view.set(root);
+  const rows = h.nodeRows();
+  assert.deepEqual(tabStops(h), [rows[0]]);
+  assert.equal(h.doc.activeElement, null); // Rendering does not steal editor focus.
+  rows[0].focus();
+  h.key("ArrowRight");
+  assert.equal(h.doc.activeElement, rows[1]);
+  assert.deepEqual(tabStops(h), [rows[1]]);
+  h.key("ArrowDown"); h.key("ArrowUp");
+  assert.equal(h.doc.activeElement, rows[1]);
+  h.key("Enter");
+  assert.deepEqual(h.selected.at(-1), { n: root.children[0], focus: true });
+  h.key("ArrowLeft");
+  assert.equal(h.doc.activeElement, rows[0]);
+  h.key("ArrowLeft");
+  assert.equal(rows[0].parentElement.getAttribute("aria-expanded"), "false");
+  assert.deepEqual(tabStops(h), [rows[0]]);
+  h.key("ArrowRight");
+  assert.equal(h.doc.activeElement, rows[0]); // First Right expands; second enters.
+  h.key("ArrowRight");
+  assert.equal(h.doc.activeElement, rows[1]);
+  assert.deepEqual(tabStops(h), [rows[1]]);
+});
+
+test("native row focus, selection and collapsing descendants keep a visible entry", async () => {
+  const h = await setup(), root = wide(3); h.view.set(root);
+  const top = h.container.querySelector(":scope > ul > li");
+  const child = h.view.elements.get(root.children[1]); child.focus();
+  assert.equal(h.view.current, child);
+  assert.deepEqual(tabStops(h), [child]);
+  h.view.collapse(top);
+  assert.equal(h.doc.activeElement, top.row);
+  assert.deepEqual(tabStops(h), [top.row]);
+  h.view.expand(top);
+  h.view.setCurrent(child);
+  const outside = h.doc.createElement("button"); outside.focus();
+  h.view.collapse(top);
+  assert.equal(h.doc.activeElement, outside);
+  assert.deepEqual(tabStops(h), [top.row]);
+  h.view.set(null, "No tree");
+  assert.deepEqual(tabStops(h), []);
 });

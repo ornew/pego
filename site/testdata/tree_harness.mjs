@@ -37,7 +37,12 @@ class Element {
   getAttribute(name) { return this.attributes[name] ?? null; }
   addEventListener(name, listener) { (this.listeners[name] ??= []).push(listener); }
   click() { if (!this.disabled) for (const listener of this.listeners.click || []) listener({ target: this }); }
-  focus() { this.ownerDocument.activeElement = this; }
+  focus() {
+    this.ownerDocument.activeElement = this;
+    for (let p = this; p; p = p.parentElement) {
+      for (const listener of p.listeners.focusin || []) listener({ target: this });
+    }
+  }
   scrollIntoView() { this.scrolled = true; }
   contains(other) { for (let p = other; p; p = p.parentElement) if (p === this) return true; return false; }
   matches(selector) {

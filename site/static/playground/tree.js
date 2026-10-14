@@ -37,6 +37,10 @@ export class TreeView {
       this.onHover(row?.node ?? null);
     });
     container.addEventListener("mouseleave", () => this.onHover(null));
+    container.addEventListener("focusin", (e) => {
+      const row = e.target.closest(".row");
+      if (row) this.setCurrent(row);
+    });
     container.addEventListener("keydown", (e) => this.onKey(e));
   }
 
@@ -83,6 +87,7 @@ export class TreeView {
     this.top = this.item({ label: null, value: root }, 0, { left: limit, auto: true });
     ul.append(this.top);
     this.el.append(ul);
+    this.setCurrent(this.top.row);
   }
 
   item(entry, depth, work) {
@@ -125,9 +130,9 @@ export class TreeView {
 
   clearGroup(li) {
     if (!li.group) return;
+    if (li.group.contains(this.current)) this.setCurrent(li.row);
     for (const row of li.group.querySelectorAll(".row")) {
       if (row.node && this.elements.get(row.node) === row) this.elements.delete(row.node);
-      if (this.current === row) this.current = null;
       this.rows--;
     }
     this.rows -= li.group.querySelectorAll(".tree-page").length;
@@ -240,7 +245,11 @@ export class TreeView {
   }
 
   collapse(li) {
-    if (li.kids) li.setAttribute("aria-expanded", "false");
+    if (!li.kids) return;
+    const focused = li.group?.contains(this.doc.activeElement);
+    if (li.group?.contains(this.current) || focused) this.setCurrent(li.row);
+    li.setAttribute("aria-expanded", "false");
+    if (focused) li.row.focus();
   }
 
   expandAll() {
@@ -275,12 +284,16 @@ export class TreeView {
     const rows = [...this.el.querySelectorAll(".row")].filter((r) => r.offsetParent !== null);
     const i = rows.indexOf(this.doc.activeElement);
     if (i < 0) return;
+    this.setCurrent(rows[i]);
     const li = rows[i].parentElement;
     let next = null;
     switch (e.key) {
       case "ArrowDown": next = rows[i + 1]; break;
       case "ArrowUp": next = rows[i - 1]; break;
-      case "ArrowRight": if (li.kids) this.expand(li); break;
+      case "ArrowRight":
+        if (li.getAttribute("aria-expanded") === "true") next = li.items?.values().next().value?.row;
+        else if (li.kids) this.expand(li);
+        break;
       case "ArrowLeft":
         if (li.getAttribute("aria-expanded") === "true") this.collapse(li);
         else next = li.parentElement.closest("li")?.querySelector(":scope > .row");
@@ -297,10 +310,13 @@ export class TreeView {
   }
 
   setCurrent(row) {
-    this.current?.classList.remove("current");
+    if (this.current) {
+      this.current.classList.remove("current");
+      this.current.tabIndex = -1;
+    }
     this.current = row;
     row?.classList.add("current");
-    row?.setAttribute("tabindex", "0");
+    if (row) row.tabIndex = 0;
   }
 
   // Preserve last-containing-child semantics without rendering preceding siblings.
