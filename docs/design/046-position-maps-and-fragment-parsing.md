@@ -130,6 +130,16 @@ can require a second decoding pass over the consumed prefix; that pass observes
 active work controls. Recovered success retains `SyntaxErrors`, while an
 unrecovered failure or fatal error publishes zero consumption.
 
+The cursor-to-byte conversion is isolated in a private engine helper and does
+not depend on the editor position map. It translates the original source bytes,
+not normalized node text: a valid U+FFFD scalar consumes three bytes, while each
+malformed replacement consumes the original one-byte sequence. Regression
+fixtures exercise indexed and decoding fallback paths, supplementary scalars,
+truncated UTF-8, line terminators, byte-mode interior cursors, consumed-slice
+whole-input parity, and interruption during fallback conversion. The helper
+adds no public API and does not extend the scope to absolute fragment offsets.
+These additional fixtures pass the focused position and prefix parsing tests.
+
 Focused tests cover conversion round trips, strict boundary rejection,
 malformed UTF-8, checkpoint crossings, action-shaped/discarded values,
 recognition, recovery, cancellation, whole-input compatibility, and fragment

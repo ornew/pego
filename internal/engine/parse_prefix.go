@@ -1,7 +1,5 @@
 package engine
 
-import "unicode/utf8"
-
 // PrefixResult records the successful cursor independently of the rule's value.
 type PrefixResult struct {
 	Node          *Node
@@ -43,23 +41,8 @@ func (prog *Program) ParsePrefixWith(start, input string, o ParseOptions) (resul
 	if o.Recognize {
 		result.Node = nil
 	}
-	if result.Consumed > 0 {
-		if o.Unit == Bytes {
-			result.ConsumedBytes = result.Consumed
-		} else if len(p.offs) > result.Consumed {
-			result.ConsumedBytes = int(p.offs[result.Consumed])
-		} else {
-			// Recognition need not build the input's lazy byte-offset table. Decode
-			// the original bytes, including malformed one-byte replacement scalars.
-			off := 0
-			for i := 0; i < result.Consumed; i++ {
-				p.inputWork(uint64(min(utf8.UTFMax, len(input)-off)))
-				_, n := utf8.DecodeRuneInString(input[off:])
-				off += n
-			}
-			result.ConsumedBytes = off
-		}
-	}
+	result.ConsumedBytes = p.input.prefixByteOffset(input, result.Consumed)
+
 	if !p.aborted {
 		control.check()
 	}
