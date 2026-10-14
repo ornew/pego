@@ -322,6 +322,19 @@ func TestCompile(t *testing.T) {
 	if _, err := runCLI(t, "", "convert", "-to", "pego", bare); err == nil || !strings.Contains(err.Error(), "omits the AST") {
 		t.Errorf("got %v", err)
 	}
+	// Recompiling an AST-less file cannot restore the AST. Require the
+	// bytecode-only output to be explicit instead of silently dropping it.
+	copyPath := filepath.Join(t.TempDir(), "kv-copy.pegoc")
+	if _, err := runCLI(t, "", "compile", "-g", bare, "-o", copyPath); err == nil ||
+		!strings.Contains(err.Error(), "omits the AST") || !strings.Contains(err.Error(), "-no-ast") {
+		t.Errorf("got %v", err)
+	}
+	if _, err := os.Stat(copyPath); !os.IsNotExist(err) {
+		t.Errorf("compile wrote output after rejecting AST-less input: stat error %v", err)
+	}
+	if _, err := runCLI(t, "", "compile", "-g", bare, "-no-ast", "-o", copyPath); err != nil {
+		t.Fatal(err)
+	}
 	// Without -s, the start rule saved by compile -s is used.
 	other := filepath.Join(t.TempDir(), "other.pegoc")
 	if _, err := runCLI(t, "", "compile", "-g", g, "-s", "other", "-o", other); err != nil {

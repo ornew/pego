@@ -107,8 +107,14 @@ two bytecode backends. What you keep and lose without it:
 | `pego explain`, `pego trace`, `pego profile` | yes | yes |
 | `WithStart`, `Marshal` again | yes | yes |
 
-`pego compile -g file.pegoc -no-ast` drops the AST of an existing file. There is no way back: a file without the AST
-cannot be compiled again with one, so keep the source.
+`pego compile -g file.pegoc -no-ast` drops the AST of an existing file. An AST-less input cannot be recompiled into
+an AST-bearing file: bytecode does not retain enough source grammar structure to reconstruct it. Recompiling without
+`-no-ast` fails without writing output. Keep the original source or an AST-bearing file for a full artifact. To copy
+an AST-less file in bytecode-only form, request that form explicitly:
+
+```bash
+pego compile -g existing-noast.pegoc -no-ast -o copy-noast.pegoc
+```
 
 Choose the file without the AST for a build artifact that is only ever executed, and the full file when something may
 want to read the grammar again (a tool that lints, formats or generates from it) or when the closure backend's speed

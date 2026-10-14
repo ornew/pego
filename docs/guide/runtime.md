@@ -692,6 +692,9 @@ pego compile -g <grammar> [-s <rule>] [-no-ast] -o <file.pegoc>
 Saves a compiled grammar; see [compiled grammars](compiled-grammars.md). `-s` sets the default start rule stored in
 the file, and `-no-ast` omits the AST. Both `-g` and `-o` are required.
 
+When `<grammar>` is an AST-less `.pegoc`, `-no-ast` is required. Without it, compilation reports the missing AST and
+writes no output. The option preserves bytecode-only form; it cannot restore source grammar data.
+
 ### `gen`
 
 ```bash

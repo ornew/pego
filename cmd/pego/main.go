@@ -607,6 +607,9 @@ func compileCmd(args []string) error {
 	if err != nil {
 		return err
 	}
+	if !*noAST && p.Grammar() == nil {
+		return fmt.Errorf("compile: %s: the compiled grammar omits the AST; use the original grammar source or pass -no-ast to keep a bytecode-only file", *grammarPath)
+	}
 	var opts []pego.MarshalOption
 	if *noAST {
 		opts = append(opts, pego.WithoutAST())
