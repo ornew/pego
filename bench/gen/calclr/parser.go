@@ -219,7 +219,9 @@ func writeValue(b *strings.Builder, v any) {
 		}
 		writeNode(b, v)
 	case string:
-		b.WriteString("`" + v + "`")
+		b.WriteByte('`')
+		b.WriteString(v)
+		b.WriteByte('`')
 	case int:
 		b.WriteString(strconv.Itoa(v))
 	case bool:
@@ -252,7 +254,8 @@ func writeNode(b *strings.Builder, n *Node) {
 			b.WriteString("}")
 		}
 	default:
-		b.WriteString("(" + n.Type())
+		b.WriteByte('(')
+		b.WriteString(n.Type())
 		for _, c := range n.Children {
 			b.WriteString(" ")
 			writeValue(b, c)
@@ -271,7 +274,8 @@ func writeFields(b *strings.Builder, n *Node, sep bool) {
 			b.WriteString(" ")
 		}
 		sep = true
-		b.WriteString(f.Name + "=")
+		b.WriteString(f.Name)
+		b.WriteByte('=')
 		writeValue(b, f.Value)
 	}
 }
@@ -6137,7 +6141,7 @@ func (p *parser) e7() (*Node, bool) {
 		} else {
 			x5, _, x6 = p.peek()
 		}
-		if !(x6 && (x5 == 43)) && p.depth+0 <= p.maxDepth {
+		if !(x6 && (x5 == 43)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 5)
 			goto L7_ordinary
 		}
@@ -6151,7 +6155,7 @@ func (p *parser) e7() (*Node, bool) {
 	L8_ordinary:
 		p.reset(x3)
 	L7_ordinary:
-		if !(x6 && (x5 == 45)) && p.depth+0 <= p.maxDepth {
+		if !(x6 && (x5 == 45)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 6)
 			goto L9_ordinary
 		}
@@ -6212,7 +6216,7 @@ func (p *parser) e7() (*Node, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (x5 == 43)) && p.depth+0 <= p.maxDepth {
+	if !(x6 && (x5 == 43)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 5)
 		goto L7
 	}
@@ -6226,7 +6230,7 @@ func (p *parser) e7() (*Node, bool) {
 L8:
 	p.reset(x3)
 L7:
-	if !(x6 && (x5 == 45)) && p.depth+0 <= p.maxDepth {
+	if !(x6 && (x5 == 45)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 6)
 		goto L9
 	}
@@ -6379,7 +6383,7 @@ func (p *parser) e14() (*Node, bool) {
 		} else {
 			x5, _, x6 = p.peek()
 		}
-		if !(x6 && (x5 == 42)) && p.depth+0 <= p.maxDepth {
+		if !(x6 && (x5 == 42)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 7)
 			goto L7_ordinary
 		}
@@ -6393,7 +6397,7 @@ func (p *parser) e14() (*Node, bool) {
 	L8_ordinary:
 		p.reset(x3)
 	L7_ordinary:
-		if !(x6 && (x5 == 47)) && p.depth+0 <= p.maxDepth {
+		if !(x6 && (x5 == 47)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 8)
 			goto L9_ordinary
 		}
@@ -6407,7 +6411,7 @@ func (p *parser) e14() (*Node, bool) {
 	L10_ordinary:
 		p.reset(x3)
 	L9_ordinary:
-		if !(x6 && (x5 == 37)) && p.depth+0 <= p.maxDepth {
+		if !(x6 && (x5 == 37)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 9)
 			goto L11_ordinary
 		}
@@ -6468,7 +6472,7 @@ func (p *parser) e14() (*Node, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (x5 == 42)) && p.depth+0 <= p.maxDepth {
+	if !(x6 && (x5 == 42)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 7)
 		goto L7
 	}
@@ -6482,7 +6486,7 @@ func (p *parser) e14() (*Node, bool) {
 L8:
 	p.reset(x3)
 L7:
-	if !(x6 && (x5 == 47)) && p.depth+0 <= p.maxDepth {
+	if !(x6 && (x5 == 47)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L9
 	}
@@ -6496,7 +6500,7 @@ L7:
 L10:
 	p.reset(x3)
 L9:
-	if !(x6 && (x5 == 37)) && p.depth+0 <= p.maxDepth {
+	if !(x6 && (x5 == 37)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 9)
 		goto L11
 	}
@@ -6621,7 +6625,7 @@ func (p *parser) e16() (*Node, bool) {
 		} else {
 			x4, _, x5 = p.peek()
 		}
-		if !(x5 && (x4 == 45)) && p.depth+0 <= p.maxDepth {
+		if !(x5 && (x4 == 45)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 6)
 			goto L6_ordinary
 		}
@@ -6635,7 +6639,7 @@ func (p *parser) e16() (*Node, bool) {
 	L7_ordinary:
 		p.reset(x2)
 	L6_ordinary:
-		if !(x5 && (x4 == 43)) && p.depth+0 <= p.maxDepth {
+		if !(x5 && (x4 == 43)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 5)
 			goto L8_ordinary
 		}
@@ -6689,7 +6693,7 @@ func (p *parser) e16() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 45)) && p.depth+0 <= p.maxDepth {
+	if !(x5 && (x4 == 45)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 6)
 		goto L6
 	}
@@ -6703,7 +6707,7 @@ func (p *parser) e16() (*Node, bool) {
 L7:
 	p.reset(x2)
 L6:
-	if !(x5 && (x4 == 43)) && p.depth+0 <= p.maxDepth {
+	if !(x5 && (x4 == 43)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 5)
 		goto L8
 	}
@@ -7713,7 +7717,7 @@ func (p *parser) e32() (*Node, bool) {
 		} else {
 			x4, _, x5 = p.peek()
 		}
-		if !(x5 && (x4 == 43)) && p.depth+0 <= p.maxDepth {
+		if !(x5 && (x4 == 43)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 5)
 			goto L6_ordinary
 		}
@@ -7728,7 +7732,7 @@ func (p *parser) e32() (*Node, bool) {
 		p.pos = x1
 		p.recovered = p.recovered[:x2]
 	L6_ordinary:
-		if !(x5 && (x4 == 45)) && p.depth+0 <= p.maxDepth {
+		if !(x5 && (x4 == 45)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 6)
 			goto L8_ordinary
 		}
@@ -7785,7 +7789,7 @@ func (p *parser) e32() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 43)) && p.depth+0 <= p.maxDepth {
+	if !(x5 && (x4 == 43)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 5)
 		goto L6
 	}
@@ -7800,7 +7804,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 45)) && p.depth+0 <= p.maxDepth {
+	if !(x5 && (x4 == 45)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 6)
 		goto L8
 	}
@@ -7947,7 +7951,7 @@ func (p *parser) e36() (*Node, bool) {
 		} else {
 			x4, _, x5 = p.peek()
 		}
-		if !(x5 && (x4 == 42)) && p.depth+0 <= p.maxDepth {
+		if !(x5 && (x4 == 42)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 7)
 			goto L6_ordinary
 		}
@@ -7962,7 +7966,7 @@ func (p *parser) e36() (*Node, bool) {
 		p.pos = x1
 		p.recovered = p.recovered[:x2]
 	L6_ordinary:
-		if !(x5 && (x4 == 47)) && p.depth+0 <= p.maxDepth {
+		if !(x5 && (x4 == 47)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 8)
 			goto L8_ordinary
 		}
@@ -7977,7 +7981,7 @@ func (p *parser) e36() (*Node, bool) {
 		p.pos = x1
 		p.recovered = p.recovered[:x2]
 	L8_ordinary:
-		if !(x5 && (x4 == 37)) && p.depth+0 <= p.maxDepth {
+		if !(x5 && (x4 == 37)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 9)
 			goto L10_ordinary
 		}
@@ -8034,7 +8038,7 @@ func (p *parser) e36() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 42)) && p.depth+0 <= p.maxDepth {
+	if !(x5 && (x4 == 42)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 7)
 		goto L6
 	}
@@ -8049,7 +8053,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 47)) && p.depth+0 <= p.maxDepth {
+	if !(x5 && (x4 == 47)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L8
 	}
@@ -8064,7 +8068,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 37)) && p.depth+0 <= p.maxDepth {
+	if !(x5 && (x4 == 37)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 9)
 		goto L10
 	}
@@ -8175,7 +8179,7 @@ func (p *parser) e38() (*Node, bool) {
 		} else {
 			x4, _, x5 = p.peek()
 		}
-		if !(x5 && (x4 == 45)) && p.depth+0 <= p.maxDepth {
+		if !(x5 && (x4 == 45)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 6)
 			goto L6_ordinary
 		}
@@ -8190,7 +8194,7 @@ func (p *parser) e38() (*Node, bool) {
 		p.pos = x1
 		p.recovered = p.recovered[:x2]
 	L6_ordinary:
-		if !(x5 && (x4 == 43)) && p.depth+0 <= p.maxDepth {
+		if !(x5 && (x4 == 43)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 5)
 			goto L8_ordinary
 		}
@@ -8242,7 +8246,7 @@ func (p *parser) e38() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 45)) && p.depth+0 <= p.maxDepth {
+	if !(x5 && (x4 == 45)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 6)
 		goto L6
 	}
@@ -8257,7 +8261,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 43)) && p.depth+0 <= p.maxDepth {
+	if !(x5 && (x4 == 43)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 5)
 		goto L8
 	}
@@ -8832,7 +8836,7 @@ func (p *parser) q2() (*Node, bool) {
 		} else {
 			x4, _, x5 = p.peek()
 		}
-		if !(x5 && (x4 == 43)) && p.depth+0 <= p.maxDepth {
+		if !(x5 && (x4 == 43)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 5)
 			goto L6_ordinary
 		}
@@ -8847,7 +8851,7 @@ func (p *parser) q2() (*Node, bool) {
 		p.pos = x1
 		p.recovered = p.recovered[:x2]
 	L6_ordinary:
-		if !(x5 && (x4 == 45)) && p.depth+0 <= p.maxDepth {
+		if !(x5 && (x4 == 45)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 6)
 			goto L8_ordinary
 		}
@@ -8915,7 +8919,7 @@ func (p *parser) q2() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 43)) && p.depth+0 <= p.maxDepth {
+	if !(x5 && (x4 == 43)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 5)
 		goto L6
 	}
@@ -8930,7 +8934,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 45)) && p.depth+0 <= p.maxDepth {
+	if !(x5 && (x4 == 45)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 6)
 		goto L8
 	}
@@ -8997,7 +9001,7 @@ func (p *parser) q4() (*Node, bool) {
 		} else {
 			x4, _, x5 = p.peek()
 		}
-		if !(x5 && (x4 == 42)) && p.depth+0 <= p.maxDepth {
+		if !(x5 && (x4 == 42)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 7)
 			goto L6_ordinary
 		}
@@ -9012,7 +9016,7 @@ func (p *parser) q4() (*Node, bool) {
 		p.pos = x1
 		p.recovered = p.recovered[:x2]
 	L6_ordinary:
-		if !(x5 && (x4 == 47)) && p.depth+0 <= p.maxDepth {
+		if !(x5 && (x4 == 47)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 8)
 			goto L8_ordinary
 		}
@@ -9027,7 +9031,7 @@ func (p *parser) q4() (*Node, bool) {
 		p.pos = x1
 		p.recovered = p.recovered[:x2]
 	L8_ordinary:
-		if !(x5 && (x4 == 37)) && p.depth+0 <= p.maxDepth {
+		if !(x5 && (x4 == 37)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 9)
 			goto L10_ordinary
 		}
@@ -9095,7 +9099,7 @@ func (p *parser) q4() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 42)) && p.depth+0 <= p.maxDepth {
+	if !(x5 && (x4 == 42)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 7)
 		goto L6
 	}
@@ -9110,7 +9114,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 47)) && p.depth+0 <= p.maxDepth {
+	if !(x5 && (x4 == 47)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L8
 	}
@@ -9125,7 +9129,7 @@ L9:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L8:
-	if !(x5 && (x4 == 37)) && p.depth+0 <= p.maxDepth {
+	if !(x5 && (x4 == 37)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 9)
 		goto L10
 	}
@@ -9188,7 +9192,7 @@ func (p *parser) q6() (*Node, bool) {
 		} else {
 			x4, _, x5 = p.peek()
 		}
-		if !(x5 && (x4 == 45)) && p.depth+0 <= p.maxDepth {
+		if !(x5 && (x4 == 45)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 6)
 			goto L6_ordinary
 		}
@@ -9203,7 +9207,7 @@ func (p *parser) q6() (*Node, bool) {
 		p.pos = x1
 		p.recovered = p.recovered[:x2]
 	L6_ordinary:
-		if !(x5 && (x4 == 43)) && p.depth+0 <= p.maxDepth {
+		if !(x5 && (x4 == 43)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 5)
 			goto L8_ordinary
 		}
@@ -9266,7 +9270,7 @@ func (p *parser) q6() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 45)) && p.depth+0 <= p.maxDepth {
+	if !(x5 && (x4 == 45)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 6)
 		goto L6
 	}
@@ -9281,7 +9285,7 @@ L7:
 	p.pos = x1
 	p.recovered = p.recovered[:x2]
 L6:
-	if !(x5 && (x4 == 43)) && p.depth+0 <= p.maxDepth {
+	if !(x5 && (x4 == 43)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 5)
 		goto L8
 	}
@@ -9976,6 +9980,7 @@ func (p *tparser) i0() (any, bool) {
 			k1    any
 			ok    bool
 			v2    any
+			w     string
 		)
 		start = p.pos
 		p.depth++
@@ -9997,8 +10002,10 @@ func (p *tparser) i0() (any, bool) {
 			goto fail_ordinary
 		}
 		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+		w = p.where
 		p.where = "main"
 		v = func() any { return k1 }()
+		p.where = w
 		v = c.finish(v)
 		p.depth--
 		return v, true
@@ -10015,6 +10022,7 @@ func (p *tparser) i0() (any, bool) {
 		k1    any
 		ok    bool
 		v2    any
+		w     string
 	)
 	start = p.pos
 	p.depth++
@@ -10038,8 +10046,10 @@ func (p *tparser) i0() (any, bool) {
 		goto fail
 	}
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+	w = p.where
 	p.where = "main"
 	v = func() any { c.p.stepWork(); return k1 }()
+	p.where = w
 	v = c.finish(v)
 	p.depth--
 	return v, true
@@ -10089,6 +10099,7 @@ func (p *tparser) i2() (any, bool) {
 			v14   any
 			k15   any
 			v16   any
+			w     string
 		)
 		start = p.pos
 		p.depth++
@@ -10114,7 +10125,7 @@ func (p *tparser) i2() (any, bool) {
 		} else {
 			x8, _, x9 = p.peek()
 		}
-		if !(x9 && (x8 == 43)) && p.depth+0 <= p.maxDepth {
+		if !(x9 && (x8 == 43)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 5)
 			goto L10_ordinary
 		}
@@ -10129,7 +10140,7 @@ func (p *tparser) i2() (any, bool) {
 		p.pos = x5
 		p.recovered = p.recovered[:x6]
 	L10_ordinary:
-		if !(x9 && (x8 == 45)) && p.depth+0 <= p.maxDepth {
+		if !(x9 && (x8 == 45)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 6)
 			goto L12_ordinary
 		}
@@ -10154,6 +10165,7 @@ func (p *tparser) i2() (any, bool) {
 		}
 		k15 = v16
 		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+		w = p.where
 		p.where = "add"
 		v = func() any {
 
@@ -10164,6 +10176,7 @@ func (p *tparser) i2() (any, bool) {
 				return tmk_Binary(c, true, f_45, f_46, f_47)
 			}()
 		}()
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -10188,6 +10201,7 @@ func (p *tparser) i2() (any, bool) {
 		v14   any
 		k15   any
 		v16   any
+		w     string
 	)
 	start = p.pos
 	p.depth++
@@ -10216,7 +10230,7 @@ func (p *tparser) i2() (any, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 43)) && p.depth+0 <= p.maxDepth {
+	if !(x9 && (x8 == 43)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 5)
 		goto L10
 	}
@@ -10231,7 +10245,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 45)) && p.depth+0 <= p.maxDepth {
+	if !(x9 && (x8 == 45)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 6)
 		goto L12
 	}
@@ -10257,6 +10271,7 @@ L7:
 	}
 	k15 = v16
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+	w = p.where
 	p.where = "add"
 	v = func() any {
 		c.p.stepWork()
@@ -10267,6 +10282,7 @@ L7:
 			return tmk_Binary(c, true, f_45, f_46, f_47)
 		}()
 	}()
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -10315,6 +10331,7 @@ func (p *tparser) i4() (any, bool) {
 			v16   any
 			k17   any
 			v18   any
+			w     string
 		)
 		start = p.pos
 		p.depth++
@@ -10340,7 +10357,7 @@ func (p *tparser) i4() (any, bool) {
 		} else {
 			x8, _, x9 = p.peek()
 		}
-		if !(x9 && (x8 == 42)) && p.depth+0 <= p.maxDepth {
+		if !(x9 && (x8 == 42)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 7)
 			goto L10_ordinary
 		}
@@ -10355,7 +10372,7 @@ func (p *tparser) i4() (any, bool) {
 		p.pos = x5
 		p.recovered = p.recovered[:x6]
 	L10_ordinary:
-		if !(x9 && (x8 == 47)) && p.depth+0 <= p.maxDepth {
+		if !(x9 && (x8 == 47)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 8)
 			goto L12_ordinary
 		}
@@ -10370,7 +10387,7 @@ func (p *tparser) i4() (any, bool) {
 		p.pos = x5
 		p.recovered = p.recovered[:x6]
 	L12_ordinary:
-		if !(x9 && (x8 == 37)) && p.depth+0 <= p.maxDepth {
+		if !(x9 && (x8 == 37)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 9)
 			goto L14_ordinary
 		}
@@ -10395,6 +10412,7 @@ func (p *tparser) i4() (any, bool) {
 		}
 		k17 = v18
 		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+		w = p.where
 		p.where = "mul"
 		v = func() any {
 
@@ -10405,6 +10423,7 @@ func (p *tparser) i4() (any, bool) {
 				return tmk_Binary(c, true, f_49, f_50, f_51)
 			}()
 		}()
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -10429,6 +10448,7 @@ func (p *tparser) i4() (any, bool) {
 		v16   any
 		k17   any
 		v18   any
+		w     string
 	)
 	start = p.pos
 	p.depth++
@@ -10457,7 +10477,7 @@ func (p *tparser) i4() (any, bool) {
 	} else {
 		x8, _, x9 = p.peek()
 	}
-	if !(x9 && (x8 == 42)) && p.depth+0 <= p.maxDepth {
+	if !(x9 && (x8 == 42)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 7)
 		goto L10
 	}
@@ -10472,7 +10492,7 @@ L11:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L10:
-	if !(x9 && (x8 == 47)) && p.depth+0 <= p.maxDepth {
+	if !(x9 && (x8 == 47)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 8)
 		goto L12
 	}
@@ -10487,7 +10507,7 @@ L13:
 	p.pos = x5
 	p.recovered = p.recovered[:x6]
 L12:
-	if !(x9 && (x8 == 37)) && p.depth+0 <= p.maxDepth {
+	if !(x9 && (x8 == 37)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 9)
 		goto L14
 	}
@@ -10513,6 +10533,7 @@ L7:
 	}
 	k17 = v18
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+	w = p.where
 	p.where = "mul"
 	v = func() any {
 		c.p.stepWork()
@@ -10523,6 +10544,7 @@ L7:
 			return tmk_Binary(c, true, f_49, f_50, f_51)
 		}()
 	}()
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -10788,6 +10810,7 @@ func (p *tparser) i6() (any, bool) {
 			v12   any
 			k13   any
 			v14   any
+			w     string
 		)
 		start = p.pos
 		p.depth++
@@ -10808,7 +10831,7 @@ func (p *tparser) i6() (any, bool) {
 		} else {
 			x6, _, x7 = p.peek()
 		}
-		if !(x7 && (x6 == 45)) && p.depth+0 <= p.maxDepth {
+		if !(x7 && (x6 == 45)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 6)
 			goto L8_ordinary
 		}
@@ -10823,7 +10846,7 @@ func (p *tparser) i6() (any, bool) {
 		p.pos = x3
 		p.recovered = p.recovered[:x4]
 	L8_ordinary:
-		if !(x7 && (x6 == 43)) && p.depth+0 <= p.maxDepth {
+		if !(x7 && (x6 == 43)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 5)
 			goto L10_ordinary
 		}
@@ -10848,6 +10871,7 @@ func (p *tparser) i6() (any, bool) {
 		}
 		k13 = v14
 		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+		w = p.where
 		p.where = "neg"
 		v = func() any {
 
@@ -10857,6 +10881,7 @@ func (p *tparser) i6() (any, bool) {
 				return tmk_Unary(c, true, f_52, f_53)
 			}()
 		}()
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -10879,6 +10904,7 @@ func (p *tparser) i6() (any, bool) {
 		v12   any
 		k13   any
 		v14   any
+		w     string
 	)
 	start = p.pos
 	p.depth++
@@ -10901,7 +10927,7 @@ func (p *tparser) i6() (any, bool) {
 	} else {
 		x6, _, x7 = p.peek()
 	}
-	if !(x7 && (x6 == 45)) && p.depth+0 <= p.maxDepth {
+	if !(x7 && (x6 == 45)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 6)
 		goto L8
 	}
@@ -10916,7 +10942,7 @@ L9:
 	p.pos = x3
 	p.recovered = p.recovered[:x4]
 L8:
-	if !(x7 && (x6 == 43)) && p.depth+0 <= p.maxDepth {
+	if !(x7 && (x6 == 43)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 5)
 		goto L10
 	}
@@ -10942,6 +10968,7 @@ L5:
 	}
 	k13 = v14
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+	w = p.where
 	p.where = "neg"
 	v = func() any {
 		c.p.stepWork()
@@ -10951,6 +10978,7 @@ L5:
 			return tmk_Unary(c, true, f_52, f_53)
 		}()
 	}()
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -11102,6 +11130,7 @@ func (p *tparser) i8() (any, bool) {
 			v5    any
 			k6    any
 			v7    any
+			w     string
 		)
 		start = p.pos
 		p.depth++
@@ -11132,6 +11161,7 @@ func (p *tparser) i8() (any, bool) {
 		}
 		k6 = v7
 		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+		w = p.where
 		p.where = "pow"
 		v = func() any {
 
@@ -11142,6 +11172,7 @@ func (p *tparser) i8() (any, bool) {
 				return tmk_Binary(c, true, f_54, f_55, f_56)
 			}()
 		}()
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -11162,6 +11193,7 @@ func (p *tparser) i8() (any, bool) {
 		v5    any
 		k6    any
 		v7    any
+		w     string
 	)
 	start = p.pos
 	p.depth++
@@ -11196,6 +11228,7 @@ func (p *tparser) i8() (any, bool) {
 	}
 	k6 = v7
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+	w = p.where
 	p.where = "pow"
 	v = func() any {
 		c.p.stepWork()
@@ -11206,6 +11239,7 @@ func (p *tparser) i8() (any, bool) {
 			return tmk_Binary(c, true, f_54, f_55, f_56)
 		}()
 	}()
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -11257,6 +11291,7 @@ func (p *tparser) i9() (any, bool) {
 			x8    rune
 			x9    bool
 			v12   any
+			w     string
 		)
 		start = p.pos
 		p.depth++
@@ -11302,8 +11337,10 @@ func (p *tparser) i9() (any, bool) {
 	L5_ordinary:
 		k1 = v4
 		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+		w = p.where
 		p.where = "primary"
 		v = func() any { return k1 }()
+		p.where = w
 		v = c.finish(v)
 		p.depth--
 		return v, true
@@ -11326,6 +11363,7 @@ func (p *tparser) i9() (any, bool) {
 		x8    rune
 		x9    bool
 		v12   any
+		w     string
 	)
 	start = p.pos
 	p.depth++
@@ -11373,8 +11411,10 @@ L10:
 L5:
 	k1 = v4
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+	w = p.where
 	p.where = "primary"
 	v = func() any { c.p.stepWork(); return k1 }()
+	p.where = w
 	v = c.finish(v)
 	p.depth--
 	return v, true
@@ -11415,6 +11455,7 @@ func (p *tparser) i10() (any, bool) {
 			ok    bool
 			k1    any
 			v2    any
+			w     string
 		)
 		start = p.pos
 		p.depth++
@@ -11443,8 +11484,10 @@ func (p *tparser) i10() (any, bool) {
 			goto fail_ordinary
 		}
 		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+		w = p.where
 		p.where = "group"
 		v = func() any { return k1 }()
+		p.where = w
 		v = c.finish(v)
 		p.depth--
 		return v, true
@@ -11461,6 +11504,7 @@ func (p *tparser) i10() (any, bool) {
 		ok    bool
 		k1    any
 		v2    any
+		w     string
 	)
 	start = p.pos
 	p.depth++
@@ -11491,8 +11535,10 @@ func (p *tparser) i10() (any, bool) {
 		goto fail
 	}
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+	w = p.where
 	p.where = "group"
 	v = func() any { c.p.stepWork(); return k1 }()
+	p.where = w
 	v = c.finish(v)
 	p.depth--
 	return v, true

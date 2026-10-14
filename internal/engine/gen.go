@@ -762,7 +762,7 @@ func (g *generator) expr(e grammar.Expr, s *scope, build bool) string {
 					b.WriteString("\tch, _, more := p.peek()\n")
 					peeked = true
 				}
-				fmt.Fprintf(&b, "\tif !(more && (%s)) && p.depth+%d <= p.maxDepth {\n\t\tp.stepWork()\n\t\tp.expect(p.pos, %d)\n\t} else ", cond, depth, desc)
+				fmt.Fprintf(&b, "\tif !(more && (%s)) && %s {\n\t\tp.stepWork()\n\t\tp.expect(p.pos, %d)\n\t} else ", cond, depthLimit(depth), desc)
 			}
 			fmt.Fprintf(&b, "\t{\n\t\tprevCut := p.cut\n\t\tp.cut = false\n\t\tv, ok := p.%s()\n\t\tcut := p.cut\n\t\tp.cut = prevCut\n"+
 				"\t\tif ok {\n\t\t\treturn v, true\n\t\t}\n\t\tp.reset(m0)\n\t\tif cut {\n\t\t\treturn nil, false\n\t\t}\n\t}\n", m)
@@ -987,7 +987,7 @@ func (g *generator) first(e grammar.Expr, depth int, seen map[string]bool) (stri
 		r, _ := utf8.DecodeRuneInString(e.Value)
 		return fmt.Sprintf("ch == %d", r), g.desc(strconv.Quote(e.Value)), depth, true
 	case *grammar.CharClass:
-		return "!" + g.controlledClassReject(e), g.desc(charClassString(e)), depth, true
+		return negateCondition(g.controlledClassReject(e)), g.desc(charClassString(e)), depth, true
 	case *grammar.Seq:
 		if len(e.Items) > 0 {
 			return g.first(e.Items[0], depth, seen)
@@ -1010,6 +1010,23 @@ func (g *generator) first(e grammar.Expr, depth int, seen map[string]bool) (stri
 		return g.first(r.def.Expr, depth+1, seen)
 	}
 	return "", 0, 0, false
+}
+
+// depthLimit returns the nesting guard needed before calling depth rules.
+func depthLimit(depth int) string {
+	if depth == 0 {
+		return "p.depth <= p.maxDepth"
+	}
+	return fmt.Sprintf("p.depth+%d <= p.maxDepth", depth)
+}
+
+// negateCondition inverts a generated condition without retaining a leading
+// logical negation as a double negation.
+func negateCondition(condition string) string {
+	if strings.HasPrefix(condition, "!") {
+		return strings.TrimPrefix(condition, "!")
+	}
+	return "!(" + condition + ")"
 }
 
 // classReject returns a Go condition on ch that is true when ch is not accepted by the class.

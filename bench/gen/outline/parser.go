@@ -219,7 +219,9 @@ func writeValue(b *strings.Builder, v any) {
 		}
 		writeNode(b, v)
 	case string:
-		b.WriteString("`" + v + "`")
+		b.WriteByte('`')
+		b.WriteString(v)
+		b.WriteByte('`')
 	case int:
 		b.WriteString(strconv.Itoa(v))
 	case bool:
@@ -252,7 +254,8 @@ func writeNode(b *strings.Builder, n *Node) {
 			b.WriteString("}")
 		}
 	default:
-		b.WriteString("(" + n.Type())
+		b.WriteByte('(')
+		b.WriteString(n.Type())
 		for _, c := range n.Children {
 			b.WriteString(" ")
 			writeValue(b, c)
@@ -271,7 +274,8 @@ func writeFields(b *strings.Builder, n *Node, sep bool) {
 			b.WriteString(" ")
 		}
 		sep = true
-		b.WriteString(f.Name + "=")
+		b.WriteString(f.Name)
+		b.WriteByte('=')
 		writeValue(b, f.Value)
 	}
 }
@@ -6607,7 +6611,7 @@ func (p *parser) e10() (*Node, bool) {
 		} else {
 			x4, _, x5 = p.peek()
 		}
-		if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
+		if !(x5 && (x4 == 10)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 7)
 			goto L6_ordinary
 		}
@@ -6658,7 +6662,7 @@ func (p *parser) e10() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
+	if !(x5 && (x4 == 10)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 7)
 		goto L6
 	}
@@ -6920,7 +6924,7 @@ func (p *parser) e13() (*Node, bool) {
 		} else {
 			x4, _, x5 = p.peek()
 		}
-		if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
+		if !(x5 && (x4 == 10)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 7)
 			goto L6_ordinary
 		}
@@ -6969,7 +6973,7 @@ func (p *parser) e13() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
+	if !(x5 && (x4 == 10)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 7)
 		goto L6
 	}
@@ -7308,7 +7312,7 @@ func (p *parser) r9() (*Node, bool) {
 		} else {
 			x4, _, x5 = p.peek()
 		}
-		if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
+		if !(x5 && (x4 == 10)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 7)
 			goto L6_ordinary
 		}
@@ -7368,7 +7372,7 @@ func (p *parser) r9() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
+	if !(x5 && (x4 == 10)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 7)
 		goto L6
 	}
@@ -8129,7 +8133,7 @@ func (p *parser) q6() (*Node, bool) {
 		} else {
 			x4, _, x5 = p.peek()
 		}
-		if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
+		if !(x5 && (x4 == 10)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 7)
 			goto L6_ordinary
 		}
@@ -8189,7 +8193,7 @@ func (p *parser) q6() (*Node, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
+	if !(x5 && (x4 == 10)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 7)
 		goto L6
 	}
@@ -8353,6 +8357,7 @@ func (p *tparser) i0() (any, bool) {
 			x3      int
 			x4      int
 			x5      int
+			w       string
 		)
 		start = p.pos
 		prevEnv = p.env
@@ -8394,8 +8399,10 @@ func (p *tparser) i0() (any, bool) {
 			goto fail_ordinary
 		}
 		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+		w = p.where
 		p.where = "main"
 		v = func() any { return k1 }()
+		p.where = w
 		v = c.finish(v)
 		p.depth--
 		p.env = prevEnv
@@ -8418,6 +8425,7 @@ func (p *tparser) i0() (any, bool) {
 		x3      int
 		x4      int
 		x5      int
+		w       string
 	)
 	start = p.pos
 	prevEnv = p.env
@@ -8461,8 +8469,10 @@ func (p *tparser) i0() (any, bool) {
 		goto fail
 	}
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+	w = p.where
 	p.where = "main"
 	v = func() any { c.p.stepWork(); return k1 }()
+	p.where = w
 	v = c.finish(v)
 	p.depth--
 	p.env = prevEnv
@@ -8517,6 +8527,7 @@ func (p *tparser) v1() (any, bool) {
 			v19   any
 			v20   any
 			v21   any
+			w     string
 		)
 		start, rec = p.pos, len(p.recovered)
 		p.depth++
@@ -8583,6 +8594,7 @@ func (p *tparser) v1() (any, bool) {
 		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 		c.one[0] = v21
 		c.items = c.one[:]
+		w = p.where
 		p.where = "block"
 		v = func() any {
 
@@ -8590,6 +8602,7 @@ func (p *tparser) v1() (any, bool) {
 				return func() any { return c.member(func() any { return l_22 }(), "i") }()
 			})
 		}()
+		p.where = w
 		v = c.finish(v)
 		p.depth--
 		return v, true
@@ -8626,6 +8639,7 @@ func (p *tparser) v1() (any, bool) {
 		v19   any
 		v20   any
 		v21   any
+		w     string
 	)
 	start, rec = p.pos, len(p.recovered)
 	p.depth++
@@ -8693,6 +8707,7 @@ func (p *tparser) v1() (any, bool) {
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 	c.one[0] = v21
 	c.items = c.one[:]
+	w = p.where
 	p.where = "block"
 	v = func() any {
 		c.p.stepWork()
@@ -8700,6 +8715,7 @@ func (p *tparser) v1() (any, bool) {
 			return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_22 }(), "i") }()
 		})
 	}()
+	p.where = w
 	v = c.finish(v)
 	p.depth--
 	return v, true
@@ -8738,6 +8754,7 @@ func (p *tparser) i1() (any, bool) {
 			v19   any
 			v20   any
 			v21   any
+			w     string
 		)
 		start = p.pos
 		p.depth++
@@ -8804,6 +8821,7 @@ func (p *tparser) i1() (any, bool) {
 		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 		c.one[0] = v21
 		c.items = c.one[:]
+		w = p.where
 		p.where = "block"
 		v = func() any {
 
@@ -8811,6 +8829,7 @@ func (p *tparser) i1() (any, bool) {
 				return func() any { return c.member(func() any { return l_22 }(), "i") }()
 			})
 		}()
+		p.where = w
 		v = c.finish(v)
 		p.depth--
 		return v, true
@@ -8844,6 +8863,7 @@ func (p *tparser) i1() (any, bool) {
 		v19   any
 		v20   any
 		v21   any
+		w     string
 	)
 	start = p.pos
 	p.depth++
@@ -8911,6 +8931,7 @@ func (p *tparser) i1() (any, bool) {
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
 	c.one[0] = v21
 	c.items = c.one[:]
+	w = p.where
 	p.where = "block"
 	v = func() any {
 		c.p.stepWork()
@@ -8918,6 +8939,7 @@ func (p *tparser) i1() (any, bool) {
 			return func() any { c.p.stepWork(); return c.member(func() any { c.p.stepWork(); return l_22 }(), "i") }()
 		})
 	}()
+	p.where = w
 	v = c.finish(v)
 	p.depth--
 	return v, true
@@ -8965,6 +8987,7 @@ func (p *tparser) i2() (any, bool) {
 			x7    int
 			v8    any
 			v11   any
+			w     string
 		)
 		start = p.pos
 		p.depth++
@@ -9009,6 +9032,7 @@ func (p *tparser) i2() (any, bool) {
 	L10_ordinary:
 		k5 = v8
 		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+		w = p.where
 		p.where = "item"
 		v = func() any {
 
@@ -9018,6 +9042,7 @@ func (p *tparser) i2() (any, bool) {
 				return tmk_Item(c, true, f_23, f_24)
 			}()
 		}()
+		p.where = w
 		p.depth--
 		return v, true
 	fail_ordinary:
@@ -9040,6 +9065,7 @@ func (p *tparser) i2() (any, bool) {
 		x7    int
 		v8    any
 		v11   any
+		w     string
 	)
 	start = p.pos
 	p.depth++
@@ -9088,6 +9114,7 @@ L9:
 L10:
 	k5 = v8
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+	w = p.where
 	p.where = "item"
 	v = func() any {
 		c.p.stepWork()
@@ -9097,6 +9124,7 @@ L10:
 			return tmk_Item(c, true, f_23, f_24)
 		}()
 	}()
+	p.where = w
 	p.depth--
 	return v, true
 fail:
@@ -9143,6 +9171,7 @@ func (p *tparser) i3() (any, bool) {
 			v9      any
 			k10     any
 			v11     any
+			w       string
 		)
 		start = p.pos
 		prevEnv = p.env
@@ -9206,8 +9235,10 @@ func (p *tparser) i3() (any, bool) {
 		}
 		k10 = v11
 		c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+		w = p.where
 		p.where = "children"
 		v = func() any { return k10 }()
+		p.where = w
 		v = c.finish(v)
 		p.depth--
 		p.env = prevEnv
@@ -9233,6 +9264,7 @@ func (p *tparser) i3() (any, bool) {
 		v9      any
 		k10     any
 		v11     any
+		w       string
 	)
 	start = p.pos
 	prevEnv = p.env
@@ -9300,8 +9332,10 @@ L3:
 	}
 	k10 = v11
 	c = p.useCtx(tctx{p: p, start: start, end: p.pos, cbase: len(p.created)})
+	w = p.where
 	p.where = "children"
 	v = func() any { c.p.stepWork(); return k10 }()
+	p.where = w
 	v = c.finish(v)
 	p.depth--
 	p.env = prevEnv
@@ -9544,7 +9578,7 @@ func (p *tparser) s6() (any, bool) {
 		} else {
 			x5, _, x6 = p.peek()
 		}
-		if !(x6 && (x5 == 10)) && p.depth+0 <= p.maxDepth {
+		if !(x6 && (x5 == 10)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 7)
 			goto L7_ordinary
 		}
@@ -9614,7 +9648,7 @@ func (p *tparser) s6() (any, bool) {
 	} else {
 		x5, _, x6 = p.peek()
 	}
-	if !(x6 && (x5 == 10)) && p.depth+0 <= p.maxDepth {
+	if !(x6 && (x5 == 10)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 7)
 		goto L7
 	}
@@ -9951,7 +9985,7 @@ func (p *tparser) s9() (any, bool) {
 		} else {
 			x4, _, x5 = p.peek()
 		}
-		if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
+		if !(x5 && (x4 == 10)) && p.depth <= p.maxDepth {
 			p.expectOrdinary(p.pos, 7)
 			goto L6_ordinary
 		}
@@ -10011,7 +10045,7 @@ func (p *tparser) s9() (any, bool) {
 	} else {
 		x4, _, x5 = p.peek()
 	}
-	if !(x5 && (x4 == 10)) && p.depth+0 <= p.maxDepth {
+	if !(x5 && (x4 == 10)) && p.depth <= p.maxDepth {
 		p.expect(p.pos, 7)
 		goto L6
 	}

@@ -693,7 +693,7 @@ func (d *dgen) choice(e *grammar.Choice, s *dscope, build bool, fail string) str
 				d.line("%s", peek(ch, "_", more))
 			}
 			skip = d.label()
-			d.failIf(fmt.Sprintf("!(%s && (%s)) && p.depth+%d <= p.maxDepth", d.rd(more), chIdent.ReplaceAllString(cond, d.rd(ch)), depth), skip,
+			d.failIf(fmt.Sprintf("!(%s && (%s)) && %s", d.rd(more), chIdent.ReplaceAllString(cond, d.rd(ch)), depthLimit(depth)), skip,
 				fmt.Sprintf("p.expect(p.pos, %d)", desc))
 		}
 		f := d.label()
@@ -1185,14 +1185,17 @@ func (d *dgen) finish(r *rule, s *dscope, body string) (start, ctx bool) {
 				d.line("c.one[0] = %s\nc.items = c.one[:]", d.rd(body))
 			}
 		}
-		// The action's errors are reported with the rule's name (see tctx.result; actions do not
-		// nest, so it need not be restored).
-		d.line("p.where = %q", r.name)
+		// The action's errors are reported with the rule's name (see tctx.result). Keep that
+		// context on panic for the parse-level evalError handler; restore it after normal return.
 		g.caps, g.final = caps, r.action
 		action := g.term(r.action, newScope(), nil)
 		d.rdTerm(r.action, caps)
 		g.caps, g.final = nil, nil
+		prevWhere := d.shared("w", "string")
+		d.line("%s = p.where", prevWhere)
+		d.line("p.where = %q", r.name)
 		d.line("v = %s", action)
+		d.line("p.where = %s", d.rd(prevWhere))
 		if _, isNew := r.action.(*grammar.New); isNew {
 			// A struct made with the rule's range (tmk_T with final): what result checks holds.
 			// Structs made inside it are dropped from created, as result does.
