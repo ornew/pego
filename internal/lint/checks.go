@@ -682,8 +682,8 @@ func (l *linter) duplicateCaptures() {
 
 // scopeDuplicates reports the names captured twice in one match of a scope.
 func (l *linter) scopeDuplicates(scope grammar.Expr) {
-	// captured returns the captures that a match of e can make, in order, with one capture per
-	// name (the first).
+	// captured returns the captures that a match of e can make, in evaluation order, with one
+	// capture per name (the first).
 	var captured func(e grammar.Expr) []*grammar.Capture
 	merge := func(acc []*grammar.Capture, cs []*grammar.Capture, report bool) []*grammar.Capture {
 		for _, c := range cs {
@@ -701,7 +701,9 @@ func (l *linter) scopeDuplicates(scope grammar.Expr) {
 	captured = func(e grammar.Expr) []*grammar.Capture {
 		switch e := analysisExpr(e).(type) {
 		case *grammar.Capture:
-			return merge([]*grammar.Capture{e}, captured(e.Expr), true)
+			// A capture stores its span after its expression matches, so nested captures
+			// are evaluated first and the outer capture overwrites them.
+			return merge(captured(e.Expr), []*grammar.Capture{e}, true)
 		case *grammar.Seq:
 			var acc []*grammar.Capture
 			for _, it := range e.Items {

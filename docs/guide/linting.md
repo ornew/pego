@@ -276,6 +276,13 @@ parameter of the same name does not count), or, in a rule without an action, as 
 rule pair = a:key "=" a:value // the second a: overwrites the first
 ```
 
+A capture stores its value after its expression matches. For nested captures, the inner capture is stored first and
+the outer capture then overwrites it. The finding points to the outer capture and identifies the inner one:
+
+```pego
+rule main = a:a:"x"
+```
+
 Alternatives of a choice exclude each other (`a:x / a:y` is fine), and each iteration of a repetition is a scope of its
 own.
 

@@ -209,7 +209,8 @@ func TestUnusedCapture(t *testing.T) {
 func TestDuplicateCapture(t *testing.T) {
 	runCases(t, []lintCase{
 		{name: "sequence", src: `rule main = a:"x" a:"y"`, want: []string{"1:19 warning duplicate-capture"}},
-		{name: "nested", src: `rule main = a:a:"x"`, want: []string{"1:15 warning duplicate-capture"}},
+		{name: "nested outer overwrites inner", src: `rule main = a:a:"x"`,
+			want: []string{"1:13 warning duplicate-capture"}, msg: "overwriting the capture at 1:15"},
 		{name: "choice", src: `rule main = a:"x" / a:"y"`},
 		{name: "repetition", src: `rule main = (a:"x")* a:"y"`},
 		{name: "after a choice", src: `rule main = (a:"x" / "z") a:"y"`, want: []string{"1:27 warning duplicate-capture"}},
