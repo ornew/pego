@@ -111,3 +111,32 @@ The LSP index already uses checkpoints to avoid rescanning a long line from its 
 ## Limitations and Open Questions
 
 The exact exported names and whether recovered syntax errors should accompany a successful prefix in the existing `error` result need maintainer review. The recommendation is to preserve `Parse`'s existing `SyntaxErrors` behavior while returning consumption for that recovered success. Prefix parsing deliberately returns local coordinates; callers that need absolute positions must translate them.
+
+## Prototype Status
+
+An additive Go prototype now provides `PositionMap` and `Parser.ParsePrefix`.
+The source index lives in `internal/sourcepos` and uses scalar-boundary
+checkpoints spaced approximately 64 bytes apart, following the existing LSP
+index strategy. The public mapper enforces the strict conversions described
+above, including malformed-byte counting and the separate flat/line CRLF
+boundary rules. It retains the input string and sparse checkpoints rather than
+one coordinate record per byte.
+
+Prefix parsing uses an invocation-local runtime entry point, with no implicit
+EOF check and no mutation of the parser's configured start rule. It records the
+successful runtime cursor before returning the rule value. Normal code-point
+parses reuse the existing byte-offset table. Recognition and malformed source
+can require a second decoding pass over the consumed prefix; that pass observes
+active work controls. Recovered success retains `SyntaxErrors`, while an
+unrecovered failure or fatal error publishes zero consumption.
+
+Focused tests cover conversion round trips, strict boundary rejection,
+malformed UTF-8, checkpoint crossings, action-shaped/discarded values,
+recognition, recovery, cancellation, whole-input compatibility, and fragment
+endpoint mapping across all three backends. These tests are prepared but have
+not yet been executed. Adoption still requires local validation, independent
+review, conversion/retention measurements, and an LSP adapter that shares the
+new indexing machinery while preserving protocol clamping. The LSP extraction
+is not part of this prototype, so the existing private mapper remains intact.
+The design remains Proposed until those gates and the exported surface have
+been reviewed.
