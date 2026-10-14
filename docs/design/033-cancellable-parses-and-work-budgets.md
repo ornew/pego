@@ -48,10 +48,10 @@ existing boundary:
   apply to Node, recognition, and typed entry points under
   [design 022](022-generated-parser-depth-limits.md).
 
-No overhead or latency measurements are supplied here. A state/layout change can
-alter allocation and GC costs even when a new control is inactive. Static
-reference and exact-parent controls are required, rather than inferring zero
-cost from a disabled branch.
+Focused measurements for a lazy Closure setup prototype appear under
+Performance and Results. They are not feature-acceptance evidence: changes to
+state and setup can affect allocation, cold calls, and reachability even when a
+control is inactive.
 
 ## Goals
 
@@ -166,6 +166,35 @@ uses one resolved control instance across Parse, ParseRule, Recognize, ParseAST,
 and named ParseRuleAST where available. Named typed dispatch resolves options
 once before lookup, then shares the resolved state through direct execution or
 Node conversion; it must not reevaluate callbacks to establish a budget.
+
+### Lazy Controlled Closure Setup
+
+The closure backend keeps the ordinary compiled program as its default. When a
+parse has active cancellation or a finite work limit, the first controlled
+Closure invocation lazily builds and caches a separate metered closure program.
+Later controlled invocations reuse it; ordinary invocations continue to use the
+plain program. Bytecode backends use their existing invocation-control path and
+do not build a second closure program.
+
+The controlled program is derived from the same validated grammar and preserves
+rule metadata needed by the original program. It does not mutate or replace the
+plain graph. A controlled Document parse selects the controlled program before
+execution and retains the existing Document rule/run-site/description identity
+used by its caches. Cache identity and retry behavior remain correctness
+requirements.
+
+Lazy construction is setup, outside input-work and step budgets. Check the
+invocation context immediately before and after setup; graph construction itself
+is synchronous and cannot be interrupted. Keep context method calls outside the
+`sync.Once` initializer so reentrant context methods cannot deadlock setup. An
+inactive context such as `context.Background()` with zero limits produces no
+work control and does not materialize the second graph.
+
+Ordinary Closure parsers retain only the plain graph until a controlled call;
+after activation, the parser may retain both graphs. Measure default parsing,
+first controlled-call latency and allocations, and post-activation retained
+heap separately. The lazy prototype remains unadopted; the current costs and
+remaining gates are summarized under Performance and Results.
 
 ### What the Limits Count
 
@@ -399,15 +428,33 @@ These are proposed gates, not completed validation:
 
 ## Performance and Results
 
-The work-control integration with piece-backed `Document` remains unadopted; no
-new timing result is recorded here. Piece-backed `Document` input is already
-adopted independently. Make no performance promise for work controls. Pin exact
-parent and candidate, backend/unit, generated controls, compiler/runtime
-versions, grammar/input hashes, and normal GC settings. Compare three controls:
+The lazy Closure setup prototype remains unadopted. Piece-backed `Document`
+input is already adopted independently. Measurements compared main `77f12f2`,
+the eager-graph prototype `2ae994f`, and the lazy implementation described in
+this record; source fingerprints were fixed. Five alternating one-second rounds
+used Go 1.27.1 on Apple M3 Max (darwin/arm64), `GOMAXPROCS=16`, `GOGC=100`, and
+no memory limit. In Closure/CodePoints no-control parses, lazy/main paired
+median ratios were 1.0752 for JSON (range 1.0627–1.0934) and 1.1038 for XML
+(1.0619–1.1231); allocation counts matched. Source-preparation allocation
+counts also matched main (JSON 2,474; Minilang 7,464) and were lower than the
+eager control (3,117; 8,897); allocated bytes were not identical. Active
+steady-state Closure/CodePoints parse medians were near eager (1.0047 JSON and
+1.0011 XML; both paired ranges included parity).
+
+Cold first controlled Closure/CodePoints parses on empty input, with grammar
+compilation excluded, had median times of 7.34 to 75.63 microseconds for JSON
+and 14.01 to 177.19 microseconds for Minilang from eager to lazy. These five
+alternating 50-call probes include first-use graph setup, not graph-only timing.
+For N=128 unparsed compiled Parser owners, pre-activation retained-heap medians
+were 1.0021–1.0055 times main. After one empty-input controlled parse per owner,
+retained heap was 1.1019–1.1609 times eager across the four measured grammars.
+These focused measurements do not establish default-cost or reachability
+acceptance. Compare three controls:
 exact parent; same-revision static build/generation with controls and added
 state/layout removed; candidate with controls absent. Then measure context-only,
 budgets-only, combined controls, and cancellation latency in engine work versus
-caller-blocked intervals.
+caller-blocked intervals. The focused lazy-graph comparison above does not replace
+these broader acceptance gates.
 
 Use ordinary small/large batch Node, recognition, direct typed and conversion
 workloads; shallow scanning/backtracking; Document no-edit/edit/reparse/resume;

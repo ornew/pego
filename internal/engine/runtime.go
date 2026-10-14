@@ -645,11 +645,7 @@ func (p *parser) growEnd(r *rule, g *growState) (*Node, bool) {
 // invoke evaluates the rule body and builds the value with the action or the CST rules.
 func (p *parser) invoke(r *rule, min int) (*Node, bool) {
 	st := p.invokeBegin(r)
-	body := r.body
-	if workControlsEnabled && p.control != nil && r.controlledBody != nil {
-		body = r.controlledBody
-	}
-	v, ok := body(p, min)
+	v, ok := r.body(p, min)
 	return p.invokeEnd(r, &st, v, ok)
 }
 
@@ -666,11 +662,7 @@ func (p *parser) invokePlain(r *rule, min int) (*Node, bool) {
 		p.fail("nesting too deep: more than %d rule calls", p.maxDepth)
 	}
 	p.stats.Evaluated++
-	body := r.body
-	if workControlsEnabled && p.control != nil && r.controlledBody != nil {
-		body = r.controlledBody
-	}
-	v, ok := body(p, min)
+	v, ok := r.body(p, min)
 	p.depth--
 	p.cut = prevCut
 	p.trail = p.trail[:min2(trail, len(p.trail))]

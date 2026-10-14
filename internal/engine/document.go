@@ -145,6 +145,10 @@ func (d *Document) ParseWith(o ParseOptions) (n *Node, err error) {
 		return nil, fmt.Errorf("work controls are unavailable in the reference build")
 	}
 	c.check()
+	active, setupErr := d.prog.prepareControlledProgram(d.back, c)
+	if setupErr != nil {
+		return nil, setupErr
+	}
 	runs, lastRuns := d.runs, d.runs
 	gen := uint32(len(d.edits))
 	if runs != nil && d.runGen == gen {
@@ -154,7 +158,7 @@ func (d *Document) ParseWith(o ParseOptions) (n *Node, err error) {
 	} else {
 		runs = map[runKey]*runRecord{}
 	}
-	p = &parser{prog: d.prog, input: d.in, memo: d.memo, memoAll: true, noPlain: true, maxDepth: o.maxDepth(d.back), gen: gen, edits: d.edits,
+	p = &parser{prog: active, input: d.in, memo: d.memo, memoAll: true, noPlain: true, maxDepth: o.maxDepth(d.back), gen: gen, edits: d.edits,
 		runs: runs, lastRuns: lastRuns, kidStack: d.kids}
 	if reuseDocumentVMValues {
 		// A large document may have been replaced with a small input.
@@ -169,7 +173,7 @@ func (d *Document) ParseWith(o ParseOptions) (n *Node, err error) {
 	p.setTrace(o.Trace)
 	c.check()
 	executionStarted = true
-	n, err = d.prog.run(p, d.back, d.start)
+	n, err = active.run(p, d.back, d.start)
 	if !p.aborted {
 		c.check()
 	}

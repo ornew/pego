@@ -212,9 +212,6 @@ func (p *parser) operatorsRuleParse(r *rule, min int) (*Node, bool) {
 // operatorsRuleExpr is the body of operatorsRuleParse.
 func (p *parser) operatorsRuleExpr(r *rule, min int) (*Node, bool) {
 	pr := r.operatorsRule
-	if workControlsEnabled && p.control != nil && r.controlledOperators != nil {
-		pr = r.controlledOperators
-	}
 	lhs, ok := p.operatorsRuleNud(r)
 	if !ok {
 		return nil, false
@@ -274,9 +271,6 @@ func (p *parser) operatorsRuleExpr(r *rule, min int) (*Node, bool) {
 // operatorsRuleNud parses the beginning of an expression (a prefix operator or an operand).
 func (p *parser) operatorsRuleNud(r *rule) (*Node, bool) {
 	pr := r.operatorsRule
-	if workControlsEnabled && p.control != nil && r.controlledOperators != nil {
-		pr = r.controlledOperators
-	}
 	p.skipTrivia(pr)
 	m0 := p.mark()
 	if at, cutFailed := p.longest(pr.prefix); at.op != nil {

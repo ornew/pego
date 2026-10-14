@@ -25,6 +25,11 @@ type Program struct {
 	byName        map[string]*rule
 	types         map[string]grammar.TypeSpec
 
+	workOnce      sync.Once
+	workProgram   *Program
+	workErr       error
+	workRecognize bool
+
 	moduleOnce sync.Once
 	module     *Module
 	recOnce    sync.Once
@@ -47,6 +52,8 @@ type Options struct {
 	DisableMemo bool
 	// NoTypeCheck skips type checking.
 	NoTypeCheck bool
+	// controlledDispatch builds only the metered closure graph for lazy work setup.
+	controlledDispatch bool
 	// recognize builds a program that only checks whether the input conforms to the grammar, without
 	// building a tree (Program.recognizer).
 	recognize bool
@@ -64,20 +71,18 @@ type matcher func(p *parser) (*Node, bool)
 
 type rule struct {
 	// kinds are the node kinds the rule makes (newRuleKinds).
-	kinds               ruleKinds
-	id                  int
-	name                string
-	def                 *grammar.RuleDef
-	scope               *scope
-	body                func(p *parser, min int) (*Node, bool)
-	controlledBody      func(p *parser, min int) (*Node, bool)
-	action              grammar.Term
-	bodyIsSeq           bool
-	terminalType        string
-	memo                bool
-	leader              bool
-	operatorsRule       *operatorsRule
-	controlledOperators *operatorsRule
+	kinds         ruleKinds
+	id            int
+	name          string
+	def           *grammar.RuleDef
+	scope         *scope
+	body          func(p *parser, min int) (*Node, bool)
+	action        grammar.Term
+	bodyIsSeq     bool
+	terminalType  string
+	memo          bool
+	leader        bool
+	operatorsRule *operatorsRule
 	// stream reports that the top level of the rule body has a #stream repetition.
 	stream bool
 	// positional reports that the result may depend on position values (analysis.positional).
@@ -295,7 +300,8 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 	}
 	prog := &Program{Grammar: g, byName: map[string]*rule{}, types: map[string]grammar.TypeSpec{},
 		descTable: append([]string(nil), fixedDescs...)}
-	c := &compiler{prog: prog, opts: opts}
+	c := &compiler{prog: prog, opts: opts, plainDispatch: !opts.controlledDispatch}
+	prog.workRecognize = opts.recognize
 	prog.noProjections = opts.noProjections
 
 	for _, td := range g.Types() {
@@ -398,26 +404,7 @@ func build(g *grammar.Grammar, opts Options, flags []ruleFlags) (*Program, error
 			return nil, c.errs
 		}
 	}
-	if workControlsEnabled {
-		// Keep the metered graph for controlled invocations, then build a plain
-		// graph without expression-dispatch wrappers. Rule-level selection
-		// avoids paying one extra closure call for every ordinary expression.
-		for _, rs := range [][]*rule{prog.rules, prog.twins} {
-			for _, r := range rs {
-				r.controlledBody, r.controlledOperators = r.body, r.operatorsRule
-			}
-		}
-		c.plainDispatch, c.runSites = true, 0
-		for _, r := range prog.rules {
-			c.compileRule(r)
-		}
-		for _, r := range prog.twins {
-			c.compileRule(r)
-		}
-		if len(c.errs) != 0 {
-			return nil, c.errs
-		}
-	}
+
 	return prog, nil
 }
 

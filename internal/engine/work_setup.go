@@ -42,6 +42,10 @@ func (prog *Program) admitParse(start string, o ParseOptions, stream bool) (*Pro
 			return nil, nil, nil, err
 		}
 	}
+	active, err = active.prepareControlledProgram(o.Backend, c)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	r, err := active.prepareControlledRule(o.Backend, start, c)
 	return active, r, c, err
 }
@@ -103,4 +107,29 @@ func moduleStreams(m *Module, entry int) bool {
 		}
 	}
 	return false
+}
+
+// prepareControlledProgram builds the metered closure graph only when needed.
+// Context methods stay outside Once so reentrant calls cannot deadlock setup.
+func (prog *Program) prepareControlledProgram(b Backend, c *workControl) (*Program, error) {
+	if !workControlsEnabled || c == nil || prog.backend(b) != Closure {
+		return prog, nil
+	}
+	c.check()
+	prog.workOnce.Do(func() {
+		flags := make([]ruleFlags, len(prog.rules))
+		for i, r := range prog.rules {
+			flags[i] = ruleFlags{memo: r.memo, leader: r.leader, positional: r.positional, twin: r.twinOK}
+		}
+		prog.workProgram, prog.workErr = build(prog.Grammar, Options{
+			recognize:          prog.workRecognize,
+			noProjections:      prog.noProjections,
+			controlledDispatch: true,
+		}, flags)
+	})
+	c.check()
+	if prog.workProgram == nil && prog.workErr == nil {
+		return nil, fmt.Errorf("controlled closure initialization did not complete")
+	}
+	return prog.workProgram, prog.workErr
 }

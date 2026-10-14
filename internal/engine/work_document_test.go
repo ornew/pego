@@ -175,7 +175,11 @@ rule item = "a"`)
 func TestWorkDocumentCallerPanicAtBoundaries(t *testing.T) {
 	prog := compile(t, `rule main = "a" $$`)
 	workDocumentVariants(t, func(t *testing.T, base ParseOptions) {
-		for _, at := range []int{0, 1, 2, 3} {
+		last := 3
+		if prog.backend(base.Backend) == Closure {
+			last += 2 // Checks around lazy closure preparation precede execution.
+		}
+		for at := 0; at <= last; at++ {
 			t.Run(fmt.Sprint(at), func(t *testing.T) {
 				d, err := prog.NewDocumentWith("main", "a", base)
 				if err != nil {
@@ -201,7 +205,7 @@ func TestWorkDocumentCallerPanicAtBoundaries(t *testing.T) {
 				if at > 0 && ctx.calls != at {
 					t.Fatalf("checkpoint calls=%d want %d", ctx.calls, at)
 				}
-				if at < 3 {
+				if at < last {
 					workDocumentAssertPreserved(t, d, state)
 				} else {
 					workDocumentAssertAborted(t, d)
