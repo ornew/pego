@@ -438,8 +438,23 @@ median ratios were 1.0752 for JSON (range 1.0627–1.0934) and 1.1038 for XML
 (1.0619–1.1231); allocation counts matched. Source-preparation allocation
 counts also matched main (JSON 2,474; Minilang 7,464) and were lower than the
 eager control (3,117; 8,897); allocated bytes were not identical. Active
-steady-state Closure/CodePoints parse medians were near eager (1.0047 JSON and
-1.0011 XML; both paired ranges included parity).
+controlled Closure/CodePoints parse medians were near eager (1.0047 JSON and
+1.0011 XML; both paired ranges included parity). Both variants used the original
+unwarmed harness, with no full parse before `b.Loop`; the measurements include
+any first-use graph activation in the timed loop and are not warmed steady-state
+or allocation evidence.
+
+A later experiment split the unmetered copy, append, and clear paths from
+their controlled loops; the Go 1.27.1 compiler inlined the small entry
+functions. Five alternating one-second rounds compared seven
+Closure/CodePoints profiles: ordinary JSON/XML parsing, Document incremental
+and long-input parsing, streaming, and controlled JSON/XML parsing. Both
+variants in the new controlled-call profiles performed one full parse before
+`b.Loop`; the earlier eager/lazy profiles above used the same original
+unwarmed harness for both. The seven inline/lazy paired medians ranged from
+0.9784 to 1.0210, every paired range included parity, and allocation counts
+matched. The split was rejected for lack of a consistent timing benefit. Cold
+setup and retained heap were not remeasured.
 
 Cold first controlled Closure/CodePoints parses on empty input, with grammar
 compilation excluded, had median times of 7.34 to 75.63 microseconds for JSON

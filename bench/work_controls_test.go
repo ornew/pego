@@ -27,6 +27,10 @@ func BenchmarkControlledParse(b *testing.B) {
 			for _, backend := range backends {
 				for _, unit := range units {
 					b.Run(backend.name+"/"+unit.name, func(b *testing.B) {
+						// Initialize lazy instrumentation before measuring repeated calls.
+						if err := parseOK(p, w, input, pego.WithBackend(backend.b), pego.WithUnit(unit.u), pego.WithWorkLimits(limits)); err != nil {
+							b.Fatal(err)
+						}
 						b.SetBytes(int64(len(input)))
 						b.ReportAllocs()
 						for b.Loop() {
